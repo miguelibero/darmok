@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.15)
+
+project(
+  darmok-example-empty
+  LANGUAGES CXX
+  DESCRIPTION "empty darmok project"
+)
+
+add_subdirectory (../../ ../../build)
+
+set(sources
+  src/main.cpp
+)
+
+add_executable(
+  ${PROJECT_NAME}
+  ${sources}
+)
+
+target_link_libraries (${PROJECT_NAME} LINK_PUBLIC darmok)

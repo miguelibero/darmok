@@ -1,0 +1,6 @@
+[submodule "lib/bgfx.cmake"]
+	path = lib/bgfx.cmake
+	url = git@github.com:bkaradzic/bgfx.cmake.git
+[submodule "lib/glfw"]
+	path = lib/glfw
+	url = git@github.com:glfw/glfw.git
