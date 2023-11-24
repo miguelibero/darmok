@@ -2,30 +2,25 @@
 
 #include <bx/uint32_t.h>
 #include <darmok/entry.hpp>
-#include <imgui/imgui.h>
+// #include <imgui/imgui.h>
 
 namespace
 {
 
-class ExampleEmpty : public darmok::IApp
+class ExampleEmpty : public darmok::App
 {
 public:
-	void init(int32_t argc, const char* const* argv, uint32_t width, uint32_t height) override
+	void init(const std::vector<std::string>& args) override
 	{
-		_width = width;
-		_height = height;
-
 		bgfx::Init init;
+		init.platformData.ndt = darmok::getNativeDisplayHandle();
 		init.platformData.nwh  = darmok::getNativeWindowHandle(darmok::kDefaultWindowHandle);
-		init.platformData.ndt  = darmok::getNativeDisplayHandle();
 		init.platformData.type = darmok::getNativeWindowHandleType(darmok::kDefaultWindowHandle);
-		init.resolution.width  = _width;
-		init.resolution.height = _height;
 		init.resolution.reset  = BGFX_RESET_VSYNC;
 		bgfx::init(init);
 
 		// Enable debug text.
-		//bgfx::setDebug(m_debug);
+		bgfx::setDebug(true);
 
 		// Set view 0 clear state.
 		bgfx::setViewClear(0
@@ -35,12 +30,12 @@ public:
 			, 0
 			);
 
-		imguiCreate();
+		// imguiCreate();
 	}
 
 	virtual int shutdown() override
 	{
-		imguiDestroy();
+		// imguiDestroy();
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
@@ -50,8 +45,9 @@ public:
 
 	bool update() override
 	{
-		if (!darmok::processEvents(_width, _height, _debug, _reset, &_mouseState) )
+		if (!darmok::processEvents() )
 		{
+			/*
 			imguiBeginFrame(m_mouseState.m_mx
 				,  _mouseState.y
 				, (_mouseState.buttons[darmok::MouseButton::Left  ] ? IMGUI_MBUT_LEFT   : 0)
@@ -65,9 +61,11 @@ public:
 			showExampleDialog(this);
 
 			imguiEndFrame();
+			*/
 
 			// Set view 0 default viewport.
-			bgfx::setViewRect(0, 0, 0, uint16_t(_width), uint16_t(_height) );
+			auto& win = getWindowState(darmok::kDefaultWindowHandle);
+			bgfx::setViewRect(0, 0, 0, uint16_t(win.size.width), uint16_t(win.size.height) );
 
 			// This dummy draw call is here to make sure that view 0 is cleared
 			// if no other draw calls are submitted to view 0.
@@ -103,21 +101,12 @@ public:
 			// Advance to next frame. Rendering thread will be kicked to
 			// process submitted rendering primitives.
 			bgfx::frame();
-
 			return true;
 		}
-
 		return false;
 	}
-
-	darmok::MouseState _mouseState;
-
-	uint32_t _width;
-	uint32_t _height;
-	uint32_t _debug;
-	uint32_t _reset;
 };
 
 }
 
-ENTRY_IMPLEMENT_MAIN(ExampleEmpty);
+DARMOK_IMPLEMENT_MAIN(ExampleEmpty);

@@ -12,17 +12,16 @@
 #include <darmok/input.hpp>
 #include <darmok/utils.hpp>
 
-extern "C" int32_t _main_(int32_t _argc, char** _argv);
-
 namespace darmok
 {
 	static bx::FileReaderI* s_fileReader = NULL;
 	static bx::FileWriterI* s_fileWriter = NULL;
+	static std::string s_currentDir;
+
 
 	extern bx::AllocatorI* getDefaultAllocator();
 	bx::AllocatorI* g_allocator = getDefaultAllocator();
 
-	static std::string s_currentDir;
 
 	class FileReader final : public bx::FileReader
 	{
@@ -65,7 +64,7 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 	}
 #endif // ENTRY_CONFIG_IMPLEMENT_DEFAULT_ALLOCATOR
 
-	static const char* keyNames[] =
+	static const std::string keyNames[] =
 	{
 		"None",
 		"Esc",
@@ -171,7 +170,7 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 	};
 	BX_STATIC_ASSERT(to_underlying(Key::Count) == BX_COUNTOF(keyNames));
 
-	const std::string& getName(Key key)
+	const std::string& getKeyName(Key key)
 	{
 		BX_ASSERT(key < Key::Count, "Invalid key %d.", key);
 		return keyNames[to_underlying(key)];
@@ -195,7 +194,7 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		const bool isChar = (Key::KeyA <= key && key <= Key::KeyZ);
 		if (isChar)
 		{
-			enum { ShiftMask = to_underlying(Modifier::LeftShift) | to_underlying(Modifier::RightShift) };
+			enum { ShiftMask = to_underlying(KeyModifier::LeftShift) | to_underlying(KeyModifier::RightShift) };
 
 			const bool shift = !!( modifiers & ShiftMask );
 			return (shift ? 'A' : 'a') + char(to_underlying(key) - to_underlying(Key::KeyA));
@@ -241,61 +240,57 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		return false;
 	}
 
-	static const InputBinding s_bindings[] =
+	static const std::vector<InputBinding> s_bindings =
 	{
-		{ Key::KeyQ,         to_underlying(Modifier::LeftCtrl),  1, NULL, "exit"                              },
-		{ Key::KeyQ,         to_underlying(Modifier::RightCtrl), 1, NULL, "exit"                              },
-		{ Key::KeyF,         to_underlying(Modifier::LeftCtrl),  1, NULL, "graphics fullscreen"               },
-		{ Key::KeyF,         to_underlying(Modifier::RightCtrl), 1, NULL, "graphics fullscreen"               },
-		{ Key::Return,       to_underlying(Modifier::RightAlt),  1, NULL, "graphics fullscreen"               },
-		{ Key::F1,           to_underlying(Modifier::None),      1, NULL, "graphics stats"                    },
-		{ Key::F1,           to_underlying(Modifier::LeftCtrl),  1, NULL, "graphics ifh"                      },
-		{ Key::GamepadStart, to_underlying(Modifier::None),      1, NULL, "graphics stats"                    },
-		{ Key::F1,           to_underlying(Modifier::LeftShift), 1, NULL, "graphics stats 0\ngraphics text 0" },
-		{ Key::F3,           to_underlying(Modifier::None),      1, NULL, "graphics wireframe"                },
-		{ Key::F6,           to_underlying(Modifier::None),      1, NULL, "graphics profiler"                 },
-		{ Key::F7,           to_underlying(Modifier::None),      1, NULL, "graphics vsync"                    },
-		{ Key::F8,           to_underlying(Modifier::None),      1, NULL, "graphics msaa"                     },
-		{ Key::F9,           to_underlying(Modifier::None),      1, NULL, "graphics flush"                    },
-		{ Key::F10,          to_underlying(Modifier::None),      1, NULL, "graphics hidpi"                    },
-		{ Key::Print,        to_underlying(Modifier::None),      1, NULL, "graphics screenshot"               },
-		{ Key::KeyP,         to_underlying(Modifier::LeftCtrl),  1, NULL, "graphics screenshot"               },
-
-		INPUT_BINDING_END
+		{ Key::KeyQ,         to_underlying(KeyModifier::LeftCtrl),  1, NULL, "exit"                              },
+		{ Key::KeyQ,         to_underlying(KeyModifier::RightCtrl), 1, NULL, "exit"                              },
+		{ Key::KeyF,         to_underlying(KeyModifier::LeftCtrl),  1, NULL, "graphics fullscreen"               },
+		{ Key::KeyF,         to_underlying(KeyModifier::RightCtrl), 1, NULL, "graphics fullscreen"               },
+		{ Key::Return,       to_underlying(KeyModifier::RightAlt),  1, NULL, "graphics fullscreen"               },
+		{ Key::F1,           to_underlying(KeyModifier::None),      1, NULL, "graphics stats"                    },
+		{ Key::F1,           to_underlying(KeyModifier::LeftCtrl),  1, NULL, "graphics ifh"                      },
+		{ Key::GamepadStart, to_underlying(KeyModifier::None),      1, NULL, "graphics stats"                    },
+		{ Key::F1,           to_underlying(KeyModifier::LeftShift), 1, NULL, "graphics stats 0\ngraphics text 0" },
+		{ Key::F3,           to_underlying(KeyModifier::None),      1, NULL, "graphics wireframe"                },
+		{ Key::F6,           to_underlying(KeyModifier::None),      1, NULL, "graphics profiler"                 },
+		{ Key::F7,           to_underlying(KeyModifier::None),      1, NULL, "graphics vsync"                    },
+		{ Key::F8,           to_underlying(KeyModifier::None),      1, NULL, "graphics msaa"                     },
+		{ Key::F9,           to_underlying(KeyModifier::None),      1, NULL, "graphics flush"                    },
+		{ Key::F10,          to_underlying(KeyModifier::None),      1, NULL, "graphics hidpi"                    },
+		{ Key::Print,        to_underlying(KeyModifier::None),      1, NULL, "graphics screenshot"               },
+		{ Key::KeyP,         to_underlying(KeyModifier::LeftCtrl),  1, NULL, "graphics screenshot"               },
 	};
 
 #if BX_PLATFORM_EMSCRIPTEN
-	static AppI* s_app;
+	static App* s_app;
 	static void updateApp()
 	{
 		s_app->update();
 	}
 #endif // BX_PLATFORM_EMSCRIPTEN
 
-	static IApp*    s_currentApp = NULL;
-
 	static char s_restartArgs[1024] = { '\0' };
 
 	static ptrdiff_t s_offset = 0;
 
-	IApp::~IApp()
+	App::~App()
 	{
 	}
 
-	int runApp(std::unique_ptr<IApp>&& app, int argc, const char* const* argv)
+	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
 	{
-		auto width = ENTRY_DEFAULT_WIDTH;
-		auto height = ENTRY_DEFAULT_HEIGHT;
-		setWindowSize(kDefaultWindowHandle, width, height);
+		auto width = DARMOK_DEFAULT_WIDTH;
+		auto height = DARMOK_DEFAULT_HEIGHT;
+		setWindowSize(kDefaultWindowHandle, WindowSize(width, height));
 
-		app->init(argc, argv, width, height);
+		app->init(args);
 		bgfx::frame();
 
 #if BX_PLATFORM_EMSCRIPTEN
 		s_app = _app;
 		emscripten_set_main_loop(&updateApp, -1, 1);
 #else
-		while (app->update() )
+		while (app->update())
 		{
 			if (0 != bx::strLen(s_restartArgs) )
 			{
@@ -307,7 +302,7 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		return app->shutdown();
 	}
 
-	int main(int _argc, const char* const* _argv)
+	int main(int argc, const char* const* argv)
 	{
 		//DBG(BX_COMPILER_NAME " / " BX_CPU_NAME " / " BX_ARCH_NAME " / " BX_PLATFORM_NAME);
 
@@ -315,16 +310,11 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		s_fileWriter = BX_NEW(g_allocator, FileWriter);
 
 		inputInit();
-		inputAddBindings("bindings", s_bindings);
+		inputAddBindings("bindings", std::vector<InputBinding>(s_bindings));
 
-		bx::FilePath fp(_argv[0]);
-		char title[bx::kMaxFilePath];
-		bx::strCopy(title, BX_COUNTOF(title), fp.getBaseName() );
+		setWindowSize(kDefaultWindowHandle, WindowSize(DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT));
 
-		setWindowTitle(kDefaultWindowHandle, title);
-		setWindowSize(kDefaultWindowHandle, ENTRY_DEFAULT_WIDTH, ENTRY_DEFAULT_HEIGHT);
-
-		// TODO: run app
+		auto result = ::_main_(argc, (char**)argv);
 
 		setCurrentDir("");
 
@@ -337,12 +327,26 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		bx::deleteObject(g_allocator, s_fileWriter);
 		s_fileWriter = NULL;
 
-		return 0;
+		return result;
 	}
 
-	WindowState s_window[ENTRY_CONFIG_MAX_WINDOWS];
+	static std::array<WindowState, DARMOK_CONFIG_MAX_WINDOWS> s_windows;
 
-	bool processEvents(uint32_t& width, uint32_t& height, uint32_t& debug, uint32_t& reset, MouseState* mouse)
+	void WindowState::clear()
+	{
+		handle = { 0 };
+		size = WindowSize(0, 0);
+		pos = WindowPosition(0, 0);
+		nativeHandle = nullptr;
+		dropFile = "";
+	}
+
+	WindowState& getWindowState(WindowHandle handle)
+	{
+		return s_windows[handle.idx];
+	}
+
+	bool processEvents()
 	{
 		while(true)
 		{
@@ -351,62 +355,46 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 			{
 				break;
 			}
+			auto ptr = ev.get();
 			switch (ev->type)
 			{
 				case Event::Exit:
 					return true;
+				case Event::CharInput:
+					static_cast<CharInputEvent*>(ptr)->process();
+					break;
+				case Event::GamepadAxisChanged:
+					static_cast<GamepadAxisChangedEvent*>(ptr)->process();
+					break;
+				case Event::GamepadConnection:
+					static_cast<GamepadConnectionEvent*>(ptr)->process();
+					break;
+				case Event::KeyPressed:
+					static_cast<KeyPressedEvent*>(ptr)->process();
+					break;
+				case Event::MouseMoved:
+					static_cast<MouseMovedEvent*>(ptr)->process();
+					break;
+				case Event::MouseButtonPressed:
+					static_cast<MouseButtonPressedEvent*>(ptr)->process();
+					break;
+				case Event::WindowSizeChanged:
+					static_cast<WindowSizeChangedEvent*>(ptr)->process();
+					break;
+				case Event::WindowCreated:
+					static_cast<WindowCreatedEvent*>(ptr)->process();
+					break;
+				case Event::WindowSuspended:
+					static_cast<WindowSuspendedEvent*>(ptr)->process();
+					break;
+				case Event::FileDropped:
+					static_cast<FileDroppedEvent*>(ptr)->process();
+					break;
 				default:
-					ev->process();
 					break;
 			}
 			inputProcess();
 		};
-
-		bgfx::reset(width, height, reset);
-		inputSetMouseResolution(uint16_t(width), uint16_t(height) );
-
-		return 0;
-	}
-
-	bool processWindowEvents(WindowState& state, uint32_t& debug, uint32_t& reset)
-	{
-		WindowHandle handle = { UINT16_MAX };
-
-		bool needsReset = false;
-
-		while (true)
-		{
-			auto ev = pollEvent();
-			if (ev == nullptr)
-			{
-				break;
-			}
-			if (isValid(ev->handle))
-			{
-				handle = ev->handle;
-			}
-			switch (ev->type)
-			{
-				case Event::Exit:
-					return true;
-				case Event::Size:
-					needsReset = true;
-					ev->process();
-					break;
-				default:
-					ev->process();
-					break;
-			}
-			inputProcess();
-		};
-
-
-		if (needsReset)
-		{
-			WindowState& win = s_window[0];
-			bgfx::reset(win.width, win.height, reset);
-			inputSetMouseResolution(uint16_t(win.width), uint16_t(win.height));
-		}
 
 		return 0;
 	}
@@ -421,78 +409,237 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		return *s_fileWriter;
 	}
 
-	void AxisEvent::process()
+	GamepadAxisChangedEvent::GamepadAxisChangedEvent(GamepadHandle gampad, GamepadAxis axis, int32_t value)
+		: Event(GamepadAxisChanged)
+		, _gamepad(gampad)
+		, _axis(axis)
+		, _value(value)
 	{
-		inputSetGamepadAxis(gamepad, axis, value);
 	}
 
-	void CharEvent::process()
+	void GamepadAxisChangedEvent::process()
 	{
-		inputChar(len, std::move(data));
+		inputSetGamepadAxis(_gamepad, _axis, _value);
 	}
 
-	void GamepadEvent::process()
+	CharInputEvent::CharInputEvent(const Utf8Char& data)
+		: Event(CharInput)
+		, _data(data)
 	{
-		DBG("gamepad %d, %d", gamepad.idx, connected);
 	}
 
-	void KeyEvent::process()
+	void CharInputEvent::process()
 	{
-		inputSetKeyState(key, modifiers, down);
+		inputChar(_data);
 	}
 
-	void MouseEvent::process()
+	GamepadConnectionEvent::GamepadConnectionEvent(GamepadHandle gamepad, bool connected)
+		: Event(GamepadConnection)
+		, _gamepad(gamepad)
+		, _connected(connected)
 	{
-		bool mouseLock = inputIsMouseLocked();
+	}
 
-		if (move)
+	void GamepadConnectionEvent::process()
+	{
+		DBG("gamepad %d, %d", _gamepad.idx, _connected);
+	}
+
+	KeyPressedEvent::KeyPressedEvent(Key key, uint8_t modifiers, bool down)
+		: Event(KeyPressed)
+		, _key(key)
+		, _modifiers(modifiers)
+		, _down(down)
+	{
+	}
+
+	void KeyPressedEvent::process()
+	{
+		inputSetKeyState(_key, _modifiers, _down);
+	}
+
+	MouseMovedEvent::MouseMovedEvent(const MousePosition& pos)
+		: Event(MouseMoved)
+		, _pos(pos)
+	{
+	}
+
+	void MouseMovedEvent::process()
+	{
+		inputSetMousePos(_pos);
+	}
+
+	MouseButtonPressedEvent::MouseButtonPressedEvent(MouseButton button, bool down)
+		: Event(MouseButtonPressed)
+		, _button(button)
+		, _down(down)
+	{
+	}
+
+	void MouseButtonPressedEvent::process()
+	{
+		inputSetMouseButtonState(_button, _down);
+	}
+
+	WindowSizeChangedEvent::WindowSizeChangedEvent(WindowHandle window, const WindowSize& size)
+		: Event(WindowSizeChanged)
+		, _window(window)
+		, _size(size)
+	{
+	}
+
+	void WindowSizeChangedEvent::process()
+	{
+		WindowState& win = getWindowState(_window);
+		win.handle = _window;
+		win.size = _size;
+		bgfx::reset(win.size.width, win.size.height, win.flags);
+		inputSetMouseResolution(uint16_t(win.size.width), uint16_t(win.size.height));
+	}
+
+	WindowPositionChangedEvent::WindowPositionChangedEvent(WindowHandle window, const WindowPosition& pos)
+		: Event(WindowSizeChanged)
+		, _window(window)
+		, _pos(pos)
+	{
+	}
+
+	void WindowPositionChangedEvent::process()
+	{
+		WindowState& win = getWindowState(_window);
+		win.handle = _window;
+		win.pos = _pos;
+	}
+
+	WindowCreatedEvent::WindowCreatedEvent(WindowHandle window, void* nativeHandle, const WindowCreationOptions& options)
+		:Event(WindowCreated)
+		, _window(window)
+		, _nativeHandle(nativeHandle)
+		, _options(options)
+	{
+	}
+
+	void WindowCreatedEvent::process()
+	{
+		WindowState& win = getWindowState(_window);
+		win.handle = _window;
+		win.size = _options.size;
+		win.pos = _options.pos;
+		win.nativeHandle = _nativeHandle;
+	}
+
+	WindowDestroyedEvent::WindowDestroyedEvent(WindowHandle window)
+		:Event(WindowSuspended)
+		, _window(window)
+	{
+	}
+
+	void WindowDestroyedEvent::process()
+	{
+		getWindowState(_window).clear();
+	}
+
+	WindowSuspendedEvent::WindowSuspendedEvent(WindowHandle window, SuspendPhase phase)
+		:Event(WindowSuspended)
+		, _window(window)
+		, _phase(phase)
+	{
+	}
+
+	void WindowSuspendedEvent::process()
+	{
+	}
+
+	FileDroppedEvent::FileDroppedEvent(WindowHandle window, const std::string& filePath)
+		:Event(FileDropped)
+		, _window(window)
+		, _filePath(filePath)
+	{
+	}
+
+	void FileDroppedEvent::process()
+	{
+		DBG("drop file %s", _filePath.c_str());
+		WindowState& win = getWindowState(_window);
+		win.dropFile = _filePath;
+	}
+
+
+	void EventQueue::postGamepadAxisChangedEvent(GamepadHandle gamepad, GamepadAxis axis, int32_t value)
+	{
+		_queue.push(std::make_unique<GamepadAxisChangedEvent>(gamepad, axis, value));
+	}
+
+	void EventQueue::postCharInputEvent(const Utf8Char& data)
+	{
+		_queue.push(std::make_unique<CharInputEvent>(data));
+	}
+
+	void EventQueue::postExitEvent()
+	{
+		auto ev = std::make_unique<Event>(Event::Exit);
+		_queue.push(std::move(ev));
+	}
+
+	void EventQueue::postGamepadConnectionEvent(GamepadHandle gamepad, bool connected)
+	{
+		_queue.push(std::make_unique<GamepadConnectionEvent>(gamepad, connected));
+	}
+
+	void EventQueue::postKeyPressedEvent(Key key, uint8_t modifiers, bool down)
+	{
+		_queue.push(std::make_unique<KeyPressedEvent>(key, modifiers, down));
+	}
+
+	void EventQueue::postMouseMovedEvent(const MousePosition& pos)
+	{
+		_queue.push(std::make_unique<MouseMovedEvent>(pos));
+	}
+
+	void EventQueue::postMouseButtonPressedEvent(MouseButton button, bool down)
+	{
+		_queue.push(std::make_unique<MouseButtonPressedEvent>(button, down));
+	}
+
+	void EventQueue::postWindowSizeChangedEvent(WindowHandle window, const WindowSize& size)
+	{
+		_queue.push(std::make_unique<WindowSizeChangedEvent>(window, size));
+	}
+
+	void EventQueue::postWindowPositionChangedEvent(WindowHandle window, const WindowPosition& pos)
+	{
+		_queue.push(std::make_unique<WindowPositionChangedEvent>(window, pos));
+	}
+
+	void EventQueue::postWindowCreatedEvent(WindowHandle window, void* nativeHandle, const WindowCreationOptions& options)
+	{
+		_queue.push(std::make_unique<WindowCreatedEvent>(window, nativeHandle, options));
+	}
+
+	void EventQueue::postWindowDestroyedEvent(WindowHandle window)
+	{
+		_queue.push(std::make_unique<WindowDestroyedEvent>(window));
+	}
+
+	void EventQueue::postWindowSuspendedEvent(WindowHandle window, SuspendPhase phase)
+	{
+		_queue.push(std::make_unique<WindowSuspendedEvent>(window, phase));
+	}
+
+	void EventQueue::postFileDroppedEvent(WindowHandle window, const std::string& filePath)
+	{
+		_queue.push(std::make_unique<FileDroppedEvent>(window, filePath));
+	}
+
+	std::unique_ptr<Event> EventQueue::poll()
+	{
+		if (_queue.size() == 0)
 		{
-			inputSetMousePos(x, y, z);
+			return nullptr;
 		}
-		else
-		{
-			inputSetMouseButtonState(button, down);
-		}
-
-		if (!mouseLock)
-		{
-			WindowState& win = s_window[handle.idx];
-			if (move)
-			{
-				win.mouse.x = x;
-				win.mouse.y = y;
-				win.mouse.z = z;
-			}
-			else
-			{
-				win.mouse.buttons[to_underlying(button)] = down;
-			}
-		}
+		auto ev = std::move(_queue.front());
+		_queue.pop();
+		return std::move(ev);
 	}
 
-	void SizeEvent::process()
-	{
-		if (isValid(handle))
-		{
-			WindowState& win = s_window[handle.idx];
-			win.handle = handle;
-			win.width = width;
-			win.height = height;
-		}
-	}
-
-	void DropFileEvent::process()
-	{
-		DBG("drop file %s", filePath.getCPtr());
-		if (isValid(handle))
-		{
-			WindowState& win = s_window[handle.idx];
-			win.dropFile = filePath;
-		}
-	}
-
-	void Event::process()
-	{
-
-	}
 }

@@ -1,5 +1,6 @@
 #include "entry.hpp"
 #include <darmok/utils.hpp>
+#include <darmok/utils.hpp>
 
 #if ENTRY_CONFIG_USE_GLFW
 
@@ -82,28 +83,31 @@ namespace darmok {
 			glfwDestroyWindow(window);
 		}
 
+		static GLFWwindow* doCreateWindow(const WindowCreationOptions& options);
+		void joystickCallback(int jid, int action);
+
 		static uint8_t translateKeyModifiers(int glfw)
 		{
 			uint8_t modifiers = 0;
 
 			if (glfw & GLFW_MOD_ALT)
 			{
-				modifiers |= to_underlying(Modifier::LeftAlt);
+				modifiers |= to_underlying(KeyModifier::LeftAlt);
 			}
 
 			if (glfw & GLFW_MOD_CONTROL)
 			{
-				modifiers |= to_underlying(Modifier::LeftCtrl);
+				modifiers |= to_underlying(KeyModifier::LeftCtrl);
 			}
 
 			if (glfw & GLFW_MOD_SUPER)
 			{
-				modifiers |= to_underlying(Modifier::LeftMeta);
+				modifiers |= to_underlying(KeyModifier::LeftMeta);
 			}
 
 			if (glfw & GLFW_MOD_SHIFT)
 			{
-				modifiers |= to_underlying(Modifier::LeftShift);
+				modifiers |= to_underlying(KeyModifier::LeftShift);
 			}
 
 			return modifiers;
@@ -177,8 +181,6 @@ namespace darmok {
 			Gamepad()
 				: _connected(false)
 			{
-				bx::memSet(_axes, 0, sizeof(_axes));
-				bx::memSet(_buttons, 0, sizeof(_buttons));
 			}
 
 			void update(EventQueue& eventQueue)
@@ -187,52 +189,46 @@ namespace darmok {
 				const unsigned char* buttons = glfwGetJoystickButtons(_handle.idx, &numButtons);
 				const float* axes = glfwGetJoystickAxes(_handle.idx, &numAxes);
 
-				if (NULL == buttons || NULL == axes)
+				if (nullptr == buttons || nullptr == axes)
 				{
 					return;
 				}
-				auto axisCount = to_underlying(GamepadAxis::Count);
-				if (numAxes > axisCount)
+				if (numAxes > _axes.size())
 				{
-					numAxes = axisCount;
+					numAxes = (int)_axes.size();
 				}
-				auto maxButtons = to_underlying(Key::Count) - to_underlying(Key::GamepadA);
-				if (numButtons > maxButtons)
+				if (numButtons > _buttons.size())
 				{
-					numButtons = maxButtons;
+					numButtons = (int)_buttons.size();
 				}
 
-				WindowHandle defaultWindow = { 0 };
-
-				for (int ii = 0; ii < numAxes; ++ii)
+				for (int i = 0; i < numAxes; ++i)
 				{
-					GamepadAxis axis = translateGamepadAxis(ii);
-					int32_t value = (int32_t)(axes[ii] * 32768.f);
+					GamepadAxis axis = translateGamepadAxis(i);
+					int32_t value = (int32_t)(axes[i] * 32768.f);
 					if (GamepadAxis::LeftY == axis || GamepadAxis::RightY == axis)
 					{
 						value = -value;
 					}
 
-					if (_axes[ii] != value)
+					if (_axes[i] != value)
 					{
-						_axes[ii] = value;
-						eventQueue.postAxisEvent(defaultWindow
-							, _handle
+						_axes[i] = value;
+						eventQueue.postGamepadAxisChangedEvent(_handle
 							, axis
 							, value);
 					}
 				}
 
-				for (int ii = 0; ii < numButtons; ++ii)
+				for (int i = 0; i < numButtons; ++i)
 				{
-					Key key = translateGamepadButton(ii);
-					if (_buttons[ii] != buttons[ii])
+					Key key = translateGamepadButton(i);
+					if (_buttons[i] != buttons[i])
 					{
-						_buttons[ii] = buttons[ii];
-						eventQueue.postKeyEvent(defaultWindow
-							, key
+						_buttons[i] = buttons[i];
+						eventQueue.postKeyPressedEvent(key
 							, 0
-							, buttons[ii] != 0);
+							, buttons[i] != 0);
 					}
 				}
 			}
@@ -248,34 +244,29 @@ namespace darmok {
 				if (glfwJoystickPresent(i))
 				{
 					_connected = true;
-					eventQueue.postGamepadEvent(window
-						, _handle
-						, true);
+					eventQueue.postGamepadConnectionEvent(_handle, true);
 				}
 			}
 
 			void updateConnection(int action, EventQueue& eventQueue)
 			{
-				WindowHandle defaultWindow = { 0 };
-
 				if (action == GLFW_CONNECTED)
 				{
 					_connected = true;
-					eventQueue.postGamepadEvent(defaultWindow, _handle, true);
+					eventQueue.postGamepadConnectionEvent(_handle, true);
 				}
 				else if (action == GLFW_DISCONNECTED)
 				{
 					_connected = false;
-					eventQueue.postGamepadEvent(defaultWindow, _handle, false);
+					eventQueue.postGamepadConnectionEvent(_handle, false);
 				}
 			}
-
 
 		private:
 			bool _connected;
 			GamepadHandle _handle;
-			int32_t _axes[to_underlying(GamepadAxis::Count)];
-			uint8_t _buttons[to_underlying(Key::Count) - to_underlying(Key::GamepadA)];
+			std::array<int32_t, to_underlying(GamepadAxis::Count)> _axes;
+			std::array<uint8_t, to_underlying(Key::Count) - to_underlying(Key::GamepadA)> _buttons;
 		};
 
 		struct MainThreadEntry
@@ -294,9 +285,9 @@ namespace darmok {
 			WindowHandle findHandle(GLFWwindow* window)
 			{
 				bx::MutexScope scope(_lock);
-				for (uint32_t ii = 0, num = _windowAlloc.getNumHandles(); ii < num; ++ii)
+				for (uint32_t i = 0, num = _windowAlloc.getNumHandles(); i < num; ++i)
 				{
-					uint16_t idx = _windowAlloc.getHandleAt(ii);
+					uint16_t idx = _windowAlloc.getHandleAt(i);
 					if (window == _windows[idx])
 					{
 						WindowHandle handle = { idx };
@@ -325,8 +316,8 @@ namespace darmok {
 
 		private:
 			bx::Mutex _lock;
-			std::array<GLFWwindow*, ENTRY_CONFIG_MAX_WINDOWS> _windows;
-			bx::HandleAllocT<ENTRY_CONFIG_MAX_WINDOWS> _windowAlloc;
+			std::array<GLFWwindow*, DARMOK_CONFIG_MAX_WINDOWS> _windows;
+			bx::HandleAllocT<DARMOK_CONFIG_MAX_WINDOWS> _windowAlloc;
 		};
 
 
@@ -372,77 +363,29 @@ namespace darmok {
 
 		};
 
-		static void keyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods);
-		static void charCallback(GLFWwindow* window, uint32_t scancode);
-		static void scrollCallback(GLFWwindow* window, double dx, double dy);
-		static void cursorPosCallback(GLFWwindow* window, double mx, double my);
-		static void mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods);
-		static void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height);
-		static void dropFileCallback(GLFWwindow* window, int32_t count, const char** filePaths);
-		static void joystickCallback(int jid, int action);
-
 		class CreateWindowCmd final : public WindowCmd
 		{
 		public:
 
 			CreateWindowCmd(
 				WindowHandle handle
-				, int32_t  x
-				, int32_t  y
-				, uint32_t width
-				, uint32_t height
-				, uint32_t flags
-				, const std::string& title
+				, const WindowCreationOptions& options
 			) :
 				WindowCmd(CreateWindow, handle)
-				, _x(x)
-				, _y(y)
-				, _width(width)
-				, _height(height)
-				, _flags(flags)
-				, _title(title)
+				, _options(options)
 			{
 			}
 
 			void process(EventQueue& eventQueue, WindowMap& windows)
 			{
-				GLFWwindow* window = glfwCreateWindow(_width
-					, _height
-					, _title.c_str()
-					, NULL
-					, NULL);
-				if (!window)
-				{
-					return;
-				}
-
-				glfwSetWindowPos(window, _x, _y);
-				if (_flags & ENTRY_WINDOW_FLAG_ASPECT_RATIO)
-				{
-					glfwSetWindowAspectRatio(window, _width, _height);
-				}
-
-				glfwSetKeyCallback(window, keyCallback);
-				glfwSetCharCallback(window, charCallback);
-				glfwSetScrollCallback(window, scrollCallback);
-				glfwSetCursorPosCallback(window, cursorPosCallback);
-				glfwSetMouseButtonCallback(window, mouseButtonCallback);
-				glfwSetWindowSizeCallback(window, windowSizeCallback);
-				glfwSetDropCallback(window, dropFileCallback);
-
-
+				GLFWwindow* window = doCreateWindow(_options);
 				windows.setWindow(_handle, window);
-				eventQueue.postSizeEvent(_handle, _width, _height);
-				eventQueue.postWindowEvent(_handle, window);
+				eventQueue.postWindowCreatedEvent(_handle, window, _options);
 			}
 
 		private:
-			int32_t  _x;
-			int32_t  _y;
-			uint32_t _width;
-			uint32_t _height;
-			uint32_t _flags;
-			std::string _title;
+			std::optional<WindowPosition> _pos;
+			WindowCreationOptions _options;
 		};
 
 		class DestroyWindowCmd final : public WindowCmd
@@ -458,13 +401,10 @@ namespace darmok {
 
 			void process(EventQueue& eventQueue, WindowMap& windows)
 			{
-				if (isValid(_handle))
-				{
-					auto window = windows.getWindow(_handle);
-					eventQueue.postWindowEvent(_handle, window);
-					glfwDestroyWindowImpl(window);
-					windows.setWindow(_handle, nullptr);
-				}
+				auto window = windows.getWindow(_handle);
+				eventQueue.postWindowDestroyedEvent(_handle);
+				glfwDestroyWindowImpl(window);
+				windows.setWindow(_handle, nullptr);
 			}
 
 		};
@@ -496,24 +436,21 @@ namespace darmok {
 
 			SetWindowPositionCmd(
 				WindowHandle handle
-				, int32_t  x
-				, int32_t  y
+				, const WindowPosition& pos
 			) :
 				WindowCmd(SetWindowPosition, handle)
-				, _x(x)
-				, _y(y)
+				, _pos(pos)
 			{
 			}
 
 			void process(WindowMap& windows)
 			{
 				auto window = windows.getWindow(_handle);
-				glfwSetWindowPos(window, _x, _y);
+				glfwSetWindowPos(window, _pos.x, _pos.y);
 			}
 
 		private:
-			int32_t  _x;
-			int32_t  _y;
+			WindowPosition _pos;
 		};
 
 		class SetWindowSizeCmd final : public WindowCmd
@@ -522,24 +459,21 @@ namespace darmok {
 
 			SetWindowSizeCmd(
 				WindowHandle handle
-				, uint32_t width
-				, uint32_t height
+				, const WindowSize& size
 			) :
 				WindowCmd(SetWindowSize, handle)
-				, _width(width)
-				, _height(height)
+				, _size(size)
 			{
 			}
 
 			void process(WindowMap& windows)
 			{
 				auto window = windows.getWindow(_handle);
-				glfwSetWindowSize(window, _width, _height);
+				glfwSetWindowSize(window, _size.width, _size.height);
 			}
 
 		private:
-			uint32_t _width;
-			uint32_t _height;
+			WindowSize _size;
 		};
 
 		class ToggleWindowFullScreenCmd final : public WindowCmd
@@ -558,23 +492,27 @@ namespace darmok {
 				auto window = windows.getWindow(_handle);
 				if (glfwGetWindowMonitor(window))
 				{
+					WindowState& state = getWindowState(_handle);
 					glfwSetWindowMonitor(window
-						, NULL
-						, _oldX
-						, _oldY
-						, _oldWidth
-						, _oldHeight
+						, nullptr
+						, state.pos.x
+						, state.pos.y
+						, state.size.width
+						, state.size.height
 						, 0
 					);
 				}
 				else
 				{
 					GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-					if (NULL != monitor)
+					if (monitor != nullptr)
 					{
-						glfwGetWindowPos(window, &_oldX, &_oldY);
-						glfwGetWindowSize(window, &_oldWidth, &_oldHeight);
-
+						WindowState& state = getWindowState(_handle);
+						glfwGetWindowPos(window, &state.pos.x, &state.pos.y);
+						int w, h;
+						glfwGetWindowSize(window, &w, &h);
+						state.size.width = w;
+						state.size.height = h;
 						const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 						glfwSetWindowMonitor(window
 							, monitor
@@ -589,10 +527,8 @@ namespace darmok {
 				}
 			}
 		private:
-			static int32_t _oldX;
-			static int32_t _oldY;
-			static int32_t _oldWidth;
-			static int32_t _oldHeight;
+			static WindowPosition _oldPos;
+			static WindowSize _oldSize;
 		};
 
 		class ToggleWindowFrameCmd final : public WindowCmd
@@ -679,34 +615,38 @@ namespace darmok {
 		}
 
 		// Based on cutef8 by Jeff Bezanson (Public Domain)
-		static uint8_t encodeUTF8(std::array<uint8_t, 4>& chars, uint32_t scancode)
+		static Utf8Char encodeUTF8(uint32_t scancode)
 		{
-			uint8_t length = 0;
+			Utf8Char utf8 = { 0, 0 };
 
 			if (scancode < 0x80)
 			{
-				chars[length++] = (char)scancode;
+				utf8.data = scancode;
+				utf8.len = 1;
 			}
 			else if (scancode < 0x800)
 			{
-				chars[length++] = (scancode >> 6) | 0xc0;
-				chars[length++] = (scancode & 0x3f) | 0x80;
+				utf8.data = (scancode >> 6) | 0xc0;
+				utf8.data += ((scancode & 0x3f) | 0x80) >> 8;
+				utf8.len = 2;
 			}
 			else if (scancode < 0x10000)
 			{
-				chars[length++] = (scancode >> 12) | 0xe0;
-				chars[length++] = ((scancode >> 6) & 0x3f) | 0x80;
-				chars[length++] = (scancode & 0x3f) | 0x80;
+				utf8.data = (scancode >> 12) | 0xe0;
+				utf8.data += (((scancode >> 6) & 0x3f) | 0x80) >> 8;
+				utf8.data += ((scancode & 0x3f) | 0x80) >> 16;
+				utf8.len = 3;
 			}
 			else if (scancode < 0x110000)
 			{
-				chars[length++] = (scancode >> 18) | 0xf0;
-				chars[length++] = ((scancode >> 12) & 0x3f) | 0x80;
-				chars[length++] = ((scancode >> 6) & 0x3f) | 0x80;
-				chars[length++] = (scancode & 0x3f) | 0x80;
+				utf8.data = (scancode >> 18) | 0xf0;
+				utf8.data += (((scancode >> 12) & 0x3f) | 0x80) >> 8;
+				utf8.data += (((scancode >> 6) & 0x3f) | 0x80) >> 16;
+				utf8.data += ((scancode & 0x3f) | 0x80) >> 24;
+				utf8.len = 4;
 			}
 
-			return length;
+			return utf8;
 		}
 
 		class Context final
@@ -813,13 +753,18 @@ namespace darmok {
 
 				glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
+				;
+
 				WindowHandle handle = _windows.createHandle();
-				GLFWwindow* window = glfwCreateWindow(ENTRY_DEFAULT_WIDTH
-					, ENTRY_DEFAULT_HEIGHT
-					, "darmok"
-					, NULL
-					, NULL
-				);
+
+				WindowCreationOptions options
+				{
+					WindowSize{ DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT },
+					"darmok",
+					false
+				};
+
+				GLFWwindow* window = doCreateWindow(options);
 
 				if (!window)
 				{
@@ -829,20 +774,11 @@ namespace darmok {
 				}
 
 				_windows.setWindow(handle, window);
-				
-				glfwSetKeyCallback(window, glfw::keyCallback);
-				glfwSetCharCallback(window, glfw::charCallback);
-				glfwSetScrollCallback(window, glfw::scrollCallback);
-				glfwSetCursorPosCallback(window, glfw::cursorPosCallback);
-				glfwSetMouseButtonCallback(window, glfw::mouseButtonCallback);
-				glfwSetWindowSizeCallback(window, glfw::windowSizeCallback);
-				glfwSetDropCallback(window, glfw::dropFileCallback);
+				_eventQueue.postWindowCreatedEvent(handle, window, options);
 
-				_eventQueue.postSizeEvent(handle, ENTRY_DEFAULT_WIDTH, ENTRY_DEFAULT_HEIGHT);
-
-				for (uint32_t ii = 0; ii < _gamepads.size(); ++ii)
+				for (uint32_t i = 0; i < _gamepads.size(); ++i)
 				{
-					_gamepads[ii].init(ii, handle, _eventQueue);
+					_gamepads[i].init(i, handle, _eventQueue);
 				}
 
 				_thread.init(MainThreadEntry::threadFunc, &_mte);
@@ -878,67 +814,56 @@ namespace darmok {
 
 			void keyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods)
 			{
-				BX_UNUSED(scancode);
+				BX_UNUSED(window, scancode);
 				if (key == GLFW_KEY_UNKNOWN)
 				{
 					return;
 				}
-				WindowHandle handle = _windows.findHandle(window);
 				int mods2 = translateKeyModifiers(mods);
 				Key key2 = translateKey(key);
 				bool down = (action == GLFW_PRESS || action == GLFW_REPEAT);
-				_eventQueue.postKeyEvent(handle, key2, mods2, down);
+				_eventQueue.postKeyPressedEvent(key2, mods2, down);
 			}
 
 			void charCallback(GLFWwindow* window, uint32_t scancode)
 			{
-				WindowHandle handle = _windows.findHandle(window);
-				std::array<uint8_t, 4> chars;
-				uint8_t length = encodeUTF8(chars, scancode);
-				if (!length)
+				BX_UNUSED(window);
+				Utf8Char data = encodeUTF8(scancode);
+				if (!data.len)
 				{
 					return;
 				}
-
-				_eventQueue.postCharEvent(handle, length, std::move(chars));
+				_eventQueue.postCharInputEvent(data);
 			}
 
 			void scrollCallback(GLFWwindow* window, double dx, double dy)
 			{
-				BX_UNUSED(dx);
-				WindowHandle handle = _windows.findHandle(window);
+				BX_UNUSED(window, dx);
 				double mx, my;
 				glfwGetCursorPos(window, &mx, &my);
 				_scrollPos += dy;
-				_eventQueue.postMouseEvent(handle
-					, (int32_t)mx
+				_eventQueue.postMouseMovedEvent(
+					MousePosition((int32_t)mx
 					, (int32_t)my
-					, (int32_t)_scrollPos
-				);
+					, (int32_t)_scrollPos));
 			}
 
 			void cursorPosCallback(GLFWwindow* window, double x, double y)
 			{
-				WindowHandle handle = _windows.findHandle(window);
-				_eventQueue.postMouseEvent(handle
-					, (int32_t)x
+				BX_UNUSED(window);
+				_eventQueue.postMouseMovedEvent(
+					MousePosition((int32_t)x
 					, (int32_t)y
-					, (int32_t)_scrollPos
+					, (int32_t)_scrollPos)
 				);
 			}
 
 			void mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods)
 			{
-				BX_UNUSED(mods);
-				WindowHandle handle = _windows.findHandle(window);
+				BX_UNUSED(window, mods);
 				bool down = action == GLFW_PRESS;
-				double mx, my;
-				glfwGetCursorPos(window, &mx, &my);
-				_eventQueue.postMouseEvent(handle
-					, (int32_t)mx
-					, (int32_t)my
-					, (int32_t)_scrollPos
-					, translateMouseButton(button)
+				_eventQueue.postMouseButtonPressedEvent(
+					translateMouseButton(button)
 					, down
 				);
 			}
@@ -946,21 +871,27 @@ namespace darmok {
 			void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height)
 			{
 				WindowHandle handle = _windows.findHandle(window);
-				_eventQueue.postSizeEvent(handle, width, height);
+				_eventQueue.postWindowSizeChangedEvent(handle, WindowSize(width, height));
+			}
+
+			void windowPosCallback(GLFWwindow* window, int32_t x, int32_t y)
+			{
+				WindowHandle handle = _windows.findHandle(window);
+				_eventQueue.postWindowPositionChangedEvent(handle, WindowPosition(x, y));
 			}
 
 			void dropFileCallback(GLFWwindow* window, int32_t count, const char** filePaths)
 			{
 				WindowHandle handle = _windows.findHandle(window);
-				for (int32_t ii = 0; ii < count; ++ii)
+				for (int32_t i = 0; i < count; ++i)
 				{
-					_eventQueue.postDropFileEvent(handle, filePaths[ii]);
+					_eventQueue.postFileDroppedEvent(handle, filePaths[i]);
 				}
 			}
 
 			void joystickCallback(int jid, int action)
 			{
-				if (jid >= ENTRY_CONFIG_MAX_GAMEPADS)
+				if (jid >= _gamepads.size())
 				{
 					return;
 				}
@@ -968,20 +899,15 @@ namespace darmok {
 				_gamepads[jid].updateConnection(action, _eventQueue);
 			}
 
-			std::unique_ptr<Event>&& pollEvent()
+			std::unique_ptr<Event> pollEvent()
 			{
 				return _eventQueue.poll();
 			}
 
-			std::unique_ptr<Event>&& pollEvent(WindowHandle handle)
-			{
-				return _eventQueue.poll(handle);
-			}
-
-			WindowHandle pushCreateWindowCmd(int32_t x, int32_t y, uint32_t width, uint32_t height, uint32_t flags, const std::string& title)
+			WindowHandle pushCreateWindowCmd(const WindowCreationOptions& options)
 			{
 				auto handle = _windows.createHandle();
-				_cmds.push(std::make_unique<CreateWindowCmd>(handle, x, y, width, height, flags, title));
+				_cmds.push(std::make_unique<CreateWindowCmd>(handle, options));
 				return handle;
 			}
 
@@ -990,14 +916,14 @@ namespace darmok {
 				_cmds.push(std::make_unique<DestroyWindowCmd>(handle));
 			}
 
-			void pushSetWindowPositionCmd(WindowHandle handle, int32_t x, int32_t y)
+			void pushSetWindowPositionCmd(WindowHandle handle, const WindowPosition& pos)
 			{
-				_cmds.push(std::make_unique<SetWindowPositionCmd>(handle, x, y));
+				_cmds.push(std::make_unique<SetWindowPositionCmd>(handle, pos));
 			}
 
-			void pushSetWindowSizeCmd(WindowHandle handle, uint32_t width, uint32_t height)
+			void pushSetWindowSizeCmd(WindowHandle handle, const WindowSize& size)
 			{
-				_cmds.push(std::make_unique<SetWindowSizeCmd>(handle, width, height));
+				_cmds.push(std::make_unique<SetWindowSizeCmd>(handle, size));
 			}
 
 			void pushSetWindowTitleCmd(WindowHandle handle, const std::string& title)
@@ -1010,12 +936,12 @@ namespace darmok {
 				BX_UNUSED(handle, flags, enabled);
 			}
 
-			void pushToggleFullscreenCmd(WindowHandle handle)
+			void pushToggleWindowFullscreenCmd(WindowHandle handle)
 			{
 				_cmds.push(std::make_unique<ToggleWindowFullScreenCmd>(handle));
 			}
 
-			void pushSetMouseLockCmd(WindowHandle handle, bool lock)
+			void pushSetMouseLockToWindowCmd(WindowHandle handle, bool lock)
 			{
 				_cmds.push(std::make_unique<LockMouseToWindowCmd>(handle, lock));
 			}
@@ -1025,7 +951,6 @@ namespace darmok {
 				return glfwNativeWindowHandle(_windows.getWindow(handle));
 			}
 
-
 		private:
 
 			MainThreadEntry _mte;
@@ -1034,81 +959,13 @@ namespace darmok {
 			EventQueue _eventQueue;
 			WindowMap _windows;
 
-			std::array<Gamepad, ENTRY_CONFIG_MAX_GAMEPADS>  _gamepads;
+			std::array<Gamepad, DARMOK_CONFIG_MAX_GAMEPADS>  _gamepads;
 
 			typedef std::queue<std::unique_ptr<Cmd>> CmdQueue;
 			CmdQueue _cmds;
 
 			double _scrollPos;
 		};
-
-		static Context _ctx;
-
-		void keyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods)
-		{
-			_ctx.keyCallback(window, key, scancode, action, mods);
-		}
-
-		void charCallback(GLFWwindow* window, uint32_t scancode)
-		{
-			_ctx.charCallback(window, scancode);
-		}
-
-		void scrollCallback(GLFWwindow* window, double dx, double dy)
-		{
-			_ctx.scrollCallback(window, dx, dy);
-		}
-
-		void cursorPosCallback(GLFWwindow* window, double mx, double my)
-		{
-			_ctx.cursorPosCallback(window, mx, my);
-		}
-
-		void mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods)
-		{
-			_ctx.mouseButtonCallback(window, button, action, mods);
-		}
-
-		void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height)
-		{
-			_ctx.windowSizeCallback(window, width, height);
-		}
-
-		void dropFileCallback(GLFWwindow* window, int32_t count, const char** filePaths)
-		{
-			_ctx.dropFileCallback(window, count, filePaths);
-		}
-
-		void joystickCallback(int jid, int action)
-		{
-			_ctx.joystickCallback(jid, action);
-		}
-
-		void* getNativeDisplayHandle()
-		{
-#	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#		if ENTRY_CONFIG_USE_WAYLAND
-			return glfwGetWaylandDisplay();
-#		else
-			return glfwGetX11Display();
-#		endif // ENTRY_CONFIG_USE_WAYLAND
-#	else
-			return NULL;
-#	endif // BX_PLATFORM_*
-		}
-
-		bgfx::NativeWindowHandleType::Enum getNativeWindowHandleType(WindowHandle _handle)
-		{
-#	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#		if ENTRY_CONFIG_USE_WAYLAND
-			return bgfx::NativeWindowHandleType::Wayland;
-#		else
-			return bgfx::NativeWindowHandleType::Default;
-#		endif // ENTRY_CONFIG_USE_WAYLAND
-#	else
-			return bgfx::NativeWindowHandleType::Default;
-#	endif // BX_PLATFORM_*
-		}
 
 		int32_t MainThreadEntry::threadFunc(bx::Thread* thread, void* userData)
 		{
@@ -1121,7 +978,168 @@ namespace darmok {
 
 			return result;
 		}
+
+		static Context s_ctx;
+		
+		void keyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods)
+		{
+			s_ctx.keyCallback(window, key, scancode, action, mods);
+		}
+
+		void charCallback(GLFWwindow* window, uint32_t scancode)
+		{
+			s_ctx.charCallback(window, scancode);
+		}
+
+		void scrollCallback(GLFWwindow* window, double dx, double dy)
+		{
+			s_ctx.scrollCallback(window, dx, dy);
+		}
+
+		void cursorPosCallback(GLFWwindow* window, double mx, double my)
+		{
+			s_ctx.cursorPosCallback(window, mx, my);
+		}
+
+		void mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods)
+		{
+			s_ctx.mouseButtonCallback(window, button, action, mods);
+		}
+
+		void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height)
+		{
+			s_ctx.windowSizeCallback(window, width, height);
+		}
+
+		void windowPosCallback(GLFWwindow* window, int32_t xpos, int32_t ypos)
+		{
+			s_ctx.windowPosCallback(window, xpos, ypos);
+		}
+
+		void dropFileCallback(GLFWwindow* window, int32_t count, const char** filePaths)
+		{
+			s_ctx.dropFileCallback(window, count, filePaths);
+		}
+
+		void joystickCallback(int jid, int action)
+		{
+			s_ctx.joystickCallback(jid, action);
+		}
+
+		GLFWwindow* doCreateWindow(const WindowCreationOptions& options)
+		{
+			GLFWwindow* window = glfwCreateWindow(options.size.width
+				, options.size.height
+				, options.title.c_str()
+				, NULL
+				, NULL);
+			if (!window)
+			{
+				return window;
+			}
+
+			if (options.setPos)
+			{
+				auto v = options.pos;
+				glfwSetWindowPos(window, v.x, v.y);
+			}
+			if (options.flags & DARMOK_WINDOW_FLAG_ASPECT_RATIO)
+			{
+				glfwSetWindowAspectRatio(window, options.size.width, options.size.height);
+			}
+
+			glfwSetKeyCallback(window, keyCallback);
+			glfwSetCharCallback(window, charCallback);
+			glfwSetScrollCallback(window, scrollCallback);
+			glfwSetCursorPosCallback(window, cursorPosCallback);
+			glfwSetMouseButtonCallback(window, mouseButtonCallback);
+			glfwSetWindowSizeCallback(window, windowSizeCallback);
+			glfwSetDropCallback(window, dropFileCallback);
+
+			return window;
+		}
 	}
+
+	WindowHandle createWindow(const WindowCreationOptions& options)
+	{
+		return glfw::s_ctx.pushCreateWindowCmd(options);
+	}
+
+	void destroyWindow(WindowHandle handle)
+	{
+		glfw::s_ctx.pushDestroyWindowCmd(handle);
+	}
+
+	void setWindowPos(WindowHandle handle, const WindowPosition& pos)
+	{
+		glfw::s_ctx.pushSetWindowPositionCmd(handle, pos);
+	}
+
+	void setWindowSize(WindowHandle handle, const WindowSize& size)
+	{
+		glfw::s_ctx.pushSetWindowSizeCmd(handle, size);
+	}
+
+	void setWindowTitle(WindowHandle handle, const std::string& title)
+	{
+		glfw::s_ctx.pushSetWindowTitleCmd(handle, title);
+	}
+
+	void setWindowFlags(WindowHandle handle, uint32_t flags, bool enabled)
+	{
+		glfw::s_ctx.pushSetWindowFlagsCmd(handle, flags, enabled);
+	}
+
+	void toggleFullscreen(WindowHandle handle)
+	{
+		glfw::s_ctx.pushToggleWindowFullscreenCmd(handle);
+	}
+
+	void setMouseLock(WindowHandle handle, bool lock)
+	{
+		glfw::s_ctx.pushSetMouseLockToWindowCmd(handle, lock);
+	}
+
+	void* getNativeWindowHandle(WindowHandle handle)
+	{
+		return glfw::s_ctx.getNativeWindowHandle(handle);
+	}
+
+	void* getNativeDisplayHandle()
+	{
+#	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
+#		if ENTRY_CONFIG_USE_WAYLAND
+		return glfwGetWaylandDisplay();
+#		else
+		return glfwGetX11Display();
+#		endif // ENTRY_CONFIG_USE_WAYLAND
+#	else
+		return NULL;
+#	endif // BX_PLATFORM_*
+	}
+
+	bgfx::NativeWindowHandleType::Enum getNativeWindowHandleType(WindowHandle _handle)
+	{
+#	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
+#		if ENTRY_CONFIG_USE_WAYLAND
+		return bgfx::NativeWindowHandleType::Wayland;
+#		else
+		return bgfx::NativeWindowHandleType::Default;
+#		endif // ENTRY_CONFIG_USE_WAYLAND
+#	else
+		return bgfx::NativeWindowHandleType::Default;
+#	endif // BX_PLATFORM_*
+	}
+
+	std::unique_ptr<Event> pollEvent()
+	{
+		return glfw::s_ctx.pollEvent();
+	}
+}
+
+int main(int _argc, const char* const* _argv)
+{
+	return darmok::glfw::s_ctx.run(_argc, _argv);
 }
 
 #endif // ENTRY_CONFIG_USE_GLFW
