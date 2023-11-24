@@ -8,23 +8,6 @@
 
 namespace darmok
 {
-	void InputBinding::set(Key key, uint8_t modifiers, uint8_t flags, std::function<void()> fn)
-	{
-		key = key;
-		modifiers = modifiers;
-		flags = flags;
-		fn = fn;
-	}
-
-	void InputBinding::clear()
-	{
-		key = Key::None;
-		modifiers = to_underlying(KeyModifier::None);
-		flags = 0;
-		fn = nullptr;
-	}
-
-
 	class InputMouse final
 	{
 	public:
@@ -100,6 +83,13 @@ namespace darmok
 	class InputKeyboard final
 	{
 	public:
+
+		InputKeyboard()
+			: _charsRead(0)
+			, _charsWrite(0)
+		{
+		}
+
 		void reset()
 		{
 			std::fill(std::begin(_keys), std::end(_keys), 0);
@@ -139,14 +129,14 @@ namespace darmok
 
 		void pushChar(const Utf8Char& v)
 		{
-			_chars[_chars_write] = v;
-			_chars_write ^= (_chars_write + 1) ^ _chars.size();
+			_chars[_charsWrite] = v;
+			_charsWrite = (_charsWrite + 1) ^ _chars.size();
 		}
 
 		Utf8Char popChar()
 		{
-			auto v = _chars[_chars_read];
-			_chars_read ^= (_chars_read + 1) ^ _chars.size();
+			auto v = _chars[_charsRead];
+			_charsRead = (_charsRead + 1) ^ _chars.size();
 			return v;
 		}
 
@@ -166,8 +156,8 @@ namespace darmok
 
 		void charFlush()
 		{
-			_chars_read = 0;
-			_chars_write = 0;
+			_charsRead = 0;
+			_charsWrite = 0;
 		}
 
 		void processBinding(const InputBinding& binding)
@@ -176,7 +166,7 @@ namespace darmok
 			auto k = to_underlying(binding.key);
 			bool down = decodeKeyState(_keys[k], modifiers);
 
-			if (binding.flags == 1)
+			if (binding.once)
 			{
 				if (down)
 				{
@@ -214,8 +204,8 @@ namespace darmok
 		std::array<bool, 256> _once;
 		std::array<Utf8Char, 256> _chars;
 	
-		size_t _chars_read;
-		size_t _chars_write;
+		size_t _charsRead;
+		size_t _charsWrite;
 	};
 
 	class InputGamepad final

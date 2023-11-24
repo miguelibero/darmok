@@ -10,7 +10,6 @@
 #include <bx/string.h>
 #include <string>
 #include <memory>
-#include <optional>
 #include <array>
 #include <vector>
 #include <darmok/utils.hpp>
@@ -45,6 +44,15 @@ namespace darmok
 	{
 		uint16_t idx;
 
+		bool operator==(const WindowHandle& other) const
+		{
+			return idx == other.idx;
+		}
+
+		bool operator<(const WindowHandle& other) const
+		{
+			return idx < other.idx;
+		}
 	};
 
 	///
@@ -64,31 +72,31 @@ namespace darmok
 	///
 	const std::string& getKeyName(Key key);
 
-	///
-	struct MouseState
-	{
-		MousePosition pos;
-		std::array<uint8_t, to_underlying(MouseButton::Count)> buttons = {};
-	};
-
-	///
-	struct GamepadState
-	{
-		std::array<int32_t, to_underlying(GamepadAxis::Count)> axis;
-	};
-
+	/// 
 	struct WindowPosition
 	{
 		int32_t x;
 		int32_t y;
+
+		bool operator==(const WindowPosition& other) const
+		{
+			return x == other.x && y == other.y;
+		}
 	};
 
+	/// 
 	struct WindowSize
 	{
 		uint32_t width;
 		uint32_t height;
+
+		bool operator==(const WindowSize& other) const
+		{
+			return width == other.width && height == other.height;
+		}
 	};
 
+	/// 
 	struct WindowState
 	{
 		WindowHandle handle;
@@ -96,6 +104,7 @@ namespace darmok
 		WindowSize size;
 		uint32_t flags;
 		void* nativeHandle;
+		bool fullScreen;
 		std::string dropFile;
 
 		void clear();
@@ -111,7 +120,7 @@ namespace darmok
 	bx::FileWriterI& getFileWriter();
 
 	///
-	bx::AllocatorI& getAllocator();
+	bx::AllocatorI* getAllocator();
 
 	struct WindowCreationOptions
 	{
@@ -158,7 +167,23 @@ namespace darmok
 	///
 	void setCurrentDir(const std::string& dir);
 
+	///
 	WindowState& getWindowState(WindowHandle handle);
+
+	///
+	void setDebugFlag(uint32_t flag, bool enabled = true);
+
+	///
+	bool getDebugFlag(uint32_t flag);
+
+	/// 
+	void setResetFlag(uint32_t flag, bool enabled = true);
+
+	///
+	bool getResetFlag(uint32_t flag);
+
+	///
+	uint32_t getResetFlags();
 
 	///
 	class BX_NO_VTABLE App
@@ -176,6 +201,25 @@ namespace darmok
 
 		///
 		virtual bool update() = 0;
+
+	};
+
+	class SimpleApp : public App
+	{
+	public:
+
+		///
+		void init(const std::vector<std::string>& args) override;
+
+		///
+		int  shutdown() override;
+
+		///
+		bool update() override;
+
+	protected:
+
+		virtual void draw();
 	};
 
 	///
@@ -192,4 +236,11 @@ namespace darmok
 		}
 		return runApp(std::move(app), args);
 	};
-} // namespace entry
+} // namespace darmok
+
+
+template<> struct std::hash<darmok::WindowHandle> {
+	std::size_t operator()(darmok::WindowHandle const& handle) const noexcept {
+		return handle.idx;
+	}
+};

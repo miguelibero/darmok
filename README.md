@@ -1,6 +1,8 @@
 darmok
 ====
 
+WARNING: currently in early stages of development
+
 C++ engine using libraries that I like
 
 * [bgfx](https://github.com/bkaradzic/bgfx) as the renderer

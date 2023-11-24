@@ -11,12 +11,18 @@
 #include "dbg.h"
 #include <darmok/input.hpp>
 #include <darmok/utils.hpp>
+#include <unordered_set>
+
+// #include <imgui/imgui.h>
 
 namespace darmok
 {
 	static bx::FileReaderI* s_fileReader = NULL;
 	static bx::FileWriterI* s_fileWriter = NULL;
 	static std::string s_currentDir;
+	static bool s_exit = false;
+	static uint32_t s_debug = BGFX_DEBUG_NONE;
+	static uint32_t s_reset = BGFX_RESET_NONE;
 
 
 	extern bx::AllocatorI* getDefaultAllocator();
@@ -215,50 +221,158 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		return '\0';
 	}
 
-	bool setOrToggle(uint32_t& flags, const char* name, uint32_t bit, int first, int argc, char const* const* argv)
+	void exitAppBinding()
 	{
-		if (0 == bx::strCmp(argv[first], name))
+		s_exit = true;
+	};
+
+	void fullscreenToggleBinding()
+	{
+		toggleFullscreen(kDefaultWindowHandle);
+	}
+
+	uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled)
+	{
+		if (enabled)
 		{
-			int arg = first+1;
-			if (argc > arg)
-			{
-				flags &= ~bit;
-
-				bool set = false;
-				bx::fromString(&set, argv[arg]);
-
-				flags |= set ? bit : 0;
-			}
-			else
-			{
-				flags ^= bit;
-			}
-
-			return true;
+			return flags | flag;
 		}
+		else
+		{
+			return flags & ~flag;
+		}
+	}
 
-		return false;
+	void toggleResetFlag(uint32_t flag)
+	{
+		setResetFlag(flag, !getResetFlag(flag));
+	}
+
+	void setResetFlag(uint32_t flag, bool enabled)
+	{
+		s_reset = setFlag(s_reset, flag, enabled);
+		bgfx::setDebug(s_reset);
+	}
+
+	bool getResetFlag(uint32_t flag)
+	{
+		return s_reset & flag;
+	}
+
+	uint32_t getResetFlags()
+	{
+		return s_reset;
+	}
+
+	void toggleDebugFlag(uint32_t flag)
+	{
+		setDebugFlag(flag, !getDebugFlag(flag));
+	}
+
+	void setDebugFlag(uint32_t flag, bool enabled)
+	{
+		s_debug = setFlag(s_debug, flag, enabled);
+		bgfx::setDebug(s_debug);
+	}
+
+	bool getDebugFlag(uint32_t flag)
+	{
+		return s_debug & flag;
+	}
+
+	void toggleDebugStatsBinding()
+	{
+		toggleDebugFlag(BGFX_DEBUG_STATS);
+	}
+
+	void toggleDebugTextBinding()
+	{
+		toggleDebugFlag(BGFX_DEBUG_TEXT);
+	}
+
+	void toggleDebugIfhBinding()
+	{
+		toggleDebugFlag(BGFX_DEBUG_IFH);
+	}
+
+	void toggleDebugWireFrameBinding()
+	{
+		toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
+	}
+
+	void toggleDebugProfilerBinding()
+	{
+		toggleDebugFlag(BGFX_DEBUG_PROFILER);
+	}
+
+	void disableDebugFlagsBinding()
+	{
+		setDebugFlag(BGFX_DEBUG_STATS, false);
+		setDebugFlag(BGFX_DEBUG_TEXT, false);
+	}
+
+	void resetVsyncBinding()
+	{
+		toggleResetFlag(BGFX_RESET_VSYNC);
+	}
+
+	void resetMsaaBinding()
+	{
+		toggleResetFlag(BGFX_RESET_MSAA_X16);
+	}
+
+	void resetFlushAfterRenderBinding()
+	{
+		toggleResetFlag(BGFX_RESET_FLUSH_AFTER_RENDER);
+	}
+
+	void resetFlipAfterRenderBinding()
+	{
+		toggleResetFlag(BGFX_RESET_FLIP_AFTER_RENDER);
+	}
+
+	void resetHidpiBinding()
+	{
+		toggleResetFlag(BGFX_RESET_HIDPI);
+	}
+
+	void resetDepthClampBinding()
+	{
+		toggleResetFlag(BGFX_RESET_DEPTH_CLAMP);
+	}
+
+	void screenshotBinding()
+	{
+		bgfx::FrameBufferHandle fbh = BGFX_INVALID_HANDLE;
+
+		time_t tt;
+		time(&tt);
+
+		auto filePath = s_currentDir + "temp/screenshot-" + std::to_string(tt);
+		// bgfx::CallbackI::screenShot = 
+		bgfx::requestScreenShot(fbh, filePath.c_str());
 	}
 
 	static const std::vector<InputBinding> s_bindings =
 	{
-		{ Key::KeyQ,         to_underlying(KeyModifier::LeftCtrl),  1, NULL, "exit"                              },
-		{ Key::KeyQ,         to_underlying(KeyModifier::RightCtrl), 1, NULL, "exit"                              },
-		{ Key::KeyF,         to_underlying(KeyModifier::LeftCtrl),  1, NULL, "graphics fullscreen"               },
-		{ Key::KeyF,         to_underlying(KeyModifier::RightCtrl), 1, NULL, "graphics fullscreen"               },
-		{ Key::Return,       to_underlying(KeyModifier::RightAlt),  1, NULL, "graphics fullscreen"               },
-		{ Key::F1,           to_underlying(KeyModifier::None),      1, NULL, "graphics stats"                    },
-		{ Key::F1,           to_underlying(KeyModifier::LeftCtrl),  1, NULL, "graphics ifh"                      },
-		{ Key::GamepadStart, to_underlying(KeyModifier::None),      1, NULL, "graphics stats"                    },
-		{ Key::F1,           to_underlying(KeyModifier::LeftShift), 1, NULL, "graphics stats 0\ngraphics text 0" },
-		{ Key::F3,           to_underlying(KeyModifier::None),      1, NULL, "graphics wireframe"                },
-		{ Key::F6,           to_underlying(KeyModifier::None),      1, NULL, "graphics profiler"                 },
-		{ Key::F7,           to_underlying(KeyModifier::None),      1, NULL, "graphics vsync"                    },
-		{ Key::F8,           to_underlying(KeyModifier::None),      1, NULL, "graphics msaa"                     },
-		{ Key::F9,           to_underlying(KeyModifier::None),      1, NULL, "graphics flush"                    },
-		{ Key::F10,          to_underlying(KeyModifier::None),      1, NULL, "graphics hidpi"                    },
-		{ Key::Print,        to_underlying(KeyModifier::None),      1, NULL, "graphics screenshot"               },
-		{ Key::KeyP,         to_underlying(KeyModifier::LeftCtrl),  1, NULL, "graphics screenshot"               },
+		{ Key::Esc,			 to_underlying(KeyModifier::None),		true, exitAppBinding },
+		{ Key::KeyQ,         to_underlying(KeyModifier::LeftCtrl),	true, exitAppBinding },
+		{ Key::KeyQ,         to_underlying(KeyModifier::RightCtrl),	true, exitAppBinding },
+		{ Key::KeyF,         to_underlying(KeyModifier::LeftCtrl),	true, fullscreenToggleBinding },
+		{ Key::KeyF,         to_underlying(KeyModifier::RightCtrl),	true, fullscreenToggleBinding },
+		{ Key::Return,       to_underlying(KeyModifier::RightAlt),	true, fullscreenToggleBinding },
+		{ Key::F1,           to_underlying(KeyModifier::None),		true, toggleDebugStatsBinding },
+		{ Key::F1,           to_underlying(KeyModifier::None),		true, toggleDebugTextBinding },
+		{ Key::F1,           to_underlying(KeyModifier::LeftCtrl),	true, toggleDebugIfhBinding },
+		{ Key::F1,           to_underlying(KeyModifier::LeftShift), true, disableDebugFlagsBinding },
+		{ Key::F3,           to_underlying(KeyModifier::None),      true, toggleDebugWireFrameBinding },
+		{ Key::F6,           to_underlying(KeyModifier::None),      true, toggleDebugProfilerBinding },
+		{ Key::F7,           to_underlying(KeyModifier::None),      true, resetVsyncBinding },
+		{ Key::F8,           to_underlying(KeyModifier::None),      true, resetMsaaBinding },
+		{ Key::F9,           to_underlying(KeyModifier::None),      true, resetFlushAfterRenderBinding },
+		{ Key::F10,          to_underlying(KeyModifier::None),      true, resetHidpiBinding },
+		{ Key::Print,        to_underlying(KeyModifier::None),      true, screenshotBinding },
+		{ Key::KeyP,         to_underlying(KeyModifier::LeftCtrl),  true, screenshotBinding },
 	};
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -268,10 +382,6 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		s_app->update();
 	}
 #endif // BX_PLATFORM_EMSCRIPTEN
-
-	static char s_restartArgs[1024] = { '\0' };
-
-	static ptrdiff_t s_offset = 0;
 
 	App::~App()
 	{
@@ -292,10 +402,6 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 #else
 		while (app->update())
 		{
-			if (0 != bx::strLen(s_restartArgs) )
-			{
-				break;
-			}
 		}
 #endif // BX_PLATFORM_EMSCRIPTEN
 
@@ -348,55 +454,37 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	bool processEvents()
 	{
-		while(true)
+		std::unordered_set<WindowHandle> resetWindows;
+		while(!s_exit)
 		{
 			auto ev = pollEvent();
 			if (ev == nullptr)
 			{
 				break;
 			}
-			auto ptr = ev.get();
-			switch (ev->type)
+			auto result = Event::process(*ev);
+			if (result.exit)
 			{
-				case Event::Exit:
-					return true;
-				case Event::CharInput:
-					static_cast<CharInputEvent*>(ptr)->process();
-					break;
-				case Event::GamepadAxisChanged:
-					static_cast<GamepadAxisChangedEvent*>(ptr)->process();
-					break;
-				case Event::GamepadConnection:
-					static_cast<GamepadConnectionEvent*>(ptr)->process();
-					break;
-				case Event::KeyPressed:
-					static_cast<KeyPressedEvent*>(ptr)->process();
-					break;
-				case Event::MouseMoved:
-					static_cast<MouseMovedEvent*>(ptr)->process();
-					break;
-				case Event::MouseButtonPressed:
-					static_cast<MouseButtonPressedEvent*>(ptr)->process();
-					break;
-				case Event::WindowSizeChanged:
-					static_cast<WindowSizeChangedEvent*>(ptr)->process();
-					break;
-				case Event::WindowCreated:
-					static_cast<WindowCreatedEvent*>(ptr)->process();
-					break;
-				case Event::WindowSuspended:
-					static_cast<WindowSuspendedEvent*>(ptr)->process();
-					break;
-				case Event::FileDropped:
-					static_cast<FileDroppedEvent*>(ptr)->process();
-					break;
-				default:
-					break;
+				return true;
+			}
+			if (result.resetWindow.has_value())
+			{
+				resetWindows.insert(result.resetWindow.value());
 			}
 			inputProcess();
 		};
 
-		return 0;
+		for (auto handle : resetWindows)
+		{
+			WindowState& win = getWindowState(handle);
+			bgfx::reset(win.size.width, win.size.height, getResetFlags());
+			if (handle == kDefaultWindowHandle)
+			{
+				inputSetMouseResolution(uint16_t(win.size.width), uint16_t(win.size.height));
+			}
+		}
+
+		return s_exit;
 	}
 
 	bx::FileReaderI& getFileReader()
@@ -407,6 +495,65 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 	bx::FileWriterI& getFileWriter()
 	{
 		return *s_fileWriter;
+	}
+
+	bx::AllocatorI* getAllocator()
+	{
+		if (NULL == g_allocator)
+		{
+			g_allocator = getDefaultAllocator();
+		}
+
+		return g_allocator;
+	}
+
+	Event::Result Event::process(Event& ev)
+	{
+		switch (ev._type)
+		{
+		case Event::Exit:
+			return { true };
+		case Event::CharInput:
+			static_cast<CharInputEvent&>(ev).process();
+			break;
+		case Event::GamepadAxisChanged:
+			static_cast<GamepadAxisChangedEvent&>(ev).process();
+			break;
+		case Event::GamepadConnection:
+			static_cast<GamepadConnectionEvent&>(ev).process();
+			break;
+		case Event::KeyPressed:
+			static_cast<KeyPressedEvent&>(ev).process();
+			break;
+		case Event::MouseMoved:
+			static_cast<MouseMovedEvent&>(ev).process();
+			break;
+		case Event::MouseButtonPressed:
+			static_cast<MouseButtonPressedEvent&>(ev).process();
+			break;
+		case Event::WindowSizeChanged:
+		{
+			auto sizeEv = static_cast<WindowSizeChangedEvent&>(ev);
+			auto reset = sizeEv.process();
+			if (!reset)
+			{
+				return {};
+			}
+			return { false, sizeEv.getWindowHandle() };
+		}
+		case Event::WindowCreated:
+			static_cast<WindowCreatedEvent&>(ev).process();
+			break;
+		case Event::WindowSuspended:
+			static_cast<WindowSuspendedEvent&>(ev).process();
+			break;
+		case Event::FileDropped:
+			static_cast<FileDroppedEvent&>(ev).process();
+			break;
+		default:
+			break;
+		}
+		return {};
 	}
 
 	GamepadAxisChangedEvent::GamepadAxisChangedEvent(GamepadHandle gampad, GamepadAxis axis, int32_t value)
@@ -488,13 +635,21 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 	{
 	}
 
-	void WindowSizeChangedEvent::process()
+	bool WindowSizeChangedEvent::process()
 	{
 		WindowState& win = getWindowState(_window);
 		win.handle = _window;
+		if (win.size == _size)
+		{
+			return false;
+		}
 		win.size = _size;
-		bgfx::reset(win.size.width, win.size.height, win.flags);
-		inputSetMouseResolution(uint16_t(win.size.width), uint16_t(win.size.height));
+		return true;
+	}
+
+	WindowHandle WindowSizeChangedEvent::getWindowHandle()
+	{
+		return _window;
 	}
 
 	WindowPositionChangedEvent::WindowPositionChangedEvent(WindowHandle window, const WindowPosition& pos)
@@ -640,6 +795,79 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		auto ev = std::move(_queue.front());
 		_queue.pop();
 		return std::move(ev);
+	}
+
+	void SimpleApp::init(const std::vector<std::string>& args)
+	{
+		bx::FilePath fp(args[0].c_str());
+		auto basePath = fp.getPath();
+		setCurrentDir(std::string(basePath.getPtr(), basePath.getLength()));
+
+		bgfx::Init init;
+		init.platformData.ndt = darmok::getNativeDisplayHandle();
+		init.platformData.nwh = darmok::getNativeWindowHandle(darmok::kDefaultWindowHandle);
+		init.platformData.type = darmok::getNativeWindowHandleType(darmok::kDefaultWindowHandle);
+		init.resolution.reset = BGFX_RESET_VSYNC;
+		bgfx::init(init);
+
+		// imguiCreate();
+	}
+
+	int SimpleApp::shutdown()
+	{
+		// imguiDestroy();
+
+		// Shutdown bgfx.
+		bgfx::shutdown();
+
+		return 0;
+	}
+
+	bool SimpleApp::update()
+	{
+		if (darmok::processEvents())
+		{
+			return false;
+		}
+
+		/*
+		imguiBeginFrame(m_mouseState.m_mx
+			,  _mouseState.y
+			, (_mouseState.buttons[darmok::MouseButton::Left  ] ? IMGUI_MBUT_LEFT   : 0)
+			| (_mouseState.buttons[darmok::MouseButton::Right ] ? IMGUI_MBUT_RIGHT  : 0)
+			| (_mouseState.buttons[darmok::MouseButton::Middle] ? IMGUI_MBUT_MIDDLE : 0)
+			,  _mouseState.z
+			, uint16_t(_width)
+			, uint16_t(_height)
+			);
+
+
+		// TODO: imgui logic
+
+		imguiEndFrame();
+		*/
+
+		// Set view 0 default viewport.
+		auto& win = getWindowState(darmok::kDefaultWindowHandle);
+		bgfx::setViewRect(0, 0, 0, uint16_t(win.size.width), uint16_t(win.size.height));
+
+		// This dummy draw call is here to make sure that view 0 is cleared
+		// if no other draw calls are submitted to view 0.
+		bgfx::touch(0);
+
+		// Use debug font to print information about this example.
+		bgfx::dbgTextClear();
+
+		draw();
+		
+		// Advance to next frame. Rendering thread will be kicked to
+		// process submitted rendering primitives.
+		bgfx::frame();
+		return true;
+	}
+
+	void SimpleApp::draw()
+	{
 	}
 
 }

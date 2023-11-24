@@ -12,6 +12,11 @@ namespace darmok
 	struct GamepadHandle final
 	{
 		uint16_t idx;
+
+		bool operator==(const GamepadHandle& other) const
+		{
+			return idx == other.idx;
+		}
 	};
 
 	///
@@ -163,12 +168,9 @@ namespace darmok
 
 	struct InputBinding
 	{
-		void set(Key key, uint8_t modifiers, uint8_t flags, std::function<void()> fn);
-		void clear();
-
 		Key key;
 		uint8_t modifiers;
-		uint8_t flags;
+		bool once;
 		std::function<void()> fn;
 		std::string name;
 	};

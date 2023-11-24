@@ -273,6 +273,7 @@ namespace darmok {
 		{
 			int argc;
 			const char* const* argv;
+			bool finished;
 
 			static int32_t threadFunc(bx::Thread* thread, void* userData);
 		};
@@ -384,7 +385,6 @@ namespace darmok {
 			}
 
 		private:
-			std::optional<WindowPosition> _pos;
 			WindowCreationOptions _options;
 		};
 
@@ -478,6 +478,20 @@ namespace darmok {
 
 		class ToggleWindowFullScreenCmd final : public WindowCmd
 		{
+		private:
+			struct NormalWindowState
+			{
+				WindowSize size;
+				WindowPosition pos;
+			};
+			typedef std::array<NormalWindowState, DARMOK_CONFIG_MAX_WINDOWS> NormalWindowStates;
+			static NormalWindowStates _normals;
+
+			NormalWindowState& getNormalWindowState()
+			{
+				return _normals[_handle.idx];
+			}
+
 		public:
 
 			ToggleWindowFullScreenCmd(
@@ -492,7 +506,7 @@ namespace darmok {
 				auto window = windows.getWindow(_handle);
 				if (glfwGetWindowMonitor(window))
 				{
-					WindowState& state = getWindowState(_handle);
+					NormalWindowState& state = getNormalWindowState();
 					glfwSetWindowMonitor(window
 						, nullptr
 						, state.pos.x
@@ -507,7 +521,7 @@ namespace darmok {
 					GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 					if (monitor != nullptr)
 					{
-						WindowState& state = getWindowState(_handle);
+						NormalWindowState& state = getNormalWindowState();
 						glfwGetWindowPos(window, &state.pos.x, &state.pos.y);
 						int w, h;
 						glfwGetWindowSize(window, &w, &h);
@@ -526,10 +540,9 @@ namespace darmok {
 
 				}
 			}
-		private:
-			static WindowPosition _oldPos;
-			static WindowSize _oldSize;
 		};
+
+		ToggleWindowFullScreenCmd::NormalWindowStates ToggleWindowFullScreenCmd::_normals;
 
 		class ToggleWindowFrameCmd final : public WindowCmd
 		{
@@ -774,6 +787,9 @@ namespace darmok {
 				}
 
 				_windows.setWindow(handle, window);
+
+				glfwGetWindowPos(window, &options.pos.x, &options.pos.y);
+
 				_eventQueue.postWindowCreatedEvent(handle, window, options);
 
 				for (uint32_t i = 0; i < _gamepads.size(); ++i)
@@ -783,7 +799,7 @@ namespace darmok {
 
 				_thread.init(MainThreadEntry::threadFunc, &_mte);
 
-				while (!glfwWindowShouldClose(window))
+				while (!glfwWindowShouldClose(window) && !_mte.finished)
 				{
 					glfwWaitEventsTimeout(0.016);
 
@@ -974,7 +990,7 @@ namespace darmok {
 			MainThreadEntry* self = (MainThreadEntry*)userData;
 			int32_t result = main(self->argc, self->argv);
 
-			// RUN app?
+			self->finished = true;
 
 			return result;
 		}

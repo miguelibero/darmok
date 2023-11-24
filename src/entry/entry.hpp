@@ -4,6 +4,7 @@
 #include <darmok/input.hpp>
 
 #include <queue>
+#include <optional>
 #include <bx/filepath.h>
 
 #ifndef DARMOK_CONFIG_USE_NOOP
@@ -75,11 +76,20 @@ namespace darmok
 		};
 
 		Event(Type type)
-			: type(type)
+			: _type(type)
 		{
 		}
 
-		Event::Type type;
+		struct Result
+		{
+			bool exit;
+			std::optional<WindowHandle> resetWindow;
+		};
+
+		static Result process(Event& ev);
+
+	private:
+		Type _type;
 	};
 
 	class GamepadAxisChangedEvent final : public Event
@@ -146,9 +156,9 @@ namespace darmok
 	{
 	public:
 		WindowSizeChangedEvent(WindowHandle window, const WindowSize& size);
-		void process();
+		bool process();
+		WindowHandle getWindowHandle();
 	private:
-		uint32_t _flags;
 		WindowHandle _window;
 		WindowSize _size;
 	};
@@ -159,7 +169,6 @@ namespace darmok
 		WindowPositionChangedEvent(WindowHandle window, const WindowPosition& pos);
 		void process();
 	private:
-		uint32_t _flags;
 		WindowHandle _window;
 		WindowPosition _pos;
 	};
