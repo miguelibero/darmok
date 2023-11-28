@@ -13,6 +13,7 @@ namespace darmok
 	class WindowCreatedEvent;
 	class WindowSizeChangedEvent;
 	class WindowPositionChangedEvent;
+	class WindowTitleChangedEvent;
 	class WindowDestroyedEvent;
 	class WindowSuspendedEvent;
 	class FileDroppedEvent;
@@ -106,6 +107,8 @@ namespace darmok
 		static constexpr WindowHandle InvalidHandle = { UINT16_MAX };
 		static constexpr size_t MaxWindows = 8;
 
+		Window(const WindowHandle& handle = InvalidHandle);
+
 		/// 
 		static Window& create(const WindowCreationOptions& options);
 
@@ -140,7 +143,7 @@ namespace darmok
 		static void* getNativeDisplayHandle();
 
 		/// 
-		bgfx::NativeWindowHandleType::Enum getNativeHandleType();
+		bgfx::NativeWindowHandleType::Enum getNativeHandleType() const;
 
 		///
 		const WindowPosition& getPosition() const;
@@ -165,7 +168,6 @@ namespace darmok
 
 	private:
 
-		Window(const WindowHandle& handle = InvalidHandle);
 
 		WindowHandle _handle;
 		std::string _dropFilePath;
@@ -176,14 +178,10 @@ namespace darmok
 		std::string _title;
 		WindowSuspendPhase _suspendPhase;
 
-		typedef std::array<Window, MaxWindows> WindowArray;
-
-		static WindowArray s_windows;
-
-		friend WindowArray;
 		friend WindowCreatedEvent;
 		friend WindowSizeChangedEvent;
 		friend WindowPositionChangedEvent;
+		friend WindowTitleChangedEvent;
 		friend WindowDestroyedEvent;
 		friend WindowSuspendedEvent;
 		friend FileDroppedEvent;

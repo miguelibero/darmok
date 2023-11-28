@@ -9,6 +9,7 @@ project(
 
 set(sources
   src/window.cpp
+  src/platform.cpp
   src/app.cpp
   src/glfw.cpp
   src/input.cpp
