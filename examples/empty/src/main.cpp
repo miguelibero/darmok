@@ -1,7 +1,8 @@
 
 
-#include <bx/uint32_t.h>
-#include <darmok/entry.hpp>
+#include <darmok/app.hpp>
+#include <bgfx/bgfx.h>
+#include <dear-imgui/imgui.h>
 
 namespace
 {
@@ -25,20 +26,18 @@ public:
 			);
 	}
 
+	void imguiDraw() override
+	{
+		ImGui::TextWrapped("lala");
+		std::string text;
+		text.resize(255);
+		ImGui::InputText("text", const_cast<char*>(text.c_str()), text.size());
+	}
+
 	void draw() override
 	{
 		const bgfx::Stats* stats = bgfx::getStats();
 
-		/*
-		bgfx::dbgTextImage(
-				bx::max<uint16_t>(uint16_t(stats->textWidth/2), 20)-20
-			, bx::max<uint16_t>(uint16_t(stats->textHeight/2),  6)-6
-			, 40
-			, 12
-			, s_logo
-			, 160
-			);
-		*/
 		bgfx::dbgTextPrintf(0, 1, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");
 
 		bgfx::dbgTextPrintf(80, 1, 0x0f, "\x1b[;0m    \x1b[;1m    \x1b[; 2m    \x1b[; 3m    \x1b[; 4m    \x1b[; 5m    \x1b[; 6m    \x1b[; 7m    \x1b[0m");

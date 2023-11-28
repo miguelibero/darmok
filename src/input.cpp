@@ -1,6 +1,8 @@
 
 #include <darmok/input.hpp>
+#include <darmok/window.hpp>
 #include <darmok/utils.hpp>
+#include <bx/bx.h>
 
 #include <string>
 #include <unordered_map>
@@ -8,49 +10,220 @@
 
 namespace darmok
 {
+	static const std::string s_keyNames[] =
+	{
+		"None",
+		"Esc",
+		"Return",
+		"Tab",
+		"Space",
+		"Backspace",
+		"Up",
+		"Down",
+		"Left",
+		"Right",
+		"Insert",
+		"Delete",
+		"Home",
+		"End",
+		"PageUp",
+		"PageDown",
+		"Print",
+		"Plus",
+		"Minus",
+		"LeftBracket",
+		"RightBracket",
+		"Semicolon",
+		"Quote",
+		"Comma",
+		"Period",
+		"Slash",
+		"Backslash",
+		"Tilde",
+		"F1",
+		"F2",
+		"F3",
+		"F4",
+		"F5",
+		"F6",
+		"F7",
+		"F8",
+		"F9",
+		"F10",
+		"F11",
+		"F12",
+		"NumPad0",
+		"NumPad1",
+		"NumPad2",
+		"NumPad3",
+		"NumPad4",
+		"NumPad5",
+		"NumPad6",
+		"NumPad7",
+		"NumPad8",
+		"NumPad9",
+		"Key0",
+		"Key1",
+		"Key2",
+		"Key3",
+		"Key4",
+		"Key5",
+		"Key6",
+		"Key7",
+		"Key8",
+		"Key9",
+		"KeyA",
+		"KeyB",
+		"KeyC",
+		"KeyD",
+		"KeyE",
+		"KeyF",
+		"KeyG",
+		"KeyH",
+		"KeyI",
+		"KeyJ",
+		"KeyK",
+		"KeyL",
+		"KeyM",
+		"KeyN",
+		"KeyO",
+		"KeyP",
+		"KeyQ",
+		"KeyR",
+		"KeyS",
+		"KeyT",
+		"KeyU",
+		"KeyV",
+		"KeyW",
+		"KeyX",
+		"KeyY",
+		"KeyZ",
+		"GamepadA",
+		"GamepadB",
+		"GamepadX",
+		"GamepadY",
+		"GamepadThumbL",
+		"GamepadThumbR",
+		"GamepadShoulderL",
+		"GamepadShoulderR",
+		"GamepadUp",
+		"GamepadDown",
+		"GamepadLeft",
+		"GamepadRight",
+		"GamepadBack",
+		"GamepadStart",
+		"GamepadGuide",
+	};
+	BX_STATIC_ASSERT(to_underlying(Key::Count) == BX_COUNTOF(s_keyNames));
+
+	const std::string& getKeyName(Key key)
+	{
+		BX_ASSERT(key < Key::Count, "Invalid key %d.", key);
+		return s_keyNames[to_underlying(key)];
+	}
+
+	char keyToAscii(Key key, uint8_t modifiers)
+	{
+		const bool isAscii = (Key::Key0 <= key && key <= Key::KeyZ)
+						  || (Key::Esc  <= key && key <= Key::Minus);
+		if (!isAscii)
+		{
+			return '\0';
+		}
+
+		const bool isNumber = (Key::Key0 <= key && key <= Key::Key9);
+		if (isNumber)
+		{
+			return '0' + char(to_underlying(key) - to_underlying(Key::Key0));
+		}
+
+		const bool isChar = (Key::KeyA <= key && key <= Key::KeyZ);
+		if (isChar)
+		{
+			enum { ShiftMask = to_underlying(KeyModifier::LeftShift) | to_underlying(KeyModifier::RightShift) };
+
+			const bool shift = !!( modifiers & ShiftMask );
+			return (shift ? 'A' : 'a') + char(to_underlying(key) - to_underlying(Key::KeyA));
+		}
+
+		switch (key)
+		{
+		case Key::Esc:       return 0x1b;
+		case Key::Return:    return '\n';
+		case Key::Tab:       return '\t';
+		case Key::Space:     return ' ';
+		case Key::Backspace: return 0x08;
+		case Key::Plus:      return '+';
+		case Key::Minus:     return '-';
+		default:             break;
+		}
+
+		return '\0';
+	}
+
 	class InputMouse final
 	{
+	private:
+		NormMousePosition kDefaultNorm = { 0.0f, 0.0f, 0.0f };
+
 	public:
+
 		InputMouse()
-			: _width(1280)
-			, _height(720)
+			: _buttons{}
+			, _size{ 1280, 720 }
 			, _wheelDelta(120)
 			, _lock(false)
 		{
 		}
 
-		void reset(bool force = false)
+		void resetNorm()
 		{
-			if (_lock || force)
-			{
-				_norm.x = 0.0f;
-				_norm.y = 0.0f;
-				_norm.z = 0.0f;
-			}
+			_norm = kDefaultNorm;
 		}
 
-		void setResolution(uint16_t width, uint16_t height)
+		void setResolution(const WindowSize& size)
 		{
-			width = width;
-			height = height;
+			_size = size;
 		}
 
 		void setPos(const MousePosition& pos)
 		{
 			_absolute = pos;
-			_norm.x = float(pos.x) / float(_width);
-			_norm.y = float(pos.y) / float(_height);
+			_norm.x = float(pos.x) / float(_size.width);
+			_norm.y = float(pos.y) / float(_size.height);
 			_norm.z = float(pos.z) / float(_wheelDelta);
 		}
 
-		void setButtonState(MouseButton button, uint8_t state)
+		void setButtonState(MouseButton button, bool down)
 		{
-			_buttons[to_underlying(button)] = state;
+			_buttons[to_underlying(button)] = down;
+		}
+
+		bool getButtonState(MouseButton button) const
+		{
+			return _buttons[to_underlying(button)];
 		}
 
 		const NormMousePosition& getNorm() const
 		{
 			return _norm;
+		}
+
+		NormMousePosition popNorm()
+		{
+			auto norm = _norm;
+			resetNorm();
+			return norm;
+		}
+
+		const MousePosition& getAbs() const
+		{
+			return _absolute;
+		}
+
+		const MouseButtons& getButtonStates() const
+		{
+			return _buttons;
 		}
 
 		bool isLocked() const
@@ -63,7 +236,7 @@ namespace darmok
 			if (_lock != lock)
 			{
 				_lock = lock;
-				reset();
+				resetNorm();
 				return true;
 			}
 			return false;
@@ -72,10 +245,9 @@ namespace darmok
 	private:
 		MousePosition _absolute;
 		NormMousePosition _norm;
-		int32_t _wheel;
-		std::array<uint8_t, to_underlying(MouseButton::Count)> _buttons;
-		uint16_t _width;
-		uint16_t _height;
+
+		MouseButtons _buttons;
+		WindowSize _size;
 		uint16_t _wheelDelta;
 		bool _lock;
 	};
@@ -88,13 +260,13 @@ namespace darmok
 			: _charsRead(0)
 			, _charsWrite(0)
 		{
+			_keys.fill(0);
+			_once.fill(false);
 		}
-
 		void reset()
 		{
-			std::fill(std::begin(_keys), std::end(_keys), 0);
-			std::fill(std::begin(_once), std::end(_once), false);
-			std::fill(std::begin(_chars), std::end(_chars), Utf8Char{ 0, 0 });
+			_keys.fill(0);
+			_once.fill(false);
 			charFlush();
 		}
 
@@ -119,7 +291,7 @@ namespace darmok
 		uint8_t getModifiersState()
 		{
 			uint8_t modifiers = 0;
-			auto max = (uint32_t)to_underlying(Key::Count);
+			constexpr auto max = (uint32_t)to_underlying(Key::Count);
 			for (uint32_t i = 0; i < max; ++i)
 			{
 				modifiers |= (_keys[i] >> 16) & 0xff;
@@ -130,13 +302,17 @@ namespace darmok
 		void pushChar(const Utf8Char& v)
 		{
 			_chars[_charsWrite] = v;
-			_charsWrite = (_charsWrite + 1) ^ _chars.size();
+			_charsWrite = (_charsWrite + 1) % _chars.size();
 		}
 
 		Utf8Char popChar()
 		{
+			if (_charsRead == _charsWrite)
+			{
+				return {};
+			}
 			auto v = _chars[_charsRead];
-			_charsRead = (_charsRead + 1) ^ _chars.size();
+			_charsRead = (_charsRead + 1) % _chars.size();
 			return v;
 		}
 
@@ -156,6 +332,7 @@ namespace darmok
 
 		void charFlush()
 		{
+			_chars.fill({});
 			_charsRead = 0;
 			_charsWrite = 0;
 		}
@@ -218,7 +395,7 @@ namespace darmok
 
 		void reset()
 		{
-			std::fill(std::begin(_axis), std::end(_axis), 0);
+			_axis.fill(0);
 		}
 
 		void setAxis(GamepadAxis key, int32_t value)
@@ -275,7 +452,7 @@ namespace darmok
 
 		void reset()
 		{
-			_mouse.reset();
+			_mouse.resetNorm();
 			_keyboard.reset();
 			for(auto& gamepad : _gamepads)
 			{
@@ -346,9 +523,9 @@ namespace darmok
 		input.process();
 	}
 
-	void inputSetMouseResolution(uint16_t width, uint16_t height)
+	void inputSetMouseResolution(const WindowSize& size)
 	{
-		input.getMouse().setResolution(width, height);
+		input.getMouse().setResolution(size);
 	}
 
 	void inputSetKeyState(Key key, uint8_t modifiers, bool down)
@@ -356,7 +533,7 @@ namespace darmok
 		input.getKeyboard().setKeyState(key, modifiers, down);
 	}
 
-	bool inputGetKeyState(Key key, uint8_t& modifiers)
+	bool inputGetKeyState(Key key, uint8_t modifiers)
 	{
 		return input.getKeyboard().getKeyState(key, modifiers);
 	}
@@ -366,12 +543,12 @@ namespace darmok
 		return input.getKeyboard().getModifiersState();
 	}
 
-	void inputChar(const Utf8Char& data)
+	void inputPushChar(const Utf8Char& data)
 	{
 		input.getKeyboard().pushChar(data);
 	}
 
-	Utf8Char inputGetChar()
+	Utf8Char inputPopChar()
 	{
 		return input.getKeyboard().popChar();
 	}
@@ -386,17 +563,29 @@ namespace darmok
 		input.getMouse().setPos(v);
 	}
 
-	void inputSetMouseButtonState(MouseButton _button, uint8_t _state)
+	void inputSetMouseButtonState(MouseButton button, bool down)
 	{
-		input.getMouse().setButtonState(_button, _state);
+		input.getMouse().setButtonState(button, down);
 	}
 
-	const NormMousePosition& inputGetMouse()
+	bool inputGetMouseButtonState(MouseButton button)
 	{
-		auto& mouse = input.getMouse();
-		auto v = mouse.getNorm();
-		mouse.reset(true);
-		return v;
+		return input.getMouse().getButtonState(button);
+	}
+
+	const MousePosition& inputGetAbsoluteMouse()
+	{
+		return input.getMouse().getAbs();
+	}
+
+	const NormMousePosition& inputPopMouse()
+	{
+		return input.getMouse().popNorm();
+	}
+
+	const MouseButtons& inputGetMouseButtons()
+	{
+		return input.getMouse().getButtonStates();
 	}
 
 	bool inputIsMouseLocked()

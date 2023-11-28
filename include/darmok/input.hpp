@@ -2,12 +2,17 @@
 
 #include <functional>
 #include <string>
+#include <array>
+#include <vector>
+#include <darmok/utils.hpp>
 
 namespace darmok
 {
 #ifndef DARMOK_CONFIG_MAX_GAMEPADS
 #	define DARMOK_CONFIG_MAX_GAMEPADS 4
 #endif // DARMOK_CONFIG_MAX_GAMEPADS
+
+	struct WindowSize;
 
 	struct GamepadHandle final
 	{
@@ -16,6 +21,11 @@ namespace darmok
 		bool operator==(const GamepadHandle& other) const
 		{
 			return idx == other.idx;
+		}
+
+		bool operator<(const GamepadHandle& other) const
+		{
+			return idx < other.idx;
 		}
 	};
 
@@ -55,6 +65,15 @@ namespace darmok
 		RightShift = 0x20,
 		LeftMeta = 0x40,
 		RightMeta = 0x80,
+	};
+
+	struct KeyModifiers
+	{
+		static constexpr int None = 0;
+		static constexpr int Shift = to_underlying(KeyModifier::LeftShift) | to_underlying(KeyModifier::RightShift);
+		static constexpr int Ctrl = to_underlying(KeyModifier::LeftCtrl) | to_underlying(KeyModifier::RightCtrl);
+		static constexpr int Alt = to_underlying(KeyModifier::LeftAlt) | to_underlying(KeyModifier::RightAlt);
+		static constexpr int Meta = to_underlying(KeyModifier::LeftMeta) | to_underlying(KeyModifier::RightMeta);
 	};
 
 	///
@@ -175,11 +194,20 @@ namespace darmok
 		std::string name;
 	};
 
+	typedef std::array<bool, to_underlying(MouseButton::Count)> MouseButtons;
+
 	struct MousePosition
 	{
 		int32_t x;
 		int32_t y;
 		int32_t z;
+
+		MousePosition(int32_t px = 0, int32_t py = 0, int32_t pz = 0)
+			: x(px)
+			, y(py)
+			, z(pz)
+		{
+		}
 	};
 
 	struct NormMousePosition
@@ -187,12 +215,25 @@ namespace darmok
 		float x;
 		float y;
 		float z;
+
+		NormMousePosition(float px = 0.0f, float py = 0.0f, float pz = 0.0f)
+			: x(px)
+			, y(py)
+			, z(pz)
+		{
+		}
 	};
 
 	struct Utf8Char
 	{
-		uint8_t len;
 		uint32_t data;
+		uint8_t len;
+
+		Utf8Char(uint32_t pdata = 0, uint8_t plen = 0)
+			: data(pdata)
+			, len(pdata)
+		{
+		}
 	};
 
 	///
@@ -210,46 +251,68 @@ namespace darmok
 	///
 	void inputProcess();
 
+	// Keyboard
+
 	///
 	void inputSetKeyState(Key key, uint8_t modifiers, bool down);
 
 	///
-	bool inputGetKeyState(Key key, uint8_t& modifiers);
+	bool inputGetKeyState(Key key, uint8_t modifiers = KeyModifiers::None);
 
 	///
 	uint8_t inputGetModifiersState();
 
 	/// Adds single UTF-8 encoded character into input buffer.
-	void inputChar(const Utf8Char& data);
+	void inputPushChar(const Utf8Char& data);
 
 	/// Returns single UTF-8 encoded character from input buffer.
-	Utf8Char inputGetChar();
+	Utf8Char inputPopChar();
 
 	/// Flush internal input buffer.
 	void inputCharFlush();
 
 	///
-	void inputSetMouseResolution(uint16_t width, uint16_t height);
+	char keyToAscii(Key key, uint8_t modifiers);
+
+	///
+	const std::string& getKeyName(Key key);
+
+	// Mouse
+
+	///
+	void inputSetMouseResolution(const WindowSize& size);
 
 	///
 	void inputSetMousePos(const MousePosition& pos);
 
 	///
-	void inputSetMouseButtonState(MouseButton button, uint8_t state);
+	void inputSetMouseButtonState(MouseButton button, bool down);
+
+	///
+	bool inputGetMouseButtonState(MouseButton button);
 
 	///
 	void inputSetMouseLock(bool lock);
 
 	///
-	const NormMousePosition& inputGetMouse();
+	const NormMousePosition& inputPopMouse();
+
+	///
+	const MousePosition& inputGetAbsoluteMouse();
+
+	///
+	const MouseButtons& inputGetMouseButtons();
 
 	///
 	bool inputIsMouseLocked();
+
+	// Gamepad
 
 	///
 	void inputSetGamepadAxis(GamepadHandle handle, GamepadAxis axis, int32_t value);
 
 	///
 	int32_t inputGetGamepadAxis(GamepadHandle handle, GamepadAxis axis);
+
 }
 

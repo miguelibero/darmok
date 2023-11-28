@@ -1,19 +1,18 @@
+
+#include "app.hpp"
+#include "imgui.hpp"
+#include "dbg.h"
+
 #include <bx/bx.h>
 #include <bx/file.h>
-#include <bx/sort.h>
+#include <bx/readerwriter.h>
 #include <bgfx/bgfx.h>
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
 #endif // BX_PLATFORM_EMSCRIPTEN
 
-#include "entry.hpp"
-#include "dbg.h"
-#include <darmok/input.hpp>
-#include <darmok/utils.hpp>
-#include <unordered_set>
 
-// #include <imgui/imgui.h>
 
 namespace darmok
 {
@@ -22,12 +21,11 @@ namespace darmok
 	static std::string s_currentDir;
 	static bool s_exit = false;
 	static uint32_t s_debug = BGFX_DEBUG_NONE;
-	static uint32_t s_reset = BGFX_RESET_NONE;
-
+	static uint32_t s_reset = BGFX_RESET_VSYNC;
+	static bool s_needsReset = false;
 
 	extern bx::AllocatorI* getDefaultAllocator();
 	bx::AllocatorI* g_allocator = getDefaultAllocator();
-
 
 	class FileReader final : public bx::FileReader
 	{
@@ -70,157 +68,6 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 	}
 #endif // ENTRY_CONFIG_IMPLEMENT_DEFAULT_ALLOCATOR
 
-	static const std::string keyNames[] =
-	{
-		"None",
-		"Esc",
-		"Return",
-		"Tab",
-		"Space",
-		"Backspace",
-		"Up",
-		"Down",
-		"Left",
-		"Right",
-		"Insert",
-		"Delete",
-		"Home",
-		"End",
-		"PageUp",
-		"PageDown",
-		"Print",
-		"Plus",
-		"Minus",
-		"LeftBracket",
-		"RightBracket",
-		"Semicolon",
-		"Quote",
-		"Comma",
-		"Period",
-		"Slash",
-		"Backslash",
-		"Tilde",
-		"F1",
-		"F2",
-		"F3",
-		"F4",
-		"F5",
-		"F6",
-		"F7",
-		"F8",
-		"F9",
-		"F10",
-		"F11",
-		"F12",
-		"NumPad0",
-		"NumPad1",
-		"NumPad2",
-		"NumPad3",
-		"NumPad4",
-		"NumPad5",
-		"NumPad6",
-		"NumPad7",
-		"NumPad8",
-		"NumPad9",
-		"Key0",
-		"Key1",
-		"Key2",
-		"Key3",
-		"Key4",
-		"Key5",
-		"Key6",
-		"Key7",
-		"Key8",
-		"Key9",
-		"KeyA",
-		"KeyB",
-		"KeyC",
-		"KeyD",
-		"KeyE",
-		"KeyF",
-		"KeyG",
-		"KeyH",
-		"KeyI",
-		"KeyJ",
-		"KeyK",
-		"KeyL",
-		"KeyM",
-		"KeyN",
-		"KeyO",
-		"KeyP",
-		"KeyQ",
-		"KeyR",
-		"KeyS",
-		"KeyT",
-		"KeyU",
-		"KeyV",
-		"KeyW",
-		"KeyX",
-		"KeyY",
-		"KeyZ",
-		"GamepadA",
-		"GamepadB",
-		"GamepadX",
-		"GamepadY",
-		"GamepadThumbL",
-		"GamepadThumbR",
-		"GamepadShoulderL",
-		"GamepadShoulderR",
-		"GamepadUp",
-		"GamepadDown",
-		"GamepadLeft",
-		"GamepadRight",
-		"GamepadBack",
-		"GamepadStart",
-		"GamepadGuide",
-	};
-	BX_STATIC_ASSERT(to_underlying(Key::Count) == BX_COUNTOF(keyNames));
-
-	const std::string& getKeyName(Key key)
-	{
-		BX_ASSERT(key < Key::Count, "Invalid key %d.", key);
-		return keyNames[to_underlying(key)];
-	}
-
-	char keyToAscii(Key key, uint8_t modifiers)
-	{
-		const bool isAscii = (Key::Key0 <= key && key <= Key::KeyZ)
-						  || (Key::Esc  <= key && key <= Key::Minus);
-		if (!isAscii)
-		{
-			return '\0';
-		}
-
-		const bool isNumber = (Key::Key0 <= key && key <= Key::Key9);
-		if (isNumber)
-		{
-			return '0' + char(to_underlying(key) - to_underlying(Key::Key0));
-		}
-
-		const bool isChar = (Key::KeyA <= key && key <= Key::KeyZ);
-		if (isChar)
-		{
-			enum { ShiftMask = to_underlying(KeyModifier::LeftShift) | to_underlying(KeyModifier::RightShift) };
-
-			const bool shift = !!( modifiers & ShiftMask );
-			return (shift ? 'A' : 'a') + char(to_underlying(key) - to_underlying(Key::KeyA));
-		}
-
-		switch (key)
-		{
-		case Key::Esc:       return 0x1b;
-		case Key::Return:    return '\n';
-		case Key::Tab:       return '\t';
-		case Key::Space:     return ' ';
-		case Key::Backspace: return 0x08;
-		case Key::Plus:      return '+';
-		case Key::Minus:     return '-';
-		default:             break;
-		}
-
-		return '\0';
-	}
-
 	void exitAppBinding()
 	{
 		s_exit = true;
@@ -250,8 +97,12 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	void setResetFlag(uint32_t flag, bool enabled)
 	{
-		s_reset = setFlag(s_reset, flag, enabled);
-		bgfx::setDebug(s_reset);
+		auto reset = setFlag(s_reset, flag, enabled);
+		if (s_reset != reset)
+		{
+			s_reset = reset;
+			s_needsReset = true;
+		}
 	}
 
 	bool getResetFlag(uint32_t flag)
@@ -311,27 +162,27 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		setDebugFlag(BGFX_DEBUG_TEXT, false);
 	}
 
-	void resetVsyncBinding()
+	void toggleResetVsyncBinding()
 	{
 		toggleResetFlag(BGFX_RESET_VSYNC);
 	}
 
-	void resetMsaaBinding()
+	void toggleResetMsaaBinding()
 	{
 		toggleResetFlag(BGFX_RESET_MSAA_X16);
 	}
 
-	void resetFlushAfterRenderBinding()
+	void toggleResetFlushAfterRenderBinding()
 	{
 		toggleResetFlag(BGFX_RESET_FLUSH_AFTER_RENDER);
 	}
 
-	void resetFlipAfterRenderBinding()
+	void toggleResetFlipAfterRenderBinding()
 	{
 		toggleResetFlag(BGFX_RESET_FLIP_AFTER_RENDER);
 	}
 
-	void resetHidpiBinding()
+	void toggleResetHidpiBinding()
 	{
 		toggleResetFlag(BGFX_RESET_HIDPI);
 	}
@@ -367,10 +218,10 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		{ Key::F1,           to_underlying(KeyModifier::LeftShift), true, disableDebugFlagsBinding },
 		{ Key::F3,           to_underlying(KeyModifier::None),      true, toggleDebugWireFrameBinding },
 		{ Key::F6,           to_underlying(KeyModifier::None),      true, toggleDebugProfilerBinding },
-		{ Key::F7,           to_underlying(KeyModifier::None),      true, resetVsyncBinding },
-		{ Key::F8,           to_underlying(KeyModifier::None),      true, resetMsaaBinding },
-		{ Key::F9,           to_underlying(KeyModifier::None),      true, resetFlushAfterRenderBinding },
-		{ Key::F10,          to_underlying(KeyModifier::None),      true, resetHidpiBinding },
+		{ Key::F7,           to_underlying(KeyModifier::None),      true, toggleResetVsyncBinding },
+		{ Key::F8,           to_underlying(KeyModifier::None),      true, toggleResetMsaaBinding },
+		{ Key::F9,           to_underlying(KeyModifier::None),      true, toggleResetFlushAfterRenderBinding },
+		{ Key::F10,          to_underlying(KeyModifier::None),      true, toggleResetHidpiBinding },
 		{ Key::Print,        to_underlying(KeyModifier::None),      true, screenshotBinding },
 		{ Key::KeyP,         to_underlying(KeyModifier::LeftCtrl),  true, screenshotBinding },
 	};
@@ -436,25 +287,9 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		return result;
 	}
 
-	static std::array<WindowState, DARMOK_CONFIG_MAX_WINDOWS> s_windows;
-
-	void WindowState::clear()
-	{
-		handle = { 0 };
-		size = WindowSize(0, 0);
-		pos = WindowPosition(0, 0);
-		nativeHandle = nullptr;
-		dropFile = "";
-	}
-
-	WindowState& getWindowState(WindowHandle handle)
-	{
-		return s_windows[handle.idx];
-	}
-
 	bool processEvents()
 	{
-		std::unordered_set<WindowHandle> resetWindows;
+		bool needsReset = false;
 		while(!s_exit)
 		{
 			auto ev = pollEvent();
@@ -463,25 +298,23 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 				break;
 			}
 			auto result = Event::process(*ev);
-			if (result.exit)
+			if (result == Event::Result::Exit)
 			{
 				return true;
 			}
-			if (result.resetWindow.has_value())
+			if (result == Event::Result::Reset)
 			{
-				resetWindows.insert(result.resetWindow.value());
+				needsReset = true;
 			}
 			inputProcess();
 		};
 
-		for (auto handle : resetWindows)
+		if(needsReset || s_needsReset)
 		{
-			WindowState& win = getWindowState(handle);
+			WindowState& win = getWindowState(kDefaultWindowHandle);
 			bgfx::reset(win.size.width, win.size.height, getResetFlags());
-			if (handle == kDefaultWindowHandle)
-			{
-				inputSetMouseResolution(uint16_t(win.size.width), uint16_t(win.size.height));
-			}
+			inputSetMouseResolution(win.size);
+			s_needsReset = false;
 		}
 
 		return s_exit;
@@ -497,14 +330,14 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		return *s_fileWriter;
 	}
 
-	bx::AllocatorI* getAllocator()
+	bx::AllocatorI& getAllocator()
 	{
 		if (NULL == g_allocator)
 		{
 			g_allocator = getDefaultAllocator();
 		}
 
-		return g_allocator;
+		return *g_allocator;
 	}
 
 	Event::Result Event::process(Event& ev)
@@ -512,7 +345,7 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		switch (ev._type)
 		{
 		case Event::Exit:
-			return { true };
+			return Result::Exit;
 		case Event::CharInput:
 			static_cast<CharInputEvent&>(ev).process();
 			break;
@@ -533,13 +366,12 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 			break;
 		case Event::WindowSizeChanged:
 		{
-			auto sizeEv = static_cast<WindowSizeChangedEvent&>(ev);
-			auto reset = sizeEv.process();
-			if (!reset)
+			auto reset = static_cast<WindowSizeChangedEvent&>(ev).process();
+			if (reset)
 			{
-				return {};
+				return Result::Reset;
 			}
-			return { false, sizeEv.getWindowHandle() };
+			break;
 		}
 		case Event::WindowCreated:
 			static_cast<WindowCreatedEvent&>(ev).process();
@@ -577,7 +409,7 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	void CharInputEvent::process()
 	{
-		inputChar(_data);
+		inputPushChar(_data);
 	}
 
 	GamepadConnectionEvent::GamepadConnectionEvent(GamepadHandle gamepad, bool connected)
@@ -694,7 +526,7 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		getWindowState(_window).clear();
 	}
 
-	WindowSuspendedEvent::WindowSuspendedEvent(WindowHandle window, SuspendPhase phase)
+	WindowSuspendedEvent::WindowSuspendedEvent(WindowHandle window, WindowSuspendPhase phase)
 		:Event(WindowSuspended)
 		, _window(window)
 		, _phase(phase)
@@ -776,7 +608,7 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		_queue.push(std::make_unique<WindowDestroyedEvent>(window));
 	}
 
-	void EventQueue::postWindowSuspendedEvent(WindowHandle window, SuspendPhase phase)
+	void EventQueue::postWindowSuspendedEvent(WindowHandle window, WindowSuspendPhase phase)
 	{
 		_queue.push(std::make_unique<WindowSuspendedEvent>(window, phase));
 	}
@@ -807,15 +639,15 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		init.platformData.ndt = darmok::getNativeDisplayHandle();
 		init.platformData.nwh = darmok::getNativeWindowHandle(darmok::kDefaultWindowHandle);
 		init.platformData.type = darmok::getNativeWindowHandleType(darmok::kDefaultWindowHandle);
-		init.resolution.reset = BGFX_RESET_VSYNC;
+		init.resolution.reset = getResetFlags();
 		bgfx::init(init);
 
-		// imguiCreate();
+		imguiCreate();
 	}
 
 	int SimpleApp::shutdown()
 	{
-		// imguiDestroy();
+		imguiDestroy();
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
@@ -830,30 +662,24 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 			return false;
 		}
 
-		/*
-		imguiBeginFrame(m_mouseState.m_mx
-			,  _mouseState.y
-			, (_mouseState.buttons[darmok::MouseButton::Left  ] ? IMGUI_MBUT_LEFT   : 0)
-			| (_mouseState.buttons[darmok::MouseButton::Right ] ? IMGUI_MBUT_RIGHT  : 0)
-			| (_mouseState.buttons[darmok::MouseButton::Middle] ? IMGUI_MBUT_MIDDLE : 0)
-			,  _mouseState.z
-			, uint16_t(_width)
-			, uint16_t(_height)
-			);
+		auto& win = getWindowState(darmok::kDefaultWindowHandle);
+		bgfx::ViewId viewId = 0;
 
+		_lastMousePos = inputPopMouse();
+		_lastChar = inputPopChar();
 
-		// TODO: imgui logic
+		imguiBeginFrame(darmok::kDefaultWindowHandle, _lastChar, viewId);
+
+		imguiDraw();
 
 		imguiEndFrame();
-		*/
 
 		// Set view 0 default viewport.
-		auto& win = getWindowState(darmok::kDefaultWindowHandle);
-		bgfx::setViewRect(0, 0, 0, uint16_t(win.size.width), uint16_t(win.size.height));
+		bgfx::setViewRect(viewId, 0, 0, uint16_t(win.size.width), uint16_t(win.size.height));
 
 		// This dummy draw call is here to make sure that view 0 is cleared
 		// if no other draw calls are submitted to view 0.
-		bgfx::touch(0);
+		bgfx::touch(viewId);
 
 		// Use debug font to print information about this example.
 		bgfx::dbgTextClear();
@@ -864,6 +690,10 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		// process submitted rendering primitives.
 		bgfx::frame();
 		return true;
+	}
+
+	void SimpleApp::imguiDraw()
+	{
 	}
 
 	void SimpleApp::draw()

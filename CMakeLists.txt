@@ -8,16 +8,19 @@ project(
 )
 
 set(sources
-  src/darmok.cpp
-  src/entry/entry.cpp
-  src/entry/glfw.cpp
-  src/entry/input.cpp
+  src/window.cpp
+  src/app.cpp
+  src/glfw.cpp
+  src/input.cpp
+  src/imgui.cpp
+  src/bgfx.cpp
 )
 
 set(headers
-  include/darmok/darmok.hpp
-  include/darmok/entry.hpp
   include/darmok/input.hpp
+  include/darmok/window.hpp
+  include/darmok/app.hpp
+  include/darmok/utils.hpp
 )
 
 add_library(
@@ -29,18 +32,23 @@ add_library(
 set_target_properties(
   ${PROJECT_NAME}
   PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}"
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}"
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
+
+set(LIBS_BASE ${CMAKE_CURRENT_LIST_DIR}/lib)
+set(BGFX_BASE ${LIBS_BASE}/bgfx.cmake/bgfx)
 
 target_include_directories(
     ${PROJECT_NAME}
     PUBLIC
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${BGFX_BASE}/3rdparty
     PRIVATE
+    ${BGFX_BASE}/examples/common
     ${CMAKE_CURRENT_SOURCE_DIR}/src
   )
 
@@ -105,22 +113,27 @@ install(
 )
 
 # testing
-
 enable_testing()
 add_subdirectory(test)
 
-if( MSVC )
-    SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup" )
+if(MSVC)
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
 endif()
 set_property(TARGET darmok PROPERTY CXX_STANDARD 20)
 
+# openGL
+find_package(OpenGL REQUIRED)
+include_directories(${OPENGL_INCLUDE_DIRS})
 
-add_compile_definitions(ENTRY_CONFIG_USE_GLFW)
-find_package( OpenGL REQUIRED )
-include_directories( ${OPENGL_INCLUDE_DIRS} )
-add_subdirectory(lib/glfw)
-target_link_libraries(darmok LINK_PUBLIC glfw)
+# glfw
+add_subdirectory(${LIBS_BASE}/glfw)
+target_link_libraries(darmok glfw)
+add_compile_definitions(DARMOK_CONFIG_USE_GLFW)
 
+# bgfx
+add_subdirectory(${LIBS_BASE}/bgfx.cmake)
+target_link_libraries(darmok bgfx bimg bx)
 
-add_subdirectory(lib/bgfx.cmake)
-target_link_libraries(darmok LINK_PUBLIC bgfx bimg bx)
+# imgui
+include(${CMAKE_CURRENT_LIST_DIR}/CMake/imgui.cmake)
+target_link_libraries(darmok imgui)

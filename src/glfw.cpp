@@ -1,8 +1,8 @@
-#include "entry.hpp"
-#include <darmok/utils.hpp>
+#include "app.hpp"
+#include <darmok/input.hpp>
 #include <darmok/utils.hpp>
 
-#if ENTRY_CONFIG_USE_GLFW
+#if DARMOK_CONFIG_USE_GLFW
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -12,7 +12,7 @@
 #endif // GLFW_VERSION_MINOR < 2
 
 #if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#	if ENTRY_CONFIG_USE_WAYLAND
+#	if DARMOK_CONFIG_USE_WAYLAND
 #		include <wayland-egl.h>
 #		define GLFW_EXPOSE_NATIVE_WAYLAND
 #	else
@@ -43,7 +43,7 @@ namespace darmok {
 		static void* glfwNativeWindowHandle(GLFWwindow* window)
 		{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-# 		if ENTRY_CONFIG_USE_WAYLAND
+# 		if DARMOK_CONFIG_USE_WAYLAND
 			wl_egl_window* win_impl = (wl_egl_window*)glfwGetWindowUserPointer(window);
 			if (!win_impl)
 			{
@@ -71,7 +71,7 @@ namespace darmok {
 			if (!window)
 				return;
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#		if ENTRY_CONFIG_USE_WAYLAND
+#		if DARMOK_CONFIG_USE_WAYLAND
 			wl_egl_window* win_impl = (wl_egl_window*)glfwGetWindowUserPointer(window);
 			if (win_impl)
 			{
@@ -180,7 +180,10 @@ namespace darmok {
 		public:
 			Gamepad()
 				: _connected(false)
+				, _handle{ 0 }
 			{
+				_axes.fill(0);
+				_buttons.fill(0);
 			}
 
 			void update(EventQueue& eventQueue)
@@ -274,6 +277,13 @@ namespace darmok {
 			int argc;
 			const char* const* argv;
 			bool finished;
+
+			MainThreadEntry()
+				: argc(0)
+				, argv(nullptr)
+				, finished(false)
+			{
+			}
 
 			static int32_t threadFunc(bx::Thread* thread, void* userData);
 		};
@@ -1124,11 +1134,11 @@ namespace darmok {
 	void* getNativeDisplayHandle()
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#		if ENTRY_CONFIG_USE_WAYLAND
+#		if DARMOK_CONFIG_USE_WAYLAND
 		return glfwGetWaylandDisplay();
 #		else
 		return glfwGetX11Display();
-#		endif // ENTRY_CONFIG_USE_WAYLAND
+#		endif // DARMOK_CONFIG_USE_WAYLAND
 #	else
 		return NULL;
 #	endif // BX_PLATFORM_*
@@ -1137,11 +1147,11 @@ namespace darmok {
 	bgfx::NativeWindowHandleType::Enum getNativeWindowHandleType(WindowHandle _handle)
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#		if ENTRY_CONFIG_USE_WAYLAND
+#		if DARMOK_CONFIG_USE_WAYLAND
 		return bgfx::NativeWindowHandleType::Wayland;
 #		else
 		return bgfx::NativeWindowHandleType::Default;
-#		endif // ENTRY_CONFIG_USE_WAYLAND
+#		endif // DARMOK_CONFIG_USE_WAYLAND
 #	else
 		return bgfx::NativeWindowHandleType::Default;
 #	endif // BX_PLATFORM_*
@@ -1158,4 +1168,4 @@ int main(int _argc, const char* const* _argv)
 	return darmok::glfw::s_ctx.run(_argc, _argv);
 }
 
-#endif // ENTRY_CONFIG_USE_GLFW
+#endif // DARMOK_CONFIG_USE_GLFW

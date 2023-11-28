@@ -1,11 +1,10 @@
 #pragma once
 
-#include <darmok/entry.hpp>
+#include <darmok/window.hpp>
+#include <darmok/app.hpp>
 #include <darmok/input.hpp>
 
 #include <queue>
-#include <optional>
-#include <bx/filepath.h>
 
 #ifndef DARMOK_CONFIG_USE_NOOP
 #	define DARMOK_CONFIG_USE_NOOP 0
@@ -32,10 +31,6 @@
 #	define DARMOK_CONFIG_USE_NATIVE 0
 #endif // ...
 
-#ifndef DARMOK_CONFIG_MAX_WINDOWS
-#	define DARMOK_CONFIG_MAX_WINDOWS 8
-#endif // DARMOK_CONFIG_MAX_WINDOWS
-
 #if !defined(DARMOK_DEFAULT_WIDTH) && !defined(DARMOK_DEFAULT_HEIGHT)
 #	define DARMOK_DEFAULT_WIDTH  1280
 #	define DARMOK_DEFAULT_HEIGHT 720
@@ -54,8 +49,6 @@
 namespace darmok
 {
 	int main(int argc, const char* const* argv);
-
-	char keyToAscii(Key key, uint8_t modifiers);
 
 	class Event
 	{
@@ -80,10 +73,11 @@ namespace darmok
 		{
 		}
 
-		struct Result
+		enum class Result
 		{
-			bool exit;
-			std::optional<WindowHandle> resetWindow;
+			Nothing,
+			Exit,
+			Reset,
 		};
 
 		static Result process(Event& ev);
@@ -95,11 +89,11 @@ namespace darmok
 	class GamepadAxisChangedEvent final : public Event
 	{
 	public:
-		GamepadAxisChangedEvent(GamepadHandle handle, darmok::GamepadAxis axis, int32_t value);
+		GamepadAxisChangedEvent(GamepadHandle handle, GamepadAxis axis, int32_t value);
 		void process();
 	private:
 		GamepadHandle _gamepad;
-		darmok::GamepadAxis _axis;
+		GamepadAxis _axis;
 		int32_t _value;
 	};
 
@@ -197,11 +191,11 @@ namespace darmok
 	class WindowSuspendedEvent final : public Event
 	{
 	public:
-		WindowSuspendedEvent(WindowHandle window, SuspendPhase phase);
+		WindowSuspendedEvent(WindowHandle window, WindowSuspendPhase phase);
 		void process();
 	private:
 		WindowHandle _window;
-		SuspendPhase _phase;
+		WindowSuspendPhase _phase;
 	};
 
 	class FileDroppedEvent final : public Event
@@ -230,7 +224,7 @@ namespace darmok
 		void postWindowPositionChangedEvent(WindowHandle window, const WindowPosition& pos);
 		void postWindowCreatedEvent(WindowHandle window, void* nativeHandle, const WindowCreationOptions& options);
 		void postWindowDestroyedEvent(WindowHandle window);
-		void postWindowSuspendedEvent(WindowHandle window, SuspendPhase phase);
+		void postWindowSuspendedEvent(WindowHandle window, WindowSuspendPhase phase);
 		void postFileDroppedEvent(WindowHandle window, const std::string& filePath);
 
 		std::unique_ptr<Event> poll();
