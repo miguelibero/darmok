@@ -75,7 +75,8 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	void fullscreenToggleBinding()
 	{
-		toggleFullscreen(kDefaultWindowHandle);
+		auto& win = Window::get(Window::DefaultHandle);
+		win.toggleFullscreen();
 	}
 
 	uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled)
@@ -240,11 +241,8 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
 	{
-		auto width = DARMOK_DEFAULT_WIDTH;
-		auto height = DARMOK_DEFAULT_HEIGHT;
-		setWindowSize(kDefaultWindowHandle, WindowSize(width, height));
-
 		app->init(args);
+
 		bgfx::frame();
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -268,8 +266,6 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 		inputInit();
 		inputAddBindings("bindings", std::vector<InputBinding>(s_bindings));
-
-		setWindowSize(kDefaultWindowHandle, WindowSize(DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT));
 
 		auto result = ::_main_(argc, (char**)argv);
 
@@ -311,9 +307,9 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 		if(needsReset || s_needsReset)
 		{
-			WindowState& win = getWindowState(kDefaultWindowHandle);
-			bgfx::reset(win.size.width, win.size.height, getResetFlags());
-			inputSetMouseResolution(win.size);
+			auto& size = Window::get().getSize();
+			bgfx::reset(size.width, size.height, getResetFlags());
+			inputSetMouseResolution(size);
 			s_needsReset = false;
 		}
 
@@ -469,13 +465,12 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	bool WindowSizeChangedEvent::process()
 	{
-		WindowState& win = getWindowState(_window);
-		win.handle = _window;
-		if (win.size == _size)
+		auto& win = Window::get(_window);
+		if (win._size == _size)
 		{
 			return false;
 		}
-		win.size = _size;
+		win._size = _size;
 		return true;
 	}
 
@@ -493,9 +488,8 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	void WindowPositionChangedEvent::process()
 	{
-		WindowState& win = getWindowState(_window);
-		win.handle = _window;
-		win.pos = _pos;
+		auto& win = Window::get(_window);
+		win._pos = _pos;
 	}
 
 	WindowCreatedEvent::WindowCreatedEvent(WindowHandle window, void* nativeHandle, const WindowCreationOptions& options)
@@ -508,11 +502,12 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	void WindowCreatedEvent::process()
 	{
-		WindowState& win = getWindowState(_window);
-		win.handle = _window;
-		win.size = _options.size;
-		win.pos = _options.pos;
-		win.nativeHandle = _nativeHandle;
+		auto& win = Window::get(_window);
+		win._handle = _window;
+		win._size = _options.size;
+		win._pos = _options.pos;
+		win._title = _options.title;
+		win._flags = _options.flags;
 	}
 
 	WindowDestroyedEvent::WindowDestroyedEvent(WindowHandle window)
@@ -523,7 +518,12 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	void WindowDestroyedEvent::process()
 	{
-		getWindowState(_window).clear();
+		auto& win = Window::get();
+		win._handle = Window::InvalidHandle;
+		win._size = {};
+		win._pos = {};
+		win._title = {};
+		win._flags = WindowFlags::None;
 	}
 
 	WindowSuspendedEvent::WindowSuspendedEvent(WindowHandle window, WindowSuspendPhase phase)
@@ -547,8 +547,8 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 	void FileDroppedEvent::process()
 	{
 		DBG("drop file %s", _filePath.c_str());
-		WindowState& win = getWindowState(_window);
-		win.dropFile = _filePath;
+		auto& win = Window::get(_window);
+		win._dropFilePath = _filePath;
 	}
 
 
@@ -636,9 +636,10 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		setCurrentDir(std::string(basePath.getPtr(), basePath.getLength()));
 
 		bgfx::Init init;
-		init.platformData.ndt = darmok::getNativeDisplayHandle();
-		init.platformData.nwh = darmok::getNativeWindowHandle(darmok::kDefaultWindowHandle);
-		init.platformData.type = darmok::getNativeWindowHandleType(darmok::kDefaultWindowHandle);
+		auto& win = Window::get();
+		init.platformData.ndt = Window::getNativeDisplayHandle();
+		init.platformData.nwh = win.getNativeHandle();
+		init.platformData.type = win.getNativeHandleType();
 		init.resolution.reset = getResetFlags();
 		bgfx::init(init);
 
@@ -662,20 +663,21 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 			return false;
 		}
 
-		auto& win = getWindowState(darmok::kDefaultWindowHandle);
+		auto& win = Window::get();
 		bgfx::ViewId viewId = 0;
 
 		_lastMousePos = inputPopMouse();
 		_lastChar = inputPopChar();
 
-		imguiBeginFrame(darmok::kDefaultWindowHandle, _lastChar, viewId);
+		imguiBeginFrame(win.getHandle(), _lastChar, viewId);
 
 		imguiDraw();
 
 		imguiEndFrame();
 
 		// Set view 0 default viewport.
-		bgfx::setViewRect(viewId, 0, 0, uint16_t(win.size.width), uint16_t(win.size.height));
+		auto& size = win.getSize();
+		bgfx::setViewRect(viewId, 0, 0, uint16_t(size.width), uint16_t(size.height));
 
 		// This dummy draw call is here to make sure that view 0 is cleared
 		// if no other draw calls are submitted to view 0.

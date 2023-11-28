@@ -38,8 +38,9 @@
 #include "dbg.h"
 
 namespace darmok {
-	namespace glfw
-	{
+
+	namespace glfw {
+
 		static void* glfwNativeWindowHandle(GLFWwindow* window)
 		{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
@@ -84,6 +85,7 @@ namespace darmok {
 		}
 
 		static GLFWwindow* doCreateWindow(const WindowCreationOptions& options);
+		
 		void joystickCallback(int jid, int action);
 
 		static uint8_t translateKeyModifiers(int glfw)
@@ -327,8 +329,8 @@ namespace darmok {
 
 		private:
 			bx::Mutex _lock;
-			std::array<GLFWwindow*, DARMOK_CONFIG_MAX_WINDOWS> _windows;
-			bx::HandleAllocT<DARMOK_CONFIG_MAX_WINDOWS> _windowAlloc;
+			std::array<GLFWwindow*, Window::MaxWindows> _windows;
+			bx::HandleAllocT<Window::MaxWindows> _windowAlloc;
 		};
 
 
@@ -494,7 +496,7 @@ namespace darmok {
 				WindowSize size;
 				WindowPosition pos;
 			};
-			typedef std::array<NormalWindowState, DARMOK_CONFIG_MAX_WINDOWS> NormalWindowStates;
+			typedef std::array<NormalWindowState, Window::MaxWindows> NormalWindowStates;
 			static NormalWindowStates _normals;
 
 			NormalWindowState& getNormalWindowState()
@@ -1069,7 +1071,7 @@ namespace darmok {
 				auto v = options.pos;
 				glfwSetWindowPos(window, v.x, v.y);
 			}
-			if (options.flags & DARMOK_WINDOW_FLAG_ASPECT_RATIO)
+			if (options.flags & WindowFlags::AspectRatio)
 			{
 				glfwSetWindowAspectRatio(window, options.size.width, options.size.height);
 			}
@@ -1086,52 +1088,55 @@ namespace darmok {
 		}
 	}
 
-	WindowHandle createWindow(const WindowCreationOptions& options)
+	Window& Window::create(const WindowCreationOptions& options)
 	{
-		return glfw::s_ctx.pushCreateWindowCmd(options);
+		auto handle = glfw::s_ctx.pushCreateWindowCmd(options);
+		auto& win = s_windows[handle.idx];
+		win._handle = handle;
+		return win;
 	}
 
-	void destroyWindow(WindowHandle handle)
+	void Window::destroy()
 	{
-		glfw::s_ctx.pushDestroyWindowCmd(handle);
+		glfw::s_ctx.pushDestroyWindowCmd(getHandle());
 	}
 
-	void setWindowPos(WindowHandle handle, const WindowPosition& pos)
+	void Window::setPosition(const WindowPosition& pos)
 	{
-		glfw::s_ctx.pushSetWindowPositionCmd(handle, pos);
+		glfw::s_ctx.pushSetWindowPositionCmd(getHandle(), pos);
 	}
 
-	void setWindowSize(WindowHandle handle, const WindowSize& size)
+	void Window::setSize(const WindowSize& size)
 	{
-		glfw::s_ctx.pushSetWindowSizeCmd(handle, size);
+		glfw::s_ctx.pushSetWindowSizeCmd(getHandle(), size);
 	}
 
-	void setWindowTitle(WindowHandle handle, const std::string& title)
+	void Window::setTitle(const std::string& title)
 	{
-		glfw::s_ctx.pushSetWindowTitleCmd(handle, title);
+		glfw::s_ctx.pushSetWindowTitleCmd(getHandle(), title);
 	}
 
-	void setWindowFlags(WindowHandle handle, uint32_t flags, bool enabled)
+	void Window::setFlags( uint32_t flags, bool enabled)
 	{
-		glfw::s_ctx.pushSetWindowFlagsCmd(handle, flags, enabled);
+		glfw::s_ctx.pushSetWindowFlagsCmd(getHandle(), flags, enabled);
 	}
 
-	void toggleFullscreen(WindowHandle handle)
+	void Window::toggleFullscreen()
 	{
-		glfw::s_ctx.pushToggleWindowFullscreenCmd(handle);
+		glfw::s_ctx.pushToggleWindowFullscreenCmd(getHandle());
 	}
 
-	void setMouseLock(WindowHandle handle, bool lock)
+	void Window::setMouseLock(bool lock)
 	{
-		glfw::s_ctx.pushSetMouseLockToWindowCmd(handle, lock);
+		glfw::s_ctx.pushSetMouseLockToWindowCmd(getHandle(), lock);
 	}
 
-	void* getNativeWindowHandle(WindowHandle handle)
+	void* Window::getNativeHandle() const
 	{
-		return glfw::s_ctx.getNativeWindowHandle(handle);
+		return glfw::s_ctx.getNativeWindowHandle(getHandle());
 	}
 
-	void* getNativeDisplayHandle()
+	void* Window::getNativeDisplayHandle()
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
 #		if DARMOK_CONFIG_USE_WAYLAND
@@ -1144,7 +1149,7 @@ namespace darmok {
 #	endif // BX_PLATFORM_*
 	}
 
-	bgfx::NativeWindowHandleType::Enum getNativeWindowHandleType(WindowHandle _handle)
+	bgfx::NativeWindowHandleType::Enum Window::getNativeHandleType()
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
 #		if DARMOK_CONFIG_USE_WAYLAND
@@ -1163,9 +1168,9 @@ namespace darmok {
 	}
 }
 
-int main(int _argc, const char* const* _argv)
+int main(int argc, const char* const* argv)
 {
-	return darmok::glfw::s_ctx.run(_argc, _argv);
+	return darmok::glfw::s_ctx.run(argc, argv);
 }
 
 #endif // DARMOK_CONFIG_USE_GLFW

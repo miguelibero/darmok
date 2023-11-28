@@ -8,16 +8,16 @@
 #include <string>
 #include <darmok/utils.hpp>
 
-#define DARMOK_WINDOW_FLAG_NONE         UINT32_C(0x00000000)
-#define DARMOK_WINDOW_FLAG_ASPECT_RATIO UINT32_C(0x00000001)
-#define DARMOK_WINDOW_FLAG_FRAME        UINT32_C(0x00000002)
-
-#ifndef DARMOK_CONFIG_MAX_WINDOWS
-#	define DARMOK_CONFIG_MAX_WINDOWS 8
-#endif // DARMOK_CONFIG_MAX_WINDOWS
-
 namespace darmok
 {
+	class WindowCreatedEvent;
+	class WindowSizeChangedEvent;
+	class WindowPositionChangedEvent;
+	class WindowDestroyedEvent;
+	class WindowSuspendedEvent;
+	class FileDroppedEvent;
+
+	/// 
 	struct WindowHandle final
 	{
 		uint16_t idx;
@@ -33,22 +33,8 @@ namespace darmok
 		}
 	};
 
-	///
-	constexpr WindowHandle kDefaultWindowHandle = { 0 };
-
-	///
-	enum class WindowSuspendPhase
-	{
-		WillSuspend,
-		DidSuspend,
-		WillResume,
-		DidResume,
-
-		Count
-	};
-
 	/// 
-	struct WindowPosition
+	struct WindowPosition final
 	{
 		int32_t x;
 		int32_t y;
@@ -66,7 +52,7 @@ namespace darmok
 	};
 
 	/// 
-	struct WindowSize
+	struct WindowSize final
 	{
 		uint32_t width;
 		uint32_t height;
@@ -83,64 +69,125 @@ namespace darmok
 		}
 	};
 
-	/// 
-	struct WindowState
+	///
+	enum class WindowSuspendPhase
 	{
-		WindowHandle handle;
-		WindowPosition pos;
-		WindowSize size;
-		uint32_t flags;
-		void* nativeHandle;
-		bool fullScreen;
-		std::string dropFile;
+		None,
+		WillSuspend,
+		DidSuspend,
+		WillResume,
+		DidResume,
 
-		void clear();
+		Count
 	};
 
-	struct WindowCreationOptions
+	struct WindowFlags final
+	{
+		static constexpr uint32_t None = 0;
+		static constexpr uint32_t AspectRatio = 1;
+		static constexpr uint32_t Frame = 2;
+	};
+
+	///
+	struct WindowCreationOptions final
 	{
 		WindowSize size;
-		std::string title = "";
+		std::string title;
 		bool setPos;
 		WindowPosition pos;
-		uint32_t flags = DARMOK_WINDOW_FLAG_NONE;
+		uint32_t flags = WindowFlags::None;
 	};
 
-	///
-	WindowHandle createWindow(const WindowCreationOptions& options);
+	class Window final
+	{
+	public:
+		///
+		static constexpr WindowHandle DefaultHandle = { 0 };
+		static constexpr WindowHandle InvalidHandle = { UINT16_MAX };
+		static constexpr size_t MaxWindows = 8;
 
-	///
-	void destroyWindow(WindowHandle handle);
+		/// 
+		static Window& create(const WindowCreationOptions& options);
 
-	///
-	void setWindowPos(WindowHandle handle, const WindowPosition& pos);
+		/// 
+		static Window& get(const WindowHandle& handle = DefaultHandle);
 
-	///
-	void setWindowSize(WindowHandle handle, const WindowSize& size);
+		/// 
+		void destroy();
 
-	///
-	void setWindowTitle(WindowHandle handle, const std::string& title);
+		/// 
+		void setPosition(const WindowPosition& pos);
 
-	///
-	void setWindowFlags(WindowHandle handle, uint32_t flags, bool enabled);
+		///
+		void setSize(const WindowSize& size);
 
-	///
-	void toggleFullscreen(WindowHandle handle);
+		///
+		void setTitle(const std::string& title);
 
-	///
-	void setMouseLock(WindowHandle handle, bool lock);
+		///
+		void setFlags(uint32_t flags, bool enabled);
 
-	///
-	void* getNativeWindowHandle(WindowHandle handle);
+		///
+		void toggleFullscreen();
 
-	///
-	void* getNativeDisplayHandle();
+		///
+		void setMouseLock(bool lock);
 
-	///
-	bgfx::NativeWindowHandleType::Enum getNativeWindowHandleType(WindowHandle handle);
+		///
+		void* getNativeHandle() const;
 
-	///
-	WindowState& getWindowState(WindowHandle handle);
+		/// 
+		static void* getNativeDisplayHandle();
+
+		/// 
+		bgfx::NativeWindowHandleType::Enum getNativeHandleType();
+
+		///
+		const WindowPosition& getPosition() const;
+
+		///
+		const WindowSize& getSize() const;
+
+		/// 
+		const std::string& getTitle() const;
+
+		/// 
+		const WindowHandle& getHandle() const;
+
+		///
+		uint32_t getFlags() const;
+
+		/// 
+		const std::string& getDropFilePath() const;
+
+		/// 
+		WindowSuspendPhase getSuspendPhase() const;
+
+	private:
+
+		Window(const WindowHandle& handle = InvalidHandle);
+
+		WindowHandle _handle;
+		std::string _dropFilePath;
+		WindowSize _size;
+		WindowPosition _pos;
+		bool _mouseLock;
+		uint32_t _flags;
+		std::string _title;
+		WindowSuspendPhase _suspendPhase;
+
+		typedef std::array<Window, MaxWindows> WindowArray;
+
+		static WindowArray s_windows;
+
+		friend WindowArray;
+		friend WindowCreatedEvent;
+		friend WindowSizeChangedEvent;
+		friend WindowPositionChangedEvent;
+		friend WindowDestroyedEvent;
+		friend WindowSuspendedEvent;
+		friend FileDroppedEvent;
+	};
 
 } // namespace darmok
 

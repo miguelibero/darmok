@@ -407,7 +407,7 @@ namespace darmok
 			style.WindowBorderSize = 0.0f;
 		}
 
-		void beginFrame(WindowHandle window = kDefaultWindowHandle, Utf8Char inputChar = {}, bgfx::ViewId viewId = 255)
+		void beginFrame(WindowHandle handle = Window::DefaultHandle, Utf8Char inputChar = {}, bgfx::ViewId viewId = 255)
 		{
 			_viewId = viewId;
 
@@ -417,7 +417,8 @@ namespace darmok
 				io.AddInputCharacter(inputChar.data);
 			}
 
-			auto& size = getWindowState(window).size;
+			auto& win = Window::get(handle);
+			auto& size = win.getSize();
 			io.DisplaySize = ImVec2((float)size.width, (float)size.height);
 
 			const int64_t now = bx::getHPCounter();
@@ -425,7 +426,6 @@ namespace darmok
 			_last = now;
 			const double freq = double(bx::getHPFrequency());
 			io.DeltaTime = float(frameTime / freq);
-
 
 			auto& buttons = inputGetMouseButtons();
 			auto& pos = inputGetAbsoluteMouse();
