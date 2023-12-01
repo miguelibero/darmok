@@ -4,7 +4,44 @@
 
 namespace darmok
 {
-	std::array<Window, Window::MaxWindows> s_windows;
+	std::array<Window, Window::MaxAmount> s_windows;
+
+	bool WindowHandle::operator==(const WindowHandle& other) const
+	{
+		return idx == other.idx;
+	}
+
+	bool WindowHandle::operator<(const WindowHandle& other) const
+	{
+		return idx < other.idx;
+	}
+
+	bool WindowHandle::isValid() const
+	{
+		return idx < Window::MaxAmount;
+	}
+
+	WindowPosition::WindowPosition(int32_t vx, int32_t vy)
+		: x(vx)
+		, y(vy)
+	{
+	}
+
+	bool WindowPosition::operator==(const WindowPosition& other) const
+	{
+		return x == other.x && y == other.y;
+	}
+
+	WindowSize::WindowSize(int32_t vwidth , int32_t vheight)
+		: width(vwidth)
+		, height(vheight)
+	{
+	}
+
+	bool WindowSize::operator==(const WindowSize& other) const
+	{
+		return width == other.width && height == other.height;
+	}
 
 	Window::Window(const WindowHandle& handle)
 		: _handle(handle)

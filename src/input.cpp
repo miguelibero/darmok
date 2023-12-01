@@ -8,9 +8,108 @@
 #include <unordered_map>
 #include <array>
 
+#include "input.hpp"
+
 namespace darmok
 {
-	static const std::string s_keyNames[] =
+#pragma region Keyboard
+
+	Utf8Char::Utf8Char(uint32_t pdata, uint8_t plen)
+		: data(pdata)
+		, len(pdata)
+	{
+	}
+
+	uint32_t KeyboardImpl::encodeKey(bool down, uint8_t modifiers)
+	{
+		uint32_t state = 0;
+		state |= uint32_t(down ? modifiers : 0) << 16;
+		state |= uint32_t(down) << 8;
+		return state;
+	}
+
+	bool KeyboardImpl::decodeKey(uint32_t state, uint8_t& modifiers)
+	{
+		modifiers = (state >> 16) & 0xff;
+		return 0 != ((state >> 8) & 0xff);
+	}
+
+	KeyboardImpl::KeyboardImpl()
+		: _keys{}
+		, _charsRead(0)
+		, _charsWrite(0)
+	{
+	}
+
+	void KeyboardImpl::reset()
+	{
+		_keys.fill(0);
+		flush();
+	}
+
+	void KeyboardImpl::setKey(KeyboardKey key, uint8_t modifiers, bool down)
+	{
+		auto k = to_underlying(key);
+		_keys[k] = encodeKey(down, modifiers);
+	}
+
+	void KeyboardImpl::pushChar(const Utf8Char& data)
+	{
+		_chars[_charsWrite] = data;
+		_charsWrite = (_charsWrite + 1) % _chars.size();
+	}
+
+	bool KeyboardImpl::getKey(KeyboardKey key) const
+	{
+		return _keys[to_underlying(key)];
+	}
+
+	bool KeyboardImpl::getKey(KeyboardKey key, uint8_t& modifiers) const
+	{
+		return decodeKey(_keys[to_underlying(key)], modifiers);
+	}
+
+	const KeyboardKeys& KeyboardImpl::getKeys() const
+	{
+		return _keys;
+	}
+
+	uint8_t KeyboardImpl::getModifiers() const
+	{
+		uint8_t modifiers = 0;
+		constexpr auto max = (uint32_t)to_underlying(KeyboardKey::Count);
+		for (uint32_t i = 0; i < max; ++i)
+		{
+			modifiers |= (_keys[i] >> 16) & 0xff;
+		}
+		return modifiers;
+	}
+
+	Utf8Char KeyboardImpl::popChar()
+	{
+		if (_charsRead == _charsWrite)
+		{
+			return {};
+		}
+		auto v = _chars[_charsRead];
+		_charsRead = (_charsRead + 1) % _chars.size();
+		return v;
+	}
+
+	void KeyboardImpl::flush()
+	{
+		_chars.fill({});
+		_charsRead = 0;
+		_charsWrite = 0;
+	}
+
+	KeyboardImpl& KeyboardImpl::get()
+	{
+		static KeyboardImpl instance;
+		return instance;
+	}
+
+	static const std::string s_keyboardKeyNames[] =
 	{
 		"None",
 		"Esc",
@@ -98,513 +197,578 @@ namespace darmok
 		"KeyX",
 		"KeyY",
 		"KeyZ",
-		"GamepadA",
-		"GamepadB",
-		"GamepadX",
-		"GamepadY",
-		"GamepadThumbL",
-		"GamepadThumbR",
-		"GamepadShoulderL",
-		"GamepadShoulderR",
-		"GamepadUp",
-		"GamepadDown",
-		"GamepadLeft",
-		"GamepadRight",
-		"GamepadBack",
-		"GamepadStart",
-		"GamepadGuide",
 	};
-	BX_STATIC_ASSERT(to_underlying(Key::Count) == BX_COUNTOF(s_keyNames));
+	BX_STATIC_ASSERT(to_underlying(KeyboardKey::Count) == BX_COUNTOF(s_keyboardKeyNames));
 
-	const std::string& getKeyName(Key key)
+	const std::string& Keyboard::getKeyName(KeyboardKey key)
 	{
-		BX_ASSERT(key < Key::Count, "Invalid key %d.", key);
-		return s_keyNames[to_underlying(key)];
+		BX_ASSERT(key < KeyboardKey::Count, "Invalid key %d.", key);
+		return s_keyboardKeyNames[to_underlying(key)];
 	}
 
-	char keyToAscii(Key key, uint8_t modifiers)
+	char Keyboard::keyToAscii(KeyboardKey key, uint8_t modifiers)
 	{
-		const bool isAscii = (Key::Key0 <= key && key <= Key::KeyZ)
-						  || (Key::Esc  <= key && key <= Key::Minus);
+		const bool isAscii = (KeyboardKey::Key0 <= key && key <= KeyboardKey::KeyZ)
+						  || (KeyboardKey::Esc  <= key && key <= KeyboardKey::Minus);
 		if (!isAscii)
 		{
 			return '\0';
 		}
 
-		const bool isNumber = (Key::Key0 <= key && key <= Key::Key9);
+		const bool isNumber = (KeyboardKey::Key0 <= key && key <= KeyboardKey::Key9);
 		if (isNumber)
 		{
-			return '0' + char(to_underlying(key) - to_underlying(Key::Key0));
+			return '0' + char(to_underlying(key) - to_underlying(KeyboardKey::Key0));
 		}
 
-		const bool isChar = (Key::KeyA <= key && key <= Key::KeyZ);
+		const bool isChar = (KeyboardKey::KeyA <= key && key <= KeyboardKey::KeyZ);
 		if (isChar)
 		{
-			enum { ShiftMask = to_underlying(KeyModifier::LeftShift) | to_underlying(KeyModifier::RightShift) };
-
-			const bool shift = !!( modifiers & ShiftMask );
-			return (shift ? 'A' : 'a') + char(to_underlying(key) - to_underlying(Key::KeyA));
+			const bool shift = !!( modifiers & KeyboardModifiers::Shift );
+			return (shift ? 'A' : 'a') + char(to_underlying(key) - to_underlying(KeyboardKey::KeyA));
 		}
 
 		switch (key)
 		{
-		case Key::Esc:       return 0x1b;
-		case Key::Return:    return '\n';
-		case Key::Tab:       return '\t';
-		case Key::Space:     return ' ';
-		case Key::Backspace: return 0x08;
-		case Key::Plus:      return '+';
-		case Key::Minus:     return '-';
+		case KeyboardKey::Esc:       return 0x1b;
+		case KeyboardKey::Return:    return '\n';
+		case KeyboardKey::Tab:       return '\t';
+		case KeyboardKey::Space:     return ' ';
+		case KeyboardKey::Backspace: return 0x08;
+		case KeyboardKey::Plus:      return '+';
+		case KeyboardKey::Minus:     return '-';
 		default:             break;
 		}
 
 		return '\0';
 	}
 
-	class InputMouse final
+	bool Keyboard::getKey(KeyboardKey key) const
 	{
-	private:
-		NormMousePosition kDefaultNorm = { 0.0f, 0.0f, 0.0f };
+		return KeyboardImpl::get().getKey(key);
+	}
 
-	public:
+	bool Keyboard::getKey(KeyboardKey key, uint8_t& modifiers) const
+	{
+		return KeyboardImpl::get().getKey(key, modifiers);
+	}
 
-		InputMouse()
-			: _buttons{}
-			, _size{ 1280, 720 }
-			, _wheelDelta(120)
-			, _lock(false)
+	const KeyboardKeys& Keyboard::getKeys() const
+	{
+		return KeyboardImpl::get().getKeys();
+	}
+
+	uint8_t Keyboard::getModifiers() const
+	{
+		return KeyboardImpl::get().getModifiers();
+	}
+
+	Utf8Char Keyboard::popChar()
+	{
+		return KeyboardImpl::get().popChar();
+	}
+
+	void Keyboard::flush()
+	{
+		return KeyboardImpl::get().flush();
+	}
+
+#pragma endregion Keyboard
+
+#pragma region Mouse
+
+	MousePosition::MousePosition(int32_t px, int32_t py, int32_t pz)
+		: x(px)
+		, y(py)
+		, z(pz)
+	{
+	}
+
+	RelativeMousePosition::RelativeMousePosition(float px, float py, float pz)
+		: x(px)
+		, y(py)
+		, z(pz)
+	{
+	}
+
+	void MouseImpl::setResolution(const WindowSize& size)
+	{
+		_size = size;
+	}
+
+	void MouseImpl::setPosition(const MousePosition& pos)
+	{
+		_absolute = pos;
+		_relative.x = float(pos.x) / float(_size.width);
+		_relative.y = float(pos.y) / float(_size.height);
+		_relative.z = float(pos.z) / float(_wheelDelta);
+	}
+
+	void MouseImpl::setButton(MouseButton button, bool down)
+	{
+		_buttons[to_underlying(button)] = down;
+	}
+
+	MouseImpl::MouseImpl()
+		: _buttons{}
+		, _wheelDelta(120)
+		, _lock(false)
+	{
+	}
+
+	void MouseImpl::setWheelDelta(uint16_t wheelDelta)
+	{
+		_wheelDelta = wheelDelta;
+	}
+
+	bool MouseImpl::getButton(MouseButton button) const
+	{
+		return _buttons[to_underlying(button)];
+	}
+
+	RelativeMousePosition MouseImpl::popRelativePosition()
+	{
+		auto rel = _relative;
+		_relative = {};
+		return rel;
+	}
+
+	const MousePosition& MouseImpl::getPosition() const
+	{
+		return _absolute;
+	}
+
+	const MouseButtons& MouseImpl::getButtons() const
+	{
+		return _buttons;
+	}
+
+	bool MouseImpl::getLocked() const
+	{
+		return _lock;
+	}
+
+	bool MouseImpl::setLocked(bool lock)
+	{
+		if (_lock != lock)
 		{
+			_lock = lock;
+			_relative = {};
+			return true;
 		}
+		return false;
+	}
 
-		void resetNorm()
-		{
-			_norm = kDefaultNorm;
-		}
+	MouseImpl& MouseImpl::get()
+	{
+		static MouseImpl instance;
+		return instance;
+	}
 
-		void setResolution(const WindowSize& size)
-		{
-			_size = size;
-		}
-
-		void setPos(const MousePosition& pos)
-		{
-			_absolute = pos;
-			_norm.x = float(pos.x) / float(_size.width);
-			_norm.y = float(pos.y) / float(_size.height);
-			_norm.z = float(pos.z) / float(_wheelDelta);
-		}
-
-		void setButtonState(MouseButton button, bool down)
-		{
-			_buttons[to_underlying(button)] = down;
-		}
-
-		bool getButtonState(MouseButton button) const
-		{
-			return _buttons[to_underlying(button)];
-		}
-
-		const NormMousePosition& getNorm() const
-		{
-			return _norm;
-		}
-
-		NormMousePosition popNorm()
-		{
-			auto norm = _norm;
-			resetNorm();
-			return norm;
-		}
-
-		const MousePosition& getAbs() const
-		{
-			return _absolute;
-		}
-
-		const MouseButtons& getButtonStates() const
-		{
-			return _buttons;
-		}
-
-		bool isLocked() const
-		{
-			return _lock;
-		}
-
-		bool setLock(bool lock)
-		{
-			if (_lock != lock)
-			{
-				_lock = lock;
-				resetNorm();
-				return true;
-			}
-			return false;
-		}
-
-	private:
-		MousePosition _absolute;
-		NormMousePosition _norm;
-
-		MouseButtons _buttons;
-		WindowSize _size;
-		uint16_t _wheelDelta;
-		bool _lock;
+	static const std::string s_mouseButtonNames[] =
+	{
+		"None",
+		"Left",
+		"Middle",
+		"Right",
 	};
+	BX_STATIC_ASSERT(to_underlying(MouseButton::Count) == BX_COUNTOF(s_mouseButtonNames));
 
-	class InputKeyboard final
+	const std::string& Mouse::getButtonName(MouseButton button)
 	{
-	public:
+		BX_ASSERT(button < MouseButton::Count, "Invalid button %d.", button);
+		return s_mouseButtonNames[to_underlying(button)];
+	}
 
-		InputKeyboard()
-			: _charsRead(0)
-			, _charsWrite(0)
-		{
-			_keys.fill(0);
-			_once.fill(false);
-		}
-		void reset()
-		{
-			_keys.fill(0);
-			_once.fill(false);
-			charFlush();
-		}
+	void Mouse::setWheelDelta(float wheelDelta)
+	{
+		MouseImpl::get().setWheelDelta(wheelDelta);
+	}
 
-		void setKeyState(Key key, uint8_t modifiers, bool down)
-		{
-			auto k = to_underlying(key);
-			_keys[k] = encodeKeyState(modifiers, down);
-			_once[k] = false;
-		}
+	bool Mouse::getButton(MouseButton button) const
+	{
+		return MouseImpl::get().getButton(button);
+	}
 
-		bool getKeyState(Key key, uint8_t& modifiers)
-		{
-			return decodeKeyState(_keys[to_underlying(key)], modifiers);
-		}
+	RelativeMousePosition Mouse::popRelativePosition()
+	{
+		return MouseImpl::get().popRelativePosition();
+	}
 
-		bool getKeyState(Key key)
+	const MousePosition& Mouse::getPosition() const
+	{
+		return MouseImpl::get().getPosition();
+	}
+
+	const MouseButtons& Mouse::getButtons() const
+	{
+		return MouseImpl::get().getButtons();
+	}
+
+	bool Mouse::getLocked() const
+	{
+		return MouseImpl::get().getLocked();
+	}
+
+	bool Mouse::setLocked(bool lock)
+	{
+		return MouseImpl::get().setLocked(lock);
+	}
+
+#pragma endregion Mouse
+
+#pragma region Gamepad
+
+	bool GamepadHandle::operator==(const GamepadHandle& other) const
+	{
+		return idx == other.idx;
+	}
+
+	bool GamepadHandle::operator<(const GamepadHandle& other) const
+	{
+		return idx < other.idx;
+	}
+
+	bool GamepadHandle::isValid() const
+	{
+		return idx < Gamepad::MaxAmount;
+	}
+
+	GamepadImpl::GamepadImpl()
+		: _connected(false)
+		, _axes{}
+		, _buttons{}
+	{
+	}
+
+	void GamepadImpl::reset()
+	{
+		_axes.fill(0);
+		_buttons.fill(false);
+		_connected = false;
+	}
+
+	void GamepadImpl::setAxis(GamepadAxis axis, int32_t value)
+	{
+		_axes[to_underlying(axis)] = value;
+	}
+
+	void GamepadImpl::setButton(GamepadButton button, bool down)
+	{
+		_buttons[to_underlying(button)] = down;
+	}
+
+	void GamepadImpl::setConnected(bool connected)
+	{
+		_connected = connected;
+	}
+
+	int32_t GamepadImpl::getAxis(GamepadAxis key) const
+	{
+		return _axes[to_underlying(key)];
+	}
+
+	bool GamepadImpl::getButton(GamepadButton button) const
+	{
+		return _buttons[to_underlying(button)];
+	}
+
+	const GamepadButtons& GamepadImpl::getButtons() const
+	{
+		return _buttons;
+	}
+
+	const GamepadAxes& GamepadImpl::getAxes() const
+	{
+		return _axes;
+	}
+
+	bool GamepadImpl::getConnected() const
+	{
+		return _connected;
+	}
+
+	GamepadImpl& GamepadImpl::get(const GamepadHandle& handle)
+	{
+		static Container instances;
+		return instances[handle.idx];
+	}
+
+	static const std::string s_gamepadButtonNames[] =
+	{
+		"None",
+		"A",
+		"B",
+		"X",
+		"Y",
+		"ThumbL",
+		"ThumbR",
+		"ShoulderL",
+		"ShoulderR",
+		"Up",
+		"Down",
+		"Left",
+		"Right",
+		"Back",
+		"Start",
+		"Guide",
+	};
+	BX_STATIC_ASSERT(to_underlying(GamepadButton::Count) == BX_COUNTOF(s_gamepadButtonNames));
+
+	Gamepad::Gamepad()
+		: _handle(Gamepad::InvalidHandle)
+	{
+	}
+
+	void Gamepad::setHandle(const GamepadHandle& handle)
+	{
+		_handle = handle;
+	}
+
+	const std::string& Gamepad::getButtonName(GamepadButton button)
+	{
+		BX_ASSERT(button < GamepadButton::Count, "Invalid button %d.", button);
+		return s_gamepadButtonNames[to_underlying(button)];
+	}
+
+	int32_t Gamepad::getAxis(GamepadAxis key) const
+	{
+		return GamepadImpl::get(_handle).getAxis(key);
+	}
+
+	bool Gamepad::getButton(GamepadButton button) const
+	{
+		return GamepadImpl::get(_handle).getButton(button);
+	}
+
+	const GamepadButtons& Gamepad::getButtons() const
+	{
+		return GamepadImpl::get(_handle).getButtons();
+	}
+
+	bool Gamepad::getConnected() const
+	{
+		return GamepadImpl::get(_handle).getConnected();
+	}
+
+#pragma endregion Gamepad
+
+#pragma region Input
+
+	size_t InputBinding::hashKey(const InputBindingKey& key)
+	{
+		if (auto v = std::get_if<KeyboardInputBinding>(&key))
+		{
+			return to_underlying(v->key) | v->modifiers;
+		}
+		if (auto v = std::get_if<MouseInputBinding>(&key))
+		{
+			return KeyboardModifiers::Max + to_underlying(v->button);
+		}
+		if (auto v = std::get_if<GamepadInputBinding>(&key))
+		{
+			auto h = to_underlying(v->button) >> v->gamepad.idx;
+			return KeyboardModifiers::Max + to_underlying(MouseButton::Count) + h;
+		}
+		return 0;
+	}
+
+	InputImpl::InputImpl()
+		: _gamepads{}
+	{
+		GamepadHandle handle{ 0 };
+		for (auto& gamepad : getGamepads())
+		{
+			gamepad.setHandle(handle);
+			handle.idx++;
+		}
+	}
+
+	bool InputImpl::bindingTriggered(InputBinding& binding)
+	{
+		if (auto v = std::get_if<KeyboardInputBinding>(&binding.key))
 		{
 			uint8_t modifiers;
-			return getKeyState(key, modifiers);
-		}
-
-		uint8_t getModifiersState()
-		{
-			uint8_t modifiers = 0;
-			constexpr auto max = (uint32_t)to_underlying(Key::Count);
-			for (uint32_t i = 0; i < max; ++i)
+			if (!getKeyboard().getKey(v->key, modifiers))
 			{
-				modifiers |= (_keys[i] >> 16) & 0xff;
+				return false;
 			}
-			return modifiers;
+			return modifiers == v->modifiers;
 		}
-
-		void pushChar(const Utf8Char& v)
+		if (auto v = std::get_if<MouseInputBinding>(&binding.key))
 		{
-			_chars[_charsWrite] = v;
-			_charsWrite = (_charsWrite + 1) % _chars.size();
+			return getMouse().getButton(v->button);
 		}
-
-		Utf8Char popChar()
+		if (auto v = std::get_if<GamepadInputBinding>(&binding.key))
 		{
-			if (_charsRead == _charsWrite)
+			if (v->gamepad.isValid())
 			{
-				return {};
-			}
-			auto v = _chars[_charsRead];
-			_charsRead = (_charsRead + 1) % _chars.size();
-			return v;
-		}
-
-		static uint32_t encodeKeyState(uint8_t modifiers, bool down)
-		{
-			uint32_t state = 0;
-			state |= uint32_t(down ? modifiers : 0) << 16;
-			state |= uint32_t(down) << 8;
-			return state;
-		}
-
-		static bool decodeKeyState(uint32_t state, uint8_t& modifiers)
-		{
-			modifiers = (state >> 16) & 0xff;
-			return 0 != ((state >> 8) & 0xff);
-		}
-
-		void charFlush()
-		{
-			_chars.fill({});
-			_charsRead = 0;
-			_charsWrite = 0;
-		}
-
-		void processBinding(const InputBinding& binding)
-		{
-			uint8_t modifiers;
-			auto k = to_underlying(binding.key);
-			bool down = decodeKeyState(_keys[k], modifiers);
-
-			if (binding.once)
-			{
-				if (down)
-				{
-					if (modifiers == binding.modifiers
-						&& !_once[k])
-					{
-						if (binding.fn != nullptr)
-						{
-							binding.fn();
-						}
-						_once[k] = true;
-					}
-				}
-				else
-				{
-					_once[k] = false;
-				}
+				return getGamepad(v->gamepad).getButton(v->button);
 			}
 			else
 			{
-				if (down
-					&& modifiers == binding.modifiers)
+				for (auto& gamepad : getGamepads())
+				{
+					if (gamepad.getButton(v->button))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	void InputImpl::processBinding(InputBinding& binding)
+	{
+		bool triggered = bindingTriggered(binding);
+		if (binding.once)
+		{
+			auto keyHash = InputBinding::hashKey(binding.key);
+			if (triggered)
+			{
+				auto itr = _bindingOnce.find(keyHash);
+				if (itr == _bindingOnce.end() || itr->second == false)
 				{
 					if (binding.fn != nullptr)
 					{
 						binding.fn();
 					}
+					_bindingOnce[keyHash] = true;
 				}
 			}
-		}
-
-	private:
-
-		std::array<uint32_t, 256> _keys;
-		std::array<bool, 256> _once;
-		std::array<Utf8Char, 256> _chars;
-	
-		size_t _charsRead;
-		size_t _charsWrite;
-	};
-
-	class InputGamepad final
-	{
-	public:
-		InputGamepad()
-		{
-			reset();
-		}
-
-		void reset()
-		{
-			_axis.fill(0);
-		}
-
-		void setAxis(GamepadAxis key, int32_t value)
-		{
-			_axis[to_underlying(key)] = value;
-		}
-
-		int32_t getAxis(GamepadAxis key)
-		{
-			return _axis[to_underlying(key)];
-		}
-
-	private:
-		std::array<int32_t, to_underlying(GamepadAxis::Count)> _axis;
-	};
-
-	class Input final
-	{
-	public:
-		Input()
-		{
-			reset();
-		}
-
-		~Input()
-		{
-		}
-
-		void addBindings(const std::string& name, std::vector<InputBinding>&& value)
-		{
-			auto it = _bindings.find(name);
-			_bindings.insert(it, std::make_pair(name, std::move(value)));
-		}
-
-		void removeBindings(const std::string& name)
-		{
-			auto it = _bindings.find(name);
-			if (it != _bindings.end())
+			else
 			{
-				_bindings.erase(it);
+				_bindingOnce[keyHash] = false;
 			}
 		}
-
-		void process()
+		else if (triggered)
 		{
-			for(auto& elm : _bindings)
+			if (binding.fn != nullptr)
 			{
-				for (auto& binding : elm.second)
-				{
-					_keyboard.processBinding(binding);
-				}
+				binding.fn();
 			}
 		}
+	}
 
-		void reset()
+	void InputImpl::process()
+	{
+		for (auto& elm : _bindings)
 		{
-			_mouse.resetNorm();
-			_keyboard.reset();
-			for(auto& gamepad : _gamepads)
+			for (auto& binding : elm.second)
 			{
-				gamepad.reset();
+				processBinding(binding);
 			}
 		}
+	}
 
-		InputKeyboard& getKeyboard()
+	void InputImpl::reset()
+	{
+		_bindingOnce.clear();
+	}
+
+	void InputImpl::addBindings(const std::string& name, std::vector<InputBinding>&& bindings)
+	{
+		auto it = _bindings.find(name);
+		_bindings.insert(it, std::make_pair(name, std::move(bindings)));
+	}
+
+	void InputImpl::removeBindings(const std::string& name)
+	{
+		auto it = _bindings.find(name);
+		if (it != _bindings.end())
 		{
-			return _keyboard;
+			_bindings.erase(it);
 		}
-
-		const InputKeyboard& getKeyboard() const
-		{
-			return _keyboard;
-		}
-
-		InputMouse& getMouse()
-		{
-			return _mouse;
-		}
-
-		const InputMouse& getMouse() const
-		{
-			return _mouse;
-		}
-
-		InputGamepad& getGamepad(size_t k)
-		{
-			return _gamepads[k];
-		}
-
-		const InputGamepad& getGamepad(size_t k) const
-		{
-			return _gamepads[k];
-		}
-
-	private:
-		typedef std::unordered_map<std::string, std::vector<InputBinding>> BindingMap;
-		BindingMap _bindings;
-		InputKeyboard _keyboard;
-		InputMouse _mouse;
-		std::array<InputGamepad, DARMOK_CONFIG_MAX_GAMEPADS> _gamepads;
-	};
-
-	static Input input;
-
-	void inputInit()
-	{
 	}
 
-	void inputShutdown()
+	Keyboard& InputImpl::getKeyboard()
 	{
+		return _keyboard;
 	}
 
-	void inputAddBindings(const std::string& name, std::vector<InputBinding>&& bindings)
+	Mouse& InputImpl::getMouse()
 	{
-		input.addBindings(name, std::move(bindings));
+		return _mouse;
 	}
 
-	void inputRemoveBindings(const std::string& name)
+	Gamepad& InputImpl::getGamepad(const GamepadHandle& handle)
 	{
-		input.removeBindings(name);
+		return _gamepads[handle.idx];
 	}
 
-	void inputProcess()
+	Gamepads& InputImpl::getGamepads()
 	{
-		input.process();
+		return _gamepads;
 	}
 
-	void inputSetMouseResolution(const WindowSize& size)
+	InputImpl& InputImpl::get()
 	{
-		input.getMouse().setResolution(size);
+		static InputImpl instance;
+		return instance;
 	}
 
-	void inputSetKeyState(Key key, uint8_t modifiers, bool down)
+	void Input::addBindings(const std::string& name, std::vector<InputBinding>&& value)
 	{
-		input.getKeyboard().setKeyState(key, modifiers, down);
+		InputImpl::get().addBindings(name, std::move(value));
 	}
 
-	bool inputGetKeyState(Key key, uint8_t modifiers)
+	void Input::removeBindings(const std::string& name)
 	{
-		return input.getKeyboard().getKeyState(key, modifiers);
+		InputImpl::get().removeBindings(name);
 	}
 
-	uint8_t inputGetModifiersState()
+	void Input::process()
 	{
-		return input.getKeyboard().getModifiersState();
+		InputImpl::get().process();
 	}
 
-	void inputPushChar(const Utf8Char& data)
+	Keyboard& Input::getKeyboard()
 	{
-		input.getKeyboard().pushChar(data);
+		return InputImpl::get().getKeyboard();
 	}
 
-	Utf8Char inputPopChar()
+	const Keyboard& Input::getKeyboard() const
 	{
-		return input.getKeyboard().popChar();
+		return InputImpl::get().getKeyboard();
 	}
 
-	void inputCharFlush()
+	Mouse& Input::getMouse()
 	{
-		input.getKeyboard().charFlush();
+		return InputImpl::get().getMouse();
 	}
 
-	void inputSetMousePos(const MousePosition& v)
+	const Mouse& Input::getMouse() const
 	{
-		input.getMouse().setPos(v);
+		return InputImpl::get().getMouse();
 	}
 
-	void inputSetMouseButtonState(MouseButton button, bool down)
+	Gamepad& Input::getGamepad(const GamepadHandle& handle)
 	{
-		input.getMouse().setButtonState(button, down);
+		return InputImpl::get().getGamepad(handle);
 	}
 
-	bool inputGetMouseButtonState(MouseButton button)
+	const Gamepad& Input::getGamepad(const GamepadHandle& handle) const
 	{
-		return input.getMouse().getButtonState(button);
+		return InputImpl::get().getGamepad(handle);
 	}
 
-	const MousePosition& inputGetAbsoluteMouse()
+	Gamepads& Input::getGamepads()
 	{
-		return input.getMouse().getAbs();
+		return InputImpl::get().getGamepads();
 	}
 
-	const NormMousePosition& inputPopMouse()
+	const Gamepads& Input::getGamepads() const
 	{
-		return input.getMouse().popNorm();
+		return InputImpl::get().getGamepads();
 	}
 
-	const MouseButtons& inputGetMouseButtons()
+	Input& Input::get()
 	{
-		return input.getMouse().getButtonStates();
+		static Input instance;
+		return instance;
 	}
 
-	bool inputIsMouseLocked()
-	{
-		return input.getMouse().isLocked();
-	}
+#pragma endregion Input
 
-	void inputSetMouseLock(bool lock)
-	{
-		input.getMouse().setLock(lock);
-	}
-
-	void inputSetGamepadAxis(GamepadHandle handle, GamepadAxis axis, int32_t value)
-	{
-		input.getGamepad(handle.idx).setAxis(axis, value);
-	}
-
-	int32_t inputGetGamepadAxis(GamepadHandle handle, GamepadAxis axis)
-	{
-		return input.getGamepad(handle.idx).getAxis(axis);
-	}
 }

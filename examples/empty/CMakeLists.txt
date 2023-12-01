@@ -21,5 +21,5 @@ target_compile_definitions(
   ${PROJECT_NAME}
   PRIVATE "-DDARMOK_CONFIG_IMPLEMENT_MAIN=1"
 )
-
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 target_link_libraries (${PROJECT_NAME} LINK_PUBLIC darmok)

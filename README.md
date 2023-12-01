@@ -24,6 +24,8 @@ Pending tasks
 ====
 WARNING: currently in early stages of development
 
+* scene hierarchy
+* spritesheet loading
 * spine loading
 * assimp importing
 * wren

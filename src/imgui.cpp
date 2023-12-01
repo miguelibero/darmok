@@ -198,116 +198,116 @@ namespace darmok
 
 			io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
-			for (int32_t i = 0; i < (int32_t)Key::Count; ++i)
+			for (int32_t i = 0; i < (int32_t)KeyboardKey::Count; ++i)
 			{
-				_keyMap[i] = ImGuiKey_None;
+				_keyboardMap[i] = ImGuiKey_None;
 			}
 
-			_keyMap[to_underlying(Key::Esc)] = ImGuiKey_Escape;
-			_keyMap[to_underlying(Key::Return)] = ImGuiKey_Enter;
-			_keyMap[to_underlying(Key::Tab)] = ImGuiKey_Tab;
-			_keyMap[to_underlying(Key::Space)] = ImGuiKey_Space;
-			_keyMap[to_underlying(Key::Backspace)] = ImGuiKey_Backspace;
-			_keyMap[to_underlying(Key::Up)] = ImGuiKey_UpArrow;
-			_keyMap[to_underlying(Key::Down)] = ImGuiKey_DownArrow;
-			_keyMap[to_underlying(Key::Left)] = ImGuiKey_LeftArrow;
-			_keyMap[to_underlying(Key::Right)] = ImGuiKey_RightArrow;
-			_keyMap[to_underlying(Key::Insert)] = ImGuiKey_Insert;
-			_keyMap[to_underlying(Key::Delete)] = ImGuiKey_Delete;
-			_keyMap[to_underlying(Key::Home)] = ImGuiKey_Home;
-			_keyMap[to_underlying(Key::End)] = ImGuiKey_End;
-			_keyMap[to_underlying(Key::PageUp)] = ImGuiKey_PageUp;
-			_keyMap[to_underlying(Key::PageDown)] = ImGuiKey_PageDown;
-			_keyMap[to_underlying(Key::Print)] = ImGuiKey_PrintScreen;
-			_keyMap[to_underlying(Key::Plus)] = ImGuiKey_Equal;
-			_keyMap[to_underlying(Key::Minus)] = ImGuiKey_Minus;
-			_keyMap[to_underlying(Key::LeftBracket)] = ImGuiKey_LeftBracket;
-			_keyMap[to_underlying(Key::RightBracket)] = ImGuiKey_RightBracket;
-			_keyMap[to_underlying(Key::Semicolon)] = ImGuiKey_Semicolon;
-			_keyMap[to_underlying(Key::Quote)] = ImGuiKey_Apostrophe;
-			_keyMap[to_underlying(Key::Comma)] = ImGuiKey_Comma;
-			_keyMap[to_underlying(Key::Period)] = ImGuiKey_Period;
-			_keyMap[to_underlying(Key::Slash)] = ImGuiKey_Slash;
-			_keyMap[to_underlying(Key::Backslash)] = ImGuiKey_Backslash;
-			_keyMap[to_underlying(Key::Tilde)] = ImGuiKey_GraveAccent;
-			_keyMap[to_underlying(Key::F1)] = ImGuiKey_F1;
-			_keyMap[to_underlying(Key::F2)] = ImGuiKey_F2;
-			_keyMap[to_underlying(Key::F3)] = ImGuiKey_F3;
-			_keyMap[to_underlying(Key::F4)] = ImGuiKey_F4;
-			_keyMap[to_underlying(Key::F5)] = ImGuiKey_F5;
-			_keyMap[to_underlying(Key::F6)] = ImGuiKey_F6;
-			_keyMap[to_underlying(Key::F7)] = ImGuiKey_F7;
-			_keyMap[to_underlying(Key::F8)] = ImGuiKey_F8;
-			_keyMap[to_underlying(Key::F9)] = ImGuiKey_F9;
-			_keyMap[to_underlying(Key::F10)] = ImGuiKey_F10;
-			_keyMap[to_underlying(Key::F11)] = ImGuiKey_F11;
-			_keyMap[to_underlying(Key::F12)] = ImGuiKey_F12;
-			_keyMap[to_underlying(Key::NumPad0)] = ImGuiKey_Keypad0;
-			_keyMap[to_underlying(Key::NumPad1)] = ImGuiKey_Keypad1;
-			_keyMap[to_underlying(Key::NumPad2)] = ImGuiKey_Keypad2;
-			_keyMap[to_underlying(Key::NumPad3)] = ImGuiKey_Keypad3;
-			_keyMap[to_underlying(Key::NumPad4)] = ImGuiKey_Keypad4;
-			_keyMap[to_underlying(Key::NumPad5)] = ImGuiKey_Keypad5;
-			_keyMap[to_underlying(Key::NumPad6)] = ImGuiKey_Keypad6;
-			_keyMap[to_underlying(Key::NumPad7)] = ImGuiKey_Keypad7;
-			_keyMap[to_underlying(Key::NumPad8)] = ImGuiKey_Keypad8;
-			_keyMap[to_underlying(Key::NumPad9)] = ImGuiKey_Keypad9;
-			_keyMap[to_underlying(Key::Key0)] = ImGuiKey_0;
-			_keyMap[to_underlying(Key::Key1)] = ImGuiKey_1;
-			_keyMap[to_underlying(Key::Key2)] = ImGuiKey_2;
-			_keyMap[to_underlying(Key::Key3)] = ImGuiKey_3;
-			_keyMap[to_underlying(Key::Key4)] = ImGuiKey_4;
-			_keyMap[to_underlying(Key::Key5)] = ImGuiKey_5;
-			_keyMap[to_underlying(Key::Key6)] = ImGuiKey_6;
-			_keyMap[to_underlying(Key::Key7)] = ImGuiKey_7;
-			_keyMap[to_underlying(Key::Key8)] = ImGuiKey_8;
-			_keyMap[to_underlying(Key::Key9)] = ImGuiKey_9;
-			_keyMap[to_underlying(Key::KeyA)] = ImGuiKey_A;
-			_keyMap[to_underlying(Key::KeyB)] = ImGuiKey_B;
-			_keyMap[to_underlying(Key::KeyC)] = ImGuiKey_C;
-			_keyMap[to_underlying(Key::KeyD)] = ImGuiKey_D;
-			_keyMap[to_underlying(Key::KeyE)] = ImGuiKey_E;
-			_keyMap[to_underlying(Key::KeyF)] = ImGuiKey_F;
-			_keyMap[to_underlying(Key::KeyG)] = ImGuiKey_G;
-			_keyMap[to_underlying(Key::KeyH)] = ImGuiKey_H;
-			_keyMap[to_underlying(Key::KeyI)] = ImGuiKey_I;
-			_keyMap[to_underlying(Key::KeyJ)] = ImGuiKey_J;
-			_keyMap[to_underlying(Key::KeyK)] = ImGuiKey_K;
-			_keyMap[to_underlying(Key::KeyL)] = ImGuiKey_L;
-			_keyMap[to_underlying(Key::KeyM)] = ImGuiKey_M;
-			_keyMap[to_underlying(Key::KeyN)] = ImGuiKey_N;
-			_keyMap[to_underlying(Key::KeyO)] = ImGuiKey_O;
-			_keyMap[to_underlying(Key::KeyP)] = ImGuiKey_P;
-			_keyMap[to_underlying(Key::KeyQ)] = ImGuiKey_Q;
-			_keyMap[to_underlying(Key::KeyR)] = ImGuiKey_R;
-			_keyMap[to_underlying(Key::KeyS)] = ImGuiKey_S;
-			_keyMap[to_underlying(Key::KeyT)] = ImGuiKey_T;
-			_keyMap[to_underlying(Key::KeyU)] = ImGuiKey_U;
-			_keyMap[to_underlying(Key::KeyV)] = ImGuiKey_V;
-			_keyMap[to_underlying(Key::KeyW)] = ImGuiKey_W;
-			_keyMap[to_underlying(Key::KeyX)] = ImGuiKey_X;
-			_keyMap[to_underlying(Key::KeyY)] = ImGuiKey_Y;
-			_keyMap[to_underlying(Key::KeyZ)] = ImGuiKey_Z;
+			_keyboardMap[to_underlying(KeyboardKey::Esc)] = ImGuiKey_Escape;
+			_keyboardMap[to_underlying(KeyboardKey::Return)] = ImGuiKey_Enter;
+			_keyboardMap[to_underlying(KeyboardKey::Tab)] = ImGuiKey_Tab;
+			_keyboardMap[to_underlying(KeyboardKey::Space)] = ImGuiKey_Space;
+			_keyboardMap[to_underlying(KeyboardKey::Backspace)] = ImGuiKey_Backspace;
+			_keyboardMap[to_underlying(KeyboardKey::Up)] = ImGuiKey_UpArrow;
+			_keyboardMap[to_underlying(KeyboardKey::Down)] = ImGuiKey_DownArrow;
+			_keyboardMap[to_underlying(KeyboardKey::Left)] = ImGuiKey_LeftArrow;
+			_keyboardMap[to_underlying(KeyboardKey::Right)] = ImGuiKey_RightArrow;
+			_keyboardMap[to_underlying(KeyboardKey::Insert)] = ImGuiKey_Insert;
+			_keyboardMap[to_underlying(KeyboardKey::Delete)] = ImGuiKey_Delete;
+			_keyboardMap[to_underlying(KeyboardKey::Home)] = ImGuiKey_Home;
+			_keyboardMap[to_underlying(KeyboardKey::End)] = ImGuiKey_End;
+			_keyboardMap[to_underlying(KeyboardKey::PageUp)] = ImGuiKey_PageUp;
+			_keyboardMap[to_underlying(KeyboardKey::PageDown)] = ImGuiKey_PageDown;
+			_keyboardMap[to_underlying(KeyboardKey::Print)] = ImGuiKey_PrintScreen;
+			_keyboardMap[to_underlying(KeyboardKey::Plus)] = ImGuiKey_Equal;
+			_keyboardMap[to_underlying(KeyboardKey::Minus)] = ImGuiKey_Minus;
+			_keyboardMap[to_underlying(KeyboardKey::LeftBracket)] = ImGuiKey_LeftBracket;
+			_keyboardMap[to_underlying(KeyboardKey::RightBracket)] = ImGuiKey_RightBracket;
+			_keyboardMap[to_underlying(KeyboardKey::Semicolon)] = ImGuiKey_Semicolon;
+			_keyboardMap[to_underlying(KeyboardKey::Quote)] = ImGuiKey_Apostrophe;
+			_keyboardMap[to_underlying(KeyboardKey::Comma)] = ImGuiKey_Comma;
+			_keyboardMap[to_underlying(KeyboardKey::Period)] = ImGuiKey_Period;
+			_keyboardMap[to_underlying(KeyboardKey::Slash)] = ImGuiKey_Slash;
+			_keyboardMap[to_underlying(KeyboardKey::Backslash)] = ImGuiKey_Backslash;
+			_keyboardMap[to_underlying(KeyboardKey::Tilde)] = ImGuiKey_GraveAccent;
+			_keyboardMap[to_underlying(KeyboardKey::F1)] = ImGuiKey_F1;
+			_keyboardMap[to_underlying(KeyboardKey::F2)] = ImGuiKey_F2;
+			_keyboardMap[to_underlying(KeyboardKey::F3)] = ImGuiKey_F3;
+			_keyboardMap[to_underlying(KeyboardKey::F4)] = ImGuiKey_F4;
+			_keyboardMap[to_underlying(KeyboardKey::F5)] = ImGuiKey_F5;
+			_keyboardMap[to_underlying(KeyboardKey::F6)] = ImGuiKey_F6;
+			_keyboardMap[to_underlying(KeyboardKey::F7)] = ImGuiKey_F7;
+			_keyboardMap[to_underlying(KeyboardKey::F8)] = ImGuiKey_F8;
+			_keyboardMap[to_underlying(KeyboardKey::F9)] = ImGuiKey_F9;
+			_keyboardMap[to_underlying(KeyboardKey::F10)] = ImGuiKey_F10;
+			_keyboardMap[to_underlying(KeyboardKey::F11)] = ImGuiKey_F11;
+			_keyboardMap[to_underlying(KeyboardKey::F12)] = ImGuiKey_F12;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad0)] = ImGuiKey_Keypad0;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad1)] = ImGuiKey_Keypad1;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad2)] = ImGuiKey_Keypad2;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad3)] = ImGuiKey_Keypad3;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad4)] = ImGuiKey_Keypad4;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad5)] = ImGuiKey_Keypad5;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad6)] = ImGuiKey_Keypad6;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad7)] = ImGuiKey_Keypad7;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad8)] = ImGuiKey_Keypad8;
+			_keyboardMap[to_underlying(KeyboardKey::NumPad9)] = ImGuiKey_Keypad9;
+			_keyboardMap[to_underlying(KeyboardKey::Key0)] = ImGuiKey_0;
+			_keyboardMap[to_underlying(KeyboardKey::Key1)] = ImGuiKey_1;
+			_keyboardMap[to_underlying(KeyboardKey::Key2)] = ImGuiKey_2;
+			_keyboardMap[to_underlying(KeyboardKey::Key3)] = ImGuiKey_3;
+			_keyboardMap[to_underlying(KeyboardKey::Key4)] = ImGuiKey_4;
+			_keyboardMap[to_underlying(KeyboardKey::Key5)] = ImGuiKey_5;
+			_keyboardMap[to_underlying(KeyboardKey::Key6)] = ImGuiKey_6;
+			_keyboardMap[to_underlying(KeyboardKey::Key7)] = ImGuiKey_7;
+			_keyboardMap[to_underlying(KeyboardKey::Key8)] = ImGuiKey_8;
+			_keyboardMap[to_underlying(KeyboardKey::Key9)] = ImGuiKey_9;
+			_keyboardMap[to_underlying(KeyboardKey::KeyA)] = ImGuiKey_A;
+			_keyboardMap[to_underlying(KeyboardKey::KeyB)] = ImGuiKey_B;
+			_keyboardMap[to_underlying(KeyboardKey::KeyC)] = ImGuiKey_C;
+			_keyboardMap[to_underlying(KeyboardKey::KeyD)] = ImGuiKey_D;
+			_keyboardMap[to_underlying(KeyboardKey::KeyE)] = ImGuiKey_E;
+			_keyboardMap[to_underlying(KeyboardKey::KeyF)] = ImGuiKey_F;
+			_keyboardMap[to_underlying(KeyboardKey::KeyG)] = ImGuiKey_G;
+			_keyboardMap[to_underlying(KeyboardKey::KeyH)] = ImGuiKey_H;
+			_keyboardMap[to_underlying(KeyboardKey::KeyI)] = ImGuiKey_I;
+			_keyboardMap[to_underlying(KeyboardKey::KeyJ)] = ImGuiKey_J;
+			_keyboardMap[to_underlying(KeyboardKey::KeyK)] = ImGuiKey_K;
+			_keyboardMap[to_underlying(KeyboardKey::KeyL)] = ImGuiKey_L;
+			_keyboardMap[to_underlying(KeyboardKey::KeyM)] = ImGuiKey_M;
+			_keyboardMap[to_underlying(KeyboardKey::KeyN)] = ImGuiKey_N;
+			_keyboardMap[to_underlying(KeyboardKey::KeyO)] = ImGuiKey_O;
+			_keyboardMap[to_underlying(KeyboardKey::KeyP)] = ImGuiKey_P;
+			_keyboardMap[to_underlying(KeyboardKey::KeyQ)] = ImGuiKey_Q;
+			_keyboardMap[to_underlying(KeyboardKey::KeyR)] = ImGuiKey_R;
+			_keyboardMap[to_underlying(KeyboardKey::KeyS)] = ImGuiKey_S;
+			_keyboardMap[to_underlying(KeyboardKey::KeyT)] = ImGuiKey_T;
+			_keyboardMap[to_underlying(KeyboardKey::KeyU)] = ImGuiKey_U;
+			_keyboardMap[to_underlying(KeyboardKey::KeyV)] = ImGuiKey_V;
+			_keyboardMap[to_underlying(KeyboardKey::KeyW)] = ImGuiKey_W;
+			_keyboardMap[to_underlying(KeyboardKey::KeyX)] = ImGuiKey_X;
+			_keyboardMap[to_underlying(KeyboardKey::KeyY)] = ImGuiKey_Y;
+			_keyboardMap[to_underlying(KeyboardKey::KeyZ)] = ImGuiKey_Z;
 
 			io.ConfigFlags |= 0
 				| ImGuiConfigFlags_NavEnableGamepad
 				| ImGuiConfigFlags_NavEnableKeyboard
 				;
 
-			_keyMap[to_underlying(Key::GamepadStart)] = ImGuiKey_GamepadStart;
-			_keyMap[to_underlying(Key::GamepadBack)] = ImGuiKey_GamepadBack;
-			_keyMap[to_underlying(Key::GamepadY)] = ImGuiKey_GamepadFaceUp;
-			_keyMap[to_underlying(Key::GamepadA)] = ImGuiKey_GamepadFaceDown;
-			_keyMap[to_underlying(Key::GamepadX)] = ImGuiKey_GamepadFaceLeft;
-			_keyMap[to_underlying(Key::GamepadB)] = ImGuiKey_GamepadFaceRight;
-			_keyMap[to_underlying(Key::GamepadUp)] = ImGuiKey_GamepadDpadUp;
-			_keyMap[to_underlying(Key::GamepadDown)] = ImGuiKey_GamepadDpadDown;
-			_keyMap[to_underlying(Key::GamepadLeft)] = ImGuiKey_GamepadDpadLeft;
-			_keyMap[to_underlying(Key::GamepadRight)] = ImGuiKey_GamepadDpadRight;
-			_keyMap[to_underlying(Key::GamepadShoulderL)] = ImGuiKey_GamepadL1;
-			_keyMap[to_underlying(Key::GamepadShoulderR)] = ImGuiKey_GamepadR1;
-			_keyMap[to_underlying(Key::GamepadThumbL)] = ImGuiKey_GamepadL3;
-			_keyMap[to_underlying(Key::GamepadThumbR)] = ImGuiKey_GamepadR3;
+			_gamepadMap[to_underlying(GamepadButton::Start)] = ImGuiKey_GamepadStart;
+			_gamepadMap[to_underlying(GamepadButton::Back)] = ImGuiKey_GamepadBack;
+			_gamepadMap[to_underlying(GamepadButton::Y)] = ImGuiKey_GamepadFaceUp;
+			_gamepadMap[to_underlying(GamepadButton::A)] = ImGuiKey_GamepadFaceDown;
+			_gamepadMap[to_underlying(GamepadButton::X)] = ImGuiKey_GamepadFaceLeft;
+			_gamepadMap[to_underlying(GamepadButton::B)] = ImGuiKey_GamepadFaceRight;
+			_gamepadMap[to_underlying(GamepadButton::Up)] = ImGuiKey_GamepadDpadUp;
+			_gamepadMap[to_underlying(GamepadButton::Down)] = ImGuiKey_GamepadDpadDown;
+			_gamepadMap[to_underlying(GamepadButton::Left)] = ImGuiKey_GamepadDpadLeft;
+			_gamepadMap[to_underlying(GamepadButton::Right)] = ImGuiKey_GamepadDpadRight;
+			_gamepadMap[to_underlying(GamepadButton::ShoulderL)] = ImGuiKey_GamepadL1;
+			_gamepadMap[to_underlying(GamepadButton::ShoulderR)] = ImGuiKey_GamepadR1;
+			_gamepadMap[to_underlying(GamepadButton::ThumbL)] = ImGuiKey_GamepadL3;
+			_gamepadMap[to_underlying(GamepadButton::ThumbR)] = ImGuiKey_GamepadR3;
 
 			bgfx::RendererType::Enum type = bgfx::getRendererType();
 			_program = bgfx::createProgram(
@@ -427,8 +427,9 @@ namespace darmok
 			const double freq = double(bx::getHPFrequency());
 			io.DeltaTime = float(frameTime / freq);
 
-			auto& buttons = inputGetMouseButtons();
-			auto& pos = inputGetAbsoluteMouse();
+			auto& mouse = Input::get().getMouse();
+			auto& buttons = mouse.getButtons();
+			auto& pos = mouse.getPosition();
 			io.AddMousePosEvent((float)pos.x, (float)pos.y);
 			io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
 			io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
@@ -436,16 +437,28 @@ namespace darmok
 			io.AddMouseWheelEvent(0.0f, (float)(pos.z - _lastScroll));
 			_lastScroll = pos.z;
 
-			uint8_t modifiers = inputGetModifiersState();
-			io.AddKeyEvent(ImGuiMod_Shift, 0 != (modifiers & KeyModifiers::Shift));
-			io.AddKeyEvent(ImGuiMod_Ctrl, 0 != (modifiers & KeyModifiers::Ctrl));
-			io.AddKeyEvent(ImGuiMod_Alt, 0 != (modifiers & KeyModifiers::Alt));
-			io.AddKeyEvent(ImGuiMod_Super, 0 != (modifiers & KeyModifiers::Meta));
-			for (int32_t i = 0; i < (int32_t)Key::Count; ++i)
+
+			auto& kb = Input::get().getKeyboard();
+
+			uint8_t modifiers = kb.getModifiers();
+			io.AddKeyEvent(ImGuiMod_Shift, 0 != (modifiers & KeyboardModifiers::Shift));
+			io.AddKeyEvent(ImGuiMod_Ctrl, 0 != (modifiers & KeyboardModifiers::Ctrl));
+			io.AddKeyEvent(ImGuiMod_Alt, 0 != (modifiers & KeyboardModifiers::Alt));
+			io.AddKeyEvent(ImGuiMod_Super, 0 != (modifiers & KeyboardModifiers::Meta));
+			for (int32_t i = 0; i < (int32_t)KeyboardKey::Count; ++i)
 			{
-				io.AddKeyEvent(_keyMap[i], inputGetKeyState(Key(i)));
-				io.SetKeyEventNativeData(_keyMap[i], 0, 0, i);
+				io.AddKeyEvent(_keyboardMap[i], kb.getKey(KeyboardKey(i)));
+				io.SetKeyEventNativeData(_keyboardMap[i], 0, 0, i);
 			}
+			for (auto& gamepad : Input::get().getGamepads())
+			{
+				for (int32_t i = 0; i < (int32_t)GamepadButton::Count; ++i)
+				{
+					io.AddKeyEvent(_gamepadMap[i], gamepad.getButton(GamepadButton(i)));
+					io.SetKeyEventNativeData(_gamepadMap[i], 0, 0, i);
+				}
+			}
+
 
 			ImGui::NewFrame();
 
@@ -469,7 +482,8 @@ namespace darmok
 		int64_t _last;
 		int32_t _lastScroll;
 		bgfx::ViewId _viewId;
-		std::array<ImGuiKey, to_underlying(Key::Count)> _keyMap;
+		std::array<ImGuiKey, to_underlying(KeyboardKey::Count)> _keyboardMap;
+		std::array<ImGuiKey, to_underlying(GamepadButton::Count)> _gamepadMap;
 	};
 
 	static ImguiContext s_ctx;

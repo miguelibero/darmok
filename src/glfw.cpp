@@ -1,5 +1,5 @@
 #include "platform.hpp"
-#include <darmok/input.hpp>
+#include "input.hpp"
 #include <darmok/utils.hpp>
 #include <bx/platform.h>
 
@@ -93,30 +93,30 @@ namespace darmok {
 
 			if (glfw & GLFW_MOD_ALT)
 			{
-				modifiers |= to_underlying(KeyModifier::LeftAlt);
+				modifiers |= to_underlying(KeyboardModifier::LeftAlt);
 			}
 
 			if (glfw & GLFW_MOD_CONTROL)
 			{
-				modifiers |= to_underlying(KeyModifier::LeftCtrl);
+				modifiers |= to_underlying(KeyboardModifier::LeftCtrl);
 			}
 
 			if (glfw & GLFW_MOD_SUPER)
 			{
-				modifiers |= to_underlying(KeyModifier::LeftMeta);
+				modifiers |= to_underlying(KeyboardModifier::LeftMeta);
 			}
 
 			if (glfw & GLFW_MOD_SHIFT)
 			{
-				modifiers |= to_underlying(KeyModifier::LeftShift);
+				modifiers |= to_underlying(KeyboardModifier::LeftShift);
 			}
 
 			return modifiers;
 		}
 
-		static std::array<Key, GLFW_KEY_LAST + 1>  s_translateKey;
+		static std::array<KeyboardKey, GLFW_KEY_LAST + 1>  s_translateKey;
 
-		static Key translateKey(int key)
+		static KeyboardKey translateKey(int key)
 		{
 			return s_translateKey[key];
 		}
@@ -151,127 +151,30 @@ namespace darmok {
 			return axes[axis];
 		}
 
-		static Key translateGamepadButton(int button)
+		static GamepadButton translateGamepadButton(int button)
 		{
 			// HACK: Map XInput 360 controller until GLFW gamepad API
 
-			static Key buttons[] =
+			static GamepadButton buttons[] =
 			{
-				Key::GamepadA,
-				Key::GamepadB,
-				Key::GamepadX,
-				Key::GamepadY,
-				Key::GamepadShoulderL,
-				Key::GamepadShoulderR,
-				Key::GamepadBack,
-				Key::GamepadStart,
-				Key::GamepadThumbL,
-				Key::GamepadThumbR,
-				Key::GamepadUp,
-				Key::GamepadRight,
-				Key::GamepadDown,
-				Key::GamepadLeft,
-				Key::GamepadGuide,
+				GamepadButton::A,
+				GamepadButton::B,
+				GamepadButton::X,
+				GamepadButton::Y,
+				GamepadButton::ShoulderL,
+				GamepadButton::ShoulderR,
+				GamepadButton::Back,
+				GamepadButton::Start,
+				GamepadButton::ThumbL,
+				GamepadButton::ThumbR,
+				GamepadButton::Up,
+				GamepadButton::Right,
+				GamepadButton::Down,
+				GamepadButton::Left,
+				GamepadButton::Guide,
 			};
 			return buttons[button];
 		}
-
-		class Gamepad final
-		{
-		public:
-			Gamepad()
-				: _connected(false)
-				, _handle{ 0 }
-			{
-				_axes.fill(0);
-				_buttons.fill(0);
-			}
-
-			void update(PlatformEventQueue& events)
-			{
-				int numButtons, numAxes;
-				const unsigned char* buttons = glfwGetJoystickButtons(_handle.idx, &numButtons);
-				const float* axes = glfwGetJoystickAxes(_handle.idx, &numAxes);
-
-				if (nullptr == buttons || nullptr == axes)
-				{
-					return;
-				}
-				if (numAxes > _axes.size())
-				{
-					numAxes = (int)_axes.size();
-				}
-				if (numButtons > _buttons.size())
-				{
-					numButtons = (int)_buttons.size();
-				}
-
-				for (int i = 0; i < numAxes; ++i)
-				{
-					GamepadAxis axis = translateGamepadAxis(i);
-					int32_t value = (int32_t)(axes[i] * 32768.f);
-					if (GamepadAxis::LeftY == axis || GamepadAxis::RightY == axis)
-					{
-						value = -value;
-					}
-
-					if (_axes[i] != value)
-					{
-						_axes[i] = value;
-						events.postGamepadAxisChangedEvent(_handle
-							, axis
-							, value);
-					}
-				}
-
-				for (int i = 0; i < numButtons; ++i)
-				{
-					Key key = translateGamepadButton(i);
-					if (_buttons[i] != buttons[i])
-					{
-						_buttons[i] = buttons[i];
-						events.postKeyPressedEvent(key
-							, 0
-							, buttons[i] != 0);
-					}
-				}
-			}
-
-			bool isConnected() const
-			{
-				return _connected;
-			}
-
-			void init(uint32_t i, WindowHandle window, PlatformEventQueue& events)
-			{
-				_handle.idx = i;
-				if (glfwJoystickPresent(i))
-				{
-					_connected = true;
-					events.postGamepadConnectionEvent(_handle, true);
-				}
-			}
-
-			void updateConnection(int action, PlatformEventQueue& events)
-			{
-				if (action == GLFW_CONNECTED)
-				{
-					_connected = true;
-					events.postGamepadConnectionEvent(_handle, true);
-				}
-				else if (action == GLFW_DISCONNECTED)
-				{
-					_connected = false;
-					events.postGamepadConnectionEvent(_handle, false);
-				}
-			}
-
-		private:
-			bool _connected;
-			GamepadHandle _handle;
-			std::array<int32_t, to_underlying(GamepadAxis::Count)> _axes;
-			std::array<uint8_t, to_underlying(Key::Count) - to_underlying(Key::GamepadA)> _buttons;
-		};
 
 		struct MainThreadEntry
 		{
@@ -328,8 +231,8 @@ namespace darmok {
 
 		private:
 			bx::Mutex _lock;
-			std::array<GLFWwindow*, Window::MaxWindows> _windows;
-			bx::HandleAllocT<Window::MaxWindows> _windowAlloc;
+			std::array<GLFWwindow*, Window::MaxAmount> _windows;
+			bx::HandleAllocT<Window::MaxAmount> _windowAlloc;
 		};
 
 
@@ -517,7 +420,7 @@ namespace darmok {
 				WindowSize size;
 				WindowPosition pos;
 			};
-			typedef std::array<NormalWindowState, Window::MaxWindows> NormalWindowStates;
+			typedef std::array<NormalWindowState, Window::MaxAmount> NormalWindowStates;
 			static NormalWindowStates _normals;
 
 			NormalWindowState& getNormalWindowState()
@@ -700,85 +603,142 @@ namespace darmok {
 			Context()
 				: _scrollPos(0.0f)
 			{
-				s_translateKey[GLFW_KEY_ESCAPE] = Key::Esc;
-				s_translateKey[GLFW_KEY_ENTER] = Key::Return;
-				s_translateKey[GLFW_KEY_TAB] = Key::Tab;
-				s_translateKey[GLFW_KEY_BACKSPACE] = Key::Backspace;
-				s_translateKey[GLFW_KEY_SPACE] = Key::Space;
-				s_translateKey[GLFW_KEY_UP] = Key::Up;
-				s_translateKey[GLFW_KEY_DOWN] = Key::Down;
-				s_translateKey[GLFW_KEY_LEFT] = Key::Left;
-				s_translateKey[GLFW_KEY_RIGHT] = Key::Right;
-				s_translateKey[GLFW_KEY_PAGE_UP] = Key::PageUp;
-				s_translateKey[GLFW_KEY_PAGE_DOWN] = Key::PageDown;
-				s_translateKey[GLFW_KEY_HOME] = Key::Home;
-				s_translateKey[GLFW_KEY_END] = Key::End;
-				s_translateKey[GLFW_KEY_PRINT_SCREEN] = Key::Print;
-				s_translateKey[GLFW_KEY_KP_ADD] = Key::Plus;
-				s_translateKey[GLFW_KEY_EQUAL] = Key::Plus;
-				s_translateKey[GLFW_KEY_KP_SUBTRACT] = Key::Minus;
-				s_translateKey[GLFW_KEY_MINUS] = Key::Minus;
-				s_translateKey[GLFW_KEY_COMMA] = Key::Comma;
-				s_translateKey[GLFW_KEY_PERIOD] = Key::Period;
-				s_translateKey[GLFW_KEY_SLASH] = Key::Slash;
-				s_translateKey[GLFW_KEY_F1] = Key::F1;
-				s_translateKey[GLFW_KEY_F2] = Key::F2;
-				s_translateKey[GLFW_KEY_F3] = Key::F3;
-				s_translateKey[GLFW_KEY_F4] = Key::F4;
-				s_translateKey[GLFW_KEY_F5] = Key::F5;
-				s_translateKey[GLFW_KEY_F6] = Key::F6;
-				s_translateKey[GLFW_KEY_F7] = Key::F7;
-				s_translateKey[GLFW_KEY_F8] = Key::F8;
-				s_translateKey[GLFW_KEY_F9] = Key::F9;
-				s_translateKey[GLFW_KEY_F10] = Key::F10;
-				s_translateKey[GLFW_KEY_F11] = Key::F11;
-				s_translateKey[GLFW_KEY_F12] = Key::F12;
-				s_translateKey[GLFW_KEY_KP_0] = Key::NumPad0;
-				s_translateKey[GLFW_KEY_KP_1] = Key::NumPad1;
-				s_translateKey[GLFW_KEY_KP_2] = Key::NumPad2;
-				s_translateKey[GLFW_KEY_KP_3] = Key::NumPad3;
-				s_translateKey[GLFW_KEY_KP_4] = Key::NumPad4;
-				s_translateKey[GLFW_KEY_KP_5] = Key::NumPad5;
-				s_translateKey[GLFW_KEY_KP_6] = Key::NumPad6;
-				s_translateKey[GLFW_KEY_KP_7] = Key::NumPad7;
-				s_translateKey[GLFW_KEY_KP_8] = Key::NumPad8;
-				s_translateKey[GLFW_KEY_KP_9] = Key::NumPad9;
-				s_translateKey[GLFW_KEY_0] = Key::Key0;
-				s_translateKey[GLFW_KEY_1] = Key::Key1;
-				s_translateKey[GLFW_KEY_2] = Key::Key2;
-				s_translateKey[GLFW_KEY_3] = Key::Key3;
-				s_translateKey[GLFW_KEY_4] = Key::Key4;
-				s_translateKey[GLFW_KEY_5] = Key::Key5;
-				s_translateKey[GLFW_KEY_6] = Key::Key6;
-				s_translateKey[GLFW_KEY_7] = Key::Key7;
-				s_translateKey[GLFW_KEY_8] = Key::Key8;
-				s_translateKey[GLFW_KEY_9] = Key::Key9;
-				s_translateKey[GLFW_KEY_A] = Key::KeyA;
-				s_translateKey[GLFW_KEY_B] = Key::KeyB;
-				s_translateKey[GLFW_KEY_C] = Key::KeyC;
-				s_translateKey[GLFW_KEY_D] = Key::KeyD;
-				s_translateKey[GLFW_KEY_E] = Key::KeyE;
-				s_translateKey[GLFW_KEY_F] = Key::KeyF;
-				s_translateKey[GLFW_KEY_G] = Key::KeyG;
-				s_translateKey[GLFW_KEY_H] = Key::KeyH;
-				s_translateKey[GLFW_KEY_I] = Key::KeyI;
-				s_translateKey[GLFW_KEY_J] = Key::KeyJ;
-				s_translateKey[GLFW_KEY_K] = Key::KeyK;
-				s_translateKey[GLFW_KEY_L] = Key::KeyL;
-				s_translateKey[GLFW_KEY_M] = Key::KeyM;
-				s_translateKey[GLFW_KEY_N] = Key::KeyN;
-				s_translateKey[GLFW_KEY_O] = Key::KeyO;
-				s_translateKey[GLFW_KEY_P] = Key::KeyP;
-				s_translateKey[GLFW_KEY_Q] = Key::KeyQ;
-				s_translateKey[GLFW_KEY_R] = Key::KeyR;
-				s_translateKey[GLFW_KEY_S] = Key::KeyS;
-				s_translateKey[GLFW_KEY_T] = Key::KeyT;
-				s_translateKey[GLFW_KEY_U] = Key::KeyU;
-				s_translateKey[GLFW_KEY_V] = Key::KeyV;
-				s_translateKey[GLFW_KEY_W] = Key::KeyW;
-				s_translateKey[GLFW_KEY_X] = Key::KeyX;
-				s_translateKey[GLFW_KEY_Y] = Key::KeyY;
-				s_translateKey[GLFW_KEY_Z] = Key::KeyZ;
+				s_translateKey[GLFW_KEY_ESCAPE] = KeyboardKey::Esc;
+				s_translateKey[GLFW_KEY_ENTER] = KeyboardKey::Return;
+				s_translateKey[GLFW_KEY_TAB] = KeyboardKey::Tab;
+				s_translateKey[GLFW_KEY_BACKSPACE] = KeyboardKey::Backspace;
+				s_translateKey[GLFW_KEY_SPACE] = KeyboardKey::Space;
+				s_translateKey[GLFW_KEY_UP] = KeyboardKey::Up;
+				s_translateKey[GLFW_KEY_DOWN] = KeyboardKey::Down;
+				s_translateKey[GLFW_KEY_LEFT] = KeyboardKey::Left;
+				s_translateKey[GLFW_KEY_RIGHT] = KeyboardKey::Right;
+				s_translateKey[GLFW_KEY_PAGE_UP] = KeyboardKey::PageUp;
+				s_translateKey[GLFW_KEY_PAGE_DOWN] = KeyboardKey::PageDown;
+				s_translateKey[GLFW_KEY_HOME] = KeyboardKey::Home;
+				s_translateKey[GLFW_KEY_END] = KeyboardKey::End;
+				s_translateKey[GLFW_KEY_PRINT_SCREEN] = KeyboardKey::Print;
+				s_translateKey[GLFW_KEY_KP_ADD] = KeyboardKey::Plus;
+				s_translateKey[GLFW_KEY_EQUAL] = KeyboardKey::Plus;
+				s_translateKey[GLFW_KEY_KP_SUBTRACT] = KeyboardKey::Minus;
+				s_translateKey[GLFW_KEY_MINUS] = KeyboardKey::Minus;
+				s_translateKey[GLFW_KEY_COMMA] = KeyboardKey::Comma;
+				s_translateKey[GLFW_KEY_PERIOD] = KeyboardKey::Period;
+				s_translateKey[GLFW_KEY_SLASH] = KeyboardKey::Slash;
+				s_translateKey[GLFW_KEY_F1] = KeyboardKey::F1;
+				s_translateKey[GLFW_KEY_F2] = KeyboardKey::F2;
+				s_translateKey[GLFW_KEY_F3] = KeyboardKey::F3;
+				s_translateKey[GLFW_KEY_F4] = KeyboardKey::F4;
+				s_translateKey[GLFW_KEY_F5] = KeyboardKey::F5;
+				s_translateKey[GLFW_KEY_F6] = KeyboardKey::F6;
+				s_translateKey[GLFW_KEY_F7] = KeyboardKey::F7;
+				s_translateKey[GLFW_KEY_F8] = KeyboardKey::F8;
+				s_translateKey[GLFW_KEY_F9] = KeyboardKey::F9;
+				s_translateKey[GLFW_KEY_F10] = KeyboardKey::F10;
+				s_translateKey[GLFW_KEY_F11] = KeyboardKey::F11;
+				s_translateKey[GLFW_KEY_F12] = KeyboardKey::F12;
+				s_translateKey[GLFW_KEY_KP_0] = KeyboardKey::NumPad0;
+				s_translateKey[GLFW_KEY_KP_1] = KeyboardKey::NumPad1;
+				s_translateKey[GLFW_KEY_KP_2] = KeyboardKey::NumPad2;
+				s_translateKey[GLFW_KEY_KP_3] = KeyboardKey::NumPad3;
+				s_translateKey[GLFW_KEY_KP_4] = KeyboardKey::NumPad4;
+				s_translateKey[GLFW_KEY_KP_5] = KeyboardKey::NumPad5;
+				s_translateKey[GLFW_KEY_KP_6] = KeyboardKey::NumPad6;
+				s_translateKey[GLFW_KEY_KP_7] = KeyboardKey::NumPad7;
+				s_translateKey[GLFW_KEY_KP_8] = KeyboardKey::NumPad8;
+				s_translateKey[GLFW_KEY_KP_9] = KeyboardKey::NumPad9;
+				s_translateKey[GLFW_KEY_0] = KeyboardKey::Key0;
+				s_translateKey[GLFW_KEY_1] = KeyboardKey::Key1;
+				s_translateKey[GLFW_KEY_2] = KeyboardKey::Key2;
+				s_translateKey[GLFW_KEY_3] = KeyboardKey::Key3;
+				s_translateKey[GLFW_KEY_4] = KeyboardKey::Key4;
+				s_translateKey[GLFW_KEY_5] = KeyboardKey::Key5;
+				s_translateKey[GLFW_KEY_6] = KeyboardKey::Key6;
+				s_translateKey[GLFW_KEY_7] = KeyboardKey::Key7;
+				s_translateKey[GLFW_KEY_8] = KeyboardKey::Key8;
+				s_translateKey[GLFW_KEY_9] = KeyboardKey::Key9;
+				s_translateKey[GLFW_KEY_A] = KeyboardKey::KeyA;
+				s_translateKey[GLFW_KEY_B] = KeyboardKey::KeyB;
+				s_translateKey[GLFW_KEY_C] = KeyboardKey::KeyC;
+				s_translateKey[GLFW_KEY_D] = KeyboardKey::KeyD;
+				s_translateKey[GLFW_KEY_E] = KeyboardKey::KeyE;
+				s_translateKey[GLFW_KEY_F] = KeyboardKey::KeyF;
+				s_translateKey[GLFW_KEY_G] = KeyboardKey::KeyG;
+				s_translateKey[GLFW_KEY_H] = KeyboardKey::KeyH;
+				s_translateKey[GLFW_KEY_I] = KeyboardKey::KeyI;
+				s_translateKey[GLFW_KEY_J] = KeyboardKey::KeyJ;
+				s_translateKey[GLFW_KEY_K] = KeyboardKey::KeyK;
+				s_translateKey[GLFW_KEY_L] = KeyboardKey::KeyL;
+				s_translateKey[GLFW_KEY_M] = KeyboardKey::KeyM;
+				s_translateKey[GLFW_KEY_N] = KeyboardKey::KeyN;
+				s_translateKey[GLFW_KEY_O] = KeyboardKey::KeyO;
+				s_translateKey[GLFW_KEY_P] = KeyboardKey::KeyP;
+				s_translateKey[GLFW_KEY_Q] = KeyboardKey::KeyQ;
+				s_translateKey[GLFW_KEY_R] = KeyboardKey::KeyR;
+				s_translateKey[GLFW_KEY_S] = KeyboardKey::KeyS;
+				s_translateKey[GLFW_KEY_T] = KeyboardKey::KeyT;
+				s_translateKey[GLFW_KEY_U] = KeyboardKey::KeyU;
+				s_translateKey[GLFW_KEY_V] = KeyboardKey::KeyV;
+				s_translateKey[GLFW_KEY_W] = KeyboardKey::KeyW;
+				s_translateKey[GLFW_KEY_X] = KeyboardKey::KeyX;
+				s_translateKey[GLFW_KEY_Y] = KeyboardKey::KeyY;
+				s_translateKey[GLFW_KEY_Z] = KeyboardKey::KeyZ;
+			}
+
+			void updateGamepad(const GamepadHandle& handle)
+			{
+				int numButtons, numAxes;
+				const unsigned char* buttons = glfwGetJoystickButtons(handle.idx, &numButtons);
+				const float* axes = glfwGetJoystickAxes(handle.idx, &numAxes);
+
+				if (nullptr == buttons || nullptr == axes)
+				{
+					return;
+				}
+				auto& gamepad = GamepadImpl::get(handle);
+
+				if (numAxes > gamepad.getAxes().size())
+				{
+					numAxes = (int)gamepad.getAxes().size();
+				}
+				if (numButtons > gamepad.getButtons().size())
+				{
+					numButtons = (int)gamepad.getButtons().size();
+				}
+
+				for (int i = 0; i < numAxes; ++i)
+				{
+					GamepadAxis axis = translateGamepadAxis(i);
+					int32_t value = (int32_t)(axes[i] * 32768.f);
+					if (GamepadAxis::LeftY == axis || GamepadAxis::RightY == axis)
+					{
+						value = -value;
+					}
+
+					if (gamepad.getAxis(axis) != value)
+					{
+						_eventQueue.postGamepadAxisChangedEvent(handle
+							, axis
+							, value);
+					}
+				}
+
+				for (int i = 0; i < numButtons; ++i)
+				{
+					GamepadButton button = translateGamepadButton(i);
+					bool down = buttons[i];
+					if (gamepad.getButton(button) != down)
+					{
+						_eventQueue.postGamepadButtonChangedEvent(handle, button, down);
+					}
+				}
+			}
+
+			void updateGamepads()
+			{
+				for(GamepadHandle::idx_t i = 0; i < Gamepad::MaxAmount; i++)
+				{
+					updateGamepad({ i });
+				}
 			}
 
 			int run(int argc, const char* const* argv)
@@ -824,24 +784,13 @@ namespace darmok {
 
 				_eventQueue.postWindowCreatedEvent(handle, window, options);
 
-				for (uint32_t i = 0; i < _gamepads.size(); ++i)
-				{
-					_gamepads[i].init(i, handle, _eventQueue);
-				}
-
 				_thread.init(MainThreadEntry::threadFunc, &_mte);
 
 				while (!glfwWindowShouldClose(window) && !_mte.finished)
 				{
 					glfwWaitEventsTimeout(0.016);
 
-					for (auto& gamepad : _gamepads)
-					{
-						if (gamepad.isConnected())
-						{
-							gamepad.update(_eventQueue);
-						}
-					}
+					updateGamepads();
 
 					while (!_cmds.empty())
 					{
@@ -868,9 +817,9 @@ namespace darmok {
 					return;
 				}
 				int mods2 = translateKeyModifiers(mods);
-				Key key2 = translateKey(key);
+				KeyboardKey key2 = translateKey(key);
 				bool down = (action == GLFW_PRESS || action == GLFW_REPEAT);
-				_eventQueue.postKeyPressedEvent(key2, mods2, down);
+				_eventQueue.postKeyboardKeyChangedEvent(key2, mods2, down);
 			}
 
 			void charCallback(GLFWwindow* window, uint32_t scancode)
@@ -881,7 +830,7 @@ namespace darmok {
 				{
 					return;
 				}
-				_eventQueue.postCharInputEvent(data);
+				_eventQueue.postKeyboardCharInputEvent(data);
 			}
 
 			void scrollCallback(GLFWwindow* window, double dx, double dy)
@@ -910,7 +859,7 @@ namespace darmok {
 			{
 				BX_UNUSED(window, mods);
 				bool down = action == GLFW_PRESS;
-				_eventQueue.postMouseButtonPressedEvent(
+				_eventQueue.postMouseButtonChangedEvent(
 					translateMouseButton(button)
 					, down
 				);
@@ -939,12 +888,16 @@ namespace darmok {
 
 			void joystickCallback(int jid, int action)
 			{
-				if (jid >= _gamepads.size())
-				{
-					return;
-				}
+				GamepadHandle handle{ (uint16_t)jid };
 
-				_gamepads[jid].updateConnection(action, _eventQueue);
+				if (action == GLFW_CONNECTED)
+				{
+					_eventQueue.postGamepadConnectionEvent(handle, true);
+				}
+				else if (action == GLFW_DISCONNECTED)
+				{
+					_eventQueue.postGamepadConnectionEvent(handle, false);
+				}
 			}
 
 		private:
@@ -954,8 +907,6 @@ namespace darmok {
 
 			PlatformEventQueue _eventQueue;
 			WindowMap _windows;
-
-			std::array<Gamepad, DARMOK_CONFIG_MAX_GAMEPADS>  _gamepads;
 
 			typedef std::queue<std::unique_ptr<Cmd>> CmdQueue;
 			CmdQueue _cmds;

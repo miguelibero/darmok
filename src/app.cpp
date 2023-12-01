@@ -2,6 +2,7 @@
 #include <darmok/app.hpp>
 #include "platform.hpp"
 #include "imgui.hpp"
+#include "input.hpp"
 #include "dbg.h"
 
 #include <bx/bx.h>
@@ -208,24 +209,28 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	static const std::vector<InputBinding> s_bindings =
 	{
-		{ Key::Esc,			 to_underlying(KeyModifier::None),		true, exitAppBinding },
-		{ Key::KeyQ,         to_underlying(KeyModifier::LeftCtrl),	true, exitAppBinding },
-		{ Key::KeyQ,         to_underlying(KeyModifier::RightCtrl),	true, exitAppBinding },
-		{ Key::KeyF,         to_underlying(KeyModifier::LeftCtrl),	true, fullscreenToggleBinding },
-		{ Key::KeyF,         to_underlying(KeyModifier::RightCtrl),	true, fullscreenToggleBinding },
-		{ Key::Return,       to_underlying(KeyModifier::RightAlt),	true, fullscreenToggleBinding },
-		{ Key::F1,           to_underlying(KeyModifier::None),		true, toggleDebugStatsBinding },
-		{ Key::F1,           to_underlying(KeyModifier::None),		true, toggleDebugTextBinding },
-		{ Key::F1,           to_underlying(KeyModifier::LeftCtrl),	true, toggleDebugIfhBinding },
-		{ Key::F1,           to_underlying(KeyModifier::LeftShift), true, disableDebugFlagsBinding },
-		{ Key::F3,           to_underlying(KeyModifier::None),      true, toggleDebugWireFrameBinding },
-		{ Key::F6,           to_underlying(KeyModifier::None),      true, toggleDebugProfilerBinding },
-		{ Key::F7,           to_underlying(KeyModifier::None),      true, toggleResetVsyncBinding },
-		{ Key::F8,           to_underlying(KeyModifier::None),      true, toggleResetMsaaBinding },
-		{ Key::F9,           to_underlying(KeyModifier::None),      true, toggleResetFlushAfterRenderBinding },
-		{ Key::F10,          to_underlying(KeyModifier::None),      true, toggleResetHidpiBinding },
-		{ Key::Print,        to_underlying(KeyModifier::None),      true, screenshotBinding },
-		{ Key::KeyP,         to_underlying(KeyModifier::LeftCtrl),  true, screenshotBinding },
+		{ KeyboardInputBinding { KeyboardKey::Esc,		KeyboardModifiers::None	},			true, exitAppBinding },
+		{ KeyboardInputBinding { KeyboardKey::KeyQ,		KeyboardModifiers::LeftCtrl	},		true, exitAppBinding },
+		{ KeyboardInputBinding { KeyboardKey::KeyQ,		KeyboardModifiers::RightCtrl },		true, exitAppBinding },
+		{ KeyboardInputBinding { KeyboardKey::KeyF,     KeyboardModifiers::LeftCtrl	},		true, fullscreenToggleBinding },
+		{ KeyboardInputBinding { KeyboardKey::KeyF,     KeyboardModifiers::RightCtrl },		true, fullscreenToggleBinding },
+		{ KeyboardInputBinding { KeyboardKey::Return,   KeyboardModifiers::LeftAlt },		true, fullscreenToggleBinding },
+		{ KeyboardInputBinding { KeyboardKey::Return,   KeyboardModifiers::RightAlt },		true, fullscreenToggleBinding },
+		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::None },			true, toggleDebugStatsBinding },
+		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::None },			true, toggleDebugTextBinding },
+		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::LeftCtrl	},		true, toggleDebugIfhBinding },
+		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::RightCtrl },		true, toggleDebugIfhBinding },
+		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::LeftShift },		true, disableDebugFlagsBinding },
+		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::RightShift },	true, disableDebugFlagsBinding },
+		{ KeyboardInputBinding { KeyboardKey::F3,		KeyboardModifiers::None},			true, toggleDebugWireFrameBinding },
+		{ KeyboardInputBinding { KeyboardKey::F6,		KeyboardModifiers::None},			true, toggleDebugProfilerBinding },
+		{ KeyboardInputBinding { KeyboardKey::F7,		KeyboardModifiers::None},			true, toggleResetVsyncBinding },
+		{ KeyboardInputBinding { KeyboardKey::F8,		KeyboardModifiers::None},			true, toggleResetMsaaBinding },
+		{ KeyboardInputBinding { KeyboardKey::F9,		KeyboardModifiers::None},			true, toggleResetFlushAfterRenderBinding },
+		{ KeyboardInputBinding { KeyboardKey::F10,		KeyboardModifiers::None},			true, toggleResetHidpiBinding },
+		{ KeyboardInputBinding { KeyboardKey::Print,	KeyboardModifiers::None},			true, screenshotBinding },
+		{ KeyboardInputBinding { KeyboardKey::KeyP,		KeyboardModifiers::LeftCtrl },		true, screenshotBinding },
+		{ KeyboardInputBinding { KeyboardKey::KeyP,		KeyboardModifiers::RightCtrl },		true, screenshotBinding },
 	};
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -265,15 +270,13 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		s_fileReader = BX_NEW(g_allocator, FileReader);
 		s_fileWriter = BX_NEW(g_allocator, FileWriter);
 
-		inputInit();
-		inputAddBindings("bindings", std::vector<InputBinding>(s_bindings));
+		Input::get().addBindings("main", std::vector<InputBinding>(s_bindings));
 
 		auto result = ::_main_(argc, (char**)argv);
 
 		setCurrentDir("");
 
-		inputRemoveBindings("bindings");
-		inputShutdown();
+		Input::get().removeBindings("main");
 
 		bx::deleteObject(g_allocator, s_fileReader);
 		s_fileReader = NULL;
@@ -303,14 +306,14 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 			{
 				needsReset = true;
 			}
-			inputProcess();
+			Input::get().process();
 		};
 
 		if(needsReset || s_needsReset)
 		{
 			auto& size = Window::get().getSize();
 			bgfx::reset(size.width, size.height, getResetFlags());
-			inputSetMouseResolution(size);
+			MouseImpl::get().setResolution(size);
 			s_needsReset = false;
 		}
 
@@ -374,8 +377,8 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		auto& win = Window::get();
 		bgfx::ViewId viewId = 0;
 
-		_lastMousePos = inputPopMouse();
-		_lastChar = inputPopChar();
+		_lastMousePos = Input::get().getMouse().popRelativePosition();
+		_lastChar = Input::get().getKeyboard().popChar();
 
 		imguiBeginFrame(win.getHandle(), _lastChar, viewId);
 

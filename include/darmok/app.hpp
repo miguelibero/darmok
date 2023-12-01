@@ -3,12 +3,12 @@
  */
 #pragma once
 
-#include <darmok/input.hpp>
-
 #include <string>
 #include <memory>
 #include <vector>
+#include <cstdint>
 #include <bx/bx.h>
+#include <darmok/input.hpp>
 
 namespace bx { struct FileReaderI; struct FileWriterI; struct AllocatorI; }
 
@@ -94,7 +94,7 @@ namespace darmok
 		bool update() override;
 
 	protected:
-		NormMousePosition _lastMousePos;
+		RelativeMousePosition _lastMousePos;
 		Utf8Char _lastChar;
 
 		virtual void imguiDraw();

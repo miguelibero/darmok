@@ -1,6 +1,7 @@
 
 #include "platform.hpp"
 #include "dbg.h"
+#include "input.hpp"
 
 #include <bx/bx.h>
 #include <bx/file.h>
@@ -9,6 +10,80 @@
 
 namespace darmok
 {
+	class KeyboardKeyChangedEvent final : public PlatformEvent
+	{
+	public:
+		KeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down)
+			: PlatformEvent(KeyboardKeyChanged)
+			, _key(key)
+			, _modifiers(modifiers)
+			, _down(down)
+		{
+		}
+
+		void process()
+		{
+			KeyboardImpl::get().setKey(_key, _modifiers, _down);
+		}
+	private:
+		KeyboardKey _key;
+		uint8_t _modifiers;
+		bool _down;
+	};
+
+	class KeyboardCharInputEvent final : public PlatformEvent
+	{
+	public:
+		KeyboardCharInputEvent(const Utf8Char& data)
+			: PlatformEvent(KeyboardCharInput)
+			, _data(data)
+		{
+		}
+
+		void process()
+		{
+			KeyboardImpl::get().pushChar(_data);
+		}
+	private:
+		Utf8Char _data;
+	};
+
+	class MouseMovedEvent final : public PlatformEvent
+	{
+	public:
+		MouseMovedEvent(const MousePosition& pos)
+			: PlatformEvent(MouseMoved)
+			, _pos(pos)
+		{
+		}
+
+		void process()
+		{
+			MouseImpl::get().setPosition(_pos);
+		}
+	private:
+		MousePosition _pos;
+	};
+
+	class MouseButtonChangedEvent final : public PlatformEvent
+	{
+	public:
+		MouseButtonChangedEvent(MouseButton button, bool down)
+			: PlatformEvent(MouseButtonChanged)
+			, _button(button)
+			, _down(down)
+		{
+		}
+
+		void process()
+		{
+			MouseImpl::get().setButton(_button, _down);
+		}
+	private:
+		MouseButton _button;
+		bool _down;
+	};
+
 	class GamepadAxisChangedEvent final : public PlatformEvent
 	{
 	public:
@@ -22,7 +97,7 @@ namespace darmok
 
 		void process()
 		{
-			inputSetGamepadAxis(_gamepad, _axis, _value);
+			GamepadImpl::get(_gamepad).setAxis(_axis, _value);
 		}
 
 	private:
@@ -31,21 +106,26 @@ namespace darmok
 		int32_t _value;
 	};
 
-	class CharInputEvent final : public PlatformEvent
+	class GamepadButtonChangedEvent final : public PlatformEvent
 	{
 	public:
-		CharInputEvent(const Utf8Char& data)
-			: PlatformEvent(CharInput)
-			, _data(data)
+		GamepadButtonChangedEvent(GamepadHandle gampad, GamepadButton button, bool down)
+			: PlatformEvent(GamepadButtonChanged)
+			, _gamepad(gampad)
+			, _button(button)
+			, _down(down)
 		{
 		}
 
 		void process()
 		{
-			inputPushChar(_data);
+			GamepadImpl::get(_gamepad).setButton(_button, _down);
 		}
+
 	private:
-		Utf8Char _data;
+		GamepadHandle _gamepad;
+		GamepadButton _button;
+		bool _down;
 	};
 
 	class GamepadConnectionEvent final : public PlatformEvent
@@ -61,67 +141,11 @@ namespace darmok
 		void process()
 		{
 			DBG("gamepad %d, %d", _gamepad.idx, _connected);
+			GamepadImpl::get(_gamepad).setConnected(_connected);
 		}
 	private:
 		GamepadHandle _gamepad;
 		bool _connected;
-	};
-
-	class KeyPressedEvent final : public PlatformEvent
-	{
-	public:
-		KeyPressedEvent(Key key, uint8_t modifiers, bool down)
-			: PlatformEvent(KeyPressed)
-			, _key(key)
-			, _modifiers(modifiers)
-			, _down(down)
-		{
-		}
-
-		void process()
-		{
-			inputSetKeyState(_key, _modifiers, _down);
-		}
-	private:
-		Key _key;
-		uint8_t _modifiers;
-		bool _down;
-	};
-
-	class MouseMovedEvent final : public PlatformEvent
-	{
-	public:
-		MouseMovedEvent(const MousePosition& pos)
-			: PlatformEvent(MouseMoved)
-			, _pos(pos)
-		{
-		}
-
-		void process()
-		{
-			inputSetMousePos(_pos);
-		}
-	private:
-		MousePosition _pos;
-	};
-
-	class MouseButtonPressedEvent final : public PlatformEvent
-	{
-	public:
-		MouseButtonPressedEvent(MouseButton button, bool down)
-			: PlatformEvent(MouseButtonPressed)
-			, _button(button)
-			, _down(down)
-		{
-		}
-
-		void process()
-		{
-			inputSetMouseButtonState(_button, _down);
-		}
-	private:
-		MouseButton _button;
-		bool _down;
 	};
 
 	class WindowEvent : public PlatformEvent
@@ -292,8 +316,8 @@ namespace darmok
 		{
 		case PlatformEvent::Exit:
 			return Result::Exit;
-		case PlatformEvent::CharInput:
-			static_cast<CharInputEvent&>(ev).process();
+		case PlatformEvent::KeyboardCharInput:
+			static_cast<KeyboardCharInputEvent&>(ev).process();
 			break;
 		case PlatformEvent::GamepadAxisChanged:
 			static_cast<GamepadAxisChangedEvent&>(ev).process();
@@ -301,14 +325,14 @@ namespace darmok
 		case PlatformEvent::GamepadConnection:
 			static_cast<GamepadConnectionEvent&>(ev).process();
 			break;
-		case PlatformEvent::KeyPressed:
-			static_cast<KeyPressedEvent&>(ev).process();
+		case PlatformEvent::KeyboardKeyChanged:
+			static_cast<KeyboardKeyChangedEvent&>(ev).process();
 			break;
 		case PlatformEvent::MouseMoved:
 			static_cast<MouseMovedEvent&>(ev).process();
 			break;
-		case PlatformEvent::MouseButtonPressed:
-			static_cast<MouseButtonPressedEvent&>(ev).process();
+		case PlatformEvent::MouseButtonChanged:
+			static_cast<MouseButtonChangedEvent&>(ev).process();
 			break;
 		case PlatformEvent::WindowSizeChanged:
 		{
@@ -334,29 +358,14 @@ namespace darmok
 		return {};
 	}
 
-	void PlatformEventQueue::postGamepadAxisChangedEvent(GamepadHandle gamepad, GamepadAxis axis, int32_t value)
+	void PlatformEventQueue::postKeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down)
 	{
-		_events.push(std::make_unique<GamepadAxisChangedEvent>(gamepad, axis, value));
+		_events.push(std::make_unique<KeyboardKeyChangedEvent>(key, modifiers, down));
 	}
 
-	void PlatformEventQueue::postCharInputEvent(const Utf8Char& data)
+	void PlatformEventQueue::postKeyboardCharInputEvent(const Utf8Char& data)
 	{
-		_events.push(std::make_unique<CharInputEvent>(data));
-	}
-
-	void PlatformEventQueue::postExitEvent()
-	{
-		_events.push(std::make_unique<PlatformEvent>(PlatformEvent::Exit));
-	}
-
-	void PlatformEventQueue::postGamepadConnectionEvent(GamepadHandle gamepad, bool connected)
-	{
-		_events.push(std::make_unique<GamepadConnectionEvent>(gamepad, connected));
-	}
-
-	void PlatformEventQueue::postKeyPressedEvent(Key key, uint8_t modifiers, bool down)
-	{
-		_events.push(std::make_unique<KeyPressedEvent>(key, modifiers, down));
+		_events.push(std::make_unique<KeyboardCharInputEvent>(data));
 	}
 
 	void PlatformEventQueue::postMouseMovedEvent(const MousePosition& pos)
@@ -364,9 +373,29 @@ namespace darmok
 		_events.push(std::make_unique<MouseMovedEvent>(pos));
 	}
 
-	void PlatformEventQueue::postMouseButtonPressedEvent(MouseButton button, bool down)
+	void PlatformEventQueue::postMouseButtonChangedEvent(MouseButton button, bool down)
 	{
-		_events.push(std::make_unique<MouseButtonPressedEvent>(button, down));
+		_events.push(std::make_unique<MouseButtonChangedEvent>(button, down));
+	}
+
+	void PlatformEventQueue::postGamepadConnectionEvent(GamepadHandle gamepad, bool connected)
+	{
+		_events.push(std::make_unique<GamepadConnectionEvent>(gamepad, connected));
+	}
+
+	void PlatformEventQueue::postGamepadAxisChangedEvent(GamepadHandle gamepad, GamepadAxis axis, int32_t value)
+	{
+		_events.push(std::make_unique<GamepadAxisChangedEvent>(gamepad, axis, value));
+	}
+
+	void PlatformEventQueue::postGamepadButtonChangedEvent(GamepadHandle gamepad, GamepadButton button, bool down)
+	{
+		_events.push(std::make_unique<GamepadButtonChangedEvent>(gamepad, button, down));
+	}
+
+	void PlatformEventQueue::postExitEvent()
+	{
+		_events.push(std::make_unique<PlatformEvent>(PlatformEvent::Exit));
 	}
 
 	void PlatformEventQueue::postWindowSizeChangedEvent(WindowHandle window, const WindowSize& size)

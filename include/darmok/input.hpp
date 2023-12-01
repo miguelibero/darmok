@@ -4,57 +4,16 @@
 #include <string>
 #include <array>
 #include <vector>
+#include <variant>
+#include <cstdint>
 #include <darmok/utils.hpp>
 
 namespace darmok
 {
-#ifndef DARMOK_CONFIG_MAX_GAMEPADS
-#	define DARMOK_CONFIG_MAX_GAMEPADS 4
-#endif // DARMOK_CONFIG_MAX_GAMEPADS
-
-	struct WindowSize;
-
-	struct GamepadHandle final
-	{
-		uint16_t idx;
-
-		bool operator==(const GamepadHandle& other) const
-		{
-			return idx == other.idx;
-		}
-
-		bool operator<(const GamepadHandle& other) const
-		{
-			return idx < other.idx;
-		}
-	};
+	class InputImpl;
 
 	///
-	enum class MouseButton
-	{
-		None,
-		Left,
-		Middle,
-		Right,
-
-		Count
-	};
-
-	///
-	enum class GamepadAxis
-	{
-		LeftX,
-		LeftY,
-		LeftZ,
-		RightX,
-		RightY,
-		RightZ,
-
-		Count
-	};
-
-	///
-	enum class KeyModifier
+	enum class KeyboardModifier
 	{
 		None = 0,
 		LeftAlt = 0x01,
@@ -67,17 +26,8 @@ namespace darmok
 		RightMeta = 0x80,
 	};
 
-	struct KeyModifiers
-	{
-		static constexpr int None = 0;
-		static constexpr int Shift = to_underlying(KeyModifier::LeftShift) | to_underlying(KeyModifier::RightShift);
-		static constexpr int Ctrl = to_underlying(KeyModifier::LeftCtrl) | to_underlying(KeyModifier::RightCtrl);
-		static constexpr int Alt = to_underlying(KeyModifier::LeftAlt) | to_underlying(KeyModifier::RightAlt);
-		static constexpr int Meta = to_underlying(KeyModifier::LeftMeta) | to_underlying(KeyModifier::RightMeta);
-	};
-
 	///
-	enum class Key
+	enum class KeyboardKey
 	{
 		None = 0,
 		Esc,
@@ -166,62 +116,28 @@ namespace darmok
 		KeyY,
 		KeyZ,
 
-		GamepadA,
-		GamepadB,
-		GamepadX,
-		GamepadY,
-		GamepadThumbL,
-		GamepadThumbR,
-		GamepadShoulderL,
-		GamepadShoulderR,
-		GamepadUp,
-		GamepadDown,
-		GamepadLeft,
-		GamepadRight,
-		GamepadBack,
-		GamepadStart,
-		GamepadGuide,
-
 		Count
 	};
 
-	struct InputBinding
+	/// 
+	struct KeyboardModifiers
 	{
-		Key key;
-		uint8_t modifiers;
-		bool once;
-		std::function<void()> fn;
-		std::string name;
-	};
+		static constexpr uint8_t None = 0;
 
-	typedef std::array<bool, to_underlying(MouseButton::Count)> MouseButtons;
+		static constexpr uint8_t LeftShift = to_underlying(KeyboardModifier::LeftShift);
+		static constexpr uint8_t RightShift = to_underlying(KeyboardModifier::RightShift);
+		static constexpr uint8_t LeftCtrl = to_underlying(KeyboardModifier::LeftCtrl);
+		static constexpr uint8_t RightCtrl = to_underlying(KeyboardModifier::RightCtrl);
+		static constexpr uint8_t LeftAlt = to_underlying(KeyboardModifier::LeftAlt);
+		static constexpr uint8_t RightAlt = to_underlying(KeyboardModifier::RightAlt);
+		static constexpr uint8_t LeftMeta = to_underlying(KeyboardModifier::LeftMeta);
+		static constexpr uint8_t RightMeta = to_underlying(KeyboardModifier::RightMeta);
 
-	struct MousePosition
-	{
-		int32_t x;
-		int32_t y;
-		int32_t z;
-
-		MousePosition(int32_t px = 0, int32_t py = 0, int32_t pz = 0)
-			: x(px)
-			, y(py)
-			, z(pz)
-		{
-		}
-	};
-
-	struct NormMousePosition
-	{
-		float x;
-		float y;
-		float z;
-
-		NormMousePosition(float px = 0.0f, float py = 0.0f, float pz = 0.0f)
-			: x(px)
-			, y(py)
-			, z(pz)
-		{
-		}
+		static constexpr uint8_t Shift = LeftShift | RightShift;
+		static constexpr uint8_t Ctrl = LeftCtrl | RightCtrl;
+		static constexpr uint8_t Alt = LeftAlt | RightAlt;
+		static constexpr uint8_t Meta = LeftMeta | RightMeta;
+		static constexpr uint8_t Max = to_underlying(KeyboardKey::Count) + Meta;
 	};
 
 	struct Utf8Char
@@ -229,90 +145,255 @@ namespace darmok
 		uint32_t data;
 		uint8_t len;
 
-		Utf8Char(uint32_t pdata = 0, uint8_t plen = 0)
-			: data(pdata)
-			, len(pdata)
-		{
-		}
+		Utf8Char(uint32_t data = 0, uint8_t len = 0);
+	};
+
+	typedef std::array<uint32_t, to_underlying(KeyboardKey::Count)> KeyboardKeys;
+
+	class Keyboard final
+	{
+	public:
+		///
+		bool getKey(KeyboardKey key) const;
+
+		///
+		bool getKey(KeyboardKey key, uint8_t& modifiers) const;
+
+		///
+		const KeyboardKeys& getKeys() const;
+
+		///
+		uint8_t getModifiers() const;
+
+		/// Returns single UTF-8 encoded character from input buffer.
+		Utf8Char popChar();
+
+		/// Flush internal input buffer.
+		void flush();
+
+		///
+		static char keyToAscii(KeyboardKey key, uint8_t modifiers);
+
+		///
+		static const std::string& getKeyName(KeyboardKey key);
+	private:
+		Keyboard() = default;
+		Keyboard(const Keyboard& other) = delete;
+		Keyboard(Keyboard&& other) = delete;
+
+		friend InputImpl;
 	};
 
 	///
-	void inputInit();
+	enum class MouseButton
+	{
+		None,
+		Left,
+		Middle,
+		Right,
+
+		Count
+	};
+
+	struct MousePosition
+	{
+		int32_t x;
+		int32_t y;
+		int32_t z;
+
+		MousePosition(int32_t x = 0, int32_t y = 0, int32_t z = 0);
+	};
+
+	struct RelativeMousePosition
+	{
+		float x;
+		float y;
+		float z;
+
+		RelativeMousePosition(float x = 0.0f, float y = 0.0f, float z = 0.0f);
+	};
+
+	typedef std::array<bool, to_underlying(MouseButton::Count)> MouseButtons;
+
+	class Mouse final
+	{
+	public:
+
+		///
+		static const std::string& getButtonName(MouseButton button);
+
+		///
+		bool setLocked(bool v);
+
+		///
+		RelativeMousePosition popRelativePosition();
+
+		///
+		const MousePosition& getPosition() const;
+
+		///
+		const MouseButtons& getButtons() const;
+
+		///
+		bool getLocked() const;
+
+		///
+		bool getButton(MouseButton button) const;
+
+		///
+		void setWheelDelta(float wheelDelta);
+	private:
+		Mouse() = default;
+		Mouse(const Mouse& other) = delete;
+		Mouse(Mouse&& other) = delete;
+
+		friend InputImpl;
+	};
 
 	///
-	void inputShutdown();
+	enum class GamepadAxis
+	{
+		LeftX,
+		LeftY,
+		LeftZ,
+		RightX,
+		RightY,
+		RightZ,
+
+		Count
+	};
 
 	///
-	void inputAddBindings(const std::string& name, std::vector<InputBinding>&& bindings);
+	enum class GamepadButton
+	{
+		None = 0,
+		
+		A,
+		B,
+		X,
+		Y,
+		ThumbL,
+		ThumbR,
+		ShoulderL,
+		ShoulderR,
+		Up,
+		Down,
+		Left,
+		Right,
+		Back,
+		Start,
+		Guide,
 
-	///
-	void inputRemoveBindings(const std::string& name);
+		Count
+	};
 
-	///
-	void inputProcess();
+	struct GamepadHandle final
+	{
+		typedef uint16_t idx_t;
+		idx_t idx;
 
-	// Keyboard
+		bool operator==(const GamepadHandle& other) const;
+		bool operator<(const GamepadHandle& other) const;
+		bool isValid() const;
+	};
 
-	///
-	void inputSetKeyState(Key key, uint8_t modifiers, bool down);
+	typedef std::array<bool, to_underlying(GamepadButton::Count)> GamepadButtons;
+	typedef std::array<int32_t, to_underlying(GamepadAxis::Count)> GamepadAxes;
 
-	///
-	bool inputGetKeyState(Key key, uint8_t modifiers = KeyModifiers::None);
+	class Gamepad final
+	{
+	public:
+		const static size_t MaxAmount = 4;
+		static constexpr GamepadHandle DefaultHandle = { 0 };
+		static constexpr GamepadHandle InvalidHandle = { UINT16_MAX };
+		
+		///
+		static const std::string& getButtonName(GamepadButton button);
 
-	///
-	uint8_t inputGetModifiersState();
+		///
+		int32_t getAxis(GamepadAxis axis) const;
 
-	/// Adds single UTF-8 encoded character into input buffer.
-	void inputPushChar(const Utf8Char& data);
+		///
+		bool getButton(GamepadButton button) const;
 
-	/// Returns single UTF-8 encoded character from input buffer.
-	Utf8Char inputPopChar();
+		///
+		const GamepadButtons& getButtons() const;
 
-	/// Flush internal input buffer.
-	void inputCharFlush();
+		///
+		bool getConnected() const;
 
-	///
-	char keyToAscii(Key key, uint8_t modifiers);
+	private:
+		Gamepad();
+		Gamepad(const Gamepad& other) = delete;
+		Gamepad(Gamepad&& other) = delete;
 
-	///
-	const std::string& getKeyName(Key key);
+		void setHandle(const GamepadHandle& handle);
 
-	// Mouse
+		GamepadHandle _handle;
+		
+		friend InputImpl;
+	};
 
-	///
-	void inputSetMouseResolution(const WindowSize& size);
+	struct KeyboardInputBinding
+	{
+		KeyboardKey key;
+		uint8_t modifiers;
+	};
 
-	///
-	void inputSetMousePos(const MousePosition& pos);
+	struct MouseInputBinding
+	{
+		MouseButton button;
+	};
 
-	///
-	void inputSetMouseButtonState(MouseButton button, bool down);
+	struct GamepadInputBinding
+	{
+		GamepadHandle gamepad;
+		GamepadButton button;
+	};
 
-	///
-	bool inputGetMouseButtonState(MouseButton button);
+	typedef std::variant<KeyboardInputBinding, MouseInputBinding, GamepadInputBinding> InputBindingKey;
 
-	///
-	void inputSetMouseLock(bool lock);
+	struct InputBinding
+	{
+		static std::size_t hashKey(const InputBindingKey& key);
 
-	///
-	const NormMousePosition& inputPopMouse();
+		InputBindingKey key;
+		bool once;
+		std::function<void()> fn;
+		std::string name;
+	};
 
-	///
-	const MousePosition& inputGetAbsoluteMouse();
+	typedef std::array<Gamepad, Gamepad::MaxAmount> Gamepads;
 
-	///
-	const MouseButtons& inputGetMouseButtons();
+	class Input final
+	{
+	public:
+		void process();
 
-	///
-	bool inputIsMouseLocked();
+		void addBindings(const std::string& name, std::vector<InputBinding>&& bindings);
+		void removeBindings(const std::string& name);
 
-	// Gamepad
+		Keyboard& getKeyboard();
+		Mouse& getMouse();
+		Gamepad& getGamepad(const GamepadHandle& handle);
+		Gamepads& getGamepads();
 
-	///
-	void inputSetGamepadAxis(GamepadHandle handle, GamepadAxis axis, int32_t value);
+		const Keyboard& getKeyboard() const;
+		const Mouse& getMouse() const;
+		const Gamepad& getGamepad(const GamepadHandle& handle) const;
+		const Gamepads& getGamepads() const;
 
-	///
-	int32_t inputGetGamepadAxis(GamepadHandle handle, GamepadAxis axis);
+		static Input& get();
 
+	private:
+		Input() = default;
+		Input(const Input& other) = delete;
+		Input(Input&& other) = delete;
+	};
 }
 
+template<> struct std::hash<darmok::InputBindingKey> {
+	std::size_t operator()(darmok::InputBindingKey const& key) const noexcept {
+		return darmok::InputBinding::hashKey(key);
+	}
+};

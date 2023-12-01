@@ -55,18 +55,24 @@ namespace darmok
 	public:
 		enum Type
 		{
-			GamepadAxisChanged,
-			CharInput,
-			Exit,
+			KeyboardKeyChanged,
+			KeyboardCharInput,
+
 			GamepadConnection,
-			KeyPressed,
+			GamepadAxisChanged,
+			GamepadButtonChanged,
+
 			MouseMoved,
-			MouseButtonPressed,
+			MouseButtonChanged,
+
 			WindowSizeChanged,
 			WindowCreated,
 			WindowDestroyed,
 			WindowSuspended,
 			FileDropped,
+
+			Exit,
+			Count,
 		};
 
 		PlatformEvent(Type type)
@@ -89,14 +95,18 @@ namespace darmok
 
 	class PlatformEventQueue final
 	{
-	public:
-		void postGamepadAxisChangedEvent(GamepadHandle gamepad, GamepadAxis axis, int32_t value);
-		void postCharInputEvent(const Utf8Char& data);
-		void postExitEvent();
-		void postGamepadConnectionEvent(GamepadHandle gamepad, bool connected);
-		void postKeyPressedEvent(Key key, uint8_t modifiers, bool down);
+	public:		
+		void postKeyboardCharInputEvent(const Utf8Char& data);
+		void postKeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down);
+
 		void postMouseMovedEvent(const MousePosition& pos);
-		void postMouseButtonPressedEvent(MouseButton button, bool down);
+		void postMouseButtonChangedEvent(MouseButton button, bool down);
+
+		void postGamepadConnectionEvent(GamepadHandle gamepad, bool connected);
+		void postGamepadAxisChangedEvent(GamepadHandle gamepad, GamepadAxis axis, int32_t value);
+		void postGamepadButtonChangedEvent(GamepadHandle gamepad, GamepadButton button, bool down);
+
+		void postExitEvent();
 
 		void postWindowCreatedEvent(WindowHandle window, void* nativeHandle, const WindowCreationOptions& options);
 		void postWindowSizeChangedEvent(WindowHandle window, const WindowSize& size);

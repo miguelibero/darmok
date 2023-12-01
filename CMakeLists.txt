@@ -24,20 +24,22 @@ set(headers
   include/darmok/utils.hpp
 )
 
+set(LIB_NAME darmok)
+
 add_library(
-  ${PROJECT_NAME}
+  ${LIB_NAME}
   ${headers}
   ${sources}
 )
 
 set_target_properties(
-  ${PROJECT_NAME}
+  ${LIB_NAME}
   PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}
 )
-set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
+set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
 set(LIBS_BASE ${CMAKE_CURRENT_LIST_DIR}/lib)
 set(BGFX_BASE ${LIBS_BASE}/bgfx.cmake/bgfx)
@@ -56,9 +58,9 @@ target_include_directories(
 include(GNUInstallDirs)
 install(
   TARGETS
-  ${PROJECT_NAME}
+  ${LIB_NAME}
   EXPORT
-  ${PROJECT_NAME}Targets
+  ${LIB_NAME}Targets
   LIBRARY DESTINATION
   ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION
@@ -73,16 +75,16 @@ install(
 
 install(
   EXPORT
-  ${PROJECT_NAME}Targets
+  ${LIB_NAME}Targets
   FILE
   ${PROJECT_NAME}Targets.cmake
   NAMESPACE
-  ${PROJECT_NAME}::
+  ${LIB_NAME}::
   DESTINATION
-  ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  ${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_NAME}
 )
 
-set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
+set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
 #
 # Install the `include` directory
@@ -90,14 +92,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
 install(
   DIRECTORY
-  include/${PROJECT_NAME}
+  include/${LIB_NAME}
   DESTINATION
   include
 )
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-  ${PROJECT_NAME}ConfigVersion.cmake
+  ${LIB_NAME}ConfigVersion.cmake
   VERSION
   ${PROJECT_VERSION}
   COMPATIBILITY
@@ -105,10 +107,10 @@ write_basic_package_version_file(
 )
 
 include(GenerateExportHeader)
-generate_export_header(${PROJECT_NAME})
+generate_export_header(${LIB_NAME})
 install(
   FILES
-  ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hpp
+  ${PROJECT_BINARY_DIR}/${LIB_NAME}.hpp
   DESTINATION
   include
 )
@@ -120,7 +122,7 @@ add_subdirectory(test)
 if(MSVC)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
 endif()
-set_property(TARGET darmok PROPERTY CXX_STANDARD 20)
+set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 20)
 
 # openGL
 find_package(OpenGL REQUIRED)
@@ -128,13 +130,13 @@ include_directories(${OPENGL_INCLUDE_DIRS})
 
 # glfw
 add_subdirectory(${LIBS_BASE}/glfw)
-target_link_libraries(darmok glfw)
+target_link_libraries(${LIB_NAME} glfw)
 add_compile_definitions(DARMOK_CONFIG_USE_GLFW)
 
 # bgfx
 add_subdirectory(${LIBS_BASE}/bgfx.cmake)
-target_link_libraries(darmok bgfx bimg bx)
+target_link_libraries(${LIB_NAME} bgfx bimg bx)
 
 # imgui
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/imgui.cmake)
-target_link_libraries(darmok imgui)
+target_link_libraries(${LIB_NAME} imgui)

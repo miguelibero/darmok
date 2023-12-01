@@ -1,12 +1,9 @@
-/*
- * based on https://github.com/bkaradzic/bgfx/blob/master/examples/common/entry/entry.h
- */
-
 #pragma once
 
-#include <bgfx/bgfx.h>
+#include <cstdint>
 #include <string>
-#include <darmok/utils.hpp>
+#include <bgfx/bgfx.h>
+
 
 namespace darmok
 {
@@ -21,17 +18,12 @@ namespace darmok
 	/// 
 	struct WindowHandle final
 	{
-		uint16_t idx;
+		typedef uint16_t idx_t;
+		idx_t idx;
 
-		bool operator==(const WindowHandle& other) const
-		{
-			return idx == other.idx;
-		}
-
-		bool operator<(const WindowHandle& other) const
-		{
-			return idx < other.idx;
-		}
+		bool operator==(const WindowHandle& other) const;
+		bool operator<(const WindowHandle& other) const;
+		bool isValid() const;
 	};
 
 	/// 
@@ -40,16 +32,8 @@ namespace darmok
 		int32_t x;
 		int32_t y;
 
-		WindowPosition(int32_t vx = 0, int32_t vy = 0)
-			: x(vx)
-			, y(vy)
-		{
-		}
-
-		bool operator==(const WindowPosition& other) const
-		{
-			return x == other.x && y == other.y;
-		}
+		WindowPosition(int32_t x = 0, int32_t y = 0);
+		bool operator==(const WindowPosition& other) const;
 	};
 
 	/// 
@@ -58,16 +42,8 @@ namespace darmok
 		uint32_t width;
 		uint32_t height;
 
-		WindowSize(int32_t vwidth = 0, int32_t vheight = 0)
-			: width(vwidth)
-			, height(vheight)
-		{
-		}
-
-		bool operator==(const WindowSize& other) const
-		{
-			return width == other.width && height == other.height;
-		}
+		WindowSize(int32_t width = 0, int32_t height = 0);
+		bool operator==(const WindowSize& other) const;
 	};
 
 	///
@@ -102,10 +78,9 @@ namespace darmok
 	class Window final
 	{
 	public:
-		///
+		static constexpr size_t MaxAmount = 8;
 		static constexpr WindowHandle DefaultHandle = { 0 };
 		static constexpr WindowHandle InvalidHandle = { UINT16_MAX };
-		static constexpr size_t MaxWindows = 8;
 
 		Window(const WindowHandle& handle = InvalidHandle);
 
