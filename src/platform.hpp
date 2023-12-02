@@ -108,7 +108,7 @@ namespace darmok
 
 		void postExitEvent();
 
-		void postWindowCreatedEvent(WindowHandle window, void* nativeHandle, const WindowCreationOptions& options);
+		void postWindowCreatedEvent(WindowHandle window, const WindowCreationOptions& options);
 		void postWindowSizeChangedEvent(WindowHandle window, const WindowSize& size);
 		void postWindowPositionChangedEvent(WindowHandle window, const WindowPosition& pos);
 		void postWindowTitleChangedEvent(WindowHandle window, const std::string& title);

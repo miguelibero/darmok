@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <variant>
+#include <memory>
 #include <cstdint>
 #include <darmok/utils.hpp>
 
@@ -150,6 +151,8 @@ namespace darmok
 
 	typedef std::array<uint32_t, to_underlying(KeyboardKey::Count)> KeyboardKeys;
 
+	class KeyboardImpl;
+
 	class Keyboard final
 	{
 	public:
@@ -172,14 +175,22 @@ namespace darmok
 		void flush();
 
 		///
+		const KeyboardImpl& getImpl() const;
+
+		///
+		KeyboardImpl& getImpl();
+
+		///
 		static char keyToAscii(KeyboardKey key, uint8_t modifiers);
 
 		///
 		static const std::string& getKeyName(KeyboardKey key);
 	private:
-		Keyboard() = default;
+		Keyboard();
 		Keyboard(const Keyboard& other) = delete;
 		Keyboard(Keyboard&& other) = delete;
+
+		std::unique_ptr<KeyboardImpl> _impl;
 
 		friend InputImpl;
 	};
@@ -215,6 +226,8 @@ namespace darmok
 
 	typedef std::array<bool, to_underlying(MouseButton::Count)> MouseButtons;
 
+	class MouseImpl;
+
 	class Mouse final
 	{
 	public:
@@ -242,11 +255,20 @@ namespace darmok
 
 		///
 		void setWheelDelta(float wheelDelta);
+
+		///
+		const MouseImpl& getImpl() const;
+
+		///
+		MouseImpl& getImpl();
+
 	private:
-		Mouse() = default;
+		Mouse();
 		Mouse(const Mouse& other) = delete;
 		Mouse(Mouse&& other) = delete;
 
+		std::unique_ptr<MouseImpl> _impl;
+		
 		friend InputImpl;
 	};
 
@@ -300,10 +322,12 @@ namespace darmok
 	typedef std::array<bool, to_underlying(GamepadButton::Count)> GamepadButtons;
 	typedef std::array<int32_t, to_underlying(GamepadAxis::Count)> GamepadAxes;
 
+	class GamepadImpl;
+
 	class Gamepad final
 	{
 	public:
-		const static size_t MaxAmount = 4;
+		const static GamepadHandle::idx_t MaxAmount = 4;
 		static constexpr GamepadHandle DefaultHandle = { 0 };
 		static constexpr GamepadHandle InvalidHandle = { UINT16_MAX };
 		
@@ -317,19 +341,26 @@ namespace darmok
 		bool getButton(GamepadButton button) const;
 
 		///
+		const GamepadAxes& getAxes() const;
+
+		///
 		const GamepadButtons& getButtons() const;
 
 		///
-		bool getConnected() const;
+		bool isConnected() const;
+
+		///
+		const GamepadImpl& getImpl() const;
+
+		///
+		GamepadImpl& getImpl();
 
 	private:
 		Gamepad();
 		Gamepad(const Gamepad& other) = delete;
 		Gamepad(Gamepad&& other) = delete;
 
-		void setHandle(const GamepadHandle& handle);
-
-		GamepadHandle _handle;
+		std::unique_ptr<GamepadImpl> _impl;
 		
 		friend InputImpl;
 	};
@@ -375,20 +406,22 @@ namespace darmok
 
 		Keyboard& getKeyboard();
 		Mouse& getMouse();
-		Gamepad& getGamepad(const GamepadHandle& handle);
+		Gamepad& getGamepad(const GamepadHandle& handle = Gamepad::DefaultHandle);
 		Gamepads& getGamepads();
 
 		const Keyboard& getKeyboard() const;
 		const Mouse& getMouse() const;
-		const Gamepad& getGamepad(const GamepadHandle& handle) const;
+		const Gamepad& getGamepad(const GamepadHandle& handle = Gamepad::DefaultHandle) const;
 		const Gamepads& getGamepads() const;
 
 		static Input& get();
 
 	private:
-		Input() = default;
+		Input();
 		Input(const Input& other) = delete;
 		Input(Input&& other) = delete;
+
+		std::unique_ptr<InputImpl> _impl;
 	};
 }
 

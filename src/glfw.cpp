@@ -1,5 +1,6 @@
 #include "platform.hpp"
 #include "input.hpp"
+#include "window.hpp"
 #include <darmok/utils.hpp>
 #include <bx/platform.h>
 
@@ -219,12 +220,12 @@ namespace darmok {
 				return WindowHandle(_windowAlloc.alloc());
 			}
 
-			GLFWwindow* getWindow(WindowHandle handle) const
+			GLFWwindow* getWindow(const WindowHandle& handle) const
 			{
 				return _windows[handle.idx];
 			}
 
-			void setWindow(WindowHandle handle, GLFWwindow* win)
+			void setWindow(const WindowHandle& handle, GLFWwindow* win)
 			{
 				_windows[handle.idx] = win;
 			}
@@ -294,7 +295,7 @@ namespace darmok {
 			{
 				GLFWwindow* window = createWindowImpl(_options);
 				windows.setWindow(_handle, window);
-				events.postWindowCreatedEvent(_handle, window, _options);
+				events.postWindowCreatedEvent(_handle, _options);
 			}
 
 		private:
@@ -512,14 +513,10 @@ namespace darmok {
 			void process(WindowMap& windows)
 			{
 				auto window = windows.getWindow(_handle);
-				if (_value)
-				{
-					glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-				}
-				else
-				{
-					glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-				}
+				auto cursor = _value ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL;
+				glfwSetInputMode(window, GLFW_CURSOR, cursor);
+				
+				Input::get().getMouse().setLocked(_value);
 			}
 		private:
 			bool _value;
@@ -694,7 +691,7 @@ namespace darmok {
 				{
 					return;
 				}
-				auto& gamepad = GamepadImpl::get(handle);
+				auto& gamepad = Input::get().getGamepad(handle);
 
 				if (numAxes > gamepad.getAxes().size())
 				{
@@ -758,15 +755,12 @@ namespace darmok {
 
 				glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-				;
-
 				WindowHandle handle = _windows.createHandle();
 
 				WindowCreationOptions options
 				{
 					WindowSize{ DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT },
 					"darmok",
-					false
 				};
 
 				GLFWwindow* window = createWindowImpl(options);
@@ -780,9 +774,12 @@ namespace darmok {
 
 				_windows.setWindow(handle, window);
 
-				glfwGetWindowPos(window, &options.pos.x, &options.pos.y);
+				WindowPosition pos;
+				glfwGetWindowPos(window, &pos.x, &pos.y);
+				options.pos = pos;
 
-				_eventQueue.postWindowCreatedEvent(handle, window, options);
+				auto& win = darmok::Context::get().getWindow(handle).getImpl();
+				win.init(handle, options);
 
 				_thread.init(MainThreadEntry::threadFunc, &_mte);
 
@@ -987,10 +984,10 @@ namespace darmok {
 				return window;
 			}
 
-			if (options.setPos)
+			if (options.pos.has_value())
 			{
-				auto v = options.pos;
-				glfwSetWindowPos(window, v.x, v.y);
+				auto pos = options.pos.value();
+				glfwSetWindowPos(window, pos.x, pos.y);
 			}
 			if (options.flags & WindowFlags::AspectRatio)
 			{

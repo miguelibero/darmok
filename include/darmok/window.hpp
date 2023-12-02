@@ -2,19 +2,14 @@
 
 #include <cstdint>
 #include <string>
+#include <array>
+#include <optional>
+#include <memory>
 #include <bgfx/bgfx.h>
 
 
 namespace darmok
 {
-	class WindowCreatedEvent;
-	class WindowSizeChangedEvent;
-	class WindowPositionChangedEvent;
-	class WindowTitleChangedEvent;
-	class WindowDestroyedEvent;
-	class WindowSuspendedEvent;
-	class FileDroppedEvent;
-
 	/// 
 	struct WindowHandle final
 	{
@@ -70,25 +65,20 @@ namespace darmok
 	{
 		WindowSize size;
 		std::string title;
-		bool setPos;
-		WindowPosition pos;
+		std::optional<WindowPosition> pos;
 		uint32_t flags = WindowFlags::None;
 	};
+
+	class ContextImpl;
+	class WindowImpl;
 
 	class Window final
 	{
 	public:
-		static constexpr size_t MaxAmount = 8;
+
+		static constexpr WindowHandle::idx_t MaxAmount = 8;
 		static constexpr WindowHandle DefaultHandle = { 0 };
 		static constexpr WindowHandle InvalidHandle = { UINT16_MAX };
-
-		Window(const WindowHandle& handle = InvalidHandle);
-
-		/// 
-		static Window& create(const WindowCreationOptions& options);
-
-		/// 
-		static Window& get(const WindowHandle& handle = DefaultHandle);
 
 		/// 
 		void destroy();
@@ -141,25 +131,48 @@ namespace darmok
 		/// 
 		WindowSuspendPhase getSuspendPhase() const;
 
+		/// 
+		const WindowImpl& getImpl() const;
+
+		/// 
+		WindowImpl& getImpl();
+
 	private:
+		Window();
+		Window(const Window& other) = delete;
+		Window(Window&& other) = delete;
 
+		std::unique_ptr<WindowImpl> _impl;
 
-		WindowHandle _handle;
-		std::string _dropFilePath;
-		WindowSize _size;
-		WindowPosition _pos;
-		bool _mouseLock;
-		uint32_t _flags;
-		std::string _title;
-		WindowSuspendPhase _suspendPhase;
+		friend ContextImpl;
+	};
 
-		friend WindowCreatedEvent;
-		friend WindowSizeChangedEvent;
-		friend WindowPositionChangedEvent;
-		friend WindowTitleChangedEvent;
-		friend WindowDestroyedEvent;
-		friend WindowSuspendedEvent;
-		friend FileDroppedEvent;
+	typedef std::array<Window, Window::MaxAmount> Windows;
+
+	class Context final
+	{
+	public:
+		/// 
+		Window& createWindow(const WindowCreationOptions& options);
+
+		/// 
+		Window& getWindow(const WindowHandle& handle = Window::DefaultHandle);
+
+		/// 
+		const Window& getWindow(const WindowHandle& handle = Window::DefaultHandle) const;
+
+		/// 
+		Windows& getWindows();
+
+		/// 
+		static Context& get();
+
+	private:
+		Context();
+		Context(const Context& other) = delete;
+		Context(Context&& other) = delete;
+
+		std::unique_ptr<ContextImpl> _impl;
 	};
 
 } // namespace darmok

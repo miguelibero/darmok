@@ -417,7 +417,7 @@ namespace darmok
 				io.AddInputCharacter(inputChar.data);
 			}
 
-			auto& win = Window::get(handle);
+			auto& win = Context::get().getWindow(handle);
 			auto& size = win.getSize();
 			io.DisplaySize = ImVec2((float)size.width, (float)size.height);
 

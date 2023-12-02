@@ -1,13 +1,4 @@
 
-#include <darmok/input.hpp>
-#include <darmok/window.hpp>
-#include <darmok/utils.hpp>
-#include <bx/bx.h>
-
-#include <string>
-#include <unordered_map>
-#include <array>
-
 #include "input.hpp"
 
 namespace darmok
@@ -101,12 +92,6 @@ namespace darmok
 		_chars.fill({});
 		_charsRead = 0;
 		_charsWrite = 0;
-	}
-
-	KeyboardImpl& KeyboardImpl::get()
-	{
-		static KeyboardImpl instance;
-		return instance;
 	}
 
 	static const std::string s_keyboardKeyNames[] =
@@ -206,6 +191,11 @@ namespace darmok
 		return s_keyboardKeyNames[to_underlying(key)];
 	}
 
+	Keyboard::Keyboard()
+		: _impl(std::make_unique<KeyboardImpl>())
+	{
+	}
+
 	char Keyboard::keyToAscii(KeyboardKey key, uint8_t modifiers)
 	{
 		const bool isAscii = (KeyboardKey::Key0 <= key && key <= KeyboardKey::KeyZ)
@@ -245,32 +235,42 @@ namespace darmok
 
 	bool Keyboard::getKey(KeyboardKey key) const
 	{
-		return KeyboardImpl::get().getKey(key);
+		return _impl->getKey(key);
 	}
 
 	bool Keyboard::getKey(KeyboardKey key, uint8_t& modifiers) const
 	{
-		return KeyboardImpl::get().getKey(key, modifiers);
+		return _impl->getKey(key, modifiers);
 	}
 
 	const KeyboardKeys& Keyboard::getKeys() const
 	{
-		return KeyboardImpl::get().getKeys();
+		return _impl->getKeys();
 	}
 
 	uint8_t Keyboard::getModifiers() const
 	{
-		return KeyboardImpl::get().getModifiers();
+		return _impl->getModifiers();
 	}
 
 	Utf8Char Keyboard::popChar()
 	{
-		return KeyboardImpl::get().popChar();
+		return _impl->popChar();
 	}
 
 	void Keyboard::flush()
 	{
-		return KeyboardImpl::get().flush();
+		return _impl->flush();
+	}
+
+	const KeyboardImpl& Keyboard::getImpl() const
+	{
+		return *_impl;
+	}
+
+	KeyboardImpl& Keyboard::getImpl()
+	{
+		return *_impl;
 	}
 
 #pragma endregion Keyboard
@@ -359,12 +359,6 @@ namespace darmok
 		return false;
 	}
 
-	MouseImpl& MouseImpl::get()
-	{
-		static MouseImpl instance;
-		return instance;
-	}
-
 	static const std::string s_mouseButtonNames[] =
 	{
 		"None",
@@ -380,39 +374,54 @@ namespace darmok
 		return s_mouseButtonNames[to_underlying(button)];
 	}
 
+	Mouse::Mouse()
+		: _impl(std::make_unique<MouseImpl>())
+	{
+	}
+
 	void Mouse::setWheelDelta(float wheelDelta)
 	{
-		MouseImpl::get().setWheelDelta(wheelDelta);
+		_impl->setWheelDelta(wheelDelta);
 	}
 
 	bool Mouse::getButton(MouseButton button) const
 	{
-		return MouseImpl::get().getButton(button);
+		return _impl->getButton(button);
 	}
 
 	RelativeMousePosition Mouse::popRelativePosition()
 	{
-		return MouseImpl::get().popRelativePosition();
+		return _impl->popRelativePosition();
 	}
 
 	const MousePosition& Mouse::getPosition() const
 	{
-		return MouseImpl::get().getPosition();
+		return _impl->getPosition();
 	}
 
 	const MouseButtons& Mouse::getButtons() const
 	{
-		return MouseImpl::get().getButtons();
+		return _impl->getButtons();
 	}
 
 	bool Mouse::getLocked() const
 	{
-		return MouseImpl::get().getLocked();
+		return _impl->getLocked();
 	}
 
 	bool Mouse::setLocked(bool lock)
 	{
-		return MouseImpl::get().setLocked(lock);
+		return _impl->setLocked(lock);
+	}
+
+	const MouseImpl& Mouse::getImpl() const
+	{
+		return *_impl;
+	}
+
+	MouseImpl& Mouse::getImpl()
+	{
+		return *_impl;
 	}
 
 #pragma endregion Mouse
@@ -435,17 +444,23 @@ namespace darmok
 	}
 
 	GamepadImpl::GamepadImpl()
-		: _connected(false)
+		: _handle(Gamepad::InvalidHandle)
 		, _axes{}
 		, _buttons{}
 	{
+	}
+
+	void GamepadImpl::init(const GamepadHandle& handle)
+	{
+		reset();
+		_handle = handle;
 	}
 
 	void GamepadImpl::reset()
 	{
 		_axes.fill(0);
 		_buttons.fill(false);
-		_connected = false;
+		_handle = Gamepad::InvalidHandle;
 	}
 
 	void GamepadImpl::setAxis(GamepadAxis axis, int32_t value)
@@ -456,11 +471,6 @@ namespace darmok
 	void GamepadImpl::setButton(GamepadButton button, bool down)
 	{
 		_buttons[to_underlying(button)] = down;
-	}
-
-	void GamepadImpl::setConnected(bool connected)
-	{
-		_connected = connected;
 	}
 
 	int32_t GamepadImpl::getAxis(GamepadAxis key) const
@@ -483,15 +493,9 @@ namespace darmok
 		return _axes;
 	}
 
-	bool GamepadImpl::getConnected() const
+	bool GamepadImpl::isConnected() const
 	{
-		return _connected;
-	}
-
-	GamepadImpl& GamepadImpl::get(const GamepadHandle& handle)
-	{
-		static Container instances;
-		return instances[handle.idx];
+		return _handle.isValid();
 	}
 
 	static const std::string s_gamepadButtonNames[] =
@@ -516,13 +520,8 @@ namespace darmok
 	BX_STATIC_ASSERT(to_underlying(GamepadButton::Count) == BX_COUNTOF(s_gamepadButtonNames));
 
 	Gamepad::Gamepad()
-		: _handle(Gamepad::InvalidHandle)
+		: _impl(std::make_unique<GamepadImpl>())
 	{
-	}
-
-	void Gamepad::setHandle(const GamepadHandle& handle)
-	{
-		_handle = handle;
 	}
 
 	const std::string& Gamepad::getButtonName(GamepadButton button)
@@ -533,22 +532,37 @@ namespace darmok
 
 	int32_t Gamepad::getAxis(GamepadAxis key) const
 	{
-		return GamepadImpl::get(_handle).getAxis(key);
+		return _impl->getAxis(key);
 	}
 
 	bool Gamepad::getButton(GamepadButton button) const
 	{
-		return GamepadImpl::get(_handle).getButton(button);
+		return _impl->getButton(button);
+	}
+
+	const GamepadAxes& Gamepad::getAxes() const
+	{
+		return _impl->getAxes();
 	}
 
 	const GamepadButtons& Gamepad::getButtons() const
 	{
-		return GamepadImpl::get(_handle).getButtons();
+		return _impl->getButtons();
 	}
 
-	bool Gamepad::getConnected() const
+	bool Gamepad::isConnected() const
 	{
-		return GamepadImpl::get(_handle).getConnected();
+		return _impl->isConnected();
+	}
+
+	const GamepadImpl& Gamepad::getImpl() const
+	{
+		return *_impl;
+	}
+
+	GamepadImpl& Gamepad::getImpl()
+	{
+		return *_impl;
 	}
 
 #pragma endregion Gamepad
@@ -576,12 +590,6 @@ namespace darmok
 	InputImpl::InputImpl()
 		: _gamepads{}
 	{
-		GamepadHandle handle{ 0 };
-		for (auto& gamepad : getGamepads())
-		{
-			gamepad.setHandle(handle);
-			handle.idx++;
-		}
 	}
 
 	bool InputImpl::bindingTriggered(InputBinding& binding)
@@ -702,65 +710,64 @@ namespace darmok
 		return _gamepads;
 	}
 
-	InputImpl& InputImpl::get()
+	Input::Input()
+		: _impl(std::make_unique<InputImpl>())
 	{
-		static InputImpl instance;
-		return instance;
 	}
 
 	void Input::addBindings(const std::string& name, std::vector<InputBinding>&& value)
 	{
-		InputImpl::get().addBindings(name, std::move(value));
+		_impl->addBindings(name, std::move(value));
 	}
 
 	void Input::removeBindings(const std::string& name)
 	{
-		InputImpl::get().removeBindings(name);
+		_impl->removeBindings(name);
 	}
 
 	void Input::process()
 	{
-		InputImpl::get().process();
+		_impl->process();
 	}
 
 	Keyboard& Input::getKeyboard()
 	{
-		return InputImpl::get().getKeyboard();
+		return _impl->getKeyboard();
 	}
 
 	const Keyboard& Input::getKeyboard() const
 	{
-		return InputImpl::get().getKeyboard();
+		return _impl->getKeyboard();
 	}
 
 	Mouse& Input::getMouse()
 	{
-		return InputImpl::get().getMouse();
+		return _impl->getMouse();
 	}
 
 	const Mouse& Input::getMouse() const
 	{
-		return InputImpl::get().getMouse();
+		return _impl->getMouse();
 	}
 
 	Gamepad& Input::getGamepad(const GamepadHandle& handle)
 	{
-		return InputImpl::get().getGamepad(handle);
+		return _impl->getGamepad(handle);
 	}
 
 	const Gamepad& Input::getGamepad(const GamepadHandle& handle) const
 	{
-		return InputImpl::get().getGamepad(handle);
+		return _impl->getGamepad(handle);
 	}
 
 	Gamepads& Input::getGamepads()
 	{
-		return InputImpl::get().getGamepads();
+		return _impl->getGamepads();
 	}
 
 	const Gamepads& Input::getGamepads() const
 	{
-		return InputImpl::get().getGamepads();
+		return _impl->getGamepads();
 	}
 
 	Input& Input::get()

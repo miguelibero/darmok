@@ -16,7 +16,7 @@ namespace darmok
 	class KeyboardImpl final
 	{
 	public:
-
+		KeyboardImpl();
 		bool getKey(KeyboardKey key) const;
 		bool getKey(KeyboardKey key, uint8_t& modifiers) const;
 		const KeyboardKeys& getKeys() const;
@@ -24,15 +24,12 @@ namespace darmok
 		Utf8Char popChar();
 		void flush();
 
-		static KeyboardImpl& get();
-
 		void reset();
 		void setKey(KeyboardKey key, uint8_t modifiers, bool down);
 		void pushChar(const Utf8Char& data);
 
 	private:
 
-		KeyboardImpl();
 		KeyboardImpl(const KeyboardImpl& other) = delete;
 		KeyboardImpl(KeyboardImpl&& other) = delete;
 
@@ -52,7 +49,7 @@ namespace darmok
 	class MouseImpl final
 	{
 	public:
-
+		MouseImpl();
 		void setWheelDelta(uint16_t wheelDelta);
 		bool getButton(MouseButton button) const;
 		RelativeMousePosition popRelativePosition();
@@ -61,14 +58,11 @@ namespace darmok
 		bool getLocked() const;
 		bool setLocked(bool lock);
 
-		static MouseImpl& get();
-
 		void setResolution(const WindowSize& size);
 		void setPosition(const MousePosition& pos);
 		void setButton(MouseButton button, bool down);
 
 	private:
-		MouseImpl();
 		MouseImpl(const MouseImpl& other) = delete;
 		MouseImpl(MouseImpl&& other) = delete;
 
@@ -90,29 +84,25 @@ namespace darmok
 	class GamepadImpl final
 	{
 	public:
+		GamepadImpl();
+
 		int32_t getAxis(GamepadAxis key) const;
 		bool getButton(GamepadButton button) const;
 		const GamepadButtons& getButtons() const;
 		const GamepadAxes& getAxes() const;
-		bool getConnected() const;
+		bool isConnected() const;
 
+		void init(const GamepadHandle& handle);
 		void reset();
 		void setAxis(GamepadAxis axis, int32_t value);
 		void setButton(GamepadButton button, bool down);
-		void setConnected(bool connected);
-
-		static GamepadImpl& get(const GamepadHandle& handle);
 	private:
-		GamepadImpl();
 		GamepadImpl(const GamepadImpl& other) = delete;
 		GamepadImpl(GamepadImpl&& other) = delete;
 
-		typedef std::array<GamepadImpl, Gamepad::MaxAmount> Container;
-		friend Container;
-
+		GamepadHandle _handle;
 		GamepadButtons _buttons;
 		GamepadAxes _axes;
-		bool _connected;
 	};
 
 #pragma endregion Gamepad
@@ -122,6 +112,8 @@ namespace darmok
 	class InputImpl final
 	{
 	public:
+		InputImpl();
+
 		void process();
 		void reset();
 		void addBindings(const std::string& name, std::vector<InputBinding>&& bindings);
@@ -131,10 +123,7 @@ namespace darmok
 		Gamepad& getGamepad(const GamepadHandle& handle);
 		Gamepads& getGamepads();
 
-		static InputImpl& get();
-
 	private:
-		InputImpl();
 		InputImpl(const InputImpl& other) = delete;
 		InputImpl(InputImpl&& other) = delete;
 

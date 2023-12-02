@@ -1,7 +1,9 @@
 
 #include "platform.hpp"
-#include "dbg.h"
 #include "input.hpp"
+#include "window.hpp"
+#include "dbg.h"
+
 
 #include <bx/bx.h>
 #include <bx/file.h>
@@ -23,7 +25,8 @@ namespace darmok
 
 		void process()
 		{
-			KeyboardImpl::get().setKey(_key, _modifiers, _down);
+			auto& kb = Input::get().getKeyboard().getImpl();
+			kb.setKey(_key, _modifiers, _down);
 		}
 	private:
 		KeyboardKey _key;
@@ -42,7 +45,8 @@ namespace darmok
 
 		void process()
 		{
-			KeyboardImpl::get().pushChar(_data);
+			auto& kb = Input::get().getKeyboard().getImpl();
+			kb.pushChar(_data);
 		}
 	private:
 		Utf8Char _data;
@@ -59,7 +63,8 @@ namespace darmok
 
 		void process()
 		{
-			MouseImpl::get().setPosition(_pos);
+			auto& mouse = Input::get().getMouse().getImpl();
+			mouse.setPosition(_pos);
 		}
 	private:
 		MousePosition _pos;
@@ -77,7 +82,8 @@ namespace darmok
 
 		void process()
 		{
-			MouseImpl::get().setButton(_button, _down);
+			auto& mouse = Input::get().getMouse().getImpl();
+			mouse.setButton(_button, _down);
 		}
 	private:
 		MouseButton _button;
@@ -97,7 +103,8 @@ namespace darmok
 
 		void process()
 		{
-			GamepadImpl::get(_gamepad).setAxis(_axis, _value);
+			auto& gamepad = Input::get().getGamepad(_gamepad).getImpl();
+			gamepad.setAxis(_axis, _value);
 		}
 
 	private:
@@ -119,7 +126,8 @@ namespace darmok
 
 		void process()
 		{
-			GamepadImpl::get(_gamepad).setButton(_button, _down);
+			auto& gamepad = Input::get().getGamepad(_gamepad).getImpl();
+			gamepad.setButton(_button, _down);
 		}
 
 	private:
@@ -141,7 +149,15 @@ namespace darmok
 		void process()
 		{
 			DBG("gamepad %d, %d", _gamepad.idx, _connected);
-			GamepadImpl::get(_gamepad).setConnected(_connected);
+			auto& gamepad = Input::get().getGamepad(_gamepad).getImpl();
+			if (_connected)
+			{
+				gamepad.init(_gamepad);
+			}
+			else
+			{
+				gamepad.reset();
+			}
 		}
 	private:
 		GamepadHandle _gamepad;
@@ -157,9 +173,9 @@ namespace darmok
 		{
 		}
 
-		Window& getWindow()
+		WindowImpl& getWindowImpl()
 		{
-			return Window::get(_window);
+			return Context::get().getWindow(_window).getImpl();
 		}
 
 		WindowHandle getWindowHandle()
@@ -181,12 +197,12 @@ namespace darmok
 
 		bool process()
 		{
-			auto& win = getWindow();
-			if (win._size == _size)
+			auto& win = getWindowImpl();
+			if (win.getSize() == _size)
 			{
 				return false;
 			}
-			win._size = _size;
+			win.setSize(_size);
 			return true;
 		}
 	private:
@@ -204,8 +220,7 @@ namespace darmok
 
 		void process()
 		{
-			auto& win = getWindow();
-			win._pos = _pos;
+			getWindowImpl().setPosition(_pos);
 		}
 	private:
 		WindowPosition _pos;
@@ -222,8 +237,7 @@ namespace darmok
 
 		void process()
 		{
-			auto& win = getWindow();
-			win._title = _title;
+			getWindowImpl().setTitle(_title);
 		}
 	private:
 		std::string _title;
@@ -232,24 +246,17 @@ namespace darmok
 	class WindowCreatedEvent final : public WindowEvent
 	{
 	public:
-		WindowCreatedEvent(WindowHandle window, void* nativeHandle, const WindowCreationOptions& options)
+		WindowCreatedEvent(WindowHandle window, const WindowCreationOptions& options)
 			: WindowEvent(WindowCreated, window)
-			, _nativeHandle(nativeHandle)
 			, _options(options)
 		{
 		}
 
 		void process()
 		{
-			auto& win = getWindow();
-			win._handle = getWindowHandle();
-			win._size = _options.size;
-			win._pos = _options.pos;
-			win._title = _options.title;
-			win._flags = _options.flags;
+			getWindowImpl().init(getWindowHandle(), _options);
 		}
 	private:
-		void* _nativeHandle;
 		WindowCreationOptions _options;
 
 	};
@@ -264,12 +271,7 @@ namespace darmok
 
 		void process()
 		{
-			auto& win = Window::get();
-			win._handle = Window::InvalidHandle;
-			win._size = {};
-			win._pos = {};
-			win._title = {};
-			win._flags = WindowFlags::None;
+			getWindowImpl().reset();
 		}
 	};
 
@@ -285,6 +287,7 @@ namespace darmok
 
 		void process()
 		{
+			getWindowImpl().setSuspendPhase(_phase);
 		}
 	private:
 		WindowSuspendPhase _phase;
@@ -302,8 +305,7 @@ namespace darmok
 		void process()
 		{
 			DBG("drop file %s", _filePath.c_str());
-			auto& win = getWindow();
-			win._dropFilePath = _filePath;
+			getWindowImpl().setDropFilePath(_filePath);
 		}
 	private:
 		std::string _filePath;
@@ -413,9 +415,9 @@ namespace darmok
 		_events.push(std::make_unique<WindowTitleChangedEvent>(window, title));
 	}
 
-	void PlatformEventQueue::postWindowCreatedEvent(WindowHandle window, void* nativeHandle, const WindowCreationOptions& options)
+	void PlatformEventQueue::postWindowCreatedEvent(WindowHandle window, const WindowCreationOptions& options)
 	{
-		_events.push(std::make_unique<WindowCreatedEvent>(window, nativeHandle, options));
+		_events.push(std::make_unique<WindowCreatedEvent>(window, options));
 	}
 
 	void PlatformEventQueue::postWindowDestroyedEvent(WindowHandle window)

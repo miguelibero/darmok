@@ -77,8 +77,7 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	void fullscreenToggleBinding()
 	{
-		auto& win = Window::get(Window::DefaultHandle);
-		win.toggleFullscreen();
+		Context::get().getWindow().toggleFullscreen();
 	}
 
 	uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled)
@@ -311,9 +310,9 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 		if(needsReset || s_needsReset)
 		{
-			auto& size = Window::get().getSize();
+			auto& size = Context::get().getWindow().getSize();
 			bgfx::reset(size.width, size.height, getResetFlags());
-			MouseImpl::get().setResolution(size);
+			Input::get().getMouse().getImpl().setResolution(size);
 			s_needsReset = false;
 		}
 
@@ -342,12 +341,17 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	void SimpleApp::init(const std::vector<std::string>& args)
 	{
+		if (processEvents())
+		{
+			return;
+		}
+
 		bx::FilePath fp(args[0].c_str());
 		auto basePath = fp.getPath();
 		setCurrentDir(std::string(basePath.getPtr(), basePath.getLength()));
 
 		bgfx::Init init;
-		auto& win = Window::get();
+		auto& win = Context::get().getWindow();
 		init.platformData.ndt = Window::getNativeDisplayHandle();
 		init.platformData.nwh = win.getNativeHandle();
 		init.platformData.type = win.getNativeHandleType();
@@ -369,12 +373,12 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 
 	bool SimpleApp::update()
 	{
-		if (darmok::processEvents())
+		if (processEvents())
 		{
 			return false;
 		}
 
-		auto& win = Window::get();
+		auto& win = Context::get().getWindow();
 		bgfx::ViewId viewId = 0;
 
 		_lastMousePos = Input::get().getMouse().popRelativePosition();
