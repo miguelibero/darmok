@@ -1,30 +1,28 @@
 #pragma once
 
 #include <darmok/input.hpp>
-#include <darmok/window.hpp>
 
 #include <dear-imgui/imgui.h>
 #include <bgfx/embedded_shader.h>
 
 namespace darmok
 {
-    class ImguiContext final
+	class WindowHandle;
+
+    class ImguiAppComponentImpl final
     {
     public:
+		ImguiAppComponentImpl(float fontSize = 18.0f);
+		void init();
+		void beginFrame(const WindowHandle& window, const InputState& input);
+		void endFrame(bgfx::ViewId viewId);
 
-		static ImguiContext& get();
-
-        void init(float fontSize = 18.0f);
-        void shutdown();
-
-        void beginFrame(const WindowHandle& window, bgfx::ViewId viewId, const InputState& input);
-        void endFrame();
+		void shutdown();
 
 		static void* memAlloc(size_t size, void* userData);
 		static void memFree(void* ptr, void* userData);
 
     private:
-		ImguiContext();
 
 		typedef std::array<ImGuiKey, to_underlying(KeyboardKey::Count)> KeyboardMap;
 		typedef std::array<ImGuiKey, to_underlying(GamepadButton::Count)> GamepadMap;
@@ -32,7 +30,7 @@ namespace darmok
 		static KeyboardMap&& createKeyboardMap();
 		static GamepadMap&& createGamepadMap();
 
-        void render(ImDrawData* drawData);
+        static void render(bgfx::ViewId viewId, ImDrawData* drawData);
 		static void setupStyle(bool dark);
 
 		struct FontRangeMerge
@@ -52,7 +50,7 @@ namespace darmok
 		std::array<ImFont*, ImGui::Font::Count> _font;
 		int64_t _last;
 		int32_t _lastScroll;
-		bgfx::ViewId _viewId;
+		float _fontSize;
 
 		static const KeyboardMap _keyboardMap;
 		static const GamepadMap _gamepadMap;

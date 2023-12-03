@@ -1,7 +1,9 @@
 #pragma once
 
+#include <darmok/app.hpp>
 #include <string>
 #include <cstdint>
+#include <entt/entt.hpp>
 
 namespace darmok
 {
@@ -10,19 +12,25 @@ namespace darmok
 	public:
 		static AppImpl& get();
 
+		virtual void init(App& app, const std::vector<std::string>& args);
+		virtual void shutdown();
+		virtual void beforeUpdate(const WindowHandle& window, const InputState& input);
+		virtual void afterUpdate(const WindowHandle& window, const InputState& input);
 		bool processEvents();
-		void setCurrentDir(const std::string& dir);
+
 		uint32_t getResetFlags();
-
-		void addBindings();
-		void removeBindings();
-
 		void toggleDebugFlag(uint32_t flag);
 		void setDebugFlag(uint32_t flag, bool enabled = true);
+
+		void addComponent(std::unique_ptr<AppComponent>&& component);
 
 	private:
 
 		AppImpl();
+
+		void setCurrentDir(const std::string& dir);
+		void addBindings();
+		void removeBindings();
 
 		static void exitAppBinding();
 		static void fullscreenToggleBinding();
@@ -45,6 +53,8 @@ namespace darmok
 		bool getResetFlag(uint32_t flag);
 		bool getDebugFlag(uint32_t flag);
 
+		App& _app;
+		std::vector<std::string> _args;
 		std::string _currentDir;
 		static const std::string _bindingsName;
 	
@@ -52,5 +62,8 @@ namespace darmok
 		uint32_t _debug;
 		uint32_t _reset;
 		bool _needsReset;
+
+		std::vector<std::unique_ptr<AppComponent>> _components;
+		entt::registry _registry;
 	};
 }

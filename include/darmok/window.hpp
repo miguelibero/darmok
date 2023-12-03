@@ -93,6 +93,7 @@ namespace darmok
 		uint32_t getFlags() const;
 		const std::string& getDropFilePath() const;
 		WindowSuspendPhase getSuspendPhase() const;
+		bool isRunning() const;
 		const WindowImpl& getImpl() const;
 		WindowImpl& getImpl();
 

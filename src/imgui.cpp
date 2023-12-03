@@ -1,6 +1,8 @@
 #include "imgui.hpp"
 #include "asset.hpp"
+#include <darmok/imgui.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/window.hpp>
 
 #include <dear-imgui/imgui.h>
 #include <dear-imgui/imgui_internal.h>
@@ -24,9 +26,9 @@
 
 namespace darmok
 {
-	const uint8_t ImguiContext::AlphaBlendFlags = 0x01;
+	const uint8_t ImguiAppComponentImpl::AlphaBlendFlags = 0x01;
 
-	const bgfx::EmbeddedShader  ImguiContext::_embeddedShaders[] =
+	const bgfx::EmbeddedShader  ImguiAppComponentImpl::_embeddedShaders[] =
 	{
 		BGFX_EMBEDDED_SHADER(vs_ocornut_imgui),
 		BGFX_EMBEDDED_SHADER(fs_ocornut_imgui),
@@ -36,13 +38,13 @@ namespace darmok
 		BGFX_EMBEDDED_SHADER_END()
 	};
 
-	const ImguiContext::FontRangeMerge ImguiContext::_fontRangeMerge[] =
+	const ImguiAppComponentImpl::FontRangeMerge ImguiAppComponentImpl::_fontRangeMerge[] =
 	{
 		{ s_iconsKenneyTtf,      sizeof(s_iconsKenneyTtf),      { ICON_MIN_KI, ICON_MAX_KI, 0 } },
 		{ s_iconsFontAwesomeTtf, sizeof(s_iconsFontAwesomeTtf), { ICON_MIN_FA, ICON_MAX_FA, 0 } },
 	};
 
-	ImguiContext::KeyboardMap&& ImguiContext::createKeyboardMap()
+	ImguiAppComponentImpl::KeyboardMap&& ImguiAppComponentImpl::createKeyboardMap()
 	{
 		KeyboardMap map;
 
@@ -140,7 +142,7 @@ namespace darmok
 		return std::move(map);
 	}
 
-	ImguiContext::GamepadMap&& ImguiContext::createGamepadMap()
+	ImguiAppComponentImpl::GamepadMap&& ImguiAppComponentImpl::createGamepadMap()
 	{
 		GamepadMap map;
 		map[to_underlying(GamepadButton::None)] = ImGuiKey_None;
@@ -163,16 +165,10 @@ namespace darmok
 		return std::move(map);
 	}
 
-	const ImguiContext::KeyboardMap ImguiContext::_keyboardMap = ImguiContext::createKeyboardMap();
-	const ImguiContext::GamepadMap ImguiContext::_gamepadMap = ImguiContext::createGamepadMap();
+	const ImguiAppComponentImpl::KeyboardMap ImguiAppComponentImpl::_keyboardMap = ImguiAppComponentImpl::createKeyboardMap();
+	const ImguiAppComponentImpl::GamepadMap ImguiAppComponentImpl::_gamepadMap = ImguiAppComponentImpl::createGamepadMap();
 
-	ImguiContext& ImguiContext::get()
-	{
-		static ImguiContext instance;
-		return instance;
-	}
-	
-	ImguiContext::ImguiContext()
+	ImguiAppComponentImpl::ImguiAppComponentImpl(float fontSize)
 		: _imgui(nullptr)
 		, _program{ bgfx::kInvalidHandle }
 		, _imageProgram{ bgfx::kInvalidHandle }
@@ -182,14 +178,13 @@ namespace darmok
 		, _font{}
 		, _last(0)
 		, _lastScroll(0)
-		, _viewId(255)
+		, _fontSize(fontSize)
 	{
 		IMGUI_CHECKVERSION();
 	}
 
-	void ImguiContext::init(float fontSize)
+	void ImguiAppComponentImpl::init()
 	{
-		_viewId = 255;
 		_lastScroll = 0;
 		_last = bx::getHPCounter();
 
@@ -245,8 +240,8 @@ namespace darmok
 			//			config.MergeGlyphCenterV = true;
 
 			const ImWchar* ranges = io.Fonts->GetGlyphRangesCyrillic();
-			_font[ImGui::Font::Regular] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoRegularTtf, sizeof(s_robotoRegularTtf), fontSize, &config, ranges);
-			_font[ImGui::Font::Mono] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoMonoRegularTtf, sizeof(s_robotoMonoRegularTtf), fontSize - 3.0f, &config, ranges);
+			_font[ImGui::Font::Regular] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoRegularTtf, sizeof(s_robotoRegularTtf), _fontSize, &config, ranges);
+			_font[ImGui::Font::Mono] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoMonoRegularTtf, sizeof(s_robotoMonoRegularTtf), _fontSize - 3.0f, &config, ranges);
 
 			config.MergeMode = true;
 			config.DstFont = _font[ImGui::Font::Regular];
@@ -257,7 +252,7 @@ namespace darmok
 
 				io.Fonts->AddFontFromMemoryTTF((void*)frm.data
 					, (int)frm.size
-					, fontSize - 3.0f
+					, _fontSize - 3.0f
 					, &config
 					, frm.ranges
 				);
@@ -279,7 +274,7 @@ namespace darmok
 		ImGui::InitDockContext();
 	}
 
-	void ImguiContext::shutdown()
+	void ImguiAppComponentImpl::shutdown()
 	{
 		ImGui::ShutdownDockContext();
 		ImGui::DestroyContext(_imgui);
@@ -292,7 +287,7 @@ namespace darmok
 		bgfx::destroy(_program);
 	}
 
-	void ImguiContext::render(ImDrawData* drawData)
+	void ImguiAppComponentImpl::render(bgfx::ViewId viewId, ImDrawData* drawData)
 	{
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
 		int fb_width = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
@@ -300,8 +295,8 @@ namespace darmok
 		if (fb_width <= 0 || fb_height <= 0)
 			return;
 
-		bgfx::setViewName(_viewId, "ImGui");
-		bgfx::setViewMode(_viewId, bgfx::ViewMode::Sequential);
+		bgfx::setViewName(viewId, "ImGui");
+		bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
 		const bgfx::Caps* caps = bgfx::getCaps();
 		{
@@ -312,8 +307,8 @@ namespace darmok
 			float height = drawData->DisplaySize.y;
 
 			bx::mtxOrtho(ortho, x, x + width, y + height, y, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
-			bgfx::setViewTransform(_viewId, NULL, ortho);
-			bgfx::setViewRect(_viewId, 0, 0, uint16_t(width), uint16_t(height));
+			bgfx::setViewTransform(viewId, NULL, ortho);
+			bgfx::setViewRect(viewId, 0, 0, uint16_t(width), uint16_t(height));
 		}
 
 		const ImVec2 clipPos = drawData->DisplayPos;       // (0,0) unless using multi-viewports
@@ -406,7 +401,7 @@ namespace darmok
 						encoder->setTexture(0, _uniform, th);
 						encoder->setVertexBuffer(0, &tvb, cmd->VtxOffset, numVertices);
 						encoder->setIndexBuffer(&tib, cmd->IdxOffset, cmd->ElemCount);
-						encoder->submit(_viewId, program);
+						encoder->submit(viewId, program);
 					}
 				}
 			}
@@ -415,7 +410,7 @@ namespace darmok
 		}
 	}
 
-	void ImguiContext::setupStyle(bool dark)
+	void ImguiAppComponentImpl::setupStyle(bool dark)
 	{
 		// Doug Binks' darl color scheme
 		// https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9
@@ -433,10 +428,8 @@ namespace darmok
 		style.WindowBorderSize = 0.0f;
 	}
 
-	void ImguiContext::beginFrame(const WindowHandle& window, bgfx::ViewId viewId, const InputState& input)
+	void ImguiAppComponentImpl::beginFrame(const WindowHandle& window, const InputState& input)
 	{
-		_viewId = viewId;
-
 		ImGuiIO& io = ImGui::GetIO();
 		for(auto& inputChar : input.chars)
 		{
@@ -489,24 +482,50 @@ namespace darmok
 		ImGuizmo::BeginFrame();
 	}
 
-	void ImguiContext::endFrame()
+	void ImguiAppComponentImpl::endFrame(bgfx::ViewId viewId)
 	{
 		ImGui::Render();
-		render(ImGui::GetDrawData());
+		render(viewId, ImGui::GetDrawData());
 	}
 
-	void* ImguiContext::memAlloc(size_t size, void* userData)
+	void* ImguiAppComponentImpl::memAlloc(size_t size, void* userData)
 	{
 		BX_UNUSED(userData);
 		auto alloc = AssetContext::get().getImpl().getAllocator();
 		return bx::alloc(alloc, size);
 	}
 
-	void ImguiContext::memFree(void* ptr, void* userData)
+	void ImguiAppComponentImpl::memFree(void* ptr, void* userData)
 	{
 		BX_UNUSED(userData);
 		auto alloc = AssetContext::get().getImpl().getAllocator();
 		bx::free(alloc, ptr);
+	}
+
+	ImguiAppComponent::ImguiAppComponent(float fontSize)
+		: _impl(std::make_unique< ImguiAppComponentImpl>(fontSize))
+	{
+	}
+
+	void ImguiAppComponent::init(App& app, const std::vector<std::string>& args)
+	{
+		_impl->init();
+	}
+
+	void ImguiAppComponent::shutdown()
+	{
+		_impl->shutdown();
+	}
+
+	void ImguiAppComponent::beforeUpdate(const WindowHandle& handle, const InputState& input)
+	{
+		_impl->beginFrame(handle, input);
+	}
+
+	void ImguiAppComponent::afterUpdate(const WindowHandle& handle, const InputState& input)
+	{
+		BX_UNUSED(handle, input);
+		_impl->endFrame(255);
 	}
 }
 
@@ -538,8 +557,8 @@ BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wunused-function"); // warning: 'int re
 BX_PRAGMA_DIAGNOSTIC_PUSH();
 BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG("-Wunknown-pragmas")
 BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wtype-limits"); // warning: comparison is always true due to limited range of data type
-#define STBTT_malloc(size, userData) darmok::ImguiContext::memAlloc(size, userData)
-#define STBTT_free(ptr, userData) darmok::ImguiContext::memFree(ptr, userData)
+#define STBTT_malloc(size, userData) darmok::ImguiAppComponentImpl::memAlloc(size, userData)
+#define STBTT_free(ptr, userData) darmok::ImguiAppComponentImpl::memFree(ptr, userData)
 #define STB_RECT_PACK_IMPLEMENTATION
 #include <stb/stb_rect_pack.h>
 #define STB_TRUETYPE_IMPLEMENTATION

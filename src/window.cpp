@@ -264,6 +264,11 @@ namespace darmok
 		return _impl->getSuspendPhase();
 	}
 
+	bool Window::isRunning() const
+	{
+		return _impl->isRunning();
+	}
+
 	void* Window::getNativeHandle() const
 	{
 		return PlatformContext::get().getNativeWindowHandle(getHandle());

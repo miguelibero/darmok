@@ -1,6 +1,7 @@
 
 
 #include <darmok/app.hpp>
+#include <darmok/imgui.hpp>
 #include <bgfx/bgfx.h>
 #include <dear-imgui/imgui.h>
 
@@ -24,18 +25,18 @@ public:
 			, 1.0f
 			, 0
 			);
+
+		addComponent<darmok::ImguiAppComponent>();
 	}
 
-	void imguiDraw() override
+	void update(const darmok::WindowHandle& window, const darmok::InputState& input) override
 	{
 		ImGui::TextWrapped("lala");
 		std::string text;
 		text.resize(255);
 		ImGui::InputText("text", const_cast<char*>(text.c_str()), text.size());
-	}
 
-	void update(const darmok::InputState& input) override
-	{
+
 		const bgfx::Stats* stats = bgfx::getStats();
 
 		bgfx::dbgTextPrintf(0, 1, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");

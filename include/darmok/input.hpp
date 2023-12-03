@@ -334,7 +334,7 @@ namespace darmok
 
 	typedef std::array<Gamepad, Gamepad::MaxAmount> Gamepads;
 
-	struct InputState
+	struct InputState final
 	{
 		RelativeMousePosition mouse;
 		std::vector<Utf8Char> chars;
