@@ -1,13 +1,14 @@
 #pragma once
 
-#include <darmok/app.hpp>
+#include <string>
+#include <cstdint>
 
 namespace darmok
 {
 	class AppImpl final
 	{
 	public:
-		AppImpl();
+		static AppImpl& get();
 
 		bool processEvents();
 		void setCurrentDir(const std::string& dir);
@@ -20,6 +21,8 @@ namespace darmok
 		void setDebugFlag(uint32_t flag, bool enabled = true);
 
 	private:
+
+		AppImpl();
 
 		static void exitAppBinding();
 		static void fullscreenToggleBinding();
@@ -40,7 +43,6 @@ namespace darmok
 		void toggleResetFlag(uint32_t flag);
 		void setResetFlag(uint32_t flag, bool enabled);
 		bool getResetFlag(uint32_t flag);
-
 		bool getDebugFlag(uint32_t flag);
 
 		std::string _currentDir;

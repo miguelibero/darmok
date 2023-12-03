@@ -1,9 +1,11 @@
 #pragma once
 
-#include <darmok/asset.hpp>
-
+#include <string>
+#include <memory>
 #include <bx/file.h>
 #include <bx/pixelformat.h>
+#include <bimg/bimg.h>
+#include <bgfx/bgfx.h>
 
 namespace darmok
 {

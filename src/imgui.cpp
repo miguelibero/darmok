@@ -1,7 +1,6 @@
 #include "imgui.hpp"
 #include "asset.hpp"
-#include <darmok/input.hpp>
-#include <darmok/app.hpp>
+#include <darmok/asset.hpp>
 
 #include <dear-imgui/imgui.h>
 #include <dear-imgui/imgui_internal.h>

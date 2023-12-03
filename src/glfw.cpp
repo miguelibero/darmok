@@ -2,7 +2,6 @@
 #include "input.hpp"
 #include "window.hpp"
 #include <darmok/utils.hpp>
-#include <bx/bx.h>
 #include <bx/platform.h>
 
 #if DARMOK_CONFIG_USE_GLFW

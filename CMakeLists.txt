@@ -136,7 +136,7 @@ add_compile_definitions(DARMOK_CONFIG_USE_GLFW)
 
 # bgfx
 add_subdirectory(${LIBS_BASE}/bgfx.cmake)
-target_link_libraries(${LIB_NAME} bgfx bimg bx)
+target_link_libraries(${LIB_NAME} bgfx bimg bimg_decode bx)
 
 # imgui
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/imgui.cmake)

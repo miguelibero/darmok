@@ -99,19 +99,19 @@ namespace darmok
 		void postMouseMovedEvent(const MousePosition& pos);
 		void postMouseButtonChangedEvent(MouseButton button, bool down);
 
-		void postGamepadConnectionEvent(GamepadHandle gamepad, bool connected);
-		void postGamepadAxisChangedEvent(GamepadHandle gamepad, GamepadAxis axis, int32_t value);
-		void postGamepadButtonChangedEvent(GamepadHandle gamepad, GamepadButton button, bool down);
+		void postGamepadConnectionEvent(const GamepadHandle& gamepad, bool connected);
+		void postGamepadAxisChangedEvent(const GamepadHandle& gamepad, GamepadAxis axis, int32_t value);
+		void postGamepadButtonChangedEvent(const GamepadHandle& gamepad, GamepadButton button, bool down);
 
 		void postExitEvent();
 
-		void postWindowCreatedEvent(WindowHandle window, const WindowCreationOptions& options);
-		void postWindowSizeChangedEvent(WindowHandle window, const WindowSize& size);
-		void postWindowPositionChangedEvent(WindowHandle window, const WindowPosition& pos);
-		void postWindowTitleChangedEvent(WindowHandle window, const std::string& title);
-		void postFileDroppedEvent(WindowHandle window, const std::string& filePath);
-		void postWindowSuspendedEvent(WindowHandle window, WindowSuspendPhase phase);
-		void postWindowDestroyedEvent(WindowHandle window);
+		void postWindowCreatedEvent(const WindowHandle& window, const WindowCreationOptions& options);
+		void postWindowSizeChangedEvent(const WindowHandle& window, const WindowSize& size);
+		void postWindowPositionChangedEvent(const WindowHandle& window, const WindowPosition& pos);
+		void postWindowTitleChangedEvent(const WindowHandle& window, const std::string& title);
+		void postFileDroppedEvent(const WindowHandle& window, const std::string& filePath);
+		void postWindowSuspendedEvent(const WindowHandle& window, WindowSuspendPhase phase);
+		void postWindowDestroyedEvent(const WindowHandle& window);
 
 		std::unique_ptr<PlatformEvent> poll();
 

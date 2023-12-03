@@ -3,10 +3,9 @@
 #include "platform.hpp"
 #include "imgui.hpp"
 #include "input.hpp"
-#include "dbg.h"
 
+#include <darmok/app.hpp>
 #include <bx/filepath.h>
-#include <bgfx/bgfx.h>
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
@@ -14,7 +13,15 @@
 
 namespace darmok
 {
-	static AppImpl& getAppImpl()
+	AppImpl::AppImpl()
+		: _exit(false)
+		, _debug(BGFX_DEBUG_NONE)
+		, _reset(BGFX_RESET_VSYNC)
+		, _needsReset(false)
+	{
+	}
+
+	AppImpl& AppImpl::get()
 	{
 		static AppImpl instance;
 		return instance;
@@ -25,14 +32,6 @@ namespace darmok
 	void AppImpl::setCurrentDir(const std::string& dir)
 	{
 		_currentDir = dir;
-	}
-
-	AppImpl::AppImpl()
-		: _exit(false)
-		, _debug(BGFX_DEBUG_NONE)
-		, _reset(BGFX_RESET_VSYNC)
-		, _needsReset(false)
-	{
 	}
 
 	void AppImpl::addBindings()
@@ -70,7 +69,7 @@ namespace darmok
 
 	void AppImpl::exitAppBinding()
 	{
-		getAppImpl()._exit = true;
+		AppImpl::get()._exit = true;
 	};
 
 	void AppImpl::fullscreenToggleBinding()
@@ -133,63 +132,63 @@ namespace darmok
 
 	void AppImpl::toggleDebugStatsBinding()
 	{
-		getAppImpl().toggleDebugFlag(BGFX_DEBUG_STATS);
+		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_STATS);
 	}
 
 	void AppImpl::toggleDebugTextBinding()
 	{
-		getAppImpl().toggleDebugFlag(BGFX_DEBUG_TEXT);
+		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_TEXT);
 	}
 
 	void AppImpl::toggleDebugIfhBinding()
 	{
-		getAppImpl().toggleDebugFlag(BGFX_DEBUG_IFH);
+		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_IFH);
 	}
 
 	void AppImpl::toggleDebugWireFrameBinding()
 	{
-		getAppImpl().toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
+		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
 	}
 
 	void AppImpl::toggleDebugProfilerBinding()
 	{
-		getAppImpl().toggleDebugFlag(BGFX_DEBUG_PROFILER);
+		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_PROFILER);
 	}
 
 	void AppImpl::disableDebugFlagsBinding()
 	{
-		getAppImpl().setDebugFlag(BGFX_DEBUG_STATS, false);
-		getAppImpl().setDebugFlag(BGFX_DEBUG_TEXT, false);
+		AppImpl::get().setDebugFlag(BGFX_DEBUG_STATS, false);
+		AppImpl::get().setDebugFlag(BGFX_DEBUG_TEXT, false);
 	}
 
 	void AppImpl::toggleResetVsyncBinding()
 	{
-		getAppImpl().toggleResetFlag(BGFX_RESET_VSYNC);
+		AppImpl::get().toggleResetFlag(BGFX_RESET_VSYNC);
 	}
 
 	void AppImpl::toggleResetMsaaBinding()
 	{
-		getAppImpl().toggleResetFlag(BGFX_RESET_MSAA_X16);
+		AppImpl::get().toggleResetFlag(BGFX_RESET_MSAA_X16);
 	}
 
 	void AppImpl::toggleResetFlushAfterRenderBinding()
 	{
-		getAppImpl().toggleResetFlag(BGFX_RESET_FLUSH_AFTER_RENDER);
+		AppImpl::get().toggleResetFlag(BGFX_RESET_FLUSH_AFTER_RENDER);
 	}
 
 	void AppImpl::toggleResetFlipAfterRenderBinding()
 	{
-		getAppImpl().toggleResetFlag(BGFX_RESET_FLIP_AFTER_RENDER);
+		AppImpl::get().toggleResetFlag(BGFX_RESET_FLIP_AFTER_RENDER);
 	}
 
 	void AppImpl::toggleResetHidpiBinding()
 	{
-		getAppImpl().toggleResetFlag(BGFX_RESET_HIDPI);
+		AppImpl::get().toggleResetFlag(BGFX_RESET_HIDPI);
 	}
 
 	void AppImpl::resetDepthClampBinding()
 	{
-		getAppImpl().toggleResetFlag(BGFX_RESET_DEPTH_CLAMP);
+		AppImpl::get().toggleResetFlag(BGFX_RESET_DEPTH_CLAMP);
 	}
 
 	void AppImpl::screenshotBinding()
@@ -199,7 +198,7 @@ namespace darmok
 		time_t tt;
 		time(&tt);
 
-		auto filePath = getAppImpl()._currentDir + "temp/screenshot-" + std::to_string(tt);
+		auto filePath = AppImpl::get()._currentDir + "temp/screenshot-" + std::to_string(tt);
 		// bgfx::CallbackI::screenShot = 
 		bgfx::requestScreenShot(fbh, filePath.c_str());
 	}
@@ -276,15 +275,15 @@ namespace darmok
 		bx::FilePath fp(args[0].c_str());
 		auto basePath = fp.getPath();
 
-		getAppImpl().setCurrentDir(std::string(basePath.getPtr(), basePath.getLength()));
-		getAppImpl().addBindings();
+		AppImpl::get().setCurrentDir(std::string(basePath.getPtr(), basePath.getLength()));
+		AppImpl::get().addBindings();
 
 		bgfx::Init init;
 		auto& win = Context::get().getWindow();
 		init.platformData.ndt = Window::getNativeDisplayHandle();
 		init.platformData.nwh = win.getNativeHandle();
 		init.platformData.type = win.getNativeHandleType();
-		init.resolution.reset = getAppImpl().getResetFlags();
+		init.resolution.reset = AppImpl::get().getResetFlags();
 		bgfx::init(init);
 
 		ImguiContext::get().init();
@@ -292,7 +291,7 @@ namespace darmok
 
 	int App::shutdown()
 	{
-		getAppImpl().removeBindings();
+		AppImpl::get().removeBindings();
 
 		ImguiContext::get().shutdown();
 
@@ -304,7 +303,7 @@ namespace darmok
 
 	bool App::update()
 	{
-		if (getAppImpl().processEvents())
+		if (AppImpl::get().processEvents())
 		{
 			return false;
 		}
@@ -350,12 +349,12 @@ namespace darmok
 
 	void App::toggleDebugFlag(uint32_t flag)
 	{
-		getAppImpl().toggleDebugFlag(flag);
+		AppImpl::get().toggleDebugFlag(flag);
 	}
 
 	void App::setDebugFlag(uint32_t flag, bool enabled)
 	{
-		getAppImpl().setDebugFlag(flag, enabled);
+		AppImpl::get().setDebugFlag(flag, enabled);
 	}
 
 }

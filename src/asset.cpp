@@ -1,8 +1,7 @@
 #include "asset.hpp"
-#include "app.hpp"
 #include "dbg.h"
-#include <darmok/app.hpp>
 #include <bimg/decode.h>
+#include <darmok/asset.hpp>
 
 namespace darmok
 {
@@ -164,7 +163,7 @@ namespace darmok
 		if (data != nullptr && !data->empty())
 		{
 			auto alloc = getAllocator();
-			bimg::ImageContainer* imageContainer = nullptr; // bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size());
+			bimg::ImageContainer* imageContainer = ::bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size());
 
 			if (imageContainer != nullptr)
 			{
@@ -244,7 +243,7 @@ namespace darmok
 	{
 		auto data = loadData(filePath);
 		auto alloc = getAllocator();
-		return nullptr; //  bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Enum(dstFormat));
+		return bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Enum(dstFormat));
 	}
 
 	AssetContext& AssetContext::get()

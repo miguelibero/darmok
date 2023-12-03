@@ -4,13 +4,9 @@
 #pragma once
 
 #include <string>
-#include <memory>
 #include <vector>
 #include <cstdint>
 #include <bx/bx.h>
-#include <darmok/input.hpp>
-
-namespace bx { struct FileReaderI; struct FileWriterI; struct AllocatorI; }
 
 extern "C" int _main_(int argc, char** argv);
 
@@ -31,7 +27,8 @@ extern "C" int _main_(int argc, char** argv);
 
 namespace darmok
 {
-	///
+	class InputState;
+	
 	class BX_NO_VTABLE App
 	{
 	public:

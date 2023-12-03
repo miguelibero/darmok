@@ -4,11 +4,6 @@
 #include "window.hpp"
 #include "dbg.h"
 
-#include <bx/bx.h>
-#include <bx/file.h>
-#include <bx/readerwriter.h>
-#include <bgfx/bgfx.h>
-
 namespace darmok
 {
 	PlatformEvent::PlatformEvent(Type type)
@@ -384,17 +379,17 @@ namespace darmok
 		_events.push(std::make_unique<MouseButtonChangedEvent>(button, down));
 	}
 
-	void PlatformEventQueue::postGamepadConnectionEvent(GamepadHandle gamepad, bool connected)
+	void PlatformEventQueue::postGamepadConnectionEvent(const GamepadHandle& gamepad, bool connected)
 	{
 		_events.push(std::make_unique<GamepadConnectionEvent>(gamepad, connected));
 	}
 
-	void PlatformEventQueue::postGamepadAxisChangedEvent(GamepadHandle gamepad, GamepadAxis axis, int32_t value)
+	void PlatformEventQueue::postGamepadAxisChangedEvent(const GamepadHandle& gamepad, GamepadAxis axis, int32_t value)
 	{
 		_events.push(std::make_unique<GamepadAxisChangedEvent>(gamepad, axis, value));
 	}
 
-	void PlatformEventQueue::postGamepadButtonChangedEvent(GamepadHandle gamepad, GamepadButton button, bool down)
+	void PlatformEventQueue::postGamepadButtonChangedEvent(const GamepadHandle& gamepad, GamepadButton button, bool down)
 	{
 		_events.push(std::make_unique<GamepadButtonChangedEvent>(gamepad, button, down));
 	}
@@ -404,37 +399,37 @@ namespace darmok
 		_events.push(std::make_unique<PlatformEvent>(PlatformEvent::Exit));
 	}
 
-	void PlatformEventQueue::postWindowSizeChangedEvent(WindowHandle window, const WindowSize& size)
+	void PlatformEventQueue::postWindowSizeChangedEvent(const WindowHandle& window, const WindowSize& size)
 	{
 		_events.push(std::make_unique<WindowSizeChangedEvent>(window, size));
 	}
 
-	void PlatformEventQueue::postWindowPositionChangedEvent(WindowHandle window, const WindowPosition& pos)
+	void PlatformEventQueue::postWindowPositionChangedEvent(const WindowHandle& window, const WindowPosition& pos)
 	{
 		_events.push(std::make_unique<WindowPositionChangedEvent>(window, pos));
 	}
 
-	void PlatformEventQueue::postWindowTitleChangedEvent(WindowHandle window, const std::string& title)
+	void PlatformEventQueue::postWindowTitleChangedEvent(const WindowHandle& window, const std::string& title)
 	{
 		_events.push(std::make_unique<WindowTitleChangedEvent>(window, title));
 	}
 
-	void PlatformEventQueue::postWindowCreatedEvent(WindowHandle window, const WindowCreationOptions& options)
+	void PlatformEventQueue::postWindowCreatedEvent(const WindowHandle& window, const WindowCreationOptions& options)
 	{
 		_events.push(std::make_unique<WindowCreatedEvent>(window, options));
 	}
 
-	void PlatformEventQueue::postWindowDestroyedEvent(WindowHandle window)
+	void PlatformEventQueue::postWindowDestroyedEvent(const WindowHandle& window)
 	{
 		_events.push(std::make_unique<WindowDestroyedEvent>(window));
 	}
 
-	void PlatformEventQueue::postWindowSuspendedEvent(WindowHandle window, WindowSuspendPhase phase)
+	void PlatformEventQueue::postWindowSuspendedEvent(const WindowHandle& window, WindowSuspendPhase phase)
 	{
 		_events.push(std::make_unique<WindowSuspendedEvent>(window, phase));
 	}
 
-	void PlatformEventQueue::postFileDroppedEvent(WindowHandle window, const std::string& filePath)
+	void PlatformEventQueue::postFileDroppedEvent(const WindowHandle& window, const std::string& filePath)
 	{
 		_events.push(std::make_unique<FileDroppedEvent>(window, filePath));
 	}

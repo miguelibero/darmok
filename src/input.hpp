@@ -3,7 +3,6 @@
 #include <darmok/input.hpp>
 #include <darmok/window.hpp>
 #include <darmok/utils.hpp>
-#include <bx/bx.h>
 
 #include <string>
 #include <unordered_map>
