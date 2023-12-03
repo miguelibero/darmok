@@ -2,6 +2,7 @@
 #include "input.hpp"
 #include "window.hpp"
 #include <darmok/utils.hpp>
+#include <bx/bx.h>
 #include <bx/platform.h>
 
 #if DARMOK_CONFIG_USE_GLFW
@@ -237,7 +238,7 @@ namespace darmok {
 		};
 
 
-		class Cmd
+		class BX_NO_VTABLE Cmd
 		{
 		public:
 			enum Type
@@ -253,7 +254,6 @@ namespace darmok {
 				LockMouseToWindow,
 			};
 
-
 			Cmd(Type type)
 				: _type(type)
 			{
@@ -265,7 +265,7 @@ namespace darmok {
 			Type  _type;
 		};
 
-		class WindowCmd : public Cmd
+		class BX_NO_VTABLE WindowCmd : public Cmd
 		{
 		public:
 			WindowCmd(Type type, WindowHandle handle)
@@ -275,7 +275,6 @@ namespace darmok {
 			}
 		protected:
 			WindowHandle _handle;
-
 		};
 
 		class CreateWindowCmd final : public WindowCmd
@@ -516,7 +515,7 @@ namespace darmok {
 				auto cursor = _value ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL;
 				glfwSetInputMode(window, GLFW_CURSOR, cursor);
 				
-				Input::get().getMouse().setLocked(_value);
+				Input::get().getMouse().getImpl().setLocked(_value);
 			}
 		private:
 			bool _value;

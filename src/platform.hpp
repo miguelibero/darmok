@@ -2,7 +2,7 @@
 
 #include <darmok/window.hpp>
 #include <darmok/input.hpp>
-
+#include <bx/bx.h>
 #include <queue>
 #include <memory>
 
@@ -50,7 +50,7 @@ namespace darmok
 {
 	int main(int argc, const char* const* argv);
 
-	class PlatformEvent
+	class BX_NO_VTABLE PlatformEvent
 	{
 	public:
 		enum Type
@@ -75,10 +75,7 @@ namespace darmok
 			Count,
 		};
 
-		PlatformEvent(Type type)
-			: _type(type)
-		{
-		}
+		PlatformEvent(Type type);
 
 		enum class Result
 		{

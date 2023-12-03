@@ -7,15 +7,15 @@
 namespace
 {
 
-class ExampleEmpty : public darmok::SimpleApp
+class ExampleEmpty : public darmok::App
 {
 public:
 	void init(const std::vector<std::string>& args) override
 	{
-		SimpleApp::init(args);
+		App::init(args);
 
 		// Enable debug text.
-		darmok::setDebugFlag(BGFX_DEBUG_TEXT);
+		setDebugFlag(BGFX_DEBUG_TEXT);
 
 		// Set view 0 clear state.
 		bgfx::setViewClear(0
@@ -34,7 +34,7 @@ public:
 		ImGui::InputText("text", const_cast<char*>(text.c_str()), text.size());
 	}
 
-	void draw() override
+	void update(const darmok::InputState& input) override
 	{
 		const bgfx::Stats* stats = bgfx::getStats();
 

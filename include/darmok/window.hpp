@@ -10,7 +10,6 @@
 
 namespace darmok
 {
-	/// 
 	struct WindowHandle final
 	{
 		typedef uint16_t idx_t;
@@ -21,7 +20,6 @@ namespace darmok
 		bool isValid() const;
 	};
 
-	/// 
 	struct WindowPosition final
 	{
 		int32_t x;
@@ -31,7 +29,6 @@ namespace darmok
 		bool operator==(const WindowPosition& other) const;
 	};
 
-	/// 
 	struct WindowSize final
 	{
 		uint32_t width;
@@ -41,7 +38,6 @@ namespace darmok
 		bool operator==(const WindowSize& other) const;
 	};
 
-	///
 	enum class WindowSuspendPhase
 	{
 		None,
@@ -60,7 +56,6 @@ namespace darmok
 		static constexpr uint32_t Frame = 2;
 	};
 
-	///
 	struct WindowCreationOptions final
 	{
 		WindowSize size;
@@ -80,61 +75,25 @@ namespace darmok
 		static constexpr WindowHandle DefaultHandle = { 0 };
 		static constexpr WindowHandle InvalidHandle = { UINT16_MAX };
 
-		/// 
 		void destroy();
-
-		/// 
 		void setPosition(const WindowPosition& pos);
-
-		///
 		void setSize(const WindowSize& size);
-
-		///
 		void setTitle(const std::string& title);
-
-		///
 		void setFlags(uint32_t flags, bool enabled);
-
-		///
 		void toggleFullscreen();
-
-		///
 		void setMouseLock(bool lock);
-
-		///
+		
 		void* getNativeHandle() const;
-
-		/// 
 		static void* getNativeDisplayHandle();
-
-		/// 
 		bgfx::NativeWindowHandleType::Enum getNativeHandleType() const;
-
-		///
 		const WindowPosition& getPosition() const;
-
-		///
 		const WindowSize& getSize() const;
-
-		/// 
 		const std::string& getTitle() const;
-
-		/// 
 		const WindowHandle& getHandle() const;
-
-		///
 		uint32_t getFlags() const;
-
-		/// 
 		const std::string& getDropFilePath() const;
-
-		/// 
 		WindowSuspendPhase getSuspendPhase() const;
-
-		/// 
 		const WindowImpl& getImpl() const;
-
-		/// 
 		WindowImpl& getImpl();
 
 	private:
@@ -152,19 +111,10 @@ namespace darmok
 	class Context final
 	{
 	public:
-		/// 
 		Window& createWindow(const WindowCreationOptions& options);
-
-		/// 
 		Window& getWindow(const WindowHandle& handle = Window::DefaultHandle);
-
-		/// 
 		const Window& getWindow(const WindowHandle& handle = Window::DefaultHandle) const;
-
-		/// 
 		Windows& getWindows();
-
-		/// 
 		static Context& get();
 
 	private:

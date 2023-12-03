@@ -11,9 +11,6 @@
 
 namespace darmok
 {
-	class InputImpl;
-
-	///
 	enum class KeyboardModifier
 	{
 		None = 0,
@@ -27,7 +24,6 @@ namespace darmok
 		RightMeta = 0x80,
 	};
 
-	///
 	enum class KeyboardKey
 	{
 		None = 0,
@@ -120,8 +116,7 @@ namespace darmok
 		Count
 	};
 
-	/// 
-	struct KeyboardModifiers
+	struct KeyboardModifiers final
 	{
 		static constexpr uint8_t None = 0;
 
@@ -141,7 +136,7 @@ namespace darmok
 		static constexpr uint8_t Max = to_underlying(KeyboardKey::Count) + Meta;
 	};
 
-	struct Utf8Char
+	struct Utf8Char final
 	{
 		uint32_t data;
 		uint8_t len;
@@ -151,39 +146,21 @@ namespace darmok
 
 	typedef std::array<uint32_t, to_underlying(KeyboardKey::Count)> KeyboardKeys;
 
+	class InputImpl;
 	class KeyboardImpl;
 
 	class Keyboard final
 	{
 	public:
-		///
 		bool getKey(KeyboardKey key) const;
-
-		///
 		bool getKey(KeyboardKey key, uint8_t& modifiers) const;
-
-		///
 		const KeyboardKeys& getKeys() const;
-
-		///
 		uint8_t getModifiers() const;
 
-		/// Returns single UTF-8 encoded character from input buffer.
-		Utf8Char popChar();
-
-		/// Flush internal input buffer.
-		void flush();
-
-		///
 		const KeyboardImpl& getImpl() const;
-
-		///
 		KeyboardImpl& getImpl();
 
-		///
 		static char keyToAscii(KeyboardKey key, uint8_t modifiers);
-
-		///
 		static const std::string& getKeyName(KeyboardKey key);
 	private:
 		Keyboard();
@@ -195,7 +172,6 @@ namespace darmok
 		friend InputImpl;
 	};
 
-	///
 	enum class MouseButton
 	{
 		None,
@@ -206,7 +182,7 @@ namespace darmok
 		Count
 	};
 
-	struct MousePosition
+	struct MousePosition final
 	{
 		int32_t x;
 		int32_t y;
@@ -215,7 +191,7 @@ namespace darmok
 		MousePosition(int32_t x = 0, int32_t y = 0, int32_t z = 0);
 	};
 
-	struct RelativeMousePosition
+	struct RelativeMousePosition final
 	{
 		float x;
 		float y;
@@ -231,35 +207,14 @@ namespace darmok
 	class Mouse final
 	{
 	public:
-
-		///
 		static const std::string& getButtonName(MouseButton button);
 
-		///
-		bool setLocked(bool v);
-
-		///
-		RelativeMousePosition popRelativePosition();
-
-		///
 		const MousePosition& getPosition() const;
-
-		///
 		const MouseButtons& getButtons() const;
-
-		///
 		bool getLocked() const;
-
-		///
 		bool getButton(MouseButton button) const;
 
-		///
-		void setWheelDelta(float wheelDelta);
-
-		///
 		const MouseImpl& getImpl() const;
-
-		///
 		MouseImpl& getImpl();
 
 	private:
@@ -272,7 +227,6 @@ namespace darmok
 		friend InputImpl;
 	};
 
-	///
 	enum class GamepadAxis
 	{
 		LeftX,
@@ -285,7 +239,6 @@ namespace darmok
 		Count
 	};
 
-	///
 	enum class GamepadButton
 	{
 		None = 0,
@@ -331,28 +284,14 @@ namespace darmok
 		static constexpr GamepadHandle DefaultHandle = { 0 };
 		static constexpr GamepadHandle InvalidHandle = { UINT16_MAX };
 		
-		///
 		static const std::string& getButtonName(GamepadButton button);
-
-		///
 		int32_t getAxis(GamepadAxis axis) const;
-
-		///
 		bool getButton(GamepadButton button) const;
-
-		///
 		const GamepadAxes& getAxes() const;
-
-		///
 		const GamepadButtons& getButtons() const;
-
-		///
 		bool isConnected() const;
 
-		///
 		const GamepadImpl& getImpl() const;
-
-		///
 		GamepadImpl& getImpl();
 
 	private:
@@ -365,36 +304,41 @@ namespace darmok
 		friend InputImpl;
 	};
 
-	struct KeyboardInputBinding
+	struct KeyboardBindingKey final
 	{
 		KeyboardKey key;
 		uint8_t modifiers;
 	};
 
-	struct MouseInputBinding
+	struct MouseBindingKey final
 	{
 		MouseButton button;
 	};
 
-	struct GamepadInputBinding
+	struct GamepadBindingKey final
 	{
 		GamepadHandle gamepad;
 		GamepadButton button;
 	};
 
-	typedef std::variant<KeyboardInputBinding, MouseInputBinding, GamepadInputBinding> InputBindingKey;
+	typedef std::variant<KeyboardBindingKey, MouseBindingKey, GamepadBindingKey> InputBindingKey;
 
-	struct InputBinding
+	struct InputBinding final
 	{
 		static std::size_t hashKey(const InputBindingKey& key);
 
 		InputBindingKey key;
 		bool once;
 		std::function<void()> fn;
-		std::string name;
 	};
 
 	typedef std::array<Gamepad, Gamepad::MaxAmount> Gamepads;
+
+	struct InputState
+	{
+		RelativeMousePosition mouse;
+		std::vector<Utf8Char> chars;
+	};
 
 	class Input final
 	{
@@ -415,6 +359,8 @@ namespace darmok
 		const Gamepads& getGamepads() const;
 
 		static Input& get();
+		const InputImpl& getImpl() const;
+		InputImpl& getImpl();
 
 	private:
 		Input();

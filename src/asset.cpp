@@ -1,58 +1,85 @@
-#include "bgfx.hpp"
+#include "asset.hpp"
+#include "app.hpp"
 #include "dbg.h"
 #include <darmok/app.hpp>
-#include <bx/readerwriter.h>
 #include <bimg/decode.h>
-
-#include <vector>
-#include <string>
-#include <memory>
 
 namespace darmok
 {
-	class Data
+	void FileReader::setBasePath(const std::string& basePath)
 	{
-	private:
-		void* _ptr;
-		uint64_t _size;
-		bx::AllocatorI& _alloc;
-	public:
-		Data(void*ptr, uint64_t size, bx::AllocatorI& alloc = getAllocator())
-			: _ptr(ptr)
-			, _size(size)
-			, _alloc(alloc)
-		{
-		}
+		_basePath = basePath;
+	}
 
-		void* ptr() const
-		{
-			return _ptr;
-		}
-
-		uint64_t size() const
-		{
-			return _size;
-		}
-
-		bool empty() const
-		{
-			return _size == 0ll;
-		}
-
-		~Data()
-		{
-			bx::free(&_alloc, _ptr);
-		}
-	};
-
-	static std::unique_ptr<Data> loadData(bx::FileReaderI& reader, bx::AllocatorI& alloc, const std::string& filePath)
+	bool FileReader::open(const bx::FilePath& filePath, bx::Error* err)
 	{
-		if (bx::open(&reader, filePath.c_str()))
+		auto absFilePath = _basePath + filePath.getCPtr();
+		return super::open(absFilePath.c_str(), err);
+	}
+
+	void FileWriter::setBasePath(const std::string& basePath)
+	{
+		_basePath = basePath;
+	}
+
+	bool FileWriter::open(const bx::FilePath& filePath, bool append, bx::Error* err)
+	{
+		auto absFilePath = _basePath + filePath.getCPtr();
+		return super::open(absFilePath.c_str(), append, err);
+	}
+
+	Data::Data(void* ptr, uint64_t size, bx::AllocatorI* alloc)
+		: _ptr(ptr)
+		, _size(size)
+		, _alloc(alloc)
+	{
+	}
+
+	void* Data::ptr() const
+	{
+		return _ptr;
+	}
+
+	uint64_t Data::size() const
+	{
+		return _size;
+	}
+
+	bool Data::empty() const
+	{
+		return _size == 0ll;
+	}
+
+	Data::~Data()
+	{
+		bx::free(_alloc, _ptr);
+	}
+
+	bx::FileReaderI* AssetContextImpl::getFileReader()
+	{
+		return &_fileReader;
+	}
+
+	bx::FileWriterI* AssetContextImpl::getFileWriter()
+	{
+		return &_fileWriter;
+	}
+
+	bx::AllocatorI* AssetContextImpl::getAllocator()
+	{
+		return &_allocator;
+	}
+
+	std::unique_ptr<Data> AssetContextImpl::loadData(const std::string& filePath)
+	{
+		auto reader = getFileReader();
+		auto alloc = getAllocator();
+		if (bx::open(reader, filePath.c_str()))
 		{
-			auto size = bx::getSize(&reader);
-			void* data = bx::alloc(&alloc, size);
-			bx::read(&reader, data, (int32_t)size, bx::ErrorAssert{});
-			bx::close(&reader);
+			auto size = bx::getSize(reader);
+			void* data = bx::alloc(alloc, size);
+			bx::read(reader, data, (int32_t)size, bx::ErrorAssert{});
+			bx::close(reader);
 			return std::make_unique<Data>(data, size, alloc);
 		}
 
@@ -60,19 +87,15 @@ namespace darmok
 		return nullptr;
 	}
 
-	static std::unique_ptr<Data> loadData(const std::string& filePath)
+	const bgfx::Memory* AssetContextImpl::loadMem(const std::string& filePath)
 	{
-		return loadData(getFileReader(), getAllocator(), filePath);
-	}
-
-	static const bgfx::Memory* loadMem(bx::FileReaderI& reader, const std::string& filePath)
-	{
-		if (bx::open(&reader, filePath.c_str()))
+		auto reader = getFileReader();
+		if (bx::open(reader, filePath.c_str()))
 		{
-			uint32_t size = (uint32_t)bx::getSize(&reader);
+			uint32_t size = (uint32_t)bx::getSize(reader);
 			const bgfx::Memory* mem =bgfx::alloc(size + 1);
-			bx::read(&reader, mem->data, size, bx::ErrorAssert{});
-			bx::close(&reader);
+			bx::read(reader, mem->data, size, bx::ErrorAssert{});
+			bx::close(reader);
 			return mem;
 		}
 
@@ -80,9 +103,8 @@ namespace darmok
 		return NULL;
 	}
 
-	static bgfx::ShaderHandle loadShader(bx::FileReaderI& reader, const std::string& name)
+	bgfx::ShaderHandle AssetContextImpl::loadShader(const std::string& name)
 	{
-
 		std::string shaderPath = "???";
 
 		switch (bgfx::getRendererType())
@@ -106,7 +128,7 @@ namespace darmok
 		}
 
 		std::string filePath = shaderPath + name + ".bin";
-		auto mem = loadMem(reader, filePath);
+		auto mem = loadMem(filePath);
 		mem->data[mem->size - 1] = '\0';
 		bgfx::ShaderHandle handle = bgfx::createShader(mem);
 		bgfx::setName(handle, name.c_str());
@@ -114,26 +136,16 @@ namespace darmok
 		return handle;
 	}
 
-	bgfx::ShaderHandle loadShader(const std::string& name)
+	bgfx::ProgramHandle AssetContextImpl::loadProgram(const std::string& vsName, const std::string& fsName)
 	{
-		return loadShader(getFileReader(), name);
-	}
-
-	bgfx::ProgramHandle loadProgram(bx::FileReaderI& reader, const std::string& vsName, const std::string& fsName)
-	{
-		bgfx::ShaderHandle vsh = loadShader(reader, vsName);
+		bgfx::ShaderHandle vsh = loadShader(vsName);
 		bgfx::ShaderHandle fsh = BGFX_INVALID_HANDLE;
 		if (!fsName.empty())
 		{
-			fsh = loadShader(reader, fsName);
+			fsh = loadShader(fsName);
 		}
 
 		return bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
-	}
-
-	bgfx::ProgramHandle loadProgram(const std::string& vsName, const std::string& fsName)
-	{
-		return loadProgram(getFileReader(), vsName, fsName);
 	}
 
 	static void imageReleaseCb(void* ptr, void* userData)
@@ -143,15 +155,16 @@ namespace darmok
 		bimg::imageFree(imageContainer);
 	}
 
-	bgfx::TextureHandle loadTexture(bx::FileReaderI& reader, const std::string& filePath, uint64_t flags, uint8_t skip, bgfx::TextureInfo* info, bimg::Orientation::Enum* orientation)
+	bgfx::TextureHandle AssetContextImpl::loadTexture(const std::string& filePath, uint64_t flags, uint8_t skip, bgfx::TextureInfo* info, bimg::Orientation::Enum* orientation)
 	{
 		BX_UNUSED(skip);
 		bgfx::TextureHandle handle = BGFX_INVALID_HANDLE;
 
-		auto data = loadData(reader, getAllocator(), filePath);
+		auto data = loadData(filePath);
 		if (data != nullptr && !data->empty())
 		{
-			bimg::ImageContainer* imageContainer = bimg::imageParse(&getAllocator(), data->ptr(), (uint32_t)data->size());
+			auto alloc = getAllocator();
+			bimg::ImageContainer* imageContainer = nullptr; // bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size());
 
 			if (imageContainer != nullptr)
 			{
@@ -227,15 +240,51 @@ namespace darmok
 		return handle;
 	}
 
-	bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags, uint8_t skip, bgfx::TextureInfo* info, bimg::Orientation::Enum* orientation)
-	{
-		return loadTexture(getFileReader(), name, flags, skip, info, orientation);
-	}
-
-	bimg::ImageContainer* imageLoad(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	bimg::ImageContainer* AssetContextImpl::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
 	{
 		auto data = loadData(filePath);
+		auto alloc = getAllocator();
+		return nullptr; //  bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Enum(dstFormat));
+	}
 
-		return bimg::imageParse(&getAllocator(), data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Enum(dstFormat));
+	AssetContext& AssetContext::get()
+	{
+		static AssetContext instance;
+		return instance;
+	}
+
+	AssetContext::AssetContext()
+		: _impl(std::make_unique<AssetContextImpl>())
+	{
+	}
+
+	bgfx::ShaderHandle AssetContext::loadShader(const std::string& name)
+	{
+		return _impl->loadShader(name);
+	}
+
+	bgfx::ProgramHandle AssetContext::loadProgram(const std::string& vsName, const std::string& fsName)
+	{
+		return _impl->loadProgram(vsName, fsName);
+	}
+
+	bgfx::TextureHandle AssetContext::loadTexture(const std::string& name, uint64_t flags, uint8_t skip, bgfx::TextureInfo* info, bimg::Orientation::Enum* orientation)
+	{
+		return _impl->loadTexture(name, flags, skip, info, orientation);
+	}
+
+	bimg::ImageContainer* AssetContext::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	{
+		return _impl->loadImage(filePath, dstFormat);
+	}
+
+	AssetContextImpl& AssetContext::getImpl()
+	{
+		return *_impl;
+	}
+
+	const AssetContextImpl& AssetContext::getImpl() const
+	{
+		return *_impl;
 	}
 }

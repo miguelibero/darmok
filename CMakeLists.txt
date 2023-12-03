@@ -14,14 +14,15 @@ set(sources
   src/glfw.cpp
   src/input.cpp
   src/imgui.cpp
-  src/bgfx.cpp
+  src/asset.cpp
 )
 
 set(headers
+  include/darmok/app.hpp
   include/darmok/input.hpp
   include/darmok/window.hpp
-  include/darmok/app.hpp
   include/darmok/utils.hpp
+  include/darmok/asset.hpp
 )
 
 set(LIB_NAME darmok)

@@ -253,16 +253,6 @@ namespace darmok
 		return _impl->getModifiers();
 	}
 
-	Utf8Char Keyboard::popChar()
-	{
-		return _impl->popChar();
-	}
-
-	void Keyboard::flush()
-	{
-		return _impl->flush();
-	}
-
 	const KeyboardImpl& Keyboard::getImpl() const
 	{
 		return *_impl;
@@ -379,19 +369,9 @@ namespace darmok
 	{
 	}
 
-	void Mouse::setWheelDelta(float wheelDelta)
-	{
-		_impl->setWheelDelta(wheelDelta);
-	}
-
 	bool Mouse::getButton(MouseButton button) const
 	{
 		return _impl->getButton(button);
-	}
-
-	RelativeMousePosition Mouse::popRelativePosition()
-	{
-		return _impl->popRelativePosition();
 	}
 
 	const MousePosition& Mouse::getPosition() const
@@ -407,11 +387,6 @@ namespace darmok
 	bool Mouse::getLocked() const
 	{
 		return _impl->getLocked();
-	}
-
-	bool Mouse::setLocked(bool lock)
-	{
-		return _impl->setLocked(lock);
 	}
 
 	const MouseImpl& Mouse::getImpl() const
@@ -571,15 +546,15 @@ namespace darmok
 
 	size_t InputBinding::hashKey(const InputBindingKey& key)
 	{
-		if (auto v = std::get_if<KeyboardInputBinding>(&key))
+		if (auto v = std::get_if<KeyboardBindingKey>(&key))
 		{
 			return to_underlying(v->key) | v->modifiers;
 		}
-		if (auto v = std::get_if<MouseInputBinding>(&key))
+		if (auto v = std::get_if<MouseBindingKey>(&key))
 		{
 			return KeyboardModifiers::Max + to_underlying(v->button);
 		}
-		if (auto v = std::get_if<GamepadInputBinding>(&key))
+		if (auto v = std::get_if<GamepadBindingKey>(&key))
 		{
 			auto h = to_underlying(v->button) >> v->gamepad.idx;
 			return KeyboardModifiers::Max + to_underlying(MouseButton::Count) + h;
@@ -594,7 +569,7 @@ namespace darmok
 
 	bool InputImpl::bindingTriggered(InputBinding& binding)
 	{
-		if (auto v = std::get_if<KeyboardInputBinding>(&binding.key))
+		if (auto v = std::get_if<KeyboardBindingKey>(&binding.key))
 		{
 			uint8_t modifiers;
 			if (!getKeyboard().getKey(v->key, modifiers))
@@ -603,11 +578,11 @@ namespace darmok
 			}
 			return modifiers == v->modifiers;
 		}
-		if (auto v = std::get_if<MouseInputBinding>(&binding.key))
+		if (auto v = std::get_if<MouseBindingKey>(&binding.key))
 		{
 			return getMouse().getButton(v->button);
 		}
-		if (auto v = std::get_if<GamepadInputBinding>(&binding.key))
+		if (auto v = std::get_if<GamepadBindingKey>(&binding.key))
 		{
 			if (v->gamepad.isValid())
 			{
@@ -710,6 +685,25 @@ namespace darmok
 		return _gamepads;
 	}
 
+	InputState InputImpl::popState()
+	{
+		InputState state{
+			_mouse.getImpl().popRelativePosition()
+		};
+		auto& kb = _keyboard.getImpl();
+		Utf8Char c;
+		while(true)
+		{
+			c = kb.popChar();
+			if (c.len == 0)
+			{
+				break;
+			}
+			state.chars.push_back(c);
+		}
+		return state;
+	}
+
 	Input::Input()
 		: _impl(std::make_unique<InputImpl>())
 	{
@@ -774,6 +768,16 @@ namespace darmok
 	{
 		static Input instance;
 		return instance;
+	}
+
+	const InputImpl& Input::getImpl() const
+	{
+		return *_impl;
+	}
+
+	InputImpl& Input::getImpl()
+	{
+		return *_impl;
 	}
 
 #pragma endregion Input

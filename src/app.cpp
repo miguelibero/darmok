@@ -1,86 +1,84 @@
 
-#include <darmok/app.hpp>
+#include "app.hpp"
 #include "platform.hpp"
 #include "imgui.hpp"
 #include "input.hpp"
 #include "dbg.h"
 
-#include <bx/bx.h>
-#include <bx/file.h>
-#include <bx/readerwriter.h>
+#include <bx/filepath.h>
 #include <bgfx/bgfx.h>
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
 #endif // BX_PLATFORM_EMSCRIPTEN
 
-
-
 namespace darmok
 {
-	static bx::FileReaderI* s_fileReader = NULL;
-	static bx::FileWriterI* s_fileWriter = NULL;
-	static std::string s_currentDir;
-	static bool s_exit = false;
-	static uint32_t s_debug = BGFX_DEBUG_NONE;
-	static uint32_t s_reset = BGFX_RESET_VSYNC;
-	static bool s_needsReset = false;
-
-	extern bx::AllocatorI* getDefaultAllocator();
-	bx::AllocatorI* g_allocator = getDefaultAllocator();
-
-	class FileReader final : public bx::FileReader
+	static AppImpl& getAppImpl()
 	{
-		typedef bx::FileReader super;
-
-	public:
-		virtual bool open(const bx::FilePath& filePath, bx::Error* err) override
-		{
-			auto absFilePath = s_currentDir + filePath.getCPtr();
-			return super::open(absFilePath.c_str(), err);
-		}
-	};
-
-	class FileWriter final : public bx::FileWriter
-	{
-		typedef bx::FileWriter super;
-
-	public:
-		virtual bool open(const bx::FilePath& filePath, bool append, bx::Error* err) override
-		{
-			auto absFilePath = s_currentDir + filePath.getCPtr();
-			return super::open(absFilePath.c_str(), append, err);
-		}
-	};
-
-	void setCurrentDir(const std::string& dir)
-	{
-		s_currentDir = dir;
+		static AppImpl instance;
+		return instance;
 	}
 
-#if ENTRY_CONFIG_IMPLEMENT_DEFAULT_ALLOCATOR
-	bx::AllocatorI* getDefaultAllocator()
-	{
-BX_PRAGMA_DIAGNOSTIC_PUSH();
-BX_PRAGMA_DIAGNOSTIC_IGNORED_MSVC(4459); // warning C4459: declaration of 's_allocator' hides global declaration
-BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wshadow");
-		static bx::DefaultAllocator s_allocator;
-		return &s_allocator;
-BX_PRAGMA_DIAGNOSTIC_POP();
-	}
-#endif // ENTRY_CONFIG_IMPLEMENT_DEFAULT_ALLOCATOR
+	const std::string AppImpl::_bindingsName = "main";
 
-	void exitAppBinding()
+	void AppImpl::setCurrentDir(const std::string& dir)
 	{
-		s_exit = true;
+		_currentDir = dir;
+	}
+
+	AppImpl::AppImpl()
+		: _exit(false)
+		, _debug(BGFX_DEBUG_NONE)
+		, _reset(BGFX_RESET_VSYNC)
+		, _needsReset(false)
+	{
+	}
+
+	void AppImpl::addBindings()
+	{
+		Input::get().addBindings(_bindingsName, {
+			{ KeyboardBindingKey { KeyboardKey::Esc,		KeyboardModifiers::None },			true, exitAppBinding },
+			{ KeyboardBindingKey { KeyboardKey::KeyQ,		KeyboardModifiers::LeftCtrl	},		true, exitAppBinding },
+			{ KeyboardBindingKey { KeyboardKey::KeyQ,		KeyboardModifiers::RightCtrl },		true, exitAppBinding },
+			{ KeyboardBindingKey { KeyboardKey::KeyF,		KeyboardModifiers::LeftCtrl	},		true, fullscreenToggleBinding },
+			{ KeyboardBindingKey { KeyboardKey::KeyF,		KeyboardModifiers::RightCtrl },		true, fullscreenToggleBinding },
+			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::LeftAlt },		true, fullscreenToggleBinding },
+			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::RightAlt },		true, fullscreenToggleBinding },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::None },			true, toggleDebugStatsBinding },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::None },			true, toggleDebugTextBinding },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftCtrl	},		true, toggleDebugIfhBinding },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightCtrl },		true, toggleDebugIfhBinding },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftShift },		true, disableDebugFlagsBinding },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightShift },	true, disableDebugFlagsBinding },
+			{ KeyboardBindingKey { KeyboardKey::F3,			KeyboardModifiers::None},			true, toggleDebugWireFrameBinding },
+			{ KeyboardBindingKey { KeyboardKey::F6,			KeyboardModifiers::None},			true, toggleDebugProfilerBinding },
+			{ KeyboardBindingKey { KeyboardKey::F7,			KeyboardModifiers::None},			true, toggleResetVsyncBinding },
+			{ KeyboardBindingKey { KeyboardKey::F8,			KeyboardModifiers::None},			true, toggleResetMsaaBinding },
+			{ KeyboardBindingKey { KeyboardKey::F9,			KeyboardModifiers::None},			true, toggleResetFlushAfterRenderBinding },
+			{ KeyboardBindingKey { KeyboardKey::F10,		KeyboardModifiers::None},			true, toggleResetHidpiBinding },
+			{ KeyboardBindingKey { KeyboardKey::Print,		KeyboardModifiers::None},			true, screenshotBinding },
+			{ KeyboardBindingKey { KeyboardKey::KeyP,		KeyboardModifiers::LeftCtrl },		true, screenshotBinding },
+			{ KeyboardBindingKey { KeyboardKey::KeyP,		KeyboardModifiers::RightCtrl },		true, screenshotBinding },
+		});
+	}
+
+	void AppImpl::removeBindings()
+	{
+		Input::get().removeBindings(_bindingsName);
+	}
+
+	void AppImpl::exitAppBinding()
+	{
+		getAppImpl()._exit = true;
 	};
 
-	void fullscreenToggleBinding()
+	void AppImpl::fullscreenToggleBinding()
 	{
 		Context::get().getWindow().toggleFullscreen();
 	}
 
-	uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled)
+	static uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled)
 	{
 		if (enabled)
 		{
@@ -92,145 +90,119 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		}
 	}
 
-	void toggleResetFlag(uint32_t flag)
+	void AppImpl::toggleResetFlag(uint32_t flag)
 	{
 		setResetFlag(flag, !getResetFlag(flag));
 	}
 
-	void setResetFlag(uint32_t flag, bool enabled)
+	void AppImpl::setResetFlag(uint32_t flag, bool enabled)
 	{
-		auto reset = setFlag(s_reset, flag, enabled);
-		if (s_reset != reset)
+		auto reset = setFlag(_reset, flag, enabled);
+		if (_reset != reset)
 		{
-			s_reset = reset;
-			s_needsReset = true;
+			_reset = reset;
+			_needsReset = true;
 		}
 	}
 
-	bool getResetFlag(uint32_t flag)
+	bool AppImpl::getResetFlag(uint32_t flag)
 	{
-		return s_reset & flag;
+		return _reset & flag;
 	}
 
-	uint32_t getResetFlags()
+	uint32_t AppImpl::getResetFlags()
 	{
-		return s_reset;
+		return _reset;
 	}
 
-	void toggleDebugFlag(uint32_t flag)
+	void AppImpl::toggleDebugFlag(uint32_t flag)
 	{
 		setDebugFlag(flag, !getDebugFlag(flag));
 	}
 
-	void setDebugFlag(uint32_t flag, bool enabled)
+	void AppImpl::setDebugFlag(uint32_t flag, bool enabled)
 	{
-		s_debug = setFlag(s_debug, flag, enabled);
-		bgfx::setDebug(s_debug);
+		_debug = setFlag(_debug, flag, enabled);
+		bgfx::setDebug(_debug);
 	}
 
-	bool getDebugFlag(uint32_t flag)
+	bool AppImpl::getDebugFlag(uint32_t flag)
 	{
-		return s_debug & flag;
+		return _debug & flag;
 	}
 
-	void toggleDebugStatsBinding()
+	void AppImpl::toggleDebugStatsBinding()
 	{
-		toggleDebugFlag(BGFX_DEBUG_STATS);
+		getAppImpl().toggleDebugFlag(BGFX_DEBUG_STATS);
 	}
 
-	void toggleDebugTextBinding()
+	void AppImpl::toggleDebugTextBinding()
 	{
-		toggleDebugFlag(BGFX_DEBUG_TEXT);
+		getAppImpl().toggleDebugFlag(BGFX_DEBUG_TEXT);
 	}
 
-	void toggleDebugIfhBinding()
+	void AppImpl::toggleDebugIfhBinding()
 	{
-		toggleDebugFlag(BGFX_DEBUG_IFH);
+		getAppImpl().toggleDebugFlag(BGFX_DEBUG_IFH);
 	}
 
-	void toggleDebugWireFrameBinding()
+	void AppImpl::toggleDebugWireFrameBinding()
 	{
-		toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
+		getAppImpl().toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
 	}
 
-	void toggleDebugProfilerBinding()
+	void AppImpl::toggleDebugProfilerBinding()
 	{
-		toggleDebugFlag(BGFX_DEBUG_PROFILER);
+		getAppImpl().toggleDebugFlag(BGFX_DEBUG_PROFILER);
 	}
 
-	void disableDebugFlagsBinding()
+	void AppImpl::disableDebugFlagsBinding()
 	{
-		setDebugFlag(BGFX_DEBUG_STATS, false);
-		setDebugFlag(BGFX_DEBUG_TEXT, false);
+		getAppImpl().setDebugFlag(BGFX_DEBUG_STATS, false);
+		getAppImpl().setDebugFlag(BGFX_DEBUG_TEXT, false);
 	}
 
-	void toggleResetVsyncBinding()
+	void AppImpl::toggleResetVsyncBinding()
 	{
-		toggleResetFlag(BGFX_RESET_VSYNC);
+		getAppImpl().toggleResetFlag(BGFX_RESET_VSYNC);
 	}
 
-	void toggleResetMsaaBinding()
+	void AppImpl::toggleResetMsaaBinding()
 	{
-		toggleResetFlag(BGFX_RESET_MSAA_X16);
+		getAppImpl().toggleResetFlag(BGFX_RESET_MSAA_X16);
 	}
 
-	void toggleResetFlushAfterRenderBinding()
+	void AppImpl::toggleResetFlushAfterRenderBinding()
 	{
-		toggleResetFlag(BGFX_RESET_FLUSH_AFTER_RENDER);
+		getAppImpl().toggleResetFlag(BGFX_RESET_FLUSH_AFTER_RENDER);
 	}
 
-	void toggleResetFlipAfterRenderBinding()
+	void AppImpl::toggleResetFlipAfterRenderBinding()
 	{
-		toggleResetFlag(BGFX_RESET_FLIP_AFTER_RENDER);
+		getAppImpl().toggleResetFlag(BGFX_RESET_FLIP_AFTER_RENDER);
 	}
 
-	void toggleResetHidpiBinding()
+	void AppImpl::toggleResetHidpiBinding()
 	{
-		toggleResetFlag(BGFX_RESET_HIDPI);
+		getAppImpl().toggleResetFlag(BGFX_RESET_HIDPI);
 	}
 
-	void resetDepthClampBinding()
+	void AppImpl::resetDepthClampBinding()
 	{
-		toggleResetFlag(BGFX_RESET_DEPTH_CLAMP);
+		getAppImpl().toggleResetFlag(BGFX_RESET_DEPTH_CLAMP);
 	}
 
-	void screenshotBinding()
+	void AppImpl::screenshotBinding()
 	{
 		bgfx::FrameBufferHandle fbh = BGFX_INVALID_HANDLE;
 
 		time_t tt;
 		time(&tt);
 
-		auto filePath = s_currentDir + "temp/screenshot-" + std::to_string(tt);
+		auto filePath = getAppImpl()._currentDir + "temp/screenshot-" + std::to_string(tt);
 		// bgfx::CallbackI::screenShot = 
 		bgfx::requestScreenShot(fbh, filePath.c_str());
 	}
-
-	static const std::vector<InputBinding> s_bindings =
-	{
-		{ KeyboardInputBinding { KeyboardKey::Esc,		KeyboardModifiers::None	},			true, exitAppBinding },
-		{ KeyboardInputBinding { KeyboardKey::KeyQ,		KeyboardModifiers::LeftCtrl	},		true, exitAppBinding },
-		{ KeyboardInputBinding { KeyboardKey::KeyQ,		KeyboardModifiers::RightCtrl },		true, exitAppBinding },
-		{ KeyboardInputBinding { KeyboardKey::KeyF,     KeyboardModifiers::LeftCtrl	},		true, fullscreenToggleBinding },
-		{ KeyboardInputBinding { KeyboardKey::KeyF,     KeyboardModifiers::RightCtrl },		true, fullscreenToggleBinding },
-		{ KeyboardInputBinding { KeyboardKey::Return,   KeyboardModifiers::LeftAlt },		true, fullscreenToggleBinding },
-		{ KeyboardInputBinding { KeyboardKey::Return,   KeyboardModifiers::RightAlt },		true, fullscreenToggleBinding },
-		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::None },			true, toggleDebugStatsBinding },
-		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::None },			true, toggleDebugTextBinding },
-		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::LeftCtrl	},		true, toggleDebugIfhBinding },
-		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::RightCtrl },		true, toggleDebugIfhBinding },
-		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::LeftShift },		true, disableDebugFlagsBinding },
-		{ KeyboardInputBinding { KeyboardKey::F1,		KeyboardModifiers::RightShift },	true, disableDebugFlagsBinding },
-		{ KeyboardInputBinding { KeyboardKey::F3,		KeyboardModifiers::None},			true, toggleDebugWireFrameBinding },
-		{ KeyboardInputBinding { KeyboardKey::F6,		KeyboardModifiers::None},			true, toggleDebugProfilerBinding },
-		{ KeyboardInputBinding { KeyboardKey::F7,		KeyboardModifiers::None},			true, toggleResetVsyncBinding },
-		{ KeyboardInputBinding { KeyboardKey::F8,		KeyboardModifiers::None},			true, toggleResetMsaaBinding },
-		{ KeyboardInputBinding { KeyboardKey::F9,		KeyboardModifiers::None},			true, toggleResetFlushAfterRenderBinding },
-		{ KeyboardInputBinding { KeyboardKey::F10,		KeyboardModifiers::None},			true, toggleResetHidpiBinding },
-		{ KeyboardInputBinding { KeyboardKey::Print,	KeyboardModifiers::None},			true, screenshotBinding },
-		{ KeyboardInputBinding { KeyboardKey::KeyP,		KeyboardModifiers::LeftCtrl },		true, screenshotBinding },
-		{ KeyboardInputBinding { KeyboardKey::KeyP,		KeyboardModifiers::RightCtrl },		true, screenshotBinding },
-	};
 
 #if BX_PLATFORM_EMSCRIPTEN
 	static App* s_app;
@@ -240,56 +212,32 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 	}
 #endif // BX_PLATFORM_EMSCRIPTEN
 
-	App::~App()
+	int runApp(App& app, const std::vector<std::string>& args)
 	{
-	}
-
-	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
-	{
-		app->init(args);
-
-		bgfx::frame();
+		app.init(args);
 
 #if BX_PLATFORM_EMSCRIPTEN
 		s_app = _app;
 		emscripten_set_main_loop(&updateApp, -1, 1);
 #else
-		while (app->update())
+		while (app.update())
 		{
 		}
 #endif // BX_PLATFORM_EMSCRIPTEN
 
-		return app->shutdown();
+		return app.shutdown();
 	}
 
 	int main(int argc, const char* const* argv)
 	{
 		//DBG(BX_COMPILER_NAME " / " BX_CPU_NAME " / " BX_ARCH_NAME " / " BX_PLATFORM_NAME);
-
-		s_fileReader = BX_NEW(g_allocator, FileReader);
-		s_fileWriter = BX_NEW(g_allocator, FileWriter);
-
-		Input::get().addBindings("main", std::vector<InputBinding>(s_bindings));
-
-		auto result = ::_main_(argc, (char**)argv);
-
-		setCurrentDir("");
-
-		Input::get().removeBindings("main");
-
-		bx::deleteObject(g_allocator, s_fileReader);
-		s_fileReader = NULL;
-
-		bx::deleteObject(g_allocator, s_fileWriter);
-		s_fileWriter = NULL;
-
-		return result;
+		return ::_main_(argc, (char**)argv);
 	}
 
-	bool processEvents()
+	bool AppImpl::processEvents()
 	{
 		bool needsReset = false;
-		while(!s_exit)
+		while(!_exit)
 		{
 			auto ev = PlatformContext::get().pollEvent();
 			if (ev == nullptr)
@@ -308,62 +256,45 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 			Input::get().process();
 		};
 
-		if(needsReset || s_needsReset)
+		if(needsReset || _needsReset)
 		{
 			auto& size = Context::get().getWindow().getSize();
 			bgfx::reset(size.width, size.height, getResetFlags());
 			Input::get().getMouse().getImpl().setResolution(size);
-			s_needsReset = false;
+			_needsReset = false;
 		}
 
-		return s_exit;
+		return _exit;
 	}
 
-	bx::FileReaderI& getFileReader()
+	App::App()
 	{
-		return *s_fileReader;
 	}
 
-	bx::FileWriterI& getFileWriter()
+	void App::init(const std::vector<std::string>& args)
 	{
-		return *s_fileWriter;
-	}
-
-	bx::AllocatorI& getAllocator()
-	{
-		if (NULL == g_allocator)
-		{
-			g_allocator = getDefaultAllocator();
-		}
-
-		return *g_allocator;
-	}
-
-	void SimpleApp::init(const std::vector<std::string>& args)
-	{
-		if (processEvents())
-		{
-			return;
-		}
-
 		bx::FilePath fp(args[0].c_str());
 		auto basePath = fp.getPath();
-		setCurrentDir(std::string(basePath.getPtr(), basePath.getLength()));
+
+		getAppImpl().setCurrentDir(std::string(basePath.getPtr(), basePath.getLength()));
+		getAppImpl().addBindings();
 
 		bgfx::Init init;
 		auto& win = Context::get().getWindow();
 		init.platformData.ndt = Window::getNativeDisplayHandle();
 		init.platformData.nwh = win.getNativeHandle();
 		init.platformData.type = win.getNativeHandleType();
-		init.resolution.reset = getResetFlags();
+		init.resolution.reset = getAppImpl().getResetFlags();
 		bgfx::init(init);
 
-		imguiCreate();
+		ImguiContext::get().init();
 	}
 
-	int SimpleApp::shutdown()
+	int App::shutdown()
 	{
-		imguiDestroy();
+		getAppImpl().removeBindings();
+
+		ImguiContext::get().shutdown();
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
@@ -371,9 +302,9 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		return 0;
 	}
 
-	bool SimpleApp::update()
+	bool App::update()
 	{
-		if (processEvents())
+		if (getAppImpl().processEvents())
 		{
 			return false;
 		}
@@ -381,14 +312,14 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		auto& win = Context::get().getWindow();
 		bgfx::ViewId viewId = 0;
 
-		_lastMousePos = Input::get().getMouse().popRelativePosition();
-		_lastChar = Input::get().getKeyboard().popChar();
+		auto input = Input::get().getImpl().popState();
+		auto& imgui = ImguiContext::get();
 
-		imguiBeginFrame(win.getHandle(), _lastChar, viewId);
+		imgui.beginFrame(win.getHandle(), viewId, input);
 
 		imguiDraw();
 
-		imguiEndFrame();
+		imgui.endFrame();
 
 		// Set view 0 default viewport.
 		auto& size = win.getSize();
@@ -401,20 +332,30 @@ BX_PRAGMA_DIAGNOSTIC_POP();
 		// Use debug font to print information about this example.
 		bgfx::dbgTextClear();
 
-		draw();
-		
+		update(input);
+
 		// Advance to next frame. Rendering thread will be kicked to
 		// process submitted rendering primitives.
 		bgfx::frame();
 		return true;
 	}
 
-	void SimpleApp::imguiDraw()
+	void App::imguiDraw()
 	{
 	}
 
-	void SimpleApp::draw()
+	void App::update(const InputState& input)
 	{
+	}
+
+	void App::toggleDebugFlag(uint32_t flag)
+	{
+		getAppImpl().toggleDebugFlag(flag);
+	}
+
+	void App::setDebugFlag(uint32_t flag, bool enabled)
+	{
+		getAppImpl().setDebugFlag(flag, enabled);
 	}
 
 }

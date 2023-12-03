@@ -32,87 +32,33 @@ extern "C" int _main_(int argc, char** argv);
 namespace darmok
 {
 	///
-	bool processEvents();
-
-	///
-	bx::FileReaderI& getFileReader();
-
-	///
-	bx::FileWriterI& getFileWriter();
-
-	///
-	bx::AllocatorI& getAllocator();
-
-	///
-	void setCurrentDir(const std::string& dir);
-
-	///
-	void setDebugFlag(uint32_t flag, bool enabled = true);
-
-	///
-	bool getDebugFlag(uint32_t flag);
-
-	/// 
-	void setResetFlag(uint32_t flag, bool enabled = true);
-
-	///
-	bool getResetFlag(uint32_t flag);
-
-	///
-	uint32_t getResetFlags();
-
-	///
 	class BX_NO_VTABLE App
 	{
 	public:
-
-		///
-		virtual ~App() = 0;
-
-		///
-		virtual void init(const std::vector<std::string>& args) = 0;
-
-		///
-		virtual int  shutdown() = 0;
-
-		///
-		virtual bool update() = 0;
-
-	};
-
-	class BX_NO_VTABLE SimpleApp : public App
-	{
-	public:
-
-		///
-		void init(const std::vector<std::string>& args) override;
-
-		///
-		int  shutdown() override;
-
-		///
-		bool update() override;
+		App();
+		virtual void init(const std::vector<std::string>& args);
+		virtual int  shutdown();
+		virtual bool update();
 
 	protected:
-		RelativeMousePosition _lastMousePos;
-		Utf8Char _lastChar;
-
 		virtual void imguiDraw();
-		virtual void draw();
+		virtual void update(const InputState& input);
+
+		void toggleDebugFlag(uint32_t flag);
+		void setDebugFlag(uint32_t flag, bool enabled = true);
 	};
 
-	///
-	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args);
+	int runApp(App& app, const std::vector<std::string>& args);
 
 	template<typename T, typename... A>
 	int runApp(int argc, const char* const* argv, A... constructArgs)
 	{
-		auto app = std::make_unique<T>(std::move(constructArgs)...);
+		T app(std::forward(constructArgs)...);
 		std::vector<std::string> args(argc);
 		for (int i = 0; i < argc; ++i)
 		{
 			args[i] = argv[i];
 		}
-		return runApp(std::move(app), args);
+		return runApp(app, args);
 	};
 } // namespace darmok

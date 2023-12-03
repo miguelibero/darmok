@@ -1,3 +1,4 @@
+#pragma once
 
 #include <darmok/input.hpp>
 #include <darmok/window.hpp>
@@ -122,6 +123,8 @@ namespace darmok
 		Mouse& getMouse();
 		Gamepad& getGamepad(const GamepadHandle& handle);
 		Gamepads& getGamepads();
+
+		InputState popState();
 
 	private:
 		InputImpl(const InputImpl& other) = delete;

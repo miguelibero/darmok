@@ -4,7 +4,6 @@
 #include "window.hpp"
 #include "dbg.h"
 
-
 #include <bx/bx.h>
 #include <bx/file.h>
 #include <bx/readerwriter.h>
@@ -12,6 +11,11 @@
 
 namespace darmok
 {
+	PlatformEvent::PlatformEvent(Type type)
+		: _type(type)
+	{
+	}
+
 	class KeyboardKeyChangedEvent final : public PlatformEvent
 	{
 	public:

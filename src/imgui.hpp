@@ -1,17 +1,65 @@
 #pragma once
 
-#include <bgfx/bgfx.h>
 #include <darmok/input.hpp>
 #include <darmok/window.hpp>
 
-#define IMGUI_FLAGS_NONE        UINT8_C(0x00)
-#define IMGUI_FLAGS_ALPHA_BLEND UINT8_C(0x01)
+#include <dear-imgui/imgui.h>
+#include <bgfx/embedded_shader.h>
 
 namespace darmok
 {
-    void imguiCreate(float fontSize = 18.0f);
-    void imguiDestroy();
+    class ImguiContext final
+    {
+    public:
 
-    void imguiBeginFrame(WindowHandle window, Utf8Char inputChar = {}, bgfx::ViewId viewId = 255);
-    void imguiEndFrame();
+		static ImguiContext& get();
+
+        void init(float fontSize = 18.0f);
+        void shutdown();
+
+        void beginFrame(const WindowHandle& window, bgfx::ViewId viewId, const InputState& input);
+        void endFrame();
+
+		static void* memAlloc(size_t size, void* userData);
+		static void memFree(void* ptr, void* userData);
+
+    private:
+		ImguiContext();
+
+		typedef std::array<ImGuiKey, to_underlying(KeyboardKey::Count)> KeyboardMap;
+		typedef std::array<ImGuiKey, to_underlying(GamepadButton::Count)> GamepadMap;
+
+		static KeyboardMap&& createKeyboardMap();
+		static GamepadMap&& createGamepadMap();
+
+        void render(ImDrawData* drawData);
+		static void setupStyle(bool dark);
+
+		struct FontRangeMerge
+		{
+			const void* data;
+			size_t      size;
+			ImWchar     ranges[3];
+		};
+
+		::ImGuiContext* _imgui;
+		bgfx::VertexLayout  _layout;
+		bgfx::ProgramHandle _program;
+		bgfx::ProgramHandle _imageProgram;
+		bgfx::TextureHandle _texture;
+		bgfx::UniformHandle _uniform;
+		bgfx::UniformHandle _imageLodEnabled;
+		std::array<ImFont*, ImGui::Font::Count> _font;
+		int64_t _last;
+		int32_t _lastScroll;
+		bgfx::ViewId _viewId;
+
+		static const KeyboardMap _keyboardMap;
+		static const GamepadMap _gamepadMap;
+
+		static const uint8_t AlphaBlendFlags;
+		static const bgfx::EmbeddedShader _embeddedShaders[];
+		static const FontRangeMerge _fontRangeMerge[];
+    };
+
 }
