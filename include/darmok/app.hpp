@@ -20,7 +20,7 @@ extern "C" int _main_(int argc, char** argv);
 #define DARMOK_IMPLEMENT_MAIN(app, ...)                      \
 	int32_t _main_(int32_t argc, char** argv)                \
 	{                                                        \
-		return darmok::runApp<app>(argc, argv, __VA_ARGS__); \
+		return darmok::runApp<app>(argc, argv, ##__VA_ARGS__); \
 	}
 #else
 #define DARMOK_IMPLEMENT_MAIN(app, ...) \
@@ -49,21 +49,24 @@ namespace darmok
 		void toggleDebugFlag(uint32_t flag);
 		void setDebugFlag(uint32_t flag, bool enabled = true);
 
+		void toggleResetFlag(uint32_t flag);
+		void setResetFlag(uint32_t flag, bool enabled = true);
+
 		void addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component);
 
 		template<typename T, typename... A>
-		void addViewComponent(bgfx::ViewId viewId, A... args)
+		void addViewComponent(bgfx::ViewId viewId, A&&... args)
 		{
-			ViewComponent* ptr = new T(std::forward(args)...);
+			ViewComponent* ptr = new T(std::forward<A>(args)...);
 			addViewComponent(viewId, std::unique_ptr<ViewComponent>(ptr));
 		}
 
 		void addComponent(std::unique_ptr<AppComponent>&& component);
 
 		template<typename T, typename... A>
-		void addComponent(A... args)
+		void addComponent(A&&... args)
 		{
-			AppComponent* ptr = new T(std::forward(args)...);
+			AppComponent* ptr = new T(std::forward<A>(args)...);
 			addComponent(std::unique_ptr<AppComponent>(ptr));
 		}
 	};
@@ -76,9 +79,7 @@ namespace darmok
 
 		virtual void init();
 		virtual void shutdown();
-
-		virtual void beforeUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
-		virtual void afterUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
+		virtual void update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
 	};
 
 	class ViewComponent
@@ -89,17 +90,15 @@ namespace darmok
 
 		virtual void init(bgfx::ViewId viewId);
 		virtual void shutdown();
-
-		virtual void beforeUpdate(const InputState& input, const WindowHandle& window);
-		virtual void afterUpdate(const InputState& input, const WindowHandle& window);
+		virtual void update(const InputState& input, const WindowHandle& window);
 	};
 
 	int runApp(App& app, const std::vector<std::string>& args);
 
 	template<typename T, typename... A>
-	int runApp(int argc, const char* const* argv, A... constructArgs)
+	int runApp(int argc, const char* const* argv, A&&... constructArgs)
 	{
-		T app(std::forward(constructArgs)...);
+		T app(std::forward<A>(constructArgs)...);
 		std::vector<std::string> args(argc);
 		for (int i = 0; i < argc; ++i)
 		{

@@ -562,14 +562,17 @@ namespace darmok
 		{
 			return to_underlying(v->key) | v->modifiers;
 		}
+
+		constexpr size_t maxKey = to_underlying(KeyboardKey::Count) + KeyboardModifiers::Max;
+
 		if (auto v = std::get_if<MouseBindingKey>(&key))
 		{
-			return KeyboardModifiers::Max + to_underlying(v->button);
+			return maxKey + to_underlying(v->button);
 		}
 		if (auto v = std::get_if<GamepadBindingKey>(&key))
 		{
 			auto h = to_underlying(v->button) >> v->gamepad.idx;
-			return KeyboardModifiers::Max + to_underlying(MouseButton::Count) + h;
+			return maxKey + to_underlying(MouseButton::Count) + h;
 		}
 		return 0;
 	}

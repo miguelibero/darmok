@@ -133,7 +133,7 @@ namespace darmok
 		static constexpr uint8_t Ctrl = LeftCtrl | RightCtrl;
 		static constexpr uint8_t Alt = LeftAlt | RightAlt;
 		static constexpr uint8_t Meta = LeftMeta | RightMeta;
-		static constexpr uint8_t Max = to_underlying(KeyboardKey::Count) + Meta;
+		static constexpr uint8_t Max = Meta;
 	};
 
 	struct Utf8Char final

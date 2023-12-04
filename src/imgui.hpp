@@ -4,10 +4,12 @@
 
 #include <dear-imgui/imgui.h>
 #include <bgfx/embedded_shader.h>
+#include <bx/bx.h>
 
 namespace darmok
 {
-	class WindowHandle;
+	struct WindowHandle;
+	class ImguiUpdaterI;
 
 	class ImguiContext final
 	{
@@ -17,7 +19,7 @@ namespace darmok
 
 		bool init();
 		bool shutdown();
-		void render(bgfx::ViewId viewId, bgfx::TextureHandle texture, ImDrawData* drawData);
+		void render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData);
 
 		static void* memAlloc(size_t size, void* userData);
 		static void memFree(void* ptr, void* userData);
@@ -50,27 +52,21 @@ namespace darmok
 
 		static const uint8_t AlphaBlendFlags;
 
-
-
-		static KeyboardMap&& createKeyboardMap();
-		static GamepadMap&& createGamepadMap();
-
-
-
-
+		static KeyboardMap createKeyboardMap();
+		static GamepadMap createGamepadMap();
 	};
 
     class ImguiViewComponentImpl final
     {
     public:
-		ImguiViewComponentImpl(float fontSize = 18.0f);
+		ImguiViewComponentImpl(ImguiUpdaterI& updater, float fontSize = 18.0f);
+
 		void init(bgfx::ViewId viewId);
 		void shutdown();
-
-		void beginFrame(const WindowHandle& window, const InputState& input);
-		void endFrame();
+		void update(const InputState& input, const WindowHandle& window);
 
     private:
+		ImguiUpdaterI& _updater;
 		::ImGuiContext* _imgui;
 		bgfx::TextureHandle _texture;
 		std::array<ImFont*, ImGui::Font::Count> _font;
@@ -79,7 +75,9 @@ namespace darmok
 		float _fontSize;
 		bgfx::ViewId _viewId;
 
-
+		void updateInput(const InputState& input, const WindowHandle& window);
+		void beginFrame();
+		void endFrame();
     };
 
 }

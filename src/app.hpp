@@ -17,14 +17,15 @@ namespace darmok
 
 		virtual void init(App& app, const std::vector<std::string>& args);
 		virtual void shutdown();
-		virtual void beforeUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
-		virtual void afterUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
+		virtual void update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
 		bool processEvents();
 
 		uint32_t getResetFlags();
-		void toggleDebugFlag(uint32_t flag);
+		bool toggleDebugFlag(uint32_t flag);
 		void setDebugFlag(uint32_t flag, bool enabled = true);
-
+		bool toggleResetFlag(uint32_t flag);
+		void setResetFlag(uint32_t flag, bool enabled);
+		
 		void addComponent(std::unique_ptr<AppComponent>&& component);
 		void addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component);
 		void setViewWindow(bgfx::ViewId viewId, const WindowHandle& window);
@@ -54,8 +55,7 @@ namespace darmok
 		static void resetDepthClampBinding();
 		static void screenshotBinding();
 
-		void toggleResetFlag(uint32_t flag);
-		void setResetFlag(uint32_t flag, bool enabled);
+
 		bool getResetFlag(uint32_t flag);
 		bool getDebugFlag(uint32_t flag);
 

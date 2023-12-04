@@ -72,34 +72,18 @@ namespace darmok
 		_init = false;
 	}
 
-	void AppImpl::beforeUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
+	void AppImpl::update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
 	{
 		for (auto& component : _appComponents)
 		{
-			component->beforeUpdate(input, viewId, window);
+			component->update(input, viewId, window);
 		}
 		auto itr = _viewComponents.find(viewId);
 		if (itr != _viewComponents.end())
 		{
 			for (auto& component : itr->second)
 			{
-				component->beforeUpdate(input, window);
-			}
-		}
-	}
-
-	void AppImpl::afterUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
-	{
-		for (auto& component : _appComponents)
-		{
-			component->afterUpdate(input, viewId, window);
-		}
-		auto itr = _viewComponents.find(viewId);
-		if (itr != _viewComponents.end())
-		{
-			for (auto& component : itr->second)
-			{
-				component->afterUpdate(input, window);
+				component->update(input, window);
 			}
 		}
 	}
@@ -122,7 +106,8 @@ namespace darmok
 			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::LeftAlt },		true, fullscreenToggleBinding },
 			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::RightAlt },		true, fullscreenToggleBinding },
 			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::None },			true, toggleDebugStatsBinding },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::None },			true, toggleDebugTextBinding },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftAlt },		true, toggleDebugTextBinding },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightAlt },		true, toggleDebugTextBinding },
 			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftCtrl	},		true, toggleDebugIfhBinding },
 			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightCtrl },		true, toggleDebugIfhBinding },
 			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftShift },		true, disableDebugFlagsBinding },
@@ -166,9 +151,11 @@ namespace darmok
 		}
 	}
 
-	void AppImpl::toggleResetFlag(uint32_t flag)
+	bool AppImpl::toggleResetFlag(uint32_t flag)
 	{
-		setResetFlag(flag, !getResetFlag(flag));
+		auto v = !getResetFlag(flag);
+		setResetFlag(flag, v);
+		return v;
 	}
 
 	void AppImpl::setResetFlag(uint32_t flag, bool enabled)
@@ -191,9 +178,11 @@ namespace darmok
 		return _reset;
 	}
 
-	void AppImpl::toggleDebugFlag(uint32_t flag)
+	bool AppImpl::toggleDebugFlag(uint32_t flag)
 	{
-		setDebugFlag(flag, !getDebugFlag(flag));
+		auto v = !getDebugFlag(flag);
+		setDebugFlag(flag, v);
+		return v;
 	}
 
 	void AppImpl::setDebugFlag(uint32_t flag, bool enabled)
@@ -376,11 +365,17 @@ namespace darmok
 	{
 		bgfx::Init init;
 		auto& win = WindowContext::get().getWindow();
+		auto& size = win.getSize();
 		init.platformData.ndt = Window::getNativeDisplayHandle();
 		init.platformData.nwh = win.getNativeHandle();
 		init.platformData.type = win.getNativeHandleType();
+		init.resolution.width = size.width;
+		init.resolution.height = size.height;
 		init.resolution.reset = AppImpl::get().getResetFlags();
 		bgfx::init(init);
+
+		bgfx::setPaletteColor(0, UINT32_C(0x00000000));
+		bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
 
 		AppImpl::get().init(*this, args);
 	}
@@ -432,9 +427,8 @@ namespace darmok
 			// use debug font to print information about this example.
 			bgfx::dbgTextClear();
 
-			impl.beforeUpdate(input, viewId, handle);
+			impl.update(input, viewId, handle);
 			update(input, viewId, handle);
-			impl.afterUpdate(input, viewId, handle);
 
 			// advance to next frame. Rendering thread will be kicked to
 			// process submitted rendering primitives.
@@ -463,6 +457,16 @@ namespace darmok
 		AppImpl::get().setDebugFlag(flag, enabled);
 	}
 
+	void App::toggleResetFlag(uint32_t flag)
+	{
+		AppImpl::get().toggleResetFlag(flag);
+	}
+	
+	void App::setResetFlag(uint32_t flag, bool enabled)
+	{
+		AppImpl::get().setResetFlag(flag, enabled);
+	}
+
 	void App::addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component)
 	{
 		AppImpl::get().addViewComponent(viewId, std::move(component));
@@ -481,11 +485,7 @@ namespace darmok
 	{
 	}
 
-	void ViewComponent::beforeUpdate(const InputState& input, const WindowHandle& window)
-	{
-	}
-
-	void ViewComponent::afterUpdate(const InputState& input, const WindowHandle& window)
+	void ViewComponent::update(const InputState& input, const WindowHandle& window)
 	{
 	}
 }

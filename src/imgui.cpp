@@ -45,7 +45,7 @@ namespace darmok
 		{ s_iconsFontAwesomeTtf, sizeof(s_iconsFontAwesomeTtf), { ICON_MIN_FA, ICON_MAX_FA, 0 } },
 	};
 
-	ImguiContext::KeyboardMap&& ImguiContext::createKeyboardMap()
+	ImguiContext::KeyboardMap ImguiContext::createKeyboardMap()
 	{
 		KeyboardMap map;
 
@@ -140,10 +140,10 @@ namespace darmok
 		map[to_underlying(KeyboardKey::KeyY)] = ImGuiKey_Y;
 		map[to_underlying(KeyboardKey::KeyZ)] = ImGuiKey_Z;
 
-		return std::move(map);
+		return map;
 	}
 
-	ImguiContext::GamepadMap&& ImguiContext::createGamepadMap()
+	ImguiContext::GamepadMap ImguiContext::createGamepadMap()
 	{
 		GamepadMap map;
 		map[to_underlying(GamepadButton::None)] = ImGuiKey_None;
@@ -163,7 +163,7 @@ namespace darmok
 		map[to_underlying(GamepadButton::ThumbR)] = ImGuiKey_GamepadR3;
 		map[to_underlying(GamepadButton::Guide)] = ImGuiKey_None;
 
-		return std::move(map);
+		return map;
 	}
 
 	const ImguiContext::KeyboardMap ImguiContext::keyboardMap = ImguiContext::createKeyboardMap();
@@ -252,7 +252,7 @@ namespace darmok
 	}
 
 
-	void ImguiContext::render(bgfx::ViewId viewId, bgfx::TextureHandle texture, ImDrawData* drawData)
+	void ImguiContext::render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData)
 	{
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
 		int fb_width = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
@@ -376,8 +376,9 @@ namespace darmok
 	}
 
 
-	ImguiViewComponentImpl::ImguiViewComponentImpl(float fontSize)
-		: _imgui(nullptr)
+	ImguiViewComponentImpl::ImguiViewComponentImpl(ImguiUpdaterI& updater, float fontSize)
+		: _updater(updater)
+		, _imgui(nullptr)
 		, _texture{ bgfx::kInvalidHandle }
 		, _font{}
 		, _last(0)
@@ -404,6 +405,7 @@ namespace darmok
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImGui::StyleColorsDark(&style);
+
 		style.FrameRounding = 4.0f;
 		style.WindowBorderSize = 0.0f;
 
@@ -462,12 +464,23 @@ namespace darmok
 		ImguiContext::get().shutdown();
 	}
 
-	void ImguiViewComponentImpl::beginFrame(const WindowHandle& window, const InputState& input)
+	void ImguiViewComponentImpl::update(const InputState& input, const WindowHandle& window)
 	{
 		ImGui::SetCurrentContext(_imgui);
 
+		updateInput(input, window);
+		beginFrame();
+		_updater.imguiUpdate(input, _viewId, window);
+		endFrame();
+
+		ImGui::SetCurrentContext(nullptr);
+
+	}
+
+	void ImguiViewComponentImpl::updateInput(const InputState& input, const WindowHandle& window)
+	{
 		ImGuiIO& io = ImGui::GetIO();
-		for(auto& inputChar : input.chars)
+		for (auto& inputChar : input.chars)
 		{
 			io.AddInputCharacter(inputChar.data);
 		}
@@ -515,7 +528,10 @@ namespace darmok
 				io.SetKeyEventNativeData(ImguiContext::gamepadMap[i], 0, 0, i);
 			}
 		}
+	}
 
+	void ImguiViewComponentImpl::beginFrame()
+	{
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 	}
@@ -524,11 +540,10 @@ namespace darmok
 	{
 		ImGui::Render();
 		ImguiContext::get().render(_viewId, _texture, ImGui::GetDrawData());
-		ImGui::SetCurrentContext(nullptr);
 	}
 
-	ImguiViewComponent::ImguiViewComponent(float fontSize)
-		: _impl(std::make_unique<ImguiViewComponentImpl>(fontSize))
+	ImguiViewComponent::ImguiViewComponent(ImguiUpdaterI& updater, float fontSize)
+		: _impl(std::make_unique<ImguiViewComponentImpl>(updater, fontSize))
 	{
 	}
 
@@ -542,15 +557,9 @@ namespace darmok
 		_impl->shutdown();
 	}
 
-	void ImguiViewComponent::beforeUpdate(const InputState& input, const WindowHandle& window)
+	void ImguiViewComponent::update(const InputState& input, const WindowHandle& window)
 	{
-		_impl->beginFrame(window, input);
-	}
-
-	void ImguiViewComponent::afterUpdate(const InputState& input, const WindowHandle& window)
-	{
-		BX_UNUSED(window, input);
-		_impl->endFrame();
+		_impl->update(input, window);
 	}
 }
 
