@@ -32,6 +32,7 @@ namespace darmok
 	struct InputState;
 	struct WindowHandle;
 	class AppComponent;
+	class ViewComponent;
 	
 	class BX_NO_VTABLE App
 	{
@@ -41,10 +42,21 @@ namespace darmok
 		bool update();
 
 	protected:
-		virtual void update(const WindowHandle& window, const InputState& input);
+		virtual void update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
+
+		void setViewWindow(bgfx::ViewId viewId, const WindowHandle& window);
 
 		void toggleDebugFlag(uint32_t flag);
 		void setDebugFlag(uint32_t flag, bool enabled = true);
+
+		void addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component);
+
+		template<typename T, typename... A>
+		void addViewComponent(bgfx::ViewId viewId, A... args)
+		{
+			ViewComponent* ptr = new T(std::forward(args)...);
+			addViewComponent(viewId, std::unique_ptr<ViewComponent>(ptr));
+		}
 
 		void addComponent(std::unique_ptr<AppComponent>&& component);
 
@@ -62,11 +74,24 @@ namespace darmok
 		AppComponent() = default;
 		virtual ~AppComponent() = default;
 
-		virtual void init(App& app, const std::vector<std::string>& args);
+		virtual void init();
 		virtual void shutdown();
 
-		virtual void beforeUpdate(const WindowHandle& window, const InputState& input);
-		virtual void afterUpdate(const WindowHandle& window, const InputState& input);
+		virtual void beforeUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
+		virtual void afterUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
+	};
+
+	class ViewComponent
+	{
+	public:
+		ViewComponent() = default;
+		virtual ~ViewComponent() = default;
+
+		virtual void init(bgfx::ViewId viewId);
+		virtual void shutdown();
+
+		virtual void beforeUpdate(const InputState& input, const WindowHandle& window);
+		virtual void afterUpdate(const InputState& input, const WindowHandle& window);
 	};
 
 	int runApp(App& app, const std::vector<std::string>& args);

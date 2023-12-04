@@ -45,6 +45,7 @@ namespace darmok
 		, _mouseLock(false)
 		, _flags(WindowFlags::None)
 		, _suspendPhase(WindowSuspendPhase::None)
+		, _frameBuffer{ bgfx::kInvalidHandle }
 	{
 	}
 
@@ -55,10 +56,33 @@ namespace darmok
 		_pos = options.pos.value_or(WindowPosition());
 		_title = options.title;
 		_flags = options.flags;
+
+		createFrameBuffer();
+	}
+
+	void WindowImpl::createFrameBuffer()
+	{
+		resetFrameBuffer();
+		if (_handle != Window::DefaultHandle)
+		{
+			_frameBuffer = bgfx::createFrameBuffer(getNativeHandle(), uint16_t(_size.width), uint16_t(_size.height));
+		}
+	}
+
+	bool WindowImpl::resetFrameBuffer()
+	{
+		if (!bgfx::isValid(_frameBuffer))
+		{
+			return false;
+		}
+		bgfx::destroy(_frameBuffer);
+		_frameBuffer.idx = bgfx::kInvalidHandle;
+		return true;
 	}
 
 	void WindowImpl::reset()
 	{
+		resetFrameBuffer();
 		_handle = Window::InvalidHandle;
 	}
 
@@ -69,7 +93,11 @@ namespace darmok
 
 	void WindowImpl::setSize(const WindowSize& size)
 	{
-		_size = size;
+		if (_size != size)
+		{
+			_size = size;
+			createFrameBuffer();
+		}
 	}
 
 	void WindowImpl::setTitle(const std::string& title)
@@ -90,6 +118,11 @@ namespace darmok
 	void WindowImpl::setSuspendPhase(WindowSuspendPhase phase)
 	{
 		_suspendPhase = phase;
+	}
+
+	void WindowImpl::setHandle(const WindowHandle& handle)
+	{
+		_handle = handle;
 	}
 
 	const WindowPosition& WindowImpl::getPosition() const
@@ -132,50 +165,72 @@ namespace darmok
 		return _handle.isValid();
 	}
 
-	ContextImpl::ContextImpl()
+	const bgfx::FrameBufferHandle& WindowImpl::getFrameBuffer() const
+	{
+		return _frameBuffer;
+	}
+
+	void* WindowImpl::getNativeHandle() const
+	{
+		return PlatformContext::get().getNativeWindowHandle(getHandle());
+	}
+
+	void* WindowImpl::getNativeDisplayHandle()
+	{
+		return PlatformContext::get().getNativeDisplayHandle();
+	}
+
+	bgfx::NativeWindowHandleType::Enum WindowImpl::getNativeHandleType() const
+	{
+		return PlatformContext::get().getNativeWindowHandleType(getHandle());
+	}
+
+	WindowContextImpl::WindowContextImpl()
 		: _windows{}
 	{
 	}
 
-	Windows& ContextImpl::getWindows()
+	Windows& WindowContextImpl::getWindows()
 	{
 		return _windows;
 	}
 
-	Window& ContextImpl::getWindow(const WindowHandle& handle)
+	Window& WindowContextImpl::getWindow(const WindowHandle& handle)
 	{
 		return _windows[handle.idx];
 	}
 
-	Context::Context()
-		: _impl(std::make_unique<ContextImpl>())
+	WindowContext::WindowContext()
+		: _impl(std::make_unique<WindowContextImpl>())
 	{
 	}
 
-	Windows& Context::getWindows()
+	Windows& WindowContext::getWindows()
 	{
 		return _impl->getWindows();
 	}
 
-	Window& Context::getWindow(const WindowHandle& handle)
+	Window& WindowContext::getWindow(const WindowHandle& handle)
 	{
 		return _impl->getWindow(handle);
 	}
 
-	const Window& Context::getWindow(const WindowHandle& handle) const
+	const Window& WindowContext::getWindow(const WindowHandle& handle) const
 	{
 		return _impl->getWindow(handle);
 	}
 
-	Window& Context::createWindow(const WindowCreationOptions& options)
+	Window& WindowContext::createWindow(const WindowCreationOptions& options)
 	{
 		auto handle = PlatformContext::get().pushCreateWindowCmd(options);
-		return getWindow(handle);
+		auto& win = getWindow(handle);
+		win.getImpl().setHandle(handle);
+		return win;
 	}
 
-	Context& Context::get()
+	WindowContext& WindowContext::get()
 	{
-		static Context instance;
+		static WindowContext instance;
 		return instance;
 	}
 
@@ -271,16 +326,16 @@ namespace darmok
 
 	void* Window::getNativeHandle() const
 	{
-		return PlatformContext::get().getNativeWindowHandle(getHandle());
+		return _impl->getNativeHandle();
 	}
 
 	void* Window::getNativeDisplayHandle()
 	{
-		return PlatformContext::get().getNativeDisplayHandle();
+		return WindowImpl::getNativeDisplayHandle();
 	}
 
 	bgfx::NativeWindowHandleType::Enum Window::getNativeHandleType() const
 	{
-		return PlatformContext::get().getNativeWindowHandleType(getHandle());
+		return _impl->getNativeHandleType();
 	}
 }

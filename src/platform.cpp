@@ -11,6 +11,28 @@ namespace darmok
 	{
 	}
 
+	class WindowEvent : public PlatformEvent
+	{
+	public:
+		WindowEvent(Type type, WindowHandle window)
+			: PlatformEvent(type)
+			, _window(window)
+		{
+		}
+
+		WindowImpl& getWindowImpl()
+		{
+			return WindowContext::get().getWindow(_window).getImpl();
+		}
+
+		WindowHandle getWindowHandle()
+		{
+			return _window;
+		}
+	private:
+		WindowHandle _window;
+	};
+
 	class KeyboardKeyChangedEvent final : public PlatformEvent
 	{
 	public:
@@ -51,11 +73,11 @@ namespace darmok
 		Utf8Char _data;
 	};
 
-	class MouseMovedEvent final : public PlatformEvent
+	class MouseMovedEvent final : public WindowEvent
 	{
 	public:
-		MouseMovedEvent(const MousePosition& pos)
-			: PlatformEvent(MouseMoved)
+		MouseMovedEvent(const WindowHandle& window, const MousePosition& pos)
+			: WindowEvent(MouseMoved, window)
 			, _pos(pos)
 		{
 		}
@@ -64,6 +86,7 @@ namespace darmok
 		{
 			auto& mouse = Input::get().getMouse().getImpl();
 			mouse.setPosition(_pos);
+			mouse.setWindow(getWindowHandle());
 		}
 	private:
 		MousePosition _pos;
@@ -161,28 +184,6 @@ namespace darmok
 	private:
 		GamepadHandle _gamepad;
 		bool _connected;
-	};
-
-	class WindowEvent : public PlatformEvent
-	{
-	public:
-		WindowEvent(Type type, WindowHandle window)
-			: PlatformEvent(type)
-			, _window(window)
-		{
-		}
-
-		WindowImpl& getWindowImpl()
-		{
-			return Context::get().getWindow(_window).getImpl();
-		}
-
-		WindowHandle getWindowHandle()
-		{
-			return _window;
-		}
-	private:
-		WindowHandle _window;
 	};
 
 	class WindowSizeChangedEvent final : public WindowEvent
@@ -369,9 +370,9 @@ namespace darmok
 		_events.push(std::make_unique<KeyboardCharInputEvent>(data));
 	}
 
-	void PlatformEventQueue::postMouseMovedEvent(const MousePosition& pos)
+	void PlatformEventQueue::postMouseMovedEvent(const WindowHandle& window, const MousePosition& pos)
 	{
-		_events.push(std::make_unique<MouseMovedEvent>(pos));
+		_events.push(std::make_unique<MouseMovedEvent>(window, pos));
 	}
 
 	void PlatformEventQueue::postMouseButtonChangedEvent(MouseButton button, bool down)

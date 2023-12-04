@@ -18,6 +18,7 @@ namespace darmok
 		void setFlags(uint32_t flags);
 		void setDropFilePath(const std::string& filePath);
 		void setSuspendPhase(WindowSuspendPhase phase);
+		void setHandle(const WindowHandle& handle);
 		
 		const WindowPosition& getPosition() const;
 		const WindowSize& getSize() const;
@@ -28,9 +29,18 @@ namespace darmok
 		WindowSuspendPhase getSuspendPhase() const;
 		bool isRunning() const;
 
+		void* getNativeHandle() const;
+		static void* getNativeDisplayHandle();
+		bgfx::NativeWindowHandleType::Enum getNativeHandleType() const;
+
+		const bgfx::FrameBufferHandle& getFrameBuffer() const;
+
 	private:
 		WindowImpl(const WindowImpl& other) = delete;
 		WindowImpl(WindowImpl&& other) = delete;
+
+		bool resetFrameBuffer();
+		void createFrameBuffer();
 
 		WindowHandle _handle;
 		std::string _dropFilePath;
@@ -40,17 +50,18 @@ namespace darmok
 		uint32_t _flags;
 		std::string _title;
 		WindowSuspendPhase _suspendPhase;
+		bgfx::FrameBufferHandle _frameBuffer;
 	};
 
-	class ContextImpl final
+	class WindowContextImpl final
 	{
 	public:
-		ContextImpl();
+		WindowContextImpl();
 		Window& getWindow(const WindowHandle& handle = Window::DefaultHandle);
 		Windows& getWindows();
 	private:
-		ContextImpl(const ContextImpl& other) = delete;
-		ContextImpl(ContextImpl&& other) = delete;
+		WindowContextImpl(const WindowContextImpl& other) = delete;
+		WindowContextImpl(WindowContextImpl&& other) = delete;
 
 		Windows _windows;
 	};

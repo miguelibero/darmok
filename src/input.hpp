@@ -56,16 +56,19 @@ namespace darmok
 		const MousePosition& getPosition() const;
 		const MouseButtons& getButtons() const;
 		bool getLocked() const;
-		bool setLocked(bool lock);
+		const WindowHandle& getWindow() const;
 
+		bool setLocked(bool lock);
 		void setResolution(const WindowSize& size);
 		void setPosition(const MousePosition& pos);
 		void setButton(MouseButton button, bool down);
+		void setWindow(const WindowHandle& win);
 
 	private:
 		MouseImpl(const MouseImpl& other) = delete;
 		MouseImpl(MouseImpl&& other) = delete;
 
+		WindowHandle _window;
 		MousePosition _absolute;
 		RelativeMousePosition _relative;
 

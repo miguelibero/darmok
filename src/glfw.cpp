@@ -776,7 +776,7 @@ namespace darmok {
 				glfwGetWindowPos(window, &pos.x, &pos.y);
 				options.pos = pos;
 
-				auto& win = darmok::Context::get().getWindow(handle).getImpl();
+				auto& win = darmok::WindowContext::get().getWindow(handle).getImpl();
 				win.init(handle, options);
 
 				_thread.init(MainThreadEntry::threadFunc, &_mte);
@@ -830,11 +830,13 @@ namespace darmok {
 
 			void scrollCallback(GLFWwindow* window, double dx, double dy)
 			{
-				BX_UNUSED(window, dx);
+				BX_UNUSED(dx);
 				double mx, my;
 				glfwGetCursorPos(window, &mx, &my);
 				_scrollPos += dy;
+				auto handle = _windows.findHandle(window);
 				_eventQueue.postMouseMovedEvent(
+					handle,
 					MousePosition((int32_t)mx
 					, (int32_t)my
 					, (int32_t)_scrollPos));
@@ -842,8 +844,9 @@ namespace darmok {
 
 			void cursorPosCallback(GLFWwindow* window, double x, double y)
 			{
-				BX_UNUSED(window);
+				auto handle = _windows.findHandle(window);
 				_eventQueue.postMouseMovedEvent(
+					handle,
 					MousePosition((int32_t)x
 					, (int32_t)y
 					, (int32_t)_scrollPos)
@@ -862,19 +865,19 @@ namespace darmok {
 
 			void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height)
 			{
-				WindowHandle handle = _windows.findHandle(window);
+				auto handle = _windows.findHandle(window);
 				_eventQueue.postWindowSizeChangedEvent(handle, WindowSize(width, height));
 			}
 
 			void windowPosCallback(GLFWwindow* window, int32_t x, int32_t y)
 			{
-				WindowHandle handle = _windows.findHandle(window);
+				auto handle = _windows.findHandle(window);
 				_eventQueue.postWindowPositionChangedEvent(handle, WindowPosition(x, y));
 			}
 
 			void dropFileCallback(GLFWwindow* window, int32_t count, const char** filePaths)
 			{
-				WindowHandle handle = _windows.findHandle(window);
+				auto handle = _windows.findHandle(window);
 				for (int32_t i = 0; i < count; ++i)
 				{
 					_eventQueue.postFileDroppedEvent(handle, filePaths[i]);

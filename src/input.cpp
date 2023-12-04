@@ -300,10 +300,16 @@ namespace darmok
 		_buttons[to_underlying(button)] = down;
 	}
 
+	void MouseImpl::setWindow(const WindowHandle& win)
+	{
+		_window = win;
+	}
+
 	MouseImpl::MouseImpl()
 		: _buttons{}
 		, _wheelDelta(120)
 		, _lock(false)
+		, _window(Window::InvalidHandle)
 	{
 	}
 
@@ -337,6 +343,11 @@ namespace darmok
 	bool MouseImpl::getLocked() const
 	{
 		return _lock;
+	}
+
+	const WindowHandle& MouseImpl::getWindow() const
+	{
+		return _window;
 	}
 
 	bool MouseImpl::setLocked(bool lock)

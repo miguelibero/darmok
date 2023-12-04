@@ -5,19 +5,18 @@
 
 namespace darmok
 {
-	class ImguiAppComponentImpl;
+	class ImguiViewComponentImpl;
 
-    class ImguiAppComponent final : public AppComponent
+    class ImguiViewComponent final : public ViewComponent
     {
     public:
-		ImguiAppComponent(float fontSize = 18.0f);
+		ImguiViewComponent(float fontSize = 18.0f);
+		void init(bgfx::ViewId viewId);
+		void shutdown();
 
-		void init(App& app, const std::vector<std::string>& args) override;
-		void shutdown() override;
-		void beforeUpdate(const WindowHandle& window, const InputState& input) override;
-		void afterUpdate(const WindowHandle& window, const InputState& input) override;
+		void beforeUpdate(const InputState& input, const WindowHandle& window) override;
+		void afterUpdate(const InputState& input, const WindowHandle& window) override;
 	private:
-		std::unique_ptr<ImguiAppComponentImpl> _impl;
+		std::unique_ptr<ImguiViewComponentImpl> _impl;
     };
-
 }

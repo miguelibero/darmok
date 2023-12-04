@@ -1,5 +1,6 @@
 #include "imgui.hpp"
 #include "asset.hpp"
+#include "input.hpp"
 #include <darmok/imgui.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/window.hpp>
@@ -26,9 +27,9 @@
 
 namespace darmok
 {
-	const uint8_t ImguiAppComponentImpl::AlphaBlendFlags = 0x01;
+	const uint8_t ImguiContext::AlphaBlendFlags = 0x01;
 
-	const bgfx::EmbeddedShader  ImguiAppComponentImpl::_embeddedShaders[] =
+	const bgfx::EmbeddedShader ImguiContext::_embeddedShaders[] =
 	{
 		BGFX_EMBEDDED_SHADER(vs_ocornut_imgui),
 		BGFX_EMBEDDED_SHADER(fs_ocornut_imgui),
@@ -38,13 +39,13 @@ namespace darmok
 		BGFX_EMBEDDED_SHADER_END()
 	};
 
-	const ImguiAppComponentImpl::FontRangeMerge ImguiAppComponentImpl::_fontRangeMerge[] =
+	const std::vector<ImguiContext::FontRangeMerge> ImguiContext::fontRangeMerge =
 	{
 		{ s_iconsKenneyTtf,      sizeof(s_iconsKenneyTtf),      { ICON_MIN_KI, ICON_MAX_KI, 0 } },
 		{ s_iconsFontAwesomeTtf, sizeof(s_iconsFontAwesomeTtf), { ICON_MIN_FA, ICON_MAX_FA, 0 } },
 	};
 
-	ImguiAppComponentImpl::KeyboardMap&& ImguiAppComponentImpl::createKeyboardMap()
+	ImguiContext::KeyboardMap&& ImguiContext::createKeyboardMap()
 	{
 		KeyboardMap map;
 
@@ -142,7 +143,7 @@ namespace darmok
 		return std::move(map);
 	}
 
-	ImguiAppComponentImpl::GamepadMap&& ImguiAppComponentImpl::createGamepadMap()
+	ImguiContext::GamepadMap&& ImguiContext::createGamepadMap()
 	{
 		GamepadMap map;
 		map[to_underlying(GamepadButton::None)] = ImGuiKey_None;
@@ -165,47 +166,33 @@ namespace darmok
 		return std::move(map);
 	}
 
-	const ImguiAppComponentImpl::KeyboardMap ImguiAppComponentImpl::_keyboardMap = ImguiAppComponentImpl::createKeyboardMap();
-	const ImguiAppComponentImpl::GamepadMap ImguiAppComponentImpl::_gamepadMap = ImguiAppComponentImpl::createGamepadMap();
+	const ImguiContext::KeyboardMap ImguiContext::keyboardMap = ImguiContext::createKeyboardMap();
+	const ImguiContext::GamepadMap ImguiContext::gamepadMap = ImguiContext::createGamepadMap();
 
-	ImguiAppComponentImpl::ImguiAppComponentImpl(float fontSize)
-		: _imgui(nullptr)
+	ImguiContext::ImguiContext()
+		: _initCount(0)
 		, _program{ bgfx::kInvalidHandle }
 		, _imageProgram{ bgfx::kInvalidHandle }
-		, _texture{ bgfx::kInvalidHandle }
 		, _uniform{ bgfx::kInvalidHandle }
 		, _imageLodEnabled{ bgfx::kInvalidHandle }
-		, _font{}
-		, _last(0)
-		, _lastScroll(0)
-		, _fontSize(fontSize)
 	{
 		IMGUI_CHECKVERSION();
 	}
 
-	void ImguiAppComponentImpl::init()
+	ImguiContext& ImguiContext::get()
 	{
-		_lastScroll = 0;
-		_last = bx::getHPCounter();
+		static ImguiContext instance;
+		return instance;
+	}
 
+	bool ImguiContext::init()
+	{
+		_initCount++;
+		if (_initCount > 1)
+		{
+			return false;
+		}
 		ImGui::SetAllocatorFunctions(memAlloc, memFree, this);
-
-		_imgui = ImGui::CreateContext();
-
-		ImGuiIO& io = ImGui::GetIO();
-
-		io.DisplaySize = ImVec2(1280.0f, 720.0f);
-		io.DeltaTime = 1.0f / 60.0f;
-		io.IniFilename = NULL;
-
-		setupStyle(true);
-
-		io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
-
-		io.ConfigFlags |= 0
-			| ImGuiConfigFlags_NavEnableGamepad
-			| ImGuiConfigFlags_NavEnableKeyboard
-			;
 
 		bgfx::RendererType::Enum type = bgfx::getRendererType();
 		_program = bgfx::createProgram(
@@ -230,64 +217,42 @@ namespace darmok
 
 		_uniform = bgfx::createUniform("s_tex", bgfx::UniformType::Sampler);
 
-		uint8_t* data;
-		int32_t width;
-		int32_t height;
-		{
-			ImFontConfig config;
-			config.FontDataOwnedByAtlas = false;
-			config.MergeMode = false;
-			//			config.MergeGlyphCenterV = true;
-
-			const ImWchar* ranges = io.Fonts->GetGlyphRangesCyrillic();
-			_font[ImGui::Font::Regular] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoRegularTtf, sizeof(s_robotoRegularTtf), _fontSize, &config, ranges);
-			_font[ImGui::Font::Mono] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoMonoRegularTtf, sizeof(s_robotoMonoRegularTtf), _fontSize - 3.0f, &config, ranges);
-
-			config.MergeMode = true;
-			config.DstFont = _font[ImGui::Font::Regular];
-
-			for (uint32_t i = 0; i< BX_COUNTOF(_fontRangeMerge); ++i)
-			{
-				const FontRangeMerge& frm = _fontRangeMerge[i];
-
-				io.Fonts->AddFontFromMemoryTTF((void*)frm.data
-					, (int)frm.size
-					, _fontSize - 3.0f
-					, &config
-					, frm.ranges
-				);
-			}
-		}
-
-		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height);
-
-		_texture = bgfx::createTexture2D(
-			(uint16_t)width
-			, (uint16_t)height
-			, false
-			, 1
-			, bgfx::TextureFormat::BGRA8
-			, 0
-			, bgfx::copy(data, width * height * 4)
-		);
-
 		ImGui::InitDockContext();
+
+		return true;
 	}
 
-	void ImguiAppComponentImpl::shutdown()
+	bool ImguiContext::shutdown()
 	{
+		_initCount--;
+		if (_initCount > 0)
+		{
+			return false;
+		}
 		ImGui::ShutdownDockContext();
-		ImGui::DestroyContext(_imgui);
-
 		bgfx::destroy(_uniform);
-		bgfx::destroy(_texture);
-
 		bgfx::destroy(_imageLodEnabled);
 		bgfx::destroy(_imageProgram);
 		bgfx::destroy(_program);
+		return true;
 	}
 
-	void ImguiAppComponentImpl::render(bgfx::ViewId viewId, ImDrawData* drawData)
+	void* ImguiContext::memAlloc(size_t size, void* userData)
+	{
+		BX_UNUSED(userData);
+		auto alloc = AssetContext::get().getImpl().getAllocator();
+		return bx::alloc(alloc, size);
+	}
+
+	void ImguiContext::memFree(void* ptr, void* userData)
+	{
+		BX_UNUSED(userData);
+		auto alloc = AssetContext::get().getImpl().getAllocator();
+		bx::free(alloc, ptr);
+	}
+
+
+	void ImguiContext::render(bgfx::ViewId viewId, bgfx::TextureHandle texture, ImDrawData* drawData)
 	{
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
 		int fb_width = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
@@ -355,7 +320,7 @@ namespace darmok
 						| BGFX_STATE_MSAA
 						;
 
-					bgfx::TextureHandle th = _texture;
+					bgfx::TextureHandle th = texture;
 					bgfx::ProgramHandle program = _program;
 
 					if (NULL != cmd->TextureId)
@@ -410,33 +375,104 @@ namespace darmok
 		}
 	}
 
-	void ImguiAppComponentImpl::setupStyle(bool dark)
-	{
-		// Doug Binks' darl color scheme
-		// https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9
-		ImGuiStyle& style = ImGui::GetStyle();
-		if (dark)
-		{
-			ImGui::StyleColorsDark(&style);
-		}
-		else
-		{
-			ImGui::StyleColorsLight(&style);
-		}
 
-		style.FrameRounding = 4.0f;
-		style.WindowBorderSize = 0.0f;
+	ImguiViewComponentImpl::ImguiViewComponentImpl(float fontSize)
+		: _imgui(nullptr)
+		, _texture{ bgfx::kInvalidHandle }
+		, _font{}
+		, _last(0)
+		, _lastScroll(0)
+		, _fontSize(fontSize)
+		, _viewId(0)
+	{
 	}
 
-	void ImguiAppComponentImpl::beginFrame(const WindowHandle& window, const InputState& input)
+	void ImguiViewComponentImpl::init(bgfx::ViewId viewId)
 	{
+		ImguiContext::get().init();
+		_viewId = viewId;
+		_lastScroll = 0;
+		_last = bx::getHPCounter();
+
+		_imgui = ImGui::CreateContext();
+		ImGui::SetCurrentContext(_imgui);
+
+		ImGuiIO& io = ImGui::GetIO();
+
+		io.DeltaTime = 1.0f / 60.0f;
+		io.IniFilename = NULL;
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		ImGui::StyleColorsDark(&style);
+		style.FrameRounding = 4.0f;
+		style.WindowBorderSize = 0.0f;
+
+		io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+
+		io.ConfigFlags |= 0
+			| ImGuiConfigFlags_NavEnableGamepad
+			| ImGuiConfigFlags_NavEnableKeyboard
+			;
+
+		uint8_t* data;
+		int32_t width;
+		int32_t height;
+		{
+			ImFontConfig config;
+			config.FontDataOwnedByAtlas = false;
+			config.MergeMode = false;
+			//			config.MergeGlyphCenterV = true;
+
+			const ImWchar* ranges = io.Fonts->GetGlyphRangesCyrillic();
+			_font[ImGui::Font::Regular] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoRegularTtf, sizeof(s_robotoRegularTtf), _fontSize, &config, ranges);
+			_font[ImGui::Font::Mono] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoMonoRegularTtf, sizeof(s_robotoMonoRegularTtf), _fontSize - 3.0f, &config, ranges);
+
+			config.MergeMode = true;
+			config.DstFont = _font[ImGui::Font::Regular];
+
+			for(auto& frm : ImguiContext::fontRangeMerge)
+			{
+				io.Fonts->AddFontFromMemoryTTF((void*)frm.data
+					, (int)frm.size
+					, _fontSize - 3.0f
+					, &config
+					, frm.ranges
+				);
+			}
+		}
+
+		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height);
+
+		_texture = bgfx::createTexture2D(
+			(uint16_t)width
+			, (uint16_t)height
+			, false
+			, 1
+			, bgfx::TextureFormat::BGRA8
+			, 0
+			, bgfx::copy(data, width * height * 4)
+		);
+
+		ImGui::SetCurrentContext(nullptr);
+	}
+
+	void ImguiViewComponentImpl::shutdown()
+	{
+		ImGui::DestroyContext(_imgui);
+		ImguiContext::get().shutdown();
+	}
+
+	void ImguiViewComponentImpl::beginFrame(const WindowHandle& window, const InputState& input)
+	{
+		ImGui::SetCurrentContext(_imgui);
+
 		ImGuiIO& io = ImGui::GetIO();
 		for(auto& inputChar : input.chars)
 		{
 			io.AddInputCharacter(inputChar.data);
 		}
 
-		auto& win = Context::get().getWindow(window);
+		auto& win = WindowContext::get().getWindow(window);
 		auto& size = win.getSize();
 		io.DisplaySize = ImVec2((float)size.width, (float)size.height);
 
@@ -447,14 +483,17 @@ namespace darmok
 		io.DeltaTime = float(frameTime / freq);
 
 		auto& mouse = Input::get().getMouse();
-		auto& buttons = mouse.getButtons();
-		auto& pos = mouse.getPosition();
-		io.AddMousePosEvent((float)pos.x, (float)pos.y);
-		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
-		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
-		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);
-		io.AddMouseWheelEvent(0.0f, (float)(pos.z - _lastScroll));
-		_lastScroll = pos.z;
+		if (mouse.getImpl().getWindow() == window)
+		{
+			auto& buttons = mouse.getButtons();
+			auto& pos = mouse.getPosition();
+			io.AddMousePosEvent((float)pos.x, (float)pos.y);
+			io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
+			io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
+			io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);
+			io.AddMouseWheelEvent(0.0f, (float)(pos.z - _lastScroll));
+			_lastScroll = pos.z;
+		}
 
 		auto& kb = Input::get().getKeyboard();
 
@@ -463,69 +502,55 @@ namespace darmok
 		io.AddKeyEvent(ImGuiMod_Ctrl, 0 != (modifiers & KeyboardModifiers::Ctrl));
 		io.AddKeyEvent(ImGuiMod_Alt, 0 != (modifiers & KeyboardModifiers::Alt));
 		io.AddKeyEvent(ImGuiMod_Super, 0 != (modifiers & KeyboardModifiers::Meta));
-		for (int32_t i = 0; i < (int32_t)KeyboardKey::Count; ++i)
+		for (int32_t i = 0; i < ImguiContext::keyboardMap.size(); ++i)
 		{
-			io.AddKeyEvent(_keyboardMap[i], kb.getKey(KeyboardKey(i)));
-			io.SetKeyEventNativeData(_keyboardMap[i], 0, 0, i);
+			io.AddKeyEvent(ImguiContext::keyboardMap[i], kb.getKey(KeyboardKey(i)));
+			io.SetKeyEventNativeData(ImguiContext::keyboardMap[i], 0, 0, i);
 		}
 		for (auto& gamepad : Input::get().getGamepads())
 		{
-			for (int32_t i = 0; i < (int32_t)GamepadButton::Count; ++i)
+			for (int32_t i = 0; i < ImguiContext::gamepadMap.size(); ++i)
 			{
-				io.AddKeyEvent(_gamepadMap[i], gamepad.getButton(GamepadButton(i)));
-				io.SetKeyEventNativeData(_gamepadMap[i], 0, 0, i);
+				io.AddKeyEvent(ImguiContext::gamepadMap[i], gamepad.getButton(GamepadButton(i)));
+				io.SetKeyEventNativeData(ImguiContext::gamepadMap[i], 0, 0, i);
 			}
 		}
 
 		ImGui::NewFrame();
-
 		ImGuizmo::BeginFrame();
 	}
 
-	void ImguiAppComponentImpl::endFrame(bgfx::ViewId viewId)
+	void ImguiViewComponentImpl::endFrame()
 	{
 		ImGui::Render();
-		render(viewId, ImGui::GetDrawData());
+		ImguiContext::get().render(_viewId, _texture, ImGui::GetDrawData());
+		ImGui::SetCurrentContext(nullptr);
 	}
 
-	void* ImguiAppComponentImpl::memAlloc(size_t size, void* userData)
-	{
-		BX_UNUSED(userData);
-		auto alloc = AssetContext::get().getImpl().getAllocator();
-		return bx::alloc(alloc, size);
-	}
-
-	void ImguiAppComponentImpl::memFree(void* ptr, void* userData)
-	{
-		BX_UNUSED(userData);
-		auto alloc = AssetContext::get().getImpl().getAllocator();
-		bx::free(alloc, ptr);
-	}
-
-	ImguiAppComponent::ImguiAppComponent(float fontSize)
-		: _impl(std::make_unique< ImguiAppComponentImpl>(fontSize))
+	ImguiViewComponent::ImguiViewComponent(float fontSize)
+		: _impl(std::make_unique<ImguiViewComponentImpl>(fontSize))
 	{
 	}
 
-	void ImguiAppComponent::init(App& app, const std::vector<std::string>& args)
+	void ImguiViewComponent::init(bgfx::ViewId viewId)
 	{
-		_impl->init();
+		_impl->init(viewId);
 	}
 
-	void ImguiAppComponent::shutdown()
+	void ImguiViewComponent::shutdown()
 	{
 		_impl->shutdown();
 	}
 
-	void ImguiAppComponent::beforeUpdate(const WindowHandle& handle, const InputState& input)
+	void ImguiViewComponent::beforeUpdate(const InputState& input, const WindowHandle& window)
 	{
-		_impl->beginFrame(handle, input);
+		_impl->beginFrame(window, input);
 	}
 
-	void ImguiAppComponent::afterUpdate(const WindowHandle& handle, const InputState& input)
+	void ImguiViewComponent::afterUpdate(const InputState& input, const WindowHandle& window)
 	{
-		BX_UNUSED(handle, input);
-		_impl->endFrame(255);
+		BX_UNUSED(window, input);
+		_impl->endFrame();
 	}
 }
 
@@ -557,8 +582,8 @@ BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wunused-function"); // warning: 'int re
 BX_PRAGMA_DIAGNOSTIC_PUSH();
 BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG("-Wunknown-pragmas")
 BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wtype-limits"); // warning: comparison is always true due to limited range of data type
-#define STBTT_malloc(size, userData) darmok::ImguiAppComponentImpl::memAlloc(size, userData)
-#define STBTT_free(ptr, userData) darmok::ImguiAppComponentImpl::memFree(ptr, userData)
+#define STBTT_malloc(size, userData) darmok::ImguiContext::memAlloc(size, userData)
+#define STBTT_free(ptr, userData) darmok::ImguiContext::memFree(ptr, userData)
 #define STB_RECT_PACK_IMPLEMENTATION
 #include <stb/stb_rect_pack.h>
 #define STB_TRUETYPE_IMPLEMENTATION

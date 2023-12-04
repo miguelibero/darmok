@@ -64,7 +64,7 @@ namespace darmok
 		uint32_t flags = WindowFlags::None;
 	};
 
-	class ContextImpl;
+	class WindowContextImpl;
 	class WindowImpl;
 
 	class Window final
@@ -82,10 +82,11 @@ namespace darmok
 		void setFlags(uint32_t flags, bool enabled);
 		void toggleFullscreen();
 		void setMouseLock(bool lock);
-		
+
 		void* getNativeHandle() const;
 		static void* getNativeDisplayHandle();
 		bgfx::NativeWindowHandleType::Enum getNativeHandleType() const;
+
 		const WindowPosition& getPosition() const;
 		const WindowSize& getSize() const;
 		const std::string& getTitle() const;
@@ -104,26 +105,26 @@ namespace darmok
 
 		std::unique_ptr<WindowImpl> _impl;
 
-		friend ContextImpl;
+		friend WindowContextImpl;
 	};
 
 	typedef std::array<Window, Window::MaxAmount> Windows;
 
-	class Context final
+	class WindowContext final
 	{
 	public:
 		Window& createWindow(const WindowCreationOptions& options);
 		Window& getWindow(const WindowHandle& handle = Window::DefaultHandle);
 		const Window& getWindow(const WindowHandle& handle = Window::DefaultHandle) const;
 		Windows& getWindows();
-		static Context& get();
+		static WindowContext& get();
 
 	private:
-		Context();
-		Context(const Context& other) = delete;
-		Context(Context&& other) = delete;
+		WindowContext();
+		WindowContext(const WindowContext& other) = delete;
+		WindowContext(WindowContext&& other) = delete;
 
-		std::unique_ptr<ContextImpl> _impl;
+		std::unique_ptr<WindowContextImpl> _impl;
 	};
 
 } // namespace darmok

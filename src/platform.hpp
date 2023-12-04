@@ -96,7 +96,7 @@ namespace darmok
 		void postKeyboardCharInputEvent(const Utf8Char& data);
 		void postKeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down);
 
-		void postMouseMovedEvent(const MousePosition& pos);
+		void postMouseMovedEvent(const WindowHandle& window, const MousePosition& pos);
 		void postMouseButtonChangedEvent(MouseButton button, bool down);
 
 		void postGamepadConnectionEvent(const GamepadHandle& gamepad, bool connected);

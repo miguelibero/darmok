@@ -2,6 +2,7 @@
 #include "app.hpp"
 #include "platform.hpp"
 #include "input.hpp"
+#include "window.hpp"
 
 #include <darmok/app.hpp>
 
@@ -18,7 +19,7 @@ namespace darmok
 		, _debug(BGFX_DEBUG_NONE)
 		, _reset(BGFX_RESET_VSYNC)
 		, _needsReset(false)
-		, _app(nullptr)
+		, _init(false)
 	{
 	}
 
@@ -30,44 +31,76 @@ namespace darmok
 
 	void AppImpl::init(App& app, const std::vector<std::string>& args)
 	{
-		_app = &app;
-		_args = args;
+		_winViews.clear();
+		_winViews[0] = Window::DefaultHandle;
+
 		bx::FilePath fp(args[0].c_str());
 		auto basePath = fp.getPath();
 
 		setCurrentDir(std::string(basePath.getPtr(), basePath.getLength()));
 		addBindings();
 
-		for (auto& component : _components)
+		for (auto& component : _appComponents)
 		{
-			component->init(app, args);
+			component->init();
 		}
+		for(auto& elm : _viewComponents)
+		{
+			for (auto& component : elm.second)
+			{
+				component->init(elm.first);
+			}
+		}
+		_init = true;
 	}
 
 	void AppImpl::shutdown()
 	{
-		removeBindings();
-		for (auto& component : _components)
+		for (auto& component : _appComponents)
 		{
 			component->shutdown();
 		}
-		_app = nullptr;
-		_args.clear();
+		_appComponents.clear();
+		for (auto& elm : _viewComponents)
+		{
+			for (auto& component : elm.second)
+			{
+				component->shutdown();
+			}
+		}
+		_viewComponents.clear();
+		_init = false;
 	}
 
-	void AppImpl::beforeUpdate(const WindowHandle& window, const InputState& input)
+	void AppImpl::beforeUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
 	{
-		for (auto& component : _components)
+		for (auto& component : _appComponents)
 		{
-			component->beforeUpdate(window, input);
+			component->beforeUpdate(input, viewId, window);
+		}
+		auto itr = _viewComponents.find(viewId);
+		if (itr != _viewComponents.end())
+		{
+			for (auto& component : itr->second)
+			{
+				component->beforeUpdate(input, window);
+			}
 		}
 	}
 
-	void AppImpl::afterUpdate(const WindowHandle& window, const InputState& input)
+	void AppImpl::afterUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
 	{
-		for (auto& component : _components)
+		for (auto& component : _appComponents)
 		{
-			component->afterUpdate(window, input);
+			component->afterUpdate(input, viewId, window);
+		}
+		auto itr = _viewComponents.find(viewId);
+		if (itr != _viewComponents.end())
+		{
+			for (auto& component : itr->second)
+			{
+				component->afterUpdate(input, window);
+			}
 		}
 	}
 
@@ -118,7 +151,7 @@ namespace darmok
 
 	void AppImpl::fullscreenToggleBinding()
 	{
-		Context::get().getWindow().toggleFullscreen();
+		WindowContext::get().getWindow().toggleFullscreen();
 	}
 
 	static uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled)
@@ -272,7 +305,7 @@ namespace darmok
 
 		if (needsReset || _needsReset)
 		{
-			auto& size = Context::get().getWindow().getSize();
+			auto& size = WindowContext::get().getWindow().getSize();
 			bgfx::reset(size.width, size.height, getResetFlags());
 			Input::get().getMouse().getImpl().setResolution(size);
 			_needsReset = false;
@@ -283,11 +316,30 @@ namespace darmok
 
 	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component)
 	{
-		if (_app != nullptr)
+		if (_init)
 		{
-			component->init(*_app, _args);
+			component->init();
 		}
-		_components.push_back(std::move(component));
+		_appComponents.push_back(std::move(component));
+	}
+
+	void AppImpl::addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component)
+	{
+		if (_init)
+		{
+			component->init(viewId);
+		}
+		_viewComponents[viewId].push_back(std::move(component));
+	}
+
+	void AppImpl::setViewWindow(bgfx::ViewId viewId, const WindowHandle& window)
+	{
+		_winViews[viewId] = window;
+	}
+
+	const WindowViews& AppImpl::getWindowViews() const
+	{
+		return _winViews;
 	}
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -323,7 +375,7 @@ namespace darmok
 	void App::init(const std::vector<std::string>& args)
 	{
 		bgfx::Init init;
-		auto& win = Context::get().getWindow();
+		auto& win = WindowContext::get().getWindow();
 		init.platformData.ndt = Window::getNativeDisplayHandle();
 		init.platformData.nwh = win.getNativeHandle();
 		init.platformData.type = win.getNativeHandleType();
@@ -350,44 +402,54 @@ namespace darmok
 			return false;
 		}
 
-		bgfx::ViewId viewId = 0;
 		auto input = Input::get().getImpl().popState();
 		auto& impl = AppImpl::get();
 
-		for (auto& win : Context::get().getWindows())
+		for (auto elm : impl.getWindowViews())
 		{
+			auto& win = WindowContext::get().getWindow(elm.second);
 			if (!win.isRunning())
 			{
 				continue;
 			}
+			auto viewId = elm.first;
 			auto& handle = win.getHandle();
+			auto fbh = win.getImpl().getFrameBuffer();
 
-			// Set view 0 default viewport.
+			if (isValid(fbh))
+			{
+				bgfx::setViewFrameBuffer(viewId, fbh);
+			}
+
+			// set view default viewport.
 			auto& size = win.getSize();
 			bgfx::setViewRect(viewId, 0, 0, uint16_t(size.width), uint16_t(size.height));
 
-			// This dummy draw call is here to make sure that view 0 is cleared
-			// if no other draw calls are submitted to view 0.
+			// this dummy draw call is here to make sure that view is cleared
+			// if no other draw calls are submitted to view.
 			bgfx::touch(viewId);
 
-			// Use debug font to print information about this example.
+			// use debug font to print information about this example.
 			bgfx::dbgTextClear();
 
-			impl.beforeUpdate(handle, input);
-			update(handle, input);
-			impl.afterUpdate(handle, input);
+			impl.beforeUpdate(input, viewId, handle);
+			update(input, viewId, handle);
+			impl.afterUpdate(input, viewId, handle);
 
-			// Advance to next frame. Rendering thread will be kicked to
+			// advance to next frame. Rendering thread will be kicked to
 			// process submitted rendering primitives.
 			bgfx::frame();
 
-			viewId++;
+			if (isValid(fbh))
+			{
+				bgfx::setViewFrameBuffer(viewId, { bgfx::kInvalidHandle });
+			}
 		}
 
 		return true;
 	}
 
-	void App::update(const WindowHandle& window, const InputState& input)
+	void App::update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
 	{
 	}
 
@@ -401,24 +463,29 @@ namespace darmok
 		AppImpl::get().setDebugFlag(flag, enabled);
 	}
 
-	void App::addComponent(std::unique_ptr<AppComponent>&& component)
+	void App::addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component)
 	{
-		AppImpl::get().addComponent(std::move(component));
+		AppImpl::get().addViewComponent(viewId, std::move(component));
 	}
 
-	void AppComponent::init(App& app, const std::vector<std::string>& args)
+	void App::setViewWindow(bgfx::ViewId viewId, const WindowHandle& window)
 	{
+		AppImpl::get().setViewWindow(viewId, window);
 	}
 
-	void AppComponent::shutdown()
-	{
-	}
-
-	void AppComponent::beforeUpdate(const WindowHandle& window, const InputState& input)
+	void ViewComponent::init(bgfx::ViewId viewId)
 	{
 	}
 
-	void AppComponent::afterUpdate(const WindowHandle& window, const InputState& input)
+	void ViewComponent::shutdown()
+	{
+	}
+
+	void ViewComponent::beforeUpdate(const InputState& input, const WindowHandle& window)
+	{
+	}
+
+	void ViewComponent::afterUpdate(const InputState& input, const WindowHandle& window)
 	{
 	}
 }
