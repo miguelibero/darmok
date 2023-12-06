@@ -268,20 +268,6 @@ namespace darmok
 
 #pragma region Mouse
 
-	MousePosition::MousePosition(int32_t px, int32_t py, int32_t pz)
-		: x(px)
-		, y(py)
-		, z(pz)
-	{
-	}
-
-	RelativeMousePosition::RelativeMousePosition(float px, float py, float pz)
-		: x(px)
-		, y(py)
-		, z(pz)
-	{
-	}
-
 	void MouseImpl::setResolution(const WindowSize& size)
 	{
 		_size = size;
@@ -290,8 +276,8 @@ namespace darmok
 	void MouseImpl::setPosition(const MousePosition& pos)
 	{
 		_absolute = pos;
-		_relative.x = float(pos.x) / float(_size.width);
-		_relative.y = float(pos.y) / float(_size.height);
+		_relative.x = float(pos.x) / float(_size.x);
+		_relative.y = float(pos.y) / float(_size.y);
 		_relative.z = float(pos.z) / float(_wheelDelta);
 	}
 
@@ -310,6 +296,9 @@ namespace darmok
 		, _wheelDelta(120)
 		, _lock(false)
 		, _window(Window::InvalidHandle)
+		, _absolute{}
+		, _relative{}
+		, _size{}
 	{
 	}
 

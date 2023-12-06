@@ -18,28 +18,6 @@ namespace darmok
 		return idx < Window::MaxAmount;
 	}
 
-	WindowPosition::WindowPosition(int32_t vx, int32_t vy)
-		: x(vx)
-		, y(vy)
-	{
-	}
-
-	bool WindowPosition::operator==(const WindowPosition& other) const
-	{
-		return x == other.x && y == other.y;
-	}
-
-	WindowSize::WindowSize(int32_t vwidth , int32_t vheight)
-		: width(vwidth)
-		, height(vheight)
-	{
-	}
-
-	bool WindowSize::operator==(const WindowSize& other) const
-	{
-		return width == other.width && height == other.height;
-	}
-
 	WindowImpl::WindowImpl()
 		: _handle(Window::InvalidHandle)
 		, _mouseLock(false)
@@ -65,7 +43,7 @@ namespace darmok
 		resetFrameBuffer();
 		if (_handle != Window::DefaultHandle)
 		{
-			_frameBuffer = bgfx::createFrameBuffer(getNativeHandle(), uint16_t(_size.width), uint16_t(_size.height));
+			_frameBuffer = bgfx::createFrameBuffer(getNativeHandle(), uint16_t(_size.x), uint16_t(_size.y));
 		}
 	}
 

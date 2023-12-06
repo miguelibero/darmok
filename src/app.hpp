@@ -4,7 +4,6 @@
 #include <string>
 #include <cstdint>
 #include <map>
-#include <entt/entt.hpp>
 
 namespace darmok
 {
@@ -71,6 +70,5 @@ namespace darmok
 		std::map<bgfx::ViewId, WindowHandle> _winViews;
 		std::vector<std::unique_ptr<AppComponent>> _appComponents;
 		std::map<bgfx::ViewId, std::vector<std::unique_ptr<ViewComponent>>> _viewComponents;
-		entt::registry _registry;
 	};
 }

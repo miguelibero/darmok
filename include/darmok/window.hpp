@@ -6,6 +6,7 @@
 #include <optional>
 #include <memory>
 #include <bgfx/bgfx.h>
+#include <glm/glm.hpp>
 
 
 namespace darmok
@@ -20,23 +21,8 @@ namespace darmok
 		bool isValid() const;
 	};
 
-	struct WindowPosition final
-	{
-		int32_t x;
-		int32_t y;
-
-		WindowPosition(int32_t x = 0, int32_t y = 0);
-		bool operator==(const WindowPosition& other) const;
-	};
-
-	struct WindowSize final
-	{
-		uint32_t width;
-		uint32_t height;
-
-		WindowSize(int32_t width = 0, int32_t height = 0);
-		bool operator==(const WindowSize& other) const;
-	};
+	typedef glm::vec<2, int32_t> WindowPosition;
+	typedef glm::vec<2, int32_t> WindowSize;
 
 	enum class WindowSuspendPhase
 	{

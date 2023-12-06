@@ -404,7 +404,7 @@ namespace darmok {
 			void process(WindowMap& windows)
 			{
 				auto window = windows.getWindow(_handle);
-				glfwSetWindowSize(window, _size.width, _size.height);
+				glfwSetWindowSize(window, _size.x, _size.y);
 			}
 
 		private:
@@ -446,8 +446,8 @@ namespace darmok {
 						, nullptr
 						, state.pos.x
 						, state.pos.y
-						, state.size.width
-						, state.size.height
+						, state.size.x
+						, state.size.y
 						, 0
 					);
 				}
@@ -460,8 +460,8 @@ namespace darmok {
 						glfwGetWindowPos(window, &state.pos.x, &state.pos.y);
 						int w, h;
 						glfwGetWindowSize(window, &w, &h);
-						state.size.width = w;
-						state.size.height = h;
+						state.size.x = w;
+						state.size.y = h;
 						const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 						glfwSetWindowMonitor(window
 							, monitor
@@ -975,8 +975,8 @@ namespace darmok {
 
 		GLFWwindow* createWindowImpl(const WindowCreationOptions& options)
 		{
-			GLFWwindow* window = glfwCreateWindow(options.size.width
-				, options.size.height
+			GLFWwindow* window = glfwCreateWindow(options.size.x
+				, options.size.y
 				, options.title.c_str()
 				, NULL
 				, NULL);
@@ -992,7 +992,7 @@ namespace darmok {
 			}
 			if (options.flags & WindowFlags::AspectRatio)
 			{
-				glfwSetWindowAspectRatio(window, options.size.width, options.size.height);
+				glfwSetWindowAspectRatio(window, options.size.x, options.size.y);
 			}
 
 			glfwSetKeyCallback(window, keyCallback);

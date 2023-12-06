@@ -43,13 +43,15 @@ namespace darmok
 		bx::AllocatorI* _alloc;
 	};
 
+	class Image;
+
 	class AssetContextImpl final
 	{
 	public:
 		bgfx::ShaderHandle loadShader(const std::string& name);
-		bgfx::ProgramHandle loadProgram(const std::string& vsName, const std::string& fsName);
+		bgfx::ProgramHandle loadProgram(const std::string& vertexName, const std::string& fragmentName = "");
 		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE, uint8_t skip = 0, bgfx::TextureInfo* info = nullptr, bimg::Orientation::Enum* orientation = nullptr);
-		bimg::ImageContainer* loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat);
+		std::shared_ptr<Image> loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
 	
 		bx::AllocatorI* getAllocator();
 	private:

@@ -487,7 +487,7 @@ namespace darmok
 
 		auto& win = WindowContext::get().getWindow(window);
 		auto& size = win.getSize();
-		io.DisplaySize = ImVec2((float)size.width, (float)size.height);
+		io.DisplaySize = ImVec2((float)size.x, (float)size.y);
 
 		const int64_t now = bx::getHPCounter();
 		const int64_t frameTime = now - _last;

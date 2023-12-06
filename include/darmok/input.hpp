@@ -8,6 +8,7 @@
 #include <memory>
 #include <cstdint>
 #include <darmok/utils.hpp>
+#include <glm/glm.hpp>
 
 namespace darmok
 {
@@ -182,23 +183,8 @@ namespace darmok
 		Count
 	};
 
-	struct MousePosition final
-	{
-		int32_t x;
-		int32_t y;
-		int32_t z;
-
-		MousePosition(int32_t x = 0, int32_t y = 0, int32_t z = 0);
-	};
-
-	struct RelativeMousePosition final
-	{
-		float x;
-		float y;
-		float z;
-
-		RelativeMousePosition(float x = 0.0f, float y = 0.0f, float z = 0.0f);
-	};
+	typedef glm::vec<3, int32_t> MousePosition;
+	typedef glm::vec<3, float> RelativeMousePosition;
 
 	typedef std::array<bool, to_underlying(MouseButton::Count)> MouseButtons;
 
@@ -227,11 +213,13 @@ namespace darmok
 		friend InputImpl;
 	};
 
+	// TODO: change to 2 glm::vec<3, int32_t>
 	enum class GamepadAxis
 	{
 		LeftX,
 		LeftY,
 		LeftZ,
+
 		RightX,
 		RightY,
 		RightZ,

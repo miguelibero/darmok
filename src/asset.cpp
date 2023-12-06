@@ -99,47 +99,55 @@ namespace darmok
 		}
 
 		DBG("Failed to load %s.", filePath.c_str());
-		return NULL;
+		return nullptr;
 	}
 
-	bgfx::ShaderHandle AssetContextImpl::loadShader(const std::string& name)
+	static std::string getShaderExt()
 	{
-		std::string shaderPath = "???";
-
 		switch (bgfx::getRendererType())
 		{
 		case bgfx::RendererType::Noop:
 		case bgfx::RendererType::Direct3D11:
-		case bgfx::RendererType::Direct3D12: shaderPath = "shaders/dx11/";  break;
+		case bgfx::RendererType::Direct3D12: return "dx11";  break;
 		case bgfx::RendererType::Agc:
-		case bgfx::RendererType::Gnm:        shaderPath = "shaders/pssl/";  break;
-		case bgfx::RendererType::Metal:      shaderPath = "shaders/metal/"; break;
-		case bgfx::RendererType::Nvn:        shaderPath = "shaders/nvn/";   break;
-		case bgfx::RendererType::OpenGL:     shaderPath = "shaders/glsl/";  break;
-		case bgfx::RendererType::OpenGLES:   shaderPath = "shaders/essl/";  break;
-		case bgfx::RendererType::Vulkan:     shaderPath = "shaders/spirv/"; break;
+		case bgfx::RendererType::Gnm:        return "pssl";  break;
+		case bgfx::RendererType::Metal:      return "metal"; break;
+		case bgfx::RendererType::Nvn:		 return "nvn";   break;
+		case bgfx::RendererType::OpenGL:     return "glsl";  break;
+		case bgfx::RendererType::OpenGLES:   return "essl";  break;
+		case bgfx::RendererType::Vulkan:     return "spirv"; break;
 
 		case bgfx::RendererType::Count:
 			BX_ASSERT(false, "You should not be here!");
 			break;
 		}
+		return "???";
+	}
 
-		std::string filePath = shaderPath + name + ".bin";
+	bgfx::ShaderHandle AssetContextImpl::loadShader(const std::string& name)
+	{
+		std::string filePath = name + "." + getShaderExt() + ".bin";
 		auto mem = loadMem(filePath);
-		mem->data[mem->size - 1] = '\0';
+		
+		if (mem == nullptr)
+		{
+			return { bgfx::kInvalidHandle };
+		}
+		
+		// mem->data[mem->size - 1] = '\0';
 		bgfx::ShaderHandle handle = bgfx::createShader(mem);
 		bgfx::setName(handle, name.c_str());
 
 		return handle;
 	}
 
-	bgfx::ProgramHandle AssetContextImpl::loadProgram(const std::string& vsName, const std::string& fsName)
+	bgfx::ProgramHandle AssetContextImpl::loadProgram(const std::string& vertexName, const std::string& fragmentName)
 	{
-		bgfx::ShaderHandle vsh = loadShader(vsName);
+		bgfx::ShaderHandle vsh = loadShader(vertexName);
 		bgfx::ShaderHandle fsh = BGFX_INVALID_HANDLE;
-		if (!fsName.empty())
+		if (!fragmentName.empty())
 		{
-			fsh = loadShader(fsName);
+			fsh = loadShader(fragmentName);
 		}
 
 		return bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
@@ -237,11 +245,12 @@ namespace darmok
 		return handle;
 	}
 
-	bimg::ImageContainer* AssetContextImpl::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	std::shared_ptr<Image> AssetContextImpl::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
 	{
 		auto data = loadData(filePath);
 		auto alloc = getAllocator();
-		return bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Enum(dstFormat));
+		bimg::ImageContainer* ptr = bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Enum(dstFormat));
+		return std::make_unique<Image>(ptr);
 	}
 
 	AssetContext& AssetContext::get()
@@ -260,9 +269,9 @@ namespace darmok
 		return _impl->loadShader(name);
 	}
 
-	bgfx::ProgramHandle AssetContext::loadProgram(const std::string& vsName, const std::string& fsName)
+	bgfx::ProgramHandle AssetContext::loadProgram(const std::string& vertexName, const std::string& fragmentName)
 	{
-		return _impl->loadProgram(vsName, fsName);
+		return _impl->loadProgram(vertexName, fragmentName);
 	}
 
 	bgfx::TextureHandle AssetContext::loadTexture(const std::string& name, uint64_t flags, uint8_t skip, bgfx::TextureInfo* info, bimg::Orientation::Enum* orientation)
@@ -270,7 +279,7 @@ namespace darmok
 		return _impl->loadTexture(name, flags, skip, info, orientation);
 	}
 
-	bimg::ImageContainer* AssetContext::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	std::shared_ptr<Image> AssetContext::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
 	{
 		return _impl->loadImage(filePath, dstFormat);
 	}
@@ -283,5 +292,15 @@ namespace darmok
 	const AssetContextImpl& AssetContext::getImpl() const
 	{
 		return *_impl;
+	}
+
+	Image::Image(bimg::ImageContainer* container)
+		: _container(container)
+		{
+		}
+
+	Image::~Image()
+	{
+		bimg::imageFree(_container);
 	}
 }

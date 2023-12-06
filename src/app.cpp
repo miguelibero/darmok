@@ -295,7 +295,7 @@ namespace darmok
 		if (needsReset || _needsReset)
 		{
 			auto& size = WindowContext::get().getWindow().getSize();
-			bgfx::reset(size.width, size.height, getResetFlags());
+			bgfx::reset(size.x, size.y, getResetFlags());
 			Input::get().getMouse().getImpl().setResolution(size);
 			_needsReset = false;
 		}
@@ -369,8 +369,9 @@ namespace darmok
 		init.platformData.ndt = Window::getNativeDisplayHandle();
 		init.platformData.nwh = win.getNativeHandle();
 		init.platformData.type = win.getNativeHandleType();
-		init.resolution.width = size.width;
-		init.resolution.height = size.height;
+		init.debug = true;
+		init.resolution.width = size.x;
+		init.resolution.height = size.y;
 		init.resolution.reset = AppImpl::get().getResetFlags();
 		bgfx::init(init);
 
@@ -418,7 +419,7 @@ namespace darmok
 
 			// set view default viewport.
 			auto& size = win.getSize();
-			bgfx::setViewRect(viewId, 0, 0, uint16_t(size.width), uint16_t(size.height));
+			bgfx::setViewRect(viewId, 0, 0, uint16_t(size.x), uint16_t(size.y));
 
 			// this dummy draw call is here to make sure that view is cleared
 			// if no other draw calls are submitted to view.
@@ -467,6 +468,12 @@ namespace darmok
 		AppImpl::get().setResetFlag(flag, enabled);
 	}
 
+
+	void App::addComponent(std::unique_ptr<AppComponent>&& component)
+	{
+		AppImpl::get().addComponent(std::move(component));
+	}
+
 	void App::addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component)
 	{
 		AppImpl::get().addViewComponent(viewId, std::move(component));
@@ -475,6 +482,18 @@ namespace darmok
 	void App::setViewWindow(bgfx::ViewId viewId, const WindowHandle& window)
 	{
 		AppImpl::get().setViewWindow(viewId, window);
+	}
+
+	void AppComponent::init()
+	{
+	}
+
+	void AppComponent::shutdown()
+	{
+	}
+
+	void AppComponent::update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
+	{
 	}
 
 	void ViewComponent::init(bgfx::ViewId viewId)

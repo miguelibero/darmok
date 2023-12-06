@@ -55,19 +55,21 @@ namespace darmok
 		void addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component);
 
 		template<typename T, typename... A>
-		void addViewComponent(bgfx::ViewId viewId, A&&... args)
+		T& addViewComponent(bgfx::ViewId viewId, A&&... args)
 		{
-			ViewComponent* ptr = new T(std::forward<A>(args)...);
+			auto ptr = new T(std::forward<A>(args)...);
 			addViewComponent(viewId, std::unique_ptr<ViewComponent>(ptr));
+			return *ptr;
 		}
 
 		void addComponent(std::unique_ptr<AppComponent>&& component);
 
 		template<typename T, typename... A>
-		void addComponent(A&&... args)
+		T& addComponent(A&&... args)
 		{
-			AppComponent* ptr = new T(std::forward<A>(args)...);
+			auto ptr = new T(std::forward<A>(args)...);
 			addComponent(std::unique_ptr<AppComponent>(ptr));
+			return *ptr;
 		}
 	};
 
