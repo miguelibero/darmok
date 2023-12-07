@@ -14,6 +14,7 @@ namespace darmok
         void render(bgfx::ViewId viewId);
 
         static const bgfx::UniformHandle& getTexColorUniform();
+        static const bgfx::UniformHandle& getModelViewProjUniform();
     private:
         entt::basic_registry<Entity> _registry;
         entt::scheduler _scheduler;

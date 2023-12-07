@@ -17,10 +17,18 @@ darmok_compile_shader(
   VARYING_DEF assets/varying.def.sc
   OUTPUT_DIR ${ASSETS_DIR}
 )
+darmok_compile_shader(
+  TYPE FRAGMENT
+  SHADERS assets/sprite_fragment.sc
+  VARYING_DEF assets/varying.def.sc
+  OUTPUT_DIR ${ASSETS_DIR}
+)
 
 set(sources
   src/main.cpp
   assets/sprite_vertex.sc
+  assets/sprite_fragment.sc
+  assets/varying.def.sc
 )
 
 add_executable(

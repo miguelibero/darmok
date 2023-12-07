@@ -42,7 +42,9 @@ namespace darmok
 		bool update();
 
 	protected:
+		virtual void beforeUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
 		virtual void update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
+		virtual void afterUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
 
 		void setViewWindow(bgfx::ViewId viewId, const WindowHandle& window);
 

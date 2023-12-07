@@ -3,7 +3,6 @@
 #include <memory>
 #include <cstdint>
 #include <darmok/app.hpp>
-#include <darmok/asset.hpp>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <entt/entt.hpp>
@@ -15,7 +14,7 @@ namespace darmok
     class Transform final
     {
     public:
-        Transform(const glm::vec3& position = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(), const glm::vec3& pivot = glm::vec3());
+        Transform(const glm::vec3& position = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3());
     
         const glm::vec3& getPosition() const;
         const glm::vec3& getRotation() const;
@@ -59,22 +58,33 @@ namespace darmok
         Color color;
     };
 
+    typedef glm::vec<2, uint16_t> TextureSize;
+    struct TextureWithInfo;
+
+
+    typedef const std::vector<uint16_t> VertexIndexes;
+
     class Sprite final
     {
     public:
-        Sprite(const bgfx::TextureHandle& texture, const std::vector<glm::vec2>& texCoords, const Color& color = Colors::white);
-        Sprite(const bgfx::TextureHandle& texture, const Color& color = Colors::white);
-        Sprite(const bgfx::TextureHandle& texture, const std::vector<SpriteVertex>& vertex);
+        Sprite(const TextureWithInfo& info, const Color& color = Colors::white);
+        Sprite(const bgfx::TextureHandle& texture, const TextureSize& size, const Color& color = Colors::white);
+        Sprite(const bgfx::TextureHandle& texture, const std::vector<SpriteVertex>& vertex, const VertexIndexes& idx);
+        ~Sprite();
 
-        void setVertices(const std::vector<SpriteVertex>& vertices);
         void render(bgfx::Encoder* encoder, uint8_t textureUnit = 0, uint8_t vertexStream = 0);
         const bgfx::TextureHandle& getTexture() const;
     private:
         bgfx::TextureHandle _texture;
-        bgfx::TransientVertexBuffer _vertexBuffer;
+        bgfx::VertexBufferHandle _vertexBuffer = { bgfx::kInvalidHandle };
+        bgfx::IndexBufferHandle  _indexBuffer = { bgfx::kInvalidHandle };
 
         static bgfx::VertexLayout  _layout;
         static bgfx::VertexLayout createVertexLayout();
+        void resetVertexBuffer();
+        void resetIndexBuffer();
+        void setVertices(const std::vector<SpriteVertex>& vertices);
+        void setIndices(const VertexIndexes& idx);
     };
 
     class Program final

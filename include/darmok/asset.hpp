@@ -20,6 +20,13 @@ namespace darmok
 		bimg::ImageContainer* _container;
 	};
 
+	struct TextureWithInfo
+	{
+		bgfx::TextureHandle texture;
+		bgfx::TextureInfo info;
+		bimg::Orientation::Enum orientation;
+	};
+
 	class AssetContext final
 	{
 	public:
@@ -27,7 +34,8 @@ namespace darmok
 
 		bgfx::ShaderHandle loadShader(const std::string& name);
 		bgfx::ProgramHandle loadProgram(const std::string& vertexName, const std::string& fragmentName = "");
-		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE, uint8_t skip = 0, bgfx::TextureInfo* info = nullptr, bimg::Orientation::Enum* orientation = nullptr);
+		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE);
+		TextureWithInfo loadTextureWithInfo(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE);
 		std::shared_ptr<Image> loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
 
 		AssetContextImpl& getImpl();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <bx/error.h>
 
 namespace darmok
 {
@@ -9,4 +10,6 @@ namespace darmok
     {
         return static_cast<std::underlying_type_t<E>>(e);
     }
+
+    void checkError(bx::Error& err);
 }

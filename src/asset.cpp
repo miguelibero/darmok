@@ -2,6 +2,7 @@
 #include "dbg.h"
 #include <bimg/decode.h>
 #include <darmok/asset.hpp>
+#include <darmok/utils.hpp>
 
 namespace darmok
 {
@@ -160,23 +161,31 @@ namespace darmok
 		bimg::imageFree(imageContainer);
 	}
 
-	bgfx::TextureHandle AssetContextImpl::loadTexture(const std::string& filePath, uint64_t flags, uint8_t skip, bgfx::TextureInfo* info, bimg::Orientation::Enum* orientation)
+	TextureWithInfo AssetContextImpl::loadTextureWithInfo(const std::string& name, uint64_t flags)
 	{
-		BX_UNUSED(skip);
-		bgfx::TextureHandle handle = BGFX_INVALID_HANDLE;
+		return loadTexture(name, flags, true);
+	}
+
+	bgfx::TextureHandle AssetContextImpl::loadTexture(const std::string& name, uint64_t flags)
+	{
+		return loadTexture(name, flags, false).texture;
+	}
+
+	TextureWithInfo AssetContextImpl::loadTexture(const std::string& filePath, uint64_t flags, bool loadInfo)
+	{
+		TextureWithInfo r;
+		r.texture = BGFX_INVALID_HANDLE;
 
 		auto data = loadData(filePath);
 		if (data != nullptr && !data->empty())
 		{
 			auto alloc = getAllocator();
-			bimg::ImageContainer* imageContainer = ::bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size());
-
+			bx::Error err;
+			bimg::ImageContainer* imageContainer = bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Count, &err);
+			checkError(err);
 			if (imageContainer != nullptr)
 			{
-				if (NULL != orientation)
-				{
-					*orientation = imageContainer->m_orientation;
-				}
+				r.orientation = imageContainer->m_orientation;
 
 				const bgfx::Memory* mem = bgfx::makeRef(
 					imageContainer->m_data
@@ -187,7 +196,7 @@ namespace darmok
 
 				if (imageContainer->m_cubeMap)
 				{
-					handle = bgfx::createTextureCube(
+					r.texture = bgfx::createTextureCube(
 						uint16_t(imageContainer->m_width)
 						, 1 < imageContainer->m_numMips
 						, imageContainer->m_numLayers
@@ -198,7 +207,7 @@ namespace darmok
 				}
 				else if (1 < imageContainer->m_depth)
 				{
-					handle = bgfx::createTexture3D(
+					r.texture = bgfx::createTexture3D(
 						uint16_t(imageContainer->m_width)
 						, uint16_t(imageContainer->m_height)
 						, uint16_t(imageContainer->m_depth)
@@ -210,7 +219,7 @@ namespace darmok
 				}
 				else if (bgfx::isTextureValid(0, false, imageContainer->m_numLayers, bgfx::TextureFormat::Enum(imageContainer->m_format), flags))
 				{
-					handle = bgfx::createTexture2D(
+					r.texture = bgfx::createTexture2D(
 						uint16_t(imageContainer->m_width)
 						, uint16_t(imageContainer->m_height)
 						, 1 < imageContainer->m_numMips
@@ -221,15 +230,15 @@ namespace darmok
 					);
 				}
 
-				if (bgfx::isValid(handle))
+				if (bgfx::isValid(r.texture))
 				{
-					bgfx::setName(handle, filePath.c_str());
+					bgfx::setName(r.texture, filePath.c_str());
 				}
 
-				if (info != nullptr)
+				if (loadInfo)
 				{
 					bgfx::calcTextureSize(
-						*info
+						r.info
 						, uint16_t(imageContainer->m_width)
 						, uint16_t(imageContainer->m_height)
 						, uint16_t(imageContainer->m_depth)
@@ -242,7 +251,7 @@ namespace darmok
 			}
 		}
 
-		return handle;
+		return r;
 	}
 
 	std::shared_ptr<Image> AssetContextImpl::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
@@ -274,9 +283,14 @@ namespace darmok
 		return _impl->loadProgram(vertexName, fragmentName);
 	}
 
-	bgfx::TextureHandle AssetContext::loadTexture(const std::string& name, uint64_t flags, uint8_t skip, bgfx::TextureInfo* info, bimg::Orientation::Enum* orientation)
+	bgfx::TextureHandle AssetContext::loadTexture(const std::string& name, uint64_t flags)
 	{
-		return _impl->loadTexture(name, flags, skip, info, orientation);
+		return _impl->loadTexture(name, flags);
+	}
+
+	TextureWithInfo AssetContext::loadTextureWithInfo(const std::string& name, uint64_t flags)
+	{
+		return _impl->loadTextureWithInfo(name, flags);
 	}
 
 	std::shared_ptr<Image> AssetContext::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)

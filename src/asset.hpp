@@ -2,6 +2,7 @@
 
 #include <string>
 #include <memory>
+#include <optional>
 #include <bx/file.h>
 #include <bx/pixelformat.h>
 #include <bimg/bimg.h>
@@ -44,17 +45,22 @@ namespace darmok
 	};
 
 	class Image;
+	struct TextureWithInfo;
 
 	class AssetContextImpl final
 	{
 	public:
 		bgfx::ShaderHandle loadShader(const std::string& name);
 		bgfx::ProgramHandle loadProgram(const std::string& vertexName, const std::string& fragmentName = "");
-		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE, uint8_t skip = 0, bgfx::TextureInfo* info = nullptr, bimg::Orientation::Enum* orientation = nullptr);
+		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE);
+		TextureWithInfo loadTextureWithInfo(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE);
 		std::shared_ptr<Image> loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
 	
 		bx::AllocatorI* getAllocator();
 	private:
+
+		TextureWithInfo loadTexture(const std::string& filePath, uint64_t flags, bool loadInfo);
+
 		FileReader _fileReader;
 		FileWriter _fileWriter;
 		bx::DefaultAllocator _allocator;

@@ -428,8 +428,10 @@ namespace darmok
 			// use debug font to print information about this example.
 			bgfx::dbgTextClear();
 
+			beforeUpdate(input, viewId, handle);
 			impl.update(input, viewId, handle);
 			update(input, viewId, handle);
+			afterUpdate(input, viewId, handle);
 
 			// advance to next frame. Rendering thread will be kicked to
 			// process submitted rendering primitives.
@@ -444,7 +446,15 @@ namespace darmok
 		return true;
 	}
 
+	void App::beforeUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
+	{
+	}
+
 	void App::update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
+	{
+	}
+
+	void App::afterUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
 	{
 	}
 

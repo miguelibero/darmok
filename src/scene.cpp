@@ -1,10 +1,13 @@
 #include "scene.hpp"
+#include <numeric>
 #include <darmok/scene.hpp>
+#include <darmok/asset.hpp>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 #include <bx/math.h>
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -91,9 +94,10 @@ namespace darmok
         }
         _matrix = glm::translate(-_pivot)
             * glm::scale(_scale)
-            * glm::rotate(0.f, _rotation)
+            * glm::eulerAngleYXZ(_rotation.y, _rotation.x, _rotation.z)
             * glm::translate(_pivot)
             * glm::translate(_position);
+        _changed = false;
         return true;
     }
 
@@ -129,47 +133,76 @@ namespace darmok
 
     bgfx::VertexLayout Sprite::_layout = Sprite::createVertexLayout();
 
-    Sprite::Sprite(const bgfx::TextureHandle& texture, const std::vector<glm::vec2>& texCoords, const Color& color)
-        : _texture(texture)
+    Sprite::Sprite(const TextureWithInfo& data, const Color& color)
+        : Sprite(data.texture, TextureSize(data.info.width, data.info.height), color)
     {
-        std::vector<SpriteVertex> vertices;
-        vertices.reserve(texCoords.size());
-        for (auto& coord : texCoords)
-        {
-            vertices.push_back({ coord, coord, color });
-        }
-        setVertices(vertices);
     }
 
-    Sprite::Sprite(const bgfx::TextureHandle& texture, const Color& color)
+    Sprite::Sprite(const bgfx::TextureHandle& texture, const TextureSize& size, const Color& color)
         : _texture(texture)
     {
         setVertices({
             SpriteVertex{ glm::vec2(0, 0), glm::vec2(0, 0), color },
-            SpriteVertex{ glm::vec2(1, 0), glm::vec2(1, 0), color },
-            SpriteVertex{ glm::vec2(1, 1), glm::vec2(1, 1), color },
-            SpriteVertex{ glm::vec2(0, 1), glm::vec2(0, 1), color },
+            SpriteVertex{ glm::vec2(size.x, 0), glm::vec2(1, 0), color },
+            SpriteVertex{ size, glm::vec2(1, 1), color },
+            SpriteVertex{ glm::vec2(0, size.y), glm::vec2(0, 1), color },
         });
+        setIndices({ 0, 1, 2, 2, 3, 0 });
     }
 
-    Sprite::Sprite(const bgfx::TextureHandle& texture, const std::vector<SpriteVertex>& vertices)
+    Sprite::Sprite(const bgfx::TextureHandle& texture, const std::vector<SpriteVertex>& vertices, const VertexIndexes& idx)
         : _texture(texture)
     {
         setVertices(vertices);
     }
 
+    Sprite::~Sprite()
+    {
+        resetVertexBuffer();
+        resetIndexBuffer();
+    }
+
+    void Sprite::resetVertexBuffer()
+    {
+        if (bgfx::isValid(_vertexBuffer))
+        {
+            bgfx::destroy(_vertexBuffer);
+            _vertexBuffer = { bgfx::kInvalidHandle };
+        }
+    }
+
+    void Sprite::resetIndexBuffer()
+    {
+        if (bgfx::isValid(_indexBuffer))
+        {
+            bgfx::destroy(_indexBuffer);
+            _indexBuffer.idx = { bgfx::kInvalidHandle };
+        }
+    }
+
+    template<typename T>
+    static const bgfx::Memory* makeVectorRef(const std::vector<T>& v)
+    {
+        return bgfx::makeRef(&v.front(), v.size() * sizeof(T));
+    }
+
     void Sprite::setVertices(const std::vector<SpriteVertex>& vertices)
     {
-        bgfx::allocTransientVertexBuffer(&_vertexBuffer, vertices.size(), _layout);
-        const SpriteVertex* src = &vertices.front();
-        SpriteVertex* dst = (SpriteVertex*)_vertexBuffer.data;
-        bx::memCopy(dst, src, vertices.size() * sizeof(SpriteVertex));
+        resetVertexBuffer();
+        _vertexBuffer = bgfx::createVertexBuffer(makeVectorRef(vertices), _layout);
+    }
+
+    void Sprite::setIndices(const VertexIndexes& idx)
+    {
+        resetIndexBuffer();
+        _indexBuffer = bgfx::createIndexBuffer(makeVectorRef(idx));
     }
 
     void Sprite::render(bgfx::Encoder* encoder, uint8_t textureUnit, uint8_t vertexStream)
     {
         encoder->setTexture(textureUnit, SceneImpl::getTexColorUniform(), _texture);
-        encoder->setVertexBuffer(vertexStream, _vertexBuffer.handle, 0, _vertexBuffer.size);
+        encoder->setVertexBuffer(vertexStream, _vertexBuffer);
+        encoder->setIndexBuffer(_indexBuffer);
     }
 
     const bgfx::TextureHandle& Sprite::getTexture() const
@@ -218,6 +251,12 @@ namespace darmok
         return uniform;
     }
 
+    const bgfx::UniformHandle& SceneImpl::getModelViewProjUniform()
+    {
+        static bgfx::UniformHandle uniform = bgfx::createUniform("u_modelViewProj", bgfx::UniformType::Mat4);
+        return uniform;
+    }
+
     Registry& SceneImpl::getRegistry()
     {
         return _registry;
@@ -241,28 +280,32 @@ namespace darmok
             ;
 
         for (auto [entity, cam] : cams.each()) {
-
-            auto projView = cam.getMatrix();
+            auto& projMtx = cam.getMatrix();
             auto trans = _registry.try_get<Transform>(entity);
+            const void* viewPtr = nullptr;
             if (trans != nullptr)
             {
-                projView *= trans->getMatrix();
+                viewPtr = glm::value_ptr(trans->getMatrix());
             }
+            bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(projMtx));
             for (auto [entity] : all.each()) {
 
-                auto mtx = projView;
                 auto trans = _registry.try_get<Transform>(entity);
                 if (trans != nullptr)
                 {
-                    mtx *= trans->getMatrix();
+                    auto transMtx = trans->getMatrix();
+                    encoder->setTransform(glm::value_ptr(transMtx));
                 }
-                encoder->setTransform(glm::value_ptr(mtx));
 
                 uint64_t state = baseState;
                 auto blend = _registry.try_get<Blend>(entity);
                 if (blend != nullptr)
                 {
                     state |= BGFX_STATE_BLEND_FUNC(blend->src, blend->dst);
+                }
+                else
+                {
+                    state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
                 }
                 encoder->setState(state);
 
