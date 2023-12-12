@@ -7,7 +7,7 @@
 
 namespace
 {
-class ExampleEmpty : public darmok::App, public darmok::ImguiUpdaterI
+class ExampleEmpty : public darmok::App, public darmok::IImguiRenderer
 {
 public:
 	void init(const std::vector<std::string>& args) override
@@ -20,7 +20,7 @@ public:
 		addViewComponent<darmok::ImguiViewComponent>(0, *this);
 	}
 
-	void imguiUpdate(const darmok::InputState& input, bgfx::ViewId viewId, const darmok::WindowHandle& window) override
+	void imguiRender(bgfx::ViewId viewId)
 	{
 		std::string text;
 		text.resize(255);
@@ -29,17 +29,19 @@ public:
 		ImGui::InputText("text", const_cast<char*>(text.c_str()), text.size());
 	}
 
-	void update(const darmok::InputState& input, bgfx::ViewId viewId, const darmok::WindowHandle& window) override
+	void beforeRender(bgfx::ViewId viewId) override
 	{
 		// set view clear state.
-		
 		bgfx::setViewClear(viewId
 			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
 			, 0x303030ff
 			, 1.0f
 			, 0
 		);
+	}
 
+	void render(bgfx::ViewId viewId) override
+	{
 		const bgfx::Stats* stats = bgfx::getStats();
 
 		bgfx::dbgTextPrintf(0, 1, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");

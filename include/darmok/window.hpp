@@ -81,6 +81,7 @@ namespace darmok
 		const std::string& getDropFilePath() const;
 		WindowSuspendPhase getSuspendPhase() const;
 		bool isRunning() const;
+		bool isSuspended() const;
 		const WindowImpl& getImpl() const;
 		WindowImpl& getImpl();
 

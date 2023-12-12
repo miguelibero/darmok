@@ -17,7 +17,7 @@ namespace darmok
 		void setTitle(const std::string& title);
 		void setFlags(uint32_t flags);
 		void setDropFilePath(const std::string& filePath);
-		void setSuspendPhase(WindowSuspendPhase phase);
+		void onSuspendPhase(WindowSuspendPhase phase);
 		void setHandle(const WindowHandle& handle);
 		
 		const WindowPosition& getPosition() const;
@@ -26,7 +26,7 @@ namespace darmok
 		const WindowHandle& getHandle() const;
 		uint32_t getFlags() const;
 		const std::string& getDropFilePath() const;
-		WindowSuspendPhase getSuspendPhase() const;
+		bool isSuspended() const;
 		bool isRunning() const;
 
 		void* getNativeHandle() const;
@@ -49,7 +49,7 @@ namespace darmok
 		bool _mouseLock;
 		uint32_t _flags;
 		std::string _title;
-		WindowSuspendPhase _suspendPhase;
+		bool _suspended;
 		bgfx::FrameBufferHandle _frameBuffer;
 	};
 

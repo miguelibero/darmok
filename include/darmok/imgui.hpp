@@ -7,21 +7,22 @@ namespace darmok
 {
 	class ImguiViewComponentImpl;
 
-	class BX_NO_VTABLE ImguiUpdaterI
+	class BX_NO_VTABLE IImguiRenderer
 	{
 	public:
-		virtual ~ImguiUpdaterI() = default;
-		virtual void imguiUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window) = 0;
+		virtual ~IImguiRenderer() = default;
+		virtual void imguiRender(bgfx::ViewId viewId) = 0;
 	};
 
     class ImguiViewComponent final : public ViewComponent
     {
     public:
-		ImguiViewComponent(ImguiUpdaterI& updater, float fontSize = 18.0f);
-		void init(bgfx::ViewId viewId);
-		void shutdown();
+		ImguiViewComponent(IImguiRenderer& updater, float fontSize = 18.0f);
 
-		void update(const InputState& input, const WindowHandle& window) override;
+		void init(bgfx::ViewId viewId) override;
+		void shutdown() override;
+		void render() override;
+		void updateLogic(float dt) override;
 	private:
 		std::unique_ptr<ImguiViewComponentImpl> _impl;
     };

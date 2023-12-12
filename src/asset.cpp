@@ -116,7 +116,7 @@ namespace darmok
 		case bgfx::RendererType::Nvn:		 return "nvn";   break;
 		case bgfx::RendererType::OpenGL:     return "glsl";  break;
 		case bgfx::RendererType::OpenGLES:   return "essl";  break;
-		case bgfx::RendererType::Vulkan:     return "spirv"; break;
+		case bgfx::RendererType::Vulkan:     return "spv"; break;
 
 		case bgfx::RendererType::Count:
 			BX_ASSERT(false, "You should not be here!");

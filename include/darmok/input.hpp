@@ -189,6 +189,7 @@ namespace darmok
 	typedef std::array<bool, to_underlying(MouseButton::Count)> MouseButtons;
 
 	class MouseImpl;
+	struct WindowHandle;
 
 	class Mouse final
 	{
@@ -199,6 +200,7 @@ namespace darmok
 		const MouseButtons& getButtons() const;
 		bool getLocked() const;
 		bool getButton(MouseButton button) const;
+		const WindowHandle& getWindow() const;
 
 		const MouseImpl& getImpl() const;
 		MouseImpl& getImpl();

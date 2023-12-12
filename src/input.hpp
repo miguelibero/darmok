@@ -126,7 +126,8 @@ namespace darmok
 		Gamepad& getGamepad(const GamepadHandle& handle);
 		Gamepads& getGamepads();
 
-		InputState popState();
+		void update();
+		const InputState& getState() const;
 
 	private:
 		InputImpl(const InputImpl& other) = delete;
@@ -138,6 +139,7 @@ namespace darmok
 		Keyboard _keyboard;
 		Mouse _mouse;
 		Gamepads _gamepads;
+		InputState _state;
 
 		std::unordered_map<std::string, std::vector<InputBinding>> _bindings;
 		std::unordered_map<std::size_t, bool> _bindingOnce;

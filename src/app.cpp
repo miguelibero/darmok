@@ -3,10 +3,10 @@
 #include "platform.hpp"
 #include "input.hpp"
 #include "window.hpp"
-
 #include <darmok/app.hpp>
-
 #include <bx/filepath.h>
+#include <bx/timer.h>
+
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
@@ -20,6 +20,8 @@ namespace darmok
 		, _reset(BGFX_RESET_VSYNC)
 		, _needsReset(false)
 		, _init(false)
+		, _lastUpdate(0)
+		, _targetUpdateDeltaTime(0.)
 	{
 	}
 
@@ -29,10 +31,13 @@ namespace darmok
 		return instance;
 	}
 
-	void AppImpl::init(App& app, const std::vector<std::string>& args)
+	const float AppImpl::defaultTargetUpdateDeltaTime = 1.0f / 30.0f;
+	const int AppImpl::maxInstantLogicUpdates = 10;
+
+	void AppImpl::init(App& app, const std::vector<std::string>& args, double targetUpdateDeltaTime)
 	{
-		_winViews.clear();
-		_winViews[0] = Window::DefaultHandle;
+		_viewWindows.clear();
+		_viewWindows[0] = Window::DefaultHandle;
 
 		bx::FilePath fp(args[0].c_str());
 		auto basePath = fp.getPath();
@@ -51,6 +56,9 @@ namespace darmok
 				component->init(elm.first);
 			}
 		}
+
+		_lastUpdate = bx::getHPCounter();
+		_targetUpdateDeltaTime = targetUpdateDeltaTime;
 		_init = true;
 	}
 
@@ -72,18 +80,67 @@ namespace darmok
 		_init = false;
 	}
 
-	void AppImpl::update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
+	void AppImpl::updateLogic(float dt)
+	{
+		Input::get().getImpl().update();
+
+		for (auto& component : _appComponents)
+		{
+			component->updateLogic(dt);
+		}
+		for (auto& elm : _viewComponents)
+		{
+			for (auto& component : elm.second)
+			{
+				component->updateLogic(dt);
+			}
+		}
+	}
+
+	void AppImpl::beforeRender(bgfx::ViewId viewId)
 	{
 		for (auto& component : _appComponents)
 		{
-			component->update(input, viewId, window);
+			component->beforeRender(viewId);
 		}
 		auto itr = _viewComponents.find(viewId);
 		if (itr != _viewComponents.end())
 		{
 			for (auto& component : itr->second)
 			{
-				component->update(input, window);
+				component->beforeRender();
+			}
+		}
+	}
+
+	void AppImpl::render(bgfx::ViewId viewId)
+	{
+		for (auto& component : _appComponents)
+		{
+			component->render(viewId);
+		}
+		auto itr = _viewComponents.find(viewId);
+		if (itr != _viewComponents.end())
+		{
+			for (auto& component : itr->second)
+			{
+				component->render();
+			}
+		}
+	}
+
+	void AppImpl::afterRender(bgfx::ViewId viewId)
+	{
+		for (auto& component : _appComponents)
+		{
+			component->afterRender(viewId);
+		}
+		auto itr = _viewComponents.find(viewId);
+		if (itr != _viewComponents.end())
+		{
+			for (auto& component : itr->second)
+			{
+				component->afterRender();
 			}
 		}
 	}
@@ -323,12 +380,22 @@ namespace darmok
 
 	void AppImpl::setViewWindow(bgfx::ViewId viewId, const WindowHandle& window)
 	{
-		_winViews[viewId] = window;
+		_viewWindows[viewId] = window;
 	}
 
-	const WindowViews& AppImpl::getWindowViews() const
+	WindowHandle AppImpl::getViewWindow(bgfx::ViewId viewId) const
 	{
-		return _winViews;
+		auto itr = _viewWindows.find(viewId);
+		if (itr == _viewWindows.end())
+		{
+			return Window::InvalidHandle;
+		}
+		return itr->second;
+	}
+
+	const ViewWindows& AppImpl::getViewWindows() const
+	{
+		return _viewWindows;
 	}
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -393,15 +460,19 @@ namespace darmok
 
 	bool App::update()
 	{
-		if (AppImpl::get().processEvents())
+		auto& impl = AppImpl::get();
+
+		if (impl.processEvents())
 		{
 			return false;
 		}
 
-		auto input = Input::get().getImpl().popState();
-		auto& impl = AppImpl::get();
+		impl.update([this, &impl](float dt) {
+			updateLogic(dt);
+			impl.updateLogic(dt);
+		});
 
-		for (auto elm : impl.getWindowViews())
+		for (auto elm : impl.getViewWindows())
 		{
 			auto& win = WindowContext::get().getWindow(elm.second);
 			if (!win.isRunning())
@@ -428,10 +499,14 @@ namespace darmok
 			// use debug font to print information about this example.
 			bgfx::dbgTextClear();
 
-			beforeUpdate(input, viewId, handle);
-			impl.update(input, viewId, handle);
-			update(input, viewId, handle);
-			afterUpdate(input, viewId, handle);
+			beforeRender(viewId);
+			impl.beforeRender(viewId);
+
+			render(viewId);
+			impl.render(viewId);
+
+			afterRender(viewId);
+			impl.afterRender(viewId);
 
 			// advance to next frame. Rendering thread will be kicked to
 			// process submitted rendering primitives.
@@ -446,15 +521,19 @@ namespace darmok
 		return true;
 	}
 
-	void App::beforeUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
+	void App::updateLogic(float dt)
 	{
 	}
 
-	void App::update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
+	void App::beforeRender(bgfx::ViewId viewId)
 	{
 	}
 
-	void App::afterUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
+	void App::render(bgfx::ViewId viewId)
+	{
+	}
+
+	void App::afterRender(bgfx::ViewId viewId)
 	{
 	}
 
@@ -494,6 +573,11 @@ namespace darmok
 		AppImpl::get().setViewWindow(viewId, window);
 	}
 
+	WindowHandle App::getViewWindow(bgfx::ViewId viewId) const
+	{
+		return AppImpl::get().getViewWindow(viewId);
+	}
+
 	void AppComponent::init()
 	{
 	}
@@ -502,7 +586,19 @@ namespace darmok
 	{
 	}
 
-	void AppComponent::update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window)
+	void AppComponent::updateLogic(float dt)
+	{
+	}
+
+	void AppComponent::beforeRender(bgfx::ViewId viewId)
+	{
+	}
+
+	void AppComponent::render(bgfx::ViewId viewId)
+	{
+	}
+
+	void AppComponent::afterRender(bgfx::ViewId viewId)
 	{
 	}
 
@@ -514,7 +610,19 @@ namespace darmok
 	{
 	}
 
-	void ViewComponent::update(const InputState& input, const WindowHandle& window)
+	void ViewComponent::updateLogic(float dt)
+	{
+	}
+
+	void ViewComponent::beforeRender()
+	{
+	}
+
+	void ViewComponent::render()
+	{
+	}
+
+	void ViewComponent::afterRender()
 	{
 	}
 }

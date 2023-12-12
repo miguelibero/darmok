@@ -22,7 +22,7 @@ namespace darmok
 		: _handle(Window::InvalidHandle)
 		, _mouseLock(false)
 		, _flags(WindowFlags::None)
-		, _suspendPhase(WindowSuspendPhase::None)
+		, _suspended(false)
 		, _frameBuffer{ bgfx::kInvalidHandle }
 	{
 	}
@@ -93,9 +93,18 @@ namespace darmok
 		_dropFilePath = filePath;
 	}
 
-	void WindowImpl::setSuspendPhase(WindowSuspendPhase phase)
+	void WindowImpl::onSuspendPhase(WindowSuspendPhase phase)
 	{
-		_suspendPhase = phase;
+		switch (phase)
+		{
+		case WindowSuspendPhase::DidSuspend:
+		case WindowSuspendPhase::WillResume:
+			_suspended = true;
+			break;
+		default:
+			_suspended = false;
+			break;
+		}
 	}
 
 	void WindowImpl::setHandle(const WindowHandle& handle)
@@ -133,14 +142,14 @@ namespace darmok
 		return _dropFilePath;
 	}
 
-	WindowSuspendPhase WindowImpl::getSuspendPhase() const
-	{
-		return _suspendPhase;
-	}
-
 	bool  WindowImpl::isRunning() const
 	{
 		return _handle.isValid();
+	}
+
+	bool  WindowImpl::isSuspended() const
+	{
+		return _suspended;
 	}
 
 	const bgfx::FrameBufferHandle& WindowImpl::getFrameBuffer() const
@@ -292,14 +301,14 @@ namespace darmok
 		return _impl->getDropFilePath();
 	}
 
-	WindowSuspendPhase Window::getSuspendPhase() const
-	{
-		return _impl->getSuspendPhase();
-	}
-
 	bool Window::isRunning() const
 	{
 		return _impl->isRunning();
+	}
+
+	bool Window::isSuspended() const
+	{
+		return _impl->isSuspended();
 	}
 
 	void* Window::getNativeHandle() const

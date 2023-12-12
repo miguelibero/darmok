@@ -375,6 +375,11 @@ namespace darmok
 		return _impl->getButton(button);
 	}
 
+	const WindowHandle& Mouse::getWindow() const
+	{
+		return _impl->getWindow();
+	}
+
 	const MousePosition& Mouse::getPosition() const
 	{
 		return _impl->getPosition();
@@ -689,12 +694,16 @@ namespace darmok
 		return _gamepads;
 	}
 
-	InputState InputImpl::popState()
+	const InputState& InputImpl::getState() const
 	{
-		InputState state{
-			_mouse.getImpl().popRelativePosition()
-		};
+		return _state;
+	}
+
+	void InputImpl::update()
+	{
+		_state.mouse = _mouse.getImpl().popRelativePosition();
 		auto& kb = _keyboard.getImpl();
+		_state.chars.clear();
 		Utf8Char c;
 		while(true)
 		{
@@ -703,9 +712,8 @@ namespace darmok
 			{
 				break;
 			}
-			state.chars.push_back(c);
+			_state.chars.push_back(c);
 		}
-		return state;
 	}
 
 	Input::Input()

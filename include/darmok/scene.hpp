@@ -4,12 +4,73 @@
 #include <cstdint>
 #include <darmok/app.hpp>
 #include <glm/glm.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
+#include <bx/bx.h>
 #include <entt/entt.hpp>
 
 namespace darmok
 {
     class SceneImpl;
+
+    typedef uint32_t Entity;
+    typedef entt::basic_registry<Entity> Registry;
+
+    class BX_NO_VTABLE IEntityRenderer
+    {
+    public:
+        virtual ~IEntityRenderer() = default;
+        virtual bool render(bgfx::Encoder& encoder, Entity& entity, Registry& registry) = 0;
+    };
+
+    class BX_NO_VTABLE ISceneLogicUpdater
+    {
+    public:
+        virtual ~ISceneLogicUpdater() = default;
+        virtual void updateLogic(Registry& registry) = 0;
+    };
+
+    class Scene final
+    {
+    public:
+        Scene(const bgfx::ProgramHandle& program);
+        ~Scene();
+        Entity createEntity();
+
+        template<typename T, typename... A>
+        T& addComponent(const Entity entity, A&&... args)
+        {
+            return getRegistry().emplace<T, A...>(entity, std::forward<A>(args)...);
+        }
+
+        template<typename T, typename... A>
+        T& addRenderer(A&&... args)
+        {
+            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+            auto& ref = *ptr;
+            addRenderer(std::move(ptr));
+            return ref;
+        }
+
+        template<typename T, typename... A>
+        T& addLogicUpdater(A&&... args)
+        {
+            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+            auto& ref = *ptr;
+            addLogicUpdater(std::move(ptr));
+            return ref;
+        }
+
+        void updateLogic(float dt);
+        void render(bgfx::ViewId viewId);
+
+        void addRenderer(std::unique_ptr<IEntityRenderer>&& renderer);
+        void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& renderer);
+
+    private:
+        Registry& getRegistry();
+        const Registry& getRegistry() const;
+
+        std::unique_ptr<SceneImpl> _impl;
+    };
 
     class Transform final
     {
@@ -43,7 +104,7 @@ namespace darmok
 
     struct Colors
     {
-        static const uint8_t MaxValue;
+        static const uint8_t maxValue;
         static const Color black;
         static const Color white;
         static const Color red;
@@ -51,95 +112,58 @@ namespace darmok
         static const Color blue;
     };
 
-    struct SpriteVertex
-    {
-        glm::vec2 position;
-        glm::vec2 texCoord;
-        Color color;
-    };
-
-    typedef glm::vec<2, uint16_t> TextureSize;
-    struct TextureWithInfo;
-
-
-    typedef const std::vector<uint16_t> VertexIndexes;
-
-    class Sprite final
-    {
-    public:
-        Sprite(const TextureWithInfo& info, const Color& color = Colors::white);
-        Sprite(const bgfx::TextureHandle& texture, const TextureSize& size, const Color& color = Colors::white);
-        Sprite(const bgfx::TextureHandle& texture, const std::vector<SpriteVertex>& vertex, const VertexIndexes& idx);
-        ~Sprite();
-
-        void render(bgfx::Encoder* encoder, uint8_t textureUnit = 0, uint8_t vertexStream = 0);
-        const bgfx::TextureHandle& getTexture() const;
-    private:
-        bgfx::TextureHandle _texture;
-        bgfx::VertexBufferHandle _vertexBuffer = { bgfx::kInvalidHandle };
-        bgfx::IndexBufferHandle  _indexBuffer = { bgfx::kInvalidHandle };
-
-        static bgfx::VertexLayout  _layout;
-        static bgfx::VertexLayout createVertexLayout();
-        void resetVertexBuffer();
-        void resetIndexBuffer();
-        void setVertices(const std::vector<SpriteVertex>& vertices);
-        void setIndices(const VertexIndexes& idx);
-    };
+    typedef uint16_t VertexIndex;
 
     class Program final
     {
     public:
         Program(const bgfx::ProgramHandle& handle);
-        const bgfx::ProgramHandle& getHandle();
+        const bgfx::ProgramHandle& getHandle() const;
         void setHandle(const bgfx::ProgramHandle& handle);
 
     private:
         bgfx::ProgramHandle _handle;
     };
 
-    struct Blend
+    class Blend final
     {
-        uint64_t src;
-        uint64_t dst;
+    public:
+        Blend(uint64_t src, uint64_t dst);
+        uint64_t getState() const;
+        uint64_t getSource() const;
+        uint64_t getDestination() const;
+        void setSource(uint64_t src);
+        void setDestination(uint64_t dst);
+    private:
+        uint64_t _src;
+        uint64_t _dst;
+    };
+
+    typedef glm::vec<2, uint16_t> ViewVec;
+
+    class ViewRect final
+    {
+    public:
+        ViewRect(const ViewVec& size, const ViewVec& origin = {});
+        void setSize(const ViewVec& size);
+        void setOrigin(const ViewVec& origin);
+        const ViewVec& getSize() const;
+        const ViewVec& getOrigin() const;
+        void render(bgfx::ViewId viewId) const; 
+    private:
+        ViewVec _size;
+        ViewVec _origin;
     };
 
     class Camera final
     {
     public:
-        Camera(const glm::mat4x4& v = glm::mat4x4());
-        
-        void setMatrix(const glm::mat4x4& v);
+        Camera(const glm::mat4x4& matrix = {});
         const glm::mat4x4& getMatrix() const;
+        void setMatrix(const glm::mat4x4& matrix);
 
     private:
         glm::mat4x4 _matrix;
-    };
-
-    typedef uint32_t Entity;
-    typedef entt::basic_registry<Entity> Registry;
-
-    class Scene final
-    {
-    public:
-        Scene(const bgfx::ProgramHandle& program);
-        ~Scene();
-        Entity createEntity();
-
-        template<typename T, typename... A>
-        T& addComponent(const Entity entity, A&&... args)
-        {
-            return getRegistry().emplace<T, A...>(entity, std::forward<A>(args)...);
-        }
-
-        void render(bgfx::ViewId viewId);
-
-    private:
-
-        Registry& getRegistry();
-        const Registry& getRegistry() const;
-
-        std::unique_ptr<SceneImpl> _impl;
     };
 
     class SceneAppComponent final : public AppComponent
@@ -148,7 +172,8 @@ namespace darmok
         SceneAppComponent(const bgfx::ProgramHandle& program);
         Scene& getScene();
         const Scene& getScene() const;
-        void update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window) override;
+        void render(bgfx::ViewId viewId) override;
+        void updateLogic(float dt) override;
     private:
         bgfx::ProgramHandle _program;
         Scene _scene;

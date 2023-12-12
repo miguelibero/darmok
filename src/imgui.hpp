@@ -9,7 +9,7 @@
 namespace darmok
 {
 	struct WindowHandle;
-	class ImguiUpdaterI;
+	class IImguiRenderer;
 
 	class ImguiContext final
 	{
@@ -59,23 +59,23 @@ namespace darmok
     class ImguiViewComponentImpl final
     {
     public:
-		ImguiViewComponentImpl(ImguiUpdaterI& updater, float fontSize = 18.0f);
+		ImguiViewComponentImpl(IImguiRenderer& renderer, float fontSize = 18.0f);
 
 		void init(bgfx::ViewId viewId);
 		void shutdown();
-		void update(const InputState& input, const WindowHandle& window);
+		void updateLogic(float dt);
+		void render();
 
     private:
-		ImguiUpdaterI& _updater;
+		IImguiRenderer& _renderer;
 		::ImGuiContext* _imgui;
 		bgfx::TextureHandle _texture;
 		std::array<ImFont*, ImGui::Font::Count> _font;
-		int64_t _last;
 		int32_t _lastScroll;
 		float _fontSize;
 		bgfx::ViewId _viewId;
 
-		void updateInput(const InputState& input, const WindowHandle& window);
+		void updateInput(float dt);
 		void beginFrame();
 		void endFrame();
     };

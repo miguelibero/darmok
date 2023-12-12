@@ -33,7 +33,7 @@ namespace darmok
 	struct WindowHandle;
 	class AppComponent;
 	class ViewComponent;
-	
+
 	class BX_NO_VTABLE App
 	{
 	public:
@@ -42,11 +42,13 @@ namespace darmok
 		bool update();
 
 	protected:
-		virtual void beforeUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
-		virtual void update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
-		virtual void afterUpdate(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
+		virtual void updateLogic(float dt);
+		virtual void beforeRender(bgfx::ViewId viewId);
+		virtual void render(bgfx::ViewId viewId);
+		virtual void afterRender(bgfx::ViewId viewId);
 
 		void setViewWindow(bgfx::ViewId viewId, const WindowHandle& window);
+		WindowHandle getViewWindow(bgfx::ViewId viewId) const;
 
 		void toggleDebugFlag(uint32_t flag);
 		void setDebugFlag(uint32_t flag, bool enabled = true);
@@ -83,7 +85,10 @@ namespace darmok
 
 		virtual void init();
 		virtual void shutdown();
-		virtual void update(const InputState& input, bgfx::ViewId viewId, const WindowHandle& window);
+		virtual void updateLogic(float dt);
+		virtual void beforeRender(bgfx::ViewId viewId);
+		virtual void render(bgfx::ViewId viewId);
+		virtual void afterRender(bgfx::ViewId viewId);
 	};
 
 	class ViewComponent
@@ -94,7 +99,10 @@ namespace darmok
 
 		virtual void init(bgfx::ViewId viewId);
 		virtual void shutdown();
-		virtual void update(const InputState& input, const WindowHandle& window);
+		virtual void updateLogic(float dt);
+		virtual void beforeRender();
+		virtual void render();
+		virtual void afterRender();
 	};
 
 	int runApp(App& app, const std::vector<std::string>& args);

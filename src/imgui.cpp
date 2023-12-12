@@ -7,8 +7,6 @@
 
 #include <dear-imgui/imgui.h>
 #include <dear-imgui/imgui_internal.h>
-#include <bx/timer.h>
-#include <bx/allocator.h>
 #include <bgfx/embedded_shader.h>
 
 // shaders (using the ones in bgfx examples)
@@ -376,12 +374,11 @@ namespace darmok
 	}
 
 
-	ImguiViewComponentImpl::ImguiViewComponentImpl(ImguiUpdaterI& updater, float fontSize)
-		: _updater(updater)
+	ImguiViewComponentImpl::ImguiViewComponentImpl(IImguiRenderer& renderer, float fontSize)
+		: _renderer(renderer)
 		, _imgui(nullptr)
 		, _texture{ bgfx::kInvalidHandle }
 		, _font{}
-		, _last(0)
 		, _lastScroll(0)
 		, _fontSize(fontSize)
 		, _viewId(0)
@@ -393,7 +390,6 @@ namespace darmok
 		ImguiContext::get().init();
 		_viewId = viewId;
 		_lastScroll = 0;
-		_last = bx::getHPCounter();
 
 		_imgui = ImGui::CreateContext();
 		ImGui::SetCurrentContext(_imgui);
@@ -464,52 +460,52 @@ namespace darmok
 		ImguiContext::get().shutdown();
 	}
 
-	void ImguiViewComponentImpl::update(const InputState& input, const WindowHandle& window)
+	void ImguiViewComponentImpl::updateLogic(float dt)
 	{
 		ImGui::SetCurrentContext(_imgui);
 
-		updateInput(input, window);
+		updateInput(dt);
+
+		ImGui::SetCurrentContext(nullptr);
+	}
+
+	void ImguiViewComponentImpl::render()
+	{
+		ImGui::SetCurrentContext(_imgui);
+
 		beginFrame();
-		_updater.imguiUpdate(input, _viewId, window);
+		_renderer.imguiRender(_viewId);
 		endFrame();
 
 		ImGui::SetCurrentContext(nullptr);
-
 	}
 
-	void ImguiViewComponentImpl::updateInput(const InputState& input, const WindowHandle& window)
+	void ImguiViewComponentImpl::updateInput(float dt)
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		for (auto& inputChar : input.chars)
+		io.DeltaTime = dt;
+
+		auto& state = Input::get().getImpl().getState();
+		for (auto& inputChar : state.chars)
 		{
 			io.AddInputCharacter(inputChar.data);
 		}
 
-		auto& win = WindowContext::get().getWindow(window);
+		auto& mouse = Input::get().getMouse();
+		auto& win = WindowContext::get().getWindow(mouse.getWindow());
 		auto& size = win.getSize();
 		io.DisplaySize = ImVec2((float)size.x, (float)size.y);
 
-		const int64_t now = bx::getHPCounter();
-		const int64_t frameTime = now - _last;
-		_last = now;
-		const double freq = double(bx::getHPFrequency());
-		io.DeltaTime = float(frameTime / freq);
-
-		auto& mouse = Input::get().getMouse();
-		if (mouse.getImpl().getWindow() == window)
-		{
-			auto& buttons = mouse.getButtons();
-			auto& pos = mouse.getPosition();
-			io.AddMousePosEvent((float)pos.x, (float)pos.y);
-			io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
-			io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
-			io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);
-			io.AddMouseWheelEvent(0.0f, (float)(pos.z - _lastScroll));
-			_lastScroll = pos.z;
-		}
+		auto& buttons = mouse.getButtons();
+		auto& pos = mouse.getPosition();
+		io.AddMousePosEvent((float)pos.x, (float)pos.y);
+		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
+		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
+		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);
+		io.AddMouseWheelEvent(0.0f, (float)(pos.z - _lastScroll));
+		_lastScroll = pos.z;
 
 		auto& kb = Input::get().getKeyboard();
-
 		uint8_t modifiers = kb.getModifiers();
 		io.AddKeyEvent(ImGuiMod_Shift, 0 != (modifiers & KeyboardModifiers::Shift));
 		io.AddKeyEvent(ImGuiMod_Ctrl, 0 != (modifiers & KeyboardModifiers::Ctrl));
@@ -542,8 +538,8 @@ namespace darmok
 		ImguiContext::get().render(_viewId, _texture, ImGui::GetDrawData());
 	}
 
-	ImguiViewComponent::ImguiViewComponent(ImguiUpdaterI& updater, float fontSize)
-		: _impl(std::make_unique<ImguiViewComponentImpl>(updater, fontSize))
+	ImguiViewComponent::ImguiViewComponent(IImguiRenderer& renderer, float fontSize)
+		: _impl(std::make_unique<ImguiViewComponentImpl>(renderer, fontSize))
 	{
 	}
 
@@ -557,9 +553,14 @@ namespace darmok
 		_impl->shutdown();
 	}
 
-	void ImguiViewComponent::update(const InputState& input, const WindowHandle& window)
+	void ImguiViewComponent::updateLogic(float dt)
 	{
-		_impl->update(input, window);
+		_impl->updateLogic(dt);
+	}
+
+	void ImguiViewComponent::render()
+	{
+		_impl->render();
 	}
 }
 

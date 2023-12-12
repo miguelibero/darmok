@@ -1,5 +1,6 @@
 #include <darmok/utils.hpp>
 #include <string>
+#include <stdexcept>
 
 namespace darmok
 {
@@ -9,7 +10,8 @@ namespace darmok
         {
             auto msg = err.getMessage();
             std::string strMsg(msg.getPtr(), msg.getLength());
-            throw std::exception(strMsg.c_str(), err.get().code);
+            strMsg += "( " + err.get().code + std::string(")");
+            throw std::runtime_error(strMsg.c_str());
         }
     }
 }

@@ -287,7 +287,7 @@ namespace darmok
 
 		void process()
 		{
-			getWindowImpl().setSuspendPhase(_phase);
+			getWindowImpl().onSuspendPhase(_phase);
 		}
 	private:
 		WindowSuspendPhase _phase;

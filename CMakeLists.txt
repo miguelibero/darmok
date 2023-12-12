@@ -16,6 +16,8 @@ set(sources
   src/imgui.cpp
   src/asset.cpp
   src/scene.cpp
+  src/utils.cpp
+  src/sprite.cpp
 )
 
 set(headers
@@ -26,6 +28,7 @@ set(headers
   include/darmok/asset.hpp
   include/darmok/imgui.hpp
   include/darmok/scene.hpp
+  include/darmok/sprite.hpp
 )
 
 set(LIB_NAME darmok)
