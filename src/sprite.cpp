@@ -1,107 +1,179 @@
 #include "scene.hpp"
 #include <darmok/sprite.hpp>
+#include <darmok/asset.hpp>
+#include <darmok/utils.hpp>
 #include <bgfx/bgfx.h>
 
+#include <bgfx/embedded_shader.h>
+#include "generated/shaders/sprite_vertex.h"
+#include "generated/shaders/sprite_fragment.h"
 
 namespace darmok
 {
-    bgfx::VertexLayout Sprite::createVertexLayout()
+    const bgfx::VertexLayout& SpriteData::getVertexLayout()
     {
-        bgfx::VertexLayout layout;
-        layout
-            .begin()
-            .add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-            .end();
+        static bgfx::VertexLayout layout;
+        if (layout.m_hash == 0)
+        {
+            layout
+                .begin()
+                .add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
+                .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+                .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
+                .end();
+        }
+
         return layout;
     }
 
-    bgfx::VertexLayout Sprite::_layout = Sprite::createVertexLayout();
-
-    Sprite::Sprite(const bgfx::TextureHandle& texture, const glm::vec2& size, const Color& color)
-        : _texture(texture)
-        , _textureUnit(0)
-        , _vertexStream(0)
+    std::shared_ptr<SpriteData> SpriteData::fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, const Color& color)
     {
-        setVertices({
-            SpriteVertex{ {0.f, 0.f},       {0.f, 1.f}, color },
-            SpriteVertex{ {size.x, 0.f},    {1.f, 1.f}, color },
-            SpriteVertex{ size,             {1.f, 0.f}, color },
-            SpriteVertex{ {0.f, size.y},    {0.f, 0.f}, color },
-        });
-        setIndices({ 0, 1, 2, 2, 3, 0 });
-    }
-
-    Sprite::Sprite(const bgfx::TextureHandle& texture, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& idx)
-        : _texture(texture)
-        , _textureUnit(0)
-        , _vertexStream(0)
-    {
-        setVertices(std::move(vertices));
-        setIndices(std::move(idx));
-    }
-
-    Sprite::~Sprite()
-    {
-        resetVertexBuffer();
-        resetIndexBuffer();
-    }
-
-    void Sprite::resetVertexBuffer()
-    {
-        if (bgfx::isValid(_vertexBuffer))
+        std::vector<SpriteVertex> vertices;
+        
+        glm::vec2 atlasSize(atlas.size);
+        for (auto& vtx : element.vertices)
         {
-            bgfx::destroy(_vertexBuffer);
-            _vertexBuffer = { bgfx::kInvalidHandle };
+            vertices.push_back({
+                glm::vec2(vtx.position.x, element.originalSize.y - vtx.position.y),
+                glm::vec2(vtx.texCoord) / atlasSize,
+                color
+            });
         }
+        // TODO: check rotated
+        return std::make_shared<SpriteData>(atlas.texture, std::move(vertices), std::vector<VertexIndex>(element.indices));
     }
 
-    void Sprite::resetIndexBuffer()
+    std::shared_ptr<SpriteData> SpriteData::fromTexture(const bgfx::TextureHandle& texture, const glm::vec2& size, const Color& color)
     {
-        if (bgfx::isValid(_indexBuffer))
-        {
-            bgfx::destroy(_indexBuffer);
-            _indexBuffer.idx = { bgfx::kInvalidHandle };
-        }
+        return std::make_shared<SpriteData>(texture, std::vector<SpriteVertex>{
+                SpriteVertex{ {0.f, 0.f},       {0.f, 1.f}, color },
+                SpriteVertex{ {size.x, 0.f},    {1.f, 1.f}, color },
+                SpriteVertex{ size,             {1.f, 0.f}, color },
+                SpriteVertex{ {0.f, size.y},    {0.f, 0.f}, color },
+            }, std::vector<VertexIndex>{ 0, 1, 2, 2, 3, 0 });
     }
 
-    template<typename T>
-    static const bgfx::Memory* makeVectorRef(const std::vector<T>& v)
-    {
-        return bgfx::makeRef(&v.front(), v.size() * sizeof(T));
-    }
+    SpriteData::SpriteData(const bgfx::TextureHandle& texture, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept
+        : _texture(texture)
+        , _vertices(std::move(vertices))
+        , _indices(std::move(indices))
 
-    void Sprite::setVertices(std::vector<SpriteVertex>&& vertices)
     {
-        _vertices = std::move(vertices);
-        resetVertexBuffer();
-        auto mem = makeVectorRef(_vertices);
-        _vertexBuffer = bgfx::createVertexBuffer(mem, _layout);
-    }
-
-    void Sprite::setIndices(std::vector<VertexIndex>&& idx)
-    {
-        _indices = std::move(idx);
-        resetIndexBuffer();
+        _vertexBuffer = bgfx::createVertexBuffer(makeVectorRef(_vertices), getVertexLayout());
         _indexBuffer = bgfx::createIndexBuffer(makeVectorRef(_indices));
     }
 
-    void Sprite::render(bgfx::Encoder& encoder) const
+    SpriteData::~SpriteData() noexcept
     {
-        encoder.setTexture(_textureUnit, SceneImpl::getTexColorUniform(), _texture);
-        encoder.setVertexBuffer(_vertexStream, _vertexBuffer);
-        encoder.setIndexBuffer(_indexBuffer);
+        resetBuffers();
     }
 
-    bool SpriteRenderer::render(bgfx::Encoder& encoder, Entity& entity, Registry& registry)
+    void SpriteData::resetBuffers()
     {
-        auto sprite = registry.try_get<const Sprite>(entity);
-        if (sprite == nullptr)
+        bgfx::destroy(_vertexBuffer);
+        bgfx::destroy(_indexBuffer);
+    }
+
+    SpriteData::SpriteData(SpriteData&& other) noexcept
+        : _texture(other._texture)
+        , _vertices(std::move(other._vertices))
+        , _indices(std::move(other._indices))
+        , _vertexBuffer(other._vertexBuffer)
+        , _indexBuffer(other._indexBuffer)
+    {
+        other._vertexBuffer = { bgfx::kInvalidHandle };
+        other._indexBuffer = { bgfx::kInvalidHandle };
+    }
+    SpriteData& SpriteData::operator=(SpriteData&& other) noexcept
+    {
+        resetBuffers();
+        _vertices = std::move(other._vertices);
+        _indices = std::move(other._indices);
+        _vertexBuffer = other._vertexBuffer;
+        _indexBuffer = other._indexBuffer;
+
+        other._vertexBuffer = { bgfx::kInvalidHandle };
+        other._indexBuffer = { bgfx::kInvalidHandle };
+        return *this;
+    }
+
+    const bgfx::TextureHandle& SpriteData::getTexture() const
+    {
+        return _texture;
+    }
+    const bgfx::VertexBufferHandle& SpriteData::getVertexBuffer() const
+    {
+        return _vertexBuffer;
+    }
+
+    const bgfx::IndexBufferHandle& SpriteData::getIndexBuffer() const
+    {
+        return _indexBuffer;
+    }
+
+    Sprite::Sprite(const std::shared_ptr<SpriteData>& data)
+        : _data(data)
+    {
+    }
+
+    const SpriteData& Sprite::getData() const
+    {
+        return *_data;
+    }
+
+    SpriteRenderer::SpriteRenderer(bgfx::ProgramHandle program)
+        : _program(program)
+    {
+    }
+
+    SpriteRenderer::~SpriteRenderer()
+    {
+        bgfx::destroy(_program);
+        bgfx::destroy(_texColorUniforn);
+    }
+
+    static const bgfx::EmbeddedShader _spriteEmbeddedShaders[] =
+    {
+        BGFX_EMBEDDED_SHADER(sprite_vertex),
+        BGFX_EMBEDDED_SHADER(sprite_fragment),
+        BGFX_EMBEDDED_SHADER_END()
+    };
+
+    void SpriteRenderer::init()
+    {
+        if (!isValid(_program))
         {
-            return false;
+            auto type = bgfx::getRendererType();
+            _program = bgfx::createProgram(
+                bgfx::createEmbeddedShader(_spriteEmbeddedShaders, type, "sprite_vertex"),
+                bgfx::createEmbeddedShader(_spriteEmbeddedShaders, type, "sprite_fragment"),
+                true
+            );
         }
-        sprite->render(encoder);
-        return true;
+        _texColorUniforn = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+    }
+
+    void SpriteRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
+    {
+        auto sprites = registry.view<const Sprite>();
+        const auto textureUnit = 0;
+        const auto vertexStream = 0;
+        for (auto [entity, sprite] : sprites.each())
+        {
+            Transform::bgfxConfig(entity, encoder, registry);
+            auto& data = sprite.getData();
+            encoder.setTexture(textureUnit, _texColorUniforn, data.getTexture());
+            encoder.setVertexBuffer(vertexStream, data.getVertexBuffer());
+            encoder.setIndexBuffer(data.getIndexBuffer());
+            // TODO: configure state
+            uint64_t state = BGFX_STATE_WRITE_RGB
+                | BGFX_STATE_WRITE_A
+                | BGFX_STATE_MSAA
+                | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
+                ;
+            encoder.setState(state);
+
+            encoder.submit(viewId, _program);
+        }
     }
 }

@@ -7,28 +7,81 @@ project(
   DESCRIPTION "hobby game engine"
 )
 
+set(SRC_DIR src)
+set(INCLUDE_DIR include/darmok)
+set(ASSETS_DIR assets)
+set(SHADERS_DIR assets/shaders)
+set(SHADERS_BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
+set(SHADERS_OUTPUT_DIR generated/shaders)
+set(LIBS_DIR lib)
+
+add_subdirectory(${LIBS_DIR}/bgfx.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
+
+darmok_compile_shader(
+  TYPE VERTEX HEADER
+  SHADERS ${SHADERS_DIR}/sprite_vertex.sc
+  VARYING_DEF ${SHADERS_DIR}/sprite_varyingdef.sc
+  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
+  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
+)
+darmok_compile_shader(
+  TYPE FRAGMENT HEADER
+  SHADERS ${SHADERS_DIR}/sprite_fragment.sc
+  VARYING_DEF ${SHADERS_DIR}/sprite_varyingdef.sc
+  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
+  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
+)
+darmok_compile_shader(
+  TYPE VERTEX HEADER
+  SHADERS ${SHADERS_DIR}/debug_vertex.sc
+  VARYING_DEF ${SHADERS_DIR}/debug_varyingdef.sc
+  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
+  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
+)
+darmok_compile_shader(
+  TYPE FRAGMENT HEADER
+  SHADERS ${SHADERS_DIR}/debug_fragment.sc
+  VARYING_DEF ${SHADERS_DIR}/debug_varyingdef.sc
+  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
+  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
+)
+
+set(shaders
+  ${SHADERS_DIR}/sprite_vertex.sc
+  ${SHADERS_DIR}/sprite_varyingdef.sc
+  ${SHADERS_DIR}/sprite_fragment.sc
+  ${SHADERS_DIR}/debug_vertex.sc
+  ${SHADERS_DIR}/debug_varyingdef.sc
+  ${SHADERS_DIR}/debug_fragment.sc
+)
+
 set(sources
-  src/window.cpp
-  src/platform.cpp
-  src/app.cpp
-  src/glfw.cpp
-  src/input.cpp
-  src/imgui.cpp
-  src/asset.cpp
-  src/scene.cpp
-  src/utils.cpp
-  src/sprite.cpp
+  ${SRC_DIR}/window.cpp
+  ${SRC_DIR}/platform.cpp
+  ${SRC_DIR}/app.cpp
+  ${SRC_DIR}/glfw.cpp
+  ${SRC_DIR}/input.cpp
+  ${SRC_DIR}/imgui.cpp
+  ${SRC_DIR}/asset.cpp
+  ${SRC_DIR}/scene.cpp
+  ${SRC_DIR}/utils.cpp
+  ${SRC_DIR}/sprite.cpp
+  ${SRC_DIR}/anim.cpp
+  ${SRC_DIR}/physics2d.cpp
 )
 
 set(headers
-  include/darmok/app.hpp
-  include/darmok/input.hpp
-  include/darmok/window.hpp
-  include/darmok/utils.hpp
-  include/darmok/asset.hpp
-  include/darmok/imgui.hpp
-  include/darmok/scene.hpp
-  include/darmok/sprite.hpp
+  ${INCLUDE_DIR}/app.hpp
+  ${INCLUDE_DIR}/input.hpp
+  ${INCLUDE_DIR}/window.hpp
+  ${INCLUDE_DIR}/utils.hpp
+  ${INCLUDE_DIR}/asset.hpp
+  ${INCLUDE_DIR}/imgui.hpp
+  ${INCLUDE_DIR}/scene.hpp
+  ${INCLUDE_DIR}/sprite.hpp
+  ${INCLUDE_DIR}/anim.hpp
+  ${INCLUDE_DIR}/physics2d.hpp
 )
 
 set(LIB_NAME darmok)
@@ -37,6 +90,7 @@ add_library(
   ${LIB_NAME}
   ${headers}
   ${sources}
+  ${shaders}
 )
 
 set_target_properties(
@@ -48,8 +102,7 @@ set_target_properties(
 )
 set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
-set(LIBS_BASE ${CMAKE_CURRENT_LIST_DIR}/lib)
-set(BGFX_BASE ${LIBS_BASE}/bgfx.cmake/bgfx)
+set(BGFX_BASE ${LIBS_DIR}/bgfx.cmake/bgfx)
 
 target_include_directories(
     ${PROJECT_NAME}
@@ -60,6 +113,7 @@ target_include_directories(
     PRIVATE
     ${BGFX_BASE}/examples/common
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}/include
   )
 
 include(GNUInstallDirs)
@@ -136,12 +190,12 @@ find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
 # glfw
-add_subdirectory(${LIBS_BASE}/glfw)
+add_subdirectory(${LIBS_DIR}/glfw)
 target_link_libraries(${LIB_NAME} PRIVATE glfw)
 add_compile_definitions(DARMOK_CONFIG_USE_GLFW)
 
 # glm
-add_subdirectory(${LIBS_BASE}/glm)
+add_subdirectory(${LIBS_DIR}/glm)
 target_link_libraries(${LIB_NAME} PUBLIC glm)
 install(
   TARGETS
@@ -160,97 +214,22 @@ install(
 set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 20)
 
 # bgfx
-add_subdirectory(${LIBS_BASE}/bgfx.cmake)
 target_link_libraries(${LIB_NAME} PUBLIC bgfx bimg bimg_decode bx)
-set_property(TARGET ${LIB_NAME} PROPERTY BGFX_SHADER_INCLUDE_PATH  ${LIBS_BASE}/bgfx.cmake/bgfx/src)
 
 # imgui
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/imgui.cmake)
 target_link_libraries(${LIB_NAME} PUBLIC imgui)
 
 # entt
-add_subdirectory(${LIBS_BASE}/entt)
+add_subdirectory(${LIBS_DIR}/entt)
 target_link_libraries(${LIB_NAME} PUBLIC EnTT)
 
+# assimp
+add_subdirectory(${LIBS_DIR}/assimp)
+target_link_libraries(${LIB_NAME} PRIVATE assimp)
 
+# pugixml
+add_subdirectory(${LIBS_DIR}/pugixml)
+target_link_libraries(${LIB_NAME} PRIVATE pugixml)
+add_compile_definitions(PUGIXML_HEADER_ONLY) # also included in assimp
 
-# darmok_compile_shader(
-	# 	TYPE VERTEX|FRAGMENT|COMPUTE
-	# 	SHADERS filenames
-	# 	VARYING_DEF filename
-	# 	OUTPUT_DIR directory
-	# 	INCLUDE_DIRS directories
-	# )
-	#
-	function(darmok_compile_shader)
-		set(options "")
-		set(oneValueArgs TYPE VARYING_DEF OUTPUT_DIR OUT_FILES_VAR)
-		set(multiValueArgs SHADERS INCLUDE_DIRS)
-		cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" "${ARGN}")
-
-		set(PROFILES 120 300_es spirv) # pssl
-		if(UNIX AND NOT APPLE)
-			set(PLATFORM LINUX)
-		elseif(EMSCRIPTEN)
-			set(PLATFORM ASM_JS)
-		elseif(APPLE)
-			set(PLATFORM OSX)
-			list(APPEND PROFILES metal)
-		elseif(
-			WIN32
-			OR MINGW
-			OR MSYS
-			OR CYGWIN
-		)
-			set(PLATFORM WINDOWS)
-			list(APPEND PROFILES s_4_0)
-			list(APPEND PROFILES s_5_0)
-		else()
-			message(error "shaderc: Unsupported platform")
-		endif()
-
-    get_target_property(BGFX_SHADER_INCLUDE_PATH darmok BGFX_SHADER_INCLUDE_PATH)
-
-		set(ALL_OUTPUTS "")
-		foreach(SHADER_FILE ${ARGS_SHADERS})
-			source_group("Shaders" FILES "${SHADER}")
-			get_filename_component(SHADER_FILE_BASENAME ${SHADER_FILE} NAME)
-			get_filename_component(SHADER_FILE_ABSOLUTE ${SHADER_FILE} ABSOLUTE)
-
-			# Build output targets and their commands
-			set(OUTPUTS "")
-			set(COMMANDS "")
-			foreach(PROFILE ${PROFILES})
-				_bgfx_get_profile_ext(${PROFILE} PROFILE_EXT)
-				set(OUTPUT ${ARGS_OUTPUT_DIR}/${SHADER_FILE_BASENAME}.${PROFILE_EXT}.bin)
-				set(PLATFORM_I ${PLATFORM})
-				if(PROFILE STREQUAL "spirv")
-					set(PLATFORM_I LINUX)
-				endif()
-				_bgfx_shaderc_parse(
-					CLI #
-					${ARGS_TYPE} ${PLATFORM_I} WERROR "$<$<CONFIG:debug>:DEBUG>$<$<CONFIG:relwithdebinfo>:DEBUG>"
-					FILE ${SHADER_FILE_ABSOLUTE}
-					OUTPUT ${OUTPUT}
-					PROFILE ${PROFILE}
-					O "$<$<CONFIG:debug>:0>$<$<CONFIG:release>:3>$<$<CONFIG:relwithdebinfo>:3>$<$<CONFIG:minsizerel>:3>"
-					VARYINGDEF ${CMAKE_SOURCE_DIR}/${ARGS_VARYING_DEF}
-					INCLUDES ${BGFX_SHADER_INCLUDE_PATH} ${ARGS_INCLUDE_DIRS}
-				)
-				list(APPEND OUTPUTS ${OUTPUT})
-				list(APPEND ALL_OUTPUTS ${OUTPUT})
-				list(APPEND COMMANDS COMMAND bgfx::shaderc ${CLI})
-			endforeach()
-
-			add_custom_command(
-				OUTPUT ${OUTPUTS}
-				COMMAND ${CMAKE_COMMAND} -E make_directory ${ARGS_OUTPUT_DIR} ${COMMANDS}
-				MAIN_DEPENDENCY ${SHADER_FILE_ABSOLUTE}
-				DEPENDS ${ARGS_VARYING_DEF}
-			)
-		endforeach()
-
-		if(DEFINED ARGS_OUT_FILES_VAR)
-			set(${ARGS_OUT_FILES_VAR} ${ALL_OUTPUTS} PARENT_SCOPE)
-		endif()
-	endfunction()

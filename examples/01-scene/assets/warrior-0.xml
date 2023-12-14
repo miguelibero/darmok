@@ -1,0 +1,718 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with TexturePacker https://www.codeandweb.com/texturepacker -->
+<!-- $TexturePacker:SmartUpdate:8f400ff13ec6d20462bc15b200cba134:b4aec45149472838d0b074bfbae14ec8:4e0f3aa5809a51dbcf6b43b8fba5605f$ -->
+<!--Format:
+n  => name of the sprite
+x  => sprite x pos in texture
+y  => sprite y pos in texture
+w  => sprite width (may be trimmed)
+h  => sprite height (may be trimmed)
+pX => x pos of the pivot point (relative to sprite width)
+pY => y pos of the pivot point (relative to sprite height)
+oX => sprite's x-corner offset (only available if trimmed)
+oY => sprite's y-corner offset (only available if trimmed)
+oW => sprite's original width (only available if trimmed)
+oH => sprite's original height (only available if trimmed)
+r => 'y' only set if sprite is rotated
+with polygon mode enabled:
+vertices   => points in sprite coordinate system (x0,y0,x1,y1,x2,y2, ...)
+verticesUV => points in sheet coordinate system (x0,y0,x1,y1,x2,y2, ...)
+triangles  => sprite triangulation, 3 vertex indices per triangle
+-->
+<TextureAtlas imagePath="warrior-0.png" width="758" height="249">
+    <sprite n="Attack/Warrior_Attack_1.png" x="258" y="80" w="29" h="44" oX="11" oY="0" oW="64" oH="44">
+        <vertices>40 44 11 44 11 0 40 0</vertices>
+        <verticesUV>287 124 258 124 258 80 287 80</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_2.png" x="103" y="107" w="34" h="39" oX="6" oY="5" oW="64" oH="44">
+        <vertices>40 44 20 44 8 32 6 5 40 5</vertices>
+        <verticesUV>137 146 117 146 105 134 103 107 137 107</verticesUV>
+        <triangles>2 3 4 1 2 4 0 1 4</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_3.png" x="514" y="118" w="30" h="34" oX="10" oY="10" oW="64" oH="44">
+        <vertices>40 44 10 44 10 10 40 10</vertices>
+        <verticesUV>544 152 514 152 514 118 544 118</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_4.png" x="481" y="97" w="31" h="34" oX="12" oY="10" oW="64" oH="44">
+        <vertices>43 44 12 44 12 10 43 10</vertices>
+        <verticesUV>512 131 481 131 481 97 512 97</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_5.png" x="289" y="77" w="31" h="38" oX="14" oY="6" oW="64" oH="44">
+        <vertices>45 28 37 44 14 44 14 16 35 6</vertices>
+        <verticesUV>320 99 312 115 289 115 289 87 310 77</verticesUV>
+        <triangles>0 1 3 1 2 3 0 3 4</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_6.png" x="474" y="1" w="54" h="43" oX="10" oY="1" oW="64" oH="44">
+        <vertices>64 28 37 44 12 44 10 2 54 1</vertices>
+        <verticesUV>528 28 501 44 476 44 474 2 518 1</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_7.png" x="1" y="185" w="51" h="41" oX="13" oY="3" oW="64" oH="44">
+        <vertices>64 44 13 44 13 3 64 3</vertices>
+        <verticesUV>52 226 1 226 1 185 52 185</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_8.png" x="62" y="1" w="59" h="44" oX="1" oY="0" oW="64" oH="44">
+        <vertices>56 6 60 44 1 44 19 3 39 0</vertices>
+        <verticesUV>117 7 121 45 62 45 80 4 100 1</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_9.png" x="54" y="185" w="47" h="41" oX="17" oY="3" oW="64" oH="44">
+        <vertices>64 44 17 44 23 3</vertices>
+        <verticesUV>101 226 54 226 60 185</verticesUV>
+        <triangles>0 1 2</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_10.png" x="1" y="1" w="59" h="44" oX="0" oY="0" oW="64" oH="44">
+        <vertices>54 10 59 27 38 44 18 44 0 6 0 0 23 0</vertices>
+        <verticesUV>55 11 60 28 39 45 19 45 1 7 1 1 24 1</verticesUV>
+        <triangles>4 5 6 3 4 6 2 3 6 0 1 2 0 2 6</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_11.png" x="523" y="1" w="52" h="44" oX="0" oY="0" oW="64" oH="44">
+        <vertices>52 15 52 44 18 44 0 6 0 0 21 0</vertices>
+        <verticesUV>575 16 575 45 541 45 523 7 523 1 544 1</verticesUV>
+        <triangles>3 4 5 2 3 5 0 1 2 0 2 5</triangles>
+    </sprite>
+    <sprite n="Attack/Warrior_Attack_12.png" x="232" y="1" w="60" h="42" oX="0" oY="2" oW="64" oH="44">
+        <vertices>60 18 37 44 18 44 1 11 0 4 8 2 24 2</vertices>
+        <verticesUV>292 17 269 43 250 43 233 10 232 3 240 1 256 1</verticesUV>
+        <triangles>3 5 6 3 4 5 2 3 6 1 2 6 0 1 6</triangles>
+    </sprite>
+    <sprite n="Crouch/Warrior_Crouch_1.png" x="713" y="59" w="22" h="31" oX="16" oY="13" oW="69" oH="44">
+        <vertices>38 44 16 44 16 13 38 13</vertices>
+        <verticesUV>735 90 713 90 713 59 735 59</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Crouch/Warrior_Crouch_2.png" x="722" y="127" w="23" h="25" oX="15" oY="19" oW="69" oH="44">
+        <vertices>38 44 15 44 15 19 38 19</vertices>
+        <verticesUV>745 152 722 152 722 127 745 127</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Crouch/Warrior_Crouch_3.png" x="717" y="201" w="23" h="25" oX="15" oY="19" oW="69" oH="44">
+        <vertices>38 44 15 44 15 19 38 19</vertices>
+        <verticesUV>740 226 717 226 717 201 740 201</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Crouch/Warrior_Crouch_4.png" x="734" y="101" w="23" h="24" oX="15" oY="20" oW="69" oH="44">
+        <vertices>38 44 15 44 15 20 38 20</vertices>
+        <verticesUV>757 125 734 125 734 101 757 101</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Crouch/Warrior_Crouch_5.png" x="732" y="154" w="23" h="24" oX="15" oY="20" oW="69" oH="44">
+        <vertices>38 44 15 44 15 20 38 20</vertices>
+        <verticesUV>755 178 732 178 732 154 755 154</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Crouch/Warrior_Crouch_6.png" x="454" y="214" w="22" h="31" oX="16" oY="13" oW="69" oH="44">
+        <vertices>38 44 16 44 16 13 38 13</vertices>
+        <verticesUV>476 245 454 245 454 214 476 214</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_1.png" x="325" y="182" w="30" h="30" oX="7" oY="14" oW="69" oH="44">
+        <vertices>37 44 7 44 7 14 37 14</vertices>
+        <verticesUV>355 212 325 212 325 182 355 182</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_2.png" x="421" y="147" w="31" h="30" oX="7" oY="14" oW="69" oH="44">
+        <vertices>38 44 7 44 7 14 38 14</vertices>
+        <verticesUV>452 177 421 177 421 147 452 147</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_3.png" x="546" y="131" w="33" h="30" oX="6" oY="14" oW="69" oH="44">
+        <vertices>39 44 6 44 6 14 39 14</vertices>
+        <verticesUV>579 161 546 161 546 131 579 131</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_4.png" x="413" y="1" w="59" h="39" oX="10" oY="5" oW="69" oH="44">
+        <vertices>69 44 10 44 10 5 69 5</vertices>
+        <verticesUV>472 40 413 40 413 1 472 1</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_5.png" x="356" y="1" w="55" h="43" oX="14" oY="1" oW="69" oH="44">
+        <vertices>69 15 69 44 14 44 14 28 41 1</vertices>
+        <verticesUV>411 15 411 44 356 44 356 28 383 1</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_6.png" x="42" y="65" w="52" h="32" oX="14" oY="12" oW="69" oH="44">
+        <vertices>66 44 14 44 17 24 34 12</vertices>
+        <verticesUV>94 97 42 97 45 77 62 65</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_7.png" x="243" y="45" w="52" h="33" oX="14" oY="11" oW="69" oH="44">
+        <vertices>66 44 14 44 17 24 33 11</vertices>
+        <verticesUV>295 78 243 78 246 58 262 45</verticesUV>
+        <triangles>0 2 3 0 1 2</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_8.png" x="70" y="121" w="52" h="33" oX="14" oY="11" oW="69" oH="44">
+        <vertices>66 44 14 44 17 24 33 11</vertices>
+        <verticesUV>122 154 70 154 73 134 89 121</verticesUV>
+        <triangles>0 2 3 0 1 2</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_9.png" x="716" y="1" w="18" h="33" oX="19" oY="11" oW="69" oH="44">
+        <vertices>37 44 19 44 19 11 37 11</vertices>
+        <verticesUV>734 34 716 34 716 1 734 1</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash Attack/Warrior_Dash-Attack_10.png" x="670" y="1" w="22" h="34" oX="15" oY="10" oW="69" oH="44">
+        <vertices>37 44 15 44 15 10 37 10</vertices>
+        <verticesUV>692 35 670 35 670 1 692 1</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_1.png" x="169" y="208" w="25" h="30" oX="12" oY="14" oW="69" oH="44">
+        <vertices>37 44 12 44 12 14 37 14</vertices>
+        <verticesUV>194 238 169 238 169 208 194 208</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_2.png" x="247" y="163" w="29" h="30" oX="9" oY="14" oW="69" oH="44">
+        <vertices>38 44 9 44 9 14 38 14</vertices>
+        <verticesUV>276 193 247 193 247 163 276 163</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_3.png" x="390" y="115" w="31" h="30" oX="8" oY="14" oW="69" oH="44">
+        <vertices>39 44 8 44 8 14 39 14</vertices>
+        <verticesUV>421 145 390 145 390 115 421 115</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_4.png" x="295" y="1" w="59" h="39" oX="10" oY="5" oW="69" oH="44">
+        <vertices>69 44 10 44 10 5 69 5</vertices>
+        <verticesUV>354 40 295 40 295 1 354 1</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_5.png" x="188" y="20" w="55" h="43" oX="14" oY="1" oW="69" oH="44">
+        <vertices>69 15 69 44 14 44 14 28 41 1</vertices>
+        <verticesUV>243 34 243 63 188 63 188 47 215 20</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_6.png" x="492" y="63" w="52" h="32" oX="14" oY="12" oW="69" oH="44">
+        <vertices>66 44 14 44 17 24 34 12</vertices>
+        <verticesUV>544 95 492 95 495 75 512 63</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_7.png" x="134" y="36" w="52" h="33" oX="14" oY="11" oW="69" oH="44">
+        <vertices>66 44 14 44 17 24 33 11</vertices>
+        <verticesUV>186 69 134 69 137 49 153 36</verticesUV>
+        <triangles>0 2 3 0 1 2</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_8.png" x="310" y="42" w="52" h="33" oX="14" oY="11" oW="69" oH="44">
+        <vertices>66 44 14 44 17 24 33 11</vertices>
+        <verticesUV>362 75 310 75 313 55 329 42</verticesUV>
+        <triangles>0 2 3 0 1 2</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_9.png" x="714" y="92" w="18" h="33" oX="19" oY="11" oW="69" oH="44">
+        <vertices>37 44 19 44 19 11 37 11</vertices>
+        <verticesUV>732 125 714 125 714 92 732 92</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash-Attack_noDust/Warrior_Dash-Attack_10.png" x="666" y="78" w="22" h="34" oX="15" oY="10" oW="69" oH="44">
+        <vertices>37 44 15 44 15 10 37 10</vertices>
+        <verticesUV>688 112 666 112 666 78 688 78</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash/Warrior_Dash_1.png" x="577" y="166" w="31" h="30" oX="12" oY="14" oW="69" oH="44">
+        <vertices>43 44 12 44 12 14 43 14</vertices>
+        <verticesUV>608 196 577 196 577 166 608 166</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash/Warrior_Dash_2.png" x="421" y="179" w="30" h="30" oX="13" oY="14" oW="69" oH="44">
+        <vertices>43 44 13 44 13 14 43 14</vertices>
+        <verticesUV>451 209 421 209 421 179 451 179</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash/Warrior_Dash_3.png" x="389" y="179" w="30" h="30" oX="13" oY="14" oW="69" oH="44">
+        <vertices>43 44 13 44 13 14 43 14</vertices>
+        <verticesUV>419 209 389 209 389 179 419 179</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash/Warrior_Dash_4.png" x="357" y="179" w="30" h="30" oX="13" oY="14" oW="69" oH="44">
+        <vertices>43 44 13 44 13 14 43 14</vertices>
+        <verticesUV>387 209 357 209 357 179 387 179</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash/Warrior_Dash_5.png" x="325" y="150" w="30" h="30" oX="7" oY="14" oW="69" oH="44">
+        <vertices>37 44 7 44 7 14 37 14</vertices>
+        <verticesUV>355 180 325 180 325 150 355 150</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash/Warrior_Dash_6.png" x="442" y="42" w="49" h="42" oX="0" oY="2" oW="69" oH="44">
+        <vertices>49 44 0 44 28 2</vertices>
+        <verticesUV>491 84 442 84 470 42</verticesUV>
+        <triangles>0 1 2</triangles>
+    </sprite>
+    <sprite n="Dash/Warrior_Dash_7.png" x="593" y="45" w="34" h="40" oX="4" oY="4" oW="69" oH="44">
+        <vertices>38 18 38 44 8 44 4 40 24 4</vertices>
+        <verticesUV>627 59 627 85 597 85 593 81 613 45</verticesUV>
+        <triangles>0 3 4 0 1 2 0 2 3</triangles>
+    </sprite>
+    <sprite n="Dash_NoDust/Warrior_Dash_1.png" x="544" y="163" w="31" h="30" oX="12" oY="14" oW="69" oH="44">
+        <vertices>43 44 12 44 12 14 43 14</vertices>
+        <verticesUV>575 193 544 193 544 163 575 163</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash_NoDust/Warrior_Dash_2.png" x="325" y="118" w="30" h="30" oX="13" oY="14" oW="69" oH="44">
+        <vertices>43 44 13 44 13 14 43 14</vertices>
+        <verticesUV>355 148 325 148 325 118 355 118</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash_NoDust/Warrior_Dash_3.png" x="357" y="147" w="30" h="30" oX="13" oY="14" oW="69" oH="44">
+        <vertices>43 44 13 44 13 14 43 14</vertices>
+        <verticesUV>387 177 357 177 357 147 387 147</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash_NoDust/Warrior_Dash_4.png" x="357" y="115" w="30" h="30" oX="13" oY="14" oW="69" oH="44">
+        <vertices>43 44 13 44 13 14 43 14</vertices>
+        <verticesUV>387 145 357 145 357 115 387 115</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash_NoDust/Warrior_Dash_5.png" x="620" y="208" w="25" h="30" oX="12" oY="14" oW="69" oH="44">
+        <vertices>37 44 12 44 12 14 37 14</vertices>
+        <verticesUV>645 238 620 238 620 208 645 208</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash_NoDust/Warrior_Dash_6.png" x="357" y="211" w="24" h="30" oX="13" oY="14" oW="69" oH="44">
+        <vertices>37 44 13 44 13 14 37 14</vertices>
+        <verticesUV>381 241 357 241 357 211 381 211</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Dash_NoDust/Warrior_Dash_7.png" x="666" y="43" w="23" h="33" oX="15" oY="11" oW="69" oH="44">
+        <vertices>38 44 15 44 15 11 38 11</vertices>
+        <verticesUV>689 76 666 76 666 43 689 43</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_1.png" x="583" y="129" w="27" h="35" oX="13" oY="9" oW="64" oH="44">
+        <vertices>40 44 13 44 13 9 35 9</vertices>
+        <verticesUV>610 164 583 164 583 129 605 129</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_2.png" x="145" y="71" w="43" h="40" oX="6" oY="2" oW="64" oH="44">
+        <vertices>38 3 49 21 28 42 14 42 6 19 18 2</vertices>
+        <verticesUV>177 72 188 90 167 111 153 111 145 88 157 71</verticesUV>
+        <triangles>2 4 5 2 3 4 0 1 2 0 2 5</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_3.png" x="364" y="46" w="47" h="44" oX="4" oY="0" oW="64" oH="44">
+        <vertices>29 44 4 38 4 0 51 0</vertices>
+        <verticesUV>389 90 364 84 364 46 411 46</verticesUV>
+        <triangles>0 2 3 0 1 2</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_4.png" x="190" y="65" w="43" h="40" oX="3" oY="0" oW="64" oH="44">
+        <vertices>46 18 24 40 3 40 3 0 38 0</vertices>
+        <verticesUV>233 83 211 105 190 105 190 65 225 65</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_5.png" x="169" y="1" w="60" h="42" oX="3" oY="2" oW="64" oH="44">
+        <vertices>63 4 21 44 3 44 3 35 21 2</vertices>
+        <verticesUV>229 3 187 43 169 43 169 34 187 1</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_6.png" x="1" y="139" w="51" h="44" oX="3" oY="0" oW="64" oH="44">
+        <vertices>54 14 24 44 3 44 3 25 26 0</vertices>
+        <verticesUV>52 153 22 183 1 183 1 164 24 139</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_7.png" x="1" y="94" w="52" h="43" oX="1" oY="1" oW="64" oH="44">
+        <vertices>53 26 35 44 1 44 1 37 28 1</vertices>
+        <verticesUV>53 119 35 137 1 137 1 130 28 94</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_8.png" x="214" y="80" w="42" h="35" oX="0" oY="9" oW="64" oH="44">
+        <vertices>42 17 42 44 0 44 0 38 25 9</vertices>
+        <verticesUV>256 88 256 115 214 115 214 109 239 80</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_9.png" x="33" y="157" w="63" h="26" oX="0" oY="18" oW="64" oH="44">
+        <vertices>63 44 0 44 0 41 2 34 37 18</vertices>
+        <verticesUV>96 183 33 183 33 180 35 173 70 157</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_10.png" x="133" y="135" w="42" h="24" oX="0" oY="20" oW="64" oH="44">
+        <vertices>42 44 0 44 0 41 2 34 42 20</vertices>
+        <verticesUV>175 159 133 159 133 156 135 149 175 135</verticesUV>
+        <triangles>0 3 4 1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Death-Effect/Warrior_Death_11.png" x="214" y="139" w="42" h="22" oX="0" oY="22" oW="64" oH="44">
+        <vertices>42 44 0 44 0 41 2 34 42 22</vertices>
+        <verticesUV>256 161 214 161 214 158 216 151 256 139</verticesUV>
+        <triangles>0 3 4 1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_1.png" x="608" y="87" w="27" h="35" oX="13" oY="9" oW="64" oH="44">
+        <vertices>40 44 13 44 13 9 35 9</vertices>
+        <verticesUV>635 122 608 122 608 87 630 87</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_2.png" x="79" y="47" w="43" h="40" oX="6" oY="2" oW="64" oH="44">
+        <vertices>38 3 49 21 28 42 14 42 6 19 18 2</vertices>
+        <verticesUV>111 48 122 66 101 87 87 87 79 64 91 47</verticesUV>
+        <triangles>2 4 5 2 3 4 0 1 2 0 2 5</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_3.png" x="413" y="42" w="47" h="44" oX="4" oY="0" oW="64" oH="44">
+        <vertices>29 44 4 38 4 0 51 0</vertices>
+        <verticesUV>438 86 413 80 413 42 460 42</verticesUV>
+        <triangles>0 2 3 0 1 2</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_4.png" x="556" y="47" w="43" h="40" oX="3" oY="0" oW="64" oH="44">
+        <vertices>46 18 24 40 3 40 3 0 38 0</vertices>
+        <verticesUV>599 65 577 87 556 87 556 47 591 47</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_5.png" x="123" y="1" w="60" h="42" oX="3" oY="2" oW="64" oH="44">
+        <vertices>63 4 21 44 3 44 3 35 21 2</vertices>
+        <verticesUV>183 3 141 43 123 43 123 34 141 1</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_6.png" x="1" y="53" w="51" h="44" oX="3" oY="0" oW="64" oH="44">
+        <vertices>54 14 24 44 3 44 3 25 26 0</vertices>
+        <verticesUV>52 67 22 97 1 97 1 78 24 53</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_7.png" x="577" y="1" w="52" h="43" oX="1" oY="1" oW="64" oH="44">
+        <vertices>53 26 35 44 1 44 1 37 28 1</vertices>
+        <verticesUV>629 26 611 44 577 44 577 37 604 1</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_8.png" x="96" y="70" w="42" h="35" oX="0" oY="9" oW="64" oH="44">
+        <vertices>42 17 42 44 0 44 0 38 25 9</vertices>
+        <verticesUV>138 78 138 105 96 105 96 99 121 70</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_9.png" x="489" y="35" w="63" h="26" oX="0" oY="18" oW="64" oH="44">
+        <vertices>63 44 0 44 0 41 2 34 37 18</vertices>
+        <verticesUV>552 61 489 61 489 58 491 51 526 35</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_10.png" x="413" y="86" w="42" h="24" oX="0" oY="20" oW="64" oH="44">
+        <vertices>42 44 0 44 0 41 2 34 42 20</vertices>
+        <verticesUV>455 110 413 110 413 107 415 100 455 86</verticesUV>
+        <triangles>0 3 4 1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="DeathnoEffect/Warrior_Death_11.png" x="514" y="94" w="42" h="22" oX="0" oY="22" oW="64" oH="44">
+        <vertices>42 44 0 44 0 41 2 34 42 22</vertices>
+        <verticesUV>556 116 514 116 514 113 516 106 556 94</verticesUV>
+        <triangles>0 3 4 1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Edge-Idle/Warrior_Edge-Idle_1.png" x="660" y="124" w="16" h="40" oX="18" oY="3" oW="69" oH="44">
+        <vertices>34 43 18 43 18 3 34 3</vertices>
+        <verticesUV>676 164 660 164 660 124 676 124</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Edge-Idle/Warrior_Edge-Idle_2.png" x="652" y="166" w="16" h="40" oX="18" oY="3" oW="69" oH="44">
+        <vertices>34 43 18 43 18 3 34 3</vertices>
+        <verticesUV>668 206 652 206 652 166 668 166</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Edge-Idle/Warrior_Edge-Idle_3.png" x="520" y="186" w="18" h="40" oX="16" oY="3" oW="69" oH="44">
+        <vertices>34 43 16 43 16 3 34 3</vertices>
+        <verticesUV>538 226 520 226 520 186 538 186</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Edge-Idle/Warrior_Edge-Idle_4.png" x="500" y="186" w="18" h="40" oX="16" oY="3" oW="69" oH="44">
+        <vertices>34 43 16 43 16 3 34 3</vertices>
+        <verticesUV>518 226 500 226 500 186 518 186</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Edge-Idle/Warrior_Edge-Idle_5.png" x="629" y="45" w="17" h="40" oX="17" oY="3" oW="69" oH="44">
+        <vertices>34 43 17 43 17 3 34 3</vertices>
+        <verticesUV>646 85 629 85 629 45 646 45</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Edge-Idle/Warrior_Edge-Idle_6.png" x="652" y="1" w="16" h="40" oX="18" oY="3" oW="69" oH="44">
+        <vertices>34 43 18 43 18 3 34 3</vertices>
+        <verticesUV>668 41 652 41 652 1 668 1</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="EdgeGrab/Warrior_Edge-Grab_1.png" x="146" y="198" w="21" h="35" oX="13" oY="1" oW="69" oH="44">
+        <vertices>34 36 13 36 13 1 34 1</vertices>
+        <verticesUV>167 233 146 233 146 198 167 198</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="EdgeGrab/Warrior_Edge-Grab_2.png" x="480" y="166" w="18" h="40" oX="16" oY="3" oW="69" oH="44">
+        <vertices>34 43 16 43 16 3 34 3</vertices>
+        <verticesUV>498 206 480 206 480 166 498 166</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="EdgeGrab/Warrior_Edge-Grab_3.png" x="102" y="156" w="17" h="40" oX="17" oY="3" oW="69" oH="44">
+        <vertices>34 43 17 43 17 3 34 3</vertices>
+        <verticesUV>119 196 102 196 102 156 119 156</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="EdgeGrab/Warrior_Edge-Grab_4.png" x="454" y="172" w="18" h="40" oX="16" oY="3" oW="69" oH="44">
+        <vertices>34 43 16 43 16 3 34 3</vertices>
+        <verticesUV>472 212 454 212 454 172 472 172</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="EdgeGrab/Warrior_Edge-Grab_5.png" x="648" y="48" w="16" h="40" oX="18" oY="3" oW="69" oH="44">
+        <vertices>34 43 18 43 18 3 34 3</vertices>
+        <verticesUV>664 88 648 88 648 48 664 48</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Fall/Warrior_Fall_1.png" x="583" y="87" w="23" h="40" oX="17" oY="4" oW="64" oH="44">
+        <vertices>40 15 40 44 17 44 17 16 29 4</vertices>
+        <verticesUV>606 98 606 127 583 127 583 99 595 87</verticesUV>
+        <triangles>0 1 3 1 2 3 0 3 4</triangles>
+    </sprite>
+    <sprite n="Fall/Warrior_Fall_2.png" x="278" y="155" w="23" h="36" oX="17" oY="8" oW="64" oH="44">
+        <vertices>40 44 17 44 17 8 40 8</vertices>
+        <verticesUV>301 191 278 191 278 155 301 155</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Fall/Warrior_Fall_3.png" x="558" y="89" w="23" h="40" oX="17" oY="4" oW="64" oH="44">
+        <vertices>40 12 40 44 17 44 17 15 28 4</vertices>
+        <verticesUV>581 97 581 129 558 129 558 100 569 89</verticesUV>
+        <triangles>0 1 3 1 2 3 0 3 4</triangles>
+    </sprite>
+    <sprite n="Hurt-Effect/Warrior_hurt_1.png" x="647" y="208" w="21" h="34" oX="20" oY="10" oW="64" oH="44">
+        <vertices>41 44 20 44 20 10 41 10</vertices>
+        <verticesUV>668 242 647 242 647 208 668 208</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Hurt-Effect/Warrior_hurt_2.png" x="579" y="198" w="23" h="33" oX="16" oY="11" oW="64" oH="44">
+        <vertices>39 44 16 44 16 11 39 11</vertices>
+        <verticesUV>602 231 579 231 579 198 602 198</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Hurt-Effect/Warrior_hurt_3.png" x="693" y="205" w="22" h="33" oX="17" oY="11" oW="64" oH="44">
+        <vertices>39 44 17 44 17 11 39 11</vertices>
+        <verticesUV>715 238 693 238 693 205 715 205</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Hurt-Effect/Warrior_hurt_4.png" x="278" y="194" w="23" h="34" oX="18" oY="10" oW="64" oH="44">
+        <vertices>41 44 18 44 18 10 41 10</vertices>
+        <verticesUV>301 228 278 228 278 194 301 194</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="HurtnoEffect/Warrior_hurt_1.png" x="670" y="205" w="21" h="34" oX="20" oY="10" oW="64" oH="44">
+        <vertices>41 44 20 44 20 10 41 10</vertices>
+        <verticesUV>691 239 670 239 670 205 691 205</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="HurtnoEffect/Warrior_hurt_2.png" x="121" y="197" w="23" h="33" oX="16" oY="11" oW="64" oH="44">
+        <vertices>39 44 16 44 16 11 39 11</vertices>
+        <verticesUV>144 230 121 230 121 197 144 197</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="HurtnoEffect/Warrior_hurt_3.png" x="698" y="131" w="22" h="33" oX="17" oY="11" oW="64" oH="44">
+        <vertices>39 44 17 44 17 11 39 11</vertices>
+        <verticesUV>720 164 698 164 698 131 720 131</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="HurtnoEffect/Warrior_hurt_4.png" x="121" y="161" w="23" h="34" oX="18" oY="10" oW="64" oH="44">
+        <vertices>41 44 18 44 18 10 41 10</vertices>
+        <verticesUV>144 195 121 195 121 161 144 161</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="idle/Warrior_Idle_1.png" x="694" y="1" w="20" h="35" oX="17" oY="9" oW="64" oH="44">
+        <vertices>37 44 17 44 17 9 37 9</vertices>
+        <verticesUV>714 36 694 36 694 1 714 1</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="idle/Warrior_Idle_2.png" x="691" y="55" w="20" h="35" oX="17" oY="9" oW="64" oH="44">
+        <vertices>37 44 17 44 17 9 37 9</vertices>
+        <verticesUV>711 90 691 90 691 55 711 55</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="idle/Warrior_Idle_3.png" x="230" y="196" w="22" h="34" oX="16" oY="10" oW="64" oH="44">
+        <vertices>38 44 16 44 16 10 38 10</vertices>
+        <verticesUV>252 230 230 230 230 196 252 196</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="idle/Warrior_Idle_4.png" x="690" y="92" w="22" h="33" oX="16" oY="11" oW="64" oH="44">
+        <vertices>38 44 16 44 16 11 38 11</vertices>
+        <verticesUV>712 125 690 125 690 92 712 92</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="idle/Warrior_Idle_5.png" x="710" y="166" w="20" h="33" oX="17" oY="11" oW="64" oH="44">
+        <vertices>37 44 17 44 17 11 37 11</vertices>
+        <verticesUV>730 199 710 199 710 166 730 166</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="idle/Warrior_Idle_6.png" x="478" y="208" w="20" h="34" oX="17" oY="10" oW="64" oH="44">
+        <vertices>37 44 17 44 17 10 37 10</vertices>
+        <verticesUV>498 242 478 242 478 208 498 208</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Jump/Warrior_Jump_1.png" x="146" y="161" w="22" h="35" oX="18" oY="7" oW="64" oH="44">
+        <vertices>40 42 18 42 18 7 40 7</vertices>
+        <verticesUV>168 196 146 196 146 161 168 161</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Jump/Warrior_Jump_2.png" x="170" y="171" w="22" h="35" oX="18" oY="7" oW="64" oH="44">
+        <vertices>40 42 18 42 18 7 40 7</vertices>
+        <verticesUV>192 206 170 206 170 171 192 171</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Jump/Warrior_Jump_3.png" x="194" y="171" w="22" h="35" oX="18" oY="7" oW="64" oH="44">
+        <vertices>40 42 18 42 18 7 40 7</vertices>
+        <verticesUV>216 206 194 206 194 171 216 171</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Ladder-Grab/Warrior-Ladder-Grab_1.png" x="454" y="131" w="24" h="39" oX="21" oY="3" oW="69" oH="44">
+        <vertices>42 4 45 32 38 42 26 38 21 3</vertices>
+        <verticesUV>475 132 478 160 471 170 459 166 454 131</verticesUV>
+        <triangles>1 2 3 1 3 4 0 1 4</triangles>
+    </sprite>
+    <sprite n="Ladder-Grab/Warrior-Ladder-Grab_2.png" x="638" y="90" w="20" h="36" oX="24" oY="7" oW="69" oH="44">
+        <vertices>44 43 24 43 24 7 44 7</vertices>
+        <verticesUV>658 126 638 126 638 90 658 90</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Ladder-Grab/Warrior-Ladder-Grab_3.png" x="303" y="158" w="20" h="39" oX="23" oY="5" oW="69" oH="44">
+        <vertices>43 44 23 44 23 5 43 5</vertices>
+        <verticesUV>323 197 303 197 303 158 323 158</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Ladder-Grab/Warrior-Ladder-Grab_4.png" x="612" y="124" w="21" h="40" oX="23" oY="2" oW="69" oH="44">
+        <vertices>44 42 23 42 23 2 44 2</vertices>
+        <verticesUV>633 164 612 164 612 124 633 124</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Ladder-Grab/Warrior-Ladder-Grab_5.png" x="635" y="128" w="20" h="36" oX="22" oY="4" oW="69" oH="44">
+        <vertices>42 40 22 40 22 4 42 4</vertices>
+        <verticesUV>655 164 635 164 635 128 655 128</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Ladder-Grab/Warrior-Ladder-Grab_6.png" x="457" y="86" w="22" h="43" oX="20" oY="1" oW="69" oH="44">
+        <vertices>42 13 42 42 26 44 20 9 30 1</vertices>
+        <verticesUV>479 98 479 127 463 129 457 94 467 86</verticesUV>
+        <triangles>2 0 1 2 3 0 0 3 4</triangles>
+    </sprite>
+    <sprite n="Ladder-Grab/Warrior-Ladder-Grab_7.png" x="303" y="117" w="20" h="39" oX="22" oY="5" oW="69" oH="44">
+        <vertices>42 44 22 44 22 5 42 5</vertices>
+        <verticesUV>323 156 303 156 303 117 323 117</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Ladder-Grab/Warrior-Ladder-Grab_8.png" x="610" y="166" w="20" h="40" oX="22" oY="2" oW="69" oH="44">
+        <vertices>42 42 22 42 22 2 42 2</vertices>
+        <verticesUV>630 206 610 206 610 166 630 166</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Run/Warrior_Run_1.png" x="218" y="163" w="27" h="31" oX="11" oY="13" oW="64" oH="44">
+        <vertices>38 44 11 44 11 13 38 13</vertices>
+        <verticesUV>245 194 218 194 218 163 245 163</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Run/Warrior_Run_2.png" x="383" y="75" w="28" h="38" oX="10" oY="3" oW="64" oH="44">
+        <vertices>38 41 10 41 16 21 38 3</vertices>
+        <verticesUV>411 113 383 113 389 93 411 75</verticesUV>
+        <triangles>0 2 3 0 1 2</triangles>
+    </sprite>
+    <sprite n="Run/Warrior_Run_3.png" x="34" y="109" w="45" h="41" oX="5" oY="3" oW="64" oH="44">
+        <vertices>36 44 5 35 24 16 50 3</vertices>
+        <verticesUV>65 150 34 141 53 122 79 109</verticesUV>
+        <triangles>0 2 3 0 1 2</triangles>
+    </sprite>
+    <sprite n="Run/Warrior_Run_4.png" x="322" y="77" w="35" h="33" oX="8" oY="11" oW="64" oH="44">
+        <vertices>43 24 27 44 19 44 8 33 30 11</vertices>
+        <verticesUV>357 90 341 110 333 110 322 99 344 77</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Run/Warrior_Run_5.png" x="258" y="126" w="35" h="30" oX="11" oY="14" oW="64" oH="44">
+        <vertices>46 32 16 44 11 44 11 14 36 14</vertices>
+        <verticesUV>293 144 263 156 258 156 258 126 283 126</verticesUV>
+        <triangles>1 3 4 1 2 3 0 1 4</triangles>
+    </sprite>
+    <sprite n="Run/Warrior_Run_6.png" x="389" y="147" w="30" h="30" oX="12" oY="11" oW="64" oH="44">
+        <vertices>42 41 12 41 12 11 42 11</vertices>
+        <verticesUV>419 177 389 177 389 147 419 147</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Run/Warrior_Run_7.png" x="511" y="154" w="31" h="30" oX="10" oY="12" oW="64" oH="44">
+        <vertices>41 42 10 42 10 12 41 12</vertices>
+        <verticesUV>542 184 511 184 511 154 542 154</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Run/Warrior_Run_8.png" x="331" y="214" w="24" h="29" oX="14" oY="15" oW="64" oH="44">
+        <vertices>38 44 14 44 14 15 38 15</vertices>
+        <verticesUV>355 243 331 243 331 214 355 214</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Slide/Warrior-Slide_1.png" x="418" y="211" w="33" h="20" oX="12" oY="24" oW="69" oH="44">
+        <vertices>45 44 12 44 12 24 45 24</vertices>
+        <verticesUV>451 231 418 231 418 211 451 211</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Slide/Warrior-Slide_2.png" x="540" y="198" w="37" h="20" oX="8" oY="24" oW="69" oH="44">
+        <vertices>45 44 8 44 8 24 45 24</vertices>
+        <verticesUV>577 218 540 218 540 198 577 198</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="Slide/Warrior-Slide_3.png" x="211" y="117" w="45" h="20" oX="0" oY="24" oW="69" oH="44">
+        <vertices>45 44 0 44 20 24 45 24</vertices>
+        <verticesUV>256 137 211 137 231 117 256 117</verticesUV>
+        <triangles>0 2 3 0 1 2</triangles>
+    </sprite>
+    <sprite n="Slide/Warrior-Slide_4.png" x="148" y="93" w="40" h="40" oX="1" oY="4" oW="69" oH="44">
+        <vertices>41 44 1 44 41 4</vertices>
+        <verticesUV>188 133 148 133 188 93</verticesUV>
+        <triangles>0 1 2</triangles>
+    </sprite>
+    <sprite n="Slide/Warrior-Slide_5.png" x="423" y="112" w="32" h="31" oX="11" oY="13" oW="69" oH="44">
+        <vertices>43 14 37 44 20 44 11 33 22 13</vertices>
+        <verticesUV>455 113 449 143 432 143 423 132 434 112</verticesUV>
+        <triangles>2 3 4 1 2 4 0 1 4</triangles>
+    </sprite>
+    <sprite n="SlideNoEffect/Warrior-SlideNoEffect_1.png" x="383" y="211" w="33" h="20" oX="12" oY="24" oW="69" oH="44">
+        <vertices>45 44 12 44 12 24 45 24</vertices>
+        <verticesUV>416 231 383 231 383 211 416 211</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="SlideNoEffect/Warrior-SlideNoEffect_2.png" x="1" y="228" w="32" h="20" oX="13" oY="24" oW="69" oH="44">
+        <vertices>45 44 13 44 13 24 45 24</vertices>
+        <verticesUV>33 248 1 248 1 228 33 228</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="SlideNoEffect/Warrior-SlideNoEffect_3.png" x="545" y="220" w="32" h="20" oX="13" oY="24" oW="69" oH="44">
+        <vertices>45 44 13 44 13 24 45 24</vertices>
+        <verticesUV>577 240 545 240 545 220 577 220</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="SlideNoEffect/Warrior-SlideNoEffect_4.png" x="196" y="208" w="27" h="27" oX="14" oY="17" oW="69" oH="44">
+        <vertices>41 23 41 44 14 44 21 17</vertices>
+        <verticesUV>223 214 223 235 196 235 203 208</verticesUV>
+        <triangles>0 1 2 0 2 3</triangles>
+    </sprite>
+    <sprite n="SlideNoEffect/Warrior-SlideNoEffect_5.png" x="480" y="133" w="32" h="31" oX="11" oY="13" oW="69" oH="44">
+        <vertices>43 14 37 44 20 44 11 33 22 13</vertices>
+        <verticesUV>512 134 506 164 489 164 480 153 491 133</verticesUV>
+        <triangles>2 3 4 1 2 4 0 1 4</triangles>
+    </sprite>
+    <sprite n="UptoFall/Warrior_UptoFall_1.png" x="254" y="195" w="22" h="34" oX="18" oY="7" oW="64" oH="44">
+        <vertices>40 41 18 41 18 7 40 7</vertices>
+        <verticesUV>276 229 254 229 254 195 276 195</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="UptoFall/Warrior_UptoFall_2.png" x="177" y="135" w="23" h="34" oX="17" oY="7" oW="64" oH="44">
+        <vertices>40 41 17 41 17 7 40 7</vertices>
+        <verticesUV>200 169 177 169 177 135 200 135</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="WallSlide/Warrior_WallSlide_1.png" x="690" y="166" w="18" h="37" oX="15" oY="6" oW="69" oH="44">
+        <vertices>33 43 15 43 15 6 33 6</vertices>
+        <verticesUV>708 203 690 203 690 166 708 166</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="WallSlide/Warrior_WallSlide_2.png" x="632" y="166" w="18" h="38" oX="15" oY="5" oW="69" oH="44">
+        <vertices>33 43 15 43 15 5 33 5</vertices>
+        <verticesUV>650 204 632 204 632 166 650 166</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="WallSlide/Warrior_WallSlide_3.png" x="303" y="199" w="18" h="37" oX="15" oY="6" oW="69" oH="44">
+        <vertices>33 43 15 43 15 6 33 6</vertices>
+        <verticesUV>321 236 303 236 303 199 321 199</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="WallSlide_NoDust/Warrior_WallSlide_1.png" x="678" y="127" w="18" h="37" oX="15" oY="6" oW="69" oH="44">
+        <vertices>33 43 15 43 15 6 33 6</vertices>
+        <verticesUV>696 164 678 164 678 127 696 127</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="WallSlide_NoDust/Warrior_WallSlide_2.png" x="632" y="1" w="18" h="38" oX="15" oY="5" oW="69" oH="44">
+        <vertices>33 43 15 43 15 5 33 5</vertices>
+        <verticesUV>650 39 632 39 632 1 650 1</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+    <sprite n="WallSlide_NoDust/Warrior_WallSlide_3.png" x="670" y="166" w="18" h="37" oX="15" oY="6" oW="69" oH="44">
+        <vertices>33 43 15 43 15 6 33 6</vertices>
+        <verticesUV>688 203 670 203 670 166 688 166</verticesUV>
+        <triangles>1 2 3 0 1 3</triangles>
+    </sprite>
+</TextureAtlas>

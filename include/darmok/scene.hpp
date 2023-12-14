@@ -14,24 +14,26 @@ namespace darmok
     typedef uint32_t Entity;
     typedef entt::basic_registry<Entity> Registry;
 
-    class BX_NO_VTABLE IEntityRenderer
+    class BX_NO_VTABLE ISceneRenderer
     {
     public:
-        virtual ~IEntityRenderer() = default;
-        virtual bool render(bgfx::Encoder& encoder, Entity& entity, Registry& registry) = 0;
+        virtual ~ISceneRenderer() = default;
+        virtual void init() {};
+        virtual void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry) = 0;
     };
 
     class BX_NO_VTABLE ISceneLogicUpdater
     {
     public:
         virtual ~ISceneLogicUpdater() = default;
+        virtual void init() {};
         virtual void updateLogic(Registry& registry) = 0;
     };
 
     class Scene final
     {
     public:
-        Scene(const bgfx::ProgramHandle& program);
+        Scene();
         ~Scene();
         Entity createEntity();
 
@@ -59,11 +61,12 @@ namespace darmok
             return ref;
         }
 
+        void init();
         void updateLogic(float dt);
         void render(bgfx::ViewId viewId);
 
-        void addRenderer(std::unique_ptr<IEntityRenderer>&& renderer);
-        void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& renderer);
+        void addRenderer(std::unique_ptr<ISceneRenderer>&& renderer);
+        void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
 
     private:
         Registry& getRegistry();
@@ -90,6 +93,8 @@ namespace darmok
         bool update();
         const glm::mat4x4& getMatrix();
         const glm::mat4x4& getMatrix() const;
+
+        static bool bgfxConfig(Entity entity, bgfx::Encoder& encoder, Registry& registry);
     
     private:
         bool _changed;
@@ -114,31 +119,6 @@ namespace darmok
 
     typedef uint16_t VertexIndex;
 
-    class Program final
-    {
-    public:
-        Program(const bgfx::ProgramHandle& handle);
-        const bgfx::ProgramHandle& getHandle() const;
-        void setHandle(const bgfx::ProgramHandle& handle);
-
-    private:
-        bgfx::ProgramHandle _handle;
-    };
-
-    class Blend final
-    {
-    public:
-        Blend(uint64_t src, uint64_t dst);
-        uint64_t getState() const;
-        uint64_t getSource() const;
-        uint64_t getDestination() const;
-        void setSource(uint64_t src);
-        void setDestination(uint64_t dst);
-    private:
-        uint64_t _src;
-        uint64_t _dst;
-    };
-
     typedef glm::vec<2, uint16_t> ViewVec;
 
     class ViewRect final
@@ -149,7 +129,7 @@ namespace darmok
         void setOrigin(const ViewVec& origin);
         const ViewVec& getSize() const;
         const ViewVec& getOrigin() const;
-        void render(bgfx::ViewId viewId) const; 
+        void bgfxConfig(bgfx::ViewId viewId) const; 
     private:
         ViewVec _size;
         ViewVec _origin;
@@ -169,13 +149,13 @@ namespace darmok
     class SceneAppComponent final : public AppComponent
     {
     public:
-        SceneAppComponent(const bgfx::ProgramHandle& program);
         Scene& getScene();
         const Scene& getScene() const;
+
+        void init() override;
         void render(bgfx::ViewId viewId) override;
         void updateLogic(float dt) override;
     private:
-        bgfx::ProgramHandle _program;
         Scene _scene;
     };
 }

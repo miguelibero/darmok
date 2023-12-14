@@ -1,12 +1,11 @@
 #pragma once
 
 #include <string>
-#include <memory>
-#include <optional>
 #include <bx/file.h>
 #include <bx/pixelformat.h>
 #include <bimg/bimg.h>
 #include <bgfx/bgfx.h>
+
 
 namespace darmok
 {
@@ -30,15 +29,19 @@ namespace darmok
 		std::string _basePath;
 	};
 
-	class Data
+	class Data final
 	{
 	public:
-		Data(void* ptr, uint64_t size, bx::AllocatorI* alloc = nullptr);
-		~Data();
-		void* ptr() const;
-		uint64_t size() const;
-		bool empty() const;
+		Data(void* ptr, uint64_t size, bx::AllocatorI* alloc = nullptr) noexcept;
+		~Data() noexcept;
+		Data(Data&& other) noexcept;
+		Data& operator=(Data&& other) noexcept;
+		void* ptr() const noexcept;
+		uint64_t size() const noexcept;
+		bool empty() const noexcept;
 	private:
+		Data(const Data& other) = delete;
+		Data& operator=(const Data& other) = delete;
 		void* _ptr;
 		uint64_t _size;
 		bx::AllocatorI* _alloc;
@@ -46,6 +49,7 @@ namespace darmok
 
 	class Image;
 	struct TextureWithInfo;
+	struct TextureAtlas;
 
 	class AssetContextImpl final
 	{
@@ -54,9 +58,10 @@ namespace darmok
 		bgfx::ProgramHandle loadProgram(const std::string& vertexName, const std::string& fragmentName = "");
 		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE);
 		TextureWithInfo loadTextureWithInfo(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE);
-		std::shared_ptr<Image> loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
-	
-		bx::AllocatorI* getAllocator();
+		Image loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
+		TextureAtlas loadAtlas(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
+
+		bx::AllocatorI* getAllocator() noexcept;
 	private:
 
 		TextureWithInfo loadTexture(const std::string& filePath, uint64_t flags, bool loadInfo);
@@ -65,11 +70,11 @@ namespace darmok
 		FileWriter _fileWriter;
 		bx::DefaultAllocator _allocator;
 
-		std::unique_ptr<Data> loadData(const std::string& filePath);
+		Data loadData(const std::string& filePath);
 		const bgfx::Memory* loadMem(const std::string& filePath);
 
-		bx::FileReaderI* getFileReader();
-		bx::FileWriterI* getFileWriter();
+		bx::FileReaderI* getFileReader() noexcept;
+		bx::FileWriterI* getFileWriter() noexcept;
 
 	};
 

@@ -1,8 +1,11 @@
 #include "asset.hpp"
-#include "dbg.h"
+#include <stdexcept>
+#include <optional>
 #include <bimg/decode.h>
+#include <pugixml.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/utils.hpp>
+#include <bx/filepath.h>
 
 namespace darmok
 {
@@ -28,49 +31,68 @@ namespace darmok
 		return super::open(absFilePath.c_str(), append, err);
 	}
 
-	Data::Data(void* ptr, uint64_t size, bx::AllocatorI* alloc)
+	Data::Data(void* ptr, uint64_t size, bx::AllocatorI* alloc) noexcept
 		: _ptr(ptr)
 		, _size(size)
 		, _alloc(alloc)
 	{
 	}
 
-	void* Data::ptr() const
+	void* Data::ptr() const noexcept
 	{
 		return _ptr;
 	}
 
-	uint64_t Data::size() const
+	uint64_t Data::size() const noexcept
 	{
 		return _size;
 	}
 
-	bool Data::empty() const
+	bool Data::empty() const noexcept
 	{
 		return _size == 0ll;
 	}
 
-	Data::~Data()
+	Data::~Data() noexcept
 	{
 		bx::free(_alloc, _ptr);
 	}
 
-	bx::FileReaderI* AssetContextImpl::getFileReader()
+	Data::Data(Data&& other) noexcept
+		: _ptr(other._ptr)
+		, _size(other._size)
+		, _alloc(other._alloc)
+	{
+		other._ptr = nullptr;
+		other._size = 0;
+	}
+	Data& Data::operator=(Data&& other) noexcept
+	{
+		bx::free(_alloc, _ptr);
+		_ptr = other._ptr;
+		_size = other._size;
+		_alloc = other._alloc;
+		other._ptr = nullptr;
+		other._size = 0;
+		return *this;
+	}
+
+	bx::FileReaderI* AssetContextImpl::getFileReader() noexcept
 	{
 		return &_fileReader;
 	}
 
-	bx::FileWriterI* AssetContextImpl::getFileWriter()
+	bx::FileWriterI* AssetContextImpl::getFileWriter() noexcept
 	{
 		return &_fileWriter;
 	}
 
-	bx::AllocatorI* AssetContextImpl::getAllocator()
+	bx::AllocatorI* AssetContextImpl::getAllocator() noexcept
 	{
 		return &_allocator;
 	}
 
-	std::unique_ptr<Data> AssetContextImpl::loadData(const std::string& filePath)
+	Data AssetContextImpl::loadData(const std::string& filePath)
 	{
 		auto reader = getFileReader();
 		auto alloc = getAllocator();
@@ -80,11 +102,10 @@ namespace darmok
 			void* data = bx::alloc(alloc, size);
 			bx::read(reader, data, (int32_t)size, bx::ErrorAssert{});
 			bx::close(reader);
-			return std::make_unique<Data>(data, size, alloc);
+			return Data(data, size, alloc);
 		}
 
-		DBG("Failed to load %s.", filePath.c_str());
-		return nullptr;
+		throw std::runtime_error("Failed to load data from file \"" + filePath + "\".");
 	}
 
 	const bgfx::Memory* AssetContextImpl::loadMem(const std::string& filePath)
@@ -93,14 +114,12 @@ namespace darmok
 		if (bx::open(reader, filePath.c_str()))
 		{
 			uint32_t size = (uint32_t)bx::getSize(reader);
-			const bgfx::Memory* mem =bgfx::alloc(size + 1);
+			const bgfx::Memory* mem = bgfx::alloc(size + 1);
 			bx::read(reader, mem->data, size, bx::ErrorAssert{});
 			bx::close(reader);
 			return mem;
 		}
-
-		DBG("Failed to load %s.", filePath.c_str());
-		return nullptr;
+		throw std::runtime_error("Failed to load memory from file \"" + filePath + "\".");
 	}
 
 	static std::string getShaderExt()
@@ -135,7 +154,6 @@ namespace darmok
 			return { bgfx::kInvalidHandle };
 		}
 		
-		// mem->data[mem->size - 1] = '\0';
 		bgfx::ShaderHandle handle = bgfx::createShader(mem);
 		bgfx::setName(handle, name.c_str());
 
@@ -177,11 +195,11 @@ namespace darmok
 		r.texture = BGFX_INVALID_HANDLE;
 
 		auto data = loadData(filePath);
-		if (data != nullptr && !data->empty())
+		if (!data.empty())
 		{
 			auto alloc = getAllocator();
 			bx::Error err;
-			bimg::ImageContainer* imageContainer = bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Count, &err);
+			bimg::ImageContainer* imageContainer = bimg::imageParse(alloc, data.ptr(), (uint32_t)data.size(), bimg::TextureFormat::Count, &err);
 			checkError(err);
 			if (imageContainer != nullptr)
 			{
@@ -251,24 +269,150 @@ namespace darmok
 			}
 		}
 
+		if (!isValid(r.texture))
+		{
+			throw std::runtime_error("Could not load texture in path \"" + filePath + "\"");
+		}
+
 		return r;
 	}
 
-	std::shared_ptr<Image> AssetContextImpl::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	Image AssetContextImpl::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
 	{
 		auto data = loadData(filePath);
 		auto alloc = getAllocator();
-		bimg::ImageContainer* ptr = bimg::imageParse(alloc, data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Enum(dstFormat));
-		return std::make_unique<Image>(ptr);
+		bimg::ImageContainer* ptr = bimg::imageParse(alloc, data.ptr(), (uint32_t)data.size(), bimg::TextureFormat::Enum(dstFormat));
+		return Image(ptr);
 	}
 
-	AssetContext& AssetContext::get()
+	static std::pair<int, size_t> readAtlasXmlValueInt(const std::string& str, size_t i)
+	{
+		if (str.size() == 0 || i == std::string::npos || i >= str.size())
+		{
+			return { -1, std::string::npos };
+		}
+		auto ni = str.find(' ', i);
+		if (ni == std::string::npos)
+		{
+			ni = str.size();
+		}
+		auto v = std::stoi(str.substr(i, ni - i));
+		return { v, ni + 1 };
+	}
+
+	static std::pair<std::optional<TextureVec2>, size_t> readAtlasXmlValueVec(const std::string& str, size_t i)
+	{
+		auto p = readAtlasXmlValueInt(str, i);
+		if (p.first < 0)
+		{
+			return { std::nullopt, std::string::npos };
+		}
+		TextureVec2 v = { p.first, 0 };
+		i = p.second;
+		if (i == std::string::npos)
+		{
+			return { v, i };
+		}
+		p = readAtlasXmlValueInt(str, i);
+		if (p.first < 0)
+		{
+			return { std::nullopt, std::string::npos };
+		}
+		v.y = p.first;
+		i = p.second;
+		return { v, i };
+	}
+
+	static TextureAtlasElement loadAtlasElement(pugi::xml_node& xml)
+	{
+		std::vector<TextureAtlasVertex> vertices;
+
+		std::string vertPosVals = xml.child("vertices").text().get();
+		std::string vertTexVals = xml.child("verticesUV").text().get();
+		size_t pi = 0, ti = 0;
+
+		while (pi != std::string::npos && ti != std::string::npos)
+		{
+			auto pp = readAtlasXmlValueVec(vertPosVals, pi);
+			if (!pp.first.has_value())
+			{
+				break;
+			}
+			auto tp = readAtlasXmlValueVec(vertTexVals, ti);
+			if (!tp.first.has_value())
+			{
+				break;
+			}
+			vertices.push_back({ pp.first.value(), tp.first.value() });
+			pi = pp.second;
+			ti = tp.second;
+		}
+
+		std::string vertIdxVals = xml.child("triangles").text().get();
+		size_t ii = 0;
+		std::vector<TextureAtlasVertexIndex> indices;
+		while (ii != std::string::npos)
+		{
+			auto p = readAtlasXmlValueInt(vertIdxVals, ii);
+			if (p.first < 0)
+			{
+				break;
+			}
+			indices.push_back(p.first);
+			ii = p.second;
+		}
+
+		return {
+			xml.attribute("n").value(), vertices, indices,
+			{ xml.attribute("x").as_int(), xml.attribute("y").as_int() },
+			{ xml.attribute("w").as_int(), xml.attribute("h").as_int() },
+			{ xml.attribute("oX").as_int(), xml.attribute("oY").as_int() },
+			{ xml.attribute("oW").as_int(), xml.attribute("oH").as_int() },
+			{ xml.attribute("pX").as_int(), xml.attribute("pY").as_int() },
+			xml.attribute("r").value() == "y"
+		};
+	}
+
+	TextureAtlas AssetContextImpl::loadAtlas(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	{
+		TextureAtlas atlas;
+		auto data = loadData(filePath);
+		pugi::xml_document doc;
+		auto result = doc.load_buffer_inplace(data.ptr(), data.size());
+		if (result.status != pugi::status_ok)
+		{
+			throw std::runtime_error(result.description());
+		}
+		auto atlasXml = doc.child("TextureAtlas");
+		atlas.name = atlasXml.attribute("imagePath").value();
+		atlas.size.x = atlasXml.attribute("width").as_int();
+		atlas.size.y = atlasXml.attribute("height").as_int();
+		const char* spriteTag = "sprite";
+		for (pugi::xml_node spriteXml = atlasXml.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
+		{
+			atlas.elements.push_back(loadAtlasElement(spriteXml));
+		}
+
+		std::string atlasTexturePath = atlas.name;
+		bx::FilePath fp(atlasTexturePath.c_str());
+		if (fp.getPath().isEmpty())
+		{
+			fp.set(filePath.c_str());
+			std::string basePath(fp.getPath().getPtr(), fp.getPath().getLength());
+			atlasTexturePath = basePath + atlasTexturePath;
+		}
+		atlas.texture = loadTexture(atlasTexturePath, dstFormat);
+
+		return atlas;
+	}
+
+	AssetContext& AssetContext::get() noexcept
 	{
 		static AssetContext instance;
 		return instance;
 	}
 
-	AssetContext::AssetContext()
+	AssetContext::AssetContext() noexcept
 		: _impl(std::make_unique<AssetContextImpl>())
 	{
 	}
@@ -293,17 +437,22 @@ namespace darmok
 		return _impl->loadTextureWithInfo(name, flags);
 	}
 
-	std::shared_ptr<Image> AssetContext::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	Image AssetContext::loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
 	{
 		return _impl->loadImage(filePath, dstFormat);
 	}
 
-	AssetContextImpl& AssetContext::getImpl()
+	TextureAtlas AssetContext::loadAtlas(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	{
+		return _impl->loadAtlas(filePath, dstFormat);
+	}
+
+	AssetContextImpl& AssetContext::getImpl() noexcept
 	{
 		return *_impl;
 	}
 
-	const AssetContextImpl& AssetContext::getImpl() const
+	const AssetContextImpl& AssetContext::getImpl() const noexcept
 	{
 		return *_impl;
 	}

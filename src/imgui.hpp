@@ -3,7 +3,6 @@
 #include <darmok/input.hpp>
 
 #include <dear-imgui/imgui.h>
-#include <bgfx/embedded_shader.h>
 #include <bx/bx.h>
 
 namespace darmok
@@ -44,7 +43,6 @@ namespace darmok
 
 		int _initCount;
 		bgfx::ProgramHandle _program;
-		static const bgfx::EmbeddedShader _embeddedShaders[];
 		bgfx::UniformHandle _imageLodEnabled;
 		bgfx::ProgramHandle _imageProgram;
 		bgfx::VertexLayout  _layout;

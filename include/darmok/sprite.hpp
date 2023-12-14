@@ -1,7 +1,9 @@
 #pragma once
 
 #include <darmok/scene.hpp>
+#include <darmok/asset.hpp>
 #include <glm/glm.hpp>
+#include <memory>
 
 namespace darmok
 {
@@ -12,35 +14,56 @@ namespace darmok
         Color color;
     };
 
-    class Sprite final
+    class TextureAtlas;
+    class TextureAtlasElement;
+
+    class SpriteData final
     {
     public:
-        Sprite(const bgfx::TextureHandle& texture, const glm::vec2& size, const Color& color = Colors::white);
-        Sprite(const bgfx::TextureHandle& texture, std::vector<SpriteVertex>&& vertex, std::vector<VertexIndex>&& indices);
-        ~Sprite();
+        SpriteData(const bgfx::TextureHandle& texture, std::vector<SpriteVertex>&& vertex, std::vector<VertexIndex>&& indices) noexcept;
+        ~SpriteData() noexcept;
+        SpriteData(SpriteData&& other) noexcept;
+        SpriteData& operator=(SpriteData&& other) noexcept;
 
-        void render(bgfx::Encoder& encoder) const;
+        static std::shared_ptr<SpriteData> fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, const Color& color = Colors::white);
+        static std::shared_ptr<SpriteData> fromTexture(const bgfx::TextureHandle& texture, const glm::vec2& size, const Color& color = Colors::white);
+
+        const bgfx::TextureHandle& getTexture() const;
+        const bgfx::VertexBufferHandle& getVertexBuffer() const;
+        const bgfx::IndexBufferHandle& getIndexBuffer() const;
     private:
+        SpriteData(const SpriteData& other) = delete;
+        SpriteData& operator=(const SpriteData& other) = delete;
+        void resetBuffers();
+
         bgfx::TextureHandle _texture;
         bgfx::VertexBufferHandle _vertexBuffer = { bgfx::kInvalidHandle };
         bgfx::IndexBufferHandle  _indexBuffer = { bgfx::kInvalidHandle };
         std::vector<SpriteVertex> _vertices;
         std::vector<VertexIndex> _indices;
-        uint8_t _textureUnit;
-        uint8_t _vertexStream;
 
-        static bgfx::VertexLayout  _layout;
-        static bgfx::VertexLayout createVertexLayout();
-        void resetVertexBuffer();
-        void resetIndexBuffer();
-        void setVertices(std::vector<SpriteVertex>&& vertices);
-        void setIndices(std::vector<VertexIndex>&& idx);
+        static const bgfx::VertexLayout& getVertexLayout();
     };
 
-    class SpriteRenderer final : public IEntityRenderer
+    class Sprite final
     {
     public:
-        bool render(bgfx::Encoder& encoder, Entity& entity, Registry& registry) override;
+        Sprite(const std::shared_ptr<SpriteData>& data);
+        const SpriteData& getData() const;
+    private:
+        std::shared_ptr<SpriteData> _data;
+    };
+
+    class SpriteRenderer final : public ISceneRenderer
+    {
+    public:
+        SpriteRenderer(bgfx::ProgramHandle program = { bgfx::kInvalidHandle });
+        ~SpriteRenderer();
+        void init();
+        void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry) override;
+    private:
+        bgfx::ProgramHandle _program;
+        bgfx::UniformHandle _texColorUniforn;
     };
 
 }

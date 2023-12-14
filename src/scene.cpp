@@ -42,6 +42,7 @@ namespace darmok
         return _pivot;
     }
 
+
     bool Transform::setPosition(const glm::vec3& v)
     {
         if (v == _position)
@@ -95,7 +96,6 @@ namespace darmok
         _matrix = glm::translate(-_pivot)
             * glm::scale(_scale)
             * glm::eulerAngleYXZ(_rotation.y, _rotation.x, _rotation.z)
-            * glm::translate(_pivot)
             * glm::translate(_position);
         _changed = false;
         return true;
@@ -112,6 +112,18 @@ namespace darmok
         return _matrix;
     }
 
+    bool Transform::bgfxConfig(Entity entity, bgfx::Encoder& encoder, Registry& registry)
+    {
+        auto trans = registry.try_get<Transform>(entity);
+        if (trans == nullptr)
+        {
+            return false;
+        }
+        auto& mtx = trans->getMatrix();
+        encoder.setTransform(glm::value_ptr(mtx));
+        return true;
+    }
+
     const uint8_t Colors::maxValue = 255;
     const Color Colors::black = { 0, 0, 0, maxValue };
     const Color Colors::white = { maxValue, maxValue, maxValue, maxValue };
@@ -119,50 +131,6 @@ namespace darmok
     const Color Colors::green = { 0, maxValue, 0, maxValue };
     const Color Colors::blue = { 0, 0, maxValue, maxValue };
 
-    Program::Program(const bgfx::ProgramHandle& handle)
-        : _handle(handle)
-    {
-    }
-
-    const bgfx::ProgramHandle& Program::getHandle() const
-    {
-        return _handle;
-    }
-
-    void Program::setHandle(const bgfx::ProgramHandle& handle)
-    {
-        _handle = handle;
-    }
-
-    Blend::Blend(uint64_t src, uint64_t dst)
-        : _src(src), _dst(dst)
-    {
-    }
-
-    uint64_t Blend::getState() const
-    {
-        return BGFX_STATE_BLEND_FUNC(_src, _dst);
-    }
-
-    uint64_t Blend::getSource() const
-    {
-        return _src;
-    }
-
-    uint64_t Blend::getDestination() const
-    {
-        return _dst;
-    }
-
-    void Blend::setSource(uint64_t src)
-    {
-        _src = src;
-    }
-
-    void Blend::setDestination(uint64_t dst)
-    {
-        _dst = dst;
-    }
 
     ViewRect::ViewRect(const ViewVec& size, const ViewVec& origin)
         : _size(size), _origin(origin)
@@ -189,7 +157,7 @@ namespace darmok
         return _origin;
     }
 
-    void ViewRect::render(bgfx::ViewId viewId) const
+    void ViewRect::bgfxConfig(bgfx::ViewId viewId) const
     {
         bgfx::setViewRect(viewId, _origin.x, _origin.y, _size.x, _size.y);
     }
@@ -209,43 +177,27 @@ namespace darmok
         _matrix = matrix;
     }
 
-    const uint64_t SceneImpl::defaultRenderState = 0
-        | BGFX_STATE_WRITE_RGB
-        | BGFX_STATE_WRITE_A
-        | BGFX_STATE_WRITE_Z
-        | BGFX_STATE_MSAA
-    ;
-
-    const uint8_t SceneImpl::defaultRenderDiscard = 0
-        | BGFX_STATE_WRITE_RGB
-        | BGFX_STATE_WRITE_A
-        | BGFX_STATE_WRITE_Z
-        | BGFX_STATE_MSAA
-        ;
-
-    // TODO: check if these parameters would be better passed to the render method
-    SceneImpl::SceneImpl(const bgfx::ProgramHandle& program, uint64_t renderState, uint32_t renderDepth, uint8_t renderDiscard)
-        : _program(program)
-        , _renderState(renderState)
-        , _renderDepth(renderDepth)
-        , _renderDiscard(renderDiscard)
+    SceneImpl::SceneImpl()
+        : _init(false)
     {
     }
 
-    void SceneImpl::addRenderer(std::unique_ptr<IEntityRenderer>&& renderer)
+    void SceneImpl::addRenderer(std::unique_ptr<ISceneRenderer>&& renderer)
     {
+        if (_init)
+        {
+            renderer->init();
+        }
         _renderers.push_back(std::move(renderer));
     }
 
     void SceneImpl::addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater)
     {
+        if (_init)
+        {
+            updater->init();
+        }
         _logicUpdaters.push_back(std::move(updater));
-    }
-
-    const bgfx::UniformHandle&  SceneImpl::getTexColorUniform()
-    {
-        static bgfx::UniformHandle uniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
-        return uniform;
     }
 
     Registry& SceneImpl::getRegistry()
@@ -256,6 +208,19 @@ namespace darmok
     const Registry& SceneImpl::getRegistry() const
     {
         return _registry;
+    }
+
+    void SceneImpl::init()
+    {
+        for (auto& renderer : _renderers)
+        {
+            renderer->init();
+        }
+        for (auto& updater : _logicUpdaters)
+        {
+            updater->init();
+        }
+        _init = true;
     }
 
     void SceneImpl::updateLogic(float dt)
@@ -269,11 +234,11 @@ namespace darmok
     void SceneImpl::render(bgfx::ViewId viewId)
     {
         auto cams = _registry.view<const Camera>();
-        auto all = _registry.view<Entity>();
 
         bgfx::Encoder* encoder = bgfx::begin();
 
-        for (auto [entity, cam] : cams.each()) {
+        for (auto [entity, cam] : cams.each())
+        {
             auto& proj = cam.getMatrix();
             auto trans = _registry.try_get<Transform>(entity);
             const void* viewPtr = nullptr;
@@ -282,56 +247,23 @@ namespace darmok
                 viewPtr = glm::value_ptr(trans->getMatrix());
             }
             bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(proj));
+
             auto viewRect = _registry.try_get<const ViewRect>(entity);
             if (viewRect != nullptr)
             {
-                viewRect->render(viewId);
+                viewRect->bgfxConfig(viewId);
             }
 
-            for (auto [entity] : all.each())
+            for (auto& renderer : _renderers)
             {
-                auto rendered = false;
-                for (auto& renderer : _renderers)
-                {
-                    if (renderer->render(*encoder, entity, _registry))
-                    {
-                        rendered = true;
-                    }
-                }
-                if (!rendered)
-                {
-                    continue;
-                }
-
-                auto trans = _registry.try_get<Transform>(entity);
-                if (trans != nullptr)
-                {
-                    auto& mtx = trans->getMatrix();
-                    encoder->setTransform(glm::value_ptr(mtx));
-                }
-
-                auto state = _renderState;
-                auto blend = _registry.try_get<const Blend>(entity);
-                if (blend != nullptr)
-                {
-                    state |= blend->getState();
-                }
-                encoder->setState(state);
-
-                auto progamHandle = _program;
-                auto prog = _registry.try_get<const Program>(entity);
-                if (prog != nullptr)
-                {
-                    progamHandle = prog->getHandle();
-                }
-                encoder->submit(viewId, progamHandle, _renderDepth, _renderDiscard);
+                renderer->render(*encoder, viewId, _registry);
             }
         }
         bgfx::end(encoder);
     }
 
-    Scene::Scene(const bgfx::ProgramHandle& program)
-    : _impl(std::make_unique<SceneImpl>(program))
+    Scene::Scene()
+    : _impl(std::make_unique<SceneImpl>())
     {
     }
 
@@ -354,6 +286,11 @@ namespace darmok
         return _impl->getRegistry();
     }
 
+    void Scene::init()
+    {
+        _impl->init();
+    }
+
     void  Scene::updateLogic(float dt)
     {
         _impl->updateLogic(dt);
@@ -364,14 +301,9 @@ namespace darmok
         _impl->render(viewId);
     }
 
-    void Scene::addRenderer(std::unique_ptr<IEntityRenderer>&& renderer)
+    void Scene::addRenderer(std::unique_ptr<ISceneRenderer>&& renderer)
     {
         _impl->addRenderer(std::move(renderer));
-    }
-
-    SceneAppComponent::SceneAppComponent(const bgfx::ProgramHandle& program)
-        : _scene(program)
-    {
     }
 
     Scene& SceneAppComponent::getScene()
@@ -382,6 +314,11 @@ namespace darmok
     const Scene& SceneAppComponent::getScene() const
     {
         return _scene;
+    }
+
+    void SceneAppComponent::init()
+    {
+        _scene.init();
     }
 
     void SceneAppComponent::render(bgfx::ViewId viewId)

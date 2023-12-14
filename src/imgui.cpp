@@ -10,6 +10,7 @@
 #include <bgfx/embedded_shader.h>
 
 // shaders (using the ones in bgfx examples)
+#include <bgfx/embedded_shader.h>
 #include "imgui/vs_ocornut_imgui.bin.h"
 #include "imgui/fs_ocornut_imgui.bin.h"
 #include "imgui/vs_imgui_image.bin.h"
@@ -27,7 +28,7 @@ namespace darmok
 {
 	const uint8_t ImguiContext::AlphaBlendFlags = 0x01;
 
-	const bgfx::EmbeddedShader ImguiContext::_embeddedShaders[] =
+	static const bgfx::EmbeddedShader _imguiEmbeddedShaders[] =
 	{
 		BGFX_EMBEDDED_SHADER(vs_ocornut_imgui),
 		BGFX_EMBEDDED_SHADER(fs_ocornut_imgui),
@@ -194,15 +195,15 @@ namespace darmok
 
 		bgfx::RendererType::Enum type = bgfx::getRendererType();
 		_program = bgfx::createProgram(
-			bgfx::createEmbeddedShader(_embeddedShaders, type, "vs_ocornut_imgui")
-			, bgfx::createEmbeddedShader(_embeddedShaders, type, "fs_ocornut_imgui")
+			bgfx::createEmbeddedShader(_imguiEmbeddedShaders, type, "vs_ocornut_imgui")
+			, bgfx::createEmbeddedShader(_imguiEmbeddedShaders, type, "fs_ocornut_imgui")
 			, true
 		);
 
 		_imageLodEnabled = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
 		_imageProgram = bgfx::createProgram(
-			bgfx::createEmbeddedShader(_embeddedShaders, type, "vs_imgui_image")
-			, bgfx::createEmbeddedShader(_embeddedShaders, type, "fs_imgui_image")
+			bgfx::createEmbeddedShader(_imguiEmbeddedShaders, type, "vs_imgui_image")
+			, bgfx::createEmbeddedShader(_imguiEmbeddedShaders, type, "fs_imgui_image")
 			, true
 		);
 
