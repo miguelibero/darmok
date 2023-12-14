@@ -57,6 +57,9 @@ namespace darmok
 		std::string name;
 		bgfx::TextureHandle texture;
 		std::vector<TextureAtlasElement> elements;
+
+		TextureAtlasElement* getElement(const std::string& name);
+		const TextureAtlasElement* getElement(const std::string& name) const;
 	};
 
 	class AssetContext final
@@ -66,14 +69,16 @@ namespace darmok
 
 		bgfx::ShaderHandle loadShader(const std::string& name);
 		bgfx::ProgramHandle loadProgram(const std::string& vertexName, const std::string& fragmentName = "");
-		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE);
-		TextureWithInfo loadTextureWithInfo(const std::string& name, uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE);
+		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags = _defaultTextureFlags);
+		TextureWithInfo loadTextureWithInfo(const std::string& name, uint64_t flags = _defaultTextureFlags);
 		Image loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
-		TextureAtlas loadAtlas(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
+		TextureAtlas loadAtlas(const std::string& filePath, uint64_t flags = _defaultTextureFlags);
 
 		AssetContextImpl& getImpl() noexcept;
 		const AssetContextImpl& getImpl() const noexcept;
 	private:
+		static const uint64_t _defaultTextureFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
+
 		AssetContext() noexcept;
 
 		std::unique_ptr<AssetContextImpl> _impl;

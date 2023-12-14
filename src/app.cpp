@@ -34,6 +34,14 @@ namespace darmok
 	const float AppImpl::defaultTargetUpdateDeltaTime = 1.0f / 30.0f;
 	const int AppImpl::maxInstantLogicUpdates = 10;
 
+	float AppImpl::updateTimePassed()
+	{
+		int64_t now = bx::getHPCounter();
+		float timePassed = (now - _lastUpdate) / double(bx::getHPFrequency());
+		_lastUpdate = bx::getHPCounter();
+		return timePassed;
+	}
+
 	void AppImpl::init(App& app, const std::vector<std::string>& args, double targetUpdateDeltaTime)
 	{
 		_viewWindows.clear();

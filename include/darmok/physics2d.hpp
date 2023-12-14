@@ -9,8 +9,9 @@ namespace darmok
     class BoxCollider2D final
     {
     public:
-        BoxCollider2D(const glm::vec2& size);
+        BoxCollider2D(const glm::vec2& size = {});
         const glm::vec2& getSize() const;
+        void setSize(const glm::vec2& size);
     private:
         glm::vec2 _size;
     };

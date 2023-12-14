@@ -4,7 +4,6 @@
 #include <string>
 #include <cstdint>
 #include <map>
-#include <bx/timer.h>
 
 namespace darmok
 {
@@ -24,10 +23,7 @@ namespace darmok
 		template <typename F>
 		void update(const F& logicCallback)
 		{
-
-			int64_t now = bx::getHPCounter();
-			float timePassed = (now - _lastUpdate) / 1000000.0;
- 			_lastUpdate = bx::getHPCounter();
+			auto timePassed = updateTimePassed();
 
 			auto& win = WindowContext::get().getWindow();
 			if (win.isSuspended())
@@ -71,6 +67,8 @@ namespace darmok
 	private:
 
 		AppImpl();
+
+		float updateTimePassed();
 
 		void setCurrentDir(const std::string& dir);
 		void addBindings();

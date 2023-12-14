@@ -66,6 +66,7 @@ namespace darmok
 		other._ptr = nullptr;
 		other._size = 0;
 	}
+
 	Data& Data::operator=(Data&& other) noexcept
 	{
 		bx::free(_alloc, _ptr);
@@ -75,6 +76,30 @@ namespace darmok
 		other._ptr = nullptr;
 		other._size = 0;
 		return *this;
+	}
+
+	TextureAtlasElement* TextureAtlas::getElement(const std::string& name)
+	{
+		for (auto& elm : elements)
+		{
+			if (elm.name == name)
+			{
+				return &elm;
+			}
+		}
+		return nullptr;
+	}
+
+	const TextureAtlasElement* TextureAtlas::getElement(const std::string& name) const
+	{
+		for (auto& elm : elements)
+		{
+			if (elm.name == name)
+			{
+				return &elm;
+			}
+		}
+		return nullptr;
 	}
 
 	bx::FileReaderI* AssetContextImpl::getFileReader() noexcept
@@ -361,7 +386,6 @@ namespace darmok
 			indices.push_back(p.first);
 			ii = p.second;
 		}
-
 		return {
 			xml.attribute("n").value(), vertices, indices,
 			{ xml.attribute("x").as_int(), xml.attribute("y").as_int() },
@@ -369,11 +393,11 @@ namespace darmok
 			{ xml.attribute("oX").as_int(), xml.attribute("oY").as_int() },
 			{ xml.attribute("oW").as_int(), xml.attribute("oH").as_int() },
 			{ xml.attribute("pX").as_int(), xml.attribute("pY").as_int() },
-			xml.attribute("r").value() == "y"
+			std::string(xml.attribute("r").value()) == "y"
 		};
 	}
 
-	TextureAtlas AssetContextImpl::loadAtlas(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	TextureAtlas AssetContextImpl::loadAtlas(const std::string& filePath, uint64_t flags)
 	{
 		TextureAtlas atlas;
 		auto data = loadData(filePath);
@@ -387,7 +411,7 @@ namespace darmok
 		atlas.name = atlasXml.attribute("imagePath").value();
 		atlas.size.x = atlasXml.attribute("width").as_int();
 		atlas.size.y = atlasXml.attribute("height").as_int();
-		const char* spriteTag = "sprite";
+		static const char* spriteTag = "sprite";
 		for (pugi::xml_node spriteXml = atlasXml.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
 		{
 			atlas.elements.push_back(loadAtlasElement(spriteXml));
@@ -401,7 +425,7 @@ namespace darmok
 			std::string basePath(fp.getPath().getPtr(), fp.getPath().getLength());
 			atlasTexturePath = basePath + atlasTexturePath;
 		}
-		atlas.texture = loadTexture(atlasTexturePath, dstFormat);
+		atlas.texture = loadTexture(atlasTexturePath, flags);
 
 		return atlas;
 	}
@@ -442,9 +466,9 @@ namespace darmok
 		return _impl->loadImage(filePath, dstFormat);
 	}
 
-	TextureAtlas AssetContext::loadAtlas(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat)
+	TextureAtlas AssetContext::loadAtlas(const std::string& filePath, uint64_t flags)
 	{
-		return _impl->loadAtlas(filePath, dstFormat);
+		return _impl->loadAtlas(filePath, flags);
 	}
 
 	AssetContextImpl& AssetContext::getImpl() noexcept

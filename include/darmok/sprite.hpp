@@ -48,8 +48,9 @@ namespace darmok
     class Sprite final
     {
     public:
-        Sprite(const std::shared_ptr<SpriteData>& data);
-        const SpriteData& getData() const;
+        Sprite(const std::shared_ptr<SpriteData>& data = nullptr);
+        const std::shared_ptr<SpriteData>& getData() const;
+        void setData(const std::shared_ptr<SpriteData>& data);
     private:
         std::shared_ptr<SpriteData> _data;
     };

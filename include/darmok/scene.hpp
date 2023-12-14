@@ -43,6 +43,12 @@ namespace darmok
             return getRegistry().emplace<T, A...>(entity, std::forward<A>(args)...);
         }
 
+        template<typename T>
+        T& getComponent(const Entity entity)
+        {
+            return getRegistry().get<T>(entity);
+        }
+
         template<typename T, typename... A>
         T& addRenderer(A&&... args)
         {

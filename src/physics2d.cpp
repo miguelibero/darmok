@@ -17,6 +17,10 @@ namespace darmok
         return _size;
     }
 
+    void BoxCollider2D::setSize(const glm::vec2& size)
+    {
+        _size = size;
+    }
 
      Physics2DDebugRenderer::Physics2DDebugRenderer(const Color& color)
         : _color(color)

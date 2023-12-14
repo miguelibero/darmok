@@ -93,10 +93,11 @@ namespace darmok
         {
             return false;
         }
-        _matrix = glm::translate(-_pivot)
-            * glm::scale(_scale)
+        _matrix = glm::translate(_position)
             * glm::eulerAngleYXZ(_rotation.y, _rotation.x, _rotation.z)
-            * glm::translate(_position);
+            * glm::scale(_scale)
+            * glm::translate(-_pivot)
+            ;
         _changed = false;
         return true;
     }

@@ -34,22 +34,21 @@ namespace darmok
         for (auto& vtx : element.vertices)
         {
             vertices.push_back({
-                glm::vec2(vtx.position.x, element.originalSize.y - vtx.position.y),
+                vtx.position,
                 glm::vec2(vtx.texCoord) / atlasSize,
                 color
             });
         }
-        // TODO: check rotated
         return std::make_shared<SpriteData>(atlas.texture, std::move(vertices), std::vector<VertexIndex>(element.indices));
     }
 
     std::shared_ptr<SpriteData> SpriteData::fromTexture(const bgfx::TextureHandle& texture, const glm::vec2& size, const Color& color)
     {
         return std::make_shared<SpriteData>(texture, std::vector<SpriteVertex>{
-                SpriteVertex{ {0.f, 0.f},       {0.f, 1.f}, color },
-                SpriteVertex{ {size.x, 0.f},    {1.f, 1.f}, color },
-                SpriteVertex{ size,             {1.f, 0.f}, color },
-                SpriteVertex{ {0.f, size.y},    {0.f, 0.f}, color },
+                SpriteVertex{ {0.f, 0.f},       {0.f, 0.f}, color },
+                SpriteVertex{ {size.x, 0.f},    {1.f, 0.f}, color },
+                SpriteVertex{ size,             {1.f, 1.f}, color },
+                SpriteVertex{ {0.f, size.y},    {0.f, 1.f}, color },
             }, std::vector<VertexIndex>{ 0, 1, 2, 2, 3, 0 });
     }
 
@@ -116,9 +115,14 @@ namespace darmok
     {
     }
 
-    const SpriteData& Sprite::getData() const
+    const std::shared_ptr<SpriteData>& Sprite::getData() const
     {
-        return *_data;
+        return _data;
+    }
+
+    void Sprite::setData(const std::shared_ptr<SpriteData>& data)
+    {
+        _data = data;
     }
 
     SpriteRenderer::SpriteRenderer(bgfx::ProgramHandle program)
@@ -160,11 +164,15 @@ namespace darmok
         const auto vertexStream = 0;
         for (auto [entity, sprite] : sprites.each())
         {
-            Transform::bgfxConfig(entity, encoder, registry);
             auto& data = sprite.getData();
-            encoder.setTexture(textureUnit, _texColorUniforn, data.getTexture());
-            encoder.setVertexBuffer(vertexStream, data.getVertexBuffer());
-            encoder.setIndexBuffer(data.getIndexBuffer());
+            if (data == nullptr)
+            {
+                continue;
+            }
+            Transform::bgfxConfig(entity, encoder, registry);
+            encoder.setTexture(textureUnit, _texColorUniforn, data->getTexture());
+            encoder.setVertexBuffer(vertexStream, data->getVertexBuffer());
+            encoder.setIndexBuffer(data->getIndexBuffer());
             // TODO: configure state
             uint64_t state = BGFX_STATE_WRITE_RGB
                 | BGFX_STATE_WRITE_A
