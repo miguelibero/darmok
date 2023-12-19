@@ -1,14 +1,38 @@
 #include "asset.hpp"
-#include <stdexcept>
-#include <optional>
-#include <bimg/decode.h>
-#include <pugixml.hpp>
+
 #include <darmok/asset.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/model.hpp>
+
+#include <stdexcept>
+#include <optional>
+
 #include <bx/filepath.h>
+#include <bimg/decode.h>
+
+#include <pugixml.hpp>
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 namespace darmok
 {
+	static std::string addBasePath(const std::string& path, const std::string& basePath, const std::string& currentPath = "")
+	{
+		const char sep = '/';
+		auto npath = path;
+		if (npath.find(sep) == std::string::npos)
+		{
+			npath = currentPath + path;
+		}
+		if (!path.starts_with(sep))
+		{
+			npath = basePath + npath;
+		}
+		return npath;
+	}
+
 	void FileReader::setBasePath(const std::string& basePath)
 	{
 		_basePath = basePath;
@@ -16,7 +40,7 @@ namespace darmok
 
 	bool FileReader::open(const bx::FilePath& filePath, bx::Error* err)
 	{
-		auto absFilePath = _basePath + filePath.getCPtr();
+		auto absFilePath = addBasePath(filePath.getCPtr(), _basePath);
 		return super::open(absFilePath.c_str(), err);
 	}
 
@@ -27,7 +51,7 @@ namespace darmok
 
 	bool FileWriter::open(const bx::FilePath& filePath, bool append, bx::Error* err)
 	{
-		auto absFilePath = _basePath + filePath.getCPtr();
+		auto absFilePath = addBasePath(filePath.getCPtr(), _basePath);
 		return super::open(absFilePath.c_str(), append, err);
 	}
 
@@ -78,6 +102,28 @@ namespace darmok
 		return *this;
 	}
 
+	TextureBounds TextureAtlasElement::getBounds() const
+	{
+		return {
+			originalSize,
+			originalPosition
+		};
+	}
+
+	TextureBounds TextureAtlas::getBounds(const std::string& prefix) const
+	{
+		TextureBounds bounds{};
+		for (auto& elm : elements)
+		{
+			if (elm.name.starts_with(prefix))
+			{
+				// TODO: algorithm to combine bounds
+				bounds = elm.getBounds();
+			}
+		}
+		return bounds;
+	}
+
 	TextureAtlasElement* TextureAtlas::getElement(const std::string& name)
 	{
 		for (auto& elm : elements)
@@ -115,6 +161,13 @@ namespace darmok
 	bx::AllocatorI* AssetContextImpl::getAllocator() noexcept
 	{
 		return &_allocator;
+	}
+
+	void AssetContextImpl::setBasePath(const std::string& path)
+	{
+		_fileWriter.setBasePath(path);
+		_fileReader.setBasePath(path);
+		_basePath = path;
 	}
 
 	Data AssetContextImpl::loadData(const std::string& filePath)
@@ -417,17 +470,33 @@ namespace darmok
 			atlas.elements.push_back(loadAtlasElement(spriteXml));
 		}
 
-		std::string atlasTexturePath = atlas.name;
-		bx::FilePath fp(atlasTexturePath.c_str());
-		if (fp.getPath().isEmpty())
-		{
-			fp.set(filePath.c_str());
-			std::string basePath(fp.getPath().getPtr(), fp.getPath().getLength());
-			atlasTexturePath = basePath + atlasTexturePath;
-		}
+		bx::FilePath fp(filePath.c_str());
+		std::string currPath(fp.getPath().getPtr(), fp.getPath().getLength());
+		
+		std::string atlasTexturePath = addBasePath(atlas.name, _basePath, currPath);
 		atlas.texture = loadTexture(atlasTexturePath, flags);
 
 		return atlas;
+	}
+
+	Model AssetContextImpl::loadModel(const std::string& filePath)
+	{
+		Assimp::Importer importer;
+
+		std::string path = addBasePath(filePath, _basePath);
+
+		const aiScene* scene = importer.ReadFile(path,
+			aiProcess_CalcTangentSpace |
+			aiProcess_Triangulate |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_SortByPType);
+
+		if (nullptr == scene)
+		{
+			throw std::runtime_error(importer.GetErrorString());
+		}
+
+		return Model(scene);
 	}
 
 	AssetContext& AssetContext::get() noexcept
@@ -469,6 +538,16 @@ namespace darmok
 	TextureAtlas AssetContext::loadAtlas(const std::string& filePath, uint64_t flags)
 	{
 		return _impl->loadAtlas(filePath, flags);
+	}
+
+	Model AssetContext::loadModel(const std::string& filePath)
+	{
+		return _impl->loadModel(filePath);
+	}
+
+	void AssetContext::setBasePath(const std::string& path)
+	{
+		_impl->setBasePath(path);
 	}
 
 	AssetContextImpl& AssetContext::getImpl() noexcept

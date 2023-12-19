@@ -59,7 +59,7 @@ function(darmok_compile_shader)
         # Build output targets and their commands
         set(OUTPUTS "")
         set(COMMANDS "")
-        set(COMBINED_CONTENT "")
+        set(COMBINED_INCLUDES "")
         foreach(PROFILE ${PROFILES})
             _bgfx_get_profile_ext(${PROFILE} PROFILE_EXT)
             set(OUTPUT_FILE ${SHADER_FILE_NAME_WE}.${PROFILE_EXT}.${OUTPUT_EXT})
@@ -83,23 +83,25 @@ function(darmok_compile_shader)
             list(APPEND ALL_OUTPUTS ${OUTPUT})
             list(APPEND COMMANDS COMMAND bgfx::shaderc ${CLI})
             if(ARGS_HEADER)
-                set(COMBINED_CONTENT "${COMBINED_CONTENT}\n#include \"${ARGS_OUTPUT_DIR}/${OUTPUT_FILE}\"")
+                list(APPEND COMBINED_INCLUDES ${ARGS_OUTPUT_DIR}/${OUTPUT_FILE})
             endif()
         endforeach()
 
         if(ARGS_HEADER)
-            set(OUTPUT ${ABS_OUTPUT_DIR}/${SHADER_FILE_NAME_WE}.${OUTPUT_EXT})
-            file(WRITE ${OUTPUT} ${COMBINED_CONTENT})
-            list(APPEND OUTPUTS ${OUTPUT})
-            list(APPEND ALL_OUTPUTS ${OUTPUT})
+            set(COMBINED_OUTPUT ${ABS_OUTPUT_DIR}/${SHADER_FILE_NAME_WE}.${OUTPUT_EXT})
+            list(APPEND OUTPUTS ${COMBINED_OUTPUT})
+            list(APPEND ALL_OUTPUTS ${COMBINED_OUTPUT})
+            string(REPLACE ";" "$<SEMICOLON>" GENERATOR_COMBINED_INCLUDES "${COMBINED_INCLUDES}")
+            list(APPEND COMMANDS COMMAND ${CMAKE_COMMAND} -D INCLUDES=${GENERATOR_COMBINED_INCLUDES} -D OUTPUT="${COMBINED_OUTPUT}" -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/genCombinedHeader.cmake)
         endif()
 
         add_custom_command(
             OUTPUT ${OUTPUTS}
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${ARGS_OUTPUT_DIR} ${COMMANDS}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${ABS_OUTPUT_DIR} ${COMMANDS}
             MAIN_DEPENDENCY ${SHADER_FILE_ABSOLUTE}
             DEPENDS ${ARGS_VARYING_DEF}
         )
+
     endforeach()
 
     if(DEFINED ARGS_OUT_FILES_VAR)

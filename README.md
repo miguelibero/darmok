@@ -2,7 +2,7 @@ darmok
 ====
 
 
-![Dathon trying to explain the importance of Darmok](icon.jpg)
+![Dathon trying to explain the importance of Darmok](logo.png)
 
 C++ game engine combining libraries & tools that I like
 

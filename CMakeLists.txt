@@ -46,14 +46,33 @@ darmok_compile_shader(
   BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
   OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
 )
+darmok_compile_shader(
+  TYPE VERTEX HEADER
+  SHADERS ${SHADERS_DIR}/basic_vertex.sc
+  VARYING_DEF ${SHADERS_DIR}/basic_varyingdef.sc
+  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
+  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
+)
+darmok_compile_shader(
+  TYPE FRAGMENT HEADER
+  SHADERS ${SHADERS_DIR}/basic_fragment.sc
+  VARYING_DEF ${SHADERS_DIR}/basic_varyingdef.sc
+  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
+  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
+)
 
 set(shaders
-  ${SHADERS_DIR}/sprite_vertex.sc
-  ${SHADERS_DIR}/sprite_varyingdef.sc
-  ${SHADERS_DIR}/sprite_fragment.sc
   ${SHADERS_DIR}/debug_vertex.sc
   ${SHADERS_DIR}/debug_varyingdef.sc
   ${SHADERS_DIR}/debug_fragment.sc
+
+  ${SHADERS_DIR}/sprite_vertex.sc
+  ${SHADERS_DIR}/sprite_varyingdef.sc
+  ${SHADERS_DIR}/sprite_fragment.sc
+
+  ${SHADERS_DIR}/basic_vertex.sc
+  ${SHADERS_DIR}/basic_varyingdef.sc
+  ${SHADERS_DIR}/basic_fragment.sc
 )
 
 set(sources
@@ -69,6 +88,9 @@ set(sources
   ${SRC_DIR}/sprite.cpp
   ${SRC_DIR}/anim.cpp
   ${SRC_DIR}/physics2d.cpp
+  ${SRC_DIR}/model.cpp
+  ${SRC_DIR}/data.cpp
+  ${SRC_DIR}/mesh.cpp
 )
 
 set(headers
@@ -82,6 +104,9 @@ set(headers
   ${INCLUDE_DIR}/sprite.hpp
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/physics2d.hpp
+  ${INCLUDE_DIR}/model.hpp
+  ${INCLUDE_DIR}/data.hpp
+  ${INCLUDE_DIR}/mesh.hpp
 )
 
 set(LIB_NAME darmok)

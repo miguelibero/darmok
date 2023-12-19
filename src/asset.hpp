@@ -50,6 +50,7 @@ namespace darmok
 	class Image;
 	struct TextureWithInfo;
 	struct TextureAtlas;
+	class Model;
 
 	class AssetContextImpl final
 	{
@@ -60,8 +61,10 @@ namespace darmok
 		TextureWithInfo loadTextureWithInfo(const std::string& name, uint64_t flags);
 		Image loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
 		TextureAtlas loadAtlas(const std::string& filePath, uint64_t flags);
+		Model loadModel(const std::string& filePath);
 
 		bx::AllocatorI* getAllocator() noexcept;
+		void setBasePath(const std::string& path);
 	private:
 
 		TextureWithInfo loadTexture(const std::string& filePath, uint64_t flags, bool loadInfo);
@@ -69,6 +72,7 @@ namespace darmok
 		FileReader _fileReader;
 		FileWriter _fileWriter;
 		bx::DefaultAllocator _allocator;
+		std::string _basePath;
 
 		Data loadData(const std::string& filePath);
 		const bgfx::Memory* loadMem(const std::string& filePath);

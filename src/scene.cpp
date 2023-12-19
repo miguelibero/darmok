@@ -10,15 +10,24 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace darmok
 {
-    Transform::Transform(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale, const glm::vec3& pivot)
+    Transform::Transform(const glm::mat4x4& mat, Transform* parent)
+        : _changed(false)
+        , _parent(parent)
+    {
+        setMatrix(mat);
+    }
+
+    Transform::Transform(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale, const glm::vec3& pivot, Transform* parent)
         : _position(position)
         , _rotation(rotation)
         , _scale(scale)
         , _pivot(pivot)
         , _changed(true)
+        , _parent(parent)
     {
     }
 
@@ -42,6 +51,20 @@ namespace darmok
         return _pivot;
     }
 
+    const Transform* Transform::getParent() const
+    {
+        return _parent;
+    }
+
+    Transform* Transform::getParent()
+    {
+        return _parent;
+    }
+
+    void Transform::setParent(Transform* parent)
+    {
+        _parent = parent;
+    }
 
     bool Transform::setPosition(const glm::vec3& v)
     {
@@ -94,12 +117,36 @@ namespace darmok
             return false;
         }
         _matrix = glm::translate(_position)
-            * glm::eulerAngleYXZ(_rotation.y, _rotation.x, _rotation.z)
+            * glm::eulerAngleYXZ(glm::radians(_rotation.y), glm::radians(_rotation.x), glm::radians(_rotation.z))
             * glm::scale(_scale)
             * glm::translate(-_pivot)
             ;
+        if (_parent != nullptr)
+        {
+            _parent->update();
+            _matrix = _parent->getMatrix() * _matrix;
+        }
+
         _changed = false;
         return true;
+    }
+
+    void Transform::setMatrix(const glm::mat4x4& v)
+    {
+        glm::quat rotation;
+        glm::vec3 skew;
+        glm::vec4 perspective;
+        glm::decompose(v, _scale, rotation, _position, skew, perspective);
+        rotation = glm::conjugate(rotation);
+
+        float yaw = 0;
+        float pitch = 0;
+        float roll = 0;
+        glm::extractEulerAngleYXZ(glm::mat4_cast(rotation), yaw, pitch, roll);
+        _rotation = { glm::degrees(pitch), glm::degrees(yaw), glm::degrees(roll) };
+
+        _matrix = v;
+        _changed = false;
     }
 
     const glm::mat4x4& Transform::getMatrix()
@@ -187,7 +234,7 @@ namespace darmok
     {
         if (_init)
         {
-            renderer->init();
+            renderer->init(_registry);
         }
         _renderers.push_back(std::move(renderer));
     }
@@ -196,7 +243,7 @@ namespace darmok
     {
         if (_init)
         {
-            updater->init();
+            updater->init(_registry);
         }
         _logicUpdaters.push_back(std::move(updater));
     }
@@ -215,11 +262,11 @@ namespace darmok
     {
         for (auto& renderer : _renderers)
         {
-            renderer->init();
+            renderer->init(_registry);
         }
         for (auto& updater : _logicUpdaters)
         {
-            updater->init();
+            updater->init(_registry);
         }
         _init = true;
     }
@@ -228,7 +275,7 @@ namespace darmok
     {
         for (auto& updater : _logicUpdaters)
         {
-            updater->updateLogic(_registry);
+            updater->updateLogic(dt, _registry);
         }
     }
 
@@ -305,6 +352,11 @@ namespace darmok
     void Scene::addRenderer(std::unique_ptr<ISceneRenderer>&& renderer)
     {
         _impl->addRenderer(std::move(renderer));
+    }
+
+    void Scene::addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater)
+    {
+        _impl->addLogicUpdater(std::move(updater));
     }
 
     Scene& SceneAppComponent::getScene()

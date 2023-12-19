@@ -18,7 +18,7 @@ namespace darmok
     {
     public:
         virtual ~ISceneRenderer() = default;
-        virtual void init() {};
+        virtual void init(Registry& registry) {};
         virtual void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry) = 0;
     };
 
@@ -26,8 +26,8 @@ namespace darmok
     {
     public:
         virtual ~ISceneLogicUpdater() = default;
-        virtual void init() {};
-        virtual void updateLogic(Registry& registry) = 0;
+        virtual void init(Registry& registry) {};
+        virtual void updateLogic(float dt, Registry& registry) = 0;
     };
 
     class Scene final
@@ -84,19 +84,26 @@ namespace darmok
     class Transform final
     {
     public:
-        Transform(const glm::vec3& position = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3());
+        static constexpr auto in_place_delete = true;
+
+        Transform(const glm::mat4x4& mat, Transform* parent = nullptr);
+        Transform(const glm::vec3& position = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3(), Transform* parent = nullptr);
     
         const glm::vec3& getPosition() const;
         const glm::vec3& getRotation() const;
         const glm::vec3& getScale() const;
         const glm::vec3& getPivot() const;
+        Transform* getParent();
+        const Transform* getParent() const;
 
         bool setPosition(const glm::vec3& v);
         bool setRotation(const glm::vec3& v);
         bool setScale(const glm::vec3& v);
         bool setPivot(const glm::vec3& v);
+        void setParent(Transform* parent);
 
         bool update();
+        void setMatrix(const glm::mat4x4& v);
         const glm::mat4x4& getMatrix();
         const glm::mat4x4& getMatrix() const;
 
@@ -109,6 +116,7 @@ namespace darmok
         glm::vec3 _scale;
         glm::vec3 _pivot;
         glm::mat4x4 _matrix;
+        Transform* _parent;
     };
 
     typedef std::array<uint8_t, 4> Color;
@@ -122,8 +130,6 @@ namespace darmok
         static const Color green;
         static const Color blue;
     };
-
-    typedef uint16_t VertexIndex;
 
     typedef glm::vec<2, uint16_t> ViewVec;
 

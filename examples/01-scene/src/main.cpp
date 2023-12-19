@@ -20,35 +20,35 @@ namespace
 			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
 			scene.addRenderer<darmok::SpriteRenderer>();
 			scene.addRenderer<darmok::Physics2DDebugRenderer>();
+			scene.addLogicUpdater<darmok::SpriteAnimationUpdater>();
 
 			auto tex = darmok::AssetContext::get().loadTexture("assets/darmok.jpg");
 			
 			auto camEntity = scene.createEntity();
 			_cam = &scene.addComponent<darmok::Camera>(camEntity);
 			
-			auto atlas = darmok::AssetContext::get().loadAtlas("assets/warrior-0.xml");
-
+			// bouncing sprite
 			auto spriteEntity = scene.createEntity();
 			_spriteTrans = &scene.addComponent<darmok::Transform>(spriteEntity);
 			scene.addComponent<darmok::Sprite>(spriteEntity, darmok::SpriteData::fromTexture(tex, _spriteSize));
-			
-			_spriteDir = { 1, 1 };
-			_spriteDir *= 20.f;
 
-			auto atlasSpriteEntity = scene.createEntity();
-			_atlasSpriteTrans = &scene.addComponent<darmok::Transform>(atlasSpriteEntity);
-			auto& atlasElm = atlas.elements[2];
-			scene.addComponent<darmok::Sprite>(atlasSpriteEntity, darmok::SpriteData::fromAtlas(atlas, atlasElm));
-			scene.addComponent<darmok::BoxCollider2D>(atlasSpriteEntity, atlasElm.originalSize);
-			//_atlasSpriteTrans->setPivot(glm::vec3(atlasElm.originalSize, 0) / 2.f);
-			_atlasSpriteTrans->setScale(glm::vec3(4));
-			_atlasSpriteTrans->setPosition(glm::vec3(10));
+			_spriteDir = { 1, 1 };
+			_spriteDir *= 80.f;
+
+			// sprite animation
+			auto texAtlas = darmok::AssetContext::get().loadAtlas("assets/warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
+			static const std::string animNamePrefix = "Attack/";
+			auto animBounds = texAtlas.getBounds(animNamePrefix);
+			auto animEntity = scene.createEntity();
+			scene.addComponent<darmok::Sprite>(animEntity, darmok::SpriteAnimation::fromAtlas(texAtlas, animNamePrefix));
+			scene.addComponent<darmok::BoxCollider2D>(animEntity, glm::vec2(animBounds.size), glm::vec2(animBounds.offset));
+			_animTrans = &scene.addComponent<darmok::Transform>(animEntity, glm::vec3{}, glm::vec3{}, glm::vec3(4));
 		}
 
 		void updateLogic(float dt) override
 		{
 			auto size = darmok::WindowContext::get().getWindow().getSize();
-			//_atlasSpriteTrans->setPosition(glm::vec3(size, 0) / 2.f);
+			_animTrans->setPosition(glm::vec3(size, 0) / 2.f);
 
 			size -= _spriteSize;
 			auto pos = _spriteTrans->getPosition() + (glm::vec3(_spriteDir, 0) * dt);
@@ -73,7 +73,6 @@ namespace
 				_spriteDir.y *= -1;
 			}
 			_spriteTrans->setPosition(pos);
-
 		}
 
 		void beforeRender(bgfx::ViewId viewId) override
@@ -86,14 +85,18 @@ namespace
 			);
 
 			auto& size = darmok::WindowContext::get().getWindow(getViewWindow(viewId)).getSize();
-			_cam->setMatrix(glm::ortho<float>(0.f, size.x, 0.0f, size.y, -1.f, 1000.0f));
+			_cam->setMatrix(glm::ortho<float>(0.f, size.x, size.y, 0.0f, -1.f, 1000.0f));
 		}
 	private:
 		darmok::Camera* _cam;
+
 		darmok::Transform* _spriteTrans;
-		darmok::Transform* _atlasSpriteTrans;
 		static const glm::vec2 _spriteSize;
 		glm::vec2 _spriteDir;
+
+		darmok::TextureAtlas _texAtlas;
+		darmok::BoxCollider2D* _animCollider;
+		darmok::Transform* _animTrans;
 	};
 
 	const glm::vec2 ExampleScene::_spriteSize = { 100, 100 };

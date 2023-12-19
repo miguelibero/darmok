@@ -11,6 +11,7 @@
 namespace darmok
 {
 	class AssetContextImpl;
+	class Model;
 
 	class Image
 	{
@@ -38,6 +39,12 @@ namespace darmok
 		
 	typedef uint16_t TextureAtlasVertexIndex;
 
+	struct TextureBounds
+	{
+		TextureVec2 size;
+		TextureVec2 offset;
+	};
+
 	struct TextureAtlasElement final
 	{
 		std::string name;
@@ -49,6 +56,8 @@ namespace darmok
 		TextureVec2 originalSize;
 		TextureVec2 pivot;
 		bool rotated;
+
+		TextureBounds getBounds() const;
 	};
 
 	struct TextureAtlas final
@@ -58,6 +67,7 @@ namespace darmok
 		bgfx::TextureHandle texture;
 		std::vector<TextureAtlasElement> elements;
 
+		TextureBounds getBounds(const std::string& prefix) const;
 		TextureAtlasElement* getElement(const std::string& name);
 		const TextureAtlasElement* getElement(const std::string& name) const;
 	};
@@ -73,12 +83,13 @@ namespace darmok
 		TextureWithInfo loadTextureWithInfo(const std::string& name, uint64_t flags = _defaultTextureFlags);
 		Image loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
 		TextureAtlas loadAtlas(const std::string& filePath, uint64_t flags = _defaultTextureFlags);
+		Model loadModel(const std::string& filePath);
+		void setBasePath(const std::string& path);
 
 		AssetContextImpl& getImpl() noexcept;
 		const AssetContextImpl& getImpl() const noexcept;
 	private:
 		static const uint64_t _defaultTextureFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
-
 		AssetContext() noexcept;
 
 		std::unique_ptr<AssetContextImpl> _impl;
