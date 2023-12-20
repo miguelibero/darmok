@@ -91,6 +91,8 @@ set(sources
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/data.cpp
   ${SRC_DIR}/mesh.cpp
+  ${SRC_DIR}/color.cpp
+  ${SRC_DIR}/material.cpp
 )
 
 set(headers
@@ -107,6 +109,8 @@ set(headers
   ${INCLUDE_DIR}/model.hpp
   ${INCLUDE_DIR}/data.hpp
   ${INCLUDE_DIR}/mesh.hpp
+  ${INCLUDE_DIR}/color.hpp
+  ${INCLUDE_DIR}/material.hpp
 )
 
 set(LIB_NAME darmok)

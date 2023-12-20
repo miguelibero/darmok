@@ -15,9 +15,69 @@ namespace darmok
 		return std::string_view(str.data, str.length);
 	}
 
-	ModelTexture::ModelTexture(aiMaterial* ptr, ModelTextureType type, unsigned int index)
-		: _type(type)
+	ModelMaterialProperty::ModelMaterialProperty(aiMaterialProperty* ptr)
+		: _ptr(ptr)
 	{
+		if (_ptr != nullptr)
+		{
+			_data = Data(_ptr->mData, _ptr->mDataLength, false);
+		}
+	}
+
+	std::string_view ModelMaterialProperty::getKey() const
+	{
+		return getStringView(_ptr->mKey);
+	}
+
+	ModelMaterialPropertyType ModelMaterialProperty::getType() const
+	{
+		return (ModelMaterialPropertyType)_ptr->mType;
+	}
+
+	ModelMaterialTextureType ModelMaterialProperty::getTextureType() const
+	{
+		return (ModelMaterialTextureType)_ptr->mSemantic;
+	}
+
+	size_t ModelMaterialProperty::getTextureIndex() const
+	{
+		return _ptr->mIndex;
+	}
+
+	const Data& ModelMaterialProperty::getData() const
+	{
+		return _data;
+	}
+
+	ModelMaterialPropertyCollection::ModelMaterialPropertyCollection(aiMaterial* ptr)
+		: _ptr(ptr)
+	{
+	}
+
+	size_t ModelMaterialPropertyCollection::size() const
+	{
+		return _ptr == nullptr ? 0 : _ptr->mNumProperties;
+	}
+
+	ModelMaterialProperty ModelMaterialPropertyCollection::create(size_t pos) const
+	{
+		return ModelMaterialProperty(_ptr->mProperties[pos]);
+	}
+
+	ModelMaterialTexture::ModelMaterialTexture(aiMaterial* ptr, ModelMaterialTextureType type, unsigned int index)
+		: _ptr(ptr)
+		, _type(type)
+		, _index(index)
+		, _coordIndex(0)
+		, _mapping(ModelMaterialTextureMapping::Other)
+		, _blend(0)
+		, _operation(ModelMaterialTextureOperation::Add)
+		, _mapMode(ModelMaterialTextureMapMode::Clamp)
+	{
+		if (ptr == nullptr)
+		{
+			return;
+		}
 		aiString path;
 		unsigned int uvindex;
 		ptr->GetTexture((aiTextureType)type, index, &path,
@@ -31,105 +91,65 @@ namespace darmok
 		_path = path.C_Str();
 	}
 
-	ModelTextureType ModelTexture::getType() const
+	ModelMaterialTextureType ModelMaterialTexture::getType() const
 	{
 		return _type;
 	}
 
-	const std::string& ModelTexture::getPath() const
+	size_t ModelMaterialTexture::getIndex() const
+	{
+		return _index;
+	}
+
+	const std::string& ModelMaterialTexture::getPath() const
 	{
 		return _path;
 	}
 
-	ModelTextureMapping ModelTexture::getMapping() const
+	ModelMaterialTextureMapping ModelMaterialTexture::getMapping() const
 	{
 		return _mapping;
 	}
 
-	ModelTextureOperation ModelTexture::getOperation() const
+	ModelMaterialTextureOperation ModelMaterialTexture::getOperation() const
 	{
 		return _operation;
 	}
 
-	ModelTextureMapMode ModelTexture::getMapMode() const
+	ModelMaterialTextureMapMode ModelMaterialTexture::getMapMode() const
 	{
 		return _mapMode;
 	}
 
-	float ModelTexture::getBlend() const
+	float ModelMaterialTexture::getBlend() const
 	{
 		return _blend;
 	}
 
-	size_t ModelTexture::getCoordIndex() const
+	size_t ModelMaterialTexture::getCoordIndex() const
 	{
 		return _coordIndex;
 	}
 
-	ModelTextureContainer::ModelTextureContainer(aiMaterial* ptr)
+	ModelMaterialTextureCollection::ModelMaterialTextureCollection(aiMaterial* ptr, ModelMaterialTextureType type)
 		: _ptr(ptr)
+		, _type(type)
 	{
 	}
 
-	size_t ModelTextureContainer::size() const
+	size_t ModelMaterialTextureCollection::size() const
 	{
-		size_t size = 0;
-		for (size_t i = 0; i < (size_t)ModelTextureType::Count; i++)
-		{
-			size += _ptr->GetTextureCount((aiTextureType)i);
-		}
-		return size;
+		return _ptr->GetTextureCount((aiTextureType)_type);
 	}
 
-	ModelTexture ModelTextureContainer::create(size_t pos) const
+	ModelMaterialTexture ModelMaterialTextureCollection::create(size_t pos) const
 	{
-		size_t count = 0;
-		for (size_t i = 0; i < (size_t)ModelTextureType::Count; i++)
-		{
-			size_t typeCount = _ptr->GetTextureCount((aiTextureType)i);
-			size_t newCount = count + typeCount;
-			if (newCount > pos)
-			{
-				return ModelTexture(_ptr, (ModelTextureType)i, pos - count);
-			}
-			count = newCount;
-		}
-	}
-
-	ModelMaterialProperty::ModelMaterialProperty(aiMaterialProperty* ptr)
-		: _ptr(ptr)
-	{
-	}
-
-	std::string_view ModelMaterialProperty::getKey() const
-	{
-		return getStringView(_ptr->mKey);
-	}
-
-	ModelMaterialPropertyType ModelMaterialProperty::getType() const
-	{
-		return (ModelMaterialPropertyType)_ptr->mType;
-	}
-
-	ModelMaterialPropertyContainer::ModelMaterialPropertyContainer(aiMaterial* ptr)
-		: _ptr(ptr)
-	{
-	}
-
-	size_t ModelMaterialPropertyContainer::size() const
-	{
-		return _ptr->mNumProperties;
-	}
-
-	ModelMaterialProperty ModelMaterialPropertyContainer::create(size_t pos) const
-	{
-		return ModelMaterialProperty(_ptr->mProperties[pos]);
+		return ModelMaterialTexture(_ptr, _type, pos);
 	}
 
 	ModelMaterial::ModelMaterial(aiMaterial* ptr)
 		: _ptr(ptr)
 		, _properties(ptr)
-		, _textures(ptr)
 	{
 	}
 
@@ -138,12 +158,12 @@ namespace darmok
 		return getStringView(_ptr->GetName());
 	}
 
-	const ModelTextureContainer& ModelMaterial::getTextures() const
+	ModelMaterialTextureCollection ModelMaterial::getTextures(ModelMaterialTextureType type) const
 	{
-		return _textures;
+		return ModelMaterialTextureCollection(_ptr, type);
 	}
 
-	const ModelMaterialPropertyContainer& ModelMaterial::getProperties() const
+	const ModelMaterialPropertyCollection& ModelMaterial::getProperties() const
 	{
 		return _properties;
 	}
@@ -157,23 +177,22 @@ namespace darmok
 		return (VertexIndex*) & (indices[pos]);
 	}
 
-	ModelMeshFaceIndexContainer::ModelMeshFaceIndexContainer(aiFace* ptr)
+	ModelMeshFaceIndexCollection::ModelMeshFaceIndexCollection(aiFace* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelMeshFaceIndexContainer::size() const
+	size_t ModelMeshFaceIndexCollection::size() const
 	{
 		return _ptr->mNumIndices;
-
 	}
 
-	const VertexIndex& ModelMeshFaceIndexContainer::operator[](size_t pos) const
+	const VertexIndex& ModelMeshFaceIndexCollection::operator[](size_t pos) const
 	{
 		return (VertexIndex&)_ptr->mIndices[pos];
 	}
 
-	VertexIndex& ModelMeshFaceIndexContainer::operator[](size_t pos)
+	VertexIndex& ModelMeshFaceIndexCollection::operator[](size_t pos)
 	{
 		return (VertexIndex&)_ptr->mIndices[pos];
 	}
@@ -198,7 +217,7 @@ namespace darmok
 		return size() == 0;
 	}
 
-	const ModelMeshFaceIndexContainer& ModelMeshFace::getIndices() const
+	const ModelMeshFaceIndexCollection& ModelMeshFace::getIndices() const
 	{
 		return _indices;
 	}
@@ -213,23 +232,23 @@ namespace darmok
 		return (glm::vec3*)&(vertex[pos]);
 	}
 
-	ModelVector3Container::ModelVector3Container(aiVector3D* ptr, size_t size)
+	ModelVector3Collection::ModelVector3Collection(aiVector3D* ptr, size_t size)
 		: _ptr(ptr)
 		, _size(size)
 	{
 	}
 
-	size_t ModelVector3Container::size() const
+	size_t ModelVector3Collection::size() const
 	{
 		return _ptr == nullptr ? 0 : _size;
 	}
 
-	const glm::vec3& ModelVector3Container::operator[](size_t pos) const
+	const glm::vec3& ModelVector3Collection::operator[](size_t pos) const
 	{
 		return (glm::vec3&)_ptr[pos];
 	}
 
-	glm::vec3& ModelVector3Container::operator[](size_t pos)
+	glm::vec3& ModelVector3Collection::operator[](size_t pos)
 	{
 		return (glm::vec3&)_ptr[pos];
 	}
@@ -245,22 +264,22 @@ namespace darmok
 		return _compCount;
 	}
 
-	const ModelVector3Container& ModelTextureCoords::getCoords() const
+	const ModelVector3Collection& ModelTextureCoords::getCoords() const
 	{
 		return _coords;
 	}
 
-	ModelMeshFaceContainer::ModelMeshFaceContainer(aiMesh* ptr)
+	ModelMeshFaceCollection::ModelMeshFaceCollection(aiMesh* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelMeshFaceContainer::size() const
+	size_t ModelMeshFaceCollection::size() const
 	{
 		return _ptr == nullptr || _ptr->mFaces == nullptr ? 0 : _ptr->mNumFaces;
 	}
 
-	ModelMeshFace ModelMeshFaceContainer::create(size_t pos) const
+	ModelMeshFace ModelMeshFaceCollection::create(size_t pos) const
 	{
 		return ModelMeshFace(&_ptr->mFaces[pos]);
 	}
@@ -271,12 +290,12 @@ namespace darmok
 		return new ModelTextureCoords(mesh, pos);
 	}
 
-	ModelMeshTextureCoordsContainer::ModelMeshTextureCoordsContainer(aiMesh* ptr)
+	ModelMeshTextureCoordsCollection::ModelMeshTextureCoordsCollection(aiMesh* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelMeshTextureCoordsContainer::size() const
+	size_t ModelMeshTextureCoordsCollection::size() const
 	{
 		for (size_t i = AI_MAX_NUMBER_OF_TEXTURECOORDS - 1; i >= 0; i--)
 		{
@@ -288,7 +307,7 @@ namespace darmok
 		return 0;
 	}
 
-	ModelTextureCoords ModelMeshTextureCoordsContainer::create(size_t pos) const
+	ModelTextureCoords ModelMeshTextureCoordsCollection::create(size_t pos) const
 	{
 		return ModelTextureCoords(_ptr, pos);
 	}
@@ -310,27 +329,27 @@ namespace darmok
 		return _material;
 	}
 
-	const ModelVector3Container& ModelMesh::getVertices() const
+	const ModelVector3Collection& ModelMesh::getVertices() const
 	{
 		return _vertices;
 	}
 
-	const ModelVector3Container& ModelMesh::getNormals() const
+	const ModelVector3Collection& ModelMesh::getNormals() const
 	{
 		return _normals;
 	}
 
-	const ModelVector3Container& ModelMesh::getTangents() const
+	const ModelVector3Collection& ModelMesh::getTangents() const
 	{
 		return _tangents;
 	}
 
-	const ModelVector3Container& ModelMesh::getBitangents() const
+	const ModelVector3Collection& ModelMesh::getBitangents() const
 	{
 		return _bitangents;
 	}
 
-	const ModelMeshTextureCoordsContainer& ModelMesh::getTexCoords() const
+	const ModelMeshTextureCoordsCollection& ModelMesh::getTexCoords() const
 	{
 		return _texCoords;
 	}
@@ -340,25 +359,49 @@ namespace darmok
 		return _ptr->mNumVertices;
 	}
 
-	const ModelMeshFaceContainer& ModelMesh::getFaces() const
+	const ModelMeshFaceCollection& ModelMesh::getFaces() const
 	{
 		return _faces;
 	}
 
+	ModelNodeMeshCollection::ModelNodeMeshCollection(aiNode* ptr, const aiScene* scene)
+		: _ptr(ptr)
+		, _scene(scene)
+	{
+	}
+	
+	size_t ModelNodeMeshCollection::size() const
+	{
+		return _ptr == nullptr ? 0 : _ptr->mNumMeshes;
+	}
+
+	ModelMesh ModelNodeMeshCollection::create(size_t pos) const
+	{
+		auto m = _ptr->mMeshes[pos];
+		return ModelMesh(_scene->mMeshes[m], _scene);
+	}
+
+	ModelNodeChildrenCollection::ModelNodeChildrenCollection(aiNode* ptr, const aiScene* scene)
+		: _ptr(ptr)
+		, _scene(scene)
+	{
+	}
+
+	size_t ModelNodeChildrenCollection::size() const
+	{
+		return _ptr == nullptr ? 0 : _ptr->mNumChildren;
+	}
+
+	ModelNode ModelNodeChildrenCollection::create(size_t pos) const
+	{
+		return ModelNode(_ptr->mChildren[pos], _scene);
+	}
+
 	ModelNode::ModelNode(aiNode* ptr, const aiScene* scene)
 		: _ptr(ptr)
+		, _meshes(ptr, scene)
+		, _children(ptr, scene)
 	{
-		_meshes.reserve(ptr->mNumMeshes);
-		for (size_t i = 0; i < ptr->mNumMeshes; i++)
-		{
-			auto m = ptr->mMeshes[i];
-			_meshes.push_back(ModelMesh(scene->mMeshes[m], scene));
-		}
-		_children.reserve(ptr->mNumChildren);
-		for (size_t i = 0; i < ptr->mNumChildren; i++)
-		{
-			_children.push_back(ModelNode(ptr->mChildren[i], scene));
-		}
 	}
 
 	std::string_view ModelNode::getName() const
@@ -371,25 +414,31 @@ namespace darmok
 		return (glm::mat4x4&)_ptr->mTransformation;
 	}
 
-	const std::vector<ModelMesh>& ModelNode::getMeshes() const
+	const ModelNodeMeshCollection& ModelNode::getMeshes() const
 	{
 		return _meshes;
 	}
 
-	const std::vector<ModelNode>& ModelNode::getChildren() const
+	const ModelNodeChildrenCollection& ModelNode::getChildren() const
 	{
 		return _children;
 	}
 
-	Model::Model(const aiScene* ptr)
+	Model::Model(const aiScene* ptr, const std::string& path)
 		: _ptr(ptr)
 		, _rootNode(ptr->mRootNode, ptr)
+		, _path(path)
 	{
 	}
 
 	std::string_view Model::getName() const
 	{
 		return getStringView(_ptr->mName);
+	}
+
+	const std::string& Model::getPath() const
+	{
+		return _path;
 	}
 
 	const ModelNode& Model::getRootNode() const

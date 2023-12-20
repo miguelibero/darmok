@@ -3,6 +3,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/data.hpp>
+#include <darmok/color.hpp>
 #include <glm/glm.hpp>
 #include <memory>
 

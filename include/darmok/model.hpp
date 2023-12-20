@@ -2,7 +2,7 @@
 
 #include <darmok/utils.hpp>
 #include <darmok/data.hpp>
-#include <vector>
+#include <darmok/color.hpp>
 #include <string>
 #include <glm/glm.hpp>
 
@@ -18,7 +18,7 @@ struct aiMaterialProperty;
 
 namespace darmok
 {
-    enum class ModelTextureType
+    enum class ModelMaterialTextureType
     {
         None = 0,
         Diffuse = 1,
@@ -45,7 +45,8 @@ namespace darmok
         Count,
     };
 
-    enum class ModelTextureMapping {
+    enum class ModelMaterialTextureMapping
+    {
         UV = 0x0,
         Sphere = 0x1,
         Cylinder = 0x2,
@@ -55,7 +56,8 @@ namespace darmok
         Count
     };
 
-    enum class ModelTextureOperation {
+    enum class ModelMaterialTextureOperation
+    {
         Multiply = 0x0,
         Add = 0x1,
         Subtract = 0x2,
@@ -65,43 +67,13 @@ namespace darmok
         Count
     };
 
-    enum class ModelTextureMapMode {
+    enum class ModelMaterialTextureMapMode
+    {
         Wrap = 0x0,
         Clamp = 0x1,
         Decal = 0x3,
         Mirror = 0x2,
         Count
-    };
-
-    class ModelTexture final
-    {
-    public:
-        ModelTexture(aiMaterial* ptr, ModelTextureType type, unsigned int index);
-        ModelTextureType getType() const;
-        const std::string& getPath() const;
-        ModelTextureMapping getMapping() const;
-        ModelTextureOperation getOperation() const;
-        ModelTextureMapMode getMapMode() const;
-        float getBlend() const;
-        size_t getCoordIndex() const;
-    private:
-        ModelTextureType _type;
-        std::string _path;
-        ModelTextureMapping _mapping;
-        size_t _coordIndex;
-        float _blend;
-        ModelTextureOperation _operation;
-        ModelTextureMapMode _mapMode;
-    };
-
-    class ModelTextureContainer final : public MemContainer<ModelTexture>
-    {
-    public:
-        ModelTextureContainer(aiMaterial* ptr);
-        size_t size() const override;
-    private:
-        aiMaterial* _ptr;
-        ModelTexture create(size_t pos) const override;
     };
 
     enum class ModelMaterialPropertyType
@@ -119,18 +91,58 @@ namespace darmok
         ModelMaterialProperty(aiMaterialProperty* ptr);
         std::string_view getKey() const;
         ModelMaterialPropertyType getType() const;
+        ModelMaterialTextureType getTextureType() const;
+        size_t getTextureIndex() const;
+        const Data& getData() const;
     private:
         aiMaterialProperty* _ptr;
+        Data _data;
     };
 
-    class ModelMaterialPropertyContainer final : public MemContainer<ModelMaterialProperty>
+    class ModelMaterialPropertyCollection final : public MemReadOnlyCollection<ModelMaterialProperty>
     {
     public:
-        ModelMaterialPropertyContainer(aiMaterial* ptr);
+        ModelMaterialPropertyCollection(aiMaterial* ptr);
         size_t size() const override;
     private:
         aiMaterial* _ptr;
         ModelMaterialProperty create(size_t pos) const override;
+    };
+
+    class ModelMaterialTexture final
+    {
+    public:
+        ModelMaterialTexture(aiMaterial* ptr, ModelMaterialTextureType type, unsigned int index);
+        ModelMaterialTextureType getType() const;
+        size_t getIndex() const;
+        const std::string& getPath() const;
+        ModelMaterialTextureMapping getMapping() const;
+        ModelMaterialTextureOperation getOperation() const;
+        ModelMaterialTextureMapMode getMapMode() const;
+        float getBlend() const;
+        size_t getCoordIndex() const;
+
+    private:
+        aiMaterial* _ptr;
+        ModelMaterialTextureType _type;
+        size_t _index;
+        std::string _path;
+        ModelMaterialTextureMapping _mapping;
+        size_t _coordIndex;
+        float _blend;
+        ModelMaterialTextureOperation _operation;
+        ModelMaterialTextureMapMode _mapMode;
+    };
+
+    class ModelMaterialTextureCollection final : public MemReadOnlyCollection<ModelMaterialTexture>
+    {
+    public:
+        ModelMaterialTextureCollection(aiMaterial* ptr, ModelMaterialTextureType type);
+        size_t size() const override;
+    private:
+        aiMaterial* _ptr;
+        ModelMaterialTextureType _type;
+        ModelMaterialTexture create(size_t pos) const override;
     };
 
     class ModelMaterial final
@@ -138,18 +150,18 @@ namespace darmok
     public:
         ModelMaterial(aiMaterial* ptr);
         std::string_view getName() const;
-        const ModelTextureContainer& getTextures() const;
-        const ModelMaterialPropertyContainer& getProperties() const;
+        ModelMaterialTextureCollection getTextures(ModelMaterialTextureType type) const;
+        const ModelMaterialPropertyCollection& getProperties() const;
     private:
         aiMaterial* _ptr;
-        ModelTextureContainer _textures;
-        ModelMaterialPropertyContainer _properties;
+        std::string _path;
+        ModelMaterialPropertyCollection _properties;
     };
 
-    class ModelMeshFaceIndexContainer final : public BaseContainer<VertexIndex>
+    class ModelMeshFaceIndexCollection final : public BaseReadOnlyCollection<VertexIndex>
     {
     public:
-        ModelMeshFaceIndexContainer(aiFace* ptr);
+        ModelMeshFaceIndexCollection(aiFace* ptr);
         size_t size() const override;
         const VertexIndex& operator[](size_t pos) const  override;
         VertexIndex& operator[](size_t pos) override;
@@ -163,16 +175,16 @@ namespace darmok
         ModelMeshFace(aiFace* ptr);
         size_t size() const;
         bool empty() const;
-        const ModelMeshFaceIndexContainer& getIndices() const;
+        const ModelMeshFaceIndexCollection& getIndices() const;
     private:
         aiFace* _ptr;
-        ModelMeshFaceIndexContainer _indices;
+        ModelMeshFaceIndexCollection _indices;
     };
 
-    class ModelVector3Container final : public BaseContainer<glm::vec3>
+    class ModelVector3Collection final : public BaseReadOnlyCollection<glm::vec3>
     {
     public:
-        ModelVector3Container(aiVector3D* ptr, size_t size);
+        ModelVector3Collection(aiVector3D* ptr, size_t size);
         size_t size() const override;
         const glm::vec3& operator[](size_t pos) const  override;
         glm::vec3& operator[](size_t pos) override;
@@ -186,26 +198,26 @@ namespace darmok
     public:
         ModelTextureCoords(aiMesh* mesh, size_t pos);
         size_t getCompCount() const;
-        const ModelVector3Container& getCoords() const;
+        const ModelVector3Collection& getCoords() const;
     private:
         size_t _compCount;
-        ModelVector3Container _coords;
+        ModelVector3Collection _coords;
     };
 
-    class ModelMeshFaceContainer final : public MemContainer<ModelMeshFace>
+    class ModelMeshFaceCollection final : public MemReadOnlyCollection<ModelMeshFace>
     {
     public:
-        ModelMeshFaceContainer(aiMesh* ptr);
+        ModelMeshFaceCollection(aiMesh* ptr);
         size_t size() const override;
     private:
         aiMesh* _ptr;
         ModelMeshFace create(size_t pos) const override;
     };
 
-    class ModelMeshTextureCoordsContainer final : public MemContainer<ModelTextureCoords>
+    class ModelMeshTextureCoordsCollection final : public MemReadOnlyCollection<ModelTextureCoords>
     {
     public:
-        ModelMeshTextureCoordsContainer(aiMesh* ptr);
+        ModelMeshTextureCoordsCollection(aiMesh* ptr);
         size_t size() const override;
     private:
         aiMesh* _ptr;
@@ -218,22 +230,46 @@ namespace darmok
         ModelMesh(aiMesh* ptr, const aiScene* scene);
 
         const ModelMaterial& getMaterial() const;
-        const ModelVector3Container& getVertices() const;
-        const ModelVector3Container& getNormals() const;
-        const ModelVector3Container& getTangents() const;
-        const ModelVector3Container& getBitangents() const;
-        const ModelMeshTextureCoordsContainer& getTexCoords() const;
-        const ModelMeshFaceContainer& getFaces() const;
+        const ModelVector3Collection& getVertices() const;
+        const ModelVector3Collection& getNormals() const;
+        const ModelVector3Collection& getTangents() const;
+        const ModelVector3Collection& getBitangents() const;
+        const ModelMeshTextureCoordsCollection& getTexCoords() const;
+        const ModelMeshFaceCollection& getFaces() const;
         const size_t getVertexCount() const;
     private:
         aiMesh* _ptr;
         ModelMaterial _material;
-        ModelVector3Container _vertices;
-        ModelVector3Container _normals;
-        ModelVector3Container _tangents;
-        ModelVector3Container _bitangents;
-        ModelMeshTextureCoordsContainer _texCoords;
-        ModelMeshFaceContainer _faces;
+        ModelVector3Collection _vertices;
+        ModelVector3Collection _normals;
+        ModelVector3Collection _tangents;
+        ModelVector3Collection _bitangents;
+        ModelMeshTextureCoordsCollection _texCoords;
+        ModelMeshFaceCollection _faces;
+    };
+
+    class ModelNodeMeshCollection final : public MemReadOnlyCollection<ModelMesh>
+    {
+    public:
+        ModelNodeMeshCollection(aiNode* ptr, const aiScene* scene);
+        size_t size() const override;
+    private:
+        aiNode* _ptr;
+        const aiScene* _scene;
+        ModelMesh create(size_t pos) const override;
+    };
+
+    class ModelNode;
+
+    class ModelNodeChildrenCollection final : public MemReadOnlyCollection<ModelNode>
+    {
+    public:
+        ModelNodeChildrenCollection(aiNode* ptr, const aiScene* scene);
+        size_t size() const override;
+    private:
+        aiNode* _ptr;
+        const aiScene* _scene;
+        ModelNode create(size_t pos) const override;
     };
 
     class ModelNode final
@@ -243,24 +279,25 @@ namespace darmok
         
         std::string_view getName() const;
         const glm::mat4x4& getTransform() const;
-        const std::vector<ModelMesh>& getMeshes() const;
-        const std::vector<ModelNode>& getChildren() const;
+        const ModelNodeMeshCollection& getMeshes() const;
+        const ModelNodeChildrenCollection& getChildren() const;
 
     private:
         aiNode* _ptr;
-        std::vector<ModelMesh> _meshes;
-        std::vector<ModelNode> _children;
+        ModelNodeMeshCollection _meshes;
+        ModelNodeChildrenCollection _children;
     };
 
     class Model final
 	{
     public:
-        Model(const aiScene* ptr);
-        
+        Model(const aiScene* ptr, const std::string& path = {});
         std::string_view getName() const;
+        const std::string& getPath() const;
         const ModelNode& getRootNode() const;
     private:
         const aiScene* _ptr;
         ModelNode _rootNode;
+        std::string _path;
 	};
 }

@@ -5,7 +5,7 @@
 #include <bx/pixelformat.h>
 #include <bimg/bimg.h>
 #include <bgfx/bgfx.h>
-
+#include <assimp/Importer.hpp>
 
 namespace darmok
 {
@@ -29,24 +29,7 @@ namespace darmok
 		std::string _basePath;
 	};
 
-	class Data final
-	{
-	public:
-		Data(void* ptr, uint64_t size, bx::AllocatorI* alloc = nullptr) noexcept;
-		~Data() noexcept;
-		Data(Data&& other) noexcept;
-		Data& operator=(Data&& other) noexcept;
-		void* ptr() const noexcept;
-		uint64_t size() const noexcept;
-		bool empty() const noexcept;
-	private:
-		Data(const Data& other) = delete;
-		Data& operator=(const Data& other) = delete;
-		void* _ptr;
-		uint64_t _size;
-		bx::AllocatorI* _alloc;
-	};
-
+	class Data;
 	class Image;
 	struct TextureWithInfo;
 	struct TextureAtlas;
@@ -73,6 +56,7 @@ namespace darmok
 		FileWriter _fileWriter;
 		bx::DefaultAllocator _allocator;
 		std::string _basePath;
+		Assimp::Importer _assimpImporter;
 
 		Data loadData(const std::string& filePath);
 		const bgfx::Memory* loadMem(const std::string& filePath);

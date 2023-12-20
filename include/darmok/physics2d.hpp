@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/scene.hpp>
+#include <darmok/color.hpp>
 #include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
 

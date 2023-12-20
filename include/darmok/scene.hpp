@@ -119,18 +119,6 @@ namespace darmok
         Transform* _parent;
     };
 
-    typedef std::array<uint8_t, 4> Color;
-
-    struct Colors
-    {
-        static const uint8_t maxValue;
-        static const Color black;
-        static const Color white;
-        static const Color red;
-        static const Color green;
-        static const Color blue;
-    };
-
     typedef glm::vec<2, uint16_t> ViewVec;
 
     class ViewRect final

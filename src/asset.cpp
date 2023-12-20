@@ -12,7 +12,6 @@
 
 #include <pugixml.hpp>
 
-#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
@@ -53,53 +52,6 @@ namespace darmok
 	{
 		auto absFilePath = addBasePath(filePath.getCPtr(), _basePath);
 		return super::open(absFilePath.c_str(), append, err);
-	}
-
-	Data::Data(void* ptr, uint64_t size, bx::AllocatorI* alloc) noexcept
-		: _ptr(ptr)
-		, _size(size)
-		, _alloc(alloc)
-	{
-	}
-
-	void* Data::ptr() const noexcept
-	{
-		return _ptr;
-	}
-
-	uint64_t Data::size() const noexcept
-	{
-		return _size;
-	}
-
-	bool Data::empty() const noexcept
-	{
-		return _size == 0ll;
-	}
-
-	Data::~Data() noexcept
-	{
-		bx::free(_alloc, _ptr);
-	}
-
-	Data::Data(Data&& other) noexcept
-		: _ptr(other._ptr)
-		, _size(other._size)
-		, _alloc(other._alloc)
-	{
-		other._ptr = nullptr;
-		other._size = 0;
-	}
-
-	Data& Data::operator=(Data&& other) noexcept
-	{
-		bx::free(_alloc, _ptr);
-		_ptr = other._ptr;
-		_size = other._size;
-		_alloc = other._alloc;
-		other._ptr = nullptr;
-		other._size = 0;
-		return *this;
 	}
 
 	TextureBounds TextureAtlasElement::getBounds() const
@@ -481,11 +433,9 @@ namespace darmok
 
 	Model AssetContextImpl::loadModel(const std::string& filePath)
 	{
-		Assimp::Importer importer;
-
 		std::string path = addBasePath(filePath, _basePath);
 
-		const aiScene* scene = importer.ReadFile(path,
+		const aiScene* scene = _assimpImporter.ReadFile(path,
 			aiProcess_CalcTangentSpace |
 			aiProcess_Triangulate |
 			aiProcess_JoinIdenticalVertices |
@@ -493,7 +443,7 @@ namespace darmok
 
 		if (nullptr == scene)
 		{
-			throw std::runtime_error(importer.GetErrorString());
+			throw std::runtime_error(_assimpImporter.GetErrorString());
 		}
 
 		return Model(scene);

@@ -22,7 +22,7 @@ namespace darmok
     void checkError(bx::Error& err);
 
     template<typename V>
-    class BX_NO_VTABLE BaseContainer
+    class BX_NO_VTABLE BaseReadOnlyCollection
     {
     public:
         template<typename C, typename T>
@@ -34,8 +34,8 @@ namespace darmok
             using pointer = value_type*;
             using reference = value_type&;
 
-            BaseIterator(C& container, size_t pos = 0)
-                : _container(container)
+            BaseIterator(C& collection, size_t pos = 0)
+                : _collection(collection)
                 , _pos(pos)
             {
             }
@@ -47,7 +47,7 @@ namespace darmok
 
             pointer operator->() const
             {
-                return &_container[_pos];
+                return &_collection[_pos];
             }
 
             BaseIterator<C, T>& operator++()
@@ -65,7 +65,7 @@ namespace darmok
 
             bool operator==(const BaseIterator<C, T>& other) const
             {
-                return &_container == &other._container && _pos == other._pos;
+                return &_collection == &other._collection && _pos == other._pos;
             }
 
             bool operator!=(const BaseIterator<C, T>& other) const
@@ -74,12 +74,12 @@ namespace darmok
             }
 
         private:
-            C& _container;
+            C& _collection;
             size_t _pos;
         };
 
-        typedef BaseIterator<BaseContainer<V>, V> Iterator;
-        typedef BaseIterator<const BaseContainer<V>, const V> ConstIterator;
+        typedef BaseIterator<BaseReadOnlyCollection<V>, V> Iterator;
+        typedef BaseIterator<const BaseReadOnlyCollection<V>, const V> ConstIterator;
 
         Iterator begin()
         {
@@ -112,7 +112,7 @@ namespace darmok
     };
 
     template<typename T>
-    class BX_NO_VTABLE MemContainer : public BaseContainer<T>
+    class BX_NO_VTABLE MemReadOnlyCollection : public BaseReadOnlyCollection<T>
     {
     public:
         const T& operator[](size_t pos) const override
