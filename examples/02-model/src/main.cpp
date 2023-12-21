@@ -21,7 +21,8 @@ namespace
 			auto camEntity = scene.createEntity();
 			scene.addComponent<darmok::Camera>(camEntity);
 
-			auto model = darmok::AssetContext::get().loadModel("assets/ImpChar.fbx");
+			auto model = darmok::AssetContext::get().getModelLoader()("assets/ImpChar.fbx");
+
 			darmok::addModelToScene(scene, model);
 		}
 

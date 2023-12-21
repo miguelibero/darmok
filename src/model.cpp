@@ -424,10 +424,26 @@ namespace darmok
 		return _children;
 	}
 
+	ModelMaterialCollection::ModelMaterialCollection(const aiScene* ptr)
+		: _ptr(ptr)
+	{
+	}
+
+	size_t ModelMaterialCollection::size() const
+	{
+		return _ptr == nullptr ? 0 : _ptr->mNumMaterials;
+	}
+
+	ModelMaterial ModelMaterialCollection::create(size_t pos) const
+	{
+		return ModelMaterial(_ptr->mMaterials[pos]);
+	}
+
 	Model::Model(const aiScene* ptr, const std::string& path)
 		: _ptr(ptr)
 		, _rootNode(ptr->mRootNode, ptr)
 		, _path(path)
+		, _materials(ptr)
 	{
 	}
 
@@ -445,4 +461,10 @@ namespace darmok
 	{
 		return _rootNode;
 	}
+
+	const ModelMaterialCollection& Model::getMaterials() const
+	{
+		return _materials;
+	}
+
 }

@@ -1,11 +1,18 @@
 #pragma once
 
 #include <string>
+#include <optional>
+
+#include <darmok/asset.hpp>
+
 #include <bx/file.h>
 #include <bx/pixelformat.h>
 #include <bimg/bimg.h>
 #include <bgfx/bgfx.h>
+
 #include <assimp/Importer.hpp>
+#include <pugixml.hpp>
+
 
 namespace darmok
 {
@@ -31,67 +38,98 @@ namespace darmok
 
 	class Data;
 	class Image;
-	struct TextureWithInfo;
+	struct Texture;
 	struct TextureAtlas;
 	class Model;
+
+	class FileDataLoader final : public IDataLoader
+	{
+	public:
+		FileDataLoader(bx::FileReaderI* fileReader, bx::AllocatorI* alloc = nullptr);
+		std::shared_ptr<Data> operator()(const std::string& filePath) override;
+	private:
+		bx::FileReaderI* _fileReader;
+		bx::AllocatorI* _allocator;
+	};
+
+	class DataProgramLoader final : public IProgramLoader
+	{
+	public:
+		DataProgramLoader(IDataLoader& dataLoader);
+		std::shared_ptr<Program> operator()(const std::string& vertexName, const std::string& fragmentName = "") override;
+	private:
+		IDataLoader& _dataLoader;
+
+		bgfx::ShaderHandle loadShader(const std::string& filePath);
+		static std::string getShaderExt();
+	};
+
+	class DataImageLoader final : public IImageLoader
+	{
+	public:
+		DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI* alloc);
+		std::shared_ptr<Image> operator()(const std::string& name, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) override;
+	private:
+		IDataLoader& _dataLoader;
+		bx::AllocatorI* _allocator;
+	};
+
+	class ImageTextureLoader final : public ITextureLoader
+	{
+	public:
+		ImageTextureLoader(IImageLoader& imgLoader);
+		std::shared_ptr<Texture> operator()(const std::string& name, uint64_t flags = defaultTextureCreationFlags) override;
+	private:
+		IImageLoader& _imgLoader;
+		bx::AllocatorI* _allocator;
+	};
+
+	class TexturePackerTextureAtlasLoader final : public ITextureAtlasLoader
+	{
+	public:
+		TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader);
+		std::shared_ptr<TextureAtlas> operator()(const std::string& name, uint64_t flags = defaultTextureCreationFlags) override;
+	private:
+		IDataLoader& _dataLoader;
+		ITextureLoader& _textureLoader;
+
+		static std::pair<int, size_t> readXmlValueInt(const std::string& str, size_t i);
+		static std::pair<std::optional<TextureVec2>, size_t> readXmlValueVec(const std::string& str, size_t i);
+		static TextureAtlasElement loadElement(pugi::xml_node& xml);
+	};
+
+	class AssimpModelLoader final : public IModelLoader
+	{
+	public:
+		AssimpModelLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader);
+		std::shared_ptr<Model> operator()(const std::string& name) override;
+	private:
+		Assimp::Importer _importer;
+		IDataLoader& _dataLoader;
+		ITextureLoader& _textureLoader;
+	};
 
 	class AssetContextImpl final
 	{
 	public:
-		bgfx::ShaderHandle loadShader(const std::string& name);
-		bgfx::ProgramHandle loadProgram(const std::string& vertexName, const std::string& fragmentName = "");
-		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags);
-		TextureWithInfo loadTextureWithInfo(const std::string& name, uint64_t flags);
-		Image loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
-		TextureAtlas loadAtlas(const std::string& filePath, uint64_t flags);
-		Model loadModel(const std::string& filePath);
-
+		AssetContextImpl();
+		IImageLoader& getImageLoader() noexcept;
+		IProgramLoader& getProgramLoader() noexcept;
+		ITextureLoader& getTextureLoader() noexcept;
+		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
+		IModelLoader& getModelLoader() noexcept;
 		bx::AllocatorI* getAllocator() noexcept;
-		void setBasePath(const std::string& path);
+		void setBasePath(const std::string& path) noexcept;
 	private:
-
-		TextureWithInfo loadTexture(const std::string& filePath, uint64_t flags, bool loadInfo);
-
 		FileReader _fileReader;
 		FileWriter _fileWriter;
 		bx::DefaultAllocator _allocator;
-		std::string _basePath;
-		Assimp::Importer _assimpImporter;
-
-		Data loadData(const std::string& filePath);
-		const bgfx::Memory* loadMem(const std::string& filePath);
-
-		bx::FileReaderI* getFileReader() noexcept;
-		bx::FileWriterI* getFileWriter() noexcept;
-
+		FileDataLoader _dataLoader;
+		DataImageLoader _imageLoader;
+		DataProgramLoader _programLoader;
+		ImageTextureLoader _textureLoader;
+		TexturePackerTextureAtlasLoader _textureAtlasLoader;
+		AssimpModelLoader _modelLoader;
 	};
 
-	/// Returns true if both internal transient index and vertex buffer have
-	/// enough space.
-	///
-	/// @param[in] _numVertices Number of vertices.
-	/// @param[in] _layout Vertex layout.
-	/// @param[in] _numIndices Number of indices.
-	///
-	inline bool checkAvailTransientBuffers(uint32_t numVertices, const bgfx::VertexLayout& layout, uint32_t numIndices)
-	{
-		return numVertices == bgfx::getAvailTransientVertexBuffer(numVertices, layout)
-			&& (0 == numIndices || numIndices == bgfx::getAvailTransientIndexBuffer(numIndices))
-			;
-	}
-
-	///
-	inline uint32_t encodeNormalRgba8(float x, float y = 0.0f, float z = 0.0f, float w = 0.0f)
-	{
-		const float src[] =
-		{
-			x * 0.5f + 0.5f,
-			y * 0.5f + 0.5f,
-			z * 0.5f + 0.5f,
-			w * 0.5f + 0.5f,
-		};
-		uint32_t dst;
-		bx::packRgba8(&dst, src);
-		return dst;
-	}
 }

@@ -251,6 +251,13 @@ namespace darmok
 	}
 
 
+	inline bool checkAvailTransientBuffers(uint32_t numVertices, const bgfx::VertexLayout& layout, uint32_t numIndices)
+	{
+		return numVertices == bgfx::getAvailTransientVertexBuffer(numVertices, layout)
+			&& (0 == numIndices || numIndices == bgfx::getAvailTransientIndexBuffer(numIndices))
+			;
+	}
+
 	void ImguiContext::render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData)
 	{
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)

@@ -42,7 +42,7 @@ namespace darmok
         return std::make_shared<SpriteData>(atlas.texture, std::move(vertices), std::vector<VertexIndex>(element.indices));
     }
 
-    std::shared_ptr<SpriteData> SpriteData::fromTexture(const bgfx::TextureHandle& texture, const glm::vec2& size, const Color& color)
+    std::shared_ptr<SpriteData> SpriteData::fromTexture(const std::shared_ptr<Texture>& texture, const glm::vec2& size, const Color& color)
     {
         return std::make_shared<SpriteData>(texture, std::vector<SpriteVertex>{
                 SpriteVertex{ {0.f, 0.f},       {0.f, 0.f}, color },
@@ -52,7 +52,7 @@ namespace darmok
             }, std::vector<VertexIndex>{ 0, 1, 2, 2, 3, 0 });
     }
 
-    SpriteData::SpriteData(const bgfx::TextureHandle& texture, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept
+    SpriteData::SpriteData(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept
         : _texture(texture)
         , _vertices(std::move(vertices))
         , _indices(std::move(indices))
@@ -61,7 +61,7 @@ namespace darmok
     {
     }
 
-    const bgfx::TextureHandle& SpriteData::getTexture() const
+    const std::shared_ptr<Texture>& SpriteData::getTexture() const
     {
         return _texture;
     }
@@ -98,10 +98,6 @@ namespace darmok
 
     const std::shared_ptr<SpriteData>& SpriteAnimation::getData() const
     {
-        if (_currentFrame >= _frames.size())
-        {
-            return nullptr;
-        }
         return _frames[_currentFrame];
     }
 
@@ -218,7 +214,7 @@ namespace darmok
         const auto textureUnit = 0;
         const auto vertexStream = 0;
 
-        encoder.setTexture(textureUnit, _texColorUniforn, data.getTexture());
+        encoder.setTexture(textureUnit, _texColorUniforn, data.getTexture()->getHandle());
         encoder.setVertexBuffer(vertexStream, data.getVertexBuffer());
         encoder.setIndexBuffer(data.getIndexBuffer());
 

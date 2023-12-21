@@ -1,9 +1,11 @@
 
 #pragma once
 
-#include <bgfx/bgfx.h>
+#include <bx/bx.h>
 #include <bimg/bimg.h>
+#include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
+
 #include <vector>
 #include <string>
 #include <memory>
@@ -12,21 +14,31 @@ namespace darmok
 {
 	class AssetContextImpl;
 	class Model;
+	class Data;
 
-	class Image
+	static const uint64_t defaultTextureCreationFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
+
+	class Image final
 	{
 	public:
 		Image(bimg::ImageContainer* container);
 		~Image();
+
+		bool empty() const;
+		const bgfx::Memory* makeRef() const;
+		bgfx::TextureHandle createTexture(uint64_t flags = defaultTextureCreationFlags) const;
+		bgfx::TextureInfo calcTextureInfo() const;
 	private:
 		bimg::ImageContainer* _container;
 	};
 
-	struct TextureWithInfo
+	class Texture final
 	{
-		bgfx::TextureHandle texture;
-		bgfx::TextureInfo info;
-		bimg::Orientation::Enum orientation;
+	public:
+		Texture(const bgfx::TextureHandle& handle);
+		const bgfx::TextureHandle& getHandle() const;
+	private:
+		bgfx::TextureHandle _handle;
 	};
 
 	typedef glm::vec<2, uint32_t> TextureVec2;
@@ -62,14 +74,65 @@ namespace darmok
 
 	struct TextureAtlas final
 	{
-		TextureVec2 size;
-		std::string name;
-		bgfx::TextureHandle texture;
+		std::shared_ptr<Texture> texture;
 		std::vector<TextureAtlasElement> elements;
+		TextureVec2 size;
 
 		TextureBounds getBounds(const std::string& prefix) const;
 		TextureAtlasElement* getElement(const std::string& name);
 		const TextureAtlasElement* getElement(const std::string& name) const;
+	};
+
+	struct Program final
+	{
+		Program(const bgfx::ProgramHandle& handle);
+		const bgfx::ProgramHandle& getHandle() const;
+	private:
+		bgfx::ProgramHandle _handle;
+	};
+
+	class BX_NO_VTABLE IDataLoader
+	{
+	public:
+		virtual ~IDataLoader() = default;
+		virtual std::shared_ptr<Data> operator()(const std::string& name) = 0;
+	};
+
+	class BX_NO_VTABLE IImageLoader
+	{
+	public:
+		virtual ~IImageLoader() = default;
+		virtual std::shared_ptr<Image> operator()(const std::string& name, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) = 0;
+	};
+
+	class BX_NO_VTABLE IProgramLoader
+	{
+	public:
+		virtual ~IProgramLoader() = default;
+		virtual std::shared_ptr<Program> operator()(const std::string& vertexName, const std::string& fragmentName = "") = 0;
+	};
+
+	class BX_NO_VTABLE ITextureLoader
+	{
+	public:
+		
+		virtual ~ITextureLoader() = default;
+		virtual std::shared_ptr<Texture> operator()(const std::string& name, uint64_t flags = defaultTextureCreationFlags) = 0;
+	private:
+	};
+
+	class BX_NO_VTABLE ITextureAtlasLoader
+	{
+	public:
+		virtual ~ITextureAtlasLoader() = default;
+		virtual std::shared_ptr<TextureAtlas> operator()(const std::string& name, uint64_t flags = defaultTextureCreationFlags) = 0;
+	};
+
+	class BX_NO_VTABLE IModelLoader
+	{
+	public:
+		virtual ~IModelLoader() = default;
+		virtual std::shared_ptr<Model> operator()(const std::string& name) = 0;
 	};
 
 	class AssetContext final
@@ -77,19 +140,15 @@ namespace darmok
 	public:
 		static AssetContext& get() noexcept;
 
-		bgfx::ShaderHandle loadShader(const std::string& name);
-		bgfx::ProgramHandle loadProgram(const std::string& vertexName, const std::string& fragmentName = "");
-		bgfx::TextureHandle loadTexture(const std::string& name, uint64_t flags = _defaultTextureFlags);
-		TextureWithInfo loadTextureWithInfo(const std::string& name, uint64_t flags = _defaultTextureFlags);
-		Image loadImage(const std::string& filePath, bgfx::TextureFormat::Enum dstFormat = bgfx::TextureFormat::Count);
-		TextureAtlas loadAtlas(const std::string& filePath, uint64_t flags = _defaultTextureFlags);
-		Model loadModel(const std::string& filePath);
-		void setBasePath(const std::string& path);
+		IImageLoader& getImageLoader() noexcept;
+		IProgramLoader& getProgramLoader() noexcept;
+		ITextureLoader& getTextureLoader() noexcept;
+		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
+		IModelLoader& getModelLoader() noexcept;
 
 		AssetContextImpl& getImpl() noexcept;
 		const AssetContextImpl& getImpl() const noexcept;
 	private:
-		static const uint64_t _defaultTextureFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
 		AssetContext() noexcept;
 
 		std::unique_ptr<AssetContextImpl> _impl;

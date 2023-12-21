@@ -288,6 +288,16 @@ namespace darmok
         ModelNodeChildrenCollection _children;
     };
 
+    class ModelMaterialCollection final : public MemReadOnlyCollection<ModelMaterial>
+    {
+    public:
+        ModelMaterialCollection(const aiScene* ptr);
+        size_t size() const override;
+    private:
+        const aiScene* _ptr;
+        ModelMaterial create(size_t pos) const override;
+    };
+
     class Model final
 	{
     public:
@@ -295,9 +305,11 @@ namespace darmok
         std::string_view getName() const;
         const std::string& getPath() const;
         const ModelNode& getRootNode() const;
+        const ModelMaterialCollection& getMaterials() const;
     private:
         const aiScene* _ptr;
         ModelNode _rootNode;
         std::string _path;
+        ModelMaterialCollection _materials;
 	};
 }

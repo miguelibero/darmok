@@ -32,6 +32,7 @@ namespace darmok
         size_t size() const noexcept;
         bool empty() const noexcept;
         void clear() noexcept;
+        const bgfx::Memory* makeRef() const noexcept;
 
         template<typename T>
         static Data copy(const T& v, bx::AllocatorI* alloc = nullptr)
@@ -86,7 +87,6 @@ namespace darmok
             }
             return (T&)*_ptr;
         }
-
 
     private:
 

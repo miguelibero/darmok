@@ -17,6 +17,7 @@ namespace darmok
     class ModelMaterialPropertyCollection;
     class ModelMaterial;
     class ModelMaterialTexture;
+    class Texture;
 
     enum class MaterialTextureType
     {
@@ -49,12 +50,12 @@ namespace darmok
     class MaterialTexture final
     {
     public:
-        MaterialTexture(bgfx::TextureHandle handle, MaterialTextureType type = MaterialTextureType::Diffuse, MaterialPropertyCollection&& props = {});
+        MaterialTexture(const std::shared_ptr<Texture>& texture, MaterialTextureType type = MaterialTextureType::Diffuse, MaterialPropertyCollection&& props = {});
 
-        const bgfx::TextureHandle& getHandle() const;
+        const std::shared_ptr<Texture>& getTexture() const;
         MaterialTextureType getType() const;
 
-        void setHandle(const bgfx::TextureHandle& v);
+        void setTexture(const std::shared_ptr<Texture>& v);
         void setType(MaterialTextureType v);
 
         const MaterialPropertyCollection& getProperties() const;
@@ -62,7 +63,7 @@ namespace darmok
 
         static MaterialTexture fromModel(const ModelMaterialTexture& texture, const ModelMaterial& material, const std::string& basePath = {});
     private:
-        bgfx::TextureHandle _handle;
+        std::shared_ptr<Texture> _texture;
         MaterialTextureType _type;
         MaterialPropertyCollection _properties;
     };

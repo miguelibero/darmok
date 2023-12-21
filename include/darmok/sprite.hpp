@@ -22,21 +22,21 @@ namespace darmok
     class SpriteData final
     {
     public:
-        SpriteData(const bgfx::TextureHandle& texture, std::vector<SpriteVertex>&& vertex, std::vector<VertexIndex>&& indices) noexcept;
+        SpriteData(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertex, std::vector<VertexIndex>&& indices) noexcept;
         SpriteData(SpriteData&& other) noexcept = default;
         SpriteData& operator=(SpriteData&& other) noexcept = default;
 
         static std::shared_ptr<SpriteData> fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, const Color& color = Colors::white);
-        static std::shared_ptr<SpriteData> fromTexture(const bgfx::TextureHandle& texture, const glm::vec2& size, const Color& color = Colors::white);
+        static std::shared_ptr<SpriteData> fromTexture(const std::shared_ptr<Texture>& texture, const glm::vec2& size, const Color& color = Colors::white);
 
-        const bgfx::TextureHandle& getTexture() const;
+        const std::shared_ptr<Texture>& getTexture() const;
         const bgfx::VertexBufferHandle& getVertexBuffer() const;
         const bgfx::IndexBufferHandle& getIndexBuffer() const;
     private:
         SpriteData(const SpriteData& other) = delete;
         SpriteData& operator=(const SpriteData& other) = delete;
 
-        bgfx::TextureHandle _texture;
+        std::shared_ptr<Texture> _texture;
         std::vector<SpriteVertex> _vertices;
         std::vector<VertexIndex> _indices;
         VertexBuffer _vertexBuffer;

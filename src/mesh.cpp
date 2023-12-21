@@ -32,14 +32,14 @@ namespace darmok
 		return entity;
 	}
 
-    Entity addModelToScene(Scene& scene, const Model& model, Entity entity)
+    Entity addModelToScene(Scene& scene, const std::shared_ptr<Model>& model, Entity entity)
 	{
 		if (entity == 0)
 		{
 			entity = scene.createEntity();
 		}
-		auto basePath = std::filesystem::path(model.getPath()).parent_path().string();
-		return addModelNodeToScene(scene, model.getRootNode(), basePath, entity);
+		auto basePath = std::filesystem::path(model->getPath()).parent_path().string();
+		return addModelNodeToScene(scene, model->getRootNode(), basePath, entity);
 	}
 
 	MeshData::MeshData(const std::shared_ptr<Material>& material, std::vector<float>&& vertices, bgfx::VertexLayout layout, std::vector<VertexIndex>&& indices) noexcept
@@ -241,7 +241,7 @@ namespace darmok
 		auto textureUnit = 0;
 		for (auto& texture : data.getMaterial()->getTextures(MaterialTextureType::Diffuse))
 		{
-			encoder.setTexture(textureUnit, _texColorUniforn, texture.getHandle());
+			encoder.setTexture(textureUnit, _texColorUniforn, texture.getTexture()->getHandle());
 			textureUnit++;
 		}
 		const auto vertexStream = 0;

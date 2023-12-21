@@ -46,16 +46,16 @@ namespace darmok
 	}
 
 
-	MaterialTexture::MaterialTexture(bgfx::TextureHandle handle, MaterialTextureType type, MaterialPropertyCollection&& props)
-		: _handle(handle)
+	MaterialTexture::MaterialTexture(const std::shared_ptr<Texture>& texture, MaterialTextureType type, MaterialPropertyCollection&& props)
+		: _texture(texture)
 		, _type(type)
 		, _properties(std::move(props))
 	{
 	}
 
-	const bgfx::TextureHandle& MaterialTexture::getHandle() const
+	const std::shared_ptr<Texture>& MaterialTexture::getTexture() const
 	{
-		return _handle;
+		return _texture;
 	}
 
 	MaterialTextureType MaterialTexture::getType() const
@@ -63,9 +63,9 @@ namespace darmok
 		return _type;
 	}
 
-	void MaterialTexture::setHandle(const bgfx::TextureHandle& v)
+	void MaterialTexture::setTexture(const std::shared_ptr<Texture>& v)
 	{
-		_handle = v;
+		_texture = v;
 	}
 
 	void MaterialTexture::setType(MaterialTextureType v)
@@ -83,17 +83,17 @@ namespace darmok
 		return _properties;
 	}
 
-	MaterialTexture MaterialTexture::fromModel(const ModelMaterialTexture& texture, const ModelMaterial& material, const std::string& basePath)
+	MaterialTexture MaterialTexture::fromModel(const ModelMaterialTexture& modelTexture, const ModelMaterial& material, const std::string& basePath)
 	{
-		std::filesystem::path texPath(texture.getPath());
+		std::filesystem::path texPath(modelTexture.getPath());
 		if (!basePath.empty() && texPath.is_relative())
 		{
 			texPath = std::filesystem::path(basePath) / texPath;
 		}
-		auto path = texture.getPath();
-		auto handle = AssetContext::get().loadTexture(texPath.string());
+		auto path = modelTexture.getPath();
+		auto texture = AssetContext::get().getTextureLoader()(texPath.string());
 		auto type = MaterialTextureType::Unknown;
-		switch (texture.getType())
+		switch (modelTexture.getType())
 		{
 		case ModelMaterialTextureType::Diffuse:
 			type = MaterialTextureType::Diffuse;
@@ -107,8 +107,8 @@ namespace darmok
 		default:
 			throw std::runtime_error("unsupported model texture type");
 		}
-		auto props = MaterialPropertyCollection::fromModel(material.getProperties(), texture.getIndex());
-		return MaterialTexture(handle, type, std::move(props));
+		auto props = MaterialPropertyCollection::fromModel(material.getProperties(), modelTexture.getIndex());
+		return MaterialTexture(texture, type, std::move(props));
 	}
 
     Material::Material(std::vector<MaterialTexture>&& textures, MaterialPropertyCollection&& props)

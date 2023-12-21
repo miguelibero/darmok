@@ -9,7 +9,7 @@ namespace darmok
     class Model;
     class ModelMesh;
 
-    Entity addModelToScene(Scene& scene, const Model& model, Entity entity = 0);
+    Entity addModelToScene(Scene& scene, const std::shared_ptr<Model>& model, Entity entity = 0);
 
     class MeshData final
     {
