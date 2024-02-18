@@ -1,6 +1,6 @@
 #pragma once
 #include <darmok/color.hpp>
-#include <darmok/Data.hpp>
+#include <darmok/data.hpp>
 
 #include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
@@ -8,15 +8,12 @@
 #include <vector>
 #include <string_view>
 #include <memory>
-#include <variant>
+#include <optional>
 #include <unordered_map>
 
 
 namespace darmok
 {
-    class ModelMaterialPropertyCollection;
-    class ModelMaterial;
-    class ModelMaterialTexture;
     class Texture;
 
     enum class MaterialTextureType
@@ -29,9 +26,14 @@ namespace darmok
     };
 
 
-    struct MaterialPropertyKey
+    enum class MaterialColorType
     {
-
+        Diffuse,
+        Specular,
+        Ambient,
+        Emissive,
+        Transparent,
+        Reflective,
     };
 
     class MaterialPropertyCollection final
@@ -40,9 +42,6 @@ namespace darmok
         bool has(const std::string& name) const;
         const Data& get(const std::string& name) const;
         void set(const std::string& name, Data&& data);
-
-        static MaterialPropertyCollection fromModel(const ModelMaterialPropertyCollection& model, int textureIndex);
-
     private:
         std::unordered_map<std::string, Data> _properties;
     };
@@ -61,11 +60,16 @@ namespace darmok
         const MaterialPropertyCollection& getProperties() const;
         MaterialPropertyCollection& getProperties();
 
-        static MaterialTexture fromModel(const ModelMaterialTexture& texture, const ModelMaterial& material, const std::string& basePath = {});
     private:
         std::shared_ptr<Texture> _texture;
         MaterialTextureType _type;
         MaterialPropertyCollection _properties;
+    };
+
+    struct MaterialUniforms
+    {
+        bgfx::UniformHandle TextureColor;
+        bgfx::UniformHandle DiffuseColor;
     };
 
     class Material final
@@ -73,15 +77,21 @@ namespace darmok
     public:
         Material() = default;
         Material(std::vector<MaterialTexture>&& textures, MaterialPropertyCollection&& props = {});
-        static std::shared_ptr<Material> fromModel(const ModelMaterial& material, const std::string& basePath = {});
 
         const std::vector<MaterialTexture>& getTextures(MaterialTextureType type) const;
         const MaterialPropertyCollection& getProperties() const;
 
         MaterialTexture& addTexture(MaterialTexture&& texture);
         MaterialPropertyCollection& getProperties();
+
+        std::optional<Color> getColor(MaterialColorType type);
+        void setColor(MaterialColorType type, const Color& color);
+
+        void configure(bgfx::Encoder& encoder, const MaterialUniforms& uniforms);
+
     private:
         std::unordered_map<MaterialTextureType, std::vector<MaterialTexture>> _textures;
         MaterialPropertyCollection _properties;
+        std::unordered_map<MaterialColorType, Color> _colors;
     };
 }

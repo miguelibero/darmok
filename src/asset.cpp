@@ -82,50 +82,42 @@ namespace darmok
 		return _container == nullptr || _container->m_size == 0;
 	}
 
-	bgfx::TextureHandle Image::createTexture(uint64_t flags) const
+	uint32_t Image::getWidth() const
 	{
-		bgfx::TextureHandle handle = { bgfx::kInvalidHandle };
-		const bgfx::Memory* mem = makeRef();
-
-		if (_container->m_cubeMap)
-		{
-			handle = bgfx::createTextureCube(
-				uint16_t(_container->m_width)
-				, 1 < _container->m_numMips
-				, _container->m_numLayers
-				, bgfx::TextureFormat::Enum(_container->m_format)
-				, flags
-				, mem
-			);
-		}
-		else if (1 < _container->m_depth)
-		{
-			handle = bgfx::createTexture3D(
-				uint16_t(_container->m_width)
-				, uint16_t(_container->m_height)
-				, uint16_t(_container->m_depth)
-				, 1 < _container->m_numMips
-				, bgfx::TextureFormat::Enum(_container->m_format)
-				, flags
-				, mem
-			);
-		}
-		else if (bgfx::isTextureValid(0, false, _container->m_numLayers, bgfx::TextureFormat::Enum(_container->m_format), flags))
-		{
-			handle = bgfx::createTexture2D(
-				uint16_t(_container->m_width)
-				, uint16_t(_container->m_height)
-				, 1 < _container->m_numMips
-				, _container->m_numLayers
-				, bgfx::TextureFormat::Enum(_container->m_format)
-				, flags
-				, mem
-			);
-		}
-		return handle;
+		return _container->m_width;
 	}
 
-	bgfx::TextureInfo Image::calcTextureInfo() const
+	uint32_t Image::getHeight() const
+	{
+		return _container->m_height;
+	}
+
+	uint32_t Image::getDepth() const
+	{
+		return _container->m_depth;
+	}
+
+	bool Image::isCubeMap() const
+	{
+		return _container->m_cubeMap;
+	}
+
+	uint8_t Image::getMipCount() const
+	{
+		return _container->m_numMips;
+	}
+
+	uint16_t Image::getLayerCount() const
+	{
+		return _container->m_numLayers;
+	}
+
+	bimg::TextureFormat::Enum Image::getFormat() const
+	{
+		return _container->m_format;
+	}
+
+	bgfx::TextureInfo Image::getTextureInfo() const
 	{
 		bgfx::TextureInfo info;
 		bgfx::calcTextureSize(
@@ -141,14 +133,75 @@ namespace darmok
 		return info;
 	}
 
-	Texture::Texture(const bgfx::TextureHandle& handle)
-		: _handle(handle)
+	Texture::Texture(std::shared_ptr<Image> img, uint64_t flags, const std::string& name)
+		: _img(img)
+		, _handle{ bgfx::kInvalidHandle }
+		, _type(TextureType::Unknown)
 	{
+		init(flags);
+		if (!name.empty())
+		{
+			bgfx::setName(_handle, name.c_str());
+		}
+	}
+
+	Texture::Texture(std::shared_ptr<Image> img, const std::string& name)
+		: _img(img)
+		, _handle{ bgfx::kInvalidHandle }
+		, _type(TextureType::Unknown)
+	{
+		init(defaultTextureCreationFlags);
+		if (!name.empty())
+		{
+			bgfx::setName(_handle, name.c_str());
+		}
+	}
+
+
+	void Texture::init(uint64_t flags)
+	{
+		const auto mem = _img->makeRef();
+		auto format = bgfx::TextureFormat::Enum(_img->getFormat());
+		auto hasMips = 1 < _img->getMipCount();
+		auto w = uint16_t(_img->getWidth());
+		auto h = uint16_t(_img->getHeight());
+		auto layers = _img->getLayerCount();
+		if (_img->isCubeMap())
+		{
+			_handle = bgfx::createTextureCube(w, hasMips, layers, format, flags, mem);
+			_type = TextureType::CubeMap;
+		}
+		else if (1 < _img->getDepth())
+		{
+			_handle = bgfx::createTexture3D(w, h, uint16_t(_img->getDepth()), hasMips, format, flags, mem);
+			_type = TextureType::Texture3D;
+		}
+		else if (bgfx::isTextureValid(0, false, layers, format, flags))
+		{
+			_handle = bgfx::createTexture2D(w, h, hasMips, layers, format, flags, mem);
+			_type = TextureType::Texture2D;
+		}
 	}
 
 	const bgfx::TextureHandle& Texture::getHandle() const
 	{
 		return _handle;
+	}
+
+	std::shared_ptr<Image> Texture::getImage() const
+	{
+		return _img;
+	}
+
+	void Texture::releaseImage()
+	{
+		_img = nullptr;
+		// TODO: is there a way to check if the image was uploaded?
+	}
+
+	TextureType Texture::getType() const
+	{
+		return _type;
 	}
 
 	Program::Program(const bgfx::ProgramHandle& handle)
@@ -293,7 +346,7 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<Image> DataImageLoader::operator()(const std::string& name, bimg::TextureFormat::Enum format)
+	std::shared_ptr<Image> DataImageLoader::operator()(const std::string& name)
 	{
 		auto data = _dataLoader(name);
 		if (data == nullptr || data->empty())
@@ -323,13 +376,15 @@ namespace darmok
 		{
 			throw std::runtime_error("got empty image");
 		}
-		bgfx::TextureHandle handle = img->createTexture();
-		if (!bgfx::isValid(handle))
+
+		auto tex = std::make_shared<Texture>(img, name);
+
+		if (!bgfx::isValid(tex->getHandle()))
 		{
 			throw std::runtime_error("could not load texture");
 		}
-		bgfx::setName(handle, name.c_str());
-		return std::make_shared<Texture>(handle);
+
+		return tex;
 	}
 
 	TexturePackerTextureAtlasLoader::TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader)

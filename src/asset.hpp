@@ -68,7 +68,7 @@ namespace darmok
 	{
 	public:
 		DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI* alloc);
-		std::shared_ptr<Image> operator()(const std::string& name, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) override;
+		std::shared_ptr<Image> operator()(const std::string& name) override;
 	private:
 		IDataLoader& _dataLoader;
 		bx::AllocatorI* _allocator;

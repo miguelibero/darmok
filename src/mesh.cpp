@@ -1,48 +1,16 @@
 #include <darmok/mesh.hpp>
 #include <darmok/asset.hpp>
-#include <darmok/model.hpp>
 #include <darmok/material.hpp>
 
 #include <bgfx/embedded_shader.h>
 #include "generated/shaders/basic_vertex.h"
 #include "generated/shaders/basic_fragment.h"
 
-#include <filesystem>
+
 
 namespace darmok
 {
-	static Entity addModelNodeToScene(Scene& scene, const ModelNode& node, const std::string& basePath, Entity entity = 0, Transform* parent = nullptr)
-	{
-		if (entity == 0)
-		{
-			entity = scene.createEntity();
-		}
-		auto& t = scene.addComponent<Transform>(entity, node.getTransform(), parent);
-
-		std::vector<std::shared_ptr<MeshData>> meshData;
-		for (auto& mesh : node.getMeshes())
-		{
-			meshData.push_back(MeshData::fromModel(mesh, basePath));
-		}
-		scene.addComponent<Mesh>(entity, meshData);
-		for (auto& child : node.getChildren())
-		{
-			addModelNodeToScene(scene, child, basePath, 0, &t);
-		}
-		return entity;
-	}
-
-    Entity addModelToScene(Scene& scene, const std::shared_ptr<Model>& model, Entity entity)
-	{
-		if (entity == 0)
-		{
-			entity = scene.createEntity();
-		}
-		auto basePath = std::filesystem::path(model->getPath()).parent_path().string();
-		return addModelNodeToScene(scene, model->getRootNode(), basePath, entity);
-	}
-
-	MeshData::MeshData(const std::shared_ptr<Material>& material, std::vector<float>&& vertices, bgfx::VertexLayout layout, std::vector<VertexIndex>&& indices) noexcept
+	Mesh::Mesh(const std::shared_ptr<Material>& material, std::vector<float>&& vertices, bgfx::VertexLayout layout, std::vector<VertexIndex>&& indices) noexcept
 		: _material(material)
 		, _vertices(std::move(vertices))
 		, _indices(std::move(indices))
@@ -51,139 +19,34 @@ namespace darmok
 	{
 	}
 
-	static bgfx::VertexLayout createModelMeshVertexLayout(const ModelMesh& modelMesh)
-	{
-		bgfx::VertexLayout layout;
-		layout.begin();
-		if (!modelMesh.getVertices().empty())
-		{
-			layout.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
-		}
-		if (!modelMesh.getNormals().empty())
-		{
-			layout.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float);
-		}
-		if (!modelMesh.getTangents().empty())
-		{
-			layout.add(bgfx::Attrib::Tangent, 3, bgfx::AttribType::Float);
-		}
-		if (!modelMesh.getBitangents().empty())
-		{
-			layout.add(bgfx::Attrib::Bitangent, 3, bgfx::AttribType::Float);
-		}
-		auto i = 0;
-		for (auto& texCoords : modelMesh.getTexCoords())
-		{
-			auto attrib = bgfx::Attrib::TexCoord0 + i++;
-			layout.add((bgfx::Attrib::Enum)attrib, texCoords.getCompCount(), bgfx::AttribType::Float);
-		}
-		layout.end();
-		return layout;
-	}
-
-	std::vector<float> createModelMeshVertexData(const ModelMesh& modelMesh, const bgfx::VertexLayout& layout)
-	{
-		std::vector<float> vertices;
-		vertices.reserve(layout.getSize(modelMesh.getVertexCount()) / sizeof(float));
-		auto& verts = modelMesh.getVertices();
-		auto& norms = modelMesh.getNormals();
-		auto& tangs = modelMesh.getTangents();
-		auto& btngs = modelMesh.getBitangents();
-		for (size_t i = 0; i < modelMesh.getVertexCount(); i++)
-		{
-			if(!verts.empty())
-			{
-				auto& v = verts[i];
-				vertices.insert(vertices.end(), { v.x, v.y, v.z });
-			}
-			if (!norms.empty())
-			{
-				auto& v = norms[i];
-				vertices.insert(vertices.end(), { v.x, v.y, v.z });
-			}
-			if (!tangs.empty())
-			{
-				auto& v = tangs[i];
-				vertices.insert(vertices.end(), { v.x, v.y, v.z });
-			}
-			if (!btngs.empty())
-			{
-				auto& v = btngs[i];
-				vertices.insert(vertices.end(), { v.x, v.y, v.z });
-			}
-
-			for (auto& texCoords : modelMesh.getTexCoords())
-			{
-				auto& v = texCoords.getCoords()[i];
-				switch (texCoords.getCompCount())
-				{
-				case 1:
-					vertices.push_back(v.x);
-					break;
-				case 2:
-					vertices.push_back(v.x);
-					vertices.push_back(v.y);
-					break;
-				case 3:
-					vertices.push_back(v.x);
-					vertices.push_back(v.y);
-					vertices.push_back(v.z);
-					break;
-				default:
-					break;
-				}
-			}
-		}
-		return vertices;
-	}
-
-	std::vector<VertexIndex> createModelMeshIndexData(const ModelMesh& modelMesh)
-	{
-		std::vector<VertexIndex> indices;
-		for (auto& face : modelMesh.getFaces())
-		{
-			indices.insert(indices.end(), face.getIndices().begin(), face.getIndices().end());
-		}
-		return indices;
-	}
-
-	std::shared_ptr<MeshData> MeshData::fromModel(const ModelMesh& modelMesh, const std::string& basePath)
-	{
-		auto layout = createModelMeshVertexLayout(modelMesh);
-		auto material = Material::fromModel(modelMesh.getMaterial(), basePath);
-		auto vertices = createModelMeshVertexData(modelMesh, layout);
-		auto indices = createModelMeshIndexData(modelMesh);
-		return std::make_shared<MeshData>(material, std::move(vertices), layout, std::move(indices));
-	}
-
-	const std::shared_ptr<Material>& MeshData::getMaterial() const
+	const std::shared_ptr<Material>& Mesh::getMaterial() const
 	{
 		return _material;
 	}
 
-	const bgfx::VertexBufferHandle& MeshData::getVertexBuffer() const
+	const bgfx::VertexBufferHandle& Mesh::getVertexBuffer() const
 	{
 		return _vertexBuffer.getHandle();
 	}
 
-	const bgfx::IndexBufferHandle& MeshData::getIndexBuffer() const
+	const bgfx::IndexBufferHandle& Mesh::getIndexBuffer() const
 	{
 		return _indexBuffer.getHandle();
 	}
 
-	Mesh::Mesh(const std::vector<std::shared_ptr<MeshData>>& data)
-		: _datas(data)
+	MeshComponent::MeshComponent(const std::vector<std::shared_ptr<Mesh>>& meshes)
+		: _meshes(meshes)
 	{
 	}
 
-	const std::vector<std::shared_ptr<MeshData>>& Mesh::getData() const
+	const std::vector<std::shared_ptr<Mesh>>& MeshComponent::getMeshes() const
 	{
-		return _datas;
+		return _meshes;
 	}
 
-	void Mesh::setData(const std::vector<std::shared_ptr<MeshData>>& data)
+	void MeshComponent::setMeshes(const std::vector<std::shared_ptr<Mesh>>& data)
 	{
-		_datas = data;
+		_meshes = data;
 	}
 
 	static const bgfx::EmbeddedShader _meshEmbeddedShaders[] =
@@ -200,7 +63,6 @@ namespace darmok
 
 	MeshRenderer::~MeshRenderer()
 	{
-
 	}
 
 	void MeshRenderer::init(Registry& registry)
@@ -214,39 +76,35 @@ namespace darmok
 				true
 			);
 		}
-		_texColorUniforn = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+		_uniforms.TextureColor = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+		_uniforms.DiffuseColor = bgfx::createUniform("a_color0", bgfx::UniformType::Vec4);
 	}
 
 	void MeshRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
 	{
-		auto view = registry.view<const Mesh>();
+		auto view = registry.view<const MeshComponent>();
 		for (auto [entity, mesh] : view.each())
 		{
-			auto& data = mesh.getData();
-			if (data.size() == 0)
+			auto& meshes = mesh.getMeshes();
+			if (meshes.size() == 0)
 			{
 				continue;
 			}
-			for (auto& meshData : data)
+			for (auto& mesh : meshes)
 			{
 				Transform::bgfxConfig(entity, encoder, registry);
-				renderData(*meshData, encoder, viewId, registry);
+				renderMesh(*mesh, encoder, viewId, registry);
 			}
 		}
 	}
 
-	void MeshRenderer::renderData(const MeshData& data, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
+	void MeshRenderer::renderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
 	{
+		mesh.getMaterial()->configure(encoder, _uniforms);
 
-		auto textureUnit = 0;
-		for (auto& texture : data.getMaterial()->getTextures(MaterialTextureType::Diffuse))
-		{
-			encoder.setTexture(textureUnit, _texColorUniforn, texture.getTexture()->getHandle());
-			textureUnit++;
-		}
 		const auto vertexStream = 0;
-		encoder.setVertexBuffer(vertexStream, data.getVertexBuffer());
-		encoder.setIndexBuffer(data.getIndexBuffer());
+		encoder.setVertexBuffer(vertexStream, mesh.getVertexBuffer());
+		encoder.setIndexBuffer(mesh.getIndexBuffer());
 
 		// TODO: configure state
 		uint64_t state = BGFX_STATE_WRITE_RGB

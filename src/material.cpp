@@ -1,7 +1,5 @@
 #include <darmok/material.hpp>
-#include <darmok/model.hpp>
 #include <darmok/asset.hpp>
-#include <filesystem>
 
 namespace darmok
 {
@@ -26,25 +24,6 @@ namespace darmok
 	{
 		_properties[name] = std::move(data);
 	}
-
-	MaterialPropertyCollection MaterialPropertyCollection::fromModel(const ModelMaterialPropertyCollection& model, int textureIndex)
-	{
-		MaterialPropertyCollection collection;
-		for (auto& prop : model)
-		{
-			if (textureIndex < 0 && prop.getTextureType() != ModelMaterialTextureType::None)
-			{
-				continue;
-			}
-			else if (prop.getTextureIndex() != textureIndex)
-			{
-				continue;
-			}
-			collection.set(std::string(prop.getKey()), Data::copy(prop.getData()));
-		}
-		return collection;
-	}
-
 
 	MaterialTexture::MaterialTexture(const std::shared_ptr<Texture>& texture, MaterialTextureType type, MaterialPropertyCollection&& props)
 		: _texture(texture)
@@ -83,34 +62,6 @@ namespace darmok
 		return _properties;
 	}
 
-	MaterialTexture MaterialTexture::fromModel(const ModelMaterialTexture& modelTexture, const ModelMaterial& material, const std::string& basePath)
-	{
-		std::filesystem::path texPath(modelTexture.getPath());
-		if (!basePath.empty() && texPath.is_relative())
-		{
-			texPath = std::filesystem::path(basePath) / texPath;
-		}
-		auto path = modelTexture.getPath();
-		auto texture = AssetContext::get().getTextureLoader()(texPath.string());
-		auto type = MaterialTextureType::Unknown;
-		switch (modelTexture.getType())
-		{
-		case ModelMaterialTextureType::Diffuse:
-			type = MaterialTextureType::Diffuse;
-			break;
-		case ModelMaterialTextureType::Specular:
-			type = MaterialTextureType::Specular;
-			break;
-		case ModelMaterialTextureType::Normals:
-			type = MaterialTextureType::Normal;
-			break;
-		default:
-			throw std::runtime_error("unsupported model texture type");
-		}
-		auto props = MaterialPropertyCollection::fromModel(material.getProperties(), modelTexture.getIndex());
-		return MaterialTexture(texture, type, std::move(props));
-	}
-
     Material::Material(std::vector<MaterialTexture>&& textures, MaterialPropertyCollection&& props)
 		: _properties(std::move(props))
 	{
@@ -143,14 +94,35 @@ namespace darmok
 		return textures.back();
 	}
 
-	std::shared_ptr<Material> Material::fromModel(const ModelMaterial& material, const std::string& basePath)
+	std::optional<Color> Material::getColor(MaterialColorType type)
 	{
-		std::vector<MaterialTexture> textures;
-		for (auto& modelTex : material.getTextures(ModelMaterialTextureType::Diffuse))
+		auto itr = _colors.find(type);
+		if (itr == _colors.end())
 		{
-			textures.push_back(MaterialTexture::fromModel(modelTex, material, basePath));
+			return std::nullopt;
 		}
-		auto props = MaterialPropertyCollection::fromModel(material.getProperties(), -1);
-		return std::make_shared<Material>(std::move(textures), std::move(props));
+		return itr->second;
+	}
+
+	void Material::setColor(MaterialColorType type, const Color& color)
+	{
+		_colors[type] = color;
+	}
+
+	void Material::configure(bgfx::Encoder& encoder, const MaterialUniforms& uniforms)
+	{
+		auto textureUnit = 0;
+		for (auto& texture : getTextures(MaterialTextureType::Diffuse))
+		{
+			encoder.setTexture(textureUnit, uniforms.TextureColor, texture.getTexture()->getHandle());
+			textureUnit++;
+		}
+		if (isValid(uniforms.DiffuseColor))
+		{
+			if (auto c = getColor(MaterialColorType::Diffuse))
+			{
+				encoder.setUniform(uniforms.DiffuseColor, &c);
+			}
+		}
 	}
 }

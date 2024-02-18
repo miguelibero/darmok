@@ -18,27 +18,55 @@ namespace darmok
 
 	static const uint64_t defaultTextureCreationFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
 
+	enum class TextureType
+	{
+		Unknown,
+		CubeMap,
+		Texture2D,
+		Texture3D,
+	};
+
+
 	class Image final
 	{
 	public:
 		Image(bimg::ImageContainer* container);
 		~Image();
-
 		bool empty() const;
+
+		uint32_t getWidth() const;
+		uint32_t getHeight() const;
+		uint32_t getDepth() const;
+		bool isCubeMap() const;
+		uint8_t getMipCount() const;
+		uint16_t getLayerCount() const;
+		bimg::TextureFormat::Enum getFormat() const;
+
 		const bgfx::Memory* makeRef() const;
-		bgfx::TextureHandle createTexture(uint64_t flags = defaultTextureCreationFlags) const;
-		bgfx::TextureInfo calcTextureInfo() const;
+		bgfx::TextureInfo getTextureInfo() const;
 	private:
 		bimg::ImageContainer* _container;
 	};
 
+
+
+
 	class Texture final
 	{
 	public:
-		Texture(const bgfx::TextureHandle& handle);
+		Texture(std::shared_ptr<Image> img, uint64_t flags = defaultTextureCreationFlags, const std::string& name = "");
+		Texture(std::shared_ptr<Image> img, const std::string& name);
 		const bgfx::TextureHandle& getHandle() const;
+		std::shared_ptr<Image> getImage() const;
+		void releaseImage();
+		TextureType getType() const;
 	private:
+
+		void init(uint64_t flags);
+
+		std::shared_ptr<Image> _img;
 		bgfx::TextureHandle _handle;
+		TextureType _type;
 	};
 
 	typedef glm::vec<2, uint32_t> TextureVec2;
@@ -102,7 +130,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IImageLoader() = default;
-		virtual std::shared_ptr<Image> operator()(const std::string& name, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) = 0;
+		virtual std::shared_ptr<Image> operator()(const std::string& name) = 0;
 	};
 
 	class BX_NO_VTABLE IProgramLoader

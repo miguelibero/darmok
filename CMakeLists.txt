@@ -111,6 +111,7 @@ set(headers
   ${INCLUDE_DIR}/mesh.hpp
   ${INCLUDE_DIR}/color.hpp
   ${INCLUDE_DIR}/material.hpp
+  ${INCLUDE_DIR}/optional_ref.hpp
 )
 
 set(LIB_NAME darmok)
@@ -224,11 +225,12 @@ target_link_libraries(${LIB_NAME} PRIVATE glfw)
 add_compile_definitions(DARMOK_CONFIG_USE_GLFW)
 
 # glm
+add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
 add_subdirectory(${LIBS_DIR}/glm)
 target_link_libraries(${LIB_NAME} PUBLIC glm)
 install(
   TARGETS
-  glm
+  glm glm-header-only
   EXPORT
   glmTargets
 )

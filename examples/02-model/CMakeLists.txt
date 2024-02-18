@@ -9,7 +9,8 @@ project(
 add_subdirectory(../../ ../../build)
 
 set(ASSETS_DIR ${CMAKE_BINARY_DIR}/assets)
-FILE(COPY assets/ImpChar.fbx DESTINATION ${ASSETS_DIR})
+FILE(COPY assets/brick.fbx DESTINATION ${ASSETS_DIR})
+FILE(COPY assets/brick.png DESTINATION ${ASSETS_DIR})
 
 set(sources
   src/main.cpp

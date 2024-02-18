@@ -14,18 +14,24 @@
 
 namespace darmok
 {
-    Transform::Transform(const glm::mat4x4& mat, Transform* parent)
-        : _changed(false)
+    Transform::Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent)
+        : _position(glm::vec3())
+        , _rotation(glm::vec3())
+        , _scale(glm::vec3(1.f))
+        , _pivot(glm::vec3())
+        , _matrix(glm::mat4())
+        , _changed(false)
         , _parent(parent)
     {
         setMatrix(mat);
     }
 
-    Transform::Transform(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale, const glm::vec3& pivot, Transform* parent)
+    Transform::Transform(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale, const glm::vec3& pivot, const OptionalRef<Transform>& parent)
         : _position(position)
         , _rotation(rotation)
         , _scale(scale)
         , _pivot(pivot)
+        , _matrix(glm::mat4())
         , _changed(true)
         , _parent(parent)
     {
@@ -51,17 +57,17 @@ namespace darmok
         return _pivot;
     }
 
-    const Transform* Transform::getParent() const
+    const OptionalRef<Transform>& Transform::getParent() const
     {
         return _parent;
     }
 
-    Transform* Transform::getParent()
+    OptionalRef<Transform> Transform::getParent()
     {
         return _parent;
     }
 
-    void Transform::setParent(Transform* parent)
+    void Transform::setParent(const OptionalRef<Transform>& parent)
     {
         _parent = parent;
     }
@@ -126,12 +132,11 @@ namespace darmok
             _parent->update();
             _matrix = _parent->getMatrix() * _matrix;
         }
-
         _changed = false;
         return true;
     }
 
-    void Transform::setMatrix(const glm::mat4x4& v)
+    void Transform::setMatrix(const glm::mat4& v)
     {
         glm::quat rotation;
         glm::vec3 skew;
@@ -149,13 +154,13 @@ namespace darmok
         _changed = false;
     }
 
-    const glm::mat4x4& Transform::getMatrix()
+    const glm::mat4& Transform::getMatrix()
     {
         update();
         return _matrix;
     }
 
-    const glm::mat4x4& Transform::getMatrix() const
+    const glm::mat4& Transform::getMatrix() const
     {
         return _matrix;
     }
@@ -202,17 +207,17 @@ namespace darmok
         bgfx::setViewRect(viewId, _origin.x, _origin.y, _size.x, _size.y);
     }
 
-    Camera::Camera(const glm::mat4x4& matrix)
+    Camera::Camera(const glm::mat4& matrix)
         : _matrix(matrix)
     {
     }
 
-    const glm::mat4x4& Camera::getMatrix() const
+    const glm::mat4& Camera::getMatrix() const
     {
         return _matrix;
     }
 
-    void Camera::setMatrix(const glm::mat4x4& matrix)
+    void Camera::setMatrix(const glm::mat4& matrix)
     {
         _matrix = matrix;
     }

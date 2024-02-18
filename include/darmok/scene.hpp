@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <bx/bx.h>
 #include <entt/entt.hpp>
+#include <darmok/optional_ref.hpp>
 
 namespace darmok
 {
@@ -86,26 +87,28 @@ namespace darmok
     public:
         static constexpr auto in_place_delete = true;
 
-        Transform(const glm::mat4x4& mat, Transform* parent = nullptr);
-        Transform(const glm::vec3& position = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3(), Transform* parent = nullptr);
+        Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent = std::nullopt);
+        Transform(const glm::vec3& position = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3(), const OptionalRef<Transform>& parent = std::nullopt);
     
         const glm::vec3& getPosition() const;
         const glm::vec3& getRotation() const;
         const glm::vec3& getScale() const;
         const glm::vec3& getPivot() const;
-        Transform* getParent();
-        const Transform* getParent() const;
+        const OptionalRef<Transform>& getParent() const;
+
+        OptionalRef<Transform> getParent();
+
 
         bool setPosition(const glm::vec3& v);
         bool setRotation(const glm::vec3& v);
         bool setScale(const glm::vec3& v);
         bool setPivot(const glm::vec3& v);
-        void setParent(Transform* parent);
+        void setParent(const OptionalRef<Transform>& parent);
 
         bool update();
-        void setMatrix(const glm::mat4x4& v);
-        const glm::mat4x4& getMatrix();
-        const glm::mat4x4& getMatrix() const;
+        void setMatrix(const glm::mat4& v);
+        const glm::mat4& getMatrix();
+        const glm::mat4& getMatrix() const;
 
         static bool bgfxConfig(Entity entity, bgfx::Encoder& encoder, Registry& registry);
     
@@ -115,8 +118,8 @@ namespace darmok
         glm::vec3 _rotation;
         glm::vec3 _scale;
         glm::vec3 _pivot;
-        glm::mat4x4 _matrix;
-        Transform* _parent;
+        glm::mat4 _matrix;
+        OptionalRef<Transform> _parent;
     };
 
     typedef glm::vec<2, uint16_t> ViewVec;
@@ -138,12 +141,12 @@ namespace darmok
     class Camera final
     {
     public:
-        Camera(const glm::mat4x4& matrix = {});
-        const glm::mat4x4& getMatrix() const;
-        void setMatrix(const glm::mat4x4& matrix);
+        Camera(const glm::mat4& matrix = {});
+        const glm::mat4& getMatrix() const;
+        void setMatrix(const glm::mat4& matrix);
 
     private:
-        glm::mat4x4 _matrix;
+        glm::mat4 _matrix;
     };
 
     class SceneAppComponent final : public AppComponent

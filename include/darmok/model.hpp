@@ -3,6 +3,8 @@
 #include <darmok/utils.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
+#include <darmok/material.hpp>
+#include <darmok/mesh.hpp>
 #include <string>
 #include <glm/glm.hpp>
 
@@ -15,6 +17,8 @@ struct aiNode;
 struct aiScene;
 struct aiMaterial;
 struct aiMaterialProperty;
+struct aiCamera;
+struct aiLight;
 
 namespace darmok
 {
@@ -26,7 +30,7 @@ namespace darmok
         Ambient = 3,
         Emissive = 4,
         Height = 5,
-        Normals = 6,
+        Normal = 6,
         Shininess = 7,
         Opacity = 8,
         Displacement = 9,
@@ -83,6 +87,60 @@ namespace darmok
         String = 0x3,
         Integer = 0x4,
         Buffer = 0x5,
+        Count
+    };
+
+    enum class ModelMaterialColorType
+    {
+        Diffuse,
+        Specular,
+        Ambient,
+        Emissive,
+        Transparent,
+        Reflective,
+        Count
+    };
+
+    enum class ModelMaterialShadingModel
+    {
+        Unknown,
+        Flat = 0x1,
+        Gourand = 0x2,
+        Phong = 0x3,
+        Blinn = 0x4,
+        Toon = 0x5,
+        OrenNayar = 0x6,
+        Minnaert = 0x7,
+        CookTorrance = 0x8,
+        Unlit = 0x09,
+        Fresnel = 0xa,
+        Physicallybased = 0xb,
+        Count
+    };
+
+    enum class ModelLightAttenuationType
+    {
+        Constant,
+        Linear,
+        Quadratic,
+        Count
+    };
+
+    enum class ModelLightColorType
+    {
+        Ambient,
+        Diffuse,
+        Specular,
+        Count
+    };
+
+    enum class ModelLightType
+    {
+        Undefined,
+        Directional,
+        Point,
+        Spot,
+        Count
     };
 
     class ModelMaterialProperty final
@@ -148,14 +206,23 @@ namespace darmok
     class ModelMaterial final
     {
     public:
-        ModelMaterial(aiMaterial* ptr);
+        ModelMaterial(aiMaterial* ptr, const std::string& basePath, aiScene* scene = nullptr);
         std::string_view getName() const;
         ModelMaterialTextureCollection getTextures(ModelMaterialTextureType type) const;
         const ModelMaterialPropertyCollection& getProperties() const;
+        std::shared_ptr<Material> load();
+        std::optional<Color> getColor(ModelMaterialColorType type) const;
+        bool showWireframe() const;
+        ModelMaterialShadingModel getShadingModel() const;
+        float getOpacity() const;
     private:
         aiMaterial* _ptr;
-        std::string _path;
+        aiScene* _scene;
+        std::string _basePath;
         ModelMaterialPropertyCollection _properties;
+        std::shared_ptr<Material> _material;
+
+        MaterialTexture createMaterialTexture(const ModelMaterialTexture& modelTexture);
     };
 
     class ModelMeshFaceIndexCollection final : public BaseReadOnlyCollection<VertexIndex>
@@ -163,7 +230,7 @@ namespace darmok
     public:
         ModelMeshFaceIndexCollection(aiFace* ptr);
         size_t size() const override;
-        const VertexIndex& operator[](size_t pos) const  override;
+        const VertexIndex& operator[](size_t pos) const override;
         VertexIndex& operator[](size_t pos) override;
     private:
         aiFace* _ptr;
@@ -186,7 +253,7 @@ namespace darmok
     public:
         ModelVector3Collection(aiVector3D* ptr, size_t size);
         size_t size() const override;
-        const glm::vec3& operator[](size_t pos) const  override;
+        const glm::vec3& operator[](size_t pos) const override;
         glm::vec3& operator[](size_t pos) override;
     private:
         aiVector3D* _ptr;
@@ -224,11 +291,14 @@ namespace darmok
         ModelTextureCoords create(size_t pos) const override;
     };
 
+    class Model;
+
     class ModelMesh final
     {
     public:
-        ModelMesh(aiMesh* ptr, const aiScene* scene);
+        ModelMesh(aiMesh* ptr, ModelMaterial& material);
 
+        ModelMaterial& getMaterial();
         const ModelMaterial& getMaterial() const;
         const ModelVector3Collection& getVertices() const;
         const ModelVector3Collection& getNormals() const;
@@ -237,26 +307,70 @@ namespace darmok
         const ModelMeshTextureCoordsCollection& getTexCoords() const;
         const ModelMeshFaceCollection& getFaces() const;
         const size_t getVertexCount() const;
+
+        std::shared_ptr<Mesh> load();
+
     private:
         aiMesh* _ptr;
-        ModelMaterial _material;
+        ModelMaterial& _material;
         ModelVector3Collection _vertices;
         ModelVector3Collection _normals;
         ModelVector3Collection _tangents;
         ModelVector3Collection _bitangents;
         ModelMeshTextureCoordsCollection _texCoords;
         ModelMeshFaceCollection _faces;
+        std::shared_ptr<Mesh> _mesh;
     };
 
-    class ModelNodeMeshCollection final : public MemReadOnlyCollection<ModelMesh>
+    class ModelNodeMeshCollection final : public BaseReadOnlyCollection<ModelMesh>
     {
     public:
-        ModelNodeMeshCollection(aiNode* ptr, const aiScene* scene);
+        ModelNodeMeshCollection(aiNode* ptr, Model& model);
         size_t size() const override;
+        std::vector<std::shared_ptr<Mesh>> load();
+        const ModelMesh& operator[](size_t pos) const override;
+        ModelMesh& operator[](size_t pos) override;
     private:
         aiNode* _ptr;
-        const aiScene* _scene;
-        ModelMesh create(size_t pos) const override;
+        Model& _model;
+    };
+
+    class ModelCamera final
+    {
+    public:
+        ModelCamera(aiCamera* ptr);
+        std::string_view getName() const;
+        glm::mat4 getProjection() const;
+        const glm::mat4& getTransform() const;
+        float getAspect() const;
+        float getClipFar() const;
+        float getClipNear() const;
+        float getHorizontalFieldOfView() const;
+        float getOrthographicWidth() const;
+        const glm::vec3& getLookAt() const;
+        const glm::vec3& getPosition() const;
+        const glm::vec3& getUp() const;
+    private:
+        aiCamera* _ptr;
+        glm::mat4 _transform;
+    };
+
+    class ModelLight final
+    {
+    public:
+        ModelLight(aiLight* ptr);
+        std::string_view getName() const;
+        float getInnerConeAngle() const;
+        float getOuterConeAngle() const;
+
+        float getAttenuation(ModelLightAttenuationType type) const;
+        Color getColor(ModelLightColorType type) const;
+
+        const glm::vec3& getDirection() const;
+        const glm::vec3& getPosition() const;
+        ModelLightType getType() const;
+    private:
+        aiLight* _ptr;
     };
 
     class ModelNode;
@@ -264,38 +378,82 @@ namespace darmok
     class ModelNodeChildrenCollection final : public MemReadOnlyCollection<ModelNode>
     {
     public:
-        ModelNodeChildrenCollection(aiNode* ptr, const aiScene* scene);
+        ModelNodeChildrenCollection(aiNode* ptr, Model& model, const std::string& basePath);
         size_t size() const override;
     private:
         aiNode* _ptr;
-        const aiScene* _scene;
+        Model& _model;
+        std::string _basePath;
         ModelNode create(size_t pos) const override;
     };
 
     class ModelNode final
     {
     public:
-        ModelNode(aiNode* ptr, const aiScene* scene);
+        ModelNode(aiNode* ptr, Model& model, const std::string& basePath);
         
         std::string_view getName() const;
-        const glm::mat4x4& getTransform() const;
+        const glm::mat4& getTransform() const;
         const ModelNodeMeshCollection& getMeshes() const;
         const ModelNodeChildrenCollection& getChildren() const;
+        OptionalRef<const ModelNode> getChild(const std::string& path) const;
+
+        ModelNodeMeshCollection& getMeshes();
+        ModelNodeChildrenCollection& getChildren();
+        OptionalRef<ModelNode> getChild(const std::string& path);
 
     private:
         aiNode* _ptr;
         ModelNodeMeshCollection _meshes;
         ModelNodeChildrenCollection _children;
+        std::string _basePath;
+    };
+
+    class ModelCameraCollection final : public MemReadOnlyCollection<ModelCamera>
+    {
+    public:
+        ModelCameraCollection(const aiScene* ptr);
+        size_t size() const override;
+        OptionalRef<ModelCamera> get(const std::string& name);
+        OptionalRef<const ModelCamera> get(const std::string& name) const;
+    private:
+        const aiScene* _ptr;
+        ModelCamera create(size_t pos) const override;
+    };
+
+    class ModelLightCollection final : public MemReadOnlyCollection<ModelLight>
+    {
+    public:
+        ModelLightCollection(const aiScene* ptr);
+        size_t size() const override;
+        OptionalRef<ModelLight> get(const std::string& name);
+        OptionalRef<const ModelLight> get(const std::string& name) const;
+    private:
+        const aiScene* _ptr;
+        ModelLight create(size_t pos) const override;
     };
 
     class ModelMaterialCollection final : public MemReadOnlyCollection<ModelMaterial>
     {
     public:
-        ModelMaterialCollection(const aiScene* ptr);
+        ModelMaterialCollection(const aiScene* ptr, const std::string& basePath);
         size_t size() const override;
     private:
         const aiScene* _ptr;
+        std::string _basePath;
+
         ModelMaterial create(size_t pos) const override;
+    };
+
+    class ModelMeshCollection final : public MemReadOnlyCollection<ModelMesh>
+    {
+    public:
+        ModelMeshCollection(const aiScene* ptr, ModelMaterialCollection& materials);
+        size_t size() const override;
+    private:
+        const aiScene* _ptr;
+        ModelMaterialCollection& _materials;
+        ModelMesh create(size_t pos) const override;
     };
 
     class Model final
@@ -305,11 +463,28 @@ namespace darmok
         std::string_view getName() const;
         const std::string& getPath() const;
         const ModelNode& getRootNode() const;
+        const ModelMeshCollection& getMeshes() const;
         const ModelMaterialCollection& getMaterials() const;
+        const ModelCameraCollection& getCameras() const;
+        const ModelLightCollection& getLights() const;
+
+        ModelNode& getRootNode();
+        ModelMeshCollection& getMeshes();
+        ModelMaterialCollection& getMaterials();
+        ModelCameraCollection& getCameras();
+        ModelLightCollection& getLights();
+
     private:
         const aiScene* _ptr;
-        ModelNode _rootNode;
+        std::string _basePath;
         std::string _path;
+        ModelNode _rootNode;
+        ModelMeshCollection _meshes;
         ModelMaterialCollection _materials;
+        ModelCameraCollection _cameras;
+        ModelLightCollection _lights;
 	};
+
+    Entity addModelNodeToScene(Scene& scene, ModelNode& node, Entity entity = 0, const OptionalRef<Transform>& parent = std::nullopt);
+    Entity addModelToScene(Scene& scene, Model& model, Entity entity = 0);
 }
