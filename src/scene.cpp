@@ -142,13 +142,14 @@ namespace darmok
         glm::vec3 skew;
         glm::vec4 perspective;
         glm::decompose(v, _scale, rotation, _position, skew, perspective);
+        _position /= _scale;
         rotation = glm::conjugate(rotation);
 
-        float yaw = 0;
-        float pitch = 0;
-        float roll = 0;
-        glm::extractEulerAngleYXZ(glm::mat4_cast(rotation), yaw, pitch, roll);
-        _rotation = { glm::degrees(pitch), glm::degrees(yaw), glm::degrees(roll) };
+        float rx = 0;
+        float ry = 0;
+        float rz = 0;
+        glm::extractEulerAngleXYZ(glm::mat4_cast(rotation), rx, ry, rz);
+        _rotation = { glm::degrees(rx), glm::degrees(ry), glm::degrees(rz) };
 
         _matrix = v;
         _changed = false;

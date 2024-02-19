@@ -22,7 +22,7 @@ namespace
 			scene.addRenderer<darmok::Physics2DDebugRenderer>();
 			scene.addLogicUpdater<darmok::SpriteAnimationUpdater>();
 
-			auto tex = darmok::AssetContext::get().loadTexture("assets/darmok.jpg");
+			auto tex = darmok::AssetContext::get().getTextureLoader()("assets/darmok.jpg");
 			
 			auto camEntity = scene.createEntity();
 			_cam = &scene.addComponent<darmok::Camera>(camEntity);
@@ -30,17 +30,18 @@ namespace
 			// bouncing sprite
 			auto spriteEntity = scene.createEntity();
 			_spriteTrans = &scene.addComponent<darmok::Transform>(spriteEntity);
-			scene.addComponent<darmok::Sprite>(spriteEntity, darmok::SpriteData::fromTexture(tex, _spriteSize));
+			scene.addComponent<darmok::SpriteComponent>(spriteEntity, darmok::Sprite::fromTexture(tex, _spriteSize));
+			scene.addComponent<darmok::BoxCollider2D>(spriteEntity, _spriteSize);
 
 			_spriteDir = { 1, 1 };
 			_spriteDir *= 80.f;
 
 			// sprite animation
-			auto texAtlas = darmok::AssetContext::get().loadAtlas("assets/warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
+			auto texAtlas = darmok::AssetContext::get().getTextureAtlasLoader()("assets/warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
 			static const std::string animNamePrefix = "Attack/";
-			auto animBounds = texAtlas.getBounds(animNamePrefix);
+			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto animEntity = scene.createEntity();
-			scene.addComponent<darmok::Sprite>(animEntity, darmok::SpriteAnimation::fromAtlas(texAtlas, animNamePrefix));
+			scene.addComponent<darmok::SpriteAnimationComponent>(animEntity, darmok::Sprite::fromAtlas(*texAtlas, animNamePrefix));
 			scene.addComponent<darmok::BoxCollider2D>(animEntity, glm::vec2(animBounds.size), glm::vec2(animBounds.offset));
 			_animTrans = &scene.addComponent<darmok::Transform>(animEntity, glm::vec3{}, glm::vec3{}, glm::vec3(4));
 		}

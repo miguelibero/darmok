@@ -19,22 +19,23 @@ namespace darmok
     class TextureAtlas;
     class TextureAtlasElement;
 
-    class SpriteData final
+    class Sprite final
     {
     public:
-        SpriteData(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertex, std::vector<VertexIndex>&& indices) noexcept;
-        SpriteData(SpriteData&& other) noexcept = default;
-        SpriteData& operator=(SpriteData&& other) noexcept = default;
+        Sprite(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertex, std::vector<VertexIndex>&& indices) noexcept;
+        Sprite(Sprite&& other) noexcept = default;
+        Sprite& operator=(Sprite&& other) noexcept = default;
 
-        static std::shared_ptr<SpriteData> fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, const Color& color = Colors::white);
-        static std::shared_ptr<SpriteData> fromTexture(const std::shared_ptr<Texture>& texture, const glm::vec2& size, const Color& color = Colors::white);
+        static std::shared_ptr<Sprite> fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, const Color& color = Colors::white);
+        static std::vector<std::shared_ptr<Sprite>> fromAtlas(const TextureAtlas& atlas, const std::string& namePrefix, const Color& color = Colors::white);
+        static std::shared_ptr<Sprite> fromTexture(const std::shared_ptr<Texture>& texture, const glm::vec2& size, const Color& color = Colors::white);
 
         const std::shared_ptr<Texture>& getTexture() const;
         const bgfx::VertexBufferHandle& getVertexBuffer() const;
         const bgfx::IndexBufferHandle& getIndexBuffer() const;
     private:
-        SpriteData(const SpriteData& other) = delete;
-        SpriteData& operator=(const SpriteData& other) = delete;
+        Sprite(const Sprite& other) = delete;
+        Sprite& operator=(const Sprite& other) = delete;
 
         std::shared_ptr<Texture> _texture;
         std::vector<SpriteVertex> _vertices;
@@ -45,40 +46,44 @@ namespace darmok
         static const bgfx::VertexLayout& getVertexLayout();
     };
 
-    class SpriteAnimation final
+    class BX_NO_VTABLE ISpriteProvider
     {
     public:
-        SpriteAnimation(const std::vector<std::shared_ptr<SpriteData>>& frames = {}, int fps = 15);
-        SpriteAnimation(const SpriteAnimation& anim) noexcept = default;
-        SpriteAnimation& operator=(const SpriteAnimation& anim) noexcept = default;
-        SpriteAnimation(SpriteAnimation&& anim) noexcept = default;
-        SpriteAnimation& operator=(SpriteAnimation&& anim) noexcept = default;
+        virtual ~ISpriteProvider() = default;
+        virtual std::shared_ptr<const Sprite> getSprite() const = 0;
+        virtual std::shared_ptr<Sprite> getSprite() = 0;
+    };
 
-        static SpriteAnimation fromAtlas(const TextureAtlas& atlas, const std::string& namePrefix, int fps = 15, const Color& color = Colors::white);
-        
+    class SpriteAnimationComponent final : ISpriteProvider
+    {
+    public:
+        SpriteAnimationComponent(const std::vector<std::shared_ptr<Sprite>>& frames = {}, int fps = 15);
+        SpriteAnimationComponent(const SpriteAnimationComponent& anim) noexcept = default;
+        SpriteAnimationComponent& operator=(const SpriteAnimationComponent& anim) noexcept = default;
+        SpriteAnimationComponent(SpriteAnimationComponent&& anim) noexcept = default;
+        SpriteAnimationComponent& operator=(SpriteAnimationComponent&& anim) noexcept = default;
+
         bool empty() const;
-        const std::shared_ptr<SpriteData>& getData() const;
         void update(float dt);
+
+        std::shared_ptr<const Sprite> getSprite() const override;
+        std::shared_ptr<Sprite> getSprite()  override;
+
     private:
-        std::vector<std::shared_ptr<SpriteData>> _frames;
+        std::vector<std::shared_ptr<Sprite>> _frames;
         float _frameDuration;
         size_t _currentFrame;
         float _timeSinceLastFrame;
     };
 
-    class Sprite final
+    class SpriteComponent final : ISpriteProvider
     {
     public:
-        Sprite(const std::shared_ptr<SpriteData>& data = nullptr);
-        Sprite(const SpriteAnimation& anim);
-        const std::shared_ptr<SpriteData>& getData() const;
-        const SpriteAnimation& getAnimation() const;
-        SpriteAnimation& getAnimation();
-        void setData(const std::shared_ptr<SpriteData>& data);
-        void setAnimation(const SpriteAnimation& data);
+        SpriteComponent(const std::shared_ptr<Sprite>& data = nullptr);
+        std::shared_ptr<const Sprite> getSprite() const override;
+        std::shared_ptr<Sprite> getSprite()  override;
     private:
-        std::shared_ptr<SpriteData> _data;
-        SpriteAnimation _anim;
+        std::shared_ptr<Sprite> _data;
     };
 
     class SpriteRenderer final : public ISceneRenderer
@@ -90,7 +95,7 @@ namespace darmok
         void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry) override;
     private:
 
-        void renderData(const SpriteData& data, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry);
+        void renderData(const Sprite& data, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry);
 
         bgfx::ProgramHandle _program;
         bgfx::UniformHandle _texColorUniforn;

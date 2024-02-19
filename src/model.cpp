@@ -45,10 +45,54 @@ namespace darmok
 		return addModelNodeToScene(scene, model.getRootNode(), entity);
 	}
 
-	std::string_view getStringView(const aiString& str)
+	static inline std::string_view getStringView(const aiString& str)
 	{
 		return std::string_view(str.data, str.length);
 	}
+
+	static inline glm::mat4 convertMatrix(const aiMatrix4x4& from)
+	{
+		glm::mat4 to;
+		//the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
+		to[0][0] = from.a1; to[1][0] = from.a2; to[2][0] = from.a3; to[3][0] = from.a4;
+		to[0][1] = from.b1; to[1][1] = from.b2; to[2][1] = from.b3; to[3][1] = from.b4;
+		to[0][2] = from.c1; to[1][2] = from.c2; to[2][2] = from.c3; to[3][2] = from.c4;
+		to[0][3] = from.d1; to[1][3] = from.d2; to[2][3] = from.d3; to[3][3] = from.d4;
+		return to;
+	}
+
+	static inline glm::vec3 convertVector(const aiVector3D& vec)
+	{
+		return glm::vec3(vec.x, vec.y, vec.z);
+	}
+
+	static inline uint8_t convertColor(ai_real v)
+	{
+		return 255 * v;
+	}
+
+	Color convertColor(const aiColor4D& c)
+	{
+		return Color
+		{
+			convertColor(c.r),
+			convertColor(c.g),
+			convertColor(c.b),
+			convertColor(c.a),
+		};
+	}
+
+	Color convertColor(const aiColor3D& c)
+	{
+		return Color
+		{
+			convertColor(c.r),
+			convertColor(c.g),
+			convertColor(c.b),
+			255,
+		};
+	}
+
 
 	ModelMaterialProperty::ModelMaterialProperty(aiMaterialProperty* ptr)
 		: _ptr(ptr)
@@ -223,33 +267,6 @@ namespace darmok
 		return collection;
 	}
 
-	uint8_t createColorValue(ai_real v)
-	{
-		return 255 * v;
-	}
-
-	Color createColor(const aiColor4D& c)
-	{
-		return Color
-		{
-			createColorValue(c.r),
-			createColorValue(c.g),
-			createColorValue(c.b),
-			createColorValue(c.a),
-		};
-	}
-
-	Color createColor(const aiColor3D& c)
-	{
-		return Color
-		{
-			createColorValue(c.r),
-			createColorValue(c.g),
-			createColorValue(c.b),
-			255,
-		};
-	}
-
 	std::optional<Color> ModelMaterial::getColor(ModelMaterialColorType type) const
 	{
 		aiColor4D color;
@@ -277,7 +294,7 @@ namespace darmok
 		}
 		if (r == AI_SUCCESS)
 		{
-			return createColor(color);
+			return convertColor(color);
 		}
 		return std::nullopt;
 	}
@@ -476,15 +493,6 @@ namespace darmok
 		return _indices;
 	}
 
-	static glm::vec3* getModelVector3(aiVector3D* vertex, size_t pos)
-	{
-		if (vertex == nullptr)
-		{
-			return nullptr;
-		}
-		return (glm::vec3*)&(vertex[pos]);
-	}
-
 	ModelVector3Collection::ModelVector3Collection(aiVector3D* ptr, size_t size)
 		: _ptr(ptr)
 		, _size(size)
@@ -496,14 +504,9 @@ namespace darmok
 		return _ptr == nullptr ? 0 : _size;
 	}
 
-	const glm::vec3& ModelVector3Collection::operator[](size_t pos) const
+	glm::vec3 ModelVector3Collection::create(size_t pos) const
 	{
-		return (glm::vec3&)_ptr[pos];
-	}
-
-	glm::vec3& ModelVector3Collection::operator[](size_t pos)
-	{
-		return (glm::vec3&)_ptr[pos];
+		return convertVector(_ptr[pos]);
 	}
 
 	ModelTextureCoords::ModelTextureCoords(aiMesh* mesh, size_t pos)
@@ -769,6 +772,9 @@ namespace darmok
 	ModelCamera::ModelCamera(aiCamera* ptr)
 		: _ptr(ptr)
 	{
+		aiMatrix4x4 mat;
+		_ptr->GetCameraMatrix(mat);
+		_transform = convertMatrix(mat);
 	}
 
 	std::string_view ModelCamera::getName() const
@@ -783,7 +789,6 @@ namespace darmok
 
 	const glm::mat4& ModelCamera::getTransform() const
 	{
-		_ptr->GetCameraMatrix((aiMatrix4x4&)_transform);
 		return _transform;
 	}
 
@@ -812,19 +817,19 @@ namespace darmok
 		return _ptr->mOrthographicWidth;
 	}
 
-	const glm::vec3& ModelCamera::getLookAt() const
+	glm::vec3 ModelCamera::getLookAt() const
 	{
-		return (glm::vec3&)_ptr->mLookAt;
+		return convertVector(_ptr->mLookAt);
 	}
 
-	const glm::vec3& ModelCamera::getPosition() const
+	glm::vec3 ModelCamera::getPosition() const
 	{
-		return (glm::vec3&)_ptr->mPosition;
+		return convertVector(_ptr->mPosition);
 	}
 
-	const glm::vec3& ModelCamera::getUp() const
+	glm::vec3 ModelCamera::getUp() const
 	{
-		return (glm::vec3&)_ptr->mUp;
+		return convertVector(_ptr->mUp);
 	}
 
 	ModelLight::ModelLight(aiLight* ptr)
@@ -866,23 +871,23 @@ namespace darmok
 		switch (type)
 		{
 		case ModelLightColorType::Ambient:
-			return createColor(_ptr->mColorAmbient);
+			return convertColor(_ptr->mColorAmbient);
 		case ModelLightColorType::Diffuse:
-			return createColor(_ptr->mColorDiffuse);
+			return convertColor(_ptr->mColorDiffuse);
 		case ModelLightColorType::Specular:
-			return createColor(_ptr->mColorSpecular);
+			return convertColor(_ptr->mColorSpecular);
 		}
 		return Colors::white;
 	}
 
-	const glm::vec3& ModelLight::getDirection() const
+	glm::vec3 ModelLight::getDirection() const
 	{
-		return (glm::vec3&)_ptr->mDirection;
+		return convertVector(_ptr->mDirection);
 	}
 
-	const glm::vec3& ModelLight::getPosition() const
+	glm::vec3 ModelLight::getPosition() const
 	{
-		return (glm::vec3&)_ptr->mPosition;
+		return convertVector(_ptr->mPosition);
 	}
 
 	ModelLightType ModelLight::getType() const
@@ -920,9 +925,9 @@ namespace darmok
 		return getStringView(_ptr->mName);
 	}
 
-	const glm::mat4& ModelNode::getTransform() const
+	glm::mat4 ModelNode::getTransform() const
 	{
-		return (glm::mat4&)_ptr->mTransformation;
+		return convertMatrix(_ptr->mTransformation);
 	}
 
 	const ModelNodeMeshCollection& ModelNode::getMeshes() const

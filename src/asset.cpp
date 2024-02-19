@@ -82,14 +82,9 @@ namespace darmok
 		return _container == nullptr || _container->m_size == 0;
 	}
 
-	uint32_t Image::getWidth() const
+	glm::uvec2 Image::getSize() const
 	{
-		return _container->m_width;
-	}
-
-	uint32_t Image::getHeight() const
-	{
-		return _container->m_height;
+		return glm::uvec2(_container->m_width, _container->m_height);
 	}
 
 	uint32_t Image::getDepth() const
@@ -163,8 +158,9 @@ namespace darmok
 		const auto mem = _img->makeRef();
 		auto format = bgfx::TextureFormat::Enum(_img->getFormat());
 		auto hasMips = 1 < _img->getMipCount();
-		auto w = uint16_t(_img->getWidth());
-		auto h = uint16_t(_img->getHeight());
+		auto s = _img->getSize();
+		auto w = uint16_t(s.x);
+		auto h = uint16_t(s.y);
 		auto layers = _img->getLayerCount();
 		if (_img->isCubeMap())
 		{

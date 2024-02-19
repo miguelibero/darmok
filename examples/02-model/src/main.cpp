@@ -24,7 +24,7 @@ namespace
 			auto& cam = model->getCameras().get("Camera").value();
 			auto camEntity = scene.createEntity();
 			scene.addComponent<darmok::Camera>(camEntity, cam.getProjection());
-			auto& t = scene.addComponent<darmok::Transform>(camEntity, cam2.getTransform());
+			auto& t = scene.addComponent<darmok::Transform>(camEntity, cam2.getTransform() * cam.getTransform());
 			
 			auto& cube = model->getRootNode().getChild("Cube").value();
 			darmok::addModelNodeToScene(scene, cube);

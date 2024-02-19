@@ -124,5 +124,14 @@ namespace darmok
 				encoder.setUniform(uniforms.DiffuseColor, &c);
 			}
 		}
+
+		// TODO: configure state
+		uint64_t state = BGFX_STATE_WRITE_RGB
+			| BGFX_STATE_WRITE_A
+			| BGFX_STATE_MSAA
+			| BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
+			;
+
+		encoder.setState(state);
 	}
 }

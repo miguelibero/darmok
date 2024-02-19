@@ -106,13 +106,6 @@ namespace darmok
 		encoder.setVertexBuffer(vertexStream, mesh.getVertexBuffer());
 		encoder.setIndexBuffer(mesh.getIndexBuffer());
 
-		// TODO: configure state
-		uint64_t state = BGFX_STATE_WRITE_RGB
-			| BGFX_STATE_WRITE_A
-			| BGFX_STATE_MSAA
-			| BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
-			;
-		encoder.setState(state);
 		encoder.submit(viewId, _program);
 	}
 }

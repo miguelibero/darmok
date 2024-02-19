@@ -10,7 +10,7 @@
 
 namespace darmok
 {
-    const bgfx::VertexLayout& SpriteData::getVertexLayout()
+    const bgfx::VertexLayout& Sprite::getVertexLayout()
     {
         static bgfx::VertexLayout layout;
         if (layout.m_hash == 0)
@@ -26,7 +26,7 @@ namespace darmok
         return layout;
     }
 
-    std::shared_ptr<SpriteData> SpriteData::fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, const Color& color)
+    std::shared_ptr<Sprite> Sprite::fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, const Color& color)
     {
         std::vector<SpriteVertex> vertices;
         
@@ -39,12 +39,25 @@ namespace darmok
                 color
             });
         }
-        return std::make_shared<SpriteData>(atlas.texture, std::move(vertices), std::vector<VertexIndex>(element.indices));
+        return std::make_shared<Sprite>(atlas.texture, std::move(vertices), std::vector<VertexIndex>(element.indices));
     }
 
-    std::shared_ptr<SpriteData> SpriteData::fromTexture(const std::shared_ptr<Texture>& texture, const glm::vec2& size, const Color& color)
+    std::vector<std::shared_ptr<Sprite>> Sprite::fromAtlas(const TextureAtlas& atlas, const std::string& namePrefix, const Color& color)
     {
-        return std::make_shared<SpriteData>(texture, std::vector<SpriteVertex>{
+        std::vector<std::shared_ptr<Sprite>> frames;
+        for (auto& elm : atlas.elements)
+        {
+            if (elm.name.starts_with(namePrefix))
+            {
+                frames.push_back(Sprite::fromAtlas(atlas, elm, color));
+            }
+        }
+        return frames;
+    }
+
+    std::shared_ptr<Sprite> Sprite::fromTexture(const std::shared_ptr<Texture>& texture, const glm::vec2& size, const Color& color)
+    {
+        return std::make_shared<Sprite>(texture, std::vector<SpriteVertex>{
                 SpriteVertex{ {0.f, 0.f},       {0.f, 0.f}, color },
                 SpriteVertex{ {size.x, 0.f},    {1.f, 0.f}, color },
                 SpriteVertex{ size,             {1.f, 1.f}, color },
@@ -52,7 +65,7 @@ namespace darmok
             }, std::vector<VertexIndex>{ 0, 1, 2, 2, 3, 0 });
     }
 
-    SpriteData::SpriteData(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept
+    Sprite::Sprite(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept
         : _texture(texture)
         , _vertices(std::move(vertices))
         , _indices(std::move(indices))
@@ -61,21 +74,21 @@ namespace darmok
     {
     }
 
-    const std::shared_ptr<Texture>& SpriteData::getTexture() const
+    const std::shared_ptr<Texture>& Sprite::getTexture() const
     {
         return _texture;
     }
-    const bgfx::VertexBufferHandle& SpriteData::getVertexBuffer() const
+    const bgfx::VertexBufferHandle& Sprite::getVertexBuffer() const
     {
         return _vertexBuffer.getHandle();
     }
 
-    const bgfx::IndexBufferHandle& SpriteData::getIndexBuffer() const
+    const bgfx::IndexBufferHandle& Sprite::getIndexBuffer() const
     {
         return _indexBuffer.getHandle();
     }
 
-    SpriteAnimation::SpriteAnimation(const std::vector<std::shared_ptr<SpriteData>>& frames, int fps)
+    SpriteAnimationComponent::SpriteAnimationComponent(const std::vector<std::shared_ptr<Sprite>>& frames, int fps)
         : _frames(frames)
         , _frameDuration(1.f / fps)
         , _currentFrame(0)
@@ -83,30 +96,31 @@ namespace darmok
     {
     }
 
-    SpriteAnimation SpriteAnimation::fromAtlas(const TextureAtlas& atlas, const std::string& namePrefix, int fps, const Color& color)
+    std::shared_ptr<const Sprite> SpriteAnimationComponent::getSprite() const
     {
-        std::vector<std::shared_ptr<SpriteData>> frames;
-        for (auto& elm : atlas.elements)
+        if (_currentFrame < 0 || _currentFrame >= _frames.size())
         {
-            if (elm.name.starts_with(namePrefix))
-            {
-                frames.push_back(SpriteData::fromAtlas(atlas, elm, color));
-            }
+            return nullptr;
         }
-        return std::move(SpriteAnimation(frames, fps));
-    }
-
-    const std::shared_ptr<SpriteData>& SpriteAnimation::getData() const
-    {
         return _frames[_currentFrame];
     }
 
-    bool SpriteAnimation::empty() const
+    std::shared_ptr<Sprite> SpriteAnimationComponent::getSprite()
+    {
+        if (_currentFrame < 0 || _currentFrame >= _frames.size())
+        {
+            return nullptr;
+        }
+        return _frames[_currentFrame];
+    }
+
+
+    bool SpriteAnimationComponent::empty() const
     {
         return _frames.empty();
     }
 
-    void SpriteAnimation::update(float dt)
+    void SpriteAnimationComponent::update(float dt)
     {
         _timeSinceLastFrame += dt;
         if (_timeSinceLastFrame > _frameDuration)
@@ -120,45 +134,19 @@ namespace darmok
         }
     }
 
-    Sprite::Sprite(const std::shared_ptr<SpriteData>& data)
+    SpriteComponent::SpriteComponent(const std::shared_ptr<Sprite>& data)
         : _data(data)
     {
     }
 
-    Sprite::Sprite(const SpriteAnimation& anim)
-        : _anim(anim)
+    std::shared_ptr<const Sprite> SpriteComponent::getSprite() const
     {
-    }
-
-    const SpriteAnimation& Sprite::getAnimation() const
-    {
-        return _anim;
-    }
-
-    SpriteAnimation& Sprite::getAnimation()
-    {
-        return _anim;
-    }
-
-    void Sprite::setAnimation(const SpriteAnimation& anim)
-    {
-        _data = nullptr;
-        _anim = anim;
-    }
-
-    const std::shared_ptr<SpriteData>& Sprite::getData() const
-    {
-        auto& data = _anim.getData();
-        if (data != nullptr)
-        {
-            return data;
-        }
         return _data;
     }
 
-    void Sprite::setData(const std::shared_ptr<SpriteData>& data)
+    std::shared_ptr<Sprite> SpriteComponent::getSprite()
     {
-        _data = data;
+        return _data;
     }
 
     SpriteRenderer::SpriteRenderer(bgfx::ProgramHandle program)
@@ -196,10 +184,21 @@ namespace darmok
 
     void SpriteRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
     {
-        auto view = registry.view<const Sprite>();
-        for (auto [entity, sprite] : view.each())
+        auto sprites = registry.view<const SpriteComponent>();
+        for (auto [entity, sprite] : sprites.each())
         {
-            auto& data = sprite.getData();
+            auto data = sprite.getSprite();
+            if (data == nullptr)
+            {
+                continue;
+            }
+            Transform::bgfxConfig(entity, encoder, registry);
+            renderData(*data, encoder, viewId, registry);
+        }
+        auto anims = registry.view<const SpriteAnimationComponent>();
+        for (auto [entity, anim] : anims.each())
+        {
+            auto data = anim.getSprite();
             if (data == nullptr)
             {
                 continue;
@@ -209,7 +208,7 @@ namespace darmok
         }
     }
 
-    void SpriteRenderer::renderData(const SpriteData& data, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
+    void SpriteRenderer::renderData(const Sprite& data, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
     {
         const auto textureUnit = 0;
         const auto vertexStream = 0;
@@ -230,10 +229,10 @@ namespace darmok
 
     void SpriteAnimationUpdater::updateLogic(float dt, Registry& registry)
     {
-        auto sprites = registry.view<Sprite>();
-        for (auto [entity, sprite] : sprites.each())
+        auto anims = registry.view<SpriteAnimationComponent>();
+        for (auto [entity, anim] : anims.each())
         {
-            sprite.getAnimation().update(dt);
+            anim.update(dt);
         }
     }
 }

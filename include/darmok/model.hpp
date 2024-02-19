@@ -185,9 +185,9 @@ namespace darmok
         ModelMaterialTextureType _type;
         size_t _index;
         std::string _path;
-        ModelMaterialTextureMapping _mapping;
         size_t _coordIndex;
         float _blend;
+        ModelMaterialTextureMapping _mapping;
         ModelMaterialTextureOperation _operation;
         ModelMaterialTextureMapMode _mapMode;
     };
@@ -248,16 +248,16 @@ namespace darmok
         ModelMeshFaceIndexCollection _indices;
     };
 
-    class ModelVector3Collection final : public BaseReadOnlyCollection<glm::vec3>
+    class ModelVector3Collection final : public MemReadOnlyCollection<glm::vec3>
     {
     public:
         ModelVector3Collection(aiVector3D* ptr, size_t size);
         size_t size() const override;
-        const glm::vec3& operator[](size_t pos) const override;
-        glm::vec3& operator[](size_t pos) override;
+
     private:
         aiVector3D* _ptr;
         size_t _size;
+        glm::vec3 create(size_t pos) const override;
     };
 
     class ModelTextureCoords final
@@ -347,9 +347,9 @@ namespace darmok
         float getClipNear() const;
         float getHorizontalFieldOfView() const;
         float getOrthographicWidth() const;
-        const glm::vec3& getLookAt() const;
-        const glm::vec3& getPosition() const;
-        const glm::vec3& getUp() const;
+        glm::vec3 getLookAt() const;
+        glm::vec3 getPosition() const;
+        glm::vec3 getUp() const;
     private:
         aiCamera* _ptr;
         glm::mat4 _transform;
@@ -366,8 +366,8 @@ namespace darmok
         float getAttenuation(ModelLightAttenuationType type) const;
         Color getColor(ModelLightColorType type) const;
 
-        const glm::vec3& getDirection() const;
-        const glm::vec3& getPosition() const;
+        glm::vec3 getDirection() const;
+        glm::vec3 getPosition() const;
         ModelLightType getType() const;
     private:
         aiLight* _ptr;
@@ -393,7 +393,7 @@ namespace darmok
         ModelNode(aiNode* ptr, Model& model, const std::string& basePath);
         
         std::string_view getName() const;
-        const glm::mat4& getTransform() const;
+        glm::mat4 getTransform() const;
         const ModelNodeMeshCollection& getMeshes() const;
         const ModelNodeChildrenCollection& getChildren() const;
         OptionalRef<const ModelNode> getChild(const std::string& path) const;
