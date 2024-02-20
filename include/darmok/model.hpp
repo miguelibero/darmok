@@ -6,7 +6,10 @@
 #include <darmok/material.hpp>
 #include <darmok/mesh.hpp>
 #include <string>
+#include <string_view>
+#include <memory>
 #include <glm/glm.hpp>
+#include <bx/bx.h>
 
 template <typename TReal>
 class aiVector3t;
@@ -22,6 +25,8 @@ struct aiLight;
 
 namespace darmok
 {
+    class Texture;
+
     enum class ModelMaterialTextureType
     {
         None = 0,
@@ -222,7 +227,7 @@ namespace darmok
         ModelMaterialPropertyCollection _properties;
         std::shared_ptr<Material> _material;
 
-        MaterialTexture createMaterialTexture(const ModelMaterialTexture& modelTexture);
+        std::pair<std::shared_ptr<Texture>, MaterialTextureType> createMaterialTexture(const ModelMaterialTexture& modelTexture);
     };
 
     class ModelMeshFaceIndexCollection final : public BaseReadOnlyCollection<VertexIndex>
@@ -396,17 +401,22 @@ namespace darmok
         glm::mat4 getTransform() const;
         const ModelNodeMeshCollection& getMeshes() const;
         const ModelNodeChildrenCollection& getChildren() const;
-        OptionalRef<const ModelNode> getChild(const std::string& path) const;
+        OptionalRef<const ModelNode> getChild(const std::string_view& path) const;
+        OptionalRef<const ModelCamera> getCamera() const;
+        OptionalRef<const ModelLight> getLight() const;
 
         ModelNodeMeshCollection& getMeshes();
         ModelNodeChildrenCollection& getChildren();
-        OptionalRef<ModelNode> getChild(const std::string& path);
+        OptionalRef<ModelNode> getChild(const std::string_view& path);
+        OptionalRef<ModelCamera> getCamera();
+        OptionalRef<ModelLight> getLight();
 
     private:
         aiNode* _ptr;
         ModelNodeMeshCollection _meshes;
         ModelNodeChildrenCollection _children;
         std::string _basePath;
+        Model& _model;
     };
 
     class ModelCameraCollection final : public MemReadOnlyCollection<ModelCamera>
@@ -414,8 +424,8 @@ namespace darmok
     public:
         ModelCameraCollection(const aiScene* ptr);
         size_t size() const override;
-        OptionalRef<ModelCamera> get(const std::string& name);
-        OptionalRef<const ModelCamera> get(const std::string& name) const;
+        OptionalRef<ModelCamera> get(const std::string_view& name);
+        OptionalRef<const ModelCamera> get(const std::string_view& name) const;
     private:
         const aiScene* _ptr;
         ModelCamera create(size_t pos) const override;
@@ -426,8 +436,8 @@ namespace darmok
     public:
         ModelLightCollection(const aiScene* ptr);
         size_t size() const override;
-        OptionalRef<ModelLight> get(const std::string& name);
-        OptionalRef<const ModelLight> get(const std::string& name) const;
+        OptionalRef<ModelLight> get(const std::string_view& name);
+        OptionalRef<const ModelLight> get(const std::string_view& name) const;
     private:
         const aiScene* _ptr;
         ModelLight create(size_t pos) const override;
@@ -487,4 +497,11 @@ namespace darmok
 
     Entity addModelNodeToScene(Scene& scene, ModelNode& node, Entity entity = 0, const OptionalRef<Transform>& parent = std::nullopt);
     Entity addModelToScene(Scene& scene, Model& model, Entity entity = 0);
+
+    class BX_NO_VTABLE IModelLoader
+	{
+	public:
+		virtual ~IModelLoader() = default;
+		virtual std::shared_ptr<Model> operator()(std::string_view name) = 0;
+	};
 }

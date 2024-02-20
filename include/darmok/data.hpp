@@ -2,8 +2,13 @@
 
 #include <vector>
 #include <stdexcept>
+#include <memory>
+#include <string_view>
+
 #include <bgfx/bgfx.h>
+#include <bx/bx.h>
 #include <bx/allocator.h>
+
 
 namespace darmok
 {
@@ -154,5 +159,14 @@ namespace darmok
         IndexBuffer(const IndexBuffer& other) = delete;
         IndexBuffer& operator=(const IndexBuffer& other) = delete;
     };
+
+	class BX_NO_VTABLE IDataLoader
+	{
+	public:
+        using result_type = std::shared_ptr<Data>;
+
+		virtual ~IDataLoader() = default;
+		virtual result_type operator()(std::string_view name) = 0;
+	};
 
 }

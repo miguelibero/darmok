@@ -2,12 +2,6 @@
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
 
-#include <bgfx/embedded_shader.h>
-#include "generated/shaders/basic_vertex.h"
-#include "generated/shaders/basic_fragment.h"
-
-
-
 namespace darmok
 {
 	Mesh::Mesh(const std::shared_ptr<Material>& material, std::vector<float>&& vertices, bgfx::VertexLayout layout, std::vector<VertexIndex>&& indices) noexcept
@@ -49,37 +43,6 @@ namespace darmok
 		_meshes = data;
 	}
 
-	static const bgfx::EmbeddedShader _meshEmbeddedShaders[] =
-	{
-		BGFX_EMBEDDED_SHADER(basic_vertex),
-		BGFX_EMBEDDED_SHADER(basic_fragment),
-		BGFX_EMBEDDED_SHADER_END()
-	};
-
-	MeshRenderer::MeshRenderer(bgfx::ProgramHandle program)
-		: _program(program)
-	{
-	}
-
-	MeshRenderer::~MeshRenderer()
-	{
-	}
-
-	void MeshRenderer::init(Registry& registry)
-	{
-		if (!isValid(_program))
-		{
-			auto type = bgfx::getRendererType();
-			_program = bgfx::createProgram(
-				bgfx::createEmbeddedShader(_meshEmbeddedShaders, type, "basic_vertex"),
-				bgfx::createEmbeddedShader(_meshEmbeddedShaders, type, "basic_fragment"),
-				true
-			);
-		}
-		_uniforms.TextureColor = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
-		_uniforms.DiffuseColor = bgfx::createUniform("a_color0", bgfx::UniformType::Vec4);
-	}
-
 	void MeshRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
 	{
 		auto view = registry.view<const MeshComponent>();
@@ -100,12 +63,10 @@ namespace darmok
 
 	void MeshRenderer::renderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
 	{
-		mesh.getMaterial()->configure(encoder, _uniforms);
-
 		const auto vertexStream = 0;
 		encoder.setVertexBuffer(vertexStream, mesh.getVertexBuffer());
 		encoder.setIndexBuffer(mesh.getIndexBuffer());
 
-		encoder.submit(viewId, _program);
+		mesh.getMaterial()->submit(encoder, viewId);
 	}
 }

@@ -1,4 +1,4 @@
-#include <darmok/data.hpp>
+#include "data.hpp"
 #include <bx/allocator.h>
 
 namespace darmok
@@ -245,5 +245,33 @@ namespace darmok
         {
             _handle = { bgfx::kInvalidHandle };
         }
+    }
+
+    FileDataLoader::FileDataLoader(bx::FileReaderI* fileReader, bx::AllocatorI* alloc)
+        : _fileReader(fileReader)
+        , _allocator(alloc)
+    {
+    }
+
+    std::shared_ptr<Data> FileDataLoader::operator()(std::string_view filePath)
+    {
+        if (!bx::open(_fileReader, bx::StringView(filePath.data(), filePath.size())))
+        {
+            throw std::runtime_error("failed to load data from file.");
+        }
+
+        auto size = bx::getSize(_fileReader);
+        void* data = nullptr;
+        if (_allocator)
+        {
+            data = bx::alloc(_allocator, size);
+        }
+        else
+        {
+            data = std::malloc(size);
+        }
+        bx::read(_fileReader, data, (int32_t)size, bx::ErrorAssert{});
+        bx::close(_fileReader);
+        return std::make_shared<Data>(data, size, _allocator);
     }
 }

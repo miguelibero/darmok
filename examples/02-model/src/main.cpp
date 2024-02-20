@@ -19,20 +19,13 @@ namespace
 			auto& renderer = scene.addRenderer<darmok::MeshRenderer>();
 
 			auto model = darmok::AssetContext::get().getModelLoader()("assets/brick.fbx");
-			
-			auto& cam2 = model->getRootNode().getChild("Camera").value();
-			auto& cam = model->getCameras().get("Camera").value();
-			auto camEntity = scene.createEntity();
-			scene.addComponent<darmok::Camera>(camEntity, cam.getProjection());
-			auto& t = scene.addComponent<darmok::Transform>(camEntity, cam2.getTransform() * cam.getTransform());
-			
-			auto& cube = model->getRootNode().getChild("Cube").value();
-			darmok::addModelNodeToScene(scene, cube);
+						
+			darmok::addModelToScene(scene, *model);
 
 			auto material = model->getMaterials()[0].load();
 			material->setColor(darmok::MaterialColorType::Diffuse, darmok::Colors::red);
 			auto texture = darmok::AssetContext::get().getTextureLoader()("assets/brick.png");
-			material->addTexture(darmok::MaterialTexture(texture));
+			material->addTexture(texture);
 		}
 
 		void updateLogic(float dt) override

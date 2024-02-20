@@ -4,10 +4,6 @@
 #include <darmok/utils.hpp>
 #include <bgfx/bgfx.h>
 
-#include <bgfx/embedded_shader.h>
-#include "generated/shaders/sprite_vertex.h"
-#include "generated/shaders/sprite_fragment.h"
-
 namespace darmok
 {
     const bgfx::VertexLayout& Sprite::getVertexLayout()
@@ -65,8 +61,16 @@ namespace darmok
             }, std::vector<VertexIndex>{ 0, 1, 2, 2, 3, 0 });
     }
 
+    std::shared_ptr<Material> createMaterial(const std::shared_ptr<Texture>& texture)
+    {
+        auto prog = AssetContext::get().getEmbeddedProgramLoader()(EmbeddedProgramType::Sprite);
+        auto mat = std::make_shared<Material>(prog);
+        mat->addTexture(texture);
+        return mat;
+    }
+
     Sprite::Sprite(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept
-        : _texture(texture)
+        : _material(createMaterial(texture))
         , _vertices(std::move(vertices))
         , _indices(std::move(indices))
         , _vertexBuffer(_vertices, getVertexLayout())
@@ -74,9 +78,19 @@ namespace darmok
     {
     }
 
-    const std::shared_ptr<Texture>& Sprite::getTexture() const
+    Sprite::Sprite(const std::shared_ptr<Material>& material, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept
+        : _material(material)
+        , _vertices(std::move(vertices))
+        , _indices(std::move(indices))
+        , _vertexBuffer(_vertices, getVertexLayout())
+        , _indexBuffer(_indices)
     {
-        return _texture;
+
+    }
+
+    const std::shared_ptr<Material>& Sprite::getMaterial() const
+    {
+        return _material;
     }
     const bgfx::VertexBufferHandle& Sprite::getVertexBuffer() const
     {
@@ -149,41 +163,9 @@ namespace darmok
         return _data;
     }
 
-    SpriteRenderer::SpriteRenderer(bgfx::ProgramHandle program)
-        : _program(program)
-        , _texColorUniforn{ bgfx::kInvalidHandle }
-    {
-    }
-
-    SpriteRenderer::~SpriteRenderer()
-    {
-        bgfx::destroy(_program);
-        bgfx::destroy(_texColorUniforn);
-    }
-
-    static const bgfx::EmbeddedShader _spriteEmbeddedShaders[] =
-    {
-        BGFX_EMBEDDED_SHADER(sprite_vertex),
-        BGFX_EMBEDDED_SHADER(sprite_fragment),
-        BGFX_EMBEDDED_SHADER_END()
-    };
-
-    void SpriteRenderer::init(Registry& registry)
-    {
-        if (!isValid(_program))
-        {
-            auto type = bgfx::getRendererType();
-            _program = bgfx::createProgram(
-                bgfx::createEmbeddedShader(_spriteEmbeddedShaders, type, "sprite_vertex"),
-                bgfx::createEmbeddedShader(_spriteEmbeddedShaders, type, "sprite_fragment"),
-                true
-            );
-        }
-        _texColorUniforn = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
-    }
-
     void SpriteRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
     {
+        // TODO: sort by Z
         auto sprites = registry.view<const SpriteComponent>();
         for (auto [entity, sprite] : sprites.each())
         {
@@ -193,7 +175,7 @@ namespace darmok
                 continue;
             }
             Transform::bgfxConfig(entity, encoder, registry);
-            renderData(*data, encoder, viewId, registry);
+            renderSprite(*data, encoder, viewId, registry);
         }
         auto anims = registry.view<const SpriteAnimationComponent>();
         for (auto [entity, anim] : anims.each())
@@ -204,27 +186,16 @@ namespace darmok
                 continue;
             }
             Transform::bgfxConfig(entity, encoder, registry);
-            renderData(*data, encoder, viewId, registry);
+            renderSprite(*data, encoder, viewId, registry);
         }
     }
 
-    void SpriteRenderer::renderData(const Sprite& data, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
+    void SpriteRenderer::renderSprite(const Sprite& sprite, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
     {
-        const auto textureUnit = 0;
         const auto vertexStream = 0;
-
-        encoder.setTexture(textureUnit, _texColorUniforn, data.getTexture()->getHandle());
-        encoder.setVertexBuffer(vertexStream, data.getVertexBuffer());
-        encoder.setIndexBuffer(data.getIndexBuffer());
-
-        // TODO: configure state
-        uint64_t state = BGFX_STATE_WRITE_RGB
-            | BGFX_STATE_WRITE_A
-            | BGFX_STATE_MSAA
-            | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
-            ;
-        encoder.setState(state);
-        encoder.submit(viewId, _program);
+        encoder.setVertexBuffer(vertexStream, sprite.getVertexBuffer());
+        encoder.setIndexBuffer(sprite.getIndexBuffer());
+        sprite.getMaterial()->submit(encoder, viewId);
     }
 
     void SpriteAnimationUpdater::updateLogic(float dt, Registry& registry)

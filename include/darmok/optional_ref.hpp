@@ -78,7 +78,7 @@ namespace darmok
             return _value != nullptr;
         }
 
-        T& value() const noexcept
+        T& value() const
         {
             if (!hasValue())
             {

@@ -1,9 +1,10 @@
 #pragma once
 
 #include <darmok/scene.hpp>
-#include <darmok/asset.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
+#include <darmok/material.hpp>
 #include <glm/glm.hpp>
 #include <memory>
 
@@ -16,13 +17,11 @@ namespace darmok
         Color color;
     };
 
-    class TextureAtlas;
-    class TextureAtlasElement;
-
     class Sprite final
     {
     public:
-        Sprite(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertex, std::vector<VertexIndex>&& indices) noexcept;
+        Sprite(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept;
+        Sprite(const std::shared_ptr<Material>& material, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept;
         Sprite(Sprite&& other) noexcept = default;
         Sprite& operator=(Sprite&& other) noexcept = default;
 
@@ -30,14 +29,14 @@ namespace darmok
         static std::vector<std::shared_ptr<Sprite>> fromAtlas(const TextureAtlas& atlas, const std::string& namePrefix, const Color& color = Colors::white);
         static std::shared_ptr<Sprite> fromTexture(const std::shared_ptr<Texture>& texture, const glm::vec2& size, const Color& color = Colors::white);
 
-        const std::shared_ptr<Texture>& getTexture() const;
+        const std::shared_ptr<Material>& getMaterial() const;
         const bgfx::VertexBufferHandle& getVertexBuffer() const;
         const bgfx::IndexBufferHandle& getIndexBuffer() const;
     private:
         Sprite(const Sprite& other) = delete;
         Sprite& operator=(const Sprite& other) = delete;
 
-        std::shared_ptr<Texture> _texture;
+        std::shared_ptr<Material> _material;
         std::vector<SpriteVertex> _vertices;
         std::vector<VertexIndex> _indices;
         VertexBuffer _vertexBuffer;
@@ -89,16 +88,9 @@ namespace darmok
     class SpriteRenderer final : public ISceneRenderer
     {
     public:
-        SpriteRenderer(bgfx::ProgramHandle program = { bgfx::kInvalidHandle });
-        ~SpriteRenderer();
-        void init(Registry& registry) override;
         void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry) override;
     private:
-
-        void renderData(const Sprite& data, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry);
-
-        bgfx::ProgramHandle _program;
-        bgfx::UniformHandle _texColorUniforn;
+        void renderSprite(const Sprite& sprite, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry);
     };
 
     class SpriteAnimationUpdater final : public ISceneLogicUpdater

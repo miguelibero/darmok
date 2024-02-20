@@ -38,13 +38,8 @@ namespace darmok
     class MeshRenderer final : public ISceneRenderer
     {
     public:
-        MeshRenderer(bgfx::ProgramHandle program = { bgfx::kInvalidHandle });
-        ~MeshRenderer();
-        void init(Registry& registry) override;
         void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry) override;
     private:
-        bgfx::ProgramHandle _program;
-        MaterialUniforms _uniforms;
 
         void renderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry);
     };

@@ -1,12 +1,12 @@
 
-#include <darmok/model.hpp>
-#include <darmok/asset.hpp>
+#include "model.hpp"
 #include "asset.hpp"
 
 #include <assimp/vector3.h>
 #include <assimp/material.h>
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #include <bimg/decode.h>
 
@@ -22,16 +22,35 @@ namespace darmok
 		{
 			entity = scene.createEntity();
 		}
-		auto& t = scene.addComponent<Transform>(entity, node.getTransform(), parent);
+
+		auto transMat = node.getTransform();
+
+		auto optCam = node.getCamera();
+		if (optCam.hasValue())
+		{
+			auto& cam = optCam.value();
+			transMat *= cam.getTransform();
+			scene.addComponent<Camera>(entity, cam.getProjection());
+		}
+
+		auto& trans = scene.addComponent<Transform>(entity, transMat, parent);
 
 		auto& meshes = node.getMeshes();
 		if (!meshes.empty())
 		{
 			scene.addComponent<MeshComponent>(entity, meshes.load());
 		}
+
+		auto optLight = node.getLight();
+		if (optLight.hasValue())
+		{
+			// TODO: add light component
+			auto& light = optLight.value();
+		}
+
 		for (auto& child : node.getChildren())
 		{
-			addModelNodeToScene(scene, child, 0, &t);
+			addModelNodeToScene(scene, child, 0, trans);
 		}
 		return entity;
 	}
@@ -42,7 +61,8 @@ namespace darmok
 		{
 			entity = scene.createEntity();
 		}
-		return addModelNodeToScene(scene, model.getRootNode(), entity);
+		auto& rootNode = model.getRootNode();
+		return addModelNodeToScene(scene, rootNode, entity);
 	}
 
 	static inline std::string_view getStringView(const aiString& str)
@@ -249,24 +269,6 @@ namespace darmok
 		return _properties;
 	}
 
-	MaterialPropertyCollection createMaterialPropertyCollection(const ModelMaterialPropertyCollection& model, int textureIndex)
-	{
-		MaterialPropertyCollection collection;
-		for (auto& prop : model)
-		{
-			if (textureIndex < 0 && prop.getTextureType() != ModelMaterialTextureType::None)
-			{
-				continue;
-			}
-			else if (prop.getTextureIndex() != textureIndex)
-			{
-				continue;
-			}
-			collection.set(std::string(prop.getKey()), Data::copy(prop.getData()));
-		}
-		return collection;
-	}
-
 	std::optional<Color> ModelMaterial::getColor(ModelMaterialColorType type) const
 	{
 		aiColor4D color;
@@ -375,7 +377,7 @@ namespace darmok
 		{
 			throw std::runtime_error("got empty image container");
 		}
-		auto tex = std::make_shared<Texture>(std::make_shared<Image>(container), filePath);
+		auto tex = Texture::create(std::make_shared<Image>(container), filePath);
 		if (!isValid(tex->getHandle()))
 		{
 			throw std::runtime_error("could not load texture");
@@ -383,14 +385,13 @@ namespace darmok
 		return tex;
 	}
 
-	MaterialTexture ModelMaterial::createMaterialTexture(const ModelMaterialTexture& modelTexture)
+	std::pair<std::shared_ptr<Texture>, MaterialTextureType> ModelMaterial::createMaterialTexture(const ModelMaterialTexture& modelTexture)
 	{
 		auto itr = _materialTextures.find(modelTexture.getType());
 		if (itr == _materialTextures.end())
 		{
 			throw std::runtime_error("unsupported texture type");
 		}
-
 		auto path = modelTexture.getPath();
 		std::shared_ptr<Texture> texture;
 		if (_scene != nullptr)
@@ -406,9 +407,7 @@ namespace darmok
 			}
 			texture = AssetContext::get().getTextureLoader()(fsPath.string());
 		}
-
-		auto props = createMaterialPropertyCollection(getProperties(), modelTexture.getIndex());
-		return MaterialTexture(texture, itr->second, std::move(props));
+		return std::make_pair(texture, itr->second);
 	}
 
 	std::shared_ptr<Material> ModelMaterial::load()
@@ -417,18 +416,19 @@ namespace darmok
 		{
 			return _material;
 		}
-		std::vector<MaterialTexture> textures;
+		auto program = AssetContext::get().getEmbeddedProgramLoader()(EmbeddedProgramType::Basic);
+		_material = std::make_shared<Material>(program);
 		for (auto& elm : _materialTextures)
 		{
 			for (auto& modelTex : getTextures(elm.first))
 			{
-				textures.push_back(createMaterialTexture(modelTex));
+				auto pair = createMaterialTexture(modelTex);
+				if (pair.first != nullptr)
+				{
+					_material->addTexture(pair.first, pair.second);
+				}
 			}
 		}
-		
-		auto props = createMaterialPropertyCollection(getProperties(), -1);
-		_material = std::make_shared<Material>(std::move(textures), std::move(props));
-
 		for (auto& elm : _materialColors)
 		{
 			if (auto v = getColor(elm.first))
@@ -917,6 +917,7 @@ namespace darmok
 		, _meshes(ptr, model)
 		, _children(ptr, model, basePath)
 		, _basePath(basePath)
+		, _model(model)
 	{
 	}
 
@@ -951,7 +952,7 @@ namespace darmok
 	}
 
 	template<typename T>
-	static OptionalRef<T> getModelNodeChild(T& node, const std::string& path)
+	static OptionalRef<T> getModelNodeChild(T& node, const std::string_view& path)
 	{
 		auto itr = path.find('/');
 		auto sep = itr != std::string::npos;
@@ -971,15 +972,34 @@ namespace darmok
 		return std::nullopt;
 	}
 
-
-	OptionalRef<const ModelNode> ModelNode::getChild(const std::string& path) const
+	OptionalRef<const ModelNode> ModelNode::getChild(const std::string_view& path) const
 	{
 		return getModelNodeChild(*this, path);
 	}
 
-	OptionalRef<ModelNode> ModelNode::getChild(const std::string& path)
+	OptionalRef<const ModelCamera> ModelNode::getCamera() const
+	{
+		return ((const Model&)_model).getCameras().get(getName());
+	}
+
+	OptionalRef<const ModelLight> ModelNode::getLight() const
+	{
+		return ((const Model&)_model).getLights().get(getName());
+	}
+
+	OptionalRef<ModelNode> ModelNode::getChild(const std::string_view& path)
 	{
 		return getModelNodeChild(*this, path);
+	}
+
+	OptionalRef<ModelCamera> ModelNode::getCamera()
+	{
+		return _model.getCameras().get(getName());
+	}
+
+	OptionalRef<ModelLight> ModelNode::getLight()
+	{
+		return _model.getLights().get(getName());
 	}
 
 	ModelCameraCollection::ModelCameraCollection(const aiScene* ptr)
@@ -997,7 +1017,7 @@ namespace darmok
 		return ModelCamera(_ptr->mCameras[pos]);
 	}
 
-	OptionalRef<ModelCamera> ModelCameraCollection::get(const std::string& name)
+	OptionalRef<ModelCamera> ModelCameraCollection::get(const std::string_view& name)
 	{
 		for (auto& elm : *this)
 		{
@@ -1009,7 +1029,7 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	OptionalRef<const ModelCamera> ModelCameraCollection::get(const std::string& name) const
+	OptionalRef<const ModelCamera> ModelCameraCollection::get(const std::string_view& name) const
 	{
 		for (auto& elm : *this)
 		{
@@ -1036,7 +1056,7 @@ namespace darmok
 		return ModelLight(_ptr->mLights[pos]);
 	}
 
-	OptionalRef<ModelLight> ModelLightCollection::get(const std::string& name)
+	OptionalRef<ModelLight> ModelLightCollection::get(const std::string_view& name)
 	{
 		for (auto& elm : *this)
 		{
@@ -1048,7 +1068,7 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	OptionalRef<const ModelLight> ModelLightCollection::get(const std::string& name) const
+	OptionalRef<const ModelLight> ModelLightCollection::get(const std::string_view& name) const
 	{
 		for (auto& elm : *this)
 		{
@@ -1164,5 +1184,34 @@ namespace darmok
 	ModelLightCollection& Model::getLights()
 	{
 		return _lights;
+	}
+
+	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader)
+		: _dataLoader(dataLoader)
+		, _textureLoader(textureLoader)
+	{
+	}
+
+	std::shared_ptr<Model> AssimpModelLoader::operator()(std::string_view name)
+	{
+		auto data = _dataLoader(name);
+		if (data == nullptr || data->empty())
+		{
+			throw std::runtime_error("got empty data");
+		}
+		unsigned int flags = aiProcess_CalcTangentSpace |
+			aiProcess_Triangulate |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_SortByPType
+			;
+
+		auto scene = _importer.ReadFileFromMemory(data->ptr(), data->size(), flags, std::string(name).c_str());
+
+		if (scene == nullptr)
+		{
+			throw std::runtime_error(_importer.GetErrorString());
+		}
+
+		return std::make_shared<Model>(scene);
 	}
 }
