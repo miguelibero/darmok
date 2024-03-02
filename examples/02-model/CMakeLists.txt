@@ -6,7 +6,8 @@ project(
   DESCRIPTION "model darmok project"
 )
 
-add_subdirectory(../../ ../../build)
+get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
+add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
 set(ASSETS_DIR ${CMAKE_BINARY_DIR}/assets)
 FILE(COPY assets/brick.fbx DESTINATION ${ASSETS_DIR})
@@ -27,6 +28,6 @@ target_compile_definitions(
 )
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
-target_link_libraries (${PROJECT_NAME} LINK_PUBLIC darmok)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC darmok)
 
 

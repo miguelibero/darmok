@@ -1,209 +1,95 @@
-#include "scene.hpp"
 #include <darmok/sprite.hpp>
-#include <darmok/asset.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/vertex.hpp>
+#include <darmok/material.hpp>
+#include <darmok/mesh.hpp>
 #include <bgfx/bgfx.h>
 
 namespace darmok
 {
-    const bgfx::VertexLayout& Sprite::getVertexLayout()
+    std::shared_ptr<Material> createSpriteMaterial(const std::shared_ptr<Texture>& texture)
     {
-        static bgfx::VertexLayout layout;
-        if (layout.m_hash == 0)
-        {
-            layout
-                .begin()
-                .add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
-                .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
-                .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-                .end();
-        }
-
-        return layout;
+        auto mat = Material::createStandard(StandardMaterialType::Sprite);
+        mat->setTexture(MaterialTextureType::Diffuse, texture);
+        return mat;
     }
 
-    std::shared_ptr<Sprite> Sprite::fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, const Color& color)
+    std::shared_ptr<Mesh> SpriteUtils::fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, float scale, const Color& color)
     {
-        std::vector<SpriteVertex> vertices;
-        
+        auto material = createSpriteMaterial(atlas.texture);
+        auto& layout = material->getVertexLayout();
+        auto size = std::min(element.positions.size(), element.texCoords.size());
+        VertexDataWriter writer(layout, size);
+
         glm::vec2 atlasSize(atlas.size);
-        for (auto& vtx : element.vertices)
+
+        uint32_t i = 0;
+        for (auto& pos : element.positions)
         {
-            vertices.push_back({
-                vtx.position,
-                glm::vec2(vtx.texCoord) / atlasSize,
-                color
-            });
+            auto v = scale * glm::vec2(pos.x, element.originalSize.y - pos.y);
+            writer.set(bgfx::Attrib::Position, i++, glm::value_ptr(v));
         }
-        return std::make_shared<Sprite>(atlas.texture, std::move(vertices), std::vector<VertexIndex>(element.indices));
+        i = 0;
+        for (auto& texCoord : element.texCoords)
+        {
+            auto v = glm::vec2(texCoord) / atlasSize;
+            writer.set(bgfx::Attrib::TexCoord0, i++, glm::value_ptr(v));
+        }
+        writer.set(bgfx::Attrib::Color0, color.ptr());
+        return std::make_shared<Mesh>(material, layout, writer.release(), Data::copy(element.indices));
     }
 
-    std::vector<std::shared_ptr<Sprite>> Sprite::fromAtlas(const TextureAtlas& atlas, const std::string& namePrefix, const Color& color)
+    std::vector<AnimationFrame> SpriteUtils::fromAtlas(const TextureAtlas& atlas, std::string_view namePrefix, float frameDuration, float scale, const Color& color)
     {
-        std::vector<std::shared_ptr<Sprite>> frames;
+        std::vector<AnimationFrame> frames;
         for (auto& elm : atlas.elements)
         {
             if (elm.name.starts_with(namePrefix))
             {
-                frames.push_back(Sprite::fromAtlas(atlas, elm, color));
+                auto mesh = fromAtlas(atlas, elm, scale, color);
+                if (mesh)
+                {
+                    frames.push_back({ { mesh }, frameDuration });
+                }
             }
         }
         return frames;
     }
 
-    std::shared_ptr<Sprite> Sprite::fromTexture(const std::shared_ptr<Texture>& texture, const glm::vec2& size, const Color& color)
-    {
-        return std::make_shared<Sprite>(texture, std::vector<SpriteVertex>{
-                SpriteVertex{ {0.f, 0.f},       {0.f, 0.f}, color },
-                SpriteVertex{ {size.x, 0.f},    {1.f, 0.f}, color },
-                SpriteVertex{ size,             {1.f, 1.f}, color },
-                SpriteVertex{ {0.f, size.y},    {0.f, 1.f}, color },
-            }, std::vector<VertexIndex>{ 0, 1, 2, 2, 3, 0 });
-    }
+    static const std::vector<glm::vec2> _textureSpritePositions = {
+        { 1, 1 },
+        { 1, 0 },
+        { 0, 0 },
+        { 0, 1 },
+    };
 
-    std::shared_ptr<Material> createMaterial(const std::shared_ptr<Texture>& texture)
-    {
-        auto prog = AssetContext::get().getEmbeddedProgramLoader()(EmbeddedProgramType::Sprite);
-        auto mat = std::make_shared<Material>(prog);
-        mat->addTexture(texture);
-        return mat;
-    }
+    static const std::vector<glm::vec2> _textureSpriteTexCoords = {
+        { 1, 0 },
+        { 1, 1 },
+        { 0, 1 },
+        { 0, 0 },
+    };
 
-    Sprite::Sprite(const std::shared_ptr<Texture>& texture, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept
-        : _material(createMaterial(texture))
-        , _vertices(std::move(vertices))
-        , _indices(std::move(indices))
-        , _vertexBuffer(_vertices, getVertexLayout())
-        , _indexBuffer(_indices)
-    {
-    }
+    static const std::vector<VertexIndex> _textureSpriteIndices = {
+        0, 1, 2, 2, 3, 0
+    };
 
-    Sprite::Sprite(const std::shared_ptr<Material>& material, std::vector<SpriteVertex>&& vertices, std::vector<VertexIndex>&& indices) noexcept
-        : _material(material)
-        , _vertices(std::move(vertices))
-        , _indices(std::move(indices))
-        , _vertexBuffer(_vertices, getVertexLayout())
-        , _indexBuffer(_indices)
+    std::shared_ptr<Mesh> SpriteUtils::fromTexture(const std::shared_ptr<Texture>& texture, float scale, const Color& color)
     {
-
-    }
-
-    const std::shared_ptr<Material>& Sprite::getMaterial() const
-    {
-        return _material;
-    }
-    const bgfx::VertexBufferHandle& Sprite::getVertexBuffer() const
-    {
-        return _vertexBuffer.getHandle();
-    }
-
-    const bgfx::IndexBufferHandle& Sprite::getIndexBuffer() const
-    {
-        return _indexBuffer.getHandle();
-    }
-
-    SpriteAnimationComponent::SpriteAnimationComponent(const std::vector<std::shared_ptr<Sprite>>& frames, int fps)
-        : _frames(frames)
-        , _frameDuration(1.f / fps)
-        , _currentFrame(0)
-        , _timeSinceLastFrame(0.f)
-    {
-    }
-
-    std::shared_ptr<const Sprite> SpriteAnimationComponent::getSprite() const
-    {
-        if (_currentFrame < 0 || _currentFrame >= _frames.size())
+        auto material = createSpriteMaterial(texture);
+        auto& layout = material->getVertexLayout();
+        VertexDataWriter writer(layout, _textureSpritePositions.size());
+        auto size = glm::vec2(texture->getImage()->getSize()) * scale;
+        auto i = 0;
+        for (auto& pos : _textureSpritePositions)
         {
-            return nullptr;
+            auto v = pos * size;
+            writer.set(bgfx::Attrib::Position, i++, glm::value_ptr(v));
         }
-        return _frames[_currentFrame];
-    }
-
-    std::shared_ptr<Sprite> SpriteAnimationComponent::getSprite()
-    {
-        if (_currentFrame < 0 || _currentFrame >= _frames.size())
-        {
-            return nullptr;
-        }
-        return _frames[_currentFrame];
+        writer.set(bgfx::Attrib::TexCoord0, _textureSpriteTexCoords);
+        writer.set(bgfx::Attrib::Color0, color.ptr());
+        return std::make_shared<Mesh>(material, layout, writer.release(), Data::copy(_textureSpriteIndices));
     }
 
 
-    bool SpriteAnimationComponent::empty() const
-    {
-        return _frames.empty();
-    }
-
-    void SpriteAnimationComponent::update(float dt)
-    {
-        _timeSinceLastFrame += dt;
-        if (_timeSinceLastFrame > _frameDuration)
-        {
-            int frames = _timeSinceLastFrame / _frameDuration;
-            _timeSinceLastFrame -= frames * _frameDuration;
-            if (!empty())
-            {
-                _currentFrame = (_currentFrame + frames) % _frames.size();
-            }
-        }
-    }
-
-    SpriteComponent::SpriteComponent(const std::shared_ptr<Sprite>& data)
-        : _data(data)
-    {
-    }
-
-    std::shared_ptr<const Sprite> SpriteComponent::getSprite() const
-    {
-        return _data;
-    }
-
-    std::shared_ptr<Sprite> SpriteComponent::getSprite()
-    {
-        return _data;
-    }
-
-    void SpriteRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
-    {
-        // TODO: sort by Z
-        auto sprites = registry.view<const SpriteComponent>();
-        for (auto [entity, sprite] : sprites.each())
-        {
-            auto data = sprite.getSprite();
-            if (data == nullptr)
-            {
-                continue;
-            }
-            Transform::bgfxConfig(entity, encoder, registry);
-            renderSprite(*data, encoder, viewId, registry);
-        }
-        auto anims = registry.view<const SpriteAnimationComponent>();
-        for (auto [entity, anim] : anims.each())
-        {
-            auto data = anim.getSprite();
-            if (data == nullptr)
-            {
-                continue;
-            }
-            Transform::bgfxConfig(entity, encoder, registry);
-            renderSprite(*data, encoder, viewId, registry);
-        }
-    }
-
-    void SpriteRenderer::renderSprite(const Sprite& sprite, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
-    {
-        const auto vertexStream = 0;
-        encoder.setVertexBuffer(vertexStream, sprite.getVertexBuffer());
-        encoder.setIndexBuffer(sprite.getIndexBuffer());
-        sprite.getMaterial()->submit(encoder, viewId);
-    }
-
-    void SpriteAnimationUpdater::updateLogic(float dt, Registry& registry)
-    {
-        auto anims = registry.view<SpriteAnimationComponent>();
-        for (auto [entity, anim] : anims.each())
-        {
-            anim.update(dt);
-        }
-    }
 }

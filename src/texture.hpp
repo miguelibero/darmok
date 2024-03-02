@@ -1,8 +1,6 @@
 #pragma once
 
 #include <darmok/texture.hpp>
-#include <optional>
-#include <pugixml.hpp>
 
 
 namespace darmok
@@ -27,9 +25,5 @@ namespace darmok
 	private:
 		IDataLoader& _dataLoader;
 		ITextureLoader& _textureLoader;
-
-		static std::pair<int, size_t> readXmlValueInt(std::string_view str, size_t i);
-		static std::pair<std::optional<TextureVec2>, size_t> readXmlValueVec(std::string_view str, size_t i);
-		static TextureAtlasElement loadElement(pugi::xml_node& xml);
 	};
 }

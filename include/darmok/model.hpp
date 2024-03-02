@@ -5,6 +5,7 @@
 #include <darmok/color.hpp>
 #include <darmok/material.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/vertex.hpp>
 #include <string>
 #include <string_view>
 #include <memory>
@@ -22,6 +23,9 @@ struct aiMaterial;
 struct aiMaterialProperty;
 struct aiCamera;
 struct aiLight;
+template <typename TReal>
+class aiColor4t;
+typedef aiColor4t<float> aiColor4D;
 
 namespace darmok
 {
@@ -156,10 +160,10 @@ namespace darmok
         ModelMaterialPropertyType getType() const;
         ModelMaterialTextureType getTextureType() const;
         size_t getTextureIndex() const;
-        const Data& getData() const;
+        const DataView& getData() const;
     private:
         aiMaterialProperty* _ptr;
-        Data _data;
+        DataView _data;
     };
 
     class ModelMaterialPropertyCollection final : public MemReadOnlyCollection<ModelMaterialProperty>
@@ -227,7 +231,7 @@ namespace darmok
         ModelMaterialPropertyCollection _properties;
         std::shared_ptr<Material> _material;
 
-        std::pair<std::shared_ptr<Texture>, MaterialTextureType> createMaterialTexture(const ModelMaterialTexture& modelTexture);
+        std::pair<MaterialTextureType, std::shared_ptr<Texture>> createMaterialTexture(const ModelMaterialTexture& modelTexture) const;
     };
 
     class ModelMeshFaceIndexCollection final : public BaseReadOnlyCollection<VertexIndex>
@@ -296,6 +300,28 @@ namespace darmok
         ModelTextureCoords create(size_t pos) const override;
     };
 
+    class ModelColorCollection final : public MemReadOnlyCollection<Color>
+    {
+    public:
+        ModelColorCollection(aiColor4D* ptr, size_t size);
+        size_t size() const override;
+
+    private:
+        aiColor4D* _ptr;
+        size_t _size;
+        Color create(size_t pos) const override;
+    };
+
+    class ModelMeshColorsCollection final : public MemReadOnlyCollection<ModelColorCollection>
+    {
+    public:
+        ModelMeshColorsCollection(aiMesh* ptr);
+        size_t size() const override;
+    private:
+        aiMesh* _ptr;
+        ModelColorCollection create(size_t pos) const override;
+    };
+
     class Model;
 
     class ModelMesh final
@@ -305,12 +331,13 @@ namespace darmok
 
         ModelMaterial& getMaterial();
         const ModelMaterial& getMaterial() const;
-        const ModelVector3Collection& getVertices() const;
+        const ModelVector3Collection& getPositions() const;
         const ModelVector3Collection& getNormals() const;
         const ModelVector3Collection& getTangents() const;
         const ModelVector3Collection& getBitangents() const;
         const ModelMeshTextureCoordsCollection& getTexCoords() const;
         const ModelMeshFaceCollection& getFaces() const;
+        const ModelMeshColorsCollection& getColors() const;
         const size_t getVertexCount() const;
 
         std::shared_ptr<Mesh> load();
@@ -318,12 +345,13 @@ namespace darmok
     private:
         aiMesh* _ptr;
         ModelMaterial& _material;
-        ModelVector3Collection _vertices;
+        ModelVector3Collection _positions;
         ModelVector3Collection _normals;
         ModelVector3Collection _tangents;
         ModelVector3Collection _bitangents;
         ModelMeshTextureCoordsCollection _texCoords;
         ModelMeshFaceCollection _faces;
+        ModelMeshColorsCollection _colors;
         std::shared_ptr<Mesh> _mesh;
     };
 
@@ -345,8 +373,8 @@ namespace darmok
     public:
         ModelCamera(aiCamera* ptr);
         std::string_view getName() const;
-        glm::mat4 getProjection() const;
-        const glm::mat4& getTransform() const;
+        const glm::mat4& getProjectionMatrix() const;
+        const glm::mat4& getViewMatrix() const;
         float getAspect() const;
         float getClipFar() const;
         float getClipNear() const;
@@ -357,7 +385,8 @@ namespace darmok
         glm::vec3 getUp() const;
     private:
         aiCamera* _ptr;
-        glm::mat4 _transform;
+        glm::mat4 _view;
+        glm::mat4 _proj;
     };
 
     class ModelLight final

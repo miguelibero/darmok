@@ -6,7 +6,8 @@ project(
   DESCRIPTION "empty darmok project"
 )
 
-add_subdirectory (../../ ../../build)
+get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
+add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
 set(sources
   src/main.cpp

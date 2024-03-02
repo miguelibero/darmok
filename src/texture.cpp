@@ -2,6 +2,8 @@
 #include <darmok/data.hpp>
 #include <filesystem>
 #include <charconv>
+#include <pugixml.hpp>
+
 
 namespace darmok
 {
@@ -10,6 +12,14 @@ namespace darmok
 		, _handle(handle)
 		, _type(type)
 	{
+	}
+
+	Texture::~Texture()
+	{
+		if (isValid(_handle))
+		{
+			bgfx::destroy(_handle);
+		}
 	}
 
 	std::shared_ptr<Texture> Texture::create(std::shared_ptr<Image> img, std::string_view name, uint64_t flags)
@@ -101,25 +111,25 @@ namespace darmok
 		return bounds;
 	}
 
-	TextureAtlasElement* TextureAtlas::getElement(std::string_view name)
+	OptionalRef<TextureAtlasElement> TextureAtlas::getElement(std::string_view name)
 	{
 		for (auto& elm : elements)
 		{
 			if (elm.name == name)
 			{
-				return &elm;
+				return elm;
 			}
 		}
 		return nullptr;
 	}
 
-	const TextureAtlasElement* TextureAtlas::getElement(std::string_view name) const
+	OptionalRef<const TextureAtlasElement> TextureAtlas::getElement(std::string_view name) const
 	{
 		for (auto& elm : elements)
 		{
 			if (elm.name == name)
 			{
-				return &elm;
+				return elm;
 			}
 		}
 		return nullptr;
@@ -142,7 +152,7 @@ namespace darmok
 	{
 	}
 
-	std::pair<int, size_t> TexturePackerTextureAtlasLoader::readXmlValueInt(std::string_view str, size_t i)
+	std::pair<int, size_t> readValueInt(std::string_view str, size_t i)
 	{
 		if (str.size() == 0 || i == std::string::npos || i >= str.size())
 		{
@@ -158,9 +168,9 @@ namespace darmok
 		return { v, ni + 1 };
 	}
 
-	std::pair<std::optional<TextureVec2>, size_t> TexturePackerTextureAtlasLoader::readXmlValueVec(std::string_view str, size_t i)
+	std::pair<std::optional<TextureVec2>, size_t> readValueVec(std::string_view str, size_t i)
 	{
-		auto p = readXmlValueInt(str, i);
+		auto p = readValueInt(str, i);
 		if (p.first < 0)
 		{
 			return { std::nullopt, std::string::npos };
@@ -171,7 +181,7 @@ namespace darmok
 		{
 			return { v, i };
 		}
-		p = readXmlValueInt(str, i);
+		p = readValueInt(str, i);
 		if (p.first < 0)
 		{
 			return { std::nullopt, std::string::npos };
@@ -181,37 +191,33 @@ namespace darmok
 		return { v, i };
 	}
 
-	TextureAtlasElement TexturePackerTextureAtlasLoader::loadElement(pugi::xml_node& xml)
+	std::vector<TextureVec2> loadTextureVec2(std::string_view data)
 	{
-		std::vector<TextureAtlasVertex> vertices;
-
-		std::string vertPosVals = xml.child("vertices").text().get();
-		std::string vertTexVals = xml.child("verticesUV").text().get();
-		size_t pi = 0, ti = 0;
-
-		while (pi != std::string::npos && ti != std::string::npos)
+		std::vector<TextureVec2> vec;
+		size_t pi = 0;
+		while (pi != std::string::npos)
 		{
-			auto pp = readXmlValueVec(vertPosVals, pi);
+			auto pp = readValueVec(data, pi);
 			if (!pp.first.has_value())
 			{
 				break;
 			}
-			auto tp = readXmlValueVec(vertTexVals, ti);
-			if (!tp.first.has_value())
-			{
-				break;
-			}
-			vertices.push_back({ pp.first.value(), tp.first.value() });
+			vec.push_back(pp.first.value());
 			pi = pp.second;
-			ti = tp.second;
 		}
+		return vec;
+	}
 
+	TextureAtlasElement loadElement(pugi::xml_node& xml)
+	{
+		auto positions = loadTextureVec2(xml.child("vertices").text().get());
+		auto texCoords = loadTextureVec2(xml.child("verticesUV").text().get());
 		std::string vertIdxVals = xml.child("triangles").text().get();
 		size_t ii = 0;
-		std::vector<TextureAtlasVertexIndex> indices;
+		std::vector<TextureAtlasIndex> indices;
 		while (ii != std::string::npos)
 		{
-			auto p = readXmlValueInt(vertIdxVals, ii);
+			auto p = readValueInt(vertIdxVals, ii);
 			if (p.first < 0)
 			{
 				break;
@@ -220,7 +226,7 @@ namespace darmok
 			ii = p.second;
 		}
 		return {
-			xml.attribute("n").value(), vertices, indices,
+			xml.attribute("n").value(), positions, texCoords, indices,
 			{ xml.attribute("x").as_int(), xml.attribute("y").as_int() },
 			{ xml.attribute("w").as_int(), xml.attribute("h").as_int() },
 			{ xml.attribute("oX").as_int(), xml.attribute("oY").as_int() },

@@ -9,28 +9,46 @@ namespace darmok
     class Mesh final
     {
     public:
-        Mesh(const std::shared_ptr<Material>& material, std::vector<float>&& vertices, bgfx::VertexLayout layout, std::vector<VertexIndex>&& indices) noexcept;
+        Mesh(const std::shared_ptr<Material>& material, const bgfx::VertexLayout& layout, Data&& vertices) noexcept;
+        Mesh(const std::shared_ptr<Material>& material, const bgfx::VertexLayout& layout, Data&& vertices, Data&& indices) noexcept;
+        ~Mesh();
+
+        Mesh(const Mesh& other) noexcept;
+        Mesh& operator=(const Mesh& other) noexcept;
+
+        Mesh(Mesh&& other) noexcept;
+        Mesh& operator=(Mesh&& other) noexcept;
 
         const std::shared_ptr<Material>& getMaterial() const;
-        const bgfx::VertexBufferHandle& getVertexBuffer() const;
-        const bgfx::IndexBufferHandle& getIndexBuffer() const;
+        const Data& getVertexData() const;
+        const Data& getIndexData() const;
+        void render(RenderContext& ctxt, uint8_t vertexStream = 0) const;
+
+
+        static const std::shared_ptr<Mesh> createCube(const std::shared_ptr<Material>& material);
+
+
     private:
         std::shared_ptr<Material> _material;
-        std::vector<float> _vertices;
-        std::vector<VertexIndex> _indices;
-        VertexBuffer _vertexBuffer;
-        IndexBuffer _indexBuffer;
+        bgfx::VertexLayout _layout;
 
-        Mesh(const Mesh& other) noexcept = delete;
-        Mesh& operator=(const Mesh& other) noexcept = delete;
+        Data _vertices;
+        Data _indices;
+
+        bgfx::VertexBufferHandle _vertexBuffer;
+        bgfx::IndexBufferHandle _indexBuffer;
+
+        void destroyHandles();
     };
 
     class MeshComponent final
     {
     public:
+        MeshComponent(const std::shared_ptr<Mesh>& mesh);
         MeshComponent(const std::vector<std::shared_ptr<Mesh>>& meshes = {});
         const std::vector<std::shared_ptr<Mesh>>& getMeshes() const;
-        void setMeshes(const std::vector<std::shared_ptr<Mesh>>& data);
+        MeshComponent& setMeshes(const std::vector<std::shared_ptr<Mesh>>& meshes);
+        MeshComponent& setMesh(const std::shared_ptr<Mesh>& mesh);
     private:
         std::vector<std::shared_ptr<Mesh>> _meshes;
     };
@@ -38,9 +56,6 @@ namespace darmok
     class MeshRenderer final : public ISceneRenderer
     {
     public:
-        void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry) override;
-    private:
-
-        void renderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry);
+        void render(Registry& registry, RenderContext& ctxt) override;
     };
 }

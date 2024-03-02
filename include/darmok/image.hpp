@@ -28,6 +28,9 @@ namespace darmok
 		bgfx::TextureInfo getTextureInfo() const;
 	private:
 		bimg::ImageContainer* _container;
+
+		Image(const Image& other) = delete;
+		Image& operator=(const Image& other) = delete;
 	};
 
 	class BX_NO_VTABLE IImageLoader

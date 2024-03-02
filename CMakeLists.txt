@@ -96,6 +96,7 @@ set(sources
   ${SRC_DIR}/texture.cpp
   ${SRC_DIR}/image.cpp
   ${SRC_DIR}/program.cpp
+  ${SRC_DIR}/vertex.cpp
 )
 
 set(headers
@@ -118,6 +119,7 @@ set(headers
   ${INCLUDE_DIR}/texture.hpp
   ${INCLUDE_DIR}/image.hpp
   ${INCLUDE_DIR}/program.hpp
+  ${INCLUDE_DIR}/vertex.hpp
 )
 
 set(LIB_NAME darmok)

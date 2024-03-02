@@ -2,26 +2,21 @@
 #include <darmok/data.hpp>
 #include <unordered_map>
 
-#include <bgfx/embedded_shader.h>
-#include "generated/shaders/debug_vertex.h"
-#include "generated/shaders/debug_fragment.h"
-#include "generated/shaders/sprite_vertex.h"
-#include "generated/shaders/sprite_fragment.h"
-#include "generated/shaders/basic_vertex.h"
-#include "generated/shaders/basic_fragment.h"
-
 namespace darmok
 {
-    Program::Program(const bgfx::ProgramHandle& handle)
+    Program::Program(const bgfx::ProgramHandle& handle) noexcept
 		: _handle(handle)
 	{
 	}
-
-    Program::~Program()
+    Program::~Program() noexcept
     {
+		if (isValid(_handle))
+		{
+			bgfx::destroy(_handle);
+		}
     }
 
-	const bgfx::ProgramHandle& Program::getHandle() const
+	const bgfx::ProgramHandle& Program::getHandle() const noexcept
 	{
 		return _handle;
 	}  
@@ -36,26 +31,30 @@ namespace darmok
 		switch (bgfx::getRendererType())
 		{
 		case bgfx::RendererType::Noop:
+			return "";
 		case bgfx::RendererType::Direct3D11:
-		case bgfx::RendererType::Direct3D12: return "dx11";  break;
+		case bgfx::RendererType::Direct3D12:
+			return ".dx11";
 		case bgfx::RendererType::Agc:
-		case bgfx::RendererType::Gnm:        return "pssl";  break;
-		case bgfx::RendererType::Metal:      return "metal"; break;
-		case bgfx::RendererType::Nvn:		 return "nvn";   break;
-		case bgfx::RendererType::OpenGL:     return "glsl";  break;
-		case bgfx::RendererType::OpenGLES:   return "essl";  break;
-		case bgfx::RendererType::Vulkan:     return "spv"; break;
-
-		case bgfx::RendererType::Count:
-			BX_ASSERT(false, "You should not be here!");
-			break;
+		case bgfx::RendererType::Gnm:
+			return ".pssl";
+		case bgfx::RendererType::Metal:
+			return ".metal";
+		case bgfx::RendererType::Nvn:
+			return ".nvn";
+		case bgfx::RendererType::OpenGL:
+			return ".glsl";
+		case bgfx::RendererType::OpenGLES:
+			return ".essl";
+		case bgfx::RendererType::Vulkan:
+			return ".spv";
 		}
-		return "???";
+		throw std::runtime_error("unknown renderer type");
 	}
 
 	bgfx::ShaderHandle DataProgramLoader::loadShader(const std::string& name)
 	{
-		std::string dataName = name + "." + getShaderExt() + ".bin";
+		std::string dataName = name + getShaderExt() + ".bin";
 		auto data = _dataLoader(dataName);
 		if (data == nullptr || data->empty())
 		{
@@ -78,37 +77,20 @@ namespace darmok
 		return std::make_shared<Program>(handle);
 	}
 
-	static const bgfx::EmbeddedShader _embeddedShaders[] =
+	bgfx::UniformHandle ProgramUniformDefinition::createHandle() const noexcept
 	{
-		BGFX_EMBEDDED_SHADER(debug_vertex),
-		BGFX_EMBEDDED_SHADER(debug_fragment),
-		BGFX_EMBEDDED_SHADER(sprite_vertex),
-		BGFX_EMBEDDED_SHADER(sprite_fragment),
-		BGFX_EMBEDDED_SHADER(basic_vertex),
-		BGFX_EMBEDDED_SHADER(basic_fragment),
-		BGFX_EMBEDDED_SHADER_END()
-	};
+		return bgfx::createUniform(name.c_str(), type, num);
+	}
 
-	static const std::unordered_map<EmbeddedProgramType, std::string> _embeddedShaderNames
+	bgfx::VertexLayout ProgramDefinition::createVertexLayout() const noexcept
 	{
-		{EmbeddedProgramType::Basic, "basic"},
-		{EmbeddedProgramType::Sprite, "sprite"},
-		{EmbeddedProgramType::Debug, "debug"},
-	};
-
-	std::shared_ptr<Program> EmbeddedProgramLoader::operator()(EmbeddedProgramType type)
-	{
-		auto itr = _embeddedShaderNames.find(type);
-		if (itr == _embeddedShaderNames.end())
+		bgfx::VertexLayout layout;
+		layout.begin();
+		for (auto& pair : attribs)
 		{
-			return nullptr;
+			layout.add(pair.first, pair.second.num, pair.second.type, pair.second.normalize);
 		}
-		auto renderer = bgfx::getRendererType();
-		auto handle = bgfx::createProgram(
-			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_vertex").c_str()),
-			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_fragment").c_str()),
-			true
-		);
-		return std::make_shared<Program>(handle);
+		layout.end();
+		return layout;
 	}
 }

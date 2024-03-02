@@ -22,17 +22,36 @@ namespace darmok
         return bgfx::makeRef(&v.front(), v.size() * sizeof(T));
     }
 
+    class Data;
+
+    class DataView final
+    {
+    public:
+        DataView(const void* ptr = nullptr, size_t size = 0) noexcept;
+        DataView(const Data& data) noexcept;
+        DataView(const bgfx::Memory& mem) noexcept;
+        const void* ptr() const noexcept;
+        size_t size() const noexcept;
+        bool empty() const noexcept;
+
+    private:
+        size_t _size;
+        const void* _ptr;
+    };
+
     class Data final
     {
     public:
-        Data() noexcept;
-        Data(void* ptr, size_t size, bool own = true) noexcept;
-        Data(void* ptr, size_t size, bx::AllocatorI* alloc, bool own = true) noexcept;
+        Data(size_t size = 0, bx::AllocatorI* alloc = nullptr) noexcept;
+        Data(const void* ptr, size_t size, bx::AllocatorI* alloc = nullptr) noexcept;
         ~Data() noexcept;
+
         Data(const Data& other) noexcept;
         Data& operator=(const Data& other) noexcept;
         Data(Data&& other) noexcept;
         Data& operator=(Data&& other) noexcept;
+        operator DataView() const;
+        
         void* ptr() const noexcept;
         size_t size() const noexcept;
         bool empty() const noexcept;
@@ -40,124 +59,29 @@ namespace darmok
         const bgfx::Memory* makeRef() const noexcept;
 
         template<typename T>
-        static Data copy(const T& v, bx::AllocatorI* alloc = nullptr)
+        static Data copy(const std::vector<T>& v, bx::AllocatorI* alloc = nullptr) noexcept
         {
-            void* ptr;
-            size_t size = sizeof(T);
-            if (alloc != nullptr)
-            {
-                ptr = bx::alloc(alloc, size);
-            }
-            else
-            {
-                ptr = std::malloc(size);
-            }
-            bx::memCopy(ptr, &v, size);
-            return Data(ptr, size, true);
-        }
-
-        template<>
-        static Data copy<Data>(const Data& v, bx::AllocatorI* alloc)
-        {
-            void* ptr;
-            size_t size = v.size();
-            if (alloc != nullptr)
-            {
-                ptr = bx::alloc(alloc, size);
-            }
-            else
-            {
-                ptr = std::malloc(size);
-            }
-            bx::memCopy(ptr, v.ptr(), size);
-            return Data(ptr, size, alloc, true);
+            return Data(&v.front(), sizeof(T) * v.size(), alloc);
         }
 
         template<typename T>
-        const T& as() const
+        static Data copy(const T* ptr, size_t num, bx::AllocatorI* alloc = nullptr) noexcept
         {
-            if (_size < sizeof(T))
-            {
-                throw std::runtime_error("size too small");
-            }
-            return (T&)*_ptr;
+            return Data(ptr, sizeof(T) * num, alloc);
         }
 
         template<typename T>
-        T& as()
+        static Data copy(const T& v, bx::AllocatorI* alloc = nullptr) noexcept
         {
-            if (_size < sizeof(T))
-            {
-                throw std::runtime_error("size too small");
-            }
-            return (T&)*_ptr;
+            return Data(&v, sizeof(T), alloc);
         }
 
     private:
-
-        void* _ptr;
         size_t _size;
+        void* _ptr;
         bx::AllocatorI* _alloc;
-        bool _own;
-    };
 
-    class VertexBuffer final
-    {
-    public:
-        template<typename T>
-        VertexBuffer(const std::vector<T>& vector, bgfx::VertexLayout layout) noexcept
-            :VertexBuffer(makeVectorRef(vector), layout)
-        {
-        }
-
-        template<typename T>
-        void set(const std::vector<T>& vector) noexcept
-        {
-            set(makeVectorRef(vector));
-        }
-
-        VertexBuffer(bgfx::VertexLayout layout) noexcept;
-        VertexBuffer(VertexBuffer&& other) noexcept;
-        VertexBuffer& operator=(VertexBuffer&& other) noexcept;
-        ~VertexBuffer() noexcept;
-        
-        const bgfx::VertexBufferHandle& getHandle() const noexcept;
-        void clear() noexcept;
-
-
-    private:
-        bgfx::VertexLayout _layout;
-        bgfx::VertexBufferHandle _handle = { bgfx::kInvalidHandle };
-
-        VertexBuffer(const bgfx::Memory* mem, bgfx::VertexLayout layout) noexcept;
-        void set(const bgfx::Memory* mem) noexcept;
-
-        VertexBuffer(const VertexBuffer& other) = delete;
-        VertexBuffer& operator=(const VertexBuffer& other) = delete;
-    };
-
-    typedef uint16_t VertexIndex;
-
-    class IndexBuffer final
-    {
-    public:
-        IndexBuffer() noexcept;
-        IndexBuffer(const std::vector<VertexIndex>& vector) noexcept;
-        IndexBuffer(IndexBuffer&& other) noexcept;
-        IndexBuffer& operator=(IndexBuffer&& other) noexcept;
-        ~IndexBuffer() noexcept;
-
-        const bgfx::IndexBufferHandle& getHandle() const noexcept;
-        void clear() noexcept;
-        void set(const std::vector<VertexIndex>& vector) noexcept;
-    private:
-        bgfx::IndexBufferHandle _handle;
-
-        IndexBuffer(const bgfx::Memory* mem = nullptr) noexcept;
-        void set(const bgfx::Memory* mem) noexcept;
-
-        IndexBuffer(const IndexBuffer& other) = delete;
-        IndexBuffer& operator=(const IndexBuffer& other) = delete;
+        static void* malloc(size_t size, bx::AllocatorI* alloc) noexcept;
     };
 
 	class BX_NO_VTABLE IDataLoader

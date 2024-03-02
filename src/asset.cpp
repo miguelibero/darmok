@@ -45,6 +45,7 @@ namespace darmok
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
 		, _modelLoader(_dataLoader, _textureLoader)
+		, _vertexLayoutLoader(_dataLoader)
 	{
 	}
 
@@ -63,11 +64,6 @@ namespace darmok
 		return _programLoader;
 	}
 
-	EmbeddedProgramLoader& AssetContextImpl::getEmbeddedProgramLoader() noexcept
-	{
-		return _embeddedProgramLoader;
-	}
-
 	ITextureLoader& AssetContextImpl::getTextureLoader() noexcept
 	{
 		return _textureLoader;
@@ -81,6 +77,11 @@ namespace darmok
 	IModelLoader& AssetContextImpl::getModelLoader() noexcept
 	{
 		return _modelLoader;
+	}
+
+	IVertexLayoutLoader& AssetContextImpl::getVertexLayoutLoader() noexcept
+	{
+		return _vertexLayoutLoader;
 	}
 
 	void AssetContextImpl::setBasePath(const std::string& path) noexcept
@@ -110,11 +111,6 @@ namespace darmok
 		return _impl->getProgramLoader();
 	}
 
-	EmbeddedProgramLoader& AssetContext::getEmbeddedProgramLoader() noexcept
-	{
-		return _impl->getEmbeddedProgramLoader();
-	}
-
 	ITextureLoader& AssetContext::getTextureLoader() noexcept
 	{
 		return _impl->getTextureLoader();
@@ -128,6 +124,11 @@ namespace darmok
 	IModelLoader& AssetContext::getModelLoader() noexcept
 	{
 		return _impl->getModelLoader();
+	}
+
+	IVertexLayoutLoader& AssetContext::getVertexLayoutLoader() noexcept
+	{
+		return _impl->getVertexLayoutLoader();
 	}
 
 	AssetContextImpl& AssetContext::getImpl() noexcept

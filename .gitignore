@@ -4,10 +4,9 @@ CMakeCache.*
 CMakeFiles/*
 [Tt]esting/*
 
-examples/build/*
-examples/00-empty/build/*
-examples/01-scene/build/*
-examples/02-model/build/*
+examples/build*/*
+examples/*/build*/*
+examples/*/.idea/*
 
 ### VisualStudioCode ###
 .vscode/*

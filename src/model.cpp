@@ -1,6 +1,7 @@
 
 #include "model.hpp"
 #include "asset.hpp"
+#include <darmok/vertex.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/material.h>
@@ -10,9 +11,11 @@
 
 #include <bimg/decode.h>
 
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
 #include <filesystem>
+
 
 namespace darmok
 {
@@ -29,8 +32,8 @@ namespace darmok
 		if (optCam.hasValue())
 		{
 			auto& cam = optCam.value();
-			transMat *= cam.getTransform();
-			scene.addComponent<Camera>(entity, cam.getProjection());
+			transMat *= cam.getViewMatrix();
+			scene.addComponent<Camera>(entity, cam.getProjectionMatrix());
 		}
 
 		auto& trans = scene.addComponent<Transform>(entity, transMat, parent);
@@ -57,10 +60,6 @@ namespace darmok
 
 	Entity addModelToScene(Scene& scene, Model& model, Entity entity)
 	{
-		if (entity == 0)
-		{
-			entity = scene.createEntity();
-		}
 		auto& rootNode = model.getRootNode();
 		return addModelNodeToScene(scene, rootNode, entity);
 	}
@@ -72,13 +71,13 @@ namespace darmok
 
 	static inline glm::mat4 convertMatrix(const aiMatrix4x4& from)
 	{
-		glm::mat4 to;
-		//the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
-		to[0][0] = from.a1; to[1][0] = from.a2; to[2][0] = from.a3; to[3][0] = from.a4;
-		to[0][1] = from.b1; to[1][1] = from.b2; to[2][1] = from.b3; to[3][1] = from.b4;
-		to[0][2] = from.c1; to[1][2] = from.c2; to[2][2] = from.c3; to[3][2] = from.c4;
-		to[0][3] = from.d1; to[1][3] = from.d2; to[2][3] = from.d3; to[3][3] = from.d4;
-		return to;
+		// the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
+		return glm::mat4(
+			from.a1, from.b1, from.c1, from.d1,
+			from.a2, from.b2, from.c2, from.d2,
+			from.a3, from.b3, from.c3, from.d3,
+			from.a4, from.b4, from.c4, from.d4
+		);
 	}
 
 	static inline glm::vec3 convertVector(const aiVector3D& vec)
@@ -119,7 +118,7 @@ namespace darmok
 	{
 		if (_ptr != nullptr)
 		{
-			_data = Data(_ptr->mData, _ptr->mDataLength, false);
+			_data = DataView(_ptr->mData, _ptr->mDataLength);
 		}
 	}
 
@@ -143,7 +142,7 @@ namespace darmok
 		return _ptr->mIndex;
 	}
 
-	const Data& ModelMaterialProperty::getData() const
+	const DataView& ModelMaterialProperty::getData() const
 	{
 		return _data;
 	}
@@ -385,7 +384,7 @@ namespace darmok
 		return tex;
 	}
 
-	std::pair<std::shared_ptr<Texture>, MaterialTextureType> ModelMaterial::createMaterialTexture(const ModelMaterialTexture& modelTexture)
+	std::pair<MaterialTextureType, std::shared_ptr<Texture>> ModelMaterial::createMaterialTexture(const ModelMaterialTexture& modelTexture) const
 	{
 		auto itr = _materialTextures.find(modelTexture.getType());
 		if (itr == _materialTextures.end())
@@ -407,7 +406,7 @@ namespace darmok
 			}
 			texture = AssetContext::get().getTextureLoader()(fsPath.string());
 		}
-		return std::make_pair(texture, itr->second);
+		return std::make_pair(itr->second, texture);
 	}
 
 	std::shared_ptr<Material> ModelMaterial::load()
@@ -416,16 +415,15 @@ namespace darmok
 		{
 			return _material;
 		}
-		auto program = AssetContext::get().getEmbeddedProgramLoader()(EmbeddedProgramType::Basic);
-		_material = std::make_shared<Material>(program);
+		_material = Material::createStandard(StandardMaterialType::Basic);
 		for (auto& elm : _materialTextures)
 		{
 			for (auto& modelTex : getTextures(elm.first))
 			{
 				auto pair = createMaterialTexture(modelTex);
-				if (pair.first != nullptr)
+				if (pair.second != nullptr)
 				{
-					_material->addTexture(pair.first, pair.second);
+					_material->setTexture(pair.first, pair.second);
 				}
 			}
 		}
@@ -509,6 +507,22 @@ namespace darmok
 		return convertVector(_ptr[pos]);
 	}
 
+	ModelColorCollection::ModelColorCollection(aiColor4D* ptr, size_t size)
+		: _ptr(ptr)
+		, _size(size)
+	{
+	}
+
+	Color ModelColorCollection::create(size_t pos) const
+	{
+		return convertColor(_ptr[pos]);
+	}
+
+	size_t ModelColorCollection::size() const
+	{
+		return _size;
+	}
+
 	ModelTextureCoords::ModelTextureCoords(aiMesh* mesh, size_t pos)
 		: _compCount(mesh->mNumUVComponents[pos])
 		, _coords(mesh->mTextureCoords[pos], mesh->mNumVertices)
@@ -540,12 +554,6 @@ namespace darmok
 		return ModelMeshFace(&_ptr->mFaces[pos]);
 	}
 
-
-	static ModelTextureCoords* getModelMeshTextureCoords(aiMesh* mesh, size_t pos)
-	{
-		return new ModelTextureCoords(mesh, pos);
-	}
-
 	ModelMeshTextureCoordsCollection::ModelMeshTextureCoordsCollection(aiMesh* ptr)
 		: _ptr(ptr)
 	{
@@ -553,30 +561,79 @@ namespace darmok
 
 	size_t ModelMeshTextureCoordsCollection::size() const
 	{
-		for (size_t i = AI_MAX_NUMBER_OF_TEXTURECOORDS - 1; i >= 0; i--)
+		size_t count = 0;
+		for (size_t i = 0; i < AI_MAX_NUMBER_OF_TEXTURECOORDS; i++)
 		{
 			if (_ptr->mTextureCoords[i] != nullptr)
 			{
-				return i + 1;
+				count++;
 			}
 		}
-		return 0;
+		return count;
 	}
 
 	ModelTextureCoords ModelMeshTextureCoordsCollection::create(size_t pos) const
 	{
-		return ModelTextureCoords(_ptr, pos);
+		size_t i = 0;
+		size_t count = 0;
+		for (; i < AI_MAX_NUMBER_OF_TEXTURECOORDS; i++)
+		{
+			if (_ptr->mTextureCoords[i] != nullptr)
+			{
+				if (count++ == pos)
+				{
+					break;
+				}
+			}
+		}
+		return ModelTextureCoords(_ptr, i);
+	}
+
+	ModelMeshColorsCollection::ModelMeshColorsCollection(aiMesh* ptr)
+		: _ptr(ptr)
+	{
+	}
+
+	size_t ModelMeshColorsCollection::size() const
+	{
+		size_t count = 0;
+		for (size_t i = 0; i < AI_MAX_NUMBER_OF_COLOR_SETS; i++)
+		{
+			if (_ptr->mColors[i] != nullptr)
+			{
+				count++;
+			}
+		}
+		return count;
+	}
+
+	ModelColorCollection ModelMeshColorsCollection::create(size_t pos) const
+	{
+		size_t i = 0;
+		size_t count = 0;
+		for (; i < AI_MAX_NUMBER_OF_COLOR_SETS; i++)
+		{
+			if (_ptr->mColors[i] != nullptr)
+			{
+				if (count++ == pos)
+				{
+					break;
+				}
+			}
+		}
+		return ModelColorCollection(_ptr->mColors[i], _ptr->mNumVertices);
 	}
 
 	ModelMesh::ModelMesh(aiMesh* ptr, ModelMaterial& material)
 		: _ptr(ptr)
-		, _vertices(ptr->mVertices, ptr->mNumVertices)
+		, _positions(ptr->mVertices, ptr->mNumVertices)
 		, _normals(ptr->mNormals, ptr->mNumVertices)
 		, _tangents(ptr->mTangents, ptr->mNumVertices)
 		, _bitangents(ptr->mBitangents, ptr->mNumVertices)
 		, _material(material)
 		, _faces(ptr)
 		, _texCoords(ptr)
+		, _colors(ptr)
 	{
 	}
 
@@ -590,9 +647,9 @@ namespace darmok
 		return _material;
 	}
 
-	const ModelVector3Collection& ModelMesh::getVertices() const
+	const ModelVector3Collection& ModelMesh::getPositions() const
 	{
-		return _vertices;
+		return _positions;
 	}
 
 	const ModelVector3Collection& ModelMesh::getNormals() const
@@ -625,101 +682,40 @@ namespace darmok
 		return _faces;
 	}
 
-
-	static bgfx::VertexLayout createModelMeshVertexLayout(const ModelMesh& modelMesh)
+	const ModelMeshColorsCollection& ModelMesh::getColors() const
 	{
-		bgfx::VertexLayout layout;
-		layout.begin();
-		if (!modelMesh.getVertices().empty())
-		{
-			layout.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
-		}
-		if (!modelMesh.getNormals().empty())
-		{
-			layout.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float);
-		}
-		if (!modelMesh.getTangents().empty())
-		{
-			layout.add(bgfx::Attrib::Tangent, 3, bgfx::AttribType::Float);
-		}
-		if (!modelMesh.getBitangents().empty())
-		{
-			layout.add(bgfx::Attrib::Bitangent, 3, bgfx::AttribType::Float);
-		}
+		return _colors;
+	}
+
+
+	Data createModelMeshVertexData(const ModelMesh& modelMesh, const bgfx::VertexLayout& layout)
+	{
+		VertexDataWriter writer(layout, modelMesh.getVertexCount());
+		writer.set(bgfx::Attrib::Position, modelMesh.getPositions());
+		writer.set(bgfx::Attrib::Normal, modelMesh.getNormals());
+		writer.set(bgfx::Attrib::Tangent, modelMesh.getTangents());
+		writer.set(bgfx::Attrib::Bitangent, modelMesh.getBitangents());
 		auto i = 0;
-		for (auto& texCoords : modelMesh.getTexCoords())
+		for(auto& elm : modelMesh.getTexCoords())
 		{
-			auto attrib = bgfx::Attrib::TexCoord0 + i++;
-			layout.add((bgfx::Attrib::Enum)attrib, texCoords.getCompCount(), bgfx::AttribType::Float);
+			writer.set((bgfx::Attrib::Enum)(bgfx::Attrib::TexCoord0 + i++), elm.getCoords());
 		}
-		layout.end();
-		return layout;
+		i = 0;
+		for (auto& elm : modelMesh.getColors())
+		{
+			writer.set((bgfx::Attrib::Enum)(bgfx::Attrib::Color0 + i++), elm);
+		}
+		return writer.release();
 	}
 
-	std::vector<float> createModelMeshVertexData(const ModelMesh& modelMesh, const bgfx::VertexLayout& layout)
-	{
-		std::vector<float> vertices;
-		vertices.reserve(layout.getSize(modelMesh.getVertexCount()) / sizeof(float));
-		auto& verts = modelMesh.getVertices();
-		auto& norms = modelMesh.getNormals();
-		auto& tangs = modelMesh.getTangents();
-		auto& btngs = modelMesh.getBitangents();
-		for (size_t i = 0; i < modelMesh.getVertexCount(); i++)
-		{
-			if (!verts.empty())
-			{
-				auto& v = verts[i];
-				vertices.insert(vertices.end(), { v.x, v.y, v.z });
-			}
-			if (!norms.empty())
-			{
-				auto& v = norms[i];
-				vertices.insert(vertices.end(), { v.x, v.y, v.z });
-			}
-			if (!tangs.empty())
-			{
-				auto& v = tangs[i];
-				vertices.insert(vertices.end(), { v.x, v.y, v.z });
-			}
-			if (!btngs.empty())
-			{
-				auto& v = btngs[i];
-				vertices.insert(vertices.end(), { v.x, v.y, v.z });
-			}
-
-			for (auto& texCoords : modelMesh.getTexCoords())
-			{
-				auto& v = texCoords.getCoords()[i];
-				switch (texCoords.getCompCount())
-				{
-				case 1:
-					vertices.push_back(v.x);
-					break;
-				case 2:
-					vertices.push_back(v.x);
-					vertices.push_back(v.y);
-					break;
-				case 3:
-					vertices.push_back(v.x);
-					vertices.push_back(v.y);
-					vertices.push_back(v.z);
-					break;
-				default:
-					break;
-				}
-			}
-		}
-		return vertices;
-	}
-
-	std::vector<VertexIndex> createModelMeshIndexData(const ModelMesh& modelMesh)
+	Data createModelMeshIndexData(const ModelMesh& modelMesh)
 	{
 		std::vector<VertexIndex> indices;
 		for (auto& face : modelMesh.getFaces())
 		{
 			indices.insert(indices.end(), face.getIndices().begin(), face.getIndices().end());
 		}
-		return indices;
+		return Data::copy(indices);
 	}
 
 	std::shared_ptr<Mesh> ModelMesh::load()
@@ -728,11 +724,13 @@ namespace darmok
 		{
 			return _mesh;
 		}
-		auto layout = createModelMeshVertexLayout(*this);
 		auto material = getMaterial().load();
+		auto& layout = material->getVertexLayout();
 		auto vertices = createModelMeshVertexData(*this, layout);
 		auto indices = createModelMeshIndexData(*this);
-		_mesh = std::make_shared<Mesh>(material, std::move(vertices), layout, std::move(indices));
+
+		auto ptr = (float*)vertices.ptr();
+		_mesh = std::make_shared<Mesh>(material, layout, std::move(vertices), std::move(indices));
 		return _mesh;
 	}
 
@@ -774,7 +772,19 @@ namespace darmok
 	{
 		aiMatrix4x4 mat;
 		_ptr->GetCameraMatrix(mat);
-		_transform = convertMatrix(mat);
+		_view = convertMatrix(mat);
+
+		auto aspect = getAspect();
+		auto fovy = 0.f;
+		if (aspect != 0.f)
+		{
+			auto fovx = getHorizontalFieldOfView();
+			fovy = 2.f * atan(tan(0.5f * fovx) * aspect);
+		}
+
+		auto clipNear = getClipNear();
+		auto clipFar = getClipFar();
+		bx::mtxProj(glm::value_ptr(_proj), bx::toDeg(fovy), aspect, clipNear, clipFar, bgfx::getCaps()->homogeneousDepth);
 	}
 
 	std::string_view ModelCamera::getName() const
@@ -782,14 +792,14 @@ namespace darmok
 		return getStringView(_ptr->mName);
 	}
 
-	glm::mat4 ModelCamera::getProjection() const
+	const glm::mat4& ModelCamera::getProjectionMatrix() const
 	{
-		return glm::perspective(getHorizontalFieldOfView(), getAspect(), getClipNear(), getClipFar());
+		return _proj;
 	}
 
-	const glm::mat4& ModelCamera::getTransform() const
+	const glm::mat4& ModelCamera::getViewMatrix() const
 	{
-		return _transform;
+		return _view;
 	}
 
 	float ModelCamera::getAspect() const
@@ -799,12 +809,12 @@ namespace darmok
 
 	float ModelCamera::getClipFar() const
 	{
-		return _ptr->mAspect;
+		return _ptr->mClipPlaneFar;
 	}
 
 	float ModelCamera::getClipNear() const
 	{
-		return _ptr->mClipPlaneFar;
+		return _ptr->mClipPlaneNear;
 	}
 
 	float ModelCamera::getHorizontalFieldOfView() const

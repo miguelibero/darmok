@@ -2,6 +2,7 @@
 #pragma once
 
 #include <darmok/image.hpp>
+#include <darmok/optional_ref.hpp>
 
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
@@ -28,6 +29,7 @@ namespace darmok
 	{
 	public:
 		Texture(std::shared_ptr<Image> img, const bgfx::TextureHandle& handle, TextureType type = TextureType::Texture2D);
+		~Texture();
 		const bgfx::TextureHandle& getHandle() const;
 		std::shared_ptr<Image> getImage() const;
 		void releaseImage();
@@ -39,17 +41,14 @@ namespace darmok
 		std::shared_ptr<Image> _img;
 		bgfx::TextureHandle _handle;
 		TextureType _type;
+
+		Texture(const Texture& other) = delete;
+		Texture& operator=(const Texture& other) = delete;
 	};
 
 	typedef glm::vec<2, uint32_t> TextureVec2;
 
-	struct TextureAtlasVertex
-	{
-		TextureVec2 position;
-		TextureVec2 texCoord;
-	};
-		
-	typedef uint16_t TextureAtlasVertexIndex;
+	typedef uint16_t TextureAtlasIndex;
 
 	struct TextureBounds
 	{
@@ -60,8 +59,9 @@ namespace darmok
 	struct TextureAtlasElement final
 	{
 		std::string name;
-		std::vector<TextureAtlasVertex> vertices;
-		std::vector<TextureAtlasVertexIndex> indices;
+		std::vector<TextureVec2> positions;
+		std::vector<TextureVec2> texCoords;
+		std::vector<TextureAtlasIndex> indices;
 		TextureVec2 texturePosition;
 		TextureVec2 textureSize;
 		TextureVec2 originalPosition;
@@ -79,8 +79,8 @@ namespace darmok
 		TextureVec2 size;
 
 		TextureBounds getBounds(std::string_view prefix) const;
-		TextureAtlasElement* getElement(std::string_view name);
-		const TextureAtlasElement* getElement(std::string_view name) const;
+		OptionalRef<TextureAtlasElement> getElement(std::string_view name);
+		OptionalRef<const TextureAtlasElement> getElement(std::string_view name) const;
 	};
 
     class BX_NO_VTABLE ITextureLoader

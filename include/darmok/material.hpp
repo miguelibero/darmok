@@ -1,8 +1,11 @@
 #pragma once
+
 #include <darmok/color.hpp>
 #include <darmok/data.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/program.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/optional_ref.hpp>
 
 #include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
@@ -10,7 +13,6 @@
 #include <vector>
 #include <string_view>
 #include <memory>
-#include <optional>
 #include <unordered_map>
 
 
@@ -25,7 +27,6 @@ namespace darmok
         Count,
     };
 
-
     enum class MaterialColorType
     {
         Diffuse,
@@ -36,35 +37,54 @@ namespace darmok
         Reflective,
     };
 
-    struct MaterialUniforms
+    enum class StandardMaterialType
     {
-        bgfx::UniformHandle TextureColor;
-        bgfx::UniformHandle DiffuseColor;
-
-        static MaterialUniforms getDefault();
+        Basic,
+        Sprite,
+        Debug,
     };
 
     class Material final
     {
     public:
-        Material() = default;
-        Material(const std::shared_ptr<Program>& program, const MaterialUniforms& uniforms = MaterialUniforms::getDefault());
+        Material(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept;
+        ~Material() noexcept;
 
-        const std::shared_ptr<Program>& getProgram() const;
-        void setProgram(const std::shared_ptr<Program>& program);
+        Material(const Material& other) noexcept;
+        Material& operator=(const Material& other) noexcept;
 
-        const std::vector<std::shared_ptr<Texture>>& getTextures(MaterialTextureType type) const;
-        void addTexture(const std::shared_ptr<Texture>& texture, MaterialTextureType type = MaterialTextureType::Diffuse);
+        Material(Material&& other) noexcept;
+        Material& operator=(Material&& other) noexcept;
 
-        std::optional<Color> getColor(MaterialColorType type);
-        void setColor(MaterialColorType type, const Color& color);
+        const std::shared_ptr<Program>& getProgram() const noexcept;
+        void setProgram(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept;
+        const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
-        void submit(bgfx::Encoder& encoder, bgfx::ViewId viewId);
+        std::shared_ptr<Texture> getTexture(MaterialTextureType type, uint8_t textureUnit = 0) const noexcept;
+        void setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture, uint8_t textureUnit = 0) noexcept;
+
+        OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
+        void setColor(MaterialColorType type, const Color& color) noexcept;
+
+        void submit(RenderContext& ctxt) const;
+
+        static std::shared_ptr<Material> createStandard(StandardMaterialType type) noexcept;
 
     private:
+        void clearUniforms() noexcept;
+        bgfx::UniformHandle getUniformHandle(ProgramUniform uniform) const noexcept;
+
+        void submitTextures(bgfx::Encoder& encoder) const;
+        void submitColors(bgfx::Encoder& encoder) const;
+
         std::shared_ptr<Program> _program;
-        MaterialUniforms _uniforms;
-        std::unordered_map<MaterialTextureType, std::vector<std::shared_ptr<Texture>>> _textures;
+        ProgramDefinition _progDef;
+        bgfx::VertexLayout _vertexLayout;
+        std::unordered_map<ProgramUniform, bgfx::UniformHandle> _uniforms;
+        std::unordered_map<MaterialTextureType, std::unordered_map<uint8_t, std::shared_ptr<Texture>>> _textures;
         std::unordered_map<MaterialColorType, Color> _colors;
     };
+
+
+
 }

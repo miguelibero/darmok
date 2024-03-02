@@ -448,6 +448,7 @@ namespace darmok
 		init.resolution.width = size.x;
 		init.resolution.height = size.y;
 		init.resolution.reset = AppImpl::get().getResetFlags();
+		init.type = bgfx::RendererType::Direct3D12;
 		bgfx::init(init);
 
 		bgfx::setPaletteColor(0, UINT32_C(0x00000000));

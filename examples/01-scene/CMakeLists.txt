@@ -6,9 +6,11 @@ project(
   DESCRIPTION "scene darmok project"
 )
 
-add_subdirectory(../../ ../../build)
+get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
+add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
 set(ASSETS_DIR ${CMAKE_BINARY_DIR}/assets)
+FILE(COPY assets/brick.png DESTINATION ${ASSETS_DIR})
 FILE(COPY assets/darmok.jpg DESTINATION ${ASSETS_DIR})
 FILE(COPY assets/warrior-0.xml DESTINATION ${ASSETS_DIR})
 FILE(COPY assets/warrior-0.png DESTINATION ${ASSETS_DIR})

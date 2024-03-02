@@ -10,11 +10,11 @@ namespace darmok
     class BoxCollider2D final
     {
     public:
-        BoxCollider2D(const glm::vec2& size = {}, const glm::vec2& offset = {});
+        BoxCollider2D(const glm::vec2& size = { 1, 1 }, const glm::vec2& offset = {});
         const glm::vec2& getSize() const;
-        void setSize(const glm::vec2& size);
+        BoxCollider2D& setSize(const glm::vec2& size);
         const glm::vec2& getOffset() const;
-        void setOffset(const glm::vec2& offset);
+        BoxCollider2D& setOffset(const glm::vec2& offset);
     private:
         glm::vec2 _size;
         glm::vec2 _offset;
@@ -27,7 +27,7 @@ namespace darmok
         ~Physics2DDebugRenderer();
 
         void init(Registry& registry) override;
-        void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry) override;
+        void render(Registry& registry, RenderContext& ctxt) override;
     private:
         bgfx::IndexBufferHandle _boxIndexBuffer;
         bgfx::ProgramHandle _program;

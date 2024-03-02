@@ -2,6 +2,7 @@
 #include <darmok/physics2d.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/data.hpp>
+#include <darmok/vertex.hpp>
 
 #include <bgfx/embedded_shader.h>
 #include "generated/shaders/debug_vertex.h"
@@ -20,9 +21,10 @@ namespace darmok
         return _size;
     }
 
-    void BoxCollider2D::setSize(const glm::vec2& size)
+    BoxCollider2D& BoxCollider2D::setSize(const glm::vec2& size)
     {
         _size = size;
+        return *this;
     }
 
     const glm::vec2& BoxCollider2D::getOffset() const
@@ -30,9 +32,10 @@ namespace darmok
         return _offset;
     }
 
-    void BoxCollider2D::setOffset(const glm::vec2& offset)
+    BoxCollider2D& BoxCollider2D::setOffset(const glm::vec2& offset)
     {
         _offset = offset;
+        return *this;
     }
 
      Physics2DDebugRenderer::Physics2DDebugRenderer(const Color& color)
@@ -69,14 +72,14 @@ namespace darmok
             bgfx::createEmbeddedShader(_physics2dEmbeddedShaders, type, "debug_fragment"),
             true
         );
-        _colorUniform = bgfx::createUniform("s_color", bgfx::UniformType::Vec4);;
+        _colorUniform = bgfx::createUniform("u_color", bgfx::UniformType::Vec4);;
         _vertexLayout
             .begin()
             .add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
             .end();
     }
 
-    void Physics2DDebugRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry)
+    void Physics2DDebugRenderer::render(Registry& registry, RenderContext& ctxt)
     {
         uint64_t state = BGFX_STATE_WRITE_RGB
             | BGFX_STATE_WRITE_A
@@ -87,7 +90,7 @@ namespace darmok
         auto boxes = registry.view<const BoxCollider2D>();
         for (auto [entity, box] : boxes.each())
         {
-            Transform::bgfxConfig(entity, encoder, registry);
+            Transform::bgfxConfig(entity, ctxt.encoder, registry);
 
             auto& size = box.getSize();
             auto& offset = box.getOffset();
@@ -102,11 +105,11 @@ namespace darmok
             bgfx::allocTransientVertexBuffer(&vertexBuffer, 4, _vertexLayout);
             bx::memCopy((glm::vec2*)vertexBuffer.data, &vertices.front(), vertices.size() * sizeof(glm::vec2));
 
-            encoder.setUniform(_colorUniform, &_color);
-            encoder.setVertexBuffer(0, &vertexBuffer);
-            encoder.setIndexBuffer(_boxIndexBuffer);
-            encoder.setState(state);
-            encoder.submit(viewId, _program);
+            ctxt.encoder.setUniform(_colorUniform, &_color);
+            ctxt.encoder.setVertexBuffer(0, &vertexBuffer);
+            ctxt.encoder.setIndexBuffer(_boxIndexBuffer);
+            ctxt.encoder.setState(state);
+            ctxt.encoder.submit(ctxt.viewId, _program, ctxt.depth);
         }
     }
 }

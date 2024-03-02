@@ -1,5 +1,4 @@
 #include "scene.hpp"
-#include <numeric>
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
 #include <bgfx/bgfx.h>
@@ -20,7 +19,8 @@ namespace darmok
         , _scale(glm::vec3(1.f))
         , _pivot(glm::vec3())
         , _matrix(glm::mat4())
-        , _changed(false)
+        , _matrixUpdatePending(false)
+        , _inverseUpdatePending(false)
         , _parent(parent)
     {
         setMatrix(mat);
@@ -32,7 +32,8 @@ namespace darmok
         , _scale(scale)
         , _pivot(pivot)
         , _matrix(glm::mat4())
-        , _changed(true)
+        , _matrixUpdatePending(true)
+        , _inverseUpdatePending(true)
         , _parent(parent)
     {
     }
@@ -67,58 +68,62 @@ namespace darmok
         return _parent;
     }
 
-    void Transform::setParent(const OptionalRef<Transform>& parent)
+    void Transform::setPending(bool v)
+    {
+        _matrixUpdatePending = v;
+        _inverseUpdatePending = v;
+    }
+
+
+    Transform& Transform::setParent(const OptionalRef<Transform>& parent)
     {
         _parent = parent;
+        return *this;
     }
 
-    bool Transform::setPosition(const glm::vec3& v)
+    Transform& Transform::setPosition(const glm::vec3& v)
     {
-        if (v == _position)
+        if (v != _position)
         {
-            return false;
+            _position = v;
+            setPending();
         }
-        _changed = true;
-        _position = v;
-        return true;
+        return *this;
     }
 
-    bool Transform::setRotation(const glm::vec3& v)
+    Transform& Transform::setRotation(const glm::vec3& v)
     {
-        if (v == _rotation)
+        if (v != _rotation)
         {
-            return false;
+            _rotation = v;
+            setPending();
         }
-        _changed = true;
-        _rotation = v;
-        return true;
+        return *this;
     }
 
-    bool Transform::setScale(const glm::vec3& v)
+    Transform& Transform::setScale(const glm::vec3& v)
     {
-        if (v == _scale)
+        if (v != _scale)
         {
-            return false;
+            _scale = v;
+            setPending();
         }
-        _changed = true;
-        _scale = v;
-        return true;
+        return *this;
     }
 
-    bool Transform::setPivot(const glm::vec3& v)
+    Transform& Transform::setPivot(const glm::vec3& v)
     {
-        if (v == _pivot)
+        if (v != _pivot)
         {
-            return false;
+            _pivot = v;
+            setPending();
         }
-        _changed = true;
-        _pivot = v;
-        return true;
+        return *this;
     }
 
-    bool Transform::update()
+    bool Transform::updateMatrix()
     {
-        if (!_changed)
+        if (!_matrixUpdatePending)
         {
             return false;
         }
@@ -129,10 +134,22 @@ namespace darmok
             ;
         if (_parent != nullptr)
         {
-            _parent->update();
+            _parent->updateMatrix();
             _matrix = _parent->getMatrix() * _matrix;
         }
-        _changed = false;
+        _matrixUpdatePending = false;
+        return true;
+    }
+
+    bool Transform::updateInverse()
+    {
+        if (!_inverseUpdatePending)
+        {
+            return false;
+        }
+        updateMatrix();
+        _inverse = glm::inverse(_matrix);
+        _inverseUpdatePending = false;
         return true;
     }
 
@@ -152,18 +169,30 @@ namespace darmok
         _rotation = { glm::degrees(rx), glm::degrees(ry), glm::degrees(rz) };
 
         _matrix = v;
-        _changed = false;
+        _matrixUpdatePending = false;
+        _inverseUpdatePending = true;
     }
 
     const glm::mat4& Transform::getMatrix()
     {
-        update();
+        updateMatrix();
         return _matrix;
     }
 
     const glm::mat4& Transform::getMatrix() const
     {
         return _matrix;
+    }
+
+    const glm::mat4& Transform::getInverse()
+    {
+        updateInverse();
+        return _inverse;
+    }
+
+    const glm::mat4& Transform::getInverse() const
+    {
+        return _inverse;
     }
 
     bool Transform::bgfxConfig(Entity entity, bgfx::Encoder& encoder, Registry& registry)
@@ -208,8 +237,9 @@ namespace darmok
         bgfx::setViewRect(viewId, _origin.x, _origin.y, _size.x, _size.y);
     }
 
-    Camera::Camera(const glm::mat4& matrix)
+    Camera::Camera(const glm::mat4& matrix, uint32_t depth)
         : _matrix(matrix)
+        , _depth(depth)
     {
     }
 
@@ -218,9 +248,39 @@ namespace darmok
         return _matrix;
     }
 
-    void Camera::setMatrix(const glm::mat4& matrix)
+    Camera& Camera::setMatrix(const glm::mat4& proj)
     {
-        _matrix = matrix;
+        _matrix = proj;
+        return *this;
+    }
+
+    Camera& Camera::setProjection(float fovy, float aspect, float near, float far)
+    {
+        bx::mtxProj(glm::value_ptr(_matrix), fovy, aspect, near, far, bgfx::getCaps()->homogeneousDepth);
+        return *this;
+    }
+
+    Camera& Camera::setProjection(float fovy, float aspect, float near)
+    {
+        bx::mtxProjInf(glm::value_ptr(_matrix), glm::radians(fovy), aspect, near, bgfx::getCaps()->homogeneousDepth);
+        return *this;
+    }
+
+    Camera& Camera::setOrtho(float left, float right, float bottom, float top, float near, float far, float offset)
+    {
+        bx::mtxOrtho(glm::value_ptr(_matrix), left, right, bottom, top, near, far, offset, bgfx::getCaps()->homogeneousDepth);
+        return *this;
+    }
+
+    Camera& Camera::setDepth(uint32_t depth)
+    {
+        _depth = depth;
+        return *this;
+    }
+
+    uint32_t Camera::getDepth() const
+    {
+        return _depth;
     }
 
     SceneImpl::SceneImpl()
@@ -280,8 +340,8 @@ namespace darmok
     void SceneImpl::render(bgfx::ViewId viewId)
     {
         auto cams = _registry.view<const Camera>();
-
-        bgfx::Encoder* encoder = bgfx::begin();
+        auto encoder = bgfx::begin();
+        auto ctxt = RenderContext { *encoder, viewId, 0 };
 
         for (auto [entity, cam] : cams.each())
         {
@@ -290,7 +350,7 @@ namespace darmok
             const void* viewPtr = nullptr;
             if (trans != nullptr)
             {
-                viewPtr = glm::value_ptr(trans->getMatrix());
+                viewPtr = glm::value_ptr(trans->getInverse());
             }
             bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(proj));
 
@@ -299,10 +359,11 @@ namespace darmok
             {
                 viewRect->bgfxConfig(viewId);
             }
+            ctxt.depth = cam.getDepth();
 
             for (auto& renderer : _renderers)
             {
-                renderer->render(*encoder, viewId, _registry);
+                renderer->render(_registry, ctxt);
             }
         }
         bgfx::end(encoder);

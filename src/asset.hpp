@@ -11,6 +11,7 @@
 #include "program.hpp"
 #include "model.hpp"
 #include "data.hpp"
+#include "vertex.hpp"
 
 namespace darmok
 {
@@ -40,10 +41,11 @@ namespace darmok
 		AssetContextImpl();
 		IImageLoader& getImageLoader() noexcept;
 		IProgramLoader& getProgramLoader() noexcept;
-		EmbeddedProgramLoader& getEmbeddedProgramLoader() noexcept;
 		ITextureLoader& getTextureLoader() noexcept;
 		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		IModelLoader& getModelLoader() noexcept;
+		IVertexLayoutLoader& getVertexLayoutLoader() noexcept;
+
 		bx::AllocatorI* getAllocator() noexcept;
 		void setBasePath(const std::string& path) noexcept;
 	private:
@@ -53,10 +55,10 @@ namespace darmok
 		FileDataLoader _dataLoader;
 		DataImageLoader _imageLoader;
 		DataProgramLoader _programLoader;
-		EmbeddedProgramLoader _embeddedProgramLoader;
 		ImageTextureLoader _textureLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		AssimpModelLoader _modelLoader;
+		XmlDataVertexLayoutLoader _vertexLayoutLoader;
 	};
 
 }

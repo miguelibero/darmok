@@ -15,12 +15,19 @@ namespace darmok
     typedef uint32_t Entity;
     typedef entt::basic_registry<Entity> Registry;
 
+    struct RenderContext final
+    {
+        bgfx::Encoder& encoder;
+        bgfx::ViewId viewId;
+        uint32_t depth;
+    };
+
     class BX_NO_VTABLE ISceneRenderer
     {
     public:
         virtual ~ISceneRenderer() = default;
         virtual void init(Registry& registry) {};
-        virtual void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, Registry& registry) = 0;
+        virtual void render(Registry& registry, RenderContext& ctxt) = 0;
     };
 
     class BX_NO_VTABLE ISceneLogicUpdater
@@ -39,13 +46,13 @@ namespace darmok
         Entity createEntity();
 
         template<typename T, typename... A>
-        T& addComponent(const Entity entity, A&&... args)
+        decltype(auto) addComponent(const Entity entity, A&&... args)
         {
             return getRegistry().emplace<T, A...>(entity, std::forward<A>(args)...);
         }
 
         template<typename T>
-        T& getComponent(const Entity entity)
+        decltype(auto) getComponent(const Entity entity)
         {
             return getRegistry().get<T>(entity);
         }
@@ -98,28 +105,34 @@ namespace darmok
 
         OptionalRef<Transform> getParent();
 
+        Transform& setPosition(const glm::vec3& v);
+        Transform& setRotation(const glm::vec3& v);
+        Transform& setScale(const glm::vec3& v);
+        Transform& setPivot(const glm::vec3& v);
+        Transform& setParent(const OptionalRef<Transform>& parent);
 
-        bool setPosition(const glm::vec3& v);
-        bool setRotation(const glm::vec3& v);
-        bool setScale(const glm::vec3& v);
-        bool setPivot(const glm::vec3& v);
-        void setParent(const OptionalRef<Transform>& parent);
-
-        bool update();
+        bool updateMatrix();
+        bool updateInverse();
         void setMatrix(const glm::mat4& v);
         const glm::mat4& getMatrix();
         const glm::mat4& getMatrix() const;
+        const glm::mat4& getInverse();
+        const glm::mat4& getInverse() const;
 
         static bool bgfxConfig(Entity entity, bgfx::Encoder& encoder, Registry& registry);
     
     private:
-        bool _changed;
+        bool _matrixUpdatePending;
+        bool _inverseUpdatePending;
         glm::vec3 _position;
         glm::vec3 _rotation;
         glm::vec3 _scale;
         glm::vec3 _pivot;
         glm::mat4 _matrix;
+        glm::mat4 _inverse;
         OptionalRef<Transform> _parent;
+
+        void setPending(bool v = true);
     };
 
     typedef glm::vec<2, uint16_t> ViewVec;
@@ -141,12 +154,17 @@ namespace darmok
     class Camera final
     {
     public:
-        Camera(const glm::mat4& matrix = {});
+        Camera(const glm::mat4& matrix = {}, uint32_t depth = 0);
         const glm::mat4& getMatrix() const;
-        void setMatrix(const glm::mat4& matrix);
-
+        Camera& setMatrix(const glm::mat4& matrix);
+        Camera& setProjection(float fovy, float aspect, float near, float far);
+        Camera& setProjection(float fovy, float aspect, float near = 0.f);
+        Camera& setOrtho(float left, float right, float bottom, float top, float near = 0.f, float far = bx::kFloatLargest, float offset = 0.f);
+        Camera& setDepth(uint32_t depth);
+        uint32_t getDepth() const;
     private:
         glm::mat4 _matrix;
+        uint32_t _depth;
     };
 
     class SceneAppComponent final : public AppComponent
