@@ -35,6 +35,6 @@ namespace darmok
     {
     public:
         FrameAnimationUpdater() = default;
-        void updateLogic(float dt, Registry& registry) override;
+        void update(float dt) override;
     };
 }

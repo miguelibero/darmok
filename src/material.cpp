@@ -133,30 +133,28 @@ namespace darmok
 		return itr->second;
 	}
 
-	void Material::submit(RenderContext& ctxt) const
+	void Material::submit(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
 	{
 		if (_program == nullptr)
 		{
 			throw std::runtime_error("material without program");
 		}
 
-		submitTextures(ctxt.encoder);
-		submitColors(ctxt.encoder);
+		submitTextures(encoder);
+		submitColors(encoder);
 		
-
 		// TODO: configure state
 		uint64_t state = BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
 			| BGFX_STATE_WRITE_Z
-			| BGFX_STATE_DEPTH_TEST_LESS
+			| BGFX_STATE_DEPTH_TEST_LEQUAL
 			| BGFX_STATE_CULL_CCW
-			// | BGFX_STATE_PT_LINES
 			| BGFX_STATE_MSAA
 			| BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
 			;
 
-		ctxt.encoder.setState(state);
-		ctxt.encoder.submit(ctxt.viewId, _program->getHandle(), ctxt.depth);
+		encoder.setState(state);
+		encoder.submit(viewId, _program->getHandle());
 	}
 
 	void Material::submitTextures(bgfx::Encoder& encoder) const

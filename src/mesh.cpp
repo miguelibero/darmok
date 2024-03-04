@@ -163,18 +163,18 @@ namespace darmok
 		return std::make_shared<Mesh>(material, layout, writer.release(), Data::copy(_cubeIndices));
 	}
 
-	void Mesh::render(RenderContext& ctxt, uint8_t vertexStream) const
+	void Mesh::render(bgfx::Encoder& encoder, bgfx::ViewId viewId, uint8_t vertexStream) const
 	{
 		if (!isValid(_vertexBuffer))
 		{
 			throw std::runtime_error("invalid mesh vertex buffer");
 		}
-		ctxt.encoder.setVertexBuffer(vertexStream, _vertexBuffer);
+		encoder.setVertexBuffer(vertexStream, _vertexBuffer);
 		if (isValid(_indexBuffer))
 		{
-			ctxt.encoder.setIndexBuffer(_indexBuffer);
+			encoder.setIndexBuffer(_indexBuffer);
 		}
-		_material->submit(ctxt);
+		_material->submit(encoder, viewId);
 	}
 
 	MeshComponent::MeshComponent(const std::shared_ptr<Mesh>& mesh)
@@ -204,20 +204,22 @@ namespace darmok
 		return *this;
 	}
 
-	void MeshRenderer::render(Registry& registry, RenderContext& ctxt)
+	void MeshRenderer::render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId)
 	{
-		entt::basic_view view = registry.view<const MeshComponent>();
-		for (auto [entity, comp] : view.each())
+		auto& registry = getRegistry();
+		entities.iterate(registry.storage<MeshComponent>());
+		for (auto entity : entities)
 		{
+			auto& comp = registry.get<const MeshComponent>(entity);
 			auto& meshes = comp.getMeshes();
 			if (meshes.empty())
 			{
 				continue;
 			}
-			Transform::bgfxConfig(entity, ctxt.encoder, registry);
+			Transform::bgfxConfig(entity, encoder, registry);
 			for (auto& mesh : meshes)
 			{
-				mesh->render(ctxt);
+				mesh->render(encoder, viewId);
 			}
 		}
 	}

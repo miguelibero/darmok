@@ -43,11 +43,13 @@ namespace darmok
 
 	protected:
 		virtual void updateLogic(float dt);
+		virtual void beforeWindowRender(const WindowHandle& window, bgfx::ViewId firstViewId);
 		virtual void beforeRender(bgfx::ViewId viewId);
 		virtual void render(bgfx::ViewId viewId);
 		virtual void afterRender(bgfx::ViewId viewId);
+		virtual void afterWindowRender(const WindowHandle& window, bgfx::ViewId lastViewId);
 
-		void setViewWindow(bgfx::ViewId viewId, const WindowHandle& window);
+		void setWindowView(bgfx::ViewId viewId, const WindowHandle& window = Window::DefaultHandle);
 		WindowHandle getViewWindow(bgfx::ViewId viewId) const;
 
 		void toggleDebugFlag(uint32_t flag);

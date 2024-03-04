@@ -29,7 +29,7 @@ namespace
 		{
 		}
 
-		void updateLogic(float dt, darmok::Registry& registry)
+		void update(float dt) override
 		{
 			auto size = darmok::WindowContext::get().getWindow().getSize();
 			size -= _size * glm::vec2(_trans.getScale());
@@ -71,7 +71,7 @@ namespace
 		{
 		}
 
-		void updateLogic(float dt, darmok::Registry& registry)
+		void update(float dt) override
 		{
 			auto r = _trans.getRotation() + glm::vec3(0, dt * _speed, 0);
 			_trans.setRotation(r);
@@ -88,6 +88,7 @@ namespace
 		void init(const std::vector<std::string>& args) override
 		{
 			App::init(args);
+			setWindowView(1);
 
 			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
 			scene.addRenderer<darmok::MeshRenderer>();
@@ -97,19 +98,21 @@ namespace
 			glm::vec2 size = darmok::WindowContext::get().getWindow().getSize();
 
 			auto cam3d = scene.createEntity();
-			scene.addComponent<darmok::Camera>(cam3d)
-				.setProjection(60, size.x / size.y, 0.3, 1000)
-				.setDepth(1);
 			scene.addComponent<darmok::Transform>(cam3d)
 				.setPosition(glm::vec3(0.f, 2.f, -2.f))
 				.setRotation(glm::vec3(45.f, 0, 0));
-			scene.addComponent<Culling3D>(cam3d);
-			
+
+			scene.addComponent<darmok::Camera>(cam3d)
+				.setProjection(60, size.x / size.y, 0.3, 1000)
+				.setEntityComponentFilter<Culling3D>()
+				;
+
 			auto cam2d = scene.createEntity();
 			scene.addComponent<darmok::Camera>(cam2d)
 				.setOrtho(0.f, size.x, 0.f, size.y)
-				.setDepth(0);
-			scene.addComponent<Culling2D>(cam2d);
+				.setEntityComponentFilter<Culling2D>()
+				.setViewId(1)
+				;
 
 			createBouncingSprite(scene);
 			createSpriteAnimation(scene);
@@ -118,14 +121,14 @@ namespace
 
 		void createBouncingSprite(darmok::Scene& scene)
 		{
-			auto tex = darmok::AssetContext::get().getTextureLoader()("assets/darmok.jpg");
+			auto tex = darmok::AssetContext::get().getTextureLoader()("assets/engine.png");
 			auto sprite = scene.createEntity();
 			auto& trans = scene.addComponent<darmok::Transform>(sprite);
 			float scale = 0.5;
 			auto mesh = darmok::SpriteUtils::fromTexture(tex, scale);
 			auto size = scale * glm::vec2(tex->getImage()->getSize());
 			scene.addComponent<darmok::MeshComponent>(sprite, mesh);
-			scene.addComponent<darmok::BoxCollider2D>(sprite, size);
+			// scene.addComponent<darmok::BoxCollider2D>(sprite, size);
 			scene.addComponent<Culling2D>(sprite);
 			scene.addLogicUpdater<ScreenBounceUpdater>(trans, size, 100.f);
 		}
@@ -159,14 +162,6 @@ namespace
 			scene.addComponent<darmok::MeshComponent>(cube, darmok::Mesh::createCube(material));
 			auto& trans = scene.addComponent<darmok::Transform>(cube);
 			scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
-		}
-
-		void beforeRender(bgfx::ViewId viewId) override
-		{
-			bgfx::setViewClear(viewId
-				, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-				, 0x303030ff
-			);
 		}
 	};
 }

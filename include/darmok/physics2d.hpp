@@ -26,8 +26,8 @@ namespace darmok
         Physics2DDebugRenderer(const Color& color = Colors::red);
         ~Physics2DDebugRenderer();
 
-        void init(Registry& registry) override;
-        void render(Registry& registry, RenderContext& ctxt) override;
+        void init(EntityRegistry& registry) override;
+        void render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
     private:
         bgfx::IndexBufferHandle _boxIndexBuffer;
         bgfx::ProgramHandle _program;

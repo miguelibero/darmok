@@ -19,9 +19,9 @@
 
 namespace darmok
 {
-	Entity addModelNodeToScene(Scene& scene, ModelNode& node, Entity entity, const OptionalRef<Transform>& parent)
+	Entity addModelNodeToScene(Scene& scene, ModelNode& node, const OptionalRef<Transform>& parent, Entity entity)
 	{
-		if (entity == 0)
+		if (entity == entt::null)
 		{
 			entity = scene.createEntity();
 		}
@@ -53,15 +53,14 @@ namespace darmok
 
 		for (auto& child : node.getChildren())
 		{
-			addModelNodeToScene(scene, child, 0, trans);
+			addModelNodeToScene(scene, child, trans);
 		}
 		return entity;
 	}
 
 	Entity addModelToScene(Scene& scene, Model& model, Entity entity)
 	{
-		auto& rootNode = model.getRootNode();
-		return addModelNodeToScene(scene, rootNode, entity);
+		return addModelNodeToScene(scene, model.getRootNode(), nullptr, entity);
 	}
 
 	static inline std::string_view getStringView(const aiString& str)

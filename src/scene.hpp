@@ -16,8 +16,8 @@ namespace darmok
         void addRenderer(std::unique_ptr<ISceneRenderer>&& renderer);
         void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
 
-        Registry& getRegistry();
-        const Registry& getRegistry() const;
+        EntityRegistry& getRegistry();
+        const EntityRegistry& getRegistry() const;
 
         void init();
         void updateLogic(float dt);
@@ -27,7 +27,8 @@ namespace darmok
         std::vector<std::unique_ptr<ISceneRenderer>> _renderers;
         std::vector<std::unique_ptr<ISceneLogicUpdater>> _logicUpdaters;
 
-        entt::basic_registry<Entity> _registry;
-        entt::scheduler _scheduler;
+        EntityRegistry _registry;
+
+        void onCameraAdded(Entity entity);
     };
 }

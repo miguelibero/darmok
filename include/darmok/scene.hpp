@@ -13,29 +13,53 @@ namespace darmok
     class SceneImpl;
 
     typedef uint32_t Entity;
-    typedef entt::basic_registry<Entity> Registry;
+    typedef entt::basic_registry<Entity> EntityRegistry;
+    typedef entt::basic_runtime_view<entt::basic_sparse_set<Entity>> EntityRuntimeView;
 
-    struct RenderContext final
+    class BX_NO_VTABLE IEntityFilter
     {
-        bgfx::Encoder& encoder;
-        bgfx::ViewId viewId;
-        uint32_t depth;
+    public:
+        virtual ~IEntityFilter() = default;
+        virtual void init(EntityRegistry& registry) { _registry = registry; };
+        virtual void operator()(EntityRuntimeView& view) const = 0;
+    private:
+        OptionalRef<EntityRegistry> _registry;
+    protected:
+        EntityRegistry& getRegistry() const { return _registry.value(); }
+    };
+
+    template<typename T>
+    class EntityComponentFilter final : public IEntityFilter
+    {
+    public:
+        void operator()(EntityRuntimeView& view) const override
+        {
+            view.iterate(getRegistry().storage<T>());
+        }
     };
 
     class BX_NO_VTABLE ISceneRenderer
     {
     public:
         virtual ~ISceneRenderer() = default;
-        virtual void init(Registry& registry) {};
-        virtual void render(Registry& registry, RenderContext& ctxt) = 0;
+        virtual void init(EntityRegistry& registry) { _registry = registry; };
+        virtual void render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
+    private:
+        OptionalRef<EntityRegistry> _registry;
+    protected:
+        EntityRegistry& getRegistry() const { return _registry.value(); }
     };
 
     class BX_NO_VTABLE ISceneLogicUpdater
     {
     public:
         virtual ~ISceneLogicUpdater() = default;
-        virtual void init(Registry& registry) {};
-        virtual void updateLogic(float dt, Registry& registry) = 0;
+        virtual void init(EntityRegistry& registry) { _registry = registry; };
+        virtual void update(float dt) = 0;
+    private:
+        OptionalRef<EntityRegistry> _registry;
+    protected:
+        EntityRegistry& getRegistry() const { return _registry.value(); }
     };
 
     class Scene final
@@ -83,8 +107,8 @@ namespace darmok
         void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
 
     private:
-        Registry& getRegistry();
-        const Registry& getRegistry() const;
+        EntityRegistry& getRegistry();
+        const EntityRegistry& getRegistry() const;
 
         std::unique_ptr<SceneImpl> _impl;
     };
@@ -111,15 +135,14 @@ namespace darmok
         Transform& setPivot(const glm::vec3& v);
         Transform& setParent(const OptionalRef<Transform>& parent);
 
-        bool updateMatrix();
-        bool updateInverse();
+        void update();
         void setMatrix(const glm::mat4& v);
         const glm::mat4& getMatrix();
         const glm::mat4& getMatrix() const;
         const glm::mat4& getInverse();
         const glm::mat4& getInverse() const;
 
-        static bool bgfxConfig(Entity entity, bgfx::Encoder& encoder, Registry& registry);
+        static bool bgfxConfig(Entity entity, bgfx::Encoder& encoder, EntityRegistry& registry);
     
     private:
         bool _matrixUpdatePending;
@@ -133,6 +156,8 @@ namespace darmok
         OptionalRef<Transform> _parent;
 
         void setPending(bool v = true);
+        bool updateMatrix();
+        bool updateInverse();
     };
 
     typedef glm::vec<2, uint16_t> ViewVec;
@@ -154,17 +179,28 @@ namespace darmok
     class Camera final
     {
     public:
-        Camera(const glm::mat4& matrix = {}, uint32_t depth = 0);
+        Camera(const glm::mat4& matrix = {}, bgfx::ViewId viewId = 0);
         const glm::mat4& getMatrix() const;
         Camera& setMatrix(const glm::mat4& matrix);
         Camera& setProjection(float fovy, float aspect, float near, float far);
         Camera& setProjection(float fovy, float aspect, float near = 0.f);
         Camera& setOrtho(float left, float right, float bottom, float top, float near = 0.f, float far = bx::kFloatLargest, float offset = 0.f);
-        Camera& setDepth(uint32_t depth);
-        uint32_t getDepth() const;
+        Camera& setViewId(bgfx::ViewId viewId);
+        bgfx::ViewId getViewId() const;
+        Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter);
+
+        template<typename T>
+        Camera& setEntityComponentFilter()
+        {
+            return setEntityFilter(std::make_unique<EntityComponentFilter<T>>());
+        }
+
+        OptionalRef<const IEntityFilter> getEntityFilter() const;
+        OptionalRef<IEntityFilter> getEntityFilter();
     private:
         glm::mat4 _matrix;
-        uint32_t _depth;
+        bgfx::ViewId _viewId;
+        std::unique_ptr<IEntityFilter> _entityFilter;
     };
 
     class SceneAppComponent final : public AppComponent

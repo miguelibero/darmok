@@ -105,6 +105,10 @@ namespace darmok
 		}
 	}
 
+	void AppImpl::beforeWindowRender(const WindowHandle& window, bgfx::ViewId viewId)
+	{
+	}
+
 	void AppImpl::beforeRender(bgfx::ViewId viewId)
 	{
 		for (auto& component : _appComponents)
@@ -151,6 +155,10 @@ namespace darmok
 				component->afterRender();
 			}
 		}
+	}
+
+	void AppImpl::afterWindowRender(const WindowHandle& window, bgfx::ViewId lastViewId)
+	{
 	}
 
 	const std::string AppImpl::_bindingsName = "main";
@@ -386,7 +394,7 @@ namespace darmok
 		_viewComponents[viewId].push_back(std::move(component));
 	}
 
-	void AppImpl::setViewWindow(bgfx::ViewId viewId, const WindowHandle& window)
+	void AppImpl::setWindowView(bgfx::ViewId viewId, const WindowHandle& window)
 	{
 		_viewWindows[viewId] = window;
 	}
@@ -404,6 +412,19 @@ namespace darmok
 	const ViewWindows& AppImpl::getViewWindows() const
 	{
 		return _viewWindows;
+	}
+
+	std::vector<bgfx::ViewId> AppImpl::getWindowViews(const WindowHandle& window) const
+	{
+		std::vector<bgfx::ViewId> views;
+		for (auto& pair : _viewWindows)
+		{
+			if (pair.second == window)
+			{
+				views.push_back(pair.first);
+			}
+		}
+		return views;
 	}
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -481,57 +502,76 @@ namespace darmok
 			impl.updateLogic(dt);
 		});
 
-		for (auto elm : impl.getViewWindows())
+		for (auto& win : WindowContext::get().getWindows())
 		{
-			auto& win = WindowContext::get().getWindow(elm.second);
 			if (!win.isRunning())
 			{
 				continue;
 			}
-			auto viewId = elm.first;
 			auto& handle = win.getHandle();
+			auto viewIds = impl.getWindowViews(handle);
+			if (viewIds.empty())
+			{
+				continue;
+			}
+
+			auto& firstViewId = viewIds.front();
+			beforeWindowRender(handle, firstViewId);
+			impl.beforeWindowRender(handle, firstViewId);
+
 			auto fbh = win.getImpl().getFrameBuffer();
-
-			if (isValid(fbh))
-			{
-				bgfx::setViewFrameBuffer(viewId, fbh);
-			}
-
-			// set view default viewport.
 			auto& size = win.getSize();
-			bgfx::setViewRect(viewId, 0, 0, uint16_t(size.x), uint16_t(size.y));
 
-			// this dummy draw call is here to make sure that view is cleared
-			// if no other draw calls are submitted to view.
-			bgfx::touch(viewId);
-
-			// use debug font to print information about this example.
-			bgfx::dbgTextClear();
-
-			beforeRender(viewId);
-			impl.beforeRender(viewId);
-
-			render(viewId);
-			impl.render(viewId);
-
-			afterRender(viewId);
-			impl.afterRender(viewId);
-
-			// advance to next frame. Rendering thread will be kicked to
-			// process submitted rendering primitives.
-			bgfx::frame();
-
-			if (isValid(fbh))
+			for (auto& viewId : viewIds)
 			{
-				bgfx::setViewFrameBuffer(viewId, { bgfx::kInvalidHandle });
+				if (isValid(fbh))
+				{
+					bgfx::setViewFrameBuffer(viewId, fbh);
+				}
+				// set view default viewport.
+				bgfx::setViewRect(viewId, 0, 0, uint16_t(size.x), uint16_t(size.y));
+
+				// this dummy draw call is here to make sure that view is cleared
+				// if no other draw calls are submitted to view.
+				bgfx::touch(viewId);
+
+				// use debug font to print information about this example.
+				bgfx::dbgTextClear();
+
+				beforeRender(viewId);
+				impl.beforeRender(viewId);
+
+				render(viewId);
+				impl.render(viewId);
+
+				afterRender(viewId);
+				impl.afterRender(viewId);
+
+				if (isValid(fbh))
+				{
+					bgfx::setViewFrameBuffer(viewId, { bgfx::kInvalidHandle });
+				}
 			}
+
+			auto& lastViewId = viewIds.back();
+			afterWindowRender(handle, lastViewId);
+			impl.afterWindowRender(handle, lastViewId);
 		}
+
+		// advance to next frame. Rendering thread will be kicked to
+		// process submitted rendering primitives.
+		bgfx::frame();
 
 		return true;
 	}
 
 	void App::updateLogic(float dt)
 	{
+	}
+
+	void App::beforeWindowRender(const WindowHandle& window, bgfx::ViewId viewId)
+	{
+		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR, 0x303030ff);
 	}
 
 	void App::beforeRender(bgfx::ViewId viewId)
@@ -543,6 +583,10 @@ namespace darmok
 	}
 
 	void App::afterRender(bgfx::ViewId viewId)
+	{
+	}
+
+	void App::afterWindowRender(const WindowHandle& window, bgfx::ViewId viewId)
 	{
 	}
 
@@ -566,7 +610,6 @@ namespace darmok
 		AppImpl::get().setResetFlag(flag, enabled);
 	}
 
-
 	void App::addComponent(std::unique_ptr<AppComponent>&& component)
 	{
 		AppImpl::get().addComponent(std::move(component));
@@ -577,9 +620,9 @@ namespace darmok
 		AppImpl::get().addViewComponent(viewId, std::move(component));
 	}
 
-	void App::setViewWindow(bgfx::ViewId viewId, const WindowHandle& window)
+	void App::setWindowView(bgfx::ViewId viewId, const WindowHandle& window)
 	{
-		AppImpl::get().setViewWindow(viewId, window);
+		AppImpl::get().setWindowView(viewId, window);
 	}
 
 	WindowHandle App::getViewWindow(bgfx::ViewId viewId) const

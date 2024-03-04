@@ -57,9 +57,9 @@ namespace darmok
         }
     }
 
-    void FrameAnimationUpdater::updateLogic(float dt, Registry& registry)
+    void FrameAnimationUpdater::update(float dt)
     {
-        auto anims = registry.view<FrameAnimationComponent>();
+        auto anims = getRegistry().view<FrameAnimationComponent>();
         for (auto [entity, anim] : anims.each())
         {
             anim.update(dt);

@@ -45,9 +45,11 @@ namespace darmok
 
 		void updateLogic(float dt);
 
+		void beforeWindowRender(const WindowHandle& window, bgfx::ViewId firstViewId);
 		void beforeRender(bgfx::ViewId viewId);
 		void render(bgfx::ViewId viewId);
 		void afterRender(bgfx::ViewId viewId);
+		void afterWindowRender(const WindowHandle& window, bgfx::ViewId viewId);
 
 		bool processEvents();
 
@@ -60,9 +62,10 @@ namespace darmok
 		void addComponent(std::unique_ptr<AppComponent>&& component);
 		void addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component);
 		
-		void setViewWindow(bgfx::ViewId viewId, const WindowHandle& window);
+		void setWindowView(bgfx::ViewId viewId, const WindowHandle& window = Window::DefaultHandle);
 		WindowHandle getViewWindow(bgfx::ViewId viewId) const;
 		const ViewWindows& getViewWindows() const;
+		std::vector<bgfx::ViewId> getWindowViews(const WindowHandle& window = Window::DefaultHandle) const;
 
 	private:
 

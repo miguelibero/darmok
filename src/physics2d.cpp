@@ -62,8 +62,9 @@ namespace darmok
 
     static const std::vector<VertexIndex> _physics2dDebugBoxIndices{ 0, 1, 1, 2, 2, 3, 3, 0 };
 
-    void Physics2DDebugRenderer::init(Registry& registry)
+    void Physics2DDebugRenderer::init(EntityRegistry& registry)
     {
+        ISceneRenderer::init(registry);
         _boxIndexBuffer = bgfx::createIndexBuffer(makeVectorRef(_physics2dDebugBoxIndices));
 
         auto type = bgfx::getRendererType();
@@ -79,18 +80,19 @@ namespace darmok
             .end();
     }
 
-    void Physics2DDebugRenderer::render(Registry& registry, RenderContext& ctxt)
+    void Physics2DDebugRenderer::render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId)
     {
         uint64_t state = BGFX_STATE_WRITE_RGB
-            | BGFX_STATE_WRITE_A
-            | BGFX_STATE_MSAA
             | BGFX_STATE_PT_LINES
             ;
 
-        auto boxes = registry.view<const BoxCollider2D>();
-        for (auto [entity, box] : boxes.each())
+        auto& registry = getRegistry();
+        entities.iterate(registry.storage<BoxCollider2D>());
+        for (auto entity : entities)
         {
-            Transform::bgfxConfig(entity, ctxt.encoder, registry);
+            auto& box = registry.get<const BoxCollider2D>(entity);
+
+            Transform::bgfxConfig(entity, encoder, registry);
 
             auto& size = box.getSize();
             auto& offset = box.getOffset();
@@ -105,11 +107,11 @@ namespace darmok
             bgfx::allocTransientVertexBuffer(&vertexBuffer, 4, _vertexLayout);
             bx::memCopy((glm::vec2*)vertexBuffer.data, &vertices.front(), vertices.size() * sizeof(glm::vec2));
 
-            ctxt.encoder.setUniform(_colorUniform, &_color);
-            ctxt.encoder.setVertexBuffer(0, &vertexBuffer);
-            ctxt.encoder.setIndexBuffer(_boxIndexBuffer);
-            ctxt.encoder.setState(state);
-            ctxt.encoder.submit(ctxt.viewId, _program, ctxt.depth);
+            encoder.setUniform(_colorUniform, &_color);
+            encoder.setVertexBuffer(0, &vertexBuffer);
+            encoder.setIndexBuffer(_boxIndexBuffer);
+            encoder.setState(state);
+            encoder.submit(viewId, _program);
         }
     }
 }

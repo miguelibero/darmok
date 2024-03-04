@@ -524,8 +524,8 @@ namespace darmok
         ModelLightCollection _lights;
 	};
 
-    Entity addModelNodeToScene(Scene& scene, ModelNode& node, Entity entity = 0, const OptionalRef<Transform>& parent = std::nullopt);
-    Entity addModelToScene(Scene& scene, Model& model, Entity entity = 0);
+    Entity addModelNodeToScene(Scene& scene, ModelNode& node, const OptionalRef<Transform>& parent = std::nullopt, Entity entity = entt::null);
+    Entity addModelToScene(Scene& scene, Model& model, Entity entity = entt::null);
 
     class BX_NO_VTABLE IModelLoader
 	{

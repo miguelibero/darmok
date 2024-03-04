@@ -153,6 +153,12 @@ namespace darmok
         return true;
     }
 
+    void Transform::update()
+    {
+        updateMatrix();
+        updateInverse();
+    }
+
     void Transform::setMatrix(const glm::mat4& v)
     {
         glm::quat rotation;
@@ -195,7 +201,7 @@ namespace darmok
         return _inverse;
     }
 
-    bool Transform::bgfxConfig(Entity entity, bgfx::Encoder& encoder, Registry& registry)
+    bool Transform::bgfxConfig(Entity entity, bgfx::Encoder& encoder, EntityRegistry& registry)
     {
         auto trans = registry.try_get<Transform>(entity);
         if (trans == nullptr)
@@ -237,9 +243,9 @@ namespace darmok
         bgfx::setViewRect(viewId, _origin.x, _origin.y, _size.x, _size.y);
     }
 
-    Camera::Camera(const glm::mat4& matrix, uint32_t depth)
+    Camera::Camera(const glm::mat4& matrix, bgfx::ViewId viewId)
         : _matrix(matrix)
-        , _depth(depth)
+        , _viewId(viewId)
     {
     }
 
@@ -272,15 +278,39 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setDepth(uint32_t depth)
+    Camera& Camera::setViewId(bgfx::ViewId viewId)
     {
-        _depth = depth;
+        _viewId = viewId;
         return *this;
     }
 
-    uint32_t Camera::getDepth() const
+    bgfx::ViewId Camera::getViewId() const
     {
-        return _depth;
+        return _viewId;
+    }
+
+    Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter)
+    {
+        _entityFilter = std::move(filter);
+        return *this;
+    }
+
+    OptionalRef<const IEntityFilter> Camera::getEntityFilter() const
+    {
+        if (_entityFilter)
+        {
+            return *_entityFilter;
+        }
+        return nullptr;
+    }
+
+    OptionalRef<IEntityFilter> Camera::getEntityFilter()
+    {
+        if (_entityFilter)
+        {
+            return *_entityFilter;
+        }
+        return nullptr;
     }
 
     SceneImpl::SceneImpl()
@@ -306,12 +336,12 @@ namespace darmok
         _logicUpdaters.push_back(std::move(updater));
     }
 
-    Registry& SceneImpl::getRegistry()
+    EntityRegistry& SceneImpl::getRegistry()
     {
         return _registry;
     }
 
-    const Registry& SceneImpl::getRegistry() const
+    const EntityRegistry& SceneImpl::getRegistry() const
     {
         return _registry;
     }
@@ -326,32 +356,53 @@ namespace darmok
         {
             updater->init(_registry);
         }
+
         _init = true;
     }
 
     void SceneImpl::updateLogic(float dt)
     {
+        auto cams = _registry.view<Camera>();
+        for (auto [entity, cam] : cams.each())
+        {
+            auto filter = cam.getEntityFilter();
+            if (filter.hasValue())
+            {
+                filter.value().init(_registry);
+            }
+        }
+
+        auto transforms = _registry.group<Transform>();
+        for (auto [entity, trans] : transforms.each())
+        {
+            trans.update();
+        }
+
         for (auto& updater : _logicUpdaters)
         {
-            updater->updateLogic(dt, _registry);
+            updater->update(dt);
         }
     }
 
     void SceneImpl::render(bgfx::ViewId viewId)
     {
-        auto cams = _registry.view<const Camera>();
         auto encoder = bgfx::begin();
-        auto ctxt = RenderContext { *encoder, viewId, 0 };
 
+        auto cams = _registry.view<const Camera>();
         for (auto [entity, cam] : cams.each())
         {
+            if (cam.getViewId() != viewId)
+            {
+                continue;
+            }
             auto& proj = cam.getMatrix();
-            auto trans = _registry.try_get<Transform>(entity);
+            auto trans = _registry.try_get<const Transform>(entity);
             const void* viewPtr = nullptr;
             if (trans != nullptr)
             {
                 viewPtr = glm::value_ptr(trans->getInverse());
             }
+
             bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(proj));
 
             auto viewRect = _registry.try_get<const ViewRect>(entity);
@@ -359,11 +410,17 @@ namespace darmok
             {
                 viewRect->bgfxConfig(viewId);
             }
-            ctxt.depth = cam.getDepth();
+
+            auto filter = cam.getEntityFilter();
 
             for (auto& renderer : _renderers)
             {
-                renderer->render(_registry, ctxt);
+                EntityRuntimeView view;
+                if (filter.hasValue())
+                {
+                    filter.value()(view);
+                }                
+                renderer->render(view, *encoder, viewId);
             }
         }
         bgfx::end(encoder);
@@ -383,12 +440,12 @@ namespace darmok
         return _impl->getRegistry().create();
     }
 
-    Registry& Scene::getRegistry()
+    EntityRegistry& Scene::getRegistry()
     {
         return _impl->getRegistry();
     }
 
-    const Registry& Scene::getRegistry() const
+    const EntityRegistry& Scene::getRegistry() const
     {
         return _impl->getRegistry();
     }

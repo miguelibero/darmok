@@ -22,7 +22,7 @@ namespace darmok
         const std::shared_ptr<Material>& getMaterial() const;
         const Data& getVertexData() const;
         const Data& getIndexData() const;
-        void render(RenderContext& ctxt, uint8_t vertexStream = 0) const;
+        void render(bgfx::Encoder& encoder, bgfx::ViewId viewId, uint8_t vertexStream = 0) const;
 
 
         static const std::shared_ptr<Mesh> createCube(const std::shared_ptr<Material>& material);
@@ -55,7 +55,6 @@ namespace darmok
 
     class MeshRenderer final : public ISceneRenderer
     {
-    public:
-        void render(Registry& registry, RenderContext& ctxt) override;
+        void render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
     };
 }

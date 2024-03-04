@@ -66,7 +66,7 @@ namespace darmok
         OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
         void setColor(MaterialColorType type, const Color& color) noexcept;
 
-        void submit(RenderContext& ctxt) const;
+        void submit(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
 
         static std::shared_ptr<Material> createStandard(StandardMaterialType type) noexcept;
 
