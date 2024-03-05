@@ -165,7 +165,6 @@ namespace darmok
         glm::vec3 skew;
         glm::vec4 perspective;
         glm::decompose(v, _scale, rotation, _position, skew, perspective);
-        _position /= _scale;
         rotation = glm::conjugate(rotation);
 
         float rx = 0;
@@ -372,7 +371,7 @@ namespace darmok
             }
         }
 
-        auto transforms = _registry.group<Transform>();
+        auto transforms = _registry.view<Transform>();
         for (auto [entity, trans] : transforms.each())
         {
             trans.update();

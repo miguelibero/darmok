@@ -6,6 +6,8 @@ CMakeFiles/*
 
 examples/build*/*
 examples/*/build*/*
+examples/cmake-build*/*
+examples/*/cmake-build*/*
 examples/*/.idea/*
 
 ### VisualStudioCode ###

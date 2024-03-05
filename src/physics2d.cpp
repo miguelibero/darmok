@@ -4,7 +4,7 @@
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
 
-#include <bgfx/embedded_shader.h>
+#include "embedded_shader.hpp"
 #include "generated/shaders/debug_vertex.h"
 #include "generated/shaders/debug_fragment.h"
 

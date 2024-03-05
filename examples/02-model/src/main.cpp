@@ -10,6 +10,26 @@
 
 namespace
 {
+	class RotateUpdater final : public darmok::ISceneLogicUpdater
+	{
+	public:
+		RotateUpdater(darmok::Transform& trans, float speed = 100.f)
+			: _trans(trans)
+			, _speed(speed)
+		{
+		}
+
+		void update(float dt) override
+		{
+			auto r = _trans.getRotation() + glm::vec3(0, dt * _speed, 0);
+			_trans.setRotation(r);
+		}
+
+	private:
+		darmok::Transform& _trans;
+		float _speed;
+	};
+
 	class ModelScene : public darmok::App
 	{
 	public:
@@ -18,27 +38,16 @@ namespace
 			App::init(args);
 
 			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
-			auto& renderer = scene.addRenderer<darmok::MeshRenderer>();
+			scene.addRenderer<darmok::MeshRenderer>();
 
-			auto texture = darmok::AssetContext::get().getTextureLoader()("assets/brick.png");
+			auto& assets = darmok::AssetContext::get();
 			
-			auto model = darmok::AssetContext::get().getModelLoader()("assets/brick.fbx");
+			auto model = assets.getModelLoader()("assets/human.fbx");
 			darmok::addModelToScene(scene, *model);
-
-			auto material = model->getMaterials()[0].load();
-			material->setColor(darmok::MaterialColorType::Diffuse, darmok::Colors::red);
-			material->setTexture(darmok::MaterialTextureType::Diffuse, texture);
-		}
-
-		void beforeRender(bgfx::ViewId viewId) override
-		{
-			bgfx::setViewClear(viewId
-				, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-				, 0x303030ff
-			);
+			// scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
 		}
 	};
 
 }
 
-DARMOK_IMPLEMENT_MAIN(ModelScene);
+DARMOK_MAIN(ModelScene);

@@ -85,7 +85,7 @@ namespace darmok
     {
         if (_alloc == nullptr)
         {
-            delete _ptr;
+            std::free(_ptr);
         }
         else if(_ptr != nullptr)
         {

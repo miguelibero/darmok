@@ -4,7 +4,7 @@
 #include <darmok/utils.hpp>
 #include <bx/platform.h>
 
-#if DARMOK_CONFIG_USE_GLFW
+#if DARMOK_PLATFORM_GLFW
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -14,13 +14,12 @@
 #endif // GLFW_VERSION_MINOR < 2
 
 #if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#	if DARMOK_CONFIG_USE_WAYLAND
+#	if DARMOK_PLATFORM_SUPPORT_WAYLAND
 #		include <wayland-egl.h>
 #		define GLFW_EXPOSE_NATIVE_WAYLAND
-#	else
+#	endif
 #		define GLFW_EXPOSE_NATIVE_X11
 #		define GLFW_EXPOSE_NATIVE_GLX
-#	endif
 #elif BX_PLATFORM_OSX
 #	define GLFW_EXPOSE_NATIVE_COCOA
 #	define GLFW_EXPOSE_NATIVE_NSGL
@@ -44,22 +43,25 @@ namespace darmok {
 		static void* getNativeWindowHandle(GLFWwindow* window)
 		{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-# 		if DARMOK_CONFIG_USE_WAYLAND
-			wl_egl_window* win_impl = (wl_egl_window*)glfwGetWindowUserPointer(window);
-			if (!win_impl)
-			{
-				int width, height;
-				glfwGetWindowSize(window, &width, &height);
-				struct wl_surface* surface = (struct wl_surface*)glfwGetWaylandWindow(window);
-				if (!surface)
-					return nullptr;
-				win_impl = wl_egl_window_create(surface, width, height);
-				glfwSetWindowUserPointer(window, (void*)(uintptr_t)win_impl);
-			}
-			return (void*)(uintptr_t)win_impl;
-#		else
-			return (void*)(uintptr_t)glfwGetX11Window(window);
+# 		if DARMOK_PLATFORM_SUPPORT_WAYLAND
+            if(glfwGetPlatform() == GLFW_PLATFORM_WAYLAND)
+            {
+                wl_egl_window* win_impl = (wl_egl_window*)glfwGetWindowUserPointer(window);
+                if (!win_impl)
+                {
+                    int width, height;
+                    glfwGetWindowSize(window, &width, &height);
+                    struct wl_surface* surface = (struct wl_surface*)glfwGetWaylandWindow(window);
+                    if (!surface) {
+                        return nullptr;
+                    }
+                    win_impl = wl_egl_window_create(surface, width, height);
+                    glfwSetWindowUserPointer(window, (void*)(uintptr_t)win_impl);
+                }
+                return (void*)(uintptr_t)win_impl;
+            }
 #		endif
+			return (void*)(uintptr_t)glfwGetX11Window(window);
 #	elif BX_PLATFORM_OSX
 			return glfwGetCocoaWindow(window);
 #	elif BX_PLATFORM_WINDOWS
@@ -772,9 +774,12 @@ namespace darmok {
 
 				_windows.setWindow(handle, window);
 
-				WindowPosition pos;
-				glfwGetWindowPos(window, &pos.x, &pos.y);
-				options.pos = pos;
+                if(glfwGetPlatform() != GLFW_PLATFORM_WAYLAND)
+                {
+                    WindowPosition pos;
+                    glfwGetWindowPos(window, &pos.x, &pos.y);
+                    options.pos = pos;
+                }
 
 				auto& win = darmok::WindowContext::get().getWindow(handle).getImpl();
 				win.init(handle, options);
@@ -978,8 +983,8 @@ namespace darmok {
 			GLFWwindow* window = glfwCreateWindow(options.size.x
 				, options.size.y
 				, options.title.c_str()
-				, NULL
-				, NULL);
+				, nullptr
+				, nullptr);
 			if (!window)
 			{
 				return window;
@@ -1057,24 +1062,26 @@ namespace darmok {
 	void* PlatformContext::getNativeDisplayHandle() const
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#		if DARMOK_CONFIG_USE_WAYLAND
-		return glfwGetWaylandDisplay();
-#		else
+#       if DARMOK_PLATFORM_SUPPORT_WAYLAND
+        if(glfwGetPlatform() == GLFW_PLATFORM_WAYLAND)
+        {
+            return glfwGetWaylandDisplay();
+        }
+#       endif
 		return glfwGetX11Display();
-#		endif // DARMOK_CONFIG_USE_WAYLAND
 #	else
-		return NULL;
+		return nullptr;
 #	endif // BX_PLATFORM_*
 	}
 
 	bgfx::NativeWindowHandleType::Enum PlatformContext::getNativeWindowHandleType(const WindowHandle& window) const
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#		if DARMOK_CONFIG_USE_WAYLAND
-		return bgfx::NativeWindowHandleType::Wayland;
-#		else
+        if(glfwGetPlatform() == GLFW_PLATFORM_WAYLAND)
+        {
+            return bgfx::NativeWindowHandleType::Wayland;
+        }
 		return bgfx::NativeWindowHandleType::Default;
-#		endif // DARMOK_CONFIG_USE_WAYLAND
 #	else
 		return bgfx::NativeWindowHandleType::Default;
 #	endif // BX_PLATFORM_*

@@ -166,4 +166,4 @@ namespace
 	};
 }
 
-DARMOK_IMPLEMENT_MAIN(ExampleScene);
+DARMOK_MAIN(ExampleScene);

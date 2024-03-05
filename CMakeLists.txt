@@ -15,6 +15,7 @@ set(SHADERS_BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 set(SHADERS_OUTPUT_DIR generated/shaders)
 set(LIBS_DIR lib)
 
+
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
 
@@ -227,15 +228,36 @@ set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 20)
 find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
+if(NOT DARMOK_PLATFORM)
+    set(DARMOK_PLATFORM glfw)
+endif()
+if(NOT DARMOK_PLATFORM_SUPPORT_WAYLAND)
+    if(UNIX AND NOT APPLE)
+        set(DARMOK_PLATFORM_SUPPORT_WAYLAND 1)
+    else()
+        set(DARMOK_PLATFORM_SUPPORT_WAYLAND 0)
+    endif()
+endif()
+
+
 # glfw
-add_subdirectory(${LIBS_DIR}/glfw)
-target_link_libraries(${LIB_NAME} PRIVATE glfw)
-add_compile_definitions(DARMOK_CONFIG_USE_GLFW)
+if(DARMOK_PLATFORM STREQUAL "glfw")
+    add_subdirectory(${LIBS_DIR}/glfw)
+    target_link_libraries(${LIB_NAME} PRIVATE glfw)
+    target_compile_definitions(darmok PRIVATE DARMOK_PLATFORM_GLFW)
+    if (DARMOK_PLATFORM_SUPPORT_WAYLAND)
+        target_compile_definitions(darmok PRIVATE DARMOK_PLATFORM_SUPPORT_WAYLAND)
+        target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
+        target_compile_definitions(bgfx PRIVATE WL_EGL_PLATFORM)
+    endif()
+endif()
+
 
 # glm
-add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
 add_subdirectory(${LIBS_DIR}/glm)
 target_link_libraries(${LIB_NAME} PUBLIC glm)
+target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
+
 install(
   TARGETS
   glm glm-header-only
@@ -270,5 +292,5 @@ target_link_libraries(${LIB_NAME} PRIVATE assimp)
 # pugixml
 add_subdirectory(${LIBS_DIR}/pugixml)
 target_link_libraries(${LIB_NAME} PRIVATE pugixml)
-add_compile_definitions(PUGIXML_HEADER_ONLY) # also included in assimp
+target_compile_definitions(pugixml INTERFACE PUGIXML_HEADER_ONLY) # also included in assimp
 

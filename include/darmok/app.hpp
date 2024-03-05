@@ -12,20 +12,20 @@
 
 extern "C" int _main_(int argc, char** argv);
 
-#ifndef DARMOK_CONFIG_IMPLEMENT_MAIN
-#	define DARMOK_CONFIG_IMPLEMENT_MAIN 0
-#endif // ENTRY_CONFIG_IMPLEMENT_MAIN
+#ifndef DARMOK_IMPLEMENT_MAIN
+#	define DARMOK_IMPLEMENT_MAIN 0
+#endif // DARMOK_IMPLEMENT_MAIN
 
-#if DARMOK_CONFIG_IMPLEMENT_MAIN
-#define DARMOK_IMPLEMENT_MAIN(app, ...)                      \
+#if DARMOK_IMPLEMENT_MAIN
+#define DARMOK_MAIN(app, ...)                      \
 	int32_t _main_(int32_t argc, char** argv)                \
 	{                                                        \
 		return darmok::runApp<app>(argc, argv, ##__VA_ARGS__); \
 	}
 #else
-#define DARMOK_IMPLEMENT_MAIN(app, ...) \
+#define DARMOK_MAIN(app, ...) \
 	static app s_app(__VA_ARGS__)
-#endif // ENTRY_CONFIG_IMPLEMENT_MAIN
+#endif // DARMOK_IMPLEMENT_MAIN
 
 namespace darmok
 {

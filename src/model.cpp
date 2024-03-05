@@ -68,6 +68,7 @@ namespace darmok
 		return std::string_view(str.data, str.length);
 	}
 
+
 	static inline glm::mat4 convertMatrix(const aiMatrix4x4& from)
 	{
 		// the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
@@ -1211,16 +1212,20 @@ namespace darmok
 		unsigned int flags = aiProcess_CalcTangentSpace |
 			aiProcess_Triangulate |
 			aiProcess_JoinIdenticalVertices |
-			aiProcess_SortByPType
+			aiProcess_SortByPType | 
+			aiProcess_ConvertToLeftHanded
 			;
+		// assimp (and opengl) is right handed (+Z points towards the camera)
+		// while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
 
-		auto scene = _importer.ReadFileFromMemory(data->ptr(), data->size(), flags, std::string(name).c_str());
+		std::string nameString(name);
+		auto scene = _importer.ReadFileFromMemory(data->ptr(), data->size(), flags, nameString.c_str());
 
 		if (scene == nullptr)
 		{
 			throw std::runtime_error(_importer.GetErrorString());
 		}
 
-		return std::make_shared<Model>(scene);
+		return std::make_shared<Model>(scene, nameString);
 	}
 }

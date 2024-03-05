@@ -29,17 +29,6 @@ public:
 		ImGui::InputText("text", const_cast<char*>(text.c_str()), text.size());
 	}
 
-	void beforeRender(bgfx::ViewId viewId) override
-	{
-		// set view clear state.
-		bgfx::setViewClear(viewId
-			, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-			, 0x303030ff
-			, 1.0f
-			, 0
-		);
-	}
-
 	void render(bgfx::ViewId viewId) override
 	{
 		const bgfx::Stats* stats = bgfx::getStats();
@@ -60,4 +49,4 @@ public:
 
 }
 
-DARMOK_IMPLEMENT_MAIN(ExampleEmpty);
+DARMOK_MAIN(ExampleEmpty);

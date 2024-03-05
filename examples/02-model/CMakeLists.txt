@@ -10,8 +10,8 @@ get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
 set(ASSETS_DIR ${CMAKE_BINARY_DIR}/assets)
-FILE(COPY assets/brick.fbx DESTINATION ${ASSETS_DIR})
-FILE(COPY assets/brick.png DESTINATION ${ASSETS_DIR})
+FILE(COPY assets/human.fbx DESTINATION ${ASSETS_DIR})
+FILE(COPY assets/human.png DESTINATION ${ASSETS_DIR})
 
 set(sources
   src/main.cpp
@@ -24,7 +24,7 @@ add_executable(
 
 target_compile_definitions(
   ${PROJECT_NAME}
-  PRIVATE "-DDARMOK_CONFIG_IMPLEMENT_MAIN=1"
+  PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1"
 )
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
