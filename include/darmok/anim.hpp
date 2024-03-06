@@ -21,7 +21,7 @@ namespace darmok
         const std::vector<AnimationFrame>& getFrames() const noexcept;
         void setFrames(const std::vector<AnimationFrame>& frames) noexcept;
         void setMeshComponent(MeshComponent& comp) noexcept;
-        void update(float dt) noexcept;
+        void update(float deltaTime) noexcept;
         OptionalRef<const AnimationFrame> getCurrentFrame() const noexcept;
 
     private:
@@ -35,6 +35,6 @@ namespace darmok
     {
     public:
         FrameAnimationUpdater() = default;
-        void update(float dt) override;
+        void update(float deltaTime) override;
     };
 }

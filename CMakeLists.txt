@@ -230,18 +230,24 @@ endif()
 set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 20)
 
 # code analysis & clang tidy
-find_program(CLANG_TIDY_EXE
-  NAMES "clang-tidy"
-  NO_CACHE)
-set(CLANG_TIDY_COMMAND "${CLANG_TIDY_EXE}" "-checks=-*,modernize-*")
-set_target_properties(${LIB_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")
-set_target_properties(${LIB_NAME} PROPERTIES
-    VS_GLOBAL_RunCodeAnalysis true
-    VS_GLOBAL_EnableMicrosoftCodeAnalysis true
-    VS_GLOBAL_CodeAnalysisRuleSet ${CMAKE_CURRENT_SOURCE_DIR}/darmok.ruleset
-    VS_GLOBAL_EnableClangTidyCodeAnalysis true
-    VS_GLOBAL_ClangTidyChecks -checks=-*,readability-*,modernize-*,-modernize-use-trailing-return-type
-)
+if(DARMOK_RUN_CODE_ANALYSIS)
+  set(CLANG_TIDY_CHECKS "-checks=-*,readability-*,modernize-*,-modernize-use-trailing-return-type")
+  if(MSVC)
+    set_target_properties(${LIB_NAME} PROPERTIES
+        VS_GLOBAL_RunCodeAnalysis true
+        VS_GLOBAL_EnableMicrosoftCodeAnalysis true
+        VS_GLOBAL_CodeAnalysisRuleSet ${CMAKE_CURRENT_SOURCE_DIR}/darmok.ruleset
+        VS_GLOBAL_EnableClangTidyCodeAnalysis true
+        VS_GLOBAL_ClangTidyChecks ${CLANG_TIDY_CHECKS}
+    )
+  else()
+    find_program(CLANG_TIDY_EXE
+      NAMES "clang-tidy"
+      NO_CACHE)
+    set(CLANG_TIDY_COMMAND "${CLANG_TIDY_EXE}" "${CLANG_TIDY_CHECKS}")
+    set_target_properties(${LIB_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")
+  endif()
+endif()
 
 # openGL
 find_package(OpenGL REQUIRED)

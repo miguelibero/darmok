@@ -17,7 +17,7 @@ namespace darmok
     class ImguiViewComponent final : public ViewComponent
     {
     public:
-		ImguiViewComponent(IImguiRenderer& updater, float fontSize = 18.0f);
+		ImguiViewComponent(IImguiRenderer& renderer, float fontSize = 18.0f);
 
 		void init(bgfx::ViewId viewId) override;
 		void shutdown() override;

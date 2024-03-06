@@ -7,7 +7,7 @@
 
 namespace darmok
 {
-	typedef std::map<bgfx::ViewId, WindowHandle> ViewWindows;
+	using ViewWindows = std::map<bgfx::ViewId, WindowHandle>;
 
 	class AppImpl final
 	{
@@ -15,8 +15,7 @@ namespace darmok
 		static const float defaultTargetUpdateDeltaTime;
 		static const int maxInstantLogicUpdates;
 
-		static AppImpl& get();
-
+		AppImpl() noexcept;
 		void init(App& app, const std::vector<std::string>& args, double targetUpdateDeltaTime = defaultTargetUpdateDeltaTime);
 		void shutdown();
 
@@ -32,7 +31,7 @@ namespace darmok
 				return;
 			}
 
-			auto dt = _targetUpdateDeltaTime;
+			const auto dt = _targetUpdateDeltaTime;
 			auto i = 0;
 			while (timePassed > dt && i < maxInstantLogicUpdates)
 			{
@@ -43,68 +42,50 @@ namespace darmok
 			logicCallback(timePassed);
 		}
 
-		void updateLogic(float dt);
+		void updateLogic(float deltaTime);
 
 		void beforeWindowRender(const WindowHandle& window, bgfx::ViewId firstViewId);
 		void beforeRender(bgfx::ViewId viewId);
 		void render(bgfx::ViewId viewId);
 		void afterRender(bgfx::ViewId viewId);
 		void afterWindowRender(const WindowHandle& window, bgfx::ViewId viewId);
+		void triggerExit() noexcept;
 
 		bool processEvents();
 
-		uint32_t getResetFlags();
-		bool toggleDebugFlag(uint32_t flag);
-		void setDebugFlag(uint32_t flag, bool enabled = true);
-		bool toggleResetFlag(uint32_t flag);
-		void setResetFlag(uint32_t flag, bool enabled);
+		[[nodiscard]] uint32_t getResetFlags() const noexcept;
+		bool toggleDebugFlag(uint32_t flag) noexcept;
+		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
+		bool toggleResetFlag(uint32_t flag) noexcept;
+		void setResetFlag(uint32_t flag, bool enabled) noexcept;
 		
-		void addComponent(std::unique_ptr<AppComponent>&& component);
-		void addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component);
+		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
+		void addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component) noexcept;
 		
-		void setWindowView(bgfx::ViewId viewId, const WindowHandle& window = Window::DefaultHandle);
-		WindowHandle getViewWindow(bgfx::ViewId viewId) const;
-		const ViewWindows& getViewWindows() const;
-		std::vector<bgfx::ViewId> getWindowViews(const WindowHandle& window = Window::DefaultHandle) const;
+		void setWindowView(bgfx::ViewId viewId, const WindowHandle& window = Window::DefaultHandle) noexcept;
+		[[nodiscard]] WindowHandle getViewWindow(bgfx::ViewId viewId) const noexcept;
+		[[nodiscard]] const ViewWindows& getViewWindows() const noexcept;
+		[[nodiscard]] std::vector<bgfx::ViewId> getWindowViews(const WindowHandle& window = Window::DefaultHandle) const noexcept;
+		[[nodiscard]] const std::string& getCurrentDir() const noexcept;
 
 	private:
+		float updateTimePassed() noexcept;
 
-		AppImpl();
+		void setCurrentDir(const std::string& dir) noexcept;
+		void addBindings() noexcept;
+		static void removeBindings() noexcept;
 
-		float updateTimePassed();
-
-		void setCurrentDir(const std::string& dir);
-		void addBindings();
-		void removeBindings();
-
-		static void exitAppBinding();
-		static void fullscreenToggleBinding();
-		static void toggleDebugStatsBinding();
-		static void toggleDebugTextBinding();
-		static void toggleDebugIfhBinding();
-		static void toggleDebugWireFrameBinding();
-		static void toggleDebugProfilerBinding();
-		static void disableDebugFlagsBinding();
-		static void toggleResetVsyncBinding();
-		static void toggleResetMsaaBinding();
-		static void toggleResetFlushAfterRenderBinding();
-		static void toggleResetFlipAfterRenderBinding();
-		static void toggleResetHidpiBinding();
-		static void resetDepthClampBinding();
-		static void screenshotBinding();
-
-		bool getResetFlag(uint32_t flag);
-		bool getDebugFlag(uint32_t flag);
-
+		[[nodiscard]] bool getResetFlag(uint32_t flag) const noexcept;
+		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
 
 		std::string _currentDir;
 		static const std::string _bindingsName;
 	
 		bool _init;
 		bool _exit;
-		bool _mainWindowSuspended;
 		uint32_t _debug;
 		uint32_t _reset;
+		bool _mainWindowSuspended;
 		bool _needsReset;
 		uint64_t _lastUpdate;
 		float _targetUpdateDeltaTime;

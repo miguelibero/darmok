@@ -80,27 +80,27 @@ namespace darmok
 	class PlatformEventQueue final
 	{
 	public:		
-		void postKeyboardCharInputEvent(const Utf8Char& data);
-		void postKeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down);
+		void postKeyboardCharInputEvent(const Utf8Char& data) noexcept;
+		void postKeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
 
-		void postMouseMovedEvent(const WindowHandle& window, const MousePosition& pos);
-		void postMouseButtonChangedEvent(MouseButton button, bool down);
+		void postMouseMovedEvent(const WindowHandle& window, const MousePosition& pos) noexcept;
+		void postMouseButtonChangedEvent(MouseButton button, bool down) noexcept;
 
-		void postGamepadConnectionEvent(const GamepadHandle& gamepad, bool connected);
-		void postGamepadAxisChangedEvent(const GamepadHandle& gamepad, GamepadAxis axis, int32_t value);
-		void postGamepadButtonChangedEvent(const GamepadHandle& gamepad, GamepadButton button, bool down);
+		void postGamepadConnectionEvent(const GamepadHandle& gamepad, bool connected) noexcept;
+		void postGamepadAxisChangedEvent(const GamepadHandle& gamepad, GamepadAxis axis, int32_t value) noexcept;
+		void postGamepadButtonChangedEvent(const GamepadHandle& gamepad, GamepadButton button, bool down) noexcept;
 
-		void postExitEvent();
+		void postExitEvent() noexcept;
 
-		void postWindowCreatedEvent(const WindowHandle& window, const WindowCreationOptions& options);
-		void postWindowSizeChangedEvent(const WindowHandle& window, const WindowSize& size);
-		void postWindowPositionChangedEvent(const WindowHandle& window, const WindowPosition& pos);
-		void postWindowTitleChangedEvent(const WindowHandle& window, const std::string& title);
-		void postFileDroppedEvent(const WindowHandle& window, const std::string& filePath);
-		void postWindowSuspendedEvent(const WindowHandle& window, WindowSuspendPhase phase);
-		void postWindowDestroyedEvent(const WindowHandle& window);
+		void postWindowCreatedEvent(const WindowHandle& window, const WindowCreationOptions& options) noexcept;
+		void postWindowSizeChangedEvent(const WindowHandle& window, const WindowSize& size) noexcept;
+		void postWindowPositionChangedEvent(const WindowHandle& window, const WindowPosition& pos) noexcept;
+		void postWindowTitleChangedEvent(const WindowHandle& window, const std::string& title) noexcept;
+		void postFileDroppedEvent(const WindowHandle& window, const std::string& filePath) noexcept;
+		void postWindowSuspendedEvent(const WindowHandle& window, WindowSuspendPhase phase) noexcept;
+		void postWindowDestroyedEvent(const WindowHandle& window)noexcept;
 
-		std::unique_ptr<PlatformEvent> poll();
+		std::unique_ptr<PlatformEvent> poll()noexcept;
 
 	private:
 		std::queue<std::unique_ptr<PlatformEvent>> _events;
@@ -109,22 +109,22 @@ namespace darmok
 	class PlatformContext
 	{
 	public:
-		WindowHandle pushCreateWindowCmd(const WindowCreationOptions& options);
-		void pushDestroyWindowCmd(const WindowHandle& handle);
-		void pushSetWindowPositionCmd(const WindowHandle& handle, const WindowPosition& pos);
-		void pushSetWindowSizeCmd(const WindowHandle& handle, const WindowSize& size);
-		void pushSetWindowTitleCmd(const WindowHandle& handle, const std::string& title);
-		void pushSetWindowFlagsCmd(const WindowHandle& handle, uint32_t flags, bool enabled);
-		void pushToggleWindowFullscreenCmd(const WindowHandle& handle);
-		void pushSetMouseLockToWindowCmd(const WindowHandle& handle, bool lock);
+		WindowHandle pushCreateWindowCmd(const WindowCreationOptions& options) noexcept;
+		void pushDestroyWindowCmd(const WindowHandle& handle) noexcept;
+		void pushSetWindowPositionCmd(const WindowHandle& handle, const WindowPosition& pos) noexcept;
+		void pushSetWindowSizeCmd(const WindowHandle& handle, const WindowSize& size) noexcept;
+		void pushSetWindowTitleCmd(const WindowHandle& handle, const std::string& title) noexcept;
+		void pushSetWindowFlagsCmd(const WindowHandle& handle, uint32_t flags, bool enabled) noexcept;
+		void pushToggleWindowFullscreenCmd(const WindowHandle& handle) noexcept;
+		void pushSetMouseLockToWindowCmd(const WindowHandle& handle, bool lock) noexcept;
 
-		void* getNativeWindowHandle(const WindowHandle& handle) const;
-		bgfx::NativeWindowHandleType::Enum getNativeWindowHandleType(const WindowHandle& handle) const;
-		void* getNativeDisplayHandle() const;
+		[[nodiscard]] void* getNativeWindowHandle(const WindowHandle& handle) const noexcept;
+		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getNativeWindowHandleType(const WindowHandle& handle) const noexcept;
+		[[nodiscard]] void* getNativeDisplayHandle() const noexcept;
 
-		static PlatformContext& get();
+		static PlatformContext& get() noexcept;
 
-		std::unique_ptr<PlatformEvent> pollEvent();
+		std::unique_ptr<PlatformEvent> pollEvent() noexcept;
 	};
 
 	

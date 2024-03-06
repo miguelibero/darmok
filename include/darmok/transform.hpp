@@ -38,14 +38,15 @@ namespace darmok
         static bool bgfxConfig(Entity entity, bgfx::Encoder& encoder, EntityRegistry& registry);
     
     private:
-        bool _matrixUpdatePending;
-        bool _inverseUpdatePending;
+
         glm::vec3 _position;
         glm::vec3 _rotation;
         glm::vec3 _scale;
         glm::vec3 _pivot;
         glm::mat4 _matrix;
         glm::mat4 _inverse;
+        bool _matrixUpdatePending;
+        bool _inverseUpdatePending;
         OptionalRef<Transform> _parent;
 
         void setPending(bool v = true);

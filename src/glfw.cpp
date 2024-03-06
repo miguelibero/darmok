@@ -40,7 +40,7 @@ namespace darmok {
 
 	namespace glfw {
 
-		static void* getNativeWindowHandle(GLFWwindow* window)
+		static void* getNativeWindowHandle(GLFWwindow* window) noexcept
 		{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
 # 		if DARMOK_PLATFORM_SUPPORT_WAYLAND
@@ -69,10 +69,12 @@ namespace darmok {
 #	endif // BX_PLATFORM_
 		}
 
-		static void destroyWindowImpl(GLFWwindow* window)
+		static void destroyWindowImpl(GLFWwindow* window) noexcept
 		{
-			if (!window)
+			if (window == nullptr)
+			{
 				return;
+			}
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
 #		if DARMOK_CONFIG_USE_WAYLAND
 			wl_egl_window* win_impl = (wl_egl_window*)glfwGetWindowUserPointer(window);
@@ -94,22 +96,22 @@ namespace darmok {
 		{
 			uint8_t modifiers = 0;
 
-			if (glfw & GLFW_MOD_ALT)
+			if (static_cast<bool>(glfw & GLFW_MOD_ALT))
 			{
 				modifiers |= to_underlying(KeyboardModifier::LeftAlt);
 			}
 
-			if (glfw & GLFW_MOD_CONTROL)
+			if (static_cast<bool>(glfw & GLFW_MOD_CONTROL))
 			{
 				modifiers |= to_underlying(KeyboardModifier::LeftCtrl);
 			}
 
-			if (glfw & GLFW_MOD_SUPER)
+			if (static_cast<bool>(glfw & GLFW_MOD_SUPER))
 			{
 				modifiers |= to_underlying(KeyboardModifier::LeftMeta);
 			}
 
-			if (glfw & GLFW_MOD_SHIFT)
+			if (static_cast<bool>(glfw & GLFW_MOD_SHIFT))
 			{
 				modifiers |= to_underlying(KeyboardModifier::LeftShift);
 			}
@@ -130,7 +132,7 @@ namespace darmok {
 			{
 				return MouseButton::Left;
 			}
-			else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+			if (button == GLFW_MOUSE_BUTTON_RIGHT)
 			{
 				return MouseButton::Right;
 			}
@@ -141,8 +143,7 @@ namespace darmok {
 		static GamepadAxis translateGamepadAxis(int axis)
 		{
 			// HACK: Map XInput 360 controller until GLFW gamepad API
-
-			static GamepadAxis axes[] =
+			static std::array<GamepadAxis, 6> axes =
 			{
 				GamepadAxis::LeftX,
 				GamepadAxis::LeftY,
@@ -158,7 +159,7 @@ namespace darmok {
 		{
 			// HACK: Map XInput 360 controller until GLFW gamepad API
 
-			static GamepadButton buttons[] =
+			static std::array<GamepadButton, 15> buttons =
 			{
 				GamepadButton::A,
 				GamepadButton::B,
@@ -181,16 +182,9 @@ namespace darmok {
 
 		struct MainThreadEntry
 		{
-			int argc;
-			const char* const* argv;
-			bool finished;
-
-			MainThreadEntry()
-				: argc(0)
-				, argv(nullptr)
-				, finished(false)
-			{
-			}
+			int argc = 0;
+			const char* const* argv = nullptr;
+			bool finished = false;
 
 			static int32_t threadFunc(bx::Thread* thread, void* userData);
 		};
@@ -222,7 +216,7 @@ namespace darmok {
 				return WindowHandle(_windowAlloc.alloc());
 			}
 
-			GLFWwindow* getWindow(const WindowHandle& handle) const
+			[[nodiscard]] GLFWwindow* getWindow(const WindowHandle& handle) const
 			{
 				return _windows[handle.idx];
 			}
@@ -911,7 +905,7 @@ namespace darmok {
 			PlatformEventQueue _eventQueue;
 			WindowMap _windows;
 
-			typedef std::queue<std::unique_ptr<Cmd>> CmdQueue;
+			using CmdQueue = std::queue<std::unique_ptr<Cmd>>;
 			CmdQueue _cmds;
 
 			double _scrollPos;
@@ -923,7 +917,7 @@ namespace darmok {
 		{
 			BX_UNUSED(thread);
 
-			MainThreadEntry* self = (MainThreadEntry*)userData;
+			auto self = (MainThreadEntry*)userData;
 			int32_t result = main(self->argc, self->argv);
 
 			self->finished = true;
@@ -1012,54 +1006,54 @@ namespace darmok {
 		}
 	}
 
-	WindowHandle PlatformContext::pushCreateWindowCmd(const WindowCreationOptions& options)
+	WindowHandle PlatformContext::pushCreateWindowCmd(const WindowCreationOptions& options) noexcept
 	{
 		auto handle = glfw::s_ctx._windows.createHandle();
 		glfw::s_ctx._cmds.push(std::make_unique<glfw::CreateWindowCmd>(handle, options));
 		return handle;
 	}
 
-	void PlatformContext::pushDestroyWindowCmd(const WindowHandle& handle)
+	void PlatformContext::pushDestroyWindowCmd(const WindowHandle& handle) noexcept
 	{
 		glfw::s_ctx._cmds.push(std::make_unique<glfw::DestroyWindowCmd>(handle));
 	}
 
-	void PlatformContext::pushSetWindowPositionCmd(const WindowHandle& handle, const WindowPosition& pos)
+	void PlatformContext::pushSetWindowPositionCmd(const WindowHandle& handle, const WindowPosition& pos) noexcept
 	{
 		glfw::s_ctx._cmds.push(std::make_unique<glfw::SetWindowPositionCmd>(handle, pos));
 	}
 
-	void PlatformContext::pushSetWindowSizeCmd(const WindowHandle& handle, const WindowSize& size)
+	void PlatformContext::pushSetWindowSizeCmd(const WindowHandle& handle, const WindowSize& size) noexcept
 	{
 		glfw::s_ctx._cmds.push(std::make_unique<glfw::SetWindowSizeCmd>(handle, size));
 	}
 
-	void PlatformContext::pushSetWindowTitleCmd(const WindowHandle& handle, const std::string& title)
+	void PlatformContext::pushSetWindowTitleCmd(const WindowHandle& handle, const std::string& title) noexcept
 	{
 		glfw::s_ctx._cmds.push(std::make_unique<glfw::SetWindowTitleCmd>(handle, title));
 	}
 
-	void PlatformContext::pushSetWindowFlagsCmd(const WindowHandle& handle, uint32_t flags, bool enabled)
+	void PlatformContext::pushSetWindowFlagsCmd(const WindowHandle& handle, uint32_t flags, bool enabled) noexcept
 	{
 		glfw::s_ctx._cmds.push(std::make_unique<glfw::SetWindowFlagsCmd>(handle, flags, enabled));
 	}
 
-	void PlatformContext::pushToggleWindowFullscreenCmd(const WindowHandle& handle)
+	void PlatformContext::pushToggleWindowFullscreenCmd(const WindowHandle& handle) noexcept
 	{
 		glfw::s_ctx._cmds.push(std::make_unique<glfw::ToggleWindowFullScreenCmd>(handle));
 	}
 
-	void PlatformContext::pushSetMouseLockToWindowCmd(const WindowHandle& handle, bool lock)
+	void PlatformContext::pushSetMouseLockToWindowCmd(const WindowHandle& handle, bool lock) noexcept
 	{
 		glfw::s_ctx._cmds.push(std::make_unique<glfw::LockMouseToWindowCmd>(handle, lock));
 	}
 
-	void* PlatformContext::getNativeWindowHandle(const WindowHandle& handle) const
+	void* PlatformContext::getNativeWindowHandle(const WindowHandle& handle) const noexcept
 	{
 		return glfw::getNativeWindowHandle(glfw::s_ctx._windows.getWindow(handle));
 	}
 
-	void* PlatformContext::getNativeDisplayHandle() const
+	void* PlatformContext::getNativeDisplayHandle() const noexcept
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
 #       if DARMOK_PLATFORM_SUPPORT_WAYLAND
@@ -1074,7 +1068,7 @@ namespace darmok {
 #	endif // BX_PLATFORM_*
 	}
 
-	bgfx::NativeWindowHandleType::Enum PlatformContext::getNativeWindowHandleType(const WindowHandle& window) const
+	bgfx::NativeWindowHandleType::Enum PlatformContext::getNativeWindowHandleType(const WindowHandle& handle) const noexcept
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
         if(glfwGetPlatform() == GLFW_PLATFORM_WAYLAND)
@@ -1087,7 +1081,7 @@ namespace darmok {
 #	endif // BX_PLATFORM_*
 	}
 
-	std::unique_ptr<PlatformEvent> PlatformContext::pollEvent()
+	std::unique_ptr<PlatformEvent> PlatformContext::pollEvent() noexcept
 	{
 		return glfw::s_ctx._eventQueue.poll();
 	}

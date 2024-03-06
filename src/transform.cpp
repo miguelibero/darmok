@@ -14,9 +14,10 @@ namespace darmok
     Transform::Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent)
         : _position(glm::vec3())
         , _rotation(glm::vec3())
-        , _scale(glm::vec3(1.f))
+        , _scale(glm::vec3(1))
         , _pivot(glm::vec3())
-        , _matrix(glm::mat4())
+        , _matrix(glm::mat4(1))
+        , _inverse(glm::mat4(1))
         , _matrixUpdatePending(false)
         , _inverseUpdatePending(false)
         , _parent(parent)
@@ -159,9 +160,9 @@ namespace darmok
 
     void Transform::setMatrix(const glm::mat4& v)
     {
-        glm::quat rotation;
-        glm::vec3 skew;
-        glm::vec4 perspective;
+        glm::quat rotation{};
+        glm::vec3 skew{};
+        glm::vec4 perspective{};
         glm::decompose(v, _scale, rotation, _position, skew, perspective);
 
         float rx = 0;

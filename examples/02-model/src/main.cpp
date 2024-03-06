@@ -5,6 +5,7 @@
 #include <darmok/asset.hpp>
 #include <darmok/model.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/transform.hpp>
 
 #include <glm/ext/matrix_clip_space.hpp>
 

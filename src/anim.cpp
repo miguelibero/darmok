@@ -7,7 +7,7 @@ namespace darmok
     FrameAnimationComponent::FrameAnimationComponent(const std::vector<AnimationFrame>& frames, OptionalRef<MeshComponent> meshComp) noexcept
         : _frames(frames)
         , _currentFrame(0)
-        , _timeSinceLastFrame(0.f)
+        , _timeSinceLastFrame(0.F)
         , _meshComp(meshComp)
     {
     }
@@ -36,33 +36,37 @@ namespace darmok
         return _frames[_currentFrame % _frames.size()];
     }
 
-    void FrameAnimationComponent::update(float dt) noexcept
+    void FrameAnimationComponent::update(float deltaTime) noexcept
     {
-        _timeSinceLastFrame += dt;
+        _timeSinceLastFrame += deltaTime;
         if (_frames.empty())
         {
             return;
         }
         auto frame = getCurrentFrame();
+        if (!frame)
+        {
+            return;
+        }
 
-        while (_timeSinceLastFrame > frame.value().duration)
+        while (_timeSinceLastFrame > frame->duration)
         {
             _currentFrame = (_currentFrame + 1) % _frames.size();
             frame = getCurrentFrame();
-            _timeSinceLastFrame -= frame.value().duration;
+            _timeSinceLastFrame -= frame->duration;
         }
         if (_meshComp)
         {
-            _meshComp.value().setMeshes(frame.value().meshes);
+            _meshComp->setMeshes(frame->meshes);
         }
     }
 
-    void FrameAnimationUpdater::update(float dt)
+    void FrameAnimationUpdater::update(float deltaTime)
     {
         auto anims = getRegistry().view<FrameAnimationComponent>();
         for (auto [entity, anim] : anims.each())
         {
-            anim.update(dt);
+            anim.update(deltaTime);
         }
     }
 }

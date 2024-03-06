@@ -55,7 +55,7 @@ namespace darmok
     public:
         virtual ~ISceneLogicUpdater() = default;
         virtual void init(EntityRegistry& registry) { _registry = registry; };
-        virtual void update(float dt) = 0;
+        virtual void update(float deltaTime) = 0;
     private:
         OptionalRef<EntityRegistry> _registry;
     protected:

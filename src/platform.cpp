@@ -360,93 +360,93 @@ namespace darmok
 		return {};
 	}
 
-	void PlatformEventQueue::postKeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down)
+	void PlatformEventQueue::postKeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept
 	{
 		_events.push(std::make_unique<KeyboardKeyChangedEvent>(key, modifiers, down));
 	}
 
-	void PlatformEventQueue::postKeyboardCharInputEvent(const Utf8Char& data)
+	void PlatformEventQueue::postKeyboardCharInputEvent(const Utf8Char& data) noexcept
 	{
 		_events.push(std::make_unique<KeyboardCharInputEvent>(data));
 	}
 
-	void PlatformEventQueue::postMouseMovedEvent(const WindowHandle& window, const MousePosition& pos)
+	void PlatformEventQueue::postMouseMovedEvent(const WindowHandle& window, const MousePosition& pos) noexcept
 	{
 		_events.push(std::make_unique<MouseMovedEvent>(window, pos));
 	}
 
-	void PlatformEventQueue::postMouseButtonChangedEvent(MouseButton button, bool down)
+	void PlatformEventQueue::postMouseButtonChangedEvent(MouseButton button, bool down) noexcept
 	{
 		_events.push(std::make_unique<MouseButtonChangedEvent>(button, down));
 	}
 
-	void PlatformEventQueue::postGamepadConnectionEvent(const GamepadHandle& gamepad, bool connected)
+	void PlatformEventQueue::postGamepadConnectionEvent(const GamepadHandle& gamepad, bool connected) noexcept
 	{
 		_events.push(std::make_unique<GamepadConnectionEvent>(gamepad, connected));
 	}
 
-	void PlatformEventQueue::postGamepadAxisChangedEvent(const GamepadHandle& gamepad, GamepadAxis axis, int32_t value)
+	void PlatformEventQueue::postGamepadAxisChangedEvent(const GamepadHandle& gamepad, GamepadAxis axis, int32_t value) noexcept
 	{
 		_events.push(std::make_unique<GamepadAxisChangedEvent>(gamepad, axis, value));
 	}
 
-	void PlatformEventQueue::postGamepadButtonChangedEvent(const GamepadHandle& gamepad, GamepadButton button, bool down)
+	void PlatformEventQueue::postGamepadButtonChangedEvent(const GamepadHandle& gamepad, GamepadButton button, bool down) noexcept
 	{
 		_events.push(std::make_unique<GamepadButtonChangedEvent>(gamepad, button, down));
 	}
 
-	void PlatformEventQueue::postExitEvent()
+	void PlatformEventQueue::postExitEvent() noexcept
 	{
 		_events.push(std::make_unique<PlatformEvent>(PlatformEvent::Exit));
 	}
 
-	void PlatformEventQueue::postWindowSizeChangedEvent(const WindowHandle& window, const WindowSize& size)
+	void PlatformEventQueue::postWindowSizeChangedEvent(const WindowHandle& window, const WindowSize& size) noexcept
 	{
 		_events.push(std::make_unique<WindowSizeChangedEvent>(window, size));
 	}
 
-	void PlatformEventQueue::postWindowPositionChangedEvent(const WindowHandle& window, const WindowPosition& pos)
+	void PlatformEventQueue::postWindowPositionChangedEvent(const WindowHandle& window, const WindowPosition& pos) noexcept
 	{
 		_events.push(std::make_unique<WindowPositionChangedEvent>(window, pos));
 	}
 
-	void PlatformEventQueue::postWindowTitleChangedEvent(const WindowHandle& window, const std::string& title)
+	void PlatformEventQueue::postWindowTitleChangedEvent(const WindowHandle& window, const std::string& title) noexcept
 	{
 		_events.push(std::make_unique<WindowTitleChangedEvent>(window, title));
 	}
 
-	void PlatformEventQueue::postWindowCreatedEvent(const WindowHandle& window, const WindowCreationOptions& options)
+	void PlatformEventQueue::postWindowCreatedEvent(const WindowHandle& window, const WindowCreationOptions& options) noexcept
 	{
 		_events.push(std::make_unique<WindowCreatedEvent>(window, options));
 	}
 
-	void PlatformEventQueue::postWindowDestroyedEvent(const WindowHandle& window)
+	void PlatformEventQueue::postWindowDestroyedEvent(const WindowHandle& window) noexcept
 	{
 		_events.push(std::make_unique<WindowDestroyedEvent>(window));
 	}
 
-	void PlatformEventQueue::postWindowSuspendedEvent(const WindowHandle& window, WindowSuspendPhase phase)
+	void PlatformEventQueue::postWindowSuspendedEvent(const WindowHandle& window, WindowSuspendPhase phase) noexcept
 	{
 		_events.push(std::make_unique<WindowSuspendedEvent>(window, phase));
 	}
 
-	void PlatformEventQueue::postFileDroppedEvent(const WindowHandle& window, const std::string& filePath)
+	void PlatformEventQueue::postFileDroppedEvent(const WindowHandle& window, const std::string& filePath) noexcept
 	{
 		_events.push(std::make_unique<FileDroppedEvent>(window, filePath));
 	}
 
-	std::unique_ptr<PlatformEvent> PlatformEventQueue::poll()
+	std::unique_ptr<PlatformEvent> PlatformEventQueue::poll() noexcept
 	{
-		if (_events.size() == 0)
+		if (_events.empty())
 		{
 			return nullptr;
 		}
-		auto ev = std::move(_events.front());
+		auto platEv = std::move(_events.front());
 		_events.pop();
-		return ev;
+		return platEv;
 	}
 
-	PlatformContext& PlatformContext::get()
+	PlatformContext& PlatformContext::get() noexcept
 	{
 		static PlatformContext s_ctx;
 		return s_ctx;

@@ -52,16 +52,16 @@ namespace darmok
 		throw std::runtime_error("unknown renderer type");
 	}
 
-	bgfx::ShaderHandle DataProgramLoader::loadShader(const std::string& name)
+	bgfx::ShaderHandle DataProgramLoader::loadShader(const std::string& filePath)
 	{
-		std::string dataName = name + getShaderExt() + ".bin";
+		std::string dataName = filePath + getShaderExt() + ".bin";
 		auto data = _dataLoader(dataName);
 		if (data == nullptr || data->empty())
 		{
 			throw std::runtime_error("got empty data");
 		}
 		bgfx::ShaderHandle handle = bgfx::createShader(data->makeRef());
-		bgfx::setName(handle, name.c_str());
+		bgfx::setName(handle, filePath.c_str());
 		return handle;
 	}
 

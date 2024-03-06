@@ -511,9 +511,9 @@ namespace darmok
 		return s_gamepadButtonNames[to_underlying(button)];
 	}
 
-	int32_t Gamepad::getAxis(GamepadAxis key) const
+	int32_t Gamepad::getAxis(GamepadAxis axis) const
 	{
-		return _impl->getAxis(key);
+		return _impl->getAxis(axis);
 	}
 
 	bool Gamepad::getButton(GamepadButton button) const
@@ -721,9 +721,9 @@ namespace darmok
 	{
 	}
 
-	void Input::addBindings(const std::string& name, std::vector<InputBinding>&& value)
+	void Input::addBindings(const std::string& name, std::vector<InputBinding>&& bindings)
 	{
-		_impl->addBindings(name, std::move(value));
+		_impl->addBindings(name, std::move(bindings));
 	}
 
 	void Input::removeBindings(const std::string& name)

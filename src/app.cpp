@@ -14,30 +14,25 @@
 
 namespace darmok
 {
-	AppImpl::AppImpl()
-		: _exit(false)
+	AppImpl::AppImpl() noexcept
+		: _init(false)
+		, _exit(false)
 		, _debug(BGFX_DEBUG_NONE)
 		, _reset(BGFX_RESET_VSYNC)
+		, _mainWindowSuspended(false)
 		, _needsReset(false)
-		, _init(false)
 		, _lastUpdate(0)
 		, _targetUpdateDeltaTime(0.)
 	{
 	}
 
-	AppImpl& AppImpl::get()
-	{
-		static AppImpl instance;
-		return instance;
-	}
-
-	const float AppImpl::defaultTargetUpdateDeltaTime = 1.0f / 30.0f;
+	const float AppImpl::defaultTargetUpdateDeltaTime = 1.0F / 30.0F;
 	const int AppImpl::maxInstantLogicUpdates = 10;
 
-	float AppImpl::updateTimePassed()
+	float AppImpl::updateTimePassed() noexcept
 	{
-		int64_t now = bx::getHPCounter();
-		float timePassed = (now - _lastUpdate) / double(bx::getHPFrequency());
+		const int64_t now = bx::getHPCounter();
+		const float timePassed = (now - _lastUpdate) / double(bx::getHPFrequency());
 		_lastUpdate = bx::getHPCounter();
 		return timePassed;
 	}
@@ -47,8 +42,8 @@ namespace darmok
 		_viewWindows.clear();
 		_viewWindows[0] = Window::DefaultHandle;
 
-		bx::FilePath fp(args[0].c_str());
-		auto basePath = fp.getPath();
+		bx::FilePath filePath(args[0].c_str());
+		auto basePath = filePath.getPath();
 
 		setCurrentDir(std::string(basePath.getPtr(), basePath.getLength()));
 		addBindings();
@@ -88,19 +83,19 @@ namespace darmok
 		_init = false;
 	}
 
-	void AppImpl::updateLogic(float dt)
+	void AppImpl::updateLogic(float deltaTime)
 	{
 		Input::get().getImpl().update();
 
 		for (auto& component : _appComponents)
 		{
-			component->updateLogic(dt);
+			component->updateLogic(deltaTime);
 		}
 		for (auto& elm : _viewComponents)
 		{
 			for (auto& component : elm.second)
 			{
-				component->updateLogic(dt);
+				component->updateLogic(deltaTime);
 			}
 		}
 	}
@@ -163,75 +158,93 @@ namespace darmok
 
 	const std::string AppImpl::_bindingsName = "main";
 
-	void AppImpl::setCurrentDir(const std::string& dir)
+	void AppImpl::setCurrentDir(const std::string& dir) noexcept
 	{
 		_currentDir = dir;
 	}
 
-	void AppImpl::addBindings()
+	const std::string& AppImpl::getCurrentDir() const noexcept
 	{
-		Input::get().addBindings(_bindingsName, {
-			{ KeyboardBindingKey { KeyboardKey::Esc,		KeyboardModifiers::None },			true, exitAppBinding },
-			{ KeyboardBindingKey { KeyboardKey::KeyQ,		KeyboardModifiers::LeftCtrl	},		true, exitAppBinding },
-			{ KeyboardBindingKey { KeyboardKey::KeyQ,		KeyboardModifiers::RightCtrl },		true, exitAppBinding },
-			{ KeyboardBindingKey { KeyboardKey::KeyF,		KeyboardModifiers::LeftCtrl	},		true, fullscreenToggleBinding },
-			{ KeyboardBindingKey { KeyboardKey::KeyF,		KeyboardModifiers::RightCtrl },		true, fullscreenToggleBinding },
-			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::LeftAlt },		true, fullscreenToggleBinding },
-			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::RightAlt },		true, fullscreenToggleBinding },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::None },			true, toggleDebugStatsBinding },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftAlt },		true, toggleDebugTextBinding },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightAlt },		true, toggleDebugTextBinding },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftCtrl	},		true, toggleDebugIfhBinding },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightCtrl },		true, toggleDebugIfhBinding },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftShift },		true, disableDebugFlagsBinding },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightShift },	true, disableDebugFlagsBinding },
-			{ KeyboardBindingKey { KeyboardKey::F3,			KeyboardModifiers::None},			true, toggleDebugWireFrameBinding },
-			{ KeyboardBindingKey { KeyboardKey::F6,			KeyboardModifiers::None},			true, toggleDebugProfilerBinding },
-			{ KeyboardBindingKey { KeyboardKey::F7,			KeyboardModifiers::None},			true, toggleResetVsyncBinding },
-			{ KeyboardBindingKey { KeyboardKey::F8,			KeyboardModifiers::None},			true, toggleResetMsaaBinding },
-			{ KeyboardBindingKey { KeyboardKey::F9,			KeyboardModifiers::None},			true, toggleResetFlushAfterRenderBinding },
-			{ KeyboardBindingKey { KeyboardKey::F10,		KeyboardModifiers::None},			true, toggleResetHidpiBinding },
-			{ KeyboardBindingKey { KeyboardKey::Print,		KeyboardModifiers::None},			true, screenshotBinding },
-			{ KeyboardBindingKey { KeyboardKey::KeyP,		KeyboardModifiers::LeftCtrl },		true, screenshotBinding },
-			{ KeyboardBindingKey { KeyboardKey::KeyP,		KeyboardModifiers::RightCtrl },		true, screenshotBinding },
-		});
+		return _currentDir;
 	}
 
-	void AppImpl::removeBindings()
+	void AppImpl::removeBindings() noexcept
 	{
 		Input::get().removeBindings(_bindingsName);
 	}
 
-	void AppImpl::exitAppBinding()
-	{
-		AppImpl::get()._exit = true;
-	};
-
-	void AppImpl::fullscreenToggleBinding()
-	{
-		WindowContext::get().getWindow().toggleFullscreen();
-	}
-
-	static uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled)
+	static uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled) noexcept
 	{
 		if (enabled)
 		{
 			return flags | flag;
 		}
-		else
-		{
-			return flags & ~flag;
-		}
+		return flags & ~flag;
 	}
 
-	bool AppImpl::toggleResetFlag(uint32_t flag)
+	void AppImpl::addBindings() noexcept
 	{
-		auto v = !getResetFlag(flag);
-		setResetFlag(flag, v);
-		return v;
+		auto exit = [this]() { triggerExit(); };
+		auto fullscreen = []() { WindowContext::get().getWindow().toggleFullscreen(); };
+		auto debugStats = [this]() { toggleDebugFlag(BGFX_DEBUG_STATS); };
+		auto debugText = [this]() { toggleDebugFlag(BGFX_DEBUG_TEXT); };
+		auto debugIfh = [this]() { toggleDebugFlag(BGFX_DEBUG_IFH); };
+		auto debugWireframe = [this]() { toggleDebugFlag(BGFX_DEBUG_WIREFRAME); };
+		auto debugProfiler = [this]() { toggleDebugFlag(BGFX_DEBUG_PROFILER); };
+		auto disableDebug = [this]() { 
+			setDebugFlag(BGFX_DEBUG_STATS, false);
+			setDebugFlag(BGFX_DEBUG_TEXT, false);
+		};
+		auto resetVsync = [this]() { toggleResetFlag(BGFX_RESET_VSYNC); };
+		auto resetMsaa = [this]() { toggleResetFlag(BGFX_RESET_MSAA_X16); };
+		auto resetFlush = [this]() { toggleResetFlag(BGFX_RESET_FLUSH_AFTER_RENDER); };
+		auto resetFlip = [this]() { toggleResetFlag(BGFX_RESET_FLIP_AFTER_RENDER); };
+		auto resetHidpi = [this]() { toggleResetFlag(BGFX_RESET_HIDPI); };
+		auto resetDepthClamp = [this]() { toggleResetFlag(BGFX_RESET_DEPTH_CLAMP); };
+		auto screenshot = [this]() {
+			time_t timeVal;
+			time(&timeVal);
+			auto filePath = getCurrentDir() + "temp/screenshot-" + std::to_string(timeVal);
+			WindowContext::get().getWindow().requestScreenshot(filePath);
+		};
+
+		Input::get().addBindings(_bindingsName, {
+			{ KeyboardBindingKey { KeyboardKey::Esc,		KeyboardModifiers::None },			true, exit },
+			{ KeyboardBindingKey { KeyboardKey::KeyQ,		KeyboardModifiers::LeftCtrl	},		true, exit },
+			{ KeyboardBindingKey { KeyboardKey::KeyQ,		KeyboardModifiers::RightCtrl },		true, exit },
+			{ KeyboardBindingKey { KeyboardKey::KeyF,		KeyboardModifiers::LeftCtrl	},		true, fullscreen },
+			{ KeyboardBindingKey { KeyboardKey::KeyF,		KeyboardModifiers::RightCtrl },		true, fullscreen },
+			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::LeftAlt },		true, fullscreen },
+			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::RightAlt },		true, fullscreen },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::None },			true, debugStats },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftAlt },		true, debugText },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightAlt },		true, debugText },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftCtrl	},		true, debugIfh },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightCtrl },		true, debugIfh },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftShift },		true, disableDebug },
+			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightShift },	true, disableDebug },
+			{ KeyboardBindingKey { KeyboardKey::F2,			KeyboardModifiers::None},			true, resetFlip },
+			{ KeyboardBindingKey { KeyboardKey::F3,			KeyboardModifiers::None},			true, debugWireframe },
+			{ KeyboardBindingKey { KeyboardKey::F4,			KeyboardModifiers::None},			true, resetDepthClamp },
+			{ KeyboardBindingKey { KeyboardKey::F6,			KeyboardModifiers::None},			true, debugProfiler },
+			{ KeyboardBindingKey { KeyboardKey::F7,			KeyboardModifiers::None},			true, resetVsync },
+			{ KeyboardBindingKey { KeyboardKey::F8,			KeyboardModifiers::None},			true, resetMsaa },
+			{ KeyboardBindingKey { KeyboardKey::F9,			KeyboardModifiers::None},			true, resetFlush },
+			{ KeyboardBindingKey { KeyboardKey::F10,		KeyboardModifiers::None},			true, resetHidpi },
+			{ KeyboardBindingKey { KeyboardKey::Print,		KeyboardModifiers::None},			true, screenshot },
+			{ KeyboardBindingKey { KeyboardKey::KeyP,		KeyboardModifiers::LeftCtrl },		true, screenshot },
+			{ KeyboardBindingKey { KeyboardKey::KeyP,		KeyboardModifiers::RightCtrl },		true, screenshot },
+			});
 	}
 
-	void AppImpl::setResetFlag(uint32_t flag, bool enabled)
+	bool AppImpl::toggleResetFlag(uint32_t flag) noexcept
+	{
+		auto value = !getResetFlag(flag);
+		setResetFlag(flag, value);
+		return value;
+	}
+
+	void AppImpl::setResetFlag(uint32_t flag, bool enabled) noexcept
 	{
 		auto reset = setFlag(_reset, flag, enabled);
 		if (_reset != reset)
@@ -241,119 +254,50 @@ namespace darmok
 		}
 	}
 
-	bool AppImpl::getResetFlag(uint32_t flag)
+	bool AppImpl::getResetFlag(uint32_t flag) const noexcept
 	{
-		return _reset & flag;
+		return static_cast<bool>(_reset & flag);
 	}
 
-	uint32_t AppImpl::getResetFlags()
+	uint32_t AppImpl::getResetFlags() const noexcept
 	{
 		return _reset;
 	}
 
-	bool AppImpl::toggleDebugFlag(uint32_t flag)
+	bool AppImpl::toggleDebugFlag(uint32_t flag) noexcept
 	{
-		auto v = !getDebugFlag(flag);
-		setDebugFlag(flag, v);
-		return v;
+		auto value = !getDebugFlag(flag);
+		setDebugFlag(flag, value);
+		return value;
 	}
 
-	void AppImpl::setDebugFlag(uint32_t flag, bool enabled)
+	void AppImpl::setDebugFlag(uint32_t flag, bool enabled) noexcept
 	{
 		_debug = setFlag(_debug, flag, enabled);
 		bgfx::setDebug(_debug);
 	}
 
-	bool AppImpl::getDebugFlag(uint32_t flag)
+	bool AppImpl::getDebugFlag(uint32_t flag) const noexcept
 	{
-		return _debug & flag;
+		return static_cast<bool>(_debug & flag);
 	}
 
-	void AppImpl::toggleDebugStatsBinding()
+	void AppImpl::triggerExit() noexcept
 	{
-		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_STATS);
+		_exit = true;
 	}
-
-	void AppImpl::toggleDebugTextBinding()
-	{
-		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_TEXT);
-	}
-
-	void AppImpl::toggleDebugIfhBinding()
-	{
-		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_IFH);
-	}
-
-	void AppImpl::toggleDebugWireFrameBinding()
-	{
-		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
-	}
-
-	void AppImpl::toggleDebugProfilerBinding()
-	{
-		AppImpl::get().toggleDebugFlag(BGFX_DEBUG_PROFILER);
-	}
-
-	void AppImpl::disableDebugFlagsBinding()
-	{
-		AppImpl::get().setDebugFlag(BGFX_DEBUG_STATS, false);
-		AppImpl::get().setDebugFlag(BGFX_DEBUG_TEXT, false);
-	}
-
-	void AppImpl::toggleResetVsyncBinding()
-	{
-		AppImpl::get().toggleResetFlag(BGFX_RESET_VSYNC);
-	}
-
-	void AppImpl::toggleResetMsaaBinding()
-	{
-		AppImpl::get().toggleResetFlag(BGFX_RESET_MSAA_X16);
-	}
-
-	void AppImpl::toggleResetFlushAfterRenderBinding()
-	{
-		AppImpl::get().toggleResetFlag(BGFX_RESET_FLUSH_AFTER_RENDER);
-	}
-
-	void AppImpl::toggleResetFlipAfterRenderBinding()
-	{
-		AppImpl::get().toggleResetFlag(BGFX_RESET_FLIP_AFTER_RENDER);
-	}
-
-	void AppImpl::toggleResetHidpiBinding()
-	{
-		AppImpl::get().toggleResetFlag(BGFX_RESET_HIDPI);
-	}
-
-	void AppImpl::resetDepthClampBinding()
-	{
-		AppImpl::get().toggleResetFlag(BGFX_RESET_DEPTH_CLAMP);
-	}
-
-	void AppImpl::screenshotBinding()
-	{
-		bgfx::FrameBufferHandle fbh = BGFX_INVALID_HANDLE;
-
-		time_t tt;
-		time(&tt);
-
-		auto filePath = AppImpl::get()._currentDir + "temp/screenshot-" + std::to_string(tt);
-		// bgfx::CallbackI::screenShot = 
-		bgfx::requestScreenShot(fbh, filePath.c_str());
-	}
-
 
 	bool AppImpl::processEvents()
 	{
 		bool needsReset = false;
 		while (!_exit)
 		{
-			auto ev = PlatformContext::get().pollEvent();
-			if (ev == nullptr)
+			auto patEv = PlatformContext::get().pollEvent();
+			if (patEv == nullptr)
 			{
 				break;
 			}
-			auto result = PlatformEvent::process(*ev);
+			auto result = PlatformEvent::process(*patEv);
 			if (result == PlatformEvent::Result::Exit)
 			{
 				return true;
@@ -367,7 +311,7 @@ namespace darmok
 
 		if (needsReset || _needsReset)
 		{
-			auto& size = WindowContext::get().getWindow().getSize();
+			const auto& size = WindowContext::get().getWindow().getSize();
 			bgfx::reset(size.x, size.y, getResetFlags());
 			Input::get().getMouse().getImpl().setResolution(size);
 			_needsReset = false;
@@ -376,7 +320,7 @@ namespace darmok
 		return _exit;
 	}
 
-	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component)
+	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
 	{
 		if (_init)
 		{
@@ -385,7 +329,7 @@ namespace darmok
 		_appComponents.push_back(std::move(component));
 	}
 
-	void AppImpl::addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component)
+	void AppImpl::addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component) noexcept
 	{
 		if (_init)
 		{
@@ -394,12 +338,12 @@ namespace darmok
 		_viewComponents[viewId].push_back(std::move(component));
 	}
 
-	void AppImpl::setWindowView(bgfx::ViewId viewId, const WindowHandle& window)
+	void AppImpl::setWindowView(bgfx::ViewId viewId, const WindowHandle& window) noexcept
 	{
 		_viewWindows[viewId] = window;
 	}
 
-	WindowHandle AppImpl::getViewWindow(bgfx::ViewId viewId) const
+	WindowHandle AppImpl::getViewWindow(bgfx::ViewId viewId) const noexcept
 	{
 		auto itr = _viewWindows.find(viewId);
 		if (itr == _viewWindows.end())
@@ -409,17 +353,17 @@ namespace darmok
 		return itr->second;
 	}
 
-	const ViewWindows& AppImpl::getViewWindows() const
+	const ViewWindows& AppImpl::getViewWindows() const noexcept
 	{
 		return _viewWindows;
 	}
 
-	std::vector<bgfx::ViewId> AppImpl::getWindowViews(const WindowHandle& window) const
+	std::vector<bgfx::ViewId> AppImpl::getWindowViews(const WindowHandle& window) const noexcept
 	{
 		std::vector<bgfx::ViewId> views;
-		for (auto& pair : _viewWindows)
+		for (const auto& pair : _viewWindows)
 		{
-			if (pair.second == window)
+			if (pair.second.idx == window.idx)
 			{
 				views.push_back(pair.first);
 			}
@@ -457,29 +401,39 @@ namespace darmok
 		return ::_main_(argc, (char**)argv);
 	}
 
+	App::App() noexcept
+		: _impl(std::make_unique<AppImpl>())
+	{
+	}
+
+	App::~App() noexcept
+	{
+		// intentionally left blank for the unique_ptr<AppImpl> forward declaration
+	}
+
 	void App::init(const std::vector<std::string>& args)
 	{
 		bgfx::Init init;
 		auto& win = WindowContext::get().getWindow();
-		auto& size = win.getSize();
+		const auto& size = win.getSize();
 		init.platformData.ndt = Window::getNativeDisplayHandle();
 		init.platformData.nwh = win.getNativeHandle();
 		init.platformData.type = win.getNativeHandleType();
 		init.debug = true;
 		init.resolution.width = size.x;
 		init.resolution.height = size.y;
-		init.resolution.reset = AppImpl::get().getResetFlags();
+		init.resolution.reset = _impl->getResetFlags();
 		bgfx::init(init);
 
 		bgfx::setPaletteColor(0, UINT32_C(0x00000000));
 		bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
 
-		AppImpl::get().init(*this, args);
+		_impl->init(*this, args);
 	}
 
 	int App::shutdown()
 	{
-		AppImpl::get().shutdown();
+		_impl->shutdown();
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
@@ -489,16 +443,14 @@ namespace darmok
 
 	bool App::update()
 	{
-		auto& impl = AppImpl::get();
-
-		if (impl.processEvents())
+		if (_impl->processEvents())
 		{
 			return false;
 		}
 
-		impl.update([this, &impl](float dt) {
-			updateLogic(dt);
-			impl.updateLogic(dt);
+		_impl->update([this](float deltaTime) {
+			updateLogic(deltaTime);
+			_impl->updateLogic(deltaTime);
 		});
 
 		for (auto& win : WindowContext::get().getWindows())
@@ -507,8 +459,8 @@ namespace darmok
 			{
 				continue;
 			}
-			auto& handle = win.getHandle();
-			auto viewIds = impl.getWindowViews(handle);
+			const auto& handle = win.getHandle();
+			auto viewIds = _impl->getWindowViews(handle);
 			if (viewIds.empty())
 			{
 				continue;
@@ -516,10 +468,10 @@ namespace darmok
 
 			auto& firstViewId = viewIds.front();
 			beforeWindowRender(handle, firstViewId);
-			impl.beforeWindowRender(handle, firstViewId);
+			_impl->beforeWindowRender(handle, firstViewId);
 
 			auto fbh = win.getImpl().getFrameBuffer();
-			auto& size = win.getSize();
+			const auto& size = win.getSize();
 
 			for (auto& viewId : viewIds)
 			{
@@ -538,13 +490,13 @@ namespace darmok
 				bgfx::dbgTextClear();
 
 				beforeRender(viewId);
-				impl.beforeRender(viewId);
+				_impl->beforeRender(viewId);
 
 				render(viewId);
-				impl.render(viewId);
+				_impl->render(viewId);
 
 				afterRender(viewId);
-				impl.afterRender(viewId);
+				_impl->afterRender(viewId);
 
 				if (isValid(fbh))
 				{
@@ -554,7 +506,7 @@ namespace darmok
 
 			auto& lastViewId = viewIds.back();
 			afterWindowRender(handle, lastViewId);
-			impl.afterWindowRender(handle, lastViewId);
+			_impl->afterWindowRender(handle, lastViewId);
 		}
 
 		// advance to next frame. Rendering thread will be kicked to
@@ -564,13 +516,25 @@ namespace darmok
 		return true;
 	}
 
-	void App::updateLogic(float dt)
+	[[nodiscard]] const AppImpl& App::getImpl() const noexcept
+	{
+		return *_impl;
+	}
+
+	[[nodiscard]] AppImpl& App::getImpl() noexcept
+	{
+		return *_impl;
+	}
+
+	void App::updateLogic(float deltaTime)
 	{
 	}
 
+	const uint32_t _clearColor = 0x303030ff;
+
 	void App::beforeWindowRender(const WindowHandle& window, bgfx::ViewId viewId)
 	{
-		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR, 0x303030ff);
+		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR, _clearColor);
 	}
 
 	void App::beforeRender(bgfx::ViewId viewId)
@@ -589,44 +553,44 @@ namespace darmok
 	{
 	}
 
-	void App::toggleDebugFlag(uint32_t flag)
+	void App::toggleDebugFlag(uint32_t flag) noexcept
 	{
-		AppImpl::get().toggleDebugFlag(flag);
+		_impl->toggleDebugFlag(flag);
 	}
 
-	void App::setDebugFlag(uint32_t flag, bool enabled)
+	void App::setDebugFlag(uint32_t flag, bool enabled) noexcept
 	{
-		AppImpl::get().setDebugFlag(flag, enabled);
+		_impl->setDebugFlag(flag, enabled);
 	}
 
-	void App::toggleResetFlag(uint32_t flag)
+	void App::toggleResetFlag(uint32_t flag) noexcept
 	{
-		AppImpl::get().toggleResetFlag(flag);
+		_impl->toggleResetFlag(flag);
 	}
 	
-	void App::setResetFlag(uint32_t flag, bool enabled)
+	void App::setResetFlag(uint32_t flag, bool enabled) noexcept
 	{
-		AppImpl::get().setResetFlag(flag, enabled);
+		_impl->setResetFlag(flag, enabled);
 	}
 
-	void App::addComponent(std::unique_ptr<AppComponent>&& component)
+	void App::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
 	{
-		AppImpl::get().addComponent(std::move(component));
+		_impl->addComponent(std::move(component));
 	}
 
-	void App::addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component)
+	void App::addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component) noexcept
 	{
-		AppImpl::get().addViewComponent(viewId, std::move(component));
+		_impl->addViewComponent(viewId, std::move(component));
 	}
 
-	void App::setWindowView(bgfx::ViewId viewId, const WindowHandle& window)
+	void App::setWindowView(bgfx::ViewId viewId, const WindowHandle& window) noexcept
 	{
-		AppImpl::get().setWindowView(viewId, window);
+		_impl->setWindowView(viewId, window);
 	}
 
-	WindowHandle App::getViewWindow(bgfx::ViewId viewId) const
+	WindowHandle App::getViewWindow(bgfx::ViewId viewId) const noexcept
 	{
-		return AppImpl::get().getViewWindow(viewId);
+		return _impl->getViewWindow(viewId);
 	}
 
 	void AppComponent::init()
@@ -637,7 +601,7 @@ namespace darmok
 	{
 	}
 
-	void AppComponent::updateLogic(float dt)
+	void AppComponent::updateLogic(float deltaTime)
 	{
 	}
 
@@ -661,7 +625,7 @@ namespace darmok
 	{
 	}
 
-	void ViewComponent::updateLogic(float dt)
+	void ViewComponent::updateLogic(float deltaTime)
 	{
 	}
 

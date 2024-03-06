@@ -15,9 +15,9 @@ namespace darmok
         return _matrix;
     }
 
-    Camera& Camera::setMatrix(const glm::mat4& proj)
+    Camera& Camera::setMatrix(const glm::mat4& matrix)
     {
-        _matrix = proj;
+        _matrix = matrix;
         return *this;
     }
 

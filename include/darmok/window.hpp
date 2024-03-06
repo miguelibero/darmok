@@ -11,18 +11,10 @@
 
 namespace darmok
 {
-	struct WindowHandle final
-	{
-		typedef uint16_t idx_t;
-		idx_t idx;
+	BGFX_HANDLE(WindowHandle);
 
-		bool operator==(const WindowHandle& other) const;
-		bool operator<(const WindowHandle& other) const;
-		bool isValid() const;
-	};
-
-	typedef glm::vec<2, int32_t> WindowPosition;
-	typedef glm::vec<2, int32_t> WindowSize;
+	using WindowPosition = glm::vec<2, int32_t>;
+	using WindowSize = glm::vec<2, int32_t>;
 
 	enum class WindowSuspendPhase
 	{
@@ -31,7 +23,6 @@ namespace darmok
 		DidSuspend,
 		WillResume,
 		DidResume,
-
 		Count
 	};
 
@@ -57,65 +48,65 @@ namespace darmok
 	{
 	public:
 
-		static constexpr WindowHandle::idx_t MaxAmount = 8;
+		static constexpr uint16_t MaxAmount = 8;
 		static constexpr WindowHandle DefaultHandle = { 0 };
-		static constexpr WindowHandle InvalidHandle = { UINT16_MAX };
+		static constexpr WindowHandle InvalidHandle = { bgfx::kInvalidHandle };
 
-		void destroy();
-		void setPosition(const WindowPosition& pos);
-		void setSize(const WindowSize& size);
-		void setTitle(const std::string& title);
-		void setFlags(uint32_t flags, bool enabled);
-		void toggleFullscreen();
-		void setMouseLock(bool lock);
-
-		void* getNativeHandle() const;
-		static void* getNativeDisplayHandle();
-		bgfx::NativeWindowHandleType::Enum getNativeHandleType() const;
-
-		const WindowPosition& getPosition() const;
-		const WindowSize& getSize() const;
-		const std::string& getTitle() const;
-		const WindowHandle& getHandle() const;
-		uint32_t getFlags() const;
-		const std::string& getDropFilePath() const;
-		WindowSuspendPhase getSuspendPhase() const;
-		bool isRunning() const;
-		bool isSuspended() const;
-		const WindowImpl& getImpl() const;
-		WindowImpl& getImpl();
-
-	private:
-		Window();
 		Window(const Window& other) = delete;
 		Window(Window&& other) = delete;
 
-		std::unique_ptr<WindowImpl> _impl;
+		void destroy() noexcept;
+		void setPosition(const WindowPosition& pos) noexcept;
+		void setSize(const WindowSize& size) noexcept;
+		void setTitle(const std::string& title) noexcept;
+		void setFlags(uint32_t flags, bool enabled) noexcept;
+		void toggleFullscreen() noexcept;
+		void setMouseLock(bool lock) noexcept;
+		void requestScreenshot(std::string_view path) noexcept;
 
+		[[nodiscard]] void* getNativeHandle() const noexcept;
+		[[nodiscard]] static void* getNativeDisplayHandle() noexcept;
+		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getNativeHandleType() const noexcept;
+
+		[[nodiscard]] const WindowPosition& getPosition() const noexcept;
+		[[nodiscard]] const WindowSize& getSize() const noexcept;
+		[[nodiscard]] const std::string& getTitle() const noexcept;
+		[[nodiscard]] const WindowHandle& getHandle() const noexcept;
+		[[nodiscard]] uint32_t getFlags() const noexcept;
+		[[nodiscard]] const std::string& getDropFilePath() const noexcept;
+		[[nodiscard]] WindowSuspendPhase getSuspendPhase() const noexcept;
+		[[nodiscard]] bool isRunning() const noexcept;
+		[[nodiscard]] bool isSuspended() const noexcept;
+		[[nodiscard]] const WindowImpl& getImpl() const noexcept;
+		[[nodiscard]] WindowImpl& getImpl() noexcept;
+
+	private:
+		Window() noexcept;
+		std::unique_ptr<WindowImpl> _impl;
 		friend WindowContextImpl;
 	};
 
-	typedef std::array<Window, Window::MaxAmount> Windows;
+	using Windows = std::array<Window, Window::MaxAmount> ;
 
 	class WindowContext final
 	{
 	public:
-		Window& createWindow(const WindowCreationOptions& options);
-		Window& getWindow(const WindowHandle& handle = Window::DefaultHandle);
-		const Window& getWindow(const WindowHandle& handle = Window::DefaultHandle) const;
-		Windows& getWindows();
-		static WindowContext& get();
-
-	private:
-		WindowContext();
 		WindowContext(const WindowContext& other) = delete;
 		WindowContext(WindowContext&& other) = delete;
+
+		Window& createWindow(const WindowCreationOptions& options);
+		Window& getWindow(const WindowHandle& handle = Window::DefaultHandle) noexcept;
+		[[nodiscard]] const Window& getWindow(const WindowHandle& handle = Window::DefaultHandle) const noexcept;
+		[[nodiscard]] Windows& getWindows() noexcept;
+		static WindowContext& get() noexcept;
+
+	private:
+		WindowContext() noexcept;
 
 		std::unique_ptr<WindowContextImpl> _impl;
 	};
 
 } // namespace darmok
-
 
 template<> struct std::hash<darmok::WindowHandle> {
 	std::size_t operator()(darmok::WindowHandle const& handle) const noexcept {

@@ -8,37 +8,37 @@ namespace darmok
 	class WindowImpl final
 	{
 	public:
-		WindowImpl();
-		void init(const WindowHandle& handle, const WindowCreationOptions& options);
-		void reset();
-
-		void setPosition(const WindowPosition& pos);
-		void setSize(const WindowSize& size);
-		void setTitle(const std::string& title);
-		void setFlags(uint32_t flags);
-		void setDropFilePath(const std::string& filePath);
-		void onSuspendPhase(WindowSuspendPhase phase);
-		void setHandle(const WindowHandle& handle);
-		
-		const WindowPosition& getPosition() const;
-		const WindowSize& getSize() const;
-		const std::string& getTitle() const;
-		const WindowHandle& getHandle() const;
-		uint32_t getFlags() const;
-		const std::string& getDropFilePath() const;
-		bool isSuspended() const;
-		bool isRunning() const;
-
-		void* getNativeHandle() const;
-		static void* getNativeDisplayHandle();
-		bgfx::NativeWindowHandleType::Enum getNativeHandleType() const;
-
-		const bgfx::FrameBufferHandle& getFrameBuffer() const;
-
-	private:
+		WindowImpl() noexcept;
 		WindowImpl(const WindowImpl& other) = delete;
 		WindowImpl(WindowImpl&& other) = delete;
 
+		void init(const WindowHandle& handle, const WindowCreationOptions& options);
+		void reset();
+		void requestScreenshot(std::string_view path) noexcept;
+
+		void setPosition(const WindowPosition& pos) noexcept;
+		void setSize(const WindowSize& size) noexcept;
+		void setTitle(const std::string& title) noexcept;
+		void setFlags(uint32_t flags) noexcept;
+		void setDropFilePath(const std::string& filePath) noexcept;
+		void setHandle(const WindowHandle& handle) noexcept;
+		void onSuspendPhase(WindowSuspendPhase phase) noexcept;
+		
+		[[nodiscard]] const WindowPosition& getPosition() const noexcept;
+		[[nodiscard]] const WindowSize& getSize() const noexcept;
+		[[nodiscard]] const std::string& getTitle() const noexcept;
+		[[nodiscard]] const WindowHandle& getHandle() const noexcept;
+		[[nodiscard]] uint32_t getFlags() const noexcept;
+		[[nodiscard]] const std::string& getDropFilePath() const noexcept;
+		[[nodiscard]] bool isSuspended() const noexcept;
+		[[nodiscard]] bool isRunning() const noexcept;
+
+		[[nodiscard]] void* getNativeHandle() const noexcept;
+		[[nodiscard]] static void* getNativeDisplayHandle() noexcept;
+		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getNativeHandleType() const noexcept;
+		[[nodiscard]] const bgfx::FrameBufferHandle& getFrameBuffer() const noexcept;
+
+	private:
 		bool resetFrameBuffer();
 		void createFrameBuffer();
 
@@ -56,13 +56,13 @@ namespace darmok
 	class WindowContextImpl final
 	{
 	public:
-		WindowContextImpl();
-		Window& getWindow(const WindowHandle& handle = Window::DefaultHandle);
-		Windows& getWindows();
-	private:
+		WindowContextImpl() noexcept;
 		WindowContextImpl(const WindowContextImpl& other) = delete;
 		WindowContextImpl(WindowContextImpl&& other) = delete;
 
+		Window& getWindow(const WindowHandle& handle = Window::DefaultHandle) noexcept;
+		Windows& getWindows() noexcept;
+	private:
 		Windows _windows;
 	};
 
