@@ -11,7 +11,7 @@ namespace darmok
     class DataProgramLoader final : public IProgramLoader
 	{
 	public:
-		DataProgramLoader(IDataLoader& dataLoader);
+		DataProgramLoader(IDataLoader& dataLoader) noexcept;
 		std::shared_ptr<Program> operator()(std::string_view vertexName, std::string_view fragmentName = "") override;
 	private:
 		IDataLoader& _dataLoader;

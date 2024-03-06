@@ -3,23 +3,25 @@
 #include <darmok/data.hpp>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
+#include <glm/glm.hpp>
 #include <unordered_map>
 #include <memory>
 #include <string_view>
 
 namespace darmok
 {
+	class Texture;
+
 	class Program final
 	{
 	public:
 		Program(const bgfx::ProgramHandle& handle) noexcept;
-		~Program() noexcept;
-		const bgfx::ProgramHandle& getHandle() const noexcept;
-	private:
-		bgfx::ProgramHandle _handle;
-
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
+		~Program() noexcept;
+		[[nodiscard]] const bgfx::ProgramHandle& getHandle() const noexcept;
+	private:
+		bgfx::ProgramHandle _handle;
 	};
 
 	class BX_NO_VTABLE IProgramLoader
@@ -41,26 +43,45 @@ namespace darmok
 		Time,
 		DiffuseTexture,
 		DiffuseColor,
+		PointLight,
+		DirectionalLight,
+		SpotLight,
 	};
 
-	struct ProgramUniformDefinition
+	class ProgramUniformDefinition final
 	{
-		std::string name;
-		bgfx::UniformType::Enum type;
-		Data defaultValue;
-		uint16_t num;
+	public:
+		ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num = 1) noexcept;
+		ProgramUniformDefinition(std::string name, std::shared_ptr<Texture>& defaultValue, uint16_t num = 1) noexcept;
+		ProgramUniformDefinition(std::string name, const glm::vec4& defaultValue, uint16_t num = 1) noexcept;
+		ProgramUniformDefinition(std::string name, const glm::mat3& defaultValue, uint16_t num = 1) noexcept;
+		ProgramUniformDefinition(std::string name, const glm::mat4& defaultValue, uint16_t num = 1) noexcept;
 
-		bgfx::UniformHandle createHandle() const noexcept;
+		[[nodiscard]] const std::string& getName() const;
+		[[nodiscard]] bgfx::UniformType::Enum getType() const;
+		[[nodiscard]] const Data& getDefaultValue() const;
+		[[nodiscard]] const std::shared_ptr<Texture>& getDefaultTexture() const;
+		[[nodiscard]] uint16_t getNum() const;
+
+		[[nodiscard]] bgfx::UniformHandle createHandle() const noexcept;
+
+
+	private:
+		std::string _name;
+		bgfx::UniformType::Enum _type;
+		Data _defaultValue;
+		std::shared_ptr<Texture> _defaultTexture;
+		uint16_t _num;
 	};
 
 	struct ProgramDefinition final
 	{
-		typedef std::unordered_map<bgfx::Attrib::Enum, ProgramAttribDefinition> AttribMap;
-		typedef std::unordered_map<ProgramUniform, ProgramUniformDefinition> UniformMap;
+		using AttribMap = std::unordered_map<bgfx::Attrib::Enum, ProgramAttribDefinition>;
+		using UniformMap = std::unordered_map<ProgramUniform, ProgramUniformDefinition>;
 
 		AttribMap attribs;
 		UniformMap uniforms;
 
-		bgfx::VertexLayout createVertexLayout() const noexcept;
+		[[nodiscard]] bgfx::VertexLayout createVertexLayout() const noexcept;
 	};
 }

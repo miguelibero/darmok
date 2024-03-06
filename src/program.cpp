@@ -1,6 +1,7 @@
 #include "program.hpp"
 #include <darmok/data.hpp>
 #include <unordered_map>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
 {
@@ -21,7 +22,7 @@ namespace darmok
 		return _handle;
 	}  
 
-	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader)
+	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader) noexcept
 		: _dataLoader(dataLoader)
 	{
 	}
@@ -67,7 +68,7 @@ namespace darmok
 
 	std::shared_ptr<Program> DataProgramLoader::operator()(std::string_view vertexName, std::string_view fragmentName)
 	{
-		bgfx::ShaderHandle vsh = loadShader(std::string(fragmentName));
+		const bgfx::ShaderHandle vsh = loadShader(std::string(fragmentName));
 		bgfx::ShaderHandle fsh = BGFX_INVALID_HANDLE;
 		if (!fragmentName.empty())
 		{
@@ -77,16 +78,79 @@ namespace darmok
 		return std::make_shared<Program>(handle);
 	}
 
+	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num) noexcept
+		: _name(std::move(name))
+		, _type(type)
+		, _num(num)
+	{
+	}
+
+	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, std::shared_ptr<Texture>& defaultValue, uint16_t num) noexcept
+		: _name(std::move(name))
+		, _type(bgfx::UniformType::Sampler)
+		, _defaultTexture(defaultValue)
+		, _num(num)
+	{
+	}
+
+	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const glm::vec4& defaultValue, uint16_t num) noexcept
+		: _name(std::move(name))
+		, _type(bgfx::UniformType::Vec4)
+		, _defaultValue(Data::copy(glm::value_ptr(defaultValue)))
+		, _num(num)
+	{
+	}
+
+	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const glm::mat3& defaultValue, uint16_t num) noexcept
+		: _name(std::move(name))
+		, _type(bgfx::UniformType::Mat3)
+		, _defaultValue(Data::copy(glm::value_ptr(defaultValue)))
+		, _num(num)
+	{
+	}
+
+	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const glm::mat4& defaultValue, uint16_t num) noexcept
+		: _name(std::move(name))
+		, _type(bgfx::UniformType::Mat4)
+		, _defaultValue(Data::copy(glm::value_ptr(defaultValue)))
+		, _num(num)
+	{
+	}
+
+	const std::string& ProgramUniformDefinition::getName() const
+	{
+		return _name;
+	}
+
+	bgfx::UniformType::Enum ProgramUniformDefinition::getType() const
+	{
+		return _type;
+	}
+
+	const Data& ProgramUniformDefinition::getDefaultValue() const
+	{
+		return _defaultValue;
+	}
+
+	const std::shared_ptr<Texture>& ProgramUniformDefinition::getDefaultTexture() const
+	{
+		return _defaultTexture;
+	}
+	uint16_t ProgramUniformDefinition::getNum() const
+	{
+		return _num;
+	}
+
 	bgfx::UniformHandle ProgramUniformDefinition::createHandle() const noexcept
 	{
-		return bgfx::createUniform(name.c_str(), type, num);
+		return bgfx::createUniform(_name.c_str(), _type, _num);
 	}
 
 	bgfx::VertexLayout ProgramDefinition::createVertexLayout() const noexcept
 	{
 		bgfx::VertexLayout layout;
 		layout.begin();
-		for (auto& pair : attribs)
+		for (const auto& pair : attribs)
 		{
 			layout.add(pair.first, pair.second.num, pair.second.type, pair.second.normalize);
 		}

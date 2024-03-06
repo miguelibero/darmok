@@ -165,7 +165,7 @@ namespace darmok
 			auto itr = _textures.find(MaterialTextureType::Diffuse);
 			if (itr != _textures.end())
 			{
-				for (auto& pair : itr->second)
+				for (const auto& pair : itr->second)
 				{
 					encoder.setTexture(pair.first, uniform, pair.second->getHandle());
 				}
@@ -180,7 +180,7 @@ namespace darmok
 
 	void Material::submitColors(bgfx::Encoder& encoder) const
 	{
-		for (auto& pair : _materialColorUniforms)
+		for (const auto& pair : _materialColorUniforms)
 		{
 			auto uniform = getUniformHandle(pair.second);
 			if (!isValid(uniform))
@@ -190,15 +190,15 @@ namespace darmok
 			auto itr = _colors.find(pair.first);
 			if (itr != _colors.end())
 			{
-				auto v = itr->second.getVector();
-				encoder.setUniform(uniform, glm::value_ptr(v));
+				auto colorVec = itr->second.getVector();
+				encoder.setUniform(uniform, glm::value_ptr(colorVec));
 			}
 			else
 			{
 				auto itr = _progDef.uniforms.find(pair.second);
 				if (itr != _progDef.uniforms.end())
 				{
-					auto& defVal = itr->second.defaultValue;
+					const auto& defVal = itr->second.getDefaultValue();
 					if (!defVal.empty())
 					{
 						encoder.setUniform(uniform, defVal.ptr());
@@ -242,20 +242,26 @@ namespace darmok
 		return std::make_shared<Program>(handle);
 	}
 
-	static const std::unordered_map<StandardMaterialType, ProgramDefinition> _standardProgramDefinitions
+	static ProgramDefinition createBasicProgramDefinition(uint16_t lightAmount)
 	{
-		{StandardMaterialType::Basic, {
+		return {
 			{
-				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 3}},
-				{bgfx::Attrib::Normal, { bgfx::AttribType::Float, 3}},
-				{bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true}},
-				{bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2}},
+				{ bgfx::Attrib::Position, { bgfx::AttribType::Float, 3 } },
+				{ bgfx::Attrib::Normal, { bgfx::AttribType::Float, 3} },
+				{ bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true} },
+				{ bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2} },
 			},
 			{
 				{ProgramUniform::DiffuseTexture, {"s_texColor", bgfx::UniformType::Sampler}},
-				{ProgramUniform::DiffuseColor, {"u_diffuseColor", bgfx::UniformType::Vec4, Data::copy(glm::vec4(1, 1, 1, 1))}},
+				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
+				{ProgramUniform::PointLight, {"u_lightPos", glm::vec4(), lightAmount}}
 			}
-		}},
+		};
+	}
+
+	static const std::unordered_map<StandardMaterialType, ProgramDefinition> _standardProgramDefinitions
+	{
+		{StandardMaterialType::Basic, createBasicProgramDefinition(16) },
 		{StandardMaterialType::Sprite, {
 			{
 				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 2}},
