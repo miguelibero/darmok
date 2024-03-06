@@ -14,13 +14,15 @@ namespace darmok
         Component b;
         Component a;
 
-        Color();
-        Color(Component r, Component g, Component b, Component a = maxValue);
-        Color(const glm::vec4& v);
-        void setVector(const glm::vec4& v);
-        glm::vec4 getVector() const;
-        const Component* ptr() const;
-        Component* ptr();
+        Color() noexcept;
+        Color(Component r, Component g, Component b, Component a = maxValue) noexcept;
+        Color(const glm::vec4& v) noexcept;
+        
+        void setVector(const glm::vec4& v) noexcept;
+
+        [[nodiscard]] glm::vec4 getVector() const noexcept;
+        [[nodiscard]] const Component* ptr() const noexcept;
+        [[nodiscard]] Component* ptr() noexcept;
     };
 
     struct Colors

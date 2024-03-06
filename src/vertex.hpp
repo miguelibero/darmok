@@ -8,7 +8,7 @@ namespace darmok
     class XmlDataVertexLayoutLoader final : public IVertexLayoutLoader
 	{
 	public:
-		XmlDataVertexLayoutLoader(IDataLoader& dataLoader);
+		XmlDataVertexLayoutLoader(IDataLoader& dataLoader) noexcept;
 		bgfx::VertexLayout operator()(std::string_view name) override;
 	private:
 		IDataLoader& _dataLoader;

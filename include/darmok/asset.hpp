@@ -15,17 +15,17 @@ namespace darmok
 	class AssetContext final
 	{
 	public:
-		static AssetContext& get() noexcept;
+		[[nodiscard]] static AssetContext& get() noexcept;
 
-		IImageLoader& getImageLoader() noexcept;
-		IProgramLoader& getProgramLoader() noexcept;
-		ITextureLoader& getTextureLoader() noexcept;
-		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
-		IModelLoader& getModelLoader() noexcept;
-		IVertexLayoutLoader& getVertexLayoutLoader() noexcept;
+		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
+		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
+		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
+		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
+		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
+		[[nodiscard]] IVertexLayoutLoader& getVertexLayoutLoader() noexcept;
 
-		AssetContextImpl& getImpl() noexcept;
-		const AssetContextImpl& getImpl() const noexcept;
+		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
+		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;
 	private:
 		AssetContext() noexcept;
 		std::unique_ptr<AssetContextImpl> _impl;

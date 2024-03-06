@@ -18,11 +18,13 @@ namespace darmok
     {
     public:
         FrameAnimationComponent(const std::vector<AnimationFrame>& frames, OptionalRef<MeshComponent> meshComp = nullptr) noexcept;
-        const std::vector<AnimationFrame>& getFrames() const noexcept;
         void setFrames(const std::vector<AnimationFrame>& frames) noexcept;
         void setMeshComponent(MeshComponent& comp) noexcept;
+        
+        [[nodiscard]] const std::vector<AnimationFrame>& getFrames() const noexcept;
+        [[nodiscard]] OptionalRef<const AnimationFrame> getCurrentFrame() const noexcept;
+
         void update(float deltaTime) noexcept;
-        OptionalRef<const AnimationFrame> getCurrentFrame() const noexcept;
 
     private:
         std::vector<AnimationFrame> _frames;

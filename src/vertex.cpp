@@ -3,7 +3,7 @@
 
 namespace darmok
 {
-    XmlDataVertexLayoutLoader::XmlDataVertexLayoutLoader(IDataLoader& dataLoader)
+    XmlDataVertexLayoutLoader::XmlDataVertexLayoutLoader(IDataLoader& dataLoader) noexcept
         : _dataLoader(dataLoader)
         {
         }
@@ -20,17 +20,13 @@ namespace darmok
         , _data(layout.getSize(size), alloc)
         , _alloc(alloc)
     {
-        for (int i = 0; i < bgfx::Attrib::Count; i++)
-        {
-            _marked[i] = 0;
-        }
     }
 
     Data&& VertexDataWriter::release() noexcept
     {
         for (auto i = 0; i < bgfx::Attrib::Count; i++)
         {
-            auto attr = (bgfx::Attrib::Enum)i;
+            const auto attr = static_cast<bgfx::Attrib::Enum>(i);
             if (!_layout.has(attr) || hasBeenSet(attr))
             {
                 continue;
@@ -41,18 +37,18 @@ namespace darmok
             bool asInt;
             _layout.decode(attr, num, type, normalize, asInt);
             
-            float input[] = { 0.f, 0.f, 0.f, 0.f };
+            std::array<float, 4> input;
             if (attr == bgfx::Attrib::Normal && num == 3 && type == bgfx::AttribType::Float)
             {
-                input[2] = 1.f;
+                input.at(2) = 1.F;
             }
             else if (attr >= bgfx::Attrib::Color0 && attr <= bgfx::Attrib::Color3)
             {
-                input[0] = input[1] = input[2] = input[3] = 1.f;
+                std::fill(input.begin(), input.end(), 1.F);
             }
             for (auto j = 0; j < _size; j++)
             {
-                bgfx::vertexPack(input, true, attr, _layout, _data.ptr(), j);
+                bgfx::vertexPack(&input.front(), true, attr, _layout, _data.ptr(), j);
             }
         }
         return std::move(_data);
@@ -84,27 +80,59 @@ namespace darmok
 
     VertexDataWriter& VertexDataWriter::set(bgfx::Attrib::Enum attr, const std::vector<Color>& input) noexcept
     {
-        return setIter(attr, input.begin(), input.end(), [](auto& itr) { return itr->ptr(); });
+        return setIter(attr, input.begin(), input.end(), [](auto& itr) noexcept { return itr->ptr(); });
     }
 
     bool VertexDataWriter::hasBeenSet(bgfx::Attrib::Enum attr) const noexcept
     {
-        uint32_t v = (1 << _size) - 1;
-        return (_marked[attr] & v) == v;
+        if (_markedAll.find(attr) != _markedAll.end())
+        {
+            return true;
+        }
+        auto itr = _marked.find(attr);
+        if (itr == _marked.end())
+        {
+            return false;
+        }
+        for (uint32_t index = 0; index < _size; index++)
+        {
+            if (itr->second.find(index) == itr->second.end())
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     bool VertexDataWriter::hasBeenSet(bgfx::Attrib::Enum attr, uint32_t index) const noexcept
     {
-        return _marked[attr] & 1 >> index;
+        if (_markedAll.find(attr) != _markedAll.end())
+        {
+            return true;
+        }
+        auto itr = _marked.find(attr);
+        if (itr == _marked.end())
+        {
+            return false;
+        }
+        return itr->second.find(index) != itr->second.end();
     }
 
     void VertexDataWriter::mark(bgfx::Attrib::Enum attr, uint32_t index) noexcept
     {
-        _marked[attr] |= 1 << index;
+        auto itr = _marked.find(attr);
+        if (itr == _marked.end())
+        {
+            _marked.emplace(std::make_pair(attr, std::set<uint32_t>{ index }));
+        }
+        else
+        {
+            itr->second.emplace(index);
+        }
     }
 
     void VertexDataWriter::markAll(bgfx::Attrib::Enum attr) noexcept
     {
-        _marked[attr] = (1 << _size) - 1;
+        _markedAll.emplace(attr);
     }
 }

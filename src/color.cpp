@@ -4,22 +4,22 @@ namespace darmok
 {
     const Color::Component Color::maxValue = 255;
 
-    Color::Color()
+    Color::Color() noexcept
         : r(0), g(0), b(0), a(0)
     {
     }
 
-    Color::Color(Component r, Component g, Component b, Component a)
+    Color::Color(Component r, Component g, Component b, Component a) noexcept
         : r(r), g(g), b(b), a(a)
     {
     }
 
-    Color::Color(const glm::vec4& v)
+    Color::Color(const glm::vec4& v) noexcept
     {
         setVector(v);
     }
 
-    void Color::setVector(const glm::vec4& v)
+    void Color::setVector(const glm::vec4& v) noexcept
     {
         r = v.r * Color::maxValue;
         g = v.g * Color::maxValue;
@@ -27,7 +27,7 @@ namespace darmok
         a = v.a * Color::maxValue;
     }
 
-    glm::vec4 Color::getVector() const
+    glm::vec4 Color::getVector() const noexcept
     {
         return glm::vec4(
             ((float)r) / Color::maxValue,
@@ -37,12 +37,12 @@ namespace darmok
         );
     }
 
-    const Color::Component* Color::ptr() const
+    const Color::Component* Color::ptr() const noexcept
     {
         return (const Component*)this;
     }
 
-    Color::Component* Color::ptr()
+    Color::Component* Color::ptr() noexcept
     {
         return (Component*)this;
     }
