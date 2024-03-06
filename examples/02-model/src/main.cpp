@@ -43,8 +43,13 @@ namespace
 			auto& assets = darmok::AssetContext::get();
 			
 			auto model = assets.getModelLoader()("assets/human.fbx");
-			darmok::addModelToScene(scene, *model);
-			// scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
+			model->addToScene(scene, [&scene](const darmok::ModelNode& node, darmok::Entity entity){
+				if (node.getName() == "human")
+				{
+					auto& trans = scene.getComponent<darmok::Transform>(entity);
+					scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
+				}
+			});
 		}
 	};
 

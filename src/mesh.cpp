@@ -2,6 +2,7 @@
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/transform.hpp>
 
 namespace darmok
 {

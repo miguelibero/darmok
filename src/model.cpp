@@ -2,6 +2,9 @@
 #include "model.hpp"
 #include "asset.hpp"
 #include <darmok/vertex.hpp>
+#include <darmok/transform.hpp>
+#include <darmok/camera.hpp>
+#include <darmok/light.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/material.h>
@@ -19,55 +22,10 @@
 
 namespace darmok
 {
-	Entity addModelNodeToScene(Scene& scene, ModelNode& node, const OptionalRef<Transform>& parent, Entity entity)
-	{
-		if (entity == entt::null)
-		{
-			entity = scene.createEntity();
-		}
-
-		auto transMat = node.getTransform();
-
-		auto optCam = node.getCamera();
-		if (optCam.hasValue())
-		{
-			auto& cam = optCam.value();
-			transMat *= cam.getViewMatrix();
-			scene.addComponent<Camera>(entity, cam.getProjectionMatrix());
-		}
-
-		auto& trans = scene.addComponent<Transform>(entity, transMat, parent);
-
-		auto& meshes = node.getMeshes();
-		if (!meshes.empty())
-		{
-			scene.addComponent<MeshComponent>(entity, meshes.load());
-		}
-
-		auto optLight = node.getLight();
-		if (optLight.hasValue())
-		{
-			// TODO: add light component
-			auto& light = optLight.value();
-		}
-
-		for (auto& child : node.getChildren())
-		{
-			addModelNodeToScene(scene, child, trans);
-		}
-		return entity;
-	}
-
-	Entity addModelToScene(Scene& scene, Model& model, Entity entity)
-	{
-		return addModelNodeToScene(scene, model.getRootNode(), nullptr, entity);
-	}
-
 	static inline std::string_view getStringView(const aiString& str)
 	{
 		return std::string_view(str.data, str.length);
 	}
-
 
 	static inline glm::mat4 convertMatrix(const aiMatrix4x4& from)
 	{
@@ -1012,6 +970,47 @@ namespace darmok
 		return _model.getLights().get(getName());
 	}
 
+	Entity ModelNode::addToScene(Scene& scene, Entity parent)
+	{
+		auto entity = doAddToScene(scene, parent);
+		for (auto& child : getChildren())
+		{
+			addToScene(scene, entity);
+		}
+		return entity;
+	}
+
+	Entity ModelNode::doAddToScene(Scene& scene, Entity parent)
+	{
+		auto entity = scene.createEntity();
+		auto transMat = getTransform();
+
+		auto optCam = getCamera();
+		if (optCam.hasValue())
+		{
+			auto& cam = optCam.value();
+			transMat *= cam.getViewMatrix();
+			scene.addComponent<Camera>(entity, cam.getProjectionMatrix());
+		}
+
+		auto& meshes = getMeshes();
+		if (!meshes.empty())
+		{
+			scene.addComponent<MeshComponent>(entity, meshes.load());
+		}
+
+		auto optLight = getLight();
+		if (optLight.hasValue())
+		{
+			// TODO: add light component
+			auto& light = optLight.value();
+		}
+
+		auto parentTrans = scene.tryGetComponent<Transform>(parent);
+		scene.addComponent<Transform>(entity, transMat, parentTrans);
+		return entity;
+	}
+
 	ModelCameraCollection::ModelCameraCollection(const aiScene* ptr)
 		: _ptr(ptr)
 	{
@@ -1194,6 +1193,11 @@ namespace darmok
 	ModelLightCollection& Model::getLights()
 	{
 		return _lights;
+	}
+
+	Entity Model::addToScene(Scene& scene, Entity parent)
+	{
+		return getRootNode().addToScene(scene, parent);
 	}
 
 	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader)

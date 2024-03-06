@@ -439,6 +439,31 @@ namespace darmok
         OptionalRef<ModelNode> getChild(const std::string_view& path);
         OptionalRef<ModelCamera> getCamera();
         OptionalRef<ModelLight> getLight();
+        Entity addToScene(Scene& scene, Entity parent = entt::null);
+
+        template<typename C>
+        Entity addToScene(Scene& scene, Entity parent, C callback)
+        {
+            auto entity = doAddToScene(scene, parent);
+            callback(*this, entity);
+            for (auto& child : getChildren())
+            {
+                child.addToScene(scene, entity, callback);
+            }
+            return entity;
+        }
+
+        template<typename C>
+        Entity addToScene(Scene& scene, C callback)
+        {
+            auto entity = doAddToScene(scene);
+            callback(*this, entity);
+            for (auto& child : getChildren())
+            {
+                child.addToScene(scene, entity, callback);
+            }
+            return entity;
+        }
 
     private:
         aiNode* _ptr;
@@ -446,6 +471,8 @@ namespace darmok
         ModelNodeChildrenCollection _children;
         std::string _basePath;
         Model& _model;
+
+        Entity doAddToScene(Scene& scene, Entity parent = entt::null);
     };
 
     class ModelCameraCollection final : public MemReadOnlyCollection<ModelCamera>
@@ -512,6 +539,19 @@ namespace darmok
         ModelMaterialCollection& getMaterials();
         ModelCameraCollection& getCameras();
         ModelLightCollection& getLights();
+        Entity addToScene(Scene& scene, Entity parent = entt::null);
+
+        template<typename C>
+        Entity addToScene(Scene& scene, Entity parent, C callback)
+        {
+            return getRootNode().addToScene(scene, parent, callback);
+        }
+
+        template<typename C>
+        Entity addToScene(Scene& scene, C callback)
+        {
+            return getRootNode().addToScene(scene, callback);
+        }
 
     private:
         const aiScene* _ptr;
@@ -523,9 +563,6 @@ namespace darmok
         ModelCameraCollection _cameras;
         ModelLightCollection _lights;
 	};
-
-    Entity addModelNodeToScene(Scene& scene, ModelNode& node, const OptionalRef<Transform>& parent = std::nullopt, Entity entity = entt::null);
-    Entity addModelToScene(Scene& scene, Model& model, Entity entity = entt::null);
 
     class BX_NO_VTABLE IModelLoader
 	{

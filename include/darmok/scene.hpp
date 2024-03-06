@@ -81,6 +81,12 @@ namespace darmok
             return getRegistry().get<T>(entity);
         }
 
+        template<typename T>
+        OptionalRef<T> tryGetComponent(const Entity entity)
+        {
+            return getRegistry().try_get<T>(entity);
+        }
+
         template<typename T, typename... A>
         T& addRenderer(A&&... args)
         {
@@ -112,97 +118,7 @@ namespace darmok
 
         std::unique_ptr<SceneImpl> _impl;
     };
-
-    class Transform final
-    {
-    public:
-        static constexpr auto in_place_delete = true;
-
-        Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent = std::nullopt);
-        Transform(const glm::vec3& position = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3(), const OptionalRef<Transform>& parent = std::nullopt);
     
-        const glm::vec3& getPosition() const;
-        const glm::vec3& getRotation() const;
-        const glm::vec3& getScale() const;
-        const glm::vec3& getPivot() const;
-        const OptionalRef<Transform>& getParent() const;
-
-        OptionalRef<Transform> getParent();
-
-        Transform& setPosition(const glm::vec3& v);
-        Transform& setRotation(const glm::vec3& v);
-        Transform& setScale(const glm::vec3& v);
-        Transform& setPivot(const glm::vec3& v);
-        Transform& setParent(const OptionalRef<Transform>& parent);
-
-        void update();
-        void setMatrix(const glm::mat4& v);
-        const glm::mat4& getMatrix();
-        const glm::mat4& getMatrix() const;
-        const glm::mat4& getInverse();
-        const glm::mat4& getInverse() const;
-
-        static bool bgfxConfig(Entity entity, bgfx::Encoder& encoder, EntityRegistry& registry);
-    
-    private:
-        bool _matrixUpdatePending;
-        bool _inverseUpdatePending;
-        glm::vec3 _position;
-        glm::vec3 _rotation;
-        glm::vec3 _scale;
-        glm::vec3 _pivot;
-        glm::mat4 _matrix;
-        glm::mat4 _inverse;
-        OptionalRef<Transform> _parent;
-
-        void setPending(bool v = true);
-        bool updateMatrix();
-        bool updateInverse();
-    };
-
-    typedef glm::vec<2, uint16_t> ViewVec;
-
-    class ViewRect final
-    {
-    public:
-        ViewRect(const ViewVec& size, const ViewVec& origin = {});
-        void setSize(const ViewVec& size);
-        void setOrigin(const ViewVec& origin);
-        const ViewVec& getSize() const;
-        const ViewVec& getOrigin() const;
-        void bgfxConfig(bgfx::ViewId viewId) const; 
-    private:
-        ViewVec _size;
-        ViewVec _origin;
-    };
-
-    class Camera final
-    {
-    public:
-        Camera(const glm::mat4& matrix = {}, bgfx::ViewId viewId = 0);
-        const glm::mat4& getMatrix() const;
-        Camera& setMatrix(const glm::mat4& matrix);
-        Camera& setProjection(float fovy, float aspect, float near, float far);
-        Camera& setProjection(float fovy, float aspect, float near = 0.f);
-        Camera& setOrtho(float left, float right, float bottom, float top, float near = 0.f, float far = bx::kFloatLargest, float offset = 0.f);
-        Camera& setViewId(bgfx::ViewId viewId);
-        bgfx::ViewId getViewId() const;
-        Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter);
-
-        template<typename T>
-        Camera& setEntityComponentFilter()
-        {
-            return setEntityFilter(std::make_unique<EntityComponentFilter<T>>());
-        }
-
-        OptionalRef<const IEntityFilter> getEntityFilter() const;
-        OptionalRef<IEntityFilter> getEntityFilter();
-    private:
-        glm::mat4 _matrix;
-        bgfx::ViewId _viewId;
-        std::unique_ptr<IEntityFilter> _entityFilter;
-    };
-
     class SceneAppComponent final : public AppComponent
     {
     public:

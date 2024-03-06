@@ -15,7 +15,6 @@ set(SHADERS_BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 set(SHADERS_OUTPUT_DIR generated/shaders)
 set(LIBS_DIR lib)
 
-
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
 
@@ -98,6 +97,9 @@ set(sources
   ${SRC_DIR}/image.cpp
   ${SRC_DIR}/program.cpp
   ${SRC_DIR}/vertex.cpp
+  ${SRC_DIR}/transform.cpp
+  ${SRC_DIR}/camera.cpp
+  ${SRC_DIR}/light.cpp
 )
 
 set(headers
@@ -121,6 +123,9 @@ set(headers
   ${INCLUDE_DIR}/image.hpp
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/vertex.hpp
+  ${INCLUDE_DIR}/transform.hpp
+  ${INCLUDE_DIR}/camera.hpp
+  ${INCLUDE_DIR}/light.hpp
 )
 
 set(LIB_NAME darmok)
@@ -224,6 +229,20 @@ if(MSVC)
 endif()
 set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 20)
 
+# code analysis & clang tidy
+find_program(CLANG_TIDY_EXE
+  NAMES "clang-tidy"
+  NO_CACHE)
+set(CLANG_TIDY_COMMAND "${CLANG_TIDY_EXE}" "-checks=-*,modernize-*")
+set_target_properties(${LIB_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")
+set_target_properties(${LIB_NAME} PROPERTIES
+    VS_GLOBAL_RunCodeAnalysis true
+    VS_GLOBAL_EnableMicrosoftCodeAnalysis true
+    VS_GLOBAL_CodeAnalysisRuleSet ${CMAKE_CURRENT_SOURCE_DIR}/darmok.ruleset
+    VS_GLOBAL_EnableClangTidyCodeAnalysis true
+    VS_GLOBAL_ClangTidyChecks -checks=-*,readability-*,modernize-*,-modernize-use-trailing-return-type
+)
+
 # openGL
 find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
@@ -251,7 +270,6 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
         target_compile_definitions(bgfx PRIVATE WL_EGL_PLATFORM)
     endif()
 endif()
-
 
 # glm
 add_subdirectory(${LIBS_DIR}/glm)

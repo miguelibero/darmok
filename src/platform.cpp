@@ -443,7 +443,7 @@ namespace darmok
 		}
 		auto ev = std::move(_events.front());
 		_events.pop();
-		return std::move(ev);
+		return ev;
 	}
 
 	PlatformContext& PlatformContext::get()

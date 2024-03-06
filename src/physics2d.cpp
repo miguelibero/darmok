@@ -3,6 +3,7 @@
 #include <darmok/utils.hpp>
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/transform.hpp>
 
 #include "embedded_shader.hpp"
 #include "generated/shaders/debug_vertex.h"
