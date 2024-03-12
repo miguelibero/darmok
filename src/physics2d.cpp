@@ -4,6 +4,7 @@
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/camera.hpp>
 
 #include "embedded_shader.hpp"
 #include "generated/shaders/debug_vertex.h"
@@ -63,9 +64,10 @@ namespace darmok
 
     static const std::vector<VertexIndex> _physics2dDebugBoxIndices{ 0, 1, 1, 2, 2, 3, 3, 0 };
 
-    void Physics2DDebugRenderer::init(EntityRegistry& registry)
+    void Physics2DDebugRenderer::init(Scene& scene, App& app)
     {
-        ISceneRenderer::init(registry);
+        CameraSceneRenderer::init(scene, app);
+
         _boxIndexBuffer = bgfx::createIndexBuffer(makeVectorRef(_physics2dDebugBoxIndices));
 
         auto type = bgfx::getRendererType();
@@ -81,13 +83,13 @@ namespace darmok
             .end();
     }
 
-    void Physics2DDebugRenderer::render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId)
+    bgfx::ViewId Physics2DDebugRenderer::render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId)
     {
         uint64_t state = BGFX_STATE_WRITE_RGB
             | BGFX_STATE_PT_LINES
             ;
 
-        auto& registry = getRegistry();
+        auto& registry = _scene->getRegistry();
         entities.iterate(registry.storage<BoxCollider2D>());
         for (auto entity : entities)
         {
@@ -114,5 +116,6 @@ namespace darmok
             encoder.setState(state);
             encoder.submit(viewId, _program);
         }
+        return ++viewId;
     }
 }

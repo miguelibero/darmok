@@ -1,7 +1,8 @@
 #pragma once
 
-#include <darmok/window.hpp>
 #include <darmok/input.hpp>
+#include <darmok/window.hpp>
+#include <darmok/utils.hpp>
 #include <bx/bx.h>
 #include <queue>
 #include <memory>
@@ -37,6 +38,8 @@ namespace darmok
 {
 	int main(int argc, const char* const* argv);
 
+#pragma region PlatformEvents
+
 	class BX_NO_VTABLE PlatformEvent
 	{
 	public:
@@ -51,82 +54,177 @@ namespace darmok
 
 			MouseMoved,
 			MouseButtonChanged,
+			WindowMouseLockChanged,
 
 			WindowSizeChanged,
-			WindowCreated,
-			WindowDestroyed,
-			WindowSuspended,
-			FileDropped,
+			WindowPhaseChanged,
+			WindowModeChanged,
 
-			Exit,
 			Count,
 		};
 
 		PlatformEvent(Type type);
+		virtual ~PlatformEvent() = default;
 
-		enum class Result
-		{
-			Nothing,
-			Exit,
-			Reset,
-		};
-
-		static Result process(PlatformEvent& ev);
+		static void process(PlatformEvent& ev, Input& input, Window& win) noexcept;
 
 	private:
 		Type _type;
 	};
 
+	class KeyboardKeyChangedEvent final : public PlatformEvent
+	{
+	public:
+		KeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
+		void process(Input& input) noexcept;
+	private:
+		KeyboardKey _key;
+		uint8_t _modifiers;
+		bool _down;
+	};
+
+	class KeyboardCharInputEvent final : public PlatformEvent
+	{
+	public:
+		KeyboardCharInputEvent(const Utf8Char& data) noexcept;
+		void process(Input& input) noexcept;
+	private:
+		Utf8Char _data;
+	};
+
+	class MouseMovedEvent final : public PlatformEvent
+	{
+	public:
+		MouseMovedEvent(const MousePosition& pos) noexcept;
+		void process(Input& input) noexcept;
+	private:
+		MousePosition _pos;
+	};
+
+	class MouseButtonChangedEvent final : public PlatformEvent
+	{
+	public:
+		MouseButtonChangedEvent(MouseButton button, bool down) noexcept;
+		void process(Input& input) noexcept;
+	private:
+		MouseButton _button;
+		bool _down;
+	};
+
+	class WindowMouseLockChangedEvent final : public PlatformEvent
+	{
+	public:
+		WindowMouseLockChangedEvent(bool locked) noexcept;
+		void process(Input& input) noexcept;
+	private:
+		bool _locked;
+	};
+
+	class GamepadAxisChangedEvent final : public PlatformEvent
+	{
+	public:
+		GamepadAxisChangedEvent(GamepadHandle gampad, GamepadAxis axis, int32_t value) noexcept;
+		void process(Input& input) noexcept;
+
+	private:
+		GamepadHandle _gamepad;
+		GamepadAxis _axis;
+		int32_t _value;
+	};
+
+	class GamepadButtonChangedEvent final : public PlatformEvent
+	{
+	public:
+		GamepadButtonChangedEvent(GamepadHandle gampad, GamepadButton button, bool down) noexcept;
+		void process(Input& input) noexcept;
+
+	private:
+		GamepadHandle _gamepad;
+		GamepadButton _button;
+		bool _down;
+	};
+
+	class GamepadConnectionEvent final : public PlatformEvent
+	{
+	public:
+		GamepadConnectionEvent(GamepadHandle gamepad, bool connected) noexcept;
+		void process(Input& input) noexcept;
+	private:
+		GamepadHandle _gamepad;
+		bool _connected;
+	};
+
+	class WindowSizeChangedEvent final : public PlatformEvent
+	{
+	public:
+		WindowSizeChangedEvent(const WindowSize& size) noexcept;
+		void process(Window& win) noexcept;
+	private:
+		WindowSize _size;
+	};
+
+	class WindowPhaseChangedEvent final : public PlatformEvent
+	{
+	public:
+		WindowPhaseChangedEvent(WindowPhase phase) noexcept;
+		void process(Window& win) noexcept;
+	private:
+		WindowPhase _phase;
+	};
+
+	class WindowModeChangedEvent final : public PlatformEvent
+	{
+	public:
+		WindowModeChangedEvent(WindowMode mode) noexcept;
+		void process(Window& win) noexcept;
+	private:
+		WindowMode _mode;
+	};
+
 	class PlatformEventQueue final
 	{
-	public:		
-		void postKeyboardCharInputEvent(const Utf8Char& data) noexcept;
-		void postKeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
+	public:
+		void post(std::unique_ptr<PlatformEvent>&& ev) noexcept;
 
-		void postMouseMovedEvent(const WindowHandle& window, const MousePosition& pos) noexcept;
-		void postMouseButtonChangedEvent(MouseButton button, bool down) noexcept;
+		template<typename T, typename... A>
+		T& post(A&&... args) noexcept
+		{
+			auto ptr = new T(std::forward<A>(args)...);
+			post(std::unique_ptr<PlatformEvent>(ptr));
+			return *ptr;
+		}
 
-		void postGamepadConnectionEvent(const GamepadHandle& gamepad, bool connected) noexcept;
-		void postGamepadAxisChangedEvent(const GamepadHandle& gamepad, GamepadAxis axis, int32_t value) noexcept;
-		void postGamepadButtonChangedEvent(const GamepadHandle& gamepad, GamepadButton button, bool down) noexcept;
-
-		void postExitEvent() noexcept;
-
-		void postWindowCreatedEvent(const WindowHandle& window, const WindowCreationOptions& options) noexcept;
-		void postWindowSizeChangedEvent(const WindowHandle& window, const WindowSize& size) noexcept;
-		void postWindowPositionChangedEvent(const WindowHandle& window, const WindowPosition& pos) noexcept;
-		void postWindowTitleChangedEvent(const WindowHandle& window, const std::string& title) noexcept;
-		void postFileDroppedEvent(const WindowHandle& window, const std::string& filePath) noexcept;
-		void postWindowSuspendedEvent(const WindowHandle& window, WindowSuspendPhase phase) noexcept;
-		void postWindowDestroyedEvent(const WindowHandle& window)noexcept;
-
-		std::unique_ptr<PlatformEvent> poll()noexcept;
-
+		std::unique_ptr<PlatformEvent> poll() noexcept;
 	private:
 		std::queue<std::unique_ptr<PlatformEvent>> _events;
 	};
 
-	class PlatformContext
+#pragma endregion PlatformEvents
+
+	class PlatformImpl;
+
+	class Platform final
 	{
 	public:
-		WindowHandle pushCreateWindowCmd(const WindowCreationOptions& options) noexcept;
-		void pushDestroyWindowCmd(const WindowHandle& handle) noexcept;
-		void pushSetWindowPositionCmd(const WindowHandle& handle, const WindowPosition& pos) noexcept;
-		void pushSetWindowSizeCmd(const WindowHandle& handle, const WindowSize& size) noexcept;
-		void pushSetWindowTitleCmd(const WindowHandle& handle, const std::string& title) noexcept;
-		void pushSetWindowFlagsCmd(const WindowHandle& handle, uint32_t flags, bool enabled) noexcept;
-		void pushToggleWindowFullscreenCmd(const WindowHandle& handle) noexcept;
-		void pushSetMouseLockToWindowCmd(const WindowHandle& handle, bool lock) noexcept;
+		static Platform& get() noexcept;
 
-		[[nodiscard]] void* getNativeWindowHandle(const WindowHandle& handle) const noexcept;
-		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getNativeWindowHandleType(const WindowHandle& handle) const noexcept;
-		[[nodiscard]] void* getNativeDisplayHandle() const noexcept;
+		Platform(const Platform& other) = delete;
+		Platform(Platform&& other) = delete;
 
-		static PlatformContext& get() noexcept;
+		const PlatformImpl& getImpl() const noexcept;
+		PlatformImpl& getImpl() noexcept;
 
-		std::unique_ptr<PlatformEvent> pollEvent() noexcept;
+		void requestWindowDestruction() noexcept;
+		void requestWindowModeChange(WindowMode mode) noexcept;
+		void requestWindowMouseLock(bool enabled) noexcept;
+
+		[[nodiscard]] void* getWindowHandle() const noexcept;
+		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getWindowHandleType() const noexcept;
+		[[nodiscard]] void* getDisplayHandle() const noexcept;
+
+		[[nodiscard]] std::unique_ptr<PlatformEvent> pollEvent() noexcept;
+	private:
+		Platform(PlatformImpl& impl) noexcept;
+		PlatformImpl& _impl;
 	};
-
-	
-
 }

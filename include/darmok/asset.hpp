@@ -15,7 +15,8 @@ namespace darmok
 	class AssetContext final
 	{
 	public:
-		[[nodiscard]] static AssetContext& get() noexcept;
+		AssetContext() noexcept;
+		~AssetContext() noexcept;
 
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
@@ -27,7 +28,6 @@ namespace darmok
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;
 	private:
-		AssetContext() noexcept;
 		std::unique_ptr<AssetContextImpl> _impl;
 	};
 }

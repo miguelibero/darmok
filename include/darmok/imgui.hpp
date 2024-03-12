@@ -5,25 +5,26 @@
 
 namespace darmok
 {
-	class ImguiViewComponentImpl;
-
 	class BX_NO_VTABLE IImguiRenderer
 	{
 	public:
 		virtual ~IImguiRenderer() = default;
-		virtual void imguiRender(bgfx::ViewId viewId) = 0;
+		virtual void imguiRender() = 0;
 	};
 
-    class ImguiViewComponent final : public ViewComponent
+
+	class ImguiAppComponentImpl;
+
+    class ImguiAppComponent final : public AppComponent
     {
     public:
-		ImguiViewComponent(IImguiRenderer& renderer, float fontSize = 18.0f);
+		ImguiAppComponent(IImguiRenderer& renderer, float fontSize = 18.0f) noexcept;
 
-		void init(bgfx::ViewId viewId) override;
+		void init(App& app) override;
 		void shutdown() override;
-		void render() override;
+		bgfx::ViewId render(bgfx::ViewId viewId) override;
 		void updateLogic(float dt) override;
 	private:
-		std::unique_ptr<ImguiViewComponentImpl> _impl;
+		std::unique_ptr<ImguiAppComponentImpl> _impl;
     };
 }

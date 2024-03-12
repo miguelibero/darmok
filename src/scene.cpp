@@ -4,30 +4,30 @@
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
+#include <darmok/window.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 
 namespace darmok
 {
     SceneImpl::SceneImpl()
-        : _init(false)
     {
     }
 
     void SceneImpl::addRenderer(std::unique_ptr<ISceneRenderer>&& renderer)
     {
-        if (_init)
+        if (_scene)
         {
-            renderer->init(_registry);
+            renderer->init(_scene.value(), _app.value());
         }
         _renderers.push_back(std::move(renderer));
     }
 
     void SceneImpl::addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater)
     {
-        if (_init)
+        if (_scene)
         {
-            updater->init(_registry);
+            updater->init(_scene.value(), _app.value());
         }
         _logicUpdaters.push_back(std::move(updater));
     }
@@ -42,18 +42,18 @@ namespace darmok
         return _registry;
     }
 
-    void SceneImpl::init()
+    void SceneImpl::init(Scene& scene, App& app)
     {
         for (auto& renderer : _renderers)
         {
-            renderer->init(_registry);
+            renderer->init(scene, app);
         }
         for (auto& updater : _logicUpdaters)
         {
-            updater->init(_registry);
+            updater->init(scene, app);
         }
-
-        _init = true;
+        _scene = scene;
+        _app = app;
     }
 
     void SceneImpl::updateLogic(float dt)
@@ -61,11 +61,7 @@ namespace darmok
         auto cams = _registry.view<Camera>();
         for (auto [entity, cam] : cams.each())
         {
-            auto filter = cam.getEntityFilter();
-            if (filter.hasValue())
-            {
-                filter.value().init(_registry);
-            }
+            cam.update(_registry);
         }
 
         auto transforms = _registry.view<Transform>();
@@ -80,46 +76,15 @@ namespace darmok
         }
     }
 
-    void SceneImpl::render(bgfx::ViewId viewId)
+    bgfx::ViewId SceneImpl::render(bgfx::ViewId viewId)
     {
         auto encoder = bgfx::begin();
-
-        auto cams = _registry.view<const Camera>();
-        for (auto [entity, cam] : cams.each())
+        for (auto& renderer : _renderers)
         {
-            if (cam.getViewId() != viewId)
-            {
-                continue;
-            }
-            auto& proj = cam.getMatrix();
-            auto trans = _registry.try_get<const Transform>(entity);
-            const void* viewPtr = nullptr;
-            if (trans != nullptr)
-            {
-                viewPtr = glm::value_ptr(trans->getInverse());
-            }
-
-            bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(proj));
-
-            auto viewRect = _registry.try_get<const ViewRect>(entity);
-            if (viewRect != nullptr)
-            {
-                viewRect->bgfxConfig(viewId);
-            }
-
-            auto filter = cam.getEntityFilter();
-
-            for (auto& renderer : _renderers)
-            {
-                EntityRuntimeView view;
-                if (filter.hasValue())
-                {
-                    filter.value()(view);
-                }                
-                renderer->render(view, *encoder, viewId);
-            }
+            viewId = renderer->render(*encoder, viewId);
         }
         bgfx::end(encoder);
+        return viewId;
     }
 
     Scene::Scene()
@@ -146,9 +111,9 @@ namespace darmok
         return _impl->getRegistry();
     }
 
-    void Scene::init()
+    void Scene::init(App& app)
     {
-        _impl->init();
+        _impl->init(*this, app);
     }
 
     void  Scene::updateLogic(float dt)
@@ -156,9 +121,9 @@ namespace darmok
         _impl->updateLogic(dt);
     }
 
-    void Scene::render(bgfx::ViewId viewId)
+    bgfx::ViewId Scene::render(bgfx::ViewId viewId)
     {
-        _impl->render(viewId);
+        return _impl->render(viewId);
     }
 
     void Scene::addRenderer(std::unique_ptr<ISceneRenderer>&& renderer)
@@ -181,18 +146,42 @@ namespace darmok
         return _scene;
     }
 
-    void SceneAppComponent::init()
+    void SceneAppComponent::init(App& app)
     {
-        _scene.init();
+        _scene.init(app);
     }
 
-    void SceneAppComponent::render(bgfx::ViewId viewId)
+    bgfx::ViewId SceneAppComponent::render(bgfx::ViewId viewId)
     {
-        _scene.render(viewId);
+        return _scene.render(viewId);
     }
 
     void SceneAppComponent::updateLogic(float dt)
     {
         _scene.updateLogic(dt);
+    }
+
+    void CameraSceneRenderer::init(Scene& scene, App& app)
+    {
+        _scene = scene;
+        _app = app;
+    }
+
+    bgfx::ViewId CameraSceneRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId)
+    {
+        if (!_scene.hasValue())
+        {
+            return viewId;
+        }
+        auto& registry = _scene->getRegistry();
+        auto cams = registry.view<const Camera>();
+        auto& win = _app->getWindow();
+        for (auto [entity, cam] : cams.each())
+        {
+            win.bgfxConfig(viewId);
+            auto entities = cam.bgfxConfig(registry, viewId);
+            viewId = render(entities, encoder, viewId);
+        }
+        return viewId;
     }
 }

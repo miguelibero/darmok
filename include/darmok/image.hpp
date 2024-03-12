@@ -13,24 +13,23 @@ namespace darmok
     class Image final
 	{
 	public:
-		Image(bimg::ImageContainer* container);
-		~Image();
-		bool empty() const;
-
-		glm::uvec2 getSize() const;
-		uint32_t getDepth() const;
-		bool isCubeMap() const;
-		uint8_t getMipCount() const;
-		uint16_t getLayerCount() const;
-		bimg::TextureFormat::Enum getFormat() const;
-
-		const bgfx::Memory* makeRef() const;
-		bgfx::TextureInfo getTextureInfo() const;
-	private:
-		bimg::ImageContainer* _container;
-
+		Image(bimg::ImageContainer* container) noexcept;
+		~Image() noexcept;
 		Image(const Image& other) = delete;
 		Image& operator=(const Image& other) = delete;
+		
+		[[nodiscard]] bool empty() const noexcept;
+		[[nodiscard]] glm::uvec2 getSize() const noexcept;
+		[[nodiscard]] uint32_t getDepth() const noexcept;
+		[[nodiscard]] bool isCubeMap() const noexcept;
+		[[nodiscard]] uint8_t getMipCount() const noexcept;
+		[[nodiscard]] uint16_t getLayerCount() const noexcept;
+		[[nodiscard]] bimg::TextureFormat::Enum getFormat() const noexcept;
+		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
+		[[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
+
+	private:
+		bimg::ImageContainer* _container;
 	};
 
 	class BX_NO_VTABLE IImageLoader

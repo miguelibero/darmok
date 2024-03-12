@@ -215,7 +215,8 @@ namespace darmok
     class ModelMaterial final
     {
     public:
-        ModelMaterial(aiMaterial* ptr, const std::string& basePath, aiScene* scene = nullptr);
+        ModelMaterial(aiMaterial* ptr, const aiScene* scene = nullptr, const std::string& basePath = {},
+            const OptionalRef<ITextureLoader>& textureLoader = nullptr, bx::AllocatorI* alloc = nullptr);
         std::string_view getName() const;
         ModelMaterialTextureCollection getTextures(ModelMaterialTextureType type) const;
         const ModelMaterialPropertyCollection& getProperties() const;
@@ -226,10 +227,12 @@ namespace darmok
         float getOpacity() const;
     private:
         aiMaterial* _ptr;
-        aiScene* _scene;
+        const aiScene* _scene;
         std::string _basePath;
         ModelMaterialPropertyCollection _properties;
         std::shared_ptr<Material> _material;
+        OptionalRef<ITextureLoader> _textureLoader;
+        bx::AllocatorI* _alloc;
 
         std::pair<MaterialTextureType, std::shared_ptr<Texture>> createMaterialTexture(const ModelMaterialTexture& modelTexture) const;
     };
@@ -502,11 +505,15 @@ namespace darmok
     class ModelMaterialCollection final : public MemReadOnlyCollection<ModelMaterial>
     {
     public:
-        ModelMaterialCollection(const aiScene* ptr, const std::string& basePath);
+        ModelMaterialCollection(const aiScene* ptr, const std::string& basePath = {},
+            const OptionalRef<ITextureLoader>& textureLoader = nullptr,
+            bx::AllocatorI* alloc = nullptr);
         size_t size() const override;
     private:
         const aiScene* _ptr;
         std::string _basePath;
+        OptionalRef<ITextureLoader> _textureLoader;
+        bx::AllocatorI* _alloc;
 
         ModelMaterial create(size_t pos) const override;
     };
@@ -525,7 +532,7 @@ namespace darmok
     class Model final
 	{
     public:
-        Model(const aiScene* ptr, const std::string& path = {});
+        Model(const aiScene* ptr, const std::string& path = {}, const OptionalRef<ITextureLoader>& textureLoader = nullptr, bx::AllocatorI* alloc = nullptr);
         std::string_view getName() const;
         const std::string& getPath() const;
         const ModelNode& getRootNode() const;

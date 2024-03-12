@@ -4,8 +4,8 @@
 #include <darmok/utils.hpp>
 #include <string_view>
 #include <vector>
-#include <set>
 #include <array>
+#include <unordered_set>
 #include <unordered_map>
 
 #include <bgfx/bgfx.h>
@@ -118,8 +118,8 @@ namespace darmok
         size_t _size;
         Data _data;
         bx::AllocatorI* _alloc;
-        std::set<bgfx::Attrib::Enum> _markedAll;
-        std::unordered_map<bgfx::Attrib::Enum, std::set<uint32_t>> _marked;
+        std::unordered_set<bgfx::Attrib::Enum> _markedAll;
+        std::unordered_map<bgfx::Attrib::Enum, std::unordered_set<uint32_t>> _marked;
 
         void mark(bgfx::Attrib::Enum attr, uint32_t index) noexcept;
         void markAll(bgfx::Attrib::Enum attr) noexcept;

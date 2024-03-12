@@ -37,6 +37,9 @@ namespace darmok
     {
     public:
         FrameAnimationUpdater() = default;
+        void init(Scene& scene, App& app) override;
         void update(float deltaTime) override;
+    private:
+        OptionalRef<Scene> _scene;
     };
 }

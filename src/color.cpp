@@ -47,9 +47,9 @@ namespace darmok
         return (Component*)this;
     }
 
-    const Color Colors::black = { 0, 0, 0, Color::maxValue };
-    const Color Colors::white = { Color::maxValue, Color::maxValue, Color::maxValue, Color::maxValue };
-    const Color Colors::red = { Color::maxValue, 0, 0, Color::maxValue };
-    const Color Colors::green = { 0, Color::maxValue, 0, Color::maxValue };
-    const Color Colors::blue = { 0, 0, Color::maxValue, Color::maxValue };
+    const Color Color::black = { 0, 0, 0, Color::maxValue };
+    const Color Color::white = { Color::maxValue, Color::maxValue, Color::maxValue, Color::maxValue };
+    const Color Color::red = { Color::maxValue, 0, 0, Color::maxValue };
+    const Color Color::green = { 0, Color::maxValue, 0, Color::maxValue };
+    const Color Color::blue = { 0, 0, Color::maxValue, Color::maxValue };
 }

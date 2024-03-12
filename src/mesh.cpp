@@ -3,6 +3,7 @@
 #include <darmok/material.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/camera.hpp>
 
 namespace darmok
 {
@@ -205,10 +206,11 @@ namespace darmok
 		return *this;
 	}
 
-	void MeshRenderer::render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId)
+	bgfx::ViewId MeshRenderer::render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId)
 	{
-		auto& registry = getRegistry();
+		auto& registry = _scene->getRegistry();
 		entities.iterate(registry.storage<MeshComponent>());
+		auto rendered = false;
 		for (auto entity : entities)
 		{
 			auto& comp = registry.get<const MeshComponent>(entity);
@@ -217,11 +219,17 @@ namespace darmok
 			{
 				continue;
 			}
+			rendered = true;
 			Transform::bgfxConfig(entity, encoder, registry);
 			for (auto& mesh : meshes)
 			{
 				mesh->render(encoder, viewId);
 			}
 		}
+		if (rendered)
+		{
+			viewId++;
+		}
+		return viewId;
 	}
 }

@@ -13,7 +13,7 @@
 namespace darmok
 {
     template<typename T>
-    static const bgfx::Memory* makeVectorRef(const std::vector<T>& v)
+    static const bgfx::Memory* makeVectorRef(const std::vector<T>& v) noexcept
     {
         if (v.empty())
         {
@@ -30,9 +30,9 @@ namespace darmok
         DataView(const void* ptr = nullptr, size_t size = 0) noexcept;
         DataView(const Data& data) noexcept;
         DataView(const bgfx::Memory& mem) noexcept;
-        const void* ptr() const noexcept;
-        size_t size() const noexcept;
-        bool empty() const noexcept;
+        [[nodiscard]] const void* ptr() const noexcept;
+        [[nodiscard]] size_t size() const noexcept;
+        [[nodiscard]] bool empty() const noexcept;
 
     private:
         size_t _size;
@@ -52,11 +52,11 @@ namespace darmok
         Data& operator=(Data&& other) noexcept;
         operator DataView() const;
         
-        void* ptr() const noexcept;
-        size_t size() const noexcept;
-        bool empty() const noexcept;
+        [[nodiscard]] void* ptr() const noexcept;
+        [[nodiscard]] size_t size() const noexcept;
+        [[nodiscard]] bool empty() const noexcept;
+        [[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
         void clear() noexcept;
-        const bgfx::Memory* makeRef() const noexcept;
 
         template<typename T>
         static Data copy(const std::vector<T>& v, bx::AllocatorI* alloc = nullptr) noexcept

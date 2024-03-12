@@ -38,28 +38,34 @@ namespace darmok
         }
     };
 
+    class Scene;
+
     class BX_NO_VTABLE ISceneRenderer
     {
     public:
         virtual ~ISceneRenderer() = default;
-        virtual void init(EntityRegistry& registry) { _registry = registry; };
-        virtual void render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
-    private:
-        OptionalRef<EntityRegistry> _registry;
+        virtual void init(Scene& scene, App& app) { };
+        virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
+    };
+
+    class CameraSceneRenderer : public ISceneRenderer
+    {
+    public:
+        void init(Scene& scene, App& app) override;
+        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
     protected:
-        EntityRegistry& getRegistry() const { return _registry.value(); }
+        OptionalRef<Scene> _scene;
+        OptionalRef<App> _app;
+
+        virtual bgfx::ViewId render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
     };
 
     class BX_NO_VTABLE ISceneLogicUpdater
     {
     public:
         virtual ~ISceneLogicUpdater() = default;
-        virtual void init(EntityRegistry& registry) { _registry = registry; };
+        virtual void init(Scene& scene, App& app) { };
         virtual void update(float deltaTime) = 0;
-    private:
-        OptionalRef<EntityRegistry> _registry;
-    protected:
-        EntityRegistry& getRegistry() const { return _registry.value(); }
     };
 
     class Scene final
@@ -105,17 +111,17 @@ namespace darmok
             return ref;
         }
 
-        void init();
+        void init(App& app);
         void updateLogic(float dt);
-        void render(bgfx::ViewId viewId);
+        bgfx::ViewId render(bgfx::ViewId viewId);
 
         void addRenderer(std::unique_ptr<ISceneRenderer>&& renderer);
         void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
 
-    private:
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
 
+    private:
         std::unique_ptr<SceneImpl> _impl;
     };
     
@@ -125,8 +131,8 @@ namespace darmok
         Scene& getScene();
         const Scene& getScene() const;
 
-        void init() override;
-        void render(bgfx::ViewId viewId) override;
+        void init(App& app) override;
+        bgfx::ViewId render(bgfx::ViewId viewId) override;
         void updateLogic(float dt) override;
     private:
         Scene _scene;

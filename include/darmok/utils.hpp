@@ -147,4 +147,13 @@ namespace darmok
 
         virtual T create(size_t pos) const = 0;
     };
+
+    struct Utf8Char final
+    {
+        uint32_t data;
+        uint8_t len;
+
+        Utf8Char(uint32_t data = 0, uint8_t len = 0) noexcept;
+        static Utf8Char encode(uint32_t scancode) noexcept;
+    };
 }

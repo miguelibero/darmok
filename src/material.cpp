@@ -133,7 +133,7 @@ namespace darmok
 		return itr->second;
 	}
 
-	void Material::submit(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
+	void Material::submit(bgfx::Encoder& encoder, bgfx::ViewId viewId, uint32_t depth) const
 	{
 		if (_program == nullptr)
 		{
@@ -147,14 +147,14 @@ namespace darmok
 		uint64_t state = BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
 			| BGFX_STATE_WRITE_Z
-			| BGFX_STATE_DEPTH_TEST_LEQUAL
+			| BGFX_STATE_DEPTH_TEST_LEQUAL // TODO: should be less?
 			| BGFX_STATE_CULL_CCW
 			| BGFX_STATE_MSAA
 			| BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
 			;
 
 		encoder.setState(state);
-		encoder.submit(viewId, _program->getHandle());
+		encoder.submit(viewId, _program->getHandle(), depth);
 	}
 
 	void Material::submitTextures(bgfx::Encoder& encoder) const

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <darmok/input.hpp>
-#include <darmok/window.hpp>
 #include <darmok/utils.hpp>
 
 #include <string>
 #include <unordered_map>
 #include <array>
+#include <unordered_set>
 
 namespace darmok
 {
@@ -16,25 +16,24 @@ namespace darmok
 	class KeyboardImpl final
 	{
 	public:
-		KeyboardImpl();
-		bool getKey(KeyboardKey key) const;
-		bool getKey(KeyboardKey key, uint8_t& modifiers) const;
-		const KeyboardKeys& getKeys() const;
-		uint8_t getModifiers() const;
-		Utf8Char popChar();
-		void flush();
-
-		void reset();
-		void setKey(KeyboardKey key, uint8_t modifiers, bool down);
-		void pushChar(const Utf8Char& data);
-
-	private:
-
+		KeyboardImpl() noexcept;
 		KeyboardImpl(const KeyboardImpl& other) = delete;
 		KeyboardImpl(KeyboardImpl&& other) = delete;
 
-		static uint32_t encodeKey(bool down, uint8_t modifiers);
-		static bool decodeKey(uint32_t state, uint8_t& modifiers);
+		bool getKey(KeyboardKey key) const noexcept;
+		bool getKey(KeyboardKey key, uint8_t& modifiers) const noexcept;
+		const KeyboardKeys& getKeys() const noexcept;
+		uint8_t getModifiers() const noexcept;
+		Utf8Char popChar() noexcept;
+		void flush() noexcept;
+
+		void reset() noexcept;
+		void setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
+		void pushChar(const Utf8Char& data) noexcept;
+
+	private:
+		static uint32_t encodeKey(bool down, uint8_t modifiers) noexcept;
+		static bool decodeKey(uint32_t state, uint8_t& modifiers) noexcept;
 
 		KeyboardKeys _keys;
 		std::array<Utf8Char, 256> _chars;
@@ -49,31 +48,28 @@ namespace darmok
 	class MouseImpl final
 	{
 	public:
-		MouseImpl();
-		void setWheelDelta(uint16_t wheelDelta);
-		bool getButton(MouseButton button) const;
-		RelativeMousePosition popRelativePosition();
-		const MousePosition& getPosition() const;
-		const MouseButtons& getButtons() const;
-		bool getLocked() const;
-		const WindowHandle& getWindow() const;
-
-		bool setLocked(bool lock);
-		void setResolution(const WindowSize& size);
-		void setPosition(const MousePosition& pos);
-		void setButton(MouseButton button, bool down);
-		void setWindow(const WindowHandle& win);
-
-	private:
+		MouseImpl() noexcept;
 		MouseImpl(const MouseImpl& other) = delete;
 		MouseImpl(MouseImpl&& other) = delete;
 
-		WindowHandle _window;
+		[[nodiscard]] void setWheelDelta(uint16_t wheelDelta) noexcept;
+		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
+		[[nodiscard]] RelativeMousePosition popRelativePosition() noexcept;
+		[[nodiscard]] const MousePosition& getPosition() const noexcept;
+		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
+		[[nodiscard]] bool getLocked() const noexcept;
+
+		bool setLocked(bool lock) noexcept;
+		void setResolution(const glm::uvec2& size) noexcept;
+		void setPosition(const MousePosition& pos) noexcept;
+		void setButton(MouseButton button, bool down) noexcept;
+
+	private:
 		MousePosition _absolute;
 		RelativeMousePosition _relative;
 
 		MouseButtons _buttons;
-		WindowSize _size;
+		glm::uvec2 _size;
 		uint16_t _wheelDelta;
 		bool _lock;
 	};
@@ -87,22 +83,21 @@ namespace darmok
 	class GamepadImpl final
 	{
 	public:
-		GamepadImpl();
-
-		int32_t getAxis(GamepadAxis key) const;
-		bool getButton(GamepadButton button) const;
-		const GamepadButtons& getButtons() const;
-		const GamepadAxes& getAxes() const;
-		bool isConnected() const;
-
-		void init(const GamepadHandle& handle);
-		void reset();
-		void setAxis(GamepadAxis axis, int32_t value);
-		void setButton(GamepadButton button, bool down);
-	private:
+		GamepadImpl() noexcept;
 		GamepadImpl(const GamepadImpl& other) = delete;
 		GamepadImpl(GamepadImpl&& other) = delete;
 
+		[[nodiscard]] int32_t getAxis(GamepadAxis key) const noexcept;
+		[[nodiscard]] bool getButton(GamepadButton button) const noexcept;
+		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
+		[[nodiscard]] const GamepadAxes& getAxes() const noexcept;
+		[[nodiscard]] bool isConnected() const noexcept;
+
+		void init(const GamepadHandle& handle) noexcept;
+		void reset() noexcept;
+		void setAxis(GamepadAxis axis, int32_t value) noexcept;
+		void setButton(GamepadButton button, bool down) noexcept;
+	private:
 		GamepadHandle _handle;
 		GamepadButtons _buttons;
 		GamepadAxes _axes;
@@ -115,26 +110,25 @@ namespace darmok
 	class InputImpl final
 	{
 	public:
-		InputImpl();
-
-		void process();
-		void reset();
-		void addBindings(const std::string& name, std::vector<InputBinding>&& bindings);
-		void removeBindings(const std::string& name);
-		Keyboard& getKeyboard();
-		Mouse& getMouse();
-		Gamepad& getGamepad(const GamepadHandle& handle);
-		Gamepads& getGamepads();
-
-		void update();
-		const InputState& getState() const;
-
-	private:
+		InputImpl() noexcept;
 		InputImpl(const InputImpl& other) = delete;
 		InputImpl(InputImpl&& other) = delete;
 
-		bool bindingTriggered(InputBinding& binding);
-		void processBinding(InputBinding& binding);
+		void process() noexcept;
+		void reset() noexcept;
+		void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
+		void removeBindings(std::string_view name) noexcept;
+		Keyboard& getKeyboard() noexcept;
+		Mouse& getMouse() noexcept;
+		OptionalRef<Gamepad> getGamepad(const GamepadHandle& handle) noexcept;
+		Gamepads& getGamepads() noexcept;
+
+		void update() noexcept;
+		const InputState& getState() const noexcept;
+
+	private:
+		bool bindingTriggered(InputBinding& binding) noexcept;
+		void processBinding(InputBinding& binding) noexcept;
 
 		Keyboard _keyboard;
 		Mouse _mouse;
@@ -142,7 +136,7 @@ namespace darmok
 		InputState _state;
 
 		std::unordered_map<std::string, std::vector<InputBinding>> _bindings;
-		std::unordered_map<std::size_t, bool> _bindingOnce;
+		std::unordered_set<InputBindingKey> _bindingOnce;
 	};
 
 #pragma endregion Input

@@ -4,17 +4,17 @@
 
 namespace darmok
 {
-    Image::Image(bimg::ImageContainer* container)
+    Image::Image(bimg::ImageContainer* container) noexcept
 		: _container(container)
 	{
 	}
 
-	Image::~Image()
+	Image::~Image() noexcept
 	{
 		bimg::imageFree(_container);
 	}
 
-	const bgfx::Memory* Image::makeRef() const
+	const bgfx::Memory* Image::makeRef() const noexcept
 	{
 		return bgfx::makeRef(
 			_container->m_data
@@ -22,42 +22,42 @@ namespace darmok
 		);
 	}
 
-	bool Image::empty() const
+	bool Image::empty() const noexcept
 	{
 		return _container == nullptr || _container->m_size == 0;
 	}
 
-	glm::uvec2 Image::getSize() const
+	glm::uvec2 Image::getSize() const noexcept
 	{
 		return glm::uvec2(_container->m_width, _container->m_height);
 	}
 
-	uint32_t Image::getDepth() const
+	uint32_t Image::getDepth() const noexcept
 	{
 		return _container->m_depth;
 	}
 
-	bool Image::isCubeMap() const
+	bool Image::isCubeMap() const noexcept
 	{
 		return _container->m_cubeMap;
 	}
 
-	uint8_t Image::getMipCount() const
+	uint8_t Image::getMipCount() const noexcept
 	{
 		return _container->m_numMips;
 	}
 
-	uint16_t Image::getLayerCount() const
+	uint16_t Image::getLayerCount() const noexcept
 	{
 		return _container->m_numLayers;
 	}
 
-	bimg::TextureFormat::Enum Image::getFormat() const
+	bimg::TextureFormat::Enum Image::getFormat() const noexcept
 	{
 		return _container->m_format;
 	}
 
-	bgfx::TextureInfo Image::getTextureInfo() const
+	bgfx::TextureInfo Image::getTextureInfo() const noexcept
 	{
 		bgfx::TextureInfo info;
 		bgfx::calcTextureSize(
@@ -74,7 +74,7 @@ namespace darmok
 	}
 
 
-	DataImageLoader::DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI* alloc)
+	DataImageLoader::DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI* alloc) noexcept
 		: _dataLoader(dataLoader)
 		, _allocator(alloc)
 	{

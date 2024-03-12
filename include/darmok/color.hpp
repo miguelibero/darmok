@@ -6,8 +6,14 @@ namespace darmok
 {
     struct Color
     {
-        typedef uint8_t Component;
+        using Component = uint8_t;
         static const Component maxValue;
+
+        static const Color black;
+        static const Color white;
+        static const Color red;
+        static const Color green;
+        static const Color blue;
 
         Component r;
         Component g;
@@ -23,14 +29,5 @@ namespace darmok
         [[nodiscard]] glm::vec4 getVector() const noexcept;
         [[nodiscard]] const Component* ptr() const noexcept;
         [[nodiscard]] Component* ptr() noexcept;
-    };
-
-    struct Colors
-    {
-        static const Color black;
-        static const Color white;
-        static const Color red;
-        static const Color green;
-        static const Color blue;
     };
 }

@@ -61,9 +61,18 @@ namespace darmok
         }
     }
 
+    void FrameAnimationUpdater::init(Scene& scene, App& app)
+    {
+        _scene = scene;
+    }
+
     void FrameAnimationUpdater::update(float deltaTime)
     {
-        auto anims = getRegistry().view<FrameAnimationComponent>();
+        if (!_scene.hasValue())
+        {
+            return;
+        }
+        auto anims = _scene->getRegistry().view<FrameAnimationComponent>();
         for (auto [entity, anim] : anims.each())
         {
             anim.update(deltaTime);

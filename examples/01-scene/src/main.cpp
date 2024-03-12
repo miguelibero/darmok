@@ -8,6 +8,9 @@
 #include <darmok/input.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/anim.hpp>
+#include <darmok/transform.hpp>
+#include <darmok/camera.hpp>
+#include <darmok/window.hpp>
 
 namespace
 {
@@ -29,9 +32,14 @@ namespace
 		{
 		}
 
+		void init(darmok::Scene& scene, darmok::App& app) override
+		{
+			_app = app;
+		}
+
 		void update(float dt) override
 		{
-			auto size = darmok::WindowContext::get().getWindow().getSize();
+			auto size = _app->getWindow().getSize();
 			size -= _size * glm::vec2(_trans.getScale());
 			auto pos = _trans.getPosition() + (glm::vec3(_dir, 0) * dt);
 			if (pos.x > size.x)
@@ -57,6 +65,7 @@ namespace
 			_trans.setPosition(pos);
 		}
 	private:
+		darmok::OptionalRef<darmok::App> _app;
 		darmok::Transform& _trans;
 		glm::vec2 _size;
 		glm::vec2 _dir;
@@ -88,14 +97,19 @@ namespace
 		void init(const std::vector<std::string>& args) override
 		{
 			App::init(args);
-			setWindowView(1);
 
 			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
 			scene.addRenderer<darmok::MeshRenderer>();
 			scene.addRenderer<darmok::Physics2DDebugRenderer>();
 			scene.addLogicUpdater<darmok::FrameAnimationUpdater>();
 
-			glm::vec2 size = darmok::WindowContext::get().getWindow().getSize();
+			glm::vec2 size = getWindow().getSize();
+
+			auto cam2d = scene.createEntity();
+			scene.addComponent<darmok::Camera>(cam2d)
+				.setOrtho(0.f, size.x, 0.f, size.y)
+				.setEntityComponentFilter<Culling2D>()
+				;
 
 			auto cam3d = scene.createEntity();
 			scene.addComponent<darmok::Transform>(cam3d)
@@ -107,13 +121,6 @@ namespace
 				.setEntityComponentFilter<Culling3D>()
 				;
 
-			auto cam2d = scene.createEntity();
-			scene.addComponent<darmok::Camera>(cam2d)
-				.setOrtho(0.f, size.x, 0.f, size.y)
-				.setEntityComponentFilter<Culling2D>()
-				.setViewId(1)
-				;
-
 			createBouncingSprite(scene);
 			createSpriteAnimation(scene);
 			createRotatingCube(scene);
@@ -121,7 +128,7 @@ namespace
 
 		void createBouncingSprite(darmok::Scene& scene)
 		{
-			auto tex = darmok::AssetContext::get().getTextureLoader()("assets/engine.png");
+			auto tex = getAssets().getTextureLoader()("assets/engine.png");
 			auto sprite = scene.createEntity();
 			auto& trans = scene.addComponent<darmok::Transform>(sprite);
 			float scale = 0.5;
@@ -135,7 +142,7 @@ namespace
 
 		void createSpriteAnimation(darmok::Scene& scene)
 		{
-			auto texAtlas = darmok::AssetContext::get().getTextureAtlasLoader()("assets/warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
+			auto texAtlas = getAssets().getTextureAtlasLoader()("assets/warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
 			static const std::string animNamePrefix = "Attack/";
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = scene.createEntity();
@@ -145,7 +152,7 @@ namespace
 			scene.addComponent<darmok::FrameAnimationComponent>(anim, frames, meshComp);
 			scene.addComponent<darmok::BoxCollider2D>(anim, glm::vec2(animBounds.size) * scale);
 			scene.addComponent<Culling2D>(anim);
-			auto size = darmok::WindowContext::get().getWindow().getSize();
+			auto& size = getWindow().getSize();
 			scene.addComponent<darmok::Transform>(anim)
 				.setPosition(glm::vec3(size, 0) / 2.f)
 				.setPivot(glm::vec3(animBounds.size.x, animBounds.size.y, 0.f) / 2.f);
@@ -153,10 +160,10 @@ namespace
 
 		void createRotatingCube(darmok::Scene& scene)
 		{
-			auto texture = darmok::AssetContext::get().getTextureLoader()("assets/brick.png");
+			auto texture = getAssets().getTextureLoader()("assets/brick.png");
 			auto material = darmok::Material::createStandard(darmok::StandardMaterialType::Basic);
 			material->setTexture(darmok::MaterialTextureType::Diffuse, texture);
-			material->setColor(darmok::MaterialColorType::Diffuse, darmok::Colors::red);
+			material->setColor(darmok::MaterialColorType::Diffuse, darmok::Color::red);
 			auto cube = scene.createEntity();
 			scene.addComponent<Culling3D>(cube);
 			scene.addComponent<darmok::MeshComponent>(cube, darmok::Mesh::createCube(material));

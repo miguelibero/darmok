@@ -41,9 +41,7 @@ namespace
 			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
 			scene.addRenderer<darmok::MeshRenderer>();
 
-			auto& assets = darmok::AssetContext::get();
-			
-			auto model = assets.getModelLoader()("assets/human.fbx");
+			auto model = getAssets().getModelLoader()("assets/human.fbx");
 			model->addToScene(scene, [&scene](const darmok::ModelNode& node, darmok::Entity entity){
 				if (node.getName() == "human")
 				{

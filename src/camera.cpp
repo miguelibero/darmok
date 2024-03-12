@@ -1,18 +1,13 @@
 #include <darmok/camera.hpp>
+#include <darmok/transform.hpp>
 #include <bx/math.h>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
 {
-    Camera::Camera(const glm::mat4& matrix, bgfx::ViewId viewId) noexcept
+    Camera::Camera(const glm::mat4& matrix) noexcept
         : _matrix(matrix)
-        , _viewId(viewId)
     {
-    }
-
-    const glm::mat4& Camera::getMatrix() const noexcept
-    {
-        return _matrix;
     }
 
     Camera& Camera::setMatrix(const glm::mat4& matrix) noexcept
@@ -39,40 +34,48 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setViewId(bgfx::ViewId viewId) noexcept
-    {
-        _viewId = viewId;
-        return *this;
-    }
-
-    bgfx::ViewId Camera::getViewId() const noexcept
-    {
-        return _viewId;
-    }
-
     Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept
     {
         _entityFilter = std::move(filter);
         return *this;
     }
 
-    OptionalRef<const IEntityFilter> Camera::getEntityFilter() const noexcept
+    void Camera::update(EntityRegistry& registry) noexcept
     {
-        if (_entityFilter)
+        if (_entityFilter != nullptr)
         {
-            return *_entityFilter;
+            _entityFilter->init(registry);
         }
-        return nullptr;
     }
 
-    OptionalRef<IEntityFilter> Camera::getEntityFilter() noexcept
+    EntityRuntimeView Camera::bgfxConfig(EntityRegistry& registry, bgfx::ViewId viewId) const noexcept
     {
-        if (_entityFilter)
+        auto projPtr = glm::value_ptr(_matrix);
+
+        auto entity = entt::to_entity(registry, *this);
+        auto trans = registry.try_get<const Transform>(entity);
+        const void* viewPtr = nullptr;
+        if (trans != nullptr)
         {
-            return *_entityFilter;
+            viewPtr = glm::value_ptr(trans->getInverse());
         }
-        return nullptr;
+        bgfx::setViewTransform(viewId, viewPtr, projPtr);
+
+        auto viewRect = registry.try_get<const ViewRect>(entity);
+        if (viewRect != nullptr)
+        {
+            viewRect->bgfxConfig(viewId);
+        }
+
+        EntityRuntimeView entities;
+        if (_entityFilter != nullptr)
+        {
+            (*_entityFilter)(entities);
+        }
+
+        return entities;
     }
+
 
     ViewRect::ViewRect(const ViewVec& size, const ViewVec& origin) noexcept
         : _size(size), _origin(origin)

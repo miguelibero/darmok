@@ -19,16 +19,14 @@ namespace darmok
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
 
-        void init();
+        void init(Scene& sceme, App& app);
         void updateLogic(float dt);
-        void render(bgfx::ViewId viewId);
+        bgfx::ViewId render(bgfx::ViewId viewId);
     private:
-        bool _init;
         std::vector<std::unique_ptr<ISceneRenderer>> _renderers;
         std::vector<std::unique_ptr<ISceneLogicUpdater>> _logicUpdaters;
-
         EntityRegistry _registry;
-
-        void onCameraAdded(Entity entity);
+        OptionalRef<Scene> _scene;
+        OptionalRef<App> _app;
     };
 }

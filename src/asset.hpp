@@ -19,7 +19,7 @@ namespace darmok
 	{
 		typedef bx::FileReader super;
 	public:
-		void setBasePath(const std::string& basePath);
+		void setBasePath(const std::string& basePath) noexcept;
 		bool open(const bx::FilePath& filePath, bx::Error* err) override;
 	private:
 		std::string _basePath;
@@ -29,7 +29,7 @@ namespace darmok
 	{
 		typedef bx::FileWriter super;
 	public:
-		void setBasePath(const std::string& basePath);
+		void setBasePath(const std::string& basePath) noexcept;
 		virtual bool open(const bx::FilePath& filePath, bool append, bx::Error* err) override;
 	private:
 		std::string _basePath;
@@ -39,12 +39,12 @@ namespace darmok
 	{
 	public:
 		AssetContextImpl();
-		IImageLoader& getImageLoader() noexcept;
-		IProgramLoader& getProgramLoader() noexcept;
-		ITextureLoader& getTextureLoader() noexcept;
-		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
-		IModelLoader& getModelLoader() noexcept;
-		IVertexLayoutLoader& getVertexLayoutLoader() noexcept;
+		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
+		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
+		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
+		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
+		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
+		[[nodiscard]] IVertexLayoutLoader& getVertexLayoutLoader() noexcept;
 
 		bx::AllocatorI* getAllocator() noexcept;
 		void setBasePath(const std::string& path) noexcept;

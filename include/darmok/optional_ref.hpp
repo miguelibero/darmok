@@ -58,13 +58,21 @@ namespace darmok
             return _value != other;
         }
 
-        T* operator->() noexcept
+        T* operator->()
         {
+            if (!hasValue())
+            {
+                throw std::bad_optional_access();
+            }
             return _value;
         }
 
-        const T* operator->() const noexcept
+        const T* operator->() const
         {
+            if (!hasValue())
+            {
+                throw std::bad_optional_access();
+            }
             return _value;
         }
 

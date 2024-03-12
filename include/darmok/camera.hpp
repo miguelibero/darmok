@@ -10,17 +10,12 @@ namespace darmok
     class Camera final
     {
     public:
-        Camera(const glm::mat4& matrix = {}, bgfx::ViewId viewId = 0) noexcept;
-        [[nodiscard]] const glm::mat4& getMatrix() const noexcept;
-        [[nodiscard]] bgfx::ViewId getViewId() const noexcept;
-        [[nodiscard]] OptionalRef<const IEntityFilter> getEntityFilter() const noexcept;
-        [[nodiscard]] OptionalRef<IEntityFilter> getEntityFilter() noexcept;
+        Camera(const glm::mat4& matrix = {}) noexcept;
 
         Camera& setMatrix(const glm::mat4& matrix) noexcept;
         Camera& setProjection(float fovy, float aspect, float near, float far) noexcept;
         Camera& setProjection(float fovy, float aspect, float near = 0.f) noexcept;
         Camera& setOrtho(float left, float right, float bottom, float top, float near = 0.f, float far = bx::kFloatLargest, float offset = 0.f) noexcept;
-        Camera& setViewId(bgfx::ViewId viewId) noexcept;
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
         template<typename T>
@@ -28,9 +23,12 @@ namespace darmok
         {
             return setEntityFilter(std::make_unique<EntityComponentFilter<T>>());
         }
+
+        void update(EntityRegistry& registry) noexcept;
+        EntityRuntimeView bgfxConfig(EntityRegistry& registry, bgfx::ViewId viewId) const noexcept;
+
     private:
         glm::mat4 _matrix;
-        bgfx::ViewId _viewId;
         std::unique_ptr<IEntityFilter> _entityFilter;
     };
 

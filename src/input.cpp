@@ -6,13 +6,7 @@ namespace darmok
 {
 #pragma region Keyboard
 
-	Utf8Char::Utf8Char(uint32_t pdata, uint8_t plen)
-		: data(pdata)
-		, len(pdata)
-	{
-	}
-
-	uint32_t KeyboardImpl::encodeKey(bool down, uint8_t modifiers)
+	uint32_t KeyboardImpl::encodeKey(bool down, uint8_t modifiers) noexcept
 	{
 		uint32_t state = 0;
 		state |= uint32_t(down ? modifiers : 0) << 16;
@@ -20,53 +14,53 @@ namespace darmok
 		return state;
 	}
 
-	bool KeyboardImpl::decodeKey(uint32_t state, uint8_t& modifiers)
+	bool KeyboardImpl::decodeKey(uint32_t state, uint8_t& modifiers) noexcept
 	{
 		modifiers = (state >> 16) & 0xff;
 		return 0 != ((state >> 8) & 0xff);
 	}
 
-	KeyboardImpl::KeyboardImpl()
+	KeyboardImpl::KeyboardImpl() noexcept
 		: _keys{}
 		, _charsRead(0)
 		, _charsWrite(0)
 	{
 	}
 
-	void KeyboardImpl::reset()
+	void KeyboardImpl::reset() noexcept
 	{
 		_keys.fill(0);
 		flush();
 	}
 
-	void KeyboardImpl::setKey(KeyboardKey key, uint8_t modifiers, bool down)
+	void KeyboardImpl::setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept
 	{
 		auto k = to_underlying(key);
 		_keys[k] = encodeKey(down, modifiers);
 	}
 
-	void KeyboardImpl::pushChar(const Utf8Char& data)
+	void KeyboardImpl::pushChar(const Utf8Char& data) noexcept
 	{
 		_chars[_charsWrite] = data;
 		_charsWrite = (_charsWrite + 1) % _chars.size();
 	}
 
-	bool KeyboardImpl::getKey(KeyboardKey key) const
+	bool KeyboardImpl::getKey(KeyboardKey key) const noexcept
 	{
 		return _keys[to_underlying(key)];
 	}
 
-	bool KeyboardImpl::getKey(KeyboardKey key, uint8_t& modifiers) const
+	bool KeyboardImpl::getKey(KeyboardKey key, uint8_t& modifiers) const noexcept
 	{
 		return decodeKey(_keys[to_underlying(key)], modifiers);
 	}
 
-	const KeyboardKeys& KeyboardImpl::getKeys() const
+	const KeyboardKeys& KeyboardImpl::getKeys() const noexcept
 	{
 		return _keys;
 	}
 
-	uint8_t KeyboardImpl::getModifiers() const
+	uint8_t KeyboardImpl::getModifiers() const noexcept
 	{
 		uint8_t modifiers = 0;
 		constexpr auto max = (uint32_t)to_underlying(KeyboardKey::Count);
@@ -77,7 +71,7 @@ namespace darmok
 		return modifiers;
 	}
 
-	Utf8Char KeyboardImpl::popChar()
+	Utf8Char KeyboardImpl::popChar() noexcept
 	{
 		if (_charsRead == _charsWrite)
 		{
@@ -88,7 +82,7 @@ namespace darmok
 		return v;
 	}
 
-	void KeyboardImpl::flush()
+	void KeyboardImpl::flush() noexcept
 	{
 		_chars.fill({});
 		_charsRead = 0;
@@ -186,18 +180,18 @@ namespace darmok
 	};
 	BX_STATIC_ASSERT(to_underlying(KeyboardKey::Count) == BX_COUNTOF(s_keyboardKeyNames));
 
-	const std::string& Keyboard::getKeyName(KeyboardKey key)
+	const std::string& Keyboard::getKeyName(KeyboardKey key) noexcept
 	{
 		BX_ASSERT(key < KeyboardKey::Count, "Invalid key %d.", key);
 		return s_keyboardKeyNames[to_underlying(key)];
 	}
 
-	Keyboard::Keyboard()
+	Keyboard::Keyboard() noexcept
 		: _impl(std::make_unique<KeyboardImpl>())
 	{
 	}
 
-	char Keyboard::keyToAscii(KeyboardKey key, uint8_t modifiers)
+	char Keyboard::keyToAscii(KeyboardKey key, uint8_t modifiers) noexcept
 	{
 		const bool isAscii = (KeyboardKey::Key0 <= key && key <= KeyboardKey::KeyZ)
 						  || (KeyboardKey::Esc  <= key && key <= KeyboardKey::Minus);
@@ -234,32 +228,32 @@ namespace darmok
 		return '\0';
 	}
 
-	bool Keyboard::getKey(KeyboardKey key) const
+	bool Keyboard::getKey(KeyboardKey key) const noexcept
 	{
 		return _impl->getKey(key);
 	}
 
-	bool Keyboard::getKey(KeyboardKey key, uint8_t& modifiers) const
+	bool Keyboard::getKey(KeyboardKey key, uint8_t& modifiers) const noexcept
 	{
 		return _impl->getKey(key, modifiers);
 	}
 
-	const KeyboardKeys& Keyboard::getKeys() const
+	const KeyboardKeys& Keyboard::getKeys() const noexcept
 	{
 		return _impl->getKeys();
 	}
 
-	uint8_t Keyboard::getModifiers() const
+	uint8_t Keyboard::getModifiers() const noexcept
 	{
 		return _impl->getModifiers();
 	}
 
-	const KeyboardImpl& Keyboard::getImpl() const
+	const KeyboardImpl& Keyboard::getImpl() const noexcept
 	{
 		return *_impl;
 	}
 
-	KeyboardImpl& Keyboard::getImpl()
+	KeyboardImpl& Keyboard::getImpl() noexcept
 	{
 		return *_impl;
 	}
@@ -268,12 +262,22 @@ namespace darmok
 
 #pragma region Mouse
 
-	void MouseImpl::setResolution(const WindowSize& size)
+	MouseImpl::MouseImpl() noexcept
+		: _buttons{}
+		, _wheelDelta(120)
+		, _lock(false)
+		, _absolute{}
+		, _relative{}
+		, _size{}
+	{
+	}
+
+	void MouseImpl::setResolution(const glm::uvec2& size) noexcept
 	{
 		_size = size;
 	}
 
-	void MouseImpl::setPosition(const MousePosition& pos)
+	void MouseImpl::setPosition(const MousePosition& pos) noexcept
 	{
 		_absolute = pos;
 		_relative.x = float(pos.x) / float(_size.x);
@@ -281,65 +285,44 @@ namespace darmok
 		_relative.z = float(pos.z) / float(_wheelDelta);
 	}
 
-	void MouseImpl::setButton(MouseButton button, bool down)
+	void MouseImpl::setButton(MouseButton button, bool down) noexcept
 	{
 		_buttons[to_underlying(button)] = down;
 	}
 
-	void MouseImpl::setWindow(const WindowHandle& win)
-	{
-		_window = win;
-	}
-
-	MouseImpl::MouseImpl()
-		: _buttons{}
-		, _wheelDelta(120)
-		, _lock(false)
-		, _window(Window::InvalidHandle)
-		, _absolute{}
-		, _relative{}
-		, _size{}
-	{
-	}
-
-	void MouseImpl::setWheelDelta(uint16_t wheelDelta)
+	void MouseImpl::setWheelDelta(uint16_t wheelDelta) noexcept
 	{
 		_wheelDelta = wheelDelta;
 	}
 
-	bool MouseImpl::getButton(MouseButton button) const
+	bool MouseImpl::getButton(MouseButton button) const noexcept
 	{
 		return _buttons[to_underlying(button)];
 	}
 
-	RelativeMousePosition MouseImpl::popRelativePosition()
+	RelativeMousePosition MouseImpl::popRelativePosition() noexcept
 	{
 		auto rel = _relative;
 		_relative = {};
 		return rel;
 	}
 
-	const MousePosition& MouseImpl::getPosition() const
+	const MousePosition& MouseImpl::getPosition() const noexcept
 	{
 		return _absolute;
 	}
 
-	const MouseButtons& MouseImpl::getButtons() const
+	const MouseButtons& MouseImpl::getButtons() const noexcept
 	{
 		return _buttons;
 	}
 
-	bool MouseImpl::getLocked() const
+	bool MouseImpl::getLocked() const noexcept
 	{
 		return _lock;
 	}
 
-	const WindowHandle& MouseImpl::getWindow() const
-	{
-		return _window;
-	}
-
-	bool MouseImpl::setLocked(bool lock)
+	bool MouseImpl::setLocked(bool lock) noexcept
 	{
 		if (_lock != lock)
 		{
@@ -352,55 +335,49 @@ namespace darmok
 
 	static const std::string s_mouseButtonNames[] =
 	{
-		"None",
 		"Left",
 		"Middle",
 		"Right",
 	};
 	BX_STATIC_ASSERT(to_underlying(MouseButton::Count) == BX_COUNTOF(s_mouseButtonNames));
 
-	const std::string& Mouse::getButtonName(MouseButton button)
+	const std::string& Mouse::getButtonName(MouseButton button) noexcept
 	{
 		BX_ASSERT(button < MouseButton::Count, "Invalid button %d.", button);
 		return s_mouseButtonNames[to_underlying(button)];
 	}
 
-	Mouse::Mouse()
+	Mouse::Mouse() noexcept
 		: _impl(std::make_unique<MouseImpl>())
 	{
 	}
 
-	bool Mouse::getButton(MouseButton button) const
+	bool Mouse::getButton(MouseButton button) const noexcept
 	{
 		return _impl->getButton(button);
 	}
 
-	const WindowHandle& Mouse::getWindow() const
-	{
-		return _impl->getWindow();
-	}
-
-	const MousePosition& Mouse::getPosition() const
+	const MousePosition& Mouse::getPosition() const noexcept
 	{
 		return _impl->getPosition();
 	}
 
-	const MouseButtons& Mouse::getButtons() const
+	const MouseButtons& Mouse::getButtons() const noexcept
 	{
 		return _impl->getButtons();
 	}
 
-	bool Mouse::getLocked() const
+	bool Mouse::getLocked() const noexcept
 	{
 		return _impl->getLocked();
 	}
 
-	const MouseImpl& Mouse::getImpl() const
+	const MouseImpl& Mouse::getImpl() const noexcept
 	{
 		return *_impl;
 	}
 
-	MouseImpl& Mouse::getImpl()
+	MouseImpl& Mouse::getImpl() noexcept
 	{
 		return *_impl;
 	}
@@ -409,74 +386,59 @@ namespace darmok
 
 #pragma region Gamepad
 
-	bool GamepadHandle::operator==(const GamepadHandle& other) const
-	{
-		return idx == other.idx;
-	}
-
-	bool GamepadHandle::operator<(const GamepadHandle& other) const
-	{
-		return idx < other.idx;
-	}
-
-	bool GamepadHandle::isValid() const
-	{
-		return idx < Gamepad::MaxAmount;
-	}
-
-	GamepadImpl::GamepadImpl()
+	GamepadImpl::GamepadImpl() noexcept
 		: _handle(Gamepad::InvalidHandle)
 		, _axes{}
 		, _buttons{}
 	{
 	}
 
-	void GamepadImpl::init(const GamepadHandle& handle)
+	void GamepadImpl::init(const GamepadHandle& handle) noexcept
 	{
 		reset();
 		_handle = handle;
 	}
 
-	void GamepadImpl::reset()
+	void GamepadImpl::reset() noexcept
 	{
 		_axes.fill(0);
 		_buttons.fill(false);
 		_handle = Gamepad::InvalidHandle;
 	}
 
-	void GamepadImpl::setAxis(GamepadAxis axis, int32_t value)
+	void GamepadImpl::setAxis(GamepadAxis axis, int32_t value) noexcept
 	{
 		_axes[to_underlying(axis)] = value;
 	}
 
-	void GamepadImpl::setButton(GamepadButton button, bool down)
+	void GamepadImpl::setButton(GamepadButton button, bool down) noexcept
 	{
 		_buttons[to_underlying(button)] = down;
 	}
 
-	int32_t GamepadImpl::getAxis(GamepadAxis key) const
+	int32_t GamepadImpl::getAxis(GamepadAxis key) const noexcept
 	{
 		return _axes[to_underlying(key)];
 	}
 
-	bool GamepadImpl::getButton(GamepadButton button) const
+	bool GamepadImpl::getButton(GamepadButton button) const noexcept
 	{
 		return _buttons[to_underlying(button)];
 	}
 
-	const GamepadButtons& GamepadImpl::getButtons() const
+	const GamepadButtons& GamepadImpl::getButtons() const noexcept
 	{
 		return _buttons;
 	}
 
-	const GamepadAxes& GamepadImpl::getAxes() const
+	const GamepadAxes& GamepadImpl::getAxes() const noexcept
 	{
 		return _axes;
 	}
 
-	bool GamepadImpl::isConnected() const
+	bool GamepadImpl::isConnected() const noexcept
 	{
-		return _handle.isValid();
+		return isValid(_handle);
 	}
 
 	static const std::string s_gamepadButtonNames[] =
@@ -500,48 +462,48 @@ namespace darmok
 	};
 	BX_STATIC_ASSERT(to_underlying(GamepadButton::Count) == BX_COUNTOF(s_gamepadButtonNames));
 
-	Gamepad::Gamepad()
+	Gamepad::Gamepad() noexcept
 		: _impl(std::make_unique<GamepadImpl>())
 	{
 	}
 
-	const std::string& Gamepad::getButtonName(GamepadButton button)
+	const std::string& Gamepad::getButtonName(GamepadButton button) noexcept
 	{
 		BX_ASSERT(button < GamepadButton::Count, "Invalid button %d.", button);
 		return s_gamepadButtonNames[to_underlying(button)];
 	}
 
-	int32_t Gamepad::getAxis(GamepadAxis axis) const
+	int32_t Gamepad::getAxis(GamepadAxis axis) const noexcept
 	{
 		return _impl->getAxis(axis);
 	}
 
-	bool Gamepad::getButton(GamepadButton button) const
+	bool Gamepad::getButton(GamepadButton button) const noexcept
 	{
 		return _impl->getButton(button);
 	}
 
-	const GamepadAxes& Gamepad::getAxes() const
+	const GamepadAxes& Gamepad::getAxes() const noexcept
 	{
 		return _impl->getAxes();
 	}
 
-	const GamepadButtons& Gamepad::getButtons() const
+	const GamepadButtons& Gamepad::getButtons() const noexcept
 	{
 		return _impl->getButtons();
 	}
 
-	bool Gamepad::isConnected() const
+	bool Gamepad::isConnected() const noexcept
 	{
 		return _impl->isConnected();
 	}
 
-	const GamepadImpl& Gamepad::getImpl() const
+	const GamepadImpl& Gamepad::getImpl() const noexcept
 	{
 		return *_impl;
 	}
 
-	GamepadImpl& Gamepad::getImpl()
+	GamepadImpl& Gamepad::getImpl() noexcept
 	{
 		return *_impl;
 	}
@@ -550,7 +512,7 @@ namespace darmok
 
 #pragma region Input
 
-	size_t InputBinding::hashKey(const InputBindingKey& key)
+	size_t InputBinding::hashKey(const InputBindingKey& key) noexcept
 	{
 		if (auto v = std::get_if<KeyboardBindingKey>(&key))
 		{
@@ -571,12 +533,11 @@ namespace darmok
 		return 0;
 	}
 
-	InputImpl::InputImpl()
-		: _gamepads{}
+	InputImpl::InputImpl() noexcept
 	{
 	}
 
-	bool InputImpl::bindingTriggered(InputBinding& binding)
+	bool InputImpl::bindingTriggered(InputBinding& binding) noexcept
 	{
 		if (auto v = std::get_if<KeyboardBindingKey>(&binding.key))
 		{
@@ -593,9 +554,9 @@ namespace darmok
 		}
 		if (auto v = std::get_if<GamepadBindingKey>(&binding.key))
 		{
-			if (v->gamepad.isValid())
+			if (isValid(v->gamepad))
 			{
-				return getGamepad(v->gamepad).getButton(v->button);
+				return getGamepad(v->gamepad)->getButton(v->button);
 			}
 			else
 			{
@@ -611,27 +572,26 @@ namespace darmok
 		return false;
 	}
 
-	void InputImpl::processBinding(InputBinding& binding)
+	void InputImpl::processBinding(InputBinding& binding) noexcept
 	{
 		bool triggered = bindingTriggered(binding);
 		if (binding.once)
 		{
-			auto keyHash = InputBinding::hashKey(binding.key);
 			if (triggered)
 			{
-				auto itr = _bindingOnce.find(keyHash);
-				if (itr == _bindingOnce.end() || itr->second == false)
+				auto itr = _bindingOnce.find(binding.key);
+				if (itr == _bindingOnce.end())
 				{
 					if (binding.fn != nullptr)
 					{
 						binding.fn();
 					}
-					_bindingOnce[keyHash] = true;
+					_bindingOnce.emplace(binding.key);
 				}
 			}
 			else
 			{
-				_bindingOnce[keyHash] = false;
+				_bindingOnce.erase(binding.key);
 			}
 		}
 		else if (triggered)
@@ -643,7 +603,7 @@ namespace darmok
 		}
 	}
 
-	void InputImpl::process()
+	void InputImpl::process() noexcept
 	{
 		for (auto& elm : _bindings)
 		{
@@ -654,52 +614,58 @@ namespace darmok
 		}
 	}
 
-	void InputImpl::reset()
+	void InputImpl::reset() noexcept
 	{
 		_bindingOnce.clear();
 	}
 
-	void InputImpl::addBindings(const std::string& name, std::vector<InputBinding>&& bindings)
+	void InputImpl::addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept
 	{
-		auto it = _bindings.find(name);
-		_bindings.insert(it, std::make_pair(name, std::move(bindings)));
+		std::string nameStr(name);
+		auto it = _bindings.find(nameStr);
+		_bindings.insert(it, std::make_pair(nameStr, std::move(bindings)));
 	}
 
-	void InputImpl::removeBindings(const std::string& name)
+	void InputImpl::removeBindings(std::string_view name) noexcept
 	{
-		auto it = _bindings.find(name);
+		std::string nameStr(name);
+		auto it = _bindings.find(nameStr);
 		if (it != _bindings.end())
 		{
 			_bindings.erase(it);
 		}
 	}
 
-	Keyboard& InputImpl::getKeyboard()
+	Keyboard& InputImpl::getKeyboard() noexcept
 	{
 		return _keyboard;
 	}
 
-	Mouse& InputImpl::getMouse()
+	Mouse& InputImpl::getMouse() noexcept
 	{
 		return _mouse;
 	}
 
-	Gamepad& InputImpl::getGamepad(const GamepadHandle& handle)
+	OptionalRef<Gamepad> InputImpl::getGamepad(const GamepadHandle& handle) noexcept
 	{
-		return _gamepads[handle.idx];
+		if (handle.idx >= 0 && handle.idx < Gamepad::MaxAmount)
+		{
+			return _gamepads[handle.idx];
+		}
+		return nullptr;
 	}
 
-	Gamepads& InputImpl::getGamepads()
+	Gamepads& InputImpl::getGamepads() noexcept
 	{
 		return _gamepads;
 	}
 
-	const InputState& InputImpl::getState() const
+	const InputState& InputImpl::getState() const noexcept
 	{
 		return _state;
 	}
 
-	void InputImpl::update()
+	void InputImpl::update() noexcept
 	{
 		_state.mouse = _mouse.getImpl().popRelativePosition();
 		auto& kb = _keyboard.getImpl();
@@ -716,78 +682,77 @@ namespace darmok
 		}
 	}
 
-	Input::Input()
+	Input::Input() noexcept
 		: _impl(std::make_unique<InputImpl>())
 	{
 	}
 
-	void Input::addBindings(const std::string& name, std::vector<InputBinding>&& bindings)
+	void Input::addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept
 	{
 		_impl->addBindings(name, std::move(bindings));
 	}
 
-	void Input::removeBindings(const std::string& name)
+	void Input::removeBindings(std::string_view name) noexcept
 	{
 		_impl->removeBindings(name);
 	}
 
-	void Input::process()
+	void Input::process() noexcept
 	{
 		_impl->process();
 	}
 
-	Keyboard& Input::getKeyboard()
+	Keyboard& Input::getKeyboard() noexcept
 	{
 		return _impl->getKeyboard();
 	}
 
-	const Keyboard& Input::getKeyboard() const
+	const Keyboard& Input::getKeyboard() const noexcept
 	{
 		return _impl->getKeyboard();
 	}
 
-	Mouse& Input::getMouse()
+	Mouse& Input::getMouse() noexcept
 	{
 		return _impl->getMouse();
 	}
 
-	const Mouse& Input::getMouse() const
+	const Mouse& Input::getMouse() const noexcept
 	{
 		return _impl->getMouse();
 	}
 
-	Gamepad& Input::getGamepad(const GamepadHandle& handle)
+	OptionalRef<Gamepad> Input::getGamepad(const GamepadHandle& handle) noexcept
 	{
 		return _impl->getGamepad(handle);
 	}
 
-	const Gamepad& Input::getGamepad(const GamepadHandle& handle) const
+	OptionalRef<const Gamepad> Input::getGamepad(const GamepadHandle& handle) const noexcept
 	{
-		return _impl->getGamepad(handle);
+		auto gamepad = _impl->getGamepad(handle);
+		if (gamepad)
+		{
+			return gamepad.value();
+		}
+		return nullptr;
 	}
 
-	Gamepads& Input::getGamepads()
+	Gamepads& Input::getGamepads() noexcept
 	{
 		return _impl->getGamepads();
 	}
 
-	const Gamepads& Input::getGamepads() const
+	const Gamepads& Input::getGamepads() const noexcept
 	{
 		return _impl->getGamepads();
 	}
 
-	Input& Input::get()
-	{
-		static Input instance;
-		return instance;
-	}
-
-	const InputImpl& Input::getImpl() const
+	const InputImpl& Input::getImpl() const noexcept
 	{
 		return *_impl;
 	}
 
-	InputImpl& Input::getImpl()
+	InputImpl& Input::getImpl() noexcept
 	{
 		return *_impl;
 	}

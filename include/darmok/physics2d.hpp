@@ -20,19 +20,20 @@ namespace darmok
         glm::vec2 _offset;
     };
 
-    class Physics2DDebugRenderer final : public ISceneRenderer
+    class Physics2DDebugRenderer final : public CameraSceneRenderer
     {
     public:
-        Physics2DDebugRenderer(const Color& color = Colors::red);
+        Physics2DDebugRenderer(const Color& color = Color::red);
         ~Physics2DDebugRenderer();
 
-        void init(EntityRegistry& registry) override;
-        void render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
+        void init(Scene& scene, App& app) override;
     private:
         bgfx::IndexBufferHandle _boxIndexBuffer;
         bgfx::ProgramHandle _program;
         bgfx::UniformHandle _colorUniform;
         bgfx::VertexLayout _vertexLayout;
         Color _color;
+
+        bgfx::ViewId render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
     };
 }

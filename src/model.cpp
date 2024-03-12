@@ -203,11 +203,13 @@ namespace darmok
 		return ModelMaterialTexture(_ptr, _type, pos);
 	}
 
-	ModelMaterial::ModelMaterial(aiMaterial* ptr, const std::string& basePath, aiScene* scene)
+	ModelMaterial::ModelMaterial(aiMaterial* ptr, const aiScene* scene, const std::string& basePath, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
 		: _ptr(ptr)
 		, _scene(scene)
 		, _properties(ptr)
 		, _basePath(basePath)
+		, _textureLoader(textureLoader)
+		, _alloc(alloc)
 	{
 	}
 
@@ -307,9 +309,13 @@ namespace darmok
 		{ ModelMaterialTextureType::Normal, MaterialTextureType::Normal },
 	};
 
-	std::shared_ptr<Texture> loadEmbeddedTexture(aiScene* scene, const std::string& filePath)
+	static std::shared_ptr<Texture> loadEmbeddedTexture(const aiScene* scene, const char* filePath, bx::AllocatorI* alloc = nullptr)
 	{
-		auto data = scene->GetEmbeddedTexture(filePath.c_str());
+		if (scene == nullptr)
+		{
+			return nullptr;
+		}
+		auto data = scene->GetEmbeddedTexture(filePath);
 		if (data == nullptr)
 		{
 			return nullptr;
@@ -326,7 +332,6 @@ namespace darmok
 			size = data->mWidth * data->mHeight * 4;
 			format = bimg::TextureFormat::RGBA8;
 		}
-		auto alloc = AssetContext::get().getImpl().getAllocator();
 		bx::Error err;
 		auto container = bimg::imageParse(alloc, data->pcData, size, format, &err);
 		checkError(err);
@@ -353,16 +358,16 @@ namespace darmok
 		std::shared_ptr<Texture> texture;
 		if (_scene != nullptr)
 		{
-			texture = loadEmbeddedTexture(_scene, path);
+			texture = loadEmbeddedTexture(_scene, path.c_str(), _alloc);
 		}
-		if (texture == nullptr)
+		if (texture == nullptr && _textureLoader.hasValue())
 		{
 			std::filesystem::path fsPath(path);
 			if (!_basePath.empty() && fsPath.is_relative())
 			{
 				fsPath = std::filesystem::path(_basePath) / fsPath;
 			}
-			texture = AssetContext::get().getTextureLoader()(fsPath.string());
+			texture = _textureLoader.value()(fsPath.string());
 		}
 		return std::make_pair(itr->second, texture);
 	}
@@ -845,7 +850,7 @@ namespace darmok
 		case ModelLightColorType::Specular:
 			return convertColor(_ptr->mColorSpecular);
 		}
-		return Colors::white;
+		return Color::white;
 	}
 
 	glm::vec3 ModelLight::getDirection() const
@@ -1089,9 +1094,12 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	ModelMaterialCollection::ModelMaterialCollection(const aiScene* ptr, const std::string& basePath)
+	ModelMaterialCollection::ModelMaterialCollection(const aiScene* ptr, const std::string& basePath,
+		const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
 		: _ptr(ptr)
 		, _basePath(basePath)
+		, _textureLoader(textureLoader)
+		, _alloc(alloc)
 	{
 	}
 
@@ -1102,7 +1110,7 @@ namespace darmok
 
 	ModelMaterial ModelMaterialCollection::create(size_t pos) const
 	{
-		return ModelMaterial(_ptr->mMaterials[pos], _basePath);
+		return ModelMaterial(_ptr->mMaterials[pos], _ptr, _basePath, _textureLoader, _alloc);
 	}
 
 	ModelMeshCollection::ModelMeshCollection(const aiScene* ptr, ModelMaterialCollection& materials)
@@ -1123,12 +1131,12 @@ namespace darmok
 		return ModelMesh(ptr, material);
 	}
 
-	Model::Model(const aiScene* ptr, const std::string& path)
+	Model::Model(const aiScene* ptr, const std::string& path, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
 		: _ptr(ptr)
 		, _basePath(std::filesystem::path(path).parent_path().string())
 		, _rootNode(ptr->mRootNode, *this, _basePath)
 		, _path(path)
-		, _materials(ptr, _basePath)
+		, _materials(ptr, _basePath, textureLoader, alloc)
 		, _meshes(ptr, _materials)
 		, _cameras(ptr)
 		, _lights(ptr)
@@ -1200,9 +1208,10 @@ namespace darmok
 		return getRootNode().addToScene(scene, parent);
 	}
 
-	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader)
+	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
 		: _dataLoader(dataLoader)
 		, _textureLoader(textureLoader)
+		, _alloc(alloc)
 	{
 	}
 
@@ -1230,6 +1239,6 @@ namespace darmok
 			throw std::runtime_error(_importer.GetErrorString());
 		}
 
-		return std::make_shared<Model>(scene, nameString);
+		return std::make_shared<Model>(scene, nameString, _textureLoader, _alloc);
 	}
 }

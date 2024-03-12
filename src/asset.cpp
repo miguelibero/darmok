@@ -5,7 +5,7 @@
 
 namespace darmok
 {
-	static std::string addBasePath(const std::string& path, const std::string& basePath)
+	static std::string addBasePath(const std::string& path, const std::string& basePath) noexcept
 	{
 		std::filesystem::path p(path);
 
@@ -16,7 +16,7 @@ namespace darmok
 		return (std::filesystem::path(basePath) / p).string();
 	}
 
-	void FileReader::setBasePath(const std::string& basePath)
+	void FileReader::setBasePath(const std::string& basePath) noexcept
 	{
 		_basePath = basePath;
 	}
@@ -27,7 +27,7 @@ namespace darmok
 		return super::open(absFilePath.c_str(), err);
 	}
 
-	void FileWriter::setBasePath(const std::string& basePath)
+	void FileWriter::setBasePath(const std::string& basePath) noexcept
 	{
 		_basePath = basePath;
 	}
@@ -44,7 +44,7 @@ namespace darmok
 		, _programLoader(_dataLoader)
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
-		, _modelLoader(_dataLoader, _textureLoader)
+		, _modelLoader(_dataLoader, _textureLoader, &_allocator)
 		, _vertexLayoutLoader(_dataLoader)
 	{
 	}
@@ -90,14 +90,12 @@ namespace darmok
 		_fileWriter.setBasePath(path);
 	}
 
-	AssetContext& AssetContext::get() noexcept
-	{
-		static AssetContext instance;
-		return instance;
-	}
-
 	AssetContext::AssetContext() noexcept
 		: _impl(std::make_unique<AssetContextImpl>())
+	{
+	}
+
+	AssetContext::~AssetContext() noexcept
 	{
 	}
 

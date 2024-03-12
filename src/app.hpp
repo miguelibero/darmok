@@ -1,39 +1,62 @@
 #pragma once
 
 #include <darmok/app.hpp>
+#include <darmok/input.hpp>
+#include <darmok/window.hpp>
+#include <darmok/asset.hpp>
+#include <darmok/optional_ref.hpp>
 #include <string>
 #include <cstdint>
 #include <map>
 
 namespace darmok
 {
-	using ViewWindows = std::map<bgfx::ViewId, WindowHandle>;
+	class Platform;
 
 	class AppImpl final
 	{
 	public:
-		static const float defaultTargetUpdateDeltaTime;
-		static const int maxInstantLogicUpdates;
-
 		AppImpl() noexcept;
-		void init(App& app, const std::vector<std::string>& args, double targetUpdateDeltaTime = defaultTargetUpdateDeltaTime);
+		void configure(const AppConfig& config) noexcept;
+		void init(App& app, const std::vector<std::string>& args);
 		void shutdown();
+
+		void updateLogic(float deltaTime);
+		bgfx::ViewId render(bgfx::ViewId viewId);
+		void triggerExit() noexcept;
+
+		bool processEvents();
+
+		bool toggleDebugFlag(uint32_t flag) noexcept;
+		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
+		
+		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
+		
+		[[nodiscard]] const std::string& getCurrentDir() const noexcept;
+
+		[[nodiscard]] Input& getInput() noexcept;
+		[[nodiscard]] const Input& getInput() const noexcept;
+
+		[[nodiscard]] Window& getWindow() noexcept;
+		[[nodiscard]] const Window& getWindow() const noexcept;
+
+		[[nodiscard]] AssetContext& getAssets() noexcept;
+		[[nodiscard]] const AssetContext& getAssets() const noexcept;
+
+		[[nodiscard]] Platform& getPlatform() noexcept;
+		[[nodiscard]] const Platform& getPlatform() const noexcept;
 
 		template <typename F>
 		void update(const F& logicCallback)
 		{
-			auto timePassed = updateTimePassed();
-
-			auto& win = WindowContext::get().getWindow();
-			if (win.isSuspended())
+			if (getWindow().getPhase() != WindowPhase::Running)
 			{
-				_mainWindowSuspended = true;
 				return;
 			}
-
-			const auto dt = _targetUpdateDeltaTime;
+			auto timePassed = updateTimePassed();
+			const auto dt = _config.targetUpdateDeltaTime;
 			auto i = 0;
-			while (timePassed > dt && i < maxInstantLogicUpdates)
+			while (timePassed > dt && i < _config.maxInstantLogicUpdates)
 			{
 				logicCallback(dt);
 				timePassed -= dt;
@@ -42,56 +65,26 @@ namespace darmok
 			logicCallback(timePassed);
 		}
 
-		void updateLogic(float deltaTime);
-
-		void beforeWindowRender(const WindowHandle& window, bgfx::ViewId firstViewId);
-		void beforeRender(bgfx::ViewId viewId);
-		void render(bgfx::ViewId viewId);
-		void afterRender(bgfx::ViewId viewId);
-		void afterWindowRender(const WindowHandle& window, bgfx::ViewId viewId);
-		void triggerExit() noexcept;
-
-		bool processEvents();
-
-		[[nodiscard]] uint32_t getResetFlags() const noexcept;
-		bool toggleDebugFlag(uint32_t flag) noexcept;
-		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
-		bool toggleResetFlag(uint32_t flag) noexcept;
-		void setResetFlag(uint32_t flag, bool enabled) noexcept;
-		
-		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
-		void addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component) noexcept;
-		
-		void setWindowView(bgfx::ViewId viewId, const WindowHandle& window = Window::DefaultHandle) noexcept;
-		[[nodiscard]] WindowHandle getViewWindow(bgfx::ViewId viewId) const noexcept;
-		[[nodiscard]] const ViewWindows& getViewWindows() const noexcept;
-		[[nodiscard]] std::vector<bgfx::ViewId> getWindowViews(const WindowHandle& window = Window::DefaultHandle) const noexcept;
-		[[nodiscard]] const std::string& getCurrentDir() const noexcept;
-
 	private:
-		float updateTimePassed() noexcept;
-
-		void setCurrentDir(const std::string& dir) noexcept;
 		void addBindings() noexcept;
-		static void removeBindings() noexcept;
+		void removeBindings() noexcept;
 
-		[[nodiscard]] bool getResetFlag(uint32_t flag) const noexcept;
+		[[nodiscard]] float updateTimePassed() noexcept;
 		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
-
+		
 		std::string _currentDir;
 		static const std::string _bindingsName;
 	
-		bool _init;
 		bool _exit;
 		uint32_t _debug;
-		uint32_t _reset;
-		bool _mainWindowSuspended;
-		bool _needsReset;
 		uint64_t _lastUpdate;
-		float _targetUpdateDeltaTime;
+		AppConfig _config;
+		Platform& _plat;
+		OptionalRef<App> _app;
+		Input _input;
+		Window _window;
+		AssetContext _assets;
 
-		ViewWindows _viewWindows;
-		std::vector<std::unique_ptr<AppComponent>> _appComponents;
-		std::map<bgfx::ViewId, std::vector<std::unique_ptr<ViewComponent>>> _viewComponents;
+		std::vector<std::unique_ptr<AppComponent>> _components;
 	};
 }

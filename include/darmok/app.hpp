@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <bx/bx.h>
-#include <darmok/window.hpp>
+#include <bgfx/bgfx.h>
 
 extern "C" int _main_(int argc, char** argv);
 
@@ -29,11 +29,18 @@ extern "C" int _main_(int argc, char** argv);
 
 namespace darmok
 {
-	struct InputState;
-	struct WindowHandle;
 	class AppComponent;
-	class ViewComponent;
 	class AppImpl;
+	class Input;
+	class Window;
+	class AssetContext;
+
+	struct AppConfig
+	{
+		static const AppConfig defaultConfig;
+		double targetUpdateDeltaTime;
+		int maxInstantLogicUpdates;
+	};
 
 	class BX_NO_VTABLE App
 	{
@@ -41,38 +48,26 @@ namespace darmok
 		App() noexcept;
 		~App() noexcept;
 		virtual void init(const std::vector<std::string>& args);
-		virtual int  shutdown();
+		virtual int shutdown();
 		bool update();
 
-		[[nodiscard]] const AppImpl& getImpl() const noexcept;
-		[[nodiscard]] AppImpl& getImpl() noexcept;
+		[[nodiscard]] Input& getInput() noexcept;
+		[[nodiscard]] const Input& getInput() const noexcept;
+
+		[[nodiscard]] Window& getWindow() noexcept;
+		[[nodiscard]] const Window& getWindow() const noexcept;
+
+		[[nodiscard]] AssetContext& getAssets() noexcept;
+		[[nodiscard]] const AssetContext& getAssets() const noexcept;
 
 	protected:
-		virtual void updateLogic(float deltaTime);
-		virtual void beforeWindowRender(const WindowHandle& window, bgfx::ViewId firstViewId);
-		virtual void beforeRender(bgfx::ViewId viewId);
-		virtual void render(bgfx::ViewId viewId);
-		virtual void afterRender(bgfx::ViewId viewId);
-		virtual void afterWindowRender(const WindowHandle& window, bgfx::ViewId lastViewId);
+		void configure(const AppConfig& config) noexcept;
 
-		void setWindowView(bgfx::ViewId viewId, const WindowHandle& window = Window::DefaultHandle) noexcept;
-		[[nodiscard]] WindowHandle getViewWindow(bgfx::ViewId viewId) const noexcept;
+		virtual void updateLogic(float deltaTime);
+		[[nodiscard]] virtual bgfx::ViewId render(bgfx::ViewId viewId);
 
 		void toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
-
-		void toggleResetFlag(uint32_t flag) noexcept;
-		void setResetFlag(uint32_t flag, bool enabled = true) noexcept;
-
-		void addViewComponent(bgfx::ViewId viewId, std::unique_ptr<ViewComponent>&& component) noexcept;
-
-		template<typename T, typename... A>
-		T& addViewComponent(bgfx::ViewId viewId, A&&... args) noexcept
-		{
-			auto ptr = new T(std::forward<A>(args)...);
-			addViewComponent(viewId, std::unique_ptr<ViewComponent>(ptr));
-			return *ptr;
-		}
 
 		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
 
@@ -93,26 +88,10 @@ namespace darmok
 		AppComponent() = default;
 		virtual ~AppComponent() = default;
 
-		virtual void init();
+		virtual void init(App& app);
 		virtual void shutdown();
 		virtual void updateLogic(float deltaTime);
-		virtual void beforeRender(bgfx::ViewId viewId);
-		virtual void render(bgfx::ViewId viewId);
-		virtual void afterRender(bgfx::ViewId viewId);
-	};
-
-	class ViewComponent
-	{
-	public:
-		ViewComponent() = default;
-		virtual ~ViewComponent() = default;
-
-		virtual void init(bgfx::ViewId viewId);
-		virtual void shutdown();
-		virtual void updateLogic(float deltaTime);
-		virtual void beforeRender();
-		virtual void render();
-		virtual void afterRender();
+		virtual bgfx::ViewId render(bgfx::ViewId viewId);
 	};
 
 	int runApp(App& app, const std::vector<std::string>& args);
