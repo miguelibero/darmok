@@ -7,6 +7,7 @@
 #include <variant>
 #include <memory>
 #include <cstdint>
+#include <functional>
 #include <darmok/utils.hpp>
 #include <darmok/optional_ref.hpp>
 #include <glm/glm.hpp>
@@ -237,8 +238,6 @@ namespace darmok
 		Count
 	};
 
-	BGFX_HANDLE(GamepadHandle);
-
 	using GamepadButtons = std::array<bool, to_underlying(GamepadButton::Count)>;
 	using GamepadAxes = std::array<int32_t, to_underlying(GamepadAxis::Count)>;
 
@@ -247,9 +246,7 @@ namespace darmok
 	class Gamepad final
 	{
 	public:
-		const static uint16_t MaxAmount = 4;
-		static constexpr GamepadHandle DefaultHandle = { 0 };
-		static constexpr GamepadHandle InvalidHandle = { UINT16_MAX };
+		const static uint8_t MaxAmount = 4;
 
 		Gamepad() noexcept;
 		Gamepad(const Gamepad& other) = delete;
@@ -273,17 +270,23 @@ namespace darmok
 	{
 		KeyboardKey key;
 		uint8_t modifiers;
+
+		size_t hash() const noexcept;
 	};
 
 	struct MouseBindingKey final
 	{
 		MouseButton button;
+
+		size_t hash() const noexcept;
 	};
 
 	struct GamepadBindingKey final
 	{
-		GamepadHandle gamepad;
+		uint8_t gamepad;
 		GamepadButton button;
+
+		size_t hash() const noexcept;
 	};
 
 	using InputBindingKey = std::variant<KeyboardBindingKey, MouseBindingKey, GamepadBindingKey>;
@@ -320,12 +323,12 @@ namespace darmok
 
 		Keyboard& getKeyboard() noexcept;
 		Mouse& getMouse() noexcept;
-		OptionalRef<Gamepad> getGamepad(const GamepadHandle& handle = Gamepad::DefaultHandle) noexcept;
+		OptionalRef<Gamepad> getGamepad(uint8_t num = 0) noexcept;
 		Gamepads& getGamepads() noexcept;
 
 		const Keyboard& getKeyboard() const noexcept;
 		const Mouse& getMouse() const noexcept;
-		OptionalRef<const Gamepad> getGamepad(const GamepadHandle& handle = Gamepad::DefaultHandle) const noexcept;
+		OptionalRef<const Gamepad> getGamepad(uint8_t num = 0) const noexcept;
 		const Gamepads& getGamepads() const noexcept;
 
 		const InputImpl& getImpl() const noexcept;
@@ -336,8 +339,59 @@ namespace darmok
 	};
 }
 
-template<> struct std::hash<darmok::InputBindingKey> {
-	std::size_t operator()(darmok::InputBindingKey const& key) const noexcept {
-		return darmok::InputBinding::hashKey(key);
+template<> struct std::hash<darmok::KeyboardBindingKey>
+{
+	std::size_t operator()(darmok::KeyboardBindingKey const& key) const noexcept
+	{
+		return key.hash();
+	}
+};
+
+template<> struct std::equal_to<darmok::KeyboardBindingKey>
+{
+	bool operator()(const darmok::KeyboardBindingKey& lhs, const darmok::KeyboardBindingKey& rhs) const
+	{
+		return lhs.key == rhs.key && lhs.modifiers == rhs.modifiers;
+	}
+};
+
+template<> struct std::hash<darmok::MouseBindingKey>
+{
+	std::size_t operator()(darmok::MouseBindingKey const& key) const noexcept
+	{
+		return key.hash();
+	}
+};
+
+template<> struct std::equal_to<darmok::MouseBindingKey>
+{
+	bool operator()(const darmok::MouseBindingKey& lhs, const darmok::MouseBindingKey& rhs) const
+	{
+		return lhs.button == rhs.button;
+	}
+};
+
+template<> struct std::hash<darmok::GamepadBindingKey>
+{
+	std::size_t operator()(darmok::GamepadBindingKey const& key) const noexcept
+	{
+		return key.hash();
+	}
+};
+
+template<> struct std::equal_to<darmok::GamepadBindingKey>
+{
+	bool operator()(const darmok::GamepadBindingKey& lhs, const darmok::GamepadBindingKey& rhs) const
+	{
+		return lhs.gamepad == rhs.gamepad && lhs.button == rhs.button;
+	}
+};
+
+
+template<> struct std::equal_to<darmok::InputBindingKey>
+{
+	bool operator()(const darmok::InputBindingKey& lhs, const darmok::InputBindingKey& rhs) const
+	{
+		return std::hash<darmok::InputBindingKey>{}(lhs) == std::hash<darmok::InputBindingKey>{}(rhs);
 	}
 };

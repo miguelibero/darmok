@@ -123,11 +123,11 @@ namespace darmok
 	class GamepadAxisChangedEvent final : public PlatformEvent
 	{
 	public:
-		GamepadAxisChangedEvent(GamepadHandle gampad, GamepadAxis axis, int32_t value) noexcept;
+		GamepadAxisChangedEvent(uint8_t gampad, GamepadAxis axis, int32_t value) noexcept;
 		void process(Input& input) noexcept;
 
 	private:
-		GamepadHandle _gamepad;
+		uint8_t _gamepad;
 		GamepadAxis _axis;
 		int32_t _value;
 	};
@@ -135,11 +135,11 @@ namespace darmok
 	class GamepadButtonChangedEvent final : public PlatformEvent
 	{
 	public:
-		GamepadButtonChangedEvent(GamepadHandle gampad, GamepadButton button, bool down) noexcept;
+		GamepadButtonChangedEvent(uint8_t gampad, GamepadButton button, bool down) noexcept;
 		void process(Input& input) noexcept;
 
 	private:
-		GamepadHandle _gamepad;
+		uint8_t _gamepad;
 		GamepadButton _button;
 		bool _down;
 	};
@@ -147,10 +147,10 @@ namespace darmok
 	class GamepadConnectionEvent final : public PlatformEvent
 	{
 	public:
-		GamepadConnectionEvent(GamepadHandle gamepad, bool connected) noexcept;
+		GamepadConnectionEvent(uint8_t gamepad, bool connected) noexcept;
 		void process(Input& input) noexcept;
 	private:
-		GamepadHandle _gamepad;
+		uint8_t _gamepad;
 		bool _connected;
 	};
 

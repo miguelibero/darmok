@@ -69,7 +69,7 @@ namespace darmok
 		input.getMouse().getImpl().setLocked(_locked);
 	}
 
-	GamepadAxisChangedEvent::GamepadAxisChangedEvent(GamepadHandle gampad, GamepadAxis axis, int32_t value) noexcept
+	GamepadAxisChangedEvent::GamepadAxisChangedEvent(uint8_t gampad, GamepadAxis axis, int32_t value) noexcept
 		: PlatformEvent(GamepadAxisChanged)
 		, _gamepad(gampad)
 		, _axis(axis)
@@ -86,7 +86,7 @@ namespace darmok
 		}
 	}
 
-	GamepadButtonChangedEvent::GamepadButtonChangedEvent(GamepadHandle gampad, GamepadButton button, bool down) noexcept
+	GamepadButtonChangedEvent::GamepadButtonChangedEvent(uint8_t gampad, GamepadButton button, bool down) noexcept
 		: PlatformEvent(GamepadButtonChanged)
 		, _gamepad(gampad)
 		, _button(button)
@@ -103,7 +103,7 @@ namespace darmok
 		}
 	}
 
-	GamepadConnectionEvent::GamepadConnectionEvent(GamepadHandle gamepad, bool connected) noexcept
+	GamepadConnectionEvent::GamepadConnectionEvent(uint8_t gamepad, bool connected) noexcept
 		: PlatformEvent(GamepadConnection)
 		, _gamepad(gamepad)
 		, _connected(connected)
@@ -112,7 +112,7 @@ namespace darmok
 
 	void GamepadConnectionEvent::process(Input& input) noexcept
 	{
-		DBG("gamepad %d, %d", _gamepad.idx, _connected);
+		DBG("gamepad %d, %d", _gamepad, _connected);
 		auto gamepad = input.getGamepad(_gamepad);
 		if (gamepad.hasValue())
 		{

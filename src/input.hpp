@@ -93,12 +93,12 @@ namespace darmok
 		[[nodiscard]] const GamepadAxes& getAxes() const noexcept;
 		[[nodiscard]] bool isConnected() const noexcept;
 
-		void init(const GamepadHandle& handle) noexcept;
+		void init(uint8_t num) noexcept;
 		void reset() noexcept;
 		void setAxis(GamepadAxis axis, int32_t value) noexcept;
 		void setButton(GamepadButton button, bool down) noexcept;
 	private:
-		GamepadHandle _handle;
+		uint8_t _num;
 		GamepadButtons _buttons;
 		GamepadAxes _axes;
 	};
@@ -120,7 +120,7 @@ namespace darmok
 		void removeBindings(std::string_view name) noexcept;
 		Keyboard& getKeyboard() noexcept;
 		Mouse& getMouse() noexcept;
-		OptionalRef<Gamepad> getGamepad(const GamepadHandle& handle) noexcept;
+		OptionalRef<Gamepad> getGamepad(uint8_t num) noexcept;
 		Gamepads& getGamepads() noexcept;
 
 		void update() noexcept;

@@ -387,23 +387,23 @@ namespace darmok
 #pragma region Gamepad
 
 	GamepadImpl::GamepadImpl() noexcept
-		: _handle(Gamepad::InvalidHandle)
+		: _num(Gamepad::MaxAmount)
 		, _axes{}
 		, _buttons{}
 	{
 	}
 
-	void GamepadImpl::init(const GamepadHandle& handle) noexcept
+	void GamepadImpl::init(uint8_t num) noexcept
 	{
 		reset();
-		_handle = handle;
+		_num = num;
 	}
 
 	void GamepadImpl::reset() noexcept
 	{
 		_axes.fill(0);
 		_buttons.fill(false);
-		_handle = Gamepad::InvalidHandle;
+		_num = Gamepad::MaxAmount;
 	}
 
 	void GamepadImpl::setAxis(GamepadAxis axis, int32_t value) noexcept
@@ -438,7 +438,7 @@ namespace darmok
 
 	bool GamepadImpl::isConnected() const noexcept
 	{
-		return isValid(_handle);
+		return _num < Gamepad::MaxAmount;
 	}
 
 	static const std::string s_gamepadButtonNames[] =
@@ -512,6 +512,21 @@ namespace darmok
 
 #pragma region Input
 
+	size_t KeyboardBindingKey::hash() const noexcept
+	{
+		return to_underlying(key) | modifiers << 16;
+	}
+
+	size_t MouseBindingKey::hash() const noexcept
+	{
+		return to_underlying(button);
+	}
+
+	size_t GamepadBindingKey::hash() const noexcept
+	{
+		return to_underlying(button) << gamepad;
+	}
+
 	size_t InputBinding::hashKey(const InputBindingKey& key) noexcept
 	{
 		if (auto v = std::get_if<KeyboardBindingKey>(&key))
@@ -527,7 +542,7 @@ namespace darmok
 		}
 		if (auto v = std::get_if<GamepadBindingKey>(&key))
 		{
-			auto h = to_underlying(v->button) >> v->gamepad.idx;
+			auto h = to_underlying(v->button) << v->gamepad;
 			return maxKey + to_underlying(MouseButton::Count) + h;
 		}
 		return 0;
@@ -554,9 +569,10 @@ namespace darmok
 		}
 		if (auto v = std::get_if<GamepadBindingKey>(&binding.key))
 		{
-			if (isValid(v->gamepad))
+			auto gamepad = getGamepad(v->gamepad);
+			if (gamepad.hasValue())
 			{
-				return getGamepad(v->gamepad)->getButton(v->button);
+				return gamepad->getButton(v->button);
 			}
 			else
 			{
@@ -646,11 +662,11 @@ namespace darmok
 		return _mouse;
 	}
 
-	OptionalRef<Gamepad> InputImpl::getGamepad(const GamepadHandle& handle) noexcept
+	OptionalRef<Gamepad> InputImpl::getGamepad(uint8_t num) noexcept
 	{
-		if (handle.idx >= 0 && handle.idx < Gamepad::MaxAmount)
+		if (num < Gamepad::MaxAmount)
 		{
-			return _gamepads[handle.idx];
+			return _gamepads[num];
 		}
 		return nullptr;
 	}
@@ -722,14 +738,14 @@ namespace darmok
 		return _impl->getMouse();
 	}
 
-	OptionalRef<Gamepad> Input::getGamepad(const GamepadHandle& handle) noexcept
+	OptionalRef<Gamepad> Input::getGamepad(uint8_t num) noexcept
 	{
-		return _impl->getGamepad(handle);
+		return _impl->getGamepad(num);
 	}
 
-	OptionalRef<const Gamepad> Input::getGamepad(const GamepadHandle& handle) const noexcept
+	OptionalRef<const Gamepad> Input::getGamepad(uint8_t num) const noexcept
 	{
-		auto gamepad = _impl->getGamepad(handle);
+		auto gamepad = _impl->getGamepad(num);
 		if (gamepad)
 		{
 			return gamepad.value();

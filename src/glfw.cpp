@@ -93,7 +93,7 @@ namespace darmok
 		static GamepadButton translateGamepadButton(int button) noexcept;
 
 		void updateGamepads() noexcept;
-		void updateGamepad(const GamepadHandle& handle) noexcept;
+		void updateGamepad(uint8_t num) noexcept;
 
 		void joystickCallback(int jid, int action) noexcept;
 		void errorCallback(int error, const char* description) noexcept;
@@ -516,11 +516,11 @@ namespace darmok
 		DBG("GLFW error %d: %s", error, description);
 	}
 
-	void PlatformImpl::updateGamepad(const GamepadHandle& handle) noexcept
+	void PlatformImpl::updateGamepad(uint8_t num) noexcept
 	{
 		int numButtons, numAxes;
-		const unsigned char* buttons = glfwGetJoystickButtons(handle.idx, &numButtons);
-		const float* axes = glfwGetJoystickAxes(handle.idx, &numAxes);
+		const unsigned char* buttons = glfwGetJoystickButtons(num, &numButtons);
+		const float* axes = glfwGetJoystickAxes(num, &numAxes);
 
 		if (nullptr == buttons || nullptr == axes)
 		{
@@ -535,22 +535,22 @@ namespace darmok
 			{
 				value = -value;
 			}
-			_events.post<GamepadAxisChangedEvent>(handle, axis, value);
+			_events.post<GamepadAxisChangedEvent>(num, axis, value);
 		}
 
 		for (int i = 0; i < numButtons; ++i)
 		{
 			auto button = translateGamepadButton(i);
 			bool down = buttons[i];
-			_events.post<GamepadButtonChangedEvent>(handle, button, down);
+			_events.post<GamepadButtonChangedEvent>(num, button, down);
 		}
 	}
 
 	void PlatformImpl::updateGamepads() noexcept
 	{
-		for(uint16_t i = 0; i < Gamepad::MaxAmount; i++)
+		for(uint8_t num = 0; num < Gamepad::MaxAmount; num++)
 		{
-			updateGamepad({ i });
+			updateGamepad(num);
 		}
 	}
 
@@ -669,15 +669,13 @@ namespace darmok
 
 	void PlatformImpl::joystickCallback(int jid, int action) noexcept
 	{
-		GamepadHandle handle{ (uint16_t)jid };
-
 		if (action == GLFW_CONNECTED)
 		{
-			_events.post<GamepadConnectionEvent>(handle, true);
+			_events.post<GamepadConnectionEvent>(jid, true);
 		}
 		else if (action == GLFW_DISCONNECTED)
 		{
-			_events.post<GamepadConnectionEvent>(handle, false);
+			_events.post<GamepadConnectionEvent>(jid, false);
 		}
 	}
 
