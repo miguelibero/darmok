@@ -35,6 +35,20 @@ namespace darmok
         return _ptr == nullptr || _size == 0;
     }
 
+    bool DataView::operator==(const DataView& other) const noexcept
+    {
+        if (_size != other._size)
+        {
+            return false;
+        }
+        return std::memcmp(_ptr, other._ptr, _size) == 0;
+    }
+
+    bool DataView::operator!=(const DataView& other) const noexcept
+    {
+        return !(*this == other);
+    }
+
     void* Data::malloc(size_t size, bx::AllocatorI* alloc) noexcept
     {
         if (size == 0)
@@ -43,7 +57,6 @@ namespace darmok
         }
         return alloc == nullptr ? std::malloc(size) : bx::alloc(alloc, size);
     }
-
 
     Data::Data(size_t size, bx::AllocatorI* alloc) noexcept
         : _size(size)
@@ -74,6 +87,20 @@ namespace darmok
     bool Data::empty() const noexcept
     {
         return _ptr == nullptr || _size == 0;
+    }
+
+    bool Data::operator==(const Data& other) const noexcept
+    {
+        if (_size != other._size)
+        {
+            return false;
+        }
+        return std::memcmp(_ptr, other._ptr, _size) == 0;
+    }
+
+    bool Data::operator!=(const Data& other) const noexcept
+    {
+        return !(*this == other);
     }
 
     Data::~Data() noexcept

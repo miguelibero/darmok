@@ -6,8 +6,8 @@
 #include <darmok/model.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
-
-#include <glm/ext/matrix_clip_space.hpp>
+#include <darmok/light.hpp>
+#include <darmok/render_forward.hpp>
 
 namespace
 {
@@ -39,7 +39,6 @@ namespace
 			App::init(args);
 
 			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
-			scene.addRenderer<darmok::MeshRenderer>();
 
 			auto model = getAssets().getModelLoader()("assets/human.fbx");
 			model->addToScene(scene, [&scene](const darmok::ModelNode& node, darmok::Entity entity){
@@ -49,6 +48,11 @@ namespace
 					scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
 				}
 			});
+
+			auto& mat = model->getMaterials()[0].load();
+			auto& lights = scene.addLogicUpdater<darmok::LightRenderUpdater>();
+			scene.addRenderer<darmok::ForwardRenderer>(lights);
+
 		}
 	};
 

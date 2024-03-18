@@ -58,6 +58,7 @@ namespace darmok
 
         const std::shared_ptr<Program>& getProgram() const noexcept;
         void setProgram(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept;
+        const ProgramDefinition& getProgramDefinition() const noexcept;
         const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
         std::shared_ptr<Texture> getTexture(MaterialTextureType type, uint8_t textureUnit = 0) const noexcept;

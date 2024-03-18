@@ -1,4 +1,5 @@
 #include <darmok/material.hpp>
+#include <darmok/light.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
 #include "embedded_shader.hpp"
@@ -6,8 +7,8 @@
 #include "generated/shaders/debug_fragment.h"
 #include "generated/shaders/sprite_vertex.h"
 #include "generated/shaders/sprite_fragment.h"
-#include "generated/shaders/basic_vertex.h"
-#include "generated/shaders/basic_fragment.h"
+#include "generated/shaders/forward_vertex.h"
+#include "generated/shaders/forward_fragment.h"
 
 namespace darmok
 {
@@ -83,6 +84,11 @@ namespace darmok
 		}
 	}
 
+	const ProgramDefinition& Material::getProgramDefinition() const noexcept
+	{
+		return _progDef;
+	}
+
 	const bgfx::VertexLayout& Material::getVertexLayout() const noexcept
 	{
 		return _vertexLayout;
@@ -142,7 +148,7 @@ namespace darmok
 
 		submitTextures(encoder);
 		submitColors(encoder);
-		
+
 		// TODO: configure state
 		uint64_t state = BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
@@ -214,14 +220,14 @@ namespace darmok
 		BGFX_EMBEDDED_SHADER(debug_fragment),
 		BGFX_EMBEDDED_SHADER(sprite_vertex),
 		BGFX_EMBEDDED_SHADER(sprite_fragment),
-		BGFX_EMBEDDED_SHADER(basic_vertex),
-		BGFX_EMBEDDED_SHADER(basic_fragment),
+		BGFX_EMBEDDED_SHADER(forward_vertex),
+		BGFX_EMBEDDED_SHADER(forward_fragment),
 		BGFX_EMBEDDED_SHADER_END()
 	};
 
 	static const std::unordered_map<StandardMaterialType, std::string> _embeddedShaderNames
 	{
-		{StandardMaterialType::Basic, "basic"},
+		{StandardMaterialType::Basic, "forward"},
 		{StandardMaterialType::Sprite, "sprite"},
 		{StandardMaterialType::Debug, "debug"},
 	};
@@ -242,26 +248,26 @@ namespace darmok
 		return std::make_shared<Program>(handle);
 	}
 
-	static ProgramDefinition createBasicProgramDefinition(uint16_t lightAmount)
+	static ProgramDefinition createBasicProgramDefinition() noexcept
 	{
-		return {
+		return ProgramDefinition{
 			{
 				{ bgfx::Attrib::Position, { bgfx::AttribType::Float, 3 } },
 				{ bgfx::Attrib::Normal, { bgfx::AttribType::Float, 3} },
+				{ bgfx::Attrib::Tangent, { bgfx::AttribType::Float, 3} },
 				{ bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true} },
 				{ bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2} },
 			},
 			{
 				{ProgramUniform::DiffuseTexture, {"s_texColor", bgfx::UniformType::Sampler}},
 				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
-				{ProgramUniform::PointLight, {"u_lightPos", glm::vec4(), lightAmount}}
 			}
-		};
+		} + LightRenderUpdater::getProgramDefinition();
 	}
 
 	static const std::unordered_map<StandardMaterialType, ProgramDefinition> _standardProgramDefinitions
 	{
-		{StandardMaterialType::Basic, createBasicProgramDefinition(16) },
+		{StandardMaterialType::Basic, createBasicProgramDefinition() },
 		{StandardMaterialType::Sprite, {
 			{
 				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 2}},

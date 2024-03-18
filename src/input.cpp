@@ -1,6 +1,7 @@
 
 #include "input.hpp"
 #include <bx/bx.h>
+#include "dbg.h"
 
 namespace darmok
 {

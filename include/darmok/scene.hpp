@@ -11,6 +11,7 @@
 namespace darmok
 {
     class SceneImpl;
+    class Camera;
 
     typedef uint32_t Entity;
     typedef entt::basic_registry<Entity> EntityRegistry;
@@ -45,6 +46,7 @@ namespace darmok
     public:
         virtual ~ISceneRenderer() = default;
         virtual void init(Scene& scene, App& app) { };
+        virtual void shutdown() { }
         virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
     };
 
@@ -57,7 +59,7 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
 
-        virtual bgfx::ViewId render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
+        virtual bgfx::ViewId render(const Camera& cam, bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
     };
 
     class BX_NO_VTABLE ISceneLogicUpdater
@@ -65,6 +67,7 @@ namespace darmok
     public:
         virtual ~ISceneLogicUpdater() = default;
         virtual void init(Scene& scene, App& app) { };
+        virtual void shutdown() { }
         virtual void update(float deltaTime) = 0;
     };
 
@@ -114,6 +117,7 @@ namespace darmok
         void init(App& app);
         void updateLogic(float dt);
         bgfx::ViewId render(bgfx::ViewId viewId);
+        void shutdown();
 
         void addRenderer(std::unique_ptr<ISceneRenderer>&& renderer);
         void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
@@ -132,6 +136,7 @@ namespace darmok
         const Scene& getScene() const;
 
         void init(App& app) override;
+        void shutdown() override;
         bgfx::ViewId render(bgfx::ViewId viewId) override;
         void updateLogic(float dt) override;
     private:

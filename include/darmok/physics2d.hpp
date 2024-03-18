@@ -34,6 +34,6 @@ namespace darmok
         bgfx::VertexLayout _vertexLayout;
         Color _color;
 
-        bgfx::ViewId render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
+        bgfx::ViewId render(const Camera& cam, bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
     };
 }

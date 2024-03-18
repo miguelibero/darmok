@@ -7,7 +7,6 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
-#include <bx/bx.h>
 #include <bgfx/bgfx.h>
 
 extern "C" int _main_(int argc, char** argv);
@@ -42,7 +41,7 @@ namespace darmok
 		int maxInstantLogicUpdates;
 	};
 
-	class BX_NO_VTABLE App
+	class App
 	{
 	public:
 		App() noexcept;

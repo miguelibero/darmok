@@ -18,6 +18,8 @@ C++ game engine combining libraries & tools that I like
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [Box2D](https://box2d.org/) for 2D physics
 * [Bullet](https://github.com/bulletphysics/bullet3) for 3D physics
+* [rapidjson](https://github.com/Tencent/rapidjson) for parsing json
+* [pugixml](https://pugixml.org/) for parsing xml
 
 Trying to use modern C++ patterns where possible.
 

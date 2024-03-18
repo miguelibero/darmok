@@ -48,7 +48,7 @@ namespace darmok
         }
     }
 
-    EntityRuntimeView Camera::bgfxConfig(EntityRegistry& registry, bgfx::ViewId viewId) const noexcept
+    void Camera::bgfxConfig(EntityRegistry& registry, bgfx::ViewId viewId) const noexcept
     {
         auto projPtr = glm::value_ptr(_matrix);
 
@@ -66,16 +66,15 @@ namespace darmok
         {
             viewRect->bgfxConfig(viewId);
         }
+    }
 
-        EntityRuntimeView entities;
+    void Camera::filterEntityView(EntityRuntimeView& entities) const noexcept
+    {
         if (_entityFilter != nullptr)
         {
             (*_entityFilter)(entities);
         }
-
-        return entities;
     }
-
 
     ViewRect::ViewRect(const ViewVec& size, const ViewVec& origin) noexcept
         : _size(size), _origin(origin)

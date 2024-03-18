@@ -22,12 +22,12 @@
 
 namespace darmok
 {
-	static inline std::string_view getStringView(const aiString& str)
+	static inline std::string_view getStringView(const aiString& str) noexcept
 	{
 		return std::string_view(str.data, str.length);
 	}
 
-	static inline glm::mat4 convertMatrix(const aiMatrix4x4& from)
+	static inline glm::mat4 convertMatrix(const aiMatrix4x4& from) noexcept
 	{
 		// the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
 		return glm::mat4(
@@ -38,17 +38,22 @@ namespace darmok
 		);
 	}
 
-	static inline glm::vec3 convertVector(const aiVector3D& vec)
+	static inline glm::vec3 convertVector(const aiVector3D& vec) noexcept
 	{
 		return glm::vec3(vec.x, vec.y, vec.z);
 	}
 
-	static inline uint8_t convertColor(ai_real v)
+	static inline glm::vec2 convertVector(const aiVector2D& vec) noexcept
+	{
+		return glm::vec2(vec.x, vec.y);
+	}
+
+	static inline uint8_t convertColor(ai_real v) noexcept
 	{
 		return 255 * v;
 	}
 
-	Color convertColor(const aiColor4D& c)
+	Color convertColor(const aiColor4D& c) noexcept
 	{
 		return Color
 		{
@@ -59,14 +64,14 @@ namespace darmok
 		};
 	}
 
-	Color convertColor(const aiColor3D& c)
+	Color convertColor(const aiColor3D& c) noexcept
 	{
 		return Color
 		{
 			convertColor(c.r),
 			convertColor(c.g),
 			convertColor(c.b),
-			255,
+			Color::maxValue,
 		};
 	}
 
@@ -80,27 +85,27 @@ namespace darmok
 		}
 	}
 
-	std::string_view ModelMaterialProperty::getKey() const
+	std::string_view ModelMaterialProperty::getKey() const noexcept
 	{
 		return getStringView(_ptr->mKey);
 	}
 
-	ModelMaterialPropertyType ModelMaterialProperty::getType() const
+	ModelMaterialPropertyType ModelMaterialProperty::getType() const noexcept
 	{
 		return (ModelMaterialPropertyType)_ptr->mType;
 	}
 
-	ModelMaterialTextureType ModelMaterialProperty::getTextureType() const
+	ModelMaterialTextureType ModelMaterialProperty::getTextureType() const noexcept
 	{
 		return (ModelMaterialTextureType)_ptr->mSemantic;
 	}
 
-	size_t ModelMaterialProperty::getTextureIndex() const
+	size_t ModelMaterialProperty::getTextureIndex() const noexcept
 	{
 		return _ptr->mIndex;
 	}
 
-	const DataView& ModelMaterialProperty::getData() const
+	const DataView& ModelMaterialProperty::getData() const noexcept
 	{
 		return _data;
 	}
@@ -805,41 +810,49 @@ namespace darmok
 		return convertVector(_ptr->mUp);
 	}
 
-	ModelLight::ModelLight(aiLight* ptr)
+	ModelLight::ModelLight(aiLight* ptr) noexcept
 		: _ptr(ptr)
 	{
 	}
 
-	std::string_view ModelLight::getName() const
+	void ModelLight::addToScene(Scene& scene, Entity entity) noexcept
+	{
+		switch (getType())
+		{
+		case ModelLightType::Point:
+			scene.addComponent<PointLight>(entity, getIntensity());
+			break;
+		case ModelLightType::Ambient:
+			scene.addComponent<AmbientLight>(entity, getIntensity());
+			break;
+		}
+	}
+
+	std::string_view ModelLight::getName() const noexcept
 	{
 		return getStringView(_ptr->mName);
 	}
 
-	float ModelLight::getInnerConeAngle() const
+	float ModelLight::getInnerConeAngle() const noexcept
 	{
 		return _ptr->mAngleInnerCone;
 	}
 
-	float ModelLight::getOuterConeAngle() const
+	float ModelLight::getOuterConeAngle() const noexcept
 	{
 		return _ptr->mAngleOuterCone;
 	}
 
-	float ModelLight::getAttenuation(ModelLightAttenuationType type) const
+	glm::vec3 ModelLight::getIntensity() const noexcept
 	{
-		switch(type)
-		{
-			case ModelLightAttenuationType::Constant:
-				return _ptr->mAttenuationConstant;
-			case ModelLightAttenuationType::Linear:
-				return _ptr->mAttenuationLinear;
-			case ModelLightAttenuationType::Quadratic:
-				return _ptr->mAttenuationQuadratic;
-		}
-		return 0.f;
+		return {
+			_ptr->mAttenuationConstant,
+			_ptr->mAttenuationLinear,
+			_ptr->mAttenuationQuadratic,
+		};
 	}
 
-	Color ModelLight::getColor(ModelLightColorType type) const
+	Color ModelLight::getColor(ModelLightColorType type) const noexcept
 	{
 		switch (type)
 		{
@@ -853,19 +866,24 @@ namespace darmok
 		return Color::white;
 	}
 
-	glm::vec3 ModelLight::getDirection() const
+	glm::vec3 ModelLight::getDirection() const noexcept
 	{
 		return convertVector(_ptr->mDirection);
 	}
 
-	glm::vec3 ModelLight::getPosition() const
+	glm::vec3 ModelLight::getPosition() const noexcept
 	{
 		return convertVector(_ptr->mPosition);
 	}
 
-	ModelLightType ModelLight::getType() const
+	ModelLightType ModelLight::getType() const noexcept
 	{
 		return (ModelLightType)_ptr->mType;
+	}
+
+	glm::vec2 ModelLight::getSize() const noexcept
+	{
+		return convertVector(_ptr->mSize);
 	}
 
 	ModelNodeChildrenCollection::ModelNodeChildrenCollection(aiNode* ptr, Model& model, const std::string& basePath)
@@ -990,25 +1008,24 @@ namespace darmok
 		auto entity = scene.createEntity();
 		auto transMat = getTransform();
 
-		auto optCam = getCamera();
-		if (optCam.hasValue())
+		auto cam = getCamera();
+		if (cam.hasValue())
 		{
-			auto& cam = optCam.value();
-			transMat *= cam.getViewMatrix();
-			scene.addComponent<Camera>(entity, cam.getProjectionMatrix());
+			transMat *= cam->getViewMatrix();
+			scene.addComponent<Camera>(entity, cam->getProjectionMatrix());
+		}
+
+		auto light = getLight();
+		if (light.hasValue())
+		{
+			transMat = glm::translate(transMat, light->getPosition());
+			light->addToScene(scene, entity);
 		}
 
 		auto& meshes = getMeshes();
 		if (!meshes.empty())
 		{
 			scene.addComponent<MeshComponent>(entity, meshes.load());
-		}
-
-		auto optLight = getLight();
-		if (optLight.hasValue())
-		{
-			// TODO: add light component
-			auto& light = optLight.value();
 		}
 
 		auto parentTrans = scene.tryGetComponent<Transform>(parent);

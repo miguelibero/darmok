@@ -50,7 +50,7 @@ namespace darmok
 		: _material(other._material)
 		, _layout(other._layout)
 		, _vertices(other._vertices)
-		, _indices(std::move(other._indices))
+		, _indices(other._indices)
 		, _vertexBuffer(bgfx::createVertexBuffer(other._vertices.makeRef(), other._layout))
 		, _indexBuffer(bgfx::createIndexBuffer(other._indices.makeRef()))
 	{
@@ -204,32 +204,5 @@ namespace darmok
 	{
 		_meshes = { mesh };
 		return *this;
-	}
-
-	bgfx::ViewId MeshRenderer::render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId)
-	{
-		auto& registry = _scene->getRegistry();
-		entities.iterate(registry.storage<MeshComponent>());
-		auto rendered = false;
-		for (auto entity : entities)
-		{
-			auto& comp = registry.get<const MeshComponent>(entity);
-			auto& meshes = comp.getMeshes();
-			if (meshes.empty())
-			{
-				continue;
-			}
-			rendered = true;
-			Transform::bgfxConfig(entity, encoder, registry);
-			for (auto& mesh : meshes)
-			{
-				mesh->render(encoder, viewId);
-			}
-		}
-		if (rendered)
-		{
-			viewId++;
-		}
-		return viewId;
 	}
 }

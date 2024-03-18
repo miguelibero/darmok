@@ -52,10 +52,4 @@ namespace darmok
     private:
         std::vector<std::shared_ptr<Mesh>> _meshes;
     };
-
-    class MeshRenderer final : public CameraSceneRenderer
-    {
-    protected:
-        bgfx::ViewId render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
-    };
 }

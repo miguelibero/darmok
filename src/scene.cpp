@@ -56,6 +56,18 @@ namespace darmok
         _app = app;
     }
 
+    void SceneImpl::shutdown()
+    {
+        for (auto& renderer : _renderers)
+        {
+            renderer->shutdown();
+        }
+        for (auto& updater : _logicUpdaters)
+        {
+            updater->shutdown();
+        }
+    }
+
     void SceneImpl::updateLogic(float dt)
     {
         auto cams = _registry.view<Camera>();
@@ -116,6 +128,11 @@ namespace darmok
         _impl->init(*this, app);
     }
 
+    void Scene::shutdown()
+    {
+        _impl->shutdown();
+    }
+
     void  Scene::updateLogic(float dt)
     {
         _impl->updateLogic(dt);
@@ -151,6 +168,11 @@ namespace darmok
         _scene.init(app);
     }
 
+    void SceneAppComponent::shutdown()
+    {
+        _scene.shutdown();
+    }
+
     bgfx::ViewId SceneAppComponent::render(bgfx::ViewId viewId)
     {
         return _scene.render(viewId);
@@ -179,8 +201,10 @@ namespace darmok
         for (auto [entity, cam] : cams.each())
         {
             win.bgfxConfig(viewId);
-            auto entities = cam.bgfxConfig(registry, viewId);
-            viewId = render(entities, encoder, viewId);
+            cam.bgfxConfig(registry, viewId);
+            EntityRuntimeView entities;
+            cam.filterEntityView(entities);
+            viewId = render(cam, encoder, viewId);
         }
         return viewId;
     }

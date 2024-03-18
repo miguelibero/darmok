@@ -83,14 +83,14 @@ namespace darmok
             .end();
     }
 
-    bgfx::ViewId Physics2DDebugRenderer::render(EntityRuntimeView& entities, bgfx::Encoder& encoder, bgfx::ViewId viewId)
+    bgfx::ViewId Physics2DDebugRenderer::render(const Camera& cam, bgfx::Encoder& encoder, bgfx::ViewId viewId)
     {
         uint64_t state = BGFX_STATE_WRITE_RGB
             | BGFX_STATE_PT_LINES
             ;
 
         auto& registry = _scene->getRegistry();
-        entities.iterate(registry.storage<BoxCollider2D>());
+        auto entities = cam.createEntityView<BoxCollider2D>(registry);
         for (auto entity : entities)
         {
             auto& box = registry.get<const BoxCollider2D>(entity);

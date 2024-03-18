@@ -48,15 +48,15 @@ darmok_compile_shader(
 )
 darmok_compile_shader(
   TYPE VERTEX HEADER
-  SHADERS ${SHADERS_DIR}/basic_vertex.sc
-  VARYING_DEF ${SHADERS_DIR}/basic_varyingdef.sc
+  SHADERS ${SHADERS_DIR}/forward_vertex.sc
+  VARYING_DEF ${SHADERS_DIR}/forward_varyingdef.sc
   BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
   OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
 )
 darmok_compile_shader(
   TYPE FRAGMENT HEADER
-  SHADERS ${SHADERS_DIR}/basic_fragment.sc
-  VARYING_DEF ${SHADERS_DIR}/basic_varyingdef.sc
+  SHADERS ${SHADERS_DIR}/forward_fragment.sc
+  VARYING_DEF ${SHADERS_DIR}/forward_varyingdef.sc
   BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
   OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
 )
@@ -70,9 +70,9 @@ set(shaders
   ${SHADERS_DIR}/sprite_varyingdef.sc
   ${SHADERS_DIR}/sprite_fragment.sc
 
-  ${SHADERS_DIR}/basic_vertex.sc
-  ${SHADERS_DIR}/basic_varyingdef.sc
-  ${SHADERS_DIR}/basic_fragment.sc
+  ${SHADERS_DIR}/forward_vertex.sc
+  ${SHADERS_DIR}/forward_varyingdef.sc
+  ${SHADERS_DIR}/forward_fragment.sc
 )
 
 set(sources
@@ -100,6 +100,8 @@ set(sources
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/camera.cpp
   ${SRC_DIR}/light.cpp
+  ${SRC_DIR}/render_forward.cpp
+  ${SRC_DIR}/render_deferred.cpp
 )
 
 set(headers
@@ -126,6 +128,8 @@ set(headers
   ${INCLUDE_DIR}/transform.hpp
   ${INCLUDE_DIR}/camera.hpp
   ${INCLUDE_DIR}/light.hpp
+  ${INCLUDE_DIR}/render_forward.hpp
+  ${INCLUDE_DIR}/render_deferred.hpp
 )
 
 set(LIB_NAME darmok)
@@ -299,6 +303,7 @@ install(
 set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 20)
 
 # bgfx
+set_property(TARGET bgfx PROPERTY BGFX_BUILD_EXAMPLES 0)
 target_link_libraries(${LIB_NAME} PUBLIC bgfx bimg bimg_decode bx)
 
 # imgui

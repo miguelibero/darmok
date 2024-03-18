@@ -127,14 +127,6 @@ namespace darmok
         Count
     };
 
-    enum class ModelLightAttenuationType
-    {
-        Constant,
-        Linear,
-        Quadratic,
-        Count
-    };
-
     enum class ModelLightColorType
     {
         Ambient,
@@ -149,6 +141,8 @@ namespace darmok
         Directional,
         Point,
         Spot,
+        Ambient,
+        Area,
         Count
     };
 
@@ -156,11 +150,11 @@ namespace darmok
     {
     public:
         ModelMaterialProperty(aiMaterialProperty* ptr);
-        std::string_view getKey() const;
-        ModelMaterialPropertyType getType() const;
-        ModelMaterialTextureType getTextureType() const;
-        size_t getTextureIndex() const;
-        const DataView& getData() const;
+        [[nodiscard]] std::string_view getKey() const noexcept;
+        [[nodiscard]] ModelMaterialPropertyType getType() const noexcept;
+        [[nodiscard]] ModelMaterialTextureType getTextureType() const noexcept;
+        [[nodiscard]] size_t getTextureIndex() const noexcept;
+        [[nodiscard]] const DataView& getData() const noexcept;
     private:
         aiMaterialProperty* _ptr;
         DataView _data;
@@ -170,7 +164,7 @@ namespace darmok
     {
     public:
         ModelMaterialPropertyCollection(aiMaterial* ptr);
-        size_t size() const override;
+        [[nodiscard]] size_t size() const override;
     private:
         aiMaterial* _ptr;
         ModelMaterialProperty create(size_t pos) const override;
@@ -395,17 +389,19 @@ namespace darmok
     class ModelLight final
     {
     public:
-        ModelLight(aiLight* ptr);
-        std::string_view getName() const;
-        float getInnerConeAngle() const;
-        float getOuterConeAngle() const;
+        ModelLight(aiLight* ptr) noexcept;
 
-        float getAttenuation(ModelLightAttenuationType type) const;
-        Color getColor(ModelLightColorType type) const;
-
-        glm::vec3 getDirection() const;
-        glm::vec3 getPosition() const;
-        ModelLightType getType() const;
+        void addToScene(Scene& scene, Entity entity) noexcept;
+        
+        [[nodiscard]] std::string_view getName() const noexcept;
+        [[nodiscard]] ModelLightType getType() const noexcept;
+        [[nodiscard]] float getInnerConeAngle() const noexcept;
+        [[nodiscard]] float getOuterConeAngle() const noexcept;
+        [[nodiscard]] glm::vec3 getIntensity() const noexcept;
+        [[nodiscard]] Color getColor(ModelLightColorType type) const noexcept;
+        [[nodiscard]] glm::vec3 getDirection() const noexcept;
+        [[nodiscard]] glm::vec3 getPosition() const noexcept;
+        [[nodiscard]] glm::vec2 getSize() const noexcept;
     private:
         aiLight* _ptr;
     };

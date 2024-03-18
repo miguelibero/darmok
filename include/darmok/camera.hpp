@@ -25,7 +25,17 @@ namespace darmok
         }
 
         void update(EntityRegistry& registry) noexcept;
-        EntityRuntimeView bgfxConfig(EntityRegistry& registry, bgfx::ViewId viewId) const noexcept;
+        void bgfxConfig(EntityRegistry& registry, bgfx::ViewId viewId) const noexcept;
+        void filterEntityView(EntityRuntimeView& view) const noexcept;
+
+        template<typename T>
+        EntityRuntimeView createEntityView(EntityRegistry& registry) const noexcept
+        {
+            EntityRuntimeView view;
+            view.iterate(registry.storage<T>());
+            filterEntityView(view);
+            return view;
+        }
 
     private:
         glm::mat4 _matrix;

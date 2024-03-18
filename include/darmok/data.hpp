@@ -33,6 +33,8 @@ namespace darmok
         [[nodiscard]] const void* ptr() const noexcept;
         [[nodiscard]] size_t size() const noexcept;
         [[nodiscard]] bool empty() const noexcept;
+        [[nodiscard]] bool operator==(const DataView& other) const noexcept;
+        [[nodiscard]] bool operator!=(const DataView& other) const noexcept;
 
     private:
         size_t _size;
@@ -55,6 +57,10 @@ namespace darmok
         [[nodiscard]] void* ptr() const noexcept;
         [[nodiscard]] size_t size() const noexcept;
         [[nodiscard]] bool empty() const noexcept;
+        [[nodiscard]] bool operator==(const Data& other) const noexcept;
+        [[nodiscard]] bool operator!=(const Data& other) const noexcept;
+
+
         [[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
         void clear() noexcept;
 

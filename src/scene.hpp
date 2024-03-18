@@ -22,6 +22,7 @@ namespace darmok
         void init(Scene& sceme, App& app);
         void updateLogic(float dt);
         bgfx::ViewId render(bgfx::ViewId viewId);
+        void shutdown();
     private:
         std::vector<std::unique_ptr<ISceneRenderer>> _renderers;
         std::vector<std::unique_ptr<ISceneLogicUpdater>> _logicUpdaters;
