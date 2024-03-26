@@ -10,6 +10,8 @@ namespace darmok
     PointLight::PointLight(const glm::vec3& intensity, float radius) noexcept
         : _intensity(intensity)
         , _radius(radius)
+        , _diffuseColor(Colors::black)
+        , _specularColor(Colors::black)
     {
     }
 
@@ -25,6 +27,25 @@ namespace darmok
         return *this;
     }
 
+    PointLight& PointLight::setColor(const Color3& color) noexcept
+    {
+        _diffuseColor = color;
+        _specularColor = color;
+        return *this;
+    }
+
+    PointLight& PointLight::setDiffuseColor(const Color3& color) noexcept
+    {
+        _diffuseColor = color;
+        return *this;
+    }
+
+    PointLight& PointLight::setSpecularColor(const Color3& color) noexcept
+    {
+        _specularColor = color;
+        return *this;
+    }
+
     float PointLight::getRadius() const noexcept
     {
         return _radius;
@@ -35,41 +56,52 @@ namespace darmok
         return _intensity;
     }
 
-    const ProgramDefinition& LightRenderUpdater::getProgramDefinition() noexcept
+    const Color3& PointLight::getDiffuseColor() const noexcept
+    {
+        return _diffuseColor;
+    }
+
+    const Color3& PointLight::getSpecularColor() const noexcept
+    {
+        return _specularColor;
+    }
+
+    const ProgramDefinition& LightRenderUpdater::getPhongProgramDefinition() noexcept
     {
         static ProgramDefinition def{
             {},
             {
                 {ProgramUniform::LightCount, { "u_lightCount", bgfx::UniformType::Vec4 }},
-                {ProgramUniform::AmbientLightIntensity, { "u_ambientLightIntensity", bgfx::UniformType::Vec4 }}
+                {ProgramUniform::AmbientLightColor, { "u_ambientLightColor", bgfx::UniformType::Vec4 }}
             },
             {
                 {ProgramBuffer::PointLights, { 6, {
-                    { bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 4} },
-                    { bgfx::Attrib::TexCoord1, { bgfx::AttribType::Float, 4} },
+                    { bgfx::Attrib::Position,   { bgfx::AttribType::Float, 4} },
+                    { bgfx::Attrib::Color0,     { bgfx::AttribType::Float, 4} },
+                    { bgfx::Attrib::Color1,     { bgfx::AttribType::Float, 4} },
                 }}
             }}
         };
         return def;
     }
 
-    static bgfx::VertexLayout _pointLightLayout = LightRenderUpdater::getProgramDefinition().buffers.at(ProgramBuffer::PointLights).createVertexLayout();
+    static bgfx::VertexLayout _pointLightLayout = LightRenderUpdater::getPhongProgramDefinition().buffers.at(ProgramBuffer::PointLights).createVertexLayout();
 
     LightRenderUpdater::LightRenderUpdater() noexcept
         : _pointLightsBuffer{ bgfx::kInvalidHandle }
         , _countUniform{ bgfx::kInvalidHandle }
         , _ambientIntensityUniform{ bgfx::kInvalidHandle }
         , _lightCount{}
-        , _ambientIntensity{}
+        , _ambientColor{}
     {
     }
 
     void LightRenderUpdater::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;
-        auto& progDef = LightRenderUpdater::getProgramDefinition();
+        auto& progDef = LightRenderUpdater::getPhongProgramDefinition();
         _countUniform = progDef.uniforms.at(ProgramUniform::LightCount).createHandle();
-        _ambientIntensityUniform = progDef.uniforms.at(ProgramUniform::AmbientLightIntensity).createHandle();
+        _ambientIntensityUniform = progDef.uniforms.at(ProgramUniform::AmbientLightColor).createHandle();
         _pointLightsBuffer = bgfx::createDynamicVertexBuffer(
             1, _pointLightLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
     }
@@ -87,7 +119,6 @@ namespace darmok
         {
             return;
         }
-        _pointLightsBufferCamera = entt::null;
         auto& registry = _scene->getRegistry();
         auto cams = registry.view<const Camera>();
         auto& pointLights = registry.storage<PointLight>();
@@ -107,56 +138,52 @@ namespace darmok
                 auto trans = registry.try_get<const Transform>(entity);
                 if (trans != nullptr)
                 {
-                    auto v = glm::vec4(trans->getPosition(), 0);
-                    writer.set(bgfx::Attrib::TexCoord0, index, glm::value_ptr(v));
+                    writer.set(bgfx::Attrib::Position, index, trans->getPosition());
                 }
-                auto v = glm::vec4(pointLight.getIntensity(), pointLight.getRadius());
-                writer.set(bgfx::Attrib::TexCoord1, index, glm::value_ptr(v));
+                writer.set(bgfx::Attrib::Color0, index, pointLight.getDiffuseColor());
+                writer.set(bgfx::Attrib::Color1, index, pointLight.getSpecularColor());
                 index++;
             }
             _lightCount.x = index;
             
-            _pointLights.emplace(std::make_pair(camEntity, std::move(writer.release())));
+            _pointLights.emplace(std::make_pair(camEntity, writer.finish()));
         }
 
-        _ambientIntensity = {};
+        _ambientColor = {};
         auto ambientLights = registry.view<const AmbientLight>();
         for (auto [entity, ambientLight] : ambientLights.each())
         {
-            _ambientIntensity += glm::vec4(ambientLight.getIntensity(), 0);
+            auto f = 1.F / ambientLight.getIntensity()[2];
+            _ambientColor += glm::vec4(ambientLight.getIntensity(), 0) * f;
         }
     }
 
-    bool LightRenderUpdater::bgfxConfig(const Camera& cam, const Material& mat, bgfx::Encoder& encoder) noexcept
+    bool LightRenderUpdater::bgfxConfig(const Camera& cam, const Material& mat, bgfx::Encoder& encoder) const noexcept
     {
         auto& progDef = mat.getProgramDefinition();
-        auto& lightProgDef = LightRenderUpdater::getProgramDefinition();
+        auto& lightProgDef = getPhongProgramDefinition();
 
         if (progDef.hasUniform(ProgramUniform::LightCount, lightProgDef.uniforms))
         {
             encoder.setUniform(_countUniform, glm::value_ptr(_lightCount));
         }
 
-        if (progDef.hasUniform(ProgramUniform::AmbientLightIntensity, lightProgDef.uniforms))
+        if (progDef.hasUniform(ProgramUniform::AmbientLightColor, lightProgDef.uniforms))
         {
-            encoder.setUniform(_ambientIntensityUniform, glm::value_ptr(_ambientIntensity));
+            encoder.setUniform(_ambientIntensityUniform, glm::value_ptr(_ambientColor));
         }
 
         if (_scene)
         {
             auto& registry = _scene->getRegistry();
-            auto& pointLightsBufferDef = LightRenderUpdater::getProgramDefinition().buffers.at(ProgramBuffer::PointLights);
+            auto& pointLightsBufferDef = lightProgDef.buffers.at(ProgramBuffer::PointLights);
             if (progDef.hasBuffer(ProgramBuffer::PointLights, pointLightsBufferDef))
             {
                 auto camEntity = entt::to_entity(registry, cam);
                 auto itr = _pointLights.find(camEntity);
                 if (itr != _pointLights.end())
                 {
-                    if (_pointLightsBufferCamera != camEntity)
-                    {
-                        bgfx::update(_pointLightsBuffer, 0, itr->second.makeRef());
-                        _pointLightsBufferCamera = camEntity;
-                    }
+                    bgfx::update(_pointLightsBuffer, 0, itr->second.makeRef());
                     bgfx::setBuffer(pointLightsBufferDef.stage, _pointLightsBuffer, bgfx::Access::Read);
                 }
             }
@@ -167,7 +194,14 @@ namespace darmok
 
     AmbientLight::AmbientLight(const glm::vec3& intensity) noexcept
         : _intensity(intensity)
+        , _color(Colors::black)
     {
+    }
+
+    AmbientLight& AmbientLight::setColor(const Color3& color) noexcept
+    {
+        _color = color;
+        return *this;
     }
 
     AmbientLight& AmbientLight::setIntensity(const glm::vec3& intensity) noexcept
@@ -176,8 +210,13 @@ namespace darmok
         return *this;
     }
 
-    [[nodiscard]] const glm::vec3& AmbientLight::getIntensity() const noexcept
+    const glm::vec3& AmbientLight::getIntensity() const noexcept
     {
         return _intensity;
+    }
+
+    [[nodiscard]] const Color3& AmbientLight::getColor() const noexcept
+    {
+        return _color;
     }
 }

@@ -39,9 +39,15 @@ namespace darmok
 
     enum class StandardMaterialType
     {
-        Basic,
         Sprite,
-        Debug,
+        Unlit,
+        ForwardPhong,
+    };
+
+    enum class MaterialPrimitiveType
+    {
+        Triangle,
+        Line
     };
 
     class Material final
@@ -57,15 +63,21 @@ namespace darmok
         Material& operator=(Material&& other) noexcept;
 
         const std::shared_ptr<Program>& getProgram() const noexcept;
-        void setProgram(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept;
+        Material& setProgram(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept;
         const ProgramDefinition& getProgramDefinition() const noexcept;
         const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
         std::shared_ptr<Texture> getTexture(MaterialTextureType type, uint8_t textureUnit = 0) const noexcept;
-        void setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture, uint8_t textureUnit = 0) noexcept;
+        Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture, uint8_t textureUnit = 0) noexcept;
 
         OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
-        void setColor(MaterialColorType type, const Color& color) noexcept;
+        Material& setColor(MaterialColorType type, const Color& color) noexcept;
+
+        MaterialPrimitiveType getPrimitiveType() const noexcept;
+        Material& setPrimitiveType(MaterialPrimitiveType type) noexcept;
+
+        uint8_t getShininess() const noexcept;
+        Material& setShininess(uint8_t v) noexcept;
 
         void submit(bgfx::Encoder& encoder, bgfx::ViewId viewId = 0, uint32_t depth = 0) const;
 
@@ -84,6 +96,8 @@ namespace darmok
         std::unordered_map<ProgramUniform, bgfx::UniformHandle> _uniforms;
         std::unordered_map<MaterialTextureType, std::unordered_map<uint8_t, std::shared_ptr<Texture>>> _textures;
         std::unordered_map<MaterialColorType, Color> _colors;
+        uint8_t _shininess;
+        MaterialPrimitiveType _primitive;
     };
 
 

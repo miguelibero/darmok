@@ -179,7 +179,7 @@ namespace darmok
 				int w, h;
 				glfwGetWindowSize(glfw, &w, &h);
 				events.post<WindowModeChangedEvent>(WindowMode::Normal);
-				events.post<WindowSizeChangedEvent>(WindowSize{ w, h });
+				events.post<WindowSizeChangedEvent>(glm::uvec2{ w, h });
 				break;
 			case WindowMode::Fullscreen:
 				GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -197,7 +197,7 @@ namespace darmok
 					, mode->refreshRate
 				);
 				events.post<WindowModeChangedEvent>(WindowMode::Fullscreen);
-				events.post<WindowSizeChangedEvent>(WindowSize{ mode->width, mode->height });
+				events.post<WindowSizeChangedEvent>(glm::uvec2{ mode->width, mode->height });
 				break;
 			}
 		}
@@ -569,7 +569,7 @@ namespace darmok
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		WindowSize size{ DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT };
+		glm::uvec2 size{ DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT };
 		_window = createWindow(size, "darmok");
 
 		if (!_window)
@@ -664,7 +664,7 @@ namespace darmok
 
 	void PlatformImpl::windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
-		_events.post<WindowSizeChangedEvent>(WindowSize(width, height));
+		_events.post<WindowSizeChangedEvent>(glm::uvec2(width, height));
 	}
 
 	void PlatformImpl::joystickCallback(int jid, int action) noexcept

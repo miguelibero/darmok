@@ -10,7 +10,7 @@ namespace darmok
 	{
 	}
 
-	void WindowImpl::setSize(const WindowSize& size) noexcept
+	void WindowImpl::setSize(const glm::uvec2& size) noexcept
 	{
 		_size = size;
 	}
@@ -25,7 +25,7 @@ namespace darmok
 		_mode = mode;
 	}
 
-	const WindowSize& WindowImpl::getSize() const noexcept
+	const glm::uvec2& WindowImpl::getSize() const noexcept
 	{
 		return _size;
 	}
@@ -56,7 +56,7 @@ namespace darmok
 		return *_impl;
 	}
 
-	const WindowSize& Window::getSize() const noexcept
+	const glm::uvec2& Window::getSize() const noexcept
 	{
 		return _impl->getSize();
 	}

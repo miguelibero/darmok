@@ -1,6 +1,7 @@
 #include "image.hpp"
 #include <bimg/decode.h>
 #include <darmok/utils.hpp>
+#include <darmok/color.hpp>
 
 namespace darmok
 {
@@ -20,6 +21,15 @@ namespace darmok
 			_container->m_data
 			, _container->m_size
 		);
+	}
+
+	std::shared_ptr<Image> Image::create(bx::AllocatorI* alloc, const Color& color, const glm::uvec2& size) noexcept
+	{
+		auto container = bimg::imageAlloc(
+			alloc, bimg::TextureFormat::RGBA8, size.x, size.y, 0, 1, false, false
+		);
+		bimg::imageSolid(container->m_data, size.x, size.y, Colors::toNumber(color));
+		return std::make_shared<Image>(container);
 	}
 
 	bool Image::empty() const noexcept
@@ -72,7 +82,6 @@ namespace darmok
 		);
 		return info;
 	}
-
 
 	DataImageLoader::DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI* alloc) noexcept
 		: _dataLoader(dataLoader)

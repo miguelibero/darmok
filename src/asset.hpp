@@ -45,6 +45,7 @@ namespace darmok
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] IVertexLayoutLoader& getVertexLayoutLoader() noexcept;
+		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 
 		bx::AllocatorI* getAllocator() noexcept;
 		void setBasePath(const std::string& path) noexcept;
@@ -59,6 +60,7 @@ namespace darmok
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		AssimpModelLoader _modelLoader;
 		XmlDataVertexLayoutLoader _vertexLayoutLoader;
+		ColorTextureLoader _colorTextureLoader;
 	};
 
 }

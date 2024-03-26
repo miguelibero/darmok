@@ -52,7 +52,12 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * sprites and spritesheets
 
 ### Next tasks
-* basic lighting
+* forward renderer
+    * phong lighting
+    * pbr lighting
+* deferred renderer
+    * phong lighting
+    * pbr lighting
 * wren scripting
 * mesh serialization
 * spine animations loading

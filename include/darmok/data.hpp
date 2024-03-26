@@ -27,10 +27,10 @@ namespace darmok
     class DataView final
     {
     public:
-        DataView(const void* ptr = nullptr, size_t size = 0) noexcept;
+        DataView(void* ptr = nullptr, size_t size = 0) noexcept;
         DataView(const Data& data) noexcept;
         DataView(const bgfx::Memory& mem) noexcept;
-        [[nodiscard]] const void* ptr() const noexcept;
+        [[nodiscard]] void* ptr() const noexcept;
         [[nodiscard]] size_t size() const noexcept;
         [[nodiscard]] bool empty() const noexcept;
         [[nodiscard]] bool operator==(const DataView& other) const noexcept;
@@ -38,7 +38,7 @@ namespace darmok
 
     private:
         size_t _size;
-        const void* _ptr;
+        void* _ptr;
     };
 
     class Data final

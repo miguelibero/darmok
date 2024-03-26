@@ -1,8 +1,9 @@
-$input v_color0, v_texcoord0, v_position, v_view, v_normal 
+$input v_color0, v_texcoord0
 
 #include <bgfx_shader.sh>
 
 SAMPLER2D(s_texColor, 0);
+
 uniform vec4 u_diffuseColor;
 
 void main()

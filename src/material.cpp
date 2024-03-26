@@ -3,12 +3,12 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include "embedded_shader.hpp"
-#include "generated/shaders/debug_vertex.h"
-#include "generated/shaders/debug_fragment.h"
+#include "generated/shaders/unlit_vertex.h"
+#include "generated/shaders/unlit_fragment.h"
+#include "generated/shaders/forward_phong_vertex.h"
+#include "generated/shaders/forward_phong_fragment.h"
 #include "generated/shaders/sprite_vertex.h"
 #include "generated/shaders/sprite_fragment.h"
-#include "generated/shaders/forward_vertex.h"
-#include "generated/shaders/forward_fragment.h"
 
 namespace darmok
 {
@@ -34,6 +34,8 @@ namespace darmok
 		, _uniforms(std::move(other._uniforms))
 		, _textures(std::move(other._textures))
 		, _colors(std::move(other._colors))
+		, _shininess(32)
+		, _primitive(MaterialPrimitiveType::Triangle)
 	{
 		other._program = nullptr;
 	}
@@ -68,7 +70,7 @@ namespace darmok
 		return _program;
 	}
 
-	void Material::setProgram(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept
+	Material& Material::setProgram(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept
 	{
 		clearUniforms();
 		_program = program;
@@ -82,6 +84,7 @@ namespace darmok
 				_uniforms[pair.first] = handle;
 			}
 		}
+		return *this;
 	}
 
 	const ProgramDefinition& Material::getProgramDefinition() const noexcept
@@ -109,9 +112,10 @@ namespace darmok
 		return itr2->second;
 	}
 
-	void Material::setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture, uint8_t textureUnit) noexcept
+	Material& Material::setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture, uint8_t textureUnit) noexcept
 	{
 		_textures[type][textureUnit] = texture;
+		return *this;
 	}
 
 	OptionalRef<const Color> Material::getColor(MaterialColorType type) const noexcept
@@ -124,9 +128,32 @@ namespace darmok
 		return itr->second;
 	}
 
-	void Material::setColor(MaterialColorType type, const Color& color) noexcept
+	Material& Material::setColor(MaterialColorType type, const Color& color) noexcept
 	{
 		_colors[type] = color;
+		return *this;
+	}
+
+	MaterialPrimitiveType Material::getPrimitiveType() const noexcept
+	{
+		return _primitive;
+	}
+
+	Material& Material::setPrimitiveType(MaterialPrimitiveType type) noexcept
+	{
+		_primitive = type;
+		return *this;
+	}
+
+	uint8_t Material::getShininess() const noexcept
+	{
+		return _shininess;
+	}
+
+	Material& Material::setShininess(uint8_t v) noexcept
+	{
+		_shininess = v;
+		return *this;
 	}
 
 	bgfx::UniformHandle Material::getUniformHandle(ProgramUniform uniform) const noexcept
@@ -158,6 +185,10 @@ namespace darmok
 			| BGFX_STATE_MSAA
 			| BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
 			;
+		if (_primitive == MaterialPrimitiveType::Line)
+		{
+			state |= BGFX_STATE_PT_LINES;
+		}
 
 		encoder.setState(state);
 		encoder.submit(viewId, _program->getHandle(), depth);
@@ -196,7 +227,7 @@ namespace darmok
 			auto itr = _colors.find(pair.first);
 			if (itr != _colors.end())
 			{
-				auto colorVec = itr->second.getVector();
+				auto colorVec = Colors::normalize(itr->second);
 				encoder.setUniform(uniform, glm::value_ptr(colorVec));
 			}
 			else
@@ -216,20 +247,20 @@ namespace darmok
 
 	static const bgfx::EmbeddedShader _embeddedShaders[] =
 	{
-		BGFX_EMBEDDED_SHADER(debug_vertex),
-		BGFX_EMBEDDED_SHADER(debug_fragment),
+		BGFX_EMBEDDED_SHADER(unlit_vertex),
+		BGFX_EMBEDDED_SHADER(unlit_fragment),
+		BGFX_EMBEDDED_SHADER(forward_phong_vertex),
+		BGFX_EMBEDDED_SHADER(forward_phong_fragment),
 		BGFX_EMBEDDED_SHADER(sprite_vertex),
 		BGFX_EMBEDDED_SHADER(sprite_fragment),
-		BGFX_EMBEDDED_SHADER(forward_vertex),
-		BGFX_EMBEDDED_SHADER(forward_fragment),
 		BGFX_EMBEDDED_SHADER_END()
 	};
 
 	static const std::unordered_map<StandardMaterialType, std::string> _embeddedShaderNames
 	{
-		{StandardMaterialType::Basic, "forward"},
+		{StandardMaterialType::Unlit, "unlit"},
+		{StandardMaterialType::ForwardPhong, "forward_phong"},
 		{StandardMaterialType::Sprite, "sprite"},
-		{StandardMaterialType::Debug, "debug"},
 	};
 
 	std::shared_ptr<Program> getStandardProgram(StandardMaterialType type) noexcept
@@ -248,26 +279,37 @@ namespace darmok
 		return std::make_shared<Program>(handle);
 	}
 
-	static ProgramDefinition createBasicProgramDefinition() noexcept
+	static ProgramDefinition createForwardPhongProgramDefinition() noexcept
 	{
 		return ProgramDefinition{
 			{
 				{ bgfx::Attrib::Position, { bgfx::AttribType::Float, 3 } },
 				{ bgfx::Attrib::Normal, { bgfx::AttribType::Float, 3} },
 				{ bgfx::Attrib::Tangent, { bgfx::AttribType::Float, 3} },
-				{ bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true} },
 				{ bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2} },
+				{ bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true} },
 			},
 			{
 				{ProgramUniform::DiffuseTexture, {"s_texColor", bgfx::UniformType::Sampler}},
 				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
 			}
-		} + LightRenderUpdater::getProgramDefinition();
+		} + LightRenderUpdater::getPhongProgramDefinition();
 	}
 
 	static const std::unordered_map<StandardMaterialType, ProgramDefinition> _standardProgramDefinitions
 	{
-		{StandardMaterialType::Basic, createBasicProgramDefinition() },
+		{StandardMaterialType::ForwardPhong, createForwardPhongProgramDefinition() },
+		{StandardMaterialType::Unlit, {
+			{
+				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 3}},
+				{bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true}},
+				{bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2}},
+			},
+			{
+				{ProgramUniform::DiffuseTexture, {"s_texColor", bgfx::UniformType::Sampler}},
+				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
+			}
+		}},
 		{StandardMaterialType::Sprite, {
 			{
 				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 2}},
@@ -276,14 +318,7 @@ namespace darmok
 			},
 			{
 				{ProgramUniform::DiffuseTexture, {"s_texColor", bgfx::UniformType::Sampler}},
-			}
-		}},
-		{StandardMaterialType::Debug, {
-			{
-				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 2}},
-			},
-			{
-				{ProgramUniform::DiffuseColor, {"u_color", bgfx::UniformType::Vec4}},
+				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
 			}
 		}},
 	};

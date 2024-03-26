@@ -7,9 +7,12 @@
 
 #include <memory>
 #include <string_view>
+#include <unordered_map>
 
 namespace darmok
 {
+	using Color = glm::u8vec4;
+
     class Image final
 	{
 	public:
@@ -17,7 +20,9 @@ namespace darmok
 		~Image() noexcept;
 		Image(const Image& other) = delete;
 		Image& operator=(const Image& other) = delete;
-		
+
+		static std::shared_ptr<Image> create(bx::AllocatorI* alloc, const Color& color, const glm::uvec2& size = { 1, 1 }) noexcept;
+
 		[[nodiscard]] bool empty() const noexcept;
 		[[nodiscard]] glm::uvec2 getSize() const noexcept;
 		[[nodiscard]] uint32_t getDepth() const noexcept;

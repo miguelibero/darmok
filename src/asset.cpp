@@ -46,6 +46,7 @@ namespace darmok
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
 		, _modelLoader(_dataLoader, _textureLoader, &_allocator)
 		, _vertexLayoutLoader(_dataLoader)
+		, _colorTextureLoader(&_allocator)
 	{
 	}
 
@@ -82,6 +83,11 @@ namespace darmok
 	IVertexLayoutLoader& AssetContextImpl::getVertexLayoutLoader() noexcept
 	{
 		return _vertexLayoutLoader;
+	}
+
+	ColorTextureLoader& AssetContextImpl::getColorTextureLoader() noexcept
+	{
+		return _colorTextureLoader;
 	}
 
 	void AssetContextImpl::setBasePath(const std::string& path) noexcept
@@ -128,6 +134,12 @@ namespace darmok
 	{
 		return _impl->getVertexLayoutLoader();
 	}
+
+	ColorTextureLoader& AssetContext::getColorTextureLoader() noexcept
+	{
+		return _impl->getColorTextureLoader();
+	}
+
 
 	AssetContextImpl& AssetContext::getImpl() noexcept
 	{

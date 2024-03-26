@@ -127,7 +127,7 @@ namespace darmok
 		}
 	}
 
-	WindowSizeChangedEvent::WindowSizeChangedEvent(const WindowSize& size) noexcept
+	WindowSizeChangedEvent::WindowSizeChangedEvent(const glm::uvec2& size) noexcept
 		: PlatformEvent(WindowSizeChanged)
 		, _size(size)
 	{

@@ -71,7 +71,7 @@ namespace darmok
 			convertColor(c.r),
 			convertColor(c.g),
 			convertColor(c.b),
-			Color::maxValue,
+			Colors::maxValue,
 		};
 	}
 
@@ -383,7 +383,7 @@ namespace darmok
 		{
 			return _material;
 		}
-		_material = Material::createStandard(StandardMaterialType::Basic);
+		_material = Material::createStandard(StandardMaterialType::ForwardPhong);
 		for (auto& elm : _materialTextures)
 		{
 			for (auto& modelTex : getTextures(elm.first))
@@ -673,7 +673,7 @@ namespace darmok
 		{
 			writer.set((bgfx::Attrib::Enum)(bgfx::Attrib::Color0 + i++), elm);
 		}
-		return writer.release();
+		return writer.finish();
 	}
 
 	Data createModelMeshIndexData(const ModelMesh& modelMesh)
@@ -820,10 +820,27 @@ namespace darmok
 		switch (getType())
 		{
 		case ModelLightType::Point:
-			scene.addComponent<PointLight>(entity, getIntensity());
+		{
+			scene.addComponent<PointLight>(entity)
+				.setIntensity(getIntensity())
+				.setDiffuseColor(getColor(ModelLightColorType::Diffuse))
+				.setSpecularColor(getColor(ModelLightColorType::Specular))
+				;
+			auto ambient = getColor(ModelLightColorType::Ambient);
+			if (ambient != Colors::black)
+			{
+				scene.addComponent<AmbientLight>(entity)
+					.setIntensity(getIntensity())
+					.setColor(ambient)
+					;
+			}
 			break;
+		}
 		case ModelLightType::Ambient:
-			scene.addComponent<AmbientLight>(entity, getIntensity());
+			scene.addComponent<AmbientLight>(entity)
+				.setIntensity(getIntensity())
+				.setColor(getColor(ModelLightColorType::Ambient))
+				;
 			break;
 		}
 	}
@@ -863,7 +880,7 @@ namespace darmok
 		case ModelLightColorType::Specular:
 			return convertColor(_ptr->mColorSpecular);
 		}
-		return Color::white;
+		return Colors::white;
 	}
 
 	glm::vec3 ModelLight::getDirection() const noexcept

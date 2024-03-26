@@ -4,13 +4,14 @@
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/sprite.hpp>
-#include <darmok/physics2d.hpp>
+#include <darmok/quad.hpp>
 #include <darmok/input.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/anim.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/window.hpp>
+#include <darmok/render_forward.hpp>
 
 namespace
 {
@@ -99,9 +100,10 @@ namespace
 			App::init(args);
 
 			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
-			scene.addRenderer<darmok::MeshRenderer>();
-			scene.addRenderer<darmok::Physics2DDebugRenderer>();
+			scene.addRenderer<darmok::ForwardRenderer>();
+			scene.addRenderer<darmok::QuadRenderer>();
 			scene.addLogicUpdater<darmok::FrameAnimationUpdater>();
+			scene.addLogicUpdater<darmok::QuadUpdater>();
 
 			glm::vec2 size = getWindow().getSize();
 
@@ -121,6 +123,11 @@ namespace
 				.setEntityComponentFilter<Culling3D>()
 				;
 
+			_debugMaterial = darmok::Material::createStandard(darmok::StandardMaterialType::Sprite);
+			auto debugTexture = getAssets().getColorTextureLoader()(darmok::Colors::red);
+			_debugMaterial->setTexture(darmok::MaterialTextureType::Diffuse, debugTexture);
+			_debugMaterial->setPrimitiveType(darmok::MaterialPrimitiveType::Line);
+
 			createBouncingSprite(scene);
 			createSpriteAnimation(scene);
 			createRotatingCube(scene);
@@ -135,7 +142,7 @@ namespace
 			auto mesh = darmok::SpriteUtils::fromTexture(tex, scale);
 			auto size = scale * glm::vec2(tex->getImage()->getSize());
 			scene.addComponent<darmok::MeshComponent>(sprite, mesh);
-			// scene.addComponent<darmok::BoxCollider2D>(sprite, size);
+			scene.addComponent<darmok::QuadComponent>(sprite, _debugMaterial, glm::vec2(tex->getImage()->getSize()) * scale);
 			scene.addComponent<Culling2D>(sprite);
 			scene.addLogicUpdater<ScreenBounceUpdater>(trans, size, 100.f);
 		}
@@ -150,7 +157,10 @@ namespace
 			auto frames = darmok::SpriteUtils::fromAtlas(*texAtlas, animNamePrefix, 0.1f, scale);
 			auto& meshComp = scene.addComponent<darmok::MeshComponent>(anim);
 			scene.addComponent<darmok::FrameAnimationComponent>(anim, frames, meshComp);
-			scene.addComponent<darmok::BoxCollider2D>(anim, glm::vec2(animBounds.size) * scale);
+			
+
+			scene.addComponent<darmok::QuadComponent>(anim, _debugMaterial, glm::vec2(animBounds.size) * scale);
+
 			scene.addComponent<Culling2D>(anim);
 			auto& size = getWindow().getSize();
 			scene.addComponent<darmok::Transform>(anim)
@@ -161,15 +171,17 @@ namespace
 		void createRotatingCube(darmok::Scene& scene)
 		{
 			auto texture = getAssets().getTextureLoader()("assets/brick.png");
-			auto material = darmok::Material::createStandard(darmok::StandardMaterialType::Basic);
+			auto material = darmok::Material::createStandard(darmok::StandardMaterialType::Unlit);
 			material->setTexture(darmok::MaterialTextureType::Diffuse, texture);
-			material->setColor(darmok::MaterialColorType::Diffuse, darmok::Color::red);
+			material->setColor(darmok::MaterialColorType::Diffuse, darmok::Colors::red);
 			auto cube = scene.createEntity();
 			scene.addComponent<Culling3D>(cube);
 			scene.addComponent<darmok::MeshComponent>(cube, darmok::Mesh::createCube(material));
 			auto& trans = scene.addComponent<darmok::Transform>(cube);
 			scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
 		}
+	private:
+		std::shared_ptr<darmok::Material> _debugMaterial;
 	};
 }
 

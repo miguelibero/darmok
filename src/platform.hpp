@@ -157,10 +157,10 @@ namespace darmok
 	class WindowSizeChangedEvent final : public PlatformEvent
 	{
 	public:
-		WindowSizeChangedEvent(const WindowSize& size) noexcept;
+		WindowSizeChangedEvent(const glm::uvec2& size) noexcept;
 		void process(Window& win) noexcept;
 	private:
-		WindowSize _size;
+		glm::uvec2 _size;
 	};
 
 	class WindowPhaseChangedEvent final : public PlatformEvent

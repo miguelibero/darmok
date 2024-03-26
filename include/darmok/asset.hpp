@@ -11,6 +11,7 @@ namespace darmok
 	class ITextureAtlasLoader;
 	class IModelLoader;
 	class IVertexLayoutLoader;
+	class ColorTextureLoader;
 
 	class AssetContext final
 	{
@@ -24,6 +25,7 @@ namespace darmok
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] IVertexLayoutLoader& getVertexLayoutLoader() noexcept;
+		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;

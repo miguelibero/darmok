@@ -18,64 +18,36 @@ set(LIBS_DIR lib)
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
 
-darmok_compile_shader(
-  TYPE VERTEX HEADER
-  SHADERS ${SHADERS_DIR}/sprite_vertex.sc
-  VARYING_DEF ${SHADERS_DIR}/sprite_varyingdef.sc
-  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
-  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
-)
-darmok_compile_shader(
-  TYPE FRAGMENT HEADER
-  SHADERS ${SHADERS_DIR}/sprite_fragment.sc
-  VARYING_DEF ${SHADERS_DIR}/sprite_varyingdef.sc
-  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
-  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
-)
-darmok_compile_shader(
-  TYPE VERTEX HEADER
-  SHADERS ${SHADERS_DIR}/debug_vertex.sc
-  VARYING_DEF ${SHADERS_DIR}/debug_varyingdef.sc
-  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
-  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
-)
-darmok_compile_shader(
-  TYPE FRAGMENT HEADER
-  SHADERS ${SHADERS_DIR}/debug_fragment.sc
-  VARYING_DEF ${SHADERS_DIR}/debug_varyingdef.sc
-  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
-  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
-)
-darmok_compile_shader(
-  TYPE VERTEX HEADER
-  SHADERS ${SHADERS_DIR}/forward_vertex.sc
-  VARYING_DEF ${SHADERS_DIR}/forward_varyingdef.sc
-  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
-  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
-)
-darmok_compile_shader(
-  TYPE FRAGMENT HEADER
-  SHADERS ${SHADERS_DIR}/forward_fragment.sc
-  VARYING_DEF ${SHADERS_DIR}/forward_varyingdef.sc
-  BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
-  OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
-)
+set(SHADERS "")
 
-set(shaders
-  ${SHADERS_DIR}/debug_vertex.sc
-  ${SHADERS_DIR}/debug_varyingdef.sc
-  ${SHADERS_DIR}/debug_fragment.sc
+macro(addShader NAME)
+  set(VERTEX_PATH "${SHADERS_DIR}/${NAME}_vertex.sc")
+  set(FRAGMENT_PATH "${SHADERS_DIR}/${NAME}_fragment.sc")
+  set(VARYING_DEF_PATH "${SHADERS_DIR}/${NAME}_varyingdef.sc")
 
-  ${SHADERS_DIR}/sprite_vertex.sc
-  ${SHADERS_DIR}/sprite_varyingdef.sc
-  ${SHADERS_DIR}/sprite_fragment.sc
+  darmok_compile_shader(
+    TYPE VERTEX HEADER
+    SHADERS ${VERTEX_PATH}
+    VARYING_DEF ${VARYING_DEF_PATH}
+    BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
+    OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
+  )
+  darmok_compile_shader(
+    TYPE FRAGMENT HEADER
+    SHADERS ${FRAGMENT_PATH}
+    VARYING_DEF ${VARYING_DEF_PATH}
+    BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
+    OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
+  )
 
-  ${SHADERS_DIR}/forward_vertex.sc
-  ${SHADERS_DIR}/forward_varyingdef.sc
-  ${SHADERS_DIR}/forward_fragment.sc
-)
+  list(APPEND SHADERS ${VERTEX_PATH} ${FRAGMENT_PATH} ${VARYING_DEF_PATH})
+endmacro()
 
-set(sources
+addShader("sprite")
+addShader("unlit")
+addShader("forward_phong")
+
+set(SOURCES
   ${SRC_DIR}/window.cpp
   ${SRC_DIR}/platform.cpp
   ${SRC_DIR}/app.cpp
@@ -87,7 +59,7 @@ set(sources
   ${SRC_DIR}/utils.cpp
   ${SRC_DIR}/sprite.cpp
   ${SRC_DIR}/anim.cpp
-  ${SRC_DIR}/physics2d.cpp
+  ${SRC_DIR}/quad.cpp
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/data.cpp
   ${SRC_DIR}/mesh.cpp
@@ -104,7 +76,7 @@ set(sources
   ${SRC_DIR}/render_deferred.cpp
 )
 
-set(headers
+set(HEADERS
   ${INCLUDE_DIR}/app.hpp
   ${INCLUDE_DIR}/input.hpp
   ${INCLUDE_DIR}/window.hpp
@@ -114,7 +86,7 @@ set(headers
   ${INCLUDE_DIR}/scene.hpp
   ${INCLUDE_DIR}/sprite.hpp
   ${INCLUDE_DIR}/anim.hpp
-  ${INCLUDE_DIR}/physics2d.hpp
+  ${INCLUDE_DIR}/quad.hpp
   ${INCLUDE_DIR}/model.hpp
   ${INCLUDE_DIR}/data.hpp
   ${INCLUDE_DIR}/mesh.hpp
@@ -136,10 +108,12 @@ set(LIB_NAME darmok)
 
 add_library(
   ${LIB_NAME}
-  ${headers}
-  ${sources}
-  ${shaders}
+  ${HEADERS}
+  ${SOURCES}
+  ${SHADERS}
 )
+
+source_group("Shader Files" FILES ${SHADERS})
 
 set_target_properties(
   ${LIB_NAME}

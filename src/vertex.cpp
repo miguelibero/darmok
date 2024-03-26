@@ -18,11 +18,18 @@ namespace darmok
         : _layout(layout)
         , _size(size)
         , _data(layout.getSize(size), alloc)
-        , _alloc(alloc)
+        , _dataView(_data)
     {
     }
 
-    Data&& VertexDataWriter::release() noexcept
+    VertexDataWriter::VertexDataWriter(const bgfx::VertexLayout& layout, const DataView& data) noexcept
+        : _layout(layout)
+        , _size(data.size() / layout.getSize(1))
+        , _dataView(data)
+    {
+    }
+
+    Data&& VertexDataWriter::finish() noexcept
     {
         for (auto i = 0; i < bgfx::Attrib::Count; i++)
         {
@@ -33,9 +40,9 @@ namespace darmok
             }
             uint8_t num;
             bgfx::AttribType::Enum type;
-            bool normalize;
+            bool normalized;
             bool asInt;
-            _layout.decode(attr, num, type, normalize, asInt);
+            _layout.decode(attr, num, type, normalized, asInt);
             
             std::array<float, 4> input;
             if (attr == bgfx::Attrib::Normal && num == 3 && type == bgfx::AttribType::Float)
@@ -48,39 +55,10 @@ namespace darmok
             }
             for (auto j = 0; j < _size; j++)
             {
-                bgfx::vertexPack(&input.front(), true, attr, _layout, _data.ptr(), j);
+                bgfx::vertexPack(&input.front(), normalized, attr, _layout, _dataView.ptr(), j);
             }
         }
         return std::move(_data);
-    }
-
-    VertexDataWriter& VertexDataWriter::set(bgfx::Attrib::Enum attr, const BaseReadOnlyCollection<glm::vec2>& input) noexcept
-    {
-        return setIter(attr, input.begin(), input.end(), [](auto& itr) { return glm::value_ptr(*itr); });
-    }
-    VertexDataWriter& VertexDataWriter::set(bgfx::Attrib::Enum attr, const BaseReadOnlyCollection<glm::vec3>& input) noexcept
-    {
-        return setIter(attr, input.begin(), input.end(), [](auto& itr) { return glm::value_ptr(*itr); });
-    }
-
-    VertexDataWriter& VertexDataWriter::set(bgfx::Attrib::Enum attr, const BaseReadOnlyCollection<Color>& input) noexcept
-    {
-        return setIter(attr, input.begin(), input.end(), [](auto& itr) { return itr->ptr(); });
-    }
-
-    VertexDataWriter& VertexDataWriter::set(bgfx::Attrib::Enum attr, const std::vector<glm::vec2>& input) noexcept
-    {
-        return setIter(attr, input.begin(), input.end(), [](auto& itr) { return glm::value_ptr(*itr); });
-    }
-
-    VertexDataWriter& VertexDataWriter::set(bgfx::Attrib::Enum attr, const std::vector<glm::vec3>& input) noexcept
-    {
-        return setIter(attr, input.begin(), input.end(), [](auto& itr) { return glm::value_ptr(*itr); });
-    }
-
-    VertexDataWriter& VertexDataWriter::set(bgfx::Attrib::Enum attr, const std::vector<Color>& input) noexcept
-    {
-        return setIter(attr, input.begin(), input.end(), [](auto& itr) noexcept { return itr->ptr(); });
     }
 
     bool VertexDataWriter::hasBeenSet(bgfx::Attrib::Enum attr) const noexcept

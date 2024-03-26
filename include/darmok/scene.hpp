@@ -41,12 +41,17 @@ namespace darmok
 
     class Scene;
 
-    class BX_NO_VTABLE ISceneRenderer
+    class BX_NO_VTABLE ISceneComponent
     {
     public:
-        virtual ~ISceneRenderer() = default;
+        virtual ~ISceneComponent() = default;
         virtual void init(Scene& scene, App& app) { };
         virtual void shutdown() { }
+    };
+
+    class BX_NO_VTABLE ISceneRenderer : public ISceneComponent
+    {
+    public:
         virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
     };
 
@@ -62,12 +67,9 @@ namespace darmok
         virtual bgfx::ViewId render(const Camera& cam, bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
     };
 
-    class BX_NO_VTABLE ISceneLogicUpdater
+    class BX_NO_VTABLE ISceneLogicUpdater : public ISceneComponent
     {
     public:
-        virtual ~ISceneLogicUpdater() = default;
-        virtual void init(Scene& scene, App& app) { };
-        virtual void shutdown() { }
         virtual void update(float deltaTime) = 0;
     };
 

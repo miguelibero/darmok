@@ -24,8 +24,6 @@ namespace darmok
 		Count,
 	};
 
-	using WindowSize = glm::uvec2;
-
 	class WindowImpl;
 	class Platform;
 
@@ -42,7 +40,7 @@ namespace darmok
 
 		void bgfxConfig(bgfx::ViewId viewId) noexcept;
 
-		[[nodiscard]] const WindowSize& getSize() const noexcept;
+		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 		[[nodiscard]] WindowMode getMode() const noexcept;
 

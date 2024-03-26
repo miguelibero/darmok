@@ -107,7 +107,7 @@ namespace darmok
 		: _name(std::move(name))
 		, _type(bgfx::UniformType::Vec4)
 		, _num(num)
-		, _defaultValue(Data::copy(glm::value_ptr(defaultValue)))
+		, _defaultValue(Data::copy(glm::value_ptr(defaultValue), 4))
 	{
 	}
 
@@ -115,7 +115,7 @@ namespace darmok
 		: _name(std::move(name))
 		, _type(bgfx::UniformType::Mat3)
 		, _num(num)
-		, _defaultValue(Data::copy(glm::value_ptr(defaultValue)))
+		, _defaultValue(Data::copy(glm::value_ptr(defaultValue), 9))
 	{
 	}
 
@@ -123,7 +123,7 @@ namespace darmok
 		: _name(std::move(name))
 		, _type(bgfx::UniformType::Mat4)
 		, _num(num)
-		, _defaultValue(Data::copy(glm::value_ptr(defaultValue)))
+		, _defaultValue(Data::copy(glm::value_ptr(defaultValue), 16))
 	{
 	}
 

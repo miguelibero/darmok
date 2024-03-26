@@ -3,6 +3,7 @@
 
 #include <darmok/image.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/color.hpp>
 
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
@@ -35,7 +36,7 @@ namespace darmok
 		void releaseImage();
 		TextureType getType() const;
 
-		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, std::string_view name, uint64_t flags = defaultTextureCreationFlags);
+		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, std::string_view name = "", uint64_t flags = defaultTextureCreationFlags);
 
 	private:
 		std::shared_ptr<Image> _img;
@@ -97,5 +98,16 @@ namespace darmok
 	public:
 		virtual ~ITextureAtlasLoader() = default;
 		virtual std::shared_ptr<TextureAtlas> operator()(std::string_view name, uint64_t flags = defaultTextureCreationFlags) = 0;
+	};
+
+	class ColorTextureLoader final
+	{
+	public:
+		ColorTextureLoader(bx::AllocatorI* alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
+		std::shared_ptr<Texture> operator()(const Color& color) noexcept;
+	private:
+		bx::AllocatorI* _alloc;
+		glm::uvec2 _size;
+		std::unordered_map<Color, std::shared_ptr<Texture>> _cache;
 	};
 }

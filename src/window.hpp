@@ -13,16 +13,16 @@ namespace darmok
 		WindowImpl(const WindowImpl& other) = delete;
 		WindowImpl(WindowImpl&& other) = delete;
 
-		void setSize(const WindowSize& size) noexcept;
+		void setSize(const glm::uvec2& size) noexcept;
 		void setPhase(WindowPhase phase) noexcept;
 		void setMode(WindowMode mode) noexcept;
 		
-		[[nodiscard]] const WindowSize& getSize() const noexcept;
+		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] WindowMode getMode() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 
 	private:
-		WindowSize _size;
+		glm::uvec2 _size;
 		WindowPhase _phase;
 		WindowMode _mode;
 	};

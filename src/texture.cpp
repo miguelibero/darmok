@@ -275,4 +275,23 @@ namespace darmok
 
 		return std::make_shared<TextureAtlas>(texture, elements, size);
 	}
+
+	ColorTextureLoader::ColorTextureLoader(bx::AllocatorI* alloc, const glm::uvec2& size) noexcept
+		: _alloc(alloc)
+		, _size(size)
+	{
+	}
+
+	std::shared_ptr<Texture> ColorTextureLoader::operator()(const Color& color) noexcept
+	{
+		auto itr = _cache.find(color);
+		if (itr != _cache.end())
+		{
+			return itr->second;
+		}
+		auto tex = Texture::create(Image::create(_alloc, color, _size));
+		_cache.emplace(std::make_pair(color, tex));
+		return tex;
+	}
+
 }

@@ -127,14 +127,6 @@ namespace darmok
         Count
     };
 
-    enum class ModelLightColorType
-    {
-        Ambient,
-        Diffuse,
-        Specular,
-        Count
-    };
-
     enum class ModelLightType
     {
         Undefined,
@@ -143,6 +135,14 @@ namespace darmok
         Spot,
         Ambient,
         Area,
+        Count
+    };
+
+    enum class ModelLightColorType
+    {
+        Diffuse,
+        Specular,
+        Ambient,
         Count
     };
 

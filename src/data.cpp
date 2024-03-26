@@ -3,7 +3,7 @@
 
 namespace darmok
 {
-    DataView::DataView(const void* ptr, size_t size) noexcept
+    DataView::DataView(void* ptr, size_t size) noexcept
         : _size(size)
         , _ptr(ptr)
     {
@@ -20,7 +20,7 @@ namespace darmok
     {
     }
 
-    const void* DataView::ptr() const noexcept
+    void* DataView::ptr() const noexcept
     {
         return _ptr;
     }

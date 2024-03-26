@@ -48,7 +48,7 @@ namespace darmok
 		DiffuseTexture,
 		DiffuseColor,
 		LightCount,
-		AmbientLightIntensity
+		AmbientLightColor
 	};
 
 	class ProgramUniformDefinition final

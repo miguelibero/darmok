@@ -27,16 +27,16 @@ namespace darmok
         for (auto& pos : element.positions)
         {
             auto v = scale * glm::vec2(pos.x, element.originalSize.y - pos.y);
-            writer.set(bgfx::Attrib::Position, i++, glm::value_ptr(v));
+            writer.set(bgfx::Attrib::Position, i++, v);
         }
         i = 0;
         for (auto& texCoord : element.texCoords)
         {
             auto v = glm::vec2(texCoord) / atlasSize;
-            writer.set(bgfx::Attrib::TexCoord0, i++, glm::value_ptr(v));
+            writer.set(bgfx::Attrib::TexCoord0, i++, v);
         }
-        writer.set(bgfx::Attrib::Color0, color.ptr());
-        return std::make_shared<Mesh>(material, layout, writer.release(), Data::copy(element.indices));
+        writer.set(bgfx::Attrib::Color0, color);
+        return std::make_shared<Mesh>(material, layout, writer.finish(), Data::copy(element.indices));
     }
 
     std::vector<AnimationFrame> SpriteUtils::fromAtlas(const TextureAtlas& atlas, std::string_view namePrefix, float frameDuration, float scale, const Color& color)
@@ -84,11 +84,11 @@ namespace darmok
         for (auto& pos : _textureSpritePositions)
         {
             auto v = pos * size;
-            writer.set(bgfx::Attrib::Position, i++, glm::value_ptr(v));
+            writer.set(bgfx::Attrib::Position, i++, v);
         }
         writer.set(bgfx::Attrib::TexCoord0, _textureSpriteTexCoords);
-        writer.set(bgfx::Attrib::Color0, color.ptr());
-        return std::make_shared<Mesh>(material, layout, writer.release(), Data::copy(_textureSpriteIndices));
+        writer.set(bgfx::Attrib::Color0, color);
+        return std::make_shared<Mesh>(material, layout, writer.finish(), Data::copy(_textureSpriteIndices));
     }
 
 
