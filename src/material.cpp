@@ -1,90 +1,50 @@
 #include <darmok/material.hpp>
 #include <darmok/light.hpp>
+#include <darmok/program_def.hpp>
+#include <darmok/asset.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
-#include "embedded_shader.hpp"
-#include "generated/shaders/unlit_vertex.h"
-#include "generated/shaders/unlit_fragment.h"
-#include "generated/shaders/forward_phong_vertex.h"
-#include "generated/shaders/forward_phong_fragment.h"
-#include "generated/shaders/sprite_vertex.h"
-#include "generated/shaders/sprite_fragment.h"
 
 namespace darmok
 {
-	Material::Material(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept
+	Material::Material(const ProgramDefinition& progDef) noexcept
+		: _progDef(progDef)
+		, _vertexLayout(progDef.createVertexLayout())
 	{
-		setProgram(program, progDef);
+		for (auto& pair : _progDef.samplers)
+		{
+			_samplerHandles.emplace(pair.first, pair.second.createHandle());
+		}
+		for (auto& pair : _progDef.uniforms)
+		{
+			_uniformHandles.emplace(pair.first, pair.second.createHandle());
+		}
 	}
 
-	Material::Material(const Material& other) noexcept
+	Material::~Material()
 	{
-		setProgram(other._program, other._progDef);
-	}
-
-	Material& Material::operator=(const Material& other) noexcept
-	{
-		setProgram(other._program, other._progDef);
-		return *this;
-	}
-
-	Material::Material(Material&& other) noexcept
-		: _program(other._program)
-		, _progDef(other._progDef)
-		, _uniforms(std::move(other._uniforms))
-		, _textures(std::move(other._textures))
-		, _colors(std::move(other._colors))
-		, _shininess(32)
-		, _primitive(MaterialPrimitiveType::Triangle)
-	{
-		other._program = nullptr;
-	}
-
-	Material& Material::operator=(Material&& other) noexcept
-	{
-		_program = other._program;
-		_progDef = other._progDef;
-		_uniforms = std::move(other._uniforms);
-		_textures = std::move(other._textures);
-		_colors = std::move(other._colors);
-		other._program = nullptr;
-		return *this;
-	}
-
-	Material::~Material() noexcept
-	{
-		clearUniforms();
-	}
-
-	void Material::clearUniforms() noexcept
-	{
-		for (auto& pair : _uniforms)
+		for (auto& pair : _samplerHandles)
 		{
 			bgfx::destroy(pair.second);
 		}
-		_uniforms.clear();
-	}
-
-	const std::shared_ptr<Program>& Material::getProgram() const noexcept
-	{
-		return _program;
-	}
-
-	Material& Material::setProgram(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept
-	{
-		clearUniforms();
-		_program = program;
-		_progDef = progDef;
-		_vertexLayout = _progDef.createVertexLayout();
-		for (auto& pair : progDef.uniforms)
+		for (auto& pair : _uniformHandles)
 		{
-			auto handle = pair.second.createHandle();
-			if (isValid(handle))
+			bgfx::destroy(pair.second);
+		}
+	}
+
+	void Material::load(AssetContext& assets)
+	{
+		_defaultTextures.clear();
+		for (auto& pair : _progDef.samplers)
+		{
+			auto& texName = pair.second.getDefaultTextureName();
+			if (!texName.empty())
 			{
-				_uniforms[pair.first] = handle;
+				auto tex = assets.getTextureLoader()(texName);
+				_defaultTextures.emplace(pair.first, tex);
 			}
 		}
-		return *this;
 	}
 
 	const ProgramDefinition& Material::getProgramDefinition() const noexcept
@@ -97,24 +57,19 @@ namespace darmok
 		return _vertexLayout;
 	}
 
-	std::shared_ptr<Texture> Material::getTexture(MaterialTextureType type, uint8_t textureUnit) const noexcept
+	std::shared_ptr<Texture> Material::getTexture(MaterialTextureType type) const noexcept
 	{
 		auto itr = _textures.find(type);
 		if (itr == _textures.end())
 		{
 			return nullptr;
 		}
-		auto itr2 = itr->second.find(textureUnit);
-		if (itr2 == itr->second.end())
-		{
-			return nullptr;
-		}
-		return itr2->second;
+		return itr->second;
 	}
 
-	Material& Material::setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture, uint8_t textureUnit) noexcept
+	Material& Material::setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept
 	{
-		_textures[type][textureUnit] = texture;
+		_textures[type] = texture;
 		return *this;
 	}
 
@@ -156,185 +111,64 @@ namespace darmok
 		return *this;
 	}
 
-	bgfx::UniformHandle Material::getUniformHandle(ProgramUniform uniform) const noexcept
+	static const std::unordered_map<ProgramSampler, MaterialTextureType> _materialTextureSamplers
 	{
-		auto itr = _uniforms.find(uniform);
-		if (itr == _uniforms.end())
-		{
-			return { bgfx::kInvalidHandle };
-		}
-		return itr->second;
-	}
-
-	void Material::submit(bgfx::Encoder& encoder, bgfx::ViewId viewId, uint32_t depth) const
-	{
-		if (_program == nullptr)
-		{
-			throw std::runtime_error("material without program");
-		}
-
-		submitTextures(encoder);
-		submitColors(encoder);
-
-		// TODO: configure state
-		uint64_t state = BGFX_STATE_WRITE_RGB
-			| BGFX_STATE_WRITE_A
-			| BGFX_STATE_WRITE_Z
-			| BGFX_STATE_DEPTH_TEST_LEQUAL // TODO: should be less?
-			| BGFX_STATE_CULL_CCW
-			| BGFX_STATE_MSAA
-			| BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
-			;
-		if (_primitive == MaterialPrimitiveType::Line)
-		{
-			state |= BGFX_STATE_PT_LINES;
-		}
-
-		encoder.setState(state);
-		encoder.submit(viewId, _program->getHandle(), depth);
-	}
-
-	void Material::submitTextures(bgfx::Encoder& encoder) const
-	{
-		auto uniform = getUniformHandle(ProgramUniform::DiffuseTexture);
-		if (isValid(uniform))
-		{
-			auto itr = _textures.find(MaterialTextureType::Diffuse);
-			if (itr != _textures.end())
-			{
-				for (const auto& pair : itr->second)
-				{
-					encoder.setTexture(pair.first, uniform, pair.second->getHandle());
-				}
-			}
-		}
-	}
-
-	static const std::unordered_map<MaterialColorType, ProgramUniform> _materialColorUniforms = {
-		{ MaterialColorType::Diffuse, ProgramUniform::DiffuseColor },
+		{ ProgramSampler::DiffuseTexture, MaterialTextureType::Diffuse },
 	};
 
-
-	void Material::submitColors(bgfx::Encoder& encoder) const
+	static const std::unordered_map<ProgramUniform, MaterialColorType> _materialColorUniforms
 	{
-		for (const auto& pair : _materialColorUniforms)
+		{ ProgramUniform::DiffuseColor, MaterialColorType::Diffuse },
+	};
+
+	void Material::bgfxConfig(bgfx::Encoder& encoder) const noexcept
+	{
+		for (auto& pair : _progDef.samplers)
 		{
-			auto uniform = getUniformHandle(pair.second);
-			if (!isValid(uniform))
+			auto itr1 = _samplerHandles.find(pair.first);
+			if (itr1 == _samplerHandles.end())
 			{
 				continue;
 			}
-			auto itr = _colors.find(pair.first);
-			if (itr != _colors.end())
+			auto itr2 = _materialTextureSamplers.find(pair.first);
+			if (itr2 != _materialTextureSamplers.end())
 			{
-				auto colorVec = Colors::normalize(itr->second);
-				encoder.setUniform(uniform, glm::value_ptr(colorVec));
-			}
-			else
-			{
-				auto itr = _progDef.uniforms.find(pair.second);
-				if (itr != _progDef.uniforms.end())
+				auto itr3 = _textures.find(itr2->second);
+				if (itr3 != _textures.end())
 				{
-					const auto& defVal = itr->second.getDefaultValue();
-					if (!defVal.empty())
-					{
-						encoder.setUniform(uniform, defVal.ptr());
-					}
+					encoder.setTexture(pair.second.getStage(), itr1->second, itr3->second->getHandle());
+					continue;
 				}
 			}
+			auto itr3 = _defaultTextures.find(pair.first);
+			if (itr3 != _defaultTextures.end())
+			{
+				encoder.setTexture(pair.second.getStage(), itr1->second, itr3->second->getHandle());
+			}
 		}
-	}
-
-	static const bgfx::EmbeddedShader _embeddedShaders[] =
-	{
-		BGFX_EMBEDDED_SHADER(unlit_vertex),
-		BGFX_EMBEDDED_SHADER(unlit_fragment),
-		BGFX_EMBEDDED_SHADER(forward_phong_vertex),
-		BGFX_EMBEDDED_SHADER(forward_phong_fragment),
-		BGFX_EMBEDDED_SHADER(sprite_vertex),
-		BGFX_EMBEDDED_SHADER(sprite_fragment),
-		BGFX_EMBEDDED_SHADER_END()
-	};
-
-	static const std::unordered_map<StandardMaterialType, std::string> _embeddedShaderNames
-	{
-		{StandardMaterialType::Unlit, "unlit"},
-		{StandardMaterialType::ForwardPhong, "forward_phong"},
-		{StandardMaterialType::Sprite, "sprite"},
-	};
-
-	std::shared_ptr<Program> getStandardProgram(StandardMaterialType type) noexcept
-	{
-		auto itr = _embeddedShaderNames.find(type);
-		if (itr == _embeddedShaderNames.end())
+		for (auto& pair : _progDef.uniforms)
 		{
-			return nullptr;
+			auto itr1 = _uniformHandles.find(pair.first);
+			if (itr1 == _uniformHandles.end())
+			{
+				continue;
+			}
+			auto itr2 = _materialColorUniforms.find(pair.first);
+			if (itr2 != _materialColorUniforms.end())
+			{
+				auto itr3 = _colors.find(itr2->second);
+				if (itr3 != _colors.end())
+				{
+					auto colorVec = Colors::normalize(itr3->second);
+					encoder.setUniform(itr1->second, glm::value_ptr(colorVec));
+					continue;
+				}
+			}
+			auto& def = pair.second.getDefault();
+			if (!def.empty())
+			{
+				encoder.setUniform(itr1->second, def.ptr());
+			}
 		}
-		auto renderer = bgfx::getRendererType();
-		auto handle = bgfx::createProgram(
-			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_vertex").c_str()),
-			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_fragment").c_str()),
-			true
-		);
-		return std::make_shared<Program>(handle);
-	}
-
-	static ProgramDefinition createForwardPhongProgramDefinition() noexcept
-	{
-		return ProgramDefinition{
-			{
-				{ bgfx::Attrib::Position, { bgfx::AttribType::Float, 3 } },
-				{ bgfx::Attrib::Normal, { bgfx::AttribType::Float, 3} },
-				{ bgfx::Attrib::Tangent, { bgfx::AttribType::Float, 3} },
-				{ bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2} },
-				{ bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true} },
-			},
-			{
-				{ProgramUniform::DiffuseTexture, {"s_texColor", bgfx::UniformType::Sampler}},
-				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
-			}
-		} + LightRenderUpdater::getPhongProgramDefinition();
-	}
-
-	static const std::unordered_map<StandardMaterialType, ProgramDefinition> _standardProgramDefinitions
-	{
-		{StandardMaterialType::ForwardPhong, createForwardPhongProgramDefinition() },
-		{StandardMaterialType::Unlit, {
-			{
-				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 3}},
-				{bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true}},
-				{bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2}},
-			},
-			{
-				{ProgramUniform::DiffuseTexture, {"s_texColor", bgfx::UniformType::Sampler}},
-				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
-			}
-		}},
-		{StandardMaterialType::Sprite, {
-			{
-				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 2}},
-				{bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true}},
-				{bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2}},
-			},
-			{
-				{ProgramUniform::DiffuseTexture, {"s_texColor", bgfx::UniformType::Sampler}},
-				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
-			}
-		}},
-	};
-
-	ProgramDefinition getStandardProgramDefinition(StandardMaterialType type) noexcept
-	{
-		auto itr = _standardProgramDefinitions.find(type);
-		if (itr == _standardProgramDefinitions.end())
-		{
-			return {};
-		}
-		return itr->second;
-	}
-
-	std::shared_ptr<Material> Material::createStandard(StandardMaterialType type) noexcept
-	{
-		return std::make_shared<Material>(getStandardProgram(type), getStandardProgramDefinition(type));
 	}
 }

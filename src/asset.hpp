@@ -9,6 +9,7 @@
 #include "image.hpp"
 #include "texture.hpp"
 #include "program.hpp"
+#include "program_def.hpp"
 #include "model.hpp"
 #include "data.hpp"
 #include "vertex.hpp"
@@ -41,6 +42,7 @@ namespace darmok
 		AssetContextImpl();
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
+		[[nodiscard]] IProgramDefinitionLoader& getProgramDefinitionLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
@@ -56,6 +58,7 @@ namespace darmok
 		FileDataLoader _dataLoader;
 		DataImageLoader _imageLoader;
 		DataProgramLoader _programLoader;
+		JsonDataProgramDefinitionLoader _progDefLoader;
 		ImageTextureLoader _textureLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		AssimpModelLoader _modelLoader;

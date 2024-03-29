@@ -1,7 +1,14 @@
 #include "program.hpp"
-#include <darmok/data.hpp>
 #include <unordered_map>
-#include <glm/gtc/type_ptr.hpp>
+#include <darmok/data.hpp>
+
+#include "embedded_shader.hpp"
+#include "generated/shaders/unlit_vertex.h"
+#include "generated/shaders/unlit_fragment.h"
+#include "generated/shaders/forward_phong_vertex.h"
+#include "generated/shaders/forward_phong_fragment.h"
+#include "generated/shaders/sprite_vertex.h"
+#include "generated/shaders/sprite_fragment.h"
 
 namespace darmok
 {
@@ -9,6 +16,7 @@ namespace darmok
 		: _handle(handle)
 	{
 	}
+
     Program::~Program() noexcept
     {
 		if (isValid(_handle))
@@ -20,14 +28,50 @@ namespace darmok
 	const bgfx::ProgramHandle& Program::getHandle() const noexcept
 	{
 		return _handle;
-	}  
+	}
 
-	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader) noexcept
+	static const bgfx::EmbeddedShader _embeddedShaders[] =
+	{
+		BGFX_EMBEDDED_SHADER(unlit_vertex),
+		BGFX_EMBEDDED_SHADER(unlit_fragment),
+		BGFX_EMBEDDED_SHADER(forward_phong_vertex),
+		BGFX_EMBEDDED_SHADER(forward_phong_fragment),
+		BGFX_EMBEDDED_SHADER(sprite_vertex),
+		BGFX_EMBEDDED_SHADER(sprite_fragment),
+		BGFX_EMBEDDED_SHADER_END()
+	};
+
+	static const std::unordered_map<StandardProgramType, std::string> _embeddedShaderNames
+	{
+		{StandardProgramType::Unlit, "unlit"},
+		{StandardProgramType::ForwardPhong, "forward_phong"},
+		{StandardProgramType::Sprite, "sprite"},
+	};
+
+	std::shared_ptr<Program> Program::createStandard(StandardProgramType type) noexcept
+	{
+		auto itr = _embeddedShaderNames.find(type);
+		if (itr == _embeddedShaderNames.end())
+		{
+			return nullptr;
+		}
+		auto renderer = bgfx::getRendererType();
+		auto handle = bgfx::createProgram(
+			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_vertex").c_str()),
+			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_fragment").c_str()),
+			true
+		);
+		return std::make_shared<Program>(handle);
+	}
+
+	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader, const std::string& vertexSuffix, const std::string& fragmentSuffix) noexcept
 		: _dataLoader(dataLoader)
+		, _vertexSuffix(vertexSuffix)
+		, _fragmentSuffix(fragmentSuffix)
 	{
 	}
 
-	std::string DataProgramLoader::getShaderExt()
+	static std::string getShaderExt()
 	{
 		switch (bgfx::getRendererType())
 		{
@@ -66,340 +110,16 @@ namespace darmok
 		return handle;
 	}
 
-	std::shared_ptr<Program> DataProgramLoader::operator()(std::string_view vertexName, std::string_view fragmentName)
+	std::shared_ptr<Program> DataProgramLoader::operator()(std::string_view name)
 	{
-		const bgfx::ShaderHandle vsh = loadShader(std::string(fragmentName));
+		std::string nameStr(name);
+		const bgfx::ShaderHandle vsh = loadShader(nameStr + _vertexSuffix);
 		bgfx::ShaderHandle fsh = BGFX_INVALID_HANDLE;
-		if (!fragmentName.empty())
+		if (!name.empty())
 		{
-			fsh = loadShader(std::string(fragmentName));
+			fsh = loadShader(nameStr + _fragmentSuffix);
 		}
 		auto handle = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
 		return std::make_shared<Program>(handle);
-	}
-
-	bool ProgramAttribDefinition::operator==(const ProgramAttribDefinition& other) const noexcept
-	{
-		return type == other.type && num == other.num && normalize == other.normalize;
-	}
-
-	bool ProgramAttribDefinition::operator!=(const ProgramAttribDefinition& other) const noexcept
-	{
-		return !operator==(other);
-	}
-
-	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num) noexcept
-		: _name(std::move(name))
-		, _type(type)
-		, _num(num)
-	{
-	}
-
-	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, std::shared_ptr<Texture>& defaultValue, uint16_t num) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Sampler)
-		, _num(num)
-		, _defaultTexture(defaultValue)
-	{
-	}
-
-	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const glm::vec4& defaultValue, uint16_t num) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Vec4)
-		, _num(num)
-		, _defaultValue(Data::copy(glm::value_ptr(defaultValue), 4))
-	{
-	}
-
-	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const glm::mat3& defaultValue, uint16_t num) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Mat3)
-		, _num(num)
-		, _defaultValue(Data::copy(glm::value_ptr(defaultValue), 9))
-	{
-	}
-
-	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const glm::mat4& defaultValue, uint16_t num) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Mat4)
-		, _num(num)
-		, _defaultValue(Data::copy(glm::value_ptr(defaultValue), 16))
-	{
-	}
-
-	bool ProgramUniformDefinition::operator==(const ProgramUniformDefinition& other) const noexcept
-	{
-		return _name == other._name && _type == other._type && _num == other._num && 
-			_defaultValue == other._defaultValue && _defaultTexture == other._defaultTexture;
-	}
-
-	bool ProgramUniformDefinition::operator!=(const ProgramUniformDefinition& other) const noexcept
-	{
-		return !operator==(other);
-	}
-
-	const std::string& ProgramUniformDefinition::getName() const
-	{
-		return _name;
-	}
-
-	bgfx::UniformType::Enum ProgramUniformDefinition::getType() const
-	{
-		return _type;
-	}
-
-	const Data& ProgramUniformDefinition::getDefaultValue() const
-	{
-		return _defaultValue;
-	}
-
-	const std::shared_ptr<Texture>& ProgramUniformDefinition::getDefaultTexture() const
-	{
-		return _defaultTexture;
-	}
-
-	uint16_t ProgramUniformDefinition::getNum() const
-	{
-		return _num;
-	}
-
-	bgfx::UniformHandle ProgramUniformDefinition::createHandle() const noexcept
-	{
-		return bgfx::createUniform(_name.c_str(), _type, _num);
-	}
-
-	static bgfx::VertexLayout createVertexLayout(const ProgramAttribMap& attribs) noexcept
-	{
-		bgfx::VertexLayout layout;
-		layout.begin();
-		for (const auto& pair : attribs)
-		{
-			layout.add(pair.first, pair.second.num, pair.second.type, pair.second.normalize);
-		}
-		layout.end();
-		return layout;
-	}
-
-	template<typename K, typename V>
-	static std::unordered_map<K, V> combineMaps(const std::unordered_map<K, V>& a, const std::unordered_map<K, V>& b) noexcept
-	{
-		auto combined = a;
-		combined.insert(b.begin(), b.end());
-		return combined;
-	}
-
-	bool ProgramBufferDefinition::operator==(const ProgramBufferDefinition& other) const noexcept
-	{
-		return stage == other.stage && attribs == other.attribs;
-	}
-
-	bool ProgramBufferDefinition::operator!=(const ProgramBufferDefinition& other) const noexcept
-	{
-		return !operator==(other);
-	}
-
-	ProgramBufferDefinition& ProgramBufferDefinition::operator+=(const ProgramBufferDefinition& other) noexcept
-	{
-		attribs.insert(other.attribs.begin(), other.attribs.end());
-		return *this;
-	}
-
-	ProgramBufferDefinition ProgramBufferDefinition::operator+(const ProgramBufferDefinition& other) const  noexcept
-	{
-		return { stage, combineMaps(attribs, other.attribs) };
-	}
-
-	bool ProgramBufferDefinition::contains(const ProgramBufferDefinition& other) const noexcept
-	{
-		for (auto& elm : other.attribs)
-		{
-			if (!hasAttrib(elm.first, elm.second))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
-	bool ProgramBufferDefinition::hasAttrib(bgfx::Attrib::Enum attrib, const ProgramAttribMap& defs) const noexcept
-	{
-		auto itr = defs.find(attrib);
-		if (itr == defs.end())
-		{
-			return false;
-		}
-		return hasAttrib(attrib, itr->second);
-	}
-
-	bool ProgramBufferDefinition::hasAttrib(bgfx::Attrib::Enum attrib, const ProgramAttribDefinition& def) const noexcept
-	{
-		auto itr = attribs.find(attrib);
-		if (itr == attribs.end())
-		{
-			return false;
-		}
-		return itr->second == def;
-	}
-
-	bgfx::VertexLayout ProgramBufferDefinition::createVertexLayout() const noexcept
-	{
-		return darmok::createVertexLayout(attribs);
-	}
-
-	bgfx::VertexLayout ProgramDefinition::createVertexLayout() const noexcept
-	{
-		return darmok::createVertexLayout(attribs);
-	}
-
-	bool ProgramDefinition::operator==(const ProgramDefinition& other) const noexcept
-	{
-		return attribs == other.attribs && uniforms == other.uniforms && buffers == other.buffers;
-	}
-
-	bool ProgramDefinition::operator!=(const ProgramDefinition& other) const noexcept
-	{
-		return !operator==(other);
-	}
-
-	ProgramDefinition& ProgramDefinition::operator+=(const ProgramDefinition& other) noexcept
-	{
-		attribs.insert(other.attribs.begin(), other.attribs.end());
-		uniforms.insert(other.uniforms.begin(), other.uniforms.end());
-		buffers.insert(other.buffers.begin(), other.buffers.end());
-		return *this;
-	}
-
-	ProgramDefinition ProgramDefinition::operator+(const ProgramDefinition& other) const noexcept
-	{
-		return {
-			combineMaps(attribs, other.attribs),
-			combineMaps(uniforms, other.uniforms),
-			combineMaps(buffers, other.buffers),
-		};
-	}
-
-	bool ProgramDefinition::contains(const ProgramDefinition& other) const noexcept
-	{
-		for (auto& elm : other.attribs)
-		{
-			if (!hasAttrib(elm.first, elm.second))
-			{
-				return false;
-			}
-		}
-		for (auto& elm : other.uniforms)
-		{
-			if (!hasUniform(elm.first, elm.second))
-			{
-				return false;
-			}
-		}
-		for (auto& elm : other.buffers)
-		{
-			if (!hasBuffer(elm.first, elm.second))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
-	bool ProgramDefinition::hasAttrib(bgfx::Attrib::Enum attrib, const ProgramAttribMap& defs) const noexcept
-	{
-		auto itr = defs.find(attrib);
-		if (itr == defs.end())
-		{
-			return false;
-		}
-		return hasAttrib(attrib, itr->second);
-	}
-
-	bool ProgramDefinition::hasAttrib(bgfx::Attrib::Enum attrib, const ProgramAttribDefinition& def) const noexcept
-	{
-		auto itr = attribs.find(attrib);
-		if (itr == attribs.end())
-		{
-			return false;
-		}
-		return itr->second == def;
-	}
-
-	bool ProgramDefinition::hasBuffer(ProgramBuffer buffer, const ProgramBufferMap& defs) const noexcept
-	{
-		auto itr = defs.find(buffer);
-		if (itr == defs.end())
-		{
-			return false;
-		}
-		return hasBuffer(buffer, itr->second);
-	}
-
-	bool ProgramDefinition::hasBuffer(ProgramBuffer buffer, const ProgramBufferDefinition& def) const noexcept
-	{
-		auto itr = buffers.find(buffer);
-		if (itr != buffers.end())
-		{
-			return itr->second == def;
-		}
-		return false;
-	}
-
-	bool ProgramDefinition::hasUniform(ProgramUniform uniform, const ProgramUniformMap& defs) const noexcept
-	{
-		auto itr = defs.find(uniform);
-		if (itr == defs.end())
-		{
-			return false;
-		}
-		return hasUniform(uniform, itr->second);
-	}
-
-
-	bool ProgramDefinition::hasUniform(ProgramUniform uniform, const ProgramUniformDefinition& def) const noexcept
-	{
-		auto itr = uniforms.find(uniform);
-		if (itr != uniforms.end())
-		{
-			return itr->second == def;
-		}
-		return false;
-	}
-
-	OptionalRef<const ProgramUniformDefinition> ProgramDefinition::getUniform(ProgramUniform uniform) const noexcept
-	{
-		auto itr = uniforms.find(uniform);
-		if (itr != uniforms.end())
-		{
-			return itr->second;
-		}
-		return nullptr;
-	}
-
-	OptionalRef<const ProgramUniformDefinition> ProgramDefinition::getUniform(ProgramUniform uniform, std::string_view name) const noexcept
-	{
-		auto itr = uniforms.find(uniform);
-		if (itr != uniforms.end())
-		{
-			auto& u = itr->second;
-			if (u.getName() == name)
-			{
-				return u;
-			}
-		}
-		return nullptr;
-	}
-
-	OptionalRef<const ProgramUniformDefinition> ProgramDefinition::getUniform(ProgramUniform uniform, std::string_view name, bgfx::UniformType::Enum type, uint16_t num) const noexcept
-	{
-		auto itr = uniforms.find(uniform);
-		if (itr != uniforms.end())
-		{
-			auto& u = itr->second;
-			if (u.getName() == name && u.getType() == type && u.getNum() == num)
-			{
-				return u;
-			}
-		}
-		return nullptr;
 	}
 }

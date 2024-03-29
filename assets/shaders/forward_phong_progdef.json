@@ -1,0 +1,38 @@
+{
+    "attributes": {
+        "position": { 
+            "type": "float",
+            "num": 3
+        },
+        "normal": { 
+            "type": "float",
+            "num": 3
+        },
+        "tangent": { 
+            "type": "float",
+            "num": 3
+        },
+        "texCoord0": { 
+            "type": "float",
+            "num": 2
+        },
+        "color0": { 
+            "type": "uint8",
+            "num": 4,
+            "normalize": true
+        }
+    },
+    "uniforms": {
+        "diffuseTexture": {
+            "name": "s_texColor",
+            "type": "sampler"
+        },
+        "diffuseColor": {
+            "name": "u_diffuseColor",
+            "default": [1, 1, 1, 1]
+        }
+    },
+    "include": [
+        "phong"
+    ]
+}

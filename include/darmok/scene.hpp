@@ -58,7 +58,7 @@ namespace darmok
     class CameraSceneRenderer : public ISceneRenderer
     {
     public:
-        void init(Scene& scene, App& app) override;
+        void init(Scene& scene, App& app) noexcept override;
         bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
     protected:
         OptionalRef<Scene> _scene;

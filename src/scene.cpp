@@ -183,7 +183,7 @@ namespace darmok
         _scene.updateLogic(dt);
     }
 
-    void CameraSceneRenderer::init(Scene& scene, App& app)
+    void CameraSceneRenderer::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _app = app;

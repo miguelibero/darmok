@@ -140,7 +140,7 @@ namespace darmok
             {
                 return itr->second;
             }
-            auto r = _elements.emplace(std::make_pair(pos, create(pos)));
+            auto r = _elements.emplace(pos, create(pos));
             return r.first->second;
         }
 

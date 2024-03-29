@@ -11,6 +11,7 @@ namespace darmok
 	class ITextureAtlasLoader;
 	class IModelLoader;
 	class IVertexLayoutLoader;
+	class IProgramDefinitionLoader;
 	class ColorTextureLoader;
 
 	class AssetContext final
@@ -21,6 +22,7 @@ namespace darmok
 
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
+		[[nodiscard]] IProgramDefinitionLoader& getProgramDefinitionLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;

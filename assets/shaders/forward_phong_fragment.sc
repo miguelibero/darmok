@@ -9,6 +9,7 @@ uniform vec4 u_diffuseColor;
 
 void main()
 {
+	vec4 base = texture2D(s_texColor, v_texcoord0) * v_color0;
 	vec3 diffuse = vec3_splat(0);
 	vec3 specular = vec3_splat(0);
 	vec3 viewDir = normalize(v_view - v_position);
@@ -31,7 +32,6 @@ void main()
 	}
 	diffuse *= u_diffuseColor.xyz;
 	vec3 ambient = getAmbientLight().color;
-	vec4 objColor = texture2D(s_texColor, v_texcoord0) * v_color0;
-	gl_FragColor.rgb = objColor.rgb * (ambient + diffuse + specular);
-	gl_FragColor.a = objColor.a;
+	gl_FragColor.rgb = base.rgb * (ambient + diffuse + specular);
+	gl_FragColor.a = base.a;
 }

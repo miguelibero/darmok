@@ -7,19 +7,18 @@
 
 namespace darmok
 {
-    std::shared_ptr<Material> createSpriteMaterial(const std::shared_ptr<Texture>& texture)
+    static std::shared_ptr<Material> createSpriteMaterial(const std::shared_ptr<Texture>& texture, const ProgramDefinition& progDef) noexcept
     {
-        auto mat = Material::createStandard(StandardMaterialType::Sprite);
+        auto mat = std::make_shared<Material>(progDef);
         mat->setTexture(MaterialTextureType::Diffuse, texture);
         return mat;
     }
 
-    std::shared_ptr<Mesh> SpriteUtils::fromAtlas(const TextureAtlas& atlas, const TextureAtlasElement& element, float scale, const Color& color)
+    std::shared_ptr<Mesh> SpriteUtils::fromAtlas(const TextureAtlas& atlas, const ProgramDefinition& progDef, const TextureAtlasElement& element, float scale, const Color& color)
     {
-        auto material = createSpriteMaterial(atlas.texture);
-        auto& layout = material->getVertexLayout();
+        auto material = createSpriteMaterial(atlas.texture, progDef);
         auto size = std::min(element.positions.size(), element.texCoords.size());
-        VertexDataWriter writer(layout, size);
+        VertexDataWriter writer(material->getVertexLayout(), size);
 
         glm::vec2 atlasSize(atlas.size);
 
@@ -36,17 +35,17 @@ namespace darmok
             writer.set(bgfx::Attrib::TexCoord0, i++, v);
         }
         writer.set(bgfx::Attrib::Color0, color);
-        return std::make_shared<Mesh>(material, layout, writer.finish(), Data::copy(element.indices));
+        return std::make_shared<Mesh>(material, writer.finish(), Data::copy(element.indices));
     }
 
-    std::vector<AnimationFrame> SpriteUtils::fromAtlas(const TextureAtlas& atlas, std::string_view namePrefix, float frameDuration, float scale, const Color& color)
+    std::vector<AnimationFrame> SpriteUtils::fromAtlas(const TextureAtlas& atlas, const ProgramDefinition& progDef, std::string_view namePrefix, float frameDuration, float scale, const Color& color)
     {
         std::vector<AnimationFrame> frames;
         for (auto& elm : atlas.elements)
         {
             if (elm.name.starts_with(namePrefix))
             {
-                auto mesh = fromAtlas(atlas, elm, scale, color);
+                auto mesh = fromAtlas(atlas, progDef, elm, scale, color);
                 if (mesh)
                 {
                     frames.push_back({ { mesh }, frameDuration });
@@ -74,11 +73,10 @@ namespace darmok
         0, 1, 2, 2, 3, 0
     };
 
-    std::shared_ptr<Mesh> SpriteUtils::fromTexture(const std::shared_ptr<Texture>& texture, float scale, const Color& color)
+    std::shared_ptr<Mesh> SpriteUtils::fromTexture(const std::shared_ptr<Texture>& texture, const ProgramDefinition& progDef, float scale, const Color& color)
     {
-        auto material = createSpriteMaterial(texture);
-        auto& layout = material->getVertexLayout();
-        VertexDataWriter writer(layout, _textureSpritePositions.size());
+        auto material = createSpriteMaterial(texture, progDef);
+        VertexDataWriter writer(material->getVertexLayout(), _textureSpritePositions.size());
         auto size = glm::vec2(texture->getImage()->getSize()) * scale;
         auto i = 0;
         for (auto& pos : _textureSpritePositions)
@@ -88,7 +86,7 @@ namespace darmok
         }
         writer.set(bgfx::Attrib::TexCoord0, _textureSpriteTexCoords);
         writer.set(bgfx::Attrib::Color0, color);
-        return std::make_shared<Mesh>(material, layout, writer.finish(), Data::copy(_textureSpriteIndices));
+        return std::make_shared<Mesh>(material, writer.finish(), Data::copy(_textureSpriteIndices));
     }
 
 

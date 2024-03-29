@@ -14,7 +14,7 @@ uniform vec4 u_ambientLightColor;
 //   vec3 diffuse color
 //   vec3 specular color
 // SAMPLER_LIGHTS_POINTLIGHTS=6
-BUFFER_RO(b_pointLights, vec4, 6);
+BUFFER_RO(b_pointLights, vec3, 6);
 
 struct PointLight
 {

@@ -15,6 +15,8 @@ set(SHADERS_BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 set(SHADERS_OUTPUT_DIR generated/shaders)
 set(LIBS_DIR lib)
 
+option(BGFX_BUILD_EXAMPLES "Build bgfx examples." ON)
+set(BGFX_BUILD_EXAMPLES OFF)
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
 
@@ -24,6 +26,7 @@ macro(addShader NAME)
   set(VERTEX_PATH "${SHADERS_DIR}/${NAME}_vertex.sc")
   set(FRAGMENT_PATH "${SHADERS_DIR}/${NAME}_fragment.sc")
   set(VARYING_DEF_PATH "${SHADERS_DIR}/${NAME}_varyingdef.sc")
+  set(PROG_DEF_PATH "${SHADERS_DIR}/${NAME}_progdef.json")
 
   darmok_compile_shader(
     TYPE VERTEX HEADER
@@ -40,7 +43,13 @@ macro(addShader NAME)
     OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
   )
 
-  list(APPEND SHADERS ${VERTEX_PATH} ${FRAGMENT_PATH} ${VARYING_DEF_PATH})
+  bgfx_compile_binary_to_header(
+    INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${PROG_DEF_PATH}
+    OUTPUT_FILE include/${SHADERS_OUTPUT_DIR}/${NAME}_progdef.h
+    ARRAY_NAME ${NAME}_progdef
+  )
+
+  list(APPEND SHADERS ${VERTEX_PATH} ${FRAGMENT_PATH} ${VARYING_DEF_PATH} ${PROG_DEF_PATH})
 endmacro()
 
 addShader("sprite")
@@ -59,7 +68,6 @@ set(SOURCES
   ${SRC_DIR}/utils.cpp
   ${SRC_DIR}/sprite.cpp
   ${SRC_DIR}/anim.cpp
-  ${SRC_DIR}/quad.cpp
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/data.cpp
   ${SRC_DIR}/mesh.cpp
@@ -68,6 +76,7 @@ set(SOURCES
   ${SRC_DIR}/texture.cpp
   ${SRC_DIR}/image.cpp
   ${SRC_DIR}/program.cpp
+  ${SRC_DIR}/program_def.cpp
   ${SRC_DIR}/vertex.cpp
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/camera.cpp
@@ -86,7 +95,6 @@ set(HEADERS
   ${INCLUDE_DIR}/scene.hpp
   ${INCLUDE_DIR}/sprite.hpp
   ${INCLUDE_DIR}/anim.hpp
-  ${INCLUDE_DIR}/quad.hpp
   ${INCLUDE_DIR}/model.hpp
   ${INCLUDE_DIR}/data.hpp
   ${INCLUDE_DIR}/mesh.hpp
@@ -96,6 +104,7 @@ set(HEADERS
   ${INCLUDE_DIR}/texture.hpp
   ${INCLUDE_DIR}/image.hpp
   ${INCLUDE_DIR}/program.hpp
+  ${INCLUDE_DIR}/program_def.hpp
   ${INCLUDE_DIR}/vertex.hpp
   ${INCLUDE_DIR}/transform.hpp
   ${INCLUDE_DIR}/camera.hpp
@@ -136,6 +145,7 @@ target_include_directories(
     ${BGFX_BASE}/examples/common
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}/include
+    ${LIBS_DIR}/rapidjson/include
   )
 
 include(GNUInstallDirs)
@@ -242,9 +252,14 @@ if(NOT DARMOK_PLATFORM_SUPPORT_WAYLAND)
     endif()
 endif()
 
-
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
+    option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" ${GLFW_STANDALONE})
+    option(GLFW_BUILD_TESTS "Build the GLFW test programs" ${GLFW_STANDALONE})
+    option(GLFW_BUILD_DOCS "Build the GLFW documentation" ON)
+    set(GLFW_BUILD_EXAMPLES OFF)
+    set(GLFW_BUILD_TESTS OFF)
+    set(GLFW_BUILD_DOCS OFF)
     add_subdirectory(${LIBS_DIR}/glfw)
     target_link_libraries(${LIB_NAME} PRIVATE glfw)
     target_compile_definitions(darmok PRIVATE DARMOK_PLATFORM_GLFW)
@@ -277,7 +292,6 @@ install(
 set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 20)
 
 # bgfx
-set_property(TARGET bgfx PROPERTY BGFX_BUILD_EXAMPLES 0)
 target_link_libraries(${LIB_NAME} PUBLIC bgfx bimg bimg_decode bx)
 
 # imgui
@@ -296,4 +310,3 @@ target_link_libraries(${LIB_NAME} PRIVATE assimp)
 add_subdirectory(${LIBS_DIR}/pugixml)
 target_link_libraries(${LIB_NAME} PRIVATE pugixml)
 target_compile_definitions(pugixml INTERFACE PUGIXML_HEADER_ONLY) # also included in assimp
-

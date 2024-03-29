@@ -4,7 +4,6 @@
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/sprite.hpp>
-#include <darmok/quad.hpp>
 #include <darmok/input.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/anim.hpp>
@@ -12,6 +11,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/window.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/program_def.hpp>
 
 namespace
 {
@@ -100,10 +100,9 @@ namespace
 			App::init(args);
 
 			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
-			scene.addRenderer<darmok::ForwardRenderer>();
-			scene.addRenderer<darmok::QuadRenderer>();
+			auto& renderer = scene.addRenderer<darmok::ForwardRenderer>();
+			_progDef = renderer.getProgramDefinition();
 			scene.addLogicUpdater<darmok::FrameAnimationUpdater>();
-			scene.addLogicUpdater<darmok::QuadUpdater>();
 
 			glm::vec2 size = getWindow().getSize();
 
@@ -123,7 +122,7 @@ namespace
 				.setEntityComponentFilter<Culling3D>()
 				;
 
-			_debugMaterial = darmok::Material::createStandard(darmok::StandardMaterialType::Sprite);
+			_debugMaterial = std::make_shared<darmok::Material>(_progDef);
 			auto debugTexture = getAssets().getColorTextureLoader()(darmok::Colors::red);
 			_debugMaterial->setTexture(darmok::MaterialTextureType::Diffuse, debugTexture);
 			_debugMaterial->setPrimitiveType(darmok::MaterialPrimitiveType::Line);
@@ -139,10 +138,10 @@ namespace
 			auto sprite = scene.createEntity();
 			auto& trans = scene.addComponent<darmok::Transform>(sprite);
 			float scale = 0.5;
-			auto mesh = darmok::SpriteUtils::fromTexture(tex, scale);
+			auto mesh = darmok::SpriteUtils::fromTexture(tex, _progDef, scale);
 			auto size = scale * glm::vec2(tex->getImage()->getSize());
-			scene.addComponent<darmok::MeshComponent>(sprite, mesh);
-			scene.addComponent<darmok::QuadComponent>(sprite, _debugMaterial, glm::vec2(tex->getImage()->getSize()) * scale);
+			auto debugMesh = darmok::Mesh::createQuad(_debugMaterial, size);
+			scene.addComponent<darmok::MeshComponent>(sprite).setMeshes({ mesh, debugMesh });
 			scene.addComponent<Culling2D>(sprite);
 			scene.addLogicUpdater<ScreenBounceUpdater>(trans, size, 100.f);
 		}
@@ -154,24 +153,24 @@ namespace
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = scene.createEntity();
 			float scale = 2.f;
-			auto frames = darmok::SpriteUtils::fromAtlas(*texAtlas, animNamePrefix, 0.1f, scale);
+			auto frames = darmok::SpriteUtils::fromAtlas(*texAtlas, _progDef, animNamePrefix, 0.1f, scale);
+			auto size = glm::vec2(animBounds.size) * scale;
+			auto debugMesh = darmok::Mesh::createQuad(_debugMaterial, size);
+			
 			auto& meshComp = scene.addComponent<darmok::MeshComponent>(anim);
 			scene.addComponent<darmok::FrameAnimationComponent>(anim, frames, meshComp);
 			
-
-			scene.addComponent<darmok::QuadComponent>(anim, _debugMaterial, glm::vec2(animBounds.size) * scale);
-
 			scene.addComponent<Culling2D>(anim);
-			auto& size = getWindow().getSize();
+			auto& winSize = getWindow().getSize();
 			scene.addComponent<darmok::Transform>(anim)
-				.setPosition(glm::vec3(size, 0) / 2.f)
+				.setPosition(glm::vec3(winSize, 0) / 2.f)
 				.setPivot(glm::vec3(animBounds.size.x, animBounds.size.y, 0.f) / 2.f);
 		}
 
 		void createRotatingCube(darmok::Scene& scene)
 		{
 			auto texture = getAssets().getTextureLoader()("assets/brick.png");
-			auto material = darmok::Material::createStandard(darmok::StandardMaterialType::Unlit);
+			auto material = std::make_shared<darmok::Material>(_progDef);
 			material->setTexture(darmok::MaterialTextureType::Diffuse, texture);
 			material->setColor(darmok::MaterialColorType::Diffuse, darmok::Colors::red);
 			auto cube = scene.createEntity();
@@ -182,6 +181,7 @@ namespace
 		}
 	private:
 		std::shared_ptr<darmok::Material> _debugMaterial;
+		darmok::ProgramDefinition _progDef;
 	};
 }
 

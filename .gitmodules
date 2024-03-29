@@ -16,3 +16,6 @@
 [submodule "lib/pugixml"]
 	path = lib/pugixml
 	url = git@github.com:zeux/pugixml.git
+[submodule "lib/rapidjson"]
+	path = lib/rapidjson
+	url = git@github.com:Tencent/rapidjson.git

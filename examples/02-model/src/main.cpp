@@ -39,20 +39,18 @@ namespace
 			App::init(args);
 
 			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
+			auto& lights = scene.addLogicUpdater<darmok::LightRenderUpdater>();
+			auto& renderer = scene.addRenderer<darmok::ForwardRenderer>(lights);
+			auto& progDef = renderer.getProgramDefinition();
 
 			auto model = getAssets().getModelLoader()("assets/human.fbx");
-			model->addToScene(scene, [&scene](const darmok::ModelNode& node, darmok::Entity entity){
+			model->addToScene(scene, progDef, [&scene](const darmok::ModelNode& node, darmok::Entity entity){
 				if (node.getName() == "human")
 				{
 					auto& trans = scene.getComponent<darmok::Transform>(entity);
 					scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
 				}
 			});
-
-			auto& mat = model->getMaterials()[0].load();
-			auto& lights = scene.addLogicUpdater<darmok::LightRenderUpdater>();
-			scene.addRenderer<darmok::ForwardRenderer>(lights);
-
 		}
 	};
 

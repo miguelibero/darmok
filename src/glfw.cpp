@@ -449,12 +449,15 @@ namespace darmok
 		return v;
 	}
 
-	const std::array<KeyboardKey, GLFW_KEY_LAST + 1>  s_translateKey = createTranslateKeys();
-
+	static const std::array<KeyboardKey, GLFW_KEY_LAST + 1>  _glfwKeys = createTranslateKeys();
 
 	KeyboardKey PlatformImpl::translateKey(int key) noexcept
 	{
-		return s_translateKey[key];
+		if (key < 0 || key >= _glfwKeys.size())
+		{
+			return KeyboardKey::Count;
+		}
+		return _glfwKeys[key];
 	}
 
 	MouseButton PlatformImpl::translateMouseButton(int button) noexcept
@@ -616,6 +619,10 @@ namespace darmok
 		}
 		int mods2 = translateKeyModifiers(mods);
 		KeyboardKey key2 = translateKey(key);
+		if (key2 == KeyboardKey::Count)
+		{
+			return;
+		}
 		bool down = (action == GLFW_PRESS || action == GLFW_REPEAT);
 		_events.post<KeyboardKeyChangedEvent>(key2, mods2, down);
 	}

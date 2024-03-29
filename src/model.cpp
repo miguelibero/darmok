@@ -377,13 +377,9 @@ namespace darmok
 		return std::make_pair(itr->second, texture);
 	}
 
-	std::shared_ptr<Material> ModelMaterial::load()
+	std::shared_ptr<Material> ModelMaterial::load(const ProgramDefinition& progDef)
 	{
-		if (_material != nullptr)
-		{
-			return _material;
-		}
-		_material = Material::createStandard(StandardMaterialType::ForwardPhong);
+		auto material = std::make_shared<Material>(progDef);
 		for (auto& elm : _materialTextures)
 		{
 			for (auto& modelTex : getTextures(elm.first))
@@ -391,7 +387,7 @@ namespace darmok
 				auto pair = createMaterialTexture(modelTex);
 				if (pair.second != nullptr)
 				{
-					_material->setTexture(pair.first, pair.second);
+					material->setTexture(pair.first, pair.second);
 				}
 			}
 		}
@@ -399,10 +395,10 @@ namespace darmok
 		{
 			if (auto v = getColor(elm.first))
 			{
-				_material->setColor(elm.second, v.value());
+				material->setColor(elm.second, v.value());
 			}
 		}
-		return _material;
+		return material;
 	}
 
 	static VertexIndex* getModelIndex(unsigned int* indices, size_t pos)
@@ -686,20 +682,14 @@ namespace darmok
 		return Data::copy(indices);
 	}
 
-	std::shared_ptr<Mesh> ModelMesh::load()
+	std::shared_ptr<Mesh> ModelMesh::load(const ProgramDefinition& progDef)
 	{
-		if (_mesh != nullptr)
-		{
-			return _mesh;
-		}
-		auto material = getMaterial().load();
-		auto& layout = material->getVertexLayout();
-		auto vertices = createModelMeshVertexData(*this, layout);
+		auto material = getMaterial().load(progDef);
+		auto vertices = createModelMeshVertexData(*this, material->getVertexLayout());
 		auto indices = createModelMeshIndexData(*this);
 
 		auto ptr = (float*)vertices.ptr();
-		_mesh = std::make_shared<Mesh>(material, layout, std::move(vertices), std::move(indices));
-		return _mesh;
+		return std::make_shared<Mesh>(material, std::move(vertices), std::move(indices));
 	}
 
 	ModelNodeMeshCollection::ModelNodeMeshCollection(aiNode* ptr, Model& model)
@@ -713,12 +703,12 @@ namespace darmok
 		return _ptr == nullptr ? 0 : _ptr->mNumMeshes;
 	}
 
-	std::vector<std::shared_ptr<Mesh>> ModelNodeMeshCollection::load()
+	std::vector<std::shared_ptr<Mesh>> ModelNodeMeshCollection::load(const ProgramDefinition& progDef)
 	{
 		std::vector<std::shared_ptr<Mesh>> meshes;
 		for (auto& mesh : *this)
 		{
-			meshes.push_back(mesh.load());
+			meshes.push_back(mesh.load(progDef));
 		}
 		return meshes;
 	}
@@ -1010,17 +1000,17 @@ namespace darmok
 		return _model.getLights().get(getName());
 	}
 
-	Entity ModelNode::addToScene(Scene& scene, Entity parent)
+	Entity ModelNode::addToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent)
 	{
-		auto entity = doAddToScene(scene, parent);
+		auto entity = doAddToScene(scene, progDef, parent);
 		for (auto& child : getChildren())
 		{
-			addToScene(scene, entity);
+			addToScene(scene, progDef, entity);
 		}
 		return entity;
 	}
 
-	Entity ModelNode::doAddToScene(Scene& scene, Entity parent)
+	Entity ModelNode::doAddToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent)
 	{
 		auto entity = scene.createEntity();
 		auto transMat = getTransform();
@@ -1042,7 +1032,7 @@ namespace darmok
 		auto& meshes = getMeshes();
 		if (!meshes.empty())
 		{
-			scene.addComponent<MeshComponent>(entity, meshes.load());
+			scene.addComponent<MeshComponent>(entity, meshes.load(progDef));
 		}
 
 		auto parentTrans = scene.tryGetComponent<Transform>(parent);
@@ -1237,9 +1227,9 @@ namespace darmok
 		return _lights;
 	}
 
-	Entity Model::addToScene(Scene& scene, Entity parent)
+	Entity Model::addToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent)
 	{
-		return getRootNode().addToScene(scene, parent);
+		return getRootNode().addToScene(scene, progDef, parent);
 	}
 
 	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)

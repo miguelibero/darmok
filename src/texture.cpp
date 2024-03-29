@@ -290,7 +290,7 @@ namespace darmok
 			return itr->second;
 		}
 		auto tex = Texture::create(Image::create(_alloc, color, _size));
-		_cache.emplace(std::make_pair(color, tex));
+		_cache.emplace(color, tex);
 		return tex;
 	}
 

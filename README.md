@@ -50,10 +50,13 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * scene using entt
 * update logic methods with delta time
 * sprites and spritesheets
+* renderer
+    * sprite, unlit
+    * forward with phong lighting (point, ambient)
 
 ### Next tasks
+* loading program definitions from json
 * forward renderer
-    * phong lighting
     * pbr lighting
 * deferred renderer
     * phong lighting

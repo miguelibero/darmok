@@ -101,7 +101,7 @@ namespace darmok
         auto itr = _marked.find(attr);
         if (itr == _marked.end())
         {
-            _marked.emplace(std::make_pair(attr, std::unordered_set<uint32_t>{ index }));
+            _marked.emplace(attr, std::unordered_set<uint32_t>{ index });
         }
         else
         {

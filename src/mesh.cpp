@@ -8,21 +8,19 @@
 namespace darmok
 {
 
-	Mesh::Mesh(const std::shared_ptr<Material>& material, const bgfx::VertexLayout& layout, Data&& vertices, Data&& indices) noexcept
+	Mesh::Mesh(const std::shared_ptr<Material>& material, Data&& vertices, Data&& indices) noexcept
 		: _material(material)
-		, _layout(layout)
 		, _vertices(std::move(vertices))
 		, _indices(std::move(indices))
-		, _vertexBuffer(bgfx::createVertexBuffer(_vertices.makeRef(), layout))
+		, _vertexBuffer(bgfx::createVertexBuffer(_vertices.makeRef(), material->getVertexLayout()))
 		, _indexBuffer(bgfx::createIndexBuffer(_indices.makeRef()))
 	{
 	}
 
-	Mesh::Mesh(const std::shared_ptr<Material>& material, const bgfx::VertexLayout& layout, Data&& vertices) noexcept
+	Mesh::Mesh(const std::shared_ptr<Material>& material, Data&& vertices) noexcept
 		: _material(material)
-		, _layout(layout)
 		, _vertices(std::move(vertices))
-		, _vertexBuffer(bgfx::createVertexBuffer(_vertices.makeRef(), layout))
+		, _vertexBuffer(bgfx::createVertexBuffer(_vertices.makeRef(), material->getVertexLayout()))
 		, _indexBuffer{ bgfx::kInvalidHandle }
 	{
 	}
@@ -48,10 +46,9 @@ namespace darmok
 
 	Mesh::Mesh(const Mesh& other) noexcept
 		: _material(other._material)
-		, _layout(other._layout)
 		, _vertices(other._vertices)
 		, _indices(other._indices)
-		, _vertexBuffer(bgfx::createVertexBuffer(other._vertices.makeRef(), other._layout))
+		, _vertexBuffer(bgfx::createVertexBuffer(other._vertices.makeRef(), other.getMaterial()->getVertexLayout()))
 		, _indexBuffer(bgfx::createIndexBuffer(other._indices.makeRef()))
 	{
 	}
@@ -61,11 +58,10 @@ namespace darmok
 		destroyHandles();
 
 		_material = other._material;
-		_layout = other._layout;
 		_vertices = other._vertices;
 		_indices = other._indices;
 
-		_vertexBuffer = bgfx::createVertexBuffer(_vertices.makeRef(), _layout);
+		_vertexBuffer = bgfx::createVertexBuffer(_vertices.makeRef(), _material->getVertexLayout());
 		_indexBuffer = bgfx::createIndexBuffer(_indices.makeRef());
 
 		return *this;
@@ -73,7 +69,6 @@ namespace darmok
 
 	Mesh::Mesh(Mesh&& other) noexcept
 		: _material(other._material)
-		, _layout(other._layout)
 		, _vertices(std::move(other._vertices))
 		, _indices(std::move(other._indices))
 		, _vertexBuffer(other._vertexBuffer)
@@ -89,7 +84,6 @@ namespace darmok
 		destroyHandles();
 
 		_material = other._material;
-		_layout = other._layout;
 		_indices = std::move(other._indices);
 		_vertices = std::move(other._vertices);
 		_vertexBuffer = other._vertexBuffer;
@@ -101,17 +95,17 @@ namespace darmok
 		return *this;
 	}
 
-	const Data& Mesh::getVertexData() const
+	const Data& Mesh::getVertexData() const noexcept
 	{
 		return _vertices;
 	}
 
-	const Data& Mesh::getIndexData() const
+	const Data& Mesh::getIndexData() const noexcept
 	{
 		return _indices;
 	}
 
-	const std::shared_ptr<Material>& Mesh::getMaterial() const
+	const std::shared_ptr<Material>& Mesh::getMaterial() const noexcept
 	{
 		return _material;
 	}
@@ -124,10 +118,9 @@ namespace darmok
 		std::vector<VertexIndex> indices;
 	};
 
-	const std::shared_ptr<Mesh> createMesh(const std::shared_ptr<Material>& material, const MeshData& data)
+	static const std::shared_ptr<Mesh> createMesh(const std::shared_ptr<Material>& material, const MeshData& data) noexcept
 	{
-		auto& layout = material->getVertexLayout();
-		VertexDataWriter writer(layout, data.positions.size());
+		VertexDataWriter writer(material->getVertexLayout(), data.positions.size());
 		uint32_t i = 0;
 		for (auto& pos : data.positions)
 		{
@@ -136,10 +129,10 @@ namespace darmok
 		}
 		writer.set(bgfx::Attrib::Normal, data.normals);
 		writer.set(bgfx::Attrib::TexCoord0, data.texCoords);
-		return std::make_shared<Mesh>(material, layout, writer.finish(), Data::copy(data.indices));
+		return std::make_shared<Mesh>(material, writer.finish(), Data::copy(data.indices));
 	}
 
-	const std::shared_ptr<Mesh> Mesh::createCube(const std::shared_ptr<Material>& material)
+	const std::shared_ptr<Mesh> Mesh::createCube(const std::shared_ptr<Material>& material) noexcept
 	{
 		const static MeshData data = {
 			{
@@ -178,7 +171,28 @@ namespace darmok
 		return createMesh(material, data);
 	}
 
-	void Mesh::render(bgfx::Encoder& encoder, bgfx::ViewId viewId, uint8_t vertexStream) const
+	const std::shared_ptr<Mesh> Mesh::createQuad(const std::shared_ptr<Material>& material, const glm::uvec2& size, bool lines) noexcept
+	{
+		static const std::vector<glm::vec3> normals{
+				{ 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 },
+		};
+		static const std::vector<glm::vec2> texCoords{
+				{ 1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 },
+		};
+		static const std::vector<VertexIndex> lineIndices{ 0, 1, 1, 2, 2, 3, 3, 0 };
+		static const std::vector<VertexIndex> triIndices{ 0, 1, 2, 2, 3, 0 };
+
+		return createMesh(material, MeshData{
+			{
+				{ size.x,  size.y, 0 }, { 0,  size.y, 0 }, { 0,  0, 0 }, { size.x,  0, 0 },
+			},
+			normals,
+			texCoords,
+			lines ? lineIndices : triIndices
+		});
+	}
+
+	void Mesh::bgfxConfig(bgfx::Encoder& encoder, uint8_t vertexStream) const
 	{
 		if (!isValid(_vertexBuffer))
 		{
@@ -189,33 +203,38 @@ namespace darmok
 		{
 			encoder.setIndexBuffer(_indexBuffer);
 		}
-		_material->submit(encoder, viewId);
 	}
 
-	MeshComponent::MeshComponent(const std::shared_ptr<Mesh>& mesh)
+	MeshComponent::MeshComponent(const std::shared_ptr<Mesh>& mesh) noexcept
 		: _meshes{ mesh }
 	{
 	}
 
-	MeshComponent::MeshComponent(const std::vector<std::shared_ptr<Mesh>>& meshes)
+	MeshComponent::MeshComponent(const std::vector<std::shared_ptr<Mesh>>& meshes) noexcept
 		: _meshes(meshes)
 	{
 	}
 
-	const std::vector<std::shared_ptr<Mesh>>& MeshComponent::getMeshes() const
+	const std::vector<std::shared_ptr<Mesh>>& MeshComponent::getMeshes() const noexcept
 	{
 		return _meshes;
 	}
 
-	MeshComponent& MeshComponent::setMeshes(const std::vector<std::shared_ptr<Mesh>>& meshes)
+	MeshComponent& MeshComponent::setMeshes(const std::vector<std::shared_ptr<Mesh>>& meshes) noexcept
 	{
 		_meshes = meshes;
 		return *this;
 	}
 
-	MeshComponent& MeshComponent::setMesh(const std::shared_ptr<Mesh>& mesh)
+	MeshComponent& MeshComponent::setMesh(const std::shared_ptr<Mesh>& mesh) noexcept
 	{
 		_meshes = { mesh };
+		return *this;
+	}
+
+	MeshComponent& MeshComponent::addMesh(const std::shared_ptr<Mesh>& mesh) noexcept
+	{
+		_meshes.push_back(mesh);
 		return *this;
 	}
 }

@@ -74,11 +74,12 @@ namespace darmok
                 {ProgramUniform::LightCount, { "u_lightCount", bgfx::UniformType::Vec4 }},
                 {ProgramUniform::AmbientLightColor, { "u_ambientLightColor", bgfx::UniformType::Vec4 }}
             },
+            {},
             {
                 {ProgramBuffer::PointLights, { 6, {
-                    { bgfx::Attrib::Position,   { bgfx::AttribType::Float, 4} },
-                    { bgfx::Attrib::Color0,     { bgfx::AttribType::Float, 4} },
-                    { bgfx::Attrib::Color1,     { bgfx::AttribType::Float, 4} },
+                    { bgfx::Attrib::Position,   { bgfx::AttribType::Float, 3} },
+                    { bgfx::Attrib::Color0,     { bgfx::AttribType::Float, 3, true} },
+                    { bgfx::Attrib::Color1,     { bgfx::AttribType::Float, 3, true} },
                 }}
             }}
         };
@@ -99,7 +100,7 @@ namespace darmok
     void LightRenderUpdater::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;
-        auto& progDef = LightRenderUpdater::getPhongProgramDefinition();
+        auto& progDef = getPhongProgramDefinition();
         _countUniform = progDef.uniforms.at(ProgramUniform::LightCount).createHandle();
         _ambientIntensityUniform = progDef.uniforms.at(ProgramUniform::AmbientLightColor).createHandle();
         _pointLightsBuffer = bgfx::createDynamicVertexBuffer(
@@ -146,21 +147,20 @@ namespace darmok
             }
             _lightCount.x = index;
             
-            _pointLights.emplace(std::make_pair(camEntity, writer.finish()));
+            _pointLights.emplace(camEntity, writer.finish());
         }
 
         _ambientColor = {};
         auto ambientLights = registry.view<const AmbientLight>();
         for (auto [entity, ambientLight] : ambientLights.each())
         {
-            auto f = 1.F / ambientLight.getIntensity()[2];
-            _ambientColor += glm::vec4(ambientLight.getIntensity(), 0) * f;
+            _ambientColor += glm::vec4(ambientLight.getIntensity(), 0);
         }
+        _ambientColor /= Colors::white;
     }
 
-    bool LightRenderUpdater::bgfxConfig(const Camera& cam, const Material& mat, bgfx::Encoder& encoder) const noexcept
+    bool LightRenderUpdater::bgfxConfig(const Camera& cam, const ProgramDefinition& progDef, bgfx::Encoder& encoder) const noexcept
     {
-        auto& progDef = mat.getProgramDefinition();
         auto& lightProgDef = getPhongProgramDefinition();
 
         if (progDef.hasUniform(ProgramUniform::LightCount, lightProgDef.uniforms))
