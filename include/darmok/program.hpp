@@ -12,7 +12,6 @@ namespace darmok
 
 	enum class StandardProgramType
 	{
-		Sprite,
 		Unlit,
 		ForwardPhong,
 	};

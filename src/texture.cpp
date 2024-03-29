@@ -1,5 +1,8 @@
 #include "texture.hpp"
 #include <darmok/data.hpp>
+#include <darmok/mesh.hpp>
+#include <darmok/anim.hpp>
+#include <darmok/vertex.hpp>
 #include <filesystem>
 #include <charconv>
 #include <pugixml.hpp>
@@ -133,6 +136,49 @@ namespace darmok
 			}
 		}
 		return nullptr;
+	}
+
+	std::shared_ptr<Mesh> TextureAtlas::createSprite(const ProgramDefinition& progDef, const TextureAtlasElement& element, float scale, const Color& color)
+	{
+		auto material = std::make_shared<Material>(progDef);
+		material->setTexture(MaterialTextureType::Diffuse, texture);
+		material->setColor(MaterialColorType::Diffuse, color);
+		auto elmSize = std::min(element.positions.size(), element.texCoords.size());
+		VertexDataWriter writer(material->getVertexLayout(), elmSize);
+
+		glm::vec2 atlasSize(size);
+
+		uint32_t i = 0;
+		for (auto& pos : element.positions)
+		{
+			auto v = scale * glm::vec2(pos.x, element.originalSize.y - pos.y);
+			writer.set(bgfx::Attrib::Position, i++, v);
+		}
+		i = 0;
+		for (auto& texCoord : element.texCoords)
+		{
+			auto v = glm::vec2(texCoord) / atlasSize;
+			writer.set(bgfx::Attrib::TexCoord0, i++, v);
+		}
+		writer.set(bgfx::Attrib::Color0, color);
+		return std::make_shared<Mesh>(material, writer.finish(), Data::copy(element.indices));
+	}
+
+	std::vector<AnimationFrame> TextureAtlas::createSpriteAnimation(const ProgramDefinition& progDef, std::string_view namePrefix, float frameDuration, float scale, const Color& color)
+	{
+		std::vector<AnimationFrame> frames;
+		for (auto& elm : elements)
+		{
+			if (elm.name.starts_with(namePrefix))
+			{
+				auto mesh = createSprite(progDef, elm, scale, color);
+				if (mesh)
+				{
+					frames.push_back({ { mesh }, frameDuration });
+				}
+			}
+		}
+		return frames;
 	}
 
 	ImageTextureLoader::ImageTextureLoader(IImageLoader& imgLoader)

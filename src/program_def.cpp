@@ -462,20 +462,7 @@ namespace darmok
 			{
 				{ProgramSampler::DiffuseTexture, {"s_texColor"}},
 			}
-		}},
-		{StandardProgramType::Sprite, {
-			{
-				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 2}},
-				{bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true}},
-				{bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2}},
-			},
-			{
-				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
-			},
-			{
-				{ProgramSampler::DiffuseTexture, {"s_texColor"}},
-			}
-		}},
+		}}
 	};
 
 	ProgramDefinition ProgramDefinition::getStandard(StandardProgramType type) noexcept

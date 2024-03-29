@@ -3,7 +3,6 @@
 #include <darmok/app.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
-#include <darmok/sprite.hpp>
 #include <darmok/input.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/anim.hpp>
@@ -138,7 +137,7 @@ namespace
 			auto sprite = scene.createEntity();
 			auto& trans = scene.addComponent<darmok::Transform>(sprite);
 			float scale = 0.5;
-			auto mesh = darmok::SpriteUtils::fromTexture(tex, _progDef, scale);
+			auto mesh = darmok::Mesh::createSprite(tex, _progDef, scale);
 			auto size = scale * glm::vec2(tex->getImage()->getSize());
 			auto debugMesh = darmok::Mesh::createQuad(_debugMaterial, size);
 			scene.addComponent<darmok::MeshComponent>(sprite).setMeshes({ mesh, debugMesh });
@@ -153,7 +152,7 @@ namespace
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = scene.createEntity();
 			float scale = 2.f;
-			auto frames = darmok::SpriteUtils::fromAtlas(*texAtlas, _progDef, animNamePrefix, 0.1f, scale);
+			auto frames = texAtlas->createSpriteAnimation(_progDef, animNamePrefix, 0.1f, scale);
 			auto size = glm::vec2(animBounds.size) * scale;
 			auto debugMesh = darmok::Mesh::createQuad(_debugMaterial, size);
 			

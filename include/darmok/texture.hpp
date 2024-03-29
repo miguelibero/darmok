@@ -38,6 +38,7 @@ namespace darmok
 
 		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, std::string_view name = "", uint64_t flags = defaultTextureCreationFlags);
 
+
 	private:
 		std::shared_ptr<Image> _img;
 		bgfx::TextureHandle _handle;
@@ -73,6 +74,10 @@ namespace darmok
 		TextureBounds getBounds() const;
 	};
 
+	class Mesh;
+	class AnimationFrame;
+	class ProgramDefinition;
+
 	struct TextureAtlas final
 	{
 		std::shared_ptr<Texture> texture;
@@ -82,6 +87,10 @@ namespace darmok
 		TextureBounds getBounds(std::string_view prefix) const;
 		OptionalRef<TextureAtlasElement> getElement(std::string_view name);
 		OptionalRef<const TextureAtlasElement> getElement(std::string_view name) const;
+
+		std::shared_ptr<Mesh> createSprite(const ProgramDefinition& progDef, const TextureAtlasElement& element, float scale = 1.f, const Color& color = Colors::white);
+		std::vector<AnimationFrame> createSpriteAnimation(const ProgramDefinition& progDef, std::string_view namePrefix, float frameDuration = 1.f / 30.f, float scale = 1.f, const Color& color = Colors::white);
+
 	};
 
     class BX_NO_VTABLE ITextureLoader

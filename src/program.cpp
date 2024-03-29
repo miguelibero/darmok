@@ -7,8 +7,6 @@
 #include "generated/shaders/unlit_fragment.h"
 #include "generated/shaders/forward_phong_vertex.h"
 #include "generated/shaders/forward_phong_fragment.h"
-#include "generated/shaders/sprite_vertex.h"
-#include "generated/shaders/sprite_fragment.h"
 
 namespace darmok
 {
@@ -36,8 +34,6 @@ namespace darmok
 		BGFX_EMBEDDED_SHADER(unlit_fragment),
 		BGFX_EMBEDDED_SHADER(forward_phong_vertex),
 		BGFX_EMBEDDED_SHADER(forward_phong_fragment),
-		BGFX_EMBEDDED_SHADER(sprite_vertex),
-		BGFX_EMBEDDED_SHADER(sprite_fragment),
 		BGFX_EMBEDDED_SHADER_END()
 	};
 
@@ -45,7 +41,6 @@ namespace darmok
 	{
 		{StandardProgramType::Unlit, "unlit"},
 		{StandardProgramType::ForwardPhong, "forward_phong"},
-		{StandardProgramType::Sprite, "sprite"},
 	};
 
 	std::shared_ptr<Program> Program::createStandard(StandardProgramType type) noexcept

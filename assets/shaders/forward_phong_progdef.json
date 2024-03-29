@@ -23,16 +23,18 @@
         }
     },
     "uniforms": {
-        "diffuseTexture": {
-            "name": "s_texColor",
-            "type": "sampler"
-        },
         "diffuseColor": {
             "name": "u_diffuseColor",
             "default": [1, 1, 1, 1]
         }
     },
+    "samplers": {
+        "diffuseTexture": {
+            "name": "s_texColor",
+            "type": "sampler"
+        }
+    },
     "include": [
-        "phong"
+        "phong_lighting"
     ]
 }

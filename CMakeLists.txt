@@ -52,7 +52,6 @@ macro(addShader NAME)
   list(APPEND SHADERS ${VERTEX_PATH} ${FRAGMENT_PATH} ${VARYING_DEF_PATH} ${PROG_DEF_PATH})
 endmacro()
 
-addShader("sprite")
 addShader("unlit")
 addShader("forward_phong")
 
@@ -66,7 +65,6 @@ set(SOURCES
   ${SRC_DIR}/asset.cpp
   ${SRC_DIR}/scene.cpp
   ${SRC_DIR}/utils.cpp
-  ${SRC_DIR}/sprite.cpp
   ${SRC_DIR}/anim.cpp
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/data.cpp
@@ -93,7 +91,6 @@ set(HEADERS
   ${INCLUDE_DIR}/asset.hpp
   ${INCLUDE_DIR}/imgui.hpp
   ${INCLUDE_DIR}/scene.hpp
-  ${INCLUDE_DIR}/sprite.hpp
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/model.hpp
   ${INCLUDE_DIR}/data.hpp

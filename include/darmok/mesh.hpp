@@ -26,7 +26,8 @@ namespace darmok
 
         void bgfxConfig(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const;
         static const std::shared_ptr<Mesh> createCube(const std::shared_ptr<Material>& material) noexcept;
-        static const std::shared_ptr<Mesh> createQuad(const std::shared_ptr<Material>& material, const glm::uvec2& size = {1, 1}, bool lines = true) noexcept;
+        static const std::shared_ptr<Mesh> createQuad(const std::shared_ptr<Material>& material, const glm::uvec2& size = {1, 1}) noexcept;
+        static const std::shared_ptr<Mesh> createSprite(const std::shared_ptr<Texture>& texture, const ProgramDefinition& progDef, float scale = 1.f, const Color& color = Colors::white) noexcept;
 
     private:
         std::shared_ptr<Material> _material;

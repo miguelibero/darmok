@@ -171,25 +171,36 @@ namespace darmok
 		return createMesh(material, data);
 	}
 
-	const std::shared_ptr<Mesh> Mesh::createQuad(const std::shared_ptr<Material>& material, const glm::uvec2& size, bool lines) noexcept
+	const std::shared_ptr<Mesh> Mesh::createQuad(const std::shared_ptr<Material>& material, const glm::uvec2& size) noexcept
 	{
 		static const std::vector<glm::vec3> normals{
 				{ 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 },
 		};
 		static const std::vector<glm::vec2> texCoords{
-				{ 1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 },
+				{ 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 },
 		};
 		static const std::vector<VertexIndex> lineIndices{ 0, 1, 1, 2, 2, 3, 3, 0 };
 		static const std::vector<VertexIndex> triIndices{ 0, 1, 2, 2, 3, 0 };
 
+		auto lines = material->getPrimitiveType() == MaterialPrimitiveType::Line;
+
 		return createMesh(material, MeshData{
 			{
-				{ size.x,  size.y, 0 }, { 0,  size.y, 0 }, { 0,  0, 0 }, { size.x,  0, 0 },
+				{ size.x,  size.y, 0 }, { size.x, 0, 0 }, { 0, 0, 0 }, { 0, size.y, 0 },
 			},
 			normals,
 			texCoords,
 			lines ? lineIndices : triIndices
 		});
+	}
+
+	const std::shared_ptr<Mesh> Mesh::createSprite(const std::shared_ptr<Texture>& texture, const ProgramDefinition& progDef, float scale, const Color& color) noexcept
+	{
+		auto material = std::make_shared<Material>(progDef);
+		material->setTexture(MaterialTextureType::Diffuse, texture);
+		material->setColor(MaterialColorType::Diffuse, color);
+		auto size = glm::vec2(texture->getImage()->getSize()) * scale;
+		return Mesh::createQuad(material, size);
 	}
 
 	void Mesh::bgfxConfig(bgfx::Encoder& encoder, uint8_t vertexStream) const
