@@ -31,6 +31,7 @@ namespace darmok
 
     Data&& VertexDataWriter::finish() noexcept
     {
+        auto data = const_cast<void*>(_dataView.ptr());
         for (auto i = 0; i < bgfx::Attrib::Count; i++)
         {
             const auto attr = static_cast<bgfx::Attrib::Enum>(i);
@@ -55,7 +56,7 @@ namespace darmok
             }
             for (auto j = 0; j < _size; j++)
             {
-                bgfx::vertexPack(&input.front(), normalized, attr, _layout, _dataView.ptr(), j);
+                bgfx::vertexPack(&input.front(), normalized, attr, _layout, data, j);
             }
         }
         return std::move(_data);

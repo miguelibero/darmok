@@ -56,6 +56,7 @@ namespace darmok
 	{
 	public:
 		ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num = 1) noexcept;
+		ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num, Data&& defaultValue) noexcept;
 		ProgramUniformDefinition(std::string name, const glm::vec4& defaultValue) noexcept;
 		ProgramUniformDefinition(std::string name, const glm::mat4& defaultValue) noexcept;
 		ProgramUniformDefinition(std::string name, const glm::mat3& defaultValue) noexcept;
@@ -146,7 +147,7 @@ namespace darmok
 	class BX_NO_VTABLE IProgramDefinitionLoader
 	{
 	public:
-		using result_type = std::shared_ptr<ProgramDefinition>;
+		using result_type = ProgramDefinition;
 
 		virtual ~IProgramDefinitionLoader() = default;
 		virtual result_type operator()(std::string_view name) = 0;

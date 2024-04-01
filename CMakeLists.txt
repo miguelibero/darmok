@@ -300,6 +300,8 @@ add_subdirectory(${LIBS_DIR}/entt)
 target_link_libraries(${LIB_NAME} PUBLIC EnTT)
 
 # assimp
+OPTION(ASSIMP_BUILD_TESTS "If the test suite for Assimp is built in addition to the library." ON)
+set(ASSIMP_BUILD_TESTS OFF)
 add_subdirectory(${LIBS_DIR}/assimp)
 target_link_libraries(${LIB_NAME} PRIVATE assimp)
 

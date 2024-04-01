@@ -8,7 +8,7 @@
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 #include <bx/allocator.h>
-
+#include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
 {
@@ -27,18 +27,19 @@ namespace darmok
     class DataView final
     {
     public:
-        DataView(void* ptr = nullptr, size_t size = 0) noexcept;
+        DataView(const void* ptr = nullptr, size_t size = 0) noexcept;
+        DataView(const char* str) noexcept;
         DataView(const Data& data) noexcept;
         DataView(const bgfx::Memory& mem) noexcept;
-        [[nodiscard]] void* ptr() const noexcept;
+        [[nodiscard]] const void* ptr() const noexcept;
         [[nodiscard]] size_t size() const noexcept;
         [[nodiscard]] bool empty() const noexcept;
         [[nodiscard]] bool operator==(const DataView& other) const noexcept;
         [[nodiscard]] bool operator!=(const DataView& other) const noexcept;
 
     private:
+        const void* _ptr;
         size_t _size;
-        void* _ptr;
     };
 
     class Data final
@@ -80,6 +81,18 @@ namespace darmok
         static Data copy(const T& v, bx::AllocatorI* alloc = nullptr) noexcept
         {
             return Data(&v, sizeof(T), alloc);
+        }
+
+        template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+        static Data copy(const glm::vec<L, T, Q>& v, bx::AllocatorI* alloc = nullptr) noexcept
+        {
+            return Data(glm::value_ptr(v), L*sizeof(T), alloc);
+        }
+
+        template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
+        static Data copy(const glm::mat<L1, L2, T, Q>& v, bx::AllocatorI* alloc = nullptr) noexcept
+        {
+            return Data(glm::value_ptr(v), L1 * L2 * sizeof(T), alloc);
         }
 
     private:

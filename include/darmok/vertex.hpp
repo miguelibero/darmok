@@ -84,7 +84,7 @@ namespace darmok
             std::array<float, 4> finput{};
             if (convertInput(attr, input, finput))
             {
-                auto data = _dataView.ptr();
+                auto data = const_cast<void*>(_dataView.ptr());
                 bgfx::vertexPack(&finput.front(), false, attr, _layout, data, index);
                 mark(attr, index);
             }
@@ -98,7 +98,7 @@ namespace darmok
             std::array<float, 4> finput{};
             if (convertInput(attr, input, finput))
             {
-                auto data = _dataView.ptr();
+                auto data = const_cast<void*>(_dataView.ptr());
                 for (auto i = 0; i < _size; i++)
                 {
                     if (overwrite || !hasBeenSet(attr, i))

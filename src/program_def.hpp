@@ -1,4 +1,5 @@
 #include <darmok/program_def.hpp>
+#include <rapidjson/document.h>
 
 namespace darmok
 {
@@ -6,7 +7,8 @@ namespace darmok
 	{
 	public:
 		JsonDataProgramDefinitionLoader(IDataLoader& dataLoader);
-		std::shared_ptr<ProgramDefinition> operator()(std::string_view name) override;
+		ProgramDefinition operator()(std::string_view name) override;
+		static void read(ProgramDefinition& progDef, const rapidjson::Document& json);
 	private:
 		IDataLoader& _dataLoader;
 	};

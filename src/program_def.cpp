@@ -1,8 +1,11 @@
 #include "program_def.hpp"
 #include <darmok/light.hpp>
 #include <charconv>
+#include <cctype>
 #include <glm/gtc/type_ptr.hpp>
 #include <rapidjson/document.h>
+#include "generated/shaders/unlit_progdef.h"
+#include "generated/shaders/forward_phong_progdef.h"
 
 namespace darmok
 {
@@ -17,14 +20,14 @@ namespace darmok
 	}
 
 	ProgramSamplerDefinition::ProgramSamplerDefinition(std::string name, uint8_t stage) noexcept
-		: _name(name)
+		: _name(std::move(name))
 		, _stage(stage)
 	{
 	}
 
 	ProgramSamplerDefinition::ProgramSamplerDefinition(std::string name, std::string defaultTextureName, uint8_t stage) noexcept
-		: _name(name)
-		, _defaultTextureName(defaultTextureName)
+		: _name(std::move(name))
+		, _defaultTextureName(std::move(defaultTextureName))
 		, _stage(stage)
 	{
 	}
@@ -62,6 +65,14 @@ namespace darmok
 		: _name(std::move(name))
 		, _type(type)
 		, _num(num)
+	{
+	}
+
+	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num, Data&& defaultValue) noexcept
+		: _name(std::move(name))
+		, _type(type)
+		, _num(num)
+		, _default(std::move(defaultValue))
 	{
 	}
 
@@ -447,32 +458,24 @@ namespace darmok
 		} + LightRenderUpdater::getPhongProgramDefinition();
 	}
 
-	static const std::unordered_map<StandardProgramType, ProgramDefinition> _standardProgramDefinitions
+	static const std::unordered_map<StandardProgramType, const char*> _standardProgramDefinitionJsons
 	{
-		{StandardProgramType::ForwardPhong, createForwardPhongProgramDefinition() },
-		{StandardProgramType::Unlit, {
-			{
-				{bgfx::Attrib::Position, { bgfx::AttribType::Float, 3}},
-				{bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true}},
-				{bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2}},
-			},
-			{
-				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
-			},
-			{
-				{ProgramSampler::DiffuseTexture, {"s_texColor"}},
-			}
-		}}
+		{StandardProgramType::ForwardPhong, forward_phong_progdef},
+		{StandardProgramType::Unlit, unlit_progdef},
 	};
 
 	ProgramDefinition ProgramDefinition::getStandard(StandardProgramType type) noexcept
 	{
-		auto itr = _standardProgramDefinitions.find(type);
-		if (itr == _standardProgramDefinitions.end())
+		auto itr = _standardProgramDefinitionJsons.find(type);
+		if (itr == _standardProgramDefinitionJsons.end())
 		{
 			return {};
 		}
-		return itr->second;
+		ProgramDefinition progDef;
+		rapidjson::Document json;
+		json.Parse(itr->second);
+		JsonDataProgramDefinitionLoader::read(progDef, json);
+		return progDef;
 	}
 
 	JsonDataProgramDefinitionLoader::JsonDataProgramDefinitionLoader(IDataLoader& dataLoader)
@@ -480,114 +483,402 @@ namespace darmok
 	{
 	}
 
-	static std::optional<int> getNameSuffixCounter(const std::string_view name, const std::string_view prefix) noexcept
+	namespace json
 	{
-		if (!name.starts_with(prefix))
+		static std::optional<int> getNameSuffixCounter(const std::string_view name, const std::string_view prefix) noexcept
 		{
+			if (!name.starts_with(prefix))
+			{
+				return std::nullopt;
+			}
+			int v;
+			auto r = std::from_chars(name.data() + prefix.size(), name.data() + name.size(), v);
+			if (r.ptr == nullptr)
+			{
+				return std::nullopt;
+			}
+			return v;
+		}
+
+		std::string strToLower(std::string_view sv)
+		{
+			std::string s(sv);
+			std::transform(s.begin(), s.end(), s.begin(),
+				[](unsigned char c) { return std::tolower(c); } // correct
+			);
+			return s;
+		}
+
+		static bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept
+		{
+			auto sname = strToLower(name);
+			if (sname == "position" || sname == "pos")
+			{
+				return bgfx::Attrib::Position;
+			}
+			if (sname == "normal" || sname == "norm" || sname == "n")
+			{
+				return bgfx::Attrib::Normal;
+			}
+			if (sname == "tangent" || name == "tang" || sname == "t")
+			{
+				return bgfx::Attrib::Normal;
+			}
+			if (sname == "bitangent" || sname == "bitang" || sname == "b")
+			{
+				return bgfx::Attrib::Normal;
+			}
+			if (sname == "bitangent" || sname == "bitang" || sname == "b")
+			{
+				return bgfx::Attrib::Normal;
+			}
+			if (sname == "indices" || sname == "index" || sname == "i")
+			{
+				return bgfx::Attrib::Indices;
+			}
+			if (sname == "weight" || sname == "w")
+			{
+				return bgfx::Attrib::Weight;
+			}
+			auto count = getNameSuffixCounter(sname, "color");
+			if (count != std::nullopt)
+			{
+				return (bgfx::Attrib::Enum)((int)bgfx::Attrib::Color0 + count.value());
+			}
+			count = getNameSuffixCounter(sname, "texcoord");
+			if (count == std::nullopt)
+			{
+				count = getNameSuffixCounter(sname, "tex_coord");
+			}
+			if (count != std::nullopt)
+			{
+				return (bgfx::Attrib::Enum)((int)bgfx::Attrib::TexCoord0 + count.value());
+			}
+
+			return bgfx::Attrib::Count;
+		}
+
+		static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept
+		{
+			auto sname = strToLower(name);
+			if (sname == "u8" || sname == "uint8")
+			{
+				return bgfx::AttribType::Uint8;
+			}
+			if (sname == "u10" || sname == "uint10")
+			{
+				return bgfx::AttribType::Uint10;
+			}
+			if (sname == "i" || sname == "int" || sname == "int16")
+			{
+				return bgfx::AttribType::Int16;
+			}
+			if (sname == "h" || sname == "half" || sname == "float8")
+			{
+				return bgfx::AttribType::Half;
+			}
+			if (sname == "f" || sname == "float" || sname == "float16")
+			{
+				return bgfx::AttribType::Float;
+			}
+			return bgfx::AttribType::Count;
+		}
+
+
+		static bgfx::UniformType::Enum getBgfxUniformType(const std::string_view name) noexcept
+		{
+			auto sname = strToLower(name);
+			if (sname == "s" || sname == "sampler")
+			{
+				return bgfx::UniformType::Sampler;
+			}
+			if (sname == "v" || sname == "vec4")
+			{
+				return bgfx::UniformType::Vec4;
+			}
+			if (sname == "m3" || sname == "mat3")
+			{
+				return bgfx::UniformType::Mat3;
+			}
+			if (sname == "m4" || sname == "mat4")
+			{
+				return bgfx::UniformType::Mat4;
+			}
+			return bgfx::UniformType::Count;
+		}
+
+		static std::optional<ProgramUniform> getProgramUniform(std::string_view name)
+		{
+			auto sname = strToLower(name);
+			if (sname == "t" || sname == "time")
+			{
+				return ProgramUniform::Time;
+			}
+			if (sname == "color" || sname == "diffuse" || sname == "diffuse_color" || sname == "diffusecolor")
+			{
+				return ProgramUniform::DiffuseColor;
+			}
+			if (sname == "light_count" || sname == "lightcount")
+			{
+				return ProgramUniform::LightCount;
+			}
+			if (sname == "ambient" || sname == "ambient_light" || sname == "ambientlight")
+			{
+				return ProgramUniform::AmbientLightColor;
+			}
 			return std::nullopt;
 		}
-		int v;
-		auto r = std::from_chars(name.data() + prefix.size(), name.data() + name.size(), v);
-		if (r.ptr == nullptr)
+
+		static std::optional<ProgramSampler> getProgramSampler(std::string_view name)
 		{
+			auto sname = strToLower(name);
+			if (sname == "diffuse" || sname == "diffusetexture" || sname == "diffuse_texture")
+			{
+				return ProgramSampler::DiffuseTexture;
+			}
 			return std::nullopt;
 		}
-		return v;
-	}
 
-	static bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept
-	{
-		if (name == "position" || name == "pos")
+		static std::optional<ProgramBuffer> getProgramBuffer(std::string_view name)
 		{
-			return bgfx::Attrib::Position;
-		}
-		if (name == "normal" || name == "norm" || name == "n")
-		{
-			return bgfx::Attrib::Normal;
-		}
-		if (name == "tangent" || name == "tang" || name == "t")
-		{
-			return bgfx::Attrib::Normal;
-		}
-		if (name == "bitangent" || name == "bitang" || name == "b")
-		{
-			return bgfx::Attrib::Normal;
-		}
-		if (name == "bitangent" || name == "bitang" || name == "b")
-		{
-			return bgfx::Attrib::Normal;
-		}
-		if (name == "indices" || name == "index" || name == "i")
-		{
-			return bgfx::Attrib::Indices;
-		}
-		if (name == "weight" || name == "w")
-		{
-			return bgfx::Attrib::Weight;
-		}
-		auto count = getNameSuffixCounter(name, "color");
-		if (count != std::nullopt)
-		{
-			return (bgfx::Attrib::Enum)((int)bgfx::Attrib::Color0 + count.value());
-		}
-		count = getNameSuffixCounter(name, "texcoord");
-		if (count != std::nullopt)
-		{
-			return (bgfx::Attrib::Enum)((int)bgfx::Attrib::TexCoord0 + count.value());
-		}
-
-		return bgfx::Attrib::Count;
-	}
-
-	static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept
-	{
-		return bgfx::AttribType::Count;
-	}
-
-	static std::optional<ProgramAttribDefinition> getJsonProgramAttribDefinition(const rapidjson::Document::GenericValue& value) noexcept
-	{
-		auto type = getBgfxAttribType(value["type"].GetString());
-		if (type == bgfx::AttribType::Count)
-		{
+			auto sname = strToLower(name);
+			if (sname == "pointlights" || sname == "point_lights")
+			{
+				return ProgramBuffer::PointLights;
+			}
 			return std::nullopt;
 		}
-		uint8_t num = 1;
-		if (value.HasMember("num"))
+
+		static std::optional<ProgramAttribDefinition> getProgramAttribDefinition(const rapidjson::Document::GenericValue& value) noexcept
 		{
-			num = value["num"].GetInt();
+			auto type = bgfx::AttribType::Float;
+			if (value.HasMember("type"))
+			{
+				type = getBgfxAttribType(value["type"].GetString());
+			}
+			if (type == bgfx::AttribType::Count)
+			{
+				return std::nullopt;
+			}
+			uint8_t num = 1;
+			if (value.HasMember("num"))
+			{
+				num = value["num"].GetInt();
+			}
+			bool normalize = false;
+			if (value.HasMember("normalize"))
+			{
+				normalize = value["normalize"].GetBool();
+			}
+			return ProgramAttribDefinition{ type, num, normalize };
 		}
-		bool normalize = false;
-		if (value.HasMember("normalize"))
+
+		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+		static void readVec(glm::vec<L, T, Q>& vec, const rapidjson::Document::ConstArray& json) noexcept
 		{
-			normalize = value["normalize"].GetBool();
+			int i = 0;
+			for (auto& elm : json)
+			{
+				vec[i++] = elm.GetFloat();
+				if (i > vec.length())
+				{
+					break;
+				}
+			}
 		}
-		return ProgramAttribDefinition{ type, num, normalize };
+
+		template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
+		static void readMat(glm::mat<L1, L2, T, Q>& mat, const rapidjson::Document::ConstArray& json) noexcept
+		{
+			int i = 0;
+			for (auto& elm : json)
+			{
+				readVec(mat[i++], elm.GetArray());
+				if (i > mat.length())
+				{
+					break;
+				}
+			}
+		}
+
+		static bgfx::UniformType::Enum getUniformData(Data& data, const rapidjson::Value& v)
+		{
+			auto jsonType = v.GetType();
+			if (jsonType == rapidjson::Type::kStringType)
+			{
+				data = std::move(Data(v.GetString(), v.GetStringLength()));
+				return bgfx::UniformType::Sampler;
+			}
+			if (jsonType == rapidjson::Type::kArrayType)
+			{
+				auto jsonArray = v.GetArray();
+				auto size = jsonArray.Size();
+				if (size > 0)
+				{
+					auto elmType = jsonArray[0].GetType();
+					if (elmType == rapidjson::Type::kNumberType && size >= 4)
+					{
+						glm::vec4 v;
+						readVec(v, jsonArray);
+						data = std::move(Data::copy(v));
+						return bgfx::UniformType::Vec4;
+					}
+					if (elmType == rapidjson::Type::kArrayType)
+					{
+						if (size == 3)
+						{
+							glm::mat3 v;
+							readMat(v, jsonArray);
+							data = std::move(Data::copy(v));
+							return bgfx::UniformType::Mat3;
+						}
+						if (size >= 4)
+						{
+							glm::mat4 v;
+							readMat(v, jsonArray);
+							data = std::move(Data::copy(v));
+							return bgfx::UniformType::Mat4;
+						}
+					}
+				}
+			}
+			return bgfx::UniformType::Count;
+		}
+
+		static std::optional<ProgramUniformDefinition> getProgramUniformDefinition(const rapidjson::Document::GenericValue& value) noexcept
+		{
+			auto type = bgfx::UniformType::Vec4;
+			if (value.HasMember("type"))
+			{
+				type = getBgfxUniformType(value["type"].GetString());
+			}
+			if (type == bgfx::UniformType::Count)
+			{
+				return std::nullopt;
+			}
+			if (!value.HasMember("name"))
+			{
+				return std::nullopt;
+			}
+			std::string name = value["name"].GetString();
+			uint8_t num = 1;
+			if (value.HasMember("num"))
+			{
+				num = value["num"].GetInt();
+			}
+			Data defaultData;
+			if (value.HasMember("default"))
+			{
+				getUniformData(defaultData, value["default"]);
+			}
+			return ProgramUniformDefinition(name, type, num, std::move(defaultData));
+		}
+
+		static std::optional<ProgramSamplerDefinition> getProgramSamplerDefinition(const rapidjson::Document::GenericValue& value) noexcept
+		{
+			if (!value.HasMember("name"))
+			{
+				return std::nullopt;
+			}
+			std::string name = value["name"].GetString();
+			uint8_t stage = 0;
+			if (value.HasMember("stage"))
+			{
+				stage = value["stage"].GetInt();
+			}
+			std::string defaultTextureName;
+			if (value.HasMember("default"))
+			{
+				defaultTextureName = value["default"].GetString();
+			}
+			return ProgramSamplerDefinition(name, defaultTextureName, stage);
+		}
+
+		size_t readAttribMap(ProgramAttribMap& attribs, const rapidjson::Document::ConstObject& json)
+		{
+			size_t count = 0;
+			for (auto& member : json)
+			{
+				auto attrib = json::getBgfxAttrib(member.name.GetString());
+				if (attrib == bgfx::Attrib::Count)
+				{
+					continue;
+				}
+				auto definition = json::getProgramAttribDefinition(member.value);
+				if (!definition)
+				{
+					continue;
+				}
+				attribs.emplace(attrib, definition.value());
+				count++;
+			}
+			return count;
+		}
+
+		static std::optional<ProgramBufferDefinition> getProgramBufferDefinition(const rapidjson::Document::GenericValue& value) noexcept
+		{
+			ProgramBufferDefinition def{ 0 };
+			if (value.HasMember("stage"))
+			{
+				def.stage = value["stage"].GetInt();
+			}
+			if (value.HasMember("attributes"))
+			{
+				readAttribMap(def.attribs, value["attributes"].GetObject());
+			}
+			return def;
+		}
 	}
 
-	std::shared_ptr<ProgramDefinition> JsonDataProgramDefinitionLoader::operator()(std::string_view name)
+	void JsonDataProgramDefinitionLoader::read(ProgramDefinition& progDef, const rapidjson::Document& json)
 	{
+		if (json.HasMember("attributes"))
+		{
+			json::readAttribMap(progDef.attribs, json["attributes"].GetObject());
+		}
+		if (json.HasMember("uniforms"))
+		{
+			for (auto& member : json["uniforms"].GetObject())
+			{
+				auto uniform = json::getProgramUniform(member.name.GetString());
+				if (!uniform)
+				{
+					continue;
+				}
+				auto definition = json::getProgramUniformDefinition(member.value);
+				if (!definition)
+				{
+					continue;
+				}
+				progDef.uniforms.emplace(uniform.value(), definition.value());
+			}
+		}
+		if (json.HasMember("samplers"))
+		{
+			for (auto& member : json["samplers"].GetObject())
+			{
+				auto sampler = json::getProgramSampler(member.name.GetString());
+				if (!sampler)
+				{
+					continue;
+				}
+				auto definition = json::getProgramSamplerDefinition(member.value);
+				if (!definition)
+				{
+					continue;
+				}
+				progDef.samplers.emplace(sampler.value(), definition.value());
+			}
+		}
+	}
+
+	ProgramDefinition JsonDataProgramDefinitionLoader::operator()(std::string_view name)
+	{
+		ProgramDefinition progDef;
 		auto data = _dataLoader(name);
 		rapidjson::Document json;
-		// maybe ParseInsitu?
-		json.Parse((const char*)data->ptr(), data->size());
-
-		auto def = std::make_shared<ProgramDefinition>();
-
-		for (auto& member : json["attributes"].GetObject())
-		{
-			auto attrib = getBgfxAttrib(member.name.GetString());
-			if (attrib == bgfx::Attrib::Count)
-			{
-				continue;
-			}
-			auto attrDef = getJsonProgramAttribDefinition(member.value);
-			if (!attrDef)
-			{
-				continue;
-			}
-			def->attribs.emplace(attrib, attrDef.value());
-		}
-
-		return def;
+		json.Parse((const char*)data->ptr(), data->size()); // maybe ParseInsitu?
+		read(progDef, json);
+		return progDef;
 	}
 }

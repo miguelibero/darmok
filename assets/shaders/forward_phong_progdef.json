@@ -25,6 +25,7 @@
     "uniforms": {
         "diffuseColor": {
             "name": "u_diffuseColor",
+            "type": "vec4",
             "default": [1, 1, 1, 1]
         }
     },
