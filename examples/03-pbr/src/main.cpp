@@ -7,28 +7,72 @@
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/light.hpp>
+#include <darmok/window.hpp>
+#include <darmok/camera.hpp>
+#include <darmok/input.hpp>
 #include <darmok/render_forward.hpp>
 
 namespace
 {
-	class PbrScene : public darmok::App
+	using namespace darmok;
+
+	class PbrScene : public App
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
 		{
 			App::init(args);
 
-			auto& scene = addComponent<darmok::SceneAppComponent>().getScene();
-			auto& lights = scene.addLogicUpdater<darmok::LightRenderUpdater>();
-			auto& renderer = scene.addRenderer<darmok::ForwardRenderer>(lights);
+			auto& scene = addComponent<SceneAppComponent>().getScene();
+			auto& lights = scene.addLogicUpdater<LightRenderUpdater>();
+			auto& renderer = scene.addRenderer<ForwardRenderer>(lights);
 			auto& progDef = renderer.getProgramDefinition();
 
-			auto tex = getAssets().getColorTextureLoader()(darmok::Colors::red);
-			auto mat = std::make_shared<darmok::Material>(progDef);
-			mat->setTexture(darmok::MaterialTextureType::Diffuse, tex);
-			auto sphereMesh = darmok::Mesh::createSphere(mat);
+			auto cam = scene.createEntity();
+			glm::vec2 winSize = getWindow().getSize();
+
+			scene.addComponent<Transform>(cam)
+				.setPosition(glm::vec3(0.f, 2.f, -2.f))
+				.setRotation(glm::vec3(45.f, 0, 0));
+
+			scene.addComponent<Camera>(cam)
+				.setProjection(60, winSize.x / winSize.y, 0.3, 1000);
+
+			auto light = scene.createEntity();
+			scene.addComponent<Transform>(light)
+				.setPosition(glm::vec3(0.f, 2.f, -2.f));
+			scene.addComponent<PointLight>(light);
+
+			auto tex = getAssets().getColorTextureLoader()(Colors::red);
+			auto mat = std::make_shared<Material>(progDef);
+			mat->setTexture(MaterialTextureType::Diffuse, tex);
+			auto sphereMesh = Mesh::createSphere(mat);
 			auto sphere = scene.createEntity();
-			scene.addComponent<darmok::MeshComponent>(sphere, sphereMesh);
+			scene.addComponent<MeshComponent>(sphere, sphereMesh);
+			auto& trans = scene.addComponent<Transform>(sphere);
+
+			auto speed = 0.01F;
+
+			auto move = [&trans, speed](const glm::vec3& d) {
+				auto pos = trans.getPosition();
+				pos += d * speed;
+				trans.setPosition(pos);
+			};
+			auto moveRight = [move]() { move({ 1, 0, 0 });};
+			auto moveLeft = [move]() { move({ -1, 0, 0 }); };
+			auto moveForward = [move]() { move({ 0, 0, 1 }); };
+			auto moveBack = [move]() { move({ 0, 0, -1 }); };
+
+			getInput().addBindings("movement", {
+				{ KeyboardBindingKey{ KeyboardKey::Right}, false, moveRight},
+				{ KeyboardBindingKey{ KeyboardKey::KeyD}, false, moveRight},
+				{ KeyboardBindingKey{ KeyboardKey::Left}, false, moveLeft},
+				{ KeyboardBindingKey{ KeyboardKey::KeyA}, false, moveLeft},
+				{ KeyboardBindingKey{ KeyboardKey::Up}, false, moveForward},
+				{ KeyboardBindingKey{ KeyboardKey::KeyW}, false, moveForward},
+				{ KeyboardBindingKey{ KeyboardKey::Down}, false, moveBack},
+				{ KeyboardBindingKey{ KeyboardKey::KeyS}, false, moveBack},
+			});
 		}
 	};
 

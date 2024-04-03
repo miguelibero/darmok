@@ -55,7 +55,7 @@ namespace darmok
         void init(Scene& scene, App& app) noexcept override;
         void shutdown()  noexcept override;
         void update(float deltaTime)  noexcept override;
-        bool bgfxConfig(const Camera& cam, const ProgramDefinition& progDef, bgfx::Encoder& encoder) const noexcept;
+        void bgfxConfig(const Camera& cam, const ProgramDefinition& progDef, bgfx::Encoder& encoder) const noexcept;
 
         static const ProgramDefinition& getPhongProgramDefinition();
 

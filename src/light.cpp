@@ -13,8 +13,8 @@ namespace darmok
     PointLight::PointLight(const glm::vec3& intensity, float radius) noexcept
         : _intensity(intensity)
         , _radius(radius)
-        , _diffuseColor(Colors::black)
-        , _specularColor(Colors::black)
+        , _diffuseColor(Colors::white)
+        , _specularColor(Colors::white)
     {
     }
 
@@ -112,11 +112,20 @@ namespace darmok
 
     void LightRenderUpdater::shutdown() noexcept
     {
-        bgfx::destroy(_countUniform);
-        bgfx::destroy(_ambientIntensityUniform);
+        if (isValid(_countUniform))
+        {
+            bgfx::destroy(_countUniform);
+        }
+        if (isValid(_ambientIntensityUniform))
+        {
+            bgfx::destroy(_ambientIntensityUniform);
+        }
         for (auto& elm : _pointLightBuffers)
         {
-            bgfx::destroy(elm.second);
+            if (isValid(elm.second))
+            {
+                bgfx::destroy(elm.second);
+            }
         }
     }
 
@@ -156,18 +165,21 @@ namespace darmok
 
         itr->second = writer.finish();
 
-        auto itr2 = _pointLightBuffers.find(camEntity);
-        bgfx::DynamicVertexBufferHandle buffer;
-        if (itr2 == _pointLightBuffers.end())
+        if (index > 0)
         {
-            buffer = bgfx::createDynamicVertexBuffer(index, _pointLightLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-            _pointLightBuffers.emplace(camEntity, buffer);
+            auto itr2 = _pointLightBuffers.find(camEntity);
+            bgfx::DynamicVertexBufferHandle buffer;
+            if (itr2 == _pointLightBuffers.end())
+            {
+                buffer = bgfx::createDynamicVertexBuffer(index, _pointLightLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
+                _pointLightBuffers.emplace(camEntity, buffer);
+            }
+            else
+            {
+                buffer = itr2->second;
+            }
+            bgfx::update(buffer, 0, itr->second.makeRef());
         }
-        else
-        {
-            buffer = itr2->second;
-        }
-        bgfx::update(buffer, 0, itr->second.makeRef());
 
         return index;
     }
@@ -195,10 +207,14 @@ namespace darmok
         _ambientColor /= Colors::white;
     }
 
-    bool LightRenderUpdater::bgfxConfig(const Camera& cam, const ProgramDefinition& progDef, bgfx::Encoder& encoder) const noexcept
+    void LightRenderUpdater::bgfxConfig(const Camera& cam, const ProgramDefinition& progDef, bgfx::Encoder& encoder) const noexcept
     {
-        auto& lightProgDef = getPhongProgramDefinition();
+        if (!_scene)
+        {
+            return;
+        }
 
+        auto& lightProgDef = getPhongProgramDefinition();
         if (progDef.hasUniform(ProgramUniform::LightCount, lightProgDef.uniforms))
         {
             encoder.setUniform(_countUniform, glm::value_ptr(_lightCount));
@@ -209,9 +225,9 @@ namespace darmok
             encoder.setUniform(_ambientIntensityUniform, glm::value_ptr(_ambientColor));
         }
 
-        if (_scene)
+        auto& registry = _scene->getRegistry();
+        if (_lightCount.x > 0)
         {
-            auto& registry = _scene->getRegistry();
             auto& pointLightsBufferDef = lightProgDef.buffers.at(ProgramBuffer::PointLights);
             if (progDef.hasBuffer(ProgramBuffer::PointLights, pointLightsBufferDef))
             {
@@ -223,8 +239,6 @@ namespace darmok
                 }
             }
         }
-
-        return false;
     }
 
     AmbientLight::AmbientLight(const glm::vec3& intensity) noexcept

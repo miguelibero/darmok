@@ -65,7 +65,9 @@ endmacro()
 
 addShader("unlit")
 addShader("forward_phong")
+addShader("forward_pbr")
 addShaderInclude("phong_lighting")
+addShaderInclude("pbr_lighting")
 
 set(SOURCES
   ${SRC_DIR}/window.cpp

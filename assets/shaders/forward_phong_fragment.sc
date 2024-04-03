@@ -14,8 +14,7 @@ void main()
 	vec3 specular = vec3_splat(0);
 	vec3 viewDir = normalize(v_view - v_position);
 	vec3 norm = normalize(v_normal);
-
-	int shininess = 32; // material
+	int shininess = u_diffuseColor[3];
 
 	uint c = pointLightCount();
     for(uint i = 0; i < c; i++)
