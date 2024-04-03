@@ -6,26 +6,14 @@
         },
         "ambientLightColor": {
             "name": "u_ambientLightColor",
-            "type": "vec4"
+            "type": "vec3"
         }
     },
     "buffers": {
         "pointLights": {
             "stage": 6,
-            "attributes": {
-                "position": {
-                    "type": "float",
-                    "num": 3
-                },
-                "color0": {
-                    "type": "float",
-                    "num": 3
-                },
-                "color1": {
-                    "type": "float",
-                    "num": 3
-                }
-            }
+            "type": "vec4",
+            "attributes": ["position", "color0", "color1"]
         }
     }
 }

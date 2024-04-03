@@ -5,6 +5,9 @@
 #include <darmok/camera.hpp>
 #include <darmok/material.hpp>
 
+#include "program_def.hpp"
+#include "generated/shaders/phong_lighting_progdef.h"
+
 namespace darmok
 {
     PointLight::PointLight(const glm::vec3& intensity, float radius) noexcept
@@ -66,31 +69,14 @@ namespace darmok
         return _specularColor;
     }
 
-    const ProgramDefinition& LightRenderUpdater::getPhongProgramDefinition() noexcept
+    const ProgramDefinition& LightRenderUpdater::getPhongProgramDefinition()
     {
-        static ProgramDefinition def{
-            {},
-            {
-                {ProgramUniform::LightCount, { "u_lightCount", bgfx::UniformType::Vec4 }},
-                {ProgramUniform::AmbientLightColor, { "u_ambientLightColor", bgfx::UniformType::Vec4 }}
-            },
-            {},
-            {
-                {ProgramBuffer::PointLights, { 6, {
-                    { bgfx::Attrib::Position,   { bgfx::AttribType::Float, 3} },
-                    { bgfx::Attrib::Color0,     { bgfx::AttribType::Float, 3, true} },
-                    { bgfx::Attrib::Color1,     { bgfx::AttribType::Float, 3, true} },
-                }}
-            }}
-        };
+        static auto def = ProgramDefinition::createFromJson(phong_lighting_progdef);
         return def;
     }
 
-    static bgfx::VertexLayout _pointLightLayout = LightRenderUpdater::getPhongProgramDefinition().buffers.at(ProgramBuffer::PointLights).createVertexLayout();
-
     LightRenderUpdater::LightRenderUpdater() noexcept
-        : _pointLightsBuffer{ bgfx::kInvalidHandle }
-        , _countUniform{ bgfx::kInvalidHandle }
+        : _countUniform{ bgfx::kInvalidHandle }
         , _ambientIntensityUniform{ bgfx::kInvalidHandle }
         , _lightCount{}
         , _ambientColor{}
@@ -101,17 +87,89 @@ namespace darmok
     {
         _scene = scene;
         auto& progDef = getPhongProgramDefinition();
-        _countUniform = progDef.uniforms.at(ProgramUniform::LightCount).createHandle();
-        _ambientIntensityUniform = progDef.uniforms.at(ProgramUniform::AmbientLightColor).createHandle();
-        _pointLightsBuffer = bgfx::createDynamicVertexBuffer(
-            1, _pointLightLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
+        {
+            auto itr = progDef.buffers.find(ProgramBuffer::PointLights);
+            if (itr != progDef.buffers.end())
+            {
+                _pointLightLayout = itr->second.createVertexLayout();
+            }
+        }
+        {
+            auto itr = progDef.uniforms.find(ProgramUniform::LightCount);
+            if (itr != progDef.uniforms.end())
+            {
+                _countUniform = itr->second.createHandle();
+            }
+        }
+        {
+            auto itr = progDef.uniforms.find(ProgramUniform::AmbientLightColor);
+            if (itr != progDef.uniforms.end())
+            {
+                _ambientIntensityUniform = itr->second.createHandle();
+            }
+        }
     }
 
     void LightRenderUpdater::shutdown() noexcept
     {
         bgfx::destroy(_countUniform);
         bgfx::destroy(_ambientIntensityUniform);
-        bgfx::destroy(_pointLightsBuffer);
+        for (auto& elm : _pointLightBuffers)
+        {
+            bgfx::destroy(elm.second);
+        }
+    }
+
+    size_t LightRenderUpdater::updatePointLights(Entity camEntity, const Camera& cam) noexcept
+    {
+        auto& registry = _scene->getRegistry();
+        auto& pointLights = registry.storage<PointLight>();
+        EntityRuntimeView camPointLights;
+        camPointLights.iterate(pointLights);
+        cam.filterEntityView(camPointLights);
+
+        VertexDataWriter writer(_pointLightLayout, pointLights.size());
+
+        auto itr = _pointLights.find(camEntity);
+        if (itr != _pointLights.end())
+        {
+            writer.load(std::move(itr->second));
+        }
+        else
+        {
+            itr = _pointLights.emplace(camEntity, Data()).first;
+        }
+
+        size_t index = 0;
+        for (auto entity : camPointLights)
+        {
+            auto& pointLight = registry.get<const PointLight>(entity);
+            auto trans = registry.try_get<const Transform>(entity);
+            if (trans != nullptr)
+            {
+                writer.set(bgfx::Attrib::Position, index, trans->getPosition());
+            }
+            writer.set(bgfx::Attrib::Color0, index, Colors::normalize(pointLight.getDiffuseColor()));
+            writer.set(bgfx::Attrib::Color1, index, Colors::normalize(pointLight.getSpecularColor()));
+            index++;
+        }
+
+        itr->second = writer.finish();
+
+        auto itr2 = _pointLightBuffers.find(camEntity);
+        bgfx::DynamicVertexBufferHandle buffer;
+        if (itr2 == _pointLightBuffers.end())
+        {
+            buffer = bgfx::createDynamicVertexBuffer(index, _pointLightLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
+            _pointLightBuffers.emplace(camEntity, buffer);
+        }
+        else
+        {
+            buffer = itr2->second;
+        }
+        bgfx::update(buffer, 0, itr->second.makeRef());
+
+        return index;
     }
 
     void LightRenderUpdater::update(float deltaTime) noexcept
@@ -122,32 +180,10 @@ namespace darmok
         }
         auto& registry = _scene->getRegistry();
         auto cams = registry.view<const Camera>();
-        auto& pointLights = registry.storage<PointLight>();
 
         for (auto [camEntity, cam] : cams.each())
         {
-            EntityRuntimeView camPointLights;
-            camPointLights.iterate(pointLights);
-            cam.filterEntityView(camPointLights);
-
-            uint32_t index = 0;
-            VertexDataWriter writer(_pointLightLayout, pointLights.size());
-
-            for (auto entity : camPointLights)
-            {
-                auto& pointLight = registry.get<const PointLight>(entity);
-                auto trans = registry.try_get<const Transform>(entity);
-                if (trans != nullptr)
-                {
-                    writer.set(bgfx::Attrib::Position, index, trans->getPosition());
-                }
-                writer.set(bgfx::Attrib::Color0, index, pointLight.getDiffuseColor());
-                writer.set(bgfx::Attrib::Color1, index, pointLight.getSpecularColor());
-                index++;
-            }
-            _lightCount.x = index;
-            
-            _pointLights.emplace(camEntity, writer.finish());
+            _lightCount.x = updatePointLights(camEntity, cam);
         }
 
         _ambientColor = {};
@@ -180,11 +216,10 @@ namespace darmok
             if (progDef.hasBuffer(ProgramBuffer::PointLights, pointLightsBufferDef))
             {
                 auto camEntity = entt::to_entity(registry, cam);
-                auto itr = _pointLights.find(camEntity);
-                if (itr != _pointLights.end())
+                auto itr = _pointLightBuffers.find(camEntity);
+                if (itr != _pointLightBuffers.end())
                 {
-                    bgfx::update(_pointLightsBuffer, 0, itr->second.makeRef());
-                    bgfx::setBuffer(pointLightsBufferDef.stage, _pointLightsBuffer, bgfx::Access::Read);
+                    bgfx::setBuffer(pointLightsBufferDef.stage, itr->second, bgfx::Access::Read);
                 }
             }
         }

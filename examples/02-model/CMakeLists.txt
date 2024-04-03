@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 project(
   darmok-example-model
   LANGUAGES CXX
-  DESCRIPTION "model darmok project"
+  DESCRIPTION "model example darmok project"
 )
 
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)

@@ -38,7 +38,7 @@ namespace darmok
 		_defaultTextures.clear();
 		for (auto& pair : _progDef.samplers)
 		{
-			auto& texName = pair.second.getDefaultTextureName();
+			auto& texName = pair.second.defaultTexture;
 			if (!texName.empty())
 			{
 				auto tex = assets.getTextureLoader()(texName);
@@ -136,14 +136,14 @@ namespace darmok
 				auto itr3 = _textures.find(itr2->second);
 				if (itr3 != _textures.end())
 				{
-					encoder.setTexture(pair.second.getStage(), itr1->second, itr3->second->getHandle());
+					encoder.setTexture(pair.second.stage, itr1->second, itr3->second->getHandle());
 					continue;
 				}
 			}
 			auto itr3 = _defaultTextures.find(pair.first);
 			if (itr3 != _defaultTextures.end())
 			{
-				encoder.setTexture(pair.second.getStage(), itr1->second, itr3->second->getHandle());
+				encoder.setTexture(pair.second.stage, itr1->second, itr3->second->getHandle());
 			}
 		}
 		for (auto& pair : _progDef.uniforms)
@@ -164,7 +164,7 @@ namespace darmok
 					continue;
 				}
 			}
-			auto& def = pair.second.getDefault();
+			auto& def = pair.second.defaultValue;
 			if (!def.empty())
 			{
 				encoder.setUniform(itr1->second, def.ptr());

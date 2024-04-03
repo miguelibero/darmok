@@ -53,15 +53,17 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * renderer
     * sprite, unlit
     * forward with phong lighting (point, ambient)
+* loading program definitions from json
 
 ### Next tasks
-* loading program definitions from json
 * forward renderer
+    * other types of lights
     * pbr lighting
+* wren scripting
+* physics
 * deferred renderer
     * phong lighting
     * pbr lighting
-* wren scripting
 * mesh serialization
 * spine animations loading
 

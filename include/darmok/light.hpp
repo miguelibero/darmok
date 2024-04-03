@@ -57,15 +57,18 @@ namespace darmok
         void update(float deltaTime)  noexcept override;
         bool bgfxConfig(const Camera& cam, const ProgramDefinition& progDef, bgfx::Encoder& encoder) const noexcept;
 
-        static const ProgramDefinition& getPhongProgramDefinition() noexcept;
+        static const ProgramDefinition& getPhongProgramDefinition();
 
     private:
+        bgfx::VertexLayout _pointLightLayout;
         OptionalRef<Scene> _scene;
         bgfx::UniformHandle _countUniform;
         bgfx::UniformHandle _ambientIntensityUniform;
-        bgfx::DynamicVertexBufferHandle _pointLightsBuffer;
         std::unordered_map<Entity, Data> _pointLights;
+        std::unordered_map<Entity, bgfx::DynamicVertexBufferHandle> _pointLightBuffers;
         glm::vec4 _lightCount;
         glm::vec4 _ambientColor;
+
+        size_t updatePointLights(Entity camEntity, const Camera& cam) noexcept;
     };
 }

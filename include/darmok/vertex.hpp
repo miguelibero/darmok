@@ -56,8 +56,8 @@ namespace darmok
 
     public:
         VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, bx::AllocatorI* alloc = nullptr) noexcept;
-        VertexDataWriter(const bgfx::VertexLayout& layout, const DataView& data) noexcept;
 
+        bool load(Data&& data) noexcept;
         Data&& finish() noexcept;
 
         template<typename Iter, typename Filter>
@@ -65,7 +65,6 @@ namespace darmok
         {
             if (_layout.has(attr))
             {
-                auto data = _dataView.ptr();
                 for (auto i = 0; i < _size; i++)
                 {
                     set(attr, i, filter(begin));
@@ -84,7 +83,7 @@ namespace darmok
             std::array<float, 4> finput{};
             if (convertInput(attr, input, finput))
             {
-                auto data = const_cast<void*>(_dataView.ptr());
+                auto data = prepareData();
                 bgfx::vertexPack(&finput.front(), false, attr, _layout, data, index);
                 mark(attr, index);
             }
@@ -98,7 +97,7 @@ namespace darmok
             std::array<float, 4> finput{};
             if (convertInput(attr, input, finput))
             {
-                auto data = const_cast<void*>(_dataView.ptr());
+                auto data = prepareData();
                 for (auto i = 0; i < _size; i++)
                 {
                     if (overwrite || !hasBeenSet(attr, i))
@@ -146,10 +145,11 @@ namespace darmok
         const bgfx::VertexLayout& _layout;
         size_t _size;
         Data _data;
-        DataView _dataView;
+        bx::AllocatorI* _alloc;
         std::unordered_set<bgfx::Attrib::Enum> _markedAll;
         std::unordered_map<bgfx::Attrib::Enum, std::unordered_set<uint32_t>> _marked;
 
+        void* prepareData();
         void mark(bgfx::Attrib::Enum attr, uint32_t index) noexcept;
         void markAll(bgfx::Attrib::Enum attr) noexcept;
     };

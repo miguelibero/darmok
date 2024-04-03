@@ -58,12 +58,15 @@ namespace darmok
         [[nodiscard]] void* ptr() const noexcept;
         [[nodiscard]] size_t size() const noexcept;
         [[nodiscard]] bool empty() const noexcept;
+
         [[nodiscard]] bool operator==(const Data& other) const noexcept;
         [[nodiscard]] bool operator!=(const Data& other) const noexcept;
 
 
         [[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
         void clear() noexcept;
+
+        static Data reuse(Data&& data, size_t size) noexcept;
 
         template<typename T>
         static Data copy(const std::vector<T>& v, bx::AllocatorI* alloc = nullptr) noexcept
@@ -96,8 +99,8 @@ namespace darmok
         }
 
     private:
-        size_t _size;
         void* _ptr;
+        size_t _size;
         bx::AllocatorI* _alloc;
 
         static void* malloc(size_t size, bx::AllocatorI* alloc) noexcept;

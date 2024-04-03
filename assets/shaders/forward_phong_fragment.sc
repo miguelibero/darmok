@@ -21,6 +21,7 @@ void main()
     for(uint i = 0; i < c; i++)
     {
 		PointLight light = getPointLight(i);
+		gl_FragColor.rgb = light.specular;
 
 		vec3 lightDir = normalize(light.position - v_position);
 		float diff = max(dot(norm, lightDir), 0.0);
@@ -30,8 +31,10 @@ void main()
 		float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
 		specular += spec * light.specular;
 	}
+	
 	diffuse *= u_diffuseColor.xyz;
 	vec3 ambient = getAmbientLight().color;
+	
 	gl_FragColor.rgb = base.rgb * (ambient + diffuse + specular);
 	gl_FragColor.a = base.a;
 }

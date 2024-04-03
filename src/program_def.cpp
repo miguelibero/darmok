@@ -9,6 +9,11 @@
 
 namespace darmok
 {
+	void ProgramAttribDefinition::updateVertexLayout(bgfx::Attrib::Enum attrib, bgfx::VertexLayout& layout) const noexcept
+	{
+		layout.add(attrib, num, type, normalize);
+	}
+
 	bool ProgramAttribDefinition::operator==(const ProgramAttribDefinition& other) const noexcept
 	{
 		return type == other.type && num == other.num && normalize == other.normalize;
@@ -19,22 +24,44 @@ namespace darmok
 		return !operator==(other);
 	}
 
+	static bgfx::AttribType::Enum getBiggestAttribType(bgfx::AttribType::Enum a, bgfx::AttribType::Enum b) noexcept
+	{
+		return (bgfx::AttribType::Enum)std::max((int)a, (int)b);
+	}
+
+	ProgramAttribDefinition& ProgramAttribDefinition::operator+=(const ProgramAttribDefinition& other) noexcept
+	{
+		type = getBiggestAttribType(type, other.type);
+		num = std::max(num, other.num);
+		normalize = normalize || other.normalize;
+		return *this;
+	}
+
+	ProgramAttribDefinition ProgramAttribDefinition::operator+(const ProgramAttribDefinition& other) const  noexcept
+	{
+		return {
+			getBiggestAttribType(type, other.type),
+			std::max(num, other.num),
+			normalize || other.normalize,
+		};
+	}
+
 	ProgramSamplerDefinition::ProgramSamplerDefinition(std::string name, uint8_t stage) noexcept
-		: _name(std::move(name))
-		, _stage(stage)
+		: name(std::move(name))
+		, stage(stage)
 	{
 	}
 
-	ProgramSamplerDefinition::ProgramSamplerDefinition(std::string name, std::string defaultTextureName, uint8_t stage) noexcept
-		: _name(std::move(name))
-		, _defaultTextureName(std::move(defaultTextureName))
-		, _stage(stage)
+	ProgramSamplerDefinition::ProgramSamplerDefinition(std::string name, std::string defaultTexture, uint8_t stage) noexcept
+		: name(std::move(name))
+		, defaultTexture(std::move(defaultTexture))
+		, stage(stage)
 	{
 	}
 
 	bool ProgramSamplerDefinition::operator==(const ProgramSamplerDefinition& other) const noexcept
 	{
-		return _name == other._name && _defaultTextureName == other._defaultTextureName && _stage == other._stage;
+		return name == other.name && defaultTexture == other.defaultTexture && stage == other.stage;
 	}
 
 	bool ProgramSamplerDefinition::operator!=(const ProgramSamplerDefinition& other) const noexcept
@@ -42,90 +69,76 @@ namespace darmok
 		return !operator==(other);
 	}
 
-	const std::string& ProgramSamplerDefinition::getName() const
-	{
-		return _name;
-	}
-
-	const std::string& ProgramSamplerDefinition::getDefaultTextureName() const
-	{
-		return _defaultTextureName;
-	}
-	uint8_t ProgramSamplerDefinition::getStage() const
-	{
-		return _stage;
-	}
-
 	bgfx::UniformHandle ProgramSamplerDefinition::createHandle() const noexcept
 	{
-		return bgfx::createUniform(_name.c_str(), bgfx::UniformType::Sampler);
+		return bgfx::createUniform(name.c_str(), bgfx::UniformType::Sampler);
 	}
 
 	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num) noexcept
-		: _name(std::move(name))
-		, _type(type)
-		, _num(num)
+		: name(std::move(name))
+		, type(type)
+		, num(num)
 	{
 	}
 
 	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num, Data&& defaultValue) noexcept
-		: _name(std::move(name))
-		, _type(type)
-		, _num(num)
-		, _default(std::move(defaultValue))
+		: name(std::move(name))
+		, type(type)
+		, num(num)
+		, defaultValue(std::move(defaultValue))
 	{
 	}
 
 	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const glm::vec4& defaultValue) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Vec4)
-		, _num(1)
-		, _default(Data::copy(glm::value_ptr(defaultValue), 4))
+		: name(std::move(name))
+		, type(bgfx::UniformType::Vec4)
+		, num(1)
+		, defaultValue(Data::copy(glm::value_ptr(defaultValue), 4))
 	{
 	}
 
 	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const glm::mat3& defaultValue) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Mat3)
-		, _num(1)
-		, _default(Data::copy(glm::value_ptr(defaultValue), 9))
+		: name(std::move(name))
+		, type(bgfx::UniformType::Mat3)
+		, num(1)
+		, defaultValue(Data::copy(glm::value_ptr(defaultValue), 9))
 	{
 	}
 
 	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const glm::mat4& defaultValue) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Mat4)
-		, _num(1)
-		, _default(Data::copy(glm::value_ptr(defaultValue), 16))
+		: name(std::move(name))
+		, type(bgfx::UniformType::Mat4)
+		, num(1)
+		, defaultValue(Data::copy(glm::value_ptr(defaultValue), 16))
 	{
 	}
 
 	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const std::vector<glm::vec4>& defaultValue) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Vec4)
-		, _num(defaultValue.size())
-		, _default(Data::copy(&defaultValue.front(), 4))
+		: name(std::move(name))
+		, type(bgfx::UniformType::Vec4)
+		, num(defaultValue.size())
+		, defaultValue(Data::copy(&defaultValue.front(), 4))
 	{
 	}
 
 	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const std::vector<glm::mat4>& defaultValue) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Mat3)
-		, _num(defaultValue.size())
-		, _default(Data::copy(&defaultValue.front(), 9))
+		: name(std::move(name))
+		, type(bgfx::UniformType::Mat3)
+		, num(defaultValue.size())
+		, defaultValue(Data::copy(&defaultValue.front(), 9))
 	{
 	}
 	ProgramUniformDefinition::ProgramUniformDefinition(std::string name, const std::vector<glm::mat3>& defaultValue) noexcept
-		: _name(std::move(name))
-		, _type(bgfx::UniformType::Mat4)
-		, _num(defaultValue.size())
-		, _default(Data::copy(&defaultValue.front(), 16))
+		: name(std::move(name))
+		, type(bgfx::UniformType::Mat4)
+		, num(defaultValue.size())
+		, defaultValue(Data::copy(&defaultValue.front(), 16))
 	{
 	}
 
 	bool ProgramUniformDefinition::operator==(const ProgramUniformDefinition& other) const noexcept
 	{
-		return _name == other._name && _type == other._type && _num == other._num && _default == other._default;
+		return name == other.name && type == other.type && num == other.num && defaultValue == other.defaultValue;
 	}
 
 	bool ProgramUniformDefinition::operator!=(const ProgramUniformDefinition& other) const noexcept
@@ -133,29 +146,9 @@ namespace darmok
 		return !operator==(other);
 	}
 
-	const std::string& ProgramUniformDefinition::getName() const
-	{
-		return _name;
-	}
-
-	bgfx::UniformType::Enum ProgramUniformDefinition::getType() const
-	{
-		return _type;
-	}
-
-	const Data& ProgramUniformDefinition::getDefault() const
-	{
-		return _default;
-	}
-
-	uint16_t ProgramUniformDefinition::getNum() const
-	{
-		return _num;
-	}
-
 	bgfx::UniformHandle ProgramUniformDefinition::createHandle() const noexcept
 	{
-		return bgfx::createUniform(_name.c_str(), _type, _num);
+		return bgfx::createUniform(name.c_str(), type, num);
 	}
 
 	static bgfx::VertexLayout createVertexLayout(const ProgramAttribMap& attribs) noexcept
@@ -164,7 +157,7 @@ namespace darmok
 		layout.begin();
 		for (const auto& pair : attribs)
 		{
-			layout.add(pair.first, pair.second.num, pair.second.type, pair.second.normalize);
+			pair.second.updateVertexLayout(pair.first, layout);
 		}
 		layout.end();
 		return layout;
@@ -180,7 +173,7 @@ namespace darmok
 
 	bool ProgramBufferDefinition::operator==(const ProgramBufferDefinition& other) const noexcept
 	{
-		return stage == other.stage && attribs == other.attribs;
+		return stage == other.stage && type == other.type && attribs == other.attribs;
 	}
 
 	bool ProgramBufferDefinition::operator!=(const ProgramBufferDefinition& other) const noexcept
@@ -188,22 +181,44 @@ namespace darmok
 		return !operator==(other);
 	}
 
+
+	static ProgramBufferAttribType getBiggestProgramBufferAttribType(ProgramBufferAttribType a, ProgramBufferAttribType b) noexcept
+	{
+		return (ProgramBufferAttribType)std::max((int)a, (int)b);
+	}
+
 	ProgramBufferDefinition& ProgramBufferDefinition::operator+=(const ProgramBufferDefinition& other) noexcept
 	{
-		attribs.insert(other.attribs.begin(), other.attribs.end());
+		type = getBiggestProgramBufferAttribType(type, other.type);
+		for (auto& attrib : other.attribs)
+		{
+			if (!hasAttrib(attrib))
+			{
+				attribs.push_back(attrib);
+			}
+		}
 		return *this;
 	}
 
 	ProgramBufferDefinition ProgramBufferDefinition::operator+(const ProgramBufferDefinition& other) const  noexcept
 	{
-		return { stage, combineMaps(attribs, other.attribs) };
+		std::vector<bgfx::Attrib::Enum> combinedAttribs(attribs);
+		for (auto& attrib : other.attribs)
+		{
+			auto itr = std::find(combinedAttribs.begin(), combinedAttribs.end(), attrib);
+			if (itr == combinedAttribs.end())
+			{
+				combinedAttribs.push_back(attrib);
+			}
+		}
+		return { stage, getBiggestProgramBufferAttribType(type, other.type), combinedAttribs };
 	}
 
 	bool ProgramBufferDefinition::contains(const ProgramBufferDefinition& other) const noexcept
 	{
-		for (auto& elm : other.attribs)
+		for (auto& attrib : other.attribs)
 		{
-			if (!hasAttrib(elm.first, elm.second))
+			if (!hasAttrib(attrib))
 			{
 				return false;
 			}
@@ -211,29 +226,49 @@ namespace darmok
 		return true;
 	}
 
-	bool ProgramBufferDefinition::hasAttrib(bgfx::Attrib::Enum attrib, const ProgramAttribMap& defs) const noexcept
+	bool ProgramBufferDefinition::hasAttrib(bgfx::Attrib::Enum attrib) const noexcept
 	{
-		auto itr = defs.find(attrib);
-		if (itr == defs.end())
-		{
-			return false;
-		}
-		return hasAttrib(attrib, itr->second);
-	}
-
-	bool ProgramBufferDefinition::hasAttrib(bgfx::Attrib::Enum attrib, const ProgramAttribDefinition& def) const noexcept
-	{
-		auto itr = attribs.find(attrib);
-		if (itr == attribs.end())
-		{
-			return false;
-		}
-		return itr->second == def;
+		auto itr = std::find(attribs.begin(), attribs.end(), attrib);
+		return itr != attribs.end();
 	}
 
 	bgfx::VertexLayout ProgramBufferDefinition::createVertexLayout() const noexcept
 	{
-		return darmok::createVertexLayout(attribs);
+		bgfx::VertexLayout layout;
+		layout.begin();
+
+		ProgramAttribDefinition attribDef{ bgfx::AttribType::Float, 1, false };
+		switch (type)
+		{
+		case ProgramBufferAttribType::Vec4:
+			attribDef.num = 4;
+			break;
+		case ProgramBufferAttribType::Uvec4:
+			attribDef.num = 4;
+			attribDef.type = bgfx::AttribType::Uint8;
+			break;
+		case ProgramBufferAttribType::Uint:
+			attribDef.type = bgfx::AttribType::Uint8;
+			break;
+		case ProgramBufferAttribType::Int:
+			attribDef.type = bgfx::AttribType::Int16;
+			break;
+		case ProgramBufferAttribType::Bool:
+			attribDef.type = bgfx::AttribType::Uint8;
+			break;
+		}
+
+		for (auto& attrib : attribs)
+		{
+			attribDef.updateVertexLayout(attrib, layout);
+		}
+		layout.end();
+		return layout;
+	}
+
+	bool ProgramDefinition::empty() const noexcept
+	{
+		return attribs.empty() && uniforms.empty() && samplers.empty() && buffers.empty();
 	}
 
 	bgfx::VertexLayout ProgramDefinition::createVertexLayout() const noexcept
@@ -243,7 +278,7 @@ namespace darmok
 
 	bool ProgramDefinition::operator==(const ProgramDefinition& other) const noexcept
 	{
-		return attribs == other.attribs && uniforms == other.uniforms && buffers == other.buffers;
+		return attribs == other.attribs && uniforms == other.uniforms && samplers == other.samplers && buffers == other.buffers;
 	}
 
 	bool ProgramDefinition::operator!=(const ProgramDefinition& other) const noexcept
@@ -282,6 +317,13 @@ namespace darmok
 		for (auto& elm : other.uniforms)
 		{
 			if (!hasUniform(elm.first, elm.second))
+			{
+				return false;
+			}
+		}
+		for (auto& elm : other.samplers)
+		{
+			if (!hasSampler(elm.first, elm.second))
 			{
 				return false;
 			}
@@ -372,7 +414,7 @@ namespace darmok
 		if (itr != uniforms.end())
 		{
 			auto& u = itr->second;
-			if (u.getName() == name)
+			if (u.name == name)
 			{
 				return u;
 			}
@@ -386,7 +428,7 @@ namespace darmok
 		if (itr != uniforms.end())
 		{
 			auto& u = itr->second;
-			if (u.getName() == name && u.getType() == type && u.getNum() == num)
+			if (u.name == name && u.type == type && u.num == num)
 			{
 				return u;
 			}
@@ -431,31 +473,12 @@ namespace darmok
 		if (itr != samplers.end())
 		{
 			auto& u = itr->second;
-			if (u.getName() == name && u.getStage() == stage)
+			if (u.name == name && u.stage == stage)
 			{
 				return u;
 			}
 		}
 		return nullptr;
-	}
-
-	static ProgramDefinition createForwardPhongProgramDefinition() noexcept
-	{
-		return ProgramDefinition{
-			{
-				{ bgfx::Attrib::Position, { bgfx::AttribType::Float, 3 } },
-				{ bgfx::Attrib::Normal, { bgfx::AttribType::Float, 3} },
-				{ bgfx::Attrib::Tangent, { bgfx::AttribType::Float, 3} },
-				{ bgfx::Attrib::TexCoord0, { bgfx::AttribType::Float, 2} },
-				{ bgfx::Attrib::Color0, { bgfx::AttribType::Uint8, 4, true} },
-			},
-			{
-				{ProgramUniform::DiffuseColor, {"u_diffuseColor", glm::vec4(1)}},
-			},
-			{
-				{ProgramSampler::DiffuseTexture, {"s_texColor"}},
-			}
-		} + LightRenderUpdater::getPhongProgramDefinition();
 	}
 
 	static const std::unordered_map<StandardProgramType, const char*> _standardProgramDefinitionJsons
@@ -464,18 +487,32 @@ namespace darmok
 		{StandardProgramType::Unlit, unlit_progdef},
 	};
 
-	ProgramDefinition ProgramDefinition::getStandard(StandardProgramType type) noexcept
+	static std::optional<ProgramDefinition> getStandardProgramDefinitionInclude(std::string_view name) noexcept
+	{
+		if (name == "phong_lighting")
+		{
+			return LightRenderUpdater::getPhongProgramDefinition();
+		}
+		return std::nullopt;
+	}
+
+	ProgramDefinition ProgramDefinition::createFromJson(std::string_view json)
+	{
+		rapidjson::Document doc;
+		doc.Parse(json.data(), json.size());
+		ProgramDefinition progDef;
+		JsonDataProgramDefinitionLoader::read(progDef, doc, getStandardProgramDefinitionInclude);
+		return progDef;
+	}
+
+	ProgramDefinition ProgramDefinition::createStandard(StandardProgramType type)
 	{
 		auto itr = _standardProgramDefinitionJsons.find(type);
 		if (itr == _standardProgramDefinitionJsons.end())
 		{
 			return {};
 		}
-		ProgramDefinition progDef;
-		rapidjson::Document json;
-		json.Parse(itr->second);
-		JsonDataProgramDefinitionLoader::read(progDef, json);
-		return progDef;
+		return createFromJson(itr->second);
 	}
 
 	JsonDataProgramDefinitionLoader::JsonDataProgramDefinitionLoader(IDataLoader& dataLoader)
@@ -485,6 +522,11 @@ namespace darmok
 
 	namespace json
 	{
+		static std::string_view getStringView(const rapidjson::Value& v) noexcept
+		{
+			return std::string_view(v.GetString(), v.GetStringLength());
+		}
+
 		static std::optional<int> getNameSuffixCounter(const std::string_view name, const std::string_view prefix) noexcept
 		{
 			if (!name.starts_with(prefix))
@@ -607,7 +649,7 @@ namespace darmok
 			return bgfx::UniformType::Count;
 		}
 
-		static std::optional<ProgramUniform> getProgramUniform(std::string_view name)
+		static std::optional<ProgramUniform> getProgramUniform(std::string_view name) noexcept
 		{
 			auto sname = strToLower(name);
 			if (sname == "t" || sname == "time")
@@ -622,14 +664,14 @@ namespace darmok
 			{
 				return ProgramUniform::LightCount;
 			}
-			if (sname == "ambient" || sname == "ambient_light" || sname == "ambientlight")
+			if (sname == "ambient" || sname == "ambient_light" || sname == "ambientlight" || sname == "ambientlightcolor" || sname == "ambient_light_color")
 			{
 				return ProgramUniform::AmbientLightColor;
 			}
 			return std::nullopt;
 		}
 
-		static std::optional<ProgramSampler> getProgramSampler(std::string_view name)
+		static std::optional<ProgramSampler> getProgramSampler(std::string_view name) noexcept
 		{
 			auto sname = strToLower(name);
 			if (sname == "diffuse" || sname == "diffusetexture" || sname == "diffuse_texture")
@@ -639,7 +681,7 @@ namespace darmok
 			return std::nullopt;
 		}
 
-		static std::optional<ProgramBuffer> getProgramBuffer(std::string_view name)
+		static std::optional<ProgramBuffer> getProgramBuffer(std::string_view name) noexcept
 		{
 			auto sname = strToLower(name);
 			if (sname == "pointlights" || sname == "point_lights")
@@ -649,12 +691,38 @@ namespace darmok
 			return std::nullopt;
 		}
 
+		static std::optional<ProgramBufferAttribType> getProgramBufferAttribType(std::string_view name) noexcept
+		{
+			auto sname = strToLower(name);
+			if (sname == "vec4" || sname == "v4")
+			{
+				return ProgramBufferAttribType::Vec4;
+			}
+			if (sname == "uvec4" || sname == "u4")
+			{
+				return ProgramBufferAttribType::Uvec4;
+			}
+			if (sname == "uint" || sname == "u")
+			{
+				return ProgramBufferAttribType::Uint;
+			}
+			if (sname == "int" || sname == "i")
+			{
+				return ProgramBufferAttribType::Int;
+			}
+			if (sname == "bool" || sname == "boolean" || sname == "b")
+			{
+				return ProgramBufferAttribType::Bool;
+			}
+			return std::nullopt;
+		}
+
 		static std::optional<ProgramAttribDefinition> getProgramAttribDefinition(const rapidjson::Document::GenericValue& value) noexcept
 		{
 			auto type = bgfx::AttribType::Float;
 			if (value.HasMember("type"))
 			{
-				type = getBgfxAttribType(value["type"].GetString());
+				type = getBgfxAttribType(getStringView(value["type"]));
 			}
 			if (type == bgfx::AttribType::Count)
 			{
@@ -750,7 +818,7 @@ namespace darmok
 			auto type = bgfx::UniformType::Vec4;
 			if (value.HasMember("type"))
 			{
-				type = getBgfxUniformType(value["type"].GetString());
+				type = getBgfxUniformType(getStringView(value["type"]));
 			}
 			if (type == bgfx::UniformType::Count)
 			{
@@ -780,7 +848,7 @@ namespace darmok
 			{
 				return std::nullopt;
 			}
-			std::string name = value["name"].GetString();
+			std::string name(getStringView(value["name"]));
 			uint8_t stage = 0;
 			if (value.HasMember("stage"))
 			{
@@ -799,12 +867,12 @@ namespace darmok
 			size_t count = 0;
 			for (auto& member : json)
 			{
-				auto attrib = json::getBgfxAttrib(member.name.GetString());
+				auto attrib = getBgfxAttrib(getStringView(member.name));
 				if (attrib == bgfx::Attrib::Count)
 				{
 					continue;
 				}
-				auto definition = json::getProgramAttribDefinition(member.value);
+				auto definition = getProgramAttribDefinition(member.value);
 				if (!definition)
 				{
 					continue;
@@ -817,14 +885,25 @@ namespace darmok
 
 		static std::optional<ProgramBufferDefinition> getProgramBufferDefinition(const rapidjson::Document::GenericValue& value) noexcept
 		{
-			ProgramBufferDefinition def{ 0 };
+			ProgramBufferDefinition def{ 0, ProgramBufferAttribType::Vec4 };
 			if (value.HasMember("stage"))
 			{
 				def.stage = value["stage"].GetInt();
 			}
+			if (value.HasMember("type"))
+			{
+				auto type = getProgramBufferAttribType(getStringView(value["type"]));
+				if (type)
+				{
+					def.type = type.value();
+				}
+			}
 			if (value.HasMember("attributes"))
 			{
-				readAttribMap(def.attribs, value["attributes"].GetObject());
+				for (auto& elm : value["attributes"].GetArray())
+				{
+					def.attribs.push_back(getBgfxAttrib(getStringView(elm)));
+				}
 			}
 			return def;
 		}
@@ -840,7 +919,7 @@ namespace darmok
 		{
 			for (auto& member : json["uniforms"].GetObject())
 			{
-				auto uniform = json::getProgramUniform(member.name.GetString());
+				auto uniform = json::getProgramUniform(json::getStringView(member.name));
 				if (!uniform)
 				{
 					continue;
@@ -857,7 +936,7 @@ namespace darmok
 		{
 			for (auto& member : json["samplers"].GetObject())
 			{
-				auto sampler = json::getProgramSampler(member.name.GetString());
+				auto sampler = json::getProgramSampler(json::getStringView(member.name));
 				if (!sampler)
 				{
 					continue;
@@ -870,6 +949,23 @@ namespace darmok
 				progDef.samplers.emplace(sampler.value(), definition.value());
 			}
 		}
+		if (json.HasMember("buffers"))
+		{
+			for (auto& member : json["buffers"].GetObject())
+			{
+				auto buffer = json::getProgramBuffer(json::getStringView(member.name));
+				if (!buffer)
+				{
+					continue;
+				}
+				auto definition = json::getProgramBufferDefinition(member.value);
+				if (!definition)
+				{
+					continue;
+				}
+				progDef.buffers.emplace(buffer.value(), definition.value());
+			}
+		}
 	}
 
 	ProgramDefinition JsonDataProgramDefinitionLoader::operator()(std::string_view name)
@@ -877,8 +973,16 @@ namespace darmok
 		ProgramDefinition progDef;
 		auto data = _dataLoader(name);
 		rapidjson::Document json;
-		json.Parse((const char*)data->ptr(), data->size()); // maybe ParseInsitu?
-		read(progDef, json);
+		json.Parse(static_cast<const char*>(data->ptr()), data->size()); // maybe ParseInsitu?
+		read(progDef, json, [this](auto include) -> std::optional<ProgramDefinition>
+		{
+			auto v = getStandardProgramDefinitionInclude(include);
+			if (v)
+			{
+				return v;
+			}
+			return (*this)(include);
+		});
 		return progDef;
 	}
 }

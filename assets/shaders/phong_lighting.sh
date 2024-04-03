@@ -9,19 +9,14 @@ uniform vec4 u_lightCount;
 
 uniform vec4 u_ambientLightColor;
 
-// for each point light:
-//   vec3 position
-//   vec3 diffuse color
-//   vec3 specular color
-// SAMPLER_LIGHTS_POINTLIGHTS=6
-BUFFER_RO(b_pointLights, vec3, 6);
-
 struct PointLight
 {
     vec3 position;
     vec3 diffuse;
     vec3 specular;
 };
+
+BUFFER_RO(b_pointLights, vec4, 6);
 
 struct AmbientLight
 {
@@ -36,9 +31,10 @@ uint pointLightCount()
 PointLight getPointLight(uint i)
 {
     PointLight light;
-    light.position = b_pointLights[3 * i + 0].xyz;
-    light.diffuse = b_pointLights[3 * i + 1].xyz;
-    light.specular = b_pointLights[3 * i + 2].xyz;
+    i *= 3;
+    light.position  = b_pointLights[i + 0].xyz;
+    light.diffuse   = b_pointLights[i + 1].xyz;
+    light.specular  = b_pointLights[i + 2].xyz;
     return light;
 }
 

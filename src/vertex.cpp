@@ -17,21 +17,24 @@ namespace darmok
     VertexDataWriter::VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, bx::AllocatorI* alloc) noexcept
         : _layout(layout)
         , _size(size)
-        , _data(layout.getSize(size), alloc)
-        , _dataView(_data)
+        , _alloc(alloc)
     {
     }
 
-    VertexDataWriter::VertexDataWriter(const bgfx::VertexLayout& layout, const DataView& data) noexcept
-        : _layout(layout)
-        , _size(data.size() / layout.getSize(1))
-        , _dataView(data)
+    bool VertexDataWriter::load(Data&& data) noexcept
     {
+        auto size = _layout.getSize(_size);
+        if (data.size() >= size)
+        {
+            _data = std::move(data);
+            return true;
+        }
+        return false;
     }
 
     Data&& VertexDataWriter::finish() noexcept
     {
-        auto data = const_cast<void*>(_dataView.ptr());
+        auto data = const_cast<void*>(_data.ptr());
         for (auto i = 0; i < bgfx::Attrib::Count; i++)
         {
             const auto attr = static_cast<bgfx::Attrib::Enum>(i);
@@ -95,6 +98,16 @@ namespace darmok
             return false;
         }
         return itr->second.find(index) != itr->second.end();
+    }
+
+    void* VertexDataWriter::prepareData()
+    {
+        auto size = _layout.getSize(_size);
+        if (_data.size() < size)
+        {
+            _data = Data(size, _alloc);
+        }
+        return _data.ptr();
     }
 
     void VertexDataWriter::mark(bgfx::Attrib::Enum attr, uint32_t index) noexcept

@@ -65,8 +65,8 @@ namespace darmok
     }
 
     Data::Data(size_t size, bx::AllocatorI* alloc) noexcept
-        : _size(size)
-        , _ptr(malloc(size, alloc))
+        : _ptr(malloc(size, alloc))
+        , _size(size)
         , _alloc(alloc)
     {
     }
@@ -116,16 +116,25 @@ namespace darmok
 
     void Data::clear() noexcept
     {
+        _size = 0;
+        if (_ptr == nullptr)
+        {
+            return;
+        }
         if (_alloc == nullptr)
         {
             std::free(_ptr);
         }
-        else if(_ptr != nullptr)
+        else
         {
             bx::free(_alloc, _ptr);
         }
         _ptr = nullptr;
-        _size = 0;
+    }
+
+    Data Data::reuse(Data&& data, size_t size) noexcept
+    {
+        return data.size() < size ? Data(size, data._alloc) : std::move(data);
     }
 
     const bgfx::Memory* Data::makeRef() const noexcept
@@ -161,7 +170,9 @@ namespace darmok
     }
 
     Data::Data(Data&& other) noexcept
-        : Data(other._ptr, other._size, other._alloc)
+        : _ptr(other._ptr)
+        , _size(other._size)
+        , _alloc(other._alloc)
     {
         other._ptr = nullptr;
         other._size = 0;

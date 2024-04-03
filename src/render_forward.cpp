@@ -17,7 +17,7 @@ namespace darmok
 		CameraSceneRenderer::init(scene, app);
 
 		auto prog = _lights ? StandardProgramType::ForwardPhong : StandardProgramType::Unlit;
-		_progDef = ProgramDefinition::getStandard(prog);
+		_progDef = ProgramDefinition::createStandard(prog);
 		_program = Program::createStandard(prog);
 	}
 

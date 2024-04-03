@@ -21,12 +21,22 @@ add_subdirectory(${LIBS_DIR}/bgfx.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
 
 set(SHADERS "")
+set(SHADER_INCLUDES "")
+
+macro(addShaderProgramDefinition NAME)
+  set(PROG_DEF_PATH "${SHADERS_DIR}/${NAME}_progdef.json")
+  bgfx_compile_binary_to_header(
+    INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${PROG_DEF_PATH}
+    OUTPUT_FILE include/${SHADERS_OUTPUT_DIR}/${NAME}_progdef.h
+    ARRAY_NAME ${NAME}_progdef
+  )
+  list(APPEND SHADERS ${PROG_DEF_PATH})
+endmacro()
 
 macro(addShader NAME)
   set(VERTEX_PATH "${SHADERS_DIR}/${NAME}_vertex.sc")
   set(FRAGMENT_PATH "${SHADERS_DIR}/${NAME}_fragment.sc")
   set(VARYING_DEF_PATH "${SHADERS_DIR}/${NAME}_varyingdef.sc")
-  set(PROG_DEF_PATH "${SHADERS_DIR}/${NAME}_progdef.json")
 
   darmok_compile_shader(
     TYPE VERTEX HEADER
@@ -42,18 +52,20 @@ macro(addShader NAME)
     BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
     OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
   )
+  list(APPEND SHADERS ${VERTEX_PATH} ${FRAGMENT_PATH} ${VARYING_DEF_PATH})
 
-  bgfx_compile_binary_to_header(
-    INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${PROG_DEF_PATH}
-    OUTPUT_FILE include/${SHADERS_OUTPUT_DIR}/${NAME}_progdef.h
-    ARRAY_NAME ${NAME}_progdef
-  )
+  addShaderProgramDefinition(${NAME})
 
-  list(APPEND SHADERS ${VERTEX_PATH} ${FRAGMENT_PATH} ${VARYING_DEF_PATH} ${PROG_DEF_PATH})
+endmacro()
+
+macro(addShaderInclude NAME)
+  addShaderProgramDefinition(${NAME})
+  list(APPEND SHADER_INCLUDES "${SHADERS_DIR}/${NAME}.sh")
 endmacro()
 
 addShader("unlit")
 addShader("forward_phong")
+addShaderInclude("phong_lighting")
 
 set(SOURCES
   ${SRC_DIR}/window.cpp
@@ -117,9 +129,10 @@ add_library(
   ${HEADERS}
   ${SOURCES}
   ${SHADERS}
+  ${SHADER_INCLUDES}
 )
 
-source_group("Shader Files" FILES ${SHADERS})
+source_group("Shader Files" FILES ${SHADERS} ${SHADER_INCLUDES})
 
 set_target_properties(
   ${LIB_NAME}

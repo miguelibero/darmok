@@ -194,6 +194,11 @@ namespace darmok
 		});
 	}
 
+	const std::shared_ptr<Mesh> Mesh::createSphere(const std::shared_ptr<Material>& material, float radius, float lod) noexcept
+	{
+		return createCube(material);
+	}
+
 	const std::shared_ptr<Mesh> Mesh::createSprite(const std::shared_ptr<Texture>& texture, const ProgramDefinition& progDef, float scale, const Color& color) noexcept
 	{
 		auto material = std::make_shared<Material>(progDef);

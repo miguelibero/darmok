@@ -15,8 +15,11 @@ namespace darmok
 		uint8_t num;
 		bool normalize;
 
+		void updateVertexLayout(bgfx::Attrib::Enum attrib, bgfx::VertexLayout& layout) const noexcept;
 		[[nodiscard]] bool operator==(const ProgramAttribDefinition& other) const noexcept;
 		[[nodiscard]] bool operator!=(const ProgramAttribDefinition& other) const noexcept;
+		ProgramAttribDefinition& operator+=(const ProgramAttribDefinition& other) noexcept;
+		[[nodiscard]] ProgramAttribDefinition operator+(const ProgramAttribDefinition& other) const  noexcept;
 	};
 
 	enum class ProgramSampler
@@ -24,24 +27,21 @@ namespace darmok
 		DiffuseTexture,
 	};
 
-	class ProgramSamplerDefinition final
+	struct ProgramSamplerDefinition final
 	{
 	public:
+		std::string name;
+		uint16_t stage;
+		std::string defaultTexture;
+
 		ProgramSamplerDefinition(std::string name, uint8_t stage = 0) noexcept;
-		ProgramSamplerDefinition(std::string name, std::string defaultTextureName, uint8_t stage = 0) noexcept;
+		ProgramSamplerDefinition(std::string name, std::string defaultTexture, uint8_t stage = 0) noexcept;
 
 		[[nodiscard]] bool operator==(const ProgramSamplerDefinition& other) const noexcept;
 		[[nodiscard]] bool operator!=(const ProgramSamplerDefinition& other) const noexcept;
 
-		[[nodiscard]] const std::string& getName() const;
-		[[nodiscard]] const std::string& getDefaultTextureName() const;
-		[[nodiscard]] uint8_t getStage() const;
-
 		[[nodiscard]] bgfx::UniformHandle createHandle() const noexcept;
-	private:
-		std::string _name;
-		uint16_t _stage;
-		std::string _defaultTextureName;
+
 	};
 
 	enum class ProgramUniform
@@ -52,9 +52,14 @@ namespace darmok
 		AmbientLightColor
 	};
 
-	class ProgramUniformDefinition final
+	struct ProgramUniformDefinition final
 	{
 	public:
+		std::string name;
+		bgfx::UniformType::Enum type;
+		uint16_t num;
+		Data defaultValue;
+
 		ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num = 1) noexcept;
 		ProgramUniformDefinition(std::string name, bgfx::UniformType::Enum type, uint16_t num, Data&& defaultValue) noexcept;
 		ProgramUniformDefinition(std::string name, const glm::vec4& defaultValue) noexcept;
@@ -67,18 +72,7 @@ namespace darmok
 		[[nodiscard]] bool operator==(const ProgramUniformDefinition& other) const noexcept;
 		[[nodiscard]] bool operator!=(const ProgramUniformDefinition& other) const noexcept;
 
-		[[nodiscard]] const std::string& getName() const;
-		[[nodiscard]] bgfx::UniformType::Enum getType() const;
-		[[nodiscard]] const Data& getDefault() const;
-		[[nodiscard]] uint16_t getNum() const;
-
 		[[nodiscard]] bgfx::UniformHandle createHandle() const noexcept;
-
-	private:
-		std::string _name;
-		bgfx::UniformType::Enum _type;
-		uint16_t _num;
-		Data _default;
 	};
 
 	enum class ProgramBuffer
@@ -86,12 +80,22 @@ namespace darmok
 		PointLights,
 	};
 
-	using ProgramAttribMap = std::unordered_map<bgfx::Attrib::Enum, ProgramAttribDefinition>;
+	// TODO: check why not all types of attribs seem to work (DX11)
+	// so instead of using AttribDefinition we use this enum
+	enum class ProgramBufferAttribType
+	{
+		Vec4,
+		Uvec4,
+		Int,
+		Uint,
+		Bool,
+	};
 
 	struct ProgramBufferDefinition final
 	{
 		uint8_t stage;
-		ProgramAttribMap attribs;
+		ProgramBufferAttribType type;
+		std::vector<bgfx::Attrib::Enum> attribs;
 
 		[[nodiscard]] bool operator==(const ProgramBufferDefinition& other) const noexcept;
 		[[nodiscard]] bool operator!=(const ProgramBufferDefinition& other) const noexcept;
@@ -99,12 +103,12 @@ namespace darmok
 		[[nodiscard]] ProgramBufferDefinition operator+(const ProgramBufferDefinition& other) const  noexcept;
 
 		[[nodiscard]] bool contains(const ProgramBufferDefinition& other) const noexcept;
-		[[nodiscard]] bool hasAttrib(bgfx::Attrib::Enum attrib, const ProgramAttribMap& defs) const noexcept;
-		[[nodiscard]] bool hasAttrib(bgfx::Attrib::Enum attrib, const ProgramAttribDefinition& def) const noexcept;
+		[[nodiscard]] bool hasAttrib(bgfx::Attrib::Enum attrib) const noexcept;
 
 		[[nodiscard]] bgfx::VertexLayout createVertexLayout() const noexcept;
 	};
 
+	using ProgramAttribMap = std::unordered_map<bgfx::Attrib::Enum, ProgramAttribDefinition>;
 	using ProgramUniformMap = std::unordered_map<ProgramUniform, ProgramUniformDefinition>;
 	using ProgramSamplerMap = std::unordered_map<ProgramSampler, ProgramSamplerDefinition>;
 	using ProgramBufferMap = std::unordered_map<ProgramBuffer, ProgramBufferDefinition>;
@@ -115,6 +119,8 @@ namespace darmok
 		ProgramUniformMap uniforms;
 		ProgramSamplerMap samplers;
 		ProgramBufferMap buffers;
+
+		bool empty() const noexcept;
 
 		[[nodiscard]] bool operator==(const ProgramDefinition& other) const noexcept;
 		[[nodiscard]] bool operator!=(const ProgramDefinition& other) const noexcept;
@@ -141,7 +147,8 @@ namespace darmok
 		[[nodiscard]] OptionalRef<const ProgramSamplerDefinition> getSampler(ProgramSampler sampler) const noexcept;
 		[[nodiscard]] OptionalRef<const ProgramSamplerDefinition> getSampler(ProgramSampler sampler, std::string_view name, uint8_t stage = 0) const noexcept;
 
-		static ProgramDefinition getStandard(StandardProgramType type) noexcept;
+		static ProgramDefinition createFromJson(std::string_view data);
+		static ProgramDefinition createStandard(StandardProgramType type);
 	};
 
 	class BX_NO_VTABLE IProgramDefinitionLoader
