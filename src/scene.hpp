@@ -13,7 +13,6 @@ namespace darmok
     {
     public:
         SceneImpl();
-        void addRenderer(std::unique_ptr<ISceneRenderer>&& renderer);
         void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
 
         EntityRegistry& getRegistry();
@@ -24,7 +23,6 @@ namespace darmok
         bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
     private:
-        std::vector<std::unique_ptr<ISceneRenderer>> _renderers;
         std::vector<std::unique_ptr<ISceneLogicUpdater>> _logicUpdaters;
         EntityRegistry _registry;
         OptionalRef<Scene> _scene;

@@ -32,24 +32,32 @@ namespace
 			glm::vec2 winSize = getWindow().getSize();
 
 			scene.addComponent<Transform>(cam)
-				.setPosition(glm::vec3(0.f, 2.f, -2.f))
-				.setRotation(glm::vec3(45.f, 0, 0));
+				.setPosition({ 0, 2, -2 })
+				.setRotation({ 45, 0, 0 });
 
 			scene.addComponent<Camera>(cam)
 				.setProjection(60, winSize.x / winSize.y, 0.3, 1000);
 
 			auto light = scene.createEntity();
 			scene.addComponent<Transform>(light)
-				.setPosition(glm::vec3(0.f, 2.f, -2.f));
+				.setPosition({ 1, 1, -2 });
 			scene.addComponent<PointLight>(light);
 
 			auto tex = getAssets().getColorTextureLoader()(Colors::red);
 			auto mat = std::make_shared<Material>(progDef);
+			mat->setColor(MaterialColorType::Specular, Colors::blue);
+
 			mat->setTexture(MaterialTextureType::Diffuse, tex);
 			auto sphereMesh = Mesh::createSphere(mat);
 			auto sphere = scene.createEntity();
 			scene.addComponent<MeshComponent>(sphere, sphereMesh);
 			auto& trans = scene.addComponent<Transform>(sphere);
+
+			auto cubeMesh = Mesh::createCube(mat);
+			auto cube = scene.createEntity();
+			scene.addComponent<MeshComponent>(cube, cubeMesh);
+			scene.addComponent<Transform>(cube)
+				.setPosition({ 1.5F, 0, 0 });
 
 			auto speed = 0.01F;
 

@@ -4,6 +4,8 @@
 #include <darmok/program.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/material.hpp>
+#include <darmok/uniform.hpp>
+#include <darmok/buffer.hpp>
 
 #include "program_def.hpp"
 #include "generated/shaders/phong_lighting_progdef.h"
@@ -69,178 +71,6 @@ namespace darmok
         return _specularColor;
     }
 
-    const ProgramDefinition& LightRenderUpdater::getPhongProgramDefinition()
-    {
-        static auto def = ProgramDefinition::createFromJson(phong_lighting_progdef);
-        return def;
-    }
-
-    LightRenderUpdater::LightRenderUpdater() noexcept
-        : _countUniform{ bgfx::kInvalidHandle }
-        , _ambientIntensityUniform{ bgfx::kInvalidHandle }
-        , _lightCount{}
-        , _ambientColor{}
-    {
-    }
-
-    void LightRenderUpdater::init(Scene& scene, App& app) noexcept
-    {
-        _scene = scene;
-        auto& progDef = getPhongProgramDefinition();
-        {
-            auto itr = progDef.buffers.find(ProgramBuffer::PointLights);
-            if (itr != progDef.buffers.end())
-            {
-                _pointLightLayout = itr->second.createVertexLayout();
-            }
-        }
-        {
-            auto itr = progDef.uniforms.find(ProgramUniform::LightCount);
-            if (itr != progDef.uniforms.end())
-            {
-                _countUniform = itr->second.createHandle();
-            }
-        }
-        {
-            auto itr = progDef.uniforms.find(ProgramUniform::AmbientLightColor);
-            if (itr != progDef.uniforms.end())
-            {
-                _ambientIntensityUniform = itr->second.createHandle();
-            }
-        }
-    }
-
-    void LightRenderUpdater::shutdown() noexcept
-    {
-        if (isValid(_countUniform))
-        {
-            bgfx::destroy(_countUniform);
-        }
-        if (isValid(_ambientIntensityUniform))
-        {
-            bgfx::destroy(_ambientIntensityUniform);
-        }
-        for (auto& elm : _pointLightBuffers)
-        {
-            if (isValid(elm.second))
-            {
-                bgfx::destroy(elm.second);
-            }
-        }
-    }
-
-    size_t LightRenderUpdater::updatePointLights(Entity camEntity, const Camera& cam) noexcept
-    {
-        auto& registry = _scene->getRegistry();
-        auto& pointLights = registry.storage<PointLight>();
-        EntityRuntimeView camPointLights;
-        camPointLights.iterate(pointLights);
-        cam.filterEntityView(camPointLights);
-
-        VertexDataWriter writer(_pointLightLayout, pointLights.size());
-
-        auto itr = _pointLights.find(camEntity);
-        if (itr != _pointLights.end())
-        {
-            writer.load(std::move(itr->second));
-        }
-        else
-        {
-            itr = _pointLights.emplace(camEntity, Data()).first;
-        }
-
-        size_t index = 0;
-        for (auto entity : camPointLights)
-        {
-            auto& pointLight = registry.get<const PointLight>(entity);
-            auto trans = registry.try_get<const Transform>(entity);
-            if (trans != nullptr)
-            {
-                writer.set(bgfx::Attrib::Position, index, trans->getPosition());
-            }
-            writer.set(bgfx::Attrib::Color0, index, Colors::normalize(pointLight.getDiffuseColor()));
-            writer.set(bgfx::Attrib::Color1, index, Colors::normalize(pointLight.getSpecularColor()));
-            index++;
-        }
-
-        itr->second = writer.finish();
-
-        if (index > 0)
-        {
-            auto itr2 = _pointLightBuffers.find(camEntity);
-            bgfx::DynamicVertexBufferHandle buffer;
-            if (itr2 == _pointLightBuffers.end())
-            {
-                buffer = bgfx::createDynamicVertexBuffer(index, _pointLightLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-                _pointLightBuffers.emplace(camEntity, buffer);
-            }
-            else
-            {
-                buffer = itr2->second;
-            }
-            bgfx::update(buffer, 0, itr->second.makeRef());
-        }
-
-        return index;
-    }
-
-    void LightRenderUpdater::update(float deltaTime) noexcept
-    {
-        if (!_scene)
-        {
-            return;
-        }
-        auto& registry = _scene->getRegistry();
-        auto cams = registry.view<const Camera>();
-
-        for (auto [camEntity, cam] : cams.each())
-        {
-            _lightCount.x = updatePointLights(camEntity, cam);
-        }
-
-        _ambientColor = {};
-        auto ambientLights = registry.view<const AmbientLight>();
-        for (auto [entity, ambientLight] : ambientLights.each())
-        {
-            _ambientColor += glm::vec4(ambientLight.getIntensity(), 0);
-        }
-        _ambientColor /= Colors::white;
-    }
-
-    void LightRenderUpdater::bgfxConfig(const Camera& cam, const ProgramDefinition& progDef, bgfx::Encoder& encoder) const noexcept
-    {
-        if (!_scene)
-        {
-            return;
-        }
-
-        auto& lightProgDef = getPhongProgramDefinition();
-        if (progDef.hasUniform(ProgramUniform::LightCount, lightProgDef.uniforms))
-        {
-            encoder.setUniform(_countUniform, glm::value_ptr(_lightCount));
-        }
-
-        if (progDef.hasUniform(ProgramUniform::AmbientLightColor, lightProgDef.uniforms))
-        {
-            encoder.setUniform(_ambientIntensityUniform, glm::value_ptr(_ambientColor));
-        }
-
-        auto& registry = _scene->getRegistry();
-        if (_lightCount.x > 0)
-        {
-            auto& pointLightsBufferDef = lightProgDef.buffers.at(ProgramBuffer::PointLights);
-            if (progDef.hasBuffer(ProgramBuffer::PointLights, pointLightsBufferDef))
-            {
-                auto camEntity = entt::to_entity(registry, cam);
-                auto itr = _pointLightBuffers.find(camEntity);
-                if (itr != _pointLightBuffers.end())
-                {
-                    bgfx::setBuffer(pointLightsBufferDef.stage, itr->second, bgfx::Access::Read);
-                }
-            }
-        }
-    }
-
     AmbientLight::AmbientLight(const glm::vec3& intensity) noexcept
         : _intensity(intensity)
         , _color(Colors::black)
@@ -267,5 +97,154 @@ namespace darmok
     [[nodiscard]] const Color3& AmbientLight::getColor() const noexcept
     {
         return _color;
+    }
+
+
+    const ProgramDefinition& PhongLightRenderer::getProgramDefinition()
+    {
+        static auto def = ProgramDefinition::createFromJson(phong_lighting_progdef);
+        return def;
+    }
+
+    PhongLightRenderer::PhongLightRenderer() noexcept
+        : _lightCountUniform{ bgfx::kInvalidHandle }
+        , _lightDataUniform{ bgfx::kInvalidHandle }
+    {
+    }
+
+    const std::string PhongLightRenderer::_pointLightsBufferName = "pointLights";
+    const std::string PhongLightRenderer::_lightCountUniformName = "lightCount";
+    const std::string PhongLightRenderer::_lightDataUniformName = "phongLightingData";
+
+    void PhongLightRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    {
+        _scene = scene;
+        _cam = cam;
+        auto& progDef = getProgramDefinition();
+        {
+            auto buffer = progDef.getBuffer(_pointLightsBufferName);
+            if (buffer)
+            {
+                _pointLightBuffer = buffer->createHandle();
+            }
+        }
+        {
+            auto uniform = progDef.getUniform(_lightCountUniformName);
+            if (uniform)
+            {
+                _lightCountUniform = uniform.value().createHandle();
+            }
+        }
+        {
+            auto uniform = progDef.getUniform(_lightDataUniformName);
+            if (uniform)
+            {
+                _lightDataUniform = uniform.value().createHandle();
+            }
+        }
+    }
+
+    void PhongLightRenderer::shutdown() noexcept
+    {
+        if (isValid(_lightCountUniform))
+        {
+            bgfx::destroy(_lightCountUniform);
+        }
+        if (isValid(_lightDataUniform))
+        {
+            bgfx::destroy(_lightDataUniform);
+        }
+        if (isValid(_pointLightBuffer))
+        {
+            bgfx::destroy(_pointLightBuffer);
+        }
+    }
+
+    size_t PhongLightRenderer::updatePointLights() noexcept
+    {
+        auto& registry = _scene->getRegistry();
+        auto pointLights = _cam->createEntityView<PointLight>(registry);
+
+        auto& progDef = getProgramDefinition();
+        auto writer = BufferDataWriter(progDef.getBuffer(_pointLightsBufferName).value());
+        writer.load(std::move(_pointLights));
+
+        size_t index = 0;
+        for (auto entity : pointLights)
+        {
+            auto& pointLight = registry.get<const PointLight>(entity);
+            auto trans = registry.try_get<const Transform>(entity);
+            if (trans != nullptr)
+            {
+                writer.set("position", index, trans->getPosition());
+            }
+            writer.set("diffuseColor", index, Colors::normalize(pointLight.getDiffuseColor()));
+            writer.set("specularColor", index, Colors::normalize(pointLight.getSpecularColor()));
+            index++;
+        }
+
+        _pointLights = writer.finish();
+        bgfx::update(_pointLightBuffer, 0, _pointLights.makeRef());
+
+        return index;
+    }
+
+    void PhongLightRenderer::update(float deltaTime) noexcept
+    {
+        if (!_scene)
+        {
+            return;
+        }
+        auto& registry = _scene->getRegistry();
+        auto& progDef = getProgramDefinition();
+
+        {
+            auto writer = UniformDataWriter(progDef.getUniform(_lightCountUniformName).value());
+            writer.load(std::move(_lightCount));
+            writer.set("pointLights", updatePointLights());
+            _lightCount = std::move(writer.finish());
+        }
+
+        {
+            auto writer = UniformDataWriter(progDef.getUniform(_lightDataUniformName).value());
+            writer.load(std::move(_lightData));
+            auto& registry = _scene->getRegistry();
+            auto ambientLights = _cam->createEntityView<AmbientLight>(registry);
+            glm::vec3 ambientColor;
+            for (auto entity : ambientLights)
+            {
+                auto& ambientLight = registry.get<const AmbientLight>(entity);
+                ambientColor += ambientLight.getIntensity();
+            }
+            writer.set("ambientLightColor", ambientColor);
+            _lightData = std::move(writer.finish());
+        }
+    }
+
+    bgfx::ViewId PhongLightRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+    {
+        if (!_scene)
+        {
+            return;
+        }
+
+        auto& progDef = getProgramDefinition();
+        if (isValid(_lightCountUniform))
+        {
+            encoder.setUniform(_lightCountUniform, _lightCount.ptr());
+        }
+
+        if (isValid(_lightDataUniform))
+        {
+            encoder.setUniform(_lightDataUniform, _lightData.ptr());
+        }
+        if (isValid(_pointLightBuffer))
+        {
+            auto buffer = progDef.getBuffer(_pointLightsBufferName);
+            if (buffer)
+            {
+                bgfx::setBuffer(buffer->stage, _pointLightBuffer, bgfx::Access::Read);
+            }
+        }
     }
 }

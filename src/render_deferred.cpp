@@ -1,12 +1,11 @@
 #pragma once
 
-#include <darmok/scene.hpp>
+#include <darmok/render_deferred.hpp>
 
 namespace darmok
 {
-    class DeferredRenderer final : public CameraSceneRenderer
+    bgfx::ViewId DeferredRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId)
     {
-    protected:
-        bgfx::ViewId render(const Camera& cam, bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
-    };
+        return viewId;
+    }
 }

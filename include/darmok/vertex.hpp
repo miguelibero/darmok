@@ -9,18 +9,10 @@
 #include <unordered_map>
 
 #include <bgfx/bgfx.h>
-#include <bx/bx.h>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
 {
-	class BX_NO_VTABLE IVertexLayoutLoader
-	{
-	public:
-		virtual ~IVertexLayoutLoader() = default;
-		virtual bgfx::VertexLayout operator()(std::string_view name) = 0;
-	};
-
     using VertexIndex = uint16_t;
     using Color = glm::u8vec4;
 

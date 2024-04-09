@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <darmok/scene.hpp>
+#include <darmok/camera.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
 #include <unordered_map>
@@ -48,27 +48,32 @@ namespace darmok
         Color3 _color;
     };
 
-    class LightRenderUpdater final : public ISceneLogicUpdater
+    class PhongLightRenderer final : public ICameraRenderer
     {
     public:
-        LightRenderUpdater() noexcept;
-        void init(Scene& scene, App& app) noexcept override;
+        PhongLightRenderer() noexcept;
+        void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown()  noexcept override;
         void update(float deltaTime)  noexcept override;
-        void bgfxConfig(const Camera& cam, const ProgramDefinition& progDef, bgfx::Encoder& encoder) const noexcept;
+        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept override;
 
-        static const ProgramDefinition& getPhongProgramDefinition();
+        static const ProgramDefinition& getProgramDefinition();
 
     private:
-        bgfx::VertexLayout _pointLightLayout;
+        const static std::string _pointLightsBufferName;
+        const static std::string _lightCountUniformName;
+        const static std::string _lightDataUniformName;
+        
         OptionalRef<Scene> _scene;
-        bgfx::UniformHandle _countUniform;
-        bgfx::UniformHandle _ambientIntensityUniform;
-        std::unordered_map<Entity, Data> _pointLights;
-        std::unordered_map<Entity, bgfx::DynamicVertexBufferHandle> _pointLightBuffers;
-        glm::vec4 _lightCount;
-        glm::vec4 _ambientColor;
+        OptionalRef<Camera> _cam;
 
-        size_t updatePointLights(Entity camEntity, const Camera& cam) noexcept;
+        bgfx::UniformHandle _lightCountUniform;
+        bgfx::UniformHandle _lightDataUniform;
+        bgfx::DynamicVertexBufferHandle _pointLightBuffer;
+        Data _lightCount;
+        Data _lightData;
+        Data _pointLights;
+
+        size_t updatePointLights() noexcept;
     };
 }

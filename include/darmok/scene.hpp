@@ -41,35 +41,12 @@ namespace darmok
 
     class Scene;
 
-    class BX_NO_VTABLE ISceneComponent
+    class BX_NO_VTABLE ISceneLogicUpdater
     {
     public:
-        virtual ~ISceneComponent() = default;
+        virtual ~ISceneLogicUpdater() = default;
         virtual void init(Scene& scene, App& app) { };
         virtual void shutdown() { }
-    };
-
-    class BX_NO_VTABLE ISceneRenderer : public ISceneComponent
-    {
-    public:
-        virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
-    };
-
-    class CameraSceneRenderer : public ISceneRenderer
-    {
-    public:
-        void init(Scene& scene, App& app) noexcept override;
-        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
-    protected:
-        OptionalRef<Scene> _scene;
-        OptionalRef<App> _app;
-
-        virtual bgfx::ViewId render(const Camera& cam, bgfx::Encoder& encoder, bgfx::ViewId viewId) = 0;
-    };
-
-    class BX_NO_VTABLE ISceneLogicUpdater : public ISceneComponent
-    {
-    public:
         virtual void update(float deltaTime) = 0;
     };
 
@@ -99,15 +76,6 @@ namespace darmok
         }
 
         template<typename T, typename... A>
-        T& addRenderer(A&&... args)
-        {
-            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
-            auto& ref = *ptr;
-            addRenderer(std::move(ptr));
-            return ref;
-        }
-
-        template<typename T, typename... A>
         T& addLogicUpdater(A&&... args)
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
@@ -121,7 +89,6 @@ namespace darmok
         bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
 
-        void addRenderer(std::unique_ptr<ISceneRenderer>&& renderer);
         void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
 
         EntityRegistry& getRegistry();

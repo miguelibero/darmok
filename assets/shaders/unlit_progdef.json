@@ -21,9 +21,8 @@
         }
     },
     "samplers": {
-        "diffuseTexture": {
-            "name": "s_texColor",
-            "type": "sampler"
+        "textureColor": {
+            "name": "s_texColor"
         }
     }
 }

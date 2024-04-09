@@ -12,7 +12,6 @@
 #include "program_def.hpp"
 #include "model.hpp"
 #include "data.hpp"
-#include "vertex.hpp"
 
 namespace darmok
 {
@@ -62,7 +61,6 @@ namespace darmok
 		ImageTextureLoader _textureLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		AssimpModelLoader _modelLoader;
-		XmlDataVertexLayoutLoader _vertexLayoutLoader;
 		ColorTextureLoader _colorTextureLoader;
 	};
 

@@ -74,9 +74,10 @@ namespace darmok
         ProgramDefinition _progDef;
         bgfx::VertexLayout _vertexLayout;
 
-        std::unordered_map<ProgramSampler, bgfx::UniformHandle> _samplerHandles;
-        std::unordered_map<ProgramSampler, std::shared_ptr<Texture>> _defaultTextures;
-        std::unordered_map<ProgramUniform, bgfx::UniformHandle> _uniformHandles;
+        std::unordered_map<std::string, bgfx::UniformHandle> _samplerHandles;
+        std::unordered_map<std::string, std::shared_ptr<Texture>> _defaultTextures;
+        std::unordered_map<std::string, bgfx::UniformHandle> _uniformHandles;
+        std::unordered_map<std::string, Data> _defaultUniforms;
 
         std::unordered_map<MaterialTextureType, std::shared_ptr<Texture>> _textures;
         std::unordered_map<MaterialColorType, Color> _colors;

@@ -115,4 +115,20 @@ namespace darmok
 		virtual result_type operator()(std::string_view name) = 0;
 	};
 
+    template<typename T>
+    class DataWriter final
+    {
+    public:
+        DataWriter(const std::vector<T>& definition, Data& data);
+
+        template<typename T>
+        DataWriter& set(const T& type, T* v)
+        {
+        }
+
+    private:
+        const std::vector<T>& _definition;
+        Data& _data;
+    };
+
 }

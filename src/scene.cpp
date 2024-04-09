@@ -14,15 +14,6 @@ namespace darmok
     {
     }
 
-    void SceneImpl::addRenderer(std::unique_ptr<ISceneRenderer>&& renderer)
-    {
-        if (_scene)
-        {
-            renderer->init(_scene.value(), _app.value());
-        }
-        _renderers.push_back(std::move(renderer));
-    }
-
     void SceneImpl::addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater)
     {
         if (_scene)
@@ -44,28 +35,28 @@ namespace darmok
 
     void SceneImpl::init(Scene& scene, App& app)
     {
-        for (auto& renderer : _renderers)
-        {
-            renderer->init(scene, app);
-        }
+        _scene = scene;
+        _app = app;
+
         for (auto& updater : _logicUpdaters)
         {
             updater->init(scene, app);
         }
-        _scene = scene;
-        _app = app;
+
+        auto& registry = _scene->getRegistry();
+        for (auto [entity, cam] : registry.view<Camera>().each())
+        {
+            cam.init(scene, app);
+        }
     }
 
     void SceneImpl::shutdown()
     {
-        for (auto& renderer : _renderers)
-        {
-            renderer->shutdown();
-        }
         for (auto& updater : _logicUpdaters)
         {
             updater->shutdown();
         }
+        _registry.clear();
     }
 
     void SceneImpl::updateLogic(float dt)
@@ -73,7 +64,7 @@ namespace darmok
         auto cams = _registry.view<Camera>();
         for (auto [entity, cam] : cams.each())
         {
-            cam.update(_registry);
+            cam.update(dt);
         }
 
         auto transforms = _registry.view<Transform>();
@@ -91,9 +82,10 @@ namespace darmok
     bgfx::ViewId SceneImpl::render(bgfx::ViewId viewId)
     {
         auto encoder = bgfx::begin();
-        for (auto& renderer : _renderers)
+        auto& registry = _scene->getRegistry();
+        for (auto [entity, cam] : registry.view<Camera>().each())
         {
-            viewId = renderer->render(*encoder, viewId);
+            viewId = cam.render(*encoder, viewId);
         }
         bgfx::end(encoder);
         return viewId;
@@ -133,7 +125,7 @@ namespace darmok
         _impl->shutdown();
     }
 
-    void  Scene::updateLogic(float dt)
+    void Scene::updateLogic(float dt)
     {
         _impl->updateLogic(dt);
     }
@@ -141,11 +133,6 @@ namespace darmok
     bgfx::ViewId Scene::render(bgfx::ViewId viewId)
     {
         return _impl->render(viewId);
-    }
-
-    void Scene::addRenderer(std::unique_ptr<ISceneRenderer>&& renderer)
-    {
-        _impl->addRenderer(std::move(renderer));
     }
 
     void Scene::addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater)
@@ -181,31 +168,5 @@ namespace darmok
     void SceneAppComponent::updateLogic(float dt)
     {
         _scene.updateLogic(dt);
-    }
-
-    void CameraSceneRenderer::init(Scene& scene, App& app) noexcept
-    {
-        _scene = scene;
-        _app = app;
-    }
-
-    bgfx::ViewId CameraSceneRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId)
-    {
-        if (!_scene.hasValue())
-        {
-            return viewId;
-        }
-        auto& registry = _scene->getRegistry();
-        auto cams = registry.view<const Camera>();
-        auto& win = _app->getWindow();
-        for (auto [entity, cam] : cams.each())
-        {
-            win.bgfxConfig(viewId);
-            cam.bgfxConfig(registry, viewId);
-            EntityRuntimeView entities;
-            cam.filterEntityView(entities);
-            viewId = render(cam, encoder, viewId);
-        }
-        return viewId;
     }
 }

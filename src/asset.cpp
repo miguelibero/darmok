@@ -46,7 +46,6 @@ namespace darmok
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
 		, _modelLoader(_dataLoader, _textureLoader, &_allocator)
-		, _vertexLayoutLoader(_dataLoader)
 		, _colorTextureLoader(&_allocator)
 	{
 	}
@@ -84,11 +83,6 @@ namespace darmok
 	IModelLoader& AssetContextImpl::getModelLoader() noexcept
 	{
 		return _modelLoader;
-	}
-
-	IVertexLayoutLoader& AssetContextImpl::getVertexLayoutLoader() noexcept
-	{
-		return _vertexLayoutLoader;
 	}
 
 	ColorTextureLoader& AssetContextImpl::getColorTextureLoader() noexcept

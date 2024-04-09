@@ -7,26 +7,21 @@
 
 namespace darmok
 {
-	ForwardRenderer::ForwardRenderer(OptionalRef<LightRenderUpdater> lights)
-		: _lights(lights)
+
+	ForwardRenderer::ForwardRenderer(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept
+		: _program(program)
+		, _progDef(progDef)
 	{
 	}
 
-	void ForwardRenderer::init(Scene& scene, App& app) noexcept
+	void ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
-		CameraSceneRenderer::init(scene, app);
-
-		auto prog = _lights ? StandardProgramType::ForwardPhong : StandardProgramType::Unlit;
-		_progDef = ProgramDefinition::createStandard(prog);
-		_program = Program::createStandard(prog);
+		_cam = cam;
+		_scene = scene;
+		_app = app;
 	}
 
-	const ProgramDefinition& ForwardRenderer::getProgramDefinition() const noexcept
-	{
-		return _progDef;
-	}
-
-	bgfx::ViewId ForwardRenderer::render(const Camera& cam, bgfx::Encoder& encoder, bgfx::ViewId viewId)
+	bgfx::ViewId ForwardRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId)
 	{
 		if (_program == nullptr)
 		{
@@ -34,7 +29,7 @@ namespace darmok
 		}
 
 		auto& registry = _scene->getRegistry();
-		auto meshes = cam.createEntityView<MeshComponent>(registry);
+		auto meshes = _cam->createEntityView<MeshComponent>(registry);
 		auto rendered = false;
 		for (auto entity : meshes)
 		{
@@ -54,11 +49,6 @@ namespace darmok
 				}
 
 				Transform::bgfxConfig(entity, encoder, registry);
-
-				if (_lights)
-				{
-					_lights->bgfxConfig(cam, _progDef, encoder);
-				}
 
 				uint64_t state = BGFX_STATE_WRITE_RGB
 					| BGFX_STATE_WRITE_A

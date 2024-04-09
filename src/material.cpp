@@ -10,6 +10,7 @@ namespace darmok
 	Material::Material(const ProgramDefinition& progDef) noexcept
 		: _progDef(progDef)
 		, _vertexLayout(progDef.createVertexLayout())
+		, _primitive(MaterialPrimitiveType::Triangle)
 	{
 		for (auto& pair : _progDef.samplers)
 		{
@@ -44,6 +45,10 @@ namespace darmok
 				auto tex = assets.getTextureLoader()(texName);
 				_defaultTextures.emplace(pair.first, tex);
 			}
+		}
+		for (auto& pair : _progDef.uniforms)
+		{
+			_defaultUniforms.emplace(pair.first, pair.second.createDefaultValue());
 		}
 	}
 
@@ -111,14 +116,14 @@ namespace darmok
 		return *this;
 	}
 
-	static const std::unordered_map<ProgramSampler, MaterialTextureType> _materialTextureSamplers
+	static const std::unordered_map<std::string, MaterialTextureType> _materialTextureSamplers
 	{
-		{ ProgramSampler::DiffuseTexture, MaterialTextureType::Diffuse },
+		{ "textureColor", MaterialTextureType::Diffuse },
 	};
 
-	static const std::unordered_map<ProgramUniform, MaterialColorType> _materialColorUniforms
+	static const std::unordered_map<std::string, MaterialColorType> _materialColorUniforms
 	{
-		{ ProgramUniform::DiffuseColor, MaterialColorType::Diffuse },
+		{ "diffuseColor", MaterialColorType::Diffuse},
 	};
 
 	void Material::bgfxConfig(bgfx::Encoder& encoder) const noexcept
@@ -164,10 +169,10 @@ namespace darmok
 					continue;
 				}
 			}
-			auto& def = pair.second.defaultValue;
-			if (!def.empty())
+			auto itr3 = _defaultUniforms.find(pair.first);
+			if (itr3 != _defaultUniforms.end())
 			{
-				encoder.setUniform(itr1->second, def.ptr());
+				encoder.setUniform(itr1->second, itr3->second.ptr());
 			}
 		}
 	}

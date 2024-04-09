@@ -94,5 +94,19 @@ namespace darmok
             }
             return *_value;
         }
+
+        [[nodiscard]] bool operator==(const OptionalRef<T>& other) const noexcept
+        {
+            if (_value == nullptr)
+            {
+                return other._value == nullptr;
+            }
+            return *_value == *other._value;
+        }
+
+        [[nodiscard]] bool operator!=(const OptionalRef<T>& other) const noexcept
+        {
+            return !operator==(other);
+        }
     };
 }

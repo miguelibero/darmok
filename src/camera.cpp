@@ -1,5 +1,6 @@
 #include <darmok/camera.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/window.hpp>
 #include <bx/math.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -40,14 +41,6 @@ namespace darmok
         return *this;
     }
 
-    void Camera::update(EntityRegistry& registry) noexcept
-    {
-        if (_entityFilter != nullptr)
-        {
-            _entityFilter->init(registry);
-        }
-    }
-
     void Camera::bgfxConfig(EntityRegistry& registry, bgfx::ViewId viewId) const noexcept
     {
         auto projPtr = glm::value_ptr(_matrix);
@@ -74,6 +67,52 @@ namespace darmok
         {
             (*_entityFilter)(entities);
         }
+    }
+
+    void Camera::init(Scene& scene, App& app)
+    {
+        _scene = scene;
+        _app = app;
+        if (_entityFilter != nullptr)
+        {
+            _entityFilter->init(scene.getRegistry());
+        }
+        for(auto& renderer : _renderers)
+        {
+            renderer->init(*this, scene, app);
+        }
+    }
+
+    void Camera::update(float deltaTime)
+    {
+        for (auto& renderer : _renderers)
+        {
+            renderer->update(deltaTime);
+        }
+    }
+
+    bgfx::ViewId Camera::render(bgfx::Encoder& encoder, bgfx::ViewId viewId)
+    {
+        if (!_app || !_scene)
+        {
+            return viewId;
+        }
+        auto& win = _app->getWindow();
+        auto& registry = _scene->getRegistry();
+        win.bgfxConfig(viewId);
+        bgfxConfig(registry, viewId);
+
+        for (auto& renderer : _renderers)
+        {
+            viewId = renderer->render(encoder, viewId);
+        }
+
+        return viewId;
+    }
+
+    void Camera::addRenderer(std::unique_ptr<ICameraRenderer>&& renderer)
+    {
+        _renderers.push_back(std::move(renderer));
     }
 
     ViewRect::ViewRect(const ViewVec& size, const ViewVec& origin) noexcept

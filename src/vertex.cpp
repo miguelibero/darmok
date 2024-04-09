@@ -3,17 +3,6 @@
 
 namespace darmok
 {
-    XmlDataVertexLayoutLoader::XmlDataVertexLayoutLoader(IDataLoader& dataLoader) noexcept
-        : _dataLoader(dataLoader)
-        {
-        }
-
-	bgfx::VertexLayout XmlDataVertexLayoutLoader::operator()(std::string_view name)
-    {
-        bgfx::VertexLayout layout;
-        return layout;
-    }
-
     VertexDataWriter::VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, bx::AllocatorI* alloc) noexcept
         : _layout(layout)
         , _size(size)

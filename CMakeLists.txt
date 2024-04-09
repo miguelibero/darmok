@@ -90,6 +90,8 @@ set(SOURCES
   ${SRC_DIR}/program.cpp
   ${SRC_DIR}/program_def.cpp
   ${SRC_DIR}/vertex.cpp
+  ${SRC_DIR}/uniform.cpp
+  ${SRC_DIR}/buffer.cpp
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/camera.cpp
   ${SRC_DIR}/light.cpp
@@ -117,6 +119,8 @@ set(HEADERS
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/program_def.hpp
   ${INCLUDE_DIR}/vertex.hpp
+  ${INCLUDE_DIR}/uniform.hpp
+  ${INCLUDE_DIR}/buffer.hpp
   ${INCLUDE_DIR}/transform.hpp
   ${INCLUDE_DIR}/camera.hpp
   ${INCLUDE_DIR}/light.hpp

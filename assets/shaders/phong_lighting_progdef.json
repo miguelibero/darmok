@@ -1,19 +1,59 @@
 {
     "uniforms": {
         "lightCount": {
+            "type": "vec4",
             "name": "u_lightCount",
-            "type": "vec4"
+            "pack": {
+                "pointLightCount": {
+                    "type": "int"
+                }
+            }
         },
-        "ambientLightColor": {
-            "name": "u_ambientLightColor",
-            "type": "vec3"
+        "phongLightingData": {
+            "type": "vec4",
+            "name": "u_phongLightingData",
+            "pack": {
+                "ambientLightColor": {
+                    "type": "float",
+                    "default": [1, 1, 1]
+                },
+                "materialShininess": {
+                    "type": "int",
+                    "default": 32
+                }
+            }
         }
     },
     "buffers": {
         "pointLights": {
+            "name": "b_pointLights",
             "stage": 6,
             "type": "vec4",
-            "attributes": ["position", "color0", "color1"]
+            "attributes": {
+                "position": {
+
+                },
+                "color0": {
+
+                },
+                "color1": {
+
+                }
+            }],
+            "pack": {
+                "position": {
+                    "type": "float",
+                    "default": [0, 0, 0]
+                },
+                "diffuseColor": {
+                    "type": "float",
+                    "default": [1, 1, 1]
+                },
+                "specularColor": {
+                    "type": "float",
+                    "default": [1, 1, 1]
+                }
+            }
         }
     }
 }

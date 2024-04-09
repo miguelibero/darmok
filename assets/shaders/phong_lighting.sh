@@ -9,6 +9,8 @@ uniform vec4 u_lightCount;
 
 uniform vec4 u_ambientLightColor;
 
+uniform vec4 u_material;
+
 struct PointLight
 {
     vec3 position;
@@ -43,6 +45,18 @@ AmbientLight getAmbientLight()
     AmbientLight light;
     light.color = u_ambientLightColor.xyz;
     return light;
+}
+
+struct Material
+{
+    int shininess;
+};
+
+Material getMaterial()
+{
+    Material mat;
+    mat.shininess = u_material[0];
+    return mat;
 }
 
 #endif // PHONG_LIGHTS_SH_HEADER_GUARD

@@ -25,14 +25,12 @@
     "uniforms": {
         "diffuseColor": {
             "name": "u_diffuseColor",
-            "type": "vec4",
-            "default": [1, 1, 1, 32]
+            "default": [1, 1, 1, 1]
         }
     },
     "samplers": {
-        "diffuseTexture": {
-            "name": "s_texColor",
-            "type": "sampler"
+        "textureColor": {
+            "name": "s_texColor"
         }
     },
     "include": [

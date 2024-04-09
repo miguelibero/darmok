@@ -1,24 +1,24 @@
 #pragma once
 
-#include <darmok/scene.hpp>
+#include <darmok/camera.hpp>
 #include <darmok/program_def.hpp>
 
 namespace darmok
 {
-    class LightRenderUpdater;
     class Program;
 
-    class ForwardRenderer final : public CameraSceneRenderer
+    class ForwardRenderer final : public ICameraRenderer
     {
     public:
-        ForwardRenderer(OptionalRef<LightRenderUpdater> lights = nullptr);
-        void init(Scene& scene, App& app) noexcept override;
-        const ProgramDefinition& getProgramDefinition() const noexcept;
+        ForwardRenderer(const std::shared_ptr<Program>& program, const ProgramDefinition& prodDef) noexcept;
+        void init(Camera& cam, Scene& scene, App& app) noexcept override;
     protected:
-        bgfx::ViewId render(const Camera& cam, bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
+        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) override;
     private:
-        OptionalRef<LightRenderUpdater> _lights;
         std::shared_ptr<Program> _program;
         ProgramDefinition _progDef;
+        OptionalRef<Camera> _cam;
+        OptionalRef<Scene> _scene;
+        OptionalRef<App> _app;
     };
 }
