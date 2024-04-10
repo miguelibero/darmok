@@ -1,10 +1,9 @@
 
 #include "model.hpp"
-#include "asset.hpp"
-#include <darmok/vertex.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
+#include <darmok/vertex.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/material.h>
@@ -12,13 +11,13 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include <bx/math.h>
 #include <bimg/decode.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
 #include <filesystem>
-
 
 namespace darmok
 {
@@ -377,9 +376,9 @@ namespace darmok
 		return std::make_pair(itr->second, texture);
 	}
 
-	std::shared_ptr<Material> ModelMaterial::load(const ProgramDefinition& progDef)
+	std::shared_ptr<Material> ModelMaterial::load() noexcept
 	{
-		auto material = std::make_shared<Material>(progDef);
+		auto material = std::make_shared<Material>();
 		for (auto& elm : _materialTextures)
 		{
 			for (auto& modelTex : getTextures(elm.first))
@@ -651,23 +650,29 @@ namespace darmok
 		return _colors;
 	}
 
-
-	Data createModelMeshVertexData(const ModelMesh& modelMesh, const bgfx::VertexLayout& layout)
+	static Data createModelMeshVertexData(const ModelMesh& modelMesh, const bgfx::VertexLayout& layout) noexcept
 	{
 		VertexDataWriter writer(layout, modelMesh.getVertexCount());
-		writer.set(bgfx::Attrib::Position, modelMesh.getPositions());
-		writer.set(bgfx::Attrib::Normal, modelMesh.getNormals());
-		writer.set(bgfx::Attrib::Tangent, modelMesh.getTangents());
-		writer.set(bgfx::Attrib::Bitangent, modelMesh.getBitangents());
-		auto i = 0;
-		for(auto& elm : modelMesh.getTexCoords())
+		writer.write(bgfx::Attrib::Position, modelMesh.getPositions());
+		writer.write(bgfx::Attrib::Normal, modelMesh.getNormals());
+		writer.write(bgfx::Attrib::Tangent, modelMesh.getTangents());
+		writer.write(bgfx::Attrib::Bitangent, modelMesh.getBitangents());
+
 		{
-			writer.set((bgfx::Attrib::Enum)(bgfx::Attrib::TexCoord0 + i++), elm.getCoords());
+			auto i = 0;
+			for (auto& elm : modelMesh.getTexCoords())
+			{
+				auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::TexCoord0 + i++);
+				writer.write(attrib, elm.getCoords());
+			}
 		}
-		i = 0;
-		for (auto& elm : modelMesh.getColors())
 		{
-			writer.set((bgfx::Attrib::Enum)(bgfx::Attrib::Color0 + i++), elm);
+			auto i = 0;
+			for (auto& elm : modelMesh.getColors())
+			{
+				auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::Color0 + i++);
+				writer.write(attrib, elm);
+			}
 		}
 		return writer.finish();
 	}
@@ -682,14 +687,14 @@ namespace darmok
 		return Data::copy(indices);
 	}
 
-	std::shared_ptr<Mesh> ModelMesh::load(const ProgramDefinition& progDef)
+	std::shared_ptr<Mesh> ModelMesh::load(const bgfx::VertexLayout& layout)
 	{
-		auto material = getMaterial().load(progDef);
-		auto vertices = createModelMeshVertexData(*this, material->getVertexLayout());
+		auto material = getMaterial().load();
+		auto vertices = createModelMeshVertexData(*this, layout);
 		auto indices = createModelMeshIndexData(*this);
 
 		auto ptr = (float*)vertices.ptr();
-		return std::make_shared<Mesh>(material, std::move(vertices), std::move(indices));
+		return std::make_shared<Mesh>(layout, std::move(vertices), std::move(indices), material);
 	}
 
 	ModelNodeMeshCollection::ModelNodeMeshCollection(aiNode* ptr, Model& model)
@@ -703,12 +708,12 @@ namespace darmok
 		return _ptr == nullptr ? 0 : _ptr->mNumMeshes;
 	}
 
-	std::vector<std::shared_ptr<Mesh>> ModelNodeMeshCollection::load(const ProgramDefinition& progDef)
+	std::vector<std::shared_ptr<Mesh>> ModelNodeMeshCollection::load(const bgfx::VertexLayout& layout)
 	{
 		std::vector<std::shared_ptr<Mesh>> meshes;
 		for (auto& mesh : *this)
 		{
-			meshes.push_back(mesh.load(progDef));
+			meshes.push_back(mesh.load(layout));
 		}
 		return meshes;
 	}
@@ -1000,17 +1005,17 @@ namespace darmok
 		return _model.getLights().get(getName());
 	}
 
-	Entity ModelNode::addToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent)
+	Entity ModelNode::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent)
 	{
-		auto entity = doAddToScene(scene, progDef, parent);
+		auto entity = doAddToScene(scene, layout, parent);
 		for (auto& child : getChildren())
 		{
-			addToScene(scene, progDef, entity);
+			addToScene(scene, layout, entity);
 		}
 		return entity;
 	}
 
-	Entity ModelNode::doAddToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent)
+	Entity ModelNode::doAddToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent)
 	{
 		auto entity = scene.createEntity();
 		auto transMat = getTransform();
@@ -1032,7 +1037,7 @@ namespace darmok
 		auto& meshes = getMeshes();
 		if (!meshes.empty())
 		{
-			scene.addComponent<MeshComponent>(entity, meshes.load(progDef));
+			scene.addComponent<MeshComponent>(entity, meshes.load(layout));
 		}
 
 		auto parentTrans = scene.tryGetComponent<Transform>(parent);
@@ -1227,9 +1232,9 @@ namespace darmok
 		return _lights;
 	}
 
-	Entity Model::addToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent)
+	Entity Model::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent)
 	{
-		return getRootNode().addToScene(scene, progDef, parent);
+		return getRootNode().addToScene(scene, layout, parent);
 	}
 
 	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)

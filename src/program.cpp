@@ -1,17 +1,25 @@
 #include "program.hpp"
 #include <unordered_map>
+#include <optional>
+#include <charconv>
+
 #include <darmok/data.hpp>
+#include <darmok/vertex.hpp>
+#include <rapidjson/document.h>
 
 #include "embedded_shader.hpp"
 #include "generated/shaders/unlit_vertex.h"
 #include "generated/shaders/unlit_fragment.h"
+#include "generated/shaders/unlit_vertex_layout.h"
 #include "generated/shaders/forward_phong_vertex.h"
 #include "generated/shaders/forward_phong_fragment.h"
+#include "generated/shaders/forward_phong_vertex_layout.h"
 
 namespace darmok
 {
-    Program::Program(const bgfx::ProgramHandle& handle) noexcept
+    Program::Program(const bgfx::ProgramHandle& handle, const bgfx::VertexLayout& layout) noexcept
 		: _handle(handle)
+		, _layout(layout)
 	{
 	}
 
@@ -26,6 +34,11 @@ namespace darmok
 	const bgfx::ProgramHandle& Program::getHandle() const noexcept
 	{
 		return _handle;
+	}
+
+	const bgfx::VertexLayout& Program::getVertexLayout() const noexcept
+	{
+		return _layout;
 	}
 
 	static const bgfx::EmbeddedShader _embeddedShaders[] =
@@ -43,6 +56,12 @@ namespace darmok
 		{StandardProgramType::ForwardPhong, "forward_phong"},
 	};
 
+	static const std::unordered_map<StandardProgramType, const char*> _embeddedShaderVertexLayouts
+	{
+		{StandardProgramType::Unlit, unlit_vertex_layout},
+		{StandardProgramType::ForwardPhong, forward_phong_vertex_layout},
+	};
+
 	std::shared_ptr<Program> Program::createStandard(StandardProgramType type) noexcept
 	{
 		auto itr = _embeddedShaderNames.find(type);
@@ -56,13 +75,159 @@ namespace darmok
 			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_fragment").c_str()),
 			true
 		);
-		return std::make_shared<Program>(handle);
+
+		bgfx::VertexLayout layout;
+		auto itr2 = _embeddedShaderVertexLayouts.find(type);
+		if (itr2 != _embeddedShaderVertexLayouts.end())
+		{
+			readVertexLayoutJson(itr2->second, layout);
+		};
+		
+		return std::make_shared<Program>(handle, layout);
 	}
 
-	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader, const std::string& vertexSuffix, const std::string& fragmentSuffix) noexcept
+	static std::optional<int> getNameSuffixCounter(const std::string_view name, const std::string_view prefix) noexcept
+	{
+		if (!name.starts_with(prefix))
+		{
+			return std::nullopt;
+		}
+		int v;
+		auto r = std::from_chars(name.data() + prefix.size(), name.data() + name.size(), v);
+		if (r.ptr == nullptr)
+		{
+			return std::nullopt;
+		}
+		return v;
+	}
+
+	bgfx::Attrib::Enum Program::getBgfxAttrib(const std::string_view name) noexcept
+	{
+		auto sname = strToLower(name);
+		if (sname == "position" || sname == "pos")
+		{
+			return bgfx::Attrib::Position;
+		}
+		if (sname == "normal" || sname == "norm" || sname == "n")
+		{
+			return bgfx::Attrib::Normal;
+		}
+		if (sname == "tangent" || name == "tang" || sname == "t")
+		{
+			return bgfx::Attrib::Normal;
+		}
+		if (sname == "bitangent" || sname == "bitang" || sname == "b")
+		{
+			return bgfx::Attrib::Normal;
+		}
+		if (sname == "bitangent" || sname == "bitang" || sname == "b")
+		{
+			return bgfx::Attrib::Normal;
+		}
+		if (sname == "indices" || sname == "index" || sname == "i")
+		{
+			return bgfx::Attrib::Indices;
+		}
+		if (sname == "weight" || sname == "w")
+		{
+			return bgfx::Attrib::Weight;
+		}
+		auto count = getNameSuffixCounter(sname, "color");
+		if (count != std::nullopt)
+		{
+			return (bgfx::Attrib::Enum)((int)bgfx::Attrib::Color0 + count.value());
+		}
+		count = getNameSuffixCounter(sname, "texcoord");
+		if (count == std::nullopt)
+		{
+			count = getNameSuffixCounter(sname, "tex_coord");
+		}
+		if (count != std::nullopt)
+		{
+			return (bgfx::Attrib::Enum)((int)bgfx::Attrib::TexCoord0 + count.value());
+		}
+
+		return bgfx::Attrib::Count;
+	}
+
+	bgfx::AttribType::Enum Program::getBgfxAttribType(const std::string_view name) noexcept
+	{
+		auto sname = strToLower(name);
+		if (sname == "u8" || sname == "uint8")
+		{
+			return bgfx::AttribType::Uint8;
+		}
+		if (sname == "u10" || sname == "uint10")
+		{
+			return bgfx::AttribType::Uint10;
+		}
+		if (sname == "i" || sname == "int" || sname == "int16")
+		{
+			return bgfx::AttribType::Int16;
+		}
+		if (sname == "h" || sname == "half" || sname == "float8")
+		{
+			return bgfx::AttribType::Half;
+		}
+		if (sname == "f" || sname == "float" || sname == "float16")
+		{
+			return bgfx::AttribType::Float;
+		}
+		return bgfx::AttribType::Count;
+	}
+
+	static std::string_view getStringView(const rapidjson::Value& v) noexcept
+	{
+		return std::string_view(v.GetString(), v.GetStringLength());
+	}
+
+	void Program::readVertexLayoutJson(std::string_view json, bgfx::VertexLayout& layout) noexcept
+	{
+		rapidjson::Document doc;
+		doc.Parse(json.data(), json.size());
+		layout.begin();
+		for (auto& elm : doc.GetObject())
+		{
+			auto attrib = getBgfxAttrib(getStringView(elm.name));
+			if (attrib == bgfx::Attrib::Count)
+			{
+				continue;
+			}
+			auto type = bgfx::AttribType::Float;
+			if (elm.value.HasMember("type"))
+			{
+				type = getBgfxAttribType(getStringView(elm.value["type"]));
+			}
+			if (type == bgfx::AttribType::Count)
+			{
+				continue;
+			}
+			uint8_t num = 1;
+			if (elm.value.HasMember("num"))
+			{
+				num = elm.value["num"].GetUint();
+			}
+			auto normalize = false;
+			if (elm.value.HasMember("normalize"))
+			{
+				normalize = elm.value["normalize"].GetBool();
+			}
+			auto asInt = false;
+			if (elm.value.HasMember("int"))
+			{
+				asInt = elm.value["int"].GetBool();
+			}
+			layout.add(attrib, num, type, normalize, asInt);
+		}
+		layout.end();
+	}
+
+	const DataProgramLoader::Suffixes DataProgramLoader::defaultSuffixes = Suffixes{ "_vertex", "_fragment", "_vertex_layout" };
+
+	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader, IVertexLayoutLoader& vertexLayoutLoader, Suffixes suffixes) noexcept
 		: _dataLoader(dataLoader)
-		, _vertexSuffix(vertexSuffix)
-		, _fragmentSuffix(fragmentSuffix)
+		, _vertexLayoutLoader(vertexLayoutLoader)
+		, _suffixes(suffixes)
 	{
 	}
 
@@ -108,13 +273,14 @@ namespace darmok
 	std::shared_ptr<Program> DataProgramLoader::operator()(std::string_view name)
 	{
 		std::string nameStr(name);
-		const bgfx::ShaderHandle vsh = loadShader(nameStr + _vertexSuffix);
+		const bgfx::ShaderHandle vsh = loadShader(nameStr + _suffixes.vertex);
 		bgfx::ShaderHandle fsh = BGFX_INVALID_HANDLE;
 		if (!name.empty())
 		{
-			fsh = loadShader(nameStr + _fragmentSuffix);
+			fsh = loadShader(nameStr + _suffixes.fragment);
 		}
 		auto handle = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
-		return std::make_shared<Program>(handle);
+		auto layout = _vertexLayoutLoader(nameStr + _suffixes.vertexLayout);
+		return std::make_shared<Program>(handle, layout);
 	}
 }

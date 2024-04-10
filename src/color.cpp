@@ -9,6 +9,9 @@ namespace darmok
     const Color Colors::red = { maxValue, 0, 0, maxValue };
     const Color Colors::green = { 0, maxValue, 0, maxValue };
     const Color Colors::blue = { 0, 0, maxValue, maxValue };
+    const Color Colors::yellow = { maxValue, maxValue, 0, maxValue };
+    const Color Colors::cyan = { 0, maxValue, maxValue, maxValue };
+    const Color Colors::magenta = { maxValue, 0, maxValue, maxValue };
 
     glm::vec4 Colors::normalize(const Color& color) noexcept
     {
@@ -36,11 +39,11 @@ namespace darmok
 
     uint32_t Colors::toNumber(const Color& color) noexcept
     {
-        return color.r << 24 | color.g << 16 | color.b << 8 | color.a;
+        return uint32_t(color.a) << 24 | uint32_t(color.b) << 16 | uint32_t(color.g) << 8 | uint32_t(color.r);
     }
 
     uint32_t Colors::toNumber(const Color3& color) noexcept
     {
-        return color.r << 24 | color.g << 16 | color.b << 8 | 0xff;
+        return 0xff << 24 | uint32_t(color.b) << 16 | uint32_t(color.g) << 8 | uint32_t(color.r);
     }
 }

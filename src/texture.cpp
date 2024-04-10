@@ -10,14 +10,14 @@
 
 namespace darmok
 {
-	Texture::Texture(std::shared_ptr<Image> img, const bgfx::TextureHandle& handle, TextureType type)
+	Texture::Texture(std::shared_ptr<Image> img, const bgfx::TextureHandle& handle, TextureType type) noexcept
 		: _img(img)
 		, _handle(handle)
 		, _type(type)
 	{
 	}
 
-	Texture::~Texture()
+	Texture::~Texture() noexcept
 	{
 		if (isValid(_handle))
 		{
@@ -25,7 +25,7 @@ namespace darmok
 		}
 	}
 
-	std::shared_ptr<Texture> Texture::create(std::shared_ptr<Image> img, std::string_view name, uint64_t flags)
+	std::shared_ptr<Texture> Texture::create(std::shared_ptr<Image> img, std::string_view name, uint64_t flags) noexcept
 	{
 		if (img == nullptr || img->empty())
 		{
@@ -71,28 +71,28 @@ namespace darmok
 		return std::make_shared<Texture>(img, handle, type);
 	}
 
-	const bgfx::TextureHandle& Texture::getHandle() const
+	const bgfx::TextureHandle& Texture::getHandle() const noexcept
 	{
 		return _handle;
 	}
 
-	std::shared_ptr<Image> Texture::getImage() const
+	std::shared_ptr<Image> Texture::getImage() const noexcept
 	{
 		return _img;
 	}
 
-	void Texture::releaseImage()
+	void Texture::releaseImage() noexcept
 	{
 		_img = nullptr;
 		// TODO: is there a way to check if the image was uploaded?
 	}
 
-	TextureType Texture::getType() const
+	TextureType Texture::getType() const noexcept
 	{
 		return _type;
 	}
 
-    TextureBounds TextureAtlasElement::getBounds() const
+    TextureBounds TextureAtlasElement::getBounds() const noexcept
 	{
 		return {
 			originalSize,
@@ -100,7 +100,7 @@ namespace darmok
 		};
 	}
 
-	TextureBounds TextureAtlas::getBounds(std::string_view prefix) const
+	TextureBounds TextureAtlas::getBounds(std::string_view prefix) const noexcept
 	{
 		TextureBounds bounds{};
 		for (auto& elm : elements)
@@ -114,7 +114,7 @@ namespace darmok
 		return bounds;
 	}
 
-	OptionalRef<TextureAtlasElement> TextureAtlas::getElement(std::string_view name)
+	OptionalRef<TextureAtlasElement> TextureAtlas::getElement(std::string_view name) noexcept
 	{
 		for (auto& elm : elements)
 		{
@@ -126,7 +126,7 @@ namespace darmok
 		return nullptr;
 	}
 
-	OptionalRef<const TextureAtlasElement> TextureAtlas::getElement(std::string_view name) const
+	OptionalRef<const TextureAtlasElement> TextureAtlas::getElement(std::string_view name) const noexcept
 	{
 		for (auto& elm : elements)
 		{
@@ -138,42 +138,56 @@ namespace darmok
 		return nullptr;
 	}
 
-	std::shared_ptr<Mesh> TextureAtlas::createSprite(const ProgramDefinition& progDef, const TextureAtlasElement& element, float scale, const Color& color)
-	{
-		auto material = std::make_shared<Material>(progDef);
-		material->setTexture(MaterialTextureType::Diffuse, texture);
-		material->setColor(MaterialColorType::Diffuse, color);
-		auto elmSize = std::min(element.positions.size(), element.texCoords.size());
-		VertexDataWriter writer(material->getVertexLayout(), elmSize);
+	std::shared_ptr<Mesh> TextureAtlasElement::createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& atlasSize, float scale) const noexcept
+	{		
+		auto elmSize = std::min(positions.size(), texCoords.size());
+		VertexDataWriter writer(layout, elmSize);
 
-		glm::vec2 atlasSize(size);
+		glm::vec2 fatlasSize(atlasSize);
 
 		uint32_t i = 0;
-		for (auto& pos : element.positions)
+		for (auto& pos : positions)
 		{
-			auto v = scale * glm::vec2(pos.x, element.originalSize.y - pos.y);
-			writer.set(bgfx::Attrib::Position, i++, v);
+			auto v = scale * glm::vec2(pos.x, originalSize.y - pos.y);
+			writer.write(bgfx::Attrib::Position, i++, v);
 		}
 		i = 0;
-		for (auto& texCoord : element.texCoords)
+		for (auto& texCoord : texCoords)
 		{
-			auto v = glm::vec2(texCoord) / atlasSize;
-			writer.set(bgfx::Attrib::TexCoord0, i++, v);
+			auto v = glm::vec2(texCoord) / fatlasSize;
+			writer.write(bgfx::Attrib::TexCoord0, i++, v);
 		}
-		writer.set(bgfx::Attrib::Color0, color);
-		return std::make_shared<Mesh>(material, writer.finish(), Data::copy(element.indices));
+		auto vertexData = writer.finish();
+		return std::make_shared<Mesh>(layout, std::move(vertexData), Data::copy(indices));
 	}
 
-	std::vector<AnimationFrame> TextureAtlas::createSpriteAnimation(const ProgramDefinition& progDef, std::string_view namePrefix, float frameDuration, float scale, const Color& color)
+	std::shared_ptr<Material> TextureAtlas::createMaterial(const Color& color) const noexcept
 	{
+		auto material = std::make_shared<Material>();
+		material->setTexture(MaterialTextureType::Diffuse, texture);
+		material->setColor(MaterialColorType::Diffuse, color);
+		return material;
+	}
+
+	std::shared_ptr<Mesh> TextureAtlas::createSprite(const bgfx::VertexLayout& layout, const TextureAtlasElement& element, float scale, const Color& color) const noexcept
+	{
+		auto mesh = element.createSprite(layout, size, scale);
+		mesh->setMaterial(createMaterial(color));
+		return mesh;
+	}
+
+	std::vector<AnimationFrame> TextureAtlas::createSpriteAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration, float scale, const Color& color) const noexcept
+	{
+		auto material = createMaterial(color);
 		std::vector<AnimationFrame> frames;
 		for (auto& elm : elements)
 		{
 			if (elm.name.starts_with(namePrefix))
 			{
-				auto mesh = createSprite(progDef, elm, scale, color);
+				auto mesh = elm.createSprite(layout, size, scale);
 				if (mesh)
 				{
+					mesh->setMaterial(material);
 					frames.push_back({ { mesh }, frameDuration });
 				}
 			}
@@ -181,89 +195,92 @@ namespace darmok
 		return frames;
 	}
 
-	ImageTextureLoader::ImageTextureLoader(IImageLoader& imgLoader)
+	ImageTextureLoader::ImageTextureLoader(IImageLoader& imgLoader) noexcept
 		: _imgLoader(imgLoader)
 	{
 	}
 
-	std::shared_ptr<Texture> ImageTextureLoader::operator()(std::string_view name, uint64_t flags)
+	std::shared_ptr<Texture> ImageTextureLoader::operator()(std::string_view name, uint64_t flags) noexcept
 	{
 		auto img = _imgLoader(name);
 		return Texture::create(img, name, flags);
 	}
 
-	TexturePackerTextureAtlasLoader::TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader)
+	TexturePackerTextureAtlasLoader::TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept
 		: _dataLoader(dataLoader)
 		, _textureLoader(textureLoader)
 	{
 	}
 
-	std::pair<int, size_t> readValueInt(std::string_view str, size_t i)
+	namespace texture_packer_xml
 	{
-		if (str.size() == 0 || i == std::string::npos || i >= str.size())
+		static std::pair<int, size_t> readInt(std::string_view str, size_t i) noexcept
 		{
-			return { -1, std::string::npos };
+			if (str.size() == 0 || i == std::string::npos || i >= str.size())
+			{
+				return { -1, std::string::npos };
+			}
+			auto ni = str.find(' ', i);
+			if (ni == std::string::npos)
+			{
+				ni = str.size();
+			}
+			int v;
+			std::from_chars(str.data() + i, str.data() + ni, v);
+			return { v, ni + 1 };
 		}
-		auto ni = str.find(' ', i);
-		if (ni == std::string::npos)
-		{
-			ni = str.size();
-		}
-		int v;
-		std::from_chars(str.data() + i, str.data() + ni, v);
-		return { v, ni + 1 };
-	}
 
-	std::pair<std::optional<TextureVec2>, size_t> readValueVec(std::string_view str, size_t i)
-	{
-		auto p = readValueInt(str, i);
-		if (p.first < 0)
+		static std::pair<std::optional<TextureVec2>, size_t> readTextureVec2(std::string_view str, size_t i) noexcept
 		{
-			return { std::nullopt, std::string::npos };
-		}
-		TextureVec2 v = { p.first, 0 };
-		i = p.second;
-		if (i == std::string::npos)
-		{
+			auto p = readInt(str, i);
+			if (p.first < 0)
+			{
+				return { std::nullopt, std::string::npos };
+			}
+			TextureVec2 v = { p.first, 0 };
+			i = p.second;
+			if (i == std::string::npos)
+			{
+				return { v, i };
+			}
+			p = readInt(str, i);
+			if (p.first < 0)
+			{
+				return { std::nullopt, std::string::npos };
+			}
+			v.y = p.first;
+			i = p.second;
 			return { v, i };
 		}
-		p = readValueInt(str, i);
-		if (p.first < 0)
-		{
-			return { std::nullopt, std::string::npos };
-		}
-		v.y = p.first;
-		i = p.second;
-		return { v, i };
-	}
 
-	std::vector<TextureVec2> loadTextureVec2(std::string_view data)
-	{
-		std::vector<TextureVec2> vec;
-		size_t pi = 0;
-		while (pi != std::string::npos)
+		static std::vector<TextureVec2> readTextureVec2List(std::string_view data) noexcept
 		{
-			auto pp = readValueVec(data, pi);
-			if (!pp.first.has_value())
+			std::vector<TextureVec2> vec;
+			size_t pi = 0;
+			while (pi != std::string::npos)
 			{
-				break;
+				auto pp = readTextureVec2(data, pi);
+				if (!pp.first.has_value())
+				{
+					break;
+				}
+				vec.push_back(pp.first.value());
+				pi = pp.second;
 			}
-			vec.push_back(pp.first.value());
-			pi = pp.second;
+			return vec;
 		}
-		return vec;
 	}
 
-	TextureAtlasElement loadElement(pugi::xml_node& xml)
+	TextureAtlasElement loadElement(pugi::xml_node& xml) noexcept
 	{
-		auto positions = loadTextureVec2(xml.child("vertices").text().get());
-		auto texCoords = loadTextureVec2(xml.child("verticesUV").text().get());
+		auto positions = texture_packer_xml::readTextureVec2List(xml.child("vertices").text().get());
+		auto texCoords = texture_packer_xml::readTextureVec2List(xml.child("verticesUV").text().get());
 		std::string vertIdxVals = xml.child("triangles").text().get();
 		size_t ii = 0;
 		std::vector<TextureAtlasIndex> indices;
 		while (ii != std::string::npos)
 		{
-			auto p = readValueInt(vertIdxVals, ii);
+			auto p = texture_packer_xml::readInt(vertIdxVals, ii);
 			if (p.first < 0)
 			{
 				break;

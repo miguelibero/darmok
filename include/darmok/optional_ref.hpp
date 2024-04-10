@@ -95,6 +95,11 @@ namespace darmok
             return *_value;
         }
 
+        operator OptionalRef<const T>() const noexcept
+        { 
+            return OptionalRef<const T>(_value);
+        }
+
         [[nodiscard]] bool operator==(const OptionalRef<T>& other) const noexcept
         {
             if (_value == nullptr)

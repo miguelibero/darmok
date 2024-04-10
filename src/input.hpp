@@ -114,7 +114,7 @@ namespace darmok
 		InputImpl(const InputImpl& other) = delete;
 		InputImpl(InputImpl&& other) = delete;
 
-		void process() noexcept;
+		void processBindings() noexcept;
 		void reset() noexcept;
 		void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
 		void removeBindings(std::string_view name) noexcept;

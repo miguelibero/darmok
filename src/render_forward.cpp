@@ -1,16 +1,16 @@
 #include <darmok/render_forward.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
-#include <darmok/light.hpp>
 #include <darmok/camera.hpp>
-#include <darmok/program_def.hpp>
+#include <darmok/program.hpp>
+#include <darmok/light.hpp>
 
 namespace darmok
 {
 
-	ForwardRenderer::ForwardRenderer(const std::shared_ptr<Program>& program, const ProgramDefinition& progDef) noexcept
+	ForwardRenderer::ForwardRenderer(const std::shared_ptr<Program>& program, const OptionalRef<ILightingComponent>& lighting) noexcept
 		: _program(program)
-		, _progDef(progDef)
+		, _lighting(lighting)
 	{
 	}
 
@@ -21,9 +21,9 @@ namespace darmok
 		_app = app;
 	}
 
-	bgfx::ViewId ForwardRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId)
+	bgfx::ViewId ForwardRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
 	{
-		if (_program == nullptr)
+		if (!_cam || _program == nullptr)
 		{
 			return viewId;
 		}
@@ -43,12 +43,20 @@ namespace darmok
 			for (auto& mesh : meshes)
 			{
 				auto mat = mesh->getMaterial();
-				if (mat == nullptr || mat->getProgramDefinition() != _progDef)
+				if (mat == nullptr)
 				{
 					continue;
 				}
 
 				Transform::bgfxConfig(entity, encoder, registry);
+
+				if (_lighting)
+				{
+					_lighting->bgfxConfig(encoder, viewId);
+				}
+
+				mat->bgfxConfig(encoder);
+				mesh->bgfxConfig(encoder, viewId);
 
 				uint64_t state = BGFX_STATE_WRITE_RGB
 					| BGFX_STATE_WRITE_A
@@ -59,13 +67,11 @@ namespace darmok
 					| BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
 					;
 				
-				mat->bgfxConfig(encoder);
 				if (mat->getPrimitiveType() == MaterialPrimitiveType::Line)
 				{
 					state |= BGFX_STATE_PT_LINES;
 				}
 
-				mesh->bgfxConfig(encoder, viewId);
 				encoder.setState(state);
 				encoder.submit(viewId, _program->getHandle());
 			}

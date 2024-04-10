@@ -23,14 +23,14 @@ include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
 set(SHADERS "")
 set(SHADER_INCLUDES "")
 
-macro(addShaderProgramDefinition NAME)
-  set(PROG_DEF_PATH "${SHADERS_DIR}/${NAME}_progdef.json")
+macro(addShaderVertexLayout NAME)
+  set(VERTEX_LAYOUT_PATH "${SHADERS_DIR}/${NAME}_vertex_layout.json")
   bgfx_compile_binary_to_header(
-    INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${PROG_DEF_PATH}
-    OUTPUT_FILE include/${SHADERS_OUTPUT_DIR}/${NAME}_progdef.h
-    ARRAY_NAME ${NAME}_progdef
+    INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${VERTEX_LAYOUT_PATH}
+    OUTPUT_FILE include/${SHADERS_OUTPUT_DIR}/${NAME}_vertex_layout.h
+    ARRAY_NAME ${NAME}_vertex_layout
   )
-  list(APPEND SHADERS ${PROG_DEF_PATH})
+  list(APPEND SHADERS ${VERTEX_LAYOUT_PATH})
 endmacro()
 
 macro(addShader NAME)
@@ -54,12 +54,11 @@ macro(addShader NAME)
   )
   list(APPEND SHADERS ${VERTEX_PATH} ${FRAGMENT_PATH} ${VARYING_DEF_PATH})
 
-  addShaderProgramDefinition(${NAME})
+  addShaderVertexLayout(${NAME})
 
 endmacro()
 
 macro(addShaderInclude NAME)
-  addShaderProgramDefinition(${NAME})
   list(APPEND SHADER_INCLUDES "${SHADERS_DIR}/${NAME}.sh")
 endmacro()
 
@@ -88,13 +87,10 @@ set(SOURCES
   ${SRC_DIR}/texture.cpp
   ${SRC_DIR}/image.cpp
   ${SRC_DIR}/program.cpp
-  ${SRC_DIR}/program_def.cpp
-  ${SRC_DIR}/vertex.cpp
-  ${SRC_DIR}/uniform.cpp
-  ${SRC_DIR}/buffer.cpp
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/camera.cpp
   ${SRC_DIR}/light.cpp
+  ${SRC_DIR}/vertex.cpp
   ${SRC_DIR}/render_forward.cpp
   ${SRC_DIR}/render_deferred.cpp
 )
@@ -117,13 +113,10 @@ set(HEADERS
   ${INCLUDE_DIR}/texture.hpp
   ${INCLUDE_DIR}/image.hpp
   ${INCLUDE_DIR}/program.hpp
-  ${INCLUDE_DIR}/program_def.hpp
-  ${INCLUDE_DIR}/vertex.hpp
-  ${INCLUDE_DIR}/uniform.hpp
-  ${INCLUDE_DIR}/buffer.hpp
   ${INCLUDE_DIR}/transform.hpp
   ${INCLUDE_DIR}/camera.hpp
   ${INCLUDE_DIR}/light.hpp
+  ${INCLUDE_DIR}/vertex.hpp
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
 )

@@ -132,11 +132,6 @@ namespace darmok
         _ptr = nullptr;
     }
 
-    Data Data::reuse(Data&& data, size_t size) noexcept
-    {
-        return data.size() < size ? Data(size, data._alloc) : std::move(data);
-    }
-
     const bgfx::Memory* Data::makeRef() const noexcept
     {
         if (empty())

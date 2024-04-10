@@ -15,7 +15,7 @@ namespace darmok
 
     typedef uint32_t Entity;
     typedef entt::basic_registry<Entity> EntityRegistry;
-    typedef entt::basic_runtime_view<entt::basic_sparse_set<Entity>> EntityRuntimeView;
+    typedef entt::basic_runtime_view<const entt::basic_sparse_set<Entity>> EntityRuntimeView;
 
     class BX_NO_VTABLE IEntityFilter
     {

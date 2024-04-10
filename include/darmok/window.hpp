@@ -38,7 +38,7 @@ namespace darmok
 		void requestMouseLock(bool enabled) noexcept;
 		void requestDestruction() noexcept;
 
-		void bgfxConfig(bgfx::ViewId viewId) noexcept;
+		void bgfxConfig(bgfx::ViewId viewId) const noexcept;
 
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;

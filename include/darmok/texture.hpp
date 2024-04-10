@@ -29,23 +29,23 @@ namespace darmok
     class Texture final
 	{
 	public:
-		Texture(std::shared_ptr<Image> img, const bgfx::TextureHandle& handle, TextureType type = TextureType::Texture2D);
-		~Texture();
-		const bgfx::TextureHandle& getHandle() const;
-		std::shared_ptr<Image> getImage() const;
-		void releaseImage();
-		TextureType getType() const;
+		Texture(std::shared_ptr<Image> img, const bgfx::TextureHandle& handle, TextureType type = TextureType::Texture2D) noexcept;
+		~Texture() noexcept;
+		Texture(const Texture& other) = delete;
+		Texture& operator=(const Texture& other) = delete;
 
-		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, std::string_view name = "", uint64_t flags = defaultTextureCreationFlags);
+		const bgfx::TextureHandle& getHandle() const noexcept;
+		std::shared_ptr<Image> getImage() const noexcept;
+		void releaseImage() noexcept;
+		TextureType getType() const noexcept;
+
+		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, std::string_view name = "", uint64_t flags = defaultTextureCreationFlags) noexcept;
 
 
 	private:
 		std::shared_ptr<Image> _img;
 		bgfx::TextureHandle _handle;
 		TextureType _type;
-
-		Texture(const Texture& other) = delete;
-		Texture& operator=(const Texture& other) = delete;
 	};
 
 	typedef glm::vec<2, uint32_t> TextureVec2;
@@ -57,6 +57,10 @@ namespace darmok
 		TextureVec2 size;
 		TextureVec2 offset;
 	};
+
+	class Mesh;
+	class Material;
+	class AnimationFrame;
 
 	struct TextureAtlasElement final
 	{
@@ -71,12 +75,10 @@ namespace darmok
 		TextureVec2 pivot;
 		bool rotated;
 
-		TextureBounds getBounds() const;
-	};
+		TextureBounds getBounds() const noexcept;
+		std::shared_ptr<Mesh> createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& atlasSize, float scale = 1.f) const noexcept;
 
-	class Mesh;
-	class AnimationFrame;
-	class ProgramDefinition;
+	};
 
 	struct TextureAtlas final
 	{
@@ -84,12 +86,13 @@ namespace darmok
 		std::vector<TextureAtlasElement> elements;
 		TextureVec2 size;
 
-		TextureBounds getBounds(std::string_view prefix) const;
-		OptionalRef<TextureAtlasElement> getElement(std::string_view name);
-		OptionalRef<const TextureAtlasElement> getElement(std::string_view name) const;
-
-		std::shared_ptr<Mesh> createSprite(const ProgramDefinition& progDef, const TextureAtlasElement& element, float scale = 1.f, const Color& color = Colors::white);
-		std::vector<AnimationFrame> createSpriteAnimation(const ProgramDefinition& progDef, std::string_view namePrefix, float frameDuration = 1.f / 30.f, float scale = 1.f, const Color& color = Colors::white);
+		TextureBounds getBounds(std::string_view prefix) const noexcept;
+		OptionalRef<TextureAtlasElement> getElement(std::string_view name) noexcept;
+		OptionalRef<const TextureAtlasElement> getElement(std::string_view name) const noexcept;
+		
+		std::shared_ptr<Material> createMaterial(const Color& color = Colors::white) const noexcept;
+		std::shared_ptr<Mesh> createSprite(const bgfx::VertexLayout& layout, const TextureAtlasElement& element, float scale = 1.f, const Color& color = Colors::white) const noexcept;
+		std::vector<AnimationFrame> createSpriteAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration = 1.f / 30.f, float scale = 1.f, const Color& color = Colors::white) const noexcept;
 
 	};
 

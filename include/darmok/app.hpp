@@ -45,7 +45,7 @@ namespace darmok
 	{
 	public:
 		App() noexcept;
-		~App() noexcept;
+		virtual ~App() noexcept;
 		virtual void init(const std::vector<std::string>& args);
 		virtual int shutdown();
 		bool update();
@@ -93,17 +93,17 @@ namespace darmok
 		virtual bgfx::ViewId render(bgfx::ViewId viewId);
 	};
 
-	int runApp(App& app, const std::vector<std::string>& args);
+	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args);
 
 	template<typename T, typename... A>
 	int runApp(int argc, const char* const* argv, A&&... constructArgs)
 	{
-		T app(std::forward<A>(constructArgs)...);
+		auto app = std::unique_ptr<App>(new T(std::forward<A>(constructArgs)...));
 		std::vector<std::string> args(argc);
 		for (int i = 0; i < argc; ++i)
 		{
 			args[i] = argv[i];
 		}
-		return runApp(app, args);
+		return runApp(std::move(app), args);
 	};
 } // namespace darmok

@@ -48,30 +48,34 @@ namespace darmok
         Color3 _color;
     };
 
-    class PhongLightRenderer final : public ICameraRenderer
+
+    class BX_NO_VTABLE ILightingComponent : public ICameraComponent
     {
     public:
-        PhongLightRenderer() noexcept;
+        virtual void bgfxConfig(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
+    };
+
+    class PhongLightingComponent final : public ILightingComponent
+    {
+    public:
+        PhongLightingComponent() noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown()  noexcept override;
         void update(float deltaTime)  noexcept override;
-        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept override;
-
-        static const ProgramDefinition& getProgramDefinition();
+        void bgfxConfig(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept override;
 
     private:
-        const static std::string _pointLightsBufferName;
-        const static std::string _lightCountUniformName;
-        const static std::string _lightDataUniformName;
-        
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
 
         bgfx::UniformHandle _lightCountUniform;
         bgfx::UniformHandle _lightDataUniform;
         bgfx::DynamicVertexBufferHandle _pointLightBuffer;
-        Data _lightCount;
-        Data _lightData;
+
+        bgfx::VertexLayout _pointLightsLayout;
+
+        glm::vec4 _lightCount;
+        glm::vec4 _lightData;
         Data _pointLights;
 
         size_t updatePointLights() noexcept;

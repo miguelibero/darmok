@@ -27,5 +27,8 @@ namespace darmok
         EntityRegistry _registry;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
+
+        void onCameraConstructed(EntityRegistry& registry, Entity entity);
+        void onCameraDestroyed(EntityRegistry& registry, Entity entity);
     };
 }

@@ -1,4 +1,4 @@
-$input v_position, v_view, v_normal, v_tangent, v_color0, v_texcoord0
+$input v_position, v_view, v_normal, v_color0, v_texcoord0
 
 #include <bgfx_shader.sh>
 #include "phong_lighting.sh"

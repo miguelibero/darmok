@@ -28,7 +28,8 @@ namespace darmok
 		auto container = bimg::imageAlloc(
 			alloc, bimg::TextureFormat::RGBA8, size.x, size.y, 0, 1, false, false
 		);
-		bimg::imageSolid(container->m_data, size.x, size.y, Colors::toNumber(color));
+		auto c = Colors::toNumber(color);
+		bimg::imageSolid(container->m_data, size.x, size.y, c);
 		return std::make_shared<Image>(container);
 	}
 

@@ -86,7 +86,7 @@ namespace darmok
 		return _impl->getMode();
 	}
 
-	void Window::bgfxConfig(bgfx::ViewId viewId) noexcept
+	void Window::bgfxConfig(bgfx::ViewId viewId) const noexcept
 	{
 		// set view default viewport
 		const auto& size = getSize();

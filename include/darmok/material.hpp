@@ -5,7 +5,6 @@
 #include <darmok/texture.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/program_def.hpp>
 
 #include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
@@ -43,18 +42,13 @@ namespace darmok
         Line
     };
 
-    struct ProgramDefinition;
-
     class Material final
     {
     public:
-        Material(const ProgramDefinition& progDef) noexcept;
+        Material() noexcept;
         ~Material();
 
-        void load(AssetContext& assets);
-
-        const ProgramDefinition& getProgramDefinition() const noexcept;
-        const bgfx::VertexLayout& getVertexLayout() const noexcept;
+        void setDefaultTexture(const std::shared_ptr<Texture>& texture) noexcept;
 
         std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
         Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
@@ -71,19 +65,19 @@ namespace darmok
         void bgfxConfig(bgfx::Encoder& encoder) const noexcept;
 
     private:
-        ProgramDefinition _progDef;
-        bgfx::VertexLayout _vertexLayout;
-
-        std::unordered_map<std::string, bgfx::UniformHandle> _samplerHandles;
-        std::unordered_map<std::string, std::shared_ptr<Texture>> _defaultTextures;
-        std::unordered_map<std::string, bgfx::UniformHandle> _uniformHandles;
-        std::unordered_map<std::string, Data> _defaultUniforms;
+        OptionalRef<AssetContext> _assets;
+        std::unordered_map<MaterialTextureType, bgfx::UniformHandle> _textureHandles;
+        std::unordered_map<MaterialColorType, bgfx::UniformHandle> _colorHandles;
+        bgfx::UniformHandle _mainHandle;
 
         std::unordered_map<MaterialTextureType, std::shared_ptr<Texture>> _textures;
         std::unordered_map<MaterialColorType, Color> _colors;
 
-        uint8_t _shininess;
+        std::shared_ptr<Texture> _defaultTexture;
+        glm::vec4 _mainData;
         MaterialPrimitiveType _primitive;
+
+        void destroyHandles() noexcept;
     };
 
 

@@ -233,9 +233,8 @@ namespace darmok
 			{
 				return true;
 			}
-			_input.process();
 		};
-
+		_input.processBindings();
 		return _exit;
 	}
 
@@ -256,20 +255,28 @@ namespace darmok
 	}
 #endif // BX_PLATFORM_EMSCRIPTEN
 
-	int runApp(App& app, const std::vector<std::string>& args)
+	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
 	{
-		app.init(args);
+		app->init(args);
 
 #if BX_PLATFORM_EMSCRIPTEN
-		s_app = _app;
+		s_app = app.get();
 		emscripten_set_main_loop(&updateApp, -1, 1);
 #else
-		while (app.update())
+		while (app->update())
 		{
 		}
 #endif // BX_PLATFORM_EMSCRIPTEN
 
-		return app.shutdown();
+		auto result = app->shutdown();
+
+		// destroy app before the bgfx shutdown to guarantee no dangling resources
+		app.reset();
+
+		// Shutdown bgfx.
+		bgfx::shutdown();
+
+		return result;
 	}
 
 	int main(int argc, const char* const* argv)
@@ -313,9 +320,6 @@ namespace darmok
 	int App::shutdown()
 	{
 		_impl->shutdown();
-		// Shutdown bgfx.
-		bgfx::shutdown();
-
 		return 0;
 	}
 

@@ -1,10 +1,20 @@
 #include <darmok/utils.hpp>
 #include <string>
 #include <stdexcept>
+#include <algorithm>
 
 namespace darmok
 {
-    void checkError(bx::Error& err)
+	std::string strToLower(std::string_view sv) noexcept
+	{
+		std::string s(sv);
+		std::transform(s.begin(), s.end(), s.begin(),
+			[](unsigned char c) { return std::tolower(c); }
+		);
+		return s;
+	}
+
+	void checkError(bx::Error& err)
     {
         if (!err.isOk())
         {

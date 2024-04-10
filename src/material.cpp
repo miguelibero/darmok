@@ -1,65 +1,77 @@
 #include <darmok/material.hpp>
 #include <darmok/light.hpp>
-#include <darmok/program_def.hpp>
 #include <darmok/asset.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
 {
-	Material::Material(const ProgramDefinition& progDef) noexcept
-		: _progDef(progDef)
-		, _vertexLayout(progDef.createVertexLayout())
-		, _primitive(MaterialPrimitiveType::Triangle)
+
+	struct MaterialSamplerDefinition
 	{
-		for (auto& pair : _progDef.samplers)
+		std::string name;
+		uint8_t stage;
+	};
+
+	struct MaterialColorUniformDefinition
+	{
+		std::string name;
+		Color defaultValue;
+	};
+
+	static const std::unordered_map<MaterialTextureType, MaterialSamplerDefinition> _materialSamplerDefinitions = {
+		{ MaterialTextureType::Diffuse, { "s_texColor", 0 } }
+	};
+
+	static const std::unordered_map<MaterialColorType, MaterialColorUniformDefinition> _materialColorDefinitions = {
+		{ MaterialColorType::Diffuse, { "u_diffuseColor", Colors::white } }
+	};
+
+
+	Material::Material() noexcept
+		: _primitive(MaterialPrimitiveType::Triangle)
+		, _mainData(32, 0, 0, 0)
+		, _mainHandle{ bgfx::kInvalidHandle }
+	{
+		for (auto& pair : _materialSamplerDefinitions)
 		{
-			_samplerHandles.emplace(pair.first, pair.second.createHandle());
+			_textureHandles.emplace(pair.first, bgfx::createUniform(pair.second.name.c_str(), bgfx::UniformType::Sampler));
 		}
-		for (auto& pair : _progDef.uniforms)
+		for (auto& pair : _materialColorDefinitions)
 		{
-			_uniformHandles.emplace(pair.first, pair.second.createHandle());
+			_colorHandles.emplace(pair.first, bgfx::createUniform(pair.second.name.c_str(), bgfx::UniformType::Vec4));
 		}
+		_mainHandle = bgfx::createUniform("u_material", bgfx::UniformType::Vec4);
 	}
 
 	Material::~Material()
 	{
-		for (auto& pair : _samplerHandles)
+		destroyHandles();
+	}
+
+	void Material::destroyHandles() noexcept
+	{
+		for (auto& pair : _textureHandles)
 		{
 			bgfx::destroy(pair.second);
 		}
-		for (auto& pair : _uniformHandles)
+		_textureHandles.clear();
+		for (auto& pair : _colorHandles)
 		{
 			bgfx::destroy(pair.second);
 		}
-	}
+		_colorHandles.clear();
 
-	void Material::load(AssetContext& assets)
-	{
-		_defaultTextures.clear();
-		for (auto& pair : _progDef.samplers)
+		if (isValid(_mainHandle))
 		{
-			auto& texName = pair.second.defaultTexture;
-			if (!texName.empty())
-			{
-				auto tex = assets.getTextureLoader()(texName);
-				_defaultTextures.emplace(pair.first, tex);
-			}
-		}
-		for (auto& pair : _progDef.uniforms)
-		{
-			_defaultUniforms.emplace(pair.first, pair.second.createDefaultValue());
+			bgfx::destroy(_mainHandle);
+			_mainHandle.idx = bgfx::kInvalidHandle;
 		}
 	}
 
-	const ProgramDefinition& Material::getProgramDefinition() const noexcept
+	void Material::setDefaultTexture(const std::shared_ptr<Texture>& texture) noexcept
 	{
-		return _progDef;
-	}
-
-	const bgfx::VertexLayout& Material::getVertexLayout() const noexcept
-	{
-		return _vertexLayout;
+		_defaultTexture = texture;
 	}
 
 	std::shared_ptr<Texture> Material::getTexture(MaterialTextureType type) const noexcept
@@ -107,73 +119,61 @@ namespace darmok
 
 	uint8_t Material::getShininess() const noexcept
 	{
-		return _shininess;
+		return _mainData.x;
 	}
 
 	Material& Material::setShininess(uint8_t v) noexcept
 	{
-		_shininess = v;
+		_mainData.x = v;
 		return *this;
 	}
 
-	static const std::unordered_map<std::string, MaterialTextureType> _materialTextureSamplers
-	{
-		{ "textureColor", MaterialTextureType::Diffuse },
-	};
-
-	static const std::unordered_map<std::string, MaterialColorType> _materialColorUniforms
-	{
-		{ "diffuseColor", MaterialColorType::Diffuse},
-	};
-
 	void Material::bgfxConfig(bgfx::Encoder& encoder) const noexcept
 	{
-		for (auto& pair : _progDef.samplers)
+		for (auto& pair : _textureHandles)
 		{
-			auto itr1 = _samplerHandles.find(pair.first);
-			if (itr1 == _samplerHandles.end())
+			uint8_t stage = 0;
 			{
-				continue;
-			}
-			auto itr2 = _materialTextureSamplers.find(pair.first);
-			if (itr2 != _materialTextureSamplers.end())
-			{
-				auto itr3 = _textures.find(itr2->second);
-				if (itr3 != _textures.end())
+				auto itr = _materialSamplerDefinitions.find(pair.first);
+				if (itr != _materialSamplerDefinitions.end())
 				{
-					encoder.setTexture(pair.second.stage, itr1->second, itr3->second->getHandle());
-					continue;
+					stage = itr->second.stage;
 				}
 			}
-			auto itr3 = _defaultTextures.find(pair.first);
-			if (itr3 != _defaultTextures.end())
+			auto tex = _defaultTexture;
+			auto itr = _textures.find(pair.first);
+			if (itr != _textures.end())
 			{
-				encoder.setTexture(pair.second.stage, itr1->second, itr3->second->getHandle());
+				tex = itr->second;
+			}
+			if (tex != nullptr)
+			{
+				encoder.setTexture(stage, pair.second, tex->getHandle());
 			}
 		}
-		for (auto& pair : _progDef.uniforms)
+		for (auto& pair : _colorHandles)
 		{
-			auto itr1 = _uniformHandles.find(pair.first);
-			if (itr1 == _uniformHandles.end())
+			auto itr = _colors.find(pair.first);
+			Color c = Colors::magenta;
+			if (itr != _colors.end())
 			{
-				continue;
+				c = itr->second;
 			}
-			auto itr2 = _materialColorUniforms.find(pair.first);
-			if (itr2 != _materialColorUniforms.end())
+			else
 			{
-				auto itr3 = _colors.find(itr2->second);
-				if (itr3 != _colors.end())
+				auto itr = _materialColorDefinitions.find(pair.first);
+				if (itr != _materialColorDefinitions.end())
 				{
-					auto colorVec = Colors::normalize(itr3->second);
-					encoder.setUniform(itr1->second, glm::value_ptr(colorVec));
-					continue;
+					c = itr->second.defaultValue;
 				}
 			}
-			auto itr3 = _defaultUniforms.find(pair.first);
-			if (itr3 != _defaultUniforms.end())
-			{
-				encoder.setUniform(itr1->second, itr3->second.ptr());
-			}
+			encoder.setUniform(pair.second, glm::value_ptr(Colors::normalize(c)));
 		}
+
+		if (isValid(_mainHandle))
+		{
+			encoder.setUniform(_mainHandle, glm::value_ptr(_mainData));
+		}
+
 	}
 }

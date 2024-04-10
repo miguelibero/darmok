@@ -7,16 +7,26 @@
 namespace darmok
 {
 	class IDataLoader;
+	class IVertexLayoutLoader;
 
     class DataProgramLoader final : public IProgramLoader
 	{
 	public:
-		DataProgramLoader(IDataLoader& dataLoader, const std::string& vertexSuffix = "_vertex", const std::string& fragmentSuffix = "_fragment") noexcept;
+		struct Suffixes
+		{
+			std::string vertex;
+			std::string fragment;
+			std::string vertexLayout;
+		};
+
+		static const Suffixes defaultSuffixes;
+
+		DataProgramLoader(IDataLoader& dataLoader, IVertexLayoutLoader& vertexLayoutLoader, Suffixes suffixes = defaultSuffixes) noexcept;
 		std::shared_ptr<Program> operator()(std::string_view name) override;
 	private:
 		IDataLoader& _dataLoader;
-		std::string _vertexSuffix;
-		std::string _fragmentSuffix;
+		IVertexLayoutLoader& _vertexLayoutLoader;
+		Suffixes _suffixes;
 
 		bgfx::ShaderHandle loadShader(const std::string& filePath);
 	};

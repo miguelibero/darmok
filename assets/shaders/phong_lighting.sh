@@ -7,7 +7,7 @@
 uniform vec4 u_lightCount;
 #define u_pointLightCount uint(u_lightCount.x)
 
-uniform vec4 u_ambientLightColor;
+uniform vec4 u_lightingData;
 
 uniform vec4 u_material;
 
@@ -43,7 +43,7 @@ PointLight getPointLight(uint i)
 AmbientLight getAmbientLight()
 {
     AmbientLight light;
-    light.color = u_ambientLightColor.xyz;
+    light.color = u_lightingData.xyz;
     return light;
 }
 

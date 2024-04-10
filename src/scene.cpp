@@ -1,10 +1,7 @@
 #include "scene.hpp"
-#include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
-#include <darmok/light.hpp>
-#include <darmok/window.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 
@@ -48,6 +45,27 @@ namespace darmok
         {
             cam.init(scene, app);
         }
+
+        _registry.on_construct<Camera>().connect<&SceneImpl::onCameraConstructed>(*this);
+        _registry.on_destroy<Camera>().connect< &SceneImpl::onCameraDestroyed>(*this);
+    }
+
+    void SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity)
+    {
+        if (_scene && _app)
+        {
+            auto& cam = registry.get<Camera>(entity);
+            cam.init(_scene.value(), _app.value());
+        }
+    }
+
+    void SceneImpl::onCameraDestroyed(EntityRegistry& registry, Entity entity)
+    {
+        if (_scene && _app)
+        {
+            auto& cam = registry.get<Camera>(entity);
+            cam.shutdown();
+        }
     }
 
     void SceneImpl::shutdown()
@@ -56,19 +74,24 @@ namespace darmok
         {
             updater->shutdown();
         }
+
         _registry.clear();
+
+        _scene = nullptr;
+        _app = nullptr;
+
+        _registry.on_construct<Camera>().disconnect<&SceneImpl::onCameraConstructed>(*this);
+        _registry.on_destroy<Camera>().disconnect< &SceneImpl::onCameraDestroyed>(*this);
     }
 
     void SceneImpl::updateLogic(float dt)
     {
-        auto cams = _registry.view<Camera>();
-        for (auto [entity, cam] : cams.each())
+        for (auto [entity, cam] : _registry.view<Camera>().each())
         {
             cam.update(dt);
         }
 
-        auto transforms = _registry.view<Transform>();
-        for (auto [entity, trans] : transforms.each())
+        for (auto [entity, trans] : _registry.view<Transform>().each())
         {
             trans.update();
         }
@@ -83,7 +106,7 @@ namespace darmok
     {
         auto encoder = bgfx::begin();
         auto& registry = _scene->getRegistry();
-        for (auto [entity, cam] : registry.view<Camera>().each())
+        for (auto [entity, cam] : registry.view<const Camera>().each())
         {
             viewId = cam.render(*encoder, viewId);
         }

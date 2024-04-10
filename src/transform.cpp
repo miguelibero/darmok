@@ -11,7 +11,7 @@
 
 namespace darmok
 {
-    Transform::Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent)
+    Transform::Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent) noexcept
         : _position(glm::vec3())
         , _rotation(glm::vec3())
         , _scale(glm::vec3(1))
@@ -25,7 +25,7 @@ namespace darmok
         setMatrix(mat);
     }
 
-    Transform::Transform(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale, const glm::vec3& pivot, const OptionalRef<Transform>& parent)
+    Transform::Transform(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale, const glm::vec3& pivot, const OptionalRef<Transform>& parent) noexcept
         : _position(position)
         , _rotation(rotation)
         , _scale(scale)
@@ -37,50 +37,49 @@ namespace darmok
     {
     }
 
-    const glm::vec3& Transform::getPosition() const
+    const glm::vec3& Transform::getPosition() const noexcept
     {
         return _position;
     }
 
-    const glm::vec3& Transform::getRotation() const
+    const glm::vec3& Transform::getRotation() const noexcept
     {
         return _rotation;
     }
 
-    const glm::vec3& Transform::getScale() const
+    const glm::vec3& Transform::getScale() const noexcept
     {
         return _scale;
     }
 
-    const glm::vec3& Transform::getPivot() const
+    const glm::vec3& Transform::getPivot() const noexcept
     {
         return _pivot;
     }
 
-    const OptionalRef<Transform>& Transform::getParent() const
+    OptionalRef<const Transform> Transform::getParent() const noexcept
     {
         return _parent;
     }
 
-    OptionalRef<Transform> Transform::getParent()
+    OptionalRef<Transform> Transform::getParent() noexcept
     {
         return _parent;
     }
 
-    void Transform::setPending(bool v)
+    void Transform::setPending(bool v) noexcept
     {
         _matrixUpdatePending = v;
         _inverseUpdatePending = v;
     }
 
-
-    Transform& Transform::setParent(const OptionalRef<Transform>& parent)
+    Transform& Transform::setParent(const OptionalRef<Transform>& parent) noexcept
     {
         _parent = parent;
         return *this;
     }
 
-    Transform& Transform::setPosition(const glm::vec3& v)
+    Transform& Transform::setPosition(const glm::vec3& v) noexcept
     {
         if (v != _position)
         {
@@ -90,7 +89,7 @@ namespace darmok
         return *this;
     }
 
-    Transform& Transform::setRotation(const glm::vec3& v)
+    Transform& Transform::setRotation(const glm::vec3& v) noexcept
     {
         if (v != _rotation)
         {
@@ -100,7 +99,7 @@ namespace darmok
         return *this;
     }
 
-    Transform& Transform::setScale(const glm::vec3& v)
+    Transform& Transform::setScale(const glm::vec3& v) noexcept
     {
         if (v != _scale)
         {
@@ -110,7 +109,7 @@ namespace darmok
         return *this;
     }
 
-    Transform& Transform::setPivot(const glm::vec3& v)
+    Transform& Transform::setPivot(const glm::vec3& v) noexcept
     {
         if (v != _pivot)
         {
@@ -120,7 +119,7 @@ namespace darmok
         return *this;
     }
 
-    bool Transform::updateMatrix()
+    bool Transform::updateMatrix() noexcept
     {
         if (!_matrixUpdatePending)
         {
@@ -140,7 +139,7 @@ namespace darmok
         return true;
     }
 
-    bool Transform::updateInverse()
+    bool Transform::updateInverse() noexcept
     {
         if (!_inverseUpdatePending)
         {
@@ -152,13 +151,13 @@ namespace darmok
         return true;
     }
 
-    void Transform::update()
+    void Transform::update() noexcept
     {
         updateMatrix();
         updateInverse();
     }
 
-    void Transform::setMatrix(const glm::mat4& v)
+    void Transform::setMatrix(const glm::mat4& v) noexcept
     {
         glm::quat rotation{};
         glm::vec3 skew{};
@@ -176,29 +175,29 @@ namespace darmok
         _inverseUpdatePending = true;
     }
 
-    const glm::mat4& Transform::getMatrix()
+    const glm::mat4& Transform::getMatrix() noexcept
     {
         updateMatrix();
         return _matrix;
     }
 
-    const glm::mat4& Transform::getMatrix() const
+    const glm::mat4& Transform::getMatrix() const noexcept
     {
         return _matrix;
     }
 
-    const glm::mat4& Transform::getInverse()
+    const glm::mat4& Transform::getInverse() noexcept
     {
         updateInverse();
         return _inverse;
     }
 
-    const glm::mat4& Transform::getInverse() const
+    const glm::mat4& Transform::getInverse() const noexcept
     {
         return _inverse;
     }
 
-    bool Transform::bgfxConfig(Entity entity, bgfx::Encoder& encoder, EntityRegistry& registry)
+    bool Transform::bgfxConfig(Entity entity, bgfx::Encoder& encoder, const EntityRegistry& registry) noexcept
     {
         auto trans = registry.try_get<Transform>(entity);
         if (trans == nullptr)

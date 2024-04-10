@@ -38,10 +38,14 @@ namespace darmok
     Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept
     {
         _entityFilter = std::move(filter);
+        if (_scene)
+        {
+            _entityFilter->init(_scene->getRegistry());
+        }
         return *this;
     }
 
-    void Camera::bgfxConfig(EntityRegistry& registry, bgfx::ViewId viewId) const noexcept
+    void Camera::bgfxConfig(const EntityRegistry& registry, bgfx::ViewId viewId) const noexcept
     {
         auto projPtr = glm::value_ptr(_matrix);
 
@@ -77,21 +81,41 @@ namespace darmok
         {
             _entityFilter->init(scene.getRegistry());
         }
-        for(auto& renderer : _renderers)
+        if (_renderer != nullptr)
         {
-            renderer->init(*this, scene, app);
+            _renderer->init(*this, scene, app);
+        }
+        for(auto& component : _components)
+        {
+            component->init(*this, scene, app);
+        }
+    }
+
+    void Camera::shutdown()
+    {
+        if (_renderer != nullptr)
+        {
+            _renderer->shutdown();
+        }
+        for (auto& component : _components)
+        {
+            component->shutdown();
         }
     }
 
     void Camera::update(float deltaTime)
     {
-        for (auto& renderer : _renderers)
+        if (_renderer != nullptr)
         {
-            renderer->update(deltaTime);
+            _renderer->update(deltaTime);
+        }
+        for (auto& component : _components)
+        {
+            component->update(deltaTime);
         }
     }
 
-    bgfx::ViewId Camera::render(bgfx::Encoder& encoder, bgfx::ViewId viewId)
+    bgfx::ViewId Camera::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
     {
         if (!_app || !_scene)
         {
@@ -102,17 +126,32 @@ namespace darmok
         win.bgfxConfig(viewId);
         bgfxConfig(registry, viewId);
 
-        for (auto& renderer : _renderers)
+        if(_renderer != nullptr)
         {
-            viewId = renderer->render(encoder, viewId);
+            viewId = _renderer->render(encoder, viewId);
         }
 
         return viewId;
     }
 
-    void Camera::addRenderer(std::unique_ptr<ICameraRenderer>&& renderer)
+    Camera& Camera::setRenderer(std::unique_ptr<ICameraRenderer>&& renderer) noexcept
     {
-        _renderers.push_back(std::move(renderer));
+        if (_scene)
+        {
+            renderer->init(*this, _scene.value(), _app.value());
+        }
+        _renderer = std::move(renderer);
+        return *this;
+    }
+
+    Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept
+    {
+        if (_scene)
+        {
+            component->init(*this, _scene.value(), _app.value());
+        }
+        _components.push_back(std::move(component));
+        return *this;
     }
 
     ViewRect::ViewRect(const ViewVec& size, const ViewVec& origin) noexcept

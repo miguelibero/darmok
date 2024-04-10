@@ -316,7 +316,7 @@ namespace darmok
 		Input() noexcept;
 		Input(const Input& other) = delete;
 		Input(Input&& other) = delete;
-		void process() noexcept;
+		void processBindings() noexcept;
 
 		void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
 		void removeBindings(std::string_view name) noexcept;

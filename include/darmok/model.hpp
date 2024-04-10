@@ -5,7 +5,6 @@
 #include <darmok/color.hpp>
 #include <darmok/material.hpp>
 #include <darmok/mesh.hpp>
-#include <darmok/vertex.hpp>
 #include <string>
 #include <string_view>
 #include <memory>
@@ -214,7 +213,7 @@ namespace darmok
         std::string_view getName() const;
         ModelMaterialTextureCollection getTextures(ModelMaterialTextureType type) const;
         const ModelMaterialPropertyCollection& getProperties() const;
-        std::shared_ptr<Material> load(const ProgramDefinition& progDef);
+        std::shared_ptr<Material> load() noexcept;
         std::optional<Color> getColor(ModelMaterialColorType type) const;
         bool showWireframe() const;
         ModelMaterialShadingModel getShadingModel() const;
@@ -336,7 +335,7 @@ namespace darmok
         const ModelMeshColorsCollection& getColors() const;
         const size_t getVertexCount() const;
 
-        std::shared_ptr<Mesh> load(const ProgramDefinition& progDef);
+        std::shared_ptr<Mesh> load(const bgfx::VertexLayout& layout);
 
     private:
         aiMesh* _ptr;
@@ -355,7 +354,7 @@ namespace darmok
     public:
         ModelNodeMeshCollection(aiNode* ptr, Model& model);
         size_t size() const override;
-        std::vector<std::shared_ptr<Mesh>> load(const ProgramDefinition& progDef);
+        std::vector<std::shared_ptr<Mesh>> load(const bgfx::VertexLayout& layout);
         const ModelMesh& operator[](size_t pos) const override;
         ModelMesh& operator[](size_t pos) override;
     private:
@@ -436,28 +435,28 @@ namespace darmok
         OptionalRef<ModelNode> getChild(const std::string_view& path);
         OptionalRef<ModelCamera> getCamera();
         OptionalRef<ModelLight> getLight();
-        Entity addToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent = entt::null);
+        Entity addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent = entt::null);
 
         template<typename C>
-        Entity addToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent, C callback)
+        Entity addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent, C callback)
         {
-            auto entity = doAddToScene(scene, progDef, parent);
+            auto entity = doAddToScene(scene, layout, parent);
             callback(*this, entity);
             for (auto& child : getChildren())
             {
-                child.addToScene(scene, progDef, entity, callback);
+                child.addToScene(scene, layout, entity, callback);
             }
             return entity;
         }
 
         template<typename C>
-        Entity addToScene(Scene& scene, const ProgramDefinition& progDef, C callback)
+        Entity addToScene(Scene& scene, const bgfx::VertexLayout& layout, C callback)
         {
-            auto entity = doAddToScene(scene, progDef);
+            auto entity = doAddToScene(scene, layout);
             callback(*this, entity);
             for (auto& child : getChildren())
             {
-                child.addToScene(scene, progDef, entity, callback);
+                child.addToScene(scene, layout, entity, callback);
             }
             return entity;
         }
@@ -469,7 +468,7 @@ namespace darmok
         std::string _basePath;
         Model& _model;
 
-        Entity doAddToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent = entt::null);
+        Entity doAddToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent = entt::null);
     };
 
     class ModelCameraCollection final : public MemReadOnlyCollection<ModelCamera>
@@ -540,18 +539,18 @@ namespace darmok
         ModelMaterialCollection& getMaterials();
         ModelCameraCollection& getCameras();
         ModelLightCollection& getLights();
-        Entity addToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent = entt::null);
+        Entity addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent = entt::null);
 
         template<typename C>
-        Entity addToScene(Scene& scene, const ProgramDefinition& progDef, Entity parent, C callback)
+        Entity addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent, C callback)
         {
-            return getRootNode().addToScene(scene, progDef, parent, callback);
+            return getRootNode().addToScene(scene, layout, parent, callback);
         }
 
         template<typename C>
-        Entity addToScene(Scene& scene, const ProgramDefinition& progDef, C callback)
+        Entity addToScene(Scene& scene, const bgfx::VertexLayout& layout, C callback)
         {
-            return getRootNode().addToScene(scene, progDef, callback);
+            return getRootNode().addToScene(scene, layout, callback);
         }
 
     private:

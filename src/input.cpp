@@ -525,7 +525,7 @@ namespace darmok
 
 	size_t GamepadBindingKey::hash() const noexcept
 	{
-		return to_underlying(button) << gamepad;
+		return ((size_t)to_underlying(button)) << gamepad;
 	}
 
 	size_t InputBinding::hashKey(const InputBindingKey& key) noexcept
@@ -620,7 +620,7 @@ namespace darmok
 		}
 	}
 
-	void InputImpl::process() noexcept
+	void InputImpl::processBindings() noexcept
 	{
 		for (auto& elm : _bindings)
 		{
@@ -714,9 +714,9 @@ namespace darmok
 		_impl->removeBindings(name);
 	}
 
-	void Input::process() noexcept
+	void Input::processBindings() noexcept
 	{
-		_impl->process();
+		_impl->processBindings();
 	}
 
 	Keyboard& Input::getKeyboard() noexcept

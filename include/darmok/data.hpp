@@ -66,8 +66,6 @@ namespace darmok
         [[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
         void clear() noexcept;
 
-        static Data reuse(Data&& data, size_t size) noexcept;
-
         template<typename T>
         static Data copy(const std::vector<T>& v, bx::AllocatorI* alloc = nullptr) noexcept
         {
@@ -114,21 +112,4 @@ namespace darmok
 		virtual ~IDataLoader() = default;
 		virtual result_type operator()(std::string_view name) = 0;
 	};
-
-    template<typename T>
-    class DataWriter final
-    {
-    public:
-        DataWriter(const std::vector<T>& definition, Data& data);
-
-        template<typename T>
-        DataWriter& set(const T& type, T* v)
-        {
-        }
-
-    private:
-        const std::vector<T>& _definition;
-        Data& _data;
-    };
-
 }

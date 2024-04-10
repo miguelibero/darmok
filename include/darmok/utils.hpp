@@ -8,7 +8,7 @@
 #include <memory>
 #include <stdexcept>
 #include <unordered_map>
-
+#include <string_view>
 
 namespace darmok
 {
@@ -18,6 +18,7 @@ namespace darmok
         return static_cast<std::underlying_type_t<E>>(e);
     }
 
+    std::string strToLower(std::string_view sv) noexcept;
     void checkError(bx::Error& err);
 
     template<typename V>
@@ -108,6 +109,35 @@ namespace darmok
         [[nodiscard]] virtual size_t size() const = 0;
         [[nodiscard]] virtual const V& operator[](size_t pos) const = 0;
         [[nodiscard]] virtual V& operator[](size_t pos) = 0;
+    };
+
+    template<typename V>
+    class ArrayCollection final : public BaseReadOnlyCollection<V>
+    {
+    public:
+        ArrayCollection(V* ptr, size_t size)
+            : _ptr(ptr)
+        {
+        }
+
+        size_t size() const override
+        {
+            return _size;
+        }
+
+        const V& operator[](size_t pos) const override
+        {
+            return _ptr[pos];
+        }
+
+        V& operator[](size_t pos) override
+        {
+            return _ptr[pos];
+        }
+
+    private:
+        V* _ptr;
+        size_t _size;
     };
 
     template<typename T>

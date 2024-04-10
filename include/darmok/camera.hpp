@@ -8,16 +8,20 @@
 
 namespace darmok
 {
-    class BX_NO_VTABLE ICameraRenderer
+    class BX_NO_VTABLE ICameraComponent
     {
     public:
-        virtual ~ICameraRenderer() = default;
+        virtual ~ICameraComponent() = default;
         virtual void init(Camera& cam, Scene& scene, App& app) { };
         virtual void shutdown() { }
         virtual void update(float deltaTime) { }
-        virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
     };
 
+    class BX_NO_VTABLE ICameraRenderer : public ICameraComponent
+    {
+    public:
+        virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
+    };
 
     class Camera final
     {
@@ -39,36 +43,53 @@ namespace darmok
         void filterEntityView(EntityRuntimeView& view) const noexcept;
 
         template<typename T>
-        EntityRuntimeView createEntityView(EntityRegistry& registry) const noexcept
+        EntityRuntimeView createEntityView(const EntityRegistry& registry) const noexcept
         {
             EntityRuntimeView view;
-            view.iterate(registry.storage<T>());
+            auto s = registry.storage(entt::type_hash<T>::value());
+            if (s != nullptr)
+            {
+                view.iterate(*s);
+            }
             filterEntityView(view);
             return view;
         }
 
+        void init(Scene& scene, App& app);
+        void update(float deltaTime);
+        void shutdown();
+        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
+
+        Camera& setRenderer(std::unique_ptr<ICameraRenderer>&& renderer) noexcept;
+        Camera& addComponent(std::unique_ptr<ICameraComponent>&& renderer) noexcept;
+
         template<typename T, typename... A>
-        T& addRenderer(A&&... args)
+        T& setRenderer(A&&... args)
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addRenderer(std::move(ptr));
+            setRenderer(std::move(ptr));
             return ref;
         }
 
-        void init(Scene& scene, App& app);
-        void update(float deltaTime);
-        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId);
-        void addRenderer(std::unique_ptr<ICameraRenderer>&& renderer);
+        template<typename T, typename... A>
+        T& addComponent(A&&... args)
+        {
+            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+            auto& ref = *ptr;
+            addComponent(std::move(ptr));
+            return ref;
+        }
 
     private:
         glm::mat4 _matrix;
         std::unique_ptr<IEntityFilter> _entityFilter;
-        std::vector<std::unique_ptr<ICameraRenderer>> _renderers;
+        std::unique_ptr<ICameraRenderer> _renderer;
+        std::vector<std::unique_ptr<ICameraComponent>> _components;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
 
-        void bgfxConfig(EntityRegistry& registry, bgfx::ViewId viewId) const noexcept;
+        void bgfxConfig(const EntityRegistry& registry, bgfx::ViewId viewId) const noexcept;
     };
 
     using ViewVec = glm::vec<2, uint16_t>;

@@ -10,8 +10,8 @@ namespace darmok
     class ImageTextureLoader final : public ITextureLoader
 	{
 	public:
-		ImageTextureLoader(IImageLoader& imgLoader);
-		std::shared_ptr<Texture> operator()(std::string_view name, uint64_t flags = defaultTextureCreationFlags) override;
+		ImageTextureLoader(IImageLoader& imgLoader) noexcept;
+		std::shared_ptr<Texture> operator()(std::string_view name, uint64_t flags = defaultTextureCreationFlags) noexcept override;
 	private:
 		IImageLoader& _imgLoader;
 		bx::AllocatorI* _allocator;
@@ -20,7 +20,7 @@ namespace darmok
     class TexturePackerTextureAtlasLoader final : public ITextureAtlasLoader
 	{
 	public:
-		TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader);
+		TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept;
 		std::shared_ptr<TextureAtlas> operator()(std::string_view name, uint64_t flags = defaultTextureCreationFlags) override;
 	private:
 		IDataLoader& _dataLoader;
