@@ -19,3 +19,12 @@
 [submodule "lib/rapidjson"]
 	path = lib/rapidjson
 	url = git@github.com:Tencent/rapidjson.git
+[submodule "lib/wren"]
+	path = lib/wren
+	url = git@github.com:wren-lang/wren.git
+[submodule "lib/ozz"]
+	path = lib/ozz
+	url = git@github.com:guillaumeblanc/ozz-animation.git
+[submodule "lib/wrenbind17"]
+	path = lib/wrenbind17
+	url = git@github.com:matusnovak/wrenbind17.git
