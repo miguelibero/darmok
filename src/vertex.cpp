@@ -21,15 +21,9 @@ namespace darmok
         }
     }
 
-    bool VertexDataWriter::load(Data&& data) noexcept
+    void VertexDataWriter::load(Data&& data) noexcept
     {
-        auto size = _layout.getSize(_size);
-        if (data.size() >= size)
-        {
-            _data = std::move(data);
-            return true;
-        }
-        return false;
+        _data = std::move(data);
     }
 
     void* VertexDataWriter::prepareData() noexcept
@@ -37,7 +31,7 @@ namespace darmok
         auto size = _layout.getSize(_size);
         if (_data.size() < size)
         {
-            _data = Data(size, _alloc);
+            _data.resize(size);
         }
         return _data.ptr();
     }

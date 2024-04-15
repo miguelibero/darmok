@@ -132,6 +132,37 @@ namespace darmok
         _ptr = nullptr;
     }
 
+    void Data::resize(size_t size) noexcept
+    {
+        if (size == _size)
+        {
+            return;
+        }
+        if (size == 0)
+        {
+            clear();
+            return;
+        }
+        void* ptr = nullptr;
+        if (empty())
+        {
+            ptr = malloc(size, _alloc);
+        }
+        else if (_alloc == nullptr)
+        {
+            ptr = std::realloc(_ptr, size);
+        }
+        else
+        {
+            ptr = bx::realloc(_alloc, _ptr, size);
+        }
+        if (ptr != nullptr)
+        {
+            _size = size;
+            _ptr = ptr;
+        }
+    }
+
     const bgfx::Memory* Data::makeRef() const noexcept
     {
         if (empty())

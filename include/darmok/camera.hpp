@@ -31,6 +31,10 @@ namespace darmok
         Camera& setMatrix(const glm::mat4& matrix) noexcept;
         Camera& setProjection(float fovy, float aspect, float near, float far) noexcept;
         Camera& setProjection(float fovy, float aspect, float near = 0.f) noexcept;
+        
+        Camera& setProjection(float fovy, const glm::uvec2& size, float near, float far) noexcept;
+        Camera& setProjection(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
+
         Camera& setOrtho(float left, float right, float bottom, float top, float near = 0.f, float far = bx::kFloatLargest, float offset = 0.f) noexcept;
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 

@@ -46,7 +46,7 @@ namespace darmok
         
     public:
         VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, bx::AllocatorI* alloc = nullptr) noexcept;
-        bool load(Data&& data) noexcept;
+        void load(Data&& data) noexcept;
 
         template<typename Iter, typename Filter>
         VertexDataWriter& write(bgfx::Attrib::Enum attr, Iter begin, Iter end, Filter filter) noexcept

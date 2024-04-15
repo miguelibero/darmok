@@ -5,8 +5,10 @@
 namespace darmok
 {
 	class AssetContextImpl;
+	class IDataLoader;
 	class IImageLoader;
 	class IProgramLoader;
+	class StandardProgramLoader;
 	class ITextureLoader;
 	class ITextureAtlasLoader;
 	class IModelLoader;
@@ -19,12 +21,13 @@ namespace darmok
 		AssetContext() noexcept;
 		~AssetContext() noexcept;
 
+		[[nodiscard]] IDataLoader& getDataLoader() noexcept;
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
+		[[nodiscard]] StandardProgramLoader& getStandardProgramLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
-		[[nodiscard]] IVertexLayoutLoader& getVertexLayoutLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;

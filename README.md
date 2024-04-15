@@ -14,6 +14,7 @@ C++ game engine combining libraries & tools that I like
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [cereal](https://uscilab.github.io/cereal/) for serialization
 * [wren](https://github.com/wren-lang/wren) as the scripting layer
+    * using [wrenbind17](https://github.com/matusnovak/wrenbind17) for convenience
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [Box2D](https://box2d.org/) for 2D physics
@@ -49,25 +50,28 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * bgfx window setup (GLFW on windows & linux)
 * scene using entt
 * update logic methods with delta time
+* loading shader vertex layout from json
 * sprites and spritesheets
+* loading meshes using assimp (FBX, etc...)
 * renderer
-    * sprite, unlit
+    * unlit
     * forward with phong lighting (point, ambient)
-* loading program definitions from json
 
 ### Next tasks
-* forward renderer
-    * other types of lights
-    * pbr lighting
+* skeletal animations
+* other types of lights
+* pbr lighting
 * wren scripting
-* physics
 * deferred renderer
-    * phong lighting
-    * pbr lighting
-* mesh serialization
+* physics
 * spine animations loading
+* distance field fonts
+* mesh serialization
 
 ## Interesting Related Projects
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
 * [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
+* scripting alternatives
+    * [pocketpy](https://pocketpy.dev/) - python as a scripting language
+    * [lua sol2](https://github.com/ThePhD/sol2) - lua with advanced C++ bindings

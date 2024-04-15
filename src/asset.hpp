@@ -39,8 +39,10 @@ namespace darmok
 	{
 	public:
 		AssetContextImpl();
+		[[nodiscard]] IDataLoader& getDataLoader() noexcept;
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
+		[[nodiscard]] StandardProgramLoader& getStandardProgramLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
@@ -56,6 +58,7 @@ namespace darmok
 		DataImageLoader _imageLoader;
 		JsonDataVertexLayoutLoader _vertexLayoutLoader;
 		DataProgramLoader _programLoader;
+		StandardProgramLoader _standardProgramLoader;
 		ImageTextureLoader _textureLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		AssimpModelLoader _modelLoader;

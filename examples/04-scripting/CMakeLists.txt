@@ -1,27 +1,19 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(
-  darmok-example-scene
+  darmok-example-scripting
   LANGUAGES CXX
-  DESCRIPTION "scene example darmok project"
+  DESCRIPTION "scripting example darmok project"
 )
 
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
-addCopySource(assets/brick.png)
-addCopySource(assets/darmok.jpg)
-addCopySource(assets/engine.png)
-addCopySource(assets/warrior-0.xml)
-addCopySource(assets/warrior-0.png)
+addCopySource(assets/main.lua main.lua)
 
 set(sources
   src/main.cpp
-  assets/brick.png
-  assets/darmok.jpg
-  assets/engine.png
-  assets/warrior-0.xml
-  assets/warrior-0.png
+  assets/main.lua
 )
 
 add_executable(
@@ -35,6 +27,6 @@ target_compile_definitions(
 )
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
-target_link_libraries (${PROJECT_NAME} LINK_PUBLIC darmok)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC darmok)
 
 

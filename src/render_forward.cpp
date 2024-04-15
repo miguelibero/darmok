@@ -1,3 +1,5 @@
+#pragma once
+
 #include <darmok/render_forward.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>

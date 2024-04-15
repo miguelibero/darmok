@@ -812,11 +812,12 @@ namespace darmok
 
 	void ModelLight::addToScene(Scene& scene, Entity entity) noexcept
 	{
+		auto& registry = scene.getRegistry();
 		switch (getType())
 		{
 		case ModelLightType::Point:
 		{
-			scene.addComponent<PointLight>(entity)
+			registry.emplace<PointLight>(entity)
 				.setIntensity(getIntensity())
 				.setDiffuseColor(getColor(ModelLightColorType::Diffuse))
 				.setSpecularColor(getColor(ModelLightColorType::Specular))
@@ -824,7 +825,7 @@ namespace darmok
 			auto ambient = getColor(ModelLightColorType::Ambient);
 			if (ambient != Colors::black)
 			{
-				scene.addComponent<AmbientLight>(entity)
+				registry.emplace<AmbientLight>(entity)
 					.setIntensity(getIntensity())
 					.setColor(ambient)
 					;
@@ -832,7 +833,7 @@ namespace darmok
 			break;
 		}
 		case ModelLightType::Ambient:
-			scene.addComponent<AmbientLight>(entity)
+			registry.emplace<AmbientLight>(entity)
 				.setIntensity(getIntensity())
 				.setColor(getColor(ModelLightColorType::Ambient))
 				;
@@ -1017,14 +1018,15 @@ namespace darmok
 
 	Entity ModelNode::doAddToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent)
 	{
-		auto entity = scene.createEntity();
+		auto entity = scene.getRegistry().create();
 		auto transMat = getTransform();
+		auto& registry = scene.getRegistry();
 
 		auto cam = getCamera();
 		if (cam.hasValue())
 		{
 			transMat *= cam->getViewMatrix();
-			scene.addComponent<Camera>(entity, cam->getProjectionMatrix());
+			registry.emplace<Camera>(entity, cam->getProjectionMatrix());
 		}
 
 		auto light = getLight();
@@ -1037,11 +1039,11 @@ namespace darmok
 		auto& meshes = getMeshes();
 		if (!meshes.empty())
 		{
-			scene.addComponent<MeshComponent>(entity, meshes.load(layout));
+			registry.emplace<MeshComponent>(entity, meshes.load(layout));
 		}
 
-		auto parentTrans = scene.tryGetComponent<Transform>(parent);
-		scene.addComponent<Transform>(entity, transMat, parentTrans);
+		auto parentTrans = registry.try_get<Transform>(parent);
+		registry.emplace<Transform>(entity, transMat, parentTrans);
 		return entity;
 	}
 

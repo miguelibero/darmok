@@ -59,12 +59,6 @@ namespace darmok
 		[[nodiscard]] AssetContext& getAssets() noexcept;
 		[[nodiscard]] const AssetContext& getAssets() const noexcept;
 
-	protected:
-		void configure(const AppConfig& config) noexcept;
-
-		virtual void updateLogic(float deltaTime);
-		[[nodiscard]] virtual bgfx::ViewId render(bgfx::ViewId viewId);
-
 		void toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
@@ -77,6 +71,13 @@ namespace darmok
 			addComponent(std::unique_ptr<AppComponent>(ptr));
 			return *ptr;
 		}
+
+	protected:
+		void configure(const AppConfig& config) noexcept;
+
+		virtual void updateLogic(float deltaTime);
+		[[nodiscard]] virtual bgfx::ViewId render(bgfx::ViewId viewId);
+
 	private:
 		std::unique_ptr<AppImpl> _impl;
 	};

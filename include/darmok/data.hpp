@@ -65,6 +65,7 @@ namespace darmok
 
         [[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
         void clear() noexcept;
+        void resize(size_t size) noexcept;
 
         template<typename T>
         static Data copy(const std::vector<T>& v, bx::AllocatorI* alloc = nullptr) noexcept

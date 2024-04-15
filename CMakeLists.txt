@@ -20,6 +20,19 @@ set(BGFX_BUILD_EXAMPLES OFF)
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
 
+macro(addExportTargets NAME TARGETS)
+  install(TARGETS ${TARGETS} EXPORT ${NAME}Targets)
+  install(EXPORT ${NAME}Targets FILE ${NAME}Targets.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAME})
+endmacro()
+
+macro(addCopySource SRC DST)
+  add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/${DST}
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} ${CMAKE_BINARY_DIR}/${DST}
+    MAIN_DEPENDENCY ${SRC})
+endmacro()
+
 set(SHADERS "")
 set(SHADER_INCLUDES "")
 
@@ -93,6 +106,7 @@ set(SOURCES
   ${SRC_DIR}/vertex.cpp
   ${SRC_DIR}/render_forward.cpp
   ${SRC_DIR}/render_deferred.cpp
+  ${SRC_DIR}/scripting.cpp
 )
 
 set(HEADERS
@@ -119,6 +133,7 @@ set(HEADERS
   ${INCLUDE_DIR}/vertex.hpp
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
+  ${INCLUDE_DIR}/scripting.hpp
 )
 
 set(LIB_NAME darmok)
@@ -283,22 +298,7 @@ endif()
 add_subdirectory(${LIBS_DIR}/glm)
 target_link_libraries(${LIB_NAME} PUBLIC glm)
 target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
-
-install(
-  TARGETS
-  glm glm-header-only
-  EXPORT
-  glmTargets
-)
-install(
-  EXPORT
-  glmTargets
-  FILE
-  glmTargets.cmake
-  DESTINATION
-  ${CMAKE_INSTALL_LIBDIR}/cmake/glm
-)
-set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 20)
+addExportTargets("glm" "glm;glm-header-only")
 
 # bgfx
 target_link_libraries(${LIB_NAME} PUBLIC bgfx bimg bimg_decode bx)
@@ -321,3 +321,31 @@ target_link_libraries(${LIB_NAME} PRIVATE assimp)
 add_subdirectory(${LIBS_DIR}/pugixml)
 target_link_libraries(${LIB_NAME} PRIVATE pugixml)
 target_compile_definitions(pugixml INTERFACE PUGIXML_HEADER_ONLY) # also included in assimp
+
+# luajit
+add_subdirectory(${LIBS_DIR}/luajit)
+
+
+# sol2
+add_subdirectory(${LIBS_DIR}/sol2)
+target_link_libraries(${LIB_NAME} PRIVATE sol2)
+
+# ozz
+option(ozz_build_fbx "Build Fbx pipeline (Requires Fbx SDK)" ON)
+option(ozz_build_gltf "Build glTF importer (Requires c++11)" ON)
+option(ozz_build_samples "Build samples" ON)
+option(ozz_build_howtos "Build howtos" ON)
+option(ozz_build_tests "Build unit tests" ON)
+option(ozz_build_msvc_rt_dll "Select msvc DLL runtime library" OFF)
+set(ozz_build_fbx OFF)
+set(ozz_build_gltf OFF)
+set(ozz_build_samples OFF)
+set(ozz_build_howtos OFF)
+set(ozz_build_tests OFF)
+set(ozz_build_msvc_rt_dll ON)
+add_subdirectory(${LIBS_DIR}/ozz)
+target_link_libraries(${LIB_NAME} PRIVATE
+  ozz_geometry
+  ozz_animation_offline
+  ozz_options)
+addExportTargets("ozz" "ozz_base;ozz_geometry;ozz_animation;ozz_animation_offline;ozz_options")

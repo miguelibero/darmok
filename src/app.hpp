@@ -32,8 +32,6 @@ namespace darmok
 		
 		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
 		
-		[[nodiscard]] const std::string& getCurrentDir() const noexcept;
-
 		[[nodiscard]] Input& getInput() noexcept;
 		[[nodiscard]] const Input& getInput() const noexcept;
 
@@ -72,7 +70,6 @@ namespace darmok
 		[[nodiscard]] float updateTimePassed() noexcept;
 		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
 		
-		std::string _currentDir;
 		static const std::string _bindingsName;
 	
 		bool _exit;

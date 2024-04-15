@@ -9,12 +9,13 @@ project(
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
-set(ASSETS_DIR ${CMAKE_BINARY_DIR}/assets)
-FILE(COPY assets/human.fbx DESTINATION ${ASSETS_DIR})
-FILE(COPY assets/human.png DESTINATION ${ASSETS_DIR})
+addCopySource(assets/human.fbx)
+addCopySource(assets/human.png)
 
 set(sources
   src/main.cpp
+  assets/human.fbx
+  assets/human.png
 )
 
 add_executable(

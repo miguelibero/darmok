@@ -26,7 +26,6 @@ namespace darmok
 		[[nodiscard]] const bgfx::ProgramHandle& getHandle() const noexcept;
 		const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
-		static std::shared_ptr<Program> createStandard(StandardProgramType type) noexcept;
 		static void readVertexLayoutJson(std::string_view json, bgfx::VertexLayout& layout) noexcept;
 		static bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept;
 		static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
@@ -43,5 +42,12 @@ namespace darmok
 
 		virtual ~IProgramLoader() = default;
 		virtual result_type operator()(std::string_view name) = 0;
+	};
+
+	class StandardProgramLoader final
+	{
+	public:
+		using result_type = std::shared_ptr<Program>;
+		virtual result_type operator()(StandardProgramType type) noexcept;
 	};
 }

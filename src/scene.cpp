@@ -40,8 +40,7 @@ namespace darmok
             updater->init(scene, app);
         }
 
-        auto& registry = _scene->getRegistry();
-        for (auto [entity, cam] : registry.view<Camera>().each())
+        for (auto [entity, cam] : _registry.view<Camera>().each())
         {
             cam.init(scene, app);
         }
@@ -105,8 +104,7 @@ namespace darmok
     bgfx::ViewId SceneImpl::render(bgfx::ViewId viewId)
     {
         auto encoder = bgfx::begin();
-        auto& registry = _scene->getRegistry();
-        for (auto [entity, cam] : registry.view<const Camera>().each())
+        for (auto [entity, cam] : _registry.view<const Camera>().each())
         {
             viewId = cam.render(*encoder, viewId);
         }
@@ -114,19 +112,35 @@ namespace darmok
         return viewId;
     }
 
-    Scene::Scene()
+    Scene::Scene() noexcept
     : _impl(std::make_unique<SceneImpl>())
     {
     }
 
-    Scene::~Scene()
+    Scene::~Scene() noexcept
     {
     }
 
-    Entity Scene::createEntity()
+    /*
+    Entity Scene::createEntity() noexcept
     {
         return _impl->getRegistry().create();
     }
+
+    void Scene::destroyEntity(Entity entity) noexcept
+    {
+        _impl->getRegistry().destroy(entity);
+    }
+
+    const SceneImpl& Scene::getImpl() const noexcept
+    {
+        return *_impl;
+    }
+
+    SceneImpl& Scene::getImpl() noexcept
+    {
+        return *_impl;
+    }*/
 
     EntityRegistry& Scene::getRegistry()
     {

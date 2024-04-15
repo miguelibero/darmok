@@ -20,6 +20,11 @@ namespace darmok
         {
         }
 
+        OptionalRef(const std::optional<T>& value) noexcept
+            : _value(value.has_value() ? &value.value() : nullptr)
+        {
+        }
+
         OptionalRef(T* value) noexcept
             : _value(value)
         {

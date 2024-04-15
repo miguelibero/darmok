@@ -53,9 +53,12 @@ namespace darmok
     class Scene final
     {
     public:
-        Scene();
-        ~Scene();
-        Entity createEntity();
+        Scene() noexcept;
+        ~Scene() noexcept;
+
+        /*
+        Entity createEntity() noexcept;
+        void destroyEntity(Entity entity) noexcept;
 
         template<typename T, typename... A>
         decltype(auto) addComponent(const Entity entity, A&&... args)
@@ -64,9 +67,21 @@ namespace darmok
         }
 
         template<typename T>
+        decltype(auto) copyComponent(const Entity entity, const T& comp)
+        {
+            return getRegistry().insert(entity, entity, comp);
+        }
+
+        template<typename T>
         decltype(auto) getComponent(const Entity entity)
         {
             return getRegistry().get<T>(entity);
+        }
+
+        template<typename T>
+        decltype(auto) getComponentView()
+        {
+            return getRegistry().view<T>();
         }
 
         template<typename T>
@@ -83,6 +98,7 @@ namespace darmok
             addLogicUpdater(std::move(ptr));
             return ref;
         }
+        */
 
         void init(App& app);
         void updateLogic(float dt);

@@ -41,51 +41,6 @@ namespace darmok
 		return _layout;
 	}
 
-	static const bgfx::EmbeddedShader _embeddedShaders[] =
-	{
-		BGFX_EMBEDDED_SHADER(unlit_vertex),
-		BGFX_EMBEDDED_SHADER(unlit_fragment),
-		BGFX_EMBEDDED_SHADER(forward_phong_vertex),
-		BGFX_EMBEDDED_SHADER(forward_phong_fragment),
-		BGFX_EMBEDDED_SHADER_END()
-	};
-
-	static const std::unordered_map<StandardProgramType, std::string> _embeddedShaderNames
-	{
-		{StandardProgramType::Unlit, "unlit"},
-		{StandardProgramType::ForwardPhong, "forward_phong"},
-	};
-
-	static const std::unordered_map<StandardProgramType, const char*> _embeddedShaderVertexLayouts
-	{
-		{StandardProgramType::Unlit, unlit_vertex_layout},
-		{StandardProgramType::ForwardPhong, forward_phong_vertex_layout},
-	};
-
-	std::shared_ptr<Program> Program::createStandard(StandardProgramType type) noexcept
-	{
-		auto itr = _embeddedShaderNames.find(type);
-		if (itr == _embeddedShaderNames.end())
-		{
-			return nullptr;
-		}
-		auto renderer = bgfx::getRendererType();
-		auto handle = bgfx::createProgram(
-			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_vertex").c_str()),
-			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_fragment").c_str()),
-			true
-		);
-
-		bgfx::VertexLayout layout;
-		auto itr2 = _embeddedShaderVertexLayouts.find(type);
-		if (itr2 != _embeddedShaderVertexLayouts.end())
-		{
-			readVertexLayoutJson(itr2->second, layout);
-		};
-		
-		return std::make_shared<Program>(handle, layout);
-	}
-
 	static std::optional<int> getNameSuffixCounter(const std::string_view name, const std::string_view prefix) noexcept
 	{
 		if (!name.starts_with(prefix))
@@ -281,6 +236,53 @@ namespace darmok
 		}
 		auto handle = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
 		auto layout = _vertexLayoutLoader(nameStr + _suffixes.vertexLayout);
+		return std::make_shared<Program>(handle, layout);
+	}
+
+
+	static const bgfx::EmbeddedShader _embeddedShaders[] =
+	{
+		BGFX_EMBEDDED_SHADER(unlit_vertex),
+		BGFX_EMBEDDED_SHADER(unlit_fragment),
+		BGFX_EMBEDDED_SHADER(forward_phong_vertex),
+		BGFX_EMBEDDED_SHADER(forward_phong_fragment),
+		BGFX_EMBEDDED_SHADER_END()
+	};
+
+	static const std::unordered_map<StandardProgramType, std::string> _embeddedShaderNames
+	{
+		{StandardProgramType::Unlit, "unlit"},
+		{StandardProgramType::ForwardPhong, "forward_phong"},
+	};
+
+	static const std::unordered_map<StandardProgramType, const char*> _embeddedShaderVertexLayouts
+	{
+		{StandardProgramType::Unlit, unlit_vertex_layout},
+		{StandardProgramType::ForwardPhong, forward_phong_vertex_layout},
+	};
+
+
+	std::shared_ptr<Program> StandardProgramLoader::operator()(StandardProgramType type) noexcept
+	{
+		auto itr = _embeddedShaderNames.find(type);
+		if (itr == _embeddedShaderNames.end())
+		{
+			return nullptr;
+		}
+		auto renderer = bgfx::getRendererType();
+		auto handle = bgfx::createProgram(
+			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_vertex").c_str()),
+			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_fragment").c_str()),
+			true
+		);
+
+		bgfx::VertexLayout layout;
+		auto itr2 = _embeddedShaderVertexLayouts.find(type);
+		if (itr2 != _embeddedShaderVertexLayouts.end())
+		{
+			Program::readVertexLayoutJson(itr2->second, layout);
+		};
+
 		return std::make_shared<Program>(handle, layout);
 	}
 }

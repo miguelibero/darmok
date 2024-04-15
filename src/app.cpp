@@ -6,7 +6,11 @@
 #include <darmok/app.hpp>
 #include <bx/filepath.h>
 #include <bx/timer.h>
+#include <iostream>
 
+#if BX_PLATFORM_WINDOWS
+#include <Windows.h>
+#endif
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
@@ -85,10 +89,6 @@ namespace darmok
 
 	void AppImpl::init(App& app, const std::vector<std::string>& args)
 	{
-		bx::FilePath filePath(args[0].c_str());
-		auto basePath = filePath.getPath();
-		_currentDir = std::string(basePath.getPtr(), basePath.getLength());
-
 		addBindings();
 
 		for (auto& component : _components)
@@ -129,12 +129,7 @@ namespace darmok
 		return viewId;
 	}
 
-	const std::string AppImpl::_bindingsName = "main";
-
-	const std::string& AppImpl::getCurrentDir() const noexcept
-	{
-		return _currentDir;
-	}
+	const std::string AppImpl::_bindingsName = "debug";
 
 	void AppImpl::removeBindings() noexcept
 	{
@@ -169,7 +164,7 @@ namespace darmok
 		auto screenshot = [this]() {
 			time_t timeVal;
 			time(&timeVal);
-			auto filePath = getCurrentDir() + "temp/screenshot-" + std::to_string(timeVal);
+			auto filePath = "temp/screenshot-" + std::to_string(timeVal);
 			bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filePath.c_str());
 		};
 
@@ -187,7 +182,7 @@ namespace darmok
 			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftCtrl	},		true, debugIfh },
 			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightCtrl },		true, debugIfh },
 			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftShift },		true, disableDebug },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightShift },	true, disableDebug },
+			{ KeyboardBindingKey{ KeyboardKey::F1,			KeyboardModifiers::RightShift }, true, disableDebug },
 			{ KeyboardBindingKey { KeyboardKey::F3,			KeyboardModifiers::None},			true, debugWireframe },
 			{ KeyboardBindingKey { KeyboardKey::F6,			KeyboardModifiers::None},			true, debugProfiler },
 			{ KeyboardBindingKey { KeyboardKey::Print,		KeyboardModifiers::None},			true, screenshot },
@@ -255,20 +250,58 @@ namespace darmok
 	}
 #endif // BX_PLATFORM_EMSCRIPTEN
 
+	static void logAppException(std::string_view phase, const std::exception& ex) noexcept
+	{
+		auto msg = std::string("[DARMOK] exception running app ") + std::string(phase) + ": " + ex.what();
+		std::cerr << msg << std::endl;
+#if BX_PLATFORM_WINDOWS
+		OutputDebugString(msg.c_str());
+#endif
+	}
+
 	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
 	{
-		app->init(args);
-
-#if BX_PLATFORM_EMSCRIPTEN
-		s_app = app.get();
-		emscripten_set_main_loop(&updateApp, -1, 1);
-#else
-		while (app->update())
+		try
 		{
+			app->init(args);
 		}
-#endif // BX_PLATFORM_EMSCRIPTEN
+		catch (const std::exception& ex)
+		{
+			logAppException("init", ex);
+			return -1;
+		}
 
-		auto result = app->shutdown();
+		int result = 0;
+
+		try
+		{
+#if BX_PLATFORM_EMSCRIPTEN
+			s_app = app.get();
+			emscripten_set_main_loop(&updateApp, -1, 1);
+#else
+			while (app->update())
+			{
+			}
+#endif // BX_PLATFORM_EMSCRIPTEN
+		}
+		catch(const std::exception& ex)
+		{
+			logAppException("update", ex);
+			result = -1;
+		}
+
+		if (result == 0)
+		{
+			try
+			{
+				result = app->shutdown();
+			}
+			catch (const std::exception& ex)
+			{
+				logAppException("shutdown", ex);
+				result = -1;
+			}
+		}
 
 		// destroy app before the bgfx shutdown to guarantee no dangling resources
 		app.reset();

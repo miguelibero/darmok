@@ -28,7 +28,7 @@ namespace darmok
 	};
 
 
-	Material::Material() noexcept
+	Material::Material(const std::shared_ptr<Texture>& diffuseTexture) noexcept
 		: _primitive(MaterialPrimitiveType::Triangle)
 		, _mainData(32, 0, 0, 0)
 		, _mainHandle{ bgfx::kInvalidHandle }
@@ -42,6 +42,10 @@ namespace darmok
 			_colorHandles.emplace(pair.first, bgfx::createUniform(pair.second.name.c_str(), bgfx::UniformType::Vec4));
 		}
 		_mainHandle = bgfx::createUniform("u_material", bgfx::UniformType::Vec4);
+		if (diffuseTexture != nullptr)
+		{
+			setTexture(MaterialTextureType::Diffuse, diffuseTexture);
+		}
 	}
 
 	Material::~Material()
@@ -67,11 +71,6 @@ namespace darmok
 			bgfx::destroy(_mainHandle);
 			_mainHandle.idx = bgfx::kInvalidHandle;
 		}
-	}
-
-	void Material::setDefaultTexture(const std::shared_ptr<Texture>& texture) noexcept
-	{
-		_defaultTexture = texture;
 	}
 
 	std::shared_ptr<Texture> Material::getTexture(MaterialTextureType type) const noexcept
@@ -140,7 +139,7 @@ namespace darmok
 					stage = itr->second.stage;
 				}
 			}
-			auto tex = _defaultTexture;
+			std::shared_ptr<Texture> tex;
 			auto itr = _textures.find(pair.first);
 			if (itr != _textures.end())
 			{

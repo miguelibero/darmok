@@ -20,7 +20,7 @@ namespace darmok
             (float)color.g / maxValue,
             (float)color.b / maxValue,
             (float)color.a / maxValue
-            );
+        );
     }
 
     glm::vec3 Colors::normalize(const Color3& color) noexcept

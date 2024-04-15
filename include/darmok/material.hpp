@@ -45,10 +45,8 @@ namespace darmok
     class Material final
     {
     public:
-        Material() noexcept;
+        Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
         ~Material();
-
-        void setDefaultTexture(const std::shared_ptr<Texture>& texture) noexcept;
 
         std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
         Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
@@ -73,7 +71,6 @@ namespace darmok
         std::unordered_map<MaterialTextureType, std::shared_ptr<Texture>> _textures;
         std::unordered_map<MaterialColorType, Color> _colors;
 
-        std::shared_ptr<Texture> _defaultTexture;
         glm::vec4 _mainData;
         MaterialPrimitiveType _primitive;
 

@@ -29,6 +29,16 @@ namespace darmok
         return *this;
     }
 
+    Camera& Camera::setProjection(float fovy, const glm::uvec2& size, float near, float far) noexcept
+    {
+        return setProjection(fovy, (float)size.x / size.y, near, far);
+    }
+
+    Camera& Camera::setProjection(float fovy, const glm::uvec2& size, float near) noexcept
+    {
+        return setProjection(fovy, (float)size.x / size.y, near);
+    }
+
     Camera& Camera::setOrtho(float left, float right, float bottom, float top, float near, float far, float offset) noexcept
     {
         bx::mtxOrtho(glm::value_ptr(_matrix), left, right, bottom, top, near, far, offset, bgfx::getCaps()->homogeneousDepth);
