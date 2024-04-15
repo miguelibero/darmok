@@ -322,13 +322,15 @@ add_subdirectory(${LIBS_DIR}/pugixml)
 target_link_libraries(${LIB_NAME} PRIVATE pugixml)
 target_compile_definitions(pugixml INTERFACE PUGIXML_HEADER_ONLY) # also included in assimp
 
-# luajit
-add_subdirectory(${LIBS_DIR}/luajit)
-
-
-# sol2
+# lua sol2
+set(BUILD_LUAJIT ON)
+set(BUILD_LUA_AS_DLL OFF)
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/sol2/cmake/Packages")
+set(LUA_LOCAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/luajit)
+find_package(LuaBuild REQUIRED COMPONENTS "luajit")
 add_subdirectory(${LIBS_DIR}/sol2)
-target_link_libraries(${LIB_NAME} PRIVATE sol2)
+target_link_libraries(${LIB_NAME} PRIVATE sol2 Lua::Lua)
+addExportTargets("lua" luajit_lib_)
 
 # ozz
 option(ozz_build_fbx "Build Fbx pipeline (Requires Fbx SDK)" ON)
