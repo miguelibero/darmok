@@ -14,9 +14,11 @@ namespace darmok
     {
     public:
         void init(App& app, const std::vector<std::string>& args);
+        void updateLogic(float deltaTime);
         void shutdown() noexcept;
 
     private:
         std::unique_ptr<sol::state> _lua;
+        sol::function _luaUpdate;
     };
 }

@@ -56,40 +56,6 @@ namespace darmok
         Scene() noexcept;
         ~Scene() noexcept;
 
-        /*
-        Entity createEntity() noexcept;
-        void destroyEntity(Entity entity) noexcept;
-
-        template<typename T, typename... A>
-        decltype(auto) addComponent(const Entity entity, A&&... args)
-        {
-            return getRegistry().emplace<T, A...>(entity, std::forward<A>(args)...);
-        }
-
-        template<typename T>
-        decltype(auto) copyComponent(const Entity entity, const T& comp)
-        {
-            return getRegistry().insert(entity, entity, comp);
-        }
-
-        template<typename T>
-        decltype(auto) getComponent(const Entity entity)
-        {
-            return getRegistry().get<T>(entity);
-        }
-
-        template<typename T>
-        decltype(auto) getComponentView()
-        {
-            return getRegistry().view<T>();
-        }
-
-        template<typename T>
-        OptionalRef<T> tryGetComponent(const Entity entity)
-        {
-            return getRegistry().try_get<T>(entity);
-        }
-
         template<typename T, typename... A>
         T& addLogicUpdater(A&&... args)
         {
@@ -98,7 +64,6 @@ namespace darmok
             addLogicUpdater(std::move(ptr));
             return ref;
         }
-        */
 
         void init(App& app);
         void updateLogic(float dt);

@@ -4,7 +4,7 @@ project(
   darmok
   VERSION 0.1.0
   LANGUAGES CXX
-  DESCRIPTION "hobby game engine"
+  DESCRIPTION "hobby C++ game engine"
 )
 
 set(SRC_DIR src)
@@ -15,16 +15,13 @@ set(SHADERS_BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 set(SHADERS_OUTPUT_DIR generated/shaders)
 set(LIBS_DIR lib)
 
-option(BGFX_BUILD_EXAMPLES "Build bgfx examples." ON)
-set(BGFX_BUILD_EXAMPLES OFF)
+
+option(DARMOK_BUILD_SCRIPTING "enable scripting support" OFF)
+option(DARMOK_BUILD_SCRIPTING_EXE "compile scripting executable" OFF)
+
+set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "build bgfx examples.")
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
-
-macro(addExportTargets NAME TARGETS)
-  install(TARGETS ${TARGETS} EXPORT ${NAME}Targets)
-  install(EXPORT ${NAME}Targets FILE ${NAME}Targets.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${NAME})
-endmacro()
 
 macro(addCopySource SRC DST)
   add_custom_command(
@@ -106,7 +103,6 @@ set(SOURCES
   ${SRC_DIR}/vertex.cpp
   ${SRC_DIR}/render_forward.cpp
   ${SRC_DIR}/render_deferred.cpp
-  ${SRC_DIR}/scripting.cpp
 )
 
 set(HEADERS
@@ -133,8 +129,12 @@ set(HEADERS
   ${INCLUDE_DIR}/vertex.hpp
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
-  ${INCLUDE_DIR}/scripting.hpp
 )
+
+if(DARMOK_BUILD_SCRIPTING)
+  list(APPEND SOURCES ${SRC_DIR}/scripting.cpp)
+  list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
+endif()
 
 set(LIB_NAME darmok)
 
@@ -172,65 +172,7 @@ target_include_directories(
     ${LIBS_DIR}/rapidjson/include
   )
 
-include(GNUInstallDirs)
-install(
-  TARGETS
-  ${LIB_NAME}
-  EXPORT
-  ${LIB_NAME}Targets
-  LIBRARY DESTINATION
-  ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION
-  ${CMAKE_INSTALL_BINDIR}
-  ARCHIVE DESTINATION
-  ${CMAKE_INSTALL_LIBDIR}
-  INCLUDES DESTINATION
-  include
-  PUBLIC_HEADER DESTINATION
-  include
-)
-
-install(
-  EXPORT
-  ${LIB_NAME}Targets
-  FILE
-  ${PROJECT_NAME}Targets.cmake
-  NAMESPACE
-  ${LIB_NAME}::
-  DESTINATION
-  ${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_NAME}
-)
-
 set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-
-#
-# Install the `include` directory
-#
-
-install(
-  DIRECTORY
-  include/${LIB_NAME}
-  DESTINATION
-  include
-)
-
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-  ${LIB_NAME}ConfigVersion.cmake
-  VERSION
-  ${PROJECT_VERSION}
-  COMPATIBILITY
-  SameMajorVersion
-)
-
-include(GenerateExportHeader)
-generate_export_header(${LIB_NAME})
-install(
-  FILES
-  ${PROJECT_BINARY_DIR}/${LIB_NAME}.hpp
-  DESTINATION
-  include
-)
 
 # testing
 enable_testing()
@@ -278,12 +220,9 @@ endif()
 
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
-    option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" ${GLFW_STANDALONE})
-    option(GLFW_BUILD_TESTS "Build the GLFW test programs" ${GLFW_STANDALONE})
-    option(GLFW_BUILD_DOCS "Build the GLFW documentation" ON)
-    set(GLFW_BUILD_EXAMPLES OFF)
-    set(GLFW_BUILD_TESTS OFF)
-    set(GLFW_BUILD_DOCS OFF)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs")
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs")
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "Build the GLFW documentation")
     add_subdirectory(${LIBS_DIR}/glfw)
     target_link_libraries(${LIB_NAME} PRIVATE glfw)
     target_compile_definitions(darmok PRIVATE DARMOK_PLATFORM_GLFW)
@@ -298,7 +237,6 @@ endif()
 add_subdirectory(${LIBS_DIR}/glm)
 target_link_libraries(${LIB_NAME} PUBLIC glm)
 target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
-addExportTargets("glm" "glm;glm-header-only")
 
 # bgfx
 target_link_libraries(${LIB_NAME} PUBLIC bgfx bimg bimg_decode bx)
@@ -312,8 +250,7 @@ add_subdirectory(${LIBS_DIR}/entt)
 target_link_libraries(${LIB_NAME} PUBLIC EnTT)
 
 # assimp
-OPTION(ASSIMP_BUILD_TESTS "If the test suite for Assimp is built in addition to the library." ON)
-set(ASSIMP_BUILD_TESTS OFF)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "If the test suite for Assimp is built in addition to the library.")
 add_subdirectory(${LIBS_DIR}/assimp)
 target_link_libraries(${LIB_NAME} PRIVATE assimp)
 
@@ -323,31 +260,38 @@ target_link_libraries(${LIB_NAME} PRIVATE pugixml)
 target_compile_definitions(pugixml INTERFACE PUGIXML_HEADER_ONLY) # also included in assimp
 
 # lua sol2
-set(BUILD_LUAJIT ON)
-set(BUILD_LUA_AS_DLL OFF)
-list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/sol2/cmake/Packages")
-set(LUA_LOCAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/luajit)
-find_package(LuaBuild REQUIRED COMPONENTS "luajit")
-add_subdirectory(${LIBS_DIR}/sol2)
-target_link_libraries(${LIB_NAME} PRIVATE sol2 Lua::Lua)
-addExportTargets("lua" luajit_lib_)
+if(DARMOK_BUILD_SCRIPTING)
+  set(BUILD_LUAJIT ON)
+  set(BUILD_LUA_AS_DLL OFF)
+  list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/sol2/cmake/Packages")
+  set(LUA_LOCAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/luajit)
+  find_package(LuaBuild REQUIRED COMPONENTS "latest")
+  set(LUA_LIB_NAME luajit_lib_2.1)
+  add_subdirectory(${LIBS_DIR}/sol2)
+  target_link_libraries(${LIB_NAME} PRIVATE sol2 ${LUA_LIB_NAME})
+endif()
+if(DARMOK_BUILD_SCRIPTING_EXE)
+  set(SCRIPTING_EXE_NAME ${LIB_NAME}-scripting)
+  add_executable(
+    ${SCRIPTING_EXE_NAME}
+    src/scripting_main.cpp
+  )
+  target_compile_definitions(
+    ${SCRIPTING_EXE_NAME}
+    PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1"
+  )
+  target_link_libraries(${SCRIPTING_EXE_NAME} LINK_PUBLIC ${LIB_NAME})
+endif()
 
 # ozz
-option(ozz_build_fbx "Build Fbx pipeline (Requires Fbx SDK)" ON)
-option(ozz_build_gltf "Build glTF importer (Requires c++11)" ON)
-option(ozz_build_samples "Build samples" ON)
-option(ozz_build_howtos "Build howtos" ON)
-option(ozz_build_tests "Build unit tests" ON)
-option(ozz_build_msvc_rt_dll "Select msvc DLL runtime library" OFF)
-set(ozz_build_fbx OFF)
-set(ozz_build_gltf OFF)
-set(ozz_build_samples OFF)
-set(ozz_build_howtos OFF)
-set(ozz_build_tests OFF)
-set(ozz_build_msvc_rt_dll ON)
+set(ozz_build_fbx OFF CACHE BOOL "Build Fbx pipeline (Requires Fbx SDK)")
+set(ozz_build_gltf OFF CACHE BOOL "Build glTF importer (Requires c++11)")
+set(ozz_build_samples OFF CACHE BOOL "Build samples")
+set(ozz_build_howtos OFF CACHE BOOL "Build howtos")
+set(ozz_build_tests OFF CACHE BOOL "Build unit tests")
+set(ozz_build_msvc_rt_dll ON CACHE BOOL "Select msvc DLL runtime library")
 add_subdirectory(${LIBS_DIR}/ozz)
 target_link_libraries(${LIB_NAME} PRIVATE
   ozz_geometry
   ozz_animation_offline
   ozz_options)
-addExportTargets("ozz" "ozz_base;ozz_geometry;ozz_animation;ozz_animation_offline;ozz_options")

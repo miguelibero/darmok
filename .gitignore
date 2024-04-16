@@ -9,6 +9,9 @@ examples/*/build*/*
 examples/cmake-build*/*
 examples/*/cmake-build*/*
 examples/*/.idea/*
+examples/*/out/*
+examples/out/*
+out/*
 
 ### VisualStudioCode ###
 .vscode/*

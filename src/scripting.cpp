@@ -33,6 +33,12 @@ namespace darmok
 		_impl->init(*this, args);
 	}
 
+	void ScriptingApp::updateLogic(float deltaTime)
+	{
+		App::updateLogic(deltaTime);
+		_impl->updateLogic(deltaTime);
+	}
+
 	class LuaProgram final
 	{
 	public:
@@ -123,10 +129,27 @@ namespace darmok
 		MeshComponent& _comp;
 	};
 
+	class LuaInternalComponent final
+	{
+	public:
+		LuaInternalComponent(const sol::table& table) noexcept;
+	private:
+		sol::table _table;
+	};
+
+	class LuaComponent final
+	{
+	public:
+		LuaComponent(LuaInternalComponent& comp) noexcept;
+	private:
+		LuaInternalComponent& _comp;
+	};
+
 	class LuaEntity final
 	{
 	public:
 		LuaEntity(Entity entity, Scene& scene) noexcept;
+		LuaComponent addComponent(const sol::table& table) noexcept;
 		LuaTransform addTransformComponent() noexcept;
 		LuaCamera addCameraComponent() noexcept;
 		LuaPointLight addPointLightComponent() noexcept;
@@ -173,6 +196,7 @@ namespace darmok
 		LuaScene getScene() noexcept;
 		LuaAssets getAssets() noexcept;
 		LuaWindow getWindow() noexcept;
+		Input& getInput() noexcept;
 	private:
 		App& _app;
 		OptionalRef<Scene> _scene;
@@ -338,10 +362,25 @@ namespace darmok
 	{
 	}
 
+	LuaComponent::LuaComponent(LuaInternalComponent& comp) noexcept
+		: _comp(comp)
+	{
+	}
+
+	LuaInternalComponent::LuaInternalComponent(const sol::table& table) noexcept
+		: _table(table)
+	{
+	}
+
 	LuaEntity::LuaEntity(Entity entity, Scene& scene) noexcept
 		: _entity(entity)
 		, _scene(scene)
 	{
+	}
+
+	LuaComponent LuaEntity::addComponent(const sol::table& table) noexcept
+	{
+		return LuaComponent(_scene.getRegistry().emplace<LuaInternalComponent>(_entity, table));
 	}
 
 	LuaTransform LuaEntity::addTransformComponent() noexcept
@@ -436,6 +475,10 @@ namespace darmok
 		return LuaWindow(_app.getWindow());
 	}
 
+	Input& LuaApp::getInput() noexcept
+	{
+		return _app.getInput();
+	}
 
 	LuaWindow::LuaWindow(Window& win) noexcept
 		: _win(win)
@@ -448,15 +491,16 @@ namespace darmok
 	}
 
 	template<typename T, typename C>
-	static sol::usertype<T> configureScriptingGlmVector(sol::state_view& lua, std::string_view name, const C& constructors) noexcept
+	static sol::usertype<T> createScriptingGlmVector(sol::state_view& lua, std::string_view name, const C& constructors) noexcept
 	{
-		using value_type = T::value_type;
+		using V = T::value_type;
 		return lua.new_usertype<T>(name, constructors,
-			sol::meta_function::addition, sol::resolve<T(const T&, const T&)>(glm::operator+),
-			sol::meta_function::subtraction, sol::resolve<T(const T&, const T&)>(glm::operator-),
-			sol::meta_function::multiplication, sol::resolve<T(const T&, const T&)>(glm::operator*),
-			sol::meta_function::division, sol::resolve<T(const T&, const T&)>(glm::operator/),
-			"dot", sol::resolve<value_type(const T&, const T&)>(glm::dot)
+			sol::meta_function::addition, sol::overload(sol::resolve<T(const T&, const T&)>(glm::operator+), sol::resolve<T(const T&, V)>(glm::operator+)),
+			sol::meta_function::subtraction, sol::overload(sol::resolve<T(const T&, const T&)>(glm::operator-), sol::resolve<T(const T&, V)>(glm::operator-), sol::resolve<T(const T&)>(glm::operator-)),
+			sol::meta_function::multiplication, sol::overload(sol::resolve<T(const T&, const T&)>(glm::operator*), sol::resolve<T(const T&, V)>(glm::operator*)),
+			sol::meta_function::division, sol::overload(sol::resolve<T(const T&, const T&)>(glm::operator/), sol::resolve<T(const T&, V)>(glm::operator/)),
+			"dot", sol::resolve<V(const T&, const T&)>(glm::dot),
+			"norm", sol::resolve<T(const T&)>(glm::normalize)
 		);
 	}
 
@@ -464,16 +508,27 @@ namespace darmok
 	{
 		_lua = std::make_unique<sol::state>();
 		auto& lua = *_lua;
-		lua.open_libraries();
+		lua.open_libraries(sol::lib::base, sol::lib::package);
 		{
-			configureScriptingGlmVector<glm::vec3>(lua, "vec3", sol::constructors<glm::vec3(float), glm::vec3(float, float, float)>());
+			createScriptingGlmVector<glm::vec4>(lua, "vec4", sol::constructors<glm::vec4(float), glm::vec4(float, float, float, float)>());
+			createScriptingGlmVector<glm::vec3>(lua, "vec3", sol::constructors<glm::vec3(float), glm::vec3(float, float, float)>());
+			createScriptingGlmVector<glm::vec2>(lua, "vec2", sol::constructors<glm::vec2(float), glm::vec2(float, float)>());
+			//createScriptingGlmVector<glm::uvec3>(lua, "uvec3", sol::constructors<glm::uvec3(unsigned int), glm::uvec3(unsigned int, unsigned int, unsigned int)>());
+			//createScriptingGlmVector<glm::uvec2>(lua, "uvec2", sol::constructors<glm::uvec2(unsigned int), glm::uvec2(unsigned int, unsigned int)>());
 		}
 		{
-			auto usertype = lua.new_usertype<Color>("Color",
+			lua.new_usertype<Color>("Color",
 				sol::constructors<Color(uint8_t, uint8_t, uint8_t, uint8_t)>()
 			);
 			lua.create_named_table("colors",
-				"green", &Colors::green
+				"black", &Colors::black,
+				"white", &Colors::white,
+				"red", &Colors::red,
+				"green", &Colors::green,
+				"blue", &Colors::blue,
+				"yellow", &Colors::yellow,
+				"cyan", &Colors::cyan,
+				"magenta", &Colors::magenta
 			);
 		}
 		{
@@ -510,6 +565,7 @@ namespace darmok
 		}
 		{
 			auto usertype = lua.new_usertype<LuaEntity>("Entity");
+			usertype["add_component"] = &LuaEntity::addComponent;
 			usertype["add_camera_component"] = &LuaEntity::addCameraComponent;
 			usertype["add_transform_component"] = &LuaEntity::addTransformComponent;
 			usertype["add_point_light_component"] = &LuaEntity::addPointLightComponent;
@@ -532,12 +588,23 @@ namespace darmok
 
 
 		lua["app"] = LuaApp(app);
+		lua["args"] = args;
 
 		lua.script_file("main.lua");
+		_luaUpdate = lua["update"];
+	}
+
+	void ScriptingAppImpl::updateLogic(float deltaTime)
+	{
+		if (_luaUpdate)
+		{
+			_luaUpdate(deltaTime);
+		}
 	}
 
 	void ScriptingAppImpl::shutdown() noexcept
 	{
 		_lua.reset();
+		_luaUpdate.reset();
 	}
 }

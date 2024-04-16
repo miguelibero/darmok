@@ -13,6 +13,8 @@ namespace darmok
         ScriptingApp();
         ~ScriptingApp();
         void init(const std::vector<std::string>& args) override;
+    protected:
+        void updateLogic(float deltaTime) override;
     private:
         std::unique_ptr<ScriptingAppImpl> _impl;
     };

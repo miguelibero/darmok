@@ -121,27 +121,6 @@ namespace darmok
     {
     }
 
-    /*
-    Entity Scene::createEntity() noexcept
-    {
-        return _impl->getRegistry().create();
-    }
-
-    void Scene::destroyEntity(Entity entity) noexcept
-    {
-        _impl->getRegistry().destroy(entity);
-    }
-
-    const SceneImpl& Scene::getImpl() const noexcept
-    {
-        return *_impl;
-    }
-
-    SceneImpl& Scene::getImpl() noexcept
-    {
-        return *_impl;
-    }*/
-
     EntityRegistry& Scene::getRegistry()
     {
         return _impl->getRegistry();
