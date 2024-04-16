@@ -33,10 +33,32 @@ function SpeedComponent:new(v)
     return comp
 end
 
-local speedEntity = app.scene:create_entity()
-speedEntity:add_component(SpeedComponent.new(vec3.new(0, 1, 1)))
+local speed = 1
 
-function update(dt)
-	meshTrans.position = meshTrans.position + (vec3.new(0.1, 0, 0) * dt);
+function move_mesh(dir)
+    meshTrans.position = meshTrans.position + (dir * speed)
 end
+
+function move_left()
+    move_mesh(vec3.new(-1, 0, 0))
+end
+
+function move_right()
+    move_mesh(vec3.new(1, 0, 0))
+end
+
+function move_forward()
+    move_mesh(vec3.new(0, 0, 1))
+end
+
+function move_back()
+    move(vec3.new(0, 0, -1))
+end
+
+app.input:add_bindings("test", {
+    left = move_left,
+    KeyA = move_left,
+    right = move_right,
+    KeyD = move_right,
+})
 

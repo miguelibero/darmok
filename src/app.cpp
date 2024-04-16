@@ -106,8 +106,9 @@ namespace darmok
 		{
 			component->shutdown();
 		}
+		_input.getImpl().clearBindings();
 		_components.clear();
-		_app.reset();;
+		_app.reset();
 	}
 
 	void AppImpl::updateLogic(float deltaTime)

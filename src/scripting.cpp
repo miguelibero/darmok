@@ -10,6 +10,7 @@
 #include <darmok/material.hpp>
 #include <darmok/light.hpp>
 #include <darmok/window.hpp>
+#include <darmok/input.hpp>
 #include <darmok/render_forward.hpp>
 
 #include <filesystem>
@@ -189,6 +190,15 @@ namespace darmok
 		Window& _win;
 	};
 
+	class LuaInput
+	{
+	public:
+		LuaInput(Input& input) noexcept;
+		void addBindings(const std::string& name, const sol::table& data) noexcept;
+	private:
+		Input& _input;
+	};
+
 	class LuaApp final
 	{
 	public:
@@ -196,7 +206,7 @@ namespace darmok
 		LuaScene getScene() noexcept;
 		LuaAssets getAssets() noexcept;
 		LuaWindow getWindow() noexcept;
-		Input& getInput() noexcept;
+		LuaInput getInput() noexcept;
 	private:
 		App& _app;
 		OptionalRef<Scene> _scene;
@@ -475,9 +485,9 @@ namespace darmok
 		return LuaWindow(_app.getWindow());
 	}
 
-	Input& LuaApp::getInput() noexcept
+	LuaInput LuaApp::getInput() noexcept
 	{
-		return _app.getInput();
+		return LuaInput(_app.getInput());
 	}
 
 	LuaWindow::LuaWindow(Window& win) noexcept
@@ -488,6 +498,34 @@ namespace darmok
 	const glm::uvec2& LuaWindow::getSize() const noexcept
 	{
 		return _win.getSize();
+	}
+
+	LuaInput::LuaInput(Input& input) noexcept
+		: _input(input)
+	{
+	}
+
+	void LuaInput::addBindings(const std::string& name, const sol::table& data) noexcept
+	{
+		std::vector<InputBinding> bindings;
+
+		for (auto& elm : data)
+		{
+			if (elm.second.get_type() != sol::type::function)
+			{
+				continue;
+			}
+			auto keyString = elm.first.as<std::string>();
+			auto key = InputBinding::readKey(keyString);
+			if (!key)
+			{
+				continue;
+			}
+			std::function<void()> func = elm.second.as<sol::function>();
+			auto once = false;
+			bindings.push_back(InputBinding{ key.value(), once, func });
+		}
+		_input.addBindings(name, std::move(bindings));
 	}
 
 	template<typename T, typename C>
@@ -580,10 +618,16 @@ namespace darmok
 			usertype["size"] = sol::property(&LuaWindow::getSize);
 		}
 		{
+			auto usertype = lua.new_usertype<LuaInput>("Input");
+			usertype["add_bindings"] = &LuaInput::addBindings;
+		}
+		{
 			auto usertype = lua.new_usertype<LuaApp>("App");
 			usertype["scene"] = sol::property(&LuaApp::getScene);
 			usertype["assets"] = sol::property(&LuaApp::getAssets);
 			usertype["window"] = sol::property(&LuaApp::getWindow);
+			usertype["inpuy"] = sol::property(&LuaApp::getWindow);
+			usertype["input"] = sol::property(&LuaApp::getInput);
 		}
 
 

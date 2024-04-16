@@ -14,7 +14,7 @@
 
 namespace darmok
 {
-	enum class KeyboardModifier
+	enum class KeyboardModifier : uint8_t
 	{
 		None = 0,
 		LeftAlt = 0x01,
@@ -272,6 +272,8 @@ namespace darmok
 		uint8_t modifiers;
 
 		size_t hash() const noexcept;
+
+		static std::optional<KeyboardBindingKey> read(std::string_view name) noexcept;
 	};
 
 	struct MouseBindingKey final
@@ -279,6 +281,8 @@ namespace darmok
 		MouseButton button;
 
 		size_t hash() const noexcept;
+
+		static std::optional<MouseBindingKey> read(std::string_view name) noexcept;
 	};
 
 	struct GamepadBindingKey final
@@ -287,6 +291,8 @@ namespace darmok
 		GamepadButton button;
 
 		size_t hash() const noexcept;
+
+		static std::optional<GamepadBindingKey> read(std::string_view name) noexcept;
 	};
 
 	using InputBindingKey = std::variant<KeyboardBindingKey, MouseBindingKey, GamepadBindingKey>;
@@ -298,6 +304,8 @@ namespace darmok
 		InputBindingKey key;
 		bool once;
 		std::function<void()> fn;
+
+		static std::optional<InputBindingKey> readKey(std::string_view name) noexcept;
 	};
 
 	using Gamepads = std::array<Gamepad, Gamepad::MaxAmount>;

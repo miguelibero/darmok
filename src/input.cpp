@@ -37,7 +37,10 @@ namespace darmok
 	void KeyboardImpl::setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept
 	{
 		auto k = to_underlying(key);
-		_keys[k] = encodeKey(down, modifiers);
+		if (k < _keys.size())
+		{
+			_keys[k] = encodeKey(down, modifiers);
+		}
 	}
 
 	void KeyboardImpl::pushChar(const Utf8Char& data) noexcept
@@ -518,14 +521,90 @@ namespace darmok
 		return to_underlying(key) | modifiers << 16;
 	}
 
+	static const std::unordered_map<std::string, uint8_t> s_keyboardModifierNames =
+	{
+		{ "leftalt", to_underlying(KeyboardModifier::LeftAlt) },
+		{ "rightalt", to_underlying(KeyboardModifier::RightAlt) },
+		{ "leftctrl", to_underlying(KeyboardModifier::LeftCtrl) },
+		{ "rightctrl", to_underlying(KeyboardModifier::RightCtrl) },
+		{ "leftshift", to_underlying(KeyboardModifier::LeftShift) },
+		{ "rightshift", to_underlying(KeyboardModifier::RightShift) },
+		{ "leftmeta", to_underlying(KeyboardModifier::LeftMeta) },
+		{ "rightmeta", to_underlying(KeyboardModifier::RightMeta) },
+	};
+
+	std::optional<KeyboardBindingKey> KeyboardBindingKey::read(std::string_view name) noexcept
+	{
+		auto lowerName = strToLower(name);
+		const char sep = '+';
+		auto pos = lowerName.find(sep);
+		auto keyStr = lowerName.substr(0, pos);
+		auto key = KeyboardKey::Count;
+		uint8_t modifiers = 0;
+
+		for (auto i = 0; i < BX_COUNTOF(s_keyboardKeyNames); i++)
+		{
+			if (strToLower(s_keyboardKeyNames[i]) == keyStr)
+			{
+				key = (KeyboardKey)i;
+				break;
+			}
+		}
+		if (key == KeyboardKey::Count)
+		{
+			return std::nullopt;
+		}
+
+		while (pos < std::string::npos)
+		{
+			auto newPos = lowerName.find(sep, pos);
+			auto modStr = lowerName.substr(pos, newPos - pos);
+
+			auto itr = s_keyboardModifierNames.find(modStr);
+			if (itr != s_keyboardModifierNames.end())
+			{
+				modifiers |= itr->second;
+			}
+			pos = newPos;
+		}
+		return KeyboardBindingKey{ key, modifiers };
+	}
+
 	size_t MouseBindingKey::hash() const noexcept
 	{
 		return to_underlying(button);
 	}
 
+	std::optional<MouseBindingKey> MouseBindingKey::read(std::string_view name) noexcept
+	{
+		auto lowerName = strToLower(name);
+		for (auto i = 0; i < BX_COUNTOF(s_mouseButtonNames); i++)
+		{
+			if (strToLower(s_mouseButtonNames[i]) == lowerName)
+			{
+				return MouseBindingKey{ (MouseButton)i };
+			}
+		}
+		return std::nullopt;
+	}
+
 	size_t GamepadBindingKey::hash() const noexcept
 	{
 		return ((size_t)to_underlying(button)) << gamepad;
+	}
+
+	std::optional<GamepadBindingKey> GamepadBindingKey::read(std::string_view name) noexcept
+	{
+		auto lowerName = strToLower(name);
+		uint8_t gamepad = 0;
+		for (auto i = 0; i < BX_COUNTOF(s_mouseButtonNames); i++)
+		{
+			if (strToLower(s_gamepadButtonNames[i]) == lowerName)
+			{
+				return GamepadBindingKey{ gamepad, (GamepadButton)i };
+			}
+		}
+		return std::nullopt;
 	}
 
 	size_t InputBinding::hashKey(const InputBindingKey& key) noexcept
@@ -547,6 +626,26 @@ namespace darmok
 			return maxKey + to_underlying(MouseButton::Count) + h;
 		}
 		return 0;
+	}
+
+	std::optional<InputBindingKey> InputBinding::readKey(std::string_view name) noexcept
+	{
+		auto kb = KeyboardBindingKey::read(name);
+		if (kb)
+		{
+			return kb;
+		}
+		auto mouse = MouseBindingKey::read(name);
+		if (mouse)
+		{
+			return mouse;
+		}
+		auto gamepad = GamepadBindingKey::read(name);
+		if (gamepad)
+		{
+			return gamepad;
+		}
+		return std::nullopt;
 	}
 
 	InputImpl::InputImpl() noexcept
@@ -631,7 +730,7 @@ namespace darmok
 		}
 	}
 
-	void InputImpl::reset() noexcept
+	void InputImpl::resetOnceBindings() noexcept
 	{
 		_bindingOnce.clear();
 	}
@@ -651,6 +750,11 @@ namespace darmok
 		{
 			_bindings.erase(it);
 		}
+	}
+
+	void InputImpl::clearBindings() noexcept
+	{
+		_bindings.clear();
 	}
 
 	Keyboard& InputImpl::getKeyboard() noexcept
