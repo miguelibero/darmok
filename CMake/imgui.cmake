@@ -15,19 +15,5 @@ target_include_directories(
     ${BGFX_BASE}/3rdparty
 )
 
-install(
-  TARGETS
-  imgui
-  EXPORT
-  imguiTargets
-)
-install(
-  EXPORT
-  imguiTargets
-  FILE
-  imguiTargets.cmake
-  DESTINATION
-  ${CMAKE_INSTALL_LIBDIR}/cmake/imgui
-)
 set_property(TARGET imgui PROPERTY CXX_STANDARD 20)
 target_link_libraries(imgui bx)

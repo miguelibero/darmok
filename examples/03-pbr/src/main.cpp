@@ -25,26 +25,27 @@ namespace
 			App::init(args);
 
 			auto& scene = addComponent<SceneAppComponent>().getScene();
-			auto prog = Program::createStandard(StandardProgramType::ForwardPhong);
+			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			auto& layout = prog->getVertexLayout();
+			auto& registry = scene.getRegistry();
 
-			auto camEntity = scene.createEntity();
+			auto camEntity = registry.create();
 			glm::vec2 winSize = getWindow().getSize();
 
-			scene.addComponent<Transform>(camEntity)
+			registry.emplace<Transform>(camEntity)
 				.setPosition({ 0, 2, -2 })
 				.setRotation({ 45, 0, 0 });
-			auto& cam = scene.addComponent<Camera>(camEntity)
+			auto& cam = registry.emplace<Camera>(camEntity)
 				.setProjection(60, winSize.x / winSize.y, 0.3, 1000);
 			
 			auto& lighting = cam.addComponent<PhongLightingComponent>();
 
 			cam.setRenderer<ForwardRenderer>(prog, lighting);
 
-			auto light = scene.createEntity();
-			scene.addComponent<Transform>(light)
+			auto light = registry.create();
+			registry.emplace<Transform>(light)
 				.setPosition({ 1, 1, -2 });
-			scene.addComponent<PointLight>(light);
+			registry.emplace<PointLight>(light);
 
 			auto greenTex = getAssets().getColorTextureLoader()(Colors::green);
 			auto greenMat = std::make_shared<Material>();
@@ -52,9 +53,9 @@ namespace
 
 			auto cubeMesh = Mesh::createCube(layout);
 			cubeMesh->setMaterial(greenMat);
-			auto cube = scene.createEntity();
-			scene.addComponent<MeshComponent>(cube, cubeMesh);
-			scene.addComponent<Transform>(cube)
+			auto cube = registry.create();
+			registry.emplace<MeshComponent>(cube, cubeMesh);
+			registry.emplace<Transform>(cube)
 				.setPosition({ 1.5F, 0, 0 });
 
 			auto redTex = getAssets().getColorTextureLoader()(Colors::red);
@@ -63,9 +64,9 @@ namespace
 
 			auto sphereMesh = Mesh::createSphere(layout);
 			sphereMesh->setMaterial(redMat);
-			auto sphere = scene.createEntity();
-			scene.addComponent<MeshComponent>(sphere, sphereMesh);
-			auto& trans = scene.addComponent<Transform>(sphere);
+			auto sphere = registry.create();
+			registry.emplace<MeshComponent>(sphere, sphereMesh);
+			auto& trans = registry.emplace<Transform>(sphere);
 
 			auto speed = 0.01F;
 

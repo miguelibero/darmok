@@ -35,7 +35,7 @@ namespace darmok
 		input.getKeyboard().getImpl().pushChar(_data);
 	}
 
-	MouseMovedEvent::MouseMovedEvent(const MousePosition& pos) noexcept
+	MouseMovedEvent::MouseMovedEvent(const glm::vec3& pos) noexcept
 		: PlatformEvent(MouseMoved)
 		, _pos(pos)
 	{
@@ -56,17 +56,6 @@ namespace darmok
 	void MouseButtonChangedEvent::process(Input& input) noexcept
 	{
 		input.getMouse().getImpl().setButton(_button, _down);
-	}
-
-	WindowMouseLockChangedEvent::WindowMouseLockChangedEvent(bool locked) noexcept
-		: PlatformEvent(WindowMouseLockChanged)
-		, _locked(locked)
-	{
-	}
-
-	void WindowMouseLockChangedEvent::process(Input& input) noexcept
-	{
-		input.getMouse().getImpl().setLocked(_locked);
 	}
 
 	GamepadAxisChangedEvent::GamepadAxisChangedEvent(uint8_t gampad, GamepadAxis axis, int32_t value) noexcept
@@ -127,18 +116,26 @@ namespace darmok
 		}
 	}
 
-	WindowSizeChangedEvent::WindowSizeChangedEvent(const glm::uvec2& size) noexcept
+	WindowSizeChangedEvent::WindowSizeChangedEvent(const glm::uvec2& size, bool pixel) noexcept
 		: PlatformEvent(WindowSizeChanged)
 		, _size(size)
+		, _pixel(pixel)
 	{
 	}
 
 	void WindowSizeChangedEvent::process(Window& win) noexcept
 	{
-		win.getImpl().setSize(_size);
-		if (win.getPhase() == WindowPhase::Running)
+		if (_pixel)
 		{
-			bgfx::reset(_size.x, _size.y);
+			win.getImpl().setPixelSize(_size);
+			if (win.getPhase() == WindowPhase::Running)
+			{
+				bgfx::reset(_size.x, _size.y);
+			}
+		}
+		else
+		{
+			win.getImpl().setSize(_size);
 		}
 	}
 
@@ -186,9 +183,6 @@ namespace darmok
 			break;
 		case PlatformEvent::MouseButtonChanged:
 			static_cast<MouseButtonChangedEvent&>(ev).process(input);
-			break;
-		case PlatformEvent::WindowMouseLockChanged:
-			static_cast<WindowMouseLockChangedEvent&>(ev).process(input);
 			break;
 		case PlatformEvent::WindowSizeChanged:
 			static_cast<WindowSizeChangedEvent&>(ev).process(window);

@@ -2,6 +2,7 @@
 
 #include <darmok/app.hpp>
 #include <memory>
+#include <bx/bx.h>
 
 namespace darmok
 {

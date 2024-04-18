@@ -23,10 +23,14 @@ namespace darmok
         virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
     };
 
+    class Ray;
+
     class Camera final
     {
     public:
         Camera(const glm::mat4& matrix = {}) noexcept;
+
+        const glm::mat4& getMatrix() const noexcept;
 
         Camera& setMatrix(const glm::mat4& matrix) noexcept;
         Camera& setProjection(float fovy, float aspect, float near, float far) noexcept;
@@ -35,7 +39,7 @@ namespace darmok
         Camera& setProjection(float fovy, const glm::uvec2& size, float near, float far) noexcept;
         Camera& setProjection(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
 
-        Camera& setOrtho(float left, float right, float bottom, float top, float near = 0.f, float far = bx::kFloatLargest, float offset = 0.f) noexcept;
+        Camera& setOrtho(const glm::vec4& edges, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest), float offset = 0.f) noexcept;
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
         template<typename T>
@@ -85,6 +89,8 @@ namespace darmok
             return ref;
         }
 
+        std::optional<Ray> screenPointToRay(const glm::vec2& point) const noexcept;
+
     private:
         glm::mat4 _matrix;
         std::unique_ptr<IEntityFilter> _entityFilter;
@@ -96,22 +102,15 @@ namespace darmok
         void bgfxConfig(const EntityRegistry& registry, bgfx::ViewId viewId) const noexcept;
     };
 
-    using ViewVec = glm::vec<2, uint16_t>;
-
     class ViewRect final
     {
     public:
-        ViewRect(const ViewVec& size, const ViewVec& origin = {}) noexcept;
-
-        [[nodiscard]] const ViewVec& getSize() const noexcept;
-        [[nodiscard]] const ViewVec& getOrigin() const noexcept;
-
-        void setSize(const ViewVec& size) noexcept;
-        void setOrigin(const ViewVec& origin) noexcept;
+        ViewRect(const glm::ivec4& viewport) noexcept;
+        [[nodiscard]] const glm::ivec4& getViewport() const noexcept;
+        void setViewport(const glm::ivec4& vp) noexcept;
 
         void bgfxConfig(bgfx::ViewId viewId) const noexcept;
     private:
-        ViewVec _size;
-        ViewVec _origin;
+        glm::ivec4 _viewport;
     };
 }

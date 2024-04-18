@@ -140,7 +140,7 @@ namespace darmok
 	};
 
 	using KeyboardKeys = std::array<uint32_t, to_underlying(KeyboardKey::Count)>;
-
+	using KeyboardChars = std::vector<Utf8Char>;
 	class KeyboardImpl;
 
 	class Keyboard final
@@ -154,12 +154,13 @@ namespace darmok
 		[[nodiscard]] bool getKey(KeyboardKey key, uint8_t& modifiers) const noexcept;
 		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
 		[[nodiscard]] uint8_t getModifiers() const noexcept;
-
+		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 		[[nodiscard]] const KeyboardImpl& getImpl() const noexcept;
 		[[nodiscard]] KeyboardImpl& getImpl() noexcept;
 
-		static char keyToAscii(KeyboardKey key, uint8_t modifiers) noexcept;
-		static const std::string& getKeyName(KeyboardKey key) noexcept;
+		[[nodiscard]] static char keyToAscii(KeyboardKey key, uint8_t modifiers) noexcept;
+		[[nodiscard]] static const std::string& getKeyName(KeyboardKey key) noexcept;
+
 	private:
 		
 		std::unique_ptr<KeyboardImpl> _impl;
@@ -174,8 +175,6 @@ namespace darmok
 		Count
 	};
 
-	using MousePosition = glm::vec<3, int32_t>;
-	using RelativeMousePosition = glm::vec<3, float>;
 	using MouseButtons = std::array<bool, to_underlying(MouseButton::Count)>;
 
 	class MouseImpl;
@@ -189,9 +188,8 @@ namespace darmok
 
 		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
 
-		[[nodiscard]] const MousePosition& getPosition() const noexcept;
+		[[nodiscard]] const glm::vec3& getPosition() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
-		[[nodiscard]] bool getLocked() const noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 
 		[[nodiscard]] const MouseImpl& getImpl() const noexcept;
@@ -201,17 +199,10 @@ namespace darmok
 		std::unique_ptr<MouseImpl> _impl;
 	};
 
-	// TODO: change to 2 glm::vec<3, int32_t>
-	enum class GamepadAxis
+	enum class GamepadStick
 	{
-		LeftX,
-		LeftY,
-		LeftZ,
-
-		RightX,
-		RightY,
-		RightZ,
-
+		Left,
+		Right,
 		Count
 	};
 
@@ -239,7 +230,7 @@ namespace darmok
 	};
 
 	using GamepadButtons = std::array<bool, to_underlying(GamepadButton::Count)>;
-	using GamepadAxes = std::array<int32_t, to_underlying(GamepadAxis::Count)>;
+	using GamepadSticks = std::array<glm::ivec3, to_underlying(GamepadButton::Count)>;
 
 	class GamepadImpl;
 
@@ -252,15 +243,16 @@ namespace darmok
 		Gamepad(const Gamepad& other) = delete;
 		Gamepad(Gamepad&& other) = delete;
 		
-		static const std::string& getButtonName(GamepadButton button) noexcept;
-		int32_t getAxis(GamepadAxis axis) const noexcept;
-		bool getButton(GamepadButton button) const noexcept;
-		const GamepadAxes& getAxes() const noexcept;
-		const GamepadButtons& getButtons() const noexcept;
-		bool isConnected() const noexcept;
+		[[nodiscard]] static const std::string& getButtonName(GamepadButton button) noexcept;
+		
+		[[nodiscard]] const glm::ivec3& getStick(GamepadStick stick) const noexcept;
+		[[nodiscard]] const GamepadSticks& getSticks() const noexcept;
+		[[nodiscard]] bool getButton(GamepadButton button) const noexcept;
+		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
+		[[nodiscard]] bool isConnected() const noexcept;
 
-		const GamepadImpl& getImpl() const noexcept;
-		GamepadImpl& getImpl() noexcept;
+		[[nodiscard]] const GamepadImpl& getImpl() const noexcept;
+		[[nodiscard]] GamepadImpl& getImpl() noexcept;
 
 	private:
 		std::unique_ptr<GamepadImpl> _impl;
@@ -273,6 +265,8 @@ namespace darmok
 
 		size_t hash() const noexcept;
 
+		static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
+		static uint8_t readModifiers(std::string_view name) noexcept;
 		static std::optional<KeyboardBindingKey> read(std::string_view name) noexcept;
 	};
 
@@ -282,6 +276,7 @@ namespace darmok
 
 		size_t hash() const noexcept;
 
+		static std::optional<MouseButton> readButton(std::string_view name) noexcept;
 		static std::optional<MouseBindingKey> read(std::string_view name) noexcept;
 	};
 
@@ -292,6 +287,7 @@ namespace darmok
 
 		size_t hash() const noexcept;
 
+		static std::optional<GamepadButton> readButton(std::string_view name) noexcept;
 		static std::optional<GamepadBindingKey> read(std::string_view name) noexcept;
 	};
 
@@ -306,15 +302,10 @@ namespace darmok
 		std::function<void()> fn;
 
 		static std::optional<InputBindingKey> readKey(std::string_view name) noexcept;
+		static std::optional<InputBinding> read(std::string_view name, std::function<void()>&& fn) noexcept;
 	};
 
 	using Gamepads = std::array<Gamepad, Gamepad::MaxAmount>;
-
-	struct InputState final
-	{
-		RelativeMousePosition mouse;
-		std::vector<Utf8Char> chars;
-	};
 
 	class InputImpl;
 
@@ -324,23 +315,23 @@ namespace darmok
 		Input() noexcept;
 		Input(const Input& other) = delete;
 		Input(Input&& other) = delete;
-		void processBindings() noexcept;
 
+		void processBindings() noexcept;
 		void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
 		void removeBindings(std::string_view name) noexcept;
 
-		Keyboard& getKeyboard() noexcept;
-		Mouse& getMouse() noexcept;
-		OptionalRef<Gamepad> getGamepad(uint8_t num = 0) noexcept;
-		Gamepads& getGamepads() noexcept;
+		[[nodiscard]] Keyboard& getKeyboard() noexcept;
+		[[nodiscard]] Mouse& getMouse() noexcept;
+		[[nodiscard]] OptionalRef<Gamepad> getGamepad(uint8_t num = 0) noexcept;
+		[[nodiscard]] Gamepads& getGamepads() noexcept;
 
-		const Keyboard& getKeyboard() const noexcept;
-		const Mouse& getMouse() const noexcept;
-		OptionalRef<const Gamepad> getGamepad(uint8_t num = 0) const noexcept;
-		const Gamepads& getGamepads() const noexcept;
-
-		const InputImpl& getImpl() const noexcept;
-		InputImpl& getImpl() noexcept;
+		[[nodiscard]] const Keyboard& getKeyboard() const noexcept;
+		[[nodiscard]] const Mouse& getMouse() const noexcept;
+		[[nodiscard]] OptionalRef<const Gamepad> getGamepad(uint8_t num = 0) const noexcept;
+		[[nodiscard]] const Gamepads& getGamepads() const noexcept;
+		
+		[[nodiscard]] const InputImpl& getImpl() const noexcept;
+		[[nodiscard]] InputImpl& getImpl() noexcept;
 
 	private:
 		std::unique_ptr<InputImpl> _impl;

@@ -1,6 +1,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/window.hpp>
+#include <darmok/math.hpp>
 #include <bx/math.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -9,6 +10,11 @@ namespace darmok
     Camera::Camera(const glm::mat4& matrix) noexcept
         : _matrix(matrix)
     {
+    }
+
+    const glm::mat4& Camera::getMatrix() const noexcept
+    {
+        return _matrix;
     }
 
     Camera& Camera::setMatrix(const glm::mat4& matrix) noexcept
@@ -39,9 +45,9 @@ namespace darmok
         return setProjection(fovy, (float)size.x / size.y, near);
     }
 
-    Camera& Camera::setOrtho(float left, float right, float bottom, float top, float near, float far, float offset) noexcept
+    Camera& Camera::setOrtho(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept
     {
-        bx::mtxOrtho(glm::value_ptr(_matrix), left, right, bottom, top, near, far, offset, bgfx::getCaps()->homogeneousDepth);
+        bx::mtxOrtho(glm::value_ptr(_matrix), edges[0], edges[1], edges[2], edges[3], range[0], range[1], offset, bgfx::getCaps()->homogeneousDepth);
         return *this;
     }
 
@@ -164,34 +170,42 @@ namespace darmok
         return *this;
     }
 
-    ViewRect::ViewRect(const ViewVec& size, const ViewVec& origin) noexcept
-        : _size(size), _origin(origin)
+    std::optional<Ray> Camera::screenPointToRay(const glm::vec2& point) const noexcept
+    {
+        if (!_scene || !_app)
+        {
+            return std::nullopt;
+        }
+        glm::mat4 model;
+        auto& registry = _scene->getRegistry();
+        auto entity = entt::to_entity(registry, *this);
+        auto trans = registry.try_get<const Transform>(entity);
+        if (trans != nullptr)
+        {
+            model = trans->getInverse();
+        }
+        glm::ivec4 viewport = _app->getWindow().getViewport();
+        return Ray::unproject(point, model, _matrix, viewport);
+    }
+
+    ViewRect::ViewRect(const glm::ivec4& viewport) noexcept
+        : _viewport(viewport)
     {
     }
 
-    void ViewRect::setSize(const ViewVec& size) noexcept
+    const glm::ivec4& ViewRect::getViewport() const noexcept
     {
-        _size = size;
+        return _viewport;
     }
 
-    void ViewRect::setOrigin(const ViewVec& origin) noexcept
+    void ViewRect::setViewport(const glm::ivec4& viewport) noexcept
     {
-        _origin = origin;
-    }
-
-    const ViewVec& ViewRect::getSize() const noexcept
-    {
-        return _size;
-    }
-
-    const ViewVec& ViewRect::getOrigin() const noexcept
-    {
-        return _origin;
+        _viewport = viewport;
     }
 
     void ViewRect::bgfxConfig(bgfx::ViewId viewId) const noexcept
     {
-        bgfx::setViewRect(viewId, _origin.x, _origin.y, _size.x, _size.y);
+        bgfx::setViewRect(viewId, _viewport[0], _viewport[1], _viewport[2], _viewport[3]);
     }
 
 }

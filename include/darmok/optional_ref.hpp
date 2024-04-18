@@ -100,6 +100,11 @@ namespace darmok
             return *_value;
         }
 
+        T* ptr() const noexcept
+        {
+            return _value;
+        }
+
         operator OptionalRef<const T>() const noexcept
         { 
             return OptionalRef<const T>(_value);

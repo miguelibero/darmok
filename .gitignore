@@ -3,6 +3,7 @@
 CMakeCache.*
 CMakeFiles/*
 [Tt]esting/*
+CMakeSettings.json
 
 examples/build*/*
 examples/*/build*/*

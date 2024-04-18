@@ -1,6 +1,7 @@
 
 #include "input.hpp"
 #include <bx/bx.h>
+#include <darmok/window.hpp>
 #include "dbg.h"
 
 namespace darmok
@@ -84,6 +85,26 @@ namespace darmok
 		auto v = _chars[_charsRead];
 		_charsRead = (_charsRead + 1) % _chars.size();
 		return v;
+	}
+
+	const KeyboardChars& KeyboardImpl::getUpdateChars() const noexcept
+	{
+		return _updateChars;
+	}
+
+	void KeyboardImpl::update() noexcept
+	{
+		_updateChars.clear();
+		Utf8Char c;
+		while (true)
+		{
+			c = popChar();
+			if (c.len == 0)
+			{
+				break;
+			}
+			_updateChars.push_back(c);
+		}
 	}
 
 	void KeyboardImpl::flush() noexcept
@@ -247,6 +268,11 @@ namespace darmok
 		return _impl->getKeys();
 	}
 
+	const KeyboardChars& Keyboard::getUpdateChars() const noexcept
+	{
+		return _impl->getUpdateChars();
+	}
+
 	uint8_t Keyboard::getModifiers() const noexcept
 	{
 		return _impl->getModifiers();
@@ -270,23 +296,13 @@ namespace darmok
 		: _buttons{}
 		, _wheelDelta(120)
 		, _lock(false)
-		, _absolute{}
-		, _relative{}
-		, _size{}
+		, _position{}
 	{
 	}
 
-	void MouseImpl::setResolution(const glm::uvec2& size) noexcept
+	void MouseImpl::setPosition(const glm::vec3& pos) noexcept
 	{
-		_size = size;
-	}
-
-	void MouseImpl::setPosition(const MousePosition& pos) noexcept
-	{
-		_absolute = pos;
-		_relative.x = float(pos.x) / float(_size.x);
-		_relative.y = float(pos.y) / float(_size.y);
-		_relative.z = float(pos.z) / float(_wheelDelta);
+		_position = pos;
 	}
 
 	void MouseImpl::setButton(MouseButton button, bool down) noexcept
@@ -304,37 +320,15 @@ namespace darmok
 		return _buttons[to_underlying(button)];
 	}
 
-	RelativeMousePosition MouseImpl::popRelativePosition() noexcept
-	{
-		auto rel = _relative;
-		_relative = {};
-		return rel;
-	}
 
-	const MousePosition& MouseImpl::getPosition() const noexcept
+	const glm::vec3& MouseImpl::getPosition() const noexcept
 	{
-		return _absolute;
+		return _position;
 	}
 
 	const MouseButtons& MouseImpl::getButtons() const noexcept
 	{
 		return _buttons;
-	}
-
-	bool MouseImpl::getLocked() const noexcept
-	{
-		return _lock;
-	}
-
-	bool MouseImpl::setLocked(bool lock) noexcept
-	{
-		if (_lock != lock)
-		{
-			_lock = lock;
-			_relative = {};
-			return true;
-		}
-		return false;
 	}
 
 	static const std::string s_mouseButtonNames[] =
@@ -361,7 +355,7 @@ namespace darmok
 		return _impl->getButton(button);
 	}
 
-	const MousePosition& Mouse::getPosition() const noexcept
+	const glm::vec3& Mouse::getPosition() const noexcept
 	{
 		return _impl->getPosition();
 	}
@@ -369,11 +363,6 @@ namespace darmok
 	const MouseButtons& Mouse::getButtons() const noexcept
 	{
 		return _impl->getButtons();
-	}
-
-	bool Mouse::getLocked() const noexcept
-	{
-		return _impl->getLocked();
 	}
 
 	const MouseImpl& Mouse::getImpl() const noexcept
@@ -392,7 +381,7 @@ namespace darmok
 
 	GamepadImpl::GamepadImpl() noexcept
 		: _num(Gamepad::MaxAmount)
-		, _axes{}
+		, _sticks{}
 		, _buttons{}
 	{
 	}
@@ -405,14 +394,38 @@ namespace darmok
 
 	void GamepadImpl::reset() noexcept
 	{
-		_axes.fill(0);
+		_sticks.fill(glm::ivec3(0));
 		_buttons.fill(false);
 		_num = Gamepad::MaxAmount;
 	}
 
-	void GamepadImpl::setAxis(GamepadAxis axis, int32_t value) noexcept
+
+
+	void GamepadImpl::setAxis(GamepadAxis axis, int value) noexcept
 	{
-		_axes[to_underlying(axis)] = value;
+		switch (axis)
+		{
+			case GamepadAxis::LeftX:
+				_sticks[to_underlying(GamepadStick::Left)].x = value;
+				break;
+			case GamepadAxis::LeftY:
+				_sticks[to_underlying(GamepadStick::Left)].y = value;
+				break;
+			case GamepadAxis::LeftZ:
+				_sticks[to_underlying(GamepadStick::Left)].z = value;
+				break;
+			case GamepadAxis::RightX:
+				_sticks[to_underlying(GamepadStick::Right)].x = value;
+				break;
+			case GamepadAxis::RightY:
+				_sticks[to_underlying(GamepadStick::Right)].y = value;
+				break;
+			case GamepadAxis::RightZ:
+				_sticks[to_underlying(GamepadStick::Right)].z = value;
+				break;
+			default:
+				break;
+		}
 	}
 
 	void GamepadImpl::setButton(GamepadButton button, bool down) noexcept
@@ -420,9 +433,9 @@ namespace darmok
 		_buttons[to_underlying(button)] = down;
 	}
 
-	int32_t GamepadImpl::getAxis(GamepadAxis key) const noexcept
+	const glm::ivec3& GamepadImpl::getStick(GamepadStick stick) const noexcept
 	{
-		return _axes[to_underlying(key)];
+		return _sticks[to_underlying(stick)];
 	}
 
 	bool GamepadImpl::getButton(GamepadButton button) const noexcept
@@ -435,9 +448,9 @@ namespace darmok
 		return _buttons;
 	}
 
-	const GamepadAxes& GamepadImpl::getAxes() const noexcept
+	const GamepadSticks& GamepadImpl::getSticks() const noexcept
 	{
-		return _axes;
+		return _sticks;
 	}
 
 	bool GamepadImpl::isConnected() const noexcept
@@ -477,9 +490,9 @@ namespace darmok
 		return s_gamepadButtonNames[to_underlying(button)];
 	}
 
-	int32_t Gamepad::getAxis(GamepadAxis axis) const noexcept
+	const glm::ivec3& Gamepad::getStick(GamepadStick stick) const noexcept
 	{
-		return _impl->getAxis(axis);
+		return _impl->getStick(stick);
 	}
 
 	bool Gamepad::getButton(GamepadButton button) const noexcept
@@ -487,9 +500,9 @@ namespace darmok
 		return _impl->getButton(button);
 	}
 
-	const GamepadAxes& Gamepad::getAxes() const noexcept
+	const GamepadSticks& Gamepad::getSticks() const noexcept
 	{
-		return _impl->getAxes();
+		return _impl->getSticks();
 	}
 
 	const GamepadButtons& Gamepad::getButtons() const noexcept
@@ -521,6 +534,26 @@ namespace darmok
 		return to_underlying(key) | modifiers << 16;
 	}
 
+	std::optional<KeyboardKey> KeyboardBindingKey::readKey(std::string_view name) noexcept
+	{
+		auto lowerName = strToLower(name);
+		static const std::string keyPrefix = "key";
+		std::string keyStr;
+		if (lowerName.starts_with(keyPrefix))
+		{
+			keyStr = lowerName.substr(keyPrefix.size());
+		}
+		for (auto i = 0; i < BX_COUNTOF(s_keyboardKeyNames); i++)
+		{
+			auto keyName = strToLower(s_keyboardKeyNames[i]);
+			if (keyName == lowerName || keyName == keyStr)
+			{
+				return (KeyboardKey)i;
+			}
+		}
+		return std::nullopt;
+	}
+
 	static const std::unordered_map<std::string, uint8_t> s_keyboardModifierNames =
 	{
 		{ "leftalt", to_underlying(KeyboardModifier::LeftAlt) },
@@ -533,28 +566,12 @@ namespace darmok
 		{ "rightmeta", to_underlying(KeyboardModifier::RightMeta) },
 	};
 
-	std::optional<KeyboardBindingKey> KeyboardBindingKey::read(std::string_view name) noexcept
+	uint8_t KeyboardBindingKey::readModifiers(std::string_view name) noexcept
 	{
+		static const char sep = '+';
 		auto lowerName = strToLower(name);
-		const char sep = '+';
-		auto pos = lowerName.find(sep);
-		auto keyStr = lowerName.substr(0, pos);
-		auto key = KeyboardKey::Count;
 		uint8_t modifiers = 0;
-
-		for (auto i = 0; i < BX_COUNTOF(s_keyboardKeyNames); i++)
-		{
-			if (strToLower(s_keyboardKeyNames[i]) == keyStr)
-			{
-				key = (KeyboardKey)i;
-				break;
-			}
-		}
-		if (key == KeyboardKey::Count)
-		{
-			return std::nullopt;
-		}
-
+		size_t pos = 0;
 		while (pos < std::string::npos)
 		{
 			auto newPos = lowerName.find(sep, pos);
@@ -567,7 +584,34 @@ namespace darmok
 			}
 			pos = newPos;
 		}
-		return KeyboardBindingKey{ key, modifiers };
+		return modifiers;
+	}
+
+	std::optional<KeyboardBindingKey> KeyboardBindingKey::read(std::string_view name) noexcept
+	{
+		auto lowerName = strToLower(name);
+
+		static const std::string prefix = "keyboard";
+		if (lowerName.starts_with(prefix))
+		{
+			lowerName = lowerName.substr(prefix.size());
+		}
+
+		static const char sep = '+';
+		auto pos = lowerName.find(sep);
+		auto key = readKey(lowerName.substr(0, pos));
+		if (!key)
+		{
+			return std::nullopt;
+		}
+		
+		uint8_t modifiers = 0;
+		if (pos != std::string::npos)
+		{
+			modifiers = readModifiers(lowerName.substr(pos));
+		}
+		
+		return KeyboardBindingKey{ key.value(), modifiers};
 	}
 
 	size_t MouseBindingKey::hash() const noexcept
@@ -575,15 +619,32 @@ namespace darmok
 		return to_underlying(button);
 	}
 
-	std::optional<MouseBindingKey> MouseBindingKey::read(std::string_view name) noexcept
+	std::optional<MouseButton> MouseBindingKey::readButton(std::string_view name) noexcept
 	{
 		auto lowerName = strToLower(name);
 		for (auto i = 0; i < BX_COUNTOF(s_mouseButtonNames); i++)
 		{
 			if (strToLower(s_mouseButtonNames[i]) == lowerName)
 			{
-				return MouseBindingKey{ (MouseButton)i };
+				return (MouseButton)i;
 			}
+		}
+		return std::nullopt;
+	}
+
+	std::optional<MouseBindingKey> MouseBindingKey::read(std::string_view name) noexcept
+	{
+		auto lowerName = strToLower(name);
+		static const std::string prefix = "mouse";
+		if (!lowerName.starts_with(prefix))
+		{
+			return std::nullopt;
+		}
+
+		auto button = readButton(lowerName.substr(prefix.size()));
+		if (button)
+		{
+			return MouseBindingKey{ button.value() };
 		}
 		return std::nullopt;
 	}
@@ -593,16 +654,40 @@ namespace darmok
 		return ((size_t)to_underlying(button)) << gamepad;
 	}
 
-	std::optional<GamepadBindingKey> GamepadBindingKey::read(std::string_view name) noexcept
+	std::optional<GamepadButton> GamepadBindingKey::readButton(std::string_view name) noexcept
 	{
 		auto lowerName = strToLower(name);
-		uint8_t gamepad = 0;
 		for (auto i = 0; i < BX_COUNTOF(s_mouseButtonNames); i++)
 		{
 			if (strToLower(s_gamepadButtonNames[i]) == lowerName)
 			{
-				return GamepadBindingKey{ gamepad, (GamepadButton)i };
+				return (GamepadButton)i;
 			}
+		}
+		return std::nullopt;
+	}
+
+	std::optional<GamepadBindingKey> GamepadBindingKey::read(std::string_view name) noexcept
+	{
+		auto lowerName = strToLower(name);
+		static const std::string prefix = "gamepad";
+		if (!lowerName.starts_with(prefix))
+		{
+			return std::nullopt;
+		}
+		lowerName = lowerName.substr(prefix.size());
+		uint8_t gamepad = 0;
+		static const char sep = ':';
+		auto pos = lowerName.find(sep);
+		if (pos != std::string::npos)
+		{
+			gamepad = std::stoi(lowerName.substr(0, pos));
+			lowerName = lowerName.substr(pos);
+		}
+		auto button = readButton(lowerName);
+		if (button)
+		{
+			return GamepadBindingKey{ gamepad, button.value() };
 		}
 		return std::nullopt;
 	}
@@ -646,6 +731,24 @@ namespace darmok
 			return gamepad;
 		}
 		return std::nullopt;
+	}
+
+	std::optional<InputBinding> InputBinding::read(std::string_view name, std::function<void()>&& fn) noexcept
+	{
+		static const std::string onceSuffix = "once";
+		auto lowerName = strToLower(name);
+		bool once = false;
+		if (lowerName.ends_with(onceSuffix))
+		{
+			once = true;
+			lowerName = lowerName.substr(0, lowerName.size() - onceSuffix.size());
+		}
+		auto key = readKey(lowerName);
+		if (!key)
+		{
+			return std::nullopt;
+		}
+		return InputBinding{ key.value(), once, std::move(fn)};
 	}
 
 	InputImpl::InputImpl() noexcept
@@ -781,26 +884,9 @@ namespace darmok
 		return _gamepads;
 	}
 
-	const InputState& InputImpl::getState() const noexcept
-	{
-		return _state;
-	}
-
 	void InputImpl::update() noexcept
 	{
-		_state.mouse = _mouse.getImpl().popRelativePosition();
-		auto& kb = _keyboard.getImpl();
-		_state.chars.clear();
-		Utf8Char c;
-		while(true)
-		{
-			c = kb.popChar();
-			if (c.len == 0)
-			{
-				break;
-			}
-			_state.chars.push_back(c);
-		}
+		_keyboard.getImpl().update();
 	}
 
 	Input::Input() noexcept

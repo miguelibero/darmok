@@ -9,11 +9,11 @@ project(
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
-addCopySource(assets/brick.png)
-addCopySource(assets/darmok.jpg)
-addCopySource(assets/engine.png)
-addCopySource(assets/warrior-0.xml)
-addCopySource(assets/warrior-0.png)
+addCopySource(assets/brick.png assets/brick.png)
+addCopySource(assets/darmok.jpg assets/darmok.jpg)
+addCopySource(assets/engine.png assets/engine.png)
+addCopySource(assets/warrior-0.xml assets/warrior-0.xml)
+addCopySource(assets/warrior-0.png assets/warrior-0.png)
 
 set(sources
   src/main.cpp

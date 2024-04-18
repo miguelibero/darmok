@@ -35,14 +35,18 @@ namespace darmok
 		Window(Window&& other) = delete;
 
 		void requestMode(WindowMode mode) noexcept;
-		void requestMouseLock(bool enabled) noexcept;
+		void requestCursorVisibilityChange(bool enabled) noexcept;
 		void requestDestruction() noexcept;
 
 		void bgfxConfig(bgfx::ViewId viewId) const noexcept;
 
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
+		[[nodiscard]] glm::uvec2 getPixelSize() const noexcept;
+		[[nodiscard]] const glm::ivec4& getViewport() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 		[[nodiscard]] WindowMode getMode() const noexcept;
+
+		[[nodiscard]] glm::uvec2 screenPointToWindow(const glm::vec2& point) const noexcept;
 
 		[[nodiscard]] const WindowImpl& getImpl() const noexcept;
 		[[nodiscard]] WindowImpl& getImpl() noexcept;

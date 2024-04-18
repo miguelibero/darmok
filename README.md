@@ -5,27 +5,32 @@ darmok
 
 C++ game engine combining libraries & tools that I like
 
+currently using:
+
 * [CMake](https://cmake.org/) as the build system 
 * [bgfx](https://github.com/bkaradzic/bgfx) as the renderer
 * [glm](https://github.com/g-truc/glm) for 3d math
 * [EnTT](https://github.com/skypjack/entt) as the entity component system
 * [assimp](https://github.com/assimp/assimp) for generic asset loading (not in runtime)
-* [fastgltf](https://github.com/spnda/fastgltf) for gltf asset loading (runtime)
-* [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
-* [cereal](https://uscilab.github.io/cereal/) for serialization
-* [wren](https://github.com/wren-lang/wren) as the scripting layer
-    * using [wrenbind17](https://github.com/matusnovak/wrenbind17) for convenience
-* [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
-* [ldtk](https://ldtk.io/) for 2D level editor
-* [Box2D](https://box2d.org/) for 2D physics
-* [Bullet](https://github.com/bulletphysics/bullet3) for 3D physics
+* [luajit](https://luajit.org/) as the scripting layer
+* [sol2](https://github.com/ThePhD/sol2) modern C++ bindings for lua
 * [rapidjson](https://github.com/Tencent/rapidjson) for parsing json
 * [pugixml](https://pugixml.org/) for parsing xml
 
+planned to use:
+
+* [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
+* [nuklear](https://github.com/Immediate-Mode-UI/Nuklear) for ingame UI
+* [Bullet](https://github.com/bulletphysics/bullet3) for 3D physics
+* [Box2D](https://box2d.org/) for 2D physics
+* [ldtk](https://ldtk.io/) for 2D level editor
+* [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
+* [fastgltf](https://github.com/spnda/fastgltf) for gltf asset loading (runtime)
+* [cereal](https://uscilab.github.io/cereal/) for serialization
+
 Trying to use modern C++ patterns where possible.
 
-Trying to target the following platforms
-
+Trying to target the following platforms:
 * desktop (windows, macos, linux)
 * mobile (iOS, Android) (pending)
 
@@ -56,14 +61,14 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * renderer
     * unlit
     * forward with phong lighting (point, ambient)
+* lua scripting
 
 ### Next tasks
 * skeletal animations
+* physics
 * other types of lights
 * pbr lighting
-* wren scripting
 * deferred renderer
-* physics
 * spine animations loading
 * distance field fonts
 * mesh serialization
@@ -74,4 +79,5 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
 * scripting alternatives
     * [pocketpy](https://pocketpy.dev/) - python as a scripting language
-    * [lua sol2](https://github.com/ThePhD/sol2) - lua with advanced C++ bindings
+    * [wren](https://github.com/wren-lang/wren) as the scripting layer
+    * [wrenbind17](https://github.com/matusnovak/wrenbind17) for modern C++ wren binding

@@ -91,6 +91,7 @@ set(SOURCES
   ${SRC_DIR}/anim.cpp
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/data.cpp
+  ${SRC_DIR}/math.cpp
   ${SRC_DIR}/mesh.cpp
   ${SRC_DIR}/color.cpp
   ${SRC_DIR}/material.cpp
@@ -116,6 +117,7 @@ set(HEADERS
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/model.hpp
   ${INCLUDE_DIR}/data.hpp
+  ${INCLUDE_DIR}/math.hpp
   ${INCLUDE_DIR}/mesh.hpp
   ${INCLUDE_DIR}/color.hpp
   ${INCLUDE_DIR}/material.hpp
@@ -132,8 +134,18 @@ set(HEADERS
 )
 
 if(DARMOK_BUILD_SCRIPTING)
-  list(APPEND SOURCES ${SRC_DIR}/scripting.cpp)
-  list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
+  set(SCRIPTING_SOURCES
+    ${SRC_DIR}/scripting/app.cpp
+    ${SRC_DIR}/scripting/asset.cpp
+    ${SRC_DIR}/scripting/input.cpp
+    ${SRC_DIR}/scripting/math1.cpp
+    ${SRC_DIR}/scripting/math2.cpp
+    ${SRC_DIR}/scripting/scene.cpp
+    ${SRC_DIR}/scripting/window.cpp
+  )
+  list(APPEND SOURCES ${SCRIPTING_SOURCES})
+  list(APPEND HEADERS${INCLUDE_DIR}/scripting.hpp )
+  source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
 endif()
 
 set(LIB_NAME darmok)
@@ -235,8 +247,9 @@ endif()
 
 # glm
 add_subdirectory(${LIBS_DIR}/glm)
+set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
+target_compile_definitions(glm INTERFACE ${GLM_DEFINES})
 target_link_libraries(${LIB_NAME} PUBLIC glm)
-target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
 
 # bgfx
 target_link_libraries(${LIB_NAME} PUBLIC bgfx bimg bimg_decode bx)
@@ -274,7 +287,7 @@ if(DARMOK_BUILD_SCRIPTING_EXE)
   set(SCRIPTING_EXE_NAME ${LIB_NAME}-scripting)
   add_executable(
     ${SCRIPTING_EXE_NAME}
-    src/scripting_main.cpp
+    src/scripting/main.cpp
   )
   target_compile_definitions(
     ${SCRIPTING_EXE_NAME}

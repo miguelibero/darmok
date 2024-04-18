@@ -184,5 +184,6 @@ namespace darmok
 
         Utf8Char(uint32_t data = 0, uint8_t len = 0) noexcept;
         [[nodiscard]] static Utf8Char encode(uint32_t scancode) noexcept;
+        std::string_view string() const noexcept;
     };
 }

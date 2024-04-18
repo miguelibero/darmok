@@ -13,9 +13,9 @@ namespace darmok
     class SceneImpl;
     class Camera;
 
-    typedef uint32_t Entity;
-    typedef entt::basic_registry<Entity> EntityRegistry;
-    typedef entt::basic_runtime_view<const entt::basic_sparse_set<Entity>> EntityRuntimeView;
+    using Entity = uint32_t;
+    using EntityRegistry = entt::basic_registry<Entity> ;
+    using EntityRuntimeView = entt::basic_runtime_view<const entt::basic_sparse_set<Entity>> ;
 
     class BX_NO_VTABLE IEntityFilter
     {

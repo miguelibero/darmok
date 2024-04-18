@@ -1,6 +1,6 @@
 #pragma once
 
-#include <darmok/input.hpp>
+#include "input.hpp"
 #include <darmok/window.hpp>
 #include <darmok/utils.hpp>
 #include <bx/bx.h>
@@ -95,10 +95,10 @@ namespace darmok
 	class MouseMovedEvent final : public PlatformEvent
 	{
 	public:
-		MouseMovedEvent(const MousePosition& pos) noexcept;
+		MouseMovedEvent(const glm::vec3& pos) noexcept;
 		void process(Input& input) noexcept;
 	private:
-		MousePosition _pos;
+		glm::vec3 _pos;
 	};
 
 	class MouseButtonChangedEvent final : public PlatformEvent
@@ -109,15 +109,6 @@ namespace darmok
 	private:
 		MouseButton _button;
 		bool _down;
-	};
-
-	class WindowMouseLockChangedEvent final : public PlatformEvent
-	{
-	public:
-		WindowMouseLockChangedEvent(bool locked) noexcept;
-		void process(Input& input) noexcept;
-	private:
-		bool _locked;
 	};
 
 	class GamepadAxisChangedEvent final : public PlatformEvent
@@ -157,10 +148,11 @@ namespace darmok
 	class WindowSizeChangedEvent final : public PlatformEvent
 	{
 	public:
-		WindowSizeChangedEvent(const glm::uvec2& size) noexcept;
+		WindowSizeChangedEvent(const glm::uvec2& size, bool pixel = false) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		glm::uvec2 _size;
+		bool _pixel;
 	};
 
 	class WindowPhaseChangedEvent final : public PlatformEvent
@@ -216,7 +208,7 @@ namespace darmok
 
 		void requestWindowDestruction() noexcept;
 		void requestWindowModeChange(WindowMode mode) noexcept;
-		void requestWindowMouseLock(bool enabled) noexcept;
+		void requestCursorVisibilityChange(bool visible) noexcept;
 
 		[[nodiscard]] void* getWindowHandle() const noexcept;
 		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getWindowHandleType() const noexcept;

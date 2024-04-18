@@ -484,8 +484,7 @@ namespace darmok
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = dt;
 
-		auto& state = input.getImpl().getState();
-		for (auto& inputChar : state.chars)
+		for (auto& inputChar : input.getImpl().getKeyboard().getUpdateChars())
 		{
 			io.AddInputCharacter(inputChar.data);
 		}
@@ -496,7 +495,7 @@ namespace darmok
 
 		auto& buttons = mouse.getButtons();
 		auto& pos = mouse.getPosition();
-		io.AddMousePosEvent((float)pos.x, (float)pos.y);
+		io.AddMousePosEvent(pos.x, size.y - pos.y);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);

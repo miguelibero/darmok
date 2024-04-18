@@ -84,7 +84,10 @@ namespace darmok
 		bx::Thread _thread;
 		std::queue<std::unique_ptr<PlatformCmd>> _cmds;
 		double _scrollPos;
+		glm::uvec2 _windowSize;
+		glm::uvec2 _framebufferSize;
 
+		glm::vec2 normalizeScreenPoint(double x, double y) noexcept;
 
 		static uint8_t translateKeyModifiers(int mods) noexcept;
 		static KeyboardKey translateKey(int key) noexcept;
@@ -103,6 +106,7 @@ namespace darmok
 		void cursorPosCallback(GLFWwindow* window, double x, double y) noexcept;
 		void mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
 		void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
+		void framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
 
 		static void staticJoystickCallback(int jid, int action) noexcept;
 		static void staticErrorCallback(int error, const char* description) noexcept;
@@ -112,6 +116,7 @@ namespace darmok
 		static void staticCursorPosCallback(GLFWwindow* window, double x, double y) noexcept;
 		static void staticMouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
 		static void staticWindowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
+		static void staticFramebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
 	};
 
 #pragma endregion PlatformImpl definition
@@ -126,7 +131,7 @@ namespace darmok
 			CreateWindow,
 			DestroyWindow,
 			ChangeWindowMode,
-			LockMouseToWindow,
+			ChangeCursorVisibility,
 		};
 
 		PlatformCmd(Type type)
@@ -168,6 +173,7 @@ namespace darmok
 			switch (_mode)
 			{
 			case WindowMode::Normal:
+			{
 				glfwSetWindowMonitor(glfw
 					, nullptr
 					, 0
@@ -176,12 +182,11 @@ namespace darmok
 					, 0
 					, 0
 				);
-				int w, h;
-				glfwGetWindowSize(glfw, &w, &h);
 				events.post<WindowModeChangedEvent>(WindowMode::Normal);
-				events.post<WindowSizeChangedEvent>(glm::uvec2{ w, h });
 				break;
+			}
 			case WindowMode::Fullscreen:
+			{
 				GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 				if (monitor == nullptr)
 				{
@@ -197,22 +202,38 @@ namespace darmok
 					, mode->refreshRate
 				);
 				events.post<WindowModeChangedEvent>(WindowMode::Fullscreen);
-				events.post<WindowSizeChangedEvent>(glm::uvec2{ mode->width, mode->height });
 				break;
+			}
+			case WindowMode::WindowedFullscreen:
+			{
+				GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+				if (monitor == nullptr)
+				{
+					break;
+				}
+				const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+				glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+				glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+				glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+				glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+				events.post<WindowModeChangedEvent>(WindowMode::WindowedFullscreen);
+				break;
+			}
 			}
 		}
 	private:
 		WindowMode _mode;
 	};
 
-	class LockMouseToWindowCmd final : public PlatformCmd
+	class ChangeCursorVisibilityCmd final : public PlatformCmd
 	{
 	public:
 
-		LockMouseToWindowCmd(
+		ChangeCursorVisibilityCmd(
 			bool value
 		) :
-			PlatformCmd(LockMouseToWindow)
+			PlatformCmd(ChangeCursorVisibility)
 			, _value(value)
 		{
 		}
@@ -221,7 +242,6 @@ namespace darmok
 		{
 			auto cursor = _value ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL;
 			glfwSetInputMode(glfw, GLFW_CURSOR, cursor);
-			events.post<WindowMouseLockChangedEvent>(_value);
 		}
 	private:
 		bool _value;
@@ -235,8 +255,8 @@ namespace darmok
 		case PlatformCmd::DestroyWindow:
 			static_cast<DestroyWindowCmd&>(cmd).process(plat.getGlfwWindow());
 			break;
-		case PlatformCmd::LockMouseToWindow:
-			static_cast<LockMouseToWindowCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
+		case PlatformCmd::ChangeCursorVisibility:
+			static_cast<ChangeCursorVisibilityCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
 			break;
 		case PlatformCmd::ChangeWindowMode:
 			static_cast<ChangeWindowModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
@@ -249,6 +269,8 @@ namespace darmok
 	PlatformImpl::PlatformImpl() noexcept
 		: _window(nullptr)
 		, _scrollPos(0.0f)
+		, _windowSize(0)
+		, _framebufferSize(0)
 	{
 	}
 
@@ -333,6 +355,7 @@ namespace darmok
 		glfwSetMouseButtonCallback(window, staticMouseButtonCallback);
 		glfwSetJoystickCallback(staticJoystickCallback);
 		glfwSetWindowSizeCallback(window, staticWindowSizeCallback);
+		glfwSetFramebufferSizeCallback(window, staticFramebufferSizeCallback);
 
 		return window;
 	}
@@ -572,8 +595,8 @@ namespace darmok
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		glm::uvec2 size{ DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT };
-		_window = createWindow(size, "darmok");
+		_windowSize = glm::uvec2{ DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT };
+		_window = createWindow(_windowSize, "darmok");
 
 		if (!_window)
 		{
@@ -582,7 +605,11 @@ namespace darmok
 			return bx::kExitFailure;
 		}
 
-		_events.post<WindowSizeChangedEvent>(size);
+		_events.post<WindowSizeChangedEvent>(_windowSize);
+		int w, h;
+		glfwGetFramebufferSize(_window, &w, &h);
+		_framebufferSize = glm::uvec2(w, h);
+		_events.post<WindowSizeChangedEvent>(_framebufferSize, true);
 		_events.post<WindowPhaseChangedEvent>(WindowPhase::Running);
 
 		_thread.init(MainThreadEntry::threadFunc, &_mte);
@@ -638,25 +665,25 @@ namespace darmok
 		_events.post<KeyboardCharInputEvent>(data);
 	}
 
+	glm::vec2 PlatformImpl::normalizeScreenPoint(double x, double y) noexcept
+	{
+		y = _windowSize.y - y;
+		auto f = glm::vec2(_framebufferSize) / glm::vec2(_windowSize);
+		return (glm::vec2(x, y) * f) + glm::vec2(0.5F);
+	}
+
 	void PlatformImpl::scrollCallback(GLFWwindow* window, double dx, double dy) noexcept
 	{
 		BX_UNUSED(dx);
 		double mx, my;
 		glfwGetCursorPos(window, &mx, &my);
 		_scrollPos += dy;
-		_events.post<MouseMovedEvent>(
-			MousePosition((int32_t)mx
-			, (int32_t)my
-			, (int32_t)_scrollPos));
+		_events.post<MouseMovedEvent>(glm::vec3(normalizeScreenPoint(mx, my), _scrollPos));
 	}
 
 	void PlatformImpl::cursorPosCallback(GLFWwindow* window, double x, double y) noexcept
 	{
-		_events.post<MouseMovedEvent>(
-			MousePosition((int32_t)x
-			, (int32_t)y
-			, (int32_t)_scrollPos)
-		);
+		_events.post<MouseMovedEvent>(glm::vec3(normalizeScreenPoint(x, y), _scrollPos));
 	}
 
 	void PlatformImpl::mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept
@@ -672,6 +699,11 @@ namespace darmok
 	void PlatformImpl::windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
 		_events.post<WindowSizeChangedEvent>(glm::uvec2(width, height));
+	}
+
+	void PlatformImpl::framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
+	{
+		_events.post<WindowSizeChangedEvent>(glm::uvec2(width, height), true);
 	}
 
 	void PlatformImpl::joystickCallback(int jid, int action) noexcept
@@ -726,6 +758,11 @@ namespace darmok
 		Platform::get().getImpl().windowSizeCallback(window, width, height);
 	}
 
+	void PlatformImpl::staticFramebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
+	{
+		Platform::get().getImpl().framebufferSizeCallback(window, width, height);
+	};
+
 	void PlatformImpl::pushCmd(std::unique_ptr<PlatformCmd>&& cmd) noexcept
 	{
 		_cmds.push(std::move(cmd));
@@ -768,9 +805,9 @@ namespace darmok
 		_impl.pushCmd<ChangeWindowModeCmd>(mode);
 	}
 
-	void Platform::requestWindowMouseLock(bool lock) noexcept
+	void Platform::requestCursorVisibilityChange(bool visible) noexcept
 	{
-		_impl.pushCmd<LockMouseToWindowCmd>(lock);
+		_impl.pushCmd<ChangeCursorVisibilityCmd>(visible);
 	}
 
 	void* Platform::getWindowHandle() const noexcept

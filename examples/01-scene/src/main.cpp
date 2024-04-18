@@ -103,24 +103,25 @@ namespace
 
 			auto& scene = addComponent<SceneAppComponent>().getScene();
 			scene.addLogicUpdater<FrameAnimationUpdater>();
+			auto& registry = scene.getRegistry();
 
 			glm::vec2 size = getWindow().getSize();
 
-			auto prog = Program::createStandard(StandardProgramType::Unlit);
+			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::Unlit);
 			_layout = prog->getVertexLayout();
 
-			auto cam2d = scene.createEntity();
-			scene.addComponent<Camera>(cam2d)
-				.setOrtho(0.f, size.x, 0.f, size.y)
+			auto cam2d = registry.create();
+			registry.emplace<Camera>(cam2d)
+				.setOrtho({ 0.f, size.x, 0.f, size.y })
 				.setEntityComponentFilter<Culling2D>()
 				.setRenderer<ForwardRenderer>(prog);
 
-			auto cam3d = scene.createEntity();
-			scene.addComponent<Transform>(cam3d)
+			auto cam3d = registry.create();
+			registry.emplace<Transform>(cam3d)
 				.setPosition(glm::vec3(0.f, 2.f, -2.f))
 				.setRotation(glm::vec3(45.f, 0, 0));
 
-			scene.addComponent<Camera>(cam3d)
+			registry.emplace<Camera>(cam3d)
 				.setProjection(60, size.x / size.y, 0.3, 1000)
 				.setEntityComponentFilter<Culling3D>()
 				.setRenderer<ForwardRenderer>(prog);
@@ -137,35 +138,37 @@ namespace
 
 		void createBouncingSprite(Scene& scene)
 		{
+			auto& registry = scene.getRegistry();
 			auto tex = getAssets().getTextureLoader()("assets/engine.png");
-			auto sprite = scene.createEntity();
-			auto& trans = scene.addComponent<Transform>(sprite);
+			auto sprite = registry.create();
+			auto& trans = registry.emplace<Transform>(sprite);
 			trans.setPivot(glm::vec3(-0.5F));
 			float scale = 0.5;
-			auto mesh = Mesh::createSprite(tex, _layout, scale);
+			auto mesh = Mesh::createSprite(_layout, tex, scale);
 			auto size = scale * glm::vec2(tex->getImage()->getSize());
 			auto debugMesh = Mesh::createLineQuad(_layout, size);
 			debugMesh->setMaterial(_debugMaterial);
-			scene.addComponent<MeshComponent>(sprite).setMeshes({ mesh, debugMesh });
-			scene.addComponent<Culling2D>(sprite);
+			registry.emplace<MeshComponent>(sprite).setMeshes({ mesh, debugMesh });
+			registry.emplace<Culling2D>(sprite);
 			scene.addLogicUpdater<ScreenBounceUpdater>(trans, size, 100.f);
 		}
 
 		void createSpriteAnimation(Scene& scene)
 		{
+			auto& registry = scene.getRegistry();
 			auto texAtlas = getAssets().getTextureAtlasLoader()("assets/warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
 			static const std::string animNamePrefix = "Attack/";
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
-			auto anim = scene.createEntity();
+			auto anim = registry.create();
 			float scale = 2.f;
 			auto frames = texAtlas->createSpriteAnimation(_layout, animNamePrefix, 0.1f, scale);
 			
-			auto& meshComp = scene.addComponent<MeshComponent>(anim);
-			scene.addComponent<FrameAnimationComponent>(anim, frames, meshComp);
+			auto& meshComp = registry.emplace<MeshComponent>(anim);
+			registry.emplace<FrameAnimationComponent>(anim, frames, meshComp);
 			
-			scene.addComponent<Culling2D>(anim);
+			registry.emplace<Culling2D>(anim);
 			auto& winSize = getWindow().getSize();
-			scene.addComponent<Transform>(anim)
+			registry.emplace<Transform>(anim)
 				.setPosition(glm::vec3(winSize, 0) / 2.f)
 				.setPivot(glm::vec3(animBounds.size.x, animBounds.size.y, 0.f) / 2.f);
 		}
@@ -179,10 +182,11 @@ namespace
 			auto cubeMesh = Mesh::createCube(_layout);
 			cubeMesh->setMaterial(material);
 
-			auto cube = scene.createEntity();
-			scene.addComponent<Culling3D>(cube);
-			scene.addComponent<MeshComponent>(cube, cubeMesh);
-			auto& trans = scene.addComponent<Transform>(cube);
+			auto& registry = scene.getRegistry();
+			auto cube = registry.create();
+			registry.emplace<Culling3D>(cube);
+			registry.emplace<MeshComponent>(cube, cubeMesh);
+			auto& trans = registry.emplace<Transform>(cube);
 			scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
 		}
 	private:
