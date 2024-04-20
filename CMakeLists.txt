@@ -31,12 +31,6 @@ macro(addCopySource SRC DST)
     MAIN_DEPENDENCY ${SRC})
 endmacro()
 
-macro(addCopySources PATHS)
-  foreach(PATH ${PATHS})
-    addCopySource(${PATH} ${PATH})
-  endforeach()
-endmacro()
-
 set(SHADERS "")
 set(SHADER_INCLUDES "")
 

@@ -48,6 +48,7 @@ namespace darmok
 		, _modelLoader(_dataLoader, _textureLoader, &_allocator)
 		, _colorTextureLoader(&_allocator)
 	{
+		setBasePath("assets");
 	}
 
 	bx::AllocatorI* AssetContextImpl::getAllocator() noexcept

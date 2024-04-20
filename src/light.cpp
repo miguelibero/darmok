@@ -97,6 +97,9 @@ namespace darmok
     PhongLightingComponent::PhongLightingComponent() noexcept
         : _lightCountUniform{ bgfx::kInvalidHandle }
         , _lightDataUniform{ bgfx::kInvalidHandle }
+        , _lightCount(0)
+        , _lightData(0)
+        , _pointLightBuffer{ bgfx::kInvalidHandle }
     {
         _pointLightsLayout.begin()
             .add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
@@ -140,10 +143,11 @@ namespace darmok
         auto& registry = _scene->getRegistry();
         auto pointLights = _cam->createEntityView<PointLight>(registry);
 
+        // TODO: not sure if size_hint is accurate
         auto size = _pointLightsLayout.getSize(pointLights.size_hint());
         if (_pointLights.size() < size)
         {
-            _pointLights = Data(size);
+            _pointLights.resize(size);
         }
 
         size_t index = 0;
@@ -162,7 +166,11 @@ namespace darmok
             index++;
         }
         size = _pointLightsLayout.getSize(index);
-        bgfx::update(_pointLightBuffer, 0, bgfx::makeRef(_pointLights.ptr(), size));
+        auto ptr = _pointLights.ptr();
+        if (ptr != nullptr)
+        {
+            bgfx::update(_pointLightBuffer, 0, bgfx::makeRef(ptr, size));
+        }
 
         return index;
     }
@@ -174,7 +182,6 @@ namespace darmok
             return;
         }
         _lightCount.x = updatePointLights();
-
 
         auto& registry = _scene->getRegistry();
         auto ambientLights = _cam->createEntityView<AmbientLight>(registry);

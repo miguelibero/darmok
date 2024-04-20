@@ -89,6 +89,22 @@ namespace darmok
 		std::shared_ptr<Mesh> _mesh;
 	};
 
+	class TextureAtlas;
+	struct SpriteCreationConfig;
+
+	class LuaTextureAtlas final
+	{
+	public:
+		LuaTextureAtlas(const std::shared_ptr<TextureAtlas>& atlas) noexcept;
+		const std::shared_ptr<TextureAtlas>& getReal() const noexcept;
+		LuaMesh createSprite1(const bgfx::VertexLayout& layout, const std::string& name, const SpriteCreationConfig& cfg);
+		LuaMesh createSprite2(const bgfx::VertexLayout& layout, const std::string& name);
+
+		static void configure(sol::state_view& lua) noexcept;
+	private:
+		std::shared_ptr<TextureAtlas> _atlas;
+	};
+
 	class Model;
 	class LuaEntity;
 	class LuaScene;
@@ -118,7 +134,9 @@ namespace darmok
 		LuaAssets(AssetContext& assets) noexcept;
 		LuaProgram loadProgram(const std::string& name);
 		LuaProgram loadStandardProgram(const std::string& name);
+		LuaTexture loadTexture(const std::string& name);
 		LuaTexture loadColorTexture(const Color& color);
+		LuaTextureAtlas loadTextureAtlas(const std::string& name);
 		LuaModel loadModel(const std::string& name);
 
 		static void configure(sol::state_view& lua) noexcept;

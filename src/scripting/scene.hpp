@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <variant>
 #include <glm/glm.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
@@ -25,10 +26,12 @@ namespace darmok
 		const glm::mat4& getMatrix() const noexcept;
 		const glm::mat4& getInverse() const noexcept;
 
-		void setPosition(const glm::vec3& v) noexcept;
-		void setRotation(const glm::vec3& v) noexcept;
-		void setScale(const glm::vec3& v) noexcept;
-		void setPivot(const glm::vec3& v) noexcept;
+		using VarVec3 = std::variant<glm::vec3, sol::table>;
+
+		void setPosition(const VarVec3& v) noexcept;
+		void setRotation(const VarVec3& v) noexcept;
+		void setScale(const VarVec3& v) noexcept;
+		void setPivot(const VarVec3& v) noexcept;
 		void setMatrix(const glm::mat4& v) noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
@@ -49,6 +52,7 @@ namespace darmok
 		void setProjection2(float fovy, float aspect, float near) noexcept;
 		void setWindowProjection1(float fovy, const glm::vec2& range) noexcept;
 		void setWindowProjection2(float fovy, float near) noexcept;
+		void setWindowProjection3(float fovy) noexcept;
 		void setOrtho1(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept;
 		void setOrtho2(const glm::vec4& edges, const glm::vec2& range) noexcept;
 		void setOrtho3(const glm::vec4& edges) noexcept;
@@ -117,10 +121,10 @@ namespace darmok
 	public:
 		LuaEntity(Entity entity, Scene& scene) noexcept;
 		LuaComponent addComponent(const sol::table& table) noexcept;
-		LuaTransform addTransformComponent() noexcept;
-		LuaCamera addCameraComponent() noexcept;
-		LuaPointLight addPointLightComponent() noexcept;
-		LuaMeshComponent addMeshComponent(const LuaMesh& mesh) noexcept;
+		LuaTransform getTransform() noexcept;
+		LuaCamera getCamera() noexcept;
+		LuaPointLight getPointLight() noexcept;
+		LuaMeshComponent addMesh(const LuaMesh& mesh) noexcept;
 		const Entity& getReal() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;

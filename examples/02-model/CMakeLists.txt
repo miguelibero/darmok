@@ -14,7 +14,9 @@ set(ASSETS
   assets/human.png
 )
 
-addCopySources(${ASSETS})
+foreach(ASSET ${ASSETS})
+  addCopySource(${ASSET} ${ASSET})
+endforeach()
 
 add_executable(
   ${PROJECT_NAME}

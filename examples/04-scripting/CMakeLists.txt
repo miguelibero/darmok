@@ -16,8 +16,8 @@ addCopySource(assets/main.lua main.lua)
 set(SCRIPTS
   assets/main.lua
 )
-source_group("Scripting Files" FILES ${SCRIPTS})
 
+source_group("Scripting Files" FILES ${SCRIPTS})
 add_custom_target(${PROJECT_NAME}
   COMMAND $<TARGET_FILE:darmok-scripting>
   DEPENDS darmok-scripting
@@ -25,6 +25,5 @@ add_custom_target(${PROJECT_NAME}
   SOURCES ${SCRIPTS}
   COMMENT "running darmok scripting executable"
 )
-
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 

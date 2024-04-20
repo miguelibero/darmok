@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <variant>
 
 #include <glm/gtx/string_cast.hpp>
 #include <glm/glm.hpp>
@@ -13,6 +14,62 @@ namespace darmok
 		// had to split due to Visual Studio error C1126
 		static void configure1(sol::state_view& lua) noexcept;
 		static void configure2(sol::state_view& lua) noexcept;
+
+
+		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+		static void loadFromTable(const sol::table& tab, glm::vec<L, T, Q>& v) noexcept
+		{
+			glm::length_t i = 0;
+			for (auto& elm : tab)
+			{
+				v[i++] = elm.second.as<T>();
+				if (i >= v.length())
+				{
+					break;
+				}
+			}
+		}
+
+		template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
+		static void loadFromTable(const sol::table& tab, glm::mat<L1, L2, T, Q>& v) noexcept
+		{
+			glm::length_t i = 0;
+			for (auto& elm : tab)
+			{
+				if (elm.second.is<sol::table>())
+				{
+					loadFromTable(elm.second.as<sol::table>(), v[i++]);
+				}
+				else if (elm.second.is<glm::vec<L2, T, Q>>())
+				{
+					v[i++] = elm.second.as<glm::vec<L2, T, Q>>();
+				}
+				if (i >= v.length())
+				{
+					break;
+				}
+			}
+		}
+
+		template<typename T>
+		static T tableToGlm(const std::variant<T, sol::table>& v) noexcept
+		{
+			auto ptr = std::get_if<T>(&v);
+			if (ptr != nullptr)
+			{
+				return *ptr;
+			}
+			return tableToGlm<T>(std::get<sol::table>(v));
+		}
+
+		template<typename T>
+		static T tableToGlm(const sol::table& tab) noexcept
+		{
+			T v;
+			loadFromTable(tab, v);
+			return v;
+		}
+
 	private:
 
 		template<typename T, typename... Ctors>
@@ -44,6 +101,7 @@ namespace darmok
 			usertype["zero"] = sol::var(T());
 			usertype["dot"] = sol::resolve<val(const vec&, const vec&)>(glm::dot);
 			usertype["norm"] = sol::resolve<vec(const vec&)>(glm::normalize);
+
 			return usertype;
 		}
 

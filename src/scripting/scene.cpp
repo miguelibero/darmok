@@ -1,5 +1,6 @@
 #include "scene.hpp"
 #include "asset.hpp"
+#include "math.hpp"
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/mesh.hpp>
@@ -64,24 +65,24 @@ namespace darmok
 		return _transform->getInverse();
 	}
 
-	void LuaTransform::setPosition(const glm::vec3& v) noexcept
+	void LuaTransform::setPosition(const VarVec3& v) noexcept
 	{
-		_transform->setPosition(v);
+		_transform->setPosition(LuaMath::tableToGlm(v));
 	}
 
-	void LuaTransform::setRotation(const glm::vec3& v) noexcept
+	void LuaTransform::setRotation(const VarVec3& v) noexcept
 	{
-		_transform->setRotation(v);
+		_transform->setRotation(LuaMath::tableToGlm(v));
 	}
 
-	void LuaTransform::setScale(const glm::vec3& v) noexcept
+	void LuaTransform::setScale(const VarVec3& v) noexcept
 	{
-		_transform->setScale(v);
+		_transform->setScale(LuaMath::tableToGlm(v));
 	}
 
-	void LuaTransform::setPivot(const glm::vec3& v) noexcept
+	void LuaTransform::setPivot(const VarVec3& v) noexcept
 	{
-		_transform->setPivot(v);
+		_transform->setPivot(LuaMath::tableToGlm(v));
 	}
 
 	void LuaTransform::setMatrix(const glm::mat4& v) noexcept
@@ -112,6 +113,11 @@ namespace darmok
 	void LuaCamera::setWindowProjection2(float fovy, float near) noexcept
 	{
 		_camera->setWindowProjection(fovy, near);
+	}
+
+	void LuaCamera::setWindowProjection3(float fovy) noexcept
+	{
+		_camera->setWindowProjection(fovy);
 	}
 
 	void LuaCamera::setOrtho1(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept
@@ -200,23 +206,30 @@ namespace darmok
 		return LuaComponent(getRegistry().emplace<LuaInternalComponent>(_entity, table));
 	}
 
-	LuaTransform LuaEntity::addTransformComponent() noexcept
+	LuaTransform LuaEntity::getTransform() noexcept
 	{
-		return LuaTransform(getRegistry().emplace<Transform>(_entity));
+		return LuaTransform(getRegistry().get_or_emplace<Transform>(_entity));
 	}
 
-	LuaCamera LuaEntity::addCameraComponent() noexcept
+	LuaCamera LuaEntity::getCamera() noexcept
 	{
-		return LuaCamera(getRegistry().emplace<Camera>(_entity));
+		return LuaCamera(getRegistry().get_or_emplace<Camera>(_entity));
 	}
 
-	LuaPointLight LuaEntity::addPointLightComponent() noexcept
+	LuaPointLight LuaEntity::getPointLight() noexcept
 	{
-		return LuaPointLight(getRegistry().emplace<PointLight>(_entity));
+		return LuaPointLight(getRegistry().get_or_emplace<PointLight>(_entity));
 	}
 
-	LuaMeshComponent LuaEntity::addMeshComponent(const LuaMesh& mesh) noexcept
+	LuaMeshComponent LuaEntity::addMesh(const LuaMesh& mesh) noexcept
 	{
+		auto& registry = getRegistry();
+		auto comp = registry.try_get<MeshComponent>(_entity);
+		if (comp != nullptr)
+		{
+			comp->addMesh(mesh.getReal());
+			return LuaMeshComponent(*comp);
+		}
 		return LuaMeshComponent(getRegistry().emplace<MeshComponent>(_entity, mesh.getReal()));
 	}
 
@@ -270,7 +283,8 @@ namespace darmok
 				&LuaCamera::setProjection1,
 				&LuaCamera::setProjection2,
 				&LuaCamera::setWindowProjection1,
-				&LuaCamera::setWindowProjection2
+				&LuaCamera::setWindowProjection2,
+				&LuaCamera::setWindowProjection3
 			),
 			"set_ortho", sol::overload(
 				&LuaCamera::setOrtho1,
@@ -290,10 +304,10 @@ namespace darmok
 	{
 		lua.new_usertype<LuaEntity>("Entity", sol::constructors<>(),
 			"add_component", &LuaEntity::addComponent,
-			"add_camera_component", &LuaEntity::addCameraComponent,
-			"add_transform_component", &LuaEntity::addTransformComponent,
-			"add_point_light_component", &LuaEntity::addPointLightComponent,
-			"add_mesh_component", &LuaEntity::addMeshComponent
+			"get_camera", &LuaEntity::getCamera,
+			"get_transform", &LuaEntity::getTransform,
+			"get_point_light", &LuaEntity::getPointLight,
+			"add_mesh", &LuaEntity::addMesh
 		);
 	}
 

@@ -96,7 +96,7 @@ namespace darmok
 	{
 		return {
 			originalSize,
-			originalPosition
+			offset
 		};
 	}
 
@@ -138,25 +138,35 @@ namespace darmok
 		return nullptr;
 	}
 
-	std::shared_ptr<Mesh> TextureAtlasElement::createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& atlasSize, float scale) const noexcept
+	std::shared_ptr<Mesh> TextureAtlasElement::createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& atlasSize,
+		const SpriteCreationConfig& cfg) const noexcept
 	{		
 		auto elmSize = std::min(positions.size(), texCoords.size());
 		VertexDataWriter writer(layout, elmSize);
 
 		glm::vec2 fatlasSize(atlasSize);
+		auto foffset = cfg.offset + glm::vec2(offset) - (pivot * glm::vec2(originalSize));
 
 		uint32_t i = 0;
 		for (auto& pos : positions)
 		{
-			auto v = scale * glm::vec2(pos.x, originalSize.y - pos.y);
+			auto v = foffset + glm::vec2(pos.x, float(originalSize.y) - pos.y);
+			v *= cfg.scale;
 			writer.write(bgfx::Attrib::Position, i++, v);
 		}
 		i = 0;
 		for (auto& texCoord : texCoords)
 		{
-			auto v = glm::vec2(texCoord) / fatlasSize;
+			auto v = cfg.textureScale * glm::vec2(texCoord) / fatlasSize;
 			writer.write(bgfx::Attrib::TexCoord0, i++, v);
 		}
+
+		if (layout.has(bgfx::Attrib::Normal))
+		{
+			static const glm::vec3 norm(0, 0, -1);
+			writer.write(bgfx::Attrib::Normal, norm);
+		}
+
 		auto vertexData = writer.finish();
 		return std::make_shared<Mesh>(layout, std::move(vertexData), Data::copy(indices));
 	}
@@ -169,22 +179,23 @@ namespace darmok
 		return material;
 	}
 
-	std::shared_ptr<Mesh> TextureAtlas::createSprite(const bgfx::VertexLayout& layout, const TextureAtlasElement& element, float scale, const Color& color) const noexcept
+	std::shared_ptr<Mesh> TextureAtlas::createSprite(const bgfx::VertexLayout& layout, const TextureAtlasElement& element, const SpriteCreationConfig& cfg) const noexcept
 	{
-		auto mesh = element.createSprite(layout, size, scale);
-		mesh->setMaterial(createMaterial(color));
+		auto mesh = element.createSprite(layout, size, { cfg.scale, cfg.textureScale });
+		mesh->setMaterial(createMaterial(cfg.color));
 		return mesh;
 	}
 
-	std::vector<AnimationFrame> TextureAtlas::createSpriteAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration, float scale, const Color& color) const noexcept
+	std::vector<AnimationFrame> TextureAtlas::createSpriteAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration, const SpriteCreationConfig& cfg) const noexcept
 	{
-		auto material = createMaterial(color);
+		auto material = createMaterial(cfg.color);
 		std::vector<AnimationFrame> frames;
+
 		for (auto& elm : elements)
 		{
 			if (elm.name.starts_with(namePrefix))
 			{
-				auto mesh = elm.createSprite(layout, size, scale);
+				auto mesh = elm.createSprite(layout, size, cfg);
 				if (mesh)
 				{
 					mesh->setMaterial(material);
@@ -230,14 +241,31 @@ namespace darmok
 			return { v, ni + 1 };
 		}
 
-		static std::pair<std::optional<TextureVec2>, size_t> readTextureVec2(std::string_view str, size_t i) noexcept
+		static std::vector<TextureAtlasIndex> readTextureIndexList(std::string_view str) noexcept
+		{
+			std::vector<TextureAtlasIndex> list;
+			size_t ii = 0;
+			while (ii != std::string::npos)
+			{
+				auto p = readInt(str, ii);
+				if (p.first < 0)
+				{
+					break;
+				}
+				list.push_back(p.first);
+				ii = p.second;
+			}
+			return list;
+		}
+
+		static std::pair<std::optional<glm::uvec2>, size_t> readTextureVec2(std::string_view str, size_t i) noexcept
 		{
 			auto p = readInt(str, i);
 			if (p.first < 0)
 			{
 				return { std::nullopt, std::string::npos };
 			}
-			TextureVec2 v = { p.first, 0 };
+			glm::uvec2 v = { p.first, 0 };
 			i = p.second;
 			if (i == std::string::npos)
 			{
@@ -253,9 +281,9 @@ namespace darmok
 			return { v, i };
 		}
 
-		static std::vector<TextureVec2> readTextureVec2List(std::string_view data) noexcept
+		static std::vector<glm::uvec2> readTextureVec2List(std::string_view data) noexcept
 		{
-			std::vector<TextureVec2> vec;
+			std::vector<glm::uvec2> list;
 			size_t pi = 0;
 			while (pi != std::string::npos)
 			{
@@ -264,39 +292,103 @@ namespace darmok
 				{
 					break;
 				}
-				vec.push_back(pp.first.value());
+				list.push_back(pp.first.value());
 				pi = pp.second;
 			}
-			return vec;
+			return list;
 		}
 	}
 
-	TextureAtlasElement loadElement(pugi::xml_node& xml) noexcept
+	TextureAtlasElement loadElement(pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept
 	{
-		auto positions = texture_packer_xml::readTextureVec2List(xml.child("vertices").text().get());
-		auto texCoords = texture_packer_xml::readTextureVec2List(xml.child("verticesUV").text().get());
-		std::string vertIdxVals = xml.child("triangles").text().get();
-		size_t ii = 0;
-		std::vector<TextureAtlasIndex> indices;
-		while (ii != std::string::npos)
+		TextureAtlasElement elm{ xml.attribute("n").value() };
+
+		elm.texturePosition = glm::uvec2(0);
+		elm.size = textureSize;
+
+		auto xmlX = xml.attribute("x");
+		if (xmlX)
 		{
-			auto p = texture_packer_xml::readInt(vertIdxVals, ii);
-			if (p.first < 0)
-			{
-				break;
-			}
-			indices.push_back(p.first);
-			ii = p.second;
+			elm.texturePosition.x = xmlX.as_int();
 		}
-		return {
-			xml.attribute("n").value(), positions, texCoords, indices,
-			{ xml.attribute("x").as_int(), xml.attribute("y").as_int() },
-			{ xml.attribute("w").as_int(), xml.attribute("h").as_int() },
-			{ xml.attribute("oX").as_int(), xml.attribute("oY").as_int() },
-			{ xml.attribute("oW").as_int(), xml.attribute("oH").as_int() },
-			{ xml.attribute("pX").as_int(), xml.attribute("pY").as_int() },
-			std::string(xml.attribute("r").value()) == "y"
-		};
+		auto xmlY = xml.attribute("y");
+		if (xmlY)
+		{
+			elm.texturePosition.y = xmlY.as_int();
+		}
+		auto xmlW = xml.attribute("w");
+		if (xmlW)
+		{
+			elm.size.x = xmlW.as_int();
+		}
+		auto xmlH = xml.attribute("h");
+		if (xmlH)
+		{
+			elm.size.y = xmlH.as_int();
+		}
+
+		elm.offset = glm::uvec2(0);
+		auto xmlOriginalX = xml.attribute("oX");
+		if (xmlOriginalX)
+		{
+			elm.offset.x = xmlOriginalX.as_int();
+		}
+		auto xmlOriginalY = xml.attribute("oY");
+		if (xmlOriginalY)
+		{
+			elm.offset.y = xmlOriginalY.as_int();
+		}
+
+		auto xmlVertices = xml.child("vertices");
+		if (xmlVertices)
+		{
+			elm.positions = texture_packer_xml::readTextureVec2List(xmlVertices.text().get());
+		}
+		else
+		{
+			auto base = elm.offset + elm.texturePosition;
+			elm.positions = {
+				base + glm::uvec2(elm.size.x, 0), base + elm.size,
+				base + glm::uvec2(0, elm.size.y), base,
+			};
+		}
+
+		auto xmlVerticesUV = xml.child("verticesUV");
+		if (xmlVerticesUV)
+		{
+			elm.texCoords = texture_packer_xml::readTextureVec2List(xmlVerticesUV.text().get());
+		}
+		else
+		{
+			elm.texCoords = elm.positions;
+		}
+
+		auto xmlTriangles = xml.child("triangles");
+		if (xmlTriangles)
+		{
+			elm.indices = texture_packer_xml::readTextureIndexList(xmlTriangles.text().get());
+		}
+		else
+		{
+			elm.indices = { 0, 1, 2, 2, 3, 0 };
+		}
+		
+		elm.originalSize = elm.size;
+		auto xmlOriginalW = xml.attribute("oW");
+		if (xmlOriginalW)
+		{
+			elm.originalSize.x = xmlOriginalW.as_int();
+		}
+		auto xmlOriginalH = xml.attribute("oH");
+		if (xmlOriginalH)
+		{
+			elm.originalSize.y = xmlOriginalH.as_int();
+		}
+
+		elm.pivot = { xml.attribute("pX").as_float(), xml.attribute("pY").as_float() };
+		elm.rotated = std::string(xml.attribute("r").value()) == "y";
+
+		return elm;
 	}
 
 	std::shared_ptr<TextureAtlas> TexturePackerTextureAtlasLoader::operator()(std::string_view name, uint64_t flags)
@@ -324,7 +416,7 @@ namespace darmok
 		auto atlasFullName = p.string();
 		auto texture = _textureLoader(atlasFullName, flags);
 
-		TextureVec2 size{
+		glm::uvec2 size{
 			atlasXml.attribute("width").as_int(),
 			atlasXml.attribute("height").as_int(),
 		};
@@ -333,7 +425,7 @@ namespace darmok
 		std::vector<TextureAtlasElement> elements;
 		for (pugi::xml_node spriteXml = atlasXml.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
 		{
-			elements.push_back(loadElement(spriteXml));
+			elements.push_back(loadElement(spriteXml, size));
 		}
 
 		return std::make_shared<TextureAtlas>(texture, elements, size);

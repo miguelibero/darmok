@@ -12,7 +12,9 @@ add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 set(ASSETS
   assets/NotoSans-Regular.ttf
 )
-addCopySources(${ASSETS})
+foreach(ASSET ${ASSETS})
+  addCopySource(${ASSET} ${ASSET})
+endforeach()
 
 add_executable(
   ${PROJECT_NAME}

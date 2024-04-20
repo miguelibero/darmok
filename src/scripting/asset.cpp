@@ -50,6 +50,61 @@ namespace darmok
 		);
 	}
 
+	LuaTextureAtlas::LuaTextureAtlas(const std::shared_ptr<TextureAtlas>& atlas) noexcept
+		: _atlas(atlas)
+	{
+	}
+
+	const std::shared_ptr<TextureAtlas>& LuaTextureAtlas::LuaTextureAtlas::getReal() const noexcept
+	{
+		return _atlas;
+	}
+
+	LuaMesh LuaTextureAtlas::createSprite1(const bgfx::VertexLayout& layout, const std::string& name, const SpriteCreationConfig& cfg)
+	{
+		auto elm = _atlas->getElement(name);
+		if(!elm)
+		{
+			throw std::runtime_error("could not find atlas element");
+		}
+		return LuaMesh(_atlas->createSprite(layout, elm.value(), cfg));
+	}
+
+	LuaMesh LuaTextureAtlas::createSprite2(const bgfx::VertexLayout& layout, const std::string& name)
+	{
+		auto elm = _atlas->getElement(name);
+		if(!elm)
+		{
+			throw std::runtime_error("could not find atlas element");
+		}
+		return LuaMesh(_atlas->createSprite(layout, elm.value()));
+	}
+
+
+	void LuaTextureAtlas::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<SpriteCreationConfig>("SpriteCreationConfig",
+			sol::constructors<
+				SpriteCreationConfig(const glm::vec2&, const glm::vec2&, const glm::vec2&, const Color&),
+				SpriteCreationConfig(const glm::vec2&, const glm::vec2&, const glm::vec2&),
+				SpriteCreationConfig(const glm::vec2&, const glm::vec2&),
+				SpriteCreationConfig(const glm::vec2&),
+				SpriteCreationConfig()
+			>(),
+			"scale", &SpriteCreationConfig::scale,
+			"textureScale", &SpriteCreationConfig::textureScale,
+			"offset", &SpriteCreationConfig::offset,
+			"color", &SpriteCreationConfig::color
+		);
+		lua.new_usertype<LuaTextureAtlas>("TextureAtlas",
+			sol::constructors<>(),
+			"create_sprite", sol::overload(
+				&LuaTextureAtlas::createSprite1,
+				&LuaTextureAtlas::createSprite2
+			)
+		);
+	}
+
 	LuaMaterial::LuaMaterial() noexcept
 		: _material(std::make_shared<Material>())
 	{
@@ -295,7 +350,7 @@ namespace darmok
 		}
 		else if (name == "Unlit")
 		{
-			type = StandardProgramType::ForwardPhong;
+			type = StandardProgramType::Unlit;
 		}
 		else
 		{
@@ -309,6 +364,16 @@ namespace darmok
 		return LuaTexture(_assets->getColorTextureLoader()(color));
 	}
 
+	LuaTextureAtlas LuaAssets::loadTextureAtlas(const std::string& name)
+	{
+		return LuaTextureAtlas(_assets->getTextureAtlasLoader()(name));
+	}
+
+	LuaTexture LuaAssets::loadTexture(const std::string& name)
+	{
+		return LuaTexture(_assets->getTextureLoader()(name));
+	}
+
 	LuaModel LuaAssets::loadModel(const std::string& name)
 	{
 		return LuaModel(_assets->getModelLoader()(name));
@@ -318,6 +383,7 @@ namespace darmok
 	{
 		LuaProgram::configure(lua);
 		LuaTexture::configure(lua);
+		LuaTextureAtlas::configure(lua);
 		LuaMaterial::configure(lua);
 		LuaMesh::configure(lua);
 
@@ -325,7 +391,9 @@ namespace darmok
 			sol::constructors<>(),
 			"load_program", &LuaAssets::loadProgram,
 			"load_standard_program", &LuaAssets::loadStandardProgram,
+			"load_texture", &LuaAssets::loadTexture,
 			"load_color_texture", &LuaAssets::loadColorTexture,
+			"load_texture_atlas", &LuaAssets::loadTextureAtlas,
 			"load_model", &LuaAssets::loadModel
 		);
 	}

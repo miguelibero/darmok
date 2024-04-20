@@ -14,7 +14,6 @@ namespace darmok
 		std::shared_ptr<Texture> operator()(std::string_view name, uint64_t flags = defaultTextureCreationFlags) noexcept override;
 	private:
 		IImageLoader& _imgLoader;
-		bx::AllocatorI* _allocator;
 	};
 
     class TexturePackerTextureAtlasLoader final : public ITextureAtlasLoader

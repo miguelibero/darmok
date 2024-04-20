@@ -48,51 +48,57 @@ namespace darmok
 		TextureType _type;
 	};
 
-	typedef glm::vec<2, uint32_t> TextureVec2;
-
-	typedef uint16_t TextureAtlasIndex;
+	using TextureAtlasIndex = uint16_t ;
 
 	struct TextureBounds
 	{
-		TextureVec2 size;
-		TextureVec2 offset;
+		glm::uvec2 size;
+		glm::uvec2 offset;
 	};
 
 	class Mesh;
 	class Material;
 	class AnimationFrame;
 
+	struct SpriteCreationConfig final
+	{
+		glm::vec2 scale = glm::vec2(1);
+		glm::vec2 textureScale = glm::vec2(1);
+		glm::vec2 offset = glm::vec2(0);
+		Color color = Colors::white;
+	};
+
 	struct TextureAtlasElement final
 	{
 		std::string name;
-		std::vector<TextureVec2> positions;
-		std::vector<TextureVec2> texCoords;
+		std::vector<glm::uvec2> positions;
+		std::vector<glm::uvec2> texCoords;
 		std::vector<TextureAtlasIndex> indices;
-		TextureVec2 texturePosition;
-		TextureVec2 textureSize;
-		TextureVec2 originalPosition;
-		TextureVec2 originalSize;
-		TextureVec2 pivot;
+		glm::uvec2 texturePosition;
+		glm::uvec2 size;
+		glm::uvec2 offset;
+		glm::uvec2 originalSize;
+		glm::vec2 pivot;
 		bool rotated;
 
 		TextureBounds getBounds() const noexcept;
-		std::shared_ptr<Mesh> createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& atlasSize, float scale = 1.f) const noexcept;
-
+		std::shared_ptr<Mesh> createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& atlasSize,
+			const SpriteCreationConfig& cfg = {}) const noexcept;
 	};
 
 	struct TextureAtlas final
 	{
 		std::shared_ptr<Texture> texture;
 		std::vector<TextureAtlasElement> elements;
-		TextureVec2 size;
+		glm::uvec2 size;
 
 		TextureBounds getBounds(std::string_view prefix) const noexcept;
 		OptionalRef<TextureAtlasElement> getElement(std::string_view name) noexcept;
 		OptionalRef<const TextureAtlasElement> getElement(std::string_view name) const noexcept;
-		
+
 		std::shared_ptr<Material> createMaterial(const Color& color = Colors::white) const noexcept;
-		std::shared_ptr<Mesh> createSprite(const bgfx::VertexLayout& layout, const TextureAtlasElement& element, float scale = 1.f, const Color& color = Colors::white) const noexcept;
-		std::vector<AnimationFrame> createSpriteAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration = 1.f / 30.f, float scale = 1.f, const Color& color = Colors::white) const noexcept;
+		std::shared_ptr<Mesh> createSprite(const bgfx::VertexLayout& layout, const TextureAtlasElement& element, const SpriteCreationConfig& cfg = {}) const noexcept;
+		std::vector<AnimationFrame> createSpriteAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration = 1.f / 30.f, const SpriteCreationConfig& cfg = {}) const noexcept;
 
 	};
 

@@ -52,7 +52,7 @@ namespace darmok
     Camera& Camera::setWindowOrtho(const glm::vec2& range, float offset) noexcept
     {
         auto& vp = _app->getWindow().getViewport();
-        glm::vec4 edges(vp[0], vp[2], vp[3], vp[1]);
+        glm::vec4 edges(vp[0], vp[2], vp[1], vp[3]);
         return setOrtho(edges, range, offset);
     }
 

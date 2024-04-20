@@ -105,14 +105,12 @@ namespace
 			scene.addLogicUpdater<FrameAnimationUpdater>();
 			auto& registry = scene.getRegistry();
 
-			glm::vec2 size = getWindow().getSize();
-
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::Unlit);
 			_layout = prog->getVertexLayout();
 
 			auto cam2d = registry.create();
 			registry.emplace<Camera>(cam2d)
-				.setOrtho({ 0.f, size.x, 0.f, size.y })
+				.setWindowOrtho()
 				.setEntityComponentFilter<Culling2D>()
 				.setRenderer<ForwardRenderer>(prog);
 
@@ -122,7 +120,7 @@ namespace
 				.setRotation(glm::vec3(45.f, 0, 0));
 
 			registry.emplace<Camera>(cam3d)
-				.setProjection(60, size.x / size.y, 0.3, 1000)
+				.setWindowProjection(60, { 0.3, 1000 })
 				.setEntityComponentFilter<Culling3D>()
 				.setRenderer<ForwardRenderer>(prog);
 
@@ -139,7 +137,7 @@ namespace
 		void createBouncingSprite(Scene& scene)
 		{
 			auto& registry = scene.getRegistry();
-			auto tex = getAssets().getTextureLoader()("assets/engine.png");
+			auto tex = getAssets().getTextureLoader()("engine.png");
 			auto sprite = registry.create();
 			auto& trans = registry.emplace<Transform>(sprite);
 			trans.setPivot(glm::vec3(-0.5F));
@@ -156,12 +154,12 @@ namespace
 		void createSpriteAnimation(Scene& scene)
 		{
 			auto& registry = scene.getRegistry();
-			auto texAtlas = getAssets().getTextureAtlasLoader()("assets/warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
+			auto texAtlas = getAssets().getTextureAtlasLoader()("warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
 			static const std::string animNamePrefix = "Attack/";
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = registry.create();
 			float scale = 2.f;
-			auto frames = texAtlas->createSpriteAnimation(_layout, animNamePrefix, 0.1f, scale);
+			auto frames = texAtlas->createSpriteAnimation(_layout, animNamePrefix, 0.1f, { glm::vec2(scale) });
 			
 			auto& meshComp = registry.emplace<MeshComponent>(anim);
 			registry.emplace<FrameAnimationComponent>(anim, frames, meshComp);
@@ -175,7 +173,7 @@ namespace
 
 		void createRotatingCube(Scene& scene)
 		{
-			auto texture = getAssets().getTextureLoader()("assets/brick.png");
+			auto texture = getAssets().getTextureLoader()("brick.png");
 			auto material = std::make_shared<Material>();
 			material->setTexture(MaterialTextureType::Diffuse, texture);
 			material->setColor(MaterialColorType::Diffuse, Colors::red);
