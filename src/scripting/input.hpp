@@ -17,6 +17,7 @@ namespace darmok
 		bool getKey(const std::string& name) const noexcept;
 		std::string getUpdateChars() const noexcept;
 
+		static void configure(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Keyboard> _kb;
 	};
@@ -27,11 +28,13 @@ namespace darmok
 	{
 	public:
 		LuaMouse(Mouse& mouse) noexcept;
-		const glm::vec3& getPosition() const noexcept;
+		const glm::vec2& getPosition() const noexcept;
+		const glm::vec2& getScroll() const noexcept;
 		bool getLeftButton() const noexcept;
 		bool getMiddleButton() const noexcept;
 		bool getRightButton() const noexcept;
 
+		static void configure(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Mouse> _mouse;
 	};
@@ -46,6 +49,8 @@ namespace darmok
 		const glm::ivec3& getLeftStick() const noexcept;
 		const glm::ivec3& getRightStick() const noexcept;
 		bool isConnected() const noexcept;
+
+		static void configure(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Gamepad> _gamepad;
 	};

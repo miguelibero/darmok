@@ -12,8 +12,10 @@ namespace darmok
 
 	enum class StandardProgramType
 	{
+		Gui,
 		Unlit,
 		ForwardPhong,
+		ForwardPbr,
 	};
 
 	class Program final

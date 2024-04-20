@@ -26,7 +26,6 @@ namespace darmok
 		ImGuiContext* _imgui;
 		bgfx::TextureHandle _texture;
 		std::array<ImFont*, ImGui::Font::Count> _font;
-		int32_t _lastScroll;
 		float _fontSize;
 		bgfx::ProgramHandle _program;
 		bgfx::UniformHandle _imageLodEnabled;

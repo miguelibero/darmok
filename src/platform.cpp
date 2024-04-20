@@ -35,7 +35,7 @@ namespace darmok
 		input.getKeyboard().getImpl().pushChar(_data);
 	}
 
-	MouseMovedEvent::MouseMovedEvent(const glm::vec3& pos) noexcept
+	MouseMovedEvent::MouseMovedEvent(const glm::vec2& pos) noexcept
 		: PlatformEvent(MouseMoved)
 		, _pos(pos)
 	{
@@ -44,6 +44,17 @@ namespace darmok
 	void MouseMovedEvent::process(Input& input) noexcept
 	{
 		input.getMouse().getImpl().setPosition(_pos);
+	}
+
+	MouseScrolledEvent::MouseScrolledEvent(const glm::vec2& pos) noexcept
+		: PlatformEvent(MouseScrolled)
+		, _pos(pos)
+	{
+	}
+
+	void MouseScrolledEvent::process(Input& input) noexcept
+	{
+		input.getMouse().getImpl().setScroll(_pos);
 	}
 
 	MouseButtonChangedEvent::MouseButtonChangedEvent(MouseButton button, bool down) noexcept
@@ -180,6 +191,9 @@ namespace darmok
 			break;
 		case PlatformEvent::MouseMoved:
 			static_cast<MouseMovedEvent&>(ev).process(input);
+			break;
+		case PlatformEvent::MouseScrolled:
+			static_cast<MouseScrolledEvent&>(ev).process(input);
 			break;
 		case PlatformEvent::MouseButtonChanged:
 			static_cast<MouseButtonChangedEvent&>(ev).process(input);

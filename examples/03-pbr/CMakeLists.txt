@@ -9,15 +9,9 @@ project(
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
-set(ASSETS_DIR ${CMAKE_BINARY_DIR}/assets)
-
-set(sources
-  src/main.cpp
-)
-
 add_executable(
   ${PROJECT_NAME}
-  ${sources}
+  src/main.cpp
 )
 
 target_compile_definitions(

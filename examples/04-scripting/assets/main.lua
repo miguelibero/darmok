@@ -9,7 +9,7 @@ local camTrans = camEntity:add_transform_component()
 camTrans.position = vec3.new(0, 2, -2)
 camTrans.rotation = vec3.new(45, 0, 0)
 local cam = camEntity:add_camera_component()
-cam:set_projection(60, app.window.size, 0.3, 1000)
+cam:set_projection(60, vec2.new(0.3, 1000))
 cam:set_forward_phong_renderer(program)
 
 local lightEntity = app.scene:create_entity()

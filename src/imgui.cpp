@@ -338,7 +338,6 @@ namespace darmok
 		: _renderer(renderer)
 		, _texture{ bgfx::kInvalidHandle }
 		, _font{}
-		, _lastScroll(0)
 		, _fontSize(fontSize)
 		, _program{ bgfx::kInvalidHandle }
 		, _imageProgram{ bgfx::kInvalidHandle }
@@ -377,9 +376,6 @@ namespace darmok
 		_uniform = bgfx::createUniform("s_tex", bgfx::UniformType::Sampler);
 
 		ImGui::InitDockContext();
-
-
-		_lastScroll = 0;
 
 		_imgui = ImGui::CreateContext();
 		ImGui::SetCurrentContext(_imgui);
@@ -499,8 +495,9 @@ namespace darmok
 		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);
-		io.AddMouseWheelEvent(0.0f, (float)(pos.z - _lastScroll));
-		_lastScroll = pos.z;
+		
+		auto& scroll = mouse.getScroll();
+		io.AddMouseWheelEvent(scroll.x, scroll.y);
 
 		auto& kb = input.getKeyboard();
 		uint8_t modifiers = kb.getModifiers();
@@ -590,8 +587,8 @@ BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wunused-function"); // warning: 'int re
 BX_PRAGMA_DIAGNOSTIC_PUSH();
 BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG("-Wunknown-pragmas")
 BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wtype-limits"); // warning: comparison is always true due to limited range of data type
-#define STBTT_malloc(size, userData) darmok::imguiMemAlloc(size, userData)
-#define STBTT_free(ptr, userData) darmok::imguiMemFree(ptr, userData)
+// #define STBTT_malloc(size, userData) darmok::imguiMemAlloc(size, userData)
+// #define STBTT_free(ptr, userData) darmok::imguiMemFree(ptr, userData)
 #define STB_RECT_PACK_IMPLEMENTATION
 #include <stb/stb_rect_pack.h>
 #define STB_TRUETYPE_IMPLEMENTATION

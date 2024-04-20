@@ -16,11 +16,11 @@ currently using:
 * [sol2](https://github.com/ThePhD/sol2) modern C++ bindings for lua
 * [rapidjson](https://github.com/Tencent/rapidjson) for parsing json
 * [pugixml](https://pugixml.org/) for parsing xml
+* [nuklear](https://github.com/Immediate-Mode-UI/Nuklear) for ingame UI
 
 planned to use:
 
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
-* [nuklear](https://github.com/Immediate-Mode-UI/Nuklear) for ingame UI
 * [Bullet](https://github.com/bulletphysics/bullet3) for 3D physics
 * [Box2D](https://box2d.org/) for 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
@@ -62,6 +62,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * unlit
     * forward with phong lighting (point, ambient)
 * lua scripting
+* nuklear UI binding
 
 ### Next tasks
 * skeletal animations
@@ -72,6 +73,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * spine animations loading
 * distance field fonts
 * mesh serialization
+* unify use of std::allocator everywhere
 
 ## Interesting Related Projects
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
@@ -81,3 +83,5 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * [pocketpy](https://pocketpy.dev/) - python as a scripting language
     * [wren](https://github.com/wren-lang/wren) as the scripting layer
     * [wrenbind17](https://github.com/matusnovak/wrenbind17) for modern C++ wren binding
+* no clear UI library winner,
+    it would be interesting to write a skinnable UI library based on (vg-renderer)[https://github.com/jdryg/vg-renderer] and using html and css to skin 

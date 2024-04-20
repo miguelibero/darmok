@@ -32,14 +32,28 @@ namespace darmok
 		return str;
 	}
 
+	void LuaKeyboard::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaKeyboard>("Keyboard",
+			sol::constructors<>(),
+			"get_key", &LuaKeyboard::getKey,
+			"chars", sol::property(&LuaKeyboard::getUpdateChars)
+		);
+	}
+
 	LuaMouse::LuaMouse(Mouse& mouse) noexcept
 		: _mouse(mouse)
 	{
 	}
 
-	const glm::vec3& LuaMouse::getPosition() const noexcept
+	const glm::vec2& LuaMouse::getPosition() const noexcept
 	{
 		return _mouse->getPosition();
+	}
+
+	const glm::vec2& LuaMouse::getScroll() const noexcept
+	{
+		return _mouse->getScroll();
 	}
 
 	bool LuaMouse::getLeftButton() const noexcept
@@ -55,6 +69,18 @@ namespace darmok
 	bool LuaMouse::getRightButton() const noexcept
 	{
 		return _mouse->getButton(MouseButton::Right);
+	}
+
+	void LuaMouse::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaMouse>("Mouse",
+			sol::constructors<>(),
+			"position", sol::property(&LuaMouse::getPosition),
+			"scroll", sol::property(&LuaMouse::getScroll),
+			"left_button", sol::property(&LuaMouse::getLeftButton),
+			"middle_button", sol::property(&LuaMouse::getMiddleButton),
+			"right_button", sol::property(&LuaMouse::getRightButton)
+		);
 	}
 
 	LuaGamepad::LuaGamepad(Gamepad& gamepad) noexcept
@@ -85,6 +111,17 @@ namespace darmok
 	bool LuaGamepad::isConnected() const noexcept
 	{
 		return _gamepad->isConnected();
+	}
+
+	void LuaGamepad::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaGamepad>("Gamepad",
+			sol::constructors<>(),
+			"get_button", &LuaGamepad::getButton,
+			"connected", sol::property(&LuaGamepad::isConnected),
+			"left_stick", sol::property(&LuaGamepad::getLeftStick),
+			"right_stick", sol::property(&LuaGamepad::getRightStick)
+		);
 	}
 
     LuaInput::LuaInput(Input& input) noexcept
@@ -157,25 +194,11 @@ namespace darmok
 
 	void LuaInput::configure(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaKeyboard>("Keyboard",
-			sol::constructors<>(),
-			"get_key", &LuaKeyboard::getKey,
-			"chars", sol::property(&LuaKeyboard::getUpdateChars)
-		);
-		lua.new_usertype<LuaMouse>("Mouse",
-			sol::constructors<>(),
-			"position", sol::property(&LuaMouse::getPosition),
-			"left_button", sol::property(&LuaMouse::getLeftButton),
-			"middle_button", sol::property(&LuaMouse::getMiddleButton),
-			"right_button", sol::property(&LuaMouse::getRightButton)
-		);
-		lua.new_usertype<LuaGamepad>("Gamepad",
-			sol::constructors<>(),
-			"get_button", &LuaGamepad::getButton,
-			"connected", sol::property(&LuaGamepad::isConnected),
-			"left_stick", sol::property(&LuaGamepad::getLeftStick),
-			"right_stick", sol::property(&LuaGamepad::getRightStick)
-		);
+
+		LuaKeyboard::configure(lua);
+		LuaMouse::configure(lua);
+		LuaGamepad::configure(lua);
+
 		lua.new_usertype<LuaInput>("Input",
 			sol::constructors<>(),
 			"add_bindings",		&LuaInput::addBindings,

@@ -8,12 +8,18 @@
 #include <rapidjson/document.h>
 
 #include "embedded_shader.hpp"
+#include "generated/shaders/gui_vertex.h"
+#include "generated/shaders/gui_fragment.h"
+#include "generated/shaders/gui_vertex_layout.h"
 #include "generated/shaders/unlit_vertex.h"
 #include "generated/shaders/unlit_fragment.h"
 #include "generated/shaders/unlit_vertex_layout.h"
 #include "generated/shaders/forward_phong_vertex.h"
 #include "generated/shaders/forward_phong_fragment.h"
 #include "generated/shaders/forward_phong_vertex_layout.h"
+#include "generated/shaders/forward_pbr_vertex.h"
+#include "generated/shaders/forward_pbr_fragment.h"
+#include "generated/shaders/forward_pbr_vertex_layout.h"
 
 namespace darmok
 {
@@ -242,23 +248,31 @@ namespace darmok
 
 	static const bgfx::EmbeddedShader _embeddedShaders[] =
 	{
+		BGFX_EMBEDDED_SHADER(gui_vertex),
+		BGFX_EMBEDDED_SHADER(gui_fragment),
 		BGFX_EMBEDDED_SHADER(unlit_vertex),
 		BGFX_EMBEDDED_SHADER(unlit_fragment),
 		BGFX_EMBEDDED_SHADER(forward_phong_vertex),
 		BGFX_EMBEDDED_SHADER(forward_phong_fragment),
+		BGFX_EMBEDDED_SHADER(forward_pbr_vertex),
+		BGFX_EMBEDDED_SHADER(forward_pbr_fragment),
 		BGFX_EMBEDDED_SHADER_END()
 	};
 
 	static const std::unordered_map<StandardProgramType, std::string> _embeddedShaderNames
 	{
+		{StandardProgramType::Gui, "gui"},
 		{StandardProgramType::Unlit, "unlit"},
 		{StandardProgramType::ForwardPhong, "forward_phong"},
+		{StandardProgramType::ForwardPbr, "forward_pbr"},
 	};
 
 	static const std::unordered_map<StandardProgramType, const char*> _embeddedShaderVertexLayouts
 	{
+		{StandardProgramType::Gui, gui_vertex_layout},
 		{StandardProgramType::Unlit, unlit_vertex_layout},
 		{StandardProgramType::ForwardPhong, forward_phong_vertex_layout},
+		{StandardProgramType::ForwardPbr, forward_pbr_vertex_layout},
 	};
 
 

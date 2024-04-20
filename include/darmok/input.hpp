@@ -27,6 +27,15 @@ namespace darmok
 		RightMeta = 0x80,
 	};
 
+	enum class KeyboardModifierGroup : uint8_t
+	{
+		None = 0,
+		Alt = to_underlying(KeyboardModifier::LeftAlt) | to_underlying(KeyboardModifier::RightAlt),
+		Ctrl = to_underlying(KeyboardModifier::LeftCtrl) | to_underlying(KeyboardModifier::RightCtrl),
+		Shift = to_underlying(KeyboardModifier::LeftShift) | to_underlying(KeyboardModifier::RightShift),
+		Meta = to_underlying(KeyboardModifier::LeftMeta) | to_underlying(KeyboardModifier::RightMeta),
+	};
+
 	enum class KeyboardKey
 	{
 		None = 0,
@@ -188,7 +197,8 @@ namespace darmok
 
 		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
 
-		[[nodiscard]] const glm::vec3& getPosition() const noexcept;
+		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
+		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 

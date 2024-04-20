@@ -18,6 +18,7 @@ set(LIBS_DIR lib)
 
 option(DARMOK_BUILD_SCRIPTING "enable scripting support" OFF)
 option(DARMOK_BUILD_SCRIPTING_EXE "compile scripting executable" OFF)
+option(DARMOK_BUILD_NUKLEAR "compile nuklear support" OFF)
 
 set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "build bgfx examples.")
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
@@ -28,6 +29,12 @@ macro(addCopySource SRC DST)
     OUTPUT ${CMAKE_BINARY_DIR}/${DST}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} ${CMAKE_BINARY_DIR}/${DST}
     MAIN_DEPENDENCY ${SRC})
+endmacro()
+
+macro(addCopySources PATHS)
+  foreach(PATH ${PATHS})
+    addCopySource(${PATH} ${PATH})
+  endforeach()
 endmacro()
 
 set(SHADERS "")
@@ -72,6 +79,7 @@ macro(addShaderInclude NAME)
   list(APPEND SHADER_INCLUDES "${SHADERS_DIR}/${NAME}.sh")
 endmacro()
 
+addShader("gui")
 addShader("unlit")
 addShader("forward_phong")
 addShader("forward_pbr")
@@ -133,6 +141,11 @@ set(HEADERS
   ${INCLUDE_DIR}/render_deferred.hpp
 )
 
+if(DARMOK_BUILD_NUKLEAR)
+  list(APPEND SOURCES ${SRC_DIR}/nuklear.cpp)
+  list(APPEND HEADERS ${INCLUDE_DIR}/nuklear.hpp)
+endif()
+
 if(DARMOK_BUILD_SCRIPTING)
   set(SCRIPTING_SOURCES
     ${SRC_DIR}/scripting/app.cpp
@@ -144,7 +157,7 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/window.cpp
   )
   list(APPEND SOURCES ${SCRIPTING_SOURCES})
-  list(APPEND HEADERS${INCLUDE_DIR}/scripting.hpp )
+  list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
   source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
 endif()
 
@@ -184,7 +197,7 @@ target_include_directories(
     ${LIBS_DIR}/rapidjson/include
   )
 
-set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
+  set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
 # testing
 enable_testing()
@@ -308,3 +321,26 @@ target_link_libraries(${LIB_NAME} PRIVATE
   ozz_geometry
   ozz_animation_offline
   ozz_options)
+
+# nuklear
+if(DARMOK_BUILD_NUKLEAR)
+  set(NUKLEAR_BASE ${LIBS_DIR}/nuklear)
+  set(NUKLEAR_DEFINES 
+    NK_INCLUDE_FIXED_TYPES
+    NK_INCLUDE_STANDARD_IO
+    NK_INCLUDE_STANDARD_VARARGS
+    NK_INCLUDE_DEFAULT_ALLOCATOR
+    NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+    NK_INCLUDE_FONT_BAKING # adds `stb_truetype` and `stb_rect_pack` implementation to this library and provides font baking and rendering. If you already have font handling or do not want to use this font handler you don't have to define it.
+    NK_INCLUDE_DEFAULT_FONT # adds the default font: ProggyClean.ttf into this library which can be loaded into a font atlas and allows using this library without having a truetype font
+    NK_NO_STB_TRUETYPE_IMPLEMENTATION # already added in imgui
+    NK_NO_STB_RECT_PACK_IMPLEMENTATION # already added in imgui
+    NK_KEYSTATE_BASED_INPUT # if your backend uses key state for each frame rather than key press/release events
+    NK_INCLUDE_STANDARD_BOOL
+    # NK_ZERO_COMMAND_MEMORY # will zero out memory for each drawing command added to a drawing queue (inside nk_command_buffer_push). Zeroing command memory is very useful for fast checking (using memcmp) if command buffers are equal and avoid drawing frames when nothing on screen has changed since previous frame.
+    # NK_INCLUDE_COMMAND_USERDATA # adds a userdata pointer into each command. Can be useful for example if you want to provide custom shaders depending on the used widget. Can be combined with the style structures.
+    # NK_BUTTON_TRIGGER_ON_RELEASE # require button clicks occurring either on buttons being pressed (up to down) or released (down to up). By default this library will react on buttons being pressed, but if you define this it will only trigger if a button is released.
+  )
+  target_include_directories(${LIB_NAME} PUBLIC ${NUKLEAR_BASE})
+  target_compile_definitions(${LIB_NAME} PUBLIC ${NUKLEAR_DEFINES})
+endif()

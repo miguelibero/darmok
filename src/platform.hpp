@@ -53,6 +53,7 @@ namespace darmok
 			GamepadButtonChanged,
 
 			MouseMoved,
+			MouseScrolled,
 			MouseButtonChanged,
 			WindowMouseLockChanged,
 
@@ -95,10 +96,19 @@ namespace darmok
 	class MouseMovedEvent final : public PlatformEvent
 	{
 	public:
-		MouseMovedEvent(const glm::vec3& pos) noexcept;
+		MouseMovedEvent(const glm::vec2& pos) noexcept;
 		void process(Input& input) noexcept;
 	private:
-		glm::vec3 _pos;
+		glm::vec2 _pos;
+	};
+
+	class MouseScrolledEvent final : public PlatformEvent
+	{
+	public:
+		MouseScrolledEvent(const glm::vec2& pos) noexcept;
+		void process(Input& input) noexcept;
+	private:
+		glm::vec2 _pos;
 	};
 
 	class MouseButtonChangedEvent final : public PlatformEvent

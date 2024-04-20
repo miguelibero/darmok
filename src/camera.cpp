@@ -23,9 +23,9 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setProjection(float fovy, float aspect, float near, float far) noexcept
+    Camera& Camera::setProjection(float fovy, float aspect, const glm::vec2& range) noexcept
     {
-        bx::mtxProj(glm::value_ptr(_matrix), fovy, aspect, near, far, bgfx::getCaps()->homogeneousDepth);
+        bx::mtxProj(glm::value_ptr(_matrix), fovy, aspect, range[0], range[1], bgfx::getCaps()->homogeneousDepth);
         return *this;
     }
 
@@ -35,14 +35,25 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setProjection(float fovy, const glm::uvec2& size, float near, float far) noexcept
+    Camera& Camera::setWindowProjection(float fovy, const glm::vec2& range) noexcept
     {
-        return setProjection(fovy, (float)size.x / size.y, near, far);
+        auto size = _app->getWindow().getPixelSize();
+        float aspect = (float)size.x / size.y;
+        return setProjection(fovy, aspect, range);
     }
 
-    Camera& Camera::setProjection(float fovy, const glm::uvec2& size, float near) noexcept
+    Camera& Camera::setWindowProjection(float fovy, float near) noexcept
     {
-        return setProjection(fovy, (float)size.x / size.y, near);
+        auto size = _app->getWindow().getPixelSize();
+        float aspect = (float)size.x / size.y;
+        return setProjection(fovy, aspect, near);
+    }
+
+    Camera& Camera::setWindowOrtho(const glm::vec2& range, float offset) noexcept
+    {
+        auto& vp = _app->getWindow().getViewport();
+        glm::vec4 edges(vp[0], vp[2], vp[3], vp[1]);
+        return setOrtho(edges, range, offset);
     }
 
     Camera& Camera::setOrtho(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept

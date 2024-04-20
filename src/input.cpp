@@ -297,12 +297,18 @@ namespace darmok
 		, _wheelDelta(120)
 		, _lock(false)
 		, _position{}
+		, _scroll{}
 	{
 	}
 
-	void MouseImpl::setPosition(const glm::vec3& pos) noexcept
+	void MouseImpl::setPosition(const glm::vec2& pos) noexcept
 	{
 		_position = pos;
+	}
+
+	void MouseImpl::setScroll(const glm::vec2& scroll) noexcept
+	{
+		_scroll = scroll;
 	}
 
 	void MouseImpl::setButton(MouseButton button, bool down) noexcept
@@ -320,10 +326,14 @@ namespace darmok
 		return _buttons[to_underlying(button)];
 	}
 
-
-	const glm::vec3& MouseImpl::getPosition() const noexcept
+	const glm::vec2& MouseImpl::getPosition() const noexcept
 	{
 		return _position;
+	}
+
+	const glm::vec2& MouseImpl::getScroll() const noexcept
+	{
+		return _scroll;
 	}
 
 	const MouseButtons& MouseImpl::getButtons() const noexcept
@@ -355,9 +365,14 @@ namespace darmok
 		return _impl->getButton(button);
 	}
 
-	const glm::vec3& Mouse::getPosition() const noexcept
+	const glm::vec2& Mouse::getPosition() const noexcept
 	{
 		return _impl->getPosition();
+	}
+
+	const glm::vec2& Mouse::getScroll() const noexcept
+	{
+		return _impl->getScroll();
 	}
 
 	const MouseButtons& Mouse::getButtons() const noexcept

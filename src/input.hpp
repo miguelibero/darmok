@@ -59,14 +59,17 @@ namespace darmok
 
 		[[nodiscard]] void setWheelDelta(uint16_t wheelDelta) noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
-		[[nodiscard]] const glm::vec3& getPosition() const noexcept;
+		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
+		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 
-		void setPosition(const glm::vec3& pos) noexcept;
+		void setPosition(const glm::vec2& pos) noexcept;
+		void setScroll(const glm::vec2& scroll) noexcept;
 		void setButton(MouseButton button, bool down) noexcept;
 
 	private:
-		glm::vec3 _position;
+		glm::vec2 _position;
+		glm::vec2 _scroll;
 
 		MouseButtons _buttons;
 		uint16_t _wheelDelta;

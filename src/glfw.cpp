@@ -83,7 +83,6 @@ namespace darmok
 		MainThreadEntry _mte;
 		bx::Thread _thread;
 		std::queue<std::unique_ptr<PlatformCmd>> _cmds;
-		double _scrollPos;
 		glm::uvec2 _windowSize;
 		glm::uvec2 _framebufferSize;
 
@@ -268,7 +267,6 @@ namespace darmok
 
 	PlatformImpl::PlatformImpl() noexcept
 		: _window(nullptr)
-		, _scrollPos(0.0f)
 		, _windowSize(0)
 		, _framebufferSize(0)
 	{
@@ -674,16 +672,12 @@ namespace darmok
 
 	void PlatformImpl::scrollCallback(GLFWwindow* window, double dx, double dy) noexcept
 	{
-		BX_UNUSED(dx);
-		double mx, my;
-		glfwGetCursorPos(window, &mx, &my);
-		_scrollPos += dy;
-		_events.post<MouseMovedEvent>(glm::vec3(normalizeScreenPoint(mx, my), _scrollPos));
+		_events.post<MouseScrolledEvent>(glm::vec2{ dx, dy });
 	}
 
 	void PlatformImpl::cursorPosCallback(GLFWwindow* window, double x, double y) noexcept
 	{
-		_events.post<MouseMovedEvent>(glm::vec3(normalizeScreenPoint(x, y), _scrollPos));
+		_events.post<MouseMovedEvent>(normalizeScreenPoint(x, y));
 	}
 
 	void PlatformImpl::mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept
@@ -698,12 +692,14 @@ namespace darmok
 
 	void PlatformImpl::windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
-		_events.post<WindowSizeChangedEvent>(glm::uvec2(width, height));
+		_windowSize = glm::uvec2(width, height);
+		_events.post<WindowSizeChangedEvent>(_windowSize);
 	}
 
 	void PlatformImpl::framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
-		_events.post<WindowSizeChangedEvent>(glm::uvec2(width, height), true);
+		_framebufferSize = glm::uvec2(width, height);
+		_events.post<WindowSizeChangedEvent>(_framebufferSize, true);
 	}
 
 	void PlatformImpl::joystickCallback(int jid, int action) noexcept

@@ -94,9 +94,54 @@ namespace darmok
 	{
 	}
 
-	void LuaCamera::setProjection(float fovy, const glm::uvec2& size, float near, float far) noexcept
+	void LuaCamera::setProjection1(float fovy, float aspect, const glm::vec2& range) noexcept
 	{
-		_camera->setProjection(fovy, size, near, far);
+		_camera->setProjection(fovy, aspect, range);
+	}
+
+	void LuaCamera::setProjection2(float fovy, float aspect, float near) noexcept
+	{
+		_camera->setProjection(fovy, aspect, near);
+	}
+
+	void LuaCamera::setWindowProjection1(float fovy, const glm::vec2& range) noexcept
+	{
+		_camera->setWindowProjection(fovy, range);
+	}
+
+	void LuaCamera::setWindowProjection2(float fovy, float near) noexcept
+	{
+		_camera->setWindowProjection(fovy, near);
+	}
+
+	void LuaCamera::setOrtho1(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept
+	{
+		_camera->setOrtho(edges, range, offset);
+	}
+
+	void LuaCamera::setOrtho2(const glm::vec4& edges, const glm::vec2& range) noexcept
+	{
+		_camera->setOrtho(edges, range);
+	}
+
+	void LuaCamera::setOrtho3(const glm::vec4& edges) noexcept
+	{
+		_camera->setOrtho(edges);
+	}
+
+	void LuaCamera::setWindowOrtho1(const glm::vec2& range, float offset) noexcept
+	{
+		_camera->setWindowOrtho(range, offset);
+	}
+
+	void LuaCamera::setWindowOrtho2(const glm::vec2& range) noexcept
+	{
+		_camera->setWindowOrtho(range);
+	}
+
+	void LuaCamera::setWindowOrtho3() noexcept
+	{
+		_camera->setWindowOrtho();
 	}
 
 	void LuaCamera::setForwardPhongRenderer(const LuaProgram& program) noexcept
@@ -112,10 +157,6 @@ namespace darmok
 	void LuaCamera::setMatrix(const glm::mat4& matrix) noexcept
 	{
 		_camera->setMatrix(matrix);
-	}
-	void LuaCamera::setOrtho(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept
-	{
-		_camera->setOrtho(edges, range, offset);
 	}
 
 	std::optional<Ray> LuaCamera::screenPointToRay(const glm::vec2& point) const noexcept
@@ -225,8 +266,20 @@ namespace darmok
 	void LuaCamera::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaCamera>("Camera", sol::constructors<>(),
-			"set_projection", &LuaCamera::setProjection,
-			"set_ortho", &LuaCamera::setOrtho,
+			"set_projection", sol::overload(
+				&LuaCamera::setProjection1,
+				&LuaCamera::setProjection2,
+				&LuaCamera::setWindowProjection1,
+				&LuaCamera::setWindowProjection2
+			),
+			"set_ortho", sol::overload(
+				&LuaCamera::setOrtho1,
+				&LuaCamera::setOrtho2,
+				&LuaCamera::setOrtho3,
+				&LuaCamera::setWindowOrtho1,
+				&LuaCamera::setWindowOrtho2,
+				&LuaCamera::setWindowOrtho3
+			),
 			"set_forward_phong_renderer", &LuaCamera::setForwardPhongRenderer,
 			"matrix", sol::property(&LuaCamera::getMatrix, &LuaCamera::setMatrix),
 			"screen_point_to_ray", &LuaCamera::screenPointToRay
