@@ -78,6 +78,7 @@ namespace darmok
 			using mat = T;
 			using val = T::value_type;
 			auto usertype = configureGlmOperators<T, Ctors...>(lua, name);
+			usertype["id"] = sol::var(T());
 			usertype["inverse"] = sol::resolve<mat(const mat&)>(glm::inverse);
 			usertype["transpose"] = sol::resolve<mat(const mat&)>(glm::transpose);
 			usertype["det"] = sol::resolve<val(const mat&)>(glm::determinant);
@@ -87,8 +88,10 @@ namespace darmok
 		template<typename T, typename... Ctors>
 		static sol::usertype<T> configureUvec(sol::state_view& lua, std::string_view name) noexcept
 		{
+			using vec = T;
+			using val = T::value_type;
 			auto usertype = configureGlmOperators<T, Ctors...>(lua, name);
-			usertype["zero"] = sol::var(T());
+			usertype["zero"] = sol::var(vec(0));
 			return usertype;
 		}
 
@@ -98,10 +101,12 @@ namespace darmok
 			using vec = T;
 			using val = T::value_type;
 			auto usertype = configureGlmOperators<T, Ctors...>(lua, name);
-			usertype["zero"] = sol::var(T());
+			usertype["zero"] = sol::var(vec(0));
 			usertype["dot"] = sol::resolve<val(const vec&, const vec&)>(glm::dot);
 			usertype["norm"] = sol::resolve<vec(const vec&)>(glm::normalize);
-
+			usertype["radians"] = sol::resolve<vec(const vec&)>(glm::radians);
+			usertype["degrees"] = sol::resolve<vec(const vec&)>(glm::degrees);
+			usertype["clamp"] = sol::overload(sol::resolve<vec(const vec&, const vec&, const vec&)>(glm::clamp), sol::resolve<vec(const vec&, val, val)>(glm::clamp));
 			return usertype;
 		}
 
@@ -111,8 +116,10 @@ namespace darmok
 			using cls = T;
 			using val = T::value_type;
 			return lua.new_usertype<cls>(name, sol::constructors<Ctors...>(),
+				sol::meta_function::equal_to,		sol::resolve<bool(const cls&, const cls&)>(glm::operator==),
 				sol::meta_function::addition,		sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator+), sol::resolve<cls(const cls&, val)>(glm::operator+)),
-				sol::meta_function::subtraction,	sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator-), sol::resolve<cls(const cls&, val)>(glm::operator-), sol::resolve<cls(const cls&)>(glm::operator-)),
+				sol::meta_function::subtraction,	sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator-), sol::resolve<cls(const cls&, val)>(glm::operator-)),
+				sol::meta_function::unary_minus,	sol::resolve<cls(const cls&)>(glm::operator-),
 				sol::meta_function::multiplication, sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator*), sol::resolve<cls(const cls&, val)>(glm::operator*)),
 				sol::meta_function::division,		sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator/), sol::resolve<cls(const cls&, val)>(glm::operator/)),
 				sol::meta_function::to_string,		sol::resolve<std::string(const cls&)>(glm::to_string)

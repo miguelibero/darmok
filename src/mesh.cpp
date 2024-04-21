@@ -116,50 +116,53 @@ namespace darmok
 		_material = material;
 	}
 
-	struct MeshData
+	void Mesh::bgfxConfig(bgfx::Encoder& encoder, uint8_t vertexStream) const
 	{
-		std::vector<glm::vec3> positions;
-		std::vector<glm::vec3> normals;
-		std::vector<glm::vec2> texCoords;
-		std::vector<VertexIndex> indices;
-	};
-
-	template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
-	static bool writeVertexAttrib(bgfx::Attrib::Enum attrib, const bgfx::VertexLayout& layout, const std::vector<glm::vec<L, T, Q>>& collection, Data& data) noexcept
-	{
-		if (!layout.has(attrib))
+		if (!isValid(_vertexBuffer))
 		{
-			return false;
+			throw std::runtime_error("invalid mesh vertex buffer");
 		}
-		uint32_t i = 0;
-		for (auto& v : collection)
+		encoder.setVertexBuffer(vertexStream, _vertexBuffer);
+		if (isValid(_indexBuffer))
 		{
-			std::array<float, 4> finput = { 0, 0, 0, 0 };
-			for (glm::length_t j = 0; j < L && j < finput.size(); j++)
-			{
-				finput[j] = static_cast<float>(v[j]);
-			}
-			bgfx::vertexPack(&finput.front(), false, attrib, layout, data.ptr(), i++);
+			encoder.setIndexBuffer(_indexBuffer);
 		}
-		return true;
 	}
 
-	static std::shared_ptr<Mesh> createMesh(const bgfx::VertexLayout& layout, const MeshData& meshData, const glm::vec3& origin = {}, const glm::vec3& scale = glm::vec3(1)) noexcept
+
+	MeshCreator::MeshCreator(const bgfx::VertexLayout& layout, const Config& cfg) noexcept
+		: layout(layout)
+		, config(cfg)
+	{
+	}
+
+	std::shared_ptr<Mesh> MeshCreator::createMesh(const MeshData& meshData) noexcept
+	{
+		return createMesh(meshData, config);
+	}
+
+	std::shared_ptr<Mesh> MeshCreator::createMesh(const MeshData& meshData, const MeshCreationConfig& cfg) noexcept
 	{
 		VertexDataWriter writer(layout, meshData.positions.size());
 		uint32_t i = 0;
 		for (auto& pos : meshData.positions)
 		{
-			auto v = scale * (pos - origin);
+			auto v = cfg.scale * (pos + cfg.offset);
 			writer.write(bgfx::Attrib::Position, i++, v);
 		}
+		i = 0;
+		for (auto& texCoord : meshData.texCoords)
+		{
+			auto v = cfg.textureScale * texCoord;
+			writer.write(bgfx::Attrib::TexCoord0, i++, v);
+		}
+
 		writer.write(bgfx::Attrib::Normal, meshData.normals);
-		writer.write(bgfx::Attrib::TexCoord0, meshData.texCoords);
 		auto vertexData = writer.finish();
 		return std::make_shared<Mesh>(layout, std::move(vertexData), Data::copy(meshData.indices));
 	}
 
-	std::shared_ptr<Mesh> Mesh::createCube(const bgfx::VertexLayout& layout, const Cube& cube) noexcept
+	std::shared_ptr<Mesh> MeshCreator::createCube(const Cube& cube) noexcept
 	{
 		const static MeshData data = {
 			{
@@ -195,7 +198,10 @@ namespace darmok
 				20, 21, 22, 22, 23, 20,
 			}
 		};
-		return createMesh(layout, data, glm::vec3(0.5f) + cube.origin, cube.size);
+		auto cfg = config;
+		cfg.scale *= cube.size;
+		cfg.offset += cube.origin - glm::vec3(0.5f);
+		return createMesh(data, cfg);
 	}
 
 	const static MeshData _quadMeshData = {
@@ -210,26 +216,29 @@ namespace darmok
 		}
 	};
 
-	static std::shared_ptr<Mesh> createQuadMesh(const bgfx::VertexLayout& layout, const MeshData& data, const Quad& quad) noexcept
+	std::shared_ptr<Mesh> MeshCreator::createQuadMesh(const bgfx::VertexLayout& layout, const MeshData& data, const Quad& quad) noexcept
 	{
-		return createMesh(layout, data, glm::vec3(glm::vec2(0.5F) + quad.origin, 0), glm::vec3(quad.size, 0));
+		auto cfg = config;
+		cfg.scale *= glm::vec3(quad.size, 0);
+		cfg.offset += glm::vec3(quad.origin - glm::vec2(0.5F), 0);
+		return createMesh(data, cfg);
 	}
 
-	std::shared_ptr<Mesh> Mesh::createQuad(const bgfx::VertexLayout& layout, const Quad& quad) noexcept
+	std::shared_ptr<Mesh> MeshCreator::createQuad(const Quad& quad) noexcept
 	{
 		MeshData data = _quadMeshData;
 		data.indices = { 0, 1, 2, 2, 3, 0 };
 		return createQuadMesh(layout, data, quad);
 	}
 
-	std::shared_ptr<Mesh> Mesh::createLineQuad(const bgfx::VertexLayout& layout, const Quad& quad) noexcept
+	std::shared_ptr<Mesh> MeshCreator::createLineQuad(const Quad& quad) noexcept
 	{
 		MeshData data = _quadMeshData;
 		data.indices = { 0, 1, 1, 2, 2, 3, 3, 0 };
 		return createQuadMesh(layout, data, quad);
 	}
 
-	std::shared_ptr<Mesh> Mesh::createSphere(const bgfx::VertexLayout& layout, const Sphere& sphere, int lod) noexcept
+	std::shared_ptr<Mesh> MeshCreator::createSphere(const Sphere& sphere, int lod) noexcept
 	{
 		auto rings = lod;
 		auto sectors = lod;
@@ -254,10 +263,10 @@ namespace darmok
 					auto theta = u * 2.0f * pi;
 					auto rho = v * pi;
 					auto pos = glm::vec3(
-							cos(theta) * sin(rho),
-							sin((0.5F * pi) + rho),
-							sin(theta) * sin(rho)
-						);
+						cos(theta) * sin(rho),
+						sin((0.5F * pi) + rho),
+						sin(theta) * sin(rho)
+					);
 					data.positions.push_back(pos);
 					data.normals.push_back(pos);
 					data.texCoords.push_back(glm::vec2(
@@ -283,16 +292,23 @@ namespace darmok
 				}
 			}
 		}
-
-		return createMesh(layout, data, sphere.origin, glm::vec3(sphere.radius));
+		auto cfg = config;
+		cfg.scale *= glm::vec3(sphere.radius);
+		cfg.offset += sphere.origin;
+		return createMesh(data, cfg);
 	}
 
-	std::shared_ptr<Mesh> Mesh::createLine(const bgfx::VertexLayout& layout, const Line& line) noexcept
+	std::shared_ptr<Mesh> MeshCreator::createRay(const Ray& ray) noexcept
 	{
-		return createLines(layout, { line });
+		return createLine(ray.toLine());
 	}
 
-	std::shared_ptr<Mesh> Mesh::createLines(const bgfx::VertexLayout& layout, const std::vector<Line>& lines) noexcept
+	std::shared_ptr<Mesh> MeshCreator::createLine(const Line& line) noexcept
+	{
+		return createLines({ line });
+	}
+
+	std::shared_ptr<Mesh> MeshCreator::createLines(const std::vector<Line>& lines) noexcept
 	{
 		MeshData data;
 		VertexIndex i = 0;
@@ -307,31 +323,17 @@ namespace darmok
 			data.indices.emplace_back(i++);
 			data.indices.emplace_back(i++);
 		}
-		return createMesh(layout, data);
+		return createMesh(data, config);
 	}
 
-	std::shared_ptr<Mesh> Mesh::createSprite(const bgfx::VertexLayout& layout, const std::shared_ptr<Texture>& texture, float scale, const Color& color) noexcept
+	std::shared_ptr<Mesh> MeshCreator::createSprite(const std::shared_ptr<Texture>& texture) noexcept
 	{
 		auto material = std::make_shared<Material>();
 		material->setTexture(MaterialTextureType::Diffuse, texture);
-		material->setColor(MaterialColorType::Diffuse, color);
-		auto size = glm::vec2(texture->getImage()->getSize()) * scale;
-		auto mesh = Mesh::createQuad(layout, Quad(size));
+		material->setColor(MaterialColorType::Diffuse, config.color);
+		auto mesh = createQuad(Quad(texture->getImage()->getSize()));
 		mesh->setMaterial(material);
 		return mesh;
-	}
-
-	void Mesh::bgfxConfig(bgfx::Encoder& encoder, uint8_t vertexStream) const
-	{
-		if (!isValid(_vertexBuffer))
-		{
-			throw std::runtime_error("invalid mesh vertex buffer");
-		}
-		encoder.setVertexBuffer(vertexStream, _vertexBuffer);
-		if (isValid(_indexBuffer))
-		{
-			encoder.setIndexBuffer(_indexBuffer);
-		}
 	}
 
 	MeshComponent::MeshComponent(const std::shared_ptr<Mesh>& mesh) noexcept

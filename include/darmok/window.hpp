@@ -27,6 +27,13 @@ namespace darmok
 	class WindowImpl;
 	class Platform;
 
+	enum class WindowCursorMode
+	{
+		Normal,
+		Hidden,
+		Disabled,
+	};
+
 	class Window final
 	{
 	public:
@@ -35,7 +42,7 @@ namespace darmok
 		Window(Window&& other) = delete;
 
 		void requestMode(WindowMode mode) noexcept;
-		void requestCursorVisibilityChange(bool enabled) noexcept;
+		void requestCursorMode(WindowCursorMode mode) noexcept;
 		void requestDestruction() noexcept;
 
 		void bgfxConfig(bgfx::ViewId viewId) const noexcept;

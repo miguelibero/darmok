@@ -21,6 +21,7 @@ namespace darmok
 
 		const glm::vec3& getPosition() const noexcept;
 		const glm::vec3& getRotation() const noexcept;
+		glm::vec3 getForward() const noexcept;
 		const glm::vec3& getScale() const noexcept;
 		const glm::vec3& getPivot() const noexcept;
 		const glm::mat4& getMatrix() const noexcept;
@@ -30,9 +31,15 @@ namespace darmok
 
 		void setPosition(const VarVec3& v) noexcept;
 		void setRotation(const VarVec3& v) noexcept;
+		void setForward(const VarVec3& v) noexcept;
 		void setScale(const VarVec3& v) noexcept;
 		void setPivot(const VarVec3& v) noexcept;
 		void setMatrix(const glm::mat4& v) noexcept;
+
+		void lookDir1(const VarVec3& v) noexcept;
+		void lookDir2(const VarVec3& v, const VarVec3& up) noexcept;
+		void lookAt1(const VarVec3& v) noexcept;
+		void lookAt2(const VarVec3& v, const VarVec3& up) noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 

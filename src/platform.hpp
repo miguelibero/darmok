@@ -218,7 +218,7 @@ namespace darmok
 
 		void requestWindowDestruction() noexcept;
 		void requestWindowModeChange(WindowMode mode) noexcept;
-		void requestCursorVisibilityChange(bool visible) noexcept;
+		void requestCursorModeChange(WindowCursorMode mode) noexcept;
 
 		[[nodiscard]] void* getWindowHandle() const noexcept;
 		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getWindowHandleType() const noexcept;

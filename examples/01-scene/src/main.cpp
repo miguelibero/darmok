@@ -7,6 +7,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/anim.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/texture_atlas.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/window.hpp>
 #include <darmok/program.hpp>
@@ -142,9 +143,14 @@ namespace
 			auto& trans = registry.emplace<Transform>(sprite);
 			trans.setPivot(glm::vec3(-0.5F));
 			float scale = 0.5;
-			auto mesh = Mesh::createSprite(_layout, tex, scale);
+
+			MeshCreator meshCreator(_layout);
+			meshCreator.config.scale = glm::vec3(0.5F);
+			auto mesh = meshCreator.createSprite(tex);
+
 			auto size = scale * glm::vec2(tex->getImage()->getSize());
-			auto debugMesh = Mesh::createLineQuad(_layout, size);
+			meshCreator.config.scale = glm::vec3(size, 0);
+			auto debugMesh = meshCreator.createLineQuad();
 			debugMesh->setMaterial(_debugMaterial);
 			registry.emplace<MeshComponent>(sprite).setMeshes({ mesh, debugMesh });
 			registry.emplace<Culling2D>(sprite);
@@ -158,8 +164,10 @@ namespace
 			static const std::string animNamePrefix = "Attack/";
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = registry.create();
-			float scale = 2.f;
-			auto frames = texAtlas->createSpriteAnimation(_layout, animNamePrefix, 0.1f, { glm::vec2(scale) });
+
+			TextureAtlasMeshCreator meshCreator(_layout, *texAtlas);
+			meshCreator.config.scale = glm::vec3(2.F);
+			auto frames = meshCreator.createAnimation(animNamePrefix, 0.1f);
 			
 			auto& meshComp = registry.emplace<MeshComponent>(anim);
 			registry.emplace<FrameAnimationComponent>(anim, frames, meshComp);
@@ -177,7 +185,8 @@ namespace
 			auto material = std::make_shared<Material>();
 			material->setTexture(MaterialTextureType::Diffuse, texture);
 			material->setColor(MaterialColorType::Diffuse, Colors::red);
-			auto cubeMesh = Mesh::createCube(_layout);
+
+			auto cubeMesh = MeshCreator(_layout).createCube();
 			cubeMesh->setMaterial(material);
 
 			auto& registry = scene.getRegistry();

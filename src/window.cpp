@@ -101,9 +101,9 @@ namespace darmok
 		_plat.requestWindowModeChange(mode);
 	}
 
-	void Window::requestCursorVisibilityChange(bool enabled) noexcept
+	void Window::requestCursorMode(WindowCursorMode mode) noexcept
 	{
-		_plat.requestCursorVisibilityChange(enabled);
+		_plat.requestCursorModeChange(mode);
 	}
 
 	void Window::requestDestruction() noexcept

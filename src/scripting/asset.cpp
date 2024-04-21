@@ -5,6 +5,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/program.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/texture_atlas.hpp>
 #include <darmok/math.hpp>
 #include <darmok/model.hpp>
 
@@ -31,6 +32,13 @@ namespace darmok
 			sol::constructors<>(),
 			"vertex_layout", sol::property(&LuaProgram::getVertexLayout)
 		);
+
+		lua.new_enum<StandardProgramType>("StandardProgramType", {
+			{ "Gui", StandardProgramType::Gui },
+			{ "Unlit", StandardProgramType::Unlit },
+			{ "ForwardPhong", StandardProgramType::ForwardPhong },
+			{ "ForwardPbr", StandardProgramType::ForwardPbr }
+		});
 	}
 
 	LuaTexture::LuaTexture(const std::shared_ptr<Texture>& texture) noexcept
@@ -60,48 +68,77 @@ namespace darmok
 		return _atlas;
 	}
 
-	LuaMesh LuaTextureAtlas::createSprite1(const bgfx::VertexLayout& layout, const std::string& name, const SpriteCreationConfig& cfg)
-	{
-		auto elm = _atlas->getElement(name);
-		if(!elm)
-		{
-			throw std::runtime_error("could not find atlas element");
-		}
-		return LuaMesh(_atlas->createSprite(layout, elm.value(), cfg));
-	}
-
-	LuaMesh LuaTextureAtlas::createSprite2(const bgfx::VertexLayout& layout, const std::string& name)
-	{
-		auto elm = _atlas->getElement(name);
-		if(!elm)
-		{
-			throw std::runtime_error("could not find atlas element");
-		}
-		return LuaMesh(_atlas->createSprite(layout, elm.value()));
-	}
-
-
 	void LuaTextureAtlas::configure(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<SpriteCreationConfig>("SpriteCreationConfig",
-			sol::constructors<
-				SpriteCreationConfig(const glm::vec2&, const glm::vec2&, const glm::vec2&, const Color&),
-				SpriteCreationConfig(const glm::vec2&, const glm::vec2&, const glm::vec2&),
-				SpriteCreationConfig(const glm::vec2&, const glm::vec2&),
-				SpriteCreationConfig(const glm::vec2&),
-				SpriteCreationConfig()
-			>(),
-			"scale", &SpriteCreationConfig::scale,
-			"textureScale", &SpriteCreationConfig::textureScale,
-			"offset", &SpriteCreationConfig::offset,
-			"color", &SpriteCreationConfig::color
-		);
 		lua.new_usertype<LuaTextureAtlas>("TextureAtlas",
-			sol::constructors<>(),
-			"create_sprite", sol::overload(
-				&LuaTextureAtlas::createSprite1,
-				&LuaTextureAtlas::createSprite2
-			)
+			sol::constructors<>()
+		);
+	}
+
+	LuaTextureAtlasMeshCreator::LuaTextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const LuaTextureAtlas& atlas) noexcept
+		: _creator(std::make_shared<TextureAtlasMeshCreator>(layout, *atlas.getReal()))
+		, _atlas(atlas)
+	{
+	}
+
+	LuaTextureAtlasMeshCreator::LuaTextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const LuaTextureAtlas& atlas, const Config& cfg) noexcept
+		: _creator(std::make_shared<TextureAtlasMeshCreator>(layout, *atlas.getReal(), cfg))
+		, _atlas(atlas)
+	{
+	}
+
+	LuaTextureAtlasMeshCreator::~LuaTextureAtlasMeshCreator()
+	{
+	}
+
+	LuaTextureAtlasMeshCreator::Config& LuaTextureAtlasMeshCreator::getConfig() noexcept
+	{
+		return _creator->config;
+	}
+
+	void LuaTextureAtlasMeshCreator::setConfig(const Config& config) noexcept
+	{
+		_creator->config = config;
+	}
+
+	bgfx::VertexLayout& LuaTextureAtlasMeshCreator::getVertexLayout()  noexcept
+	{
+		return _creator->layout;
+	}
+
+	const LuaTextureAtlas& LuaTextureAtlasMeshCreator::getTextureAtlas() noexcept
+	{
+		return _atlas;
+	}
+
+	LuaMesh LuaTextureAtlasMeshCreator::createSprite(const std::string& name) const noexcept
+	{
+		return LuaMesh(_creator->createSprite(name));
+	}
+
+	std::vector<AnimationFrame> LuaTextureAtlasMeshCreator::createAnimation1(const std::string& namePrefix) const noexcept
+	{
+		return _creator->createAnimation(namePrefix);
+	}
+
+	std::vector<AnimationFrame> LuaTextureAtlasMeshCreator::createAnimation2(const std::string& namePrefix, float frameDuration) const noexcept
+	{
+		return _creator->createAnimation(namePrefix, frameDuration);
+	}
+
+	void LuaTextureAtlasMeshCreator::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaTextureAtlasMeshCreator>("TextureAtlasMeshCreator",
+			sol::constructors<
+				LuaTextureAtlasMeshCreator(const bgfx::VertexLayout&, const LuaTextureAtlas&),
+				LuaTextureAtlasMeshCreator(const bgfx::VertexLayout&, const LuaTextureAtlas&, const Config&)>(),
+			"config", sol::property(&LuaTextureAtlasMeshCreator::getConfig, &LuaTextureAtlasMeshCreator::setConfig),
+			"vertex_layout", sol::property(&LuaTextureAtlasMeshCreator::getVertexLayout),
+			"atlas", sol::property(&LuaTextureAtlasMeshCreator::getTextureAtlas),
+			"create_sprite", &LuaTextureAtlasMeshCreator::createSprite,
+			"create_animation", sol::overload(
+				&LuaTextureAtlasMeshCreator::createAnimation1,
+				&LuaTextureAtlasMeshCreator::createAnimation2)
 		);
 	}
 
@@ -156,100 +193,159 @@ namespace darmok
 		_mesh->setMaterial(material.getReal());
 	}
 
-	LuaMesh LuaMesh::createCube1(const bgfx::VertexLayout& layout) noexcept
-	{
-		return LuaMesh(Mesh::createCube(layout));
-	}
-
-	LuaMesh LuaMesh::createCube2(const bgfx::VertexLayout& layout, const Cube& cube) noexcept
-	{
-		return LuaMesh(Mesh::createCube(layout, cube));
-	}
-
-	LuaMesh LuaMesh::createSphere1(const bgfx::VertexLayout& layout) noexcept
-	{
-		return LuaMesh(Mesh::createSphere(layout));
-	}
-
-	LuaMesh LuaMesh::createSphere2(const bgfx::VertexLayout& layout, const Sphere& sphere) noexcept
-	{
-		return LuaMesh(Mesh::createSphere(layout, sphere));
-	}
-
-	LuaMesh LuaMesh::createSphere3(const bgfx::VertexLayout& layout, const Sphere& sphere, int lod) noexcept
-	{
-		return LuaMesh(Mesh::createSphere(layout, sphere, lod));
-	}
-
-	LuaMesh LuaMesh::createQuad1(const bgfx::VertexLayout& layout) noexcept
-	{
-		return LuaMesh(Mesh::createQuad(layout));
-	}
-
-	LuaMesh LuaMesh::createQuad2(const bgfx::VertexLayout& layout, const Quad& quad) noexcept
-	{
-		return LuaMesh(Mesh::createQuad(layout, quad));
-	}
-
-	LuaMesh LuaMesh::createLineQuad1(const bgfx::VertexLayout& layout) noexcept
-	{
-		return LuaMesh(Mesh::createLineQuad(layout, Quad::standard));
-	}
-
-	LuaMesh LuaMesh::createLineQuad2(const bgfx::VertexLayout& layout, const Quad& quad) noexcept
-	{
-		return LuaMesh(Mesh::createLineQuad(layout, quad));
-	}
-
-	LuaMesh LuaMesh::createSprite1(const bgfx::VertexLayout& layout, const LuaTexture& texture) noexcept
-	{
-		return LuaMesh(Mesh::createSprite(layout, texture.getReal()));
-	}
-
-	LuaMesh LuaMesh::createSprite2(const bgfx::VertexLayout& layout, const LuaTexture& texture, float scale) noexcept
-	{
-		return LuaMesh(Mesh::createSprite(layout, texture.getReal(), scale));
-	}
-
-	LuaMesh LuaMesh::createLine(const bgfx::VertexLayout& layout, const Line& line) noexcept
-	{
-		return LuaMesh(Mesh::createLine(layout, line));
-	}
-
-	LuaMesh LuaMesh::createRay(const bgfx::VertexLayout& layout, const Ray& ray) noexcept
-	{
-		return createLine(layout, ray.toLine());
-	}
-
-	LuaMesh LuaMesh::createLines(const bgfx::VertexLayout& layout, const std::vector<Line>& lines) noexcept
-	{
-		return LuaMesh(Mesh::createLines(layout, lines));
-	}
-
 	void LuaMesh::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaMesh>("Mesh",
 			sol::constructors<LuaMesh(const bgfx::VertexLayout&)>(),
-			"create_cube", sol::overload(&LuaMesh::createCube1, &LuaMesh::createCube2),
-			"create_sphere", sol::overload(&LuaMesh::createSphere1, &LuaMesh::createSphere2, &LuaMesh::createSphere3),
-			"create_quad", sol::overload(&LuaMesh::createQuad1, &LuaMesh::createQuad2),
-			"create_line_quad", sol::overload(&LuaMesh::createLineQuad1, &LuaMesh::createLineQuad2),
-			"create_sprite", sol::overload(&LuaMesh::createSprite1, &LuaMesh::createSprite2),
-			"create_line", &LuaMesh::createLine,
-			"create_ray", &LuaMesh::createRay,
-			"create_lines", &LuaMesh::createLines,
-			"create", sol::overload(
-				&LuaMesh::createCube2,
-				&LuaMesh::createSphere2,
-				&LuaMesh::createSphere3,
-				&LuaMesh::createQuad2,
-				&LuaMesh::createSprite1,
-				&LuaMesh::createSprite2,
-				&LuaMesh::createLine,
-				&LuaMesh::createRay,
-				&LuaMesh::createLines
-			),
 			"material", sol::property(&LuaMesh::getMaterial, &LuaMesh::setMaterial)
+		);
+	}
+
+	LuaMeshCreator::LuaMeshCreator(const bgfx::VertexLayout& layout) noexcept
+		: _creator(std::make_shared<MeshCreator>(layout))
+	{
+	}
+
+	LuaMeshCreator::LuaMeshCreator(const bgfx::VertexLayout& layout, const Config& cfg) noexcept
+		: _creator(std::make_shared<MeshCreator>(layout, cfg))
+	{
+	}
+
+	LuaMeshCreator::~LuaMeshCreator()
+	{
+	}
+
+	LuaMeshCreator::Config& LuaMeshCreator::getConfig() noexcept
+	{
+		return _creator->config;
+	}
+
+	void LuaMeshCreator::setConfig(const Config& config) noexcept
+	{
+		_creator->config = config;
+	}
+
+	bgfx::VertexLayout& LuaMeshCreator::getVertexLayout()  noexcept
+	{
+		return _creator->layout;
+	}
+
+	LuaMesh LuaMeshCreator::createMesh(const MeshData& meshData) noexcept
+	{
+		return LuaMesh(_creator->createMesh(meshData));
+	}
+
+	LuaMesh LuaMeshCreator::createCube1() noexcept
+	{
+		return LuaMesh(_creator->createCube());
+	}
+
+	LuaMesh LuaMeshCreator::createCube2(const Cube& cube) noexcept
+	{
+		return LuaMesh(_creator->createCube(cube));
+	}
+
+	LuaMesh LuaMeshCreator::createSphere1() noexcept
+	{
+		return LuaMesh(_creator->createSphere());
+	}
+
+	LuaMesh LuaMeshCreator::createSphere2(const Sphere& sphere) noexcept
+	{
+		return LuaMesh(_creator->createSphere(sphere));
+	}
+
+	LuaMesh LuaMeshCreator::createSphere3(int lod) noexcept
+	{
+		return LuaMesh(_creator->createSphere(Sphere::standard, lod));
+	}
+
+	LuaMesh LuaMeshCreator::createSphere4(const Sphere& sphere, int lod) noexcept
+	{
+		return LuaMesh(_creator->createSphere(sphere, lod));
+	}
+
+	LuaMesh LuaMeshCreator::createQuad1() noexcept
+	{
+		return LuaMesh(_creator->createQuad());
+	}
+
+	LuaMesh LuaMeshCreator::createQuad2(const Quad& quad) noexcept
+	{
+		return LuaMesh(_creator->createQuad(quad));
+	}
+
+	LuaMesh LuaMeshCreator::createLineQuad1() noexcept
+	{
+		return LuaMesh(_creator->createLineQuad());
+	}
+
+	LuaMesh LuaMeshCreator::createLineQuad2(const Quad& quad) noexcept
+	{
+		return LuaMesh(_creator->createLineQuad(quad));
+	}
+
+	LuaMesh LuaMeshCreator::createSprite(const LuaTexture& texture) noexcept
+	{
+		return LuaMesh(_creator->createSprite(texture.getReal()));
+	}
+
+	LuaMesh LuaMeshCreator::createRay(const Ray& ray) noexcept
+	{
+		return LuaMesh(_creator->createRay(ray));
+	}
+
+	LuaMesh LuaMeshCreator::createLine(const Line& line) noexcept
+	{
+		return LuaMesh(_creator->createLine(line));
+	}
+
+	LuaMesh LuaMeshCreator::createLines(const std::vector<Line>& lines) noexcept
+	{
+		return LuaMesh(_creator->createLines(lines));
+	}
+
+	void LuaMeshCreator::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<MeshCreationConfig>("MeshCreationConfig",
+			sol::constructors<
+			MeshCreationConfig(const glm::vec3&, const glm::vec3&, const glm::vec2&, const Color&),
+			MeshCreationConfig(const glm::vec3&, const glm::vec3&, const glm::vec2&),
+			MeshCreationConfig(const glm::vec3&, const glm::vec3&),
+			MeshCreationConfig(const glm::vec3&),
+			MeshCreationConfig()
+			>(),
+			"scale", &MeshCreationConfig::scale,
+			"textureScale", &MeshCreationConfig::textureScale,
+			"offset", &MeshCreationConfig::offset,
+			"color", &MeshCreationConfig::color
+		);
+
+		lua.new_usertype<LuaMeshCreator>("MeshCreator",
+			sol::constructors<LuaMeshCreator(const bgfx::VertexLayout&), LuaMeshCreator(const bgfx::VertexLayout&, const MeshCreationConfig&)>(),
+			"config", sol::property(&LuaMeshCreator::getConfig, &LuaMeshCreator::setConfig),
+			"vertex_layout", sol::property(&LuaMeshCreator::getVertexLayout),
+			"create_cube", sol::overload(&LuaMeshCreator::createCube1, &LuaMeshCreator::createCube2),
+			"create_sphere", sol::overload(
+				&LuaMeshCreator::createSphere1, &LuaMeshCreator::createSphere2,
+				&LuaMeshCreator::createSphere3, &LuaMeshCreator::createSphere4),
+			"create_quad", sol::overload(&LuaMeshCreator::createQuad1, &LuaMeshCreator::createQuad2),
+			"create_line_quad", sol::overload(&LuaMeshCreator::createLineQuad1, &LuaMeshCreator::createLineQuad2),
+			"create_sprite", &LuaMeshCreator::createSprite,
+			"create_line", &LuaMeshCreator::createLine,
+			"create_ray", &LuaMeshCreator::createRay,
+			"create_lines", &LuaMeshCreator::createLines,
+			"create", sol::overload(
+				&LuaMeshCreator::createCube2,
+				&LuaMeshCreator::createSphere2,
+				&LuaMeshCreator::createSphere3,
+				&LuaMeshCreator::createSphere4,
+				&LuaMeshCreator::createQuad2,
+				&LuaMeshCreator::createSprite,
+				&LuaMeshCreator::createLine,
+				&LuaMeshCreator::createRay,
+				&LuaMeshCreator::createLines
+			)
 		);
 	}
 
@@ -341,21 +437,8 @@ namespace darmok
 		return LuaProgram(_assets->getProgramLoader()(name));
 	}
 
-	LuaProgram LuaAssets::loadStandardProgram(const std::string& name)
+	LuaProgram LuaAssets::loadStandardProgram(StandardProgramType type)
 	{
-		auto type = StandardProgramType::Unlit;
-		if (name == "ForwardPhong")
-		{
-			type = StandardProgramType::ForwardPhong;
-		}
-		else if (name == "Unlit")
-		{
-			type = StandardProgramType::Unlit;
-		}
-		else
-		{
-			throw std::exception("unknown standard program");
-		}
 		return LuaProgram(_assets->getStandardProgramLoader()(type));
 	}
 
@@ -384,8 +467,10 @@ namespace darmok
 		LuaProgram::configure(lua);
 		LuaTexture::configure(lua);
 		LuaTextureAtlas::configure(lua);
+		LuaTextureAtlasMeshCreator::configure(lua);
 		LuaMaterial::configure(lua);
 		LuaMesh::configure(lua);
+		LuaMeshCreator::configure(lua);
 
 		lua.new_usertype<LuaAssets>("Assets",
 			sol::constructors<>(),

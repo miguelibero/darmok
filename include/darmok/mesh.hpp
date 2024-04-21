@@ -31,14 +31,7 @@ namespace darmok
         const Data& getIndexData() const noexcept;
 
         void bgfxConfig(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const;
-        static std::shared_ptr<Mesh> createCube(const bgfx::VertexLayout& layout, const Cube& cube = Cube::standard) noexcept;
-        static std::shared_ptr<Mesh> createQuad(const bgfx::VertexLayout& layout, const Quad& quad = Quad::standard) noexcept;
-        static std::shared_ptr<Mesh> createLineQuad(const bgfx::VertexLayout& layout, const Quad& quad = Quad::standard) noexcept;
-        static std::shared_ptr<Mesh> createSphere(const bgfx::VertexLayout& layout, const Sphere& sphere = Sphere::standard, int lod = 32) noexcept;
-        static std::shared_ptr<Mesh> createSprite(const bgfx::VertexLayout& layout, const std::shared_ptr<Texture>& texture, float scale = 1.f, const Color& color = Colors::white) noexcept;
-        static std::shared_ptr<Mesh> createLine(const bgfx::VertexLayout& layout, const Line& line) noexcept;
-        static std::shared_ptr<Mesh> createLines(const bgfx::VertexLayout& layout, const std::vector<Line>& lines) noexcept;
-
+        
     private:
         bgfx::VertexLayout _layout;
         Data _vertices;
@@ -48,6 +41,48 @@ namespace darmok
         bgfx::IndexBufferHandle _indexBuffer;
 
         void destroyHandles();
+    };
+
+    class TextureAtlas;
+    class TextureAtlasElement;
+
+    struct MeshCreationConfig final
+    {
+        glm::vec3 scale = glm::vec3(1);
+        glm::vec3 offset = glm::vec3(0);
+        glm::vec2 textureScale = glm::vec2(1);
+        Color color = Colors::white;
+    };
+
+    struct MeshData
+    {
+        std::vector<glm::vec3> positions;
+        std::vector<glm::vec3> normals;
+        std::vector<glm::vec2> texCoords;
+        std::vector<VertexIndex> indices;
+    };
+
+    struct MeshCreator final
+    {
+        using Config = MeshCreationConfig;
+        Config config;
+        bgfx::VertexLayout layout;
+
+        MeshCreator(const bgfx::VertexLayout& layout, const Config& cfg = {}) noexcept;
+        
+        std::shared_ptr<Mesh> createMesh(const MeshData& meshData) noexcept;
+        std::shared_ptr<Mesh> createCube(const Cube& cube = Cube::standard) noexcept;
+        std::shared_ptr<Mesh> createSphere(const Sphere& sphere = Sphere::standard, int lod = 32) noexcept;
+        std::shared_ptr<Mesh> createQuad(const Quad& quad = Quad::standard) noexcept;
+        std::shared_ptr<Mesh> createLineQuad(const Quad& quad = Quad::standard) noexcept;
+        std::shared_ptr<Mesh> createSprite(const std::shared_ptr<Texture>& texture) noexcept;
+        std::shared_ptr<Mesh> createRay(const Ray& ray) noexcept;
+        std::shared_ptr<Mesh> createLine(const Line& line) noexcept;
+        std::shared_ptr<Mesh> createLines(const std::vector<Line>& lines) noexcept;
+
+    private:
+        std::shared_ptr<Mesh> createMesh(const MeshData& meshData, const Config& cfg) noexcept;
+        std::shared_ptr<Mesh> createQuadMesh(const bgfx::VertexLayout& layout, const MeshData& data, const Quad& quad) noexcept;
     };
 
     class MeshComponent final

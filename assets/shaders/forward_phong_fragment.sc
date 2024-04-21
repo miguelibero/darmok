@@ -1,18 +1,20 @@
-$input v_position, v_view, v_normal, v_color0, v_texcoord0
+$input v_position, v_normal, v_color0, v_texcoord0
 
 #include <bgfx_shader.sh>
 #include "phong_lighting.sh"
 
 SAMPLER2D(s_texColor, 0);
-
 uniform vec4 u_diffuseColor;
+uniform vec4 u_camPos;
+
+// https://learnopengl.com/Lighting/Basic-Lighting
 
 void main()
 {
 	vec4 base = texture2D(s_texColor, v_texcoord0) * v_color0;
 	vec3 diffuse = vec3_splat(0);
 	vec3 specular = vec3_splat(0);
-	vec3 viewDir = normalize(v_view - v_position);
+	vec3 viewDir = normalize(u_camPos.xyz - v_position);
 	vec3 norm = normalize(v_normal);
 	int shininess = u_diffuseColor[3];
 

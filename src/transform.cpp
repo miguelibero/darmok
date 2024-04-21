@@ -3,11 +3,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
-
-/*
-#include <glm/gtx/transform.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-*/
+#include <glm/gtx/rotate_vector.hpp>
 
 namespace darmok
 {
@@ -30,7 +26,8 @@ namespace darmok
         , _rotation(rotation)
         , _scale(scale)
         , _pivot(pivot)
-        , _matrix(glm::mat4())
+        , _matrix()
+        , _inverse()
         , _matrixUpdatePending(true)
         , _inverseUpdatePending(true)
         , _parent(parent)
@@ -55,6 +52,15 @@ namespace darmok
     const glm::vec3& Transform::getPivot() const noexcept
     {
         return _pivot;
+    }
+
+    glm::vec3 Transform::getForward() const noexcept
+    {
+        auto fw = glm::vec3(0, 0, 1);
+        fw = glm::rotateX(fw, glm::radians(_rotation.x));
+        fw = glm::rotateY(fw, glm::radians(_rotation.y));
+        fw = glm::rotateZ(fw, -glm::radians(_rotation.z));
+        return fw;
     }
 
     OptionalRef<const Transform> Transform::getParent() const noexcept
@@ -99,6 +105,21 @@ namespace darmok
         return *this;
     }
 
+    Transform& Transform::setForward(const glm::vec3& v) noexcept
+    {
+        return *this;
+    }
+
+    Transform& Transform::lookDir(const glm::vec3& v, const glm::vec3& up) noexcept
+    {
+        return setRotation(glm::quatLookAt(glm::normalize(v), up));
+    }
+
+    Transform& Transform::lookAt(const glm::vec3& v, const glm::vec3& up) noexcept
+    {
+        return lookDir(v - _position);
+    }
+
     Transform& Transform::setScale(const glm::vec3& v) noexcept
     {
         if (v != _scale)
@@ -126,7 +147,7 @@ namespace darmok
             return false;
         }
         _matrix = glm::translate(_position)
-            * glm::eulerAngleYXZ(glm::radians(_rotation.y), glm::radians(_rotation.x), glm::radians(_rotation.z))
+            * glm::eulerAngleXYZ(glm::radians(_rotation.x), glm::radians(_rotation.y), glm::radians(_rotation.z))
             * glm::scale(_scale)
             * glm::translate(-_pivot)
             ;
@@ -157,22 +178,36 @@ namespace darmok
         updateInverse();
     }
 
-    void Transform::setMatrix(const glm::mat4& v) noexcept
+    Transform& Transform::setRotation(const glm::quat& v) noexcept
     {
-        glm::quat rotation{};
-        glm::vec3 skew{};
-        glm::vec4 perspective{};
-        glm::decompose(v, _scale, rotation, _position, skew, perspective);
+        return setRotation(rotationQuadToVec(v));
+    }
 
+    glm::vec3 Transform::rotationQuadToVec(const glm::quat& v) noexcept
+    {
         float rx = 0;
         float ry = 0;
         float rz = 0;
-        glm::extractEulerAngleXYZ(glm::mat4_cast(rotation), rx, ry, rz);
-        _rotation = { glm::degrees(rx), glm::degrees(ry), glm::degrees(rz) };
+        glm::extractEulerAngleXYZ(glm::mat4_cast(v), rx, ry, rz);
+        return { glm::degrees(rx), glm::degrees(ry), glm::degrees(rz) };
+    }
 
-        _matrix = v;
-        _matrixUpdatePending = false;
-        _inverseUpdatePending = true;
+    Transform& Transform::setMatrix(const glm::mat4& v) noexcept
+    {
+        if (_matrix != v)
+        {
+            glm::quat rotation{};
+            glm::vec3 skew{};
+            glm::vec4 perspective{};
+            glm::decompose(v, _scale, rotation, _position, skew, perspective);
+            _rotation = rotationQuadToVec(rotation);
+
+            _matrix = v;
+            _matrixUpdatePending = false;
+            _inverseUpdatePending = true;
+        }
+
+        return *this;
     }
 
     const glm::mat4& Transform::getMatrix() noexcept

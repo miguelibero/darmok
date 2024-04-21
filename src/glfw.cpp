@@ -130,7 +130,7 @@ namespace darmok
 			CreateWindow,
 			DestroyWindow,
 			ChangeWindowMode,
-			ChangeCursorVisibility,
+			ChangeWindowCursorMode,
 		};
 
 		PlatformCmd(Type type)
@@ -225,25 +225,39 @@ namespace darmok
 		WindowMode _mode;
 	};
 
-	class ChangeCursorVisibilityCmd final : public PlatformCmd
+	class ChangeWindowCursorModeCmd final : public PlatformCmd
 	{
 	public:
 
-		ChangeCursorVisibilityCmd(
-			bool value
+		ChangeWindowCursorModeCmd(
+			WindowCursorMode value
 		) :
-			PlatformCmd(ChangeCursorVisibility)
+			PlatformCmd(ChangeWindowCursorMode)
 			, _value(value)
 		{
 		}
 
 		void process(PlatformEventQueue& events, GLFWwindow* glfw)
 		{
-			auto cursor = _value ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL;
-			glfwSetInputMode(glfw, GLFW_CURSOR, cursor);
+			int v = 0;
+			switch (_value)
+			{
+			case WindowCursorMode::Normal:
+				v = GLFW_CURSOR_NORMAL;
+				break;
+			case WindowCursorMode::Disabled:
+				v = GLFW_CURSOR_DISABLED;
+				break;
+			case WindowCursorMode::Hidden:
+				v = GLFW_CURSOR_HIDDEN;
+				break;
+			default:
+				return;
+			}
+			glfwSetInputMode(glfw, GLFW_CURSOR, v);
 		}
 	private:
-		bool _value;
+		WindowCursorMode _value;
 	};
 
 	void PlatformCmd::process(PlatformCmd& cmd, PlatformImpl& plat)
@@ -254,8 +268,8 @@ namespace darmok
 		case PlatformCmd::DestroyWindow:
 			static_cast<DestroyWindowCmd&>(cmd).process(plat.getGlfwWindow());
 			break;
-		case PlatformCmd::ChangeCursorVisibility:
-			static_cast<ChangeCursorVisibilityCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
+		case PlatformCmd::ChangeWindowCursorMode:
+			static_cast<ChangeWindowCursorModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
 			break;
 		case PlatformCmd::ChangeWindowMode:
 			static_cast<ChangeWindowModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
@@ -801,9 +815,9 @@ namespace darmok
 		_impl.pushCmd<ChangeWindowModeCmd>(mode);
 	}
 
-	void Platform::requestCursorVisibilityChange(bool visible) noexcept
+	void Platform::requestCursorModeChange(WindowCursorMode mode) noexcept
 	{
-		_impl.pushCmd<ChangeCursorVisibilityCmd>(visible);
+		_impl.pushCmd<ChangeWindowCursorModeCmd>(mode);
 	}
 
 	void* Platform::getWindowHandle() const noexcept

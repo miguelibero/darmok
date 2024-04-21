@@ -88,7 +88,7 @@ namespace darmok
 		lua["app"] = LuaApp(app);
 		lua["args"] = args;
 
-		auto result = lua.safe_script_file("main.lua");
+		auto result = lua.script_file("main.lua");
 		if (!result.valid())
 		{
 			sol::error err = result;

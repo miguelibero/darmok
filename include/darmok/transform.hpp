@@ -16,20 +16,26 @@ namespace darmok
     
         const glm::vec3& getPosition() const noexcept;
         const glm::vec3& getRotation() const noexcept;
+        glm::vec3 getForward() const noexcept;
         const glm::vec3& getScale() const noexcept;
         const glm::vec3& getPivot() const noexcept;
+
 
         OptionalRef<const Transform> getParent() const noexcept;
         OptionalRef<Transform> getParent() noexcept;
 
         Transform& setPosition(const glm::vec3& v) noexcept;
         Transform& setRotation(const glm::vec3& v) noexcept;
+        Transform& setRotation(const glm::quat& v) noexcept;
+        Transform& setForward(const glm::vec3& v) noexcept;
         Transform& setScale(const glm::vec3& v) noexcept;
         Transform& setPivot(const glm::vec3& v) noexcept;
         Transform& setParent(const OptionalRef<Transform>& parent) noexcept;
+        Transform& lookDir(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
+        Transform& lookAt(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
+        Transform& setMatrix(const glm::mat4& v) noexcept;
 
         void update() noexcept;
-        void setMatrix(const glm::mat4& v) noexcept;
         const glm::mat4& getMatrix() noexcept;
         const glm::mat4& getMatrix() const noexcept;
         const glm::mat4& getInverse() noexcept;
@@ -52,5 +58,6 @@ namespace darmok
         void setPending(bool v = true) noexcept;
         bool updateMatrix() noexcept;
         bool updateInverse() noexcept;
+        static glm::vec3 rotationQuadToVec(const glm::quat& v) noexcept;
     };
 }

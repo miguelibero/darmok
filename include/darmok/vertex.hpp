@@ -132,7 +132,7 @@ namespace darmok
         std::unordered_map<bgfx::Attrib::Enum, std::unordered_set<uint32_t>> _marked;
 
         void* prepareData() noexcept;
-        void write(bgfx::Attrib::Enum attr, uint32_t index, const std::array<float, 4>& finput, bool mark = true) noexcept;
+        bool write(bgfx::Attrib::Enum attr, uint32_t index, const std::array<float, 4>& finput, bool mark = true) noexcept;
 
         void markOne(bgfx::Attrib::Enum attr, uint32_t index) noexcept;
         void markAll(bgfx::Attrib::Enum attr) noexcept;

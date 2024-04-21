@@ -70,12 +70,14 @@ namespace darmok
 
         bgfx::UniformHandle _lightCountUniform;
         bgfx::UniformHandle _lightDataUniform;
+        bgfx::UniformHandle _camPosUniform;
         bgfx::DynamicVertexBufferHandle _pointLightBuffer;
 
         bgfx::VertexLayout _pointLightsLayout;
 
         glm::vec4 _lightCount;
         glm::vec4 _lightData;
+        glm::vec4 _camPos;
         Data _pointLights;
 
         size_t updatePointLights() noexcept;

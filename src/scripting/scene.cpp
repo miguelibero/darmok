@@ -42,17 +42,22 @@ namespace darmok
 
 	const glm::vec3& LuaTransform::getRotation() const noexcept
 	{
-		return _transform->getPosition();
+		return _transform->getRotation();
+	}
+
+	glm::vec3 LuaTransform::getForward() const noexcept
+	{
+		return _transform->getForward();
 	}
 
 	const glm::vec3& LuaTransform::getScale() const noexcept
 	{
-		return _transform->getPosition();
+		return _transform->getScale();
 	}
 
 	const glm::vec3& LuaTransform::getPivot() const noexcept
 	{
-		return _transform->getPosition();
+		return _transform->getPivot();
 	}
 
 	const glm::mat4& LuaTransform::getMatrix() const noexcept
@@ -75,6 +80,11 @@ namespace darmok
 		_transform->setRotation(LuaMath::tableToGlm(v));
 	}
 
+	void LuaTransform::setForward(const VarVec3& v) noexcept
+	{
+		_transform->setForward(LuaMath::tableToGlm(v));
+	}
+
 	void LuaTransform::setScale(const VarVec3& v) noexcept
 	{
 		_transform->setScale(LuaMath::tableToGlm(v));
@@ -85,9 +95,45 @@ namespace darmok
 		_transform->setPivot(LuaMath::tableToGlm(v));
 	}
 
+	void LuaTransform::lookDir1(const VarVec3& v) noexcept
+	{
+		_transform->lookDir(LuaMath::tableToGlm(v));
+	}
+
+	void LuaTransform::lookDir2(const VarVec3& v, const VarVec3& up) noexcept
+	{
+		_transform->lookDir(LuaMath::tableToGlm(v), LuaMath::tableToGlm(up));
+	}
+
+	void LuaTransform::lookAt1(const VarVec3& v) noexcept
+	{
+		_transform->lookAt(LuaMath::tableToGlm(v));
+	}
+
+	void LuaTransform::lookAt2(const VarVec3& v, const VarVec3& up) noexcept
+	{
+		_transform->lookAt(LuaMath::tableToGlm(v), LuaMath::tableToGlm(up));
+	}
+
 	void LuaTransform::setMatrix(const glm::mat4& v) noexcept
 	{
 		_transform->setMatrix(v);
+	}
+
+	void LuaTransform::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaTransform>("Transform", sol::constructors<>(),
+			"position", sol::property(&LuaTransform::getPosition, &LuaTransform::setPosition),
+			"rotation", sol::property(&LuaTransform::getRotation, &LuaTransform::setRotation),
+			"forward", sol::property(&LuaTransform::getForward),
+			"scale", sol::property(&LuaTransform::getScale, &LuaTransform::setScale),
+			"pivot", sol::property(&LuaTransform::getPivot, &LuaTransform::setPivot),
+			"matrix", sol::property(&LuaTransform::getMatrix, &LuaTransform::setMatrix),
+			"inverse", sol::property(&LuaTransform::getInverse),
+			"parent", sol::property(&LuaTransform::getParent, &LuaTransform::setParent),
+			"look_dir", sol::overload(&LuaTransform::lookDir1, &LuaTransform::lookDir2),
+			"look_at", sol::overload(&LuaTransform::lookAt1, &LuaTransform::lookAt2)
+		);
 	}
 
 	LuaCamera::LuaCamera(Camera& camera) noexcept
@@ -170,6 +216,30 @@ namespace darmok
 		return _camera->screenPointToRay(point);
 	}
 
+	void LuaCamera::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaCamera>("Camera", sol::constructors<>(),
+			"set_projection", sol::overload(
+				&LuaCamera::setProjection1,
+				&LuaCamera::setProjection2,
+				&LuaCamera::setWindowProjection1,
+				&LuaCamera::setWindowProjection2,
+				&LuaCamera::setWindowProjection3
+			),
+			"set_ortho", sol::overload(
+				&LuaCamera::setOrtho1,
+				&LuaCamera::setOrtho2,
+				&LuaCamera::setOrtho3,
+				&LuaCamera::setWindowOrtho1,
+				&LuaCamera::setWindowOrtho2,
+				&LuaCamera::setWindowOrtho3
+			),
+			"set_forward_phong_renderer", &LuaCamera::setForwardPhongRenderer,
+			"matrix", sol::property(&LuaCamera::getMatrix, &LuaCamera::setMatrix),
+			"screen_point_to_ray", &LuaCamera::screenPointToRay
+		);
+	}
+
 	LuaPointLight::LuaPointLight(PointLight& light) noexcept
 		: _light(light)
 	{
@@ -238,6 +308,17 @@ namespace darmok
 		return _entity;
 	}
 
+	void LuaEntity::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaEntity>("Entity", sol::constructors<>(),
+			"add_component", &LuaEntity::addComponent,
+			"get_camera", &LuaEntity::getCamera,
+			"get_transform", &LuaEntity::getTransform,
+			"get_point_light", &LuaEntity::getPointLight,
+			"add_mesh", &LuaEntity::addMesh
+		);
+	}
+
 	LuaScene::LuaScene(Scene& scene) noexcept
 		: _scene(scene)
 	{
@@ -261,54 +342,6 @@ namespace darmok
 	Scene& LuaScene::getReal() noexcept
 	{
 		return _scene.value();
-	}
-
-	void LuaTransform::configure(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<LuaTransform>("Transform", sol::constructors<>(),
-			"position", sol::property(&LuaTransform::getPosition, &LuaTransform::setPosition),
-			"rotation", sol::property(&LuaTransform::getRotation, &LuaTransform::setRotation),
-			"scale", sol::property(&LuaTransform::getScale, &LuaTransform::setScale),
-			"pivot", sol::property(&LuaTransform::getPivot, &LuaTransform::setPivot),
-			"matrix", sol::property(&LuaTransform::getMatrix, &LuaTransform::setMatrix),
-			"inverse", sol::property(&LuaTransform::getInverse),
-			"parent", sol::property(&LuaTransform::getParent, &LuaTransform::setParent)
-		);
-	}
-
-	void LuaCamera::configure(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<LuaCamera>("Camera", sol::constructors<>(),
-			"set_projection", sol::overload(
-				&LuaCamera::setProjection1,
-				&LuaCamera::setProjection2,
-				&LuaCamera::setWindowProjection1,
-				&LuaCamera::setWindowProjection2,
-				&LuaCamera::setWindowProjection3
-			),
-			"set_ortho", sol::overload(
-				&LuaCamera::setOrtho1,
-				&LuaCamera::setOrtho2,
-				&LuaCamera::setOrtho3,
-				&LuaCamera::setWindowOrtho1,
-				&LuaCamera::setWindowOrtho2,
-				&LuaCamera::setWindowOrtho3
-			),
-			"set_forward_phong_renderer", &LuaCamera::setForwardPhongRenderer,
-			"matrix", sol::property(&LuaCamera::getMatrix, &LuaCamera::setMatrix),
-			"screen_point_to_ray", &LuaCamera::screenPointToRay
-		);
-	}
-
-	void LuaEntity::configure(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<LuaEntity>("Entity", sol::constructors<>(),
-			"add_component", &LuaEntity::addComponent,
-			"get_camera", &LuaEntity::getCamera,
-			"get_transform", &LuaEntity::getTransform,
-			"get_point_light", &LuaEntity::getPointLight,
-			"add_mesh", &LuaEntity::addMesh
-		);
 	}
 
 	void LuaPointLight::configure(sol::state_view& lua) noexcept

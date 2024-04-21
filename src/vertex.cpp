@@ -11,14 +11,19 @@ namespace darmok
     {
     }
 
-    void VertexDataWriter::write(bgfx::Attrib::Enum attr, uint32_t index, const std::array<float, 4>& finput, bool mark) noexcept
+    bool VertexDataWriter::write(bgfx::Attrib::Enum attr, uint32_t index, const std::array<float, 4>& finput, bool mark) noexcept
     {
+        if (index >= _size || !_layout.has(attr))
+        {
+            return false;
+        }
         auto dataPtr = prepareData();
         bgfx::vertexPack(&finput.front(), false, attr, _layout, dataPtr, index);
         if (mark)
         {
             markOne(attr, index);
         }
+        return true;
     }
 
     void VertexDataWriter::load(Data&& data) noexcept

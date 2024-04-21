@@ -98,6 +98,7 @@ set(SOURCES
   ${SRC_DIR}/color.cpp
   ${SRC_DIR}/material.cpp
   ${SRC_DIR}/texture.cpp
+  ${SRC_DIR}/texture_atlas.cpp
   ${SRC_DIR}/image.cpp
   ${SRC_DIR}/program.cpp
   ${SRC_DIR}/transform.cpp
@@ -125,6 +126,7 @@ set(HEADERS
   ${INCLUDE_DIR}/material.hpp
   ${INCLUDE_DIR}/optional_ref.hpp
   ${INCLUDE_DIR}/texture.hpp
+  ${INCLUDE_DIR}/texture_atlas.hpp
   ${INCLUDE_DIR}/image.hpp
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/transform.hpp
@@ -288,6 +290,7 @@ if(DARMOK_BUILD_SCRIPTING)
   find_package(LuaBuild REQUIRED COMPONENTS "latest")
   set(LUA_LIB_NAME luajit_lib_2.1)
   add_subdirectory(${LIBS_DIR}/sol2)
+  target_compile_definitions(sol2 INTERFACE SOL_EXCEPTIONS_SAFE_PROPAGATION)
   target_link_libraries(${LIB_NAME} PRIVATE sol2 ${LUA_LIB_NAME})
 endif()
 if(DARMOK_BUILD_SCRIPTING_EXE)

@@ -111,6 +111,7 @@ namespace darmok
     const uint8_t _phongPointLightsBufferStage = 6;
     const std::string _phongLightCountUniformName = "u_lightCount";
     const std::string _phongLightDataUniformName = "u_lightingData";
+    const std::string _phongCamPosUniformName = "u_camPos";
 
     void PhongLightingComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
@@ -120,6 +121,7 @@ namespace darmok
         _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
         _lightCountUniform = bgfx::createUniform(_phongLightCountUniformName.c_str(), bgfx::UniformType::Vec4);
         _lightDataUniform = bgfx::createUniform(_phongLightDataUniformName.c_str(), bgfx::UniformType::Vec4);
+        _camPosUniform = bgfx::createUniform(_phongCamPosUniformName.c_str(), bgfx::UniformType::Vec4);
     }
 
     void PhongLightingComponent::shutdown() noexcept
@@ -135,6 +137,10 @@ namespace darmok
         if (isValid(_pointLightBuffer))
         {
             bgfx::destroy(_pointLightBuffer);
+        }
+        if (isValid(_camPosUniform))
+        {
+            bgfx::destroy(_camPosUniform);
         }
     }
 
@@ -191,6 +197,16 @@ namespace darmok
             auto& ambientLight = registry.get<const AmbientLight>(entity);
             _lightData += glm::vec4(ambientLight.getIntensity(), 0.F);
         }
+        _camPos = glm::vec4(0);
+        if (_cam)
+        {
+            auto camEntity = entt::to_entity(registry, _cam.value());
+            auto camTrans = registry.try_get<const Transform>(camEntity);
+            if (camTrans != nullptr)
+            {
+                _camPos = glm::vec4(camTrans->getPosition(), 0);
+            }
+        }
     }
 
     void PhongLightingComponent::bgfxConfig(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
@@ -203,10 +219,13 @@ namespace darmok
         {
             encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
         }
-
         if (isValid(_lightDataUniform))
         {
             encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
+        }
+        if (isValid(_camPosUniform))
+        {
+            encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
         }
         if (isValid(_pointLightBuffer))
         {

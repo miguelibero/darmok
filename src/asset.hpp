@@ -8,6 +8,7 @@
 
 #include "image.hpp"
 #include "texture.hpp"
+#include "texture_atlas.hpp"
 #include "program.hpp"
 #include "model.hpp"
 #include "data.hpp"
