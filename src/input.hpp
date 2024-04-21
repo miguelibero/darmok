@@ -57,23 +57,28 @@ namespace darmok
 		MouseImpl(const MouseImpl& other) = delete;
 		MouseImpl(MouseImpl&& other) = delete;
 
-		[[nodiscard]] void setWheelDelta(uint16_t wheelDelta) noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
+		[[nodiscard]] bool getActive() const noexcept;
 		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
-		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
+		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
+		[[nodiscard]] const glm::vec2& getScrollDelta() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 
+		void setActive(bool active);
 		void setPosition(const glm::vec2& pos) noexcept;
-		void setScroll(const glm::vec2& scroll) noexcept;
+		void setScrollDelta(const glm::vec2& scrollDelta) noexcept;
 		void setButton(MouseButton button, bool down) noexcept;
+
+		void update() noexcept;
 
 	private:
 		glm::vec2 _position;
-		glm::vec2 _scroll;
+		glm::vec2 _lastPosition;
+		glm::vec2 _scrollDelta;
 
 		MouseButtons _buttons;
-		uint16_t _wheelDelta;
-		bool _lock;
+		bool _active;
+		bool _hasBeenInactive;
 	};
 
 #pragma endregion Mouse

@@ -29,10 +29,12 @@ namespace darmok
 	public:
 		LuaMouse(Mouse& mouse) noexcept;
 		const glm::vec2& getPosition() const noexcept;
-		const glm::vec2& getScroll() const noexcept;
+		glm::vec2 getPositionDelta() const noexcept;
+		const glm::vec2& getScrollDelta() const noexcept;
 		bool getLeftButton() const noexcept;
 		bool getMiddleButton() const noexcept;
 		bool getRightButton() const noexcept;
+		bool getActive() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:

@@ -294,21 +294,35 @@ namespace darmok
 
 	MouseImpl::MouseImpl() noexcept
 		: _buttons{}
-		, _wheelDelta(120)
-		, _lock(false)
 		, _position{}
-		, _scroll{}
+		, _lastPosition{}
+		, _scrollDelta{}
+		, _active(false)
+		, _hasBeenInactive(true)
 	{
+	}
+
+	void MouseImpl::setActive(bool active)
+	{
+		_active = active;
+		if (!active)
+		{
+			_hasBeenInactive = true;
+		}
 	}
 
 	void MouseImpl::setPosition(const glm::vec2& pos) noexcept
 	{
 		_position = pos;
+		if (_hasBeenInactive)
+		{
+			_lastPosition = pos;
+		}
 	}
 
-	void MouseImpl::setScroll(const glm::vec2& scroll) noexcept
+	void MouseImpl::setScrollDelta(const glm::vec2& scrollDelta) noexcept
 	{
-		_scroll = scroll;
+		_scrollDelta = scrollDelta;
 	}
 
 	void MouseImpl::setButton(MouseButton button, bool down) noexcept
@@ -316,9 +330,13 @@ namespace darmok
 		_buttons[to_underlying(button)] = down;
 	}
 
-	void MouseImpl::setWheelDelta(uint16_t wheelDelta) noexcept
+	void MouseImpl::update() noexcept
 	{
-		_wheelDelta = wheelDelta;
+		_lastPosition = _position;
+		if (_active)
+		{
+			_hasBeenInactive = false;
+		}
 	}
 
 	bool MouseImpl::getButton(MouseButton button) const noexcept
@@ -326,14 +344,28 @@ namespace darmok
 		return _buttons[to_underlying(button)];
 	}
 
+	bool MouseImpl::getActive() const noexcept
+	{
+		return _active;
+	}
+
 	const glm::vec2& MouseImpl::getPosition() const noexcept
 	{
 		return _position;
 	}
 
-	const glm::vec2& MouseImpl::getScroll() const noexcept
+	glm::vec2 MouseImpl::getPositionDelta() const noexcept
 	{
-		return _scroll;
+		if (_hasBeenInactive)
+		{
+			return glm::vec2(0);
+		}
+		return _position - _lastPosition;
+	}
+
+	const glm::vec2& MouseImpl::getScrollDelta() const noexcept
+	{
+		return _scrollDelta;
 	}
 
 	const MouseButtons& MouseImpl::getButtons() const noexcept
@@ -370,9 +402,19 @@ namespace darmok
 		return _impl->getPosition();
 	}
 
-	const glm::vec2& Mouse::getScroll() const noexcept
+	glm::vec2 Mouse::getPositionDelta() const noexcept
 	{
-		return _impl->getScroll();
+		return _impl->getPositionDelta();
+	}
+
+	const glm::vec2& Mouse::getScrollDelta() const noexcept
+	{
+		return _impl->getScrollDelta();
+	}
+
+	bool Mouse::getActive() const noexcept
+	{
+		return _impl->getActive();
 	}
 
 	const MouseButtons& Mouse::getButtons() const noexcept
@@ -902,6 +944,7 @@ namespace darmok
 	void InputImpl::update() noexcept
 	{
 		_keyboard.getImpl().update();
+		_mouse.getImpl().update();
 	}
 
 	Input::Input() noexcept

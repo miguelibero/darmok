@@ -52,6 +52,7 @@ Some philosofical decisions (could be controversial)
 I'm still learning CMake, so if you see something that should be fixed please let me know.
 
 ### Working features
+
 * bgfx window setup (GLFW on windows & linux)
 * scene using entt
 * update logic methods with delta time
@@ -65,6 +66,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * nuklear UI binding
 
 ### Next tasks
+
 * skeletal animations
 * physics
 * other types of lights
@@ -76,6 +78,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * unify use of std::allocator everywhere
 
 ## Interesting Related Projects
+
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
 * [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
@@ -85,3 +88,27 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * [wrenbind17](https://github.com/matusnovak/wrenbind17) for modern C++ wren binding
 * no clear UI library winner,
     it would be interesting to write a skinnable UI library based on (vg-renderer)[https://github.com/jdryg/vg-renderer] and using html and css to skin 
+
+## Example code
+
+```lua
+program = app.assets:load_standard_program(StandardProgramType.ForwardPhong)
+
+camEntity = app.scene:create_entity()
+camTrans = camEntity:get_transform()
+camTrans.position = { 0, 2, -2 }
+camTrans:look_at({ 0, 0, 0 })
+local cam = camEntity:get_camera()
+cam:set_projection(60, Vec2.new(0.3, 1000))
+cam:set_forward_phong_renderer(program)
+
+lightEntity = app.scene:create_entity()
+lightTrans = lightEntity:get_transform()
+lightTrans.position = { 1, 1, -2 }
+lightEntity:get_point_light()
+
+cubeMesh = MeshCreator.new(program.vertex_layout):create_cube()
+greenTex = app.assets:load_color_texture(Colors.green)
+cubeMesh.material = Material.new(greenTex)
+app.scene:create_entity():add_mesh(cubeMesh)
+```

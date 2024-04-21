@@ -39,7 +39,7 @@ namespace darmok
         return _position;
     }
 
-    const glm::vec3& Transform::getRotation() const noexcept
+    const glm::quat& Transform::getRotation() const noexcept
     {
         return _rotation;
     }
@@ -52,15 +52,6 @@ namespace darmok
     const glm::vec3& Transform::getPivot() const noexcept
     {
         return _pivot;
-    }
-
-    glm::vec3 Transform::getForward() const noexcept
-    {
-        auto fw = glm::vec3(0, 0, 1);
-        fw = glm::rotateX(fw, glm::radians(_rotation.x));
-        fw = glm::rotateY(fw, glm::radians(_rotation.y));
-        fw = glm::rotateZ(fw, -glm::radians(_rotation.z));
-        return fw;
     }
 
     OptionalRef<const Transform> Transform::getParent() const noexcept
@@ -90,16 +81,6 @@ namespace darmok
         if (v != _position)
         {
             _position = v;
-            setPending();
-        }
-        return *this;
-    }
-
-    Transform& Transform::setRotation(const glm::vec3& v) noexcept
-    {
-        if (v != _rotation)
-        {
-            _rotation = v;
             setPending();
         }
         return *this;
@@ -147,7 +128,7 @@ namespace darmok
             return false;
         }
         _matrix = glm::translate(_position)
-            * glm::eulerAngleXYZ(glm::radians(_rotation.x), glm::radians(_rotation.y), glm::radians(_rotation.z))
+            * glm::mat4_cast(_rotation)
             * glm::scale(_scale)
             * glm::translate(-_pivot)
             ;
@@ -156,6 +137,7 @@ namespace darmok
             _parent->updateMatrix();
             _matrix = _parent->getMatrix() * _matrix;
         }
+
         _matrixUpdatePending = false;
         return true;
     }
@@ -180,16 +162,12 @@ namespace darmok
 
     Transform& Transform::setRotation(const glm::quat& v) noexcept
     {
-        return setRotation(rotationQuadToVec(v));
-    }
-
-    glm::vec3 Transform::rotationQuadToVec(const glm::quat& v) noexcept
-    {
-        float rx = 0;
-        float ry = 0;
-        float rz = 0;
-        glm::extractEulerAngleXYZ(glm::mat4_cast(v), rx, ry, rz);
-        return { glm::degrees(rx), glm::degrees(ry), glm::degrees(rz) };
+        if (v != _rotation)
+        {
+            _rotation = v;
+            setPending();
+        }
+        return *this;
     }
 
     Transform& Transform::setMatrix(const glm::mat4& v) noexcept
@@ -199,8 +177,7 @@ namespace darmok
             glm::quat rotation{};
             glm::vec3 skew{};
             glm::vec4 perspective{};
-            glm::decompose(v, _scale, rotation, _position, skew, perspective);
-            _rotation = rotationQuadToVec(rotation);
+            glm::decompose(v, _scale, _rotation, _position, skew, perspective);
 
             _matrix = v;
             _matrixUpdatePending = false;

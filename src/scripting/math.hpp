@@ -30,6 +30,20 @@ namespace darmok
 			}
 		}
 
+		template<typename T, glm::qualifier Q = glm::defaultp>
+		static void loadFromTable(const sol::table& tab, glm::qua<T, Q>& v) noexcept
+		{
+			glm::length_t i = 0;
+			for (auto& elm : tab)
+			{
+				v[i++] = elm.second.as<T>();
+				if (i >= v.length())
+				{
+					break;
+				}
+			}
+		}
+
 		template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
 		static void loadFromTable(const sol::table& tab, glm::mat<L1, L2, T, Q>& v) noexcept
 		{
@@ -70,6 +84,12 @@ namespace darmok
 			return v;
 		}
 
+		template<typename T>
+		static T lerp(const T& a, const T& b, float p) noexcept
+		{
+			return a + (b * p);
+		}
+
 	private:
 
 		template<typename T, typename... Ctors>
@@ -107,6 +127,7 @@ namespace darmok
 			usertype["radians"] = sol::resolve<vec(const vec&)>(glm::radians);
 			usertype["degrees"] = sol::resolve<vec(const vec&)>(glm::degrees);
 			usertype["clamp"] = sol::overload(sol::resolve<vec(const vec&, const vec&, const vec&)>(glm::clamp), sol::resolve<vec(const vec&, val, val)>(glm::clamp));
+			usertype["lerp"] = sol::resolve<vec(const vec&, const vec&, float)>(lerp);
 			return usertype;
 		}
 

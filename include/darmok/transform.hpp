@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/detail/type_quat.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene.hpp>
 
@@ -15,17 +16,14 @@ namespace darmok
         Transform(const glm::vec3& position = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3(), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
     
         const glm::vec3& getPosition() const noexcept;
-        const glm::vec3& getRotation() const noexcept;
-        glm::vec3 getForward() const noexcept;
+        const glm::quat& getRotation() const noexcept;
         const glm::vec3& getScale() const noexcept;
         const glm::vec3& getPivot() const noexcept;
-
 
         OptionalRef<const Transform> getParent() const noexcept;
         OptionalRef<Transform> getParent() noexcept;
 
         Transform& setPosition(const glm::vec3& v) noexcept;
-        Transform& setRotation(const glm::vec3& v) noexcept;
         Transform& setRotation(const glm::quat& v) noexcept;
         Transform& setForward(const glm::vec3& v) noexcept;
         Transform& setScale(const glm::vec3& v) noexcept;
@@ -46,7 +44,7 @@ namespace darmok
     private:
 
         glm::vec3 _position;
-        glm::vec3 _rotation;
+        glm::quat _rotation;
         glm::vec3 _scale;
         glm::vec3 _pivot;
         glm::mat4 _matrix;
@@ -58,6 +56,5 @@ namespace darmok
         void setPending(bool v = true) noexcept;
         bool updateMatrix() noexcept;
         bool updateInverse() noexcept;
-        static glm::vec3 rotationQuadToVec(const glm::quat& v) noexcept;
     };
 }

@@ -2,23 +2,29 @@
 #include <darmok/color.hpp>
 #include <darmok/math.hpp>
 #include <tuple>
+#include <glm/gtx/rotate_normalized_axis.hpp>
 
 namespace darmok
 {
+	static glm::quat quatEuler(float x, float y, float z) noexcept
+	{
+		return glm::quat(glm::vec3(x, y, z));
+	}
+
     void LuaMath::configure2(sol::state_view& lua) noexcept
     {
-		auto ivec4 = configureUvec<glm::ivec4, glm::ivec4(int), glm::ivec4(int, int, int, int)>(lua, "ivec3");
+		auto ivec4 = configureUvec<glm::ivec4, glm::ivec4(int), glm::ivec4(int, int, int, int)>(lua, "Ivec3");
 		ivec4["x"] = &glm::ivec4::x;
 		ivec4["y"] = &glm::ivec4::y;
 		ivec4["z"] = &glm::ivec4::z;
 		ivec4["w"] = &glm::ivec4::w;
 
-		auto ivec3 = configureUvec<glm::ivec3, glm::ivec3(int), glm::ivec3(int, int, int)>(lua, "ivec3");
+		auto ivec3 = configureUvec<glm::ivec3, glm::ivec3(int), glm::ivec3(int, int, int)>(lua, "Ivec3");
 		ivec3["x"] = &glm::ivec3::x;
 		ivec3["y"] = &glm::ivec3::y;
 		ivec3["z"] = &glm::ivec3::z;
 
-		auto ivec2 = configureUvec<glm::ivec2, glm::ivec2(int), glm::ivec2(int, int)>(lua, "ivec2");
+		auto ivec2 = configureUvec<glm::ivec2, glm::ivec2(int), glm::ivec2(int, int)>(lua, "Ivec2");
 		ivec2["x"] = &glm::ivec2::x;
 		ivec2["y"] = &glm::ivec2::y;
 
@@ -32,7 +38,28 @@ namespace darmok
 		color3["r"] = &Color3::r;
 		color3["g"] = &Color3::g;
 		color3["b"] = &Color3::b;
-		
+
+		lua.new_usertype<glm::quat>("Quat",
+			sol::constructors<glm::quat(float, float, float, float), glm::quat(const glm::vec3&)>(),
+			sol::meta_function::equal_to, sol::resolve<bool(const glm::quat&, const glm::quat&)>(glm::operator==),
+			sol::meta_function::addition, sol::resolve<glm::quat(const glm::quat&, const glm::quat&)>(glm::operator+),
+			sol::meta_function::subtraction, sol::resolve<glm::quat(const glm::quat&, const glm::quat&)>(glm::operator-),
+			sol::meta_function::unary_minus, sol::resolve<glm::quat(const glm::quat&)>(glm::operator-),
+			sol::meta_function::multiplication, sol::overload(sol::resolve<glm::quat(const glm::quat&, const glm::quat&)>(glm::operator*), sol::resolve<glm::quat(const glm::quat&, const float&)>(glm::operator*)),
+			sol::meta_function::division, sol::resolve<glm::quat(const glm::quat&, const float&)>(glm::operator/),
+			sol::meta_function::to_string, sol::resolve<std::string(const glm::quat&)>(glm::to_string),
+			"x", &glm::quat::x,
+			"y", &glm::quat::y,
+			"z", &glm::quat::z,
+			"w", &glm::quat::w,
+			"zero", sol::var(glm::quat()),
+			"euler", &quatEuler,
+			"slerp", sol::resolve<glm::quat(const glm::quat&, const glm::quat&, float)>(&glm::slerp),
+			"euler_angles", sol::resolve<glm::vec3(const glm::quat&)>(&glm::eulerAngles),
+			"angle_axis", sol::resolve<glm::quat(const float&, const glm::vec3&)>(&glm::angleAxis),
+			"rotate_axis", sol::resolve<glm::quat(const glm::quat&, const float&, const glm::vec3&)>(&glm::rotateNormalizedAxis)
+		);
+
 		lua.create_named_table("Colors",
 			"black", &Colors::black,
 			"white", &Colors::white,

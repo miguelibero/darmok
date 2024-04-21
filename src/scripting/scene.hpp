@@ -20,17 +20,22 @@ namespace darmok
 		void setParent(std::optional<LuaTransform> parent) noexcept;
 
 		const glm::vec3& getPosition() const noexcept;
-		const glm::vec3& getRotation() const noexcept;
+		const glm::quat& getRotation() const noexcept;
+		glm::vec3 getEulerAngles() const noexcept;
 		glm::vec3 getForward() const noexcept;
+		glm::vec3 getRight() const noexcept;
+		glm::vec3 getUp() const noexcept;
 		const glm::vec3& getScale() const noexcept;
 		const glm::vec3& getPivot() const noexcept;
 		const glm::mat4& getMatrix() const noexcept;
 		const glm::mat4& getInverse() const noexcept;
 
 		using VarVec3 = std::variant<glm::vec3, sol::table>;
+		using VarQuat = std::variant<glm::quat, sol::table>;
 
 		void setPosition(const VarVec3& v) noexcept;
-		void setRotation(const VarVec3& v) noexcept;
+		void setRotation(const VarQuat& v) noexcept;
+		void setEulerAngles(const VarVec3& v) noexcept;
 		void setForward(const VarVec3& v) noexcept;
 		void setScale(const VarVec3& v) noexcept;
 		void setPivot(const VarVec3& v) noexcept;

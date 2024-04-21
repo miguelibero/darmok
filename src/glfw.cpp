@@ -103,6 +103,7 @@ namespace darmok
 		void charCallback(GLFWwindow* window, uint32_t scancode) noexcept;
 		void scrollCallback(GLFWwindow* window, double dx, double dy) noexcept;
 		void cursorPosCallback(GLFWwindow* window, double x, double y) noexcept;
+		void cursorEnterCallback(GLFWwindow* window, int entered) noexcept;
 		void mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
 		void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
 		void framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
@@ -113,6 +114,7 @@ namespace darmok
 		static void staticCharCallback(GLFWwindow* window, uint32_t scancode) noexcept;
 		static void staticScrollCallback(GLFWwindow* window, double dx, double dy) noexcept;
 		static void staticCursorPosCallback(GLFWwindow* window, double x, double y) noexcept;
+		static void staticCursorEnterCallback(GLFWwindow* window, int entered) noexcept;
 		static void staticMouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
 		static void staticWindowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
 		static void staticFramebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
@@ -364,6 +366,7 @@ namespace darmok
 		glfwSetCharCallback(window, staticCharCallback);
 		glfwSetScrollCallback(window, staticScrollCallback);
 		glfwSetCursorPosCallback(window, staticCursorPosCallback);
+		glfwSetCursorEnterCallback(window, staticCursorEnterCallback);
 		glfwSetMouseButtonCallback(window, staticMouseButtonCallback);
 		glfwSetJoystickCallback(staticJoystickCallback);
 		glfwSetWindowSizeCallback(window, staticWindowSizeCallback);
@@ -694,6 +697,11 @@ namespace darmok
 		_events.post<MouseMovedEvent>(normalizeScreenPoint(x, y));
 	}
 
+	void PlatformImpl::cursorEnterCallback(GLFWwindow* window, int entered) noexcept
+	{
+		_events.post<MouseActiveChangedEvent>((bool)entered);
+	}
+
 	void PlatformImpl::mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept
 	{
 		BX_UNUSED(window, mods);
@@ -756,6 +764,11 @@ namespace darmok
 	void PlatformImpl::staticCursorPosCallback(GLFWwindow* window, double x, double y) noexcept
 	{
 		Platform::get().getImpl().cursorPosCallback(window, x, y);
+	}
+
+	void PlatformImpl::staticCursorEnterCallback(GLFWwindow* window, int entered) noexcept
+	{
+		Platform::get().getImpl().cursorEnterCallback(window, entered);
 	}
 
 	void PlatformImpl::staticMouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept
