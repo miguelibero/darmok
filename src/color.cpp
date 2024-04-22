@@ -4,23 +4,102 @@ namespace darmok
 {
     const Color::value_type Colors::maxValue = 255;
 
-    const Color3 Colors::black3 = { 0, 0, 0 };
-    const Color3 Colors::white3 = { maxValue, maxValue, maxValue };
-    const Color3 Colors::red3 = { maxValue, 0, 0 };
-    const Color3 Colors::green3 = { 0, maxValue, 0 };
-    const Color3 Colors::blue3 = { 0, 0, maxValue };
-    const Color3 Colors::yellow3 = { maxValue, maxValue, 0 };
-    const Color3 Colors::cyan3 = { 0, maxValue, maxValue };
-    const Color3 Colors::magenta3 = { maxValue, 0, maxValue };
+    const Color3& Colors::black3() noexcept
+    {
+        const static Color3 v{ 0, 0, 0 };
+        return v;
+    }
+        
+    const Color3& Colors::white3() noexcept
+    {
+        const static Color3 v{ maxValue, maxValue, maxValue };
+        return v;
+    }
 
-    const Color Colors::black = Color(Colors::black3, maxValue);
-    const Color Colors::white = Color(Colors::white3, maxValue);
-    const Color Colors::red = Color(Colors::red3, maxValue);
-    const Color Colors::green = Color(Colors::green3, maxValue);
-    const Color Colors::blue = Color(Colors::blue3, maxValue);
-    const Color Colors::yellow = Color(Colors::yellow3, maxValue);
-    const Color Colors::cyan = Color(Colors::cyan3, maxValue);
-    const Color Colors::magenta = Color(Colors::magenta3, maxValue);
+    const Color3& Colors::red3() noexcept
+    {
+        const static Color3 v{ maxValue, 0, 0 };
+        return v;
+    }
+
+    const Color3& Colors::green3() noexcept
+    {
+        const static Color3 v{ 0, maxValue, 0 };
+        return v;
+    }
+
+    const Color3& Colors::blue3() noexcept
+    {
+        const static Color3 v{ 0, 0, maxValue };
+        return v;
+    }
+
+    const Color3& Colors::yellow3() noexcept
+    {
+        const static Color3 v{ maxValue, maxValue, 0 };
+        return v;
+    }
+
+    const Color3& Colors::cyan3() noexcept
+    {
+        const static Color3 v{ 0, maxValue, maxValue };
+        return v;
+    }
+
+    const Color3& Colors::magenta3() noexcept
+    {
+        const static Color3 v{ maxValue, 0, maxValue };
+        return v;
+    }
+
+    const Color& Colors::black() noexcept
+    {
+        const static Color v(black3(), maxValue);
+        return v;
+    }
+
+    const Color& Colors::white() noexcept
+    {
+        const static Color v(white3(), maxValue);
+        return v;
+    }
+
+    const Color& Colors::red() noexcept
+    {
+        const static Color v(red3(), maxValue);
+        return v;
+    }
+
+    const Color& Colors::green() noexcept
+    {
+        const static Color v(green3(), maxValue);
+        return v;
+    }
+
+    const Color& Colors::blue() noexcept
+    {
+        const static Color v(blue3(), maxValue);
+        return v;
+    }
+
+    const Color& Colors::yellow() noexcept
+    {
+        const static Color v(yellow3(), maxValue);
+        return v;
+    }
+
+    const Color& Colors::cyan() noexcept
+    {
+        const static Color v(cyan3(), maxValue);
+        return v;
+    }
+
+    const Color& Colors::magenta() noexcept
+    {
+        const static Color v(magenta3(), maxValue);
+        return v;
+    }
+
 
     glm::vec4 Colors::normalize(const Color& color) noexcept
     {

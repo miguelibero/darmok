@@ -36,7 +36,7 @@ PointLight getPointLight(uint i)
     i *= 3;
     light.position  = b_pointLights[i + 0].xyz;
     light.diffuse   = b_pointLights[i + 1].xyz;
-    light.specular  = b_pointLights[i + 2].xyz;
+    light.specular   = b_pointLights[i + 2].xyz;
     return light;
 }
 
@@ -50,12 +50,14 @@ AmbientLight getAmbientLight()
 struct Material
 {
     int shininess;
+    float specularStrength;
 };
 
 Material getMaterial()
 {
     Material mat;
     mat.shininess = u_material[0];
+    mat.specularStrength = u_material[1];
     return mat;
 }
 

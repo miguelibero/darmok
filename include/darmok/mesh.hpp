@@ -43,15 +43,12 @@ namespace darmok
         void destroyHandles();
     };
 
-    class TextureAtlas;
-    class TextureAtlasElement;
-
     struct MeshCreationConfig final
     {
         glm::vec3 scale = glm::vec3(1);
         glm::vec3 offset = glm::vec3(0);
         glm::vec2 textureScale = glm::vec2(1);
-        Color color = Colors::white;
+        Color color = Colors::white();
     };
 
     struct MeshData

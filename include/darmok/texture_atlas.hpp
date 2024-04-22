@@ -6,7 +6,6 @@
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 
-#include <darmok/mesh.hpp>
 #include <darmok/optional_ref.hpp>
 
 namespace darmok
@@ -51,9 +50,16 @@ namespace darmok
 		OptionalRef<const TextureAtlasElement> getElement(std::string_view name) const noexcept;
 	};
 
+	struct TextureAtlasMeshCreationConfig final
+	{
+		glm::vec3 scale = glm::vec3(1);
+		glm::vec3 offset = glm::vec3(0);
+		Color color = Colors::white();
+	};
+
 	struct TextureAtlasMeshCreator final
 	{
-		using Config = MeshCreationConfig;
+		using Config = TextureAtlasMeshCreationConfig;
 		bgfx::VertexLayout layout;
 		const TextureAtlas& atlas;
 		Config config;
@@ -66,7 +72,7 @@ namespace darmok
 
 
 		std::shared_ptr<Mesh> createSprite(const TextureAtlasElement& elm) const noexcept;
-		std::shared_ptr<Material> createMaterial(const Color& color = Colors::white) const noexcept;
+		std::shared_ptr<Material> createMaterial(const Color& color = Colors::white()) const noexcept;
 	};
 
     class BX_NO_VTABLE ITextureAtlasLoader

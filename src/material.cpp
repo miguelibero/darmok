@@ -24,13 +24,18 @@ namespace darmok
 	};
 
 	static const std::unordered_map<MaterialColorType, MaterialColorUniformDefinition> _materialColorDefinitions = {
-		{ MaterialColorType::Diffuse, { "u_diffuseColor", Colors::white } }
+		{ MaterialColorType::Diffuse, { "u_diffuseColor", Colors::white() }},
+		{ MaterialColorType::Specular, { "u_specularColor", Colors::white() }}
 	};
 
 
 	Material::Material(const std::shared_ptr<Texture>& diffuseTexture) noexcept
 		: _primitive(MaterialPrimitiveType::Triangle)
-		, _mainData(32, 0, 0, 0)
+		, _mainData{
+			32,  // shininess
+			0.5, // specular strenth
+			0, 0 // unused
+		}
 		, _mainHandle{ bgfx::kInvalidHandle }
 	{
 		for (auto& pair : _materialSamplerDefinitions)
@@ -127,6 +132,17 @@ namespace darmok
 		return *this;
 	}
 
+	float Material::getSpecularStrength() const noexcept
+	{
+		return _mainData.y;
+	}
+
+	Material& Material::setSpecularStrength(float v) noexcept
+	{
+		_mainData.y = v;
+		return *this;
+	}
+
 	void Material::bgfxConfig(bgfx::Encoder& encoder) const noexcept
 	{
 		for (auto& pair : _textureHandles)
@@ -153,7 +169,7 @@ namespace darmok
 		for (auto& pair : _colorHandles)
 		{
 			auto itr = _colors.find(pair.first);
-			Color c = Colors::magenta;
+			Color c = Colors::magenta();
 			if (itr != _colors.end())
 			{
 				c = itr->second;

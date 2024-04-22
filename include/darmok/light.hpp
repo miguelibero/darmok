@@ -14,20 +14,23 @@ namespace darmok
     class PointLight final
     {
     public:
-        PointLight(const glm::vec3& intensity = glm::vec3(0, 0, 1), float radius = 1.F) noexcept;
+        PointLight(float intensity = 1.F) noexcept;
 
+        PointLight& setIntensity(float intensity) noexcept;
         PointLight& setRadius(float radius) noexcept;
-        PointLight& setIntensity(const glm::vec3& intensity) noexcept;
+        PointLight& setAttenuation(const glm::vec3& attn) noexcept;
         PointLight& setColor(const Color3& color) noexcept;
         PointLight& setDiffuseColor(const Color3& color) noexcept;
         PointLight& setSpecularColor(const Color3& color) noexcept;
 
         [[nodiscard]] float getRadius() const noexcept;
-        [[nodiscard]] const glm::vec3& getIntensity() const noexcept;
+        [[nodiscard]] float getIntensity() const noexcept;
+        [[nodiscard]] const glm::vec3& getAttenuation() const noexcept;
         [[nodiscard]] const Color3& getDiffuseColor() const noexcept;
         [[nodiscard]] const Color3& getSpecularColor() const noexcept;
     private:
-        glm::vec3 _intensity;
+        float _intensity;
+        glm::vec3 _attenuation;
         float _radius;
         Color3 _diffuseColor;
         Color3 _specularColor;
@@ -36,15 +39,15 @@ namespace darmok
     class AmbientLight final
     {
     public:
-        AmbientLight(const glm::vec3& intensity = glm::vec3(1)) noexcept;
+        AmbientLight(float intensity = 1.F) noexcept;
 
+        AmbientLight& setIntensity(float intensity) noexcept;
         AmbientLight& setColor(const Color3& color) noexcept;
-        AmbientLight& setIntensity(const glm::vec3& intensity) noexcept;
 
-        [[nodiscard]] const glm::vec3& getIntensity() const noexcept;
         [[nodiscard]] const Color3& getColor() const noexcept;
+        [[nodiscard]] float getIntensity() const noexcept;
     private:
-        glm::vec3 _intensity;
+        float _intensity;
         Color3 _color;
     };
 
@@ -81,5 +84,7 @@ namespace darmok
         Data _pointLights;
 
         size_t updatePointLights() noexcept;
+        void updateAmbientLights() noexcept;
+        void updateCamera() noexcept;
     };
 }

@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <bx/bx.h>
 #include <darmok/scene.hpp>
+#include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
 #include "sol.hpp"
 
@@ -20,6 +21,13 @@ namespace darmok
 		PointLight,
 		Mesh
 	};
+
+	using VarVec2 = std::variant<glm::vec2, sol::table>;
+	using VarVec3 = std::variant<glm::vec3, sol::table>;
+	using VarVec4 = std::variant<glm::vec4, sol::table>;
+	using VarQuat = std::variant<glm::quat, sol::table>;
+	using VarColor3 = std::variant<Color3, sol::table>;
+	using VarColor = std::variant<Color, sol::table>;
 
     class Transform;
 
@@ -43,9 +51,6 @@ namespace darmok
 		const glm::vec3& getPivot() const noexcept;
 		const glm::mat4& getMatrix() const noexcept;
 		const glm::mat4& getInverse() const noexcept;
-
-		using VarVec3 = std::variant<glm::vec3, sol::table>;
-		using VarQuat = std::variant<glm::quat, sol::table>;
 
 		void setPosition(const VarVec3& v) noexcept;
 		void setRotation(const VarQuat& v) noexcept;
@@ -75,9 +80,6 @@ namespace darmok
 	public:
 		using native_t = Camera;
 		const static LuaNativeComponentType native_type = LuaNativeComponentType::Camera;
-
-		using VarVec2 = std::variant<glm::vec2, sol::table>;
-		using VarVec4 = std::variant<glm::vec4, sol::table>;
 
 		LuaCamera(Camera& camera) noexcept;
 		void setProjection1(float fovy, float aspect, const VarVec2& range) noexcept;
@@ -112,6 +114,18 @@ namespace darmok
 		const static LuaNativeComponentType native_type = LuaNativeComponentType::PointLight;
 
 		LuaPointLight(PointLight& light) noexcept;
+		void setIntensity(float intensity) noexcept;
+		void setRadius(float radius) noexcept;
+		void setAttenuation(const VarVec3& attn) noexcept;
+		void setColor(const VarColor3& color) noexcept;
+		void setDiffuseColor(const VarColor3& color) noexcept;
+		void setSpecularColor(const VarColor3& color) noexcept;
+
+		float getIntensity() const noexcept;
+		float getRadius() const noexcept;
+		const glm::vec3& getAttenuation() const noexcept;
+		const Color3& getDiffuseColor() const noexcept;
+		const Color3& getSpecularColor() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:
@@ -127,6 +141,12 @@ namespace darmok
 		const static LuaNativeComponentType native_type = LuaNativeComponentType::AmbientLight;
 
 		LuaAmbientLight(AmbientLight& light) noexcept;
+
+		void setIntensity(float intensity) noexcept;
+		void setColor(const VarColor3& color) noexcept;
+
+		const Color3& getColor() const noexcept;
+		float getIntensity() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:
@@ -185,50 +205,7 @@ namespace darmok
     class Scene;
 	class LuaMesh;
 
-	using LuaNativeComponent = std::variant<LuaTransform, LuaCamera, LuaPointLight, LuaMeshComponent>;
-
-	/*
-	template<LuaNativeComponentType T>
-	struct LuaNativeComponentOperations final : public ILuaNativeComponentOperations
-	{
-		EntityRegistry& registry;
-		Entity entity;
-
-		lua_t add()
-		{
-			return lua_t(registry.emplace<native_t>(_entity));
-		}
-		
-		bool remove() noexcept
-		{
-			return registry.remove<native_t>(_entity) > 0;
-		}
-
-		lua_t get()
-		{
-			return lua_t(registry.get<native_t>(_entity));
-		}
-
-		lua_t getOrAdd() noexcept
-		{
-			return lua_t(registry.get_or_emplace<native_t>(_entity));
-		}
-
-		bool has() const noexcept
-		{
-			return registry.try_get<native_t>(_entity) != nullptr;
-		}
-
-		std::optional<lua_t> tryGet() noexcept
-		{
-			auto comp = registry.try_get<native_t>(_entity);
-			if (comp == nullptr)
-			{
-				return std::nullopt;
-			}
-			return lua_t(*comp);
-		}
-	};*/
+	using LuaNativeComponent = std::variant<LuaTransform, LuaCamera, LuaAmbientLight, LuaPointLight, LuaMeshComponent>;
 
 	class LuaEntity final
 	{
@@ -358,6 +335,33 @@ namespace darmok
 		LuaScene(Scene& scene) noexcept;
 		EntityRegistry& getRegistry() noexcept;
 		LuaEntity createEntity() noexcept;
+		bool destroyEntity(const LuaEntity& entity) noexcept;
+
+		template <std::size_t I = 0>
+		std::optional<LuaEntity> getEntity(const LuaNativeComponent& comp) noexcept
+		{
+			if (!_scene)
+			{
+				return std::nullopt;
+			}
+			if constexpr (I < std::variant_size_v<LuaNativeComponent>)
+			{
+				using lua_t = std::variant_alternative_t<I, LuaNativeComponent>;
+				auto ptr = std::get_if<lua_t>(&comp);
+				if (ptr == nullptr)
+				{
+					return getEntity<I + 1>(comp);
+				}
+				auto entity = entt::to_entity(getRegistry(), *ptr);
+				if (entity == 0)
+				{
+					return std::nullopt;
+				}
+				return LuaEntity(entity, _scene.value());
+			}
+			return std::nullopt;
+		}
+
 		const Scene& getReal() const noexcept;
 		Scene& getReal() noexcept;
 

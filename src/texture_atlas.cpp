@@ -86,7 +86,7 @@ namespace darmok
 		i = 0;
 		for (auto& texCoord : elm.texCoords)
 		{
-			auto v = config.textureScale * glm::vec2(texCoord) / fatlasSize;
+			auto v = glm::vec2(texCoord) / fatlasSize;
 			writer.write(bgfx::Attrib::TexCoord0, i++, v);
 		}
 
@@ -94,6 +94,11 @@ namespace darmok
 		{
 			static const glm::vec3 norm(0, 0, -1);
 			writer.write(bgfx::Attrib::Normal, norm);
+		}
+
+		if (layout.has(bgfx::Attrib::Color0))
+		{
+			writer.write(bgfx::Attrib::Color0, config.color);
 		}
 
 		auto vertexData = writer.finish();
@@ -269,10 +274,9 @@ namespace darmok
 		}
 		else
 		{
-			auto base = elm.offset + elm.texturePosition;
 			elm.positions = {
-				base + glm::uvec2(elm.size.x, 0), base + elm.size,
-				base + glm::uvec2(0, elm.size.y), base,
+				glm::uvec2(elm.size.x, 0), elm.size,
+				glm::uvec2(0, elm.size.y), glm::uvec2(0),
 			};
 		}
 

@@ -394,8 +394,8 @@ namespace darmok
         [[nodiscard]] ModelLightType getType() const noexcept;
         [[nodiscard]] float getInnerConeAngle() const noexcept;
         [[nodiscard]] float getOuterConeAngle() const noexcept;
-        [[nodiscard]] glm::vec3 getIntensity() const noexcept;
-        [[nodiscard]] Color getColor(ModelLightColorType type) const noexcept;
+        [[nodiscard]] glm::vec3 getAttenuation() const noexcept;
+        [[nodiscard]] Color3 getColor(ModelLightColorType type) const noexcept;
         [[nodiscard]] glm::vec3 getDirection() const noexcept;
         [[nodiscard]] glm::vec3 getPosition() const noexcept;
         [[nodiscard]] glm::vec2 getSize() const noexcept;

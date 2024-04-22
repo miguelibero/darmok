@@ -60,6 +60,9 @@ namespace darmok
         uint8_t getShininess() const noexcept;
         Material& setShininess(uint8_t v) noexcept;
 
+        float getSpecularStrength() const noexcept;
+        Material& setSpecularStrength(float v) noexcept;
+
         void bgfxConfig(bgfx::Encoder& encoder) const noexcept;
 
     private:

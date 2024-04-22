@@ -11,23 +11,23 @@ namespace darmok
     {
         static const Color::value_type maxValue;
 
-        static const Color black;
-        static const Color white;
-        static const Color red;
-        static const Color green;
-        static const Color blue;
-        static const Color yellow;
-        static const Color cyan;
-        static const Color magenta;
+        static const Color& black() noexcept;
+        static const Color& white() noexcept;
+        static const Color& red() noexcept;
+        static const Color& green() noexcept;
+        static const Color& blue() noexcept;
+        static const Color& yellow() noexcept;
+        static const Color& cyan() noexcept;
+        static const Color& magenta() noexcept;
 
-        static const Color3 black3;
-        static const Color3 white3;
-        static const Color3 red3;
-        static const Color3 green3;
-        static const Color3 blue3;
-        static const Color3 yellow3;
-        static const Color3 cyan3;
-        static const Color3 magenta3;
+        static const Color3& black3() noexcept;
+        static const Color3& white3() noexcept;
+        static const Color3& red3() noexcept;
+        static const Color3& green3() noexcept;
+        static const Color3& blue3() noexcept;
+        static const Color3& yellow3() noexcept;
+        static const Color3& cyan3() noexcept;
+        static const Color3& magenta3() noexcept;
 
         static glm::vec4 normalize(const Color& color) noexcept;
         static glm::vec3 normalize(const Color3& color) noexcept;

@@ -128,6 +128,18 @@ namespace darmok
 
 	void LuaTextureAtlasMeshCreator::configure(sol::state_view& lua) noexcept
 	{
+		lua.new_usertype<TextureAtlasMeshCreationConfig>("TextureAtlasMeshCreationConfig",
+			sol::constructors<
+			MeshCreationConfig(const glm::vec3&, const glm::vec3&, const Color&),
+			MeshCreationConfig(const glm::vec3&, const glm::vec3&),
+			MeshCreationConfig(const glm::vec3&),
+			MeshCreationConfig()
+			>(),
+			"scale", &TextureAtlasMeshCreationConfig::scale,
+			"offset", &TextureAtlasMeshCreationConfig::offset,
+			"color", &TextureAtlasMeshCreationConfig::color
+		);
+
 		lua.new_usertype<LuaTextureAtlasMeshCreator>("TextureAtlasMeshCreator",
 			sol::constructors<
 				LuaTextureAtlasMeshCreator(const bgfx::VertexLayout&, const LuaTextureAtlas&),
@@ -162,10 +174,35 @@ namespace darmok
 		return _material;
 	}
 
+	uint8_t LuaMaterial::getShininess() const noexcept
+	{
+		return _material->getShininess();
+	}
+
+	LuaMaterial& LuaMaterial::setShininess(uint8_t v) noexcept
+	{
+		_material->setShininess(v);
+		return *this;
+	}
+
+	float LuaMaterial::getSpecularStrength() const noexcept
+	{
+		return _material->getSpecularStrength();
+	}
+
+	LuaMaterial& LuaMaterial::setSpecularStrength(float v) noexcept
+	{
+		_material->setSpecularStrength(v);
+		return *this;
+	}
+
 	void LuaMaterial::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaMaterial>("Material",
-			sol::constructors<LuaMaterial(), LuaMaterial(LuaTexture)>());
+			sol::constructors<LuaMaterial(), LuaMaterial(LuaTexture)>(),
+			"shininess", sol::property(&LuaMaterial::getShininess, &LuaMaterial::setShininess),
+			"specular_strength", sol::property(&LuaMaterial::getSpecularStrength, &LuaMaterial::setSpecularStrength)
+		);
 	}
 
 	LuaMesh::LuaMesh(const bgfx::VertexLayout& layout) noexcept

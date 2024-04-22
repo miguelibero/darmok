@@ -47,7 +47,7 @@ namespace darmok
 		return glm::vec2(vec.x, vec.y);
 	}
 
-	static inline uint8_t convertColor(ai_real v) noexcept
+	static inline uint8_t convertColorComp(ai_real v) noexcept
 	{
 		return 255 * v;
 	}
@@ -56,21 +56,20 @@ namespace darmok
 	{
 		return Color
 		{
-			convertColor(c.r),
-			convertColor(c.g),
-			convertColor(c.b),
-			convertColor(c.a),
+			convertColorComp(c.r),
+			convertColorComp(c.g),
+			convertColorComp(c.b),
+			convertColorComp(c.a),
 		};
 	}
 
-	Color convertColor(const aiColor3D& c) noexcept
+	Color3 convertColor(const aiColor3D& c) noexcept
 	{
-		return Color
+		return Color3
 		{
-			convertColor(c.r),
-			convertColor(c.g),
-			convertColor(c.b),
-			Colors::maxValue,
+			convertColorComp(c.r),
+			convertColorComp(c.g),
+			convertColorComp(c.b)
 		};
 	}
 
@@ -818,15 +817,14 @@ namespace darmok
 		case ModelLightType::Point:
 		{
 			registry.emplace<PointLight>(entity)
-				.setIntensity(getIntensity())
+				.setAttenuation(getAttenuation())
 				.setDiffuseColor(getColor(ModelLightColorType::Diffuse))
 				.setSpecularColor(getColor(ModelLightColorType::Specular))
 				;
 			auto ambient = getColor(ModelLightColorType::Ambient);
-			if (ambient != Colors::black)
+			if (ambient != Colors::black3())
 			{
 				registry.emplace<AmbientLight>(entity)
-					.setIntensity(getIntensity())
 					.setColor(ambient)
 					;
 			}
@@ -834,7 +832,6 @@ namespace darmok
 		}
 		case ModelLightType::Ambient:
 			registry.emplace<AmbientLight>(entity)
-				.setIntensity(getIntensity())
 				.setColor(getColor(ModelLightColorType::Ambient))
 				;
 			break;
@@ -856,7 +853,7 @@ namespace darmok
 		return _ptr->mAngleOuterCone;
 	}
 
-	glm::vec3 ModelLight::getIntensity() const noexcept
+	glm::vec3 ModelLight::getAttenuation() const noexcept
 	{
 		return {
 			_ptr->mAttenuationConstant,
@@ -865,7 +862,7 @@ namespace darmok
 		};
 	}
 
-	Color ModelLight::getColor(ModelLightColorType type) const noexcept
+	Color3 ModelLight::getColor(ModelLightColorType type) const noexcept
 	{
 		switch (type)
 		{
@@ -876,7 +873,7 @@ namespace darmok
 		case ModelLightColorType::Specular:
 			return convertColor(_ptr->mColorSpecular);
 		}
-		return Colors::white;
+		return Colors::white3();
 	}
 
 	glm::vec3 ModelLight::getDirection() const noexcept

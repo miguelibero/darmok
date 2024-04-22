@@ -3,15 +3,23 @@
 #include <darmok/program.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/material.hpp>
+#include <darmok/vertex.hpp>
 
 namespace darmok
 {
-    PointLight::PointLight(const glm::vec3& intensity, float radius) noexcept
+    PointLight::PointLight(float intensity) noexcept
         : _intensity(intensity)
-        , _radius(radius)
-        , _diffuseColor(Colors::white)
-        , _specularColor(Colors::white)
+        , _attenuation(0)
+        , _radius(0)
+        , _diffuseColor(Colors::white3())
+        , _specularColor(Colors::white3())
     {
+    }
+
+    PointLight& PointLight::setIntensity(float intensity) noexcept
+    {
+        _intensity = intensity;
+        return *this;
     }
 
     PointLight& PointLight::setRadius(float radius) noexcept
@@ -20,9 +28,9 @@ namespace darmok
         return *this;
     }
 
-    PointLight& PointLight::setIntensity(const glm::vec3& intensity) noexcept
+    PointLight& PointLight::setAttenuation(const glm::vec3& attn) noexcept
     {
-        _intensity = intensity;
+        _attenuation = attn;
         return *this;
     }
 
@@ -45,14 +53,19 @@ namespace darmok
         return *this;
     }
 
+    float PointLight::getIntensity() const noexcept
+    {
+        return _intensity;
+    }
+
     float PointLight::getRadius() const noexcept
     {
         return _radius;
     }
 
-    const glm::vec3& PointLight::getIntensity() const noexcept
+    const glm::vec3& PointLight::getAttenuation() const noexcept
     {
-        return _intensity;
+        return _attenuation;
     }
 
     const Color3& PointLight::getDiffuseColor() const noexcept
@@ -65,10 +78,16 @@ namespace darmok
         return _specularColor;
     }
 
-    AmbientLight::AmbientLight(const glm::vec3& intensity) noexcept
+    AmbientLight::AmbientLight(float intensity) noexcept
         : _intensity(intensity)
-        , _color(Colors::black)
+        , _color(Colors::white3())
     {
+    }
+
+    AmbientLight& AmbientLight::setIntensity(float intensity) noexcept
+    {
+        _intensity = intensity;
+        return *this;
     }
 
     AmbientLight& AmbientLight::setColor(const Color3& color) noexcept
@@ -77,34 +96,29 @@ namespace darmok
         return *this;
     }
 
-    AmbientLight& AmbientLight::setIntensity(const glm::vec3& intensity) noexcept
-    {
-        _intensity = intensity;
-        return *this;
-    }
-
-    const glm::vec3& AmbientLight::getIntensity() const noexcept
-    {
-        return _intensity;
-    }
-
-    [[nodiscard]] const Color3& AmbientLight::getColor() const noexcept
+    const Color3& AmbientLight::getColor() const noexcept
     {
         return _color;
     }
 
+    float AmbientLight::getIntensity() const noexcept
+    {
+        return _intensity;
+    }
 
     PhongLightingComponent::PhongLightingComponent() noexcept
         : _lightCountUniform{ bgfx::kInvalidHandle }
         , _lightDataUniform{ bgfx::kInvalidHandle }
+        , _camPosUniform{ bgfx::kInvalidHandle }
+        , _pointLightBuffer{ bgfx::kInvalidHandle }
         , _lightCount(0)
         , _lightData(0)
-        , _pointLightBuffer{ bgfx::kInvalidHandle }
+        , _camPos(0)
     {
         _pointLightsLayout.begin()
             .add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float, true)
-            .add(bgfx::Attrib::Color1, 4, bgfx::AttribType::Float, true)
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color1, 4, bgfx::AttribType::Float)
             .end();
     }
 
@@ -150,11 +164,8 @@ namespace darmok
         auto pointLights = _cam->createEntityView<PointLight>(registry);
 
         // TODO: not sure if size_hint is accurate
-        auto size = _pointLightsLayout.getSize(pointLights.size_hint());
-        if (_pointLights.size() < size)
-        {
-            _pointLights.resize(size);
-        }
+        VertexDataWriter writer(_pointLightsLayout, pointLights.size_hint());
+        writer.load(std::move(_pointLights));
 
         size_t index = 0;
         for (auto entity : pointLights)
@@ -163,23 +174,54 @@ namespace darmok
             auto trans = registry.try_get<const Transform>(entity);
             if (trans != nullptr)
             {
-                bgfx::vertexPack(glm::value_ptr(trans->getPosition()), false, bgfx::Attrib::Position, _pointLightsLayout, _pointLights.ptr(), index);
+                writer.write(bgfx::Attrib::Position, index, trans->getPosition());
             }
-            auto c = Colors::normalize(pointLight.getDiffuseColor());
-            bgfx::vertexPack(glm::value_ptr(c), true, bgfx::Attrib::Color0, _pointLightsLayout, _pointLights.ptr(), index);
-            c = Colors::normalize(pointLight.getSpecularColor());
-            bgfx::vertexPack(glm::value_ptr(c), true, bgfx::Attrib::Color1, _pointLightsLayout, _pointLights.ptr(), index);
+            auto c = Colors::normalize(pointLight.getDiffuseColor()) * pointLight.getIntensity();
+            writer.write(bgfx::Attrib::Color0, index, c);
+            c = Colors::normalize(pointLight.getSpecularColor()) * pointLight.getIntensity();
+            writer.write(bgfx::Attrib::Color1, index, c);
             index++;
         }
-        size = _pointLightsLayout.getSize(index);
+        _pointLights = writer.finish();
         auto ptr = _pointLights.ptr();
         if (ptr != nullptr)
         {
+            auto size = _pointLightsLayout.getSize(index);
             bgfx::update(_pointLightBuffer, 0, bgfx::makeRef(ptr, size));
         }
 
         return index;
     }
+
+    void PhongLightingComponent::updateAmbientLights() noexcept
+    {
+        auto& registry = _scene->getRegistry();
+        auto ambientLights = _cam->createEntityView<AmbientLight>(registry);
+        _lightData = glm::vec4(0.F);
+        for (auto entity : ambientLights)
+        {
+            auto& ambientLight = registry.get<const AmbientLight>(entity);
+            auto c = Colors::normalize(ambientLight.getColor());
+            _lightData += glm::vec4(c, 0.F) * ambientLight.getIntensity();
+        }
+    }
+
+    void PhongLightingComponent::updateCamera() noexcept
+    {
+        _camPos = glm::vec4(0);
+        if (!_cam || !_scene)
+        {
+            return;
+        }
+        auto& registry = _scene->getRegistry();
+        auto camEntity = entt::to_entity(registry, _cam.value());
+        auto camTrans = registry.try_get<const Transform>(camEntity);
+        if (camTrans != nullptr)
+        {
+            _camPos = glm::vec4(camTrans->getPosition(), 0);
+        }
+    }
+
 
     void PhongLightingComponent::update(float deltaTime) noexcept
     {
@@ -188,25 +230,8 @@ namespace darmok
             return;
         }
         _lightCount.x = updatePointLights();
-
-        auto& registry = _scene->getRegistry();
-        auto ambientLights = _cam->createEntityView<AmbientLight>(registry);
-        _lightData = glm::vec4(0.F);
-        for (auto entity : ambientLights)
-        {
-            auto& ambientLight = registry.get<const AmbientLight>(entity);
-            _lightData += glm::vec4(ambientLight.getIntensity(), 0.F);
-        }
-        _camPos = glm::vec4(0);
-        if (_cam)
-        {
-            auto camEntity = entt::to_entity(registry, _cam.value());
-            auto camTrans = registry.try_get<const Transform>(camEntity);
-            if (camTrans != nullptr)
-            {
-                _camPos = glm::vec4(camTrans->getPosition(), 0);
-            }
-        }
+        updateAmbientLights();
+        updateCamera();
     }
 
     void PhongLightingComponent::bgfxConfig(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept

@@ -31,14 +31,14 @@ namespace darmok
 		color["g"] = &Color::g;
 		color["b"] = &Color::b;
 		color["a"] = &Color::a;
-		color["black"] = sol::var(Colors::black);
-		color["white"] = sol::var(Colors::white);
-		color["red"] = sol::var(Colors::red);
-		color["green"] = sol::var(Colors::green);
-		color["blue"] = sol::var(Colors::blue);
-		color["yellow"] = sol::var(Colors::yellow);
-		color["cyan"] = sol::var(Colors::cyan);
-		color["magenta"] = sol::var(Colors::magenta);
+		color["black"] = sol::var(Colors::black());
+		color["white"] = sol::var(Colors::white());
+		color["red"] = sol::var(Colors::red());
+		color["green"] = sol::var(Colors::green());
+		color["blue"] = sol::var(Colors::blue());
+		color["yellow"] = sol::var(Colors::yellow());
+		color["cyan"] = sol::var(Colors::cyan());
+		color["magenta"] = sol::var(Colors::magenta());
 		color["norm"] = sol::resolve<glm::vec4(const Color&)>(Colors::normalize);
 		color["to_num"] = sol::resolve<uint32_t(const Color&)>(&Colors::toNumber);
 
@@ -46,14 +46,14 @@ namespace darmok
 		color3["r"] = &Color3::r;
 		color3["g"] = &Color3::g;
 		color3["b"] = &Color3::b;
-		color3["black"] = sol::var(Colors::black3);
-		color3["white"] = sol::var(Colors::white3);
-		color3["red"] = sol::var(Colors::red3);
-		color3["green"] = sol::var(Colors::green3);
-		color3["blue"] = sol::var(Colors::blue3);
-		color3["yellow"] = sol::var(Colors::yellow3);
+		color3["black"] = sol::var(Colors::black3());
+		color3["white"] = sol::var(Colors::white3());
+		color3["red"] = sol::var(Colors::red3());
+		color3["green"] = sol::var(Colors::green3());
+		color3["blue"] = sol::var(Colors::blue3());
+		color3["yellow"] = sol::var(Colors::yellow3());
 		color3["cyan"] = sol::var(Colors::cyan3);
-		color3["magenta"] = sol::var(Colors::magenta3);
+		color3["magenta"] = sol::var(Colors::magenta3());
 		color3["norm"] = sol::resolve<glm::vec3(const Color3&)>(Colors::normalize);
 		color3["to_num"] = sol::resolve<uint32_t(const Color3&)>(&Colors::toNumber);
 
