@@ -14,7 +14,7 @@ namespace darmok
 		// had to split due to Visual Studio error C1126
 		static void configure1(sol::state_view& lua) noexcept;
 		static void configure2(sol::state_view& lua) noexcept;
-
+		static void configure3(sol::state_view& lua) noexcept;
 
 		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
 		static void loadFromTable(const sol::table& tab, glm::vec<L, T, Q>& v) noexcept
@@ -115,6 +115,24 @@ namespace darmok
 			return usertype;
 		}
 
+		template<typename T>
+		static T::value_type vecDot(const std::variant<T, sol::table>& a, const std::variant<T, sol::table>& b) noexcept
+		{
+			return glm::dot(tableToGlm(a), tableToGlm(b));
+		}
+
+		template<typename T>
+		static T vecClamp(const std::variant<T, sol::table>& v, const std::variant<T, sol::table>& min, const std::variant<T, sol::table>& max) noexcept
+		{
+			return glm::clamp(tableToGlm(v), tableToGlm(min), tableToGlm(max));
+		}
+
+		template<typename T>
+		static T vecLerp(const std::variant<T, sol::table>& min, const std::variant<T, sol::table>& max, float p) noexcept
+		{
+			return lerp(tableToGlm(min), tableToGlm(max), p);
+		}
+
 		template<typename T, typename... Ctors>
 		static sol::usertype<T> configureVec(sol::state_view& lua, std::string_view name) noexcept
 		{
@@ -122,12 +140,12 @@ namespace darmok
 			using val = T::value_type;
 			auto usertype = configureGlmOperators<T, Ctors...>(lua, name);
 			usertype["zero"] = sol::var(vec(0));
-			usertype["dot"] = sol::resolve<val(const vec&, const vec&)>(glm::dot);
 			usertype["norm"] = sol::resolve<vec(const vec&)>(glm::normalize);
 			usertype["radians"] = sol::resolve<vec(const vec&)>(glm::radians);
 			usertype["degrees"] = sol::resolve<vec(const vec&)>(glm::degrees);
-			usertype["clamp"] = sol::overload(sol::resolve<vec(const vec&, const vec&, const vec&)>(glm::clamp), sol::resolve<vec(const vec&, val, val)>(glm::clamp));
-			usertype["lerp"] = sol::resolve<vec(const vec&, const vec&, float)>(lerp);
+			usertype["clamp"] = sol::overload(&vecClamp<vec>, sol::resolve<vec(const vec&, val, val)>(glm::clamp));
+			usertype["dot"] = &vecDot<vec>;
+			usertype["lerp"] = &vecLerp<vec>;
 			return usertype;
 		}
 

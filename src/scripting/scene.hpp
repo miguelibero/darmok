@@ -59,23 +59,26 @@ namespace darmok
 	class LuaCamera final
 	{
 	public:
+		using VarVec2 = std::variant<glm::vec2, sol::table>;
+		using VarVec4 = std::variant<glm::vec4, sol::table>;
+
 		LuaCamera(Camera& camera) noexcept;
-		void setProjection1(float fovy, float aspect, const glm::vec2& range) noexcept;
+		void setProjection1(float fovy, float aspect, const VarVec2& range) noexcept;
 		void setProjection2(float fovy, float aspect, float near) noexcept;
-		void setWindowProjection1(float fovy, const glm::vec2& range) noexcept;
+		void setWindowProjection1(float fovy, const VarVec2& range) noexcept;
 		void setWindowProjection2(float fovy, float near) noexcept;
 		void setWindowProjection3(float fovy) noexcept;
-		void setOrtho1(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept;
-		void setOrtho2(const glm::vec4& edges, const glm::vec2& range) noexcept;
-		void setOrtho3(const glm::vec4& edges) noexcept;
-		void setWindowOrtho1(const glm::vec2& range, float offset) noexcept;
-		void setWindowOrtho2(const glm::vec2& range) noexcept;
+		void setOrtho1(const VarVec4& edges, const VarVec2& range, float offset) noexcept;
+		void setOrtho2(const VarVec4& edges, const VarVec2& range) noexcept;
+		void setOrtho3(const VarVec4& edges) noexcept;
+		void setWindowOrtho1(const VarVec2& range, float offset) noexcept;
+		void setWindowOrtho2(const VarVec2& range) noexcept;
 		void setWindowOrtho3() noexcept;
 
 		void setForwardPhongRenderer(const LuaProgram& program) noexcept;
 		const glm::mat4& getMatrix() const noexcept;
 		void setMatrix(const glm::mat4& matrix) noexcept;
-		std::optional<Ray> screenPointToRay(const glm::vec2& point) const noexcept;
+		std::optional<Ray> screenPointToRay(const VarVec2& point) const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 

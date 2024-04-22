@@ -99,7 +99,7 @@ camTrans = camEntity:get_transform()
 camTrans.position = { 0, 2, -2 }
 camTrans:look_at({ 0, 0, 0 })
 local cam = camEntity:get_camera()
-cam:set_projection(60, Vec2.new(0.3, 1000))
+cam:set_projection(60, { 0.3, 1000 })
 cam:set_forward_phong_renderer(program)
 
 lightEntity = app.scene:create_entity()
@@ -108,7 +108,7 @@ lightTrans.position = { 1, 1, -2 }
 lightEntity:get_point_light()
 
 cubeMesh = MeshCreator.new(program.vertex_layout):create_cube()
-greenTex = app.assets:load_color_texture(Colors.green)
+greenTex = app.assets:load_color_texture(Color.green)
 cubeMesh.material = Material.new(greenTex)
 app.scene:create_entity():add_mesh(cubeMesh)
 ```

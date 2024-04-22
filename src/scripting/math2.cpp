@@ -1,7 +1,5 @@
 #include "math.hpp"
 #include <darmok/color.hpp>
-#include <darmok/math.hpp>
-#include <tuple>
 #include <glm/gtx/rotate_normalized_axis.hpp>
 
 namespace darmok
@@ -33,11 +31,31 @@ namespace darmok
 		color["g"] = &Color::g;
 		color["b"] = &Color::b;
 		color["a"] = &Color::a;
+		color["black"] = sol::var(Colors::black);
+		color["white"] = sol::var(Colors::white);
+		color["red"] = sol::var(Colors::red);
+		color["green"] = sol::var(Colors::green);
+		color["blue"] = sol::var(Colors::blue);
+		color["yellow"] = sol::var(Colors::yellow);
+		color["cyan"] = sol::var(Colors::cyan);
+		color["magenta"] = sol::var(Colors::magenta);
+		color["norm"] = sol::resolve<glm::vec4(const Color&)>(Colors::normalize);
+		color["to_num"] = sol::resolve<uint32_t(const Color&)>(&Colors::toNumber);
 
 		auto color3 = configureUvec<Color3, Color3(uint8_t, uint8_t, uint8_t)>(lua, "Color3");
 		color3["r"] = &Color3::r;
 		color3["g"] = &Color3::g;
 		color3["b"] = &Color3::b;
+		color3["black"] = sol::var(Colors::black3);
+		color3["white"] = sol::var(Colors::white3);
+		color3["red"] = sol::var(Colors::red3);
+		color3["green"] = sol::var(Colors::green3);
+		color3["blue"] = sol::var(Colors::blue3);
+		color3["yellow"] = sol::var(Colors::yellow3);
+		color3["cyan"] = sol::var(Colors::cyan3);
+		color3["magenta"] = sol::var(Colors::magenta3);
+		color3["norm"] = sol::resolve<glm::vec3(const Color3&)>(Colors::normalize);
+		color3["to_num"] = sol::resolve<uint32_t(const Color3&)>(&Colors::toNumber);
 
 		lua.new_usertype<glm::quat>("Quat",
 			sol::constructors<glm::quat(float, float, float, float), glm::quat(const glm::vec3&)>(),
@@ -58,61 +76,6 @@ namespace darmok
 			"euler_angles", sol::resolve<glm::vec3(const glm::quat&)>(&glm::eulerAngles),
 			"angle_axis", sol::resolve<glm::quat(const float&, const glm::vec3&)>(&glm::angleAxis),
 			"rotate_axis", sol::resolve<glm::quat(const glm::quat&, const float&, const glm::vec3&)>(&glm::rotateNormalizedAxis)
-		);
-
-		lua.create_named_table("Colors",
-			"black", &Colors::black,
-			"white", &Colors::white,
-			"red", &Colors::red,
-			"green", &Colors::green,
-			"blue", &Colors::blue,
-			"yellow", &Colors::yellow,
-			"cyan", &Colors::cyan,
-			"magenta", &Colors::magenta
-		);
-
-		lua.new_usertype<Quad>("Quad",
-			sol::constructors<Quad(const glm::vec2&, const glm::vec2&), Quad(const glm::vec2&), Quad()>(),
-			"size", &Quad::size,
-			"origin", &Quad::origin,
-			"to_lines", &Quad::toLines
-		);
-
-		lua.new_usertype<Cube>("Cube",
-			sol::constructors<Cube(const glm::vec3&, const glm::vec3&), Cube(const glm::vec3&), Cube()>(),
-			"size", &Cube::size,
-			"origin", &Cube::origin
-		);
-
-		lua.new_usertype<Triangle>("Triangle",
-			sol::constructors<Triangle(const Triangle::Vertices&)>(),
-			"vertices", &Triangle::vertices
-		);
-
-		lua.new_usertype<Plane>("Plane",
-			sol::constructors<Plane(const glm::vec3&, const glm::vec3&), Plane(const glm::vec3&), Plane()>(),
-			"normal", &Plane::normal,
-			"origin", &Plane::origin
-		);
-
-		lua.new_usertype<Ray>("Ray",
-			sol::constructors<Ray(const glm::vec3&, const glm::vec3&), Ray(const glm::vec3&), Ray()>(),
-			"direction", &Ray::direction,
-			"origin", &Ray::origin,
-			sol::meta_function::multiplication, &Ray::operator*,
-			"unproject", &Ray::unproject,
-			"intersect", sol::overload(
-				sol::resolve<std::optional<float>(const Plane&) const>(&Ray::intersect),
-				sol::resolve<std::optional<float>(const Sphere&) const>(&Ray::intersect)
-			),
-			"intersect_normal", &Ray::intersectNormal,
-			"to_line", &Ray::toLine
-		);
-
-		lua.new_usertype<Line>("Line",
-			sol::constructors<Line(const Line::Points&)>(),
-			"points", &Line::points,
-			sol::meta_function::multiplication, &Line::operator*
 		);
     }
 }

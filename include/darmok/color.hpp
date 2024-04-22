@@ -10,6 +10,7 @@ namespace darmok
     struct Colors final
     {
         static const Color::value_type maxValue;
+
         static const Color black;
         static const Color white;
         static const Color red;
@@ -18,6 +19,15 @@ namespace darmok
         static const Color yellow;
         static const Color cyan;
         static const Color magenta;
+
+        static const Color3 black3;
+        static const Color3 white3;
+        static const Color3 red3;
+        static const Color3 green3;
+        static const Color3 blue3;
+        static const Color3 yellow3;
+        static const Color3 cyan3;
+        static const Color3 magenta3;
 
         static glm::vec4 normalize(const Color& color) noexcept;
         static glm::vec3 normalize(const Color3& color) noexcept;

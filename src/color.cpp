@@ -4,14 +4,23 @@ namespace darmok
 {
     const Color::value_type Colors::maxValue = 255;
 
-    const Color Colors::black = { 0, 0, 0, maxValue };
-    const Color Colors::white = { maxValue, maxValue, maxValue, maxValue };
-    const Color Colors::red = { maxValue, 0, 0, maxValue };
-    const Color Colors::green = { 0, maxValue, 0, maxValue };
-    const Color Colors::blue = { 0, 0, maxValue, maxValue };
-    const Color Colors::yellow = { maxValue, maxValue, 0, maxValue };
-    const Color Colors::cyan = { 0, maxValue, maxValue, maxValue };
-    const Color Colors::magenta = { maxValue, 0, maxValue, maxValue };
+    const Color3 Colors::black3 = { 0, 0, 0 };
+    const Color3 Colors::white3 = { maxValue, maxValue, maxValue };
+    const Color3 Colors::red3 = { maxValue, 0, 0 };
+    const Color3 Colors::green3 = { 0, maxValue, 0 };
+    const Color3 Colors::blue3 = { 0, 0, maxValue };
+    const Color3 Colors::yellow3 = { maxValue, maxValue, 0 };
+    const Color3 Colors::cyan3 = { 0, maxValue, maxValue };
+    const Color3 Colors::magenta3 = { maxValue, 0, maxValue };
+
+    const Color Colors::black = Color(Colors::black3, maxValue);
+    const Color Colors::white = Color(Colors::white3, maxValue);
+    const Color Colors::red = Color(Colors::red3, maxValue);
+    const Color Colors::green = Color(Colors::green3, maxValue);
+    const Color Colors::blue = Color(Colors::blue3, maxValue);
+    const Color Colors::yellow = Color(Colors::yellow3, maxValue);
+    const Color Colors::cyan = Color(Colors::cyan3, maxValue);
+    const Color Colors::magenta = Color(Colors::magenta3, maxValue);
 
     glm::vec4 Colors::normalize(const Color& color) noexcept
     {

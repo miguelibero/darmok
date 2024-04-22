@@ -149,6 +149,7 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/input.cpp
     ${SRC_DIR}/scripting/math1.cpp
     ${SRC_DIR}/scripting/math2.cpp
+    ${SRC_DIR}/scripting/math3.cpp
     ${SRC_DIR}/scripting/scene.cpp
     ${SRC_DIR}/scripting/window.cpp
   )

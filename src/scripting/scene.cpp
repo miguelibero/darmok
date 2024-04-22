@@ -167,9 +167,9 @@ namespace darmok
 	{
 	}
 
-	void LuaCamera::setProjection1(float fovy, float aspect, const glm::vec2& range) noexcept
+	void LuaCamera::setProjection1(float fovy, float aspect, const VarVec2& range) noexcept
 	{
-		_camera->setProjection(fovy, aspect, range);
+		_camera->setProjection(fovy, aspect, LuaMath::tableToGlm(range));
 	}
 
 	void LuaCamera::setProjection2(float fovy, float aspect, float near) noexcept
@@ -177,9 +177,9 @@ namespace darmok
 		_camera->setProjection(fovy, aspect, near);
 	}
 
-	void LuaCamera::setWindowProjection1(float fovy, const glm::vec2& range) noexcept
+	void LuaCamera::setWindowProjection1(float fovy, const VarVec2& range) noexcept
 	{
-		_camera->setWindowProjection(fovy, range);
+		_camera->setWindowProjection(fovy, LuaMath::tableToGlm(range));
 	}
 
 	void LuaCamera::setWindowProjection2(float fovy, float near) noexcept
@@ -192,29 +192,29 @@ namespace darmok
 		_camera->setWindowProjection(fovy);
 	}
 
-	void LuaCamera::setOrtho1(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept
+	void LuaCamera::setOrtho1(const VarVec4& edges, const VarVec2& range, float offset) noexcept
 	{
-		_camera->setOrtho(edges, range, offset);
+		_camera->setOrtho(LuaMath::tableToGlm(edges), LuaMath::tableToGlm(range), offset);
 	}
 
-	void LuaCamera::setOrtho2(const glm::vec4& edges, const glm::vec2& range) noexcept
+	void LuaCamera::setOrtho2(const VarVec4& edges, const VarVec2& range) noexcept
 	{
-		_camera->setOrtho(edges, range);
+		_camera->setOrtho(LuaMath::tableToGlm(edges), LuaMath::tableToGlm(range));
 	}
 
-	void LuaCamera::setOrtho3(const glm::vec4& edges) noexcept
+	void LuaCamera::setOrtho3(const VarVec4& edges) noexcept
 	{
-		_camera->setOrtho(edges);
+		_camera->setOrtho(LuaMath::tableToGlm(edges));
 	}
 
-	void LuaCamera::setWindowOrtho1(const glm::vec2& range, float offset) noexcept
+	void LuaCamera::setWindowOrtho1(const VarVec2& range, float offset) noexcept
 	{
-		_camera->setWindowOrtho(range, offset);
+		_camera->setWindowOrtho(LuaMath::tableToGlm(range), offset);
 	}
 
-	void LuaCamera::setWindowOrtho2(const glm::vec2& range) noexcept
+	void LuaCamera::setWindowOrtho2(const VarVec2& range) noexcept
 	{
-		_camera->setWindowOrtho(range);
+		_camera->setWindowOrtho(LuaMath::tableToGlm(range));
 	}
 
 	void LuaCamera::setWindowOrtho3() noexcept
@@ -237,9 +237,9 @@ namespace darmok
 		_camera->setMatrix(matrix);
 	}
 
-	std::optional<Ray> LuaCamera::screenPointToRay(const glm::vec2& point) const noexcept
+	std::optional<Ray> LuaCamera::screenPointToRay(const VarVec2& point) const noexcept
 	{
-		return _camera->screenPointToRay(point);
+		return _camera->screenPointToRay(LuaMath::tableToGlm(point));
 	}
 
 	void LuaCamera::configure(sol::state_view& lua) noexcept
