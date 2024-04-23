@@ -30,6 +30,12 @@ namespace darmok
 			return viewId;
 		}
 
+		auto& fb = _cam->getFrameBuffer();
+		if (isValid(fb))
+		{
+			bgfx::setViewFrameBuffer(viewId, fb);
+		}
+
 		auto& registry = _scene->getRegistry();
 		auto meshes = _cam->createEntityView<MeshComponent>(registry);
 		auto rendered = false;

@@ -2,6 +2,7 @@
 #include <darmok/transform.hpp>
 #include <darmok/window.hpp>
 #include <darmok/math.hpp>
+#include <darmok/texture.hpp>
 #include <bx/math.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -9,7 +10,17 @@ namespace darmok
 {
     Camera::Camera(const glm::mat4& matrix) noexcept
         : _matrix(matrix)
+        , _framebuffer{ bgfx::kInvalidHandle }
+        , _targetTextureChanged(false)
     {
+    }
+
+    Camera::~Camera()
+    {
+        if (isValid(_framebuffer))
+        {
+            bgfx::destroy(_framebuffer);
+        }
     }
 
     const glm::mat4& Camera::getMatrix() const noexcept
@@ -70,6 +81,26 @@ namespace darmok
             _entityFilter->init(_scene->getRegistry());
         }
         return *this;
+    }
+
+    Camera& Camera::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
+    {
+        if (_targetTexture != texture)
+        {
+            _targetTexture = texture;
+            _targetTextureChanged = true;
+        }
+        return *this;
+    }
+
+    const std::shared_ptr<Texture>& Camera::getTargetTexture() noexcept
+    {
+        return _targetTexture;
+    }
+
+    const bgfx::FrameBufferHandle& Camera::getFrameBuffer() const noexcept
+    {
+        return _framebuffer;
     }
 
     void Camera::bgfxConfig(const EntityRegistry& registry, bgfx::ViewId viewId) const noexcept
@@ -139,6 +170,18 @@ namespace darmok
         for (auto& component : _components)
         {
             component->update(deltaTime);
+        }
+        if (_targetTextureChanged)
+        {
+            if (isValid(_framebuffer))
+            {
+                bgfx::destroy(_framebuffer);
+                _framebuffer.idx = bgfx::kInvalidHandle;
+            }
+            if (_targetTexture != nullptr)
+            {
+                _framebuffer = bgfx::createFrameBuffer(1, &_targetTexture->getHandle());
+            }
         }
     }
 

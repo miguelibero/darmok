@@ -2,7 +2,10 @@
 
 #include <bgfx/bgfx.h>
 #include <memory>
+#include <vector>
+#include <darmok/optional_ref.hpp>
 #include "sol.hpp"
+#include "scene_fwd.hpp"
 
 namespace darmok
 {
@@ -66,5 +69,24 @@ namespace darmok
 		static void configure(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<MeshCreator> _creator;
+	};
+
+	class MeshComponent;
+
+	class LuaMeshComponent final
+	{
+	public:
+		using native_t = MeshComponent;
+		const static LuaNativeComponentType native_type = LuaNativeComponentType::Mesh;
+
+		LuaMeshComponent(MeshComponent& comp) noexcept;
+		std::vector<LuaMesh> getMeshes() const noexcept;
+		void setMeshes(const std::vector<LuaMesh>& meshes) noexcept;
+		void setMesh(const LuaMesh& mesh) noexcept;
+		void addMesh(const LuaMesh& mesh) noexcept;
+
+		static void configure(sol::state_view& lua) noexcept;
+	private:
+		OptionalRef<MeshComponent> _comp;
 	};
 }

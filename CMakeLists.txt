@@ -157,6 +157,9 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/math2.cpp
     ${SRC_DIR}/scripting/math3.cpp
     ${SRC_DIR}/scripting/scene.cpp
+    ${SRC_DIR}/scripting/transform.cpp
+    ${SRC_DIR}/scripting/light.cpp
+    ${SRC_DIR}/scripting/camera.cpp
     ${SRC_DIR}/scripting/window.cpp
   )
   list(APPEND SOURCES ${SCRIPTING_SOURCES})

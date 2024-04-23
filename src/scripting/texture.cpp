@@ -1,6 +1,7 @@
 #include "texture.hpp"
 #include "image.hpp"
 #include "mesh.hpp"
+#include "math.hpp"
 #include <darmok/texture_atlas.hpp>
 
 namespace darmok
@@ -30,14 +31,19 @@ namespace darmok
 		return *this;
 	}
 
-	LuaTexture LuaTexture::create1(const TextureCreationConfig& cfg, uint64_t flags) noexcept
+	LuaTexture LuaTexture::create1(const LuaImage& img, uint64_t flags) noexcept
+	{
+		return LuaTexture(Texture::create(img.getReal(), flags));
+	}
+
+	LuaTexture LuaTexture::create2(const TextureCreationConfig& cfg, uint64_t flags) noexcept
 	{
 		return LuaTexture(Texture::create(cfg, flags));
 	}
 
-	LuaTexture LuaTexture::create2(const LuaImage& img, uint64_t flags) noexcept
+	LuaTexture LuaTexture::create3(const VarUvec2& size, uint64_t flags) noexcept
 	{
-		return LuaTexture(Texture::create(img.getReal(), flags));
+		return create2(TextureCreationConfig{ LuaMath::tableToGlm(size) }, flags);
 	}
 
 	void LuaTexture::configure(sol::state_view& lua) noexcept
@@ -233,7 +239,7 @@ namespace darmok
 			"image", sol::property(&LuaTexture::getImage),
 			"type", sol::property(&LuaTexture::getType),
 			"name", sol::property(&LuaTexture::setName),
-			"create", sol::overload(&LuaTexture::create1, &LuaTexture::create2)
+			"create", sol::overload(&LuaTexture::create1, &LuaTexture::create2, &LuaTexture::create3)
 		);
 	}
 

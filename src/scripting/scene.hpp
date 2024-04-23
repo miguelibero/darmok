@@ -11,168 +11,14 @@
 #include <darmok/optional_ref.hpp>
 #include "sol.hpp"
 
+#include "scene_fwd.hpp"
+#include "transform.hpp"
+#include "light.hpp"
+#include "mesh.hpp"
+#include "camera.hpp"
+
 namespace darmok
 {
-	enum class LuaNativeComponentType
-	{
-		Transform,
-		Camera,
-		AmbientLight,
-		PointLight,
-		Mesh
-	};
-
-	using VarVec2 = std::variant<glm::vec2, sol::table>;
-	using VarVec3 = std::variant<glm::vec3, sol::table>;
-	using VarVec4 = std::variant<glm::vec4, sol::table>;
-	using VarQuat = std::variant<glm::quat, sol::table>;
-	using VarColor3 = std::variant<Color3, sol::table>;
-	using VarColor = std::variant<Color, sol::table>;
-
-    class Transform;
-
-    class LuaTransform final
-	{
-	public:
-		using native_t = Transform;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::Transform;
-
-		LuaTransform(Transform& transform) noexcept;
-		std::optional<LuaTransform> getParent() noexcept;
-		void setParent(std::optional<LuaTransform> parent) noexcept;
-
-		const glm::vec3& getPosition() const noexcept;
-		const glm::quat& getRotation() const noexcept;
-		glm::vec3 getEulerAngles() const noexcept;
-		glm::vec3 getForward() const noexcept;
-		glm::vec3 getRight() const noexcept;
-		glm::vec3 getUp() const noexcept;
-		const glm::vec3& getScale() const noexcept;
-		const glm::vec3& getPivot() const noexcept;
-		const glm::mat4& getMatrix() const noexcept;
-		const glm::mat4& getInverse() const noexcept;
-
-		void setPosition(const VarVec3& v) noexcept;
-		void setRotation(const VarQuat& v) noexcept;
-		void setEulerAngles(const VarVec3& v) noexcept;
-		void setForward(const VarVec3& v) noexcept;
-		void setScale(const VarVec3& v) noexcept;
-		void setPivot(const VarVec3& v) noexcept;
-		void setMatrix(const glm::mat4& v) noexcept;
-
-		void lookDir1(const VarVec3& v) noexcept;
-		void lookDir2(const VarVec3& v, const VarVec3& up) noexcept;
-		void lookAt1(const VarVec3& v) noexcept;
-		void lookAt2(const VarVec3& v, const VarVec3& up) noexcept;
-
-		static void configure(sol::state_view& lua) noexcept;
-
-	private:
-		OptionalRef<Transform> _transform;
-	};
-
-    class Camera;
-	class LuaProgram;
-	class Ray;
-
-	class LuaCamera final
-	{
-	public:
-		using native_t = Camera;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::Camera;
-
-		LuaCamera(Camera& camera) noexcept;
-		void setProjection1(float fovy, float aspect, const VarVec2& range) noexcept;
-		void setProjection2(float fovy, float aspect, float near) noexcept;
-		void setWindowProjection1(float fovy, const VarVec2& range) noexcept;
-		void setWindowProjection2(float fovy, float near) noexcept;
-		void setWindowProjection3(float fovy) noexcept;
-		void setOrtho1(const VarVec4& edges, const VarVec2& range, float offset) noexcept;
-		void setOrtho2(const VarVec4& edges, const VarVec2& range) noexcept;
-		void setOrtho3(const VarVec4& edges) noexcept;
-		void setWindowOrtho1(const VarVec2& range, float offset) noexcept;
-		void setWindowOrtho2(const VarVec2& range) noexcept;
-		void setWindowOrtho3() noexcept;
-
-		void setForwardPhongRenderer(const LuaProgram& program) noexcept;
-		const glm::mat4& getMatrix() const noexcept;
-		void setMatrix(const glm::mat4& matrix) noexcept;
-		std::optional<Ray> screenPointToRay(const VarVec2& point) const noexcept;
-
-		static void configure(sol::state_view& lua) noexcept;
-
-	private:
-		OptionalRef<Camera> _camera;
-	};
-
-    class PointLight;
-
-	class LuaPointLight final
-	{
-	public:
-		using native_t = PointLight;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::PointLight;
-
-		LuaPointLight(PointLight& light) noexcept;
-		void setIntensity(float intensity) noexcept;
-		void setRadius(float radius) noexcept;
-		void setAttenuation(const VarVec3& attn) noexcept;
-		void setColor(const VarColor3& color) noexcept;
-		void setDiffuseColor(const VarColor3& color) noexcept;
-		void setSpecularColor(const VarColor3& color) noexcept;
-
-		float getIntensity() const noexcept;
-		float getRadius() const noexcept;
-		const glm::vec3& getAttenuation() const noexcept;
-		const Color3& getDiffuseColor() const noexcept;
-		const Color3& getSpecularColor() const noexcept;
-
-		static void configure(sol::state_view& lua) noexcept;
-	private:
-		OptionalRef<PointLight> _light;
-	};
-
-	class AmbientLight;
-
-	class LuaAmbientLight final
-	{
-	public:
-		using native_t = AmbientLight;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::AmbientLight;
-
-		LuaAmbientLight(AmbientLight& light) noexcept;
-
-		void setIntensity(float intensity) noexcept;
-		void setColor(const VarColor3& color) noexcept;
-
-		const Color3& getColor() const noexcept;
-		float getIntensity() const noexcept;
-
-		static void configure(sol::state_view& lua) noexcept;
-	private:
-		OptionalRef<AmbientLight> _light;
-	};
-
-    class MeshComponent;
-	class LuaMesh;
-
-	class LuaMeshComponent final
-	{
-	public:
-		using native_t = MeshComponent;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::Mesh;
-
-		LuaMeshComponent(MeshComponent& comp) noexcept;
-		std::vector<LuaMesh> getMeshes() const noexcept;
-		void setMeshes(const std::vector<LuaMesh>& meshes) noexcept;
-		void setMesh(const LuaMesh& mesh) noexcept;
-		void addMesh(const LuaMesh& mesh) noexcept;
-
-		static void configure(sol::state_view& lua) noexcept;
-	private:
-		OptionalRef<MeshComponent> _comp;
-	};
-
 	class LuaTableComponent final
 	{
 	public:
@@ -203,7 +49,6 @@ namespace darmok
 	};
 
     class Scene;
-	class LuaMesh;
 
 	using LuaNativeComponent = std::variant<LuaTransform, LuaCamera, LuaAmbientLight, LuaPointLight, LuaMeshComponent>;
 
@@ -323,10 +168,6 @@ namespace darmok
 
 		EntityRegistry& getRegistry() noexcept;
 		const EntityRegistry& getRegistry() const noexcept;
-
-
-
-
 	};
 
 	class LuaScene final

@@ -6,9 +6,17 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/glm.hpp>
 #include "sol.hpp"
+#include <darmok/color.hpp>
 
 namespace darmok
 {
+    using VarVec2 = std::variant<glm::vec2, sol::table>;
+	using VarVec3 = std::variant<glm::vec3, sol::table>;
+	using VarVec4 = std::variant<glm::vec4, sol::table>;
+	using VarQuat = std::variant<glm::quat, sol::table>;
+	using VarColor3 = std::variant<Color3, sol::table>;
+	using VarColor = std::variant<Color, sol::table>;
+
 	struct LuaMath final
 	{
 		// had to split due to Visual Studio error C1126
