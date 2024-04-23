@@ -122,40 +122,58 @@ namespace darmok
             .end();
     }
 
-    const uint8_t _phongPointLightsBufferStage = 6;
-    const std::string _phongLightCountUniformName = "u_lightCount";
-    const std::string _phongLightDataUniformName = "u_lightingData";
-    const std::string _phongCamPosUniformName = "u_camPos";
+    PhongLightingComponent::~PhongLightingComponent() noexcept
+    {
+        destroyHandles();
+    }
 
     void PhongLightingComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _cam = cam;
 
-        _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-        _lightCountUniform = bgfx::createUniform(_phongLightCountUniformName.c_str(), bgfx::UniformType::Vec4);
-        _lightDataUniform = bgfx::createUniform(_phongLightDataUniformName.c_str(), bgfx::UniformType::Vec4);
-        _camPosUniform = bgfx::createUniform(_phongCamPosUniformName.c_str(), bgfx::UniformType::Vec4);
+        createHandles();
     }
 
-    void PhongLightingComponent::shutdown() noexcept
+    void PhongLightingComponent::createHandles() noexcept
+    {
+        static const std::string countUniformName = "u_lightCount";
+        static const std::string lightDataUniformName = "u_lightingData";
+        static const std::string camPosUniformName = "u_camPos";
+
+        _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
+        _lightCountUniform = bgfx::createUniform(countUniformName.c_str(), bgfx::UniformType::Vec4);
+        _lightDataUniform = bgfx::createUniform(lightDataUniformName.c_str(), bgfx::UniformType::Vec4);
+        _camPosUniform = bgfx::createUniform(camPosUniformName.c_str(), bgfx::UniformType::Vec4);
+    }
+
+    void PhongLightingComponent::destroyHandles() noexcept
     {
         if (isValid(_lightCountUniform))
         {
             bgfx::destroy(_lightCountUniform);
+            _lightCountUniform.idx = bgfx::kInvalidHandle;
         }
         if (isValid(_lightDataUniform))
         {
             bgfx::destroy(_lightDataUniform);
+            _lightDataUniform.idx = bgfx::kInvalidHandle;
         }
         if (isValid(_pointLightBuffer))
         {
             bgfx::destroy(_pointLightBuffer);
+            _pointLightBuffer.idx = bgfx::kInvalidHandle;
         }
         if (isValid(_camPosUniform))
         {
             bgfx::destroy(_camPosUniform);
+            _camPosUniform.idx = bgfx::kInvalidHandle;
         }
+    }
+
+    void PhongLightingComponent::shutdown() noexcept
+    {
+        destroyHandles();
     }
 
     size_t PhongLightingComponent::updatePointLights() noexcept
@@ -244,6 +262,7 @@ namespace darmok
         {
             encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
         }
+
         if (isValid(_lightDataUniform))
         {
             encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
@@ -254,7 +273,8 @@ namespace darmok
         }
         if (isValid(_pointLightBuffer))
         {
-            bgfx::setBuffer(_phongPointLightsBufferStage, _pointLightBuffer, bgfx::Access::Read);
+            static const uint8_t lightsBufferStage = 6;
+            bgfx::setBuffer(lightsBufferStage, _pointLightBuffer, bgfx::Access::Read);
         }
     }
 }

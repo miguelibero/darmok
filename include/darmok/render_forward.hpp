@@ -12,6 +12,7 @@ namespace darmok
     public:
         ForwardRenderer(const std::shared_ptr<Program>& program, const OptionalRef<ILightingComponent>& lighting = nullptr) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
+        void shutdown() noexcept override;
     protected:
         bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const override;
     private:

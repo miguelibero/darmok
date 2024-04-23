@@ -307,6 +307,10 @@ namespace darmok
 		// destroy app before the bgfx shutdown to guarantee no dangling resources
 		app.reset();
 
+		// add empty frame at the end to avoid weird artifacts
+		bgfx::touch(0);
+		bgfx::frame();
+
 		// Shutdown bgfx.
 		bgfx::shutdown();
 

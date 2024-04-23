@@ -62,6 +62,7 @@ namespace darmok
     {
     public:
         PhongLightingComponent() noexcept;
+        ~PhongLightingComponent() noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown()  noexcept override;
         void update(float deltaTime)  noexcept override;
@@ -86,5 +87,8 @@ namespace darmok
         size_t updatePointLights() noexcept;
         void updateAmbientLights() noexcept;
         void updateCamera() noexcept;
+
+        void createHandles() noexcept;
+        void destroyHandles() noexcept;
     };
 }

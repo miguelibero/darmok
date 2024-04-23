@@ -23,6 +23,13 @@ namespace darmok
 		_app = app;
 	}
 
+	void ForwardRenderer::shutdown() noexcept
+	{
+		_cam = nullptr;
+		_scene = nullptr;
+		_app = nullptr;
+	}
+
 	bgfx::ViewId ForwardRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
 	{
 		if (!_cam || _program == nullptr)

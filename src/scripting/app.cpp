@@ -38,15 +38,54 @@ namespace darmok
 		return LuaInput(_app->getInput());
 	}
 
+	void LuaApp::registerUpdate(const sol::protected_function& func) noexcept
+	{
+		if (func)
+		{
+			_updates.push_back(func);
+		}
+	}
+
+	bool LuaApp::unregisterUpdate(const sol::protected_function& func) noexcept
+	{
+		auto itr = std::find(_updates.begin(), _updates.end(), func);
+		if (itr == _updates.end())
+		{
+			return false;
+		}
+		_updates.erase(itr);
+		return true;
+	}
+
+	void LuaApp::update(float deltaTime) noexcept
+	{
+		for(auto& update : _updates)
+		{
+			if (!update)
+			{
+				continue;
+			}
+			auto result = update(deltaTime);
+			if (result.valid())
+			{
+				continue;
+			}
+			sol::error err = result;
+			std::cerr << "error running update:" << std::endl;
+			std::cerr << err.what() << std::endl;
+		}
+	}
+
 	void LuaApp::configure(sol::state_view& lua) noexcept
 	{
-		auto usertype = lua.new_usertype<LuaApp>("App");
-		usertype["scene"] = sol::property(&LuaApp::getScene);
-		usertype["assets"] = sol::property(&LuaApp::getAssets);
-		usertype["window"] = sol::property(&LuaApp::getWindow);
-		usertype["inpuy"] = sol::property(&LuaApp::getWindow);
-		usertype["input"] = sol::property(&LuaApp::getInput);
-
+		lua.new_usertype<LuaApp>("App",
+			"scene", sol::property(&LuaApp::getScene),
+			"assets", sol::property(&LuaApp::getAssets),
+			"window", sol::property(&LuaApp::getWindow),
+			"input", sol::property(&LuaApp::getInput),
+			"register_update", &LuaApp::registerUpdate,
+			"unregister_update", &LuaApp::unregisterUpdate
+		);
 	}
 
 	ScriptingApp::ScriptingApp()
@@ -85,7 +124,9 @@ namespace darmok
 		LuaInput::configure(lua);
 		LuaApp::configure(lua);
 
-		lua["app"] = LuaApp(app);
+		_luaApp = LuaApp(app);
+
+		lua["app"] = std::ref(_luaApp);
 		lua["args"] = args;
 
 		auto result = lua.script_file("main.lua");
@@ -97,27 +138,21 @@ namespace darmok
 		}
 		else
 		{
-			_luaUpdate = lua["update"];
+			_luaApp->registerUpdate(lua["update"]);
 		}
 	}
 
 	void ScriptingAppImpl::updateLogic(float deltaTime)
 	{
-		if (_luaUpdate)
+		if (_luaApp)
 		{
-			auto result = _luaUpdate(deltaTime);
-			if (!result.valid())
-			{
-				sol::error err = result;
-				std::cerr << "error running update:" << std::endl;
-				std::cerr << err.what() << std::endl;
-			}
+			_luaApp->update(deltaTime);
 		}
 	}
 
 	void ScriptingAppImpl::shutdown() noexcept
 	{
 		_lua.reset();
-		_luaUpdate.reset();
+		_luaApp.reset();
 	}
 }

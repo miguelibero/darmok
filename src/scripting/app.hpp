@@ -3,6 +3,7 @@
 #include <darmok/optional_ref.hpp>
 #include "scene.hpp"
 #include <vector>
+#include <optional>
 #include "sol.hpp"
 
 namespace darmok
@@ -20,9 +21,13 @@ namespace darmok
 		LuaAssets getAssets() noexcept;
 		LuaWindow getWindow() noexcept;
 		LuaInput getInput() noexcept;
+		void registerUpdate(const sol::protected_function& func) noexcept;
+		bool unregisterUpdate(const sol::protected_function& func) noexcept;
+		void update(float deltaTime) noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:
+		std::vector<sol::protected_function> _updates;
 		OptionalRef<App> _app;
 		OptionalRef<Scene> _scene;
 	};
@@ -36,6 +41,6 @@ namespace darmok
 
     private:
         std::unique_ptr<sol::state> _lua;
-        sol::protected_function _luaUpdate;
+		std::optional<LuaApp> _luaApp;
     };
 }
