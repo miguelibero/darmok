@@ -16,6 +16,10 @@ namespace darmok
 		const static LuaNativeComponentType native_type = LuaNativeComponentType::PointLight;
 
 		LuaPointLight(PointLight& light) noexcept;
+
+		const PointLight& getReal() const;
+		PointLight& getReal();
+
 		void setIntensity(float intensity) noexcept;
 		void setRadius(float radius) noexcept;
 		void setAttenuation(const VarVec3& attn) noexcept;
@@ -43,6 +47,9 @@ namespace darmok
 		const static LuaNativeComponentType native_type = LuaNativeComponentType::AmbientLight;
 
 		LuaAmbientLight(AmbientLight& light) noexcept;
+
+		const AmbientLight& getReal() const;
+		AmbientLight& getReal();
 
 		void setIntensity(float intensity) noexcept;
 		void setColor(const VarColor3& color) noexcept;

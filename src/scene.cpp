@@ -32,6 +32,16 @@ namespace darmok
 
     void SceneImpl::init(Scene& scene, App& app)
     {
+        if (_scene == scene && _app == app)
+        {
+            return;
+        }
+
+        if (_scene || _app)
+        {
+            shutdown();
+        }
+
         _scene = scene;
         _app = app;
 
@@ -156,33 +166,130 @@ namespace darmok
         _impl->addLogicUpdater(std::move(updater));
     }
 
-    Scene& SceneAppComponent::getScene()
+    SceneAppComponent::SceneAppComponent(const std::shared_ptr<Scene>& scene) noexcept
+        : _mainScene(scene == nullptr ? std::make_shared<Scene>() : scene)
     {
-        return _scene;
+        addScene(_mainScene);
     }
 
-    const Scene& SceneAppComponent::getScene() const
+    const std::shared_ptr<Scene>& SceneAppComponent::getScene() const noexcept
     {
-        return _scene;
+        return _mainScene;
+    }
+
+    void SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene) noexcept
+    {
+        if (_mainScene == scene)
+        {
+            return;
+        }
+        if (_mainScene != nullptr)
+        {
+            removeScene(_mainScene);
+        }
+        _mainScene = scene;
+        if (_mainScene != nullptr)
+        {
+            addScene(_mainScene);
+        }
+    }
+
+    const std::unordered_set<std::shared_ptr<Scene>>& SceneAppComponent::getScenes() const noexcept
+    {
+        return _scenes;
+    }
+
+    std::shared_ptr<Scene> SceneAppComponent::addScene() noexcept
+    {
+        auto scene = std::make_shared<Scene>();
+        _scenes.insert(scene);
+        if (_app)
+        {
+            scene->init(_app.value());
+        }
+        return scene;
+    }
+
+    bool SceneAppComponent::addScene(const std::shared_ptr<Scene>& scene) noexcept
+    {
+        if (scene == nullptr)
+        {
+            return false;
+        }
+        auto r = _scenes.insert(scene);
+        if (!r.second)
+        {
+            return false;
+        }
+        if (_app)
+        {
+            scene->init(_app.value());
+        }
+        return true;
+    }
+
+    bool SceneAppComponent::removeScene(const std::shared_ptr<Scene>& scene) noexcept
+    {
+        if (scene == nullptr)
+        {
+            return false;
+        }
+        auto count = _scenes.erase(scene);
+        if (!count)
+        {
+            return false;
+        }
+        if (_app)
+        {
+            scene->shutdown();
+        }
+        return true;
     }
 
     void SceneAppComponent::init(App& app)
     {
-        _scene.init(app);
+        _app = app;
+        for (auto& scene : _scenes)
+        {
+            if (scene != nullptr)
+            {
+                scene->init(app);
+            }
+        }
     }
 
     void SceneAppComponent::shutdown()
     {
-        _scene.shutdown();
+        _app = nullptr;
+        for (auto& scene : _scenes)
+        {
+            if (scene != nullptr)
+            {
+                scene->shutdown();
+            }
+        }
     }
 
     bgfx::ViewId SceneAppComponent::render(bgfx::ViewId viewId)
     {
-        return _scene.render(viewId);
+        for (auto& scene : _scenes)
+        {
+            if (scene != nullptr)
+            {
+                viewId = scene->render(viewId);
+            }
+        }
+        return viewId;
     }
 
-    void SceneAppComponent::updateLogic(float dt)
+    void SceneAppComponent::updateLogic(float deltaTime)
     {
-        _scene.updateLogic(dt);
+        for (auto& scene : _scenes)
+        {
+            if (scene != nullptr)
+            {
+                scene->updateLogic(deltaTime);
+            }
+        }
     }
 }

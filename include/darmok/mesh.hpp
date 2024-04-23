@@ -18,6 +18,8 @@ namespace darmok
         Mesh(const bgfx::VertexLayout& layout, Data&& vertices, Data&& indices, const std::shared_ptr<Material>& material = nullptr) noexcept;
         ~Mesh();
 
+        std::string to_string() const noexcept;
+
         Mesh(const Mesh& other) noexcept;
         Mesh& operator=(const Mesh& other) noexcept;
 
@@ -89,6 +91,7 @@ namespace darmok
         MeshComponent(const std::shared_ptr<Mesh>& mesh) noexcept;
         MeshComponent(const std::vector<std::shared_ptr<Mesh>>& meshes = {}) noexcept;
         const std::vector<std::shared_ptr<Mesh>>& getMeshes() const noexcept;
+        std::shared_ptr<Mesh> getMesh() const noexcept;
         MeshComponent& setMeshes(const std::vector<std::shared_ptr<Mesh>>& meshes) noexcept;
         MeshComponent& setMesh(const std::shared_ptr<Mesh>& mesh) noexcept;
         MeshComponent& addMesh(const std::shared_ptr<Mesh>& mesh) noexcept;

@@ -1,14 +1,30 @@
 #pragma once
 
 #include <memory>
+#include <string>
+#include <darmok/optional_ref.hpp>
 #include <bgfx/bgfx.h>
 #include "sol.hpp"
 
 namespace darmok
 {
     class Model;
+	class ModelNode;
 	class LuaEntity;
 	class LuaScene;
+
+	class ConstLuaModelNode final
+	{
+	public:
+		ConstLuaModelNode(const ModelNode& node) noexcept;
+		const ModelNode& getReal() const noexcept;
+		std::string getName() const noexcept;
+
+		static void configure(sol::state_view& lua) noexcept;
+
+	private:
+		OptionalRef<const ModelNode> _node;
+	};
 
 	class LuaModel final
 	{

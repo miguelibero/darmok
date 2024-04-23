@@ -56,13 +56,15 @@ namespace darmok
 	class LuaEntity final
 	{
 	public:
-		LuaEntity(Entity entity, Scene& scene) noexcept;
+		LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept;
+		std::string to_string() const noexcept;
+		bool isValid() const noexcept;
 		LuaComponent addLuaComponent(const std::string& name, const sol::table& data);
 		LuaComponent getLuaComponent(const std::string& name);
-		bool removeLuaComponent(const std::string& name) noexcept;
-		LuaComponent getOrAddLuaComponent(const std::string& name) noexcept;
-		std::optional<LuaComponent> tryGetLuaComponent(const std::string& name) noexcept;
-		bool hasLuaComponent(const std::string& name) const noexcept;
+		bool removeLuaComponent(const std::string& name);
+		LuaComponent getOrAddLuaComponent(const std::string& name);
+		std::optional<LuaComponent> tryGetLuaComponent(const std::string& name);
+		bool hasLuaComponent(const std::string& name) const;
 
 		template <std::size_t I = 0>
 		LuaNativeComponent addNativeComponent(LuaNativeComponentType type)
@@ -131,7 +133,7 @@ namespace darmok
 		}
 
 		template <std::size_t I = 0>
-		bool removeNativeComponent(LuaNativeComponentType type) noexcept
+		bool removeNativeComponent(LuaNativeComponentType type)
 		{
 			if constexpr (I < std::variant_size_v<LuaNativeComponent>)
 			{
@@ -146,7 +148,7 @@ namespace darmok
 		}
 
 		template <std::size_t I = 0>
-		bool hasNativeComponent(LuaNativeComponentType type) const noexcept
+		bool hasNativeComponent(LuaNativeComponentType type) const
 		{
 			if constexpr (I < std::variant_size_v<LuaNativeComponent>)
 			{
@@ -168,16 +170,21 @@ namespace darmok
 		static void configure(sol::state_view& lua) noexcept;
 	private:
 		Entity _entity;
-		OptionalRef<Scene> _scene;
+		std::weak_ptr<Scene> _scene;
 
-		EntityRegistry& getRegistry() noexcept;
-		const EntityRegistry& getRegistry() const noexcept;
+		EntityRegistry& getRegistry();
+		const EntityRegistry& getRegistry() const;
 	};
+
+	class LuaApp;
 
 	class LuaScene final
 	{
 	public:
-		LuaScene(Scene& scene) noexcept;
+		LuaScene(const std::shared_ptr<Scene>& scene) noexcept;
+		LuaScene(LuaApp& app) noexcept;
+
+		std::string to_string() const noexcept;
 		EntityRegistry& getRegistry() noexcept;
 		LuaEntity createEntity() noexcept;
 		bool destroyEntity(const LuaEntity& entity) noexcept;
@@ -185,10 +192,6 @@ namespace darmok
 		template <std::size_t I = 0>
 		std::optional<LuaEntity> getEntity(const LuaNativeComponent& comp) noexcept
 		{
-			if (!_scene)
-			{
-				return std::nullopt;
-			}
 			if constexpr (I < std::variant_size_v<LuaNativeComponent>)
 			{
 				using lua_t = std::variant_alternative_t<I, LuaNativeComponent>;
@@ -197,21 +200,21 @@ namespace darmok
 				{
 					return getEntity<I + 1>(comp);
 				}
-				auto entity = entt::to_entity(getRegistry(), *ptr);
-				if (entity == 0)
+				auto entity = entt::to_entity(getRegistry(), ptr->getReal());
+				if (entity == entt::null)
 				{
 					return std::nullopt;
 				}
-				return LuaEntity(entity, _scene.value());
+				return LuaEntity(entity, _scene);
 			}
 			return std::nullopt;
 		}
 
-		const Scene& getReal() const noexcept;
-		Scene& getReal() noexcept;
+		const std::shared_ptr<Scene>& getReal() const noexcept;
+		std::shared_ptr<Scene>& getReal() noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<Scene> _scene;
+		std::shared_ptr<Scene> _scene;
 	};
 }

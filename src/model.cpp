@@ -375,7 +375,7 @@ namespace darmok
 		return std::make_pair(itr->second, texture);
 	}
 
-	std::shared_ptr<Material> ModelMaterial::load() noexcept
+	std::shared_ptr<Material> ModelMaterial::load() const noexcept
 	{
 		auto material = std::make_shared<Material>();
 		for (auto& elm : _materialTextures)
@@ -686,7 +686,7 @@ namespace darmok
 		return Data::copy(indices);
 	}
 
-	std::shared_ptr<Mesh> ModelMesh::load(const bgfx::VertexLayout& layout)
+	std::shared_ptr<Mesh> ModelMesh::load(const bgfx::VertexLayout& layout) const
 	{
 		auto material = getMaterial().load();
 		auto vertices = createModelMeshVertexData(*this, layout);
@@ -707,7 +707,7 @@ namespace darmok
 		return _ptr == nullptr ? 0 : _ptr->mNumMeshes;
 	}
 
-	std::vector<std::shared_ptr<Mesh>> ModelNodeMeshCollection::load(const bgfx::VertexLayout& layout)
+	std::vector<std::shared_ptr<Mesh>> ModelNodeMeshCollection::load(const bgfx::VertexLayout& layout) const
 	{
 		std::vector<std::shared_ptr<Mesh>> meshes;
 		for (auto& mesh : *this)
@@ -809,7 +809,7 @@ namespace darmok
 	{
 	}
 
-	void ModelLight::addToScene(Scene& scene, Entity entity) noexcept
+	void ModelLight::addToScene(Scene& scene, Entity entity) const noexcept
 	{
 		auto& registry = scene.getRegistry();
 		switch (getType())
@@ -1003,7 +1003,7 @@ namespace darmok
 		return _model.getLights().get(getName());
 	}
 
-	Entity ModelNode::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent)
+	Entity ModelNode::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
 	{
 		auto entity = doAddToScene(scene, layout, parent);
 		for (auto& child : getChildren())
@@ -1013,7 +1013,7 @@ namespace darmok
 		return entity;
 	}
 
-	Entity ModelNode::doAddToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent)
+	Entity ModelNode::doAddToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
 	{
 		auto entity = scene.getRegistry().create();
 		auto transMat = getTransform();
@@ -1231,7 +1231,7 @@ namespace darmok
 		return _lights;
 	}
 
-	Entity Model::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent)
+	Entity Model::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
 	{
 		return getRootNode().addToScene(scene, layout, parent);
 	}

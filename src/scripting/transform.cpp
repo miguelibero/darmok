@@ -8,6 +8,16 @@ namespace darmok
 	{
 	}
 
+	const Transform& LuaTransform::getReal() const
+	{
+		return _transform.value();
+	}
+
+	Transform& LuaTransform::getReal()
+	{
+		return _transform.value();
+	}
+
 	std::optional<LuaTransform> LuaTransform::getParent() noexcept
 	{
 		auto parent = _transform->getParent();

@@ -14,13 +14,58 @@ namespace darmok
 	{
 	}
 
+	App& LuaApp::getReal() noexcept
+	{
+		return _app.value();
+	}
+
+	const App& LuaApp::getReal() const noexcept
+	{
+		return _app.value();
+	}
+
+	SceneAppComponent& LuaApp::getSceneComponent() noexcept
+	{
+		if (!_sceneComponent)
+		{
+			_sceneComponent = _app->addComponent<SceneAppComponent>();
+		}
+		return _sceneComponent.value();
+	}
+
 	LuaScene LuaApp::getScene() noexcept
 	{
-		if (!_scene)
+		return LuaScene(getSceneComponent().getScene());
+	}
+
+	void LuaApp::setScene(const LuaScene& scene) noexcept
+	{
+		getSceneComponent().setScene(scene.getReal());
+	}
+
+	std::vector<LuaScene> LuaApp::getScenes() noexcept
+	{
+		std::vector<LuaScene> scenes;
+		for (auto& scene : getSceneComponent().getScenes())
 		{
-			_scene = _app->addComponent<SceneAppComponent>().getScene();
+			scenes.push_back(LuaScene(scene));
 		}
-		return LuaScene(_scene.value());
+		return scenes;
+	}
+
+	bool LuaApp::addScene1(const LuaScene& scene) noexcept
+	{
+		return getSceneComponent().addScene(scene.getReal());
+	}
+
+	LuaScene LuaApp::addScene2() noexcept
+	{
+		return LuaScene(getSceneComponent().addScene());
+	}
+
+	bool LuaApp::removeScene(const LuaScene& scene) noexcept
+	{
+		return getSceneComponent().removeScene(scene.getReal());
 	}
 
 	LuaAssets LuaApp::getAssets() noexcept
@@ -79,7 +124,10 @@ namespace darmok
 	void LuaApp::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaApp>("App",
-			"scene", sol::property(&LuaApp::getScene),
+			"scene", sol::property(&LuaApp::getScene, &LuaApp::setScene),
+			"scenes", sol::property(&LuaApp::getScenes),
+			"add_scene", sol::overload(&LuaApp::addScene1, &LuaApp::addScene2),
+			"remove_scene", &LuaApp::removeScene,
 			"assets", sol::property(&LuaApp::getAssets),
 			"window", sol::property(&LuaApp::getWindow),
 			"input", sol::property(&LuaApp::getInput),

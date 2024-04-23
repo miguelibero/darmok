@@ -20,6 +20,10 @@ namespace darmok
 		const static LuaNativeComponentType native_type = LuaNativeComponentType::Camera;
 
 		LuaCamera(Camera& camera) noexcept;
+
+		const Camera& getReal() const;
+		Camera& getReal();
+
 		LuaCamera& setProjection1(float fovy, float aspect, const VarVec2& range) noexcept;
 		LuaCamera& setProjection2(float fovy, float aspect, float near) noexcept;
 		LuaCamera& setWindowProjection1(float fovy, const VarVec2& range) noexcept;

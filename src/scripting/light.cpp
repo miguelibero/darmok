@@ -3,9 +3,19 @@
 
 namespace darmok
 {
-    	LuaPointLight::LuaPointLight(PointLight& light) noexcept
+    LuaPointLight::LuaPointLight(PointLight& light) noexcept
 		: _light(light)
 	{
+	}
+
+	const PointLight& LuaPointLight::getReal() const
+	{
+		return _light.value();
+	}
+
+	PointLight& LuaPointLight::getReal()
+	{
+		return _light.value();
 	}
 
 	void LuaPointLight::setIntensity(float intensity) noexcept
@@ -79,6 +89,16 @@ namespace darmok
 	LuaAmbientLight::LuaAmbientLight(AmbientLight& light) noexcept
 		: _light(light)
 	{
+	}
+
+	const AmbientLight& LuaAmbientLight::getReal() const
+	{
+		return _light.value();
+	}
+
+	AmbientLight& LuaAmbientLight::getReal()
+	{
+		return _light.value();
 	}
 
 	void LuaAmbientLight::setIntensity(float intensity) noexcept

@@ -1,9 +1,11 @@
 #include "scene.hpp"
 #include "model.hpp"
+#include "app.hpp"
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/model.hpp>
 
 namespace darmok
 {
@@ -67,20 +69,47 @@ namespace darmok
 		);
 	}
 
-	LuaEntity::LuaEntity(Entity entity, Scene& scene) noexcept
+	LuaEntity::LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept
 		: _entity(entity)
 		, _scene(scene)
 	{
 	}
 
-	EntityRegistry& LuaEntity::getRegistry() noexcept
+	std::string LuaEntity::to_string() const noexcept
 	{
-		return _scene->getRegistry();
+		std::string str = "Entity(" + std::to_string(_entity);
+		if (!isValid())
+		{
+			str += " invalid";
+		}
+		return str + ")";
 	}
 
-	const EntityRegistry& LuaEntity::getRegistry() const noexcept
+	bool LuaEntity::isValid() const noexcept
 	{
-		return _scene->getRegistry();
+		if (auto scene = _scene.lock())
+		{
+			return scene->getRegistry().valid(_entity);
+		}
+		return false;
+	}
+
+	EntityRegistry& LuaEntity::getRegistry()
+	{
+		if (auto scene = _scene.lock())
+		{
+			return scene->getRegistry();
+		}
+		throw std::runtime_error("scene expired");
+	}
+
+	const EntityRegistry& LuaEntity::getRegistry() const
+	{
+		if (auto scene = _scene.lock())
+		{
+			return scene->getRegistry();
+		}
+		throw std::runtime_error("scene expired");
 	}
 
 	LuaComponent LuaEntity::addLuaComponent(const std::string& name, const sol::table& data)
@@ -100,13 +129,13 @@ namespace darmok
 		return LuaComponent(name, table);
 	}
 
-	bool LuaEntity::hasLuaComponent(const std::string& name) const noexcept
+	bool LuaEntity::hasLuaComponent(const std::string& name) const
 	{
 		auto table = getRegistry().try_get<LuaTableComponent>(_entity);
 		return table != nullptr && table->hasEntry(name);
 	}
 
-	std::optional<LuaComponent> LuaEntity::tryGetLuaComponent(const std::string& name) noexcept
+	std::optional<LuaComponent> LuaEntity::tryGetLuaComponent(const std::string& name)
 	{
 		auto table = getRegistry().try_get<LuaTableComponent>(_entity);
 		if (table == nullptr || !table->hasEntry(name))
@@ -116,7 +145,7 @@ namespace darmok
 		return LuaComponent(name, *table);
 	}
 
-	bool LuaEntity::removeLuaComponent(const std::string& name) noexcept
+	bool LuaEntity::removeLuaComponent(const std::string& name)
 	{
 		auto table = getRegistry().try_get<LuaTableComponent>(_entity);
 		if (table == nullptr)
@@ -126,7 +155,7 @@ namespace darmok
 		return table->removeEntry(name);
 	}
 
-	LuaComponent LuaEntity::getOrAddLuaComponent(const std::string& name) noexcept
+	LuaComponent LuaEntity::getOrAddLuaComponent(const std::string& name)
 	{
 		auto& table = getRegistry().get_or_emplace<LuaTableComponent>(_entity);
 		return LuaComponent(name, table);
@@ -139,13 +168,23 @@ namespace darmok
 
 	LuaEntity LuaEntity::addModel1(const LuaModel& model, const bgfx::VertexLayout& layout)
 	{
-		LuaScene scene(_scene.value());
+		auto scenePtr = _scene.lock();
+		if (scenePtr == nullptr)
+		{
+			throw std::runtime_error("scene expired");
+		}
+		LuaScene scene(scenePtr);
 		return model.addToScene3(scene, layout, *this);
 	}
 
 	LuaEntity LuaEntity::addModel2(const LuaModel& model, const bgfx::VertexLayout& layout, sol::protected_function callback)
 	{
-		LuaScene scene(_scene.value());
+		auto scenePtr = _scene.lock();
+		if (scenePtr == nullptr)
+		{
+			throw std::runtime_error("scene expired");
+		}
+		LuaScene scene(scenePtr);
 		return model.addToScene4(scene, layout, *this, callback);
 	}
 
@@ -170,9 +209,20 @@ namespace darmok
 		);
 	}
 
-	LuaScene::LuaScene(Scene& scene) noexcept
-		: _scene(scene)
+	LuaScene::LuaScene(const std::shared_ptr<Scene>& scene) noexcept
+		: _scene(scene == nullptr ? std::make_shared<Scene>() : scene)
 	{
+	}
+
+	LuaScene::LuaScene(LuaApp& app) noexcept
+		: _scene(std::make_shared<Scene>())
+	{
+		_scene->init(app.getReal());
+	}
+
+	std::string LuaScene::to_string() const noexcept
+	{
+		return "Scene()";
 	}
 
 	EntityRegistry& LuaScene::getRegistry() noexcept
@@ -182,7 +232,7 @@ namespace darmok
 
 	LuaEntity LuaScene::createEntity() noexcept
 	{
-		return LuaEntity(getRegistry().create(), _scene.value());
+		return LuaEntity(getRegistry().create(), std::weak_ptr<Scene>(_scene));
 	}
 
 	bool LuaScene::destroyEntity(const LuaEntity& entity) noexcept
@@ -190,14 +240,14 @@ namespace darmok
 		return getRegistry().destroy(entity.getReal()) != 0;
 	}
 
-	const Scene& LuaScene::getReal() const noexcept
+	const std::shared_ptr<Scene>& LuaScene::getReal() const noexcept
 	{
-		return _scene.value();
+		return _scene;
 	}
 
-	Scene& LuaScene::getReal() noexcept
+	std::shared_ptr<Scene>& LuaScene::getReal() noexcept
 	{
-		return _scene.value();
+		return _scene;
 	}
 
 	void LuaScene::configure(sol::state_view& lua) noexcept
@@ -210,7 +260,8 @@ namespace darmok
 		LuaMeshComponent::configure(lua);
 		LuaComponent::configure(lua);
 
-		lua.new_usertype<LuaScene>("Scene", sol::constructors<>(), 
+		lua.new_usertype<LuaScene>("Scene",
+			sol::constructors<LuaScene(LuaApp&)>(),
 			"create_entity",	&LuaScene::createEntity,
 			"destroy_entity",	&LuaScene::destroyEntity,
 			"get_entity",		&LuaScene::getEntity<0>

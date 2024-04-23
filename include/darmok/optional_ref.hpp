@@ -53,17 +53,7 @@ namespace darmok
 
         OptionalRef& operator=(const OptionalRef& other) noexcept = default;
 
-        bool operator==(T* other) noexcept
-        {
-            return _value == other;
-        }
-
-        bool operator!=(T* other) noexcept
-        {
-            return _value != other;
-        }
-
-        T* operator->() const
+        [[nodiscard]] T* operator->() const
         {
             if (!hasValue())
             {
@@ -77,12 +67,12 @@ namespace darmok
             return hasValue();
         }
 
-        bool hasValue() const noexcept
+        [[nodiscard]] bool hasValue() const noexcept
         {
             return _value != nullptr;
         }
 
-        T& value() const
+        [[nodiscard]] T& value() const
         {
             if (!hasValue())
             {
@@ -91,7 +81,7 @@ namespace darmok
             return *_value;
         }
 
-        T* ptr() const noexcept
+        [[nodiscard]] T* ptr() const noexcept
         {
             return _value;
         }
@@ -111,6 +101,26 @@ namespace darmok
         }
 
         [[nodiscard]] bool operator!=(const OptionalRef<T>& other) const noexcept
+        {
+            return !operator==(other);
+        }
+
+        [[nodiscard]] bool operator==(T* other) noexcept
+        {
+            return _value == other;
+        }
+
+        [[nodiscard]] bool operator!=(T* other) noexcept
+        {
+            return !operator==(other);
+        }
+
+        [[nodiscard]] bool operator==(const T& other) noexcept
+        {
+            return _value == &other;
+        }
+
+        [[nodiscard]] bool operator!=(const T& other) noexcept
         {
             return !operator==(other);
         }

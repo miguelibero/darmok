@@ -17,7 +17,16 @@ namespace darmok
 	{
 	public:
 		LuaApp(App& app) noexcept;
+		App& getReal() noexcept;
+		const App& getReal() const noexcept;
+
 		LuaScene getScene() noexcept;
+		void setScene(const LuaScene& scene) noexcept;
+		std::vector<LuaScene> getScenes() noexcept;
+		bool addScene1(const LuaScene& scene) noexcept;
+		LuaScene addScene2() noexcept;
+		bool removeScene(const LuaScene& scene) noexcept;
+		
 		LuaAssets getAssets() noexcept;
 		LuaWindow getWindow() noexcept;
 		LuaInput getInput() noexcept;
@@ -29,7 +38,9 @@ namespace darmok
 	private:
 		std::vector<sol::protected_function> _updates;
 		OptionalRef<App> _app;
-		OptionalRef<Scene> _scene;
+		OptionalRef<SceneAppComponent> _sceneComponent;
+
+		SceneAppComponent& getSceneComponent() noexcept;
 	};
 
 	class ScriptingAppImpl final

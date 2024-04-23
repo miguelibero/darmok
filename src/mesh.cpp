@@ -33,6 +33,16 @@ namespace darmok
 		destroyHandles();
 	}
 
+	std::string Mesh::to_string() const noexcept
+	{
+		auto stride = _layout.getStride();
+		auto numVerts = _vertices.size() / stride;
+		auto numIdx = _indices.size() / sizeof(VertexIndex);
+		return "Mesh(" + std::to_string(numVerts) + " vertices, "
+			+ std::to_string(stride) + " stride, "
+			+ std::to_string(numIdx) + " indices)";
+	}
+
 	void Mesh::destroyHandles()
 	{
 		if (isValid(_indexBuffer))
@@ -349,6 +359,15 @@ namespace darmok
 	const std::vector<std::shared_ptr<Mesh>>& MeshComponent::getMeshes() const noexcept
 	{
 		return _meshes;
+	}
+
+	std::shared_ptr<Mesh> MeshComponent::getMesh() const noexcept
+	{
+		if (_meshes.empty())
+		{
+			return nullptr;
+		}
+		return _meshes[0];
 	}
 
 	MeshComponent& MeshComponent::setMeshes(const std::vector<std::shared_ptr<Mesh>>& meshes) noexcept

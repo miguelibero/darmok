@@ -12,6 +12,16 @@ namespace darmok
 	{
 	}
 
+	const Camera& LuaCamera::getReal() const
+	{
+		return _camera.value();
+	}
+
+	Camera& LuaCamera::getReal()
+	{
+		return _camera.value();
+	}
+
 	LuaCamera& LuaCamera::setProjection1(float fovy, float aspect, const VarVec2& range) noexcept
 	{
 		_camera->setProjection(fovy, aspect, LuaMath::tableToGlm(range));

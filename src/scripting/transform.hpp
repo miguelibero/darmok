@@ -19,6 +19,10 @@ namespace darmok
 		const static LuaNativeComponentType native_type = LuaNativeComponentType::Transform;
 
 		LuaTransform(Transform& transform) noexcept;
+
+		const Transform& getReal() const;
+		Transform& getReal();
+
 		std::optional<LuaTransform> getParent() noexcept;
 		void setParent(std::optional<LuaTransform> parent) noexcept;
 

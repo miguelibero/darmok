@@ -6,8 +6,8 @@
 
 namespace darmok
 {
-    	LuaTexture::LuaTexture(const std::shared_ptr<Texture>& texture) noexcept
-		: _texture(texture)
+    LuaTexture::LuaTexture(const std::shared_ptr<Texture>& texture) noexcept
+	: _texture(texture)
 	{
 	}
 

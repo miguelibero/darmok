@@ -15,6 +15,11 @@ namespace darmok
 	{
 	}
 
+	std::string LuaMesh::to_string() const noexcept
+	{
+		return _mesh->to_string();
+	}
+
 	const std::shared_ptr<Mesh>& LuaMesh::getReal() const noexcept
 	{
 		return _mesh;
@@ -186,6 +191,16 @@ namespace darmok
 	{
 	}
 
+	const MeshComponent& LuaMeshComponent::getReal() const
+	{
+		return _comp.value();
+	}
+
+	MeshComponent& LuaMeshComponent::getReal()
+	{
+		return _comp.value();
+	}
+
 	std::vector<LuaMesh> LuaMeshComponent::getMeshes() const noexcept
 	{
 		std::vector<LuaMesh> luaMeshes;
@@ -196,6 +211,16 @@ namespace darmok
 			luaMeshes.push_back(LuaMesh(mesh));
 		}
 		return luaMeshes;
+	}
+
+	std::optional<LuaMesh> LuaMeshComponent::getMesh() const noexcept
+	{
+		auto mesh = _comp->getMesh();
+		if (mesh == nullptr)
+		{
+			return std::nullopt;
+		}
+		return LuaMesh(mesh);
 	}
 
 	void LuaMeshComponent::setMeshes(const std::vector<LuaMesh>& meshes) noexcept
@@ -224,7 +249,7 @@ namespace darmok
 		lua.new_usertype<LuaMeshComponent>("MeshComponent",
 			sol::constructors<>(),
 			"meshes", sol::property(&LuaMeshComponent::getMeshes, &LuaMeshComponent::setMeshes),
-			"set_mesh", &LuaMeshComponent::setMesh,
+			"mesh", sol::property(&LuaMeshComponent::getMesh, &LuaMeshComponent::setMesh),
 			"add_mesh", &LuaMeshComponent::addMesh
 		);
 	}
