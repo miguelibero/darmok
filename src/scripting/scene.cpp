@@ -1,6 +1,8 @@
 #include "scene.hpp"
 #include "asset.hpp"
 #include "math.hpp"
+#include "mesh.hpp"
+#include "program.hpp"
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/mesh.hpp>

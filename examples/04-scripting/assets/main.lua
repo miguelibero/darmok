@@ -40,7 +40,7 @@ function move_forward()
 end
 
 function move_backward()
-    move_mesh(vec3.move_backward)
+    move_mesh(vec3.backward)
 end
 
 local groundPlane = Plane.new(vec3.up);

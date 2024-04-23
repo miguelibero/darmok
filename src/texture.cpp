@@ -2,7 +2,7 @@
 
 namespace darmok
 {
-	Texture::Texture(std::shared_ptr<Image> img, const bgfx::TextureHandle& handle, TextureType type) noexcept
+	Texture::Texture(const bgfx::TextureHandle& handle, TextureType type, std::shared_ptr<Image> img) noexcept
 		: _img(img)
 		, _handle(handle)
 		, _type(type)
@@ -17,7 +17,34 @@ namespace darmok
 		}
 	}
 
-	std::shared_ptr<Texture> Texture::create(std::shared_ptr<Image> img, std::string_view name, uint64_t flags) noexcept
+	std::shared_ptr<Texture> Texture::create(const TextureCreationConfig& cfg, uint64_t flags) noexcept
+	{
+		bgfx::TextureHandle handle{ bgfx::kInvalidHandle };
+
+		switch (cfg.type)
+		{
+		case TextureType::CubeMap:
+			handle = bgfx::createTextureCube(cfg.size.x, cfg.mips, cfg.layers, cfg.format, flags);
+			break;
+		case TextureType::Texture2D:
+			handle = bgfx::createTexture2D(cfg.size.x, cfg.size.y, cfg.mips, cfg.layers, cfg.format, flags);
+			break;
+		case TextureType::Texture3D:
+			handle = bgfx::createTexture3D(cfg.size.x, cfg.size.y, cfg.depth, cfg.mips, cfg.format, flags);
+			break;
+		default:
+			return nullptr;
+		}
+
+		if (!bgfx::isValid(handle))
+		{
+			return nullptr;
+		}
+
+		return std::make_shared<Texture>(handle, cfg.type);
+	}
+
+	std::shared_ptr<Texture> Texture::create(std::shared_ptr<Image> img, uint64_t flags) noexcept
 	{
 		if (img == nullptr || img->empty())
 		{
@@ -55,12 +82,8 @@ namespace darmok
 		{
 			return nullptr;
 		}
-		if (!name.empty())
-		{
-			bgfx::setName(handle, name.data(), name.size());
-		}
 
-		return std::make_shared<Texture>(img, handle, type);
+		return std::make_shared<Texture>(handle, type, img);
 	}
 
 	const bgfx::TextureHandle& Texture::getHandle() const noexcept
@@ -84,6 +107,12 @@ namespace darmok
 		return _type;
 	}
 
+	Texture& Texture::setName(std::string_view name) noexcept
+	{
+		bgfx::setName(_handle, name.data(), name.size());
+		return *this;
+	}
+
 	ImageTextureLoader::ImageTextureLoader(IImageLoader& imgLoader) noexcept
 		: _imgLoader(imgLoader)
 	{
@@ -91,8 +120,12 @@ namespace darmok
 
 	std::shared_ptr<Texture> ImageTextureLoader::operator()(std::string_view name, uint64_t flags) noexcept
 	{
-		auto img = _imgLoader(name);
-		return Texture::create(img, name, flags);
+		auto tex = Texture::create(_imgLoader(name), flags);
+		if (tex != nullptr)
+		{
+			tex->setName(name);
+		}
+		return tex;
 	}
 
 	ColorTextureLoader::ColorTextureLoader(bx::AllocatorI* alloc, const glm::uvec2& size) noexcept

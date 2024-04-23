@@ -23,10 +23,20 @@ namespace darmok
 		Texture3D,
 	};
 
+	struct TextureCreationConfig final
+	{
+		glm::uvec2 size;
+		uint16_t depth = 0;
+		bool mips = false;
+		uint16_t layers = 1;
+		TextureType type = TextureType::Texture2D;
+		bgfx::TextureFormat::Enum format = bgfx::TextureFormat::RGBA8;
+	};
+
     class Texture final
 	{
 	public:
-		Texture(std::shared_ptr<Image> img, const bgfx::TextureHandle& handle, TextureType type = TextureType::Texture2D) noexcept;
+		Texture(const bgfx::TextureHandle& handle, TextureType type = TextureType::Texture2D, std::shared_ptr<Image> img = nullptr) noexcept;
 		~Texture() noexcept;
 		Texture(const Texture& other) = delete;
 		Texture& operator=(const Texture& other) = delete;
@@ -35,8 +45,10 @@ namespace darmok
 		std::shared_ptr<Image> getImage() const noexcept;
 		void releaseImage() noexcept;
 		TextureType getType() const noexcept;
+		Texture& setName(std::string_view name) noexcept;
 
-		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, std::string_view name = "", uint64_t flags = defaultTextureLoadFlags) noexcept;
+		static std::shared_ptr<Texture> create(const TextureCreationConfig& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, uint64_t flags = defaultTextureLoadFlags) noexcept;
 
 
 	private:

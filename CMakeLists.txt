@@ -146,6 +146,12 @@ if(DARMOK_BUILD_SCRIPTING)
   set(SCRIPTING_SOURCES
     ${SRC_DIR}/scripting/app.cpp
     ${SRC_DIR}/scripting/asset.cpp
+    ${SRC_DIR}/scripting/image.cpp
+    ${SRC_DIR}/scripting/material.cpp
+    ${SRC_DIR}/scripting/mesh.cpp
+    ${SRC_DIR}/scripting/model.cpp
+    ${SRC_DIR}/scripting/program.cpp
+    ${SRC_DIR}/scripting/texture.cpp
     ${SRC_DIR}/scripting/input.cpp
     ${SRC_DIR}/scripting/math1.cpp
     ${SRC_DIR}/scripting/math2.cpp
