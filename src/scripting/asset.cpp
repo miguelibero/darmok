@@ -67,6 +67,7 @@ namespace darmok
 		LuaMaterial::configure(lua);
 		LuaMesh::configure(lua);
 		LuaMeshCreator::configure(lua);
+		LuaModel::configure(lua);
 
 		lua.new_usertype<LuaAssets>("Assets",
 			sol::constructors<>(),

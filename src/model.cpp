@@ -307,7 +307,6 @@ namespace darmok
 	static const auto _materialTextures = std::unordered_map<ModelMaterialTextureType, MaterialTextureType>
 	{
 		{ ModelMaterialTextureType::Diffuse, MaterialTextureType::Diffuse },
-		{ ModelMaterialTextureType::DiffuseRoughness, MaterialTextureType::Diffuse },
 		{ ModelMaterialTextureType::Specular, MaterialTextureType::Specular },
 		{ ModelMaterialTextureType::Normal, MaterialTextureType::Normal },
 	};
@@ -1009,7 +1008,7 @@ namespace darmok
 		auto entity = doAddToScene(scene, layout, parent);
 		for (auto& child : getChildren())
 		{
-			addToScene(scene, layout, entity);
+			child.addToScene(scene, layout, entity);
 		}
 		return entity;
 	}
@@ -1040,7 +1039,7 @@ namespace darmok
 			registry.emplace<MeshComponent>(entity, meshes.load(layout));
 		}
 
-		auto parentTrans = registry.try_get<Transform>(parent);
+		auto& parentTrans = registry.get_or_emplace<Transform>(parent);
 		registry.emplace<Transform>(entity, transMat, parentTrans);
 		return entity;
 	}

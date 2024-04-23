@@ -63,16 +63,7 @@ namespace darmok
             return _value != other;
         }
 
-        T* operator->()
-        {
-            if (!hasValue())
-            {
-                throw std::bad_optional_access();
-            }
-            return _value;
-        }
-
-        const T* operator->() const
+        T* operator->() const
         {
             if (!hasValue())
             {
@@ -116,7 +107,7 @@ namespace darmok
             {
                 return other._value == nullptr;
             }
-            return *_value == *other._value;
+            return _value == other._value;
         }
 
         [[nodiscard]] bool operator!=(const OptionalRef<T>& other) const noexcept
@@ -125,3 +116,11 @@ namespace darmok
         }
     };
 }
+
+template<typename T> struct std::hash<darmok::OptionalRef<T>>
+{
+    std::size_t operator()(const darmok::OptionalRef<T>& key) const noexcept
+    {
+        return (std::size_t)key.ptr();
+    }
+};

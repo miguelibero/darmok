@@ -16,9 +16,9 @@ namespace darmok
         , _inverse(glm::mat4(1))
         , _matrixUpdatePending(false)
         , _inverseUpdatePending(false)
-        , _parent(parent)
     {
         setMatrix(mat);
+        setParent(parent);
     }
 
     Transform::Transform(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale, const glm::vec3& pivot, const OptionalRef<Transform>& parent) noexcept
@@ -68,11 +68,34 @@ namespace darmok
     {
         _matrixUpdatePending = v;
         _inverseUpdatePending = v;
+        if (v)
+        {
+            for (auto& child : _children)
+            {
+                if (child)
+                {
+                    child->setPending(true);
+                }
+            }
+        }
     }
 
     Transform& Transform::setParent(const OptionalRef<Transform>& parent) noexcept
     {
+        if (_parent == parent)
+        {
+            return *this;
+        }
+        if (_parent)
+        {
+            _parent->_children.erase(*this);
+        }
         _parent = parent;
+        _parent->_children.emplace(*this);
+        if (_parent->_matrixUpdatePending)
+        {
+            setPending();
+        }
         return *this;
     }
 
@@ -154,10 +177,11 @@ namespace darmok
         return true;
     }
 
-    void Transform::update() noexcept
+    bool Transform::update() noexcept
     {
-        updateMatrix();
+        auto changed = updateMatrix();
         updateInverse();
+        return changed;
     }
 
     Transform& Transform::setRotation(const glm::quat& v) noexcept

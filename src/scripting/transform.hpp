@@ -41,6 +41,9 @@ namespace darmok
 		void setPivot(const VarVec3& v) noexcept;
 		void setMatrix(const glm::mat4& v) noexcept;
 
+		void rotate1(float x, float y, float z) noexcept;
+		void rotate2(const VarVec3& v) noexcept;
+
 		void lookDir1(const VarVec3& v) noexcept;
 		void lookDir2(const VarVec3& v, const VarVec3& up) noexcept;
 		void lookAt1(const VarVec3& v) noexcept;

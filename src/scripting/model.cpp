@@ -42,28 +42,28 @@ namespace darmok
 		const sol::protected_function& _callback;
 	};
 
-	LuaEntity LuaModel::addToScene1(LuaScene& scene, const bgfx::VertexLayout& layout)
+	LuaEntity LuaModel::addToScene1(LuaScene& scene, const bgfx::VertexLayout& layout) const
 	{
 		auto& realScene = scene.getReal();
 		auto entity = _model->addToScene(realScene, layout);
 		return LuaEntity(entity, realScene);
 	}
 
-	LuaEntity LuaModel::addToScene2(LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback)
+	LuaEntity LuaModel::addToScene2(LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const
 	{
 		auto& realScene = scene.getReal();
 		auto entity = _model->addToScene(realScene, layout, LuaModelAddToSceneCallback(realScene, callback));
 		return LuaEntity(entity, realScene);
 	}
 
-	LuaEntity LuaModel::addToScene3(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent)
+	LuaEntity LuaModel::addToScene3(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent) const
 	{
 		auto& realScene = scene.getReal();
 		auto entity = _model->addToScene(realScene, layout, parent.getReal());
 		return LuaEntity(entity, realScene);
 	}
 
-	LuaEntity LuaModel::addToScene4(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent, sol::protected_function callback)
+	LuaEntity LuaModel::addToScene4(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent, sol::protected_function callback) const
 	{
 		auto& realScene = scene.getReal();
 		auto entity = _model->addToScene(realScene, layout, parent.getReal(), LuaModelAddToSceneCallback(realScene, callback));

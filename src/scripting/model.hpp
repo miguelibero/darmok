@@ -16,10 +16,10 @@ namespace darmok
 		LuaModel(const std::shared_ptr<Model>& model) noexcept;
 		const std::shared_ptr<Model>& getReal() const noexcept;
 
-		LuaEntity addToScene1(LuaScene& scene, const bgfx::VertexLayout& layout);
-		LuaEntity addToScene2(LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback);
-		LuaEntity addToScene3(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent);
-		LuaEntity addToScene4(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent, sol::protected_function callback);
+		LuaEntity addToScene1(LuaScene& scene, const bgfx::VertexLayout& layout) const;
+		LuaEntity addToScene2(LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const;
+		LuaEntity addToScene3(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent) const;
+		LuaEntity addToScene4(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent, sol::protected_function callback) const;
 
 		static void configure(sol::state_view& lua) noexcept;
 

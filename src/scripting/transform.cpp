@@ -136,6 +136,16 @@ namespace darmok
 		_transform->setMatrix(v);
 	}
 
+	void LuaTransform::rotate1(float x, float y, float z) noexcept
+	{
+		rotate2(glm::radians(glm::vec3(x, y, z)));
+	}
+
+	void LuaTransform::rotate2(const VarVec3& v) noexcept
+	{
+		_transform->setRotation(_transform->getRotation() * glm::quat(LuaMath::tableToGlm(v)));
+	}
+
 	void LuaTransform::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaTransform>("Transform", sol::constructors<>(),
@@ -150,6 +160,7 @@ namespace darmok
 			"matrix", sol::property(&LuaTransform::getMatrix, &LuaTransform::setMatrix),
 			"inverse", sol::property(&LuaTransform::getInverse),
 			"parent", sol::property(&LuaTransform::getParent, &LuaTransform::setParent),
+			"rotate", sol::overload(&LuaTransform::rotate1, &LuaTransform::rotate2),
 			"look_dir", sol::overload(&LuaTransform::lookDir1, &LuaTransform::lookDir2),
 			"look_at", sol::overload(&LuaTransform::lookAt1, &LuaTransform::lookAt2)
 		);

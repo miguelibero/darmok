@@ -4,6 +4,7 @@
 #include <glm/detail/type_quat.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene.hpp>
+#include <unordered_set>
 
 namespace darmok
 {
@@ -33,7 +34,7 @@ namespace darmok
         Transform& lookAt(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
         Transform& setMatrix(const glm::mat4& v) noexcept;
 
-        void update() noexcept;
+        bool update() noexcept;
         const glm::mat4& getMatrix() noexcept;
         const glm::mat4& getMatrix() const noexcept;
         const glm::mat4& getInverse() noexcept;
@@ -52,6 +53,7 @@ namespace darmok
         bool _matrixUpdatePending;
         bool _inverseUpdatePending;
         OptionalRef<Transform> _parent;
+        std::unordered_set<OptionalRef<Transform>> _children;
 
         void setPending(bool v = true) noexcept;
         bool updateMatrix() noexcept;

@@ -283,8 +283,12 @@ target_link_libraries(${LIB_NAME} PUBLIC EnTT)
 
 # assimp
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "If the test suite for Assimp is built in addition to the library.")
+set(ASSIMP_BUILD_DRACO ON CACHE BOOL "If the Draco libraries are to be built. Primarily for glTF")
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "default value of all ASSIMP_BUILD_XXX_EXPORTER values")
+
 add_subdirectory(${LIBS_DIR}/assimp)
 target_link_libraries(${LIB_NAME} PRIVATE assimp)
+target_compile_definitions(assimp PRIVATE ASSIMP_BUILD_NO_GLTF1_IMPORTER ASSIMP_BUILD_NO_EXPORT)
 
 # pugixml
 add_subdirectory(${LIBS_DIR}/pugixml)
@@ -318,7 +322,7 @@ endif()
 
 # ozz
 set(ozz_build_fbx OFF CACHE BOOL "Build Fbx pipeline (Requires Fbx SDK)")
-set(ozz_build_gltf OFF CACHE BOOL "Build glTF importer (Requires c++11)")
+set(ozz_build_gltf ON CACHE BOOL "Build glTF importer (Requires c++11)")
 set(ozz_build_samples OFF CACHE BOOL "Build samples")
 set(ozz_build_howtos OFF CACHE BOOL "Build howtos")
 set(ozz_build_tests OFF CACHE BOOL "Build unit tests")

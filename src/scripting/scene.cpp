@@ -1,4 +1,5 @@
 #include "scene.hpp"
+#include "model.hpp"
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
@@ -136,6 +137,18 @@ namespace darmok
 		return _entity;
 	}
 
+	LuaEntity LuaEntity::addModel1(const LuaModel& model, const bgfx::VertexLayout& layout)
+	{
+		LuaScene scene(_scene.value());
+		return model.addToScene3(scene, layout, *this);
+	}
+
+	LuaEntity LuaEntity::addModel2(const LuaModel& model, const bgfx::VertexLayout& layout, sol::protected_function callback)
+	{
+		LuaScene scene(_scene.value());
+		return model.addToScene4(scene, layout, *this, callback);
+	}
+
 	void LuaEntity::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<LuaNativeComponentType>("ComponentType", {
@@ -152,7 +165,8 @@ namespace darmok
 			"remove_component", sol::overload(&LuaEntity::removeNativeComponent<0>, &LuaEntity::removeLuaComponent),
 			"get_or_add_component", sol::overload(&LuaEntity::getOrAddNativeComponent<0>, &LuaEntity::getOrAddLuaComponent),
 			"try_get_component", sol::overload(&LuaEntity::tryGetNativeComponent<0>, &LuaEntity::tryGetLuaComponent),
-			"has_component", sol::overload(&LuaEntity::hasNativeComponent<0>, &LuaEntity::hasLuaComponent)
+			"has_component", sol::overload(&LuaEntity::hasNativeComponent<0>, &LuaEntity::hasLuaComponent),
+			"add_model", sol::overload(&LuaEntity::addModel1, &LuaEntity::addModel2)
 		);
 	}
 
