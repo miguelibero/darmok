@@ -13,6 +13,7 @@ namespace darmok
     using VarVec2 = std::variant<glm::vec2, sol::table>;
 	using VarVec3 = std::variant<glm::vec3, sol::table>;
 	using VarVec4 = std::variant<glm::vec4, sol::table>;
+	using VarUvec2 = std::variant<glm::uvec2, sol::table>;
 	using VarQuat = std::variant<glm::quat, sol::table>;
 	using VarColor3 = std::variant<Color3, sol::table>;
 	using VarColor = std::variant<Color, sol::table>;

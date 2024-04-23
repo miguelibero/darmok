@@ -24,7 +24,7 @@ namespace darmok
     };
 
     class Ray;
-    class Texture;
+    class RenderTexture;
 
     class Camera final
     {
@@ -45,8 +45,8 @@ namespace darmok
         Camera& setOrtho(const glm::vec4& edges, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest), float offset = 0.f) noexcept;
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
-        Camera& setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
-        const std::shared_ptr<Texture>& getTargetTexture() noexcept;
+        Camera& setTargetTexture(const std::shared_ptr<RenderTexture>& texture) noexcept;
+        const std::shared_ptr<RenderTexture>& getTargetTexture() noexcept;
 
         const bgfx::FrameBufferHandle& getFrameBuffer() const noexcept;
 
@@ -106,7 +106,7 @@ namespace darmok
         std::vector<std::unique_ptr<ICameraComponent>> _components;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
-        std::shared_ptr<Texture> _targetTexture;
+        std::shared_ptr<RenderTexture> _targetTexture;
         bool _targetTextureChanged;
         bgfx::FrameBufferHandle _framebuffer;
 

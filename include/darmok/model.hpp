@@ -205,6 +205,8 @@ namespace darmok
         ModelMaterialTexture create(size_t pos) const override;
     };
 
+    class ITextureLoader;
+
     class ModelMaterial final
     {
     public:

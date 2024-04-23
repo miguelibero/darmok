@@ -20,6 +20,11 @@ namespace darmok
 	{
 	}
 
+	LuaMaterial::LuaMaterial(const LuaRenderTexture& texture) noexcept
+		: _material(std::make_shared<Material>(texture.getReal()))
+	{
+	}
+
 	const std::shared_ptr<Material>& LuaMaterial::getReal() const noexcept
 	{
 		return _material;
@@ -50,7 +55,7 @@ namespace darmok
 	void LuaMaterial::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaMaterial>("Material",
-			sol::constructors<LuaMaterial(), LuaMaterial(LuaTexture)>(),
+			sol::constructors<LuaMaterial(), LuaMaterial(LuaTexture), LuaMaterial(LuaRenderTexture)>(),
 			"shininess", sol::property(&LuaMaterial::getShininess, &LuaMaterial::setShininess),
 			"specular_strength", sol::property(&LuaMaterial::getSpecularStrength, &LuaMaterial::setSpecularStrength)
 		);

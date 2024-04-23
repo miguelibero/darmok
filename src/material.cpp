@@ -1,6 +1,7 @@
 #include <darmok/material.hpp>
 #include <darmok/light.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/texture.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -29,7 +30,7 @@ namespace darmok
 	};
 
 
-	Material::Material(const std::shared_ptr<Texture>& diffuseTexture) noexcept
+	Material::Material(const std::shared_ptr<ITexture>& diffuseTexture) noexcept
 		: _primitive(MaterialPrimitiveType::Triangle)
 		, _mainData{
 			32,  // shininess
@@ -78,7 +79,7 @@ namespace darmok
 		}
 	}
 
-	std::shared_ptr<Texture> Material::getTexture(MaterialTextureType type) const noexcept
+	std::shared_ptr<ITexture> Material::getTexture(MaterialTextureType type) const noexcept
 	{
 		auto itr = _textures.find(type);
 		if (itr == _textures.end())
@@ -88,7 +89,7 @@ namespace darmok
 		return itr->second;
 	}
 
-	Material& Material::setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept
+	Material& Material::setTexture(MaterialTextureType type, const std::shared_ptr<ITexture>& texture) noexcept
 	{
 		_textures[type] = texture;
 		return *this;
@@ -155,7 +156,7 @@ namespace darmok
 					stage = itr->second.stage;
 				}
 			}
-			std::shared_ptr<Texture> tex;
+			std::shared_ptr<ITexture> tex;
 			auto itr = _textures.find(pair.first);
 			if (itr != _textures.end())
 			{

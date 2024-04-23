@@ -10,7 +10,7 @@ namespace darmok
 {
     class Camera;
 	class LuaProgram;
-	class LuaTexture;
+	class LuaRenderTexture;
 	class Ray;
 
 	class LuaCamera final
@@ -35,10 +35,10 @@ namespace darmok
 		LuaCamera& setWindowOrtho1(const VarVec2& range, float offset) noexcept;
 		LuaCamera& setWindowOrtho2(const VarVec2& range) noexcept;
 		LuaCamera& setWindowOrtho3() noexcept;
-		LuaCamera& setTargetTexture(const LuaTexture& texture) noexcept;
+		LuaCamera& setTargetTexture(const LuaRenderTexture& texture) noexcept;
 		LuaCamera& setForwardPhongRenderer(const LuaProgram& program) noexcept;
 
-		std::optional<LuaTexture> getTargetTexture() noexcept;
+		std::optional<LuaRenderTexture> getTargetTexture() noexcept;
 		const glm::mat4& getMatrix() const noexcept;
 		void setMatrix(const glm::mat4& matrix) noexcept;
 		std::optional<Ray> screenPointToRay(const VarVec2& point) const noexcept;

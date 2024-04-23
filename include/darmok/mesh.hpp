@@ -62,6 +62,8 @@ namespace darmok
         std::vector<VertexIndex> indices;
     };
 
+    class Texture;
+
     struct MeshCreator final
     {
         using Config = MeshCreationConfig;

@@ -83,7 +83,7 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
+    Camera& Camera::setTargetTexture(const std::shared_ptr<RenderTexture>& texture) noexcept
     {
         if (_targetTexture != texture)
         {
@@ -93,7 +93,7 @@ namespace darmok
         return *this;
     }
 
-    const std::shared_ptr<Texture>& Camera::getTargetTexture() noexcept
+    const std::shared_ptr<RenderTexture>& Camera::getTargetTexture() noexcept
     {
         return _targetTexture;
     }
@@ -180,7 +180,8 @@ namespace darmok
             }
             if (_targetTexture != nullptr)
             {
-                _framebuffer = bgfx::createFrameBuffer(1, &_targetTexture->getHandle());
+                auto handle = _targetTexture->getHandle();
+                _framebuffer = bgfx::createFrameBuffer(1, &handle);
             }
         }
     }

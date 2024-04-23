@@ -2,6 +2,7 @@
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/vertex.hpp>
 #include <glm/gtx/vector_angle.hpp>

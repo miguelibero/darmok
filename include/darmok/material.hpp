@@ -1,9 +1,6 @@
 #pragma once
 
 #include <darmok/color.hpp>
-#include <darmok/data.hpp>
-#include <darmok/texture.hpp>
-#include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
 
 #include <glm/glm.hpp>
@@ -42,14 +39,16 @@ namespace darmok
         Line
     };
 
+    class ITexture;
+
     class Material final
     {
     public:
-        Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
+        Material(const std::shared_ptr<ITexture>& diffuseTexture = nullptr) noexcept;
         ~Material();
 
-        std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
-        Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
+        std::shared_ptr<ITexture> getTexture(MaterialTextureType type) const noexcept;
+        Material& setTexture(MaterialTextureType type, const std::shared_ptr<ITexture>& texture) noexcept;
 
         OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
         Material& setColor(MaterialColorType type, const Color& color) noexcept;
@@ -66,12 +65,11 @@ namespace darmok
         void bgfxConfig(bgfx::Encoder& encoder) const noexcept;
 
     private:
-        OptionalRef<AssetContext> _assets;
         std::unordered_map<MaterialTextureType, bgfx::UniformHandle> _textureHandles;
         std::unordered_map<MaterialColorType, bgfx::UniformHandle> _colorHandles;
         bgfx::UniformHandle _mainHandle;
 
-        std::unordered_map<MaterialTextureType, std::shared_ptr<Texture>> _textures;
+        std::unordered_map<MaterialTextureType, std::shared_ptr<ITexture>> _textures;
         std::unordered_map<MaterialColorType, Color> _colors;
 
         glm::vec4 _mainData;

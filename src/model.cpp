@@ -4,6 +4,8 @@
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/image.hpp>
+#include <darmok/texture.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/material.h>
@@ -341,7 +343,7 @@ namespace darmok
 		{
 			throw std::runtime_error("got empty image container");
 		}
-		auto tex = Texture::create(std::make_shared<Image>(container));
+		auto tex = std::make_shared<Texture>(std::make_shared<Image>(container));
 		if (tex == nullptr)
 		{
 			throw std::runtime_error("could not load texture");

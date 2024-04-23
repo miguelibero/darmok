@@ -2,11 +2,32 @@
 
 namespace darmok
 {
-	Texture::Texture(const bgfx::TextureHandle& handle, TextureType type, std::shared_ptr<Image> img) noexcept
+	Texture::Texture(std::shared_ptr<Image> img, uint64_t flags) noexcept
 		: _img(img)
-		, _handle(handle)
-		, _type(type)
+		, _flags(flags)
+		, _handle{ bgfx::kInvalidHandle }
+		, _type(TextureType::Unknown)
 	{
+		// we're delaying the handle creation because bgfx tries to load the image asyncronously (at least in DX11)
+		// that produces that if a texture is added and then removed, bgfx crashes afterwards trying to load the image (that was already released)
+		// TODO: check if there is a better way
+		if (img->isCubeMap())
+		{
+			_type = TextureType::CubeMap;
+		}
+		else if (1 < img->getDepth())
+		{
+			_type = TextureType::Texture3D;
+		}
+		else
+		{
+			auto format = bgfx::TextureFormat::Enum(_img->getFormat());
+			auto layers = _img->getLayerCount();
+			if (bgfx::isTextureValid(0, false, layers, format, _flags))
+			{
+				_type = TextureType::Texture2D;
+			}
+		}
 	}
 
 	Texture::~Texture() noexcept
@@ -17,73 +38,46 @@ namespace darmok
 		}
 	}
 
-	std::shared_ptr<Texture> Texture::create(const TextureCreationConfig& cfg, uint64_t flags) noexcept
+	void Texture::load() noexcept
 	{
-		bgfx::TextureHandle handle{ bgfx::kInvalidHandle };
-
-		switch (cfg.type)
+		if (isValid(_handle) || _img == nullptr || _img->empty())
 		{
-		case TextureType::CubeMap:
-			handle = bgfx::createTextureCube(cfg.size.x, cfg.mips, cfg.layers, cfg.format, flags);
-			break;
-		case TextureType::Texture2D:
-			handle = bgfx::createTexture2D(cfg.size.x, cfg.size.y, cfg.mips, cfg.layers, cfg.format, flags);
-			break;
-		case TextureType::Texture3D:
-			handle = bgfx::createTexture3D(cfg.size.x, cfg.size.y, cfg.depth, cfg.mips, cfg.format, flags);
-			break;
-		default:
-			return nullptr;
+			return;
 		}
 
-		if (!bgfx::isValid(handle))
-		{
-			return nullptr;
-		}
-
-		return std::make_shared<Texture>(handle, cfg.type);
-	}
-
-	std::shared_ptr<Texture> Texture::create(std::shared_ptr<Image> img, uint64_t flags) noexcept
-	{
-		if (img == nullptr || img->empty())
-		{
-			return nullptr;
-		}
-
-		const auto mem = img->makeRef();
-		auto format = bgfx::TextureFormat::Enum(img->getFormat());
-		auto hasMips = 1 < img->getMipCount();
-		auto s = img->getSize();
+		const auto mem = _img->makeRef();
+		auto format = bgfx::TextureFormat::Enum(_img->getFormat());
+		auto hasMips = 1 < _img->getMipCount();
+		auto s = _img->getSize();
 		auto w = uint16_t(s.x);
 		auto h = uint16_t(s.y);
-		auto layers = img->getLayerCount();
+		auto layers = _img->getLayerCount();
 
 		bgfx::TextureHandle handle{ bgfx::kInvalidHandle };
 		TextureType type = TextureType::Unknown;
 
-		if (img->isCubeMap())
+		if (_type == TextureType::CubeMap)
 		{
-			handle = bgfx::createTextureCube(w, hasMips, layers, format, flags, mem);
-			type = TextureType::CubeMap;
+			_handle = bgfx::createTextureCube(w, hasMips, layers, format, _flags, mem);
 		}
-		else if (1 < img->getDepth())
+		else if (_type == TextureType::Texture3D)
 		{
-			handle = bgfx::createTexture3D(w, h, uint16_t(img->getDepth()), hasMips, format, flags, mem);
-			type = TextureType::Texture3D;
+			_handle = bgfx::createTexture3D(w, h, uint16_t(_img->getDepth()), hasMips, format, _flags, mem);
 		}
-		else if (bgfx::isTextureValid(0, false, layers, format, flags))
+		else if (_type == TextureType::Texture2D)
 		{
-			handle = bgfx::createTexture2D(w, h, hasMips, layers, format, flags, mem);
-			type = TextureType::Texture2D;
+			_handle = bgfx::createTexture2D(w, h, hasMips, layers, format, _flags, mem);
 		}
+		if (isValid(_handle) && !_name.empty())
+		{
+			bgfx::setName(_handle, _name.data(), _name.size());
+		}
+	}
 
-		if (!bgfx::isValid(handle))
-		{
-			return nullptr;
-		}
-
-		return std::make_shared<Texture>(handle, type, img);
+	bgfx::TextureHandle Texture::getHandle() noexcept
+	{
+		load();
+		return _handle;
 	}
 
 	const bgfx::TextureHandle& Texture::getHandle() const noexcept
@@ -109,7 +103,14 @@ namespace darmok
 
 	Texture& Texture::setName(std::string_view name) noexcept
 	{
-		bgfx::setName(_handle, name.data(), name.size());
+		if (isValid(_handle))
+		{
+			bgfx::setName(_handle, name.data(), name.size());
+		}
+		else
+		{
+			_name = name;
+		}
 		return *this;
 	}
 
@@ -118,9 +119,58 @@ namespace darmok
 	{
 	}
 
+	RenderTexture::RenderTexture(const Config& cfg, uint64_t flags) noexcept
+		: _handle{ bgfx::kInvalidHandle }
+		, _type(cfg.type)
+	{
+		switch (_type)
+		{
+		case TextureType::CubeMap:
+			_handle = bgfx::createTextureCube(cfg.size.x, cfg.mips, cfg.layers, cfg.format, flags);
+			break;
+		case TextureType::Texture2D:
+			_handle = bgfx::createTexture2D(cfg.size.x, cfg.size.y, cfg.mips, cfg.layers, cfg.format, flags);
+			break;
+		case TextureType::Texture3D:
+			_handle = bgfx::createTexture3D(cfg.size.x, cfg.size.y, cfg.depth, cfg.mips, cfg.format, flags);
+			break;
+		default:
+			break;
+		}
+	}
+
+	RenderTexture::~RenderTexture() noexcept
+	{
+		if (isValid(_handle))
+		{
+			bgfx::destroy(_handle);
+		}
+	}
+
+	bgfx::TextureHandle RenderTexture::getHandle() noexcept
+	{
+		return _handle;
+	}
+
+	const bgfx::TextureHandle& RenderTexture::getHandle() const noexcept
+	{
+		return _handle;
+	}
+
+	TextureType RenderTexture::getType() const noexcept
+	{
+		return _type;
+	}
+
+	RenderTexture& RenderTexture::setName(std::string_view name) noexcept
+	{
+		bgfx::setName(_handle, name.data(), name.size());
+		return *this;
+	}
+
 	std::shared_ptr<Texture> ImageTextureLoader::operator()(std::string_view name, uint64_t flags) noexcept
 	{
-		auto tex = Texture::create(_imgLoader(name), flags);
+		auto tex = std::make_shared<Texture>(_imgLoader(name), flags);
 		if (tex != nullptr)
 		{
 			tex->setName(name);
@@ -141,7 +191,7 @@ namespace darmok
 		{
 			return itr->second;
 		}
-		auto tex = Texture::create(Image::create(_alloc, color, _size));
+		auto tex = std::make_shared<Texture>(Image::create(_alloc, color, _size));
 		_cache.emplace(color, tex);
 		return tex;
 	}

@@ -64,6 +64,7 @@ namespace darmok
 		LuaTexture::configure(lua);
 		LuaTextureAtlas::configure(lua);
 		LuaTextureAtlasMeshCreator::configure(lua);
+		LuaRenderTexture::configure(lua);
 		LuaMaterial::configure(lua);
 		LuaMesh::configure(lua);
 		LuaMeshCreator::configure(lua);

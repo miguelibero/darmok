@@ -7,6 +7,7 @@ namespace darmok
 {
     class Material;
     class LuaTexture;
+	class LuaRenderTexture;
 
 	class LuaMaterial final
 	{
@@ -14,6 +15,7 @@ namespace darmok
 		LuaMaterial() noexcept;
 		LuaMaterial(const std::shared_ptr<Material>& material) noexcept;
 		LuaMaterial(const LuaTexture& texture) noexcept;
+		LuaMaterial(const LuaRenderTexture& texture) noexcept;
 		const std::shared_ptr<Material>& getReal() const noexcept;
 
 		uint8_t getShininess() const noexcept;

@@ -7,31 +7,44 @@
 #include <darmok/texture.hpp>
 #include <darmok/anim.hpp>
 #include "sol.hpp"
+#include "math.hpp"
 
 namespace darmok
 {
     class LuaImage;
 
-	using VarUvec2 = std::variant<glm::uvec2, sol::table>;
-
 	class LuaTexture final
 	{
 	public:
 		LuaTexture(const std::shared_ptr<Texture>& texture) noexcept;
+		LuaTexture(const LuaImage& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		const std::shared_ptr<Texture>& getReal() const noexcept;
 		LuaImage getImage() const noexcept;
 		TextureType getType() const noexcept;
 		LuaTexture& setName(const std::string& name) noexcept;
-
-		static LuaTexture create1(const LuaImage& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		static LuaTexture create2(const TextureCreationConfig& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		static LuaTexture create3(const VarUvec2& size, uint64_t flags = defaultTextureLoadFlags) noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 
 	private:
 		std::shared_ptr<Texture> _texture;
 	};	
+
+	class LuaRenderTexture final
+	{
+	public:
+		using Config = RenderTextureConfig;
+		LuaRenderTexture(const std::shared_ptr<RenderTexture>& texture) noexcept;
+		LuaRenderTexture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		LuaRenderTexture(const VarUvec2& size, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		const std::shared_ptr<RenderTexture>& getReal() const noexcept;
+		TextureType getType() const noexcept;
+		LuaRenderTexture& setName(const std::string& name) noexcept;
+
+		static void configure(sol::state_view& lua) noexcept;
+
+	private:
+		std::shared_ptr<RenderTexture> _texture;
+	};
 
 	class TextureAtlas;
 	struct MeshCreationConfig;

@@ -8,7 +8,7 @@
 #include <glm/glm.hpp>
 #include <bx/bx.h>
 
-#include <string_view>
+#include <string>
 #include <memory>
 
 namespace darmok
@@ -23,7 +23,42 @@ namespace darmok
 		Texture3D,
 	};
 
-	struct TextureCreationConfig final
+	class BX_NO_VTABLE ITexture
+	{
+	public:
+		virtual ~ITexture() = default;
+		virtual bgfx::TextureHandle getHandle() noexcept = 0;
+		virtual const bgfx::TextureHandle& getHandle() const noexcept = 0;
+		virtual TextureType getType() const noexcept = 0;
+	};
+
+    class Texture final : public ITexture
+	{
+	public:
+		Texture(std::shared_ptr<Image> img, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		~Texture() noexcept;
+		Texture(const Texture& other) = delete;
+		Texture& operator=(const Texture& other) = delete;
+
+		bgfx::TextureHandle getHandle() noexcept override;
+		const bgfx::TextureHandle& getHandle() const noexcept override;
+		TextureType getType() const noexcept override;
+
+		std::shared_ptr<Image> getImage() const noexcept;
+		void releaseImage() noexcept;
+		Texture& setName(std::string_view name) noexcept;
+
+	private:
+		std::shared_ptr<Image> _img;
+		uint64_t _flags;
+		bgfx::TextureHandle _handle;
+		TextureType _type;
+		std::string _name;
+
+		void load() noexcept;
+	};
+
+	struct RenderTextureConfig final
 	{
 		glm::uvec2 size;
 		uint16_t depth = 0;
@@ -33,26 +68,20 @@ namespace darmok
 		bgfx::TextureFormat::Enum format = bgfx::TextureFormat::RGBA8;
 	};
 
-    class Texture final
+	class RenderTexture final : public ITexture
 	{
 	public:
-		Texture(const bgfx::TextureHandle& handle, TextureType type = TextureType::Texture2D, std::shared_ptr<Image> img = nullptr) noexcept;
-		~Texture() noexcept;
-		Texture(const Texture& other) = delete;
-		Texture& operator=(const Texture& other) = delete;
+		using Config = RenderTextureConfig;
+		RenderTexture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		~RenderTexture() noexcept;
+		RenderTexture& operator=(const RenderTexture& other) = delete;
 
-		const bgfx::TextureHandle& getHandle() const noexcept;
-		std::shared_ptr<Image> getImage() const noexcept;
-		void releaseImage() noexcept;
-		TextureType getType() const noexcept;
-		Texture& setName(std::string_view name) noexcept;
+		bgfx::TextureHandle getHandle() noexcept override;
+		const bgfx::TextureHandle& getHandle() const noexcept override;
+		TextureType getType() const noexcept override;
 
-		static std::shared_ptr<Texture> create(const TextureCreationConfig& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, uint64_t flags = defaultTextureLoadFlags) noexcept;
-
-
+		RenderTexture& setName(std::string_view name) noexcept;
 	private:
-		std::shared_ptr<Image> _img;
 		bgfx::TextureHandle _handle;
 		TextureType _type;
 	};
@@ -60,10 +89,8 @@ namespace darmok
     class BX_NO_VTABLE ITextureLoader
 	{
 	public:
-		
 		virtual ~ITextureLoader() = default;
 		virtual std::shared_ptr<Texture> operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) = 0;
-	private:
 	};
 
 	class ColorTextureLoader final

@@ -11,6 +11,11 @@ namespace darmok
 	{
 	}
 
+	LuaTexture::LuaTexture(const LuaImage& img, uint64_t flags) noexcept
+		: _texture(std::make_shared<Texture>(img.getReal(), flags))
+	{
+	}
+
 	const std::shared_ptr<Texture>& LuaTexture::getReal() const noexcept
 	{
 		return _texture;
@@ -29,21 +34,6 @@ namespace darmok
 	{
 		_texture->setName(name);
 		return *this;
-	}
-
-	LuaTexture LuaTexture::create1(const LuaImage& img, uint64_t flags) noexcept
-	{
-		return LuaTexture(Texture::create(img.getReal(), flags));
-	}
-
-	LuaTexture LuaTexture::create2(const TextureCreationConfig& cfg, uint64_t flags) noexcept
-	{
-		return LuaTexture(Texture::create(cfg, flags));
-	}
-
-	LuaTexture LuaTexture::create3(const VarUvec2& size, uint64_t flags) noexcept
-	{
-		return create2(TextureCreationConfig{ LuaMath::tableToGlm(size) }, flags);
 	}
 
 	void LuaTexture::configure(sol::state_view& lua) noexcept
@@ -224,22 +214,69 @@ namespace darmok
 			{ "D0S8", bgfx::TextureFormat::D0S8 }
 		});
 
-		lua.new_usertype<TextureCreationConfig>("TextureCreationConfig",
-			sol::constructors<TextureCreationConfig(), TextureCreationConfig(const glm::uvec2&)>(),
-			"size", &TextureCreationConfig::size,
-			"depth", &TextureCreationConfig::depth,
-			"mips", &TextureCreationConfig::mips,
-			"layers", &TextureCreationConfig::layers,
-			"type", &TextureCreationConfig::type,
-			"format", &TextureCreationConfig::format
-		);
-
 		lua.new_usertype<LuaTexture>("Texture",
-			sol::constructors<>(),
+			sol::constructors<
+				LuaTexture(const LuaImage& img, uint64_t),
+				LuaTexture(const LuaImage& img)
+			>(),
 			"image", sol::property(&LuaTexture::getImage),
 			"type", sol::property(&LuaTexture::getType),
-			"name", sol::property(&LuaTexture::setName),
-			"create", sol::overload(&LuaTexture::create1, &LuaTexture::create2, &LuaTexture::create3)
+			"name", sol::property(&LuaTexture::setName)
+		);
+	}
+
+	LuaRenderTexture::LuaRenderTexture(const std::shared_ptr<RenderTexture>& texture) noexcept
+		: _texture(texture)
+	{
+	}
+
+	LuaRenderTexture::LuaRenderTexture(const Config& cfg, uint64_t flags) noexcept
+		: _texture(std::make_shared<RenderTexture>(cfg, flags))
+	{
+	}
+
+	LuaRenderTexture::LuaRenderTexture(const VarUvec2& size, uint64_t flags) noexcept
+		: _texture(std::make_shared<RenderTexture>(Config{ LuaMath::tableToGlm(size) }, flags))
+	{
+	}
+
+	const std::shared_ptr<RenderTexture>& LuaRenderTexture::getReal() const noexcept
+	{
+		return _texture;
+	}
+
+	TextureType LuaRenderTexture::getType() const noexcept
+	{
+		return _texture->getType();
+	}
+
+	LuaRenderTexture& LuaRenderTexture::setName(const std::string& name) noexcept
+	{
+		_texture->setName(name);
+		return *this;
+	}
+
+	void LuaRenderTexture::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<RenderTextureConfig>("RenderTextureConfig",
+			sol::constructors<RenderTextureConfig(), RenderTextureConfig(const glm::uvec2&)>(),
+			"size", &RenderTextureConfig::size,
+			"depth", &RenderTextureConfig::depth,
+			"mips", &RenderTextureConfig::mips,
+			"layers", &RenderTextureConfig::layers,
+			"type", &RenderTextureConfig::type,
+			"format", &RenderTextureConfig::format
+		);
+
+		lua.new_usertype<LuaRenderTexture>("RenderTexture",
+			sol::constructors<
+				LuaRenderTexture(const Config&),
+				LuaRenderTexture(const Config&, uint64_t),
+				LuaRenderTexture(const VarUvec2&),
+				LuaRenderTexture(const VarUvec2&, uint64_t)
+			>(),
+			"type", sol::property(&LuaRenderTexture::getType),
+			"name", sol::property(&LuaRenderTexture::setName)
 		);
 	}
 

@@ -88,7 +88,7 @@ namespace darmok
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setTargetTexture(const LuaTexture& texture) noexcept
+	LuaCamera& LuaCamera::setTargetTexture(const LuaRenderTexture& texture) noexcept
 	{
 		_camera->setTargetTexture(texture.getReal());
 		return *this;
@@ -100,14 +100,14 @@ namespace darmok
 		return *this;
 	}
 
-	std::optional<LuaTexture> LuaCamera::getTargetTexture() noexcept
+	std::optional<LuaRenderTexture> LuaCamera::getTargetTexture() noexcept
 	{
 		auto tex = _camera->getTargetTexture();
 		if (tex == nullptr)
 		{
 			return std::nullopt;
 		}
-		return LuaTexture(tex);
+		return LuaRenderTexture(tex);
 	}
 
 	const glm::mat4& LuaCamera::getMatrix() const noexcept
