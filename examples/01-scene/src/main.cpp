@@ -86,7 +86,7 @@ namespace
 
 		void update(float dt) override
 		{
-			auto r = _trans.getRotation() + glm::vec3(0, dt * _speed, 0);
+			auto r = _trans.getRotation() * glm::quat(glm::radians(glm::vec3(0, dt * _speed, 0)));
 			_trans.setRotation(r);
 		}
 
@@ -118,7 +118,7 @@ namespace
 			auto cam3d = registry.create();
 			registry.emplace<Transform>(cam3d)
 				.setPosition(glm::vec3(0.f, 2.f, -2.f))
-				.setRotation(glm::vec3(45.f, 0, 0));
+				.lookAt(glm::vec3(0, 0, 0));
 
 			registry.emplace<Camera>(cam3d)
 				.setWindowProjection(60, { 0.3, 1000 })
@@ -126,7 +126,7 @@ namespace
 				.setRenderer<ForwardRenderer>(prog);
 
 			_debugMaterial = std::make_shared<Material>();
-			auto debugTexture = getAssets().getColorTextureLoader()(Colors::red);
+			auto debugTexture = getAssets().getColorTextureLoader()(Colors::red());
 			_debugMaterial->setTexture(MaterialTextureType::Diffuse, debugTexture);
 			_debugMaterial->setPrimitiveType(MaterialPrimitiveType::Line);
 
@@ -184,7 +184,7 @@ namespace
 			auto texture = getAssets().getTextureLoader()("brick.png");
 			auto material = std::make_shared<Material>();
 			material->setTexture(MaterialTextureType::Diffuse, texture);
-			material->setColor(MaterialColorType::Diffuse, Colors::red);
+			material->setColor(MaterialColorType::Diffuse, Colors::red());
 
 			auto cubeMesh = MeshCreator(_layout).createCube();
 			cubeMesh->setMaterial(material);

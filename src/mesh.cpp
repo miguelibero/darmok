@@ -130,9 +130,9 @@ namespace darmok
 	}
 
 
-	MeshCreator::MeshCreator(const bgfx::VertexLayout& layout, const Config& cfg) noexcept
+	MeshCreator::MeshCreator(const bgfx::VertexLayout& layout) noexcept
 		: layout(layout)
-		, config(cfg)
+		, config{}
 	{
 	}
 
@@ -153,7 +153,7 @@ namespace darmok
 		i = 0;
 		for (auto& texCoord : meshData.texCoords)
 		{
-			auto v = cfg.textureScale * texCoord;
+			auto v = cfg.textureScale * (texCoord + cfg.textureOffset);
 			writer.write(bgfx::Attrib::TexCoord0, i++, v);
 		}
 

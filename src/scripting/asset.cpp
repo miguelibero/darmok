@@ -53,6 +53,76 @@ namespace darmok
 
 	void LuaTexture::configure(sol::state_view& lua) noexcept
 	{
+		lua.create_named_table("TextureFlag",
+			"NONE", BGFX_TEXTURE_NONE,
+			"MSAA_SAMPLE", BGFX_TEXTURE_MSAA_SAMPLE,
+			"RT", BGFX_TEXTURE_RT,
+			"COMPUTE_WRITE", BGFX_TEXTURE_COMPUTE_WRITE,
+			"SRG", BGFX_TEXTURE_SRGB,
+			"BLIT_DST", BGFX_TEXTURE_BLIT_DST,
+			"READ_BACK", BGFX_TEXTURE_READ_BACK,
+			"RT_MSAA_X2", BGFX_TEXTURE_RT_MSAA_X2,
+			"RT_MSAA_X4", BGFX_TEXTURE_RT_MSAA_X4,
+			"RT_MSAA_X8", BGFX_TEXTURE_RT_MSAA_X8,
+			"RT_MSAA_X16", BGFX_TEXTURE_RT_MSAA_X16,
+			"RT_MSAA_SHIFT", BGFX_TEXTURE_RT_MSAA_SHIFT,
+			"RT_MSAA_MASK", BGFX_TEXTURE_RT_MSAA_MASK,
+			"RT_WRITE_ONLY", BGFX_TEXTURE_RT_WRITE_ONLY,
+			"RT_SHIFT", BGFX_TEXTURE_RT_SHIFT,
+			"RT_MASK", BGFX_TEXTURE_RT_MASK
+		);
+
+		lua.create_named_table("SamplerFlag",
+			"NONE", BGFX_SAMPLER_NONE,
+			"U_MIRROR", BGFX_SAMPLER_U_MIRROR,
+			"U_CLAMP", BGFX_SAMPLER_U_CLAMP,
+			"U_BORDER", BGFX_SAMPLER_U_BORDER,
+			"U_SHIFT", BGFX_SAMPLER_U_SHIFT,
+			"U_MASK", BGFX_SAMPLER_U_MASK,
+			"V_MIRROR", BGFX_SAMPLER_V_MIRROR,
+			"V_CLAMP", BGFX_SAMPLER_V_CLAMP,
+			"V_BORDER", BGFX_SAMPLER_V_BORDER,
+			"V_SHIFT", BGFX_SAMPLER_V_SHIFT,
+			"V_MASK", BGFX_SAMPLER_V_MASK,
+			"W_MIRROR", BGFX_SAMPLER_W_MIRROR,
+			"W_CLAMP", BGFX_SAMPLER_W_CLAMP,
+			"W_BORDER", BGFX_SAMPLER_W_BORDER,
+			"W_SHIFT", BGFX_SAMPLER_W_SHIFT,
+			"W_MASK", BGFX_SAMPLER_W_MASK,
+			"MIN_POINT", BGFX_SAMPLER_MIN_POINT,
+			"MIN_ANISOTROPIC", BGFX_SAMPLER_MIN_ANISOTROPIC,
+			"MIN_SHIFT", BGFX_SAMPLER_MIN_SHIFT,
+			"MIN_MASK", BGFX_SAMPLER_MIN_MASK,
+			"MAG_POINT", BGFX_SAMPLER_MAG_POINT,
+			"MAG_ANISOTROPIC", BGFX_SAMPLER_MAG_ANISOTROPIC,
+			"MAG_SHIFT", BGFX_SAMPLER_MAG_SHIFT,
+			"MAG_MASK", BGFX_SAMPLER_MAG_MASK,
+			"MIP_POINT", BGFX_SAMPLER_MIP_POINT,
+			"MIP_SHIFT", BGFX_SAMPLER_MIP_SHIFT,
+			"MIP_MASK", BGFX_SAMPLER_MIP_MASK,
+			"COMPARE_LESS", BGFX_SAMPLER_COMPARE_LESS,
+			"COMPARE_LEQUAL", BGFX_SAMPLER_COMPARE_LEQUAL,
+			"COMPARE_EQUAL", BGFX_SAMPLER_COMPARE_EQUAL,
+			"COMPARE_GEQUAL", BGFX_SAMPLER_COMPARE_GEQUAL,
+			"COMPARE_GREATER", BGFX_SAMPLER_COMPARE_GREATER,
+			"COMPARE_NOTEQUAL", BGFX_SAMPLER_COMPARE_NOTEQUAL,
+			"COMPARE_NEVER", BGFX_SAMPLER_COMPARE_NEVER,
+			"COMPARE_ALWAYS", BGFX_SAMPLER_COMPARE_ALWAYS,
+			"COMPARE_SHIFT", BGFX_SAMPLER_COMPARE_SHIFT,
+			"COMPARE_MASK", BGFX_SAMPLER_COMPARE_MASK,
+			"BORDER_COLOR_SHIFT", BGFX_SAMPLER_BORDER_COLOR_SHIFT,
+			"BORDER_COLOR_MASK", BGFX_SAMPLER_BORDER_COLOR_MASK,
+			"RESERVED_SHIFT", BGFX_SAMPLER_RESERVED_SHIFT,
+			"RESERVED_MASK", BGFX_SAMPLER_RESERVED_MASK,
+			"SAMPLE_STENCIL", BGFX_SAMPLER_SAMPLE_STENCIL,
+			"POINT", BGFX_SAMPLER_POINT,
+			"UVW_MIRROR", BGFX_SAMPLER_UVW_MIRROR,
+			"UVW_CLAMP", BGFX_SAMPLER_UVW_CLAMP,
+			"UVW_BORDER", BGFX_SAMPLER_UVW_BORDER,
+			"BITS_MASK", BGFX_SAMPLER_BITS_MASK,
+			"BORDER_COLOR", [](uint32_t v) { return BGFX_SAMPLER_BORDER_COLOR(v); }
+		);
+
 		lua.new_usertype<LuaTexture>("Texture",
 			sol::constructors<>()
 		);
@@ -77,12 +147,6 @@ namespace darmok
 
 	LuaTextureAtlasMeshCreator::LuaTextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const LuaTextureAtlas& atlas) noexcept
 		: _creator(std::make_shared<TextureAtlasMeshCreator>(layout, *atlas.getReal()))
-		, _atlas(atlas)
-	{
-	}
-
-	LuaTextureAtlasMeshCreator::LuaTextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const LuaTextureAtlas& atlas, const Config& cfg) noexcept
-		: _creator(std::make_shared<TextureAtlasMeshCreator>(layout, *atlas.getReal(), cfg))
 		, _atlas(atlas)
 	{
 	}
@@ -130,20 +194,21 @@ namespace darmok
 	{
 		lua.new_usertype<TextureAtlasMeshCreationConfig>("TextureAtlasMeshCreationConfig",
 			sol::constructors<
-			MeshCreationConfig(const glm::vec3&, const glm::vec3&, const Color&),
-			MeshCreationConfig(const glm::vec3&, const glm::vec3&),
-			MeshCreationConfig(const glm::vec3&),
-			MeshCreationConfig()
+				MeshCreationConfig(const glm::vec3&, const glm::vec3&, const Color&, const glm::uvec2& amount),
+				MeshCreationConfig(const glm::vec3&, const glm::vec3&, const Color&),
+				MeshCreationConfig(const glm::vec3&, const glm::vec3&),
+				MeshCreationConfig(const glm::vec3&),
+				MeshCreationConfig()
 			>(),
 			"scale", &TextureAtlasMeshCreationConfig::scale,
 			"offset", &TextureAtlasMeshCreationConfig::offset,
-			"color", &TextureAtlasMeshCreationConfig::color
+			"color", &TextureAtlasMeshCreationConfig::color,
+			"amount", &TextureAtlasMeshCreationConfig::amount
 		);
 
 		lua.new_usertype<LuaTextureAtlasMeshCreator>("TextureAtlasMeshCreator",
 			sol::constructors<
-				LuaTextureAtlasMeshCreator(const bgfx::VertexLayout&, const LuaTextureAtlas&),
-				LuaTextureAtlasMeshCreator(const bgfx::VertexLayout&, const LuaTextureAtlas&, const Config&)>(),
+				LuaTextureAtlasMeshCreator(const bgfx::VertexLayout&, const LuaTextureAtlas&)>(),
 			"config", sol::property(&LuaTextureAtlasMeshCreator::getConfig, &LuaTextureAtlasMeshCreator::setConfig),
 			"vertex_layout", sol::property(&LuaTextureAtlasMeshCreator::getVertexLayout),
 			"atlas", sol::property(&LuaTextureAtlasMeshCreator::getTextureAtlas),
@@ -240,11 +305,6 @@ namespace darmok
 
 	LuaMeshCreator::LuaMeshCreator(const bgfx::VertexLayout& layout) noexcept
 		: _creator(std::make_shared<MeshCreator>(layout))
-	{
-	}
-
-	LuaMeshCreator::LuaMeshCreator(const bgfx::VertexLayout& layout, const Config& cfg) noexcept
-		: _creator(std::make_shared<MeshCreator>(layout, cfg))
 	{
 	}
 
@@ -359,7 +419,7 @@ namespace darmok
 		);
 
 		lua.new_usertype<LuaMeshCreator>("MeshCreator",
-			sol::constructors<LuaMeshCreator(const bgfx::VertexLayout&), LuaMeshCreator(const bgfx::VertexLayout&, const MeshCreationConfig&)>(),
+			sol::constructors<LuaMeshCreator(const bgfx::VertexLayout&)>(),
 			"config", sol::property(&LuaMeshCreator::getConfig, &LuaMeshCreator::setConfig),
 			"vertex_layout", sol::property(&LuaMeshCreator::getVertexLayout),
 			"create_cube", sol::overload(&LuaMeshCreator::createCube1, &LuaMeshCreator::createCube2),
@@ -484,14 +544,24 @@ namespace darmok
 		return LuaTexture(_assets->getColorTextureLoader()(color));
 	}
 
-	LuaTextureAtlas LuaAssets::loadTextureAtlas(const std::string& name)
+	LuaTextureAtlas LuaAssets::loadTextureAtlas1(const std::string& name)
 	{
 		return LuaTextureAtlas(_assets->getTextureAtlasLoader()(name));
 	}
 
-	LuaTexture LuaAssets::loadTexture(const std::string& name)
+	LuaTextureAtlas LuaAssets::loadTextureAtlas2(const std::string& name, uint64_t textureFlags)
+	{
+		return LuaTextureAtlas(_assets->getTextureAtlasLoader()(name, textureFlags));
+	}
+
+	LuaTexture LuaAssets::loadTexture1(const std::string& name)
 	{
 		return LuaTexture(_assets->getTextureLoader()(name));
+	}
+
+	LuaTexture LuaAssets::loadTexture2(const std::string& name, uint64_t flags)
+	{
+		return LuaTexture(_assets->getTextureLoader()(name, flags));
 	}
 
 	LuaModel LuaAssets::loadModel(const std::string& name)
@@ -513,9 +583,9 @@ namespace darmok
 			sol::constructors<>(),
 			"load_program", &LuaAssets::loadProgram,
 			"load_standard_program", &LuaAssets::loadStandardProgram,
-			"load_texture", &LuaAssets::loadTexture,
+			"load_texture", sol::overload(&LuaAssets::loadTexture1, &LuaAssets::loadTexture2),
 			"load_color_texture", &LuaAssets::loadColorTexture,
-			"load_texture_atlas", &LuaAssets::loadTextureAtlas,
+			"load_texture_atlas", sol::overload(&LuaAssets::loadTextureAtlas1, &LuaAssets::loadTextureAtlas2),
 			"load_model", &LuaAssets::loadModel
 		);
 	}

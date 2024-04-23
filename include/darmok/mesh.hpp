@@ -48,6 +48,7 @@ namespace darmok
         glm::vec3 scale = glm::vec3(1);
         glm::vec3 offset = glm::vec3(0);
         glm::vec2 textureScale = glm::vec2(1);
+        glm::vec2 textureOffset = glm::vec3(0);
         Color color = Colors::white();
     };
 
@@ -65,7 +66,7 @@ namespace darmok
         Config config;
         bgfx::VertexLayout layout;
 
-        MeshCreator(const bgfx::VertexLayout& layout, const Config& cfg = {}) noexcept;
+        MeshCreator(const bgfx::VertexLayout& layout) noexcept;
         
         std::shared_ptr<Mesh> createMesh(const MeshData& meshData) noexcept;
         std::shared_ptr<Mesh> createCube(const Cube& cube = Cube::standard) noexcept;

@@ -11,7 +11,7 @@
 
 namespace darmok
 {
-       TextureAtlasBounds TextureAtlasElement::getBounds() const noexcept
+    TextureAtlasBounds TextureAtlasElement::getBounds() const noexcept
 	{
 		return {
 			originalSize,
@@ -62,32 +62,48 @@ namespace darmok
 		return nullptr;
 	}
 
-	TextureAtlasMeshCreator::TextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const TextureAtlas& atlas, const Config& cfg) noexcept
+	TextureAtlasMeshCreator::TextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const TextureAtlas& atlas) noexcept
 		: layout(layout)
 		, atlas(atlas)
-		, config(cfg)
+		, config{}
 	{
 	}
 
 	std::shared_ptr<Mesh> TextureAtlasMeshCreator::createSprite(const TextureAtlasElement& elm) const noexcept
-	{		
-		VertexDataWriter writer(layout, elm.getVertexAmount());
+	{
+		uint32_t vertexAmount = elm.getVertexAmount();
+		VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
+		std::vector<VertexIndex> indices;
+		indices.reserve(elm.indices.size() * config.amount.x * config.amount.y);
 
 		glm::vec2 fatlasSize(atlas.size);
-		auto foffset = config.offset + glm::vec3(elm.offset, 0) - glm::vec3(elm.pivot * glm::vec2(elm.originalSize), 0);
 
-		uint32_t i = 0;
-		for (auto& pos : elm.positions)
+		auto baseOffset = config.offset + glm::vec3(elm.offset, 0) - glm::vec3(elm.pivot * glm::vec2(elm.originalSize), 0);
+		auto amountStep = glm::vec2(elm.originalSize);
+		auto amountOffsetMax = (glm::vec2(config.amount) - glm::vec2(1)) * amountStep * 0.5F;
+		auto amountOffset = -glm::vec3(amountOffsetMax, 0.F);
+
+		uint32_t vertexIndex = 0;
+		for (; amountOffset.x <= amountOffsetMax.x; amountOffset.x += amountStep.x)
 		{
-			auto v = foffset + glm::vec3(pos.x, float(elm.originalSize.y) - pos.y, 0);
-			v *= config.scale;
-			writer.write(bgfx::Attrib::Position, i++, v);
-		}
-		i = 0;
-		for (auto& texCoord : elm.texCoords)
-		{
-			auto v = glm::vec2(texCoord) / fatlasSize;
-			writer.write(bgfx::Attrib::TexCoord0, i++, v);
+			amountOffset.y = -amountOffsetMax.y;
+			for (; amountOffset.y <= amountOffsetMax.y; amountOffset.y += amountStep.y)
+			{
+				auto offset = baseOffset + amountOffset;
+				for(uint32_t i = 0; i < vertexAmount; i++)
+				{
+					auto& texPos = elm.positions[i];
+					auto pos = (offset + glm::vec3(texPos.x, float(elm.originalSize.y) - texPos.y, 0)) * config.scale;
+					writer.write(bgfx::Attrib::Position, vertexIndex + i, pos);
+					auto texCoord = glm::vec2(elm.texCoords[i]) / fatlasSize;
+					writer.write(bgfx::Attrib::TexCoord0, vertexIndex + i, texCoord);
+				}
+				for (auto& idx : elm.indices)
+				{
+					indices.push_back(vertexIndex + idx);
+				}
+				vertexIndex += vertexAmount;
+			}
 		}
 
 		if (layout.has(bgfx::Attrib::Normal))
@@ -95,14 +111,13 @@ namespace darmok
 			static const glm::vec3 norm(0, 0, -1);
 			writer.write(bgfx::Attrib::Normal, norm);
 		}
-
 		if (layout.has(bgfx::Attrib::Color0))
 		{
 			writer.write(bgfx::Attrib::Color0, config.color);
 		}
 
 		auto vertexData = writer.finish();
-		return std::make_shared<Mesh>(layout, std::move(vertexData), Data::copy(elm.indices));
+		return std::make_shared<Mesh>(layout, std::move(vertexData), Data::copy(indices));
 	}
 
 	std::shared_ptr<Material> TextureAtlasMeshCreator::createMaterial(const Color& color) const noexcept
@@ -287,7 +302,11 @@ namespace darmok
 		}
 		else
 		{
-			elm.texCoords = elm.positions;
+			elm.texCoords.reserve(elm.positions.size());
+			for (auto& p : elm.positions)
+			{
+				elm.texCoords.push_back(elm.texturePosition + p);
+			}
 		}
 
 		auto xmlTriangles = xml.child("triangles");
@@ -318,7 +337,7 @@ namespace darmok
 		return elm;
 	}
 
-	std::shared_ptr<TextureAtlas> TexturePackerTextureAtlasLoader::operator()(std::string_view name, uint64_t flags)
+	std::shared_ptr<TextureAtlas> TexturePackerTextureAtlasLoader::operator()(std::string_view name, uint64_t textureFlags)
 	{
 		auto data = _dataLoader(name);
 		if (data == nullptr || data->empty())
@@ -341,7 +360,7 @@ namespace darmok
 			p = std::filesystem::path(name).parent_path() / p;
 		}
 		auto atlasFullName = p.string();
-		auto texture = _textureLoader(atlasFullName, flags);
+		auto texture = _textureLoader(atlasFullName, textureFlags);
 
 		glm::uvec2 size{
 			atlasXml.attribute("width").as_int(),

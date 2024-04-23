@@ -93,7 +93,6 @@ namespace darmok
 		using Config = MeshCreationConfig;
 
 		LuaMeshCreator(const bgfx::VertexLayout& layout) noexcept;
-		LuaMeshCreator(const bgfx::VertexLayout& layout, const Config& cfg) noexcept;
 		~LuaMeshCreator();
 
 		Config& getConfig() noexcept;
@@ -136,13 +135,13 @@ namespace darmok
 	};
 
 	struct TextureAtlasMeshCreator;
+	struct TextureAtlasMeshCreationConfig;
 
 	struct LuaTextureAtlasMeshCreator final
 	{
-		using Config = MeshCreationConfig;
+		using Config = TextureAtlasMeshCreationConfig;
 
 		LuaTextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const LuaTextureAtlas& atlas) noexcept;
-		LuaTextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const LuaTextureAtlas& atlas, const Config& cfg) noexcept;
 		~LuaTextureAtlasMeshCreator();
 
 		Config& getConfig() noexcept;
@@ -189,9 +188,11 @@ namespace darmok
 		LuaAssets(AssetContext& assets) noexcept;
 		LuaProgram loadProgram(const std::string& name);
 		LuaProgram loadStandardProgram(StandardProgramType type);
-		LuaTexture loadTexture(const std::string& name);
+		LuaTexture loadTexture1(const std::string& name);
+		LuaTexture loadTexture2(const std::string& name, uint64_t flags);
 		LuaTexture loadColorTexture(const Color& color);
-		LuaTextureAtlas loadTextureAtlas(const std::string& name);
+		LuaTextureAtlas loadTextureAtlas1(const std::string& name);
+		LuaTextureAtlas loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
 		LuaModel loadModel(const std::string& name);
 
 		static void configure(sol::state_view& lua) noexcept;

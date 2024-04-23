@@ -2,11 +2,14 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 
 #include <darmok/optional_ref.hpp>
+#include <darmok/color.hpp>
+#include <darmok/texture.hpp>
 
 namespace darmok
 {
@@ -18,9 +21,7 @@ namespace darmok
 		glm::uvec2 offset;
 	};
 
-	class Texture;
 	class Material;
-	struct AnimationFrame;
 
 	struct TextureAtlasElement final
 	{
@@ -55,7 +56,11 @@ namespace darmok
 		glm::vec3 scale = glm::vec3(1);
 		glm::vec3 offset = glm::vec3(0);
 		Color color = Colors::white();
+		glm::uvec2 amount = glm::uvec2(1);
 	};
+
+	class Mesh;
+	struct AnimationFrame;
 
 	struct TextureAtlasMeshCreator final
 	{
@@ -64,7 +69,7 @@ namespace darmok
 		const TextureAtlas& atlas;
 		Config config;
 
-		TextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const TextureAtlas& atlas, const Config& cfg = {}) noexcept;
+		TextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const TextureAtlas& atlas) noexcept;
 
 		std::shared_ptr<Mesh> createSprite(std::string_view name) const noexcept;
 		std::vector<AnimationFrame> createAnimation(std::string_view namePrefix, float frameDuration = 1.f / 30.f) const noexcept;
@@ -79,6 +84,6 @@ namespace darmok
 	{
 	public:
 		virtual ~ITextureAtlasLoader() = default;
-		virtual std::shared_ptr<TextureAtlas> operator()(std::string_view name, uint64_t flags = defaultTextureCreationFlags) = 0;
+		virtual std::shared_ptr<TextureAtlas> operator()(std::string_view name, uint64_t textureFlags = defaultTextureLoadFlags) = 0;
 	};
 }

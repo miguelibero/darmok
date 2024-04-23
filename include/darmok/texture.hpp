@@ -13,7 +13,7 @@
 
 namespace darmok
 {
-	static const uint64_t defaultTextureCreationFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
+	static const uint64_t defaultTextureLoadFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
 
 	enum class TextureType
 	{
@@ -36,7 +36,7 @@ namespace darmok
 		void releaseImage() noexcept;
 		TextureType getType() const noexcept;
 
-		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, std::string_view name = "", uint64_t flags = defaultTextureCreationFlags) noexcept;
+		static std::shared_ptr<Texture> create(std::shared_ptr<Image> img, std::string_view name = "", uint64_t flags = defaultTextureLoadFlags) noexcept;
 
 
 	private:
@@ -50,7 +50,7 @@ namespace darmok
 	public:
 		
 		virtual ~ITextureLoader() = default;
-		virtual std::shared_ptr<Texture> operator()(std::string_view name, uint64_t flags = defaultTextureCreationFlags) = 0;
+		virtual std::shared_ptr<Texture> operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) = 0;
 	private:
 	};
 
