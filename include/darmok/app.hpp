@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <bgfx/bgfx.h>
+#include <darmok/color.hpp>
 
 extern "C" int _main_(int argc, char** argv);
 
@@ -37,8 +38,9 @@ namespace darmok
 	struct AppConfig
 	{
 		static const AppConfig defaultConfig;
-		double targetUpdateDeltaTime;
-		int maxInstantLogicUpdates;
+		double targetUpdateDeltaTime = defaultConfig.targetUpdateDeltaTime;
+		int maxInstantLogicUpdates = defaultConfig.maxInstantLogicUpdates;
+		Color clearColor = defaultConfig.clearColor;
 	};
 
 	class App
@@ -76,7 +78,7 @@ namespace darmok
 		void configure(const AppConfig& config) noexcept;
 
 		virtual void updateLogic(float deltaTime);
-		[[nodiscard]] virtual bgfx::ViewId render(bgfx::ViewId viewId);
+		[[nodiscard]] virtual bgfx::ViewId render(bgfx::ViewId viewId) const;
 
 	private:
 		std::unique_ptr<AppImpl> _impl;
@@ -88,10 +90,10 @@ namespace darmok
 		AppComponent() = default;
 		virtual ~AppComponent() = default;
 
-		virtual void init(App& app);
-		virtual void shutdown();
-		virtual void updateLogic(float deltaTime);
-		virtual bgfx::ViewId render(bgfx::ViewId viewId);
+		virtual void init(App& app) {};
+		virtual void shutdown() {};
+		virtual void updateLogic(float deltaTime) {};
+		virtual bgfx::ViewId render(bgfx::ViewId viewId) const { return viewId;  };
 	};
 
 	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args);

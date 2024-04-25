@@ -39,16 +39,16 @@ namespace darmok
         Line
     };
 
-    class ITexture;
+    class Texture;
 
     class Material final
     {
     public:
-        Material(const std::shared_ptr<ITexture>& diffuseTexture = nullptr) noexcept;
+        Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
         ~Material();
 
-        std::shared_ptr<ITexture> getTexture(MaterialTextureType type) const noexcept;
-        Material& setTexture(MaterialTextureType type, const std::shared_ptr<ITexture>& texture) noexcept;
+        std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
+        Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
 
         OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
         Material& setColor(MaterialColorType type, const Color& color) noexcept;
@@ -62,14 +62,14 @@ namespace darmok
         float getSpecularStrength() const noexcept;
         Material& setSpecularStrength(float v) noexcept;
 
-        void bgfxConfig(bgfx::Encoder& encoder) const noexcept;
+        uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
         std::unordered_map<MaterialTextureType, bgfx::UniformHandle> _textureHandles;
         std::unordered_map<MaterialColorType, bgfx::UniformHandle> _colorHandles;
         bgfx::UniformHandle _mainHandle;
 
-        std::unordered_map<MaterialTextureType, std::shared_ptr<ITexture>> _textures;
+        std::unordered_map<MaterialTextureType, std::shared_ptr<Texture>> _textures;
         std::unordered_map<MaterialColorType, Color> _colors;
 
         glm::vec4 _mainData;

@@ -4,6 +4,7 @@
 #include <bimg/bimg.h>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
+#include <darmok/texture_fwd.hpp>
 
 #include <memory>
 #include <string_view>
@@ -32,6 +33,8 @@ namespace darmok
 		[[nodiscard]] bimg::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
 		[[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
+		[[nodiscard]] const bgfx::Memory* makeCopyRef() const noexcept;
+		[[nodiscard]] TextureType getTextureType(uint64_t flags) const noexcept;
 
 	private:
 		bimg::ImageContainer* _container;

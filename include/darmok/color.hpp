@@ -34,6 +34,8 @@ namespace darmok
         static Color fromNumber(uint32_t color) noexcept;
         static uint32_t toNumber(const Color& color) noexcept;
         static uint32_t toNumber(const Color3& color) noexcept;
+        static uint32_t toReverseNumber(const Color& color) noexcept;
+        static uint32_t toReverseNumber(const Color3& color) noexcept;
     };
 }
 

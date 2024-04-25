@@ -8,6 +8,7 @@
 #include <darmok/math.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/model.hpp>
 
@@ -64,7 +65,6 @@ namespace darmok
 		LuaTexture::configure(lua);
 		LuaTextureAtlas::configure(lua);
 		LuaTextureAtlasMeshCreator::configure(lua);
-		LuaRenderTexture::configure(lua);
 		LuaMaterial::configure(lua);
 		LuaMesh::configure(lua);
 		LuaMeshCreator::configure(lua);

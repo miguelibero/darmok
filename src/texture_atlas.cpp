@@ -3,6 +3,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/anim.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/texture.hpp>
 
 #include <filesystem>
 #include <charconv>

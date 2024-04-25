@@ -99,6 +99,42 @@ namespace darmok
 			return a + (b * p);
 		}
 
+		// TODO: change all the methods to use the glm:: template vars
+
+		template<typename T>
+		static T::value_type vecMax(const T& v) noexcept
+		{
+			using vec = T;
+			using val = T::value_type;
+			val result = std::numeric_limits<val>::min();
+			for (glm::length_t i = 0; i < vec::length(); i++)
+			{
+				auto j = v[i];
+				if (j > result)
+				{
+					result = j;
+				}
+			}
+			return result;
+		}
+
+		template<typename T>
+		static T::value_type vecMin(const T& v) noexcept
+		{
+			using vec = T;
+			using val = T::value_type;
+			val result = std::numeric_limits<val>::max();
+			for (glm::length_t i = 0; i < vec::length(); i++)
+			{
+				auto j = v[i];
+				if (j < result)
+				{
+					result = j;
+				}
+			}
+			return result;
+		}
+
 	private:
 
 		template<typename T, typename... Ctors>
@@ -121,6 +157,8 @@ namespace darmok
 			using val = T::value_type;
 			auto usertype = configureGlmOperators<T, Ctors...>(lua, name);
 			usertype["zero"] = sol::var(vec(0));
+			usertype["max"] = &vecMax<vec>;
+			usertype["min"] = &vecMin<vec>;
 			return usertype;
 		}
 
@@ -155,6 +193,8 @@ namespace darmok
 			usertype["clamp"] = sol::overload(&vecClamp<vec>, sol::resolve<vec(const vec&, val, val)>(glm::clamp));
 			usertype["dot"] = &vecDot<vec>;
 			usertype["lerp"] = &vecLerp<vec>;
+			usertype["max"] = &vecMax<vec>;
+			usertype["min"] = &vecMin<vec>;
 			return usertype;
 		}
 

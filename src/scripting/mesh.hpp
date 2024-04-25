@@ -6,19 +6,12 @@
 #include <optional>
 #include <darmok/optional_ref.hpp>
 #include "sol.hpp"
+#include "math.hpp"
 #include "scene_fwd.hpp"
 
 namespace darmok
 {
     class Mesh;
-	struct MeshCreationConfig;
-	struct Cube;
-	struct Sphere;
-	struct Quad;
-	struct Line;
-	struct Ray;
-
-    class LuaTexture;
     class LuaMaterial;
 
 	class LuaMesh final
@@ -39,8 +32,14 @@ namespace darmok
 	};
 
 	struct MeshCreator;
-	struct MeshCreationConfig;
 	struct MeshData;
+	struct MeshCreationConfig;
+	struct Cube;
+	struct Sphere;
+	struct Quad;
+	struct Line;
+	struct Ray;
+	class LuaTexture;
 
 	struct LuaMeshCreator final
 	{
@@ -64,7 +63,8 @@ namespace darmok
 		LuaMesh createQuad2(const Quad& quad) noexcept;
 		LuaMesh createLineQuad1() noexcept;
 		LuaMesh createLineQuad2(const Quad& quad) noexcept;
-		LuaMesh createSprite(const LuaTexture& texture) noexcept;
+		LuaMesh createSprite1(const LuaTexture& texture) noexcept;
+		LuaMesh createSprite2(const LuaTexture& texture, const VarUvec2& size) noexcept;
 		LuaMesh createRay(const Ray& ray) noexcept;
 		LuaMesh createLine(const Line& line) noexcept;
 		LuaMesh createLines(const std::vector<Line>& lines) noexcept;

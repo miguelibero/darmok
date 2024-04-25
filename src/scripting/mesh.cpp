@@ -122,9 +122,14 @@ namespace darmok
 		return LuaMesh(_creator->createLineQuad(quad));
 	}
 
-	LuaMesh LuaMeshCreator::createSprite(const LuaTexture& texture) noexcept
+	LuaMesh LuaMeshCreator::createSprite1(const LuaTexture& texture) noexcept
 	{
 		return LuaMesh(_creator->createSprite(texture.getReal()));
+	}
+
+	LuaMesh LuaMeshCreator::createSprite2(const LuaTexture& texture, const VarUvec2& size) noexcept
+	{
+		return LuaMesh(_creator->createSprite(texture.getReal(), LuaMath::tableToGlm(size)));
 	}
 
 	LuaMesh LuaMeshCreator::createRay(const Ray& ray) noexcept
@@ -168,7 +173,7 @@ namespace darmok
 				&LuaMeshCreator::createSphere3, &LuaMeshCreator::createSphere4),
 			"create_quad", sol::overload(&LuaMeshCreator::createQuad1, &LuaMeshCreator::createQuad2),
 			"create_line_quad", sol::overload(&LuaMeshCreator::createLineQuad1, &LuaMeshCreator::createLineQuad2),
-			"create_sprite", &LuaMeshCreator::createSprite,
+			"create_sprite", sol::overload(&LuaMeshCreator::createSprite1, &LuaMeshCreator::createSprite2),
 			"create_line", &LuaMeshCreator::createLine,
 			"create_ray", &LuaMeshCreator::createRay,
 			"create_lines", &LuaMeshCreator::createLines,
@@ -178,7 +183,8 @@ namespace darmok
 				&LuaMeshCreator::createSphere3,
 				&LuaMeshCreator::createSphere4,
 				&LuaMeshCreator::createQuad2,
-				&LuaMeshCreator::createSprite,
+				&LuaMeshCreator::createSprite1,
+				&LuaMeshCreator::createSprite2,
 				&LuaMeshCreator::createLine,
 				&LuaMeshCreator::createRay,
 				&LuaMeshCreator::createLines

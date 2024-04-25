@@ -127,10 +127,20 @@ namespace darmok
 
     uint32_t Colors::toNumber(const Color& color) noexcept
     {
-        return uint32_t(color.a) << 24 | uint32_t(color.b) << 16 | uint32_t(color.g) << 8 | uint32_t(color.r);
+        return uint32_t(color.r) << 24 | uint32_t(color.g) << 16 | uint32_t(color.b) << 8 | uint32_t(color.a);
     }
 
     uint32_t Colors::toNumber(const Color3& color) noexcept
+    {
+        return uint32_t(color.r) << 24 | uint32_t(color.g) << 16 | uint32_t(color.b) << 8 | 0xff;
+    }
+
+    uint32_t Colors::toReverseNumber(const Color& color) noexcept
+    {
+        return uint32_t(color.a) << 24 | uint32_t(color.b) << 16 | uint32_t(color.g) << 8 | uint32_t(color.r);
+    }
+
+    uint32_t Colors::toReverseNumber(const Color3& color) noexcept
     {
         return 0xff << 24 | uint32_t(color.b) << 16 | uint32_t(color.g) << 8 | uint32_t(color.r);
     }

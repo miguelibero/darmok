@@ -14,8 +14,9 @@ namespace darmok
         static constexpr auto in_place_delete = true;
 
         Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent = std::nullopt) noexcept;
-        Transform(const glm::vec3& position = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3(), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
-    
+        Transform(const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3(), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
+        Transform(const OptionalRef<Transform>& parent, const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3()) noexcept;
+
         const glm::vec3& getPosition() const noexcept;
         const glm::quat& getRotation() const noexcept;
         const glm::vec3& getScale() const noexcept;
@@ -40,7 +41,7 @@ namespace darmok
         const glm::mat4& getInverse() noexcept;
         const glm::mat4& getInverse() const noexcept;
 
-        static bool bgfxConfig(Entity entity, bgfx::Encoder& encoder, const EntityRegistry& registry) noexcept;
+        bool beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
     
     private:
 

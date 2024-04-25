@@ -9,7 +9,7 @@
 
 #include <darmok/optional_ref.hpp>
 #include <darmok/color.hpp>
-#include <darmok/texture.hpp>
+#include <darmok/texture_fwd.hpp>
 
 namespace darmok
 {

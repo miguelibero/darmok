@@ -52,13 +52,7 @@ namespace darmok
     };
 
 
-    class BX_NO_VTABLE ILightingComponent : public ICameraComponent
-    {
-    public:
-        virtual void bgfxConfig(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
-    };
-
-    class PhongLightingComponent final : public ILightingComponent
+    class PhongLightingComponent final : public ICameraComponent
     {
     public:
         PhongLightingComponent() noexcept;
@@ -66,7 +60,7 @@ namespace darmok
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown()  noexcept override;
         void update(float deltaTime)  noexcept override;
-        void bgfxConfig(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept override;
+        void beforeRenderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept override;
 
     private:
         OptionalRef<Scene> _scene;

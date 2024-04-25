@@ -45,13 +45,13 @@ namespace darmok
             _value = nullptr;
         }
 
-        OptionalRef& operator=(std::nullopt_t) noexcept
+        OptionalRef<T>& operator=(std::nullopt_t) noexcept
         {
             reset();
             return *this;
         }
 
-        OptionalRef& operator=(const OptionalRef& other) noexcept = default;
+        OptionalRef<T>& operator=(const OptionalRef<T>& other) noexcept = default;
 
         [[nodiscard]] T* operator->() const
         {
@@ -114,7 +114,7 @@ namespace darmok
         {
             return !operator==(other);
         }
-
+        /*
         [[nodiscard]] bool operator==(const T& other) noexcept
         {
             return _value == &other;
@@ -123,7 +123,7 @@ namespace darmok
         [[nodiscard]] bool operator!=(const T& other) noexcept
         {
             return !operator==(other);
-        }
+        }*/
     };
 }
 

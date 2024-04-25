@@ -42,7 +42,7 @@ namespace darmok
 		return glm::uvec2(_viewport[2], _viewport[3]);
 	}
 
-	const glm::ivec4& WindowImpl::getViewport() const noexcept
+	const glm::uvec4& WindowImpl::getViewport() const noexcept
 	{
 		return _viewport;
 	}
@@ -91,7 +91,7 @@ namespace darmok
 		return _impl->getPixelSize();
 	}
 
-	const glm::ivec4& Window::getViewport() const noexcept
+	const glm::uvec4& Window::getViewport() const noexcept
 	{
 		return _impl->getViewport();
 	}
@@ -124,29 +124,5 @@ namespace darmok
 	glm::uvec2 Window::screenPointToWindow(const glm::vec2& pos) const noexcept
 	{
 		return _impl->screenPointToWindow(pos);
-	}
-
-	void Window::bgfxConfig(bgfx::ViewId viewId) const noexcept
-	{
-		// set view default viewport
-		auto& vp = getViewport();
-		bgfx::setViewRect(viewId, vp[0], vp[1], vp[2], vp[3]);
-
-		// this dummy draw call is here to make sure that view is cleared
-		// if no other draw calls are submitted to view.
-		bgfx::touch(viewId);
-
-		// use debug font to print information about this example.
-		bgfx::dbgTextClear();
-
-		// clear the view
-		if (viewId == 0)
-		{
-			bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR, 1.F, 0U, 1);
-		}
-		else
-		{
-			bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH);
-		}
 	}
 }

@@ -1,6 +1,8 @@
 
 #pragma once
 
+
+#include <darmok/texture_fwd.hpp>
 #include <darmok/image.hpp>
 #include <darmok/color.hpp>
 
@@ -13,77 +15,44 @@
 
 namespace darmok
 {
-	static const uint64_t defaultTextureLoadFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
-
-	enum class TextureType
+	struct TextureConfig final
 	{
-		Unknown,
-		CubeMap,
-		Texture2D,
-		Texture3D,
+		glm::uvec2 size = glm::uvec2(1);
+		bgfx::TextureFormat::Enum format = bgfx::TextureFormat::RGBA8;
+		TextureType type = TextureType::Texture2D;
+		uint16_t depth = 0;
+		bool mips = false;
+		uint16_t layers = 1;
+
+		std::string to_string() const noexcept;
 	};
 
-	class BX_NO_VTABLE ITexture
+    class Texture final
 	{
 	public:
-		virtual ~ITexture() = default;
-		virtual bgfx::TextureHandle getHandle() noexcept = 0;
-		virtual const bgfx::TextureHandle& getHandle() const noexcept = 0;
-		virtual TextureType getType() const noexcept = 0;
-	};
+		using Config = TextureConfig;
 
-    class Texture final : public ITexture
-	{
-	public:
-		Texture(std::shared_ptr<Image> img, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
+		Texture(const Image& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		Texture(const Config& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
+
 		~Texture() noexcept;
 		Texture(const Texture& other) = delete;
 		Texture& operator=(const Texture& other) = delete;
 
-		bgfx::TextureHandle getHandle() noexcept override;
-		const bgfx::TextureHandle& getHandle() const noexcept override;
-		TextureType getType() const noexcept override;
+		std::string to_string() const noexcept;
+		const bgfx::TextureHandle& getHandle() const noexcept;
+		TextureType getType() const noexcept;
+		const glm::uvec2& getSize() const noexcept;
+		bgfx::TextureFormat::Enum getFormat() const noexcept;
+		uint16_t getLayerCount() const noexcept;
+		uint16_t getDepth() const noexcept;
+		bool hasMips() const noexcept;
 
-		std::shared_ptr<Image> getImage() const noexcept;
-		void releaseImage() noexcept;
 		Texture& setName(std::string_view name) noexcept;
-
-	private:
-		std::shared_ptr<Image> _img;
-		uint64_t _flags;
-		bgfx::TextureHandle _handle;
-		TextureType _type;
-		std::string _name;
-
-		void load() noexcept;
-	};
-
-	struct RenderTextureConfig final
-	{
-		glm::uvec2 size;
-		uint16_t depth = 0;
-		bool mips = false;
-		uint16_t layers = 1;
-		TextureType type = TextureType::Texture2D;
-		bgfx::TextureFormat::Enum format = bgfx::TextureFormat::RGBA8;
-	};
-
-	class RenderTexture final : public ITexture
-	{
-	public:
-		using Config = RenderTextureConfig;
-		RenderTexture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		~RenderTexture() noexcept;
-		RenderTexture& operator=(const RenderTexture& other) = delete;
-
-		bgfx::TextureHandle getHandle() noexcept override;
-		const bgfx::TextureHandle& getHandle() const noexcept override;
-		TextureType getType() const noexcept override;
-
-		RenderTexture& setName(std::string_view name) noexcept;
 	private:
 		bgfx::TextureHandle _handle;
-		TextureType _type;
+		Config _config;
 	};
 
     class BX_NO_VTABLE ITextureLoader

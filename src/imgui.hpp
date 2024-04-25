@@ -18,7 +18,7 @@ namespace darmok
 		void init(App& app);
 		void shutdown();
 		void updateLogic(float dt);
-		void render(bgfx::ViewId viewId);
+		void render(bgfx::ViewId viewId) const;
 
     private:
 		IImguiRenderer& _renderer;
@@ -34,10 +34,10 @@ namespace darmok
 		bgfx::UniformHandle _uniform;
 		static bx::AllocatorI* _alloc;
 
-		void render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData);
+		void render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData) const;
 		void updateInput(float dt);
-		void beginFrame();
-		void endFrame(bgfx::ViewId viewId);
+		void beginFrame() const;
+		void endFrame(bgfx::ViewId viewId) const;
     };
 
 }

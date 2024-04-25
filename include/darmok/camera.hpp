@@ -2,19 +2,26 @@
 
 #include <memory>
 #include <bx/bx.h>
+#include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene.hpp>
 
 namespace darmok
 {
+    class Mesh;
+
     class BX_NO_VTABLE ICameraComponent
     {
     public:
         virtual ~ICameraComponent() = default;
         virtual void init(Camera& cam, Scene& scene, App& app) { };
-        virtual void shutdown() { }
         virtual void update(float deltaTime) { }
+        virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
+        virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const { };
+        virtual void beforeRenderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId) const { };
+        virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
+        virtual void shutdown() { }
     };
 
     class BX_NO_VTABLE ICameraRenderer : public ICameraComponent
@@ -23,8 +30,9 @@ namespace darmok
         virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
     };
 
+    class Mesh;
     class Ray;
-    class RenderTexture;
+    class Texture;
 
     class Camera final
     {
@@ -37,18 +45,15 @@ namespace darmok
         Camera& setMatrix(const glm::mat4& matrix) noexcept;
         Camera& setProjection(float fovy, float aspect, const glm::vec2& range) noexcept;
         Camera& setProjection(float fovy, float aspect, float near = 0.f) noexcept;
+        Camera& setProjection(float fovy, const glm::uvec2& size, const glm::vec2& range) noexcept;
+        Camera& setProjection(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
         
-        Camera& setWindowProjection(float fovy, const glm::vec2& range) noexcept;
-        Camera& setWindowProjection(float fovy,float near = 0.f) noexcept;
-
-        Camera& setWindowOrtho(const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest), float offset = 0.f) noexcept;
         Camera& setOrtho(const glm::vec4& edges, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest), float offset = 0.f) noexcept;
+        Camera& setOrtho(const glm::uvec2& size, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest), float offset = 0.f) noexcept;
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
-        Camera& setTargetTexture(const std::shared_ptr<RenderTexture>& texture) noexcept;
-        const std::shared_ptr<RenderTexture>& getTargetTexture() noexcept;
-
-        const bgfx::FrameBufferHandle& getFrameBuffer() const noexcept;
+        Camera& setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
+        const std::vector<std::shared_ptr<Texture>>& getTargetTextures() noexcept;
 
         template<typename T>
         Camera& setEntityComponentFilter() noexcept
@@ -74,7 +79,6 @@ namespace darmok
         void init(Scene& scene, App& app);
         void update(float deltaTime);
         void shutdown();
-        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
 
         Camera& setRenderer(std::unique_ptr<ICameraRenderer>&& renderer) noexcept;
         Camera& addComponent(std::unique_ptr<ICameraComponent>&& renderer) noexcept;
@@ -98,6 +102,12 @@ namespace darmok
         }
 
         std::optional<Ray> screenPointToRay(const glm::vec2& point) const noexcept;
+        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
+
+        void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        void beforeRenderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
         glm::mat4 _matrix;
@@ -106,11 +116,9 @@ namespace darmok
         std::vector<std::unique_ptr<ICameraComponent>> _components;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
-        std::shared_ptr<RenderTexture> _targetTexture;
-        bool _targetTextureChanged;
-        bgfx::FrameBufferHandle _framebuffer;
+        std::vector<std::shared_ptr<Texture>> _targetTextures;
+        bgfx::FrameBufferHandle _frameBuffer;
 
-        void bgfxConfig(const EntityRegistry& registry, bgfx::ViewId viewId) const noexcept;
     };
 
     class ViewRect final
@@ -120,7 +128,7 @@ namespace darmok
         [[nodiscard]] const glm::ivec4& getViewport() const noexcept;
         void setViewport(const glm::ivec4& vp) noexcept;
 
-        void bgfxConfig(bgfx::ViewId viewId) const noexcept;
+        void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
     private:
         glm::ivec4 _viewport;
     };

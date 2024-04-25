@@ -95,12 +95,14 @@ namespace darmok
 
     void SceneImpl::updateLogic(float dt)
     {
-        for (auto [entity, cam] : _registry.view<Camera>().each())
+        auto camView = _registry.view<Camera>();
+        for (auto [entity, cam] : camView.each())
         {
             cam.update(dt);
         }
 
-        for (auto [entity, trans] : _registry.view<Transform>().each())
+        auto transView = _registry.view<Transform>();
+        for (auto [entity, trans] : transView.each())
         {
             trans.update();
         }
@@ -194,7 +196,7 @@ namespace darmok
         }
     }
 
-    const std::unordered_set<std::shared_ptr<Scene>>& SceneAppComponent::getScenes() const noexcept
+    const std::vector<std::shared_ptr<Scene>>& SceneAppComponent::getScenes() const noexcept
     {
         return _scenes;
     }
@@ -202,7 +204,7 @@ namespace darmok
     std::shared_ptr<Scene> SceneAppComponent::addScene() noexcept
     {
         auto scene = std::make_shared<Scene>();
-        _scenes.insert(scene);
+        _scenes.push_back(scene);
         if (_app)
         {
             scene->init(_app.value());
@@ -216,11 +218,12 @@ namespace darmok
         {
             return false;
         }
-        auto r = _scenes.insert(scene);
-        if (!r.second)
+        auto itr = std::find(_scenes.begin(), _scenes.end(), scene);
+        if (itr != _scenes.end())
         {
             return false;
         }
+        _scenes.push_back(scene);
         if (_app)
         {
             scene->init(_app.value());
@@ -234,11 +237,12 @@ namespace darmok
         {
             return false;
         }
-        auto count = _scenes.erase(scene);
-        if (!count)
+        auto itr = std::find(_scenes.begin(), _scenes.end(), scene);
+        if (itr == _scenes.end())
         {
             return false;
         }
+        _scenes.erase(itr);
         if (_app)
         {
             scene->shutdown();
@@ -248,9 +252,14 @@ namespace darmok
 
     void SceneAppComponent::init(App& app)
     {
-        _app = app;
-        for (auto& scene : _scenes)
+        if (_app)
         {
+            shutdown();
+        }
+        _app = app;
+        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
+        {
+            auto& scene = *itr;
             if (scene != nullptr)
             {
                 scene->init(app);
@@ -261,19 +270,21 @@ namespace darmok
     void SceneAppComponent::shutdown()
     {
         _app = nullptr;
-        for (auto& scene : _scenes)
+        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
         {
-            if (scene != nullptr)
+            auto& scene = *itr;
+            if (*itr != nullptr)
             {
                 scene->shutdown();
             }
         }
     }
 
-    bgfx::ViewId SceneAppComponent::render(bgfx::ViewId viewId)
+    bgfx::ViewId SceneAppComponent::render(bgfx::ViewId viewId) const
     {
-        for (auto& scene : _scenes)
+        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
         {
+            auto& scene = *itr;
             if (scene != nullptr)
             {
                 viewId = scene->render(viewId);
@@ -284,8 +295,9 @@ namespace darmok
 
     void SceneAppComponent::updateLogic(float deltaTime)
     {
-        for (auto& scene : _scenes)
+        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
         {
+            auto& scene = *itr;
             if (scene != nullptr)
             {
                 scene->updateLogic(deltaTime);

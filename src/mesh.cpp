@@ -127,7 +127,7 @@ namespace darmok
 		_material = material;
 	}
 
-	void Mesh::bgfxConfig(bgfx::Encoder& encoder, uint8_t vertexStream) const
+	void Mesh::render(bgfx::Encoder& encoder, uint8_t vertexStream) const
 	{
 		if (!isValid(_vertexBuffer))
 		{
@@ -339,10 +339,15 @@ namespace darmok
 
 	std::shared_ptr<Mesh> MeshCreator::createSprite(const std::shared_ptr<Texture>& texture) noexcept
 	{
+		return createSprite(texture, texture->getSize());
+	}
+
+	std::shared_ptr<Mesh> MeshCreator::createSprite(const std::shared_ptr<Texture>& texture, const glm::uvec2 size) noexcept
+	{
 		auto material = std::make_shared<Material>();
 		material->setTexture(MaterialTextureType::Diffuse, texture);
 		material->setColor(MaterialColorType::Diffuse, config.color);
-		auto mesh = createQuad(Quad(texture->getImage()->getSize()));
+		auto mesh = createQuad(Quad(size));
 		mesh->setMaterial(material);
 		return mesh;
 	}

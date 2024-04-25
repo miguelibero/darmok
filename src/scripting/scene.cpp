@@ -230,9 +230,50 @@ namespace darmok
 		return _scene->getRegistry();
 	}
 
-	LuaEntity LuaScene::createEntity() noexcept
+	LuaEntity LuaScene::createEntity1() noexcept
 	{
 		return LuaEntity(getRegistry().create(), std::weak_ptr<Scene>(_scene));
+	}
+
+	LuaEntity LuaScene::createEntity2(const VarVec3& position) noexcept
+	{
+		auto& registry = getRegistry();
+		auto entity = registry.create();
+		registry.emplace<Transform>(entity, LuaMath::tableToGlm(position));
+		return LuaEntity(entity, std::weak_ptr<Scene>(_scene));
+	}
+
+	static OptionalRef<Transform> getVarParentTransform(EntityRegistry& registry, LuaScene::VarParent parent) noexcept
+	{
+		auto luaTrans = std::get_if<LuaTransform>(&parent);
+		if (luaTrans != nullptr)
+		{
+			return luaTrans->getReal();
+		}
+		auto parentEntity = std::get<Entity>(parent);
+		if (parentEntity == entt::null)
+		{
+			return nullptr;
+		}
+		return registry.get_or_emplace<Transform>(parentEntity);
+	}
+
+	LuaEntity LuaScene::createEntity3(const VarParent& parent) noexcept
+	{
+		auto& registry = getRegistry();
+		auto entity = registry.create();
+		auto parentTrans = getVarParentTransform(registry, parent);
+		registry.emplace<Transform>(entity, parentTrans);
+		return LuaEntity(entity, std::weak_ptr<Scene>(_scene));
+	}
+
+	LuaEntity LuaScene::createEntity4(const VarParent& parent, const VarVec3& position) noexcept
+	{
+		auto& registry = getRegistry();
+		auto entity = registry.create();
+		auto parentTrans = getVarParentTransform(registry, parent);
+		registry.emplace<Transform>(entity, parentTrans, LuaMath::tableToGlm(position));
+		return LuaEntity(entity, std::weak_ptr<Scene>(_scene));
 	}
 
 	bool LuaScene::destroyEntity(const LuaEntity& entity) noexcept
@@ -262,7 +303,9 @@ namespace darmok
 
 		lua.new_usertype<LuaScene>("Scene",
 			sol::constructors<LuaScene(LuaApp&)>(),
-			"create_entity",	&LuaScene::createEntity,
+			"create_entity",	sol::overload(
+				&LuaScene::createEntity1, &LuaScene::createEntity2,
+				&LuaScene::createEntity3, &LuaScene::createEntity4),
 			"destroy_entity",	&LuaScene::destroyEntity,
 			"get_entity",		&LuaScene::getEntity<0>
 		);

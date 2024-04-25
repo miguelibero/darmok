@@ -10,16 +10,15 @@ namespace darmok
 {
     Camera::Camera(const glm::mat4& matrix) noexcept
         : _matrix(matrix)
-        , _framebuffer{ bgfx::kInvalidHandle }
-        , _targetTextureChanged(false)
+        , _frameBuffer{ bgfx::kInvalidHandle }
     {
     }
 
     Camera::~Camera()
     {
-        if (isValid(_framebuffer))
+        if (isValid(_frameBuffer))
         {
-            bgfx::destroy(_framebuffer);
+            bgfx::destroy(_frameBuffer);
         }
     }
 
@@ -46,31 +45,27 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setWindowProjection(float fovy, const glm::vec2& range) noexcept
+    Camera& Camera::setProjection(float fovy, const glm::uvec2& size, const glm::vec2& range) noexcept
     {
-        auto size = _app->getWindow().getPixelSize();
         float aspect = (float)size.x / size.y;
         return setProjection(fovy, aspect, range);
     }
 
-    Camera& Camera::setWindowProjection(float fovy, float near) noexcept
+    Camera& Camera::setProjection(float fovy, const glm::uvec2& size, float near) noexcept
     {
-        auto size = _app->getWindow().getPixelSize();
         float aspect = (float)size.x / size.y;
         return setProjection(fovy, aspect, near);
-    }
-
-    Camera& Camera::setWindowOrtho(const glm::vec2& range, float offset) noexcept
-    {
-        auto& vp = _app->getWindow().getViewport();
-        glm::vec4 edges(vp[0], vp[2], vp[1], vp[3]);
-        return setOrtho(edges, range, offset);
     }
 
     Camera& Camera::setOrtho(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept
     {
         bx::mtxOrtho(glm::value_ptr(_matrix), edges[0], edges[1], edges[2], edges[3], range[0], range[1], offset, bgfx::getCaps()->homogeneousDepth);
         return *this;
+    }
+
+    Camera& Camera::setOrtho(const glm::uvec2& size, const glm::vec2& range, float offset) noexcept
+    {
+        return setOrtho(glm::vec4(0, size.x, 0, size.y), range, offset);
     }
 
     Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept
@@ -83,44 +78,30 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setTargetTexture(const std::shared_ptr<RenderTexture>& texture) noexcept
+    Camera& Camera::setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept
     {
-        if (_targetTexture != texture)
+        if (_targetTextures != textures)
         {
-            _targetTexture = texture;
-            _targetTextureChanged = true;
+            if (isValid(_frameBuffer))
+            {
+                bgfx::destroy(_frameBuffer);
+            }
+            _targetTextures = textures;
+            std::vector<bgfx::TextureHandle> handles;
+            handles.reserve(textures.size());
+            for (auto& tex : textures)
+            {
+                handles.push_back(tex->getHandle());
+            }
+            _frameBuffer = bgfx::createFrameBuffer(handles.size(), &handles.front());
         }
+
         return *this;
     }
 
-    const std::shared_ptr<RenderTexture>& Camera::getTargetTexture() noexcept
+    const std::vector<std::shared_ptr<Texture>>& Camera::getTargetTextures() noexcept
     {
-        return _targetTexture;
-    }
-
-    const bgfx::FrameBufferHandle& Camera::getFrameBuffer() const noexcept
-    {
-        return _framebuffer;
-    }
-
-    void Camera::bgfxConfig(const EntityRegistry& registry, bgfx::ViewId viewId) const noexcept
-    {
-        auto projPtr = glm::value_ptr(_matrix);
-
-        auto entity = entt::to_entity(registry, *this);
-        auto trans = registry.try_get<const Transform>(entity);
-        const void* viewPtr = nullptr;
-        if (trans != nullptr)
-        {
-            viewPtr = glm::value_ptr(trans->getInverse());
-        }
-        bgfx::setViewTransform(viewId, viewPtr, projPtr);
-
-        auto viewRect = registry.try_get<const ViewRect>(entity);
-        if (viewRect != nullptr)
-        {
-            viewRect->bgfxConfig(viewId);
-        }
+        return _targetTextures;
     }
 
     void Camera::filterEntityView(EntityRuntimeView& entities) const noexcept
@@ -171,38 +152,91 @@ namespace darmok
         {
             component->update(deltaTime);
         }
-        if (_targetTextureChanged)
-        {
-            if (isValid(_framebuffer))
-            {
-                bgfx::destroy(_framebuffer);
-                _framebuffer.idx = bgfx::kInvalidHandle;
-            }
-            if (_targetTexture != nullptr)
-            {
-                auto handle = _targetTexture->getHandle();
-                _framebuffer = bgfx::createFrameBuffer(1, &handle);
-            }
-        }
     }
 
     bgfx::ViewId Camera::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
     {
-        if (!_app || !_scene)
-        {
-            return viewId;
-        }
-        auto& win = _app->getWindow();
-        auto& registry = _scene->getRegistry();
-        win.bgfxConfig(viewId);
-        bgfxConfig(registry, viewId);
-
         if(_renderer != nullptr)
         {
             viewId = _renderer->render(encoder, viewId);
         }
-
         return viewId;
+    }
+
+    void Camera::beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+    {
+        glm::uvec4 vp;
+        if (!_targetTextures.empty())
+        {
+            auto& size = _targetTextures[0]->getSize();
+            vp = glm::uvec4(0, 0, size);
+        }
+        else if (_app)
+        {
+            vp = _app->getWindow().getViewport();
+        }
+
+        uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+        if (viewId == 0)
+        {
+            clearFlags |= BGFX_CLEAR_COLOR;
+        }
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
+
+        bgfx::setViewFrameBuffer(viewId, _frameBuffer);
+        bgfx::setViewRect(viewId, vp[0], vp[1], vp[2], vp[3]);
+
+        // this dummy draw call is here to make sure that view is cleared
+        // if no other draw calls are submitted to view.
+        bgfx::touch(viewId);
+
+        if (_scene)
+        {
+            auto projPtr = glm::value_ptr(_matrix);
+            auto& registry = _scene->getRegistry();
+            auto entity = entt::to_entity(registry, *this);
+            auto trans = registry.try_get<const Transform>(entity);
+            const void* viewPtr = nullptr;
+            if (trans != nullptr)
+            {
+                viewPtr = glm::value_ptr(trans->getInverse());
+            }
+            bgfx::setViewTransform(viewId, viewPtr, projPtr);
+
+            auto viewRect = registry.try_get<const ViewRect>(entity);
+            if (viewRect != nullptr)
+            {
+                viewRect->beforeRenderView(encoder, viewId);
+            }
+        }
+        for (auto& comp : _components)
+        {
+            comp->beforeRenderView(encoder, viewId);
+        }
+    }
+
+    void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+    {
+        for (auto& comp : _components)
+        {
+            comp->beforeRenderEntity(entity, encoder, viewId);
+        }
+    }
+
+    void Camera::beforeRenderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+    {
+        for (auto& comp : _components)
+        {
+            comp->beforeRenderMesh(mesh, encoder, viewId);
+        }
+    }
+
+    void Camera::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+    {
+        for (auto& comp : _components)
+        {
+            comp->afterRenderView(encoder, viewId);
+        }
     }
 
     Camera& Camera::setRenderer(std::unique_ptr<ICameraRenderer>&& renderer) noexcept
@@ -258,7 +292,7 @@ namespace darmok
         _viewport = viewport;
     }
 
-    void ViewRect::bgfxConfig(bgfx::ViewId viewId) const noexcept
+    void ViewRect::beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
         bgfx::setViewRect(viewId, _viewport[0], _viewport[1], _viewport[2], _viewport[3]);
     }

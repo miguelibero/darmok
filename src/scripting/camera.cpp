@@ -34,21 +34,15 @@ namespace darmok
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setWindowProjection1(float fovy, const VarVec2& range) noexcept
+	LuaCamera& LuaCamera::setProjection3(float fovy, const VarUvec2& size, const VarVec2& range) noexcept
 	{
-		_camera->setWindowProjection(fovy, LuaMath::tableToGlm(range));
+		_camera->setProjection(fovy, LuaMath::tableToGlm(size), LuaMath::tableToGlm(range));
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setWindowProjection2(float fovy, float near) noexcept
+	LuaCamera& LuaCamera::setProjection4(float fovy, const VarUvec2& size, float near) noexcept
 	{
-		_camera->setWindowProjection(fovy, near);
-		return *this;
-	}
-
-	LuaCamera& LuaCamera::setWindowProjection3(float fovy) noexcept
-	{
-		_camera->setWindowProjection(fovy);
+		_camera->setProjection(fovy, LuaMath::tableToGlm(size), near);
 		return *this;
 	}
 
@@ -70,44 +64,67 @@ namespace darmok
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setWindowOrtho1(const VarVec2& range, float offset) noexcept
+	LuaCamera& LuaCamera::setOrtho4(const VarUvec2& size, const VarVec2& range, float offset) noexcept
 	{
-		_camera->setWindowOrtho(LuaMath::tableToGlm(range), offset);
+		_camera->setOrtho(LuaMath::tableToGlm(size), LuaMath::tableToGlm(range), offset);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setWindowOrtho2(const VarVec2& range) noexcept
+	LuaCamera& LuaCamera::setOrtho5(const VarUvec2& size, const VarVec2& range) noexcept
 	{
-		_camera->setWindowOrtho(LuaMath::tableToGlm(range));
+		_camera->setOrtho(LuaMath::tableToGlm(size), LuaMath::tableToGlm(range));
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setWindowOrtho3() noexcept
+	LuaCamera& LuaCamera::setOrtho6(const VarUvec2& size) noexcept
 	{
-		_camera->setWindowOrtho();
+		_camera->setOrtho(LuaMath::tableToGlm(size));
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setTargetTexture(const LuaRenderTexture& texture) noexcept
+	LuaCamera& LuaCamera::setTargetTextures(const sol::table& textures) noexcept
 	{
-		_camera->setTargetTexture(texture.getReal());
-		return *this;
-	}
-
-	LuaCamera& LuaCamera::setForwardPhongRenderer(const LuaProgram& program) noexcept
-	{
-		_camera->setRenderer<ForwardRenderer>(program.getReal(), _camera->addComponent<PhongLightingComponent>());
-		return *this;
-	}
-
-	std::optional<LuaRenderTexture> LuaCamera::getTargetTexture() noexcept
-	{
-		auto tex = _camera->getTargetTexture();
-		if (tex == nullptr)
+		std::vector<std::shared_ptr<Texture>> realTextures;
+		realTextures.reserve(textures.size());
+		for (auto& elm : textures)
 		{
-			return std::nullopt;
+			if (elm.second.is<LuaTexture>())
+			{
+				auto luaTexture = elm.second.as<LuaTexture>();
+				realTextures.push_back(luaTexture.getReal());
+			}
 		}
-		return LuaRenderTexture(tex);
+		_camera->setTargetTextures(realTextures);
+		return *this;
+	}
+
+	LuaCamera& LuaCamera::addNativeComponent(LuaNativeCameraComponentType type) noexcept
+	{
+		switch (type)
+		{
+		case LuaNativeCameraComponentType::PhongLighting:
+			_camera->addComponent<PhongLightingComponent>();
+			break;
+		}
+		return *this;
+	}
+
+	LuaCamera& LuaCamera::setForwardRenderer(const LuaProgram& program) noexcept
+	{
+		_camera->setRenderer<ForwardRenderer>(program.getReal());
+		return *this;
+	}
+
+	std::vector<LuaTexture> LuaCamera::getTargetTextures() noexcept
+	{
+		auto& textures = _camera->getTargetTextures();
+		std::vector<LuaTexture> luaTextures;
+		luaTextures.reserve(textures.size());
+		for (auto& tex : textures)
+		{
+			luaTextures.push_back(LuaTexture(tex));
+		}
+		return luaTextures;
 	}
 
 	const glm::mat4& LuaCamera::getMatrix() const noexcept
@@ -127,25 +144,29 @@ namespace darmok
 
 	void LuaCamera::configure(sol::state_view& lua) noexcept
 	{
+		lua.new_enum<LuaNativeCameraComponentType>("CameraComponentType", {
+			{ "PhongLighting", LuaNativeCameraComponentType::PhongLighting },
+		});
+
 		lua.new_usertype<LuaCamera>("Camera", sol::constructors<>(),
 			"set_projection", sol::overload(
 				&LuaCamera::setProjection1,
 				&LuaCamera::setProjection2,
-				&LuaCamera::setWindowProjection1,
-				&LuaCamera::setWindowProjection2,
-				&LuaCamera::setWindowProjection3
+				&LuaCamera::setProjection3,
+				&LuaCamera::setProjection4
 			),
 			"set_ortho", sol::overload(
 				&LuaCamera::setOrtho1,
 				&LuaCamera::setOrtho2,
 				&LuaCamera::setOrtho3,
-				&LuaCamera::setWindowOrtho1,
-				&LuaCamera::setWindowOrtho2,
-				&LuaCamera::setWindowOrtho3
+				&LuaCamera::setOrtho4,
+				&LuaCamera::setOrtho5,
+				&LuaCamera::setOrtho6
 			),
-			"set_forward_phong_renderer", &LuaCamera::setForwardPhongRenderer,
+			"set_forward_renderer", &LuaCamera::setForwardRenderer,
+			"add_component", sol::overload(&LuaCamera::addNativeComponent),
 			"matrix", sol::property(&LuaCamera::getMatrix, &LuaCamera::setMatrix),
-			"target_texture", sol::property(&LuaCamera::getTargetTexture, &LuaCamera::setTargetTexture),
+			"target_textures", sol::property(&LuaCamera::getTargetTextures, &LuaCamera::setTargetTextures),
 			"screen_point_to_ray", &LuaCamera::screenPointToRay
 		);
 	}

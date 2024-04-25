@@ -252,17 +252,12 @@ namespace darmok
         updateCamera();
     }
 
-    void PhongLightingComponent::bgfxConfig(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+    void PhongLightingComponent::beforeRenderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
-        if (!_scene)
-        {
-            return;
-        }
         if (isValid(_lightCountUniform))
         {
             encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
         }
-
         if (isValid(_lightDataUniform))
         {
             encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
@@ -274,7 +269,7 @@ namespace darmok
         if (isValid(_pointLightBuffer))
         {
             static const uint8_t lightsBufferStage = 6;
-            bgfx::setBuffer(lightsBufferStage, _pointLightBuffer, bgfx::Access::Read);
+            encoder.setBuffer(lightsBufferStage, _pointLightBuffer, bgfx::Access::Read);
         }
     }
 }

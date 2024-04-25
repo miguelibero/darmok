@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <cstdint>
-#include <unordered_set>
+#include <vector>
 #include <darmok/app.hpp>
 #include <glm/glm.hpp>
 #include <bx/bx.h>
@@ -87,18 +87,18 @@ namespace darmok
         
         const std::shared_ptr<Scene>& getScene() const noexcept;
         void setScene(const std::shared_ptr<Scene>& scene) noexcept;
-        const std::unordered_set<std::shared_ptr<Scene>>& getScenes() const noexcept;
+        const std::vector<std::shared_ptr<Scene>>& getScenes() const noexcept;
         std::shared_ptr<Scene> addScene() noexcept;
         bool addScene(const std::shared_ptr<Scene>& scene) noexcept;
         bool removeScene(const std::shared_ptr<Scene>& scene) noexcept;
 
         void init(App& app) override;
         void shutdown() override;
-        bgfx::ViewId render(bgfx::ViewId viewId) override;
+        bgfx::ViewId render(bgfx::ViewId viewId) const override;
         void updateLogic(float dt) override;
     private:
         std::shared_ptr<Scene> _mainScene;
-        std::unordered_set<std::shared_ptr<Scene>> _scenes;
+        std::vector<std::shared_ptr<Scene>> _scenes;
         OptionalRef<App> _app;
     };
 }

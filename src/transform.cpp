@@ -8,29 +8,34 @@
 namespace darmok
 {
     Transform::Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent) noexcept
-        : _position(glm::vec3())
-        , _rotation(glm::vec3())
-        , _scale(glm::vec3(1))
-        , _pivot(glm::vec3())
-        , _matrix(glm::mat4(1))
-        , _inverse(glm::mat4(1))
+        : _position()
+        , _rotation()
+        , _scale(1)
+        , _pivot()
+        , _matrix(1)
+        , _inverse(1)
         , _matrixUpdatePending(false)
         , _inverseUpdatePending(false)
     {
-        setMatrix(mat);
         setParent(parent);
+        setMatrix(mat);
     }
 
-    Transform::Transform(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale, const glm::vec3& pivot, const OptionalRef<Transform>& parent) noexcept
+    Transform::Transform(const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale, const glm::vec3& pivot, const OptionalRef<Transform>& parent) noexcept
         : _position(position)
         , _rotation(rotation)
         , _scale(scale)
         , _pivot(pivot)
-        , _matrix()
-        , _inverse()
+        , _matrix(1)
+        , _inverse(1)
         , _matrixUpdatePending(true)
         , _inverseUpdatePending(true)
-        , _parent(parent)
+    {
+        setParent(parent);
+    }
+
+    Transform::Transform(const OptionalRef<Transform>& parent, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale, const glm::vec3& pivot) noexcept
+        : Transform(position, rotation, scale, pivot, parent)
     {
     }
 
@@ -92,10 +97,7 @@ namespace darmok
         }
         _parent = parent;
         _parent->_children.emplace(*this);
-        if (_parent->_matrixUpdatePending)
-        {
-            setPending();
-        }
+        setPending();
         return *this;
     }
 
@@ -160,7 +162,6 @@ namespace darmok
             _parent->updateMatrix();
             _matrix = _parent->getMatrix() * _matrix;
         }
-
         _matrixUpdatePending = false;
         return true;
     }
@@ -198,10 +199,10 @@ namespace darmok
     {
         if (_matrix != v)
         {
-            glm::quat rotation{};
             glm::vec3 skew{};
             glm::vec4 perspective{};
             glm::decompose(v, _scale, _rotation, _position, skew, perspective);
+            // TODO: check skew == [0, 0, 0] && persp == [0, 0, 0, 1]
 
             _matrix = v;
             _matrixUpdatePending = false;
@@ -233,14 +234,9 @@ namespace darmok
         return _inverse;
     }
 
-    bool Transform::bgfxConfig(Entity entity, bgfx::Encoder& encoder, const EntityRegistry& registry) noexcept
+    bool Transform::beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
-        auto trans = registry.try_get<Transform>(entity);
-        if (trans == nullptr)
-        {
-            return false;
-        }
-        auto& mtx = trans->getMatrix();
+        auto& mtx = getMatrix();
         encoder.setTransform(glm::value_ptr(mtx));
         return true;
     }

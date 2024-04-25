@@ -30,7 +30,7 @@ namespace darmok
 	};
 
 
-	Material::Material(const std::shared_ptr<ITexture>& diffuseTexture) noexcept
+	Material::Material(const std::shared_ptr<Texture>& diffuseTexture) noexcept
 		: _primitive(MaterialPrimitiveType::Triangle)
 		, _mainData{
 			32,  // shininess
@@ -79,7 +79,7 @@ namespace darmok
 		}
 	}
 
-	std::shared_ptr<ITexture> Material::getTexture(MaterialTextureType type) const noexcept
+	std::shared_ptr<Texture> Material::getTexture(MaterialTextureType type) const noexcept
 	{
 		auto itr = _textures.find(type);
 		if (itr == _textures.end())
@@ -89,7 +89,7 @@ namespace darmok
 		return itr->second;
 	}
 
-	Material& Material::setTexture(MaterialTextureType type, const std::shared_ptr<ITexture>& texture) noexcept
+	Material& Material::setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept
 	{
 		_textures[type] = texture;
 		return *this;
@@ -144,7 +144,7 @@ namespace darmok
 		return *this;
 	}
 
-	void Material::bgfxConfig(bgfx::Encoder& encoder) const noexcept
+	uint64_t Material::beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
 	{
 		for (auto& pair : _textureHandles)
 		{
@@ -156,7 +156,7 @@ namespace darmok
 					stage = itr->second.stage;
 				}
 			}
-			std::shared_ptr<ITexture> tex;
+			std::shared_ptr<Texture> tex;
 			auto itr = _textures.find(pair.first);
 			if (itr != _textures.end())
 			{
@@ -191,5 +191,20 @@ namespace darmok
 			encoder.setUniform(_mainHandle, glm::value_ptr(_mainData));
 		}
 
+		uint64_t state = BGFX_STATE_WRITE_RGB
+			| BGFX_STATE_WRITE_A
+			| BGFX_STATE_WRITE_Z
+			| BGFX_STATE_DEPTH_TEST_LEQUAL
+			| BGFX_STATE_CULL_CCW
+			| BGFX_STATE_MSAA
+			| BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
+			;
+
+		if (_primitive == MaterialPrimitiveType::Line)
+		{
+			state |= BGFX_STATE_PT_LINES;
+		}
+
+		return state;
 	}
 }

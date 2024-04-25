@@ -25,7 +25,8 @@ namespace darmok
 		vec4["rotate_z"] = sol::resolve<glm::vec4(const glm::vec4&, const float&)>(glm::rotateZ);
 
 		auto vec3 = configureVec<glm::vec3, glm::vec3(float), glm::vec3(float, float, float),
-			glm::vec3(const glm::ivec3&), glm::vec3(const glm::uvec3&), glm::vec3(const glm::vec2&, float)>(lua, "Vec3");
+			glm::vec3(const glm::ivec3&), glm::vec3(const glm::uvec3&),
+			glm::vec3(const glm::vec2&, float), glm::vec3(const glm::uvec2&, float)>(lua, "Vec3");
 		vec3["x"] = &glm::vec3::x;
 		vec3["y"] = &glm::vec3::y;
 		vec3["z"] = &glm::vec3::z;
@@ -60,7 +61,7 @@ namespace darmok
 		lua.new_usertype<LuaMath>("Math",
 			sol::constructors<>(),
 			"clamp", sol::overload(&glm::clamp<float>, &glm::clamp<int>),
-			"lerp", sol::overload(&lerp<float>, &lerp<int>)
+			"lerp", sol::overload(&lerp<float>, &lerp<int>)			
 		);
     }
 }

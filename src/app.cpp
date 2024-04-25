@@ -72,6 +72,7 @@ namespace darmok
 	{
 		1.0F / 30.0F,
 		10,
+		Colors::fromNumber(0x303030ff)
 	};
 
 	float AppImpl::updateTimePassed() noexcept
@@ -85,6 +86,7 @@ namespace darmok
 	void AppImpl::configure(const AppConfig& config) noexcept
 	{
 		_config = config;
+		bgfx::setPaletteColor(1, Colors::toNumber(config.clearColor));
 	}
 
 	void AppImpl::init(App& app, const std::vector<std::string>& args)
@@ -114,14 +116,13 @@ namespace darmok
 	void AppImpl::updateLogic(float deltaTime)
 	{
 		_input.getImpl().update();
-
 		for (auto& component : _components)
 		{
 			component->updateLogic(deltaTime);
 		}
 	}
 
-	bgfx::ViewId AppImpl::render(bgfx::ViewId viewId)
+	bgfx::ViewId AppImpl::render(bgfx::ViewId viewId) const
 	{
 		for (auto& component : _components)
 		{
@@ -305,11 +306,8 @@ namespace darmok
 		}
 
 		// destroy app before the bgfx shutdown to guarantee no dangling resources
+		auto& size = app->getWindow().getSize();
 		app.reset();
-
-		// add empty frame at the end to avoid weird artifacts
-		bgfx::touch(0);
-		bgfx::frame();
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
@@ -403,9 +401,13 @@ namespace darmok
 			_impl->updateLogic(deltaTime);
 		});
 
+		// TODO: should this be moved to App::render?
 		bgfx::ViewId viewId = 0;
-		// TODO: will be called twice?
-		getWindow().bgfxConfig(viewId);
+		bgfx::dbgTextClear(); // use debug font to print information
+		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
+		auto& size = getWindow().getSize();
+		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+		bgfx::touch(viewId);
 
 		viewId = render(viewId);
 		viewId = _impl->render(viewId);
@@ -427,7 +429,7 @@ namespace darmok
 		_impl->configure(config);
 	}
 
-	bgfx::ViewId App::render(bgfx::ViewId viewId)
+	bgfx::ViewId App::render(bgfx::ViewId viewId) const
 	{
 		return viewId;
 	}
@@ -445,22 +447,5 @@ namespace darmok
 	void App::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
 	{
 		_impl->addComponent(std::move(component));
-	}
-
-	void AppComponent::init(App& app)
-	{
-	}
-
-	void AppComponent::shutdown()
-	{
-	}
-
-	void AppComponent::updateLogic(float deltaTime)
-	{
-	} 
-
-	bgfx::ViewId AppComponent::render(bgfx::ViewId viewId)
-	{
-		return viewId;
 	}
 }

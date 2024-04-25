@@ -125,6 +125,7 @@ set(HEADERS
   ${INCLUDE_DIR}/color.hpp
   ${INCLUDE_DIR}/material.hpp
   ${INCLUDE_DIR}/optional_ref.hpp
+  ${INCLUDE_DIR}/texture_fwd.hpp
   ${INCLUDE_DIR}/texture.hpp
   ${INCLUDE_DIR}/texture_atlas.hpp
   ${INCLUDE_DIR}/image.hpp

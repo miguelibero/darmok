@@ -343,7 +343,7 @@ namespace darmok
 		{
 			throw std::runtime_error("got empty image container");
 		}
-		auto tex = std::make_shared<Texture>(std::make_shared<Image>(container));
+		auto tex = std::make_shared<Texture>(Image(container));
 		if (tex == nullptr)
 		{
 			throw std::runtime_error("could not load texture");

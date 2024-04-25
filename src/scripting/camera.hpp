@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <vector>
 #include <darmok/optional_ref.hpp>
 #include "sol.hpp"
 #include "math.hpp"
@@ -10,8 +11,13 @@ namespace darmok
 {
     class Camera;
 	class LuaProgram;
-	class LuaRenderTexture;
+	class LuaTexture;
 	class Ray;
+
+	enum class LuaNativeCameraComponentType
+	{
+		PhongLighting
+	};
 
 	class LuaCamera final
 	{
@@ -26,19 +32,19 @@ namespace darmok
 
 		LuaCamera& setProjection1(float fovy, float aspect, const VarVec2& range) noexcept;
 		LuaCamera& setProjection2(float fovy, float aspect, float near) noexcept;
-		LuaCamera& setWindowProjection1(float fovy, const VarVec2& range) noexcept;
-		LuaCamera& setWindowProjection2(float fovy, float near) noexcept;
-		LuaCamera& setWindowProjection3(float fovy) noexcept;
+		LuaCamera& setProjection3(float fovy, const VarUvec2& size, const VarVec2& range) noexcept;
+		LuaCamera& setProjection4(float fovy, const VarUvec2& size, float near) noexcept;
 		LuaCamera& setOrtho1(const VarVec4& edges, const VarVec2& range, float offset) noexcept;
 		LuaCamera& setOrtho2(const VarVec4& edges, const VarVec2& range) noexcept;
 		LuaCamera& setOrtho3(const VarVec4& edges) noexcept;
-		LuaCamera& setWindowOrtho1(const VarVec2& range, float offset) noexcept;
-		LuaCamera& setWindowOrtho2(const VarVec2& range) noexcept;
-		LuaCamera& setWindowOrtho3() noexcept;
-		LuaCamera& setTargetTexture(const LuaRenderTexture& texture) noexcept;
-		LuaCamera& setForwardPhongRenderer(const LuaProgram& program) noexcept;
+		LuaCamera& setOrtho4(const VarUvec2& size, const VarVec2& range, float offset) noexcept;
+		LuaCamera& setOrtho5(const VarUvec2& size, const VarVec2& range) noexcept;
+		LuaCamera& setOrtho6(const VarUvec2& size) noexcept;
+		LuaCamera& setTargetTextures(const sol::table& textures) noexcept;
+		LuaCamera& addNativeComponent(LuaNativeCameraComponentType type) noexcept;
+		LuaCamera& setForwardRenderer(const LuaProgram& program) noexcept;
 
-		std::optional<LuaRenderTexture> getTargetTexture() noexcept;
+		std::vector<LuaTexture> getTargetTextures() noexcept;
 		const glm::mat4& getMatrix() const noexcept;
 		void setMatrix(const glm::mat4& matrix) noexcept;
 		std::optional<Ray> screenPointToRay(const VarVec2& point) const noexcept;

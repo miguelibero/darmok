@@ -1,5 +1,3 @@
-#pragma once
-
 #include <darmok/render_forward.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
@@ -10,9 +8,8 @@
 namespace darmok
 {
 
-	ForwardRenderer::ForwardRenderer(const std::shared_ptr<Program>& program, const OptionalRef<ILightingComponent>& lighting) noexcept
+	ForwardRenderer::ForwardRenderer(const std::shared_ptr<Program>& program) noexcept
 		: _program(program)
-		, _lighting(lighting)
 	{
 	}
 
@@ -37,16 +34,12 @@ namespace darmok
 			return viewId;
 		}
 
-		auto& fb = _cam->getFrameBuffer();
-		if (isValid(fb))
-		{
-			bgfx::setViewFrameBuffer(viewId, fb);
-		}
+		_cam->beforeRenderView(encoder, viewId);
 
 		auto& registry = _scene->getRegistry();
-		auto meshes = _cam->createEntityView<MeshComponent>(registry);
+		auto meshComponents = _cam->createEntityView<MeshComponent>(registry);
 		auto rendered = false;
-		for (auto entity : meshes)
+		for (auto entity : meshComponents)
 		{
 			auto& comp = registry.get<const MeshComponent>(entity);
 			auto& meshes = comp.getMeshes();
@@ -55,6 +48,13 @@ namespace darmok
 				continue;
 			}
 			rendered = true;
+			_cam->beforeRenderEntity(entity, encoder, viewId);
+
+			auto trans = registry.try_get<Transform>(entity);
+			if (trans != nullptr)
+			{
+				trans->beforeRender(encoder, viewId);
+			}
 			for (auto& mesh : meshes)
 			{
 				auto mat = mesh->getMaterial();
@@ -63,38 +63,21 @@ namespace darmok
 					continue;
 				}
 
-				Transform::bgfxConfig(entity, encoder, registry);
-
-				if (_lighting)
-				{
-					_lighting->bgfxConfig(encoder, viewId);
-				}
-
-				mat->bgfxConfig(encoder);
-				mesh->bgfxConfig(encoder, viewId);
-
-				uint64_t state = BGFX_STATE_WRITE_RGB
-					| BGFX_STATE_WRITE_A
-					| BGFX_STATE_WRITE_Z
-					| BGFX_STATE_DEPTH_TEST_LEQUAL // TODO: should be less?
-					| BGFX_STATE_CULL_CCW
-					| BGFX_STATE_MSAA
-					| BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
-					;
-				
-				if (mat->getPrimitiveType() == MaterialPrimitiveType::Line)
-				{
-					state |= BGFX_STATE_PT_LINES;
-				}
+				_cam->beforeRenderMesh(*mesh, encoder, viewId);
+				uint64_t state = mat->beforeRender(encoder, viewId);
+				mesh->render(encoder, viewId);
 
 				encoder.setState(state);
 				encoder.submit(viewId, _program->getHandle());
 			}
 		}
+		_cam->afterRenderView(encoder, viewId);
+
 		if (!rendered)
 		{
 			return viewId;
 		}
+
 
 		return ++viewId;
 	}

@@ -16,6 +16,7 @@
 #include "light.hpp"
 #include "mesh.hpp"
 #include "camera.hpp"
+#include "math.hpp"
 
 namespace darmok
 {
@@ -181,12 +182,17 @@ namespace darmok
 	class LuaScene final
 	{
 	public:
+		using VarParent = std::variant<Entity, LuaTransform>;
+
 		LuaScene(const std::shared_ptr<Scene>& scene) noexcept;
 		LuaScene(LuaApp& app) noexcept;
 
 		std::string to_string() const noexcept;
 		EntityRegistry& getRegistry() noexcept;
-		LuaEntity createEntity() noexcept;
+		LuaEntity createEntity1() noexcept;
+		LuaEntity createEntity2(const VarVec3& position) noexcept;
+		LuaEntity createEntity3(const VarParent& parent) noexcept;
+		LuaEntity createEntity4(const VarParent& parent, const VarVec3& position) noexcept;
 		bool destroyEntity(const LuaEntity& entity) noexcept;
 
 		template <std::size_t I = 0>

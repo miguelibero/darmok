@@ -23,7 +23,7 @@ namespace darmok
 
 		void init(App& app) override;
 		void shutdown() override;
-		bgfx::ViewId render(bgfx::ViewId viewId) override;
+		bgfx::ViewId render(bgfx::ViewId viewId) const override;
 		void updateLogic(float dt) override;
 	private:
 		std::unique_ptr<ImguiAppComponentImpl> _impl;

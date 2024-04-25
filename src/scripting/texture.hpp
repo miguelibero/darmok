@@ -4,7 +4,7 @@
 #include <string>
 #include <variant>
 #include <glm/glm.hpp>
-#include <darmok/texture.hpp>
+#include <darmok/texture_fwd.hpp>
 #include <darmok/anim.hpp>
 #include "sol.hpp"
 #include "math.hpp"
@@ -16,35 +16,27 @@ namespace darmok
 	class LuaTexture final
 	{
 	public:
+		using Config = TextureConfig;
 		LuaTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		LuaTexture(const LuaImage& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		LuaTexture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		LuaTexture(const VarUvec2& size, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		LuaTexture(const VarUvec2& size, bgfx::TextureFormat::Enum format, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		const std::shared_ptr<Texture>& getReal() const noexcept;
-		LuaImage getImage() const noexcept;
 		TextureType getType() const noexcept;
 		LuaTexture& setName(const std::string& name) noexcept;
+		const glm::uvec2& getSize() noexcept;
+		bgfx::TextureFormat::Enum getFormat() const noexcept;
+		uint16_t getLayerCount() const noexcept;
+		uint16_t getDepth() const noexcept;
+		bool hasMips() const noexcept;
+		std::string to_string() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 
 	private:
 		std::shared_ptr<Texture> _texture;
 	};	
-
-	class LuaRenderTexture final
-	{
-	public:
-		using Config = RenderTextureConfig;
-		LuaRenderTexture(const std::shared_ptr<RenderTexture>& texture) noexcept;
-		LuaRenderTexture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		LuaRenderTexture(const VarUvec2& size, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		const std::shared_ptr<RenderTexture>& getReal() const noexcept;
-		TextureType getType() const noexcept;
-		LuaRenderTexture& setName(const std::string& name) noexcept;
-
-		static void configure(sol::state_view& lua) noexcept;
-
-	private:
-		std::shared_ptr<RenderTexture> _texture;
-	};
 
 	class TextureAtlas;
 	struct MeshCreationConfig;

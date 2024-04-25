@@ -22,7 +22,7 @@ namespace darmok
 		void shutdown();
 
 		void updateLogic(float deltaTime);
-		bgfx::ViewId render(bgfx::ViewId viewId);
+		bgfx::ViewId render(bgfx::ViewId viewId) const;
 		void triggerExit() noexcept;
 
 		bool processEvents();

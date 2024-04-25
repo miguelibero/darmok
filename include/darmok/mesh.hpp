@@ -32,7 +32,7 @@ namespace darmok
         const Data& getVertexData() const noexcept;
         const Data& getIndexData() const noexcept;
 
-        void bgfxConfig(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const;
+        void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const;
         
     private:
         bgfx::VertexLayout _layout;
@@ -78,6 +78,7 @@ namespace darmok
         std::shared_ptr<Mesh> createQuad(const Quad& quad = Quad::standard) noexcept;
         std::shared_ptr<Mesh> createLineQuad(const Quad& quad = Quad::standard) noexcept;
         std::shared_ptr<Mesh> createSprite(const std::shared_ptr<Texture>& texture) noexcept;
+        std::shared_ptr<Mesh> createSprite(const std::shared_ptr<Texture>& texture, const glm::uvec2 size) noexcept;
         std::shared_ptr<Mesh> createRay(const Ray& ray) noexcept;
         std::shared_ptr<Mesh> createLine(const Line& line) noexcept;
         std::shared_ptr<Mesh> createLines(const std::vector<Line>& lines) noexcept;

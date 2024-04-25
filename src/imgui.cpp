@@ -209,7 +209,7 @@ namespace darmok
 			;
 	}
 
-	void ImguiAppComponentImpl::render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData)
+	void ImguiAppComponentImpl::render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData) const
 	{
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
 		int fb_width = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
@@ -459,7 +459,7 @@ namespace darmok
 		ImGui::SetCurrentContext(nullptr);
 	}
 
-	void ImguiAppComponentImpl::render(bgfx::ViewId viewId)
+	void ImguiAppComponentImpl::render(bgfx::ViewId viewId) const
 	{
 		ImGui::SetCurrentContext(_imgui);
 
@@ -520,13 +520,13 @@ namespace darmok
 		}
 	}
 
-	void ImguiAppComponentImpl::beginFrame()
+	void ImguiAppComponentImpl::beginFrame() const
 	{
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 	}
 
-	void ImguiAppComponentImpl::endFrame(bgfx::ViewId viewId)
+	void ImguiAppComponentImpl::endFrame(bgfx::ViewId viewId) const
 	{
 		ImGui::Render();
 		render(viewId, _texture, ImGui::GetDrawData());
@@ -552,7 +552,7 @@ namespace darmok
 		_impl->updateLogic(dt);
 	}
 
-	bgfx::ViewId ImguiAppComponent::render(bgfx::ViewId viewId)
+	bgfx::ViewId ImguiAppComponent::render(bgfx::ViewId viewId) const
 	{
 		_impl->render(viewId);
 		return ++viewId;

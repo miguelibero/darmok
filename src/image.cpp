@@ -23,12 +23,40 @@ namespace darmok
 		);
 	}
 
+	const bgfx::Memory* Image::makeCopyRef() const noexcept
+	{
+
+		return bgfx::copy(
+			_container->m_data
+			, _container->m_size
+		);
+	}
+
+	TextureType Image::getTextureType(uint64_t flags) const noexcept
+	{
+		if (isCubeMap())
+		{
+			return TextureType::CubeMap;
+		}
+		else if (1 < getDepth())
+		{
+			return TextureType::Texture3D;
+		}
+		auto format = bgfx::TextureFormat::Enum(getFormat());
+		auto layers = getLayerCount();
+		if (bgfx::isTextureValid(0, false, layers, format, flags))
+		{
+			return TextureType::Texture2D;
+		}
+		return TextureType::Unknown;
+	}
+
 	std::shared_ptr<Image> Image::create(bx::AllocatorI* alloc, const Color& color, const glm::uvec2& size) noexcept
 	{
 		auto container = bimg::imageAlloc(
 			alloc, bimg::TextureFormat::RGBA8, size.x, size.y, 0, 1, false, false
 		);
-		auto c = Colors::toNumber(color);
+		auto c = Colors::toReverseNumber(color);
 		bimg::imageSolid(container->m_data, size.x, size.y, c);
 		return std::make_shared<Image>(container);
 	}
