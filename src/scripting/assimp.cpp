@@ -14,7 +14,7 @@ namespace darmok
 		{
 		}
 
-		void operator()(const ModelNode& node, Entity entity) const noexcept
+		void operator()(const AssimpNode& node, Entity entity) const noexcept
 		{
 			auto result = _callback(ConstLuaAssimpNode(node), LuaEntity(entity, _scene));
 			if (result.valid())
@@ -33,12 +33,12 @@ namespace darmok
 	};
 
 
-	ConstLuaAssimpNode::ConstLuaAssimpNode(const ModelNode& node) noexcept
+	ConstLuaAssimpNode::ConstLuaAssimpNode(const AssimpNode& node) noexcept
 		: _node(node)
 	{
 	}
 
-	const ModelNode& ConstLuaAssimpNode::getReal() const noexcept
+	const AssimpNode& ConstLuaAssimpNode::getReal() const noexcept
 	{
 		return _node.value();
 	}
@@ -48,30 +48,30 @@ namespace darmok
 		return std::string(_node->getName());
 	}
 
-	LuaEntity ConstLuaAssimpNode::addToScene1(LuaScene& scene, const bgfx::VertexLayout& layout) const
+	LuaEntity ConstLuaAssimpNode::addToScene1(const LuaScene& scene, const bgfx::VertexLayout& layout) const
 	{
 		auto& realScene = scene.getReal();
 		auto entity = _node->addToScene(*realScene, layout);
 		return LuaEntity(entity, realScene);
 	}
 
-	LuaEntity ConstLuaAssimpNode::addToScene2(LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const
+	LuaEntity ConstLuaAssimpNode::addToScene2(const LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const
 	{
 		auto& realScene = scene.getReal();
 		auto entity = _node->addToScene(*realScene, layout, LuaAssimpSceneAddToSceneCallback(realScene, callback));
 		return LuaEntity(entity, realScene);
 	}
 
-	LuaEntity ConstLuaAssimpNode::addToScene3(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent) const
+	LuaEntity ConstLuaAssimpNode::addToScene3(const LuaEntity& parent, const bgfx::VertexLayout& layout) const
 	{
-		auto& realScene = scene.getReal();
+		auto& realScene = parent.getScene().getReal();
 		auto entity = _node->addToScene(*realScene, layout, parent.getReal());
 		return LuaEntity(entity, realScene);
 	}
 
-	LuaEntity ConstLuaAssimpNode::addToScene4(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent, sol::protected_function callback) const
+	LuaEntity ConstLuaAssimpNode::addToScene4(const LuaEntity& parent, const bgfx::VertexLayout& layout, sol::protected_function callback) const
 	{
-		auto& realScene = scene.getReal();
+		auto& realScene = parent.getScene().getReal();
 		auto entity = _node->addToScene(*realScene, layout, parent.getReal(), LuaAssimpSceneAddToSceneCallback(realScene, callback));
 		return LuaEntity(entity, realScene);
 	}
@@ -102,30 +102,30 @@ namespace darmok
 		return _scene;
 	}
 
-	LuaEntity LuaAssimpScene::addToScene1(LuaScene& scene, const bgfx::VertexLayout& layout) const
+	LuaEntity LuaAssimpScene::addToScene1(const LuaScene& scene, const bgfx::VertexLayout& layout) const
 	{
 		auto& realScene = scene.getReal();
 		auto entity = _scene->addToScene(*realScene, layout);
 		return LuaEntity(entity, realScene);
 	}
 
-	LuaEntity LuaAssimpScene::addToScene2(LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const
+	LuaEntity LuaAssimpScene::addToScene2(const LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const
 	{
 		auto& realScene = scene.getReal();
 		auto entity = _scene->addToScene(*realScene, layout, LuaAssimpSceneAddToSceneCallback(realScene, callback));
 		return LuaEntity(entity, realScene);
 	}
 
-	LuaEntity LuaAssimpScene::addToScene3(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent) const
+	LuaEntity LuaAssimpScene::addToScene3(const LuaEntity& parent, const bgfx::VertexLayout& layout) const
 	{
-		auto& realScene = scene.getReal();
+		auto& realScene = parent.getScene().getReal();
 		auto entity = _scene->addToScene(*realScene, layout, parent.getReal());
 		return LuaEntity(entity, realScene);
 	}
 
-	LuaEntity LuaAssimpScene::addToScene4(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent, sol::protected_function callback) const
+	LuaEntity LuaAssimpScene::addToScene4(const LuaEntity& parent, const bgfx::VertexLayout& layout, sol::protected_function callback) const
 	{
-		auto& realScene = scene.getReal();
+		auto& realScene = parent.getScene().getReal();
 		auto entity = _scene->addToScene(*realScene, layout, parent.getReal(), LuaAssimpSceneAddToSceneCallback(realScene, callback));
 		return LuaEntity(entity, realScene);
 	}

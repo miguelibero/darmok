@@ -92,6 +92,15 @@ namespace darmok
 		return false;
 	}
 
+	LuaScene LuaEntity::getScene() const
+	{
+		if (auto scene = _scene.lock())
+		{
+			return LuaScene(scene);
+		}
+		throw std::runtime_error("scene expired");
+	}
+
 	EntityRegistry& LuaEntity::getRegistry()
 	{
 		if (auto scene = _scene.lock())
@@ -175,6 +184,7 @@ namespace darmok
 		});
 
 		lua.new_usertype<LuaEntity>("Entity", sol::constructors<>(),
+			"scene", sol::property(&LuaEntity::getScene),
 			"add_component", sol::overload(&LuaEntity::addNativeComponent<0>, &LuaEntity::addLuaComponent),
 			"get_component", sol::overload(&LuaEntity::getNativeComponent<0>, &LuaEntity::getLuaComponent),
 			"remove_component", sol::overload(&LuaEntity::removeNativeComponent<0>, &LuaEntity::removeLuaComponent),

@@ -181,7 +181,7 @@ namespace darmok
         if (viewId > 0)
         {
             static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-            bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+            bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
         }
         
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
@@ -194,14 +194,19 @@ namespace darmok
         if (_scene)
         {
             auto projPtr = glm::value_ptr(_matrix);
-            auto& registry = _scene->getRegistry();
-            auto entity = entt::to_entity(registry, *this);
-            auto trans = registry.try_get<const Transform>(entity);
             const void* viewPtr = nullptr;
-            if (trans != nullptr)
+            auto& registry = _scene->getRegistry();
+
+            auto entity = entt::to_entity(registry.storage<Camera>(), *this);
+            if (entity != entt::null)
             {
-                viewPtr = glm::value_ptr(trans->getInverse());
+                auto trans = registry.try_get<const Transform>(entity);
+                if (trans != nullptr)
+                {
+                    viewPtr = glm::value_ptr(trans->getInverse());
+                }
             }
+
             bgfx::setViewTransform(viewId, viewPtr, projPtr);
 
             auto viewRect = registry.try_get<const ViewRect>(entity);
@@ -282,9 +287,13 @@ namespace darmok
         {
             return std::nullopt;
         }
-        glm::mat4 model;
         auto& registry = _scene->getRegistry();
-        auto entity = entt::to_entity(registry, *this);
+        auto entity = entt::to_entity(registry.storage<Camera>(), *this);
+        if (entity == entt::null)
+        {
+            return std::nullopt;
+        }
+        glm::mat4 model;
         auto trans = registry.try_get<const Transform>(entity);
         if (trans != nullptr)
         {

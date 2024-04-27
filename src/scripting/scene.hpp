@@ -51,6 +51,7 @@ namespace darmok
 
     class Scene;
 	class LuaAssimpScene;
+	class LuaScene;
 
 	using LuaNativeComponent = std::variant<LuaTransform, LuaCamera, LuaAmbientLight, LuaPointLight, LuaMeshComponent>;
 
@@ -163,6 +164,8 @@ namespace darmok
 			return false;
 		}
 
+		LuaScene getScene() const;
+
 		const Entity& getReal() const noexcept;
 		static void configure(sol::state_view& lua) noexcept;
 	private:
@@ -202,7 +205,8 @@ namespace darmok
 				{
 					return getEntity<I + 1>(comp);
 				}
-				auto entity = entt::to_entity(getRegistry(), ptr->getReal());
+				using native_t = lua_t::native_t;
+				auto entity = entt::to_entity(getRegistry().storage<native_t>(), ptr->getReal());
 				if (entity == entt::null)
 				{
 					return std::nullopt;

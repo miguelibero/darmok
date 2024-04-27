@@ -19,10 +19,10 @@ namespace darmok
 		const AssimpNode& getReal() const noexcept;
 		std::string getName() const noexcept;
 
-		LuaEntity addToScene1(LuaScene& scene, const bgfx::VertexLayout& layout) const;
-		LuaEntity addToScene2(LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const;
-		LuaEntity addToScene3(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent) const;
-		LuaEntity addToScene4(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent, sol::protected_function callback) const;
+		LuaEntity addToScene1(const LuaScene& scene, const bgfx::VertexLayout& layout) const;
+		LuaEntity addToScene2(const LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const;
+		LuaEntity addToScene3(const LuaEntity& parent, const bgfx::VertexLayout& layout) const;
+		LuaEntity addToScene4(const LuaEntity& parent, const bgfx::VertexLayout& layout, sol::protected_function callback) const;
 
 		static void configure(sol::state_view& lua) noexcept;
 
@@ -38,10 +38,10 @@ namespace darmok
 		LuaAssimpScene(const std::shared_ptr<AssimpScene>& scene) noexcept;
 		const std::shared_ptr<AssimpScene>& getReal() const noexcept;
 
-		LuaEntity addToScene1(LuaScene& scene, const bgfx::VertexLayout& layout) const;
-		LuaEntity addToScene2(LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const;
-		LuaEntity addToScene3(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent) const;
-		LuaEntity addToScene4(LuaScene& scene, const bgfx::VertexLayout& layout, const LuaEntity& parent, sol::protected_function callback) const;
+		LuaEntity addToScene1(const LuaScene& scene, const bgfx::VertexLayout& layout) const;
+		LuaEntity addToScene2(const LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const;
+		LuaEntity addToScene3(const LuaEntity& parent, const bgfx::VertexLayout& layout) const;
+		LuaEntity addToScene4(const LuaEntity& parent, const bgfx::VertexLayout& layout, sol::protected_function callback) const;
 
 		static void configure(sol::state_view& lua) noexcept;
 
