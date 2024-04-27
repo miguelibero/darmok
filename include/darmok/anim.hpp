@@ -2,17 +2,21 @@
 
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/mesh.hpp>
 #include <vector>
 #include <memory>
 
 namespace darmok
 {
+    class Mesh;
+
     struct AnimationFrame final
     {
         std::vector<std::shared_ptr<Mesh>> meshes;
         float duration;
     };
+
+    class MeshComponent;
+    class Scene;
 
     class FrameAnimationComponent final
     {

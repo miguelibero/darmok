@@ -1,12 +1,9 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <darmok/color_fwd.hpp>
 
 namespace darmok
 {
-    using Color = glm::u8vec4;
-    using Color3 = glm::u8vec3;
-
     struct Colors final
     {
         static const Color::value_type maxValue;

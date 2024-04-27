@@ -3,6 +3,8 @@
 #include <darmok/window.hpp>
 #include <darmok/math.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/app.hpp>
 #include <bx/math.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -209,6 +211,10 @@ namespace darmok
                 viewRect->beforeRenderView(encoder, viewId);
             }
         }
+        if (_renderer != nullptr)
+        {
+            _renderer->beforeRenderView(encoder, viewId);
+        }
         for (auto& comp : _components)
         {
             comp->beforeRenderView(encoder, viewId);
@@ -217,6 +223,10 @@ namespace darmok
 
     void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
+        if (_renderer != nullptr)
+        {
+            _renderer->beforeRenderEntity(entity, encoder, viewId);
+        }
         for (auto& comp : _components)
         {
             comp->beforeRenderEntity(entity, encoder, viewId);
@@ -225,6 +235,10 @@ namespace darmok
 
     void Camera::beforeRenderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
+        if (_renderer != nullptr)
+        {
+            _renderer->beforeRenderMesh(mesh, encoder, viewId);
+        }
         for (auto& comp : _components)
         {
             comp->beforeRenderMesh(mesh, encoder, viewId);
@@ -233,6 +247,10 @@ namespace darmok
 
     void Camera::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
+        if (_renderer != nullptr)
+        {
+            _renderer->afterRenderView(encoder, viewId);
+        }
         for (auto& comp : _components)
         {
             comp->afterRenderView(encoder, viewId);

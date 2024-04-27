@@ -4,6 +4,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/program.hpp>
 #include <darmok/light.hpp>
+#include <darmok/material.hpp>
 
 namespace darmok
 {

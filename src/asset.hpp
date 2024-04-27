@@ -10,9 +10,12 @@
 #include "texture.hpp"
 #include "texture_atlas.hpp"
 #include "program.hpp"
-#include "model.hpp"
 #include "data.hpp"
 #include "vertex.hpp"
+
+#ifdef DARMOK_ASSIMP 
+#include <darmok/assimp.hpp>
+#endif
 
 namespace darmok
 {
@@ -46,8 +49,11 @@ namespace darmok
 		[[nodiscard]] StandardProgramLoader& getStandardProgramLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
-		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
+
+#ifdef DARMOK_ASSIMP 
+		[[nodiscard]] AssimpSceneLoader& getAssimpLoader() noexcept;
+#endif
 
 		bx::AllocatorI* getAllocator() noexcept;
 		void setBasePath(const std::string& path) noexcept;
@@ -62,8 +68,10 @@ namespace darmok
 		StandardProgramLoader _standardProgramLoader;
 		ImageTextureLoader _textureLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
-		AssimpModelLoader _modelLoader;
 		ColorTextureLoader _colorTextureLoader;
-	};
 
+#ifdef DARMOK_ASSIMP 
+		AssimpSceneLoader _assimpLoader;
+#endif
+	};
 }

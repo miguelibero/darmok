@@ -45,7 +45,9 @@ namespace darmok
 		, _programLoader(_dataLoader, _vertexLayoutLoader)
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
-		, _modelLoader(_dataLoader, _textureLoader, &_allocator)
+#ifdef DARMOK_ASSIMP 
+		, _assimpLoader(_dataLoader, _textureLoader, &_allocator)
+#endif
 		, _colorTextureLoader(&_allocator)
 	{
 		setBasePath("assets");
@@ -86,10 +88,12 @@ namespace darmok
 		return _textureAtlasLoader;
 	}
 
-	IModelLoader& AssetContextImpl::getModelLoader() noexcept
+#ifdef DARMOK_ASSIMP 
+	AssimpSceneLoader& AssetContextImpl::getAssimpLoader() noexcept
 	{
-		return _modelLoader;
+		return _assimpLoader;
 	}
+#endif
 
 	ColorTextureLoader& AssetContextImpl::getColorTextureLoader() noexcept
 	{
@@ -141,10 +145,12 @@ namespace darmok
 		return _impl->getTextureAtlasLoader();
 	}
 
-	IModelLoader& AssetContext::getModelLoader() noexcept
+#ifdef DARMOK_ASSIMP 
+	AssimpSceneLoader& AssetContext::getAssimpLoader() noexcept
 	{
-		return _impl->getModelLoader();
+		return _impl->getAssimpLoader();
 	}
+#endif
 
 	ColorTextureLoader& AssetContext::getColorTextureLoader() noexcept
 	{

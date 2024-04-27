@@ -6,6 +6,7 @@ project(
   DESCRIPTION "empty example darmok project"
 )
 
+set(DARMOK_BUILD_IMGUI ON CACHE BOOL "build darmok with imGUI support")
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 

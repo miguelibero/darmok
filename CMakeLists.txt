@@ -16,9 +16,11 @@ set(SHADERS_OUTPUT_DIR generated/shaders)
 set(LIBS_DIR lib)
 
 
-option(DARMOK_BUILD_SCRIPTING "enable scripting support" OFF)
-option(DARMOK_BUILD_SCRIPTING_EXE "compile scripting executable" OFF)
-option(DARMOK_BUILD_NUKLEAR "compile nuklear support" OFF)
+option(DARMOK_BUILD_SCRIPTING "build darmok with scripting support" OFF)
+option(DARMOK_BUILD_SCRIPTING_EXE "build the darmok scripting executable" OFF)
+option(DARMOK_BUILD_NUKLEAR "build darmok with nuklear UI support" OFF)
+option(DARMOK_BUILD_IMGUI "build darmok with imGUI support" OFF)
+option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
 
 set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "build bgfx examples.")
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
@@ -86,12 +88,10 @@ set(SOURCES
   ${SRC_DIR}/app.cpp
   ${SRC_DIR}/glfw.cpp
   ${SRC_DIR}/input.cpp
-  ${SRC_DIR}/imgui.cpp
   ${SRC_DIR}/asset.cpp
   ${SRC_DIR}/scene.cpp
   ${SRC_DIR}/utils.cpp
   ${SRC_DIR}/anim.cpp
-  ${SRC_DIR}/model.cpp
   ${SRC_DIR}/data.cpp
   ${SRC_DIR}/math.cpp
   ${SRC_DIR}/mesh.cpp
@@ -115,14 +115,15 @@ set(HEADERS
   ${INCLUDE_DIR}/window.hpp
   ${INCLUDE_DIR}/utils.hpp
   ${INCLUDE_DIR}/asset.hpp
-  ${INCLUDE_DIR}/imgui.hpp
+  ${INCLUDE_DIR}/scene_fwd.hpp
   ${INCLUDE_DIR}/scene.hpp
   ${INCLUDE_DIR}/anim.hpp
-  ${INCLUDE_DIR}/model.hpp
   ${INCLUDE_DIR}/data.hpp
   ${INCLUDE_DIR}/math.hpp
   ${INCLUDE_DIR}/mesh.hpp
+  ${INCLUDE_DIR}/color_fwd.hpp
   ${INCLUDE_DIR}/color.hpp
+  ${INCLUDE_DIR}/material_fwd.hpp
   ${INCLUDE_DIR}/material.hpp
   ${INCLUDE_DIR}/optional_ref.hpp
   ${INCLUDE_DIR}/texture_fwd.hpp
@@ -137,6 +138,18 @@ set(HEADERS
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
 )
+
+if(DARMOK_BUILD_ASSIMP)
+  list(APPEND SOURCES ${SRC_DIR}/assimp.cpp)
+  list(APPEND HEADERS
+    ${INCLUDE_DIR}/assimp_fwd.hpp
+    ${INCLUDE_DIR}/assimp.hpp)
+endif()
+
+if(DARMOK_BUILD_IMGUI)
+  list(APPEND SOURCES ${SRC_DIR}/imgui.cpp)
+  list(APPEND HEADERS ${INCLUDE_DIR}/imgui.hpp)
+endif()
 
 if(DARMOK_BUILD_NUKLEAR)
   list(APPEND SOURCES ${SRC_DIR}/nuklear.cpp)
@@ -275,21 +288,26 @@ target_link_libraries(${LIB_NAME} PUBLIC glm)
 target_link_libraries(${LIB_NAME} PUBLIC bgfx bimg bimg_decode bx)
 
 # imgui
-include(${CMAKE_CURRENT_LIST_DIR}/CMake/imgui.cmake)
-target_link_libraries(${LIB_NAME} PUBLIC imgui)
+if(DARMOK_BUILD_IMGUI)
+  include(${CMAKE_CURRENT_LIST_DIR}/CMake/imgui.cmake)
+  target_link_libraries(${LIB_NAME} PUBLIC imgui)
+endif()
 
 # entt
 add_subdirectory(${LIBS_DIR}/entt)
 target_link_libraries(${LIB_NAME} PUBLIC EnTT)
 
 # assimp
-set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "If the test suite for Assimp is built in addition to the library.")
-set(ASSIMP_BUILD_DRACO ON CACHE BOOL "If the Draco libraries are to be built. Primarily for glTF")
-set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "default value of all ASSIMP_BUILD_XXX_EXPORTER values")
+if(DARMOK_BUILD_ASSIMP)
+  set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "If the test suite for Assimp is built in addition to the library.")
+  set(ASSIMP_BUILD_DRACO ON CACHE BOOL "If the Draco libraries are to be built. Primarily for glTF")
+  set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "default value of all ASSIMP_BUILD_XXX_EXPORTER values")
 
-add_subdirectory(${LIBS_DIR}/assimp)
-target_link_libraries(${LIB_NAME} PRIVATE assimp)
-target_compile_definitions(assimp PRIVATE ASSIMP_BUILD_NO_GLTF1_IMPORTER ASSIMP_BUILD_NO_EXPORT)
+  add_subdirectory(${LIBS_DIR}/assimp)
+  target_link_libraries(${LIB_NAME} PUBLIC assimp)
+  target_compile_definitions(assimp PRIVATE ASSIMP_BUILD_NO_GLTF1_IMPORTER ASSIMP_BUILD_NO_EXPORT)
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_ASSIMP)
+endif()
 
 # pugixml
 add_subdirectory(${LIBS_DIR}/pugixml)

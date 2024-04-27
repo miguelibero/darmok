@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+#include <optional>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
@@ -10,6 +12,8 @@
 namespace darmok
 {
     class Mesh;
+    class Camera;
+    class App;
 
     class BX_NO_VTABLE ICameraComponent
     {
@@ -33,6 +37,7 @@ namespace darmok
     class Mesh;
     class Ray;
     class Texture;
+    class IEntityFilter;
 
     class Camera final
     {

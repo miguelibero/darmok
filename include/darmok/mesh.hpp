@@ -1,16 +1,15 @@
 #pragma once
 
-#include <darmok/scene.hpp>
 #include <darmok/data.hpp>
-#include <darmok/material.hpp>
-#include <darmok/math.hpp>
+#include <darmok/color.hpp>
+#include <darmok/scene_fwd.hpp>
+#include <darmok/material_fwd.hpp>
+#include <darmok/vertex_fwd.hpp>
 #include <vector>
 #include <bgfx/bgfx.h>
 
 namespace darmok
 {
-    using VertexIndex = uint16_t;
-
     class Mesh final
     {
     public:
@@ -63,6 +62,11 @@ namespace darmok
     };
 
     class Texture;
+    struct Cube;
+    struct Sphere;
+    struct Quad;
+    struct Ray;
+    struct Line;
 
     struct MeshCreator final
     {
@@ -73,10 +77,14 @@ namespace darmok
         MeshCreator(const bgfx::VertexLayout& layout) noexcept;
         
         std::shared_ptr<Mesh> createMesh(const MeshData& meshData) noexcept;
-        std::shared_ptr<Mesh> createCube(const Cube& cube = Cube::standard) noexcept;
-        std::shared_ptr<Mesh> createSphere(const Sphere& sphere = Sphere::standard, int lod = 32) noexcept;
-        std::shared_ptr<Mesh> createQuad(const Quad& quad = Quad::standard) noexcept;
-        std::shared_ptr<Mesh> createLineQuad(const Quad& quad = Quad::standard) noexcept;
+        std::shared_ptr<Mesh> createCube() noexcept;
+        std::shared_ptr<Mesh> createCube(const Cube& cube) noexcept;
+        std::shared_ptr<Mesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
+        std::shared_ptr<Mesh> createSphere(int lod = 32) noexcept;
+        std::shared_ptr<Mesh> createQuad() noexcept;
+        std::shared_ptr<Mesh> createQuad(const Quad& quad) noexcept;
+        std::shared_ptr<Mesh> createLineQuad() noexcept;
+        std::shared_ptr<Mesh> createLineQuad(const Quad& quad) noexcept;
         std::shared_ptr<Mesh> createSprite(const std::shared_ptr<Texture>& texture) noexcept;
         std::shared_ptr<Mesh> createSprite(const std::shared_ptr<Texture>& texture, const glm::uvec2 size) noexcept;
         std::shared_ptr<Mesh> createRay(const Ray& ray) noexcept;

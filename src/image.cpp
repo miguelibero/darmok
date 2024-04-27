@@ -23,7 +23,7 @@ namespace darmok
 		);
 	}
 
-	const bgfx::Memory* Image::makeCopyRef() const noexcept
+	const bgfx::Memory* Image::copyMem() const noexcept
 	{
 
 		return bgfx::copy(

@@ -4,35 +4,12 @@
 #include <string_view>
 #include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
+#include <darmok/window_fwd.hpp>
 
 namespace darmok
 {
-	enum class WindowPhase
-	{
-		Unknown,
-		Running,
-		Suspended,
-		Destroyed,
-		Count,
-	};
-
-	enum class WindowMode
-	{
-		Normal,
-		Fullscreen,
-		WindowedFullscreen,
-		Count,
-	};
-
 	class WindowImpl;
 	class Platform;
-
-	enum class WindowCursorMode
-	{
-		Normal,
-		Hidden,
-		Disabled,
-	};
 
 	class Window final
 	{

@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(
-  darmok-example-model
+  darmok-example-assimp
   LANGUAGES CXX
-  DESCRIPTION "model example darmok project"
+  DESCRIPTION "assimp example darmok project"
 )
 
+set(DARMOK_BUILD_ASSIMP ON CACHE BOOL "build darmok with assimp support")
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 

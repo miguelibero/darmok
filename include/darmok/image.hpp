@@ -33,7 +33,7 @@ namespace darmok
 		[[nodiscard]] bimg::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
 		[[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
-		[[nodiscard]] const bgfx::Memory* makeCopyRef() const noexcept;
+		[[nodiscard]] const bgfx::Memory* copyMem() const noexcept;
 		[[nodiscard]] TextureType getTextureType(uint64_t flags) const noexcept;
 
 	private:

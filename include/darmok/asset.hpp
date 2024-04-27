@@ -11,9 +11,13 @@ namespace darmok
 	class StandardProgramLoader;
 	class ITextureLoader;
 	class ITextureAtlasLoader;
-	class IModelLoader;
 	class IVertexLayoutLoader;
 	class ColorTextureLoader;
+    class AssetContext;
+
+#ifdef DARMOK_ASSIMP 
+	class AssimpSceneLoader;
+#endif
 
 	class AssetContext final
 	{
@@ -27,8 +31,11 @@ namespace darmok
 		[[nodiscard]] StandardProgramLoader& getStandardProgramLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
-		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
+
+#ifdef DARMOK_ASSIMP 
+		[[nodiscard]] AssimpSceneLoader& getAssimpLoader() noexcept;
+#endif
 
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;

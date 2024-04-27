@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <bgfx/bgfx.h>
-#include <darmok/color.hpp>
+#include <darmok/color_fwd.hpp>
 
 extern "C" int _main_(int argc, char** argv);
 

@@ -3,21 +3,14 @@
 #include <memory>
 #include <cstdint>
 #include <vector>
-#include <darmok/app.hpp>
 #include <glm/glm.hpp>
 #include <bx/bx.h>
-#include <entt/entt.hpp>
+#include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/scene_fwd.hpp>
 
 namespace darmok
 {
-    class SceneImpl;
-    class Camera;
-
-    using Entity = uint32_t;
-    using EntityRegistry = entt::basic_registry<Entity> ;
-    using EntityRuntimeView = entt::basic_runtime_view<const entt::basic_sparse_set<Entity>> ;
-
     class BX_NO_VTABLE IEntityFilter
     {
     public:
@@ -50,6 +43,8 @@ namespace darmok
         virtual void shutdown() { }
         virtual void update(float deltaTime) = 0;
     };
+
+    class SceneImpl;
 
     class Scene final
     {

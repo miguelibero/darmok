@@ -10,18 +10,16 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/color.hpp>
 #include <darmok/texture_fwd.hpp>
+#include <darmok/texture_atlas_fwd.hpp>
+#include <darmok/material_fwd.hpp>
 
 namespace darmok
 {
-    using TextureAtlasIndex = uint16_t ;
-
-	struct TextureAtlasBounds
+	struct TextureAtlasBounds final
 	{
 		glm::uvec2 size;
 		glm::uvec2 offset;
 	};
-
-	class Material;
 
 	struct TextureAtlasElement final
 	{

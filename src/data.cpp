@@ -172,6 +172,15 @@ namespace darmok
         return bgfx::makeRef(_ptr, _size);
     }
 
+    const bgfx::Memory* Data::copyMem() const noexcept
+    {
+        if (empty())
+        {
+            return nullptr;
+        }
+        return bgfx::copy(_ptr, _size);
+    }
+
     Data::Data(const Data& other) noexcept
         : Data(other._ptr, other._size, other._alloc)
     {

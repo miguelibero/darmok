@@ -4,6 +4,8 @@
 #include "input.hpp"
 #include "window.hpp"
 #include <darmok/app.hpp>
+#include <darmok/color.hpp>
+
 #include <bx/filepath.h>
 #include <bx/timer.h>
 #include <iostream>

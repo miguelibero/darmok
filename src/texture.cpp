@@ -30,7 +30,7 @@ namespace darmok
 		// copying the memory of the image becauyse bgfx needs to maintain the memory for some frames
 		// since the texture creation can b e async, and it could happen that the std::shared_ptr<Image>
 		// is destroyed before (for example if a texture is created and replaced in the same frame
-		const auto mem = img.makeCopyRef();
+		const auto mem = img.copyMem();
 		auto w = uint16_t(_config.size.x);
 		auto h = uint16_t(_config.size.y);
 

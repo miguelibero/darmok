@@ -3,7 +3,7 @@
 #include <darmok/app.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
-#include <darmok/model.hpp>
+#include <darmok/assimp.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/light.hpp>
@@ -26,7 +26,7 @@ namespace
 
 		void update(float dt) override
 		{
-			auto r = _trans.getRotation() + glm::vec3(0, dt * _speed, 0);
+			auto r = _trans.getRotation() * glm::quat(glm::radians(glm::vec3(0, 0, dt * _speed)));
 			_trans.setRotation(r);
 		}
 
@@ -42,11 +42,11 @@ namespace
 		{
 			App::init(args);
 
-			auto& scene = addComponent<SceneAppComponent>().getScene();
+			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 
-			auto model = getAssets().getModelLoader()("human.fbx");
-			model->addToScene(scene, prog->getVertexLayout(), [&scene, prog](const ModelNode& node, Entity entity) {
+			auto assimpScene = getAssets().getAssimpLoader()("human.fbx");
+			assimpScene->addToScene(scene, prog->getVertexLayout(), [&scene, prog](const AssimpNode& node, Entity entity) {
 				auto& registry = scene.getRegistry();
 				if (node.getName() == "human")
 				{
@@ -56,8 +56,8 @@ namespace
 				if (node.getCamera().hasValue())
 				{
 					auto& cam = registry.get_or_emplace<Camera>(entity);
-					auto& lighting = cam.addComponent<PhongLightingComponent>();
-					cam.setRenderer<ForwardRenderer>(prog, lighting);
+					cam.addComponent<PhongLightingComponent>();
+					cam.setRenderer<ForwardRenderer>(prog);
 				}
 			});
 		}

@@ -2,6 +2,7 @@
 
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/material_fwd.hpp>
 
 #include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
@@ -11,34 +12,8 @@
 #include <memory>
 #include <unordered_map>
 
-
 namespace darmok
 {
-    enum class MaterialTextureType
-    {
-        Unknown,
-        Diffuse,
-        Specular,
-        Normal,
-        Count,
-    };
-
-    enum class MaterialColorType
-    {
-        Diffuse,
-        Specular,
-        Ambient,
-        Emissive,
-        Transparent,
-        Reflective,
-    };
-
-    enum class MaterialPrimitiveType
-    {
-        Triangle,
-        Line
-    };
-
     class Texture;
 
     class Material final

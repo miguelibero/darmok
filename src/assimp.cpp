@@ -1,14 +1,15 @@
 
-#include "model.hpp"
+#include <darmok/assimp.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/image.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/material.hpp>
+#include <darmok/mesh.hpp>
 
 #include <assimp/vector3.h>
-#include <assimp/material.h>
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -76,7 +77,7 @@ namespace darmok
 	}
 
 
-	ModelMaterialProperty::ModelMaterialProperty(aiMaterialProperty* ptr)
+	AssimpMaterialProperty::AssimpMaterialProperty(aiMaterialProperty* ptr)
 		: _ptr(ptr)
 	{
 		if (_ptr != nullptr)
@@ -85,55 +86,55 @@ namespace darmok
 		}
 	}
 
-	std::string_view ModelMaterialProperty::getKey() const noexcept
+	std::string_view AssimpMaterialProperty::getKey() const noexcept
 	{
 		return getStringView(_ptr->mKey);
 	}
 
-	ModelMaterialPropertyType ModelMaterialProperty::getType() const noexcept
+	aiPropertyTypeInfo AssimpMaterialProperty::getType() const noexcept
 	{
-		return (ModelMaterialPropertyType)_ptr->mType;
+		return _ptr->mType;
 	}
 
-	ModelMaterialTextureType ModelMaterialProperty::getTextureType() const noexcept
+	aiTextureType AssimpMaterialProperty::getTextureType() const noexcept
 	{
-		return (ModelMaterialTextureType)_ptr->mSemantic;
+		return (aiTextureType)_ptr->mSemantic;
 	}
 
-	size_t ModelMaterialProperty::getTextureIndex() const noexcept
+	size_t AssimpMaterialProperty::getTextureIndex() const noexcept
 	{
 		return _ptr->mIndex;
 	}
 
-	const DataView& ModelMaterialProperty::getData() const noexcept
+	const DataView& AssimpMaterialProperty::getData() const noexcept
 	{
 		return _data;
 	}
 
-	ModelMaterialPropertyCollection::ModelMaterialPropertyCollection(aiMaterial* ptr)
+	AssimpMaterialPropertyCollection::AssimpMaterialPropertyCollection(aiMaterial* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelMaterialPropertyCollection::size() const
+	size_t AssimpMaterialPropertyCollection::size() const
 	{
 		return _ptr == nullptr ? 0 : _ptr->mNumProperties;
 	}
 
-	ModelMaterialProperty ModelMaterialPropertyCollection::create(size_t pos) const
+	AssimpMaterialProperty AssimpMaterialPropertyCollection::create(size_t pos) const
 	{
-		return ModelMaterialProperty(_ptr->mProperties[pos]);
+		return AssimpMaterialProperty(_ptr->mProperties[pos]);
 	}
 
-	ModelMaterialTexture::ModelMaterialTexture(aiMaterial* ptr, ModelMaterialTextureType type, unsigned int index)
+	AssimpMaterialTexture::AssimpMaterialTexture(aiMaterial* ptr, aiTextureType type, unsigned int index)
 		: _ptr(ptr)
 		, _type(type)
 		, _index(index)
 		, _coordIndex(0)
-		, _mapping(ModelMaterialTextureMapping::Other)
+		, _mapping(aiTextureMapping_OTHER)
 		, _blend(0)
-		, _operation(ModelMaterialTextureOperation::Add)
-		, _mapMode(ModelMaterialTextureMapMode::Clamp)
+		, _operation(aiTextureOp_Add)
+		, _mapMode(aiTextureMapMode_Clamp)
 	{
 		if (ptr == nullptr)
 		{
@@ -142,73 +143,73 @@ namespace darmok
 		aiString path;
 		unsigned int uvindex;
 		ptr->GetTexture((aiTextureType)type, index, &path,
-			(aiTextureMapping*)&_mapping,
+			&_mapping,
 			&uvindex,
 			&_blend,
-			(aiTextureOp*) & _operation,
-			(aiTextureMapMode*)&_mapMode
+			& _operation,
+			&_mapMode
 		);
 		_coordIndex = uvindex;
 		_path = path.C_Str();
 	}
 
-	ModelMaterialTextureType ModelMaterialTexture::getType() const
+	aiTextureType AssimpMaterialTexture::getType() const
 	{
 		return _type;
 	}
 
-	size_t ModelMaterialTexture::getIndex() const
+	size_t AssimpMaterialTexture::getIndex() const
 	{
 		return _index;
 	}
 
-	const std::string& ModelMaterialTexture::getPath() const
+	const std::string& AssimpMaterialTexture::getPath() const
 	{
 		return _path;
 	}
 
-	ModelMaterialTextureMapping ModelMaterialTexture::getMapping() const
+	aiTextureMapping AssimpMaterialTexture::getMapping() const
 	{
 		return _mapping;
 	}
 
-	ModelMaterialTextureOperation ModelMaterialTexture::getOperation() const
+	aiTextureOp AssimpMaterialTexture::getOperation() const
 	{
 		return _operation;
 	}
 
-	ModelMaterialTextureMapMode ModelMaterialTexture::getMapMode() const
+	aiTextureMapMode AssimpMaterialTexture::getMapMode() const
 	{
 		return _mapMode;
 	}
 
-	float ModelMaterialTexture::getBlend() const
+	float AssimpMaterialTexture::getBlend() const
 	{
 		return _blend;
 	}
 
-	size_t ModelMaterialTexture::getCoordIndex() const
+	size_t AssimpMaterialTexture::getCoordIndex() const
 	{
 		return _coordIndex;
 	}
 
-	ModelMaterialTextureCollection::ModelMaterialTextureCollection(aiMaterial* ptr, ModelMaterialTextureType type)
+	AssimpMaterialTextureCollection::AssimpMaterialTextureCollection(aiMaterial* ptr, aiTextureType type)
 		: _ptr(ptr)
 		, _type(type)
 	{
 	}
 
-	size_t ModelMaterialTextureCollection::size() const
+	size_t AssimpMaterialTextureCollection::size() const
 	{
 		return _ptr->GetTextureCount((aiTextureType)_type);
 	}
 
-	ModelMaterialTexture ModelMaterialTextureCollection::create(size_t pos) const
+	AssimpMaterialTexture AssimpMaterialTextureCollection::create(size_t pos) const
 	{
-		return ModelMaterialTexture(_ptr, _type, pos);
+		return AssimpMaterialTexture(_ptr, _type, pos);
 	}
 
-	ModelMaterial::ModelMaterial(aiMaterial* ptr, const aiScene* scene, const std::string& basePath, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
+	AssimpMaterial::AssimpMaterial(aiMaterial* ptr, const aiScene* scene, const std::string& basePath, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
 		: _ptr(ptr)
 		, _scene(scene)
 		, _properties(ptr)
@@ -218,44 +219,44 @@ namespace darmok
 	{
 	}
 
-	std::string_view ModelMaterial::getName() const
+	std::string_view AssimpMaterial::getName() const
 	{
 		return getStringView(_ptr->GetName());
 	}
 
-	ModelMaterialTextureCollection ModelMaterial::getTextures(ModelMaterialTextureType type) const
+	AssimpMaterialTextureCollection AssimpMaterial::getTextures(aiTextureType type) const
 	{
-		return ModelMaterialTextureCollection(_ptr, type);
+		return AssimpMaterialTextureCollection(_ptr, type);
 	}
 
-	const ModelMaterialPropertyCollection& ModelMaterial::getProperties() const
+	const AssimpMaterialPropertyCollection& AssimpMaterial::getProperties() const
 	{
 		return _properties;
 	}
 
-	std::optional<Color> ModelMaterial::getColor(ModelMaterialColorType type) const
+	std::optional<Color> AssimpMaterial::getColor(AssimpMaterialColorType type) const
 	{
 		aiColor4D color;
 		aiReturn r = AI_FAILURE;
 		switch (type)
 		{
-		case ModelMaterialColorType::Diffuse:
+		case AssimpMaterialColorType::Diffuse:
 			r = _ptr->Get(AI_MATKEY_COLOR_DIFFUSE, color);
 			break;
-		case ModelMaterialColorType::Specular:
+		case AssimpMaterialColorType::Specular:
 			r = _ptr->Get(AI_MATKEY_COLOR_SPECULAR, color);
 			break;
-		case ModelMaterialColorType::Ambient:
+		case AssimpMaterialColorType::Ambient:
 			r = _ptr->Get(AI_MATKEY_COLOR_AMBIENT, color);
 			break;
-		case ModelMaterialColorType::Emissive:
+		case AssimpMaterialColorType::Emissive:
 			r = _ptr->Get(AI_MATKEY_COLOR_EMISSIVE, color);
 			break;
-		case ModelMaterialColorType::Transparent:
+		case AssimpMaterialColorType::Transparent:
 			r = _ptr->Get(AI_MATKEY_COLOR_TRANSPARENT, color);
 			break;
-		case ModelMaterialColorType::Reflective:
-			r = _ptr->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+		case AssimpMaterialColorType::Reflective:
+			r = _ptr->Get(AI_MATKEY_COLOR_REFLECTIVE, color);
 			break;
 		}
 		if (r == AI_SUCCESS)
@@ -265,7 +266,7 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	bool ModelMaterial::showWireframe() const
+	bool AssimpMaterial::showWireframe() const
 	{
 		int v;
 		if (AI_SUCCESS == _ptr->Get(AI_MATKEY_ENABLE_WIREFRAME, v))
@@ -275,17 +276,17 @@ namespace darmok
 		return false;
 	}
 
-	ModelMaterialShadingModel ModelMaterial::getShadingModel() const
+	aiShadingMode AssimpMaterial::getShadingMode() const
 	{
 		int v;
 		if (AI_SUCCESS == _ptr->Get(AI_MATKEY_SHADING_MODEL, v))
 		{
-			return (ModelMaterialShadingModel)v;
+			return (aiShadingMode)v;
 		}
-		return ModelMaterialShadingModel::Unknown;
+		return aiShadingMode_NoShading;
 	}
 
-	float ModelMaterial::getOpacity() const
+	float AssimpMaterial::getOpacity() const
 	{
 		float v;
 		if (AI_SUCCESS == _ptr->Get(AI_MATKEY_OPACITY, v))
@@ -295,22 +296,21 @@ namespace darmok
 		return 1.f;
 	}
 
-	static const auto _materialColors = std::unordered_map<ModelMaterialColorType, MaterialColorType>
+	static const auto _materialColors = std::unordered_map<AssimpMaterialColorType, MaterialColorType>
 	{
-		{ ModelMaterialColorType::Diffuse, MaterialColorType::Diffuse },
-		{ ModelMaterialColorType::Specular, MaterialColorType::Specular },
-		{ ModelMaterialColorType::Ambient, MaterialColorType::Ambient },
-		{ ModelMaterialColorType::Emissive, MaterialColorType::Emissive },
-		{ ModelMaterialColorType::Transparent, MaterialColorType::Transparent },
-		{ ModelMaterialColorType::Reflective, MaterialColorType::Reflective },
+		{ AssimpMaterialColorType::Diffuse, MaterialColorType::Diffuse },
+		{ AssimpMaterialColorType::Specular, MaterialColorType::Specular },
+		{ AssimpMaterialColorType::Ambient, MaterialColorType::Ambient },
+		{ AssimpMaterialColorType::Emissive, MaterialColorType::Emissive },
+		{ AssimpMaterialColorType::Transparent, MaterialColorType::Transparent },
+		{ AssimpMaterialColorType::Reflective, MaterialColorType::Reflective },
 	};
 
-
-	static const auto _materialTextures = std::unordered_map<ModelMaterialTextureType, MaterialTextureType>
+	static const auto _materialTextures = std::unordered_map<aiTextureType, MaterialTextureType>
 	{
-		{ ModelMaterialTextureType::Diffuse, MaterialTextureType::Diffuse },
-		{ ModelMaterialTextureType::Specular, MaterialTextureType::Specular },
-		{ ModelMaterialTextureType::Normal, MaterialTextureType::Normal },
+		{ aiTextureType_DIFFUSE, MaterialTextureType::Diffuse },
+		{ aiTextureType_SPECULAR, MaterialTextureType::Specular },
+		{ aiTextureType_NORMALS, MaterialTextureType::Normal },
 	};
 
 	static std::shared_ptr<Texture> loadEmbeddedTexture(const aiScene* scene, const char* filePath, bx::AllocatorI* alloc = nullptr)
@@ -352,7 +352,7 @@ namespace darmok
 		return tex;
 	}
 
-	std::pair<MaterialTextureType, std::shared_ptr<Texture>> ModelMaterial::createMaterialTexture(const ModelMaterialTexture& modelTexture) const
+	std::pair<MaterialTextureType, std::shared_ptr<Texture>> AssimpMaterial::createMaterialTexture(const AssimpMaterialTexture& modelTexture) const
 	{
 		auto itr = _materialTextures.find(modelTexture.getType());
 		if (itr == _materialTextures.end())
@@ -377,7 +377,7 @@ namespace darmok
 		return std::make_pair(itr->second, texture);
 	}
 
-	std::shared_ptr<Material> ModelMaterial::load() const noexcept
+	std::shared_ptr<Material> AssimpMaterial::load() const noexcept
 	{
 		auto material = std::make_shared<Material>();
 		for (auto& elm : _materialTextures)
@@ -401,7 +401,7 @@ namespace darmok
 		return material;
 	}
 
-	static VertexIndex* getModelIndex(unsigned int* indices, size_t pos)
+	static VertexIndex* getAssimpIndex(unsigned int* indices, size_t pos)
 	{
 		if (indices == nullptr)
 		{
@@ -410,33 +410,33 @@ namespace darmok
 		return (VertexIndex*) & (indices[pos]);
 	}
 
-	ModelMeshFaceIndexCollection::ModelMeshFaceIndexCollection(aiFace* ptr)
+	AssimpMeshFaceIndexCollection::AssimpMeshFaceIndexCollection(aiFace* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelMeshFaceIndexCollection::size() const
+	size_t AssimpMeshFaceIndexCollection::size() const
 	{
 		return _ptr->mNumIndices;
 	}
 
-	const VertexIndex& ModelMeshFaceIndexCollection::operator[](size_t pos) const
+	const VertexIndex& AssimpMeshFaceIndexCollection::operator[](size_t pos) const
 	{
 		return (VertexIndex&)_ptr->mIndices[pos];
 	}
 
-	VertexIndex& ModelMeshFaceIndexCollection::operator[](size_t pos)
+	VertexIndex& AssimpMeshFaceIndexCollection::operator[](size_t pos)
 	{
 		return (VertexIndex&)_ptr->mIndices[pos];
 	}
 
-	ModelMeshFace::ModelMeshFace(aiFace* ptr)
+	AssimpMeshFace::AssimpMeshFace(aiFace* ptr)
 		: _ptr(ptr)
 		, _indices(ptr)
 	{
 	}
 
-	size_t ModelMeshFace::size() const
+	size_t AssimpMeshFace::size() const
 	{
 		if (_ptr == nullptr)
 		{
@@ -445,85 +445,85 @@ namespace darmok
 		return _ptr->mNumIndices;
 	}
 
-	bool ModelMeshFace::empty() const
+	bool AssimpMeshFace::empty() const
 	{
 		return size() == 0;
 	}
 
-	const ModelMeshFaceIndexCollection& ModelMeshFace::getIndices() const
+	const AssimpMeshFaceIndexCollection& AssimpMeshFace::getIndices() const
 	{
 		return _indices;
 	}
 
-	ModelVector3Collection::ModelVector3Collection(aiVector3D* ptr, size_t size)
+	AssimpVector3Collection::AssimpVector3Collection(aiVector3D* ptr, size_t size)
 		: _ptr(ptr)
 		, _size(size)
 	{
 	}
 
-	size_t ModelVector3Collection::size() const
+	size_t AssimpVector3Collection::size() const
 	{
 		return _ptr == nullptr ? 0 : _size;
 	}
 
-	glm::vec3 ModelVector3Collection::create(size_t pos) const
+	glm::vec3 AssimpVector3Collection::create(size_t pos) const
 	{
 		return convertVector(_ptr[pos]);
 	}
 
-	ModelColorCollection::ModelColorCollection(aiColor4D* ptr, size_t size)
+	AssimpColorCollection::AssimpColorCollection(aiColor4D* ptr, size_t size)
 		: _ptr(ptr)
 		, _size(size)
 	{
 	}
 
-	Color ModelColorCollection::create(size_t pos) const
+	Color AssimpColorCollection::create(size_t pos) const
 	{
 		return convertColor(_ptr[pos]);
 	}
 
-	size_t ModelColorCollection::size() const
+	size_t AssimpColorCollection::size() const
 	{
 		return _size;
 	}
 
-	ModelTextureCoords::ModelTextureCoords(aiMesh* mesh, size_t pos)
+	AssimpTextureCoords::AssimpTextureCoords(aiMesh* mesh, size_t pos)
 		: _compCount(mesh->mNumUVComponents[pos])
 		, _coords(mesh->mTextureCoords[pos], mesh->mNumVertices)
 	{
 	}
 
-	size_t ModelTextureCoords::getCompCount() const
+	size_t AssimpTextureCoords::getCompCount() const
 	{
 		return _compCount;
 	}
 
-	const ModelVector3Collection& ModelTextureCoords::getCoords() const
+	const AssimpVector3Collection& AssimpTextureCoords::getCoords() const
 	{
 		return _coords;
 	}
 
-	ModelMeshFaceCollection::ModelMeshFaceCollection(aiMesh* ptr)
+	AssimpMeshFaceCollection::AssimpMeshFaceCollection(aiMesh* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelMeshFaceCollection::size() const
+	size_t AssimpMeshFaceCollection::size() const
 	{
 		return _ptr == nullptr || _ptr->mFaces == nullptr ? 0 : _ptr->mNumFaces;
 	}
 
-	ModelMeshFace ModelMeshFaceCollection::create(size_t pos) const
+	AssimpMeshFace AssimpMeshFaceCollection::create(size_t pos) const
 	{
-		return ModelMeshFace(&_ptr->mFaces[pos]);
+		return AssimpMeshFace(&_ptr->mFaces[pos]);
 	}
 
-	ModelMeshTextureCoordsCollection::ModelMeshTextureCoordsCollection(aiMesh* ptr)
+	AssimpMeshTextureCoordsCollection::AssimpMeshTextureCoordsCollection(aiMesh* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelMeshTextureCoordsCollection::size() const
+	size_t AssimpMeshTextureCoordsCollection::size() const
 	{
 		size_t count = 0;
 		for (size_t i = 0; i < AI_MAX_NUMBER_OF_TEXTURECOORDS; i++)
@@ -536,7 +536,7 @@ namespace darmok
 		return count;
 	}
 
-	ModelTextureCoords ModelMeshTextureCoordsCollection::create(size_t pos) const
+	AssimpTextureCoords AssimpMeshTextureCoordsCollection::create(size_t pos) const
 	{
 		size_t i = 0;
 		size_t count = 0;
@@ -550,15 +550,15 @@ namespace darmok
 				}
 			}
 		}
-		return ModelTextureCoords(_ptr, i);
+		return AssimpTextureCoords(_ptr, i);
 	}
 
-	ModelMeshColorsCollection::ModelMeshColorsCollection(aiMesh* ptr)
+	AssimpMeshColorsCollection::AssimpMeshColorsCollection(aiMesh* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelMeshColorsCollection::size() const
+	size_t AssimpMeshColorsCollection::size() const
 	{
 		size_t count = 0;
 		for (size_t i = 0; i < AI_MAX_NUMBER_OF_COLOR_SETS; i++)
@@ -571,7 +571,7 @@ namespace darmok
 		return count;
 	}
 
-	ModelColorCollection ModelMeshColorsCollection::create(size_t pos) const
+	AssimpColorCollection AssimpMeshColorsCollection::create(size_t pos) const
 	{
 		size_t i = 0;
 		size_t count = 0;
@@ -585,10 +585,10 @@ namespace darmok
 				}
 			}
 		}
-		return ModelColorCollection(_ptr->mColors[i], _ptr->mNumVertices);
+		return AssimpColorCollection(_ptr->mColors[i], _ptr->mNumVertices);
 	}
 
-	ModelMesh::ModelMesh(aiMesh* ptr, ModelMaterial& material)
+	AssimpMesh::AssimpMesh(aiMesh* ptr, AssimpMaterial& material)
 		: _ptr(ptr)
 		, _positions(ptr->mVertices, ptr->mNumVertices)
 		, _normals(ptr->mNormals, ptr->mNumVertices)
@@ -601,57 +601,57 @@ namespace darmok
 	{
 	}
 
-	ModelMaterial& ModelMesh::getMaterial()
+	AssimpMaterial& AssimpMesh::getMaterial()
 	{
 		return _material;
 	}
 
-	const ModelMaterial& ModelMesh::getMaterial() const
+	const AssimpMaterial& AssimpMesh::getMaterial() const
 	{
 		return _material;
 	}
 
-	const ModelVector3Collection& ModelMesh::getPositions() const
+	const AssimpVector3Collection& AssimpMesh::getPositions() const
 	{
 		return _positions;
 	}
 
-	const ModelVector3Collection& ModelMesh::getNormals() const
+	const AssimpVector3Collection& AssimpMesh::getNormals() const
 	{
 		return _normals;
 	}
 
-	const ModelVector3Collection& ModelMesh::getTangents() const
+	const AssimpVector3Collection& AssimpMesh::getTangents() const
 	{
 		return _tangents;
 	}
 
-	const ModelVector3Collection& ModelMesh::getBitangents() const
+	const AssimpVector3Collection& AssimpMesh::getBitangents() const
 	{
 		return _bitangents;
 	}
 
-	const ModelMeshTextureCoordsCollection& ModelMesh::getTexCoords() const
+	const AssimpMeshTextureCoordsCollection& AssimpMesh::getTexCoords() const
 	{
 		return _texCoords;
 	}
 
-	const size_t ModelMesh::getVertexCount() const
+	const size_t AssimpMesh::getVertexCount() const
 	{
 		return _ptr->mNumVertices;
 	}
 
-	const ModelMeshFaceCollection& ModelMesh::getFaces() const
+	const AssimpMeshFaceCollection& AssimpMesh::getFaces() const
 	{
 		return _faces;
 	}
 
-	const ModelMeshColorsCollection& ModelMesh::getColors() const
+	const AssimpMeshColorsCollection& AssimpMesh::getColors() const
 	{
 		return _colors;
 	}
 
-	static Data createModelMeshVertexData(const ModelMesh& modelMesh, const bgfx::VertexLayout& layout) noexcept
+	static Data createAssimpMeshVertexData(const AssimpMesh& modelMesh, const bgfx::VertexLayout& layout) noexcept
 	{
 		VertexDataWriter writer(layout, modelMesh.getVertexCount());
 		writer.write(bgfx::Attrib::Position, modelMesh.getPositions());
@@ -678,7 +678,7 @@ namespace darmok
 		return writer.finish();
 	}
 
-	Data createModelMeshIndexData(const ModelMesh& modelMesh)
+	Data createAssimpMeshIndexData(const AssimpMesh& modelMesh)
 	{
 		std::vector<VertexIndex> indices;
 		for (auto& face : modelMesh.getFaces())
@@ -688,28 +688,28 @@ namespace darmok
 		return Data::copy(indices);
 	}
 
-	std::shared_ptr<Mesh> ModelMesh::load(const bgfx::VertexLayout& layout) const
+	std::shared_ptr<Mesh> AssimpMesh::load(const bgfx::VertexLayout& layout) const
 	{
 		auto material = getMaterial().load();
-		auto vertices = createModelMeshVertexData(*this, layout);
-		auto indices = createModelMeshIndexData(*this);
+		auto vertices = createAssimpMeshVertexData(*this, layout);
+		auto indices = createAssimpMeshIndexData(*this);
 
 		auto ptr = (float*)vertices.ptr();
 		return std::make_shared<Mesh>(layout, std::move(vertices), std::move(indices), material);
 	}
 
-	ModelNodeMeshCollection::ModelNodeMeshCollection(aiNode* ptr, Model& model)
+	AssimpNodeMeshCollection::AssimpNodeMeshCollection(aiNode* ptr, AssimpScene& scene)
 		: _ptr(ptr)
-		, _model(model)
+		, _scene(scene)
 	{
 	}
 	
-	size_t ModelNodeMeshCollection::size() const
+	size_t AssimpNodeMeshCollection::size() const
 	{
 		return _ptr == nullptr ? 0 : _ptr->mNumMeshes;
 	}
 
-	std::vector<std::shared_ptr<Mesh>> ModelNodeMeshCollection::load(const bgfx::VertexLayout& layout) const
+	std::vector<std::shared_ptr<Mesh>> AssimpNodeMeshCollection::load(const bgfx::VertexLayout& layout) const
 	{
 		std::vector<std::shared_ptr<Mesh>> meshes;
 		for (auto& mesh : *this)
@@ -719,19 +719,19 @@ namespace darmok
 		return meshes;
 	}
 
-	const ModelMesh& ModelNodeMeshCollection::operator[](size_t pos) const
+	const AssimpMesh& AssimpNodeMeshCollection::operator[](size_t pos) const
 	{
 		auto m = _ptr->mMeshes[pos];
-		return _model.getMeshes()[m];
+		return _scene.getMeshes()[m];
 	}
 
-	ModelMesh& ModelNodeMeshCollection::operator[](size_t pos)
+	AssimpMesh& AssimpNodeMeshCollection::operator[](size_t pos)
 	{
 		auto m = _ptr->mMeshes[pos];
-		return _model.getMeshes()[m];
+		return _scene.getMeshes()[m];
 	}
 
-	ModelCamera::ModelCamera(aiCamera* ptr)
+	AssimpCamera::AssimpCamera(aiCamera* ptr)
 		: _ptr(ptr)
 	{
 		aiMatrix4x4 mat;
@@ -751,111 +751,109 @@ namespace darmok
 		bx::mtxProj(glm::value_ptr(_proj), bx::toDeg(fovy), aspect, clipNear, clipFar, bgfx::getCaps()->homogeneousDepth);
 	}
 
-	std::string_view ModelCamera::getName() const
+	std::string_view AssimpCamera::getName() const
 	{
 		return getStringView(_ptr->mName);
 	}
 
-	const glm::mat4& ModelCamera::getProjectionMatrix() const
+	const glm::mat4& AssimpCamera::getProjectionMatrix() const
 	{
 		return _proj;
 	}
 
-	const glm::mat4& ModelCamera::getViewMatrix() const
+	const glm::mat4& AssimpCamera::getViewMatrix() const
 	{
 		return _view;
 	}
 
-	float ModelCamera::getAspect() const
+	float AssimpCamera::getAspect() const
 	{
 		return _ptr->mAspect;
 	}
 
-	float ModelCamera::getClipFar() const
+	float AssimpCamera::getClipFar() const
 	{
 		return _ptr->mClipPlaneFar;
 	}
 
-	float ModelCamera::getClipNear() const
+	float AssimpCamera::getClipNear() const
 	{
 		return _ptr->mClipPlaneNear;
 	}
 
-	float ModelCamera::getHorizontalFieldOfView() const
+	float AssimpCamera::getHorizontalFieldOfView() const
 	{
 		return _ptr->mHorizontalFOV;
 	}
 
-	float ModelCamera::getOrthographicWidth() const
+	float AssimpCamera::getOrthographicWidth() const
 	{
 		return _ptr->mOrthographicWidth;
 	}
 
-	glm::vec3 ModelCamera::getLookAt() const
+	glm::vec3 AssimpCamera::getLookAt() const
 	{
 		return convertVector(_ptr->mLookAt);
 	}
 
-	glm::vec3 ModelCamera::getPosition() const
+	glm::vec3 AssimpCamera::getPosition() const
 	{
 		return convertVector(_ptr->mPosition);
 	}
 
-	glm::vec3 ModelCamera::getUp() const
+	glm::vec3 AssimpCamera::getUp() const
 	{
 		return convertVector(_ptr->mUp);
 	}
 
-	ModelLight::ModelLight(aiLight* ptr) noexcept
+	AssimpLight::AssimpLight(aiLight* ptr) noexcept
 		: _ptr(ptr)
 	{
 	}
 
-	void ModelLight::addToScene(Scene& scene, Entity entity) const noexcept
+	void AssimpLight::addToScene(Scene& scene, Entity entity) const noexcept
 	{
 		auto& registry = scene.getRegistry();
 		switch (getType())
 		{
-		case ModelLightType::Point:
+		case aiLightSource_POINT:
 		{
 			registry.emplace<PointLight>(entity)
 				.setAttenuation(getAttenuation())
-				.setDiffuseColor(getColor(ModelLightColorType::Diffuse))
-				.setSpecularColor(getColor(ModelLightColorType::Specular))
+				.setDiffuseColor(getDiffuseColor())
+				.setSpecularColor(getSpecularColor())
 				;
-			auto ambient = getColor(ModelLightColorType::Ambient);
+			auto ambient = getAmbientColor();
 			if (ambient != Colors::black3())
 			{
 				registry.emplace<AmbientLight>(entity)
-					.setColor(ambient)
-					;
+					.setColor(ambient);
 			}
 			break;
 		}
-		case ModelLightType::Ambient:
+		case aiLightSource_AMBIENT:
 			registry.emplace<AmbientLight>(entity)
-				.setColor(getColor(ModelLightColorType::Ambient))
-				;
+				.setColor(getAmbientColor());
 			break;
 		}
 	}
 
-	std::string_view ModelLight::getName() const noexcept
+	std::string_view AssimpLight::getName() const noexcept
 	{
 		return getStringView(_ptr->mName);
 	}
 
-	float ModelLight::getInnerConeAngle() const noexcept
+	float AssimpLight::getInnerConeAngle() const noexcept
 	{
 		return _ptr->mAngleInnerCone;
 	}
 
-	float ModelLight::getOuterConeAngle() const noexcept
+	float AssimpLight::getOuterConeAngle() const noexcept
 	{
 		return _ptr->mAngleOuterCone;
 	}
 
-	glm::vec3 ModelLight::getAttenuation() const noexcept
+	glm::vec3 AssimpLight::getAttenuation() const noexcept
 	{
 		return {
 			_ptr->mAttenuationConstant,
@@ -864,98 +862,99 @@ namespace darmok
 		};
 	}
 
-	Color3 ModelLight::getColor(ModelLightColorType type) const noexcept
+	Color3 AssimpLight::getAmbientColor() const noexcept
 	{
-		switch (type)
-		{
-		case ModelLightColorType::Ambient:
-			return convertColor(_ptr->mColorAmbient);
-		case ModelLightColorType::Diffuse:
-			return convertColor(_ptr->mColorDiffuse);
-		case ModelLightColorType::Specular:
-			return convertColor(_ptr->mColorSpecular);
-		}
-		return Colors::white3();
+		return convertColor(_ptr->mColorAmbient);
 	}
 
-	glm::vec3 ModelLight::getDirection() const noexcept
+	Color3 AssimpLight::getDiffuseColor() const noexcept
+	{
+		return convertColor(_ptr->mColorDiffuse);
+	}
+
+	Color3 AssimpLight::getSpecularColor() const noexcept
+	{
+		return convertColor(_ptr->mColorSpecular);
+	}
+
+	glm::vec3 AssimpLight::getDirection() const noexcept
 	{
 		return convertVector(_ptr->mDirection);
 	}
 
-	glm::vec3 ModelLight::getPosition() const noexcept
+	glm::vec3 AssimpLight::getPosition() const noexcept
 	{
 		return convertVector(_ptr->mPosition);
 	}
 
-	ModelLightType ModelLight::getType() const noexcept
+	aiLightSourceType AssimpLight::getType() const noexcept
 	{
-		return (ModelLightType)_ptr->mType;
+		return _ptr->mType;
 	}
 
-	glm::vec2 ModelLight::getSize() const noexcept
+	glm::vec2 AssimpLight::getSize() const noexcept
 	{
 		return convertVector(_ptr->mSize);
 	}
 
-	ModelNodeChildrenCollection::ModelNodeChildrenCollection(aiNode* ptr, Model& model, const std::string& basePath)
+	AssimpNodeChildrenCollection::AssimpNodeChildrenCollection(aiNode* ptr, AssimpScene& scene, const std::string& basePath)
 		: _ptr(ptr)
-		, _model(model)
+		, _scene(scene)
 		, _basePath(basePath)
 	{
 	}
 
-	size_t ModelNodeChildrenCollection::size() const
+	size_t AssimpNodeChildrenCollection::size() const
 	{
 		return _ptr == nullptr ? 0 : _ptr->mNumChildren;
 	}
 
-	ModelNode ModelNodeChildrenCollection::create(size_t pos) const
+	AssimpNode AssimpNodeChildrenCollection::create(size_t pos) const
 	{
-		return ModelNode(_ptr->mChildren[pos], _model, _basePath);
+		return AssimpNode(_ptr->mChildren[pos], _scene, _basePath);
 	}
 
-	ModelNode::ModelNode(aiNode* ptr, Model& model, const std::string& basePath)
+	AssimpNode::AssimpNode(aiNode* ptr, AssimpScene& scene, const std::string& basePath)
 		: _ptr(ptr)
-		, _meshes(ptr, model)
-		, _children(ptr, model, basePath)
+		, _meshes(ptr, scene)
+		, _children(ptr, scene, basePath)
 		, _basePath(basePath)
-		, _model(model)
+		, _scene(scene)
 	{
 	}
 
-	std::string_view ModelNode::getName() const
+	std::string_view AssimpNode::getName() const
 	{
 		return getStringView(_ptr->mName);
 	}
 
-	glm::mat4 ModelNode::getTransform() const
+	glm::mat4 AssimpNode::getTransform() const
 	{
 		return convertMatrix(_ptr->mTransformation);
 	}
 
-	const ModelNodeMeshCollection& ModelNode::getMeshes() const
+	const AssimpNodeMeshCollection& AssimpNode::getMeshes() const
 	{
 		return _meshes;
 	}
 
-	const ModelNodeChildrenCollection& ModelNode::getChildren() const
+	const AssimpNodeChildrenCollection& AssimpNode::getChildren() const
 	{
 		return _children;
 	}
 
-	ModelNodeMeshCollection& ModelNode::getMeshes()
+	AssimpNodeMeshCollection& AssimpNode::getMeshes()
 	{
 		return _meshes;
 	}
 
-	ModelNodeChildrenCollection& ModelNode::getChildren()
+	AssimpNodeChildrenCollection& AssimpNode::getChildren()
 	{
 		return _children;
 	}
 
 	template<typename T>
-	static OptionalRef<T> getModelNodeChild(T& node, const std::string_view& path)
+	static OptionalRef<T> getAssimpNodeChild(T& node, const std::string_view& path)
 	{
 		auto itr = path.find('/');
 		auto sep = itr != std::string::npos;
@@ -975,37 +974,37 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	OptionalRef<const ModelNode> ModelNode::getChild(const std::string_view& path) const
+	OptionalRef<const AssimpNode> AssimpNode::getChild(const std::string_view& path) const
 	{
-		return getModelNodeChild(*this, path);
+		return getAssimpNodeChild(*this, path);
 	}
 
-	OptionalRef<const ModelCamera> ModelNode::getCamera() const
+	OptionalRef<const AssimpCamera> AssimpNode::getCamera() const
 	{
-		return ((const Model&)_model).getCameras().get(getName());
+		return _scene.getCameras().get(getName());
 	}
 
-	OptionalRef<const ModelLight> ModelNode::getLight() const
+	OptionalRef<const AssimpLight> AssimpNode::getLight() const
 	{
-		return ((const Model&)_model).getLights().get(getName());
+		return _scene.getLights().get(getName());
 	}
 
-	OptionalRef<ModelNode> ModelNode::getChild(const std::string_view& path)
+	OptionalRef<AssimpNode> AssimpNode::getChild(const std::string_view& path)
 	{
-		return getModelNodeChild(*this, path);
+		return getAssimpNodeChild(*this, path);
 	}
 
-	OptionalRef<ModelCamera> ModelNode::getCamera()
+	OptionalRef<AssimpCamera> AssimpNode::getCamera()
 	{
-		return _model.getCameras().get(getName());
+		return _scene.getCameras().get(getName());
 	}
 
-	OptionalRef<ModelLight> ModelNode::getLight()
+	OptionalRef<AssimpLight> AssimpNode::getLight()
 	{
-		return _model.getLights().get(getName());
+		return _scene.getLights().get(getName());
 	}
 
-	Entity ModelNode::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
+	Entity AssimpNode::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
 	{
 		auto entity = doAddToScene(scene, layout, parent);
 		for (auto& child : getChildren())
@@ -1015,7 +1014,7 @@ namespace darmok
 		return entity;
 	}
 
-	Entity ModelNode::doAddToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
+	Entity AssimpNode::doAddToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
 	{
 		auto entity = scene.getRegistry().create();
 		auto transMat = getTransform();
@@ -1046,34 +1045,22 @@ namespace darmok
 		return entity;
 	}
 
-	ModelCameraCollection::ModelCameraCollection(const aiScene* ptr)
+	AssimpCameraCollection::AssimpCameraCollection(const aiScene* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelCameraCollection::size() const
+	size_t AssimpCameraCollection::size() const
 	{
 		return _ptr == nullptr ? 0 : _ptr->mNumCameras;
 	}
 
-	ModelCamera ModelCameraCollection::create(size_t pos) const
+	AssimpCamera AssimpCameraCollection::create(size_t pos) const
 	{
-		return ModelCamera(_ptr->mCameras[pos]);
+		return AssimpCamera(_ptr->mCameras[pos]);
 	}
 
-	OptionalRef<ModelCamera> ModelCameraCollection::get(const std::string_view& name)
-	{
-		for (auto& elm : *this)
-		{
-			if (elm.getName() == name)
-			{
-				return elm;
-			}
-		}
-		return std::nullopt;
-	}
-
-	OptionalRef<const ModelCamera> ModelCameraCollection::get(const std::string_view& name) const
+	OptionalRef<AssimpCamera> AssimpCameraCollection::get(const std::string_view& name)
 	{
 		for (auto& elm : *this)
 		{
@@ -1085,34 +1072,34 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	ModelLightCollection::ModelLightCollection(const aiScene* ptr)
+	OptionalRef<const AssimpCamera> AssimpCameraCollection::get(const std::string_view& name) const
+	{
+		for (auto& elm : *this)
+		{
+			if (elm.getName() == name)
+			{
+				return elm;
+			}
+		}
+		return std::nullopt;
+	}
+
+	AssimpLightCollection::AssimpLightCollection(const aiScene* ptr)
 		: _ptr(ptr)
 	{
 	}
 
-	size_t ModelLightCollection::size() const
+	size_t AssimpLightCollection::size() const
 	{
 		return _ptr == nullptr ? 0 : _ptr->mNumCameras;
 	}
 
-	ModelLight ModelLightCollection::create(size_t pos) const
+	AssimpLight AssimpLightCollection::create(size_t pos) const
 	{
-		return ModelLight(_ptr->mLights[pos]);
+		return AssimpLight(_ptr->mLights[pos]);
 	}
 
-	OptionalRef<ModelLight> ModelLightCollection::get(const std::string_view& name)
-	{
-		for (auto& elm : *this)
-		{
-			if (elm.getName() == name)
-			{
-				return elm;
-			}
-		}
-		return std::nullopt;
-	}
-
-	OptionalRef<const ModelLight> ModelLightCollection::get(const std::string_view& name) const
+	OptionalRef<AssimpLight> AssimpLightCollection::get(const std::string_view& name)
 	{
 		for (auto& elm : *this)
 		{
@@ -1124,7 +1111,19 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	ModelMaterialCollection::ModelMaterialCollection(const aiScene* ptr, const std::string& basePath,
+	OptionalRef<const AssimpLight> AssimpLightCollection::get(const std::string_view& name) const
+	{
+		for (auto& elm : *this)
+		{
+			if (elm.getName() == name)
+			{
+				return elm;
+			}
+		}
+		return std::nullopt;
+	}
+
+	AssimpMaterialCollection::AssimpMaterialCollection(const aiScene* ptr, const std::string& basePath,
 		const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
 		: _ptr(ptr)
 		, _basePath(basePath)
@@ -1133,35 +1132,35 @@ namespace darmok
 	{
 	}
 
-	size_t ModelMaterialCollection::size() const
+	size_t AssimpMaterialCollection::size() const
 	{
 		return _ptr == nullptr ? 0 : _ptr->mNumMaterials;
 	}
 
-	ModelMaterial ModelMaterialCollection::create(size_t pos) const
+	AssimpMaterial AssimpMaterialCollection::create(size_t pos) const
 	{
-		return ModelMaterial(_ptr->mMaterials[pos], _ptr, _basePath, _textureLoader, _alloc);
+		return AssimpMaterial(_ptr->mMaterials[pos], _ptr, _basePath, _textureLoader, _alloc);
 	}
 
-	ModelMeshCollection::ModelMeshCollection(const aiScene* ptr, ModelMaterialCollection& materials)
+	AssimpMeshCollection::AssimpMeshCollection(const aiScene* ptr, AssimpMaterialCollection& materials)
 		: _ptr(ptr)
 		, _materials(materials)
 	{
 	}
 
-	size_t ModelMeshCollection::size() const
+	size_t AssimpMeshCollection::size() const
 	{
 		return _ptr == nullptr ? 0 : _ptr->mNumMeshes;
 	}
 
-	ModelMesh ModelMeshCollection::create(size_t pos) const
+	AssimpMesh AssimpMeshCollection::create(size_t pos) const
 	{
 		auto ptr = _ptr->mMeshes[pos];
 		auto& material = _materials[ptr->mMaterialIndex];
-		return ModelMesh(ptr, material);
+		return AssimpMesh(ptr, material);
 	}
 
-	Model::Model(const aiScene* ptr, const std::string& path, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
+	AssimpScene::AssimpScene(const aiScene* ptr, const std::string& path, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
 		: _ptr(ptr)
 		, _basePath(std::filesystem::path(path).parent_path().string())
 		, _rootNode(ptr->mRootNode, *this, _basePath)
@@ -1173,79 +1172,79 @@ namespace darmok
 	{
 	}
 
-	std::string_view Model::getName() const
+	std::string_view AssimpScene::getName() const
 	{
 		return getStringView(_ptr->mName);
 	}
 
-	const std::string& Model::getPath() const
+	const std::string& AssimpScene::getPath() const
 	{
 		return _path;
 	}
 
-	const ModelNode& Model::getRootNode() const
+	const AssimpNode& AssimpScene::getRootNode() const
 	{
 		return _rootNode;
 	}
 
-	const ModelMeshCollection& Model::getMeshes() const
+	const AssimpMeshCollection& AssimpScene::getMeshes() const
 	{
 		return _meshes;
 	}
 
-	const ModelMaterialCollection& Model::getMaterials() const
+	const AssimpMaterialCollection& AssimpScene::getMaterials() const
 	{
 		return _materials;
 	}
 
-	const ModelCameraCollection& Model::getCameras() const
+	const AssimpCameraCollection& AssimpScene::getCameras() const
 	{
 		return _cameras;
 	}
 
-	const ModelLightCollection& Model::getLights() const
+	const AssimpLightCollection& AssimpScene::getLights() const
 	{
 		return _lights;
 	}
 
-	ModelNode& Model::getRootNode()
+	AssimpNode& AssimpScene::getRootNode()
 	{
 		return _rootNode;
 	}
 
-	ModelMeshCollection& Model::getMeshes()
+	AssimpMeshCollection& AssimpScene::getMeshes()
 	{
 		return _meshes;
 	}
 
-	ModelMaterialCollection& Model::getMaterials()
+	AssimpMaterialCollection& AssimpScene::getMaterials()
 	{
 		return _materials;
 	}
 
-	ModelCameraCollection& Model::getCameras()
+	AssimpCameraCollection& AssimpScene::getCameras()
 	{
 		return _cameras;
 	}
 
-	ModelLightCollection& Model::getLights()
+	AssimpLightCollection& AssimpScene::getLights()
 	{
 		return _lights;
 	}
 
-	Entity Model::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
+	Entity AssimpScene::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
 	{
 		return getRootNode().addToScene(scene, layout, parent);
 	}
 
-	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
+	AssimpSceneLoader::AssimpSceneLoader(IDataLoader& dataLoader, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
 		: _dataLoader(dataLoader)
 		, _textureLoader(textureLoader)
 		, _alloc(alloc)
 	{
 	}
 
-	std::shared_ptr<Model> AssimpModelLoader::operator()(std::string_view name)
+	std::shared_ptr<AssimpScene> AssimpSceneLoader::operator()(std::string_view name)
 	{
 		auto data = _dataLoader(name);
 		if (data == nullptr || data->empty())
@@ -1269,6 +1268,6 @@ namespace darmok
 			throw std::runtime_error(_importer.GetErrorString());
 		}
 
-		return std::make_shared<Model>(scene, nameString, _textureLoader, _alloc);
+		return std::make_shared<AssimpScene>(scene, nameString, _textureLoader, _alloc);
 	}
 }

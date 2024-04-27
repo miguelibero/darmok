@@ -7,7 +7,6 @@
 #include <array>
 #include <unordered_set>
 #include <unordered_map>
-
 #include <bgfx/bgfx.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -19,9 +18,6 @@ namespace darmok
         virtual ~IVertexLayoutLoader() = default;
         virtual bgfx::VertexLayout operator()(std::string_view name) = 0;
     };
-
-    using VertexIndex = uint16_t;
-    using Color = glm::u8vec4;
 
     class VertexDataWriter final
     {

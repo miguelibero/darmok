@@ -64,6 +64,7 @@ namespace darmok
 
 
         [[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
+        [[nodiscard]] const bgfx::Memory* copyMem() const noexcept;
         void clear() noexcept;
         void resize(size_t size) noexcept;
 
