@@ -4,6 +4,7 @@
 #include "asset.hpp"
 #include "input.hpp"
 #include "math.hpp"
+#include "shape.hpp"
 #include "scene.hpp"
 #include "window.hpp"
 
@@ -166,6 +167,7 @@ namespace darmok
 		
 		LuaMath::configure1(lua);
 		LuaMath::configure2(lua);
+		LuaShape::configure(lua);
 		LuaAssets::configure(lua);
 		LuaScene::configure(lua);
 		LuaWindow::configure(lua);

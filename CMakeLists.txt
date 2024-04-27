@@ -93,7 +93,7 @@ set(SOURCES
   ${SRC_DIR}/utils.cpp
   ${SRC_DIR}/anim.cpp
   ${SRC_DIR}/data.cpp
-  ${SRC_DIR}/math.cpp
+  ${SRC_DIR}/shape.cpp
   ${SRC_DIR}/mesh.cpp
   ${SRC_DIR}/color.cpp
   ${SRC_DIR}/material.cpp
@@ -119,7 +119,7 @@ set(HEADERS
   ${INCLUDE_DIR}/scene.hpp
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/data.hpp
-  ${INCLUDE_DIR}/math.hpp
+  ${INCLUDE_DIR}/shape.hpp
   ${INCLUDE_DIR}/mesh.hpp
   ${INCLUDE_DIR}/color_fwd.hpp
   ${INCLUDE_DIR}/color.hpp
@@ -139,8 +139,11 @@ set(HEADERS
   ${INCLUDE_DIR}/render_deferred.hpp
 )
 
+set(SCRIPTING_SOURCES)
+
 if(DARMOK_BUILD_ASSIMP)
   list(APPEND SOURCES ${SRC_DIR}/assimp.cpp)
+  list(APPEND SCRIPTING_SOURCES ${SRC_DIR}/scripting/assimp.cpp)
   list(APPEND HEADERS
     ${INCLUDE_DIR}/assimp_fwd.hpp
     ${INCLUDE_DIR}/assimp.hpp)
@@ -157,29 +160,29 @@ if(DARMOK_BUILD_NUKLEAR)
 endif()
 
 if(DARMOK_BUILD_SCRIPTING)
-  set(SCRIPTING_SOURCES
+  list(APPEND SCRIPTING_SOURCES
     ${SRC_DIR}/scripting/app.cpp
     ${SRC_DIR}/scripting/asset.cpp
     ${SRC_DIR}/scripting/image.cpp
     ${SRC_DIR}/scripting/material.cpp
     ${SRC_DIR}/scripting/mesh.cpp
-    ${SRC_DIR}/scripting/model.cpp
     ${SRC_DIR}/scripting/program.cpp
     ${SRC_DIR}/scripting/texture.cpp
     ${SRC_DIR}/scripting/input.cpp
     ${SRC_DIR}/scripting/math1.cpp
     ${SRC_DIR}/scripting/math2.cpp
-    ${SRC_DIR}/scripting/math3.cpp
+    ${SRC_DIR}/scripting/shape.cpp
     ${SRC_DIR}/scripting/scene.cpp
     ${SRC_DIR}/scripting/transform.cpp
     ${SRC_DIR}/scripting/light.cpp
     ${SRC_DIR}/scripting/camera.cpp
     ${SRC_DIR}/scripting/window.cpp
   )
-  list(APPEND SOURCES ${SCRIPTING_SOURCES})
   list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
-  source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
 endif()
+
+list(APPEND SOURCES ${SCRIPTING_SOURCES})
+source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
 
 set(LIB_NAME darmok)
 

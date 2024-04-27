@@ -50,7 +50,7 @@ namespace darmok
 	};
 
     class Scene;
-	class LuaModel;
+	class LuaAssimpScene;
 
 	using LuaNativeComponent = std::variant<LuaTransform, LuaCamera, LuaAmbientLight, LuaPointLight, LuaMeshComponent>;
 
@@ -164,10 +164,6 @@ namespace darmok
 		}
 
 		const Entity& getReal() const noexcept;
-
-		LuaEntity addModel1(const LuaModel& model, const bgfx::VertexLayout& layout);
-		LuaEntity addModel2(const LuaModel& model, const bgfx::VertexLayout& layout, sol::protected_function callback);
-
 		static void configure(sol::state_view& lua) noexcept;
 	private:
 		Entity _entity;

@@ -26,8 +26,7 @@ namespace
 
 		void update(float dt) override
 		{
-			auto r = _trans.getRotation() * glm::quat(glm::radians(glm::vec3(0, 0, dt * _speed)));
-			_trans.setRotation(r);
+			_trans.rotate(glm::vec3(0, 0, dt * _speed));
 		}
 
 	private:

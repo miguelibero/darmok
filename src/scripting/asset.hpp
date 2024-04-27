@@ -12,7 +12,7 @@ namespace darmok
 	class LuaProgram;
 	class LuaTexture;
 	class LuaTextureAtlas;
-	class LuaModel;
+	class LuaAssimpScene;
 
 	class LuaAssets final
 	{
@@ -25,7 +25,9 @@ namespace darmok
 		LuaTexture loadColorTexture(const Color& color);
 		LuaTextureAtlas loadTextureAtlas1(const std::string& name);
 		LuaTextureAtlas loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
-		LuaModel loadModel(const std::string& name);
+#ifdef DARMOK_ASSIMP
+		LuaAssimpScene loadAssimp(const std::string& name);
+#endif
 
 		static void configure(sol::state_view& lua) noexcept;
 

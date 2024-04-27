@@ -38,6 +38,8 @@ namespace darmok
 		size_t getVertexAmount() const noexcept;
 	};
 
+	class Texture;
+
 	struct TextureAtlas final
 	{
 		std::shared_ptr<Texture> texture;

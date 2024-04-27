@@ -1,25 +1,28 @@
 
-local program = app.assets:load_standard_program("ForwardPhong")
-local cubeMesh = Mesh.create_cube(program.vertex_layout)
-local greenTex = app.assets:load_color_texture(Colors.green)
+local program = app.assets:load_standard_program(StandardProgramType.ForwardPhong)
+local meshCreator = MeshCreator.new(program.vertex_layout)
+
+local cubeMesh = meshCreator:create_cube()
+local greenTex = app.assets:load_color_texture(Color.green)
 cubeMesh.material = Material.new(greenTex)
 
 local camEntity = app.scene:create_entity()
-local camTrans = camEntity:get_transform()
+local camTrans = camEntity:add_component(ComponentType.Transform)
 camTrans.position = { 0, 2, -2 }
-camTrans.look_at({ 0, 0, 0 })
-local cam = camEntity:get_camera()
-cam:set_projection(60, { 0.3, 1000 })
-cam:set_forward_phong_renderer(program)
+camTrans:look_at({ 0, 0, 0 })
+local cam = camEntity:add_component(ComponentType.Camera)
+cam:set_projection(60, app.window.size, { 0.3, 1000 })
+cam:set_forward_renderer(program)
+cam:add_component(CameraComponentType.PhongLighting)
 
 local lightEntity = app.scene:create_entity()
-local lightTrans = lightEntity:get_transform()
+local lightTrans = lightEntity:add_component(ComponentType.Transform)
 lightTrans.position = { 1, 1, -2 }
-lightEntity:get_point_light()
+lightEntity:add_component(ComponentType.PointLight)
 
 local meshEntity = app.scene:create_entity()
-local meshTrans = meshEntity:get_transform()
-meshEntity:add_mesh(cubeMesh)
+local meshTrans = meshEntity:add_component(ComponentType.Transform)
+meshEntity:add_component(ComponentType.Mesh).mesh = cubeMesh
 
 local speed = 0.1
 
@@ -28,22 +31,22 @@ function move_mesh(dir)
 end
 
 function move_left()
-    move_mesh(vec3.left)
+    move_mesh(Vec3.left)
 end
 
 function move_right()
-    move_mesh(vec3.right)
+    move_mesh(Vec3.right)
 end
 
 function move_forward()
-    move_mesh(vec3.forward)
+    move_mesh(Vec3.forward)
 end
 
 function move_backward()
-    move_mesh(vec3.backward)
+    move_mesh(Vec3.backward)
 end
 
-local groundPlane = Plane.new(vec3.up);
+local groundPlane = Plane.new(Vec3.up);
 
 function move_mouse()
     local ray = cam:screen_point_to_ray(app.input.mouse.position)
@@ -54,13 +57,13 @@ function move_mouse()
 end
 
 app.input:add_bindings("test", {
-    Keyleft = move_left,
+    KeyLeft = move_left,
     KeyA = move_left,
-    Keyright = move_right,
+    KeyRight = move_right,
     KeyD = move_right,
-    Keyup = move_forward,
+    KeyUp = move_forward,
     KeyW = move_forward,
-    Keydown = move_backward,
+    KeyDown = move_backward,
     KeyS = move_backward,
     MouseLeft = move_mouse,
 })

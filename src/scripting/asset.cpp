@@ -3,14 +3,17 @@
 #include "mesh.hpp"
 #include "program.hpp"
 #include "texture.hpp"
-#include "model.hpp"
 #include "material.hpp"
-#include <darmok/math.hpp>
+#include <darmok/shape.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
-#include <darmok/model.hpp>
+
+#ifdef DARMOK_ASSIMP
+#include "assimp.hpp"
+#include <darmok/assimp.hpp>
+#endif
 
 namespace darmok
 {	
@@ -54,10 +57,12 @@ namespace darmok
 		return LuaTexture(_assets->getTextureLoader()(name, flags));
 	}
 
-	LuaModel LuaAssets::loadModel(const std::string& name)
+#ifdef DARMOK_ASSIMP
+	LuaAssimpScene LuaAssets::loadAssimp(const std::string& name)
 	{
-		return LuaModel(_assets->getModelLoader()(name));
+		return LuaAssimpScene(_assets->getAssimpLoader()(name));
 	}
+#endif
 
 	void LuaAssets::configure(sol::state_view& lua) noexcept
 	{
@@ -68,16 +73,20 @@ namespace darmok
 		LuaMaterial::configure(lua);
 		LuaMesh::configure(lua);
 		LuaMeshCreator::configure(lua);
-		LuaModel::configure(lua);
+#ifdef DARMOK_ASSIMP
+		LuaAssimpScene::configure(lua);
+#endif
 
 		lua.new_usertype<LuaAssets>("Assets",
 			sol::constructors<>(),
+#ifdef DARMOK_ASSIMP
+			"load_assimp", &LuaAssets::loadAssimp,
+#endif
 			"load_program", &LuaAssets::loadProgram,
 			"load_standard_program", &LuaAssets::loadStandardProgram,
 			"load_texture", sol::overload(&LuaAssets::loadTexture1, &LuaAssets::loadTexture2),
 			"load_color_texture", &LuaAssets::loadColorTexture,
-			"load_texture_atlas", sol::overload(&LuaAssets::loadTextureAtlas1, &LuaAssets::loadTextureAtlas2),
-			"load_model", &LuaAssets::loadModel
+			"load_texture_atlas", sol::overload(&LuaAssets::loadTextureAtlas1, &LuaAssets::loadTextureAtlas2)
 		);
 	}
 }

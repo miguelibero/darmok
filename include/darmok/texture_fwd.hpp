@@ -13,9 +13,4 @@ namespace darmok
 		Texture2D,
 		Texture3D,
 	};
-
-	class Texture;
-	struct TextureConfig;
-	class ITextureLoader;
-	class ColorTextureLoader;
 }

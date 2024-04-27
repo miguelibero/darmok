@@ -1,7 +1,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/window.hpp>
-#include <darmok/math.hpp>
+#include <darmok/shape.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
@@ -178,13 +178,12 @@ namespace darmok
             vp = _app->getWindow().getViewport();
         }
 
-        uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-        if (viewId == 0)
+        if (viewId > 0)
         {
-            clearFlags |= BGFX_CLEAR_COLOR;
+            static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+            bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
         }
-        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
-
+        
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
         bgfx::setViewRect(viewId, vp[0], vp[1], vp[2], vp[3]);
 

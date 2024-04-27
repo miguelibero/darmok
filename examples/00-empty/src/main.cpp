@@ -30,7 +30,7 @@ namespace
 
 	protected:
 
-		bgfx::ViewId render(bgfx::ViewId viewId) override
+		bgfx::ViewId render(bgfx::ViewId viewId) const override
 		{
 			const bgfx::Stats* stats = bgfx::getStats();
 

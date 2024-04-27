@@ -98,7 +98,7 @@ namespace darmok
 
 	void LuaTransform::setEulerAngles(const VarVec3& v) noexcept
 	{
-		_transform->setRotation(glm::quat(glm::radians(LuaMath::tableToGlm(v))));
+		_transform->setEulerAngles(LuaMath::tableToGlm(v));
 	}
 
 	void LuaTransform::setRotation(const VarQuat& v) noexcept
@@ -148,12 +148,12 @@ namespace darmok
 
 	void LuaTransform::rotate1(float x, float y, float z) noexcept
 	{
-		rotate2(glm::radians(glm::vec3(x, y, z)));
+		rotate2(glm::vec3(x, y, z));
 	}
 
 	void LuaTransform::rotate2(const VarVec3& v) noexcept
 	{
-		_transform->setRotation(_transform->getRotation() * glm::quat(LuaMath::tableToGlm(v)));
+		_transform->rotate(LuaMath::tableToGlm(v));
 	}
 
 	void LuaTransform::configure(sol::state_view& lua) noexcept

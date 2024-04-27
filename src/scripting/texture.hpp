@@ -12,6 +12,8 @@
 namespace darmok
 {
     class LuaImage;
+	struct TextureConfig;
+	class Texture;
 
 	class LuaTexture final
 	{

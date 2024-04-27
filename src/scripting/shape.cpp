@@ -1,10 +1,10 @@
-#include "math.hpp"
+#include "shape.hpp"
 #include <darmok/color.hpp>
-#include <darmok/math.hpp>
+#include <darmok/shape.hpp>
 
 namespace darmok
 {
-    void LuaMath::configure3(sol::state_view& lua) noexcept
+    void LuaShape::configure(sol::state_view& lua) noexcept
     {
 		lua.new_usertype<Quad>("Quad",
 			sol::constructors<Quad(const glm::vec2&, const glm::vec2&), Quad(const glm::vec2&), Quad()>(),

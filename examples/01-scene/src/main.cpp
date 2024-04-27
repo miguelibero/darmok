@@ -7,10 +7,12 @@
 #include <darmok/mesh.hpp>
 #include <darmok/anim.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/window.hpp>
 #include <darmok/program.hpp>
+#include <darmok/material.hpp>
 #include <darmok/render_forward.hpp>
 
 namespace
@@ -102,7 +104,7 @@ namespace
 		{
 			App::init(args);
 
-			auto& scene = addComponent<SceneAppComponent>().getScene();
+			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			scene.addLogicUpdater<FrameAnimationUpdater>();
 			auto& registry = scene.getRegistry();
 
@@ -111,7 +113,7 @@ namespace
 
 			auto cam2d = registry.create();
 			registry.emplace<Camera>(cam2d)
-				.setWindowOrtho()
+				.setOrtho(getWindow().getSize())
 				.setEntityComponentFilter<Culling2D>()
 				.setRenderer<ForwardRenderer>(prog);
 
@@ -121,12 +123,12 @@ namespace
 				.lookAt(glm::vec3(0, 0, 0));
 
 			registry.emplace<Camera>(cam3d)
-				.setWindowProjection(60, { 0.3, 1000 })
+				.setProjection(60, getWindow().getSize(), { 0.3, 1000 })
 				.setEntityComponentFilter<Culling3D>()
 				.setRenderer<ForwardRenderer>(prog);
 
-			_debugMaterial = std::make_shared<Material>();
 			auto debugTexture = getAssets().getColorTextureLoader()(Colors::red());
+			_debugMaterial = std::make_shared<Material>();
 			_debugMaterial->setTexture(MaterialTextureType::Diffuse, debugTexture);
 			_debugMaterial->setPrimitiveType(MaterialPrimitiveType::Line);
 
@@ -148,7 +150,7 @@ namespace
 			meshCreator.config.scale = glm::vec3(0.5F);
 			auto mesh = meshCreator.createSprite(tex);
 
-			auto size = scale * glm::vec2(tex->getImage()->getSize());
+			auto size = scale * glm::vec2(tex->getSize());
 			meshCreator.config.scale = glm::vec3(size, 0);
 			auto debugMesh = meshCreator.createLineQuad();
 			debugMesh->setMaterial(_debugMaterial);

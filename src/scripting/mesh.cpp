@@ -2,6 +2,7 @@
 #include "material.hpp"
 #include "texture.hpp"
 #include <darmok/mesh.hpp>
+#include <darmok/shape.hpp>
 
 namespace darmok
 {
@@ -94,7 +95,7 @@ namespace darmok
 
 	LuaMesh LuaMeshCreator::createSphere3(int lod) noexcept
 	{
-		return LuaMesh(_creator->createSphere(Sphere::standard, lod));
+		return LuaMesh(_creator->createSphere(lod));
 	}
 
 	LuaMesh LuaMeshCreator::createSphere4(const Sphere& sphere, int lod) noexcept

@@ -3,7 +3,6 @@
 #include <darmok/app.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
-#include <darmok/model.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/light.hpp>
@@ -11,6 +10,8 @@
 #include <darmok/camera.hpp>
 #include <darmok/input.hpp>
 #include <darmok/program.hpp>
+#include <darmok/material.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/render_forward.hpp>
 
 namespace
@@ -24,45 +25,45 @@ namespace
 		{
 			App::init(args);
 
-			auto& scene = addComponent<SceneAppComponent>().getScene();
+			auto scene = addComponent<SceneAppComponent>().getScene();
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			auto& layout = prog->getVertexLayout();
-			auto& registry = scene.getRegistry();
+			auto& registry = scene->getRegistry();
 
 			auto camEntity = registry.create();
 			glm::vec2 winSize = getWindow().getSize();
 
 			registry.emplace<Transform>(camEntity)
 				.setPosition({ 0, 2, -2 })
-				.setRotation({ 45, 0, 0 });
+				.setEulerAngles({ 45, 0, 0 });
 			auto& cam = registry.emplace<Camera>(camEntity)
-				.setProjection(60, winSize.x / winSize.y, 0.3, 1000);
+				.setProjection(60, winSize.x / winSize.y, { 0.3, 1000 });
 			
-			auto& lighting = cam.addComponent<PhongLightingComponent>();
-
-			cam.setRenderer<ForwardRenderer>(prog, lighting);
+			cam.addComponent<PhongLightingComponent>();
+			cam.setRenderer<ForwardRenderer>(prog);
 
 			auto light = registry.create();
 			registry.emplace<Transform>(light)
 				.setPosition({ 1, 1, -2 });
 			registry.emplace<PointLight>(light);
 
-			auto greenTex = getAssets().getColorTextureLoader()(Colors::green);
+			auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
 			auto greenMat = std::make_shared<Material>();
 			greenMat->setTexture(MaterialTextureType::Diffuse, greenTex);
 
-			auto cubeMesh = Mesh::createCube(layout);
+			MeshCreator meshCreator(layout);
+			auto cubeMesh = meshCreator.createCube();
 			cubeMesh->setMaterial(greenMat);
 			auto cube = registry.create();
 			registry.emplace<MeshComponent>(cube, cubeMesh);
 			registry.emplace<Transform>(cube)
 				.setPosition({ 1.5F, 0, 0 });
 
-			auto redTex = getAssets().getColorTextureLoader()(Colors::red);
+			auto redTex = getAssets().getColorTextureLoader()(Colors::red());
 			auto redMat = std::make_shared<Material>();
 			redMat->setTexture(MaterialTextureType::Diffuse, redTex);
 
-			auto sphereMesh = Mesh::createSphere(layout);
+			auto sphereMesh = meshCreator.createSphere();
 			sphereMesh->setMaterial(redMat);
 			auto sphere = registry.create();
 			registry.emplace<MeshComponent>(sphere, sphereMesh);

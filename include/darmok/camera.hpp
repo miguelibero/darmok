@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/shape.hpp>
 
 namespace darmok
 {
@@ -35,7 +36,6 @@ namespace darmok
     };
 
     class Mesh;
-    class Ray;
     class Texture;
     class IEntityFilter;
 

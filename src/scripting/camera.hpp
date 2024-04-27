@@ -3,6 +3,7 @@
 #include <optional>
 #include <vector>
 #include <darmok/optional_ref.hpp>
+#include <darmok/shape.hpp>
 #include "sol.hpp"
 #include "math.hpp"
 #include "scene_fwd.hpp"
@@ -12,7 +13,6 @@ namespace darmok
     class Camera;
 	class LuaProgram;
 	class LuaTexture;
-	class Ray;
 
 	enum class LuaNativeCameraComponentType
 	{

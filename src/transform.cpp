@@ -126,6 +126,41 @@ namespace darmok
         return lookDir(v - _position);
     }
 
+    glm::vec3 Transform::getEulerAngles() const noexcept
+    {
+        return glm::degrees(glm::eulerAngles(getRotation()));
+    }
+
+    glm::vec3 Transform::getForward() const noexcept
+    {
+        static const glm::vec3 dir(0, 0, 1);
+        return getRotation() * dir;
+    }
+
+    glm::vec3 Transform::getRight() const noexcept
+    {
+        static const glm::vec3 dir(1, 0, 0);
+        return getRotation() * dir;
+    }
+
+    glm::vec3 Transform::getUp() const noexcept
+    {
+        static const glm::vec3 dir(0, 1, 0);
+        return getRotation() * dir;
+    }
+
+    Transform& Transform::setEulerAngles(const glm::vec3& v) noexcept
+    {
+        setRotation(glm::quat(glm::radians(v)));
+        return *this;
+    }
+
+    Transform& Transform::rotate(const glm::vec3& v) noexcept
+    {
+        setRotation(getRotation() * glm::quat(glm::radians(v)));
+        return *this;
+    }
+
     Transform& Transform::setScale(const glm::vec3& v) noexcept
     {
         if (v != _scale)
@@ -232,12 +267,5 @@ namespace darmok
     const glm::mat4& Transform::getInverse() const noexcept
     {
         return _inverse;
-    }
-
-    bool Transform::beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
-    {
-        auto& mtx = getMatrix();
-        encoder.setTransform(glm::value_ptr(mtx));
-        return true;
     }
 }

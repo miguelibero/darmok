@@ -51,11 +51,13 @@ namespace darmok
 			rendered = true;
 			_cam->beforeRenderEntity(entity, encoder, viewId);
 
+			const void* transMtx = nullptr;
 			auto trans = registry.try_get<Transform>(entity);
 			if (trans != nullptr)
 			{
-				trans->beforeRender(encoder, viewId);
+				transMtx = glm::value_ptr(trans->getMatrix());
 			}
+
 			for (auto& mesh : meshes)
 			{
 				auto mat = mesh->getMaterial();
@@ -63,11 +65,10 @@ namespace darmok
 				{
 					continue;
 				}
-
+				encoder.setTransform(transMtx);
 				_cam->beforeRenderMesh(*mesh, encoder, viewId);
 				uint64_t state = mat->beforeRender(encoder, viewId);
 				mesh->render(encoder, viewId);
-
 				encoder.setState(state);
 				encoder.submit(viewId, _program->getHandle());
 			}

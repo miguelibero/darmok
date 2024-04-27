@@ -5,7 +5,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/vertex.hpp>
-#include <darmok/math.hpp>
+#include <darmok/shape.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
 namespace darmok
@@ -176,7 +176,7 @@ namespace darmok
 
 	std::shared_ptr<Mesh> MeshCreator::createCube() noexcept
 	{
-		return createCube(Cube::standard);
+		return createCube(Cube::standard());
 	}
 
 	std::shared_ptr<Mesh> MeshCreator::createCube(const Cube& cube) noexcept
@@ -257,17 +257,17 @@ namespace darmok
 
 	std::shared_ptr<Mesh> MeshCreator::createSphere(int lod) noexcept
 	{
-		return createSphere(Sphere::standard);
+		return createSphere(Sphere::standard());
 	}
 
 	std::shared_ptr<Mesh> MeshCreator::createQuad() noexcept
 	{
-		return createQuad(Quad::standard);
+		return createQuad(Quad::standard());
 	}
 
 	std::shared_ptr<Mesh> MeshCreator::createLineQuad() noexcept
 	{
-		return createLineQuad(Quad::standard);
+		return createLineQuad(Quad::standard());
 	}
 
 	std::shared_ptr<Mesh> MeshCreator::createSphere(const Sphere& sphere, int lod) noexcept

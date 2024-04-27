@@ -21,28 +21,34 @@ namespace darmok
         const glm::quat& getRotation() const noexcept;
         const glm::vec3& getScale() const noexcept;
         const glm::vec3& getPivot() const noexcept;
+        Transform& setPosition(const glm::vec3& v) noexcept;
+        Transform& setRotation(const glm::quat& v) noexcept;
+        Transform& setScale(const glm::vec3& v) noexcept;
+        Transform& setPivot(const glm::vec3& v) noexcept;
+        Transform& setMatrix(const glm::mat4& v) noexcept;
 
         OptionalRef<const Transform> getParent() const noexcept;
         OptionalRef<Transform> getParent() noexcept;
-
-        Transform& setPosition(const glm::vec3& v) noexcept;
-        Transform& setRotation(const glm::quat& v) noexcept;
-        Transform& setForward(const glm::vec3& v) noexcept;
-        Transform& setScale(const glm::vec3& v) noexcept;
-        Transform& setPivot(const glm::vec3& v) noexcept;
         Transform& setParent(const OptionalRef<Transform>& parent) noexcept;
-        Transform& lookDir(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
-        Transform& lookAt(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
-        Transform& setMatrix(const glm::mat4& v) noexcept;
 
-        bool update() noexcept;
         const glm::mat4& getMatrix() noexcept;
         const glm::mat4& getMatrix() const noexcept;
         const glm::mat4& getInverse() noexcept;
         const glm::mat4& getInverse() const noexcept;
 
-        bool beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
-    
+        bool update() noexcept;
+
+        glm::vec3 getEulerAngles() const noexcept;
+        glm::vec3 getForward() const noexcept;
+        glm::vec3 getRight() const noexcept;
+        glm::vec3 getUp() const noexcept;
+
+        Transform& setEulerAngles(const glm::vec3& v) noexcept;
+        Transform& rotate(const glm::vec3& v) noexcept;
+        Transform& lookDir(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
+        Transform& lookAt(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
+        Transform& setForward(const glm::vec3& v) noexcept;
+
     private:
 
         glm::vec3 _position;
