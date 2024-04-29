@@ -197,4 +197,9 @@ namespace darmok
     {
         return false;
     }
+
+    void CeguiRenderer::setViewId(bgfx::ViewId viewId) noexcept
+    {
+        _viewId = viewId;
+    }
 }

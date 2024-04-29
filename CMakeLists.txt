@@ -430,7 +430,7 @@ if(DARMOK_BUILD_CEGUI)
   target_link_libraries(CEGUIPugiXMLParser_Static pugixml)
   target_include_directories(CEGUIPugiXMLParser_Static PRIVATE ${PUGIXML_H_PATH})
 
-  target_include_directories(${LIB_NAME} PRIVATE ${CEGUI_INCLUDE_DIRS})
+  target_include_directories(${LIB_NAME} PUBLIC ${CEGUI_INCLUDE_DIRS})
 
   target_link_libraries(${LIB_NAME} PUBLIC
     CEGUIBase-9999_Static CEGUICommonDialogs-9999_Static)

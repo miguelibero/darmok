@@ -10,17 +10,19 @@ set(DARMOK_BUILD_CEGUI ON CACHE BOOL "build darmok with cegui support")
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
-set(ASSETS
-  assets/NotoSans-Regular.ttf
-)
-foreach(ASSET ${ASSETS})
-  addCopySource(${ASSET} ${ASSET})
+set(CEGUI_ASSETS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/cegui/datafiles)
+file(GLOB_RECURSE CEGUI_ASSETS ${CEGUI_ASSETS_DIR}/*)
+foreach(ASSET ${CEGUI_ASSETS})
+  file(RELATIVE_PATH ASSET_SRC ${CMAKE_CURRENT_SOURCE_DIR} ${ASSET})  
+  file(RELATIVE_PATH ASSET_DST ${CEGUI_ASSETS_DIR} ${ASSET})  
+  addCopySource(${ASSET_SRC} assets/cegui/${ASSET_DST})
 endforeach()
+source_group(TREE ${CEGUI_ASSETS_DIR} PREFIX "CEGUI Asset Files" FILES ${CEGUI_ASSETS})
 
 add_executable(
   ${PROJECT_NAME}
   src/main.cpp
-  ${ASSETS}
+  ${CEGUI_ASSETS}
 )
 
 target_compile_definitions(

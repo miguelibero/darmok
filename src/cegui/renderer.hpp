@@ -3,6 +3,7 @@
 #include <CEGUI/Renderer.h>
 #include "render_target.hpp"
 #include "shader.hpp"
+#include <bgfx/bgfx.h>
 
 namespace bx
 {
@@ -45,6 +46,8 @@ namespace darmok
         const CEGUI::String& getIdentifierString() const override;
         bool isTexCoordSystemFlipped() const override;
 
+        void setViewId(bgfx::ViewId viewId) noexcept;
+
     private:
         static const CEGUI::String _rendererId;
         CEGUI::Sizef _displaySize;
@@ -53,6 +56,7 @@ namespace darmok
         std::unordered_map<CEGUI::String, std::unique_ptr<CeguiTexture>> _textures;
         std::vector<std::unique_ptr<CeguiTextureTarget>> _textureTargets;
         mutable CeguiShaderWrapper _shaderWrapper;
+        bgfx::ViewId _viewId;
 
         bx::AllocatorI* getAllocator() const noexcept;
         CeguiTexture& doCreateTexture(const CEGUI::String& name);
