@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <bx/allocator.h>
 
 namespace darmok
 {
@@ -14,6 +15,7 @@ namespace darmok
 	class IVertexLayoutLoader;
 	class ColorTextureLoader;
     class AssetContext;
+	class IAssetFinder;
 
 #ifdef DARMOK_ASSIMP 
 	class AssimpSceneLoader;
@@ -32,6 +34,7 @@ namespace darmok
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
+		[[nodiscard]] bx::AllocatorI* getAllocator() noexcept;
 
 #ifdef DARMOK_ASSIMP 
 		[[nodiscard]] AssimpSceneLoader& getAssimpLoader() noexcept;

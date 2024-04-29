@@ -19,8 +19,7 @@ namespace darmok
 		void setMode(WindowMode mode) noexcept;
 		
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
-		[[nodiscard]] glm::uvec2 getPixelSize() const noexcept;
-		[[nodiscard]] const glm::uvec4& getViewport() const noexcept;
+		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
 		[[nodiscard]] WindowMode getMode() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 
@@ -28,7 +27,7 @@ namespace darmok
 
 	private:
 		glm::uvec2 _size;
-		glm::uvec4 _viewport;
+		glm::uvec2 _pixelSize;
 		WindowPhase _phase;
 		WindowMode _mode;
 	};

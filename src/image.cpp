@@ -2,34 +2,49 @@
 #include <bimg/decode.h>
 #include <darmok/utils.hpp>
 #include <darmok/color.hpp>
+#include <darmok/data.hpp>
+#include <darmok/texture.hpp>
 
 namespace darmok
 {
-    Image::Image(bimg::ImageContainer* container) noexcept
+	Image::Image(const DataView& data, bimg::TextureFormat::Enum format, bx::AllocatorI* alloc)
+		: _container(nullptr)
+	{
+		if(data.empty())
+		{
+			throw std::runtime_error("got empty data");
+		}
+
+		bx::Error err;
+		_container = bimg::imageParse(alloc, data.ptr(), (uint32_t)data.size(), format, &err);
+		checkError(err);
+		if (_container == nullptr)
+		{
+			throw std::runtime_error("got empty image container");
+		}
+	}
+
+    Image::Image(bimg::ImageContainer* container)
 		: _container(container)
 	{
+		if (_container == nullptr)
+		{
+			throw std::runtime_error("got empty image container");
+		}
 	}
 
 	Image::~Image() noexcept
 	{
-		bimg::imageFree(_container);
+		if (_container != nullptr)
+		{
+			bimg::imageFree(_container);
+		}
 	}
 
-	const bgfx::Memory* Image::makeRef() const noexcept
+	DataView Image::getData() const noexcept
 	{
-		return bgfx::makeRef(
-			_container->m_data
-			, _container->m_size
-		);
-	}
-
-	const bgfx::Memory* Image::copyMem() const noexcept
-	{
-
-		return bgfx::copy(
-			_container->m_data
-			, _container->m_size
-		);
+		return DataView(_container->m_data
+			, _container->m_size);
 	}
 
 	TextureType Image::getTextureType(uint64_t flags) const noexcept
@@ -112,6 +127,18 @@ namespace darmok
 		return info;
 	}
 
+	TextureConfig Image::getTextureConfig(uint64_t flags) const noexcept
+	{
+		return {
+			getSize(),
+			bgfx::TextureFormat::Enum(getFormat()),
+			getTextureType(flags),
+			uint16_t(getDepth()),
+			getMipCount() > 1,
+			getLayerCount()
+		};
+	}
+
 	DataImageLoader::DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI* alloc) noexcept
 		: _dataLoader(dataLoader)
 		, _allocator(alloc)
@@ -121,19 +148,10 @@ namespace darmok
 	std::shared_ptr<Image> DataImageLoader::operator()(std::string_view name)
 	{
 		auto data = _dataLoader(name);
-		if (data == nullptr || data->empty())
+		if (data == nullptr)
 		{
 			throw std::runtime_error("got empty data");
 		}
-
-		bx::Error err;
-		bimg::ImageContainer* container = bimg::imageParse(_allocator, data->ptr(), (uint32_t)data->size(), bimg::TextureFormat::Count, &err);
-		checkError(err);
-		if (container == nullptr)
-		{
-			throw std::runtime_error("got empty image container");
-		}
-		return std::make_shared<Image>(container);
+		return std::make_shared<Image>(data->view(), bimg::TextureFormat::Count, _allocator);
 	}
-
 }

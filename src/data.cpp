@@ -55,6 +55,54 @@ namespace darmok
         return !(*this == other);
     }
 
+    DataView DataView::view(size_t offset, size_t size) const noexcept
+    {
+        void* ptr;
+        offset = fixOffset(offset, ptr);
+        size = fixSize(size, offset);
+        return DataView(ptr, size);
+    }
+
+    const bgfx::Memory* DataView::makeRef(size_t offset, size_t size) const noexcept
+    {
+        void* ptr;
+        offset = fixOffset(offset, ptr);
+        size = fixSize(size, offset);
+        return bgfx::makeRef(ptr, size);
+    }
+
+    const bgfx::Memory* DataView::copyMem(size_t offset, size_t size) const noexcept
+    {
+        void* ptr;
+        offset = fixOffset(offset, ptr);
+        size = fixSize(size, offset);
+        return bgfx::copy(ptr, size);
+    }
+
+    size_t DataView::fixOffset(size_t offset, void*& ptr) const noexcept
+    {
+        if (offset >= _size)
+        {
+            offset = _size - 1;
+        }
+        ptr = ((char*)_ptr) + offset;
+        return offset;
+    }
+
+    size_t DataView::fixSize(size_t size, size_t offset) const noexcept
+    {
+        if (size == -1)
+        {
+            size = _size;
+        }
+        auto max = _size - offset;
+        if (size > max)
+        {
+            size = max;
+        }
+        return size;
+    }
+
     void* Data::malloc(size_t size, bx::AllocatorI* alloc) noexcept
     {
         if (size == 0)
@@ -109,9 +157,30 @@ namespace darmok
         return !(*this == other);
     }
 
+    DataView Data::view(size_t offset, size_t size) const noexcept
+    {
+        return DataView(_ptr, _size).view(offset, size);
+    }
+
+    const bgfx::Memory* Data::makeRef(size_t offset, size_t size) const noexcept
+    {
+        return view().makeRef(offset, size);
+    }
+
+    const bgfx::Memory* Data::copyMem(size_t offset, size_t size) const noexcept
+    {
+        return view().copyMem(offset, size);
+    }
+
     Data::~Data() noexcept
     {
         clear();
+    }
+
+    void Data::release() noexcept
+    {
+        _size = 0;
+        _ptr = nullptr;
     }
 
     void Data::clear() noexcept
@@ -161,24 +230,6 @@ namespace darmok
             _size = size;
             _ptr = ptr;
         }
-    }
-
-    const bgfx::Memory* Data::makeRef() const noexcept
-    {
-        if (empty())
-        {
-            return nullptr;
-        }
-        return bgfx::makeRef(_ptr, _size);
-    }
-
-    const bgfx::Memory* Data::copyMem() const noexcept
-    {
-        if (empty())
-        {
-            return nullptr;
-        }
-        return bgfx::copy(_ptr, _size);
     }
 
     Data::Data(const Data& other) noexcept

@@ -31,3 +31,6 @@
 [submodule "lib/nuklear"]
 	path = lib/nuklear
 	url = git@github.com:Immediate-Mode-UI/Nuklear.git
+[submodule "lib/cegui"]
+	path = lib/cegui
+	url = git@github.com:cegui/cegui.git

@@ -55,7 +55,7 @@ namespace
 			nk_style_from_table(&ctx, table);
 		}
 
-		void nuklearRender(nk_context& ctx)
+		void nuklearRender(nk_context& ctx) const override
 		{
 			if (nk_begin(&ctx, "Show", nk_rect(50, 50, 220, 220),
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE | NK_WINDOW_SCALABLE)) {

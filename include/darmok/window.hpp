@@ -23,8 +23,7 @@ namespace darmok
 		void requestDestruction() noexcept;
 
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
-		[[nodiscard]] glm::uvec2 getPixelSize() const noexcept;
-		[[nodiscard]] const glm::uvec4& getViewport() const noexcept;
+		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 		[[nodiscard]] WindowMode getMode() const noexcept;
 

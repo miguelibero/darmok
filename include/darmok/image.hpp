@@ -5,6 +5,7 @@
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 #include <darmok/texture_fwd.hpp>
+#include <darmok/color_fwd.hpp>
 
 #include <memory>
 #include <string_view>
@@ -12,12 +13,14 @@
 
 namespace darmok
 {
-	using Color = glm::u8vec4;
+	class DataView;
+	struct TextureConfig;
 
     class Image final
 	{
 	public:
-		Image(bimg::ImageContainer* container) noexcept;
+		Image(const DataView& data, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count, bx::AllocatorI* alloc = nullptr);
+		Image(bimg::ImageContainer* container);
 		~Image() noexcept;
 		Image(const Image& other) = delete;
 		Image& operator=(const Image& other) = delete;
@@ -32,8 +35,8 @@ namespace darmok
 		[[nodiscard]] uint16_t getLayerCount() const noexcept;
 		[[nodiscard]] bimg::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
-		[[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
-		[[nodiscard]] const bgfx::Memory* copyMem() const noexcept;
+		[[nodiscard]] TextureConfig getTextureConfig(uint64_t flags) const noexcept;
+		[[nodiscard]] DataView getData() const noexcept;
 		[[nodiscard]] TextureType getTextureType(uint64_t flags) const noexcept;
 
 	private:

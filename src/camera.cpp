@@ -167,15 +167,14 @@ namespace darmok
 
     void Camera::beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
-        glm::uvec4 vp;
+        std::optional<glm::uvec2> size;
         if (!_targetTextures.empty())
         {
-            auto& size = _targetTextures[0]->getSize();
-            vp = glm::uvec4(0, 0, size);
+            size = _targetTextures[0]->getSize();
         }
         else if (_app)
         {
-            vp = _app->getWindow().getViewport();
+            size = _app->getWindow().getPixelSize();
         }
 
         if (viewId > 0)
@@ -185,7 +184,10 @@ namespace darmok
         }
         
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
-        bgfx::setViewRect(viewId, vp[0], vp[1], vp[2], vp[3]);
+        if (size)
+        {
+            bgfx::setViewRect(viewId, 0, 0, size->x, size->y);
+        }
 
         // this dummy draw call is here to make sure that view is cleared
         // if no other draw calls are submitted to view.
@@ -299,7 +301,7 @@ namespace darmok
         {
             model = trans->getInverse();
         }
-        glm::ivec4 viewport = _app->getWindow().getViewport();
+        auto viewport = glm::ivec4(0, 0, _app->getWindow().getPixelSize());
         return Ray::unproject(point, model, _matrix, viewport);
     }
 

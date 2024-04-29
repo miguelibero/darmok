@@ -7,7 +7,7 @@ namespace darmok
 		: _phase(WindowPhase::Unknown)
 		, _mode(WindowMode::Normal)
 		, _size(0)
-		, _viewport(0)
+		, _pixelSize(0)
 	{
 	}
 
@@ -18,8 +18,7 @@ namespace darmok
 
 	void WindowImpl::setPixelSize(const glm::uvec2& size) noexcept
 	{
-		_viewport[2] = size.x;
-		_viewport[3] = size.y;
+		_pixelSize = size;
 	}
 
 	void WindowImpl::setPhase(WindowPhase phase) noexcept
@@ -37,14 +36,9 @@ namespace darmok
 		return _size;
 	}
 
-	glm::uvec2 WindowImpl::getPixelSize() const noexcept
+	const glm::uvec2& WindowImpl::getPixelSize() const noexcept
 	{
-		return glm::uvec2(_viewport[2], _viewport[3]);
-	}
-
-	const glm::uvec4& WindowImpl::getViewport() const noexcept
-	{
-		return _viewport;
+		return _pixelSize;
 	}
 
 	WindowPhase WindowImpl::getPhase() const noexcept
@@ -59,7 +53,7 @@ namespace darmok
 
 	glm::uvec2 WindowImpl::screenPointToWindow(const glm::vec2& point) const noexcept
 	{
-		auto f = glm::vec2(_size) / glm::vec2(_viewport[2], _viewport[3]);
+		auto f = glm::vec2(_size) / glm::vec2(_pixelSize);
 		auto p =  (point - glm::vec2(0.5F)) * f;
 		p.y = _size.y - p.y;
 		return p;
@@ -86,14 +80,9 @@ namespace darmok
 		return _impl->getSize();
 	}
 
-	glm::uvec2 Window::getPixelSize() const noexcept
+	const glm::uvec2& Window::getPixelSize() const noexcept
 	{
 		return _impl->getPixelSize();
-	}
-
-	const glm::uvec4& Window::getViewport() const noexcept
-	{
-		return _impl->getViewport();
 	}
 
 	void Window::requestMode(WindowMode mode) noexcept

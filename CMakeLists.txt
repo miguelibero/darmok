@@ -15,12 +15,13 @@ set(SHADERS_BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
 set(SHADERS_OUTPUT_DIR generated/shaders)
 set(LIBS_DIR lib)
 
-
 option(DARMOK_BUILD_SCRIPTING "build darmok with scripting support" OFF)
 option(DARMOK_BUILD_SCRIPTING_EXE "build the darmok scripting executable" OFF)
 option(DARMOK_BUILD_NUKLEAR "build darmok with nuklear UI support" OFF)
 option(DARMOK_BUILD_IMGUI "build darmok with imGUI support" OFF)
+option(DARMOK_BUILD_CEGUI "build darmok with cegui support" OFF)
 option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
+option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
 
 set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "build bgfx examples.")
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
@@ -95,6 +96,7 @@ set(SOURCES
   ${SRC_DIR}/data.cpp
   ${SRC_DIR}/shape.cpp
   ${SRC_DIR}/mesh.cpp
+  ${SRC_DIR}/find.cpp
   ${SRC_DIR}/color.cpp
   ${SRC_DIR}/material.cpp
   ${SRC_DIR}/texture.cpp
@@ -121,6 +123,7 @@ set(HEADERS
   ${INCLUDE_DIR}/data.hpp
   ${INCLUDE_DIR}/shape.hpp
   ${INCLUDE_DIR}/mesh.hpp
+  ${INCLUDE_DIR}/find.hpp
   ${INCLUDE_DIR}/color_fwd.hpp
   ${INCLUDE_DIR}/color.hpp
   ${INCLUDE_DIR}/material_fwd.hpp
@@ -157,6 +160,21 @@ endif()
 if(DARMOK_BUILD_NUKLEAR)
   list(APPEND SOURCES ${SRC_DIR}/nuklear.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/nuklear.hpp)
+endif()
+
+if(DARMOK_BUILD_CEGUI)
+  set(CEGUI_SOURCES 
+    ${SRC_DIR}/cegui/geometry.cpp
+    ${SRC_DIR}/cegui/render_target.cpp
+    ${SRC_DIR}/cegui/renderer.cpp
+    ${SRC_DIR}/cegui/resource.cpp
+    ${SRC_DIR}/cegui/shader.cpp
+    ${SRC_DIR}/cegui/texture_target.cpp
+    ${SRC_DIR}/cegui/texture.cpp
+  )
+  list(APPEND SOURCES ${CEGUI_SOURCES} ${SRC_DIR}/cegui.cpp)
+  list(APPEND HEADERS ${INCLUDE_DIR}/cegui.hpp)
+  source_group("CEGUI Source Files" FILES ${CEGUI_SOURCES})
 endif()
 
 if(DARMOK_BUILD_SCRIPTING)
@@ -279,6 +297,7 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
         target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
         target_compile_definitions(bgfx PRIVATE WL_EGL_PLATFORM)
     endif()
+
 endif()
 
 # glm
@@ -343,17 +362,19 @@ if(DARMOK_BUILD_SCRIPTING_EXE)
 endif()
 
 # ozz
-set(ozz_build_fbx OFF CACHE BOOL "Build Fbx pipeline (Requires Fbx SDK)")
-set(ozz_build_gltf ON CACHE BOOL "Build glTF importer (Requires c++11)")
-set(ozz_build_samples OFF CACHE BOOL "Build samples")
-set(ozz_build_howtos OFF CACHE BOOL "Build howtos")
-set(ozz_build_tests OFF CACHE BOOL "Build unit tests")
-set(ozz_build_msvc_rt_dll ON CACHE BOOL "Select msvc DLL runtime library")
-add_subdirectory(${LIBS_DIR}/ozz)
-target_link_libraries(${LIB_NAME} PRIVATE
-  ozz_geometry
-  ozz_animation_offline
-  ozz_options)
+if(DARMOK_BUILD_OZZ)
+  set(ozz_build_fbx OFF CACHE BOOL "Build Fbx pipeline (Requires Fbx SDK)")
+  set(ozz_build_gltf ON CACHE BOOL "Build glTF importer (Requires c++11)")
+  set(ozz_build_samples OFF CACHE BOOL "Build samples")
+  set(ozz_build_howtos OFF CACHE BOOL "Build howtos")
+  set(ozz_build_tests OFF CACHE BOOL "Build unit tests")
+  set(ozz_build_msvc_rt_dll ON CACHE BOOL "Select msvc DLL runtime library")
+  add_subdirectory(${LIBS_DIR}/ozz)
+  target_link_libraries(${LIB_NAME} PRIVATE
+    ozz_geometry
+    ozz_animation_offline
+    ozz_options)
+endif()
 
 # nuklear
 if(DARMOK_BUILD_NUKLEAR)
@@ -376,4 +397,46 @@ if(DARMOK_BUILD_NUKLEAR)
   )
   target_include_directories(${LIB_NAME} PUBLIC ${NUKLEAR_BASE})
   target_compile_definitions(${LIB_NAME} PUBLIC ${NUKLEAR_DEFINES})
+endif()
+
+# cegui
+if(DARMOK_BUILD_CEGUI)
+  set(GLFW3_H_PATH ${LIBS_DIR}/glfw/include)
+  set(GLFW3_LIB ${CMAKE_CURRENT_BINARY_DIR}/lib/glfw/src/$<CONFIG>/glfw3)
+  set(GLM_LOCAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/glm)
+  set(GLM_H_PATH ${GLM_LOCAL_DIR})
+
+  set(PUGIXML_H_PATH ${LIBS_DIR}/pugixml/src)
+  # set(PUGIXML_LIB ${CMAKE_CURRENT_BINARY_DIR}/lib/pugixml/$<CONFIG>/pugixml)
+  # set(PUGIXML_LIB_DBG ${CMAKE_CURRENT_BINARY_DIR}/lib/pugixml/pugixml-static.dir/$<CONFIG>/pugixml)
+
+  #set(FREETYPE_LIB ${LIBS_DIR}/freetype)
+  #set(MINIZIP_LIB ${LIBS_DIR}/glfw)
+  
+  set(CEGUI_BUILD_APPLICATION_TEMPLATES OFF CACHE BOOL "Specifies whether to build the application templates.")
+  set(CEGUI_BUILD_RENDERER_OPENGL OFF CACHE BOOL "Specifies whether to build the old OpenGL 1.2 (fixed pipeline) renderer module.")
+  set(CEGUI_BUILD_RENDERER_OPENGL3 OFF CACHE BOOL "Specifies whether to build the renderer module that supports OpenGL 3.2 (core profile) and OpenGL ES 2.0.")
+  set(CEGUI_BUILD_RENDERER_DIRECT3D11 OFF CACHE BOOL "Specifies whether to build the Direct3D 11 renderer module")
+  set(CEGUI_BUILD_SAMPLES OFF CACHE BOOL "Specifies whether to build the CEGUI sample applications")
+  set(CEGUI_BUILD_XMLPARSER_PUGIXML ON CACHE BOOL "Specifies the XMLParser module to use as the default")
+  set(CEGUI_BUILD_IMAGECODEC_STB ON CACHE BOOL "Specifies whether to build the STB based ImageCodec module")  
+
+  add_subdirectory(${LIBS_DIR}/cegui)
+
+  # manually add cegui pugixml to avoid duplicated symbols error
+  set(CEGUI_PUGIXML_DIR ${LIBS_DIR}/cegui/cegui/src/XMLParserModules/PugiXML)
+  set(CEGUI_INCLUDE_DIRS
+    ${LIBS_DIR}/cegui/cegui/include
+    ${CMAKE_CURRENT_BINARY_DIR}/lib/cegui/cegui/include)
+  
+  file(GLOB_RECURSE CEGUI_PUGIXML_SOURCES ${CEGUI_PUGIXML_DIR}/*.cpp)
+  add_library(darmok-cegui-pugixml ${CEGUI_PUGIXML_SOURCES})
+  target_include_directories(darmok-cegui-pugixml PRIVATE ${CEGUI_INCLUDE_DIRS})
+  add_dependencies(darmok-cegui-pugixml CEGUIBase-9999)
+  target_link_libraries(darmok-cegui-pugixml PRIVATE CEGUIBase-9999 pugixml glm)
+
+  target_include_directories(${LIB_NAME} PRIVATE ${CEGUI_INCLUDE_DIRS})
+  target_link_libraries(${LIB_NAME} PUBLIC
+    CEGUIBase-9999 CEGUICoreWindowRendererSet
+    CEGUISTBImageCodec darmok-cegui-pugixml)
 endif()

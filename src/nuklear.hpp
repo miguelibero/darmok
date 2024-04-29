@@ -45,7 +45,7 @@ namespace darmok
         void init(App& app) noexcept;
         void shutdown() noexcept;
         void updateLogic(float deltaTime) noexcept;
-        bgfx::ViewId render(bgfx::ViewId viewId) noexcept;
+        bgfx::ViewId render(bgfx::ViewId viewId) const noexcept;
         nk_context& getContext() noexcept;
         const nk_context& getContext() const noexcept;
         OptionalRef<nk_user_font> loadFont(std::string_view name, float height) noexcept;

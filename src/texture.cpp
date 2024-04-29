@@ -1,5 +1,6 @@
 #include "texture.hpp"
 #include <glm/gtx/string_cast.hpp>
+#include <darmok/data.hpp>
 
 namespace darmok
 {
@@ -10,17 +11,14 @@ namespace darmok
 	}
 
 	Texture::Texture(const Image& img, uint64_t flags) noexcept
-		: _handle{ bgfx::kInvalidHandle }
-		, _config{}
+		: Texture(img.getData(), img.getTextureConfig(flags), flags)
 	{
+	}
 
-		_config.format = bgfx::TextureFormat::Enum(img.getFormat());
-		_config.mips = img.getMipCount() > 1;
-		_config.layers = img.getLayerCount();
-		_config.type = img.getTextureType(flags);
-		_config.size = img.getSize();
-		_config.depth = uint16_t(img.getDepth());
-
+	Texture::Texture(const DataView& data, const Config& cfg, uint64_t flags) noexcept
+		: _handle{ bgfx::kInvalidHandle }
+		, _config(cfg)
+	{
 		if (_config.type == TextureType::Unknown)
 		{
 			// TODO: maybe throw here
@@ -30,7 +28,7 @@ namespace darmok
 		// copying the memory of the image becauyse bgfx needs to maintain the memory for some frames
 		// since the texture creation can b e async, and it could happen that the std::shared_ptr<Image>
 		// is destroyed before (for example if a texture is created and replaced in the same frame
-		const auto mem = img.copyMem();
+		const auto mem = data.copyMem();
 		auto w = uint16_t(_config.size.x);
 		auto h = uint16_t(_config.size.y);
 
@@ -78,6 +76,52 @@ namespace darmok
 	std::string TextureConfig::to_string() const noexcept
 	{
 		return "size:" + glm::to_string(size);
+	}
+
+	bgfx::TextureInfo TextureConfig::getInfo() const noexcept
+	{
+		bgfx::TextureInfo info;
+		auto cubeMap = type == TextureType::CubeMap;
+		bgfx::calcTextureSize(info, size.x, size.y, depth, cubeMap, mips, layers, format);
+		return info;
+	}
+
+	uint32_t Texture::getStorageSize() const noexcept
+	{
+		return _config.getInfo().storageSize;
+	}
+
+	uint8_t Texture::getMipsCount() const noexcept
+	{
+		return _config.getInfo().numMips;
+	}
+
+	uint8_t Texture::getBitsPerPixel() const noexcept
+	{
+		return _config.getInfo().bitsPerPixel;
+	}
+
+	void Texture::update(const DataView& data, const glm::uvec2& origin, uint16_t layer, uint8_t mip) noexcept
+	{
+		update(data, getSize(), origin, layer, mip);
+	}
+
+	void Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint16_t layer, uint8_t mip) noexcept
+	{
+		auto memSize = getBitsPerPixel() * size.x * size.y;
+		bgfx::updateTexture2D(_handle, layer, mip,
+			origin.x, origin.y, size.x, size.y,
+			data.copyMem(0, memSize));
+	}
+
+	uint32_t Texture::read(Data& data) noexcept
+	{
+		auto size = getStorageSize();
+		if (data.size() < size)
+		{
+			data.resize(size);
+		}
+		return bgfx::readTexture(_handle, data.ptr());
 	}
 
 	std::string Texture::to_string() const noexcept

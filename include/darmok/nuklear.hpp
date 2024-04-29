@@ -14,7 +14,7 @@ namespace darmok
     {
     public:
         virtual ~INuklearRenderer() = default;
-        virtual void nuklearRender(nk_context& ctx) = 0;
+        virtual void nuklearRender(nk_context& ctx) const = 0;
     };
 
 
@@ -28,7 +28,7 @@ namespace darmok
         void init(App& app) override;
 		void shutdown() override;
 		void updateLogic(float deltaTime) override;
-		bgfx::ViewId render(bgfx::ViewId viewId) override;
+		bgfx::ViewId render(bgfx::ViewId viewId) const override;
 
         nk_context& getContext() noexcept;
         const nk_context& getContext() const noexcept;

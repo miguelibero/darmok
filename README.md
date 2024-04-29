@@ -20,6 +20,7 @@ currently using:
 
 planned to use:
 
+* [CEGUI](https://github.com/cegui/cegui) for ingame UI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [Bullet](https://github.com/bulletphysics/bullet3) for 3D physics
 * [Box2D](https://box2d.org/) for 2D physics
@@ -68,6 +69,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 ### Next tasks
 
+* CEGui support (probably drop nuklear)
 * skeletal animations
 * physics
 * other types of lights
@@ -75,7 +77,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * deferred renderer
 * spine animations loading
 * distance field fonts
-* mesh serialization
+* binary mesh serialization
 * unify use of std::allocator everywhere
 
 ## Interesting Related Projects

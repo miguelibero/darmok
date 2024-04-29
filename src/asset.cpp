@@ -157,6 +157,11 @@ namespace darmok
 		return _impl->getColorTextureLoader();
 	}
 
+	bx::AllocatorI* AssetContext::getAllocator() noexcept
+	{
+		return _impl->getAllocator();
+	}
+
 	AssetContextImpl& AssetContext::getImpl() noexcept
 	{
 		return *_impl;

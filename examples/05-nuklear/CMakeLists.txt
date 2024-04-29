@@ -6,6 +6,7 @@ project(
   DESCRIPTION "nuklear UI example darmok project"
 )
 
+set(DARMOK_BUILD_NUKLEAR ON CACHE BOOL "build darmok with nuklear UI support")
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 

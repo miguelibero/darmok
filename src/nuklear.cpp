@@ -265,7 +265,7 @@ namespace darmok
         processInput();
     }
 
-    bgfx::ViewId NuklearAppComponentImpl::render(bgfx::ViewId viewId) noexcept
+    bgfx::ViewId NuklearAppComponentImpl::render(bgfx::ViewId viewId) const noexcept
     {
         if (!_app)
         {
@@ -360,7 +360,7 @@ namespace darmok
         _impl->updateLogic(deltaTime);
     }
 
-    bgfx::ViewId NuklearAppComponent::render(bgfx::ViewId viewId)
+    bgfx::ViewId NuklearAppComponent::render(bgfx::ViewId viewId) const 
     {
         return _impl->render(viewId);
     }

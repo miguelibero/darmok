@@ -37,9 +37,16 @@ namespace darmok
         [[nodiscard]] bool operator==(const DataView& other) const noexcept;
         [[nodiscard]] bool operator!=(const DataView& other) const noexcept;
 
+        [[nodiscard]] DataView view(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
+
     private:
         const void* _ptr;
         size_t _size;
+
+        size_t fixOffset(size_t offset, void*& ptr) const noexcept;
+        size_t fixSize(size_t size, size_t offset = 0) const noexcept;
     };
 
     class Data final
@@ -62,9 +69,11 @@ namespace darmok
         [[nodiscard]] bool operator==(const Data& other) const noexcept;
         [[nodiscard]] bool operator!=(const Data& other) const noexcept;
 
+        [[nodiscard]] DataView view(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
 
-        [[nodiscard]] const bgfx::Memory* makeRef() const noexcept;
-        [[nodiscard]] const bgfx::Memory* copyMem() const noexcept;
+        void release() noexcept;
         void clear() noexcept;
         void resize(size_t size) noexcept;
 
@@ -104,14 +113,20 @@ namespace darmok
         bx::AllocatorI* _alloc;
 
         static void* malloc(size_t size, bx::AllocatorI* alloc) noexcept;
+
     };
 
 	class BX_NO_VTABLE IDataLoader
 	{
 	public:
+        // TODO: change to Data to avoid having to copy memory
         using result_type = std::shared_ptr<Data>;
 
 		virtual ~IDataLoader() = default;
 		virtual result_type operator()(std::string_view name) = 0;
+        virtual std::vector<std::string> find(std::string_view name)
+        {
+            return std::vector<std::string>();
+        }
 	};
 }
