@@ -407,17 +407,8 @@ endif()
 
 # cegui
 if(DARMOK_BUILD_CEGUI)
-  set(GLFW3_H_PATH ${LIBS_DIR}/glfw/include)
-  set(GLFW3_LIB ${CMAKE_CURRENT_BINARY_DIR}/lib/glfw/src/$<CONFIG>/glfw3)
-  set(GLM_LOCAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/glm)
-  set(GLM_H_PATH ${GLM_LOCAL_DIR})
-
+  set(GLM_H_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/glm)
   set(PUGIXML_H_PATH ${LIBS_DIR}/pugixml/src)
-  # set(PUGIXML_LIB ${CMAKE_CURRENT_BINARY_DIR}/lib/pugixml/$<CONFIG>/pugixml)
-  # set(PUGIXML_LIB_DBG ${CMAKE_CURRENT_BINARY_DIR}/lib/pugixml/pugixml-static.dir/$<CONFIG>/pugixml)
-
-  #set(FREETYPE_LIB ${LIBS_DIR}/freetype)
-  #set(MINIZIP_LIB ${LIBS_DIR}/glfw)
   
   set(CEGUI_BUILD_APPLICATION_TEMPLATES OFF CACHE BOOL "Specifies whether to build the application templates.")
   set(CEGUI_BUILD_RENDERER_OPENGL OFF CACHE BOOL "Specifies whether to build the old OpenGL 1.2 (fixed pipeline) renderer module.")
@@ -426,23 +417,25 @@ if(DARMOK_BUILD_CEGUI)
   set(CEGUI_BUILD_SAMPLES OFF CACHE BOOL "Specifies whether to build the CEGUI sample applications")
   set(CEGUI_BUILD_XMLPARSER_PUGIXML ON CACHE BOOL "Specifies the XMLParser module to use as the default")
   set(CEGUI_BUILD_IMAGECODEC_STB ON CACHE BOOL "Specifies whether to build the STB based ImageCodec module")  
+  set(CEGUI_BUILD_STATIC_CONFIGURATION ON CACHE BOOL "Specifies whether the static configs will be built. (NB: Shared configs are always built)")
+  set(CEGUI_BUILD_DYNAMIC_CONFIGURATION OFF CACHE BOOL "Dynamic libs to be built. Always true except for Android")
+  set(CEGUI_BUILD_STATIC_FACTORY_MODULE ON CACHE BOOL "For static CEGUI builds, specifies whether to include the getWindowFactoryModule method.  When false, the developer must provide a custom implementation of the method")
 
   add_subdirectory(${LIBS_DIR}/cegui)
 
-  # manually add cegui pugixml to avoid duplicated symbols error
-  set(CEGUI_PUGIXML_DIR ${LIBS_DIR}/cegui/cegui/src/XMLParserModules/PugiXML)
   set(CEGUI_INCLUDE_DIRS
     ${LIBS_DIR}/cegui/cegui/include
     ${CMAKE_CURRENT_BINARY_DIR}/lib/cegui/cegui/include)
-  
-  file(GLOB_RECURSE CEGUI_PUGIXML_SOURCES ${CEGUI_PUGIXML_DIR}/*.cpp)
-  add_library(darmok-cegui-pugixml ${CEGUI_PUGIXML_SOURCES})
-  target_include_directories(darmok-cegui-pugixml PRIVATE ${CEGUI_INCLUDE_DIRS})
-  add_dependencies(darmok-cegui-pugixml CEGUIBase-9999)
-  target_link_libraries(darmok-cegui-pugixml PRIVATE CEGUIBase-9999 pugixml glm)
+
+  target_link_libraries(CEGUIPugiXMLParser_Static pugixml)
+  target_include_directories(CEGUIPugiXMLParser_Static PRIVATE ${PUGIXML_H_PATH})
 
   target_include_directories(${LIB_NAME} PRIVATE ${CEGUI_INCLUDE_DIRS})
+
   target_link_libraries(${LIB_NAME} PUBLIC
-    CEGUIBase-9999 CEGUICoreWindowRendererSet
-    CEGUISTBImageCodec darmok-cegui-pugixml)
+    CEGUIBase-9999_Static CEGUICommonDialogs-9999_Static)
+  target_link_libraries(${LIB_NAME} PRIVATE
+    CEGUICoreWindowRendererSet_Static
+    CEGUISTBImageCodec_Static
+    CEGUIPugiXMLParser_Static)
 endif()
