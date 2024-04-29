@@ -3,9 +3,14 @@
 
 namespace darmok
 {
-    FileAssetFinder::FileAssetFinder(const std::string& basePath) noexcept
+    FileAssetFinder::FileAssetFinder(std::string_view basePath) noexcept
         : _basePath(basePath)
     {
+    }
+
+    void FileAssetFinder::setBasePath(std::string_view basePath) noexcept
+    {
+        _basePath = basePath;
     }
 
     std::vector<std::string> FileAssetFinder::operator()(std::string_view pattern)

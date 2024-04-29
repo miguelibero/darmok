@@ -148,10 +148,6 @@ namespace darmok
 	std::shared_ptr<Image> DataImageLoader::operator()(std::string_view name)
 	{
 		auto data = _dataLoader(name);
-		if (data == nullptr)
-		{
-			throw std::runtime_error("got empty data");
-		}
-		return std::make_shared<Image>(data->view(), bimg::TextureFormat::Count, _allocator);
+		return std::make_shared<Image>(data.view(), bimg::TextureFormat::Count, _allocator);
 	}
 }

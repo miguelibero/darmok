@@ -678,24 +678,23 @@ namespace darmok
 		return writer.finish();
 	}
 
-	Data createAssimpMeshIndexData(const AssimpMesh& modelMesh)
+	std::vector<VertexIndex> createAssimpMeshIndexData(const AssimpMesh& modelMesh)
 	{
 		std::vector<VertexIndex> indices;
 		for (auto& face : modelMesh.getFaces())
 		{
 			indices.insert(indices.end(), face.getIndices().begin(), face.getIndices().end());
 		}
-		return Data::copy(indices);
+		return indices;
 	}
 
 	std::shared_ptr<Mesh> AssimpMesh::load(const bgfx::VertexLayout& layout) const
 	{
-		auto material = getMaterial().load();
 		auto vertices = createAssimpMeshVertexData(*this, layout);
 		auto indices = createAssimpMeshIndexData(*this);
-
-		auto ptr = (float*)vertices.ptr();
-		return std::make_shared<Mesh>(layout, std::move(vertices), std::move(indices), material);
+		auto mesh = std::make_shared<Mesh>(layout, DataView(vertices), DataView(indices));
+		mesh->setMaterial(getMaterial().load());
+		return mesh;
 	}
 
 	AssimpNodeMeshCollection::AssimpNodeMeshCollection(aiNode* ptr, AssimpScene& scene)
@@ -1247,7 +1246,7 @@ namespace darmok
 	std::shared_ptr<AssimpScene> AssimpSceneLoader::operator()(std::string_view name)
 	{
 		auto data = _dataLoader(name);
-		if (data == nullptr || data->empty())
+		if (data.empty())
 		{
 			throw std::runtime_error("got empty data");
 		}
@@ -1261,7 +1260,7 @@ namespace darmok
 		// while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
 
 		std::string nameString(name);
-		auto scene = _importer.ReadFileFromMemory(data->ptr(), data->size(), flags, nameString.c_str());
+		auto scene = _importer.ReadFileFromMemory(data.ptr(), data.size(), flags, nameString.c_str());
 
 		if (scene == nullptr)
 		{

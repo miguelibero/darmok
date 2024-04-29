@@ -55,6 +55,14 @@ namespace darmok
         return !(*this == other);
     }
 
+    std::string_view DataView::stringView(size_t offset, size_t size) const noexcept
+    {
+        void* ptr;
+        offset = fixOffset(offset, ptr);
+        size = fixSize(size, offset);
+        return std::string_view((char*)ptr, size);
+    }
+
     DataView DataView::view(size_t offset, size_t size) const noexcept
     {
         void* ptr;
@@ -157,6 +165,11 @@ namespace darmok
         return !(*this == other);
     }
 
+    std::string_view Data::stringView(size_t offset, size_t size) const noexcept
+    {
+        return DataView(_ptr, _size).stringView(offset, size);
+    }
+
     DataView Data::view(size_t offset, size_t size) const noexcept
     {
         return DataView(_ptr, _size).view(offset, size);
@@ -239,18 +252,21 @@ namespace darmok
 
     Data& Data::operator=(const Data& other) noexcept
     {
-        clear();
         _alloc = other._alloc;
-        if (other._ptr && _size > 0)
+        return operator=(other.view());
+    }
+
+    Data::Data(const DataView& other, bx::AllocatorI* alloc) noexcept
+        : Data(other.ptr(), other.size(), _alloc)
+    {
+    }
+
+    Data& Data::operator=(const DataView& other) noexcept
+    {
+        resize(other.size());
+        if (_size > 0)
         {
-            _size = other._size;
-            _ptr = malloc(_size, _alloc);
-            bx::memCopy(_ptr, other._ptr, _size);
-        }
-        else
-        {
-            _ptr = nullptr;
-            _size = 0;
+            bx::memCopy(_ptr, other.ptr(), _size);
         }
         return *this;
     }
@@ -286,7 +302,7 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<Data> FileDataLoader::operator()(std::string_view filePath)
+    Data FileDataLoader::operator()(std::string_view filePath)
     {
         if (!bx::open(_fileReader, bx::StringView(filePath.data(), filePath.size())))
         {
@@ -294,9 +310,14 @@ namespace darmok
         }
 
         auto size = bx::getSize(_fileReader);
-        auto data = std::make_shared<Data>(size, _allocator);
-        bx::read(_fileReader, data->ptr(), (int32_t)size, bx::ErrorAssert{});
+        auto data = Data(size, _allocator);
+        bx::read(_fileReader, data.ptr(), (int32_t)size, bx::ErrorAssert{});
         bx::close(_fileReader);
         return data;
+    }
+
+    std::vector<std::string> FileDataLoader::find(std::string_view name)
+    {
+        return _finder(name);
     }
 }

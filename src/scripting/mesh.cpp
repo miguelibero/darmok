@@ -6,11 +6,6 @@
 
 namespace darmok
 {
-	LuaMesh::LuaMesh(const bgfx::VertexLayout& layout) noexcept
-		: _mesh(std::make_shared<Mesh>(layout))
-	{
-	}
-
 	LuaMesh::LuaMesh(const std::shared_ptr<Mesh>& mesh) noexcept
 		: _mesh(mesh)
 	{
@@ -39,7 +34,7 @@ namespace darmok
 	void LuaMesh::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaMesh>("Mesh",
-			sol::constructors<LuaMesh(const bgfx::VertexLayout&)>(),
+			sol::constructors<>(),
 			"material", sol::property(&LuaMesh::getMaterial, &LuaMesh::setMaterial)
 		);
 	}

@@ -134,9 +134,10 @@ namespace darmok
     bgfx::VertexLayout JsonDataVertexLayoutLoader::operator()(std::string_view name)
     {
         auto data = _dataLoader(name);
-        std::string_view json(static_cast<char*>(data->ptr()), data->size());
         bgfx::VertexLayout layout;
-        Program::readVertexLayoutJson(json, layout);
+        rapidjson::Document doc;
+        doc.ParseInsitu((char*)data.ptr());
+        Program::readVertexLayoutJson(doc, layout);
         return layout;
     }
 }

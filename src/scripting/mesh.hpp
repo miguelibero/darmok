@@ -17,7 +17,6 @@ namespace darmok
 	class LuaMesh final
 	{
 	public:
-		LuaMesh(const bgfx::VertexLayout& layout) noexcept;
 		LuaMesh(const std::shared_ptr<Mesh>& mesh) noexcept;
 
 		std::string to_string() const noexcept;

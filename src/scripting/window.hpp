@@ -13,7 +13,6 @@ namespace darmok
 		LuaWindow(Window& win) noexcept;
 		const glm::uvec2& getSize() const noexcept;
 		glm::uvec2 getPixelSize() const noexcept;
-		const glm::ivec4& getViewport() const noexcept;
 		const Window& getReal() const noexcept;
 		Window& getReal() noexcept;
 		glm::uvec2 screenPointToWindow(const glm::vec2& point) const noexcept;

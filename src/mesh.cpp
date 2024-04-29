@@ -1,121 +1,46 @@
 #include <darmok/mesh.hpp>
-#include <darmok/asset.hpp>
 #include <darmok/material.hpp>
-#include <darmok/transform.hpp>
 #include <darmok/texture.hpp>
-#include <darmok/camera.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
-#include <glm/gtx/vector_angle.hpp>
+#include <darmok/data.hpp>
 
 namespace darmok
 {
-
-	Mesh::Mesh(const bgfx::VertexLayout& layout, Data&& vertices, Data&& indices, const std::shared_ptr<Material>& material) noexcept
-		: _layout(layout)
-		, _vertices(std::move(vertices))
-		, _indices(std::move(indices))
-		, _material(material)
-		, _vertexBuffer(bgfx::createVertexBuffer(_vertices.makeRef(), layout))
-		, _indexBuffer(bgfx::createIndexBuffer(_indices.makeRef()))
-	{
-	}
-
-	Mesh::Mesh(const bgfx::VertexLayout& layout, Data&& vertices, const std::shared_ptr<Material>& material) noexcept
-		: _layout(layout)
-		, _vertices(std::move(vertices))
-		, _material(material)
-		, _vertexBuffer(bgfx::createVertexBuffer(_vertices.makeRef(), layout))
+	Mesh::Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool dynamic) noexcept
+		: _layout(_layout)
+		, _vertexBuffer{ bgfx::kInvalidHandle }
 		, _indexBuffer{ bgfx::kInvalidHandle }
+		, _vertexSize(vertices.size())
+		, _indexSize(indices.size())
+		, _dynamic(dynamic)
 	{
-	}
-
-	Mesh::~Mesh()
-	{
-		destroyHandles();
-	}
-
-	std::string Mesh::to_string() const noexcept
-	{
-		auto stride = _layout.getStride();
-		auto numVerts = _vertices.size() / stride;
-		auto numIdx = _indices.size() / sizeof(VertexIndex);
-		return "Mesh(" + std::to_string(numVerts) + " vertices, "
-			+ std::to_string(stride) + " stride, "
-			+ std::to_string(numIdx) + " indices)";
-	}
-
-	void Mesh::destroyHandles()
-	{
-		if (isValid(_indexBuffer))
+		if (dynamic)
 		{
-			bgfx::destroy(_vertexBuffer);
+			_vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout).idx;
+			if (!indices.empty())
+			{
+				_indexBuffer = bgfx::createDynamicIndexBuffer(indices.copyMem()).idx;
+			}
 		}
-		if (isValid(_indexBuffer))
+		else
 		{
-			bgfx::destroy(_indexBuffer);
+			_vertexBuffer = bgfx::createVertexBuffer(vertices.copyMem(), layout).idx;
+			if (!indices.empty())
+			{
+				_indexBuffer = bgfx::createIndexBuffer(indices.copyMem()).idx;
+			}
 		}
 	}
 
-	Mesh::Mesh(const Mesh& other) noexcept
-		: _material(other._material)
-		, _vertices(other._vertices)
-		, _indices(other._indices)
-		, _vertexBuffer(bgfx::createVertexBuffer(other._vertices.makeRef(), _layout))
-		, _indexBuffer(bgfx::createIndexBuffer(other._indices.makeRef()))
+	Mesh::Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, bool dynamic) noexcept
+		: Mesh(layout, vertices, DataView(), dynamic)
 	{
 	}
 
-	Mesh& Mesh::operator=(const Mesh& other) noexcept
+	const bgfx::VertexLayout& Mesh::getVertexLayout() const noexcept
 	{
-		destroyHandles();
-
-		_material = other._material;
-		_vertices = other._vertices;
-		_indices = other._indices;
-
-		_vertexBuffer = bgfx::createVertexBuffer(_vertices.makeRef(), _layout);
-		_indexBuffer = bgfx::createIndexBuffer(_indices.makeRef());
-
-		return *this;
-	}
-
-	Mesh::Mesh(Mesh&& other) noexcept
-		: _material(other._material)
-		, _vertices(std::move(other._vertices))
-		, _indices(std::move(other._indices))
-		, _vertexBuffer(other._vertexBuffer)
-		, _indexBuffer(other._indexBuffer)
-	{
-		other._material = nullptr;
-		other._vertexBuffer.idx = bgfx::kInvalidHandle;
-		other._indexBuffer.idx = bgfx::kInvalidHandle;
-	}
-
-	Mesh& Mesh::operator=(Mesh&& other) noexcept
-	{
-		destroyHandles();
-
-		_material = other._material;
-		_indices = std::move(other._indices);
-		_vertices = std::move(other._vertices);
-		_vertexBuffer = other._vertexBuffer;
-		_indexBuffer = other._indexBuffer;
-
-		other._material = nullptr;
-		other._vertexBuffer.idx = bgfx::kInvalidHandle;
-		other._indexBuffer.idx = bgfx::kInvalidHandle;
-		return *this;
-	}
-
-	const Data& Mesh::getVertexData() const noexcept
-	{
-		return _vertices;
-	}
-
-	const Data& Mesh::getIndexData() const noexcept
-	{
-		return _indices;
+		return _layout;
 	}
 
 	const std::shared_ptr<Material>& Mesh::getMaterial() const noexcept
@@ -128,19 +53,116 @@ namespace darmok
 		_material = material;
 	}
 
-	void Mesh::render(bgfx::Encoder& encoder, uint8_t vertexStream) const
+
+	Mesh::~Mesh() noexcept
 	{
-		if (!isValid(_vertexBuffer))
+		if (_vertexBuffer != bgfx::kInvalidHandle)
 		{
-			throw std::runtime_error("invalid mesh vertex buffer");
+			if (_dynamic)
+			{
+				bgfx::destroy(bgfx::DynamicVertexBufferHandle{ _vertexBuffer });
+			}
+			else
+			{
+				bgfx::destroy(bgfx::VertexBufferHandle{ _vertexBuffer });
+			}
 		}
-		encoder.setVertexBuffer(vertexStream, _vertexBuffer);
-		if (isValid(_indexBuffer))
+		if (_indexBuffer != bgfx::kInvalidHandle)
 		{
-			encoder.setIndexBuffer(_indexBuffer);
+			if (_dynamic)
+			{
+				bgfx::destroy(bgfx::DynamicIndexBufferHandle{ _indexBuffer });
+			}
+			else
+			{
+				bgfx::destroy(bgfx::IndexBufferHandle{ _indexBuffer });
+			}
 		}
 	}
 
+	Mesh::Mesh(Mesh&& other) noexcept
+		: _layout(other._layout), _material(other._material)
+		, _vertexBuffer(other._vertexBuffer)
+		, _indexBuffer(other._indexBuffer)
+		, _vertexSize(other._vertexSize)
+		, _indexSize(other._indexSize)
+		, _dynamic(other._dynamic)
+	{
+		other._vertexBuffer = bgfx::kInvalidHandle;
+		other._indexBuffer = bgfx::kInvalidHandle;
+		other._vertexSize = 0;
+		other._indexSize = 0;
+	}
+
+	Mesh& Mesh::operator=(Mesh&& other) noexcept
+	{
+		_layout = other._layout;
+		_material = other._material;
+		_vertexBuffer = other._vertexBuffer;
+		_indexBuffer = other._indexBuffer;
+		_vertexSize = other._vertexSize;
+		_indexSize = other._indexSize;
+		_dynamic = other._dynamic;
+		other._vertexBuffer = bgfx::kInvalidHandle;
+		other._indexBuffer = bgfx::kInvalidHandle;
+		other._vertexSize = 0;
+		other._indexSize = 0;
+		return *this;
+	}
+
+
+	void Mesh::updateVertices(const DataView& data, size_t offset)
+	{
+		if (!_dynamic)
+		{
+			throw std::runtime_error("cannot update static mesh");
+		}
+	}
+	
+	void Mesh::updateIndices(const DataView& data, size_t offset)
+	{
+		if (!_dynamic)
+		{
+			throw std::runtime_error("cannot update static mesh");
+		}
+	}
+
+	std::string Mesh::to_string() const noexcept
+	{
+		auto stride = getVertexLayout().getStride();
+		auto numVerts = _vertexSize / stride;
+		auto numIdx = _indexSize / sizeof(VertexIndex);
+		return "Mesh(" + std::to_string(numVerts) + " vertices, "
+			+ std::to_string(stride) + " stride, "
+			+ std::to_string(numIdx) + " indices)";
+	}
+
+	void Mesh::render(bgfx::Encoder& encoder, uint8_t vertexStream) const
+	{
+		if (_vertexBuffer == bgfx::kInvalidHandle)
+		{
+			throw std::runtime_error("invalid mesh vertex buffer");
+		}
+		if (_dynamic)
+		{
+			encoder.setVertexBuffer(vertexStream, bgfx::DynamicVertexBufferHandle{ _vertexBuffer });
+		}
+		else
+		{
+			encoder.setVertexBuffer(vertexStream, bgfx::VertexBufferHandle{ _vertexBuffer });
+		}
+		if (_indexBuffer != bgfx::kInvalidHandle)
+		{
+			if (_dynamic)
+			{
+				encoder.setIndexBuffer(bgfx::DynamicIndexBufferHandle{ _indexBuffer });
+			}
+			else
+			{
+				encoder.setIndexBuffer(bgfx::IndexBufferHandle{ _indexBuffer });
+			}
+		}
+	}
 
 	MeshCreator::MeshCreator(const bgfx::VertexLayout& layout) noexcept
 		: layout(layout)
@@ -171,7 +193,7 @@ namespace darmok
 
 		writer.write(bgfx::Attrib::Normal, meshData.normals);
 		auto vertexData = writer.finish();
-		return std::make_shared<Mesh>(layout, std::move(vertexData), Data::copy(meshData.indices));
+		return std::make_shared<Mesh>(layout, DataView(vertexData), DataView(meshData.indices), cfg.dynamic);
 	}
 
 	std::shared_ptr<Mesh> MeshCreator::createCube() noexcept

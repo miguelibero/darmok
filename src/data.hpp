@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/data.hpp>
+#include "find.hpp"
 #include <bx/file.h>
 
 namespace darmok
@@ -9,9 +10,11 @@ namespace darmok
 	{
 	public:
 		FileDataLoader(bx::FileReaderI* fileReader, bx::AllocatorI* alloc = nullptr);
-		std::shared_ptr<Data> operator()(std::string_view filePath) override;
+		IDataLoader::result_type operator()(std::string_view filePath) override;
+		std::vector<std::string> find(std::string_view name) override;
 	private:
 		bx::FileReaderI* _fileReader;
 		bx::AllocatorI* _allocator;
+		FileAssetFinder _finder;
 	};
 }

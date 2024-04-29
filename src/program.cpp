@@ -5,7 +5,6 @@
 
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
-#include <rapidjson/document.h>
 
 #include "embedded_shader.hpp"
 #include "generated/shaders/gui_vertex.h"
@@ -142,10 +141,8 @@ namespace darmok
 		return std::string_view(v.GetString(), v.GetStringLength());
 	}
 
-	void Program::readVertexLayoutJson(std::string_view json, bgfx::VertexLayout& layout) noexcept
+	void Program::readVertexLayoutJson(const rapidjson::Document& doc, bgfx::VertexLayout& layout) noexcept
 	{
-		rapidjson::Document doc;
-		doc.Parse(json.data(), json.size());
 		layout.begin();
 		for (auto& elm : doc.GetObject())
 		{
@@ -222,11 +219,11 @@ namespace darmok
 	{
 		std::string dataName = filePath + getShaderExt() + ".bin";
 		auto data = _dataLoader(dataName);
-		if (data == nullptr || data->empty())
+		if (data.empty())
 		{
 			throw std::runtime_error("got empty data");
 		}
-		bgfx::ShaderHandle handle = bgfx::createShader(data->makeRef());
+		bgfx::ShaderHandle handle = bgfx::createShader(data.makeRef());
 		bgfx::setName(handle, filePath.c_str());
 		return handle;
 	}
@@ -294,7 +291,9 @@ namespace darmok
 		auto itr2 = _embeddedShaderVertexLayouts.find(type);
 		if (itr2 != _embeddedShaderVertexLayouts.end())
 		{
-			Program::readVertexLayoutJson(itr2->second, layout);
+			rapidjson::Document doc;
+			doc.Parse(itr2->second);
+			Program::readVertexLayoutJson(doc, layout);
 		};
 
 		return std::make_shared<Program>(handle, layout);

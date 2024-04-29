@@ -119,7 +119,7 @@ namespace darmok
 		}
 
 		auto vertexData = writer.finish();
-		return std::make_shared<Mesh>(layout, std::move(vertexData), Data::copy(indices));
+		return std::make_shared<Mesh>(layout, DataView(vertexData), DataView(indices));
 	}
 
 	std::shared_ptr<Material> TextureAtlasMeshCreator::createMaterial(const Color& color) const noexcept
@@ -342,13 +342,13 @@ namespace darmok
 	std::shared_ptr<TextureAtlas> TexturePackerTextureAtlasLoader::operator()(std::string_view name, uint64_t textureFlags)
 	{
 		auto data = _dataLoader(name);
-		if (data == nullptr || data->empty())
+		if (data.empty())
 		{
 			throw std::runtime_error("got empty data");
 		}
 
 		pugi::xml_document doc;
-		auto result = doc.load_buffer(data->ptr(), data->size());
+		auto result = doc.load_buffer_inplace(data.ptr(), data.size());
 		if (result.status != pugi::status_ok)
 		{
 			throw std::runtime_error(result.description());

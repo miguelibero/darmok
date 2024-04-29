@@ -18,11 +18,6 @@ namespace darmok
 		return _win->getPixelSize();
 	}
 
-	const glm::ivec4& LuaWindow::getViewport() const noexcept
-	{
-		return _win->getViewport();
-	}
-
 	glm::uvec2 LuaWindow::screenPointToWindow(const glm::vec2& point) const noexcept
 	{
 		return _win->screenPointToWindow(point);
@@ -66,7 +61,6 @@ namespace darmok
 			sol::constructors<>(),
 			"size", sol::property(&LuaWindow::getSize),
 			"pixel_size", sol::property(&LuaWindow::getPixelSize),
-			"viewport", sol::property(&LuaWindow::getViewport),
 			"mode", sol::property(&LuaWindow::setMode),
 			"cursor_mode", sol::property(&LuaWindow::setCursorMode),
 			"screen_point_to_window", &LuaWindow::screenPointToWindow

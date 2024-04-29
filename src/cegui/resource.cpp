@@ -30,11 +30,10 @@ namespace darmok
 	void CeguiResourceProvider::loadRawDataContainer(const CEGUI::String& filename, CEGUI::RawDataContainer& output,
 		const CEGUI::String& resourceGroup)
 	{
-		// TODO: not the best because data could be shared
 		auto data = _loader(getFinalFilename(filename, resourceGroup));
-		output.setData(static_cast<uint8_t*>(data->ptr()));
-		output.setSize(data->size());
-		data->release();
+		output.setData(static_cast<uint8_t*>(data.ptr()));
+		output.setSize(data.size());
+		data.release();
 	}
 
 	void CeguiResourceProvider::unloadRawDataContainer(CEGUI::RawDataContainer& container)

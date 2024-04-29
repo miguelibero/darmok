@@ -1,47 +1,44 @@
 #pragma once
 
-#include <darmok/data.hpp>
 #include <darmok/color.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/material_fwd.hpp>
 #include <darmok/vertex_fwd.hpp>
 #include <vector>
 #include <bgfx/bgfx.h>
+#include <glm/glm.hpp>
 
 namespace darmok
 {
+    class DataView;
+
     class Mesh final
     {
     public:
-        Mesh(const bgfx::VertexLayout& layout, Data&& vertices = Data(), const std::shared_ptr<Material>& material = nullptr) noexcept;
-        Mesh(const bgfx::VertexLayout& layout, Data&& vertices, Data&& indices, const std::shared_ptr<Material>& material = nullptr) noexcept;
-        ~Mesh();
-
-        std::string to_string() const noexcept;
-
-        Mesh(const Mesh& other) noexcept;
-        Mesh& operator=(const Mesh& other) noexcept;
-
+        Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, bool dynamic = false) noexcept;
+        Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool dynamic = false) noexcept;
+        ~Mesh() noexcept;
+        Mesh(const Mesh& other) = delete;
+        Mesh& operator=(const Mesh& other) = delete;
         Mesh(Mesh&& other) noexcept;
         Mesh& operator=(Mesh&& other) noexcept;
 
+        void updateVertices(const DataView& data, size_t offset = 0);
+        void updateIndices(const DataView& data, size_t offset = 0);
+        
+        virtual std::string to_string() const noexcept;
+        virtual void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const;
+        const bgfx::VertexLayout& getVertexLayout() const noexcept;
         const std::shared_ptr<Material>& getMaterial() const noexcept;
         void setMaterial(const std::shared_ptr<Material>& material) noexcept;
-
-        const Data& getVertexData() const noexcept;
-        const Data& getIndexData() const noexcept;
-
-        void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const;
-        
     private:
         bgfx::VertexLayout _layout;
-        Data _vertices;
-        Data _indices;
         std::shared_ptr<Material> _material;
-        bgfx::VertexBufferHandle _vertexBuffer;
-        bgfx::IndexBufferHandle _indexBuffer;
-
-        void destroyHandles();
+        uint16_t _vertexBuffer;
+        uint16_t _indexBuffer;
+        size_t _vertexSize;
+        size_t _indexSize;
+        bool _dynamic;
     };
 
     struct MeshCreationConfig final
@@ -51,6 +48,7 @@ namespace darmok
         glm::vec2 textureScale = glm::vec2(1);
         glm::vec2 textureOffset = glm::vec3(0);
         Color color = Colors::white();
+        bool dynamic = false;
     };
 
     struct MeshData

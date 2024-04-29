@@ -31,12 +31,32 @@ namespace darmok
         DataView(const char* str) noexcept;
         DataView(const Data& data) noexcept;
         DataView(const bgfx::Memory& mem) noexcept;
+
+        template<typename T>
+        DataView(const std::vector<T>& v) noexcept
+            : DataView(&v.front(), sizeof(T) * v.size())
+        {
+        }
+
+        template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+        DataView(const glm::vec<L, T, Q>& v) noexcept
+            : DataView(glm::value_ptr(v), L * sizeof(T))
+        {
+        }
+
+        template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
+        DataView(const glm::mat<L1, L2, T, Q>& v) noexcept
+            : DataView(glm::value_ptr(v), L1* L2 * sizeof(T))
+        {
+        }
+
         [[nodiscard]] const void* ptr() const noexcept;
         [[nodiscard]] size_t size() const noexcept;
         [[nodiscard]] bool empty() const noexcept;
         [[nodiscard]] bool operator==(const DataView& other) const noexcept;
         [[nodiscard]] bool operator!=(const DataView& other) const noexcept;
 
+        [[nodiscard]] std::string_view stringView(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] DataView view(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
@@ -56,8 +76,28 @@ namespace darmok
         Data(const void* ptr, size_t size, bx::AllocatorI* alloc = nullptr) noexcept;
         ~Data() noexcept;
 
+        template<typename T>
+        Data(const std::vector<T>& v, bx::AllocatorI* alloc = nullptr) noexcept
+            : Data(&v.front(), sizeof(T) * v.size(), alloc)
+        {
+        }
+
+        template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+        Data(const glm::vec<L, T, Q>& v, bx::AllocatorI* alloc = nullptr) noexcept
+            : Data(glm::value_ptr(v), L * sizeof(T), alloc)
+        {
+        }
+
+        template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
+        Data(const glm::mat<L1, L2, T, Q>& v, bx::AllocatorI* alloc = nullptr) noexcept
+            : Data(glm::value_ptr(v), L1* L2 * sizeof(T), alloc)
+        {
+        }
+
         Data(const Data& other) noexcept;
         Data& operator=(const Data& other) noexcept;
+        Data(const DataView& other, bx::AllocatorI* alloc = nullptr) noexcept;
+        Data& operator=(const DataView& other) noexcept;
         Data(Data&& other) noexcept;
         Data& operator=(Data&& other) noexcept;
         operator DataView() const;
@@ -69,6 +109,7 @@ namespace darmok
         [[nodiscard]] bool operator==(const Data& other) const noexcept;
         [[nodiscard]] bool operator!=(const Data& other) const noexcept;
 
+        [[nodiscard]] std::string_view stringView(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] DataView view(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
@@ -76,36 +117,6 @@ namespace darmok
         void release() noexcept;
         void clear() noexcept;
         void resize(size_t size) noexcept;
-
-        template<typename T>
-        static Data copy(const std::vector<T>& v, bx::AllocatorI* alloc = nullptr) noexcept
-        {
-            return Data(&v.front(), sizeof(T) * v.size(), alloc);
-        }
-
-        template<typename T>
-        static Data copy(const T* ptr, size_t num, bx::AllocatorI* alloc = nullptr) noexcept
-        {
-            return Data(ptr, sizeof(T) * num, alloc);
-        }
-
-        template<typename T>
-        static Data copy(const T& v, bx::AllocatorI* alloc = nullptr) noexcept
-        {
-            return Data(&v, sizeof(T), alloc);
-        }
-
-        template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
-        static Data copy(const glm::vec<L, T, Q>& v, bx::AllocatorI* alloc = nullptr) noexcept
-        {
-            return Data(glm::value_ptr(v), L*sizeof(T), alloc);
-        }
-
-        template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
-        static Data copy(const glm::mat<L1, L2, T, Q>& v, bx::AllocatorI* alloc = nullptr) noexcept
-        {
-            return Data(glm::value_ptr(v), L1 * L2 * sizeof(T), alloc);
-        }
 
     private:
         void* _ptr;
@@ -120,7 +131,7 @@ namespace darmok
 	{
 	public:
         // TODO: change to Data to avoid having to copy memory
-        using result_type = std::shared_ptr<Data>;
+        using result_type = Data;
 
 		virtual ~IDataLoader() = default;
 		virtual result_type operator()(std::string_view name) = 0;

@@ -5,6 +5,7 @@
 #include <bgfx/bgfx.h>
 #include <memory>
 #include <string_view>
+#include <rapidjson/document.h>
 
 namespace darmok
 {
@@ -18,6 +19,8 @@ namespace darmok
 		ForwardPbr,
 	};
 
+	class Data;
+
 	class Program final
 	{
 	public:
@@ -28,7 +31,7 @@ namespace darmok
 		[[nodiscard]] const bgfx::ProgramHandle& getHandle() const noexcept;
 		const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
-		static void readVertexLayoutJson(std::string_view json, bgfx::VertexLayout& layout) noexcept;
+		static void readVertexLayoutJson(const rapidjson::Document& doc, bgfx::VertexLayout& layout) noexcept;
 		static bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept;
 		static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
 
