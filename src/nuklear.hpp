@@ -1,19 +1,20 @@
 
 #include <darmok/app.hpp>
-#include <darmok/data.hpp>
 #include <darmok/optional_ref.hpp>
 #include <nuklear.h>
 #include <array>
 #include <memory>
+#include <bgfx/bgfx.h>
 
 namespace darmok
 {
+    class DataView;
 
     class NuklearFont final
     {
     public:
         NuklearFont(struct nk_font_config& cfg, const OptionalRef<nk_draw_null_texture>& nullTex = nullptr) noexcept;
-        NuklearFont(struct nk_font_config& cfg, const std::shared_ptr<Data>& data, const OptionalRef<nk_draw_null_texture>& nullTex = nullptr) noexcept;
+        NuklearFont(struct nk_font_config& cfg, const DataView& data, const OptionalRef<nk_draw_null_texture>& nullTex = nullptr) noexcept;
         ~NuklearFont() noexcept;
 
         // nk_font_atlas memory needs to be stable
@@ -25,8 +26,6 @@ namespace darmok
 
         nk_font_atlas _atlas;
         bgfx::TextureHandle _texture;
-        std::shared_ptr<Data> _ttf;
-        Data _image;
 
         void atlasBegin() noexcept;
         void atlasEnd(const OptionalRef<nk_draw_null_texture>& nullTex) noexcept;
@@ -52,8 +51,8 @@ namespace darmok
 
     private:
         INuklearRenderer& _renderer;
-        nk_context _ctx;
-        nk_buffer _cmds;
+        mutable nk_context _ctx;
+        mutable nk_buffer _cmds;
         nk_draw_null_texture _nullTexture;
         nk_convert_config _convertConfig;
         struct nk_font_config _fontConfig;
@@ -64,11 +63,11 @@ namespace darmok
         OptionalRef<App> _app;
         float _ortho[16];
         NuklearVertexLayout _nkLayout;
-        glm::ivec4 _viewport;
+        glm::uvec2 _viewSize;
 
         void setupProgram(App& app) noexcept;
         void setupFonts(App& app) noexcept;
         void processInput() noexcept;
-        void submitRender(bgfx::ViewId viewId) noexcept;
+        void submitRender(bgfx::ViewId viewId) const noexcept;
     };
 }

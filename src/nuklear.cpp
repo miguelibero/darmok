@@ -1,14 +1,13 @@
 
-#define NK_IMPLEMENTATION
-#include <nuklear.h>
-#undef NK_IMPLEMENTATION
-
 #include "nuklear.hpp"
+#define NK_IMPLEMENTATION
 #include <darmok/nuklear.hpp>
+
 #include <darmok/asset.hpp>
 #include <darmok/window.hpp>
 #include <darmok/input.hpp>
 #include <darmok/program.hpp>
+#include <darmok/data.hpp>
 #include <bx/math.h>
 #include <array>
 #include <memory>
@@ -23,11 +22,10 @@ namespace darmok
         atlasEnd(nullTex);
     }
 
-    NuklearFont::NuklearFont(struct nk_font_config& cfg, const std::shared_ptr<Data>& data, const OptionalRef<nk_draw_null_texture>& nullTex) noexcept
+    NuklearFont::NuklearFont(struct nk_font_config& cfg, const DataView& data, const OptionalRef<nk_draw_null_texture>& nullTex) noexcept
     {
         atlasBegin();
-        _ttf = data;
-        nk_font_atlas_add_from_memory(&_atlas, data->ptr(), data->size(), 18, &cfg);
+        nk_font_atlas_add_from_memory(&_atlas, const_cast<void*>(data.ptr()), data.size(), 18, &cfg);
         nk_font_atlas_add_default(&_atlas, cfg.size, &cfg);
         atlasEnd(nullTex);
     }
@@ -42,13 +40,10 @@ namespace darmok
     {
         int w, h;
         auto imagePtr = nk_font_atlas_bake(&_atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
-        // TODO: check if the memory needs to be copied
-        _image = Data(imagePtr, w * h * 4);
         _texture = bgfx::createTexture2D(
             w, h, false, 1, bgfx::TextureFormat::RGBA8, 0,
-            _image.makeRef()
+            bgfx::copy(imagePtr, w * h * 4)
         );
-
         nk_font_atlas_end(&_atlas, nk_handle_id(_texture.idx), nullTex.ptr());
     }
 
@@ -84,7 +79,7 @@ namespace darmok
         , _textureUniform{ bgfx::kInvalidHandle }
         , _ortho{}
         , _nkLayout{}
-        , _viewport{}
+        , _viewSize(0)
     {
     }
 
@@ -135,12 +130,12 @@ namespace darmok
             return nullptr;
         }
         auto data = _app->getAssets().getDataLoader()(name);
-        if (data == nullptr)
+        if (data.empty())
         {
             return nullptr;
         }
 
-        auto font = std::make_unique<NuklearFont>(_fontConfig, data, _nullTexture);
+        auto font = std::make_unique<NuklearFont>(_fontConfig, data.view(), _nullTexture);
         auto handle = font->getHandle();
         _fonts.push_back(std::move(font));
         return handle;
@@ -239,7 +234,7 @@ namespace darmok
             nk_input_button(&_ctx, NK_BUTTON_LEFT, p.x, p.y, mouse.getButton(MouseButton::Left));
             nk_input_button(&_ctx, NK_BUTTON_MIDDLE, p.x, p.y, mouse.getButton(MouseButton::Middle));
             nk_input_button(&_ctx, NK_BUTTON_RIGHT, p.x, p.y, mouse.getButton(MouseButton::Right));
-            auto& scroll = mouse.getScroll();
+            auto& scroll = mouse.getScrollDelta();
             nk_input_scroll(&_ctx, { scroll.x, scroll. y });
         }
 
@@ -254,31 +249,25 @@ namespace darmok
         }
 
         // update ortho matrix
-        auto& vp = _app->getWindow().getViewport();
-        if (vp != _viewport)
+        auto& viewSize = _app->getWindow().getPixelSize();
+        if (viewSize != _viewSize)
         {
             auto caps = bgfx::getCaps();
-            bx::mtxOrtho(_ortho, vp[0], vp[2], vp[3], vp[1], 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
-            _viewport = vp;
+            bx::mtxOrtho(_ortho, 0.F, viewSize.x, viewSize.y, 0.F, 0.0F, 1000.0F, 0.0F, caps->homogeneousDepth);
+            _viewSize = viewSize;
         }
-
         processInput();
     }
 
     bgfx::ViewId NuklearAppComponentImpl::render(bgfx::ViewId viewId) const noexcept
     {
-        if (!_app)
-        {
-            return viewId;
-        }
-
         _renderer.nuklearRender(_ctx);
         submitRender(viewId);
-
         return ++viewId;
     }
 
-    void NuklearAppComponentImpl::submitRender(bgfx::ViewId viewId) noexcept
+
+    void NuklearAppComponentImpl::submitRender(bgfx::ViewId viewId) const noexcept
     {
         bgfx::setViewTransform(viewId, nullptr, _ortho);
         auto winSize = _app->getWindow().getPixelSize();

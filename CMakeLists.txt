@@ -231,11 +231,10 @@ target_include_directories(
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     ${BGFX_BASE}/3rdparty
+    ${LIBS_DIR}/rapidjson/include
     PRIVATE
-    ${BGFX_BASE}/examples/common
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}/include
-    ${LIBS_DIR}/rapidjson/include
   )
 
   set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
@@ -313,6 +312,7 @@ target_link_libraries(${LIB_NAME} PUBLIC bgfx bimg bimg_decode bx)
 if(DARMOK_BUILD_IMGUI)
   include(${CMAKE_CURRENT_LIST_DIR}/CMake/imgui.cmake)
   target_link_libraries(${LIB_NAME} PUBLIC imgui)
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_IMGUI)
 endif()
 
 # entt
@@ -383,20 +383,26 @@ if(DARMOK_BUILD_NUKLEAR)
     NK_INCLUDE_FIXED_TYPES
     NK_INCLUDE_STANDARD_IO
     NK_INCLUDE_STANDARD_VARARGS
+    NK_INCLUDE_STANDARD_BOOL
     NK_INCLUDE_DEFAULT_ALLOCATOR
     NK_INCLUDE_VERTEX_BUFFER_OUTPUT
     NK_INCLUDE_FONT_BAKING # adds `stb_truetype` and `stb_rect_pack` implementation to this library and provides font baking and rendering. If you already have font handling or do not want to use this font handler you don't have to define it.
     NK_INCLUDE_DEFAULT_FONT # adds the default font: ProggyClean.ttf into this library which can be loaded into a font atlas and allows using this library without having a truetype font
-    NK_NO_STB_TRUETYPE_IMPLEMENTATION # already added in imgui
-    NK_NO_STB_RECT_PACK_IMPLEMENTATION # already added in imgui
     NK_KEYSTATE_BASED_INPUT # if your backend uses key state for each frame rather than key press/release events
     NK_INCLUDE_STANDARD_BOOL
     # NK_ZERO_COMMAND_MEMORY # will zero out memory for each drawing command added to a drawing queue (inside nk_command_buffer_push). Zeroing command memory is very useful for fast checking (using memcmp) if command buffers are equal and avoid drawing frames when nothing on screen has changed since previous frame.
     # NK_INCLUDE_COMMAND_USERDATA # adds a userdata pointer into each command. Can be useful for example if you want to provide custom shaders depending on the used widget. Can be combined with the style structures.
     # NK_BUTTON_TRIGGER_ON_RELEASE # require button clicks occurring either on buttons being pressed (up to down) or released (down to up). By default this library will react on buttons being pressed, but if you define this it will only trigger if a button is released.
   )
+  if(DARMOK_BUILD_IMGUI)
+    list(APPEND NUKLEAR_DEFINES
+      NK_NO_STB_TRUETYPE_IMPLEMENTATION # already added in imgui
+      NK_NO_STB_RECT_PACK_IMPLEMENTATION # already added in imgui
+    )
+  endif()
   target_include_directories(${LIB_NAME} PUBLIC ${NUKLEAR_BASE})
   target_compile_definitions(${LIB_NAME} PUBLIC ${NUKLEAR_DEFINES})
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_NUKLEAR)
 endif()
 
 # cegui

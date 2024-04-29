@@ -20,7 +20,7 @@ namespace
 			App::init(args);
 			_nuklear = addComponent<NuklearAppComponent>(*this);
 			auto& ctx = _nuklear->getContext();
-			auto font = _nuklear->loadFont("assets/NotoSans-Regular.ttf");
+			auto font = _nuklear->loadFont("NotoSans-Regular.ttf");
 			nk_style_set_font(&ctx, font.ptr());
 
 			struct nk_color table[NK_COLOR_COUNT];
@@ -61,7 +61,8 @@ namespace
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE | NK_WINDOW_SCALABLE)) {
 
 				nk_layout_row_static(&ctx, 30, 80, 1);
-				if (nk_button_label(&ctx, "button")) {
+				if (nk_button_label(&ctx, "button"))
+				{
 					/* event handling */
 				}
 
@@ -99,10 +100,10 @@ namespace
 		}
 
 	private:
-		NuklearAppOp _op;
-		float _value;
-		Data _textBuffer = Data(255);
-		std::string _text = "testing";
+		mutable NuklearAppOp _op;
+		mutable float _value;
+		mutable Data _textBuffer = Data(255);
+		mutable std::string _text = "testing";
 		OptionalRef<NuklearAppComponent> _nuklear;
 	};
 }

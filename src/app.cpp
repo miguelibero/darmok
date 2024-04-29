@@ -406,9 +406,15 @@ namespace darmok
 		// TODO: should this be moved to App::render?
 		bgfx::ViewId viewId = 0;
 		auto& size = getWindow().getSize();
+
+		// initial view 0 to clear the screen
 		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+		bgfx::touch(viewId);
 		bgfx::dbgTextClear(); // use debug font to print information
 		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
+
+		viewId++;
+		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
 		bgfx::touch(viewId);
 
 		viewId = render(viewId);

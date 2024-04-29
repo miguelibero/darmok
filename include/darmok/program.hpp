@@ -1,11 +1,11 @@
 #pragma once
 
-
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <memory>
 #include <string_view>
 #include <rapidjson/document.h>
+
 
 namespace darmok
 {
@@ -32,6 +32,7 @@ namespace darmok
 		const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
 		static void readVertexLayoutJson(const rapidjson::Document& doc, bgfx::VertexLayout& layout) noexcept;
+
 		static bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept;
 		static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
 

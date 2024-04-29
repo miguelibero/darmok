@@ -177,11 +177,8 @@ namespace darmok
             size = _app->getWindow().getPixelSize();
         }
 
-        if (viewId > 0)
-        {
-            static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-            bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
-        }
+        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
         
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
         if (size)
