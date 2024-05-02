@@ -173,25 +173,25 @@ namespace darmok
 		};
 
 		_input.addBindings(_bindingsName, {
-			{ KeyboardBindingKey { KeyboardKey::Esc,		KeyboardModifiers::None },			true, exit },
-			{ KeyboardBindingKey { KeyboardKey::KeyQ,		KeyboardModifiers::LeftCtrl	},		true, exit },
-			{ KeyboardBindingKey { KeyboardKey::KeyQ,		KeyboardModifiers::RightCtrl },		true, exit },
-			{ KeyboardBindingKey { KeyboardKey::KeyF,		KeyboardModifiers::LeftCtrl	},		true, fullscreen },
-			{ KeyboardBindingKey { KeyboardKey::KeyF,		KeyboardModifiers::RightCtrl },		true, fullscreen },
-			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::LeftAlt },		true, fullscreen },
-			{ KeyboardBindingKey { KeyboardKey::Return,		KeyboardModifiers::RightAlt },		true, fullscreen },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::None },			true, debugStats },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftAlt },		true, debugText },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightAlt },		true, debugText },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftCtrl	},		true, debugIfh },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightCtrl },		true, debugIfh },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::LeftShift },		true, disableDebug },
-			{ KeyboardBindingKey { KeyboardKey::F1,			KeyboardModifiers::RightShift },	true, disableDebug },
-			{ KeyboardBindingKey { KeyboardKey::F3,			KeyboardModifiers::None},			true, debugWireframe },
-			{ KeyboardBindingKey { KeyboardKey::F6,			KeyboardModifiers::None},			true, debugProfiler },
-			{ KeyboardBindingKey { KeyboardKey::Print,		KeyboardModifiers::None},			true, screenshot },
-			{ KeyboardBindingKey { KeyboardKey::KeyP,		KeyboardModifiers::LeftCtrl },		true, screenshot },
-			{ KeyboardBindingKey { KeyboardKey::KeyP,		KeyboardModifiers::RightCtrl },		true, screenshot },
+			{ KeyboardBindingKey { KeyboardKey::Esc,		to_underlying(KeyboardModifier::None) },		true, exit },
+			{ KeyboardBindingKey { KeyboardKey::KeyQ,		to_underlying(KeyboardModifier::LeftCtrl) },	true, exit },
+			{ KeyboardBindingKey { KeyboardKey::KeyQ,		to_underlying(KeyboardModifier::RightCtrl) },	true, exit },
+			{ KeyboardBindingKey { KeyboardKey::KeyF,		to_underlying(KeyboardModifier::LeftCtrl) },	true, fullscreen },
+			{ KeyboardBindingKey { KeyboardKey::KeyF,		to_underlying(KeyboardModifier::RightCtrl) },	true, fullscreen },
+			{ KeyboardBindingKey { KeyboardKey::Return,		to_underlying(KeyboardModifier::LeftAlt) },		true, fullscreen },
+			{ KeyboardBindingKey { KeyboardKey::Return,		to_underlying(KeyboardModifier::RightAlt) },	true, fullscreen },
+			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::None) },		true, debugStats },
+			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::LeftAlt) },		true, debugText },
+			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::RightAlt) },	true, debugText },
+			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::LeftCtrl) },	true, debugIfh },
+			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::RightCtrl) },	true, debugIfh },
+			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::LeftShift) },	true, disableDebug },
+			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::RightShift) },	true, disableDebug },
+			{ KeyboardBindingKey { KeyboardKey::F3,			to_underlying(KeyboardModifier::None) },		true, debugWireframe },
+			{ KeyboardBindingKey { KeyboardKey::F6,			to_underlying(KeyboardModifier::None) },		true, debugProfiler },
+			{ KeyboardBindingKey { KeyboardKey::Print,		to_underlying(KeyboardModifier::None) },		true, screenshot },
+			{ KeyboardBindingKey { KeyboardKey::KeyP,		to_underlying(KeyboardModifier::LeftCtrl) },	true, screenshot },
+			{ KeyboardBindingKey { KeyboardKey::KeyP,		to_underlying(KeyboardModifier::RightCtrl) },	true, screenshot },
 			});
 	}
 
@@ -403,20 +403,7 @@ namespace darmok
 			_impl->updateLogic(deltaTime);
 		});
 
-		// TODO: should this be moved to App::render?
 		bgfx::ViewId viewId = 0;
-		auto& size = getWindow().getSize();
-
-		// initial view 0 to clear the screen
-		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
-		bgfx::touch(viewId);
-		bgfx::dbgTextClear(); // use debug font to print information
-		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
-
-		viewId++;
-		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
-		bgfx::touch(viewId);
-
 		viewId = render(viewId);
 		viewId = _impl->render(viewId);
 
@@ -439,6 +426,18 @@ namespace darmok
 
 	bgfx::ViewId App::render(bgfx::ViewId viewId) const
 	{
+		auto& size = getWindow().getSize();
+
+		// initial view 0 to clear the screen
+		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+		bgfx::touch(viewId);
+		bgfx::dbgTextClear(); // use debug font to print information
+		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
+
+		viewId++;
+		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+		bgfx::touch(viewId);
+
 		return viewId;
 	}
 

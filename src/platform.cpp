@@ -11,101 +11,101 @@ namespace darmok
 	{
 	}
 
-	KeyboardKeyChangedEvent::KeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept
-		: PlatformEvent(KeyboardKeyChanged)
+	KeyboardKeyEvent::KeyboardKeyEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept
+		: PlatformEvent(Type::KeyboardKey)
 		, _key(key)
 		, _modifiers(modifiers)
 		, _down(down)
 	{
 	}
 
-	void KeyboardKeyChangedEvent::process(Input& input) noexcept
+	void KeyboardKeyEvent::process(Input& input) noexcept
 	{
 		input.getKeyboard().getImpl().setKey(_key, _modifiers, _down);
 	}
 
-	KeyboardCharInputEvent::KeyboardCharInputEvent(const Utf8Char& data) noexcept
-		: PlatformEvent(KeyboardCharInput)
+	KeyboardCharEvent::KeyboardCharEvent(const Utf8Char& data) noexcept
+		: PlatformEvent(Type::KeyboardChar)
 		, _data(data)
 	{
 	}
 
-	void KeyboardCharInputEvent::process(Input& input) noexcept
+	void KeyboardCharEvent::process(Input& input) noexcept
 	{
 		input.getKeyboard().getImpl().pushChar(_data);
 	}
 
-	MouseMovedEvent::MouseMovedEvent(const glm::vec2& pos) noexcept
-		: PlatformEvent(MouseMoved)
+	MousePositionEvent::MousePositionEvent(const glm::vec2& pos) noexcept
+		: PlatformEvent(Type::MousePosition)
 		, _pos(pos)
 	{
 	}
 
-	void MouseMovedEvent::process(Input& input) noexcept
+	void MousePositionEvent::process(Input& input) noexcept
 	{
 		input.getMouse().getImpl().setPosition(_pos);
 	}
 
-	MouseActiveChangedEvent::MouseActiveChangedEvent(bool active) noexcept
-		: PlatformEvent(MouseActiveChanged)
+	MouseActiveEvent::MouseActiveEvent(bool active) noexcept
+		: PlatformEvent(Type::MouseActive)
 		, _active(active)
 	{
 	}
 
-	void MouseActiveChangedEvent::process(Input& input) noexcept
+	void MouseActiveEvent::process(Input& input) noexcept
 	{
 		input.getMouse().getImpl().setActive(_active);
 	}
 
-	MouseScrolledEvent::MouseScrolledEvent(const glm::vec2& scrollDelta) noexcept
-		: PlatformEvent(MouseScrolled)
-		, _scrollDelta(scrollDelta)
+	MouseScrollEvent::MouseScrollEvent(const glm::vec2& scroll) noexcept
+		: PlatformEvent(Type::MouseScroll)
+		, _scroll(scroll)
 	{
 	}
 
-	void MouseScrolledEvent::process(Input& input) noexcept
+	void MouseScrollEvent::process(Input& input) noexcept
 	{
-		input.getMouse().getImpl().setScrollDelta(_scrollDelta);
+		input.getMouse().getImpl().setScroll(_scroll);
 	}
 
-	MouseButtonChangedEvent::MouseButtonChangedEvent(MouseButton button, bool down) noexcept
-		: PlatformEvent(MouseButtonChanged)
+	MouseButtonEvent::MouseButtonEvent(MouseButton button, bool down) noexcept
+		: PlatformEvent(Type::MouseButton)
 		, _button(button)
 		, _down(down)
 	{
 	}
 
-	void MouseButtonChangedEvent::process(Input& input) noexcept
+	void MouseButtonEvent::process(Input& input) noexcept
 	{
 		input.getMouse().getImpl().setButton(_button, _down);
 	}
 
-	GamepadAxisChangedEvent::GamepadAxisChangedEvent(uint8_t gampad, GamepadAxis axis, int32_t value) noexcept
-		: PlatformEvent(GamepadAxisChanged)
+	GamepadStickEvent::GamepadStickEvent(uint8_t gampad, GamepadStick stick, const glm::ivec3& value) noexcept
+		: PlatformEvent(Type::GamepadStick)
 		, _gamepad(gampad)
-		, _axis(axis)
+		, _stick(stick)
 		, _value(value)
 	{
 	}
 
-	void GamepadAxisChangedEvent::process(Input& input) noexcept
+	void GamepadStickEvent::process(Input& input) noexcept
 	{
 		auto gamepad = input.getGamepad(_gamepad);
 		if (gamepad.hasValue())
 		{
-			gamepad->getImpl().setAxis(_axis, _value);
+			gamepad->getImpl().setStick(_stick, _value);
 		}
 	}
 
-	GamepadButtonChangedEvent::GamepadButtonChangedEvent(uint8_t gampad, GamepadButton button, bool down) noexcept
-		: PlatformEvent(GamepadButtonChanged)
+	GamepadButtonEvent::GamepadButtonEvent(uint8_t gampad, GamepadButton button, bool down) noexcept
+		: PlatformEvent(Type::GamepadButton)
 		, _gamepad(gampad)
 		, _button(button)
 		, _down(down)
 	{
 	}
 
-	void GamepadButtonChangedEvent::process(Input& input) noexcept
+	void GamepadButtonEvent::process(Input& input) noexcept
 	{
 		auto gamepad = input.getGamepad(_gamepad);
 		if (gamepad.hasValue())
@@ -114,38 +114,31 @@ namespace darmok
 		}
 	}
 
-	GamepadConnectionEvent::GamepadConnectionEvent(uint8_t gamepad, bool connected) noexcept
-		: PlatformEvent(GamepadConnection)
+	GamepadConnectEvent::GamepadConnectEvent(uint8_t gamepad, bool connected) noexcept
+		: PlatformEvent(Type::GamepadConnect)
 		, _gamepad(gamepad)
 		, _connected(connected)
 	{
 	}
 
-	void GamepadConnectionEvent::process(Input& input) noexcept
+	void GamepadConnectEvent::process(Input& input) noexcept
 	{
 		DBG("gamepad %d, %d", _gamepad, _connected);
 		auto gamepad = input.getGamepad(_gamepad);
 		if (gamepad.hasValue())
 		{
-			if (_connected)
-			{
-				gamepad->getImpl().init(_gamepad);
-			}
-			else
-			{
-				gamepad->getImpl().reset();
-			}
+			gamepad->getImpl().setConnected(_connected);
 		}
 	}
 
-	WindowSizeChangedEvent::WindowSizeChangedEvent(const glm::uvec2& size, bool pixel) noexcept
-		: PlatformEvent(WindowSizeChanged)
+	WindowSizeEvent::WindowSizeEvent(const glm::uvec2& size, bool pixel) noexcept
+		: PlatformEvent(Type::WindowSize)
 		, _size(size)
 		, _pixel(pixel)
 	{
 	}
 
-	void WindowSizeChangedEvent::process(Window& win) noexcept
+	void WindowSizeEvent::process(Window& win) noexcept
 	{
 		if (_pixel)
 		{
@@ -161,24 +154,24 @@ namespace darmok
 		}
 	}
 
-	WindowPhaseChangedEvent::WindowPhaseChangedEvent(WindowPhase phase) noexcept
-		: PlatformEvent(WindowPhaseChanged)
+	WindowPhaseEvent::WindowPhaseEvent(WindowPhase phase) noexcept
+		: PlatformEvent(Type::WindowPhase)
 		, _phase(phase)
 	{
 	}
 
-	void WindowPhaseChangedEvent::process(Window& win) noexcept
+	void WindowPhaseEvent::process(Window& win) noexcept
 	{
 		win.getImpl().setPhase(_phase);
 	}
 
-	WindowModeChangedEvent::WindowModeChangedEvent(WindowMode mode) noexcept
-		: PlatformEvent(WindowModeChanged)
+	WindowModeEvent::WindowModeEvent(WindowMode mode) noexcept
+		: PlatformEvent(Type::WindowMode)
 		, _mode(mode)
 	{
 	}
 
-	void WindowModeChangedEvent::process(Window& win) noexcept
+	void WindowModeEvent::process(Window& win) noexcept
 	{
 		win.getImpl().setMode(_mode);
 	}
@@ -188,38 +181,41 @@ namespace darmok
 	{
 		switch (ev._type)
 		{
-		case PlatformEvent::KeyboardCharInput:
-			static_cast<KeyboardCharInputEvent&>(ev).process(input);
+		case PlatformEvent::Type::KeyboardKey:
+			static_cast<KeyboardKeyEvent&>(ev).process(input);
 			break;
-		case PlatformEvent::GamepadAxisChanged:
-			static_cast<GamepadAxisChangedEvent&>(ev).process(input);
+		case PlatformEvent::Type::KeyboardChar:
+			static_cast<KeyboardCharEvent&>(ev).process(input);
 			break;
-		case PlatformEvent::GamepadConnection:
-			static_cast<GamepadConnectionEvent&>(ev).process(input);
+		case PlatformEvent::Type::GamepadConnect:
+			static_cast<GamepadConnectEvent&>(ev).process(input);
 			break;
-		case PlatformEvent::KeyboardKeyChanged:
-			static_cast<KeyboardKeyChangedEvent&>(ev).process(input);
+		case PlatformEvent::Type::GamepadStick:
+			static_cast<GamepadStickEvent&>(ev).process(input);
 			break;
-		case PlatformEvent::MouseMoved:
-			static_cast<MouseMovedEvent&>(ev).process(input);
+		case PlatformEvent::Type::GamepadButton:
+			static_cast<GamepadButtonEvent&>(ev).process(input);
 			break;
-		case PlatformEvent::MouseActiveChanged:
-			static_cast<MouseActiveChangedEvent&>(ev).process(input);
+		case PlatformEvent::Type::MousePosition:
+			static_cast<MousePositionEvent&>(ev).process(input);
 			break;
-		case PlatformEvent::MouseScrolled:
-			static_cast<MouseScrolledEvent&>(ev).process(input);
+		case PlatformEvent::Type::MouseActive:
+			static_cast<MouseActiveEvent&>(ev).process(input);
 			break;
-		case PlatformEvent::MouseButtonChanged:
-			static_cast<MouseButtonChangedEvent&>(ev).process(input);
+		case PlatformEvent::Type::MouseScroll:
+			static_cast<MouseScrollEvent&>(ev).process(input);
 			break;
-		case PlatformEvent::WindowSizeChanged:
-			static_cast<WindowSizeChangedEvent&>(ev).process(window);
+		case PlatformEvent::Type::MouseButton:
+			static_cast<MouseButtonEvent&>(ev).process(input);
 			break;
-		case PlatformEvent::WindowPhaseChanged:
-			static_cast<WindowPhaseChangedEvent&>(ev).process(window);
+		case PlatformEvent::Type::WindowSize:
+			static_cast<WindowSizeEvent&>(ev).process(window);
 			break;
-		case PlatformEvent::WindowModeChanged:
-			static_cast<WindowModeChangedEvent&>(ev).process(window);
+		case PlatformEvent::Type::WindowPhase:
+			static_cast<WindowPhaseEvent&>(ev).process(window);
+			break;
+		case PlatformEvent::Type::WindowMode:
+			static_cast<WindowModeEvent&>(ev).process(window);
 			break;
 		default:
 			break;

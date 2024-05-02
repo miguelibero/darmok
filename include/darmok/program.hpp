@@ -3,9 +3,14 @@
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <memory>
-#include <string_view>
+#include <string>
 #include <rapidjson/document.h>
 
+
+namespace bgfx
+{
+	struct EmbeddedShader;
+}
 
 namespace darmok
 {
@@ -24,6 +29,7 @@ namespace darmok
 	class Program final
 	{
 	public:
+		Program(const std::string& name, const bgfx::EmbeddedShader* embeddedShaders, std::string_view layoutJson);
 		Program(const bgfx::ProgramHandle& handle, const bgfx::VertexLayout& layout) noexcept;
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
@@ -50,10 +56,16 @@ namespace darmok
 		virtual result_type operator()(std::string_view name) = 0;
 	};
 
+	class StandardProgramLoaderImpl;
+
 	class StandardProgramLoader final
 	{
 	public:
+		StandardProgramLoader() noexcept;
+		~StandardProgramLoader() noexcept;
 		using result_type = std::shared_ptr<Program>;
 		virtual result_type operator()(StandardProgramType type) noexcept;
+	private:
+		std::unique_ptr<StandardProgramLoaderImpl> _impl;
 	};
 }

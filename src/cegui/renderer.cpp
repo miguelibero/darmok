@@ -10,15 +10,40 @@
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
+#include <darmok/color.hpp>
+#include <darmok/image.hpp>
+#include <darmok/texture.hpp>
+
+#include "embedded_shader.hpp"
+#include "generated/shaders/cegui_vertex.h"
+#include "generated/shaders/cegui_fragment.h"
+#include "generated/shaders/cegui_vertex_layout.h"
+#include "generated/shaders/cegui_solid_vertex.h"
+#include "generated/shaders/cegui_solid_fragment.h"
+#include "generated/shaders/cegui_solid_vertex_layout.h"
 
 namespace darmok
 {
     const CEGUI::String CeguiRenderer::_rendererId("darmok");
+    const CEGUI::String CeguiRenderer::_solidWhiteTextureName = "solidWhite";
+
+    const bgfx::EmbeddedShader CeguiRenderer::_embeddedShaders[] =
+    {
+        BGFX_EMBEDDED_SHADER(cegui_vertex),
+        BGFX_EMBEDDED_SHADER(cegui_fragment),
+        BGFX_EMBEDDED_SHADER(cegui_solid_vertex),
+        BGFX_EMBEDDED_SHADER(cegui_solid_fragment),
+        BGFX_EMBEDDED_SHADER_END()
+    };
 
 	CeguiRenderer::CeguiRenderer(App& app) noexcept
 		: _app(app)
         , _defaultRenderTarget(*this)
-        , _shaderWrapper(app.getAssets().getStandardProgramLoader()(StandardProgramType::Gui))
+        , _texturedProgram(std::make_shared<Program>("cegui", _embeddedShaders, cegui_vertex_layout))
+        , _solidProgram(std::make_shared<Program>("cegui_solid", _embeddedShaders, cegui_solid_vertex_layout))
+        , _texturedShaderWrapper(_texturedProgram)
+        , _solidShaderWrapper(_solidProgram)
+        , _viewId(0)
 	{
 	}
 
@@ -35,19 +60,26 @@ namespace darmok
     CEGUI::RefCounted<CEGUI::RenderMaterial> CeguiRenderer::createRenderMaterial(const CEGUI::DefaultShaderType shaderType) const 
     {
         // Solid & Textured use the same StandardProgramType::Gui
-        CEGUI::RefCounted<CEGUI::RenderMaterial> material(new CEGUI::RenderMaterial(&_shaderWrapper));
-        return material;
+        
+        auto shaderWrapper = &_texturedShaderWrapper;
+        if (shaderType == CEGUI::DefaultShaderType::Solid)
+        {
+            shaderWrapper = &_solidShaderWrapper;
+        }
+        return CEGUI::RefCounted<CEGUI::RenderMaterial>(new CEGUI::RenderMaterial(shaderWrapper));
     }
 
     CEGUI::GeometryBuffer& CeguiRenderer::createGeometryBufferTextured(CEGUI::RefCounted<CEGUI::RenderMaterial> renderMaterial) 
     {
-        auto buffer = new CeguiGeometryBuffer(renderMaterial);
+        auto buffer = new CeguiGeometryBuffer(renderMaterial, *this);
+        addGeometryBuffer(*buffer);
         return *buffer;
     }
 
     CEGUI::GeometryBuffer& CeguiRenderer::createGeometryBufferColoured(CEGUI::RefCounted<CEGUI::RenderMaterial> renderMaterial) 
     {
-        auto buffer = new CeguiGeometryBuffer(renderMaterial);
+        auto buffer = new CeguiGeometryBuffer(renderMaterial, *this);
+        addGeometryBuffer(*buffer);
         return *buffer;
     }
 
@@ -58,7 +90,7 @@ namespace darmok
 
     CEGUI::TextureTarget* CeguiRenderer::createTextureTarget(bool addStencilBuffer)
     {
-        auto target = std::make_unique<CeguiTextureTarget>(*this, addStencilBuffer, getAllocator());
+        auto target = std::make_unique<CeguiTextureTarget>(*this, addStencilBuffer);
         auto ptr = target.get();
         _textureTargets.push_back(std::move(target));
         return ptr;
@@ -83,20 +115,24 @@ namespace darmok
         _textureTargets.clear();
     }
 
-    CeguiTexture& CeguiRenderer::doCreateTexture(const CEGUI::String& name)
+    CeguiTexture& CeguiRenderer::doCreateTexture(const CEGUI::String& name, uint64_t flags)
     {
         if (_textures.find(name) != _textures.end())
         {
             throw CEGUI::AlreadyExistsException(
                 "A texture named '" + name + "' already exists.");
         }
-        auto texture = std::make_unique<CeguiTexture>(getAllocator(), name);
+        return doAddTexture(std::make_unique<CeguiTexture>(getAllocator(), name, flags));
+    }
+
+    CeguiTexture& CeguiRenderer::doAddTexture(std::unique_ptr<CeguiTexture>&& texture)
+    {
+        auto& name = texture->getName();
         auto logger = CEGUI::Logger::getSingletonPtr();
         if (logger)
         {
             logger->logEvent("[DarmokRenderer] Created texture: " + name);
         }
-
         auto ptr = texture.get();
         _textures[name] = std::move(texture);
         return *ptr;
@@ -123,6 +159,11 @@ namespace darmok
         return texture;
     }
 
+    CeguiTexture& CeguiRenderer::createRenderTexture(const CEGUI::String& name)
+    {
+        return doCreateTexture(name, BGFX_TEXTURE_RT);
+    }
+
     void CeguiRenderer::destroyTexture(CEGUI::Texture& texture) 
     {
         destroyTexture(texture.getName());
@@ -135,12 +176,12 @@ namespace darmok
         {
             return;
         }
-        _textures.erase(itr);
         auto logger = CEGUI::Logger::getSingletonPtr();
         if (logger)
         {
             logger->logEvent("[DarmokRenderer] Destroyed texture: " + name);
         }
+        _textures.erase(itr);
     }
 
     void CeguiRenderer::destroyAllTextures() 
@@ -196,6 +237,11 @@ namespace darmok
     bool CeguiRenderer::isTexCoordSystemFlipped() const 
     {
         return false;
+    }
+
+    bgfx::ViewId CeguiRenderer::getViewId() const noexcept
+    {
+        return _viewId;
     }
 
     void CeguiRenderer::setViewId(bgfx::ViewId viewId) noexcept

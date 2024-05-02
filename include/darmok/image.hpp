@@ -20,12 +20,13 @@ namespace darmok
 	{
 	public:
 		Image(const DataView& data, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count, bx::AllocatorI* alloc = nullptr);
+		Image(const Color& color, const glm::uvec2& size = { 1, 1 }, bx::AllocatorI* alloc = nullptr) noexcept;
 		Image(bimg::ImageContainer* container);
 		~Image() noexcept;
 		Image(const Image& other) = delete;
 		Image& operator=(const Image& other) = delete;
 
-		static std::shared_ptr<Image> create(bx::AllocatorI* alloc, const Color& color, const glm::uvec2& size = { 1, 1 }) noexcept;
+		
 
 		[[nodiscard]] bool empty() const noexcept;
 		[[nodiscard]] glm::uvec2 getSize() const noexcept;
@@ -38,6 +39,7 @@ namespace darmok
 		[[nodiscard]] TextureConfig getTextureConfig(uint64_t flags) const noexcept;
 		[[nodiscard]] DataView getData() const noexcept;
 		[[nodiscard]] TextureType getTextureType(uint64_t flags) const noexcept;
+		[[nodiscard]] bx::AllocatorI* getAllocator() const noexcept;
 
 	private:
 		bimg::ImageContainer* _container;

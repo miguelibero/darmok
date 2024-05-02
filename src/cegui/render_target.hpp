@@ -4,14 +4,18 @@
 
 namespace darmok
 {
-    class CeguiRenderTarget final : public CEGUI::RenderTarget
+    class CeguiRenderer;
+
+    class CeguiRenderTarget : public CEGUI::RenderTarget
     {
     public:
-        CeguiRenderTarget(CEGUI::Renderer& renderer) noexcept;
-        bool isImageryCache() const override;
-        void updateMatrix() const override;
-        CEGUI::Renderer& getOwner() override;
-    private:
-        CEGUI::Renderer& _renderer;
+        CeguiRenderTarget(CeguiRenderer& renderer) noexcept;
+        bool isImageryCache() const noexcept override;
+        void activate() noexcept override;
+        void deactivate() noexcept override;
+        void updateMatrix() const noexcept override;
+        CEGUI::Renderer& getOwner() noexcept override;
+    protected:
+        CeguiRenderer& _renderer;
     };
 }

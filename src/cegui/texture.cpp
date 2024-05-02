@@ -1,4 +1,5 @@
 #include "texture.hpp"
+#include "utils.hpp"
 #include <bimg/bimg.h>
 #include <bx/bx.h>
 #include <exception>
@@ -16,9 +17,26 @@
 
 namespace darmok
 {
-    CeguiTexture::CeguiTexture(bx::AllocatorI* alloc, const CEGUI::String& name) noexcept
-        : _name(name), _alloc(alloc)
+    const uint64_t CeguiTexture::_defaultFlags = BGFX_TEXTURE_BLIT_DST;
+
+    CeguiTexture::CeguiTexture(bx::AllocatorI* alloc, const CEGUI::String& name, uint64_t flags) noexcept
+        : _name(name)
+        , _alloc(alloc)
+        , _texel(0)
+        , _size(0, 0)
+        , _flags(flags)
     {
+    }
+
+    CeguiTexture::CeguiTexture(std::unique_ptr<darmok::Texture>&& texture, bx::AllocatorI* alloc, const CEGUI::String& name, uint64_t flags) noexcept
+        : _name(name)
+        , _alloc(alloc)
+        , _texel(0)
+        , _size(0, 0)
+        , _texture(std::move(texture))
+        , _flags(flags)
+    {
+        onTextureChanged();
     }
 
     CeguiTexture::~CeguiTexture() noexcept
@@ -58,15 +76,25 @@ namespace darmok
         try
         {
             Image img(DataView(container.getDataPtr(), container.getSize()), bimg::TextureFormat::Count, _alloc);
-            _texture = std::make_unique<darmok::Texture>(img);
+            auto flags = _defaultFlags | _flags;
+            _texture = std::make_unique<darmok::Texture>(img, flags);
         }
         catch (const std::exception& ex)
         {
             resourceProvider->unloadRawDataContainer(container);
             throw;
         }
-        updateTexture();
+        onTextureChanged();
         resourceProvider->unloadRawDataContainer(container);
+    }
+
+    void CeguiTexture::loadFromSize(const CEGUI::Sizef& buffer_size)
+    {
+        TextureConfig cfg;
+        cfg.size = glm::uvec2(buffer_size.d_width, buffer_size.d_height);
+        auto flags = _defaultFlags | _flags;
+        _texture = std::make_unique<darmok::Texture>(cfg, flags);
+        onTextureChanged();
     }
 
     void CeguiTexture::loadFromMemory(const void* buffer,
@@ -102,26 +130,20 @@ namespace darmok
             cfg.format = bgfx::TextureFormat::BC3;
             break;
         default:
-            throw std::runtime_error("texture format not supported");
+            throw RendererException("texture format not supported");
             break;
         }
         DataView data(buffer, cfg.getInfo().storageSize);
-        _texture = std::make_unique<darmok::Texture>(data, cfg);
-        updateTexture();
+        auto flags = _defaultFlags | _flags;
+        _texture = std::make_unique<darmok::Texture>(data, cfg, flags);
+        onTextureChanged();
     }
 
-    void CeguiTexture::loadFromSize(const CEGUI::Sizef& buffer_size)
-    {
-        TextureConfig cfg;
-        cfg.size = glm::uvec2(buffer_size.d_width, buffer_size.d_height);
-        _texture = std::make_unique<darmok::Texture>(cfg);
-        updateTexture();
-    }
-
-    void CeguiTexture::updateTexture() noexcept
+    void CeguiTexture::onTextureChanged() noexcept
     {
         if (_texture != nullptr)
         {
+            _texture->setName(CeguiUtils::convert(_name));
             auto& size = _texture->getSize();
             _texel = glm::vec2(1) / glm::vec2(size);
             _size = CEGUI::Sizef(size.x, size.y);
@@ -141,8 +163,8 @@ namespace darmok
         }
         auto size = glm::uvec2(area.getWidth(), area.getHeight());
         auto origin = glm::uvec2(area.d_min.x, area.d_min.y);
-        auto memSize = size.x * size.y * _texture->getBitsPerPixel();
-        _texture->update(DataView(sourceData, memSize), origin, size);
+        auto memSize = size.x * size.y * _texture->getBitsPerPixel() / 8;
+        _texture->update(DataView(sourceData, memSize), size, origin);
     }
 
     void CeguiTexture::blitToMemory(void* targetData)
@@ -156,5 +178,15 @@ namespace darmok
     bool CeguiTexture::isPixelFormatSupported(const PixelFormat fmt) const
     {
         return true;
+    }
+
+    OptionalRef<darmok::Texture> CeguiTexture::getDarmokTexture() const noexcept
+    {
+        return _texture == nullptr ? nullptr : _texture.get();
+    }
+
+    bgfx::TextureHandle CeguiTexture::getBgfxHandle() const noexcept
+    {
+        return _texture == nullptr ? bgfx::TextureHandle{ bgfx::kInvalidHandle } : _texture->getHandle();
     }
 }

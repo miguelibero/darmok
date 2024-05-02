@@ -24,6 +24,15 @@ namespace darmok
 		}
 	}
 
+	Image::Image(const Color& color, const glm::uvec2& size, bx::AllocatorI* alloc) noexcept
+		: _container(bimg::imageAlloc(
+			alloc, bimg::TextureFormat::RGBA8, size.x, size.y, 0, 1, false, false
+		))
+	{
+		auto c = Colors::toReverseNumber(color);
+		bimg::imageSolid(_container->m_data, size.x, size.y, c);
+	}
+
     Image::Image(bimg::ImageContainer* container)
 		: _container(container)
 	{
@@ -66,14 +75,9 @@ namespace darmok
 		return TextureType::Unknown;
 	}
 
-	std::shared_ptr<Image> Image::create(bx::AllocatorI* alloc, const Color& color, const glm::uvec2& size) noexcept
+	bx::AllocatorI* Image::getAllocator() const noexcept
 	{
-		auto container = bimg::imageAlloc(
-			alloc, bimg::TextureFormat::RGBA8, size.x, size.y, 0, 1, false, false
-		);
-		auto c = Colors::toReverseNumber(color);
-		bimg::imageSolid(container->m_data, size.x, size.y, c);
-		return std::make_shared<Image>(container);
+		return _container->m_allocator;
 	}
 
 	bool Image::empty() const noexcept

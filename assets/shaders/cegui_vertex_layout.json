@@ -1,0 +1,14 @@
+{
+    "position": { 
+        "type": "float",
+        "num": 3
+    },
+    "color0": { 
+        "type": "float",
+        "num": 4
+    },
+    "texCoord0": { 
+        "type": "float",
+        "num": 2
+    }
+}

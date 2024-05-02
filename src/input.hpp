@@ -4,8 +4,8 @@
 #include <darmok/utils.hpp>
 
 #include <string>
-#include <unordered_map>
 #include <array>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace darmok
@@ -26,9 +26,12 @@ namespace darmok
 		[[nodiscard]] uint8_t getModifiers() const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
+		void addListener(IKeyboardListener& listener) noexcept;
+		bool removeListener(IKeyboardListener& listener) noexcept;
+
 		void flush() noexcept;
 		void reset() noexcept;
-		void setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
+		bool setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
 		void pushChar(const Utf8Char& data) noexcept;
 
 		void update() noexcept;
@@ -44,6 +47,7 @@ namespace darmok
 		KeyboardChars _updateChars;
 		size_t _charsRead;
 		size_t _charsWrite;
+		std::unordered_set<OptionalRef<IKeyboardListener>> _listeners;
 	};
 
 #pragma endregion Keyboard
@@ -61,24 +65,30 @@ namespace darmok
 		[[nodiscard]] bool getActive() const noexcept;
 		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
 		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
-		[[nodiscard]] const glm::vec2& getScrollDelta() const noexcept;
+		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
+		[[nodiscard]] glm::vec2 getScrollDelta() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 
-		void setActive(bool active);
-		void setPosition(const glm::vec2& pos) noexcept;
-		void setScrollDelta(const glm::vec2& scrollDelta) noexcept;
-		void setButton(MouseButton button, bool down) noexcept;
+		void addListener(IMouseListener& listener) noexcept;
+		bool removeListener(IMouseListener& listener) noexcept;
+
+		bool setActive(bool active) noexcept;
+		bool setPosition(const glm::vec2& pos) noexcept;
+		bool setScroll(const glm::vec2& scroll) noexcept;
+		bool setButton(MouseButton button, bool down) noexcept;
 
 		void update() noexcept;
 
 	private:
 		glm::vec2 _position;
 		glm::vec2 _lastPosition;
-		glm::vec2 _scrollDelta;
+		glm::vec2 _scroll;
+		glm::vec2 _lastScroll;
 
 		MouseButtons _buttons;
 		bool _active;
 		bool _hasBeenInactive;
+		std::unordered_set<OptionalRef<IMouseListener>> _listeners;
 	};
 
 #pragma endregion Mouse
@@ -86,19 +96,6 @@ namespace darmok
 #pragma region Gamepad
 
 	class GamepadImpl;
-
-	enum class GamepadAxis
-	{
-		LeftX,
-		LeftY,
-		LeftZ,
-
-		RightX,
-		RightY,
-		RightZ,
-
-		Count
-	};
 
 	class GamepadImpl final
 	{
@@ -113,14 +110,22 @@ namespace darmok
 		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
 		[[nodiscard]] bool isConnected() const noexcept;
 
-		void init(uint8_t num) noexcept;
-		void reset() noexcept;
-		void setAxis(GamepadAxis axis, int value) noexcept;
-		void setButton(GamepadButton button, bool down) noexcept;
+		void addListener(IGamepadListener& listener) noexcept;
+		bool removeListener(IGamepadListener& listener) noexcept;
+
+		bool setNumber(uint8_t num) noexcept;
+		bool setConnected(bool value) noexcept;
+
+		bool setStick(GamepadStick stick, const glm::ivec3& value) noexcept;
+		bool setButton(GamepadButton button, bool down) noexcept;
 	private:
 		uint8_t _num;
+		bool _connected;
 		GamepadButtons _buttons;
 		GamepadSticks _sticks;
+		std::unordered_set<OptionalRef<IGamepadListener>> _listeners;
+
+		void clear() noexcept;
 	};
 
 #pragma endregion Gamepad

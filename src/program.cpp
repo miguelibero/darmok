@@ -22,6 +22,21 @@
 
 namespace darmok
 {
+	Program::Program(const std::string& name, const bgfx::EmbeddedShader* embeddedShaders, std::string_view layoutJson)
+		: _handle{ bgfx::kInvalidHandle }
+	{
+		auto renderer = bgfx::getRendererType();
+		_handle = bgfx::createProgram(
+			bgfx::createEmbeddedShader(embeddedShaders, renderer, (name + "_vertex").c_str()),
+			bgfx::createEmbeddedShader(embeddedShaders, renderer, (name + "_fragment").c_str()),
+			true
+		);
+		rapidjson::Document doc;
+		doc.Parse(layoutJson.data(), layoutJson.size());
+		Program::readVertexLayoutJson(doc, _layout);
+	}
+
+
     Program::Program(const bgfx::ProgramHandle& handle, const bgfx::VertexLayout& layout) noexcept
 		: _handle(handle)
 		, _layout(layout)
@@ -242,8 +257,21 @@ namespace darmok
 		return std::make_shared<Program>(handle, layout);
 	}
 
+	StandardProgramLoader::StandardProgramLoader() noexcept
+		: _impl(std::make_unique<StandardProgramLoaderImpl>())
+	{
+	}
 
-	static const bgfx::EmbeddedShader _embeddedShaders[] =
+	StandardProgramLoader::~StandardProgramLoader() noexcept
+	{
+	}
+
+	StandardProgramLoader::result_type StandardProgramLoader::operator()(StandardProgramType type) noexcept
+	{
+		return (*_impl)(type);
+	}
+
+	const bgfx::EmbeddedShader StandardProgramLoaderImpl::_embeddedShaders[] =
 	{
 		BGFX_EMBEDDED_SHADER(gui_vertex),
 		BGFX_EMBEDDED_SHADER(gui_fragment),
@@ -256,7 +284,7 @@ namespace darmok
 		BGFX_EMBEDDED_SHADER_END()
 	};
 
-	static const std::unordered_map<StandardProgramType, std::string> _embeddedShaderNames
+	const std::unordered_map<StandardProgramType, std::string> StandardProgramLoaderImpl::_embeddedShaderNames
 	{
 		{StandardProgramType::Gui, "gui"},
 		{StandardProgramType::Unlit, "unlit"},
@@ -264,7 +292,7 @@ namespace darmok
 		{StandardProgramType::ForwardPbr, "forward_pbr"},
 	};
 
-	static const std::unordered_map<StandardProgramType, const char*> _embeddedShaderVertexLayouts
+	const std::unordered_map<StandardProgramType, std::string_view> StandardProgramLoaderImpl::_embeddedShaderVertexLayouts
 	{
 		{StandardProgramType::Gui, gui_vertex_layout},
 		{StandardProgramType::Unlit, unlit_vertex_layout},
@@ -272,30 +300,18 @@ namespace darmok
 		{StandardProgramType::ForwardPbr, forward_pbr_vertex_layout},
 	};
 
-
-	std::shared_ptr<Program> StandardProgramLoader::operator()(StandardProgramType type) noexcept
+	std::shared_ptr<Program> StandardProgramLoaderImpl::operator()(StandardProgramType type) const noexcept
 	{
 		auto itr = _embeddedShaderNames.find(type);
 		if (itr == _embeddedShaderNames.end())
 		{
 			return nullptr;
 		}
-		auto renderer = bgfx::getRendererType();
-		auto handle = bgfx::createProgram(
-			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_vertex").c_str()),
-			bgfx::createEmbeddedShader(_embeddedShaders, renderer, (itr->second + "_fragment").c_str()),
-			true
-		);
-
-		bgfx::VertexLayout layout;
 		auto itr2 = _embeddedShaderVertexLayouts.find(type);
-		if (itr2 != _embeddedShaderVertexLayouts.end())
+		if (itr2 == _embeddedShaderVertexLayouts.end())
 		{
-			rapidjson::Document doc;
-			doc.Parse(itr2->second);
-			Program::readVertexLayoutJson(doc, layout);
+			return nullptr;
 		};
-
-		return std::make_shared<Program>(handle, layout);
+		return std::make_shared<Program>(itr->second, _embeddedShaders, itr2->second);
 	}
 }

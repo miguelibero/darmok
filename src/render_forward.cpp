@@ -57,6 +57,7 @@ namespace darmok
 			{
 				transMtx = glm::value_ptr(trans->getMatrix());
 			}
+			auto transCache = encoder.setTransform(transMtx);
 
 			for (auto& mesh : meshes)
 			{
@@ -65,7 +66,7 @@ namespace darmok
 				{
 					continue;
 				}
-				encoder.setTransform(transMtx);
+				encoder.setTransform(transCache);
 				_cam->beforeRenderMesh(*mesh, encoder, viewId);
 				uint64_t state = mat->beforeRender(encoder, viewId);
 				mesh->render(encoder, viewId);

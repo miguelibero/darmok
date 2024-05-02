@@ -82,6 +82,10 @@ addShader("forward_phong")
 addShader("forward_pbr")
 addShaderInclude("phong_lighting")
 addShaderInclude("pbr_lighting")
+if(DARMOK_BUILD_CEGUI)
+  addShader("cegui")
+  addShader("cegui_solid")
+endif()
 
 set(SOURCES
   ${SRC_DIR}/window.cpp
@@ -113,6 +117,7 @@ set(SOURCES
 
 set(HEADERS
   ${INCLUDE_DIR}/app.hpp
+  ${INCLUDE_DIR}/input_fwd.hpp
   ${INCLUDE_DIR}/input.hpp
   ${INCLUDE_DIR}/window.hpp
   ${INCLUDE_DIR}/utils.hpp
@@ -171,6 +176,7 @@ if(DARMOK_BUILD_CEGUI)
     ${SRC_DIR}/cegui/shader.cpp
     ${SRC_DIR}/cegui/texture_target.cpp
     ${SRC_DIR}/cegui/texture.cpp
+    ${SRC_DIR}/cegui/utils.cpp
   )
   list(APPEND SOURCES ${CEGUI_SOURCES} ${SRC_DIR}/cegui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/cegui.hpp)
@@ -405,11 +411,25 @@ if(DARMOK_BUILD_NUKLEAR)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_NUKLEAR)
 endif()
 
+# freetype
+set(FT_DISABLE_BROTLI ON CACHE BOOL "Disable support of compressed WOFF2 fonts.")
+set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "Disable HarfBuzz (used for improving auto-hinting of OpenType fonts).")
+set(FT_ENABLE_ERROR_STRINGS ON CACHE BOOL "Enable support for meaningful error descriptions.")
+add_subdirectory(${LIBS_DIR}/freetype)
+target_link_libraries(${LIB_NAME} PRIVATE freetype)
+
 # cegui
 if(DARMOK_BUILD_CEGUI)
   set(GLM_H_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/glm)
   set(PUGIXML_H_PATH ${LIBS_DIR}/pugixml/src)
-  
+  set(FREETYPE_H_PATH ${LIBS_DIR}/freetype/include)
+  # set(FREETYPE_H_PATH_ft2build ${FREETYPE_H_PATH})
+  # set(FREETYPE_H_PATH_ftconfig ${FREETYPE_H_PATH}/freetype/config)
+  # set(FREETYPE_LIB_STATIC ${CMAKE_CURRENT_BINARY_DIR}/lib/freetype/$<CONFIG>/freetype)
+  # set(FREETYPE_LIB_DBG_STATIC ${CMAKE_CURRENT_BINARY_DIR}/lib/freetype/Debug/freetyped)
+  # set(FREETYPE_LIB ${FREETYPE_LIB_STATIC})
+  # set(FREETYPE_LIB_DBG ${FREETYPE_LIB_DBG_STATIC})
+
   set(CEGUI_BUILD_APPLICATION_TEMPLATES OFF CACHE BOOL "Specifies whether to build the application templates.")
   set(CEGUI_BUILD_RENDERER_OPENGL OFF CACHE BOOL "Specifies whether to build the old OpenGL 1.2 (fixed pipeline) renderer module.")
   set(CEGUI_BUILD_RENDERER_OPENGL3 OFF CACHE BOOL "Specifies whether to build the renderer module that supports OpenGL 3.2 (core profile) and OpenGL ES 2.0.")
@@ -420,6 +440,7 @@ if(DARMOK_BUILD_CEGUI)
   set(CEGUI_BUILD_STATIC_CONFIGURATION ON CACHE BOOL "Specifies whether the static configs will be built. (NB: Shared configs are always built)")
   set(CEGUI_BUILD_DYNAMIC_CONFIGURATION OFF CACHE BOOL "Dynamic libs to be built. Always true except for Android")
   set(CEGUI_BUILD_STATIC_FACTORY_MODULE ON CACHE BOOL "For static CEGUI builds, specifies whether to include the getWindowFactoryModule method.  When false, the developer must provide a custom implementation of the method")
+  set(CEGUI_USE_FREETYPE ON CACHE BOOL "Specifies whether to include Freetype font support")
 
   add_subdirectory(${LIBS_DIR}/cegui)
 
@@ -427,15 +448,19 @@ if(DARMOK_BUILD_CEGUI)
     ${LIBS_DIR}/cegui/cegui/include
     ${CMAKE_CURRENT_BINARY_DIR}/lib/cegui/cegui/include)
 
+  # TODO: maybe add CEGUIPugiXMLParser directly in darmok
+  # TODO: CEGUI recommends dynamic linking
   target_link_libraries(CEGUIPugiXMLParser_Static pugixml)
   target_include_directories(CEGUIPugiXMLParser_Static PRIVATE ${PUGIXML_H_PATH})
-
+  target_include_directories(CEGUIBase-9999_Static PRIVATE ${FREETYPE_H_PATH})
   target_include_directories(${LIB_NAME} PUBLIC ${CEGUI_INCLUDE_DIRS})
 
-  target_link_libraries(${LIB_NAME} PUBLIC
-    CEGUIBase-9999_Static CEGUICommonDialogs-9999_Static)
   target_link_libraries(${LIB_NAME} PRIVATE
     CEGUICoreWindowRendererSet_Static
     CEGUISTBImageCodec_Static
     CEGUIPugiXMLParser_Static)
+
+  target_link_libraries(${LIB_NAME} PUBLIC
+    CEGUIBase-9999_Static CEGUICommonDialogs-9999_Static)
+
 endif()

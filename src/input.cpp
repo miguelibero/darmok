@@ -35,19 +35,35 @@ namespace darmok
 		flush();
 	}
 
-	void KeyboardImpl::setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept
+	bool KeyboardImpl::setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept
 	{
 		auto k = to_underlying(key);
-		if (k < _keys.size())
+		if (k > _keys.size())
 		{
-			_keys[k] = encodeKey(down, modifiers);
+			return false;
 		}
+		auto& oldValue = _keys[k];
+		auto value = encodeKey(down, modifiers);
+		if (oldValue == value)
+		{
+			return false;
+		}
+		_keys[k] = value;
+		for (auto& listener : _listeners)
+		{
+			listener->onKeyboardKey(key, modifiers, down);
+		}
+		return true;
 	}
 
 	void KeyboardImpl::pushChar(const Utf8Char& data) noexcept
 	{
 		_chars[_charsWrite] = data;
 		_charsWrite = (_charsWrite + 1) % _chars.size();
+		for (auto& listener : _listeners)
+		{
+			listener->onKeyboardChar(data);
+		}
 	}
 
 	bool KeyboardImpl::getKey(KeyboardKey key) const noexcept
@@ -114,7 +130,17 @@ namespace darmok
 		_charsWrite = 0;
 	}
 
-	static const std::string s_keyboardKeyNames[] =
+	void KeyboardImpl::addListener(IKeyboardListener& listener) noexcept
+	{
+		_listeners.insert(listener);
+	}
+
+	bool KeyboardImpl::removeListener(IKeyboardListener& listener) noexcept
+	{
+		return _listeners.erase(listener) > 0;
+	}
+
+	static const std::array<std::string, to_underlying(KeyboardKey::Count)> s_keyboardKeyNames =
 	{
 		"None",
 		"Esc",
@@ -203,12 +229,16 @@ namespace darmok
 		"KeyY",
 		"KeyZ",
 	};
-	BX_STATIC_ASSERT(to_underlying(KeyboardKey::Count) == BX_COUNTOF(s_keyboardKeyNames));
 
 	const std::string& Keyboard::getKeyName(KeyboardKey key) noexcept
 	{
-		BX_ASSERT(key < KeyboardKey::Count, "Invalid key %d.", key);
-		return s_keyboardKeyNames[to_underlying(key)];
+		auto idx = to_underlying(key);
+		if (idx >= s_keyboardKeyNames.size())
+		{
+			static const std::string empty;
+			return empty;
+		}
+		return s_keyboardKeyNames[idx];
 	}
 
 	Keyboard::Keyboard() noexcept
@@ -234,7 +264,7 @@ namespace darmok
 		const bool isChar = (KeyboardKey::KeyA <= key && key <= KeyboardKey::KeyZ);
 		if (isChar)
 		{
-			const bool shift = !!( modifiers & KeyboardModifiers::Shift );
+			const bool shift = !!( modifiers & to_underlying(KeyboardModifierGroup::Shift) );
 			return (shift ? 'A' : 'a') + char(to_underlying(key) - to_underlying(KeyboardKey::KeyA));
 		}
 
@@ -288,51 +318,105 @@ namespace darmok
 		return *_impl;
 	}
 
+	void Keyboard::addListener(IKeyboardListener& listener) noexcept
+	{
+		_impl->addListener(listener);
+	}
+
+	bool Keyboard::removeListener(IKeyboardListener& listener) noexcept
+	{
+		return _impl->removeListener(listener);
+	}
+
 #pragma endregion Keyboard
 
 #pragma region Mouse
 
 	MouseImpl::MouseImpl() noexcept
 		: _buttons{}
-		, _position{}
-		, _lastPosition{}
-		, _scrollDelta{}
+		, _position(0)
+		, _lastPosition(0)
+		, _scroll(0)
+		, _lastScroll(0)
 		, _active(false)
 		, _hasBeenInactive(true)
 	{
 	}
 
-	void MouseImpl::setActive(bool active)
+	bool MouseImpl::setActive(bool active) noexcept
 	{
+		if (_active == active)
+		{
+			return false;
+		}
 		_active = active;
 		if (!active)
 		{
 			_hasBeenInactive = true;
 		}
+		for (auto& listener : _listeners)
+		{
+			listener->onMouseActive(active);
+		}
+		return true;
 	}
 
-	void MouseImpl::setPosition(const glm::vec2& pos) noexcept
+	bool MouseImpl::setPosition(const glm::vec2& pos) noexcept
 	{
-		_position = pos;
+		if (_position == pos)
+		{
+			return false;
+		}
 		if (_hasBeenInactive)
 		{
 			_lastPosition = pos;
 		}
+		auto delta = pos - _position;
+		_position = pos;
+		if (!_hasBeenInactive)
+		{
+			for (auto& listener : _listeners)
+			{
+				listener->onMousePositionChange(delta);
+			}
+		}
+		return true;
 	}
 
-	void MouseImpl::setScrollDelta(const glm::vec2& scrollDelta) noexcept
+	bool MouseImpl::setScroll(const glm::vec2& scroll) noexcept
 	{
-		_scrollDelta = scrollDelta;
+		if (_scroll == scroll)
+		{
+			return false;
+		}
+		auto delta = scroll - _scroll;
+		_scroll = scroll;
+		for (auto& listener : _listeners)
+		{
+			listener->onMouseScrollChange(delta);
+		}
+		return true;
 	}
 
-	void MouseImpl::setButton(MouseButton button, bool down) noexcept
+	bool MouseImpl::setButton(MouseButton button, bool down) noexcept
 	{
-		_buttons[to_underlying(button)] = down;
+		auto idx = to_underlying(button);
+		if (idx >= _buttons.size() || _buttons[idx] == down)
+		{
+			return false;
+		}
+		_buttons[idx] = down;
+		for (auto& listener : _listeners)
+		{
+			listener->onMouseButton(button, down);
+		}
+		return true;
 	}
 
 	void MouseImpl::update() noexcept
 	{
 		_lastPosition = _position;
+		_lastScroll = _scroll;
 		if (_active)
 		{
 			_hasBeenInactive = false;
@@ -341,7 +425,12 @@ namespace darmok
 
 	bool MouseImpl::getButton(MouseButton button) const noexcept
 	{
-		return _buttons[to_underlying(button)];
+		auto idx = to_underlying(button);
+		if (idx >= _buttons.size())
+		{
+			return false;
+		}
+		return _buttons[idx];
 	}
 
 	bool MouseImpl::getActive() const noexcept
@@ -363,9 +452,14 @@ namespace darmok
 		return _position - _lastPosition;
 	}
 
-	const glm::vec2& MouseImpl::getScrollDelta() const noexcept
+	const glm::vec2& MouseImpl::getScroll() const noexcept
 	{
-		return _scrollDelta;
+		return _scroll;
+	}
+
+	glm::vec2 MouseImpl::getScrollDelta() const noexcept
+	{
+		return _scroll - _lastScroll;
 	}
 
 	const MouseButtons& MouseImpl::getButtons() const noexcept
@@ -373,18 +467,32 @@ namespace darmok
 		return _buttons;
 	}
 
-	static const std::string s_mouseButtonNames[] =
+	void MouseImpl::addListener(IMouseListener& listener) noexcept
+	{
+		_listeners.insert(listener);
+	}
+
+	bool MouseImpl::removeListener(IMouseListener& listener) noexcept
+	{
+		return _listeners.erase(listener) > 0;
+	}
+
+	static const std::array<std::string, to_underlying(MouseButton::Count)> s_mouseButtonNames =
 	{
 		"Left",
 		"Middle",
 		"Right",
 	};
-	BX_STATIC_ASSERT(to_underlying(MouseButton::Count) == BX_COUNTOF(s_mouseButtonNames));
 
 	const std::string& Mouse::getButtonName(MouseButton button) noexcept
 	{
-		BX_ASSERT(button < MouseButton::Count, "Invalid button %d.", button);
-		return s_mouseButtonNames[to_underlying(button)];
+		auto idx = to_underlying(button);
+		if (idx >= s_mouseButtonNames.size())
+		{
+			static const std::string empty;
+			return empty;
+		}
+		return s_mouseButtonNames[idx];
 	}
 
 	Mouse::Mouse() noexcept
@@ -432,72 +540,113 @@ namespace darmok
 		return *_impl;
 	}
 
+	void Mouse::addListener(IMouseListener& listener) noexcept
+	{
+		_impl->addListener(listener);
+	}
+
+	bool Mouse::removeListener(IMouseListener& listener) noexcept
+	{
+		return _impl->removeListener(listener);
+	}
+
 #pragma endregion Mouse
 
 #pragma region Gamepad
 
 	GamepadImpl::GamepadImpl() noexcept
 		: _num(Gamepad::MaxAmount)
+		, _connected(false)
 		, _sticks{}
 		, _buttons{}
 	{
 	}
 
-	void GamepadImpl::init(uint8_t num) noexcept
+	bool GamepadImpl::setNumber(uint8_t num) noexcept
 	{
-		reset();
+		if (_num == num)
+		{
+			return false;
+		}
 		_num = num;
+		clear();
+		return true;
+	}
+	bool GamepadImpl::setConnected(bool value) noexcept
+	{
+		if (_connected == value)
+		{
+			return false;
+		}
+		clear();
+		for (auto& listener : _listeners)
+		{
+			listener->onGamepadConnect(_num, value);
+		}
+		return true;
 	}
 
-	void GamepadImpl::reset() noexcept
+	void GamepadImpl::clear() noexcept
 	{
 		_sticks.fill(glm::ivec3(0));
 		_buttons.fill(false);
-		_num = Gamepad::MaxAmount;
 	}
 
-
-
-	void GamepadImpl::setAxis(GamepadAxis axis, int value) noexcept
+	bool GamepadImpl::setStick(GamepadStick stick, const glm::ivec3& value) noexcept
 	{
-		switch (axis)
+		auto idx = to_underlying(stick);
+		if (idx >= _sticks.size())
 		{
-			case GamepadAxis::LeftX:
-				_sticks[to_underlying(GamepadStick::Left)].x = value;
-				break;
-			case GamepadAxis::LeftY:
-				_sticks[to_underlying(GamepadStick::Left)].y = value;
-				break;
-			case GamepadAxis::LeftZ:
-				_sticks[to_underlying(GamepadStick::Left)].z = value;
-				break;
-			case GamepadAxis::RightX:
-				_sticks[to_underlying(GamepadStick::Right)].x = value;
-				break;
-			case GamepadAxis::RightY:
-				_sticks[to_underlying(GamepadStick::Right)].y = value;
-				break;
-			case GamepadAxis::RightZ:
-				_sticks[to_underlying(GamepadStick::Right)].z = value;
-				break;
-			default:
-				break;
+			return false;
 		}
+		auto& oldValue = _sticks[idx];
+		if (oldValue == value)
+		{
+			return false;
+		}
+		_sticks[idx] = value;
+		auto delta = value - oldValue;
+		for (auto& listener : _listeners)
+		{
+			listener->onGamepadStickChange(_num, stick, delta);
+		}
+		return true;
 	}
 
-	void GamepadImpl::setButton(GamepadButton button, bool down) noexcept
+	bool GamepadImpl::setButton(GamepadButton button, bool down) noexcept
 	{
-		_buttons[to_underlying(button)] = down;
+		auto idx = to_underlying(button);
+		if (idx >= _buttons.size() || _buttons[idx] == down)
+		{
+			return false;
+		}
+		_buttons[idx] = down;
+		for (auto& listener : _listeners)
+		{
+			listener->onGamepadButton(_num, button, down);
+		}
+		return true;
 	}
 
 	const glm::ivec3& GamepadImpl::getStick(GamepadStick stick) const noexcept
 	{
-		return _sticks[to_underlying(stick)];
+		auto idx = to_underlying(stick);
+		if (idx >= _sticks.size())
+		{
+			const static glm::ivec3 zero(0);
+			return zero;
+		}
+		return _sticks[idx];
 	}
 
 	bool GamepadImpl::getButton(GamepadButton button) const noexcept
 	{
-		return _buttons[to_underlying(button)];
+		auto idx = to_underlying(button);
+		if (idx >= _buttons.size())
+		{
+			return false;
+		}
+		return _buttons[idx];
 	}
 
 	const GamepadButtons& GamepadImpl::getButtons() const noexcept
@@ -515,7 +664,17 @@ namespace darmok
 		return _num < Gamepad::MaxAmount;
 	}
 
-	static const std::string s_gamepadButtonNames[] =
+	void GamepadImpl::addListener(IGamepadListener& listener) noexcept
+	{
+		_listeners.insert(listener);
+	}
+
+	bool GamepadImpl::removeListener(IGamepadListener& listener) noexcept
+	{
+		return _listeners.erase(listener) > 0;
+	}
+
+	static const std::array<std::string, to_underlying(GamepadButton::Count)> s_gamepadButtonNames =
 	{
 		"None",
 		"A",
@@ -532,9 +691,8 @@ namespace darmok
 		"Right",
 		"Back",
 		"Start",
-		"Guide",
+		"Guide"
 	};
-	BX_STATIC_ASSERT(to_underlying(GamepadButton::Count) == BX_COUNTOF(s_gamepadButtonNames));
 
 	Gamepad::Gamepad() noexcept
 		: _impl(std::make_unique<GamepadImpl>())
@@ -543,8 +701,13 @@ namespace darmok
 
 	const std::string& Gamepad::getButtonName(GamepadButton button) noexcept
 	{
-		BX_ASSERT(button < GamepadButton::Count, "Invalid button %d.", button);
-		return s_gamepadButtonNames[to_underlying(button)];
+		auto idx = to_underlying(button);
+		if (idx >= s_gamepadButtonNames.size())
+		{
+			static const std::string empty;
+			return empty;
+		}
+		return s_gamepadButtonNames[idx];
 	}
 
 	const glm::ivec3& Gamepad::getStick(GamepadStick stick) const noexcept
@@ -582,6 +745,16 @@ namespace darmok
 		return *_impl;
 	}
 
+	void Gamepad::addListener(IGamepadListener& listener) noexcept
+	{
+		_impl->addListener(listener);
+	}
+
+	bool Gamepad::removeListener(IGamepadListener& listener) noexcept
+	{
+		return _impl->removeListener(listener);
+	}
+
 #pragma endregion Gamepad
 
 #pragma region Input
@@ -600,7 +773,7 @@ namespace darmok
 		{
 			keyStr = lowerName.substr(keyPrefix.size());
 		}
-		for (auto i = 0; i < BX_COUNTOF(s_keyboardKeyNames); i++)
+		for (auto i = 0; i < s_keyboardKeyNames.size(); i++)
 		{
 			auto keyName = strToLower(s_keyboardKeyNames[i]);
 			if (keyName == lowerName || keyName == keyStr)
@@ -679,7 +852,7 @@ namespace darmok
 	std::optional<MouseButton> MouseBindingKey::readButton(std::string_view name) noexcept
 	{
 		auto lowerName = strToLower(name);
-		for (auto i = 0; i < BX_COUNTOF(s_mouseButtonNames); i++)
+		for (auto i = 0; i < s_mouseButtonNames.size(); i++)
 		{
 			if (strToLower(s_mouseButtonNames[i]) == lowerName)
 			{
@@ -714,7 +887,7 @@ namespace darmok
 	std::optional<GamepadButton> GamepadBindingKey::readButton(std::string_view name) noexcept
 	{
 		auto lowerName = strToLower(name);
-		for (auto i = 0; i < BX_COUNTOF(s_mouseButtonNames); i++)
+		for (auto i = 0; i < s_mouseButtonNames.size(); i++)
 		{
 			if (strToLower(s_gamepadButtonNames[i]) == lowerName)
 			{
@@ -756,7 +929,7 @@ namespace darmok
 			return to_underlying(v->key) | v->modifiers;
 		}
 
-		constexpr size_t maxKey = to_underlying(KeyboardKey::Count) + KeyboardModifiers::Max;
+		constexpr size_t maxKey = to_underlying(KeyboardKey::Count) + 255;
 
 		if (auto v = std::get_if<MouseBindingKey>(&key))
 		{
@@ -810,6 +983,11 @@ namespace darmok
 
 	InputImpl::InputImpl() noexcept
 	{
+		uint8_t num = 0;
+		for (auto& gamepad : _gamepads)
+		{
+			gamepad.getImpl().setNumber(num++);
+		}
 	}
 
 	bool InputImpl::bindingTriggered(InputBinding& binding) noexcept

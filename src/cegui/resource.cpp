@@ -1,4 +1,5 @@
 #include "resource.hpp"
+#include "utils.hpp"
 #include <CEGUI/DataContainer.h>
 #include <darmok/data.hpp>
 
@@ -24,7 +25,7 @@ namespace darmok
 			finalFilename = itr->second;
 		}
 		finalFilename += filename;
-		return CEGUI::String::convertUtf32ToUtf8(finalFilename.getString());
+		return CeguiUtils::convert(finalFilename);
 	}
 
 	void CeguiResourceProvider::loadRawDataContainer(const CEGUI::String& filename, CEGUI::RawDataContainer& output,

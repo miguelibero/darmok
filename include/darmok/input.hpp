@@ -10,147 +10,23 @@
 #include <functional>
 #include <darmok/utils.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/input_fwd.hpp>
 #include <glm/glm.hpp>
+#include <bx/bx.h>
 
 namespace darmok
 {
-	enum class KeyboardModifier : uint8_t
-	{
-		None = 0,
-		LeftAlt = 0x01,
-		RightAlt = 0x02,
-		LeftCtrl = 0x04,
-		RightCtrl = 0x08,
-		LeftShift = 0x10,
-		RightShift = 0x20,
-		LeftMeta = 0x40,
-		RightMeta = 0x80,
-	};
-
-	enum class KeyboardModifierGroup : uint8_t
-	{
-		None = 0,
-		Alt = to_underlying(KeyboardModifier::LeftAlt) | to_underlying(KeyboardModifier::RightAlt),
-		Ctrl = to_underlying(KeyboardModifier::LeftCtrl) | to_underlying(KeyboardModifier::RightCtrl),
-		Shift = to_underlying(KeyboardModifier::LeftShift) | to_underlying(KeyboardModifier::RightShift),
-		Meta = to_underlying(KeyboardModifier::LeftMeta) | to_underlying(KeyboardModifier::RightMeta),
-	};
-
-	enum class KeyboardKey
-	{
-		None = 0,
-		Esc,
-		Return,
-		Tab,
-		Space,
-		Backspace,
-		Up,
-		Down,
-		Left,
-		Right,
-		Insert,
-		Delete,
-		Home,
-		End,
-		PageUp,
-		PageDown,
-		Print,
-		Plus,
-		Minus,
-		LeftBracket,
-		RightBracket,
-		Semicolon,
-		Quote,
-		Comma,
-		Period,
-		Slash,
-		Backslash,
-		Tilde,
-		F1,
-		F2,
-		F3,
-		F4,
-		F5,
-		F6,
-		F7,
-		F8,
-		F9,
-		F10,
-		F11,
-		F12,
-		NumPad0,
-		NumPad1,
-		NumPad2,
-		NumPad3,
-		NumPad4,
-		NumPad5,
-		NumPad6,
-		NumPad7,
-		NumPad8,
-		NumPad9,
-		Key0,
-		Key1,
-		Key2,
-		Key3,
-		Key4,
-		Key5,
-		Key6,
-		Key7,
-		Key8,
-		Key9,
-		KeyA,
-		KeyB,
-		KeyC,
-		KeyD,
-		KeyE,
-		KeyF,
-		KeyG,
-		KeyH,
-		KeyI,
-		KeyJ,
-		KeyK,
-		KeyL,
-		KeyM,
-		KeyN,
-		KeyO,
-		KeyP,
-		KeyQ,
-		KeyR,
-		KeyS,
-		KeyT,
-		KeyU,
-		KeyV,
-		KeyW,
-		KeyX,
-		KeyY,
-		KeyZ,
-
-		Count
-	};
-
-	struct KeyboardModifiers final
-	{
-		static constexpr uint8_t None = 0;
-
-		static constexpr uint8_t LeftShift = to_underlying(KeyboardModifier::LeftShift);
-		static constexpr uint8_t RightShift = to_underlying(KeyboardModifier::RightShift);
-		static constexpr uint8_t LeftCtrl = to_underlying(KeyboardModifier::LeftCtrl);
-		static constexpr uint8_t RightCtrl = to_underlying(KeyboardModifier::RightCtrl);
-		static constexpr uint8_t LeftAlt = to_underlying(KeyboardModifier::LeftAlt);
-		static constexpr uint8_t RightAlt = to_underlying(KeyboardModifier::RightAlt);
-		static constexpr uint8_t LeftMeta = to_underlying(KeyboardModifier::LeftMeta);
-		static constexpr uint8_t RightMeta = to_underlying(KeyboardModifier::RightMeta);
-
-		static constexpr uint8_t Shift = LeftShift | RightShift;
-		static constexpr uint8_t Ctrl = LeftCtrl | RightCtrl;
-		static constexpr uint8_t Alt = LeftAlt | RightAlt;
-		static constexpr uint8_t Meta = LeftMeta | RightMeta;
-		static constexpr uint8_t Max = Meta;
-	};
-
 	using KeyboardKeys = std::array<uint32_t, to_underlying(KeyboardKey::Count)>;
 	using KeyboardChars = std::vector<Utf8Char>;
 	class KeyboardImpl;
+
+	class BX_NO_VTABLE IKeyboardListener
+	{
+	public:
+		virtual ~IKeyboardListener() = default;
+		virtual void onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down) {};
+		virtual void onKeyboardChar(const Utf8Char& chr) {};
+	};
 
 	class Keyboard final
 	{
@@ -164,29 +40,34 @@ namespace darmok
 		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
 		[[nodiscard]] uint8_t getModifiers() const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
+
+		void addListener(IKeyboardListener& listener) noexcept;
+		bool removeListener(IKeyboardListener& listener) noexcept;
+
 		[[nodiscard]] const KeyboardImpl& getImpl() const noexcept;
 		[[nodiscard]] KeyboardImpl& getImpl() noexcept;
 
 		[[nodiscard]] static char keyToAscii(KeyboardKey key, uint8_t modifiers) noexcept;
 		[[nodiscard]] static const std::string& getKeyName(KeyboardKey key) noexcept;
 
+
 	private:
-		
 		std::unique_ptr<KeyboardImpl> _impl;
-	};
-
-	enum class MouseButton
-	{
-		Left,
-		Middle,
-		Right,
-
-		Count
 	};
 
 	using MouseButtons = std::array<bool, to_underlying(MouseButton::Count)>;
 
 	class MouseImpl;
+
+	class BX_NO_VTABLE IMouseListener
+	{
+	public:
+		virtual ~IMouseListener() = default;
+		virtual void onMouseActive(bool active) {};
+		virtual void onMousePositionChange(const glm::vec2& delta) {};
+		virtual void onMouseScrollChange(const glm::vec2& delta) {};
+		virtual void onMouseButton(MouseButton button, bool down) {};
+	};
 
 	class Mouse final
 	{
@@ -204,6 +85,9 @@ namespace darmok
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 
+		void addListener(IMouseListener& listener) noexcept;
+		bool removeListener(IMouseListener& listener) noexcept;
+
 		[[nodiscard]] const MouseImpl& getImpl() const noexcept;
 		[[nodiscard]] MouseImpl& getImpl() noexcept;
 
@@ -211,40 +95,19 @@ namespace darmok
 		std::unique_ptr<MouseImpl> _impl;
 	};
 
-	enum class GamepadStick
-	{
-		Left,
-		Right,
-		Count
-	};
-
-	enum class GamepadButton
-	{
-		None = 0,
-		
-		A,
-		B,
-		X,
-		Y,
-		ThumbL,
-		ThumbR,
-		ShoulderL,
-		ShoulderR,
-		Up,
-		Down,
-		Left,
-		Right,
-		Back,
-		Start,
-		Guide,
-
-		Count
-	};
-
 	using GamepadButtons = std::array<bool, to_underlying(GamepadButton::Count)>;
 	using GamepadSticks = std::array<glm::ivec3, to_underlying(GamepadButton::Count)>;
 
 	class GamepadImpl;
+
+	class BX_NO_VTABLE IGamepadListener
+	{
+	public:
+		virtual ~IGamepadListener() = default;
+		virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::ivec3& delta) {};
+		virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
+		virtual void onGamepadConnect(uint8_t num, bool connected) {};
+	};
 
 	class Gamepad final
 	{
@@ -262,6 +125,9 @@ namespace darmok
 		[[nodiscard]] bool getButton(GamepadButton button) const noexcept;
 		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
 		[[nodiscard]] bool isConnected() const noexcept;
+
+		void addListener(IGamepadListener& listener) noexcept;
+		bool removeListener(IGamepadListener& listener) noexcept;
 
 		[[nodiscard]] const GamepadImpl& getImpl() const noexcept;
 		[[nodiscard]] GamepadImpl& getImpl() noexcept;

@@ -4,15 +4,22 @@
 #include "render_target.hpp"
 #include "shader.hpp"
 #include <bgfx/bgfx.h>
+#include <memory>
 
 namespace bx
 {
     struct AllocatorI;
 }
 
+namespace bgfx
+{
+    struct EmbeddedShader;
+}
+
 namespace darmok
 {
     class App;
+    class Program;
     class CeguiTexture;
     class CeguiTextureTarget;
 
@@ -46,19 +53,27 @@ namespace darmok
         const CEGUI::String& getIdentifierString() const override;
         bool isTexCoordSystemFlipped() const override;
 
+        bgfx::ViewId getViewId() const noexcept;
         void setViewId(bgfx::ViewId viewId) noexcept;
+        bx::AllocatorI* getAllocator() const noexcept;
+        CeguiTexture& createRenderTexture(const CEGUI::String& name);
 
     private:
         static const CEGUI::String _rendererId;
+        static const CEGUI::String _solidWhiteTextureName;
         CEGUI::Sizef _displaySize;
         App& _app;
         CeguiRenderTarget _defaultRenderTarget;
         std::unordered_map<CEGUI::String, std::unique_ptr<CeguiTexture>> _textures;
         std::vector<std::unique_ptr<CeguiTextureTarget>> _textureTargets;
-        mutable CeguiShaderWrapper _shaderWrapper;
+        std::shared_ptr<Program> _texturedProgram;
+        mutable CeguiShaderWrapper _texturedShaderWrapper;
+        std::shared_ptr<Program> _solidProgram;
+        mutable CeguiShaderWrapper _solidShaderWrapper;
         bgfx::ViewId _viewId;
+        static const bgfx::EmbeddedShader _embeddedShaders[];
 
-        bx::AllocatorI* getAllocator() const noexcept;
-        CeguiTexture& doCreateTexture(const CEGUI::String& name);
+        CeguiTexture& doCreateTexture(const CEGUI::String& name, uint64_t flags = 0);
+        CeguiTexture& doAddTexture(std::unique_ptr<CeguiTexture>&& tex);
     };
 }

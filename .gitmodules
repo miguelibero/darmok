@@ -34,3 +34,6 @@
 [submodule "lib/cegui"]
 	path = lib/cegui
 	url = git@github.com:cegui/cegui.git
+[submodule "lib/freetype"]
+	path = lib/freetype
+	url = git@github.com:freetype/freetype.git

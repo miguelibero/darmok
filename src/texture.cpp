@@ -108,7 +108,11 @@ namespace darmok
 
 	void Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint16_t layer, uint8_t mip) noexcept
 	{
-		auto memSize = getBitsPerPixel() * size.x * size.y;
+		auto memSize = size.x * size.y * getBitsPerPixel() / 8;
+		if (memSize == 0)
+		{
+			return;
+		}
 		bgfx::updateTexture2D(_handle, layer, mip,
 			origin.x, origin.y, size.x, size.y,
 			data.copyMem(0, memSize));
@@ -202,7 +206,7 @@ namespace darmok
 		{
 			return itr->second;
 		}
-		auto tex = std::make_shared<Texture>(*Image::create(_alloc, color, _size));
+		auto tex = std::make_shared<Texture>(Image(color, _size, _alloc));
 		_cache.emplace(color, tex);
 		return tex;
 	}

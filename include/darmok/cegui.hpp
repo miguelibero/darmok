@@ -22,6 +22,10 @@ namespace darmok
 		void updateLogic(float deltaTime) override;
 		bgfx::ViewId render(bgfx::ViewId viewId) const override;
 
+        void setViewRect(const glm::uvec2& size, const glm::uvec2& origin = glm::uvec2(0)) noexcept;
+        void setProjectionFovy(float fovy) noexcept;
+        void setFontScale(float scale) noexcept;
+
         void setResourceGroupDirectory(std::string_view resourceGroup, std::string_view directory) noexcept;
         OptionalRef<CEGUI::GUIContext> getGuiContext() noexcept;
         OptionalRef<const CEGUI::GUIContext> getGuiContext() const noexcept;

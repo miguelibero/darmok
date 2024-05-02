@@ -43,24 +43,23 @@ namespace darmok
 	class BX_NO_VTABLE PlatformEvent
 	{
 	public:
-		enum Type
+		enum class Type
 		{
-			KeyboardKeyChanged,
-			KeyboardCharInput,
+			KeyboardKey,
+			KeyboardChar,
 
-			GamepadConnection,
-			GamepadAxisChanged,
-			GamepadButtonChanged,
+			GamepadConnect,
+			GamepadStick,
+			GamepadButton,
 
-			MouseMoved,
-			MouseActiveChanged,
-			MouseScrolled,
-			MouseButtonChanged,
-			WindowMouseLockChanged,
+			MousePosition,
+			MouseActive,
+			MouseScroll,
+			MouseButton,
 
-			WindowSizeChanged,
-			WindowPhaseChanged,
-			WindowModeChanged,
+			WindowSize,
+			WindowPhase,
+			WindowMode,
 
 			Count,
 		};
@@ -74,10 +73,10 @@ namespace darmok
 		Type _type;
 	};
 
-	class KeyboardKeyChangedEvent final : public PlatformEvent
+	class KeyboardKeyEvent final : public PlatformEvent
 	{
 	public:
-		KeyboardKeyChangedEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
+		KeyboardKeyEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
 		void process(Input& input) noexcept;
 	private:
 		KeyboardKey _key;
@@ -85,68 +84,68 @@ namespace darmok
 		bool _down;
 	};
 
-	class KeyboardCharInputEvent final : public PlatformEvent
+	class KeyboardCharEvent final : public PlatformEvent
 	{
 	public:
-		KeyboardCharInputEvent(const Utf8Char& data) noexcept;
+		KeyboardCharEvent(const Utf8Char& data) noexcept;
 		void process(Input& input) noexcept;
 	private:
 		Utf8Char _data;
 	};
 
-	class MouseMovedEvent final : public PlatformEvent
+	class MousePositionEvent final : public PlatformEvent
 	{
 	public:
-		MouseMovedEvent(const glm::vec2& pos) noexcept;
+		MousePositionEvent(const glm::vec2& pos) noexcept;
 		void process(Input& input) noexcept;
 	private:
 		glm::vec2 _pos;
 	};
 
-	class MouseActiveChangedEvent final : public PlatformEvent
+	class MouseActiveEvent final : public PlatformEvent
 	{
 	public:
-		MouseActiveChangedEvent(bool active) noexcept;
+		MouseActiveEvent(bool active) noexcept;
 		void process(Input& input) noexcept;
 	private:
 		bool _active;
 	};
 
-	class MouseScrolledEvent final : public PlatformEvent
+	class MouseScrollEvent final : public PlatformEvent
 	{
 	public:
-		MouseScrolledEvent(const glm::vec2& scrollDelta) noexcept;
+		MouseScrollEvent(const glm::vec2& scroll) noexcept;
 		void process(Input& input) noexcept;
 	private:
-		glm::vec2 _scrollDelta;
+		glm::vec2 _scroll;
 	};
 
-	class MouseButtonChangedEvent final : public PlatformEvent
+	class MouseButtonEvent final : public PlatformEvent
 	{
 	public:
-		MouseButtonChangedEvent(MouseButton button, bool down) noexcept;
+		MouseButtonEvent(MouseButton button, bool down) noexcept;
 		void process(Input& input) noexcept;
 	private:
 		MouseButton _button;
 		bool _down;
 	};
 
-	class GamepadAxisChangedEvent final : public PlatformEvent
+	class GamepadStickEvent final : public PlatformEvent
 	{
 	public:
-		GamepadAxisChangedEvent(uint8_t gampad, GamepadAxis axis, int32_t value) noexcept;
+		GamepadStickEvent(uint8_t gampad, GamepadStick stick, const glm::ivec3& value) noexcept;
 		void process(Input& input) noexcept;
 
 	private:
 		uint8_t _gamepad;
-		GamepadAxis _axis;
-		int32_t _value;
+		GamepadStick _stick;
+		glm::ivec3 _value;
 	};
 
-	class GamepadButtonChangedEvent final : public PlatformEvent
+	class GamepadButtonEvent final : public PlatformEvent
 	{
 	public:
-		GamepadButtonChangedEvent(uint8_t gampad, GamepadButton button, bool down) noexcept;
+		GamepadButtonEvent(uint8_t gampad, GamepadButton button, bool down) noexcept;
 		void process(Input& input) noexcept;
 
 	private:
@@ -155,39 +154,39 @@ namespace darmok
 		bool _down;
 	};
 
-	class GamepadConnectionEvent final : public PlatformEvent
+	class GamepadConnectEvent final : public PlatformEvent
 	{
 	public:
-		GamepadConnectionEvent(uint8_t gamepad, bool connected) noexcept;
+		GamepadConnectEvent(uint8_t gamepad, bool connected) noexcept;
 		void process(Input& input) noexcept;
 	private:
 		uint8_t _gamepad;
 		bool _connected;
 	};
 
-	class WindowSizeChangedEvent final : public PlatformEvent
+	class WindowSizeEvent final : public PlatformEvent
 	{
 	public:
-		WindowSizeChangedEvent(const glm::uvec2& size, bool pixel = false) noexcept;
+		WindowSizeEvent(const glm::uvec2& size, bool pixel = false) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		glm::uvec2 _size;
 		bool _pixel;
 	};
 
-	class WindowPhaseChangedEvent final : public PlatformEvent
+	class WindowPhaseEvent final : public PlatformEvent
 	{
 	public:
-		WindowPhaseChangedEvent(WindowPhase phase) noexcept;
+		WindowPhaseEvent(WindowPhase phase) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		WindowPhase _phase;
 	};
 
-	class WindowModeChangedEvent final : public PlatformEvent
+	class WindowModeEvent final : public PlatformEvent
 	{
 	public:
-		WindowModeChangedEvent(WindowMode mode) noexcept;
+		WindowModeEvent(WindowMode mode) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		WindowMode _mode;

@@ -1,22 +1,32 @@
 #pragma once
 
 #include <CEGUI/TextureTarget.h>
-#include "texture.hpp"
+#include "render_target.hpp"
+#include <bgfx/bgfx.h>
 
 namespace darmok
 {
-    class CeguiTextureTarget final : public CEGUI::TextureTarget
+    class CeguiTexture;
+
+    class CeguiTextureTarget final : public CEGUI::TextureTarget, public CeguiRenderTarget
     {
     public:
-        CeguiTextureTarget(CEGUI::Renderer& renderer, bool addStencilBuffer, bx::AllocatorI* alloc) noexcept;
-        void clear() override;
-        CEGUI::Texture& getTexture() const override;
-        void declareRenderSize(const CEGUI::Sizef& sz) override;
-        bool isImageryCache() const override;
-        void updateMatrix() const override;
-        CEGUI::Renderer& getOwner() override;
+        CeguiTextureTarget(CeguiRenderer& renderer, bool addStencilBuffer) noexcept;
+        ~CeguiTextureTarget() noexcept;
+        void clear() noexcept override;
+        CEGUI::Texture& getTexture() const noexcept override;
+        void declareRenderSize(const CEGUI::Sizef& sz) noexcept override;
+        void activate() noexcept override;
+        void deactivate() noexcept override;
+        bool isImageryCache() const noexcept override;
+        void updateMatrix() const noexcept override;
+        CEGUI::Renderer& getOwner() noexcept override;
     private:
-        CEGUI::Renderer& _renderer;
-        mutable CeguiTexture _texture;
+        CeguiTexture& _texture;
+        bgfx::FrameBufferHandle _frameBuffer;
+        static uint32_t s_textureNumber;
+
+        static CEGUI::String generateTextureName() noexcept;
+        void destroyFramebuffer() noexcept;
     };
 }

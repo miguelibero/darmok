@@ -5,15 +5,18 @@
 #include <CEGUI/Sizef.h>
 #include <bgfx/bgfx.h>
 #include <memory>
+#include <darmok/optional_ref.hpp>
 
 namespace darmok
 {
     class Texture;
+    class Image;
 
     class CeguiTexture final : public CEGUI::Texture
     {
     public:
-        CeguiTexture(bx::AllocatorI* alloc, const CEGUI::String& name = "") noexcept;
+        CeguiTexture(bx::AllocatorI* alloc = nullptr, const CEGUI::String& name = "", uint64_t flags = 0) noexcept;
+        CeguiTexture(std::unique_ptr<darmok::Texture>&& tex, bx::AllocatorI* alloc = nullptr, const CEGUI::String& name = "", uint64_t flags = 0) noexcept;
         ~CeguiTexture() noexcept;
         const CEGUI::String& getName() const override;
         const CEGUI::Sizef& getSize() const override;
@@ -30,13 +33,18 @@ namespace darmok
         void blitFromMemory(const void* sourceData, const CEGUI::Rectf& area) override;
         void blitToMemory(void* targetData) override;
         bool isPixelFormatSupported(const PixelFormat fmt) const override;
+
+        OptionalRef<darmok::Texture> getDarmokTexture() const noexcept;
+        bgfx::TextureHandle getBgfxHandle() const noexcept;
     private:
+        static const uint64_t _defaultFlags;
+        uint64_t _flags;
         CEGUI::String _name;
         bx::AllocatorI* _alloc;
         std::unique_ptr<darmok::Texture> _texture;
         glm::vec2 _texel;
         CEGUI::Sizef _size;
 
-        void updateTexture() noexcept;
+        void onTextureChanged() noexcept;
     };
 }

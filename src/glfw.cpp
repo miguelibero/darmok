@@ -91,7 +91,15 @@ namespace darmok
 		static uint8_t translateKeyModifiers(int mods) noexcept;
 		static KeyboardKey translateKey(int key) noexcept;
 		static MouseButton translateMouseButton(int button) noexcept;
-		static GamepadAxis translateGamepadAxis(int axis) noexcept;
+
+		struct GamepadAxisConfig final
+		{
+			GamepadStick stick;
+			size_t index;
+			bool reverse;
+		};
+
+		static std::optional<GamepadAxisConfig> translateGamepadAxis(int axis) noexcept;
 		static GamepadButton translateGamepadButton(int button) noexcept;
 
 		void updateGamepads() noexcept;
@@ -183,7 +191,7 @@ namespace darmok
 					, 0
 					, 0
 				);
-				events.post<WindowModeChangedEvent>(WindowMode::Normal);
+				events.post<WindowModeEvent>(WindowMode::Normal);
 				break;
 			}
 			case WindowMode::Fullscreen:
@@ -202,7 +210,7 @@ namespace darmok
 					, mode->height
 					, mode->refreshRate
 				);
-				events.post<WindowModeChangedEvent>(WindowMode::Fullscreen);
+				events.post<WindowModeEvent>(WindowMode::Fullscreen);
 				break;
 			}
 			case WindowMode::WindowedFullscreen:
@@ -218,7 +226,7 @@ namespace darmok
 				glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 				glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
-				events.post<WindowModeChangedEvent>(WindowMode::WindowedFullscreen);
+				events.post<WindowModeEvent>(WindowMode::WindowedFullscreen);
 				break;
 			}
 			}
@@ -512,18 +520,22 @@ namespace darmok
 		return MouseButton::Middle;
 	}
 
-	GamepadAxis PlatformImpl::translateGamepadAxis(int axis) noexcept
+	std::optional<PlatformImpl::GamepadAxisConfig> PlatformImpl::translateGamepadAxis(int axis) noexcept
 	{
-		// HACK: Map XInput 360 controller until GLFW gamepad API
-		static std::array<GamepadAxis, 6> axes =
+		// Map XInput 360 controller until GLFW gamepad API
+		const static std::array<GamepadAxisConfig, 6> axes =
 		{
-			GamepadAxis::LeftX,
-			GamepadAxis::LeftY,
-			GamepadAxis::RightX,
-			GamepadAxis::RightY,
-			GamepadAxis::LeftZ,
-			GamepadAxis::RightZ,
+			GamepadAxisConfig{ GamepadStick::Left, 0 },
+			GamepadAxisConfig{ GamepadStick::Left, 1, true },
+			GamepadAxisConfig{ GamepadStick::Right, 0 },
+			GamepadAxisConfig{ GamepadStick::Right, 1, true },
+			GamepadAxisConfig{ GamepadStick::Left, 2 },
+			GamepadAxisConfig{ GamepadStick::Right, 2 },
 		};
+		if (axis < 0 || axis >= axes.size())
+		{
+			return std::nullopt;
+		}
 		return axes[axis];
 	}
 
@@ -563,27 +575,37 @@ namespace darmok
 		const unsigned char* buttons = glfwGetJoystickButtons(num, &numButtons);
 		const float* axes = glfwGetJoystickAxes(num, &numAxes);
 
-		if (nullptr == buttons || nullptr == axes)
+		if (axes != nullptr)
 		{
-			return;
-		}
-
-		for (int i = 0; i < numAxes; ++i)
-		{
-			auto axis = translateGamepadAxis(i);
-			int32_t value = (int32_t)(axes[i] * 32768.f);
-			if (GamepadAxis::LeftY == axis || GamepadAxis::RightY == axis)
+			std::unordered_map<GamepadStick, glm::ivec3> stickValues;
+			for (int i = 0; i < numAxes; ++i)
 			{
-				value = -value;
+				int32_t value = (int32_t)(axes[i] * 32768.f);
+				auto config = translateGamepadAxis(i);
+				if (!config)
+				{
+					continue;
+				}
+				if (config->reverse)
+				{
+					value = -value;
+				}
+				stickValues[config->stick][config->index] = value;
 			}
-			_events.post<GamepadAxisChangedEvent>(num, axis, value);
+			for (auto& elm : stickValues)
+			{
+				_events.post<GamepadStickEvent>(num, elm.first, elm.second);
+			}
 		}
 
-		for (int i = 0; i < numButtons; ++i)
+		if (buttons != nullptr)
 		{
-			auto button = translateGamepadButton(i);
-			bool down = buttons[i];
-			_events.post<GamepadButtonChangedEvent>(num, button, down);
+			for (int i = 0; i < numButtons; ++i)
+			{
+				auto button = translateGamepadButton(i);
+				bool down = buttons[i];
+				_events.post<GamepadButtonEvent>(num, button, down);
+			}
 		}
 	}
 
@@ -620,12 +642,12 @@ namespace darmok
 			return bx::kExitFailure;
 		}
 
-		_events.post<WindowSizeChangedEvent>(_windowSize);
+		_events.post<WindowSizeEvent>(_windowSize);
 		int w, h;
 		glfwGetFramebufferSize(_window, &w, &h);
 		_framebufferSize = glm::uvec2(w, h);
-		_events.post<WindowSizeChangedEvent>(_framebufferSize, true);
-		_events.post<WindowPhaseChangedEvent>(WindowPhase::Running);
+		_events.post<WindowSizeEvent>(_framebufferSize, true);
+		_events.post<WindowPhaseEvent>(WindowPhase::Running);
 
 		_thread.init(MainThreadEntry::threadFunc, &_mte);
 
@@ -643,7 +665,7 @@ namespace darmok
 			}
 		}
 
-		_events.post<WindowPhaseChangedEvent>(WindowPhase::Destroyed);
+		_events.post<WindowPhaseEvent>(WindowPhase::Destroyed);
 		_thread.shutdown();
 
 		destroyWindow(_window);
@@ -666,7 +688,7 @@ namespace darmok
 			return;
 		}
 		bool down = (action == GLFW_PRESS || action == GLFW_REPEAT);
-		_events.post<KeyboardKeyChangedEvent>(key2, mods2, down);
+		_events.post<KeyboardKeyEvent>(key2, mods2, down);
 	}
 
 	void PlatformImpl::charCallback(GLFWwindow* window, uint32_t scancode) noexcept
@@ -677,7 +699,7 @@ namespace darmok
 		{
 			return;
 		}
-		_events.post<KeyboardCharInputEvent>(data);
+		_events.post<KeyboardCharEvent>(data);
 	}
 
 	glm::vec2 PlatformImpl::normalizeScreenPoint(double x, double y) noexcept
@@ -689,24 +711,24 @@ namespace darmok
 
 	void PlatformImpl::scrollCallback(GLFWwindow* window, double dx, double dy) noexcept
 	{
-		_events.post<MouseScrolledEvent>(glm::vec2{ dx, dy });
+		_events.post<MouseScrollEvent>(glm::vec2{ dx, dy });
 	}
 
 	void PlatformImpl::cursorPosCallback(GLFWwindow* window, double x, double y) noexcept
 	{
-		_events.post<MouseMovedEvent>(normalizeScreenPoint(x, y));
+		_events.post<MousePositionEvent>(normalizeScreenPoint(x, y));
 	}
 
 	void PlatformImpl::cursorEnterCallback(GLFWwindow* window, int entered) noexcept
 	{
-		_events.post<MouseActiveChangedEvent>((bool)entered);
+		_events.post<MouseActiveEvent>((bool)entered);
 	}
 
 	void PlatformImpl::mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept
 	{
 		BX_UNUSED(window, mods);
 		bool down = action == GLFW_PRESS;
-		_events.post<MouseButtonChangedEvent>(
+		_events.post<MouseButtonEvent>(
 			translateMouseButton(button)
 			, down
 		);
@@ -715,24 +737,24 @@ namespace darmok
 	void PlatformImpl::windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
 		_windowSize = glm::uvec2(width, height);
-		_events.post<WindowSizeChangedEvent>(_windowSize);
+		_events.post<WindowSizeEvent>(_windowSize);
 	}
 
 	void PlatformImpl::framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
 		_framebufferSize = glm::uvec2(width, height);
-		_events.post<WindowSizeChangedEvent>(_framebufferSize, true);
+		_events.post<WindowSizeEvent>(_framebufferSize, true);
 	}
 
 	void PlatformImpl::joystickCallback(int jid, int action) noexcept
 	{
 		if (action == GLFW_CONNECTED)
 		{
-			_events.post<GamepadConnectionEvent>(jid, true);
+			_events.post<GamepadConnectEvent>(jid, true);
 		}
 		else if (action == GLFW_DISCONNECTED)
 		{
-			_events.post<GamepadConnectionEvent>(jid, false);
+			_events.post<GamepadConnectEvent>(jid, false);
 		}
 	}
 

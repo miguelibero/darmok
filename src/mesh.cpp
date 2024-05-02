@@ -17,10 +17,11 @@ namespace darmok
 	{
 		if (dynamic)
 		{
-			_vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout).idx;
+			uint64_t flags = BGFX_BUFFER_ALLOW_RESIZE;
+			_vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout, flags).idx;
 			if (!indices.empty())
 			{
-				_indexBuffer = bgfx::createDynamicIndexBuffer(indices.copyMem()).idx;
+				_indexBuffer = bgfx::createDynamicIndexBuffer(indices.copyMem(), flags).idx;
 			}
 		}
 		else
@@ -52,7 +53,6 @@ namespace darmok
 	{
 		_material = material;
 	}
-
 
 	Mesh::~Mesh() noexcept
 	{
@@ -117,6 +117,8 @@ namespace darmok
 		{
 			throw std::runtime_error("cannot update static mesh");
 		}
+		bgfx::DynamicVertexBufferHandle handle{ _vertexBuffer };
+		bgfx::update(handle, offset, data.copyMem());
 	}
 	
 	void Mesh::updateIndices(const DataView& data, size_t offset)
@@ -125,6 +127,8 @@ namespace darmok
 		{
 			throw std::runtime_error("cannot update static mesh");
 		}
+		bgfx::DynamicIndexBufferHandle handle{ _indexBuffer };
+		bgfx::update(handle, offset, data.copyMem());
 	}
 
 	std::string Mesh::to_string() const noexcept
