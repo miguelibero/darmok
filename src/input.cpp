@@ -515,7 +515,12 @@ namespace darmok
 		return _impl->getPositionDelta();
 	}
 
-	const glm::vec2& Mouse::getScrollDelta() const noexcept
+	const glm::vec2& Mouse::getScroll() const noexcept
+	{
+		return _impl->getScroll();
+	}
+
+	glm::vec2 Mouse::getScrollDelta() const noexcept
 	{
 		return _impl->getScrollDelta();
 	}
@@ -929,7 +934,7 @@ namespace darmok
 			return to_underlying(v->key) | v->modifiers;
 		}
 
-		constexpr size_t maxKey = to_underlying(KeyboardKey::Count) + 255;
+		constexpr size_t maxKey = to_underlying(KeyboardKey::Count) + UINT8_MAX;
 
 		if (auto v = std::get_if<MouseBindingKey>(&key))
 		{

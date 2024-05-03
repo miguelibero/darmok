@@ -101,13 +101,17 @@ namespace darmok
 		return _config.getInfo().bitsPerPixel;
 	}
 
-	void Texture::update(const DataView& data, const glm::uvec2& origin, uint16_t layer, uint8_t mip) noexcept
+	void Texture::update(const DataView& data, uint16_t layer, uint8_t mip)
 	{
-		update(data, getSize(), origin, layer, mip);
+		update(data, getSize(), glm::uvec2(0), layer, mip);
 	}
 
-	void Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint16_t layer, uint8_t mip) noexcept
+	void Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint16_t layer, uint8_t mip)
 	{
+		if (_config.type != TextureType::Texture2D)
+		{
+			throw std::runtime_error("only works on 2D textures");
+		}
 		auto memSize = size.x * size.y * getBitsPerPixel() / 8;
 		if (memSize == 0)
 		{

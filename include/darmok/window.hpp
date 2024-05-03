@@ -4,12 +4,23 @@
 #include <string_view>
 #include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
+#include <bx/bx.h>
 #include <darmok/window_fwd.hpp>
 
 namespace darmok
 {
 	class WindowImpl;
 	class Platform;
+
+	class BX_NO_VTABLE IWindowListener
+	{
+	public:
+		virtual ~IWindowListener() = default;
+		virtual void onWindowSize(const glm::uvec2& size) {};
+		virtual void onWindowPixelSize(const glm::uvec2& size) {};
+		virtual void onWindowPhase(WindowPhase phase) {};
+		virtual void onWindowMode(WindowMode phase) {};
+	};
 
 	class Window final
 	{
@@ -31,6 +42,9 @@ namespace darmok
 
 		[[nodiscard]] const WindowImpl& getImpl() const noexcept;
 		[[nodiscard]] WindowImpl& getImpl() noexcept;
+
+		void addListener(IWindowListener& listener) noexcept;
+		bool removeListener(IWindowListener& listener) noexcept;
 
 	private:
 		std::unique_ptr<WindowImpl> _impl;

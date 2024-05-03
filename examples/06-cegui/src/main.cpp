@@ -1,6 +1,7 @@
 #include <darmok/app.hpp>
 #include <darmok/cegui.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/window.hpp>
 #include <CEGUI/CEGUI.h>
 #include <iostream>
 
@@ -34,6 +35,7 @@ namespace
 			auto guiContext = _cegui->getGuiContext();
 
 			CEGUI::SchemeManager::getSingleton().createFromFile("TaharezLook.scheme");
+			getWindow().requestCursorMode(WindowCursorMode::Hidden);
 			guiContext->setDefaultCursorImage("TaharezLook/MouseArrow");
 			auto& winMgr = CEGUI::WindowManager::getSingleton();
 

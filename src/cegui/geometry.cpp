@@ -97,10 +97,10 @@ namespace darmok
 		{
 			updateMatrix();
 		}
-		
+		auto scissorCache = UINT16_MAX;
 		if (d_clippingActive)
 		{
-			bgfx::setScissor(
+			scissorCache = bgfx::setScissor(
 				d_preparedClippingRegion.d_min.x,
 				d_preparedClippingRegion.d_min.y,
 				d_preparedClippingRegion.getWidth(),
@@ -126,14 +126,22 @@ namespace darmok
 			d_renderMaterial->prepareForRendering();
 
 			bgfx::setTransform(transCache);
+			bgfx::setScissor(scissorCache);
 			bgfx::setVertexBuffer(0, _vertexHandle, 0, d_vertexCount);
 			if (isValid(texHandle))
 			{
 				bgfx::setTexture(0, _textureUniformHandle, texHandle);
 			}
 
-			bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA);
+			// TODO: options depend on d_polygonFillRule
+
+			bgfx::setState(
+				BGFX_STATE_WRITE_RGB
+				| BGFX_STATE_WRITE_A
+				| BGFX_STATE_BLEND_ALPHA
+			);
 			bgfx::submit(viewId, program.getHandle());
+			bgfx::setScissor(UINT16_MAX);
 
 			if (d_effect)
 			{

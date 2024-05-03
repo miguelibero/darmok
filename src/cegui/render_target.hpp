@@ -1,6 +1,8 @@
 #pragma once
 
 #include <CEGUI/RenderTarget.h>
+#include <bgfx/bgfx.h>
+#include "target_transform.hpp"
 
 namespace darmok
 {
@@ -16,6 +18,6 @@ namespace darmok
         void updateMatrix() const noexcept override;
         CEGUI::Renderer& getOwner() noexcept override;
     protected:
-        CeguiRenderer& _renderer;
+        CeguiTargetTransform _trans;
     };
 }

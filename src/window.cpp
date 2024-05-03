@@ -11,24 +11,60 @@ namespace darmok
 	{
 	}
 
-	void WindowImpl::setSize(const glm::uvec2& size) noexcept
+	bool WindowImpl::setSize(const glm::uvec2& size) noexcept
 	{
+		if (_size == size)
+		{
+			return false;
+		}
+		for (auto& listener : _listeners)
+		{
+			listener->onWindowSize(size);
+		}
 		_size = size;
+		return true;
 	}
 
-	void WindowImpl::setPixelSize(const glm::uvec2& size) noexcept
+	bool WindowImpl::setPixelSize(const glm::uvec2& size) noexcept
 	{
+		if (_pixelSize == size)
+		{
+			return false;
+		}
+		for (auto& listener : _listeners)
+		{
+			listener->onWindowPixelSize(size);
+		}
 		_pixelSize = size;
+		return true;
 	}
 
-	void WindowImpl::setPhase(WindowPhase phase) noexcept
+	bool WindowImpl::setPhase(WindowPhase phase) noexcept
 	{
+		if (_phase == phase)
+		{
+			return false;
+		}
+		for (auto& listener : _listeners)
+		{
+			listener->onWindowPhase(phase);
+		}
 		_phase = phase;
+		return true;
 	}
 
-	void WindowImpl::setMode(WindowMode mode) noexcept
+	bool WindowImpl::setMode(WindowMode mode) noexcept
 	{
+		if (_mode == mode)
+		{
+			return false;
+		}
+		for (auto& listener : _listeners)
+		{
+			listener->onWindowMode(mode);
+		}
 		_mode = mode;
+		return true;
 	}
 
 	const glm::uvec2& WindowImpl::getSize() const noexcept
@@ -57,6 +93,16 @@ namespace darmok
 		auto p =  (point - glm::vec2(0.5F)) * f;
 		p.y = _size.y - p.y;
 		return p;
+	}
+
+	void WindowImpl::addListener(IWindowListener& listener) noexcept
+	{
+		_listeners.insert(listener);
+	}
+
+	bool WindowImpl::removeListener(IWindowListener& listener) noexcept
+	{
+		return _listeners.erase(listener) > 0;
 	}
 
 	Window::Window(Platform& plat) noexcept
@@ -113,5 +159,15 @@ namespace darmok
 	glm::uvec2 Window::screenPointToWindow(const glm::vec2& pos) const noexcept
 	{
 		return _impl->screenPointToWindow(pos);
+	}
+
+	void Window::addListener(IWindowListener& listener) noexcept
+	{
+		_impl->addListener(listener);
+	}
+
+	bool Window::removeListener(IWindowListener& listener) noexcept
+	{
+		return _impl->removeListener(listener);
 	}
 }

@@ -117,11 +117,11 @@ namespace darmok
 
 	void AppImpl::updateLogic(float deltaTime)
 	{
-		_input.getImpl().update();
 		for (auto& component : _components)
 		{
 			component->updateLogic(deltaTime);
 		}
+		_input.getImpl().update();
 	}
 
 	bgfx::ViewId AppImpl::render(bgfx::ViewId viewId) const

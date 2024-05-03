@@ -177,6 +177,7 @@ if(DARMOK_BUILD_CEGUI)
     ${SRC_DIR}/cegui/texture_target.cpp
     ${SRC_DIR}/cegui/texture.cpp
     ${SRC_DIR}/cegui/utils.cpp
+    ${SRC_DIR}/cegui/target_transform.cpp
   )
   list(APPEND SOURCES ${CEGUI_SOURCES} ${SRC_DIR}/cegui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/cegui.hpp)

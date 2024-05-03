@@ -80,7 +80,8 @@ namespace darmok
 
 		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
 		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
-		[[nodiscard]] const glm::vec2& getScrollDelta() const noexcept;
+		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
+		[[nodiscard]] glm::vec2 getScrollDelta() const noexcept;
 		[[nodiscard]] bool getActive() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;

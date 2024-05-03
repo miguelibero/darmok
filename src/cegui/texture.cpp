@@ -17,7 +17,7 @@
 
 namespace darmok
 {
-    const uint64_t CeguiTexture::_defaultFlags = BGFX_TEXTURE_BLIT_DST;
+    const uint64_t CeguiTexture::_defaultFlags = BGFX_TEXTURE_BLIT_DST | defaultTextureLoadFlags;
 
     CeguiTexture::CeguiTexture(bx::AllocatorI* alloc, const CEGUI::String& name, uint64_t flags) noexcept
         : _name(name)
@@ -90,11 +90,52 @@ namespace darmok
 
     void CeguiTexture::loadFromSize(const CEGUI::Sizef& buffer_size)
     {
-        TextureConfig cfg;
-        cfg.size = glm::uvec2(buffer_size.d_width, buffer_size.d_height);
+        if (_size == buffer_size)
+        {
+            return;
+        }
+        auto glmSize = glm::uvec2(buffer_size.d_width, buffer_size.d_height);
         auto flags = _defaultFlags | _flags;
-        _texture = std::make_unique<darmok::Texture>(cfg, flags);
+        TextureConfig cfg;
+        cfg.size = glmSize;
+        auto canReadBack = flags & BGFX_TEXTURE_READ_BACK;
+        if (_texture == nullptr || !canReadBack)
+        {
+            _texture = std::make_unique<darmok::Texture>(cfg, flags);
+        }
+        else
+        {
+            Data data;
+            _texture->read(data);
+            _texture = std::make_unique<darmok::Texture>(data.view(), cfg, flags);
+        }
+
         onTextureChanged();
+    }
+
+    static bgfx::TextureFormat::Enum convertPixelFormat(CEGUI::Texture::PixelFormat pixel_format) noexcept
+    {
+        switch (pixel_format)
+        {
+        case CEGUI::Texture::PixelFormat::Rgb:
+            return bgfx::TextureFormat::RGB8;
+        case CEGUI::Texture::PixelFormat::Rgba:
+            return bgfx::TextureFormat::RGBA8;
+        case CEGUI::Texture::PixelFormat::Rgba4444:
+            return bgfx::TextureFormat::RGBA4;
+        case CEGUI::Texture::PixelFormat::Pvrtc2:
+            return bgfx::TextureFormat::PTC12;
+        case CEGUI::Texture::PixelFormat::Pvrtc4:
+            return bgfx::TextureFormat::PTC14;
+        case CEGUI::Texture::PixelFormat::RgbaDxt1:
+            return bgfx::TextureFormat::BC1;
+        case CEGUI::Texture::PixelFormat::RgbaDxt3:
+            return bgfx::TextureFormat::BC2;
+        case CEGUI::Texture::PixelFormat::RgbaDxt5:
+            return bgfx::TextureFormat::BC3;
+        default:
+            return bgfx::TextureFormat::Unknown;
+        }
     }
 
     void CeguiTexture::loadFromMemory(const void* buffer,
@@ -103,35 +144,10 @@ namespace darmok
     {
         TextureConfig cfg;
         cfg.size = glm::uvec2(buffer_size.d_width, buffer_size.d_height);
-        switch (pixel_format)
+        cfg.format = convertPixelFormat(pixel_format);
+        if(cfg.format == bgfx::TextureFormat::Unknown)
         {
-        case PixelFormat::Rgb:
-            cfg.format = bgfx::TextureFormat::RGB8;
-            break;
-        case PixelFormat::Rgba:
-            cfg.format = bgfx::TextureFormat::RGBA8;
-            break;
-        case PixelFormat::Rgba4444:
-            cfg.format = bgfx::TextureFormat::RGBA4;
-            break;
-        case PixelFormat::Pvrtc2:
-            cfg.format = bgfx::TextureFormat::PTC12;
-            break;
-        case PixelFormat::Pvrtc4:
-            cfg.format = bgfx::TextureFormat::PTC14;
-            break;
-        case PixelFormat::RgbaDxt1:
-            cfg.format = bgfx::TextureFormat::BC1;
-            break;
-        case PixelFormat::RgbaDxt3:
-            cfg.format = bgfx::TextureFormat::BC2;
-            break;
-        case PixelFormat::RgbaDxt5:
-            cfg.format = bgfx::TextureFormat::BC3;
-            break;
-        default:
             throw RendererException("texture format not supported");
-            break;
         }
         DataView data(buffer, cfg.getInfo().storageSize);
         auto flags = _defaultFlags | _flags;
@@ -177,7 +193,7 @@ namespace darmok
 
     bool CeguiTexture::isPixelFormatSupported(const PixelFormat fmt) const
     {
-        return true;
+        return convertPixelFormat(fmt) != bgfx::TextureFormat::Unknown;
     }
 
     OptionalRef<darmok::Texture> CeguiTexture::getDarmokTexture() const noexcept

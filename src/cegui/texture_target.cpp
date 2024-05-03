@@ -2,32 +2,33 @@
 #include "renderer.hpp"
 #include "texture.hpp"
 #include "utils.hpp"
+#include <array>
 #include <cegui/PropertyHelper.h>
+#include <cegui/Sizef.h>
 #include <darmok/texture.hpp>
 #include <darmok/data.hpp>
 
 namespace darmok
 {
-    uint32_t CeguiTextureTarget::s_textureNumber = 0;
-
-    CeguiTextureTarget::CeguiTextureTarget(CeguiRenderer& renderer, bool addStencilBuffer) noexcept
-        : CeguiRenderTarget(renderer)
-        , TextureTarget(addStencilBuffer)
-        , _texture(renderer.createRenderTexture(generateTextureName()))
+    CeguiTextureTarget::CeguiTextureTarget(CeguiRenderer& renderer, uint16_t num, bool addStencilBuffer) noexcept
+        : TextureTarget(addStencilBuffer)
+        , _trans(*this, renderer)
+        , _num(num)
+        , _texture(renderer.createRenderTexture(generateTextureName(num)))
         , _frameBuffer{ bgfx::kInvalidHandle }
     {
     }
 
-    CEGUI::String CeguiTextureTarget::generateTextureName() noexcept
+    CEGUI::String CeguiTextureTarget::generateTextureName(uint16_t num) noexcept
     {
         CEGUI::String tmp("_darmok_tt_tex_");
-        tmp.append(CEGUI::PropertyHelper<std::uint32_t>::toString(s_textureNumber++));
+        tmp.append(CEGUI::PropertyHelper<std::uint32_t>::toString(num));
         return tmp;
     }
 
     CeguiTextureTarget::~CeguiTextureTarget() noexcept
     {
-        _renderer.destroyTexture(_texture);
+        _trans.getRenderer().destroyTexture(_texture);
         destroyFramebuffer();
     }
 
@@ -46,8 +47,7 @@ namespace darmok
         {
             return;
         }
-        auto size = tex->getStorageSize();
-        std::vector<uint8_t> mem(size);
+        std::vector<uint8_t> mem(tex->getStorageSize());
         tex->update(DataView(mem));
     }
 
@@ -56,13 +56,14 @@ namespace darmok
         return _texture;
     }
 
-    void CeguiTextureTarget::declareRenderSize(const CEGUI::Sizef& sz) noexcept
+    void CeguiTextureTarget::declareRenderSize(const CEGUI::Sizef& sz)
     {
-        if (_texture.getSize() == sz)
+        setArea(CEGUI::Rectf(d_area.getPosition(), sz));
+        destroyFramebuffer();
+        if (sz.d_width == 0 || sz.d_height == 0)
         {
             return;
         }
-        destroyFramebuffer();
         _texture.loadFromSize(sz);
         auto handle = _texture.getBgfxHandle();
         _frameBuffer = bgfx::createFrameBuffer(1, &handle);
@@ -72,28 +73,39 @@ namespace darmok
 
     void CeguiTextureTarget::activate() noexcept
     {
-        CeguiRenderTarget::activate();
-        bgfx::setViewFrameBuffer(_renderer.getViewId(), _frameBuffer);
+        TextureTarget::activate();
+        auto viewId = _trans.getRenderer().getViewId();
+        _trans.activate(d_matrixValid);
+        bgfx::setViewFrameBuffer(viewId, _frameBuffer);
     }
 
     void CeguiTextureTarget::deactivate() noexcept
     {
-        CeguiRenderTarget::deactivate();
-        bgfx::setViewFrameBuffer(_renderer.getViewId(), { bgfx::kInvalidHandle });
+        TextureTarget::deactivate();
+        auto viewId = _trans.getRenderer().getViewId();
+        bgfx::setViewFrameBuffer(viewId, { bgfx::kInvalidHandle });
+        _trans.deactivate();
     }
 
     bool CeguiTextureTarget::isImageryCache() const noexcept
     {
-        return CeguiRenderTarget::isImageryCache();
+        return true;
     }
 
     void CeguiTextureTarget::updateMatrix() const noexcept
     {
-        CeguiRenderTarget::updateMatrix();
+        d_viewDistance = _trans.updateMatrix(d_fovY_halftan);
+        d_matrix = _trans.getMatrix();
+        d_matrixValid = true;
     }
 
     CEGUI::Renderer& CeguiTextureTarget::getOwner() noexcept
     {
-        return CeguiRenderTarget::getOwner();
+        return _trans.getRenderer();
+    }
+
+    uint16_t CeguiTextureTarget::getNumber() const noexcept
+    {
+        return _num;
     }
 }

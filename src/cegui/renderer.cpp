@@ -8,6 +8,7 @@
 #include <CEGUI/Exceptions.h>
 #include <CEGUI/RenderMaterial.h>
 #include <darmok/app.hpp>
+#include <darmok/window.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
 #include <darmok/color.hpp>
@@ -44,7 +45,10 @@ namespace darmok
         , _texturedShaderWrapper(_texturedProgram)
         , _solidShaderWrapper(_solidProgram)
         , _viewId(0)
+        , _textureTargetNum(0)
 	{
+        auto& winSize = app.getWindow().getPixelSize();
+        setDisplaySize(CEGUI::Sizef(winSize.x, winSize.y));
 	}
 
     CeguiRenderer::~CeguiRenderer() noexcept
@@ -59,8 +63,6 @@ namespace darmok
 
     CEGUI::RefCounted<CEGUI::RenderMaterial> CeguiRenderer::createRenderMaterial(const CEGUI::DefaultShaderType shaderType) const 
     {
-        // Solid & Textured use the same StandardProgramType::Gui
-        
         auto shaderWrapper = &_texturedShaderWrapper;
         if (shaderType == CEGUI::DefaultShaderType::Solid)
         {
@@ -90,7 +92,7 @@ namespace darmok
 
     CEGUI::TextureTarget* CeguiRenderer::createTextureTarget(bool addStencilBuffer)
     {
-        auto target = std::make_unique<CeguiTextureTarget>(*this, addStencilBuffer);
+        auto target = std::make_unique<CeguiTextureTarget>(*this, _textureTargetNum++, addStencilBuffer);
         auto ptr = target.get();
         _textureTargets.push_back(std::move(target));
         return ptr;
@@ -110,7 +112,7 @@ namespace darmok
         }
     }
 
-    void CeguiRenderer::destroyAllTextureTargets() 
+    void CeguiRenderer::destroyAllTextureTargets()
     {
         _textureTargets.clear();
     }
@@ -161,7 +163,7 @@ namespace darmok
 
     CeguiTexture& CeguiRenderer::createRenderTexture(const CEGUI::String& name)
     {
-        return doCreateTexture(name, BGFX_TEXTURE_RT);
+        return doCreateTexture(name, BGFX_TEXTURE_RT_MSAA_X2);
     }
 
     void CeguiRenderer::destroyTexture(CEGUI::Texture& texture) 
@@ -216,6 +218,7 @@ namespace darmok
     void CeguiRenderer::setDisplaySize(const CEGUI::Sizef& sz) 
     {
         _displaySize = sz;
+        _defaultRenderTarget.setArea(CEGUI::Rectf(0, 0, sz.d_width, sz.d_height));
     }
 
     const CEGUI::Sizef& CeguiRenderer::getDisplaySize() const 

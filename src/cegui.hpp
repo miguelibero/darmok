@@ -54,5 +54,6 @@ namespace darmok
 
         void updateRenderer() const noexcept;
         void updateRenderTarget(CEGUI::RenderTarget& target) const noexcept;
+        void updateGuiContext(float deltaTime) noexcept;
     };
 }

@@ -45,8 +45,8 @@ namespace darmok
 		Texture(const Texture& other) = delete;
 		Texture& operator=(const Texture& other) = delete;
 
-		void update(const DataView& data, const glm::uvec2& origin = glm::uvec2(0), uint16_t layer = 0, uint8_t mip = 0) noexcept;
-		void update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin = glm::uvec2(0), uint16_t layer = 0, uint8_t mip = 0) noexcept;
+		void update(const DataView& data,uint16_t layer = 0, uint8_t mip = 0);
+		void update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin = glm::uvec2(0), uint16_t layer = 0, uint8_t mip = 0);
 		uint32_t read(Data& data) noexcept;
 
 		std::string to_string() const noexcept;

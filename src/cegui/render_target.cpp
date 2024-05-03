@@ -2,11 +2,13 @@
 #include "renderer.hpp"
 #include <bgfx/bgfx.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <bx/math.h>
+#include <bgfx/bgfx.h>
 
 namespace darmok
 {
 	CeguiRenderTarget::CeguiRenderTarget(CeguiRenderer& renderer) noexcept
-		: _renderer(renderer)
+		: _trans(*this, renderer)
 	{
 		setArea(CEGUI::Rectf(glm::vec2(0), renderer.getDisplaySize()));
 	}
@@ -18,30 +20,25 @@ namespace darmok
 
 	void CeguiRenderTarget::activate() noexcept
 	{
-		CEGUI::RenderTarget::activate();
-		auto viewId = _renderer.getViewId();
-		bgfx::setViewRect(viewId, d_area.left(), d_area.bottom(), d_area.right(), d_area.top());
-
-		if (!d_matrixValid)
-		{
-			updateMatrix();
-		}
-
-		bgfx::setViewTransform(viewId, nullptr, glm::value_ptr(d_matrix));
+		RenderTarget::activate();
+		_trans.activate(d_matrixValid);
 	}
 
 	void CeguiRenderTarget::deactivate() noexcept
 	{
-		CEGUI::RenderTarget::deactivate();
+		RenderTarget::deactivate();
+		_trans.deactivate();
 	}
 
 	void CeguiRenderTarget::updateMatrix() const noexcept
 	{
-		RenderTarget::updateMatrix(createViewProjMatrixForDirect3D());
+		d_viewDistance = _trans.updateMatrix(d_fovY_halftan);
+		d_matrix = _trans.getMatrix();
+		d_matrixValid = true;
 	}
 
 	CEGUI::Renderer& CeguiRenderTarget::getOwner() noexcept
 	{
-		return _renderer;
+		return _trans.getRenderer();
 	}
 }

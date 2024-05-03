@@ -55,6 +55,7 @@ namespace darmok
 
         bgfx::ViewId getViewId() const noexcept;
         void setViewId(bgfx::ViewId viewId) noexcept;
+
         bx::AllocatorI* getAllocator() const noexcept;
         CeguiTexture& createRenderTexture(const CEGUI::String& name);
 
@@ -66,6 +67,7 @@ namespace darmok
         CeguiRenderTarget _defaultRenderTarget;
         std::unordered_map<CEGUI::String, std::unique_ptr<CeguiTexture>> _textures;
         std::vector<std::unique_ptr<CeguiTextureTarget>> _textureTargets;
+        uint16_t _textureTargetNum;
         std::shared_ptr<Program> _texturedProgram;
         mutable CeguiShaderWrapper _texturedShaderWrapper;
         std::shared_ptr<Program> _solidProgram;

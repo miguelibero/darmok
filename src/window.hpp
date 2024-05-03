@@ -1,6 +1,8 @@
 #pragma once
 
+#include <unordered_set>
 #include <darmok/window.hpp>
+#include <darmok/optional_ref.hpp>
 
 namespace darmok
 {
@@ -13,10 +15,10 @@ namespace darmok
 		WindowImpl(const WindowImpl& other) = delete;
 		WindowImpl(WindowImpl&& other) = delete;
 
-		void setSize(const glm::uvec2& size) noexcept;
-		void setPixelSize(const glm::uvec2& size) noexcept;
-		void setPhase(WindowPhase phase) noexcept;
-		void setMode(WindowMode mode) noexcept;
+		bool setSize(const glm::uvec2& size) noexcept;
+		bool setPixelSize(const glm::uvec2& size) noexcept;
+		bool setPhase(WindowPhase phase) noexcept;
+		bool setMode(WindowMode mode) noexcept;
 		
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
@@ -25,11 +27,15 @@ namespace darmok
 
 		[[nodiscard]] glm::uvec2 screenPointToWindow(const glm::vec2& point) const noexcept;
 
+		void addListener(IWindowListener& listener) noexcept;
+		bool removeListener(IWindowListener& listener) noexcept;
+
 	private:
 		glm::uvec2 _size;
 		glm::uvec2 _pixelSize;
 		WindowPhase _phase;
 		WindowMode _mode;
+		std::unordered_set<OptionalRef<IWindowListener>> _listeners;
 	};
 
 } // namespace darmok

@@ -73,7 +73,8 @@ namespace darmok
 
     void CeguiShaderWrapper::prepareForRendering(const CEGUI::ShaderParameterBindings* shaderParameterBindings) noexcept
     {
-        updateUniformHandles(*shaderParameterBindings);
+        // updateUniformHandles(*shaderParameterBindings);
+        // setUniforms(*shaderParameterBindings);
     }
 
     void CeguiShaderWrapper::setUniforms(const CEGUI::ShaderParameterBindings& shaderParameterBindings) const noexcept
