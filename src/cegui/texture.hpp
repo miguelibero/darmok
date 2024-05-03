@@ -16,7 +16,6 @@ namespace darmok
     {
     public:
         CeguiTexture(bx::AllocatorI* alloc = nullptr, const CEGUI::String& name = "", uint64_t flags = 0) noexcept;
-        CeguiTexture(std::unique_ptr<darmok::Texture>&& tex, bx::AllocatorI* alloc = nullptr, const CEGUI::String& name = "", uint64_t flags = 0) noexcept;
         ~CeguiTexture() noexcept;
         const CEGUI::String& getName() const override;
         const CEGUI::Sizef& getSize() const override;

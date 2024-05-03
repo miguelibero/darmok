@@ -25,9 +25,11 @@ namespace darmok
 			_target.updateMatrix();
 		}
 
+		/*
 		static const uint16_t clearFlags = BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL;
 		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
 		bgfx::touch(viewId);
+		*/
 
 		bgfx::setViewTransform(viewId, glm::value_ptr(_view), glm::value_ptr(_proj));
 	}

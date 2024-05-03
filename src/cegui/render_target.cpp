@@ -22,6 +22,8 @@ namespace darmok
 	{
 		RenderTarget::activate();
 		_trans.activate(d_matrixValid);
+		auto viewId = _trans.getRenderer().getViewId();
+		bgfx::setViewFrameBuffer(viewId, { bgfx::kInvalidHandle });
 	}
 
 	void CeguiRenderTarget::deactivate() noexcept

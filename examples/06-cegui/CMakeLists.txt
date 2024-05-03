@@ -10,7 +10,8 @@ set(DARMOK_BUILD_CEGUI ON CACHE BOOL "build darmok with cegui support")
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
-set(CEGUI_ASSETS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/cegui/datafiles)
+set(CEGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/cegui)
+set(CEGUI_ASSETS_DIR ${CEGUI_DIR}/datafiles)
 file(GLOB_RECURSE CEGUI_ASSETS ${CEGUI_ASSETS_DIR}/*)
 foreach(ASSET ${CEGUI_ASSETS})
   file(RELATIVE_PATH ASSET_SRC ${CMAKE_CURRENT_SOURCE_DIR} ${ASSET})  
@@ -22,7 +23,14 @@ source_group(TREE ${CEGUI_ASSETS_DIR} PREFIX "CEGUI Asset Files" FILES ${CEGUI_A
 add_executable(
   ${PROJECT_NAME}
   src/main.cpp
+  ${CEGUI_DIR}/samples/GameMenu/GameMenu.cpp
   ${CEGUI_ASSETS}
+)
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+  ${CEGUI_DIR}/cegui/include
+  ${CEGUI_DIR}/samples/common/include
+  ${CEGUI_DIR}/samples/GameMenu
 )
 
 target_compile_definitions(

@@ -14,7 +14,7 @@ namespace darmok
         : TextureTarget(addStencilBuffer)
         , _trans(*this, renderer)
         , _num(num)
-        , _texture(renderer.createRenderTexture(generateTextureName(num)))
+        , _texture(renderer.createTexture(generateTextureName(num), BGFX_TEXTURE_RT))
         , _frameBuffer{ bgfx::kInvalidHandle }
     {
     }
@@ -47,8 +47,8 @@ namespace darmok
         {
             return;
         }
-        std::vector<uint8_t> mem(tex->getStorageSize());
-        tex->update(DataView(mem));
+        std::vector<uint8_t> data(tex->getStorageSize());
+        _texture.blitFromMemory(&data.front(), CEGUI::Rectf({ 0, 0 }, _texture.getSize()));
     }
 
     CEGUI::Texture& CeguiTextureTarget::getTexture() const noexcept
@@ -58,32 +58,35 @@ namespace darmok
 
     void CeguiTextureTarget::declareRenderSize(const CEGUI::Sizef& sz)
     {
+        auto& size = _texture.getSize();
+        if (sz.d_width <= size.d_width && sz.d_height <= size.d_height)
+        {
+            return;
+        }
         setArea(CEGUI::Rectf(d_area.getPosition(), sz));
         destroyFramebuffer();
-        if (sz.d_width == 0 || sz.d_height == 0)
+        if (sz.d_width == 0 && sz.d_height == 0)
         {
             return;
         }
         _texture.loadFromSize(sz);
+        auto name = CeguiUtils::convert(_texture.getName());
         auto handle = _texture.getBgfxHandle();
         _frameBuffer = bgfx::createFrameBuffer(1, &handle);
-        auto name = CeguiUtils::convert(_texture.getName());
         bgfx::setName(_frameBuffer, name.data(), name.size());
     }
 
     void CeguiTextureTarget::activate() noexcept
     {
         TextureTarget::activate();
-        auto viewId = _trans.getRenderer().getViewId();
         _trans.activate(d_matrixValid);
+        auto viewId = _trans.getRenderer().getViewId();
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
     }
 
     void CeguiTextureTarget::deactivate() noexcept
     {
         TextureTarget::deactivate();
-        auto viewId = _trans.getRenderer().getViewId();
-        bgfx::setViewFrameBuffer(viewId, { bgfx::kInvalidHandle });
         _trans.deactivate();
     }
 

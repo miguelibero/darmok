@@ -396,17 +396,17 @@ namespace darmok
 
 	void CeguiAppComponentImpl::updateLogic(float deltaTime)
 	{
+		CEGUI::System::getSingleton().injectTimePulse(deltaTime);
 		updateRenderer();
-		updateGuiContext(deltaTime);
+		updateGuiContext();
 	}
 
-	void CeguiAppComponentImpl::updateGuiContext(float deltaTime) noexcept
+	void CeguiAppComponentImpl::updateGuiContext() noexcept
 	{
 		if (!_guiContext)
 		{
 			return;
 		}
-		_guiContext->injectTimePulse(deltaTime);
 		if (!_app)
 		{
 			return;

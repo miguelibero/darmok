@@ -145,6 +145,11 @@ namespace darmok
         return doCreateTexture(name);
     }
 
+    CeguiTexture& CeguiRenderer::createTexture(const CEGUI::String& name, uint64_t flags)
+    {
+        return doCreateTexture(name, flags);
+    }
+
     CEGUI::Texture& CeguiRenderer::createTexture(const CEGUI::String& name,
         const CEGUI::String& filename,
         const CEGUI::String& resourceGroup) 
@@ -159,11 +164,6 @@ namespace darmok
         auto& texture = doCreateTexture(name);
         texture.loadFromSize(size);
         return texture;
-    }
-
-    CeguiTexture& CeguiRenderer::createRenderTexture(const CEGUI::String& name)
-    {
-        return doCreateTexture(name, BGFX_TEXTURE_RT_MSAA_X2);
     }
 
     void CeguiRenderer::destroyTexture(CEGUI::Texture& texture) 

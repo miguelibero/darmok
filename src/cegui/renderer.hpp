@@ -36,6 +36,7 @@ namespace darmok
         void destroyTextureTarget(CEGUI::TextureTarget* target) override;
         void destroyAllTextureTargets() override;
         CEGUI::Texture& createTexture(const CEGUI::String& name) override;
+        CeguiTexture& createTexture(const CEGUI::String& name, uint64_t flags);
         CEGUI::Texture& createTexture(const CEGUI::String& name,
             const CEGUI::String& filename,
             const CEGUI::String& resourceGroup) override;
@@ -57,7 +58,6 @@ namespace darmok
         void setViewId(bgfx::ViewId viewId) noexcept;
 
         bx::AllocatorI* getAllocator() const noexcept;
-        CeguiTexture& createRenderTexture(const CEGUI::String& name);
 
     private:
         static const CEGUI::String _rendererId;

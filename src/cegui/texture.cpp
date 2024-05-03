@@ -28,17 +28,6 @@ namespace darmok
     {
     }
 
-    CeguiTexture::CeguiTexture(std::unique_ptr<darmok::Texture>&& texture, bx::AllocatorI* alloc, const CEGUI::String& name, uint64_t flags) noexcept
-        : _name(name)
-        , _alloc(alloc)
-        , _texel(0)
-        , _size(0, 0)
-        , _texture(std::move(texture))
-        , _flags(flags)
-    {
-        onTextureChanged();
-    }
-
     CeguiTexture::~CeguiTexture() noexcept
     {
         // intentionally left black for std::unique_ptr<darmok::Texture>
