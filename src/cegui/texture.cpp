@@ -13,6 +13,7 @@
 #include <CEGUI/System.h>
 #include <CEGUI/DataContainer.h>
 #include <CEGUI/ResourceProvider.h>
+#include <CEGUI/ImageCodec.h>
 
 
 namespace darmok
@@ -64,17 +65,31 @@ namespace darmok
 
         try
         {
-            Image img(DataView(container.getDataPtr(), container.getSize()), bimg::TextureFormat::Count, _alloc);
-            auto flags = _defaultFlags | _flags;
-            _texture = std::make_unique<darmok::Texture>(img, flags);
+            CEGUI::System::getSingleton().getImageCodec().load(container, this);
         }
         catch (const std::exception& ex)
         {
             resourceProvider->unloadRawDataContainer(container);
             throw;
         }
-        onTextureChanged();
         resourceProvider->unloadRawDataContainer(container);
+    }
+
+    void CeguiTexture::loadFromMemory(const void* buffer,
+        const CEGUI::Sizef& buffer_size,
+        PixelFormat pixel_format)
+    {
+        TextureConfig cfg;
+        cfg.size = glm::uvec2(buffer_size.d_width, buffer_size.d_height);
+        cfg.format = convertFormat(pixel_format);
+        if (cfg.format == bgfx::TextureFormat::Unknown)
+        {
+            throw RendererException("texture format not supported");
+        }
+        DataView data(buffer, cfg.getInfo().storageSize);
+        auto flags = _defaultFlags | _flags;
+        _texture = std::make_unique<darmok::Texture>(data, cfg, flags);
+        onTextureChanged();
     }
 
     void CeguiTexture::loadFromSize(const CEGUI::Sizef& buffer_size)
@@ -102,46 +117,38 @@ namespace darmok
         onTextureChanged();
     }
 
-    static bgfx::TextureFormat::Enum convertPixelFormat(CEGUI::Texture::PixelFormat pixel_format) noexcept
+    const std::unordered_map<bgfx::TextureFormat::Enum, CEGUI::Texture::PixelFormat> CeguiTexture::_formatMap =
     {
-        switch (pixel_format)
+        { bgfx::TextureFormat::RGB8, CEGUI::Texture::PixelFormat::Rgb },
+        { bgfx::TextureFormat::RGBA8, CEGUI::Texture::PixelFormat::Rgba },
+        { bgfx::TextureFormat::RGBA4, CEGUI::Texture::PixelFormat::Rgba4444 },
+        { bgfx::TextureFormat::PTC12, CEGUI::Texture::PixelFormat::Pvrtc2 },
+        { bgfx::TextureFormat::PTC14, CEGUI::Texture::PixelFormat::Pvrtc4 },
+        { bgfx::TextureFormat::BC1, CEGUI::Texture::PixelFormat::RgbaDxt1 },
+        { bgfx::TextureFormat::BC2, CEGUI::Texture::PixelFormat::RgbaDxt3 },
+        { bgfx::TextureFormat::BC3, CEGUI::Texture::PixelFormat::RgbaDxt5 },
+    };
+
+    bgfx::TextureFormat::Enum CeguiTexture::convertFormat(CEGUI::Texture::PixelFormat format) noexcept
+    {
+        for (auto& elm : _formatMap)
         {
-        case CEGUI::Texture::PixelFormat::Rgb:
-            return bgfx::TextureFormat::RGB8;
-        case CEGUI::Texture::PixelFormat::Rgba:
-            return bgfx::TextureFormat::RGBA8;
-        case CEGUI::Texture::PixelFormat::Rgba4444:
-            return bgfx::TextureFormat::RGBA4;
-        case CEGUI::Texture::PixelFormat::Pvrtc2:
-            return bgfx::TextureFormat::PTC12;
-        case CEGUI::Texture::PixelFormat::Pvrtc4:
-            return bgfx::TextureFormat::PTC14;
-        case CEGUI::Texture::PixelFormat::RgbaDxt1:
-            return bgfx::TextureFormat::BC1;
-        case CEGUI::Texture::PixelFormat::RgbaDxt3:
-            return bgfx::TextureFormat::BC2;
-        case CEGUI::Texture::PixelFormat::RgbaDxt5:
-            return bgfx::TextureFormat::BC3;
-        default:
-            return bgfx::TextureFormat::Unknown;
+            if (elm.second == format)
+            {
+                return elm.first;
+            }
         }
+        return bgfx::TextureFormat::Unknown;
     }
 
-    void CeguiTexture::loadFromMemory(const void* buffer,
-        const CEGUI::Sizef& buffer_size,
-        PixelFormat pixel_format)
+    std::optional<CEGUI::Texture::PixelFormat> CeguiTexture::convertFormat(bgfx::TextureFormat::Enum format) noexcept
     {
-        TextureConfig cfg;
-        cfg.size = glm::uvec2(buffer_size.d_width, buffer_size.d_height);
-        cfg.format = convertPixelFormat(pixel_format);
-        if(cfg.format == bgfx::TextureFormat::Unknown)
+        auto itr = _formatMap.find(format);
+        if (itr == _formatMap.end())
         {
-            throw RendererException("texture format not supported");
+            return std::nullopt;
         }
-        DataView data(buffer, cfg.getInfo().storageSize);
-        auto flags = _defaultFlags | _flags;
-        _texture = std::make_unique<darmok::Texture>(data, cfg, flags);
-        onTextureChanged();
+        return itr->second;
     }
 
     void CeguiTexture::onTextureChanged() noexcept
@@ -182,7 +189,7 @@ namespace darmok
 
     bool CeguiTexture::isPixelFormatSupported(const PixelFormat fmt) const
     {
-        return convertPixelFormat(fmt) != bgfx::TextureFormat::Unknown;
+        return convertFormat(fmt) != bgfx::TextureFormat::Unknown;
     }
 
     OptionalRef<darmok::Texture> CeguiTexture::getDarmokTexture() const noexcept

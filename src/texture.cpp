@@ -210,7 +210,7 @@ namespace darmok
 		{
 			return itr->second;
 		}
-		auto tex = std::make_shared<Texture>(Image(color, _size, _alloc));
+		auto tex = std::make_shared<Texture>(Image(color, _alloc, _size));
 		_cache.emplace(color, tex);
 		return tex;
 	}

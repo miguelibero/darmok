@@ -5,6 +5,8 @@
 #include <CEGUI/Sizef.h>
 #include <bgfx/bgfx.h>
 #include <memory>
+#include <unordered_map>
+#include <optional>
 #include <darmok/optional_ref.hpp>
 
 namespace darmok
@@ -35,8 +37,13 @@ namespace darmok
 
         OptionalRef<darmok::Texture> getDarmokTexture() const noexcept;
         bgfx::TextureHandle getBgfxHandle() const noexcept;
+
+        static bgfx::TextureFormat::Enum convertFormat(CEGUI::Texture::PixelFormat format) noexcept;
+        static std::optional<CEGUI::Texture::PixelFormat> convertFormat(bgfx::TextureFormat::Enum format) noexcept;
+
     private:
         static const uint64_t _defaultFlags;
+        static const std::unordered_map<bgfx::TextureFormat::Enum, CEGUI::Texture::PixelFormat> _formatMap;
         uint64_t _flags;
         CEGUI::String _name;
         bx::AllocatorI* _alloc;

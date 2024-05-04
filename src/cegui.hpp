@@ -3,9 +3,11 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <unordered_map>
 #include <bgfx/bgfx.h>
 #include <darmok/cegui.hpp>
 #include <darmok/input.hpp>
+#include <cegui/InputEvent.h>
 
 namespace CEGUI
 {
@@ -17,6 +19,7 @@ namespace darmok
     class App;
     class CeguiRenderer;
     class CeguiResourceProvider;
+    class CeguiImageCodec;
 
     class CeguiAppComponentImpl final : public IKeyboardListener, public IMouseListener
     {
@@ -43,10 +46,12 @@ namespace darmok
         void onMouseButton(MouseButton button, bool down) override;
 
     private:
+        const static std::unordered_map<KeyboardModifier, CEGUI::Key::Scan> _scanModifiers;
         OptionalRef<App> _app;
         OptionalRef<CEGUI::GUIContext> _guiContext;
         std::unique_ptr<CeguiRenderer> _renderer;
         std::unique_ptr<CeguiResourceProvider> _resourceProvider;
+        std::unique_ptr<CeguiImageCodec> _imageCodec;
         std::optional<glm::uvec2> _viewSize;
         glm::uvec2 _viewOrigin;
         float _projFovy;
@@ -55,5 +60,8 @@ namespace darmok
         void updateRenderer() const noexcept;
         void updateRenderTarget(CEGUI::RenderTarget& target) const noexcept;
         void updateGuiContext() noexcept;
+
+        static CEGUI::Key::Scan convertKeyboardKey(KeyboardKey key) noexcept;
+        static std::vector<CEGUI::Key::Scan> convertKeyModifiers(uint8_t modifiers) noexcept;
     };
 }

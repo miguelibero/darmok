@@ -7,7 +7,7 @@
 
 namespace darmok
 {
-	Image::Image(const DataView& data, bimg::TextureFormat::Enum format, bx::AllocatorI* alloc)
+	Image::Image(const DataView& data, bx::AllocatorI* alloc, bimg::TextureFormat::Enum format)
 		: _container(nullptr)
 	{
 		if(data.empty())
@@ -24,7 +24,7 @@ namespace darmok
 		}
 	}
 
-	Image::Image(const Color& color, const glm::uvec2& size, bx::AllocatorI* alloc) noexcept
+	Image::Image(const Color& color, bx::AllocatorI* alloc, const glm::uvec2& size) noexcept
 		: _container(bimg::imageAlloc(
 			alloc, bimg::TextureFormat::RGBA8, size.x, size.y, 0, 1, false, false
 		))
@@ -152,6 +152,6 @@ namespace darmok
 	std::shared_ptr<Image> DataImageLoader::operator()(std::string_view name)
 	{
 		auto data = _dataLoader(name);
-		return std::make_shared<Image>(data.view(), bimg::TextureFormat::Count, _allocator);
+		return std::make_shared<Image>(data.view(), _allocator);
 	}
 }

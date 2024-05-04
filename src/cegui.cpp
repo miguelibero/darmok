@@ -1,6 +1,7 @@
 #include "cegui.hpp"
 #include "cegui/renderer.hpp"
 #include "cegui/resource.hpp"
+#include "cegui/image.hpp"
 #include <darmok/cegui.hpp>
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
@@ -29,8 +30,9 @@ namespace darmok
 		_renderer = std::make_unique<CeguiRenderer>(app);
 		updateRenderer();
 		_resourceProvider = std::make_unique<CeguiResourceProvider>(app.getAssets().getDataLoader());
+		_imageCodec = std::make_unique<CeguiImageCodec>(app.getAssets().getAllocator());
 		CEGUI::System::create(
-			*_renderer, _resourceProvider.get()
+			*_renderer, _resourceProvider.get(), nullptr, _imageCodec.get()
 		);
 		auto& renderTarget = _renderer->getDefaultRenderTarget();
 		updateRenderTarget(renderTarget);
@@ -129,7 +131,7 @@ namespace darmok
 		return _guiContext;
 	}
 
-	static CEGUI::Key::Scan convertCeguiKeyboardKey(KeyboardKey key) noexcept
+	CEGUI::Key::Scan CeguiAppComponentImpl::convertKeyboardKey(KeyboardKey key) noexcept
 	{
 		switch (key)
 		{
@@ -303,7 +305,7 @@ namespace darmok
 		return CEGUI::Key::Scan::Unknown;
 	}
 
-	const static std::unordered_map<KeyboardModifier, CEGUI::Key::Scan> s_ceguiScanModifiers =
+	const std::unordered_map<KeyboardModifier, CEGUI::Key::Scan> CeguiAppComponentImpl::_scanModifiers =
 	{
 		{KeyboardModifier::LeftAlt, CEGUI::Key::Scan::LeftAlt},
 		{KeyboardModifier::RightAlt, CEGUI::Key::Scan::RightAlt},
@@ -315,10 +317,10 @@ namespace darmok
 		{KeyboardModifier::RightMeta, CEGUI::Key::Scan::RightWindows},
 	};
 
-	std::vector<CEGUI::Key::Scan> convertCeguiKeyModifiers(uint8_t modifiers) noexcept
+	std::vector<CEGUI::Key::Scan> CeguiAppComponentImpl::convertKeyModifiers(uint8_t modifiers) noexcept
 	{
 		std::vector<CEGUI::Key::Scan> scans;
-		for(auto& elm : s_ceguiScanModifiers)
+		for(auto& elm : _scanModifiers)
 		{
 			if (modifiers | to_underlying(elm.first))
 			{
@@ -330,8 +332,8 @@ namespace darmok
 
 	void CeguiAppComponentImpl::onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down)
 	{
-		auto scans = convertCeguiKeyModifiers(modifiers);
-		scans.push_back(convertCeguiKeyboardKey(key));
+		auto scans = convertKeyModifiers(modifiers);
+		scans.push_back(convertKeyboardKey(key));
 
 		for (auto& scan : scans)
 		{

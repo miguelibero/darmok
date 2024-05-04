@@ -178,6 +178,7 @@ if(DARMOK_BUILD_CEGUI)
     ${SRC_DIR}/cegui/texture.cpp
     ${SRC_DIR}/cegui/utils.cpp
     ${SRC_DIR}/cegui/target_transform.cpp
+    ${SRC_DIR}/cegui/image.cpp
   )
   list(APPEND SOURCES ${CEGUI_SOURCES} ${SRC_DIR}/cegui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/cegui.hpp)
@@ -437,7 +438,6 @@ if(DARMOK_BUILD_CEGUI)
   set(CEGUI_BUILD_RENDERER_DIRECT3D11 OFF CACHE BOOL "Specifies whether to build the Direct3D 11 renderer module")
   set(CEGUI_BUILD_SAMPLES OFF CACHE BOOL "Specifies whether to build the CEGUI sample applications")
   set(CEGUI_BUILD_XMLPARSER_PUGIXML ON CACHE BOOL "Specifies the XMLParser module to use as the default")
-  set(CEGUI_BUILD_IMAGECODEC_STB ON CACHE BOOL "Specifies whether to build the STB based ImageCodec module")  
   set(CEGUI_BUILD_STATIC_CONFIGURATION ON CACHE BOOL "Specifies whether the static configs will be built. (NB: Shared configs are always built)")
   set(CEGUI_BUILD_DYNAMIC_CONFIGURATION OFF CACHE BOOL "Dynamic libs to be built. Always true except for Android")
   set(CEGUI_BUILD_STATIC_FACTORY_MODULE ON CACHE BOOL "For static CEGUI builds, specifies whether to include the getWindowFactoryModule method.  When false, the developer must provide a custom implementation of the method")
@@ -458,7 +458,6 @@ if(DARMOK_BUILD_CEGUI)
 
   target_link_libraries(${LIB_NAME} PRIVATE
     CEGUICoreWindowRendererSet_Static
-    CEGUISTBImageCodec_Static
     CEGUIPugiXMLParser_Static)
 
   target_link_libraries(${LIB_NAME} PUBLIC
