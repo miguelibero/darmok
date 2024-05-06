@@ -12,18 +12,15 @@ set(DARMOK_BUILD_SCRIPTING_EXE ON CACHE BOOL "compile scripting executable")
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
-addCopySource(assets/main.lua main.lua)
-set(SCRIPTS
-  assets/main.lua
-)
+darmok_process_assets()
 
-source_group("Scripting Files" FILES ${SCRIPTS})
 add_custom_target(${PROJECT_NAME}
   COMMAND $<TARGET_FILE:darmok-scripting>
   DEPENDS darmok-scripting
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-  SOURCES ${SCRIPTS}
+  SOURCES ${ASSETS}
   COMMENT "running darmok scripting executable"
 )
+
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 

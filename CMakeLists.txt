@@ -7,14 +7,6 @@ project(
   DESCRIPTION "hobby C++ game engine"
 )
 
-set(SRC_DIR src)
-set(INCLUDE_DIR include/darmok)
-set(ASSETS_DIR assets)
-set(SHADERS_DIR assets/shaders)
-set(SHADERS_BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
-set(SHADERS_OUTPUT_DIR generated/shaders)
-set(LIBS_DIR lib)
-
 option(DARMOK_BUILD_SCRIPTING "build darmok with scripting support" OFF)
 option(DARMOK_BUILD_SCRIPTING_EXE "build the darmok scripting executable" OFF)
 option(DARMOK_BUILD_NUKLEAR "build darmok with nuklear UI support" OFF)
@@ -23,69 +15,18 @@ option(DARMOK_BUILD_CEGUI "build darmok with cegui support" OFF)
 option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
 option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
 
+set(SRC_DIR src)
+set(INCLUDE_DIR include/darmok)
+set(LIBS_DIR lib)
+
 set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "build bgfx examples.")
 add_subdirectory(${LIBS_DIR}/bgfx.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/CMake/compileShader.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/processAssets.cmake)
 
-macro(addCopySource SRC DST)
-  add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/${DST}
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} ${CMAKE_BINARY_DIR}/${DST}
-    MAIN_DEPENDENCY ${SRC})
-endmacro()
-
-set(SHADERS "")
-set(SHADER_INCLUDES "")
-
-macro(addShaderVertexLayout NAME)
-  set(VERTEX_LAYOUT_PATH "${SHADERS_DIR}/${NAME}_vertex_layout.json")
-  bgfx_compile_binary_to_header(
-    INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${VERTEX_LAYOUT_PATH}
-    OUTPUT_FILE include/${SHADERS_OUTPUT_DIR}/${NAME}_vertex_layout.h
-    ARRAY_NAME ${NAME}_vertex_layout
-  )
-  list(APPEND SHADERS ${VERTEX_LAYOUT_PATH})
-endmacro()
-
-macro(addShader NAME)
-  set(VERTEX_PATH "${SHADERS_DIR}/${NAME}_vertex.sc")
-  set(FRAGMENT_PATH "${SHADERS_DIR}/${NAME}_fragment.sc")
-  set(VARYING_DEF_PATH "${SHADERS_DIR}/${NAME}_varyingdef.sc")
-
-  darmok_compile_shader(
-    TYPE VERTEX HEADER
-    SHADERS ${VERTEX_PATH}
-    VARYING_DEF ${VARYING_DEF_PATH}
-    BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
-    OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
-  )
-  darmok_compile_shader(
-    TYPE FRAGMENT HEADER
-    SHADERS ${FRAGMENT_PATH}
-    VARYING_DEF ${VARYING_DEF_PATH}
-    BASE_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include
-    OUTPUT_DIR ${SHADERS_OUTPUT_DIR}
-  )
-  list(APPEND SHADERS ${VERTEX_PATH} ${FRAGMENT_PATH} ${VARYING_DEF_PATH})
-
-  addShaderVertexLayout(${NAME})
-
-endmacro()
-
-macro(addShaderInclude NAME)
-  list(APPEND SHADER_INCLUDES "${SHADERS_DIR}/${NAME}.sh")
-endmacro()
-
-addShader("gui")
-addShader("unlit")
-addShader("forward_phong")
-addShader("forward_pbr")
-addShaderInclude("phong_lighting")
-addShaderInclude("pbr_lighting")
-if(DARMOK_BUILD_CEGUI)
-  addShader("cegui")
-  addShader("cegui_solid")
-endif()
+darmok_process_assets(
+  HEADER_SHADER_OUTPUT_DIR "include/generated/shaders"
+  HEADER_SHADER_INCLUDE_DIR "generated/shaders"
+)
 
 set(SOURCES
   ${SRC_DIR}/window.cpp
@@ -207,8 +148,10 @@ if(DARMOK_BUILD_SCRIPTING)
   list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
 endif()
 
-list(APPEND SOURCES ${SCRIPTING_SOURCES})
-source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
+if(DARMOK_BUILD_SCRIPTING)
+  list(APPEND SOURCES ${SCRIPTING_SOURCES})
+  source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
+endif()
 
 set(LIB_NAME darmok)
 
@@ -216,11 +159,8 @@ add_library(
   ${LIB_NAME}
   ${HEADERS}
   ${SOURCES}
-  ${SHADERS}
-  ${SHADER_INCLUDES}
+  ${ASSETS}
 )
-
-source_group("Shader Files" FILES ${SHADERS} ${SHADER_INCLUDES})
 
 set_target_properties(
   ${LIB_NAME}
@@ -425,18 +365,13 @@ if(DARMOK_BUILD_CEGUI)
   set(GLM_H_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/glm)
   set(PUGIXML_H_PATH ${LIBS_DIR}/pugixml/src)
   set(FREETYPE_H_PATH ${LIBS_DIR}/freetype/include)
-  # set(FREETYPE_H_PATH_ft2build ${FREETYPE_H_PATH})
-  # set(FREETYPE_H_PATH_ftconfig ${FREETYPE_H_PATH}/freetype/config)
-  # set(FREETYPE_LIB_STATIC ${CMAKE_CURRENT_BINARY_DIR}/lib/freetype/$<CONFIG>/freetype)
-  # set(FREETYPE_LIB_DBG_STATIC ${CMAKE_CURRENT_BINARY_DIR}/lib/freetype/Debug/freetyped)
-  # set(FREETYPE_LIB ${FREETYPE_LIB_STATIC})
-  # set(FREETYPE_LIB_DBG ${FREETYPE_LIB_DBG_STATIC})
 
   set(CEGUI_BUILD_APPLICATION_TEMPLATES OFF CACHE BOOL "Specifies whether to build the application templates.")
   set(CEGUI_BUILD_RENDERER_OPENGL OFF CACHE BOOL "Specifies whether to build the old OpenGL 1.2 (fixed pipeline) renderer module.")
   set(CEGUI_BUILD_RENDERER_OPENGL3 OFF CACHE BOOL "Specifies whether to build the renderer module that supports OpenGL 3.2 (core profile) and OpenGL ES 2.0.")
   set(CEGUI_BUILD_RENDERER_DIRECT3D11 OFF CACHE BOOL "Specifies whether to build the Direct3D 11 renderer module")
   set(CEGUI_BUILD_SAMPLES OFF CACHE BOOL "Specifies whether to build the CEGUI sample applications")
+  set(CEGUI_BUILD_IMAGECODEC_STB ON CACHE BOOL "Specifies whether to build the STB based ImageCodec module")
   set(CEGUI_BUILD_XMLPARSER_PUGIXML ON CACHE BOOL "Specifies the XMLParser module to use as the default")
   set(CEGUI_BUILD_STATIC_CONFIGURATION ON CACHE BOOL "Specifies whether the static configs will be built. (NB: Shared configs are always built)")
   set(CEGUI_BUILD_DYNAMIC_CONFIGURATION OFF CACHE BOOL "Dynamic libs to be built. Always true except for Android")

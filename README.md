@@ -16,11 +16,12 @@ currently using:
 * [sol2](https://github.com/ThePhD/sol2) modern C++ bindings for lua
 * [rapidjson](https://github.com/Tencent/rapidjson) for parsing json
 * [pugixml](https://pugixml.org/) for parsing xml
+* [imgui](https://github.com/ocornut/imgui) for editor UI
 * [nuklear](https://github.com/Immediate-Mode-UI/Nuklear) for ingame UI
+* [CEGUI](https://github.com/cegui/cegui) for ingame UI
 
 planned to use:
 
-* [CEGUI](https://github.com/cegui/cegui) for ingame UI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [Bullet](https://github.com/bulletphysics/bullet3) for 3D physics
 * [Box2D](https://box2d.org/) for 2D physics
@@ -65,11 +66,13 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * unlit
     * forward with phong lighting (point, ambient)
 * lua scripting
-* nuklear UI binding
+* multiple UI options
+    * imgui for tooling
+    * nuklear game UI
+    * Crazy Eddi's UI for more advanced stuff 
 
 ### Next tasks
 
-* CEGui support (probably drop nuklear)
 * skeletal animations
 * physics
 * other types of lights
@@ -103,7 +106,8 @@ camTrans.position = { 0, 2, -2 }
 camTrans:look_at({ 0, 0, 0 })
 local cam = camEntity:add_component(ComponentType.Camera)
 cam:set_projection(60, { 0.3, 1000 })
-cam:set_forward_phong_renderer(program)
+cam:set_forward_renderer(program)
+cam:add_component(CameraComponentType.PhongLighting)
 
 lightEntity = app.scene:create_entity()
 lightTrans = lightEntity:add_component(ComponentType.Transform)

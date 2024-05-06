@@ -12,12 +12,12 @@ add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
 set(CEGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/cegui)
 set(CEGUI_ASSETS_DIR ${CEGUI_DIR}/datafiles)
-file(GLOB_RECURSE CEGUI_ASSETS ${CEGUI_ASSETS_DIR}/*)
-foreach(ASSET ${CEGUI_ASSETS})
-  file(RELATIVE_PATH ASSET_SRC ${CMAKE_CURRENT_SOURCE_DIR} ${ASSET})  
-  file(RELATIVE_PATH ASSET_DST ${CEGUI_ASSETS_DIR} ${ASSET})  
-  addCopySource(${ASSET_SRC} assets/cegui/${ASSET_DST})
-endforeach()
+
+darmok_process_assets(
+  ASSETS ${CEGUI_ASSETS_DIR}
+  OUTPUT_DIR assets/cegui
+  SOURCES_VAR CEGUI_ASSETS
+)
 source_group(TREE ${CEGUI_ASSETS_DIR} PREFIX "CEGUI Asset Files" FILES ${CEGUI_ASSETS})
 
 add_executable(

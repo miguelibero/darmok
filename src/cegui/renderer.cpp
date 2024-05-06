@@ -16,12 +16,12 @@
 #include <darmok/texture.hpp>
 
 #include "embedded_shader.hpp"
-#include "generated/shaders/cegui_vertex.h"
-#include "generated/shaders/cegui_fragment.h"
-#include "generated/shaders/cegui_vertex_layout.h"
-#include "generated/shaders/cegui_solid_vertex.h"
-#include "generated/shaders/cegui_solid_fragment.h"
-#include "generated/shaders/cegui_solid_vertex_layout.h"
+#include "generated/shaders/cegui.vertex.h"
+#include "generated/shaders/cegui.fragment.h"
+#include "generated/shaders/cegui.layout.h"
+#include "generated/shaders/cegui_solid.vertex.h"
+#include "generated/shaders/cegui_solid.fragment.h"
+#include "generated/shaders/cegui_solid.layout.h"
 
 namespace darmok
 {
@@ -40,8 +40,8 @@ namespace darmok
 	CeguiRenderer::CeguiRenderer(App& app) noexcept
 		: _app(app)
         , _defaultRenderTarget(*this)
-        , _texturedProgram(std::make_shared<Program>("cegui", _embeddedShaders, cegui_vertex_layout))
-        , _solidProgram(std::make_shared<Program>("cegui_solid", _embeddedShaders, cegui_solid_vertex_layout))
+        , _texturedProgram(std::make_shared<Program>("cegui", _embeddedShaders, cegui_layout))
+        , _solidProgram(std::make_shared<Program>("cegui_solid", _embeddedShaders, cegui_solid_layout))
         , _texturedShaderWrapper(_texturedProgram)
         , _solidShaderWrapper(_solidProgram)
         , _viewId(0)

@@ -1,0 +1,5 @@
+function(darmok_process_skeletal_animation)
+    set(ONE_VALUE_ARGS OUTPUT_DIR ARGS_OUT_VAR)
+    set(MULTI_VALUE_ARGS FILES)
+    cmake_parse_arguments(ARGS "${options}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" "${ARGN}")
+endfunction()

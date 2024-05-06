@@ -53,5 +53,6 @@ namespace darmok
     private:
         std::unique_ptr<sol::state> _lua;
 		std::optional<LuaApp> _luaApp;
+		static std::string findMainLua(const std::vector<std::string>& args) noexcept;
     };
 }

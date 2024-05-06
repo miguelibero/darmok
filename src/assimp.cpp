@@ -1039,7 +1039,11 @@ namespace darmok
 			registry.emplace<MeshComponent>(entity, meshes.load(layout));
 		}
 
-		auto& parentTrans = registry.get_or_emplace<Transform>(parent);
+		OptionalRef<Transform> parentTrans;
+		if (parent != entt::null)
+		{
+			parentTrans = registry.get_or_emplace<Transform>(parent);
+		}
 		registry.emplace<Transform>(entity, transMat, parentTrans);
 		return entity;
 	}

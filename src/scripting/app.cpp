@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include <darmok/app.hpp>
 #include <darmok/scripting.hpp>
+#include <filesystem>
 #include "asset.hpp"
 #include "input.hpp"
 #include "math.hpp"
@@ -157,10 +158,37 @@ namespace darmok
 	{
 		App::updateLogic(deltaTime);
 		_impl->updateLogic(deltaTime);
-	}		
+	}
+
+	std::string ScriptingAppImpl::findMainLua(const std::vector<std::string>& args) noexcept
+	{
+		static const std::vector<std::string> possiblePaths = {
+			"main.lua",
+			"assets/main.lua"
+		};
+
+		if (!args.empty() && args[0].ends_with(".lua"))
+		{
+			return args[0];
+		}
+		else
+		{
+			for (auto& path : possiblePaths)
+			{
+				if (std::filesystem::exists(path))
+				{
+					return path;
+				}
+			}
+		}
+		return possiblePaths[0];
+	}
 
 	void ScriptingAppImpl::init(App& app, const std::vector<std::string>& args)
 	{
+		auto mainFile = findMainLua(args);
+		auto mainDir = std::filesystem::path(mainFile).parent_path().string();
+
 		_lua = std::make_unique<sol::state>();
 		auto& lua = *_lua;
 		lua.open_libraries(sol::lib::base, sol::lib::package);
@@ -175,11 +203,15 @@ namespace darmok
 		LuaApp::configure(lua);
 
 		_luaApp = LuaApp(app);
-
 		lua["app"] = std::ref(_luaApp);
 		lua["args"] = args;
 
-		auto result = lua.script_file("main.lua");
+		if (!mainDir.empty())
+		{
+			lua["package"]["path"] = mainDir;
+		}
+		
+		auto result = lua.script_file(mainFile);
 		if (!result.valid())
 		{
 			sol::error err = result;

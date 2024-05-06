@@ -7,18 +7,18 @@
 #include <darmok/vertex.hpp>
 
 #include "embedded_shader.hpp"
-#include "generated/shaders/gui_vertex.h"
-#include "generated/shaders/gui_fragment.h"
-#include "generated/shaders/gui_vertex_layout.h"
-#include "generated/shaders/unlit_vertex.h"
-#include "generated/shaders/unlit_fragment.h"
-#include "generated/shaders/unlit_vertex_layout.h"
-#include "generated/shaders/forward_phong_vertex.h"
-#include "generated/shaders/forward_phong_fragment.h"
-#include "generated/shaders/forward_phong_vertex_layout.h"
-#include "generated/shaders/forward_pbr_vertex.h"
-#include "generated/shaders/forward_pbr_fragment.h"
-#include "generated/shaders/forward_pbr_vertex_layout.h"
+#include "generated/shaders/gui.vertex.h"
+#include "generated/shaders/gui.fragment.h"
+#include "generated/shaders/gui.layout.h"
+#include "generated/shaders/unlit.vertex.h"
+#include "generated/shaders/unlit.fragment.h"
+#include "generated/shaders/unlit.layout.h"
+#include "generated/shaders/forward_phong.vertex.h"
+#include "generated/shaders/forward_phong.fragment.h"
+#include "generated/shaders/forward_phong.layout.h"
+#include "generated/shaders/forward_pbr.vertex.h"
+#include "generated/shaders/forward_pbr.fragment.h"
+#include "generated/shaders/forward_pbr.layout.h"
 
 namespace darmok
 {
@@ -294,10 +294,10 @@ namespace darmok
 
 	const std::unordered_map<StandardProgramType, std::string_view> StandardProgramLoaderImpl::_embeddedShaderVertexLayouts
 	{
-		{StandardProgramType::Gui, gui_vertex_layout},
-		{StandardProgramType::Unlit, unlit_vertex_layout},
-		{StandardProgramType::ForwardPhong, forward_phong_vertex_layout},
-		{StandardProgramType::ForwardPbr, forward_pbr_vertex_layout},
+		{StandardProgramType::Gui, gui_layout},
+		{StandardProgramType::Unlit, unlit_layout},
+		{StandardProgramType::ForwardPhong, forward_phong_layout},
+		{StandardProgramType::ForwardPbr, forward_pbr_layout},
 	};
 
 	std::shared_ptr<Program> StandardProgramLoaderImpl::operator()(StandardProgramType type) const noexcept

@@ -9,17 +9,7 @@ project(
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
-set(ASSETS 
-  assets/brick.png
-  assets/darmok.jpg
-  assets/engine.png
-  assets/warrior-0.xml
-  assets/warrior-0.png
-)
-
-foreach(ASSET ${ASSETS})
-  addCopySource(${ASSET} ${ASSET})
-endforeach()
+darmok_process_assets()
 
 add_executable(
   ${PROJECT_NAME}

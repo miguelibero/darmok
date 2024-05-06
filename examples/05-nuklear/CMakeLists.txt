@@ -10,12 +10,7 @@ set(DARMOK_BUILD_NUKLEAR ON CACHE BOOL "build darmok with nuklear UI support")
 get_filename_component(BINARY_DIR_NAME ${CMAKE_BINARY_DIR} NAME)
 add_subdirectory(../../ ../../${BINARY_DIR_NAME})
 
-set(ASSETS
-  assets/NotoSans-Regular.ttf
-)
-foreach(ASSET ${ASSETS})
-  addCopySource(${ASSET} ${ASSET})
-endforeach()
+darmok_process_assets()
 
 add_executable(
   ${PROJECT_NAME}
