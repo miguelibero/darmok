@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/asset.hpp>
+#include <darmok/skeleton.hpp>
 
 #include <string>
 
@@ -12,6 +13,10 @@
 #include "program.hpp"
 #include "data.hpp"
 #include "vertex.hpp"
+
+#ifdef DARMOK_OZZ
+#include "skeleton_ozz.hpp"
+#endif
 
 #ifdef DARMOK_ASSIMP 
 #include <darmok/assimp.hpp>
@@ -50,6 +55,8 @@ namespace darmok
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
+		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
+		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;		
 
 #ifdef DARMOK_ASSIMP 
 		[[nodiscard]] AssimpSceneLoader& getAssimpLoader() noexcept;
@@ -69,6 +76,13 @@ namespace darmok
 		ImageTextureLoader _textureLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		ColorTextureLoader _colorTextureLoader;
+#ifdef DARMOK_OZZ		
+		OzzSkeletonLoader _skeletonLoader;
+		OzzSkeletalAnimationLoader _skeletalAnimationLoader;
+#else
+		EmptySkeletonLoader _skeletonLoader;
+		EmptySkeletalAnimationLoader _skeletalAnimationLoader;
+#endif
 
 #ifdef DARMOK_ASSIMP 
 		AssimpSceneLoader _assimpLoader;

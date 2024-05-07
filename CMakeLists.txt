@@ -82,6 +82,7 @@ set(HEADERS
   ${INCLUDE_DIR}/image.hpp
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/transform.hpp
+  ${INCLUDE_DIR}/skeleton.hpp
   ${INCLUDE_DIR}/camera.hpp
   ${INCLUDE_DIR}/light.hpp
   ${INCLUDE_DIR}/vertex.hpp
@@ -107,6 +108,10 @@ endif()
 if(DARMOK_BUILD_NUKLEAR)
   list(APPEND SOURCES ${SRC_DIR}/nuklear.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/nuklear.hpp)
+endif()
+
+if(DARMOK_BUILD_OZZ)
+  list(APPEND SOURCES ${SRC_DIR}/skeleton_ozz.cpp)
 endif()
 
 if(DARMOK_BUILD_CEGUI)
@@ -327,6 +332,7 @@ if(DARMOK_BUILD_OZZ)
   set(ozz_build_tests OFF CACHE BOOL "Build unit tests")
   set(ozz_build_msvc_rt_dll ON CACHE BOOL "Select msvc DLL runtime library")
   add_subdirectory(${LIBS_DIR}/ozz)
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_OZZ)
   target_link_libraries(${LIB_NAME} PRIVATE
     ozz_geometry
     ozz_animation_offline

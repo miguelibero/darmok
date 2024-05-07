@@ -45,6 +45,10 @@ namespace darmok
 		, _programLoader(_dataLoader, _vertexLayoutLoader)
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
+#ifdef DARMOK_OZZ
+		, _skeletonLoader(_dataLoader)
+		, _skeletalAnimationLoader(_dataLoader)
+#endif
 #ifdef DARMOK_ASSIMP 
 		, _assimpLoader(_dataLoader, _textureLoader, &_allocator)
 #endif
@@ -98,6 +102,16 @@ namespace darmok
 	ColorTextureLoader& AssetContextImpl::getColorTextureLoader() noexcept
 	{
 		return _colorTextureLoader;
+	}
+	
+	ISkeletonLoader& AssetContextImpl::getSkeletonLoader() noexcept
+	{
+		return _skeletonLoader;
+	}
+
+	ISkeletalAnimationLoader& AssetContextImpl::getSkeletalAnimationLoader() noexcept
+	{
+		return _skeletalAnimationLoader;
 	}
 
 	void AssetContextImpl::setBasePath(const std::string& path) noexcept
@@ -155,6 +169,16 @@ namespace darmok
 	ColorTextureLoader& AssetContext::getColorTextureLoader() noexcept
 	{
 		return _impl->getColorTextureLoader();
+	}
+
+	ISkeletonLoader& AssetContext::getSkeletonLoader() noexcept
+	{
+		return _impl->getSkeletonLoader();
+	}
+
+	ISkeletalAnimationLoader& AssetContext::getSkeletalAnimationLoader() noexcept
+	{
+		return _impl->getSkeletalAnimationLoader();
 	}
 
 	bx::AllocatorI* AssetContext::getAllocator() noexcept

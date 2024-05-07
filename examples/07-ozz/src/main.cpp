@@ -2,6 +2,8 @@
 #include <darmok/cegui.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/window.hpp>
+#include <darmok/asset.hpp>
+#include <darmok/skeleton.hpp>
 
 namespace
 {
@@ -13,6 +15,8 @@ namespace
 		void init(const std::vector<std::string>& args) override
 		{
 			App::init(args);
+			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");
+			auto anim = getAssets().getSkeletalAnimationLoader()("idle.ozz");
 		}
 
 		int shutdown() override
