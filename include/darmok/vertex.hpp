@@ -1,7 +1,7 @@
 #pragma once
 
 #include <darmok/data.hpp>
-#include <darmok/utils.hpp>
+#include <darmok/collection.hpp>
 #include <string_view>
 #include <vector>
 #include <array>
@@ -99,7 +99,7 @@ namespace darmok
         }
 
         template<int L, typename T, glm::qualifier Q = glm::defaultp>
-        VertexDataWriter& write(bgfx::Attrib::Enum attr, const BaseReadOnlyCollection<glm::vec<L, T, Q>>& input) noexcept
+        VertexDataWriter& write(bgfx::Attrib::Enum attr, const ReadOnlyCollection<glm::vec<L, T, Q>>& input) noexcept
         {
             return write(attr, input.begin(), input.end(), [](auto& itr) {
                 return Input{ glm::value_ptr(*itr), L };

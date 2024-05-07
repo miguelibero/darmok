@@ -8,15 +8,15 @@
 
 namespace darmok
 {
-	class AssimpNode;
+	class ModelNode;
 	class LuaEntity;
 	class LuaScene;
 
-	class ConstLuaAssimpNode final
+	class ConstLuaModelNode final
 	{
 	public:
-		ConstLuaAssimpNode(const AssimpNode& node) noexcept;
-		const AssimpNode& getReal() const noexcept;
+		ConstLuaModelNode(const ModelNode& node) noexcept;
+		const ModelNode& getReal() const noexcept;
 		std::string getName() const noexcept;
 
 		LuaEntity addToScene1(const LuaScene& scene, const bgfx::VertexLayout& layout) const;
@@ -27,16 +27,16 @@ namespace darmok
 		static void configure(sol::state_view& lua) noexcept;
 
 	private:
-		OptionalRef<const AssimpNode> _node;
+		OptionalRef<const ModelNode> _node;
 	};
 
-    class AssimpScene;
+    class Model;
 
-	class LuaAssimpScene final
+	class LuaModel final
 	{
 	public:
-		LuaAssimpScene(const std::shared_ptr<AssimpScene>& scene) noexcept;
-		const std::shared_ptr<AssimpScene>& getReal() const noexcept;
+		LuaModel(const std::shared_ptr<Model>& model) noexcept;
+		const std::shared_ptr<Model>& getReal() const noexcept;
 
 		LuaEntity addToScene1(const LuaScene& scene, const bgfx::VertexLayout& layout) const;
 		LuaEntity addToScene2(const LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const;
@@ -46,7 +46,7 @@ namespace darmok
 		static void configure(sol::state_view& lua) noexcept;
 
 	private:
-		std::shared_ptr<AssimpScene> _scene;
+		std::shared_ptr<Model> _model;
 	};
 
 }

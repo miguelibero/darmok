@@ -1,9 +1,9 @@
 #pragma once
 
-#include <bx/bx.h>
-#include <string_view>
 #include <memory>
+#include <string_view>
 #include <stdexcept>
+#include <bx/bx.h>
 
 namespace darmok
 {
@@ -46,7 +46,7 @@ namespace darmok
 	public:
 		std::shared_ptr<Skeleton> operator()(std::string_view name) override
         {
-            throw std::runtime_error("no skeletal animation library");
+            throw std::runtime_error("no skeletal animation implementation");
         }
 	};
 
@@ -55,7 +55,7 @@ namespace darmok
 	public:
 		std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override
         {
-            throw std::runtime_error("no skeletal animation library");
+            throw std::runtime_error("no skeletal animation implementation");
         }
 	};
 }

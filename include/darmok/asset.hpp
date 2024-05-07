@@ -18,10 +18,7 @@ namespace darmok
 	class IAssetFinder;
 	class ISkeletonLoader;
 	class ISkeletalAnimationLoader;
-
-#ifdef DARMOK_ASSIMP 
-	class AssimpSceneLoader;
-#endif
+	class IModelLoader;
 
 	class AssetContext final
 	{
@@ -38,13 +35,9 @@ namespace darmok
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
 		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
+		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 
 		[[nodiscard]] bx::AllocatorI* getAllocator() noexcept;
-
-#ifdef DARMOK_ASSIMP 
-		[[nodiscard]] AssimpSceneLoader& getAssimpLoader() noexcept;
-#endif
-
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;
 	private:

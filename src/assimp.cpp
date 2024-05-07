@@ -1,13 +1,5 @@
 
-#include <darmok/assimp.hpp>
-#include <darmok/transform.hpp>
-#include <darmok/camera.hpp>
-#include <darmok/light.hpp>
-#include <darmok/vertex.hpp>
-#include <darmok/image.hpp>
-#include <darmok/texture.hpp>
-#include <darmok/material.hpp>
-#include <darmok/mesh.hpp>
+#include "assimp.hpp"
 
 #include <assimp/vector3.h>
 #include <assimp/mesh.h>
@@ -15,12 +7,9 @@
 #include <assimp/postprocess.h>
 
 #include <bx/math.h>
-#include <bimg/decode.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
-
-#include <filesystem>
 
 namespace darmok
 {
@@ -209,13 +198,9 @@ namespace darmok
 		return AssimpMaterialTexture(_ptr, _type, pos);
 	}
 
-	AssimpMaterial::AssimpMaterial(aiMaterial* ptr, const aiScene* scene, const std::string& basePath, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
+	AssimpMaterial::AssimpMaterial(aiMaterial* ptr)
 		: _ptr(ptr)
-		, _scene(scene)
 		, _properties(ptr)
-		, _basePath(basePath)
-		, _textureLoader(textureLoader)
-		, _alloc(alloc)
 	{
 	}
 
@@ -294,111 +279,6 @@ namespace darmok
 			return v != 0;
 		}
 		return 1.f;
-	}
-
-	static const auto _materialColors = std::unordered_map<AssimpMaterialColorType, MaterialColorType>
-	{
-		{ AssimpMaterialColorType::Diffuse, MaterialColorType::Diffuse },
-		{ AssimpMaterialColorType::Specular, MaterialColorType::Specular },
-		{ AssimpMaterialColorType::Ambient, MaterialColorType::Ambient },
-		{ AssimpMaterialColorType::Emissive, MaterialColorType::Emissive },
-		{ AssimpMaterialColorType::Transparent, MaterialColorType::Transparent },
-		{ AssimpMaterialColorType::Reflective, MaterialColorType::Reflective },
-	};
-
-	static const auto _materialTextures = std::unordered_map<aiTextureType, MaterialTextureType>
-	{
-		{ aiTextureType_DIFFUSE, MaterialTextureType::Diffuse },
-		{ aiTextureType_SPECULAR, MaterialTextureType::Specular },
-		{ aiTextureType_NORMALS, MaterialTextureType::Normal },
-	};
-
-	static std::shared_ptr<Texture> loadEmbeddedTexture(const aiScene* scene, const char* filePath, bx::AllocatorI* alloc = nullptr)
-	{
-		if (scene == nullptr)
-		{
-			return nullptr;
-		}
-		auto data = scene->GetEmbeddedTexture(filePath);
-		if (data == nullptr)
-		{
-			return nullptr;
-		}
-		auto format = bimg::TextureFormat::Count;
-		uint32_t size = 0;
-		if (data->mHeight == 0)
-		{
-			// compressed
-			size = data->mWidth;
-		}
-		else
-		{
-			size = data->mWidth * data->mHeight * 4;
-			format = bimg::TextureFormat::RGBA8;
-		}
-		bx::Error err;
-		auto container = bimg::imageParse(alloc, data->pcData, size, format, &err);
-		checkError(err);
-		if (container == nullptr)
-		{
-			throw std::runtime_error("got empty image container");
-		}
-		auto tex = std::make_shared<Texture>(Image(container));
-		if (tex == nullptr)
-		{
-			throw std::runtime_error("could not load texture");
-		}
-		tex->setName(filePath);
-		return tex;
-	}
-
-	std::pair<MaterialTextureType, std::shared_ptr<Texture>> AssimpMaterial::createMaterialTexture(const AssimpMaterialTexture& modelTexture) const
-	{
-		auto itr = _materialTextures.find(modelTexture.getType());
-		if (itr == _materialTextures.end())
-		{
-			throw std::runtime_error("unsupported texture type");
-		}
-		auto path = modelTexture.getPath();
-		std::shared_ptr<Texture> texture;
-		if (_scene != nullptr)
-		{
-			texture = loadEmbeddedTexture(_scene, path.c_str(), _alloc);
-		}
-		if (texture == nullptr && _textureLoader.hasValue())
-		{
-			std::filesystem::path fsPath(path);
-			if (!_basePath.empty() && fsPath.is_relative())
-			{
-				fsPath = std::filesystem::path(_basePath) / fsPath;
-			}
-			texture = _textureLoader.value()(fsPath.string());
-		}
-		return std::make_pair(itr->second, texture);
-	}
-
-	std::shared_ptr<Material> AssimpMaterial::load() const noexcept
-	{
-		auto material = std::make_shared<Material>();
-		for (auto& elm : _materialTextures)
-		{
-			for (auto& modelTex : getTextures(elm.first))
-			{
-				auto pair = createMaterialTexture(modelTex);
-				if (pair.second != nullptr)
-				{
-					material->setTexture(pair.first, pair.second);
-				}
-			}
-		}
-		for (auto& elm : _materialColors)
-		{
-			if (auto v = getColor(elm.first))
-			{
-				material->setColor(elm.second, v.value());
-			}
-		}
-		return material;
 	}
 
 	static VertexIndex* getAssimpIndex(unsigned int* indices, size_t pos)
@@ -651,52 +531,6 @@ namespace darmok
 		return _colors;
 	}
 
-	static Data createAssimpMeshVertexData(const AssimpMesh& modelMesh, const bgfx::VertexLayout& layout) noexcept
-	{
-		VertexDataWriter writer(layout, modelMesh.getVertexCount());
-		writer.write(bgfx::Attrib::Position, modelMesh.getPositions());
-		writer.write(bgfx::Attrib::Normal, modelMesh.getNormals());
-		writer.write(bgfx::Attrib::Tangent, modelMesh.getTangents());
-		writer.write(bgfx::Attrib::Bitangent, modelMesh.getBitangents());
-
-		{
-			auto i = 0;
-			for (auto& elm : modelMesh.getTexCoords())
-			{
-				auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::TexCoord0 + i++);
-				writer.write(attrib, elm.getCoords());
-			}
-		}
-		{
-			auto i = 0;
-			for (auto& elm : modelMesh.getColors())
-			{
-				auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::Color0 + i++);
-				writer.write(attrib, elm);
-			}
-		}
-		return writer.finish();
-	}
-
-	std::vector<VertexIndex> createAssimpMeshIndexData(const AssimpMesh& modelMesh)
-	{
-		std::vector<VertexIndex> indices;
-		for (auto& face : modelMesh.getFaces())
-		{
-			indices.insert(indices.end(), face.getIndices().begin(), face.getIndices().end());
-		}
-		return indices;
-	}
-
-	std::shared_ptr<Mesh> AssimpMesh::load(const bgfx::VertexLayout& layout) const
-	{
-		auto vertices = createAssimpMeshVertexData(*this, layout);
-		auto indices = createAssimpMeshIndexData(*this);
-		auto mesh = std::make_shared<Mesh>(layout, DataView(vertices), DataView(indices));
-		mesh->setMaterial(getMaterial().load());
-		return mesh;
-	}
-
 	AssimpNodeMeshCollection::AssimpNodeMeshCollection(aiNode* ptr, AssimpScene& scene)
 		: _ptr(ptr)
 		, _scene(scene)
@@ -706,16 +540,6 @@ namespace darmok
 	size_t AssimpNodeMeshCollection::size() const
 	{
 		return _ptr == nullptr ? 0 : _ptr->mNumMeshes;
-	}
-
-	std::vector<std::shared_ptr<Mesh>> AssimpNodeMeshCollection::load(const bgfx::VertexLayout& layout) const
-	{
-		std::vector<std::shared_ptr<Mesh>> meshes;
-		for (auto& mesh : *this)
-		{
-			meshes.push_back(mesh.load(layout));
-		}
-		return meshes;
 	}
 
 	const AssimpMesh& AssimpNodeMeshCollection::operator[](size_t pos) const
@@ -810,33 +634,6 @@ namespace darmok
 	{
 	}
 
-	void AssimpLight::addToScene(Scene& scene, Entity entity) const noexcept
-	{
-		auto& registry = scene.getRegistry();
-		switch (getType())
-		{
-		case aiLightSource_POINT:
-		{
-			registry.emplace<PointLight>(entity)
-				.setAttenuation(getAttenuation())
-				.setDiffuseColor(getDiffuseColor())
-				.setSpecularColor(getSpecularColor())
-				;
-			auto ambient = getAmbientColor();
-			if (ambient != Colors::black3())
-			{
-				registry.emplace<AmbientLight>(entity)
-					.setColor(ambient);
-			}
-			break;
-		}
-		case aiLightSource_AMBIENT:
-			registry.emplace<AmbientLight>(entity)
-				.setColor(getAmbientColor());
-			break;
-		}
-	}
-
 	std::string_view AssimpLight::getName() const noexcept
 	{
 		return getStringView(_ptr->mName);
@@ -896,10 +693,9 @@ namespace darmok
 		return convertVector(_ptr->mSize);
 	}
 
-	AssimpNodeChildrenCollection::AssimpNodeChildrenCollection(aiNode* ptr, AssimpScene& scene, const std::string& basePath)
+	AssimpNodeChildrenCollection::AssimpNodeChildrenCollection(aiNode* ptr, AssimpScene& scene)
 		: _ptr(ptr)
 		, _scene(scene)
-		, _basePath(basePath)
 	{
 	}
 
@@ -910,14 +706,13 @@ namespace darmok
 
 	AssimpNode AssimpNodeChildrenCollection::create(size_t pos) const
 	{
-		return AssimpNode(_ptr->mChildren[pos], _scene, _basePath);
+		return AssimpNode(_ptr->mChildren[pos], _scene);
 	}
 
-	AssimpNode::AssimpNode(aiNode* ptr, AssimpScene& scene, const std::string& basePath)
+	AssimpNode::AssimpNode(aiNode* ptr, AssimpScene& scene)
 		: _ptr(ptr)
 		, _meshes(ptr, scene)
-		, _children(ptr, scene, basePath)
-		, _basePath(basePath)
+		, _children(ptr, scene)
 		, _scene(scene)
 	{
 	}
@@ -1003,51 +798,6 @@ namespace darmok
 		return _scene.getLights().get(getName());
 	}
 
-	Entity AssimpNode::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
-	{
-		auto entity = doAddToScene(scene, layout, parent);
-		for (auto& child : getChildren())
-		{
-			child.addToScene(scene, layout, entity);
-		}
-		return entity;
-	}
-
-	Entity AssimpNode::doAddToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
-	{
-		auto entity = scene.getRegistry().create();
-		auto transMat = getTransform();
-		auto& registry = scene.getRegistry();
-
-		auto cam = getCamera();
-		if (cam.hasValue())
-		{
-			transMat *= cam->getViewMatrix();
-			registry.emplace<Camera>(entity, cam->getProjectionMatrix());
-		}
-
-		auto light = getLight();
-		if (light.hasValue())
-		{
-			transMat = glm::translate(transMat, light->getPosition());
-			light->addToScene(scene, entity);
-		}
-
-		auto& meshes = getMeshes();
-		if (!meshes.empty())
-		{
-			registry.emplace<MeshComponent>(entity, meshes.load(layout));
-		}
-
-		OptionalRef<Transform> parentTrans;
-		if (parent != entt::null)
-		{
-			parentTrans = registry.get_or_emplace<Transform>(parent);
-		}
-		registry.emplace<Transform>(entity, transMat, parentTrans);
-		return entity;
-	}
-
 	AssimpCameraCollection::AssimpCameraCollection(const aiScene* ptr)
 		: _ptr(ptr)
 	{
@@ -1126,12 +876,8 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	AssimpMaterialCollection::AssimpMaterialCollection(const aiScene* ptr, const std::string& basePath,
-		const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
+	AssimpMaterialCollection::AssimpMaterialCollection(const aiScene* ptr)
 		: _ptr(ptr)
-		, _basePath(basePath)
-		, _textureLoader(textureLoader)
-		, _alloc(alloc)
 	{
 	}
 
@@ -1142,7 +888,7 @@ namespace darmok
 
 	AssimpMaterial AssimpMaterialCollection::create(size_t pos) const
 	{
-		return AssimpMaterial(_ptr->mMaterials[pos], _ptr, _basePath, _textureLoader, _alloc);
+		return AssimpMaterial(_ptr->mMaterials[pos]);
 	}
 
 	AssimpMeshCollection::AssimpMeshCollection(const aiScene* ptr, AssimpMaterialCollection& materials)
@@ -1163,114 +909,73 @@ namespace darmok
 		return AssimpMesh(ptr, material);
 	}
 
-	AssimpScene::AssimpScene(const aiScene* ptr, const std::string& path, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
+	AssimpScene::AssimpScene(const aiScene* ptr) noexcept
 		: _ptr(ptr)
-		, _basePath(std::filesystem::path(path).parent_path().string())
-		, _rootNode(ptr->mRootNode, *this, _basePath)
-		, _path(path)
-		, _materials(ptr, _basePath, textureLoader, alloc)
+		, _rootNode(ptr->mRootNode, *this)
+		, _materials(ptr)
 		, _meshes(ptr, _materials)
 		, _cameras(ptr)
 		, _lights(ptr)
 	{
 	}
 
-	std::string_view AssimpScene::getName() const
+	AssimpScene::~AssimpScene() noexcept
+	{
+		delete _ptr;
+	}
+
+	std::string_view AssimpScene::getName() const noexcept
 	{
 		return getStringView(_ptr->mName);
 	}
 
-	const std::string& AssimpScene::getPath() const
-	{
-		return _path;
-	}
-
-	const AssimpNode& AssimpScene::getRootNode() const
+	const AssimpNode& AssimpScene::getRootNode() const noexcept
 	{
 		return _rootNode;
 	}
 
-	const AssimpMeshCollection& AssimpScene::getMeshes() const
+	const AssimpMeshCollection& AssimpScene::getMeshes() const noexcept
 	{
 		return _meshes;
 	}
 
-	const AssimpMaterialCollection& AssimpScene::getMaterials() const
+	const AssimpMaterialCollection& AssimpScene::getMaterials() const noexcept
 	{
 		return _materials;
 	}
 
-	const AssimpCameraCollection& AssimpScene::getCameras() const
+	const AssimpCameraCollection& AssimpScene::getCameras() const noexcept
 	{
 		return _cameras;
 	}
 
-	const AssimpLightCollection& AssimpScene::getLights() const
+	const AssimpLightCollection& AssimpScene::getLights() const noexcept
 	{
 		return _lights;
 	}
 
-	AssimpNode& AssimpScene::getRootNode()
+	AssimpNode& AssimpScene::getRootNode() noexcept
 	{
 		return _rootNode;
 	}
 
-	AssimpMeshCollection& AssimpScene::getMeshes()
+	AssimpMeshCollection& AssimpScene::getMeshes() noexcept
 	{
 		return _meshes;
 	}
 
-	AssimpMaterialCollection& AssimpScene::getMaterials()
+	AssimpMaterialCollection& AssimpScene::getMaterials() noexcept
 	{
 		return _materials;
 	}
 
-	AssimpCameraCollection& AssimpScene::getCameras()
+	AssimpCameraCollection& AssimpScene::getCameras() noexcept
 	{
 		return _cameras;
 	}
 
-	AssimpLightCollection& AssimpScene::getLights()
+	AssimpLightCollection& AssimpScene::getLights() noexcept
 	{
 		return _lights;
-	}
-
-	Entity AssimpScene::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent) const
-	{
-		return getRootNode().addToScene(scene, layout, parent);
-	}
-
-	AssimpSceneLoader::AssimpSceneLoader(IDataLoader& dataLoader, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
-		: _dataLoader(dataLoader)
-		, _textureLoader(textureLoader)
-		, _alloc(alloc)
-	{
-	}
-
-	std::shared_ptr<AssimpScene> AssimpSceneLoader::operator()(std::string_view name)
-	{
-		auto data = _dataLoader(name);
-		if (data.empty())
-		{
-			throw std::runtime_error("got empty data");
-		}
-		unsigned int flags = aiProcess_CalcTangentSpace |
-			aiProcess_Triangulate |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_SortByPType | 
-			aiProcess_ConvertToLeftHanded
-			;
-		// assimp (and opengl) is right handed (+Z points towards the camera)
-		// while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
-
-		std::string nameString(name);
-		auto scene = _importer.ReadFileFromMemory(data.ptr(), data.size(), flags, nameString.c_str());
-
-		if (scene == nullptr)
-		{
-			throw std::runtime_error(_importer.GetErrorString());
-		}
-
-		return std::make_shared<AssimpScene>(scene, nameString, _textureLoader, _alloc);
 	}
 }

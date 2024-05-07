@@ -63,6 +63,7 @@ set(HEADERS
   ${INCLUDE_DIR}/input.hpp
   ${INCLUDE_DIR}/window.hpp
   ${INCLUDE_DIR}/utils.hpp
+  ${INCLUDE_DIR}/collection.hpp
   ${INCLUDE_DIR}/asset.hpp
   ${INCLUDE_DIR}/scene_fwd.hpp
   ${INCLUDE_DIR}/scene.hpp
@@ -88,17 +89,10 @@ set(HEADERS
   ${INCLUDE_DIR}/vertex.hpp
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
+  ${INCLUDE_DIR}/model.hpp
 )
 
 set(SCRIPTING_SOURCES)
-
-if(DARMOK_BUILD_ASSIMP)
-  list(APPEND SOURCES ${SRC_DIR}/assimp.cpp)
-  list(APPEND SCRIPTING_SOURCES ${SRC_DIR}/scripting/assimp.cpp)
-  list(APPEND HEADERS
-    ${INCLUDE_DIR}/assimp_fwd.hpp
-    ${INCLUDE_DIR}/assimp.hpp)
-endif()
 
 if(DARMOK_BUILD_IMGUI)
   list(APPEND SOURCES ${SRC_DIR}/imgui.cpp)
@@ -108,6 +102,11 @@ endif()
 if(DARMOK_BUILD_NUKLEAR)
   list(APPEND SOURCES ${SRC_DIR}/nuklear.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/nuklear.hpp)
+endif()
+
+if(DARMOK_BUILD_ASSIMP)
+  list(APPEND SOURCES ${SRC_DIR}/assimp.cpp)
+  list(APPEND SOURCES ${SRC_DIR}/model_assimp.cpp)
 endif()
 
 if(DARMOK_BUILD_OZZ)
@@ -157,6 +156,7 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/light.cpp
     ${SRC_DIR}/scripting/camera.cpp
     ${SRC_DIR}/scripting/window.cpp
+    ${SRC_DIR}/scripting/model.cpp
   )
   list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
 endif()

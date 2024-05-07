@@ -50,7 +50,7 @@ namespace darmok
 		, _skeletalAnimationLoader(_dataLoader)
 #endif
 #ifdef DARMOK_ASSIMP 
-		, _assimpLoader(_dataLoader, _textureLoader, &_allocator)
+		, _modelLoader(_dataLoader, _textureLoader, &_allocator)
 #endif
 		, _colorTextureLoader(&_allocator)
 	{
@@ -92,12 +92,10 @@ namespace darmok
 		return _textureAtlasLoader;
 	}
 
-#ifdef DARMOK_ASSIMP 
-	AssimpSceneLoader& AssetContextImpl::getAssimpLoader() noexcept
+	IModelLoader& AssetContextImpl::getModelLoader() noexcept
 	{
-		return _assimpLoader;
+		return _modelLoader;
 	}
-#endif
 
 	ColorTextureLoader& AssetContextImpl::getColorTextureLoader() noexcept
 	{
@@ -159,12 +157,10 @@ namespace darmok
 		return _impl->getTextureAtlasLoader();
 	}
 
-#ifdef DARMOK_ASSIMP 
-	AssimpSceneLoader& AssetContext::getAssimpLoader() noexcept
+	IModelLoader& AssetContext::getModelLoader() noexcept
 	{
-		return _impl->getAssimpLoader();
+		return _impl->getModelLoader();
 	}
-#endif
 
 	ColorTextureLoader& AssetContext::getColorTextureLoader() noexcept
 	{

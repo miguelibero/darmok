@@ -2,6 +2,7 @@
 
 #include <darmok/asset.hpp>
 #include <darmok/skeleton.hpp>
+#include <darmok/model.hpp>
 
 #include <string>
 
@@ -19,7 +20,7 @@
 #endif
 
 #ifdef DARMOK_ASSIMP 
-#include <darmok/assimp.hpp>
+#include "model_assimp.hpp"
 #endif
 
 namespace darmok
@@ -57,10 +58,7 @@ namespace darmok
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
 		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;		
-
-#ifdef DARMOK_ASSIMP 
-		[[nodiscard]] AssimpSceneLoader& getAssimpLoader() noexcept;
-#endif
+		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 
 		bx::AllocatorI* getAllocator() noexcept;
 		void setBasePath(const std::string& path) noexcept;
@@ -85,7 +83,9 @@ namespace darmok
 #endif
 
 #ifdef DARMOK_ASSIMP 
-		AssimpSceneLoader _assimpLoader;
+		AssimpModelLoader _modelLoader;
+#else
+		EmptyModelLoader _modelLoader;
 #endif
 	};
 }
