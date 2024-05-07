@@ -1,19 +1,23 @@
 set(CMAKE_MOD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+include(${CMAKE_MOD_DIR}/utils.cmake)
 include(${CMAKE_MOD_DIR}/processShader.cmake)
 include(${CMAKE_MOD_DIR}/processVertexLayout.cmake)
-include(${CMAKE_MOD_DIR}/processSkeletalAnimation.cmake)
+include(${CMAKE_MOD_DIR}/processOzzSkeleton.cmake)
 
 # darmok_process_assets(
 #   ASSETS files or pattern
+#   ASSETS_EXCLUDES files or patterns
+#   ASSETS_INCLUDES files or patterns
 # 	OUTPUT_DIR directory
 # 	HEADER_SHADER_OUTPUT_DIR directory
 # 	HEADER_SHADER_INCLUDE_DIR directory
 #   SOURCES_VAR variable
+
 # )
 function(darmok_process_assets)
     set(OPTIONS "")
     set(ONE_VALUE_ARGS OUTPUT_DIR HEADER_SHADER_OUTPUT_DIR HEADER_SHADER_INCLUDE_DIR SOURCES_VAR)
-    set(MULTI_VALUE_ARGS ASSETS)
+    set(MULTI_VALUE_ARGS ASSETS ASSETS_EXCLUDES ASSETS_INCLUDES)
     cmake_parse_arguments(ARGS "${OPTIONS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" "${ARGN}")
 
     if(NOT DEFINED ARGS_OUTPUT_DIR)
@@ -39,12 +43,6 @@ function(darmok_process_assets)
     endif()
 
     set(SOURCES "")
-
-    macro(_darmok_replace_ext VAR INPUT_PATH EXT)
-        get_filename_component(NAME_WE ${INPUT_PATH} NAME_WE)
-        get_filename_component(INPUT_DIR ${INPUT_PATH} DIRECTORY)
-        set(${VAR} ${INPUT_DIR}/${NAME_WE}${EXT})
-    endmacro()
 
     macro(_darmok_process_shader_asset TYPE SHADER_PATH)
         _darmok_replace_ext(VARYINGDEF_PATH ${SHADER_PATH} ".varyingdef")
@@ -88,9 +86,27 @@ function(darmok_process_assets)
         set(VERTEX_LAYOUTS "")
         set(LUA_SCRIPTS "")
         set(COPY_ASSETS "")
-        set(SKELETAL_ANIMATIONS "")
+        set(OZZ_SKELETONS "")
+        set(OZZ_CONFIGS "")
         foreach(ASSET_PATH_ABS ${ASSET_PATHS})
             file(RELATIVE_PATH ASSET_PATH ${ASSET_BASE_PATH} ${ASSET_PATH_ABS})
+            set(EXCLUDED OFF)
+            if(DEFINED ARGS_ASSETS_INCLUDES)
+                set(EXCLUDED ON)
+                foreach(INCLUDE ${ARGS_ASSETS_INCLUDES})
+                    if(${ASSET_PATH} MATCHES ${INCLUDE})
+                        set(EXCLUDED OFF)
+                    endif()
+                endforeach()
+            endif()
+            foreach(EXCLUDE ${ARGS_ASSETS_EXCLUDES})
+                if(${ASSET_PATH} MATCHES ${EXCLUDE})
+                    set(EXCLUDED ON)
+                endif()
+            endforeach()            
+            if(${EXCLUDED})
+                continue()
+            endif()
             get_filename_component(ASSET_EXT ${ASSET_PATH_ABS} EXT)
             _darmok_replace_ext(OZZ_CONFIG_PATH ${ASSET_PATH_ABS} ".ozz.json")
             if(${ASSET_EXT} STREQUAL ".fragment.sc")
@@ -104,7 +120,11 @@ function(darmok_process_assets)
             elseif(${ASSET_EXT} STREQUAL ".layout.json")
                 list(APPEND VERTEX_LAYOUTS ${ASSET_PATH_ABS})
             elseif(EXISTS ${OZZ_CONFIG_PATH})
-                list(APPEND SKELETAL_ANIMATIONS ${ASSET_PATH_ABS})                
+                if(${ASSET_PATH_ABS} STREQUAL ${OZZ_CONFIG_PATH})
+                    list(APPEND OZZ_CONFIGS ${ASSET_PATH_ABS})                
+                else()
+                    list(APPEND OZZ_SKELETONS ${ASSET_PATH_ABS})                
+                endif()
             else()
                 list(APPEND COPY_ASSETS ${ASSET_PATH})
             endif()
@@ -125,6 +145,16 @@ function(darmok_process_assets)
             )
             list(APPEND ASSET_SOURCES ${VERTEX_LAYOUTS})
         endif()
+
+        foreach(ASSET_PATH ${OZZ_SKELETONS})
+            _darmok_replace_ext(OZZ_CONFIG_PATH ${ASSET_PATH} ".ozz.json")
+            darmok_process_ozz_skeleton(
+                SKELETONS ${ASSET_PATH}
+                CONFIG ${OZZ_CONFIG_PATH}
+                OUTPUT_DIR ${ARGS_OUTPUT_DIR}
+            )
+            list(APPEND ASSET_SOURCES ${ASSET_PATH} ${OZZ_CONFIG_PATH})
+        endforeach()
 
         foreach(ASSET_PATH ${COPY_ASSETS})
             set(SOURCE ${ASSET_BASE_PATH}/${ASSET_PATH})

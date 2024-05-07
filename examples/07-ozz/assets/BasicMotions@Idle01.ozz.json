@@ -1,2 +1,7 @@
 {
+    "animations":[
+        {
+            "filename": "idle.ozz"
+        }
+    ]
 }

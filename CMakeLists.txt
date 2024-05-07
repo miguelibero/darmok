@@ -26,6 +26,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/processAssets.cmake)
 darmok_process_assets(
   HEADER_SHADER_OUTPUT_DIR "include/generated/shaders"
   HEADER_SHADER_INCLUDE_DIR "generated/shaders"
+  ASSETS_EXCLUDES "shaders/cegui_*"
 )
 
 set(SOURCES
@@ -124,6 +125,13 @@ if(DARMOK_BUILD_CEGUI)
   list(APPEND SOURCES ${CEGUI_SOURCES} ${SRC_DIR}/cegui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/cegui.hpp)
   source_group("CEGUI Source Files" FILES ${CEGUI_SOURCES})
+
+  darmok_process_assets(
+    ASSETS_INCLUDES "shaders/cegui_*"
+    HEADER_SHADER_OUTPUT_DIR "include/generated/shaders"
+    HEADER_SHADER_INCLUDE_DIR "generated/shaders"
+  )
+
 endif()
 
 if(DARMOK_BUILD_SCRIPTING)
@@ -311,7 +319,8 @@ endif()
 
 # ozz
 if(DARMOK_BUILD_OZZ)
-  set(ozz_build_fbx OFF CACHE BOOL "Build Fbx pipeline (Requires Fbx SDK)")
+  # FBX SDK can be downloaded from https://aps.autodesk.com/developer/overview/fbx-sdk
+  # set(ozz_build_fbx ON CACHE BOOL "Build Fbx pipeline (Requires Fbx SDK)")
   set(ozz_build_gltf ON CACHE BOOL "Build glTF importer (Requires c++11)")
   set(ozz_build_samples OFF CACHE BOOL "Build samples")
   set(ozz_build_howtos OFF CACHE BOOL "Build howtos")
