@@ -49,6 +49,7 @@ set(SOURCES
   ${SRC_DIR}/texture_atlas.cpp
   ${SRC_DIR}/image.cpp
   ${SRC_DIR}/program.cpp
+  ${SRC_DIR}/model.cpp
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/camera.cpp
   ${SRC_DIR}/light.cpp

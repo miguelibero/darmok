@@ -40,7 +40,7 @@ namespace darmok
 
 	AssetContextImpl::AssetContextImpl()
 		: _dataLoader(&_fileReader, &_allocator)
-		, _imageLoader(_dataLoader, &_allocator)
+		, _imageLoader(_dataLoader, _allocator)
 		, _vertexLayoutLoader(_dataLoader)
 		, _programLoader(_dataLoader, _vertexLayoutLoader)
 		, _textureLoader(_imageLoader)
@@ -50,16 +50,16 @@ namespace darmok
 		, _skeletalAnimationLoader(_dataLoader)
 #endif
 #ifdef DARMOK_ASSIMP 
-		, _modelLoader(_dataLoader, _textureLoader, &_allocator)
+		, _modelLoader(_dataLoader, _allocator)
 #endif
-		, _colorTextureLoader(&_allocator)
+		, _colorTextureLoader(_allocator)
 	{
 		setBasePath("assets");
 	}
 
-	bx::AllocatorI* AssetContextImpl::getAllocator() noexcept
+	bx::AllocatorI& AssetContextImpl::getAllocator() noexcept
 	{
-		return &_allocator;
+		return _allocator;
 	}
 
 	[[nodiscard]] IDataLoader& AssetContextImpl::getDataLoader() noexcept
@@ -177,7 +177,7 @@ namespace darmok
 		return _impl->getSkeletalAnimationLoader();
 	}
 
-	bx::AllocatorI* AssetContext::getAllocator() noexcept
+	bx::AllocatorI& AssetContext::getAllocator() noexcept
 	{
 		return _impl->getAllocator();
 	}

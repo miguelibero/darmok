@@ -31,6 +31,11 @@ namespace darmok
         return _ptr;
     }
 
+    const void* DataView::end() const noexcept
+    {
+        return ((uint8_t*)_ptr) + _size;
+    }
+
     size_t DataView::size() const noexcept
     {
         return _size;
@@ -93,7 +98,7 @@ namespace darmok
         {
             offset = _size - 1;
         }
-        ptr = ((char*)_ptr) + offset;
+        ptr = ((uint8_t*)_ptr) + offset;
         return offset;
     }
 
@@ -111,23 +116,23 @@ namespace darmok
         return size;
     }
 
-    void* Data::malloc(size_t size, bx::AllocatorI* alloc) noexcept
+    void* Data::malloc(size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept
     {
         if (size == 0)
         {
             return nullptr;
         }
-        return alloc == nullptr ? std::malloc(size) : bx::alloc(alloc, size);
+        return alloc == nullptr ? std::malloc(size) : bx::alloc(alloc.ptr(), size);
     }
 
-    Data::Data(size_t size, bx::AllocatorI* alloc) noexcept
-        : _ptr(malloc(size, alloc))
+    Data::Data(size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept
+        : _ptr(malloc(size, alloc.ptr()))
         , _size(size)
         , _alloc(alloc)
     {
     }
 
-    Data::Data(const void* ptr, size_t size, bx::AllocatorI* alloc) noexcept
+    Data::Data(const void* ptr, size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept
         : Data(ptr == nullptr ? 0 : size, alloc)
     {
         if (_ptr != nullptr)
@@ -139,6 +144,11 @@ namespace darmok
     void* Data::ptr() const noexcept
     {
         return _ptr;
+    }
+
+    void* Data::end() const noexcept
+    {
+        return ((uint8_t*)_ptr) + _size;
     }
 
     size_t Data::size() const noexcept
@@ -209,7 +219,7 @@ namespace darmok
         }
         else
         {
-            bx::free(_alloc, _ptr);
+            bx::free(_alloc.ptr(), _ptr);
         }
         _ptr = nullptr;
     }
@@ -236,12 +246,26 @@ namespace darmok
         }
         else
         {
-            ptr = bx::realloc(_alloc, _ptr, size);
+            ptr = bx::realloc(_alloc.ptr(), _ptr, size);
         }
         if (ptr != nullptr)
         {
             _size = size;
             _ptr = ptr;
+        }
+    }
+
+    void Data::fill(const DataView& data) noexcept
+    {
+        if (data.empty())
+        {
+            return;
+        }
+        auto ptr = static_cast<uint8_t*>(_ptr);
+        auto endPtr = static_cast<uint8_t*>(end());
+        for (; ptr < endPtr; ptr += data.size())
+        {
+            std::memcpy(ptr, data.ptr(), data.size());
         }
     }
 
@@ -256,7 +280,7 @@ namespace darmok
         return operator=(other.view());
     }
 
-    Data::Data(const DataView& other, bx::AllocatorI* alloc) noexcept
+    Data::Data(const DataView& other, const OptionalRef<bx::AllocatorI>& alloc) noexcept
         : Data(other.ptr(), other.size(), _alloc)
     {
     }
@@ -296,7 +320,7 @@ namespace darmok
         return DataView(*this);
     }
 
-    FileDataLoader::FileDataLoader(bx::FileReaderI* fileReader, bx::AllocatorI* alloc)
+    FileDataLoader::FileDataLoader(bx::FileReaderI* fileReader, const OptionalRef<bx::AllocatorI>& alloc)
         : _fileReader(fileReader)
         , _allocator(alloc)
     {

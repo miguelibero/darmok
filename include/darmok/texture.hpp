@@ -77,10 +77,10 @@ namespace darmok
 	class ColorTextureLoader final
 	{
 	public:
-		ColorTextureLoader(bx::AllocatorI* alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
+		ColorTextureLoader(bx::AllocatorI& alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
 		std::shared_ptr<Texture> operator()(const Color& color) noexcept;
 	private:
-		bx::AllocatorI* _alloc;
+		bx::AllocatorI& _alloc;
 		glm::uvec2 _size;
 		std::unordered_map<Color, std::shared_ptr<Texture>> _cache;
 	};

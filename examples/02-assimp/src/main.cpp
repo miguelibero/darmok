@@ -3,7 +3,7 @@
 #include <darmok/app.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
-#include <darmok/assimp.hpp>
+#include <darmok/model.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/light.hpp>
@@ -44,19 +44,21 @@ namespace
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 
-			auto assimpScene = getAssets().getAssimpLoader()("human.fbx");
-			assimpScene->addToScene(scene, prog->getVertexLayout(), [&scene, prog](const AssimpNode& node, Entity entity) {
+			auto model = getAssets().getModelLoader()("human.fbx");
+
+			ModelSceneConfigurer configurer(scene.getRegistry(), prog->getVertexLayout(), getAssets());
+			configurer.run(*model, [&scene, prog](const auto& node, Entity entity) {
 				auto& registry = scene.getRegistry();
 				if (node.getName() == "human")
 				{
 					auto& trans = registry.get_or_emplace<Transform>(entity);
 					scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
 				}
-				if (node.getCamera().hasValue())
+				auto cam = registry.try_get<Camera>(entity);
+				if (cam != nullptr)
 				{
-					auto& cam = registry.get_or_emplace<Camera>(entity);
-					cam.addComponent<PhongLightingComponent>();
-					cam.setRenderer<ForwardRenderer>(prog);
+					cam->addComponent<PhongLightingComponent>();
+					cam->setRenderer<ForwardRenderer>(prog);
 				}
 			});
 		}

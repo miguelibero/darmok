@@ -20,11 +20,6 @@ namespace darmok
         {
         }
 
-        OptionalRef(const std::optional<T>& value) noexcept
-            : _value(value.has_value() ? &value.value() : nullptr)
-        {
-        }
-
         OptionalRef(T* value) noexcept
             : _value(value)
         {
@@ -81,6 +76,15 @@ namespace darmok
             return *_value;
         }
 
+        [[nodiscard]] std::optional<T> optional() const
+        {
+            if (!hasValue())
+            {
+                return std::nullopt;
+            }
+            return *_value;
+        }
+
         [[nodiscard]] T* ptr() const noexcept
         {
             return _value;
@@ -114,16 +118,6 @@ namespace darmok
         {
             return !operator==(other);
         }
-        /*
-        [[nodiscard]] bool operator==(const T& other) noexcept
-        {
-            return _value == &other;
-        }
-
-        [[nodiscard]] bool operator!=(const T& other) noexcept
-        {
-            return !operator==(other);
-        }*/
     };
 }
 

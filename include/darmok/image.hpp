@@ -19,8 +19,8 @@ namespace darmok
     class Image final
 	{
 	public:
-		Image(const DataView& data, bx::AllocatorI* alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
-		Image(const Color& color, bx::AllocatorI* alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
+		Image(const DataView& data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
+		Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
 		Image(bimg::ImageContainer* container);
 		~Image() noexcept;
 		Image(const Image& other) = delete;

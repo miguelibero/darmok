@@ -7,7 +7,7 @@
 
 namespace darmok
 {
-	Image::Image(const DataView& data, bx::AllocatorI* alloc, bimg::TextureFormat::Enum format)
+	Image::Image(const DataView& data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
 		: _container(nullptr)
 	{
 		if(data.empty())
@@ -16,7 +16,7 @@ namespace darmok
 		}
 
 		bx::Error err;
-		_container = bimg::imageParse(alloc, data.ptr(), (uint32_t)data.size(), format, &err);
+		_container = bimg::imageParse(&alloc, data.ptr(), (uint32_t)data.size(), format, &err);
 		checkError(err);
 		if (_container == nullptr)
 		{
@@ -24,9 +24,9 @@ namespace darmok
 		}
 	}
 
-	Image::Image(const Color& color, bx::AllocatorI* alloc, const glm::uvec2& size) noexcept
+	Image::Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size) noexcept
 		: _container(bimg::imageAlloc(
-			alloc, bimg::TextureFormat::RGBA8, size.x, size.y, 0, 1, false, false
+			&alloc, bimg::TextureFormat::RGBA8, size.x, size.y, 0, 1, false, false
 		))
 	{
 		auto c = Colors::toReverseNumber(color);
@@ -143,7 +143,7 @@ namespace darmok
 		};
 	}
 
-	DataImageLoader::DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI* alloc) noexcept
+	DataImageLoader::DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept
 		: _dataLoader(dataLoader)
 		, _allocator(alloc)
 	{

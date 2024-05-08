@@ -36,8 +36,8 @@ namespace darmok
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
 		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
+		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
 
-		[[nodiscard]] bx::AllocatorI* getAllocator() noexcept;
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;
 	private:

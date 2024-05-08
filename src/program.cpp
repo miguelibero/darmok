@@ -5,6 +5,7 @@
 
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/utils.hpp>
 
 #include "embedded_shader.hpp"
 #include "generated/shaders/gui.vertex.h"

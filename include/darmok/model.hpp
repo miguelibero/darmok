@@ -2,94 +2,104 @@
 
 #include <memory>
 #include <string_view>
-#include <stdexcept>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/collection.hpp>
+#include <darmok/optional_ref.hpp>
 #include <glm/glm.hpp>
 
 namespace darmok
 {
-    class ModelNodeImpl;
+    class AssetContext;
+    class ModelSceneConfigurer;
 
-    class ModelNode final
+    struct ModelSceneConfig
     {
-    public:
-        ModelNode(std::unique_ptr<ModelNodeImpl>&& impl) noexcept;
-
-        std::string_view getName() const;
-        glm::mat4 getTransform() const;
-        const ReadOnlyCollection<ModelNode>& getChildren() const;            
-    private:
-        std::unique_ptr<ModelNodeImpl> _impl;
+        EntityRegistry& registry;
+        bgfx::VertexLayout layout;
+        AssetContext& assets;
+        std::string path;
     };
 
-    class ModelImpl;
-
-    class Model final
+    class BX_NO_VTABLE IModelNode
     {
     public:
-        Model(std::unique_ptr<ModelImpl>&& impl) noexcept;
-        ModelNode& getRootNode() noexcept;
+        IModelNode() = default;
+        virtual ~IModelNode() = default;
+        IModelNode(const IModelNode& other) = delete;
+        IModelNode& operator=(const IModelNode& other) = delete;
 
-    private:
-        std::unique_ptr<ModelImpl> _impl;
+        virtual std::string_view getName() const noexcept = 0;
+        virtual glm::mat4 getTransform() const noexcept = 0;
+        virtual const ReadOnlyCollection<IModelNode>& getChildren() const noexcept = 0;
+        virtual void configureEntity(Entity entity, const ModelSceneConfig& config) const = 0;
     };
 
-    class ITextureLoader;
-    class Scene;
-
-    class ModelSceneConfigurer
+    class BX_NO_VTABLE IModel
     {
     public:
-        ModelSceneConfigurer(Scene& scene, const bgfx::VertexLayout& layout);
-        
+        IModel() = default;
+        virtual ~IModel() = default;
+        IModel(const IModel& other) = delete;
+        IModel& operator=(const IModel& other) = delete;
+
+        virtual IModelNode& getRootNode() noexcept = 0;
+        virtual const IModelNode& getRootNode() const noexcept = 0;
+    };
+
+    class ModelSceneConfigurer final
+    {
+    public:
+        ModelSceneConfigurer(EntityRegistry& registry, const bgfx::VertexLayout& layout, AssetContext& assets);
+
+        ModelSceneConfigurer& setPath(const std::string& path) noexcept;
         ModelSceneConfigurer& setParent(Entity parent) noexcept;
-        ModelSceneConfigurer& setTextureLoader(ITextureLoader& loader) noexcept;
-        ModelSceneConfigurer& setAllocator(bx::AllocatorI* alloc) noexcept;
 
-        Entity run(const Model& model) const noexcept;
-        Entity run(const ModelNode& node) const noexcept;
+        Entity run(const IModel& model) const noexcept;
+        Entity run(const IModelNode& node, Entity parent = entt::null) const noexcept;
 
         template<typename C>
-        Entity run(const ModelNode& node, C callback) const
+        Entity run(const IModelNode& node, C callback) const
         {
-            auto entity = run(node);
-            callback(*this, entity);
+            return run(node, _parent, callback);
+        }
+
+        template<typename C>
+        Entity run(const IModel& model, C callback) const
+        {
+            return run(model.getRootNode(), callback);
+        }
+
+    private:
+        ModelSceneConfig _config;
+        Entity _parent;
+
+        Entity add(const IModelNode& node, Entity parent) const noexcept;
+
+        template<typename C>
+        Entity run(const IModelNode& node, Entity parent, C callback) const
+        {
+            auto entity = add(node, parent);
+            callback(node, entity);
             for (auto& child : node.getChildren())
             {
                 run(child, callback);
             }
             return entity;
         }
-
-        template<typename C>
-        Entity run(const Model& model, C callback) const
-        {
-            return run(model.getRootNode(), callback);
-        }
-
-    private:
-        Scene& scene;
-        const bgfx::VertexLayout _layout;
-        OptionalRef<ITextureLoader> _textureLoader;
-        bx::AllocatorI* _alloc;
     };
 
     class BX_NO_VTABLE IModelLoader
 	{
 	public:
         virtual ~IModelLoader() = default;
-		virtual std::shared_ptr<Model> operator()(std::string_view name) = 0;
+		virtual std::shared_ptr<IModel> operator()(std::string_view name) = 0;
 	};
 
     class EmptyModelLoader : public IModelLoader
 	{
 	public:
-		std::shared_ptr<Model> operator()(std::string_view name) override
-        {
-            throw std::runtime_error("no model implementation");
-        }
+		std::shared_ptr<IModel> operator()(std::string_view name) override;
 	};
 }

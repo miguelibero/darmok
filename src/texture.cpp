@@ -197,7 +197,7 @@ namespace darmok
 		return tex;
 	}
 
-	ColorTextureLoader::ColorTextureLoader(bx::AllocatorI* alloc, const glm::uvec2& size) noexcept
+	ColorTextureLoader::ColorTextureLoader(bx::AllocatorI& alloc, const glm::uvec2& size) noexcept
 		: _alloc(alloc)
 		, _size(size)
 	{

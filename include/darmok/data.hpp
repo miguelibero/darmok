@@ -4,11 +4,17 @@
 #include <stdexcept>
 #include <memory>
 #include <string_view>
+#include <darmok/optional_ref.hpp>
+
 
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
-#include <bx/allocator.h>
 #include <glm/gtc/type_ptr.hpp>
+
+namespace bx
+{
+    struct AllocatorI;
+}
 
 namespace darmok
 {
@@ -51,6 +57,7 @@ namespace darmok
         }
 
         [[nodiscard]] const void* ptr() const noexcept;
+        [[nodiscard]] const void* end() const noexcept;
         [[nodiscard]] size_t size() const noexcept;
         [[nodiscard]] bool empty() const noexcept;
         [[nodiscard]] bool operator==(const DataView& other) const noexcept;
@@ -72,37 +79,38 @@ namespace darmok
     class Data final
     {
     public:
-        Data(size_t size = 0, bx::AllocatorI* alloc = nullptr) noexcept;
-        Data(const void* ptr, size_t size, bx::AllocatorI* alloc = nullptr) noexcept;
+        Data(size_t size = 0, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
+        Data(const void* ptr, size_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
         ~Data() noexcept;
 
         template<typename T>
-        Data(const std::vector<T>& v, bx::AllocatorI* alloc = nullptr) noexcept
+        Data(const std::vector<T>& v, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept
             : Data(&v.front(), sizeof(T) * v.size(), alloc)
         {
         }
 
         template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
-        Data(const glm::vec<L, T, Q>& v, bx::AllocatorI* alloc = nullptr) noexcept
+        Data(const glm::vec<L, T, Q>& v, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept
             : Data(glm::value_ptr(v), L * sizeof(T), alloc)
         {
         }
 
         template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
-        Data(const glm::mat<L1, L2, T, Q>& v, bx::AllocatorI* alloc = nullptr) noexcept
+        Data(const glm::mat<L1, L2, T, Q>& v, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept
             : Data(glm::value_ptr(v), L1* L2 * sizeof(T), alloc)
         {
         }
 
         Data(const Data& other) noexcept;
         Data& operator=(const Data& other) noexcept;
-        Data(const DataView& other, bx::AllocatorI* alloc = nullptr) noexcept;
+        Data(const DataView& other, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
         Data& operator=(const DataView& other) noexcept;
         Data(Data&& other) noexcept;
         Data& operator=(Data&& other) noexcept;
         operator DataView() const;
         
         [[nodiscard]] void* ptr() const noexcept;
+        [[nodiscard]] void* end() const noexcept;
         [[nodiscard]] size_t size() const noexcept;
         [[nodiscard]] bool empty() const noexcept;
 
@@ -117,13 +125,14 @@ namespace darmok
         void release() noexcept;
         void clear() noexcept;
         void resize(size_t size) noexcept;
+        void fill(const DataView& data) noexcept;
 
     private:
         void* _ptr;
         size_t _size;
-        bx::AllocatorI* _alloc;
+        OptionalRef<bx::AllocatorI> _alloc;
 
-        static void* malloc(size_t size, bx::AllocatorI* alloc) noexcept;
+        static void* malloc(size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept;
 
     };
 

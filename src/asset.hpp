@@ -59,8 +59,8 @@ namespace darmok
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
 		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;		
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
+		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
 
-		bx::AllocatorI* getAllocator() noexcept;
 		void setBasePath(const std::string& path) noexcept;
 	private:
 		FileReader _fileReader;

@@ -13,28 +13,36 @@ namespace bx
 
 namespace darmok
 {
-    class ModelNodeImpl final
+    class Mesh;
+
+    class AssimpModelNode final : public IModelNode
     {
     public:
-        ModelNodeImpl(AssimpNode& node, AssimpScene& scene) noexcept;
-        std::string_view getName() const noexcept;
-        glm::mat4 getTransform() const noexcept;
-        const ReadOnlyCollection<ModelNode>& getChildren() const noexcept;  
-        const AssimpScene& getScene() const noexcept;          
+        AssimpModelNode(const AssimpNode& assimp) noexcept;
+
+        std::string_view getName() const noexcept override;
+        glm::mat4 getTransform() const noexcept override;
+        const ReadOnlyCollection<IModelNode>& getChildren() const noexcept override;
+        void configureEntity(Entity entity, const ModelSceneConfig& config) const override;
+
     private:
-        AssimpNode& _node;
-        AssimpScene& _scene;
+        const AssimpNode& _assimp;
+        VectorReadOnlyCollection<IModelNode> _children;
+
+        void configureCamera(const AssimpCamera& cam, Entity entity, const ModelSceneConfig& config) const noexcept;
+        void configureLight(const AssimpLight& light, Entity entity, const ModelSceneConfig& config) const noexcept;
     };
 
-    class ITextureLoader;
-
-    class ModelImpl final
+    class AssimpModel final : public IModel
     {
     public:
-        ModelImpl(AssimpScene&& scene, const std::string& path = {}) noexcept;
-        ModelNode& getRootNode() noexcept;
+        AssimpModel(AssimpScene&& assimp) noexcept;
+        IModelNode& getRootNode() noexcept override;
+        const IModelNode& getRootNode() const noexcept override;
+
     private:
-        AssimpScene _scene;
+        AssimpModelNode _rootNode;
+        AssimpScene _assimp;
     };
 
     class IDataLoader;
@@ -42,10 +50,11 @@ namespace darmok
     class AssimpModelLoader final : public IModelLoader
 	{
 	public:
-		AssimpModelLoader(IDataLoader& dataLoader);
-		std::shared_ptr<Model> operator()(std::string_view name) override;
+		AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc);
+		std::shared_ptr<IModel> operator()(std::string_view name) override;
 	private:
 		Assimp::Importer _importer;
 		IDataLoader& _dataLoader;
+        bx::AllocatorI& _alloc;
 	};
 }

@@ -8,51 +8,120 @@
 #include <darmok/texture.hpp>
 #include <darmok/material.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/asset.hpp>
 
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
 namespace darmok
 {
-	ModelImpl::ModelImpl(AssimpScene&& scene, const std::string& path = {}, const OptionalRef<ITextureLoader>& textureLoader, bx::AllocatorI* alloc)
+	AssimpModelNode::AssimpModelNode(const AssimpNode& assimp) noexcept
+		: _assimp(assimp)
 	{
 	}
 
-	ModelNode& ModelImpl::getRootNode() noexcept;
-	Entity ModelImpl::addToScene(Scene& scene, const bgfx::VertexLayout& layout, Entity parent = entt::null) const;
+	std::string_view AssimpModelNode::getName() const noexcept
+	{
+		return _assimp.getName();
+	}
 
+	glm::mat4 AssimpModelNode::getTransform() const noexcept
+	{
+		return _assimp.getTransform();
+	}
 
-	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader)
+	const ReadOnlyCollection<IModelNode>& AssimpModelNode::getChildren() const noexcept
+	{
+		// TODO: do this
+		return _children;
+	}
+
+	void AssimpModelNode::configureEntity(Entity entity, const ModelSceneConfig& config) const
+	{
+		auto assimpCam = _assimp.getCamera();
+		if (assimpCam.hasValue())
+		{
+			configureCamera(assimpCam.value(), entity, config);
+		}
+
+		auto assimpLight = _assimp.getLight();
+		if (assimpLight.hasValue())
+		{
+			configureLight(assimpLight.value(), entity, config);
+		}
+
+		auto& assimpMeshes = _assimp.getMeshes();
+		if (!assimpMeshes.empty())
+		{
+			auto meshes = assimpMeshes.load(config.layout, config.assets.getTextureLoader(), config.assets.getAllocator());
+			config.registry.emplace<MeshComponent>(entity, meshes);
+		}
+	}
+
+	void AssimpModelNode::configureCamera(const AssimpCamera& cam, Entity entity, const ModelSceneConfig& config) const noexcept
+	{
+		config.registry.emplace<Camera>(entity, cam.getProjectionMatrix());
+	}
+
+	void AssimpModelNode::configureLight(const AssimpLight& light, Entity entity, const ModelSceneConfig& config) const noexcept
+	{
+		// TODO: decide what to do with light->getPosition()
+		// transMat = glm::translate(transMat, light->getPosition());
+		switch (light.getType())
+		{
+		case aiLightSource_POINT:
+		{
+			config.registry.emplace<PointLight>(entity)
+				.setAttenuation(light.getAttenuation())
+				.setDiffuseColor(light.getDiffuseColor())
+				.setSpecularColor(light.getSpecularColor())
+				;
+			auto ambient = light.getAmbientColor();
+			if (ambient != Colors::black3())
+			{
+				config.registry.emplace<AmbientLight>(entity)
+					.setColor(ambient);
+			}
+			break;
+		}
+		case aiLightSource_AMBIENT:
+			config.registry.emplace<AmbientLight>(entity)
+				.setColor(light.getAmbientColor());
+			break;
+		}
+	}
+
+	AssimpModel::AssimpModel(AssimpScene&& assimp) noexcept
+		: _assimp(std::move(assimp))
+		, _rootNode(_assimp.getRootNode())
+	{
+	}
+
+	IModelNode& AssimpModel::getRootNode() noexcept
+	{
+		return _rootNode;
+	}
+
+	const IModelNode& AssimpModel::getRootNode() const noexcept
+	{
+		return _rootNode;
+	}
+
+	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc)
 		: _dataLoader(dataLoader)
+		, _alloc(alloc)
 	{
 	}
 
-	std::shared_ptr<Model> AssimpModelLoader::operator()(std::string_view name)
+	std::shared_ptr<IModel> AssimpModelLoader::operator()(std::string_view name)
 	{
 		auto data = _dataLoader(name);
 		if (data.empty())
 		{
 			throw std::runtime_error("got empty data");
 		}
-		unsigned int flags = aiProcess_CalcTangentSpace |
-			aiProcess_Triangulate |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_SortByPType | 
-			aiProcess_ConvertToLeftHanded
-			;
-		// assimp (and opengl) is right handed (+Z points towards the camera)
-		// while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
-
-		std::string nameString(name);
-		auto scene = _importer.ReadFileFromMemory(data.ptr(), data.size(), flags, nameString.c_str());
-
-		if (scene == nullptr)
-		{
-			throw std::runtime_error(_importer.GetErrorString());
-		}
-
-		return std::make_shared<Model>(
-			std::make_unique<ModelImpl>(
-				AssimpScene(scene), nameString))
-		);
+		AssimpScene assimpScene(_importer, data.view(), std::string(name));
+		return std::make_shared<AssimpModel>(std::move(assimpScene));
 	}
 }
