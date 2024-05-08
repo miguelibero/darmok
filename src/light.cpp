@@ -4,6 +4,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/material.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/scene.hpp>
 
 namespace darmok
 {
@@ -192,7 +193,7 @@ namespace darmok
             auto trans = registry.try_get<const Transform>(entity);
             if (trans != nullptr)
             {
-                writer.write(bgfx::Attrib::Position, index, trans->getPosition());
+                writer.write(bgfx::Attrib::Position, index, trans->getWorldPosition());
             }
             auto c = Colors::normalize(pointLight.getDiffuseColor()) * pointLight.getIntensity();
             writer.write(bgfx::Attrib::Color0, index, c);

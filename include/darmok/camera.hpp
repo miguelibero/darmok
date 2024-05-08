@@ -7,7 +7,8 @@
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/scene.hpp>
+#include <darmok/scene_fwd.hpp>
+#include <darmok/entity_filter.hpp>
 #include <darmok/shape.hpp>
 
 namespace darmok
@@ -15,6 +16,7 @@ namespace darmok
     class Mesh;
     class Camera;
     class App;
+    class Scene;
 
     class BX_NO_VTABLE ICameraComponent
     {

@@ -86,11 +86,11 @@ namespace darmok
 
         _registry.clear();
 
-        _scene = nullptr;
-        _app = nullptr;
-
         _registry.on_construct<Camera>().disconnect<&SceneImpl::onCameraConstructed>(*this);
         _registry.on_destroy<Camera>().disconnect< &SceneImpl::onCameraDestroyed>(*this);
+
+        _scene.reset();
+        _app.reset();
     }
 
     void SceneImpl::updateLogic(float dt)

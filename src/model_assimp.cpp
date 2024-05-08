@@ -16,9 +16,44 @@
 
 namespace darmok
 {
+	AssimpModelNodeChildrenCollection::AssimpModelNodeChildrenCollection(const std::vector<AssimpModelNode>& children) noexcept
+		: _children(children)
+	{
+	}
+
+	size_t AssimpModelNodeChildrenCollection::size() const noexcept
+	{
+		return _children.size();
+	}
+
+	const IModelNode& AssimpModelNodeChildrenCollection::operator[](size_t pos) const
+	{
+		return _children[pos];
+	}
+
 	AssimpModelNode::AssimpModelNode(const AssimpNode& assimp) noexcept
 		: _assimp(assimp)
+		, _childrenCollection(_children)
 	{
+		for (auto& child : assimp.getChildren())
+		{
+			_children.emplace_back(child);
+		}
+	}
+
+	AssimpModelNode::AssimpModelNode(const AssimpModelNode& other) noexcept
+		: _assimp(other._assimp)
+		, _children(other._children)
+		, _childrenCollection(_children)
+	{
+	}
+
+	AssimpModelNode& AssimpModelNode::operator=(const AssimpModelNode& other) noexcept
+	{
+		_assimp = other._assimp;
+		_children.clear();
+		_children.insert(_children.end(), other._children.begin(), other._children.end());
+		return *this;
 	}
 
 	std::string_view AssimpModelNode::getName() const noexcept
@@ -31,10 +66,9 @@ namespace darmok
 		return _assimp.getTransform();
 	}
 
-	const ReadOnlyCollection<IModelNode>& AssimpModelNode::getChildren() const noexcept
+	const ConstRefCollection<IModelNode>& AssimpModelNode::getChildren() const noexcept
 	{
-		// TODO: do this
-		return _children;
+		return _childrenCollection;
 	}
 
 	void AssimpModelNode::configureEntity(Entity entity, const ModelSceneConfig& config) const
@@ -51,28 +85,35 @@ namespace darmok
 			configureLight(assimpLight.value(), entity, config);
 		}
 
-		auto& assimpMeshes = _assimp.getMeshes();
-		if (!assimpMeshes.empty())
+		auto meshes = _assimp.loadMeshes(config.layout, config.assets.getTextureLoader(), config.assets.getAllocator());
+		if (!meshes.empty())
 		{
-			auto meshes = assimpMeshes.load(config.layout, config.assets.getTextureLoader(), config.assets.getAllocator());
 			config.registry.emplace<MeshComponent>(entity, meshes);
 		}
 	}
 
 	void AssimpModelNode::configureCamera(const AssimpCamera& cam, Entity entity, const ModelSceneConfig& config) const noexcept
 	{
-		config.registry.emplace<Camera>(entity, cam.getProjectionMatrix());
+		auto camEntity = config.registry.create();
+		auto parentTrans = config.registry.try_get<Transform>(entity);
+		config.registry.emplace<Transform>(camEntity, cam.getViewMatrix(), parentTrans);
+		config.registry.emplace<Camera>(camEntity, cam.getProjectionMatrix());
 	}
 
 	void AssimpModelNode::configureLight(const AssimpLight& light, Entity entity, const ModelSceneConfig& config) const noexcept
 	{
 		// TODO: decide what to do with light->getPosition()
 		// transMat = glm::translate(transMat, light->getPosition());
+
+		auto lightEntity = config.registry.create();
+		auto parentTrans = config.registry.try_get<Transform>(entity);
+		config.registry.emplace<Transform>(lightEntity, parentTrans, light.getPosition());
+
 		switch (light.getType())
 		{
 		case aiLightSource_POINT:
 		{
-			config.registry.emplace<PointLight>(entity)
+			config.registry.emplace<PointLight>(lightEntity)
 				.setAttenuation(light.getAttenuation())
 				.setDiffuseColor(light.getDiffuseColor())
 				.setSpecularColor(light.getSpecularColor())
@@ -80,13 +121,13 @@ namespace darmok
 			auto ambient = light.getAmbientColor();
 			if (ambient != Colors::black3())
 			{
-				config.registry.emplace<AmbientLight>(entity)
+				config.registry.emplace<AmbientLight>(lightEntity)
 					.setColor(ambient);
 			}
 			break;
 		}
 		case aiLightSource_AMBIENT:
-			config.registry.emplace<AmbientLight>(entity)
+			config.registry.emplace<AmbientLight>(lightEntity)
 				.setColor(light.getAmbientColor());
 			break;
 		}

@@ -68,6 +68,7 @@ set(HEADERS
   ${INCLUDE_DIR}/asset.hpp
   ${INCLUDE_DIR}/scene_fwd.hpp
   ${INCLUDE_DIR}/scene.hpp
+  ${INCLUDE_DIR}/entity_filter.hpp
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/data.hpp
   ${INCLUDE_DIR}/shape.hpp

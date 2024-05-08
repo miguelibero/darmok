@@ -79,6 +79,7 @@ namespace darmok
     class Data final
     {
     public:
+        Data(const OptionalRef<bx::AllocatorI>& alloc) noexcept;
         Data(size_t size = 0, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
         Data(const void* ptr, size_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
         ~Data() noexcept;

@@ -32,7 +32,7 @@ namespace darmok
         auto entity = add(node, parent);
         for (auto& child : node.getChildren())
         {
-            run(child);
+            run(child, entity);
         }
         return entity;
     }

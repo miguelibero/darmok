@@ -54,8 +54,8 @@ namespace
 					auto& trans = registry.get_or_emplace<Transform>(entity);
 					scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
 				}
-				auto cam = registry.try_get<Camera>(entity);
-				if (cam != nullptr)
+				auto cam = scene.getComponentInChildren<Camera>(entity);
+				if (cam)
 				{
 					cam->addComponent<PhongLightingComponent>();
 					cam->setRenderer<ForwardRenderer>(prog);

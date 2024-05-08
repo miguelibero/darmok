@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/detail/type_quat.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/scene.hpp>
+#include <darmok/scene_fwd.hpp>
 #include <unordered_set>
 
 namespace darmok
@@ -25,16 +25,20 @@ namespace darmok
         Transform& setRotation(const glm::quat& v) noexcept;
         Transform& setScale(const glm::vec3& v) noexcept;
         Transform& setPivot(const glm::vec3& v) noexcept;
-        Transform& setMatrix(const glm::mat4& v) noexcept;
+        Transform& setLocalMatrix(const glm::mat4& v) noexcept;
+
+        glm::vec3 getWorldPosition() const noexcept;
 
         OptionalRef<const Transform> getParent() const noexcept;
         OptionalRef<Transform> getParent() noexcept;
         Transform& setParent(const OptionalRef<Transform>& parent) noexcept;
+        const std::unordered_set<OptionalRef<Transform>>& getChildren() const noexcept;
 
-        const glm::mat4& getMatrix() noexcept;
-        const glm::mat4& getMatrix() const noexcept;
-        const glm::mat4& getInverse() noexcept;
-        const glm::mat4& getInverse() const noexcept;
+        const glm::mat4& getLocalMatrix() const noexcept;
+        const glm::mat4& getLocalInverse() const noexcept;
+
+        const glm::mat4& getWorldMatrix() const noexcept;
+        const glm::mat4& getWorldInverse() const noexcept;
 
         bool update() noexcept;
 
@@ -50,20 +54,23 @@ namespace darmok
         Transform& setForward(const glm::vec3& v) noexcept;
 
     private:
-
         glm::vec3 _position;
         glm::quat _rotation;
         glm::vec3 _scale;
         glm::vec3 _pivot;
-        glm::mat4 _matrix;
-        glm::mat4 _inverse;
-        bool _matrixUpdatePending;
-        bool _inverseUpdatePending;
+
+        glm::mat4 _localMatrix;
+        glm::mat4 _localInverse;
+        glm::mat4 _worldMatrix;
+        glm::mat4 _worldInverse;
+
+        bool _matrixChanged;
+        bool _parentChanged;
         OptionalRef<Transform> _parent;
         std::unordered_set<OptionalRef<Transform>> _children;
 
-        void setPending(bool v = true) noexcept;
-        bool updateMatrix() noexcept;
-        bool updateInverse() noexcept;
+        void setMatrixChanged() noexcept;
+        void setParentChanged() noexcept;
+        void setChildrenParentChanged() noexcept;
     };
 }

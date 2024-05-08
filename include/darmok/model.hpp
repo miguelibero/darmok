@@ -5,12 +5,13 @@
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <darmok/scene_fwd.hpp>
-#include <darmok/collection.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/collection.hpp>
 #include <glm/glm.hpp>
 
 namespace darmok
 {
+
     class AssetContext;
     class ModelSceneConfigurer;
 
@@ -32,7 +33,7 @@ namespace darmok
 
         virtual std::string_view getName() const noexcept = 0;
         virtual glm::mat4 getTransform() const noexcept = 0;
-        virtual const ReadOnlyCollection<IModelNode>& getChildren() const noexcept = 0;
+        virtual const ConstRefCollection<IModelNode>& getChildren() const noexcept = 0;
         virtual void configureEntity(Entity entity, const ModelSceneConfig& config) const = 0;
     };
 
@@ -84,7 +85,7 @@ namespace darmok
             callback(node, entity);
             for (auto& child : node.getChildren())
             {
-                run(child, callback);
+                run(child, entity, callback);
             }
             return entity;
         }

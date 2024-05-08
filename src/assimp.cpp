@@ -76,6 +76,18 @@ namespace darmok
             };
         }
 
+        template<typename T, typename F>
+        static std::vector<T> vectorConvert(F* ptr, size_t size) noexcept
+        {
+            std::vector<T> elements;
+            elements.reserve(size);
+            for (size_t i = 0; i < size; i++)
+            {
+                elements.push_back(convert(ptr[i]));
+            }
+            return elements;
+        }
+
         template<typename T>
         static OptionalRef<T> getNodeChild(T& node, const std::string_view& path) noexcept
         {
@@ -107,38 +119,28 @@ namespace darmok
 
     std::string_view AssimpMaterialProperty::getKey() const noexcept
     {
-        return AssimpUtils::getStringView(_prop.mKey);
+        return AssimpUtils::getStringView(_prop->mKey);
     }
 
     aiPropertyTypeInfo AssimpMaterialProperty::getType() const noexcept
     {
-        return _prop.mType;
+        return _prop->mType;
     }
 
     aiTextureType AssimpMaterialProperty::getTextureType() const noexcept
     {
-        return (aiTextureType)_prop.mSemantic;
+        return (aiTextureType)_prop->mSemantic;
     }
 
     size_t AssimpMaterialProperty::getTextureIndex() const noexcept
     {
-        return _prop.mIndex;
+        return _prop->mIndex;
     }
 
     const DataView& AssimpMaterialProperty::getData() const noexcept
     {
         return _data;
     }
-
-    AssimpMaterialPropertyCollection::AssimpMaterialPropertyCollection(const aiMaterial& material, const aiSceneRef& scene) noexcept
-    {
-        auto size = material.mNumProperties;
-        _elements.reserve(size);
-        for(size_t i = 0; i < size; i++)
-        {
-            _elements.emplace_back(*material.mProperties[i++], scene);
-        }
-    } 
 
     AssimpMaterialTexture::AssimpMaterialTexture(const aiMaterial& material, aiTextureType type, unsigned int index) noexcept
         : _type(type)
@@ -202,41 +204,43 @@ namespace darmok
         return _coordIndex;
     }
 
-    AssimpMaterialTextureCollection::AssimpMaterialTextureCollection(const aiMaterial& material, aiTextureType type) noexcept
-    {
-        auto size = material.GetTextureCount((aiTextureType)type);
-        _elements.reserve(size);
-        for (unsigned int i = 0; i < size; i++)
-        {
-            _elements.emplace_back(material, type, i++);
-        }
-    }
-
     AssimpMaterial::AssimpMaterial(const aiMaterial& material, const aiSceneRef& scene, const std::string& basePath) noexcept
         : _material(material)
         , _scene(scene)
-        , _properties(material, scene)
         , _basePath(basePath)
     {
+        auto size = material.mNumProperties;
+        _properties.reserve(size);
+        for (size_t i = 0; i < size; i++)
+        {
+            _properties.emplace_back(*material.mProperties[i], scene);
+        }
     }
 
     std::string_view AssimpMaterial::getName() const noexcept
     {
-        return AssimpUtils::getStringView(_material.GetName());
+        return AssimpUtils::getStringView(_material->GetName());
     }
 
-    const AssimpMaterialTextureCollection& AssimpMaterial::getTextures(aiTextureType type) const noexcept
+    const std::vector<AssimpMaterialTexture>& AssimpMaterial::getTextures(aiTextureType type) const noexcept
     {
         auto itr = _textures.find(type);
         if (itr == _textures.end())
         {
-            auto r = _textures.emplace(std::make_pair(type, AssimpMaterialTextureCollection(_material, type)));
+            auto r = _textures.try_emplace(type);
             itr = r.first;
+            auto& textures = itr->second;
+            auto size = _material->GetTextureCount((aiTextureType)type);
+            textures.reserve(size);
+            for (unsigned int i = 0; i < size; i++)
+            {
+                textures.emplace_back(_material.value(), type, i);
+            }
         }
         return itr->second;
     }
 
-    const AssimpMaterialPropertyCollection& AssimpMaterial::getProperties() const noexcept
+    const std::vector<AssimpMaterialProperty>& AssimpMaterial::getProperties() const noexcept
     {
         return _properties;
     }
@@ -248,22 +252,22 @@ namespace darmok
         switch (type)
         {
         case AssimpMaterialColorType::Diffuse:
-            r = _material.Get(AI_MATKEY_COLOR_DIFFUSE, color);
+            r = _material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
             break;
         case AssimpMaterialColorType::Specular:
-            r = _material.Get(AI_MATKEY_COLOR_SPECULAR, color);
+            r = _material->Get(AI_MATKEY_COLOR_SPECULAR, color);
             break;
         case AssimpMaterialColorType::Ambient:
-            r = _material.Get(AI_MATKEY_COLOR_AMBIENT, color);
+            r = _material->Get(AI_MATKEY_COLOR_AMBIENT, color);
             break;
         case AssimpMaterialColorType::Emissive:
-            r = _material.Get(AI_MATKEY_COLOR_EMISSIVE, color);
+            r = _material->Get(AI_MATKEY_COLOR_EMISSIVE, color);
             break;
         case AssimpMaterialColorType::Transparent:
-            r = _material.Get(AI_MATKEY_COLOR_TRANSPARENT, color);
+            r = _material->Get(AI_MATKEY_COLOR_TRANSPARENT, color);
             break;
         case AssimpMaterialColorType::Reflective:
-            r = _material.Get(AI_MATKEY_COLOR_REFLECTIVE, color);
+            r = _material->Get(AI_MATKEY_COLOR_REFLECTIVE, color);
             break;
         }
         if (r == AI_SUCCESS)
@@ -276,7 +280,7 @@ namespace darmok
     bool AssimpMaterial::showWireframe() const noexcept
     {
         int v;
-        if (AI_SUCCESS == _material.Get(AI_MATKEY_ENABLE_WIREFRAME, v))
+        if (AI_SUCCESS == _material->Get(AI_MATKEY_ENABLE_WIREFRAME, v))
         {
             return v != 0;
         }
@@ -286,7 +290,7 @@ namespace darmok
     aiShadingMode AssimpMaterial::getShadingMode() const noexcept
     {
         int v;
-        if (AI_SUCCESS == _material.Get(AI_MATKEY_SHADING_MODEL, v))
+        if (AI_SUCCESS == _material->Get(AI_MATKEY_SHADING_MODEL, v))
         {
             return (aiShadingMode)v;
         }
@@ -296,7 +300,7 @@ namespace darmok
     float AssimpMaterial::getOpacity() const noexcept
     {
         float v;
-        if (AI_SUCCESS == _material.Get(AI_MATKEY_OPACITY, v))
+        if (AI_SUCCESS == _material->Get(AI_MATKEY_OPACITY, v))
         {
             return v != 0;
         }
@@ -377,37 +381,15 @@ namespace darmok
         return tex;
     }
 
-    AssimpMeshFaceIndexCollection::AssimpMeshFaceIndexCollection(const aiFace& face, const aiSceneRef& scene) noexcept
-        : _face(face)
-        , _scene(scene)
-    {
-    }
-
-    size_t AssimpMeshFaceIndexCollection::size() const noexcept
-    {
-        return _face.mNumIndices;
-    }
-
-    const VertexIndex& AssimpMeshFaceIndexCollection::operator[](size_t pos) const noexcept
-    {
-        return (VertexIndex&)_face.mIndices[pos];
-    }
-
-    VertexIndex& AssimpMeshFaceIndexCollection::operator[](size_t pos) noexcept
-    {
-        return (VertexIndex&)_face.mIndices[pos];
-    }
-
     AssimpMeshFace::AssimpMeshFace(const aiFace& face, const aiSceneRef& scene) noexcept
         : _face(face)
         , _scene(scene)
-        , _indices(face, scene)
     {
     }
 
     size_t AssimpMeshFace::size() const noexcept
     {
-        return _face.mNumIndices;
+        return _face->mNumIndices;
     }
 
     bool AssimpMeshFace::empty() const noexcept
@@ -415,32 +397,14 @@ namespace darmok
         return size() == 0;
     }
 
-    const AssimpMeshFaceIndexCollection& AssimpMeshFace::getIndices() const noexcept
+    VertexIndex AssimpMeshFace::getIndex(size_t pos) const noexcept
     {
-        return _indices;
-    }
-
-    AssimpVector3Collection::AssimpVector3Collection(aiVector3D* vectors, size_t size) noexcept
-    {
-        _elements.reserve(size);
-        for(size_t i = 0; i < size; i++)
-        {
-            _elements.push_back(AssimpUtils::convert(vectors[i]));
-        }
-    }
-
-    AssimpColorCollection::AssimpColorCollection(aiColor4D* colors, size_t size) noexcept
-    {
-        _elements.reserve(size);
-        for (size_t i = 0; i < size; i++)
-        {
-            _elements.push_back(AssimpUtils::convert(colors[i]));
-        }
+        return _face->mIndices[pos];
     }
 
     AssimpTextureCoords::AssimpTextureCoords(const aiMesh& mesh, size_t pos) noexcept
         : _compCount(mesh.mNumUVComponents[pos])
-        , _coords(mesh.mTextureCoords[pos], mesh.mNumVertices)
+        , _coords(AssimpUtils::vectorConvert<glm::vec3>(mesh.mTextureCoords[pos], mesh.mNumVertices))
     {
     }
 
@@ -449,63 +413,93 @@ namespace darmok
         return _compCount;
     }
 
-    const AssimpVector3Collection& AssimpTextureCoords::getCoords() const noexcept
+    const std::vector<glm::vec3>& AssimpTextureCoords::getCoords() const noexcept
     {
         return _coords;
     }
 
-    AssimpMeshFaceCollection::AssimpMeshFaceCollection(const aiMesh& mesh, const aiSceneRef& scene) noexcept
+    AssimpVector3Collection::AssimpVector3Collection(const aiVector3D* ptr, size_t size) noexcept
+        : _ptr(ptr)
+        , _size(size)
     {
-        if (mesh.mFaces == nullptr)
-        {
-            return;
-        }
-        auto size = mesh.mNumFaces;
-        _elements.reserve(size);
-        for(size_t i = 0; i < size; i++)
-        {
-            _elements.emplace_back(mesh.mFaces[i], scene);
-        }
     }
 
-    AssimpMeshTextureCoordsCollection::AssimpMeshTextureCoordsCollection(const aiMesh& mesh) noexcept
+    size_t AssimpVector3Collection::size() const noexcept
     {
-        size_t size = AI_MAX_NUMBER_OF_TEXTURECOORDS;
-        _elements.reserve(size);
-        for (size_t i = 0; i < size; i++)
-        {
-            if (mesh.mTextureCoords[i] != nullptr)
-            {
-                _elements.emplace_back(mesh, i);
-            }
-        }
+        return _size;
     }
 
-    AssimpMeshColorsCollection::AssimpMeshColorsCollection(const aiMesh& mesh) noexcept
+    glm::vec3 AssimpVector3Collection::operator[](size_t pos) const
     {
-        size_t size = AI_MAX_NUMBER_OF_COLOR_SETS;
-        _elements.reserve(size);
-        for (size_t i = 0; i < size; i++)
+        if (pos < 0 || pos >= _size)
         {
-            if (mesh.mColors[i] != nullptr)
-            {
-                _elements.emplace_back(mesh.mColors[i], mesh.mNumVertices);
-            }
+            throw std::runtime_error("invalid access");
         }
+        return AssimpUtils::convert(_ptr[pos]);
+    }
+
+    AssimpColorCollection::AssimpColorCollection(const aiColor4D* ptr, size_t size) noexcept
+        : _ptr(ptr)
+        , _size(size)
+    {
+    }
+
+    size_t AssimpColorCollection::size() const noexcept
+    {
+        return _size;
+    }
+
+    Color AssimpColorCollection::operator[](size_t pos) const
+    {
+        if (pos < 0 || pos >= _size)
+        {
+            throw std::runtime_error("invalid access");
+        }
+        return AssimpUtils::convert(_ptr[pos]);
     }
 
     AssimpMesh::AssimpMesh(const aiMesh& mesh, const AssimpMaterial& material, const aiSceneRef& scene) noexcept
         : _mesh(mesh)
         , _material(material)
         , _scene(scene)
-        , _faces(mesh, scene)
-        , _texCoords(mesh)
-        , _colors(mesh)
         , _positions(mesh.mVertices, mesh.mNumVertices)
         , _normals(mesh.mNormals, mesh.mNumVertices)
         , _tangents(mesh.mTangents, mesh.mNumVertices)
         , _bitangents(mesh.mBitangents, mesh.mNumVertices)
     {
+        {
+            size_t size = AI_MAX_NUMBER_OF_COLOR_SETS;
+            _colors.reserve(size);
+            for (size_t i = 0; i < size; i++)
+            {
+                if (mesh.mColors[i] != nullptr)
+                {
+                    _colors.emplace_back(mesh.mColors[i], mesh.mNumVertices);
+                }
+            }
+        }
+        {
+            size_t size = AI_MAX_NUMBER_OF_TEXTURECOORDS;
+            _texCoords.reserve(size);
+            for (size_t i = 0; i < size; i++)
+            {
+                if (mesh.mTextureCoords[i] != nullptr)
+                {
+                    _texCoords.emplace_back(mesh, i);
+                }
+            }
+        }
+        {
+            if (mesh.mFaces != nullptr)
+            {
+                auto size = mesh.mNumFaces;
+                _faces.reserve(size);
+                for (size_t i = 0; i < size; i++)
+                {
+                    _faces.emplace_back(mesh.mFaces[i], scene);
+                }
+            }
+        }
     }
 
     const AssimpMaterial& AssimpMesh::getMaterial() const noexcept
@@ -533,19 +527,19 @@ namespace darmok
         return _bitangents;
     }
 
-    const AssimpMeshTextureCoordsCollection& AssimpMesh::getTexCoords() const noexcept
+    const std::vector<AssimpTextureCoords>& AssimpMesh::getTexCoords() const noexcept
     {
         return _texCoords;
     }
 
     const size_t AssimpMesh::getVertexCount() const noexcept
     {
-        return _mesh.mNumVertices;
+        return _mesh->mNumVertices;
     }
 
-    Data AssimpMesh::createVertexData(const bgfx::VertexLayout& layout) const noexcept
+    Data AssimpMesh::createVertexData(const bgfx::VertexLayout& layout, bx::AllocatorI& alloc) const noexcept
     {
-        VertexDataWriter writer(layout, getVertexCount());
+        VertexDataWriter writer(layout, getVertexCount(), alloc);
         writer.write(bgfx::Attrib::Position, getPositions());
         writer.write(bgfx::Attrib::Normal, getNormals());
         writer.write(bgfx::Attrib::Tangent, getTangents());
@@ -572,56 +566,40 @@ namespace darmok
 
     std::vector<VertexIndex> AssimpMesh::createIndexData() const noexcept
     {
-        std::vector<VertexIndex> indices;
+        size_t size = 0;
         for (auto& face : getFaces())
         {
-            indices.insert(indices.end(), face.getIndices().begin(), face.getIndices().end());
+            size += face.size();
+        }
+        std::vector<VertexIndex> indices;
+        indices.reserve(size);
+        for (auto& face : getFaces())
+        {
+            for (size_t i = 0; i < face.size(); i++)
+            {
+                indices.push_back(face.getIndex(i));
+            }
         }
         return indices;
     }
 
     std::shared_ptr<Mesh> AssimpMesh::load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept
     {
-        auto vertices = createVertexData(layout);
+        auto vertices = createVertexData(layout, alloc);
         auto indices = createIndexData();
         auto mesh = std::make_shared<Mesh>(layout, DataView(vertices), DataView(indices));
         mesh->setMaterial(getMaterial().load(textureLoader, alloc));
         return mesh;
     }
 
-    const AssimpMeshFaceCollection& AssimpMesh::getFaces() const noexcept
+    const std::vector<AssimpMeshFace>& AssimpMesh::getFaces() const noexcept
     {
         return _faces;
     }
 
-    const AssimpMeshColorsCollection& AssimpMesh::getColors() const noexcept
+    const std::vector<AssimpColorCollection>& AssimpMesh::getColors() const noexcept
     {
         return _colors;
-    }
-
-    AssimpNodeMeshCollection::AssimpNodeMeshCollection(const aiNode& node, const AssimpMeshCollection& meshes) noexcept
-    {
-        auto size = node.mNumMeshes;
-        _elements.reserve(size);
-        for (size_t i = 0; i < size; i++)
-        {
-            auto j = node.mMeshes[i];
-            if (j < meshes.size())
-            {
-                _elements.push_back(meshes[j]);
-            }
-        }
-    }
-    
-    std::vector<std::shared_ptr<Mesh>> AssimpNodeMeshCollection::load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept
-    {
-        std::vector<std::shared_ptr<Mesh>> meshes;
-        meshes.reserve(size());
-        for (auto& mesh : *this)
-        {
-            meshes.push_back(mesh.load(layout, textureLoader, alloc));
-        }
-        return meshes;
     }
 
     AssimpCamera::AssimpCamera(const aiCamera& cam, const aiSceneRef& scene) noexcept
@@ -649,7 +627,7 @@ namespace darmok
 
     std::string_view AssimpCamera::getName() const noexcept
     {
-        return AssimpUtils::getStringView(_cam.mName);
+        return AssimpUtils::getStringView(_cam->mName);
     }
 
     const glm::mat4& AssimpCamera::getProjectionMatrix() const noexcept
@@ -664,42 +642,42 @@ namespace darmok
 
     float AssimpCamera::getAspect() const noexcept
     {
-        return _cam.mAspect;
+        return _cam->mAspect;
     }
 
     float AssimpCamera::getClipFar() const noexcept
     {
-        return _cam.mClipPlaneFar;
+        return _cam->mClipPlaneFar;
     }
 
     float AssimpCamera::getClipNear() const noexcept
     {
-        return _cam.mClipPlaneNear;
+        return _cam->mClipPlaneNear;
     }
 
     float AssimpCamera::getHorizontalFieldOfView() const noexcept
     {
-        return _cam.mHorizontalFOV;
+        return _cam->mHorizontalFOV;
     }
 
     float AssimpCamera::getOrthographicWidth() const noexcept
     {
-        return _cam.mOrthographicWidth;
+        return _cam->mOrthographicWidth;
     }
 
     glm::vec3 AssimpCamera::getLookAt() const noexcept
     {
-        return AssimpUtils::convert(_cam.mLookAt);
+        return AssimpUtils::convert(_cam->mLookAt);
     }
 
     glm::vec3 AssimpCamera::getPosition() const noexcept
     {
-        return AssimpUtils::convert(_cam.mPosition);
+        return AssimpUtils::convert(_cam->mPosition);
     }
 
     glm::vec3 AssimpCamera::getUp() const noexcept
     {
-        return AssimpUtils::convert(_cam.mUp);
+        return AssimpUtils::convert(_cam->mUp);
     }
 
     AssimpLight::AssimpLight(const aiLight& light, const aiSceneRef& scene) noexcept
@@ -710,98 +688,120 @@ namespace darmok
 
     std::string_view AssimpLight::getName() const noexcept
     {
-        return AssimpUtils::getStringView(_light.mName);
+        return AssimpUtils::getStringView(_light->mName);
     }
 
     float AssimpLight::getInnerConeAngle() const noexcept
     {
-        return _light.mAngleInnerCone;
+        return _light->mAngleInnerCone;
     }
 
     float AssimpLight::getOuterConeAngle() const noexcept
     {
-        return _light.mAngleOuterCone;
+        return _light->mAngleOuterCone;
     }
 
     glm::vec3 AssimpLight::getAttenuation() const noexcept
     {
         return {
-            _light.mAttenuationConstant,
-            _light.mAttenuationLinear,
-            _light.mAttenuationQuadratic,
+            _light->mAttenuationConstant,
+            _light->mAttenuationLinear,
+            _light->mAttenuationQuadratic,
         };
     }
 
     Color3 AssimpLight::getAmbientColor() const noexcept
     {
-        return AssimpUtils::convert(_light.mColorAmbient);
+        return AssimpUtils::convert(_light->mColorAmbient);
     }
 
     Color3 AssimpLight::getDiffuseColor() const noexcept
     {
-        return AssimpUtils::convert(_light.mColorDiffuse);
+        return AssimpUtils::convert(_light->mColorDiffuse);
     }
 
     Color3 AssimpLight::getSpecularColor() const noexcept
     {
-        return AssimpUtils::convert(_light.mColorSpecular);
+        return AssimpUtils::convert(_light->mColorSpecular);
     }
 
     glm::vec3 AssimpLight::getDirection() const noexcept
     {
-        return AssimpUtils::convert(_light.mDirection);
+        return AssimpUtils::convert(_light->mDirection);
     }
 
     glm::vec3 AssimpLight::getPosition() const noexcept
     {
-        return AssimpUtils::convert(_light.mPosition);
+        return AssimpUtils::convert(_light->mPosition);
     }
 
     aiLightSourceType AssimpLight::getType() const noexcept
     {
-        return _light.mType;
+        return _light->mType;
     }
 
     glm::vec2 AssimpLight::getSize() const noexcept
     {
-        return AssimpUtils::convert(_light.mSize);
-    }
-
-    AssimpNodeChildrenCollection::AssimpNodeChildrenCollection(const aiNode& node, const AssimpScene& scene) noexcept
-    {
-        auto size = node.mNumChildren;
-        _elements.reserve(size);
-        for (size_t i = 0; i < size; i++)
-        {
-            _elements.emplace_back(*node.mChildren[i++], scene);
-        }
+        return AssimpUtils::convert(_light->mSize);
     }
 
     AssimpNode::AssimpNode(const aiNode& node, const AssimpScene& scene) noexcept
         : _node(node)
-        , _meshes(node, scene.getMeshes())
-        , _children(node, scene)
-        , _light(scene.getLights().get(getName()).optional())
-        , _camera(scene.getCameras().get(getName()).optional())
+        , _scene(scene.getInternal())
+        , _light(scene.getLight(getName()).optional())
+        , _camera(scene.getCamera(getName()).optional())
     {
+
+        {
+            auto size = node.mNumMeshes;
+            _meshes.reserve(size);
+            auto& meshes = scene.getMeshes();
+            for (size_t i = 0; i < size; i++)
+            {
+                auto j = node.mMeshes[i];
+                if (j < meshes.size())
+                {
+                    _meshes.push_back(meshes[j]);
+                }
+            }
+        }
+        {
+            auto size = node.mNumChildren;
+            _children.reserve(size);
+            for (size_t i = 0; i < size; i++)
+            {
+                _children.emplace_back(*node.mChildren[i], scene);
+            }
+        }
+    }
+
+    std::vector<std::shared_ptr<Mesh>> AssimpNode::loadMeshes(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept
+    {
+        std::vector<std::shared_ptr<Mesh>> meshes;
+        meshes.reserve(_meshes.size());
+        for (auto& mesh : _meshes)
+        {
+            meshes.push_back(mesh.load(layout, textureLoader, alloc));
+        }
+        return meshes;
     }
 
     std::string_view AssimpNode::getName() const noexcept
     {
-        return AssimpUtils::getStringView(_node.mName);
+        return AssimpUtils::getStringView(_node->mName);
     }
 
     glm::mat4 AssimpNode::getTransform() const noexcept
     {
-        return AssimpUtils::convert(_node.mTransformation);
+        return AssimpUtils::convert(_node->mTransformation);
     }
 
-    const AssimpNodeMeshCollection& AssimpNode::getMeshes() const noexcept
+    const std::vector<AssimpMesh>& AssimpNode::getMeshes() const noexcept
     {
         return _meshes;
     }
 
-    const AssimpNodeChildrenCollection& AssimpNode::getChildren() const noexcept
+    const std::vector<AssimpNode>& AssimpNode::getChildren() const noexcept
     {
         return _children;
     }
@@ -821,67 +821,75 @@ namespace darmok
         return _light ? &_light.value() : nullptr;
     }
 
-    AssimpCameraCollection::AssimpCameraCollection(const aiSceneRef& scene) noexcept
+    OptionalRef<const AssimpCamera> AssimpScene::getCamera(const std::string_view& name) const noexcept
     {
-        auto size = scene->mNumCameras;
-        _elements.reserve(size);
-        size_t i = 0;
-        for(size_t i = 0; i < size; i++)
+        for (auto& cam : _cameras)
         {
-            _elements.emplace_back(*scene->mCameras[i], scene);
-        }
-    }
-
-    OptionalRef<const AssimpCamera> AssimpCameraCollection::get(const std::string_view& name) const noexcept
-    {
-        for (auto& elm : *this)
-        {
-            if (elm.getName() == name)
+            if (cam.getName() == name)
             {
-                return elm;
+                return cam;
             }
         }
         return std::nullopt;
     }
 
-    AssimpLightCollection::AssimpLightCollection(const aiSceneRef& scene) noexcept
+    OptionalRef<const AssimpLight> AssimpScene::getLight(const std::string_view& name) const noexcept
     {
-        auto size = scene->mNumLights;
-        _elements.reserve(size);
-        size_t i = 0;
-        for (size_t i = 0; i < size; i++)
+        for (auto& light : _lights)
         {
-            _elements.emplace_back(*scene->mLights[i], scene);
-        }
-    }
-
-    OptionalRef<const AssimpLight> AssimpLightCollection::get(const std::string_view& name) const noexcept
-    {
-        for (auto& elm : *this)
-        {
-            if (elm.getName() == name)
+            if (light.getName() == name)
             {
-                return elm;
+                return light;
             }
         }
         return std::nullopt;
     }
 
-    AssimpMaterialCollection::AssimpMaterialCollection(const aiSceneRef& scene, const std::string& basePath) noexcept
+    std::vector<AssimpMaterial> AssimpScene::loadMaterials(const aiSceneRef& scene, const std::string& path) noexcept
     {
+        std::vector<AssimpMaterial> materials;
         auto size = scene->mNumMaterials;
-        _elements.reserve(size);
+        materials.reserve(size);
+        size_t i = 0;
+        auto basePath = std::filesystem::path(path).parent_path().string();
+        for (size_t i = 0; i < size; i++)
+        {
+            materials.emplace_back(*scene->mMaterials[i], scene, basePath);
+        }
+        return materials;
+    }
+
+    std::vector<AssimpCamera> AssimpScene::loadCameras(const aiSceneRef& scene) noexcept
+    {
+        std::vector<AssimpCamera> cameras;
+        auto size = scene->mNumCameras;
+        cameras.reserve(size);
         size_t i = 0;
         for (size_t i = 0; i < size; i++)
         {
-            _elements.emplace_back(*scene->mMaterials[i], scene, basePath);
+            cameras.emplace_back(*scene->mCameras[i], scene);
         }
+        return cameras;
     }
 
-    AssimpMeshCollection::AssimpMeshCollection(const aiSceneRef& scene, const AssimpMaterialCollection& materials) noexcept
+    std::vector<AssimpLight> AssimpScene::loadLights(const aiSceneRef& scene) noexcept
     {
+        std::vector<AssimpLight> lights;
+        auto size = scene->mNumLights;
+        lights.reserve(size);
+        size_t i = 0;
+        for (size_t i = 0; i < size; i++)
+        {
+            lights.emplace_back(*scene->mLights[i], scene);
+        }
+        return lights;
+    }
+
+    std::vector<AssimpMesh> AssimpScene::loadMeshes(const aiSceneRef& scene, const std::vector<AssimpMaterial>& materials) noexcept
+    {
+        std::vector<AssimpMesh> meshes;
         auto size = scene->mNumMeshes;
-        _elements.reserve(size);
+        meshes.reserve(size);
         size_t i = 0;
         for (size_t i = 0; i < size; i++)
         {
@@ -889,18 +897,19 @@ namespace darmok
             if (meshPtr != nullptr && meshPtr->mMaterialIndex < materials.size())
             {
                 auto& material = materials[meshPtr->mMaterialIndex];
-                _elements.emplace_back(*meshPtr, material, scene);
+                meshes.emplace_back(*meshPtr, material, scene);
             }
         }
+        return meshes;
     }
 
     AssimpScene::AssimpScene(const aiSceneRef& scene, const std::string& path) noexcept
         : _scene(scene)
         , _path(path)
-        , _materials(scene, path)
-        , _meshes(scene, _materials)
-        , _cameras(scene)
-        , _lights(scene)
+        , _materials(loadMaterials(scene, path))
+        , _meshes(loadMeshes(scene, _materials))
+        , _cameras(loadCameras(scene))
+        , _lights(loadLights(scene))
         , _rootNode(*scene->mRootNode, *this)
     {
     }
@@ -940,27 +949,32 @@ namespace darmok
         return _path;
     }
 
+    const aiSceneRef& AssimpScene::getInternal() const noexcept
+    {
+        return _scene;
+    }
+
     const AssimpNode& AssimpScene::getRootNode() const noexcept
     {
         return _rootNode;
     }
 
-    const AssimpMeshCollection& AssimpScene::getMeshes() const noexcept
+    const std::vector<AssimpMesh>& AssimpScene::getMeshes() const noexcept
     {
         return _meshes;
     }
 
-    const AssimpMaterialCollection& AssimpScene::getMaterials() const noexcept
+    const std::vector<AssimpMaterial>& AssimpScene::getMaterials() const noexcept
     {
         return _materials;
     }
 
-    const AssimpCameraCollection& AssimpScene::getCameras() const noexcept
+    const std::vector<AssimpCamera>& AssimpScene::getCameras() const noexcept
     {
         return _cameras;
     }
 
-    const AssimpLightCollection& AssimpScene::getLights() const noexcept
+    const std::vector<AssimpLight>& AssimpScene::getLights() const noexcept
     {
         return _lights;
     }

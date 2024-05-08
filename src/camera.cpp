@@ -202,7 +202,7 @@ namespace darmok
                 auto trans = registry.try_get<const Transform>(entity);
                 if (trans != nullptr)
                 {
-                    viewPtr = glm::value_ptr(trans->getInverse());
+                    viewPtr = glm::value_ptr(trans->getWorldInverse());
                 }
             }
 
@@ -296,7 +296,7 @@ namespace darmok
         auto trans = registry.try_get<const Transform>(entity);
         if (trans != nullptr)
         {
-            model = trans->getInverse();
+            model = trans->getWorldInverse();
         }
         auto viewport = glm::ivec4(0, 0, _app->getWindow().getPixelSize());
         return Ray::unproject(point, model, _matrix, viewport);

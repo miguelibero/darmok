@@ -8,31 +8,10 @@
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/transform.hpp>
 
 namespace darmok
-{
-    class BX_NO_VTABLE IEntityFilter
-    {
-    public:
-        virtual ~IEntityFilter() = default;
-        virtual void init(EntityRegistry& registry) { _registry = registry; };
-        virtual void operator()(EntityRuntimeView& view) const = 0;
-    private:
-        OptionalRef<EntityRegistry> _registry;
-    protected:
-        EntityRegistry& getRegistry() const { return _registry.value(); }
-    };
-
-    template<typename T>
-    class EntityComponentFilter final : public IEntityFilter
-    {
-    public:
-        void operator()(EntityRuntimeView& view) const override
-        {
-            view.iterate(getRegistry().storage<T>());
-        }
-    };
-
+{    
     class Scene;
 
     class BX_NO_VTABLE ISceneLogicUpdater
@@ -70,6 +49,35 @@ namespace darmok
 
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
+
+        template<typename T>
+        OptionalRef<T> getComponentInChildren(Entity entity) noexcept
+        {
+            auto& registry = getRegistry();
+            auto comp = registry.try_get<T>(entity);
+            if (comp != nullptr)
+            {
+                return OptionalRef<T>(comp);
+            }
+            auto trans = registry.try_get<Transform>(entity);
+            if (trans == nullptr)
+            {
+                return nullptr;
+            }
+            for (auto& child : trans->getChildren())
+            {
+                auto childEntity = entt::to_entity(registry.storage<Transform>(), child.value());
+                if (childEntity != entt::null)
+                {
+                    auto comp = getComponentInChildren<T>(childEntity);
+                    if (comp)
+                    {
+                        return comp;
+                    }
+                }
+            }
+            return nullptr;
+        }
 
     private:
         std::unique_ptr<SceneImpl> _impl;

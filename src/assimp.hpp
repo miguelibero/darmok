@@ -3,13 +3,14 @@
 #include <string>
 #include <unordered_map>
 #include <optional>
+#include <vector>
 
-#include <darmok/collection.hpp>
 #include <darmok/data.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/color_fwd.hpp>
 #include <darmok/vertex_fwd.hpp>
 #include <darmok/material_fwd.hpp>
+#include <darmok/collection.hpp>
 
 #include <assimp/light.h>
 #include <assimp/material.h>
@@ -50,19 +51,10 @@ namespace darmok
         [[nodiscard]] size_t getTextureIndex() const noexcept;
         [[nodiscard]] const DataView& getData() const noexcept;
     private:
-        const aiMaterialProperty& _prop;
+        OptionalRef<const aiMaterialProperty> _prop;
         DataView _data;
         aiSceneRef _scene;
     };
-
-    class AssimpMaterialPropertyCollection final : public VectorReadOnlyCollection<AssimpMaterialProperty>
-    {
-    public:
-        AssimpMaterialPropertyCollection(const aiMaterial& material, const aiSceneRef& scene) noexcept;
-    };
-
-    class Texture;
-    class ITextureLoader;
 
     class AssimpMaterialTexture final
     {
@@ -81,19 +73,12 @@ namespace darmok
     private:
         aiTextureType _type;
         size_t _index;
-        aiSceneRef _sceneRef;
         std::string _path;
         size_t _coordIndex;
         float _blend;
         aiTextureMapping _mapping;
         aiTextureOp _operation;
         aiTextureMapMode _mapMode;
-    };
-
-    class AssimpMaterialTextureCollection final : public VectorReadOnlyCollection<AssimpMaterialTexture>
-    {
-    public:
-        AssimpMaterialTextureCollection(const aiMaterial& material, aiTextureType type) noexcept;
     };
 
     enum class AssimpMaterialColorType
@@ -108,6 +93,8 @@ namespace darmok
     };
 
     class Material;
+    class Texture;
+    class ITextureLoader;
 
     class AssimpMaterial final
     {
@@ -115,8 +102,8 @@ namespace darmok
         AssimpMaterial(const aiMaterial& material, const aiSceneRef& scene, const std::string& basePath) noexcept;
 
         std::string_view getName() const noexcept;
-        const AssimpMaterialTextureCollection& getTextures(aiTextureType type) const noexcept;
-        const AssimpMaterialPropertyCollection& getProperties() const noexcept;
+        const std::vector<AssimpMaterialTexture>& getTextures(aiTextureType type) const noexcept;
+        const std::vector<AssimpMaterialProperty>& getProperties() const noexcept;
         std::optional<Color> getColor(AssimpMaterialColorType type) const noexcept;
         bool showWireframe() const noexcept;
         aiShadingMode getShadingMode() const noexcept;
@@ -127,27 +114,14 @@ namespace darmok
     private:
         aiSceneRef _scene;
         std::string _basePath;
-        const aiMaterial& _material;
-        AssimpMaterialPropertyCollection _properties;
-        mutable std::unordered_map<aiTextureType, AssimpMaterialTextureCollection> _textures;
+        OptionalRef<const aiMaterial> _material;
+        std::vector<AssimpMaterialProperty> _properties;
+        mutable std::unordered_map<aiTextureType, std::vector<AssimpMaterialTexture>> _textures;
         static const std::unordered_map<AssimpMaterialColorType, MaterialColorType> _materialColors;
         static const std::unordered_map<aiTextureType, MaterialTextureType> _materialTextures;
 
         std::shared_ptr<Texture> loadEmbeddedTexture(const std::string& path, bx::AllocatorI& alloc) const noexcept;
 
-    };
-
-    class AssimpMeshFaceIndexCollection final : public ReadOnlyCollection<VertexIndex>
-    {
-    public:
-        AssimpMeshFaceIndexCollection(const aiFace& face, const aiSceneRef& scene) noexcept;
-        
-        size_t size() const noexcept override;
-        const VertexIndex& operator[](size_t pos) const noexcept override;
-        VertexIndex& operator[](size_t pos) noexcept override;
-    private:
-        const aiFace& _face;
-        aiSceneRef _scene;
     };
 
     class AssimpMeshFace final
@@ -157,26 +131,10 @@ namespace darmok
 
         size_t size() const noexcept;
         bool empty() const noexcept;
-        const AssimpMeshFaceIndexCollection& getIndices() const noexcept;
+        VertexIndex getIndex(size_t pos) const noexcept;
     private:
-        const aiFace& _face;
+        OptionalRef<const aiFace> _face;
         aiSceneRef _scene;
-        AssimpMeshFaceIndexCollection _indices;
-
-    };
-
-    class AssimpVector3Collection final : public VectorReadOnlyCollection<glm::vec3>
-    {
-    public:
-        AssimpVector3Collection(aiVector3D* vectors, size_t size) noexcept;
-    private:
-        aiSceneRef _sceneRef;
-    };
-
-    class AssimpColorCollection final : public VectorReadOnlyCollection<Color>
-    {
-    public:
-        AssimpColorCollection(aiColor4D* colors, size_t size) noexcept;
     };
 
     class AssimpTextureCoords final
@@ -184,31 +142,37 @@ namespace darmok
     public:
         AssimpTextureCoords(const aiMesh& mesh, size_t pos) noexcept;
         size_t getCompCount() const noexcept;
-        const AssimpVector3Collection& getCoords() const noexcept;
+        const std::vector<glm::vec3>& getCoords() const noexcept;
     private:
         size_t _compCount;
-        AssimpVector3Collection _coords;
-    };
-
-    class AssimpMeshFaceCollection final : public VectorReadOnlyCollection<AssimpMeshFace>
-    {
-    public:
-        AssimpMeshFaceCollection(const aiMesh& mesh, const aiSceneRef& scene) noexcept;
-    };
-
-    class AssimpMeshTextureCoordsCollection final : public VectorReadOnlyCollection<AssimpTextureCoords>
-    {
-    public:
-        AssimpMeshTextureCoordsCollection(const aiMesh& mesh) noexcept;
-    };
-
-    class AssimpMeshColorsCollection final : public VectorReadOnlyCollection<AssimpColorCollection>
-    {
-    public:
-        AssimpMeshColorsCollection(const aiMesh& mesh) noexcept;
+        std::vector<glm::vec3> _coords;
     };
 
     class Mesh;
+
+    class AssimpVector3Collection final : public ValCollection<glm::vec3>
+    {
+    public:
+        AssimpVector3Collection(const aiVector3D* ptr, size_t size) noexcept;
+
+        [[nodiscard]] size_t size() const noexcept override;
+        [[nodiscard]] glm::vec3 operator[](size_t pos) const override;
+    private:
+        const aiVector3D* _ptr;
+        size_t _size;
+    };
+
+    class AssimpColorCollection final : public ValCollection<Color>
+    {
+    public:
+        AssimpColorCollection(const aiColor4D* ptr, size_t size) noexcept;
+
+        [[nodiscard]] size_t size() const noexcept override;
+        [[nodiscard]] Color operator[](size_t pos) const override;
+    private:
+        const aiColor4D* _ptr;
+        size_t _size;
+    };
 
     class AssimpMesh final
     {
@@ -220,38 +184,27 @@ namespace darmok
         const AssimpVector3Collection& getNormals() const noexcept;
         const AssimpVector3Collection& getTangents() const noexcept;
         const AssimpVector3Collection& getBitangents() const noexcept;
-        const AssimpMeshTextureCoordsCollection& getTexCoords() const noexcept;
-        const AssimpMeshFaceCollection& getFaces() const noexcept;
-        const AssimpMeshColorsCollection& getColors() const noexcept;
+        const std::vector<AssimpTextureCoords>& getTexCoords() const noexcept;
+        const std::vector<AssimpMeshFace>& getFaces() const noexcept;
+        const std::vector<AssimpColorCollection>& getColors() const noexcept;
         const size_t getVertexCount() const noexcept;
 
         std::shared_ptr<Mesh> load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept;
 
     private:
-        const aiMesh& _mesh;
+        OptionalRef<const aiMesh> _mesh;
         AssimpMaterial _material;
         aiSceneRef _scene;
         AssimpVector3Collection _positions;
         AssimpVector3Collection _normals;
         AssimpVector3Collection _tangents;
         AssimpVector3Collection _bitangents;
-        AssimpMeshTextureCoordsCollection _texCoords;
-        AssimpMeshFaceCollection _faces;
-        AssimpMeshColorsCollection _colors;
+        std::vector<AssimpTextureCoords> _texCoords;
+        std::vector<AssimpMeshFace> _faces;
+        std::vector<AssimpColorCollection> _colors;
 
-        Data createVertexData(const bgfx::VertexLayout& layout) const noexcept;
+        Data createVertexData(const bgfx::VertexLayout& layout, bx::AllocatorI& alloc) const noexcept;
         std::vector<VertexIndex> createIndexData() const noexcept;
-    };
-
-    class AssimpMeshCollection;
-
-    class AssimpNodeMeshCollection final : public VectorReadOnlyCollection<AssimpMesh>
-    {
-    public:
-        AssimpNodeMeshCollection(const aiNode& node, const AssimpMeshCollection& meshes) noexcept;
-
-        std::vector<std::shared_ptr<Mesh>> load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept;
-    private:
     };
 
     class AssimpCamera final
@@ -271,7 +224,7 @@ namespace darmok
         glm::vec3 getPosition() const noexcept;
         glm::vec3 getUp() const noexcept;
     private:
-        const aiCamera& _cam;
+        OptionalRef<const aiCamera> _cam;
         aiSceneRef _scene;
         glm::mat4 _view;
         glm::mat4 _proj;
@@ -294,18 +247,11 @@ namespace darmok
         [[nodiscard]] glm::vec3 getPosition() const noexcept;
         [[nodiscard]] glm::vec2 getSize() const noexcept;
     private:
-        const aiLight& _light;
+        OptionalRef<const aiLight> _light;
         aiSceneRef _scene;
     };
 
     class AssimpScene;
-    class AssimpNode;
-
-    class AssimpNodeChildrenCollection final : public VectorReadOnlyCollection<AssimpNode>
-    {
-    public:
-        AssimpNodeChildrenCollection(const aiNode& node, const AssimpScene& scene) noexcept;
-    };
 
     class AssimpNode final
     {
@@ -314,46 +260,21 @@ namespace darmok
         
         std::string_view getName() const noexcept;
         glm::mat4 getTransform() const noexcept;
-        const AssimpNodeMeshCollection& getMeshes() const noexcept;
-        const AssimpNodeChildrenCollection& getChildren() const noexcept;
+        const std::vector<AssimpMesh>& getMeshes() const noexcept;
+        const std::vector<AssimpNode>& getChildren() const noexcept;
         OptionalRef<const AssimpNode> getChild(const std::string_view& path) const noexcept;
         OptionalRef<const AssimpCamera> getCamera() const noexcept;
         OptionalRef<const AssimpLight> getLight() const noexcept;
 
+        std::vector<std::shared_ptr<Mesh>> loadMeshes(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept;
+
     private:
-        const aiNode& _node;
+        OptionalRef<const aiNode> _node;
+        aiSceneRef _scene;
         std::optional<AssimpCamera> _camera;
         std::optional<AssimpLight> _light;
-        AssimpNodeMeshCollection _meshes;
-        AssimpNodeChildrenCollection _children;
-    };
-
-    class AssimpCameraCollection final : public VectorReadOnlyCollection<AssimpCamera>
-    {
-    public:
-        AssimpCameraCollection(const aiSceneRef& scene) noexcept;
-
-        OptionalRef<const AssimpCamera> get(const std::string_view& name) const noexcept;
-    };
-
-    class AssimpLightCollection final : public VectorReadOnlyCollection<AssimpLight>
-    {
-    public:
-        AssimpLightCollection(const aiSceneRef& scene) noexcept;
-
-        OptionalRef<const AssimpLight> get(const std::string_view& name) const noexcept;
-    };
-
-    class AssimpMaterialCollection final : public VectorReadOnlyCollection<AssimpMaterial>
-    {
-    public:
-        AssimpMaterialCollection(const aiSceneRef& scene, const std::string& basePath) noexcept;
-    };
-
-    class AssimpMeshCollection final : public VectorReadOnlyCollection<AssimpMesh>
-    {
-    public:
-        AssimpMeshCollection(const aiSceneRef& scene, const AssimpMaterialCollection& materials) noexcept;
+        std::vector<AssimpMesh> _meshes;
+        std::vector<AssimpNode> _children;
     };
 
     class AssimpScene final
@@ -364,22 +285,30 @@ namespace darmok
 
         std::string_view getName() const noexcept;
         const std::string& getPath() const noexcept;
+        const aiSceneRef& getInternal() const noexcept;
 
         const AssimpNode& getRootNode() const noexcept;
-        const AssimpMeshCollection& getMeshes() const noexcept;
-        const AssimpMaterialCollection& getMaterials() const noexcept;
-        const AssimpCameraCollection& getCameras() const noexcept;
-        const AssimpLightCollection& getLights() const noexcept;
+        const std::vector<AssimpMaterial>& getMaterials() const noexcept;
+        const std::vector<AssimpMesh>& getMeshes() const noexcept;
+        const std::vector<AssimpCamera>& getCameras() const noexcept;
+        const std::vector<AssimpLight>& getLights() const noexcept;
+
+        OptionalRef<const AssimpCamera> getCamera(const std::string_view& name) const noexcept;
+        OptionalRef<const AssimpLight> getLight(const std::string_view& name) const noexcept;
 
     private:
         std::string _path;
         aiSceneRef _scene;
-        AssimpMaterialCollection _materials;
-        AssimpMeshCollection _meshes;
-        AssimpCameraCollection _cameras;
-        AssimpLightCollection _lights;
+        std::vector<AssimpMaterial> _materials;
+        std::vector<AssimpMesh> _meshes;
+        std::vector<AssimpCamera> _cameras;
+        std::vector<AssimpLight> _lights;
         AssimpNode _rootNode;
 
+        static std::vector<AssimpMaterial> loadMaterials(const aiSceneRef& scene, const std::string& path) noexcept;
+        static std::vector<AssimpMesh> loadMeshes(const aiSceneRef& scene, const std::vector<AssimpMaterial>& materials) noexcept;
+        static std::vector<AssimpCamera> loadCameras(const aiSceneRef& scene) noexcept;
+        static std::vector<AssimpLight> loadLights(const aiSceneRef& scene) noexcept;
 
         static aiSceneRef importScene(Assimp::Importer& importer, const DataView& data, const std::string & path);
 	};

@@ -12,13 +12,15 @@ namespace darmok
         , _rotation()
         , _scale(1)
         , _pivot()
-        , _matrix(1)
-        , _inverse(1)
-        , _matrixUpdatePending(false)
-        , _inverseUpdatePending(false)
+        , _localMatrix(1)
+        , _localInverse(1)
+        , _worldMatrix(1)
+        , _worldInverse(1)
+        , _matrixChanged(false)
+        , _parentChanged(false)
     {
         setParent(parent);
-        setMatrix(mat);
+        setLocalMatrix(mat);
     }
 
     Transform::Transform(const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale, const glm::vec3& pivot, const OptionalRef<Transform>& parent) noexcept
@@ -26,10 +28,12 @@ namespace darmok
         , _rotation(rotation)
         , _scale(scale)
         , _pivot(pivot)
-        , _matrix(1)
-        , _inverse(1)
-        , _matrixUpdatePending(true)
-        , _inverseUpdatePending(true)
+        , _localMatrix(1)
+        , _localInverse(1)
+        , _worldMatrix(1)
+        , _worldInverse(1)
+        , _matrixChanged(true)
+        , _parentChanged(false)
     {
         setParent(parent);
     }
@@ -69,22 +73,6 @@ namespace darmok
         return _parent;
     }
 
-    void Transform::setPending(bool v) noexcept
-    {
-        _matrixUpdatePending = v;
-        _inverseUpdatePending = v;
-        if (v)
-        {
-            for (auto& child : _children)
-            {
-                if (child)
-                {
-                    child->setPending(true);
-                }
-            }
-        }
-    }
-
     Transform& Transform::setParent(const OptionalRef<Transform>& parent) noexcept
     {
         if (_parent == parent)
@@ -97,8 +85,33 @@ namespace darmok
         }
         _parent = parent;
         _parent->_children.emplace(*this);
-        setPending();
+        setParentChanged();
         return *this;
+    }
+
+    const std::unordered_set<OptionalRef<Transform>>& Transform::getChildren() const noexcept
+    {
+        return _children;
+    }
+
+    void Transform::setMatrixChanged() noexcept
+    {
+        _matrixChanged = true;
+        setChildrenParentChanged();
+    }
+
+    void Transform::setParentChanged() noexcept
+    {
+        _parentChanged = true;
+        setChildrenParentChanged();
+    }
+
+    void Transform::setChildrenParentChanged() noexcept
+    {
+        for (auto& child : _children)
+        {
+            child->setParentChanged();
+        }
     }
 
     Transform& Transform::setPosition(const glm::vec3& v) noexcept
@@ -106,7 +119,7 @@ namespace darmok
         if (v != _position)
         {
             _position = v;
-            setPending();
+            setMatrixChanged();
         }
         return *this;
     }
@@ -166,7 +179,7 @@ namespace darmok
         if (v != _scale)
         {
             _scale = v;
-            setPending();
+            setMatrixChanged();
         }
         return *this;
     }
@@ -176,47 +189,33 @@ namespace darmok
         if (v != _pivot)
         {
             _pivot = v;
-            setPending();
+            setMatrixChanged();
         }
         return *this;
     }
 
-    bool Transform::updateMatrix() noexcept
-    {
-        if (!_matrixUpdatePending)
-        {
-            return false;
-        }
-        _matrix = glm::translate(_position)
-            * glm::mat4_cast(_rotation)
-            * glm::scale(_scale)
-            * glm::translate(-_pivot)
-            ;
-        if (_parent != nullptr)
-        {
-            _parent->updateMatrix();
-            _matrix = _parent->getMatrix() * _matrix;
-        }
-        _matrixUpdatePending = false;
-        return true;
-    }
-
-    bool Transform::updateInverse() noexcept
-    {
-        if (!_inverseUpdatePending)
-        {
-            return false;
-        }
-        updateMatrix();
-        _inverse = glm::inverse(_matrix);
-        _inverseUpdatePending = false;
-        return true;
-    }
-
     bool Transform::update() noexcept
     {
-        auto changed = updateMatrix();
-        updateInverse();
+        auto changed = false;
+        if (_matrixChanged)
+        {
+            _localMatrix = glm::translate(_position)
+                * glm::mat4_cast(_rotation)
+                * glm::scale(_scale)
+                * glm::translate(-_pivot)
+                ;
+            _localInverse = glm::inverse(_localMatrix);
+            changed = true;
+        }
+        if (_parent != nullptr && (_parentChanged || _matrixChanged))
+        {
+            _parent->update();
+            _worldMatrix = _parent->getWorldMatrix() * _localMatrix;
+            _worldInverse = _localInverse * _parent->getWorldInverse();
+            changed = true;
+        }
+        _matrixChanged = false;
+        _parentChanged = false;
         return changed;
     }
 
@@ -225,47 +224,50 @@ namespace darmok
         if (v != _rotation)
         {
             _rotation = v;
-            setPending();
+            setMatrixChanged();
         }
         return *this;
     }
 
-    Transform& Transform::setMatrix(const glm::mat4& v) noexcept
+    Transform& Transform::setLocalMatrix(const glm::mat4& v) noexcept
     {
-        if (_matrix != v)
+        if (_localMatrix != v)
         {
             glm::vec3 skew{};
             glm::vec4 perspective{};
             glm::decompose(v, _scale, _rotation, _position, skew, perspective);
             // TODO: check skew == [0, 0, 0] && persp == [0, 0, 0, 1]
-
-            _matrix = v;
-            _matrixUpdatePending = false;
-            _inverseUpdatePending = true;
+            // TODO: optimize calculating inverse in next update
+            _localMatrix = v;
+            _localInverse = glm::inverse(_localMatrix);
+            setChildrenParentChanged();
         }
 
         return *this;
     }
 
-    const glm::mat4& Transform::getMatrix() noexcept
+    glm::vec3 Transform::getWorldPosition() const noexcept
     {
-        updateMatrix();
-        return _matrix;
+        return _worldMatrix * glm::vec4(_position, 1);
     }
 
-    const glm::mat4& Transform::getMatrix() const noexcept
+    const glm::mat4& Transform::getLocalMatrix() const noexcept
     {
-        return _matrix;
+        return _localMatrix;
     }
 
-    const glm::mat4& Transform::getInverse() noexcept
+    const glm::mat4& Transform::getLocalInverse() const noexcept
     {
-        updateInverse();
-        return _inverse;
+        return _localInverse;
     }
 
-    const glm::mat4& Transform::getInverse() const noexcept
+    const glm::mat4& Transform::getWorldMatrix() const noexcept
     {
-        return _inverse;
+        return _worldMatrix;
+    }
+
+    const glm::mat4& Transform::getWorldInverse() const noexcept
+    {
+        return _worldInverse;
     }
 }

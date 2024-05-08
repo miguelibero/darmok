@@ -10,7 +10,7 @@
 namespace darmok
 {
     template<typename C, typename T>
-    struct ReadOnlyIterator final
+    struct RefIterator final
     {
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
@@ -18,7 +18,7 @@ namespace darmok
         using pointer = value_type*;
         using reference = value_type&;
 
-        ReadOnlyIterator(C& collection, size_t pos = 0) noexcept
+        RefIterator(C& collection, size_t pos = 0) noexcept
             : _collection(collection)
             , _pos(pos)
         {
@@ -34,25 +34,25 @@ namespace darmok
             return &_collection[_pos];
         }
 
-        ReadOnlyIterator<C, T>& operator++() noexcept
+        RefIterator<C, T>& operator++() noexcept
         {
             _pos++;
             return *this;
         }
 
-        ReadOnlyIterator<C, T> operator++(int) noexcept
+        RefIterator<C, T> operator++(int) noexcept
         {
             auto tmp = *this;
             ++(*this);
             return tmp;
         }
 
-        bool operator==(const ReadOnlyIterator<C, T>& other) const noexcept
+        bool operator==(const RefIterator<C, T>& other) const noexcept
         {
             return &_collection == &other._collection && _pos == other._pos;
         }
 
-        bool operator!=(const ReadOnlyIterator<C, T>& other) const noexcept
+        bool operator!=(const RefIterator<C, T>& other) const noexcept
         {
             return !(operator==(other));
         }
@@ -63,13 +63,40 @@ namespace darmok
     };
 
     template<typename V>
-    class BX_NO_VTABLE ReadOnlyCollection
+    class BX_NO_VTABLE ConstRefCollection
     {
     public:
-        using Iterator = ReadOnlyIterator<ReadOnlyCollection<V>, V> ;
-        using ConstIterator = ReadOnlyIterator<const ReadOnlyCollection<V>, const V>;
+        using Iterator = RefIterator<const ConstRefCollection<V>, const V> ;
 
-        virtual ~ReadOnlyCollection() = default;
+        virtual ~ConstRefCollection() = default;
+
+        [[nodiscard]] Iterator begin() const noexcept
+        {
+            return Iterator(*this, 0);
+        }
+
+        [[nodiscard]] Iterator end() const
+        {
+            return Iterator(*this, size());
+        }
+
+        [[nodiscard]] bool empty() const
+        {
+            return size() == 0;
+        }
+
+        [[nodiscard]] virtual size_t size() const = 0;
+        [[nodiscard]] virtual const V& operator[](size_t pos) const = 0;
+    };
+
+    template<typename V>
+    class BX_NO_VTABLE RefCollection
+    {
+    public:
+        using Iterator = RefIterator<RefCollection<V>, V>;
+        using ConstIterator = RefIterator<const RefCollection<V>, const V>;
+
+        virtual ~RefCollection() = default;
 
         [[nodiscard]] Iterator begin() noexcept
         {
@@ -101,188 +128,81 @@ namespace darmok
         [[nodiscard]] virtual V& operator[](size_t pos) = 0;
     };
 
-    template<typename V>
-    class FixedReadOnlyCollection : public ReadOnlyCollection<V>
+    template<typename C, typename T>
+    struct ValIterator final
     {
-    public:
-        FixedReadOnlyCollection(const V* ptr, size_t size)
-            : _ptr(ptr)
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = T;
+
+        ValIterator(C& collection, size_t pos = 0) noexcept
+            : _collection(collection)
+            , _pos(pos)
         {
         }
 
-        size_t size() const noexcept override
+        value_type operator*() const
         {
-            return _size;
+            return operator->();
         }
 
-        const V& operator[](size_t pos) const override
+        value_type operator->() const
         {
-            return get(pos);
+            return _collection[_pos];
         }
 
-        V& operator[](size_t pos) override
+        ValIterator<C, T>& operator++() noexcept
         {
-            return get(pos);
+            _pos++;
+            return *this;
+        }
+
+        ValIterator<C, T> operator++(int) noexcept
+        {
+            auto tmp = *this;
+            ++(*this);
+            return tmp;
+        }
+
+        bool operator==(const ValIterator<C, T>& other) const noexcept
+        {
+            return &_collection == &other._collection && _pos == other._pos;
+        }
+
+        bool operator!=(const ValIterator<C, T>& other) const noexcept
+        {
+            return !(operator==(other));
         }
 
     private:
-        const V* _ptr;
-        size_t _size;
-
-        [[nodiscard]] V& get(size_t pos) const
-        {
-            if (pos < 0 || pos >= size())
-            {
-                throw std::out_of_range("out of container size");
-            }
-            return _ptr[pos];
-        }
+        C& _collection;
+        size_t _pos;
     };
 
     template<typename V>
-    class AllocatedReadOnlyCollection : public ReadOnlyCollection<V>
+    class BX_NO_VTABLE ValCollection
     {
     public:
-        AllocatedReadOnlyCollection(size_t size, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept
-            : _ptr(nullptr)
-            , _size(size)
-            , _alloc(alloc)
+        using Iterator = ValIterator<const ValCollection<V>, V>;
+
+        virtual ~ValCollection() = default;
+
+        [[nodiscard]] Iterator begin() const noexcept
         {
+            return Iterator(*this, 0);
         }
 
-        AllocatedReadOnlyCollection(OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept
-            : AllocatedReadOnlyCollection(0, alloc)
+        [[nodiscard]] Iterator end() const
         {
+            return Iterator(*this, size());
         }
 
-        size_t size() const noexcept override
+        [[nodiscard]] bool empty() const
         {
-            return _size;
-        }
-
-        const V& operator[](size_t pos) const override
-        {
-            return get(pos);
-        }
-
-        V& operator[](size_t pos) override
-        {
-            return get(pos);
-        }
-
-    private:
-        V* _ptr;
-        size_t _size;
-        OptionalRef<bx::AllocatorI> _alloc;
-
-        V& get(size_t pos) const
-        {
-            if (pos < 0 || pos >= size())
-            {
-                throw std::out_of_range("out of container size");
-            }
-            return _ptr[pos];
-        }
-
-    protected:
-        void allocCollection(size_t size, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept
-        {
-            _alloc = alloc;
-            _size = size;
-            size *= sizeof(V);
-            void* ptr;
-            if (_alloc)
-            {
-                ptr = bx::alloc(_alloc.ptr(), size);
-            }
-            else
-            {
-                ptr = malloc(size);
-            }
-            _ptr = static_cast<V*>(ptr);
-        }
-
-        void freeCollection() noexcept
-        {
-            if (_alloc)
-            {
-                bx::free(_alloc, _ptr);
-            }
-            else
-            {
-                std::free(_ptr);
-            }
-        }
-    };
-
-    template<typename V>
-    class VectorReadOnlyCollection : public ReadOnlyCollection<V>
-    {
-    public:
-        VectorReadOnlyCollection() = default;
-
-        VectorReadOnlyCollection(size_t size) noexcept
-            : _elements(size)
-        {
-        }
-
-        VectorReadOnlyCollection(const std::vector<V>& elements) noexcept
-            : _elements(elements)
-        {
-        }
-
-        size_t size() const noexcept override
-        {
-            return _elements.size();
-        }
-
-        const V& operator[](size_t pos) const override
-        {
-            return _elements[pos];
-        }
-
-        V& operator[](size_t pos) override
-        {
-            return _elements[pos];
-        }
-    protected:
-        std::vector<V> _elements;
-    };
-
-    template<typename V>
-    class DynamicReadOnlyCollection : public ReadOnlyCollection<V>
-    {
-    public:
-        [[nodiscard]] const V& operator[](size_t pos) const override
-        {
-            return get(pos);
-        }
-
-        [[nodiscard]] V& operator[](size_t pos) override
-        {
-            return get(pos);
+            return size() == 0;
         }
 
         [[nodiscard]] virtual size_t size() const = 0;
-
-    private:
-        mutable std::unordered_map<size_t, V> _elements;
-
-        [[nodiscard]] V& get(size_t pos) const
-        {
-            if (pos < 0 || pos >= size())
-            {
-                throw std::out_of_range("out of container size");
-            }
-            auto itr = _elements.find(pos);
-            if (itr != _elements.end())
-            {
-                return itr->second;
-            }
-            auto r = _elements.insert(pos, std::move(create(pos)));
-            return r.first->second;
-        }
-
-        [[nodiscard]] virtual V&& create(size_t pos) const = 0;
+        [[nodiscard]] virtual V operator[](size_t pos) const = 0;
     };
 }

@@ -2,6 +2,7 @@
 
 #include <darmok/data.hpp>
 #include <darmok/collection.hpp>
+#include <darmok/optional_ref.hpp>
 #include <string_view>
 #include <vector>
 #include <array>
@@ -9,6 +10,11 @@
 #include <unordered_map>
 #include <bgfx/bgfx.h>
 #include <glm/gtc/type_ptr.hpp>
+
+namespace bx
+{
+    struct AllocatorI;
+}
 
 namespace darmok
 {
@@ -41,7 +47,7 @@ namespace darmok
         }
         
     public:
-        VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, bx::AllocatorI* alloc = nullptr) noexcept;
+        VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
         void load(Data&& data) noexcept;
 
         template<typename Iter, typename Filter>
@@ -99,11 +105,33 @@ namespace darmok
         }
 
         template<int L, typename T, glm::qualifier Q = glm::defaultp>
-        VertexDataWriter& write(bgfx::Attrib::Enum attr, const ReadOnlyCollection<glm::vec<L, T, Q>>& input) noexcept
+        VertexDataWriter& write(bgfx::Attrib::Enum attr, const RefCollection<glm::vec<L, T, Q>>& input) noexcept
         {
             return write(attr, input.begin(), input.end(), [](auto& itr) {
                 return Input{ glm::value_ptr(*itr), L };
             });
+        }
+
+        template<int L, typename T, glm::qualifier Q = glm::defaultp>
+        VertexDataWriter& write(bgfx::Attrib::Enum attr, const ConstRefCollection<glm::vec<L, T, Q>>& input) noexcept
+        {
+            return write(attr, input.begin(), input.end(), [](auto& itr) {
+                return Input{ glm::value_ptr(*itr), L };
+            });
+        }
+
+        template<int L, typename T, glm::qualifier Q = glm::defaultp>
+        VertexDataWriter& write(bgfx::Attrib::Enum attr, const ValCollection<glm::vec<L, T, Q>>& input) noexcept
+        {
+            if (_layout.has(attr))
+            {
+                for (auto i = 0; i < _size && i < input.size(); i++)
+                {
+                    auto elm = input[i];
+                    write(attr, i, Input{ glm::value_ptr(elm), L });
+                }
+            }
+            return *this;
         }
 
         template<int L, typename T, glm::qualifier Q = glm::defaultp>
@@ -122,7 +150,6 @@ namespace darmok
     private:
         const bgfx::VertexLayout& _layout;
         size_t _size;
-        bx::AllocatorI* _alloc;
         Data _data;
         std::unordered_set<bgfx::Attrib::Enum> _markedAll;
         std::unordered_map<bgfx::Attrib::Enum, std::unordered_set<uint32_t>> _marked;

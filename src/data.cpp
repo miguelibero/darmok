@@ -132,6 +132,11 @@ namespace darmok
     {
     }
 
+    Data::Data(const OptionalRef<bx::AllocatorI>& alloc) noexcept
+        : Data(0, alloc)
+    {
+    }
+
     Data::Data(const void* ptr, size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept
         : Data(ptr == nullptr ? 0 : size, alloc)
     {

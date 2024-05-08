@@ -5,6 +5,7 @@
 #include <darmok/program.hpp>
 #include <darmok/light.hpp>
 #include <darmok/material.hpp>
+#include <darmok/scene.hpp>
 
 namespace darmok
 {
@@ -55,7 +56,7 @@ namespace darmok
 			auto trans = registry.try_get<Transform>(entity);
 			if (trans != nullptr)
 			{
-				transMtx = glm::value_ptr(trans->getMatrix());
+				transMtx = glm::value_ptr(trans->getWorldMatrix());
 			}
 			auto transCache = encoder.setTransform(transMtx);
 

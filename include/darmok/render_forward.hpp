@@ -5,6 +5,8 @@
 namespace darmok
 {
     class Program;
+    class Scene;
+    class App;
 
     class ForwardRenderer final : public ICameraRenderer
     {

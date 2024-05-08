@@ -4,10 +4,10 @@
 
 namespace darmok
 {
-    VertexDataWriter::VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, bx::AllocatorI* alloc) noexcept
+    VertexDataWriter::VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept
         : _layout(layout)
         , _size(size)
-        , _alloc(alloc)
+        , _data(alloc)
     {
     }
 
