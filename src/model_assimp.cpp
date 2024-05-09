@@ -16,9 +16,14 @@
 
 namespace darmok
 {
-	AssimpModelNodeChildrenCollection::AssimpModelNodeChildrenCollection(const std::vector<AssimpModelNode>& children) noexcept
-		: _children(children)
+	AssimpModelNodeChildrenCollection::AssimpModelNodeChildrenCollection(const AssimpNode& parent) noexcept
 	{
+		auto& children = parent.getChildren();
+		_children.reserve(children.size());
+		for (auto& child : children)
+		{
+			_children.push_back(std::make_shared<AssimpModelNode>(child));
+		}
 	}
 
 	size_t AssimpModelNodeChildrenCollection::size() const noexcept
@@ -26,34 +31,15 @@ namespace darmok
 		return _children.size();
 	}
 
-	const IModelNode& AssimpModelNodeChildrenCollection::operator[](size_t pos) const
+	std::shared_ptr<IModelNode> AssimpModelNodeChildrenCollection::operator[](size_t pos) const
 	{
-		return _children[pos];
+		return _children.at(pos);
 	}
 
 	AssimpModelNode::AssimpModelNode(const AssimpNode& assimp) noexcept
 		: _assimp(assimp)
-		, _childrenCollection(_children)
+		, _children(assimp)
 	{
-		for (auto& child : assimp.getChildren())
-		{
-			_children.emplace_back(child);
-		}
-	}
-
-	AssimpModelNode::AssimpModelNode(const AssimpModelNode& other) noexcept
-		: _assimp(other._assimp)
-		, _children(other._children)
-		, _childrenCollection(_children)
-	{
-	}
-
-	AssimpModelNode& AssimpModelNode::operator=(const AssimpModelNode& other) noexcept
-	{
-		_assimp = other._assimp;
-		_children.clear();
-		_children.insert(_children.end(), other._children.begin(), other._children.end());
-		return *this;
 	}
 
 	std::string_view AssimpModelNode::getName() const noexcept
@@ -66,9 +52,9 @@ namespace darmok
 		return _assimp.getTransform();
 	}
 
-	const ConstRefCollection<IModelNode>& AssimpModelNode::getChildren() const noexcept
+	const ValCollection<std::shared_ptr<IModelNode>>& AssimpModelNode::getChildren() const noexcept
 	{
-		return _childrenCollection;
+		return _children;
 	}
 
 	void AssimpModelNode::configureEntity(Entity entity, const ModelSceneConfig& config) const
@@ -102,9 +88,6 @@ namespace darmok
 
 	void AssimpModelNode::configureLight(const AssimpLight& light, Entity entity, const ModelSceneConfig& config) const noexcept
 	{
-		// TODO: decide what to do with light->getPosition()
-		// transMat = glm::translate(transMat, light->getPosition());
-
 		auto lightEntity = config.registry.create();
 		auto parentTrans = config.registry.try_get<Transform>(entity);
 		config.registry.emplace<Transform>(lightEntity, parentTrans, light.getPosition());
@@ -135,16 +118,11 @@ namespace darmok
 
 	AssimpModel::AssimpModel(const AssimpScene& assimp) noexcept
 		: _assimp(assimp)
-		, _rootNode(_assimp.getRootNode())
+		, _rootNode(std::make_shared<AssimpModelNode>(_assimp.getRootNode()))
 	{
 	}
 
-	IModelNode& AssimpModel::getRootNode() noexcept
-	{
-		return _rootNode;
-	}
-
-	const IModelNode& AssimpModel::getRootNode() const noexcept
+	std::shared_ptr<IModelNode> AssimpModel::getRootNode() const noexcept
 	{
 		return _rootNode;
 	}

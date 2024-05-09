@@ -13,7 +13,7 @@ namespace darmok
 		return _program->getVertexLayout();
 	}
 
-	const std::shared_ptr<Program>& LuaProgram::getReal() const noexcept
+	std::shared_ptr<Program> LuaProgram::getReal() const noexcept
 	{
 		return _program;
 	}

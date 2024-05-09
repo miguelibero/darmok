@@ -13,7 +13,7 @@ namespace darmok
 	public:
 		LuaProgram(const std::shared_ptr<Program>& program) noexcept;
 		const bgfx::VertexLayout& getVertexLayout() const noexcept;
-		const std::shared_ptr<Program>& getReal() const noexcept;
+		std::shared_ptr<Program> getReal() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:

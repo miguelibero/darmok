@@ -21,7 +21,7 @@ namespace darmok
 
 		std::string to_string() const noexcept;
 
-		const std::shared_ptr<Mesh>& getReal() const noexcept;
+		std::shared_ptr<Mesh> getReal() const noexcept;
 		LuaMaterial getMaterial() const noexcept;
 		void setMaterial(const LuaMaterial& material) noexcept;
 

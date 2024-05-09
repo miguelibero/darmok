@@ -47,9 +47,9 @@ namespace
 			auto model = getAssets().getModelLoader()("human.fbx");
 
 			ModelSceneConfigurer configurer(scene.getRegistry(), prog->getVertexLayout(), getAssets());
-			configurer.run(*model, [&scene, prog](const auto& node, Entity entity) {
+			configurer.run(model, [&scene, prog](const auto& node, Entity entity) {
 				auto& registry = scene.getRegistry();
-				if (node.getName() == "human")
+				if (node->getName() == "human")
 				{
 					auto& trans = registry.get_or_emplace<Transform>(entity);
 					scene.addLogicUpdater<RotateUpdater>(trans, 100.f);

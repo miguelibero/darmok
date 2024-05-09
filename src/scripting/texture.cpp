@@ -32,7 +32,7 @@ namespace darmok
 	{
 	}
 
-	const std::shared_ptr<Texture>& LuaTexture::getReal() const noexcept
+	std::shared_ptr<Texture> LuaTexture::getReal() const noexcept
 	{
 		return _texture;
 	}
@@ -293,7 +293,7 @@ namespace darmok
 	{
 	}
 
-	const std::shared_ptr<TextureAtlas>& LuaTextureAtlas::LuaTextureAtlas::getReal() const noexcept
+	std::shared_ptr<TextureAtlas> LuaTextureAtlas::LuaTextureAtlas::getReal() const noexcept
 	{
 		return _atlas;
 	}

@@ -16,27 +16,27 @@ namespace darmok
         return *this;
     }
 
-    Entity ModelSceneConfigurer::run(const IModel& model) const noexcept
+    Entity ModelSceneConfigurer::run(const std::shared_ptr<IModel>& model) const noexcept
     {
-        return run(model.getRootNode());
+        return run(model->getRootNode());
     }
 
-    Entity ModelSceneConfigurer::run(const IModelNode& node) const noexcept
+    Entity ModelSceneConfigurer::run(const std::shared_ptr<IModelNode>& node) const noexcept
     {
         return run(node, _parent);
     }
 
-    Entity ModelSceneConfigurer::run(const IModelNode& node, Entity parent) const noexcept
+    Entity ModelSceneConfigurer::run(const std::shared_ptr<IModelNode>& node, Entity parent) const noexcept
     {
         auto entity = add(node, parent);
-        for (auto& child : node.getChildren())
+        for (auto child : node->getChildren())
         {
             run(child, entity);
         }
         return entity;
     }
 
-    Entity ModelSceneConfigurer::add(const IModelNode& node, Entity parent) const noexcept
+    Entity ModelSceneConfigurer::add(const std::shared_ptr<IModelNode>& node, Entity parent) const noexcept
     {
         auto entity = _config.registry.create();
         OptionalRef<Transform> parentTrans;
@@ -44,8 +44,8 @@ namespace darmok
 		{
 			parentTrans = _config.registry.get_or_emplace<Transform>(parent);
 		}
-		_config.registry.emplace<Transform>(entity, node.getTransform(), parentTrans);
-        node.configureEntity(entity, _config);
+		_config.registry.emplace<Transform>(entity, node->getTransform(), parentTrans);
+        node->configureEntity(entity, _config);
         return entity;
     }
 

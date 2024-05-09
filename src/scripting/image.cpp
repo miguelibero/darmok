@@ -8,7 +8,7 @@ namespace darmok
 	{
 	}
 
-	const std::shared_ptr<Image>& LuaImage::getReal() const noexcept
+	std::shared_ptr<Image> LuaImage::getReal() const noexcept
 	{
 		return _img;
 	}

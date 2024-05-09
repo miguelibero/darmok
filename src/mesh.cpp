@@ -8,7 +8,7 @@
 namespace darmok
 {
 	Mesh::Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool dynamic) noexcept
-		: _layout(_layout)
+		: _layout(layout)
 		, _vertexBuffer{ bgfx::kInvalidHandle }
 		, _indexBuffer{ bgfx::kInvalidHandle }
 		, _vertexSize(vertices.size())

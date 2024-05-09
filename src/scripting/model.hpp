@@ -19,20 +19,20 @@ namespace darmok
 	class LuaModelNodeChildrenCollection final : public ValCollection<LuaModelNode>
 	{
 	public:
-		LuaModelNodeChildrenCollection(const IModelNode& node) noexcept;
+		LuaModelNodeChildrenCollection(const std::shared_ptr<IModelNode>& node) noexcept;
 
 		[[nodiscard]] size_t size() const noexcept override;
 		[[nodiscard]] LuaModelNode operator[](size_t pos) const override;
 	private:
-		OptionalRef<const IModelNode> _node;
+		std::shared_ptr<IModelNode> _node;
 	};
 
 	class LuaModelNode final
 	{
 	public:
-		LuaModelNode(const IModelNode& node) noexcept;
+		LuaModelNode(const std::shared_ptr<IModelNode>& node) noexcept;
 
-		const IModelNode& getReal() const noexcept;
+		std::shared_ptr<IModelNode> getReal() const noexcept;
 		std::string getName() const noexcept;
 
         glm::mat4 getTransform() const noexcept;
@@ -40,15 +40,16 @@ namespace darmok
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<const IModelNode> _node;
+		std::shared_ptr<IModelNode> _node;
 		LuaModelNodeChildrenCollection _children;
 	};
-
+	  
 	class LuaModel final
 	{
 	public:
 		LuaModel(const std::shared_ptr<IModel>& model) noexcept;
-		const std::shared_ptr<IModel>& getReal() const noexcept;
+
+		std::shared_ptr<IModel> getReal() const noexcept;
         const LuaModelNode& getRootNode() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;

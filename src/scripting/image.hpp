@@ -12,7 +12,7 @@ namespace darmok
 	{
 	public:
 		LuaImage(const std::shared_ptr<Image>& img) noexcept;
-		const std::shared_ptr<Image>& getReal() const noexcept;
+		std::shared_ptr<Image> getReal() const noexcept;
 		bool empty() const noexcept;
 		glm::uvec2 getSize() const noexcept;
 		uint32_t getDepth() const noexcept;

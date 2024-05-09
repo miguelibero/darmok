@@ -15,33 +15,30 @@ namespace darmok
 {
     class AssimpModelNode;
 
-    class AssimpModelNodeChildrenCollection final : public ConstRefCollection<IModelNode>
+    class AssimpModelNodeChildrenCollection final : public ValCollection<std::shared_ptr<IModelNode>>
     {
     public:
-        AssimpModelNodeChildrenCollection(const std::vector<AssimpModelNode>& children) noexcept;
+        AssimpModelNodeChildrenCollection(const AssimpNode& parent) noexcept;
 
         [[nodiscard]] size_t size() const noexcept override;
-        [[nodiscard]] const IModelNode& operator[](size_t pos) const  override;
+        [[nodiscard]] std::shared_ptr<IModelNode> operator[](size_t pos) const  override;
     private:
-        const std::vector<AssimpModelNode>& _children;
+        std::vector<std::shared_ptr<AssimpModelNode>> _children;
     };
 
     class AssimpModelNode final : public IModelNode
     {
     public:
         AssimpModelNode(const AssimpNode& assimp) noexcept;
-        AssimpModelNode(const AssimpModelNode& other) noexcept;
-        AssimpModelNode& operator=(const AssimpModelNode& other) noexcept;
 
         std::string_view getName() const noexcept override;
         glm::mat4 getTransform() const noexcept override;
-        const ConstRefCollection<IModelNode>& getChildren() const noexcept override;
+        const ValCollection<std::shared_ptr<IModelNode>>& getChildren() const noexcept override;
         void configureEntity(Entity entity, const ModelSceneConfig& config) const override;
 
     private:
         AssimpNode _assimp;
-        AssimpModelNodeChildrenCollection _childrenCollection;
-        std::vector<AssimpModelNode> _children;
+        AssimpModelNodeChildrenCollection _children;
 
         void configureCamera(const AssimpCamera& cam, Entity entity, const ModelSceneConfig& config) const noexcept;
         void configureLight(const AssimpLight& light, Entity entity, const ModelSceneConfig& config) const noexcept;
@@ -51,12 +48,11 @@ namespace darmok
     {
     public:
         AssimpModel(const AssimpScene& assimp) noexcept;
-        IModelNode& getRootNode() noexcept override;
-        const IModelNode& getRootNode() const noexcept override;
+        std::shared_ptr<IModelNode> getRootNode() const noexcept override;
 
     private:
         AssimpScene _assimp;
-        AssimpModelNode _rootNode;
+        std::shared_ptr<AssimpModelNode> _rootNode;
     };
 
     class IDataLoader;

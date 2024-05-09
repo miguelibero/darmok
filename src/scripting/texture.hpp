@@ -24,7 +24,7 @@ namespace darmok
 		LuaTexture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		LuaTexture(const VarUvec2& size, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		LuaTexture(const VarUvec2& size, bgfx::TextureFormat::Enum format, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		const std::shared_ptr<Texture>& getReal() const noexcept;
+		std::shared_ptr<Texture> getReal() const noexcept;
 		TextureType getType() const noexcept;
 		LuaTexture& setName(const std::string& name) noexcept;
 		const glm::uvec2& getSize() noexcept;
@@ -47,7 +47,7 @@ namespace darmok
 	{
 	public:
 		LuaTextureAtlas(const std::shared_ptr<TextureAtlas>& atlas) noexcept;
-		const std::shared_ptr<TextureAtlas>& getReal() const noexcept;
+		std::shared_ptr<TextureAtlas> getReal() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:

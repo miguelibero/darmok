@@ -16,7 +16,7 @@ namespace darmok
 		return _mesh->to_string();
 	}
 
-	const std::shared_ptr<Mesh>& LuaMesh::getReal() const noexcept
+	std::shared_ptr<Mesh> LuaMesh::getReal() const noexcept
 	{
 		return _mesh;
 	}

@@ -13,7 +13,6 @@ namespace darmok
 {
 
     class AssetContext;
-    class ModelSceneConfigurer;
 
     struct ModelSceneConfig final
     {
@@ -25,23 +24,20 @@ namespace darmok
     class BX_NO_VTABLE IModelNode
     {
     public:
-        IModelNode() = default;
         virtual ~IModelNode() = default;
 
         virtual std::string_view getName() const noexcept = 0;
         virtual glm::mat4 getTransform() const noexcept = 0;
-        virtual const ConstRefCollection<IModelNode>& getChildren() const noexcept = 0;
+        virtual const ValCollection<std::shared_ptr<IModelNode>>& getChildren() const noexcept = 0;
         virtual void configureEntity(Entity entity, const ModelSceneConfig& config) const = 0;
     };
 
     class BX_NO_VTABLE IModel
     {
     public:
-        IModel() = default;
         virtual ~IModel() = default;
 
-        virtual IModelNode& getRootNode() noexcept = 0;
-        virtual const IModelNode& getRootNode() const noexcept = 0;
+        virtual std::shared_ptr<IModelNode> getRootNode() const noexcept = 0;
     };
 
     class ModelSceneConfigurer final
@@ -51,34 +47,34 @@ namespace darmok
 
         ModelSceneConfigurer& setParent(Entity parent) noexcept;
 
-        Entity run(const IModel& model) const noexcept;
-        Entity run(const IModelNode& node) const noexcept;
+        Entity run(const std::shared_ptr<IModel>& model) const noexcept;
+        Entity run(const std::shared_ptr<IModelNode>& node) const noexcept;
 
         template<typename C>
-        Entity run(const IModelNode& node, C callback) const
+        Entity run(const std::shared_ptr<IModelNode>& node, C callback) const
         {
             return run(node, _parent, callback);
         }
 
         template<typename C>
-        Entity run(const IModel& model, C callback) const
+        Entity run(const std::shared_ptr<IModel>& model, C callback) const
         {
-            return run(model.getRootNode(), callback);
+            return run(model->getRootNode(), callback);
         }
 
     private:
         ModelSceneConfig _config;
         Entity _parent;
 
-        Entity add(const IModelNode& node, Entity parent) const noexcept;
-        Entity run(const IModelNode& node, Entity parent) const noexcept;
+        Entity add(const std::shared_ptr<IModelNode>& node, Entity parent) const noexcept;
+        Entity run(const std::shared_ptr<IModelNode>& node, Entity parent) const noexcept;
 
         template<typename C>
-        Entity run(const IModelNode& node, Entity parent, C callback) const
+        Entity run(const std::shared_ptr<IModelNode>& node, Entity parent, C callback) const
         {
             auto entity = add(node, parent);
             callback(node, entity);
-            for (auto& child : node.getChildren())
+            for (auto child : node->getChildren())
             {
                 run(child, entity, callback);
             }
