@@ -76,18 +76,6 @@ namespace darmok
             };
         }
 
-        template<typename T, typename F>
-        static std::vector<T> vectorConvert(F* ptr, size_t size) noexcept
-        {
-            std::vector<T> elements;
-            elements.reserve(size);
-            for (size_t i = 0; i < size; i++)
-            {
-                elements.push_back(convert(ptr[i]));
-            }
-            return elements;
-        }
-
         template<typename T>
         static OptionalRef<T> getNodeChild(T& node, const std::string_view& path) noexcept
         {
@@ -392,19 +380,20 @@ namespace darmok
         return _face->mNumIndices;
     }
 
-    bool AssimpMeshFace::empty() const noexcept
+    VertexIndex AssimpMeshFace::operator[](size_t pos) const
     {
-        return size() == 0;
-    }
-
-    VertexIndex AssimpMeshFace::getIndex(size_t pos) const noexcept
-    {
+        if (pos < 0 || pos >= size())
+        {
+            throw std::runtime_error("invalid face index");
+        }
         return _face->mIndices[pos];
+
     }
 
-    AssimpTextureCoords::AssimpTextureCoords(const aiMesh& mesh, size_t pos) noexcept
-        : _compCount(mesh.mNumUVComponents[pos])
-        , _coords(AssimpUtils::vectorConvert<glm::vec3>(mesh.mTextureCoords[pos], mesh.mNumVertices))
+    AssimpTextureCoords::AssimpTextureCoords(const aiMesh& mesh, size_t pos, const aiSceneRef& scene) noexcept
+        : _scene(scene)
+        , _compCount(mesh.mNumUVComponents[pos])
+        , _coords(mesh.mTextureCoords[pos], mesh.mNumVertices)
     {
     }
 
@@ -412,8 +401,8 @@ namespace darmok
     {
         return _compCount;
     }
-
-    const std::vector<glm::vec3>& AssimpTextureCoords::getCoords() const noexcept
+    
+    AssimpVector3Collection AssimpTextureCoords::getCoords() const noexcept
     {
         return _coords;
     }
@@ -485,7 +474,7 @@ namespace darmok
             {
                 if (mesh.mTextureCoords[i] != nullptr)
                 {
-                    _texCoords.emplace_back(mesh, i);
+                    _texCoords.emplace_back(mesh, i, scene);
                 }
             }
         }
@@ -575,9 +564,9 @@ namespace darmok
         indices.reserve(size);
         for (auto& face : getFaces())
         {
-            for (size_t i = 0; i < face.size(); i++)
+            for (auto index : face)
             {
-                indices.push_back(face.getIndex(i));
+                indices.push_back(index);
             }
         }
         return indices;

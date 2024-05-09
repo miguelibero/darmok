@@ -100,6 +100,10 @@ namespace darmok
     {
     public:
         AssimpMaterial(const aiMaterial& material, const aiSceneRef& scene, const std::string& basePath) noexcept;
+        ~AssimpMaterial()
+        {
+
+        }
 
         std::string_view getName() const noexcept;
         const std::vector<AssimpMaterialTexture>& getTextures(aiTextureType type) const noexcept;
@@ -121,34 +125,8 @@ namespace darmok
         static const std::unordered_map<aiTextureType, MaterialTextureType> _materialTextures;
 
         std::shared_ptr<Texture> loadEmbeddedTexture(const std::string& path, bx::AllocatorI& alloc) const noexcept;
-
     };
 
-    class AssimpMeshFace final
-    {
-    public:
-        AssimpMeshFace(const aiFace& face, const aiSceneRef& scene) noexcept;
-
-        size_t size() const noexcept;
-        bool empty() const noexcept;
-        VertexIndex getIndex(size_t pos) const noexcept;
-    private:
-        OptionalRef<const aiFace> _face;
-        aiSceneRef _scene;
-    };
-
-    class AssimpTextureCoords final
-    {
-    public:
-        AssimpTextureCoords(const aiMesh& mesh, size_t pos) noexcept;
-        size_t getCompCount() const noexcept;
-        const std::vector<glm::vec3>& getCoords() const noexcept;
-    private:
-        size_t _compCount;
-        std::vector<glm::vec3> _coords;
-    };
-
-    class Mesh;
 
     class AssimpVector3Collection final : public ValCollection<glm::vec3>
     {
@@ -173,6 +151,31 @@ namespace darmok
         const aiColor4D* _ptr;
         size_t _size;
     };
+
+    class AssimpMeshFace final : public ValCollection<VertexIndex>
+    {
+    public:
+        AssimpMeshFace(const aiFace& face, const aiSceneRef& scene) noexcept;
+        size_t size() const noexcept override;
+        VertexIndex operator[](size_t pos) const override;
+    private:
+        OptionalRef<const aiFace> _face;
+        aiSceneRef _scene;
+    };
+
+    class AssimpTextureCoords final
+    {
+    public:
+        AssimpTextureCoords(const aiMesh& mesh, size_t pos, const aiSceneRef& scene) noexcept;
+        size_t getCompCount() const noexcept;
+        AssimpVector3Collection getCoords() const noexcept;
+    private:
+        size_t _compCount;
+        aiSceneRef _scene;
+        AssimpVector3Collection _coords;
+    };
+
+    class Mesh;
 
     class AssimpMesh final
     {
@@ -257,7 +260,11 @@ namespace darmok
     {
     public:
         AssimpNode(const aiNode& node, const AssimpScene& scene) noexcept;
-        
+        ~AssimpNode()
+        {
+
+        }
+
         std::string_view getName() const noexcept;
         glm::mat4 getTransform() const noexcept;
         const std::vector<AssimpMesh>& getMeshes() const noexcept;
@@ -282,6 +289,10 @@ namespace darmok
     public:
         AssimpScene(const aiSceneRef& scene, const std::string& path = {}) noexcept;
         AssimpScene(Assimp::Importer& importer, const DataView& data, const std::string& path = {});
+        ~AssimpScene()
+        {
+
+        }
 
         std::string_view getName() const noexcept;
         const std::string& getPath() const noexcept;

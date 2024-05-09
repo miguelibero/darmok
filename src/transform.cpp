@@ -196,7 +196,6 @@ namespace darmok
 
     bool Transform::update() noexcept
     {
-        auto changed = false;
         if (_matrixChanged)
         {
             _localMatrix = glm::translate(_position)
@@ -205,13 +204,18 @@ namespace darmok
                 * glm::translate(-_pivot)
                 ;
             _localInverse = glm::inverse(_localMatrix);
-            changed = true;
         }
-        if (_parent != nullptr && (_parentChanged || _matrixChanged))
+        auto changed = _parentChanged || _matrixChanged;
+        if (changed)
         {
-            _parent->update();
-            _worldMatrix = _parent->getWorldMatrix() * _localMatrix;
-            _worldInverse = _localInverse * _parent->getWorldInverse();
+            _worldMatrix = _localMatrix;
+            _worldInverse = _localInverse;
+            if (_parent != nullptr)
+            {
+                _parent->update();
+                _worldMatrix = _parent->getWorldMatrix() * _worldMatrix;
+                _worldInverse = _worldInverse * _parent->getWorldInverse();
+            }
             changed = true;
         }
         _matrixChanged = false;

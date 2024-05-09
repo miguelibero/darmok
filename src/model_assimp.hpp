@@ -50,7 +50,7 @@ namespace darmok
     class AssimpModel final : public IModel
     {
     public:
-        AssimpModel(AssimpScene&& assimp) noexcept;
+        AssimpModel(const AssimpScene& assimp) noexcept;
         IModelNode& getRootNode() noexcept override;
         const IModelNode& getRootNode() const noexcept override;
 

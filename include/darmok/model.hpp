@@ -15,12 +15,11 @@ namespace darmok
     class AssetContext;
     class ModelSceneConfigurer;
 
-    struct ModelSceneConfig
+    struct ModelSceneConfig final
     {
         EntityRegistry& registry;
         bgfx::VertexLayout layout;
         AssetContext& assets;
-        std::string path;
     };
 
     class BX_NO_VTABLE IModelNode
@@ -28,8 +27,6 @@ namespace darmok
     public:
         IModelNode() = default;
         virtual ~IModelNode() = default;
-        IModelNode(const IModelNode& other) = delete;
-        IModelNode& operator=(const IModelNode& other) = delete;
 
         virtual std::string_view getName() const noexcept = 0;
         virtual glm::mat4 getTransform() const noexcept = 0;
@@ -42,8 +39,6 @@ namespace darmok
     public:
         IModel() = default;
         virtual ~IModel() = default;
-        IModel(const IModel& other) = delete;
-        IModel& operator=(const IModel& other) = delete;
 
         virtual IModelNode& getRootNode() noexcept = 0;
         virtual const IModelNode& getRootNode() const noexcept = 0;
@@ -54,11 +49,10 @@ namespace darmok
     public:
         ModelSceneConfigurer(EntityRegistry& registry, const bgfx::VertexLayout& layout, AssetContext& assets);
 
-        ModelSceneConfigurer& setPath(const std::string& path) noexcept;
         ModelSceneConfigurer& setParent(Entity parent) noexcept;
 
         Entity run(const IModel& model) const noexcept;
-        Entity run(const IModelNode& node, Entity parent = entt::null) const noexcept;
+        Entity run(const IModelNode& node) const noexcept;
 
         template<typename C>
         Entity run(const IModelNode& node, C callback) const
@@ -77,6 +71,7 @@ namespace darmok
         Entity _parent;
 
         Entity add(const IModelNode& node, Entity parent) const noexcept;
+        Entity run(const IModelNode& node, Entity parent) const noexcept;
 
         template<typename C>
         Entity run(const IModelNode& node, Entity parent, C callback) const

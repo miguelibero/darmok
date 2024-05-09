@@ -83,6 +83,7 @@ set(HEADERS
   ${INCLUDE_DIR}/texture.hpp
   ${INCLUDE_DIR}/texture_atlas.hpp
   ${INCLUDE_DIR}/image.hpp
+  ${INCLUDE_DIR}/program_fwd.hpp
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/transform.hpp
   ${INCLUDE_DIR}/skeleton.hpp

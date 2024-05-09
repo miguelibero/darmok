@@ -10,12 +10,6 @@ namespace darmok
     {
     }
 
-    ModelSceneConfigurer& ModelSceneConfigurer::setPath(const std::string& path) noexcept
-    {
-        _config.path = path;
-        return *this;
-    }
-
     ModelSceneConfigurer& ModelSceneConfigurer::setParent(Entity parent) noexcept
     {
         _parent = parent;
@@ -25,6 +19,11 @@ namespace darmok
     Entity ModelSceneConfigurer::run(const IModel& model) const noexcept
     {
         return run(model.getRootNode());
+    }
+
+    Entity ModelSceneConfigurer::run(const IModelNode& node) const noexcept
+    {
+        return run(node, _parent);
     }
 
     Entity ModelSceneConfigurer::run(const IModelNode& node, Entity parent) const noexcept

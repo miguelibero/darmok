@@ -133,8 +133,8 @@ namespace darmok
 		}
 	}
 
-	AssimpModel::AssimpModel(AssimpScene&& assimp) noexcept
-		: _assimp(std::move(assimp))
+	AssimpModel::AssimpModel(const AssimpScene& assimp) noexcept
+		: _assimp(assimp)
 		, _rootNode(_assimp.getRootNode())
 	{
 	}
@@ -162,7 +162,6 @@ namespace darmok
 		{
 			throw std::runtime_error("got empty data");
 		}
-		AssimpScene assimpScene(_importer, data.view(), std::string(name));
-		return std::make_shared<AssimpModel>(std::move(assimpScene));
+		return std::make_shared<AssimpModel>(AssimpScene(_importer, data.view(), std::string(name)));
 	}
 }

@@ -35,7 +35,8 @@ namespace darmok
 		const glm::vec3& getScale() const noexcept;
 		const glm::vec3& getPivot() const noexcept;
 		const glm::mat4& getMatrix() const noexcept;
-		const glm::mat4& getInverse() const noexcept;
+		const glm::mat4& getLocalToWorldMatrix() const noexcept;
+		const glm::mat4& getWorldToLocalMatrix() const noexcept;
 
 		void setPosition(const VarVec3& v) noexcept;
 		void setRotation(const VarQuat& v) noexcept;

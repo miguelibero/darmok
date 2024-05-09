@@ -3,7 +3,7 @@
 #include <string>
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/program.hpp>
+#include <darmok/program_fwd.hpp>
 #include "sol.hpp"
 
 namespace darmok
@@ -12,12 +12,16 @@ namespace darmok
 	class LuaProgram;
 	class LuaTexture;
 	class LuaTextureAtlas;
-	class LuaAssimpScene;
+	class LuaModel;
 
 	class LuaAssets final
 	{
 	public:
 		LuaAssets(AssetContext& assets) noexcept;
+
+		AssetContext& getReal() noexcept;
+		const AssetContext& getReal() const noexcept;
+
 		LuaProgram loadProgram(const std::string& name);
 		LuaProgram loadStandardProgram(StandardProgramType type);
 		LuaTexture loadTexture1(const std::string& name);
@@ -25,9 +29,7 @@ namespace darmok
 		LuaTexture loadColorTexture(const Color& color);
 		LuaTextureAtlas loadTextureAtlas1(const std::string& name);
 		LuaTextureAtlas loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
-#ifdef DARMOK_ASSIMP
-		LuaAssimpScene loadAssimp(const std::string& name);
-#endif
+		LuaModel loadModel(const std::string& name);
 
 		static void configure(sol::state_view& lua) noexcept;
 

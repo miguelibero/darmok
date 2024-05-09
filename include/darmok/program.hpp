@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 #include <rapidjson/document.h>
-
+#include <darmok/program_fwd.hpp>
 
 namespace bgfx
 {
@@ -14,18 +14,6 @@ namespace bgfx
 
 namespace darmok
 {
-	class Texture;
-
-	enum class StandardProgramType
-	{
-		Gui,
-		Unlit,
-		ForwardPhong,
-		ForwardPbr,
-	};
-
-	class Data;
-
 	class Program final
 	{
 	public:

@@ -1,7 +1,7 @@
 #include "model.hpp"
 #include "scene.hpp"
+#include "asset.hpp"
 #include <darmok/scene.hpp>
-#include <darmok/model.hpp>
 
 namespace darmok
 {
@@ -14,9 +14,9 @@ namespace darmok
 		{
 		}
 
-		void operator()(const ModelNode& node, Entity entity) const noexcept
+		void operator()(const IModelNode& node, Entity entity) const noexcept
 		{
-			auto result = _callback(ConstLuaModelNode(node), LuaEntity(entity, _scene));
+			auto result = _callback(LuaModelNode(node), LuaEntity(entity, _scene));
 			if (result.valid())
 			{
 				return;
@@ -26,121 +26,135 @@ namespace darmok
 			std::cerr << err.what() << std::endl;
 		}
 
-
 	private:
 		std::weak_ptr<Scene> _scene;
 		const sol::protected_function& _callback;
 	};
 
-
-	ConstLuaModelNode::ConstLuaModelNode(const ModelNode& node) noexcept
+	LuaModelNodeChildrenCollection::LuaModelNodeChildrenCollection(const IModelNode& node) noexcept
 		: _node(node)
 	{
 	}
 
-	const ModelNode& ConstLuaModelNode::getReal() const noexcept
+	size_t LuaModelNodeChildrenCollection::size() const noexcept
+	{
+		return _node->getChildren().size();
+	}
+
+	LuaModelNode LuaModelNodeChildrenCollection::operator[](size_t pos) const
+	{
+		return _node->getChildren()[pos];
+	}
+
+	LuaModelNode::LuaModelNode(const IModelNode& node) noexcept
+		: _node(node)
+		, _children(node)
+	{
+	}
+
+	const IModelNode& LuaModelNode::getReal() const noexcept
 	{
 		return _node.value();
 	}
 
-	std::string ConstLuaModelNode::getName() const noexcept
+	std::string LuaModelNode::getName() const noexcept
 	{
 		return std::string(_node->getName());
 	}
 
-	LuaEntity ConstLuaModelNode::addToScene1(const LuaScene& scene, const bgfx::VertexLayout& layout) const
+	glm::mat4 LuaModelNode::getTransform() const noexcept
 	{
-		auto& realScene = scene.getReal();
-		auto entity = _node->addToScene(*realScene, layout);
-		return LuaEntity(entity, realScene);
+		return _node->getTransform();
 	}
 
-	LuaEntity ConstLuaModelNode::addToScene2(const LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const
+	const LuaModelNodeChildrenCollection& LuaModelNode::getChildren() const noexcept
 	{
-		auto& realScene = scene.getReal();
-		auto entity = _node->addToScene(*realScene, layout, LuaModelAddToSceneCallback(realScene, callback));
-		return LuaEntity(entity, realScene);
+		return _children;
 	}
 
-	LuaEntity ConstLuaModelNode::addToScene3(const LuaEntity& parent, const bgfx::VertexLayout& layout) const
+	void LuaModelNode::configure(sol::state_view& lua) noexcept
 	{
-		auto& realScene = parent.getScene().getReal();
-		auto entity = _node->addToScene(*realScene, layout, parent.getReal());
-		return LuaEntity(entity, realScene);
-	}
-
-	LuaEntity ConstLuaModelNode::addToScene4(const LuaEntity& parent, const bgfx::VertexLayout& layout, sol::protected_function callback) const
-	{
-		auto& realScene = parent.getScene().getReal();
-		auto entity = _node->addToScene(*realScene, layout, parent.getReal(), LuaModelAddToSceneCallback(realScene, callback));
-		return LuaEntity(entity, realScene);
-	}
-
-	void ConstLuaModelNode::configure(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<ConstLuaModelNode>("ConstModelNode",
+		lua.new_usertype<LuaModelNode>("ModelNode",
 			sol::constructors<>(),
-			"name", sol::property(&ConstLuaModelNode::getName),
-			"add_to_scene", sol::overload(
-				&ConstLuaModelNode::addToScene1,
-				&ConstLuaModelNode::addToScene2,
-				&ConstLuaModelNode::addToScene3,
-				&ConstLuaModelNode::addToScene4
-			)
+			"name", sol::property(&LuaModelNode::getName),
+			"transform", sol::property(&LuaModelNode::getTransform),
+			"children", sol::property(&LuaModelNode::getChildren)
 		);
 	}
 
-
-    LuaModel::LuaModel(const std::shared_ptr<Model>& model) noexcept
+	LuaModel::LuaModel(const std::shared_ptr<IModel>& model) noexcept
 		: _model(model)
-		{
-		}
+		, _rootNode(model->getRootNode())
+	{
+	}
 
-	const std::shared_ptr<Model>& LuaModel::getReal() const noexcept
+	const std::shared_ptr<IModel>& LuaModel::getReal() const noexcept
 	{
 		return _model;
 	}
 
-	LuaEntity LuaModel::addToScene1(const LuaScene& scene, const bgfx::VertexLayout& layout) const
+	const LuaModelNode& LuaModel::getRootNode() const noexcept
 	{
-		auto& realScene = scene.getReal();
-		auto entity = _model->addToScene(*realScene, layout);
-		return LuaEntity(entity, realScene);
-	}
-
-	LuaEntity LuaModel::addToScene2(const LuaScene& scene, const bgfx::VertexLayout& layout, sol::protected_function callback) const
-	{
-		auto& realScene = scene.getReal();
-		auto entity = _model->addToScene(*realScene, layout, LuaModelAddToSceneCallback(realScene, callback));
-		return LuaEntity(entity, realScene);
-	}
-
-	LuaEntity LuaModel::addToScene3(const LuaEntity& parent, const bgfx::VertexLayout& layout) const
-	{
-		auto& realScene = parent.getScene().getReal();
-		auto entity = _model->addToScene(*realScene, layout, parent.getReal());
-		return LuaEntity(entity, realScene);
-	}
-
-	LuaEntity LuaModel::addToScene4(const LuaEntity& parent, const bgfx::VertexLayout& layout, sol::protected_function callback) const
-	{
-		auto& realScene = parent.getScene().getReal();
-		auto entity = _model->addToScene(*realScene, layout, parent.getReal(), LuaModelAddToSceneCallback(realScene, callback));
-		return LuaEntity(entity, realScene);
+		return _rootNode;
 	}
 
 	void LuaModel::configure(sol::state_view& lua) noexcept
 	{
-		ConstLuaModelNode::configure(lua);
+		LuaModelNode::configure(lua);
+		LuaModelSceneConfigurer::configure(lua);
 		lua.new_usertype<LuaModel>("Model",
 			sol::constructors<>(),
-			"add_to_scene", sol::overload(
-				&LuaModel::addToScene1,
-				&LuaModel::addToScene2,
-				&LuaModel::addToScene3,
-				&LuaModel::addToScene4
+			"root_node", sol::property(&LuaModel::getRootNode)
+		);
+	}
+
+	LuaModelSceneConfigurer::LuaModelSceneConfigurer(const LuaScene& scene, const bgfx::VertexLayout& layout, LuaAssets& assets) noexcept
+		: _configurer(scene.getReal()->getRegistry(), layout, assets.getReal())
+		, _scene(scene.getReal())
+	{
+	}
+
+	LuaModelSceneConfigurer& LuaModelSceneConfigurer::setParent(const LuaEntity& parent) noexcept
+	{
+		_configurer.setParent(parent.getReal());
+		return *this;
+	}
+
+	void LuaModelSceneConfigurer::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaModelSceneConfigurer>("ModelSceneConfigurer",
+			sol::constructors<LuaModelSceneConfigurer(const LuaScene&, const bgfx::VertexLayout&, LuaAssets&)>(),
+			"parent", sol::property(&LuaModelSceneConfigurer::setParent),
+			"run", sol::overload(
+				&LuaModelSceneConfigurer::run1,
+				&LuaModelSceneConfigurer::run2,
+				&LuaModelSceneConfigurer::run3,
+				&LuaModelSceneConfigurer::run4
 			)
 		);
 	}
 
+	LuaEntity LuaModelSceneConfigurer::run1(const LuaModel& model) const
+	{
+		auto entity = _configurer.run(*model.getReal());
+		return LuaEntity(entity, _scene);
+	}
+
+	LuaEntity LuaModelSceneConfigurer::run2(const LuaModel& model, sol::protected_function callback) const
+	{
+		auto entity = _configurer.run(*model.getReal(), LuaModelAddToSceneCallback(_scene, callback));
+		return LuaEntity(entity, _scene);
+	}
+
+	LuaEntity LuaModelSceneConfigurer::run3(const LuaModelNode& node) const
+	{
+		auto entity = _configurer.run(node.getReal());
+		return LuaEntity(entity, _scene);
+	}
+
+	LuaEntity LuaModelSceneConfigurer::run4(const LuaModelNode& node, sol::protected_function callback) const
+	{
+		auto entity = _configurer.run(node.getReal(), LuaModelAddToSceneCallback(_scene, callback));
+		return LuaEntity(entity, _scene);
+	}
 }

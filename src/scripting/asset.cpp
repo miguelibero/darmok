@@ -4,22 +4,28 @@
 #include "program.hpp"
 #include "texture.hpp"
 #include "material.hpp"
+#include "model.hpp"
 #include <darmok/shape.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 
-#ifdef DARMOK_ASSIMP
-#include "assimp.hpp"
-#include <darmok/assimp.hpp>
-#endif
-
 namespace darmok
 {	
 	LuaAssets::LuaAssets(AssetContext& assets) noexcept
 		: _assets(assets)
 	{
+	}
+
+	AssetContext& LuaAssets::getReal() noexcept
+	{
+		return _assets.value();
+	}
+
+	const AssetContext& LuaAssets::getReal() const noexcept
+	{
+		return _assets.value();
 	}
 
 	LuaProgram LuaAssets::loadProgram(const std::string& name)
@@ -57,12 +63,10 @@ namespace darmok
 		return LuaTexture(_assets->getTextureLoader()(name, flags));
 	}
 
-#ifdef DARMOK_ASSIMP
-	LuaAssimpScene LuaAssets::loadAssimp(const std::string& name)
+	LuaModel LuaAssets::loadModel(const std::string& name)
 	{
-		return LuaAssimpScene(_assets->getAssimpLoader()(name));
+		return LuaModel(_assets->getModelLoader()(name));
 	}
-#endif
 
 	void LuaAssets::configure(sol::state_view& lua) noexcept
 	{
@@ -73,15 +77,11 @@ namespace darmok
 		LuaMaterial::configure(lua);
 		LuaMesh::configure(lua);
 		LuaMeshCreator::configure(lua);
-#ifdef DARMOK_ASSIMP
-		LuaAssimpScene::configure(lua);
-#endif
+		LuaModel::configure(lua);
 
 		lua.new_usertype<LuaAssets>("Assets",
 			sol::constructors<>(),
-#ifdef DARMOK_ASSIMP
-			"load_assimp", &LuaAssets::loadAssimp,
-#endif
+			"load_model", &LuaAssets::loadModel,
 			"load_program", &LuaAssets::loadProgram,
 			"load_standard_program", &LuaAssets::loadStandardProgram,
 			"load_texture", sol::overload(&LuaAssets::loadTexture1, &LuaAssets::loadTexture2),

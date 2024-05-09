@@ -164,6 +164,7 @@ namespace darmok
 	{
 		static const std::vector<std::string> possiblePaths = {
 			"main.lua",
+			"lua/main.lua",
 			"assets/main.lua"
 		};
 
@@ -182,6 +183,13 @@ namespace darmok
 			}
 		}
 		return possiblePaths[0];
+	}
+
+	void ScriptingAppImpl::addPackagePath(const std::string& path) noexcept
+	{
+		auto& lua = *_lua;
+		const std::string current = lua["package"]["path"];
+		lua["package"]["path"] = current + (!current.empty() ? ";" : "") + path + "?.lua";
 	}
 
 	void ScriptingAppImpl::init(App& app, const std::vector<std::string>& args)
@@ -208,7 +216,7 @@ namespace darmok
 
 		if (!mainDir.empty())
 		{
-			lua["package"]["path"] = mainDir;
+			addPackagePath(mainDir);
 		}
 		
 		auto result = lua.script_file(mainFile);

@@ -54,5 +54,7 @@ namespace darmok
         std::unique_ptr<sol::state> _lua;
 		std::optional<LuaApp> _luaApp;
 		static std::string findMainLua(const std::vector<std::string>& args) noexcept;
+
+		void addPackagePath(const std::string& path) noexcept;
     };
 }
