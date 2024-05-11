@@ -26,7 +26,6 @@ namespace darmok
         virtual void update(float deltaTime) { }
         virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
         virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const { };
-        virtual void beforeRenderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId) const { };
         virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
         virtual void shutdown() { }
     };
@@ -114,7 +113,6 @@ namespace darmok
         void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
         void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
-        void beforeRenderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
         glm::mat4 _matrix;

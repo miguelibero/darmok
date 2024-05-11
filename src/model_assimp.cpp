@@ -71,10 +71,23 @@ namespace darmok
 			configureLight(*assimpLight, entity, config);
 		}
 
-		auto meshes = _assimp->loadMeshes(config.layout, config.assets.getTextureLoader(), config.assets.getAllocator());
-		if (!meshes.empty())
+		for(auto& assimpMesh : _assimp->getMeshes())
 		{
-			config.registry.emplace<MeshComponent>(entity, meshes);
+			configureMesh(*assimpMesh, entity, config);
+		}
+	}
+
+	void AssimpModelNode::configureMesh(const AssimpMesh& assimpMesh, Entity entity, const ModelSceneConfig& config) const noexcept
+	{
+		auto meshEntity = config.registry.create();
+		auto parentTrans = config.registry.try_get<Transform>(entity);
+		config.registry.emplace<Transform>(meshEntity, parentTrans);
+		auto assimpMat = assimpMesh.getMaterial();
+		if (assimpMat != nullptr)
+		{
+			auto mat = assimpMat->load(config.assets.getTextureLoader(), config.assets.getAllocator());
+			auto mesh = assimpMesh.load(config.layout, config.assets.getTextureLoader(), config.assets.getAllocator());
+			config.registry.emplace<Renderable>(entity, mesh, mat);
 		}
 	}
 

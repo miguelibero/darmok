@@ -22,8 +22,9 @@ currently using:
 
 planned to use:
 
+* [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI to replace CEGUI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
-* [Bullet](https://github.com/bulletphysics/bullet3) for 3D physics
+* [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [Box2D](https://box2d.org/) for 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
@@ -85,6 +86,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 ## Interesting Related Projects
 
+* [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine/tree/master) very similar engine
+* [entt-meets-sol2](https://github.com/skaarj1989/entt-meets-sol2)
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
 * [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
@@ -92,8 +95,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * [pocketpy](https://pocketpy.dev/) - python as a scripting language
     * [wren](https://github.com/wren-lang/wren) as the scripting layer
     * [wrenbind17](https://github.com/matusnovak/wrenbind17) for modern C++ wren binding
-* no clear UI library winner,
-    it would be interesting to write a skinnable UI library based on (vg-renderer)[https://github.com/jdryg/vg-renderer] and using html and css to skin 
 
 ## Example code
 

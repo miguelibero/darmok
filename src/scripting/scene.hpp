@@ -52,7 +52,7 @@ namespace darmok
     class Scene;
 	class LuaScene;
 
-	using LuaNativeComponent = std::variant<LuaTransform, LuaCamera, LuaAmbientLight, LuaPointLight, LuaMeshComponent>;
+	using LuaNativeComponent = std::variant<LuaTransform, LuaCamera, LuaAmbientLight, LuaPointLight, LuaRenderable>;
 
 	class LuaEntity final
 	{

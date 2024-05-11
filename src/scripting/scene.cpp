@@ -180,7 +180,7 @@ namespace darmok
 			{ "Camera", LuaNativeComponentType::Camera },
 			{ "AmbientLight", LuaNativeComponentType::AmbientLight },
 			{ "PointLight", LuaNativeComponentType::PointLight },
-			{ "Mesh", LuaNativeComponentType::Mesh },
+			{ "Renderable", LuaNativeComponentType::Renderable },
 		});
 
 		lua.new_usertype<LuaEntity>("Entity", sol::constructors<>(),
@@ -283,7 +283,7 @@ namespace darmok
 		LuaEntity::configure(lua);
 		LuaAmbientLight::configure(lua);
 		LuaPointLight::configure(lua);
-		LuaMeshComponent::configure(lua);
+		LuaRenderable::configure(lua);
 		LuaComponent::configure(lua);
 
 		lua.new_usertype<LuaScene>("Scene",

@@ -40,6 +40,7 @@ namespace darmok
         std::shared_ptr<AssimpNode> _assimp;
         AssimpModelNodeChildrenCollection _children;
 
+        void configureMesh(const AssimpMesh& mesh, Entity entity, const ModelSceneConfig& config) const noexcept;
         void configureCamera(const AssimpCamera& cam, Entity entity, const ModelSceneConfig& config) const noexcept;
         void configureLight(const AssimpLight& light, Entity entity, const ModelSceneConfig& config) const noexcept;
     };

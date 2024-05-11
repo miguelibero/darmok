@@ -8,6 +8,6 @@ namespace darmok
 		Camera,
 		AmbientLight,
 		PointLight,
-		Mesh
+		Renderable
 	};
 }

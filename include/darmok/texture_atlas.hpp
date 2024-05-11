@@ -77,7 +77,6 @@ namespace darmok
 
 
 		std::shared_ptr<Mesh> createSprite(const TextureAtlasElement& elm) const noexcept;
-		std::shared_ptr<Material> createMaterial(const Color& color = Colors::white()) const noexcept;
 	};
 
     class BX_NO_VTABLE ITextureAtlasLoader

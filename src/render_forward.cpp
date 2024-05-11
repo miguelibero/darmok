@@ -39,41 +39,37 @@ namespace darmok
 		_cam->beforeRenderView(encoder, viewId);
 
 		auto& registry = _scene->getRegistry();
-		auto meshComponents = _cam->createEntityView<MeshComponent>(registry);
+		auto renderables = _cam->createEntityView<Renderable>(registry);
 		auto rendered = false;
-		for (auto entity : meshComponents)
+		for (auto entity : renderables)
 		{
-			auto& comp = registry.get<const MeshComponent>(entity);
-			auto& meshes = comp.getMeshes();
-			if (meshes.empty())
+			auto& renderable = registry.get<const Renderable>(entity);
+			auto mesh = renderable.getMesh();
+			if (mesh == nullptr)
 			{
 				continue;
 			}
+			auto mat = renderable.getMaterial();
+			if (mat == nullptr)
+			{
+				continue;
+			}
+
 			rendered = true;
 			_cam->beforeRenderEntity(entity, encoder, viewId);
 
 			const void* transMtx = nullptr;
-			auto trans = registry.try_get<Transform>(entity);
+			auto trans = registry.try_get<const Transform>(entity);
 			if (trans != nullptr)
 			{
 				transMtx = glm::value_ptr(trans->getWorldMatrix());
 			}
-			auto transCache = encoder.setTransform(transMtx);
+			encoder.setTransform(transMtx);
 
-			for (auto& mesh : meshes)
-			{
-				auto mat = mesh->getMaterial();
-				if (mat == nullptr)
-				{
-					continue;
-				}
-				encoder.setTransform(transCache);
-				_cam->beforeRenderMesh(*mesh, encoder, viewId);
-				uint64_t state = mat->beforeRender(encoder, viewId);
-				mesh->render(encoder, viewId);
-				encoder.setState(state);
-				encoder.submit(viewId, _program->getHandle());
-			}
+			uint64_t state = mat->beforeRender(encoder, viewId);
+			mesh->render(encoder, viewId);
+			encoder.setState(state);
+			encoder.submit(viewId, _program->getHandle());
 		}
 		_cam->afterRenderView(encoder, viewId);
 

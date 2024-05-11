@@ -21,21 +21,10 @@ namespace darmok
 		return _mesh;
 	}
 
-	LuaMaterial LuaMesh::getMaterial() const noexcept
-	{
-		return LuaMaterial(_mesh->getMaterial());
-	}
-
-	void LuaMesh::setMaterial(const LuaMaterial& material) noexcept
-	{
-		_mesh->setMaterial(material.getReal());
-	}
-
 	void LuaMesh::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaMesh>("Mesh",
-			sol::constructors<>(),
-			"material", sol::property(&LuaMesh::getMaterial, &LuaMesh::setMaterial)
+			sol::constructors<>()
 		);
 	}
 
@@ -118,14 +107,9 @@ namespace darmok
 		return LuaMesh(_creator->createLineQuad(quad));
 	}
 
-	LuaMesh LuaMeshCreator::createSprite1(const LuaTexture& texture) noexcept
+	LuaMesh LuaMeshCreator::createSprite(const LuaTexture& texture) noexcept
 	{
 		return LuaMesh(_creator->createSprite(texture.getReal()));
-	}
-
-	LuaMesh LuaMeshCreator::createSprite2(const LuaTexture& texture, const VarUvec2& size) noexcept
-	{
-		return LuaMesh(_creator->createSprite(texture.getReal(), LuaMath::tableToGlm(size)));
 	}
 
 	LuaMesh LuaMeshCreator::createRay(const Ray& ray) noexcept
@@ -169,7 +153,7 @@ namespace darmok
 				&LuaMeshCreator::createSphere3, &LuaMeshCreator::createSphere4),
 			"create_quad", sol::overload(&LuaMeshCreator::createQuad1, &LuaMeshCreator::createQuad2),
 			"create_line_quad", sol::overload(&LuaMeshCreator::createLineQuad1, &LuaMeshCreator::createLineQuad2),
-			"create_sprite", sol::overload(&LuaMeshCreator::createSprite1, &LuaMeshCreator::createSprite2),
+			"create_sprite", &LuaMeshCreator::createSprite,
 			"create_line", &LuaMeshCreator::createLine,
 			"create_ray", &LuaMeshCreator::createRay,
 			"create_lines", &LuaMeshCreator::createLines,
@@ -179,8 +163,7 @@ namespace darmok
 				&LuaMeshCreator::createSphere3,
 				&LuaMeshCreator::createSphere4,
 				&LuaMeshCreator::createQuad2,
-				&LuaMeshCreator::createSprite1,
-				&LuaMeshCreator::createSprite2,
+				&LuaMeshCreator::createSprite,
 				&LuaMeshCreator::createLine,
 				&LuaMeshCreator::createRay,
 				&LuaMeshCreator::createLines
@@ -188,34 +171,22 @@ namespace darmok
 		);
 	}
 
-	LuaMeshComponent::LuaMeshComponent(MeshComponent& comp) noexcept
+	LuaRenderable::LuaRenderable(Renderable& comp) noexcept
 		: _comp(comp)
 	{
 	}
 
-	const MeshComponent& LuaMeshComponent::getReal() const
+	const Renderable& LuaRenderable::getReal() const
 	{
 		return _comp.value();
 	}
 
-	MeshComponent& LuaMeshComponent::getReal()
+	Renderable& LuaRenderable::getReal()
 	{
 		return _comp.value();
 	}
 
-	std::vector<LuaMesh> LuaMeshComponent::getMeshes() const noexcept
-	{
-		std::vector<LuaMesh> luaMeshes;
-		auto realMeshes = _comp->getMeshes();
-		luaMeshes.reserve(realMeshes.size());
-		for (auto& mesh : realMeshes)
-		{
-			luaMeshes.push_back(LuaMesh(mesh));
-		}
-		return luaMeshes;
-	}
-
-	std::optional<LuaMesh> LuaMeshComponent::getMesh() const noexcept
+	std::optional<LuaMesh> LuaRenderable::getMesh() const noexcept
 	{
 		auto mesh = _comp->getMesh();
 		if (mesh == nullptr)
@@ -225,34 +196,29 @@ namespace darmok
 		return LuaMesh(mesh);
 	}
 
-	void LuaMeshComponent::setMeshes(const std::vector<LuaMesh>& meshes) noexcept
-	{
-		std::vector<std::shared_ptr<Mesh>> realMeshes;
-		realMeshes.reserve(meshes.size());
-		for (auto& mesh : meshes)
-		{
-			realMeshes.push_back(mesh.getReal());
-		}
-		_comp->setMeshes(realMeshes);
-	}
-
-	void LuaMeshComponent::setMesh(const LuaMesh& mesh) noexcept
+	LuaRenderable& LuaRenderable::setMesh(const LuaMesh& mesh) noexcept
 	{
 		_comp->setMesh(mesh.getReal());
+		return *this;
 	}
 
-	void LuaMeshComponent::addMesh(const LuaMesh& mesh) noexcept
+	LuaMaterial LuaRenderable::getMaterial() const noexcept
 	{
-		_comp->addMesh(mesh.getReal());
+		return LuaMaterial(_comp->getMaterial());
 	}
 
-	void LuaMeshComponent::configure(sol::state_view& lua) noexcept
+	LuaRenderable& LuaRenderable::setMaterial(const LuaMaterial& material) noexcept
 	{
-		lua.new_usertype<LuaMeshComponent>("MeshComponent",
+		_comp->setMaterial(material.getReal());
+		return *this;
+	}
+
+	void LuaRenderable::configure(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaRenderable>("Renderable",
 			sol::constructors<>(),
-			"meshes", sol::property(&LuaMeshComponent::getMeshes, &LuaMeshComponent::setMeshes),
-			"mesh", sol::property(&LuaMeshComponent::getMesh, &LuaMeshComponent::setMesh),
-			"add_mesh", &LuaMeshComponent::addMesh
+			"type_id", &entt::type_hash<Renderable>::value,
+			"mesh", sol::property(&LuaRenderable::getMesh, &LuaRenderable::setMesh)
 		);
 	}
 

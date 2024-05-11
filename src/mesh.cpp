@@ -1,9 +1,9 @@
 #include <darmok/mesh.hpp>
-#include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/data.hpp>
+#include <darmok/material.hpp>
 
 namespace darmok
 {
@@ -44,16 +44,6 @@ namespace darmok
 		return _layout;
 	}
 
-	const std::shared_ptr<Material>& Mesh::getMaterial() const noexcept
-	{
-		return _material;
-	}
-
-	void Mesh::setMaterial(const std::shared_ptr<Material>& material) noexcept
-	{
-		_material = material;
-	}
-
 	Mesh::~Mesh() noexcept
 	{
 		if (_vertexBuffer != bgfx::kInvalidHandle)
@@ -81,7 +71,7 @@ namespace darmok
 	}
 
 	Mesh::Mesh(Mesh&& other) noexcept
-		: _layout(other._layout), _material(other._material)
+		: _layout(other._layout)
 		, _vertexBuffer(other._vertexBuffer)
 		, _indexBuffer(other._indexBuffer)
 		, _vertexSize(other._vertexSize)
@@ -97,7 +87,6 @@ namespace darmok
 	Mesh& Mesh::operator=(Mesh&& other) noexcept
 	{
 		_layout = other._layout;
-		_material = other._material;
 		_vertexBuffer = other._vertexBuffer;
 		_indexBuffer = other._indexBuffer;
 		_vertexSize = other._vertexSize;
@@ -386,58 +375,39 @@ namespace darmok
 
 	std::shared_ptr<Mesh> MeshCreator::createSprite(const std::shared_ptr<Texture>& texture) noexcept
 	{
-		return createSprite(texture, texture->getSize());
+		return createQuad(Quad(texture->getSize()));
 	}
 
-	std::shared_ptr<Mesh> MeshCreator::createSprite(const std::shared_ptr<Texture>& texture, const glm::uvec2 size) noexcept
-	{
-		auto material = std::make_shared<Material>();
-		material->setTexture(MaterialTextureType::Diffuse, texture);
-		material->setColor(MaterialColorType::Diffuse, config.color);
-		auto mesh = createQuad(Quad(size));
-		mesh->setMaterial(material);
-		return mesh;
-	}
-
-	MeshComponent::MeshComponent(const std::shared_ptr<Mesh>& mesh) noexcept
-		: _meshes{ mesh }
+	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material) noexcept
+		: _mesh(mesh)
+		, _material(material)
 	{
 	}
 
-	MeshComponent::MeshComponent(const std::vector<std::shared_ptr<Mesh>>& meshes) noexcept
-		: _meshes(meshes)
+	Renderable::Renderable(const std::shared_ptr<Material>& material) noexcept
+		: _material(material)
 	{
 	}
 
-	const std::vector<std::shared_ptr<Mesh>>& MeshComponent::getMeshes() const noexcept
+	std::shared_ptr<Mesh> Renderable::getMesh() const noexcept
 	{
-		return _meshes;
+		return _mesh;
 	}
 
-	std::shared_ptr<Mesh> MeshComponent::getMesh() const noexcept
+	Renderable& Renderable::setMesh(const std::shared_ptr<Mesh>& mesh) noexcept
 	{
-		if (_meshes.empty())
-		{
-			return nullptr;
-		}
-		return _meshes[0];
-	}
-
-	MeshComponent& MeshComponent::setMeshes(const std::vector<std::shared_ptr<Mesh>>& meshes) noexcept
-	{
-		_meshes = meshes;
+		_mesh = mesh;
 		return *this;
 	}
 
-	MeshComponent& MeshComponent::setMesh(const std::shared_ptr<Mesh>& mesh) noexcept
+	std::shared_ptr<Material> Renderable::getMaterial() const noexcept
 	{
-		_meshes = { mesh };
-		return *this;
+		return _material;
 	}
 
-	MeshComponent& MeshComponent::addMesh(const std::shared_ptr<Mesh>& mesh) noexcept
+	Renderable& Renderable::setMaterial(const std::shared_ptr<Material>& material) noexcept
 	{
-		_meshes.push_back(mesh);
+		_material = material;
 		return *this;
 	}
 }

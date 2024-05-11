@@ -11,19 +11,18 @@ namespace darmok
 
     struct AnimationFrame final
     {
-        std::vector<std::shared_ptr<Mesh>> meshes;
+        std::shared_ptr<Mesh> mesh;
         float duration;
     };
 
-    class MeshComponent;
-    class Scene;
+    class Renderable;
 
-    class FrameAnimationComponent final
+    class FrameAnimation final
     {
     public:
-        FrameAnimationComponent(const std::vector<AnimationFrame>& frames, OptionalRef<MeshComponent> meshComp = nullptr) noexcept;
+        FrameAnimation(const std::vector<AnimationFrame>& frames, OptionalRef<Renderable> renderable = nullptr) noexcept;
         void setFrames(const std::vector<AnimationFrame>& frames) noexcept;
-        void setMeshComponent(MeshComponent& comp) noexcept;
+        void setRenderable(Renderable& renderable) noexcept;
         
         [[nodiscard]] const std::vector<AnimationFrame>& getFrames() const noexcept;
         [[nodiscard]] OptionalRef<const AnimationFrame> getCurrentFrame() const noexcept;
@@ -34,7 +33,7 @@ namespace darmok
         std::vector<AnimationFrame> _frames;
         size_t _currentFrame;
         float _timeSinceLastFrame;
-        OptionalRef<MeshComponent> _meshComp;
+        OptionalRef<Renderable> _renderable;
     };
 
     class FrameAnimationUpdater final : public ISceneLogicUpdater

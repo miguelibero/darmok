@@ -122,14 +122,6 @@ namespace darmok
 		return std::make_shared<Mesh>(layout, DataView(vertexData), DataView(indices));
 	}
 
-	std::shared_ptr<Material> TextureAtlasMeshCreator::createMaterial(const Color& color) const noexcept
-	{
-		auto material = std::make_shared<Material>();
-		material->setTexture(MaterialTextureType::Diffuse, atlas.texture);
-		material->setColor(MaterialColorType::Diffuse, color);
-		return material;
-	}
-
 	std::shared_ptr<Mesh> TextureAtlasMeshCreator::createSprite(std::string_view name) const noexcept
 	{
 		auto elm = atlas.getElement(name);
@@ -137,14 +129,11 @@ namespace darmok
 		{
 			return nullptr;
 		}
-		auto mesh = createSprite(elm.value());
-		mesh->setMaterial(createMaterial(config.color));
-		return mesh;
+		return createSprite(elm.value());
 	}
 
 	std::vector<AnimationFrame> TextureAtlasMeshCreator::createAnimation(std::string_view namePrefix, float frameDuration) const noexcept
 	{
-		auto material = createMaterial(config.color);
 		std::vector<AnimationFrame> frames;
 
 		for (auto& elm : atlas.elements)
@@ -154,7 +143,6 @@ namespace darmok
 				auto mesh = createSprite(elm);
 				if (mesh)
 				{
-					mesh->setMaterial(material);
 					frames.push_back({ { mesh }, frameDuration });
 				}
 			}

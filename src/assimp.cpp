@@ -555,13 +555,7 @@ namespace darmok
     {
         auto vertices = createVertexData(layout, alloc);
         auto indices = createIndexData();
-        auto mesh = std::make_shared<Mesh>(layout, DataView(vertices), DataView(indices));
-        auto material = getMaterial();
-        if (material != nullptr)
-        {
-            mesh->setMaterial(material->load(textureLoader, alloc));
-        }
-        return mesh;
+        return std::make_shared<Mesh>(layout, DataView(vertices), DataView(indices));
     }
 
     const std::vector<AssimpMeshFace>& AssimpMesh::getFaces() const noexcept
@@ -745,17 +739,6 @@ namespace darmok
                 _children.push_back(std::make_shared<AssimpNode>(*node.mChildren[i], scene));
             }
         }
-    }
-
-    std::vector<std::shared_ptr<Mesh>> AssimpNode::loadMeshes(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept
-    {
-        std::vector<std::shared_ptr<Mesh>> meshes;
-        meshes.reserve(_meshes.size());
-        for (auto& mesh : _meshes)
-        {
-            meshes.push_back(mesh->load(layout, textureLoader, alloc));
-        }
-        return meshes;
     }
 
     std::string_view AssimpNode::getName() const noexcept

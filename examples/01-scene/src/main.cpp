@@ -150,12 +150,17 @@ namespace
 			meshCreator.config.dynamic = true;
 			meshCreator.config.scale = glm::vec3(0.5F);
 			auto mesh = meshCreator.createSprite(tex);
+			auto mat = std::make_shared<Material>(tex);
+			registry.emplace<Renderable>(sprite, mesh, mat);
 
+			auto spriteBorder = registry.create();
 			auto size = scale * glm::vec2(tex->getSize());
 			meshCreator.config.scale = glm::vec3(size, 0);
 			auto debugMesh = meshCreator.createLineQuad();
-			debugMesh->setMaterial(_debugMaterial);
-			registry.emplace<MeshComponent>(sprite).setMeshes({ mesh, debugMesh });
+			registry.emplace<Renderable>(spriteBorder, debugMesh, _debugMaterial);
+			registry.emplace<Transform>(spriteBorder).setParent(trans);
+			registry.emplace<Culling2D>(spriteBorder);
+
 			registry.emplace<Culling2D>(sprite);
 			scene.addLogicUpdater<ScreenBounceUpdater>(trans, size, 100.f);
 		}
@@ -172,8 +177,9 @@ namespace
 			meshCreator.config.scale = glm::vec3(2.F);
 			auto frames = meshCreator.createAnimation(animNamePrefix, 0.1f);
 			
-			auto& meshComp = registry.emplace<MeshComponent>(anim);
-			registry.emplace<FrameAnimationComponent>(anim, frames, meshComp);
+			auto material = std::make_shared<Material>(texAtlas->texture);
+			auto& renderable = registry.emplace<Renderable>(anim, material);
+			registry.emplace<FrameAnimation>(anim, frames, renderable);
 			
 			registry.emplace<Culling2D>(anim);
 			auto& winSize = getWindow().getSize();
@@ -190,12 +196,11 @@ namespace
 			material->setColor(MaterialColorType::Diffuse, Colors::red());
 
 			auto cubeMesh = MeshCreator(_layout).createCube();
-			cubeMesh->setMaterial(material);
 
 			auto& registry = scene.getRegistry();
 			auto cube = registry.create();
 			registry.emplace<Culling3D>(cube);
-			registry.emplace<MeshComponent>(cube, cubeMesh);
+			registry.emplace<Renderable>(cube, cubeMesh, material);
 			auto& trans = registry.emplace<Transform>(cube);
 			scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
 		}

@@ -4,30 +4,30 @@
 
 namespace darmok
 {
-    FrameAnimationComponent::FrameAnimationComponent(const std::vector<AnimationFrame>& frames, OptionalRef<MeshComponent> meshComp) noexcept
+    FrameAnimation::FrameAnimation(const std::vector<AnimationFrame>& frames, OptionalRef<Renderable> renderable) noexcept
         : _frames(frames)
         , _currentFrame(0)
         , _timeSinceLastFrame(0.F)
-        , _meshComp(meshComp)
+        , _renderable(renderable)
     {
     }
 
-    const std::vector<AnimationFrame>& FrameAnimationComponent::getFrames() const noexcept
+    const std::vector<AnimationFrame>& FrameAnimation::getFrames() const noexcept
     {
         return _frames;
     }
 
-    void FrameAnimationComponent::setFrames(const std::vector<AnimationFrame>& frames) noexcept
+    void FrameAnimation::setFrames(const std::vector<AnimationFrame>& frames) noexcept
     {
         _frames = frames;
     }
 
-    void FrameAnimationComponent::setMeshComponent(MeshComponent& comp) noexcept
+    void FrameAnimation::setRenderable(Renderable& renderable) noexcept
     {
-        _meshComp = comp;
+        _renderable = renderable;
     }
 
-    OptionalRef<const AnimationFrame> FrameAnimationComponent::getCurrentFrame() const noexcept
+    OptionalRef<const AnimationFrame> FrameAnimation::getCurrentFrame() const noexcept
     {
         if (_frames.empty())
         {
@@ -36,7 +36,7 @@ namespace darmok
         return _frames[_currentFrame % _frames.size()];
     }
 
-    void FrameAnimationComponent::update(float deltaTime) noexcept
+    void FrameAnimation::update(float deltaTime) noexcept
     {
         _timeSinceLastFrame += deltaTime;
         if (_frames.empty())
@@ -55,9 +55,9 @@ namespace darmok
             frame = getCurrentFrame();
             _timeSinceLastFrame -= frame->duration;
         }
-        if (_meshComp)
+        if (_renderable)
         {
-            _meshComp->setMeshes(frame->meshes);
+            _renderable->setMesh(frame->mesh);
         }
     }
 
@@ -72,7 +72,7 @@ namespace darmok
         {
             return;
         }
-        auto anims = _scene->getRegistry().view<FrameAnimationComponent>();
+        auto anims = _scene->getRegistry().view<FrameAnimation>();
         for (auto [entity, anim] : anims.each())
         {
             anim.update(deltaTime);

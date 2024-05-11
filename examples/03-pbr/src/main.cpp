@@ -53,9 +53,8 @@ namespace
 
 			MeshCreator meshCreator(layout);
 			auto cubeMesh = meshCreator.createCube();
-			cubeMesh->setMaterial(greenMat);
 			auto cube = registry.create();
-			registry.emplace<MeshComponent>(cube, cubeMesh);
+			registry.emplace<Renderable>(cube, cubeMesh, greenMat);
 			registry.emplace<Transform>(cube)
 				.setPosition({ 1.5F, 0, 0 });
 
@@ -63,10 +62,9 @@ namespace
 			auto redMat = std::make_shared<Material>();
 			redMat->setTexture(MaterialTextureType::Diffuse, redTex);
 
-			auto sphereMesh = meshCreator.createSphere();
-			sphereMesh->setMaterial(redMat);
+			auto sphereMesh = .createSphere();
 			auto sphere = registry.create();
-			registry.emplace<MeshComponent>(sphere, sphereMesh);
+			registry.emplace<Renderable>(sphere, sphereMesh, redMat);
 			auto& trans = registry.emplace<Transform>(sphere);
 
 			auto speed = 0.01F;

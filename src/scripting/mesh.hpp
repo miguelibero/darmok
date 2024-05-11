@@ -22,8 +22,6 @@ namespace darmok
 		std::string to_string() const noexcept;
 
 		std::shared_ptr<Mesh> getReal() const noexcept;
-		LuaMaterial getMaterial() const noexcept;
-		void setMaterial(const LuaMaterial& material) noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:
@@ -62,8 +60,7 @@ namespace darmok
 		LuaMesh createQuad2(const Quad& quad) noexcept;
 		LuaMesh createLineQuad1() noexcept;
 		LuaMesh createLineQuad2(const Quad& quad) noexcept;
-		LuaMesh createSprite1(const LuaTexture& texture) noexcept;
-		LuaMesh createSprite2(const LuaTexture& texture, const VarUvec2& size) noexcept;
+		LuaMesh createSprite(const LuaTexture& texture) noexcept;
 		LuaMesh createRay(const Ray& ray) noexcept;
 		LuaMesh createLine(const Line& line) noexcept;
 		LuaMesh createLines(const std::vector<Line>& lines) noexcept;
@@ -73,27 +70,26 @@ namespace darmok
 		std::shared_ptr<MeshCreator> _creator;
 	};
 
-	class MeshComponent;
+	class Renderable;
 
-	class LuaMeshComponent final
+	class LuaRenderable final
 	{
 	public:
-		using native_t = MeshComponent;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::Mesh;
+		using native_t = Renderable;
+		const static LuaNativeComponentType native_type = LuaNativeComponentType::Renderable;
 
-		LuaMeshComponent(MeshComponent& comp) noexcept;
+		LuaRenderable(Renderable& comp) noexcept;
 
-		const MeshComponent& getReal() const;
-		MeshComponent& getReal();
+		const Renderable& getReal() const;
+		Renderable& getReal();
 
-		std::vector<LuaMesh> getMeshes() const noexcept;
 		std::optional<LuaMesh> getMesh() const noexcept;
-		void setMeshes(const std::vector<LuaMesh>& meshes) noexcept;
-		void setMesh(const LuaMesh& mesh) noexcept;
-		void addMesh(const LuaMesh& mesh) noexcept;
+		LuaRenderable& setMesh(const LuaMesh& mesh) noexcept;
+		LuaMaterial getMaterial() const noexcept;
+		LuaRenderable& setMaterial(const LuaMaterial& material) noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<MeshComponent> _comp;
+		OptionalRef<Renderable> _comp;
 	};
 }

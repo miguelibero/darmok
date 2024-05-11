@@ -236,18 +236,6 @@ namespace darmok
         }
     }
 
-    void Camera::beforeRenderMesh(const Mesh& mesh, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
-    {
-        if (_renderer != nullptr)
-        {
-            _renderer->beforeRenderMesh(mesh, encoder, viewId);
-        }
-        for (auto& comp : _components)
-        {
-            comp->beforeRenderMesh(mesh, encoder, viewId);
-        }
-    }
-
     void Camera::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
         if (_renderer != nullptr)

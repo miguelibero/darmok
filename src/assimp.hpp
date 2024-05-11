@@ -268,8 +268,6 @@ namespace darmok
         std::shared_ptr<AssimpCamera> getCamera() const noexcept;
         std::shared_ptr<AssimpLight> getLight() const noexcept;
 
-        std::vector<std::shared_ptr<Mesh>> loadMeshes(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept;
-
     private:
         OptionalRef<const aiNode> _node;
         aiSceneRef _scene;

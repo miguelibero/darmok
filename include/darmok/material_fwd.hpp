@@ -26,6 +26,4 @@ namespace darmok
         Triangle,
         Line
     };
-
-    class Material;
 }
