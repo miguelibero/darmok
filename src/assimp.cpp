@@ -75,27 +75,6 @@ namespace darmok
                 convertColorComp(c.b)
             };
         }
-
-        template<typename T>
-        static OptionalRef<T> getNodeChild(T& node, const std::string_view& path) noexcept
-        {
-            auto itr = path.find('/');
-            auto sep = itr != std::string::npos;
-            auto name = sep ? path.substr(0, itr) : path;
-            for (auto& child : node.getChildren())
-            {
-                if (child.getName() != name)
-                {
-                    continue;
-                }
-                if (!sep)
-                {
-                    return child;
-                }
-                return child.getChild(path.substr(itr + 1));
-            }
-            return std::nullopt;
-        }
     };
 
     AssimpMaterialProperty::AssimpMaterialProperty(const aiMaterialProperty& prop, aiSceneRef scene) noexcept
@@ -139,9 +118,10 @@ namespace darmok
         , _operation(aiTextureOp_Add)
         , _mapMode(aiTextureMapMode_Clamp)
     {
+
         aiString path;
         unsigned int uvindex;
-        material.GetTexture((aiTextureType)type, index, &path,
+        material.GetTexture(type, index, &path,
             &_mapping,
             &uvindex,
             &_blend,
@@ -210,16 +190,11 @@ namespace darmok
         return AssimpUtils::getStringView(_material->GetName());
     }
 
-    const std::vector<AssimpMaterialTexture>& AssimpMaterial::getTextures(aiTextureType type) const noexcept
+    std::vector<AssimpMaterialTexture> AssimpMaterial::getTextures(aiTextureType type) const noexcept
     {
-        auto itr = _textures.find(type);
-        if (itr == _textures.end())
-        {
-            auto r = _textures.try_emplace(type);
-            itr = r.first;
-            fillTextures(itr->second, type);
-        }
-        return itr->second;
+        std::vector<AssimpMaterialTexture> textures;
+        fillTextures(textures, type);
+        return textures;
     }
 
     void AssimpMaterial::fillTextures(std::vector<AssimpMaterialTexture>& textures, aiTextureType type) const noexcept
@@ -228,7 +203,7 @@ namespace darmok
         textures.reserve(size);
         for (unsigned int i = 0; i < size; i++)
         {
-            textures.emplace_back(_material.value(), type, i);
+            textures.push_back(AssimpMaterialTexture(_material.value(), type, i));
         }
     }
 
@@ -322,7 +297,7 @@ namespace darmok
         std::filesystem::path basePath(_basePath);
         for (auto& elm : _materialTextures)
         {
-            for (auto& modelTex : getTextures(elm.first))
+            for (auto modelTex : getTextures(elm.first))
             {
                 auto& path = modelTex.getPath();
                 auto texture = loadEmbeddedTexture(path, alloc);
@@ -451,7 +426,7 @@ namespace darmok
         return AssimpUtils::convert(_ptr[pos]);
     }
 
-    AssimpMesh::AssimpMesh(const aiMesh& mesh, const AssimpMaterial& material, aiSceneRef scene) noexcept
+    AssimpMesh::AssimpMesh(const aiMesh& mesh, const std::shared_ptr<AssimpMaterial>& material, aiSceneRef scene) noexcept
         : _mesh(mesh)
         , _material(material)
         , _scene(scene)
@@ -495,7 +470,7 @@ namespace darmok
         }
     }
 
-    const AssimpMaterial& AssimpMesh::getMaterial() const noexcept
+    std::shared_ptr<AssimpMaterial> AssimpMesh::getMaterial() const noexcept
     {
         return _material;
     }
@@ -581,7 +556,11 @@ namespace darmok
         auto vertices = createVertexData(layout, alloc);
         auto indices = createIndexData();
         auto mesh = std::make_shared<Mesh>(layout, DataView(vertices), DataView(indices));
-        mesh->setMaterial(getMaterial().load(textureLoader, alloc));
+        auto material = getMaterial();
+        if (material != nullptr)
+        {
+            mesh->setMaterial(material->load(textureLoader, alloc));
+        }
         return mesh;
     }
 
@@ -741,8 +720,8 @@ namespace darmok
     AssimpNode::AssimpNode(const aiNode& node, const AssimpScene& scene) noexcept
         : _node(node)
         , _scene(scene.getInternal())
-        , _light(scene.getLight(getName()).optional())
-        , _camera(scene.getCamera(getName()).optional())
+        , _light(scene.getLight(getName()))
+        , _camera(scene.getCamera(getName()))
     {
 
         {
@@ -763,7 +742,7 @@ namespace darmok
             _children.reserve(size);
             for (size_t i = 0; i < size; i++)
             {
-                _children.emplace_back(*node.mChildren[i], scene);
+                _children.push_back(std::make_shared<AssimpNode>(*node.mChildren[i], scene));
             }
         }
     }
@@ -774,7 +753,7 @@ namespace darmok
         meshes.reserve(_meshes.size());
         for (auto& mesh : _meshes)
         {
-            meshes.push_back(mesh.load(layout, textureLoader, alloc));
+            meshes.push_back(mesh->load(layout, textureLoader, alloc));
         }
         return meshes;
     }
@@ -789,108 +768,119 @@ namespace darmok
         return AssimpUtils::convert(_node->mTransformation);
     }
 
-    const std::vector<AssimpMesh>& AssimpNode::getMeshes() const noexcept
+    const std::vector<std::shared_ptr<AssimpMesh>>& AssimpNode::getMeshes() const noexcept
     {
         return _meshes;
     }
 
-    const std::vector<AssimpNode>& AssimpNode::getChildren() const noexcept
+    const std::vector<std::shared_ptr<AssimpNode>>& AssimpNode::getChildren() const noexcept
     {
         return _children;
     }
 
-    OptionalRef<const AssimpNode> AssimpNode::getChild(const std::string_view& path) const noexcept
+    std::shared_ptr<AssimpNode> AssimpNode::getChild(const std::string_view& path) const noexcept
     {
-        return AssimpUtils::getNodeChild(*this, path);
+        auto itr = path.find('/');
+        auto sep = itr != std::string::npos;
+        auto name = sep ? path.substr(0, itr) : path;
+        for (auto& child : getChildren())
+        {
+            if (child->getName() != name)
+            {
+                continue;
+            }
+            if (!sep)
+            {
+                return child;
+            }
+            return child->getChild(path.substr(itr + 1));
+        }
+        return nullptr;
     }
 
-    OptionalRef<const AssimpCamera> AssimpNode::getCamera() const noexcept
+    std::shared_ptr<AssimpCamera> AssimpNode::getCamera() const noexcept
     {
-        return _camera ? &_camera.value() : nullptr;
+        return _camera;
     }
 
-    OptionalRef<const AssimpLight> AssimpNode::getLight() const noexcept
+    std::shared_ptr<AssimpLight> AssimpNode::getLight() const noexcept
     {
-        return _light ? &_light.value() : nullptr;
+        return _light;
     }
 
-    OptionalRef<const AssimpCamera> AssimpScene::getCamera(const std::string_view& name) const noexcept
+    std::shared_ptr<AssimpCamera> AssimpScene::getCamera(const std::string_view& name) const noexcept
     {
         for (auto& cam : _cameras)
         {
-            if (cam.getName() == name)
+            if (cam->getName() == name)
             {
                 return cam;
             }
         }
-        return std::nullopt;
+        return nullptr;
     }
 
-    OptionalRef<const AssimpLight> AssimpScene::getLight(const std::string_view& name) const noexcept
+    std::shared_ptr<AssimpLight> AssimpScene::getLight(const std::string_view& name) const noexcept
     {
         for (auto& light : _lights)
         {
-            if (light.getName() == name)
+            if (light->getName() == name)
             {
                 return light;
             }
         }
-        return std::nullopt;
+        return nullptr;
     }
 
-    std::vector<AssimpMaterial> AssimpScene::loadMaterials(aiSceneRef scene, const std::string& path) noexcept
+    std::vector<std::shared_ptr<AssimpMaterial>> AssimpScene::loadMaterials(aiSceneRef scene, const std::string& path) noexcept
     {
-        std::vector<AssimpMaterial> materials;
+        std::vector<std::shared_ptr<AssimpMaterial>> materials;
         auto size = scene->mNumMaterials;
         materials.reserve(size);
-        size_t i = 0;
         auto basePath = std::filesystem::path(path).parent_path().string();
         for (size_t i = 0; i < size; i++)
         {
-            materials.emplace_back(*scene->mMaterials[i], scene, basePath);
+            materials.push_back(std::make_shared<AssimpMaterial>(*scene->mMaterials[i], scene, basePath));
         }
         return materials;
     }
 
-    std::vector<AssimpCamera> AssimpScene::loadCameras(aiSceneRef scene) noexcept
+    std::vector<std::shared_ptr<AssimpCamera>> AssimpScene::loadCameras(aiSceneRef scene) noexcept
     {
-        std::vector<AssimpCamera> cameras;
+        std::vector<std::shared_ptr<AssimpCamera>> cameras;
         auto size = scene->mNumCameras;
         cameras.reserve(size);
-        size_t i = 0;
         for (size_t i = 0; i < size; i++)
         {
-            cameras.emplace_back(*scene->mCameras[i], scene);
+            cameras.push_back(std::make_shared<AssimpCamera>(*scene->mCameras[i], scene));
         }
         return cameras;
     }
 
-    std::vector<AssimpLight> AssimpScene::loadLights(aiSceneRef scene) noexcept
+    std::vector<std::shared_ptr<AssimpLight>> AssimpScene::loadLights(aiSceneRef scene) noexcept
     {
-        std::vector<AssimpLight> lights;
+        std::vector<std::shared_ptr<AssimpLight>> lights;
         auto size = scene->mNumLights;
         lights.reserve(size);
-        size_t i = 0;
         for (size_t i = 0; i < size; i++)
         {
-            lights.emplace_back(*scene->mLights[i], scene);
+            lights.push_back(std::make_shared<AssimpLight>(*scene->mLights[i], scene));
         }
         return lights;
     }
 
-    std::vector<AssimpMesh> AssimpScene::loadMeshes(aiSceneRef scene, const std::vector<AssimpMaterial>& materials) noexcept
+    std::vector<std::shared_ptr<AssimpMesh>> AssimpScene::loadMeshes(aiSceneRef scene, const std::vector<std::shared_ptr<AssimpMaterial>>& materials) noexcept
     {
-        std::vector<AssimpMesh> meshes;
+        std::vector<std::shared_ptr<AssimpMesh>> meshes;
         auto size = scene->mNumMeshes;
         meshes.reserve(size);
-        size_t i = 0;
         for (size_t i = 0; i < size; i++)
         {
             auto meshPtr = scene->mMeshes[i];
             if (meshPtr != nullptr && meshPtr->mMaterialIndex < materials.size())
             {
                 auto& material = materials[meshPtr->mMaterialIndex];
-                meshes.emplace_back(*meshPtr, material, scene);
+                meshes.push_back(std::make_shared<AssimpMesh>(*meshPtr, material, scene));
             }
         }
         return meshes;
@@ -903,7 +893,7 @@ namespace darmok
         , _meshes(loadMeshes(scene, _materials))
         , _cameras(loadCameras(scene))
         , _lights(loadLights(scene))
-        , _rootNode(*scene->mRootNode, *this)
+        , _rootNode(std::make_shared<AssimpNode>(*scene->mRootNode, *this))
     {
     }
 
@@ -947,27 +937,27 @@ namespace darmok
         return _scene;
     }
 
-    const AssimpNode& AssimpScene::getRootNode() const noexcept
+    std::shared_ptr<AssimpNode> AssimpScene::getRootNode() const noexcept
     {
         return _rootNode;
     }
 
-    const std::vector<AssimpMesh>& AssimpScene::getMeshes() const noexcept
+    const std::vector<std::shared_ptr<AssimpMesh>>& AssimpScene::getMeshes() const noexcept
     {
         return _meshes;
     }
 
-    const std::vector<AssimpMaterial>& AssimpScene::getMaterials() const noexcept
+    const std::vector<std::shared_ptr<AssimpMaterial>>& AssimpScene::getMaterials() const noexcept
     {
         return _materials;
     }
 
-    const std::vector<AssimpCamera>& AssimpScene::getCameras() const noexcept
+    const std::vector<std::shared_ptr<AssimpCamera>>& AssimpScene::getCameras() const noexcept
     {
         return _cameras;
     }
 
-    const std::vector<AssimpLight>& AssimpScene::getLights() const noexcept
+    const std::vector<std::shared_ptr<AssimpLight>>& AssimpScene::getLights() const noexcept
     {
         return _lights;
     }

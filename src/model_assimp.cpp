@@ -36,20 +36,20 @@ namespace darmok
 		return _children.at(pos);
 	}
 
-	AssimpModelNode::AssimpModelNode(const AssimpNode& assimp) noexcept
+	AssimpModelNode::AssimpModelNode(const std::shared_ptr<AssimpNode>& assimp) noexcept
 		: _assimp(assimp)
-		, _children(assimp)
+		, _children(*assimp)
 	{
 	}
 
 	std::string_view AssimpModelNode::getName() const noexcept
 	{
-		return _assimp.getName();
+		return _assimp->getName();
 	}
 
 	glm::mat4 AssimpModelNode::getTransform() const noexcept
 	{
-		return _assimp.getTransform();
+		return _assimp->getTransform();
 	}
 
 	const ValCollection<std::shared_ptr<IModelNode>>& AssimpModelNode::getChildren() const noexcept
@@ -59,19 +59,19 @@ namespace darmok
 
 	void AssimpModelNode::configureEntity(Entity entity, const ModelSceneConfig& config) const
 	{
-		auto assimpCam = _assimp.getCamera();
-		if (assimpCam.hasValue())
+		auto assimpCam = _assimp->getCamera();
+		if (assimpCam != nullptr)
 		{
-			configureCamera(assimpCam.value(), entity, config);
+			configureCamera(*assimpCam, entity, config);
 		}
 
-		auto assimpLight = _assimp.getLight();
-		if (assimpLight.hasValue())
+		auto assimpLight = _assimp->getLight();
+		if (assimpLight != nullptr)
 		{
-			configureLight(assimpLight.value(), entity, config);
+			configureLight(*assimpLight, entity, config);
 		}
 
-		auto meshes = _assimp.loadMeshes(config.layout, config.assets.getTextureLoader(), config.assets.getAllocator());
+		auto meshes = _assimp->loadMeshes(config.layout, config.assets.getTextureLoader(), config.assets.getAllocator());
 		if (!meshes.empty())
 		{
 			config.registry.emplace<MeshComponent>(entity, meshes);

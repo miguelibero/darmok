@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <optional>
 #include <vector>
+#include <memory>
 
 #include <darmok/data.hpp>
 #include <darmok/optional_ref.hpp>
@@ -102,7 +103,7 @@ namespace darmok
         AssimpMaterial(const aiMaterial& material, aiSceneRef scene, const std::string& basePath) noexcept;
 
         std::string_view getName() const noexcept;
-        const std::vector<AssimpMaterialTexture>& getTextures(aiTextureType type) const noexcept;
+        std::vector<AssimpMaterialTexture> getTextures(aiTextureType type) const noexcept;
         const std::vector<AssimpMaterialProperty>& getProperties() const noexcept;
         std::optional<Color> getColor(AssimpMaterialColorType type) const noexcept;
         bool showWireframe() const noexcept;
@@ -116,7 +117,6 @@ namespace darmok
         std::string _basePath;
         OptionalRef<const aiMaterial> _material;
         std::vector<AssimpMaterialProperty> _properties;
-        mutable std::unordered_map<aiTextureType, std::vector<AssimpMaterialTexture>> _textures;
 
         static const std::unordered_map<AssimpMaterialColorType, MaterialColorType> _materialColors;
         static const std::unordered_map<aiTextureType, MaterialTextureType> _materialTextures;
@@ -179,9 +179,9 @@ namespace darmok
     class AssimpMesh final
     {
     public:
-        AssimpMesh(const aiMesh& mesh, const AssimpMaterial& material, aiSceneRef scene) noexcept;
+        AssimpMesh(const aiMesh& mesh, const std::shared_ptr<AssimpMaterial>& material, aiSceneRef scene) noexcept;
 
-        const AssimpMaterial& getMaterial() const noexcept;
+        std::shared_ptr<AssimpMaterial> getMaterial() const noexcept;
         const AssimpVector3Collection& getPositions() const noexcept;
         const AssimpVector3Collection& getNormals() const noexcept;
         const AssimpVector3Collection& getTangents() const noexcept;
@@ -195,7 +195,7 @@ namespace darmok
 
     private:
         OptionalRef<const aiMesh> _mesh;
-        AssimpMaterial _material;
+        std::shared_ptr<AssimpMaterial> _material;
         aiSceneRef _scene;
         AssimpVector3Collection _positions;
         AssimpVector3Collection _normals;
@@ -259,25 +259,24 @@ namespace darmok
     {
     public:
         AssimpNode(const aiNode& node, const AssimpScene& scene) noexcept;
-        AssimpNode(const AssimpNode& other) = default;
 
         std::string_view getName() const noexcept;
         glm::mat4 getTransform() const noexcept;
-        const std::vector<AssimpMesh>& getMeshes() const noexcept;
-        const std::vector<AssimpNode>& getChildren() const noexcept;
-        OptionalRef<const AssimpNode> getChild(const std::string_view& path) const noexcept;
-        OptionalRef<const AssimpCamera> getCamera() const noexcept;
-        OptionalRef<const AssimpLight> getLight() const noexcept;
+        const std::vector<std::shared_ptr<AssimpMesh>>& getMeshes() const noexcept;
+        const std::vector<std::shared_ptr<AssimpNode>>& getChildren() const noexcept;
+        std::shared_ptr<AssimpNode> getChild(const std::string_view& path) const noexcept;
+        std::shared_ptr<AssimpCamera> getCamera() const noexcept;
+        std::shared_ptr<AssimpLight> getLight() const noexcept;
 
         std::vector<std::shared_ptr<Mesh>> loadMeshes(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept;
 
     private:
         OptionalRef<const aiNode> _node;
         aiSceneRef _scene;
-        std::optional<AssimpCamera> _camera;
-        std::optional<AssimpLight> _light;
-        std::vector<AssimpMesh> _meshes;
-        std::vector<AssimpNode> _children;
+        std::shared_ptr<AssimpCamera> _camera;
+        std::shared_ptr<AssimpLight> _light;
+        std::vector<std::shared_ptr<AssimpMesh>> _meshes;
+        std::vector<std::shared_ptr<AssimpNode>> _children;
     };
 
     class AssimpScene final
@@ -290,28 +289,28 @@ namespace darmok
         const std::string& getPath() const noexcept;
         aiSceneRef getInternal() const noexcept;
 
-        const AssimpNode& getRootNode() const noexcept;
-        const std::vector<AssimpMaterial>& getMaterials() const noexcept;
-        const std::vector<AssimpMesh>& getMeshes() const noexcept;
-        const std::vector<AssimpCamera>& getCameras() const noexcept;
-        const std::vector<AssimpLight>& getLights() const noexcept;
+        std::shared_ptr<AssimpNode> getRootNode() const noexcept;
+        const std::vector<std::shared_ptr<AssimpMaterial>>& getMaterials() const noexcept;
+        const std::vector<std::shared_ptr<AssimpMesh>>& getMeshes() const noexcept;
+        const std::vector<std::shared_ptr<AssimpCamera>>& getCameras() const noexcept;
+        const std::vector<std::shared_ptr<AssimpLight>>& getLights() const noexcept;
 
-        OptionalRef<const AssimpCamera> getCamera(const std::string_view& name) const noexcept;
-        OptionalRef<const AssimpLight> getLight(const std::string_view& name) const noexcept;
+        std::shared_ptr<AssimpCamera> getCamera(const std::string_view& name) const noexcept;
+        std::shared_ptr<AssimpLight> getLight(const std::string_view& name) const noexcept;
 
     private:
         std::string _path;
         aiSceneRef _scene;
-        std::vector<AssimpMaterial> _materials;
-        std::vector<AssimpMesh> _meshes;
-        std::vector<AssimpCamera> _cameras;
-        std::vector<AssimpLight> _lights;
-        AssimpNode _rootNode;
+        std::vector<std::shared_ptr<AssimpMaterial>> _materials;
+        std::vector<std::shared_ptr<AssimpMesh>> _meshes;
+        std::vector<std::shared_ptr<AssimpCamera>> _cameras;
+        std::vector<std::shared_ptr<AssimpLight>> _lights;
+        std::shared_ptr<AssimpNode> _rootNode;
 
-        static std::vector<AssimpMaterial> loadMaterials(aiSceneRef scene, const std::string& path) noexcept;
-        static std::vector<AssimpMesh> loadMeshes(aiSceneRef scene, const std::vector<AssimpMaterial>& materials) noexcept;
-        static std::vector<AssimpCamera> loadCameras(aiSceneRef scene) noexcept;
-        static std::vector<AssimpLight> loadLights(aiSceneRef scene) noexcept;
+        static std::vector<std::shared_ptr<AssimpMaterial>> loadMaterials(aiSceneRef scene, const std::string& path) noexcept;
+        static std::vector<std::shared_ptr<AssimpMesh>> loadMeshes(aiSceneRef scene, const std::vector<std::shared_ptr<AssimpMaterial>>& materials) noexcept;
+        static std::vector<std::shared_ptr<AssimpCamera>> loadCameras(aiSceneRef scene) noexcept;
+        static std::vector<std::shared_ptr<AssimpLight>> loadLights(aiSceneRef scene) noexcept;
 
         static aiSceneRef importScene(Assimp::Importer& importer, const DataView& data, const std::string & path);
 	};

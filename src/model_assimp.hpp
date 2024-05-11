@@ -29,7 +29,7 @@ namespace darmok
     class AssimpModelNode final : public IModelNode
     {
     public:
-        AssimpModelNode(const AssimpNode& assimp) noexcept;
+        AssimpModelNode(const std::shared_ptr<AssimpNode>& assimp) noexcept;
 
         std::string_view getName() const noexcept override;
         glm::mat4 getTransform() const noexcept override;
@@ -37,7 +37,7 @@ namespace darmok
         void configureEntity(Entity entity, const ModelSceneConfig& config) const override;
 
     private:
-        AssimpNode _assimp;
+        std::shared_ptr<AssimpNode> _assimp;
         AssimpModelNodeChildrenCollection _children;
 
         void configureCamera(const AssimpCamera& cam, Entity entity, const ModelSceneConfig& config) const noexcept;
