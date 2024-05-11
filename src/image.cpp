@@ -75,9 +75,9 @@ namespace darmok
 		return TextureType::Unknown;
 	}
 
-	bx::AllocatorI* Image::getAllocator() const noexcept
+	bx::AllocatorI& Image::getAllocator() const noexcept
 	{
-		return _container->m_allocator;
+		return *_container->m_allocator;
 	}
 
 	bool Image::empty() const noexcept

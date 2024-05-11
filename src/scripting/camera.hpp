@@ -6,13 +6,14 @@
 #include <darmok/shape.hpp>
 #include "sol.hpp"
 #include "math.hpp"
-#include "scene_fwd.hpp"
 
 namespace darmok
 {
     class Camera;
 	class LuaProgram;
 	class LuaTexture;
+	class LuaEntity;
+	class LuaScene;
 
 	enum class LuaNativeCameraComponentType
 	{
@@ -22,9 +23,6 @@ namespace darmok
 	class LuaCamera final
 	{
 	public:
-		using native_t = Camera;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::Camera;
-
 		LuaCamera(Camera& camera) noexcept;
 
 		const Camera& getReal() const;
@@ -53,6 +51,10 @@ namespace darmok
 
 	private:
 		OptionalRef<Camera> _camera;
+
+		static LuaCamera addEntityComponent(LuaEntity& entity) noexcept;
+		static std::optional<LuaCamera> getEntityComponent(LuaEntity& entity) noexcept;
+		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
 
 }

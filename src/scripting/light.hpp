@@ -3,18 +3,16 @@
 #include <darmok/optional_ref.hpp>
 #include "sol.hpp"
 #include "math.hpp"
-#include "scene_fwd.hpp"
 
 namespace darmok
 {
     class PointLight;
+	class LuaEntity;
+	class LuaScene;
 
 	class LuaPointLight final
 	{
 	public:
-		using native_t = PointLight;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::PointLight;
-
 		LuaPointLight(PointLight& light) noexcept;
 
 		const PointLight& getReal() const;
@@ -36,6 +34,11 @@ namespace darmok
 		static void configure(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<PointLight> _light;
+
+		static LuaPointLight addEntityComponent1(LuaEntity& entity) noexcept;
+		static LuaPointLight addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
+		static std::optional<LuaPointLight> getEntityComponent(LuaEntity& entity) noexcept;
+		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
 
 	class AmbientLight;
@@ -43,9 +46,6 @@ namespace darmok
 	class LuaAmbientLight final
 	{
 	public:
-		using native_t = AmbientLight;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::AmbientLight;
-
 		LuaAmbientLight(AmbientLight& light) noexcept;
 
 		const AmbientLight& getReal() const;
@@ -60,5 +60,10 @@ namespace darmok
 		static void configure(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<AmbientLight> _light;
+
+		static LuaAmbientLight addEntityComponent1(LuaEntity& entity) noexcept;
+		static LuaAmbientLight addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
+		static std::optional<LuaAmbientLight> getEntityComponent(LuaEntity& entity) noexcept;
+		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
 }

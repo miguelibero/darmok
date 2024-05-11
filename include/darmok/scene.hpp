@@ -88,7 +88,7 @@ namespace darmok
     public:
         SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;
         
-        const std::shared_ptr<Scene>& getScene() const noexcept;
+        std::shared_ptr<Scene> getScene() const noexcept;
         void setScene(const std::shared_ptr<Scene>& scene) noexcept;
         const std::vector<std::shared_ptr<Scene>>& getScenes() const noexcept;
         std::shared_ptr<Scene> addScene() noexcept;

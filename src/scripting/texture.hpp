@@ -48,6 +48,7 @@ namespace darmok
 	public:
 		LuaTextureAtlas(const std::shared_ptr<TextureAtlas>& atlas) noexcept;
 		std::shared_ptr<TextureAtlas> getReal() const noexcept;
+		LuaTexture getTexture() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:

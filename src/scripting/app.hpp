@@ -12,6 +12,7 @@ namespace darmok
 	class LuaAssets;
 	class LuaWindow;
 	class LuaInput;
+	class SceneAppComponent;
 
 	class LuaApp final
 	{

@@ -5,9 +5,9 @@
 #include <vector>
 #include <optional>
 #include <darmok/optional_ref.hpp>
+#include <darmok/scene_fwd.hpp>
 #include "sol.hpp"
 #include "math.hpp"
-#include "scene_fwd.hpp"
 
 namespace darmok
 {
@@ -37,6 +37,7 @@ namespace darmok
 	struct Line;
 	struct Ray;
 	class LuaTexture;
+	class LuaRenderable;
 
 	struct LuaMeshCreator final
 	{
@@ -58,9 +59,9 @@ namespace darmok
 		LuaMesh createSphere4(const Sphere& sphere, int lod) noexcept;
 		LuaMesh createQuad1() noexcept;
 		LuaMesh createQuad2(const Quad& quad) noexcept;
+		LuaMesh createQuad3(const VarUvec2& size) noexcept;
 		LuaMesh createLineQuad1() noexcept;
 		LuaMesh createLineQuad2(const Quad& quad) noexcept;
-		LuaMesh createSprite(const LuaTexture& texture) noexcept;
 		LuaMesh createRay(const Ray& ray) noexcept;
 		LuaMesh createLine(const Line& line) noexcept;
 		LuaMesh createLines(const std::vector<Line>& lines) noexcept;
@@ -71,14 +72,13 @@ namespace darmok
 	};
 
 	class Renderable;
+	class LuaEntity;
+	class LuaScene;
 
 	class LuaRenderable final
 	{
 	public:
-		using native_t = Renderable;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::Renderable;
-
-		LuaRenderable(Renderable& comp) noexcept;
+		LuaRenderable(Renderable& renderable) noexcept;
 
 		const Renderable& getReal() const;
 		Renderable& getReal();
@@ -90,6 +90,13 @@ namespace darmok
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<Renderable> _comp;
+		OptionalRef<Renderable> _renderable;
+
+		static LuaRenderable addEntityComponent1(LuaEntity& entity, const LuaMesh& mesh) noexcept;
+		static LuaRenderable addEntityComponent2(LuaEntity& entity, const LuaMaterial& material) noexcept;
+		static LuaRenderable addEntityComponent3(LuaEntity& entity, const LuaMesh& mesh, const LuaMaterial& material) noexcept;
+		static LuaRenderable addEntityComponent4(LuaEntity& entity, const LuaMesh& mesh, const LuaTexture& texture) noexcept;
+		static std::optional<LuaRenderable> getEntityComponent(LuaEntity& entity) noexcept;
+		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
 }

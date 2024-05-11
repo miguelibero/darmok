@@ -1,4 +1,5 @@
 #include "light.hpp"
+#include "scene.hpp"
 #include <darmok/light.hpp>
 
 namespace darmok
@@ -73,10 +74,37 @@ namespace darmok
 		return _light->getSpecularColor();
 	}
 
+	LuaPointLight LuaPointLight::addEntityComponent1(LuaEntity& entity) noexcept
+	{
+		return entity.addComponent<PointLight>();
+	}
+
+	LuaPointLight LuaPointLight::addEntityComponent2(LuaEntity& entity, float intensity) noexcept
+	{
+		return entity.addComponent<PointLight>(intensity);
+	}
+
+	std::optional<LuaPointLight> LuaPointLight::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<PointLight, LuaPointLight>();
+	}
+
+	std::optional<LuaEntity> LuaPointLight::getEntity(LuaScene& scene) noexcept
+	{
+		return scene.getEntity(_light.value());
+	}
+
 	void LuaPointLight::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaPointLight>("PointLight",
 			sol::constructors<>(),
+			"type_id", &entt::type_hash<PointLight>::value,
+			"add_entity_component", sol::overload(
+				&LuaPointLight::addEntityComponent1,
+				&LuaPointLight::addEntityComponent2
+			),
+			"get_entity_component", &LuaPointLight::getEntityComponent,
+			"get_entity", &LuaPointLight::getEntity,
 			"intensity", sol::property(&LuaPointLight::getIntensity, &LuaPointLight::setIntensity),
 			"radius", sol::property(&LuaPointLight::getRadius, &LuaPointLight::setRadius),
 			"attenuation", sol::property(&LuaPointLight::getAttenuation, &LuaPointLight::setAttenuation),
@@ -121,10 +149,38 @@ namespace darmok
 		return _light->getIntensity();
 	}
 
+	LuaAmbientLight LuaAmbientLight::addEntityComponent1(LuaEntity& entity) noexcept
+	{
+		return entity.addComponent<AmbientLight>();
+	}
+
+	LuaAmbientLight LuaAmbientLight::addEntityComponent2(LuaEntity& entity, float intensity) noexcept
+	{
+		return entity.addComponent<AmbientLight>(intensity);
+	}
+
+	std::optional<LuaAmbientLight> LuaAmbientLight::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<AmbientLight, LuaAmbientLight>();
+	}
+
+	std::optional<LuaEntity> LuaAmbientLight::getEntity(LuaScene& scene) noexcept
+	{
+		return scene.getEntity(_light.value());
+	}
+
 	void LuaAmbientLight::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaAmbientLight>("AmbientLight",
 			sol::constructors<>(),
+			"type_id", &entt::type_hash<AmbientLight>::value,
+			"add_entity_component", sol::overload(
+				&LuaAmbientLight::addEntityComponent1,
+				&LuaAmbientLight::addEntityComponent2
+			),
+			"get_entity_component", &LuaAmbientLight::getEntityComponent,
+			"get_entity", &LuaAmbientLight::getEntity,
+
 			"intensity", sol::property(&LuaAmbientLight::getIntensity, &LuaAmbientLight::setIntensity),
 			"color", sol::property(&LuaAmbientLight::getColor, &LuaAmbientLight::setColor)
 		);

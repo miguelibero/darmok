@@ -160,6 +160,7 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/camera.cpp
     ${SRC_DIR}/scripting/window.cpp
     ${SRC_DIR}/scripting/model.cpp
+    ${SRC_DIR}/scripting/entt.cpp
   )
   list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
 endif()

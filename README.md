@@ -102,21 +102,18 @@ I'm still learning CMake, so if you see something that should be fixed please le
 program = app.assets:load_standard_program(StandardProgramType.ForwardPhong)
 
 camEntity = app.scene:create_entity()
-camTrans = camEntity:add_component(ComponentType.Transform)
-camTrans.position = { 0, 2, -2 }
+camTrans = camEntity:add_component(Transform, { 0, 2, -2 })
 camTrans:look_at({ 0, 0, 0 })
-local cam = camEntity:add_component(ComponentType.Camera)
+local cam = camEntity:add_component(Camera)
 cam:set_projection(60, { 0.3, 1000 })
 cam:set_forward_renderer(program)
 cam:add_component(CameraComponentType.PhongLighting)
 
 lightEntity = app.scene:create_entity()
-lightTrans = lightEntity:add_component(ComponentType.Transform)
-lightTrans.position = { 1, 1, -2 }
-lightEntity:add_component(ComponentType.PointLight)
+lightEntity:add_component(Transform, { 1, 1, -2 })
+lightEntity:add_component(PointLight)
 
 cubeMesh = MeshCreator.new(program.vertex_layout):create_cube()
 greenTex = app.assets:load_color_texture(Color.green)
-cubeMesh.material = Material.new(greenTex)
-app.scene:create_entity():add_component(ComponentType.Mesh):add_mesh(cubeMesh)
+app.scene:create_entity():add_component(Renderable, cubeMesh, greenTex)
 ```

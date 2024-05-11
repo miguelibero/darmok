@@ -1,9 +1,11 @@
 #include "scene.hpp"
 #include "app.hpp"
+#include "entt.hpp"
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/scene.hpp>
 
 namespace darmok
 {
@@ -119,79 +121,73 @@ namespace darmok
 		throw std::runtime_error("scene expired");
 	}
 
-	LuaComponent LuaEntity::addLuaComponent(const std::string& name, const sol::table& data)
-	{
-		auto& table = getRegistry().get_or_emplace<LuaTableComponent>(_entity);
-		table.addEntry(name, data);
-		return LuaComponent(name, table);
-	}
-
-	LuaComponent LuaEntity::getLuaComponent(const std::string& name)
-	{
-		auto& table = getRegistry().get<LuaTableComponent>(_entity);
-		if (!table.hasEntry(name))
-		{
-			throw std::runtime_error("expected lua component missing");
-		}
-		return LuaComponent(name, table);
-	}
-
-	bool LuaEntity::hasLuaComponent(const std::string& name) const
-	{
-		auto table = getRegistry().try_get<LuaTableComponent>(_entity);
-		return table != nullptr && table->hasEntry(name);
-	}
-
-	std::optional<LuaComponent> LuaEntity::tryGetLuaComponent(const std::string& name)
-	{
-		auto table = getRegistry().try_get<LuaTableComponent>(_entity);
-		if (table == nullptr || !table->hasEntry(name))
-		{
-			return std::nullopt;
-		}
-		return LuaComponent(name, *table);
-	}
-
-	bool LuaEntity::removeLuaComponent(const std::string& name)
-	{
-		auto table = getRegistry().try_get<LuaTableComponent>(_entity);
-		if (table == nullptr)
-		{
-			return false;
-		}
-		return table->removeEntry(name);
-	}
-
-	LuaComponent LuaEntity::getOrAddLuaComponent(const std::string& name)
-	{
-		auto& table = getRegistry().get_or_emplace<LuaTableComponent>(_entity);
-		return LuaComponent(name, table);
-	}
-
 	const Entity& LuaEntity::getReal() const noexcept
 	{
 		return _entity;
 	}
 
+	bool LuaEntity::removeComponent(const sol::object& type)
+	{
+		auto typeId = getComponentTypeId(type);
+		if (!typeId)
+		{
+			return false;
+		}
+		return getRegistry().storage(typeId.value())->remove(_entity);
+	}
+
+	bool LuaEntity::hasComponent(const sol::object& type) const
+	{
+		auto typeId = getComponentTypeId(type);
+		if (!typeId)
+		{
+			return false;
+		}
+		auto storage = getRegistry().storage(typeId.value());
+		return storage->find(_entity) != storage->end();
+	}
+
+	std::optional<entt::id_type> LuaEntity::getComponentTypeId(const sol::object& obj) noexcept
+	{
+		switch (obj.get_type())
+		{
+		case sol::type::number:
+			return obj.template as<entt::id_type>();
+		case sol::type::table:
+			sol::table tab = obj;
+			auto f = tab["__type_id"].get<sol::function>();
+			if (f.valid())
+			{
+				return f().get<entt::id_type>();
+			}
+			break;
+		}
+		return std::nullopt;
+	}
+
 	void LuaEntity::configure(sol::state_view& lua) noexcept
 	{
-		lua.new_enum<LuaNativeComponentType>("ComponentType", {
-			{ "Transform", LuaNativeComponentType::Transform },
-			{ "Camera", LuaNativeComponentType::Camera },
-			{ "AmbientLight", LuaNativeComponentType::AmbientLight },
-			{ "PointLight", LuaNativeComponentType::PointLight },
-			{ "Renderable", LuaNativeComponentType::Renderable },
-		});
-
 		lua.new_usertype<LuaEntity>("Entity", sol::constructors<>(),
 			"scene", sol::property(&LuaEntity::getScene),
-			"add_component", sol::overload(&LuaEntity::addNativeComponent<0>, &LuaEntity::addLuaComponent),
-			"get_component", sol::overload(&LuaEntity::getNativeComponent<0>, &LuaEntity::getLuaComponent),
-			"remove_component", sol::overload(&LuaEntity::removeNativeComponent<0>, &LuaEntity::removeLuaComponent),
-			"get_or_add_component", sol::overload(&LuaEntity::getOrAddNativeComponent<0>, &LuaEntity::getOrAddLuaComponent),
-			"try_get_component", sol::overload(&LuaEntity::tryGetNativeComponent<0>, &LuaEntity::tryGetLuaComponent),
-			"has_component", sol::overload(&LuaEntity::hasNativeComponent<0>, &LuaEntity::hasLuaComponent)
+			"remove_component", &LuaEntity::removeComponent,
+			"has_component", &LuaEntity::hasComponent
 		);
+
+		lua.script(R"(
+function Entity:add_component(type, ...)
+	return type.add_entity_component(self, ...)
+end
+function Entity:get_component(type)
+	return type.get_entity_component(self)
+end
+function Entity:get_or_add_component(type, ...)
+	local comp = self:get_component(type)
+	if comp ~= nil then
+		return comp
+	end
+	return self:add_component(type, ...)
+end
+)");
 	}
 
 	LuaScene::LuaScene(const std::shared_ptr<Scene>& scene) noexcept
@@ -291,8 +287,12 @@ namespace darmok
 			"create_entity",	sol::overload(
 				&LuaScene::createEntity1, &LuaScene::createEntity2,
 				&LuaScene::createEntity3, &LuaScene::createEntity4),
-			"destroy_entity",	&LuaScene::destroyEntity,
-			"get_entity",		&LuaScene::getEntity<0>
+			"destroy_entity",	&LuaScene::destroyEntity
 		);
+		lua.script(R"(
+function Scene:get_entity(comp)
+	return comp:get_entity(self)
+end
+)");
 	}
 }

@@ -26,8 +26,6 @@ namespace darmok
 		Image(const Image& other) = delete;
 		Image& operator=(const Image& other) = delete;
 
-		
-
 		[[nodiscard]] bool empty() const noexcept;
 		[[nodiscard]] glm::uvec2 getSize() const noexcept;
 		[[nodiscard]] uint32_t getDepth() const noexcept;
@@ -39,7 +37,7 @@ namespace darmok
 		[[nodiscard]] TextureConfig getTextureConfig(uint64_t flags) const noexcept;
 		[[nodiscard]] DataView getData() const noexcept;
 		[[nodiscard]] TextureType getTextureType(uint64_t flags) const noexcept;
-		[[nodiscard]] bx::AllocatorI* getAllocator() const noexcept;
+		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
 
 	private:
 		bimg::ImageContainer* _container;

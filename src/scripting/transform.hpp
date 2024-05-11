@@ -1,6 +1,5 @@
 #pragma once
 
-#include "scene_fwd.hpp"
 #include <variant>
 #include <optional>
 #include "sol.hpp"
@@ -11,17 +10,17 @@
 namespace darmok
 {
     class Transform;
+	class LuaEntity;
+	class LuaScene;
 
     class LuaTransform final
 	{
 	public:
-		using native_t = Transform;
-		const static LuaNativeComponentType native_type = LuaNativeComponentType::Transform;
-
 		LuaTransform(Transform& transform) noexcept;
 
 		const Transform& getReal() const;
 		Transform& getReal();
+		std::string to_string() const noexcept;
 
 		std::optional<LuaTransform> getParent() noexcept;
 		void setParent(std::optional<LuaTransform> parent) noexcept;
@@ -58,5 +57,12 @@ namespace darmok
 
 	private:
 		OptionalRef<Transform> _transform;
+
+		static LuaTransform addEntityComponent1(LuaEntity& entity) noexcept;
+		static LuaTransform addEntityComponent2(LuaEntity& entity, const VarVec3& pos) noexcept;
+		static LuaTransform addEntityComponent3(LuaEntity& entity, LuaTransform& parent) noexcept;
+		static LuaTransform addEntityComponent4(LuaEntity& entity, LuaTransform& parent, const VarVec3& pos) noexcept;
+		static std::optional<LuaTransform> getEntityComponent(LuaEntity& entity) noexcept;
+		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
 }

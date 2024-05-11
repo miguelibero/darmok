@@ -174,7 +174,7 @@ namespace darmok
         addScene(_mainScene);
     }
 
-    const std::shared_ptr<Scene>& SceneAppComponent::getScene() const noexcept
+    std::shared_ptr<Scene> SceneAppComponent::getScene() const noexcept
     {
         return _mainScene;
     }

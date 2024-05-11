@@ -4,25 +4,23 @@ local meshCreator = MeshCreator.new(program.vertex_layout)
 
 local cubeMesh = meshCreator:create_cube()
 local greenTex = app.assets:load_color_texture(Color.green)
-cubeMesh.material = Material.new(greenTex)
+local greenMat = Material.new(greenTex)
 
 local camEntity = app.scene:create_entity()
-local camTrans = camEntity:add_component(ComponentType.Transform)
-camTrans.position = { 0, 2, -2 }
+local camTrans = camEntity:add_component(Transform, { 0, 2, -2 })
 camTrans:look_at({ 0, 0, 0 })
-local cam = camEntity:add_component(ComponentType.Camera)
+local cam = camEntity:add_component(Camera)
 cam:set_projection(60, app.window.size, { 0.3, 1000 })
 cam:set_forward_renderer(program)
 cam:add_component(CameraComponentType.PhongLighting)
 
 local lightEntity = app.scene:create_entity()
-local lightTrans = lightEntity:add_component(ComponentType.Transform)
-lightTrans.position = { 1, 1, -2 }
-lightEntity:add_component(ComponentType.PointLight)
+lightEntity:add_component(Transform, { 1, 1, -2 })
+lightEntity:add_component(PointLight)
 
 local meshEntity = app.scene:create_entity()
-local meshTrans = meshEntity:add_component(ComponentType.Transform)
-meshEntity:add_component(ComponentType.Mesh).mesh = cubeMesh
+local meshTrans = meshEntity:add_component(Transform)
+meshEntity:add_component(Renderable, cubeMesh, greenMat)
 
 local speed = 0.1
 

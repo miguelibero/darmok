@@ -4,6 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 namespace darmok
 {
@@ -41,6 +42,11 @@ namespace darmok
     Transform::Transform(const OptionalRef<Transform>& parent, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale, const glm::vec3& pivot) noexcept
         : Transform(position, rotation, scale, pivot, parent)
     {
+    }
+
+    std::string Transform::to_string() const noexcept
+    {
+        return glm::to_string(_localMatrix);
     }
 
     const glm::vec3& Transform::getPosition() const noexcept

@@ -1,4 +1,5 @@
 #include "transform.hpp"
+#include "scene.hpp"
 #include <darmok/transform.hpp>
 
 namespace darmok
@@ -16,6 +17,11 @@ namespace darmok
 	Transform& LuaTransform::getReal()
 	{
 		return _transform.value();
+	}
+
+	std::string LuaTransform::to_string() const noexcept
+	{
+		return std::string("Transform(") + _transform->to_string() + ")";
 	}
 
 	std::optional<LuaTransform> LuaTransform::getParent() noexcept
@@ -161,9 +167,52 @@ namespace darmok
 		_transform->rotate(LuaMath::tableToGlm(v));
 	}
 
+	LuaTransform LuaTransform::addEntityComponent1(LuaEntity& entity) noexcept
+	{
+		return entity.addComponent<Transform>();
+	}
+
+	LuaTransform LuaTransform::addEntityComponent2(LuaEntity& entity, const VarVec3& pos) noexcept
+	{
+		return entity.addComponent<Transform>(LuaMath::tableToGlm(pos));
+	}
+
+	LuaTransform LuaTransform::addEntityComponent3(LuaEntity& entity, LuaTransform& parent) noexcept
+	{
+		auto& trans = entity.addComponent<Transform>();
+		trans.setParent(parent.getReal());
+		return trans;
+	}
+
+	LuaTransform LuaTransform::addEntityComponent4(LuaEntity& entity, LuaTransform& parent, const VarVec3& pos) noexcept
+	{
+		return entity.addComponent<Transform>(parent.getReal(), LuaMath::tableToGlm(pos));
+	}
+
+	std::optional<LuaTransform> LuaTransform::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<Transform, LuaTransform>();
+	}
+
+	std::optional<LuaEntity> LuaTransform::getEntity(LuaScene& scene) noexcept
+	{
+		return scene.getEntity(_transform.value());
+	}
+
 	void LuaTransform::configure(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaTransform>("Transform", sol::constructors<>(),
+		lua.new_usertype<LuaTransform>("Transform",
+			sol::constructors<>(),
+			"type_id", &entt::type_hash<Transform>::value,
+			"add_entity_component", sol::overload(
+				&LuaTransform::addEntityComponent1,
+				&LuaTransform::addEntityComponent2,
+				&LuaTransform::addEntityComponent3,
+				&LuaTransform::addEntityComponent4
+			),
+			"get_entity_component", &LuaTransform::getEntityComponent,
+			"get_entity", &LuaTransform::getEntity,
+
 			"position", sol::property(&LuaTransform::getPosition, &LuaTransform::setPosition),
 			"rotation", sol::property(&LuaTransform::getRotation, &LuaTransform::setRotation),
 			"euler_angles", sol::property(&LuaTransform::getEulerAngles, &LuaTransform::setEulerAngles),

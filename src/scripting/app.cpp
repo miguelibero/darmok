@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include <darmok/app.hpp>
 #include <darmok/scripting.hpp>
+#include <darmok/scene.hpp>
 #include <filesystem>
 #include "asset.hpp"
 #include "input.hpp"

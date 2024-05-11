@@ -298,10 +298,16 @@ namespace darmok
 		return _atlas;
 	}
 
+	LuaTexture LuaTextureAtlas::getTexture() const noexcept
+	{
+		return LuaTexture(_atlas->texture);
+	}
+
 	void LuaTextureAtlas::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaTextureAtlas>("TextureAtlas",
-			sol::constructors<>()
+			sol::constructors<>(),
+			"texture", sol::property(&LuaTextureAtlas::getTexture)
 		);
 	}
 

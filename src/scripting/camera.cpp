@@ -1,6 +1,7 @@
 #include "camera.hpp"
 #include "program.hpp"
 #include "texture.hpp"
+#include "scene.hpp"
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/light.hpp>
@@ -142,13 +143,33 @@ namespace darmok
 		return _camera->screenPointToRay(LuaMath::tableToGlm(point));
 	}
 
+	LuaCamera LuaCamera::addEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.addComponent<Camera>();
+	}
+
+	std::optional<LuaCamera> LuaCamera::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<Camera, LuaCamera>();
+	}
+
+	std::optional<LuaEntity> LuaCamera::getEntity(LuaScene& scene) noexcept
+	{
+		return scene.getEntity(_camera.value());
+	}
+
 	void LuaCamera::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<LuaNativeCameraComponentType>("CameraComponentType", {
 			{ "PhongLighting", LuaNativeCameraComponentType::PhongLighting },
 		});
 
-		lua.new_usertype<LuaCamera>("Camera", sol::constructors<>(),
+		lua.new_usertype<LuaCamera>("Camera",
+			sol::constructors<>(),
+			"type_id", &entt::type_hash<Camera>::value,
+			"add_entity_component", &LuaCamera::addEntityComponent,
+			"get_entity_component", &LuaCamera::getEntityComponent,
+			"get_entity", &LuaCamera::getEntity,
 			"set_projection", sol::overload(
 				&LuaCamera::setProjection1,
 				&LuaCamera::setProjection2,

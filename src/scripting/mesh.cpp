@@ -1,8 +1,10 @@
 #include "mesh.hpp"
 #include "material.hpp"
 #include "texture.hpp"
+#include "scene.hpp"
 #include <darmok/mesh.hpp>
 #include <darmok/shape.hpp>
+#include <entt/entt.hpp>
 
 namespace darmok
 {
@@ -97,6 +99,11 @@ namespace darmok
 		return LuaMesh(_creator->createQuad(quad));
 	}
 
+	LuaMesh LuaMeshCreator::createQuad3(const VarUvec2& size) noexcept
+	{
+		return LuaMesh(_creator->createQuad(Quad(LuaMath::tableToGlm(size))));
+	}
+
 	LuaMesh LuaMeshCreator::createLineQuad1() noexcept
 	{
 		return LuaMesh(_creator->createLineQuad());
@@ -105,11 +112,6 @@ namespace darmok
 	LuaMesh LuaMeshCreator::createLineQuad2(const Quad& quad) noexcept
 	{
 		return LuaMesh(_creator->createLineQuad(quad));
-	}
-
-	LuaMesh LuaMeshCreator::createSprite(const LuaTexture& texture) noexcept
-	{
-		return LuaMesh(_creator->createSprite(texture.getReal()));
 	}
 
 	LuaMesh LuaMeshCreator::createRay(const Ray& ray) noexcept
@@ -151,9 +153,12 @@ namespace darmok
 			"create_sphere", sol::overload(
 				&LuaMeshCreator::createSphere1, &LuaMeshCreator::createSphere2,
 				&LuaMeshCreator::createSphere3, &LuaMeshCreator::createSphere4),
-			"create_quad", sol::overload(&LuaMeshCreator::createQuad1, &LuaMeshCreator::createQuad2),
+			"create_quad", sol::overload(
+				&LuaMeshCreator::createQuad1,
+				&LuaMeshCreator::createQuad2,
+				&LuaMeshCreator::createQuad3
+			),
 			"create_line_quad", sol::overload(&LuaMeshCreator::createLineQuad1, &LuaMeshCreator::createLineQuad2),
-			"create_sprite", &LuaMeshCreator::createSprite,
 			"create_line", &LuaMeshCreator::createLine,
 			"create_ray", &LuaMeshCreator::createRay,
 			"create_lines", &LuaMeshCreator::createLines,
@@ -163,7 +168,6 @@ namespace darmok
 				&LuaMeshCreator::createSphere3,
 				&LuaMeshCreator::createSphere4,
 				&LuaMeshCreator::createQuad2,
-				&LuaMeshCreator::createSprite,
 				&LuaMeshCreator::createLine,
 				&LuaMeshCreator::createRay,
 				&LuaMeshCreator::createLines
@@ -171,24 +175,55 @@ namespace darmok
 		);
 	}
 
-	LuaRenderable::LuaRenderable(Renderable& comp) noexcept
-		: _comp(comp)
+	LuaRenderable LuaRenderable::addEntityComponent1(LuaEntity& entity, const LuaMesh& mesh) noexcept
+	{
+		return entity.addComponent<Renderable>(mesh.getReal());
+	}
+
+
+	LuaRenderable LuaRenderable::addEntityComponent2(LuaEntity& entity, const LuaMaterial& material) noexcept
+	{
+		return entity.addComponent<Renderable>(material.getReal());
+	}
+
+	LuaRenderable LuaRenderable::addEntityComponent3(LuaEntity& entity, const LuaMesh& mesh, const LuaMaterial& material) noexcept
+	{
+		return entity.addComponent<Renderable>(mesh.getReal(), material.getReal());
+	}
+
+	LuaRenderable LuaRenderable::addEntityComponent4(LuaEntity& entity, const LuaMesh& mesh, const LuaTexture& texture) noexcept
+	{
+		return entity.addComponent<Renderable>(mesh.getReal(), texture.getReal());
+	}
+
+	std::optional<LuaRenderable> LuaRenderable::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<Renderable, LuaRenderable>();
+	}
+
+	std::optional<LuaEntity> LuaRenderable::getEntity(LuaScene& scene) noexcept
+	{
+		return scene.getEntity(_renderable.value());
+	}
+
+	LuaRenderable::LuaRenderable(Renderable& renderable) noexcept
+		: _renderable(renderable)
 	{
 	}
 
 	const Renderable& LuaRenderable::getReal() const
 	{
-		return _comp.value();
+		return _renderable.value();
 	}
 
 	Renderable& LuaRenderable::getReal()
 	{
-		return _comp.value();
+		return _renderable.value();
 	}
 
 	std::optional<LuaMesh> LuaRenderable::getMesh() const noexcept
 	{
-		auto mesh = _comp->getMesh();
+		auto mesh = _renderable->getMesh();
 		if (mesh == nullptr)
 		{
 			return std::nullopt;
@@ -198,18 +233,18 @@ namespace darmok
 
 	LuaRenderable& LuaRenderable::setMesh(const LuaMesh& mesh) noexcept
 	{
-		_comp->setMesh(mesh.getReal());
+		_renderable->setMesh(mesh.getReal());
 		return *this;
 	}
 
 	LuaMaterial LuaRenderable::getMaterial() const noexcept
 	{
-		return LuaMaterial(_comp->getMaterial());
+		return LuaMaterial(_renderable->getMaterial());
 	}
 
 	LuaRenderable& LuaRenderable::setMaterial(const LuaMaterial& material) noexcept
 	{
-		_comp->setMaterial(material.getReal());
+		_renderable->setMaterial(material.getReal());
 		return *this;
 	}
 
@@ -218,6 +253,13 @@ namespace darmok
 		lua.new_usertype<LuaRenderable>("Renderable",
 			sol::constructors<>(),
 			"type_id", &entt::type_hash<Renderable>::value,
+			"add_entity_component", sol::overload(
+				&LuaRenderable::addEntityComponent1,
+				&LuaRenderable::addEntityComponent2,
+				&LuaRenderable::addEntityComponent3
+			),
+			"get_entity_component", &LuaRenderable::getEntityComponent,
+			"get_entity", &LuaRenderable::getEntity,
 			"mesh", sol::property(&LuaRenderable::getMesh, &LuaRenderable::setMesh)
 		);
 	}

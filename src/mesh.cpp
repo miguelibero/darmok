@@ -373,14 +373,15 @@ namespace darmok
 		return createMesh(data, config);
 	}
 
-	std::shared_ptr<Mesh> MeshCreator::createSprite(const std::shared_ptr<Texture>& texture) noexcept
-	{
-		return createQuad(Quad(texture->getSize()));
-	}
-
 	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material) noexcept
 		: _mesh(mesh)
 		, _material(material)
+	{
+	}
+
+	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Texture>& texture) noexcept
+		: _mesh(mesh)
+		, _material(std::make_shared<Material>(texture))
 	{
 	}
 
