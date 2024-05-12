@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <glm/glm.hpp>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 namespace darmok
 {

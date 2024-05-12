@@ -54,8 +54,6 @@ function(darmok_process_shader)
         set(ARGS_VARYING_DEF ${CMAKE_CURRENT_SOURCE_DIR}/${ARGS_VARYING_DEF})
     endif()
 
-    set(BGFX_SHADER_INCLUDE_PATH ${CMAKE_CURRENT_LIST_DIR}/lib/bgfx.cmake/bgfx/src)
-
     set(OUTPUTS "")
     foreach(SHADER_PATH ${ARGS_SHADERS})
         get_filename_component(SHADER_PATH_BASENAME ${SHADER_PATH} NAME)

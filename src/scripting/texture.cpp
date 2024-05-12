@@ -257,7 +257,10 @@ namespace darmok
 		});
 
 		lua.new_usertype<TextureConfig>("TextureConfig",
-			sol::constructors<TextureConfig(), TextureConfig(const glm::uvec2&)>(),
+			sol::factories(
+				[]() { return TextureConfig{}; },
+				[](const glm::uvec2& size) { return TextureConfig{ size }; }
+			),
 			"size", &TextureConfig::size,
 			"depth", &TextureConfig::depth,
 			"mips", &TextureConfig::mips,
@@ -359,13 +362,7 @@ namespace darmok
 	void LuaTextureAtlasMeshCreator::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<TextureAtlasMeshCreationConfig>("TextureAtlasMeshCreationConfig",
-			sol::constructors<
-				MeshCreationConfig(const glm::vec3&, const glm::vec3&, const Color&, const glm::uvec2& amount),
-				MeshCreationConfig(const glm::vec3&, const glm::vec3&, const Color&),
-				MeshCreationConfig(const glm::vec3&, const glm::vec3&),
-				MeshCreationConfig(const glm::vec3&),
-				MeshCreationConfig()
-			>(),
+			sol::constructors<MeshCreationConfig()>(),
 			"scale", &TextureAtlasMeshCreationConfig::scale,
 			"offset", &TextureAtlasMeshCreationConfig::offset,
 			"color", &TextureAtlasMeshCreationConfig::color,

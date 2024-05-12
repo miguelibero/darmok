@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <darmok/texture_fwd.hpp>
 #include <darmok/anim.hpp>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include "math.hpp"
 
 namespace darmok

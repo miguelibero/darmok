@@ -1,74 +1,13 @@
 #include "scene.hpp"
 #include "app.hpp"
-#include "entt.hpp"
-#include <darmok/transform.hpp>
-#include <darmok/camera.hpp>
-#include <darmok/light.hpp>
-#include <darmok/mesh.hpp>
+#include "transform.hpp"
+#include "camera.hpp"
+#include "light.hpp"
+#include "mesh.hpp"
 #include <darmok/scene.hpp>
 
 namespace darmok
 {
-	void LuaTableComponent::addEntry(const std::string& name, const sol::table& data)
-	{
-		_tables.emplace(name, data);
-	}
-
-	void LuaTableComponent::setEntry(const std::string& name, const sol::table& data) noexcept
-	{
-		_tables[name] = data;
-	}
-
-	const sol::table& LuaTableComponent::getEntry(const std::string& name) const
-	{
-		return _tables.at(name);
-	}
-
-	sol::table& LuaTableComponent::getEntry(const std::string& name)
-	{
-		return _tables.at(name);
-	}
-
-	bool LuaTableComponent::hasEntry(const std::string& name) const noexcept
-	{
-		return _tables.find(name) != _tables.end();
-	}
-
-	bool LuaTableComponent::removeEntry(const std::string& name) noexcept
-	{
-		return _tables.erase(name) > 0;
-	}
-
-	LuaComponent::LuaComponent(const std::string& name, LuaTableComponent& table) noexcept
-		: _name(name)
-		, _table(table)
-	{
-	}
-
-	const std::string& LuaComponent::getName() const noexcept
-	{
-		return _name;
-	}
-
-	sol::table& LuaComponent::getData()
-	{
-		return _table.getEntry(_name);
-	}
-
-	void LuaComponent::setData(const sol::table& data) noexcept
-	{
-		_table.setEntry(_name, data);
-	}
-
-	void LuaComponent::configure(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<LuaComponent>("Component",
-			sol::constructors<>(),
-			"name", sol::property(&LuaComponent::getName),
-			"data", sol::property(&LuaComponent::getData, &LuaComponent::setData)
-		);
-	}
-
 	LuaEntity::LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept
 		: _entity(entity)
 		, _scene(scene)
@@ -280,7 +219,6 @@ end
 		LuaAmbientLight::configure(lua);
 		LuaPointLight::configure(lua);
 		LuaRenderable::configure(lua);
-		LuaComponent::configure(lua);
 
 		lua.new_usertype<LuaScene>("Scene",
 			sol::constructors<LuaScene(LuaApp&)>(),

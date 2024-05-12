@@ -31,7 +31,7 @@ namespace darmok
         template<typename T>
         struct Input final
         {
-            T* ptr;
+            const T* ptr;
             size_t size;
         };
 
@@ -93,22 +93,28 @@ namespace darmok
         }
 
         template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+        static Input<T> getVecInput(const glm::vec<L, T, Q>& input) noexcept
+        {
+            return { glm::value_ptr(input), input.length() };
+        }
+
+        template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
         VertexDataWriter& write(bgfx::Attrib::Enum attr, uint32_t index, const glm::vec<L, T, Q>& input) noexcept
         {
-            return write(attr, index, Input{ glm::value_ptr(input), L });
+            return write(attr, index, getVecInput(input));
         }
 
         template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
         VertexDataWriter& write(bgfx::Attrib::Enum attr, const glm::vec<L, T, Q>& input, bool overwrite = true) noexcept
         {
-            return write(attr, Input{ glm::value_ptr(input), L }, overwrite);
+            return write(attr, getVecInput(input), overwrite);
         }
 
         template<int L, typename T, glm::qualifier Q = glm::defaultp>
         VertexDataWriter& write(bgfx::Attrib::Enum attr, const RefCollection<glm::vec<L, T, Q>>& input) noexcept
         {
             return write(attr, input.begin(), input.end(), [](auto& itr) {
-                return Input{ glm::value_ptr(*itr), L };
+                return getVecInput(*itr);
             });
         }
 
@@ -116,7 +122,7 @@ namespace darmok
         VertexDataWriter& write(bgfx::Attrib::Enum attr, const ConstRefCollection<glm::vec<L, T, Q>>& input) noexcept
         {
             return write(attr, input.begin(), input.end(), [](auto& itr) {
-                return Input{ glm::value_ptr(*itr), L };
+                return getVecInput(*itr);
             });
         }
 
@@ -128,7 +134,7 @@ namespace darmok
                 for (auto i = 0; i < _size && i < input.size(); i++)
                 {
                     auto elm = input[i];
-                    write(attr, i, Input{ glm::value_ptr(elm), L });
+                    write(attr, i, getVecInput(elm));
                 }
             }
             return *this;
@@ -138,7 +144,7 @@ namespace darmok
         VertexDataWriter& write(bgfx::Attrib::Enum attr, const std::vector<glm::vec<L, T, Q>>& input) noexcept
         {
             return write(attr, input.begin(), input.end(), [](auto& itr) {
-                return Input{ glm::value_ptr(*itr), L };
+                return getVecInput(*itr);
             });
         }
 

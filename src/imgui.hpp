@@ -2,13 +2,15 @@
 
 #include <darmok/input.hpp>
 #include <darmok/optional_ref.hpp>
-#include <dear-imgui/imgui.h>
+#include <imgui.h>
 #include <array>
+#include <memory>
 
 namespace darmok
 {
 	class App;
 	class IImguiRenderer;
+	class Program;
 
     class ImguiAppComponentImpl final
     {
@@ -25,13 +27,10 @@ namespace darmok
 		OptionalRef<App> _app;
 		ImGuiContext* _imgui;
 		bgfx::TextureHandle _texture;
-		std::array<ImFont*, ImGui::Font::Count> _font;
-		float _fontSize;
-		bgfx::ProgramHandle _program;
-		bgfx::UniformHandle _imageLodEnabled;
-		bgfx::ProgramHandle _imageProgram;
-		bgfx::VertexLayout  _layout;
-		bgfx::UniformHandle _uniform;
+		std::shared_ptr<Program> _program;
+		std::shared_ptr<Program> _imageProgram;
+		bgfx::UniformHandle _imageLodEnabledUniform;
+		bgfx::UniformHandle _textureUniform;
 		static bx::AllocatorI* _alloc;
 
 		void render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData) const;

@@ -4,7 +4,7 @@
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/program_fwd.hpp>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 namespace darmok
 {

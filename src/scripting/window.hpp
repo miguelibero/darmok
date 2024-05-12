@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/window.hpp>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 namespace darmok
 {

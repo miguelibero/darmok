@@ -6,7 +6,7 @@
 #include <optional>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include "math.hpp"
 
 namespace darmok

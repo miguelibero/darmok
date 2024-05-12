@@ -5,7 +5,7 @@
 
 #include <glm/gtx/string_cast.hpp>
 #include <glm/glm.hpp>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include <darmok/color.hpp>
 
 namespace darmok
@@ -102,7 +102,7 @@ namespace darmok
 		// TODO: change all the methods to use the glm:: template vars
 
 		template<typename T>
-		static T::value_type vecMax(const T& v) noexcept
+		static T::template value_type vecMax(const T& v) noexcept
 		{
 			using vec = T;
 			using val = T::value_type;
@@ -119,7 +119,7 @@ namespace darmok
 		}
 
 		template<typename T>
-		static T::value_type vecMin(const T& v) noexcept
+		static T::template value_type vecMin(const T& v) noexcept
 		{
 			using vec = T;
 			using val = T::value_type;
@@ -141,7 +141,7 @@ namespace darmok
 		static sol::usertype<T> configureMat(sol::state_view& lua, std::string_view name) noexcept
 		{
 			using mat = T;
-			using val = T::value_type;
+			using val = T::template value_type;
 			auto usertype = configureGlmOperators<T, Ctors...>(lua, name);
 			usertype["id"] = sol::var(T());
 			usertype["inverse"] = sol::resolve<mat(const mat&)>(glm::inverse);
@@ -154,7 +154,7 @@ namespace darmok
 		static sol::usertype<T> configureUvec(sol::state_view& lua, std::string_view name) noexcept
 		{
 			using vec = T;
-			using val = T::value_type;
+			using val = T::template value_type;
 			auto usertype = configureGlmOperators<T, Ctors...>(lua, name);
 			usertype["zero"] = sol::var(vec(0));
 			usertype["max"] = &vecMax<vec>;
@@ -163,7 +163,7 @@ namespace darmok
 		}
 
 		template<typename T>
-		static T::value_type vecDot(const std::variant<T, sol::table>& a, const std::variant<T, sol::table>& b) noexcept
+		static T::template value_type vecDot(const std::variant<T, sol::table>& a, const std::variant<T, sol::table>& b) noexcept
 		{
 			return glm::dot(tableToGlm(a), tableToGlm(b));
 		}
@@ -184,7 +184,7 @@ namespace darmok
 		static sol::usertype<T> configureVec(sol::state_view& lua, std::string_view name) noexcept
 		{
 			using vec = T;
-			using val = T::value_type;
+			using val = T::template value_type;
 			auto usertype = configureGlmOperators<T, Ctors...>(lua, name);
 			usertype["zero"] = sol::var(vec(0));
 			usertype["norm"] = sol::resolve<vec(const vec&)>(glm::normalize);
@@ -202,7 +202,7 @@ namespace darmok
 		static sol::usertype<T> configureGlmOperators(sol::state_view& lua, std::string_view name) noexcept
 		{
 			using cls = T;
-			using val = T::value_type;
+			using val = T::template value_type;
 			return lua.new_usertype<cls>(name, sol::constructors<Ctors...>(),
 				sol::meta_function::equal_to,		sol::resolve<bool(const cls&, const cls&)>(glm::operator==),
 				sol::meta_function::addition,		sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator+), sol::resolve<cls(const cls&, val)>(glm::operator+)),

@@ -2,7 +2,7 @@
 
 #include <variant>
 #include <optional>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include "math.hpp"
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>

@@ -4,7 +4,7 @@
 #include <vector>
 #include <darmok/optional_ref.hpp>
 #include <darmok/shape.hpp>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include "math.hpp"
 
 namespace darmok

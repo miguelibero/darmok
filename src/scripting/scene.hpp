@@ -4,48 +4,15 @@
 #include <optional>
 #include <variant>
 #include <unordered_map>
-#include <glm/glm.hpp>
-#include <bx/bx.h>
 #include <darmok/color.hpp>
-#include "sol.hpp"
+#include <darmok/scene_fwd.hpp>
+#include <sol/sol.hpp>
 
-#include "transform.hpp"
-#include "light.hpp"
-#include "mesh.hpp"
-#include "camera.hpp"
 #include "math.hpp"
+#include "transform.hpp"
 
 namespace darmok
 {
-	class LuaTableComponent final
-	{
-	public:
-		void addEntry(const std::string& name, const sol::table& data);
-		void setEntry(const std::string& name, const sol::table& data) noexcept;
-		const sol::table& getEntry(const std::string& name) const;
-		sol::table& getEntry(const std::string& name);
-		bool hasEntry(const std::string& name) const noexcept;
-		bool removeEntry(const std::string& name) noexcept;
-
-	private:
-		std::unordered_map<std::string, sol::table> _tables;
-	};
-
-	class LuaComponent final
-	{
-	public:
-		LuaComponent(const std::string& name, LuaTableComponent& table) noexcept;
-
-		const std::string& getName() const noexcept;
-		sol::table& getData();
-		void setData(const sol::table& data) noexcept;
-
-		static void configure(sol::state_view& lua) noexcept;
-	private:
-		std::string _name;
-		LuaTableComponent& _table;
-	};
-
     class Scene;
 	class LuaScene;
 

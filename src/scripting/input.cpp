@@ -61,9 +61,14 @@ namespace darmok
 		return _mouse->getPositionDelta();
 	}
 
-	const glm::vec2& LuaMouse::getScrollDelta() const noexcept
+	glm::vec2 LuaMouse::getScrollDelta() const noexcept
 	{
 		return _mouse->getScrollDelta();
+	}
+
+	const glm::vec2& LuaMouse::getScroll() const noexcept
+	{
+		return _mouse->getScroll();
 	}
 
 	bool LuaMouse::getLeftButton() const noexcept
@@ -88,6 +93,7 @@ namespace darmok
 			"active", sol::property(&LuaMouse::getActive),
 			"position", sol::property(&LuaMouse::getPosition),
 			"position_delta", sol::property(&LuaMouse::getPositionDelta),
+			"scroll", sol::property(&LuaMouse::getScroll),
 			"scroll_delta", sol::property(&LuaMouse::getScrollDelta),
 			"left_button", sol::property(&LuaMouse::getLeftButton),
 			"middle_button", sol::property(&LuaMouse::getMiddleButton),

@@ -12,7 +12,13 @@ namespace darmok
         return static_cast<std::underlying_type_t<E>>(e);
     }
 
-    std::string strToLower(std::string_view sv) noexcept;
+    struct StringUtils final
+    {
+        static std::string toLower(std::string_view sv) noexcept;
+        static bool startsWith(std::string_view sv, std::string_view start) noexcept;
+        static bool endsWith(std::string_view sv, std::string_view end) noexcept;
+    };
+
     void checkError(bx::Error& err);    
 
     struct Utf8Char final

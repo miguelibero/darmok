@@ -7,51 +7,9 @@
 #include <darmok/window.hpp>
 #include <bx/allocator.h>
 
-#include <dear-imgui/imgui.h>
-#include <dear-imgui/imgui_internal.h>
-#include <bgfx/embedded_shader.h>
-
-// shaders (using the ones in bgfx examples)
-#include <bgfx/embedded_shader.h>
-#include "imgui/vs_ocornut_imgui.bin.h"
-#include "imgui/fs_ocornut_imgui.bin.h"
-#include "imgui/vs_imgui_image.bin.h"
-#include "imgui/fs_imgui_image.bin.h"
-
-// fonts (using the ones in bgfx examples)
-#include "imgui/roboto_regular.ttf.h"
-#include "imgui/robotomono_regular.ttf.h"
-#include "imgui/icons_kenney.ttf.h"
-#include "imgui/icons_font_awesome.ttf.h"
-#include <iconfontheaders/icons_kenney.h>
-#include <iconfontheaders/icons_font_awesome.h>
-
 namespace darmok
 {
 	static const uint8_t _imguiAlphaBlendFlags = 0x01;
-
-	static const bgfx::EmbeddedShader _imguiEmbeddedShaders[] =
-	{
-		BGFX_EMBEDDED_SHADER(vs_ocornut_imgui),
-		BGFX_EMBEDDED_SHADER(fs_ocornut_imgui),
-		BGFX_EMBEDDED_SHADER(vs_imgui_image),
-		BGFX_EMBEDDED_SHADER(fs_imgui_image),
-
-		BGFX_EMBEDDED_SHADER_END()
-	};
-
-	struct ImguiFontRangeMerge final
-	{
-		const void* data;
-		size_t      size;
-		ImWchar     ranges[3];
-	};
-
-	static const std::vector<ImguiFontRangeMerge> _imguiFontRangeMerge =
-	{
-		{ s_iconsKenneyTtf,      sizeof(s_iconsKenneyTtf),      { ICON_MIN_KI, ICON_MAX_KI, 0 } },
-		{ s_iconsFontAwesomeTtf, sizeof(s_iconsFontAwesomeTtf), { ICON_MIN_FA, ICON_MAX_FA, 0 } },
-	};
 
 	using ImguiKeyboardMap = std::array<ImGuiKey, to_underlying(KeyboardKey::Count)>;
 
@@ -238,6 +196,8 @@ namespace darmok
 		const ImVec2 clipPos = drawData->DisplayPos;       // (0,0) unless using multi-viewports
 		const ImVec2 clipScale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
+		auto& layout = _program->getVertexLayout();
+
 		// Render command lists
 		for (int32_t ii = 0, num = drawData->CmdListsCount; ii < num; ++ii)
 		{
@@ -248,13 +208,13 @@ namespace darmok
 			uint32_t numVertices = (uint32_t)drawList->VtxBuffer.size();
 			uint32_t numIndices = (uint32_t)drawList->IdxBuffer.size();
 
-			if (!checkAvailTransientBuffers(numVertices, _layout, numIndices))
+			if (!checkAvailTransientBuffers(numVertices, layout, numIndices))
 			{
 				// not enough space in transient buffer just quit drawing the rest...
 				break;
 			}
 
-			bgfx::allocTransientVertexBuffer(&tvb, numVertices, _layout);
+			bgfx::allocTransientVertexBuffer(&tvb, numVertices, layout);
 			bgfx::allocTransientIndexBuffer(&tib, numIndices, sizeof(ImDrawIdx) == 4);
 
 			ImDrawVert* verts = (ImDrawVert*)tvb.data;
@@ -280,7 +240,7 @@ namespace darmok
 						;
 
 					bgfx::TextureHandle th = texture;
-					bgfx::ProgramHandle program = _program;
+					bgfx::ProgramHandle program = _program->getHandle();
 
 					if (NULL != cmd->TextureId)
 					{
@@ -293,8 +253,8 @@ namespace darmok
 						if (0 != texture.s.mip)
 						{
 							const float lodEnabled[4] = { float(texture.s.mip), 1.0f, 0.0f, 0.0f };
-							bgfx::setUniform(_imageLodEnabled, lodEnabled);
-							program = _imageProgram;
+							bgfx::setUniform(_imageLodEnabledUniform, lodEnabled);
+							program = _imageProgram->getHandle();
 						}
 					}
 					else
@@ -322,7 +282,7 @@ namespace darmok
 						);
 
 						encoder->setState(state);
-						encoder->setTexture(0, _uniform, th);
+						encoder->setTexture(0, _textureUniform, th);
 						encoder->setVertexBuffer(0, &tvb, cmd->VtxOffset, numVertices);
 						encoder->setIndexBuffer(&tib, cmd->IdxOffset, cmd->ElemCount);
 						encoder->submit(viewId, program);
@@ -337,12 +297,8 @@ namespace darmok
 	ImguiAppComponentImpl::ImguiAppComponentImpl(IImguiRenderer& renderer, float fontSize)
 		: _renderer(renderer)
 		, _texture{ bgfx::kInvalidHandle }
-		, _font{}
-		, _fontSize(fontSize)
-		, _program{ bgfx::kInvalidHandle }
-		, _imageProgram{ bgfx::kInvalidHandle }
-		, _uniform{ bgfx::kInvalidHandle }
-		, _imageLodEnabled{ bgfx::kInvalidHandle }
+		, _textureUniform{ bgfx::kInvalidHandle }
+		, _imageLodEnabledUniform{ bgfx::kInvalidHandle }
 	{
 		IMGUI_CHECKVERSION();
 	}
@@ -350,32 +306,12 @@ namespace darmok
 	void ImguiAppComponentImpl::init(App& app)
 	{
 		_app = app;
-		ImGui::SetAllocatorFunctions(imguiMemAlloc, imguiMemFree, app.getAssets().getImpl().getAllocator());
+		ImGui::SetAllocatorFunctions(imguiMemAlloc, imguiMemFree, &app.getAssets().getAllocator());
 
-		bgfx::RendererType::Enum type = bgfx::getRendererType();
-		_program = bgfx::createProgram(
-			bgfx::createEmbeddedShader(_imguiEmbeddedShaders, type, "vs_ocornut_imgui")
-			, bgfx::createEmbeddedShader(_imguiEmbeddedShaders, type, "fs_ocornut_imgui")
-			, true
-		);
-
-		_imageLodEnabled = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
-		_imageProgram = bgfx::createProgram(
-			bgfx::createEmbeddedShader(_imguiEmbeddedShaders, type, "vs_imgui_image")
-			, bgfx::createEmbeddedShader(_imguiEmbeddedShaders, type, "fs_imgui_image")
-			, true
-		);
-
-		_layout
-			.begin()
-			.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
-			.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-			.end();
-
-		_uniform = bgfx::createUniform("s_tex", bgfx::UniformType::Sampler);
-
-		ImGui::InitDockContext();
+		_program = app.getAssets().getStandardProgramLoader()(StandardProgramType::Gui);
+		_imageProgram = app.getAssets().getStandardProgramLoader()(StandardProgramType::GuiImage);;
+		_imageLodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
+		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
 		_imgui = ImGui::CreateContext();
 		ImGui::SetCurrentContext(_imgui);
@@ -406,23 +342,6 @@ namespace darmok
 			config.FontDataOwnedByAtlas = false;
 			config.MergeMode = false;
 			// config.MergeGlyphCenterV = true;
-
-			const ImWchar* ranges = io.Fonts->GetGlyphRangesCyrillic();
-			_font[ImGui::Font::Regular] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoRegularTtf, sizeof(s_robotoRegularTtf), _fontSize, &config, ranges);
-			_font[ImGui::Font::Mono] = io.Fonts->AddFontFromMemoryTTF((void*)s_robotoMonoRegularTtf, sizeof(s_robotoMonoRegularTtf), _fontSize - 3.0f, &config, ranges);
-
-			config.MergeMode = true;
-			config.DstFont = _font[ImGui::Font::Regular];
-
-			for(auto& frm : _imguiFontRangeMerge)
-			{
-				io.Fonts->AddFontFromMemoryTTF((void*)frm.data
-					, (int)frm.size
-					, _fontSize - 3.0f
-					, &config
-					, frm.ranges
-				);
-			}
 		}
 
 		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height);
@@ -443,11 +362,8 @@ namespace darmok
 	void ImguiAppComponentImpl::shutdown()
 	{
 		ImGui::DestroyContext(_imgui);
-		ImGui::ShutdownDockContext();
-		bgfx::destroy(_uniform);
-		bgfx::destroy(_imageLodEnabled);
-		bgfx::destroy(_imageProgram);
-		bgfx::destroy(_program);
+		bgfx::destroy(_textureUniform);
+		bgfx::destroy(_imageLodEnabledUniform);
 	}
 
 	void ImguiAppComponentImpl::updateLogic(float dt)
@@ -501,10 +417,10 @@ namespace darmok
 
 		auto& kb = input.getKeyboard();
 		uint8_t modifiers = kb.getModifiers();
-		io.AddKeyEvent(ImGuiMod_Shift, 0 != (modifiers & KeyboardModifiers::Shift));
-		io.AddKeyEvent(ImGuiMod_Ctrl, 0 != (modifiers & KeyboardModifiers::Ctrl));
-		io.AddKeyEvent(ImGuiMod_Alt, 0 != (modifiers & KeyboardModifiers::Alt));
-		io.AddKeyEvent(ImGuiMod_Super, 0 != (modifiers & KeyboardModifiers::Meta));
+		io.AddKeyEvent(ImGuiMod_Shift, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Shift)));
+		io.AddKeyEvent(ImGuiMod_Ctrl, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Ctrl)));
+		io.AddKeyEvent(ImGuiMod_Alt, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Alt)));
+		io.AddKeyEvent(ImGuiMod_Super, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Meta)));
 		for (int32_t i = 0; i < _imguiKeyboardMap.size(); ++i)
 		{
 			io.AddKeyEvent(_imguiKeyboardMap[i], kb.getKey(KeyboardKey(i)));
@@ -523,7 +439,6 @@ namespace darmok
 	void ImguiAppComponentImpl::beginFrame() const
 	{
 		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
 	}
 
 	void ImguiAppComponentImpl::endFrame(bgfx::ViewId viewId) const
@@ -558,39 +473,3 @@ namespace darmok
 		return ++viewId;
 	}
 }
-
-namespace ImGui
-{
-	void PushFont(Font::Enum font)
-	{
-		// PushFont(darmok::s_ctx._font[font]);
-	}
-
-	void PushEnabled(bool enabled)
-	{
-		extern void PushItemFlag(int option, bool enabled);
-		PushItemFlag(ImGuiItemFlags_Disabled, !enabled);
-		PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * (enabled ? 1.0f : 0.5f));
-	}
-
-	void PopEnabled()
-	{
-		extern void PopItemFlag();
-		PopItemFlag();
-		PopStyleVar();
-	}
-
-} // namespace ImGui
-
-BX_PRAGMA_DIAGNOSTIC_IGNORED_MSVC(4505); // error C4505: '' : unreferenced local function has been removed
-BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wunused-function"); // warning: 'int rect_width_compare(const void*, const void*)' defined but not used
-BX_PRAGMA_DIAGNOSTIC_PUSH();
-BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG("-Wunknown-pragmas")
-BX_PRAGMA_DIAGNOSTIC_IGNORED_CLANG_GCC("-Wtype-limits"); // warning: comparison is always true due to limited range of data type
-// #define STBTT_malloc(size, userData) darmok::imguiMemAlloc(size, userData)
-// #define STBTT_free(ptr, userData) darmok::imguiMemFree(ptr, userData)
-#define STB_RECT_PACK_IMPLEMENTATION
-#include <stb/stb_rect_pack.h>
-#define STB_TRUETYPE_IMPLEMENTATION
-#include <stb/stb_truetype.h>
-BX_PRAGMA_DIAGNOSTIC_POP();

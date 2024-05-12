@@ -1,4 +1,10 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.26)
+
+if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_TOOLCHAIN_FILE
+    "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+    CACHE STRING "")
+endif()
 
 project(
   darmok
@@ -7,20 +13,28 @@ project(
   DESCRIPTION "hobby C++ game engine"
 )
 
+if(PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
+  message(
+    FATAL_ERROR
+    "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there."
+  )
+endif()
+
+option(DARMOK_BUILD_TESTS "build darmok unit tests" OFF)
+option(DARMOK_BUILD_EXAMPLES "build darmok examples" OFF)
 option(DARMOK_BUILD_SCRIPTING "build darmok with scripting support" OFF)
 option(DARMOK_BUILD_SCRIPTING_EXE "build the darmok scripting executable" OFF)
-option(DARMOK_BUILD_NUKLEAR "build darmok with nuklear UI support" OFF)
 option(DARMOK_BUILD_IMGUI "build darmok with imGUI support" OFF)
-option(DARMOK_BUILD_CEGUI "build darmok with cegui support" OFF)
+option(DARMOK_BUILD_RMLUI "build darmok with RmlUI support" OFF)
 option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
 option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
+option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
 
 set(SRC_DIR src)
 set(INCLUDE_DIR include/darmok)
 set(LIBS_DIR lib)
 
-set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "build bgfx examples.")
-add_subdirectory(${LIBS_DIR}/bgfx.cmake)
+find_package(bgfx CONFIG REQUIRED)
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/processAssets.cmake)
 
 darmok_process_assets(
@@ -102,11 +116,6 @@ if(DARMOK_BUILD_IMGUI)
   list(APPEND HEADERS ${INCLUDE_DIR}/imgui.hpp)
 endif()
 
-if(DARMOK_BUILD_NUKLEAR)
-  list(APPEND SOURCES ${SRC_DIR}/nuklear.cpp)
-  list(APPEND HEADERS ${INCLUDE_DIR}/nuklear.hpp)
-endif()
-
 if(DARMOK_BUILD_ASSIMP)
   list(APPEND SOURCES ${SRC_DIR}/assimp.cpp)
   list(APPEND SOURCES ${SRC_DIR}/model_assimp.cpp)
@@ -114,31 +123,6 @@ endif()
 
 if(DARMOK_BUILD_OZZ)
   list(APPEND SOURCES ${SRC_DIR}/skeleton_ozz.cpp)
-endif()
-
-if(DARMOK_BUILD_CEGUI)
-  set(CEGUI_SOURCES 
-    ${SRC_DIR}/cegui/geometry.cpp
-    ${SRC_DIR}/cegui/render_target.cpp
-    ${SRC_DIR}/cegui/renderer.cpp
-    ${SRC_DIR}/cegui/resource.cpp
-    ${SRC_DIR}/cegui/shader.cpp
-    ${SRC_DIR}/cegui/texture_target.cpp
-    ${SRC_DIR}/cegui/texture.cpp
-    ${SRC_DIR}/cegui/utils.cpp
-    ${SRC_DIR}/cegui/target_transform.cpp
-    ${SRC_DIR}/cegui/image.cpp
-  )
-  list(APPEND SOURCES ${CEGUI_SOURCES} ${SRC_DIR}/cegui.cpp)
-  list(APPEND HEADERS ${INCLUDE_DIR}/cegui.hpp)
-  source_group("CEGUI Source Files" FILES ${CEGUI_SOURCES})
-
-  darmok_process_assets(
-    ASSETS_INCLUDES "shaders/cegui_*"
-    HEADER_SHADER_OUTPUT_DIR "include/generated/shaders"
-    HEADER_SHADER_INCLUDE_DIR "generated/shaders"
-  )
-
 endif()
 
 if(DARMOK_BUILD_SCRIPTING)
@@ -153,6 +137,7 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/input.cpp
     ${SRC_DIR}/scripting/math1.cpp
     ${SRC_DIR}/scripting/math2.cpp
+    ${SRC_DIR}/scripting/math3.cpp
     ${SRC_DIR}/scripting/shape.cpp
     ${SRC_DIR}/scripting/scene.cpp
     ${SRC_DIR}/scripting/transform.cpp
@@ -160,7 +145,6 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/camera.cpp
     ${SRC_DIR}/scripting/window.cpp
     ${SRC_DIR}/scripting/model.cpp
-    ${SRC_DIR}/scripting/entt.cpp
   )
   list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
 endif()
@@ -179,39 +163,56 @@ add_library(
   ${ASSETS}
 )
 
-set_target_properties(
-  ${LIB_NAME}
-  PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}
-  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}
-)
-set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-
-set(BGFX_BASE ${LIBS_DIR}/bgfx.cmake/bgfx)
-
 target_include_directories(
     ${PROJECT_NAME}
     PUBLIC
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    ${BGFX_BASE}/3rdparty
-    ${LIBS_DIR}/rapidjson/include
     PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}/include
-  )
+    ${BGFX_INCLUDE_DIR}/3rdparty/
+    ${BGFX_INCLUDE_DIR}/bgfx/examples/common
+)
 
-  set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
+set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
 # testing
-enable_testing()
-add_subdirectory(test)
+if(DARMOK_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(test)
+endif()
 
 if(MSVC)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
 endif()
-set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
+
+set(BUILD_SHARED_LIBS OFF)
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Distribution")
+
+set(CMAKE_CXX_FLAGS_DISTRIBUTION "/GS- /Gy /O2 /Oi /Ot")
+set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+
+function(SET_WARNING_LEVEL)
+  if(MSVC)
+    target_compile_options(${ARGV0} PRIVATE /W4)
+  else()
+    target_compile_options(${ARGV0} PRIVATE -Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
+  endif()
+endfunction()
+
+function(SET_DEBUGGER_WORKING_DIRECTORY)
+  set_target_properties(${ARGV0} PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
+endfunction()
 
 # code analysis & clang tidy
 if(DARMOK_RUN_CODE_ANALYSIS)
@@ -250,10 +251,7 @@ endif()
 
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
-    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs")
-    set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs")
-    set(GLFW_BUILD_DOCS OFF CACHE BOOL "Build the GLFW documentation")
-    add_subdirectory(${LIBS_DIR}/glfw)
+    find_package(glfw3 CONFIG REQUIRED)
     target_link_libraries(${LIB_NAME} PRIVATE glfw)
     target_compile_definitions(darmok PRIVATE DARMOK_PLATFORM_GLFW)
     if (DARMOK_PLATFORM_SUPPORT_WAYLAND)
@@ -261,57 +259,69 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
         target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
         target_compile_definitions(bgfx PRIVATE WL_EGL_PLATFORM)
     endif()
-
 endif()
 
 # glm
-add_subdirectory(${LIBS_DIR}/glm)
+find_package(glm CONFIG REQUIRED)
 set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
-target_compile_definitions(glm INTERFACE ${GLM_DEFINES})
-target_link_libraries(${LIB_NAME} PUBLIC glm)
+target_compile_definitions(glm::glm-header-only INTERFACE ${GLM_DEFINES})
+target_link_libraries(${LIB_NAME} PUBLIC glm::glm-header-only)
 
 # bgfx
-target_link_libraries(${LIB_NAME} PUBLIC bgfx bimg bimg_decode bx)
+target_link_libraries(${LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode)
 
 # imgui
 if(DARMOK_BUILD_IMGUI)
-  include(${CMAKE_CURRENT_LIST_DIR}/CMake/imgui.cmake)
-  target_link_libraries(${LIB_NAME} PUBLIC imgui)
-  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_IMGUI)
+  find_package(imgui CONFIG REQUIRED)
+  target_link_libraries(${LIB_NAME} PUBLIC imgui::imgui)
 endif()
 
 # entt
-add_subdirectory(${LIBS_DIR}/entt)
-target_link_libraries(${LIB_NAME} PUBLIC EnTT)
+find_package(entt CONFIG REQUIRED)
+target_link_libraries(${LIB_NAME} PUBLIC EnTT::EnTT)
 
 # assimp
 if(DARMOK_BUILD_ASSIMP)
-  set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "If the test suite for Assimp is built in addition to the library.")
-  set(ASSIMP_BUILD_DRACO ON CACHE BOOL "If the Draco libraries are to be built. Primarily for glTF")
-  set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "default value of all ASSIMP_BUILD_XXX_EXPORTER values")
-
-  add_subdirectory(${LIBS_DIR}/assimp)
-  target_link_libraries(${LIB_NAME} PUBLIC assimp)
-  target_compile_definitions(assimp PRIVATE ASSIMP_BUILD_NO_GLTF1_IMPORTER ASSIMP_BUILD_NO_EXPORT)
+  find_package(assimp CONFIG REQUIRED)
+  target_link_libraries(${LIB_NAME} PUBLIC assimp::assimp)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_ASSIMP)
 endif()
 
 # pugixml
-add_subdirectory(${LIBS_DIR}/pugixml)
-target_link_libraries(${LIB_NAME} PRIVATE pugixml)
+find_package(pugixml CONFIG REQUIRED)
+target_link_libraries(${LIB_NAME} PRIVATE pugixml::pugixml)
 target_compile_definitions(pugixml INTERFACE PUGIXML_HEADER_ONLY) # also included in assimp
+
+# json
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(${LIB_NAME} PRIVATE nlohmann_json::nlohmann_json)
+
+# cereal
+find_package(cereal CONFIG REQUIRED)
+target_link_libraries(${LIB_NAME} PRIVATE cereal::cereal)
+
+if(DARMOK_BUILD_JOLT)
+  find_package(unofficial-joltphysics CONFIG REQUIRED)
+  target_link_libraries(${LIB_NAME} PRIVATE unofficial::joltphysics::Jolt)
+endif()
 
 # lua sol2
 if(DARMOK_BUILD_SCRIPTING)
-  set(BUILD_LUAJIT ON)
-  set(BUILD_LUA_AS_DLL OFF)
-  list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/sol2/cmake/Packages")
-  set(LUA_LOCAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/luajit)
-  find_package(LuaBuild REQUIRED COMPONENTS "latest")
-  set(LUA_LIB_NAME luajit_lib_2.1)
-  add_subdirectory(${LIBS_DIR}/sol2)
-  target_compile_definitions(sol2 INTERFACE SOL_EXCEPTIONS_SAFE_PROPAGATION)
-  target_link_libraries(${LIB_NAME} PRIVATE sol2 ${LUA_LIB_NAME})
+  find_package(Lua REQUIRED)
+  target_include_directories(${LIB_NAME} PRIVATE ${LUA_INCLUDE_DIR})
+  target_link_libraries(${LIB_NAME} PRIVATE ${LUA_LIBRARIES})
+
+  # TODO: check how to use luajit
+  #find_package(LuaJit REQUIRED)
+  #target_include_directories(main PRIVATE ${LUAJIT_INCLUDE_DIR})
+  #target_link_libraries(main PRIVATE ${LUAJIT_LIBRARIES})
+
+  find_package(sol2 CONFIG REQUIRED)
+  set(SOL_DEFINES SOL_ALL_SAFETIES_ON SOL_EXCEPTIONS_SAFE_PROPAGATION)
+  target_compile_definitions(sol2 INTERFACE ${SOL_DEFINES})
+  target_link_libraries(${LIB_NAME} PRIVATE sol2)
+
+
 endif()
 if(DARMOK_BUILD_SCRIPTING_EXE)
   set(SCRIPTING_EXE_NAME ${LIB_NAME}-scripting)
@@ -328,93 +338,11 @@ endif()
 
 # ozz
 if(DARMOK_BUILD_OZZ)
-  # FBX SDK can be downloaded from https://aps.autodesk.com/developer/overview/fbx-sdk
-  # set(ozz_build_fbx ON CACHE BOOL "Build Fbx pipeline (Requires Fbx SDK)")
-  set(ozz_build_gltf ON CACHE BOOL "Build glTF importer (Requires c++11)")
-  set(ozz_build_samples OFF CACHE BOOL "Build samples")
-  set(ozz_build_howtos OFF CACHE BOOL "Build howtos")
-  set(ozz_build_tests OFF CACHE BOOL "Build unit tests")
-  set(ozz_build_msvc_rt_dll ON CACHE BOOL "Select msvc DLL runtime library")
-  add_subdirectory(${LIBS_DIR}/ozz)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/configureOzzAnimation.cmake)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_OZZ)
   target_link_libraries(${LIB_NAME} PRIVATE
     ozz_geometry
+    ozz_animation
     ozz_animation_offline
     ozz_options)
-endif()
-
-# nuklear
-if(DARMOK_BUILD_NUKLEAR)
-  set(NUKLEAR_BASE ${LIBS_DIR}/nuklear)
-  set(NUKLEAR_DEFINES 
-    NK_INCLUDE_FIXED_TYPES
-    NK_INCLUDE_STANDARD_IO
-    NK_INCLUDE_STANDARD_VARARGS
-    NK_INCLUDE_STANDARD_BOOL
-    NK_INCLUDE_DEFAULT_ALLOCATOR
-    NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-    NK_INCLUDE_FONT_BAKING # adds `stb_truetype` and `stb_rect_pack` implementation to this library and provides font baking and rendering. If you already have font handling or do not want to use this font handler you don't have to define it.
-    NK_INCLUDE_DEFAULT_FONT # adds the default font: ProggyClean.ttf into this library which can be loaded into a font atlas and allows using this library without having a truetype font
-    NK_KEYSTATE_BASED_INPUT # if your backend uses key state for each frame rather than key press/release events
-    NK_INCLUDE_STANDARD_BOOL
-    # NK_ZERO_COMMAND_MEMORY # will zero out memory for each drawing command added to a drawing queue (inside nk_command_buffer_push). Zeroing command memory is very useful for fast checking (using memcmp) if command buffers are equal and avoid drawing frames when nothing on screen has changed since previous frame.
-    # NK_INCLUDE_COMMAND_USERDATA # adds a userdata pointer into each command. Can be useful for example if you want to provide custom shaders depending on the used widget. Can be combined with the style structures.
-    # NK_BUTTON_TRIGGER_ON_RELEASE # require button clicks occurring either on buttons being pressed (up to down) or released (down to up). By default this library will react on buttons being pressed, but if you define this it will only trigger if a button is released.
-  )
-  if(DARMOK_BUILD_IMGUI)
-    list(APPEND NUKLEAR_DEFINES
-      NK_NO_STB_TRUETYPE_IMPLEMENTATION # already added in imgui
-      NK_NO_STB_RECT_PACK_IMPLEMENTATION # already added in imgui
-    )
-  endif()
-  target_include_directories(${LIB_NAME} PUBLIC ${NUKLEAR_BASE})
-  target_compile_definitions(${LIB_NAME} PUBLIC ${NUKLEAR_DEFINES})
-  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_NUKLEAR)
-endif()
-
-# freetype
-set(FT_DISABLE_BROTLI ON CACHE BOOL "Disable support of compressed WOFF2 fonts.")
-set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "Disable HarfBuzz (used for improving auto-hinting of OpenType fonts).")
-set(FT_ENABLE_ERROR_STRINGS ON CACHE BOOL "Enable support for meaningful error descriptions.")
-add_subdirectory(${LIBS_DIR}/freetype)
-target_link_libraries(${LIB_NAME} PRIVATE freetype)
-
-# cegui
-if(DARMOK_BUILD_CEGUI)
-  set(GLM_H_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${LIBS_DIR}/glm)
-  set(PUGIXML_H_PATH ${LIBS_DIR}/pugixml/src)
-  set(FREETYPE_H_PATH ${LIBS_DIR}/freetype/include)
-
-  set(CEGUI_BUILD_APPLICATION_TEMPLATES OFF CACHE BOOL "Specifies whether to build the application templates.")
-  set(CEGUI_BUILD_RENDERER_OPENGL OFF CACHE BOOL "Specifies whether to build the old OpenGL 1.2 (fixed pipeline) renderer module.")
-  set(CEGUI_BUILD_RENDERER_OPENGL3 OFF CACHE BOOL "Specifies whether to build the renderer module that supports OpenGL 3.2 (core profile) and OpenGL ES 2.0.")
-  set(CEGUI_BUILD_RENDERER_DIRECT3D11 OFF CACHE BOOL "Specifies whether to build the Direct3D 11 renderer module")
-  set(CEGUI_BUILD_SAMPLES OFF CACHE BOOL "Specifies whether to build the CEGUI sample applications")
-  set(CEGUI_BUILD_IMAGECODEC_STB ON CACHE BOOL "Specifies whether to build the STB based ImageCodec module")
-  set(CEGUI_BUILD_XMLPARSER_PUGIXML ON CACHE BOOL "Specifies the XMLParser module to use as the default")
-  set(CEGUI_BUILD_STATIC_CONFIGURATION ON CACHE BOOL "Specifies whether the static configs will be built. (NB: Shared configs are always built)")
-  set(CEGUI_BUILD_DYNAMIC_CONFIGURATION OFF CACHE BOOL "Dynamic libs to be built. Always true except for Android")
-  set(CEGUI_BUILD_STATIC_FACTORY_MODULE ON CACHE BOOL "For static CEGUI builds, specifies whether to include the getWindowFactoryModule method.  When false, the developer must provide a custom implementation of the method")
-  set(CEGUI_USE_FREETYPE ON CACHE BOOL "Specifies whether to include Freetype font support")
-
-  add_subdirectory(${LIBS_DIR}/cegui)
-
-  set(CEGUI_INCLUDE_DIRS
-    ${LIBS_DIR}/cegui/cegui/include
-    ${CMAKE_CURRENT_BINARY_DIR}/lib/cegui/cegui/include)
-
-  # TODO: maybe add CEGUIPugiXMLParser directly in darmok
-  # TODO: CEGUI recommends dynamic linking
-  target_link_libraries(CEGUIPugiXMLParser_Static pugixml)
-  target_include_directories(CEGUIPugiXMLParser_Static PRIVATE ${PUGIXML_H_PATH})
-  target_include_directories(CEGUIBase-9999_Static PRIVATE ${FREETYPE_H_PATH})
-  target_include_directories(${LIB_NAME} PUBLIC ${CEGUI_INCLUDE_DIRS})
-
-  target_link_libraries(${LIB_NAME} PRIVATE
-    CEGUICoreWindowRendererSet_Static
-    CEGUIPugiXMLParser_Static)
-
-  target_link_libraries(${LIB_NAME} PUBLIC
-    CEGUIBase-9999_Static CEGUICommonDialogs-9999_Static)
-
 endif()

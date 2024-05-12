@@ -2,6 +2,7 @@
 #include <darmok/app.hpp>
 #include <darmok/scripting.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/utils.hpp>
 #include <filesystem>
 #include "asset.hpp"
 #include "input.hpp"
@@ -169,7 +170,7 @@ namespace darmok
 			"assets/main.lua"
 		};
 
-		if (!args.empty() && args[0].ends_with(".lua"))
+		if (!args.empty() && StringUtils::endsWith(args[0], ".lua"))
 		{
 			return args[0];
 		}
@@ -190,7 +191,7 @@ namespace darmok
 	{
 		auto& lua = *_lua;
 		const std::string current = lua["package"]["path"];
-		lua["package"]["path"] = current + (!current.empty() ? ";" : "") + path + "?.lua";
+		lua["package"]["path"] = current + (!current.empty() ? ";./" : "./") + path + "?.lua";
 	}
 
 	void ScriptingAppImpl::init(App& app, const std::vector<std::string>& args)
@@ -204,6 +205,7 @@ namespace darmok
 		
 		LuaMath::configure1(lua);
 		LuaMath::configure2(lua);
+		LuaMath::configure3(lua);
 		LuaShape::configure(lua);
 		LuaAssets::configure(lua);
 		LuaScene::configure(lua);

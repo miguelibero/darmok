@@ -5,6 +5,7 @@
 #include <darmok/vertex.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/material.hpp>
+#include <darmok/utils.hpp>
 
 #include <filesystem>
 #include <charconv>
@@ -31,7 +32,7 @@ namespace darmok
 		TextureAtlasBounds bounds{};
 		for (auto& elm : elements)
 		{
-			if (elm.name.starts_with(prefix))
+			if (StringUtils::startsWith(elm.name, prefix))
 			{
 				// TODO: algorithm to combine bounds
 				bounds = elm.getBounds();
@@ -138,7 +139,7 @@ namespace darmok
 
 		for (auto& elm : atlas.elements)
 		{
-			if (elm.name.starts_with(namePrefix))
+			if (StringUtils::startsWith(elm.name, namePrefix))
 			{
 				auto mesh = createSprite(elm);
 				if (mesh)
@@ -364,6 +365,6 @@ namespace darmok
 			elements.push_back(loadElement(spriteXml, size));
 		}
 
-		return std::make_shared<TextureAtlas>(texture, elements, size);
+		return std::make_shared<TextureAtlas>(TextureAtlas{ texture, elements, size });
 	}
 }

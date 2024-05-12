@@ -49,15 +49,6 @@ namespace darmok
 		vec2["x"] = &glm::vec2::x;
 		vec2["y"] = &glm::vec2::y;
 
-		auto uvec3 = configureUvec<glm::uvec3, glm::uvec3(unsigned int), glm::uvec3(unsigned int, unsigned int, unsigned int)>(lua, "Uvec3");
-		uvec3["x"] = &glm::uvec3::x;
-		uvec3["y"] = &glm::uvec3::y;
-		uvec3["z"] = &glm::uvec3::z;
-
-		auto uvec2 = configureUvec<glm::uvec2, glm::uvec2(unsigned int), glm::uvec2(unsigned int, unsigned int)>(lua, "Uvec2");
-		uvec2["x"] = &glm::uvec2::x;
-		uvec2["y"] = &glm::uvec2::y;
-
 		lua.new_usertype<LuaMath>("Math",
 			sol::constructors<>(),
 			"clamp", sol::overload(&glm::clamp<float>, &glm::clamp<int>),

@@ -10,6 +10,8 @@
 #include "embedded_shader.hpp"
 #include "generated/shaders/gui.vertex.h"
 #include "generated/shaders/gui.fragment.h"
+#include "generated/shaders/gui_image.vertex.h"
+#include "generated/shaders/gui_image.fragment.h"
 #include "generated/shaders/gui.layout.h"
 #include "generated/shaders/unlit.vertex.h"
 #include "generated/shaders/unlit.fragment.h"
@@ -64,7 +66,7 @@ namespace darmok
 
 	static std::optional<int> getNameSuffixCounter(const std::string_view name, const std::string_view prefix) noexcept
 	{
-		if (!name.starts_with(prefix))
+		if (!StringUtils::startsWith(name, prefix))
 		{
 			return std::nullopt;
 		}
@@ -79,7 +81,7 @@ namespace darmok
 
 	bgfx::Attrib::Enum Program::getBgfxAttrib(const std::string_view name) noexcept
 	{
-		auto sname = strToLower(name);
+		auto sname = StringUtils::toLower(name);
 		if (sname == "position" || sname == "pos")
 		{
 			return bgfx::Attrib::Position;
@@ -128,7 +130,7 @@ namespace darmok
 
 	bgfx::AttribType::Enum Program::getBgfxAttribType(const std::string_view name) noexcept
 	{
-		auto sname = strToLower(name);
+		auto sname = StringUtils::toLower(name);
 		if (sname == "u8" || sname == "uint8")
 		{
 			return bgfx::AttribType::Uint8;

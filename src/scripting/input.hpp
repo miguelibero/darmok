@@ -2,7 +2,7 @@
 
 #include <optional>
 #include <vector>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include <glm/glm.hpp>
 #include <darmok/optional_ref.hpp>
 
@@ -30,7 +30,8 @@ namespace darmok
 		LuaMouse(Mouse& mouse) noexcept;
 		const glm::vec2& getPosition() const noexcept;
 		glm::vec2 getPositionDelta() const noexcept;
-		const glm::vec2& getScrollDelta() const noexcept;
+		const glm::vec2& getScroll() const noexcept;
+		glm::vec2 getScrollDelta() const noexcept;
 		bool getLeftButton() const noexcept;
 		bool getMiddleButton() const noexcept;
 		bool getRightButton() const noexcept;

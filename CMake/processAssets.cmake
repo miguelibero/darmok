@@ -161,7 +161,7 @@ function(darmok_process_assets)
             set(OUTPUT ${ARGS_OUTPUT_DIR}/${ASSET_PATH})
             add_custom_command(
                 OUTPUT ${OUTPUT}
-                COMMAND ${CMAKE_COMMAND} -E copy ${SOURCE} ${OUTPUT}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SOURCE} ${OUTPUT}
                 MAIN_DEPENDENCY ${SOURCE}
             )
             list(APPEND ASSET_SOURCES ${SOURCE})

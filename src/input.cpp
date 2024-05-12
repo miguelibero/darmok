@@ -771,16 +771,16 @@ namespace darmok
 
 	std::optional<KeyboardKey> KeyboardBindingKey::readKey(std::string_view name) noexcept
 	{
-		auto lowerName = strToLower(name);
+		auto lowerName = StringUtils::toLower(name);
 		static const std::string keyPrefix = "key";
 		std::string keyStr;
-		if (lowerName.starts_with(keyPrefix))
+		if (StringUtils::startsWith(lowerName, keyPrefix))
 		{
 			keyStr = lowerName.substr(keyPrefix.size());
 		}
 		for (auto i = 0; i < s_keyboardKeyNames.size(); i++)
 		{
-			auto keyName = strToLower(s_keyboardKeyNames[i]);
+			auto keyName = StringUtils::toLower(s_keyboardKeyNames[i]);
 			if (keyName == lowerName || keyName == keyStr)
 			{
 				return (KeyboardKey)i;
@@ -804,7 +804,7 @@ namespace darmok
 	uint8_t KeyboardBindingKey::readModifiers(std::string_view name) noexcept
 	{
 		static const char sep = '+';
-		auto lowerName = strToLower(name);
+		auto lowerName = StringUtils::toLower(name);
 		uint8_t modifiers = 0;
 		size_t pos = 0;
 		while (pos < std::string::npos)
@@ -824,10 +824,10 @@ namespace darmok
 
 	std::optional<KeyboardBindingKey> KeyboardBindingKey::read(std::string_view name) noexcept
 	{
-		auto lowerName = strToLower(name);
+		auto lowerName = StringUtils::toLower(name);
 
 		static const std::string prefix = "keyboard";
-		if (lowerName.starts_with(prefix))
+		if (StringUtils::startsWith(lowerName, prefix))
 		{
 			lowerName = lowerName.substr(prefix.size());
 		}
@@ -856,10 +856,10 @@ namespace darmok
 
 	std::optional<MouseButton> MouseBindingKey::readButton(std::string_view name) noexcept
 	{
-		auto lowerName = strToLower(name);
+		auto lowerName = StringUtils::toLower(name);
 		for (auto i = 0; i < s_mouseButtonNames.size(); i++)
 		{
-			if (strToLower(s_mouseButtonNames[i]) == lowerName)
+			if (StringUtils::toLower(s_mouseButtonNames[i]) == lowerName)
 			{
 				return (MouseButton)i;
 			}
@@ -869,9 +869,9 @@ namespace darmok
 
 	std::optional<MouseBindingKey> MouseBindingKey::read(std::string_view name) noexcept
 	{
-		auto lowerName = strToLower(name);
+		auto lowerName = StringUtils::toLower(name);
 		static const std::string prefix = "mouse";
-		if (!lowerName.starts_with(prefix))
+		if (!StringUtils::startsWith(lowerName, prefix))
 		{
 			return std::nullopt;
 		}
@@ -891,10 +891,10 @@ namespace darmok
 
 	std::optional<GamepadButton> GamepadBindingKey::readButton(std::string_view name) noexcept
 	{
-		auto lowerName = strToLower(name);
+		auto lowerName = StringUtils::toLower(name);
 		for (auto i = 0; i < s_mouseButtonNames.size(); i++)
 		{
-			if (strToLower(s_gamepadButtonNames[i]) == lowerName)
+			if (StringUtils::toLower(s_gamepadButtonNames[i]) == lowerName)
 			{
 				return (GamepadButton)i;
 			}
@@ -904,9 +904,9 @@ namespace darmok
 
 	std::optional<GamepadBindingKey> GamepadBindingKey::read(std::string_view name) noexcept
 	{
-		auto lowerName = strToLower(name);
+		auto lowerName = StringUtils::toLower(name);
 		static const std::string prefix = "gamepad";
-		if (!lowerName.starts_with(prefix))
+		if (!StringUtils::startsWith(lowerName, prefix))
 		{
 			return std::nullopt;
 		}
@@ -971,9 +971,9 @@ namespace darmok
 	std::optional<InputBinding> InputBinding::read(std::string_view name, std::function<void()>&& fn) noexcept
 	{
 		static const std::string onceSuffix = "once";
-		auto lowerName = strToLower(name);
+		auto lowerName = StringUtils::toLower(name);
 		bool once = false;
-		if (lowerName.ends_with(onceSuffix))
+		if (StringUtils::endsWith(lowerName, onceSuffix))
 		{
 			once = true;
 			lowerName = lowerName.substr(0, lowerName.size() - onceSuffix.size());

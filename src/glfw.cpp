@@ -412,7 +412,7 @@ namespace darmok
 
 	static constexpr std::array<KeyboardKey, GLFW_KEY_LAST + 1> createTranslateKeys()
 	{
-		std::array<KeyboardKey, GLFW_KEY_LAST + 1> v;
+		std::array<KeyboardKey, GLFW_KEY_LAST + 1> v{};
 		v[GLFW_KEY_ESCAPE] = KeyboardKey::Esc;
 		v[GLFW_KEY_ENTER] = KeyboardKey::Return;
 		v[GLFW_KEY_TAB] = KeyboardKey::Tab;

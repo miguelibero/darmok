@@ -1,7 +1,7 @@
 #pragma once
 
 #include <darmok/optional_ref.hpp>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include "math.hpp"
 
 namespace darmok

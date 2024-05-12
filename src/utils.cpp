@@ -5,13 +5,23 @@
 
 namespace darmok
 {
-	std::string strToLower(std::string_view sv) noexcept
+	std::string StringUtils::toLower(std::string_view sv) noexcept
 	{
 		std::string s(sv);
 		std::transform(s.begin(), s.end(), s.begin(),
 			[](unsigned char c) { return std::tolower(c); }
 		);
 		return s;
+	}
+
+	bool StringUtils::startsWith(std::string_view sv, std::string_view start) noexcept
+	{
+		return sv.find(start) == 0;
+	}
+
+	bool StringUtils::endsWith(std::string_view sv, std::string_view end) noexcept
+	{
+		return sv.rfind(end) == sv.size() - end.size();
 	}
 
 	void checkError(bx::Error& err)

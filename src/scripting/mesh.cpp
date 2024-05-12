@@ -132,16 +132,11 @@ namespace darmok
 	void LuaMeshCreator::configure(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<MeshCreationConfig>("MeshCreationConfig",
-			sol::constructors<
-			MeshCreationConfig(const glm::vec3&, const glm::vec3&, const glm::vec2&, const Color&),
-			MeshCreationConfig(const glm::vec3&, const glm::vec3&, const glm::vec2&),
-			MeshCreationConfig(const glm::vec3&, const glm::vec3&),
-			MeshCreationConfig(const glm::vec3&),
-			MeshCreationConfig()
-			>(),
+			sol::constructors<MeshCreationConfig()>(),
 			"scale", &MeshCreationConfig::scale,
-			"textureScale", &MeshCreationConfig::textureScale,
 			"offset", &MeshCreationConfig::offset,
+			"texture_scale", &MeshCreationConfig::textureScale,
+			"texture_offset", &MeshCreationConfig::textureOffset,
 			"color", &MeshCreationConfig::color
 		);
 

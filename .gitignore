@@ -4,6 +4,7 @@ CMakeCache.*
 CMakeFiles/*
 [Tt]esting/*
 CMakeSettings.json
+vcpkg_installed/*
 
 examples/build*/*
 examples/*/build*/*
@@ -12,6 +13,7 @@ examples/*/cmake-build*/*
 examples/*/.idea/*
 examples/*/out/*
 examples/out/*
+build*/*
 out/*
 
 ### VisualStudioCode ###

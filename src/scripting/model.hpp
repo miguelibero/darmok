@@ -6,7 +6,7 @@
 #include <darmok/collection.hpp>
 #include <darmok/model.hpp>
 #include <bgfx/bgfx.h>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 namespace darmok
 {

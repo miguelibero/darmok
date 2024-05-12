@@ -1,10 +1,9 @@
 #pragma once
 
 #include <darmok/optional_ref.hpp>
-#include "scene.hpp"
 #include <vector>
 #include <optional>
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 namespace darmok
 {
@@ -12,6 +11,7 @@ namespace darmok
 	class LuaAssets;
 	class LuaWindow;
 	class LuaInput;
+	class LuaScene;
 	class SceneAppComponent;
 
 	class LuaApp final
