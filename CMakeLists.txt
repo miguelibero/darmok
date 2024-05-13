@@ -32,7 +32,6 @@ option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
 
 set(SRC_DIR src)
 set(INCLUDE_DIR include/darmok)
-set(LIBS_DIR lib)
 
 find_package(bgfx CONFIG REQUIRED)
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/processAssets.cmake)
@@ -170,17 +169,9 @@ target_include_directories(
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/include
-    ${BGFX_INCLUDE_DIR}/3rdparty/
-    ${BGFX_INCLUDE_DIR}/bgfx/examples/common
 )
 
 set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-
-# testing
-if(DARMOK_BUILD_TESTS)
-  enable_testing()
-  add_subdirectory(test)
-endif()
 
 if(MSVC)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
@@ -189,8 +180,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
-
-set(BUILD_SHARED_LIBS OFF)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
@@ -213,6 +202,12 @@ function(SET_DEBUGGER_WORKING_DIRECTORY)
   set_target_properties(${ARGV0} PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
 endfunction()
+
+# testing
+if(DARMOK_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(test)
+endif()
 
 # code analysis & clang tidy
 if(DARMOK_RUN_CODE_ANALYSIS)

@@ -4,7 +4,7 @@ CMakeCache.*
 CMakeFiles/*
 [Tt]esting/*
 CMakeSettings.json
-vcpkg_installed/*
+**/vcpkg_installed/*
 
 examples/build*/*
 examples/*/build*/*
