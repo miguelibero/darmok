@@ -34,9 +34,8 @@ namespace darmok
 			bgfx::createEmbeddedShader(embeddedShaders, renderer, (name + "_fragment").c_str()),
 			true
 		);
-		rapidjson::Document doc;
-		doc.Parse(layoutJson.data(), layoutJson.size());
-		Program::readVertexLayoutJson(doc, _layout);
+		auto json = nlohmann::json::parse(layoutJson);
+		Program::readVertexLayoutJson(json, _layout);
 	}
 
 
@@ -154,44 +153,40 @@ namespace darmok
 		return bgfx::AttribType::Count;
 	}
 
-	static std::string_view getStringView(const rapidjson::Value& v) noexcept
-	{
-		return std::string_view(v.GetString(), v.GetStringLength());
-	}
-
-	void Program::readVertexLayoutJson(const rapidjson::Document& doc, bgfx::VertexLayout& layout) noexcept
+	void Program::readVertexLayoutJson(const nlohmann::json& json, bgfx::VertexLayout& layout) noexcept
 	{
 		layout.begin();
-		for (auto& elm : doc.GetObject())
+		for (auto& elm : json.items())
 		{
-			auto attrib = getBgfxAttrib(getStringView(elm.name));
+			auto attrib = getBgfxAttrib(elm.key());
 			if (attrib == bgfx::Attrib::Count)
 			{
 				continue;
 			}
 			auto type = bgfx::AttribType::Float;
-			if (elm.value.HasMember("type"))
+			auto val = elm.value();
+			if (val.contains("type"))
 			{
-				type = getBgfxAttribType(getStringView(elm.value["type"]));
+				type = getBgfxAttribType(val["type"]);
 			}
 			if (type == bgfx::AttribType::Count)
 			{
 				continue;
 			}
 			uint8_t num = 1;
-			if (elm.value.HasMember("num"))
+			if (val.contains("num"))
 			{
-				num = elm.value["num"].GetUint();
+				num = val["num"].get<uint8_t>();
 			}
 			auto normalize = false;
-			if (elm.value.HasMember("normalize"))
+			if (val.contains("normalize"))
 			{
-				normalize = elm.value["normalize"].GetBool();
+				normalize = val["normalize"].get<bool>();
 			}
 			auto asInt = false;
-			if (elm.value.HasMember("int"))
+			if (val.contains("int"))
 			{
-				asInt = elm.value["int"].GetBool();
+				asInt = val["int"].get<bool>();
 			}
 			layout.add(attrib, num, type, normalize, asInt);
 		}

@@ -135,9 +135,8 @@ namespace darmok
     {
         auto data = _dataLoader(name);
         bgfx::VertexLayout layout;
-        rapidjson::Document doc;
-        doc.ParseInsitu((char*)data.ptr());
-        Program::readVertexLayoutJson(doc, layout);
+        auto json = nlohmann::json::parse(data.stringView());
+        Program::readVertexLayoutJson(json, layout);
         return layout;
     }
 }

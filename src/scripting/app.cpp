@@ -170,9 +170,9 @@ namespace darmok
 			"assets/main.lua"
 		};
 
-		if (!args.empty() && StringUtils::endsWith(args[0], ".lua"))
+		if (args.size() > 1 && StringUtils::endsWith(args[1], ".lua"))
 		{
-			return args[0];
+			return args[1];
 		}
 		else
 		{
@@ -190,8 +190,10 @@ namespace darmok
 	void ScriptingAppImpl::addPackagePath(const std::string& path) noexcept
 	{
 		auto& lua = *_lua;
-		const std::string current = lua["package"]["path"];
-		lua["package"]["path"] = current + (!current.empty() ? ";./" : "./") + path + "?.lua";
+		std::string current = lua["package"]["path"];
+		auto pathPattern = std::filesystem::path(path) / std::filesystem::path("?.lua");
+		current += (!current.empty() ? ";" : "") + std::filesystem::absolute(pathPattern).string();
+		lua["package"]["path"] = current;
 	}
 
 	void ScriptingAppImpl::init(App& app, const std::vector<std::string>& args)
