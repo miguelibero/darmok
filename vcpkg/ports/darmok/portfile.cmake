@@ -8,6 +8,7 @@ vcpkg_from_github(
     HEAD_REF feature/vcpkg
 )
 
+message("lala ${SOURCE_PATH}")
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
 )

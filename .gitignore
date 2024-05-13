@@ -6,13 +6,13 @@ CMakeFiles/*
 CMakeSettings.json
 **/vcpkg_installed/*
 
-examples/build*/*
-examples/*/build*/*
-examples/cmake-build*/*
-examples/*/cmake-build*/*
-examples/*/.idea/*
-examples/*/out/*
-examples/out/*
+samples/build*/*
+samples/*/build*/*
+samples/cmake-build*/*
+samples/*/cmake-build*/*
+samples/*/.idea/*
+samples/*/out/*
+samples/out/*
 build*/*
 out/*
 

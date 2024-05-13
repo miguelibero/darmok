@@ -20,6 +20,7 @@ if(PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
   )
 endif()
 
+option(DARMOK_BUILD_SAMPLES "build darmok samples" OFF)
 option(DARMOK_BUILD_TESTS "build darmok unit tests" OFF)
 option(DARMOK_BUILD_EXAMPLES "build darmok examples" OFF)
 option(DARMOK_BUILD_SCRIPTING "build darmok with scripting support" OFF)
@@ -153,13 +154,14 @@ if(DARMOK_BUILD_SCRIPTING)
   source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
 endif()
 
-set(LIB_NAME darmok)
+set(LIB_NAME darmok::darmok)
 
 add_library(
   ${LIB_NAME}
   ${HEADERS}
   ${SOURCES}
   ${ASSETS}
+  ALIAS darmok
 )
 
 target_include_directories(
@@ -203,10 +205,17 @@ function(SET_DEBUGGER_WORKING_DIRECTORY)
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
 endfunction()
 
+# samples
+if(BUILD_SAMPLES)
+  list(APPEND VCPKG_MANIFEST_FEATURES "samples")
+  add_subdirectory(samples)
+endif()
+
 # testing
 if(DARMOK_BUILD_TESTS)
   enable_testing()
   add_subdirectory(test)
+  list(APPEND VCPKG_MANIFEST_FEATURES "tests")
 endif()
 
 # code analysis & clang tidy
@@ -319,10 +328,11 @@ if(DARMOK_BUILD_SCRIPTING)
 
 endif()
 if(DARMOK_BUILD_SCRIPTING_EXE)
-  set(SCRIPTING_EXE_NAME ${LIB_NAME}-scripting)
+  set(SCRIPTING_EXE_NAME darmok::scripting)
   add_executable(
     ${SCRIPTING_EXE_NAME}
     src/scripting/main.cpp
+    ALIAS darmok-scripting
   )
   target_compile_definitions(
     ${SCRIPTING_EXE_NAME}

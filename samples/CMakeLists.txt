@@ -1,0 +1,6 @@
+add_subdirectory(imgui)
+add_subdirectory(scene)
+add_subdirectory(assimp)
+add_subdirectory(pbr)
+add_subdirectory(scripting)
+add_subdirectory(ozz)

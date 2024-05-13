@@ -11,12 +11,3 @@ set(ozz_build_howtos OFF CACHE BOOL "")
 set(ozz_build_tests OFF CACHE BOOL "")
 
 FetchContent_MakeAvailable(ozz-animation)
-
-set_target_properties(
-  ozz_base
-  ozz_animation
-  ozz_animation_offline
-  ozz_geometry
-  ozz_options
-  PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-)
