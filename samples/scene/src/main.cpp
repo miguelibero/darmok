@@ -149,7 +149,7 @@ namespace
 			MeshCreator meshCreator(_layout);
 			meshCreator.config.dynamic = true;
 			meshCreator.config.scale = glm::vec3(0.5F);
-			auto mesh = meshCreator.createSprite(tex);
+			auto mesh = meshCreator.createQuad(Quad(tex->getSize()));
 			auto mat = std::make_shared<Material>(tex);
 			registry.emplace<Renderable>(sprite, mesh, mat);
 
@@ -210,4 +210,4 @@ namespace
 	};
 }
 
-DARMOK_MAIN(ExampleScene);
+DARMOK_RUN_APP(ExampleScene);

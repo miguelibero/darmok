@@ -34,8 +34,8 @@ namespace darmok
 		glm::vec2 pivot;
 		bool rotated;
 
-		TextureAtlasBounds getBounds() const noexcept;
-		size_t getVertexAmount() const noexcept;
+		DLLEXPORT TextureAtlasBounds getBounds() const noexcept;
+		DLLEXPORT size_t getVertexAmount() const noexcept;
 	};
 
 	class Texture;
@@ -46,9 +46,9 @@ namespace darmok
 		std::vector<TextureAtlasElement> elements;
 		glm::uvec2 size;
 
-		TextureAtlasBounds getBounds(std::string_view prefix) const noexcept;
-		OptionalRef<TextureAtlasElement> getElement(std::string_view name) noexcept;
-		OptionalRef<const TextureAtlasElement> getElement(std::string_view name) const noexcept;
+		DLLEXPORT TextureAtlasBounds getBounds(std::string_view prefix) const noexcept;
+		DLLEXPORT OptionalRef<TextureAtlasElement> getElement(std::string_view name) noexcept;
+		DLLEXPORT OptionalRef<const TextureAtlasElement> getElement(std::string_view name) const noexcept;
 	};
 
 	struct TextureAtlasMeshCreationConfig final
@@ -69,12 +69,11 @@ namespace darmok
 		const TextureAtlas& atlas;
 		Config config;
 
-		TextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const TextureAtlas& atlas) noexcept;
+		DLLEXPORT TextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const TextureAtlas& atlas) noexcept;
 
-		std::shared_ptr<Mesh> createSprite(std::string_view name) const noexcept;
-		std::vector<AnimationFrame> createAnimation(std::string_view namePrefix, float frameDuration = 1.f / 30.f) const noexcept;
+		DLLEXPORT std::shared_ptr<Mesh> createSprite(std::string_view name) const noexcept;
+		DLLEXPORT std::vector<AnimationFrame> createAnimation(std::string_view namePrefix, float frameDuration = 1.f / 30.f) const noexcept;
 	private:
-
 
 		std::shared_ptr<Mesh> createSprite(const TextureAtlasElement& elm) const noexcept;
 	};
@@ -82,7 +81,8 @@ namespace darmok
     class BX_NO_VTABLE ITextureAtlasLoader
 	{
 	public:
-		virtual ~ITextureAtlasLoader() = default;
-		virtual std::shared_ptr<TextureAtlas> operator()(std::string_view name, uint64_t textureFlags = defaultTextureLoadFlags) = 0;
+		using result_type = std::shared_ptr<TextureAtlas>;
+		DLLEXPORT virtual ~ITextureAtlasLoader() = default;
+		DLLEXPORT virtual result_type operator()(std::string_view name, uint64_t textureFlags = defaultTextureLoadFlags) = 0;
 	};
 }

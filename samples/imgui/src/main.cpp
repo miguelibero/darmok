@@ -3,7 +3,6 @@
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
 #include <bgfx/bgfx.h>
-#include <dear-imgui/imgui.h>
 
 namespace
 {
@@ -52,4 +51,4 @@ namespace
 
 }
 
-DARMOK_MAIN(ExampleEmpty);
+DARMOK_RUN_APP(ExampleEmpty);

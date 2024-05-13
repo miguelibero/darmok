@@ -1,6 +1,3 @@
-/*
- * based on https://github.com/bkaradzic/bgfx/blob/master/examples/common/entry/entry.h
- */
 #pragma once
 
 #include <string>
@@ -8,23 +5,31 @@
 #include <cstdint>
 #include <memory>
 #include <bgfx/bgfx.h>
+#include <darmok/app_fwd.hpp>
 #include <darmok/color_fwd.hpp>
-
-extern "C" int _main_(int argc, char** argv);
 
 #ifndef DARMOK_IMPLEMENT_MAIN
 #	define DARMOK_IMPLEMENT_MAIN 0
 #endif // DARMOK_IMPLEMENT_MAIN
 
+#define DARMOK_RUN_APP_DECL(app, ...)                           \
+	int32_t darmokRunApp(const std::vector<std::string>& args)  \
+	{                                                           \
+		return darmok::runApp<app>(args, ##__VA_ARGS__);        \
+	}                                                           \
+
 #if DARMOK_IMPLEMENT_MAIN
-#define DARMOK_MAIN(app, ...)                      \
-	int32_t _main_(int32_t argc, char** argv)                \
-	{                                                        \
-		return darmok::runApp<app>(argc, argv, ##__VA_ARGS__); \
-	}
+#define DARMOK_RUN_APP(app, ...)                                \
+    DARMOK_RUN_APP_DECL(app, ##__VA_ARGS__)                     \
+                                                                \
+	int main(int argc, const char* const* argv)                 \
+	{                                                           \
+		return darmok::main(argc, argv, darmokRunApp);          \
+	}                                                           \
+
 #else
-#define DARMOK_MAIN(app, ...) \
-	static app s_app(__VA_ARGS__)
+#define DARMOK_RUN_APP(app, ...)                                \
+	DARMOK_RUN_APP_DECL(app, ...)
 #endif // DARMOK_IMPLEMENT_MAIN
 
 namespace darmok
@@ -34,6 +39,8 @@ namespace darmok
 	class Input;
 	class Window;
 	class AssetContext;
+
+	DLLEXPORT int32_t main(int32_t argc, const char* const* argv, RunAppCallback callback);
 
 	struct AppConfig
 	{
@@ -46,25 +53,25 @@ namespace darmok
 	class App
 	{
 	public:
-		App() noexcept;
-		virtual ~App() noexcept;
-		virtual void init(const std::vector<std::string>& args);
-		virtual int shutdown();
+		DLLEXPORT App() noexcept;
+		DLLEXPORT virtual ~App() noexcept;
+		DLLEXPORT virtual void init(const std::vector<std::string>& args);
+		DLLEXPORT virtual int shutdown();
 		bool update();
 
-		[[nodiscard]] Input& getInput() noexcept;
-		[[nodiscard]] const Input& getInput() const noexcept;
+		[[nodiscard]] DLLEXPORT Input& getInput() noexcept;
+		[[nodiscard]] DLLEXPORT const Input& getInput() const noexcept;
 
-		[[nodiscard]] Window& getWindow() noexcept;
-		[[nodiscard]] const Window& getWindow() const noexcept;
+		[[nodiscard]] DLLEXPORT Window& getWindow() noexcept;
+		[[nodiscard]] DLLEXPORT const Window& getWindow() const noexcept;
 
-		[[nodiscard]] AssetContext& getAssets() noexcept;
-		[[nodiscard]] const AssetContext& getAssets() const noexcept;
+		[[nodiscard]] DLLEXPORT AssetContext& getAssets() noexcept;
+		[[nodiscard]] DLLEXPORT const AssetContext& getAssets() const noexcept;
 
-		void toggleDebugFlag(uint32_t flag) noexcept;
-		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
+		DLLEXPORT void toggleDebugFlag(uint32_t flag) noexcept;
+		DLLEXPORT void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
-		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
+		DLLEXPORT void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
 
 		template<typename T, typename... A>
 		T& addComponent(A&&... args) noexcept
@@ -77,8 +84,8 @@ namespace darmok
 	protected:
 		void configure(const AppConfig& config) noexcept;
 
-		virtual void updateLogic(float deltaTime);
-		[[nodiscard]] virtual bgfx::ViewId render(bgfx::ViewId viewId) const;
+		DLLEXPORT virtual void updateLogic(float deltaTime);
+		DLLEXPORT [[nodiscard]] virtual bgfx::ViewId render(bgfx::ViewId viewId) const;
 
 	private:
 		std::unique_ptr<AppImpl> _impl;
@@ -96,17 +103,12 @@ namespace darmok
 		virtual bgfx::ViewId render(bgfx::ViewId viewId) const { return viewId;  };
 	};
 
-	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args);
+	DLLEXPORT int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args);
 
 	template<typename T, typename... A>
-	int runApp(int argc, const char* const* argv, A&&... constructArgs)
+	int runApp(const std::vector<std::string>& args, A&&... constructArgs)
 	{
-		auto app = std::unique_ptr<App>(new T(std::forward<A>(constructArgs)...));
-		std::vector<std::string> args(argc);
-		for (int i = 0; i < argc; ++i)
-		{
-			args[i] = argv[i];
-		}
+		auto app = std::unique_ptr<App>(new T(std::forward<A>(constructArgs)...));		
 		return runApp(std::move(app), args);
 	};
 } // namespace darmok

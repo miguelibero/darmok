@@ -17,22 +17,23 @@ namespace darmok
 	class Program final
 	{
 	public:
-		Program(const std::string& name, const bgfx::EmbeddedShader* embeddedShaders, std::string_view layoutJson);
-		Program(const bgfx::ProgramHandle& handle, const bgfx::VertexLayout& layout) noexcept;
-		Program(const Program& other) = delete;
-		Program& operator=(const Program& other) = delete;
-		~Program() noexcept;
-		[[nodiscard]] const bgfx::ProgramHandle& getHandle() const noexcept;
-		const bgfx::VertexLayout& getVertexLayout() const noexcept;
+		DLLEXPORT Program(const std::string& name, const bgfx::EmbeddedShader* embeddedShaders, std::string_view layoutJson);
+		DLLEXPORT Program(const bgfx::ProgramHandle& handle, const bgfx::VertexLayout& layout) noexcept;
+		DLLEXPORT Program(const Program& other) = delete;
+		DLLEXPORT Program& operator=(const Program& other) = delete;
+		DLLEXPORT ~Program() noexcept;
 
-		static void readVertexLayoutJson(const nlohmann::json& json, bgfx::VertexLayout& layout) noexcept;
+		[[nodiscard]] DLLEXPORT const bgfx::ProgramHandle& getHandle() const noexcept;
+		[[nodiscard]] DLLEXPORT const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
-		static bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept;
-		static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
+		DLLEXPORT static void readVertexLayoutJson(const nlohmann::json& json, bgfx::VertexLayout& layout) noexcept;
 
 	private:
 		bgfx::ProgramHandle _handle;
 		bgfx::VertexLayout _layout;
+
+		static bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept;
+		static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
 	};
 
 	class BX_NO_VTABLE IProgramLoader
@@ -40,8 +41,8 @@ namespace darmok
 	public:
 		using result_type = std::shared_ptr<Program>;
 
-		virtual ~IProgramLoader() = default;
-		virtual result_type operator()(std::string_view name) = 0;
+		DLLEXPORT virtual ~IProgramLoader() = default;
+		DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
 	};
 
 	class StandardProgramLoaderImpl;
@@ -49,10 +50,11 @@ namespace darmok
 	class StandardProgramLoader final
 	{
 	public:
-		StandardProgramLoader() noexcept;
-		~StandardProgramLoader() noexcept;
 		using result_type = std::shared_ptr<Program>;
-		virtual result_type operator()(StandardProgramType type) noexcept;
+
+		DLLEXPORT StandardProgramLoader() noexcept;
+		DLLEXPORT ~StandardProgramLoader() noexcept;
+		DLLEXPORT virtual result_type operator()(StandardProgramType type) noexcept;
 	private:
 		std::unique_ptr<StandardProgramLoaderImpl> _impl;
 	};

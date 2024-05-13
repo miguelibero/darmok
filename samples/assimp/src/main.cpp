@@ -65,4 +65,4 @@ namespace
 	};
 }
 
-DARMOK_MAIN(ModelApp);
+DARMOK_RUN_APP(ModelApp);

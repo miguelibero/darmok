@@ -15,7 +15,7 @@
     },
     {
       "name": "bgfx",
-      "features": [ "tools" ]
+      "features": [ "multithreaded", "tools" ]
     },
     "assimp",
     "cereal",
@@ -23,7 +23,6 @@
     "glm",
     "joltphysics",
     "lua",
-    "luajit",
     "nlohmann-json",
     "pugixml",
     {
@@ -37,6 +36,10 @@
   "features": {
     "samples": {
       "description": "Build samples"
+    },
+    "luajit": {
+      "description": "Build scripting using luajit",
+      "dependencies": [ "luajit" ]
     },
     "tests": {
       "description": "Build Tests",

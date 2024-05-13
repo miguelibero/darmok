@@ -22,7 +22,6 @@ endif()
 
 option(DARMOK_BUILD_SAMPLES "build darmok samples" OFF)
 option(DARMOK_BUILD_TESTS "build darmok unit tests" OFF)
-option(DARMOK_BUILD_EXAMPLES "build darmok examples" OFF)
 option(DARMOK_BUILD_SCRIPTING "build darmok with scripting support" OFF)
 option(DARMOK_BUILD_SCRIPTING_EXE "build the darmok scripting executable" OFF)
 option(DARMOK_BUILD_IMGUI "build darmok with imGUI support" OFF)
@@ -32,15 +31,17 @@ option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
 option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
 
 set(SRC_DIR src)
-set(INCLUDE_DIR include/darmok)
+set(INCLUDE_BASE_DIR include)
+set(INCLUDE_DIR ${INCLUDE_BASE_DIR}/darmok)
 
 find_package(bgfx CONFIG REQUIRED)
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/processAssets.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/copyLinkedDlls.cmake)
 
 darmok_process_assets(
   HEADER_SHADER_OUTPUT_DIR "include/generated/shaders"
   HEADER_SHADER_INCLUDE_DIR "generated/shaders"
-  ASSETS_EXCLUDES "shaders/cegui_*"
+  SOURCE_GROUP_NAME "Embedded Shader Files"
 )
 
 set(SOURCES
@@ -56,7 +57,6 @@ set(SOURCES
   ${SRC_DIR}/data.cpp
   ${SRC_DIR}/shape.cpp
   ${SRC_DIR}/mesh.cpp
-  ${SRC_DIR}/find.cpp
   ${SRC_DIR}/color.cpp
   ${SRC_DIR}/material.cpp
   ${SRC_DIR}/texture.cpp
@@ -73,6 +73,7 @@ set(SOURCES
 )
 
 set(HEADERS
+  ${INCLUDE_DIR}/app_fwd.hpp
   ${INCLUDE_DIR}/app.hpp
   ${INCLUDE_DIR}/input_fwd.hpp
   ${INCLUDE_DIR}/input.hpp
@@ -87,7 +88,6 @@ set(HEADERS
   ${INCLUDE_DIR}/data.hpp
   ${INCLUDE_DIR}/shape.hpp
   ${INCLUDE_DIR}/mesh.hpp
-  ${INCLUDE_DIR}/find.hpp
   ${INCLUDE_DIR}/color_fwd.hpp
   ${INCLUDE_DIR}/color.hpp
   ${INCLUDE_DIR}/material_fwd.hpp
@@ -125,6 +125,10 @@ if(DARMOK_BUILD_OZZ)
   list(APPEND SOURCES ${SRC_DIR}/skeleton_ozz.cpp)
 endif()
 
+if(DARMOK_BUILD_SCRIPTING_EXE)
+  set(DARMOK_BUILD_SCRIPTING ON CACHE BOOL "")
+endif()
+
 if(DARMOK_BUILD_SCRIPTING)
   list(APPEND SCRIPTING_SOURCES
     ${SRC_DIR}/scripting/app.cpp
@@ -154,18 +158,38 @@ if(DARMOK_BUILD_SCRIPTING)
   source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
 endif()
 
-set(LIB_NAME darmok::darmok)
-
+set(LIB_NAME "darmok")
 add_library(
   ${LIB_NAME}
-  ${HEADERS}
   ${SOURCES}
   ${ASSETS}
-  ALIAS darmok
 )
 
+target_sources(${LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${HEADERS})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} PREFIX "Source Files" FILES ${SOURCES})
+
+add_library(darmok::darmok ALIAS ${LIB_NAME})
+set_target_properties(${LIB_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
+
+set(EXPORT_NAME "${PROJECT_NAME}Targets")
+set(EXPORT_INSTALL_DIR "share/${PROJECT_NAME}")
+install(TARGETS ${LIB_NAME}
+    EXPORT ${EXPORT_NAME}
+    RUNTIME_DEPENDENCY_SET ${LIB_NAME}
+    FILE_SET HEADERS
+)
+install(EXPORT ${EXPORT_NAME}
+  NAMESPACE darmok
+  DESTINATION ${EXPORT_INSTALL_DIR}
+)
+install(FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/README.md
+  ${CMAKE_CURRENT_SOURCE_DIR}/CHANGES.md
+  ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+  DESTINATION share/doc/darmok)
+
 target_include_directories(
-    ${PROJECT_NAME}
+    ${LIB_NAME}
     PUBLIC
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -176,21 +200,30 @@ target_include_directories(
 set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
 if(MSVC)
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
 endif()
+
+if(MSVC AND BUILD_SHARED_LIBS)
+  set(DLLEXPORT "__declspec(dllexport)")
+else()
+  set(DLLEXPORT "")
+endif()
+target_compile_definitions(darmok PUBLIC "DLLEXPORT=${DLLEXPORT}")
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(ADD_OPTIM_FLAGS "")
+if(MSVC)
+  set(ADD_OPTIM_FLAGS "/GS- /Gy /O2 /Oi /Ot")
+endif()
 
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Distribution")
-
-set(CMAKE_CXX_FLAGS_DISTRIBUTION "/GS- /Gy /O2 /Oi /Ot")
-set(CMAKE_EXE_LINKER_FLAGS_DISTRIBUTION "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${ADD_OPTIM_FLAGS}")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${ADD_OPTIM_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${ADD_OPTIM_FLAGS}")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${ADD_OPTIM_FLAGS}")
 
 function(SET_WARNING_LEVEL)
   if(MSVC)
@@ -206,7 +239,7 @@ function(SET_DEBUGGER_WORKING_DIRECTORY)
 endfunction()
 
 # samples
-if(BUILD_SAMPLES)
+if(DARMOK_BUILD_SAMPLES)
   list(APPEND VCPKG_MANIFEST_FEATURES "samples")
   add_subdirectory(samples)
 endif()
@@ -257,11 +290,11 @@ endif()
 if(DARMOK_PLATFORM STREQUAL "glfw")
     find_package(glfw3 CONFIG REQUIRED)
     target_link_libraries(${LIB_NAME} PRIVATE glfw)
-    target_compile_definitions(darmok PRIVATE DARMOK_PLATFORM_GLFW)
+    target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_GLFW)
     if (DARMOK_PLATFORM_SUPPORT_WAYLAND)
-        target_compile_definitions(darmok PRIVATE DARMOK_PLATFORM_SUPPORT_WAYLAND)
+        target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_SUPPORT_WAYLAND)
         target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
-        target_compile_definitions(bgfx PRIVATE WL_EGL_PLATFORM)
+        target_compile_definitions(bgfx::bgfx PRIVATE WL_EGL_PLATFORM)
     endif()
 endif()
 
@@ -294,7 +327,6 @@ endif()
 # pugixml
 find_package(pugixml CONFIG REQUIRED)
 target_link_libraries(${LIB_NAME} PRIVATE pugixml::pugixml)
-target_compile_definitions(pugixml INTERFACE PUGIXML_HEADER_ONLY) # also included in assimp
 
 # json
 find_package(nlohmann_json CONFIG REQUIRED)
@@ -325,20 +357,30 @@ if(DARMOK_BUILD_SCRIPTING)
   target_compile_definitions(sol2 INTERFACE ${SOL_DEFINES})
   target_link_libraries(${LIB_NAME} PRIVATE sol2)
 
-
+  list(APPEND VCPKG_MANIFEST_FEATURES "scripting")
 endif()
+
 if(DARMOK_BUILD_SCRIPTING_EXE)
-  set(SCRIPTING_EXE_NAME darmok::scripting)
+  set(SCRIPTING_EXE_NAME darmok-scripting)
   add_executable(
     ${SCRIPTING_EXE_NAME}
     src/scripting/main.cpp
-    ALIAS darmok-scripting
   )
+  add_executable(darmok::scripting ALIAS ${SCRIPTING_EXE_NAME})
   target_compile_definitions(
     ${SCRIPTING_EXE_NAME}
     PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1"
   )
-  target_link_libraries(${SCRIPTING_EXE_NAME} LINK_PUBLIC ${LIB_NAME})
+  set_target_properties(${SCRIPTING_EXE_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
+  target_link_libraries(${SCRIPTING_EXE_NAME} ${LIB_NAME})
+  install(TARGETS ${SCRIPTING_EXE_NAME}
+    EXPORT ${EXPORT_NAME}
+    RUNTIME_DEPENDENCY_SET ${LIB_NAME}
+  )
+  install(RUNTIME_DEPENDENCY_SET ${LIB_NAME}
+    PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-" "ozz_.*\\.dll"
+    POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"    
+  )
 endif()
 
 # ozz

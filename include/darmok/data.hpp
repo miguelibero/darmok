@@ -18,25 +18,15 @@ namespace bx
 
 namespace darmok
 {
-    template<typename T>
-    static const bgfx::Memory* makeVectorRef(const std::vector<T>& v) noexcept
-    {
-        if (v.empty())
-        {
-            return nullptr;
-        }
-        return bgfx::makeRef(&v.front(), v.size() * sizeof(T));
-    }
-
     class Data;
 
     class DataView final
     {
     public:
-        DataView(const void* ptr = nullptr, size_t size = 0) noexcept;
-        DataView(const char* str) noexcept;
-        DataView(const Data& data) noexcept;
-        DataView(const bgfx::Memory& mem) noexcept;
+        DLLEXPORT DataView(const void* ptr = nullptr, size_t size = 0) noexcept;
+        DLLEXPORT DataView(const char* str) noexcept;
+        DLLEXPORT DataView(const Data& data) noexcept;
+        DLLEXPORT DataView(const bgfx::Memory& mem) noexcept;
 
         template<typename T>
         DataView(const std::vector<T>& v) noexcept
@@ -56,17 +46,17 @@ namespace darmok
         {
         }
 
-        [[nodiscard]] const void* ptr() const noexcept;
-        [[nodiscard]] const void* end() const noexcept;
-        [[nodiscard]] size_t size() const noexcept;
-        [[nodiscard]] bool empty() const noexcept;
-        [[nodiscard]] bool operator==(const DataView& other) const noexcept;
-        [[nodiscard]] bool operator!=(const DataView& other) const noexcept;
+        [[nodiscard]] DLLEXPORT const void* ptr() const noexcept;
+        [[nodiscard]] DLLEXPORT const void* end() const noexcept;
+        [[nodiscard]] DLLEXPORT size_t size() const noexcept;
+        [[nodiscard]] DLLEXPORT bool empty() const noexcept;
+        [[nodiscard]] DLLEXPORT bool operator==(const DataView& other) const noexcept;
+        [[nodiscard]] DLLEXPORT bool operator!=(const DataView& other) const noexcept;
 
-        [[nodiscard]] std::string_view stringView(size_t offset = 0, size_t size = -1) const noexcept;
-        [[nodiscard]] DataView view(size_t offset = 0, size_t size = -1) const noexcept;
-        [[nodiscard]] const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
-        [[nodiscard]] const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT std::string_view stringView(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT DataView view(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
 
     private:
         const void* _ptr;
@@ -79,10 +69,10 @@ namespace darmok
     class Data final
     {
     public:
-        Data(const OptionalRef<bx::AllocatorI>& alloc) noexcept;
-        Data(size_t size = 0, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
-        Data(const void* ptr, size_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
-        ~Data() noexcept;
+        DLLEXPORT Data(const OptionalRef<bx::AllocatorI>& alloc) noexcept;
+        DLLEXPORT Data(size_t size = 0, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
+        DLLEXPORT Data(const void* ptr, size_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
+        DLLEXPORT ~Data() noexcept;
 
         template<typename T>
         Data(const std::vector<T>& v, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept
@@ -102,31 +92,31 @@ namespace darmok
         {
         }
 
-        Data(const Data& other) noexcept;
-        Data& operator=(const Data& other) noexcept;
-        Data(const DataView& other, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
-        Data& operator=(const DataView& other) noexcept;
-        Data(Data&& other) noexcept;
-        Data& operator=(Data&& other) noexcept;
-        operator DataView() const;
+        DLLEXPORT Data(const Data& other) noexcept;
+        DLLEXPORT Data& operator=(const Data& other) noexcept;
+        DLLEXPORT Data(const DataView& other, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
+        DLLEXPORT Data& operator=(const DataView& other) noexcept;
+        DLLEXPORT Data(Data&& other) noexcept;
+        DLLEXPORT Data& operator=(Data&& other) noexcept;
+        DLLEXPORT operator DataView() const;
         
-        [[nodiscard]] void* ptr() const noexcept;
-        [[nodiscard]] void* end() const noexcept;
-        [[nodiscard]] size_t size() const noexcept;
-        [[nodiscard]] bool empty() const noexcept;
+        [[nodiscard]] DLLEXPORT void* ptr() const noexcept;
+        [[nodiscard]] DLLEXPORT void* end() const noexcept;
+        [[nodiscard]] DLLEXPORT size_t size() const noexcept;
+        [[nodiscard]] DLLEXPORT bool empty() const noexcept;
 
-        [[nodiscard]] bool operator==(const Data& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Data& other) const noexcept;
+        [[nodiscard]] DLLEXPORT bool operator==(const Data& other) const noexcept;
+        [[nodiscard]] DLLEXPORT bool operator!=(const Data& other) const noexcept;
 
-        [[nodiscard]] std::string_view stringView(size_t offset = 0, size_t size = -1) const noexcept;
-        [[nodiscard]] DataView view(size_t offset = 0, size_t size = -1) const noexcept;
-        [[nodiscard]] const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
-        [[nodiscard]] const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT std::string_view stringView(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT DataView view(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
 
-        void release() noexcept;
-        void clear() noexcept;
-        void resize(size_t size) noexcept;
-        void fill(const DataView& data) noexcept;
+        DLLEXPORT void release() noexcept;
+        DLLEXPORT void clear() noexcept;
+        DLLEXPORT void resize(size_t size) noexcept;
+        DLLEXPORT void fill(const DataView& data) noexcept;
 
     private:
         void* _ptr;
@@ -143,11 +133,7 @@ namespace darmok
         // TODO: change to Data to avoid having to copy memory
         using result_type = Data;
 
-		virtual ~IDataLoader() = default;
-		virtual result_type operator()(std::string_view name) = 0;
-        virtual std::vector<std::string> find(std::string_view name)
-        {
-            return std::vector<std::string>();
-        }
+        DLLEXPORT virtual ~IDataLoader() = default;
+        DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
 	};
 }

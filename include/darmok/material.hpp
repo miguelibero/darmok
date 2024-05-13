@@ -19,25 +19,25 @@ namespace darmok
     class Material final
     {
     public:
-        Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
-        ~Material();
+        DLLEXPORT Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
+        DLLEXPORT ~Material();
 
-        std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
-        Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
+        DLLEXPORT std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
+        DLLEXPORT Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
+        
+        DLLEXPORT OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
+        DLLEXPORT Material& setColor(MaterialColorType type, const Color& color) noexcept;
+        
+        DLLEXPORT MaterialPrimitiveType getPrimitiveType() const noexcept;
+        DLLEXPORT Material& setPrimitiveType(MaterialPrimitiveType type) noexcept;
+        
+        DLLEXPORT uint8_t getShininess() const noexcept;
+        DLLEXPORT Material& setShininess(uint8_t v) noexcept;
 
-        OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
-        Material& setColor(MaterialColorType type, const Color& color) noexcept;
+        DLLEXPORT float getSpecularStrength() const noexcept;
+        DLLEXPORT Material& setSpecularStrength(float v) noexcept;
 
-        MaterialPrimitiveType getPrimitiveType() const noexcept;
-        Material& setPrimitiveType(MaterialPrimitiveType type) noexcept;
-
-        uint8_t getShininess() const noexcept;
-        Material& setShininess(uint8_t v) noexcept;
-
-        float getSpecularStrength() const noexcept;
-        Material& setSpecularStrength(float v) noexcept;
-
-        uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        DLLEXPORT uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
         std::unordered_map<MaterialTextureType, bgfx::UniformHandle> _textureHandles;

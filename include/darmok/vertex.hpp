@@ -21,8 +21,9 @@ namespace darmok
     class BX_NO_VTABLE IVertexLayoutLoader
     {
     public:
-        virtual ~IVertexLayoutLoader() = default;
-        virtual bgfx::VertexLayout operator()(std::string_view name) = 0;
+        using result_type = bgfx::VertexLayout;
+        DLLEXPORT virtual ~IVertexLayoutLoader() = default;
+        DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
     };
 
     class VertexDataWriter final
@@ -47,8 +48,8 @@ namespace darmok
         }
         
     public:
-        VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
-        void load(Data&& data) noexcept;
+        DLLEXPORT VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
+        DLLEXPORT void load(Data&& data) noexcept;
 
         template<typename Iter, typename Filter>
         VertexDataWriter& write(bgfx::Attrib::Enum attr, Iter begin, Iter end, Filter filter) noexcept
@@ -151,7 +152,7 @@ namespace darmok
         [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr, uint32_t index) const noexcept;
         [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr) const noexcept;
 
-        Data&& finish() noexcept;
+        DLLEXPORT Data&& finish() noexcept;
 
     private:
         const bgfx::VertexLayout& _layout;

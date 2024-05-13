@@ -21,19 +21,19 @@ namespace darmok
     class BX_NO_VTABLE ICameraComponent
     {
     public:
-        virtual ~ICameraComponent() = default;
-        virtual void init(Camera& cam, Scene& scene, App& app) { };
-        virtual void update(float deltaTime) { }
-        virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
-        virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const { };
-        virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
-        virtual void shutdown() { }
+        DLLEXPORT virtual ~ICameraComponent() = default;
+        DLLEXPORT virtual void init(Camera& cam, Scene& scene, App& app) { };
+        DLLEXPORT virtual void update(float deltaTime) { }
+        DLLEXPORT virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
+        DLLEXPORT virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const { };
+        DLLEXPORT virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
+        DLLEXPORT virtual void shutdown() { }
     };
 
     class BX_NO_VTABLE ICameraRenderer : public ICameraComponent
     {
     public:
-        virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
+        DLLEXPORT virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
     };
 
     class Mesh;
@@ -43,23 +43,23 @@ namespace darmok
     class Camera final
     {
     public:
-        Camera(const glm::mat4& matrix = {}) noexcept;
-        ~Camera();
+        DLLEXPORT Camera(const glm::mat4& matrix = {}) noexcept;
+        DLLEXPORT ~Camera();
 
-        const glm::mat4& getMatrix() const noexcept;
+        DLLEXPORT const glm::mat4& getMatrix() const noexcept;
 
-        Camera& setMatrix(const glm::mat4& matrix) noexcept;
-        Camera& setProjection(float fovy, float aspect, const glm::vec2& range) noexcept;
-        Camera& setProjection(float fovy, float aspect, float near = 0.f) noexcept;
-        Camera& setProjection(float fovy, const glm::uvec2& size, const glm::vec2& range) noexcept;
-        Camera& setProjection(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
+        DLLEXPORT Camera& setMatrix(const glm::mat4& matrix) noexcept;
+        DLLEXPORT Camera& setProjection(float fovy, float aspect, const glm::vec2& range) noexcept;
+        DLLEXPORT Camera& setProjection(float fovy, float aspect, float near = 0.f) noexcept;
+        DLLEXPORT Camera& setProjection(float fovy, const glm::uvec2& size, const glm::vec2& range) noexcept;
+        DLLEXPORT Camera& setProjection(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
         
-        Camera& setOrtho(const glm::vec4& edges, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest), float offset = 0.f) noexcept;
-        Camera& setOrtho(const glm::uvec2& size, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest), float offset = 0.f) noexcept;
-        Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
+        DLLEXPORT Camera& setOrtho(const glm::vec4& edges, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest), float offset = 0.f) noexcept;
+        DLLEXPORT Camera& setOrtho(const glm::uvec2& size, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest), float offset = 0.f) noexcept;
+        DLLEXPORT Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
-        Camera& setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
-        const std::vector<std::shared_ptr<Texture>>& getTargetTextures() noexcept;
+        DLLEXPORT Camera& setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
+        DLLEXPORT const std::vector<std::shared_ptr<Texture>>& getTargetTextures() noexcept;
 
         template<typename T>
         Camera& setEntityComponentFilter() noexcept
@@ -67,7 +67,7 @@ namespace darmok
             return setEntityFilter(std::make_unique<EntityComponentFilter<T>>());
         }
 
-        void filterEntityView(EntityRuntimeView& view) const noexcept;
+        DLLEXPORT void filterEntityView(EntityRuntimeView& view) const noexcept;
 
         template<typename T>
         EntityRuntimeView createEntityView(const EntityRegistry& registry) const noexcept
@@ -86,8 +86,8 @@ namespace darmok
         void update(float deltaTime);
         void shutdown();
 
-        Camera& setRenderer(std::unique_ptr<ICameraRenderer>&& renderer) noexcept;
-        Camera& addComponent(std::unique_ptr<ICameraComponent>&& renderer) noexcept;
+        DLLEXPORT Camera& setRenderer(std::unique_ptr<ICameraRenderer>&& renderer) noexcept;
+        DLLEXPORT Camera& addComponent(std::unique_ptr<ICameraComponent>&& renderer) noexcept;
 
         template<typename T, typename... A>
         T& setRenderer(A&&... args)
@@ -107,12 +107,12 @@ namespace darmok
             return ref;
         }
 
-        std::optional<Ray> screenPointToRay(const glm::vec2& point) const noexcept;
-        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
+        DLLEXPORT std::optional<Ray> screenPointToRay(const glm::vec2& point) const noexcept;
+        DLLEXPORT bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
 
-        void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
-        void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
-        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        DLLEXPORT void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        DLLEXPORT void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        DLLEXPORT void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
         glm::mat4 _matrix;

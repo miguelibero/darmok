@@ -11,7 +11,7 @@ namespace darmok
     class ForwardRenderer final : public ICameraRenderer
     {
     public:
-        ForwardRenderer(const std::shared_ptr<Program>& program) noexcept;
+        DLLEXPORT ForwardRenderer(const std::shared_ptr<Program>& program) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
     protected:

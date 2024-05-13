@@ -14,20 +14,20 @@ namespace darmok
     class PointLight final
     {
     public:
-        PointLight(float intensity = 1.F) noexcept;
+        DLLEXPORT PointLight(float intensity = 1.F) noexcept;
 
-        PointLight& setIntensity(float intensity) noexcept;
-        PointLight& setRadius(float radius) noexcept;
-        PointLight& setAttenuation(const glm::vec3& attn) noexcept;
-        PointLight& setColor(const Color3& color) noexcept;
-        PointLight& setDiffuseColor(const Color3& color) noexcept;
-        PointLight& setSpecularColor(const Color3& color) noexcept;
+        DLLEXPORT PointLight& setIntensity(float intensity) noexcept;
+        DLLEXPORT PointLight& setRadius(float radius) noexcept;
+        DLLEXPORT PointLight& setAttenuation(const glm::vec3& attn) noexcept;
+        DLLEXPORT PointLight& setColor(const Color3& color) noexcept;
+        DLLEXPORT PointLight& setDiffuseColor(const Color3& color) noexcept;
+        DLLEXPORT PointLight& setSpecularColor(const Color3& color) noexcept;
 
-        [[nodiscard]] float getRadius() const noexcept;
-        [[nodiscard]] float getIntensity() const noexcept;
-        [[nodiscard]] const glm::vec3& getAttenuation() const noexcept;
-        [[nodiscard]] const Color3& getDiffuseColor() const noexcept;
-        [[nodiscard]] const Color3& getSpecularColor() const noexcept;
+        [[nodiscard]] DLLEXPORT float getRadius() const noexcept;
+        [[nodiscard]] DLLEXPORT float getIntensity() const noexcept;
+        [[nodiscard]] DLLEXPORT const glm::vec3& getAttenuation() const noexcept;
+        [[nodiscard]] DLLEXPORT const Color3& getDiffuseColor() const noexcept;
+        [[nodiscard]] DLLEXPORT const Color3& getSpecularColor() const noexcept;
     private:
         float _intensity;
         glm::vec3 _attenuation;
@@ -39,13 +39,13 @@ namespace darmok
     class AmbientLight final
     {
     public:
-        AmbientLight(float intensity = 1.F) noexcept;
+        DLLEXPORT AmbientLight(float intensity = 1.F) noexcept;
 
-        AmbientLight& setIntensity(float intensity) noexcept;
-        AmbientLight& setColor(const Color3& color) noexcept;
+        DLLEXPORT AmbientLight& setIntensity(float intensity) noexcept;
+        DLLEXPORT AmbientLight& setColor(const Color3& color) noexcept;
 
-        [[nodiscard]] const Color3& getColor() const noexcept;
-        [[nodiscard]] float getIntensity() const noexcept;
+        [[nodiscard]] DLLEXPORT const Color3& getColor() const noexcept;
+        [[nodiscard]] DLLEXPORT float getIntensity() const noexcept;
     private:
         float _intensity;
         Color3 _color;
@@ -55,12 +55,12 @@ namespace darmok
     class PhongLightingComponent final : public ICameraComponent
     {
     public:
-        PhongLightingComponent() noexcept;
-        ~PhongLightingComponent() noexcept;
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown()  noexcept override;
-        void update(float deltaTime)  noexcept override;
-        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept override;
+        DLLEXPORT PhongLightingComponent() noexcept;
+        DLLEXPORT ~PhongLightingComponent() noexcept;
+        DLLEXPORT void init(Camera& cam, Scene& scene, App& app) noexcept override;
+        DLLEXPORT void shutdown()  noexcept override;
+        DLLEXPORT void update(float deltaTime)  noexcept override;
+        DLLEXPORT void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept override;
 
     private:
         OptionalRef<Scene> _scene;

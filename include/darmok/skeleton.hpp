@@ -30,21 +30,24 @@ namespace darmok
     class BX_NO_VTABLE ISkeletonLoader
 	{
 	public:
-		virtual ~ISkeletonLoader() = default;
-		virtual std::shared_ptr<Skeleton> operator()(std::string_view name) = 0;
+        using result_type = std::shared_ptr<Skeleton>;
+
+        DLLEXPORT virtual ~ISkeletonLoader() = default;
+        DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
 	};
 
     class BX_NO_VTABLE ISkeletalAnimationLoader
 	{
 	public:
-		virtual ~ISkeletalAnimationLoader() = default;
-		virtual std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) = 0;
+        using result_type = std::shared_ptr<SkeletalAnimation>;
+		DLLEXPORT virtual ~ISkeletalAnimationLoader() = default;
+		DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
 	};
 
     class EmptySkeletonLoader : public ISkeletonLoader
 	{
 	public:
-		std::shared_ptr<Skeleton> operator()(std::string_view name) override
+        DLLEXPORT std::shared_ptr<Skeleton> operator()(std::string_view name) override
         {
             throw std::runtime_error("no skeletal animation implementation");
         }
@@ -53,7 +56,7 @@ namespace darmok
     class EmptySkeletalAnimationLoader : public ISkeletalAnimationLoader
 	{
 	public:
-		std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override
+        DLLEXPORT std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override
         {
             throw std::runtime_error("no skeletal animation implementation");
         }

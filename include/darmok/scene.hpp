@@ -45,10 +45,10 @@ namespace darmok
         bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
 
-        void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
+        DLLEXPORT void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
 
-        EntityRegistry& getRegistry();
-        const EntityRegistry& getRegistry() const;
+        DLLEXPORT EntityRegistry& getRegistry();
+        DLLEXPORT const EntityRegistry& getRegistry() const;
 
         template<typename T>
         OptionalRef<T> getComponentInChildren(Entity entity) noexcept
@@ -86,14 +86,14 @@ namespace darmok
     class SceneAppComponent final : public AppComponent
     {
     public:
-        SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;
+        DLLEXPORT SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;
         
-        std::shared_ptr<Scene> getScene() const noexcept;
-        void setScene(const std::shared_ptr<Scene>& scene) noexcept;
-        const std::vector<std::shared_ptr<Scene>>& getScenes() const noexcept;
-        std::shared_ptr<Scene> addScene() noexcept;
-        bool addScene(const std::shared_ptr<Scene>& scene) noexcept;
-        bool removeScene(const std::shared_ptr<Scene>& scene) noexcept;
+        DLLEXPORT std::shared_ptr<Scene> getScene() const noexcept;
+        DLLEXPORT void setScene(const std::shared_ptr<Scene>& scene) noexcept;
+        DLLEXPORT const std::vector<std::shared_ptr<Scene>>& getScenes() const noexcept;
+        DLLEXPORT std::shared_ptr<Scene> addScene() noexcept;
+        DLLEXPORT bool addScene(const std::shared_ptr<Scene>& scene) noexcept;
+        DLLEXPORT bool removeScene(const std::shared_ptr<Scene>& scene) noexcept;
 
         void init(App& app) override;
         void shutdown() override;

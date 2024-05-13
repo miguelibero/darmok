@@ -3,6 +3,7 @@
 #include "input.hpp"
 #include <darmok/window.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/app_fwd.hpp>
 #include <bx/bx.h>
 #include <queue>
 #include <memory>
@@ -36,8 +37,6 @@
 
 namespace darmok
 {
-	int main(int argc, const char* const* argv);
-
 #pragma region PlatformEvents
 
 	class BX_NO_VTABLE PlatformEvent
@@ -234,8 +233,12 @@ namespace darmok
 		[[nodiscard]] void* getDisplayHandle() const noexcept;
 
 		[[nodiscard]] std::unique_ptr<PlatformEvent> pollEvent() noexcept;
+
+		int32_t main(const std::vector<std::string>& args, RunAppCallback callback);
+
 	private:
-		Platform(PlatformImpl& impl) noexcept;
-		PlatformImpl& _impl;
+		Platform() noexcept;
+		~Platform() noexcept;
+		std::unique_ptr<PlatformImpl> _impl;
 	};
 }

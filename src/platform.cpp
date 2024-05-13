@@ -238,18 +238,19 @@ namespace darmok
 		return platEv;
 	}
 
-	Platform::Platform(PlatformImpl& impl) noexcept
-		: _impl(impl)
+	Platform& Platform::get() noexcept
 	{
+		static Platform platform;
+		return platform;
 	}
 
 	const PlatformImpl& Platform::getImpl() const noexcept
 	{
-		return _impl;
+		return *_impl;
 	}
 
 	PlatformImpl& Platform::getImpl() noexcept
 	{
-		return _impl;
+		return *_impl;
 	}
 }

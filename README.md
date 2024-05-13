@@ -12,18 +12,15 @@ currently using:
 * [glm](https://github.com/g-truc/glm) for 3d math
 * [EnTT](https://github.com/skypjack/entt) as the entity component system
 * [assimp](https://github.com/assimp/assimp) for generic asset loading (not in runtime)
-* [luajit](https://luajit.org/) as the scripting layer
 * [sol2](https://github.com/ThePhD/sol2) modern C++ bindings for lua
-* [rapidjson](https://github.com/Tencent/rapidjson) for parsing json
+* [nlohmann-json](https://github.com/nlohmann/json) for parsing json
 * [pugixml](https://pugixml.org/) for parsing xml
 * [imgui](https://github.com/ocornut/imgui) for editor UI
-* [nuklear](https://github.com/Immediate-Mode-UI/Nuklear) for ingame UI
-* [CEGUI](https://github.com/cegui/cegui) for ingame UI
 
 planned to use:
 
-* [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI to replace CEGUI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
+* [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI to replace CEGUI
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [Box2D](https://box2d.org/) for 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
@@ -60,7 +57,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * bgfx window setup (GLFW on windows & linux)
 * scene using entt
 * update logic methods with delta time
-* loading shader vertex layout from json
 * sprites and spritesheets
 * loading meshes using assimp (FBX, etc...)
 * renderer
@@ -83,18 +79,14 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * distance field fonts
 * binary mesh serialization
 * unify use of std::allocator everywhere
+* sound
 
 ## Interesting Related Projects
 
-* [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine/tree/master) very similar engine
-* [entt-meets-sol2](https://github.com/skaarj1989/entt-meets-sol2)
+* [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
 * [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
-* scripting alternatives
-    * [pocketpy](https://pocketpy.dev/) - python as a scripting language
-    * [wren](https://github.com/wren-lang/wren) as the scripting layer
-    * [wrenbind17](https://github.com/matusnovak/wrenbind17) for modern C++ wren binding
 
 ## Example code
 

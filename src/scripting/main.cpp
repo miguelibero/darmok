@@ -1,3 +1,3 @@
 #include <darmok/scripting.hpp>
 
-DARMOK_MAIN(darmok::ScriptingApp);
+DARMOK_RUN_APP(darmok::ScriptingApp);

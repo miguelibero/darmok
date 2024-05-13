@@ -20,12 +20,12 @@ namespace darmok
     class FrameAnimation final
     {
     public:
-        FrameAnimation(const std::vector<AnimationFrame>& frames, OptionalRef<Renderable> renderable = nullptr) noexcept;
-        void setFrames(const std::vector<AnimationFrame>& frames) noexcept;
-        void setRenderable(Renderable& renderable) noexcept;
+        DLLEXPORT FrameAnimation(const std::vector<AnimationFrame>& frames, OptionalRef<Renderable> renderable = nullptr) noexcept;
+        DLLEXPORT void setFrames(const std::vector<AnimationFrame>& frames) noexcept;
+        DLLEXPORT void setRenderable(Renderable& renderable) noexcept;
         
-        [[nodiscard]] const std::vector<AnimationFrame>& getFrames() const noexcept;
-        [[nodiscard]] OptionalRef<const AnimationFrame> getCurrentFrame() const noexcept;
+        [[nodiscard]] DLLEXPORT const std::vector<AnimationFrame>& getFrames() const noexcept;
+        [[nodiscard]] DLLEXPORT OptionalRef<const AnimationFrame> getCurrentFrame() const noexcept;
 
         void update(float deltaTime) noexcept;
 
@@ -40,8 +40,8 @@ namespace darmok
     {
     public:
         FrameAnimationUpdater() = default;
-        void init(Scene& scene, App& app) override;
-        void update(float deltaTime) override;
+        DLLEXPORT void init(Scene& scene, App& app) override;
+        DLLEXPORT void update(float deltaTime) override;
     private:
         OptionalRef<Scene> _scene;
     };

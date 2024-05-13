@@ -45,13 +45,13 @@ namespace darmok
     class Renderable final
     {
     public:
-        Renderable(const std::shared_ptr<Mesh>& mesh = nullptr, const std::shared_ptr<Material>& material = nullptr) noexcept;
-        Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Texture>& texture) noexcept;
-        Renderable(const std::shared_ptr<Material>& material) noexcept;
-        std::shared_ptr<Mesh> getMesh() const noexcept;
-        Renderable& setMesh(const std::shared_ptr<Mesh>& mesh) noexcept;
-        std::shared_ptr<Material> getMaterial() const noexcept;
-        Renderable& setMaterial(const std::shared_ptr<Material>& material) noexcept;
+        DLLEXPORT Renderable(const std::shared_ptr<Mesh>& mesh = nullptr, const std::shared_ptr<Material>& material = nullptr) noexcept;
+        DLLEXPORT Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Texture>& texture) noexcept;
+        DLLEXPORT Renderable(const std::shared_ptr<Material>& material) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> getMesh() const noexcept;
+        DLLEXPORT Renderable& setMesh(const std::shared_ptr<Mesh>& mesh) noexcept;
+        DLLEXPORT std::shared_ptr<Material> getMaterial() const noexcept;
+        DLLEXPORT Renderable& setMaterial(const std::shared_ptr<Material>& material) noexcept;
     private:
         std::shared_ptr<Mesh> _mesh;
         std::shared_ptr<Material> _material;
@@ -89,20 +89,20 @@ namespace darmok
         Config config;
         bgfx::VertexLayout layout;
 
-        MeshCreator(const bgfx::VertexLayout& layout) noexcept;
+        DLLEXPORT MeshCreator(const bgfx::VertexLayout& layout) noexcept;
 
-        std::shared_ptr<Mesh> createMesh(const MeshData& meshData) noexcept;
-        std::shared_ptr<Mesh> createCube() noexcept;
-        std::shared_ptr<Mesh> createCube(const Cube& cube) noexcept;
-        std::shared_ptr<Mesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
-        std::shared_ptr<Mesh> createSphere(int lod = 32) noexcept;
-        std::shared_ptr<Mesh> createQuad() noexcept;
-        std::shared_ptr<Mesh> createQuad(const Quad& quad) noexcept;
-        std::shared_ptr<Mesh> createLineQuad() noexcept;
-        std::shared_ptr<Mesh> createLineQuad(const Quad& quad) noexcept;
-        std::shared_ptr<Mesh> createRay(const Ray& ray) noexcept;
-        std::shared_ptr<Mesh> createLine(const Line& line) noexcept;
-        std::shared_ptr<Mesh> createLines(const std::vector<Line>& lines) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createMesh(const MeshData& meshData) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createCube() noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createCube(const Cube& cube) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createSphere(int lod = 32) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createQuad() noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createQuad(const Quad& quad) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createLineQuad() noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createLineQuad(const Quad& quad) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createRay(const Ray& ray) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createLine(const Line& line) noexcept;
+        DLLEXPORT std::shared_ptr<Mesh> createLines(const std::vector<Line>& lines) noexcept;
 
     private:
         std::shared_ptr<Mesh> createMesh(const MeshData& meshData, const Config& cfg) noexcept;

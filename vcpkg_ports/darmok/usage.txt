@@ -1,0 +1,12 @@
+darmok provides CMake targets:
+
+find_package(darmok CONFIG REQUIRED)
+target_link_libraries(main PRIVATE darmok::darmok)
+
+add_custom_target(mygame
+  COMMAND $<TARGET_FILE:darmok-scripting>
+  DEPENDS darmok::scripting
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  SOURCES ${ASSETS}
+  COMMENT "my darmok lua game"
+)

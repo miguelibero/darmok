@@ -1,4 +1,0 @@
-darmok provides CMake targets:
-
-find_package(darmok CONFIG REQUIRED)
-target_link_libraries(main PRIVATE darmok::darmok)

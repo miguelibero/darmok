@@ -10,8 +10,8 @@ namespace darmok
     class ScriptingApp final : public App
     {
     public:
-        ScriptingApp();
-        ~ScriptingApp();
+        DLLEXPORT ScriptingApp();
+        DLLEXPORT ~ScriptingApp();
         void init(const std::vector<std::string>& args) override;
     protected:
         void updateLogic(float deltaTime) override;

@@ -20,6 +20,16 @@
 
 namespace darmok
 {
+	int32_t main(int32_t argc, const char* const* argv, RunAppCallback callback)
+	{
+		std::vector<std::string> args(argc);
+		for (int i = 0; i < argc; ++i)
+		{
+			args[i] = argv[i];
+		}
+		return Platform::get().main(args, callback);
+	}
+
 	AppImpl::AppImpl() noexcept
 		: _exit(false)
 		, _debug(BGFX_DEBUG_NONE)
@@ -315,12 +325,6 @@ namespace darmok
 		bgfx::shutdown();
 
 		return result;
-	}
-
-	int main(int argc, const char* const* argv)
-	{
-		//DBG(BX_COMPILER_NAME " / " BX_CPU_NAME " / " BX_ARCH_NAME " / " BX_PLATFORM_NAME);
-		return ::_main_(argc, (char**)argv);
 	}
 
 	App::App() noexcept

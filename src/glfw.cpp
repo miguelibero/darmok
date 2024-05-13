@@ -3,6 +3,7 @@
 #include "window.hpp"
 #include <darmok/utils.hpp>
 #include <darmok/window.hpp>
+#include <darmok/app.hpp>
 #include <bx/platform.h>
 
 #if DARMOK_PLATFORM_GLFW
@@ -41,8 +42,8 @@ namespace darmok
 {
 	struct MainThreadEntry
 	{
-		int argc = 0;
-		const char* const* argv = nullptr;
+		std::vector<std::string> args;
+		RunAppCallback callback;
 		bool finished = false;
 
 		static int32_t threadFunc(bx::Thread* thread, void* userData);
@@ -57,7 +58,7 @@ namespace darmok
 	public:
 		PlatformImpl() noexcept;
 
-		int run(int argc, const char* const* argv) noexcept;
+		int run(const std::vector<std::string>& args, RunAppCallback callback) noexcept;
 		
 		void pushCmd(std::unique_ptr<PlatformCmd>&& cmd) noexcept;
 		std::unique_ptr<PlatformEvent> pollEvent() noexcept;
@@ -617,10 +618,10 @@ namespace darmok
 		}
 	}
 
-	int PlatformImpl::run(int argc, const char* const* argv) noexcept
+	int PlatformImpl::run(const std::vector<std::string>& args, RunAppCallback callback) noexcept
 	{
-		_mte.argc = argc;
-		_mte.argv = argv;
+		_mte.args = args;
+		_mte.callback = callback;
 
 		glfwSetErrorCallback(staticErrorCallback);
 
@@ -823,41 +824,48 @@ namespace darmok
 		BX_UNUSED(thread);
 
 		auto self = (MainThreadEntry*)userData;
-		int32_t result = main(self->argc, self->argv);
+		int32_t result = self->callback(self->args);
 		self->finished = true;
 		return result;
 	}
 
-	Platform& Platform::get() noexcept
+	Platform::Platform() noexcept
+		: _impl(std::make_unique<PlatformImpl>())
 	{
-		static PlatformImpl impl;
-		static Platform plat(impl);
-		return plat;
+	}
+
+	Platform::~Platform() noexcept
+	{
 	}
 
 	std::unique_ptr<PlatformEvent> Platform::pollEvent() noexcept
 	{
-		return _impl.pollEvent();
+		return _impl->pollEvent();
+	}
+
+	int32_t Platform::main(const std::vector<std::string>& args, RunAppCallback callback)
+	{
+		return _impl->run(args, callback);
 	}
 
 	void Platform::requestWindowDestruction() noexcept
 	{
-		_impl.pushCmd<DestroyWindowCmd>();
+		_impl->pushCmd<DestroyWindowCmd>();
 	}
 
 	void Platform::requestWindowModeChange(WindowMode mode) noexcept
 	{
-		_impl.pushCmd<ChangeWindowModeCmd>(mode);
+		_impl->pushCmd<ChangeWindowModeCmd>(mode);
 	}
 
 	void Platform::requestCursorModeChange(WindowCursorMode mode) noexcept
 	{
-		_impl.pushCmd<ChangeWindowCursorModeCmd>(mode);
+		_impl->pushCmd<ChangeWindowCursorModeCmd>(mode);
 	}
 
 	void* Platform::getWindowHandle() const noexcept
 	{
-		return PlatformImpl::getWindowHandle(_impl.getGlfwWindow());
+		return PlatformImpl::getWindowHandle(_impl->getGlfwWindow());
 	}
 
 	void* Platform::getDisplayHandle() const noexcept
@@ -887,11 +895,6 @@ namespace darmok
 		return bgfx::NativeWindowHandleType::Default;
 #	endif // BX_PLATFORM_*
 	}
-}
-
-int main(int argc, const char* const* argv) noexcept
-{
-	return darmok::Platform::get().getImpl().run(argc, argv);
 }
 
 #endif // DARMOK_CONFIG_USE_GLFW

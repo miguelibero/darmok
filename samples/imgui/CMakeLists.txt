@@ -1,18 +1,17 @@
-project(
-  darmok::samples::empty
-  LANGUAGES CXX
-  DESCRIPTION "empty example darmok project"
-)
+if(NOT ${DARMOK_BUILD_IMGUI})
+  return()
+endif()
+
+set(SAMPLE_NAME darmok-samples-imgui)
 
 add_executable(
-  ${PROJECT_NAME}
+  ${SAMPLE_NAME}
   src/main.cpp
 )
 
-set(DARMOK_BUILD_IMGUI ON CACHE BOOL "")
-
 target_compile_definitions(
-  ${PROJECT_NAME}
+  ${SAMPLE_NAME}
   PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1"
 )
-target_link_libraries(${PROJECT_NAME} LINK_PUBLIC darmok::darmok)
+target_link_libraries(${SAMPLE_NAME} PUBLIC darmok::darmok)
+darmok_copy_linked_dlls(${SAMPLE_NAME})

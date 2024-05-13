@@ -62,7 +62,7 @@ namespace
 			auto redMat = std::make_shared<Material>();
 			redMat->setTexture(MaterialTextureType::Diffuse, redTex);
 
-			auto sphereMesh = .createSphere();
+			auto sphereMesh = meshCreator.createSphere();
 			auto sphere = registry.create();
 			registry.emplace<Renderable>(sphere, sphereMesh, redMat);
 			auto& trans = registry.emplace<Transform>(sphere);
@@ -94,4 +94,4 @@ namespace
 
 }
 
-DARMOK_MAIN(PbrApp);
+DARMOK_RUN_APP(PbrApp);

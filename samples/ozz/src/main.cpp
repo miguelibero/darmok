@@ -33,4 +33,4 @@ namespace
 	};
 }
 
-DARMOK_MAIN(OzzApp);
+DARMOK_RUN_APP(OzzApp);

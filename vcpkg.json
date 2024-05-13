@@ -8,6 +8,37 @@
       "name" : "vcpkg-cmake-config",
       "host" : true
     },
-    "darmok"
-  ]
+    {
+      "name": "bgfx",
+      "features": [ "multithreaded", "tools" ]
+    },
+    "assimp",
+    "cereal",
+    "entt",
+    "glm",
+    "joltphysics",
+    "lua",
+    "nlohmann-json",
+    "pugixml",
+    {
+      "name": "imgui",
+      "features": ["freetype"]
+    },
+    "rmlui",
+    "sol2",
+    "glfw3"
+  ],
+  "features": {
+    "samples": {
+      "description": "Build samples"
+    },
+    "luajit": {
+      "description": "Build scripting using luajit",
+      "dependencies": [ "luajit" ]
+    },
+    "tests": {
+      "description": "Build Tests",
+      "dependencies": [ "catch2" ]
+    }
+  }
 }

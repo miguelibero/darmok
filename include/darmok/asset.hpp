@@ -15,7 +15,6 @@ namespace darmok
 	class IVertexLayoutLoader;
 	class ColorTextureLoader;
     class AssetContext;
-	class IAssetFinder;
 	class ISkeletonLoader;
 	class ISkeletalAnimationLoader;
 	class IModelLoader;
@@ -26,17 +25,17 @@ namespace darmok
 		AssetContext() noexcept;
 		~AssetContext() noexcept;
 
-		[[nodiscard]] IDataLoader& getDataLoader() noexcept;
-		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
-		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
-		[[nodiscard]] StandardProgramLoader& getStandardProgramLoader() noexcept;
-		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
-		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
-		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
-		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
-		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
-		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
-		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
+		[[nodiscard]] DLLEXPORT IDataLoader& getDataLoader() noexcept;
+		[[nodiscard]] DLLEXPORT IImageLoader& getImageLoader() noexcept;
+		[[nodiscard]] DLLEXPORT IProgramLoader& getProgramLoader() noexcept;
+		[[nodiscard]] DLLEXPORT StandardProgramLoader& getStandardProgramLoader() noexcept;
+		[[nodiscard]] DLLEXPORT ITextureLoader& getTextureLoader() noexcept;
+		[[nodiscard]] DLLEXPORT ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
+		[[nodiscard]] DLLEXPORT ColorTextureLoader& getColorTextureLoader() noexcept;
+		[[nodiscard]] DLLEXPORT ISkeletonLoader& getSkeletonLoader() noexcept;
+		[[nodiscard]] DLLEXPORT ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
+		[[nodiscard]] DLLEXPORT IModelLoader& getModelLoader() noexcept;
+		[[nodiscard]] DLLEXPORT bx::AllocatorI& getAllocator() noexcept;
 
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;

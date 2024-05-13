@@ -3,14 +3,15 @@
 #include <darmok/app.hpp>
 #include <memory>
 #include <bx/bx.h>
+#include <imgui.h>
 
 namespace darmok
 {
 	class BX_NO_VTABLE IImguiRenderer
 	{
 	public:
-		virtual ~IImguiRenderer() = default;
-		virtual void imguiRender() = 0;
+		DLLEXPORT virtual ~IImguiRenderer() = default;
+		DLLEXPORT virtual void imguiRender() = 0;
 	};
 
 
@@ -19,7 +20,7 @@ namespace darmok
     class ImguiAppComponent final : public AppComponent
     {
     public:
-		ImguiAppComponent(IImguiRenderer& renderer, float fontSize = 18.0f) noexcept;
+		DLLEXPORT ImguiAppComponent(IImguiRenderer& renderer, float fontSize = 18.0f) noexcept;
 
 		void init(App& app) override;
 		void shutdown() override;

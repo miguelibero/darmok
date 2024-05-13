@@ -344,9 +344,4 @@ namespace darmok
         bx::close(_fileReader);
         return data;
     }
-
-    std::vector<std::string> FileDataLoader::find(std::string_view name)
-    {
-        return _finder(name);
-    }
 }
