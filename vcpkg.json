@@ -12,33 +12,23 @@
       "name": "bgfx",
       "features": [ "multithreaded", "tools" ]
     },
+    "glfw3",
     "assimp",
     "cereal",
     "entt",
     "glm",
     "joltphysics",
     "lua",
+    "sol2",
     "nlohmann-json",
     "pugixml",
     {
       "name": "imgui",
       "features": ["freetype"]
     },
-    "rmlui",
-    "sol2",
-    "glfw3"
-  ],
-  "features": {
-    "samples": {
-      "description": "Build samples"
-    },
-    "luajit": {
-      "description": "Build scripting using luajit",
-      "dependencies": [ "luajit" ]
-    },
-    "tests": {
-      "description": "Build Tests",
-      "dependencies": [ "catch2" ]
+    {
+      "name": "rmlui",
+      "features": ["freetype", "lua"]
     }
-  }
+  ]
 }

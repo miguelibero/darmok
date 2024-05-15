@@ -19,7 +19,7 @@ namespace darmok
 	class Mesh;
 	class Texture;
 
-	class RmluiRender final : public Rml::RenderInterface
+	class RmluiRenderInterface final : public Rml::RenderInterface
 	{
 	public:
 		void RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept override;
@@ -30,14 +30,14 @@ namespace darmok
 		void RenderCompiledGeometry(Rml::CompiledGeometryHandle geometry, const Rml::Vector2f& translation) noexcept override;
 		void ReleaseCompiledGeometry(Rml::CompiledGeometryHandle geometry) noexcept override;
 
-		bool LoadTexture(Rml::TextureHandle& handle, Rml::Vector2i& textureDimensions, const Rml::String& source) noexcept override;
-		bool GenerateTexture(Rml::TextureHandle& texture_handle, const Rml::byte* source, const Rml::Vector2i& sourceDimensions) noexcept override;
+		bool LoadTexture(Rml::TextureHandle& handle, Rml::Vector2i& dimensions, const Rml::String& source) noexcept override;
+		bool GenerateTexture(Rml::TextureHandle& handle, const Rml::byte* source, const Rml::Vector2i& dimensions) noexcept override;
 		void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 		
 		void init(App& app);
 		void beforeRender(bgfx::ViewId viewId) noexcept;
-		void afterRender() noexcept;
+		bool afterRender() noexcept;
 		void shutdown() noexcept;
 
 	private:
@@ -45,22 +45,32 @@ namespace darmok
 		struct CompiledGeometry final
 		{
 			std::unique_ptr<Mesh> mesh;
-			std::unique_ptr<Texture> texture;
+			Rml::TextureHandle texture;
 		};
 
-		std::unordered_map< Rml::CompiledGeometryHandle, CompiledGeometry> _compiledGeometries;
+		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
+		std::unordered_map<Rml::CompiledGeometryHandle, CompiledGeometry> _compiledGeometries;
 		std::optional<bgfx::ViewId> _viewId;
+		OptionalRef<bgfx::Encoder> _encoder;
 		std::unique_ptr<Program> _program;
 		bgfx::VertexLayout _layout;
 		bgfx::UniformHandle _textureUniform;
 		static const bgfx::EmbeddedShader _embeddedShaders[];
-		glm::mat4 _transform;
+		glm::mat4 _view;
+		glm::ivec4 _scissor;
+		bool _scissorEnabled;
+		bool _rendered;
+		bool _viewSetup;
+
+		bool createTexture(Rml::TextureHandle& handle, const DataView& data, const Rml::Vector2i& dimensions) noexcept;
+		void render(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
+		void setupView() noexcept;
 	};
 
-	class RmluiSystem final : public Rml::SystemInterface
+	class RmluiSystemInterface final : public Rml::SystemInterface
 	{
 	public:
-		RmluiSystem() noexcept;
+		RmluiSystemInterface() noexcept;
 		void init(App& app);
 		void update(float dt) noexcept;
 		double GetElapsedTime() override;
@@ -70,7 +80,7 @@ namespace darmok
 
 	class IDataLoader;
 
-	class RmluiDataFile final : public Rml::FileInterface
+	class RmluiFileInterface final : public Rml::FileInterface
 	{
 	public:
 		void init(App& app);
@@ -116,9 +126,9 @@ namespace darmok
 
 	private:
 		OptionalRef<Rml::Context> _context;
-		mutable RmluiRender _render;
-		RmluiSystem _system;
-		RmluiDataFile _file;
+		mutable RmluiRenderInterface _render;
+		RmluiSystemInterface _system;
+		RmluiFileInterface _file;
 		OptionalRef<App> _app;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;

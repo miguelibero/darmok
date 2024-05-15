@@ -5,6 +5,8 @@
 #include <darmok/texture.hpp>
 #include "rmlui.hpp"
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <bx/math.h>
 
 #include "generated/rmlui/shaders/basic.vertex.h"
 #include "generated/rmlui/shaders/basic.fragment.h"
@@ -18,47 +20,113 @@ namespace darmok
         {
             return { v.x, v.y };
         }
+
+        static glm::vec2 convert(const Rml::Vector2f& v)
+        {
+            return { v.x, v.y };
+        }
     };
 
-    Rml::CompiledGeometryHandle RmluiRender::CompileGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture) noexcept
+    Rml::CompiledGeometryHandle RmluiRenderInterface::CompileGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture) noexcept
     {
-
+        auto itr = _textures.find(texture);
+        DataView vertData(vertices, sizeof(Rml::Vertex) * numVertices);
+        DataView idxData(indices, sizeof(int) * numIndices);
+        MeshConfig meshConfig;
+        meshConfig.index32 = true;
+        auto mesh = std::make_unique<Mesh>(_layout, vertData, idxData, meshConfig);
+        Rml::CompiledGeometryHandle handle = mesh->getVertexHandle();
+        _compiledGeometries.emplace(handle, CompiledGeometry{ std::move(mesh), texture });
+        return handle;
     }
 
-    void RmluiRender::RenderCompiledGeometry(Rml::CompiledGeometryHandle geometry, const Rml::Vector2f& translation) noexcept
+    void RmluiRenderInterface::RenderCompiledGeometry(Rml::CompiledGeometryHandle handle, const Rml::Vector2f& translation) noexcept
     {
-
+        if (!_encoder)
+        {
+            return;
+        }
+        auto itr = _compiledGeometries.find(handle);
+        if (itr == _compiledGeometries.end())
+        {
+            return;
+        }
+        itr->second.mesh->render(_encoder.value());
+        render(itr->second.texture, translation);
     }
 
-    void RmluiRender::ReleaseCompiledGeometry(Rml::CompiledGeometryHandle geometry) noexcept
+    void RmluiRenderInterface::ReleaseCompiledGeometry(Rml::CompiledGeometryHandle handle) noexcept
     {
-
+        auto itr = _compiledGeometries.find(handle);
+        if (itr != _compiledGeometries.end())
+        {
+            _compiledGeometries.erase(itr);
+        }
     }
 
-
-    bool RmluiRender::LoadTexture(Rml::TextureHandle& handle, Rml::Vector2i& textureDimensions, const Rml::String& source) noexcept
+    bool RmluiRenderInterface::LoadTexture(Rml::TextureHandle& handle, Rml::Vector2i& dimensions, const Rml::String& source) noexcept
     {
+        const auto file = Rml::GetFileInterface();
+        const auto fileHandle = file->Open(source);
 
+        if (!fileHandle)
+        {
+            return false;
+        }
+
+        Data data(file->Length(fileHandle));
+        file->Read(data.ptr(), data.size(), fileHandle);
+        file->Close(fileHandle);
+
+        return createTexture(handle, data.view(), dimensions);
     }
 
-    bool RmluiRender::GenerateTexture(Rml::TextureHandle& texture_handle, const Rml::byte* source, const Rml::Vector2i& sourceDimensions) noexcept
+    bool RmluiRenderInterface::GenerateTexture(Rml::TextureHandle& handle, const Rml::byte* source, const Rml::Vector2i& dimensions) noexcept
     {
-
+        auto size = 4 * sizeof(Rml::byte) * dimensions.x * dimensions.y;
+        return createTexture(handle, DataView(source, size), dimensions);
     }
 
-    void RmluiRender::ReleaseTexture(Rml::TextureHandle texture) noexcept
+    bool RmluiRenderInterface::createTexture(Rml::TextureHandle& handle, const DataView& data, const Rml::Vector2i& dimensions) noexcept
     {
-
+        TextureConfig config;
+        config.format = bgfx::TextureFormat::RGBA8;
+        config.size = glm::uvec2(dimensions.x, dimensions.y);
+        try
+        {
+            _textures.emplace(handle, std::make_unique<Texture>(data, config));
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
     }
 
-    void RmluiRender::SetTransform(const Rml::Matrix4f* transform) noexcept
+    void RmluiRenderInterface::ReleaseTexture(Rml::TextureHandle handle) noexcept
     {
-
+        auto itr = _textures.find(handle);
+        if (itr != _textures.end())
+        {
+            _textures.erase(itr);
+        }
     }
 
-    void RmluiRender::RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
+    void RmluiRenderInterface::SetTransform(const Rml::Matrix4f* transform) noexcept
     {
-        if (!_viewId || _program == nullptr)
+        if (transform == nullptr)
+        {
+            _view = glm::mat4(1);
+        }
+        else
+        {
+            _view = (glm::mat4)*transform->data();
+        }
+    }
+
+    void RmluiRenderInterface::RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
+    {
+        if (!_encoder)
         {
             return;
         }
@@ -69,54 +137,100 @@ namespace darmok
         bgfx::allocTransientIndexBuffer(&tib, numIndices, true);
         bx::memCopy(tvb.data, vertices, numVertices * sizeof(Rml::Vertex));
         bx::memCopy(tib.data, indices, numIndices * sizeof(int));
+        _encoder->setVertexBuffer(0, &tvb);
+        _encoder->setIndexBuffer(&tib);
 
-        auto encoder = bgfx::begin();
+        render(texture, translation);
+    }
 
-        encoder->setVertexBuffer(0, &tvb);
-        encoder->setIndexBuffer(&tib);
+    void RmluiRenderInterface::setupView() noexcept
+    {
+        auto dim = GetContext()->GetDimensions();
+        bgfx::setViewRect(_viewId.value(), 0, 0, dim.x, dim.y);
 
-        uint64_t state = 0
+        glm::mat4 proj(1);
+        bx::mtxOrtho(glm::value_ptr(proj), 0, dim.x, dim.y, 0.F, 0.F, bx::kFloatLargest, 0.F, bgfx::getCaps()->homogeneousDepth);
+        bgfx::setViewTransform(_viewId.value(), glm::value_ptr(_view), glm::value_ptr(proj));
+    }
+
+    void RmluiRenderInterface::render(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
+    {
+        if (!_viewId || _program == nullptr || !_encoder)
+        {
+            return;
+        }
+
+        if (!_viewSetup)
+        {
+            setupView();
+            _viewSetup = true;
+        }
+
+        auto trans = glm::translate(glm::mat4(1), glm::vec3(translation.x, translation.y, 0.0f));
+        _encoder->setTransform(glm::value_ptr(trans));
+
+        auto itr = _textures.find(texture);
+        if(itr != _textures.end())
+        {
+            _encoder->setTexture(0, _textureUniform, itr->second->getHandle());
+        }
+
+        static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB
             | BGFX_STATE_WRITE_A
             | BGFX_STATE_MSAA
             | BGFX_STATE_BLEND_ALPHA
             ;
 
-        encoder->setState(state);
-        encoder->submit(_viewId.value(), _program->getHandle());
-
-        bgfx::end(encoder);
+        _encoder->setState(state);
+        _encoder->submit(_viewId.value(), _program->getHandle());
+        _rendered = true;
     }
 
-    void RmluiRender::EnableScissorRegion(bool enable) noexcept
-    {
-        SetScissorRegion(0, 0, 0, 0);
-    }
-
-    void RmluiRender::SetScissorRegion(int x, int y, int width, int height) noexcept
+    void RmluiRenderInterface::EnableScissorRegion(bool enable) noexcept
     {
         if (!_viewId)
         {
             return;
         }
-        bgfx::setViewScissor(_viewId.value(), x, y, width, height);
+        _scissorEnabled = enable;
+        if (enable)
+        {
+            bgfx::setViewScissor(_viewId.value(), _scissor.x, _scissor.y, _scissor.z, _scissor.w);
+        }
+        else
+        {
+            bgfx::setViewScissor(_viewId.value());
+        }
     }
 
-    const bgfx::EmbeddedShader RmluiRender::_embeddedShaders[] =
+    void RmluiRenderInterface::SetScissorRegion(int x, int y, int width, int height) noexcept
+    {
+        _scissor = glm::ivec4(x, y, width, height);
+        if (_scissorEnabled)
+        {
+            EnableScissorRegion(true);
+        }
+    }
+
+    const bgfx::EmbeddedShader RmluiRenderInterface::_embeddedShaders[] =
     {
         BGFX_EMBEDDED_SHADER(rmlui_basic_vertex),
         BGFX_EMBEDDED_SHADER(rmlui_basic_fragment),
         BGFX_EMBEDDED_SHADER_END()
     };
 
-    void RmluiRender::init(App& app)
+    void RmluiRenderInterface::init(App& app)
     {
         _program = std::make_unique<Program>("rmlui_basic", _embeddedShaders, rmlui_basic_vlayout);
         _layout = _program->getVertexLayout();
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+        _scissorEnabled = false;
+        _rendered = false;
+        _viewSetup = false;
     }
 
-    void RmluiRender::shutdown()
+    void RmluiRenderInterface::shutdown() noexcept
     {
         _program.reset();
         if (isValid(_textureUniform))
@@ -125,42 +239,64 @@ namespace darmok
         }
     }
 
-    void RmluiRender::beforeRender(bgfx::ViewId viewId) noexcept
+    void RmluiRenderInterface::beforeRender(bgfx::ViewId viewId) noexcept
     {
+        if (_encoder)
+        {
+            bgfx::end(_encoder.ptr());
+        }
+
         _viewId = viewId;
+
+        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+
+        _encoder = bgfx::begin();
+        _rendered = false;
+        _viewSetup = false;
+        _view = glm::mat4(1);
+
+        bgfx::setViewName(viewId, "RmlUI");
     }
 
-    void RmluiRender::afterRender() noexcept
+    bool RmluiRenderInterface::afterRender() noexcept
     {
+        if (_encoder)
+        {
+            bgfx::end(_encoder.ptr());
+            _encoder.reset();
+        }
         _viewId.reset();
+        SetTransform(nullptr);
+        return _rendered;
     }
 
-    RmluiSystem::RmluiSystem() noexcept
+    RmluiSystemInterface::RmluiSystemInterface() noexcept
         : _elapsedTime(0)
     {
     }
 
-    void RmluiSystem::init(App& app)
+    void RmluiSystemInterface::init(App& app)
     {
         _elapsedTime = 0;
     }
 
-    void RmluiSystem::update(float dt) noexcept
+    void RmluiSystemInterface::update(float dt) noexcept
     {
         _elapsedTime += dt;
     }
 
-    double RmluiSystem::GetElapsedTime()
+    double RmluiSystemInterface::GetElapsedTime()
     {
         return _elapsedTime;
     }
 
-    void RmluiDataFile::init(App& app)
+    void RmluiFileInterface::init(App& app)
     {
         _dataLoader = app.getAssets().getDataLoader();
     }
 
-    Rml::FileHandle RmluiDataFile::Open(const Rml::String& path) noexcept
+    Rml::FileHandle RmluiFileInterface::Open(const Rml::String& path) noexcept
     {
         try
         {
@@ -175,7 +311,7 @@ namespace darmok
         }
     }
 
-    OptionalRef<RmluiDataFile::Element> RmluiDataFile::find(Rml::FileHandle file) noexcept
+    OptionalRef<RmluiFileInterface::Element> RmluiFileInterface::find(Rml::FileHandle file) noexcept
     {
         auto itr = _elements.find(file);
         if (itr == _elements.end())
@@ -185,12 +321,12 @@ namespace darmok
         return itr->second;
     }
 
-    void RmluiDataFile::Close(Rml::FileHandle file) noexcept
+    void RmluiFileInterface::Close(Rml::FileHandle file) noexcept
     {
         _elements.erase(file);
     }
 
-    size_t RmluiDataFile::Read(void* buffer, size_t size, Rml::FileHandle file) noexcept
+    size_t RmluiFileInterface::Read(void* buffer, size_t size, Rml::FileHandle file) noexcept
     {
         auto elm = find(file);
         if (!elm)
@@ -207,7 +343,7 @@ namespace darmok
         return size;
     }
 
-    bool RmluiDataFile::Seek(Rml::FileHandle file, long offset, int origin) noexcept
+    bool RmluiFileInterface::Seek(Rml::FileHandle file, long offset, int origin) noexcept
     {
         auto elm = find(file);
         if (!elm)
@@ -235,7 +371,7 @@ namespace darmok
         return true;
     }
 
-    size_t RmluiDataFile::Tell(Rml::FileHandle file) noexcept
+    size_t RmluiFileInterface::Tell(Rml::FileHandle file) noexcept
     {
         auto elm = find(file);
         if (!elm)
@@ -245,7 +381,7 @@ namespace darmok
         return elm->position;
     }
 
-    size_t RmluiDataFile::Length(Rml::FileHandle file) noexcept
+    size_t RmluiFileInterface::Length(Rml::FileHandle file) noexcept
     {
         auto elm = find(file);
         if (!elm)
@@ -255,7 +391,7 @@ namespace darmok
         return elm->data.size();
     }
 
-    bool RmluiDataFile::LoadFile(const Rml::String& path, Rml::String& out_data) noexcept
+    bool RmluiFileInterface::LoadFile(const Rml::String& path, Rml::String& out_data) noexcept
     {
         try
         {

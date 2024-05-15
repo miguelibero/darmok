@@ -181,11 +181,8 @@ namespace darmok
 			bgfx::allocTransientVertexBuffer(&tvb, numVertices, layout);
 			bgfx::allocTransientIndexBuffer(&tib, numIndices, sizeof(ImDrawIdx) == 4);
 
-			ImDrawVert* verts = (ImDrawVert*)tvb.data;
-			bx::memCopy(verts, drawList->VtxBuffer.begin(), numVertices * sizeof(ImDrawVert));
-
-			ImDrawIdx* indices = (ImDrawIdx*)tib.data;
-			bx::memCopy(indices, drawList->IdxBuffer.begin(), numIndices * sizeof(ImDrawIdx));
+			bx::memCopy(tvb.data, drawList->VtxBuffer.begin(), numVertices * sizeof(ImDrawVert));
+			bx::memCopy(tib.data, drawList->IdxBuffer.begin(), numIndices * sizeof(ImDrawIdx));
 
 			bgfx::Encoder* encoder = bgfx::begin();
 

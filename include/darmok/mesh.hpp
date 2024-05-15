@@ -13,17 +13,26 @@ namespace darmok
 {
     class DataView;
 
+    struct MeshConfig final
+    {
+        bool dynamic = false;
+        bool index32 = false;
+    };
+
+    // TODO: decide if it should be split into a separate DynamicMesh, TransientMesh classes
     class Mesh final
     {
     public:
-        DLLEXPORT Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, bool dynamic = false) noexcept;
-        DLLEXPORT Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool dynamic = false) noexcept;
+        DLLEXPORT Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, MeshConfig config = {}) noexcept;
+        DLLEXPORT Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, MeshConfig config = {}) noexcept;
         DLLEXPORT ~Mesh() noexcept;
         DLLEXPORT Mesh(Mesh&& other) noexcept;
         DLLEXPORT Mesh& operator=(Mesh&& other) noexcept;
 
         Mesh(const Mesh& other) = delete;
         Mesh& operator=(const Mesh& other) = delete;
+
+        uint16_t getVertexHandle() const noexcept;
 
         DLLEXPORT void updateVertices(const DataView& data, size_t offset = 0);
         DLLEXPORT void updateIndices(const DataView& data, size_t offset = 0);

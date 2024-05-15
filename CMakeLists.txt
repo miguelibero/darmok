@@ -347,6 +347,9 @@ if(DARMOK_BUILD_RMLUI)
   find_package(RmlUi CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PUBLIC RmlCore)
   target_link_libraries(${LIB_NAME} PUBLIC debug RmlDebugger)
+  if(DARMOK_BUILD_SCRIPTING)
+    target_link_libraries(${LIB_NAME} PRIVATE RmlLua)
+  endif()
 endif()
 
 # entt

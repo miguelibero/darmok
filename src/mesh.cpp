@@ -7,17 +7,22 @@
 
 namespace darmok
 {
-	Mesh::Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool dynamic) noexcept
+	Mesh::Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, MeshConfig config) noexcept
 		: _layout(layout)
 		, _vertexBuffer{ bgfx::kInvalidHandle }
 		, _indexBuffer{ bgfx::kInvalidHandle }
 		, _vertexSize(vertices.size())
 		, _indexSize(indices.size())
-		, _dynamic(dynamic)
+		, _dynamic(config.dynamic)
 	{
-		if (dynamic)
+		uint64_t flags = 0;
+		if (config.index32)
 		{
-			uint64_t flags = BGFX_BUFFER_ALLOW_RESIZE;
+			flags |= BGFX_BUFFER_INDEX32;
+		}
+		if (_dynamic)
+		{
+			flags |= BGFX_BUFFER_ALLOW_RESIZE;
 			_vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout, flags).idx;
 			if (!indices.empty())
 			{
@@ -26,16 +31,16 @@ namespace darmok
 		}
 		else
 		{
-			_vertexBuffer = bgfx::createVertexBuffer(vertices.copyMem(), layout).idx;
+			_vertexBuffer = bgfx::createVertexBuffer(vertices.copyMem(), layout, flags).idx;
 			if (!indices.empty())
 			{
-				_indexBuffer = bgfx::createIndexBuffer(indices.copyMem()).idx;
+				_indexBuffer = bgfx::createIndexBuffer(indices.copyMem(), flags).idx;
 			}
 		}
 	}
 
-	Mesh::Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, bool dynamic) noexcept
-		: Mesh(layout, vertices, DataView(), dynamic)
+	Mesh::Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, MeshConfig config) noexcept
+		: Mesh(layout, vertices, DataView(), config)
 	{
 	}
 
@@ -99,6 +104,10 @@ namespace darmok
 		return *this;
 	}
 
+	uint16_t Mesh::getVertexHandle() const noexcept
+	{
+		return _vertexBuffer;
+	}
 
 	void Mesh::updateVertices(const DataView& data, size_t offset)
 	{
@@ -186,7 +195,7 @@ namespace darmok
 
 		writer.write(bgfx::Attrib::Normal, meshData.normals);
 		auto vertexData = writer.finish();
-		return std::make_shared<Mesh>(layout, DataView(vertexData), DataView(meshData.indices), cfg.dynamic);
+		return std::make_shared<Mesh>(layout, DataView(vertexData), DataView(meshData.indices), MeshConfig{ cfg.dynamic });
 	}
 
 	std::shared_ptr<Mesh> MeshCreator::createCube() noexcept

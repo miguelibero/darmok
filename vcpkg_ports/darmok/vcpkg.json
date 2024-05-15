@@ -17,21 +17,24 @@
       "name": "bgfx",
       "features": [ "multithreaded", "tools" ]
     },
+    "glfw3",
     "assimp",
     "cereal",
     "entt",
     "glm",
     "joltphysics",
     "lua",
+    "sol2",
     "nlohmann-json",
     "pugixml",
     {
       "name": "imgui",
       "features": ["freetype"]
     },
-    "rmlui",
-    "sol2",
-    "glfw3"
+    {
+      "name": "rmlui",
+      "features": ["freetype", "lua"]
+    }
   ],
   "features": {
     "samples": {
