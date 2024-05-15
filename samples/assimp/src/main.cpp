@@ -34,7 +34,7 @@ namespace
 		float _speed;
 	};
 
-	class ModelApp : public App
+	class AssimpSampleApp : public App
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
@@ -65,4 +65,4 @@ namespace
 	};
 }
 
-DARMOK_RUN_APP(ModelApp);
+DARMOK_RUN_APP(AssimpSampleApp);

@@ -16,20 +16,21 @@ namespace darmok
     class Mesh final
     {
     public:
-        Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, bool dynamic = false) noexcept;
-        Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool dynamic = false) noexcept;
-        ~Mesh() noexcept;
+        DLLEXPORT Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, bool dynamic = false) noexcept;
+        DLLEXPORT Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool dynamic = false) noexcept;
+        DLLEXPORT ~Mesh() noexcept;
+        DLLEXPORT Mesh(Mesh&& other) noexcept;
+        DLLEXPORT Mesh& operator=(Mesh&& other) noexcept;
+
         Mesh(const Mesh& other) = delete;
         Mesh& operator=(const Mesh& other) = delete;
-        Mesh(Mesh&& other) noexcept;
-        Mesh& operator=(Mesh&& other) noexcept;
 
-        void updateVertices(const DataView& data, size_t offset = 0);
-        void updateIndices(const DataView& data, size_t offset = 0);
+        DLLEXPORT void updateVertices(const DataView& data, size_t offset = 0);
+        DLLEXPORT void updateIndices(const DataView& data, size_t offset = 0);
         
-        std::string to_string() const noexcept;
-        void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const;
-        const bgfx::VertexLayout& getVertexLayout() const noexcept;
+        DLLEXPORT std::string to_string() const noexcept;
+        DLLEXPORT void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const;
+        DLLEXPORT const bgfx::VertexLayout& getVertexLayout() const noexcept;
     private:
         bgfx::VertexLayout _layout;
         uint16_t _vertexBuffer;
@@ -56,7 +57,6 @@ namespace darmok
         std::shared_ptr<Mesh> _mesh;
         std::shared_ptr<Material> _material;
     };
-
 
     struct MeshCreationConfig final
     {

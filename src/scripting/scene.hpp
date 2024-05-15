@@ -77,8 +77,7 @@ namespace darmok
 		template<typename T>
 		std::optional<LuaEntity> getEntity(const T& component) noexcept
 		{
-			auto& storage = getRegistry().storage<T>();
-			auto entity = entt::to_entity(storage, component);
+			auto entity = getEntity(component);
 			if (entity == entt::null)
 			{
 				return std::nullopt;

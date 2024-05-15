@@ -122,7 +122,7 @@ function(darmok_process_assets)
                 list(APPEND SHADER_INCLUDES ${ASSET_PATH_ABS})                  
             elseif(${ASSET_EXT} STREQUAL ".varyingdef")
                 list(APPEND VARYING_DEFS ${ASSET_PATH_ABS})  
-            elseif(${ASSET_EXT} STREQUAL ".layout.json")
+            elseif(${ASSET_EXT} STREQUAL ".vlayout.json")
                 list(APPEND VERTEX_LAYOUTS ${ASSET_PATH_ABS})
             elseif(EXISTS ${OZZ_CONFIG_PATH})
                 if(${ASSET_PATH_ABS} STREQUAL ${OZZ_CONFIG_PATH})
@@ -142,7 +142,7 @@ function(darmok_process_assets)
             _darmok_process_shader_asset(VERTEX ${ASSET_PATH})
         endforeach()
 
-        if(NOT "${VERTEX_LAYOUTS}" STREQUAL "")
+        if(VERTEX_LAYOUTS)
             darmok_process_asset(
                 FILES ${VERTEX_LAYOUTS}
                 ${SHADER_HEADER}

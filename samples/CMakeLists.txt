@@ -1,4 +1,5 @@
 add_subdirectory(imgui)
+add_subdirectory(rmlui)
 add_subdirectory(scene)
 add_subdirectory(assimp)
 add_subdirectory(pbr)

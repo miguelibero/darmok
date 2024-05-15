@@ -18,7 +18,7 @@ namespace
 {
 	using namespace darmok;
 
-	class PbrApp : public App
+	class PbrSampleApp : public App
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
@@ -94,4 +94,4 @@ namespace
 
 }
 
-DARMOK_RUN_APP(PbrApp);
+DARMOK_RUN_APP(PbrSampleApp);

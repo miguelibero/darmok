@@ -55,7 +55,7 @@ namespace darmok
 			{ KeyboardKey::Period, ImGuiKey_Period},
 			{ KeyboardKey::Slash, ImGuiKey_Slash},
 			{ KeyboardKey::Backslash, ImGuiKey_Backslash},
-			{ KeyboardKey::Tilde, ImGuiKey_GraveAccent},
+			{ KeyboardKey::GraveAccent, ImGuiKey_GraveAccent},
 		};
 		static bool first = true;
 

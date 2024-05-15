@@ -9,7 +9,7 @@ namespace
 {
 	using namespace darmok;
 
-	class OzzApp : public App
+	class OzzSampleApp : public App
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
@@ -33,4 +33,4 @@ namespace
 	};
 }
 
-DARMOK_RUN_APP(OzzApp);
+DARMOK_RUN_APP(OzzSampleApp);

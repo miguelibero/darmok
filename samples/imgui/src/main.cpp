@@ -9,13 +9,13 @@ namespace
 {
 	using namespace darmok;
 
-	class ExampleEmpty : public App, public IImguiRenderer
+	class ImguiSampleApp : public App, public IImguiRenderer
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
 		{
-			_textData = "hello darmok!";
 			App::init(args);
+			_textData = "hello darmok!";
 
 			// Enable debug text.
 			setDebugFlag(BGFX_DEBUG_TEXT);
@@ -55,4 +55,4 @@ namespace
 
 }
 
-DARMOK_RUN_APP(ExampleEmpty);
+DARMOK_RUN_APP(ImguiSampleApp);

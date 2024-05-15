@@ -17,6 +17,7 @@ namespace darmok
     protected:
         bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const override;
     private:
+        const static std::string _name;
         std::shared_ptr<Program> _program;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;

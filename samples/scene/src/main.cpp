@@ -97,7 +97,7 @@ namespace
 		float _speed;
 	};
 
-	class ExampleScene : public App
+	class SceneSampleApp : public App
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
@@ -210,4 +210,4 @@ namespace
 	};
 }
 
-DARMOK_RUN_APP(ExampleScene);
+DARMOK_RUN_APP(SceneSampleApp);

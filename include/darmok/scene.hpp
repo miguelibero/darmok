@@ -51,6 +51,13 @@ namespace darmok
         DLLEXPORT const EntityRegistry& getRegistry() const;
 
         template<typename T>
+		Entity getEntity(const T& component) noexcept
+		{
+			auto& storage = getRegistry().storage<T>();
+			return entt::to_entity(storage, component);
+		}
+
+        template<typename T>
         OptionalRef<T> getComponentInChildren(Entity entity) noexcept
         {
             auto& registry = getRegistry();

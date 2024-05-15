@@ -13,3 +13,4 @@ add_custom_target(${SAMPLE_NAME}
   SOURCES ${ASSETS}
   COMMENT "running darmok scripting executable"
 )
+set_target_properties(${SAMPLE_NAME} PROPERTIES FOLDER "darmok/samples")

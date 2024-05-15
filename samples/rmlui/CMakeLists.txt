@@ -1,8 +1,8 @@
-if(NOT ${DARMOK_BUILD_OZZ})
+if(NOT ${DARMOK_BUILD_RMLUI})
   return()
 endif()
 
-set(SAMPLE_NAME darmok-samples-ozz)
+set(SAMPLE_NAME darmok-samples-rmlui)
 
 darmok_process_assets(
   SOURCE_GROUP_NAME "Sample Asset Files"
@@ -18,7 +18,6 @@ target_compile_definitions(
   ${SAMPLE_NAME}
   PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1"
 )
-
 target_link_libraries(${SAMPLE_NAME} PUBLIC darmok::darmok)
 darmok_copy_linked_dlls(${SAMPLE_NAME})
 set_target_properties(${SAMPLE_NAME} PROPERTIES FOLDER "darmok/samples")

@@ -29,12 +29,18 @@ namespace darmok
 		_app = nullptr;
 	}
 
+	const std::string ForwardRenderer::_name = "Forward Renderer";
+
 	bgfx::ViewId ForwardRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
 	{
 		if (!_cam || _program == nullptr)
 		{
 			return viewId;
 		}
+
+		auto camEntity = _scene->getEntity(_cam.value());
+		std::string name = _name + " " + std::to_string(camEntity);
+		bgfx::setViewName(viewId, name.c_str());
 
 		_cam->beforeRenderView(encoder, viewId);
 

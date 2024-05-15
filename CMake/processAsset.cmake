@@ -28,11 +28,11 @@ function(darmok_process_asset)
         if(ARGS_HEADER)
             set(OUTPUT ${ARGS_OUTPUT_DIR}/${FILE_PATH_NAME_WE}.h)
             string(REPLACE "." "_" ARRAY_NAME "${FILE_PATH_NAME_WE}")
+            set(ARRAY_NAME "${ARGS_HEADER_VAR_PREFIX}${ARRAY_NAME}")
             bgfx_compile_binary_to_header(
                 INPUT_FILE ${FILE_PATH}
                 OUTPUT_FILE ${OUTPUT}
                 ARRAY_NAME ${ARRAY_NAME}
-                HEADER_VAR_PREFIX ${ARGS_HEADER_VAR_PREFIX}
             )
         else()
             set(OUTPUT ${ARGS_OUTPUT_DIR}/${FILE_PATH_NAME_WE}.json)

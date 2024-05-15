@@ -49,7 +49,6 @@ set(SOURCES
   ${SRC_DIR}/window.cpp
   ${SRC_DIR}/platform.cpp
   ${SRC_DIR}/app.cpp
-  ${SRC_DIR}/glfw.cpp
   ${SRC_DIR}/input.cpp
   ${SRC_DIR}/asset.cpp
   ${SRC_DIR}/scene.cpp
@@ -112,6 +111,19 @@ set(HEADERS
 
 set(SCRIPTING_SOURCES)
 
+if(NOT DARMOK_PLATFORM)
+    set(DARMOK_PLATFORM glfw)
+endif()
+  if(UNIX AND NOT APPLE)
+      set(DARMOK_PLATFORM_SUPPORT_WAYLAND 1)
+  else()
+      set(DARMOK_PLATFORM_SUPPORT_WAYLAND 0)
+  endif()
+
+if(DARMOK_PLATFORM STREQUAL "glfw")
+  list(APPEND SOURCES ${SRC_DIR}/glfw.cpp)
+endif()
+
 if(DARMOK_BUILD_IMGUI)
   list(APPEND SOURCES ${SRC_DIR}/imgui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/imgui.hpp)
@@ -125,6 +137,22 @@ if(DARMOK_BUILD_IMGUI)
     SOURCES_VAR IMGUI_ASSETS
   )
   list(APPEND ASSETS ${IMGUI_ASSETS})
+
+endif()
+
+if(DARMOK_BUILD_RMLUI)
+  list(APPEND SOURCES ${SRC_DIR}/rmlui.cpp)
+  list(APPEND HEADERS ${INCLUDE_DIR}/rmlui.hpp)
+
+  darmok_process_assets(
+    ASSETS "assets/rmlui"
+    HEADER_VAR_PREFIX "rmlui_"
+    HEADER_SHADER_OUTPUT_DIR "include/generated/rmlui/shaders"
+    HEADER_SHADER_INCLUDE_DIR "generated/rmlui/shaders"
+    SOURCE_GROUP_NAME "RmlUI Asset Files"
+    SOURCES_VAR RMLUI_ASSETS
+  )
+  list(APPEND ASSETS ${RMLUI_ASSETS})
 
 endif()
 
@@ -287,17 +315,6 @@ endif()
 find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
-if(NOT DARMOK_PLATFORM)
-    set(DARMOK_PLATFORM glfw)
-endif()
-if(NOT DARMOK_PLATFORM_SUPPORT_WAYLAND)
-    if(UNIX AND NOT APPLE)
-        set(DARMOK_PLATFORM_SUPPORT_WAYLAND 1)
-    else()
-        set(DARMOK_PLATFORM_SUPPORT_WAYLAND 0)
-    endif()
-endif()
-
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
     find_package(glfw3 CONFIG REQUIRED)
@@ -323,6 +340,13 @@ target_link_libraries(${LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bi
 if(DARMOK_BUILD_IMGUI)
   find_package(imgui CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PUBLIC imgui::imgui)
+endif()
+
+# imgui
+if(DARMOK_BUILD_RMLUI)
+  find_package(RmlUi CONFIG REQUIRED)
+  target_link_libraries(${LIB_NAME} PUBLIC RmlCore)
+  target_link_libraries(${LIB_NAME} PUBLIC debug RmlDebugger)
 endif()
 
 # entt

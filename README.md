@@ -80,6 +80,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * binary mesh serialization
 * unify use of std::allocator everywhere
 * sound
+* progressive data reader
+* async?
 
 ## Interesting Related Projects
 

@@ -1,187 +1,45 @@
-#include "platform.hpp"
+#include "glfw.hpp"
+
 #include "input.hpp"
 #include "window.hpp"
 #include <darmok/utils.hpp>
 #include <darmok/window.hpp>
 #include <darmok/app.hpp>
-#include <bx/platform.h>
+#include <stdexcept>
 
-#if DARMOK_PLATFORM_GLFW
-
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#if GLFW_VERSION_MINOR < 2
-#	error "GLFW 3.2 or later is required"
-#endif // GLFW_VERSION_MINOR < 2
-
-#if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#	if DARMOK_PLATFORM_SUPPORT_WAYLAND
-#		include <wayland-egl.h>
-#		define GLFW_EXPOSE_NATIVE_WAYLAND
-#	endif
-#		define GLFW_EXPOSE_NATIVE_X11
-#		define GLFW_EXPOSE_NATIVE_GLX
-#elif BX_PLATFORM_OSX
-#	define GLFW_EXPOSE_NATIVE_COCOA
-#	define GLFW_EXPOSE_NATIVE_NSGL
-#elif BX_PLATFORM_WINDOWS
-#	define GLFW_EXPOSE_NATIVE_WIN32
-#	define GLFW_EXPOSE_NATIVE_WGL
-#endif //
-#include <GLFW/glfw3native.h>
-
-#include <bgfx/platform.h>
-#include <bx/handlealloc.h>
-#include <bx/thread.h>
 #include <bx/mutex.h>
 
-#include "dbg.h"
+#include <GLFW/glfw3native.h>
 
 namespace darmok
 {
-	struct MainThreadEntry
-	{
-		std::vector<std::string> args;
-		RunAppCallback callback;
-		bool finished = false;
-
-		static int32_t threadFunc(bx::Thread* thread, void* userData);
-	};
-
-#pragma region PlatformImpl definition
-
-	class PlatformCmd;
-
-	class PlatformImpl final
-	{
-	public:
-		PlatformImpl() noexcept;
-
-		int run(const std::vector<std::string>& args, RunAppCallback callback) noexcept;
-		
-		void pushCmd(std::unique_ptr<PlatformCmd>&& cmd) noexcept;
-		std::unique_ptr<PlatformEvent> pollEvent() noexcept;
-
-		template<typename T, typename... A>
-		T& pushCmd(A&&... args) noexcept
-		{
-			auto ptr = new T(std::forward<A>(args)...);
-			pushCmd(std::unique_ptr<PlatformCmd>(ptr));
-			return *ptr;
-		}
-
-		GLFWwindow* getGlfwWindow() const noexcept;
-		PlatformEventQueue& getEvents() noexcept;
-		
-		[[nodiscard]] static void* getWindowHandle(GLFWwindow* window) noexcept;
-		static void destroyWindow(GLFWwindow* window) noexcept;
-		[[nodiscard]] static GLFWwindow* createWindow(const glm::uvec2& size, const char* title) noexcept;
-
-	private:
-		GLFWwindow* _window;
-		PlatformEventQueue _events;
-		MainThreadEntry _mte;
-		bx::Thread _thread;
-		std::queue<std::unique_ptr<PlatformCmd>> _cmds;
-		glm::uvec2 _windowSize;
-		glm::uvec2 _framebufferSize;
-
-		glm::vec2 normalizeScreenPoint(double x, double y) noexcept;
-
-		static uint8_t translateKeyModifiers(int mods) noexcept;
-		static KeyboardKey translateKey(int key) noexcept;
-		static MouseButton translateMouseButton(int button) noexcept;
-
-		struct GamepadAxisConfig final
-		{
-			GamepadStick stick;
-			size_t index;
-			bool reverse;
-		};
-
-		static std::optional<GamepadAxisConfig> translateGamepadAxis(int axis) noexcept;
-		static GamepadButton translateGamepadButton(int button) noexcept;
-
-		void updateGamepads() noexcept;
-		void updateGamepad(uint8_t num) noexcept;
-
-		void joystickCallback(int jid, int action) noexcept;
-		void errorCallback(int error, const char* description) noexcept;
-		void keyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods) noexcept;
-		void charCallback(GLFWwindow* window, uint32_t scancode) noexcept;
-		void scrollCallback(GLFWwindow* window, double dx, double dy) noexcept;
-		void cursorPosCallback(GLFWwindow* window, double x, double y) noexcept;
-		void cursorEnterCallback(GLFWwindow* window, int entered) noexcept;
-		void mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
-		void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
-		void framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
-
-		static void staticJoystickCallback(int jid, int action) noexcept;
-		static void staticErrorCallback(int error, const char* description) noexcept;
-		static void staticKeyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods) noexcept;
-		static void staticCharCallback(GLFWwindow* window, uint32_t scancode) noexcept;
-		static void staticScrollCallback(GLFWwindow* window, double dx, double dy) noexcept;
-		static void staticCursorPosCallback(GLFWwindow* window, double x, double y) noexcept;
-		static void staticCursorEnterCallback(GLFWwindow* window, int entered) noexcept;
-		static void staticMouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
-		static void staticWindowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
-		static void staticFramebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
-	};
-
-#pragma endregion PlatformImpl definition
-
 #pragma region PlatformCmds
 
-	class BX_NO_VTABLE PlatformCmd
+	PlatformCmd::PlatformCmd(Type type) noexcept
+		: _type(type)
 	{
-	public:
-		enum Type
-		{
-			CreateWindow,
-			DestroyWindow,
-			ChangeWindowMode,
-			ChangeWindowCursorMode,
-		};
+	}
 
-		PlatformCmd(Type type)
-			: _type(type)
-		{
-		}
-
-		static void process(PlatformCmd& cmd, PlatformImpl& plat);
-
-	private:
-		Type  _type;
-	};
-
-	class DestroyWindowCmd final : public PlatformCmd
+	DestroyWindowCmd::DestroyWindowCmd() noexcept
+		: PlatformCmd(DestroyWindow)
 	{
-	public:
-		DestroyWindowCmd()
-			: PlatformCmd(DestroyWindow)
-		{
-		}
+	}
 
-		void process(GLFWwindow* glfw)
-		{
-			glfwSetWindowShouldClose(glfw, true);
-		}
-	};
-
-	class ChangeWindowModeCmd final : public PlatformCmd
+	void DestroyWindowCmd::process(GLFWwindow* glfw) noexcept
 	{
-	public:
-		ChangeWindowModeCmd(WindowMode mode)
-			: PlatformCmd(ChangeWindowMode)
-			, _mode(mode)
-		{
-		}
+		glfwSetWindowShouldClose(glfw, true);
+	}
 
-		void process(PlatformEventQueue& events, GLFWwindow* glfw)
+	ChangeWindowModeCmd::ChangeWindowModeCmd(WindowMode mode) noexcept
+		: PlatformCmd(ChangeWindowMode)
+		, _mode(mode)
+	{
+	}
+
+	void ChangeWindowModeCmd::process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept
+	{
+		switch (_mode)
 		{
-			switch (_mode)
-			{
 			case WindowMode::Normal:
 			{
 				glfwSetWindowMonitor(glfw
@@ -230,48 +88,36 @@ namespace darmok
 				events.post<WindowModeEvent>(WindowMode::WindowedFullscreen);
 				break;
 			}
-			}
 		}
-	private:
-		WindowMode _mode;
-	};
+	}
 
-	class ChangeWindowCursorModeCmd final : public PlatformCmd
+	ChangeWindowCursorModeCmd::ChangeWindowCursorModeCmd(WindowCursorMode value) noexcept
+		: PlatformCmd(ChangeWindowCursorMode)
+		, _value(value)
 	{
-	public:
+	}
 
-		ChangeWindowCursorModeCmd(
-			WindowCursorMode value
-		) :
-			PlatformCmd(ChangeWindowCursorMode)
-			, _value(value)
+	void ChangeWindowCursorModeCmd::process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept
+	{
+		int v = 0;
+		switch (_value)
 		{
+		case WindowCursorMode::Normal:
+			v = GLFW_CURSOR_NORMAL;
+			break;
+		case WindowCursorMode::Disabled:
+			v = GLFW_CURSOR_DISABLED;
+			break;
+		case WindowCursorMode::Hidden:
+			v = GLFW_CURSOR_HIDDEN;
+			break;
+		default:
+			return;
 		}
+		glfwSetInputMode(glfw, GLFW_CURSOR, v);
+	}
 
-		void process(PlatformEventQueue& events, GLFWwindow* glfw)
-		{
-			int v = 0;
-			switch (_value)
-			{
-			case WindowCursorMode::Normal:
-				v = GLFW_CURSOR_NORMAL;
-				break;
-			case WindowCursorMode::Disabled:
-				v = GLFW_CURSOR_DISABLED;
-				break;
-			case WindowCursorMode::Hidden:
-				v = GLFW_CURSOR_HIDDEN;
-				break;
-			default:
-				return;
-			}
-			glfwSetInputMode(glfw, GLFW_CURSOR, v);
-		}
-	private:
-		WindowCursorMode _value;
-	};
-
-	void PlatformCmd::process(PlatformCmd& cmd, PlatformImpl& plat)
+	void PlatformCmd::process(PlatformCmd& cmd, PlatformImpl& plat) noexcept
 	{
 		// explicit cast to avoid virtual method for performance
 		switch (cmd._type)
@@ -411,9 +257,9 @@ namespace darmok
 		return modifiers;
 	}
 
-	static constexpr std::array<KeyboardKey, GLFW_KEY_LAST + 1> createTranslateKeys()
+	PlatformImpl::KeyMap PlatformImpl::createKeyMap() noexcept
 	{
-		std::array<KeyboardKey, GLFW_KEY_LAST + 1> v{};
+		KeyMap v{};
 		v[GLFW_KEY_ESCAPE] = KeyboardKey::Esc;
 		v[GLFW_KEY_ENTER] = KeyboardKey::Return;
 		v[GLFW_KEY_TAB] = KeyboardKey::Tab;
@@ -435,6 +281,11 @@ namespace darmok
 		v[GLFW_KEY_COMMA] = KeyboardKey::Comma;
 		v[GLFW_KEY_PERIOD] = KeyboardKey::Period;
 		v[GLFW_KEY_SLASH] = KeyboardKey::Slash;
+		v[GLFW_KEY_BACKSLASH] = KeyboardKey::Backslash;
+		v[GLFW_KEY_GRAVE_ACCENT] = KeyboardKey::GraveAccent;
+		v[GLFW_KEY_CAPS_LOCK] = KeyboardKey::CapsLock;
+		v[GLFW_KEY_NUM_LOCK] = KeyboardKey::NumLock;
+		v[GLFW_KEY_SCROLL_LOCK] = KeyboardKey::ScrollLock;
 		v[GLFW_KEY_F1] = KeyboardKey::F1;
 		v[GLFW_KEY_F2] = KeyboardKey::F2;
 		v[GLFW_KEY_F3] = KeyboardKey::F3;
@@ -496,15 +347,14 @@ namespace darmok
 		return v;
 	}
 
-	static const std::array<KeyboardKey, GLFW_KEY_LAST + 1>  _glfwKeys = createTranslateKeys();
-
 	KeyboardKey PlatformImpl::translateKey(int key) noexcept
 	{
-		if (key < 0 || key >= _glfwKeys.size())
+		static auto keyMap = createKeyMap();
+		if (key < 0 || key >= keyMap.size())
 		{
 			return KeyboardKey::Count;
 		}
-		return _glfwKeys[key];
+		return keyMap[key];
 	}
 
 	MouseButton PlatformImpl::translateMouseButton(int button) noexcept
@@ -565,9 +415,9 @@ namespace darmok
 		return buttons[button];
 	}
 
-	void PlatformImpl::errorCallback(int error, const char* description) noexcept
+	void PlatformImpl::errorCallback(int error, const char* description)
 	{
-		DBG("GLFW error %d: %s", error, description);
+		throw std::runtime_error(std::string("GLFW error ") + std::to_string(error) + ": " + std::string(description));
 	}
 
 	void PlatformImpl::updateGamepad(uint8_t num) noexcept
@@ -618,7 +468,7 @@ namespace darmok
 		}
 	}
 
-	int PlatformImpl::run(const std::vector<std::string>& args, RunAppCallback callback) noexcept
+	int PlatformImpl::run(const std::vector<std::string>& args, RunAppCallback callback)
 	{
 		_mte.args = args;
 		_mte.callback = callback;
@@ -627,7 +477,7 @@ namespace darmok
 
 		if (!glfwInit())
 		{
-			DBG("glfwInit failed!");
+			throw std::runtime_error("glfwInit failed!");
 			return bx::kExitFailure;
 		}
 
@@ -638,8 +488,8 @@ namespace darmok
 
 		if (!_window)
 		{
-			DBG("glfwCreateWindow failed!");
 			glfwTerminate();
+			throw std::runtime_error("glfwCreateWindow failed!");
 			return bx::kExitFailure;
 		}
 
@@ -896,5 +746,3 @@ namespace darmok
 #	endif // BX_PLATFORM_*
 	}
 }
-
-#endif // DARMOK_CONFIG_USE_GLFW
