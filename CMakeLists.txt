@@ -39,6 +39,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/processAssets.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/copyLinkedDlls.cmake)
 
 darmok_process_assets(
+  ASSETS "assets/shaders"
   HEADER_SHADER_OUTPUT_DIR "include/generated/shaders"
   HEADER_SHADER_INCLUDE_DIR "generated/shaders"
   SOURCE_GROUP_NAME "Embedded Shader Files"
@@ -114,6 +115,17 @@ set(SCRIPTING_SOURCES)
 if(DARMOK_BUILD_IMGUI)
   list(APPEND SOURCES ${SRC_DIR}/imgui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/imgui.hpp)
+
+  darmok_process_assets(
+    ASSETS "assets/imgui"
+    HEADER_VAR_PREFIX "imgui_"
+    HEADER_SHADER_OUTPUT_DIR "include/generated/imgui/shaders"
+    HEADER_SHADER_INCLUDE_DIR "generated/imgui/shaders"
+    SOURCE_GROUP_NAME "Imgui Asset Files"
+    SOURCES_VAR IMGUI_ASSETS
+  )
+  list(APPEND ASSETS ${IMGUI_ASSETS})
+
 endif()
 
 if(DARMOK_BUILD_ASSIMP)

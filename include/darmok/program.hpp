@@ -19,14 +19,14 @@ namespace darmok
 	public:
 		DLLEXPORT Program(const std::string& name, const bgfx::EmbeddedShader* embeddedShaders, std::string_view layoutJson);
 		DLLEXPORT Program(const bgfx::ProgramHandle& handle, const bgfx::VertexLayout& layout) noexcept;
-		DLLEXPORT Program(const Program& other) = delete;
-		DLLEXPORT Program& operator=(const Program& other) = delete;
 		DLLEXPORT ~Program() noexcept;
+		Program(const Program& other) = delete;
+		Program& operator=(const Program& other) = delete;
 
 		[[nodiscard]] DLLEXPORT const bgfx::ProgramHandle& getHandle() const noexcept;
 		[[nodiscard]] DLLEXPORT const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
-		DLLEXPORT static void readVertexLayoutJson(const nlohmann::json& json, bgfx::VertexLayout& layout) noexcept;
+		DLLEXPORT static void readVertexLayoutJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept;
 
 	private:
 		bgfx::ProgramHandle _handle;

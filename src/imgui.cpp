@@ -6,141 +6,105 @@
 #include <darmok/asset.hpp>
 #include <darmok/window.hpp>
 #include <bx/allocator.h>
+#include "generated/imgui/shaders/basic.vertex.h"
+#include "generated/imgui/shaders/basic.fragment.h"
+#include "generated/imgui/shaders/lod.vertex.h"
+#include "generated/imgui/shaders/lod.fragment.h"
+#include "generated/shaders/gui.layout.h"
 
 namespace darmok
 {
-	static const uint8_t _imguiAlphaBlendFlags = 0x01;
-
-	using ImguiKeyboardMap = std::array<ImGuiKey, to_underlying(KeyboardKey::Count)>;
-
-	static ImguiKeyboardMap createImguiKeyboardMap()
+	const bgfx::EmbeddedShader ImguiAppComponentImpl::_embeddedShaders[] =
 	{
-		ImguiKeyboardMap map;
+		BGFX_EMBEDDED_SHADER(imgui_basic_vertex),
+		BGFX_EMBEDDED_SHADER(imgui_basic_fragment),
+		BGFX_EMBEDDED_SHADER(imgui_lod_vertex),
+		BGFX_EMBEDDED_SHADER(imgui_lod_fragment),
+		BGFX_EMBEDDED_SHADER_END()
+	};
 
-		for (int32_t i = 0; i < (int32_t)KeyboardKey::Count; ++i)
+	const uint8_t ImguiAppComponentImpl::_imguiAlphaBlendFlags = 0x01;
+
+	const ImguiAppComponentImpl::KeyboardMap& ImguiAppComponentImpl::getKeyboardMap() noexcept
+	{
+		static KeyboardMap map
 		{
-			map[i] = ImGuiKey_None;
+			{ KeyboardKey::Esc, ImGuiKey_Escape},
+			{ KeyboardKey::Return, ImGuiKey_Enter},
+			{ KeyboardKey::Tab, ImGuiKey_Tab},
+			{ KeyboardKey::Space, ImGuiKey_Space},
+			{ KeyboardKey::Backspace, ImGuiKey_Backspace},
+			{ KeyboardKey::Up, ImGuiKey_UpArrow},
+			{ KeyboardKey::Down, ImGuiKey_DownArrow},
+			{ KeyboardKey::Left, ImGuiKey_LeftArrow},
+			{ KeyboardKey::Right, ImGuiKey_RightArrow},
+			{ KeyboardKey::Insert, ImGuiKey_Insert},
+			{ KeyboardKey::Delete, ImGuiKey_Delete},
+			{ KeyboardKey::Home, ImGuiKey_Home},
+			{ KeyboardKey::End, ImGuiKey_End},
+			{ KeyboardKey::PageUp, ImGuiKey_PageUp},
+			{ KeyboardKey::PageDown, ImGuiKey_PageDown},
+			{ KeyboardKey::Print, ImGuiKey_PrintScreen},
+			{ KeyboardKey::Plus, ImGuiKey_Equal},
+			{ KeyboardKey::Minus, ImGuiKey_Minus},
+			{ KeyboardKey::LeftBracket, ImGuiKey_LeftBracket},
+			{ KeyboardKey::RightBracket, ImGuiKey_RightBracket},
+			{ KeyboardKey::Semicolon, ImGuiKey_Semicolon},
+			{ KeyboardKey::Quote, ImGuiKey_Apostrophe},
+			{ KeyboardKey::Comma, ImGuiKey_Comma},
+			{ KeyboardKey::Period, ImGuiKey_Period},
+			{ KeyboardKey::Slash, ImGuiKey_Slash},
+			{ KeyboardKey::Backslash, ImGuiKey_Backslash},
+			{ KeyboardKey::Tilde, ImGuiKey_GraveAccent},
+		};
+		static bool first = true;
+
+		auto addRange = [](KeyboardKey start, KeyboardKey end, ImGuiKey imguiStart) {
+			auto j = to_underlying(imguiStart);
+			for (auto i = to_underlying(start); i < to_underlying(end); i++)
+			{
+				map[(KeyboardKey)i] = (ImGuiKey)j++;
+			}
+		};
+
+		if (first)
+		{
+			addRange(KeyboardKey::F1, KeyboardKey::F12, ImGuiKey_F1);
+			addRange(KeyboardKey::NumPad0, KeyboardKey::NumPad9, ImGuiKey_Keypad9);
+			addRange(KeyboardKey::Key0, KeyboardKey::Key9, ImGuiKey_0);
+			addRange(KeyboardKey::KeyA, KeyboardKey::KeyZ, ImGuiKey_A);
+			first = false;
 		}
-
-		map[to_underlying(KeyboardKey::Esc)] = ImGuiKey_Escape;
-		map[to_underlying(KeyboardKey::Return)] = ImGuiKey_Enter;
-		map[to_underlying(KeyboardKey::Tab)] = ImGuiKey_Tab;
-		map[to_underlying(KeyboardKey::Space)] = ImGuiKey_Space;
-		map[to_underlying(KeyboardKey::Backspace)] = ImGuiKey_Backspace;
-		map[to_underlying(KeyboardKey::Up)] = ImGuiKey_UpArrow;
-		map[to_underlying(KeyboardKey::Down)] = ImGuiKey_DownArrow;
-		map[to_underlying(KeyboardKey::Left)] = ImGuiKey_LeftArrow;
-		map[to_underlying(KeyboardKey::Right)] = ImGuiKey_RightArrow;
-		map[to_underlying(KeyboardKey::Insert)] = ImGuiKey_Insert;
-		map[to_underlying(KeyboardKey::Delete)] = ImGuiKey_Delete;
-		map[to_underlying(KeyboardKey::Home)] = ImGuiKey_Home;
-		map[to_underlying(KeyboardKey::End)] = ImGuiKey_End;
-		map[to_underlying(KeyboardKey::PageUp)] = ImGuiKey_PageUp;
-		map[to_underlying(KeyboardKey::PageDown)] = ImGuiKey_PageDown;
-		map[to_underlying(KeyboardKey::Print)] = ImGuiKey_PrintScreen;
-		map[to_underlying(KeyboardKey::Plus)] = ImGuiKey_Equal;
-		map[to_underlying(KeyboardKey::Minus)] = ImGuiKey_Minus;
-		map[to_underlying(KeyboardKey::LeftBracket)] = ImGuiKey_LeftBracket;
-		map[to_underlying(KeyboardKey::RightBracket)] = ImGuiKey_RightBracket;
-		map[to_underlying(KeyboardKey::Semicolon)] = ImGuiKey_Semicolon;
-		map[to_underlying(KeyboardKey::Quote)] = ImGuiKey_Apostrophe;
-		map[to_underlying(KeyboardKey::Comma)] = ImGuiKey_Comma;
-		map[to_underlying(KeyboardKey::Period)] = ImGuiKey_Period;
-		map[to_underlying(KeyboardKey::Slash)] = ImGuiKey_Slash;
-		map[to_underlying(KeyboardKey::Backslash)] = ImGuiKey_Backslash;
-		map[to_underlying(KeyboardKey::Tilde)] = ImGuiKey_GraveAccent;
-		map[to_underlying(KeyboardKey::F1)] = ImGuiKey_F1;
-		map[to_underlying(KeyboardKey::F2)] = ImGuiKey_F2;
-		map[to_underlying(KeyboardKey::F3)] = ImGuiKey_F3;
-		map[to_underlying(KeyboardKey::F4)] = ImGuiKey_F4;
-		map[to_underlying(KeyboardKey::F5)] = ImGuiKey_F5;
-		map[to_underlying(KeyboardKey::F6)] = ImGuiKey_F6;
-		map[to_underlying(KeyboardKey::F7)] = ImGuiKey_F7;
-		map[to_underlying(KeyboardKey::F8)] = ImGuiKey_F8;
-		map[to_underlying(KeyboardKey::F9)] = ImGuiKey_F9;
-		map[to_underlying(KeyboardKey::F10)] = ImGuiKey_F10;
-		map[to_underlying(KeyboardKey::F11)] = ImGuiKey_F11;
-		map[to_underlying(KeyboardKey::F12)] = ImGuiKey_F12;
-		map[to_underlying(KeyboardKey::NumPad0)] = ImGuiKey_Keypad0;
-		map[to_underlying(KeyboardKey::NumPad1)] = ImGuiKey_Keypad1;
-		map[to_underlying(KeyboardKey::NumPad2)] = ImGuiKey_Keypad2;
-		map[to_underlying(KeyboardKey::NumPad3)] = ImGuiKey_Keypad3;
-		map[to_underlying(KeyboardKey::NumPad4)] = ImGuiKey_Keypad4;
-		map[to_underlying(KeyboardKey::NumPad5)] = ImGuiKey_Keypad5;
-		map[to_underlying(KeyboardKey::NumPad6)] = ImGuiKey_Keypad6;
-		map[to_underlying(KeyboardKey::NumPad7)] = ImGuiKey_Keypad7;
-		map[to_underlying(KeyboardKey::NumPad8)] = ImGuiKey_Keypad8;
-		map[to_underlying(KeyboardKey::NumPad9)] = ImGuiKey_Keypad9;
-		map[to_underlying(KeyboardKey::Key0)] = ImGuiKey_0;
-		map[to_underlying(KeyboardKey::Key1)] = ImGuiKey_1;
-		map[to_underlying(KeyboardKey::Key2)] = ImGuiKey_2;
-		map[to_underlying(KeyboardKey::Key3)] = ImGuiKey_3;
-		map[to_underlying(KeyboardKey::Key4)] = ImGuiKey_4;
-		map[to_underlying(KeyboardKey::Key5)] = ImGuiKey_5;
-		map[to_underlying(KeyboardKey::Key6)] = ImGuiKey_6;
-		map[to_underlying(KeyboardKey::Key7)] = ImGuiKey_7;
-		map[to_underlying(KeyboardKey::Key8)] = ImGuiKey_8;
-		map[to_underlying(KeyboardKey::Key9)] = ImGuiKey_9;
-		map[to_underlying(KeyboardKey::KeyA)] = ImGuiKey_A;
-		map[to_underlying(KeyboardKey::KeyB)] = ImGuiKey_B;
-		map[to_underlying(KeyboardKey::KeyC)] = ImGuiKey_C;
-		map[to_underlying(KeyboardKey::KeyD)] = ImGuiKey_D;
-		map[to_underlying(KeyboardKey::KeyE)] = ImGuiKey_E;
-		map[to_underlying(KeyboardKey::KeyF)] = ImGuiKey_F;
-		map[to_underlying(KeyboardKey::KeyG)] = ImGuiKey_G;
-		map[to_underlying(KeyboardKey::KeyH)] = ImGuiKey_H;
-		map[to_underlying(KeyboardKey::KeyI)] = ImGuiKey_I;
-		map[to_underlying(KeyboardKey::KeyJ)] = ImGuiKey_J;
-		map[to_underlying(KeyboardKey::KeyK)] = ImGuiKey_K;
-		map[to_underlying(KeyboardKey::KeyL)] = ImGuiKey_L;
-		map[to_underlying(KeyboardKey::KeyM)] = ImGuiKey_M;
-		map[to_underlying(KeyboardKey::KeyN)] = ImGuiKey_N;
-		map[to_underlying(KeyboardKey::KeyO)] = ImGuiKey_O;
-		map[to_underlying(KeyboardKey::KeyP)] = ImGuiKey_P;
-		map[to_underlying(KeyboardKey::KeyQ)] = ImGuiKey_Q;
-		map[to_underlying(KeyboardKey::KeyR)] = ImGuiKey_R;
-		map[to_underlying(KeyboardKey::KeyS)] = ImGuiKey_S;
-		map[to_underlying(KeyboardKey::KeyT)] = ImGuiKey_T;
-		map[to_underlying(KeyboardKey::KeyU)] = ImGuiKey_U;
-		map[to_underlying(KeyboardKey::KeyV)] = ImGuiKey_V;
-		map[to_underlying(KeyboardKey::KeyW)] = ImGuiKey_W;
-		map[to_underlying(KeyboardKey::KeyX)] = ImGuiKey_X;
-		map[to_underlying(KeyboardKey::KeyY)] = ImGuiKey_Y;
-		map[to_underlying(KeyboardKey::KeyZ)] = ImGuiKey_Z;
-
 		return map;
 	}
 
-	using ImguiGamepadMap = std::array<ImGuiKey, to_underlying(GamepadButton::Count)>;
 
-
-	static ImguiGamepadMap createImguiGamepadMap()
+	const ImguiAppComponentImpl::GamepadMap& ImguiAppComponentImpl::getGamepadMap() noexcept
 	{
-		ImguiGamepadMap map;
-		map[to_underlying(GamepadButton::None)] = ImGuiKey_None;
-		map[to_underlying(GamepadButton::Start)] = ImGuiKey_GamepadStart;
-		map[to_underlying(GamepadButton::Back)] = ImGuiKey_GamepadBack;
-		map[to_underlying(GamepadButton::Y)] = ImGuiKey_GamepadFaceUp;
-		map[to_underlying(GamepadButton::A)] = ImGuiKey_GamepadFaceDown;
-		map[to_underlying(GamepadButton::X)] = ImGuiKey_GamepadFaceLeft;
-		map[to_underlying(GamepadButton::B)] = ImGuiKey_GamepadFaceRight;
-		map[to_underlying(GamepadButton::Up)] = ImGuiKey_GamepadDpadUp;
-		map[to_underlying(GamepadButton::Down)] = ImGuiKey_GamepadDpadDown;
-		map[to_underlying(GamepadButton::Left)] = ImGuiKey_GamepadDpadLeft;
-		map[to_underlying(GamepadButton::Right)] = ImGuiKey_GamepadDpadRight;
-		map[to_underlying(GamepadButton::ShoulderL)] = ImGuiKey_GamepadL1;
-		map[to_underlying(GamepadButton::ShoulderR)] = ImGuiKey_GamepadR1;
-		map[to_underlying(GamepadButton::ThumbL)] = ImGuiKey_GamepadL3;
-		map[to_underlying(GamepadButton::ThumbR)] = ImGuiKey_GamepadR3;
-		map[to_underlying(GamepadButton::Guide)] = ImGuiKey_None;
+		static GamepadMap map
+		{
+			{ GamepadButton::None, ImGuiKey_None },
+			{ GamepadButton::Start, ImGuiKey_GamepadStart },
+			{ GamepadButton::Back, ImGuiKey_GamepadBack },
+			{ GamepadButton::Y, ImGuiKey_GamepadFaceUp },
+			{ GamepadButton::A, ImGuiKey_GamepadFaceDown },
+			{ GamepadButton::X, ImGuiKey_GamepadFaceLeft },
+			{ GamepadButton::B, ImGuiKey_GamepadFaceRight },
+			{ GamepadButton::Up, ImGuiKey_GamepadDpadUp },
+			{ GamepadButton::Down, ImGuiKey_GamepadDpadDown },
+			{ GamepadButton::Left, ImGuiKey_GamepadDpadLeft },
+			{ GamepadButton::Right, ImGuiKey_GamepadDpadRight },
+			{ GamepadButton::ShoulderL, ImGuiKey_GamepadL1 },
+			{ GamepadButton::ShoulderR, ImGuiKey_GamepadR1 },
+			{ GamepadButton::ThumbL, ImGuiKey_GamepadL3 },
+			{ GamepadButton::ThumbR, ImGuiKey_GamepadR3 },
+			{ GamepadButton::Guide, ImGuiKey_None },
+		};
 
 		return map;
 	}
 
-	static const ImguiKeyboardMap _imguiKeyboardMap = createImguiKeyboardMap();
-	static const ImguiGamepadMap _imguiGamepadMap = createImguiGamepadMap();
-
-	void* imguiMemAlloc(size_t size, void* userData)
+	void* ImguiAppComponentImpl::memAlloc(size_t size, void* userData) noexcept
 	{
 		if (userData == nullptr)
 		{
@@ -150,7 +114,7 @@ namespace darmok
 		return bx::alloc(alloc, size);
 	}
 
-	void imguiMemFree(void* ptr, void* userData)
+	void ImguiAppComponentImpl::memFree(void* ptr, void* userData) noexcept
 	{
 		if (userData == nullptr)
 		{
@@ -160,21 +124,21 @@ namespace darmok
 		bx::free(alloc, ptr);
 	}
 
-	inline bool checkAvailTransientBuffers(uint32_t numVertices, const bgfx::VertexLayout& layout, uint32_t numIndices)
+	inline bool ImguiAppComponentImpl::checkAvailTransientBuffers(uint32_t numVertices, const bgfx::VertexLayout& layout, uint32_t numIndices) noexcept
 	{
 		return numVertices == bgfx::getAvailTransientVertexBuffer(numVertices, layout)
 			&& (0 == numIndices || numIndices == bgfx::getAvailTransientIndexBuffer(numIndices))
 			;
 	}
 
-	void ImguiAppComponentImpl::render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData) const
+	bool ImguiAppComponentImpl::render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData) const noexcept
 	{
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
 		int fb_width = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
 		int fb_height = (int)(drawData->DisplaySize.y * drawData->FramebufferScale.y);
 		if (fb_width <= 0 || fb_height <= 0)
 		{
-			return;
+			return false;
 		}
 
 		bgfx::setViewName(viewId, "ImGui");
@@ -196,7 +160,7 @@ namespace darmok
 		const ImVec2 clipPos = drawData->DisplayPos;       // (0,0) unless using multi-viewports
 		const ImVec2 clipScale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
-		auto& layout = _program->getVertexLayout();
+		auto& layout = _basicProgram->getVertexLayout();
 
 		// Render command lists
 		for (int32_t ii = 0, num = drawData->CmdListsCount; ii < num; ++ii)
@@ -240,26 +204,27 @@ namespace darmok
 						;
 
 					bgfx::TextureHandle th = texture;
-					bgfx::ProgramHandle program = _program->getHandle();
+					bgfx::ProgramHandle program = _basicProgram->getHandle();
 
 					if (NULL != cmd->TextureId)
 					{
 						union { ImTextureID ptr; struct { bgfx::TextureHandle handle; uint8_t flags; uint8_t mip; } s; } texture = { cmd->TextureId };
 						state |= 0 != (_imguiAlphaBlendFlags & texture.s.flags)
-							? BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
+							? BGFX_STATE_BLEND_ALPHA
 							: BGFX_STATE_NONE
 							;
 						th = texture.s.handle;
-						if (0 != texture.s.mip)
+						auto mipEnabled = 0 != texture.s.mip;
+						if (mipEnabled)
 						{
-							const float lodEnabled[4] = { float(texture.s.mip), 1.0f, 0.0f, 0.0f };
-							bgfx::setUniform(_imageLodEnabledUniform, lodEnabled);
-							program = _imageProgram->getHandle();
+							program = _lodProgram->getHandle();
+							const float lodEnabled[4] = { float(texture.s.mip), mipEnabled ? 1.0F : 0.0F, 0.0F, 0.0F };
+							bgfx::setUniform(_lodEnabledUniform, lodEnabled);
 						}
 					}
 					else
 					{
-						state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
+						state |= BGFX_STATE_BLEND_ALPHA;
 					}
 
 					// Project scissor/clipping rectangles into framebuffer space
@@ -292,13 +257,15 @@ namespace darmok
 
 			bgfx::end(encoder);
 		}
+
+		return true;
 	}
 
 	ImguiAppComponentImpl::ImguiAppComponentImpl(IImguiRenderer& renderer, float fontSize)
 		: _renderer(renderer)
 		, _texture{ bgfx::kInvalidHandle }
 		, _textureUniform{ bgfx::kInvalidHandle }
-		, _imageLodEnabledUniform{ bgfx::kInvalidHandle }
+		, _lodEnabledUniform{ bgfx::kInvalidHandle }
 	{
 		IMGUI_CHECKVERSION();
 	}
@@ -306,11 +273,11 @@ namespace darmok
 	void ImguiAppComponentImpl::init(App& app)
 	{
 		_app = app;
-		ImGui::SetAllocatorFunctions(imguiMemAlloc, imguiMemFree, &app.getAssets().getAllocator());
+		ImGui::SetAllocatorFunctions(memAlloc, memFree, &app.getAssets().getAllocator());
 
-		_program = app.getAssets().getStandardProgramLoader()(StandardProgramType::Gui);
-		_imageProgram = app.getAssets().getStandardProgramLoader()(StandardProgramType::GuiImage);;
-		_imageLodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
+		_basicProgram = std::make_unique<Program>("imgui_basic", _embeddedShaders, gui_layout);
+		_lodProgram = std::make_unique<Program>("imgui_lod", _embeddedShaders, gui_layout);
+		_lodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
 		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
 		_imgui = ImGui::CreateContext();
@@ -359,34 +326,34 @@ namespace darmok
 		ImGui::SetCurrentContext(nullptr);
 	}
 
-	void ImguiAppComponentImpl::shutdown()
+	void ImguiAppComponentImpl::shutdown() noexcept
 	{
 		ImGui::DestroyContext(_imgui);
 		bgfx::destroy(_textureUniform);
-		bgfx::destroy(_imageLodEnabledUniform);
+		bgfx::destroy(_lodEnabledUniform);
 	}
 
-	void ImguiAppComponentImpl::updateLogic(float dt)
+	void ImguiAppComponentImpl::updateLogic(float dt) noexcept
 	{
 		ImGui::SetCurrentContext(_imgui);
-
 		updateInput(dt);
-
 		ImGui::SetCurrentContext(nullptr);
 	}
 
-	void ImguiAppComponentImpl::render(bgfx::ViewId viewId) const
+	bool ImguiAppComponentImpl::render(bgfx::ViewId viewId) const noexcept
 	{
 		ImGui::SetCurrentContext(_imgui);
 
 		beginFrame();
 		_renderer.imguiRender();
-		endFrame(viewId);
+		auto rendered = endFrame(viewId);
 
 		ImGui::SetCurrentContext(nullptr);
+
+		return rendered;
 	}
 
-	void ImguiAppComponentImpl::updateInput(float dt)
+	void ImguiAppComponentImpl::updateInput(float dt) noexcept
 	{
 		if (!_app.hasValue())
 		{
@@ -421,30 +388,30 @@ namespace darmok
 		io.AddKeyEvent(ImGuiMod_Ctrl, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Ctrl)));
 		io.AddKeyEvent(ImGuiMod_Alt, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Alt)));
 		io.AddKeyEvent(ImGuiMod_Super, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Meta)));
-		for (int32_t i = 0; i < _imguiKeyboardMap.size(); ++i)
+		for (auto& elm : getKeyboardMap())
 		{
-			io.AddKeyEvent(_imguiKeyboardMap[i], kb.getKey(KeyboardKey(i)));
-			io.SetKeyEventNativeData(_imguiKeyboardMap[i], 0, 0, i);
+			io.AddKeyEvent(elm.second, kb.getKey(elm.first));
+			io.SetKeyEventNativeData(elm.second, 0, 0, (int)elm.first);
 		}
 		for (auto& gamepad : input.getGamepads())
 		{
-			for (int32_t i = 0; i < _imguiGamepadMap.size(); ++i)
+			for (auto& elm : getGamepadMap())
 			{
-				io.AddKeyEvent(_imguiGamepadMap[i], gamepad.getButton(GamepadButton(i)));
-				io.SetKeyEventNativeData(_imguiGamepadMap[i], 0, 0, i);
+				io.AddKeyEvent(elm.second, gamepad.getButton(elm.first));
+				io.SetKeyEventNativeData(elm.second, 0, 0, (int)elm.first);
 			}
 		}
 	}
 
-	void ImguiAppComponentImpl::beginFrame() const
+	void ImguiAppComponentImpl::beginFrame() const noexcept
 	{
 		ImGui::NewFrame();
 	}
 
-	void ImguiAppComponentImpl::endFrame(bgfx::ViewId viewId) const
+	bool ImguiAppComponentImpl::endFrame(bgfx::ViewId viewId) const noexcept
 	{
 		ImGui::Render();
-		render(viewId, _texture, ImGui::GetDrawData());
+		return render(viewId, _texture, ImGui::GetDrawData());
 	}
 
 	ImguiAppComponent::ImguiAppComponent(IImguiRenderer& renderer, float fontSize) noexcept
@@ -457,19 +424,22 @@ namespace darmok
 		_impl->init(app);
 	}
 
-	void ImguiAppComponent::shutdown()
+	void ImguiAppComponent::shutdown() noexcept
 	{
 		_impl->shutdown();
 	}
 
-	void ImguiAppComponent::updateLogic(float dt)
+	void ImguiAppComponent::updateLogic(float dt) noexcept
 	{
 		_impl->updateLogic(dt);
 	}
 
-	bgfx::ViewId ImguiAppComponent::render(bgfx::ViewId viewId) const
+	bgfx::ViewId ImguiAppComponent::render(bgfx::ViewId viewId) const noexcept
 	{
-		_impl->render(viewId);
-		return ++viewId;
+		if (_impl->render(viewId))
+		{
+			++viewId;
+		}
+		return viewId;
 	}
 }

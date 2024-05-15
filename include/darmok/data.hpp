@@ -98,6 +98,9 @@ namespace darmok
         DLLEXPORT Data& operator=(const DataView& other) noexcept;
         DLLEXPORT Data(Data&& other) noexcept;
         DLLEXPORT Data& operator=(Data&& other) noexcept;
+        DLLEXPORT Data(std::string_view str, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
+        DLLEXPORT Data& operator=(std::string_view str) noexcept;
+        DLLEXPORT Data& operator=(const char* str) noexcept;
         DLLEXPORT operator DataView() const;
         
         [[nodiscard]] DLLEXPORT void* ptr() const noexcept;

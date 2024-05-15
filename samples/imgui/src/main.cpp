@@ -2,15 +2,19 @@
 
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
+#include <darmok/data.hpp>
 #include <bgfx/bgfx.h>
 
 namespace
 {
-	class ExampleEmpty : public darmok::App, public darmok::IImguiRenderer
+	using namespace darmok;
+
+	class ExampleEmpty : public App, public IImguiRenderer
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
 		{
+			_textData = "hello darmok!";
 			App::init(args);
 
 			// Enable debug text.
@@ -20,17 +24,17 @@ namespace
 
 		void imguiRender()
 		{
-			std::string text;
-			text.resize(255);
-
 			ImGui::TextWrapped("lala");
-			ImGui::InputText("text", const_cast<char*>(text.c_str()), text.size());
+			ImGui::InputText("text", static_cast<char*>(_textData.ptr()), _textData.size());
 		}
 
 	protected:
+		Data _textData = Data(1024);
 
 		bgfx::ViewId render(bgfx::ViewId viewId) const override
 		{
+			viewId = App::render(viewId);
+
 			const bgfx::Stats* stats = bgfx::getStats();
 
 			bgfx::dbgTextPrintf(0, 1, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");
@@ -45,7 +49,7 @@ namespace
 				, stats->textHeight
 			);
 
-			return ++viewId;
+			return viewId;
 		}
 	};
 

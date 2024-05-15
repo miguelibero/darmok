@@ -10,8 +10,6 @@
 #include "embedded_shader.hpp"
 #include "generated/shaders/gui.vertex.h"
 #include "generated/shaders/gui.fragment.h"
-#include "generated/shaders/gui_image.vertex.h"
-#include "generated/shaders/gui_image.fragment.h"
 #include "generated/shaders/gui.layout.h"
 #include "generated/shaders/unlit.vertex.h"
 #include "generated/shaders/unlit.fragment.h"
@@ -34,7 +32,7 @@ namespace darmok
 			bgfx::createEmbeddedShader(embeddedShaders, renderer, (name + "_fragment").c_str()),
 			true
 		);
-		auto json = nlohmann::json::parse(layoutJson);
+		auto json = nlohmann::ordered_json::parse(layoutJson);
 		Program::readVertexLayoutJson(json, _layout);
 	}
 
@@ -153,7 +151,7 @@ namespace darmok
 		return bgfx::AttribType::Count;
 	}
 
-	void Program::readVertexLayoutJson(const nlohmann::json& json, bgfx::VertexLayout& layout) noexcept
+	void Program::readVertexLayoutJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept
 	{
 		layout.begin();
 		for (auto& elm : json.items())

@@ -23,9 +23,9 @@ namespace darmok
 		DLLEXPORT ImguiAppComponent(IImguiRenderer& renderer, float fontSize = 18.0f) noexcept;
 
 		void init(App& app) override;
-		void shutdown() override;
-		bgfx::ViewId render(bgfx::ViewId viewId) const override;
-		void updateLogic(float dt) override;
+		void shutdown() noexcept override;
+		bgfx::ViewId render(bgfx::ViewId viewId) const noexcept override;
+		void updateLogic(float dt) noexcept override;
 	private:
 		std::unique_ptr<ImguiAppComponentImpl> _impl;
     };

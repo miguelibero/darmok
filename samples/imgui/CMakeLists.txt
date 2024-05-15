@@ -15,3 +15,4 @@ target_compile_definitions(
 )
 target_link_libraries(${SAMPLE_NAME} PUBLIC darmok::darmok)
 darmok_copy_linked_dlls(${SAMPLE_NAME})
+set_target_properties(darmok-samples-imgui PROPERTIES FOLDER "darmok/samples")

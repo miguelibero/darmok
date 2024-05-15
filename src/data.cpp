@@ -270,7 +270,12 @@ namespace darmok
         auto endPtr = static_cast<uint8_t*>(end());
         for (; ptr < endPtr; ptr += data.size())
         {
-            std::memcpy(ptr, data.ptr(), data.size());
+            auto ptrSize = data.size();
+            if (ptr + ptrSize > endPtr)
+            {
+                ptrSize = endPtr - ptr;
+            }
+            std::memcpy(ptr, data.ptr(), ptrSize);
         }
     }
 
@@ -318,6 +323,29 @@ namespace darmok
         other._ptr = nullptr;
         other._size = 0;
         return *this;
+    }
+
+    Data::Data(std::string_view str, const OptionalRef<bx::AllocatorI>& alloc) noexcept
+        : Data(str.size() + 1, alloc)
+    {
+        *this = str;
+    }
+
+    Data& Data::operator=(std::string_view str) noexcept
+    {
+        auto strSize = str.size() + 1;
+        if (_size < strSize)
+        {
+            resize(strSize);
+        }
+        bx::memCopy(_ptr, str.data(), str.size());
+        static_cast<std::string_view::pointer>(_ptr)[str.size()] = 0;
+        return *this;
+    }
+
+    Data& Data::operator=(const char* str) noexcept
+    {
+        return operator=(std::string_view(str));
     }
 
     Data::operator DataView() const

@@ -1,7 +1,7 @@
 set(CMAKE_MOD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 include(${CMAKE_MOD_DIR}/utils.cmake)
 include(${CMAKE_MOD_DIR}/processShader.cmake)
-include(${CMAKE_MOD_DIR}/processVertexLayout.cmake)
+include(${CMAKE_MOD_DIR}/processAsset.cmake)
 include(${CMAKE_MOD_DIR}/processOzzSkeleton.cmake)
 
 # darmok_process_assets(
@@ -9,6 +9,7 @@ include(${CMAKE_MOD_DIR}/processOzzSkeleton.cmake)
 #   ASSETS_EXCLUDES files or patterns
 #   ASSETS_INCLUDES files or patterns
 # 	OUTPUT_DIR directory
+#   HEADER_VAR_PREFIX prefix
 # 	HEADER_SHADER_OUTPUT_DIR directory
 # 	HEADER_SHADER_INCLUDE_DIR directory
 #   SOURCES_VAR variable
@@ -16,7 +17,7 @@ include(${CMAKE_MOD_DIR}/processOzzSkeleton.cmake)
 # )
 function(darmok_process_assets)
     set(OPTIONS "")
-    set(ONE_VALUE_ARGS OUTPUT_DIR HEADER_SHADER_OUTPUT_DIR HEADER_SHADER_INCLUDE_DIR SOURCES_VAR SOURCE_GROUP_NAME)
+    set(ONE_VALUE_ARGS OUTPUT_DIR HEADER_SHADER_OUTPUT_DIR HEADER_VAR_PREFIX HEADER_SHADER_INCLUDE_DIR SOURCES_VAR SOURCE_GROUP_NAME)
     set(MULTI_VALUE_ARGS ASSETS ASSETS_EXCLUDES ASSETS_INCLUDES)
     cmake_parse_arguments(ARGS "${OPTIONS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" "${ARGN}")
 
@@ -54,6 +55,7 @@ function(darmok_process_assets)
             ${SHADER_HEADER}
             SHADERS ${SHADER_PATH}
             VARYING_DEF ${VARYINGDEF_PATH}
+            HEADER_VAR_PREFIX ${ARGS_HEADER_VAR_PREFIX}
             HEADER_INCLUDE_DIR ${ARGS_HEADER_SHADER_INCLUDE_DIR}
             OUTPUT_DIR ${SHADER_OUTPUT_DIR}
         )
@@ -141,9 +143,10 @@ function(darmok_process_assets)
         endforeach()
 
         if(NOT "${VERTEX_LAYOUTS}" STREQUAL "")
-            darmok_process_vertex_layout(
-                LAYOUTS ${VERTEX_LAYOUTS}
+            darmok_process_asset(
+                FILES ${VERTEX_LAYOUTS}
                 ${SHADER_HEADER}
+                HEADER_VAR_PREFIX ${ARGS_HEADER_VAR_PREFIX}
                 OUTPUT_DIR ${SHADER_OUTPUT_DIR}
             )
             list(APPEND ASSET_SOURCES ${VERTEX_LAYOUTS})
