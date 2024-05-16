@@ -2,6 +2,8 @@
 
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
+#include <string>
+#include <glm/glm.hpp>
 
 namespace Rml
 {
@@ -15,7 +17,8 @@ namespace darmok
     class RmluiAppComponent final : public AppComponent
     {
     public:
-		DLLEXPORT RmluiAppComponent() noexcept;
+		DLLEXPORT RmluiAppComponent(const std::string& name) noexcept;
+		DLLEXPORT RmluiAppComponent(const std::string& name, const glm::uvec2& size) noexcept;
 
 		DLLEXPORT OptionalRef<Rml::Context> getContext() const noexcept;
 

@@ -105,6 +105,13 @@ namespace darmok
 	{
 		addBindings();
 
+		for (auto& elm : _sharedComponents)
+		{
+			if (auto comp = elm.second.lock())
+			{
+				comp->init(app);
+			}
+		}
 		for (auto& component : _components)
 		{
 			component->init(app);
@@ -120,13 +127,29 @@ namespace darmok
 		{
 			component->shutdown();
 		}
-		_input.getImpl().clearBindings();
+		for (auto& elm : _sharedComponents)
+		{
+			if (auto comp = elm.second.lock())
+			{
+				comp->shutdown();
+			}
+		}
 		_components.clear();
+		_sharedComponents.clear();
+		_input.getImpl().clearBindings();
 		_app.reset();
 	}
 
 	void AppImpl::updateLogic(float deltaTime)
 	{
+		cleanSharedComponents();
+		for (auto& elm : _sharedComponents)
+		{
+			if (auto comp = elm.second.lock())
+			{
+				comp->updateLogic(deltaTime);
+			}
+		}
 		for (auto& component : _components)
 		{
 			component->updateLogic(deltaTime);
@@ -136,6 +159,13 @@ namespace darmok
 
 	bgfx::ViewId AppImpl::render(bgfx::ViewId viewId) const
 	{
+		for (auto& elm : _sharedComponents)
+		{
+			if (auto comp = elm.second.lock())
+			{
+				viewId = comp->render(viewId);
+			}
+		}
 		for (auto& component : _components)
 		{
 			viewId = component->render(viewId);
@@ -245,6 +275,30 @@ namespace darmok
 		};
 		_input.processBindings();
 		return _exit;
+	}
+	std::shared_ptr<AppComponent> AppImpl::getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback)
+	{
+		cleanSharedComponents();
+		auto itr = _sharedComponents.find(typeHash);
+		if (itr != _sharedComponents.end())
+		{
+			if (auto comp = itr->second.lock())
+			{
+				return comp;
+			}
+		}
+		auto component = std::shared_ptr<AppComponent>(callback());
+		auto r = _sharedComponents.emplace(typeHash, component);
+		if (_app.hasValue())
+		{
+			component->init(_app.value());
+		}
+		return component;
+	}
+
+	void AppImpl::cleanSharedComponents() noexcept
+	{
+
 	}
 
 	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
@@ -414,6 +468,8 @@ namespace darmok
 			return false;
 		}
 
+		// TODO: decide if impl updateLogic and render should go inside app methods
+
 		_impl->update([this](float deltaTime) {
 			updateLogic(deltaTime);
 			_impl->updateLogic(deltaTime);
@@ -430,6 +486,10 @@ namespace darmok
 		return true;
 	}
 
+	std::shared_ptr<AppComponent> App::getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback)
+	{
+		return _impl->getSharedComponent(typeHash, callback);
+	}
 
 	void App::updateLogic(float deltaTime)
 	{

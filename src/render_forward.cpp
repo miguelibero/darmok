@@ -62,7 +62,6 @@ namespace darmok
 			}
 
 			rendered = true;
-			_cam->beforeRenderEntity(entity, encoder, viewId);
 
 			const void* transMtx = nullptr;
 			auto trans = registry.try_get<const Transform>(entity);
@@ -71,6 +70,8 @@ namespace darmok
 				transMtx = glm::value_ptr(trans->getWorldMatrix());
 			}
 			encoder.setTransform(transMtx);
+
+			_cam->beforeRenderEntity(entity, encoder, viewId);
 
 			uint64_t state = mat->beforeRender(encoder, viewId);
 			mesh->render(encoder, viewId);

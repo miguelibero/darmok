@@ -122,11 +122,11 @@ namespace darmok
     {
         if (transform == nullptr)
         {
-            _view = glm::mat4(1);
+            _transform = glm::mat4(1);
         }
         else
         {
-            _view = (glm::mat4)*transform->data();
+            _transform = (glm::mat4)*transform->data();
         }
     }
 
@@ -158,7 +158,7 @@ namespace darmok
 
         glm::mat4 proj(1);
         bx::mtxOrtho(glm::value_ptr(proj), 0, dim.x, dim.y, 0.F, -1000.F, 1000.F, 0.F, bgfx::getCaps()->homogeneousDepth);
-        bgfx::setViewTransform(viewId, glm::value_ptr(_view), glm::value_ptr(proj));
+        bgfx::setViewTransform(viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
     }
 
     void RmluiRenderInterface::submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
@@ -272,7 +272,7 @@ namespace darmok
         _encoder = bgfx::begin();
         _rendered = false;
         _viewSetup = false;
-        _view = glm::mat4(1);
+        _transform = glm::mat4(1);
     }
 
     bool RmluiRenderInterface::afterRender() noexcept
@@ -420,26 +420,86 @@ namespace darmok
         }
     }
 
+    RmluiAppComponentImpl::RmluiAppComponentImpl(const std::string& name) noexcept
+        : _inputActive(true)
+        , _name(name)
+    {
+    }
+
+    RmluiAppComponentImpl::RmluiAppComponentImpl(const std::string& name, const glm::uvec2& size) noexcept
+        : _size(size)
+        , _inputActive(false)
+        , _name(name)
+    {
+    }
+
+    void RmluiAppComponentImpl::setSize(const std::optional<glm::uvec2>& size) noexcept
+    {
+        _size = size;
+        if (!_context)
+        {
+            return;
+        }
+        if (size)
+        {
+            _context->SetDimensions(RmluiUtils::convert<int>(size.value()));
+        }
+        else if (_app)
+        {
+            auto& winSize = _app->getWindow().getPixelSize();
+            _context->SetDimensions(RmluiUtils::convert<int>(winSize));
+        }
+    }
+
+    const std::optional<glm::uvec2>& RmluiAppComponentImpl::getSize() const noexcept
+    {
+        return _size;
+    }
+
+    void RmluiAppComponentImpl::setInputActive(bool active) noexcept
+    {
+        _inputActive = active;
+    }
+
+    bool RmluiAppComponentImpl::getInputActive() const noexcept
+    {
+        return _inputActive;
+    }
+
     OptionalRef<Rml::Context> RmluiAppComponentImpl::getContext() const noexcept
     {
         return _context;
     }
 
-    void RmluiAppComponentImpl::init(App& app)
+    void RmluiSharedAppComponent::init(App& app) noexcept
     {
-        _app = app;
         _system.init(app);
-        _render.init(app);
         _file.init(app);
 
-        Rml::SetRenderInterface(&_render);
         Rml::SetSystemInterface(&_system);
         Rml::SetFileInterface(&_file);
 
         Rml::Initialise();
+    }
 
-        auto& winSize = app.getWindow().getPixelSize();
-        _context = Rml::CreateContext("main", RmluiUtils::convert<int>(winSize));
+    void RmluiSharedAppComponent::shutdown() noexcept
+    {
+        Rml::Shutdown();
+    }
+
+    void RmluiSharedAppComponent::update(float dt) noexcept
+    {
+        _system.update(dt);
+    }
+
+    void RmluiAppComponentImpl::init(App& app)
+    {
+        _app = app;
+        _shared = app.getSharedComponent<RmluiSharedAppComponent>();
+
+        _render.init(app);
+        auto size = _size ? _size.value() : app.getWindow().getPixelSize();
+        _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_render);
 
         app.getWindow().addListener(*this);
         app.getInput().getKeyboard().addListener(*this);
@@ -455,8 +515,11 @@ namespace darmok
             _app->getInput().getMouse().removeListener(*this);
         }
 
+        Rml::RemoveContext(_context->GetName());
+        Rml::ReleaseTextures();
+
+        _shared.reset();
         _context.reset();
-        Rml::Shutdown();
         _app.reset();
     }
 
@@ -470,7 +533,6 @@ namespace darmok
 
     bool RmluiAppComponentImpl::update(float dt) noexcept
     {
-        _system.update(dt);
         return _context->Update();
     }
 
@@ -579,7 +641,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept
     {
-        if (_context == nullptr)
+        if (!_inputActive || _context == nullptr)
         {
             return;
         }
@@ -601,7 +663,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onKeyboardChar(const Utf8Char& chr) noexcept
     {
-        if (_context == nullptr)
+        if (!_inputActive || _context == nullptr)
         {
             return;
         }
@@ -610,7 +672,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onMouseActive(bool active) noexcept
     {
-        if (_context == nullptr)
+        if (!_inputActive || _context == nullptr)
         {
             return;
         }
@@ -622,7 +684,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
-        if (_context == nullptr || !_app)
+        if (!_inputActive || _context == nullptr || !_app)
         {
             return;
         }
@@ -632,7 +694,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
-        if (_context == nullptr)
+        if (!_inputActive || _context == nullptr)
         {
             return;
         }
@@ -641,7 +703,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onMouseButton(MouseButton button, bool down) noexcept
     {
-        if (_context == nullptr)
+        if (!_inputActive || _context == nullptr)
         {
             return;
         }
@@ -668,8 +730,13 @@ namespace darmok
         }
     }
 
-    RmluiAppComponent::RmluiAppComponent() noexcept
-        : _impl(std::make_unique<RmluiAppComponentImpl>())
+    RmluiAppComponent::RmluiAppComponent(const std::string& name) noexcept
+        : _impl(std::make_unique<RmluiAppComponentImpl>(name))
+    {
+    }
+
+    RmluiAppComponent::RmluiAppComponent(const std::string& name, const glm::uvec2& size) noexcept
+        : _impl(std::make_unique<RmluiAppComponentImpl>(name, size))
     {
     }
 

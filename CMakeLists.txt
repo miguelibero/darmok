@@ -33,10 +33,13 @@ option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
 set(SRC_DIR src)
 set(INCLUDE_BASE_DIR include)
 set(INCLUDE_DIR ${INCLUDE_BASE_DIR}/darmok)
+set(LOCAL_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+
+list(APPEND CMAKE_MODULE_PATH ${LOCAL_MODULE_PATH})
 
 find_package(bgfx CONFIG REQUIRED)
-include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/processAssets.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/copyLinkedDlls.cmake)
+
+include(darmokProcessAssets)
 
 darmok_process_assets(
   ASSETS "assets/shaders"
@@ -191,10 +194,6 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/model.cpp
   )
   list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
-endif()
-
-if(DARMOK_BUILD_SCRIPTING)
-  list(APPEND SOURCES ${SCRIPTING_SOURCES})
   source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
 endif()
 
@@ -202,6 +201,7 @@ set(LIB_NAME "darmok")
 add_library(
   ${LIB_NAME}
   ${SOURCES}
+  ${SCRIPTING_SOURCES}
   ${ASSETS}
 )
 
@@ -234,7 +234,7 @@ target_include_directories(
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
-    ${CMAKE_CURRENT_BINARY_DIR}/include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 )
 
 set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
@@ -347,9 +347,6 @@ if(DARMOK_BUILD_RMLUI)
   find_package(RmlUi CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PUBLIC RmlCore)
   target_link_libraries(${LIB_NAME} PUBLIC debug RmlDebugger)
-  if(DARMOK_BUILD_SCRIPTING)
-    target_link_libraries(${LIB_NAME} PRIVATE RmlLua)
-  endif()
 endif()
 
 # entt
@@ -395,8 +392,15 @@ if(DARMOK_BUILD_SCRIPTING)
   set(SOL_DEFINES SOL_ALL_SAFETIES_ON SOL_EXCEPTIONS_SAFE_PROPAGATION)
   target_compile_definitions(sol2 INTERFACE ${SOL_DEFINES})
   target_link_libraries(${LIB_NAME} PRIVATE sol2)
-
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_SCRIPTING)
   list(APPEND VCPKG_MANIFEST_FEATURES "scripting")
+  add_library(sol2::sol2 ALIAS sol2)
+
+  if(DARMOK_BUILD_RMLUI)
+    set(RmlSolLua_DIR ${LOCAL_MODULE_PATH})
+    find_package(RmlSolLua CONFIG REQUIRED)
+    target_link_libraries(${LIB_NAME} PRIVATE RmlLua RmlSolLua)
+  endif()
 endif()
 
 if(DARMOK_BUILD_SCRIPTING_EXE)
@@ -424,7 +428,8 @@ endif()
 
 # ozz
 if(DARMOK_BUILD_OZZ)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/configureOzzAnimation.cmake)
+  set(OzzAnimation_DIR ${LOCAL_MODULE_PATH})
+  find_package(OzzAnimation CONFIG REQUIRED)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_OZZ)
   target_link_libraries(${LIB_NAME} PRIVATE
     ozz_geometry

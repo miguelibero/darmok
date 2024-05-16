@@ -18,7 +18,7 @@ namespace
 		{
 			App::init(args);
 
-			auto& comp = addComponent<darmok::RmluiAppComponent>();
+			auto& comp = addComponent<darmok::RmluiAppComponent>("main");
 			auto context = comp.getContext();
 
 			// sample taken from the RmlUI README

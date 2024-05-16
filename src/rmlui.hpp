@@ -57,11 +57,12 @@ namespace darmok
 		bgfx::VertexLayout _layout;
 		bgfx::UniformHandle _textureUniform;
 		static const bgfx::EmbeddedShader _embeddedShaders[];
-		glm::mat4 _view;
+		glm::mat4 _transform;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
 		bool _rendered;
 		bool _viewSetup;
+		glm::uvec2 _size;
 
 		bool createTexture(Rml::TextureHandle& handle, const DataView& data, const Rml::Vector2i& dimensions) noexcept;
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
@@ -106,9 +107,37 @@ namespace darmok
 		OptionalRef<Element> find(Rml::FileHandle file) noexcept;
 	};
 
+	class IRmluiListener
+	{
+		void onRmluiInitialized();
+		void onRmluiContextCreated(Rml::Context context);
+		void onRmluiShutdown();
+	};
+
+	class RmluiSharedAppComponent final : public AppComponent
+	{
+	public:
+		void init(App& app) noexcept;
+		void shutdown() noexcept;
+		void update(float dt) noexcept;
+
+	private:
+		static size_t _initCount;
+		RmluiSystemInterface _system;
+		RmluiFileInterface _file;
+	};
+
     class RmluiAppComponentImpl final : public IWindowListener, public IKeyboardListener, public IMouseListener
     {
     public:
+		RmluiAppComponentImpl(const std::string& name) noexcept;
+		RmluiAppComponentImpl(const std::string& name, const glm::uvec2& size) noexcept;
+
+		void setSize(const std::optional<glm::uvec2>& size) noexcept;
+		const std::optional<glm::uvec2>& getSize() const noexcept;
+		void setInputActive(bool active) noexcept;
+		bool getInputActive() const noexcept;
+
 		OptionalRef<Rml::Context> getContext() const noexcept;
 
 		void init(App& app);
@@ -126,11 +155,13 @@ namespace darmok
 
 
 	private:
+		std::string _name;
 		OptionalRef<Rml::Context> _context;
-		mutable RmluiRenderInterface _render;
-		RmluiSystemInterface _system;
-		RmluiFileInterface _file;
 		OptionalRef<App> _app;
+		mutable RmluiRenderInterface _render;
+		std::optional<glm::uvec2> _size;
+		bool _inputActive;
+		std::shared_ptr<RmluiSharedAppComponent> _shared;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;
 		static const KeyboardMap& getKeyboardMap() noexcept;

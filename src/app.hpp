@@ -7,7 +7,8 @@
 #include <darmok/optional_ref.hpp>
 #include <string>
 #include <cstdint>
-#include <map>
+#include <vector>
+#include <unordered_map>
 
 namespace darmok
 {
@@ -29,6 +30,8 @@ namespace darmok
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
+
+		std::shared_ptr<AppComponent> getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback);
 		
 		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
 		bool removeComponent(AppComponent& component) noexcept;
@@ -67,6 +70,7 @@ namespace darmok
 	private:
 		void addBindings() noexcept;
 		void removeBindings() noexcept;
+		void cleanSharedComponents() noexcept;
 
 		[[nodiscard]] float updateTimePassed() noexcept;
 		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
@@ -84,5 +88,6 @@ namespace darmok
 		AssetContext _assets;
 
 		std::vector<std::unique_ptr<AppComponent>> _components;
+		std::unordered_map<size_t, std::weak_ptr<AppComponent>> _sharedComponents;
 	};
 }

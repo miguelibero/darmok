@@ -10,6 +10,4 @@ target_compile_definitions(
   PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1"
 )
 
-target_link_libraries(${SAMPLE_NAME} PUBLIC darmok::darmok)
-darmok_copy_linked_dlls(${SAMPLE_NAME})
-set_target_properties(${SAMPLE_NAME} PROPERTIES FOLDER "darmok/samples")
+darmok_sample_setup(${SAMPLE_NAME})

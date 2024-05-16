@@ -70,17 +70,18 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 ### Next tasks
 
+* support multiple imgui & rmlui app components with different transforms
 * skeletal animations
 * physics
-* support multiple imgui & rmlui app components with different transforms
+* sound
+
 * other types of lights
 * pbr lighting
 * deferred renderer
-* spine animations loading
-* distance field fonts
 * binary mesh serialization
+
+* spine animations loading
 * unify use of std::allocator everywhere
-* sound
 * progressive data reader
 * async?
 

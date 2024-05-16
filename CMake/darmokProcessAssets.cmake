@@ -1,8 +1,7 @@
-set(CMAKE_MOD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
-include(${CMAKE_MOD_DIR}/utils.cmake)
-include(${CMAKE_MOD_DIR}/processShader.cmake)
-include(${CMAKE_MOD_DIR}/processAsset.cmake)
-include(${CMAKE_MOD_DIR}/processOzzSkeleton.cmake)
+include(darmokUtils)
+include(darmokProcessShader)
+include(darmokProcessAsset)
+include(darmokProcessOzzSkeleton)
 
 # darmok_process_assets(
 #   ASSETS files or pattern

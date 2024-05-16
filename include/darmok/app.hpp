@@ -50,6 +50,8 @@ namespace darmok
 		Color clearColor = defaultConfig.clearColor;
 	};
 
+	typedef std::shared_ptr<AppComponent> (*SharedAppComponentCreationCallback)();
+
 	class App
 	{
 	public:
@@ -82,8 +84,23 @@ namespace darmok
 			return *ptr;
 		}
 
+		template<typename T>
+		std::shared_ptr<T> getSharedComponent()
+		{
+			auto comp = getSharedComponent(typeid(T).hash_code(), createComponent<T>);
+			return std::static_pointer_cast<T>(comp);
+		}
+
 	protected:
 		void configure(const AppConfig& config) noexcept;
+
+		template<typename T>
+		static std::shared_ptr<AppComponent> createComponent()
+		{
+			return std::make_shared<T>();
+		}
+
+		std::shared_ptr<AppComponent> getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback);
 
 		DLLEXPORT virtual void updateLogic(float deltaTime);
 		DLLEXPORT [[nodiscard]] virtual bgfx::ViewId render(bgfx::ViewId viewId) const;

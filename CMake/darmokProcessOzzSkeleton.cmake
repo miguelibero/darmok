@@ -1,5 +1,4 @@
-set(CMAKE_MOD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
-include(${CMAKE_MOD_DIR}/utils.cmake)
+include(darmokUtils)
 
 # darmok_process_skeletal_animation(
 #   SKELETONS fbx or gltf files

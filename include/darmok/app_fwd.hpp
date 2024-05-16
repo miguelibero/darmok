@@ -6,5 +6,5 @@
 
 namespace darmok
 {
-	typedef  int32_t(*RunAppCallback)(const std::vector<std::string>& args);
+	typedef int32_t (*RunAppCallback)(const std::vector<std::string>& args);
 }
