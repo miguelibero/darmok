@@ -70,7 +70,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 ### Next tasks
 
-* separate Mesh classes (check if memory needs to be copied)
 * use entt::dispatcher to manage platform events and commands
 * skeletal animations
 * physics

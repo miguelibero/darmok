@@ -4,6 +4,7 @@
 #include "math.hpp"
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
+#include <darmok/mesh.hpp>
 
 namespace darmok
 {

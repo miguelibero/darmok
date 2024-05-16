@@ -41,9 +41,14 @@ namespace darmok
 	{
 	}
 
-	std::string_view Utf8Char::string() const noexcept
+	std::string_view Utf8Char::stringView() const noexcept
 	{
 		return std::string_view((const char*)& data, len);
+	}
+
+	std::string Utf8Char::to_string() const noexcept
+	{
+		return std::string(stringView());
 	}
 
 	// Based on cutef8 by Jeff Bezanson (Public Domain)

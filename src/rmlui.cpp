@@ -39,7 +39,7 @@ namespace darmok
         MeshConfig meshConfig;
         meshConfig.index32 = true;
         auto mesh = std::make_unique<Mesh>(_layout, vertData, idxData, meshConfig);
-        Rml::CompiledGeometryHandle handle = mesh->getVertexHandle();
+        Rml::CompiledGeometryHandle handle = mesh->getVertexHandle().idx;
         _compiledGeometries.emplace(handle, CompiledGeometry{ std::move(mesh), texture });
         return handle;
     }
@@ -137,14 +137,10 @@ namespace darmok
             return;
         }
 
-        bgfx::TransientVertexBuffer tvb;
-        bgfx::TransientIndexBuffer tib;
-        bgfx::allocTransientVertexBuffer(&tvb, numVertices, _layout);
-        bgfx::allocTransientIndexBuffer(&tib, numIndices, true);
-        bx::memCopy(tvb.data, vertices, numVertices * sizeof(Rml::Vertex));
-        bx::memCopy(tib.data, indices, numIndices * sizeof(int));
-        _encoder->setVertexBuffer(0, &tvb);
-        _encoder->setIndexBuffer(&tib);
+        DataView vertData(vertices, numVertices * sizeof(Rml::Vertex));
+        DataView idxData(indices, numIndices * sizeof(int));
+        TransientMesh mesh(_layout, vertData, idxData, true);
+        mesh.render(_encoder.value(), 0);
 
         submitGeometry(texture, translation);
     }
@@ -609,7 +605,7 @@ namespace darmok
         {
             return;
         }
-        _context->ProcessTextInput(chr.data);
+        _context->ProcessTextInput(chr.to_string());
     }
 
     void RmluiAppComponentImpl::onMouseActive(bool active) noexcept

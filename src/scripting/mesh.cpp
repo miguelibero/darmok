@@ -8,7 +8,7 @@
 
 namespace darmok
 {
-	LuaMesh::LuaMesh(const std::shared_ptr<Mesh>& mesh) noexcept
+	LuaMesh::LuaMesh(const std::shared_ptr<IMesh>& mesh) noexcept
 		: _mesh(mesh)
 	{
 	}
@@ -18,7 +18,7 @@ namespace darmok
 		return _mesh->to_string();
 	}
 
-	std::shared_ptr<Mesh> LuaMesh::getReal() const noexcept
+	std::shared_ptr<IMesh> LuaMesh::getReal() const noexcept
 	{
 		return _mesh;
 	}

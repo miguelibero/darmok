@@ -24,6 +24,8 @@ namespace darmok
 		bool mips = false;
 		uint16_t layers = 1;
 
+		const static TextureConfig getEmpty() noexcept;
+
 		std::string to_string() const noexcept;
 		bgfx::TextureInfo getInfo() const noexcept;
 	};
@@ -40,6 +42,8 @@ namespace darmok
 		DLLEXPORT Texture(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		DLLEXPORT Texture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		DLLEXPORT Texture(const DataView& data, const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		DLLEXPORT Texture(Texture&& other) noexcept;
+		DLLEXPORT Texture& operator=(Texture&& other) noexcept;
 
 		DLLEXPORT ~Texture() noexcept;
 		Texture(const Texture& other) = delete;

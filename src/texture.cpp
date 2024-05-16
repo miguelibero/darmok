@@ -65,12 +65,40 @@ namespace darmok
 		}
 	}
 
+	Texture::Texture(Texture&& other) noexcept
+		: _handle(other._handle)
+		, _config(other._config)
+	{
+		other._handle.idx = bgfx::kInvalidHandle;
+		other._config = Config::getEmpty();
+	}
+
+	Texture& Texture::operator=(Texture&& other) noexcept
+	{
+		_handle = other._handle;
+		_config = other._config;
+		other._handle.idx = bgfx::kInvalidHandle;
+		other._config = Config::getEmpty();
+		return *this;
+	}
+
 	Texture::~Texture() noexcept
 	{
 		if (isValid(_handle))
 		{
 			bgfx::destroy(_handle);
 		}
+	}
+
+	const TextureConfig TextureConfig::getEmpty() noexcept
+	{
+		static TextureConfig empty{
+			glm::uvec2(0),
+			bgfx::TextureFormat::Unknown,
+			TextureType::Unknown,
+			0, false, 0
+		};
+		return empty;
 	}
 
 	std::string TextureConfig::to_string() const noexcept

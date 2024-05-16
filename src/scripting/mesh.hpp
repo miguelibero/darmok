@@ -11,21 +11,21 @@
 
 namespace darmok
 {
-    class Mesh;
+    class IMesh;
     class LuaMaterial;
 
 	class LuaMesh final
 	{
 	public:
-		LuaMesh(const std::shared_ptr<Mesh>& mesh) noexcept;
+		LuaMesh(const std::shared_ptr<IMesh>& mesh) noexcept;
 
 		std::string to_string() const noexcept;
 
-		std::shared_ptr<Mesh> getReal() const noexcept;
+		std::shared_ptr<IMesh> getReal() const noexcept;
 
 		static void configure(sol::state_view& lua) noexcept;
 	private:
-		std::shared_ptr<Mesh> _mesh;
+		std::shared_ptr<IMesh> _mesh;
 	};
 
 	struct MeshCreator;

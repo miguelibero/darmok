@@ -5,6 +5,7 @@
 #include <darmok/imgui.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/window.hpp>
+#include <darmok/mesh.hpp>
 #include <bx/allocator.h>
 #include "generated/imgui/shaders/basic.vertex.h"
 #include "generated/imgui/shaders/basic.fragment.h"
@@ -160,31 +161,29 @@ namespace darmok
 		const ImVec2 clipPos = drawData->DisplayPos;       // (0,0) unless using multi-viewports
 		const ImVec2 clipScale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
-		auto& layout = _basicProgram->getVertexLayout();
+		auto& layout = _basicProgram->getVertexLayout(); // both programs have the same layout
+		bgfx::Encoder* encoder = bgfx::begin();
 
 		// Render command lists
 		for (int32_t ii = 0, num = drawData->CmdListsCount; ii < num; ++ii)
 		{
-			bgfx::TransientVertexBuffer tvb;
-			bgfx::TransientIndexBuffer tib;
-
 			const ImDrawList* drawList = drawData->CmdLists[ii];
-			uint32_t numVertices = (uint32_t)drawList->VtxBuffer.size();
-			uint32_t numIndices = (uint32_t)drawList->IdxBuffer.size();
 
-			if (!checkAvailTransientBuffers(numVertices, layout, numIndices))
+			auto numVertices = (uint32_t)drawList->VtxBuffer.size();
+			auto numIndices = (uint32_t)drawList->IdxBuffer.size();
+
+			DataView vertData(drawList->VtxBuffer.begin(), numVertices * sizeof(ImDrawVert));
+			DataView idxData(drawList->IdxBuffer.begin(), numIndices * sizeof(ImDrawIdx));
+			std::optional<TransientMesh> mesh;
+			try
+			{
+				mesh.emplace(layout, vertData, idxData);
+			}
+			catch (...)
 			{
 				// not enough space in transient buffer just quit drawing the rest...
 				break;
 			}
-
-			bgfx::allocTransientVertexBuffer(&tvb, numVertices, layout);
-			bgfx::allocTransientIndexBuffer(&tib, numIndices, sizeof(ImDrawIdx) == 4);
-
-			bx::memCopy(tvb.data, drawList->VtxBuffer.begin(), numVertices * sizeof(ImDrawVert));
-			bx::memCopy(tib.data, drawList->IdxBuffer.begin(), numIndices * sizeof(ImDrawIdx));
-
-			bgfx::Encoder* encoder = bgfx::begin();
 
 			for (const ImDrawCmd* cmd = drawList->CmdBuffer.begin(), *cmdEnd = drawList->CmdBuffer.end(); cmd != cmdEnd; ++cmd)
 			{
@@ -245,15 +244,15 @@ namespace darmok
 
 						encoder->setState(state);
 						encoder->setTexture(0, _textureUniform, th);
-						encoder->setVertexBuffer(0, &tvb, cmd->VtxOffset, numVertices);
-						encoder->setIndexBuffer(&tib, cmd->IdxOffset, cmd->ElemCount);
+						mesh->render(*encoder, 0);
 						encoder->submit(viewId, program);
 					}
 				}
 			}
-
-			bgfx::end(encoder);
 		}
+
+		bgfx::end(encoder);
+
 
 		return true;
 	}
