@@ -94,21 +94,15 @@ namespace darmok
     {
     public:
         DLLEXPORT SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;
-        
         DLLEXPORT std::shared_ptr<Scene> getScene() const noexcept;
-        DLLEXPORT void setScene(const std::shared_ptr<Scene>& scene) noexcept;
-        DLLEXPORT const std::vector<std::shared_ptr<Scene>>& getScenes() const noexcept;
-        DLLEXPORT std::shared_ptr<Scene> addScene() noexcept;
-        DLLEXPORT bool addScene(const std::shared_ptr<Scene>& scene) noexcept;
-        DLLEXPORT bool removeScene(const std::shared_ptr<Scene>& scene) noexcept;
+        DLLEXPORT SceneAppComponent& setScene(const std::shared_ptr<Scene>& scene) noexcept;
 
         void init(App& app) override;
         void shutdown() override;
         bgfx::ViewId render(bgfx::ViewId viewId) const override;
         void updateLogic(float dt) override;
     private:
-        std::shared_ptr<Scene> _mainScene;
-        std::vector<std::shared_ptr<Scene>> _scenes;
+        std::shared_ptr<Scene> _scene;
         OptionalRef<App> _app;
     };
 }

@@ -72,6 +72,7 @@ namespace darmok
 		DLLEXPORT void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
 		DLLEXPORT void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
+		DLLEXPORT bool removeComponent(AppComponent& component) noexcept;
 
 		template<typename T, typename... A>
 		T& addComponent(A&&... args) noexcept

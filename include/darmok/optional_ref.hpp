@@ -57,6 +57,15 @@ namespace darmok
             return _value;
         }
 
+        [[nodiscard]] T& operator*() const
+        {
+            if (!hasValue())
+            {
+                throw std::bad_optional_access();
+            }
+            return *_value;
+        }
+
         explicit operator bool() const noexcept
         {
             return hasValue();

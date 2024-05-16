@@ -39,9 +39,11 @@ namespace darmok
 	private:
 		std::vector<sol::protected_function> _updates;
 		OptionalRef<App> _app;
-		OptionalRef<SceneAppComponent> _sceneComponent;
+		using SceneComponents = std::vector<OptionalRef<SceneAppComponent>>;
+		SceneComponents _sceneComponents;
 
-		SceneAppComponent& getSceneComponent() noexcept;
+		SceneComponents::iterator findSceneComponent(const LuaScene& scene) noexcept;
+
 	};
 
 	class ScriptingAppImpl final

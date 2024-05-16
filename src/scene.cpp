@@ -169,85 +169,31 @@ namespace darmok
     }
 
     SceneAppComponent::SceneAppComponent(const std::shared_ptr<Scene>& scene) noexcept
-        : _mainScene(scene == nullptr ? std::make_shared<Scene>() : scene)
+        : _scene(scene == nullptr ? std::make_shared<Scene>() : scene)
     {
-        addScene(_mainScene);
     }
 
     std::shared_ptr<Scene> SceneAppComponent::getScene() const noexcept
     {
-        return _mainScene;
+        return _scene;
     }
 
-    void SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene) noexcept
+    SceneAppComponent& SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene) noexcept
     {
-        if (_mainScene == scene)
+        if (_scene == scene)
         {
-            return;
+            return *this;
         }
-        if (_mainScene != nullptr)
+        if (_app && _scene)
         {
-            removeScene(_mainScene);
+            _scene->shutdown();
         }
-        _mainScene = scene;
-        if (_mainScene != nullptr)
+        _scene = scene;
+        if (_app && _scene)
         {
-            addScene(_mainScene);
+            _scene->init(*_app);
         }
-    }
-
-    const std::vector<std::shared_ptr<Scene>>& SceneAppComponent::getScenes() const noexcept
-    {
-        return _scenes;
-    }
-
-    std::shared_ptr<Scene> SceneAppComponent::addScene() noexcept
-    {
-        auto scene = std::make_shared<Scene>();
-        _scenes.push_back(scene);
-        if (_app)
-        {
-            scene->init(_app.value());
-        }
-        return scene;
-    }
-
-    bool SceneAppComponent::addScene(const std::shared_ptr<Scene>& scene) noexcept
-    {
-        if (scene == nullptr)
-        {
-            return false;
-        }
-        auto itr = std::find(_scenes.begin(), _scenes.end(), scene);
-        if (itr != _scenes.end())
-        {
-            return false;
-        }
-        _scenes.push_back(scene);
-        if (_app)
-        {
-            scene->init(_app.value());
-        }
-        return true;
-    }
-
-    bool SceneAppComponent::removeScene(const std::shared_ptr<Scene>& scene) noexcept
-    {
-        if (scene == nullptr)
-        {
-            return false;
-        }
-        auto itr = std::find(_scenes.begin(), _scenes.end(), scene);
-        if (itr == _scenes.end())
-        {
-            return false;
-        }
-        _scenes.erase(itr);
-        if (_app)
-        {
-            scene->shutdown();
-        }
-        return true;
+        return *this;
     }
 
     void SceneAppComponent::init(App& app)
@@ -257,51 +203,35 @@ namespace darmok
             shutdown();
         }
         _app = app;
-        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
+        if(_scene)
         {
-            auto& scene = *itr;
-            if (scene != nullptr)
-            {
-                scene->init(app);
-            }
+            _scene->init(app);
         }
     }
 
     void SceneAppComponent::shutdown()
     {
         _app = nullptr;
-        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
+        if (_scene)
         {
-            auto& scene = *itr;
-            if (*itr != nullptr)
-            {
-                scene->shutdown();
-            }
+            _scene->shutdown();
         }
     }
 
     bgfx::ViewId SceneAppComponent::render(bgfx::ViewId viewId) const
     {
-        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
+        if (_scene)
         {
-            auto& scene = *itr;
-            if (scene != nullptr)
-            {
-                viewId = scene->render(viewId);
-            }
+            viewId = _scene->render(viewId);
         }
         return viewId;
     }
 
     void SceneAppComponent::updateLogic(float deltaTime)
     {
-        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
+        if (_scene)
         {
-            auto& scene = *itr;
-            if (scene != nullptr)
-            {
-                scene->updateLogic(deltaTime);
-            }
+            _scene->updateLogic(deltaTime);
         }
     }
 }

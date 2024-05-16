@@ -147,7 +147,7 @@ namespace
 			float scale = 0.5;
 
 			MeshCreator meshCreator(_layout);
-			meshCreator.config.dynamic = true;
+			meshCreator.config.type = MeshType::Dynamic;
 			meshCreator.config.scale = glm::vec3(0.5F);
 			auto mesh = meshCreator.createQuad(Quad(tex->getSize()));
 			auto mat = std::make_shared<Material>(tex);

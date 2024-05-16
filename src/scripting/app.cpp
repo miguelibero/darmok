@@ -28,48 +28,74 @@ namespace darmok
 		return _app.value();
 	}
 
-	SceneAppComponent& LuaApp::getSceneComponent() noexcept
+	LuaApp::SceneComponents::iterator LuaApp::findSceneComponent(const LuaScene& scene) noexcept
 	{
-		if (!_sceneComponent)
-		{
-			_sceneComponent = _app->addComponent<SceneAppComponent>();
-		}
-		return _sceneComponent.value();
+		auto real = scene.getReal();
+		return std::find_if(_sceneComponents.begin(), _sceneComponents.end(),
+			[real](auto& comp) { return comp->getScene() == real; });
 	}
 
 	LuaScene LuaApp::getScene() noexcept
 	{
-		return LuaScene(getSceneComponent().getScene());
+		if (_sceneComponents.empty())
+		{
+			_sceneComponents.push_back(_app->addComponent<SceneAppComponent>());
+		}
+		return LuaScene(_sceneComponents.front()->getScene());
 	}
 
 	void LuaApp::setScene(const LuaScene& scene) noexcept
 	{
-		getSceneComponent().setScene(scene.getReal());
+		if (_sceneComponents.empty())
+		{
+			_sceneComponents.push_back(_app->addComponent<SceneAppComponent>(scene.getReal()));
+		}
+		else
+		{
+			_sceneComponents.front()->setScene(scene.getReal());
+		}
 	}
 
 	std::vector<LuaScene> LuaApp::getScenes() noexcept
 	{
 		std::vector<LuaScene> scenes;
-		for (auto& scene : getSceneComponent().getScenes())
+		for (auto& comp : _sceneComponents)
 		{
-			scenes.push_back(LuaScene(scene));
+			scenes.push_back(LuaScene(comp->getScene()));
 		}
 		return scenes;
 	}
 
 	bool LuaApp::addScene1(const LuaScene& scene) noexcept
 	{
-		return getSceneComponent().addScene(scene.getReal());
+		auto itr = findSceneComponent(scene);
+		if (itr != _sceneComponents.end())
+		{
+			return false;
+		}
+		getScene();
+		auto& comp = _app->addComponent<SceneAppComponent>(scene.getReal());
+		_sceneComponents.push_back(comp);
+		return true;
 	}
 
 	LuaScene LuaApp::addScene2() noexcept
 	{
-		return LuaScene(getSceneComponent().addScene());
+		getScene();
+		auto& comp = _app->addComponent<SceneAppComponent>();
+		_sceneComponents.push_back(comp);
+		return LuaScene(comp.getScene());
 	}
 
 	bool LuaApp::removeScene(const LuaScene& scene) noexcept
 	{
-		return getSceneComponent().removeScene(scene.getReal());
+		auto itr = findSceneComponent(scene);
+		if (itr == _sceneComponents.end())
+		{
+			return false;
+		}
+		_sceneComponents.erase(itr);
+		return true;
 	}
 
 	LuaAssets LuaApp::getAssets() noexcept

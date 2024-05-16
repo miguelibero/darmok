@@ -256,6 +256,18 @@ namespace darmok
 		_components.push_back(std::move(component));
 	}
 
+	bool AppImpl::removeComponent(AppComponent& component) noexcept
+	{
+		auto ptr = &component;
+		auto itr = std::find_if(_components.begin(), _components.end(), [ptr](auto& comp) { return comp.get() == ptr;  });
+		if (itr == _components.end())
+		{
+			return false;
+		}
+		_components.erase(itr);
+		return true;
+	}
+
 #if BX_PLATFORM_EMSCRIPTEN
 	static App* s_app;
 	static void updateApp()
@@ -458,5 +470,10 @@ namespace darmok
 	void App::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
 	{
 		_impl->addComponent(std::move(component));
+	}
+
+	bool App::removeComponent(AppComponent& component) noexcept
+	{
+		return _impl->removeComponent(component);
 	}
 }
