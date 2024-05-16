@@ -64,8 +64,8 @@ namespace darmok
 	public:
 		DLLEXPORT virtual ~IMouseListener() = default;
 		DLLEXPORT virtual void onMouseActive(bool active) {};
-		DLLEXPORT virtual void onMousePositionChange(const glm::vec2& delta) {};
-		DLLEXPORT virtual void onMouseScrollChange(const glm::vec2& delta) {};
+		DLLEXPORT virtual void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) {};
+		DLLEXPORT virtual void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) {};
 		DLLEXPORT virtual void onMouseButton(MouseButton button, bool down) {};
 	};
 
@@ -105,7 +105,7 @@ namespace darmok
 	{
 	public:
 		DLLEXPORT virtual ~IGamepadListener() = default;
-		DLLEXPORT virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::ivec3& delta) {};
+		DLLEXPORT virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::ivec3& delta, const glm::ivec3& absolute) {};
 		DLLEXPORT virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
 		DLLEXPORT virtual void onGamepadConnect(uint8_t num, bool connected) {};
 	};

@@ -16,11 +16,11 @@ currently using:
 * [nlohmann-json](https://github.com/nlohmann/json) for parsing json
 * [pugixml](https://pugixml.org/) for parsing xml
 * [imgui](https://github.com/ocornut/imgui) for editor UI
+* [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI to replace CEGUI
 
 planned to use:
 
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
-* [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI to replace CEGUI
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [Box2D](https://box2d.org/) for 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
@@ -74,6 +74,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * use entt::dispatcher to manage platform events and commands
 * skeletal animations
 * physics
+* support multiple imgui & rmlui app components with different transforms
 * other types of lights
 * pbr lighting
 * deferred renderer

@@ -53,6 +53,7 @@ namespace darmok
 		std::optional<bgfx::ViewId> _viewId;
 		OptionalRef<bgfx::Encoder> _encoder;
 		std::unique_ptr<Program> _program;
+		std::unique_ptr<Program> _solidProgram;
 		bgfx::VertexLayout _layout;
 		bgfx::UniformHandle _textureUniform;
 		static const bgfx::EmbeddedShader _embeddedShaders[];
@@ -63,7 +64,7 @@ namespace darmok
 		bool _viewSetup;
 
 		bool createTexture(Rml::TextureHandle& handle, const DataView& data, const Rml::Vector2i& dimensions) noexcept;
-		void render(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
+		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
 		void setupView() noexcept;
 	};
 
@@ -119,8 +120,8 @@ namespace darmok
 		void onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept override;
 		void onKeyboardChar(const Utf8Char& chr) noexcept override;
 		void onMouseActive(bool active) noexcept override;
-		void onMousePositionChange(const glm::vec2& delta) noexcept override;
-		void onMouseScrollChange(const glm::vec2& delta) noexcept override;
+		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
+		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseButton(MouseButton button, bool down) noexcept override;
 
 

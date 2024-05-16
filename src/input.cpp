@@ -377,7 +377,7 @@ namespace darmok
 		{
 			for (auto& listener : _listeners)
 			{
-				listener->onMousePositionChange(delta);
+				listener->onMousePositionChange(delta, _position);
 			}
 		}
 		return true;
@@ -393,7 +393,7 @@ namespace darmok
 		_scroll = scroll;
 		for (auto& listener : _listeners)
 		{
-			listener->onMouseScrollChange(delta);
+			listener->onMouseScrollChange(delta, _scroll);
 		}
 		return true;
 	}
@@ -613,7 +613,7 @@ namespace darmok
 		auto delta = value - oldValue;
 		for (auto& listener : _listeners)
 		{
-			listener->onGamepadStickChange(_num, stick, delta);
+			listener->onGamepadStickChange(_num, stick, delta, value);
 		}
 		return true;
 	}

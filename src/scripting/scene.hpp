@@ -5,7 +5,7 @@
 #include <variant>
 #include <unordered_map>
 #include <darmok/color.hpp>
-#include <darmok/scene_fwd.hpp>
+#include <darmok/scene.hpp>
 #include <sol/sol.hpp>
 
 #include "math.hpp"
@@ -77,7 +77,7 @@ namespace darmok
 		template<typename T>
 		std::optional<LuaEntity> getEntity(const T& component) noexcept
 		{
-			auto entity = getEntity(component);
+			auto entity = _scene->getEntity(component);
 			if (entity == entt::null)
 			{
 				return std::nullopt;

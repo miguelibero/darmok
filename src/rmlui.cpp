@@ -10,18 +10,22 @@
 
 #include "generated/rmlui/shaders/basic.vertex.h"
 #include "generated/rmlui/shaders/basic.fragment.h"
+#include "generated/rmlui/shaders/solid.vertex.h"
+#include "generated/rmlui/shaders/solid.fragment.h"
 #include "generated/rmlui/shaders/basic.vlayout.h"
 
 namespace darmok
 {
     struct RmluiUtils final
     {
-        static Rml::Vector2i convert(const glm::ivec2& v)
+        template<typename T>
+        static Rml::Vector2<T> convert(const glm::vec2& v)
         {
-            return { v.x, v.y };
+            return { (T)v.x, (T)v.y };
         }
 
-        static glm::vec2 convert(const Rml::Vector2f& v)
+        template<typename T>
+        static glm::vec<2, T> convert(const Rml::Vector2<T>& v)
         {
             return { v.x, v.y };
         }
@@ -52,7 +56,7 @@ namespace darmok
             return;
         }
         itr->second.mesh->render(_encoder.value());
-        render(itr->second.texture, translation);
+        submitGeometry(itr->second.texture, translation);
     }
 
     void RmluiRenderInterface::ReleaseCompiledGeometry(Rml::CompiledGeometryHandle handle) noexcept
@@ -94,7 +98,9 @@ namespace darmok
         config.size = glm::uvec2(dimensions.x, dimensions.y);
         try
         {
-            _textures.emplace(handle, std::make_unique<Texture>(data, config));
+            auto texture = std::make_unique<Texture>(data, config);
+            handle = texture->getHandle().idx;
+            _textures.emplace(handle, std::move(texture));
             return true;
         }
         catch (...)
@@ -140,20 +146,26 @@ namespace darmok
         _encoder->setVertexBuffer(0, &tvb);
         _encoder->setIndexBuffer(&tib);
 
-        render(texture, translation);
+        submitGeometry(texture, translation);
     }
 
     void RmluiRenderInterface::setupView() noexcept
     {
+        auto viewId = _viewId.value();
+        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+        bgfx::setViewName(viewId, "RmlUI");
+        bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+
         auto dim = GetContext()->GetDimensions();
         bgfx::setViewRect(_viewId.value(), 0, 0, dim.x, dim.y);
 
         glm::mat4 proj(1);
-        bx::mtxOrtho(glm::value_ptr(proj), 0, dim.x, dim.y, 0.F, 0.F, bx::kFloatLargest, 0.F, bgfx::getCaps()->homogeneousDepth);
-        bgfx::setViewTransform(_viewId.value(), glm::value_ptr(_view), glm::value_ptr(proj));
+        bx::mtxOrtho(glm::value_ptr(proj), 0, dim.x, dim.y, 0.F, -1000.F, 1000.F, 0.F, bgfx::getCaps()->homogeneousDepth);
+        bgfx::setViewTransform(viewId, glm::value_ptr(_view), glm::value_ptr(proj));
     }
 
-    void RmluiRenderInterface::render(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
+    void RmluiRenderInterface::submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
     {
         if (!_viewId || _program == nullptr || !_encoder)
         {
@@ -169,11 +181,21 @@ namespace darmok
         auto trans = glm::translate(glm::mat4(1), glm::vec3(translation.x, translation.y, 0.0f));
         _encoder->setTransform(glm::value_ptr(trans));
 
-        auto itr = _textures.find(texture);
-        if(itr != _textures.end())
+        auto programHandle = _program->getHandle();
+
+        if (texture)
         {
-            _encoder->setTexture(0, _textureUniform, itr->second->getHandle());
+            auto itr = _textures.find(texture);
+            if (itr != _textures.end())
+            {
+                _encoder->setTexture(0, _textureUniform, itr->second->getHandle());
+            }
         }
+        else
+        {
+            programHandle = _solidProgram->getHandle();
+        }
+
 
         static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB
@@ -183,7 +205,7 @@ namespace darmok
             ;
 
         _encoder->setState(state);
-        _encoder->submit(_viewId.value(), _program->getHandle());
+        _encoder->submit(_viewId.value(), programHandle);
         _rendered = true;
     }
 
@@ -217,12 +239,15 @@ namespace darmok
     {
         BGFX_EMBEDDED_SHADER(rmlui_basic_vertex),
         BGFX_EMBEDDED_SHADER(rmlui_basic_fragment),
+        BGFX_EMBEDDED_SHADER(rmlui_solid_vertex),
+        BGFX_EMBEDDED_SHADER(rmlui_solid_fragment),
         BGFX_EMBEDDED_SHADER_END()
     };
 
     void RmluiRenderInterface::init(App& app)
     {
         _program = std::make_unique<Program>("rmlui_basic", _embeddedShaders, rmlui_basic_vlayout);
+        _solidProgram = std::make_unique<Program>("rmlui_solid", _embeddedShaders, rmlui_basic_vlayout);
         _layout = _program->getVertexLayout();
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
         _scissorEnabled = false;
@@ -248,15 +273,10 @@ namespace darmok
 
         _viewId = viewId;
 
-        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
-
         _encoder = bgfx::begin();
         _rendered = false;
         _viewSetup = false;
         _view = glm::mat4(1);
-
-        bgfx::setViewName(viewId, "RmlUI");
     }
 
     bool RmluiRenderInterface::afterRender() noexcept
@@ -420,11 +440,10 @@ namespace darmok
         Rml::SetSystemInterface(&_system);
         Rml::SetFileInterface(&_file);
 
-        // Now we can initialize RmlUi.
         Rml::Initialise();
 
         auto& winSize = app.getWindow().getPixelSize();
-        _context = Rml::CreateContext("main", RmluiUtils::convert(winSize));
+        _context = Rml::CreateContext("main", RmluiUtils::convert<int>(winSize));
 
         app.getWindow().addListener(*this);
         app.getInput().getKeyboard().addListener(*this);
@@ -465,6 +484,7 @@ namespace darmok
         {
             return;
         }
+        _context->SetDimensions(RmluiUtils::convert<int>(size));
     }
 
     const RmluiAppComponentImpl::KeyboardMap& RmluiAppComponentImpl::getKeyboardMap() noexcept
@@ -604,22 +624,23 @@ namespace darmok
         }
     }
 
-    void RmluiAppComponentImpl::onMousePositionChange(const glm::vec2& delta) noexcept
+    void RmluiAppComponentImpl::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
-        if (_context == nullptr)
+        if (_context == nullptr || !_app)
         {
             return;
         }
-        _context->ProcessMouseMove(delta.x, delta.y, getKeyModifierState());
+        auto y = _app->getWindow().getPixelSize().y - absolute.y;
+        _context->ProcessMouseMove(absolute.x, y, getKeyModifierState());
     }
 
-    void RmluiAppComponentImpl::onMouseScrollChange(const glm::vec2& delta) noexcept
+    void RmluiAppComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
         if (_context == nullptr)
         {
             return;
         }
-        _context->ProcessMouseWheel(delta.x, getKeyModifierState());
+        _context->ProcessMouseWheel(RmluiUtils::convert<float>(delta), getKeyModifierState());
     }
 
     void RmluiAppComponentImpl::onMouseButton(MouseButton button, bool down) noexcept
