@@ -231,4 +231,84 @@ namespace darmok
 		);
 	}
 
+	namespace lua
+	{
+		namespace transform
+		{
+			std::reference_wrapper<Transform> addEntityComponent1(LuaEntity& entity) noexcept
+			{
+				return entity.addComponent<Transform>();
+			}
+
+			std::reference_wrapper<Transform> addEntityComponent2(LuaEntity& entity, const VarVec3& pos) noexcept
+			{
+				return entity.addComponent<Transform>(LuaMath::tableToGlm(pos));
+			}
+
+			std::reference_wrapper<Transform> addEntityComponent3(LuaEntity& entity, OptionalRef<Transform> parent) noexcept
+			{
+				auto& trans = entity.addComponent<Transform>();
+				trans.setParent(parent);
+				return trans;
+			}
+
+			std::reference_wrapper<Transform> addEntityComponent4(LuaEntity& entity, OptionalRef<Transform> parent, const VarVec3& pos) noexcept
+			{
+				return entity.addComponent<Transform>(parent, LuaMath::tableToGlm(pos));
+			}
+
+			OptionalRef<Transform>::std_t getEntityComponent(LuaEntity& entity) noexcept
+			{
+				return entity.getScene().getReal()->getComponent<Transform>(entity.getReal());
+			}
+
+			std::optional<LuaEntity> getEntity(Transform& self, LuaScene& scene) noexcept
+			{
+				return scene.getEntity(self);
+			}
+
+			void rotate2(Transform& self, const VarVec3& v) noexcept
+			{
+				self.rotate(LuaMath::tableToGlm(v));
+			}
+
+			void rotate1(Transform& self, float x, float y, float z) noexcept
+			{
+				rotate2(self, glm::vec3(x, y, z));
+			}
+		}
+
+		void bindTransform(sol::state_view& lua) noexcept
+		{
+			lua.new_usertype<Transform>("Transform",
+				sol::no_constructor,
+				"type_id", &entt::type_hash<Transform>::value /*,
+				"add_entity_component", sol::overload(
+					&transform::addEntityComponent1,
+					&transform::addEntityComponent2,
+					&transform::addEntityComponent3,
+					&transform::addEntityComponent4
+				),
+				"get_entity_component", &transform::getEntityComponent,
+				"get_entity", &transform::getEntity,
+
+				"position", sol::property(&Transform::getPosition, &Transform::setPosition),
+				"rotation", sol::property(&Transform::getRotation, &Transform::setRotation),
+				"euler_angles", sol::property(&Transform::getEulerAngles, &Transform::setEulerAngles),
+				"forward", sol::property(&Transform::getForward),
+				"right", sol::property(&Transform::getRight),
+				"up", sol::property(&Transform::getUp),
+				"scale", sol::property(&Transform::getScale, &Transform::setScale),
+				"pivot", sol::property(&Transform::getPivot, &Transform::setPivot),
+				"local_matrix", sol::property(&Transform::getLocalMatrix, &Transform::setLocalMatrix),
+				"local_to_world_matrix", sol::property(&Transform::getWorldMatrix),
+				"world_to_local_matrix", sol::property(&Transform::getWorldInverse),
+				"parent", sol::property(sol::resolve<OptionalRef<Transform>()>(&Transform::getParent), &Transform::setParent),
+				"rotate", sol::overload(&transform::rotate1, &transform::rotate2),
+				"look_dir", sol::overload(&Transform::lookDir, &Transform::lookDir),
+				"look_at", sol::overload(&Transform::lookAt, &Transform::lookAt)
+				*/
+			);
+		}
+	}
 }

@@ -130,6 +130,11 @@ namespace darmok
         }
     }
 
+    RmluiRenderInterface::RmluiRenderInterface() noexcept
+        : _frameBuffer{ bgfx::kInvalidHandle }
+    {
+    }
+
     void RmluiRenderInterface::RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
     {
         if (!_encoder)
@@ -159,6 +164,8 @@ namespace darmok
         glm::mat4 proj(1);
         bx::mtxOrtho(glm::value_ptr(proj), 0, dim.x, dim.y, 0.F, -1000.F, 1000.F, 0.F, bgfx::getCaps()->homogeneousDepth);
         bgfx::setViewTransform(viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
+
+        bgfx::setViewFrameBuffer(viewId, _frameBuffer);
     }
 
     void RmluiRenderInterface::submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
@@ -285,6 +292,31 @@ namespace darmok
         _viewId.reset();
         SetTransform(nullptr);
         return _rendered;
+    }
+
+
+    void RmluiRenderInterface::setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept
+    {
+        if (_targetTextures != textures)
+        {
+            if (isValid(_frameBuffer))
+            {
+                bgfx::destroy(_frameBuffer);
+            }
+            _targetTextures = textures;
+            std::vector<bgfx::TextureHandle> handles;
+            handles.reserve(textures.size());
+            for (auto& tex : textures)
+            {
+                handles.push_back(tex->getHandle());
+            }
+            _frameBuffer = bgfx::createFrameBuffer(handles.size(), &handles.front());
+        }
+    }
+
+    const std::vector<std::shared_ptr<Texture>>& RmluiRenderInterface::getTargetTextures() noexcept
+    {
+        return _targetTextures;
     }
 
     RmluiSystemInterface::RmluiSystemInterface() noexcept
@@ -469,6 +501,11 @@ namespace darmok
     OptionalRef<Rml::Context> RmluiAppComponentImpl::getContext() const noexcept
     {
         return _context;
+    }
+
+    RmluiRenderInterface& RmluiAppComponentImpl::getRenderInterface() noexcept
+    {
+        return _render;
     }
 
     void RmluiSharedAppComponent::init(App& app) noexcept
@@ -743,6 +780,17 @@ namespace darmok
     OptionalRef<Rml::Context> RmluiAppComponent::getContext() const noexcept
     {
         return _impl->getContext();
+    }
+
+    RmluiAppComponent& RmluiAppComponent::setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept
+    {
+        _impl->getRenderInterface().setTargetTextures(textures);
+        return *this;
+    }
+
+    const std::vector<std::shared_ptr<Texture>>& RmluiAppComponent::getTargetTextures() noexcept
+    {
+        return _impl->getRenderInterface().getTargetTextures();
     }
 
     void RmluiAppComponent::init(App& app)

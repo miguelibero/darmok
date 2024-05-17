@@ -58,6 +58,12 @@ namespace darmok
 		}
 
         template<typename T>
+        OptionalRef<T> getComponent(Entity entity) noexcept
+        {
+            return getRegistry().try_get<T>(entity);
+        }
+
+        template<typename T>
         OptionalRef<T> getComponentInChildren(Entity entity) noexcept
         {
             auto& registry = getRegistry();

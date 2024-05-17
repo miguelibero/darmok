@@ -213,7 +213,10 @@ end
 
 	void LuaScene::configure(sol::state_view& lua) noexcept
 	{
-		LuaTransform::configure(lua);
+		// LuaTransform::configure(lua);
+
+		lua::bindTransform(lua);
+
 		LuaCamera::configure(lua);
 		LuaEntity::configure(lua);
 		LuaAmbientLight::configure(lua);

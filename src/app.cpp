@@ -289,7 +289,7 @@ namespace darmok
 		}
 		auto component = std::shared_ptr<AppComponent>(callback());
 		auto r = _sharedComponents.emplace(typeHash, component);
-		if (_app.hasValue())
+		if (_app)
 		{
 			component->init(_app.value());
 		}
@@ -303,7 +303,7 @@ namespace darmok
 
 	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
 	{
-		if (_app.hasValue())
+		if (_app)
 		{
 			component->init(_app.value());
 		}

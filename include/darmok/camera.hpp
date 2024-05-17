@@ -123,7 +123,6 @@ namespace darmok
         OptionalRef<App> _app;
         std::vector<std::shared_ptr<Texture>> _targetTextures;
         bgfx::FrameBufferHandle _frameBuffer;
-
     };
 
     class ViewRect final

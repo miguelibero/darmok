@@ -22,6 +22,7 @@ namespace darmok
 	class RmluiRenderInterface final : public Rml::RenderInterface
 	{
 	public:
+		RmluiRenderInterface() noexcept;
 		void RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept override;
 		void EnableScissorRegion(bool enable) noexcept override;
 		void SetScissorRegion(int x, int y, int width, int height) noexcept override;
@@ -39,6 +40,8 @@ namespace darmok
 		void beforeRender(bgfx::ViewId viewId) noexcept;
 		bool afterRender() noexcept;
 		void shutdown() noexcept;
+		void setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
+		const std::vector<std::shared_ptr<Texture>>& getTargetTextures() noexcept;
 
 	private:
 
@@ -62,7 +65,8 @@ namespace darmok
 		bool _scissorEnabled;
 		bool _rendered;
 		bool _viewSetup;
-		glm::uvec2 _size;
+		std::vector<std::shared_ptr<Texture>> _targetTextures;
+		bgfx::FrameBufferHandle _frameBuffer;
 
 		bool createTexture(Rml::TextureHandle& handle, const DataView& data, const Rml::Vector2i& dimensions) noexcept;
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
@@ -139,6 +143,7 @@ namespace darmok
 		bool getInputActive() const noexcept;
 
 		OptionalRef<Rml::Context> getContext() const noexcept;
+		RmluiRenderInterface& getRenderInterface() noexcept;
 
 		void init(App& app);
 		void shutdown() noexcept;

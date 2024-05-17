@@ -2,8 +2,9 @@
 
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
-#include <string>
 #include <glm/glm.hpp>
+#include <string>
+#include <vector>
 
 namespace Rml
 {
@@ -13,6 +14,7 @@ namespace Rml
 namespace darmok
 {
     class RmluiAppComponentImpl;
+	class Texture;
 
     class RmluiAppComponent final : public AppComponent
     {
@@ -21,6 +23,8 @@ namespace darmok
 		DLLEXPORT RmluiAppComponent(const std::string& name, const glm::uvec2& size) noexcept;
 
 		DLLEXPORT OptionalRef<Rml::Context> getContext() const noexcept;
+		DLLEXPORT RmluiAppComponent& setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
+		DLLEXPORT const std::vector<std::shared_ptr<Texture>>& getTargetTextures() noexcept;
 
 		void init(App& app) override;
 		void shutdown() noexcept override;

@@ -1017,7 +1017,7 @@ namespace darmok
 		if (auto v = std::get_if<GamepadBindingKey>(&binding.key))
 		{
 			auto gamepad = getGamepad(v->gamepad);
-			if (gamepad.hasValue())
+			if (gamepad)
 			{
 				return gamepad->getButton(v->button);
 			}
@@ -1181,12 +1181,7 @@ namespace darmok
 
 	OptionalRef<const Gamepad> Input::getGamepad(uint8_t num) const noexcept
 	{
-		auto gamepad = _impl->getGamepad(num);
-		if (gamepad)
-		{
-			return gamepad.value();
-		}
-		return nullptr;
+		return _impl->getGamepad(num);
 	}
 
 	Gamepads& Input::getGamepads() noexcept

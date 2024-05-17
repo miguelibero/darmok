@@ -91,7 +91,7 @@ namespace darmok
 	void GamepadStickEvent::process(Input& input) noexcept
 	{
 		auto gamepad = input.getGamepad(_gamepad);
-		if (gamepad.hasValue())
+		if (gamepad)
 		{
 			gamepad->getImpl().setStick(_stick, _value);
 		}
@@ -108,7 +108,7 @@ namespace darmok
 	void GamepadButtonEvent::process(Input& input) noexcept
 	{
 		auto gamepad = input.getGamepad(_gamepad);
-		if (gamepad.hasValue())
+		if (gamepad)
 		{
 			gamepad->getImpl().setButton(_button, _down);
 		}
@@ -125,7 +125,7 @@ namespace darmok
 	{
 		DBG("gamepad %d, %d", _gamepad, _connected);
 		auto gamepad = input.getGamepad(_gamepad);
-		if (gamepad.hasValue())
+		if (gamepad)
 		{
 			gamepad->getImpl().setConnected(_connected);
 		}

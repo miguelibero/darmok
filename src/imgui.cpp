@@ -351,7 +351,7 @@ namespace darmok
 
 	void ImguiAppComponentImpl::updateInput(float dt) noexcept
 	{
-		if (!_app.hasValue())
+		if (!_app)
 		{
 			return;
 		}

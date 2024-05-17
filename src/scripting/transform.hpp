@@ -65,4 +65,9 @@ namespace darmok
 		static std::optional<LuaTransform> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
+
+	namespace lua
+	{
+		void bindTransform(sol::state_view& lua) noexcept;
+	}
 }

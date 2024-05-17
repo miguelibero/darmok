@@ -68,7 +68,7 @@ namespace darmok
 
     void FrameAnimationUpdater::update(float deltaTime)
     {
-        if (!_scene.hasValue())
+        if (!_scene)
         {
             return;
         }
