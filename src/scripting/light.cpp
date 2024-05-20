@@ -29,24 +29,24 @@ namespace darmok
 		_light->setRadius(radius);
 	}
 
-	void LuaPointLight::setAttenuation(const glm::vec3& attn) noexcept
+	void LuaPointLight::setAttenuation(const VarLuaTable<glm::vec3>& attn) noexcept
 	{
-		_light->setAttenuation(attn);
+		_light->setAttenuation(LuaGlm::tableGet(attn));
 	}
 
-	void LuaPointLight::setColor(const Color3& color) noexcept
+	void LuaPointLight::setColor(const VarLuaTable<Color3>& color) noexcept
 	{
-		_light->setColor(color);
+		_light->setColor(LuaGlm::tableGet(color));
 	}
 
-	void LuaPointLight::setDiffuseColor(const Color3& color) noexcept
+	void LuaPointLight::setDiffuseColor(const VarLuaTable<Color3>& color) noexcept
 	{
-		_light->setDiffuseColor(color);
+		_light->setDiffuseColor(LuaGlm::tableGet(color));
 	}
 
-	void LuaPointLight::setSpecularColor(const Color3& color) noexcept
+	void LuaPointLight::setSpecularColor(const VarLuaTable<Color3>& color) noexcept
 	{
-		_light->setSpecularColor(color);
+		_light->setSpecularColor(LuaGlm::tableGet(color));
 	}
 
 	float LuaPointLight::getIntensity() const noexcept
@@ -134,9 +134,9 @@ namespace darmok
 		_light->setIntensity(intensity);
 	}
 
-	void LuaAmbientLight::setColor(const Color3& color) noexcept
+	void LuaAmbientLight::setColor(const VarLuaTable<Color3>& color) noexcept
 	{
-		_light->setColor(color);
+		_light->setColor(LuaGlm::tableGet(color));
 	}
 
 	const Color3& LuaAmbientLight::getColor() const noexcept

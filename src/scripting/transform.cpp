@@ -103,69 +103,69 @@ namespace darmok
 		return _transform->getWorldInverse();
 	}
 
-	void LuaTransform::setPosition(const glm::vec3& v) noexcept
+	void LuaTransform::setPosition(const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		_transform->setPosition(v);
+		_transform->setPosition(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::setEulerAngles(const glm::vec3& v) noexcept
+	void LuaTransform::setEulerAngles(const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		_transform->setEulerAngles(v);
+		_transform->setEulerAngles(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::setRotation(const glm::quat& v) noexcept
+	void LuaTransform::setRotation(const VarLuaTable<glm::quat>& v) noexcept
 	{
-		_transform->setRotation(v);
+		_transform->setRotation(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::setForward(const glm::vec3& v) noexcept
+	void LuaTransform::setForward(const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		_transform->setForward(v);
+		_transform->setForward(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::setScale(const glm::vec3& v) noexcept
+	void LuaTransform::setScale(const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		_transform->setScale(v);
+		_transform->setScale(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::setPivot(const glm::vec3& v) noexcept
+	void LuaTransform::setPivot(const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		_transform->setPivot(v);
+		_transform->setPivot(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::lookDir1(const glm::vec3& v) noexcept
+	void LuaTransform::lookDir1(const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		_transform->lookDir(v);
+		_transform->lookDir(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::lookDir2(const glm::vec3& v, const glm::vec3& up) noexcept
+	void LuaTransform::lookDir2(const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
 	{
-		_transform->lookDir(v, up);
+		_transform->lookDir(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
 	}
 
-	void LuaTransform::lookAt1(const glm::vec3& v) noexcept
+	void LuaTransform::lookAt1(const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		_transform->lookAt(v);
+		_transform->lookAt(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::lookAt2(const glm::vec3& v, const glm::vec3& up) noexcept
+	void LuaTransform::lookAt2(const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
 	{
-		_transform->lookAt(v, up);
+		_transform->lookAt(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
 	}
 
-	void LuaTransform::setMatrix(const glm::mat4& v) noexcept
+	void LuaTransform::setMatrix(const VarLuaTable<glm::mat4>& v) noexcept
 	{
-		_transform->setLocalMatrix(v);
+		_transform->setLocalMatrix(LuaGlm::tableGet(v));
 	}
 
 	void LuaTransform::rotate1(float x, float y, float z) noexcept
 	{
-		rotate2(glm::vec3(x, y, z));
+		_transform->rotate(glm::vec3(x, y, z));
 	}
 
-	void LuaTransform::rotate2(const glm::vec3& v) noexcept
+	void LuaTransform::rotate2(const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		_transform->rotate(v);
+		_transform->rotate(LuaGlm::tableGet(v));
 	}
 
 	LuaTransform LuaTransform::addEntityComponent1(LuaEntity& entity) noexcept
@@ -173,9 +173,9 @@ namespace darmok
 		return entity.addComponent<Transform>();
 	}
 
-	LuaTransform LuaTransform::addEntityComponent2(LuaEntity& entity, const glm::vec3& pos) noexcept
+	LuaTransform LuaTransform::addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept
 	{
-		return entity.addComponent<Transform>(pos);
+		return entity.addComponent<Transform>(LuaGlm::tableGet(pos));
 	}
 
 	LuaTransform LuaTransform::addEntityComponent3(LuaEntity& entity, LuaTransform& parent) noexcept
@@ -185,9 +185,9 @@ namespace darmok
 		return trans;
 	}
 
-	LuaTransform LuaTransform::addEntityComponent4(LuaEntity& entity, LuaTransform& parent, const glm::vec3& pos) noexcept
+	LuaTransform LuaTransform::addEntityComponent4(LuaEntity& entity, LuaTransform& parent, const VarLuaTable<glm::vec3>& pos) noexcept
 	{
-		return entity.addComponent<Transform>(parent.getReal(), pos);
+		return entity.addComponent<Transform>(parent.getReal(), LuaGlm::tableGet(pos));
 	}
 
 	std::optional<LuaTransform> LuaTransform::getEntityComponent(LuaEntity& entity) noexcept

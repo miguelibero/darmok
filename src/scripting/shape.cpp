@@ -1,4 +1,5 @@
 #include "shape.hpp"
+#include "glm.hpp"
 #include <darmok/color.hpp>
 #include <darmok/shape.hpp>
 
@@ -6,32 +7,63 @@ namespace darmok
 {
     void LuaShape::bind(sol::state_view& lua) noexcept
     {
-		lua.new_usertype<Quad>("Quad",
-			sol::constructors<Quad(const glm::vec2&, const glm::vec2&), Quad(const glm::vec2&), Quad()>(),
+		lua.new_usertype<Quad>("Quad", sol::no_constructor,
+			"new", sol::overload(
+				[]() { return Quad(); },
+				[](const VarLuaTable<glm::vec2>& size) { 
+					return Quad(LuaGlm::tableGet(size)); },
+				[](const VarLuaTable<glm::vec2>& size, const VarLuaTable<glm::vec2>& origin) {
+					return Quad(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
+			),
 			"size", &Quad::size,
 			"origin", &Quad::origin,
 			"to_lines", &Quad::toLines
 		);
 
-		lua.new_usertype<Cube>("Cube",
-			sol::constructors<Cube(const glm::vec3&, const glm::vec3&), Cube(const glm::vec3&), Cube()>(),
+		lua.new_usertype<Cube>("Cube", sol::no_constructor,
+			"new", sol::overload(
+				[]() { return Cube(); },
+				[](const VarLuaTable<glm::vec3>& size) {
+					return Cube(LuaGlm::tableGet(size)); },
+				[](const VarLuaTable<glm::vec3>& size, const VarLuaTable<glm::vec3>& origin) {
+					return Cube(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
+			),
 			"size", &Cube::size,
 			"origin", &Cube::origin
 		);
 
-		lua.new_usertype<Triangle>("Triangle",
-			sol::constructors<Triangle(const Triangle::Vertices&)>(),
+		lua.new_usertype<Triangle>("Triangle", sol::no_constructor,
+			"new", sol::overload(
+				[]() { return Line(); },
+				[](const Triangle::Vertices& vertices) {
+					return Triangle(vertices); },
+				[](const VarLuaTable<glm::vec3>& p1, const VarLuaTable<glm::vec3>& p2, const VarLuaTable<glm::vec3>& p3) {
+					return Triangle(LuaGlm::tableGet(p1), LuaGlm::tableGet(p2), LuaGlm::tableGet(p3));
+				}
+			),
 			"vertices", &Triangle::vertices
 		);
 
-		lua.new_usertype<Plane>("Plane",
-			sol::constructors<Plane(const glm::vec3&, const glm::vec3&), Plane(const glm::vec3&), Plane()>(),
+		lua.new_usertype<Plane>("Plane", sol::no_constructor,
+			"new", sol::overload(
+				[]() { return Plane(); },
+				[](const VarLuaTable<glm::vec3>& normal) {
+					return Plane(LuaGlm::tableGet(normal)); },
+				[](const VarLuaTable<glm::vec3>& normal, const VarLuaTable<glm::vec3>& origin) {
+					return Plane(LuaGlm::tableGet(normal), LuaGlm::tableGet(origin)); }
+			),
 			"normal", &Plane::normal,
 			"origin", &Plane::origin
 		);
 
-		lua.new_usertype<Ray>("Ray",
-			sol::constructors<Ray(const glm::vec3&, const glm::vec3&), Ray(const glm::vec3&), Ray()>(),
+		lua.new_usertype<Ray>("Ray", sol::no_constructor,
+			"new", sol::overload(
+				[]() { return Ray(); },
+				[](const VarLuaTable<glm::vec3>& dir) {
+					return Ray(LuaGlm::tableGet(dir)); },
+				[](const VarLuaTable<glm::vec3>& dir, const VarLuaTable<glm::vec3>& origin) {
+					return Ray(LuaGlm::tableGet(dir), LuaGlm::tableGet(origin)); }
+			),
 			"direction", &Ray::direction,
 			"origin", &Ray::origin,
 			sol::meta_function::multiplication, &Ray::operator*,
@@ -44,8 +76,15 @@ namespace darmok
 			"to_line", &Ray::toLine
 		);
 
-		lua.new_usertype<Line>("Line",
-			sol::constructors<Line(const Line::Points&)>(),
+		lua.new_usertype<Line>("Line", sol::no_constructor,
+			"new", sol::overload(
+				[]() { return Line(); },
+				[](const Line::Points& points) {
+					return Line(points); },
+				[](const VarLuaTable<glm::vec3>& p1, const VarLuaTable<glm::vec3>& p2) {
+					return Line(LuaGlm::tableGet(p1), LuaGlm::tableGet(p2));
+				}
+			),
 			"points", &Line::points,
 			sol::meta_function::multiplication, &Line::operator*
 		);

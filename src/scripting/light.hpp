@@ -3,7 +3,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/color_fwd.hpp>
 #include <sol/sol.hpp>
-#include <glm/glm.hpp>
+#include "glm.hpp"
 
 namespace darmok
 {
@@ -21,10 +21,10 @@ namespace darmok
 
 		void setIntensity(float intensity) noexcept;
 		void setRadius(float radius) noexcept;
-		void setAttenuation(const glm::vec3& attn) noexcept;
-		void setColor(const Color3& color) noexcept;
-		void setDiffuseColor(const Color3& color) noexcept;
-		void setSpecularColor(const Color3& color) noexcept;
+		void setAttenuation(const VarLuaTable<glm::vec3>& attn) noexcept;
+		void setColor(const VarLuaTable<Color3>& color) noexcept;
+		void setDiffuseColor(const VarLuaTable<Color3>& color) noexcept;
+		void setSpecularColor(const VarLuaTable<Color3>& color) noexcept;
 
 		float getIntensity() const noexcept;
 		float getRadius() const noexcept;
@@ -53,7 +53,7 @@ namespace darmok
 		AmbientLight& getReal();
 
 		void setIntensity(float intensity) noexcept;
-		void setColor(const Color3& color) noexcept;
+		void setColor(const VarLuaTable<Color3>& color) noexcept;
 
 		const Color3& getColor() const noexcept;
 		float getIntensity() const noexcept;

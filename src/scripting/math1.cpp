@@ -1,4 +1,5 @@
 #include "math.hpp"
+#include "glm.hpp"
 #include <darmok/color.hpp>
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -16,7 +17,6 @@ namespace darmok
 		usertype["transpose"] = sol::resolve<mat(const mat&)>(glm::transpose);
 		usertype["det"] = sol::resolve<val(const mat&)>(glm::determinant);
 	}
-
 
 	template<glm::length_t L, glm::qualifier Q = glm::defaultp>
 	void configLuaGlmVec(sol::usertype<glm::vec<L, glm::f32, Q>>& usertype) noexcept
@@ -130,27 +130,4 @@ namespace darmok
 		bindGlmQuat(lua);
 		bindColor(lua);
     }
-
-	bool LuaGlm::numberTableSolCheck(size_t size, lua_State* lua, int index, sol::stack::record& tracking) noexcept
-	{
-		int absindex = lua_absindex(lua, index);
-		tracking.use(1);
-		if (lua_type(lua, absindex) != LUA_TTABLE)
-		{
-			return false;
-		}
-		if (lua_rawlen(lua, absindex) != size)
-		{
-			return false;
-		}
-		for (int i = 1; i <= size; i++)
-		{
-			auto type = lua_rawgeti(lua, absindex, i);
-			if (type != LUA_TNUMBER)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
 }

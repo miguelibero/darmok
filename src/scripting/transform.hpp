@@ -1,6 +1,6 @@
 #pragma once
 
-#include <variant>
+#include "glm.hpp"
 #include <optional>
 #include <sol/sol.hpp>
 #include <darmok/color.hpp>
@@ -36,21 +36,21 @@ namespace darmok
 		const glm::mat4& getLocalToWorldMatrix() const noexcept;
 		const glm::mat4& getWorldToLocalMatrix() const noexcept;
 
-		void setPosition(const glm::vec3& v) noexcept;
-		void setRotation(const glm::quat& v) noexcept;
-		void setEulerAngles(const glm::vec3& v) noexcept;
-		void setForward(const glm::vec3& v) noexcept;
-		void setScale(const glm::vec3& v) noexcept;
-		void setPivot(const glm::vec3& v) noexcept;
-		void setMatrix(const glm::mat4& v) noexcept;
+		void setPosition(const VarLuaTable<glm::vec3>& v) noexcept;
+		void setRotation(const VarLuaTable<glm::quat>& v) noexcept;
+		void setEulerAngles(const VarLuaTable<glm::vec3>& v) noexcept;
+		void setForward(const VarLuaTable<glm::vec3>& v) noexcept;
+		void setScale(const VarLuaTable<glm::vec3>& v) noexcept;
+		void setPivot(const VarLuaTable<glm::vec3>& v) noexcept;
+		void setMatrix(const VarLuaTable<glm::mat4>& v) noexcept;
 
 		void rotate1(float x, float y, float z) noexcept;
-		void rotate2(const glm::vec3& v) noexcept;
+		void rotate2(const VarLuaTable<glm::vec3>& v) noexcept;
 
-		void lookDir1(const glm::vec3& v) noexcept;
-		void lookDir2(const glm::vec3& v, const glm::vec3& up) noexcept;
-		void lookAt1(const glm::vec3& v) noexcept;
-		void lookAt2(const glm::vec3& v, const glm::vec3& up) noexcept;
+		void lookDir1(const VarLuaTable<glm::vec3>& v) noexcept;
+		void lookDir2(const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept;
+		void lookAt1(const VarLuaTable<glm::vec3>& v) noexcept;
+		void lookAt2(const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 
@@ -58,9 +58,9 @@ namespace darmok
 		OptionalRef<Transform> _transform;
 
 		static LuaTransform addEntityComponent1(LuaEntity& entity) noexcept;
-		static LuaTransform addEntityComponent2(LuaEntity& entity, const glm::vec3& pos) noexcept;
+		static LuaTransform addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept;
 		static LuaTransform addEntityComponent3(LuaEntity& entity, LuaTransform& parent) noexcept;
-		static LuaTransform addEntityComponent4(LuaEntity& entity, LuaTransform& parent, const glm::vec3& pos) noexcept;
+		static LuaTransform addEntityComponent4(LuaEntity& entity, LuaTransform& parent, const VarLuaTable<glm::vec3>& pos) noexcept;
 		static std::optional<LuaTransform> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};

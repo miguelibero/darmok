@@ -193,7 +193,9 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/window.cpp
     ${SRC_DIR}/scripting/model.cpp
   )
-  list(APPEND HEADERS ${INCLUDE_DIR}/scripting.hpp)
+  list(APPEND HEADERS
+    ${INCLUDE_DIR}/scripting.hpp
+  )
   source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
 endif()
 

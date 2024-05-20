@@ -155,11 +155,11 @@ end
 		return LuaEntity(getRegistry().create(), std::weak_ptr<Scene>(_scene));
 	}
 
-	LuaEntity LuaScene::createEntity2(const glm::vec3& position) noexcept
+	LuaEntity LuaScene::createEntity2(const VarLuaTable<glm::vec3>& position) noexcept
 	{
 		auto& registry = getRegistry();
 		auto entity = registry.create();
-		registry.emplace<Transform>(entity, position);
+		registry.emplace<Transform>(entity, LuaGlm::tableGet(position));
 		return LuaEntity(entity, std::weak_ptr<Scene>(_scene));
 	}
 
@@ -187,12 +187,12 @@ end
 		return LuaEntity(entity, std::weak_ptr<Scene>(_scene));
 	}
 
-	LuaEntity LuaScene::createEntity4(const VarParent& parent, const glm::vec3& position) noexcept
+	LuaEntity LuaScene::createEntity4(const VarParent& parent, const VarLuaTable<glm::vec3>& position) noexcept
 	{
 		auto& registry = getRegistry();
 		auto entity = registry.create();
 		auto parentTrans = getVarParentTransform(registry, parent);
-		registry.emplace<Transform>(entity, parentTrans, position);
+		registry.emplace<Transform>(entity, parentTrans, LuaGlm::tableGet(position));
 		return LuaEntity(entity, std::weak_ptr<Scene>(_scene));
 	}
 

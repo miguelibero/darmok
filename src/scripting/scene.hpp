@@ -68,9 +68,9 @@ namespace darmok
 		std::string to_string() const noexcept;
 		EntityRegistry& getRegistry() noexcept;
 		LuaEntity createEntity1() noexcept;
-		LuaEntity createEntity2(const glm::vec3& position) noexcept;
+		LuaEntity createEntity2(const VarLuaTable<glm::vec3>& position) noexcept;
 		LuaEntity createEntity3(const VarParent& parent) noexcept;
-		LuaEntity createEntity4(const VarParent& parent, const glm::vec3& position) noexcept;
+		LuaEntity createEntity4(const VarParent& parent, const VarLuaTable<glm::vec3>& position) noexcept;
 		bool destroyEntity(const LuaEntity& entity) noexcept;
 
 		template<typename T>
