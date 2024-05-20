@@ -57,8 +57,7 @@ namespace darmok
 			{ "Hidden", WindowCursorMode::Hidden }
 		});
 
-		lua.new_usertype<LuaWindow>("Window",
-			sol::constructors<>(),
+		lua.new_usertype<LuaWindow>("Window", sol::no_constructor,
 			"size", sol::property(&LuaWindow::getSize),
 			"pixel_size", sol::property(&LuaWindow::getPixelSize),
 			"mode", sol::property(&LuaWindow::setMode),

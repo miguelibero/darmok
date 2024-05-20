@@ -147,6 +147,10 @@ if(DARMOK_BUILD_RMLUI)
   list(APPEND SOURCES ${SRC_DIR}/rmlui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/rmlui.hpp)
 
+  if(DARMOK_BUILD_SCRIPTING)
+    list(APPEND SCRIPTING_SOURCES ${SRC_DIR}/scripting/rmlui.cpp)
+  endif()
+
   darmok_process_assets(
     ASSETS "assets/rmlui"
     HEADER_VAR_PREFIX "rmlui_"
@@ -397,12 +401,6 @@ if(DARMOK_BUILD_SCRIPTING)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_SCRIPTING)
   list(APPEND VCPKG_MANIFEST_FEATURES "scripting")
   add_library(sol2::sol2 ALIAS sol2)
-
-  if(DARMOK_BUILD_RMLUI)
-    set(RmlSolLua_DIR ${LOCAL_MODULE_PATH})
-    find_package(RmlSolLua CONFIG REQUIRED)
-    target_link_libraries(${LIB_NAME} PRIVATE RmlLua RmlSolLua)
-  endif()
 endif()
 
 if(DARMOK_BUILD_SCRIPTING_EXE)

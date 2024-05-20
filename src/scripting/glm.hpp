@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <variant>
+#include <optional>
 #include <darmok/color_fwd.hpp>
 
 namespace darmok
@@ -59,6 +60,26 @@ namespace darmok
 			usertype[sol::meta_function::multiplication] = sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator*), sol::resolve<cls(const cls&, val)>(glm::operator*));
 			usertype[sol::meta_function::division] = sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator/), sol::resolve<cls(const cls&, val)>(glm::operator/));
 			usertype[sol::meta_function::to_string] = sol::resolve<std::string(const cls&)>(glm::to_string);
+		}
+
+		template<typename T>
+		static void tableInit(std::optional<T>& opt, const sol::table& table)
+		{
+			if (table.empty())
+			{
+				opt.reset();
+				return;
+			}
+			if (opt)
+			{
+				tableInit(opt.value(), table);
+			}
+			else
+			{
+				T val;
+				tableInit(val, table);
+				opt = val;
+			}
 		}
 
 

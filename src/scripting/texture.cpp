@@ -22,13 +22,13 @@ namespace darmok
 	{
 	}
 
-	LuaTexture::LuaTexture(const glm::uvec2& size, bgfx::TextureFormat::Enum format, uint64_t flags) noexcept
-		: LuaTexture(Config{ size, format }, flags)
+	LuaTexture::LuaTexture(const VarLuaTable<glm::uvec2>& size, bgfx::TextureFormat::Enum format, uint64_t flags) noexcept
+		: LuaTexture(Config{ LuaGlm::tableGet(size), format }, flags)
 	{
 	}
 
-	LuaTexture::LuaTexture(const glm::uvec2& size, uint64_t flags) noexcept
-		: LuaTexture(Config{ size }, flags)
+	LuaTexture::LuaTexture(const VarLuaTable<glm::uvec2>& size, uint64_t flags) noexcept
+		: LuaTexture(Config{ LuaGlm::tableGet(size) }, flags)
 	{
 	}
 
@@ -259,7 +259,7 @@ namespace darmok
 		lua.new_usertype<TextureConfig>("TextureConfig",
 			sol::factories(
 				[]() { return TextureConfig{}; },
-				[](const glm::uvec2& size) { return TextureConfig{ size }; }
+				[](const VarLuaTable<glm::uvec2>& size) { return TextureConfig{ LuaGlm::tableGet(size) }; }
 			),
 			"size", &TextureConfig::size,
 			"depth", &TextureConfig::depth,
@@ -275,10 +275,10 @@ namespace darmok
 				LuaTexture(const LuaImage&, uint64_t),
 				LuaTexture(const TextureConfig&),
 				LuaTexture(const TextureConfig&, uint64_t),
-				LuaTexture(const glm::uvec2&),
-				LuaTexture(const glm::uvec2&, uint64_t),
-				LuaTexture(const glm::uvec2&, const bgfx::TextureFormat::Enum&),
-				LuaTexture(const glm::uvec2&, const bgfx::TextureFormat::Enum&, uint64_t)
+				LuaTexture(const VarLuaTable<glm::uvec2>&),
+				LuaTexture(const VarLuaTable<glm::uvec2>&, uint64_t),
+				LuaTexture(const VarLuaTable<glm::uvec2>&, const bgfx::TextureFormat::Enum&),
+				LuaTexture(const VarLuaTable<glm::uvec2>&, const bgfx::TextureFormat::Enum&, uint64_t)
 			>(),
 			"type", sol::property(&LuaTexture::getType),
 			"size", sol::property(&LuaTexture::getSize),

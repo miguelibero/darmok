@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <RmlUi/Core.h>
 #include <darmok/input.hpp>
@@ -40,8 +41,8 @@ namespace darmok
 		void beforeRender(bgfx::ViewId viewId) noexcept;
 		bool afterRender() noexcept;
 		void shutdown() noexcept;
-		void setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
-		const std::vector<std::shared_ptr<Texture>>& getTargetTextures() noexcept;
+		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
+		const std::shared_ptr<Texture>& getTargetTexture() noexcept;
 
 	private:
 
@@ -65,7 +66,7 @@ namespace darmok
 		bool _scissorEnabled;
 		bool _rendered;
 		bool _viewSetup;
-		std::vector<std::shared_ptr<Texture>> _targetTextures;
+		std::shared_ptr<Texture> _targetTexture;
 		bgfx::FrameBufferHandle _frameBuffer;
 
 		bool createTexture(Rml::TextureHandle& handle, const DataView& data, const Rml::Vector2i& dimensions) noexcept;
@@ -111,11 +112,13 @@ namespace darmok
 		OptionalRef<Element> find(Rml::FileHandle file) noexcept;
 	};
 
-	class IRmluiListener
+	class BX_NO_VTABLE IRmluiListener
 	{
-		void onRmluiInitialized();
-		void onRmluiContextCreated(Rml::Context context);
-		void onRmluiShutdown();
+	public:
+		virtual ~IRmluiListener() noexcept = default;
+		virtual void onRmluiInitialized() = 0;
+		virtual void onRmluiContextCreated(Rml::Context& context) = 0;
+		virtual void onRmluiShutdown() = 0;
 	};
 
 	class RmluiSharedAppComponent final : public AppComponent
@@ -139,6 +142,10 @@ namespace darmok
 
 		void setSize(const std::optional<glm::uvec2>& size) noexcept;
 		const std::optional<glm::uvec2>& getSize() const noexcept;
+
+		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
+		const std::shared_ptr<Texture>& getTargetTexture() noexcept;
+
 		void setInputActive(bool active) noexcept;
 		bool getInputActive() const noexcept;
 
@@ -157,7 +164,6 @@ namespace darmok
 		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseButton(MouseButton button, bool down) noexcept override;
-
 
 	private:
 		std::string _name;

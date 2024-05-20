@@ -2,6 +2,7 @@
 #include <darmok/app.hpp>
 #include <darmok/scripting.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/rmlui.hpp>
 #include <darmok/utils.hpp>
 #include <filesystem>
 #include "asset.hpp"
@@ -10,6 +11,8 @@
 #include "shape.hpp"
 #include "scene.hpp"
 #include "window.hpp"
+#include "texture.hpp"
+#include "rmlui.hpp"
 
 namespace darmok
 {
@@ -98,6 +101,51 @@ namespace darmok
 		return true;
 	}
 
+	LuaRmluiAppComponent LuaApp::getMainGui() noexcept
+	{
+		static const std::string name = "";
+		return getOrAddGui(name);
+	}
+
+	std::optional<LuaRmluiAppComponent> LuaApp::getGui(const std::string& name) noexcept
+	{
+		auto itr = _guiComponents.find(name);
+		if (itr == _guiComponents.end())
+		{
+			return std::nullopt;
+		}
+		return LuaRmluiAppComponent(itr->second);
+	}
+
+	LuaRmluiAppComponent LuaApp::getOrAddGui(const std::string& name) noexcept
+	{
+		auto itr = _guiComponents.find(name);
+		if (itr == _guiComponents.end())
+		{
+			auto& comp = _app->addComponent<RmluiAppComponent>(name);
+			itr = _guiComponents.emplace(name, comp).first;
+		}
+		return LuaRmluiAppComponent(itr->second);
+	}
+
+	LuaRmluiAppComponent LuaApp::addGui(const std::string& name)
+	{
+		auto& comp = _app->addComponent<RmluiAppComponent>(name);
+		_guiComponents.emplace(name, comp);
+		return LuaRmluiAppComponent(comp);
+	}
+
+	bool LuaApp::removeGui(const std::string& name) noexcept
+	{
+		auto itr = _guiComponents.find(name);
+		if (itr == _guiComponents.end())
+		{
+			return false;
+		}
+		_guiComponents.erase(itr);
+		return true;
+	}
+
 	LuaAssets LuaApp::getAssets() noexcept
 	{
 		return LuaAssets(_app->getAssets());
@@ -153,11 +201,17 @@ namespace darmok
 
 	void LuaApp::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaApp>("App",
+		lua.new_usertype<LuaApp>("App", sol::no_constructor,
 			"scene", sol::property(&LuaApp::getScene, &LuaApp::setScene),
 			"scenes", sol::property(&LuaApp::getScenes),
 			"add_scene", sol::overload(&LuaApp::addScene1, &LuaApp::addScene2),
 			"remove_scene", &LuaApp::removeScene,
+			
+			"gui", sol::property(&LuaApp::getMainGui),
+			"get_gui", &LuaApp::getGui,
+			"get_or_add_gui", &LuaApp::getOrAddGui,
+			"add_gui", &LuaApp::addGui,
+
 			"assets", sol::property(&LuaApp::getAssets),
 			"window", sol::property(&LuaApp::getWindow),
 			"input", sol::property(&LuaApp::getInput),
@@ -238,6 +292,7 @@ namespace darmok
 		LuaWindow::bind(lua);
 		LuaInput::bind(lua);
 		LuaApp::bind(lua);
+		LuaRmluiAppComponent::bind(lua);
 
 		_luaApp = LuaApp(app);
 		lua["app"] = std::ref(_luaApp);

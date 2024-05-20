@@ -295,28 +295,25 @@ namespace darmok
     }
 
 
-    void RmluiRenderInterface::setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept
+    void RmluiRenderInterface::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
     {
-        if (_targetTextures != textures)
+        if (_targetTexture != texture)
         {
             if (isValid(_frameBuffer))
             {
                 bgfx::destroy(_frameBuffer);
             }
-            _targetTextures = textures;
-            std::vector<bgfx::TextureHandle> handles;
-            handles.reserve(textures.size());
-            for (auto& tex : textures)
+            _targetTexture = texture;
+            if (_targetTexture != nullptr)
             {
-                handles.push_back(tex->getHandle());
+                _frameBuffer = bgfx::createFrameBuffer(1, &_targetTexture->getHandle());
             }
-            _frameBuffer = bgfx::createFrameBuffer(handles.size(), &handles.front());
         }
     }
 
-    const std::vector<std::shared_ptr<Texture>>& RmluiRenderInterface::getTargetTextures() noexcept
+    const std::shared_ptr<Texture>& RmluiRenderInterface::getTargetTexture() noexcept
     {
-        return _targetTextures;
+        return _targetTexture;
     }
 
     RmluiSystemInterface::RmluiSystemInterface() noexcept
@@ -486,6 +483,16 @@ namespace darmok
     const std::optional<glm::uvec2>& RmluiAppComponentImpl::getSize() const noexcept
     {
         return _size;
+    }
+
+    void RmluiAppComponentImpl::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
+    {
+        _render.setTargetTexture(texture);
+    }
+
+    const std::shared_ptr<Texture>& RmluiAppComponentImpl::getTargetTexture() noexcept
+    {
+        return _render.getTargetTexture();
     }
 
     void RmluiAppComponentImpl::setInputActive(bool active) noexcept
@@ -782,15 +789,26 @@ namespace darmok
         return _impl->getContext();
     }
 
-    RmluiAppComponent& RmluiAppComponent::setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept
+    RmluiAppComponent& RmluiAppComponent::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
     {
-        _impl->getRenderInterface().setTargetTextures(textures);
+        _impl->setTargetTexture(texture);
         return *this;
     }
 
-    const std::vector<std::shared_ptr<Texture>>& RmluiAppComponent::getTargetTextures() noexcept
+    const std::shared_ptr<Texture>& RmluiAppComponent::getTargetTexture() noexcept
     {
-        return _impl->getRenderInterface().getTargetTextures();
+        return _impl->getTargetTexture();
+    }
+
+    RmluiAppComponent& RmluiAppComponent::setSize(const std::optional<glm::uvec2>& size) noexcept
+    {
+        _impl->setSize(size);
+        return *this;
+    }
+
+    const std::optional<glm::uvec2>& RmluiAppComponent::getSize() noexcept
+    {
+        return _impl->getSize();
     }
 
     void RmluiAppComponent::init(App& app)

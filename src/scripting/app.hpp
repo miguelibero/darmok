@@ -3,7 +3,9 @@
 #include <darmok/optional_ref.hpp>
 #include <vector>
 #include <optional>
+#include <unordered_map>
 #include <sol/sol.hpp>
+#include "glm.hpp"
 
 namespace darmok
 {
@@ -12,7 +14,10 @@ namespace darmok
 	class LuaWindow;
 	class LuaInput;
 	class LuaScene;
+	class LuaTexture;
 	class SceneAppComponent;
+	class RmluiAppComponent;
+	class LuaRmluiAppComponent;
 
 	class LuaApp final
 	{
@@ -27,6 +32,12 @@ namespace darmok
 		bool addScene1(const LuaScene& scene) noexcept;
 		LuaScene addScene2() noexcept;
 		bool removeScene(const LuaScene& scene) noexcept;
+
+		LuaRmluiAppComponent getMainGui() noexcept;
+		std::optional<LuaRmluiAppComponent> getGui(const std::string& name) noexcept;
+		LuaRmluiAppComponent getOrAddGui(const std::string& name) noexcept;
+		LuaRmluiAppComponent addGui(const std::string& name);
+		bool removeGui(const std::string& name) noexcept;
 		
 		LuaAssets getAssets() noexcept;
 		LuaWindow getWindow() noexcept;
@@ -39,11 +50,13 @@ namespace darmok
 	private:
 		std::vector<sol::protected_function> _updates;
 		OptionalRef<App> _app;
+
 		using SceneComponents = std::vector<OptionalRef<SceneAppComponent>>;
 		SceneComponents _sceneComponents;
-
 		SceneComponents::iterator findSceneComponent(const LuaScene& scene) noexcept;
 
+		using RmluiComponents = std::unordered_map<std::string, OptionalRef<RmluiAppComponent>>;
+		RmluiComponents _guiComponents;
 	};
 
 	class ScriptingAppImpl final

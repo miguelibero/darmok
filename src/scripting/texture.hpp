@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include <variant>
-#include <glm/glm.hpp>
+#include "glm.hpp"
 #include <darmok/texture_fwd.hpp>
 #include <darmok/anim.hpp>
 #include <sol/sol.hpp>
@@ -21,8 +21,8 @@ namespace darmok
 		LuaTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		LuaTexture(const LuaImage& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		LuaTexture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		LuaTexture(const glm::uvec2& size, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		LuaTexture(const glm::uvec2& size, bgfx::TextureFormat::Enum format, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		LuaTexture(const VarLuaTable<glm::uvec2>& size, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		LuaTexture(const VarLuaTable<glm::uvec2>& size, bgfx::TextureFormat::Enum format, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		std::shared_ptr<Texture> getReal() const noexcept;
 		TextureType getType() const noexcept;
 		LuaTexture& setName(const std::string& name) noexcept;
