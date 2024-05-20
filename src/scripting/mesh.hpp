@@ -6,8 +6,8 @@
 #include <optional>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <glm/glm.hpp>
 #include <sol/sol.hpp>
-#include "math.hpp"
 
 namespace darmok
 {
@@ -23,7 +23,7 @@ namespace darmok
 
 		std::shared_ptr<IMesh> getReal() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<IMesh> _mesh;
 	};
@@ -59,14 +59,14 @@ namespace darmok
 		LuaMesh createSphere4(const Sphere& sphere, int lod) noexcept;
 		LuaMesh createQuad1() noexcept;
 		LuaMesh createQuad2(const Quad& quad) noexcept;
-		LuaMesh createQuad3(const VarUvec2& size) noexcept;
+		LuaMesh createQuad3(const glm::uvec2& size) noexcept;
 		LuaMesh createLineQuad1() noexcept;
 		LuaMesh createLineQuad2(const Quad& quad) noexcept;
 		LuaMesh createRay(const Ray& ray) noexcept;
 		LuaMesh createLine(const Line& line) noexcept;
 		LuaMesh createLines(const std::vector<Line>& lines) noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<MeshCreator> _creator;
 	};
@@ -88,7 +88,7 @@ namespace darmok
 		LuaMaterial getMaterial() const noexcept;
 		LuaRenderable& setMaterial(const LuaMaterial& material) noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Renderable> _renderable;
 

@@ -62,7 +62,7 @@ namespace darmok
 		return _img->getLayerCount();
 	}
 
-	void LuaImage::configure(sol::state_view& lua) noexcept
+	void LuaImage::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaImage>("Image",
 			sol::constructors<>(),

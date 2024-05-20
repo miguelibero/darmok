@@ -7,7 +7,6 @@
 #include <darmok/texture_fwd.hpp>
 #include <darmok/anim.hpp>
 #include <sol/sol.hpp>
-#include "math.hpp"
 
 namespace darmok
 {
@@ -22,8 +21,8 @@ namespace darmok
 		LuaTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		LuaTexture(const LuaImage& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		LuaTexture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		LuaTexture(const VarUvec2& size, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		LuaTexture(const VarUvec2& size, bgfx::TextureFormat::Enum format, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		LuaTexture(const glm::uvec2& size, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		LuaTexture(const glm::uvec2& size, bgfx::TextureFormat::Enum format, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		std::shared_ptr<Texture> getReal() const noexcept;
 		TextureType getType() const noexcept;
 		LuaTexture& setName(const std::string& name) noexcept;
@@ -34,7 +33,7 @@ namespace darmok
 		bool hasMips() const noexcept;
 		std::string to_string() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 
 	private:
 		std::shared_ptr<Texture> _texture;
@@ -50,7 +49,7 @@ namespace darmok
 		std::shared_ptr<TextureAtlas> getReal() const noexcept;
 		LuaTexture getTexture() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<TextureAtlas> _atlas;
 	};
@@ -75,7 +74,7 @@ namespace darmok
 		std::vector<AnimationFrame> createAnimation1(const std::string& namePrefix) const noexcept;
 		std::vector<AnimationFrame> createAnimation2(const std::string& namePrefix, float frameDuration) const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		LuaTextureAtlas _atlas;
 		std::shared_ptr<TextureAtlasMeshCreator> _creator;

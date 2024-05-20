@@ -20,7 +20,7 @@ namespace darmok
 		uint8_t getMipCount() const noexcept;
 		uint16_t getLayerCount() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<Image> _img;
 	};

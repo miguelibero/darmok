@@ -35,7 +35,7 @@ namespace darmok
 		bool unregisterUpdate(const sol::protected_function& func) noexcept;
 		void update(float deltaTime) noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::vector<sol::protected_function> _updates;
 		OptionalRef<App> _app;

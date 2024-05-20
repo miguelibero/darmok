@@ -4,44 +4,55 @@
 
 namespace darmok
 {
-	static glm::quat quatEuler(float x, float y, float z) noexcept
+	void LuaMath::bindColor(sol::state_view& lua) noexcept
+	{
+		auto color = lua.new_usertype<Color>("Color", sol::constructors<
+				Color(uint8_t, uint8_t, uint8_t, uint8_t)
+			>(),
+			"r", &Color::r, 
+			"g", &Color::g, 
+			"b", &Color::b, 
+			"a", &Color::a, 
+			"black", sol::var(Colors::black()), 
+			"white", sol::var(Colors::white()), 
+			"red", sol::var(Colors::red()), 
+			"green", sol::var(Colors::green()), 
+			"blue", sol::var(Colors::blue()), 
+			"yellow", sol::var(Colors::yellow()), 
+			"cyan", sol::var(Colors::cyan()), 
+			"magenta", sol::var(Colors::magenta()), 
+			"norm", sol::resolve<glm::vec4(const Color&)>(Colors::normalize), 
+			"to_num", sol::resolve<uint32_t(const Color&)>(&Colors::toNumber)
+		);
+		LuaGlm::configUsertype(color);
+
+		auto color3 = lua.new_usertype<Color3>("Color3", sol::constructors<
+			Color(uint8_t, uint8_t, uint8_t)
+		>(),
+			"r", &Color3::r, 
+			"g", &Color3::g, 
+			"b", &Color3::b, 
+			"black", sol::var(Colors::black3()), 
+			"white", sol::var(Colors::white3()), 
+			"red", sol::var(Colors::red3()), 
+			"green", sol::var(Colors::green3()), 
+			"blue", sol::var(Colors::blue3()), 
+			"yellow", sol::var(Colors::yellow3()), 
+			"cyan", sol::var(Colors::cyan3), 
+			"magenta", sol::var(Colors::magenta3()), 
+			"norm", sol::resolve<glm::vec3(const Color3&)>(Colors::normalize), 
+			"to_num", sol::resolve<uint32_t(const Color3&)>(&Colors::toNumber)
+		);
+		LuaGlm::configUsertype(color3);
+	}
+
+	glm::quat quatEuler(float x, float y, float z) noexcept
 	{
 		return glm::quat(glm::vec3(x, y, z));
 	}
 
-    void LuaMath::configure3(sol::state_view& lua) noexcept
-    {
-		auto color = configureUvec<Color, Color(uint8_t, uint8_t, uint8_t, uint8_t)>(lua, "Color");
-		color["r"] = &Color::r;
-		color["g"] = &Color::g;
-		color["b"] = &Color::b;
-		color["a"] = &Color::a;
-		color["black"] = sol::var(Colors::black());
-		color["white"] = sol::var(Colors::white());
-		color["red"] = sol::var(Colors::red());
-		color["green"] = sol::var(Colors::green());
-		color["blue"] = sol::var(Colors::blue());
-		color["yellow"] = sol::var(Colors::yellow());
-		color["cyan"] = sol::var(Colors::cyan());
-		color["magenta"] = sol::var(Colors::magenta());
-		color["norm"] = sol::resolve<glm::vec4(const Color&)>(Colors::normalize);
-		color["to_num"] = sol::resolve<uint32_t(const Color&)>(&Colors::toNumber);
-
-		auto color3 = configureUvec<Color3, Color3(uint8_t, uint8_t, uint8_t)>(lua, "Color3");
-		color3["r"] = &Color3::r;
-		color3["g"] = &Color3::g;
-		color3["b"] = &Color3::b;
-		color3["black"] = sol::var(Colors::black3());
-		color3["white"] = sol::var(Colors::white3());
-		color3["red"] = sol::var(Colors::red3());
-		color3["green"] = sol::var(Colors::green3());
-		color3["blue"] = sol::var(Colors::blue3());
-		color3["yellow"] = sol::var(Colors::yellow3());
-		color3["cyan"] = sol::var(Colors::cyan3);
-		color3["magenta"] = sol::var(Colors::magenta3());
-		color3["norm"] = sol::resolve<glm::vec3(const Color3&)>(Colors::normalize);
-		color3["to_num"] = sol::resolve<uint32_t(const Color3&)>(&Colors::toNumber);
-
+	void LuaMath::bindGlmQuat(sol::state_view& lua) noexcept
+	{
 		lua.new_usertype<glm::quat>("Quat",
 			sol::constructors<glm::quat(float, float, float, float), glm::quat(const glm::vec3&)>(),
 			sol::meta_function::equal_to, sol::resolve<bool(const glm::quat&, const glm::quat&)>(glm::operator==),

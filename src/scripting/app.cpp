@@ -151,7 +151,7 @@ namespace darmok
 		}
 	}
 
-	void LuaApp::configure(sol::state_view& lua) noexcept
+	void LuaApp::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaApp>("App",
 			"scene", sol::property(&LuaApp::getScene, &LuaApp::setScene),
@@ -231,15 +231,13 @@ namespace darmok
 		auto& lua = *_lua;
 		lua.open_libraries(sol::lib::base, sol::lib::package);
 		
-		LuaMath::configure1(lua);
-		LuaMath::configure2(lua);
-		LuaMath::configure3(lua);
-		LuaShape::configure(lua);
-		LuaAssets::configure(lua);
-		LuaScene::configure(lua);
-		LuaWindow::configure(lua);
-		LuaInput::configure(lua);
-		LuaApp::configure(lua);
+		LuaMath::bind(lua);
+		LuaShape::bind(lua);
+		LuaAssets::bind(lua);
+		LuaScene::bind(lua);
+		LuaWindow::bind(lua);
+		LuaInput::bind(lua);
+		LuaApp::bind(lua);
 
 		_luaApp = LuaApp(app);
 		lua["app"] = std::ref(_luaApp);

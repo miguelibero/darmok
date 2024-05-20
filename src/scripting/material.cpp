@@ -47,7 +47,7 @@ namespace darmok
 		return *this;
 	}
 
-	void LuaMaterial::configure(sol::state_view& lua) noexcept
+	void LuaMaterial::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaMaterial>("Material",
 			sol::constructors<LuaMaterial(), LuaMaterial(LuaTexture)>(),

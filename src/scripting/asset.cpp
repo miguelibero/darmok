@@ -68,16 +68,16 @@ namespace darmok
 		return LuaModel(_assets->getModelLoader()(name));
 	}
 
-	void LuaAssets::configure(sol::state_view& lua) noexcept
+	void LuaAssets::bind(sol::state_view& lua) noexcept
 	{
-		LuaProgram::configure(lua);
-		LuaTexture::configure(lua);
-		LuaTextureAtlas::configure(lua);
-		LuaTextureAtlasMeshCreator::configure(lua);
-		LuaMaterial::configure(lua);
-		LuaMesh::configure(lua);
-		LuaMeshCreator::configure(lua);
-		LuaModel::configure(lua);
+		LuaProgram::bind(lua);
+		LuaTexture::bind(lua);
+		LuaTextureAtlas::bind(lua);
+		LuaTextureAtlasMeshCreator::bind(lua);
+		LuaMaterial::bind(lua);
+		LuaMesh::bind(lua);
+		LuaMeshCreator::bind(lua);
+		LuaModel::bind(lua);
 
 		lua.new_usertype<LuaAssets>("Assets",
 			sol::constructors<>(),

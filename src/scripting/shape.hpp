@@ -6,6 +6,6 @@ namespace darmok
 {
     struct LuaShape final
     {
-        static void configure(sol::state_view& lua) noexcept;
+        static void bind(sol::state_view& lua) noexcept;
     };
 }

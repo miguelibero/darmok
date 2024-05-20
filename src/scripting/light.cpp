@@ -29,24 +29,24 @@ namespace darmok
 		_light->setRadius(radius);
 	}
 
-	void LuaPointLight::setAttenuation(const VarVec3& attn) noexcept
+	void LuaPointLight::setAttenuation(const glm::vec3& attn) noexcept
 	{
-		_light->setAttenuation(LuaMath::tableToGlm(attn));
+		_light->setAttenuation(attn);
 	}
 
-	void LuaPointLight::setColor(const VarColor3& color) noexcept
+	void LuaPointLight::setColor(const Color3& color) noexcept
 	{
-		_light->setColor(LuaMath::tableToGlm(color));
+		_light->setColor(color);
 	}
 
-	void LuaPointLight::setDiffuseColor(const VarColor3& color) noexcept
+	void LuaPointLight::setDiffuseColor(const Color3& color) noexcept
 	{
-		_light->setDiffuseColor(LuaMath::tableToGlm(color));
+		_light->setDiffuseColor(color);
 	}
 
-	void LuaPointLight::setSpecularColor(const VarColor3& color) noexcept
+	void LuaPointLight::setSpecularColor(const Color3& color) noexcept
 	{
-		_light->setSpecularColor(LuaMath::tableToGlm(color));
+		_light->setSpecularColor(color);
 	}
 
 	float LuaPointLight::getIntensity() const noexcept
@@ -94,7 +94,7 @@ namespace darmok
 		return scene.getEntity(_light.value());
 	}
 
-	void LuaPointLight::configure(sol::state_view& lua) noexcept
+	void LuaPointLight::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaPointLight>("PointLight",
 			sol::constructors<>(),
@@ -134,9 +134,9 @@ namespace darmok
 		_light->setIntensity(intensity);
 	}
 
-	void LuaAmbientLight::setColor(const VarColor3& color) noexcept
+	void LuaAmbientLight::setColor(const Color3& color) noexcept
 	{
-		_light->setColor(LuaMath::tableToGlm(color));
+		_light->setColor(color);
 	}
 
 	const Color3& LuaAmbientLight::getColor() const noexcept
@@ -169,7 +169,7 @@ namespace darmok
 		return scene.getEntity(_light.value());
 	}
 
-	void LuaAmbientLight::configure(sol::state_view& lua) noexcept
+	void LuaAmbientLight::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaAmbientLight>("AmbientLight",
 			sol::constructors<>(),

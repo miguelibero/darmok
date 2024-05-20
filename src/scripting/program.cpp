@@ -18,7 +18,7 @@ namespace darmok
 		return _program;
 	}
 
-	void LuaProgram::configure(sol::state_view& lua) noexcept
+	void LuaProgram::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaProgram>("Program",
 			sol::constructors<>(),

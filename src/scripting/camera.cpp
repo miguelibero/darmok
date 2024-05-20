@@ -23,9 +23,9 @@ namespace darmok
 		return _camera.value();
 	}
 
-	LuaCamera& LuaCamera::setProjection1(float fovy, float aspect, const VarVec2& range) noexcept
+	LuaCamera& LuaCamera::setProjection1(float fovy, float aspect, const glm::vec2& range) noexcept
 	{
-		_camera->setProjection(fovy, aspect, LuaMath::tableToGlm(range));
+		_camera->setProjection(fovy, aspect, range);
 		return *this;
 	}
 
@@ -35,51 +35,51 @@ namespace darmok
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setProjection3(float fovy, const VarUvec2& size, const VarVec2& range) noexcept
+	LuaCamera& LuaCamera::setProjection3(float fovy, const glm::uvec2& size, const glm::vec2& range) noexcept
 	{
-		_camera->setProjection(fovy, LuaMath::tableToGlm(size), LuaMath::tableToGlm(range));
+		_camera->setProjection(fovy, size, range);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setProjection4(float fovy, const VarUvec2& size, float near) noexcept
+	LuaCamera& LuaCamera::setProjection4(float fovy, const glm::uvec2& size, float near) noexcept
 	{
-		_camera->setProjection(fovy, LuaMath::tableToGlm(size), near);
+		_camera->setProjection(fovy, size, near);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho1(const VarVec4& edges, const VarVec2& range, float offset) noexcept
+	LuaCamera& LuaCamera::setOrtho1(const glm::vec4& edges, const glm::vec2& range, float offset) noexcept
 	{
-		_camera->setOrtho(LuaMath::tableToGlm(edges), LuaMath::tableToGlm(range), offset);
+		_camera->setOrtho(edges, range, offset);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho2(const VarVec4& edges, const VarVec2& range) noexcept
+	LuaCamera& LuaCamera::setOrtho2(const glm::vec4& edges, const glm::vec2& range) noexcept
 	{
-		_camera->setOrtho(LuaMath::tableToGlm(edges), LuaMath::tableToGlm(range));
+		_camera->setOrtho(edges, range);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho3(const VarVec4& edges) noexcept
+	LuaCamera& LuaCamera::setOrtho3(const glm::vec4& edges) noexcept
 	{
-		_camera->setOrtho(LuaMath::tableToGlm(edges));
+		_camera->setOrtho(edges);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho4(const VarUvec2& size, const VarVec2& range, float offset) noexcept
+	LuaCamera& LuaCamera::setOrtho4(const glm::uvec2& size, const glm::vec2& range, float offset) noexcept
 	{
-		_camera->setOrtho(LuaMath::tableToGlm(size), LuaMath::tableToGlm(range), offset);
+		_camera->setOrtho(size, range, offset);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho5(const VarUvec2& size, const VarVec2& range) noexcept
+	LuaCamera& LuaCamera::setOrtho5(const glm::uvec2& size, const glm::vec2& range) noexcept
 	{
-		_camera->setOrtho(LuaMath::tableToGlm(size), LuaMath::tableToGlm(range));
+		_camera->setOrtho(size, range);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho6(const VarUvec2& size) noexcept
+	LuaCamera& LuaCamera::setOrtho6(const glm::uvec2& size) noexcept
 	{
-		_camera->setOrtho(LuaMath::tableToGlm(size));
+		_camera->setOrtho(size);
 		return *this;
 	}
 
@@ -138,9 +138,9 @@ namespace darmok
 		_camera->setMatrix(matrix);
 	}
 
-	std::optional<Ray> LuaCamera::screenPointToRay(const VarVec2& point) const noexcept
+	std::optional<Ray> LuaCamera::screenPointToRay(const glm::vec2& point) const noexcept
 	{
-		return _camera->screenPointToRay(LuaMath::tableToGlm(point));
+		return _camera->screenPointToRay(point);
 	}
 
 	LuaCamera LuaCamera::addEntityComponent(LuaEntity& entity) noexcept
@@ -158,7 +158,7 @@ namespace darmok
 		return scene.getEntity(_camera.value());
 	}
 
-	void LuaCamera::configure(sol::state_view& lua) noexcept
+	void LuaCamera::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<LuaNativeCameraComponentType>("CameraComponentType", {
 			{ "PhongLighting", LuaNativeCameraComponentType::PhongLighting },

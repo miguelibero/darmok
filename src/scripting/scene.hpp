@@ -8,7 +8,6 @@
 #include <darmok/scene.hpp>
 #include <sol/sol.hpp>
 
-#include "math.hpp"
 #include "transform.hpp"
 
 namespace darmok
@@ -45,7 +44,7 @@ namespace darmok
 		LuaScene getScene() const;
 		const Entity& getReal() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 		[[nodiscard]] static std::optional<entt::id_type> getComponentTypeId(const sol::object& obj) noexcept;
 
 	private:
@@ -69,9 +68,9 @@ namespace darmok
 		std::string to_string() const noexcept;
 		EntityRegistry& getRegistry() noexcept;
 		LuaEntity createEntity1() noexcept;
-		LuaEntity createEntity2(const VarVec3& position) noexcept;
+		LuaEntity createEntity2(const glm::vec3& position) noexcept;
 		LuaEntity createEntity3(const VarParent& parent) noexcept;
-		LuaEntity createEntity4(const VarParent& parent, const VarVec3& position) noexcept;
+		LuaEntity createEntity4(const VarParent& parent, const glm::vec3& position) noexcept;
 		bool destroyEntity(const LuaEntity& entity) noexcept;
 
 		template<typename T>
@@ -88,7 +87,7 @@ namespace darmok
 		const std::shared_ptr<Scene>& getReal() const noexcept;
 		std::shared_ptr<Scene>& getReal() noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<Scene> _scene;
 	};

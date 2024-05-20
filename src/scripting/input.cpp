@@ -32,7 +32,7 @@ namespace darmok
 		return str;
 	}
 
-	void LuaKeyboard::configure(sol::state_view& lua) noexcept
+	void LuaKeyboard::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaKeyboard>("Keyboard",
 			sol::constructors<>(),
@@ -86,7 +86,7 @@ namespace darmok
 		return _mouse->getButton(MouseButton::Right);
 	}
 
-	void LuaMouse::configure(sol::state_view& lua) noexcept
+	void LuaMouse::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaMouse>("Mouse",
 			sol::constructors<>(),
@@ -131,7 +131,7 @@ namespace darmok
 		return _gamepad->isConnected();
 	}
 
-	void LuaGamepad::configure(sol::state_view& lua) noexcept
+	void LuaGamepad::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaGamepad>("Gamepad",
 			sol::constructors<>(),
@@ -210,12 +210,12 @@ namespace darmok
 		return gamepads;
 	}
 
-	void LuaInput::configure(sol::state_view& lua) noexcept
+	void LuaInput::bind(sol::state_view& lua) noexcept
 	{
 
-		LuaKeyboard::configure(lua);
-		LuaMouse::configure(lua);
-		LuaGamepad::configure(lua);
+		LuaKeyboard::bind(lua);
+		LuaMouse::bind(lua);
+		LuaGamepad::bind(lua);
 
 		lua.new_usertype<LuaInput>("Input",
 			sol::constructors<>(),

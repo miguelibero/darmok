@@ -31,7 +31,7 @@ namespace darmok
 		LuaTextureAtlas loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
 		LuaModel loadModel(const std::string& name);
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 
 	private:
 		OptionalRef<AssetContext> _assets;

@@ -38,7 +38,7 @@ namespace darmok
         {
         }
 
-        OptionalRef(std_t& value) noexcept
+        OptionalRef(const std_t& value) noexcept
             : _value(value ? &value.value().get() : nullptr)
         {
         }

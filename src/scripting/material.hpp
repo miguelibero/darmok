@@ -22,7 +22,7 @@ namespace darmok
 		float getSpecularStrength() const noexcept;
 		LuaMaterial& setSpecularStrength(float v) noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 
 	private:
 		std::shared_ptr<Material> _material;

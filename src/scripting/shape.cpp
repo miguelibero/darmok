@@ -4,7 +4,7 @@
 
 namespace darmok
 {
-    void LuaShape::configure(sol::state_view& lua) noexcept
+    void LuaShape::bind(sol::state_view& lua) noexcept
     {
 		lua.new_usertype<Quad>("Quad",
 			sol::constructors<Quad(const glm::vec2&, const glm::vec2&), Quad(const glm::vec2&), Quad()>(),

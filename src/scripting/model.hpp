@@ -38,7 +38,7 @@ namespace darmok
         glm::mat4 getTransform() const noexcept;
         const LuaModelNodeChildrenCollection& getChildren() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<IModelNode> _node;
 		LuaModelNodeChildrenCollection _children;
@@ -52,7 +52,7 @@ namespace darmok
 		std::shared_ptr<IModel> getReal() const noexcept;
         const LuaModelNode& getRootNode() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<IModel> _model;
 		LuaModelNode _rootNode;
@@ -69,7 +69,7 @@ namespace darmok
 		LuaEntity run3(const LuaModelNode& node) const;
 		LuaEntity run4(const LuaModelNode& node, sol::protected_function callback) const;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		ModelSceneConfigurer _configurer;
 		std::shared_ptr<Scene> _scene;

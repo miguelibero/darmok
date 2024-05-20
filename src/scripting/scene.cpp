@@ -104,7 +104,7 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	void LuaEntity::configure(sol::state_view& lua) noexcept
+	void LuaEntity::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaEntity>("Entity", sol::constructors<>(),
 			"scene", sol::property(&LuaEntity::getScene),
@@ -155,11 +155,11 @@ end
 		return LuaEntity(getRegistry().create(), std::weak_ptr<Scene>(_scene));
 	}
 
-	LuaEntity LuaScene::createEntity2(const VarVec3& position) noexcept
+	LuaEntity LuaScene::createEntity2(const glm::vec3& position) noexcept
 	{
 		auto& registry = getRegistry();
 		auto entity = registry.create();
-		registry.emplace<Transform>(entity, LuaMath::tableToGlm(position));
+		registry.emplace<Transform>(entity, position);
 		return LuaEntity(entity, std::weak_ptr<Scene>(_scene));
 	}
 
@@ -187,12 +187,12 @@ end
 		return LuaEntity(entity, std::weak_ptr<Scene>(_scene));
 	}
 
-	LuaEntity LuaScene::createEntity4(const VarParent& parent, const VarVec3& position) noexcept
+	LuaEntity LuaScene::createEntity4(const VarParent& parent, const glm::vec3& position) noexcept
 	{
 		auto& registry = getRegistry();
 		auto entity = registry.create();
 		auto parentTrans = getVarParentTransform(registry, parent);
-		registry.emplace<Transform>(entity, parentTrans, LuaMath::tableToGlm(position));
+		registry.emplace<Transform>(entity, parentTrans, position);
 		return LuaEntity(entity, std::weak_ptr<Scene>(_scene));
 	}
 
@@ -211,17 +211,14 @@ end
 		return _scene;
 	}
 
-	void LuaScene::configure(sol::state_view& lua) noexcept
+	void LuaScene::bind(sol::state_view& lua) noexcept
 	{
-		// LuaTransform::configure(lua);
-
-		lua::bindTransform(lua);
-
-		LuaCamera::configure(lua);
-		LuaEntity::configure(lua);
-		LuaAmbientLight::configure(lua);
-		LuaPointLight::configure(lua);
-		LuaRenderable::configure(lua);
+		LuaTransform::bind(lua);
+		LuaCamera::bind(lua);
+		LuaEntity::bind(lua);
+		LuaAmbientLight::bind(lua);
+		LuaPointLight::bind(lua);
+		LuaRenderable::bind(lua);
 
 		lua.new_usertype<LuaScene>("Scene",
 			sol::constructors<LuaScene(LuaApp&)>(),

@@ -1,7 +1,6 @@
 #include "texture.hpp"
 #include "image.hpp"
 #include "mesh.hpp"
-#include "math.hpp"
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/mesh.hpp>
@@ -23,13 +22,13 @@ namespace darmok
 	{
 	}
 
-	LuaTexture::LuaTexture(const VarUvec2& size, bgfx::TextureFormat::Enum format, uint64_t flags) noexcept
-		: LuaTexture(Config{ LuaMath::tableToGlm(size), format }, flags)
+	LuaTexture::LuaTexture(const glm::uvec2& size, bgfx::TextureFormat::Enum format, uint64_t flags) noexcept
+		: LuaTexture(Config{ size, format }, flags)
 	{
 	}
 
-	LuaTexture::LuaTexture(const VarUvec2& size, uint64_t flags) noexcept
-		: LuaTexture(Config{ LuaMath::tableToGlm(size)}, flags)
+	LuaTexture::LuaTexture(const glm::uvec2& size, uint64_t flags) noexcept
+		: LuaTexture(Config{ size }, flags)
 	{
 	}
 
@@ -79,7 +78,7 @@ namespace darmok
 		return _texture->to_string();
 	}
 
-	void LuaTexture::configure(sol::state_view& lua) noexcept
+	void LuaTexture::bind(sol::state_view& lua) noexcept
 	{
 		lua.create_named_table("TextureFlag",
 			"NONE", BGFX_TEXTURE_NONE,
@@ -276,10 +275,10 @@ namespace darmok
 				LuaTexture(const LuaImage&, uint64_t),
 				LuaTexture(const TextureConfig&),
 				LuaTexture(const TextureConfig&, uint64_t),
-				LuaTexture(const VarUvec2&),
-				LuaTexture(const VarUvec2&, uint64_t),
-				LuaTexture(const VarUvec2&, const bgfx::TextureFormat::Enum&),
-				LuaTexture(const VarUvec2&, const bgfx::TextureFormat::Enum&, uint64_t)
+				LuaTexture(const glm::uvec2&),
+				LuaTexture(const glm::uvec2&, uint64_t),
+				LuaTexture(const glm::uvec2&, const bgfx::TextureFormat::Enum&),
+				LuaTexture(const glm::uvec2&, const bgfx::TextureFormat::Enum&, uint64_t)
 			>(),
 			"type", sol::property(&LuaTexture::getType),
 			"size", sol::property(&LuaTexture::getSize),
@@ -307,7 +306,7 @@ namespace darmok
 		return LuaTexture(_atlas->texture);
 	}
 
-	void LuaTextureAtlas::configure(sol::state_view& lua) noexcept
+	void LuaTextureAtlas::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaTextureAtlas>("TextureAtlas",
 			sol::constructors<>(),
@@ -360,7 +359,7 @@ namespace darmok
 		return _creator->createAnimation(namePrefix, frameDuration);
 	}
 
-	void LuaTextureAtlasMeshCreator::configure(sol::state_view& lua) noexcept
+	void LuaTextureAtlasMeshCreator::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<TextureAtlasMeshCreationConfig>("TextureAtlasMeshCreationConfig",
 			sol::constructors<MeshCreationConfig()>(),

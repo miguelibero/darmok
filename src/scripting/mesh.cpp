@@ -23,7 +23,7 @@ namespace darmok
 		return _mesh;
 	}
 
-	void LuaMesh::configure(sol::state_view& lua) noexcept
+	void LuaMesh::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaMesh>("Mesh",
 			sol::constructors<>()
@@ -99,9 +99,9 @@ namespace darmok
 		return LuaMesh(_creator->createQuad(quad));
 	}
 
-	LuaMesh LuaMeshCreator::createQuad3(const VarUvec2& size) noexcept
+	LuaMesh LuaMeshCreator::createQuad3(const glm::uvec2& size) noexcept
 	{
-		return LuaMesh(_creator->createQuad(Quad(LuaMath::tableToGlm(size))));
+		return LuaMesh(_creator->createQuad(Quad(size)));
 	}
 
 	LuaMesh LuaMeshCreator::createLineQuad1() noexcept
@@ -129,7 +129,7 @@ namespace darmok
 		return LuaMesh(_creator->createLines(lines));
 	}
 
-	void LuaMeshCreator::configure(sol::state_view& lua) noexcept
+	void LuaMeshCreator::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<MeshCreationConfig>("MeshCreationConfig",
 			sol::constructors<MeshCreationConfig()>(),
@@ -243,7 +243,7 @@ namespace darmok
 		return *this;
 	}
 
-	void LuaRenderable::configure(sol::state_view& lua) noexcept
+	void LuaRenderable::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaRenderable>("Renderable",
 			sol::constructors<>(),

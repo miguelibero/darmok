@@ -43,7 +43,7 @@ namespace darmok
 		return _win.value();
 	}
 
-	void LuaWindow::configure(sol::state_view& lua) noexcept
+	void LuaWindow::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<WindowMode>("WindowMode", {
 			{ "Normal", WindowMode::Normal },

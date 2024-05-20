@@ -1,8 +1,9 @@
 #pragma once
 
 #include <darmok/optional_ref.hpp>
+#include <darmok/color_fwd.hpp>
 #include <sol/sol.hpp>
-#include "math.hpp"
+#include <glm/glm.hpp>
 
 namespace darmok
 {
@@ -20,10 +21,10 @@ namespace darmok
 
 		void setIntensity(float intensity) noexcept;
 		void setRadius(float radius) noexcept;
-		void setAttenuation(const VarVec3& attn) noexcept;
-		void setColor(const VarColor3& color) noexcept;
-		void setDiffuseColor(const VarColor3& color) noexcept;
-		void setSpecularColor(const VarColor3& color) noexcept;
+		void setAttenuation(const glm::vec3& attn) noexcept;
+		void setColor(const Color3& color) noexcept;
+		void setDiffuseColor(const Color3& color) noexcept;
+		void setSpecularColor(const Color3& color) noexcept;
 
 		float getIntensity() const noexcept;
 		float getRadius() const noexcept;
@@ -31,7 +32,7 @@ namespace darmok
 		const Color3& getDiffuseColor() const noexcept;
 		const Color3& getSpecularColor() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<PointLight> _light;
 
@@ -52,12 +53,12 @@ namespace darmok
 		AmbientLight& getReal();
 
 		void setIntensity(float intensity) noexcept;
-		void setColor(const VarColor3& color) noexcept;
+		void setColor(const Color3& color) noexcept;
 
 		const Color3& getColor() const noexcept;
 		float getIntensity() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<AmbientLight> _light;
 

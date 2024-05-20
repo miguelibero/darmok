@@ -19,7 +19,7 @@ namespace darmok
 		void setCursorMode(WindowCursorMode mode);
 		void setMode(WindowMode mode);
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Window> _win;
 	};

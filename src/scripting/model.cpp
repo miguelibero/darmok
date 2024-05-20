@@ -72,7 +72,7 @@ namespace darmok
 		return _children;
 	}
 
-	void LuaModelNode::configure(sol::state_view& lua) noexcept
+	void LuaModelNode::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaModelNode>("ModelNode",
 			sol::constructors<>(),
@@ -98,10 +98,10 @@ namespace darmok
 		return _rootNode;
 	}
 
-	void LuaModel::configure(sol::state_view& lua) noexcept
+	void LuaModel::bind(sol::state_view& lua) noexcept
 	{
-		LuaModelNode::configure(lua);
-		LuaModelSceneConfigurer::configure(lua);
+		LuaModelNode::bind(lua);
+		LuaModelSceneConfigurer::bind(lua);
 		lua.new_usertype<LuaModel>("Model",
 			sol::constructors<>(),
 			"root_node", sol::property(&LuaModel::getRootNode)
@@ -120,7 +120,7 @@ namespace darmok
 		return *this;
 	}
 
-	void LuaModelSceneConfigurer::configure(sol::state_view& lua) noexcept
+	void LuaModelSceneConfigurer::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaModelSceneConfigurer>("ModelSceneConfigurer",
 			sol::constructors<LuaModelSceneConfigurer(const LuaScene&, const bgfx::VertexLayout&, LuaAssets&)>(),

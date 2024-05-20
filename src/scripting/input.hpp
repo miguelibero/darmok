@@ -17,7 +17,7 @@ namespace darmok
 		bool getKey(const std::string& name) const noexcept;
 		std::string getUpdateChars() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Keyboard> _kb;
 	};
@@ -37,7 +37,7 @@ namespace darmok
 		bool getRightButton() const noexcept;
 		bool getActive() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Mouse> _mouse;
 	};
@@ -53,7 +53,7 @@ namespace darmok
 		const glm::ivec3& getRightStick() const noexcept;
 		bool isConnected() const noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Gamepad> _gamepad;
 	};
@@ -70,7 +70,7 @@ namespace darmok
 		std::optional<LuaGamepad> getGamepad(uint8_t num = 0) noexcept;
 		std::vector<LuaGamepad> getGamepads() noexcept;
 
-		static void configure(sol::state_view& lua) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Input> _input;
 	};
