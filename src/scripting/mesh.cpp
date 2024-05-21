@@ -89,29 +89,29 @@ namespace darmok
 		return LuaMesh(_creator->createSphere(sphere, lod));
 	}
 
-	LuaMesh LuaMeshCreator::createQuad1() noexcept
+	LuaMesh LuaMeshCreator::createRectangle1() noexcept
 	{
-		return LuaMesh(_creator->createQuad());
+		return LuaMesh(_creator->createRectangle());
 	}
 
-	LuaMesh LuaMeshCreator::createQuad2(const Quad& quad) noexcept
+	LuaMesh LuaMeshCreator::createRectangle2(const Rectangle& rect) noexcept
 	{
-		return LuaMesh(_creator->createQuad(quad));
+		return LuaMesh(_creator->createRectangle(rect));
 	}
 
-	LuaMesh LuaMeshCreator::createQuad3(const glm::uvec2& size) noexcept
+	LuaMesh LuaMeshCreator::createRectangle3(const glm::uvec2& size) noexcept
 	{
-		return LuaMesh(_creator->createQuad(Quad(size)));
+		return LuaMesh(_creator->createRectangle(Rectangle(size)));
 	}
 
-	LuaMesh LuaMeshCreator::createLineQuad1() noexcept
+	LuaMesh LuaMeshCreator::createLineRectangle1() noexcept
 	{
-		return LuaMesh(_creator->createLineQuad());
+		return LuaMesh(_creator->createLineRectangle());
 	}
 
-	LuaMesh LuaMeshCreator::createLineQuad2(const Quad& quad) noexcept
+	LuaMesh LuaMeshCreator::createLineRectangle2(const Rectangle& rect) noexcept
 	{
-		return LuaMesh(_creator->createLineQuad(quad));
+		return LuaMesh(_creator->createLineRectangle(rect));
 	}
 
 	LuaMesh LuaMeshCreator::createRay(const Ray& ray) noexcept
@@ -148,12 +148,12 @@ namespace darmok
 			"create_sphere", sol::overload(
 				&LuaMeshCreator::createSphere1, &LuaMeshCreator::createSphere2,
 				&LuaMeshCreator::createSphere3, &LuaMeshCreator::createSphere4),
-			"create_quad", sol::overload(
-				&LuaMeshCreator::createQuad1,
-				&LuaMeshCreator::createQuad2,
-				&LuaMeshCreator::createQuad3
+			"create_rectangle", sol::overload(
+				&LuaMeshCreator::createRectangle1,
+				&LuaMeshCreator::createRectangle2,
+				&LuaMeshCreator::createRectangle3
 			),
-			"create_line_quad", sol::overload(&LuaMeshCreator::createLineQuad1, &LuaMeshCreator::createLineQuad2),
+			"create_line_rectangle", sol::overload(&LuaMeshCreator::createLineRectangle1, &LuaMeshCreator::createLineRectangle2),
 			"create_line", &LuaMeshCreator::createLine,
 			"create_ray", &LuaMeshCreator::createRay,
 			"create_lines", &LuaMeshCreator::createLines,
@@ -162,7 +162,7 @@ namespace darmok
 				&LuaMeshCreator::createSphere2,
 				&LuaMeshCreator::createSphere3,
 				&LuaMeshCreator::createSphere4,
-				&LuaMeshCreator::createQuad2,
+				&LuaMeshCreator::createRectangle2,
 				&LuaMeshCreator::createLine,
 				&LuaMeshCreator::createRay,
 				&LuaMeshCreator::createLines

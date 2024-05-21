@@ -7,17 +7,17 @@ namespace darmok
 {
     void LuaShape::bind(sol::state_view& lua) noexcept
     {
-		lua.new_usertype<Quad>("Quad", sol::no_constructor,
+		lua.new_usertype<Rectangle>("Rectangle", sol::no_constructor,
 			"new", sol::overload(
-				[]() { return Quad(); },
+				[]() { return Rectangle(); },
 				[](const VarLuaTable<glm::vec2>& size) { 
-					return Quad(LuaGlm::tableGet(size)); },
+					return Rectangle(LuaGlm::tableGet(size)); },
 				[](const VarLuaTable<glm::vec2>& size, const VarLuaTable<glm::vec2>& origin) {
-					return Quad(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
+					return Rectangle(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
 			),
-			"size", &Quad::size,
-			"origin", &Quad::origin,
-			"to_lines", &Quad::toLines
+			"size", &Rectangle::size,
+			"origin", &Rectangle::origin,
+			"to_lines", &Rectangle::toLines
 		);
 
 		lua.new_usertype<Cube>("Cube", sol::no_constructor,
@@ -53,7 +53,8 @@ namespace darmok
 					return Plane(LuaGlm::tableGet(normal), LuaGlm::tableGet(origin)); }
 			),
 			"normal", &Plane::normal,
-			"origin", &Plane::origin
+			"origin", &Plane::origin,
+			sol::meta_function::multiplication, &Plane::operator*
 		);
 
 		lua.new_usertype<Ray>("Ray", sol::no_constructor,
@@ -66,7 +67,10 @@ namespace darmok
 			),
 			"direction", &Ray::direction,
 			"origin", &Ray::origin,
-			sol::meta_function::multiplication, &Ray::operator*,
+			sol::meta_function::multiplication, sol::overload(
+				sol::resolve<glm::vec3(float) const>(&Ray::operator*),
+				sol::resolve<Ray(const glm::mat4&) const >(&Ray::operator*)
+			),
 			"unproject", &Ray::unproject,
 			"intersect", sol::overload(
 				sol::resolve<std::optional<float>(const Plane&) const>(&Ray::intersect),

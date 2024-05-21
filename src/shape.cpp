@@ -5,9 +5,9 @@
 
 namespace darmok
 {
-    const Quad& Quad::standard() noexcept
+    const Rectangle& Rectangle::standard() noexcept
     {
-        const static Quad v;
+        const static Rectangle v;
         return v;
     }
 
@@ -29,18 +29,18 @@ namespace darmok
         return v;
     }
 
-    Quad::Quad(const glm::vec2& size, const glm::vec2& origin) noexcept
+    Rectangle::Rectangle(const glm::vec2& size, const glm::vec2& origin) noexcept
         : size(size)
         , origin(origin)
     {
     }
 
-    std::string Quad::to_string() const noexcept
+    std::string Rectangle::to_string() const noexcept
     {
-        return "Quad(size=" + glm::to_string(size) + ", origin=" + glm::to_string(origin) + ")";
+        return "Rectangle(size=" + glm::to_string(size) + ", origin=" + glm::to_string(origin) + ")";
     }
 
-    std::vector<Line> Quad::toLines() const noexcept
+    std::vector<Line> Rectangle::toLines() const noexcept
     {
         glm::vec3 v0(origin, 0);
         glm::vec3 v1 = v0 + glm::vec3(size.x, 0, 0);
@@ -97,10 +97,44 @@ namespace darmok
         return "Plane(normal=" + glm::to_string(normal) + ", origin=" + glm::to_string(origin) + ")";
     }
 
+    glm::vec3 transformNormal(const glm::vec3& normal, const glm::mat4& transform) noexcept
+    {
+        return glm::normalize(transform * glm::vec4(normal, 0));
+    }
+
+    glm::vec3 transformPosition(const glm::vec3& position, const glm::mat4& transform) noexcept
+    {
+        return transform * glm::vec4(position, 1);
+    }
+
+    Plane Plane::operator*(const glm::mat4& transform) const noexcept
+    {
+        return Plane(transformNormal(normal, transform), transformPosition(origin, transform));
+    }
+
+    Plane& Plane::operator*=(const glm::mat4& transform) noexcept
+    {
+        normal = transformNormal(normal, transform);
+        origin = transformPosition(origin, transform);
+        return *this;
+    }
+
     Ray::Ray(const glm::vec3& dir, const glm::vec3& origin) noexcept
         : direction(dir)
         , origin(origin)
     {
+    }
+
+    Ray Ray::operator*(const glm::mat4& transform) const noexcept
+    {
+        return Ray(transformNormal(direction, transform), transformPosition(origin, transform));
+    }
+
+    Ray& Ray::operator*=(const glm::mat4& transform) noexcept
+    {
+        direction = transformNormal(direction, transform);
+        origin = transformPosition(origin, transform);
+        return *this;
     }
 
     std::string Ray::to_string() const noexcept

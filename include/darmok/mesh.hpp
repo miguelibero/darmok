@@ -6,6 +6,7 @@
 #include <darmok/color.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/vertex_fwd.hpp>
+#include <darmok/mesh_fwd.hpp>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 #include <glm/glm.hpp>
@@ -25,10 +26,15 @@ namespace darmok
     class BX_NO_VTABLE IMesh
     {
     public:
+        using Config = MeshConfig;
+
         virtual ~IMesh() = default;
         DLLEXPORT virtual std::string to_string() const noexcept = 0;
         DLLEXPORT virtual void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const = 0;
         DLLEXPORT virtual const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
+
+        static std::shared_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config = {}) noexcept;
+        static std::shared_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config = {}) noexcept;
     };
 
     class Mesh final : public IMesh
@@ -92,7 +98,6 @@ namespace darmok
     class TransientMesh final : public IMesh
     {
     public:
-        using Config = MeshConfig;
         DLLEXPORT TransientMesh(const bgfx::VertexLayout& layout, const DataView& vertices, bool index32 = false);
         DLLEXPORT TransientMesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool index32 = false);
         DLLEXPORT TransientMesh(TransientMesh&& other) noexcept;
@@ -130,13 +135,6 @@ namespace darmok
         std::shared_ptr<Material> _material;
     };
 
-    enum class MeshType
-    {
-        Static,
-        Dynamic,
-        Transient
-    };
-
     struct MeshCreationConfig final
     {
         glm::vec3 scale = glm::vec3(1);
@@ -158,7 +156,7 @@ namespace darmok
     class Texture;
     struct Cube;
     struct Sphere;
-    struct Quad;
+    struct Rectangle;
     struct Ray;
     struct Line;
 
@@ -175,16 +173,18 @@ namespace darmok
         DLLEXPORT std::shared_ptr<IMesh> createCube(const Cube& cube) noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createSphere(int lod = 32) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createQuad() noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createQuad(const Quad& quad) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createLineQuad() noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createLineQuad(const Quad& quad) noexcept;
+        DLLEXPORT std::shared_ptr<IMesh> createRectangle() noexcept;
+        DLLEXPORT std::shared_ptr<IMesh> createRectangle(const Rectangle& rect) noexcept;
+        DLLEXPORT std::shared_ptr<IMesh> createLineRectangle() noexcept;
+        DLLEXPORT std::shared_ptr<IMesh> createLineRectangle(const Rectangle& rect) noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createRay(const Ray& ray) noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createLine(const Line& line) noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createLines(const std::vector<Line>& lines) noexcept;
 
     private:
+        const static MeshData _rectangleMeshData;
+
         std::shared_ptr<IMesh> createMesh(const MeshData& meshData, const Config& cfg) noexcept;
-        std::shared_ptr<IMesh> createQuadMesh(const bgfx::VertexLayout& layout, const MeshData& data, const Quad& quad) noexcept;
+        std::shared_ptr<IMesh> createRectangleMesh(const bgfx::VertexLayout& layout, const MeshData& data, const Rectangle& quad) noexcept;
     };
 }

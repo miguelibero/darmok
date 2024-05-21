@@ -90,6 +90,7 @@ set(HEADERS
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/data.hpp
   ${INCLUDE_DIR}/shape.hpp
+  ${INCLUDE_DIR}/mesh_fwd.hpp
   ${INCLUDE_DIR}/mesh.hpp
   ${INCLUDE_DIR}/color_fwd.hpp
   ${INCLUDE_DIR}/color.hpp
@@ -352,7 +353,10 @@ endif()
 if(DARMOK_BUILD_RMLUI)
   find_package(RmlUi CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PUBLIC RmlCore)
-  target_link_libraries(${LIB_NAME} PUBLIC debug RmlDebugger)
+  target_link_libraries(${LIB_NAME} PRIVATE debug RmlDebugger)
+  if(DARMOK_BUILD_SCRIPTING)
+    target_link_libraries(${LIB_NAME} PRIVATE RmlLua)
+  endif()
 endif()
 
 # entt

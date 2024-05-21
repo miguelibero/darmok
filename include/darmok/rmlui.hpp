@@ -15,6 +15,8 @@ namespace darmok
 {
     class RmluiAppComponentImpl;
 	class Texture;
+	class Camera;
+	class Transform;
 
     class RmluiAppComponent final : public AppComponent
     {
@@ -27,6 +29,12 @@ namespace darmok
 		DLLEXPORT const std::shared_ptr<Texture>& getTargetTexture() noexcept;
 		DLLEXPORT RmluiAppComponent& setSize(const std::optional<glm::uvec2>& size) noexcept;
 		DLLEXPORT const std::optional<glm::uvec2>& getSize() noexcept;
+
+		RmluiAppComponent& setInputActive(bool active) noexcept;
+		bool getInputActive() const noexcept;
+
+		RmluiAppComponent& setMouseTransform(const Camera& cam, const Transform& trans) noexcept;
+		RmluiAppComponent& resetMouseTransform() noexcept;
 
 		void init(App& app) override;
 		void shutdown() noexcept override;

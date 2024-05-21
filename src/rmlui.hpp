@@ -39,6 +39,7 @@ namespace darmok
 		
 		void init(App& app);
 		void beforeRender(bgfx::ViewId viewId) noexcept;
+		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
 		bool afterRender() noexcept;
 		void shutdown() noexcept;
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
@@ -68,8 +69,9 @@ namespace darmok
 		bool _viewSetup;
 		std::shared_ptr<Texture> _targetTexture;
 		bgfx::FrameBufferHandle _frameBuffer;
+		OptionalRef<bx::AllocatorI> _alloc;
+		static const uint64_t _state;
 
-		bool createTexture(Rml::TextureHandle& handle, const DataView& data, const Rml::Vector2i& dimensions) noexcept;
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
 		void setupView() noexcept;
 	};
@@ -81,8 +83,12 @@ namespace darmok
 		void init(App& app);
 		void update(float dt) noexcept;
 		double GetElapsedTime() override;
+
+		const std::string& getMouseCursor() noexcept;
+		void SetMouseCursor(const Rml::String& name) noexcept override;
 	private:
 		double _elapsedTime;
+		std::string _mouseCursor;
 	};
 
 	class IDataLoader;
@@ -128,6 +134,8 @@ namespace darmok
 		void shutdown() noexcept;
 		void update(float dt) noexcept;
 
+		const std::string& getMouseCursor() noexcept;
+
 	private:
 		static size_t _initCount;
 		RmluiSystemInterface _system;
@@ -148,6 +156,8 @@ namespace darmok
 
 		void setInputActive(bool active) noexcept;
 		bool getInputActive() const noexcept;
+		void setMouseTransform(const Camera& cam, const Transform& trans) noexcept;
+		void resetMouseTransform() noexcept;
 
 		OptionalRef<Rml::Context> getContext() const noexcept;
 		RmluiRenderInterface& getRenderInterface() noexcept;
@@ -169,10 +179,16 @@ namespace darmok
 		std::string _name;
 		OptionalRef<Rml::Context> _context;
 		OptionalRef<App> _app;
+		
 		mutable RmluiRenderInterface _render;
 		std::optional<glm::uvec2> _size;
 		bool _inputActive;
 		std::shared_ptr<RmluiSharedAppComponent> _shared;
+
+		OptionalRef<const Camera> _mouseCamera;
+		OptionalRef<const Transform> _mouseTransform;
+		glm::vec2 _mousePosition;
+		std::string _defaultMouseCursor;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;
 		static const KeyboardMap& getKeyboardMap() noexcept;
@@ -181,5 +197,7 @@ namespace darmok
 		static const KeyboardModifierMap& getKeyboardModifierMap() noexcept;
 
 		int getKeyModifierState() const noexcept;
+		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
+		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
     };
 }

@@ -6,6 +6,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/material.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/shape.hpp>
 
 #include <filesystem>
 #include <charconv>
@@ -25,6 +26,78 @@ namespace darmok
 	size_t TextureAtlasElement::getVertexAmount() const noexcept
 	{
 		return std::min(positions.size(), texCoords.size());
+	}
+
+	TextureAtlasElement TextureAtlasElement::create(const TextureAtlasBounds& bounds) noexcept
+	{
+		static const std::vector<glm::uvec2> elms = { { 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 } };
+		static const std::vector<VertexIndex> idxs = { 0, 1, 2, 2, 3, 0 };
+		TextureAtlasElement elm{ "", elms, elms, idxs, bounds.offset, bounds.size, {}, bounds.size, {}, false };
+
+		for (auto& pos : elm.positions)
+		{
+			pos = pos * bounds.size;
+		}
+		for (auto& texCoord : elm.texCoords)
+		{
+			texCoord.y = texCoord.y ? 0 : 1;
+			texCoord = bounds.offset + texCoord * bounds.size;
+		}
+
+		return elm;
+	}
+
+	std::shared_ptr<IMesh> TextureAtlasElement::createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, Config config) const noexcept
+	{
+		uint32_t vertexAmount = getVertexAmount();
+		VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
+		std::vector<VertexIndex> totalIndices;
+		totalIndices.reserve(indices.size() * config.amount.x * config.amount.y);
+
+		glm::vec2 fatlasSize(textureSize);
+
+		auto baseOffset = config.offset - glm::vec3(pivot * glm::vec2(originalSize), 0);
+		// don't think this is needed since it's already factored into the position values
+		// baseOffset += glm::vec3(offset, 0);
+		auto amountStep = glm::vec2(originalSize);
+		auto amountOffsetMax = (glm::vec2(config.amount) - glm::vec2(1)) * amountStep * 0.5F;
+		auto amountOffset = -glm::vec3(amountOffsetMax, 0.F);
+
+		uint32_t vertexIndex = 0;
+		for (; amountOffset.x <= amountOffsetMax.x; amountOffset.x += amountStep.x)
+		{
+			amountOffset.y = -amountOffsetMax.y;
+			for (; amountOffset.y <= amountOffsetMax.y; amountOffset.y += amountStep.y)
+			{
+				auto elmOffset = baseOffset + amountOffset;
+				for (uint32_t i = 0; i < vertexAmount; i++)
+				{
+					auto& texPos = positions[i];
+					auto pos = (elmOffset + glm::vec3(texPos.x, float(originalSize.y) - texPos.y, 0)) * config.scale;
+					writer.write(bgfx::Attrib::Position, vertexIndex + i, pos);
+					auto texCoord = glm::vec2(texCoords[i]) / fatlasSize;
+					writer.write(bgfx::Attrib::TexCoord0, vertexIndex + i, texCoord);
+				}
+				for (auto& idx : indices)
+				{
+					totalIndices.push_back(vertexIndex + idx);
+				}
+				vertexIndex += vertexAmount;
+			}
+		}
+
+		if (layout.has(bgfx::Attrib::Normal))
+		{
+			static const glm::vec3 norm(0, 0, -1);
+			writer.write(bgfx::Attrib::Normal, norm);
+		}
+		if (layout.has(bgfx::Attrib::Color0))
+		{
+			writer.write(bgfx::Attrib::Color0, config.color);
+		}
+
+		auto vertexData = writer.finish();
+		return IMesh::create(config.type, layout, DataView(vertexData), DataView(totalIndices));
 	}
 
 	TextureAtlasBounds TextureAtlas::getBounds(std::string_view prefix) const noexcept
@@ -72,65 +145,14 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<Mesh> TextureAtlasMeshCreator::createSprite(const TextureAtlasElement& elm) const noexcept
-	{
-		uint32_t vertexAmount = elm.getVertexAmount();
-		VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
-		std::vector<VertexIndex> indices;
-		indices.reserve(elm.indices.size() * config.amount.x * config.amount.y);
-
-		glm::vec2 fatlasSize(atlas.size);
-
-		auto baseOffset = config.offset + glm::vec3(elm.offset, 0) - glm::vec3(elm.pivot * glm::vec2(elm.originalSize), 0);
-		auto amountStep = glm::vec2(elm.originalSize);
-		auto amountOffsetMax = (glm::vec2(config.amount) - glm::vec2(1)) * amountStep * 0.5F;
-		auto amountOffset = -glm::vec3(amountOffsetMax, 0.F);
-
-		uint32_t vertexIndex = 0;
-		for (; amountOffset.x <= amountOffsetMax.x; amountOffset.x += amountStep.x)
-		{
-			amountOffset.y = -amountOffsetMax.y;
-			for (; amountOffset.y <= amountOffsetMax.y; amountOffset.y += amountStep.y)
-			{
-				auto offset = baseOffset + amountOffset;
-				for(uint32_t i = 0; i < vertexAmount; i++)
-				{
-					auto& texPos = elm.positions[i];
-					auto pos = (offset + glm::vec3(texPos.x, float(elm.originalSize.y) - texPos.y, 0)) * config.scale;
-					writer.write(bgfx::Attrib::Position, vertexIndex + i, pos);
-					auto texCoord = glm::vec2(elm.texCoords[i]) / fatlasSize;
-					writer.write(bgfx::Attrib::TexCoord0, vertexIndex + i, texCoord);
-				}
-				for (auto& idx : elm.indices)
-				{
-					indices.push_back(vertexIndex + idx);
-				}
-				vertexIndex += vertexAmount;
-			}
-		}
-
-		if (layout.has(bgfx::Attrib::Normal))
-		{
-			static const glm::vec3 norm(0, 0, -1);
-			writer.write(bgfx::Attrib::Normal, norm);
-		}
-		if (layout.has(bgfx::Attrib::Color0))
-		{
-			writer.write(bgfx::Attrib::Color0, config.color);
-		}
-
-		auto vertexData = writer.finish();
-		return std::make_shared<Mesh>(layout, DataView(vertexData), DataView(indices));
-	}
-
-	std::shared_ptr<Mesh> TextureAtlasMeshCreator::createSprite(std::string_view name) const noexcept
+	std::shared_ptr<IMesh> TextureAtlasMeshCreator::createSprite(std::string_view name) const noexcept
 	{
 		auto elm = atlas.getElement(name);
 		if (!elm)
 		{
 			return nullptr;
 		}
-		return createSprite(elm.value());
+		return elm->createSprite(layout, atlas.size, config);
 	}
 
 	std::vector<AnimationFrame> TextureAtlasMeshCreator::createAnimation(std::string_view namePrefix, float frameDuration) const noexcept
@@ -141,7 +163,7 @@ namespace darmok
 		{
 			if (StringUtils::startsWith(elm.name, namePrefix))
 			{
-				auto mesh = createSprite(elm);
+				auto mesh = elm.createSprite(layout, atlas.size, config);
 				if (mesh)
 				{
 					frames.push_back({ { mesh }, frameDuration });

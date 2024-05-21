@@ -3,6 +3,11 @@
 #include <darmok/program.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/image.hpp>
+#include <darmok/camera.hpp>
+#include <darmok/transform.hpp>
+#include <darmok/shape.hpp>
+#include <darmok/texture_atlas.hpp>
 #include "rmlui.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -28,6 +33,11 @@ namespace darmok
         static glm::vec<2, T> convert(const Rml::Vector2<T>& v)
         {
             return { v.x, v.y };
+        }
+
+        static TextureAtlasBounds convert(const Rml::Rectangle& v)
+        {
+            return TextureAtlasBounds{ glm::vec2(v.width, v.height), glm::vec2(v.x, v.y) };
         }
     };
 
@@ -70,6 +80,10 @@ namespace darmok
 
     bool RmluiRenderInterface::LoadTexture(Rml::TextureHandle& handle, Rml::Vector2i& dimensions, const Rml::String& source) noexcept
     {
+        if (!_alloc)
+        {
+            return false;
+        }
         const auto file = Rml::GetFileInterface();
         const auto fileHandle = file->Open(source);
 
@@ -78,24 +92,35 @@ namespace darmok
             return false;
         }
 
-        Data data(file->Length(fileHandle));
+        Data data(file->Length(fileHandle), _alloc);
         file->Read(data.ptr(), data.size(), fileHandle);
         file->Close(fileHandle);
 
-        return createTexture(handle, data.view(), dimensions);
+        try
+        {
+            Image img(data.view(), _alloc.value());
+            auto& size = img.getSize();
+            dimensions.x = size.x;
+            dimensions.y = size.y;
+            auto texture = std::make_unique<Texture>(img);
+            handle = texture->getHandle().idx;
+            _textures.emplace(handle, std::move(texture));
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
     }
 
     bool RmluiRenderInterface::GenerateTexture(Rml::TextureHandle& handle, const Rml::byte* source, const Rml::Vector2i& dimensions) noexcept
     {
         auto size = 4 * sizeof(Rml::byte) * dimensions.x * dimensions.y;
-        return createTexture(handle, DataView(source, size), dimensions);
-    }
-
-    bool RmluiRenderInterface::createTexture(Rml::TextureHandle& handle, const DataView& data, const Rml::Vector2i& dimensions) noexcept
-    {
         TextureConfig config;
         config.format = bgfx::TextureFormat::RGBA8;
         config.size = glm::uvec2(dimensions.x, dimensions.y);
+        DataView data(source, size);
+
         try
         {
             auto texture = std::make_unique<Texture>(data, config);
@@ -132,6 +157,10 @@ namespace darmok
 
     RmluiRenderInterface::RmluiRenderInterface() noexcept
         : _frameBuffer{ bgfx::kInvalidHandle }
+        , _textureUniform{ bgfx::kInvalidHandle }
+        , _scissorEnabled(false)
+        , _rendered(false)
+        , _viewSetup(false)
     {
     }
 
@@ -154,7 +183,7 @@ namespace darmok
     {
         auto viewId = _viewId.value();
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
         bgfx::setViewName(viewId, "RmlUI");
         bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
@@ -167,6 +196,13 @@ namespace darmok
 
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
     }
+
+    const uint64_t RmluiRenderInterface::_state = 0
+        | BGFX_STATE_WRITE_RGB
+        | BGFX_STATE_WRITE_A
+        | BGFX_STATE_MSAA
+        | BGFX_STATE_BLEND_ALPHA
+        ;
 
     void RmluiRenderInterface::submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
     {
@@ -199,15 +235,7 @@ namespace darmok
             programHandle = _solidProgram->getHandle();
         }
 
-
-        static const uint64_t state = 0
-            | BGFX_STATE_WRITE_RGB
-            | BGFX_STATE_WRITE_A
-            | BGFX_STATE_MSAA
-            | BGFX_STATE_BLEND_ALPHA
-            ;
-
-        _encoder->setState(state);
+        _encoder->setState(_state);
         _encoder->submit(_viewId.value(), programHandle);
         _rendered = true;
     }
@@ -249,6 +277,7 @@ namespace darmok
 
     void RmluiRenderInterface::init(App& app)
     {
+        _alloc = app.getAssets().getAllocator();
         _program = std::make_unique<Program>("rmlui_basic", _embeddedShaders, rmlui_basic_vlayout);
         _solidProgram = std::make_unique<Program>("rmlui_solid", _embeddedShaders, rmlui_basic_vlayout);
         _layout = _program->getVertexLayout();
@@ -280,6 +309,36 @@ namespace darmok
         _rendered = false;
         _viewSetup = false;
         _transform = glm::mat4(1);
+    }
+
+    void RmluiRenderInterface::renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept
+    {
+        if (!_viewId || !_program)
+        {
+            return;
+        }
+
+        auto rmlHandle = sprite.sprite_sheet->texture.GetHandle(this);
+        auto itr = _textures.find(rmlHandle);
+        if (itr == _textures.end())
+        {
+            return;
+        }
+        auto& tex = *itr->second;
+
+        auto textureElm = TextureAtlasElement::create(RmluiUtils::convert(sprite.rectangle));
+        TextureAtlasMeshCreationConfig config;
+        config.type = MeshType::Transient;
+        auto mesh = textureElm.createSprite(_program->getVertexLayout(), tex.getSize(), config);
+
+        _encoder->setTexture(0, _textureUniform, tex.getHandle());
+
+        auto trans = glm::translate(glm::mat4(1), glm::vec3(position, 0));
+        _encoder->setTransform(glm::value_ptr(trans));
+
+        mesh->render(_encoder.value(), 0);
+        _encoder->setState(_state);
+        _encoder->submit(_viewId.value(), _program->getHandle());
     }
 
     bool RmluiRenderInterface::afterRender() noexcept
@@ -334,6 +393,16 @@ namespace darmok
     double RmluiSystemInterface::GetElapsedTime()
     {
         return _elapsedTime;
+    }
+
+    void RmluiSystemInterface::SetMouseCursor(const Rml::String& name) noexcept
+    {
+        _mouseCursor = name;
+    }
+
+    const std::string& RmluiSystemInterface::getMouseCursor() noexcept
+    {
+        return _mouseCursor;
     }
 
     void RmluiFileInterface::init(App& app)
@@ -487,6 +556,14 @@ namespace darmok
 
     void RmluiAppComponentImpl::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
     {
+        if (texture != nullptr)
+        {
+            setSize(texture->getSize());
+        }
+        else
+        {
+            setSize(std::nullopt);
+        }
         _render.setTargetTexture(texture);
     }
 
@@ -503,6 +580,18 @@ namespace darmok
     bool RmluiAppComponentImpl::getInputActive() const noexcept
     {
         return _inputActive;
+    }
+
+    void RmluiAppComponentImpl::setMouseTransform(const Camera& cam, const Transform& trans) noexcept
+    {
+        _mouseCamera = cam;
+        _mouseTransform = trans;
+    }
+
+    void RmluiAppComponentImpl::resetMouseTransform() noexcept
+    {
+        _mouseCamera.reset();
+        _mouseTransform.reset();
     }
 
     OptionalRef<Rml::Context> RmluiAppComponentImpl::getContext() const noexcept
@@ -536,6 +625,11 @@ namespace darmok
         _system.update(dt);
     }
 
+    const std::string& RmluiSharedAppComponent::getMouseCursor() noexcept
+    {
+        return _system.getMouseCursor();
+    }
+
     void RmluiAppComponentImpl::init(App& app)
     {
         _app = app;
@@ -544,6 +638,8 @@ namespace darmok
         _render.init(app);
         auto size = _size ? _size.value() : app.getWindow().getPixelSize();
         _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_render);
+
+        _context->EnableMouseCursor(true);
 
         app.getWindow().addListener(*this);
         app.getInput().getKeyboard().addListener(*this);
@@ -567,10 +663,52 @@ namespace darmok
         _app.reset();
     }
 
+    OptionalRef<const Rml::Sprite> RmluiAppComponentImpl::getMouseCursorSprite() const noexcept
+    {
+        for (int i = 0; i < _context->GetNumDocuments(); i++)
+        {
+            auto sprite = getMouseCursorSprite(*_context->GetDocument(i));
+            if (sprite)
+            {
+                return sprite;
+            }
+        }
+        return nullptr;
+    }
+
+    OptionalRef<const Rml::Sprite> RmluiAppComponentImpl::getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept
+    {
+        auto cursorName = _shared->getMouseCursor();
+        if (cursorName.empty())
+        {
+            auto prop = doc.GetProperty("cursor");
+            if (prop != nullptr)
+            {
+                cursorName = prop->Get<std::string>();
+            }
+        }
+        if (cursorName.empty())
+        {
+            return nullptr;
+        }
+        cursorName = std::string("cursor-") + cursorName;
+        auto style = doc.GetStyleSheet();
+        if (style == nullptr)
+        {
+            return nullptr;
+        }
+        return style->GetSprite(cursorName);
+    }
+
     bool RmluiAppComponentImpl::render(bgfx::ViewId viewId) const noexcept
     {
         _render.beforeRender(viewId);
         auto result = _context->Render();
+        auto cursorSprite = getMouseCursorSprite();
+        if (cursorSprite)
+        {
+            _render.renderMouseCursor(cursorSprite.value(), _mousePosition);
+        }
         _render.afterRender();
         return result;
     }
@@ -732,8 +870,35 @@ namespace darmok
         {
             return;
         }
-        auto y = _app->getWindow().getPixelSize().y - absolute.y;
-        _context->ProcessMouseMove(absolute.x, y, getKeyModifierState());
+        auto pos = absolute;
+        if (_mouseCamera)
+        {
+            auto optRay = _mouseCamera->screenPointToRay(pos);
+            if (!optRay)
+            {
+                return;
+            }
+            auto ray = optRay.value();
+            if (_mouseTransform)
+            {
+                ray *= _mouseTransform->getWorldInverse();
+            }
+            auto dist = ray.intersect(Plane());
+            if (!dist)
+            {
+                return;
+            }
+            auto rayPos = ray * dist.value();
+            pos.x = rayPos.x;
+            pos.y = rayPos.z;
+        }
+
+        auto size = _size ? _size.value() : _app->getWindow().getPixelSize();
+        pos.y = size.y - pos.y;
+        _mousePosition = pos;
+
+
+        _context->ProcessMouseMove(pos.x, pos.y, getKeyModifierState());
     }
 
     void RmluiAppComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
@@ -819,6 +984,29 @@ namespace darmok
     void RmluiAppComponent::shutdown() noexcept
     {
         _impl->shutdown();
+    }
+
+    RmluiAppComponent& RmluiAppComponent::setInputActive(bool active) noexcept
+    {
+        _impl->setInputActive(active);
+        return *this;
+    }
+
+    bool RmluiAppComponent::getInputActive() const noexcept
+    {
+        return _impl->getInputActive();
+    }
+
+    RmluiAppComponent& RmluiAppComponent::setMouseTransform(const Camera& cam, const Transform& trans) noexcept
+    {
+        _impl->setMouseTransform(cam, trans);
+        return *this;
+    }
+
+    RmluiAppComponent& RmluiAppComponent::resetMouseTransform() noexcept
+    {
+        _impl->resetMouseTransform();
+        return *this;
     }
 
     bgfx::ViewId RmluiAppComponent::render(bgfx::ViewId viewId) const noexcept

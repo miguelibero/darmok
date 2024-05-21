@@ -103,7 +103,7 @@ namespace darmok
 		std::shared_ptr<AppComponent> getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback);
 
 		DLLEXPORT virtual void updateLogic(float deltaTime);
-		DLLEXPORT [[nodiscard]] virtual bgfx::ViewId render(bgfx::ViewId viewId) const;
+		DLLEXPORT virtual bgfx::ViewId render(bgfx::ViewId viewId) const;
 
 	private:
 		std::unique_ptr<AppImpl> _impl;

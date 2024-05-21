@@ -149,14 +149,14 @@ namespace
 			MeshCreator meshCreator(_layout);
 			meshCreator.config.type = MeshType::Dynamic;
 			meshCreator.config.scale = glm::vec3(0.5F);
-			auto mesh = meshCreator.createQuad(Quad(tex->getSize()));
+			auto mesh = meshCreator.createRectangle(Rectangle(tex->getSize()));
 			auto mat = std::make_shared<Material>(tex);
 			registry.emplace<Renderable>(sprite, mesh, mat);
 
 			auto spriteBorder = registry.create();
 			auto size = scale * glm::vec2(tex->getSize());
 			meshCreator.config.scale = glm::vec3(size, 0);
-			auto debugMesh = meshCreator.createLineQuad();
+			auto debugMesh = meshCreator.createLineRectangle();
 			registry.emplace<Renderable>(spriteBorder, debugMesh, _debugMaterial);
 			registry.emplace<Transform>(spriteBorder).setParent(trans);
 			registry.emplace<Culling2D>(spriteBorder);

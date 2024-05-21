@@ -31,6 +31,31 @@ namespace darmok
 		return getMeshIndexSize(index32);
 	}
 
+	std::shared_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config) noexcept
+	{
+		switch (type)
+		{
+		case MeshType::Dynamic:
+			return std::make_shared<DynamicMesh>(layout, vertices, config);
+		case MeshType::Transient:
+			return std::make_shared<TransientMesh>(layout, vertices, config.index32);
+		default:
+			return std::make_shared<Mesh>(layout, vertices, config);
+		}
+	}
+
+	std::shared_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config) noexcept
+	{
+		switch (type)
+		{
+		case MeshType::Dynamic:
+			return std::make_shared<DynamicMesh>(layout, vertices, indices, config);
+		case MeshType::Transient:
+			return std::make_shared<TransientMesh>(layout, vertices, indices, config.index32);
+		default:
+			return std::make_shared<Mesh>(layout, vertices, indices, config);
+		}
+	}
 
 	static std::string getMeshDescription(const std::string& name, size_t vertNum, size_t idxNum, const bgfx::VertexLayout& layout) noexcept
 	{
@@ -343,15 +368,9 @@ namespace darmok
 		auto vertexData = writer.finish();
 		DataView vertDataView(vertexData);
 		DataView idxDataView(meshData.indices);
-		switch (cfg.type)
-		{
-		case MeshType::Dynamic:
-			return std::make_shared<DynamicMesh>(layout, vertDataView, idxDataView);
-		case MeshType::Transient:
-			return std::make_shared<TransientMesh>(layout, vertDataView, idxDataView);
-		default:
-			return std::make_shared<Mesh>(layout, vertDataView, idxDataView);
-		}
+
+		return IMesh::create(config.type, layout, vertDataView, idxDataView);
+
 	}
 
 	std::shared_ptr<IMesh> MeshCreator::createCube() noexcept
@@ -401,7 +420,7 @@ namespace darmok
 		return createMesh(data, cfg);
 	}
 
-	const static MeshData _quadMeshData = {
+	const MeshData MeshCreator::_rectangleMeshData = {
 		{
 			{ 1, 1, 0 }, { 1, 0, 0 }, { 0, 0, 0 }, { 0, 1, 0 },
 		},
@@ -413,26 +432,26 @@ namespace darmok
 		}
 	};
 
-	std::shared_ptr<IMesh> MeshCreator::createQuadMesh(const bgfx::VertexLayout& layout, const MeshData& data, const Quad& quad) noexcept
+	std::shared_ptr<IMesh> MeshCreator::createRectangleMesh(const bgfx::VertexLayout& layout, const MeshData& data, const Rectangle& rect) noexcept
 	{
 		auto cfg = config;
-		cfg.scale *= glm::vec3(quad.size, 0);
-		cfg.offset += glm::vec3(quad.origin - glm::vec2(0.5F), 0);
+		cfg.scale *= glm::vec3(rect.size, 0);
+		cfg.offset += glm::vec3(rect.origin - glm::vec2(0.5F), 0);
 		return createMesh(data, cfg);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createQuad(const Quad& quad) noexcept
+	std::shared_ptr<IMesh> MeshCreator::createRectangle(const Rectangle& rect) noexcept
 	{
-		MeshData data = _quadMeshData;
+		MeshData data = _rectangleMeshData;
 		data.indices = { 0, 1, 2, 2, 3, 0 };
-		return createQuadMesh(layout, data, quad);
+		return createRectangleMesh(layout, data, rect);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createLineQuad(const Quad& quad) noexcept
+	std::shared_ptr<IMesh> MeshCreator::createLineRectangle(const Rectangle& rect) noexcept
 	{
-		MeshData data = _quadMeshData;
+		MeshData data = _rectangleMeshData;
 		data.indices = { 0, 1, 1, 2, 2, 3, 3, 0 };
-		return createQuadMesh(layout, data, quad);
+		return createRectangleMesh(layout, data, rect);
 	}
 
 	std::shared_ptr<IMesh> MeshCreator::createSphere(int lod) noexcept
@@ -440,14 +459,14 @@ namespace darmok
 		return createSphere(Sphere::standard());
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createQuad() noexcept
+	std::shared_ptr<IMesh> MeshCreator::createRectangle() noexcept
 	{
-		return createQuad(Quad::standard());
+		return createRectangle(Rectangle::standard());
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createLineQuad() noexcept
+	std::shared_ptr<IMesh> MeshCreator::createLineRectangle() noexcept
 	{
-		return createLineQuad(Quad::standard());
+		return createLineRectangle(Rectangle::standard());
 	}
 
 	std::shared_ptr<IMesh> MeshCreator::createSphere(const Sphere& sphere, int lod) noexcept

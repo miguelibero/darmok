@@ -10,19 +10,19 @@ namespace darmok
 {
     struct Line;
 
-    struct Quad
+    struct Rectangle final
     {
         glm::vec2 size;
         glm::vec2 origin;
 
-        DLLEXPORT Quad(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
+        DLLEXPORT Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
         DLLEXPORT std::string to_string() const noexcept;
         DLLEXPORT std::vector<Line> toLines() const noexcept;
 
-        DLLEXPORT static const Quad& standard() noexcept;
+        DLLEXPORT static const Rectangle& standard() noexcept;
     };
 
-    struct Cube
+    struct Cube final
     {
         glm::vec3 size;
         glm::vec3 origin;
@@ -34,7 +34,7 @@ namespace darmok
     };
 
 
-    struct Triangle
+    struct Triangle final
     {
         using Vertices = std::array<glm::vec3, 3>;
         Vertices vertices;
@@ -44,7 +44,7 @@ namespace darmok
         DLLEXPORT std::string to_string() const noexcept;
     };
 
-    struct Sphere
+    struct Sphere final
     {
         float radius;
         glm::vec3 origin;
@@ -55,7 +55,7 @@ namespace darmok
         DLLEXPORT static const Sphere& standard() noexcept;
     };
 
-    struct Plane
+    struct Plane final
     {
         glm::vec3 normal;
         glm::vec3 origin;
@@ -63,10 +63,13 @@ namespace darmok
         DLLEXPORT Plane(const glm::vec3& normal = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
         DLLEXPORT std::string to_string() const noexcept;
 
+        DLLEXPORT Plane operator*(const glm::mat4& transform) const noexcept;
+        DLLEXPORT Plane& operator*=(const glm::mat4& transform) noexcept;
+
         DLLEXPORT static const Plane& standard() noexcept;
     };
 
-    struct NormalIntersection
+    struct NormalIntersection final
     {
         glm::vec3 position;
         glm::vec3 normal;
@@ -74,7 +77,7 @@ namespace darmok
         DLLEXPORT std::string to_string() const noexcept;
     };
 
-    struct DistanceIntersection
+    struct DistanceIntersection final
     {
         glm::vec2 position;
         float distance;
@@ -84,13 +87,16 @@ namespace darmok
 
     struct Line;
 
-    struct Ray
+    struct Ray final
     {
         glm::vec3 direction;
         glm::vec3 origin;
 
         DLLEXPORT Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 1, 0)) noexcept;
         
+        DLLEXPORT Ray operator*(const glm::mat4& transform) const noexcept;
+        DLLEXPORT Ray& operator*=(const glm::mat4& transform) noexcept;
+
         DLLEXPORT glm::vec3 operator*(float dist) const noexcept;
         
         DLLEXPORT std::string to_string() const noexcept;
@@ -108,7 +114,7 @@ namespace darmok
         DLLEXPORT static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const glm::ivec4& viewport) noexcept;
     };
 
-    struct Line
+    struct Line final
     {
         using Points = std::array<glm::vec3, 2>;
         Points points;

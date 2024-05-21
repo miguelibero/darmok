@@ -12,6 +12,7 @@
 #include <darmok/texture_fwd.hpp>
 #include <darmok/texture_atlas_fwd.hpp>
 #include <darmok/material_fwd.hpp>
+#include <darmok/mesh_fwd.hpp>
 
 namespace darmok
 {
@@ -20,6 +21,17 @@ namespace darmok
 		glm::uvec2 size;
 		glm::uvec2 offset;
 	};
+
+	struct TextureAtlasMeshCreationConfig final
+	{
+		glm::vec3 scale = glm::vec3(1);
+		glm::vec3 offset = glm::vec3(0);
+		Color color = Colors::white();
+		glm::uvec2 amount = glm::uvec2(1);
+		MeshType type = MeshType::Static;
+	};
+
+	class IMesh;
 
 	struct TextureAtlasElement final
 	{
@@ -36,6 +48,12 @@ namespace darmok
 
 		DLLEXPORT TextureAtlasBounds getBounds() const noexcept;
 		DLLEXPORT size_t getVertexAmount() const noexcept;
+
+		using Config = TextureAtlasMeshCreationConfig;
+
+		DLLEXPORT std::shared_ptr<IMesh> createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, Config config) const noexcept;
+
+		DLLEXPORT static TextureAtlasElement create(const TextureAtlasBounds& bounds) noexcept;
 	};
 
 	class Texture;
@@ -51,15 +69,6 @@ namespace darmok
 		DLLEXPORT OptionalRef<const TextureAtlasElement> getElement(std::string_view name) const noexcept;
 	};
 
-	struct TextureAtlasMeshCreationConfig final
-	{
-		glm::vec3 scale = glm::vec3(1);
-		glm::vec3 offset = glm::vec3(0);
-		Color color = Colors::white();
-		glm::uvec2 amount = glm::uvec2(1);
-	};
-
-	class Mesh;
 	struct AnimationFrame;
 
 	struct TextureAtlasMeshCreator final
@@ -71,11 +80,8 @@ namespace darmok
 
 		DLLEXPORT TextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const TextureAtlas& atlas) noexcept;
 
-		DLLEXPORT std::shared_ptr<Mesh> createSprite(std::string_view name) const noexcept;
+		DLLEXPORT std::shared_ptr<IMesh> createSprite(std::string_view name) const noexcept;
 		DLLEXPORT std::vector<AnimationFrame> createAnimation(std::string_view namePrefix, float frameDuration = 1.f / 30.f) const noexcept;
-	private:
-
-		std::shared_ptr<Mesh> createSprite(const TextureAtlasElement& elm) const noexcept;
 	};
 
     class BX_NO_VTABLE ITextureAtlasLoader

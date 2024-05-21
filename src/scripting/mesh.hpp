@@ -33,7 +33,7 @@ namespace darmok
 	struct MeshCreationConfig;
 	struct Cube;
 	struct Sphere;
-	struct Quad;
+	struct Rectangle;
 	struct Line;
 	struct Ray;
 	class LuaTexture;
@@ -57,11 +57,11 @@ namespace darmok
 		LuaMesh createSphere2(const Sphere& sphere) noexcept;
 		LuaMesh createSphere3(int lod) noexcept;
 		LuaMesh createSphere4(const Sphere& sphere, int lod) noexcept;
-		LuaMesh createQuad1() noexcept;
-		LuaMesh createQuad2(const Quad& quad) noexcept;
-		LuaMesh createQuad3(const glm::uvec2& size) noexcept;
-		LuaMesh createLineQuad1() noexcept;
-		LuaMesh createLineQuad2(const Quad& quad) noexcept;
+		LuaMesh createRectangle1() noexcept;
+		LuaMesh createRectangle2(const Rectangle& rectangle) noexcept;
+		LuaMesh createRectangle3(const glm::uvec2& size) noexcept;
+		LuaMesh createLineRectangle1() noexcept;
+		LuaMesh createLineRectangle2(const Rectangle& rectangle) noexcept;
 		LuaMesh createRay(const Ray& ray) noexcept;
 		LuaMesh createLine(const Line& line) noexcept;
 		LuaMesh createLines(const std::vector<Line>& lines) noexcept;

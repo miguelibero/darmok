@@ -44,6 +44,15 @@ namespace darmok
 	LuaMouse::LuaMouse(Mouse& mouse) noexcept
 		: _mouse(mouse)
 	{
+		_mouse->addListener(*this);
+	}
+
+	LuaMouse::~LuaMouse() noexcept
+	{
+		if (_mouse)
+		{
+			_mouse->removeListener(*this);
+		}
 	}
 
 	bool LuaMouse::getActive() const noexcept
@@ -86,8 +95,80 @@ namespace darmok
 		return _mouse->getButton(MouseButton::Right);
 	}
 
+	void LuaMouse::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute)
+	{
+		for (auto& listener : _positionListeners)
+		{
+			listener.call(delta, absolute);
+		}
+	}
+
+	void LuaMouse::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute)
+	{
+		for (auto& listener : _buttonListeners)
+		{
+			listener.call(delta, absolute);
+		}
+	}
+
+	void LuaMouse::onMouseButton(MouseButton button, bool down)
+	{
+		for (auto& listener : _buttonListeners)
+		{
+			listener.call(button, down);
+		}
+	}
+
+	void LuaMouse::registerPositionListener(const sol::protected_function& func) noexcept
+	{
+		_positionListeners.push_back(func);
+	}
+
+	template<typename T>
+	bool unregisterListener(std::vector<T> listeners, const T& elm) noexcept
+	{
+		auto itr = std::remove(listeners.begin(), listeners.end(), elm);
+		if (itr == listeners.end())
+		{
+			return false;
+		}
+		listeners.erase(itr, listeners.end());
+		return true;
+	}
+
+	bool LuaMouse::unregisterPositionListener(const sol::protected_function& func) noexcept
+	{
+		return unregisterListener(_positionListeners, func);
+	}
+
+	void LuaMouse::registerScrollListener(const sol::protected_function& func) noexcept
+	{
+		_scrollListeners.push_back(func);
+	}
+
+	bool LuaMouse::unregisterScrollListener(const sol::protected_function& func) noexcept
+	{
+		return unregisterListener(_scrollListeners, func);
+	}
+
+	void LuaMouse::registerButtonListener(const sol::protected_function& func) noexcept
+	{
+		_buttonListeners.push_back(func);
+	}
+
+	bool LuaMouse::unregisterButtonListener(const sol::protected_function& func) noexcept
+	{
+		return unregisterListener(_buttonListeners, func);
+	}
+
 	void LuaMouse::bind(sol::state_view& lua) noexcept
 	{
+		lua.new_enum<MouseButton>("MouseButton", {
+			{ "Left", MouseButton::Left },
+			{ "Middle", MouseButton::Middle },
+			{ "Right", MouseButton::Right },
+		});
+
 		lua.new_usertype<LuaMouse>("Mouse",
 			sol::constructors<>(),
 			"active", sol::property(&LuaMouse::getActive),
@@ -97,7 +178,13 @@ namespace darmok
 			"scroll_delta", sol::property(&LuaMouse::getScrollDelta),
 			"left_button", sol::property(&LuaMouse::getLeftButton),
 			"middle_button", sol::property(&LuaMouse::getMiddleButton),
-			"right_button", sol::property(&LuaMouse::getRightButton)
+			"right_button", sol::property(&LuaMouse::getRightButton),
+			"register_position_listener", &LuaMouse::registerPositionListener,
+			"unregister_position_listener", &LuaMouse::unregisterPositionListener,
+			"register_scroll_listener", &LuaMouse::registerScrollListener,
+			"unregister_scroll_listener", &LuaMouse::unregisterScrollListener,
+			"register_button_listener", &LuaMouse::registerButtonListener,
+			"unregister_button_listener", &LuaMouse::unregisterButtonListener
 		);
 	}
 

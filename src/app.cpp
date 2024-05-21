@@ -212,6 +212,10 @@ namespace darmok
 			bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filePath.c_str());
 		};
 
+		auto reload = [this]() {
+
+		};
+
 		_input.addBindings(_bindingsName, {
 			{ KeyboardBindingKey { KeyboardKey::Esc,		to_underlying(KeyboardModifier::None) },		true, exit },
 			{ KeyboardBindingKey { KeyboardKey::KeyQ,		to_underlying(KeyboardModifier::LeftCtrl) },	true, exit },
@@ -232,6 +236,8 @@ namespace darmok
 			{ KeyboardBindingKey { KeyboardKey::Print,		to_underlying(KeyboardModifier::None) },		true, screenshot },
 			{ KeyboardBindingKey { KeyboardKey::KeyP,		to_underlying(KeyboardModifier::LeftCtrl) },	true, screenshot },
 			{ KeyboardBindingKey { KeyboardKey::KeyP,		to_underlying(KeyboardModifier::RightCtrl) },	true, screenshot },
+			{ KeyboardBindingKey { KeyboardKey::KeyR,		to_underlying(KeyboardModifier::LeftCtrl) },	true, reload },
+			{ KeyboardBindingKey { KeyboardKey::KeyR,		to_underlying(KeyboardModifier::RightCtrl) },	true, reload },
 			});
 	}
 
@@ -468,8 +474,6 @@ namespace darmok
 			return false;
 		}
 
-		// TODO: decide if impl updateLogic and render should go inside app methods
-
 		_impl->update([this](float deltaTime) {
 			updateLogic(deltaTime);
 			_impl->updateLogic(deltaTime);
@@ -477,7 +481,6 @@ namespace darmok
 
 		bgfx::ViewId viewId = 0;
 		viewId = render(viewId);
-		viewId = _impl->render(viewId);
 
 		// advance to next frame. Rendering thread will be kicked to
 		// process submitted rendering primitives.
@@ -509,8 +512,10 @@ namespace darmok
 		bgfx::touch(viewId);
 		bgfx::dbgTextClear(); // use debug font to print information
 		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
-
 		viewId++;
+
+		viewId = _impl->render(viewId);
+
 		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
 		bgfx::touch(viewId);
 

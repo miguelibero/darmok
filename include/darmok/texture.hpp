@@ -66,6 +66,7 @@ namespace darmok
 		DLLEXPORT uint8_t getBitsPerPixel() const noexcept;
 
 		Texture& setName(std::string_view name) noexcept;
+
 	private:
 		bgfx::TextureHandle _handle;
 		Config _config;
