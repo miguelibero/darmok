@@ -13,6 +13,7 @@
 #include "window.hpp"
 #include "texture.hpp"
 #include "rmlui.hpp"
+#include "utils.hpp"
 
 namespace darmok
 {
@@ -101,23 +102,23 @@ namespace darmok
 		return true;
 	}
 
-	LuaRmluiAppComponent LuaApp::getMainGui() noexcept
+	std::reference_wrapper<LuaRmluiAppComponent> LuaApp::getMainGui() noexcept
 	{
 		static const std::string name = "";
 		return getOrAddGui(name);
 	}
 
-	std::optional<LuaRmluiAppComponent> LuaApp::getGui(const std::string& name) noexcept
+	OptionalRef<LuaRmluiAppComponent>::std_t LuaApp::getGui(const std::string& name) noexcept
 	{
 		auto itr = _guiComponents.find(name);
 		if (itr == _guiComponents.end())
 		{
 			return std::nullopt;
 		}
-		return LuaRmluiAppComponent(itr->second);
+		return itr->second;
 	}
 
-	LuaRmluiAppComponent LuaApp::getOrAddGui(const std::string& name) noexcept
+	std::reference_wrapper<LuaRmluiAppComponent> LuaApp::getOrAddGui(const std::string& name) noexcept
 	{
 		auto itr = _guiComponents.find(name);
 		if (itr == _guiComponents.end())
@@ -125,14 +126,14 @@ namespace darmok
 			auto& comp = _app->addComponent<RmluiAppComponent>(name);
 			itr = _guiComponents.emplace(name, comp).first;
 		}
-		return LuaRmluiAppComponent(itr->second);
+		return itr->second;
 	}
 
-	LuaRmluiAppComponent LuaApp::addGui(const std::string& name)
+	std::reference_wrapper<LuaRmluiAppComponent> LuaApp::addGui(const std::string& name)
 	{
 		auto& comp = _app->addComponent<RmluiAppComponent>(name);
-		_guiComponents.emplace(name, comp);
-		return LuaRmluiAppComponent(comp);
+		auto r = _guiComponents.emplace(name, comp);
+		return r.first->second;
 	}
 
 	bool LuaApp::removeGui(const std::string& name) noexcept
@@ -189,13 +190,10 @@ namespace darmok
 				continue;
 			}
 			auto result = update(deltaTime);
-			if (result.valid())
+			if (!result.valid())
 			{
-				continue;
+				recoveredLuaError("running update", result);
 			}
-			sol::error err = result;
-			std::cerr << "error running update:" << std::endl;
-			std::cerr << err.what() << std::endl;
 		}
 	}
 
@@ -234,6 +232,14 @@ namespace darmok
 	{
 		App::init(args);
 		_impl->init(*this, args);
+	}
+
+	int ScriptingApp::shutdown()
+	{
+		_impl->beforeShutdown();
+		auto r = App::shutdown();
+		_impl->afterShutdown();
+		return r;
 	}
 
 	void ScriptingApp::updateLogic(float deltaTime)
@@ -306,9 +312,7 @@ namespace darmok
 		auto result = lua.script_file(mainFile);
 		if (!result.valid())
 		{
-			sol::error err = result;
-			std::cerr << "error running main:" << std::endl;
-			std::cerr << err.what() << std::endl;
+			recoveredLuaError("running main", result);
 		}
 		else
 		{
@@ -324,9 +328,13 @@ namespace darmok
 		}
 	}
 
-	void ScriptingAppImpl::shutdown() noexcept
+	void ScriptingAppImpl::beforeShutdown() noexcept
+	{
+		_luaApp.reset();
+	}
+
+	void ScriptingAppImpl::afterShutdown() noexcept
 	{
 		_lua.reset();
-		_luaApp.reset();
 	}
 }

@@ -45,6 +45,8 @@ namespace darmok
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		const std::shared_ptr<Texture>& getTargetTexture() noexcept;
 
+		static glm::vec3 screenProject(const glm::vec3& position, const glm::uvec2& screenSize, const glm::mat4& model = glm::mat4(1)) noexcept;
+
 	private:
 
 		struct CompiledGeometry final
@@ -74,6 +76,9 @@ namespace darmok
 
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
 		void setupView() noexcept;
+
+		static glm::mat4 getProjection(const glm::uvec2& size) noexcept;
+		static glm::uvec4 getViewport(const glm::uvec2& size) noexcept;
 	};
 
 	class RmluiSystemInterface final : public Rml::SystemInterface
@@ -142,22 +147,27 @@ namespace darmok
 		RmluiFileInterface _file;
 	};
 
+	class IRmluiMouseDelegate;
+
     class RmluiAppComponentImpl final : public IWindowListener, public IKeyboardListener, public IMouseListener
     {
     public:
 		RmluiAppComponentImpl(const std::string& name) noexcept;
-		RmluiAppComponentImpl(const std::string& name, const glm::uvec2& size) noexcept;
+		RmluiAppComponentImpl(const std::string& name, const glm::uvec2& fixedSize) noexcept;
 
-		void setSize(const std::optional<glm::uvec2>& size) noexcept;
-		const std::optional<glm::uvec2>& getSize() const noexcept;
+		void setFixedSize(const std::optional<glm::uvec2>& fixedSize) noexcept;
+		const std::optional<glm::uvec2>& getFixedSize() const noexcept;
+
+		glm::uvec2 getCurrentSize() const noexcept;
 
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		const std::shared_ptr<Texture>& getTargetTexture() noexcept;
 
 		void setInputActive(bool active) noexcept;
 		bool getInputActive() const noexcept;
-		void setMouseTransform(const Camera& cam, const Transform& trans) noexcept;
-		void resetMouseTransform() noexcept;
+		void setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
+		void resetMouseDelegate() noexcept;
+		glm::ivec2 screenProject(const glm::vec3& position, const glm::mat4& model) noexcept;
 
 		OptionalRef<Rml::Context> getContext() const noexcept;
 		RmluiRenderInterface& getRenderInterface() noexcept;
@@ -181,13 +191,12 @@ namespace darmok
 		OptionalRef<App> _app;
 		
 		mutable RmluiRenderInterface _render;
-		std::optional<glm::uvec2> _size;
+		std::optional<glm::uvec2> _fixedSize;
 		bool _inputActive;
 		std::shared_ptr<RmluiSharedAppComponent> _shared;
 
-		OptionalRef<const Camera> _mouseCamera;
-		OptionalRef<const Transform> _mouseTransform;
-		glm::vec2 _mousePosition;
+		OptionalRef<IRmluiMouseDelegate> _mouseDelegate;
+		glm::ivec2 _mousePosition;
 		std::string _defaultMouseCursor;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;

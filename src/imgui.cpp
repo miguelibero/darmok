@@ -370,7 +370,7 @@ namespace darmok
 
 		auto& buttons = mouse.getButtons();
 		auto& pos = mouse.getPosition();
-		io.AddMousePosEvent(pos.x, size.y - pos.y);
+		io.AddMousePosEvent(pos.x, pos.y);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);

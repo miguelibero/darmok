@@ -39,6 +39,7 @@ namespace darmok
     class Mesh;
     class Texture;
     class IEntityFilter;
+    class Transform;
 
     class Camera final
     {
@@ -107,7 +108,10 @@ namespace darmok
             return ref;
         }
 
-        DLLEXPORT std::optional<Ray> screenPointToRay(const glm::vec2& point) const noexcept;
+        glm::uvec2 getScreenPoint(const glm::vec2& normPoint) const noexcept;
+        DLLEXPORT Ray screenPointToRay(const glm::vec2& point) const noexcept;
+        DLLEXPORT glm::vec3 worldToScreenPoint(const glm::vec3& position) const noexcept;
+
         DLLEXPORT bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
 
         DLLEXPORT void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
@@ -123,17 +127,9 @@ namespace darmok
         OptionalRef<App> _app;
         std::vector<std::shared_ptr<Texture>> _targetTextures;
         bgfx::FrameBufferHandle _frameBuffer;
-    };
 
-    class ViewRect final
-    {
-    public:
-        ViewRect(const glm::ivec4& viewport) noexcept;
-        [[nodiscard]] const glm::ivec4& getViewport() const noexcept;
-        void setViewport(const glm::ivec4& vp) noexcept;
-
-        void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
-    private:
-        glm::ivec4 _viewport;
+        glm::ivec4 getViewport() const noexcept;
+        OptionalRef<Transform> getTransform() const noexcept;
+        glm::mat4 getModelMatrix() const noexcept;
     };
 }

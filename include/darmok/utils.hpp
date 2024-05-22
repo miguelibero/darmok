@@ -19,7 +19,7 @@ namespace darmok
         static bool endsWith(std::string_view sv, std::string_view end) noexcept;
     };
 
-    void checkError(bx::Error& err);    
+    void checkError(bx::Error& err);
 
     struct Utf8Char final
     {

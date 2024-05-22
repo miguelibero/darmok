@@ -179,6 +179,26 @@ namespace darmok
         submitGeometry(texture, translation);
     }
 
+    glm::mat4 RmluiRenderInterface::getProjection(const glm::uvec2& size) noexcept
+    {
+        glm::mat4 proj(1);
+        bx::mtxOrtho(glm::value_ptr(proj), 0, size.x, size.y, 0.F, -1000.F, 1000.F, 0.F, bgfx::getCaps()->homogeneousDepth);
+        return proj;
+    }
+
+    glm::uvec4 RmluiRenderInterface::getViewport(const glm::uvec2& size) noexcept
+    {
+        return glm::uvec4(0, 0, size.x, size.y);
+    }
+
+    glm::vec3 RmluiRenderInterface::screenProject(const glm::vec3& position, const glm::uvec2& screenSize, const glm::mat4& model) noexcept
+    {
+        auto vp = getViewport(screenSize);
+        auto proj = getProjection(screenSize);
+
+        return glm::project(position, model, proj, vp);
+    }
+
     void RmluiRenderInterface::setupView() noexcept
     {
         auto viewId = _viewId.value();
@@ -187,11 +207,11 @@ namespace darmok
         bgfx::setViewName(viewId, "RmlUI");
         bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
-        auto dim = GetContext()->GetDimensions();
-        bgfx::setViewRect(_viewId.value(), 0, 0, dim.x, dim.y);
+        auto size = RmluiUtils::convert(GetContext()->GetDimensions());
+        auto vp = getViewport(size);
+        bgfx::setViewRect(_viewId.value(), vp[0], vp[1], vp[2], vp[3]);
 
-        glm::mat4 proj(1);
-        bx::mtxOrtho(glm::value_ptr(proj), 0, dim.x, dim.y, 0.F, -1000.F, 1000.F, 0.F, bgfx::getCaps()->homogeneousDepth);
+        auto proj = getProjection(size);
         bgfx::setViewTransform(viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
 
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
@@ -524,23 +544,24 @@ namespace darmok
     {
     }
 
-    RmluiAppComponentImpl::RmluiAppComponentImpl(const std::string& name, const glm::uvec2& size) noexcept
-        : _size(size)
+    RmluiAppComponentImpl::RmluiAppComponentImpl(const std::string& name, const glm::uvec2& fixedSize) noexcept
+        : _fixedSize(fixedSize)
         , _inputActive(false)
         , _name(name)
+        , _mousePosition(0)
     {
     }
 
-    void RmluiAppComponentImpl::setSize(const std::optional<glm::uvec2>& size) noexcept
+    void RmluiAppComponentImpl::setFixedSize(const std::optional<glm::uvec2>& fixedSize) noexcept
     {
-        _size = size;
+        _fixedSize = fixedSize;
         if (!_context)
         {
             return;
         }
-        if (size)
+        if (fixedSize)
         {
-            _context->SetDimensions(RmluiUtils::convert<int>(size.value()));
+            _context->SetDimensions(RmluiUtils::convert<int>(fixedSize.value()));
         }
         else if (_app)
         {
@@ -549,20 +570,29 @@ namespace darmok
         }
     }
 
-    const std::optional<glm::uvec2>& RmluiAppComponentImpl::getSize() const noexcept
+    const std::optional<glm::uvec2>& RmluiAppComponentImpl::getFixedSize() const noexcept
     {
-        return _size;
+        return _fixedSize;
+    }
+
+    glm::uvec2 RmluiAppComponentImpl::getCurrentSize() const noexcept
+    {
+        if (!_context)
+        {
+            return {};
+        }
+        return RmluiUtils::convert(_context->GetDimensions());
     }
 
     void RmluiAppComponentImpl::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
     {
         if (texture != nullptr)
         {
-            setSize(texture->getSize());
+            setFixedSize(texture->getSize());
         }
         else
         {
-            setSize(std::nullopt);
+            setFixedSize(std::nullopt);
         }
         _render.setTargetTexture(texture);
     }
@@ -582,16 +612,20 @@ namespace darmok
         return _inputActive;
     }
 
-    void RmluiAppComponentImpl::setMouseTransform(const Camera& cam, const Transform& trans) noexcept
+    void RmluiAppComponentImpl::setMouseDelegate(IRmluiMouseDelegate & dlg) noexcept
     {
-        _mouseCamera = cam;
-        _mouseTransform = trans;
+        _mouseDelegate = dlg;
     }
 
-    void RmluiAppComponentImpl::resetMouseTransform() noexcept
+    void RmluiAppComponentImpl::resetMouseDelegate() noexcept
     {
-        _mouseCamera.reset();
-        _mouseTransform.reset();
+        _mouseDelegate.reset();
+    }
+
+    glm::ivec2 RmluiAppComponentImpl::screenProject(const glm::vec3& position, const glm::mat4& model) noexcept
+    {
+        auto size = getCurrentSize();
+        return _render.screenProject(position, size, model);
     }
 
     OptionalRef<Rml::Context> RmluiAppComponentImpl::getContext() const noexcept
@@ -636,9 +670,10 @@ namespace darmok
         _shared = app.getSharedComponent<RmluiSharedAppComponent>();
 
         _render.init(app);
-        auto size = _size ? _size.value() : app.getWindow().getPixelSize();
+        auto size = _fixedSize ? _fixedSize.value() : app.getWindow().getPixelSize();
         _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_render);
-
+        
+        // TODO: configure this
         _context->EnableMouseCursor(true);
 
         app.getWindow().addListener(*this);
@@ -720,7 +755,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onWindowPixelSize(const glm::uvec2& size) noexcept
     {
-        if (_context == nullptr)
+        if (_fixedSize || _context == nullptr)
         {
             return;
         }
@@ -871,33 +906,13 @@ namespace darmok
             return;
         }
         auto pos = absolute;
-        if (_mouseCamera)
+
+        if (_mouseDelegate)
         {
-            auto optRay = _mouseCamera->screenPointToRay(pos);
-            if (!optRay)
-            {
-                return;
-            }
-            auto ray = optRay.value();
-            if (_mouseTransform)
-            {
-                ray *= _mouseTransform->getWorldInverse();
-            }
-            auto dist = ray.intersect(Plane());
-            if (!dist)
-            {
-                return;
-            }
-            auto rayPos = ray * dist.value();
-            pos.x = rayPos.x;
-            pos.y = rayPos.z;
+            pos = _mouseDelegate->onMousePositionChange(delta, pos);
         }
 
-        auto size = _size ? _size.value() : _app->getWindow().getPixelSize();
-        pos.y = size.y - pos.y;
         _mousePosition = pos;
-
-
         _context->ProcessMouseMove(pos.x, pos.y, getKeyModifierState());
     }
 
@@ -965,15 +980,20 @@ namespace darmok
         return _impl->getTargetTexture();
     }
 
-    RmluiAppComponent& RmluiAppComponent::setSize(const std::optional<glm::uvec2>& size) noexcept
+    RmluiAppComponent& RmluiAppComponent::setFixedSize(const std::optional<glm::uvec2>& size) noexcept
     {
-        _impl->setSize(size);
+        _impl->setFixedSize(size);
         return *this;
     }
 
-    const std::optional<glm::uvec2>& RmluiAppComponent::getSize() noexcept
+    const std::optional<glm::uvec2>& RmluiAppComponent::getFixedSize() noexcept
     {
-        return _impl->getSize();
+        return _impl->getFixedSize();
+    }
+
+    glm::uvec2 RmluiAppComponent::getCurrentSize() const noexcept
+    {
+        return _impl->getCurrentSize();
     }
 
     void RmluiAppComponent::init(App& app)
@@ -997,16 +1017,21 @@ namespace darmok
         return _impl->getInputActive();
     }
 
-    RmluiAppComponent& RmluiAppComponent::setMouseTransform(const Camera& cam, const Transform& trans) noexcept
+    RmluiAppComponent& RmluiAppComponent::setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept
     {
-        _impl->setMouseTransform(cam, trans);
+        _impl->setMouseDelegate(dlg);
         return *this;
     }
 
-    RmluiAppComponent& RmluiAppComponent::resetMouseTransform() noexcept
+    RmluiAppComponent& RmluiAppComponent::resetMouseDelegate() noexcept
     {
-        _impl->resetMouseTransform();
+        _impl->resetMouseDelegate();
         return *this;
+    }
+
+    glm::ivec2 RmluiAppComponent::screenProject(const glm::vec3& position, const glm::mat4& model) noexcept
+    {
+        return _impl->screenProject(position, model);
     }
 
     bgfx::ViewId RmluiAppComponent::render(bgfx::ViewId viewId) const noexcept

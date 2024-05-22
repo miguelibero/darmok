@@ -5,12 +5,22 @@
 #include "texture.hpp"
 #include "camera.hpp"
 #include "transform.hpp"
+#include "utils.hpp"
 
 namespace darmok
 {
     LuaRmluiAppComponent::LuaRmluiAppComponent(OptionalRef<RmluiAppComponent> comp) noexcept
         : _comp(comp)
     {
+        comp->setMouseDelegate(*this);
+    }
+
+    LuaRmluiAppComponent::~LuaRmluiAppComponent() noexcept
+    {
+        if (_comp)
+        {
+            _comp->resetMouseDelegate();
+        }
     }
 
     Rml::Context* LuaRmluiAppComponent::getContext() noexcept
@@ -28,7 +38,7 @@ namespace darmok
         return getContext()->GetName();
     }
 
-    std::optional<LuaTexture> LuaRmluiAppComponent::getTargetTexture() noexcept
+    std::optional<LuaTexture> LuaRmluiAppComponent::getTargetTexture() const noexcept
     {
         auto tex = _comp->getTargetTexture();
         if (tex == nullptr)
@@ -38,9 +48,9 @@ namespace darmok
         return LuaTexture(tex);
     }
 
-    std::optional<glm::uvec2> LuaRmluiAppComponent::getSize() noexcept
+    glm::uvec2 LuaRmluiAppComponent::getCurrentSize() const noexcept
     {
-        return _comp->getSize();
+        return _comp->getCurrentSize();
     }
 
     void LuaRmluiAppComponent::setTargetTexture(const std::optional<LuaTexture>& texture) noexcept
@@ -48,9 +58,14 @@ namespace darmok
         _comp->setTargetTexture(texture ? texture->getReal() : nullptr);
     }
 
-    void LuaRmluiAppComponent::setSize(const VarLuaTable<std::optional<glm::uvec2>>& size) noexcept
+    std::optional<glm::uvec2> LuaRmluiAppComponent::getFixedSize() const noexcept
     {
-        _comp->setSize(LuaGlm::tableGet(size));
+        return _comp->getFixedSize();
+    }
+
+    void LuaRmluiAppComponent::setFixedSize(const VarLuaTable<std::optional<glm::uvec2>>& size) noexcept
+    {
+        _comp->setFixedSize(LuaGlm::tableGet(size));
     }
 
     void LuaRmluiAppComponent::loadFont(const std::string& path) noexcept
@@ -74,15 +89,45 @@ namespace darmok
         return _comp->getInputActive();
     }
 
-    LuaRmluiAppComponent& LuaRmluiAppComponent::setMouseTransform(const LuaCamera& cam, const LuaTransform& trans) noexcept
+    glm::ivec2 LuaRmluiAppComponent::onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept
     {
-        _comp->setMouseTransform(cam.getReal(), trans.getReal());
+        if (_mouseDelegate)
+        {
+            auto result = _mouseDelegate(delta, position);
+            if (!result.valid())
+            {
+                recoveredLuaError("mouse position delegate", result);
+                return position;
+            }
+            sol::object obj = result;
+            if (obj.is<glm::ivec2>())
+            {
+                return obj.as<glm::ivec2>();
+            }
+            if (obj.is<sol::table>())
+            {
+                glm::ivec2 v;
+                LuaGlm::tableInit(v, obj);
+                return v;
+            }
+        }
+        return position;
+    }
+
+    LuaRmluiAppComponent& LuaRmluiAppComponent::setMouseDelegate(const sol::protected_function& func) noexcept
+    {
+        _mouseDelegate = func;
         return *this;
     }
-    LuaRmluiAppComponent& LuaRmluiAppComponent::resetMouseTransform() noexcept
+
+    glm::ivec2 LuaRmluiAppComponent::screenProject1(const glm::vec3& position) const noexcept
     {
-        _comp->resetMouseTransform();
-        return *this;
+        return _comp->screenProject(position);
+    }
+
+    glm::ivec2 LuaRmluiAppComponent::screenProject2(const glm::vec3& position, const glm::mat4& model) const noexcept
+    {
+        return _comp->screenProject(position, model);
     }
 
     LuaRmluiDocument LuaRmluiAppComponent::loadDocument(const std::string& name)
@@ -125,10 +170,11 @@ namespace darmok
             "name", sol::property(&LuaRmluiAppComponent::getName),
             "context", sol::property(&LuaRmluiAppComponent::getContext),
             "target_texture", sol::property(&LuaRmluiAppComponent::getTargetTexture, &LuaRmluiAppComponent::setTargetTexture),
-            "size", sol::property(&LuaRmluiAppComponent::getSize, &LuaRmluiAppComponent::setSize),
+            "fixed_size", sol::property(&LuaRmluiAppComponent::getFixedSize, &LuaRmluiAppComponent::setFixedSize),
+            "current_size", sol::property(&LuaRmluiAppComponent::getCurrentSize),
             "input_active", sol::property(&LuaRmluiAppComponent::getInputActive, &LuaRmluiAppComponent::setInputActive),
-            "set_mouse_transform", &LuaRmluiAppComponent::setMouseTransform,
-            "reset_mouse_transform", &LuaRmluiAppComponent::resetMouseTransform,
+            "mouse_delegate", sol::property(&LuaRmluiAppComponent::setMouseDelegate),
+            "screen_project", sol::overload(&LuaRmluiAppComponent::screenProject1, &LuaRmluiAppComponent::screenProject2),
             "load_document", &LuaRmluiAppComponent::loadDocument,
             "load_font", &LuaRmluiAppComponent::loadFont,
             "load_fallback_font", &LuaRmluiAppComponent::loadFallbackFont,

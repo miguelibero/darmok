@@ -1,5 +1,6 @@
 #include "input.hpp"
 #include "window.hpp"
+#include "utils.hpp"
 #include <darmok/input.hpp>
 #include <glm/gtx/string_cast.hpp>
 
@@ -237,13 +238,10 @@ namespace darmok
 	static void callLuaBinding(std::string key, sol::protected_function fn)
 	{
 		auto result = fn();
-		if (result.valid())
+		if (!result.valid())
 		{
-			return;
+			recoveredLuaError(std::string("triggering input binding '") + key + "'", result);
 		}
-		sol::error err = result;
-		std::cerr << "error triggering input binding '" << key << "':" << std::endl;
-		std::cerr << err.what() << std::endl;
 	}
 
 	void LuaInput::addBindings(const std::string& name, const sol::table& data) noexcept

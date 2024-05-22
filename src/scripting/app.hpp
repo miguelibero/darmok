@@ -33,10 +33,10 @@ namespace darmok
 		LuaScene addScene2() noexcept;
 		bool removeScene(const LuaScene& scene) noexcept;
 
-		LuaRmluiAppComponent getMainGui() noexcept;
-		std::optional<LuaRmluiAppComponent> getGui(const std::string& name) noexcept;
-		LuaRmluiAppComponent getOrAddGui(const std::string& name) noexcept;
-		LuaRmluiAppComponent addGui(const std::string& name);
+		std::reference_wrapper<LuaRmluiAppComponent> getMainGui() noexcept;
+		OptionalRef<LuaRmluiAppComponent>::std_t getGui(const std::string& name) noexcept;
+		std::reference_wrapper<LuaRmluiAppComponent> getOrAddGui(const std::string& name) noexcept;
+		std::reference_wrapper<LuaRmluiAppComponent> addGui(const std::string& name);
 		bool removeGui(const std::string& name) noexcept;
 		
 		LuaAssets getAssets() noexcept;
@@ -55,7 +55,7 @@ namespace darmok
 		SceneComponents _sceneComponents;
 		SceneComponents::iterator findSceneComponent(const LuaScene& scene) noexcept;
 
-		using RmluiComponents = std::unordered_map<std::string, OptionalRef<RmluiAppComponent>>;
+		using RmluiComponents = std::unordered_map<std::string, LuaRmluiAppComponent>;
 		RmluiComponents _guiComponents;
 	};
 
@@ -64,7 +64,8 @@ namespace darmok
     public:
         void init(App& app, const std::vector<std::string>& args);
         void updateLogic(float deltaTime);
-        void shutdown() noexcept;
+		void beforeShutdown() noexcept;
+        void afterShutdown() noexcept;
 
     private:
         std::unique_ptr<sol::state> _lua;

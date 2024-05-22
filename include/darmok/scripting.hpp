@@ -13,6 +13,7 @@ namespace darmok
         DLLEXPORT ScriptingApp();
         DLLEXPORT ~ScriptingApp();
         void init(const std::vector<std::string>& args) override;
+        int shutdown() override;
     protected:
         void updateLogic(float deltaTime) override;
     private:

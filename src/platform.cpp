@@ -123,7 +123,6 @@ namespace darmok
 
 	void GamepadConnectEvent::process(Input& input) noexcept
 	{
-		DBG("gamepad %d, %d", _gamepad, _connected);
 		auto gamepad = input.getGamepad(_gamepad);
 		if (gamepad)
 		{

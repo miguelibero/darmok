@@ -112,6 +112,7 @@ namespace darmok
         DLLEXPORT std::optional<DistanceIntersection> intersect(const Triangle& tri) const noexcept;
 
         DLLEXPORT static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const glm::ivec4& viewport) noexcept;
+
     };
 
     struct Line final
@@ -128,6 +129,7 @@ namespace darmok
 
         DLLEXPORT std::optional<std::array<NormalIntersection, 2>> intersect(const Sphere& sphere) const noexcept;
         DLLEXPORT std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
+        DLLEXPORT glm::vec3 closestPoint(const glm::vec3& p);
     };
 
 }

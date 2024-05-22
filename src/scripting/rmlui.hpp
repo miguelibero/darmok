@@ -2,6 +2,7 @@
 
 #include <sol/sol.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/rmlui.hpp>
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/DataModelHandle.h>
 #include "glm.hpp"
@@ -59,26 +60,31 @@ namespace darmok
     class LuaCamera;
     class LuaTransform;
 
-    class LuaRmluiAppComponent final
+    class LuaRmluiAppComponent final : public IRmluiMouseDelegate
     {
     public:
         LuaRmluiAppComponent(OptionalRef<RmluiAppComponent> comp) noexcept;
+        ~LuaRmluiAppComponent() noexcept;
 
         Rml::Context* getContext() noexcept;
 
-        std::optional<LuaTexture> getTargetTexture() noexcept;
-        std::optional<glm::uvec2> getSize() noexcept;
-
+        std::optional<LuaTexture> getTargetTexture() const noexcept;
         void setTargetTexture(const std::optional<LuaTexture>& texture) noexcept;
-        void setSize(const VarLuaTable<std::optional<glm::uvec2>>& size) noexcept;
+
+        std::optional<glm::uvec2> getFixedSize() const noexcept;
+        void setFixedSize(const VarLuaTable<std::optional<glm::uvec2>>& size) noexcept;
+        glm::uvec2 getCurrentSize() const noexcept;
 
         void loadFont(const std::string& path) noexcept;
         void loadFallbackFont(const std::string& path) noexcept;
 
         LuaRmluiAppComponent& setInputActive(bool active) noexcept;
         bool getInputActive() const noexcept;
-        LuaRmluiAppComponent& setMouseTransform(const LuaCamera& cam, const LuaTransform& trans) noexcept;
-        LuaRmluiAppComponent& resetMouseTransform() noexcept;
+
+        glm::ivec2 onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept override;
+        LuaRmluiAppComponent& setMouseDelegate(const sol::protected_function& func) noexcept;
+        glm::ivec2 screenProject1(const glm::vec3& position) const noexcept;
+        glm::ivec2 screenProject2(const glm::vec3& position, const glm::mat4& model) const noexcept;
 
         OptionalRef<RmluiAppComponent> getReal() noexcept;
         const std::string& getName() noexcept;
@@ -91,5 +97,6 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
         OptionalRef<RmluiAppComponent> _comp;
+        sol::protected_function _mouseDelegate;
     };
 }

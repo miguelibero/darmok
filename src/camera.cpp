@@ -167,24 +167,13 @@ namespace darmok
 
     void Camera::beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
-        std::optional<glm::uvec2> size;
-        if (!_targetTextures.empty())
-        {
-            size = _targetTextures[0]->getSize();
-        }
-        else if (_app)
-        {
-            size = _app->getWindow().getPixelSize();
-        }
-
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
         bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
         
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
-        if (size)
-        {
-            bgfx::setViewRect(viewId, 0, 0, size->x, size->y);
-        }
+
+        auto vp = getViewport();
+        bgfx::setViewRect(viewId, vp[0], vp[1], vp[2], vp[3]);
 
         // this dummy draw call is here to make sure that view is cleared
         // if no other draw calls are submitted to view.
@@ -207,12 +196,6 @@ namespace darmok
             }
 
             bgfx::setViewTransform(viewId, viewPtr, projPtr);
-
-            auto viewRect = registry.try_get<const ViewRect>(entity);
-            if (viewRect != nullptr)
-            {
-                viewRect->beforeRenderView(encoder, viewId);
-            }
         }
         if (_renderer != nullptr)
         {
@@ -268,46 +251,63 @@ namespace darmok
         return *this;
     }
 
-    std::optional<Ray> Camera::screenPointToRay(const glm::vec2& point) const noexcept
+    glm::ivec4 Camera::getViewport() const noexcept
     {
-        if (!_scene || !_app)
+        if (!_targetTextures.empty())
         {
-            return std::nullopt;
+            auto& size = _targetTextures[0]->getSize();
+            return glm::ivec4(0, 0, size);
+        }
+        if (_app)
+        {
+            return glm::ivec4(0, 0, _app->getWindow().getPixelSize());
+        }
+        return glm::ivec4(0);
+    }
+
+    OptionalRef<Transform> Camera::getTransform() const noexcept
+    {
+        if (!_scene)
+        {
+            return nullptr;
         }
         auto& registry = _scene->getRegistry();
         auto entity = entt::to_entity(registry.storage<Camera>(), *this);
         if (entity == entt::null)
         {
-            return std::nullopt;
+            return nullptr;
         }
-        glm::mat4 model;
-        auto trans = registry.try_get<const Transform>(entity);
-        if (trans != nullptr)
+        return registry.try_get<Transform>(entity);
+    }
+
+    glm::mat4 Camera::getModelMatrix() const noexcept
+    {
+        auto trans = getTransform();
+        if (trans)
         {
-            model = trans->getWorldInverse();
+            return trans->getWorldInverse();
         }
-        auto viewport = glm::ivec4(0, 0, _app->getWindow().getPixelSize());
-        return Ray::unproject(point, model, _matrix, viewport);
+        return glm::mat4(1);
     }
 
-    ViewRect::ViewRect(const glm::ivec4& viewport) noexcept
-        : _viewport(viewport)
+    glm::uvec2 Camera::getScreenPoint(const glm::vec2& normPoint) const noexcept
     {
+        auto vp = getViewport();
+        return glm::uvec2(vp[0], vp[1]) + glm::uvec2(normPoint * glm::vec2(vp[2], vp[3]));
     }
 
-    const glm::ivec4& ViewRect::getViewport() const noexcept
+    Ray Camera::screenPointToRay(const glm::vec2& point) const noexcept
     {
-        return _viewport;
+        auto model = getModelMatrix();
+        auto vp = getViewport();
+        // TODO: check if we can optimize since unproject inverts the matrix
+        return Ray::unproject(point, model, _matrix, vp);
     }
 
-    void ViewRect::setViewport(const glm::ivec4& viewport) noexcept
+    glm::vec3 Camera::worldToScreenPoint(const glm::vec3& position) const noexcept
     {
-        _viewport = viewport;
+        auto model = getModelMatrix();
+        auto vp = getViewport();
+        return glm::project(position, model, _matrix, vp);
     }
-
-    void ViewRect::beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
-    {
-        bgfx::setViewRect(viewId, _viewport[0], _viewport[1], _viewport[2], _viewport[3]);
-    }
-
 }

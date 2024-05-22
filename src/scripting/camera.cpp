@@ -23,6 +23,11 @@ namespace darmok
 		return _camera.value();
 	}
 
+	glm::uvec2 LuaCamera::getScreenPoint(const VarLuaTable<glm::vec2>& normPoint) const noexcept
+	{
+		return _camera->getScreenPoint(LuaGlm::tableGet(normPoint));
+	}
+
 	LuaCamera& LuaCamera::setProjection1(float fovy, float aspect, const VarLuaTable<glm::vec2>& range) noexcept
 	{
 		_camera->setProjection(fovy, aspect, LuaGlm::tableGet(range));
@@ -126,9 +131,14 @@ namespace darmok
 		_camera->setMatrix(LuaGlm::tableGet(matrix));
 	}
 
-	std::optional<Ray> LuaCamera::screenPointToRay(const VarLuaTable<glm::vec2>& point) const noexcept
+	Ray LuaCamera::screenPointToRay(const VarLuaTable<glm::vec2>& point) const noexcept
 	{
 		return _camera->screenPointToRay(LuaGlm::tableGet(point));
+	}
+
+	glm::vec3 LuaCamera::worldToScreenPoint(const VarLuaTable<glm::vec3>& position) const noexcept
+	{
+		return _camera->worldToScreenPoint(LuaGlm::tableGet(position));
 	}
 
 	LuaCamera LuaCamera::addEntityComponent(LuaEntity& entity) noexcept
@@ -174,7 +184,9 @@ namespace darmok
 			"add_component", sol::overload(&LuaCamera::addNativeComponent),
 			"matrix", sol::property(&LuaCamera::getMatrix, &LuaCamera::setMatrix),
 			"target_textures", sol::property(&LuaCamera::getTargetTextures, &LuaCamera::setTargetTextures),
-			"screen_point_to_ray", &LuaCamera::screenPointToRay
+			"screen_point_to_ray", &LuaCamera::screenPointToRay,
+			"world_to_screen_point", &LuaCamera::worldToScreenPoint,
+			"get_screen_point", &LuaCamera::getScreenPoint
 		);
 	}
 }

@@ -28,6 +28,8 @@ namespace darmok
 		const Camera& getReal() const;
 		Camera& getReal();
 
+		glm::uvec2 getScreenPoint(const VarLuaTable<glm::vec2>& normPoint) const noexcept;
+
 		LuaCamera& setProjection1(float fovy, float aspect, const VarLuaTable<glm::vec2>& range) noexcept;
 		LuaCamera& setProjection2(float fovy, float aspect, float near) noexcept;
 		LuaCamera& setProjection3(float fovy, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& range) noexcept;
@@ -43,7 +45,8 @@ namespace darmok
 		std::vector<LuaTexture> getTargetTextures() noexcept;
 		const glm::mat4& getMatrix() const noexcept;
 		void setMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept;
-		std::optional<Ray> screenPointToRay(const VarLuaTable<glm::vec2>& point) const noexcept;
+		Ray screenPointToRay(const VarLuaTable<glm::vec2>& point) const noexcept;
+		glm::vec3 worldToScreenPoint(const VarLuaTable<glm::vec3>& position) const noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 

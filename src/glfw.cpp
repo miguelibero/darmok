@@ -555,7 +555,6 @@ namespace darmok
 
 	glm::vec2 PlatformImpl::normalizeScreenPoint(double x, double y) noexcept
 	{
-		y = _windowSize.y - y;
 		auto f = glm::vec2(_framebufferSize) / glm::vec2(_windowSize);
 		return (glm::vec2(x, y) * f) + glm::vec2(0.5F);
 	}

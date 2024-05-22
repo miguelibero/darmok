@@ -2,7 +2,6 @@
 #include "input.hpp"
 #include <bx/bx.h>
 #include <darmok/window.hpp>
-#include "dbg.h"
 
 namespace darmok
 {

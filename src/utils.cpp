@@ -2,6 +2,7 @@
 #include <string>
 #include <stdexcept>
 #include <algorithm>
+#include <sstream>
 
 namespace darmok
 {
@@ -29,9 +30,9 @@ namespace darmok
         if (!err.isOk())
         {
             auto msg = err.getMessage();
-            std::string strMsg(msg.getPtr(), msg.getLength());
-            strMsg += "( " + err.get().code + std::string(")");
-            throw std::runtime_error(strMsg.c_str());
+			std::stringstream ss(msg.getPtr(), msg.getLength());
+			ss << "( " << err.get().code << ")";
+            throw std::runtime_error(ss.str());
         }
     }
 

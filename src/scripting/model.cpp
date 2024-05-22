@@ -1,6 +1,7 @@
 #include "model.hpp"
 #include "scene.hpp"
 #include "asset.hpp"
+#include "utils.hpp"
 #include <darmok/scene.hpp>
 
 namespace darmok
@@ -17,13 +18,10 @@ namespace darmok
 		void operator()(const std::shared_ptr<IModelNode>& node, Entity entity) const noexcept
 		{
 			auto result = _callback(LuaModelNode(node), LuaEntity(entity, _scene));
-			if (result.valid())
+			if (!result.valid())
 			{
-				return;
+				recoveredLuaError("adding model to scene", result);
 			}
-			sol::error err = result;
-			std::cerr << "error adding model to scene:" << std::endl;
-			std::cerr << err.what() << std::endl;
 		}
 
 	private:

@@ -192,7 +192,7 @@ namespace darmok
         auto near = glm::unProject(glm::vec3(screenPosition, 0), model, proj, viewport);
         auto far = glm::unProject(glm::vec3(screenPosition, 1), model, proj, viewport);
 
-        return Ray(far - near, near);
+        return Ray(glm::normalize(far - near), near);
     }
 
     glm::vec3 Ray::operator*(float dist) const noexcept
@@ -239,6 +239,11 @@ namespace darmok
             return pos;
         }
         return std::nullopt;
+    }
+
+    glm::vec3 Line::closestPoint(const glm::vec3& p)
+    {
+        return glm::closestPointOnLine(p, points[0], points[1]);
     }
 
     std::string NormalIntersection::to_string() const noexcept
