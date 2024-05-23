@@ -165,9 +165,9 @@ namespace darmok
 	void LuaMouse::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<MouseButton>("MouseButton", {
-			{ "Left", MouseButton::Left },
-			{ "Middle", MouseButton::Middle },
-			{ "Right", MouseButton::Right },
+			{ "left", MouseButton::Left },
+			{ "middle", MouseButton::Middle },
+			{ "right", MouseButton::Right },
 		});
 
 		lua.new_usertype<LuaMouse>("Mouse",

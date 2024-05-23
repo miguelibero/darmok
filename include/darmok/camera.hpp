@@ -10,6 +10,7 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/entity_filter.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/viewport.hpp>
 
 namespace darmok
 {
@@ -44,12 +45,12 @@ namespace darmok
     class Camera final
     {
     public:
-        DLLEXPORT Camera(const glm::mat4& matrix = {}) noexcept;
+        DLLEXPORT Camera(const glm::mat4& projMatrix = {}) noexcept;
         DLLEXPORT ~Camera();
 
-        DLLEXPORT const glm::mat4& getMatrix() const noexcept;
+        DLLEXPORT const glm::mat4& getProjectionMatrix() const noexcept;
 
-        DLLEXPORT Camera& setMatrix(const glm::mat4& matrix) noexcept;
+        DLLEXPORT Camera& setProjectionMatrix(const glm::mat4& matrix) noexcept;
         DLLEXPORT Camera& setProjection(float fovy, float aspect, const glm::vec2& range) noexcept;
         DLLEXPORT Camera& setProjection(float fovy, float aspect, float near = 0.f) noexcept;
         DLLEXPORT Camera& setProjection(float fovy, const glm::uvec2& size, const glm::vec2& range) noexcept;
@@ -60,7 +61,14 @@ namespace darmok
         DLLEXPORT Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
         DLLEXPORT Camera& setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
-        DLLEXPORT const std::vector<std::shared_ptr<Texture>>& getTargetTextures() noexcept;
+        DLLEXPORT const std::vector<std::shared_ptr<Texture>>& getTargetTextures() const noexcept;
+
+        DLLEXPORT Camera& setViewport(const std::optional<Viewport>& viewport) noexcept;
+        DLLEXPORT const std::optional<Viewport>& getViewport() const noexcept;
+        DLLEXPORT Viewport getCurrentViewport() const noexcept;
+
+        DLLEXPORT OptionalRef<Transform> getTransform() const noexcept;
+        DLLEXPORT glm::mat4 getModelMatrix() const noexcept;
 
         template<typename T>
         Camera& setEntityComponentFilter() noexcept
@@ -108,9 +116,15 @@ namespace darmok
             return ref;
         }
 
-        glm::uvec2 getScreenPoint(const glm::vec2& normPoint) const noexcept;
-        DLLEXPORT Ray screenPointToRay(const glm::vec2& point) const noexcept;
-        DLLEXPORT glm::vec3 worldToScreenPoint(const glm::vec3& position) const noexcept;
+        // trying to maintain Unity API https://docs.unity3d.com/ScriptReference/Camera.html
+        DLLEXPORT Ray screenPointToRay(const glm::vec3& point) const noexcept;
+        DLLEXPORT Ray viewportPointToRay(const glm::vec3& point) const noexcept;
+        DLLEXPORT glm::vec3 worldToScreenPoint(const glm::vec3& point) const noexcept;
+        DLLEXPORT glm::vec3 worldToViewportPoint(const glm::vec3& point) const noexcept;
+        DLLEXPORT glm::vec3 screenToWorldPoint(const glm::vec3& point) const noexcept;
+        DLLEXPORT glm::vec3 viewportToWorldPoint(const glm::vec3& point) const noexcept;
+        DLLEXPORT glm::vec3 viewportToScreenPoint(const glm::vec3& point) const noexcept;
+        DLLEXPORT glm::vec3 screenToViewportPoint(const glm::vec3& point) const noexcept;
 
         DLLEXPORT bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
 
@@ -119,7 +133,8 @@ namespace darmok
         DLLEXPORT void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
-        glm::mat4 _matrix;
+        glm::mat4 _proj;
+        std::optional<Viewport> _viewport;
         std::unique_ptr<IEntityFilter> _entityFilter;
         std::unique_ptr<ICameraRenderer> _renderer;
         std::vector<std::unique_ptr<ICameraComponent>> _components;
@@ -127,9 +142,5 @@ namespace darmok
         OptionalRef<App> _app;
         std::vector<std::shared_ptr<Texture>> _targetTextures;
         bgfx::FrameBufferHandle _frameBuffer;
-
-        glm::ivec4 getViewport() const noexcept;
-        OptionalRef<Transform> getTransform() const noexcept;
-        glm::mat4 getModelMatrix() const noexcept;
     };
 }

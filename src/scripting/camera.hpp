@@ -6,14 +6,17 @@
 #include <darmok/shape.hpp>
 #include <sol/sol.hpp>
 #include "glm.hpp"
+#include "viewport.hpp"
 
 namespace darmok
 {
+	class Viewport;
     class Camera;
 	class LuaProgram;
 	class LuaTexture;
 	class LuaEntity;
 	class LuaScene;
+	class LuaTransform;
 
 	enum class LuaNativeCameraComponentType
 	{
@@ -28,8 +31,6 @@ namespace darmok
 		const Camera& getReal() const;
 		Camera& getReal();
 
-		glm::uvec2 getScreenPoint(const VarLuaTable<glm::vec2>& normPoint) const noexcept;
-
 		LuaCamera& setProjection1(float fovy, float aspect, const VarLuaTable<glm::vec2>& range) noexcept;
 		LuaCamera& setProjection2(float fovy, float aspect, float near) noexcept;
 		LuaCamera& setProjection3(float fovy, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& range) noexcept;
@@ -38,15 +39,30 @@ namespace darmok
 		LuaCamera& setOrtho2(const VarLuaTable<glm::vec4>& edges) noexcept;
 		LuaCamera& setOrtho3(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& range) noexcept;
 		LuaCamera& setOrtho4(const VarLuaTable<glm::uvec2>& size) noexcept;
-		LuaCamera& setTargetTextures(const sol::table& textures) noexcept;
 		LuaCamera& addNativeComponent(LuaNativeCameraComponentType type) noexcept;
 		LuaCamera& setForwardRenderer(const LuaProgram& program) noexcept;
 
+		const glm::mat4& getProjectionMatrix() const noexcept;
+		void setProjectionMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept;
+
+		LuaCamera& setTargetTextures(const sol::table& textures) noexcept;
 		std::vector<LuaTexture> getTargetTextures() noexcept;
-		const glm::mat4& getMatrix() const noexcept;
-		void setMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept;
-		Ray screenPointToRay(const VarLuaTable<glm::vec2>& point) const noexcept;
-		glm::vec3 worldToScreenPoint(const VarLuaTable<glm::vec3>& position) const noexcept;
+
+		std::optional<Viewport> getViewport() const noexcept;
+		LuaCamera& setViewport(const std::optional<VarViewport>& viewport) noexcept;
+		Viewport getCurrentViewport() const noexcept;
+
+		std::optional<LuaTransform> getTransform() const noexcept;
+		glm::mat4 getModelMatrix() const noexcept;
+
+		Ray screenPointToRay(const VarLuaTable<glm::vec3>& point) const noexcept;
+		Ray viewportPointToRay(const VarLuaTable<glm::vec3>& point) const noexcept;
+		glm::vec3 worldToScreenPoint(const VarLuaTable<glm::vec3>& point) const noexcept;
+		glm::vec3 worldToViewportPoint(const VarLuaTable<glm::vec3>& point) const noexcept;
+		glm::vec3 screenToWorldPoint(const VarLuaTable<glm::vec3>& point) const noexcept;
+		glm::vec3 viewportToWorldPoint(const VarLuaTable<glm::vec3>& point) const noexcept;
+		glm::vec3 viewportToScreenPoint(const VarLuaTable<glm::vec3>& point) const noexcept;
+		glm::vec3 screenToViewportPoint(const VarLuaTable<glm::vec3>& point) const noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 

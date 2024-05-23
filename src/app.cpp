@@ -107,10 +107,7 @@ namespace darmok
 
 		for (auto& elm : _sharedComponents)
 		{
-			if (auto comp = elm.second.lock())
-			{
-				comp->init(app);
-			}
+			elm.second->init(app);
 		}
 		for (auto& component : _components)
 		{
@@ -129,10 +126,7 @@ namespace darmok
 		}
 		for (auto& elm : _sharedComponents)
 		{
-			if (auto comp = elm.second.lock())
-			{
-				comp->shutdown();
-			}
+			elm.second->shutdown();
 		}
 		_components.clear();
 		_sharedComponents.clear();
@@ -145,10 +139,7 @@ namespace darmok
 		cleanSharedComponents();
 		for (auto& elm : _sharedComponents)
 		{
-			if (auto comp = elm.second.lock())
-			{
-				comp->updateLogic(deltaTime);
-			}
+			elm.second->updateLogic(deltaTime);
 		}
 		for (auto& component : _components)
 		{
@@ -161,10 +152,7 @@ namespace darmok
 	{
 		for (auto& elm : _sharedComponents)
 		{
-			if (auto comp = elm.second.lock())
-			{
-				viewId = comp->render(viewId);
-			}
+			viewId = elm.second->render(viewId);
 		}
 		for (auto& component : _components)
 		{
@@ -288,10 +276,7 @@ namespace darmok
 		auto itr = _sharedComponents.find(typeHash);
 		if (itr != _sharedComponents.end())
 		{
-			if (auto comp = itr->second.lock())
-			{
-				return comp;
-			}
+			return itr->second;
 		}
 		auto component = std::shared_ptr<AppComponent>(callback());
 		auto r = _sharedComponents.emplace(typeHash, component);
@@ -304,7 +289,17 @@ namespace darmok
 
 	void AppImpl::cleanSharedComponents() noexcept
 	{
-
+		for (auto itr = _sharedComponents.begin(), last = _sharedComponents.end(); itr != last;)
+		{
+			if (itr->second.use_count() == 1)
+			{
+				itr = _sharedComponents.erase(itr);
+			}
+			else
+			{
+				++itr;
+			}
+		}
 	}
 
 	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
@@ -319,13 +314,22 @@ namespace darmok
 	bool AppImpl::removeComponent(AppComponent& component) noexcept
 	{
 		auto ptr = &component;
-		auto itr = std::find_if(_components.begin(), _components.end(), [ptr](auto& comp) { return comp.get() == ptr;  });
-		if (itr == _components.end())
+		auto itr1 = std::find_if(_components.begin(), _components.end(), [ptr](auto& comp) { return comp.get() == ptr;  });
+		auto itr2 = std::find_if(_sharedComponents.begin(), _sharedComponents.end(), [ptr](auto& elm) { return elm.second.get() == ptr; });
+		auto found = itr1 != _components.end() || itr2 != _sharedComponents.end();
+		if (_app && found)
 		{
-			return false;
+			component.shutdown();
 		}
-		_components.erase(itr);
-		return true;
+		if (itr1 != _components.end())
+		{
+			_components.erase(itr1);
+		}
+		if (itr2 != _sharedComponents.end())
+		{
+			_sharedComponents.erase(itr2);
+		}
+		return found;
 	}
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -345,52 +349,71 @@ namespace darmok
 #endif
 	}
 
-	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
+	bool tryInitApp(App& app, const std::vector<std::string>& args) noexcept
 	{
 		try
 		{
-			app->init(args);
+			app.init(args);
+			return true;
 		}
 		catch (const std::exception& ex)
 		{
 			logAppException("init", ex);
-			return -1;
+			return false;
 		}
+	}
 
-		int result = 0;
-
+	bool tryUpdateApp(App& app) noexcept
+	{
 		try
 		{
 #if BX_PLATFORM_EMSCRIPTEN
 			s_app = app.get();
 			emscripten_set_main_loop(&updateApp, -1, 1);
 #else
-			while (app->update())
+			while (app.update())
 			{
 			}
 #endif // BX_PLATFORM_EMSCRIPTEN
+			return true;
 		}
-		catch(const std::exception& ex)
+		catch (const std::exception& ex)
 		{
 			logAppException("update", ex);
+			return false;
+		}
+	}
+
+	int tryShutdownApp(App& app) noexcept
+	{
+		try
+		{
+			return app.shutdown();
+		}
+		catch (const std::exception& ex)
+		{
+			logAppException("shutdown", ex);
+			return -1;
+		}
+	}
+
+	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
+	{
+		bool success = false;
+		if (tryInitApp(*app, args))
+		{
+			if (tryUpdateApp(*app))
+			{
+				success = true;
+			}
+		}
+		auto result = tryShutdownApp(*app);
+		if (!success && result == 0)
+		{
 			result = -1;
 		}
 
-		if (result == 0)
-		{
-			try
-			{
-				result = app->shutdown();
-			}
-			catch (const std::exception& ex)
-			{
-				logAppException("shutdown", ex);
-				result = -1;
-			}
-		}
-
 		// destroy app before the bgfx shutdown to guarantee no dangling resources
-		auto& size = app->getWindow().getSize();
 		app.reset();
 
 		// Shutdown bgfx.

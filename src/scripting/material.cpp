@@ -47,12 +47,29 @@ namespace darmok
 		return *this;
 	}
 
+	MaterialPrimitiveType LuaMaterial::getPrimitiveType() const noexcept
+	{
+		return _material->getPrimitiveType();
+	}
+
+	LuaMaterial& LuaMaterial::setPrimitiveType(MaterialPrimitiveType type) noexcept
+	{
+		_material->setPrimitiveType(type);
+		return *this;
+	}
+
 	void LuaMaterial::bind(sol::state_view& lua) noexcept
 	{
+		lua.new_enum<MaterialPrimitiveType>("MaterialPrimitiveType", {
+			{ "triangle", MaterialPrimitiveType::Triangle },
+			{ "line", MaterialPrimitiveType::Line }
+		});
+
 		lua.new_usertype<LuaMaterial>("Material",
 			sol::constructors<LuaMaterial(), LuaMaterial(LuaTexture)>(),
 			"shininess", sol::property(&LuaMaterial::getShininess, &LuaMaterial::setShininess),
-			"specular_strength", sol::property(&LuaMaterial::getSpecularStrength, &LuaMaterial::setSpecularStrength)
+			"specular_strength", sol::property(&LuaMaterial::getSpecularStrength, &LuaMaterial::setSpecularStrength),
+			"primitive_type", sol::property(&LuaMaterial::getPrimitiveType, &LuaMaterial::setPrimitiveType)
 		);
 	}
 }

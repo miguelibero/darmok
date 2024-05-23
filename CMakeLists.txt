@@ -68,6 +68,7 @@ set(SOURCES
   ${SRC_DIR}/program.cpp
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/transform.cpp
+  ${SRC_DIR}/viewport.cpp
   ${SRC_DIR}/camera.cpp
   ${SRC_DIR}/light.cpp
   ${SRC_DIR}/vertex.cpp
@@ -105,6 +106,7 @@ set(HEADERS
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/transform.hpp
   ${INCLUDE_DIR}/skeleton.hpp
+  ${INCLUDE_DIR}/viewport.hpp
   ${INCLUDE_DIR}/camera.hpp
   ${INCLUDE_DIR}/light.hpp
   ${INCLUDE_DIR}/vertex.hpp
@@ -194,6 +196,7 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/scene.cpp
     ${SRC_DIR}/scripting/transform.cpp
     ${SRC_DIR}/scripting/light.cpp
+    ${SRC_DIR}/scripting/viewport.cpp
     ${SRC_DIR}/scripting/camera.cpp
     ${SRC_DIR}/scripting/window.cpp
     ${SRC_DIR}/scripting/model.cpp

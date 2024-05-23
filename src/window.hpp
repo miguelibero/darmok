@@ -25,7 +25,8 @@ namespace darmok
 		[[nodiscard]] WindowMode getMode() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 
-		[[nodiscard]] glm::uvec2 screenPointToWindow(const glm::vec2& point) const noexcept;
+		[[nodiscard]] glm::uvec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
+		[[nodiscard]] glm::vec2 windowToScreenPoint(const glm::uvec2& point) const noexcept;
 
 		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(IWindowListener& listener) noexcept;
@@ -36,6 +37,8 @@ namespace darmok
 		WindowPhase _phase;
 		WindowMode _mode;
 		std::unordered_set<OptionalRef<IWindowListener>> _listeners;
+
+		glm::vec2 getScreenToWindowFactor() const noexcept;
 	};
 
 } // namespace darmok

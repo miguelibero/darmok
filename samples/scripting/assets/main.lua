@@ -1,5 +1,5 @@
 
-local program = app.assets:load_standard_program(StandardProgramType.ForwardPhong)
+local program = app.assets:load_standard_program(StandardProgramType.forward_phong)
 local meshCreator = MeshCreator.new(program.vertex_layout)
 
 local cubeMesh = meshCreator:create_cube()
@@ -12,7 +12,7 @@ camTrans:look_at({ 0, 0, 0 })
 local cam = camEntity:add_component(Camera)
 cam:set_projection(60, app.window.size, { 0.3, 1000 })
 cam:set_forward_renderer(program)
-cam:add_component(CameraComponentType.PhongLighting)
+cam:add_component(CameraComponentType.phong_lighting)
 
 local lightEntity = app.scene:create_entity()
 lightEntity:add_component(Transform, { 1, 1, -2 })
@@ -47,7 +47,9 @@ end
 local groundPlane = Plane.new(Vec3.up);
 
 function move_mouse()
-    local ray = cam:screen_point_to_ray(app.input.mouse.position)
+    local p = app.input.mouse.position
+    p = app.window:window_to_screen_point(p)
+    local ray = cam:screen_point_to_ray(p)
     local dist = ray:intersect(groundPlane)
     if dist ~= nil then
         meshTrans.position = ray * dist;

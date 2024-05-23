@@ -88,6 +88,6 @@ namespace darmok
 		AssetContext _assets;
 
 		std::vector<std::unique_ptr<AppComponent>> _components;
-		std::unordered_map<size_t, std::weak_ptr<AppComponent>> _sharedComponents;
+		std::unordered_map<size_t, std::shared_ptr<AppComponent>> _sharedComponents;
 	};
 }

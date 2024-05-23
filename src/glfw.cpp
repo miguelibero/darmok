@@ -493,12 +493,22 @@ namespace darmok
 			return bx::kExitFailure;
 		}
 
-		_events.post<WindowSizeEvent>(_windowSize);
-		int w, h;
-		glfwGetFramebufferSize(_window, &w, &h);
-		_framebufferSize = glm::uvec2(w, h);
-		_events.post<WindowSizeEvent>(_framebufferSize, true);
-		_events.post<WindowPhaseEvent>(WindowPhase::Running);
+		{
+			// send events for initial window state
+			_events.post<WindowSizeEvent>(_windowSize);
+			int w, h;
+			glfwGetFramebufferSize(_window, &w, &h);
+			_framebufferSize = glm::uvec2(w, h);
+			_events.post<WindowSizeEvent>(_framebufferSize, true);
+			_events.post<WindowPhaseEvent>(WindowPhase::Running);
+		}
+
+		{
+			// send event for initial mouse state
+			double x, y;
+			glfwGetCursorPos(_window, &x, &y);
+			cursorPosCallback(_window, x, y);
+		}
 
 		_thread.init(MainThreadEntry::threadFunc, &_mte);
 

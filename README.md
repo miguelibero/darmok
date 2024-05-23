@@ -70,7 +70,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 ### Next tasks
 
-* support multiple imgui & rmlui app components with different transforms
+* return lua app children by reference
 * skeletal animations
 * physics
 * sound
@@ -80,6 +80,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * deferred renderer
 * binary mesh serialization
 
+* support multiple imgui app components with different transforms
 * spine animations loading
 * unify use of std::allocator everywhere
 * progressive data reader

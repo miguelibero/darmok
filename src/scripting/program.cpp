@@ -26,10 +26,10 @@ namespace darmok
 		);
 
 		lua.new_enum<StandardProgramType>("StandardProgramType", {
-			{ "Gui", StandardProgramType::Gui },
-			{ "Unlit", StandardProgramType::Unlit },
-			{ "ForwardPhong", StandardProgramType::ForwardPhong },
-			{ "ForwardPbr", StandardProgramType::ForwardPbr }
+			{ "gui", StandardProgramType::Gui },
+			{ "unlit", StandardProgramType::Unlit },
+			{ "forward_phong", StandardProgramType::ForwardPhong },
+			{ "forward_pbr", StandardProgramType::ForwardPbr }
 		});
 	}
 

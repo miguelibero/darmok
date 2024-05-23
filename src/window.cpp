@@ -87,11 +87,25 @@ namespace darmok
 		return _mode;
 	}
 
-	glm::uvec2 WindowImpl::screenPointToWindow(const glm::vec2& point) const noexcept
+	glm::vec2 WindowImpl::getScreenToWindowFactor() const noexcept
 	{
-		auto f = glm::vec2(_size) / glm::vec2(_pixelSize);
-		auto p =  (point - glm::vec2(0.5F)) * f;
+		return glm::vec2(_size) / glm::vec2(_pixelSize);
+	}
+
+	glm::uvec2 WindowImpl::screenToWindowPoint(const glm::vec2& point) const noexcept
+	{
+		auto f = getScreenToWindowFactor();
+		auto p = (point - glm::vec2(0.5F)) * f;
 		p.y = _size.y - p.y;
+		return p;
+	}
+
+	glm::vec2 WindowImpl::windowToScreenPoint(const glm::uvec2& point) const noexcept
+	{
+		glm::vec2 p(point);
+		p.y = _size.y - p.y;
+		auto f = getScreenToWindowFactor();
+		p = p / f + glm::vec2(0.5F);
 		return p;
 	}
 
@@ -156,9 +170,14 @@ namespace darmok
 		return _impl->getMode();
 	}
 
-	glm::uvec2 Window::screenPointToWindow(const glm::vec2& pos) const noexcept
+	glm::uvec2 Window::windowToScreenPoint(const glm::vec2& pos) const noexcept
 	{
-		return _impl->screenPointToWindow(pos);
+		return _impl->windowToScreenPoint(pos);
+	}
+
+	glm::uvec2 Window::screenToWindowPoint(const glm::vec2& pos) const noexcept
+	{
+		return _impl->screenToWindowPoint(pos);
 	}
 
 	void Window::addListener(IWindowListener& listener) noexcept

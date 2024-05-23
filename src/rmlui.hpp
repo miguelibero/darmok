@@ -7,6 +7,7 @@
 #include <darmok/window.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/data.hpp>
+#include <darmok/viewport.hpp>
 #include "embedded_shader.hpp"
 #include <unordered_map>
 #include <variant>
@@ -19,11 +20,13 @@ namespace darmok
 	class Program;
 	class Mesh;
 	class Texture;
+	struct Viewport;
 
 	class RmluiRenderInterface final : public Rml::RenderInterface
 	{
 	public:
 		RmluiRenderInterface() noexcept;
+		~RmluiRenderInterface() noexcept;
 		void RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept override;
 		void EnableScissorRegion(bool enable) noexcept override;
 		void SetScissorRegion(int x, int y, int width, int height) noexcept override;
@@ -38,14 +41,14 @@ namespace darmok
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 		
 		void init(App& app);
-		void beforeRender(bgfx::ViewId viewId) noexcept;
+		void beforeRender(bgfx::ViewId viewId, const Viewport& vp) noexcept;
 		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
 		bool afterRender() noexcept;
 		void shutdown() noexcept;
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		const std::shared_ptr<Texture>& getTargetTexture() noexcept;
 
-		static glm::vec3 screenProject(const glm::vec3& position, const glm::uvec2& screenSize, const glm::mat4& model = glm::mat4(1)) noexcept;
+		static glm::mat4 getProjection(const Viewport& vp) noexcept;
 
 	private:
 
@@ -58,6 +61,7 @@ namespace darmok
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
 		std::unordered_map<Rml::CompiledGeometryHandle, CompiledGeometry> _compiledGeometries;
 		std::optional<bgfx::ViewId> _viewId;
+		Viewport _viewport;
 		OptionalRef<bgfx::Encoder> _encoder;
 		std::unique_ptr<Program> _program;
 		std::unique_ptr<Program> _solidProgram;
@@ -77,8 +81,6 @@ namespace darmok
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
 		void setupView() noexcept;
 
-		static glm::mat4 getProjection(const glm::uvec2& size) noexcept;
-		static glm::uvec4 getViewport(const glm::uvec2& size) noexcept;
 	};
 
 	class RmluiSystemInterface final : public Rml::SystemInterface
@@ -153,21 +155,23 @@ namespace darmok
     {
     public:
 		RmluiAppComponentImpl(const std::string& name) noexcept;
-		RmluiAppComponentImpl(const std::string& name, const glm::uvec2& fixedSize) noexcept;
+		RmluiAppComponentImpl(const std::string& name, const Viewport& viewport) noexcept;
+		~RmluiAppComponentImpl() noexcept;
 
-		void setFixedSize(const std::optional<glm::uvec2>& fixedSize) noexcept;
-		const std::optional<glm::uvec2>& getFixedSize() const noexcept;
-
-		glm::uvec2 getCurrentSize() const noexcept;
+		void setViewport(const std::optional<Viewport>& viewport) noexcept;
+		const std::optional<Viewport>& getViewport() const noexcept;
+		Viewport getCurrentViewport() const noexcept;
 
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
-		const std::shared_ptr<Texture>& getTargetTexture() noexcept;
+		const std::shared_ptr<Texture>& getTargetTexture() const noexcept;
 
 		void setInputActive(bool active) noexcept;
 		bool getInputActive() const noexcept;
 		void setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
 		void resetMouseDelegate() noexcept;
-		glm::ivec2 screenProject(const glm::vec3& position, const glm::mat4& model) noexcept;
+		const glm::ivec2& getMousePosition() const noexcept;
+		void setMousePosition(const glm::ivec2& position) noexcept;
+		glm::ivec2 worldToScreenPoint(const glm::vec3& position, const glm::mat4& model = glm::mat4(1)) noexcept;
 
 		OptionalRef<Rml::Context> getContext() const noexcept;
 		RmluiRenderInterface& getRenderInterface() noexcept;
@@ -191,7 +195,7 @@ namespace darmok
 		OptionalRef<App> _app;
 		
 		mutable RmluiRenderInterface _render;
-		std::optional<glm::uvec2> _fixedSize;
+		std::optional<Viewport> _viewport;
 		bool _inputActive;
 		std::shared_ptr<RmluiSharedAppComponent> _shared;
 

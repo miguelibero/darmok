@@ -102,7 +102,7 @@ namespace darmok
 		return true;
 	}
 
-	std::reference_wrapper<LuaRmluiAppComponent> LuaApp::getMainGui() noexcept
+	LuaRmluiAppComponent& LuaApp::getMainGui() noexcept
 	{
 		static const std::string name = "";
 		return getOrAddGui(name);
@@ -118,7 +118,7 @@ namespace darmok
 		return itr->second;
 	}
 
-	std::reference_wrapper<LuaRmluiAppComponent> LuaApp::getOrAddGui(const std::string& name) noexcept
+	LuaRmluiAppComponent& LuaApp::getOrAddGui(const std::string& name) noexcept
 	{
 		auto itr = _guiComponents.find(name);
 		if (itr == _guiComponents.end())
@@ -129,7 +129,7 @@ namespace darmok
 		return itr->second;
 	}
 
-	std::reference_wrapper<LuaRmluiAppComponent> LuaApp::addGui(const std::string& name)
+	LuaRmluiAppComponent& LuaApp::addGui(const std::string& name)
 	{
 		auto& comp = _app->addComponent<RmluiAppComponent>(name);
 		auto r = _guiComponents.emplace(name, comp);
@@ -225,7 +225,7 @@ namespace darmok
 
 	ScriptingApp::~ScriptingApp()
 	{
-		// intentionally left blank for the unique_ptr<AppImpl> forward declaration
+		// intentionally left blank for the unique_ptr<ScriptingAppImpl> forward declaration
 	}
 
 	void ScriptingApp::init(const std::vector<std::string>& args)
@@ -280,6 +280,12 @@ namespace darmok
 		auto pathPattern = std::filesystem::path(path) / std::filesystem::path("?.lua");
 		current += (!current.empty() ? ";" : "") + std::filesystem::absolute(pathPattern).string();
 		lua["package"]["path"] = current;
+	}
+
+	ScriptingAppImpl::~ScriptingAppImpl() noexcept
+	{
+		_luaApp.reset();
+		_lua.reset();
 	}
 
 	void ScriptingAppImpl::init(App& app, const std::vector<std::string>& args)

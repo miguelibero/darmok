@@ -33,10 +33,10 @@ namespace darmok
 		LuaScene addScene2() noexcept;
 		bool removeScene(const LuaScene& scene) noexcept;
 
-		std::reference_wrapper<LuaRmluiAppComponent> getMainGui() noexcept;
+		LuaRmluiAppComponent& getMainGui() noexcept;
 		OptionalRef<LuaRmluiAppComponent>::std_t getGui(const std::string& name) noexcept;
-		std::reference_wrapper<LuaRmluiAppComponent> getOrAddGui(const std::string& name) noexcept;
-		std::reference_wrapper<LuaRmluiAppComponent> addGui(const std::string& name);
+		LuaRmluiAppComponent& getOrAddGui(const std::string& name) noexcept;
+		LuaRmluiAppComponent& addGui(const std::string& name);
 		bool removeGui(const std::string& name) noexcept;
 		
 		LuaAssets getAssets() noexcept;
@@ -62,14 +62,15 @@ namespace darmok
 	class ScriptingAppImpl final
     {
     public:
+		~ScriptingAppImpl() noexcept;
         void init(App& app, const std::vector<std::string>& args);
         void updateLogic(float deltaTime);
 		void beforeShutdown() noexcept;
         void afterShutdown() noexcept;
 
     private:
-        std::unique_ptr<sol::state> _lua;
 		std::optional<LuaApp> _luaApp;
+        std::unique_ptr<sol::state> _lua;
 		static std::string findMainLua(const std::vector<std::string>& args) noexcept;
 
 		void addPackagePath(const std::string& path) noexcept;

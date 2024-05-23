@@ -38,7 +38,8 @@ namespace darmok
 		[[nodiscard]] DLLEXPORT WindowPhase getPhase() const noexcept;
 		[[nodiscard]] DLLEXPORT WindowMode getMode() const noexcept;
 
-		[[nodiscard]] DLLEXPORT glm::uvec2 screenPointToWindow(const glm::vec2& point) const noexcept;
+		[[nodiscard]] DLLEXPORT glm::uvec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
+		[[nodiscard]] DLLEXPORT glm::uvec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
 
 		[[nodiscard]] const WindowImpl& getImpl() const noexcept;
 		[[nodiscard]] WindowImpl& getImpl() noexcept;

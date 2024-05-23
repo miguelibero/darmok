@@ -2,6 +2,7 @@
 #include <RmlUi/Core.h>
 #include <RmlUi/Lua.h>
 #include <darmok/rmlui.hpp>
+#include <darmok/viewport.hpp>
 #include "texture.hpp"
 #include "camera.hpp"
 #include "transform.hpp"
@@ -48,24 +49,27 @@ namespace darmok
         return LuaTexture(tex);
     }
 
-    glm::uvec2 LuaRmluiAppComponent::getCurrentSize() const noexcept
-    {
-        return _comp->getCurrentSize();
-    }
-
     void LuaRmluiAppComponent::setTargetTexture(const std::optional<LuaTexture>& texture) noexcept
     {
         _comp->setTargetTexture(texture ? texture->getReal() : nullptr);
     }
 
-    std::optional<glm::uvec2> LuaRmluiAppComponent::getFixedSize() const noexcept
+
+    std::optional<Viewport> LuaRmluiAppComponent::getViewport() const noexcept
     {
-        return _comp->getFixedSize();
+        return _comp->getViewport();
     }
 
-    void LuaRmluiAppComponent::setFixedSize(const VarLuaTable<std::optional<glm::uvec2>>& size) noexcept
+
+    LuaRmluiAppComponent& LuaRmluiAppComponent::setViewport(const std::optional<VarViewport>& viewport) noexcept
     {
-        _comp->setFixedSize(LuaGlm::tableGet(size));
+        _comp->setViewport(LuaViewport::tableGet(viewport));
+        return *this;
+    }
+
+    Viewport LuaRmluiAppComponent::getCurrentViewport() const noexcept
+    {
+        return _comp->getCurrentViewport();
     }
 
     void LuaRmluiAppComponent::loadFont(const std::string& path) noexcept
@@ -87,6 +91,17 @@ namespace darmok
     bool LuaRmluiAppComponent::getInputActive() const noexcept
     {
         return _comp->getInputActive();
+    }
+
+    const glm::ivec2& LuaRmluiAppComponent::getMousePosition() const noexcept
+    {
+        return _comp->getMousePosition();
+    }
+
+    LuaRmluiAppComponent& LuaRmluiAppComponent::setMousePosition(const VarLuaTable<glm::ivec2>& position) noexcept
+    {
+        _comp->setMousePosition(LuaGlm::tableGet(position));
+        return *this;
     }
 
     glm::ivec2 LuaRmluiAppComponent::onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept
@@ -120,14 +135,14 @@ namespace darmok
         return *this;
     }
 
-    glm::ivec2 LuaRmluiAppComponent::screenProject1(const glm::vec3& position) const noexcept
+    glm::ivec2 LuaRmluiAppComponent::worldToScreenPoint1(const glm::vec3& position) const noexcept
     {
-        return _comp->screenProject(position);
+        return _comp->worldToScreenPoint(position);
     }
 
-    glm::ivec2 LuaRmluiAppComponent::screenProject2(const glm::vec3& position, const glm::mat4& model) const noexcept
+    glm::ivec2 LuaRmluiAppComponent::worldToScreenPoint2(const glm::vec3& position, const glm::mat4& model) const noexcept
     {
-        return _comp->screenProject(position, model);
+        return _comp->worldToScreenPoint(position, model);
     }
 
     LuaRmluiDocument LuaRmluiAppComponent::loadDocument(const std::string& name)
@@ -170,11 +185,13 @@ namespace darmok
             "name", sol::property(&LuaRmluiAppComponent::getName),
             "context", sol::property(&LuaRmluiAppComponent::getContext),
             "target_texture", sol::property(&LuaRmluiAppComponent::getTargetTexture, &LuaRmluiAppComponent::setTargetTexture),
-            "fixed_size", sol::property(&LuaRmluiAppComponent::getFixedSize, &LuaRmluiAppComponent::setFixedSize),
-            "current_size", sol::property(&LuaRmluiAppComponent::getCurrentSize),
+            //"viewport", sol::property(&LuaRmluiAppComponent::getViewport, &LuaRmluiAppComponent::setViewport),
+            //"current_viewport", sol::property(&LuaRmluiAppComponent::getCurrentViewport),
+            "current_size", sol::property(&LuaRmluiAppComponent::getCurrentViewport),
             "input_active", sol::property(&LuaRmluiAppComponent::getInputActive, &LuaRmluiAppComponent::setInputActive),
             "mouse_delegate", sol::property(&LuaRmluiAppComponent::setMouseDelegate),
-            "screen_project", sol::overload(&LuaRmluiAppComponent::screenProject1, &LuaRmluiAppComponent::screenProject2),
+            "mouse_position", sol::property(&LuaRmluiAppComponent::getMousePosition, &LuaRmluiAppComponent::setMousePosition),
+            "world_to_screen_point", sol::overload(&LuaRmluiAppComponent::worldToScreenPoint1, &LuaRmluiAppComponent::worldToScreenPoint2),
             "load_document", &LuaRmluiAppComponent::loadDocument,
             "load_font", &LuaRmluiAppComponent::loadFont,
             "load_fallback_font", &LuaRmluiAppComponent::loadFallbackFont,
@@ -221,16 +238,16 @@ namespace darmok
     void LuaRmluiDocument::bind(sol::state_view& lua) noexcept
     {
         lua.new_enum<Rml::ModalFlag>("GuiDocumentMode", {
-            { "Normal", Rml::ModalFlag::None },
-            { "Modal", Rml::ModalFlag::Modal },
-            { "Keep", Rml::ModalFlag::Keep },
+            { "normal", Rml::ModalFlag::None },
+            { "modal", Rml::ModalFlag::Modal },
+            { "keep", Rml::ModalFlag::Keep },
         });
 
         lua.new_enum<Rml::FocusFlag>("GuiDocumentFocus", {
-            { "Normal", Rml::FocusFlag::None },
-            { "Document", Rml::FocusFlag::Document },
-            { "Keep", Rml::FocusFlag::Keep },
-            { "Auto", Rml::FocusFlag::Auto },
+            { "normal", Rml::FocusFlag::None },
+            { "document", Rml::FocusFlag::Document },
+            { "keep", Rml::FocusFlag::Keep },
+            { "auto", Rml::FocusFlag::Auto },
         });
 
         lua.new_usertype<LuaRmluiDocument>("GuiDocument", sol::no_constructor,

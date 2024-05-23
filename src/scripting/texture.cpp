@@ -151,10 +151,10 @@ namespace darmok
 		);
 
 		lua.new_enum<TextureType>("TextureType", {
-			{ "Unknown", TextureType::Unknown },
-			{ "CubeMap", TextureType::CubeMap },
-			{ "Texture2D", TextureType::Texture2D },
-			{ "Texture3D", TextureType::Texture3D },
+			{ "unknown", TextureType::Unknown },
+			{ "cube_map", TextureType::CubeMap },
+			{ "texture2d", TextureType::Texture2D },
+			{ "texture3d", TextureType::Texture3D },
 		});
 
 		lua.new_enum<bgfx::TextureFormat::Enum>("TextureFormat", {

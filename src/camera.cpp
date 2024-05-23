@@ -10,8 +10,8 @@
 
 namespace darmok
 {
-    Camera::Camera(const glm::mat4& matrix) noexcept
-        : _matrix(matrix)
+    Camera::Camera(const glm::mat4& projMatrix) noexcept
+        : _proj(projMatrix)
         , _frameBuffer{ bgfx::kInvalidHandle }
     {
     }
@@ -24,26 +24,26 @@ namespace darmok
         }
     }
 
-    const glm::mat4& Camera::getMatrix() const noexcept
+    const glm::mat4& Camera::getProjectionMatrix() const noexcept
     {
-        return _matrix;
+        return _proj;
     }
 
-    Camera& Camera::setMatrix(const glm::mat4& matrix) noexcept
+    Camera& Camera::setProjectionMatrix(const glm::mat4& matrix) noexcept
     {
-        _matrix = matrix;
+        _proj = matrix;
         return *this;
     }
 
     Camera& Camera::setProjection(float fovy, float aspect, const glm::vec2& range) noexcept
     {
-        bx::mtxProj(glm::value_ptr(_matrix), fovy, aspect, range[0], range[1], bgfx::getCaps()->homogeneousDepth);
+        bx::mtxProj(glm::value_ptr(_proj), fovy, aspect, range[0], range[1], bgfx::getCaps()->homogeneousDepth);
         return *this;
     }
 
     Camera& Camera::setProjection(float fovy, float aspect, float near) noexcept
     {
-        bx::mtxProjInf(glm::value_ptr(_matrix), glm::radians(fovy), aspect, near, bgfx::getCaps()->homogeneousDepth);
+        bx::mtxProjInf(glm::value_ptr(_proj), glm::radians(fovy), aspect, near, bgfx::getCaps()->homogeneousDepth);
         return *this;
     }
 
@@ -61,7 +61,7 @@ namespace darmok
 
     Camera& Camera::setOrtho(const glm::vec4& edges, const glm::vec2& range) noexcept
     {
-        bx::mtxOrtho(glm::value_ptr(_matrix), edges[0], edges[1], edges[2], edges[3], range[0], range[1], 0.F, bgfx::getCaps()->homogeneousDepth);
+        bx::mtxOrtho(glm::value_ptr(_proj), edges[0], edges[1], edges[2], edges[3], range[0], range[1], 0.F, bgfx::getCaps()->homogeneousDepth);
         return *this;
     }
 
@@ -101,7 +101,7 @@ namespace darmok
         return *this;
     }
 
-    const std::vector<std::shared_ptr<Texture>>& Camera::getTargetTextures() noexcept
+    const std::vector<std::shared_ptr<Texture>>& Camera::getTargetTextures() const noexcept
     {
         return _targetTextures;
     }
@@ -172,8 +172,7 @@ namespace darmok
         
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
 
-        auto vp = getViewport();
-        bgfx::setViewRect(viewId, vp[0], vp[1], vp[2], vp[3]);
+        getCurrentViewport().bgfxSetup(viewId);
 
         // this dummy draw call is here to make sure that view is cleared
         // if no other draw calls are submitted to view.
@@ -181,7 +180,7 @@ namespace darmok
 
         if (_scene)
         {
-            auto projPtr = glm::value_ptr(_matrix);
+            auto projPtr = glm::value_ptr(_proj);
             const void* viewPtr = nullptr;
             auto& registry = _scene->getRegistry();
 
@@ -251,18 +250,33 @@ namespace darmok
         return *this;
     }
 
-    glm::ivec4 Camera::getViewport() const noexcept
+    Camera& Camera::setViewport(const std::optional<Viewport>& viewport) noexcept
     {
+        _viewport = viewport;
+        return *this;
+    }
+
+    const std::optional<Viewport>& Camera::getViewport() const noexcept
+    {
+        return _viewport;
+    }
+
+    Viewport Camera::getCurrentViewport() const noexcept
+    {
+        if (_viewport)
+        {
+            return _viewport.value();
+        }
         if (!_targetTextures.empty())
         {
             auto& size = _targetTextures[0]->getSize();
-            return glm::ivec4(0, 0, size);
+            return Viewport(0, 0, size.x, size.y);
         }
         if (_app)
         {
-            return glm::ivec4(0, 0, _app->getWindow().getPixelSize());
+            return Viewport(_app->getWindow().getPixelSize());
         }
-        return glm::ivec4(0);
+        return Viewport();
     }
 
     OptionalRef<Transform> Camera::getTransform() const noexcept
@@ -290,24 +304,47 @@ namespace darmok
         return glm::mat4(1);
     }
 
-    glm::uvec2 Camera::getScreenPoint(const glm::vec2& normPoint) const noexcept
+    Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept
     {
-        auto vp = getViewport();
-        return glm::uvec2(vp[0], vp[1]) + glm::uvec2(normPoint * glm::vec2(vp[2], vp[3]));
+        return Ray::unproject(point, getModelMatrix(), _proj, getCurrentViewport().values);
     }
 
-    Ray Camera::screenPointToRay(const glm::vec2& point) const noexcept
+    Ray Camera::viewportPointToRay(const glm::vec3& point) const noexcept
     {
-        auto model = getModelMatrix();
-        auto vp = getViewport();
-        // TODO: check if we can optimize since unproject inverts the matrix
-        return Ray::unproject(point, model, _matrix, vp);
+        return Ray::unproject(point, getModelMatrix(), _proj, Viewport::standardValues);
     }
 
-    glm::vec3 Camera::worldToScreenPoint(const glm::vec3& position) const noexcept
+    glm::vec3 Camera::worldToScreenPoint(const glm::vec3& point) const noexcept
     {
-        auto model = getModelMatrix();
-        auto vp = getViewport();
-        return glm::project(position, model, _matrix, vp);
+        return glm::project(point, getModelMatrix(), _proj, getCurrentViewport().values);
+    }
+
+    glm::vec3 Camera::worldToViewportPoint(const glm::vec3& point) const noexcept
+    {
+        return glm::project(point, getModelMatrix(), _proj, Viewport::standardValues);
+    }
+
+    glm::vec3 Camera::screenToWorldPoint(const glm::vec3& point) const noexcept
+    {
+        return glm::unProject(point, getModelMatrix(), _proj, getCurrentViewport().values);
+    }
+
+    glm::vec3 Camera::viewportToWorldPoint(const glm::vec3& point) const noexcept
+    {
+        return glm::unProject(point, getModelMatrix(), _proj, Viewport::standardValues);
+    }
+
+    glm::vec3 Camera::viewportToScreenPoint(const glm::vec3& point) const noexcept
+    {
+        auto z = point.z;
+        auto p = getCurrentViewport().viewportToScreenPoint(point);
+        return glm::vec3(p, z);
+    }
+
+    glm::vec3 Camera::screenToViewportPoint(const glm::vec3& point) const noexcept
+    {
+        auto z = point.z;
+        auto p = getCurrentViewport().screenToViewportPoint(point);
+        return glm::vec3(p, z);
     }
 }

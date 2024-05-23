@@ -324,9 +324,21 @@ namespace darmok
 
 	void ImguiAppComponentImpl::shutdown() noexcept
 	{
-		ImGui::DestroyContext(_imgui);
-		bgfx::destroy(_textureUniform);
-		bgfx::destroy(_lodEnabledUniform);
+		if (_imgui != nullptr)
+		{
+			ImGui::DestroyContext(_imgui);
+			_imgui = nullptr;
+		}
+		if (isValid(_textureUniform))
+		{
+			bgfx::destroy(_textureUniform);
+			_textureUniform.idx = bgfx::kInvalidHandle;
+		}
+		if (isValid(_lodEnabledUniform))
+		{
+			bgfx::destroy(_lodEnabledUniform);
+			_lodEnabledUniform.idx = bgfx::kInvalidHandle;
+		}
 	}
 
 	void ImguiAppComponentImpl::updateLogic(float dt) noexcept
@@ -365,7 +377,7 @@ namespace darmok
 		}
 
 		auto& mouse = input.getMouse();
-		auto& size = _app->getWindow().getSize();
+		auto& size = _app->getWindow().getPixelSize();
 		io.DisplaySize = ImVec2((float)size.x, (float)size.y);
 
 		auto& buttons = mouse.getButtons();

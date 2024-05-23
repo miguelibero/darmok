@@ -161,7 +161,14 @@ namespace darmok
         , _scissorEnabled(false)
         , _rendered(false)
         , _viewSetup(false)
+        , _scissor(0)
+        , _transform(1)
     {
+    }
+
+    RmluiRenderInterface::~RmluiRenderInterface() noexcept
+    {
+        shutdown();
     }
 
     void RmluiRenderInterface::RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
@@ -179,24 +186,9 @@ namespace darmok
         submitGeometry(texture, translation);
     }
 
-    glm::mat4 RmluiRenderInterface::getProjection(const glm::uvec2& size) noexcept
+    glm::mat4 RmluiRenderInterface::getProjection(const Viewport& vp) noexcept
     {
-        glm::mat4 proj(1);
-        bx::mtxOrtho(glm::value_ptr(proj), 0, size.x, size.y, 0.F, -1000.F, 1000.F, 0.F, bgfx::getCaps()->homogeneousDepth);
-        return proj;
-    }
-
-    glm::uvec4 RmluiRenderInterface::getViewport(const glm::uvec2& size) noexcept
-    {
-        return glm::uvec4(0, 0, size.x, size.y);
-    }
-
-    glm::vec3 RmluiRenderInterface::screenProject(const glm::vec3& position, const glm::uvec2& screenSize, const glm::mat4& model) noexcept
-    {
-        auto vp = getViewport(screenSize);
-        auto proj = getProjection(screenSize);
-
-        return glm::project(position, model, proj, vp);
+        return vp.getOrtho(-1000.F, 1000.F);
     }
 
     void RmluiRenderInterface::setupView() noexcept
@@ -208,10 +200,9 @@ namespace darmok
         bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
         auto size = RmluiUtils::convert(GetContext()->GetDimensions());
-        auto vp = getViewport(size);
-        bgfx::setViewRect(_viewId.value(), vp[0], vp[1], vp[2], vp[3]);
+        _viewport.bgfxSetup(viewId);
 
-        auto proj = getProjection(size);
+        auto proj = getProjection(_viewport);
         bgfx::setViewTransform(viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
 
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
@@ -313,10 +304,11 @@ namespace darmok
         if (isValid(_textureUniform))
         {
             bgfx::destroy(_textureUniform);
+            _textureUniform.idx = bgfx::kInvalidHandle;
         }
     }
 
-    void RmluiRenderInterface::beforeRender(bgfx::ViewId viewId) noexcept
+    void RmluiRenderInterface::beforeRender(bgfx::ViewId viewId, const Viewport& vp) noexcept
     {
         if (_encoder)
         {
@@ -324,6 +316,7 @@ namespace darmok
         }
 
         _viewId = viewId;
+        _viewport = vp;
 
         _encoder = bgfx::begin();
         _rendered = false;
@@ -541,27 +534,36 @@ namespace darmok
     RmluiAppComponentImpl::RmluiAppComponentImpl(const std::string& name) noexcept
         : _inputActive(true)
         , _name(name)
+        , _mousePosition(0)
     {
     }
 
-    RmluiAppComponentImpl::RmluiAppComponentImpl(const std::string& name, const glm::uvec2& fixedSize) noexcept
-        : _fixedSize(fixedSize)
+    RmluiAppComponentImpl::RmluiAppComponentImpl(const std::string& name, const Viewport& viewport) noexcept
+        : _viewport(viewport)
         , _inputActive(false)
         , _name(name)
         , _mousePosition(0)
     {
     }
 
-    void RmluiAppComponentImpl::setFixedSize(const std::optional<glm::uvec2>& fixedSize) noexcept
+    RmluiAppComponentImpl::~RmluiAppComponentImpl() noexcept
     {
-        _fixedSize = fixedSize;
+        if (_app)
+        {
+            shutdown();
+        }
+    }
+
+    void RmluiAppComponentImpl::setViewport(const std::optional<Viewport>& vp) noexcept
+    {
+        _viewport = vp;
         if (!_context)
         {
             return;
         }
-        if (fixedSize)
+        if (vp)
         {
-            _context->SetDimensions(RmluiUtils::convert<int>(fixedSize.value()));
+            _context->SetDimensions(RmluiUtils::convert<int>(vp.value().getSize()));
         }
         else if (_app)
         {
@@ -570,34 +572,35 @@ namespace darmok
         }
     }
 
-    const std::optional<glm::uvec2>& RmluiAppComponentImpl::getFixedSize() const noexcept
+    const std::optional<Viewport>& RmluiAppComponentImpl::getViewport() const noexcept
     {
-        return _fixedSize;
+        return _viewport;
     }
 
-    glm::uvec2 RmluiAppComponentImpl::getCurrentSize() const noexcept
+    Viewport RmluiAppComponentImpl::getCurrentViewport() const noexcept
     {
-        if (!_context)
+        if (_viewport)
         {
-            return {};
+            return _viewport.value();
         }
-        return RmluiUtils::convert(_context->GetDimensions());
+        auto tex = getTargetTexture();
+        if (tex != nullptr)
+        {
+            return tex->getSize();
+        }
+        if (_app)
+        {
+            return _app->getWindow().getPixelSize();
+        }
+        return {};
     }
 
     void RmluiAppComponentImpl::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
     {
-        if (texture != nullptr)
-        {
-            setFixedSize(texture->getSize());
-        }
-        else
-        {
-            setFixedSize(std::nullopt);
-        }
         _render.setTargetTexture(texture);
     }
 
-    const std::shared_ptr<Texture>& RmluiAppComponentImpl::getTargetTexture() noexcept
+    const std::shared_ptr<Texture>& RmluiAppComponentImpl::getTargetTexture() const noexcept
     {
         return _render.getTargetTexture();
     }
@@ -622,10 +625,26 @@ namespace darmok
         _mouseDelegate.reset();
     }
 
-    glm::ivec2 RmluiAppComponentImpl::screenProject(const glm::vec3& position, const glm::mat4& model) noexcept
+    glm::ivec2 RmluiAppComponentImpl::worldToScreenPoint(const glm::vec3& point, const glm::mat4& model) noexcept
     {
-        auto size = getCurrentSize();
-        return _render.screenProject(position, size, model);
+        auto vp = getCurrentViewport();
+        auto proj = _render.getProjection(vp);
+        return glm::project(point, model, proj, vp.values);
+    }
+
+    const glm::ivec2& RmluiAppComponentImpl::getMousePosition() const noexcept
+    {
+        return _mousePosition;
+    }
+
+    void RmluiAppComponentImpl::setMousePosition(const glm::ivec2& pos) noexcept
+    {
+        _mousePosition = pos;
+        if (!_inputActive)
+        {
+            return;
+        }
+        _context->ProcessMouseMove(pos.x, pos.y, getKeyModifierState());
     }
 
     OptionalRef<Rml::Context> RmluiAppComponentImpl::getContext() const noexcept
@@ -670,11 +689,12 @@ namespace darmok
         _shared = app.getSharedComponent<RmluiSharedAppComponent>();
 
         _render.init(app);
-        auto size = _fixedSize ? _fixedSize.value() : app.getWindow().getPixelSize();
+        auto size = getCurrentViewport().getSize();
         _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_render);
         
         // TODO: configure this
         _context->EnableMouseCursor(true);
+        setMousePosition(app.getInput().getMouse().getPosition());
 
         app.getWindow().addListener(*this);
         app.getInput().getKeyboard().addListener(*this);
@@ -689,6 +709,8 @@ namespace darmok
             _app->getInput().getKeyboard().removeListener(*this);
             _app->getInput().getMouse().removeListener(*this);
         }
+
+        _render.shutdown();
 
         Rml::RemoveContext(_context->GetName());
         Rml::ReleaseTextures();
@@ -737,7 +759,7 @@ namespace darmok
 
     bool RmluiAppComponentImpl::render(bgfx::ViewId viewId) const noexcept
     {
-        _render.beforeRender(viewId);
+        _render.beforeRender(viewId, getCurrentViewport());
         auto result = _context->Render();
         auto cursorSprite = getMouseCursorSprite();
         if (cursorSprite)
@@ -755,7 +777,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onWindowPixelSize(const glm::uvec2& size) noexcept
     {
-        if (_fixedSize || _context == nullptr)
+        if (_viewport || _context == nullptr)
         {
             return;
         }
@@ -906,14 +928,11 @@ namespace darmok
             return;
         }
         auto pos = absolute;
-
         if (_mouseDelegate)
         {
             pos = _mouseDelegate->onMousePositionChange(delta, pos);
         }
-
-        _mousePosition = pos;
-        _context->ProcessMouseMove(pos.x, pos.y, getKeyModifierState());
+        setMousePosition(pos);
     }
 
     void RmluiAppComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
@@ -980,20 +999,20 @@ namespace darmok
         return _impl->getTargetTexture();
     }
 
-    RmluiAppComponent& RmluiAppComponent::setFixedSize(const std::optional<glm::uvec2>& size) noexcept
+    RmluiAppComponent& RmluiAppComponent::setViewport(const std::optional<Viewport>& vp) noexcept
     {
-        _impl->setFixedSize(size);
+        _impl->setViewport(vp);
         return *this;
     }
 
-    const std::optional<glm::uvec2>& RmluiAppComponent::getFixedSize() noexcept
+    const std::optional<Viewport>& RmluiAppComponent::getViewport() const noexcept
     {
-        return _impl->getFixedSize();
+        return _impl->getViewport();
     }
 
-    glm::uvec2 RmluiAppComponent::getCurrentSize() const noexcept
+    Viewport RmluiAppComponent::getCurrentViewport() const noexcept
     {
-        return _impl->getCurrentSize();
+        return _impl->getCurrentViewport();
     }
 
     void RmluiAppComponent::init(App& app)
@@ -1017,6 +1036,17 @@ namespace darmok
         return _impl->getInputActive();
     }
 
+    const glm::ivec2& RmluiAppComponent::getMousePosition() const noexcept
+    {
+        return _impl->getMousePosition();
+    }
+
+    RmluiAppComponent& RmluiAppComponent::setMousePosition(const glm::ivec2& position) noexcept
+    {
+        _impl->setMousePosition(position);
+        return *this;
+    }
+
     RmluiAppComponent& RmluiAppComponent::setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept
     {
         _impl->setMouseDelegate(dlg);
@@ -1029,9 +1059,9 @@ namespace darmok
         return *this;
     }
 
-    glm::ivec2 RmluiAppComponent::screenProject(const glm::vec3& position, const glm::mat4& model) noexcept
+    glm::ivec2 RmluiAppComponent::worldToScreenPoint(const glm::vec3& position, const glm::mat4& model) noexcept
     {
-        return _impl->screenProject(position, model);
+        return _impl->worldToScreenPoint(position, model);
     }
 
     bgfx::ViewId RmluiAppComponent::render(bgfx::ViewId viewId) const noexcept

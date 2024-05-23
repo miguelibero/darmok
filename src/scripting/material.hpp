@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <sol/sol.hpp>
+#include <darmok/material_fwd.hpp>
 
 namespace darmok
 {
@@ -21,6 +22,9 @@ namespace darmok
 
 		float getSpecularStrength() const noexcept;
 		LuaMaterial& setSpecularStrength(float v) noexcept;
+
+		MaterialPrimitiveType getPrimitiveType() const noexcept;
+		LuaMaterial& setPrimitiveType(MaterialPrimitiveType type) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 
