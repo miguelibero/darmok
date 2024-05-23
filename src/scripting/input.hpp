@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <vector>
+#include <array>
 #include <sol/sol.hpp>
 #include <glm/glm.hpp>
 #include <darmok/optional_ref.hpp>
@@ -20,7 +21,7 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<Keyboard> _kb;
+		std::reference_wrapper<Keyboard> _kb;
 	};
 
 	class Mouse;
@@ -34,6 +35,7 @@ namespace darmok
 		glm::vec2 getPositionDelta() const noexcept;
 		const glm::vec2& getScroll() const noexcept;
 		glm::vec2 getScrollDelta() const noexcept;
+		bool getButton(MouseButton button) const noexcept;
 		bool getLeftButton() const noexcept;
 		bool getMiddleButton() const noexcept;
 		bool getRightButton() const noexcept;
@@ -52,7 +54,7 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<Mouse> _mouse;
+		std::reference_wrapper<Mouse> _mouse;
 		std::vector<sol::protected_function> _positionListeners;
 		std::vector<sol::protected_function> _scrollListeners;
 		std::vector<sol::protected_function> _buttonListeners;
@@ -64,6 +66,7 @@ namespace darmok
 	{
 	public:
 		LuaGamepad(Gamepad& gamepad) noexcept;
+
 		bool getButton(const std::string& name) const noexcept;
 		const glm::ivec3& getLeftStick() const noexcept;
 		const glm::ivec3& getRightStick() const noexcept;
@@ -71,7 +74,7 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<Gamepad> _gamepad;
+		std::reference_wrapper<Gamepad> _gamepad;
 	};
 
 	class Input;
@@ -81,13 +84,16 @@ namespace darmok
 	public:
 		LuaInput(Input& input) noexcept;
 		void addBindings(const std::string& name, const sol::table& data) noexcept;
-		LuaKeyboard getKeyboard() noexcept;
-		LuaMouse getMouse() noexcept;
-		std::optional<LuaGamepad> getGamepad(uint8_t num = 0) noexcept;
-		std::vector<LuaGamepad> getGamepads() noexcept;
+		LuaKeyboard& getKeyboard() noexcept;
+		LuaMouse& getMouse() noexcept;
+		OptionalRef<LuaGamepad>::std_t getGamepad(uint8_t num = 0) noexcept;
+		const std::vector<LuaGamepad>& getGamepads() noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Input> _input;
+		LuaKeyboard _keyboard;
+		LuaMouse _mouse;
+		std::vector<LuaGamepad> _gamepads;
 	};
 }

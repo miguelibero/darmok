@@ -56,8 +56,8 @@ namespace darmok
         DLLEXPORT Camera& setProjection(float fovy, const glm::uvec2& size, const glm::vec2& range) noexcept;
         DLLEXPORT Camera& setProjection(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
         
-        DLLEXPORT Camera& setOrtho(const glm::vec4& edges, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest)) noexcept;
-        DLLEXPORT Camera& setOrtho(const glm::uvec2& size, const glm::vec2& range = glm::vec2(0.f, bx::kFloatLargest)) noexcept;
+        DLLEXPORT Camera& setOrtho(const Viewport& viewport, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+        DLLEXPORT Camera& setOrtho(const glm::uvec2& size, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
         DLLEXPORT Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
         DLLEXPORT Camera& setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;

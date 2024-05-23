@@ -30,6 +30,8 @@ namespace darmok
         DLLEXPORT Transform& setLocalMatrix(const glm::mat4& v) noexcept;
 
         DLLEXPORT glm::vec3 getWorldPosition() const noexcept;
+        DLLEXPORT glm::vec3 worldToLocalPoint(const glm::vec3& point) const noexcept;
+        DLLEXPORT glm::vec3 localToWorldPoint(const glm::vec3& point) const noexcept;
 
         DLLEXPORT OptionalRef<const Transform> getParent() const noexcept;
         DLLEXPORT OptionalRef<Transform> getParent() noexcept;

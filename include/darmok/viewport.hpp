@@ -21,10 +21,12 @@ namespace darmok
         DLLEXPORT void setSize(const glm::uvec2& size) noexcept;
         DLLEXPORT void setOrigin(const glm::ivec2& origin) noexcept;
 
-        DLLEXPORT glm::vec2 viewportToScreenPoint(const glm::vec2& viewportPoint) const noexcept;
-        DLLEXPORT glm::vec2 screenToViewportPoint(const glm::vec2& screenPoint) const noexcept;
+        DLLEXPORT glm::vec2 viewportToScreenPoint(const glm::vec2& point) const noexcept;
+        DLLEXPORT glm::vec2 screenToViewportPoint(const glm::vec2& point) const noexcept;
 
         DLLEXPORT glm::mat4 getOrtho(float near = -1000, float far = 1000) const noexcept;
+
+        DLLEXPORT glm::vec2 adaptFromScreenPoint(const glm::vec2& point, const glm::vec2& size) const noexcept;
 
         void bgfxSetup(bgfx::ViewId viewId) const noexcept;
     };

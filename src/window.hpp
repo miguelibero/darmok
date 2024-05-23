@@ -25,8 +25,8 @@ namespace darmok
 		[[nodiscard]] WindowMode getMode() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 
-		[[nodiscard]] glm::uvec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
-		[[nodiscard]] glm::vec2 windowToScreenPoint(const glm::uvec2& point) const noexcept;
+		[[nodiscard]] glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
+		[[nodiscard]] glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
 
 		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(IWindowListener& listener) noexcept;

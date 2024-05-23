@@ -33,7 +33,6 @@ namespace darmok
         DLLEXPORT static const Cube& standard() noexcept;
     };
 
-
     struct Triangle final
     {
         using Vertices = std::array<glm::vec3, 3>;
@@ -49,6 +48,7 @@ namespace darmok
         float radius;
         glm::vec3 origin;
 
+        DLLEXPORT Sphere(const glm::vec3& origin, float radius = 1) noexcept;
         DLLEXPORT Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
         DLLEXPORT std::string to_string() const noexcept;
 

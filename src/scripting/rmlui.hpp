@@ -60,7 +60,6 @@ namespace darmok
     class RmluiAppComponent;
     class LuaCamera;
     class LuaTransform;
-    class Viewport;
 
     class LuaRmluiAppComponent final : public IRmluiMouseDelegate
     {
@@ -74,7 +73,7 @@ namespace darmok
         void setTargetTexture(const std::optional<LuaTexture>& texture) noexcept;
 
         std::optional<Viewport> getViewport() const noexcept;
-        LuaRmluiAppComponent& setViewport(const std::optional<VarViewport>& viewport) noexcept;
+        LuaRmluiAppComponent& setViewport(std::optional<VarViewport> viewport) noexcept;
         Viewport getCurrentViewport() const noexcept;
 
         void loadFont(const std::string& path) noexcept;
@@ -83,13 +82,12 @@ namespace darmok
         LuaRmluiAppComponent& setInputActive(bool active) noexcept;
         bool getInputActive() const noexcept;
 
-        glm::ivec2 onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept override;
+        glm::vec2 onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept override;
         LuaRmluiAppComponent& setMouseDelegate(const sol::protected_function& func) noexcept;
-        glm::ivec2 worldToScreenPoint1(const glm::vec3& position) const noexcept;
-        glm::ivec2 worldToScreenPoint2(const glm::vec3& position, const glm::mat4& model) const noexcept;
+        glm::vec2 worldToScreenPoint1(const glm::vec3& position) const noexcept;
+        glm::vec2 worldToScreenPoint2(const glm::vec3& position, const glm::mat4& model) const noexcept;
 
-        const glm::ivec2& getMousePosition() const noexcept;
-        LuaRmluiAppComponent& setMousePosition(const VarLuaTable<glm::ivec2>& position) noexcept;
+        LuaRmluiAppComponent& setMousePosition(const VarLuaTable<glm::vec2>& position) noexcept;
 
         OptionalRef<RmluiAppComponent> getReal() noexcept;
         const std::string& getName() noexcept;

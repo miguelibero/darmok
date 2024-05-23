@@ -1,5 +1,6 @@
 #include "material.hpp"
 #include "texture.hpp"
+#include "program.hpp"
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 
@@ -12,6 +13,11 @@ namespace darmok
 
 	LuaMaterial::LuaMaterial(const std::shared_ptr<Material>& material) noexcept
 		: _material(material)
+	{
+	}
+
+	LuaMaterial::LuaMaterial(const LuaProgram& program, const LuaTexture& texture) noexcept
+		: _material(std::make_shared<Material>(program.getReal(), texture.getReal()))
 	{
 	}
 
@@ -58,6 +64,17 @@ namespace darmok
 		return *this;
 	}
 
+	LuaProgram LuaMaterial::getProgram() const noexcept
+	{
+		return LuaProgram(_material->getProgram());
+	}
+
+	LuaMaterial& LuaMaterial::setProgram(const LuaProgram& program) noexcept
+	{
+		_material->setProgram(program.getReal());
+		return *this;
+	}
+
 	void LuaMaterial::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<MaterialPrimitiveType>("MaterialPrimitiveType", {
@@ -66,8 +83,9 @@ namespace darmok
 		});
 
 		lua.new_usertype<LuaMaterial>("Material",
-			sol::constructors<LuaMaterial(), LuaMaterial(LuaTexture)>(),
+			sol::constructors<LuaMaterial(), LuaMaterial(LuaProgram, LuaTexture), LuaMaterial(LuaTexture)>(),
 			"shininess", sol::property(&LuaMaterial::getShininess, &LuaMaterial::setShininess),
+			"program", sol::property(&LuaMaterial::getProgram, &LuaMaterial::setProgram),
 			"specular_strength", sol::property(&LuaMaterial::getSpecularStrength, &LuaMaterial::setSpecularStrength),
 			"primitive_type", sol::property(&LuaMaterial::getPrimitiveType, &LuaMaterial::setPrimitiveType)
 		);

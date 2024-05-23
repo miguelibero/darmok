@@ -563,12 +563,6 @@ namespace darmok
 		_events.post<KeyboardCharEvent>(data);
 	}
 
-	glm::vec2 PlatformImpl::normalizeScreenPoint(double x, double y) noexcept
-	{
-		auto f = glm::vec2(_framebufferSize) / glm::vec2(_windowSize);
-		return (glm::vec2(x, y) * f) + glm::vec2(0.5F);
-	}
-
 	void PlatformImpl::scrollCallback(GLFWwindow* window, double dx, double dy) noexcept
 	{
 		_events.post<MouseScrollEvent>(glm::vec2{ dx, dy });
@@ -576,7 +570,7 @@ namespace darmok
 
 	void PlatformImpl::cursorPosCallback(GLFWwindow* window, double x, double y) noexcept
 	{
-		_events.post<MousePositionEvent>(normalizeScreenPoint(x, y));
+		_events.post<MousePositionEvent>(glm::vec2{ x, y });
 	}
 
 	void PlatformImpl::cursorEnterCallback(GLFWwindow* window, int entered) noexcept

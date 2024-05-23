@@ -57,6 +57,8 @@ namespace darmok
 		LuaMesh createSphere2(const Sphere& sphere) noexcept;
 		LuaMesh createSphere3(int lod) noexcept;
 		LuaMesh createSphere4(const Sphere& sphere, int lod) noexcept;
+		LuaMesh createSphere5(const glm::vec3& origin) noexcept;
+		LuaMesh createSphere6(const glm::vec3& origin, int lod) noexcept;
 		LuaMesh createRectangle1() noexcept;
 		LuaMesh createRectangle2(const Rectangle& rectangle) noexcept;
 		LuaMesh createRectangle3(const glm::uvec2& size) noexcept;

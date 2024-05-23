@@ -25,7 +25,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IRmluiMouseDelegate() = default;
-		virtual glm::ivec2 onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) = 0;
+		virtual glm::vec2 onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) = 0;
 	};
 
     class RmluiAppComponent final : public AppComponent
@@ -46,12 +46,11 @@ namespace darmok
 		DLLEXPORT RmluiAppComponent& setInputActive(bool active) noexcept;
 		DLLEXPORT bool getInputActive() const noexcept;
 
-		DLLEXPORT const glm::ivec2& getMousePosition() const noexcept;
-		DLLEXPORT RmluiAppComponent& setMousePosition(const glm::ivec2& position) noexcept;
+		DLLEXPORT RmluiAppComponent& setMousePosition(const glm::vec2& position) noexcept;
 
 		DLLEXPORT RmluiAppComponent& setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
 		DLLEXPORT RmluiAppComponent& resetMouseDelegate() noexcept;
-		DLLEXPORT glm::ivec2 worldToScreenPoint(const glm::vec3& position, const glm::mat4& model = glm::mat4(1)) noexcept;
+		DLLEXPORT glm::vec2 worldToScreenPoint(const glm::vec3& position, const glm::mat4& model = glm::mat4(1)) noexcept;
 
 
 		void init(App& app) override;

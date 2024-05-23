@@ -45,12 +45,12 @@ namespace darmok
 
     glm::vec2 Viewport::screenToViewportPoint(const glm::vec2& point) const noexcept
     {
-        return (point - glm::vec2(values[0], values[1])) / glm::vec2(values[2], values[3]);
+        return (point - glm::vec2(getOrigin())) / glm::vec2(getSize());
     }
 
     glm::vec2 Viewport::viewportToScreenPoint(const glm::vec2& point) const noexcept
     {
-        return glm::vec2(values[0], values[1]) + (point * glm::vec2(values[2], values[3]));
+        return glm::vec2(getOrigin()) + (point * glm::vec2(getSize()));
     }
 
     glm::mat4 Viewport::getOrtho(float near, float far) const noexcept
@@ -60,6 +60,11 @@ namespace darmok
         auto size = getSize();
         bx::mtxOrtho(glm::value_ptr(proj), origin.x, size.x, size.y, origin.y, near, far, 0.F, bgfx::getCaps()->homogeneousDepth);
         return proj;
+    }
+
+    glm::vec2 Viewport::adaptFromScreenPoint(const glm::vec2& point, const glm::vec2& size) const noexcept
+    {
+        return (point - glm::vec2(getOrigin())) * glm::vec2(getSize()) / size;
     }
 
     void Viewport::bgfxSetup(bgfx::ViewId viewId) const noexcept

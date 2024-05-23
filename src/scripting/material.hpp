@@ -8,12 +8,14 @@ namespace darmok
 {
     class Material;
     class LuaTexture;
+	class LuaProgram;
 
 	class LuaMaterial final
 	{
 	public:
 		LuaMaterial() noexcept;
 		LuaMaterial(const std::shared_ptr<Material>& material) noexcept;
+		LuaMaterial(const LuaProgram& program, const LuaTexture& texture) noexcept;
 		LuaMaterial(const LuaTexture& texture) noexcept;
 		const std::shared_ptr<Material>& getReal() const noexcept;
 
@@ -25,6 +27,9 @@ namespace darmok
 
 		MaterialPrimitiveType getPrimitiveType() const noexcept;
 		LuaMaterial& setPrimitiveType(MaterialPrimitiveType type) noexcept;
+
+		LuaProgram getProgram() const noexcept;
+		LuaMaterial& setProgram(const LuaProgram& program) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 

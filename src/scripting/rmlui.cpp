@@ -60,8 +60,7 @@ namespace darmok
         return _comp->getViewport();
     }
 
-
-    LuaRmluiAppComponent& LuaRmluiAppComponent::setViewport(const std::optional<VarViewport>& viewport) noexcept
+    LuaRmluiAppComponent& LuaRmluiAppComponent::setViewport(std::optional<VarViewport> viewport) noexcept
     {
         _comp->setViewport(LuaViewport::tableGet(viewport));
         return *this;
@@ -93,18 +92,13 @@ namespace darmok
         return _comp->getInputActive();
     }
 
-    const glm::ivec2& LuaRmluiAppComponent::getMousePosition() const noexcept
-    {
-        return _comp->getMousePosition();
-    }
-
-    LuaRmluiAppComponent& LuaRmluiAppComponent::setMousePosition(const VarLuaTable<glm::ivec2>& position) noexcept
+    LuaRmluiAppComponent& LuaRmluiAppComponent::setMousePosition(const VarLuaTable<glm::vec2>& position) noexcept
     {
         _comp->setMousePosition(LuaGlm::tableGet(position));
         return *this;
     }
 
-    glm::ivec2 LuaRmluiAppComponent::onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept
+    glm::vec2 LuaRmluiAppComponent::onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept
     {
         if (_mouseDelegate)
         {
@@ -119,9 +113,13 @@ namespace darmok
             {
                 return obj.as<glm::ivec2>();
             }
+            if (obj.is<glm::vec2>())
+            {
+                return obj.as<glm::vec2>();
+            }
             if (obj.is<sol::table>())
             {
-                glm::ivec2 v;
+                glm::vec2 v;
                 LuaGlm::tableInit(v, obj);
                 return v;
             }
@@ -135,12 +133,12 @@ namespace darmok
         return *this;
     }
 
-    glm::ivec2 LuaRmluiAppComponent::worldToScreenPoint1(const glm::vec3& position) const noexcept
+    glm::vec2 LuaRmluiAppComponent::worldToScreenPoint1(const glm::vec3& position) const noexcept
     {
         return _comp->worldToScreenPoint(position);
     }
 
-    glm::ivec2 LuaRmluiAppComponent::worldToScreenPoint2(const glm::vec3& position, const glm::mat4& model) const noexcept
+    glm::vec2 LuaRmluiAppComponent::worldToScreenPoint2(const glm::vec3& position, const glm::mat4& model) const noexcept
     {
         return _comp->worldToScreenPoint(position, model);
     }
@@ -185,12 +183,12 @@ namespace darmok
             "name", sol::property(&LuaRmluiAppComponent::getName),
             "context", sol::property(&LuaRmluiAppComponent::getContext),
             "target_texture", sol::property(&LuaRmluiAppComponent::getTargetTexture, &LuaRmluiAppComponent::setTargetTexture),
-            //"viewport", sol::property(&LuaRmluiAppComponent::getViewport, &LuaRmluiAppComponent::setViewport),
-            //"current_viewport", sol::property(&LuaRmluiAppComponent::getCurrentViewport),
+            "viewport", sol::property(&LuaRmluiAppComponent::getViewport, &LuaRmluiAppComponent::setViewport),
+            "current_viewport", sol::property(&LuaRmluiAppComponent::getCurrentViewport),
             "current_size", sol::property(&LuaRmluiAppComponent::getCurrentViewport),
             "input_active", sol::property(&LuaRmluiAppComponent::getInputActive, &LuaRmluiAppComponent::setInputActive),
             "mouse_delegate", sol::property(&LuaRmluiAppComponent::setMouseDelegate),
-            "mouse_position", sol::property(&LuaRmluiAppComponent::getMousePosition, &LuaRmluiAppComponent::setMousePosition),
+            "mouse_position", sol::property(&LuaRmluiAppComponent::setMousePosition),
             "world_to_screen_point", sol::overload(&LuaRmluiAppComponent::worldToScreenPoint1, &LuaRmluiAppComponent::worldToScreenPoint2),
             "load_document", &LuaRmluiAppComponent::loadDocument,
             "load_font", &LuaRmluiAppComponent::loadFont,

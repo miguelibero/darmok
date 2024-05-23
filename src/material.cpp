@@ -29,8 +29,12 @@ namespace darmok
 		{ MaterialColorType::Specular, { "u_specularColor", Colors::white() }}
 	};
 
-
 	Material::Material(const std::shared_ptr<Texture>& diffuseTexture) noexcept
+		: Material(nullptr, diffuseTexture)
+	{
+	}
+
+	Material::Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture) noexcept
 		: _primitive(MaterialPrimitiveType::Triangle)
 		, _mainData{
 			32,  // shininess
@@ -38,6 +42,7 @@ namespace darmok
 			0, 0 // unused
 		}
 		, _mainHandle{ bgfx::kInvalidHandle }
+		, _program(program)
 	{
 		for (auto& pair : _materialSamplerDefinitions)
 		{
@@ -77,6 +82,17 @@ namespace darmok
 			bgfx::destroy(_mainHandle);
 			_mainHandle.idx = bgfx::kInvalidHandle;
 		}
+	}
+
+	std::shared_ptr<Program> Material::getProgram() const noexcept
+	{
+		return _program;
+	}
+
+	Material& Material::setProgram(const std::shared_ptr<Program>& program) noexcept
+	{
+		_program = program;
+		return *this;
 	}
 
 	std::shared_ptr<Texture> Material::getTexture(MaterialTextureType type) const noexcept

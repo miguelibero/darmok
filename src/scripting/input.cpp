@@ -9,7 +9,6 @@ namespace darmok
 	LuaKeyboard::LuaKeyboard(Keyboard& kb) noexcept
 		: _kb(kb)
 	{
-		glm::to_string(glm::vec3(0));
 	}
 
 	bool LuaKeyboard::getKey(const std::string& name) const noexcept
@@ -20,13 +19,13 @@ namespace darmok
 			return false;
 		}
 		auto binding = optBinding.value();
-		return _kb->getKey(binding.key, binding.modifiers);
+		return _kb.get().getKey(binding.key, binding.modifiers);
 	}
 
 	std::string LuaKeyboard::getUpdateChars() const noexcept
 	{
 		std::string str;
-		for (auto& chr : _kb->getUpdateChars())
+		for (auto& chr : _kb.get().getUpdateChars())
 		{
 			str += chr.stringView();
 		}
@@ -45,55 +44,57 @@ namespace darmok
 	LuaMouse::LuaMouse(Mouse& mouse) noexcept
 		: _mouse(mouse)
 	{
-		_mouse->addListener(*this);
+		_mouse.get().addListener(*this);
 	}
 
 	LuaMouse::~LuaMouse() noexcept
 	{
-		if (_mouse)
-		{
-			_mouse->removeListener(*this);
-		}
+		_mouse.get().removeListener(*this);
 	}
 
 	bool LuaMouse::getActive() const noexcept
 	{
-		return _mouse->getActive();
+		return _mouse.get().getActive();
 	}
 
 	const glm::vec2& LuaMouse::getPosition() const noexcept
 	{
-		return _mouse->getPosition();
+		return _mouse.get().getPosition();
 	}
 
 	glm::vec2 LuaMouse::getPositionDelta() const noexcept
 	{
-		return _mouse->getPositionDelta();
+		return _mouse.get().getPositionDelta();
 	}
 
 	glm::vec2 LuaMouse::getScrollDelta() const noexcept
 	{
-		return _mouse->getScrollDelta();
+		return _mouse.get().getScrollDelta();
 	}
 
 	const glm::vec2& LuaMouse::getScroll() const noexcept
 	{
-		return _mouse->getScroll();
+		return _mouse.get().getScroll();
+	}
+
+	bool LuaMouse::getButton(MouseButton button) const noexcept
+	{
+		return _mouse.get().getButton(button);
 	}
 
 	bool LuaMouse::getLeftButton() const noexcept
 	{
-		return _mouse->getButton(MouseButton::Left);
+		return _mouse.get().getButton(MouseButton::Left);
 	}
 
 	bool LuaMouse::getMiddleButton() const noexcept
 	{
-		return _mouse->getButton(MouseButton::Middle);
+		return _mouse.get().getButton(MouseButton::Middle);
 	}
 
 	bool LuaMouse::getRightButton() const noexcept
 	{
-		return _mouse->getButton(MouseButton::Right);
+		return _mouse.get().getButton(MouseButton::Right);
 	}
 
 	void LuaMouse::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute)
@@ -180,6 +181,7 @@ namespace darmok
 			"left_button", sol::property(&LuaMouse::getLeftButton),
 			"middle_button", sol::property(&LuaMouse::getMiddleButton),
 			"right_button", sol::property(&LuaMouse::getRightButton),
+			"get_button", &LuaMouse::getButton,
 			"register_position_listener", &LuaMouse::registerPositionListener,
 			"unregister_position_listener", &LuaMouse::unregisterPositionListener,
 			"register_scroll_listener", &LuaMouse::registerScrollListener,
@@ -201,22 +203,22 @@ namespace darmok
 		{
 			return false;
 		}
-		return _gamepad->getButton(button.value());
+		return _gamepad.get().getButton(button.value());
 	}
 
 	const glm::ivec3& LuaGamepad::getLeftStick() const noexcept
 	{
-		return _gamepad->getStick(GamepadStick::Left);
+		return _gamepad.get().getStick(GamepadStick::Left);
 	}
 
 	const glm::ivec3& LuaGamepad::getRightStick() const noexcept
 	{
-		return _gamepad->getStick(GamepadStick::Right);
+		return _gamepad.get().getStick(GamepadStick::Right);
 	}
 
 	bool LuaGamepad::isConnected() const noexcept
 	{
-		return _gamepad->isConnected();
+		return _gamepad.get().isConnected();
 	}
 
 	void LuaGamepad::bind(sol::state_view& lua) noexcept
@@ -232,7 +234,15 @@ namespace darmok
 
     LuaInput::LuaInput(Input& input) noexcept
 		: _input(input)
+		, _keyboard(input.getKeyboard())
+		, _mouse(input.getMouse())
 	{
+		auto& gamepads = input.getGamepads();
+		_gamepads.reserve(gamepads.size());
+		for (auto& gamepad : gamepads)
+		{
+			_gamepads.emplace_back(gamepad);
+		}
 	}
 
 	static void callLuaBinding(std::string key, sol::protected_function fn)
@@ -265,39 +275,32 @@ namespace darmok
 		_input->addBindings(name, std::move(bindings));
 	}
 
-	LuaKeyboard LuaInput::getKeyboard() noexcept
+	LuaKeyboard& LuaInput::getKeyboard() noexcept
 	{
-		return LuaKeyboard(_input->getKeyboard());
+		return _keyboard;
 	}
 
-	LuaMouse LuaInput::getMouse() noexcept
+	LuaMouse& LuaInput::getMouse() noexcept
 	{
-		return LuaMouse(_input->getMouse());
+		return _mouse;
 	}
 
-	std::optional<LuaGamepad> LuaInput::getGamepad(uint8_t num) noexcept
+	OptionalRef<LuaGamepad>::std_t LuaInput::getGamepad(uint8_t num) noexcept
 	{
-        auto gamepad = _input->getGamepad(num);
-        if(gamepad)
-        {
-            return LuaGamepad(gamepad.value());
-        }
+		if (num >= 0 && num < _gamepads.size())
+		{
+			return _gamepads[num];
+		}
 		return std::nullopt;
 	}
 
-	std::vector<LuaGamepad> LuaInput::getGamepads() noexcept
+	const std::vector<LuaGamepad>& LuaInput::getGamepads() noexcept
 	{
-        std::vector<LuaGamepad> gamepads;
-        for(auto& gamepad : _input->getGamepads())
-        {
-            gamepads.push_back(LuaGamepad(gamepad));
-        }
-		return gamepads;
+		return _gamepads;
 	}
 
 	void LuaInput::bind(sol::state_view& lua) noexcept
 	{
-
 		LuaKeyboard::bind(lua);
 		LuaMouse::bind(lua);
 		LuaGamepad::bind(lua);

@@ -77,8 +77,6 @@ namespace darmok
 		glm::uvec2 _windowSize;
 		glm::uvec2 _framebufferSize;
 
-		glm::vec2 normalizeScreenPoint(double x, double y) noexcept;
-
 		static uint8_t translateKeyModifiers(int mods) noexcept;
 
 		using KeyMap = std::array<KeyboardKey, GLFW_KEY_LAST + 1>;

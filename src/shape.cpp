@@ -75,6 +75,12 @@ namespace darmok
         return "Triangle(" + glm::to_string(vertices[0]) + ", " + glm::to_string(vertices[1]) + ", " + glm::to_string(vertices[2]) + ")";
     }
 
+    Sphere::Sphere(const glm::vec3& origin, float radius) noexcept
+        : radius(radius)
+        , origin(origin)
+    {
+    }
+
     Sphere::Sphere(float radius, const glm::vec3& origin) noexcept
         : radius(radius)
         , origin(origin)

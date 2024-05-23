@@ -103,6 +103,21 @@ namespace darmok
 		return _transform->getWorldInverse();
 	}
 
+	glm::vec3 LuaTransform::getWorldPosition() const noexcept
+	{
+		return _transform->getWorldPosition();
+	}
+
+	glm::vec3 LuaTransform::worldToLocalPoint(const VarLuaTable<glm::vec3>& v) const noexcept
+	{
+		return _transform->worldToLocalPoint(LuaGlm::tableGet(v));
+	}
+
+	glm::vec3 LuaTransform::localToWorldPoint(const VarLuaTable<glm::vec3>& vt) const noexcept
+	{
+		return _transform->worldToLocalPoint(LuaGlm::tableGet(v));
+	}
+
 	void LuaTransform::setPosition(const VarLuaTable<glm::vec3>& v) noexcept
 	{
 		_transform->setPosition(LuaGlm::tableGet(v));
@@ -215,6 +230,7 @@ namespace darmok
 			"get_entity", &LuaTransform::getEntity,
 
 			"position", sol::property(&LuaTransform::getPosition, &LuaTransform::setPosition),
+			"world_position", sol::property(&LuaTransform::getWorldPosition),
 			"rotation", sol::property(&LuaTransform::getRotation, &LuaTransform::setRotation),
 			"euler_angles", sol::property(&LuaTransform::getEulerAngles, &LuaTransform::setEulerAngles),
 			"forward", sol::property(&LuaTransform::getForward),
@@ -228,7 +244,9 @@ namespace darmok
 			"parent", sol::property(&LuaTransform::getParent, &LuaTransform::setParent),
 			"rotate", sol::overload(&LuaTransform::rotate1, &LuaTransform::rotate2),
 			"look_dir", sol::overload(&LuaTransform::lookDir1, &LuaTransform::lookDir2),
-			"look_at", sol::overload(&LuaTransform::lookAt1, &LuaTransform::lookAt2)
+			"look_at", sol::overload(&LuaTransform::lookAt1, &LuaTransform::lookAt2),
+			"world_to_local_point", &LuaTransform::worldToLocalPoint,
+			"local_to_world_point", &LuaTransform::localToWorldPoint
 		);
 	}
 }

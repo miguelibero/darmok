@@ -10,7 +10,6 @@
 
 namespace darmok
 {
-	class Viewport;
     class Camera;
 	class LuaProgram;
 	class LuaTexture;
@@ -35,9 +34,9 @@ namespace darmok
 		LuaCamera& setProjection2(float fovy, float aspect, float near) noexcept;
 		LuaCamera& setProjection3(float fovy, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& range) noexcept;
 		LuaCamera& setProjection4(float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept;
-		LuaCamera& setOrtho1(const VarLuaTable<glm::vec4>& edges, const VarLuaTable<glm::vec2>& range) noexcept;
-		LuaCamera& setOrtho2(const VarLuaTable<glm::vec4>& edges) noexcept;
-		LuaCamera& setOrtho3(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& range) noexcept;
+		LuaCamera& setOrtho1(const VarViewport& vp, float near, float far) noexcept;
+		LuaCamera& setOrtho2(const VarViewport& vp) noexcept;
+		LuaCamera& setOrtho3(const VarLuaTable<glm::uvec2>& size, float near, float fare) noexcept;
 		LuaCamera& setOrtho4(const VarLuaTable<glm::uvec2>& size) noexcept;
 		LuaCamera& addNativeComponent(LuaNativeCameraComponentType type) noexcept;
 		LuaCamera& setForwardRenderer(const LuaProgram& program) noexcept;
@@ -49,7 +48,7 @@ namespace darmok
 		std::vector<LuaTexture> getTargetTextures() noexcept;
 
 		std::optional<Viewport> getViewport() const noexcept;
-		LuaCamera& setViewport(const std::optional<VarViewport>& viewport) noexcept;
+		LuaCamera& setViewport(std::optional<VarViewport> viewport) noexcept;
 		Viewport getCurrentViewport() const noexcept;
 
 		std::optional<LuaTransform> getTransform() const noexcept;

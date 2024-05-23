@@ -35,7 +35,9 @@ namespace darmok
 		const glm::mat4& getMatrix() const noexcept;
 		const glm::mat4& getLocalToWorldMatrix() const noexcept;
 		const glm::mat4& getWorldToLocalMatrix() const noexcept;
-
+		glm::vec3 getWorldPosition() const noexcept;
+		glm::vec3 worldToLocalPoint(const VarLuaTable<glm::vec3>& v) const noexcept;
+		glm::vec3 localToWorldPoint(const VarLuaTable<glm::vec3>& v) const noexcept;
 		void setPosition(const VarLuaTable<glm::vec3>& v) noexcept;
 		void setRotation(const VarLuaTable<glm::quat>& v) noexcept;
 		void setEulerAngles(const VarLuaTable<glm::vec3>& v) noexcept;

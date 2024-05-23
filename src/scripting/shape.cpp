@@ -32,6 +32,22 @@ namespace darmok
 			"origin", &Cube::origin
 		);
 
+		lua.new_usertype<Sphere>("Sphere", sol::no_constructor,
+			"new", sol::overload(
+				[]() { return Sphere(); },
+				[](const VarLuaTable<glm::vec3>& origin) {
+					return Sphere(LuaGlm::tableGet(origin)); },
+				[](float radius) {
+					return Sphere(radius); },
+				[](float radius, const VarLuaTable<glm::vec3>& origin) {
+					return Sphere(radius, LuaGlm::tableGet(origin)); },
+				[](const VarLuaTable<glm::vec3>& origin, float radius) {
+					return Sphere(LuaGlm::tableGet(origin), radius); }
+			),
+			"radius", &Sphere::radius,
+			"origin", &Sphere::origin
+		);
+
 		lua.new_usertype<Triangle>("Triangle", sol::no_constructor,
 			"new", sol::overload(
 				[]() { return Line(); },

@@ -19,6 +19,9 @@ namespace darmok
 {
     LuaApp::LuaApp(App& app) noexcept
 		: _app(app)
+		, _assets(app.getAssets())
+		, _window(app.getWindow())
+		, _input(app.getInput())
 	{
 	}
 
@@ -32,73 +35,83 @@ namespace darmok
 		return _app.value();
 	}
 
-	LuaApp::SceneComponents::iterator LuaApp::findSceneComponent(const LuaScene& scene) noexcept
-	{
-		auto real = scene.getReal();
-		return std::find_if(_sceneComponents.begin(), _sceneComponents.end(),
-			[real](auto& comp) { return comp->getScene() == real; });
-	}
-
-	LuaScene LuaApp::getScene() noexcept
+	LuaScene& LuaApp::getScene() noexcept
 	{
 		if (_sceneComponents.empty())
 		{
-			_sceneComponents.push_back(_app->addComponent<SceneAppComponent>());
+			return doAddScene();
 		}
-		return LuaScene(_sceneComponents.front()->getScene());
+		return _scenes.front();
 	}
 
-	void LuaApp::setScene(const LuaScene& scene) noexcept
+	size_t LuaApp::findScene(const LuaScene& scene) const noexcept
 	{
-		if (_sceneComponents.empty())
-		{
-			_sceneComponents.push_back(_app->addComponent<SceneAppComponent>(scene.getReal()));
-		}
-		else
-		{
-			_sceneComponents.front()->setScene(scene.getReal());
-		}
-	}
-
-	std::vector<LuaScene> LuaApp::getScenes() noexcept
-	{
-		std::vector<LuaScene> scenes;
+		size_t i = 0;
+		auto& real = scene.getReal();
 		for (auto& comp : _sceneComponents)
 		{
-			scenes.push_back(LuaScene(comp->getScene()));
+			if (comp->getScene() == real)
+			{
+				return i;
+			}
+			i++;
 		}
-		return scenes;
+		return -1;
 	}
 
-	bool LuaApp::addScene1(const LuaScene& scene) noexcept
+	LuaScene& LuaApp::setScene(const LuaScene& scene) noexcept
 	{
-		auto itr = findSceneComponent(scene);
-		if (itr != _sceneComponents.end())
+		if (_sceneComponents.empty())
 		{
-			return false;
+			auto& comp = _app->addComponent<SceneAppComponent>(scene.getReal());
+			_sceneComponents.push_back(comp);
+			return _scenes.emplace_back(scene);
+		}
+		_sceneComponents[0]->setScene(scene.getReal());
+		_scenes[0] = scene;
+		return _scenes[0];
+	}
+
+	const std::vector<LuaScene>& LuaApp::getScenes() noexcept
+	{
+		return _scenes;
+	}
+
+	LuaScene& LuaApp::addScene1(const LuaScene& scene) noexcept
+	{
+		auto i = findScene(scene);
+		if (i >= 0)
+		{
+			return _scenes[i];
 		}
 		getScene();
 		auto& comp = _app->addComponent<SceneAppComponent>(scene.getReal());
 		_sceneComponents.push_back(comp);
-		return true;
+		return _scenes.emplace_back(scene);
 	}
 
-	LuaScene LuaApp::addScene2() noexcept
+	LuaScene& LuaApp::addScene2() noexcept
 	{
 		getScene();
+		return doAddScene();
+	}
+
+	LuaScene& LuaApp::doAddScene() noexcept
+	{
 		auto& comp = _app->addComponent<SceneAppComponent>();
 		_sceneComponents.push_back(comp);
-		return LuaScene(comp.getScene());
+		return _scenes.emplace_back(comp.getScene());
 	}
 
 	bool LuaApp::removeScene(const LuaScene& scene) noexcept
 	{
-		auto itr = findSceneComponent(scene);
-		if (itr == _sceneComponents.end())
+		auto i = findScene(scene);
+		if (i < 0)
 		{
 			return false;
 		}
-		_sceneComponents.erase(itr);
+		_sceneComponents.erase(_sceneComponents.begin() + i);
+		_scenes.erase(_scenes.begin() + i);
 		return true;
 	}
 
@@ -147,19 +160,19 @@ namespace darmok
 		return true;
 	}
 
-	LuaAssets LuaApp::getAssets() noexcept
+	LuaAssets& LuaApp::getAssets() noexcept
 	{
-		return LuaAssets(_app->getAssets());
+		return _assets;
 	}
 
-	LuaWindow LuaApp::getWindow() noexcept
+	LuaWindow& LuaApp::getWindow() noexcept
 	{
-		return LuaWindow(_app->getWindow());
+		return _window;
 	}
 
-	LuaInput LuaApp::getInput() noexcept
+	LuaInput& LuaApp::getInput() noexcept
 	{
-		return LuaInput(_app->getInput());
+		return _input;
 	}
 
 	void LuaApp::registerUpdate(const sol::protected_function& func) noexcept
@@ -306,8 +319,8 @@ namespace darmok
 		LuaApp::bind(lua);
 		LuaRmluiAppComponent::bind(lua);
 
-		_luaApp = LuaApp(app);
-		lua["app"] = std::ref(_luaApp);
+		_luaApp.emplace(app);
+		lua["app"] = std::ref(_luaApp.value());
 		lua["args"] = args;
 
 		if (!mainDir.empty())

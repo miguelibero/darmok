@@ -15,12 +15,17 @@
 namespace darmok
 {
     class Texture;
+    class Program;
 
     class Material final
     {
     public:
         DLLEXPORT Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
+        DLLEXPORT Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
         DLLEXPORT ~Material();
+
+        DLLEXPORT std::shared_ptr<Program> getProgram() const noexcept;
+        DLLEXPORT Material& setProgram(const std::shared_ptr<Program>& program) noexcept;
 
         DLLEXPORT std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
         DLLEXPORT Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
@@ -40,6 +45,7 @@ namespace darmok
         DLLEXPORT uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
+        std::shared_ptr<Program> _program;
         std::unordered_map<MaterialTextureType, bgfx::UniformHandle> _textureHandles;
         std::unordered_map<MaterialColorType, bgfx::UniformHandle> _colorHandles;
         bgfx::UniformHandle _mainHandle;

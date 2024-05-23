@@ -70,7 +70,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 ### Next tasks
 
-* return lua app children by reference
 * skeletal animations
 * physics
 * sound

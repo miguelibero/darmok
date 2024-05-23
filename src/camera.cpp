@@ -59,15 +59,16 @@ namespace darmok
         return setProjection(fovy, aspect, near);
     }
 
-    Camera& Camera::setOrtho(const glm::vec4& edges, const glm::vec2& range) noexcept
+    Camera& Camera::setOrtho(const Viewport& viewport, float near, float far) noexcept
     {
-        bx::mtxOrtho(glm::value_ptr(_proj), edges[0], edges[1], edges[2], edges[3], range[0], range[1], 0.F, bgfx::getCaps()->homogeneousDepth);
+        _proj = viewport.getOrtho(near, far);
         return *this;
     }
 
-    Camera& Camera::setOrtho(const glm::uvec2& size, const glm::vec2& range) noexcept
+    Camera& Camera::setOrtho(const glm::uvec2& size, float near, float far) noexcept
     {
-        return setOrtho(glm::vec4(0, size.x, 0, size.y), range);
+        _proj = Viewport(size).getOrtho(near, far);
+        return *this;
     }
 
     Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept

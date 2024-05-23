@@ -47,21 +47,21 @@ namespace darmok
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho1(const VarLuaTable<glm::vec4>& edges, const VarLuaTable<glm::vec2>& range) noexcept
+	LuaCamera& LuaCamera::setOrtho1(const VarViewport& vp, float near, float far) noexcept
 	{
-		_camera->setOrtho(LuaGlm::tableGet(edges), LuaGlm::tableGet(range));
+		_camera->setOrtho(LuaViewport::tableGet(vp), near, far);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho2(const VarLuaTable<glm::vec4>& edges) noexcept
+	LuaCamera& LuaCamera::setOrtho2(const VarViewport& vp) noexcept
 	{
-		_camera->setOrtho(LuaGlm::tableGet(edges));
+		_camera->setOrtho(LuaViewport::tableGet(vp));
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho3(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& range) noexcept
+	LuaCamera& LuaCamera::setOrtho3(const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept
 	{
-		_camera->setOrtho(LuaGlm::tableGet(size), LuaGlm::tableGet(range));
+		_camera->setOrtho(LuaGlm::tableGet(size), near, far);
 		return *this;
 	}
 
@@ -122,7 +122,7 @@ namespace darmok
 	}
 
 
-	LuaCamera& LuaCamera::setViewport(const std::optional<VarViewport>& viewport) noexcept
+	LuaCamera& LuaCamera::setViewport(std::optional<VarViewport> viewport) noexcept
 	{
 		_camera->setViewport(LuaViewport::tableGet(viewport));
 		return *this;
@@ -165,7 +165,7 @@ namespace darmok
 
 	Ray LuaCamera::viewportPointToRay(const VarLuaTable<glm::vec3>& point) const noexcept
 	{
-		return _camera->screenPointToRay(LuaGlm::tableGet(point));
+		return _camera->viewportPointToRay(LuaGlm::tableGet(point));
 	}
 
 	glm::vec3 LuaCamera::worldToScreenPoint(const VarLuaTable<glm::vec3>& point) const noexcept
@@ -242,8 +242,8 @@ namespace darmok
 			"add_component", &LuaCamera::addNativeComponent,
 			"projection_matrix", sol::property(&LuaCamera::getProjectionMatrix, &LuaCamera::setProjectionMatrix),
 			"target_textures", sol::property(&LuaCamera::getTargetTextures, &LuaCamera::setTargetTextures),
-			//"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
-			//"current_viewport", sol::property(&LuaCamera::getCurrentViewport),
+			"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
+			"current_viewport", sol::property(&LuaCamera::getCurrentViewport),
 			"transform", sol::property(&LuaCamera::getTransform),
 			"model_matrix", sol::property(&LuaCamera::getModelMatrix),
 			"screen_point_to_ray", &LuaCamera::screenPointToRay,

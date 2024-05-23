@@ -550,7 +550,7 @@ namespace darmok
 			data.normals.emplace_back();
 			data.normals.emplace_back();
 			data.texCoords.emplace_back(0, 0);
-			data.texCoords.emplace_back(0, 1);
+			data.texCoords.emplace_back(1, 1);
 			data.indices.emplace_back(i++);
 			data.indices.emplace_back(i++);
 		}

@@ -169,9 +169,11 @@ namespace darmok
 		bool getInputActive() const noexcept;
 		void setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
 		void resetMouseDelegate() noexcept;
-		const glm::ivec2& getMousePosition() const noexcept;
-		void setMousePosition(const glm::ivec2& position) noexcept;
-		glm::ivec2 worldToScreenPoint(const glm::vec3& position, const glm::mat4& model = glm::mat4(1)) noexcept;
+		
+		void setMousePosition(const glm::vec2& position) noexcept;
+
+		glm::vec2 worldToScreenPoint(const glm::vec3& position, const glm::mat4& model = glm::mat4(1)) noexcept;
+		glm::vec2 screenToViewportPoint(const glm::vec2& point) noexcept;
 
 		OptionalRef<Rml::Context> getContext() const noexcept;
 		RmluiRenderInterface& getRenderInterface() noexcept;
@@ -200,7 +202,7 @@ namespace darmok
 		std::shared_ptr<RmluiSharedAppComponent> _shared;
 
 		OptionalRef<IRmluiMouseDelegate> _mouseDelegate;
-		glm::ivec2 _mousePosition;
+		glm::vec2 _mousePosition;
 		std::string _defaultMouseCursor;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;

@@ -43,12 +43,21 @@ namespace darmok
 		auto mat3 = lua.new_usertype<glm::mat3>("Mat3", sol::constructors<
 			glm::mat3(glm::f32),
 			glm::mat3(glm::vec3, glm::vec3, glm::vec3)
-		>());
+		>(),
+			sol::meta_function::multiplication, sol::overload(
+				[](const glm::mat3 mat, const glm::vec3& vec) { return mat * vec;  }
+			)
+		);
 		configLuaGlmMat(mat3);
-		auto mat4 = lua.new_usertype<glm::mat4>("Mat4", sol::constructors<
+		auto mat4 = lua.new_usertype<glm::mat4>("Mat4", sol::constructors <
 			glm::mat4(glm::f32),
 			glm::mat4(glm::vec4, glm::vec4, glm::vec4, glm::vec4)
-		>());
+		>(),
+			sol::meta_function::multiplication, sol::overload(
+				[](const glm::mat4 mat, const glm::vec3& vec) { return mat * glm::vec4(vec, 1);  },
+				[](const glm::mat4 mat, const glm::vec4& vec) { return mat * vec;  }
+			)
+		);
 		configLuaGlmMat(mat4);
 	}
 

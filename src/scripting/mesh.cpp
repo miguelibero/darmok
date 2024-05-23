@@ -89,6 +89,16 @@ namespace darmok
 		return LuaMesh(_creator->createSphere(sphere, lod));
 	}
 
+	LuaMesh LuaMeshCreator::createSphere5(const glm::vec3& origin) noexcept
+	{
+		return LuaMesh(_creator->createSphere(Sphere{ 1, origin }));
+	}
+
+	LuaMesh LuaMeshCreator::createSphere6(const glm::vec3& origin, int lod) noexcept
+	{
+		return LuaMesh(_creator->createSphere(Sphere{ 1, origin }, lod));
+	}
+
 	LuaMesh LuaMeshCreator::createRectangle1() noexcept
 	{
 		return LuaMesh(_creator->createRectangle());
@@ -154,7 +164,8 @@ namespace darmok
 			"create_cube", sol::overload(&LuaMeshCreator::createCube1, &LuaMeshCreator::createCube2),
 			"create_sphere", sol::overload(
 				&LuaMeshCreator::createSphere1, &LuaMeshCreator::createSphere2,
-				&LuaMeshCreator::createSphere3, &LuaMeshCreator::createSphere4),
+				&LuaMeshCreator::createSphere3, &LuaMeshCreator::createSphere4,
+				&LuaMeshCreator::createSphere5, &LuaMeshCreator::createSphere6),
 			"create_rectangle", sol::overload(
 				&LuaMeshCreator::createRectangle1,
 				&LuaMeshCreator::createRectangle2,

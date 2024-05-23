@@ -76,7 +76,12 @@ namespace darmok
 			uint64_t state = mat->beforeRender(encoder, viewId);
 			mesh->render(encoder, viewId);
 			encoder.setState(state);
-			encoder.submit(viewId, _program->getHandle());
+			auto prog = mat->getProgram();
+			if (prog == nullptr)
+			{
+				prog = _program;
+			}
+			encoder.submit(viewId, prog->getHandle());
 		}
 		_cam->afterRenderView(encoder, viewId);
 

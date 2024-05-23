@@ -6,6 +6,9 @@
 #include <unordered_map>
 #include <sol/sol.hpp>
 #include "glm.hpp"
+#include "asset.hpp"
+#include "window.hpp"
+#include "input.hpp"
 
 namespace darmok
 {
@@ -26,11 +29,11 @@ namespace darmok
 		App& getReal() noexcept;
 		const App& getReal() const noexcept;
 
-		LuaScene getScene() noexcept;
-		void setScene(const LuaScene& scene) noexcept;
-		std::vector<LuaScene> getScenes() noexcept;
-		bool addScene1(const LuaScene& scene) noexcept;
-		LuaScene addScene2() noexcept;
+		LuaScene& getScene() noexcept;
+		LuaScene& setScene(const LuaScene& scene) noexcept;
+		const std::vector<LuaScene>& getScenes() noexcept;
+		LuaScene& addScene1(const LuaScene& scene) noexcept;
+		LuaScene& addScene2() noexcept;
 		bool removeScene(const LuaScene& scene) noexcept;
 
 		LuaRmluiAppComponent& getMainGui() noexcept;
@@ -39,9 +42,10 @@ namespace darmok
 		LuaRmluiAppComponent& addGui(const std::string& name);
 		bool removeGui(const std::string& name) noexcept;
 		
-		LuaAssets getAssets() noexcept;
-		LuaWindow getWindow() noexcept;
-		LuaInput getInput() noexcept;
+		LuaAssets& getAssets() noexcept;
+		LuaWindow& getWindow() noexcept;
+		LuaInput& getInput() noexcept;
+
 		void registerUpdate(const sol::protected_function& func) noexcept;
 		bool unregisterUpdate(const sol::protected_function& func) noexcept;
 		void update(float deltaTime) noexcept;
@@ -50,10 +54,15 @@ namespace darmok
 	private:
 		std::vector<sol::protected_function> _updates;
 		OptionalRef<App> _app;
+		LuaAssets _assets;
+		LuaWindow _window;
+		LuaInput _input;
 
-		using SceneComponents = std::vector<OptionalRef<SceneAppComponent>>;
-		SceneComponents _sceneComponents;
-		SceneComponents::iterator findSceneComponent(const LuaScene& scene) noexcept;
+		std::vector<OptionalRef<SceneAppComponent>> _sceneComponents;
+		std::vector<LuaScene> _scenes;
+
+		LuaScene& doAddScene() noexcept;
+		size_t findScene(const LuaScene& scene) const noexcept;
 
 		using RmluiComponents = std::unordered_map<std::string, LuaRmluiAppComponent>;
 		RmluiComponents _guiComponents;

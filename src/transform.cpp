@@ -258,7 +258,17 @@ namespace darmok
 
     glm::vec3 Transform::getWorldPosition() const noexcept
     {
-        return _worldMatrix * glm::vec4(_position, 1);
+        return _worldMatrix * glm::vec4(0, 0, 0, 1);
+    }
+
+    glm::vec3 Transform::worldToLocalPoint(const glm::vec3& point) const noexcept
+    {
+        return _worldMatrix * glm::vec4(point, 1);
+    }
+
+    glm::vec3 Transform::localToWorldPoint(const glm::vec3& point) const noexcept
+    {
+        return _worldInverse * glm::vec4(point, 1);
     }
 
     const glm::mat4& Transform::getLocalMatrix() const noexcept
