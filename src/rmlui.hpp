@@ -48,8 +48,6 @@ namespace darmok
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		const std::shared_ptr<Texture>& getTargetTexture() noexcept;
 
-		static glm::mat4 getProjection(const Viewport& vp) noexcept;
-
 	private:
 
 		struct CompiledGeometry final
@@ -173,7 +171,6 @@ namespace darmok
 		void setMousePosition(const glm::vec2& position) noexcept;
 
 		glm::vec2 worldToScreenPoint(const glm::vec3& position, const glm::mat4& model = glm::mat4(1)) noexcept;
-		glm::vec2 screenToViewportPoint(const glm::vec2& point) noexcept;
 
 		OptionalRef<Rml::Context> getContext() const noexcept;
 		RmluiRenderInterface& getRenderInterface() noexcept;

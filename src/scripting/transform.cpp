@@ -113,7 +113,7 @@ namespace darmok
 		return _transform->worldToLocalPoint(LuaGlm::tableGet(v));
 	}
 
-	glm::vec3 LuaTransform::localToWorldPoint(const VarLuaTable<glm::vec3>& vt) const noexcept
+	glm::vec3 LuaTransform::localToWorldPoint(const VarLuaTable<glm::vec3>& v) const noexcept
 	{
 		return _transform->worldToLocalPoint(LuaGlm::tableGet(v));
 	}

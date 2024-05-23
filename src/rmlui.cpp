@@ -186,11 +186,6 @@ namespace darmok
         submitGeometry(texture, translation);
     }
 
-    glm::mat4 RmluiRenderInterface::getProjection(const Viewport& vp) noexcept
-    {
-        return vp.getOrtho(-1000.F, 1000.F);
-    }
-
     void RmluiRenderInterface::setupView() noexcept
     {
         auto viewId = _viewId.value();
@@ -202,9 +197,15 @@ namespace darmok
         auto size = RmluiUtils::convert(GetContext()->GetDimensions());
         _viewport.bgfxSetup(viewId);
 
-        auto proj = getProjection(_viewport);
-        bgfx::setViewTransform(viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
+        glm::mat4 proj(1);
+        {
+            auto bot = glm::vec2(_viewport.origin);
+            auto top = bot + glm::vec2(_viewport.size);
+            // rmlui renders with inverted y 
+            bx::mtxOrtho(glm::value_ptr(proj), bot.x, top.x, top.y, bot.y, -1000, 1000, 0.F, bgfx::getCaps()->homogeneousDepth);
+        }
 
+        bgfx::setViewTransform(viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
     }
 
@@ -564,7 +565,7 @@ namespace darmok
         }
         if (vp)
         {
-            _context->SetDimensions(RmluiUtils::convert<int>(vp.value().getSize()));
+            _context->SetDimensions(RmluiUtils::convert<int>(vp.value().size));
         }
         else if (_app)
         {
@@ -633,16 +634,11 @@ namespace darmok
     glm::vec2 RmluiAppComponentImpl::worldToScreenPoint(const glm::vec3& point, const glm::mat4& model) noexcept
     {
         auto vp = getCurrentViewport();
-        auto proj = _render.getProjection(vp);
-        return glm::project(point, model, proj, vp.values);
-    }
-
-    glm::vec2 RmluiAppComponentImpl::screenToViewportPoint(const glm::vec2& point) noexcept
-    {
-        auto vp = getCurrentViewport();
-        auto p = point - glm::vec2(vp.getOrigin());
-        glm::vec2 screenSize = _app ? _app->getWindow().getPixelSize() : vp.getSize();
-        return p / screenSize;
+        glm::mat4 proj;
+        // we suppose the context is shown in viewport size with the origin in the middle
+        auto edge = glm::vec2(vp.origin) + (glm::vec2(vp.size) * 0.5F);
+        bx::mtxOrtho(glm::value_ptr(proj), -edge.x, edge.x, -edge.y, edge.y, -1000, 1000, 0.F, bgfx::getCaps()->homogeneousDepth);
+        return glm::project(point, model, proj, vp.getValues());
     }
 
     void RmluiAppComponentImpl::setMousePosition(const glm::vec2& pos) noexcept
@@ -656,8 +652,8 @@ namespace darmok
             p = vp.adaptFromScreenPoint(p, _app->getWindow().getPixelSize());
         }
 
-        // invert vertical since that's how imgui works
-        p.y = vp.getSize().y - p.y;
+        // invert vertical since that's how rmlui works
+        p.y = vp.size.y - p.y;
 
         _mousePosition = p;
         if (!_inputActive)
@@ -709,7 +705,7 @@ namespace darmok
         _shared = app.getSharedComponent<RmluiSharedAppComponent>();
 
         _render.init(app);
-        auto size = getCurrentViewport().getSize();
+        auto size = getCurrentViewport().size;
         _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_render);
         if (!_context)
         {

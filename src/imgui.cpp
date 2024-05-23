@@ -399,14 +399,12 @@ namespace darmok
 		for (auto& elm : getKeyboardMap())
 		{
 			io.AddKeyEvent(elm.second, kb.getKey(elm.first));
-			io.SetKeyEventNativeData(elm.second, 0, 0, (int)elm.first);
 		}
 		for (auto& gamepad : input.getGamepads())
 		{
 			for (auto& elm : getGamepadMap())
 			{
 				io.AddKeyEvent(elm.second, gamepad.getButton(elm.first));
-				io.SetKeyEventNativeData(elm.second, 0, 0, (int)elm.first);
 			}
 		}
 	}

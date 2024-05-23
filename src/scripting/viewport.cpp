@@ -11,13 +11,13 @@ namespace darmok
         {
             return *v1;
         }
-        auto v2 = std::get_if<glm::ivec4>(&vp);
+        auto v2 = std::get_if<glm::uvec4>(&vp);
         if (v2 != nullptr)
         {
             return *v2;
         }
         auto v3 = std::get<sol::table>(vp);
-        glm::ivec4 vec;
+        glm::uvec4 vec;
         LuaGlm::tableInit(vec, v3);
         return vec;
     }
@@ -34,8 +34,8 @@ namespace darmok
     void LuaViewport::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<Viewport>("Viewport", sol::no_constructor,
-			"size", sol::property(&Viewport::getSize, &Viewport::setSize),
-			"origin", sol::property(&Viewport::getOrigin, &Viewport::setOrigin),
+			"size", &Viewport::size,
+			"origin", &Viewport::origin,
 			"screen_to_viewport_point", &Viewport::viewportToScreenPoint,
 			"viewport_to_screen_point", &Viewport::screenToViewportPoint
 		);

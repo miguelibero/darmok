@@ -133,14 +133,14 @@ namespace darmok
         return *this;
     }
 
-    glm::vec2 LuaRmluiAppComponent::worldToScreenPoint1(const glm::vec3& position) const noexcept
+    glm::vec2 LuaRmluiAppComponent::worldToScreenPoint1(const VarLuaTable<glm::vec3>& position) const noexcept
     {
-        return _comp->worldToScreenPoint(position);
+        return _comp->worldToScreenPoint(LuaGlm::tableGet(position));
     }
 
-    glm::vec2 LuaRmluiAppComponent::worldToScreenPoint2(const glm::vec3& position, const glm::mat4& model) const noexcept
+    glm::vec2 LuaRmluiAppComponent::worldToScreenPoint2(const VarLuaTable<glm::vec3>& position, const glm::mat4& model) const noexcept
     {
-        return _comp->worldToScreenPoint(position, model);
+        return _comp->worldToScreenPoint(LuaGlm::tableGet(position), model);
     }
 
     LuaRmluiDocument LuaRmluiAppComponent::loadDocument(const std::string& name)

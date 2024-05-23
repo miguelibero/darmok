@@ -59,16 +59,17 @@ namespace darmok
         return setProjection(fovy, aspect, near);
     }
 
-    Camera& Camera::setOrtho(const Viewport& viewport, float near, float far) noexcept
+    Camera& Camera::setOrtho(const Viewport& vp, float near, float far) noexcept
     {
-        _proj = viewport.getOrtho(near, far);
+        auto bot = glm::vec2(vp.origin);
+        auto top = bot + glm::vec2(vp.size);
+        bx::mtxOrtho(glm::value_ptr(_proj), bot.x, top.x, bot.y, top.y, near, far, 0.F, bgfx::getCaps()->homogeneousDepth);
         return *this;
     }
 
     Camera& Camera::setOrtho(const glm::uvec2& size, float near, float far) noexcept
     {
-        _proj = Viewport(size).getOrtho(near, far);
-        return *this;
+        return setOrtho(Viewport(size), near, far);
     }
 
     Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept
@@ -307,7 +308,7 @@ namespace darmok
 
     Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept
     {
-        return Ray::unproject(point, getModelMatrix(), _proj, getCurrentViewport().values);
+        return Ray::unproject(point, getModelMatrix(), _proj, getCurrentViewport().getValues());
     }
 
     Ray Camera::viewportPointToRay(const glm::vec3& point) const noexcept
@@ -317,7 +318,7 @@ namespace darmok
 
     glm::vec3 Camera::worldToScreenPoint(const glm::vec3& point) const noexcept
     {
-        return glm::project(point, getModelMatrix(), _proj, getCurrentViewport().values);
+        return glm::project(point, getModelMatrix(), _proj, getCurrentViewport().getValues());
     }
 
     glm::vec3 Camera::worldToViewportPoint(const glm::vec3& point) const noexcept
@@ -327,7 +328,7 @@ namespace darmok
 
     glm::vec3 Camera::screenToWorldPoint(const glm::vec3& point) const noexcept
     {
-        return glm::unProject(point, getModelMatrix(), _proj, getCurrentViewport().values);
+        return glm::unProject(point, getModelMatrix(), _proj, getCurrentViewport().getValues());
     }
 
     glm::vec3 Camera::viewportToWorldPoint(const glm::vec3& point) const noexcept
