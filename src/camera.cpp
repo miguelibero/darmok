@@ -5,7 +5,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
-#include <bx/math.h>
+#include <darmok/math.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
@@ -35,35 +35,35 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setProjection(float fovy, float aspect, const glm::vec2& range) noexcept
+    Camera& Camera::setPerspective(float fovy, float aspect, float near) noexcept
     {
-        bx::mtxProj(glm::value_ptr(_proj), fovy, aspect, range[0], range[1], bgfx::getCaps()->homogeneousDepth);
+        _proj = Math::perspective(glm::radians(fovy), aspect, near);
         return *this;
     }
 
-    Camera& Camera::setProjection(float fovy, float aspect, float near) noexcept
+    Camera& Camera::setPerspective(float fovy, float aspect, float near, float far) noexcept
     {
-        bx::mtxProjInf(glm::value_ptr(_proj), glm::radians(fovy), aspect, near, bgfx::getCaps()->homogeneousDepth);
+        _proj = Math::perspective(glm::radians(fovy), aspect, near, far);
         return *this;
     }
 
-    Camera& Camera::setProjection(float fovy, const glm::uvec2& size, const glm::vec2& range) noexcept
+    Camera& Camera::setPerspective(float fovy, const glm::uvec2& size, float near) noexcept
     {
         float aspect = (float)size.x / size.y;
-        return setProjection(fovy, aspect, range);
+        return setPerspective(fovy, aspect, near);
     }
 
-    Camera& Camera::setProjection(float fovy, const glm::uvec2& size, float near) noexcept
+    Camera& Camera::setPerspective(float fovy, const glm::uvec2& size, float near, float far) noexcept
     {
         float aspect = (float)size.x / size.y;
-        return setProjection(fovy, aspect, near);
+        return setPerspective(fovy, aspect, near, far);
     }
 
     Camera& Camera::setOrtho(const Viewport& vp, float near, float far) noexcept
     {
         auto bot = glm::vec2(vp.origin);
         auto top = bot + glm::vec2(vp.size);
-        bx::mtxOrtho(glm::value_ptr(_proj), bot.x, top.x, bot.y, top.y, near, far, 0.F, bgfx::getCaps()->homogeneousDepth);
+        _proj = Math::ortho(bot.x, top.x, bot.y, top.y, near, far);
         return *this;
     }
 

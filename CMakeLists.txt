@@ -70,6 +70,7 @@ set(SOURCES
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/viewport.cpp
   ${SRC_DIR}/camera.cpp
+  ${SRC_DIR}/math.cpp
   ${SRC_DIR}/light.cpp
   ${SRC_DIR}/vertex.cpp
   ${SRC_DIR}/render_forward.cpp
@@ -107,6 +108,7 @@ set(HEADERS
   ${INCLUDE_DIR}/transform.hpp
   ${INCLUDE_DIR}/skeleton.hpp
   ${INCLUDE_DIR}/viewport.hpp
+  ${INCLUDE_DIR}/math.hpp
   ${INCLUDE_DIR}/camera.hpp
   ${INCLUDE_DIR}/light.hpp
   ${INCLUDE_DIR}/vertex.hpp

@@ -30,10 +30,10 @@ namespace darmok
 		const Camera& getReal() const;
 		Camera& getReal();
 
-		LuaCamera& setProjection1(float fovy, float aspect, const VarLuaTable<glm::vec2>& range) noexcept;
-		LuaCamera& setProjection2(float fovy, float aspect, float near) noexcept;
-		LuaCamera& setProjection3(float fovy, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& range) noexcept;
-		LuaCamera& setProjection4(float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept;
+		LuaCamera& setPerspective1(float fovy, float aspect, float near, float far) noexcept;
+		LuaCamera& setPerspective2(float fovy, float aspect, float near) noexcept;
+		LuaCamera& setPerspective3(float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept;
+		LuaCamera& setPerspective4(float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept;
 		LuaCamera& setOrtho1(const VarViewport& vp, float near, float far) noexcept;
 		LuaCamera& setOrtho2(const VarViewport& vp) noexcept;
 		LuaCamera& setOrtho3(const VarLuaTable<glm::uvec2>& size, float near, float fare) noexcept;

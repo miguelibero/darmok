@@ -85,9 +85,6 @@ namespace darmok
         glm::vec2 onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept override;
         
         LuaRmluiAppComponent& setMouseDelegate(const sol::protected_function& func) noexcept;
-        glm::vec2 worldToScreenPoint1(const VarLuaTable<glm::vec3>& position) const noexcept;
-        glm::vec2 worldToScreenPoint2(const VarLuaTable<glm::vec3>& position, const glm::mat4& model) const noexcept;
-
         LuaRmluiAppComponent& setMousePosition(const VarLuaTable<glm::vec2>& position) noexcept;
 
         OptionalRef<RmluiAppComponent> getReal() noexcept;

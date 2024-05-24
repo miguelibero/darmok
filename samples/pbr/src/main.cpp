@@ -37,7 +37,7 @@ namespace
 				.setPosition({ 0, 2, -2 })
 				.setEulerAngles({ 45, 0, 0 });
 			auto& cam = registry.emplace<Camera>(camEntity)
-				.setProjection(60, winSize.x / winSize.y, { 0.3, 1000 });
+				.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
 			
 			cam.addComponent<PhongLightingComponent>();
 			cam.setRenderer<ForwardRenderer>(prog);

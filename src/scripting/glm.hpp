@@ -6,6 +6,7 @@
 #include <variant>
 #include <optional>
 #include <darmok/color_fwd.hpp>
+#include <darmok/math.hpp>
 
 namespace darmok
 {
@@ -15,37 +16,15 @@ namespace darmok
 	struct LuaGlm final
 	{
 		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
-		static T vecMax(const glm::vec<L, T, Q>& v) noexcept
+		static void configVec(sol::usertype<glm::vec<L, T, Q>>& usertype) noexcept
 		{
 			using vec = glm::vec<L, T, Q>;
 			using val = T;
-			val result = std::numeric_limits<val>::min();
-			for (glm::length_t i = 0; i < vec::length(); i++)
-			{
-				auto j = v[i];
-				if (j > result)
-				{
-					result = j;
-				}
-			}
-			return result;
-		}
-
-		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
-		static T vecMin(const  glm::vec<L, T, Q>& v) noexcept
-		{
-			using vec = glm::vec<L, T, Q>;
-			using val = T;
-			val result = std::numeric_limits<val>::max();
-			for (glm::length_t i = 0; i < vec::length(); i++)
-			{
-				auto j = v[i];
-				if (j < result)
-				{
-					result = j;
-				}
-			}
-			return result;
+			configUsertype(usertype);
+			usertype["zero"] = sol::var(vec(0));
+			usertype["one"] = sol::var(vec(1));
+			usertype["max"] = sol::resolve<val(const vec&)>(&Math::vecMax);
+			usertype["min"] = sol::resolve<val(const vec&)>(&Math::vecMin);
 		}
 
 		template<typename T>

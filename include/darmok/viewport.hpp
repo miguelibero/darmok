@@ -17,11 +17,13 @@ namespace darmok
         Viewport(glm::uint x, glm::uint y, glm::uint w, glm::uint h) noexcept;
 
         DLLEXPORT glm::uvec4 getValues() const noexcept;
+        DLLEXPORT void setValues(const glm::uvec4& values) noexcept;
 
         DLLEXPORT glm::vec2 viewportToScreenPoint(const glm::vec2& point) const noexcept;
         DLLEXPORT glm::vec2 screenToViewportPoint(const glm::vec2& point) const noexcept;
 
-        DLLEXPORT glm::vec2 adaptFromScreenPoint(const glm::vec2& point, const glm::vec2& size) const noexcept;
+        DLLEXPORT glm::vec2 project(const glm::vec2& point) const noexcept;
+        DLLEXPORT glm::vec2 unproject(const glm::vec2& point) const noexcept;
 
         void bgfxSetup(bgfx::ViewId viewId) const noexcept;
     };

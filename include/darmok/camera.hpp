@@ -51,10 +51,10 @@ namespace darmok
         DLLEXPORT const glm::mat4& getProjectionMatrix() const noexcept;
 
         DLLEXPORT Camera& setProjectionMatrix(const glm::mat4& matrix) noexcept;
-        DLLEXPORT Camera& setProjection(float fovy, float aspect, const glm::vec2& range) noexcept;
-        DLLEXPORT Camera& setProjection(float fovy, float aspect, float near = 0.f) noexcept;
-        DLLEXPORT Camera& setProjection(float fovy, const glm::uvec2& size, const glm::vec2& range) noexcept;
-        DLLEXPORT Camera& setProjection(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
+        DLLEXPORT Camera& setPerspective(float fovy, float aspect, float near = 0.f) noexcept;
+        DLLEXPORT Camera& setPerspective(float fovy, float aspect, float near, float far) noexcept;
+        DLLEXPORT Camera& setPerspective(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
+        DLLEXPORT Camera& setPerspective(float fovy, const glm::uvec2& size, float near, float far) noexcept;
         
         DLLEXPORT Camera& setOrtho(const Viewport& viewport, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
         DLLEXPORT Camera& setOrtho(const glm::uvec2& size, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;

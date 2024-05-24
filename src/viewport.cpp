@@ -1,4 +1,5 @@
 #include <darmok/viewport.hpp>
+#include <darmok/math.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <bx/math.h>
 
@@ -26,6 +27,14 @@ namespace darmok
         return glm::ivec4(origin.x, origin.y, size.x, size.y);
     }
 
+    void Viewport::setValues(const glm::uvec4& values) noexcept
+    {
+        origin.x = values[0];
+        origin.y = values[1];
+        size.x = values[2];
+        size.y = values[3];
+    }
+
     glm::vec2 Viewport::screenToViewportPoint(const glm::vec2& point) const noexcept
     {
         return (point - glm::vec2(origin)) / glm::vec2(size);
@@ -36,9 +45,16 @@ namespace darmok
         return glm::vec2(origin) + (point * glm::vec2(size));
     }
 
-    glm::vec2 Viewport::adaptFromScreenPoint(const glm::vec2& point, const glm::vec2& size) const noexcept
+    glm::vec2 Viewport::project(const glm::vec2& point) const noexcept
     {
-        return (point - glm::vec2(origin)) * glm::vec2(size) / size;
+        auto p = (point * 0.5F) + 0.5F;
+        return viewportToScreenPoint(p);
+    }
+
+    glm::vec2 Viewport::unproject(const glm::vec2& point) const noexcept
+    {
+        auto p = screenToViewportPoint(point);
+        return (p * 2.F) - 1.F;
     }
 
     void Viewport::bgfxSetup(bgfx::ViewId viewId) const noexcept

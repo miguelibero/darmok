@@ -123,7 +123,7 @@ namespace
 				.lookAt(glm::vec3(0, 0, 0));
 
 			registry.emplace<Camera>(cam3d)
-				.setProjection(60, getWindow().getSize(), { 0.3, 1000 })
+				.setPerspective(60, getWindow().getSize(), 0.3, 1000)
 				.setEntityComponentFilter<Culling3D>()
 				.setRenderer<ForwardRenderer>(prog);
 

@@ -133,16 +133,6 @@ namespace darmok
         return *this;
     }
 
-    glm::vec2 LuaRmluiAppComponent::worldToScreenPoint1(const VarLuaTable<glm::vec3>& position) const noexcept
-    {
-        return _comp->worldToScreenPoint(LuaGlm::tableGet(position));
-    }
-
-    glm::vec2 LuaRmluiAppComponent::worldToScreenPoint2(const VarLuaTable<glm::vec3>& position, const glm::mat4& model) const noexcept
-    {
-        return _comp->worldToScreenPoint(LuaGlm::tableGet(position), model);
-    }
-
     LuaRmluiDocument LuaRmluiAppComponent::loadDocument(const std::string& name)
     {
         return LuaRmluiDocument(getContext()->LoadDocument(name));
@@ -189,7 +179,6 @@ namespace darmok
             "input_active", sol::property(&LuaRmluiAppComponent::getInputActive, &LuaRmluiAppComponent::setInputActive),
             "mouse_delegate", sol::property(&LuaRmluiAppComponent::setMouseDelegate),
             "mouse_position", sol::property(&LuaRmluiAppComponent::setMousePosition),
-            "world_to_screen_point", sol::overload(&LuaRmluiAppComponent::worldToScreenPoint1, &LuaRmluiAppComponent::worldToScreenPoint2),
             "load_document", &LuaRmluiAppComponent::loadDocument,
             "load_font", &LuaRmluiAppComponent::loadFont,
             "load_fallback_font", &LuaRmluiAppComponent::loadFallbackFont,

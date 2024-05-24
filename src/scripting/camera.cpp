@@ -23,27 +23,27 @@ namespace darmok
 		return _camera.value();
 	}
 
-	LuaCamera& LuaCamera::setProjection1(float fovy, float aspect, const VarLuaTable<glm::vec2>& range) noexcept
+	LuaCamera& LuaCamera::setPerspective1(float fovy, float aspect, float near, float far) noexcept
 	{
-		_camera->setProjection(fovy, aspect, LuaGlm::tableGet(range));
+		_camera->setPerspective(fovy, aspect, near, far);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setProjection2(float fovy, float aspect, float near) noexcept
+	LuaCamera& LuaCamera::setPerspective2(float fovy, float aspect, float near) noexcept
 	{
-		_camera->setProjection(fovy, aspect, near);
+		_camera->setPerspective(fovy, aspect, near);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setProjection3(float fovy, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& range) noexcept
+	LuaCamera& LuaCamera::setPerspective3(float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept
 	{
-		_camera->setProjection(fovy, LuaGlm::tableGet(size), LuaGlm::tableGet(range));
+		_camera->setPerspective(fovy, LuaGlm::tableGet(size), near, far);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setProjection4(float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept
+	LuaCamera& LuaCamera::setPerspective4(float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept
 	{
-		_camera->setProjection(fovy, LuaGlm::tableGet(size), near);
+		_camera->setPerspective(fovy, LuaGlm::tableGet(size), near);
 		return *this;
 	}
 
@@ -226,11 +226,11 @@ namespace darmok
 			"add_entity_component", &LuaCamera::addEntityComponent,
 			"get_entity_component", &LuaCamera::getEntityComponent,
 			"get_entity", &LuaCamera::getEntity,
-			"set_projection", sol::overload(
-				&LuaCamera::setProjection1,
-				&LuaCamera::setProjection2,
-				&LuaCamera::setProjection3,
-				&LuaCamera::setProjection4
+			"set_perspective", sol::overload(
+				&LuaCamera::setPerspective1,
+				&LuaCamera::setPerspective2,
+				&LuaCamera::setPerspective3,
+				&LuaCamera::setPerspective4
 			),
 			"set_ortho", sol::overload(
 				&LuaCamera::setOrtho1,

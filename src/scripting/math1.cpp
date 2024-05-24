@@ -1,6 +1,7 @@
 #include "math.hpp"
 #include "glm.hpp"
 #include <darmok/color.hpp>
+#include <darmok/math.hpp>
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
@@ -19,12 +20,11 @@ namespace darmok
 	}
 
 	template<glm::length_t L, glm::qualifier Q = glm::defaultp>
-	void configLuaGlmVec(sol::usertype<glm::vec<L, glm::f32, Q>>& usertype) noexcept
+	void configLuaGlmFloatVec(sol::usertype<glm::vec<L, glm::f32, Q>>& usertype) noexcept
 	{
 		using vec = glm::vec<L, glm::f32, Q>;
 		using val = glm::f32;
-		LuaGlm::configUsertype(usertype);
-		usertype["zero"] = sol::var(vec(0));
+		LuaGlm::configVec(usertype);
 		usertype["norm"] = sol::resolve<vec(const vec&)>(glm::normalize);
 		usertype["radians"] = sol::resolve<vec(const vec&)>(glm::radians);
 		usertype["degrees"] = sol::resolve<vec(const vec&)>(glm::degrees);
@@ -33,9 +33,7 @@ namespace darmok
 			sol::resolve<vec(const vec&, val, val)>(glm::clamp)
 		);
 		usertype["dot"] = &glm::dot<L, val, Q>;
-		usertype["lerp"] = &LuaMath::lerp<vec>;
-		usertype["max"] = &LuaGlm::vecMax<L, glm::f32, Q>;
-		usertype["min"] = &LuaGlm::vecMin<L, glm::f32, Q>;
+		usertype["lerp"] = &Math::lerp<vec>;
 	}
 
 	void LuaMath::bindGlmMat(sol::state_view& lua) noexcept
@@ -51,7 +49,34 @@ namespace darmok
 		auto mat4 = lua.new_usertype<glm::mat4>("Mat4", sol::constructors <
 			glm::mat4(glm::f32),
 			glm::mat4(glm::vec4, glm::vec4, glm::vec4, glm::vec4)
-		>());
+		>(),
+			"ortho", sol::overload(
+				sol::resolve<glm::mat4(float, float, float, float, float, float)>(&Math::ortho),
+				sol::resolve<glm::mat4(const glm::vec2&, const glm::vec2&, float, float)>(&Math::ortho)
+			),
+			"perspective", sol::overload(
+				sol::resolve<glm::mat4(float, float, float, float)>(&Math::perspective),
+				sol::resolve<glm::mat4(float, float, float)>(&Math::perspective)
+			),
+			"frustrum", sol::overload(
+				sol::resolve<glm::mat4(float, float, float, float, float, float)>(&Math::frustrum),
+				sol::resolve<glm::mat4(const glm::vec2&, const glm::vec2&, float, float)>(&Math::frustrum)
+			),
+			"look_at", sol::resolve<glm::mat4(const glm::vec3&, const glm::vec3&, const glm::vec3&)>(&glm::lookAt),
+			"rotate", sol::resolve<glm::mat4(const glm::quat&)>(&glm::mat4_cast),
+			"scale", sol::resolve<glm::mat4(const glm::vec3&)>(&glm::scale),
+			"translate", sol::resolve<glm::mat4(const glm::vec3&)>(&glm::translate),
+			"transform", sol::overload(&Math::transform, &Math::translateRotateScale),
+			"decompose", [](const glm::mat4& mat) {
+				glm::vec3 pos;
+				glm::quat rot;
+				glm::vec3 scale;
+				glm::vec3 pivot;
+				Math::decompose(mat, pos, rot, scale, pivot);
+				return std::make_tuple( pos, rot, scale, pivot );
+			},
+			"translate_rotate_scale", &Math::translateRotateScale
+		);
 		configLuaGlmMat(mat4);
 		mat4[sol::meta_function::multiplication] = sol::overload(
 			[](const glm::mat4 mat, const glm::vec3& vec) -> glm::vec3 { return mat * glm::vec4(vec, 1);  },
@@ -77,7 +102,7 @@ namespace darmok
 			"rotate_y", sol::resolve<glm::vec4(const glm::vec4&, const glm::f32&)>(glm::rotateY),
 			"rotate_z", sol::resolve<glm::vec4(const glm::vec4&, const glm::f32&)>(glm::rotateZ)
 		);
-		configLuaGlmVec(vec4);
+		configLuaGlmFloatVec(vec4);
 		
 		auto vec3 = lua.new_usertype<glm::vec3>("Vec3", sol::constructors<
 				glm::vec3(glm::f32),
@@ -85,7 +110,8 @@ namespace darmok
 				glm::vec3(const glm::ivec3&),
 				glm::vec3(const glm::uvec3&),
 				glm::vec3(const glm::vec2&, glm::f32),
-				glm::vec3(const glm::uvec2&, glm::f32)
+				glm::vec3(const glm::vec4&)
+
 			>(),
 			"x", &glm::vec3::x,
 			"y", &glm::vec3::y,
@@ -104,18 +130,19 @@ namespace darmok
 			"rotate_y", sol::resolve<glm::vec3(const glm::vec3&, const glm::f32&)>(glm::rotateY),
 			"rotate_z", sol::resolve<glm::vec3(const glm::vec3&, const glm::f32&)>(glm::rotateZ)
 		);
-		configLuaGlmVec(vec3);
+		configLuaGlmFloatVec(vec3);
 
 		auto vec2 = lua.new_usertype<glm::vec2>("Vec2", sol::constructors<
 			glm::vec2(glm::f32),
 			glm::vec2(glm::f32, glm::f32),
 			glm::vec2(const glm::ivec2&),
-			glm::vec2(const glm::uvec2&)
+			glm::vec2(const glm::uvec2&),
+			glm::vec2(const glm::vec3&)
 		>(),
 			"x", &glm::vec2::x,
 			"y", &glm::vec2::y
 		);
-		configLuaGlmVec(vec2);
+		configLuaGlmFloatVec(vec2);
 	}
 
 	void LuaMath::bind(sol::state_view& lua) noexcept
@@ -124,10 +151,15 @@ namespace darmok
 		{
 			return vec;
 		};
-
+		auto degrees = sol::resolve<float(float)>(&glm::degrees);
+		auto radians = sol::resolve<float(float)>(&glm::radians);
 		lua.create_named_table("Math",
 			"clamp", sol::overload(&glm::clamp<float>, &glm::clamp<int>),
-			"lerp", sol::overload(&lerp<float>, &lerp<int>)			
+			"lerp", sol::overload(&Math::lerp<float>, &Math::lerp<int>),
+			"degrees", degrees,
+			"radians", radians,
+			"rad2deg", degrees,
+			"deg2rad", radians
 		);
 
 		bindGlmMat(lua);

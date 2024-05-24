@@ -50,7 +50,6 @@ namespace darmok
 
 		DLLEXPORT RmluiAppComponent& setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
 		DLLEXPORT RmluiAppComponent& resetMouseDelegate() noexcept;
-		DLLEXPORT glm::vec2 worldToScreenPoint(const glm::vec3& position, const glm::mat4& model = glm::mat4(1)) noexcept;
 
 
 		void init(App& app) override;

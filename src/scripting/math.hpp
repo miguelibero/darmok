@@ -8,12 +8,6 @@ namespace darmok
 	{
 		static void bind(sol::state_view& lua) noexcept;
 
-		template<typename T>
-		static T lerp(const T& a, const T& b, float p) noexcept
-		{
-			return a + (b * p);
-		}
-
 	private:
 		
 		static void bindGlmMat(sol::state_view& lua) noexcept;

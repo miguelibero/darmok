@@ -167,10 +167,7 @@ namespace darmok
 		bool getInputActive() const noexcept;
 		void setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
 		void resetMouseDelegate() noexcept;
-		
 		void setMousePosition(const glm::vec2& position) noexcept;
-
-		glm::vec2 worldToScreenPoint(const glm::vec3& position, const glm::mat4& model = glm::mat4(1)) noexcept;
 
 		OptionalRef<Rml::Context> getContext() const noexcept;
 		RmluiRenderInterface& getRenderInterface() noexcept;

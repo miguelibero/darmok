@@ -6,17 +6,13 @@
 #include <darmok/mesh.hpp>
 #include <darmok/image.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/math.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
-
-#include <bx/math.h>
-
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
 
 #include <filesystem>
 
@@ -586,9 +582,7 @@ namespace darmok
             fovy = 2.f * atan(tan(0.5f * fovx) * aspect);
         }
 
-        auto clipNear = getClipNear();
-        auto clipFar = getClipFar();
-        bx::mtxProj(glm::value_ptr(_proj), bx::toDeg(fovy), aspect, clipNear, clipFar, bgfx::getCaps()->homogeneousDepth);
+        _proj = Math::perspective(fovy, aspect, getClipNear(), getClipFar());
     }
 
     std::string_view AssimpCamera::getName() const noexcept

@@ -36,8 +36,15 @@ namespace darmok
         lua.new_usertype<Viewport>("Viewport", sol::no_constructor,
 			"size", &Viewport::size,
 			"origin", &Viewport::origin,
+            "values", sol::property(&Viewport::getValues, &Viewport::setValues),
 			"screen_to_viewport_point", &Viewport::viewportToScreenPoint,
-			"viewport_to_screen_point", &Viewport::screenToViewportPoint
+			"viewport_to_screen_point", &Viewport::screenToViewportPoint,
+            "project", &Viewport::project,
+            "unproject", &Viewport::unproject,
+            "ortho", sol::overload(
+                [](const Viewport& vp, VarLuaTable<glm::vec2> center) { return Math::ortho(vp, LuaGlm::tableGet(center)); },
+                [](const Viewport& vp, VarLuaTable<glm::vec2> center, float near, float far) { return Math::ortho(vp, LuaGlm::tableGet(center), near, far); }
+            )
 		);
 
     }

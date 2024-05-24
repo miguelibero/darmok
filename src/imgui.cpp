@@ -6,6 +6,7 @@
 #include <darmok/asset.hpp>
 #include <darmok/window.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/math.hpp>
 #include <bx/allocator.h>
 #include "generated/imgui/shaders/basic.vertex.h"
 #include "generated/imgui/shaders/basic.fragment.h"
@@ -145,16 +146,13 @@ namespace darmok
 		bgfx::setViewName(viewId, "ImGui");
 		bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
-		const bgfx::Caps* caps = bgfx::getCaps();
 		{
-			float ortho[16];
 			float x = drawData->DisplayPos.x;
 			float y = drawData->DisplayPos.y;
 			float width = drawData->DisplaySize.x;
 			float height = drawData->DisplaySize.y;
-
-			bx::mtxOrtho(ortho, x, x + width, y + height, y, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
-			bgfx::setViewTransform(viewId, NULL, ortho);
+			auto ortho = Math::ortho(x, x + width, y + height, y);
+			bgfx::setViewTransform(viewId, NULL, glm::value_ptr(ortho));
 			bgfx::setViewRect(viewId, 0, 0, uint16_t(width), uint16_t(height));
 		}
 

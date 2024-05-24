@@ -8,10 +8,10 @@
 #include <darmok/transform.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/texture_atlas.hpp>
+#include <darmok/math.hpp>
 #include "rmlui.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <bx/math.h>
 
 #include "generated/rmlui/shaders/basic.vertex.h"
 #include "generated/rmlui/shaders/basic.fragment.h"
@@ -197,13 +197,9 @@ namespace darmok
         auto size = RmluiUtils::convert(GetContext()->GetDimensions());
         _viewport.bgfxSetup(viewId);
 
-        glm::mat4 proj(1);
-        {
-            auto bot = glm::vec2(_viewport.origin);
-            auto top = bot + glm::vec2(_viewport.size);
-            // rmlui renders with inverted y 
-            bx::mtxOrtho(glm::value_ptr(proj), bot.x, top.x, top.y, bot.y, -1000, 1000, 0.F, bgfx::getCaps()->homogeneousDepth);
-        }
+        auto bot = glm::vec2(_viewport.origin);
+        auto top = bot + glm::vec2(_viewport.size);
+        auto proj = Math::ortho(bot.x, top.x, top.y, bot.y);
 
         bgfx::setViewTransform(viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
@@ -631,26 +627,10 @@ namespace darmok
         _mouseDelegate.reset();
     }
 
-    glm::vec2 RmluiAppComponentImpl::worldToScreenPoint(const glm::vec3& point, const glm::mat4& model) noexcept
-    {
-        auto vp = getCurrentViewport();
-        glm::mat4 proj;
-        // we suppose the context is shown in viewport size with the origin in the middle
-        auto edge = glm::vec2(vp.origin) + (glm::vec2(vp.size) * 0.5F);
-        bx::mtxOrtho(glm::value_ptr(proj), -edge.x, edge.x, -edge.y, edge.y, -1000, 1000, 0.F, bgfx::getCaps()->homogeneousDepth);
-        return glm::project(point, model, proj, vp.getValues());
-    }
-
     void RmluiAppComponentImpl::setMousePosition(const glm::vec2& pos) noexcept
     {
         auto vp = getCurrentViewport();
         auto p = pos;
-
-        if (_app)
-        {
-            // scale from screen to the viewport
-            p = vp.adaptFromScreenPoint(p, _app->getWindow().getPixelSize());
-        }
 
         // invert vertical since that's how rmlui works
         p.y = vp.size.y - p.y;
@@ -712,8 +692,8 @@ namespace darmok
             throw std::runtime_error("Failed to create rmlui context");
         }
 
-        // TODO: configure this
         _context->EnableMouseCursor(true);
+
         onMousePositionChange({}, app.getInput().getMouse().getPosition());
 
         app.getWindow().addListener(*this);
@@ -755,26 +735,38 @@ namespace darmok
 
     OptionalRef<const Rml::Sprite> RmluiAppComponentImpl::getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept
     {
-        auto cursorName = _shared->getMouseCursor();
-        if (cursorName.empty())
-        {
-            auto prop = doc.GetProperty("cursor");
-            if (prop != nullptr)
-            {
-                cursorName = prop->Get<std::string>();
-            }
-        }
-        if (cursorName.empty())
-        {
-            return nullptr;
-        }
-        cursorName = std::string("cursor-") + cursorName;
         auto style = doc.GetStyleSheet();
         if (style == nullptr)
         {
             return nullptr;
         }
-        return style->GetSprite(cursorName);
+
+
+        auto cursorName = _shared->getMouseCursor();
+        auto getSprite = [&]() -> const Rml::Sprite*
+        { 
+            if (cursorName.empty())
+            {
+                return nullptr;
+            }
+            return style->GetSprite(std::string("cursor-") + cursorName);
+        };
+
+        if (auto sprite = getSprite())
+        {
+            return sprite;
+        }
+        auto prop = doc.GetProperty("cursor");
+        if (prop == nullptr)
+        {
+            return nullptr;
+        }
+        cursorName = prop->Get<std::string>();
+        if (auto sprite = getSprite())
+        {
+            return sprite;
+        }
+        return nullptr;
     }
 
     bool RmluiAppComponentImpl::render(bgfx::ViewId viewId) const noexcept
@@ -947,12 +939,17 @@ namespace darmok
         {
             return;
         }
+        // transform from window to window screen
         auto pos = _app->getWindow().windowToScreenPoint(absolute);
+        // transform from window screen to viewport screen
+        auto vp = getCurrentViewport();
+        pos = vp.viewportToScreenPoint(pos / glm::vec2(_app->getWindow().getPixelSize()));
         
         if (_mouseDelegate)
         {
             pos = _mouseDelegate->onMousePositionChange(delta, pos);
         }
+
         setMousePosition(pos);
     }
 
@@ -1073,11 +1070,6 @@ namespace darmok
     {
         _impl->resetMouseDelegate();
         return *this;
-    }
-
-    glm::vec2 RmluiAppComponent::worldToScreenPoint(const glm::vec3& position, const glm::mat4& model) noexcept
-    {
-        return _impl->worldToScreenPoint(position, model);
     }
 
     bgfx::ViewId RmluiAppComponent::render(bgfx::ViewId viewId) const noexcept
