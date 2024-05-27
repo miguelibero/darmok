@@ -21,23 +21,30 @@ namespace darmok
         AssetContext& assets;
     };
 
-    class BX_NO_VTABLE IModelNode
+    class ModelNodeImpl;
+
+    class ModelNode final
     {
     public:
-        DLLEXPORT virtual ~IModelNode() = default;
+        ModelNode(std::unique_ptr<ModelNodeImpl>&& impl) noexcept;
 
-        DLLEXPORT virtual std::string_view getName() const noexcept = 0;
-        DLLEXPORT virtual glm::mat4 getTransform() const noexcept = 0;
-        DLLEXPORT virtual const ValCollection<std::shared_ptr<IModelNode>>& getChildren() const noexcept = 0;
-        DLLEXPORT virtual void configureEntity(Entity entity, const ModelSceneConfig& config) const = 0;
+        DLLEXPORT std::string_view getName() const noexcept;
+        DLLEXPORT glm::mat4 getTransform() const noexcept;
+        DLLEXPORT const ValCollection<std::shared_ptr<ModelNode>>& getChildren() const noexcept;
+        DLLEXPORT void configureEntity(Entity entity, const ModelSceneConfig& config) const;
+    private:
+        std::unique_ptr<ModelNodeImpl> _impl;
     };
 
-    class BX_NO_VTABLE IModel
+    class ModelImpl;
+
+    class Model final
     {
     public:
-        DLLEXPORT virtual ~IModel() = default;
-
-        DLLEXPORT virtual std::shared_ptr<IModelNode> getRootNode() const noexcept = 0;
+        Model(std::unique_ptr<ModelImpl>&& impl) noexcept;
+        DLLEXPORT std::shared_ptr<ModelNode> getRootNode() const noexcept;
+    private:
+        std::unique_ptr<ModelImpl> _impl;
     };
 
     class ModelSceneConfigurer final
@@ -47,17 +54,17 @@ namespace darmok
 
         DLLEXPORT ModelSceneConfigurer& setParent(Entity parent) noexcept;
 
-        DLLEXPORT Entity run(const std::shared_ptr<IModel>& model) const noexcept;
-        DLLEXPORT Entity run(const std::shared_ptr<IModelNode>& node) const noexcept;
+        DLLEXPORT Entity run(const std::shared_ptr<Model>& model) const noexcept;
+        DLLEXPORT Entity run(const std::shared_ptr<ModelNode>& node) const noexcept;
 
         template<typename C>
-        Entity run(const std::shared_ptr<IModelNode>& node, C callback) const
+        Entity run(const std::shared_ptr<ModelNode>& node, C callback) const
         {
             return run(node, _parent, callback);
         }
 
         template<typename C>
-        Entity run(const std::shared_ptr<IModel>& model, C callback) const
+        Entity run(const std::shared_ptr<Model>& model, C callback) const
         {
             return run(model->getRootNode(), callback);
         }
@@ -66,11 +73,11 @@ namespace darmok
         ModelSceneConfig _config;
         Entity _parent;
 
-        DLLEXPORT Entity add(const std::shared_ptr<IModelNode>& node, Entity parent) const noexcept;
-        DLLEXPORT Entity run(const std::shared_ptr<IModelNode>& node, Entity parent) const noexcept;
+        DLLEXPORT Entity add(const std::shared_ptr<ModelNode>& node, Entity parent) const noexcept;
+        DLLEXPORT Entity run(const std::shared_ptr<ModelNode>& node, Entity parent) const noexcept;
 
         template<typename C>
-        Entity run(const std::shared_ptr<IModelNode>& node, Entity parent, C callback) const
+        Entity run(const std::shared_ptr<ModelNode>& node, Entity parent, C callback) const
         {
             auto entity = add(node, parent);
             callback(node, entity);
@@ -85,7 +92,7 @@ namespace darmok
     class BX_NO_VTABLE IModelLoader
 	{
 	public:
-        using result_type = std::shared_ptr<IModel>;
+        using result_type = std::shared_ptr<Model>;
 
         DLLEXPORT virtual ~IModelLoader() = default;
 		DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
@@ -94,6 +101,6 @@ namespace darmok
     class EmptyModelLoader : public IModelLoader
 	{
 	public:
-        DLLEXPORT std::shared_ptr<IModel> operator()(std::string_view name) override;
+        DLLEXPORT std::shared_ptr<Model> operator()(std::string_view name) override;
 	};
 }

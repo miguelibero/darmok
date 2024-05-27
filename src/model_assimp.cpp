@@ -22,7 +22,8 @@ namespace darmok
 		_children.reserve(children.size());
 		for (auto& child : children)
 		{
-			_children.push_back(std::make_shared<AssimpModelNode>(child));
+			_children.push_back(std::make_shared<ModelNode>(
+				std::make_unique<ModelNodeImpl>(child)));
 		}
 	}
 
@@ -31,33 +32,33 @@ namespace darmok
 		return _children.size();
 	}
 
-	std::shared_ptr<IModelNode> AssimpModelNodeChildrenCollection::operator[](size_t pos) const
+	std::shared_ptr<ModelNode> AssimpModelNodeChildrenCollection::operator[](size_t pos) const
 	{
 		return _children.at(pos);
 	}
 
-	AssimpModelNode::AssimpModelNode(const std::shared_ptr<AssimpNode>& assimp) noexcept
+	ModelNodeImpl::ModelNodeImpl(const std::shared_ptr<AssimpNode>& assimp) noexcept
 		: _assimp(assimp)
 		, _children(*assimp)
 	{
 	}
 
-	std::string_view AssimpModelNode::getName() const noexcept
+	std::string_view ModelNodeImpl::getName() const noexcept
 	{
 		return _assimp->getName();
 	}
 
-	glm::mat4 AssimpModelNode::getTransform() const noexcept
+	glm::mat4 ModelNodeImpl::getTransform() const noexcept
 	{
 		return _assimp->getTransform();
 	}
 
-	const ValCollection<std::shared_ptr<IModelNode>>& AssimpModelNode::getChildren() const noexcept
+	const ValCollection<std::shared_ptr<ModelNode>>& ModelNodeImpl::getChildren() const noexcept
 	{
 		return _children;
 	}
 
-	void AssimpModelNode::configureEntity(Entity entity, const ModelSceneConfig& config) const
+	void ModelNodeImpl::configureEntity(Entity entity, const ModelSceneConfig& config) const
 	{
 		auto assimpCam = _assimp->getCamera();
 		if (assimpCam != nullptr)
@@ -77,7 +78,7 @@ namespace darmok
 		}
 	}
 
-	void AssimpModelNode::configureMesh(const AssimpMesh& assimpMesh, Entity entity, const ModelSceneConfig& config) const noexcept
+	void ModelNodeImpl::configureMesh(const AssimpMesh& assimpMesh, Entity entity, const ModelSceneConfig& config) const noexcept
 	{
 		auto meshEntity = config.registry.create();
 		auto parentTrans = config.registry.try_get<Transform>(entity);
@@ -91,7 +92,7 @@ namespace darmok
 		}
 	}
 
-	void AssimpModelNode::configureCamera(const AssimpCamera& cam, Entity entity, const ModelSceneConfig& config) const noexcept
+	void ModelNodeImpl::configureCamera(const AssimpCamera& cam, Entity entity, const ModelSceneConfig& config) const noexcept
 	{
 		auto camEntity = config.registry.create();
 		auto parentTrans = config.registry.try_get<Transform>(entity);
@@ -99,7 +100,7 @@ namespace darmok
 		config.registry.emplace<Camera>(camEntity, cam.getProjectionMatrix());
 	}
 
-	void AssimpModelNode::configureLight(const AssimpLight& light, Entity entity, const ModelSceneConfig& config) const noexcept
+	void ModelNodeImpl::configureLight(const AssimpLight& light, Entity entity, const ModelSceneConfig& config) const noexcept
 	{
 		auto lightEntity = config.registry.create();
 		auto parentTrans = config.registry.try_get<Transform>(entity);
@@ -129,15 +130,50 @@ namespace darmok
 		}
 	}
 
-	AssimpModel::AssimpModel(const AssimpScene& assimp) noexcept
+	ModelImpl::ModelImpl(const AssimpScene& assimp) noexcept
 		: _assimp(assimp)
-		, _rootNode(std::make_shared<AssimpModelNode>(_assimp.getRootNode()))
+		, _rootNode(std::make_shared<ModelNode>(std::make_unique<ModelNodeImpl>(_assimp.getRootNode())))
 	{
 	}
 
-	std::shared_ptr<IModelNode> AssimpModel::getRootNode() const noexcept
+	std::shared_ptr<ModelNode> ModelImpl::getRootNode() const noexcept
 	{
 		return _rootNode;
+	}
+
+	Model::Model(std::unique_ptr<ModelImpl>&& impl) noexcept
+		: _impl(std::move(impl))
+	{
+	}
+
+	std::shared_ptr<ModelNode> Model::getRootNode() const noexcept
+	{
+		return _impl->getRootNode();
+	}
+
+	ModelNode::ModelNode(std::unique_ptr<ModelNodeImpl>&& impl) noexcept
+		: _impl(std::move(impl))
+	{
+	}
+
+	std::string_view ModelNode::getName() const noexcept
+	{
+		return _impl->getName();
+	}
+
+	glm::mat4 ModelNode::getTransform() const noexcept
+	{
+		return _impl->getTransform();
+	}
+
+	const ValCollection<std::shared_ptr<ModelNode>>& ModelNode::getChildren() const noexcept
+	{
+		return _impl->getChildren();
+	}
+
+	void ModelNode::configureEntity(Entity entity, const ModelSceneConfig& config) const
+	{
+		_impl->configureEntity(entity, config);
 	}
 
 	AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc)
@@ -146,13 +182,14 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<IModel> AssimpModelLoader::operator()(std::string_view name)
+	std::shared_ptr<Model> AssimpModelLoader::operator()(std::string_view name)
 	{
 		auto data = _dataLoader(name);
 		if (data.empty())
 		{
 			throw std::runtime_error("got empty data");
 		}
-		return std::make_shared<AssimpModel>(AssimpScene(_importer, data.view(), std::string(name)));
+		return std::make_shared<Model>(
+			std::make_unique<ModelImpl>(AssimpScene(_importer, data.view(), std::string(name))));
 	}
 }

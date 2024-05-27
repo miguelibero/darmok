@@ -15,7 +15,7 @@ namespace darmok
 		{
 		}
 
-		void operator()(const std::shared_ptr<IModelNode>& node, Entity entity) const noexcept
+		void operator()(const std::shared_ptr<ModelNode>& node, Entity entity) const noexcept
 		{
 			auto result = _callback(LuaModelNode(node), LuaEntity(entity, _scene));
 			if (!result.valid())
@@ -29,7 +29,7 @@ namespace darmok
 		const sol::protected_function& _callback;
 	};
 
-	LuaModelNodeChildrenCollection::LuaModelNodeChildrenCollection(const std::shared_ptr<IModelNode>& node) noexcept
+	LuaModelNodeChildrenCollection::LuaModelNodeChildrenCollection(const std::shared_ptr<ModelNode>& node) noexcept
 		: _node(node)
 	{
 	}
@@ -44,13 +44,13 @@ namespace darmok
 		return _node->getChildren()[pos];
 	}
 
-	LuaModelNode::LuaModelNode(const std::shared_ptr<IModelNode>& node) noexcept
+	LuaModelNode::LuaModelNode(const std::shared_ptr<ModelNode>& node) noexcept
 		: _node(node)
 		, _children(node)
 	{
 	}
 
-	std::shared_ptr<IModelNode> LuaModelNode::getReal() const noexcept
+	std::shared_ptr<ModelNode> LuaModelNode::getReal() const noexcept
 	{
 		return _node;
 	}
@@ -80,13 +80,13 @@ namespace darmok
 		);
 	}
 
-	LuaModel::LuaModel(const std::shared_ptr<IModel>& model) noexcept
+	LuaModel::LuaModel(const std::shared_ptr<Model>& model) noexcept
 		: _model(model)
 		, _rootNode(model->getRootNode())
 	{
 	}
 
-	std::shared_ptr<IModel> LuaModel::getReal() const noexcept
+	std::shared_ptr<Model> LuaModel::getReal() const noexcept
 	{
 		return _model;
 	}

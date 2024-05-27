@@ -16,17 +16,17 @@ namespace darmok
         return *this;
     }
 
-    Entity ModelSceneConfigurer::run(const std::shared_ptr<IModel>& model) const noexcept
+    Entity ModelSceneConfigurer::run(const std::shared_ptr<Model>& model) const noexcept
     {
         return run(model->getRootNode());
     }
 
-    Entity ModelSceneConfigurer::run(const std::shared_ptr<IModelNode>& node) const noexcept
+    Entity ModelSceneConfigurer::run(const std::shared_ptr<ModelNode>& node) const noexcept
     {
         return run(node, _parent);
     }
 
-    Entity ModelSceneConfigurer::run(const std::shared_ptr<IModelNode>& node, Entity parent) const noexcept
+    Entity ModelSceneConfigurer::run(const std::shared_ptr<ModelNode>& node, Entity parent) const noexcept
     {
         auto entity = add(node, parent);
         for (auto child : node->getChildren())
@@ -36,7 +36,7 @@ namespace darmok
         return entity;
     }
 
-    Entity ModelSceneConfigurer::add(const std::shared_ptr<IModelNode>& node, Entity parent) const noexcept
+    Entity ModelSceneConfigurer::add(const std::shared_ptr<ModelNode>& node, Entity parent) const noexcept
     {
         auto entity = _config.registry.create();
         OptionalRef<Transform> parentTrans;
@@ -49,7 +49,7 @@ namespace darmok
         return entity;
     }
 
-    std::shared_ptr<IModel> EmptyModelLoader::operator()(std::string_view name)
+    std::shared_ptr<Model> EmptyModelLoader::operator()(std::string_view name)
     {
         throw std::runtime_error("no model implementation");
     }
