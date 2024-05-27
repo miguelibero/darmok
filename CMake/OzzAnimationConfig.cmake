@@ -21,16 +21,20 @@ set(OZZ_TARGETS
   ozz_animation_offline
   ozz_geometry
   ozz_options
-  ozz_animation_fbx
   ozz_animation_tools
   json
 )
 
 set(OZZ_EXE_TARGETS
   dump2ozz
-  fbx2ozz
   gltf2ozz
 )
+
+if(TARGET ozz_animation_fbx)
+  list(APPEND OZZ_TARGETS ozz_animation_fbx)
+  list(APPEND OZZ_EXE_TARGETS fbx2ozz)
+endif()
+
 set_target_properties(${OZZ_TARGETS} ${OZZ_EXE_TARGETS}
   PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 )

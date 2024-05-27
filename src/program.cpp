@@ -10,16 +10,16 @@
 #include "embedded_shader.hpp"
 #include "generated/shaders/gui.vertex.h"
 #include "generated/shaders/gui.fragment.h"
-#include "generated/shaders/gui.layout.h"
+#include "generated/shaders/gui.vlayout.h"
 #include "generated/shaders/unlit.vertex.h"
 #include "generated/shaders/unlit.fragment.h"
-#include "generated/shaders/unlit.layout.h"
+#include "generated/shaders/unlit.vlayout.h"
 #include "generated/shaders/forward_phong.vertex.h"
 #include "generated/shaders/forward_phong.fragment.h"
-#include "generated/shaders/forward_phong.layout.h"
+#include "generated/shaders/forward_phong.vlayout.h"
 #include "generated/shaders/forward_pbr.vertex.h"
 #include "generated/shaders/forward_pbr.fragment.h"
-#include "generated/shaders/forward_pbr.layout.h"
+#include "generated/shaders/forward_pbr.vlayout.h"
 
 namespace darmok
 {
@@ -165,7 +165,7 @@ namespace darmok
 			auto val = elm.value();
 			if (val.contains("type"))
 			{
-				type = getBgfxAttribType(val["type"]);
+				type = getBgfxAttribType(val["type"].get<std::string_view>());
 			}
 			if (type == bgfx::AttribType::Count)
 			{
@@ -290,10 +290,10 @@ namespace darmok
 
 	const std::unordered_map<StandardProgramType, std::string_view> StandardProgramLoaderImpl::_embeddedShaderVertexLayouts
 	{
-		{StandardProgramType::Gui, gui_layout},
-		{StandardProgramType::Unlit, unlit_layout},
-		{StandardProgramType::ForwardPhong, forward_phong_layout},
-		{StandardProgramType::ForwardPbr, forward_pbr_layout},
+		{StandardProgramType::Gui, gui_vlayout},
+		{StandardProgramType::Unlit, unlit_vlayout},
+		{StandardProgramType::ForwardPhong, forward_phong_vlayout},
+		{StandardProgramType::ForwardPbr, forward_pbr_vlayout},
 	};
 
 	std::shared_ptr<Program> StandardProgramLoaderImpl::operator()(StandardProgramType type) const noexcept

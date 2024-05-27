@@ -30,7 +30,8 @@ namespace darmok
         if (!err.isOk())
         {
             auto msg = err.getMessage();
-			std::stringstream ss(msg.getPtr(), msg.getLength());
+			std::stringstream ss;
+			ss << std::string_view(msg.getPtr(), msg.getLength());
 			ss << "( " << err.get().code << ")";
             throw std::runtime_error(ss.str());
         }

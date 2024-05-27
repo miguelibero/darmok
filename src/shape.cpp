@@ -150,7 +150,7 @@ namespace darmok
 
     Line Ray::toLine() const noexcept
     {
-        return Line({ origin, origin + direction });
+        return Line(origin, origin + direction);
     }
 
     std::optional<float> Ray::intersect(const Plane& plane) const noexcept

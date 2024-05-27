@@ -15,6 +15,13 @@ namespace darmok
             return a + (b * p);
         }
 
+		template<typename T>
+		static const T& clamp(const T& v, const T& min, const T& max) noexcept
+		{
+			auto& x = v < max ? v : max;
+			return x < min ? min : x;
+		}
+
 		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
 		static T vecMax(const glm::vec<L, T, Q>& v) noexcept
 		{

@@ -328,6 +328,9 @@ endif()
 find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
+# bgfx
+target_link_libraries(${LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode)
+
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
     find_package(glfw3 CONFIG REQUIRED)
@@ -336,7 +339,7 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
     if (DARMOK_PLATFORM_SUPPORT_WAYLAND)
         target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_SUPPORT_WAYLAND)
         target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
-        target_compile_definitions(bgfx::bgfx PRIVATE WL_EGL_PLATFORM)
+        target_compile_definitions(bgfx::bgfx INTERFACE WL_EGL_PLATFORM)
     endif()
 endif()
 
@@ -345,9 +348,6 @@ find_package(glm CONFIG REQUIRED)
 set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
 target_compile_definitions(glm::glm-header-only INTERFACE ${GLM_DEFINES})
 target_link_libraries(${LIB_NAME} PUBLIC glm::glm-header-only)
-
-# bgfx
-target_link_libraries(${LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode)
 
 # imgui
 if(DARMOK_BUILD_IMGUI)
@@ -366,7 +366,7 @@ if(DARMOK_BUILD_RMLUI)
 endif()
 
 # entt
-find_package(entt CONFIG REQUIRED)
+find_package(EnTT CONFIG REQUIRED)
 target_link_libraries(${LIB_NAME} PUBLIC EnTT::EnTT)
 
 # assimp

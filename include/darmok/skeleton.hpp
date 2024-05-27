@@ -3,6 +3,8 @@
 #include <memory>
 #include <string_view>
 #include <stdexcept>
+#include <unordered_map>
+#include <darmok/scene_fwd.hpp>
 #include <bx/bx.h>
 
 namespace darmok
@@ -13,6 +15,9 @@ namespace darmok
     {
     public:
         Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept;
+        ~Skeleton();
+        SkeletonImpl& getImpl();
+        const SkeletonImpl& getImpl() const;
     private:
         std::unique_ptr<SkeletonImpl> _impl;
     };
@@ -22,7 +27,11 @@ namespace darmok
 	class SkeletalAnimation final
     {
     public:
-        SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept;        
+        SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept;
+        ~SkeletalAnimation();
+        SkeletalAnimationImpl& getImpl();
+        const SkeletalAnimationImpl& getImpl() const;
+        std::string_view getName() const noexcept;
     private:
         std::unique_ptr<SkeletalAnimationImpl> _impl;
     };
@@ -61,4 +70,17 @@ namespace darmok
             throw std::runtime_error("no skeletal animation implementation");
         }
 	};
+
+    class SkeletalAnimationControllerImpl;
+
+    class SkeletalAnimationController final
+    {
+    public:
+        ~SkeletalAnimationController();
+        DLLEXPORT SkeletalAnimationController(const std::shared_ptr<Skeleton>& skel, const std::vector<std::shared_ptr<SkeletalAnimation>>& animations = {}) noexcept;
+        DLLEXPORT SkeletalAnimationController& addAnimation(const std::shared_ptr<SkeletalAnimation>& anim) noexcept;
+        DLLEXPORT bool playAnimation(std::string_view name) noexcept;
+    private:
+        std::unique_ptr<SkeletalAnimationControllerImpl> _impl;
+    };
 }

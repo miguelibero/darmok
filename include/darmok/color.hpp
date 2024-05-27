@@ -36,6 +36,12 @@ namespace darmok
     };
 }
 
+namespace std
+{
+    template<typename T>
+    struct hash;
+}
+
 template<> struct std::hash<darmok::Color>
 {
     std::size_t operator()(darmok::Color const& key) const noexcept

@@ -5,14 +5,18 @@
 #include <ozz/animation/runtime/skeleton.h>
 #include <ozz/animation/runtime/animation.h>
 #include <ozz/base/io/stream.h>
-
-
+#include <ozz/animation/runtime/sampling_job.h>
+#include <ozz/base/maths/soa_transform.h>
+#include <ozz/base/maths/vec_float.h>
+#include <ozz/base/containers/vector.h>
 namespace darmok
 {
 	class SkeletonImpl final
 	{
 	public:
 		SkeletonImpl(ozz::animation::Skeleton&& skel) noexcept;
+		ozz::animation::Skeleton& getOzz() noexcept;
+		const ozz::animation::Skeleton& getOzz() const noexcept;
 	private:
 		ozz::animation::Skeleton _skel;
 	};
@@ -21,6 +25,8 @@ namespace darmok
 	{
 	public:
 		SkeletalAnimationImpl(ozz::animation::Animation&& anim) noexcept;
+		ozz::animation::Animation& getOzz() noexcept;
+		const ozz::animation::Animation& getOzz() const noexcept;
 	private:
 		ozz::animation::Animation _anim;
 	};
@@ -58,5 +64,32 @@ namespace darmok
 		std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override;
 	private:
 		IDataLoader& _dataLoader;
+	};
+
+	class Mesh;
+
+	class SkeletalAnimationControllerImpl final
+	{
+	public:
+		SkeletalAnimationControllerImpl(const std::shared_ptr<Skeleton>& skeleton, const std::vector<std::shared_ptr<SkeletalAnimation>>& animations = {}) noexcept;
+		void addAnimation(const std::shared_ptr<SkeletalAnimation> &anim) noexcept;
+		bool playAnimation(std::string_view name, bool loop = true);
+		bool update(float deltaTime) noexcept;
+		void setTimeRatio(float ratio) noexcept;
+	private:
+		std::shared_ptr<Skeleton> _skeleton;
+		std::vector<std::shared_ptr<SkeletalAnimation>> _animations;
+		std::shared_ptr<SkeletalAnimation> _currentAnimation;
+
+		ozz::animation::SamplingJob::Context _sampling;
+		ozz::vector<ozz::math::SoaTransform> _locals;
+		ozz::vector<ozz::math::Float4x4> _models;
+		ozz::vector<ozz::math::Float4x4> _skinning;
+		std::vector<std::shared_ptr<Mesh>> _meshes;
+
+		float _timeRatio;
+		float _playbackSpeed;
+		bool _play;
+		bool _loop;
 	};
 }

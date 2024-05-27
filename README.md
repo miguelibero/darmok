@@ -71,6 +71,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 ### Next tasks
 
 * skeletal animations
+* replace IModel interfaces for PIMPL since we will only have one implementation
 * physics
 * sound
 

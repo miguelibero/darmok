@@ -9,6 +9,7 @@
 #include <bx/filepath.h>
 #include <bx/timer.h>
 #include <iostream>
+#include <algorithm>
 
 #if BX_PLATFORM_WINDOWS
 #include <Windows.h>
