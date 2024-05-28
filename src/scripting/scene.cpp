@@ -3,7 +3,7 @@
 #include "transform.hpp"
 #include "camera.hpp"
 #include "light.hpp"
-#include "mesh.hpp"
+#include "render.hpp"
 #include <darmok/scene.hpp>
 
 namespace darmok

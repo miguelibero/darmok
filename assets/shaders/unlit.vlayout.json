@@ -11,5 +11,11 @@
         "type": "uint8",
         "num": 4,
         "normalize": true
+    },
+    "joint": {
+        "type": "int"
+    },
+    "weight": {
+        "type": "float"
     }
 }

@@ -1,5 +1,5 @@
-#ifndef PHONG_LIGHTS_SH_HEADER_GUARD
-#define PHONG_LIGHTS_SH_HEADER_GUARD
+#ifndef DARMOK_PHONG_LIGHTING_HEADER
+#define DARMOK_PHONG_LIGHTING_HEADER
 
 #include <bgfx_compute.sh>
 #include "samplers.include.sc"
@@ -25,7 +25,7 @@ struct AmbientLight
     vec3 color;
 };
 
-uint pointLightCount()
+uint getPointLightCount()
 {
     return u_pointLightCount;
 }
@@ -61,4 +61,4 @@ Material getMaterial()
     return mat;
 }
 
-#endif // PHONG_LIGHTS_SH_HEADER_GUARD
+#endif // DARMOK_PHONG_LIGHTING_HEADER

@@ -3,7 +3,6 @@
 #include <memory>
 #include <string_view>
 #include <bx/bx.h>
-#include <bgfx/bgfx.h>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/collection.hpp>
@@ -11,13 +10,13 @@
 
 namespace darmok
 {
-
     class AssetContext;
+    class Program;
 
     struct ModelSceneConfig final
     {
         EntityRegistry& registry;
-        bgfx::VertexLayout layout;
+        std::shared_ptr<Program> program;
         AssetContext& assets;
     };
 
@@ -50,7 +49,7 @@ namespace darmok
     class ModelSceneConfigurer final
     {
     public:
-        DLLEXPORT ModelSceneConfigurer(EntityRegistry& registry, const bgfx::VertexLayout& layout, AssetContext& assets);
+        DLLEXPORT ModelSceneConfigurer(EntityRegistry& registry, const std::shared_ptr<Program>& program, AssetContext& assets);
 
         DLLEXPORT ModelSceneConfigurer& setParent(Entity parent) noexcept;
 

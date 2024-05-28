@@ -9,6 +9,7 @@
 #include <ozz/base/maths/soa_transform.h>
 #include <ozz/base/maths/vec_float.h>
 #include <ozz/base/containers/vector.h>
+
 namespace darmok
 {
 	class SkeletonImpl final
@@ -66,8 +67,6 @@ namespace darmok
 		IDataLoader& _dataLoader;
 	};
 
-	class Mesh;
-
 	class SkeletalAnimationControllerImpl final
 	{
 	public:
@@ -76,6 +75,7 @@ namespace darmok
 		bool playAnimation(std::string_view name, bool loop = true);
 		bool update(float deltaTime) noexcept;
 		void setTimeRatio(float ratio) noexcept;
+		glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
 	private:
 		std::shared_ptr<Skeleton> _skeleton;
 		std::vector<std::shared_ptr<SkeletalAnimation>> _animations;
@@ -84,8 +84,6 @@ namespace darmok
 		ozz::animation::SamplingJob::Context _sampling;
 		ozz::vector<ozz::math::SoaTransform> _locals;
 		ozz::vector<ozz::math::Float4x4> _models;
-		ozz::vector<ozz::math::Float4x4> _skinning;
-		std::vector<std::shared_ptr<Mesh>> _meshes;
 
 		float _timeRatio;
 		float _playbackSpeed;

@@ -1,9 +1,7 @@
 #include <darmok/mesh.hpp>
-#include <darmok/texture.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/data.hpp>
-#include <darmok/material.hpp>
 
 namespace darmok
 {
@@ -555,44 +553,5 @@ namespace darmok
 			data.indices.emplace_back(i++);
 		}
 		return createMesh(data, config);
-	}
-
-	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
-		: _mesh(mesh)
-		, _material(material)
-	{
-	}
-
-	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Texture>& texture) noexcept
-		: _mesh(mesh)
-		, _material(std::make_shared<Material>(texture))
-	{
-	}
-
-	Renderable::Renderable(const std::shared_ptr<Material>& material) noexcept
-		: _material(material)
-	{
-	}
-
-	std::shared_ptr<IMesh> Renderable::getMesh() const noexcept
-	{
-		return _mesh;
-	}
-
-	Renderable& Renderable::setMesh(const std::shared_ptr<IMesh>& mesh) noexcept
-	{
-		_mesh = mesh;
-		return *this;
-	}
-
-	std::shared_ptr<Material> Renderable::getMaterial() const noexcept
-	{
-		return _material;
-	}
-
-	Renderable& Renderable::setMaterial(const std::shared_ptr<Material>& material) noexcept
-	{
-		_material = material;
-		return *this;
 	}
 }

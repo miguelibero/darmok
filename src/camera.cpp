@@ -198,10 +198,6 @@ namespace darmok
 
             bgfx::setViewTransform(viewId, viewPtr, projPtr);
         }
-        if (_renderer != nullptr)
-        {
-            _renderer->beforeRenderView(encoder, viewId);
-        }
         for (auto& comp : _components)
         {
             comp->beforeRenderView(encoder, viewId);
@@ -210,22 +206,30 @@ namespace darmok
 
     void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
-        if (_renderer != nullptr)
-        {
-            _renderer->beforeRenderEntity(entity, encoder, viewId);
-        }
         for (auto& comp : _components)
         {
             comp->beforeRenderEntity(entity, encoder, viewId);
         }
+
+        std::vector<glm::mat4> transforms;
+        if (_scene)
+        {
+            auto& registry = _scene->getRegistry();
+            auto trans = registry.try_get<const Transform>(entity);
+            if (trans != nullptr)
+            {
+                transforms.push_back(trans->getWorldMatrix());
+            }
+        }
+        for (auto& comp : _components)
+        {
+            comp->getEntityTransforms(entity, transforms);
+        }
+        encoder.setTransform(&transforms.front(), transforms.size());
     }
 
     void Camera::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
-        if (_renderer != nullptr)
-        {
-            _renderer->afterRenderView(encoder, viewId);
-        }
         for (auto& comp : _components)
         {
             comp->afterRenderView(encoder, viewId);

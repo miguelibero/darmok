@@ -5,6 +5,15 @@
 #include <darmok/asset.hpp>
 #include <darmok/skeleton.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/model.hpp>
+#include <darmok/program.hpp>
+#include <darmok/camera.hpp>
+#include <darmok/light.hpp>
+#include <darmok/render_forward.hpp>
+#include <darmok/texture.hpp>
+#include <darmok/mesh.hpp>
+#include <darmok/material.hpp>
+#include <darmok/render.hpp>
 
 namespace
 {
@@ -16,21 +25,50 @@ namespace
 		void init(const std::vector<std::string>& args) override
 		{
 			App::init(args);
-			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");
-			auto anim = getAssets().getSkeletalAnimationLoader()("idle.ozz");
-
+			
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
+			scene.addLogicUpdater<SkeletalAnimationUpdater>();
+
+			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
+			
 			auto& registry = scene.getRegistry();
 
-			auto cam = registry.create();
-			registry.emplace<Transform>(cam)
-				.setPosition(glm::vec3(0.f, 2.f, -2.f))
-				.lookAt(glm::vec3(0, 0, 0));
+			auto camEntity = registry.create();
+			registry.emplace<Transform>(camEntity)
+				.setPosition(glm::vec3(0.f, 200.f, -200.f))
+				.lookAt(glm::vec3(0, 100, 0));
 
-			auto skelEntity = registry.create();
-			auto& ctrl = registry.emplace<SkeletalAnimationController>(skelEntity, skel);
-			ctrl.addAnimation(anim);
-			ctrl.playAnimation(anim->getName());
+			auto& cam = registry.emplace<Camera>(camEntity)
+				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
+			cam.setRenderer<ForwardRenderer>();
+			cam.addComponent<PhongLightingComponent>();
+			cam.addComponent<SkeletalAnimationCameraComponent>();
+
+			auto lightEntity = registry.create();
+			registry.emplace<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
+			registry.emplace<PointLight>(lightEntity);
+			registry.emplace<AmbientLight>(registry.create(), 0.8);
+
+			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
+			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");
+			auto anim = getAssets().getSkeletalAnimationLoader()("run.ozz");
+			auto model = getAssets().getModelLoader()("BasicMotionsDummyModelBin.fbx");
+
+			ModelSceneConfigurer configurer(scene.getRegistry(), prog, getAssets());
+			configurer.run(model, [&registry, modelTex, skel, anim](const auto& node, Entity entity) {
+				auto renderable = registry.try_get<Renderable>(entity);
+				if (renderable != nullptr)
+				{
+					auto mat = renderable->getMaterial();
+					if (mat != nullptr)
+					{
+						mat->setTexture(MaterialTextureType::Diffuse, modelTex);
+					}
+					auto& ctrl = registry.emplace<SkeletalAnimationController>(entity, skel);
+					ctrl.addAnimation(anim);
+					ctrl.playAnimation(anim->getName());
+				}
+			});
 		}
 
 		int shutdown() override

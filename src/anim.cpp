@@ -1,6 +1,7 @@
 
 #include <darmok/anim.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/render.hpp>
 
 namespace darmok
 {

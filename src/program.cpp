@@ -103,7 +103,11 @@ namespace darmok
 		{
 			return bgfx::Attrib::Indices;
 		}
-		if (sname == "weight" || sname == "w")
+		if (sname == "joints" || sname == "joint" || sname == "j")
+		{
+			return bgfx::Attrib::Indices;
+		}
+		if (sname == "weight" || sname == "weights" || sname == "w")
 		{
 			return bgfx::Attrib::Weight;
 		}

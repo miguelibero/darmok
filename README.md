@@ -72,12 +72,12 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 * skeletal animations
 * physics
+* binary mesh serialization
 * sound
 
 * other types of lights
 * pbr lighting
 * deferred renderer
-* binary mesh serialization
 
 * support multiple imgui app components with different transforms
 * spine animations loading

@@ -4,8 +4,8 @@
 
 namespace darmok
 {
-    ModelSceneConfigurer::ModelSceneConfigurer(EntityRegistry& registry, const bgfx::VertexLayout& layout, AssetContext& assets)
-        : _config{ registry, layout, assets }
+    ModelSceneConfigurer::ModelSceneConfigurer(EntityRegistry& registry, const std::shared_ptr<Program>& program, AssetContext& assets)
+        : _config{ registry, program, assets }
         , _parent(entt::null)
     {
     }

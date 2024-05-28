@@ -10,6 +10,16 @@
 
 namespace darmok
 {
+    Skeleton::Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept
+        : _impl(std::move(impl))
+    {
+    }
+
+    Skeleton::~Skeleton()
+    {
+        // intentionally empty to be able to forward declare the impl
+    }
+
     SkeletonImpl::SkeletonImpl(ozz::animation::Skeleton&& skel) noexcept
         : _skel(std::move(skel))
     {
@@ -25,24 +35,14 @@ namespace darmok
         return _skel;
     }
 
-    Skeleton::Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept
+    SkeletalAnimation::SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept
         : _impl(std::move(impl))
     {
     }
 
-    Skeleton::~Skeleton()
+    SkeletalAnimation::~SkeletalAnimation()
     {
         // intentionally empty to be able to forward declare the impl
-    }
-
-    SkeletonImpl& Skeleton::getImpl()
-    {
-        return *_impl;
-    }
-
-    const SkeletonImpl& Skeleton::getImpl() const
-    {
-        return *_impl;
     }
 
     SkeletalAnimationImpl::SkeletalAnimationImpl(ozz::animation::Animation&& anim) noexcept
@@ -58,27 +58,6 @@ namespace darmok
     const ozz::animation::Animation& SkeletalAnimationImpl::getOzz() const noexcept
     {
         return _anim;
-    }
-
-    SkeletalAnimation::SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept
-        : _impl(std::move(impl))
-    {
-    }
-
-    SkeletalAnimation::~SkeletalAnimation()
-    {
-        // intentionally empty to be able to forward declare the impl
-    }
-
-
-    SkeletalAnimationImpl& SkeletalAnimation::getImpl()
-    {
-        return *_impl;
-    }
-
-    const SkeletalAnimationImpl& SkeletalAnimation::getImpl() const
-    {
-        return *_impl;
     }
 
     std::string_view SkeletalAnimation::getName() const noexcept
@@ -217,6 +196,16 @@ namespace darmok
         // intentionally empty to be able to forward declare the impl
     }
 
+    glm::mat4 SkeletalAnimationController::getModelMatrix(const std::string& joint) const noexcept
+    {
+        return _impl->getModelMatrix(joint);
+    }
+
+    void SkeletalAnimationController::update(float deltaTime) noexcept
+    {
+        _impl->update(deltaTime);
+    }
+
     void SkeletalAnimationControllerImpl::addAnimation(const std::shared_ptr<SkeletalAnimation>& anim) noexcept
     {
         _animations.push_back(anim);
@@ -250,9 +239,25 @@ namespace darmok
         }
     }
 
+    glm::mat4 SkeletalAnimationControllerImpl::getModelMatrix(const std::string& joint) const noexcept
+    {
+        if (_skeleton == nullptr)
+        {
+            return glm::mat4(1);
+        }
+        auto jointNames = _skeleton->getImpl().getOzz().joint_names();
+        for (size_t i = 0; i < jointNames.size() && i < _models.size(); i++)
+        {
+            if (jointNames[i] == joint)
+            {
+                return (glm::mat4&)_models[i];
+            }
+        }
+        return glm::mat4(1);
+    }
+
     bool SkeletalAnimationControllerImpl::update(float deltaTime) noexcept
     {
-
         if (_currentAnimation == nullptr)
         {
             return false;
@@ -278,11 +283,11 @@ namespace darmok
             return false;
         }
 
-        ozz::animation::LocalToModelJob ltm_job;
-        ltm_job.skeleton = &_skeleton->getImpl().getOzz();
-        ltm_job.input = ozz::make_span(_locals);
-        ltm_job.output = ozz::make_span(_models);
-        if (!ltm_job.Run())
+        ozz::animation::LocalToModelJob ltm;
+        ltm.skeleton = &_skeleton->getImpl().getOzz();
+        ltm.input = ozz::make_span(_locals);
+        ltm.output = ozz::make_span(_models);
+        if (!ltm.Run())
         {
             return false;
         }

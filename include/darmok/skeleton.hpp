@@ -1,10 +1,13 @@
 #pragma once
 
 #include <memory>
-#include <string_view>
+#include <string>
 #include <stdexcept>
 #include <unordered_map>
-#include <darmok/scene_fwd.hpp>
+#include <vector>
+#include <darmok/scene.hpp>
+#include <darmok/optional_ref.hpp>
+#include <darmok/camera.hpp>
 #include <bx/bx.h>
 
 namespace darmok
@@ -80,7 +83,55 @@ namespace darmok
         DLLEXPORT SkeletalAnimationController(const std::shared_ptr<Skeleton>& skel, const std::vector<std::shared_ptr<SkeletalAnimation>>& animations = {}) noexcept;
         DLLEXPORT SkeletalAnimationController& addAnimation(const std::shared_ptr<SkeletalAnimation>& anim) noexcept;
         DLLEXPORT bool playAnimation(std::string_view name) noexcept;
+        DLLEXPORT glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
+        void update(float deltaTime) noexcept;
     private:
         std::unique_ptr<SkeletalAnimationControllerImpl> _impl;
+    };
+
+    class SkeletalAnimationUpdater final : public ISceneLogicUpdater
+    {
+    public:
+        DLLEXPORT void init(Scene& scene, App& app) noexcept override;
+        DLLEXPORT void update(float deltaTime) noexcept override;
+    private:
+        OptionalRef<Scene> _scene;
+    };
+
+    class Mesh;
+
+    struct ArmatureBone final
+    {
+        std::string joint;
+        glm::mat4 inverseBindPose;
+    };
+
+    class Armature final
+    {
+    public:
+        DLLEXPORT Armature(const std::vector<ArmatureBone>& bones) noexcept;
+        DLLEXPORT Armature(std::vector<ArmatureBone>&& bones) noexcept;
+        DLLEXPORT const std::vector<ArmatureBone>& getBones() const noexcept;
+    private:
+        std::vector<ArmatureBone> _bones;
+    };
+
+    class Skinnable
+    {
+    public:
+        DLLEXPORT Skinnable(const std::shared_ptr<Armature>& armature = nullptr) noexcept;
+        const std::shared_ptr<Armature>& getArmature() const noexcept;
+        void setArmature(const std::shared_ptr<Armature>& armature) noexcept;
+    private:
+        std::shared_ptr<Armature> _armature;
+    };
+
+    class SkeletalAnimationCameraComponent final : public ICameraComponent
+    {
+    public:
+        DLLEXPORT void init(Camera& cam, Scene& scene, App& app) noexcept override;
+        DLLEXPORT void getEntityTransforms(Entity entity, std::vector<glm::mat4>& transforms) const override;
+    private:
+        OptionalRef<Scene> _scene;
     };
 }

@@ -19,7 +19,7 @@ void main()
 	vec3 norm = normalize(v_normal);
 	Material material = getMaterial();
 
-	uint c = pointLightCount();
+	uint c = getPointLightCount();
     for(uint i = 0; i < c; i++)
     {
 		PointLight light = getPointLight(i);

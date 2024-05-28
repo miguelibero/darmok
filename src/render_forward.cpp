@@ -6,15 +6,10 @@
 #include <darmok/light.hpp>
 #include <darmok/material.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/render.hpp>
 
 namespace darmok
 {
-
-	ForwardRenderer::ForwardRenderer(const std::shared_ptr<Program>& program) noexcept
-		: _program(program)
-	{
-	}
-
 	void ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
 		_cam = cam;
@@ -33,7 +28,7 @@ namespace darmok
 
 	bgfx::ViewId ForwardRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
 	{
-		if (!_cam || _program == nullptr)
+		if (!_cam)
 		{
 			return viewId;
 		}
@@ -50,38 +45,12 @@ namespace darmok
 		for (auto entity : renderables)
 		{
 			auto& renderable = registry.get<const Renderable>(entity);
-			auto mesh = renderable.getMesh();
-			if (mesh == nullptr)
+			if (renderable)
 			{
-				continue;
+				rendered = true;
+				_cam->beforeRenderEntity(entity, encoder, viewId);
+				renderable.render(encoder, viewId);
 			}
-			auto mat = renderable.getMaterial();
-			if (mat == nullptr)
-			{
-				continue;
-			}
-
-			rendered = true;
-
-			const void* transMtx = nullptr;
-			auto trans = registry.try_get<const Transform>(entity);
-			if (trans != nullptr)
-			{
-				transMtx = glm::value_ptr(trans->getWorldMatrix());
-			}
-			encoder.setTransform(transMtx);
-
-			_cam->beforeRenderEntity(entity, encoder, viewId);
-
-			uint64_t state = mat->beforeRender(encoder, viewId);
-			mesh->render(encoder, viewId);
-			encoder.setState(state);
-			auto prog = mat->getProgram();
-			if (prog == nullptr)
-			{
-				prog = _program;
-			}
-			encoder.submit(viewId, prog->getHandle());
 		}
 		_cam->afterRenderView(encoder, viewId);
 
@@ -89,7 +58,6 @@ namespace darmok
 		{
 			return viewId;
 		}
-
 
 		return ++viewId;
 	}

@@ -23,18 +23,22 @@ namespace darmok
     {
     public:
         DLLEXPORT virtual ~ICameraComponent() = default;
-        DLLEXPORT virtual void init(Camera& cam, Scene& scene, App& app) { };
-        DLLEXPORT virtual void update(float deltaTime) { }
+        DLLEXPORT virtual void init(Camera& cam, Scene& scene, App& app) {};
+        DLLEXPORT virtual void update(float deltaTime) {}
         DLLEXPORT virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
-        DLLEXPORT virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const { };
+        DLLEXPORT virtual void getEntityTransforms(Entity entity, std::vector<glm::mat4>& transforms) const {};
+        DLLEXPORT virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
         DLLEXPORT virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
-        DLLEXPORT virtual void shutdown() { }
+        DLLEXPORT virtual void shutdown() {}
     };
 
-    class BX_NO_VTABLE ICameraRenderer : public ICameraComponent
+    class BX_NO_VTABLE ICameraRenderer
     {
     public:
+        DLLEXPORT virtual void init(Camera& cam, Scene& scene, App& app) {};
+        DLLEXPORT virtual void update(float deltaTime) {}
         DLLEXPORT virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
+        DLLEXPORT virtual void shutdown() {}
     };
 
     class Mesh;

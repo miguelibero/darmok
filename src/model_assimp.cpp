@@ -10,6 +10,9 @@
 #include <darmok/mesh.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/render.hpp>
+#include <darmok/skeleton.hpp>
+#include <darmok/program.hpp>
 
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -87,8 +90,17 @@ namespace darmok
 		if (assimpMat != nullptr)
 		{
 			auto mat = assimpMat->load(config.assets.getTextureLoader(), config.assets.getAllocator());
-			auto mesh = assimpMesh.load(config.layout, config.assets.getTextureLoader(), config.assets.getAllocator());
+			if (mat->getProgram() == nullptr)
+			{
+				mat->setProgram(config.program);
+			}
+			auto mesh = assimpMesh.load(config.program->getVertexLayout(), config.assets.getTextureLoader(), config.assets.getAllocator());
 			config.registry.emplace<Renderable>(entity, mesh, mat);
+			auto armature = assimpMesh.loadArmature();
+			if (armature != nullptr)
+			{
+				config.registry.emplace<Skinnable>(entity, armature);
+			}
 		}
 	}
 

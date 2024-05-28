@@ -17,10 +17,16 @@
 #include <assimp/material.h>
 #include <glm/glm.hpp>
 
+#if DARMOK_OZZ
+    #include <ozz/animation/offline/raw_skeleton.h>
+#endif
+
 template <typename TReal>
 class aiVector3t;
 typedef aiVector3t<float> aiVector3D;
 struct aiMesh;
+struct aiVertexWeight;
+struct aiBone;
 struct aiFace;
 struct aiNode;
 struct aiScene;
@@ -174,7 +180,40 @@ namespace darmok
         AssimpVector3Collection _coords;
     };
 
-    class Mesh;
+    struct AssimpVertexWeight final
+    {
+        unsigned int vertexIndex;
+        float value;
+    };
+
+    class AssimpVertexWeightCollection final : public ValCollection<AssimpVertexWeight>
+    {
+    public:
+        AssimpVertexWeightCollection(const aiVertexWeight* ptr, size_t size) noexcept;
+
+        [[nodiscard]] size_t size() const noexcept override;
+        [[nodiscard]] AssimpVertexWeight operator[](size_t pos) const override;
+    private:
+        const aiVertexWeight* _ptr;
+        size_t _size;
+    };
+
+    class AssimpBone final
+    {
+    public:
+        AssimpBone(const aiBone& bone, aiSceneRef scene) noexcept;
+        std::string_view getName() const noexcept;
+        glm::mat4 getInverseBindPoseMatrix() const noexcept;
+        const AssimpVertexWeightCollection& getWeights() const noexcept;
+    private:
+        OptionalRef<const aiBone> _bone;
+        aiSceneRef _scene;
+        AssimpVertexWeightCollection _weights;
+    };
+
+    class IMesh;
+    class Armature;
+    struct ArmatureBone;
 
     class AssimpMesh final
     {
@@ -189,9 +228,13 @@ namespace darmok
         const std::vector<AssimpTextureCoords>& getTexCoords() const noexcept;
         const std::vector<AssimpMeshFace>& getFaces() const noexcept;
         const std::vector<AssimpColorCollection>& getColors() const noexcept;
+        const std::vector<AssimpBone>& getBones() const noexcept;
         const size_t getVertexCount() const noexcept;
 
-        std::shared_ptr<Mesh> load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept;
+        bool hasBones() const noexcept;
+
+        std::shared_ptr<IMesh> load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept;
+        std::shared_ptr<Armature> loadArmature() const noexcept;
 
     private:
         OptionalRef<const aiMesh> _mesh;
@@ -204,9 +247,11 @@ namespace darmok
         std::vector<AssimpTextureCoords> _texCoords;
         std::vector<AssimpMeshFace> _faces;
         std::vector<AssimpColorCollection> _colors;
+        std::vector<AssimpBone> _bones;
 
         Data createVertexData(const bgfx::VertexLayout& layout, bx::AllocatorI& alloc) const noexcept;
         std::vector<VertexIndex> createIndexData() const noexcept;
+        std::vector<ArmatureBone> createArmatureBones() const noexcept;
     };
 
     class AssimpCamera final
@@ -264,7 +309,9 @@ namespace darmok
         glm::mat4 getTransform() const noexcept;
         const std::vector<std::shared_ptr<AssimpMesh>>& getMeshes() const noexcept;
         const std::vector<std::shared_ptr<AssimpNode>>& getChildren() const noexcept;
-        std::shared_ptr<AssimpNode> getChild(const std::string_view& path) const noexcept;
+        std::weak_ptr<AssimpNode> getParent() const noexcept;
+        std::shared_ptr<AssimpNode> findChildByPath(std::string_view path) const noexcept;
+        std::shared_ptr<AssimpNode> findChildByName(std::string_view name) const noexcept;
         std::shared_ptr<AssimpCamera> getCamera() const noexcept;
         std::shared_ptr<AssimpLight> getLight() const noexcept;
 
@@ -287,14 +334,18 @@ namespace darmok
         const std::string& getPath() const noexcept;
         aiSceneRef getInternal() const noexcept;
 
+#if DARMOK_OZZ
+        ozz::animation::offline::RawSkeleton createSkeleton() const;
+#endif
+
         std::shared_ptr<AssimpNode> getRootNode() const noexcept;
         const std::vector<std::shared_ptr<AssimpMaterial>>& getMaterials() const noexcept;
         const std::vector<std::shared_ptr<AssimpMesh>>& getMeshes() const noexcept;
         const std::vector<std::shared_ptr<AssimpCamera>>& getCameras() const noexcept;
         const std::vector<std::shared_ptr<AssimpLight>>& getLights() const noexcept;
 
-        std::shared_ptr<AssimpCamera> getCamera(const std::string_view& name) const noexcept;
-        std::shared_ptr<AssimpLight> getLight(const std::string_view& name) const noexcept;
+        std::shared_ptr<AssimpCamera> getCamera(std::string_view name) const noexcept;
+        std::shared_ptr<AssimpLight> getLight(std::string_view name) const noexcept;
 
     private:
         std::string _path;

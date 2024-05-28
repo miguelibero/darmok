@@ -98,9 +98,9 @@ namespace darmok
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setForwardRenderer(const LuaProgram& program) noexcept
+	LuaCamera& LuaCamera::setForwardRenderer() noexcept
 	{
-		_camera->setRenderer<ForwardRenderer>(program.getReal());
+		_camera->setRenderer<ForwardRenderer>();
 		return *this;
 	}
 

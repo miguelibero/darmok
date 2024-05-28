@@ -2,6 +2,7 @@
 #include "scene.hpp"
 #include "asset.hpp"
 #include "utils.hpp"
+#include "program.hpp"
 #include <darmok/scene.hpp>
 
 namespace darmok
@@ -106,8 +107,8 @@ namespace darmok
 		);
 	}
 
-	LuaModelSceneConfigurer::LuaModelSceneConfigurer(const LuaScene& scene, const bgfx::VertexLayout& layout, LuaAssets& assets) noexcept
-		: _configurer(scene.getReal()->getRegistry(), layout, assets.getReal())
+	LuaModelSceneConfigurer::LuaModelSceneConfigurer(const LuaScene& scene, const LuaProgram& program, LuaAssets& assets) noexcept
+		: _configurer(scene.getReal()->getRegistry(), program.getReal(), assets.getReal())
 		, _scene(scene.getReal())
 	{
 	}
@@ -121,7 +122,7 @@ namespace darmok
 	void LuaModelSceneConfigurer::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaModelSceneConfigurer>("ModelSceneConfigurer",
-			sol::constructors<LuaModelSceneConfigurer(const LuaScene&, const bgfx::VertexLayout&, LuaAssets&)>(),
+			sol::constructors<LuaModelSceneConfigurer(const LuaScene&, const LuaProgram&, LuaAssets&)>(),
 			"parent", sol::property(&LuaModelSceneConfigurer::setParent),
 			"run", sol::overload(
 				&LuaModelSceneConfigurer::run1,

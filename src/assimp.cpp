@@ -7,6 +7,7 @@
 #include <darmok/image.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/math.hpp>
+#include <darmok/skeleton.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/mesh.h>
@@ -422,6 +423,44 @@ namespace darmok
         return AssimpUtils::convert(_ptr[pos]);
     }
 
+    AssimpVertexWeightCollection::AssimpVertexWeightCollection(const aiVertexWeight* ptr, size_t size) noexcept
+        : _ptr(ptr)
+        , _size(size)
+    {
+    }
+
+    size_t AssimpVertexWeightCollection::size() const noexcept
+    {
+        return _size;
+    }
+
+    AssimpVertexWeight AssimpVertexWeightCollection::operator[](size_t pos) const
+    {
+        return (const AssimpVertexWeight&)(_ptr[pos]);
+    }
+
+    AssimpBone::AssimpBone(const aiBone& bone, aiSceneRef scene) noexcept
+        : _bone(bone)
+        , _scene(scene)
+        , _weights(bone.mWeights, bone.mNumWeights)
+    {
+    }
+
+    std::string_view AssimpBone::getName() const noexcept
+    {
+        return AssimpUtils::getStringView(_bone->mName);
+    }
+
+    glm::mat4 AssimpBone::getInverseBindPoseMatrix() const noexcept
+    {
+        return AssimpUtils::convert(_bone->mOffsetMatrix);
+    }
+
+    const AssimpVertexWeightCollection& AssimpBone::getWeights() const noexcept
+    {
+        return _weights;
+    }
+
     AssimpMesh::AssimpMesh(const aiMesh& mesh, const std::shared_ptr<AssimpMaterial>& material, aiSceneRef scene) noexcept
         : _mesh(mesh)
         , _material(material)
@@ -464,6 +503,26 @@ namespace darmok
                 }
             }
         }
+        {
+            if (mesh.mBones != nullptr)
+            {
+                auto size = mesh.mNumBones;
+                _bones.reserve(size);
+                for (size_t i = 0; i < size; i++)
+                {
+                    _bones.emplace_back(*mesh.mBones[i], scene);
+                }
+            }
+        }
+    }
+
+    bool AssimpMesh::hasBones() const noexcept
+    {
+        if (!_mesh)
+        {
+            return false;
+        }
+        return _mesh->HasBones();
     }
 
     std::shared_ptr<AssimpMaterial> AssimpMesh::getMaterial() const noexcept
@@ -498,12 +557,17 @@ namespace darmok
 
     const size_t AssimpMesh::getVertexCount() const noexcept
     {
+        if (!_mesh)
+        {
+            return 0;
+        }
         return _mesh->mNumVertices;
     }
 
     Data AssimpMesh::createVertexData(const bgfx::VertexLayout& layout, bx::AllocatorI& alloc) const noexcept
     {
-        VertexDataWriter writer(layout, getVertexCount(), alloc);
+        auto vertexCount = getVertexCount();
+        VertexDataWriter writer(layout, vertexCount, alloc);
         writer.write(bgfx::Attrib::Position, getPositions());
         writer.write(bgfx::Attrib::Normal, getNormals());
         writer.write(bgfx::Attrib::Tangent, getTangents());
@@ -525,6 +589,32 @@ namespace darmok
                 writer.write(attrib, elm);
             }
         }
+        if(hasBones())
+        {
+            int boneIndex = 0;
+            std::vector<int> boneCount(vertexCount);
+            std::vector<glm::ivec4> boneIndices(vertexCount);
+            std::fill(boneIndices.begin(), boneIndices.end(), glm::ivec4(-1));
+            std::vector<glm::vec4> boneWeights(vertexCount);
+            for (auto& bone : getBones())
+            {
+                for (auto& weight : bone.getWeights())
+                {
+                    auto i = weight.vertexIndex;
+                    auto c = boneCount[i];
+                    if (c <= 3)
+                    {
+                        boneIndices[i][c] = boneIndex + 1;
+                        boneWeights[i][c] = weight.value;
+                    }
+                    ++boneCount[i];
+                }
+                ++boneIndex;
+            }
+            writer.write(bgfx::Attrib::Indices, boneIndices);
+            writer.write(bgfx::Attrib::Weight, boneWeights);
+        }
+
         return writer.finish();
     }
 
@@ -547,11 +637,35 @@ namespace darmok
         return indices;
     }
 
-    std::shared_ptr<Mesh> AssimpMesh::load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept
+
+
+    std::shared_ptr<IMesh> AssimpMesh::load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept
     {
         auto vertices = createVertexData(layout, alloc);
         auto indices = createIndexData();
         return std::make_shared<Mesh>(layout, DataView(vertices), DataView(indices));
+    }
+
+    std::shared_ptr<Armature> AssimpMesh::loadArmature() const noexcept
+    {
+        if (!hasBones())
+        {
+            return nullptr;
+        }
+        return std::make_shared<Armature>(createArmatureBones());
+    }
+
+    std::vector<ArmatureBone> AssimpMesh::createArmatureBones() const noexcept
+    {
+        std::vector<ArmatureBone> bones;
+        for (auto& assimpBone : getBones())
+        {
+            bones.push_back({
+                std::string(assimpBone.getName()),
+                assimpBone.getInverseBindPoseMatrix()
+            });
+        }
+        return bones;
     }
 
     const std::vector<AssimpMeshFace>& AssimpMesh::getFaces() const noexcept
@@ -562,6 +676,11 @@ namespace darmok
     const std::vector<AssimpColorCollection>& AssimpMesh::getColors() const noexcept
     {
         return _colors;
+    }
+
+    const std::vector<AssimpBone>& AssimpMesh::getBones() const noexcept
+    {
+        return _bones;
     }
 
     AssimpCamera::AssimpCamera(const aiCamera& cam, aiSceneRef scene) noexcept
@@ -755,7 +874,7 @@ namespace darmok
         return _children;
     }
 
-    std::shared_ptr<AssimpNode> AssimpNode::getChild(const std::string_view& path) const noexcept
+    std::shared_ptr<AssimpNode> AssimpNode::findChildByPath(std::string_view path) const noexcept
     {
         auto itr = path.find('/');
         auto sep = itr != std::string::npos;
@@ -770,7 +889,24 @@ namespace darmok
             {
                 return child;
             }
-            return child->getChild(path.substr(itr + 1));
+            return child->findChildByPath(path.substr(itr + 1));
+        }
+        return nullptr;
+    }
+
+    std::shared_ptr<AssimpNode> AssimpNode::findChildByName(std::string_view name) const noexcept
+    {
+        for (auto& child : getChildren())
+        {
+            if (child->getName() == name)
+            {
+                return child;
+            }
+            auto result = child->findChildByName(name);
+            if (result != nullptr)
+            {
+                return result;
+            }
         }
         return nullptr;
     }
@@ -785,7 +921,7 @@ namespace darmok
         return _light;
     }
 
-    std::shared_ptr<AssimpCamera> AssimpScene::getCamera(const std::string_view& name) const noexcept
+    std::shared_ptr<AssimpCamera> AssimpScene::getCamera(std::string_view name) const noexcept
     {
         for (auto& cam : _cameras)
         {
@@ -797,7 +933,7 @@ namespace darmok
         return nullptr;
     }
 
-    std::shared_ptr<AssimpLight> AssimpScene::getLight(const std::string_view& name) const noexcept
+    std::shared_ptr<AssimpLight> AssimpScene::getLight(std::string_view name) const noexcept
     {
         for (auto& light : _lights)
         {
@@ -879,12 +1015,35 @@ namespace darmok
     {
     }
 
+#if DARMOK_OZZ
+    ozz::animation::offline::RawSkeleton AssimpScene::createSkeleton() const
+    {
+        ozz::animation::offline::RawSkeleton skel;
+        skel.roots.resize(1);
+
+        std::vector<std::string> boneNames;
+        for (auto& mesh : getMeshes())
+        {
+            if (!mesh->hasBones())
+            {
+                continue;
+            }
+            for (auto& bone : mesh->getBones())
+            {
+                boneNames.emplace_back(bone.getName());
+            }
+        }
+        return skel;
+    }
+#endif
+
     aiSceneRef AssimpScene::importScene(Assimp::Importer& importer, const DataView& data, const std::string& path)
     {
         unsigned int flags = aiProcess_CalcTangentSpace |
             aiProcess_Triangulate |
             aiProcess_JoinIdenticalVertices |
             aiProcess_SortByPType |
+            aiProcess_PopulateArmatureData |
             aiProcess_ConvertToLeftHanded
             ;
         // assimp (and opengl) is right handed (+Z points towards the camera)

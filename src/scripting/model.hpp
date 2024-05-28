@@ -5,7 +5,6 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/collection.hpp>
 #include <darmok/model.hpp>
-#include <bgfx/bgfx.h>
 #include <sol/sol.hpp>
 
 namespace darmok
@@ -14,6 +13,7 @@ namespace darmok
 	class LuaScene;
 	class LuaAssets;
 	class LuaModelNode;
+	class LuaProgram;
 	class Scene;
 
 	class LuaModelNodeChildrenCollection final : public ValCollection<LuaModelNode>
@@ -61,7 +61,7 @@ namespace darmok
 	class LuaModelSceneConfigurer final
 	{
 	public:
-		LuaModelSceneConfigurer(const LuaScene& scene, const bgfx::VertexLayout& layout, LuaAssets& assets) noexcept;
+		LuaModelSceneConfigurer(const LuaScene& scene, const LuaProgram& program, LuaAssets& assets) noexcept;
 		LuaModelSceneConfigurer& setParent(const LuaEntity& parent) noexcept;
 
 		LuaEntity run1(const LuaModel& model) const;

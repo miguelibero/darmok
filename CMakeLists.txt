@@ -70,9 +70,11 @@ set(SOURCES
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/viewport.cpp
   ${SRC_DIR}/camera.cpp
+  ${SRC_DIR}/skeleton.cpp
   ${SRC_DIR}/math.cpp
   ${SRC_DIR}/light.cpp
   ${SRC_DIR}/vertex.cpp
+  ${SRC_DIR}/render.cpp
   ${SRC_DIR}/render_forward.cpp
   ${SRC_DIR}/render_deferred.cpp
 )
@@ -112,6 +114,7 @@ set(HEADERS
   ${INCLUDE_DIR}/camera.hpp
   ${INCLUDE_DIR}/light.hpp
   ${INCLUDE_DIR}/vertex.hpp
+  ${INCLUDE_DIR}/render.hpp
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
   ${INCLUDE_DIR}/model.hpp
@@ -187,6 +190,7 @@ if(DARMOK_BUILD_SCRIPTING)
     ${SRC_DIR}/scripting/asset.cpp
     ${SRC_DIR}/scripting/image.cpp
     ${SRC_DIR}/scripting/material.cpp
+    ${SRC_DIR}/scripting/render.cpp
     ${SRC_DIR}/scripting/mesh.cpp
     ${SRC_DIR}/scripting/program.cpp
     ${SRC_DIR}/scripting/texture.cpp

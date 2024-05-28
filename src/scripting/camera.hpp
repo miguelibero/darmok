@@ -39,7 +39,7 @@ namespace darmok
 		LuaCamera& setOrtho3(const VarLuaTable<glm::uvec2>& size, float near, float fare) noexcept;
 		LuaCamera& setOrtho4(const VarLuaTable<glm::uvec2>& size) noexcept;
 		LuaCamera& addNativeComponent(LuaNativeCameraComponentType type) noexcept;
-		LuaCamera& setForwardRenderer(const LuaProgram& program) noexcept;
+		LuaCamera& setForwardRenderer() noexcept;
 
 		const glm::mat4& getProjectionMatrix() const noexcept;
 		void setProjectionMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept;

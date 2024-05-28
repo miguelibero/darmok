@@ -61,6 +61,10 @@ namespace darmok
             {
                 input.at(2) = 1.F;
             }
+            if (attr == bgfx::Attrib::Indices && type == bgfx::AttribType::Int16)
+            {
+                std::fill(input.begin(), input.end(), -1.F);
+            }
             else if (attr >= bgfx::Attrib::Color0 && attr <= bgfx::Attrib::Color3)
             {
                 std::fill(input.begin(), input.end(), Colors::maxValue);
