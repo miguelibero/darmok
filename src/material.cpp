@@ -84,6 +84,11 @@ namespace darmok
 		}
 	}
 
+	bool Material::valid() const noexcept
+	{
+		return _program != nullptr;
+	}
+
 	std::shared_ptr<Program> Material::getProgram() const noexcept
 	{
 		return _program;

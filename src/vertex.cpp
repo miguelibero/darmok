@@ -57,17 +57,19 @@ namespace darmok
             _layout.decode(attr, num, type, normalized, asInt);
             
             std::array<float, 4> input{};
-            if (attr == bgfx::Attrib::Normal && num == 3 && type == bgfx::AttribType::Float)
+            input.fill(0.F);
+
+            if (attr == bgfx::Attrib::Normal && num == 3)
             {
                 input.at(2) = 1.F;
             }
-            if (attr == bgfx::Attrib::Indices && type == bgfx::AttribType::Int16)
+            else if (attr == bgfx::Attrib::Weight)
             {
-                std::fill(input.begin(), input.end(), -1.F);
+                input.at(0) = 1.F; // take only first weight
             }
             else if (attr >= bgfx::Attrib::Color0 && attr <= bgfx::Attrib::Color3)
             {
-                std::fill(input.begin(), input.end(), Colors::maxValue);
+                input.fill(Colors::maxValue);
             }
             for (auto j = 0; j < _size; j++)
             {

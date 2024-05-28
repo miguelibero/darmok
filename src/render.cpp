@@ -45,15 +45,15 @@ namespace darmok
 		return *this;
 	}
 
-	Renderable::operator bool() const noexcept
+	bool Renderable::valid() const noexcept
 	{
-		return _mesh != nullptr && _material != nullptr;
+		return _mesh != nullptr && _material != nullptr && _material->valid();
 	}
 
 	void Renderable::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
 	{
-		uint64_t state = _material->beforeRender(encoder, viewId);
 		_mesh->render(encoder, viewId);
+		uint64_t state = _material->beforeRender(encoder, viewId);
 		encoder.setState(state);
 		auto prog = _material->getProgram();
 		encoder.submit(viewId, prog->getHandle());

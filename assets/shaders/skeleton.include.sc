@@ -3,10 +3,10 @@
 
 mat4 getSkinningMatrix(vec4 indices, vec4 weights)
 {
-    return weights.x * u_model[int(indices.x)] +
-           weights.y * u_model[int(indices.y)] +
-           weights.z * u_model[int(indices.z)] +
-           weights.w * u_model[int(indices.w)];
+    return (u_model[int(indices.x) + 1] * weights.x) +
+           (u_model[int(indices.y) + 1] * weights.y) +
+           (u_model[int(indices.z) + 1] * weights.z) +
+           (u_model[int(indices.w) + 1] * weights.w);
 }
 
 #endif

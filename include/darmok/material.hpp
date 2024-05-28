@@ -24,6 +24,8 @@ namespace darmok
         DLLEXPORT Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
         DLLEXPORT ~Material();
 
+        DLLEXPORT bool valid() const noexcept;
+
         DLLEXPORT std::shared_ptr<Program> getProgram() const noexcept;
         DLLEXPORT Material& setProgram(const std::shared_ptr<Program>& program) noexcept;
 

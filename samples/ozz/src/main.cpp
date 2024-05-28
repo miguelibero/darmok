@@ -35,23 +35,36 @@ namespace
 
 			auto camEntity = registry.create();
 			registry.emplace<Transform>(camEntity)
-				.setPosition(glm::vec3(0.f, 200.f, -200.f))
+				.setPosition(glm::vec3(0.f, 200, -200))
 				.lookAt(glm::vec3(0, 100, 0));
 
 			auto& cam = registry.emplace<Camera>(camEntity)
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
 			cam.setRenderer<ForwardRenderer>();
 			cam.addComponent<PhongLightingComponent>();
-			cam.addComponent<SkeletalAnimationCameraComponent>();
+
+			auto& skelCam = cam.addComponent<SkeletalAnimationCameraComponent>();
+
+			/*
+			auto skelDebugTex = getAssets().getColorTextureLoader()(Colors::red());
+			auto skelDebugMat = std::make_shared<Material>(prog, skelDebugTex);
+			skelCam.setDebugMaterial(skelDebugMat);
+			*/
 
 			auto lightEntity = registry.create();
 			registry.emplace<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
 			registry.emplace<PointLight>(lightEntity);
 			registry.emplace<AmbientLight>(registry.create(), 0.8);
 
-			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
 			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");
 			auto anim = getAssets().getSkeletalAnimationLoader()("run.ozz");
+
+			auto skelEntity = registry.create();
+			auto& ctrl = registry.emplace<SkeletalAnimationController>(skelEntity, skel);
+			ctrl.addAnimation(anim);
+			ctrl.playAnimation(anim->getName());
+
+			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
 			auto model = getAssets().getModelLoader()("BasicMotionsDummyModelBin.fbx");
 
 			ModelSceneConfigurer configurer(scene.getRegistry(), prog, getAssets());

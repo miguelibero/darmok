@@ -10,6 +10,20 @@
 
 namespace darmok
 {
+    struct OzzUtils final
+    {
+        static glm::mat4 convert(const ozz::math::Float4x4& v)
+        {
+            // TODO: check if we can do this in a nicer way
+            return {
+                { v.cols[0].m128_f32[0], v.cols[0].m128_f32[1], v.cols[0].m128_f32[2], v.cols[0].m128_f32[3] },
+                { v.cols[1].m128_f32[0], v.cols[1].m128_f32[1], v.cols[1].m128_f32[2], v.cols[1].m128_f32[3] },
+                { v.cols[2].m128_f32[0], v.cols[2].m128_f32[1], v.cols[2].m128_f32[2], v.cols[2].m128_f32[3] },
+                { v.cols[3].m128_f32[0], v.cols[3].m128_f32[1], v.cols[3].m128_f32[2], v.cols[3].m128_f32[3] }
+            };
+        }
+    };
+
     Skeleton::Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept
         : _impl(std::move(impl))
     {
@@ -196,9 +210,14 @@ namespace darmok
         // intentionally empty to be able to forward declare the impl
     }
 
-    glm::mat4 SkeletalAnimationController::getModelMatrix(const std::string& joint) const noexcept
+    glm::mat4 SkeletalAnimationController::getModelMatrix(const std::string& boneName) const noexcept
     {
-        return _impl->getModelMatrix(joint);
+        return _impl->getModelMatrix(boneName);
+    }
+
+    std::vector<glm::mat4> SkeletalAnimationController::getModelMatrixes() const noexcept
+    {
+        return _impl->getModelMatrixes();
     }
 
     void SkeletalAnimationController::update(float deltaTime) noexcept
@@ -250,10 +269,20 @@ namespace darmok
         {
             if (jointNames[i] == joint)
             {
-                return (glm::mat4&)_models[i];
+                return OzzUtils::convert(_models[i]);
             }
         }
         return glm::mat4(1);
+    }
+
+    std::vector<glm::mat4> SkeletalAnimationControllerImpl::getModelMatrixes() const noexcept
+    {
+        std::vector<glm::mat4> models;
+        for (auto& ozzModel : _models)
+        {
+            models.push_back(OzzUtils::convert(ozzModel));
+        }
+        return models;
     }
 
     bool SkeletalAnimationControllerImpl::update(float deltaTime) noexcept

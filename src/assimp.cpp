@@ -594,20 +594,20 @@ namespace darmok
             int boneIndex = 0;
             std::vector<int> boneCount(vertexCount);
             std::vector<glm::ivec4> boneIndices(vertexCount);
-            std::fill(boneIndices.begin(), boneIndices.end(), glm::ivec4(-1));
             std::vector<glm::vec4> boneWeights(vertexCount);
             for (auto& bone : getBones())
             {
                 for (auto& weight : bone.getWeights())
                 {
                     auto i = weight.vertexIndex;
-                    auto c = boneCount[i];
+                    auto c = boneCount[i]++;
                     if (c <= 3)
                     {
-                        boneIndices[i][c] = boneIndex + 1;
+                        // first model matrix is the entity one
+                        // second model matrix is identity
+                        boneIndices[i][c] = boneIndex + 2;
                         boneWeights[i][c] = weight.value;
                     }
-                    ++boneCount[i];
                 }
                 ++boneIndex;
             }

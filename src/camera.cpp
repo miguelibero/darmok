@@ -7,6 +7,7 @@
 #include <darmok/app.hpp>
 #include <darmok/math.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <bx/math.h>
 
 namespace darmok
 {
@@ -206,11 +207,6 @@ namespace darmok
 
     void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
-        for (auto& comp : _components)
-        {
-            comp->beforeRenderEntity(entity, encoder, viewId);
-        }
-
         std::vector<glm::mat4> transforms;
         if (_scene)
         {
@@ -221,11 +217,23 @@ namespace darmok
                 transforms.push_back(trans->getWorldMatrix());
             }
         }
+        if (transforms.empty())
+        {
+            transforms.push_back(glm::mat4(1));
+        }
+        // add indentity matrix for meshes that are not skinned
+        // TODO: alternatively have separate shaders for skinned and normal meshes
+        transforms.push_back(glm::mat4(1));
         for (auto& comp : _components)
         {
             comp->getEntityTransforms(entity, transforms);
         }
         encoder.setTransform(&transforms.front(), transforms.size());
+
+        for (auto& comp : _components)
+        {
+            comp->beforeRenderEntity(entity, encoder, viewId);
+        }
     }
 
     void Camera::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept

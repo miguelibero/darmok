@@ -19,7 +19,7 @@ namespace darmok
         DLLEXPORT Renderable& setMesh(const std::shared_ptr<IMesh>& mesh) noexcept;
         DLLEXPORT std::shared_ptr<Material> getMaterial() const noexcept;
         DLLEXPORT Renderable& setMaterial(const std::shared_ptr<Material>& material) noexcept;
-        DLLEXPORT operator bool() const noexcept;
+        DLLEXPORT bool valid() const noexcept;
         DLLEXPORT void render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
     private:
         std::shared_ptr<IMesh> _mesh;

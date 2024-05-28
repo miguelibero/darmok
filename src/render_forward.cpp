@@ -41,23 +41,16 @@ namespace darmok
 
 		auto& registry = _scene->getRegistry();
 		auto renderables = _cam->createEntityView<Renderable>(registry);
-		auto rendered = false;
 		for (auto entity : renderables)
 		{
 			auto& renderable = registry.get<const Renderable>(entity);
-			if (renderable)
+			if (renderable.valid())
 			{
-				rendered = true;
 				_cam->beforeRenderEntity(entity, encoder, viewId);
 				renderable.render(encoder, viewId);
 			}
 		}
 		_cam->afterRenderView(encoder, viewId);
-
-		if (!rendered)
-		{
-			return viewId;
-		}
 
 		return ++viewId;
 	}

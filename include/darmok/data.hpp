@@ -30,7 +30,7 @@ namespace darmok
 
         template<typename T>
         DataView(const std::vector<T>& v) noexcept
-            : DataView(&v.front(), sizeof(T) * v.size())
+            : DataView(v.empty() ? nullptr : &v.front(), sizeof(T)* v.size())
         {
         }
 
@@ -76,7 +76,7 @@ namespace darmok
 
         template<typename T>
         Data(const std::vector<T>& v, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept
-            : Data(&v.front(), sizeof(T) * v.size(), alloc)
+            : Data(v.empty() ? nullptr : &v.front(), sizeof(T)* v.size(), alloc)
         {
         }
 

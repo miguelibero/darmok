@@ -554,4 +554,47 @@ namespace darmok
 		}
 		return createMesh(data, config);
 	}
+
+	std::shared_ptr<IMesh> MeshCreator::createBone() noexcept
+	{
+		const float kInter = .2f;
+		const std::vector<glm::vec3> pos = {
+			{ 1.f, 0.f, 0.f		}, { kInter, .1f, .1f },
+			{ kInter, .1f, -.1f }, { kInter, -.1f, -.1f },
+			{ kInter, -.1f, .1f }, { 0.f, 0.f, 0.f }
+		};
+		const std::vector<glm::vec2> tex = {
+			{ 0.f, 0.f		}, { .1f, .1f },
+			{ .1f, -.1f }, { -.1f, -.1f },
+			{ -.1f, .1f }, { 0.f, 0.f }
+		};
+		const std::vector<glm::vec3> norm = {
+			glm::normalize(glm::cross(pos[2] - pos[1], pos[2] - pos[0])),
+			glm::normalize(glm::cross(pos[1] - pos[2], pos[1] - pos[5])),
+			glm::normalize(glm::cross(pos[3] - pos[2], pos[3] - pos[0])),
+			glm::normalize(glm::cross(pos[2] - pos[3], pos[2] - pos[5])),
+			glm::normalize(glm::cross(pos[4] - pos[3], pos[4] - pos[0])),
+			glm::normalize(glm::cross(pos[3] - pos[4], pos[3] - pos[5])),
+			glm::normalize(glm::cross(pos[1] - pos[4], pos[1] - pos[0])),
+			glm::normalize(glm::cross(pos[4] - pos[1], pos[4] - pos[5]))
+		};
+		const MeshData data = { 
+			{ 
+				pos[0], pos[2], pos[1], pos[5], pos[1], pos[2], pos[0], pos[3],
+				pos[2], pos[5], pos[2], pos[3], pos[0], pos[4], pos[3], pos[5],
+				pos[3], pos[4], pos[0], pos[1], pos[4], pos[5], pos[4], pos[1],
+			},
+			{
+				 norm[0], norm[0], norm[0], norm[1], norm[1], norm[1], norm[2], norm[2],
+				 norm[2], norm[3], norm[3], norm[3], norm[4], norm[4], norm[4], norm[5],
+				 norm[5], norm[5], norm[6], norm[6], norm[6], norm[7], norm[7], norm[7],
+			},
+			{
+				tex[0], tex[1], tex[1], tex[0], tex[2], tex[2], tex[0], tex[3],
+				tex[3], tex[0], tex[4], tex[4], tex[2], tex[5], tex[2], tex[3],
+				tex[5], tex[3], tex[4], tex[5], tex[4], tex[1], tex[5], tex[1],
+			}
+		};
+		return createMesh(data, config);
+	}
 }

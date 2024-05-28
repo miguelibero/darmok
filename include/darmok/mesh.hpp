@@ -162,6 +162,7 @@ namespace darmok
         DLLEXPORT std::shared_ptr<IMesh> createRay(const Ray& ray) noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createLine(const Line& line) noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createLines(const std::vector<Line>& lines) noexcept;
+        DLLEXPORT std::shared_ptr<IMesh> createBone() noexcept;
 
     private:
         const static MeshData _rectangleMeshData;

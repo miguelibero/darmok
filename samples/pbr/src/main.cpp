@@ -12,6 +12,7 @@
 #include <darmok/program.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/render.hpp>
 #include <darmok/render_forward.hpp>
 
 namespace
@@ -40,7 +41,7 @@ namespace
 				.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
 			
 			cam.addComponent<PhongLightingComponent>();
-			cam.setRenderer<ForwardRenderer>(prog);
+			cam.setRenderer<ForwardRenderer>();
 
 			auto light = registry.create();
 			registry.emplace<Transform>(light)
@@ -48,7 +49,7 @@ namespace
 			registry.emplace<PointLight>(light);
 
 			auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
-			auto greenMat = std::make_shared<Material>();
+			auto greenMat = std::make_shared<Material>(prog);
 			greenMat->setTexture(MaterialTextureType::Diffuse, greenTex);
 
 			MeshCreator meshCreator(layout);
@@ -59,7 +60,7 @@ namespace
 				.setPosition({ 1.5F, 0, 0 });
 
 			auto redTex = getAssets().getColorTextureLoader()(Colors::red());
-			auto redMat = std::make_shared<Material>();
+			auto redMat = std::make_shared<Material>(prog);
 			redMat->setTexture(MaterialTextureType::Diffuse, redTex);
 
 			auto sphereMesh = meshCreator.createSphere();

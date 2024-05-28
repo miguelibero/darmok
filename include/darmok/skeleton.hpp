@@ -8,6 +8,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/camera.hpp>
+#include <darmok/render.hpp>
 #include <bx/bx.h>
 
 namespace darmok
@@ -84,6 +85,7 @@ namespace darmok
         DLLEXPORT SkeletalAnimationController& addAnimation(const std::shared_ptr<SkeletalAnimation>& anim) noexcept;
         DLLEXPORT bool playAnimation(std::string_view name) noexcept;
         DLLEXPORT glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
+        DLLEXPORT std::vector<glm::mat4> getModelMatrixes() const noexcept;
         void update(float deltaTime) noexcept;
     private:
         std::unique_ptr<SkeletalAnimationControllerImpl> _impl;
@@ -98,7 +100,6 @@ namespace darmok
         OptionalRef<Scene> _scene;
     };
 
-    class Mesh;
 
     struct ArmatureBone final
     {
@@ -126,12 +127,17 @@ namespace darmok
         std::shared_ptr<Armature> _armature;
     };
 
+    class Renderable;
+    class Material;
+
     class SkeletalAnimationCameraComponent final : public ICameraComponent
     {
     public:
-        DLLEXPORT void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        DLLEXPORT void getEntityTransforms(Entity entity, std::vector<glm::mat4>& transforms) const override;
+        void init(Camera& cam, Scene& scene, App& app) noexcept override;
+        void getEntityTransforms(Entity entity, std::vector<glm::mat4>& transforms) const override;
     private:
         OptionalRef<Scene> _scene;
+        OptionalRef<Camera> _cam;
+        OptionalRef<SkeletalAnimationController> getController(Entity entity) const noexcept;
     };
 }

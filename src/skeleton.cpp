@@ -1,4 +1,7 @@
 #include <darmok/skeleton.hpp>
+#include <darmok/mesh.hpp>
+#include <darmok/material.hpp>
+#include <darmok/program.hpp>
 
 namespace darmok
 {
@@ -73,20 +76,27 @@ namespace darmok
     void SkeletalAnimationCameraComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
+        _cam = cam;
+    }
+
+    OptionalRef<SkeletalAnimationController> SkeletalAnimationCameraComponent::getController(Entity entity) const noexcept
+    {
+        if (!_scene)
+        {
+            return nullptr;
+        }
+        auto& registry = _scene->getRegistry();
+        return registry.try_get<SkeletalAnimationController>(entity);
     }
 
     void SkeletalAnimationCameraComponent::getEntityTransforms(Entity entity, std::vector<glm::mat4>& transforms) const
     {
-        if (!_scene)
+        auto ctrl = getController(entity);
+        if (!ctrl)
         {
             return;
         }
         auto& registry = _scene->getRegistry();
-        auto ctrl = registry.try_get<SkeletalAnimationController>(entity);
-        if (ctrl == nullptr)
-        {
-            return;
-        }
         auto skinnable = registry.try_get<Skinnable>(entity);
         if (skinnable != nullptr)
         {
@@ -95,7 +105,8 @@ namespace darmok
             {
                 for (auto& bone : armature->getBones())
                 {
-                    transforms.emplace_back(ctrl->getModelMatrix(bone.joint) * bone.inverseBindPose);
+                    auto model = ctrl->getModelMatrix(bone.joint);
+                    transforms.emplace_back(model * bone.inverseBindPose);
                 }
             }
         }
