@@ -10,6 +10,7 @@ void main()
 {
 	vec4 pos = vec4(a_position, 1.0);
 	pos = mul(getSkinningMatrix(a_indices, a_weight), pos);
+
 	v_position = mul(u_model[0], pos).xyz;
 	v_normal = mul(u_model[0], vec4(a_normal, 0.0)).xyz;
 	v_texcoord0 = a_texcoord0;

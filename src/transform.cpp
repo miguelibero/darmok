@@ -250,7 +250,7 @@ namespace darmok
             // TODO: optimize calculating inverse in next update
             _localMatrix = v;
             _localInverse = glm::inverse(_localMatrix);
-            setChildrenParentChanged();
+            setParentChanged();
         }
 
         return *this;

@@ -63,6 +63,10 @@ namespace darmok
             {
                 input.at(2) = 1.F;
             }
+            else if (attr == bgfx::Attrib::Indices)
+            {
+                input.fill(-1.F); // unused index is -1
+            }
             else if (attr == bgfx::Attrib::Weight)
             {
                 input.at(0) = 1.F; // take only first weight

@@ -2,6 +2,8 @@
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
+#include <darmok/transform.hpp>
+#include <darmok/render.hpp>
 
 namespace darmok
 {
@@ -55,9 +57,90 @@ namespace darmok
         _armature = armature;
     }
 
+    RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<IMesh>& boneMesh, const std::shared_ptr<Material>& mat) noexcept
+        : _boneMesh(boneMesh)
+        , _material(mat)
+    {
+    }
+
+    RenderableSkeleton::~RenderableSkeleton() noexcept
+    {
+        shutdown();
+    }
+
+    void RenderableSkeleton::init(Scene& scene) noexcept
+    {
+        _scene = scene;
+        auto& registry = scene.getRegistry();
+        auto entity = scene.getEntity(*this);
+        if (entity != entt::null)
+        {
+            _ctrl = scene.getComponent<SkeletalAnimationController>(entity);
+        }
+        if (_ctrl && _boneMesh && _material)
+        {
+            auto& trans = scene.getOrAddComponent<Transform>(entity);
+            auto& matrixes = _ctrl->getBoneMatrixes();
+            for (auto& mtx : matrixes)
+            {
+                auto boneEntity = scene.createEntity();
+                auto& boneTrans = scene.addComponent<Transform>(boneEntity, mtx, trans);
+                scene.addComponent<Renderable>(boneEntity, _boneMesh, _material);
+                _bones.emplace_back(boneTrans);
+            }
+        }
+    }
+
+    void RenderableSkeleton::update(float deltaTime) noexcept
+    {
+        if (!_ctrl)
+        {
+            return;
+        }
+        auto& matrixes = _ctrl->getBoneMatrixes();
+        auto i = 0;
+        for (auto& bone : _bones)
+        {
+            bone->setLocalMatrix(matrixes[i++]);
+        }
+    }
+
+    void RenderableSkeleton::shutdown() noexcept
+    {
+        if (_scene)
+        {
+            for (auto& bone : _bones)
+            {
+                _scene->destroyEntity(_scene->getEntity(bone));
+            }
+        }
+        _scene.reset();
+        _bones.clear();
+    }
+
     void SkeletalAnimationUpdater::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;
+        auto& registry = scene.getRegistry();
+        registry.on_construct<RenderableSkeleton>().connect<&SkeletalAnimationUpdater::onSkeletonConstructed>(*this);
+    }
+
+    void SkeletalAnimationUpdater::onSkeletonConstructed(EntityRegistry& registry, Entity entity) noexcept
+    {
+        if (_scene)
+        {
+            auto& bones = registry.get<RenderableSkeleton>(entity);
+            bones.init(_scene.value());
+        }
+    }
+
+    void SkeletalAnimationUpdater::shutdown() noexcept
+    {
+        if (_scene)
+        {
+            auto& registry = _scene->getRegistry();
+            registry.on_construct<RenderableSkeleton>().disconnect<&SkeletalAnimationUpdater::onSkeletonConstructed>(*this);
+        }
     }
 
     void SkeletalAnimationUpdater::update(float deltaTime) noexcept
@@ -70,6 +153,11 @@ namespace darmok
         for (auto [entity, ctrl] : ctrls.each())
         {
             ctrl.update(deltaTime);
+        }
+        auto skels = _scene->getRegistry().view<RenderableSkeleton>();
+        for (auto [entity, skel] : skels.each())
+        {
+            skel.update(deltaTime);
         }
     }
 

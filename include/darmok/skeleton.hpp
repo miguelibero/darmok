@@ -36,6 +36,7 @@ namespace darmok
         SkeletalAnimationImpl& getImpl();
         const SkeletalAnimationImpl& getImpl() const;
         std::string_view getName() const noexcept;
+        float getDuration() const noexcept;
     private:
         std::unique_ptr<SkeletalAnimationImpl> _impl;
     };
@@ -76,28 +77,50 @@ namespace darmok
 	};
 
     class SkeletalAnimationControllerImpl;
+    class Transform;
+    class Material;
 
     class SkeletalAnimationController final
     {
     public:
-        ~SkeletalAnimationController();
         DLLEXPORT SkeletalAnimationController(const std::shared_ptr<Skeleton>& skel, const std::vector<std::shared_ptr<SkeletalAnimation>>& animations = {}) noexcept;
+        DLLEXPORT ~SkeletalAnimationController();
         DLLEXPORT SkeletalAnimationController& addAnimation(const std::shared_ptr<SkeletalAnimation>& anim) noexcept;
-        DLLEXPORT bool playAnimation(std::string_view name) noexcept;
+        DLLEXPORT bool playAnimation(std::string_view name, bool loop = true) noexcept;
         DLLEXPORT glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
-        DLLEXPORT std::vector<glm::mat4> getModelMatrixes() const noexcept;
+        DLLEXPORT std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
+        DLLEXPORT SkeletalAnimationController& setPlaybackSpeed(float speed) noexcept;
         void update(float deltaTime) noexcept;
     private:
         std::unique_ptr<SkeletalAnimationControllerImpl> _impl;
     };
 
+    class RenderableSkeleton final
+    {
+    public:
+        DLLEXPORT RenderableSkeleton(const std::shared_ptr<IMesh>& boneMesh, const std::shared_ptr<Material>& mat) noexcept;
+        ~RenderableSkeleton() noexcept;
+        void init(Scene& scene) noexcept;
+        void update(float deltaTime) noexcept;
+        void shutdown() noexcept;
+    private:
+        OptionalRef<Scene> _scene;
+        std::shared_ptr<Material> _material;
+        std::shared_ptr<IMesh> _boneMesh;
+        OptionalRef<SkeletalAnimationController> _ctrl;
+        std::vector<OptionalRef<Transform>> _bones;
+    };
+
     class SkeletalAnimationUpdater final : public ISceneLogicUpdater
     {
     public:
-        DLLEXPORT void init(Scene& scene, App& app) noexcept override;
-        DLLEXPORT void update(float deltaTime) noexcept override;
+        void init(Scene& scene, App& app) noexcept override;
+        void update(float deltaTime) noexcept override;
+        void shutdown() noexcept override;
     private:
         OptionalRef<Scene> _scene;
+
+        void onSkeletonConstructed(EntityRegistry& registry, Entity entity) noexcept;
     };
 
 
@@ -126,9 +149,6 @@ namespace darmok
     private:
         std::shared_ptr<Armature> _armature;
     };
-
-    class Renderable;
-    class Material;
 
     class SkeletalAnimationCameraComponent final : public ICameraComponent
     {

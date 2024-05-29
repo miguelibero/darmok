@@ -9,6 +9,7 @@ namespace darmok
         static const Color::value_type maxValue;
 
         DLLEXPORT static const Color& black() noexcept;
+        DLLEXPORT static const Color& grey() noexcept;
         DLLEXPORT static const Color& white() noexcept;
         DLLEXPORT static const Color& red() noexcept;
         DLLEXPORT static const Color& green() noexcept;
@@ -18,6 +19,7 @@ namespace darmok
         DLLEXPORT static const Color& magenta() noexcept;
 
         DLLEXPORT static const Color3& black3() noexcept;
+        DLLEXPORT static const Color3& grey3() noexcept;
         DLLEXPORT static const Color3& white3() noexcept;
         DLLEXPORT static const Color3& red3() noexcept;
         DLLEXPORT static const Color3& green3() noexcept;

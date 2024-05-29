@@ -7,6 +7,7 @@
 #include <ozz/base/maths/simd_math.h>
 #include <ozz/animation/runtime/local_to_model_job.h>
 #include <optional>
+#include <glm/gtx/quaternion.hpp>
 
 namespace darmok
 {
@@ -14,13 +15,12 @@ namespace darmok
     {
         static glm::mat4 convert(const ozz::math::Float4x4& v)
         {
-            // TODO: check if we can do this in a nicer way
-            return {
-                { v.cols[0].m128_f32[0], v.cols[0].m128_f32[1], v.cols[0].m128_f32[2], v.cols[0].m128_f32[3] },
-                { v.cols[1].m128_f32[0], v.cols[1].m128_f32[1], v.cols[1].m128_f32[2], v.cols[1].m128_f32[3] },
-                { v.cols[2].m128_f32[0], v.cols[2].m128_f32[1], v.cols[2].m128_f32[2], v.cols[2].m128_f32[3] },
-                { v.cols[3].m128_f32[0], v.cols[3].m128_f32[1], v.cols[3].m128_f32[2], v.cols[3].m128_f32[3] }
-            };
+            return {  convert(v.cols[0]), convert(v.cols[1]), convert(v.cols[2]), convert(v.cols[3]) };
+        }
+
+        static glm::vec4 convert(const ozz::math::SimdFloat4& v)
+        {
+            return { v.m128_f32[0], v.m128_f32[1], v.m128_f32[2], v.m128_f32[3] };
         }
     };
 
@@ -74,9 +74,19 @@ namespace darmok
         return _anim;
     }
 
+    float SkeletalAnimationImpl::getDuration() const noexcept
+    {
+        return _anim.duration();
+    }
+
     std::string_view SkeletalAnimation::getName() const noexcept
     {
         return _impl->getOzz().name();
+    }
+
+    float SkeletalAnimation::getDuration() const noexcept
+    {
+        return _impl->getDuration();
     }
 
     DataOzzStream::DataOzzStream(const DataView& data) noexcept
@@ -203,6 +213,12 @@ namespace darmok
         _locals.resize(skel.num_soa_joints());
         _models.resize(skel.num_joints());
         _sampling.Resize(skel.num_joints());
+
+        ozz::animation::LocalToModelJob job;
+        job.input = skel.joint_rest_poses();
+        job.output = ozz::make_span(_models);
+        job.skeleton = &skel;
+        job.Run();
     }
 
     SkeletalAnimationController::~SkeletalAnimationController()
@@ -215,9 +231,15 @@ namespace darmok
         return _impl->getModelMatrix(boneName);
     }
 
-    std::vector<glm::mat4> SkeletalAnimationController::getModelMatrixes() const noexcept
+    std::vector<glm::mat4> SkeletalAnimationController::getBoneMatrixes(const glm::vec3& dir) const noexcept
     {
-        return _impl->getModelMatrixes();
+        return _impl->getBoneMatrixes(dir);
+    }
+
+    SkeletalAnimationController& SkeletalAnimationController::setPlaybackSpeed(float speed) noexcept
+    {
+        _impl->setPlaybackSpeed(speed);
+        return *this;
     }
 
     void SkeletalAnimationController::update(float deltaTime) noexcept
@@ -248,14 +270,12 @@ namespace darmok
 
     void SkeletalAnimationControllerImpl::setTimeRatio(float ratio) noexcept
     {
-        if (_loop)
-        {
-            _timeRatio = ratio - floorf(ratio);
-        }
-        else
-        {
-            _timeRatio = Math::clamp(0.f, ratio, 1.f);
-        }
+        _timeRatio = std::fmodf(ratio, 1.F);
+    }
+
+    void SkeletalAnimationControllerImpl::setPlaybackSpeed(float speed) noexcept
+    {
+        _playbackSpeed = speed;
     }
 
     glm::mat4 SkeletalAnimationControllerImpl::getModelMatrix(const std::string& joint) const noexcept
@@ -275,14 +295,29 @@ namespace darmok
         return glm::mat4(1);
     }
 
-    std::vector<glm::mat4> SkeletalAnimationControllerImpl::getModelMatrixes() const noexcept
+    std::vector<glm::mat4> SkeletalAnimationControllerImpl::getBoneMatrixes(const glm::vec3& dir) const noexcept
     {
-        std::vector<glm::mat4> models;
-        for (auto& ozzModel : _models)
+        auto& skel = _skeleton->getImpl().getOzz();
+        auto numJoints = skel.num_joints();
+        auto parents = skel.joint_parents();
+        std::vector<glm::mat4> bones;
+        bones.reserve(numJoints);
+        for (int i = 0; i < numJoints; ++i)
         {
-            models.push_back(OzzUtils::convert(ozzModel));
+            auto parentId = parents[i];
+            if (parentId == ozz::animation::Skeleton::kNoParent)
+            {
+                continue;
+            }
+            glm::vec3 parentPos = OzzUtils::convert(_models[parentId].cols[3]);
+            glm::vec3 childPos = OzzUtils::convert(_models[i].cols[3]);
+            auto diff = childPos - parentPos;
+            auto rot = glm::rotation(dir, glm::normalize(diff));
+            auto scale = glm::vec3(glm::length(diff));
+            auto bone = Math::transform(parentPos, rot, scale);
+            bones.push_back(bone);
         }
-        return models;
+        return bones;
     }
 
     bool SkeletalAnimationControllerImpl::update(float deltaTime) noexcept
@@ -293,15 +328,19 @@ namespace darmok
         }
         auto& anim = _currentAnimation->getImpl().getOzz();
 
+        if (_play)
         {
-            float newTime = _timeRatio;
-            if (_play)
+            auto timeRatio = _timeRatio + (deltaTime * _playbackSpeed / anim.duration());
+            if (timeRatio > 1.F)
             {
-                newTime = _timeRatio + deltaTime * _playbackSpeed / anim.duration();
+                if (!_loop)
+                {
+                    _play = false;
+                    return false;
+                }
             }
-            setTimeRatio(newTime);
+            setTimeRatio(timeRatio);
         }
-
         ozz::animation::SamplingJob sampling;
         sampling.animation = &anim;
         sampling.context = &_sampling;
@@ -335,8 +374,8 @@ namespace darmok
         return *this;
     }
 
-    bool SkeletalAnimationController::playAnimation(std::string_view name) noexcept
+    bool SkeletalAnimationController::playAnimation(std::string_view name, bool loop) noexcept
     {
-        return _impl->playAnimation(name);
+        return _impl->playAnimation(name, loop);
     }
 }

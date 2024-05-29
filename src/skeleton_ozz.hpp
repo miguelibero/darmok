@@ -28,6 +28,7 @@ namespace darmok
 		SkeletalAnimationImpl(ozz::animation::Animation&& anim) noexcept;
 		ozz::animation::Animation& getOzz() noexcept;
 		const ozz::animation::Animation& getOzz() const noexcept;
+		float getDuration() const noexcept;
 	private:
 		ozz::animation::Animation _anim;
 	};
@@ -75,8 +76,9 @@ namespace darmok
 		bool playAnimation(std::string_view name, bool loop = true);
 		bool update(float deltaTime) noexcept;
 		void setTimeRatio(float ratio) noexcept;
+		void setPlaybackSpeed(float speed) noexcept;
 		glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
-		std::vector<glm::mat4> getModelMatrixes() const noexcept;
+		std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 	private:
 		std::shared_ptr<Skeleton> _skeleton;
 		std::vector<std::shared_ptr<SkeletalAnimation>> _animations;

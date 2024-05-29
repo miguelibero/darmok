@@ -9,6 +9,12 @@ namespace darmok
         const static Color3 v{ 0, 0, 0 };
         return v;
     }
+
+    const Color3& Colors::grey3() noexcept
+    {
+        const static Color3 v{ maxValue / 2, maxValue / 2, maxValue / 2 };
+        return v;
+    }
         
     const Color3& Colors::white3() noexcept
     {
@@ -55,6 +61,12 @@ namespace darmok
     const Color& Colors::black() noexcept
     {
         const static Color v(black3(), maxValue);
+        return v;
+    }
+
+    const Color& Colors::grey() noexcept
+    {
+        const static Color v(grey3(), maxValue);
         return v;
     }
 

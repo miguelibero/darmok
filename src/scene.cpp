@@ -143,6 +143,20 @@ namespace darmok
         return _impl->getRegistry();
     }
 
+    Entity Scene::createEntity() noexcept
+    {
+        return getRegistry().create();
+    }
+
+    bool Scene::destroyEntity(Entity entity) noexcept
+    {
+        if (entity == entt::null)
+        {
+            return false;
+        }
+        return getRegistry().destroy(entity) > 0;
+    }
+
     void Scene::init(App& app)
     {
         _impl->init(*this, app);

@@ -27,7 +27,7 @@ namespace
 			App::init(args);
 			
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
-			scene.addLogicUpdater<SkeletalAnimationUpdater>();
+			auto& skelUpdater = scene.addLogicUpdater<SkeletalAnimationUpdater>();
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			
@@ -35,8 +35,10 @@ namespace
 
 			auto camEntity = registry.create();
 			registry.emplace<Transform>(camEntity)
-				.setPosition(glm::vec3(0.f, 200, -200))
-				.lookAt(glm::vec3(0, 100, 0));
+				.setPosition(glm::vec3(0.f, 2, -2))
+				.lookAt(glm::vec3(0, 1, 0));
+				// .setPosition(glm::vec3(0.f, 200, -200))
+				// .lookAt(glm::vec3(0, 100, 0));
 
 			auto& cam = registry.emplace<Camera>(camEntity)
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
@@ -45,25 +47,31 @@ namespace
 
 			auto& skelCam = cam.addComponent<SkeletalAnimationCameraComponent>();
 
-			/*
-			auto skelDebugTex = getAssets().getColorTextureLoader()(Colors::red());
-			auto skelDebugMat = std::make_shared<Material>(prog, skelDebugTex);
-			skelCam.setDebugMaterial(skelDebugMat);
-			*/
-
 			auto lightEntity = registry.create();
 			registry.emplace<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
 			registry.emplace<PointLight>(lightEntity);
 			registry.emplace<AmbientLight>(registry.create(), 0.8);
 
 			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");
-			auto anim = getAssets().getSkeletalAnimationLoader()("run.ozz");
+			auto anim = getAssets().getSkeletalAnimationLoader()("BasicMotions@Run01 - Forwards.ozz");
 
 			auto skelEntity = registry.create();
+			auto& skelTrans = registry.emplace<Transform>(skelEntity);
+			// TODO: convert ozz to left handed
+			// see https://github.com/guillaumeblanc/ozz-animation/issues/28
+			skelTrans.setEulerAngles(glm::vec3(0, 180, 0));
+
 			auto& ctrl = registry.emplace<SkeletalAnimationController>(skelEntity, skel);
 			ctrl.addAnimation(anim);
+			ctrl.setPlaybackSpeed(0.5);
 			ctrl.playAnimation(anim->getName());
 
+			auto boneTex = getAssets().getColorTextureLoader()(Colors::grey());
+			auto boneMat = std::make_shared<Material>(prog, boneTex);
+			auto boneMesh = MeshCreator(prog->getVertexLayout()).createBone();
+			registry.emplace<RenderableSkeleton>(skelEntity, boneMesh, boneMat);
+
+			/*
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
 			auto model = getAssets().getModelLoader()("BasicMotionsDummyModelBin.fbx");
 
@@ -81,7 +89,7 @@ namespace
 					ctrl.addAnimation(anim);
 					ctrl.playAnimation(anim->getName());
 				}
-			});
+			});*/
 		}
 
 		int shutdown() override

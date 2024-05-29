@@ -17,7 +17,7 @@
         "normalize": true
     },
     "indices": {
-        "type": "int",
+        "type": "float",
         "num": 4
     },
     "weights": {

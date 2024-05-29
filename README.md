@@ -74,6 +74,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * physics
 * binary mesh serialization
 * sound
+* render to fullscreen texture
 
 * other types of lights
 * pbr lighting

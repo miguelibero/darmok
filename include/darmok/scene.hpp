@@ -50,6 +50,9 @@ namespace darmok
         DLLEXPORT EntityRegistry& getRegistry();
         DLLEXPORT const EntityRegistry& getRegistry() const;
 
+        Entity createEntity() noexcept;
+        bool destroyEntity(Entity entity) noexcept;
+
         template<typename T>
 		Entity getEntity(const T& component) noexcept
 		{
@@ -61,6 +64,24 @@ namespace darmok
         OptionalRef<T> getComponent(Entity entity) noexcept
         {
             return getRegistry().try_get<T>(entity);
+        }
+
+        template<typename T, typename... A>
+        T& getOrAddComponent(Entity entity, A&&... args) noexcept
+        {
+            return getRegistry().get_or_emplace<T>(entity, std::forward<A>(args)...);
+        }
+
+        template<typename T, typename... A>
+        T& addComponent(Entity entity, A&&... args) noexcept
+        {
+            return getRegistry().emplace<T>(entity, std::forward<A>(args)...);
+        }
+
+        template<typename T>
+        bool removeComponent(Entity entity) noexcept
+        {
+            return getRegistry().remove<T>(entity) > 0;
         }
 
         template<typename T>

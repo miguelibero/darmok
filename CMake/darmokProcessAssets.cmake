@@ -1,7 +1,7 @@
 include(darmokUtils)
 include(darmokProcessShader)
 include(darmokProcessAsset)
-include(darmokProcessOzzSkeleton)
+include(darmokProcessOzz)
 
 # darmok_process_assets(
 #   ASSETS files or pattern
@@ -90,7 +90,7 @@ function(darmok_process_assets)
         set(VERTEX_LAYOUTS "")
         set(LUA_SCRIPTS "")
         set(COPY_ASSETS "")
-        set(OZZ_SKELETONS "")
+        set(OZZ_ASSETS "")
         set(OZZ_CONFIGS "")
         foreach(ASSET_PATH_ABS ${ASSET_PATHS})
             file(RELATIVE_PATH ASSET_PATH ${ASSET_BASE_PATH} ${ASSET_PATH_ABS})
@@ -127,7 +127,7 @@ function(darmok_process_assets)
                 if(${ASSET_PATH_ABS} STREQUAL ${OZZ_CONFIG_PATH})
                     list(APPEND OZZ_CONFIGS ${ASSET_PATH_ABS})                
                 else()
-                    list(APPEND OZZ_SKELETONS ${ASSET_PATH_ABS})
+                    list(APPEND OZZ_ASSETS ${ASSET_PATH_ABS})
                     list(APPEND COPY_ASSETS ${ASSET_PATH})
                 endif()
             else()
@@ -152,9 +152,9 @@ function(darmok_process_assets)
             list(APPEND ASSET_SOURCES ${VERTEX_LAYOUTS})
         endif()
 
-        foreach(ASSET_PATH ${OZZ_SKELETONS})
+        foreach(ASSET_PATH ${OZZ_ASSETS})
             _darmok_replace_ext(OZZ_CONFIG_PATH ${ASSET_PATH} ".ozz.json")
-            darmok_process_ozz_skeleton(
+            darmok_process_ozz(
                 SKELETONS ${ASSET_PATH}
                 CONFIG ${OZZ_CONFIG_PATH}
                 OUTPUT_DIR ${ARGS_OUTPUT_DIR}

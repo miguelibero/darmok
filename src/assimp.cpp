@@ -594,6 +594,7 @@ namespace darmok
             int boneIndex = 0;
             std::vector<int> boneCount(vertexCount);
             std::vector<glm::ivec4> boneIndices(vertexCount);
+            std::fill(boneIndices.begin(), boneIndices.end(), glm::ivec4(-1));
             std::vector<glm::vec4> boneWeights(vertexCount);
             for (auto& bone : getBones())
             {
