@@ -308,8 +308,7 @@ namespace darmok
 
 	void LuaTextureAtlas::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaTextureAtlas>("TextureAtlas",
-			sol::constructors<>(),
+		lua.new_usertype<LuaTextureAtlas>("TextureAtlas", sol::no_constructor,
 			"texture", sol::property(&LuaTextureAtlas::getTexture)
 		);
 	}

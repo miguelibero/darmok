@@ -19,7 +19,8 @@ namespace darmok
 
 	enum class LuaNativeCameraComponentType
 	{
-		PhongLighting
+		PhongLighting,
+		SkeletalAnimation
 	};
 
 	class LuaCamera final

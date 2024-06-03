@@ -35,6 +35,10 @@ namespace darmok
 
 	std::optional<LuaEntity> LuaRenderable::getEntity(LuaScene& scene) noexcept
 	{
+		if (!_renderable)
+		{
+			return std::nullopt;
+		}
 		return scene.getEntity(_renderable.value());
 	}
 
@@ -82,8 +86,7 @@ namespace darmok
 
 	void LuaRenderable::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaRenderable>("Renderable",
-			sol::constructors<>(),
+		lua.new_usertype<LuaRenderable>("Renderable", sol::no_constructor,
 			"type_id", &entt::type_hash<Renderable>::value,
 			"add_entity_component", sol::overload(
 				&LuaRenderable::addEntityComponent1,
@@ -92,7 +95,8 @@ namespace darmok
 			),
 			"get_entity_component", &LuaRenderable::getEntityComponent,
 			"get_entity", &LuaRenderable::getEntity,
-			"mesh", sol::property(&LuaRenderable::getMesh, &LuaRenderable::setMesh)
+			"mesh", sol::property(&LuaRenderable::getMesh, &LuaRenderable::setMesh),
+			"material", sol::property(&LuaRenderable::getMaterial, &LuaRenderable::setMaterial)
 		);
 	}
 }

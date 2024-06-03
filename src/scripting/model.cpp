@@ -73,8 +73,7 @@ namespace darmok
 
 	void LuaModelNode::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaModelNode>("ModelNode",
-			sol::constructors<>(),
+		lua.new_usertype<LuaModelNode>("ModelNode", sol::no_constructor,
 			"name", sol::property(&LuaModelNode::getName),
 			"transform", sol::property(&LuaModelNode::getTransform),
 			"children", sol::property(&LuaModelNode::getChildren)
@@ -101,8 +100,7 @@ namespace darmok
 	{
 		LuaModelNode::bind(lua);
 		LuaModelSceneConfigurer::bind(lua);
-		lua.new_usertype<LuaModel>("Model",
-			sol::constructors<>(),
+		lua.new_usertype<LuaModel>("Model", sol::no_constructor,
 			"root_node", sol::property(&LuaModel::getRootNode)
 		);
 	}

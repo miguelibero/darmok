@@ -5,6 +5,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/light.hpp>
+#include <darmok/skeleton.hpp>
 
 namespace darmok
 {
@@ -93,6 +94,9 @@ namespace darmok
 		{
 		case LuaNativeCameraComponentType::PhongLighting:
 			_camera->addComponent<PhongLightingComponent>();
+			break;
+		case LuaNativeCameraComponentType::SkeletalAnimation:
+			_camera->addComponent<SkeletalAnimationCameraComponent>();
 			break;
 		}
 		return *this;

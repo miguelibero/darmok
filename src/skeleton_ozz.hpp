@@ -77,6 +77,7 @@ namespace darmok
 		bool update(float deltaTime) noexcept;
 		void setTimeRatio(float ratio) noexcept;
 		void setPlaybackSpeed(float speed) noexcept;
+		float getPlaybackSpeed() const noexcept;
 		glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
 		std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 	private:

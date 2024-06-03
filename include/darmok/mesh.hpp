@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <optional>
 
 #include <darmok/color.hpp>
 #include <darmok/scene_fwd.hpp>
@@ -146,10 +147,9 @@ namespace darmok
     {
         using Config = MeshCreationConfig;
         Config config;
-        bgfx::VertexLayout layout;
+        std::optional<bgfx::VertexLayout> vertexLayout;
 
-        DLLEXPORT MeshCreator(const bgfx::VertexLayout& layout) noexcept;
-
+        DLLEXPORT MeshCreator(std::optional<bgfx::VertexLayout> vertexLauout = std::nullopt) noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createMesh(const MeshData& meshData) noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createCube() noexcept;
         DLLEXPORT std::shared_ptr<IMesh> createCube(const Cube& cube) noexcept;
@@ -168,6 +168,7 @@ namespace darmok
         const static MeshData _rectangleMeshData;
 
         std::shared_ptr<IMesh> createMesh(const MeshData& meshData, const Config& cfg) noexcept;
-        std::shared_ptr<IMesh> createRectangleMesh(const bgfx::VertexLayout& layout, const MeshData& data, const Rectangle& quad) noexcept;
+        std::shared_ptr<IMesh> createRectangleMesh(const MeshData& data, const Rectangle& quad) noexcept;
+        static bgfx::VertexLayout getDefaultVertexLayout(const MeshData& meshData) noexcept;
     };
 }

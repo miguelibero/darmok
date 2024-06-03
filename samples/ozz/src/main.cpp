@@ -60,8 +60,7 @@ namespace
 
 			auto boneTex = getAssets().getColorTextureLoader()(Colors::grey());
 			auto boneMat = std::make_shared<Material>(prog, boneTex);
-			auto boneMesh = MeshCreator(prog->getVertexLayout()).createBone();
-			registry.emplace<RenderableSkeleton>(skelEntity, boneMesh, boneMat);
+			registry.emplace<RenderableSkeleton>(skelEntity, boneMat);
 
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
 			auto model = getAssets().getModelLoader()("BasicMotionsDummyModelBin.fbx");

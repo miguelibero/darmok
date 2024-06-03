@@ -3,6 +3,7 @@
 #include <bgfx/bgfx.h>
 #include <memory>
 #include <vector>
+#include <optional>
 #include <glm/glm.hpp>
 #include <sol/sol.hpp>
 
@@ -14,9 +15,7 @@ namespace darmok
 	{
 	public:
 		LuaMesh(const std::shared_ptr<IMesh>& mesh) noexcept;
-
 		std::string to_string() const noexcept;
-
 		std::shared_ptr<IMesh> getReal() const noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
@@ -37,12 +36,14 @@ namespace darmok
 	{
 		using Config = MeshCreationConfig;
 
-		LuaMeshCreator(const bgfx::VertexLayout& layout) noexcept;
-		~LuaMeshCreator();
+		LuaMeshCreator() noexcept;
+		LuaMeshCreator(const std::optional<bgfx::VertexLayout>& layout) noexcept;
+		~LuaMeshCreator() noexcept;
 
 		Config& getConfig() noexcept;
 		void setConfig(const Config& config) noexcept;
-		bgfx::VertexLayout& getVertexLayout()  noexcept;
+		void setVertexLayout(const std::optional<bgfx::VertexLayout>& layout) noexcept;
+		std::optional<bgfx::VertexLayout> getVertexLayout() noexcept;
 
 		LuaMesh createMesh(const MeshData& meshData) noexcept;
 		LuaMesh createCube1() noexcept;

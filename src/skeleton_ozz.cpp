@@ -6,8 +6,10 @@
 #include <ozz/base/span.h>
 #include <ozz/base/maths/simd_math.h>
 #include <ozz/animation/runtime/local_to_model_job.h>
-#include <optional>
 #include <glm/gtx/quaternion.hpp>
+#include <optional>
+#include <sstream>
+
 
 namespace darmok
 {
@@ -28,6 +30,15 @@ namespace darmok
     Skeleton::~Skeleton()
     {
         // intentionally empty to be able to forward declare the impl
+    }
+
+    std::string Skeleton::to_string() const noexcept
+    {
+        auto& skel = _impl->getOzz();
+
+        std::stringstream ss;
+        ss << "Skeleton " << skel.num_joints() << "joints";
+        return ss.str();
     }
 
     SkeletonImpl::SkeletonImpl(ozz::animation::Skeleton&& skel) noexcept
@@ -53,6 +64,15 @@ namespace darmok
     SkeletalAnimation::~SkeletalAnimation()
     {
         // intentionally empty to be able to forward declare the impl
+    }
+
+    std::string SkeletalAnimation::to_string() const noexcept
+    {
+        auto& anim = _impl->getOzz();
+
+        std::stringstream ss;
+        ss << "SkeletalAnimation " << anim.name();
+        return ss.str();
     }
 
     SkeletalAnimationImpl::SkeletalAnimationImpl(ozz::animation::Animation&& anim) noexcept
@@ -238,6 +258,11 @@ namespace darmok
         return *this;
     }
 
+    float SkeletalAnimationController::getPlaybackSpeed() const noexcept
+    {
+        return _impl->getPlaybackSpeed();
+    }
+
     void SkeletalAnimationController::update(float deltaTime) noexcept
     {
         _impl->update(deltaTime);
@@ -272,6 +297,11 @@ namespace darmok
     void SkeletalAnimationControllerImpl::setPlaybackSpeed(float speed) noexcept
     {
         _playbackSpeed = speed;
+    }
+
+    float SkeletalAnimationControllerImpl::getPlaybackSpeed() const noexcept
+    {
+        return _playbackSpeed;
     }
 
     glm::mat4 SkeletalAnimationControllerImpl::getModelMatrix(const std::string& joint) const noexcept

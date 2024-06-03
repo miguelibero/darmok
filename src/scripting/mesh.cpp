@@ -25,17 +25,21 @@ namespace darmok
 
 	void LuaMesh::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaMesh>("Mesh",
-			sol::constructors<>()
+		lua.new_usertype<LuaMesh>("Mesh", sol::no_constructor
 		);
 	}
 
-	LuaMeshCreator::LuaMeshCreator(const bgfx::VertexLayout& layout) noexcept
+	LuaMeshCreator::LuaMeshCreator() noexcept
+		: LuaMeshCreator(std::nullopt)
+	{
+	}
+
+	LuaMeshCreator::LuaMeshCreator(const std::optional<bgfx::VertexLayout>& layout) noexcept
 		: _creator(std::make_shared<MeshCreator>(layout))
 	{
 	}
 
-	LuaMeshCreator::~LuaMeshCreator()
+	LuaMeshCreator::~LuaMeshCreator() noexcept
 	{
 	}
 
@@ -49,9 +53,14 @@ namespace darmok
 		_creator->config = config;
 	}
 
-	bgfx::VertexLayout& LuaMeshCreator::getVertexLayout()  noexcept
+	void LuaMeshCreator::setVertexLayout(const std::optional<bgfx::VertexLayout>& layout)  noexcept
 	{
-		return _creator->layout;
+		_creator->vertexLayout = layout;
+	}
+
+	std::optional<bgfx::VertexLayout> LuaMeshCreator::getVertexLayout()  noexcept
+	{
+		return _creator->vertexLayout;
 	}
 
 	LuaMesh LuaMeshCreator::createMesh(const MeshData& meshData) noexcept
@@ -158,9 +167,9 @@ namespace darmok
 		);
 
 		lua.new_usertype<LuaMeshCreator>("MeshCreator",
-			sol::constructors<LuaMeshCreator(const bgfx::VertexLayout&)>(),
+			sol::constructors<LuaMeshCreator(), LuaMeshCreator(const std::optional<bgfx::VertexLayout>&)>(),
 			"config", sol::property(&LuaMeshCreator::getConfig, &LuaMeshCreator::setConfig),
-			"vertex_layout", sol::property(&LuaMeshCreator::getVertexLayout),
+			"vertex_layout", sol::property(&LuaMeshCreator::getVertexLayout, &LuaMeshCreator::setVertexLayout),
 			"create_cube", sol::overload(&LuaMeshCreator::createCube1, &LuaMeshCreator::createCube2),
 			"create_sphere", sol::overload(
 				&LuaMeshCreator::createSphere1, &LuaMeshCreator::createSphere2,

@@ -20,8 +20,7 @@ namespace darmok
 
 	void LuaProgram::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaProgram>("Program",
-			sol::constructors<>(),
+		lua.new_usertype<LuaProgram>("Program", sol::no_constructor,
 			"vertex_layout", sol::property(&LuaProgram::getVertexLayout)
 		);
 

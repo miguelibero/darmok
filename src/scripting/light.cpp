@@ -96,8 +96,7 @@ namespace darmok
 
 	void LuaPointLight::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaPointLight>("PointLight",
-			sol::constructors<>(),
+		lua.new_usertype<LuaPointLight>("PointLight", sol::no_constructor,
 			"type_id", &entt::type_hash<PointLight>::value,
 			"add_entity_component", sol::overload(
 				&LuaPointLight::addEntityComponent1,
@@ -171,8 +170,7 @@ namespace darmok
 
 	void LuaAmbientLight::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaAmbientLight>("AmbientLight",
-			sol::constructors<>(),
+		lua.new_usertype<LuaAmbientLight>("AmbientLight", sol::no_constructor,
 			"type_id", &entt::type_hash<AmbientLight>::value,
 			"add_entity_component", sol::overload(
 				&LuaAmbientLight::addEntityComponent1,

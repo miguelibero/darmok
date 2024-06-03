@@ -58,10 +58,23 @@ namespace darmok
         _armature = armature;
     }
 
-    RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<IMesh>& boneMesh, const std::shared_ptr<Material>& mat) noexcept
+    RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept
         : _boneMesh(boneMesh)
         , _material(mat)
     {
+        if(!_boneMesh)
+        {
+            MeshCreator creator;
+            if (mat)
+            {
+                auto prog = mat->getProgram();
+                if (prog)
+                {
+                    creator.vertexLayout = prog->getVertexLayout();
+                }
+                _boneMesh = creator.createBone();
+            }
+        }
     }
 
     RenderableSkeleton::~RenderableSkeleton() noexcept
@@ -199,7 +212,7 @@ namespace darmok
         }
         auto& registry = _scene->getRegistry();
         auto skinnable = registry.try_get<Skinnable>(entity);
-        if (skinnable == nullptr)
+        if (!skinnable)
         {
             return;
         }
@@ -207,7 +220,7 @@ namespace darmok
         auto armature = skinnable->getArmature();
         _skinning.clear();
         _skinning.push_back(glm::mat4(1));
-        if (armature != nullptr)
+        if (armature)
         {
             auto& bones = armature->getBones();
             _skinning.reserve(bones.size() + 1);

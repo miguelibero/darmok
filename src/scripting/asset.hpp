@@ -13,6 +13,8 @@ namespace darmok
 	class LuaTexture;
 	class LuaTextureAtlas;
 	class LuaModel;
+	class LuaSkeleton;
+	class LuaSkeletalAnimation;
 
 	class LuaAssets final
 	{
@@ -30,6 +32,8 @@ namespace darmok
 		LuaTextureAtlas loadTextureAtlas1(const std::string& name);
 		LuaTextureAtlas loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
 		LuaModel loadModel(const std::string& name);
+		LuaSkeleton loadSkeleton(const std::string& name);
+		LuaSkeletalAnimation loadSkeletalAnimation(const std::string& name);
 
 		static void bind(sol::state_view& lua) noexcept;
 

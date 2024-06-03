@@ -24,6 +24,7 @@ namespace darmok
     public:
         Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept;
         ~Skeleton();
+        std::string to_string() const noexcept;
         SkeletonImpl& getImpl();
         const SkeletonImpl& getImpl() const;
     private:
@@ -39,6 +40,7 @@ namespace darmok
         ~SkeletalAnimation();
         SkeletalAnimationImpl& getImpl();
         const SkeletalAnimationImpl& getImpl() const;
+        std::string to_string() const noexcept;
         std::string_view getName() const noexcept;
         float getDuration() const noexcept;
     private:
@@ -94,6 +96,7 @@ namespace darmok
         DLLEXPORT glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
         DLLEXPORT std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
         DLLEXPORT SkeletalAnimationController& setPlaybackSpeed(float speed) noexcept;
+        DLLEXPORT float getPlaybackSpeed() const noexcept;
         void update(float deltaTime) noexcept;
     private:
         std::unique_ptr<SkeletalAnimationControllerImpl> _impl;
@@ -102,7 +105,7 @@ namespace darmok
     class RenderableSkeleton final
     {
     public:
-        DLLEXPORT RenderableSkeleton(const std::shared_ptr<IMesh>& boneMesh, const std::shared_ptr<Material>& mat) noexcept;
+        DLLEXPORT RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh = nullptr) noexcept;
         ~RenderableSkeleton() noexcept;
         void init(Scene& scene) noexcept;
         void update(float deltaTime) noexcept;

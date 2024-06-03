@@ -335,8 +335,8 @@ namespace darmok
 		return _layout;
 	}
 
-	MeshCreator::MeshCreator(const bgfx::VertexLayout& layout) noexcept
-		: layout(layout)
+	MeshCreator::MeshCreator(std::optional<bgfx::VertexLayout> vertexLauout) noexcept
+		: vertexLayout(vertexLauout)
 		, config{}
 	{
 	}
@@ -346,28 +346,59 @@ namespace darmok
 		return createMesh(meshData, config);
 	}
 
+	bgfx::VertexLayout MeshCreator::getDefaultVertexLayout(const MeshData& meshData) noexcept
+	{
+		bgfx::VertexLayout meshLayout;
+		meshLayout.begin();
+		if (!meshData.positions.empty())
+		{
+			meshLayout.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
+		}
+		if (!meshData.normals.empty())
+		{
+			meshLayout.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float);
+		}
+		if (!meshData.texCoords.empty())
+		{
+			meshLayout.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float);
+		}
+		meshLayout.end();
+		return meshLayout;
+	}
+
 	std::shared_ptr<IMesh> MeshCreator::createMesh(const MeshData& meshData, const MeshCreationConfig& cfg) noexcept
 	{
-		VertexDataWriter writer(layout, meshData.positions.size());
-		uint32_t i = 0;
-		for (auto& pos : meshData.positions)
+		auto meshLayout = vertexLayout ? vertexLayout.value() : getDefaultVertexLayout(meshData);
+		
+		VertexDataWriter writer(meshLayout, meshData.positions.size());
+		if (meshLayout.has(bgfx::Attrib::Position))
 		{
-			auto v = cfg.scale * (pos + cfg.offset);
-			writer.write(bgfx::Attrib::Position, i++, v);
+			uint32_t i = 0;
+			for (auto& pos : meshData.positions)
+			{
+				auto v = cfg.scale * (pos + cfg.offset);
+				writer.write(bgfx::Attrib::Position, i++, v);
+			}
 		}
-		i = 0;
-		for (auto& texCoord : meshData.texCoords)
+		if (meshLayout.has(bgfx::Attrib::TexCoord0))
 		{
-			auto v = cfg.textureScale * (texCoord + cfg.textureOffset);
-			writer.write(bgfx::Attrib::TexCoord0, i++, v);
+			uint32_t i = 0;
+			for (auto& texCoord : meshData.texCoords)
+			{
+				auto v = cfg.textureScale * (texCoord + cfg.textureOffset);
+				writer.write(bgfx::Attrib::TexCoord0, i++, v);
+			}
+		}
+		if (meshLayout.has(bgfx::Attrib::Normal))
+		{
+			writer.write(bgfx::Attrib::Normal, meshData.normals);
 		}
 
-		writer.write(bgfx::Attrib::Normal, meshData.normals);
 		auto vertexData = writer.finish();
 		DataView vertDataView(vertexData);
 		DataView idxDataView(meshData.indices);
 
-		return IMesh::create(config.type, layout, vertDataView, idxDataView);
+		return IMesh::create(config.type, meshLayout, vertDataView, idxDataView);
 	}
 
 	std::shared_ptr<IMesh> MeshCreator::createCube() noexcept
@@ -429,7 +460,7 @@ namespace darmok
 		}
 	};
 
-	std::shared_ptr<IMesh> MeshCreator::createRectangleMesh(const bgfx::VertexLayout& layout, const MeshData& data, const Rectangle& rect) noexcept
+	std::shared_ptr<IMesh> MeshCreator::createRectangleMesh(const MeshData& data, const Rectangle& rect) noexcept
 	{
 		auto cfg = config;
 		cfg.scale *= glm::vec3(rect.size, 0);
@@ -441,14 +472,14 @@ namespace darmok
 	{
 		MeshData data = _rectangleMeshData;
 		data.indices = { 0, 1, 2, 2, 3, 0 };
-		return createRectangleMesh(layout, data, rect);
+		return createRectangleMesh(data, rect);
 	}
 
 	std::shared_ptr<IMesh> MeshCreator::createLineRectangle(const Rectangle& rect) noexcept
 	{
 		MeshData data = _rectangleMeshData;
 		data.indices = { 0, 1, 1, 2, 2, 3, 3, 0 };
-		return createRectangleMesh(layout, data, rect);
+		return createRectangleMesh(data, rect);
 	}
 
 	std::shared_ptr<IMesh> MeshCreator::createSphere(int lod) noexcept

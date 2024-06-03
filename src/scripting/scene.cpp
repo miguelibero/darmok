@@ -4,6 +4,7 @@
 #include "camera.hpp"
 #include "light.hpp"
 #include "render.hpp"
+#include "skeleton.hpp"
 #include <darmok/scene.hpp>
 
 namespace darmok
@@ -106,7 +107,7 @@ namespace darmok
 
 	void LuaEntity::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaEntity>("Entity", sol::constructors<>(),
+		lua.new_usertype<LuaEntity>("Entity", sol::no_constructor,
 			"scene", sol::property(&LuaEntity::getScene),
 			"remove_component", &LuaEntity::removeComponent,
 			"has_component", &LuaEntity::hasComponent
@@ -219,6 +220,8 @@ end
 		LuaAmbientLight::bind(lua);
 		LuaPointLight::bind(lua);
 		LuaRenderable::bind(lua);
+		LuaSkeletalAnimationController::bind(lua);
+		LuaRenderableSkeleton::bind(lua);
 
 		lua.new_usertype<LuaScene>("Scene",
 			sol::constructors<LuaScene(LuaApp&)>(),

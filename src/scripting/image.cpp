@@ -64,8 +64,7 @@ namespace darmok
 
 	void LuaImage::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaImage>("Image",
-			sol::constructors<>(),
+		lua.new_usertype<LuaImage>("Image", sol::no_constructor,
 			"size", sol::property(&LuaImage::getSize),
 			"depth", sol::property(&LuaImage::getDepth),
 			"is_cubemap", sol::property(&LuaImage::isCubeMap),

@@ -5,11 +5,13 @@
 #include "texture.hpp"
 #include "material.hpp"
 #include "model.hpp"
+#include "skeleton.hpp"
 #include <darmok/shape.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
+#include <darmok/skeleton.hpp>
 
 namespace darmok
 {	
@@ -68,6 +70,16 @@ namespace darmok
 		return LuaModel(_assets->getModelLoader()(name));
 	}
 
+	LuaSkeleton LuaAssets::loadSkeleton(const std::string& name)
+	{
+		return LuaSkeleton(_assets->getSkeletonLoader()(name));
+	}
+
+	LuaSkeletalAnimation LuaAssets::loadSkeletalAnimation(const std::string& name)
+	{
+		return LuaSkeletalAnimation(_assets->getSkeletalAnimationLoader()(name));
+	}
+
 	void LuaAssets::bind(sol::state_view& lua) noexcept
 	{
 		LuaProgram::bind(lua);
@@ -78,15 +90,17 @@ namespace darmok
 		LuaMesh::bind(lua);
 		LuaMeshCreator::bind(lua);
 		LuaModel::bind(lua);
+		LuaSkeleton::bind(lua);
 
-		lua.new_usertype<LuaAssets>("Assets",
-			sol::constructors<>(),
+		lua.new_usertype<LuaAssets>("Assets", sol::no_constructor,
 			"load_model", &LuaAssets::loadModel,
 			"load_program", &LuaAssets::loadProgram,
 			"load_standard_program", &LuaAssets::loadStandardProgram,
 			"load_texture", sol::overload(&LuaAssets::loadTexture1, &LuaAssets::loadTexture2),
 			"load_color_texture", &LuaAssets::loadColorTexture,
-			"load_texture_atlas", sol::overload(&LuaAssets::loadTextureAtlas1, &LuaAssets::loadTextureAtlas2)
+			"load_texture_atlas", sol::overload(&LuaAssets::loadTextureAtlas1, &LuaAssets::loadTextureAtlas2),
+			"load_skeleton", &LuaAssets::loadSkeleton,
+			"load_skeletal_animation", &LuaAssets::loadSkeletalAnimation
 		);
 	}
 }

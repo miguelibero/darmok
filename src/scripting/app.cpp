@@ -13,6 +13,7 @@
 #include "window.hpp"
 #include "texture.hpp"
 #include "rmlui.hpp"
+#include "skeleton.hpp"
 #include "utils.hpp"
 
 namespace darmok
