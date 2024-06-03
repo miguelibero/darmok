@@ -1,15 +1,13 @@
 #ifndef DARMOK_PHONG_LIGHTING_HEADER
 #define DARMOK_PHONG_LIGHTING_HEADER
 
-#include <bgfx_compute.sh>
-#include "samplers.include.sc"
+#include <darmok_compute.include.sc>
 
 uniform vec4 u_lightCount;
-#define u_pointLightCount uint(u_lightCount.x)
-
 uniform vec4 u_lightingData;
-
 uniform vec4 u_material;
+
+#define u_pointLightCount uint(u_lightCount.x)
 
 struct PointLight
 {
@@ -36,7 +34,7 @@ PointLight getPointLight(uint i)
     i *= 3;
     light.position  = b_pointLights[i + 0].xyz;
     light.diffuse   = b_pointLights[i + 1].xyz;
-    light.specular   = b_pointLights[i + 2].xyz;
+    light.specular  = b_pointLights[i + 2].xyz;
     return light;
 }
 
@@ -56,7 +54,7 @@ struct Material
 Material getMaterial()
 {
     Material mat;
-    mat.shininess = u_material[0];
+    mat.shininess = int(u_material[0]);
     mat.specularStrength = u_material[1];
     return mat;
 }

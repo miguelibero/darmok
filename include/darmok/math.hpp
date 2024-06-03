@@ -56,6 +56,8 @@ namespace darmok
 			return result;
 		}
 
+		static glm::mat4 flipHandedness(const glm::mat4& mat) noexcept;
+
        /*
         * we cannot use the glm camera functions because they use opengl depth format 
         * and bgfx can run on different renderers so they have math functions with a depth parameter

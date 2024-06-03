@@ -25,10 +25,9 @@ namespace darmok
         DLLEXPORT virtual ~ICameraComponent() = default;
         DLLEXPORT virtual void init(Camera& cam, Scene& scene, App& app) {};
         DLLEXPORT virtual void update(float deltaTime) {}
-        DLLEXPORT virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
-        DLLEXPORT virtual void getEntityTransforms(Entity entity, std::vector<glm::mat4>& transforms) const {};
-        DLLEXPORT virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
-        DLLEXPORT virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const {};
+        DLLEXPORT virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) {};
+        DLLEXPORT virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) {};
+        DLLEXPORT virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) {};
         DLLEXPORT virtual void shutdown() {}
     };
 

@@ -138,14 +138,10 @@ namespace darmok
 
     void PhongLightingComponent::createHandles() noexcept
     {
-        static const std::string countUniformName = "u_lightCount";
-        static const std::string lightDataUniformName = "u_lightingData";
-        static const std::string camPosUniformName = "u_camPos";
-
         _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-        _lightCountUniform = bgfx::createUniform(countUniformName.c_str(), bgfx::UniformType::Vec4);
-        _lightDataUniform = bgfx::createUniform(lightDataUniformName.c_str(), bgfx::UniformType::Vec4);
-        _camPosUniform = bgfx::createUniform(camPosUniformName.c_str(), bgfx::UniformType::Vec4);
+        _lightCountUniform = bgfx::createUniform("u_lightCount", bgfx::UniformType::Vec4);
+        _lightDataUniform = bgfx::createUniform("u_lightingData", bgfx::UniformType::Vec4);
+        _camPosUniform = bgfx::createUniform("u_camPos", bgfx::UniformType::Vec4);
     }
 
     void PhongLightingComponent::destroyHandles() noexcept
@@ -256,7 +252,7 @@ namespace darmok
         updateCamera();
     }
 
-    void PhongLightingComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+    void PhongLightingComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept
     {
         if (isValid(_lightCountUniform))
         {

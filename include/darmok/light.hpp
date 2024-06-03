@@ -60,7 +60,7 @@ namespace darmok
         DLLEXPORT void init(Camera& cam, Scene& scene, App& app) noexcept override;
         DLLEXPORT void shutdown()  noexcept override;
         DLLEXPORT void update(float deltaTime)  noexcept override;
-        DLLEXPORT void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept override;
+        DLLEXPORT void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept override;
 
     private:
         OptionalRef<Scene> _scene;

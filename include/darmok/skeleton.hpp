@@ -11,6 +11,10 @@
 #include <darmok/render.hpp>
 #include <bx/bx.h>
 
+#ifndef DARMOK_SKELETON_MAX_BONES
+#define DARMOK_SKELETON_MAX_BONES 64
+#endif
+
 namespace darmok
 {
     class SkeletonImpl;
@@ -136,6 +140,7 @@ namespace darmok
         DLLEXPORT Armature(const std::vector<ArmatureBone>& bones) noexcept;
         DLLEXPORT Armature(std::vector<ArmatureBone>&& bones) noexcept;
         DLLEXPORT const std::vector<ArmatureBone>& getBones() const noexcept;
+
     private:
         std::vector<ArmatureBone> _bones;
     };
@@ -154,8 +159,11 @@ namespace darmok
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void getEntityTransforms(Entity entity, std::vector<glm::mat4>& transforms) const override;
+        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept override;
+        void shutdown() noexcept override;
     private:
+        bgfx::UniformHandle _skinningUniform;
+        std::vector<glm::mat4> _skinning;
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
         OptionalRef<SkeletalAnimationController> getController(Entity entity) const noexcept;

@@ -207,33 +207,22 @@ namespace darmok
 
     void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
-        std::vector<glm::mat4> transforms;
+        for (auto& comp : _components)
+        {
+            comp->beforeRenderEntity(entity, encoder, viewId);
+        }
+
+        const void* transMtx = nullptr;
         if (_scene)
         {
             auto& registry = _scene->getRegistry();
             auto trans = registry.try_get<const Transform>(entity);
             if (trans != nullptr)
             {
-                transforms.push_back(trans->getWorldMatrix());
+                transMtx = glm::value_ptr(trans->getWorldMatrix());
             }
         }
-        if (transforms.empty())
-        {
-            transforms.push_back(glm::mat4(1));
-        }
-        // add indentity matrix for meshes that are not skinned
-        // TODO: alternatively have separate shaders for skinned and normal meshes
-        transforms.push_back(glm::mat4(1));
-        for (auto& comp : _components)
-        {
-            comp->getEntityTransforms(entity, transforms);
-        }
-        encoder.setTransform(&transforms.front(), transforms.size());
-
-        for (auto& comp : _components)
-        {
-            comp->beforeRenderEntity(entity, encoder, viewId);
-        }
+        encoder.setTransform(transMtx);
     }
 
     void Camera::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept

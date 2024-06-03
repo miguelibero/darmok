@@ -1,7 +1,7 @@
 $input v_position, v_normal, v_color0, v_texcoord0
 
-#include <bgfx_shader.sh>
-#include "phong_lighting.include.sc"
+#include <darmok.include.sc>
+#include <darmok_phong_lighting.include.sc>
 
 SAMPLER2D(s_texColor, 0);
 uniform vec4 u_diffuseColor;
@@ -10,9 +10,12 @@ uniform vec4 u_camPos;
 
 // https://learnopengl.com/Lighting/Basic-Lighting
 
+
 void main()
 {
 	vec4 base = texture2D(s_texColor, v_texcoord0) * v_color0;
+	vec3 ambient = getAmbientLight().color;
+
 	vec3 diffuse = vec3_splat(0);
 	vec3 specular = vec3_splat(0);
 	vec3 viewDir = normalize(u_camPos.xyz - v_position);
@@ -35,7 +38,6 @@ void main()
 	
 	diffuse *= u_diffuseColor.xyz;
 	specular *= u_specularColor.xyz;
-	vec3 ambient = getAmbientLight().color;
 
 	gl_FragColor.rgb = base.rgb * (ambient + diffuse + specular);
 	gl_FragColor.a = base.a;

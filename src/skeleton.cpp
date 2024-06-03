@@ -4,6 +4,7 @@
 #include <darmok/program.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/render.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace darmok
 {
@@ -165,6 +166,18 @@ namespace darmok
     {
         _scene = scene;
         _cam = cam;
+        _skinningUniform = bgfx::createUniform("u_skinning", bgfx::UniformType::Mat4, DARMOK_SKELETON_MAX_BONES);
+    }
+
+    void SkeletalAnimationCameraComponent::shutdown() noexcept
+    {
+        _scene.reset();
+        _cam.reset();
+        if (isValid(_skinningUniform))
+        {
+            bgfx::destroy(_skinningUniform);
+            _skinningUniform.idx = bgfx::kInvalidHandle;
+        }
     }
 
     OptionalRef<SkeletalAnimationController> SkeletalAnimationCameraComponent::getController(Entity entity) const noexcept
@@ -177,7 +190,7 @@ namespace darmok
         return registry.try_get<SkeletalAnimationController>(entity);
     }
 
-    void SkeletalAnimationCameraComponent::getEntityTransforms(Entity entity, std::vector<glm::mat4>& transforms) const
+    void SkeletalAnimationCameraComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept
     {
         auto ctrl = getController(entity);
         if (!ctrl)
@@ -186,18 +199,25 @@ namespace darmok
         }
         auto& registry = _scene->getRegistry();
         auto skinnable = registry.try_get<Skinnable>(entity);
-        if (skinnable != nullptr)
+        if (skinnable == nullptr)
         {
-            auto armature = skinnable->getArmature();
-            if (armature != nullptr)
+            return;
+        }
+
+        auto armature = skinnable->getArmature();
+        _skinning.clear();
+        _skinning.push_back(glm::mat4(1));
+        if (armature != nullptr)
+        {
+            auto& bones = armature->getBones();
+            _skinning.reserve(bones.size() + 1);
+            for (auto& bone : bones)
             {
-                for (auto& bone : armature->getBones())
-                {
-                    auto model = ctrl->getModelMatrix(bone.joint);
-                    transforms.emplace_back(model * bone.inverseBindPose);
-                }
+                auto model = ctrl->getModelMatrix(bone.joint);
+                _skinning.push_back(model * bone.inverseBindPose);
             }
         }
+        encoder.setUniform(_skinningUniform, &_skinning.front(), _skinning.size());
     }
 
 }

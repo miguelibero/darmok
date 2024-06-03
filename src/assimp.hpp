@@ -303,13 +303,19 @@ namespace darmok
     class AssimpNode final
     {
     public:
-        AssimpNode(const aiNode& node, const AssimpScene& scene) noexcept;
+        using ParentRef = std::optional<std::weak_ptr<AssimpNode>>;
 
+        AssimpNode(const aiNode& node, const AssimpScene& scene, const ParentRef& parent = std::nullopt) noexcept;
+        void loadChildren(const std::weak_ptr<AssimpNode> selfPtr, const AssimpScene& scene) noexcept;
+
+        const aiNode& getAssimp() const noexcept;
         std::string_view getName() const noexcept;
         glm::mat4 getTransform() const noexcept;
+        glm::mat4 getWorldTransform() const noexcept;
+        static glm::mat4 getWorldTransform(const aiNode* node) noexcept;
         const std::vector<std::shared_ptr<AssimpMesh>>& getMeshes() const noexcept;
         const std::vector<std::shared_ptr<AssimpNode>>& getChildren() const noexcept;
-        std::weak_ptr<AssimpNode> getParent() const noexcept;
+        ParentRef getParent() const noexcept;
         std::shared_ptr<AssimpNode> findChildByPath(std::string_view path) const noexcept;
         std::shared_ptr<AssimpNode> findChildByName(std::string_view name) const noexcept;
         std::shared_ptr<AssimpCamera> getCamera() const noexcept;
@@ -318,10 +324,12 @@ namespace darmok
     private:
         OptionalRef<const aiNode> _node;
         aiSceneRef _scene;
+        ParentRef _parent;
         std::shared_ptr<AssimpCamera> _camera;
         std::shared_ptr<AssimpLight> _light;
         std::vector<std::shared_ptr<AssimpMesh>> _meshes;
         std::vector<std::shared_ptr<AssimpNode>> _children;
+        mutable std::optional<glm::mat4> _worldTransform;
     };
 
     class AssimpScene final

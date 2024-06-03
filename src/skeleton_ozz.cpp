@@ -15,12 +15,8 @@ namespace darmok
     {
         static glm::mat4 convert(const ozz::math::Float4x4& v)
         {
-            return {  convert(v.cols[0]), convert(v.cols[1]), convert(v.cols[2]), convert(v.cols[3]) };
-        }
-
-        static glm::vec4 convert(const ozz::math::SimdFloat4& v)
-        {
-            return { v.m128_f32[0], v.m128_f32[1], v.m128_f32[2], v.m128_f32[3] };
+            // convert from right-handed (ozz) to left-handed (bgfx)
+            return Math::flipHandedness((const glm::mat4&)v);
         }
     };
 
@@ -309,8 +305,8 @@ namespace darmok
             {
                 continue;
             }
-            glm::vec3 parentPos = OzzUtils::convert(_models[parentId].cols[3]);
-            glm::vec3 childPos = OzzUtils::convert(_models[i].cols[3]);
+            glm::vec3 parentPos = OzzUtils::convert(_models[parentId])[3];
+            glm::vec3 childPos = OzzUtils::convert(_models[i])[3];
             auto diff = childPos - parentPos;
             auto rot = glm::rotation(dir, glm::normalize(diff));
             auto scale = glm::vec3(glm::length(diff));

@@ -37,15 +37,13 @@ namespace
 			registry.emplace<Transform>(camEntity)
 				.setPosition(glm::vec3(0.f, 2, -2))
 				.lookAt(glm::vec3(0, 1, 0));
-				// .setPosition(glm::vec3(0.f, 200, -200))
-				// .lookAt(glm::vec3(0, 100, 0));
 
 			auto& cam = registry.emplace<Camera>(camEntity)
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
 			cam.setRenderer<ForwardRenderer>();
 			cam.addComponent<PhongLightingComponent>();
 
-			auto& skelCam = cam.addComponent<SkeletalAnimationCameraComponent>();
+			cam.addComponent<SkeletalAnimationCameraComponent>();
 
 			auto lightEntity = registry.create();
 			registry.emplace<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
@@ -56,14 +54,9 @@ namespace
 			auto anim = getAssets().getSkeletalAnimationLoader()("BasicMotions@Run01 - Forwards.ozz");
 
 			auto skelEntity = registry.create();
-			auto& skelTrans = registry.emplace<Transform>(skelEntity);
-			// TODO: convert ozz to left handed
-			// see https://github.com/guillaumeblanc/ozz-animation/issues/28
-			skelTrans.setEulerAngles(glm::vec3(0, 180, 0));
-
+			registry.emplace<Transform>(skelEntity, glm::vec3(-1, 0, 0));
 			auto& ctrl = registry.emplace<SkeletalAnimationController>(skelEntity, skel);
 			ctrl.addAnimation(anim);
-			ctrl.setPlaybackSpeed(0.5);
 			ctrl.playAnimation(anim->getName());
 
 			auto boneTex = getAssets().getColorTextureLoader()(Colors::grey());
@@ -71,11 +64,14 @@ namespace
 			auto boneMesh = MeshCreator(prog->getVertexLayout()).createBone();
 			registry.emplace<RenderableSkeleton>(skelEntity, boneMesh, boneMat);
 
-			/*
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
 			auto model = getAssets().getModelLoader()("BasicMotionsDummyModelBin.fbx");
 
+			auto skinEntity = registry.create();
+			registry.emplace<Transform>(skinEntity, glm::vec3(1, 0, 0));
+
 			ModelSceneConfigurer configurer(scene.getRegistry(), prog, getAssets());
+			configurer.setParent(skinEntity);
 			configurer.run(model, [&registry, modelTex, skel, anim](const auto& node, Entity entity) {
 				auto renderable = registry.try_get<Renderable>(entity);
 				if (renderable != nullptr)
@@ -89,7 +85,7 @@ namespace
 					ctrl.addAnimation(anim);
 					ctrl.playAnimation(anim->getName());
 				}
-			});*/
+			});
 		}
 
 		int shutdown() override

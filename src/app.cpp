@@ -446,6 +446,7 @@ namespace darmok
 		init.debug = true;
 		init.resolution.width = size.x;
 		init.resolution.height = size.y;
+		// init.type = bgfx::RendererType::Vulkan;
 		// init.resolution.reset = ?;
 		bgfx::init(init);
 

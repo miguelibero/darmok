@@ -68,14 +68,12 @@ namespace darmok
 		{
 			configureCamera(*assimpCam, entity, config);
 		}
-
 		auto assimpLight = _assimp->getLight();
 		if (assimpLight != nullptr)
 		{
 			configureLight(*assimpLight, entity, config);
 		}
-
-		for(auto& assimpMesh : _assimp->getMeshes())
+		for (auto& assimpMesh : _assimp->getMeshes())
 		{
 			configureMesh(*assimpMesh, entity, config);
 		}

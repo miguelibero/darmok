@@ -155,7 +155,7 @@ function(darmok_process_assets)
         foreach(ASSET_PATH ${OZZ_ASSETS})
             _darmok_replace_ext(OZZ_CONFIG_PATH ${ASSET_PATH} ".ozz.json")
             darmok_process_ozz(
-                SKELETONS ${ASSET_PATH}
+                ASSETS ${ASSET_PATH}
                 CONFIG ${OZZ_CONFIG_PATH}
                 OUTPUT_DIR ${ARGS_OUTPUT_DIR}
             )

@@ -7,6 +7,12 @@
 
 namespace darmok
 {
+    glm::mat4 Math::flipHandedness(const glm::mat4& mat) noexcept
+    {
+        static const glm::mat4 zNegate = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));
+        return zNegate * mat * zNegate;
+    }
+
     glm::mat4 Math::perspective(float fovy, float aspect, float near, float far) noexcept
     {
         glm::mat4 v;

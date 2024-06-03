@@ -436,7 +436,8 @@ namespace darmok
 
     AssimpVertexWeight AssimpVertexWeightCollection::operator[](size_t pos) const
     {
-        return (const AssimpVertexWeight&)(_ptr[pos]);
+        auto w = _ptr[pos];
+        return AssimpVertexWeight{ w.mVertexId, w.mWeight };
     }
 
     AssimpBone::AssimpBone(const aiBone& bone, aiSceneRef scene) noexcept
@@ -589,24 +590,24 @@ namespace darmok
                 writer.write(attrib, elm);
             }
         }
+
         if(hasBones())
         {
             int boneIndex = 0;
             std::vector<int> boneCount(vertexCount);
-            std::vector<glm::ivec4> boneIndices(vertexCount);
-            std::fill(boneIndices.begin(), boneIndices.end(), glm::ivec4(-1));
+            std::vector<glm::vec4> boneIndices(vertexCount);
+            std::fill(boneIndices.begin(), boneIndices.end(), glm::vec4(-1));
             std::vector<glm::vec4> boneWeights(vertexCount);
+            std::fill(boneWeights.begin(), boneWeights.end(), glm::vec4(1, 0, 0, 0));
             for (auto& bone : getBones())
             {
-                for (auto& weight : bone.getWeights())
+                for (auto weight : bone.getWeights())
                 {
                     auto i = weight.vertexIndex;
                     auto c = boneCount[i]++;
                     if (c <= 3)
                     {
-                        // first model matrix is the entity one
-                        // second model matrix is identity
-                        boneIndices[i][c] = boneIndex + 2;
+                        boneIndices[i][c] = boneIndex;
                         boneWeights[i][c] = weight.value;
                     }
                 }
@@ -638,8 +639,6 @@ namespace darmok
         return indices;
     }
 
-
-
     std::shared_ptr<IMesh> AssimpMesh::load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept
     {
         auto vertices = createVertexData(layout, alloc);
@@ -659,11 +658,11 @@ namespace darmok
     std::vector<ArmatureBone> AssimpMesh::createArmatureBones() const noexcept
     {
         std::vector<ArmatureBone> bones;
-        for (auto& assimpBone : getBones())
+        for (auto& bone : getBones())
         {
-            bones.push_back({
-                std::string(assimpBone.getName()),
-                assimpBone.getInverseBindPoseMatrix()
+            bones.push_back(ArmatureBone{
+                std::string(bone.getName()),
+                bone.getInverseBindPoseMatrix()
             });
         }
         return bones;
@@ -825,34 +824,41 @@ namespace darmok
         return AssimpUtils::convert(_light->mSize);
     }
 
-    AssimpNode::AssimpNode(const aiNode& node, const AssimpScene& scene) noexcept
+    AssimpNode::AssimpNode(const aiNode& node, const AssimpScene& scene, const ParentRef& parent) noexcept
         : _node(node)
+        , _parent(parent)
         , _scene(scene.getInternal())
         , _light(scene.getLight(getName()))
         , _camera(scene.getCamera(getName()))
     {
+        auto size = _node->mNumMeshes;
+        _meshes.reserve(size);
+        auto& meshes = scene.getMeshes();
+        for (size_t i = 0; i < size; i++)
+        {
+            auto j = node.mMeshes[i];
+            if (j < meshes.size())
+            {
+                _meshes.push_back(meshes[j]);
+            }
+        }
+    }
 
+    void AssimpNode::loadChildren(const std::weak_ptr<AssimpNode> selfPtr, const AssimpScene& scene) noexcept
+    {
+        auto size = _node->mNumChildren;
+        _children.reserve(size);
+        for (size_t i = 0; i < size; i++)
         {
-            auto size = node.mNumMeshes;
-            _meshes.reserve(size);
-            auto& meshes = scene.getMeshes();
-            for (size_t i = 0; i < size; i++)
-            {
-                auto j = node.mMeshes[i];
-                if (j < meshes.size())
-                {
-                    _meshes.push_back(meshes[j]);
-                }
-            }
+            auto node = std::make_shared<AssimpNode>(*_node->mChildren[i], scene, selfPtr);
+            node->loadChildren(node, scene);
+            _children.push_back(node);
         }
-        {
-            auto size = node.mNumChildren;
-            _children.reserve(size);
-            for (size_t i = 0; i < size; i++)
-            {
-                _children.push_back(std::make_shared<AssimpNode>(*node.mChildren[i], scene));
-            }
-        }
+    }
+
+    const aiNode& AssimpNode::getAssimp() const noexcept
+    {
+        return _node.value();
     }
 
     std::string_view AssimpNode::getName() const noexcept
@@ -863,6 +869,33 @@ namespace darmok
     glm::mat4 AssimpNode::getTransform() const noexcept
     {
         return AssimpUtils::convert(_node->mTransformation);
+    }
+
+    glm::mat4 AssimpNode::getWorldTransform() const noexcept
+    {
+        if (_worldTransform)
+        {
+            return _worldTransform.value();
+        }
+        auto trans = getWorldTransform(_node.ptr());
+        _worldTransform = trans;
+        return trans;
+    }
+
+    glm::mat4 AssimpNode::getWorldTransform(const aiNode* node) noexcept
+    {
+        aiMatrix4x4 trans;
+        while (node != nullptr)
+        {
+            trans = node->mTransformation * trans;
+            node = node->mParent;
+        }
+        return AssimpUtils::convert(trans);
+    }
+
+    AssimpNode::ParentRef AssimpNode::getParent() const noexcept
+    {
+        return _parent;
     }
 
     const std::vector<std::shared_ptr<AssimpMesh>>& AssimpNode::getMeshes() const noexcept
@@ -1009,6 +1042,7 @@ namespace darmok
         , _lights(loadLights(scene))
         , _rootNode(std::make_shared<AssimpNode>(*scene->mRootNode, *this))
     {
+        _rootNode->loadChildren(_rootNode, *this);
     }
 
     AssimpScene::AssimpScene(Assimp::Importer& importer, const DataView& data, const std::string& path)
@@ -1044,6 +1078,7 @@ namespace darmok
             aiProcess_Triangulate |
             aiProcess_JoinIdenticalVertices |
             aiProcess_SortByPType |
+            aiProcess_GlobalScale |
             aiProcess_PopulateArmatureData |
             aiProcess_ConvertToLeftHanded
             ;
