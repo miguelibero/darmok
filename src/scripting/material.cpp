@@ -78,8 +78,8 @@ namespace darmok
 	void LuaMaterial::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<MaterialPrimitiveType>("MaterialPrimitiveType", {
-			{ "triangle", MaterialPrimitiveType::Triangle },
-			{ "line", MaterialPrimitiveType::Line }
+			{ "Triangle", MaterialPrimitiveType::Triangle },
+			{ "Line", MaterialPrimitiveType::Line }
 		});
 
 		lua.new_usertype<LuaMaterial>("Material",

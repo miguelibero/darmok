@@ -286,10 +286,10 @@ namespace darmok
 
 	const std::unordered_map<StandardProgramType, std::string> StandardProgramLoaderImpl::_embeddedShaderNames
 	{
-		{StandardProgramType::Gui, "gui"},
-		{StandardProgramType::Unlit, "unlit"},
-		{StandardProgramType::ForwardPhong, "forward_phong"},
-		{StandardProgramType::ForwardPbr, "forward_pbr"},
+		{StandardProgramType::Gui, "Gui"},
+		{StandardProgramType::Unlit, "Unlit"},
+		{StandardProgramType::ForwardPhong, "ForwardPhong"},
+		{StandardProgramType::ForwardPhysical, "ForwardPhysical"},
 	};
 
 	const std::unordered_map<StandardProgramType, std::string_view> StandardProgramLoaderImpl::_embeddedShaderVertexLayouts
@@ -297,7 +297,7 @@ namespace darmok
 		{StandardProgramType::Gui, gui_vlayout},
 		{StandardProgramType::Unlit, unlit_vlayout},
 		{StandardProgramType::ForwardPhong, forward_phong_vlayout},
-		{StandardProgramType::ForwardPbr, forward_pbr_vlayout},
+		{StandardProgramType::ForwardPhysical, forward_pbr_vlayout},
 	};
 
 	std::shared_ptr<Program> StandardProgramLoaderImpl::operator()(StandardProgramType type) const noexcept

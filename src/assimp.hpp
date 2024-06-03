@@ -233,7 +233,7 @@ namespace darmok
 
         bool hasBones() const noexcept;
 
-        std::shared_ptr<IMesh> load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept;
+        std::shared_ptr<IMesh> load(const bgfx::VertexLayout& layout, bx::AllocatorI& alloc) const noexcept;
         std::shared_ptr<Armature> loadArmature() const noexcept;
 
     private:

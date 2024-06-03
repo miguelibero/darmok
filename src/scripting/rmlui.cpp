@@ -225,16 +225,16 @@ namespace darmok
     void LuaRmluiDocument::bind(sol::state_view& lua) noexcept
     {
         lua.new_enum<Rml::ModalFlag>("GuiDocumentMode", {
-            { "normal", Rml::ModalFlag::None },
-            { "modal", Rml::ModalFlag::Modal },
-            { "keep", Rml::ModalFlag::Keep },
+            { "Normal", Rml::ModalFlag::None },
+            { "Modal", Rml::ModalFlag::Modal },
+            { "Keep", Rml::ModalFlag::Keep },
         });
 
         lua.new_enum<Rml::FocusFlag>("GuiDocumentFocus", {
-            { "normal", Rml::FocusFlag::None },
-            { "document", Rml::FocusFlag::Document },
-            { "keep", Rml::FocusFlag::Keep },
-            { "auto", Rml::FocusFlag::Auto },
+            { "Normal", Rml::FocusFlag::None },
+            { "Document", Rml::FocusFlag::Document },
+            { "Keep", Rml::FocusFlag::Keep },
+            { "Auto", Rml::FocusFlag::Auto },
         });
 
         lua.new_usertype<LuaRmluiDocument>("GuiDocument", sol::no_constructor,

@@ -92,7 +92,7 @@ namespace darmok
 			{
 				mat->setProgram(config.program);
 			}
-			auto mesh = assimpMesh.load(config.program->getVertexLayout(), config.assets.getTextureLoader(), config.assets.getAllocator());
+			auto mesh = assimpMesh.load(config.program->getVertexLayout(), config.assets.getAllocator());
 			config.registry.emplace<Renderable>(entity, mesh, mat);
 			auto armature = assimpMesh.loadArmature();
 			if (armature != nullptr)

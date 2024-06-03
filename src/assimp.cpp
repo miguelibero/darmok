@@ -591,7 +591,7 @@ namespace darmok
             }
         }
 
-        if(hasBones())
+        if(layout.has(bgfx::Attrib::Indices) || layout.has(bgfx::Attrib::Weight))
         {
             int boneIndex = 0;
             std::vector<int> boneCount(vertexCount);
@@ -639,7 +639,7 @@ namespace darmok
         return indices;
     }
 
-    std::shared_ptr<IMesh> AssimpMesh::load(const bgfx::VertexLayout& layout, ITextureLoader& textureLoader, bx::AllocatorI& alloc) const noexcept
+    std::shared_ptr<IMesh> AssimpMesh::load(const bgfx::VertexLayout& layout, bx::AllocatorI& alloc) const noexcept
     {
         auto vertices = createVertexData(layout, alloc);
         auto indices = createIndexData();

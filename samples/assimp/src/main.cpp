@@ -41,24 +41,23 @@ namespace
 		{
 			App::init(args);
 
-			auto& scene = *addComponent<SceneAppComponent>().getScene();
+			auto scene = addComponent<SceneAppComponent>().getScene();
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
-
 			auto model = getAssets().getModelLoader()("human.fbx");
 
-			ModelSceneConfigurer configurer(scene.getRegistry(), prog->getVertexLayout(), getAssets());
-			configurer.run(model, [&scene, prog](const auto& node, Entity entity) {
-				auto& registry = scene.getRegistry();
+			ModelSceneConfigurer configurer(scene->getRegistry(), prog, getAssets());
+			configurer.run(model, [scene, prog](const auto& node, Entity entity) {
+				auto& registry = scene->getRegistry();
 				if (node->getName() == "human")
 				{
 					auto& trans = registry.get_or_emplace<Transform>(entity);
-					scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
+					scene->addLogicUpdater<RotateUpdater>(trans, 100.f);
 				}
-				auto cam = scene.getComponentInChildren<Camera>(entity);
+				auto cam = scene->getComponentInChildren<Camera>(entity);
 				if (cam)
 				{
 					cam->addComponent<PhongLightingComponent>();
-					cam->setRenderer<ForwardRenderer>(prog);
+					cam->setRenderer<ForwardRenderer>();
 				}
 			});
 		}

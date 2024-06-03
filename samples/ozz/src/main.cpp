@@ -42,7 +42,6 @@ namespace
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
 			cam.setRenderer<ForwardRenderer>();
 			cam.addComponent<PhongLightingComponent>();
-
 			cam.addComponent<SkeletalAnimationCameraComponent>();
 
 			auto lightEntity = registry.create();

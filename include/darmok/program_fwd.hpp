@@ -7,6 +7,6 @@ namespace darmok
 		Gui,
 		Unlit,
 		ForwardPhong,
-		ForwardPbr,
+		ForwardPhysical,
 	};
 }

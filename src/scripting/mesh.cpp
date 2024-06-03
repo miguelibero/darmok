@@ -142,9 +142,9 @@ namespace darmok
 	void LuaMeshCreator::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<MeshType>("MeshType", {
-			{ "static", MeshType::Static },
-			{ "dynamic", MeshType::Dynamic },
-			{ "transient", MeshType::Transient }
+			{ "Static", MeshType::Static },
+			{ "Dynamic", MeshType::Dynamic },
+			{ "Transient", MeshType::Transient }
 		});
 
 		lua.new_usertype<MeshCreationConfig>("MeshCreationConfig",

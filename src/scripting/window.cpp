@@ -51,15 +51,15 @@ namespace darmok
 	void LuaWindow::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<WindowMode>("WindowMode", {
-			{ "normal", WindowMode::Normal },
-			{ "fullscreen", WindowMode::Fullscreen },
-			{ "windowed_fullscreen", WindowMode::WindowedFullscreen }
+			{ "Normal", WindowMode::Normal },
+			{ "Fullscreen", WindowMode::Fullscreen },
+			{ "WindowedFullscreen", WindowMode::WindowedFullscreen }
 		});
 
 		lua.new_enum<WindowCursorMode>("WindowCursorMode", {
-			{ "normal", WindowCursorMode::Normal },
-			{ "disabled", WindowCursorMode::Disabled },
-			{ "hidden", WindowCursorMode::Hidden }
+			{ "Normal", WindowCursorMode::Normal },
+			{ "Disabled", WindowCursorMode::Disabled },
+			{ "Hidden", WindowCursorMode::Hidden }
 		});
 
 		lua.new_usertype<LuaWindow>("Window", sol::no_constructor,
