@@ -591,7 +591,7 @@ namespace darmok
             }
         }
 
-        if(layout.has(bgfx::Attrib::Indices) || layout.has(bgfx::Attrib::Weight))
+        if(hasBones())
         {
             int boneIndex = 0;
             std::vector<int> boneCount(vertexCount);
@@ -1090,8 +1090,22 @@ namespace darmok
         {
             throw std::runtime_error(importer.GetErrorString());
         }
+
+        auto scene = importer.GetOrphanedScene();
+
+        // scale camera clip planes, seems to be an assimp bug
+        // https://github.com/assimp/assimp/issues/3240
+        auto scale = importer.GetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 1.0f);
+        scale *= importer.GetPropertyFloat(AI_CONFIG_APP_SCALE_KEY, 1.0f);
+        for (auto i = 0; i < scene->mNumCameras; i++)
+        {
+            auto cam = scene->mCameras[i];
+            cam->mClipPlaneNear *= scale;
+            cam->mClipPlaneFar *= scale;
+        }
+
         // take ownership of the scene
-        return aiSceneRef(importer.GetOrphanedScene());
+        return aiSceneRef(scene);
     }
 
     std::string_view AssimpScene::getName() const noexcept

@@ -27,11 +27,19 @@ namespace darmok
 		: _handle{ bgfx::kInvalidHandle }
 	{
 		auto renderer = bgfx::getRendererType();
-		_handle = bgfx::createProgram(
-			bgfx::createEmbeddedShader(embeddedShaders, renderer, (name + "_vertex").c_str()),
-			bgfx::createEmbeddedShader(embeddedShaders, renderer, (name + "_fragment").c_str()),
-			true
-		);
+		auto vertName = name + "_vertex";
+		auto vertHandle = bgfx::createEmbeddedShader(embeddedShaders, renderer, vertName.c_str());
+		if (!isValid(vertHandle))
+		{
+			throw std::runtime_error("could not load embedded vertex shader" + vertName);
+		}
+		auto fragName = name + "_fragment";
+		auto fragHandle = bgfx::createEmbeddedShader(embeddedShaders, renderer, fragName.c_str());
+		if (!isValid(fragHandle))
+		{
+			throw std::runtime_error("could not load embedded fragment shader" + fragName);
+		}
+		_handle = bgfx::createProgram(vertHandle, fragHandle, true);
 		auto json = nlohmann::ordered_json::parse(layoutJson);
 		Program::readVertexLayoutJson(json, _layout);
 	}
@@ -286,10 +294,10 @@ namespace darmok
 
 	const std::unordered_map<StandardProgramType, std::string> StandardProgramLoaderImpl::_embeddedShaderNames
 	{
-		{StandardProgramType::Gui, "Gui"},
-		{StandardProgramType::Unlit, "Unlit"},
-		{StandardProgramType::ForwardPhong, "ForwardPhong"},
-		{StandardProgramType::ForwardPhysical, "ForwardPhysical"},
+		{StandardProgramType::Gui, "gui"},
+		{StandardProgramType::Unlit, "unlit"},
+		{StandardProgramType::ForwardPhong, "forward_phong"},
+		{StandardProgramType::ForwardPhysical, "forward_pbr"},
 	};
 
 	const std::unordered_map<StandardProgramType, std::string_view> StandardProgramLoaderImpl::_embeddedShaderVertexLayouts

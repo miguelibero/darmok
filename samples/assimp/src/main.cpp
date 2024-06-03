@@ -46,7 +46,7 @@ namespace
 			auto model = getAssets().getModelLoader()("human.fbx");
 
 			ModelSceneConfigurer configurer(scene->getRegistry(), prog, getAssets());
-			configurer.run(model, [scene, prog](const auto& node, Entity entity) {
+			configurer.run(model, [scene](const auto& node, Entity entity) {
 				auto& registry = scene->getRegistry();
 				if (node->getName() == "human")
 				{

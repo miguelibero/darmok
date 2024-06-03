@@ -368,7 +368,6 @@ namespace darmok
 		DataView idxDataView(meshData.indices);
 
 		return IMesh::create(config.type, layout, vertDataView, idxDataView);
-
 	}
 
 	std::shared_ptr<IMesh> MeshCreator::createCube() noexcept

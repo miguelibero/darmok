@@ -86,18 +86,6 @@ namespace
 				}
 			});
 		}
-
-		int shutdown() override
-		{
-			return App::shutdown();
-		}
-	protected:
-
-		void updateLogic(float deltaTime) override
-		{
-		}
-
-	private:
 	};
 }
 

@@ -13,6 +13,7 @@
 #include <darmok/window.hpp>
 #include <darmok/program.hpp>
 #include <darmok/material.hpp>
+#include <darmok/render.hpp>
 #include <darmok/render_forward.hpp>
 
 namespace
@@ -108,14 +109,13 @@ namespace
 			scene.addLogicUpdater<FrameAnimationUpdater>();
 			auto& registry = scene.getRegistry();
 
-			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::Unlit);
-			_layout = prog->getVertexLayout();
+			_prog = getAssets().getStandardProgramLoader()(StandardProgramType::Unlit);
 
 			auto cam2d = registry.create();
 			registry.emplace<Camera>(cam2d)
 				.setOrtho(getWindow().getSize())
 				.setEntityComponentFilter<Culling2D>()
-				.setRenderer<ForwardRenderer>(prog);
+				.setRenderer<ForwardRenderer>();
 
 			auto cam3d = registry.create();
 			registry.emplace<Transform>(cam3d)
@@ -125,11 +125,10 @@ namespace
 			registry.emplace<Camera>(cam3d)
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000)
 				.setEntityComponentFilter<Culling3D>()
-				.setRenderer<ForwardRenderer>(prog);
+				.setRenderer<ForwardRenderer>();
 
 			auto debugTexture = getAssets().getColorTextureLoader()(Colors::red());
-			_debugMaterial = std::make_shared<Material>();
-			_debugMaterial->setTexture(MaterialTextureType::Diffuse, debugTexture);
+			_debugMaterial = std::make_shared<Material>(_prog, debugTexture);
 			_debugMaterial->setPrimitiveType(MaterialPrimitiveType::Line);
 
 			createBouncingSprite(scene);
@@ -146,11 +145,11 @@ namespace
 			trans.setPivot(glm::vec3(-0.5F));
 			float scale = 0.5;
 
-			MeshCreator meshCreator(_layout);
+			MeshCreator meshCreator(_prog->getVertexLayout());
 			meshCreator.config.type = MeshType::Dynamic;
 			meshCreator.config.scale = glm::vec3(0.5F);
 			auto mesh = meshCreator.createRectangle(Rectangle(tex->getSize()));
-			auto mat = std::make_shared<Material>(tex);
+			auto mat = std::make_shared<Material>(_prog, tex);
 			registry.emplace<Renderable>(sprite, mesh, mat);
 
 			auto spriteBorder = registry.create();
@@ -173,11 +172,11 @@ namespace
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = registry.create();
 
-			TextureAtlasMeshCreator meshCreator(_layout, *texAtlas);
+			TextureAtlasMeshCreator meshCreator(_prog->getVertexLayout(), *texAtlas);
 			meshCreator.config.scale = glm::vec3(2.F);
 			auto frames = meshCreator.createAnimation(animNamePrefix, 0.1f);
 			
-			auto material = std::make_shared<Material>(texAtlas->texture);
+			auto material = std::make_shared<Material>(_prog, texAtlas->texture);
 			auto& renderable = registry.emplace<Renderable>(anim, material);
 			registry.emplace<FrameAnimation>(anim, frames, renderable);
 			
@@ -191,11 +190,10 @@ namespace
 		void createRotatingCube(Scene& scene)
 		{
 			auto texture = getAssets().getTextureLoader()("brick.png");
-			auto material = std::make_shared<Material>();
-			material->setTexture(MaterialTextureType::Diffuse, texture);
+			auto material = std::make_shared<Material>(_prog, texture);
 			material->setColor(MaterialColorType::Diffuse, Colors::red());
 
-			auto cubeMesh = MeshCreator(_layout).createCube();
+			auto cubeMesh = MeshCreator(_prog->getVertexLayout()).createCube();
 
 			auto& registry = scene.getRegistry();
 			auto cube = registry.create();
@@ -206,7 +204,7 @@ namespace
 		}
 	private:
 		std::shared_ptr<Material> _debugMaterial;
-		bgfx::VertexLayout _layout;
+		std::shared_ptr<Program> _prog;
 	};
 }
 
