@@ -32,31 +32,56 @@ namespace darmok
         std::shared_ptr<SkeletalAnimation> _anim;
     };
 
-    class SkeletalAnimationController;
+    struct SkeletalAnimatorStateConfig;
+    struct SkeletalAnimatorTransitionConfig;
+
+    class LuaSkeletalAnimatorStateConfig final
+    {
+    };
+
+    struct SkeletalAnimatorConfig;
+
+    class LuaSkeletalAnimatorConfig final
+    {
+    public:
+        using StateConfig = LuaSkeletalAnimatorStateConfig;
+        using TransitionConfig = SkeletalAnimatorTransitionConfig;
+        LuaSkeletalAnimatorConfig& addState(StateConfig& config) noexcept;
+        LuaSkeletalAnimatorConfig& addState(const LuaSkeletalAnimation& animation) noexcept;
+        LuaSkeletalAnimatorConfig& addTransition(const std::string& src, const std::string& dst, const TransitionConfig& config) noexcept;
+
+        std::optional<const StateConfig> getState(std::string_view name) const noexcept;
+        std::optional<const TransitionConfig> getTransition(std::string_view src, std::string_view dst) const noexcept;
+
+        const SkeletalAnimatorConfig& getReal() const noexcept;
+    private:
+        std::shared_ptr<SkeletalAnimatorConfig> _config;
+    };
+
+    class SkeletalAnimator;
     class LuaEntity;
     class LuaScene;
 
-    class LuaSkeletalAnimationController final
+    class LuaSkeletalAnimator final
 	{
     public:
-        LuaSkeletalAnimationController(SkeletalAnimationController& ctrl) noexcept;
+        using Config = LuaSkeletalAnimatorConfig;
+        LuaSkeletalAnimator(SkeletalAnimator& animator) noexcept;
         
-        static LuaSkeletalAnimationController addEntityComponent1(LuaEntity& entity, const LuaSkeleton& skel) noexcept;
-		static LuaSkeletalAnimationController addEntityComponent2(LuaEntity& entity, const LuaSkeleton& skel, const std::vector<LuaSkeletalAnimation>& animations) noexcept;
-		static std::optional<LuaSkeletalAnimationController> getEntityComponent(LuaEntity& entity) noexcept;
+        static LuaSkeletalAnimator addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const Config& config) noexcept;
+		static std::optional<LuaSkeletalAnimator> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 
-        LuaSkeletalAnimationController& addAnimation(const LuaSkeletalAnimation& anim) noexcept;
-        bool playAnimationOnce(const std::string& name) noexcept;
-        bool playAnimation(const std::string& name) noexcept;
-        LuaSkeletalAnimationController& setPlaybackSpeed(float speed) noexcept;
-        float getPlaybackSpped() const noexcept;
+        bool play1(const std::string& name) noexcept;
+        bool play2(const std::string& name, float normalizedTime) noexcept;
+        LuaSkeletalAnimator& setPlaybackSpeed(float speed) noexcept;
+        float getPlaybackSpeed() const noexcept;
         
         static void bind(sol::state_view& lua) noexcept;
 
 
     private:
-        OptionalRef<SkeletalAnimationController> _ctrl;
+        OptionalRef<SkeletalAnimator> _animator;
     };
 
     class RenderableSkeleton;

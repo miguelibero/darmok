@@ -57,82 +57,62 @@ namespace darmok
         );
     }
 
-    LuaSkeletalAnimationController::LuaSkeletalAnimationController(SkeletalAnimationController& ctrl) noexcept
-        : _ctrl(ctrl)
+    LuaSkeletalAnimator::LuaSkeletalAnimator(SkeletalAnimator& animator) noexcept
+        : _animator(animator)
     {
     }
 
-    LuaSkeletalAnimationController LuaSkeletalAnimationController::addEntityComponent1(LuaEntity& entity, const LuaSkeleton& skel) noexcept
+    LuaSkeletalAnimator LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const Config& config) noexcept
     {
-        return entity.addComponent<SkeletalAnimationController>(skel.getReal());
+        return entity.addComponent<SkeletalAnimator>(skel.getReal(), config.getReal());
     }
 
-    LuaSkeletalAnimationController LuaSkeletalAnimationController::addEntityComponent2(LuaEntity& entity, const LuaSkeleton& skel, const std::vector<LuaSkeletalAnimation>& animations) noexcept
+    std::optional<LuaSkeletalAnimator> LuaSkeletalAnimator::getEntityComponent(LuaEntity& entity) noexcept
     {
-        std::vector<std::shared_ptr<SkeletalAnimation>> realAnims;
-        realAnims.reserve(animations.size());
-        for (auto& anim : animations)
-        {
-            realAnims.push_back(anim.getReal());
-        }
-        return entity.addComponent<SkeletalAnimationController>(skel.getReal(), realAnims);
+        return entity.getComponent<SkeletalAnimator, LuaSkeletalAnimator>();
     }
 
-    std::optional<LuaSkeletalAnimationController> LuaSkeletalAnimationController::getEntityComponent(LuaEntity& entity) noexcept
+    std::optional<LuaEntity> LuaSkeletalAnimator::getEntity(LuaScene& scene) noexcept
     {
-        return entity.getComponent<SkeletalAnimationController, LuaSkeletalAnimationController>();
-    }
-
-    std::optional<LuaEntity> LuaSkeletalAnimationController::getEntity(LuaScene& scene) noexcept
-    {
-        if (!_ctrl)
+        if (!_animator)
         {
             return std::nullopt;
         }
-        return scene.getEntity(_ctrl.value());
+        return scene.getEntity(_animator.value());
     }
 
-    LuaSkeletalAnimationController& LuaSkeletalAnimationController::addAnimation(const LuaSkeletalAnimation& anim) noexcept
+    bool LuaSkeletalAnimator::play1(const std::string& name) noexcept
     {
-        _ctrl->addAnimation(anim.getReal());
+        return _animator->play(name);
+    }
+
+    bool LuaSkeletalAnimator::play2(const std::string& name, float normalizedTime) noexcept
+    {
+        return _animator->play(name, normalizedTime);
+    }
+
+    LuaSkeletalAnimator& LuaSkeletalAnimator::setPlaybackSpeed(float speed) noexcept
+    {
+        _animator->setPlaybackSpeed(speed);
         return *this;
     }
 
-    bool LuaSkeletalAnimationController::playAnimation(const std::string& name) noexcept
+    float LuaSkeletalAnimator::getPlaybackSpeed() const noexcept
     {
-        return _ctrl->playAnimation(name, true);
+        return _animator->getPlaybackSpeed();
     }
 
-    bool LuaSkeletalAnimationController::playAnimationOnce(const std::string& name) noexcept
+    void LuaSkeletalAnimator::bind(sol::state_view& lua) noexcept
     {
-        return _ctrl->playAnimation(name, false);
-    }
-
-    LuaSkeletalAnimationController& LuaSkeletalAnimationController::setPlaybackSpeed(float speed) noexcept
-    {
-        _ctrl->setPlaybackSpeed(speed);
-        return *this;
-    }
-
-    float LuaSkeletalAnimationController::getPlaybackSpped() const noexcept
-    {
-        return _ctrl->getPlaybackSpeed();
-    }
-
-    void LuaSkeletalAnimationController::bind(sol::state_view& lua) noexcept
-    {
-        lua.new_usertype<LuaSkeletalAnimationController>("SkeletalAnimationController", sol::no_constructor,
-            "type_id", &entt::type_hash<SkeletalAnimationController>::value,
+        lua.new_usertype<LuaSkeletalAnimator>("SkeletalAnimator", sol::no_constructor,
+            "type_id", &entt::type_hash<SkeletalAnimator>::value,
             "add_entity_component", sol::overload(
-                &LuaSkeletalAnimationController::addEntityComponent1,
-                &LuaSkeletalAnimationController::addEntityComponent2
+                &LuaSkeletalAnimator::addEntityComponent
             ),
-            "get_entity_component", &LuaSkeletalAnimationController::getEntityComponent,
-            "get_entity", &LuaSkeletalAnimationController::getEntity,
-            "add_animation", &LuaSkeletalAnimationController::addAnimation,
-            "play_animation", &LuaSkeletalAnimationController::playAnimation,
-            "play_animation_once", &LuaSkeletalAnimationController::playAnimationOnce,
-            "playback_speed", sol::property(&LuaSkeletalAnimationController::getPlaybackSpped, &LuaSkeletalAnimationController::setPlaybackSpeed)
+            "get_entity_component", &LuaSkeletalAnimator::getEntityComponent,
+            "get_entity", &LuaSkeletalAnimator::getEntity,
+            "play", sol::overload(&LuaSkeletalAnimator::play1, &LuaSkeletalAnimator::play2),
+            "playback_speed", sol::property(&LuaSkeletalAnimator::getPlaybackSpeed, &LuaSkeletalAnimator::setPlaybackSpeed)
         );
     }
 

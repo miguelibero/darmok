@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <stdexcept>
 #include <unordered_map>
 #include <vector>
 #include <darmok/scene.hpp>
@@ -10,6 +9,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/render.hpp>
 #include <bx/bx.h>
+#include <glm/glm.hpp>
 
 #ifndef DARMOK_SKELETON_MAX_BONES
 #define DARMOK_SKELETON_MAX_BONES 64
@@ -33,7 +33,7 @@ namespace darmok
 
     class SkeletalAnimationImpl;
 
-	class SkeletalAnimation final
+    class SkeletalAnimation final
     {
     public:
         SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept;
@@ -48,58 +48,153 @@ namespace darmok
     };
 
     class BX_NO_VTABLE ISkeletonLoader
-	{
-	public:
+    {
+    public:
         using result_type = std::shared_ptr<Skeleton>;
 
         DLLEXPORT virtual ~ISkeletonLoader() = default;
         DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
-	};
+    };
 
     class BX_NO_VTABLE ISkeletalAnimationLoader
-	{
-	public:
+    {
+    public:
         using result_type = std::shared_ptr<SkeletalAnimation>;
-		DLLEXPORT virtual ~ISkeletalAnimationLoader() = default;
-		DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
-	};
+        DLLEXPORT virtual ~ISkeletalAnimationLoader() = default;
+        DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
+    };
 
     class EmptySkeletonLoader : public ISkeletonLoader
-	{
-	public:
-        DLLEXPORT std::shared_ptr<Skeleton> operator()(std::string_view name) override
-        {
-            throw std::runtime_error("no skeletal animation implementation");
-        }
-	};
+    {
+    public:
+        DLLEXPORT std::shared_ptr<Skeleton> operator()(std::string_view name) override;
+    };
 
     class EmptySkeletalAnimationLoader : public ISkeletalAnimationLoader
-	{
-	public:
-        DLLEXPORT std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override
-        {
-            throw std::runtime_error("no skeletal animation implementation");
-        }
-	};
+    {
+    public:
+        DLLEXPORT std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override;
+    };
 
-    class SkeletalAnimationControllerImpl;
+    template<typename T>
+    struct SkeletalBlendElement final
+    {
+        std::shared_ptr<SkeletalAnimation> motion;
+        T threshold;
+        float speed;
+    };
+    using SkeletalBlendElement1D = SkeletalBlendElement<float>;
+    using SkeletalBlendElement2D = SkeletalBlendElement<glm::vec2>;
+
+    struct SkeletalBlendState1D final
+    {
+        std::string name;
+        std::vector<SkeletalBlendElement1D> elements;
+    };
+
+    struct SkeletalBlendState2D final
+    {
+        std::string name;
+        std::vector<SkeletalBlendElement2D> elements;
+    };
+
+    class SkeletalAnimatorImpl;
     class Transform;
     class Material;
 
-    class SkeletalAnimationController final
+    struct SkeletalAnimationStateConfig final
+    {
+        std::shared_ptr<SkeletalAnimation> motion;
+        std::string name;
+        float speed = 1.F;
+    };
+
+    class BX_NO_VTABLE ISkeletalAnimatorState
     {
     public:
-        DLLEXPORT SkeletalAnimationController(const std::shared_ptr<Skeleton>& skel, const std::vector<std::shared_ptr<SkeletalAnimation>>& animations = {}) noexcept;
-        DLLEXPORT ~SkeletalAnimationController();
-        DLLEXPORT SkeletalAnimationController& addAnimation(const std::shared_ptr<SkeletalAnimation>& anim) noexcept;
-        DLLEXPORT bool playAnimation(std::string_view name, bool loop = true) noexcept;
+        using Config = SkeletalAnimationStateConfig;
+        virtual ~ISkeletalAnimatorState() = default;
+        virtual float getNormalizedTime() const = 0;
+        virtual void setNormalizedTime(float normalizedTime) = 0;
+        virtual std::string_view getName() const = 0;
+    };
+
+    class BX_NO_VTABLE ISkeletalAnimatorTransition
+    {
+    public:
+        virtual ~ISkeletalAnimatorTransition() = default;
+        virtual float getNormalizedTime() const = 0;
+        virtual void setNormalizedTime(float normalizedTime) = 0;
+        virtual ISkeletalAnimatorState& getCurrentState() = 0;
+        virtual OptionalRef<ISkeletalAnimatorState> getPreviousState() = 0;
+    };
+
+    struct SkeletalAnimationTransitionConfig final
+    {
+        float exitTime = 1.F;
+        bool fixedDuration = false;
+        float duration = 0.F;
+        float offset = 0.F;
+    };
+
+    struct SkeletalAnimatorTransitionKey final
+    {
+        std::string src;
+        std::string dst;
+    };
+
+    struct SkeletalAnimatorConfig final
+    {
+        using StateConfig = SkeletalAnimationStateConfig;
+
+        using TransitionKey = std::pair<std::string, std::string>;
+
+        struct TransitionKeyHash
+        {
+            std::size_t operator()(const TransitionKey& key) const noexcept
+            {
+                auto h1 = std::hash<std::string>{}(key.first);
+                auto h2 = std::hash<std::string>{}(key.second);
+                return h1 ^ (h2 << 1);
+            }
+        };
+
+        using TransitionConfig = SkeletalAnimationTransitionConfig;
+
+        SkeletalAnimatorConfig& addState(const StateConfig& config) noexcept;
+        SkeletalAnimatorConfig& addState(const std::shared_ptr<SkeletalAnimation>& animation, std::string_view name = "") noexcept;
+        SkeletalAnimatorConfig& addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept;
+
+        std::optional<const StateConfig> getState(std::string_view name) const noexcept;
+        std::optional<const TransitionConfig> getTransition(std::string_view src, std::string_view dst) const noexcept;
+
+    private:
+        std::unordered_map<std::string, StateConfig> _states;
+        std::unordered_map<TransitionKey, TransitionConfig, TransitionKeyHash> _transitions;
+    };
+
+    class SkeletalAnimator final
+    {
+    public:
+        using Config = SkeletalAnimatorConfig;
+        DLLEXPORT SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const Config&) noexcept;
+        DLLEXPORT ~SkeletalAnimator();
+
+        DLLEXPORT SkeletalAnimator& setPlaybackSpeed(float speed) noexcept;
+        DLLEXPORT float getPlaybackSpeed() const noexcept;
+
+        DLLEXPORT const Config& getConfig() const noexcept;
+        DLLEXPORT OptionalRef<ISkeletalAnimatorState> getCurrentState() noexcept;
+        DLLEXPORT OptionalRef<ISkeletalAnimatorTransition> getCurrentTransition() noexcept;
+
+        DLLEXPORT bool play(std::string_view name, float normalizedTime = -bx::kFloatInfinity) noexcept;
+        
         DLLEXPORT glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
         DLLEXPORT std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
-        DLLEXPORT SkeletalAnimationController& setPlaybackSpeed(float speed) noexcept;
-        DLLEXPORT float getPlaybackSpeed() const noexcept;
+
         void update(float deltaTime) noexcept;
     private:
-        std::unique_ptr<SkeletalAnimationControllerImpl> _impl;
+        std::unique_ptr<SkeletalAnimatorImpl> _impl;
     };
 
     class RenderableSkeleton final
@@ -114,7 +209,7 @@ namespace darmok
         OptionalRef<Scene> _scene;
         std::shared_ptr<Material> _material;
         std::shared_ptr<IMesh> _boneMesh;
-        OptionalRef<SkeletalAnimationController> _ctrl;
+        OptionalRef<SkeletalAnimator> _ctrl;
         std::vector<OptionalRef<Transform>> _bones;
     };
 
@@ -169,6 +264,6 @@ namespace darmok
         std::vector<glm::mat4> _skinning;
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
-        OptionalRef<SkeletalAnimationController> getController(Entity entity) const noexcept;
+        OptionalRef<SkeletalAnimator> getController(Entity entity) const noexcept;
     };
 }

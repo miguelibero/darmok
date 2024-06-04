@@ -49,14 +49,27 @@ namespace
 			registry.emplace<PointLight>(lightEntity);
 			registry.emplace<AmbientLight>(registry.create(), 0.8);
 
-			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");
-			auto anim = getAssets().getSkeletalAnimationLoader()("BasicMotions@Run01 - Forwards.ozz");
+			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");			
+			auto runAnim = getAssets().getSkeletalAnimationLoader()("BasicMotions@Run01 - Forwards.ozz");
+			auto idleAnim = getAssets().getSkeletalAnimationLoader()("BasicMotions@Idle01.ozz");
 
 			auto skelEntity = registry.create();
 			registry.emplace<Transform>(skelEntity, glm::vec3(-1, 0, 0));
-			auto& ctrl = registry.emplace<SkeletalAnimationController>(skelEntity, skel);
-			ctrl.addAnimation(anim);
-			ctrl.playAnimation(anim->getName());
+
+			SkeletalAnimatorConfig animConfig;
+			animConfig.addState(runAnim, "run");
+			animConfig.addState(idleAnim, "idle");
+			animConfig.addTransition(runAnim->getName(), idleAnim->getName(), {
+				.exitTime = 0.9F,
+				.duration = 0.1F
+				});
+			animConfig.addTransition(idleAnim->getName(), runAnim->getName(), {
+				.exitTime = 0.9F,
+				.duration = 0.1F
+			});
+
+			_animator = registry.emplace<SkeletalAnimator>(skelEntity, skel, animConfig);
+			_animator->play("idle");
 
 			auto boneTex = getAssets().getColorTextureLoader()(Colors::grey());
 			auto boneMat = std::make_shared<Material>(prog, boneTex);
@@ -70,7 +83,7 @@ namespace
 
 			ModelSceneConfigurer configurer(scene.getRegistry(), prog, getAssets());
 			configurer.setParent(skinEntity);
-			configurer.run(model, [&registry, modelTex, skel, anim](const auto& node, Entity entity) {
+			configurer.run(model, [&registry, modelTex, skel, &animConfig](const auto& node, Entity entity) {
 				auto renderable = registry.try_get<Renderable>(entity);
 				if (renderable != nullptr)
 				{
@@ -79,12 +92,25 @@ namespace
 					{
 						mat->setTexture(MaterialTextureType::Diffuse, modelTex);
 					}
-					auto& ctrl = registry.emplace<SkeletalAnimationController>(entity, skel);
-					ctrl.addAnimation(anim);
-					ctrl.playAnimation(anim->getName());
+					auto& animator = registry.emplace<SkeletalAnimator>(entity, skel, animConfig);
+					animator.play("idle");
 				}
 			});
 		}
+	protected:
+
+		void updateLogic(float deltaTime)
+		{
+			App::updateLogic(deltaTime);
+			auto state = _animator->getCurrentState();
+			if (state && state->getNormalizedTime() > 0.9)
+			{
+				_animator->play(state->getName() == "run" ? "idle" : "run");
+			}
+		}
+
+	private:
+		OptionalRef<SkeletalAnimator> _animator;
 	};
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include <darmok/skeleton.hpp>
 #include <darmok/data.hpp>
 #include <ozz/animation/runtime/skeleton.h>
@@ -68,30 +69,75 @@ namespace darmok
 		IDataLoader& _dataLoader;
 	};
 
-	class SkeletalAnimationControllerImpl final
+	class OzzSkeletalAnimatorState final : public ISkeletalAnimatorState
 	{
 	public:
-		SkeletalAnimationControllerImpl(const std::shared_ptr<Skeleton>& skeleton, const std::vector<std::shared_ptr<SkeletalAnimation>>& animations = {}) noexcept;
-		void addAnimation(const std::shared_ptr<SkeletalAnimation> &anim) noexcept;
-		bool playAnimation(std::string_view name, bool loop = true);
+		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config) noexcept;
+		std::string_view getName() const noexcept override;
 		bool update(float deltaTime) noexcept;
-		void setTimeRatio(float ratio) noexcept;
+		float getNormalizedTime() const noexcept override;
+		void setNormalizedTime(float normalizedTime) noexcept override;
+		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
+	private:
+		Config _config;
+		float _normalizedTime;
+		ozz::animation::SamplingJob::Context _sampling;
+		ozz::vector<ozz::math::SoaTransform> _locals;
+
+		ozz::animation::Animation& getOzz() noexcept;
+	};
+
+	class OzzSkeletalAnimatorTransition final : public ISkeletalAnimatorTransition
+	{
+	public:
+		using State = OzzSkeletalAnimatorState;
+
+		OzzSkeletalAnimatorTransition(const ozz::animation::Skeleton& skel, const State::Config& newConfig, State&& previousState);
+		bool update(float deltaTime) noexcept;
+		float getNormalizedTime() const noexcept override;
+		void setNormalizedTime(float normalizedTime) noexcept override;
+
+		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
+
+		ISkeletalAnimatorState& getCurrentState() noexcept override;
+		OptionalRef<ISkeletalAnimatorState> getPreviousState() noexcept override;
+	private:
+		State _currentState;
+		std::optional<State> _previousState;
+		ozz::vector<ozz::math::SoaTransform> _locals;
+		float _normalizedTime;
+	};
+
+	class SkeletalAnimatorImpl final
+	{
+	public:
+		using Config = SkeletalAnimatorConfig;
+		SkeletalAnimatorImpl(const std::shared_ptr<Skeleton>& skeleton, const Config& config) noexcept;
+
 		void setPlaybackSpeed(float speed) noexcept;
 		float getPlaybackSpeed() const noexcept;
+
+		const Config& getConfig() const noexcept;
+		OptionalRef<ISkeletalAnimatorState> getCurrentState() noexcept;
+		OptionalRef<ISkeletalAnimatorTransition> getCurrentTransition() noexcept;
+
+		bool play(std::string_view name, float normalizedTime = -bx::kFloatInfinity) noexcept;
+		bool update(float deltaTime) noexcept;
+
 		glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
 		std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 	private:
-		std::shared_ptr<Skeleton> _skeleton;
-		std::vector<std::shared_ptr<SkeletalAnimation>> _animations;
-		std::shared_ptr<SkeletalAnimation> _currentAnimation;
+		using TransitionKey = std::pair<std::string, std::string>;
 
-		ozz::animation::SamplingJob::Context _sampling;
-		ozz::vector<ozz::math::SoaTransform> _locals;
+		std::shared_ptr<Skeleton> _skeleton;
+		Config _config;
+		float _speed;
+
+		std::optional<OzzSkeletalAnimatorTransition> _transition;
+		std::optional<OzzSkeletalAnimatorState> _state;
 		ozz::vector<ozz::math::Float4x4> _models;
 
-		float _timeRatio;
-		float _playbackSpeed;
-		bool _play;
-		bool _loop;
+		ozz::animation::Skeleton& getOzz() noexcept;
+		const ozz::animation::Skeleton& getOzz() const noexcept;
 	};
 }

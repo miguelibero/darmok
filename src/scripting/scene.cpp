@@ -220,7 +220,7 @@ end
 		LuaAmbientLight::bind(lua);
 		LuaPointLight::bind(lua);
 		LuaRenderable::bind(lua);
-		LuaSkeletalAnimationController::bind(lua);
+		LuaSkeletalAnimator::bind(lua);
 		LuaRenderableSkeleton::bind(lua);
 
 		lua.new_usertype<LuaScene>("Scene",

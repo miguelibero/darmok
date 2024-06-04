@@ -5,6 +5,8 @@
 #include <darmok/transform.hpp>
 #include <darmok/render.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <stdexcept>
+
 
 namespace darmok
 {
@@ -58,6 +60,16 @@ namespace darmok
         _armature = armature;
     }
 
+    std::shared_ptr<Skeleton> EmptySkeletonLoader::operator()(std::string_view name)
+    {
+        throw std::runtime_error("no skeletal animation implementation");
+    }
+
+    std::shared_ptr<SkeletalAnimation> EmptySkeletalAnimationLoader::operator()(std::string_view name)
+    {
+        throw std::runtime_error("no skeletal animation implementation");
+    }
+
     RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept
         : _boneMesh(boneMesh)
         , _material(mat)
@@ -89,7 +101,7 @@ namespace darmok
         auto entity = scene.getEntity(*this);
         if (entity != entt::null)
         {
-            _ctrl = scene.getComponent<SkeletalAnimationController>(entity);
+            _ctrl = scene.getComponent<SkeletalAnimator>(entity);
         }
         if (_ctrl && _boneMesh && _material)
         {
@@ -163,7 +175,7 @@ namespace darmok
         {
             return;
         }
-        auto ctrls = _scene->getRegistry().view<SkeletalAnimationController>();
+        auto ctrls = _scene->getRegistry().view<SkeletalAnimator>();
         for (auto [entity, ctrl] : ctrls.each())
         {
             ctrl.update(deltaTime);
@@ -193,14 +205,14 @@ namespace darmok
         }
     }
 
-    OptionalRef<SkeletalAnimationController> SkeletalAnimationCameraComponent::getController(Entity entity) const noexcept
+    OptionalRef<SkeletalAnimator> SkeletalAnimationCameraComponent::getController(Entity entity) const noexcept
     {
         if (!_scene)
         {
             return nullptr;
         }
         auto& registry = _scene->getRegistry();
-        return registry.try_get<SkeletalAnimationController>(entity);
+        return registry.try_get<SkeletalAnimator>(entity);
     }
 
     void SkeletalAnimationCameraComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept
@@ -231,6 +243,46 @@ namespace darmok
             }
         }
         encoder.setUniform(_skinningUniform, &_skinning.front(), _skinning.size());
+    }
+
+    SkeletalAnimatorConfig& SkeletalAnimatorConfig::addState(const StateConfig& config) noexcept
+    {
+        auto fixedName = config.name.empty() ? config.motion->getName() : config.name;
+        _states.emplace(fixedName, config);
+        return *this;
+    }
+
+    SkeletalAnimatorConfig& SkeletalAnimatorConfig::addState(const std::shared_ptr<SkeletalAnimation>& animation, std::string_view name) noexcept
+    {
+        return addState(StateConfig{ animation, std::string(name) });
+    }
+
+    SkeletalAnimatorConfig& SkeletalAnimatorConfig::addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept
+    {
+        TransitionKey key(src, dst);
+        _transitions.emplace(key, config);
+        return *this;
+    }
+
+    std::optional<const SkeletalAnimatorConfig::StateConfig> SkeletalAnimatorConfig::getState(std::string_view name) const noexcept
+    {
+        auto itr = std::find_if(_states.begin(), _states.end(), [name](auto& elm) { return elm.first == name; });
+        if (itr == _states.end())
+        {
+            return std::nullopt;
+        }
+        return itr->second;
+    }
+
+    std::optional<const SkeletalAnimatorConfig::TransitionConfig> SkeletalAnimatorConfig::getTransition(std::string_view src, std::string_view dst) const noexcept
+    {
+        TransitionKey key(src, dst);
+        auto itr = _transitions.find(key);
+        if (itr == _transitions.end())
+        {
+            return std::nullopt;
+        }
+        return itr->second;
     }
 
 }
