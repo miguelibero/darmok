@@ -164,5 +164,7 @@ namespace darmok
 
 		ozz::animation::Skeleton& getOzz() noexcept;
 		const ozz::animation::Skeleton& getOzz() const noexcept;
+		void afterUpdate() noexcept;
+		void checkStateLooped(State& state) noexcept;
 	};
 }

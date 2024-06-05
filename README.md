@@ -7,8 +7,9 @@ C++ game engine combining libraries & tools that I like
 
 currently using:
 
-* [CMake](https://cmake.org/) as the build system 
 * [bgfx](https://github.com/bkaradzic/bgfx) as the renderer
+* [CMake](https://cmake.org/) as the build system 
+* [vcpkg](https://vcpkg.io) as the package manager
 * [glm](https://github.com/g-truc/glm) for 3d math
 * [EnTT](https://github.com/skypjack/entt) as the entity component system
 * [assimp](https://github.com/assimp/assimp) for generic asset loading (not in runtime)
@@ -17,10 +18,10 @@ currently using:
 * [pugixml](https://pugixml.org/) for parsing xml
 * [imgui](https://github.com/ocornut/imgui) for editor UI
 * [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI to replace CEGUI
+* [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 
 planned to use:
 
-* [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [Box2D](https://box2d.org/) for 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
@@ -39,7 +40,7 @@ Some philosofical decisions (could be controversial)
 * use as much stl as possible (need to look into memory management at some point)
 * no naked pointers
 * throw exceptions for error handling
-* try to keep the lua API as similar as possible to Unity3D so that it's easy to port game logic
+* try to keep the API similar to Unity3D (where it makes sense) so that it's easy to port game logic
 
 **WARNING**: currently in early stages of development
 
@@ -70,17 +71,22 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 ### Next tasks
 
-* physics
+#### Upcoming (I need them)
+* 3d physics
 * binary mesh serialization
 * sound
 * render to fullscreen texture
+* animator blend tree
+* animator config from json
 
+#### Upcoming maybe
 * other types of lights
 * pbr lighting
 * deferred renderer
 
+#### In the future
 * separate shaders for skinning?
-* use instancing to draw skeleton bones
+* instancing to draw skeleton bones
 * support multiple imgui app components with different transforms
 * spine animations loading
 * unify use of std::allocator everywhere

@@ -85,6 +85,28 @@ namespace darmok
         }
 
         template<typename T>
+        OptionalRef<T> getComponentInParent(Entity entity) noexcept
+        {
+            auto& registry = getRegistry();
+            auto comp = registry.try_get<T>(entity);
+            if (comp != nullptr)
+            {
+                return OptionalRef<T>(comp);
+            }
+            auto trans = registry.try_get<Transform>(entity);
+            if (trans == nullptr)
+            {
+                return nullptr;
+            }
+            auto parent = trans->getParent();
+            if (!parent)
+            {
+                return nullptr;
+            }
+            return getComponentInParent<T>(getEntity(parent.value()));
+        }
+
+        template<typename T>
         OptionalRef<T> getComponentInChildren(Entity entity) noexcept
         {
             auto& registry = getRegistry();
@@ -100,7 +122,7 @@ namespace darmok
             }
             for (auto& child : trans->getChildren())
             {
-                auto childEntity = entt::to_entity(registry.storage<Transform>(), child.value());
+                auto childEntity = getEntity(child.value());
                 if (childEntity != entt::null)
                 {
                     auto comp = getComponentInChildren<T>(childEntity);

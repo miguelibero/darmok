@@ -604,36 +604,15 @@ namespace darmok
         deltaTime *= _speed;
         ozz::animation::LocalToModelJob ltm;
 
-        auto checkStateLooped = [this](State& state)
-        {
-            if (state.hasLoopedDuringLastUpdate())
-            {
-                for (auto& listener : _listeners)
-                {
-                    listener->onAnimatorStateLooped(_animator, state);
-                }
-            }
-        };
-
         if (_transition)
         {
             _transition->update(deltaTime);
             ltm.input = ozz::make_span(_transition->getLocals());
-            if (_transition->hasStartedDuringLastUpdate())
-            {
-                for (auto& listener : _listeners)
-                {
-                    listener->onAnimatorStateStarted(_animator, _transition->getCurrentState());
-                }
-            }
-            checkStateLooped(_transition->getPreviousOzzState());
-            checkStateLooped(_transition->getCurrentOzzState());
         }
         else if (_state)
         {
             _state->update(deltaTime);
             ltm.input = ozz::make_span(_state->getLocals());
-            checkStateLooped(_state.value());
         }
         else
         {
@@ -646,19 +625,51 @@ namespace darmok
         {
             throw std::runtime_error("error in the model job");
         }
+        afterUpdate();
+    }
 
-        if (_transition && _transition->hasFinished())
+    void SkeletalAnimatorImpl::checkStateLooped(State& state) noexcept
+    {
+        if (state.hasLoopedDuringLastUpdate())
         {
             for (auto& listener : _listeners)
             {
-                listener->onAnimatorTransitionFinished(_animator, _transition.value());
+                listener->onAnimatorStateLooped(_animator, state);
             }
-            for (auto& listener : _listeners)
+        }
+    }
+
+    void SkeletalAnimatorImpl::afterUpdate() noexcept
+    {
+        if (_transition)
+        {
+            if (_transition->hasStartedDuringLastUpdate())
             {
-                listener->onAnimatorStateFinished(_animator, _transition->getPreviousState());
+                for (auto& listener : _listeners)
+                {
+                    listener->onAnimatorStateStarted(_animator, _transition->getCurrentState());
+                }
             }
-            _state.emplace(_transition->finish());
-            _transition.reset();
+            checkStateLooped(_transition->getPreviousOzzState());
+            checkStateLooped(_transition->getCurrentOzzState());
+
+            if (_transition->hasFinished())
+            {
+                for (auto& listener : _listeners)
+                {
+                    listener->onAnimatorTransitionFinished(_animator, _transition.value());
+                }
+                for (auto& listener : _listeners)
+                {
+                    listener->onAnimatorStateFinished(_animator, _transition->getPreviousState());
+                }
+                _state.emplace(_transition->finish());
+                _transition.reset();
+            }
+        }
+        else if (_state)
+        {
+            checkStateLooped(_state.value());
         }
     }
 

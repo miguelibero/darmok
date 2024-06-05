@@ -19,7 +19,7 @@ namespace
 {
 	using namespace darmok;
 
-	class OzzSampleApp : public App, public ISkeletalAnimatorListener
+	class OzzSampleApp : public App
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
@@ -31,79 +31,86 @@ namespace
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			
-			auto& registry = scene.getRegistry();
-
-			auto camEntity = registry.create();
-			registry.emplace<Transform>(camEntity)
+			auto camEntity = scene.createEntity();
+			scene.addComponent<Transform>(camEntity)
 				.setPosition(glm::vec3(0.f, 2, -2))
 				.lookAt(glm::vec3(0, 1, 0));
 
-			auto& cam = registry.emplace<Camera>(camEntity)
+			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
 			cam.setRenderer<ForwardRenderer>();
 			cam.addComponent<PhongLightingComponent>();
 			cam.addComponent<SkeletalAnimationCameraComponent>();
 
-			auto lightEntity = registry.create();
-			registry.emplace<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
-			registry.emplace<PointLight>(lightEntity);
-			registry.emplace<AmbientLight>(registry.create(), 0.8);
+			auto lightEntity = scene.createEntity();
+			scene.addComponent<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
+			scene.addComponent<PointLight>(lightEntity);
+
+			scene.addComponent<AmbientLight>(scene.createEntity(), 0.8);
 
 			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");			
 			auto runAnim = getAssets().getSkeletalAnimationLoader()("BasicMotions@Run01 - Forwards.ozz");
 			auto idleAnim = getAssets().getSkeletalAnimationLoader()("BasicMotions@Idle01.ozz");
 
-			auto skelEntity = registry.create();
-			registry.emplace<Transform>(skelEntity, glm::vec3(-1, 0, 0));
-
+			auto animEntity = scene.createEntity();
+			auto& animTrans = scene.addComponent<Transform>(animEntity);
 			SkeletalAnimatorConfig animConfig;
 			animConfig.addState(runAnim, "run");
 			animConfig.addState(idleAnim, "idle");
 			animConfig.addTransition("run", "idle", {
 				.exitTime = 0.5F,
 				.duration = 0.5F
-				});
+			});
 			animConfig.addTransition("idle", "run", {
 				.exitTime = 0.5F,
 				.duration = 0.5F
 			});
 
-			auto& animator = registry.emplace<SkeletalAnimator>(skelEntity, skel, animConfig);
-			animator.addListener(*this);
-			animator.play("idle");
+			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, animConfig);
+			_animator->play("idle");
 
+			auto skelEntity = scene.createEntity();
+			scene.addComponent<Transform>(skelEntity, animTrans, glm::vec3(-1, 0, 0));
+			
 			auto boneTex = getAssets().getColorTextureLoader()(Colors::grey());
 			auto boneMat = std::make_shared<Material>(prog, boneTex);
-			registry.emplace<RenderableSkeleton>(skelEntity, boneMat);
+			scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
 			auto model = getAssets().getModelLoader()("BasicMotionsDummyModelBin.fbx");
 
-			auto skinEntity = registry.create();
-			registry.emplace<Transform>(skinEntity, glm::vec3(1, 0, 0));
+			auto skinEntity = scene.createEntity();
+			scene.addComponent<Transform>(skinEntity, animTrans, glm::vec3(1, 0, 0));
 
 			ModelSceneConfigurer configurer(scene.getRegistry(), prog, getAssets());
 			configurer.setParent(skinEntity);
-			configurer.run(model, [&registry, modelTex, skel, &animConfig, this](const auto& node, Entity entity) {
-				auto renderable = registry.try_get<Renderable>(entity);
-				if (renderable != nullptr)
+			configurer.run(model, [&scene, modelTex](const auto& node, Entity entity)
+			{
+				auto renderable = scene.getComponent<Renderable>(entity);
+				if (renderable)
 				{
 					auto mat = renderable->getMaterial();
-					if (mat != nullptr)
-					{
-						mat->setTexture(MaterialTextureType::Diffuse, modelTex);
-					}
-					auto& animator = registry.emplace<SkeletalAnimator>(entity, skel, animConfig);
-					animator.addListener(*this);
-					animator.play("idle");
+					mat->setTexture(MaterialTextureType::Diffuse, modelTex);
 				}
 			});
 		}
 
-		void onAnimatorStateLooped(SkeletalAnimator& animator, ISkeletalAnimatorState& state) override
+	protected:
+
+		void updateLogic(float deltaTime) noexcept override
 		{
-			animator.play(state.getName() == "run" ? "idle" : "run");
+			App::updateLogic(deltaTime);
+			_animTime += deltaTime;
+			if (_animTime > 2.F)
+			{
+				auto state = _animator->getCurrentState();
+				_animTime = 0.F;
+				_animator->play(!state || state->getName() == "idle" ? "run" : "idle");
+			}
 		}
+	private:
+		float _animTime;
+		OptionalRef<SkeletalAnimator> _animator;
 	};
 }
 

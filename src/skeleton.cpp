@@ -74,19 +74,26 @@ namespace darmok
         : _boneMesh(boneMesh)
         , _material(mat)
     {
-        if(!_boneMesh)
+        fixBoneMesh();
+    }
+
+    void RenderableSkeleton::fixBoneMesh() noexcept
+    {
+        if (_boneMesh)
         {
-            MeshCreator creator;
-            if (mat)
+            return;
+        }
+
+        MeshCreator creator;
+        if (_material)
+        {
+            auto prog = _material->getProgram();
+            if (prog)
             {
-                auto prog = mat->getProgram();
-                if (prog)
-                {
-                    creator.vertexLayout = prog->getVertexLayout();
-                }
-                _boneMesh = creator.createBone();
+                creator.vertexLayout = prog->getVertexLayout();
             }
         }
+        _boneMesh = creator.createBone();
     }
 
     RenderableSkeleton::~RenderableSkeleton() noexcept
@@ -97,21 +104,48 @@ namespace darmok
     void RenderableSkeleton::init(Scene& scene) noexcept
     {
         _scene = scene;
-        auto& registry = scene.getRegistry();
         auto entity = scene.getEntity(*this);
         if (entity != entt::null)
         {
-            _ctrl = scene.getComponent<SkeletalAnimator>(entity);
+            _animator = scene.getComponentInParent<SkeletalAnimator>(entity);
         }
-        if (_ctrl && _boneMesh && _material)
+        createBones();
+    }
+
+    void RenderableSkeleton::destroyBones() noexcept
+    {
+        if (!_scene)
         {
-            auto& trans = scene.getOrAddComponent<Transform>(entity);
-            auto& matrixes = _ctrl->getBoneMatrixes();
+            return;
+        }
+        for (auto& bone : _bones)
+        {
+            auto boneEntity = _scene->getEntity(bone);
+            if (boneEntity != entt::null)
+            {
+                _scene->destroyEntity(boneEntity);
+            }
+        }
+        _bones.clear();
+    }
+
+    void RenderableSkeleton::createBones() noexcept
+    {
+        destroyBones();
+        if (!_scene)
+        {
+            return;
+        }
+        if (_animator)
+        {
+            auto entity = _scene->getEntity(*this);
+            auto& trans = _scene->getOrAddComponent<Transform>(entity);
+            auto& matrixes = _animator->getBoneMatrixes();
             for (auto& mtx : matrixes)
             {
-                auto boneEntity = scene.createEntity();
-                auto& boneTrans = scene.addComponent<Transform>(boneEntity, mtx, trans);
-                scene.addComponent<Renderable>(boneEntity, _boneMesh, _material);
+                auto boneEntity = _scene->createEntity();
+                auto& boneTrans = _scene->addComponent<Transform>(boneEntity, mtx, trans);
+                _scene->addComponent<Renderable>(boneEntity, _boneMesh, _material);
                 _bones.emplace_back(boneTrans);
             }
         }
@@ -119,11 +153,11 @@ namespace darmok
 
     void RenderableSkeleton::update(float deltaTime) noexcept
     {
-        if (!_ctrl)
+        if (!_animator)
         {
             return;
         }
-        auto& matrixes = _ctrl->getBoneMatrixes();
+        auto& matrixes = _animator->getBoneMatrixes();
         auto i = 0;
         for (auto& bone : _bones)
         {
@@ -133,15 +167,9 @@ namespace darmok
 
     void RenderableSkeleton::shutdown() noexcept
     {
-        if (_scene)
-        {
-            for (auto& bone : _bones)
-            {
-                _scene->destroyEntity(_scene->getEntity(bone));
-            }
-        }
+        destroyBones();
         _scene.reset();
-        _bones.clear();
+        _animator.reset();
     }
 
     void SkeletalAnimationUpdater::init(Scene& scene, App& app) noexcept
@@ -205,20 +233,19 @@ namespace darmok
         }
     }
 
-    OptionalRef<SkeletalAnimator> SkeletalAnimationCameraComponent::getController(Entity entity) const noexcept
+    OptionalRef<SkeletalAnimator> SkeletalAnimationCameraComponent::getAnimator(Entity entity) const noexcept
     {
         if (!_scene)
         {
             return nullptr;
         }
-        auto& registry = _scene->getRegistry();
-        return registry.try_get<SkeletalAnimator>(entity);
+        return _scene->getComponentInParent<SkeletalAnimator>(entity);
     }
 
     void SkeletalAnimationCameraComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept
     {
-        auto ctrl = getController(entity);
-        if (!ctrl)
+        auto animator = getAnimator(entity);
+        if (!animator)
         {
             return;
         }
@@ -238,7 +265,7 @@ namespace darmok
             _skinning.reserve(bones.size() + 1);
             for (auto& bone : bones)
             {
-                auto model = ctrl->getModelMatrix(bone.joint);
+                auto model = animator->getModelMatrix(bone.joint);
                 _skinning.push_back(model * bone.inverseBindPose);
             }
         }

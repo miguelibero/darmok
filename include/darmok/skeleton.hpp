@@ -219,7 +219,8 @@ namespace darmok
     {
     public:
         DLLEXPORT RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh = nullptr) noexcept;
-        ~RenderableSkeleton() noexcept;
+        DLLEXPORT ~RenderableSkeleton() noexcept;
+
         void init(Scene& scene) noexcept;
         void update(float deltaTime) noexcept;
         void shutdown() noexcept;
@@ -227,8 +228,12 @@ namespace darmok
         OptionalRef<Scene> _scene;
         std::shared_ptr<Material> _material;
         std::shared_ptr<IMesh> _boneMesh;
-        OptionalRef<SkeletalAnimator> _ctrl;
+        OptionalRef<SkeletalAnimator> _animator;
         std::vector<OptionalRef<Transform>> _bones;
+
+        void fixBoneMesh() noexcept;
+        void destroyBones() noexcept;
+        void createBones() noexcept;
     };
 
     class SkeletalAnimationUpdater final : public ISceneLogicUpdater
@@ -282,6 +287,6 @@ namespace darmok
         std::vector<glm::mat4> _skinning;
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
-        OptionalRef<SkeletalAnimator> getController(Entity entity) const noexcept;
+        OptionalRef<SkeletalAnimator> getAnimator(Entity entity) const noexcept;
     };
 }
