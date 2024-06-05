@@ -175,13 +175,13 @@ namespace darmok
         {
             return;
         }
-        auto ctrls = _scene->getRegistry().view<SkeletalAnimator>();
-        for (auto [entity, ctrl] : ctrls.each())
+        auto animators = _scene->getRegistry().view<SkeletalAnimator>();
+        for (auto [entity, anim] : animators.each())
         {
-            ctrl.update(deltaTime);
+            anim.update(deltaTime);
         }
-        auto skels = _scene->getRegistry().view<RenderableSkeleton>();
-        for (auto [entity, skel] : skels.each())
+        auto skeletons = _scene->getRegistry().view<RenderableSkeleton>();
+        for (auto [entity, skel] : skeletons.each())
         {
             skel.update(deltaTime);
         }

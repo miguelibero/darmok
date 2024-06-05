@@ -72,8 +72,7 @@ namespace darmok
 		static std::optional<LuaSkeletalAnimator> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 
-        bool play1(const std::string& name) noexcept;
-        bool play2(const std::string& name, float normalizedTime) noexcept;
+        bool play(const std::string& name) noexcept;
         LuaSkeletalAnimator& setPlaybackSpeed(float speed) noexcept;
         float getPlaybackSpeed() const noexcept;
         

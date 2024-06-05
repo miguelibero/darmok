@@ -19,7 +19,7 @@ namespace
 {
 	using namespace darmok;
 
-	class OzzSampleApp : public App
+	class OzzSampleApp : public App, public ISkeletalAnimatorListener
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
@@ -59,17 +59,18 @@ namespace
 			SkeletalAnimatorConfig animConfig;
 			animConfig.addState(runAnim, "run");
 			animConfig.addState(idleAnim, "idle");
-			animConfig.addTransition(runAnim->getName(), idleAnim->getName(), {
-				.exitTime = 0.9F,
-				.duration = 0.1F
+			animConfig.addTransition("run", "idle", {
+				.exitTime = 0.5F,
+				.duration = 0.5F
 				});
-			animConfig.addTransition(idleAnim->getName(), runAnim->getName(), {
-				.exitTime = 0.9F,
-				.duration = 0.1F
+			animConfig.addTransition("idle", "run", {
+				.exitTime = 0.5F,
+				.duration = 0.5F
 			});
 
-			_animator = registry.emplace<SkeletalAnimator>(skelEntity, skel, animConfig);
-			_animator->play("idle");
+			auto& animator = registry.emplace<SkeletalAnimator>(skelEntity, skel, animConfig);
+			animator.addListener(*this);
+			animator.play("idle");
 
 			auto boneTex = getAssets().getColorTextureLoader()(Colors::grey());
 			auto boneMat = std::make_shared<Material>(prog, boneTex);
@@ -83,7 +84,7 @@ namespace
 
 			ModelSceneConfigurer configurer(scene.getRegistry(), prog, getAssets());
 			configurer.setParent(skinEntity);
-			configurer.run(model, [&registry, modelTex, skel, &animConfig](const auto& node, Entity entity) {
+			configurer.run(model, [&registry, modelTex, skel, &animConfig, this](const auto& node, Entity entity) {
 				auto renderable = registry.try_get<Renderable>(entity);
 				if (renderable != nullptr)
 				{
@@ -93,24 +94,16 @@ namespace
 						mat->setTexture(MaterialTextureType::Diffuse, modelTex);
 					}
 					auto& animator = registry.emplace<SkeletalAnimator>(entity, skel, animConfig);
+					animator.addListener(*this);
 					animator.play("idle");
 				}
 			});
 		}
-	protected:
 
-		void updateLogic(float deltaTime)
+		void onAnimatorStateLooped(SkeletalAnimator& animator, ISkeletalAnimatorState& state) override
 		{
-			App::updateLogic(deltaTime);
-			auto state = _animator->getCurrentState();
-			if (state && state->getNormalizedTime() > 0.9)
-			{
-				_animator->play(state->getName() == "run" ? "idle" : "run");
-			}
+			animator.play(state.getName() == "run" ? "idle" : "run");
 		}
-
-	private:
-		OptionalRef<SkeletalAnimator> _animator;
 	};
 }
 

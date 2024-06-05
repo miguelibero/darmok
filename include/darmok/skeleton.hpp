@@ -109,6 +109,13 @@ namespace darmok
         float speed = 1.F;
     };
 
+    struct SkeletalAnimationTransitionConfig final
+    {
+        float exitTime = 1.F;
+        float duration = 0.F;
+        float offset = 0.F;
+    };
+
     class BX_NO_VTABLE ISkeletalAnimatorState
     {
     public:
@@ -116,25 +123,20 @@ namespace darmok
         virtual ~ISkeletalAnimatorState() = default;
         virtual float getNormalizedTime() const = 0;
         virtual void setNormalizedTime(float normalizedTime) = 0;
+        virtual float getDuration() const = 0;
         virtual std::string_view getName() const = 0;
     };
 
     class BX_NO_VTABLE ISkeletalAnimatorTransition
     {
     public:
+        using Config = SkeletalAnimationTransitionConfig;
         virtual ~ISkeletalAnimatorTransition() = default;
         virtual float getNormalizedTime() const = 0;
         virtual void setNormalizedTime(float normalizedTime) = 0;
+        virtual float getDuration() const = 0;
         virtual ISkeletalAnimatorState& getCurrentState() = 0;
-        virtual OptionalRef<ISkeletalAnimatorState> getPreviousState() = 0;
-    };
-
-    struct SkeletalAnimationTransitionConfig final
-    {
-        float exitTime = 1.F;
-        bool fixedDuration = false;
-        float duration = 0.F;
-        float offset = 0.F;
+        virtual ISkeletalAnimatorState& getPreviousState() = 0;
     };
 
     struct SkeletalAnimatorTransitionKey final
@@ -173,12 +175,28 @@ namespace darmok
         std::unordered_map<TransitionKey, TransitionConfig, TransitionKeyHash> _transitions;
     };
 
+    class SkeletalAnimator;
+
+    class BX_NO_VTABLE ISkeletalAnimatorListener
+    {
+    public:
+        virtual ~ISkeletalAnimatorListener() = default;
+        virtual void onAnimatorStateFinished(SkeletalAnimator& animator, ISkeletalAnimatorState& state) {};
+        virtual void onAnimatorStateLooped(SkeletalAnimator& animator, ISkeletalAnimatorState& state) {};
+        virtual void onAnimatorStateStarted(SkeletalAnimator& animator, ISkeletalAnimatorState& state) {};
+        virtual void onAnimatorTransitionFinished(SkeletalAnimator& animator, ISkeletalAnimatorTransition& trans) {};
+        virtual void onAnimatorTransitionStarted(SkeletalAnimator& animator, ISkeletalAnimatorTransition& trans) {};
+    };
+
     class SkeletalAnimator final
     {
     public:
         using Config = SkeletalAnimatorConfig;
         DLLEXPORT SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const Config&) noexcept;
         DLLEXPORT ~SkeletalAnimator();
+
+        DLLEXPORT SkeletalAnimator& addListener(ISkeletalAnimatorListener& listener) noexcept;
+        DLLEXPORT bool removeListener(ISkeletalAnimatorListener& listener) noexcept;
 
         DLLEXPORT SkeletalAnimator& setPlaybackSpeed(float speed) noexcept;
         DLLEXPORT float getPlaybackSpeed() const noexcept;
@@ -187,12 +205,12 @@ namespace darmok
         DLLEXPORT OptionalRef<ISkeletalAnimatorState> getCurrentState() noexcept;
         DLLEXPORT OptionalRef<ISkeletalAnimatorTransition> getCurrentTransition() noexcept;
 
-        DLLEXPORT bool play(std::string_view name, float normalizedTime = -bx::kFloatInfinity) noexcept;
+        DLLEXPORT bool play(std::string_view name) noexcept;
         
         DLLEXPORT glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
         DLLEXPORT std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 
-        void update(float deltaTime) noexcept;
+        void update(float deltaTime);
     private:
         std::unique_ptr<SkeletalAnimatorImpl> _impl;
     };

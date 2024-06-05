@@ -81,14 +81,9 @@ namespace darmok
         return scene.getEntity(_animator.value());
     }
 
-    bool LuaSkeletalAnimator::play1(const std::string& name) noexcept
+    bool LuaSkeletalAnimator::play(const std::string& name) noexcept
     {
         return _animator->play(name);
-    }
-
-    bool LuaSkeletalAnimator::play2(const std::string& name, float normalizedTime) noexcept
-    {
-        return _animator->play(name, normalizedTime);
     }
 
     LuaSkeletalAnimator& LuaSkeletalAnimator::setPlaybackSpeed(float speed) noexcept
@@ -111,7 +106,7 @@ namespace darmok
             ),
             "get_entity_component", &LuaSkeletalAnimator::getEntityComponent,
             "get_entity", &LuaSkeletalAnimator::getEntity,
-            "play", sol::overload(&LuaSkeletalAnimator::play1, &LuaSkeletalAnimator::play2),
+            "play", sol::overload(&LuaSkeletalAnimator::play),
             "playback_speed", sol::property(&LuaSkeletalAnimator::getPlaybackSpeed, &LuaSkeletalAnimator::setPlaybackSpeed)
         );
     }

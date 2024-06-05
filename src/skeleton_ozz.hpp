@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <unordered_set>
 #include <darmok/skeleton.hpp>
 #include <darmok/data.hpp>
 #include <ozz/animation/runtime/skeleton.h>
@@ -73,18 +73,23 @@ namespace darmok
 	{
 	public:
 		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config) noexcept;
+		OzzSkeletalAnimatorState(OzzSkeletalAnimatorState&& other) noexcept;
+
 		std::string_view getName() const noexcept override;
-		bool update(float deltaTime) noexcept;
+		void update(float deltaTime);
+		bool hasLoopedDuringLastUpdate() const noexcept;
 		float getNormalizedTime() const noexcept override;
+		float getDuration() const noexcept override;
 		void setNormalizedTime(float normalizedTime) noexcept override;
 		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
 	private:
 		Config _config;
 		float _normalizedTime;
+		bool _lastUpdateLooped;
 		ozz::animation::SamplingJob::Context _sampling;
 		ozz::vector<ozz::math::SoaTransform> _locals;
 
-		ozz::animation::Animation& getOzz() noexcept;
+		ozz::animation::Animation& getOzz() const noexcept;
 	};
 
 	class OzzSkeletalAnimatorTransition final : public ISkeletalAnimatorTransition
@@ -92,19 +97,30 @@ namespace darmok
 	public:
 		using State = OzzSkeletalAnimatorState;
 
-		OzzSkeletalAnimatorTransition(const ozz::animation::Skeleton& skel, const State::Config& newConfig, State&& previousState);
-		bool update(float deltaTime) noexcept;
+		OzzSkeletalAnimatorTransition(const Config& config, State&& currentState, State&& previousState) noexcept;
+		void update(float deltaTime);
 		float getNormalizedTime() const noexcept override;
 		void setNormalizedTime(float normalizedTime) noexcept override;
+		bool hasStartedDuringLastUpdate() const noexcept;
+		float getDuration() const noexcept override;
+		bool hasFinished() const noexcept;
+		State&& finish() noexcept;
 
 		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
 
+		State& getCurrentOzzState() noexcept;
+		State& getPreviousOzzState() noexcept;
+
 		ISkeletalAnimatorState& getCurrentState() noexcept override;
-		OptionalRef<ISkeletalAnimatorState> getPreviousState() noexcept override;
+		ISkeletalAnimatorState& getPreviousState() noexcept override;
 	private:
+		Config _config;
 		State _currentState;
-		std::optional<State> _previousState;
+		State _previousState;
+		bool _finished;
+		bool _lastUpdateStarted;
 		ozz::vector<ozz::math::SoaTransform> _locals;
+		bool _blending;
 		float _normalizedTime;
 	};
 
@@ -112,7 +128,13 @@ namespace darmok
 	{
 	public:
 		using Config = SkeletalAnimatorConfig;
-		SkeletalAnimatorImpl(const std::shared_ptr<Skeleton>& skeleton, const Config& config) noexcept;
+		using Transition = OzzSkeletalAnimatorTransition;
+		using State = OzzSkeletalAnimatorState;
+
+		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const Config& config) noexcept;
+
+		void addListener(ISkeletalAnimatorListener& listener) noexcept;
+		bool removeListener(ISkeletalAnimatorListener& listener) noexcept;
 
 		void setPlaybackSpeed(float speed) noexcept;
 		float getPlaybackSpeed() const noexcept;
@@ -121,21 +143,24 @@ namespace darmok
 		OptionalRef<ISkeletalAnimatorState> getCurrentState() noexcept;
 		OptionalRef<ISkeletalAnimatorTransition> getCurrentTransition() noexcept;
 
-		bool play(std::string_view name, float normalizedTime = -bx::kFloatInfinity) noexcept;
-		bool update(float deltaTime) noexcept;
+		bool play(std::string_view name) noexcept;
+		void update(float deltaTime);
 
 		glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
 		std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 	private:
 		using TransitionKey = std::pair<std::string, std::string>;
 
+		SkeletalAnimator& _animator;
 		std::shared_ptr<Skeleton> _skeleton;
 		Config _config;
 		float _speed;
 
-		std::optional<OzzSkeletalAnimatorTransition> _transition;
-		std::optional<OzzSkeletalAnimatorState> _state;
+		std::optional<Transition> _transition;
+		std::optional<State> _state;
 		ozz::vector<ozz::math::Float4x4> _models;
+
+		std::unordered_set<OptionalRef<ISkeletalAnimatorListener>> _listeners;
 
 		ozz::animation::Skeleton& getOzz() noexcept;
 		const ozz::animation::Skeleton& getOzz() const noexcept;
