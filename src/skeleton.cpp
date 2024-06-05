@@ -74,127 +74,66 @@ namespace darmok
         : _boneMesh(boneMesh)
         , _material(mat)
     {
-        fixBoneMesh();
-    }
-
-    void RenderableSkeleton::fixBoneMesh() noexcept
-    {
-        if (_boneMesh)
+        if (!_boneMesh)
         {
-            return;
-        }
-
-        MeshCreator creator;
-        if (_material)
-        {
-            auto prog = _material->getProgram();
-            if (prog)
+            MeshCreator creator;
+            if (_material)
             {
-                creator.vertexLayout = prog->getVertexLayout();
+                auto prog = _material->getProgram();
+                if (prog)
+                {
+                    creator.vertexLayout = prog->getVertexLayout();
+                }
             }
+            _boneMesh = creator.createBone();
         }
-        _boneMesh = creator.createBone();
     }
-
-    RenderableSkeleton::~RenderableSkeleton() noexcept
+   
+    void RenderableSkeleton::update(Scene& scene, const std::vector<glm::mat4>& boneMatrixes) noexcept
     {
-        shutdown();
-    }
-
-    void RenderableSkeleton::init(Scene& scene) noexcept
-    {
-        _scene = scene;
-        auto entity = scene.getEntity(*this);
-        if (entity != entt::null)
+        while (_boneTransforms.size() > boneMatrixes.size())
         {
-            _animator = scene.getComponentInParent<SkeletalAnimator>(entity);
-        }
-        createBones();
-    }
-
-    void RenderableSkeleton::destroyBones() noexcept
-    {
-        if (!_scene)
-        {
-            return;
-        }
-        for (auto& bone : _bones)
-        {
-            auto boneEntity = _scene->getEntity(bone);
+            auto boneEntity = scene.getEntity(_boneTransforms.back());
             if (boneEntity != entt::null)
             {
-                _scene->destroyEntity(boneEntity);
+                scene.destroyEntity(boneEntity);
             }
+            _boneTransforms.pop_back();
         }
-        _bones.clear();
-    }
-
-    void RenderableSkeleton::createBones() noexcept
-    {
-        destroyBones();
-        if (!_scene)
+        if (boneMatrixes.empty())
         {
             return;
         }
-        if (_animator)
+
+        auto entity = scene.getEntity(*this);
+        if (entity == entt::null)
         {
-            auto entity = _scene->getEntity(*this);
-            auto& trans = _scene->getOrAddComponent<Transform>(entity);
-            auto& matrixes = _animator->getBoneMatrixes();
-            for (auto& mtx : matrixes)
+            return;
+        }
+
+        auto& trans = scene.getOrAddComponent<Transform>(entity);
+
+        size_t i = 0;
+        for (auto& mtx : boneMatrixes)
+        {
+            if (i >= _boneTransforms.size())
             {
-                auto boneEntity = _scene->createEntity();
-                auto& boneTrans = _scene->addComponent<Transform>(boneEntity, mtx, trans);
-                _scene->addComponent<Renderable>(boneEntity, _boneMesh, _material);
-                _bones.emplace_back(boneTrans);
+                auto boneEntity = scene.createEntity();
+                scene.addComponent<Renderable>(boneEntity, _boneMesh, _material);
+                auto& boneTrans = scene.addComponent<Transform>(boneEntity, mtx, trans);
+                _boneTransforms.emplace_back(boneTrans);
             }
+            else
+            {
+                _boneTransforms[i]->setLocalMatrix(mtx);
+            }
+            ++i;
         }
-    }
-
-    void RenderableSkeleton::update(float deltaTime) noexcept
-    {
-        if (!_animator)
-        {
-            return;
-        }
-        auto& matrixes = _animator->getBoneMatrixes();
-        auto i = 0;
-        for (auto& bone : _bones)
-        {
-            bone->setLocalMatrix(matrixes[i++]);
-        }
-    }
-
-    void RenderableSkeleton::shutdown() noexcept
-    {
-        destroyBones();
-        _scene.reset();
-        _animator.reset();
     }
 
     void SkeletalAnimationUpdater::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;
-        auto& registry = scene.getRegistry();
-        registry.on_construct<RenderableSkeleton>().connect<&SkeletalAnimationUpdater::onSkeletonConstructed>(*this);
-    }
-
-    void SkeletalAnimationUpdater::onSkeletonConstructed(EntityRegistry& registry, Entity entity) noexcept
-    {
-        if (_scene)
-        {
-            auto& bones = registry.get<RenderableSkeleton>(entity);
-            bones.init(_scene.value());
-        }
-    }
-
-    void SkeletalAnimationUpdater::shutdown() noexcept
-    {
-        if (_scene)
-        {
-            auto& registry = _scene->getRegistry();
-            registry.on_construct<RenderableSkeleton>().disconnect<&SkeletalAnimationUpdater::onSkeletonConstructed>(*this);
-        }
     }
 
     void SkeletalAnimationUpdater::update(float deltaTime) noexcept
@@ -204,14 +143,16 @@ namespace darmok
             return;
         }
         auto animators = _scene->getRegistry().view<SkeletalAnimator>();
+        std::vector<OptionalRef<RenderableSkeleton>> skeletons;
         for (auto [entity, anim] : animators.each())
         {
             anim.update(deltaTime);
-        }
-        auto skeletons = _scene->getRegistry().view<RenderableSkeleton>();
-        for (auto [entity, skel] : skeletons.each())
-        {
-            skel.update(deltaTime);
+            skeletons.clear();
+            _scene->getComponentsInChildren<RenderableSkeleton>(entity, skeletons);
+            for (auto& skel : skeletons)
+            {
+                skel->update(_scene.value(), anim.getBoneMatrixes());
+            }
         }
     }
 

@@ -50,8 +50,14 @@ namespace darmok
         DLLEXPORT EntityRegistry& getRegistry();
         DLLEXPORT const EntityRegistry& getRegistry() const;
 
-        Entity createEntity() noexcept;
-        bool destroyEntity(Entity entity) noexcept;
+        DLLEXPORT Entity createEntity() noexcept;
+        DLLEXPORT bool destroyEntity(Entity entity) noexcept;
+
+        template<typename T>
+        auto getComponentView() noexcept
+        {
+            return getRegistry().view<T>();
+        }
 
         template<typename T>
 		Entity getEntity(const T& component) noexcept
@@ -133,6 +139,30 @@ namespace darmok
                 }
             }
             return nullptr;
+        }
+
+        template<typename T, typename C>
+        void getComponentsInChildren(Entity entity, C& container) noexcept
+        {
+            auto& registry = getRegistry();
+            auto comp = registry.try_get<T>(entity);
+            if (comp != nullptr)
+            {
+                container.emplace_back(comp);
+            }
+            auto trans = registry.try_get<Transform>(entity);
+            if (trans == nullptr)
+            {
+                return;
+            }
+            for (auto& child : trans->getChildren())
+            {
+                auto childEntity = getEntity(child.value());
+                if (childEntity != entt::null)
+                {
+                    getComponentsInChildren<T, C>(childEntity, container);
+                }
+            }
         }
 
     private:

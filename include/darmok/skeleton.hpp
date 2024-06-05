@@ -98,10 +98,6 @@ namespace darmok
         std::vector<SkeletalBlendElement2D> elements;
     };
 
-    class SkeletalAnimatorImpl;
-    class Transform;
-    class Material;
-
     struct SkeletalAnimationStateConfig final
     {
         std::shared_ptr<SkeletalAnimation> motion;
@@ -188,6 +184,8 @@ namespace darmok
         virtual void onAnimatorTransitionStarted(SkeletalAnimator& animator, ISkeletalAnimatorTransition& trans) {};
     };
 
+    class SkeletalAnimatorImpl;
+
     class SkeletalAnimator final
     {
     public:
@@ -215,25 +213,18 @@ namespace darmok
         std::unique_ptr<SkeletalAnimatorImpl> _impl;
     };
 
+    class Transform;
+    class Material;
+
     class RenderableSkeleton final
     {
     public:
         DLLEXPORT RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh = nullptr) noexcept;
-        DLLEXPORT ~RenderableSkeleton() noexcept;
-
-        void init(Scene& scene) noexcept;
-        void update(float deltaTime) noexcept;
-        void shutdown() noexcept;
+        void update(Scene& scene, const std::vector<glm::mat4>& boneMatrixes) noexcept;
     private:
-        OptionalRef<Scene> _scene;
         std::shared_ptr<Material> _material;
         std::shared_ptr<IMesh> _boneMesh;
-        OptionalRef<SkeletalAnimator> _animator;
-        std::vector<OptionalRef<Transform>> _bones;
-
-        void fixBoneMesh() noexcept;
-        void destroyBones() noexcept;
-        void createBones() noexcept;
+        std::vector<OptionalRef<Transform>> _boneTransforms;
     };
 
     class SkeletalAnimationUpdater final : public ISceneLogicUpdater
@@ -241,11 +232,8 @@ namespace darmok
     public:
         void init(Scene& scene, App& app) noexcept override;
         void update(float deltaTime) noexcept override;
-        void shutdown() noexcept override;
     private:
         OptionalRef<Scene> _scene;
-
-        void onSkeletonConstructed(EntityRegistry& registry, Entity entity) noexcept;
     };
 
 
