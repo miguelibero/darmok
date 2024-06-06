@@ -43,7 +43,7 @@ include(darmokProcessAssets)
 
 darmok_process_assets(
   ASSETS "assets/shaders"
-  HEADER_SHADER_OUTPUT_DIR "include/generated/shaders"
+  HEADER_OUTPUT_DIR "include/generated/shaders"
   HEADER_SHADER_INCLUDE_DIR "generated/shaders"
   SOURCE_GROUP_NAME "Embedded Shader Files"
 )
@@ -74,6 +74,7 @@ set(SOURCES
   ${SRC_DIR}/math.cpp
   ${SRC_DIR}/light.cpp
   ${SRC_DIR}/vertex.cpp
+  ${SRC_DIR}/vertex_layout.cpp
   ${SRC_DIR}/render.cpp
   ${SRC_DIR}/render_forward.cpp
   ${SRC_DIR}/render_deferred.cpp
@@ -114,6 +115,7 @@ set(HEADERS
   ${INCLUDE_DIR}/camera.hpp
   ${INCLUDE_DIR}/light.hpp
   ${INCLUDE_DIR}/vertex.hpp
+  ${INCLUDE_DIR}/vertex_layout.hpp
   ${INCLUDE_DIR}/render.hpp
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
@@ -142,13 +144,12 @@ if(DARMOK_BUILD_IMGUI)
   darmok_process_assets(
     ASSETS "assets/imgui"
     HEADER_VAR_PREFIX "imgui_"
-    HEADER_SHADER_OUTPUT_DIR "include/generated/imgui/shaders"
+    HEADER_OUTPUT_DIR "include/generated/imgui/shaders"
     HEADER_SHADER_INCLUDE_DIR "generated/imgui/shaders"
     SOURCE_GROUP_NAME "Imgui Asset Files"
     SOURCES_VAR IMGUI_ASSETS
   )
   list(APPEND ASSETS ${IMGUI_ASSETS})
-
 endif()
 
 if(DARMOK_BUILD_RMLUI)
@@ -162,7 +163,7 @@ if(DARMOK_BUILD_RMLUI)
   darmok_process_assets(
     ASSETS "assets/rmlui"
     HEADER_VAR_PREFIX "rmlui_"
-    HEADER_SHADER_OUTPUT_DIR "include/generated/rmlui/shaders"
+    HEADER_OUTPUT_DIR "include/generated/rmlui/shaders"
     HEADER_SHADER_INCLUDE_DIR "generated/rmlui/shaders"
     SOURCE_GROUP_NAME "RmlUI Asset Files"
     SOURCES_VAR RMLUI_ASSETS
@@ -247,18 +248,18 @@ install(FILES
   DESTINATION share/doc/darmok)
 
 target_include_directories(
-    ${LIB_NAME}
-    PUBLIC
-    $<INSTALL_INTERFACE:include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  ${LIB_NAME}
+  PUBLIC
+  $<INSTALL_INTERFACE:include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 )
 
 set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
 if(MSVC)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
 endif()
 
 if(MSVC AND BUILD_SHARED_LIBS)
@@ -314,11 +315,11 @@ if(DARMOK_RUN_CODE_ANALYSIS)
   set(CLANG_TIDY_CHECKS "-checks=-*,readability-*,modernize-*,-modernize-use-trailing-return-type")
   if(MSVC)
     set_target_properties(${LIB_NAME} PROPERTIES
-        VS_GLOBAL_RunCodeAnalysis true
-        VS_GLOBAL_EnableMicrosoftCodeAnalysis true
-        VS_GLOBAL_CodeAnalysisRuleSet ${CMAKE_CURRENT_SOURCE_DIR}/darmok.ruleset
-        VS_GLOBAL_EnableClangTidyCodeAnalysis true
-        VS_GLOBAL_ClangTidyChecks ${CLANG_TIDY_CHECKS}
+      VS_GLOBAL_RunCodeAnalysis true
+      VS_GLOBAL_EnableMicrosoftCodeAnalysis true
+      VS_GLOBAL_CodeAnalysisRuleSet ${CMAKE_CURRENT_SOURCE_DIR}/darmok.ruleset
+      VS_GLOBAL_EnableClangTidyCodeAnalysis true
+      VS_GLOBAL_ClangTidyChecks ${CLANG_TIDY_CHECKS}
     )
   else()
     find_program(CLANG_TIDY_EXE
@@ -338,14 +339,14 @@ target_link_libraries(${LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bi
 
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
-    find_package(glfw3 CONFIG REQUIRED)
-    target_link_libraries(${LIB_NAME} PRIVATE glfw)
-    target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_GLFW)
-    if (DARMOK_PLATFORM_SUPPORT_WAYLAND)
-        target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_SUPPORT_WAYLAND)
-        target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
-        target_compile_definitions(bgfx::bgfx INTERFACE WL_EGL_PLATFORM)
-    endif()
+  find_package(glfw3 CONFIG REQUIRED)
+  target_link_libraries(${LIB_NAME} PRIVATE glfw)
+  target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_GLFW)
+  if (DARMOK_PLATFORM_SUPPORT_WAYLAND)
+    target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_SUPPORT_WAYLAND)
+    target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
+    target_compile_definitions(bgfx::bgfx INTERFACE WL_EGL_PLATFORM)
+  endif()
 endif()
 
 # glm
@@ -452,3 +453,30 @@ if(DARMOK_BUILD_OZZ)
     ozz_animation_offline
     ozz_options)
 endif()
+
+# tools
+
+# vlayoutc: adding files manually to avoid dependency cycle
+set(VLAYOUTC_NAME "darmok-vlayoutc")
+set(VLAYOUTC_SRC_DIR "tools/vlayoutc")
+add_executable(${VLAYOUTC_NAME}
+  "${VLAYOUTC_SRC_DIR}/vlayoutc.cpp"
+  "${SRC_DIR}/vertex_layout.cpp"
+  "${SRC_DIR}/utils.cpp"
+)
+target_include_directories(
+  ${VLAYOUTC_NAME}
+  PUBLIC
+  $<INSTALL_INTERFACE:include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+add_executable(darmok::vlayoutc ALIAS ${VLAYOUTC_NAME})
+target_link_libraries(${VLAYOUTC_NAME} bgfx::bx bgfx::bgfx sol2 cereal::cereal)
+
+set(MODELC_NAME "darmok-modelc")
+set(MODELC_SRC_DIR "tools/modelc")
+add_executable(${MODELC_NAME}
+  "${MODELC_SRC_DIR}/modelc.cpp"
+)
+target_link_libraries(${MODELC_NAME} ${LIB_NAME})
+add_executable(darmok::modelc ALIAS ${MODELC_NAME})

@@ -1,7 +1,8 @@
 include(darmokUtils)
 include(darmokProcessShader)
-include(darmokProcessAsset)
+include(darmokHeaderAsset)
 include(darmokProcessOzz)
+include(darmokProcessVaryingdef)
 
 # darmok_process_assets(
 #   ASSETS files or pattern
@@ -9,27 +10,28 @@ include(darmokProcessOzz)
 #   ASSETS_INCLUDES files or patterns
 # 	OUTPUT_DIR directory
 #   HEADER_VAR_PREFIX prefix
-# 	HEADER_SHADER_OUTPUT_DIR directory
+# 	HEADER_OUTPUT_DIR directory
 # 	HEADER_SHADER_INCLUDE_DIR directory
 #   SOURCES_VAR variable
 #   SOURCE_GROUP_NAME name
 # )
 function(darmok_process_assets)
     set(OPTIONS "")
-    set(ONE_VALUE_ARGS OUTPUT_DIR HEADER_SHADER_OUTPUT_DIR HEADER_VAR_PREFIX HEADER_SHADER_INCLUDE_DIR SOURCES_VAR SOURCE_GROUP_NAME)
+    set(ONE_VALUE_ARGS OUTPUT_DIR HEADER_OUTPUT_DIR HEADER_VAR_PREFIX HEADER_SHADER_INCLUDE_DIR SOURCES_VAR SOURCE_GROUP_NAME)
     set(MULTI_VALUE_ARGS ASSETS ASSETS_EXCLUDES ASSETS_INCLUDES)
     cmake_parse_arguments(ARGS "${OPTIONS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" "${ARGN}")
 
     if(NOT DEFINED ARGS_ASSETS)
         set(ARGS_ASSETS assets)
     endif()
-    if(NOT IS_ABSOLUTE ${ARGS_ASSETS})
+    if(NOT IS_ABSOLUTE ARGS_ASSETS)
         set(ARGS_ASSETS ${CMAKE_CURRENT_SOURCE_DIR}/${ARGS_ASSETS})
     endif()
+
     if(NOT DEFINED ARGS_OUTPUT_DIR)
         set(ARGS_OUTPUT_DIR assets)
     endif()
-    if(NOT IS_ABSOLUTE ${ARGS_OUTPUT_DIR})
+    if(NOT IS_ABSOLUTE ARGS_OUTPUT_DIR)
         set(ARGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${ARGS_OUTPUT_DIR})
     endif()
     if(NOT DEFINED ARGS_SOURCES_VAR)
@@ -39,28 +41,28 @@ function(darmok_process_assets)
         set(ARGS_SOURCE_GROUP_NAME "Asset Files")
     endif()
     set(SHADER_HEADER "")
-    set(SHADER_OUTPUT_DIR ${ARGS_OUTPUT_DIR})
-    if(DEFINED ARGS_HEADER_SHADER_OUTPUT_DIR)
-        set(SHADER_HEADER "HEADER")
-        set(SHADER_OUTPUT_DIR ${ARGS_HEADER_SHADER_OUTPUT_DIR})
+    set(POSSIBLE_HEADER_OUTPUT_DIR ${ARGS_OUTPUT_DIR})
+    if(DEFINED ARGS_HEADER_OUTPUT_DIR)
+        set(HEADER_OPTION "HEADER")
+        set(POSSIBLE_HEADER_OUTPUT_DIR ${ARGS_HEADER_OUTPUT_DIR})
     endif()
 
     set(SOURCES "")
 
     macro(_darmok_process_shader_asset TYPE SHADER_PATH)
-        _darmok_replace_ext(VARYINGDEF_PATH ${SHADER_PATH} ".varyingdef")
+        _darmok_replace_ext(VARYING_DEF_PATH ${SHADER_PATH} ".varyingdef")
         darmok_process_shader(
             TYPE ${TYPE}
-            ${SHADER_HEADER}
+            ${HEADER_OPTION}
             SHADERS ${SHADER_PATH}
-            VARYING_DEF ${VARYINGDEF_PATH}
+            VARYING_DEF ${VARYING_DEF_PATH}
             HEADER_VAR_PREFIX ${ARGS_HEADER_VAR_PREFIX}
             HEADER_INCLUDE_DIR ${ARGS_HEADER_SHADER_INCLUDE_DIR}
-            OUTPUT_DIR ${SHADER_OUTPUT_DIR}
+            OUTPUT_DIR ${POSSIBLE_HEADER_OUTPUT_DIR}
         )
         list(APPEND ASSET_SOURCES
             ${SHADER_PATH}
-            ${VARYINGDEF_PATH})
+            ${VARYING_DEF_PATH})
     endmacro()
 
     foreach(ASSET_ELM ${ARGS_ASSETS})
@@ -71,7 +73,7 @@ function(darmok_process_assets)
             file(GLOB_RECURSE ASSET_PATHS ${ASSET_ELM}/*)
         else()
             string(FIND ${ASSET_ELM} "*" POS)
-            if(${POS} GREATER 0)
+            if(POS GREATER 0)
                 string(SUBSTRING ${ASSET_ELM} 0 ${POS} ASSET_BASE_PATH)
                 get_filename_component(ASSET_BASE_PATH ${ASSET_BASE_PATH} DIRECTORY)
                 file(GLOB_RECURSE ASSET_PATHS ${ASSET_ELM})
@@ -95,36 +97,36 @@ function(darmok_process_assets)
         foreach(ASSET_PATH_ABS ${ASSET_PATHS})
             file(RELATIVE_PATH ASSET_PATH ${ASSET_BASE_PATH} ${ASSET_PATH_ABS})
             set(EXCLUDED OFF)
-            if(DEFINED ARGS_ASSETS_INCLUDES)
+            if(ARGS_ASSETS_INCLUDES)
                 set(EXCLUDED ON)
                 foreach(INCLUDE ${ARGS_ASSETS_INCLUDES})
-                    if(${ASSET_PATH} MATCHES ${INCLUDE})
+                    if(ASSET_PATH MATCHES INCLUDE)
                         set(EXCLUDED OFF)
                     endif()
                 endforeach()
             endif()
             foreach(EXCLUDE ${ARGS_ASSETS_EXCLUDES})
-                if(${ASSET_PATH} MATCHES ${EXCLUDE})
+                if(ASSET_PATH MATCHES EXCLUDE)
                     set(EXCLUDED ON)
                 endif()
             endforeach()            
-            if(${EXCLUDED})
+            if(EXCLUDED)
                 continue()
             endif()
             get_filename_component(ASSET_EXT ${ASSET_PATH_ABS} EXT)
             _darmok_replace_ext(OZZ_CONFIG_PATH ${ASSET_PATH_ABS} ".ozz.json")
-            if(${ASSET_EXT} STREQUAL ".fragment.sc")
+            if(ASSET_EXT STREQUAL ".fragment.sc")
                 list(APPEND FRAGMENT_SHADERS ${ASSET_PATH_ABS})
-            elseif(${ASSET_EXT} STREQUAL ".vertex.sc")
+            elseif(ASSET_EXT STREQUAL ".vertex.sc")
                 list(APPEND VERTEX_SHADERS ${ASSET_PATH_ABS})
-            elseif(${ASSET_EXT} STREQUAL ".include.sc")
+            elseif(ASSET_EXT STREQUAL ".include.sc")
                 list(APPEND SHADER_INCLUDES ${ASSET_PATH_ABS})                  
-            elseif(${ASSET_EXT} STREQUAL ".varyingdef")
+            elseif(ASSET_EXT STREQUAL ".varyingdef")
                 list(APPEND VARYING_DEFS ${ASSET_PATH_ABS})  
-            elseif(${ASSET_EXT} STREQUAL ".vlayout.json")
+            elseif(ASSET_EXT STREQUAL ".vlayout.json")
                 list(APPEND VERTEX_LAYOUTS ${ASSET_PATH_ABS})
             elseif(EXISTS ${OZZ_CONFIG_PATH})
-                if(${ASSET_PATH_ABS} STREQUAL ${OZZ_CONFIG_PATH})
+                if(ASSET_PATH_ABS STREQUAL ${OZZ_CONFIG_PATH})
                     list(APPEND OZZ_CONFIGS ${ASSET_PATH_ABS})                
                 else()
                     list(APPEND OZZ_ASSETS ${ASSET_PATH_ABS})
@@ -143,13 +145,23 @@ function(darmok_process_assets)
         endforeach()
 
         if(VERTEX_LAYOUTS)
-            darmok_process_asset(
+            darmok_header_asset(
                 FILES ${VERTEX_LAYOUTS}
-                ${SHADER_HEADER}
+                ${HEADER_OPTION}
                 HEADER_VAR_PREFIX ${ARGS_HEADER_VAR_PREFIX}
-                OUTPUT_DIR ${SHADER_OUTPUT_DIR}
+                OUTPUT_DIR ${POSSIBLE_HEADER_OUTPUT_DIR}
             )
             list(APPEND ASSET_SOURCES ${VERTEX_LAYOUTS})
+        endif()
+
+        if(VARYING_DEFS)
+            darmok_process_varyingdef(
+                VARYING_DEFS ${VARYING_DEFS}
+                ${HEADER_OPTION}
+                HEADER_VAR_PREFIX ${ARGS_HEADER_VAR_PREFIX}
+                OUTPUT_DIR ${POSSIBLE_HEADER_OUTPUT_DIR}
+            )
+            list(APPEND ASSET_SOURCES ${VARYING_DEFS})
         endif()
 
         foreach(ASSET_PATH ${OZZ_ASSETS})
@@ -178,7 +190,8 @@ function(darmok_process_assets)
         endif()
         list(APPEND SOURCES ${ASSET_SOURCES})
     endforeach()
-    if(NOT ${ARGS_SOURCES_VAR} STREQUAL "")
+
+    if(ARGS_SOURCES_VAR)
         set(${ARGS_SOURCES_VAR} ${SOURCES} PARENT_SCOPE)
     endif()
 

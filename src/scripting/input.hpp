@@ -68,8 +68,8 @@ namespace darmok
 		LuaGamepad(Gamepad& gamepad) noexcept;
 
 		bool getButton(const std::string& name) const noexcept;
-		const glm::ivec3& getLeftStick() const noexcept;
-		const glm::ivec3& getRightStick() const noexcept;
+		const glm::vec3& getLeftStick() const noexcept;
+		const glm::vec3& getRightStick() const noexcept;
 		bool isConnected() const noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;

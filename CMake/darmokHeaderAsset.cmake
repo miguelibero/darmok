@@ -1,27 +1,24 @@
-# darmok_process_asset(
+# darmok_header_asset(
 #   HEADER
 # 	FILES filenames
 # 	OUTPUT_DIR directory
 #   HEADER_VAR_PREFIX prefix
-#   ARGS_OUT_VAR variable
 # )
 #
-function(darmok_process_asset)
+function(darmok_header_asset)
     set(OPTIONS HEADER)
-    set(ONE_VALUE_ARGS OUTPUT_DIR HEADER_VAR_PREFIX OUT_VAR)
+    set(ONE_VALUE_ARGS OUTPUT_DIR HEADER_VAR_PREFIX)
     set(MULTI_VALUE_ARGS FILES)
     cmake_parse_arguments(ARGS "${OPTIONS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" "${ARGN}")
 
-    if(NOT IS_ABSOLUTE ${ARGS_OUTPUT_DIR})
+    if(NOT IS_ABSOLUTE ARGS_OUTPUT_DIR)
         set(ARGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${ARGS_OUTPUT_DIR})
     endif()
-
-    set(OUTPUTS "")
 
     foreach(FILE_PATH ${ARGS_FILES})
         get_filename_component(FILE_PATH_NAME_WE ${FILE_PATH} NAME_WLE)
 
-        if(NOT IS_ABSOLUTE ${FILE_PATH})
+        if(NOT IS_ABSOLUTE FILE_PATH)
             set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${FILE_PATH})
         endif()
 
@@ -42,9 +39,5 @@ function(darmok_process_asset)
                 MAIN_DEPENDENCY ${FILE_PATH}
             )
         endif()
-        list(APPEND OUTPUTS ${OUTPUT})
     endforeach()
-    if(NOT ${ARGS_OUT_VAR} STREQUAL "")
-        set(${ARGS_OUT_VAR} ${OUTPUTS} PARENT_SCOPE)
-    endif()
 endfunction()

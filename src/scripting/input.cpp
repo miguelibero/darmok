@@ -204,12 +204,12 @@ namespace darmok
 		return _gamepad.get().getButton(button.value());
 	}
 
-	const glm::ivec3& LuaGamepad::getLeftStick() const noexcept
+	const glm::vec3& LuaGamepad::getLeftStick() const noexcept
 	{
 		return _gamepad.get().getStick(GamepadStick::Left);
 	}
 
-	const glm::ivec3& LuaGamepad::getRightStick() const noexcept
+	const glm::vec3& LuaGamepad::getRightStick() const noexcept
 	{
 		return _gamepad.get().getStick(GamepadStick::Right);
 	}

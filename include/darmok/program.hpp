@@ -4,7 +4,6 @@
 #include <bgfx/bgfx.h>
 #include <memory>
 #include <string>
-#include <nlohmann/json.hpp>
 #include <darmok/program_fwd.hpp>
 
 namespace bgfx
@@ -25,15 +24,9 @@ namespace darmok
 
 		[[nodiscard]] DLLEXPORT const bgfx::ProgramHandle& getHandle() const noexcept;
 		[[nodiscard]] DLLEXPORT const bgfx::VertexLayout& getVertexLayout() const noexcept;
-
-		DLLEXPORT static void readVertexLayoutJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept;
-
 	private:
 		bgfx::ProgramHandle _handle;
 		bgfx::VertexLayout _layout;
-
-		static bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept;
-		static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
 	};
 
 	class BX_NO_VTABLE IProgramLoader

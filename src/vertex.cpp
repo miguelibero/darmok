@@ -1,6 +1,6 @@
 #include "vertex.hpp"
 #include <darmok/color.hpp>
-#include <darmok/program.hpp>
+#include <darmok/utils.hpp>
 
 namespace darmok
 {
@@ -136,17 +136,16 @@ namespace darmok
         _markedAll.emplace(attr);
     }
 
-    JsonDataVertexLayoutLoader::JsonDataVertexLayoutLoader(IDataLoader& dataLoader) noexcept
+    BinaryDataVertexLayoutLoader::BinaryDataVertexLayoutLoader(IDataLoader& dataLoader) noexcept
         : _dataLoader(dataLoader)
     {
     }
 
-    bgfx::VertexLayout JsonDataVertexLayoutLoader::operator()(std::string_view name)
+    bgfx::VertexLayout BinaryDataVertexLayoutLoader::operator()(std::string_view name)
     {
         auto data = _dataLoader(name);
         bgfx::VertexLayout layout;
-        auto json = nlohmann::json::parse(data.stringView());
-        Program::readVertexLayoutJson(json, layout);
+        // TODO: deserialize VertexLayout
         return layout;
     }
 }

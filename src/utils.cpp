@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <sstream>
+#include <charconv>
 
 namespace darmok
 {
@@ -23,6 +24,21 @@ namespace darmok
 	bool StringUtils::endsWith(std::string_view sv, std::string_view end) noexcept
 	{
 		return sv.rfind(end) == sv.size() - end.size();
+	}
+
+	std::optional<int> StringUtils::getIntSuffix(std::string_view name, std::string_view prefix) noexcept
+	{
+		if (!startsWith(name, prefix))
+		{
+			return std::nullopt;
+		}
+		int v;
+		auto r = std::from_chars(name.data() + prefix.size(), name.data() + name.size(), v);
+		if (r.ptr == nullptr)
+		{
+			return std::nullopt;
+		}
+		return v;
 	}
 
 	void checkError(bx::Error& err)

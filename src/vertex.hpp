@@ -5,10 +5,10 @@
 
 namespace darmok
 {
-    class JsonDataVertexLayoutLoader final : public IVertexLayoutLoader
+    class BinaryDataVertexLayoutLoader final : public IVertexLayoutLoader
     {
     public:
-        JsonDataVertexLayoutLoader(IDataLoader& dataLoader) noexcept;
+        BinaryDataVertexLayoutLoader(IDataLoader& dataLoader) noexcept;
         bgfx::VertexLayout operator()(std::string_view name) override;
     private:
         IDataLoader& _dataLoader;
