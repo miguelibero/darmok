@@ -100,7 +100,6 @@ namespace
 			App::updateLogic(deltaTime);
 
 			auto& kb = getInput().getKeyboard();
-
 			glm::vec2 dir(0);
 			if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
 			{
@@ -118,6 +117,13 @@ namespace
 			{
 				dir.x -= 1;
 			}
+
+			auto gp = getInput().getGamepad(0);
+			if (gp)
+			{
+				dir += glm::vec2(gp->getStick(GamepadStick::Left));
+			}
+
 			_animator->setBlendPosition(dir);
 			if (dir == glm::vec2(0))
 			{

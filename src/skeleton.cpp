@@ -7,6 +7,7 @@
 #include <darmok/data.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <stdexcept>
+#include <glm/gtx/vector_angle.hpp>
 
 namespace darmok
 {
@@ -233,7 +234,47 @@ namespace darmok
         }
     }
 
-    std::vector<float> SkeletalAnimatorStateConfig::calcWeights(const glm::vec2& pos)
+    float SkeletalAnimatorStateConfig::calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos)
+    {
+        std::vector<std::pair<glm::vec2, glm::vec2>> parts;
+        parts.reserve(animations.size());
+        if (blendType == SkeletalAnimatorBlendType::Directional)
+        {
+            auto lenAnim = glm::length(animPos);
+            auto len = glm::length(pos);
+            for (auto& anim : animations)
+            {
+                auto lenAnim2 = glm::length(anim.blendPosition);
+                auto p = lenAnim + lenAnim2;
+                auto a = glm::vec2((len - lenAnim) * p, glm::angle(pos, animPos));
+                auto b = glm::vec2((lenAnim2 - lenAnim) * p, glm::angle(anim.blendPosition, animPos));
+                parts.emplace_back(a, b);
+            }
+        }
+        else
+        {
+            auto a = pos - animPos;
+            for (auto& anim : animations)
+            {
+                auto b = anim.blendPosition - animPos;
+                parts.emplace_back(a, b);
+            }
+        }
+        
+        auto w = bx::kFloatLargest;
+        for (auto& [a, b] : parts)
+        {
+            auto f = 1.F - (glm::dot(a, b) / glm::length2(b));
+            if (f < w)
+            {
+                w = f;
+            }
+        }
+
+        return w;
+    }
+
+    std::vector<float> SkeletalAnimatorStateConfig::calcBlendWeights(const glm::vec2& pos)
     {
         // logic based on the Motion Interpolation explanation here
         // https://runevision.com/thesis/rune_skovbo_johansen_thesis.pdf
@@ -245,28 +286,10 @@ namespace darmok
 
         for (auto& anim : animations)
         {
-            auto w = bx::kFloatLargest;
-            auto a = pos - anim.blendPosition;
-            for (auto& anim2 : animations)
-            {
-                auto b = anim2.blendPosition - anim.blendPosition;
-                auto f = 1.F - (glm::dot(a, b) / glm::length2(b));
-                if (f < w)
-                {
-                    w = f;
-                }
-            }
+            auto w = calcBlendWeight(pos, anim.blendPosition);
             weights.push_back(w);
         }
 
-        /*
-        if (blendType == SkeletalAnimatorBlendType::Direct)
-        {
-            for (auto& anim : animations)
-            {
-                weights.push_back(glm::distance(pos, anim.blendPosition));
-            }
-        }*/
         return weights;
     }
 
@@ -274,17 +297,13 @@ namespace darmok
     {
         if (name == "directional")
         {
-            SkeletalAnimatorBlendType::FreeFormDirectional;
+            return SkeletalAnimatorBlendType::Directional;
         }
         if (name == "cartesian")
         {
-            SkeletalAnimatorBlendType::FreeFormCartesian;
+            return SkeletalAnimatorBlendType::Cartesian;
         }
-        if (name == "direct")
-        {
-            SkeletalAnimatorBlendType::Direct;
-        }
-        return SkeletalAnimatorBlendType::SimpleDirectional;
+        return SkeletalAnimatorBlendType::Cartesian;
     }
 
     void SkeletalAnimatorStateConfig::readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader)

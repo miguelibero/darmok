@@ -600,7 +600,7 @@ namespace darmok
 		_buttons.fill(false);
 	}
 
-	bool GamepadImpl::setStick(GamepadStick stick, const glm::ivec3& value) noexcept
+	bool GamepadImpl::setStick(GamepadStick stick, const glm::vec3& value) noexcept
 	{
 		auto idx = to_underlying(stick);
 		if (idx >= _sticks.size())
@@ -636,12 +636,12 @@ namespace darmok
 		return true;
 	}
 
-	const glm::ivec3& GamepadImpl::getStick(GamepadStick stick) const noexcept
+	const glm::vec3& GamepadImpl::getStick(GamepadStick stick) const noexcept
 	{
 		auto idx = to_underlying(stick);
 		if (idx >= _sticks.size())
 		{
-			const static glm::ivec3 zero(0);
+			const static glm::vec3 zero(0);
 			return zero;
 		}
 		return _sticks[idx];
@@ -718,7 +718,7 @@ namespace darmok
 		return s_gamepadButtonNames[idx];
 	}
 
-	const glm::ivec3& Gamepad::getStick(GamepadStick stick) const noexcept
+	const glm::vec3& Gamepad::getStick(GamepadStick stick) const noexcept
 	{
 		return _impl->getStick(stick);
 	}

@@ -132,13 +132,13 @@ namespace darmok
 	class GamepadStickEvent final : public PlatformEvent
 	{
 	public:
-		GamepadStickEvent(uint8_t gampad, GamepadStick stick, const glm::ivec3& value) noexcept;
+		GamepadStickEvent(uint8_t gampad, GamepadStick stick, const glm::vec3& value) noexcept;
 		void process(Input& input) noexcept;
 
 	private:
 		uint8_t _gamepad;
 		GamepadStick _stick;
-		glm::ivec3 _value;
+		glm::vec3 _value;
 	};
 
 	class GamepadButtonEvent final : public PlatformEvent

@@ -88,10 +88,8 @@ namespace darmok
 
     enum class SkeletalAnimatorBlendType
     {
-        SimpleDirectional,
-        FreeFormCartesian,
-        FreeFormDirectional,
-        Direct
+        Cartesian,
+        Directional
     };
 
     struct SkeletalAnimatorStateConfig final
@@ -99,10 +97,11 @@ namespace darmok
         using AnimationConfig = SkeletalAnimatorAnimationConfig;
         std::string name;
         std::vector<AnimationConfig> animations;
-        SkeletalAnimatorBlendType blendType = SkeletalAnimatorBlendType::SimpleDirectional;
+        SkeletalAnimatorBlendType blendType = SkeletalAnimatorBlendType::Directional;
         float threshold = bx::kFloatSmallest;
 
-        std::vector<float> calcWeights(const glm::vec2& pos);
+        float calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos);
+        std::vector<float> calcBlendWeights(const glm::vec2& pos);
 
         void readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader);
         static SkeletalAnimatorBlendType getBlendType(const std::string_view name) noexcept;

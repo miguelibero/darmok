@@ -104,7 +104,7 @@ namespace darmok
 		GamepadImpl(const GamepadImpl& other) = delete;
 		GamepadImpl(GamepadImpl&& other) = delete;
 
-		[[nodiscard]] const glm::ivec3& getStick(GamepadStick stick) const noexcept;
+		[[nodiscard]] const glm::vec3& getStick(GamepadStick stick) const noexcept;
 		[[nodiscard]] const GamepadSticks& getSticks() const noexcept;
 		[[nodiscard]] bool getButton(GamepadButton button) const noexcept;
 		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
@@ -116,7 +116,7 @@ namespace darmok
 		bool setNumber(uint8_t num) noexcept;
 		bool setConnected(bool value) noexcept;
 
-		bool setStick(GamepadStick stick, const glm::ivec3& value) noexcept;
+		bool setStick(GamepadStick stick, const glm::vec3& value) noexcept;
 		bool setButton(GamepadButton button, bool down) noexcept;
 	private:
 		uint8_t _num;

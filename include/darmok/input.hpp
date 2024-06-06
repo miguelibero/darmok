@@ -97,7 +97,7 @@ namespace darmok
 	};
 
 	using GamepadButtons = std::array<bool, to_underlying(GamepadButton::Count)>;
-	using GamepadSticks = std::array<glm::ivec3, to_underlying(GamepadButton::Count)>;
+	using GamepadSticks = std::array<glm::vec3, to_underlying(GamepadButton::Count)>;
 
 	class GamepadImpl;
 
@@ -105,7 +105,7 @@ namespace darmok
 	{
 	public:
 		DLLEXPORT virtual ~IGamepadListener() = default;
-		DLLEXPORT virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::ivec3& delta, const glm::ivec3& absolute) {};
+		DLLEXPORT virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) {};
 		DLLEXPORT virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
 		DLLEXPORT virtual void onGamepadConnect(uint8_t num, bool connected) {};
 	};
@@ -121,7 +121,7 @@ namespace darmok
 		
 		[[nodiscard]] DLLEXPORT static const std::string& getButtonName(GamepadButton button) noexcept;
 		
-		[[nodiscard]] DLLEXPORT const glm::ivec3& getStick(GamepadStick stick) const noexcept;
+		[[nodiscard]] DLLEXPORT const glm::vec3& getStick(GamepadStick stick) const noexcept;
 		[[nodiscard]] DLLEXPORT const GamepadSticks& getSticks() const noexcept;
 		[[nodiscard]] DLLEXPORT bool getButton(GamepadButton button) const noexcept;
 		[[nodiscard]] DLLEXPORT const GamepadButtons& getButtons() const noexcept;

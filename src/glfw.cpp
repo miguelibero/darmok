@@ -428,10 +428,10 @@ namespace darmok
 
 		if (axes != nullptr)
 		{
-			std::unordered_map<GamepadStick, glm::ivec3> stickValues;
+			std::unordered_map<GamepadStick, glm::vec3> stickValues;
 			for (int i = 0; i < numAxes; ++i)
 			{
-				int32_t value = (int32_t)(axes[i] * 32768.f);
+				auto value = axes[i];
 				auto config = translateGamepadAxis(i);
 				if (!config)
 				{

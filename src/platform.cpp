@@ -80,7 +80,7 @@ namespace darmok
 		input.getMouse().getImpl().setButton(_button, _down);
 	}
 
-	GamepadStickEvent::GamepadStickEvent(uint8_t gampad, GamepadStick stick, const glm::ivec3& value) noexcept
+	GamepadStickEvent::GamepadStickEvent(uint8_t gampad, GamepadStick stick, const glm::vec3& value) noexcept
 		: PlatformEvent(Type::GamepadStick)
 		, _gamepad(gampad)
 		, _stick(stick)

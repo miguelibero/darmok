@@ -406,7 +406,7 @@ namespace darmok
         blending.threshold = _config.threshold;
 
         size_t i = 0;
-        auto weights = _config.calcWeights(blendPosition);
+        auto weights = _config.calcBlendWeights(blendPosition);
         for (auto& anim : _animations)
         {
             if (anim.getBlendPosition() == glm::vec2(0))
