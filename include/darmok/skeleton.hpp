@@ -10,6 +10,7 @@
 #include <darmok/render.hpp>
 #include <bx/bx.h>
 #include <glm/glm.hpp>
+#include <nlohmann/json.hpp>
 
 #ifndef DARMOK_SKELETON_MAX_BONES
 #define DARMOK_SKELETON_MAX_BONES 64
@@ -64,75 +65,75 @@ namespace darmok
         DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
     };
 
-    class EmptySkeletonLoader : public ISkeletonLoader
+    class EmptySkeletonLoader final : public ISkeletonLoader
     {
     public:
         DLLEXPORT std::shared_ptr<Skeleton> operator()(std::string_view name) override;
     };
 
-    class EmptySkeletalAnimationLoader : public ISkeletalAnimationLoader
+    class EmptySkeletalAnimationLoader final : public ISkeletalAnimationLoader
     {
     public:
         DLLEXPORT std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override;
     };
 
-    template<typename T>
-    struct SkeletalBlendElement final
+    struct SkeletalAnimatorAnimationConfig final
     {
-        std::shared_ptr<SkeletalAnimation> motion;
-        T threshold;
-        float speed;
-    };
-    using SkeletalBlendElement1D = SkeletalBlendElement<float>;
-    using SkeletalBlendElement2D = SkeletalBlendElement<glm::vec2>;
+        std::shared_ptr<SkeletalAnimation> animation = nullptr;
+        glm::vec2 blendPosition = {};
+        float speed = 1;
 
-    struct SkeletalBlendState1D final
+        void readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader);
+    };
+
+    enum class SkeletalAnimatorBlendType
     {
+        SimpleDirectional,
+        FreeFormCartesian,
+        FreeFormDirectional,
+        Direct
+    };
+
+    struct SkeletalAnimatorStateConfig final
+    {
+        using AnimationConfig = SkeletalAnimatorAnimationConfig;
         std::string name;
-        std::vector<SkeletalBlendElement1D> elements;
+        std::vector<AnimationConfig> animations;
+        SkeletalAnimatorBlendType blendType = SkeletalAnimatorBlendType::SimpleDirectional;
+        float threshold = bx::kFloatSmallest;
+
+        std::vector<float> calcWeights(const glm::vec2& pos);
+
+        void readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader);
+        static SkeletalAnimatorBlendType getBlendType(const std::string_view name) noexcept;
     };
 
-    struct SkeletalBlendState2D final
+    struct SkeletalAnimatorTransitionConfig final
     {
-        std::string name;
-        std::vector<SkeletalBlendElement2D> elements;
-    };
-
-    struct SkeletalAnimationStateConfig final
-    {
-        std::shared_ptr<SkeletalAnimation> motion;
-        std::string name;
-        float speed = 1.F;
-    };
-
-    struct SkeletalAnimationTransitionConfig final
-    {
-        float exitTime = 1.F;
         float duration = 0.F;
         float offset = 0.F;
+
+        static std::pair<std::string, std::string> readJsonKey(std::string_view key);
+        void readJson(const nlohmann::json& json);
     };
 
     class BX_NO_VTABLE ISkeletalAnimatorState
     {
     public:
-        using Config = SkeletalAnimationStateConfig;
+        using Config = SkeletalAnimatorStateConfig;
         virtual ~ISkeletalAnimatorState() = default;
-        virtual float getNormalizedTime() const = 0;
-        virtual void setNormalizedTime(float normalizedTime) = 0;
-        virtual float getDuration() const = 0;
         virtual std::string_view getName() const = 0;
     };
 
     class BX_NO_VTABLE ISkeletalAnimatorTransition
     {
     public:
-        using Config = SkeletalAnimationTransitionConfig;
+        using Config = SkeletalAnimatorTransitionConfig;
         virtual ~ISkeletalAnimatorTransition() = default;
         virtual float getNormalizedTime() const = 0;
-        virtual void setNormalizedTime(float normalizedTime) = 0;
         virtual float getDuration() const = 0;
-        virtual ISkeletalAnimatorState& getCurrentState() = 0;
-        virtual ISkeletalAnimatorState& getPreviousState() = 0;
+        virtual const ISkeletalAnimatorState& getCurrentState() const = 0;
+        virtual const ISkeletalAnimatorState& getPreviousState() const = 0;
     };
 
     struct SkeletalAnimatorTransitionKey final
@@ -143,7 +144,7 @@ namespace darmok
 
     struct SkeletalAnimatorConfig final
     {
-        using StateConfig = SkeletalAnimationStateConfig;
+        using StateConfig = SkeletalAnimatorStateConfig;
 
         using TransitionKey = std::pair<std::string, std::string>;
 
@@ -157,7 +158,9 @@ namespace darmok
             }
         };
 
-        using TransitionConfig = SkeletalAnimationTransitionConfig;
+        using TransitionConfig = SkeletalAnimatorTransitionConfig;
+
+        void readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader);
 
         SkeletalAnimatorConfig& addState(const StateConfig& config) noexcept;
         SkeletalAnimatorConfig& addState(const std::shared_ptr<SkeletalAnimation>& animation, std::string_view name = "") noexcept;
@@ -169,6 +172,27 @@ namespace darmok
     private:
         std::unordered_map<std::string, StateConfig> _states;
         std::unordered_map<TransitionKey, TransitionConfig, TransitionKeyHash> _transitions;
+
+    };
+
+    class BX_NO_VTABLE ISkeletalAnimatorConfigLoader
+    {
+    public:
+        using result_type = SkeletalAnimatorConfig;
+        DLLEXPORT virtual ~ISkeletalAnimatorConfigLoader() = default;
+        DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
+    };
+
+    class IDataLoader;
+
+    class JsonSkeletalAnimatorConfigLoader final : public ISkeletalAnimatorConfigLoader
+    {
+    public:
+        DLLEXPORT JsonSkeletalAnimatorConfigLoader(IDataLoader& dataLoader, ISkeletalAnimationLoader& animLoader) noexcept;
+        DLLEXPORT SkeletalAnimatorConfig operator()(std::string_view name) override;
+    private:
+        IDataLoader& _dataLoader;
+        ISkeletalAnimationLoader& _animLoader;
     };
 
     class SkeletalAnimator;
@@ -177,11 +201,10 @@ namespace darmok
     {
     public:
         virtual ~ISkeletalAnimatorListener() = default;
-        virtual void onAnimatorStateFinished(SkeletalAnimator& animator, ISkeletalAnimatorState& state) {};
-        virtual void onAnimatorStateLooped(SkeletalAnimator& animator, ISkeletalAnimatorState& state) {};
-        virtual void onAnimatorStateStarted(SkeletalAnimator& animator, ISkeletalAnimatorState& state) {};
-        virtual void onAnimatorTransitionFinished(SkeletalAnimator& animator, ISkeletalAnimatorTransition& trans) {};
-        virtual void onAnimatorTransitionStarted(SkeletalAnimator& animator, ISkeletalAnimatorTransition& trans) {};
+        virtual void onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) {};
+        virtual void onAnimatorStateStarted(SkeletalAnimator& animator, std::string_view state) {};
+        virtual void onAnimatorTransitionFinished(SkeletalAnimator& animator) {};
+        virtual void onAnimatorTransitionStarted(SkeletalAnimator& animator) {};
     };
 
     class SkeletalAnimatorImpl;
@@ -198,10 +221,11 @@ namespace darmok
 
         DLLEXPORT SkeletalAnimator& setPlaybackSpeed(float speed) noexcept;
         DLLEXPORT float getPlaybackSpeed() const noexcept;
+        DLLEXPORT SkeletalAnimator& setBlendPosition(const glm::vec2& value) noexcept;
 
         DLLEXPORT const Config& getConfig() const noexcept;
-        DLLEXPORT OptionalRef<ISkeletalAnimatorState> getCurrentState() noexcept;
-        DLLEXPORT OptionalRef<ISkeletalAnimatorTransition> getCurrentTransition() noexcept;
+        DLLEXPORT OptionalRef<const ISkeletalAnimatorState> getCurrentState() const noexcept;
+        DLLEXPORT OptionalRef<const ISkeletalAnimatorTransition> getCurrentTransition() const noexcept;
 
         DLLEXPORT bool play(std::string_view name) noexcept;
         
@@ -235,7 +259,6 @@ namespace darmok
     private:
         OptionalRef<Scene> _scene;
     };
-
 
     struct ArmatureBone final
     {

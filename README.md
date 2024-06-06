@@ -73,11 +73,14 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### Upcoming (I need them)
 * 3d physics
-* binary mesh serialization
 * sound
 * render to fullscreen texture
 * animator blend tree
 * animator config from json
+
+#### Upcoming small improvements
+* tool to read VertexLayout from varyingdef into a binary
+* tool to read assimp into a binary
 
 #### Upcoming maybe
 * other types of lights

@@ -4,9 +4,9 @@
 #include <darmok/program.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/render.hpp>
+#include <darmok/data.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <stdexcept>
-
 
 namespace darmok
 {
@@ -213,16 +213,179 @@ namespace darmok
         encoder.setUniform(_skinningUniform, &_skinning.front(), _skinning.size());
     }
 
+    void SkeletalAnimatorAnimationConfig::readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader)
+    {
+        if (json.contains("value"))
+        {
+            auto& v = json["value"];
+            if (v.is_number())
+            {
+                blendPosition = glm::vec2(v);
+            }
+            if (v.is_array())
+            {
+                blendPosition = glm::vec2(v[0], v[1]);
+            }
+        }
+        if (json.contains("animation"))
+        {
+            animation = loader(json["animation"]);
+        }
+    }
+
+    std::vector<float> SkeletalAnimatorStateConfig::calcWeights(const glm::vec2& pos)
+    {
+        // logic based on the Motion Interpolation explanation here
+        // https://runevision.com/thesis/rune_skovbo_johansen_thesis.pdf
+        // FreeFormDirectional: Gradient Bands in polar space
+        // FreeFormCartesian: Gradiend band
+        // direct: distance is weight
+        std::vector<float> weights;
+        weights.reserve(animations.size());
+
+        for (auto& anim : animations)
+        {
+            auto w = bx::kFloatLargest;
+            auto a = pos - anim.blendPosition;
+            for (auto& anim2 : animations)
+            {
+                auto b = anim2.blendPosition - anim.blendPosition;
+                auto f = 1.F - (glm::dot(a, b) / glm::length2(b));
+                if (f < w)
+                {
+                    w = f;
+                }
+            }
+            weights.push_back(w);
+        }
+
+        /*
+        if (blendType == SkeletalAnimatorBlendType::Direct)
+        {
+            for (auto& anim : animations)
+            {
+                weights.push_back(glm::distance(pos, anim.blendPosition));
+            }
+        }*/
+        return weights;
+    }
+
+    SkeletalAnimatorBlendType SkeletalAnimatorStateConfig::getBlendType(const std::string_view name) noexcept
+    {
+        if (name == "directional")
+        {
+            SkeletalAnimatorBlendType::FreeFormDirectional;
+        }
+        if (name == "cartesian")
+        {
+            SkeletalAnimatorBlendType::FreeFormCartesian;
+        }
+        if (name == "direct")
+        {
+            SkeletalAnimatorBlendType::Direct;
+        }
+        return SkeletalAnimatorBlendType::SimpleDirectional;
+    }
+
+    void SkeletalAnimatorStateConfig::readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader)
+    {
+        if (json.contains("elements"))
+        {
+            for (auto& elm : json["elements"])
+            {
+                AnimationConfig config;
+                config.readJson(elm, loader);
+                animations.push_back(config);
+            }
+        }
+        if (json.contains("animation"))
+        {
+            AnimationConfig config;
+            config.readJson(json, loader);
+            animations.push_back(config);
+        }
+        if (json.contains("name"))
+        {
+            name = json["name"];
+        }
+        if (json.contains("threshold"))
+        {
+            threshold = json["threshold"];
+        }
+        if (json.contains("blend"))
+        {
+            blendType = getBlendType(json["blend"]);
+        }
+    }
+
+    std::pair<std::string, std::string> SkeletalAnimatorTransitionConfig::readJsonKey(std::string_view key)
+    {
+        const char sep = '>';
+        auto pos = key.find(sep);
+        if (pos == std::string::npos)
+        {
+            return std::pair<std::string, std::string>("", key);
+        }
+        return std::pair<std::string, std::string>(key.substr(0, pos), key.substr(pos + 1));
+    }
+
+    void SkeletalAnimatorTransitionConfig::readJson(const nlohmann::json& json)
+    {
+        if (json.contains("duration"))
+        {
+            duration = json["duration"];
+        }
+        if (json.contains("offset"))
+        {
+            offset = json["offset"];
+        }
+    }
+
+    void SkeletalAnimatorConfig::readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader)
+    {
+        for (auto& stateJson : json["states"].items())
+        {
+            StateConfig config;
+            config.name = stateJson.key();
+            config.readJson(stateJson.value(), loader);
+            addState(config);
+        }
+        for (auto& transitionJson : json["transitions"].items())
+        {
+            TransitionConfig config;
+            config.readJson(transitionJson.value());
+            auto [src, dst] = TransitionConfig::readJsonKey(transitionJson.key());
+            addTransition(src, dst, config);
+        }
+    }
+
     SkeletalAnimatorConfig& SkeletalAnimatorConfig::addState(const StateConfig& config) noexcept
     {
-        auto fixedName = config.name.empty() ? config.motion->getName() : config.name;
-        _states.emplace(fixedName, config);
+        if (config.name.empty())
+        {
+            auto fixedConfig = config;
+            size_t i = 0;
+            while (fixedConfig.name.empty() && i < fixedConfig.animations.size())
+            {
+                auto anim = fixedConfig.animations[i++].animation;
+                if (anim)
+                {
+                    fixedConfig.name = anim->getName();
+                }
+            }
+            _states.emplace(fixedConfig.name, fixedConfig);
+        }
+        else
+        {
+            _states.emplace(config.name, config);
+        }
+        
         return *this;
     }
 
     SkeletalAnimatorConfig& SkeletalAnimatorConfig::addState(const std::shared_ptr<SkeletalAnimation>& animation, std::string_view name) noexcept
     {
-        return addState(StateConfig{ animation, std::string(name) });
+        return addState(StateConfig{ std::string(name), { { animation } } });
     }
 
     SkeletalAnimatorConfig& SkeletalAnimatorConfig::addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept
@@ -248,9 +411,27 @@ namespace darmok
         auto itr = _transitions.find(key);
         if (itr == _transitions.end())
         {
+            TransitionKey key("", dst);
+            itr = _transitions.find(key);
+        }
+        if (itr == _transitions.end())
+        {
             return std::nullopt;
         }
         return itr->second;
     }
 
+    JsonSkeletalAnimatorConfigLoader::JsonSkeletalAnimatorConfigLoader(IDataLoader& dataLoader, ISkeletalAnimationLoader& animLoader) noexcept
+        : _dataLoader(dataLoader)
+        , _animLoader(animLoader)
+    {
+    }
+
+    SkeletalAnimatorConfig JsonSkeletalAnimatorConfigLoader::operator()(std::string_view name)
+    {
+        auto animData = _dataLoader("animator.json");
+        SkeletalAnimatorConfig config;
+        config.readJson(nlohmann::json::parse(animData.stringView()), _animLoader);
+        return config;
+    }
 }

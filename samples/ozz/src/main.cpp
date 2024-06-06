@@ -14,6 +14,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/render.hpp>
+#include <darmok/input.hpp>
 
 namespace
 {
@@ -54,17 +55,8 @@ namespace
 
 			auto animEntity = scene.createEntity();
 			auto& animTrans = scene.addComponent<Transform>(animEntity);
-			SkeletalAnimatorConfig animConfig;
-			animConfig.addState(runAnim, "run");
-			animConfig.addState(idleAnim, "idle");
-			animConfig.addTransition("run", "idle", {
-				.exitTime = 0.5F,
-				.duration = 0.5F
-			});
-			animConfig.addTransition("idle", "run", {
-				.exitTime = 0.5F,
-				.duration = 0.5F
-			});
+
+			auto animConfig = getAssets().getSkeletalAnimatorConfigLoader()("animator.json");
 
 			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, animConfig);
 			_animator->play("idle");
@@ -93,19 +85,47 @@ namespace
 					mat->setTexture(MaterialTextureType::Diffuse, modelTex);
 				}
 			});
+
 		}
 
 	protected:
 
+		void move(const glm::vec2& dir)
+		{
+
+		}
+
 		void updateLogic(float deltaTime) noexcept override
 		{
 			App::updateLogic(deltaTime);
-			_animTime += deltaTime;
-			if (_animTime > 2.F)
+
+			auto& kb = getInput().getKeyboard();
+
+			glm::vec2 dir(0);
+			if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
 			{
-				auto state = _animator->getCurrentState();
-				_animTime = 0.F;
-				_animator->play(!state || state->getName() == "idle" ? "run" : "idle");
+				dir.y += 1;
+			}
+			if (kb.getKey(KeyboardKey::Down) || kb.getKey(KeyboardKey::KeyS))
+			{
+				dir.y -= 1;
+			}
+			if (kb.getKey(KeyboardKey::Right) || kb.getKey(KeyboardKey::KeyD))
+			{
+				dir.x += 1;
+			}
+			if (kb.getKey(KeyboardKey::Left) || kb.getKey(KeyboardKey::KeyA))
+			{
+				dir.x -= 1;
+			}
+			_animator->setBlendPosition(dir);
+			if (dir == glm::vec2(0))
+			{
+				_animator->play("idle");
+			}
+			else
+			{
+				_animator->play("locomotion");
 			}
 		}
 	private:

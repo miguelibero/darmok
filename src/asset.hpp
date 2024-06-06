@@ -57,7 +57,8 @@ namespace darmok
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
-		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;		
+		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
+		[[nodiscard]] ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
 
@@ -81,7 +82,7 @@ namespace darmok
 		EmptySkeletonLoader _skeletonLoader;
 		EmptySkeletalAnimationLoader _skeletalAnimationLoader;
 #endif
-
+		JsonSkeletalAnimatorConfigLoader _skeletalAnimatorConfigLoader;
 #ifdef DARMOK_ASSIMP 
 		AssimpModelLoader _modelLoader;
 #else

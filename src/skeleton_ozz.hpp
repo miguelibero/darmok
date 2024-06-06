@@ -3,13 +3,14 @@
 #include <unordered_set>
 #include <darmok/skeleton.hpp>
 #include <darmok/data.hpp>
-#include <ozz/animation/runtime/skeleton.h>
-#include <ozz/animation/runtime/animation.h>
 #include <ozz/base/io/stream.h>
-#include <ozz/animation/runtime/sampling_job.h>
 #include <ozz/base/maths/soa_transform.h>
 #include <ozz/base/maths/vec_float.h>
 #include <ozz/base/containers/vector.h>
+#include <ozz/animation/runtime/skeleton.h>
+#include <ozz/animation/runtime/animation.h>
+#include <ozz/animation/runtime/sampling_job.h>
+#include <ozz/animation/runtime/blending_job.h>
 
 namespace darmok
 {
@@ -69,19 +70,20 @@ namespace darmok
 		IDataLoader& _dataLoader;
 	};
 
-	class OzzSkeletalAnimatorState final : public ISkeletalAnimatorState
+	class OzzSkeletalAnimatorAnimationState final
 	{
 	public:
-		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config) noexcept;
-		OzzSkeletalAnimatorState(OzzSkeletalAnimatorState&& other) noexcept;
+		using Config = SkeletalAnimatorAnimationConfig;
+		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config) noexcept;
+		OzzSkeletalAnimatorAnimationState(OzzSkeletalAnimatorAnimationState&& other) noexcept;
 
-		std::string_view getName() const noexcept override;
 		void update(float deltaTime);
 		bool hasLoopedDuringLastUpdate() const noexcept;
-		float getNormalizedTime() const noexcept override;
-		float getDuration() const noexcept override;
-		void setNormalizedTime(float normalizedTime) noexcept override;
+		float getDuration() const noexcept;
+		float getNormalizedTime() const noexcept;
+		void setNormalizedTime(float normalizedTime) noexcept;
 		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
+		const glm::vec2& getBlendPosition() const noexcept;
 	private:
 		Config _config;
 		float _normalizedTime;
@@ -92,17 +94,32 @@ namespace darmok
 		ozz::animation::Animation& getOzz() const noexcept;
 	};
 
+	class OzzSkeletalAnimatorState final : public ISkeletalAnimatorState
+	{
+	public:
+		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config) noexcept;
+
+		void update(float deltaTime, const glm::vec2& blendPosition);
+		std::string_view getName() const noexcept override;
+		const ozz::vector<ozz::math::SoaTransform>& getLocals() const;
+	private:
+		using AnimationState = OzzSkeletalAnimatorAnimationState;
+		Config _config;
+		std::vector<AnimationState> _animations;
+		ozz::vector<ozz::math::SoaTransform> _locals;
+		ozz::vector<ozz::animation::BlendingJob::Layer> _layers;
+	};
+
 	class OzzSkeletalAnimatorTransition final : public ISkeletalAnimatorTransition
 	{
 	public:
 		using State = OzzSkeletalAnimatorState;
 
 		OzzSkeletalAnimatorTransition(const Config& config, State&& currentState, State&& previousState) noexcept;
-		void update(float deltaTime);
-		float getNormalizedTime() const noexcept override;
-		void setNormalizedTime(float normalizedTime) noexcept override;
-		bool hasStartedDuringLastUpdate() const noexcept;
+		void update(float deltaTime, const glm::vec2& blendPosition);
 		float getDuration() const noexcept override;
+		float getNormalizedTime() const noexcept override;
+		void setNormalizedTime(float normalizedTime) noexcept;
 		bool hasFinished() const noexcept;
 		State&& finish() noexcept;
 
@@ -111,16 +128,13 @@ namespace darmok
 		State& getCurrentOzzState() noexcept;
 		State& getPreviousOzzState() noexcept;
 
-		ISkeletalAnimatorState& getCurrentState() noexcept override;
-		ISkeletalAnimatorState& getPreviousState() noexcept override;
+		const ISkeletalAnimatorState& getCurrentState() const noexcept override;
+		const ISkeletalAnimatorState& getPreviousState() const noexcept override;
 	private:
 		Config _config;
 		State _currentState;
 		State _previousState;
-		bool _finished;
-		bool _lastUpdateStarted;
 		ozz::vector<ozz::math::SoaTransform> _locals;
-		bool _blending;
 		float _normalizedTime;
 	};
 
@@ -138,10 +152,11 @@ namespace darmok
 
 		void setPlaybackSpeed(float speed) noexcept;
 		float getPlaybackSpeed() const noexcept;
+		void setBlendPosition(const glm::vec2& value) noexcept;
 
 		const Config& getConfig() const noexcept;
-		OptionalRef<ISkeletalAnimatorState> getCurrentState() noexcept;
-		OptionalRef<ISkeletalAnimatorTransition> getCurrentTransition() noexcept;
+		OptionalRef<const ISkeletalAnimatorState> getCurrentState() const noexcept;
+		OptionalRef<const ISkeletalAnimatorTransition> getCurrentTransition() const noexcept;
 
 		bool play(std::string_view name) noexcept;
 		void update(float deltaTime);
@@ -155,6 +170,7 @@ namespace darmok
 		std::shared_ptr<Skeleton> _skeleton;
 		Config _config;
 		float _speed;
+		glm::vec2 _blendPosition;
 
 		std::optional<Transition> _transition;
 		std::optional<State> _state;
@@ -165,6 +181,5 @@ namespace darmok
 		ozz::animation::Skeleton& getOzz() noexcept;
 		const ozz::animation::Skeleton& getOzz() const noexcept;
 		void afterUpdate() noexcept;
-		void checkStateLooped(State& state) noexcept;
 	};
 }
