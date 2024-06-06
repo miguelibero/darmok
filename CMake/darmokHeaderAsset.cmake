@@ -11,14 +11,14 @@ function(darmok_header_asset)
     set(MULTI_VALUE_ARGS FILES)
     cmake_parse_arguments(ARGS "${OPTIONS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" "${ARGN}")
 
-    if(NOT IS_ABSOLUTE ARGS_OUTPUT_DIR)
+    if(NOT IS_ABSOLUTE ${ARGS_OUTPUT_DIR})
         set(ARGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${ARGS_OUTPUT_DIR})
     endif()
 
     foreach(FILE_PATH ${ARGS_FILES})
         get_filename_component(FILE_PATH_NAME_WE ${FILE_PATH} NAME_WLE)
 
-        if(NOT IS_ABSOLUTE FILE_PATH)
+        if(NOT IS_ABSOLUTE ${FILE_PATH})
             set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${FILE_PATH})
         endif()
 

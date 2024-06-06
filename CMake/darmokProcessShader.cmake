@@ -37,7 +37,7 @@ function(darmok_process_shader)
         message(error "shaderc: Unsupported platform")
     endif()
 
-    if(NOT IS_ABSOLUTE ARGS_OUTPUT_DIR)
+    if(NOT IS_ABSOLUTE ${ARGS_OUTPUT_DIR})
         set(ARGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${ARGS_OUTPUT_DIR})
     endif()    
     if(ARGS_HEADER_INCLUDE_DIR OR ARGS_HEADER_VAR_PREFIX)
@@ -49,7 +49,7 @@ function(darmok_process_shader)
         set(OUTPUT_EXT "dsh")
     endif()
 
-    if(NOT IS_ABSOLUTE ARGS_VARYING_DEF)
+    if(NOT IS_ABSOLUTE ${ARGS_VARYING_DEF})
         set(ARGS_VARYING_DEF ${CMAKE_CURRENT_SOURCE_DIR}/${ARGS_VARYING_DEF})
     endif()
 
@@ -76,6 +76,7 @@ function(darmok_process_shader)
             if(PROFILE STREQUAL "spirv")
                 set(PROFILE_PLATFORM LINUX)
             endif()
+
             _bgfx_shaderc_parse(
                 CLI #
                 ${ARGS_TYPE} ${PROFILE_PLATFORM} WERROR "$<$<CONFIG:debug>:DEBUG>$<$<CONFIG:relwithdebinfo>:DEBUG>"

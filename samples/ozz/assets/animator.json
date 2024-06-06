@@ -1,0 +1,57 @@
+{
+    "states": {
+        "locomotion": {
+            "elements": [
+                {
+                    "animation": "BasicMotions@Idle01.ozz",
+                    "value": [0, 0]
+                },
+                {
+                    "animation": "BasicMotions@Run01 - Backwards.ozz",
+                    "value": [0, -1]
+                },
+                {
+                    "animation": "BasicMotions@Run01 - BackwardsLeft.ozz",
+                    "value": [-1, -1]
+                },
+                {
+                    "animation": "BasicMotions@Run01 - BackwardsRight.ozz",
+                    "value": [1, -1]
+                },
+                {
+                    "animation": "BasicMotions@Run01 - Forwards.ozz",
+                    "value": [0, 1]
+                },
+                {
+                    "animation": "BasicMotions@Run01 - ForwardsLeft.ozz",
+                    "value": [-1, 1]
+                },
+                {
+                    "animation": "BasicMotions@Run01 - ForwardsRight.ozz",
+                    "value": [1, 1]
+                },
+                {
+                    "animation": "BasicMotions@Run01 - Left.ozz",
+                    "value": [-1, 0]
+                },
+                {
+                    "animation": "BasicMotions@Run01 - Right.ozz",
+                    "value": [1, 0]
+                }
+            ],
+            "threshold": 0.2,
+            "blend": "directional"
+        },
+        "talk": {
+            "animation": "BasicMotions@Talk01.ozz"
+        }
+    },
+    "transitions": {
+        "locomotion>talk": {
+            "duration": 0.5
+        },
+        "talk>locomotion": {
+            "duration": 0.5
+        }
+    }
+}

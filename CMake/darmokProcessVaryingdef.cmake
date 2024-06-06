@@ -12,7 +12,7 @@ function(darmok_process_varyingdef)
     set(MULTI_VALUE_ARGS VARYING_DEFS)
     cmake_parse_arguments(ARGS "${OPTIONS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" "${ARGN}")
 
-    if(NOT IS_ABSOLUTE ARGS_OUTPUT_DIR)
+    if(NOT IS_ABSOLUTE ${ARGS_OUTPUT_DIR})
         set(ARGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${ARGS_OUTPUT_DIR})
     endif()
 

@@ -914,7 +914,7 @@ namespace darmok
 			return std::nullopt;
 		}
 		lowerName = lowerName.substr(prefix.size());
-		uint8_t gamepad = 0;
+		uint8_t gamepad = -1;
 		static const char sep = ':';
 		auto pos = lowerName.find(sep);
 		if (pos != std::string::npos)
@@ -925,7 +925,7 @@ namespace darmok
 		auto button = readButton(lowerName);
 		if (button)
 		{
-			return GamepadBindingKey{ gamepad, button.value() };
+			return GamepadBindingKey{ button.value(), gamepad };
 		}
 		return std::nullopt;
 	}
@@ -1115,7 +1115,7 @@ namespace darmok
 
 	OptionalRef<Gamepad> InputImpl::getGamepad(uint8_t num) noexcept
 	{
-		if (num < Gamepad::MaxAmount)
+		if (num > 0 || num < Gamepad::MaxAmount)
 		{
 			return _gamepads[num];
 		}

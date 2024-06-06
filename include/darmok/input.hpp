@@ -161,8 +161,8 @@ namespace darmok
 
 	struct GamepadBindingKey final
 	{
-		uint8_t gamepad;
 		GamepadButton button;
+		uint8_t gamepad = -1;
 
 		size_t hash() const noexcept;
 

@@ -4,6 +4,7 @@
 
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/vertex_layout.hpp>
 
 #include "embedded_shader.hpp"
 #include "generated/shaders/gui.vertex.h"
@@ -41,7 +42,6 @@ namespace darmok
 		auto json = nlohmann::ordered_json::parse(layoutJson);
 		VertexLayoutUtils::readJson(json, _layout);
 	}
-
 
     Program::Program(const bgfx::ProgramHandle& handle, const bgfx::VertexLayout& layout) noexcept
 		: _handle(handle)

@@ -69,7 +69,7 @@ namespace darmok
 		bx::DefaultAllocator _allocator;
 		FileDataLoader _dataLoader;
 		DataImageLoader _imageLoader;
-		JsonDataVertexLayoutLoader _vertexLayoutLoader;
+		BinaryDataVertexLayoutLoader _vertexLayoutLoader;
 		DataProgramLoader _programLoader;
 		StandardProgramLoader _standardProgramLoader;
 		ImageTextureLoader _textureLoader;

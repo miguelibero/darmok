@@ -59,7 +59,7 @@ namespace
 			auto animConfig = getAssets().getSkeletalAnimatorConfigLoader()("animator.json");
 
 			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, animConfig);
-			_animator->play("idle");
+			_animator->play("locomotion");
 
 			auto skelEntity = scene.createEntity();
 			scene.addComponent<Transform>(skelEntity, animTrans, glm::vec3(-1, 0, 0));
@@ -86,14 +86,15 @@ namespace
 				}
 			});
 
+			auto talk = [this]() { _animator->play("talk"); };
+
+			getInput().addBindings("talk", {
+				{ KeyboardBindingKey{ KeyboardKey::Return }, true, talk },
+				{ GamepadBindingKey{ GamepadButton::A, 0 }, true, talk },
+			});
 		}
 
 	protected:
-
-		void move(const glm::vec2& dir)
-		{
-
-		}
 
 		void updateLogic(float deltaTime) noexcept override
 		{
@@ -125,11 +126,7 @@ namespace
 			}
 
 			_animator->setBlendPosition(dir);
-			if (dir == glm::vec2(0))
-			{
-				_animator->play("idle");
-			}
-			else
+			if (dir != glm::vec2(0))
 			{
 				_animator->play("locomotion");
 			}

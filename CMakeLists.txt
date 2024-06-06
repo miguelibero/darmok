@@ -455,7 +455,7 @@ if(DARMOK_BUILD_OZZ)
 endif()
 
 # tools
-
+set(TOOLS_FOLDER ${PROJECT_NAME}/tools)
 # vlayoutc: adding files manually to avoid dependency cycle
 set(VLAYOUTC_NAME "darmok-vlayoutc")
 set(VLAYOUTC_SRC_DIR "tools/vlayoutc")
@@ -472,6 +472,7 @@ target_include_directories(
 )
 add_executable(darmok::vlayoutc ALIAS ${VLAYOUTC_NAME})
 target_link_libraries(${VLAYOUTC_NAME} bgfx::bx bgfx::bgfx sol2 cereal::cereal)
+set_target_properties(${VLAYOUTC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
 
 set(MODELC_NAME "darmok-modelc")
 set(MODELC_SRC_DIR "tools/modelc")
@@ -480,3 +481,4 @@ add_executable(${MODELC_NAME}
 )
 target_link_libraries(${MODELC_NAME} ${LIB_NAME})
 add_executable(darmok::modelc ALIAS ${MODELC_NAME})
+set_target_properties(${MODELC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
