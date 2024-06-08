@@ -12,6 +12,7 @@
 #include "texture.hpp"
 #include "texture_atlas.hpp"
 #include "program.hpp"
+#include "program_standard.hpp"
 #include "data.hpp"
 #include "vertex.hpp"
 

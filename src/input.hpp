@@ -1,7 +1,6 @@
 #pragma once
 
 #include <darmok/input.hpp>
-#include <darmok/utils.hpp>
 
 #include <string>
 #include <array>
@@ -10,7 +9,6 @@
 
 namespace darmok
 {
-
 #pragma region Keyboard
 
 	class KeyboardImpl final

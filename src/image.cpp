@@ -4,6 +4,7 @@
 #include <darmok/color.hpp>
 #include <darmok/data.hpp>
 #include <darmok/texture.hpp>
+#include <stdexcept>
 
 namespace darmok
 {

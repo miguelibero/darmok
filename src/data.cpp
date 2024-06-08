@@ -1,5 +1,6 @@
 #include "data.hpp"
 #include <bx/allocator.h>
+#include <stdexcept>
 
 namespace darmok
 {

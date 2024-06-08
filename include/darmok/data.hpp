@@ -1,20 +1,13 @@
 #pragma once
 
 #include <vector>
-#include <stdexcept>
 #include <memory>
 #include <string_view>
 #include <darmok/optional_ref.hpp>
 
-
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 #include <glm/gtc/type_ptr.hpp>
-
-namespace bx
-{
-    struct AllocatorI;
-}
 
 namespace darmok
 {
@@ -57,6 +50,12 @@ namespace darmok
         [[nodiscard]] DLLEXPORT DataView view(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] DLLEXPORT const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] DLLEXPORT const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
+
+        template<typename T>
+        [[nodiscard]] DLLEXPORT static DataView fromArray(const T& arr) noexcept
+        {
+            return DataView(&arr, sizeof(T));
+        }
 
     private:
         const void* _ptr;
@@ -127,7 +126,6 @@ namespace darmok
         OptionalRef<bx::AllocatorI> _alloc;
 
         static void* malloc(size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept;
-
     };
 
 	class BX_NO_VTABLE IDataLoader

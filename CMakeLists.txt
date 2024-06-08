@@ -20,6 +20,44 @@ if(PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
   )
 endif()
 
+if(MSVC)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
+endif()
+
+if(MSVC AND BUILD_SHARED_LIBS)
+  set(DLLEXPORT "__declspec(dllexport)")
+else()
+  set(DLLEXPORT "")
+endif()
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
+
+set(ADD_OPTIM_FLAGS "")
+if(MSVC)
+  set(ADD_OPTIM_FLAGS "/GS- /Gy /O2 /Oi /Ot")
+endif()
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${ADD_OPTIM_FLAGS}")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${ADD_OPTIM_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${ADD_OPTIM_FLAGS}")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${ADD_OPTIM_FLAGS}")
+
+function(SET_WARNING_LEVEL)
+  if(MSVC)
+    target_compile_options(${ARGV0} PRIVATE /W4)
+  else()
+    target_compile_options(${ARGV0} PRIVATE -Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
+  endif()
+endfunction()
+
+function(SET_DEBUGGER_WORKING_DIRECTORY)
+  set_target_properties(${ARGV0} PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
+endfunction()
+
 option(DARMOK_BUILD_SAMPLES "build darmok samples" OFF)
 option(DARMOK_BUILD_TESTS "build darmok unit tests" OFF)
 option(DARMOK_BUILD_SCRIPTING "build darmok with scripting support" OFF)
@@ -48,78 +86,92 @@ darmok_process_assets(
   SOURCE_GROUP_NAME "Embedded Shader Files"
 )
 
-set(SOURCES
-  ${SRC_DIR}/window.cpp
-  ${SRC_DIR}/platform.cpp
-  ${SRC_DIR}/app.cpp
-  ${SRC_DIR}/input.cpp
-  ${SRC_DIR}/asset.cpp
-  ${SRC_DIR}/scene.cpp
-  ${SRC_DIR}/utils.cpp
-  ${SRC_DIR}/anim.cpp
+set(CORE_SOURCES
+  ${SRC_DIR}/string.cpp
   ${SRC_DIR}/data.cpp
-  ${SRC_DIR}/shape.cpp
-  ${SRC_DIR}/mesh.cpp
+  ${SRC_DIR}/data_stream.cpp
+  ${SRC_DIR}/utils.cpp
+  ${SRC_DIR}/math.cpp
   ${SRC_DIR}/color.cpp
-  ${SRC_DIR}/material.cpp
+  ${SRC_DIR}/image.cpp
+  ${SRC_DIR}/shape.cpp
   ${SRC_DIR}/texture.cpp
   ${SRC_DIR}/texture_atlas.cpp
-  ${SRC_DIR}/image.cpp
+  ${SRC_DIR}/mesh.cpp
+  ${SRC_DIR}/vertex.cpp
+  ${SRC_DIR}/vertex_layout.cpp
+
+  ${SRC_DIR}/app.cpp
+  ${SRC_DIR}/window.cpp
+  ${SRC_DIR}/input.cpp
+  ${SRC_DIR}/scene.cpp
+  ${SRC_DIR}/anim.cpp
+  ${SRC_DIR}/material.cpp
   ${SRC_DIR}/program.cpp
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/transform.cpp
+  ${SRC_DIR}/skeleton.cpp
   ${SRC_DIR}/viewport.cpp
   ${SRC_DIR}/camera.cpp
-  ${SRC_DIR}/skeleton.cpp
-  ${SRC_DIR}/math.cpp
   ${SRC_DIR}/light.cpp
-  ${SRC_DIR}/vertex.cpp
-  ${SRC_DIR}/vertex_layout.cpp
   ${SRC_DIR}/render.cpp
   ${SRC_DIR}/render_forward.cpp
   ${SRC_DIR}/render_deferred.cpp
 )
 
-set(HEADERS
-  ${INCLUDE_DIR}/app_fwd.hpp
-  ${INCLUDE_DIR}/app.hpp
-  ${INCLUDE_DIR}/input_fwd.hpp
-  ${INCLUDE_DIR}/input.hpp
-  ${INCLUDE_DIR}/window.hpp
+set(CORE_HEADERS
   ${INCLUDE_DIR}/utils.hpp
-  ${INCLUDE_DIR}/collection.hpp
-  ${INCLUDE_DIR}/asset.hpp
-  ${INCLUDE_DIR}/scene_fwd.hpp
-  ${INCLUDE_DIR}/scene.hpp
-  ${INCLUDE_DIR}/entity_filter.hpp
-  ${INCLUDE_DIR}/anim.hpp
+  ${INCLUDE_DIR}/string.hpp
+  ${INCLUDE_DIR}/optional_ref.hpp
   ${INCLUDE_DIR}/data.hpp
+  ${INCLUDE_DIR}/data_stream.hpp
+  ${INCLUDE_DIR}/math.hpp
   ${INCLUDE_DIR}/shape.hpp
   ${INCLUDE_DIR}/mesh_fwd.hpp
   ${INCLUDE_DIR}/mesh.hpp
   ${INCLUDE_DIR}/color_fwd.hpp
   ${INCLUDE_DIR}/color.hpp
-  ${INCLUDE_DIR}/material_fwd.hpp
-  ${INCLUDE_DIR}/material.hpp
-  ${INCLUDE_DIR}/optional_ref.hpp
+  ${INCLUDE_DIR}/image.hpp
   ${INCLUDE_DIR}/texture_fwd.hpp
   ${INCLUDE_DIR}/texture.hpp
   ${INCLUDE_DIR}/texture_atlas.hpp
-  ${INCLUDE_DIR}/image.hpp
+  ${INCLUDE_DIR}/vertex.hpp
+  ${INCLUDE_DIR}/vertex_layout.hpp
+
+  ${INCLUDE_DIR}/app_fwd.hpp
+  ${INCLUDE_DIR}/app.hpp
+  ${INCLUDE_DIR}/input_fwd.hpp
+  ${INCLUDE_DIR}/input.hpp
+  ${INCLUDE_DIR}/window.hpp
+  ${INCLUDE_DIR}/collection.hpp
+  ${INCLUDE_DIR}/scene_fwd.hpp
+  ${INCLUDE_DIR}/scene.hpp
+  ${INCLUDE_DIR}/entity_filter.hpp
+  ${INCLUDE_DIR}/anim.hpp
+  ${INCLUDE_DIR}/material_fwd.hpp
+  ${INCLUDE_DIR}/material.hpp
   ${INCLUDE_DIR}/program_fwd.hpp
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/transform.hpp
   ${INCLUDE_DIR}/skeleton.hpp
   ${INCLUDE_DIR}/viewport.hpp
-  ${INCLUDE_DIR}/math.hpp
   ${INCLUDE_DIR}/camera.hpp
   ${INCLUDE_DIR}/light.hpp
-  ${INCLUDE_DIR}/vertex.hpp
-  ${INCLUDE_DIR}/vertex_layout.hpp
   ${INCLUDE_DIR}/render.hpp
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
   ${INCLUDE_DIR}/model.hpp
+)
+
+set(SOURCES
+  ${SRC_DIR}/platform.cpp
+  ${SRC_DIR}/program_standard.cpp
+  ${SRC_DIR}/asset.cpp
+)
+
+set(HEADERS
+  ${INCLUDE_DIR}/program_standard.hpp
+  ${INCLUDE_DIR}/asset.hpp
 )
 
 set(SCRIPTING_SOURCES)
@@ -216,6 +268,15 @@ if(DARMOK_BUILD_SCRIPTING)
   source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
 endif()
 
+set(CORE_LIB_NAME "darmok-core")
+add_library(
+  ${CORE_LIB_NAME}
+  ${CORE_SOURCES}
+)
+target_sources(${CORE_LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${CORE_HEADERS})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} PREFIX "Source Files" FILES ${CORE_SOURCES})
+add_library(darmok::darmok-core ALIAS ${CORE_LIB_NAME})
+
 set(LIB_NAME "darmok")
 add_library(
   ${LIB_NAME}
@@ -223,16 +284,14 @@ add_library(
   ${SCRIPTING_SOURCES}
   ${ASSETS}
 )
-
 target_sources(${LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${HEADERS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} PREFIX "Source Files" FILES ${SOURCES})
-
 add_library(darmok::darmok ALIAS ${LIB_NAME})
-set_target_properties(${LIB_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
+target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 
 set(EXPORT_NAME "${PROJECT_NAME}Targets")
 set(EXPORT_INSTALL_DIR "share/${PROJECT_NAME}")
-install(TARGETS ${LIB_NAME}
+install(TARGETS ${LIB_NAME} ${CORE_LIB_NAME}
     EXPORT ${EXPORT_NAME}
     RUNTIME_DEPENDENCY_SET ${LIB_NAME}
     FILE_SET HEADERS
@@ -245,57 +304,26 @@ install(FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/README.md
   ${CMAKE_CURRENT_SOURCE_DIR}/CHANGES.md
   ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
-  DESTINATION share/doc/darmok)
-
-target_include_directories(
-  ${LIB_NAME}
-  PUBLIC
-  $<INSTALL_INTERFACE:include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  PRIVATE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  DESTINATION share/doc/darmok
 )
 
-set_target_properties(${LIB_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
+macro(_darmok_lib_setup TARGET)
+  target_include_directories(
+    ${TARGET}
+    PUBLIC
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  )
+  set_target_properties(${TARGET} PROPERTIES VERSION ${PROJECT_VERSION})
+  target_compile_definitions(${TARGET} PUBLIC "DLLEXPORT=${DLLEXPORT}")
+  set_target_properties(${TARGET} PROPERTIES FOLDER ${PROJECT_NAME})
+endmacro()
 
-if(MSVC)
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
-endif()
+_darmok_lib_setup(${LIB_NAME})
+_darmok_lib_setup(${CORE_LIB_NAME})
 
-if(MSVC AND BUILD_SHARED_LIBS)
-  set(DLLEXPORT "__declspec(dllexport)")
-else()
-  set(DLLEXPORT "")
-endif()
-target_compile_definitions(darmok PUBLIC "DLLEXPORT=${DLLEXPORT}")
-
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
-
-set(ADD_OPTIM_FLAGS "")
-if(MSVC)
-  set(ADD_OPTIM_FLAGS "/GS- /Gy /O2 /Oi /Ot")
-endif()
-
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${ADD_OPTIM_FLAGS}")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${ADD_OPTIM_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${ADD_OPTIM_FLAGS}")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${ADD_OPTIM_FLAGS}")
-
-function(SET_WARNING_LEVEL)
-  if(MSVC)
-    target_compile_options(${ARGV0} PRIVATE /W4)
-  else()
-    target_compile_options(${ARGV0} PRIVATE -Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
-  endif()
-endfunction()
-
-function(SET_DEBUGGER_WORKING_DIRECTORY)
-  set_target_properties(${ARGV0} PROPERTIES
-    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
-endfunction()
 
 # samples
 if(DARMOK_BUILD_SAMPLES)
@@ -335,7 +363,25 @@ find_package(OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
 # bgfx
-target_link_libraries(${LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode)
+target_link_libraries(${CORE_LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode)
+
+# pugixml
+find_package(pugixml CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PUBLIC pugixml::pugixml)
+
+# json
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PUBLIC nlohmann_json::nlohmann_json)
+
+# cereal
+find_package(cereal CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PUBLIC cereal::cereal)
+
+# glm
+find_package(glm CONFIG REQUIRED)
+set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
+target_compile_definitions(glm::glm-header-only INTERFACE ${GLM_DEFINES})
+target_link_libraries(${CORE_LIB_NAME} PUBLIC glm::glm-header-only)
 
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
@@ -348,12 +394,6 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
     target_compile_definitions(bgfx::bgfx INTERFACE WL_EGL_PLATFORM)
   endif()
 endif()
-
-# glm
-find_package(glm CONFIG REQUIRED)
-set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
-target_compile_definitions(glm::glm-header-only INTERFACE ${GLM_DEFINES})
-target_link_libraries(${LIB_NAME} PUBLIC glm::glm-header-only)
 
 # imgui
 if(DARMOK_BUILD_IMGUI)
@@ -381,18 +421,6 @@ if(DARMOK_BUILD_ASSIMP)
   target_link_libraries(${LIB_NAME} PUBLIC assimp::assimp)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_ASSIMP)
 endif()
-
-# pugixml
-find_package(pugixml CONFIG REQUIRED)
-target_link_libraries(${LIB_NAME} PRIVATE pugixml::pugixml)
-
-# json
-find_package(nlohmann_json CONFIG REQUIRED)
-target_link_libraries(${LIB_NAME} PRIVATE nlohmann_json::nlohmann_json)
-
-# cereal
-find_package(cereal CONFIG REQUIRED)
-target_link_libraries(${LIB_NAME} PRIVATE cereal::cereal)
 
 if(DARMOK_BUILD_JOLT)
   find_package(unofficial-joltphysics CONFIG REQUIRED)
@@ -456,28 +484,22 @@ endif()
 
 # tools
 set(TOOLS_FOLDER ${PROJECT_NAME}/tools)
-# vlayoutc: adding files manually to avoid dependency cycle
+
+# vlayoutc: only depends on darmok-core to avoid dependency cycle
+# since it is used to generate standard darmok shaders
 set(VLAYOUTC_NAME "darmok-vlayoutc")
 set(VLAYOUTC_SRC_DIR "tools/vlayoutc")
 add_executable(${VLAYOUTC_NAME}
-  "${VLAYOUTC_SRC_DIR}/vlayoutc.cpp"
-  "${SRC_DIR}/vertex_layout.cpp"
-  "${SRC_DIR}/utils.cpp"
+  ${VLAYOUTC_SRC_DIR}/vlayoutc.cpp
 )
-target_include_directories(
-  ${VLAYOUTC_NAME}
-  PUBLIC
-  $<INSTALL_INTERFACE:include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
+target_link_libraries(${VLAYOUTC_NAME} ${CORE_LIB_NAME})
 add_executable(darmok::vlayoutc ALIAS ${VLAYOUTC_NAME})
-target_link_libraries(${VLAYOUTC_NAME} bgfx::bx bgfx::bgfx sol2 cereal::cereal)
 set_target_properties(${VLAYOUTC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
 
 set(MODELC_NAME "darmok-modelc")
 set(MODELC_SRC_DIR "tools/modelc")
 add_executable(${MODELC_NAME}
-  "${MODELC_SRC_DIR}/modelc.cpp"
+  ${MODELC_SRC_DIR}/modelc.cpp
 )
 target_link_libraries(${MODELC_NAME} ${LIB_NAME})
 add_executable(darmok::modelc ALIAS ${MODELC_NAME})

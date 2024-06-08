@@ -3,7 +3,6 @@
 #include <darmok/program.hpp>
 #include <darmok/asset.hpp>
 #include <string>
-#include <unordered_map>
 
 namespace darmok
 {
@@ -30,15 +29,5 @@ namespace darmok
 		Suffixes _suffixes;
 
 		bgfx::ShaderHandle loadShader(const std::string& filePath);
-	};
-
-	class StandardProgramLoaderImpl final
-	{
-	public:
-		std::shared_ptr<Program> operator()(StandardProgramType type) const noexcept;
-	private:
-		static const bgfx::EmbeddedShader _embeddedShaders[];
-		static const std::unordered_map<StandardProgramType, std::string> _embeddedShaderNames;
-		static const std::unordered_map<StandardProgramType, std::string_view> _embeddedShaderVertexLayouts;
 	};
 }

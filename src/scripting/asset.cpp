@@ -9,6 +9,7 @@
 #include <darmok/shape.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
+#include <darmok/program_standard.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/skeleton.hpp>

@@ -1,5 +1,5 @@
 #include <darmok/vertex_layout.hpp>
-#include <darmok/utils.hpp>
+#include <darmok/string.hpp>
 #include <sstream>
 
 namespace darmok

@@ -251,7 +251,6 @@ namespace darmok
 
 		bgfx::end(encoder);
 
-
 		return true;
 	}
 
@@ -269,8 +268,8 @@ namespace darmok
 		_app = app;
 		ImGui::SetAllocatorFunctions(memAlloc, memFree, &app.getAssets().getAllocator());
 
-		_basicProgram = std::make_unique<Program>("imgui_basic", _embeddedShaders, gui_vlayout);
-		_lodProgram = std::make_unique<Program>("imgui_lod", _embeddedShaders, gui_vlayout);
+		_basicProgram = std::make_unique<Program>("imgui_basic", _embeddedShaders, DataView::fromArray(gui_vlayout));
+		_lodProgram = std::make_unique<Program>("imgui_lod", _embeddedShaders, DataView::fromArray(gui_vlayout));
 		_lodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
 		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
@@ -385,7 +384,7 @@ namespace darmok
 		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);
 		
-		auto& scroll = mouse.getScrollDelta();
+		auto scroll = mouse.getScrollDelta();
 		io.AddMouseWheelEvent(scroll.x, scroll.y);
 
 		auto& kb = input.getKeyboard();

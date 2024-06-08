@@ -1,28 +1,13 @@
 #include "program.hpp"
-#include <unordered_map>
-#include <optional>
-
+#include "embedded_shader.hpp"
 #include <darmok/data.hpp>
+#include <darmok/data_stream.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/vertex_layout.hpp>
 
-#include "embedded_shader.hpp"
-#include "generated/shaders/gui.vertex.h"
-#include "generated/shaders/gui.fragment.h"
-#include "generated/shaders/gui.vlayout.h"
-#include "generated/shaders/unlit.vertex.h"
-#include "generated/shaders/unlit.fragment.h"
-#include "generated/shaders/unlit.vlayout.h"
-#include "generated/shaders/forward_phong.vertex.h"
-#include "generated/shaders/forward_phong.fragment.h"
-#include "generated/shaders/forward_phong.vlayout.h"
-#include "generated/shaders/forward_pbr.vertex.h"
-#include "generated/shaders/forward_pbr.fragment.h"
-#include "generated/shaders/forward_pbr.vlayout.h"
-
 namespace darmok
 {
-	Program::Program(const std::string& name, const bgfx::EmbeddedShader* embeddedShaders, std::string_view layoutJson)
+	Program::Program(const std::string& name, const bgfx::EmbeddedShader* embeddedShaders, const DataView& vertexLayout)
 		: _handle{ bgfx::kInvalidHandle }
 	{
 		auto renderer = bgfx::getRendererType();
@@ -38,9 +23,8 @@ namespace darmok
 		{
 			throw std::runtime_error("could not load embedded fragment shader" + fragName);
 		}
+		DataInputStream::read(vertexLayout, _layout);
 		_handle = bgfx::createProgram(vertHandle, fragHandle, true);
-		auto json = nlohmann::ordered_json::parse(layoutJson);
-		VertexLayoutUtils::readJson(json, _layout);
 	}
 
     Program::Program(const bgfx::ProgramHandle& handle, const bgfx::VertexLayout& layout) noexcept
@@ -127,63 +111,5 @@ namespace darmok
 		auto handle = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
 		auto layout = _vertexLayoutLoader(nameStr + _suffixes.vertexLayout);
 		return std::make_shared<Program>(handle, layout);
-	}
-
-	StandardProgramLoader::StandardProgramLoader() noexcept
-		: _impl(std::make_unique<StandardProgramLoaderImpl>())
-	{
-	}
-
-	StandardProgramLoader::~StandardProgramLoader() noexcept
-	{
-	}
-
-	StandardProgramLoader::result_type StandardProgramLoader::operator()(StandardProgramType type) noexcept
-	{
-		return (*_impl)(type);
-	}
-
-	const bgfx::EmbeddedShader StandardProgramLoaderImpl::_embeddedShaders[] =
-	{
-		BGFX_EMBEDDED_SHADER(gui_vertex),
-		BGFX_EMBEDDED_SHADER(gui_fragment),
-		BGFX_EMBEDDED_SHADER(unlit_vertex),
-		BGFX_EMBEDDED_SHADER(unlit_fragment),
-		BGFX_EMBEDDED_SHADER(forward_phong_vertex),
-		BGFX_EMBEDDED_SHADER(forward_phong_fragment),
-		BGFX_EMBEDDED_SHADER(forward_pbr_vertex),
-		BGFX_EMBEDDED_SHADER(forward_pbr_fragment),
-		BGFX_EMBEDDED_SHADER_END()
-	};
-
-	const std::unordered_map<StandardProgramType, std::string> StandardProgramLoaderImpl::_embeddedShaderNames
-	{
-		{StandardProgramType::Gui, "gui"},
-		{StandardProgramType::Unlit, "unlit"},
-		{StandardProgramType::ForwardPhong, "forward_phong"},
-		{StandardProgramType::ForwardPhysical, "forward_pbr"},
-	};
-
-	const std::unordered_map<StandardProgramType, std::string_view> StandardProgramLoaderImpl::_embeddedShaderVertexLayouts
-	{
-		{StandardProgramType::Gui, gui_vlayout},
-		{StandardProgramType::Unlit, unlit_vlayout},
-		{StandardProgramType::ForwardPhong, forward_phong_vlayout},
-		{StandardProgramType::ForwardPhysical, forward_pbr_vlayout},
-	};
-
-	std::shared_ptr<Program> StandardProgramLoaderImpl::operator()(StandardProgramType type) const noexcept
-	{
-		auto itr = _embeddedShaderNames.find(type);
-		if (itr == _embeddedShaderNames.end())
-		{
-			return nullptr;
-		}
-		auto itr2 = _embeddedShaderVertexLayouts.find(type);
-		if (itr2 == _embeddedShaderVertexLayouts.end())
-		{
-			return nullptr;
-		};
-		return std::make_shared<Program>(itr->second, _embeddedShaders, itr2->second);
 	}
 }

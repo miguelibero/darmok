@@ -99,7 +99,7 @@ namespace darmok
         try
         {
             Image img(data.view(), _alloc.value());
-            auto& size = img.getSize();
+            auto size = img.getSize();
             dimensions.x = size.x;
             dimensions.y = size.y;
             auto texture = std::make_unique<Texture>(img);

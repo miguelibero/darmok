@@ -3,7 +3,7 @@
 #include <darmok/scripting.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/rmlui.hpp>
-#include <darmok/utils.hpp>
+#include <darmok/string.hpp>
 #include <filesystem>
 #include "asset.hpp"
 #include "input.hpp"

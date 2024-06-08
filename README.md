@@ -83,6 +83,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * tool to read assimp into a binary
 
 #### Upcoming maybe
+* some tweening in the animation blending
 * other types of lights
 * pbr lighting
 * deferred renderer

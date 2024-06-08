@@ -18,18 +18,22 @@ namespace darmok
     };
 }
 
-// TODO: check if bgfx::read/write VertexLayout can be accessed
-// https://github.com/bkaradzic/bgfx/blob/master/src/vertexlayout.h#L39
-// instead of creating custom serialization
-template<class Archive>
-void serialize(Archive& archive, bgfx::VertexLayout& layout)
+namespace bgfx
 {
-    archive(
-        layout.m_hash,
-        layout.m_stride,
-        layout.m_offset,
-        layout.m_attributes
-    );
+
+    // TODO: check if bgfx::read/write VertexLayout can be accessed
+    // https://github.com/bkaradzic/bgfx/blob/master/src/vertexlayout.h#L39
+    // instead of creating custom serialization
+    template<class Archive>
+    void serialize(Archive& archive, VertexLayout& layout)
+    {
+        archive(
+            layout.m_hash,
+            layout.m_stride,
+            layout.m_offset,
+            layout.m_attributes
+        );
+    }
 }
 
 std::string to_string(const bgfx::VertexLayout& layout) noexcept;

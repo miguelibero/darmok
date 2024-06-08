@@ -2,7 +2,7 @@ include(darmokUtils)
 include(darmokProcessShader)
 include(darmokHeaderAsset)
 include(darmokProcessOzz)
-include(darmokProcessVaryingdef)
+include(darmokProcessVertexLayout)
 
 # darmok_process_assets(
 #   ASSETS files or pattern
@@ -87,13 +87,11 @@ function(darmok_process_assets)
         # look for assets based on the file suffix
         set(FRAGMENT_SHADERS "")
         set(VERTEX_SHADERS "")
-        set(VARYING_DEFS "")
         set(SHADER_INCLUDES "")
         set(VERTEX_LAYOUTS "")
         set(LUA_SCRIPTS "")
         set(COPY_ASSETS "")
         set(OZZ_ASSETS "")
-        set(OZZ_CONFIGS "")
         foreach(ASSET_PATH_ABS ${ASSET_PATHS})
             file(RELATIVE_PATH ASSET_PATH ${ASSET_BASE_PATH} ${ASSET_PATH_ABS})
             set(EXCLUDED OFF)
@@ -115,23 +113,20 @@ function(darmok_process_assets)
             endif()
             get_filename_component(ASSET_EXT ${ASSET_PATH_ABS} EXT)
             _darmok_replace_ext(OZZ_CONFIG_PATH ${ASSET_PATH_ABS} ".ozz.json")
+            _darmok_replace_ext(VLAYOUT_PATH ${ASSET_PATH_ABS} ".vlayout.json")
+            _darmok_replace_ext(MODEL_CONFIG_PATH ${ASSET_PATH_ABS} ".model.json")
             if(ASSET_EXT STREQUAL ".fragment.sc")
                 list(APPEND FRAGMENT_SHADERS ${ASSET_PATH_ABS})
             elseif(ASSET_EXT STREQUAL ".vertex.sc")
                 list(APPEND VERTEX_SHADERS ${ASSET_PATH_ABS})
             elseif(ASSET_EXT STREQUAL ".include.sc")
                 list(APPEND SHADER_INCLUDES ${ASSET_PATH_ABS})                  
-            elseif(ASSET_EXT STREQUAL ".varyingdef")
-                list(APPEND VARYING_DEFS ${ASSET_PATH_ABS})  
+            elseif(ASSET_EXT STREQUAL ".varyingdef" AND NOT EXISTS ${VLAYOUT_PATH})
+                list(APPEND VERTEX_LAYOUTS ${ASSET_PATH_ABS})  
             elseif(ASSET_EXT STREQUAL ".vlayout.json")
                 list(APPEND VERTEX_LAYOUTS ${ASSET_PATH_ABS})
-            elseif(EXISTS ${OZZ_CONFIG_PATH})
-                if(ASSET_PATH_ABS STREQUAL ${OZZ_CONFIG_PATH})
-                    list(APPEND OZZ_CONFIGS ${ASSET_PATH_ABS})                
-                else()
-                    list(APPEND OZZ_ASSETS ${ASSET_PATH_ABS})
-                    list(APPEND COPY_ASSETS ${ASSET_PATH})
-                endif()
+            elseif(EXISTS ${OZZ_CONFIG_PATH} AND NOT ASSET_PATH_ABS STREQUAL ${OZZ_CONFIG_PATH})
+                list(APPEND OZZ_ASSETS ${ASSET_PATH_ABS})
             else()
                 list(APPEND COPY_ASSETS ${ASSET_PATH})
             endif()
@@ -145,23 +140,13 @@ function(darmok_process_assets)
         endforeach()
 
         if(VERTEX_LAYOUTS)
-            darmok_header_asset(
+            darmok_process_vertex_layout(
                 FILES ${VERTEX_LAYOUTS}
                 ${HEADER_OPTION}
                 HEADER_VAR_PREFIX ${ARGS_HEADER_VAR_PREFIX}
                 OUTPUT_DIR ${POSSIBLE_HEADER_OUTPUT_DIR}
             )
             list(APPEND ASSET_SOURCES ${VERTEX_LAYOUTS})
-        endif()
-
-        if(VARYING_DEFS)
-            darmok_process_varyingdef(
-                VARYING_DEFS ${VARYING_DEFS}
-                ${HEADER_OPTION}
-                HEADER_VAR_PREFIX ${ARGS_HEADER_VAR_PREFIX}
-                OUTPUT_DIR ${POSSIBLE_HEADER_OUTPUT_DIR}
-            )
-            list(APPEND ASSET_SOURCES ${VARYING_DEFS})
         endif()
 
         foreach(ASSET_PATH ${OZZ_ASSETS})

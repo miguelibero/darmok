@@ -2,9 +2,65 @@
 #include "input.hpp"
 #include <bx/bx.h>
 #include <darmok/window.hpp>
+#include <darmok/string.hpp>
 
 namespace darmok
 {
+#pragma region Utf8Char
+
+	Utf8Char::Utf8Char(uint32_t pdata, uint8_t plen) noexcept
+		: data(pdata)
+		, len(pdata)
+	{
+	}
+
+	std::string_view Utf8Char::stringView() const noexcept
+	{
+		return std::string_view((const char*)&data, len);
+	}
+
+	std::string Utf8Char::to_string() const noexcept
+	{
+		return std::string(stringView());
+	}
+
+	// Based on cutef8 by Jeff Bezanson (Public Domain)
+	Utf8Char Utf8Char::encode(uint32_t scancode) noexcept
+	{
+		Utf8Char utf8 = { 0, 0 };
+
+		if (scancode < 0x80)
+		{
+			utf8.data = scancode;
+			utf8.len = 1;
+		}
+		else if (scancode < 0x800)
+		{
+			utf8.data = (scancode >> 6) | 0xc0;
+			utf8.data += ((scancode & 0x3f) | 0x80) >> 8;
+			utf8.len = 2;
+		}
+		else if (scancode < 0x10000)
+		{
+			utf8.data = (scancode >> 12) | 0xe0;
+			utf8.data += (((scancode >> 6) & 0x3f) | 0x80) >> 8;
+			utf8.data += ((scancode & 0x3f) | 0x80) >> 16;
+			utf8.len = 3;
+		}
+		else if (scancode < 0x110000)
+		{
+			utf8.data = (scancode >> 18) | 0xf0;
+			utf8.data += (((scancode >> 12) & 0x3f) | 0x80) >> 8;
+			utf8.data += (((scancode >> 6) & 0x3f) | 0x80) >> 16;
+			utf8.data += ((scancode & 0x3f) | 0x80) >> 24;
+			utf8.len = 4;
+		}
+
+		return utf8;
+	}
+
+#pragma endregion Utf8Char
+
 #pragma region Keyboard
 
 	uint32_t KeyboardImpl::encodeKey(bool down, uint8_t modifiers) noexcept
