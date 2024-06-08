@@ -1,7 +1,7 @@
 include(FetchContent)
 FetchContent_Declare(ozz-animation
-    GIT_REPOSITORY https://github.com/guillaumeblanc/ozz-animation.git
-    GIT_TAG master
+  GIT_REPOSITORY https://github.com/guillaumeblanc/ozz-animation.git
+  GIT_TAG master
 )
 
 # FBX SDK can be downloaded from https://aps.autodesk.com/developer/overview/fbx-sdk

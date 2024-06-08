@@ -1,7 +1,7 @@
 include(FetchContent)
 FetchContent_Declare(RmlSolLua
-    GIT_REPOSITORY https://github.com/miguelibero/RmlSolLua.git
-    GIT_TAG fix/cmake-fetchcontent
+  GIT_REPOSITORY https://github.com/miguelibero/RmlSolLua.git
+  GIT_TAG fix/cmake-fetchcontent
 )
 
 FetchContent_MakeAvailable(RmlSolLua)
