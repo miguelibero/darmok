@@ -13,15 +13,12 @@
 #include "texture_atlas.hpp"
 #include "program.hpp"
 #include "program_standard.hpp"
+#include "vertex_layout.hpp"
 #include "data.hpp"
-#include "vertex.hpp"
+#include "model.hpp"
 
 #ifdef DARMOK_OZZ
 #include "skeleton_ozz.hpp"
-#endif
-
-#ifdef DARMOK_ASSIMP 
-#include "model_assimp.hpp"
 #endif
 
 namespace darmok
@@ -58,11 +55,13 @@ namespace darmok
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
-		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
-		[[nodiscard]] ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
 
+#ifdef DARMOK_OZZ
+		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
+		[[nodiscard]] ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
+#endif
 		void setBasePath(const std::string& path) noexcept;
 	private:
 		FileReader _fileReader;
@@ -70,24 +69,17 @@ namespace darmok
 		bx::DefaultAllocator _allocator;
 		FileDataLoader _dataLoader;
 		DataImageLoader _imageLoader;
-		BinaryDataVertexLayoutLoader _vertexLayoutLoader;
 		DataProgramLoader _programLoader;
 		StandardProgramLoader _standardProgramLoader;
 		ImageTextureLoader _textureLoader;
+		BinaryVertexLayoutLoader _vertexLayoutLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		ColorTextureLoader _colorTextureLoader;
-#ifdef DARMOK_OZZ		
+#ifdef DARMOK_OZZ
 		OzzSkeletonLoader _skeletonLoader;
 		OzzSkeletalAnimationLoader _skeletalAnimationLoader;
-#else
-		EmptySkeletonLoader _skeletonLoader;
-		EmptySkeletalAnimationLoader _skeletalAnimationLoader;
 #endif
 		JsonSkeletalAnimatorConfigLoader _skeletalAnimatorConfigLoader;
-#ifdef DARMOK_ASSIMP 
-		AssimpModelLoader _modelLoader;
-#else
-		EmptyModelLoader _modelLoader;
-#endif
+		BinaryModelLoader _modelLoader;
 	};
 }

@@ -19,6 +19,7 @@ currently using:
 * [imgui](https://github.com/ocornut/imgui) for editor UI
 * [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI to replace CEGUI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
+* [cereal](https://uscilab.github.io/cereal/) for serialization
 
 planned to use:
 
@@ -27,7 +28,6 @@ planned to use:
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
 * [fastgltf](https://github.com/spnda/fastgltf) for gltf asset loading (runtime)
-* [cereal](https://uscilab.github.io/cereal/) for serialization
 
 Trying to use modern C++ patterns where possible.
 
@@ -90,6 +90,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### In the future
 * separate shaders for skinning?
+* cleanup public headers, more pimpl
 * instancing to draw skeleton bones
 * support multiple imgui app components with different transforms
 * spine animations loading

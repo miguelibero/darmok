@@ -69,14 +69,14 @@ namespace
 			scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
-			auto model = getAssets().getModelLoader()("BasicMotionsDummyModelBin.fbx");
+			auto model = getAssets().getModelLoader()("BasicMotionsDummyModel.dml");
 
 			auto skinEntity = scene.createEntity();
 			scene.addComponent<Transform>(skinEntity, animTrans, glm::vec3(1, 0, 0));
 
-			ModelSceneConfigurer configurer(scene.getRegistry(), prog, getAssets());
+			ModelSceneConfigurer configurer(scene, getAssets());
 			configurer.setParent(skinEntity);
-			configurer.run(model, [&scene, modelTex](const auto& node, Entity entity)
+			configurer.run(*model, [&scene, modelTex](const auto& node, Entity entity)
 			{
 				auto renderable = scene.getComponent<Renderable>(entity);
 				if (renderable)

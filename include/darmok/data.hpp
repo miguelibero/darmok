@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <memory>
-#include <string_view>
+#include <string>
 #include <darmok/optional_ref.hpp>
 
 #include <bgfx/bgfx.h>
@@ -50,6 +50,9 @@ namespace darmok
         [[nodiscard]] DLLEXPORT DataView view(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] DLLEXPORT const bgfx::Memory* makeRef(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] DLLEXPORT const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT std::string toHex(size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT std::string toHeader(std::string_view varName, size_t offset = 0, size_t size = -1) const noexcept;
+        [[nodiscard]] DLLEXPORT std::string to_string() const noexcept;
 
         template<typename T>
         [[nodiscard]] DLLEXPORT static DataView fromArray(const T& arr) noexcept
@@ -119,6 +122,10 @@ namespace darmok
         DLLEXPORT void clear() noexcept;
         DLLEXPORT void resize(size_t size) noexcept;
         DLLEXPORT void fill(const DataView& data) noexcept;
+
+        [[nodiscard]] DLLEXPORT std::string to_string() const noexcept;
+        [[nodiscard]] DLLEXPORT static Data fromHex(std::string_view hex) noexcept;
+        [[nodiscard]] DLLEXPORT static Data fromFile(std::string_view path) noexcept;
 
     private:
         void* _ptr;

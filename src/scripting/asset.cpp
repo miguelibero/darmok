@@ -66,9 +66,9 @@ namespace darmok
 		return LuaTexture(_assets->getTextureLoader()(name, flags));
 	}
 
-	LuaModel LuaAssets::loadModel(const std::string& name)
+	std::shared_ptr<Model> LuaAssets::loadModel(const std::string& name)
 	{
-		return LuaModel(_assets->getModelLoader()(name));
+		return _assets->getModelLoader()(name);
 	}
 
 	LuaSkeleton LuaAssets::loadSkeleton(const std::string& name)

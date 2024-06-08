@@ -20,6 +20,12 @@ namespace darmok
     {
         bool index32 = false;
 
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(index32);
+        }
+
         uint64_t getFlags() const noexcept;
         size_t getIndexSize() const noexcept;
     };

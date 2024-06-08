@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <memory>
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/program_fwd.hpp>
@@ -8,11 +9,11 @@
 
 namespace darmok
 {
+	class Model;
 	class AssetContext;
 	class LuaProgram;
 	class LuaTexture;
 	class LuaTextureAtlas;
-	class LuaModel;
 	class LuaSkeleton;
 	class LuaSkeletalAnimation;
 
@@ -31,7 +32,7 @@ namespace darmok
 		LuaTexture loadColorTexture(const Color& color);
 		LuaTextureAtlas loadTextureAtlas1(const std::string& name);
 		LuaTextureAtlas loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
-		LuaModel loadModel(const std::string& name);
+		std::shared_ptr<Model> loadModel(const std::string& name);
 		LuaSkeleton loadSkeleton(const std::string& name);
 		LuaSkeletalAnimation loadSkeletalAnimation(const std::string& name);
 

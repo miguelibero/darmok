@@ -1,6 +1,9 @@
-#include <darmok/vertex_layout.hpp>
+#include "vertex_layout.hpp"
 #include <darmok/string.hpp>
+#include <darmok/data.hpp>
+#include <darmok/utils.hpp>
 #include <sstream>
+#include <map>
 
 namespace darmok
 {
@@ -17,15 +20,11 @@ namespace darmok
 		}
 		if (sname == "tangent" || name == "tang" || sname == "t")
 		{
-			return bgfx::Attrib::Normal;
+			return bgfx::Attrib::Tangent;
 		}
 		if (sname == "bitangent" || sname == "bitang" || sname == "b")
 		{
-			return bgfx::Attrib::Normal;
-		}
-		if (sname == "bitangent" || sname == "bitang" || sname == "b")
-		{
-			return bgfx::Attrib::Normal;
+			return bgfx::Attrib::Bitangent;
 		}
 		if (sname == "indices" || sname == "index" || sname == "i")
 		{
@@ -83,6 +82,55 @@ namespace darmok
 		return bgfx::AttribType::Count;
 	}
 
+	std::string VertexLayoutUtils::getBgfxAttribName(bgfx::Attrib::Enum val) noexcept
+	{
+		switch (val)
+		{
+		case bgfx::Attrib::Position:
+			return "position";
+		case bgfx::Attrib::Normal:
+			return "normal";
+		case bgfx::Attrib::Tangent:
+			return "tangent";
+		case bgfx::Attrib::Bitangent:
+			return "bitangent";
+		case bgfx::Attrib::Indices:
+			return "indices";
+		case bgfx::Attrib::Weight:
+			return "weight";
+		}
+		if (val >= bgfx::Attrib::Color0 && val <= bgfx::Attrib::Color3)
+		{
+			auto i = to_underlying(val) - to_underlying(bgfx::Attrib::Color0);
+			return std::string("color") + std::to_string(i);
+		}
+		if (val >= bgfx::Attrib::TexCoord0 && val <= bgfx::Attrib::TexCoord7)
+		{
+			auto i = to_underlying(val) - to_underlying(bgfx::Attrib::TexCoord0);
+			return std::string("texcoord") + std::to_string(i);
+		}
+		return "";
+	}
+
+	std::string VertexLayoutUtils::getBgfxAttribTypeName(bgfx::AttribType::Enum val) noexcept
+	{
+		switch (val)
+		{
+			case bgfx::AttribType::Uint8:
+				return "uint8";
+			case bgfx::AttribType::Uint10:
+				return "uint10";
+			case bgfx::AttribType::Int16:
+				return "int";
+			case bgfx::AttribType::Half:
+				return "half";
+			case bgfx::AttribType::Float:
+				return "float";
+		}
+		return "";
+	}
+
+
 	void VertexLayoutUtils::readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept
 	{
 		layout.begin();
@@ -123,17 +171,73 @@ namespace darmok
 		layout.end();
 	}
 
+	void VertexLayoutUtils::writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout) noexcept
+	{
+		std::map<uint16_t, std::pair<std::string, nlohmann::json>> items;
+		for (auto i = 0; i < bgfx::Attrib::Count; i++)
+		{
+			const auto attr = static_cast<bgfx::Attrib::Enum>(i);
+			if (!layout.has(attr))
+			{
+				continue;
+			}
+			uint8_t num;
+			bgfx::AttribType::Enum type;
+			bool normalize;
+			bool asInt;
+			auto offset = layout.getOffset(attr);
+			layout.decode(attr, num, type, normalize, asInt);
+
+			nlohmann::json itemJson;
+			auto typeName = getBgfxAttribTypeName(type);
+			auto attrName = getBgfxAttribName(attr);
+			if (!typeName.empty())
+			{
+				itemJson["type"] = typeName;
+			}
+			if (asInt)
+			{
+				itemJson["int"] = true;
+			}
+			if (normalize)
+			{
+				itemJson["normalize"] = true;
+			}
+			itemJson["num"] = num;
+			items[offset] = std::make_pair(attrName, itemJson);
+		}
+		for (auto& elm : items)
+		{
+			json.emplace(elm.second.first, elm.second.second);
+		}
+	}
+
     void VertexLayoutUtils::readVaryingDef(std::string_view content, bgfx::VertexLayout& layout) noexcept
     {
-        
+        // TODO: parse varyingdef to generate VertexLayout
+    }
+
+	BinaryVertexLayoutLoader::BinaryVertexLayoutLoader(IDataLoader& dataLoader) noexcept
+        : _dataLoader(dataLoader)
+    {
+    }
+
+    bgfx::VertexLayout BinaryVertexLayoutLoader::operator()(std::string_view name)
+    {
+        auto data = _dataLoader(name);
+        bgfx::VertexLayout layout;
+        // TODO: deserialize VertexLayout
+        return layout;
     }
 }
 
 std::string to_string(const bgfx::VertexLayout& layout) noexcept
 {
 	std::stringstream ss;
-	ss << "VertexLayout" << std::endl;
-	// TODO
+	ss << "VertexLayout:" << std::endl;
+	nlohmann::ordered_json json;
+	darmok::VertexLayoutUtils::writeJson(json, layout);
+	ss << json.dump(2) << std::endl;
 	return ss.str();
 }
 

@@ -24,6 +24,12 @@ namespace darmok
 		bool mips = false;
 		uint16_t layers = 1;
 
+		template<class Archive>
+		void serialize(Archive& archive)
+		{
+			archive(size, format, type, depth, mips, layers);
+		}
+
 		const static TextureConfig getEmpty() noexcept;
 
 		std::string to_string() const noexcept;
@@ -37,6 +43,8 @@ namespace darmok
 	{
 	public:
 		using Config = TextureConfig;
+
+		// TODO: remove bgfx flags param and move options to texture config struct
 
 		DLLEXPORT Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
 		DLLEXPORT Texture(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;

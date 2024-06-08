@@ -1,4 +1,6 @@
 #include <darmok/data_stream.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/xml.hpp>
 
 namespace darmok
 {
@@ -48,5 +50,58 @@ namespace darmok
         , _buffer(data)
     {
         rdbuf(&_buffer);
+    }
+
+    void save(cereal::BinaryOutputArchive& archive, const DataView& data)
+    {
+        archive << data.size();
+        archive.saveBinary(data.ptr(), data.size());
+    }
+
+    void save(cereal::BinaryOutputArchive& archive, const Data& data)
+    {
+        save(archive, data.view());
+    }
+
+    void load(cereal::BinaryInputArchive& archive, Data& data)
+    {
+        size_t size;
+        archive >> size;
+        data.resize(size);
+        archive.loadBinary(data.ptr(), size);
+    }
+
+    void save(cereal::XMLOutputArchive& archive, const DataView& data)
+    {
+        archive(data.view().to_string());
+    }
+
+    void save(cereal::XMLOutputArchive& archive, const Data& data)
+    {
+        save(archive, data.view());
+    }
+
+    void save(cereal::JSONOutputArchive& archive, const DataView& data)
+    {
+        archive(data.view().to_string());
+    }
+
+    void save(cereal::JSONOutputArchive& archive, const Data& data)
+    {
+        save(archive, data.view());
+    }
+
+    void load(cereal::XMLInputArchive& archive, Data& data)
+    {
+        std::string hex;
+        archive >> hex;
+        data = Data::fromHex(hex);
+    }
+
+    void load(cereal::JSONInputArchive& archive, Data& data)
+    {
+        std::string hex;
+        archive >> hex;
+        data = Data::fromHex(hex);
     }
 }

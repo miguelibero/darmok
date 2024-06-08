@@ -18,14 +18,6 @@ namespace bx
 
 namespace darmok
 {
-    class BX_NO_VTABLE IVertexLayoutLoader
-    {
-    public:
-        using result_type = bgfx::VertexLayout;
-        DLLEXPORT virtual ~IVertexLayoutLoader() = default;
-        DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
-    };
-
     class VertexDataWriter final
     {
     public:

@@ -60,7 +60,4 @@ namespace darmok
 
         void destroyHandles() noexcept;
     };
-
-
-
 }

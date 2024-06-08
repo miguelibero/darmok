@@ -50,9 +50,7 @@ namespace darmok
 		, _skeletalAnimationLoader(_dataLoader)
 #endif
 		, _skeletalAnimatorConfigLoader(_dataLoader, _skeletalAnimationLoader)
-#ifdef DARMOK_ASSIMP 
-		, _modelLoader(_dataLoader, _allocator)
-#endif
+		, _modelLoader(_dataLoader)
 		, _colorTextureLoader(_allocator)
 	{
 		setBasePath("assets");
@@ -108,6 +106,7 @@ namespace darmok
 		return _skeletonLoader;
 	}
 
+#ifdef DARMOK_OZZ
 	ISkeletalAnimationLoader& AssetContextImpl::getSkeletalAnimationLoader() noexcept
 	{
 		return _skeletalAnimationLoader;
@@ -117,6 +116,7 @@ namespace darmok
 	{
 		return _skeletalAnimatorConfigLoader;
 	}
+#endif
 
 	void AssetContextImpl::setBasePath(const std::string& path) noexcept
 	{
@@ -178,6 +178,7 @@ namespace darmok
 		return _impl->getSkeletonLoader();
 	}
 
+#ifdef DARMOK_OZZ
 	ISkeletalAnimationLoader& AssetContext::getSkeletalAnimationLoader() noexcept
 	{
 		return _impl->getSkeletalAnimationLoader();
@@ -187,6 +188,7 @@ namespace darmok
 	{
 		return _impl->getSkeletalAnimatorConfigLoader();
 	}
+#endif
 
 	bx::AllocatorI& AssetContext::getAllocator() noexcept
 	{

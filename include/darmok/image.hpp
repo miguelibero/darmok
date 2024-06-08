@@ -34,7 +34,7 @@ namespace darmok
 		[[nodiscard]] DLLEXPORT uint16_t getLayerCount() const noexcept;
 		[[nodiscard]] DLLEXPORT bimg::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] DLLEXPORT bgfx::TextureInfo getTextureInfo() const noexcept;
-		[[nodiscard]] DLLEXPORT TextureConfig getTextureConfig(uint64_t flags) const noexcept;
+		[[nodiscard]] DLLEXPORT TextureConfig getTextureConfig(uint64_t flags = 0) const noexcept;
 		[[nodiscard]] DLLEXPORT DataView getData() const noexcept;
 		[[nodiscard]] DLLEXPORT TextureType getTextureType(uint64_t flags) const noexcept;
 		[[nodiscard]] DLLEXPORT bx::AllocatorI& getAllocator() const noexcept;

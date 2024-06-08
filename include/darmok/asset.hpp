@@ -12,7 +12,6 @@ namespace darmok
 	class StandardProgramLoader;
 	class ITextureLoader;
 	class ITextureAtlasLoader;
-	class IVertexLayoutLoader;
 	class ColorTextureLoader;
     class AssetContext;
 	class ISkeletonLoader;
@@ -34,8 +33,10 @@ namespace darmok
 		[[nodiscard]] DLLEXPORT ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] DLLEXPORT ColorTextureLoader& getColorTextureLoader() noexcept;
 		[[nodiscard]] DLLEXPORT ISkeletonLoader& getSkeletonLoader() noexcept;
+#ifdef DARMOK_OZZ
 		[[nodiscard]] DLLEXPORT ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
 		[[nodiscard]] DLLEXPORT ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
+#endif
 		[[nodiscard]] DLLEXPORT IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] DLLEXPORT bx::AllocatorI& getAllocator() noexcept;
 

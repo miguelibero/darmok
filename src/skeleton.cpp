@@ -31,19 +31,19 @@ namespace darmok
         return *_impl;
     }
 
-    Armature::Armature(const std::vector<ArmatureBone>& bones) noexcept
-        : _bones(bones)
+    Armature::Armature(const std::vector<ArmatureJoint>& joints) noexcept
+        : _joints(joints)
     {
     }
 
-    Armature::Armature(std::vector<ArmatureBone>&& bones) noexcept
-        : _bones(std::move(bones))
+    Armature::Armature(std::vector<ArmatureJoint>&& joints) noexcept
+        : _joints(std::move(joints))
     {
     }
 
-    const std::vector<ArmatureBone>& Armature::getBones() const noexcept
+    const std::vector<ArmatureJoint>& Armature::getJoints() const noexcept
     {
-        return _bones;
+        return _joints;
     }
 
     Skinnable::Skinnable(const std::shared_ptr<Armature>& armature) noexcept
@@ -59,16 +59,6 @@ namespace darmok
     void Skinnable::setArmature(const std::shared_ptr<Armature>& armature) noexcept
     {
         _armature = armature;
-    }
-
-    std::shared_ptr<Skeleton> EmptySkeletonLoader::operator()(std::string_view name)
-    {
-        throw std::runtime_error("no skeletal animation implementation");
-    }
-
-    std::shared_ptr<SkeletalAnimation> EmptySkeletalAnimationLoader::operator()(std::string_view name)
-    {
-        throw std::runtime_error("no skeletal animation implementation");
     }
 
     RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept
@@ -152,7 +142,7 @@ namespace darmok
             _scene->getComponentsInChildren<RenderableSkeleton>(entity, skeletons);
             for (auto& skel : skeletons)
             {
-                skel->update(_scene.value(), anim.getBoneMatrixes());
+                skel->update(_scene.value(), anim.getBoneModelMatrixes());
             }
         }
     }
@@ -203,12 +193,12 @@ namespace darmok
         _skinning.push_back(glm::mat4(1));
         if (armature)
         {
-            auto& bones = armature->getBones();
-            _skinning.reserve(bones.size() + 1);
-            for (auto& bone : bones)
+            auto& joints = armature->getJoints();
+            _skinning.reserve(joints.size() + 1);
+            for (auto& joint : joints)
             {
-                auto model = animator->getModelMatrix(bone.joint);
-                _skinning.push_back(model * bone.inverseBindPose);
+                auto model = animator->getJointModelMatrix(joint.name);
+                _skinning.push_back(model * joint.inverseBindPose);
             }
         }
         encoder.setUniform(_skinningUniform, &_skinning.front(), _skinning.size());

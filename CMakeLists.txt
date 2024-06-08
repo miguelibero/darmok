@@ -123,6 +123,7 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/utils.hpp
   ${INCLUDE_DIR}/string.hpp
   ${INCLUDE_DIR}/optional_ref.hpp
+  ${INCLUDE_DIR}/collection.hpp
   ${INCLUDE_DIR}/data.hpp
   ${INCLUDE_DIR}/data_stream.hpp
   ${INCLUDE_DIR}/math.hpp
@@ -224,11 +225,6 @@ if(DARMOK_BUILD_RMLUI)
 
 endif()
 
-if(DARMOK_BUILD_ASSIMP)
-  list(APPEND SOURCES ${SRC_DIR}/assimp.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/model_assimp.cpp)
-endif()
-
 if(DARMOK_BUILD_OZZ)
   list(APPEND SOURCES ${SRC_DIR}/skeleton_ozz.cpp)
 endif()
@@ -324,6 +320,19 @@ endmacro()
 _darmok_lib_setup(${LIB_NAME})
 _darmok_lib_setup(${CORE_LIB_NAME})
 
+# tools
+set(TOOLS_FOLDER ${PROJECT_NAME}/tools)
+
+# vlayoutc: only depends on darmok-core to avoid dependency cycle
+# since it is used to generate standard darmok shaders
+set(VLAYOUTC_NAME "darmok-vlayoutc")
+set(VLAYOUTC_SRC_DIR "tools/vlayoutc")
+add_executable(${VLAYOUTC_NAME}
+  ${VLAYOUTC_SRC_DIR}/vlayoutc.cpp
+)
+target_link_libraries(${VLAYOUTC_NAME} ${CORE_LIB_NAME})
+add_executable(darmok::vlayoutc ALIAS ${VLAYOUTC_NAME})
+set_target_properties(${VLAYOUTC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
 
 # samples
 if(DARMOK_BUILD_SAMPLES)
@@ -418,8 +427,18 @@ target_link_libraries(${LIB_NAME} PUBLIC EnTT::EnTT)
 # assimp
 if(DARMOK_BUILD_ASSIMP)
   find_package(assimp CONFIG REQUIRED)
-  target_link_libraries(${LIB_NAME} PUBLIC assimp::assimp)
-  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_ASSIMP)
+
+  set(MODELC_NAME "darmok-modelc")
+  set(MODELC_SRC_DIR "tools/modelc")
+  add_executable(${MODELC_NAME}
+    ${MODELC_SRC_DIR}/modelc.cpp
+    ${MODELC_SRC_DIR}/assimp.cpp
+    ${MODELC_SRC_DIR}/assimp_model.cpp
+  )
+  target_link_libraries(${MODELC_NAME} ${LIB_NAME} assimp::assimp)
+  add_executable(darmok::modelc ALIAS ${MODELC_NAME})
+  set_target_properties(${MODELC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
+
 endif()
 
 if(DARMOK_BUILD_JOLT)
@@ -481,26 +500,3 @@ if(DARMOK_BUILD_OZZ)
     ozz_animation_offline
     ozz_options)
 endif()
-
-# tools
-set(TOOLS_FOLDER ${PROJECT_NAME}/tools)
-
-# vlayoutc: only depends on darmok-core to avoid dependency cycle
-# since it is used to generate standard darmok shaders
-set(VLAYOUTC_NAME "darmok-vlayoutc")
-set(VLAYOUTC_SRC_DIR "tools/vlayoutc")
-add_executable(${VLAYOUTC_NAME}
-  ${VLAYOUTC_SRC_DIR}/vlayoutc.cpp
-)
-target_link_libraries(${VLAYOUTC_NAME} ${CORE_LIB_NAME})
-add_executable(darmok::vlayoutc ALIAS ${VLAYOUTC_NAME})
-set_target_properties(${VLAYOUTC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
-
-set(MODELC_NAME "darmok-modelc")
-set(MODELC_SRC_DIR "tools/modelc")
-add_executable(${MODELC_NAME}
-  ${MODELC_SRC_DIR}/modelc.cpp
-)
-target_link_libraries(${MODELC_NAME} ${LIB_NAME})
-add_executable(darmok::modelc ALIAS ${MODELC_NAME})
-set_target_properties(${MODELC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})

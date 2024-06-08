@@ -610,14 +610,14 @@ namespace darmok
         // intentionally empty to be able to forward declare the impl
     }
 
-    glm::mat4 SkeletalAnimator::getModelMatrix(const std::string& boneName) const noexcept
+    glm::mat4 SkeletalAnimator::getJointModelMatrix(const std::string& name) const noexcept
     {
-        return _impl->getModelMatrix(boneName);
+        return _impl->getJointModelMatrix(name);
     }
 
-    std::vector<glm::mat4> SkeletalAnimator::getBoneMatrixes(const glm::vec3& dir) const noexcept
+    std::vector<glm::mat4> SkeletalAnimator::getBoneModelMatrixes(const glm::vec3& dir) const noexcept
     {
-        return _impl->getBoneMatrixes(dir);
+        return _impl->getBoneModelMatrixes(dir);
     }
 
     void SkeletalAnimator::update(float deltaTime)
@@ -625,7 +625,7 @@ namespace darmok
         _impl->update(deltaTime);
     }
 
-    glm::mat4 SkeletalAnimatorImpl::getModelMatrix(const std::string& joint) const noexcept
+    glm::mat4 SkeletalAnimatorImpl::getJointModelMatrix(const std::string& joint) const noexcept
     {
         if (_skeleton == nullptr)
         {
@@ -642,7 +642,7 @@ namespace darmok
         return glm::mat4(1);
     }
 
-    std::vector<glm::mat4> SkeletalAnimatorImpl::getBoneMatrixes(const glm::vec3& dir) const noexcept
+    std::vector<glm::mat4> SkeletalAnimatorImpl::getBoneModelMatrixes(const glm::vec3& dir) const noexcept
     {
         auto& skel = _skeleton->getImpl().getOzz();
         auto numJoints = skel.num_joints();

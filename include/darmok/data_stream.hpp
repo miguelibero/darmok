@@ -4,6 +4,14 @@
 #include <iostream>
 #include <cereal/archives/binary.hpp>
 
+namespace cereal
+{
+    class XMLOutputArchive;
+    class XMLInputArchive;
+    class JSONOutputArchive;
+    class JSONInputArchive;
+}
+
 namespace darmok
 {
     class DataViewStreamBuffer final : public std::streambuf
@@ -45,13 +53,23 @@ namespace darmok
         DataOutputStream(Data& data) noexcept;
 
         template<typename T>
-        static void write(const DataView& data, const T& val)
+        static void write(Data& data, const T& val)
         {
             DataOutputStream stream(data);
-            cereal::BinaryInputArchive archive(stream);
+            cereal::BinaryOutputArchive archive(stream);
             archive(val);
         }
     private:
         DataStreamBuffer _buffer;
     };
+
+    void save(cereal::BinaryOutputArchive& archive, const DataView& data);
+    void save(cereal::BinaryOutputArchive& archive, const Data& data);
+    void save(cereal::XMLOutputArchive& archive, const DataView& data);
+    void save(cereal::XMLOutputArchive& archive, const Data& data);
+    void save(cereal::JSONOutputArchive& archive, const DataView& data);
+    void save(cereal::JSONOutputArchive& archive, const Data& data);
+    void load(cereal::BinaryInputArchive& archive, Data& data);
+    void load(cereal::XMLInputArchive& archive, Data& data);
+    void load(cereal::JSONInputArchive& archive, Data& data);
 }

@@ -161,8 +161,8 @@ namespace darmok
 		bool play(std::string_view name) noexcept;
 		void update(float deltaTime);
 
-		glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
-		std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
+		glm::mat4 getJointModelMatrix(const std::string& joint) const noexcept;
+		std::vector<glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 	private:
 		using TransitionKey = std::pair<std::string, std::string>;
 

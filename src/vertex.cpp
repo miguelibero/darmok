@@ -1,4 +1,4 @@
-#include "vertex.hpp"
+#include <darmok/vertex.hpp>
 #include <darmok/color.hpp>
 #include <darmok/utils.hpp>
 
@@ -134,18 +134,5 @@ namespace darmok
     void VertexDataWriter::markAll(bgfx::Attrib::Enum attr) noexcept
     {
         _markedAll.emplace(attr);
-    }
-
-    BinaryDataVertexLayoutLoader::BinaryDataVertexLayoutLoader(IDataLoader& dataLoader) noexcept
-        : _dataLoader(dataLoader)
-    {
-    }
-
-    bgfx::VertexLayout BinaryDataVertexLayoutLoader::operator()(std::string_view name)
-    {
-        auto data = _dataLoader(name);
-        bgfx::VertexLayout layout;
-        // TODO: deserialize VertexLayout
-        return layout;
     }
 }

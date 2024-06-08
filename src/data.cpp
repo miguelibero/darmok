@@ -1,6 +1,9 @@
 #include "data.hpp"
+#include <darmok/string.hpp>
 #include <bx/allocator.h>
 #include <stdexcept>
+#include <sstream>
+#include <algorithm>
 
 namespace darmok
 {
@@ -59,6 +62,55 @@ namespace darmok
     bool DataView::operator!=(const DataView& other) const noexcept
     {
         return !(*this == other);
+    }
+
+    std::string DataView::to_string() const noexcept
+    {
+        return toHex();
+    }
+
+    std::string DataView::toHex(size_t offset, size_t size) const noexcept
+    {
+        void* ptr;
+        offset = fixOffset(offset, ptr);
+        size = fixSize(size, offset);
+        std::stringstream ss;
+        for (size_t i = 0; i < size; i++)
+        {
+            auto& v = ((uint8_t*)ptr)[i];
+            ss << StringUtils::binToHex(v);
+        }
+        return ss.str();
+    }
+
+    std::string DataView::toHeader(std::string_view varName, size_t offset, size_t size) const noexcept
+    {
+        std::string fixVarName(varName);
+        std::replace(fixVarName.begin(), fixVarName.end(), '.', '_');
+        std::stringstream ss;
+
+        ss << "static const uint8_t " << fixVarName << "[" << size << "] = " << std::endl;
+        ss << "{" << std::endl;
+        void* ptr;
+        offset = fixOffset(offset, ptr);
+        size = fixSize(size, offset);
+        size_t i = 0;
+        for (size_t i = 0; i < size; i++)
+        {
+            auto& v = ((uint8_t*)ptr)[i];
+            ss << "0x" << darmok::StringUtils::binToHex(v);
+            if (i < size - 1)
+            {
+                ss << ", ";
+            }
+            ++i;
+            if (i % 16 == 0)
+            {
+                ss << std::endl;
+            }
+        }
+        ss << "};" << std::endl;
+        return ss.str();
     }
 
     std::string_view DataView::stringView(size_t offset, size_t size) const noexcept
@@ -278,6 +330,30 @@ namespace darmok
             }
             std::memcpy(ptr, data.ptr(), ptrSize);
         }
+    }
+
+    std::string Data::to_string() const noexcept
+    {
+        return view().to_string();
+    }
+
+    Data Data::fromHex(std::string_view hex) noexcept
+    {
+        static const size_t elmLen = 2;
+        Data data(hex.size() / elmLen);
+        auto ptr = (uint8_t*)data.ptr();
+        for (size_t i = 0; i < data.size(); i++)
+        {
+            auto elm = hex.substr(i*elmLen, elmLen);
+            ptr[i] = StringUtils::hexToBin(elm);
+        }
+        return data;
+    }
+
+    Data Data::fromFile(std::string_view path) noexcept
+    {
+        Data data;
+        return data;
     }
 
     Data::Data(const Data& other) noexcept

@@ -1,15 +1,16 @@
 #include <darmok/vertex_layout.hpp>
 #include <darmok/string.hpp>
+#include <darmok/data_stream.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/xml.hpp>
 #include <bx/commandline.h>
-#include <cereal/archives/binary.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <algorithm>
 
 void version(const std::string& name)
 {
-	std::cout << name << " vertex layout compiler tool." << std::endl;
+	std::cout << name << ": darmok vertex layout compiler tool." << std::endl;
 }
 
 void help(const std::string& name, const char* error = nullptr)
@@ -24,41 +25,18 @@ void help(const std::string& name, const char* error = nullptr)
 	std::cout << "Usage: " << name << " -i <in> -o <out> --bin2c <array name>" << std::endl;
 	std::cout << std::endl;
 	std::cout << "Options:" << std::endl;
-	std::cout << "  -h, --help           Display this help and exit." << std::endl;
-	std::cout << "  -v, --version        Output version information and exit." << std::endl;
-	std::cout << "  -i <file path>       Input's file path (can be json or varyingdef)." << std::endl;
-	std::cout << "  -o <file path>       Output's file path (if bin2c specified will generate header)." << std::endl;
+	std::cout << "  -h, --help					Display this help and exit." << std::endl;
+	std::cout << "  -v, --version				Output version information and exit." << std::endl;
+	std::cout << "  -i, --input <file path>		Input's file path (can be json or varyingdef)." << std::endl;
+	std::cout << "  -o, --output <file path>	Output's file path (header, binary, json or xml depending on extension)." << std::endl;
+	std::cout << "  -b, --bin2c <name>			Output's header variable name." << std::endl;
 }
 
-void writeHeader(std::ostream& os, std::string arrayName, const bgfx::VertexLayout& layout)
+void writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout)
 {
-	std::stringstream ss;
-	cereal::BinaryOutputArchive archive(ss);
-	archive(layout);
-
-	ss.seekg(0, std::ios::end);
-	size_t size = ss.tellg();
-	ss.seekg(0, std::ios::beg);
-	std::replace(arrayName.begin(), arrayName.end(), '.', '_');
-	os << "static const uint8_t " << arrayName << "[" << size << "] = " << std::endl;
-	os << "{" << std::endl;
-	size_t i = 0;
-	while (ss.peek() != EOF)
-	{
-		char buf;
-		ss.read(&buf, 1);
-		os << "0x" << darmok::StringUtils::binToHex(buf);
-		if (i < size - 1)
-		{
-			os << ", ";
-		}
-		++i;
-		if (i % 16 == 0)
-		{
-			os << std::endl;
-		}
-	}
-	os << "};" << std::endl;
+	darmok::Data data;
+	darmok::DataOutputStream::write(data, layout);
+	os << data.view().toHeader(varName);
 }
 
 std::string getPathExtension(const std::string& path) noexcept
@@ -66,10 +44,67 @@ std::string getPathExtension(const std::string& path) noexcept
 	return std::filesystem::path(path).extension().string();
 }
 
+std::string getString(const char* ptr)
+{
+	return ptr == nullptr ? std::string() : std::string(ptr);
+}
+
+void writeOutput(const bgfx::VertexLayout& layout, const std::string& output, std::string headerVarName)
+{
+	auto outExt = getPathExtension(output);
+
+	if (headerVarName.empty())
+	{
+		if (outExt == ".h" || outExt == ".hpp")
+		{
+			std::string outputStr(output);
+			headerVarName = outputStr.substr(0, outputStr.size() - outExt.size());
+			headerVarName += "_vlayout";
+		}
+	}
+
+	if (output.empty())
+	{
+		if (!headerVarName.empty())
+		{
+			writeHeader(std::cout, headerVarName, layout);
+		}
+		else
+		{
+			std::cout << layout << std::endl;
+		}
+		return;
+	}
+	if (!headerVarName.empty())
+	{
+		std::ofstream os(output);
+		writeHeader(os, headerVarName, layout);
+	}
+	else if (outExt == ".json")
+	{
+		std::ofstream os(output);
+		cereal::JSONOutputArchive archive(os);
+		archive(layout);
+	}
+	else if (outExt == ".xml")
+	{
+		std::ofstream os(output);
+		cereal::XMLOutputArchive archive(os);
+		archive(layout);
+	}
+	else
+	{
+		std::ofstream os(output, std::ios::binary);
+		cereal::BinaryOutputArchive archive(os);
+		archive(layout);
+	}
+}
+
 int main(int argc, const char* argv[])
 {
     bx::CommandLine cmdLine(argc, argv);
-	auto name = std::filesystem::path(cmdLine.get(0)).filename().string();
+	auto path = getString(cmdLine.get(0));
+	auto name = std::filesystem::path(path).filename().string();
 
 	if (cmdLine.hasArg('h', "help"))
 	{
@@ -83,8 +118,8 @@ int main(int argc, const char* argv[])
 		return bx::kExitSuccess;
 	}
 
-	const char* input = cmdLine.findOption('i', "input");
-	if (!input)
+	auto input = getString(cmdLine.findOption('i', "input"));
+	if (input.empty())
 	{
 		help(name, "Input file path must be specified.");
 		return bx::kExitFailure;
@@ -94,10 +129,11 @@ int main(int argc, const char* argv[])
 
 	std::ifstream ifs(input);
 	bgfx::VertexLayout layout;
+	layout.begin().end();
 
 	if (inExt == ".json")
 	{
-		auto json = nlohmann::json::parse(ifs);
+		auto json = nlohmann::ordered_json::parse(ifs);
 		darmok::VertexLayoutUtils::readJson(json, layout);
 	}
 	else
@@ -107,44 +143,9 @@ int main(int argc, const char* argv[])
 		darmok::VertexLayoutUtils::readVaryingDef(content.str(), layout);
 	}
 
-	const char* output = cmdLine.findOption('o', "output");
-	std::string arrayName = cmdLine.findOption('b', "bin2c");
+	auto output = getString(cmdLine.findOption('o', "output"));
+	auto headerVarName = getString(cmdLine.findOption('b', "bin2c"));
 
-	if (!output)
-	{
-		if (!arrayName.empty())
-		{
-			writeHeader(std::cout, arrayName, layout);
-		}
-		else
-		{
-			std::cout << layout << std::endl;
-		}
-	}
-	else
-	{
-		if (arrayName.empty())
-		{
-			auto outExt = getPathExtension(output);
-			if (outExt == ".h" || outExt == ".hpp")
-			{
-				std::string outputStr(output);
-				arrayName = outputStr.substr(0, outputStr.size() - outExt.size());
-				arrayName += "_vlayout";
-			}
-		}
-		if (!arrayName.empty())
-		{
-			std::ofstream os(output);
-			writeHeader(os, arrayName, layout);
-		}
-		else
-		{
-			std::ofstream os(output, std::ios::binary);
-			cereal::BinaryOutputArchive archive(os);
-			archive(layout);
-		}
-	}
-
+	writeOutput(layout, output, headerVarName);
 	return bx::kExitSuccess;
 }

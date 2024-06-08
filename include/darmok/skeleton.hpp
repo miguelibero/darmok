@@ -65,18 +65,6 @@ namespace darmok
         DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
     };
 
-    class EmptySkeletonLoader final : public ISkeletonLoader
-    {
-    public:
-        DLLEXPORT std::shared_ptr<Skeleton> operator()(std::string_view name) override;
-    };
-
-    class EmptySkeletalAnimationLoader final : public ISkeletalAnimationLoader
-    {
-    public:
-        DLLEXPORT std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override;
-    };
-
     struct SkeletalAnimatorAnimationConfig final
     {
         std::shared_ptr<SkeletalAnimation> animation = nullptr;
@@ -228,8 +216,8 @@ namespace darmok
 
         DLLEXPORT bool play(std::string_view name) noexcept;
         
-        DLLEXPORT glm::mat4 getModelMatrix(const std::string& joint) const noexcept;
-        DLLEXPORT std::vector<glm::mat4> getBoneMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
+        DLLEXPORT glm::mat4 getJointModelMatrix(const std::string& node) const noexcept;
+        DLLEXPORT std::vector<glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 
         void update(float deltaTime);
     private:
@@ -259,21 +247,21 @@ namespace darmok
         OptionalRef<Scene> _scene;
     };
 
-    struct ArmatureBone final
+    struct ArmatureJoint final
     {
-        std::string joint;
+        std::string name;
         glm::mat4 inverseBindPose;
     };
 
     class Armature final
     {
     public:
-        DLLEXPORT Armature(const std::vector<ArmatureBone>& bones) noexcept;
-        DLLEXPORT Armature(std::vector<ArmatureBone>&& bones) noexcept;
-        DLLEXPORT const std::vector<ArmatureBone>& getBones() const noexcept;
+        DLLEXPORT Armature(const std::vector<ArmatureJoint>& joints) noexcept;
+        DLLEXPORT Armature(std::vector<ArmatureJoint>&& joints) noexcept;
+        DLLEXPORT const std::vector<ArmatureJoint>& getJoints() const noexcept;
 
     private:
-        std::vector<ArmatureBone> _bones;
+        std::vector<ArmatureJoint> _joints;
     };
 
     class Skinnable

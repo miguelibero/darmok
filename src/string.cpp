@@ -46,4 +46,33 @@ namespace darmok
 		sprintf(&dest.front(), "%02X", v);
 		return dest;
 	}
+
+	uint8_t StringUtils::hexToBin(char chr)
+	{
+		if (chr >= '0' && chr <= '9')
+		{
+			return chr - '0';
+		}
+		else if (chr >= 'A' && chr <= 'F')
+		{
+			return chr - 'A' + 10;
+		}
+		else if (chr >= 'a' && chr <= 'f')
+		{
+			return chr - 'a' + 10;
+		}
+		throw std::invalid_argument("Invalid hex character");
+	}
+
+	uint8_t StringUtils::hexToBin(std::string_view sv)
+	{
+		if (sv.length() != 2)
+		{
+			throw std::invalid_argument("Hex string must be exactly 2 characters long");
+		}
+
+		uint8_t high = hexToBin(sv[0]);
+		uint8_t low = hexToBin(sv[1]);
+		return (high << 4) | low;
+	}
 }
