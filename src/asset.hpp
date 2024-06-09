@@ -3,19 +3,16 @@
 #include <darmok/asset.hpp>
 #include <darmok/skeleton.hpp>
 #include <darmok/model.hpp>
+#include <darmok/vertex_layout.hpp>
+#include <darmok/image.hpp>
+#include <darmok/texture.hpp>
+#include <darmok/texture_atlas.hpp>
+#include <darmok/program.hpp>
+#include <darmok/program_standard.hpp>
+#include <darmok/data.hpp>
 
 #include <string>
-
 #include <bx/file.h>
-
-#include "image.hpp"
-#include "texture.hpp"
-#include "texture_atlas.hpp"
-#include "program.hpp"
-#include "program_standard.hpp"
-#include "vertex_layout.hpp"
-#include "data.hpp"
-#include "model.hpp"
 
 #ifdef DARMOK_OZZ
 #include "skeleton_ozz.hpp"

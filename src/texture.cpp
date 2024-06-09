@@ -1,6 +1,6 @@
-#include "texture.hpp"
-#include <glm/gtx/string_cast.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/data.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <stdexcept>
 
 namespace darmok

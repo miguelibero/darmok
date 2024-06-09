@@ -1,4 +1,3 @@
-#include "model.hpp"
 #include <darmok/model.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>

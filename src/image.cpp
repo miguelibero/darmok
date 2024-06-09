@@ -1,5 +1,5 @@
-#include "image.hpp"
 #include <bimg/decode.h>
+#include <darmok/image.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/color.hpp>
 #include <darmok/data.hpp>

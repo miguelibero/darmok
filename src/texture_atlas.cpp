@@ -1,4 +1,4 @@
-#include "texture_atlas.hpp"
+#include <darmok/texture_atlas.hpp>
 #include <darmok/data.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/anim.hpp>

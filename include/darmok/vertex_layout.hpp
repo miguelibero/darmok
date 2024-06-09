@@ -29,6 +29,17 @@ namespace darmok
         DLLEXPORT virtual ~IVertexLayoutLoader() = default;
         DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
     };
+
+    class IDataLoader;
+
+    class BinaryVertexLayoutLoader final : public IVertexLayoutLoader
+    {
+    public:
+        BinaryVertexLayoutLoader(IDataLoader& dataLoader) noexcept;
+        bgfx::VertexLayout operator()(std::string_view name) override;
+    private:
+        IDataLoader& _dataLoader;
+    };
 }
 
 namespace bgfx

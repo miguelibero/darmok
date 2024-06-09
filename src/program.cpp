@@ -1,4 +1,4 @@
-#include "program.hpp"
+#include <darmok/program.hpp>
 #include "embedded_shader.hpp"
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>

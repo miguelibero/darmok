@@ -11,6 +11,7 @@
 #include "assimp_model.hpp"
 #include <assimp/Importer.hpp>
 #include <bx/allocator.h>
+#include <nlohmann/json.hpp>
 
 static void version(const std::string& name)
 {

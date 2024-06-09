@@ -9,6 +9,12 @@
 #include <bx/bx.h>
 #include <glm/gtc/type_ptr.hpp>
 
+namespace bx
+{
+    struct FileReaderI;
+    struct AllocatorI;
+}
+
 namespace darmok
 {
     class Data;
@@ -143,5 +149,15 @@ namespace darmok
 
         DLLEXPORT virtual ~IDataLoader() = default;
         DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
+	};
+
+    class FileDataLoader final : public IDataLoader
+	{
+	public:
+		FileDataLoader(bx::FileReaderI* fileReader, const OptionalRef<bx::AllocatorI>& alloc = nullptr);
+		IDataLoader::result_type operator()(std::string_view filePath) override;
+	private:
+		bx::FileReaderI* _fileReader;
+		OptionalRef<bx::AllocatorI> _allocator;
 	};
 }
