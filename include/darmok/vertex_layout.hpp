@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <iostream>
+#include <unordered_map>
 
 namespace darmok
 {
@@ -16,7 +17,9 @@ namespace darmok
         static std::string getBgfxAttribTypeName(bgfx::AttribType::Enum val) noexcept;
 		static void readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept;
         static void writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout) noexcept;
-        static void readVaryingDef(std::string_view content, bgfx::VertexLayout& layout) noexcept;
+        static void readVaryingDef(std::istream& is, bgfx::VertexLayout& layout) noexcept;
+    private:
+        static std::unordered_map<std::string, bgfx::Attrib::Enum> _varyingDefAttrs;
     };
 
     class BX_NO_VTABLE IVertexLayoutLoader
@@ -33,7 +36,8 @@ namespace bgfx
     // TODO: check if bgfx::read/write VertexLayout can be accessed
     // https://github.com/bkaradzic/bgfx/blob/master/src/vertexlayout.h#L39
     // instead of creating custom serialization
-    template<class Archive>
+
+    template<typename Archive>
     void serialize(Archive& archive, VertexLayout& layout)
     {
         archive(

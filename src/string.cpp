@@ -40,6 +40,18 @@ namespace darmok
 		return v;
 	}
 
+	std::vector<std::string> StringUtils::splitWords(std::string_view sv) noexcept
+	{
+		std::vector<std::string> words;
+		std::stringstream ss;
+		ss << sv;
+		std::string word;
+		while (ss >> word) {
+			words.push_back(word);
+		}
+		return words;
+	}
+
 	std::string StringUtils::binToHex(uint8_t v) noexcept
 	{
 		std::string dest = "  ";
@@ -74,5 +86,27 @@ namespace darmok
 		uint8_t high = hexToBin(sv[0]);
 		uint8_t low = hexToBin(sv[1]);
 		return (high << 4) | low;
+	}
+
+	void StringUtils::ltrim(std::string& str) noexcept
+	{
+		auto itr = std::find_if(str.begin(), str.end(), [](auto ch) {
+			return !std::isspace(ch);
+		});
+		str.erase(str.begin(), itr);
+	}
+
+	void StringUtils::rtrim(std::string& str) noexcept
+	{
+		auto itr = std::find_if(str.rbegin(), str.rend(), [](auto ch) {
+			return !std::isspace(ch);
+		});
+		str.erase(itr.base(), str.end());
+	}
+
+	void StringUtils::trim(std::string& str) noexcept
+	{
+		ltrim(str);
+		rtrim(str);
 	}
 }

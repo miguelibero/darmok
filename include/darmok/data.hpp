@@ -124,8 +124,8 @@ namespace darmok
         DLLEXPORT void fill(const DataView& data) noexcept;
 
         [[nodiscard]] DLLEXPORT std::string to_string() const noexcept;
-        [[nodiscard]] DLLEXPORT static Data fromHex(std::string_view hex) noexcept;
-        [[nodiscard]] DLLEXPORT static Data fromFile(std::string_view path) noexcept;
+        [[nodiscard]] DLLEXPORT static Data fromHex(std::string_view hex);
+        [[nodiscard]] DLLEXPORT static Data fromFile(const std::string& path);
 
     private:
         void* _ptr;

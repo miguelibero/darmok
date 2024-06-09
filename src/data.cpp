@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <sstream>
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 
 namespace darmok
 {
@@ -337,7 +339,7 @@ namespace darmok
         return view().to_string();
     }
 
-    Data Data::fromHex(std::string_view hex) noexcept
+    Data Data::fromHex(std::string_view hex)
     {
         static const size_t elmLen = 2;
         Data data(hex.size() / elmLen);
@@ -350,9 +352,19 @@ namespace darmok
         return data;
     }
 
-    Data Data::fromFile(std::string_view path) noexcept
+    Data Data::fromFile(const std::string& path)
     {
-        Data data;
+        auto fh = fopen(path.c_str(), "rb");
+        if (fh == nullptr)
+        {
+            throw std::runtime_error("failed to open file");
+        }
+        fseek(fh, 0, SEEK_END);
+        long size = ftell(fh);
+        fseek(fh, 0, SEEK_SET);
+        Data data(size);
+        fread(data.ptr(), size, 1, fh);
+        fclose(fh);
         return data;
     }
 

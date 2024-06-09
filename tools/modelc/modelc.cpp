@@ -12,12 +12,12 @@
 #include <assimp/Importer.hpp>
 #include <bx/allocator.h>
 
-void version(const std::string& name)
+static void version(const std::string& name)
 {
 	std::cout << name << ": darmok model compiler tool." << std::endl;
 }
 
-void help(const std::string& name, const char* error = nullptr)
+static void help(const std::string& name, const char* error = nullptr)
 {
 	if (error)
 	{
@@ -35,24 +35,24 @@ void help(const std::string& name, const char* error = nullptr)
 	std::cout << "  -o <file path>       Output's file path (header, binary, json or xml depending on extension)." << std::endl;
 }
 
-void writeHeader(std::ostream& os, std::string_view varName, const darmok::Model& model)
+static void writeHeader(std::ostream& os, std::string_view varName, const darmok::Model& model)
 {
 	darmok::Data data;
 	darmok::DataOutputStream::write(data, model);
 	os << data.view().toHeader(varName);
 }
 
-std::string getPathExtension(const std::string& path) noexcept
+static std::string getPathExtension(const std::string& path) noexcept
 {
 	return std::filesystem::path(path).extension().string();
 }
 
-std::string getString(const char* ptr)
+static std::string getString(const char* ptr)
 {
 	return ptr == nullptr ? std::string() : std::string(ptr);
 }
 
-void writeOutput(const darmok::Model& model, const std::string& output, std::string headerVarName)
+static void writeOutput(const darmok::Model& model, const std::string& output, std::string headerVarName)
 {
 	auto outExt = getPathExtension(output);
 
@@ -103,9 +103,8 @@ void writeOutput(const darmok::Model& model, const std::string& output, std::str
 	}
 }
 
-int main(int argc, const char* argv[])
+static int run(const bx::CommandLine cmdLine)
 {
-    bx::CommandLine cmdLine(argc, argv);
 	auto path = getString(cmdLine.get(0));
 	auto name = std::filesystem::path(path).filename().string();
 
@@ -122,6 +121,8 @@ int main(int argc, const char* argv[])
 	}
 
 	auto input = getString(cmdLine.findOption('i', "input"));
+	input = "../samples/ozz/assets/BasicMotionsDummyModel.fbx";
+
 	if (input.empty())
 	{
 		help(name, "Input file path must be specified.");
@@ -149,8 +150,24 @@ int main(int argc, const char* argv[])
 	updater.run(model);
 
 	auto output = getString(cmdLine.findOption('o', "output"));
+	output = "samples/ozz/assets/BasicMotionsDummyModel.dml";
 	std::string headerVarName = getString(cmdLine.findOption('b', "bin2c"));
 
 	writeOutput(model, output, headerVarName);
 	return bx::kExitSuccess;
+}
+
+int main(int argc, const char* argv[])
+{
+	try
+	{
+		bx::CommandLine cmdLine(argc, argv);
+		return run(cmdLine);
+	}
+	catch (const std::exception& ex)
+	{
+		std::cerr << "exception thrown:" << std::endl;
+		std::cerr << ex.what() << std::endl;
+		return bx::kExitFailure;
+	}
 }

@@ -1,19 +1,19 @@
 #include <darmok/vertex_layout.hpp>
 #include <darmok/string.hpp>
 #include <darmok/data_stream.hpp>
-#include <cereal/archives/json.hpp>
-#include <cereal/archives/xml.hpp>
+#include <cereal/archives/binary.hpp>
+#include <nlohmann/json.hpp>
 #include <bx/commandline.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
-void version(const std::string& name)
+static void version(const std::string& name)
 {
 	std::cout << name << ": darmok vertex layout compiler tool." << std::endl;
 }
 
-void help(const std::string& name, const char* error = nullptr)
+static void help(const std::string& name, const char* error = nullptr)
 {
 	if (error)
 	{
@@ -32,24 +32,24 @@ void help(const std::string& name, const char* error = nullptr)
 	std::cout << "  -b, --bin2c <name>			Output's header variable name." << std::endl;
 }
 
-void writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout)
+static void writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout)
 {
 	darmok::Data data;
 	darmok::DataOutputStream::write(data, layout);
 	os << data.view().toHeader(varName);
 }
 
-std::string getPathExtension(const std::string& path) noexcept
+static std::string getPathExtension(const std::string& path) noexcept
 {
 	return std::filesystem::path(path).extension().string();
 }
 
-std::string getString(const char* ptr)
+static std::string getString(const char* ptr)
 {
 	return ptr == nullptr ? std::string() : std::string(ptr);
 }
 
-void writeOutput(const bgfx::VertexLayout& layout, const std::string& output, std::string headerVarName)
+static void writeOutput(const bgfx::VertexLayout& layout, const std::string& output, std::string headerVarName)
 {
 	auto outExt = getPathExtension(output);
 
@@ -82,15 +82,10 @@ void writeOutput(const bgfx::VertexLayout& layout, const std::string& output, st
 	}
 	else if (outExt == ".json")
 	{
+		nlohmann::ordered_json json;
+		darmok::VertexLayoutUtils::writeJson(json, layout);
 		std::ofstream os(output);
-		cereal::JSONOutputArchive archive(os);
-		archive(layout);
-	}
-	else if (outExt == ".xml")
-	{
-		std::ofstream os(output);
-		cereal::XMLOutputArchive archive(os);
-		archive(layout);
+		os << json.dump(2) << std::endl;
 	}
 	else
 	{
@@ -100,9 +95,8 @@ void writeOutput(const bgfx::VertexLayout& layout, const std::string& output, st
 	}
 }
 
-int main(int argc, const char* argv[])
+static int run(const bx::CommandLine cmdLine)
 {
-    bx::CommandLine cmdLine(argc, argv);
 	auto path = getString(cmdLine.get(0));
 	auto name = std::filesystem::path(path).filename().string();
 
@@ -131,16 +125,19 @@ int main(int argc, const char* argv[])
 	bgfx::VertexLayout layout;
 	layout.begin().end();
 
-	if (inExt == ".json")
+	if (inExt == ".varyingdef")
+	{
+		darmok::VertexLayoutUtils::readVaryingDef(ifs, layout);
+	}
+	else if (inExt == ".json")
 	{
 		auto json = nlohmann::ordered_json::parse(ifs);
 		darmok::VertexLayoutUtils::readJson(json, layout);
 	}
 	else
 	{
-		std::ostringstream content;
-		content << ifs.rdbuf();
-		darmok::VertexLayoutUtils::readVaryingDef(content.str(), layout);
+		cereal::BinaryInputArchive archive(ifs);
+		archive(layout);
 	}
 
 	auto output = getString(cmdLine.findOption('o', "output"));
@@ -148,4 +145,19 @@ int main(int argc, const char* argv[])
 
 	writeOutput(layout, output, headerVarName);
 	return bx::kExitSuccess;
+}
+
+int main(int argc, const char* argv[])
+{
+	try
+	{
+		bx::CommandLine cmdLine(argc, argv);
+		return run(cmdLine);
+	}
+	catch (const std::exception& ex)
+	{
+		std::cerr << "exception thrown:" << std::endl;
+		std::cerr << ex.what() << std::endl;
+		return bx::kExitFailure;
+	}
 }

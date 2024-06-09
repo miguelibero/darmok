@@ -17,6 +17,7 @@ namespace darmok
     std::string ModelNode::to_string() const noexcept
     {
         std::stringstream ss;
+        ss << "ModelNode:" << std::endl;
         cereal::JSONOutputArchive archive(ss);
         archive(*this);
         return ss.str();
@@ -25,6 +26,7 @@ namespace darmok
     std::string Model::to_string() const noexcept
     {
         std::stringstream ss;
+        ss << "Model:" << std::endl;
         cereal::JSONOutputArchive archive(ss);
         archive(*this);
         return ss.str();

@@ -1,6 +1,7 @@
 #include "vertex_layout.hpp"
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
+#include <darmok/data_stream.hpp>
 #include <darmok/utils.hpp>
 #include <sstream>
 #include <map>
@@ -212,9 +213,72 @@ namespace darmok
 		}
 	}
 
-    void VertexLayoutUtils::readVaryingDef(std::string_view content, bgfx::VertexLayout& layout) noexcept
+	std::unordered_map<std::string, bgfx::Attrib::Enum> VertexLayoutUtils::_varyingDefAttrs
+	{
+		{ "POSITION",		bgfx::Attrib::Position },
+		{ "NORMAL",			bgfx::Attrib::Normal },
+		{ "TANGENT",		bgfx::Attrib::Tangent },
+		{ "BITANGENT",		bgfx::Attrib::Bitangent },
+		{ "COLOR0",			bgfx::Attrib::Color0 },
+		{ "COLOR1",			bgfx::Attrib::Color1 },
+		{ "COLOR2",			bgfx::Attrib::Color2 },
+		{ "COLOR3",			bgfx::Attrib::Color3 },
+		{ "BLENDINDICES",	bgfx::Attrib::Indices },
+		{ "BLENDWEIGHT",	bgfx::Attrib::Weight },
+		{ "TEXCOORD0",		bgfx::Attrib::TexCoord0 },
+		{ "TEXCOORD1",		bgfx::Attrib::TexCoord1 },
+		{ "TEXCOORD2",		bgfx::Attrib::TexCoord2 },
+		{ "TEXCOORD3",		bgfx::Attrib::TexCoord3 },
+		{ "TEXCOORD4",		bgfx::Attrib::TexCoord4 },
+		{ "TEXCOORD5",		bgfx::Attrib::TexCoord5 },
+		{ "TEXCOORD6",		bgfx::Attrib::TexCoord6 },
+		{ "TEXCOORD7",		bgfx::Attrib::TexCoord7 },
+	};
+
+    void VertexLayoutUtils::readVaryingDef(std::istream& is, bgfx::VertexLayout& layout) noexcept
     {
-        // TODO: parse varyingdef to generate VertexLayout
+		const std::string attr_marker = "a_";
+		const std::string instr_end = ";";
+		const std::string comment = "//";
+		std::string line;
+		layout.begin();
+		while (std::getline(is, line))
+		{
+			StringUtils::trim(line);
+			if (line.starts_with(comment))
+			{
+				continue;
+			}
+			if (line.ends_with(instr_end))
+			{
+				line = line.substr(0, line.size() - instr_end.size());
+			}
+			auto words = StringUtils::splitWords(line);
+			if (words.size() < 4 || !words[1].starts_with(attr_marker))
+			{
+				continue;
+			}
+			auto num = StringUtils::getIntSuffix(words[0], "vec");
+			if (!num)
+			{
+				continue;
+			}
+			auto itr = _varyingDefAttrs.find(words[3]);
+			if (itr == _varyingDefAttrs.end())
+			{
+				continue;
+			}
+			auto attr = itr->second;
+			auto normalize = false;
+			auto type = bgfx::AttribType::Float;
+			if (attr >= bgfx::Attrib::Color0 && attr <= bgfx::Attrib::Color3)
+			{
+				type = bgfx::AttribType::Uint8;
+				normalize = true;
+			}
+			layout.add(attr, num.value(), type, normalize);
+		}
+		layout.end();
     }
 
 	BinaryVertexLayoutLoader::BinaryVertexLayoutLoader(IDataLoader& dataLoader) noexcept
@@ -226,17 +290,17 @@ namespace darmok
     {
         auto data = _dataLoader(name);
         bgfx::VertexLayout layout;
-        // TODO: deserialize VertexLayout
+		DataInputStream::read(data.view(), layout);
         return layout;
     }
 }
 
 std::string to_string(const bgfx::VertexLayout& layout) noexcept
 {
-	std::stringstream ss;
-	ss << "VertexLayout:" << std::endl;
 	nlohmann::ordered_json json;
 	darmok::VertexLayoutUtils::writeJson(json, layout);
+	std::stringstream ss;
+	ss << "VertexLayout:" << std::endl;
 	ss << json.dump(2) << std::endl;
 	return ss.str();
 }
