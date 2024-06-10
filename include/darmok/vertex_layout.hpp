@@ -11,16 +11,16 @@ namespace darmok
 {
     struct VertexLayoutUtils final
     {
-        static bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept;
-		static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
-        static std::string getBgfxAttribName(bgfx::Attrib::Enum val) noexcept;
-        static std::string getBgfxAttribTypeName(bgfx::AttribType::Enum val) noexcept;
-        static void readFile(const std::string& path, bgfx::VertexLayout& layout) noexcept;
-        static void writeFile(const std::string& path, const bgfx::VertexLayout& layout) noexcept;
-		static void readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept;
-        static void writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout) noexcept;
-        static void writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout) noexcept;
-        static void readVaryingDef(std::istream& is, bgfx::VertexLayout& layout) noexcept;
+        DLLEXPORT static [[nodiscard]] bgfx::Attrib::Enum getBgfxAttrib(const std::string_view name) noexcept;
+		DLLEXPORT static [[nodiscard]] bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
+        DLLEXPORT static [[nodiscard]] std::string getBgfxAttribName(bgfx::Attrib::Enum val) noexcept;
+        DLLEXPORT static [[nodiscard]] std::string getBgfxAttribTypeName(bgfx::AttribType::Enum val) noexcept;
+        DLLEXPORT static void readFile(const std::string& path, bgfx::VertexLayout& layout) noexcept;
+        DLLEXPORT static void writeFile(const std::string& path, const bgfx::VertexLayout& layout) noexcept;
+		DLLEXPORT static void readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept;
+        DLLEXPORT static void writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout) noexcept;
+        DLLEXPORT static void writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout) noexcept;
+        DLLEXPORT static void readVaryingDef(std::istream& is, bgfx::VertexLayout& layout) noexcept;
     private:
         static std::unordered_map<std::string, bgfx::Attrib::Enum> _varyingDefAttrs;
     };
@@ -30,7 +30,7 @@ namespace darmok
     public:
         using result_type = bgfx::VertexLayout;
         DLLEXPORT virtual ~IVertexLayoutLoader() = default;
-        DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
+        DLLEXPORT virtual [[nodiscard]] result_type operator()(std::string_view name) = 0;
     };
 
     class IDataLoader;
@@ -38,8 +38,8 @@ namespace darmok
     class BinaryVertexLayoutLoader final : public IVertexLayoutLoader
     {
     public:
-        BinaryVertexLayoutLoader(IDataLoader& dataLoader) noexcept;
-        bgfx::VertexLayout operator()(std::string_view name) override;
+        DLLEXPORT BinaryVertexLayoutLoader(IDataLoader& dataLoader) noexcept;
+        DLLEXPORT [[nodiscard]] bgfx::VertexLayout operator()(std::string_view name) override;
     private:
         IDataLoader& _dataLoader;
     };
@@ -52,7 +52,7 @@ namespace bgfx
     // instead of creating custom serialization
 
     template<typename Archive>
-    void serialize(Archive& archive, VertexLayout& layout)
+    DLLEXPORT void serialize(Archive& archive, VertexLayout& layout)
     {
         archive(
             layout.m_hash,
@@ -63,5 +63,5 @@ namespace bgfx
     }
 }
 
-std::string to_string(const bgfx::VertexLayout& layout) noexcept;
-std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout);
+DLLEXPORT std::string to_string(const bgfx::VertexLayout& layout) noexcept;
+DLLEXPORT std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout);

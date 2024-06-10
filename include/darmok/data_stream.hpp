@@ -25,7 +25,7 @@ namespace darmok
     class DataInputStream final : public std::istream
     {
     public:
-        DataInputStream(const DataView& data) noexcept;
+        DLLEXPORT DataInputStream(const DataView& data) noexcept;
 
         template<typename T>
         static void read(const DataView& data, T& val)
@@ -52,7 +52,7 @@ namespace darmok
     class DataOutputStream final : public std::ostream
     {
     public:
-        DataOutputStream(Data& data) noexcept;
+        DLLEXPORT DataOutputStream(Data& data) noexcept;
 
         template<typename T>
         static void write(Data& data, const T& val)
@@ -65,13 +65,13 @@ namespace darmok
         DataStreamBuffer _buffer;
     };
 
-    void save(cereal::BinaryOutputArchive& archive, const DataView& data);
-    void save(cereal::BinaryOutputArchive& archive, const Data& data);
-    void save(cereal::XMLOutputArchive& archive, const DataView& data);
-    void save(cereal::XMLOutputArchive& archive, const Data& data);
-    void save(cereal::JSONOutputArchive& archive, const DataView& data);
-    void save(cereal::JSONOutputArchive& archive, const Data& data);
-    void load(cereal::BinaryInputArchive& archive, Data& data);
-    void load(cereal::XMLInputArchive& archive, Data& data);
-    void load(cereal::JSONInputArchive& archive, Data& data);
+    DLLEXPORT void save(cereal::BinaryOutputArchive& archive, const DataView& data);
+    DLLEXPORT void save(cereal::BinaryOutputArchive& archive, const Data& data);
+    DLLEXPORT void save(cereal::XMLOutputArchive& archive, const DataView& data);
+    DLLEXPORT void save(cereal::XMLOutputArchive& archive, const Data& data);
+    DLLEXPORT void save(cereal::JSONOutputArchive& archive, const DataView& data);
+    DLLEXPORT void save(cereal::JSONOutputArchive& archive, const Data& data);
+    DLLEXPORT void load(cereal::BinaryInputArchive& archive, Data& data);
+    DLLEXPORT void load(cereal::XMLInputArchive& archive, Data& data);
+    DLLEXPORT void load(cereal::JSONInputArchive& archive, Data& data);
 }

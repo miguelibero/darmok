@@ -151,6 +151,7 @@ namespace darmok
     {
         _scene = scene;
         _cam = cam;
+        // TODO: maybe we should use u_model[X] but the bgfx API setTransform forces you to pass all at the same time
         _skinningUniform = bgfx::createUniform("u_skinning", bgfx::UniformType::Mat4, DARMOK_SKELETON_MAX_BONES);
     }
 

@@ -91,7 +91,7 @@ namespace darmok
 		}
 	}
 
-	const TextureConfig TextureConfig::getEmpty() noexcept
+	const TextureConfig& TextureConfig::getEmpty() noexcept
 	{
 		static TextureConfig empty{
 			glm::uvec2(0),
@@ -206,7 +206,7 @@ namespace darmok
 	{
 		if (isValid(_handle))
 		{
-			bgfx::setName(_handle, name.data(), name.size());
+			bgfx::setName(_handle, name.data(), int32_t(name.size()));
 		}
 		return *this;
 	}

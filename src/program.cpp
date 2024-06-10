@@ -51,7 +51,11 @@ namespace darmok
 		return _layout;
 	}
 
-	const DataProgramLoader::Suffixes DataProgramLoader::defaultSuffixes = Suffixes{ "_vertex", "_fragment", "_vertex_layout" };
+	const DataProgramLoader::Suffixes& DataProgramLoader::getDefaultSuffixes() noexcept
+	{
+		static const DataProgramLoader::Suffixes suffixes{ "_vertex", "_fragment", "_vertex_layout" };
+		return suffixes;
+	}
 
 	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader, IVertexLayoutLoader& vertexLayoutLoader, Suffixes suffixes) noexcept
 		: _dataLoader(dataLoader)

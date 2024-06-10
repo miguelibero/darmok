@@ -24,9 +24,9 @@ namespace darmok
     class Skeleton final
     {
     public:
-        Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept;
-        ~Skeleton();
-        std::string to_string() const noexcept;
+        DLLEXPORT Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept;
+        DLLEXPORT ~Skeleton();
+        DLLEXPORT std::string to_string() const noexcept;
         SkeletonImpl& getImpl();
         const SkeletonImpl& getImpl() const;
     private:
@@ -38,13 +38,13 @@ namespace darmok
     class SkeletalAnimation final
     {
     public:
-        SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept;
-        ~SkeletalAnimation();
+        DLLEXPORT SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept;
+        DLLEXPORT ~SkeletalAnimation();
         SkeletalAnimationImpl& getImpl();
         const SkeletalAnimationImpl& getImpl() const;
-        std::string to_string() const noexcept;
-        std::string_view getName() const noexcept;
-        float getDuration() const noexcept;
+        DLLEXPORT std::string to_string() const noexcept;
+        DLLEXPORT std::string_view getName() const noexcept;
+        DLLEXPORT float getDuration() const noexcept;
     private:
         std::unique_ptr<SkeletalAnimationImpl> _impl;
     };
@@ -158,14 +158,14 @@ namespace darmok
 
         using TransitionConfig = SkeletalAnimatorTransitionConfig;
 
-        void readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader);
+        DLLEXPORT void readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader);
 
-        SkeletalAnimatorConfig& addState(const StateConfig& config) noexcept;
-        SkeletalAnimatorConfig& addState(const std::shared_ptr<SkeletalAnimation>& animation, std::string_view name = "") noexcept;
-        SkeletalAnimatorConfig& addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept;
+        DLLEXPORT SkeletalAnimatorConfig& addState(const StateConfig& config) noexcept;
+        DLLEXPORT SkeletalAnimatorConfig& addState(const std::shared_ptr<SkeletalAnimation>& animation, std::string_view name = "") noexcept;
+        DLLEXPORT SkeletalAnimatorConfig& addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept;
 
-        std::optional<const StateConfig> getState(std::string_view name) const noexcept;
-        std::optional<const TransitionConfig> getTransition(std::string_view src, std::string_view dst) const noexcept;
+        DLLEXPORT std::optional<const StateConfig> getState(std::string_view name) const noexcept;
+        DLLEXPORT std::optional<const TransitionConfig> getTransition(std::string_view src, std::string_view dst) const noexcept;
 
     private:
         std::unordered_map<std::string, StateConfig> _states;
@@ -198,11 +198,11 @@ namespace darmok
     class BX_NO_VTABLE ISkeletalAnimatorListener
     {
     public:
-        virtual ~ISkeletalAnimatorListener() = default;
-        virtual void onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) {};
-        virtual void onAnimatorStateStarted(SkeletalAnimator& animator, std::string_view state) {};
-        virtual void onAnimatorTransitionFinished(SkeletalAnimator& animator) {};
-        virtual void onAnimatorTransitionStarted(SkeletalAnimator& animator) {};
+        DLLEXPORT virtual ~ISkeletalAnimatorListener() = default;
+        DLLEXPORT virtual void onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) {};
+        DLLEXPORT virtual void onAnimatorStateStarted(SkeletalAnimator& animator, std::string_view state) {};
+        DLLEXPORT virtual void onAnimatorTransitionFinished(SkeletalAnimator& animator) {};
+        DLLEXPORT virtual void onAnimatorTransitionStarted(SkeletalAnimator& animator) {};
     };
 
     class SkeletalAnimatorImpl;

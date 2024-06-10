@@ -40,7 +40,7 @@ namespace darmok
         }
         
     public:
-        DLLEXPORT VertexDataWriter(const bgfx::VertexLayout& layout, size_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
+        DLLEXPORT VertexDataWriter(const bgfx::VertexLayout& layout, uint32_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
         DLLEXPORT void load(Data&& data) noexcept;
 
         template<typename Iter, typename Filter>
@@ -141,22 +141,22 @@ namespace darmok
             });
         }
 
-        [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr, uint32_t index) const noexcept;
-        [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr) const noexcept;
+        DLLEXPORT [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr, uint32_t index) const noexcept;
+        DLLEXPORT [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr) const noexcept;
 
         DLLEXPORT Data&& finish() noexcept;
 
     private:
         const bgfx::VertexLayout& _layout;
-        size_t _size;
+        uint32_t _size;
         Data _data;
         std::unordered_set<bgfx::Attrib::Enum> _markedAll;
         std::unordered_map<bgfx::Attrib::Enum, std::unordered_set<uint32_t>> _marked;
 
         void* prepareData() noexcept;
-        bool write(bgfx::Attrib::Enum attr, uint32_t index, const std::array<float, 4>& finput, bool mark = true) noexcept;
+        DLLEXPORT bool write(bgfx::Attrib::Enum attr, uint32_t index, const std::array<float, 4>& finput, bool mark = true) noexcept;
 
-        void markOne(bgfx::Attrib::Enum attr, uint32_t index) noexcept;
-        void markAll(bgfx::Attrib::Enum attr) noexcept;
+        DLLEXPORT void markOne(bgfx::Attrib::Enum attr, uint32_t index) noexcept;
+        DLLEXPORT void markAll(bgfx::Attrib::Enum attr) noexcept;
     };
 }

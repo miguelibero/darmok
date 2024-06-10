@@ -24,12 +24,6 @@ if(MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
 endif()
 
-if(MSVC AND BUILD_SHARED_LIBS)
-  set(DLLEXPORT "__declspec(dllexport)")
-else()
-  set(DLLEXPORT "")
-endif()
-
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -67,6 +61,13 @@ option(DARMOK_BUILD_RMLUI "build darmok with RmlUI support" OFF)
 option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
 option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
 option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
+option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+
+if(MSVC AND BUILD_SHARED_LIBS)
+  set(DLLEXPORT "__declspec(dllexport)")
+else()
+  set(DLLEXPORT "")
+endif()
 
 set(SRC_DIR src)
 set(INCLUDE_BASE_DIR include)
@@ -96,27 +97,11 @@ set(CORE_SOURCES
   ${SRC_DIR}/image.cpp
   ${SRC_DIR}/shape.cpp
   ${SRC_DIR}/texture.cpp
-  ${SRC_DIR}/texture_atlas.cpp
   ${SRC_DIR}/mesh.cpp
   ${SRC_DIR}/vertex.cpp
   ${SRC_DIR}/vertex_layout.cpp
-
-  ${SRC_DIR}/app.cpp
-  ${SRC_DIR}/window.cpp
-  ${SRC_DIR}/input.cpp
-  ${SRC_DIR}/scene.cpp
-  ${SRC_DIR}/anim.cpp
-  ${SRC_DIR}/material.cpp
-  ${SRC_DIR}/program.cpp
-  ${SRC_DIR}/model.cpp
-  ${SRC_DIR}/transform.cpp
-  ${SRC_DIR}/skeleton.cpp
   ${SRC_DIR}/viewport.cpp
-  ${SRC_DIR}/camera.cpp
-  ${SRC_DIR}/light.cpp
-  ${SRC_DIR}/render.cpp
-  ${SRC_DIR}/render_forward.cpp
-  ${SRC_DIR}/render_deferred.cpp
+  ${SRC_DIR}/program.cpp
 )
 
 set(CORE_HEADERS
@@ -135,45 +120,65 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/image.hpp
   ${INCLUDE_DIR}/texture_fwd.hpp
   ${INCLUDE_DIR}/texture.hpp
-  ${INCLUDE_DIR}/texture_atlas.hpp
   ${INCLUDE_DIR}/vertex.hpp
   ${INCLUDE_DIR}/vertex_layout.hpp
   ${INCLUDE_DIR}/ext_loader.hpp
-
-  ${INCLUDE_DIR}/app_fwd.hpp
-  ${INCLUDE_DIR}/app.hpp
-  ${INCLUDE_DIR}/input_fwd.hpp
-  ${INCLUDE_DIR}/input.hpp
-  ${INCLUDE_DIR}/window.hpp
   ${INCLUDE_DIR}/collection.hpp
-  ${INCLUDE_DIR}/scene_fwd.hpp
-  ${INCLUDE_DIR}/scene.hpp
-  ${INCLUDE_DIR}/entity_filter.hpp
-  ${INCLUDE_DIR}/anim.hpp
-  ${INCLUDE_DIR}/material_fwd.hpp
-  ${INCLUDE_DIR}/material.hpp
+  ${INCLUDE_DIR}/viewport.hpp
   ${INCLUDE_DIR}/program_fwd.hpp
   ${INCLUDE_DIR}/program.hpp
-  ${INCLUDE_DIR}/transform.hpp
-  ${INCLUDE_DIR}/skeleton.hpp
-  ${INCLUDE_DIR}/viewport.hpp
-  ${INCLUDE_DIR}/camera.hpp
-  ${INCLUDE_DIR}/light.hpp
-  ${INCLUDE_DIR}/render.hpp
-  ${INCLUDE_DIR}/render_forward.hpp
-  ${INCLUDE_DIR}/render_deferred.hpp
-  ${INCLUDE_DIR}/model.hpp
 )
 
 set(SOURCES
   ${SRC_DIR}/platform.cpp
   ${SRC_DIR}/program_standard.cpp
   ${SRC_DIR}/asset.cpp
+
+  ${SRC_DIR}/app.cpp
+  ${SRC_DIR}/window.cpp
+  ${SRC_DIR}/input.cpp
+  ${SRC_DIR}/scene.cpp
+
+  ${SRC_DIR}/texture_atlas.cpp
+  ${SRC_DIR}/material.cpp
+  ${SRC_DIR}/model.cpp
+  ${SRC_DIR}/anim.cpp
+  ${SRC_DIR}/skeleton.cpp
+
+  ${SRC_DIR}/transform.cpp
+  ${SRC_DIR}/camera.cpp
+  ${SRC_DIR}/light.cpp
+  ${SRC_DIR}/render.cpp
+  ${SRC_DIR}/render_forward.cpp
+  ${SRC_DIR}/render_deferred.cpp
 )
 
 set(HEADERS
   ${INCLUDE_DIR}/program_standard.hpp
   ${INCLUDE_DIR}/asset.hpp
+
+  ${INCLUDE_DIR}/app_fwd.hpp
+  ${INCLUDE_DIR}/app.hpp
+  ${INCLUDE_DIR}/input_fwd.hpp
+  ${INCLUDE_DIR}/input.hpp
+  ${INCLUDE_DIR}/window.hpp
+  ${INCLUDE_DIR}/scene_fwd.hpp
+  ${INCLUDE_DIR}/scene.hpp
+
+  ${INCLUDE_DIR}/texture_atlas.hpp
+  ${INCLUDE_DIR}/anim.hpp
+  ${INCLUDE_DIR}/material_fwd.hpp
+  ${INCLUDE_DIR}/material.hpp
+  ${INCLUDE_DIR}/skeleton.hpp
+  ${INCLUDE_DIR}/model.hpp
+
+  ${INCLUDE_DIR}/entity_filter.hpp
+  ${INCLUDE_DIR}/transform.hpp
+  ${INCLUDE_DIR}/camera.hpp
+  ${INCLUDE_DIR}/light.hpp
+  ${INCLUDE_DIR}/render.hpp
+  ${INCLUDE_DIR}/render_forward.hpp
+  ${INCLUDE_DIR}/render_deferred.hpp
 )
 
 set(SCRIPTING_SOURCES)
@@ -274,6 +279,7 @@ endif()
 set(CORE_LIB_NAME "darmok-core")
 add_library(
   ${CORE_LIB_NAME}
+  STATIC
   ${CORE_SOURCES}
 )
 target_sources(${CORE_LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${CORE_HEADERS})

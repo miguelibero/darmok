@@ -11,7 +11,6 @@
 #include <darmok/color.hpp>
 #include <darmok/texture_fwd.hpp>
 #include <darmok/texture_atlas_fwd.hpp>
-#include <darmok/material_fwd.hpp>
 #include <darmok/mesh_fwd.hpp>
 
 namespace darmok

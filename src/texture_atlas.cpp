@@ -4,7 +4,6 @@
 #include <darmok/anim.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/texture.hpp>
-#include <darmok/material.hpp>
 #include <darmok/string.hpp>
 #include <darmok/shape.hpp>
 

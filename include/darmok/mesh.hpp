@@ -36,12 +36,12 @@ namespace darmok
         using Config = MeshConfig;
 
         virtual ~IMesh() = default;
-        DLLEXPORT virtual std::string to_string() const noexcept = 0;
+        DLLEXPORT virtual [[nodiscard]] std::string to_string() const noexcept = 0;
         DLLEXPORT virtual void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const = 0;
-        DLLEXPORT virtual const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
+        DLLEXPORT virtual [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
 
-        static std::shared_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config = {}) noexcept;
-        static std::shared_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config = {}) noexcept;
+        DLLEXPORT static [[nodiscard]] std::shared_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config = {}) noexcept;
+        DLLEXPORT static [[nodiscard]] std::shared_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config = {}) noexcept;
     };
 
     class Mesh final : public IMesh
@@ -57,12 +57,12 @@ namespace darmok
         Mesh(const Mesh& other) = delete;
         Mesh& operator=(const Mesh& other) = delete;
 
-        bgfx::VertexBufferHandle getVertexHandle() const noexcept;
-        bgfx::IndexBufferHandle getIndexHandle() const noexcept;
+        DLLEXPORT [[nodiscard]] bgfx::VertexBufferHandle getVertexHandle() const noexcept;
+        DLLEXPORT [[nodiscard]] bgfx::IndexBufferHandle getIndexHandle() const noexcept;
 
-        DLLEXPORT std::string to_string() const noexcept override;
+        DLLEXPORT [[nodiscard]] std::string to_string() const noexcept override;
         DLLEXPORT void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const override;
-        DLLEXPORT const bgfx::VertexLayout& getVertexLayout() const noexcept override;
+        DLLEXPORT [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
     private:
         bgfx::VertexLayout _layout;
         bgfx::VertexBufferHandle _vertexBuffer;
@@ -84,15 +84,15 @@ namespace darmok
         DynamicMesh(const DynamicMesh& other) = delete;
         Mesh& operator=(const DynamicMesh& other) = delete;
 
-        bgfx::DynamicVertexBufferHandle getVertexHandle() const noexcept;
-        bgfx::DynamicIndexBufferHandle getIndexHandle() const noexcept;
+        DLLEXPORT [[nodiscard]] bgfx::DynamicVertexBufferHandle getVertexHandle() const noexcept;
+        DLLEXPORT [[nodiscard]] bgfx::DynamicIndexBufferHandle getIndexHandle() const noexcept;
 
         DLLEXPORT void updateVertices(const DataView& data, size_t offset = 0) noexcept;
         DLLEXPORT void updateIndices(const DataView& data, size_t offset = 0) noexcept;
 
-        DLLEXPORT std::string to_string() const noexcept override;
+        DLLEXPORT [[nodiscard]] std::string to_string() const noexcept override;
         DLLEXPORT void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const override;
-        DLLEXPORT const bgfx::VertexLayout& getVertexLayout() const noexcept override;
+        DLLEXPORT [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
     private:
         bgfx::VertexLayout _layout;
         bgfx::DynamicVertexBufferHandle _vertexBuffer;
@@ -113,9 +113,9 @@ namespace darmok
         TransientMesh(const Mesh& other) = delete;
         TransientMesh& operator=(const TransientMesh& other) = delete;
 
-        DLLEXPORT std::string to_string() const noexcept override;
+        DLLEXPORT [[nodiscard]] std::string to_string() const noexcept override;
         DLLEXPORT void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const override;
-        DLLEXPORT const bgfx::VertexLayout& getVertexLayout() const noexcept override;
+        DLLEXPORT [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
     private:
         bgfx::VertexLayout _layout;
         bgfx::TransientVertexBuffer _vertexBuffer;
@@ -156,19 +156,19 @@ namespace darmok
         std::optional<bgfx::VertexLayout> vertexLayout;
 
         DLLEXPORT MeshCreator(std::optional<bgfx::VertexLayout> vertexLauout = std::nullopt) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createMesh(const MeshData& meshData) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createCube() noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createCube(const Cube& cube) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createSphere(int lod = 32) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createRectangle() noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createRectangle(const Rectangle& rect) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createLineRectangle() noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createLineRectangle(const Rectangle& rect) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createRay(const Ray& ray) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createLine(const Line& line) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createLines(const std::vector<Line>& lines) noexcept;
-        DLLEXPORT std::shared_ptr<IMesh> createBone() noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createMesh(const MeshData& meshData) noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createCube() noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createCube(const Cube& cube) noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createSphere(int lod = 32) noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createRectangle() noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createRectangle(const Rectangle& rect) noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createLineRectangle() noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createLineRectangle(const Rectangle& rect) noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createRay(const Ray& ray) noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createLine(const Line& line) noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createLines(const std::vector<Line>& lines) noexcept;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<IMesh> createBone() noexcept;
 
     private:
         const static MeshData _rectangleMeshData;

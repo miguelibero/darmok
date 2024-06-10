@@ -5,7 +5,11 @@
 
 namespace darmok
 {
-    const glm::uvec4 Viewport::standardValues(0, 0, 1, 1);
+    const glm::uvec4& Viewport::getStandardValues()
+    {
+        static const glm::uvec4 values(0, 0, 1, 1);
+        return values;
+    }
 
     Viewport::Viewport(const glm::uvec2& size, const glm::uvec2& origin) noexcept
         : size(size), origin(origin)

@@ -24,8 +24,8 @@ namespace darmok
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
 
-		[[nodiscard]] DLLEXPORT const bgfx::ProgramHandle& getHandle() const noexcept;
-		[[nodiscard]] DLLEXPORT const bgfx::VertexLayout& getVertexLayout() const noexcept;
+		[[nodiscard]] DLLEXPORT [[nodiscard]] const bgfx::ProgramHandle& getHandle() const noexcept;
+		[[nodiscard]] DLLEXPORT [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
 	private:
 		bgfx::ProgramHandle _handle;
 		bgfx::VertexLayout _layout;
@@ -37,7 +37,7 @@ namespace darmok
 		using result_type = std::shared_ptr<Program>;
 
 		DLLEXPORT virtual ~IProgramLoader() = default;
-		DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
+		DLLEXPORT virtual [[nodiscard]] result_type operator()(std::string_view name) = 0;
 	};
 
 	class IDataLoader;
@@ -46,17 +46,17 @@ namespace darmok
     class DataProgramLoader final : public IProgramLoader
 	{
 	public:
-		struct Suffixes
+		struct Suffixes final
 		{
 			std::string vertex;
 			std::string fragment;
 			std::string vertexLayout;
 		};
 
-		static const Suffixes defaultSuffixes;
+		DLLEXPORT static const Suffixes& getDefaultSuffixes() noexcept;
 
-		DataProgramLoader(IDataLoader& dataLoader, IVertexLayoutLoader& vertexLayoutLoader, Suffixes suffixes = defaultSuffixes) noexcept;
-		std::shared_ptr<Program> operator()(std::string_view name) override;
+		DLLEXPORT DataProgramLoader(IDataLoader& dataLoader, IVertexLayoutLoader& vertexLayoutLoader, Suffixes suffixes = getDefaultSuffixes()) noexcept;
+		DLLEXPORT [[nodiscard]] std::shared_ptr<Program> operator()(std::string_view name) override;
 	private:
 		IDataLoader& _dataLoader;
 		IVertexLayoutLoader& _vertexLayoutLoader;

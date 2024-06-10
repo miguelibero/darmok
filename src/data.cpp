@@ -145,7 +145,7 @@ namespace darmok
         void* ptr;
         offset = fixOffset(offset, ptr);
         size = fixSize(size, offset);
-        return bgfx::makeRef(ptr, size);
+        return bgfx::makeRef(ptr, uint32_t(size));
     }
 
     const bgfx::Memory* DataView::copyMem(size_t offset, size_t size) const noexcept
@@ -153,7 +153,7 @@ namespace darmok
         void* ptr;
         offset = fixOffset(offset, ptr);
         size = fixSize(size, offset);
-        return bgfx::copy(ptr, size);
+        return bgfx::copy(ptr, uint32_t(size));
     }
 
     size_t DataView::fixOffset(size_t offset, void*& ptr) const noexcept
@@ -363,8 +363,9 @@ namespace darmok
 
     Data Data::fromFile(const std::string& path)
     {
-        auto fh = fopen(path.c_str(), "rb");
-        if (fh == nullptr)
+        FILE* fh;
+        auto err = fopen_s(&fh, path.c_str(), "rb");
+        if (err)
         {
             throw std::runtime_error("failed to open file");
         }
@@ -459,7 +460,8 @@ namespace darmok
 
     Data FileDataLoader::operator()(std::string_view filePath)
     {
-        if (!bx::open(&_fileReader, bx::StringView(filePath.data(), filePath.size())))
+        bx::StringView bxFilePath(filePath.data(), int32_t(filePath.size()));
+        if (!bx::open(&_fileReader, bxFilePath))
         {
             throw std::runtime_error("failed to load data from file.");
         }

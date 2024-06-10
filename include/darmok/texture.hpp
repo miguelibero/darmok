@@ -30,10 +30,10 @@ namespace darmok
 			archive(size, format, type, depth, mips, layers);
 		}
 
-		const static TextureConfig getEmpty() noexcept;
+		DLLEXPORT static [[nodiscard]] const TextureConfig& getEmpty() noexcept;
 
-		std::string to_string() const noexcept;
-		bgfx::TextureInfo getInfo() const noexcept;
+		DLLEXPORT [[nodiscard]] std::string to_string() const noexcept;
+		DLLEXPORT [[nodiscard]] bgfx::TextureInfo getInfo() const noexcept;
 	};
 
 	class Data;
@@ -61,19 +61,19 @@ namespace darmok
 		DLLEXPORT void update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin = glm::uvec2(0), uint16_t layer = 0, uint8_t mip = 0);
 		DLLEXPORT uint32_t read(Data& data) noexcept;
 
-		DLLEXPORT std::string to_string() const noexcept;
-		DLLEXPORT const bgfx::TextureHandle& getHandle() const noexcept;
-		DLLEXPORT TextureType getType() const noexcept;
-		DLLEXPORT const glm::uvec2& getSize() const noexcept;
-		DLLEXPORT bgfx::TextureFormat::Enum getFormat() const noexcept;
-		DLLEXPORT uint16_t getLayerCount() const noexcept;
-		DLLEXPORT uint16_t getDepth() const noexcept;
-		DLLEXPORT bool hasMips() const noexcept;
-		DLLEXPORT uint32_t getStorageSize() const noexcept;
-		DLLEXPORT uint8_t getMipsCount() const noexcept;
-		DLLEXPORT uint8_t getBitsPerPixel() const noexcept;
+		DLLEXPORT [[nodiscard]] std::string to_string() const noexcept;
+		DLLEXPORT [[nodiscard]] const bgfx::TextureHandle& getHandle() const noexcept;
+		DLLEXPORT [[nodiscard]] TextureType getType() const noexcept;
+		DLLEXPORT [[nodiscard]] const glm::uvec2& getSize() const noexcept;
+		DLLEXPORT [[nodiscard]] bgfx::TextureFormat::Enum getFormat() const noexcept;
+		DLLEXPORT [[nodiscard]] uint16_t getLayerCount() const noexcept;
+		DLLEXPORT [[nodiscard]] uint16_t getDepth() const noexcept;
+		DLLEXPORT [[nodiscard]] bool hasMips() const noexcept;
+		DLLEXPORT [[nodiscard]] uint32_t getStorageSize() const noexcept;
+		DLLEXPORT [[nodiscard]] uint8_t getMipsCount() const noexcept;
+		DLLEXPORT [[nodiscard]] uint8_t getBitsPerPixel() const noexcept;
 
-		Texture& setName(std::string_view name) noexcept;
+		DLLEXPORT Texture& setName(std::string_view name) noexcept;
 
 	private:
 		bgfx::TextureHandle _handle;
@@ -85,7 +85,7 @@ namespace darmok
 	public:
 		using result_type = std::shared_ptr<Texture>;
 		DLLEXPORT virtual ~ITextureLoader() = default;
-		DLLEXPORT virtual result_type operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) = 0;
+		DLLEXPORT virtual [[nodiscard]] result_type operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) = 0;
 	};
 
 	class IImageLoader;
@@ -93,8 +93,8 @@ namespace darmok
 	class ImageTextureLoader final : public ITextureLoader
 	{
 	public:
-		ImageTextureLoader(IImageLoader& imgLoader) noexcept;
-		std::shared_ptr<Texture> operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) noexcept override;
+		DLLEXPORT ImageTextureLoader(IImageLoader& imgLoader) noexcept;
+		DLLEXPORT [[nodiscard]] result_type operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) noexcept override;
 	private:
 		IImageLoader& _imgLoader;
 	};
@@ -104,7 +104,7 @@ namespace darmok
 	public:
 		using result_type = std::shared_ptr<Texture>;
 		DLLEXPORT ColorTextureLoader(bx::AllocatorI& alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
-		DLLEXPORT result_type operator()(const Color& color) noexcept;
+		DLLEXPORT [[nodiscard]] result_type operator()(const Color& color) noexcept;
 	private:
 		bx::AllocatorI& _alloc;
 		glm::uvec2 _size;

@@ -314,7 +314,7 @@ namespace darmok
 
     Ray Camera::viewportPointToRay(const glm::vec3& point) const noexcept
     {
-        return Ray::unproject(point, getModelMatrix(), _proj, Viewport::standardValues);
+        return Ray::unproject(point, getModelMatrix(), _proj, Viewport::getStandardValues());
     }
 
     glm::vec3 Camera::worldToScreenPoint(const glm::vec3& point) const noexcept
@@ -324,7 +324,7 @@ namespace darmok
 
     glm::vec3 Camera::worldToViewportPoint(const glm::vec3& point) const noexcept
     {
-        return glm::project(point, getModelMatrix(), _proj, Viewport::standardValues);
+        return glm::project(point, getModelMatrix(), _proj, Viewport::getStandardValues());
     }
 
     glm::vec3 Camera::screenToWorldPoint(const glm::vec3& point) const noexcept
@@ -334,7 +334,7 @@ namespace darmok
 
     glm::vec3 Camera::viewportToWorldPoint(const glm::vec3& point) const noexcept
     {
-        return glm::unProject(point, getModelMatrix(), _proj, Viewport::standardValues);
+        return glm::unProject(point, getModelMatrix(), _proj, Viewport::getStandardValues());
     }
 
     glm::vec3 Camera::viewportToScreenPoint(const glm::vec3& point) const noexcept

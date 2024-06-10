@@ -265,7 +265,7 @@ namespace darmok
         using result_type = std::shared_ptr<Model>;
 
         DLLEXPORT virtual ~IModelLoader() = default;
-		DLLEXPORT virtual result_type operator()(std::string_view name) = 0;
+		DLLEXPORT virtual [[nodiscard]] result_type operator()(std::string_view name) = 0;
 	};
 
     class IDataLoader;
@@ -274,7 +274,7 @@ namespace darmok
 	{
 	public:
         BinaryModelLoader(IDataLoader& dataLoader) noexcept;
-        DLLEXPORT std::shared_ptr<Model> operator()(std::string_view name) override;
+        DLLEXPORT [[nodiscard]] std::shared_ptr<Model> operator()(std::string_view name) override;
     private:
         IDataLoader& _dataLoader;
 	};
