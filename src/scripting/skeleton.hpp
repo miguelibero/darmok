@@ -32,32 +32,7 @@ namespace darmok
         std::shared_ptr<SkeletalAnimation> _anim;
     };
 
-    struct SkeletalAnimatorStateConfig;
-    struct SkeletalAnimatorTransitionConfig;
-
-    class LuaSkeletalAnimatorStateConfig final
-    {
-    };
-
     struct SkeletalAnimatorConfig;
-
-    class LuaSkeletalAnimatorConfig final
-    {
-    public:
-        using StateConfig = LuaSkeletalAnimatorStateConfig;
-        using TransitionConfig = SkeletalAnimatorTransitionConfig;
-        LuaSkeletalAnimatorConfig& addState(StateConfig& config) noexcept;
-        LuaSkeletalAnimatorConfig& addState(const LuaSkeletalAnimation& animation) noexcept;
-        LuaSkeletalAnimatorConfig& addTransition(const std::string& src, const std::string& dst, const TransitionConfig& config) noexcept;
-
-        std::optional<const StateConfig> getState(std::string_view name) const noexcept;
-        std::optional<const TransitionConfig> getTransition(std::string_view src, std::string_view dst) const noexcept;
-
-        const SkeletalAnimatorConfig& getReal() const noexcept;
-    private:
-        std::shared_ptr<SkeletalAnimatorConfig> _config;
-    };
-
     class SkeletalAnimator;
     class LuaEntity;
     class LuaScene;
@@ -65,7 +40,7 @@ namespace darmok
     class LuaSkeletalAnimator final
 	{
     public:
-        using Config = LuaSkeletalAnimatorConfig;
+        using Config = SkeletalAnimatorConfig;
         LuaSkeletalAnimator(SkeletalAnimator& animator) noexcept;
         
         static LuaSkeletalAnimator addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const Config& config) noexcept;

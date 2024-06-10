@@ -64,7 +64,7 @@ namespace darmok
 
     LuaSkeletalAnimator LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const Config& config) noexcept
     {
-        return entity.addComponent<SkeletalAnimator>(skel.getReal(), config.getReal());
+        return entity.addComponent<SkeletalAnimator>(skel.getReal(), config);
     }
 
     std::optional<LuaSkeletalAnimator> LuaSkeletalAnimator::getEntityComponent(LuaEntity& entity) noexcept
