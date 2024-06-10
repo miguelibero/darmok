@@ -12,8 +12,10 @@
 #include "generated/shaders/forward_pbr.vertex.h"
 #include "generated/shaders/forward_pbr.fragment.h"
 #include "generated/shaders/forward_pbr.vlayout.h"
+#include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/program.hpp>
+#include <darmok/vertex_layout.hpp>
 #include <stdexcept>
 
 namespace darmok
@@ -30,6 +32,21 @@ namespace darmok
 	StandardProgramLoader::result_type StandardProgramLoader::operator()(StandardProgramType type) noexcept
 	{
 		return (*_impl)(type);
+	}
+
+	std::optional<StandardProgramType> StandardProgramLoader::getType(std::string_view name) noexcept
+	{
+		return StandardProgramLoaderImpl::getType(name);
+	}
+
+	bgfx::VertexLayout StandardProgramLoader::getVertexLayout(StandardProgramType type) noexcept
+	{
+		return StandardProgramLoaderImpl::getVertexLayout(type);
+	}
+
+	static bgfx::VertexLayout getVertexLayout(StandardProgramType type) noexcept
+	{
+		return StandardProgramLoader::getVertexLayout(type);
 	}
 
 	const bgfx::EmbeddedShader StandardProgramLoaderImpl::_embeddedShaders[] =
@@ -61,6 +78,38 @@ namespace darmok
 		{StandardProgramType::ForwardPhysical, DataView::fromArray(forward_pbr_vlayout) },
 	};
 
+	std::optional<StandardProgramType> StandardProgramLoaderImpl::getType(std::string_view name) noexcept
+	{
+		if (name == "Gui")
+		{
+			return StandardProgramType::Gui;
+		}
+		if (name == "Unlit")
+		{
+			return StandardProgramType::Unlit;
+		}
+		if (name == "ForwardPhong")
+		{
+			return StandardProgramType::ForwardPhong;
+		}
+		if (name == "ForwardPhysical")
+		{
+			return StandardProgramType::ForwardPhysical;
+		}
+		return std::nullopt;
+	}
+
+	bgfx::VertexLayout StandardProgramLoaderImpl::getVertexLayout(StandardProgramType type) noexcept
+	{
+		auto itr = _embeddedShaderVertexLayouts.find(type);
+		bgfx::VertexLayout layout;
+		if (itr != _embeddedShaderVertexLayouts.end())
+		{
+			DataInputStream::read(itr->second, layout);
+		}
+		return layout;
+	}
+
 	std::shared_ptr<Program> StandardProgramLoaderImpl::operator()(StandardProgramType type) const noexcept
 	{
 		auto itr = _embeddedShaderNames.find(type);
@@ -72,7 +121,8 @@ namespace darmok
 		if (itr2 == _embeddedShaderVertexLayouts.end())
 		{
 			return nullptr;
-		};
+		}
+		auto layout = getVertexLayout(type);
 		return std::make_shared<Program>(itr->second, _embeddedShaders, itr2->second);
 	}
 }

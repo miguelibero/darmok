@@ -138,6 +138,7 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/texture_atlas.hpp
   ${INCLUDE_DIR}/vertex.hpp
   ${INCLUDE_DIR}/vertex_layout.hpp
+  ${INCLUDE_DIR}/ext_loader.hpp
 
   ${INCLUDE_DIR}/app_fwd.hpp
   ${INCLUDE_DIR}/app.hpp
@@ -226,7 +227,13 @@ if(DARMOK_BUILD_RMLUI)
 endif()
 
 if(DARMOK_BUILD_OZZ)
+  list(APPEND HEADERS ${INCLUDE_DIR}/skeleton_ozz.hpp)
   list(APPEND SOURCES ${SRC_DIR}/skeleton_ozz.cpp)
+endif()
+
+if(DARMOK_BUILD_ASSIMP)
+  list(APPEND HEADERS ${INCLUDE_DIR}/model_assimp.hpp)
+  list(APPEND SOURCES ${SRC_DIR}/model_assimp.cpp)
 endif()
 
 if(DARMOK_BUILD_SCRIPTING_EXE)
@@ -427,18 +434,18 @@ target_link_libraries(${LIB_NAME} PUBLIC EnTT::EnTT)
 # assimp
 if(DARMOK_BUILD_ASSIMP)
   find_package(assimp CONFIG REQUIRED)
+  target_link_libraries(${LIB_NAME} PRIVATE assimp::assimp)
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_ASSIMP)
 
   set(MODELC_NAME "darmok-modelc")
   set(MODELC_SRC_DIR "tools/modelc")
   add_executable(${MODELC_NAME}
     ${MODELC_SRC_DIR}/modelc.cpp
-    ${MODELC_SRC_DIR}/assimp.cpp
-    ${MODELC_SRC_DIR}/assimp_model.cpp
   )
-  target_link_libraries(${MODELC_NAME} ${LIB_NAME} assimp::assimp)
+
+  target_link_libraries(${MODELC_NAME} ${LIB_NAME})
   add_executable(darmok::modelc ALIAS ${MODELC_NAME})
   set_target_properties(${MODELC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
-
 endif()
 
 if(DARMOK_BUILD_JOLT)
@@ -461,7 +468,6 @@ if(DARMOK_BUILD_SCRIPTING)
   set(SOL_DEFINES SOL_ALL_SAFETIES_ON SOL_EXCEPTIONS_SAFE_PROPAGATION)
   target_compile_definitions(sol2 INTERFACE ${SOL_DEFINES})
   target_link_libraries(${LIB_NAME} PRIVATE sol2)
-  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_SCRIPTING)
   list(APPEND VCPKG_MANIFEST_FEATURES "scripting")
   add_library(sol2::sol2 ALIAS sol2)
 endif()

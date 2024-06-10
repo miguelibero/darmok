@@ -1,4 +1,5 @@
 #include <darmok/data_stream.hpp>
+#include <darmok/data.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/xml.hpp>
 

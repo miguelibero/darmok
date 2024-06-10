@@ -19,6 +19,10 @@ namespace darmok
 	class ISkeletalAnimatorConfigLoader;
 	class IModelLoader;
 
+#ifdef DARMOK_ASSIMP
+	class AssimpModelLoader;
+#endif
+
 	class AssetContext final
 	{
 	public:
@@ -33,12 +37,14 @@ namespace darmok
 		[[nodiscard]] DLLEXPORT ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] DLLEXPORT ColorTextureLoader& getColorTextureLoader() noexcept;
 		[[nodiscard]] DLLEXPORT ISkeletonLoader& getSkeletonLoader() noexcept;
-#ifdef DARMOK_OZZ
 		[[nodiscard]] DLLEXPORT ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
 		[[nodiscard]] DLLEXPORT ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
-#endif
 		[[nodiscard]] DLLEXPORT IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] DLLEXPORT bx::AllocatorI& getAllocator() noexcept;
+
+#ifdef DARMOK_ASSIMP
+		[[nodiscard]] DLLEXPORT AssimpModelLoader& getAssimpModelLoader() noexcept;
+#endif
 
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;

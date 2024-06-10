@@ -96,27 +96,27 @@ namespace darmok
         }
     }
 
-    std::shared_ptr<Texture> ModelSceneConfigurer::loadTexture(const std::shared_ptr<ModelTexture>& modelTex) noexcept
+    std::shared_ptr<Texture> ModelSceneConfigurer::loadTexture(const std::shared_ptr<ModelImage>& modelImg) noexcept
     {
-        if (!modelTex)
+        if (!modelImg)
         {
             return nullptr;
         }
-        auto itr = _textures.find(modelTex);
+        auto itr = _textures.find(modelImg);
         if (itr != _textures.end())
         {
             return itr->second;
         }
         std::shared_ptr<Texture> tex;
-        if (modelTex->data.empty())
+        if (modelImg->data.empty())
         {
-            tex = _config.assets.getTextureLoader()(modelTex->name);
+            tex = _config.assets.getTextureLoader()(modelImg->name);
         }
         else
         {
-            tex = std::make_shared<Texture>(modelTex->data.view(), modelTex->config);
+            tex = std::make_shared<Texture>(modelImg->data.view(), modelImg->config);
         }
-        _textures.emplace(modelTex, tex);
+        _textures.emplace(modelImg, tex);
         return tex;
     }
 
@@ -143,7 +143,11 @@ namespace darmok
         auto mat = std::make_shared<Material>(prog);
         for (auto& elm : modelMat->textures)
         {
-            mat->setTexture(elm.first, loadTexture(elm.second));
+            // TODO: support for multiple textures of the same type
+            if (!elm.second.empty())
+            {
+                mat->setTexture(elm.first, loadTexture(elm.second.at(0).image));
+            }
         }
         for (auto& elm : modelMat->colors)
         {
@@ -230,7 +234,7 @@ namespace darmok
     std::shared_ptr<Model> BinaryModelLoader::operator()(std::string_view name)
     {
         auto data = _dataLoader(name);
-        auto model = std::shared_ptr<Model>();
+        auto model = std::make_shared<Model>();
         // TODO: how to pass bx::AllocatorI to the serialization process?
         DataInputStream::read(data.view(), *model);
         return model;

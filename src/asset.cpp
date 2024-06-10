@@ -3,6 +3,14 @@
 #include <filesystem>
 #include <bx/filepath.h>
 
+#ifdef DARMOK_OZZ
+#include <darmok/skeleton_ozz.hpp>
+#endif
+
+#ifdef DARMOK_ASSIMP
+#include <darmok/model_assimp.hpp>
+#endif
+
 namespace darmok
 {
 	static std::string addBasePath(const std::string& path, const std::string& basePath) noexcept
@@ -24,7 +32,7 @@ namespace darmok
 	bool FileReader::open(const bx::FilePath& filePath, bx::Error* err)
 	{
 		auto absFilePath = addBasePath(filePath.getCPtr(), _basePath);
-		return super::open(absFilePath.c_str(), err);
+		return bx::FileReader::open(absFilePath.c_str(), err);
 	}
 
 	void FileWriter::setBasePath(const std::string& basePath) noexcept
@@ -35,25 +43,40 @@ namespace darmok
 	bool FileWriter::open(const bx::FilePath& filePath, bool append, bx::Error* err)
 	{
 		auto absFilePath = addBasePath(filePath.getCPtr(), _basePath);
-		return super::open(absFilePath.c_str(), append, err);
+		return bx::FileWriter::open(absFilePath.c_str(), append, err);
 	}
 
 	AssetContextImpl::AssetContextImpl()
-		: _dataLoader(&_fileReader, &_allocator)
+		: _dataLoader(_fileReader, _allocator)
 		, _imageLoader(_dataLoader, _allocator)
 		, _vertexLayoutLoader(_dataLoader)
 		, _programLoader(_dataLoader, _vertexLayoutLoader)
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
-#ifdef DARMOK_OZZ
-		, _skeletonLoader(_dataLoader)
-		, _skeletalAnimationLoader(_dataLoader)
-#endif
 		, _skeletalAnimatorConfigLoader(_dataLoader, _skeletalAnimationLoader)
-		, _modelLoader(_dataLoader)
 		, _colorTextureLoader(_allocator)
+		, _binModelLoader(_dataLoader)
+#ifdef DARMOK_OZZ
+		, _ozzSkeletonLoader(_dataLoader)
+		, _ozzSkeletalAnimationLoader(_dataLoader)
+#endif		
+#ifdef DARMOK_ASSIMP
+		, _assimpModelLoader(_dataLoader, _allocator, _imageLoader)
+#endif		
 	{
 		setBasePath("assets");
+
+#ifdef DARMOK_OZZ
+		_skeletonLoader.setDefaultLoader(_ozzSkeletonLoader);
+		_skeletalAnimationLoader.setDefaultLoader(_ozzSkeletalAnimationLoader);
+#endif
+
+		_modelLoader.setDefaultLoader(_binModelLoader);
+		_modelLoader.addLoader(".dml", _binModelLoader);
+
+#ifdef DARMOK_ASSIMP
+		_modelLoader.setDefaultLoader(_assimpModelLoader);
+#endif
 	}
 
 	bx::AllocatorI& AssetContextImpl::getAllocator() noexcept
@@ -95,6 +118,13 @@ namespace darmok
 	{
 		return _modelLoader;
 	}
+
+#ifdef DARMOK_ASSIMP
+	AssimpModelLoader& AssetContextImpl::getAssimpModelLoader() noexcept
+	{
+		return _assimpModelLoader;
+	}
+#endif
 
 	ColorTextureLoader& AssetContextImpl::getColorTextureLoader() noexcept
 	{
@@ -178,7 +208,6 @@ namespace darmok
 		return _impl->getSkeletonLoader();
 	}
 
-#ifdef DARMOK_OZZ
 	ISkeletalAnimationLoader& AssetContext::getSkeletalAnimationLoader() noexcept
 	{
 		return _impl->getSkeletalAnimationLoader();
@@ -187,6 +216,12 @@ namespace darmok
 	ISkeletalAnimatorConfigLoader& AssetContext::getSkeletalAnimatorConfigLoader() noexcept
 	{
 		return _impl->getSkeletalAnimatorConfigLoader();
+	}
+
+#ifdef DARMOK_ASSIMP
+	AssimpModelLoader& AssetContext::getAssimpModelLoader() noexcept
+	{
+		return _impl->getAssimpModelLoader();
 	}
 #endif
 

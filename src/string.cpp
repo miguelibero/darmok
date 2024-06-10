@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <sstream>
 #include <charconv>
+#include <filesystem>
 
 namespace darmok
 {
@@ -50,6 +51,26 @@ namespace darmok
 			words.push_back(word);
 		}
 		return words;
+	}
+
+	std::vector<std::string> StringUtils::split(std::string_view sv, std::string_view sep) noexcept
+	{
+		std::vector<std::string> parts;
+		size_t start = 0;
+		size_t end;
+
+		while ((end = sv.find(sep, start)) != std::string::npos)
+		{
+			parts.emplace_back(sv.substr(start, end - start));
+			start = end + sep.length();
+		}
+		parts.emplace_back(sv.substr(start));
+		return parts;
+	}
+
+	std::string StringUtils::getPathExtension(std::string_view path) noexcept
+	{
+		return std::filesystem::path(path).extension().string();
 	}
 
 	std::string StringUtils::binToHex(uint8_t v) noexcept

@@ -67,11 +67,11 @@ namespace darmok
         }
     };
 
-    struct ModelTexture final
+    struct ModelImage final
     {
         Data data;
-        TextureConfig config;
         std::string name;
+        TextureConfig config;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -80,12 +80,23 @@ namespace darmok
         }
     };
 
+    struct ModelTexture final
+    {
+        std::shared_ptr<ModelImage> image;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(image);
+        }
+    };
+
     struct ModelMaterial final
     {
         StandardProgramType standardProgram;
         std::string programName;
         MaterialPrimitiveType primitiveType;
-        std::unordered_map<MaterialTextureType, std::shared_ptr<ModelTexture>> textures;
+        std::unordered_map<MaterialTextureType, std::vector<ModelTexture>> textures;
         std::unordered_map<MaterialColorType, Color> colors;
 
         template<class Archive>
@@ -124,19 +135,19 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(vertexData, vertexLayout, config, joints);
+            archive(vertexData, indexData, vertexLayout, config, joints);
         }
     };
 
     struct ModelRenderable final
     {
-        std::shared_ptr<ModelMaterial> material;
         std::shared_ptr<ModelMesh> mesh;
+        std::shared_ptr<ModelMaterial> material;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(material, mesh);
+            archive(mesh, material);
         }
     };
 
@@ -219,7 +230,7 @@ namespace darmok
         std::unordered_map<std::shared_ptr<ModelMaterial>, std::shared_ptr<Material>> _materials;
         std::unordered_map<std::shared_ptr<ModelMesh>, std::shared_ptr<Mesh>> _meshes;
         std::unordered_map<std::shared_ptr<ModelMesh>, std::shared_ptr<Armature>> _armatures;
-        std::unordered_map<std::shared_ptr<ModelTexture>, std::shared_ptr<Texture>> _textures;
+        std::unordered_map<std::shared_ptr<ModelImage>, std::shared_ptr<Texture>> _textures;
 
         Entity add(const ModelNode& node, Entity parent) noexcept;
         Entity run(const ModelNode& node, Entity parent) noexcept;
@@ -239,7 +250,7 @@ namespace darmok
         std::shared_ptr<Material> loadMaterial(const std::shared_ptr<ModelMaterial>& modelMat) noexcept;
         std::shared_ptr<Mesh> loadMesh(const std::shared_ptr<ModelMesh>& modelMesh) noexcept;
         std::shared_ptr<Armature> loadArmature(const std::shared_ptr<ModelMesh>& modelMesh) noexcept;
-        std::shared_ptr<Texture> loadTexture(const std::shared_ptr<ModelTexture>& modelTex) noexcept;
+        std::shared_ptr<Texture> loadTexture(const std::shared_ptr<ModelImage>& modelImg) noexcept;
 
         void configureEntity(const ModelNode& node, Entity entity) noexcept;
         void configureEntity(const ModelRenderable& renderable, Entity entity) noexcept;

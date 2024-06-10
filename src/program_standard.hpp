@@ -9,6 +9,7 @@
 namespace bgfx
 {
 	struct EmbeddedShader;
+	struct VertexLayout;
 }
 
 namespace darmok
@@ -19,6 +20,8 @@ namespace darmok
 	{
 	public:
 		std::shared_ptr<Program> operator()(StandardProgramType type) const noexcept;
+		static std::optional<StandardProgramType> getType(std::string_view name) noexcept;
+		static bgfx::VertexLayout getVertexLayout(StandardProgramType type) noexcept;
 	private:
 		static const bgfx::EmbeddedShader _embeddedShaders[];
 		static const std::unordered_map<StandardProgramType, std::string> _embeddedShaderNames;

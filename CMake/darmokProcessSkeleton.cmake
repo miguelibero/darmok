@@ -32,7 +32,7 @@ function(darmok_process_skeleton)
 
     # use symbolic output since the output files depend on the config
     get_filename_component(FILE_NAME_WE ${FILE_PATH} NAME_WE)
-    set(SYMBOLIC_OUTPUT "${FILE_NAME_WE}.ozz")
+    set(SYMBOLIC_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME_WE}.ozz")
     set_property(SOURCE ${SYMBOLIC_OUTPUT} PROPERTY SYMBOLIC)
 
     add_custom_command(

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <darmok/data.hpp>
 #include <iostream>
 #include <cereal/archives/binary.hpp>
 
@@ -14,6 +13,9 @@ namespace cereal
 
 namespace darmok
 {
+    class DataView;
+    class Data;
+
     class DataViewStreamBuffer final : public std::streambuf
     {
     public:

@@ -8,6 +8,8 @@
 #include <fstream>
 #include <iostream>
 
+using namespace darmok;
+
 static void version(const std::string& name)
 {
 	std::cout << name << ": darmok vertex layout compiler tool." << std::endl;
@@ -28,20 +30,8 @@ static void help(const std::string& name, const char* error = nullptr)
 	std::cout << "  -h, --help					Display this help and exit." << std::endl;
 	std::cout << "  -v, --version				Output version information and exit." << std::endl;
 	std::cout << "  -i, --input <file path>		Input's file path (can be json or varyingdef)." << std::endl;
-	std::cout << "  -o, --output <file path>	Output's file path (header, binary, json or xml depending on extension)." << std::endl;
+	std::cout << "  -o, --output <file path>	Output's file path (header, binary or json depending on extension)." << std::endl;
 	std::cout << "  -b, --bin2c <name>			Output's header variable name." << std::endl;
-}
-
-static void writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout)
-{
-	darmok::Data data;
-	darmok::DataOutputStream::write(data, layout);
-	os << data.view().toHeader(varName);
-}
-
-static std::string getPathExtension(const std::string& path) noexcept
-{
-	return std::filesystem::path(path).extension().string();
 }
 
 static std::string getString(const char* ptr)
@@ -49,25 +39,13 @@ static std::string getString(const char* ptr)
 	return ptr == nullptr ? std::string() : std::string(ptr);
 }
 
-static void writeOutput(const bgfx::VertexLayout& layout, const std::string& output, std::string headerVarName)
+static void writeOutput(const bgfx::VertexLayout& layout, const std::string& path, std::string headerVarName)
 {
-	auto outExt = getPathExtension(output);
-
-	if (headerVarName.empty())
-	{
-		if (outExt == ".h" || outExt == ".hpp")
-		{
-			std::string outputStr(output);
-			headerVarName = outputStr.substr(0, outputStr.size() - outExt.size());
-			headerVarName += "_vlayout";
-		}
-	}
-
-	if (output.empty())
+	if (path.empty())
 	{
 		if (!headerVarName.empty())
 		{
-			writeHeader(std::cout, headerVarName, layout);
+			VertexLayoutUtils::writeHeader(std::cout, headerVarName, layout);
 		}
 		else
 		{
@@ -75,24 +53,20 @@ static void writeOutput(const bgfx::VertexLayout& layout, const std::string& out
 		}
 		return;
 	}
+
+	auto outExt = StringUtils::getPathExtension(path);
+	if (headerVarName.empty() && (outExt == ".h" || outExt == ".hpp"))
+	{
+		headerVarName = path.substr(0, path.size() - outExt.size());
+		headerVarName += "_vlayout";
+	}
 	if (!headerVarName.empty())
 	{
-		std::ofstream os(output);
-		writeHeader(os, headerVarName, layout);
+		std::ofstream os(path);
+		VertexLayoutUtils::writeHeader(os, headerVarName, layout);
+		return;
 	}
-	else if (outExt == ".json")
-	{
-		nlohmann::ordered_json json;
-		darmok::VertexLayoutUtils::writeJson(json, layout);
-		std::ofstream os(output);
-		os << json.dump(2) << std::endl;
-	}
-	else
-	{
-		std::ofstream os(output, std::ios::binary);
-		cereal::BinaryOutputArchive archive(os);
-		archive(layout);
-	}
+	VertexLayoutUtils::writeFile(path, layout);
 }
 
 static int run(const bx::CommandLine cmdLine)
@@ -112,38 +86,20 @@ static int run(const bx::CommandLine cmdLine)
 		return bx::kExitSuccess;
 	}
 
-	auto input = getString(cmdLine.findOption('i', "input"));
-	if (input.empty())
+	auto inputPath = getString(cmdLine.findOption('i', "input"));
+	if (inputPath.empty())
 	{
 		help(name, "Input file path must be specified.");
 		return bx::kExitFailure;
 	}
 
-	auto inExt = getPathExtension(input);
-
-	std::ifstream ifs(input);
 	bgfx::VertexLayout layout;
-	layout.begin().end();
+	VertexLayoutUtils::readFile(inputPath, layout);
 
-	if (inExt == ".varyingdef")
-	{
-		darmok::VertexLayoutUtils::readVaryingDef(ifs, layout);
-	}
-	else if (inExt == ".json")
-	{
-		auto json = nlohmann::ordered_json::parse(ifs);
-		darmok::VertexLayoutUtils::readJson(json, layout);
-	}
-	else
-	{
-		cereal::BinaryInputArchive archive(ifs);
-		archive(layout);
-	}
-
-	auto output = getString(cmdLine.findOption('o', "output"));
+	auto outputPath = getString(cmdLine.findOption('o', "output"));
 	auto headerVarName = getString(cmdLine.findOption('b', "bin2c"));
 
-	writeOutput(layout, output, headerVarName);
+	writeOutput(layout, outputPath, headerVarName);
 	return bx::kExitSuccess;
 }
 

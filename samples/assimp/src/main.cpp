@@ -4,11 +4,13 @@
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/model.hpp>
+#include <darmok/model_assimp.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/light.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/program.hpp>
+#include <darmok/program_standard.hpp>
 #include <darmok/render_forward.hpp>
 
 namespace
@@ -43,12 +45,13 @@ namespace
 
 			auto scene = addComponent<SceneAppComponent>().getScene();
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
+			getAssets().getAssimpModelLoader().setVertexLayout(prog->getVertexLayout());
 			auto model = getAssets().getModelLoader()("human.fbx");
 
-			ModelSceneConfigurer configurer(scene->getRegistry(), prog, getAssets());
-			configurer.run(model, [scene](const auto& node, Entity entity) {
+			ModelSceneConfigurer configurer(*scene, getAssets());
+			configurer.run(*model, [scene](const auto& node, Entity entity) {
 				auto& registry = scene->getRegistry();
-				if (node->getName() == "human")
+				if (node.name == "human")
 				{
 					auto& trans = registry.get_or_emplace<Transform>(entity);
 					scene->addLogicUpdater<RotateUpdater>(trans, 100.f);

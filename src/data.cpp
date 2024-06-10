@@ -88,29 +88,37 @@ namespace darmok
 
     std::string DataView::toHeader(std::string_view varName, size_t offset, size_t size) const noexcept
     {
+        void* ptr;
+        offset = fixOffset(offset, ptr);
+        size = fixSize(size, offset);
+
         std::string fixVarName(varName);
         std::replace(fixVarName.begin(), fixVarName.end(), '.', '_');
         std::stringstream ss;
 
         ss << "static const uint8_t " << fixVarName << "[" << size << "] = " << std::endl;
         ss << "{" << std::endl;
-        void* ptr;
-        offset = fixOffset(offset, ptr);
-        size = fixSize(size, offset);
         size_t i = 0;
-        for (size_t i = 0; i < size; i++)
+        for (; i < size; i++)
         {
+            if (i % 16 == 0)
+            {
+                ss << "  ";
+            }
             auto& v = ((uint8_t*)ptr)[i];
             ss << "0x" << darmok::StringUtils::binToHex(v);
             if (i < size - 1)
             {
                 ss << ", ";
             }
-            ++i;
-            if (i % 16 == 0)
+            if (i % 16 == 15)
             {
                 ss << std::endl;
             }
+        }
+        if (i % 16 != 0)
+        {
+            ss << std::endl;
         }
         ss << "};" << std::endl;
         return ss.str();
@@ -381,7 +389,7 @@ namespace darmok
     }
 
     Data::Data(const DataView& other, const OptionalRef<bx::AllocatorI>& alloc) noexcept
-        : Data(other.ptr(), other.size(), _alloc)
+        : Data(other.ptr(), other.size(), alloc)
     {
     }
 
@@ -443,7 +451,7 @@ namespace darmok
         return DataView(*this);
     }
 
-    FileDataLoader::FileDataLoader(bx::FileReaderI* fileReader, const OptionalRef<bx::AllocatorI>& alloc)
+    FileDataLoader::FileDataLoader(bx::FileReaderI& fileReader, const OptionalRef<bx::AllocatorI>& alloc)
         : _fileReader(fileReader)
         , _allocator(alloc)
     {
@@ -451,15 +459,23 @@ namespace darmok
 
     Data FileDataLoader::operator()(std::string_view filePath)
     {
-        if (!bx::open(_fileReader, bx::StringView(filePath.data(), filePath.size())))
+        if (!bx::open(&_fileReader, bx::StringView(filePath.data(), filePath.size())))
         {
             throw std::runtime_error("failed to load data from file.");
         }
+        try
+        {
+            auto size = bx::getSize(&_fileReader);
+            auto data = Data(size, _allocator);
+            bx::read(&_fileReader, data.ptr(), (int32_t)size, bx::ErrorAssert{});
+            bx::close(&_fileReader);
+            return data;
+        }
+        catch(const std::exception& ex)
+        {
+            bx::close(&_fileReader);
+            throw;
+        }
 
-        auto size = bx::getSize(_fileReader);
-        auto data = Data(size, _allocator);
-        bx::read(_fileReader, data.ptr(), (int32_t)size, bx::ErrorAssert{});
-        bx::close(_fileReader);
-        return data;
     }
 }

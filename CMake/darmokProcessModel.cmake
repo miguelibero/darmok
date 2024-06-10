@@ -30,12 +30,12 @@ function(darmok_process_model)
     if(ARGS_CONFIG)
       list(APPEND CMD -c "${ARGS_CONFIG}")
     endif()
-  
+
     add_custom_command(
       OUTPUT ${OUTPUT}
       COMMAND ${CMD}
       WORKING_DIRECTORY ${ARGS_OUTPUT_DIR}
-      MAIN_DEPENDENCY ${ASSET_PATH}
+      MAIN_DEPENDENCY ${FILE_PATH}
       DEPENDS ${MODELC_TARGET} ${ARGS_CONFIG}
     )
   endforeach()

@@ -4,6 +4,7 @@
 #include <darmok/data_stream.hpp>
 #include <darmok/utils.hpp>
 #include <sstream>
+#include <fstream>
 #include <map>
 
 namespace darmok
@@ -131,6 +132,43 @@ namespace darmok
 		return "";
 	}
 
+	void VertexLayoutUtils::readFile(const std::string& path, bgfx::VertexLayout& layout) noexcept
+	{
+		layout.begin().end();
+		auto ext = StringUtils::getPathExtension(path);
+		std::ifstream ifs(path);
+		if (ext == ".json")
+		{
+			auto json = nlohmann::ordered_json::parse(ifs);
+			readJson(json, layout);
+			return;
+		}
+		if (ext == ".varyingdef")
+		{
+			readVaryingDef(ifs, layout);
+			return;
+		}
+		cereal::BinaryInputArchive archive(ifs);
+		archive(layout);
+	}
+
+	void VertexLayoutUtils::writeFile(const std::string& path, const bgfx::VertexLayout& layout) noexcept
+	{
+		auto ext = StringUtils::getPathExtension(path);
+		if (ext == ".json")
+		{
+			nlohmann::ordered_json json;
+			VertexLayoutUtils::writeJson(json, layout);
+			std::ofstream os(path);
+			os << json.dump(2) << std::endl;
+		}
+		else
+		{
+			std::ofstream os(path, std::ios::binary);
+			cereal::BinaryOutputArchive archive(os);
+			archive(layout);
+		}
+	}
 
 	void VertexLayoutUtils::readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept
 	{
@@ -211,6 +249,13 @@ namespace darmok
 		{
 			json.emplace(elm.second.first, elm.second.second);
 		}
+	}
+
+	void VertexLayoutUtils::writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout) noexcept
+	{
+		Data data;
+		DataOutputStream::write(data, layout);
+		os << data.view().toHeader(varName);
 	}
 
 	std::unordered_map<std::string, bgfx::Attrib::Enum> VertexLayoutUtils::_varyingDefAttrs

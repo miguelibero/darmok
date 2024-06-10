@@ -15,8 +15,11 @@ namespace darmok
 		static bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
         static std::string getBgfxAttribName(bgfx::Attrib::Enum val) noexcept;
         static std::string getBgfxAttribTypeName(bgfx::AttribType::Enum val) noexcept;
+        static void readFile(const std::string& path, bgfx::VertexLayout& layout) noexcept;
+        static void writeFile(const std::string& path, const bgfx::VertexLayout& layout) noexcept;
 		static void readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept;
         static void writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout) noexcept;
+        static void writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout) noexcept;
         static void readVaryingDef(std::istream& is, bgfx::VertexLayout& layout) noexcept;
     private:
         static std::unordered_map<std::string, bgfx::Attrib::Enum> _varyingDefAttrs;

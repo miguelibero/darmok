@@ -132,16 +132,12 @@ function(darmok_process_assets)
         elseif(ASSET_PATH_ABS STREQUAL ${MODEL_CONFIG_PATH})
           continue()
         endif()
-        set(FOUND OFF)
         if(EXISTS ${SKEL_CONFIG_PATH})
           list(APPEND SKELETON_ASSETS ${ASSET_PATH_ABS})
-          set(FOUND ON)
         endif()
         if(EXISTS ${MODEL_CONFIG_PATH})
           list(APPEND MODEL_ASSETS ${ASSET_PATH_ABS})
-          set(FOUND ON)
-        endif()
-        if(NOT FOUND)
+        else()
           list(APPEND COPY_ASSETS ${ASSET_PATH})
         endif()
       endif()
@@ -163,6 +159,16 @@ function(darmok_process_assets)
       )
       list(APPEND ASSET_SOURCES ${VERTEX_LAYOUTS})
     endif()
+    
+    foreach(ASSET_PATH ${MODEL_ASSETS})
+      _darmok_replace_ext(CONFIG_PATH ${ASSET_PATH} ".model.json")
+      darmok_process_model(
+        FILES ${ASSET_PATH}
+        CONFIG ${CONFIG_PATH}
+        OUTPUT_DIR ${ARGS_OUTPUT_DIR}
+      )
+      list(APPEND ASSET_SOURCES ${ASSET_PATH} ${CONFIG_PATH})
+    endforeach()
 
     foreach(ASSET_PATH ${SKELETON_ASSETS})
       _darmok_replace_ext(CONFIG_PATH ${ASSET_PATH} ".skel.json")
@@ -174,15 +180,6 @@ function(darmok_process_assets)
       list(APPEND ASSET_SOURCES ${ASSET_PATH} ${CONFIG_PATH})
     endforeach()
 
-    foreach(ASSET_PATH ${MODEL_ASSETS})
-      _darmok_replace_ext(CONFIG_PATH ${ASSET_PATH} ".model.json")
-      darmok_process_model(
-        FILES ${ASSET_PATH}
-        CONFIG ${OZZ_CONFIG_PATH}
-        OUTPUT_DIR ${ARGS_OUTPUT_DIR}
-      )
-      list(APPEND ASSET_SOURCES ${ASSET_PATH} ${CONFIG_PATH})
-    endforeach()
 
     foreach(ASSET_PATH ${COPY_ASSETS})
       set(SOURCE ${ASSET_BASE_PATH}/${ASSET_PATH})

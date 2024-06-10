@@ -15,6 +15,8 @@
 #include <darmok/material.hpp>
 #include <darmok/render.hpp>
 #include <darmok/input.hpp>
+#include <darmok/program.hpp>
+#include <darmok/model_assimp.hpp>
 
 namespace
 {
@@ -69,6 +71,7 @@ namespace
 			scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
+			getAssets().getAssimpModelLoader().setVertexLayout(prog->getVertexLayout());
 			auto model = getAssets().getModelLoader()("BasicMotionsDummyModel.dml");
 
 			auto skinEntity = scene.createEntity();
