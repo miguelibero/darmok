@@ -1,6 +1,9 @@
 {
     "states": {
         "locomotion": {
+            "tween": {
+                "duration": 0.5
+            },
             "elements": [
                 {
                     "animation": "BasicMotions@Idle01.ozz",

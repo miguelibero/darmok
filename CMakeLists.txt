@@ -389,6 +389,10 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC pugixml::pugixml)
 find_package(nlohmann_json CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PUBLIC nlohmann_json::nlohmann_json)
 
+# tween
+find_package(Tweeny CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PUBLIC tweeny)
+
 # cereal
 find_package(cereal CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PUBLIC cereal::cereal)

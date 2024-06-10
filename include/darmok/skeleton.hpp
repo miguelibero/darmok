@@ -11,6 +11,7 @@
 #include <bx/bx.h>
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
+#include <tweeny/tweeny.h>
 
 #ifndef DARMOK_SKELETON_MAX_BONES
 #define DARMOK_SKELETON_MAX_BONES 64
@@ -80,6 +81,15 @@ namespace darmok
         Directional
     };
 
+    struct SkeletalAnimatorTweenConfig final
+    {
+        tweeny::easing::enumerated easing = tweeny::easing::enumerated::linear;
+        float duration = 0.F;
+
+        tweeny::tween<float> create() const noexcept;
+        void readJson(const nlohmann::json& json);
+    };
+
     struct SkeletalAnimatorStateConfig final
     {
         using AnimationConfig = SkeletalAnimatorAnimationConfig;
@@ -87,6 +97,7 @@ namespace darmok
         std::vector<AnimationConfig> animations;
         SkeletalAnimatorBlendType blendType = SkeletalAnimatorBlendType::Directional;
         float threshold = bx::kFloatSmallest;
+        SkeletalAnimatorTweenConfig tween;
 
         float calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos);
         std::vector<float> calcBlendWeights(const glm::vec2& pos);
@@ -97,7 +108,7 @@ namespace darmok
 
     struct SkeletalAnimatorTransitionConfig final
     {
-        float duration = 0.F;
+        SkeletalAnimatorTweenConfig tween;
         float offset = 0.F;
 
         static std::pair<std::string, std::string> readJsonKey(std::string_view key);

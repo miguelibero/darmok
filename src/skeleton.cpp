@@ -204,6 +204,23 @@ namespace darmok
         encoder.setUniform(_skinningUniform, &_skinning.front(), _skinning.size());
     }
 
+    tweeny::tween<float> SkeletalAnimatorTweenConfig::create() const noexcept
+    {
+        return tweeny::from(0.F).to(1.F).via(easing).during(duration * 1000);
+    }
+
+    void SkeletalAnimatorTweenConfig::readJson(const nlohmann::json& json)
+    {
+        if (json.contains("duration"))
+        {
+            duration = json["duration"];
+        }
+        if (json.contains("easing"))
+        {
+            easing = json["easing"];
+        }
+    }
+
     void SkeletalAnimatorAnimationConfig::readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader)
     {
         if (json.contains("value"))
@@ -325,6 +342,10 @@ namespace darmok
         {
             blendType = getBlendType(json["blend"]);
         }
+        if(json.contains("tween"))
+        {
+            tween.readJson(json["tween"]);
+        }
     }
 
     std::pair<std::string, std::string> SkeletalAnimatorTransitionConfig::readJsonKey(std::string_view key)
@@ -340,10 +361,7 @@ namespace darmok
 
     void SkeletalAnimatorTransitionConfig::readJson(const nlohmann::json& json)
     {
-        if (json.contains("duration"))
-        {
-            duration = json["duration"];
-        }
+        tween.readJson(json);
         if (json.contains("offset"))
         {
             offset = json["offset"];

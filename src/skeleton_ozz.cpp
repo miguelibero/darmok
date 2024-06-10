@@ -11,7 +11,6 @@
 #include <optional>
 #include <sstream>
 
-
 namespace darmok
 {
     struct OzzUtils final
@@ -381,6 +380,9 @@ namespace darmok
 
     OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config) noexcept
         : _config(config)
+        , _blendPos(0.F)
+        , _oldBlendPos(0.F)
+        , _tween(_config.tween.create())
     {
         _locals.resize(skel.num_soa_joints());
         _animations.reserve(_config.animations.size());
@@ -406,8 +408,17 @@ namespace darmok
         blending.output = ozz::make_span(_locals);
         blending.threshold = _config.threshold;
 
+        if (_blendPos != blendPosition)
+        {
+            _tween.seek(0.F);
+            _oldBlendPos = _blendPos;
+            _blendPos = blendPosition;
+        }
+        auto blendFactor = _tween.step(int(deltaTime * 1000));
+        auto pos = _oldBlendPos + blendFactor * ( _blendPos - _oldBlendPos);
+
         size_t i = 0;
-        auto weights = _config.calcBlendWeights(blendPosition);
+        auto weights = _config.calcBlendWeights(pos);
         for (auto& anim : _animations)
         {
             if (anim.getBlendPosition() == glm::vec2(0))
@@ -415,7 +426,7 @@ namespace darmok
                 // set blend position (0, 0) as rest pose
                 blending.rest_pose = ozz::make_span(anim.getLocals());
             }
-            if (anim.getBlendPosition() == blendPosition)
+            if (anim.getBlendPosition() == pos)
             {
                 // early exit since one of the animations is just in the blend position
                 _locals = anim.getLocals();
@@ -460,12 +471,13 @@ namespace darmok
         , _previousState(std::move(previousState))
         , _locals(_previousState.getLocals())
         , _normalizedTime(0.F)
+        , _tween(_config.tween.create())
     {
     }
 
     float OzzSkeletalAnimatorTransition::getDuration() const noexcept
     {
-        return _config.duration;
+        return _config.tween.duration;
     }
 
     float OzzSkeletalAnimatorTransition::getNormalizedTime() const noexcept
@@ -494,11 +506,12 @@ namespace darmok
         }
         _currentState.update(currentStateDeltaTime, blendPosition);
         _normalizedTime += deltaTime / getDuration();
+        auto v = _tween.step(int(deltaTime * 1000));
 
         std::array<ozz::animation::BlendingJob::Layer, 2> layers;
-        layers[0].weight = 1.F - _normalizedTime;
+        layers[0].weight = 1.F - v;
         layers[0].transform = ozz::make_span(_previousState.getLocals());
-        layers[1].weight = _normalizedTime;
+        layers[1].weight = v;
         layers[1].transform = ozz::make_span(_currentState.getLocals());
 
         ozz::animation::BlendingJob blending;
