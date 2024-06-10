@@ -28,6 +28,7 @@ planned to use:
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
 * [fastgltf](https://github.com/spnda/fastgltf) for gltf asset loading (runtime)
+* [taskflow](https://github.com/taskflow/taskflow) for multithreaded updates
 
 Trying to use modern C++ patterns where possible.
 
@@ -59,44 +60,38 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * scene using entt
 * update logic methods with delta time
 * sprites and spritesheets
-* loading meshes using assimp (FBX, etc...)
+* loading models using assimp (FBX, etc...)
+* serializing models from assimp into binary using cereal
 * renderer
     * unlit
     * forward with phong lighting (point, ambient)
 * lua scripting
 * multiple UI options
     * imgui for tooling
-    * nuklear game UI
-    * Crazy Eddi's UI for more advanced stuff 
-
-### Next tasks
+    * RmlUI for ingame (support for multiple canvases)
+* skeletal animations using ozz (reading from binary)
 
 #### Upcoming (I need them)
 * 3d physics
 * sound
 * render to fullscreen texture
-* animator blend tree
-* animator config from json
 
-#### Upcoming small improvements
-* tool to read VertexLayout from varyingdef into a binary
-* tool to read assimp into a binary
-
-#### Upcoming maybe
-* some tweening in the animation blending
+#### Upcoming
+* tweening in the animation blending
 * other types of lights
-* pbr lighting
-* deferred renderer
+* pbr
+* frustrum culling
+* deferred renderer, SSAO
 
 #### In the future
 * separate shaders for skinning?
 * cleanup public headers, more pimpl
-* instancing to draw skeleton bones
+* instancing meshes
 * support multiple imgui app components with different transforms
 * spine animations loading
-* unify use of std::allocator everywhere
+* unify use of allocator everywhere
 * progressive data reader
-* async?
+* async task management
 
 ## Interesting Related Projects
 
