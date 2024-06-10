@@ -12,6 +12,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/window.hpp>
 #include <darmok/program.hpp>
+#include <darmok/program_standard.hpp>
 #include <darmok/material.hpp>
 #include <darmok/render.hpp>
 #include <darmok/render_forward.hpp>

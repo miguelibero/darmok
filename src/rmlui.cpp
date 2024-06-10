@@ -286,8 +286,8 @@ namespace darmok
     void RmluiRenderInterface::init(App& app)
     {
         _alloc = app.getAssets().getAllocator();
-        _program = std::make_unique<Program>("rmlui_basic", _embeddedShaders, rmlui_basic_vlayout);
-        _solidProgram = std::make_unique<Program>("rmlui_solid", _embeddedShaders, rmlui_basic_vlayout);
+        _program = std::make_unique<Program>("rmlui_basic", _embeddedShaders, DataView::fromArray(rmlui_basic_vlayout));
+        _solidProgram = std::make_unique<Program>("rmlui_solid", _embeddedShaders, DataView::fromArray(rmlui_basic_vlayout));
         _layout = _program->getVertexLayout();
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
         _scissorEnabled = false;

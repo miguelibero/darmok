@@ -12,6 +12,14 @@
       "name": "bgfx",
       "features": [ "multithreaded", "tools" ]
     },
+    {
+      "name": "imgui",
+      "features": ["freetype"]
+    },
+    {
+      "name": "rmlui",
+      "features": ["freetype", "lua"]
+    },
     "glfw3",
     "assimp",
     "cereal",
@@ -22,14 +30,7 @@
     "sol2",
     "nlohmann-json",
     "pugixml",
-    "catch2",
-    {
-      "name": "imgui",
-      "features": ["freetype"]
-    },
-    {
-      "name": "rmlui",
-      "features": ["freetype", "lua"]
-    }
+    "tweeny",
+    "catch2"
   ]
 }

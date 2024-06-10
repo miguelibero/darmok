@@ -1,5 +1,4 @@
 #include <darmok/app.hpp>
-#include <darmok/cegui.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/window.hpp>
 #include <darmok/asset.hpp>

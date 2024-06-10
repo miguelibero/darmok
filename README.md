@@ -3,7 +3,7 @@ darmok
 
 ![Dathon trying to explain the importance of Darmok](logo.png)
 
-C++ game engine combining libraries & tools that I like
+C++ game engine combining opensource libraries & tools that I like
 
 currently using:
 
@@ -20,6 +20,7 @@ currently using:
 * [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI to replace CEGUI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [cereal](https://uscilab.github.io/cereal/) for serialization
+* [tweeny](https://github.com/mobius3/tweeny) for tweening and easings
 
 planned to use:
 
@@ -78,14 +79,16 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### Upcoming
 * tweening in the animation blending
-* other types of lights
 * pbr
 * frustrum culling
-* deferred renderer, SSAO
+* modernize renderer (probably needs frame graph or similar)
+    * deferred
+    * other types of lights
+    * SSAO
 
 #### In the future
+* unit tests, I know
 * separate shaders for skinning?
-* cleanup public headers, more pimpl
 * instancing meshes
 * support multiple imgui app components with different transforms
 * spine animations loading
@@ -93,9 +96,11 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * progressive data reader
 * async task management
 
+
 ## Interesting Related Projects
 
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced
+* [FrameGraph](https://github.com/skaarj1989/FrameGraph) renderer agnostic frame graph library 
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
 * [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx

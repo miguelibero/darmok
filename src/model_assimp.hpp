@@ -9,6 +9,7 @@
 #include <darmok/vertex_fwd.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/program_fwd.hpp>
+#include <glm/glm.hpp>
 
 namespace bx
 {
@@ -55,6 +56,7 @@ namespace darmok
         const aiScene& _scene;
         std::string _basePath;
         const AssimpModelLoaderConfig& _config;
+        glm::mat4 _inverseRoot;
 
         static const std::unordered_map<aiTextureType, MaterialTextureType> _materialTextures;
 

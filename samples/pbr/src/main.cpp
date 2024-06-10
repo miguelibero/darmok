@@ -10,6 +10,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/input.hpp>
 #include <darmok/program.hpp>
+#include <darmok/program_standard.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/render.hpp>

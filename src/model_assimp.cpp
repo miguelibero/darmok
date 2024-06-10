@@ -133,6 +133,8 @@ namespace darmok
         , _basePath(basePath)
         , _config(config)
     {
+        // TODO: check that we need this for the inverse bind poses
+        _inverseRoot = glm::inverse(AssimpUtils::convert(scene.mRootNode->mTransformation));
     }
 
     void AssimpModelLoaderContext::update(ModelNode& modelNode, const aiNode& assimpNode) noexcept
@@ -366,7 +368,7 @@ namespace darmok
             auto bone = assimpMesh.mBones[i];
             modelMesh.joints.push_back(ModelArmatureJoint{
                 std::string(bone->mName.C_Str()),
-                AssimpUtils::convert(bone->mOffsetMatrix)
+                AssimpUtils::convert(bone->mOffsetMatrix) * _inverseRoot
             });
         }
     }
@@ -458,5 +460,4 @@ namespace darmok
     {
         return (*_impl)(name);
     }
-
 }
