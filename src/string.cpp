@@ -76,7 +76,7 @@ namespace darmok
 	std::string StringUtils::binToHex(uint8_t v) noexcept
 	{
 		std::string dest = "  ";
-		sprintf(&dest.front(), "%02X", v);
+		sprintf_s(&dest.front(), dest.size(), "%02X", v);
 		return dest;
 	}
 

@@ -75,7 +75,7 @@ namespace darmok
             {
                 input.fill(Colors::getMaxValue());
             }
-            for (auto j = 0; j < _size; j++)
+            for (uint32_t j = 0; j < _size; j++)
             {
                 write(attr, j, input);
             }

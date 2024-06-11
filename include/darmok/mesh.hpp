@@ -27,7 +27,7 @@ namespace darmok
             archive(index32);
         }
 
-        uint64_t getFlags() const noexcept;
+        uint16_t getFlags() const noexcept;
         size_t getIndexSize() const noexcept;
     };
 
@@ -88,8 +88,8 @@ namespace darmok
          [[nodiscard]] bgfx::DynamicVertexBufferHandle getVertexHandle() const noexcept;
          [[nodiscard]] bgfx::DynamicIndexBufferHandle getIndexHandle() const noexcept;
 
-         void updateVertices(const DataView& data, size_t offset = 0) noexcept;
-         void updateIndices(const DataView& data, size_t offset = 0) noexcept;
+         void updateVertices(const DataView& data, uint32_t offset = 0) noexcept;
+         void updateIndices(const DataView& data, uint32_t offset = 0) noexcept;
 
          [[nodiscard]] std::string to_string() const noexcept override;
          void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const override;
@@ -121,8 +121,8 @@ namespace darmok
         bgfx::VertexLayout _layout;
         bgfx::TransientVertexBuffer _vertexBuffer;
         bgfx::TransientIndexBuffer _indexBuffer;
-        size_t _vertNum;
-        size_t _idxNum;
+        uint32_t _vertNum;
+        uint32_t _idxNum;
     };
 
     struct DARMOK_EXPORT MeshCreationConfig final

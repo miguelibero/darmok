@@ -451,8 +451,6 @@ namespace darmok
 		init.resolution.width = size.x;
 		init.resolution.height = size.y;
 		// init.resolution.reset = ?;
-
-		init.allocator = &_impl->getAssets().getAllocator();
 		// init.type = bgfx::RendererType::Vulkan;
 		bgfx::init(init);
 

@@ -34,7 +34,7 @@ namespace darmok
     {
         if (ch != EOF)
         {
-            std::size_t oldSize = pptr() - pbase();
+            int oldSize = pptr() - pbase();
             _data.resize(_data.size() + _overflowSizeIncrease);
             auto base = (char*)_data.ptr();
             auto size = _data.size();

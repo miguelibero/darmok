@@ -5,9 +5,9 @@
 
 namespace darmok
 {
-	uint64_t MeshConfig::getFlags() const noexcept
+	uint16_t MeshConfig::getFlags() const noexcept
 	{
-		uint64_t flags = 0;
+		uint16_t flags = 0;
 		if (index32)
 		{
 			flags |= BGFX_BUFFER_INDEX32;
@@ -239,14 +239,14 @@ namespace darmok
 		return getMeshDescription("DynamicMesh", _vertNum, _idxNum, getVertexLayout());
 	}
 
-	void DynamicMesh::updateVertices(const DataView& data, size_t offset) noexcept
+	void DynamicMesh::updateVertices(const DataView& data, uint32_t offset) noexcept
 	{
 		bgfx::DynamicVertexBufferHandle handle{ _vertexBuffer };
 		bgfx::update(handle, offset, data.copyMem());
 		_vertNum = data.size() / _layout.getStride();
 	}
 
-	void DynamicMesh::updateIndices(const DataView& data, size_t offset) noexcept
+	void DynamicMesh::updateIndices(const DataView& data, uint32_t offset) noexcept
 	{
 		bgfx::DynamicIndexBufferHandle handle{ _indexBuffer };
 		bgfx::update(handle, offset, data.copyMem());
@@ -370,7 +370,7 @@ namespace darmok
 	{
 		auto meshLayout = vertexLayout ? vertexLayout.value() : getDefaultVertexLayout(meshData);
 		
-		VertexDataWriter writer(meshLayout, meshData.positions.size());
+		VertexDataWriter writer(meshLayout, uint32_t(meshData.positions.size()));
 		if (meshLayout.has(bgfx::Attrib::Position))
 		{
 			uint32_t i = 0;

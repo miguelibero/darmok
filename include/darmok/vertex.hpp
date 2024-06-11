@@ -49,7 +49,7 @@ namespace darmok
         {
             if (_layout.has(attr))
             {
-                for (auto i = 0; i < _size; i++)
+                for (uint32_t i = 0; i < _size; i++)
                 {
                     write(attr, i, filter(begin));
                     if (++begin == end)

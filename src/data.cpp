@@ -473,7 +473,7 @@ namespace darmok
             bx::close(&_fileReader);
             return data;
         }
-        catch(const std::exception& ex)
+        catch(...)
         {
             bx::close(&_fileReader);
             throw;
