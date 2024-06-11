@@ -298,6 +298,9 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} PREFIX "Source Files" F
 add_library(darmok::darmok ALIAS ${LIB_NAME})
 target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 
+include(GenerateExportHeader)
+GENERATE_EXPORT_HEADER(${LIB_NAME})
+
 set(EXPORT_NAME "${PROJECT_NAME}Targets")
 set(EXPORT_INSTALL_DIR "share/${PROJECT_NAME}")
 install(TARGETS ${LIB_NAME} ${CORE_LIB_NAME}
@@ -317,6 +320,7 @@ install(FILES
 )
 
 macro(_darmok_lib_setup TARGET)
+  set_property(TARGET ${TARGET} PROPERTY COMPILE_WARNING_AS_ERROR ON)
   target_include_directories(
     ${TARGET}
     PUBLIC
@@ -335,6 +339,7 @@ _darmok_lib_setup(${CORE_LIB_NAME})
 
 # tools
 set(TOOLS_FOLDER ${PROJECT_NAME}/tools)
+include(darmokCopyDynamicLibs)
 
 # vlayoutc: only depends on darmok-core to avoid dependency cycle
 # since it is used to generate standard darmok shaders
@@ -346,6 +351,7 @@ add_executable(${VLAYOUTC_NAME}
 target_link_libraries(${VLAYOUTC_NAME} ${CORE_LIB_NAME})
 add_executable(darmok::vlayoutc ALIAS ${VLAYOUTC_NAME})
 set_target_properties(${VLAYOUTC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
+darmok_copy_dynamic_libs(${VLAYOUTC_NAME})
 
 # samples
 if(DARMOK_BUILD_SAMPLES)
@@ -452,10 +458,10 @@ if(DARMOK_BUILD_ASSIMP)
   add_executable(${MODELC_NAME}
     ${MODELC_SRC_DIR}/modelc.cpp
   )
-
   target_link_libraries(${MODELC_NAME} ${LIB_NAME})
   add_executable(darmok::modelc ALIAS ${MODELC_NAME})
   set_target_properties(${MODELC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
+  darmok_copy_dynamic_libs(${MODELC_NAME})
 endif()
 
 if(DARMOK_BUILD_JOLT)
@@ -488,6 +494,7 @@ if(DARMOK_BUILD_SCRIPTING_EXE)
     ${SCRIPTING_EXE_NAME}
     src/scripting/main.cpp
   )
+  darmok_copy_dynamic_libs(${SCRIPTING_EXE_NAME})
   add_executable(darmok::scripting ALIAS ${SCRIPTING_EXE_NAME})
   target_compile_definitions(
     ${SCRIPTING_EXE_NAME}

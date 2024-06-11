@@ -1,4 +1,3 @@
-
 if(NOT ${DARMOK_BUILD_ASSIMP})
   return()
 endif()

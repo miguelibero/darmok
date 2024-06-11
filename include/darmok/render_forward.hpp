@@ -11,9 +11,9 @@ namespace darmok
     class ForwardRenderer final : public ICameraRenderer
     {
     public:
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const override;
+        DLLEXPORT void init(Camera& cam, Scene& scene, App& app) noexcept override;
+        DLLEXPORT void shutdown() noexcept override;
+        DLLEXPORT bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const override;
     private:
         const static std::string _name;
         OptionalRef<Camera> _cam;

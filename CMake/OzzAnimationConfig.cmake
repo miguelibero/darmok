@@ -10,6 +10,7 @@ set(ozz_build_samples OFF CACHE BOOL "")
 set(ozz_build_howtos OFF CACHE BOOL "")
 set(ozz_build_tests OFF CACHE BOOL "")
 set(ozz_build_msvc_rt_dll ON CACHE BOOL "")
+set(FBX_MSVC_RT_DLL ON)
 
 FetchContent_MakeAvailable(ozz-animation)
 

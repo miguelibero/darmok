@@ -232,8 +232,8 @@ namespace darmok
         std::unordered_map<std::shared_ptr<ModelMesh>, std::shared_ptr<Armature>> _armatures;
         std::unordered_map<std::shared_ptr<ModelImage>, std::shared_ptr<Texture>> _textures;
 
-        Entity add(const ModelNode& node, Entity parent) noexcept;
-        Entity run(const ModelNode& node, Entity parent) noexcept;
+        DLLEXPORT Entity add(const ModelNode& node, Entity parent) noexcept;
+        DLLEXPORT Entity run(const ModelNode& node, Entity parent) noexcept;
 
         template<typename C>
         Entity run(const ModelNode& node, Entity parent, C callback)
@@ -280,5 +280,5 @@ namespace darmok
 	};
 }
 
-std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node);
-std::ostream& operator<<(std::ostream& out, const darmok::Model& model);
+DLLEXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node);
+DLLEXPORT std::ostream& operator<<(std::ostream& out, const darmok::Model& model);

@@ -1,9 +1,7 @@
-include(darmokCopyLinkedDlls)
-
 macro(darmok_sample_setup TARGET)
     target_compile_definitions(${TARGET} PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1")
     target_link_libraries(${TARGET} PUBLIC darmok::darmok)
-    darmok_copy_linked_dlls(${TARGET})
+    darmok_copy_dynamic_libs(${TARGET})
     set_target_properties(${TARGET} PROPERTIES FOLDER "darmok/samples")
 endmacro()
 
