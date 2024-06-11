@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <darmok/model.hpp>
 #include <darmok/optional_ref.hpp>
 #include <memory>
@@ -21,13 +22,13 @@ namespace darmok
     class IImageLoader;
     class AssimpModelLoaderImpl;
 
-    class AssimpModelLoader final : public IModelLoader
+    class DARMOK_EXPORT AssimpModelLoader final : public IModelLoader
     {
     public:
-        DLLEXPORT AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
-        DLLEXPORT ~AssimpModelLoader() noexcept;
-        DLLEXPORT void setVertexLayout(const bgfx::VertexLayout& vertexLayout) noexcept;
-		DLLEXPORT result_type operator()(std::string_view name) override;
+        AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
+        ~AssimpModelLoader() noexcept;
+        void setVertexLayout(const bgfx::VertexLayout& vertexLayout) noexcept;
+		result_type operator()(std::string_view name) override;
     private:
         std::unique_ptr<AssimpModelLoaderImpl> _impl;
     };

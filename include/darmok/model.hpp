@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <memory>
 #include <string_view>
 #include <vector>
@@ -31,7 +32,7 @@
 
 namespace darmok
 {
-    struct ModelPointLight final
+    struct DARMOK_EXPORT ModelPointLight final
     {
         glm::vec3 attenuation;
         Color3 diffuseColor;
@@ -44,7 +45,7 @@ namespace darmok
         }
     };
 
-    struct ModelAmbientLight final
+    struct DARMOK_EXPORT ModelAmbientLight final
     {
         float intensity;
         Color3 color;
@@ -56,7 +57,7 @@ namespace darmok
         }
     };
 
-    struct ModelCamera final
+    struct DARMOK_EXPORT ModelCamera final
     {
 		glm::mat4 projection;
 
@@ -67,7 +68,7 @@ namespace darmok
         }
     };
 
-    struct ModelImage final
+    struct DARMOK_EXPORT ModelImage final
     {
         Data data;
         std::string name;
@@ -80,7 +81,7 @@ namespace darmok
         }
     };
 
-    struct ModelTexture final
+    struct DARMOK_EXPORT ModelTexture final
     {
         std::shared_ptr<ModelImage> image;
 
@@ -91,7 +92,7 @@ namespace darmok
         }
     };
 
-    struct ModelMaterial final
+    struct DARMOK_EXPORT ModelMaterial final
     {
         StandardProgramType standardProgram;
         std::string programName;
@@ -112,7 +113,7 @@ namespace darmok
         }
     };
 
-    struct ModelArmatureJoint final
+    struct DARMOK_EXPORT ModelArmatureJoint final
     {
         std::string name;
         glm::mat4 inverseBindPose;
@@ -124,7 +125,7 @@ namespace darmok
         }
     };
 
-    struct ModelMesh final
+    struct DARMOK_EXPORT ModelMesh final
     {
         Data vertexData;
         Data indexData;
@@ -139,7 +140,7 @@ namespace darmok
         }
     };
 
-    struct ModelRenderable final
+    struct DARMOK_EXPORT ModelRenderable final
     {
         std::shared_ptr<ModelMesh> mesh;
         std::shared_ptr<ModelMaterial> material;
@@ -151,7 +152,7 @@ namespace darmok
         }
     };
 
-    struct ModelNode final
+    struct DARMOK_EXPORT ModelNode final
     {
         std::string name;
         glm::mat4 transform;
@@ -177,7 +178,7 @@ namespace darmok
         std::string to_string() const noexcept;
     };
 
-    struct Model final
+    struct DARMOK_EXPORT Model final
     {
         ModelNode rootNode;
 
@@ -193,7 +194,7 @@ namespace darmok
     class AssetContext;
     class Scene;
 
-    struct ModelSceneConfig final
+    struct DARMOK_EXPORT ModelSceneConfig final
     {
         Scene& scene;
         AssetContext& assets;
@@ -203,14 +204,14 @@ namespace darmok
     class Material;
     class Armature;
 
-    class ModelSceneConfigurer final
+    class DARMOK_EXPORT ModelSceneConfigurer final
     {
     public:
-        DLLEXPORT ModelSceneConfigurer(Scene& scene, AssetContext& assets);
-        DLLEXPORT ModelSceneConfigurer& setParent(Entity parent) noexcept;
+        ModelSceneConfigurer(Scene& scene, AssetContext& assets);
+        ModelSceneConfigurer& setParent(Entity parent) noexcept;
 
-        DLLEXPORT Entity run(const Model& model) noexcept;
-        DLLEXPORT Entity run(const ModelNode& node) noexcept;
+        Entity run(const Model& model) noexcept;
+        Entity run(const ModelNode& node) noexcept;
 
         template<typename C>
         Entity run(const ModelNode& node, C callback)
@@ -232,15 +233,15 @@ namespace darmok
         std::unordered_map<std::shared_ptr<ModelMesh>, std::shared_ptr<Armature>> _armatures;
         std::unordered_map<std::shared_ptr<ModelImage>, std::shared_ptr<Texture>> _textures;
 
-        DLLEXPORT Entity add(const ModelNode& node, Entity parent) noexcept;
-        DLLEXPORT Entity run(const ModelNode& node, Entity parent) noexcept;
+        Entity add(const ModelNode& node, Entity parent) noexcept;
+        Entity run(const ModelNode& node, Entity parent) noexcept;
 
         template<typename C>
         Entity run(const ModelNode& node, Entity parent, C callback)
         {
             auto entity = add(node, parent);
             callback(node, entity);
-            for (auto child : node.children)
+            for (auto& child : node.children)
             {
                 run(child, entity, callback);
             }
@@ -259,26 +260,26 @@ namespace darmok
         void configureEntity(const ModelAmbientLight& light, Entity entity) noexcept;
     };
 
-    class BX_NO_VTABLE IModelLoader
+    class DARMOK_EXPORT BX_NO_VTABLE IModelLoader
 	{
 	public:
         using result_type = std::shared_ptr<Model>;
 
-        DLLEXPORT virtual ~IModelLoader() = default;
-		DLLEXPORT virtual [[nodiscard]] result_type operator()(std::string_view name) = 0;
+        virtual ~IModelLoader() = default;
+		virtual [[nodiscard]] result_type operator()(std::string_view name) = 0;
 	};
 
     class IDataLoader;
 
-    class BinaryModelLoader : public IModelLoader
+    class DARMOK_EXPORT BinaryModelLoader : public IModelLoader
 	{
 	public:
         BinaryModelLoader(IDataLoader& dataLoader) noexcept;
-        DLLEXPORT [[nodiscard]] std::shared_ptr<Model> operator()(std::string_view name) override;
+        [[nodiscard]] result_type operator()(std::string_view name) override;
     private:
         IDataLoader& _dataLoader;
 	};
 }
 
-DLLEXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node);
-DLLEXPORT std::ostream& operator<<(std::ostream& out, const darmok::Model& model);
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node);
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::Model& model);

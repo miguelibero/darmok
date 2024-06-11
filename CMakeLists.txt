@@ -28,6 +28,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
+set(VCPKG_LIBRARY_LINKAGE "static") # force static vcpkg libraries
 
 set(ADD_OPTIM_FLAGS "")
 if(MSVC)
@@ -63,12 +64,6 @@ option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
 option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
-if(MSVC AND BUILD_SHARED_LIBS)
-  set(DLLEXPORT "__declspec(dllexport)")
-else()
-  set(DLLEXPORT "")
-endif()
-
 set(SRC_DIR src)
 set(INCLUDE_BASE_DIR include)
 set(INCLUDE_DIR ${INCLUDE_BASE_DIR}/darmok)
@@ -82,7 +77,7 @@ include(darmokProcessAssets)
 
 darmok_process_assets(
   ASSETS "assets/shaders"
-  HEADER_OUTPUT_DIR "include/generated/shaders"
+  HEADER_OUTPUT_DIR "include/private/generated/shaders"
   HEADER_SHADER_INCLUDE_DIR "generated/shaders"
   SOURCE_GROUP_NAME "Embedded Shader Files"
 )
@@ -203,7 +198,7 @@ if(DARMOK_BUILD_IMGUI)
   darmok_process_assets(
     ASSETS "assets/imgui"
     HEADER_VAR_PREFIX "imgui_"
-    HEADER_OUTPUT_DIR "include/generated/imgui/shaders"
+    HEADER_OUTPUT_DIR "include/private/generated/imgui/shaders"
     HEADER_SHADER_INCLUDE_DIR "generated/imgui/shaders"
     SOURCE_GROUP_NAME "Imgui Asset Files"
     SOURCES_VAR IMGUI_ASSETS
@@ -222,7 +217,7 @@ if(DARMOK_BUILD_RMLUI)
   darmok_process_assets(
     ASSETS "assets/rmlui"
     HEADER_VAR_PREFIX "rmlui_"
-    HEADER_OUTPUT_DIR "include/generated/rmlui/shaders"
+    HEADER_OUTPUT_DIR "include/private/generated/rmlui/shaders"
     HEADER_SHADER_INCLUDE_DIR "generated/rmlui/shaders"
     SOURCE_GROUP_NAME "RmlUI Asset Files"
     SOURCES_VAR RMLUI_ASSETS
@@ -299,7 +294,11 @@ add_library(darmok::darmok ALIAS ${LIB_NAME})
 target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 
 include(GenerateExportHeader)
-GENERATE_EXPORT_HEADER(${LIB_NAME})
+set(EXPORT_HEADER_PATH include/public/darmok/export.h)
+generate_export_header(${LIB_NAME}
+  EXPORT_FILE_NAME ${EXPORT_HEADER_PATH}
+)
+list(APPEND HEADERS ${PROJECT_BINARY_DIR}/${EXPORT_HEADER_PATH})
 
 set(EXPORT_NAME "${PROJECT_NAME}Targets")
 set(EXPORT_INSTALL_DIR "share/${PROJECT_NAME}")
@@ -326,12 +325,15 @@ macro(_darmok_lib_setup TARGET)
     PUBLIC
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/public>
     PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/private>
   )
   set_target_properties(${TARGET} PROPERTIES VERSION ${PROJECT_VERSION})
-  target_compile_definitions(${TARGET} PUBLIC "DLLEXPORT=${DLLEXPORT}")
   set_target_properties(${TARGET} PROPERTIES FOLDER ${PROJECT_NAME})
+  if(BUILD_SHARED_LIBS)
+    target_compile_definitions(${TARGET} PUBLIC darmok_EXPORTS)
+  endif()
 endmacro()
 
 _darmok_lib_setup(${LIB_NAME})
@@ -351,7 +353,7 @@ add_executable(${VLAYOUTC_NAME}
 target_link_libraries(${VLAYOUTC_NAME} ${CORE_LIB_NAME})
 add_executable(darmok::vlayoutc ALIAS ${VLAYOUTC_NAME})
 set_target_properties(${VLAYOUTC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
-darmok_copy_dynamic_libs(${VLAYOUTC_NAME})
+# darmok_copy_dynamic_libs(${VLAYOUTC_NAME})
 
 # samples
 if(DARMOK_BUILD_SAMPLES)
@@ -461,7 +463,7 @@ if(DARMOK_BUILD_ASSIMP)
   target_link_libraries(${MODELC_NAME} ${LIB_NAME})
   add_executable(darmok::modelc ALIAS ${MODELC_NAME})
   set_target_properties(${MODELC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
-  darmok_copy_dynamic_libs(${MODELC_NAME})
+  # darmok_copy_dynamic_libs(${MODELC_NAME})
 endif()
 
 if(DARMOK_BUILD_JOLT)

@@ -228,7 +228,7 @@ namespace darmok
         auto trans = glm::translate(glm::mat4(1), glm::vec3(translation.x, translation.y, 0.0f));
         _encoder->setTransform(glm::value_ptr(trans));
 
-        auto programHandle = _program->getHandle();
+        bgfx::ProgramHandle progHandle = _program->getHandle();
 
         if (texture)
         {
@@ -240,11 +240,11 @@ namespace darmok
         }
         else
         {
-            programHandle = _solidProgram->getHandle();
+            progHandle = _solidProgram->getHandle();
         }
 
         _encoder->setState(_state);
-        _encoder->submit(_viewId.value(), programHandle);
+        _encoder->submit(_viewId.value(), progHandle);
         _rendered = true;
     }
 
@@ -381,7 +381,7 @@ namespace darmok
         }
     }
 
-    const std::shared_ptr<Texture>& RmluiRenderInterface::getTargetTexture() noexcept
+    std::shared_ptr<Texture> RmluiRenderInterface::getTargetTexture() noexcept
     {
         return _targetTexture;
     }
@@ -602,7 +602,7 @@ namespace darmok
         }
     }
 
-    const std::shared_ptr<Texture>& RmluiAppComponentImpl::getTargetTexture() const noexcept
+    std::shared_ptr<Texture> RmluiAppComponentImpl::getTargetTexture() const noexcept
     {
         return _render.getTargetTexture();
     }
@@ -630,7 +630,7 @@ namespace darmok
     void RmluiAppComponentImpl::setMousePosition(const glm::vec2& pos) noexcept
     {
         auto vp = getCurrentViewport();
-        auto p = pos;
+        glm::vec2 p = pos;
 
         // invert vertical since that's how rmlui works
         p.y = vp.size.y - p.y;
@@ -742,7 +742,7 @@ namespace darmok
         }
 
 
-        auto cursorName = _shared->getMouseCursor();
+        std::string cursorName = _shared->getMouseCursor();
         auto getSprite = [&]() -> const Rml::Sprite*
         { 
             if (cursorName.empty())
@@ -1001,6 +1001,11 @@ namespace darmok
     {
     }
 
+    RmluiAppComponent::~RmluiAppComponent() noexcept
+    {
+        // left empty to get the forward declaration of the impl working
+    }
+
     OptionalRef<Rml::Context> RmluiAppComponent::getContext() const noexcept
     {
         return _impl->getContext();
@@ -1012,7 +1017,7 @@ namespace darmok
         return *this;
     }
 
-    const std::shared_ptr<Texture>& RmluiAppComponent::getTargetTexture() noexcept
+    std::shared_ptr<Texture> RmluiAppComponent::getTargetTexture() noexcept
     {
         return _impl->getTargetTexture();
     }

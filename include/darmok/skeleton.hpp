@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -21,7 +22,7 @@ namespace darmok
 {
     class SkeletonImpl;
 
-    class DLLEXPORT Skeleton final
+    class DARMOK_EXPORT Skeleton final
     {
     public:
         Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept;
@@ -35,7 +36,7 @@ namespace darmok
 
     class SkeletalAnimationImpl;
 
-    class DLLEXPORT SkeletalAnimation final
+    class DARMOK_EXPORT SkeletalAnimation final
     {
     public:
         SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept;
@@ -49,7 +50,7 @@ namespace darmok
         std::unique_ptr<SkeletalAnimationImpl> _impl;
     };
 
-    class DLLEXPORT BX_NO_VTABLE ISkeletonLoader
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletonLoader
     {
     public:
         using result_type = std::shared_ptr<Skeleton>;
@@ -58,7 +59,7 @@ namespace darmok
         virtual result_type operator()(std::string_view name) = 0;
     };
 
-    class DLLEXPORT BX_NO_VTABLE ISkeletalAnimationLoader
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimationLoader
     {
     public:
         using result_type = std::shared_ptr<SkeletalAnimation>;
@@ -66,7 +67,7 @@ namespace darmok
         virtual result_type operator()(std::string_view name) = 0;
     };
 
-    struct DLLEXPORT SkeletalAnimatorAnimationConfig final
+    struct DARMOK_EXPORT SkeletalAnimatorAnimationConfig final
     {
         std::shared_ptr<SkeletalAnimation> animation = nullptr;
         glm::vec2 blendPosition = {};
@@ -81,7 +82,7 @@ namespace darmok
         Directional
     };
 
-    struct DLLEXPORT SkeletalAnimatorTweenConfig final
+    struct DARMOK_EXPORT SkeletalAnimatorTweenConfig final
     {
         tweeny::easing::enumerated easing = tweeny::easing::enumerated::linear;
         float duration = 0.F;
@@ -90,7 +91,7 @@ namespace darmok
         void readJson(const nlohmann::json& json);
     };
 
-    struct DLLEXPORT SkeletalAnimatorStateConfig final
+    struct DARMOK_EXPORT SkeletalAnimatorStateConfig final
     {
         using AnimationConfig = SkeletalAnimatorAnimationConfig;
         std::string name;
@@ -106,7 +107,7 @@ namespace darmok
         static SkeletalAnimatorBlendType getBlendType(const std::string_view name) noexcept;
     };
 
-    struct DLLEXPORT SkeletalAnimatorTransitionConfig final
+    struct DARMOK_EXPORT SkeletalAnimatorTransitionConfig final
     {
         SkeletalAnimatorTweenConfig tween;
         float offset = 0.F;
@@ -115,7 +116,7 @@ namespace darmok
         void readJson(const nlohmann::json& json);
     };
 
-    class DLLEXPORT BX_NO_VTABLE ISkeletalAnimatorState
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorState
     {
     public:
         using Config = SkeletalAnimatorStateConfig;
@@ -123,7 +124,7 @@ namespace darmok
         virtual std::string_view getName() const = 0;
     };
 
-    class DLLEXPORT BX_NO_VTABLE ISkeletalAnimatorTransition
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorTransition
     {
     public:
         using Config = SkeletalAnimatorTransitionConfig;
@@ -134,7 +135,7 @@ namespace darmok
         virtual const ISkeletalAnimatorState& getPreviousState() const = 0;
     };
 
-    struct DLLEXPORT SkeletalAnimatorConfig final
+    struct DARMOK_EXPORT SkeletalAnimatorConfig final
     {
         using StateConfig = SkeletalAnimatorStateConfig;
 
@@ -167,7 +168,7 @@ namespace darmok
 
     };
 
-    class DLLEXPORT BX_NO_VTABLE ISkeletalAnimatorConfigLoader
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorConfigLoader
     {
     public:
         using result_type = SkeletalAnimatorConfig;
@@ -177,7 +178,7 @@ namespace darmok
 
     class IDataLoader;
 
-    class DLLEXPORT JsonSkeletalAnimatorConfigLoader final : public ISkeletalAnimatorConfigLoader
+    class JsonSkeletalAnimatorConfigLoader final : public ISkeletalAnimatorConfigLoader
     {
     public:
         JsonSkeletalAnimatorConfigLoader(IDataLoader& dataLoader, ISkeletalAnimationLoader& animLoader) noexcept;
@@ -189,7 +190,7 @@ namespace darmok
 
     class SkeletalAnimator;
 
-    class DLLEXPORT BX_NO_VTABLE ISkeletalAnimatorListener
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorListener
     {
     public:
         virtual ~ISkeletalAnimatorListener() = default;
@@ -201,7 +202,7 @@ namespace darmok
 
     class SkeletalAnimatorImpl;
 
-    class DLLEXPORT SkeletalAnimator final
+    class DARMOK_EXPORT SkeletalAnimator final
     {
     public:
         using Config = SkeletalAnimatorConfig;
@@ -232,7 +233,7 @@ namespace darmok
     class Transform;
     class Material;
 
-    class DLLEXPORT RenderableSkeleton final
+    class DARMOK_EXPORT RenderableSkeleton final
     {
     public:
         RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh = nullptr) noexcept;
@@ -243,7 +244,7 @@ namespace darmok
         std::vector<OptionalRef<Transform>> _boneTransforms;
     };
 
-    class DLLEXPORT SkeletalAnimationUpdater final : public ISceneLogicUpdater
+    class DARMOK_EXPORT SkeletalAnimationUpdater final : public ISceneLogicUpdater
     {
     public:
         void init(Scene& scene, App& app) noexcept override;
@@ -258,7 +259,7 @@ namespace darmok
         glm::mat4 inverseBindPose;
     };
 
-    class DLLEXPORT Armature final
+    class DARMOK_EXPORT Armature final
     {
     public:
         Armature(const std::vector<ArmatureJoint>& joints) noexcept;
@@ -269,17 +270,17 @@ namespace darmok
         std::vector<ArmatureJoint> _joints;
     };
 
-    class DLLEXPORT Skinnable
+    class DARMOK_EXPORT Skinnable
     {
     public:
         Skinnable(const std::shared_ptr<Armature>& armature = nullptr) noexcept;
-        const std::shared_ptr<Armature>& getArmature() const noexcept;
+        std::shared_ptr<Armature> getArmature() const noexcept;
         void setArmature(const std::shared_ptr<Armature>& armature) noexcept;
     private:
         std::shared_ptr<Armature> _armature;
     };
 
-    class DLLEXPORT SkeletalAnimationCameraComponent final : public ICameraComponent
+    class DARMOK_EXPORT SkeletalAnimationCameraComponent final : public ICameraComponent
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;

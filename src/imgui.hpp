@@ -22,6 +22,7 @@ namespace darmok
 		void shutdown() noexcept;
 		void updateLogic(float dt) noexcept;
 		bool render(bgfx::ViewId viewId) const noexcept;
+		ImGuiContext* getContext() noexcept;
 
     private:
 		IImguiRenderer& _renderer;

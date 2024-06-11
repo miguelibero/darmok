@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -40,41 +41,42 @@ namespace darmok
 	class Window;
 	class AssetContext;
 
-	DLLEXPORT int32_t main(int32_t argc, const char* const* argv, RunAppCallback callback);
+	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, RunAppCallback callback);
 
-	struct AppConfig
+	struct DARMOK_EXPORT AppConfig
 	{
-		static const AppConfig defaultConfig;
-		double targetUpdateDeltaTime = defaultConfig.targetUpdateDeltaTime;
-		int maxInstantLogicUpdates = defaultConfig.maxInstantLogicUpdates;
-		Color clearColor = defaultConfig.clearColor;
+		static const AppConfig& getDefaultConfig() noexcept;
+
+		double targetUpdateDeltaTime = getDefaultConfig().targetUpdateDeltaTime;
+		int maxInstantLogicUpdates = getDefaultConfig().maxInstantLogicUpdates;
+		Color clearColor = getDefaultConfig().clearColor;
 	};
 
-	typedef std::shared_ptr<AppComponent> (*SharedAppComponentCreationCallback)();
+	typedef std::shared_ptr<AppComponent>(*SharedAppComponentCreationCallback)();
 
-	class App
+	class DARMOK_EXPORT App
 	{
 	public:
-		DLLEXPORT App() noexcept;
-		DLLEXPORT virtual ~App() noexcept;
-		DLLEXPORT virtual void init(const std::vector<std::string>& args);
-		DLLEXPORT virtual int shutdown();
+		App() noexcept;
+		virtual ~App() noexcept;
+		virtual void init(const std::vector<std::string>& args);
+		virtual int shutdown();
 		bool update();
 
-		[[nodiscard]] DLLEXPORT Input& getInput() noexcept;
-		[[nodiscard]] DLLEXPORT const Input& getInput() const noexcept;
+		[[nodiscard]] Input& getInput() noexcept;
+		[[nodiscard]] const Input& getInput() const noexcept;
 
-		[[nodiscard]] DLLEXPORT Window& getWindow() noexcept;
-		[[nodiscard]] DLLEXPORT const Window& getWindow() const noexcept;
+		[[nodiscard]] Window& getWindow() noexcept;
+		[[nodiscard]] const Window& getWindow() const noexcept;
 
-		[[nodiscard]] DLLEXPORT AssetContext& getAssets() noexcept;
-		[[nodiscard]] DLLEXPORT const AssetContext& getAssets() const noexcept;
+		[[nodiscard]] AssetContext& getAssets() noexcept;
+		[[nodiscard]] const AssetContext& getAssets() const noexcept;
 
-		DLLEXPORT void toggleDebugFlag(uint32_t flag) noexcept;
-		DLLEXPORT void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
+		void toggleDebugFlag(uint32_t flag) noexcept;
+		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
-		DLLEXPORT void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
-		DLLEXPORT bool removeComponent(AppComponent& component) noexcept;
+		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
+		bool removeComponent(AppComponent& component) noexcept;
 
 		template<typename T, typename... A>
 		T& addComponent(A&&... args) noexcept
@@ -102,14 +104,14 @@ namespace darmok
 
 		std::shared_ptr<AppComponent> getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback);
 
-		DLLEXPORT virtual void updateLogic(float deltaTime);
-		DLLEXPORT virtual bgfx::ViewId render(bgfx::ViewId viewId) const;
+		virtual void updateLogic(float deltaTime);
+		virtual bgfx::ViewId render(bgfx::ViewId viewId) const;
 
 	private:
 		std::unique_ptr<AppImpl> _impl;
 	};
 
-	class AppComponent
+	class DARMOK_EXPORT AppComponent
 	{
 	public:
 		AppComponent() = default;
@@ -121,7 +123,7 @@ namespace darmok
 		virtual bgfx::ViewId render(bgfx::ViewId viewId) const { return viewId;  };
 	};
 
-	DLLEXPORT int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args);
+	DARMOK_EXPORT int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args);
 
 	template<typename T, typename... A>
 	int runApp(const std::vector<std::string>& args, A&&... constructArgs)

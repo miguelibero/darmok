@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <functional>
 #include <string>
 #include <array>
@@ -18,7 +19,7 @@ namespace darmok
 {
 #pragma region Utf8Char
 
-	struct Utf8Char final
+	struct DARMOK_EXPORT Utf8Char final
 	{
 		uint32_t data;
 		uint8_t len;
@@ -36,35 +37,36 @@ namespace darmok
 	using KeyboardChars = std::vector<Utf8Char>;
 	class KeyboardImpl;
 
-	class BX_NO_VTABLE IKeyboardListener
+	class DARMOK_EXPORT BX_NO_VTABLE IKeyboardListener
 	{
 	public:
-		DLLEXPORT virtual ~IKeyboardListener() = default;
-		DLLEXPORT virtual void onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down) {};
-		DLLEXPORT virtual void onKeyboardChar(const Utf8Char& chr) {};
+		virtual ~IKeyboardListener() = default;
+		virtual void onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down) {};
+		virtual void onKeyboardChar(const Utf8Char& chr) {};
 	};
 
-	class Keyboard final
+	class DARMOK_EXPORT Keyboard final
 	{
 	public:
 		Keyboard() noexcept;
+		~Keyboard() noexcept;
 		Keyboard(const Keyboard& other) = delete;
 		Keyboard(Keyboard&& other) = delete;
 
-		[[nodiscard]] DLLEXPORT bool getKey(KeyboardKey key) const noexcept;
-		[[nodiscard]] DLLEXPORT bool getKey(KeyboardKey key, uint8_t& modifiers) const noexcept;
-		[[nodiscard]] DLLEXPORT const KeyboardKeys& getKeys() const noexcept;
-		[[nodiscard]] DLLEXPORT uint8_t getModifiers() const noexcept;
-		[[nodiscard]] DLLEXPORT const KeyboardChars& getUpdateChars() const noexcept;
+		[[nodiscard]] bool getKey(KeyboardKey key) const noexcept;
+		[[nodiscard]] bool getKey(KeyboardKey key, uint8_t& modifiers) const noexcept;
+		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
+		[[nodiscard]] uint8_t getModifiers() const noexcept;
+		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
-		DLLEXPORT void addListener(IKeyboardListener& listener) noexcept;
-		DLLEXPORT bool removeListener(IKeyboardListener& listener) noexcept;
+		void addListener(IKeyboardListener& listener) noexcept;
+		bool removeListener(IKeyboardListener& listener) noexcept;
 
 		[[nodiscard]] const KeyboardImpl& getImpl() const noexcept;
 		[[nodiscard]] KeyboardImpl& getImpl() noexcept;
 
-		[[nodiscard]] DLLEXPORT static char keyToAscii(KeyboardKey key, uint8_t modifiers) noexcept;
-		[[nodiscard]] DLLEXPORT static const std::string& getKeyName(KeyboardKey key) noexcept;
+		[[nodiscard]] static char keyToAscii(KeyboardKey key, uint8_t modifiers) noexcept;
+		[[nodiscard]] static const std::string& getKeyName(KeyboardKey key) noexcept;
 
 
 	private:
@@ -75,35 +77,36 @@ namespace darmok
 
 	class MouseImpl;
 
-	class BX_NO_VTABLE IMouseListener
+	class DARMOK_EXPORT BX_NO_VTABLE IMouseListener
 	{
 	public:
-		DLLEXPORT virtual ~IMouseListener() = default;
-		DLLEXPORT virtual void onMouseActive(bool active) {};
-		DLLEXPORT virtual void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) {};
-		DLLEXPORT virtual void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) {};
-		DLLEXPORT virtual void onMouseButton(MouseButton button, bool down) {};
+		virtual ~IMouseListener() = default;
+		virtual void onMouseActive(bool active) {};
+		virtual void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) {};
+		virtual void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) {};
+		virtual void onMouseButton(MouseButton button, bool down) {};
 	};
 
-	class Mouse final
+	class DARMOK_EXPORT Mouse final
 	{
 	public:
 		Mouse() noexcept;
+		~Mouse() noexcept;
 		Mouse(const Mouse& other) = delete;
 		Mouse(Mouse&& other) = delete;
 
-		[[nodiscard]] DLLEXPORT static const std::string& getButtonName(MouseButton button) noexcept;
+		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
 
-		[[nodiscard]] DLLEXPORT const glm::vec2& getPosition() const noexcept;
-		[[nodiscard]] DLLEXPORT glm::vec2 getPositionDelta() const noexcept;
-		[[nodiscard]] DLLEXPORT const glm::vec2& getScroll() const noexcept;
-		[[nodiscard]] DLLEXPORT glm::vec2 getScrollDelta() const noexcept;
-		[[nodiscard]] DLLEXPORT bool getActive() const noexcept;
-		[[nodiscard]] DLLEXPORT const MouseButtons& getButtons() const noexcept;
-		[[nodiscard]] DLLEXPORT bool getButton(MouseButton button) const noexcept;
+		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
+		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
+		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
+		[[nodiscard]] glm::vec2 getScrollDelta() const noexcept;
+		[[nodiscard]] bool getActive() const noexcept;
+		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
+		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 
-		DLLEXPORT void addListener(IMouseListener& listener) noexcept;
-		DLLEXPORT bool removeListener(IMouseListener& listener) noexcept;
+		void addListener(IMouseListener& listener) noexcept;
+		bool removeListener(IMouseListener& listener) noexcept;
 
 		[[nodiscard]] const MouseImpl& getImpl() const noexcept;
 		[[nodiscard]] MouseImpl& getImpl() noexcept;
@@ -117,34 +120,35 @@ namespace darmok
 
 	class GamepadImpl;
 
-	class BX_NO_VTABLE IGamepadListener
+	class DARMOK_EXPORT BX_NO_VTABLE IGamepadListener
 	{
 	public:
-		DLLEXPORT virtual ~IGamepadListener() = default;
-		DLLEXPORT virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) {};
-		DLLEXPORT virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
-		DLLEXPORT virtual void onGamepadConnect(uint8_t num, bool connected) {};
+		virtual ~IGamepadListener() = default;
+		virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) {};
+		virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
+		virtual void onGamepadConnect(uint8_t num, bool connected) {};
 	};
 
-	class Gamepad final
+	class DARMOK_EXPORT Gamepad final
 	{
 	public:
 		const static uint8_t MaxAmount = 4;
 
 		Gamepad() noexcept;
+		~Gamepad() noexcept;
 		Gamepad(const Gamepad& other) = delete;
 		Gamepad(Gamepad&& other) = delete;
 		
-		[[nodiscard]] DLLEXPORT static const std::string& getButtonName(GamepadButton button) noexcept;
+		[[nodiscard]] static const std::string& getButtonName(GamepadButton button) noexcept;
 		
-		[[nodiscard]] DLLEXPORT const glm::vec3& getStick(GamepadStick stick) const noexcept;
-		[[nodiscard]] DLLEXPORT const GamepadSticks& getSticks() const noexcept;
-		[[nodiscard]] DLLEXPORT bool getButton(GamepadButton button) const noexcept;
-		[[nodiscard]] DLLEXPORT const GamepadButtons& getButtons() const noexcept;
-		[[nodiscard]] DLLEXPORT bool isConnected() const noexcept;
+		[[nodiscard]] const glm::vec3& getStick(GamepadStick stick) const noexcept;
+		[[nodiscard]] const GamepadSticks& getSticks() const noexcept;
+		[[nodiscard]] bool getButton(GamepadButton button) const noexcept;
+		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
+		[[nodiscard]] bool isConnected() const noexcept;
 
-		DLLEXPORT void addListener(IGamepadListener& listener) noexcept;
-		DLLEXPORT bool removeListener(IGamepadListener& listener) noexcept;
+		void addListener(IGamepadListener& listener) noexcept;
+		bool removeListener(IGamepadListener& listener) noexcept;
 
 		[[nodiscard]] const GamepadImpl& getImpl() const noexcept;
 		[[nodiscard]] GamepadImpl& getImpl() noexcept;
@@ -153,7 +157,7 @@ namespace darmok
 		std::unique_ptr<GamepadImpl> _impl;
 	};
 
-	struct KeyboardBindingKey final
+	struct DARMOK_EXPORT KeyboardBindingKey final
 	{
 		KeyboardKey key;
 		uint8_t modifiers;
@@ -165,7 +169,7 @@ namespace darmok
 		static std::optional<KeyboardBindingKey> read(std::string_view name) noexcept;
 	};
 
-	struct MouseBindingKey final
+	struct DARMOK_EXPORT MouseBindingKey final
 	{
 		MouseButton button;
 
@@ -175,7 +179,7 @@ namespace darmok
 		static std::optional<MouseBindingKey> read(std::string_view name) noexcept;
 	};
 
-	struct GamepadBindingKey final
+	struct DARMOK_EXPORT GamepadBindingKey final
 	{
 		GamepadButton button;
 		uint8_t gamepad = -1;
@@ -188,7 +192,7 @@ namespace darmok
 
 	using InputBindingKey = std::variant<KeyboardBindingKey, MouseBindingKey, GamepadBindingKey>;
 
-	struct InputBinding final
+	struct DARMOK_EXPORT InputBinding final
 	{
 		static std::size_t hashKey(const InputBindingKey& key) noexcept;
 
@@ -204,26 +208,27 @@ namespace darmok
 
 	class InputImpl;
 
-	class Input final
+	class DARMOK_EXPORT Input final
 	{
 	public:
 		Input() noexcept;
+		~Input() noexcept;
 		Input(const Input& other) = delete;
 		Input(Input&& other) = delete;
 
-		DLLEXPORT void processBindings() noexcept;
-		DLLEXPORT void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
-		DLLEXPORT void removeBindings(std::string_view name) noexcept;
+		void processBindings() noexcept;
+		void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
+		void removeBindings(std::string_view name) noexcept;
 
-		[[nodiscard]] DLLEXPORT Keyboard& getKeyboard() noexcept;
-		[[nodiscard]] DLLEXPORT Mouse& getMouse() noexcept;
-		[[nodiscard]] DLLEXPORT OptionalRef<Gamepad> getGamepad(uint8_t num = 0) noexcept;
-		[[nodiscard]] DLLEXPORT Gamepads& getGamepads() noexcept;
+		[[nodiscard]] Keyboard& getKeyboard() noexcept;
+		[[nodiscard]] Mouse& getMouse() noexcept;
+		[[nodiscard]] OptionalRef<Gamepad> getGamepad(uint8_t num = 0) noexcept;
+		[[nodiscard]] Gamepads& getGamepads() noexcept;
 
-		[[nodiscard]] DLLEXPORT const Keyboard& getKeyboard() const noexcept;
-		[[nodiscard]] DLLEXPORT const Mouse& getMouse() const noexcept;
-		[[nodiscard]] DLLEXPORT OptionalRef<const Gamepad> getGamepad(uint8_t num = 0) const noexcept;
-		[[nodiscard]] DLLEXPORT const Gamepads& getGamepads() const noexcept;
+		[[nodiscard]] const Keyboard& getKeyboard() const noexcept;
+		[[nodiscard]] const Mouse& getMouse() const noexcept;
+		[[nodiscard]] OptionalRef<const Gamepad> getGamepad(uint8_t num = 0) const noexcept;
+		[[nodiscard]] const Gamepads& getGamepads() const noexcept;
 		
 		[[nodiscard]] const InputImpl& getImpl() const noexcept;
 		[[nodiscard]] InputImpl& getImpl() noexcept;

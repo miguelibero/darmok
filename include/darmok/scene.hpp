@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <memory>
 #include <cstdint>
 #include <vector>
@@ -14,7 +15,7 @@ namespace darmok
 {    
     class Scene;
 
-    class BX_NO_VTABLE ISceneLogicUpdater
+    class DARMOK_EXPORT BX_NO_VTABLE ISceneLogicUpdater
     {
     public:
         virtual ~ISceneLogicUpdater() = default;
@@ -25,7 +26,7 @@ namespace darmok
 
     class SceneImpl;
 
-    class Scene final
+    class DARMOK_EXPORT Scene final
     {
     public:
         Scene() noexcept;
@@ -45,13 +46,13 @@ namespace darmok
         bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
 
-        DLLEXPORT void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
+        void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
 
-        DLLEXPORT EntityRegistry& getRegistry();
-        DLLEXPORT const EntityRegistry& getRegistry() const;
+        EntityRegistry& getRegistry();
+        const EntityRegistry& getRegistry() const;
 
-        DLLEXPORT Entity createEntity() noexcept;
-        DLLEXPORT bool destroyEntity(Entity entity) noexcept;
+        Entity createEntity() noexcept;
+        bool destroyEntity(Entity entity) noexcept;
 
         template<typename T>
         auto getComponentView() noexcept
@@ -168,13 +169,13 @@ namespace darmok
     private:
         std::unique_ptr<SceneImpl> _impl;
     };
-    
-    class SceneAppComponent final : public AppComponent
+
+    class DARMOK_EXPORT SceneAppComponent final : public AppComponent
     {
     public:
-        DLLEXPORT SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;
-        DLLEXPORT std::shared_ptr<Scene> getScene() const noexcept;
-        DLLEXPORT SceneAppComponent& setScene(const std::shared_ptr<Scene>& scene) noexcept;
+        SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;
+        std::shared_ptr<Scene> getScene() const noexcept;
+        SceneAppComponent& setScene(const std::shared_ptr<Scene>& scene) noexcept;
 
         void init(App& app) override;
         void shutdown() override;

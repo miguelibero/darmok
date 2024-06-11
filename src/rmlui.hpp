@@ -46,7 +46,7 @@ namespace darmok
 		bool afterRender() noexcept;
 		void shutdown() noexcept;
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
-		const std::shared_ptr<Texture>& getTargetTexture() noexcept;
+		std::shared_ptr<Texture> getTargetTexture() noexcept;
 
 	private:
 
@@ -161,7 +161,7 @@ namespace darmok
 		Viewport getCurrentViewport() const noexcept;
 
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
-		const std::shared_ptr<Texture>& getTargetTexture() const noexcept;
+		std::shared_ptr<Texture> getTargetTexture() const noexcept;
 
 		void setInputActive(bool active) noexcept;
 		bool getInputActive() const noexcept;

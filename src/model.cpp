@@ -231,7 +231,7 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<Model> BinaryModelLoader::operator()(std::string_view name)
+    BinaryModelLoader::result_type BinaryModelLoader::operator()(std::string_view name)
     {
         auto data = _dataLoader(name);
         auto model = std::make_shared<Model>();

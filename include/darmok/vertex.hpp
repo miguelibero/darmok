@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <darmok/data.hpp>
 #include <darmok/collection.hpp>
 #include <darmok/optional_ref.hpp>
@@ -18,7 +19,7 @@ namespace bx
 
 namespace darmok
 {
-    class VertexDataWriter final
+    class DARMOK_EXPORT VertexDataWriter final
     {
     public:
         template<typename T>
@@ -40,8 +41,8 @@ namespace darmok
         }
         
     public:
-        DLLEXPORT VertexDataWriter(const bgfx::VertexLayout& layout, uint32_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
-        DLLEXPORT void load(Data&& data) noexcept;
+        VertexDataWriter(const bgfx::VertexLayout& layout, uint32_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
+        void load(Data&& data) noexcept;
 
         template<typename Iter, typename Filter>
         VertexDataWriter& write(bgfx::Attrib::Enum attr, Iter begin, Iter end, Filter filter) noexcept
@@ -141,10 +142,10 @@ namespace darmok
             });
         }
 
-        DLLEXPORT [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr, uint32_t index) const noexcept;
-        DLLEXPORT [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr) const noexcept;
+        [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr, uint32_t index) const noexcept;
+        [[nodiscard]] bool wasWritten(bgfx::Attrib::Enum attr) const noexcept;
 
-        DLLEXPORT Data&& finish() noexcept;
+        Data&& finish() noexcept;
 
     private:
         const bgfx::VertexLayout& _layout;
@@ -154,9 +155,9 @@ namespace darmok
         std::unordered_map<bgfx::Attrib::Enum, std::unordered_set<uint32_t>> _marked;
 
         void* prepareData() noexcept;
-        DLLEXPORT bool write(bgfx::Attrib::Enum attr, uint32_t index, const std::array<float, 4>& finput, bool mark = true) noexcept;
+        bool write(bgfx::Attrib::Enum attr, uint32_t index, const std::array<float, 4>& finput, bool mark = true) noexcept;
 
-        DLLEXPORT void markOne(bgfx::Attrib::Enum attr, uint32_t index) noexcept;
-        DLLEXPORT void markAll(bgfx::Attrib::Enum attr) noexcept;
+        void markOne(bgfx::Attrib::Enum attr, uint32_t index) noexcept;
+        void markAll(bgfx::Attrib::Enum attr) noexcept;
     };
 }

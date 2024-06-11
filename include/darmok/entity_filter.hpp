@@ -1,12 +1,13 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <bx/bx.h>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/optional_ref.hpp>
 
 namespace darmok
 {
-    class BX_NO_VTABLE IEntityFilter
+    class DARMOK_EXPORT BX_NO_VTABLE IEntityFilter
     {
     public:
         virtual ~IEntityFilter() = default;
@@ -19,7 +20,7 @@ namespace darmok
     };
 
     template<typename T>
-    class EntityComponentFilter final : public IEntityFilter
+    class DARMOK_EXPORT EntityComponentFilter final : public IEntityFilter
     {
     public:
         void operator()(EntityRuntimeView& view) const override

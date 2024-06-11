@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <glm/glm.hpp>
 #include <array>
 #include <optional>
@@ -10,126 +11,126 @@ namespace darmok
 {
     struct Line;
 
-    struct Rectangle final
+    struct DARMOK_EXPORT Rectangle final
     {
         glm::vec2 size;
         glm::vec2 origin;
 
-        DLLEXPORT Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
-        DLLEXPORT std::string to_string() const noexcept;
-        DLLEXPORT std::vector<Line> toLines() const noexcept;
+        Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
+        std::string to_string() const noexcept;
+        std::vector<Line> toLines() const noexcept;
 
-        DLLEXPORT static const Rectangle& standard() noexcept;
+        static const Rectangle& standard() noexcept;
     };
 
-    struct Cube final
+    struct DARMOK_EXPORT Cube final
     {
         glm::vec3 size;
         glm::vec3 origin;
 
-        DLLEXPORT Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
-        DLLEXPORT std::string to_string() const noexcept;
+        Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        std::string to_string() const noexcept;
 
-        DLLEXPORT static const Cube& standard() noexcept;
+        static const Cube& standard() noexcept;
     };
 
-    struct Triangle final
+    struct DARMOK_EXPORT Triangle final
     {
         using Vertices = std::array<glm::vec3, 3>;
         Vertices vertices;
 
-        DLLEXPORT Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept;
-        DLLEXPORT Triangle(const Vertices& vertices) noexcept;
-        DLLEXPORT std::string to_string() const noexcept;
+        Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept;
+        Triangle(const Vertices& vertices) noexcept;
+        std::string to_string() const noexcept;
     };
 
-    struct Sphere final
+    struct DARMOK_EXPORT Sphere final
     {
         float radius;
         glm::vec3 origin;
 
-        DLLEXPORT Sphere(const glm::vec3& origin, float radius = 1) noexcept;
-        DLLEXPORT Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
-        DLLEXPORT std::string to_string() const noexcept;
+        Sphere(const glm::vec3& origin, float radius = 1) noexcept;
+        Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        std::string to_string() const noexcept;
 
-        DLLEXPORT static const Sphere& standard() noexcept;
+        static const Sphere& standard() noexcept;
     };
 
-    struct Plane final
+    struct DARMOK_EXPORT Plane final
     {
         glm::vec3 normal;
         glm::vec3 origin;
 
-        DLLEXPORT Plane(const glm::vec3& normal = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
-        DLLEXPORT std::string to_string() const noexcept;
+        Plane(const glm::vec3& normal = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        std::string to_string() const noexcept;
 
-        DLLEXPORT Plane operator*(const glm::mat4& transform) const noexcept;
-        DLLEXPORT Plane& operator*=(const glm::mat4& transform) noexcept;
+        Plane operator*(const glm::mat4& transform) const noexcept;
+        Plane& operator*=(const glm::mat4& transform) noexcept;
 
-        DLLEXPORT static const Plane& standard() noexcept;
+        static const Plane& standard() noexcept;
     };
 
-    struct NormalIntersection final
+    struct DARMOK_EXPORT NormalIntersection final
     {
         glm::vec3 position;
         glm::vec3 normal;
 
-        DLLEXPORT std::string to_string() const noexcept;
+        std::string to_string() const noexcept;
     };
 
-    struct DistanceIntersection final
+    struct DARMOK_EXPORT DistanceIntersection final
     {
         glm::vec2 position;
         float distance;
 
-        DLLEXPORT std::string to_string() const noexcept;
+        std::string to_string() const noexcept;
     };
 
     struct Line;
 
-    struct Ray final
+    struct DARMOK_EXPORT Ray final
     {
         glm::vec3 direction;
         glm::vec3 origin;
 
-        DLLEXPORT Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 1, 0)) noexcept;
+        Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 1, 0)) noexcept;
         
-        DLLEXPORT Ray operator*(const glm::mat4& transform) const noexcept;
-        DLLEXPORT Ray& operator*=(const glm::mat4& transform) noexcept;
+        Ray operator*(const glm::mat4& transform) const noexcept;
+        Ray& operator*=(const glm::mat4& transform) noexcept;
 
-        DLLEXPORT glm::vec3 operator*(float dist) const noexcept;
+        glm::vec3 operator*(float dist) const noexcept;
         
-        DLLEXPORT std::string to_string() const noexcept;
-        DLLEXPORT Line toLine() const noexcept;
+        std::string to_string() const noexcept;
+        Line toLine() const noexcept;
 
         // returns distance to ray origin
-        DLLEXPORT std::optional<float> intersect(const Plane& plane) const noexcept;
+        std::optional<float> intersect(const Plane& plane) const noexcept;
         
         // returns distance to ray origin
-        DLLEXPORT std::optional<float> intersect(const Sphere& sphere) const noexcept;
+        std::optional<float> intersect(const Sphere& sphere) const noexcept;
 
-        DLLEXPORT std::optional<NormalIntersection> intersectNormal(const Sphere& sphere) const noexcept;
-        DLLEXPORT std::optional<DistanceIntersection> intersect(const Triangle& tri) const noexcept;
+        std::optional<NormalIntersection> intersectNormal(const Sphere& sphere) const noexcept;
+        std::optional<DistanceIntersection> intersect(const Triangle& tri) const noexcept;
 
-        DLLEXPORT static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const glm::ivec4& viewport) noexcept;
+        static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const glm::ivec4& viewport) noexcept;
 
     };
 
-    struct Line final
+    struct DARMOK_EXPORT Line final
     {
         using Points = std::array<glm::vec3, 2>;
         Points points;
 
-        DLLEXPORT Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 1, 0)) noexcept;
-        DLLEXPORT Line(const Points& points) noexcept;
+        Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 1, 0)) noexcept;
+        Line(const Points& points) noexcept;
 
-        DLLEXPORT std::string to_string() const noexcept;
+        std::string to_string() const noexcept;
 
-        DLLEXPORT glm::vec3 operator*(float dist) const noexcept;
+        glm::vec3 operator*(float dist) const noexcept;
 
-        DLLEXPORT std::optional<std::array<NormalIntersection, 2>> intersect(const Sphere& sphere) const noexcept;
-        DLLEXPORT std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
-        DLLEXPORT glm::vec3 closestPoint(const glm::vec3& p);
+        std::optional<std::array<NormalIntersection, 2>> intersect(const Sphere& sphere) const noexcept;
+        std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
+        glm::vec3 closestPoint(const glm::vec3& p);
     };
 
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/material_fwd.hpp>
@@ -17,34 +18,34 @@ namespace darmok
     class Texture;
     class Program;
 
-    class Material final
+    class DARMOK_EXPORT Material final
     {
     public:
-        DLLEXPORT Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
-        DLLEXPORT Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
-        DLLEXPORT ~Material();
+        Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
+        Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
+        ~Material();
 
-        DLLEXPORT bool valid() const noexcept;
+        bool valid() const noexcept;
 
-        DLLEXPORT std::shared_ptr<Program> getProgram() const noexcept;
-        DLLEXPORT Material& setProgram(const std::shared_ptr<Program>& program) noexcept;
+        std::shared_ptr<Program> getProgram() const noexcept;
+        Material& setProgram(const std::shared_ptr<Program>& program) noexcept;
 
-        DLLEXPORT std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
-        DLLEXPORT Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
+        std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
+        Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
         
-        DLLEXPORT OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
-        DLLEXPORT Material& setColor(MaterialColorType type, const Color& color) noexcept;
+        OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
+        Material& setColor(MaterialColorType type, const Color& color) noexcept;
         
-        DLLEXPORT MaterialPrimitiveType getPrimitiveType() const noexcept;
-        DLLEXPORT Material& setPrimitiveType(MaterialPrimitiveType type) noexcept;
+        MaterialPrimitiveType getPrimitiveType() const noexcept;
+        Material& setPrimitiveType(MaterialPrimitiveType type) noexcept;
         
-        DLLEXPORT uint8_t getShininess() const noexcept;
-        DLLEXPORT Material& setShininess(uint8_t v) noexcept;
+        uint8_t getShininess() const noexcept;
+        Material& setShininess(uint8_t v) noexcept;
 
-        DLLEXPORT float getSpecularStrength() const noexcept;
-        DLLEXPORT Material& setSpecularStrength(float v) noexcept;
+        float getSpecularStrength() const noexcept;
+        Material& setSpecularStrength(float v) noexcept;
 
-        DLLEXPORT uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
         std::shared_ptr<Program> _program;

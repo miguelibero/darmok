@@ -394,7 +394,7 @@ namespace darmok
 			writer.write(bgfx::Attrib::Normal, meshData.normals);
 		}
 
-		auto vertexData = writer.finish();
+		Data vertexData = writer.finish();
 		DataView vertDataView(vertexData);
 		DataView idxDataView(meshData.indices);
 
@@ -448,17 +448,21 @@ namespace darmok
 		return createMesh(data, cfg);
 	}
 
-	const MeshData MeshCreator::_rectangleMeshData = {
-		{
-			{ 1, 1, 0 }, { 1, 0, 0 }, { 0, 0, 0 }, { 0, 1, 0 },
-		},
-		{
-			{ 0, 0, -1 }, { 0, 0, -1 }, { 0, 0, -1 }, { 0, 0, -1 },
-		},
-		{
-			{ 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 },
-		}
-	};
+	const MeshData& MeshCreator::getRectangleMeshData() noexcept
+	{
+		static const MeshData data = {
+			{
+				{ 1, 1, 0 }, { 1, 0, 0 }, { 0, 0, 0 }, { 0, 1, 0 },
+			},
+			{
+				{ 0, 0, -1 }, { 0, 0, -1 }, { 0, 0, -1 }, { 0, 0, -1 },
+			},
+			{
+				{ 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 },
+			}
+		};
+		return data;
+	}
 
 	std::shared_ptr<IMesh> MeshCreator::createRectangleMesh(const MeshData& data, const Rectangle& rect) noexcept
 	{
@@ -470,14 +474,14 @@ namespace darmok
 
 	std::shared_ptr<IMesh> MeshCreator::createRectangle(const Rectangle& rect) noexcept
 	{
-		MeshData data = _rectangleMeshData;
+		MeshData data = getRectangleMeshData();
 		data.indices = { 0, 1, 2, 2, 3, 0 };
 		return createRectangleMesh(data, rect);
 	}
 
 	std::shared_ptr<IMesh> MeshCreator::createLineRectangle(const Rectangle& rect) noexcept
 	{
-		MeshData data = _rectangleMeshData;
+		MeshData data = getRectangleMeshData();
 		data.indices = { 0, 1, 1, 2, 2, 3, 3, 0 };
 		return createRectangleMesh(data, rect);
 	}

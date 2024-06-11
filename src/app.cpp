@@ -35,7 +35,7 @@ namespace darmok
 		: _exit(false)
 		, _debug(BGFX_DEBUG_NONE)
 		, _lastUpdate(0)
-		, _config(AppConfig::defaultConfig)
+		, _config(AppConfig::getDefaultConfig())
 		, _plat(Platform::get())
 		, _window(_plat)
 	{
@@ -81,12 +81,16 @@ namespace darmok
 		return _plat;
 	}
 
-	const AppConfig AppConfig::defaultConfig =
+	const AppConfig& AppConfig::getDefaultConfig() noexcept
 	{
-		1.0F / 30.0F,
-		10,
-		Colors::fromNumber(0x303030ff)
-	};
+		static const AppConfig config
+		{
+			1.0F / 30.0F,
+			10,
+			Colors::fromNumber(0x303030ff)
+		};
+		return config;
+	}
 
 	float AppImpl::updateTimePassed() noexcept
 	{
@@ -446,8 +450,10 @@ namespace darmok
 		init.debug = true;
 		init.resolution.width = size.x;
 		init.resolution.height = size.y;
-		// init.type = bgfx::RendererType::Vulkan;
 		// init.resolution.reset = ?;
+
+		init.allocator = &_impl->getAssets().getAllocator();
+		// init.type = bgfx::RendererType::Vulkan;
 		bgfx::init(init);
 
 		bgfx::setPaletteColor(0, UINT32_C(0x00000000));

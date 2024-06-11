@@ -10,9 +10,15 @@ set(ozz_build_samples OFF CACHE BOOL "")
 set(ozz_build_howtos OFF CACHE BOOL "")
 set(ozz_build_tests OFF CACHE BOOL "")
 set(ozz_build_msvc_rt_dll ON CACHE BOOL "")
-set(FBX_MSVC_RT_DLL ON)
+set(FBX_MSVC_RT_DLL TRUE)
 
+set(BUILD_SHARED_LIBS_OLD ${BUILD_SHARED_LIBS})
+# always use static linking for ozz
+SET(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+SET(FBX_SHARED OFF CACHE BOOL "")
 FetchContent_MakeAvailable(ozz-animation)
+# recover old value
+set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_OLD})
 
 set(OZZ_TARGETS
   ozz_base
@@ -23,7 +29,6 @@ set(OZZ_TARGETS
   ozz_animation_tools
   json
 )
-
 set(OZZ_EXE_TARGETS
   dump2ozz
   gltf2ozz

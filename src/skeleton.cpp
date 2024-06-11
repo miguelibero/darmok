@@ -51,7 +51,7 @@ namespace darmok
     {
     }
 
-    const std::shared_ptr<Armature>& Skinnable::getArmature() const noexcept
+    std::shared_ptr<Armature> Skinnable::getArmature() const noexcept
     {
         return _armature;
     }

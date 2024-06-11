@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
 #include <glm/glm.hpp>
@@ -21,35 +22,36 @@ namespace darmok
 	class Transform;
 	struct Viewport;
 
-	class BX_NO_VTABLE IRmluiMouseDelegate
+	class DARMOK_EXPORT BX_NO_VTABLE IRmluiMouseDelegate
 	{
 	public:
 		virtual ~IRmluiMouseDelegate() = default;
 		virtual glm::vec2 onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) = 0;
 	};
 
-    class RmluiAppComponent final : public AppComponent
+	class DARMOK_EXPORT RmluiAppComponent final : public AppComponent
     {
     public:
-		DLLEXPORT RmluiAppComponent(const std::string& name) noexcept;
-		DLLEXPORT RmluiAppComponent(const std::string& name, const glm::uvec2& size) noexcept;
+		RmluiAppComponent(const std::string& name) noexcept;
+		RmluiAppComponent(const std::string& name, const glm::uvec2& size) noexcept;
+		~RmluiAppComponent() noexcept;
 
-		DLLEXPORT OptionalRef<Rml::Context> getContext() const noexcept;
+		OptionalRef<Rml::Context> getContext() const noexcept;
 		
-		DLLEXPORT RmluiAppComponent& setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
-		DLLEXPORT const std::shared_ptr<Texture>& getTargetTexture() noexcept;
+		RmluiAppComponent& setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
+		std::shared_ptr<Texture> getTargetTexture() noexcept;
 
-		DLLEXPORT RmluiAppComponent& setViewport(const std::optional<Viewport>& viewport) noexcept;
-		DLLEXPORT const std::optional<Viewport>& getViewport() const noexcept;
-		DLLEXPORT Viewport getCurrentViewport() const noexcept;
+		RmluiAppComponent& setViewport(const std::optional<Viewport>& viewport) noexcept;
+		const std::optional<Viewport>& getViewport() const noexcept;
+		Viewport getCurrentViewport() const noexcept;
 
-		DLLEXPORT RmluiAppComponent& setInputActive(bool active) noexcept;
-		DLLEXPORT bool getInputActive() const noexcept;
+		RmluiAppComponent& setInputActive(bool active) noexcept;
+		bool getInputActive() const noexcept;
 
-		DLLEXPORT RmluiAppComponent& setMousePosition(const glm::vec2& position) noexcept;
+		RmluiAppComponent& setMousePosition(const glm::vec2& position) noexcept;
 
-		DLLEXPORT RmluiAppComponent& setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
-		DLLEXPORT RmluiAppComponent& resetMouseDelegate() noexcept;
+		RmluiAppComponent& setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
+		RmluiAppComponent& resetMouseDelegate() noexcept;
 
 
 		void init(App& app) override;

@@ -73,7 +73,7 @@ namespace darmok
             }
             else if (attr >= bgfx::Attrib::Color0 && attr <= bgfx::Attrib::Color3)
             {
-                input.fill(Colors::maxValue);
+                input.fill(Colors::getMaxValue());
             }
             for (auto j = 0; j < _size; j++)
             {

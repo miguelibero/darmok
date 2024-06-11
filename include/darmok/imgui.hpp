@@ -1,31 +1,35 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <darmok/app.hpp>
 #include <memory>
 #include <bx/bx.h>
-#include <imgui.h>
+
+struct ImGuiContext;
 
 namespace darmok
 {
-	class BX_NO_VTABLE IImguiRenderer
+	class DARMOK_EXPORT BX_NO_VTABLE IImguiRenderer
 	{
 	public:
-		DLLEXPORT virtual ~IImguiRenderer() = default;
-		DLLEXPORT virtual void imguiRender() = 0;
-	};
+		virtual ~IImguiRenderer() = default;
 
+		virtual void imguiRender() = 0;
+	};
 
 	class ImguiAppComponentImpl;
 
-    class ImguiAppComponent final : public AppComponent
+	class DARMOK_EXPORT ImguiAppComponent final : public AppComponent
     {
     public:
-		DLLEXPORT ImguiAppComponent(IImguiRenderer& renderer, float fontSize = 18.0f) noexcept;
+		ImguiAppComponent(IImguiRenderer& renderer, float fontSize = 18.0f) noexcept;
+		~ImguiAppComponent();
 
 		void init(App& app) override;
 		void shutdown() noexcept override;
 		bgfx::ViewId render(bgfx::ViewId viewId) const noexcept override;
 		void updateLogic(float dt) noexcept override;
+		ImGuiContext* getContext() noexcept;
 	private:
 		std::unique_ptr<ImguiAppComponentImpl> _impl;
     };

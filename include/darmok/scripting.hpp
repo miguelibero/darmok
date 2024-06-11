@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <darmok/app.hpp>
 #include <memory>
 
@@ -7,11 +8,11 @@ namespace darmok
 {
     class ScriptingAppImpl;
 
-    class ScriptingApp final : public App
+    class DARMOK_EXPORT ScriptingApp final : public App
     {
     public:
-        DLLEXPORT ScriptingApp();
-        DLLEXPORT ~ScriptingApp();
+        ScriptingApp();
+        ~ScriptingApp();
         void init(const std::vector<std::string>& args) override;
         int shutdown() override;
     protected:

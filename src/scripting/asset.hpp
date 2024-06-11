@@ -9,7 +9,7 @@
 
 namespace darmok
 {
-	class Model;
+	struct Model;
 	class AssetContext;
 	class LuaProgram;
 	class LuaTexture;

@@ -95,7 +95,7 @@ namespace darmok
 			writer.write(bgfx::Attrib::Color0, config.color);
 		}
 
-		auto vertexData = writer.finish();
+		Data vertexData = writer.finish();
 		return IMesh::create(config.type, layout, DataView(vertexData), DataView(totalIndices));
 	}
 

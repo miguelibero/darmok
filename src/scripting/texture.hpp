@@ -39,7 +39,7 @@ namespace darmok
 		std::shared_ptr<Texture> _texture;
 	};	
 
-	class TextureAtlas;
+	struct TextureAtlas;
 	struct MeshCreationConfig;
 
 	class LuaTextureAtlas final

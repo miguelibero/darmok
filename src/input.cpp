@@ -153,7 +153,7 @@ namespace darmok
 		{
 			return {};
 		}
-		auto v = _chars[_charsRead];
+		auto& v = _chars[_charsRead];
 		_charsRead = (_charsRead + 1) % _chars.size();
 		return v;
 	}
@@ -303,6 +303,11 @@ namespace darmok
 	Keyboard::Keyboard() noexcept
 		: _impl(std::make_unique<KeyboardImpl>())
 	{
+	}
+
+	Keyboard::~Keyboard() noexcept
+	{
+		// left empty to get the forward declaration of the impl working
 	}
 
 	char Keyboard::keyToAscii(KeyboardKey key, uint8_t modifiers) noexcept
@@ -559,6 +564,11 @@ namespace darmok
 	{
 	}
 
+	Mouse::~Mouse() noexcept
+	{
+		// left empty to get the forward declaration of the impl working
+	}
+
 	bool Mouse::getButton(MouseButton button) const noexcept
 	{
 		return _impl->getButton(button);
@@ -763,6 +773,11 @@ namespace darmok
 	{
 	}
 
+	Gamepad::~Gamepad() noexcept
+	{
+		// left empty to get the forward declaration of the impl working
+	}
+
 	const std::string& Gamepad::getButtonName(GamepadButton button) noexcept
 	{
 		auto idx = to_underlying(button);
@@ -825,7 +840,7 @@ namespace darmok
 
 	size_t KeyboardBindingKey::hash() const noexcept
 	{
-		return to_underlying(key) | modifiers << 16;
+		return size_t(to_underlying(key)) | modifiers << 16;
 	}
 
 	std::optional<KeyboardKey> KeyboardBindingKey::readKey(std::string_view name) noexcept
@@ -993,7 +1008,7 @@ namespace darmok
 			return to_underlying(v->key) | v->modifiers;
 		}
 
-		constexpr size_t maxKey = to_underlying(KeyboardKey::Count) + UINT8_MAX;
+		constexpr size_t maxKey = size_t(to_underlying(KeyboardKey::Count)) + UINT8_MAX;
 
 		if (auto v = std::get_if<MouseBindingKey>(&key))
 		{
@@ -1192,6 +1207,11 @@ namespace darmok
 	Input::Input() noexcept
 		: _impl(std::make_unique<InputImpl>())
 	{
+	}
+
+	Input::~Input() noexcept
+	{
+		// left empty to get the forward declaration of the impl working
 	}
 
 	void Input::addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept

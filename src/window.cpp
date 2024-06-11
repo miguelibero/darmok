@@ -125,6 +125,11 @@ namespace darmok
 	{
 	}
 
+	Window::~Window() noexcept
+	{
+		// left empty to get the forward declaration of the impl working
+	}
+
 	WindowImpl& Window::getImpl() noexcept
 	{
 		return *_impl;

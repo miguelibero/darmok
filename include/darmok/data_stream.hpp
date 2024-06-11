@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <iostream>
 #include <cereal/archives/binary.hpp>
 
@@ -16,16 +17,16 @@ namespace darmok
     class DataView;
     class Data;
 
-    class DataViewStreamBuffer final : public std::streambuf
+    class DARMOK_EXPORT DataViewStreamBuffer final : public std::streambuf
     {
     public:
         DataViewStreamBuffer(const DataView& data) noexcept;
     };
 
-    class DataInputStream final : public std::istream
+    class DARMOK_EXPORT DataInputStream final : public std::istream
     {
     public:
-        DLLEXPORT DataInputStream(const DataView& data) noexcept;
+        DataInputStream(const DataView& data) noexcept;
 
         template<typename T>
         static void read(const DataView& data, T& val)
@@ -38,7 +39,7 @@ namespace darmok
         DataViewStreamBuffer _buffer;
     };
 
-    class DataStreamBuffer final : public std::streambuf
+    class DARMOK_EXPORT DataStreamBuffer final : public std::streambuf
     {
     public:
         DataStreamBuffer(Data& data, size_t overflowSizeIncrease = 64) noexcept;
@@ -49,10 +50,10 @@ namespace darmok
         size_t _overflowSizeIncrease;
     };
 
-    class DataOutputStream final : public std::ostream
+    class DARMOK_EXPORT DataOutputStream final : public std::ostream
     {
     public:
-        DLLEXPORT DataOutputStream(Data& data) noexcept;
+        DataOutputStream(Data& data) noexcept;
 
         template<typename T>
         static void write(Data& data, const T& val)
@@ -65,13 +66,13 @@ namespace darmok
         DataStreamBuffer _buffer;
     };
 
-    DLLEXPORT void save(cereal::BinaryOutputArchive& archive, const DataView& data);
-    DLLEXPORT void save(cereal::BinaryOutputArchive& archive, const Data& data);
-    DLLEXPORT void save(cereal::XMLOutputArchive& archive, const DataView& data);
-    DLLEXPORT void save(cereal::XMLOutputArchive& archive, const Data& data);
-    DLLEXPORT void save(cereal::JSONOutputArchive& archive, const DataView& data);
-    DLLEXPORT void save(cereal::JSONOutputArchive& archive, const Data& data);
-    DLLEXPORT void load(cereal::BinaryInputArchive& archive, Data& data);
-    DLLEXPORT void load(cereal::XMLInputArchive& archive, Data& data);
-    DLLEXPORT void load(cereal::JSONInputArchive& archive, Data& data);
+    DARMOK_EXPORT void save(cereal::BinaryOutputArchive& archive, const DataView& data);
+    DARMOK_EXPORT void save(cereal::BinaryOutputArchive& archive, const Data& data);
+    DARMOK_EXPORT void save(cereal::XMLOutputArchive& archive, const DataView& data);
+    DARMOK_EXPORT void save(cereal::XMLOutputArchive& archive, const Data& data);
+    DARMOK_EXPORT void save(cereal::JSONOutputArchive& archive, const DataView& data);
+    DARMOK_EXPORT void save(cereal::JSONOutputArchive& archive, const Data& data);
+    DARMOK_EXPORT void load(cereal::BinaryInputArchive& archive, Data& data);
+    DARMOK_EXPORT void load(cereal::XMLInputArchive& archive, Data& data);
+    DARMOK_EXPORT void load(cereal::JSONInputArchive& archive, Data& data);
 }

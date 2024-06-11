@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -15,16 +16,16 @@ namespace darmok
     class Program;
     class StandardProgramLoaderImpl;
 
-	class StandardProgramLoader final
+	class DARMOK_EXPORT StandardProgramLoader final
 	{
 	public:
 		using result_type = std::shared_ptr<Program>;
 
-		DLLEXPORT StandardProgramLoader() noexcept;
-		DLLEXPORT ~StandardProgramLoader() noexcept;
-		DLLEXPORT virtual result_type operator()(StandardProgramType type) noexcept;
-		DLLEXPORT static std::optional<StandardProgramType> getType(std::string_view name) noexcept;
-		DLLEXPORT static bgfx::VertexLayout getVertexLayout(StandardProgramType type) noexcept;
+		StandardProgramLoader() noexcept;
+		~StandardProgramLoader() noexcept;
+		virtual result_type operator()(StandardProgramType type) noexcept;
+		static std::optional<StandardProgramType> getType(std::string_view name) noexcept;
+		static bgfx::VertexLayout getVertexLayout(StandardProgramType type) noexcept;
 	private:
 		std::unique_ptr<StandardProgramLoaderImpl> _impl;
 	};

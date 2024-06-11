@@ -181,7 +181,7 @@ namespace darmok
 				continue;
 			}
 			auto type = bgfx::AttribType::Float;
-			auto val = elm.value();
+			nlohmann::json val = elm.value();
 			if (val.contains("type"))
 			{
 				type = getBgfxAttribType(val["type"].get<std::string_view>());
@@ -258,27 +258,31 @@ namespace darmok
 		os << data.view().toHeader(varName);
 	}
 
-	std::unordered_map<std::string, bgfx::Attrib::Enum> VertexLayoutUtils::_varyingDefAttrs
+	const std::unordered_map<std::string, bgfx::Attrib::Enum>& VertexLayoutUtils::getVaryingDefAttrs() noexcept
 	{
-		{ "POSITION",		bgfx::Attrib::Position },
-		{ "NORMAL",			bgfx::Attrib::Normal },
-		{ "TANGENT",		bgfx::Attrib::Tangent },
-		{ "BITANGENT",		bgfx::Attrib::Bitangent },
-		{ "COLOR0",			bgfx::Attrib::Color0 },
-		{ "COLOR1",			bgfx::Attrib::Color1 },
-		{ "COLOR2",			bgfx::Attrib::Color2 },
-		{ "COLOR3",			bgfx::Attrib::Color3 },
-		{ "BLENDINDICES",	bgfx::Attrib::Indices },
-		{ "BLENDWEIGHT",	bgfx::Attrib::Weight },
-		{ "TEXCOORD0",		bgfx::Attrib::TexCoord0 },
-		{ "TEXCOORD1",		bgfx::Attrib::TexCoord1 },
-		{ "TEXCOORD2",		bgfx::Attrib::TexCoord2 },
-		{ "TEXCOORD3",		bgfx::Attrib::TexCoord3 },
-		{ "TEXCOORD4",		bgfx::Attrib::TexCoord4 },
-		{ "TEXCOORD5",		bgfx::Attrib::TexCoord5 },
-		{ "TEXCOORD6",		bgfx::Attrib::TexCoord6 },
-		{ "TEXCOORD7",		bgfx::Attrib::TexCoord7 },
-	};
+		static const std::unordered_map<std::string, bgfx::Attrib::Enum> map = 
+		{
+			{ "POSITION",		bgfx::Attrib::Position },
+			{ "NORMAL",			bgfx::Attrib::Normal },
+			{ "TANGENT",		bgfx::Attrib::Tangent },
+			{ "BITANGENT",		bgfx::Attrib::Bitangent },
+			{ "COLOR0",			bgfx::Attrib::Color0 },
+			{ "COLOR1",			bgfx::Attrib::Color1 },
+			{ "COLOR2",			bgfx::Attrib::Color2 },
+			{ "COLOR3",			bgfx::Attrib::Color3 },
+			{ "BLENDINDICES",	bgfx::Attrib::Indices },
+			{ "BLENDWEIGHT",	bgfx::Attrib::Weight },
+			{ "TEXCOORD0",		bgfx::Attrib::TexCoord0 },
+			{ "TEXCOORD1",		bgfx::Attrib::TexCoord1 },
+			{ "TEXCOORD2",		bgfx::Attrib::TexCoord2 },
+			{ "TEXCOORD3",		bgfx::Attrib::TexCoord3 },
+			{ "TEXCOORD4",		bgfx::Attrib::TexCoord4 },
+			{ "TEXCOORD5",		bgfx::Attrib::TexCoord5 },
+			{ "TEXCOORD6",		bgfx::Attrib::TexCoord6 },
+			{ "TEXCOORD7",		bgfx::Attrib::TexCoord7 },
+		};
+		return map;
+	}
 
     void VertexLayoutUtils::readVaryingDef(std::istream& is, bgfx::VertexLayout& layout) noexcept
     {
@@ -287,6 +291,7 @@ namespace darmok
 		const std::string comment = "//";
 		std::string line;
 		layout.begin();
+		auto& varyingDefAttrs = getVaryingDefAttrs();
 		while (std::getline(is, line))
 		{
 			StringUtils::trim(line);
@@ -308,8 +313,8 @@ namespace darmok
 			{
 				continue;
 			}
-			auto itr = _varyingDefAttrs.find(words[3]);
-			if (itr == _varyingDefAttrs.end())
+			auto itr = varyingDefAttrs.find(words[3]);
+			if (itr == varyingDefAttrs.end())
 			{
 				continue;
 			}

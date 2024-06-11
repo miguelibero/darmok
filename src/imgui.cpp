@@ -348,7 +348,6 @@ namespace darmok
 	bool ImguiAppComponentImpl::render(bgfx::ViewId viewId) const noexcept
 	{
 		ImGui::SetCurrentContext(_imgui);
-
 		beginFrame();
 		_renderer.imguiRender();
 		auto rendered = endFrame(viewId);
@@ -356,6 +355,11 @@ namespace darmok
 		ImGui::SetCurrentContext(nullptr);
 
 		return rendered;
+	}
+
+	ImGuiContext* ImguiAppComponentImpl::getContext() noexcept
+	{
+		return _imgui;
 	}
 
 	void ImguiAppComponentImpl::updateInput(float dt) noexcept
@@ -422,6 +426,11 @@ namespace darmok
 	{
 	}
 
+	ImguiAppComponent::~ImguiAppComponent()
+	{
+		// empty for the impl forward declaration
+	}
+
 	void ImguiAppComponent::init(App& app)
 	{
 		_impl->init(app);
@@ -444,5 +453,10 @@ namespace darmok
 			++viewId;
 		}
 		return viewId;
+	}
+
+	ImGuiContext* ImguiAppComponent::getContext() noexcept
+	{
+		return _impl->getContext();
 	}
 }

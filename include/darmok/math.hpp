@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <glm/glm.hpp>
 #include <bx/bx.h>
 
@@ -7,7 +8,7 @@ namespace darmok
 {
 	struct Viewport;
 
-    struct Math final
+    struct DARMOK_EXPORT Math final
     {
         template<typename T>
         static T lerp(const T& a, const T& b, float p) noexcept
@@ -56,25 +57,25 @@ namespace darmok
 			return result;
 		}
 
-		DLLEXPORT static [[nodiscard]] glm::mat4 flipHandedness(const glm::mat4& mat) noexcept;
+		static [[nodiscard]] glm::mat4 flipHandedness(const glm::mat4& mat) noexcept;
 
        /*
         * we cannot use the glm camera functions because they use opengl depth format 
         * and bgfx can run on different renderers so they have math functions with a depth parameter
         */
-        DLLEXPORT static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near, float far) noexcept;
-        DLLEXPORT static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near = 0.f) noexcept;
-        DLLEXPORT static [[nodiscard]] glm::mat4 ortho(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
-		DLLEXPORT static [[nodiscard]] glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
-		DLLEXPORT static [[nodiscard]] glm::mat4 ortho(const Viewport& vp, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+        static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near, float far) noexcept;
+        static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near = 0.f) noexcept;
+        static [[nodiscard]] glm::mat4 ortho(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 ortho(const Viewport& vp, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
 		
-		DLLEXPORT static [[nodiscard]] glm::mat4 frustrum(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
-		DLLEXPORT static [[nodiscard]] glm::mat4 frustrum(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 frustrum(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 frustrum(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
         
 		// methods used in Transform to generate the matrix
-        DLLEXPORT static [[nodiscard]] glm::mat4 translateRotateScale(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;
-        DLLEXPORT static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale, const glm::vec3& pivot = glm::vec3(0)) noexcept;
-        DLLEXPORT static bool decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale, glm::vec3& pivot) noexcept;
+        static [[nodiscard]] glm::mat4 translateRotateScale(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;
+        static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale, const glm::vec3& pivot = glm::vec3(0)) noexcept;
+        static bool decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale, glm::vec3& pivot) noexcept;
     };
 }
 
