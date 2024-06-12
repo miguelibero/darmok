@@ -5,13 +5,13 @@ macro(darmok_sample_setup TARGET)
     set_target_properties(${TARGET} PROPERTIES FOLDER "darmok/samples")
 endmacro()
 
-macro(darmok_scripting_sample_setup TARGET ASSETS)
+macro(darmok_lua_sample_setup TARGET ASSETS)
     add_custom_target(${TARGET}
-        COMMAND $<TARGET_FILE:darmok-scripting>
-        DEPENDS darmok-scripting
+        COMMAND $<TARGET_FILE:darmok-lua>
+        DEPENDS darmok-lua
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         SOURCES ${ASSETS}
-        COMMENT "running darmok scripting executable"
+        COMMENT "running darmok lua executable"
     )
     set_target_properties(${TARGET} PROPERTIES FOLDER "darmok/samples")
 endmacro()
@@ -21,5 +21,5 @@ add_subdirectory(rmlui)
 add_subdirectory(scene)
 add_subdirectory(assimp)
 add_subdirectory(pbr)
-add_subdirectory(scripting)
+add_subdirectory(lua)
 add_subdirectory(ozz)

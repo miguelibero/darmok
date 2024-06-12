@@ -54,8 +54,8 @@ endfunction()
 
 option(DARMOK_BUILD_SAMPLES "build darmok samples" OFF)
 option(DARMOK_BUILD_TESTS "build darmok unit tests" OFF)
-option(DARMOK_BUILD_SCRIPTING "build darmok with scripting support" OFF)
-option(DARMOK_BUILD_SCRIPTING_EXE "build the darmok scripting executable" OFF)
+option(DARMOK_BUILD_LUA "build darmok with lua support" OFF)
+option(DARMOK_BUILD_LUA_EXE "build the darmok lua executable" OFF)
 option(DARMOK_BUILD_IMGUI "build darmok with imGUI support" OFF)
 option(DARMOK_BUILD_RMLUI "build darmok with RmlUI support" OFF)
 option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
@@ -176,7 +176,7 @@ set(HEADERS
   ${INCLUDE_DIR}/render_deferred.hpp
 )
 
-set(SCRIPTING_SOURCES)
+set(LUA_SOURCES)
 
 if(NOT DARMOK_PLATFORM)
     set(DARMOK_PLATFORM glfw)
@@ -210,8 +210,8 @@ if(DARMOK_BUILD_RMLUI)
   list(APPEND SOURCES ${SRC_DIR}/rmlui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/rmlui.hpp)
 
-  if(DARMOK_BUILD_SCRIPTING)
-    list(APPEND SCRIPTING_SOURCES ${SRC_DIR}/scripting/rmlui.cpp)
+  if(DARMOK_BUILD_LUA)
+    list(APPEND LUA_SOURCES ${SRC_DIR}/lua/rmlui.cpp)
   endif()
 
   darmok_process_assets(
@@ -236,39 +236,39 @@ if(DARMOK_BUILD_ASSIMP)
   list(APPEND SOURCES ${SRC_DIR}/model_assimp.cpp)
 endif()
 
-if(DARMOK_BUILD_SCRIPTING_EXE)
-  set(DARMOK_BUILD_SCRIPTING ON CACHE BOOL "")
+if(DARMOK_BUILD_LUA_EXE)
+  set(DARMOK_BUILD_LUA ON CACHE BOOL "")
 endif()
 
-if(DARMOK_BUILD_SCRIPTING)
-  list(APPEND SCRIPTING_SOURCES
-    ${SRC_DIR}/scripting/app.cpp
-    ${SRC_DIR}/scripting/asset.cpp
-    ${SRC_DIR}/scripting/image.cpp
-    ${SRC_DIR}/scripting/material.cpp
-    ${SRC_DIR}/scripting/render.cpp
-    ${SRC_DIR}/scripting/mesh.cpp
-    ${SRC_DIR}/scripting/program.cpp
-    ${SRC_DIR}/scripting/texture.cpp
-    ${SRC_DIR}/scripting/input.cpp
-    ${SRC_DIR}/scripting/math1.cpp
-    ${SRC_DIR}/scripting/math2.cpp
-    ${SRC_DIR}/scripting/math3.cpp
-    ${SRC_DIR}/scripting/shape.cpp
-    ${SRC_DIR}/scripting/scene.cpp
-    ${SRC_DIR}/scripting/transform.cpp
-    ${SRC_DIR}/scripting/light.cpp
-    ${SRC_DIR}/scripting/viewport.cpp
-    ${SRC_DIR}/scripting/camera.cpp
-    ${SRC_DIR}/scripting/window.cpp
-    ${SRC_DIR}/scripting/model.cpp
-    ${SRC_DIR}/scripting/utils.cpp
-    ${SRC_DIR}/scripting/skeleton.cpp
+if(DARMOK_BUILD_LUA)
+  list(APPEND LUA_SOURCES
+    ${SRC_DIR}/lua/app.cpp
+    ${SRC_DIR}/lua/asset.cpp
+    ${SRC_DIR}/lua/image.cpp
+    ${SRC_DIR}/lua/material.cpp
+    ${SRC_DIR}/lua/render.cpp
+    ${SRC_DIR}/lua/mesh.cpp
+    ${SRC_DIR}/lua/program.cpp
+    ${SRC_DIR}/lua/texture.cpp
+    ${SRC_DIR}/lua/input.cpp
+    ${SRC_DIR}/lua/math1.cpp
+    ${SRC_DIR}/lua/math2.cpp
+    ${SRC_DIR}/lua/math3.cpp
+    ${SRC_DIR}/lua/shape.cpp
+    ${SRC_DIR}/lua/scene.cpp
+    ${SRC_DIR}/lua/transform.cpp
+    ${SRC_DIR}/lua/light.cpp
+    ${SRC_DIR}/lua/viewport.cpp
+    ${SRC_DIR}/lua/camera.cpp
+    ${SRC_DIR}/lua/window.cpp
+    ${SRC_DIR}/lua/model.cpp
+    ${SRC_DIR}/lua/utils.cpp
+    ${SRC_DIR}/lua/skeleton.cpp
   )
   list(APPEND HEADERS
-    ${INCLUDE_DIR}/scripting.hpp
+    ${INCLUDE_DIR}/lua.hpp
   )
-  source_group("Scripting Source Files" FILES ${SCRIPTING_SOURCES})
+  source_group("Lua Binding Source Files" FILES ${LUA_SOURCES})
 endif()
 
 set(CORE_LIB_NAME "darmok-core")
@@ -285,7 +285,7 @@ set(LIB_NAME "darmok")
 add_library(
   ${LIB_NAME}
   ${SOURCES}
-  ${SCRIPTING_SOURCES}
+  ${LUA_SOURCES}
   ${ASSETS}
 )
 target_sources(${LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${HEADERS})
@@ -418,7 +418,7 @@ if(DARMOK_BUILD_RMLUI)
   find_package(RmlUi CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PUBLIC RmlCore)
   target_link_libraries(${LIB_NAME} PRIVATE debug RmlDebugger)
-  if(DARMOK_BUILD_SCRIPTING)
+  if(DARMOK_BUILD_LUA)
     target_link_libraries(${LIB_NAME} PRIVATE RmlLua)
   endif()
 endif()
@@ -451,7 +451,7 @@ if(DARMOK_BUILD_JOLT)
 endif()
 
 # lua sol2
-if(DARMOK_BUILD_SCRIPTING)
+if(DARMOK_BUILD_LUA)
   find_package(Lua REQUIRED)
   target_include_directories(${LIB_NAME} PRIVATE ${LUA_INCLUDE_DIR})
   target_link_libraries(${LIB_NAME} PRIVATE ${LUA_LIBRARIES})
@@ -465,25 +465,25 @@ if(DARMOK_BUILD_SCRIPTING)
   set(SOL_DEFINES SOL_ALL_SAFETIES_ON SOL_EXCEPTIONS_SAFE_PROPAGATION)
   target_compile_definitions(sol2 INTERFACE ${SOL_DEFINES})
   target_link_libraries(${LIB_NAME} PRIVATE sol2)
-  list(APPEND VCPKG_MANIFEST_FEATURES "scripting")
+  list(APPEND VCPKG_MANIFEST_FEATURES "lua")
 endif()
 
-if(DARMOK_BUILD_SCRIPTING_EXE)
-  set(SCRIPTING_EXE_NAME "darmok-scripting")
+if(DARMOK_BUILD_LUA_EXE)
+  set(LUA_EXE_NAME "darmok-lua")
   add_executable(
-    ${SCRIPTING_EXE_NAME}
-    src/scripting/main.cpp
+    ${LUA_EXE_NAME}
+    src/lua/main.cpp
   )
-  list(APPEND EXPORT_TARGETS ${SCRIPTING_EXE_NAME})
-  darmok_copy_dynamic_libs(${SCRIPTING_EXE_NAME})
-  add_executable(darmok::darmok-scripting ALIAS ${SCRIPTING_EXE_NAME})
+  list(APPEND EXPORT_TARGETS ${LUA_EXE_NAME})
+  darmok_copy_dynamic_libs(${LUA_EXE_NAME})
+  add_executable(darmok::darmok-lua ALIAS ${LUA_EXE_NAME})
   target_compile_definitions(
-    ${SCRIPTING_EXE_NAME}
+    ${LUA_EXE_NAME}
     PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1"
   )
-  set_target_properties(${SCRIPTING_EXE_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
-  target_link_libraries(${SCRIPTING_EXE_NAME} ${LIB_NAME})
-  install(TARGETS ${SCRIPTING_EXE_NAME}
+  set_target_properties(${LUA_EXE_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
+  target_link_libraries(${LUA_EXE_NAME} ${LIB_NAME})
+  install(TARGETS ${LUA_EXE_NAME}
     EXPORT ${EXPORT_NAME}
     RUNTIME_DEPENDENCY_SET ${LIB_NAME}
   )
@@ -529,7 +529,6 @@ install(FILES
     ${CMAKE_LIB_FILES}
     DESTINATION ${CONFIG_INSTALL_DIR}
 )
-
 set(EXPORT_NAME "${PROJECT_NAME}Targets")
 install(TARGETS ${EXPORT_TARGETS}
     EXPORT ${EXPORT_NAME}

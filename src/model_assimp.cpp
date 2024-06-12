@@ -224,19 +224,17 @@ namespace darmok
 
     void AssimpModelLoaderContext::update(ModelTexture& modelTex, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
     {
-        aiString path;
-        unsigned int uvindex;
-        float blend;
-        aiTextureMapping mapping;
-        aiTextureOp operation;
-        aiTextureMapMode mapMode;
+        aiString path("");
+        unsigned int uvindex = 0;
+        ai_real blend = 1.F;
+        aiTextureMapping mapping = aiTextureMapping::aiTextureMapping_UV;
+        aiTextureOp operation = aiTextureOp::aiTextureOp_Multiply;
 
         assimpMat.GetTexture(type, index, &path,
             &mapping,
             &uvindex,
             &blend,
-            &operation,
-            &mapMode
+            &operation
         );
 
         modelTex.image = getImage(path.C_Str());

@@ -222,7 +222,8 @@ namespace darmok
 		LuaViewport::bind(lua);
 
 		lua.new_enum<LuaNativeCameraComponentType>("CameraComponentType", {
-			{ "phong_lighting", LuaNativeCameraComponentType::PhongLighting },
+			{ "PhongLighting", LuaNativeCameraComponentType::PhongLighting },
+			{ "SkeletalAnimation", LuaNativeCameraComponentType::SkeletalAnimation },
 		});
 
 		lua.new_usertype<LuaCamera>("Camera", sol::no_constructor,

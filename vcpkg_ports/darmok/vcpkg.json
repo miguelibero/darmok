@@ -38,12 +38,12 @@
     "tweeny"
   ],
   "features": {
+    "lua": {
+      "description": "Build lua support",
+      "dependencies": [ "luajit" ]
+    },    
     "samples": {
       "description": "Build samples"
-    },
-    "luajit": {
-      "description": "Build scripting using luajit",
-      "dependencies": [ "luajit" ]
     },
     "tests": {
       "description": "Build Tests",
