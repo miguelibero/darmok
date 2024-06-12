@@ -15,8 +15,7 @@
             "DARMOK_BUILD_RMLUI": true,
             "DARMOK_BUILD_ASSIMP": true,
             "DARMOK_BUILD_OZZ": true,
-            "DARMOK_BUILD_JOLT": true,
-            "BUILD_SHARED_LIBS": true
+            "DARMOK_BUILD_JOLT": true
         }
     }
   ]

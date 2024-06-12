@@ -164,7 +164,7 @@ namespace darmok
 		, _idxNum(indices.size() / config.getIndexSize())
 		, _idxSize(config.getIndexSize())
 	{
-		uint64_t flags = config.getFlags();
+		auto flags = config.getFlags();
 		flags |= BGFX_BUFFER_ALLOW_RESIZE;
 		_vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout, flags);
 		if (!indices.empty())
@@ -268,8 +268,8 @@ namespace darmok
 
 	TransientMesh::TransientMesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool index32)
 		: _layout(layout)
-		, _vertNum(vertices.size() / layout.getStride())
-		, _idxNum(indices.size() / getMeshIndexSize(index32))
+		, _vertNum(uint32_t(vertices.size() / layout.getStride()))
+		, _idxNum(uint32_t(indices.size() / getMeshIndexSize(index32)))
 	{
 		if (!bgfx::getAvailTransientVertexBuffer(_vertNum, layout))
 		{

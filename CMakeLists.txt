@@ -28,7 +28,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
-set(VCPKG_LIBRARY_LINKAGE "static") # force static vcpkg libraries
 
 set(ADD_OPTIM_FLAGS "")
 if(MSVC)
@@ -353,7 +352,7 @@ add_executable(${VLAYOUTC_NAME}
 target_link_libraries(${VLAYOUTC_NAME} ${CORE_LIB_NAME})
 add_executable(darmok::vlayoutc ALIAS ${VLAYOUTC_NAME})
 set_target_properties(${VLAYOUTC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
-# darmok_copy_dynamic_libs(${VLAYOUTC_NAME})
+darmok_copy_dynamic_libs(${VLAYOUTC_NAME})
 
 # samples
 if(DARMOK_BUILD_SAMPLES)
@@ -463,7 +462,7 @@ if(DARMOK_BUILD_ASSIMP)
   target_link_libraries(${MODELC_NAME} ${LIB_NAME})
   add_executable(darmok::modelc ALIAS ${MODELC_NAME})
   set_target_properties(${MODELC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
-  # darmok_copy_dynamic_libs(${MODELC_NAME})
+  darmok_copy_dynamic_libs(${MODELC_NAME})
 endif()
 
 if(DARMOK_BUILD_JOLT)
