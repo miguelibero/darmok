@@ -16,7 +16,7 @@
 #include <darmok/program_fwd.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 
 
 // to allow serialization

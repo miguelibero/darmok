@@ -7,7 +7,7 @@
 #include <darmok/color.hpp>
 
 #include <bgfx/bgfx.h>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <bx/bx.h>
 
 #include <string>

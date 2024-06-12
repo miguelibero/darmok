@@ -10,7 +10,7 @@
 #include <darmok/texture_atlas.hpp>
 #include <darmok/math.hpp>
 #include "rmlui.hpp"
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "generated/rmlui/shaders/basic.vertex.h"

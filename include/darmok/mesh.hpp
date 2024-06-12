@@ -11,7 +11,7 @@
 #include <darmok/mesh_fwd.hpp>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 
 namespace darmok
 {

@@ -100,6 +100,7 @@ set(CORE_SOURCES
 )
 
 set(CORE_HEADERS
+  ${INCLUDE_DIR}/glm.hpp
   ${INCLUDE_DIR}/utils.hpp
   ${INCLUDE_DIR}/string.hpp
   ${INCLUDE_DIR}/optional_ref.hpp
@@ -296,7 +297,12 @@ target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 set(EXPORT_TARGETS "")
 macro(_darmok_lib_setup TARGET)
   list(APPEND EXPORT_TARGETS ${TARGET})
-  set_property(TARGET ${TARGET} PROPERTY COMPILE_WARNING_AS_ERROR ON)
+  set_target_properties(${TARGET} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
+  if(MSVC)
+    # disable https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-1-c4251
+    # because public methods return glm and glm is only statically linked
+    target_compile_options(${TARGET} PRIVATE /wd4251)
+  endif()
   target_include_directories(
     ${TARGET}
     PUBLIC
@@ -393,7 +399,7 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC cereal::cereal)
 find_package(glm CONFIG REQUIRED)
 set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
 target_compile_definitions(glm::glm-header-only INTERFACE ${GLM_DEFINES})
-target_link_libraries(${CORE_LIB_NAME} PUBLIC glm::glm)
+target_link_libraries(${CORE_LIB_NAME} PUBLIC glm::glm-header-only)
 
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <bx/bx.h>
 
 namespace darmok

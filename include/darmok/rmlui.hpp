@@ -3,7 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <bx/bx.h>
 #include <string>
 #include <optional>

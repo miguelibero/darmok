@@ -1,7 +1,7 @@
 #pragma once
 
 #include <sol/sol.hpp>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <variant>
 #include <optional>

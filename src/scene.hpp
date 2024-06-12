@@ -2,7 +2,7 @@
 
 #include <darmok/scene.hpp>
 #include <bgfx/bgfx.h>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <entt/entt.hpp>
 #include <vector>
 #include <memory>

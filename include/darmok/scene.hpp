@@ -4,7 +4,7 @@
 #include <memory>
 #include <cstdint>
 #include <vector>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <bx/bx.h>
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>

@@ -4,7 +4,7 @@
 #include <vector>
 #include <array>
 #include <sol/sol.hpp>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/input.hpp>
 

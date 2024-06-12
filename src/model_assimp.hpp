@@ -9,7 +9,7 @@
 #include <darmok/vertex_fwd.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/program_fwd.hpp>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 
 namespace bx
 {

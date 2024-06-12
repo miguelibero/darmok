@@ -3,7 +3,7 @@
 #include <darmok/export.h>
 #include <memory>
 #include <string_view>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 #include <darmok/window_fwd.hpp>

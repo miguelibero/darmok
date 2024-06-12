@@ -6,7 +6,7 @@
 #include <optional>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/entity_filter.hpp>

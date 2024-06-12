@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 
 namespace darmok
 {

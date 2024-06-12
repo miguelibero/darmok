@@ -10,7 +10,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/render.hpp>
 #include <bx/bx.h>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <nlohmann/json.hpp>
 #include <tweeny/tweeny.h>
 

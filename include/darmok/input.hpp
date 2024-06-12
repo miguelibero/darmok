@@ -12,7 +12,7 @@
 #include <darmok/utils.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/input_fwd.hpp>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <bx/bx.h>
 
 namespace darmok

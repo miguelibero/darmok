@@ -1,7 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <glm/detail/type_quat.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>

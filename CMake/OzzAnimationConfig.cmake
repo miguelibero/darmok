@@ -1,7 +1,7 @@
 include(FetchContent)
 FetchContent_Declare(ozz-animation
-  GIT_REPOSITORY https://github.com/guillaumeblanc/ozz-animation.git
-  GIT_TAG master
+  GIT_REPOSITORY https://github.com/miguelibero/ozz-animation.git
+  GIT_TAG fix/dll-copy-target-source
 )
 
 # FBX SDK can be downloaded from https://aps.autodesk.com/developer/overview/fbx-sdk
@@ -45,8 +45,8 @@ include(GNUInstallDirs)
 
 set(EXPORT_BASE_NAME "ozzAnimation")
 set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/darmok/cmake")
-
 set(TARGETS_EXPORT "${EXPORT_BASE_NAME}Targets")
+
 install(TARGETS ${OZZ_TARGETS}
     EXPORT ${TARGETS_EXPORT}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

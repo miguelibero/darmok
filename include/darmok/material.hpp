@@ -5,7 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/material_fwd.hpp>
 
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
 
 #include <vector>

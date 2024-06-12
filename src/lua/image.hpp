@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <sol/sol.hpp>
 
 namespace darmok

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 #include <array>
 #include <optional>
 #include <string>
