@@ -202,7 +202,7 @@ namespace darmok
                 _skinning.push_back(model * joint.inverseBindPose);
             }
         }
-        encoder.setUniform(_skinningUniform, &_skinning.front(), _skinning.size());
+        encoder.setUniform(_skinningUniform, &_skinning.front(), uint16_t(_skinning.size()));
     }
 
     tweeny::tween<float> SkeletalAnimatorTweenConfig::create() const noexcept

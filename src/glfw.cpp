@@ -441,7 +441,8 @@ namespace darmok
 				{
 					value = -value;
 				}
-				stickValues[config->stick][config->index] = value;
+				auto idx = glm::vec3::length_type(config->index);
+				stickValues[config->stick][idx] = value;
 			}
 			for (auto& elm : stickValues)
 			{
