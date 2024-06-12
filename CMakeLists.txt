@@ -414,7 +414,7 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC cereal::cereal)
 find_package(glm CONFIG REQUIRED)
 set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
 target_compile_definitions(glm::glm-header-only INTERFACE ${GLM_DEFINES})
-target_link_libraries(${CORE_LIB_NAME} PUBLIC glm::glm-header-only)
+target_link_libraries(${CORE_LIB_NAME} PUBLIC glm::glm)
 
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
