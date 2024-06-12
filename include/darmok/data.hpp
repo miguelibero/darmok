@@ -8,6 +8,7 @@
 
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
+#include <darmok/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace bx

@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <bgfx/bgfx.h>
+#include <darmok/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace bx

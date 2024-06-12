@@ -136,7 +136,6 @@ namespace darmok
 		return _skeletonLoader;
 	}
 
-#ifdef DARMOK_OZZ
 	ISkeletalAnimationLoader& AssetContextImpl::getSkeletalAnimationLoader() noexcept
 	{
 		return _skeletalAnimationLoader;
@@ -146,7 +145,6 @@ namespace darmok
 	{
 		return _skeletalAnimatorConfigLoader;
 	}
-#endif
 
 	void AssetContextImpl::setBasePath(const std::string& path) noexcept
 	{

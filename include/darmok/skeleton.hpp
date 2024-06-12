@@ -178,7 +178,7 @@ namespace darmok
 
     class IDataLoader;
 
-    class JsonSkeletalAnimatorConfigLoader final : public ISkeletalAnimatorConfigLoader
+    class DARMOK_EXPORT JsonSkeletalAnimatorConfigLoader final : public ISkeletalAnimatorConfigLoader
     {
     public:
         JsonSkeletalAnimatorConfigLoader(IDataLoader& dataLoader, ISkeletalAnimationLoader& animLoader) noexcept;
@@ -253,7 +253,7 @@ namespace darmok
         OptionalRef<Scene> _scene;
     };
 
-    struct ArmatureJoint final
+    struct DARMOK_EXPORT ArmatureJoint final
     {
         std::string name;
         glm::mat4 inverseBindPose;
