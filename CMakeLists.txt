@@ -515,7 +515,7 @@ list(APPEND HEADERS ${PROJECT_BINARY_DIR}/${EXPORT_HEADER_PATH})
 
 include(GNUInstallDirs)
 
-set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/cmake/darmok")
+set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/darmok/cmake")
 set(GENERATED_CONFIG_PATH "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
 include(CMakePackageConfigHelpers)
 configure_package_config_file(

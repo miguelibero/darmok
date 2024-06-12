@@ -44,7 +44,7 @@ set_target_properties(${OZZ_TARGETS}
 include(GNUInstallDirs)
 
 set(EXPORT_BASE_NAME "ozzAnimation")
-set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/cmake/darmok")
+set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/darmok/cmake")
 
 set(TARGETS_EXPORT "${EXPORT_BASE_NAME}Targets")
 install(TARGETS ${OZZ_TARGETS}
