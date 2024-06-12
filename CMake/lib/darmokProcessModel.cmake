@@ -15,7 +15,7 @@ function(darmok_process_model)
     set(ARGS_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${ARGS_OUTPUT_DIR})
   endif()
 
-  set(MODELC_TARGET darmok-modelc)
+  set(MODELC_TARGET "darmok::darmok-modelc")
 
   foreach(FILE_PATH ${ARGS_FILES})
     if(NOT IS_ABSOLUTE ${FILE_PATH})

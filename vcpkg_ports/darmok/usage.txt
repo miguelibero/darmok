@@ -3,9 +3,10 @@ darmok provides CMake targets:
 find_package(darmok CONFIG REQUIRED)
 target_link_libraries(main PRIVATE darmok::darmok)
 
+# you can use darmok-scripting to run lua scripts directly
 add_custom_target(mygame
-  COMMAND $<TARGET_FILE:darmok-scripting>
-  DEPENDS darmok::scripting
+  COMMAND $<TARGET_FILE:darmok::darmok-scripting>
+  DEPENDS darmok::darmok-scripting
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   SOURCES ${ASSETS}
   COMMENT "my darmok lua game"

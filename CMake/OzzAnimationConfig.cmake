@@ -14,7 +14,7 @@ set(FBX_MSVC_RT_DLL ON CACHE BOOL "")
 
 FetchContent_MakeAvailable(ozz-animation)
 
-set(OZZ_TARGETS
+set(OZZ_LIB_TARGETS
   ozz_base
   ozz_animation
   ozz_animation_offline
@@ -30,24 +30,30 @@ set(OZZ_EXE_TARGETS
 )
 
 if(TARGET ozz_animation_fbx)
-  list(APPEND OZZ_TARGETS ozz_animation_fbx)
+  list(APPEND OZZ_LIB_TARGETS ozz_animation_fbx)
   list(APPEND OZZ_EXE_TARGETS fbx2ozz)
 endif()
 
-set_target_properties(${OZZ_TARGETS} ${OZZ_EXE_TARGETS}
+set(OZZ_TARGETS ${OZZ_LIB_TARGETS})
+list(APPEND OZZ_TARGETS ${OZZ_EXE_TARGETS})
+
+set_target_properties(${OZZ_TARGETS}
   PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 )
 
 include(GNUInstallDirs)
 
-set(OZZ_EXPORT "ozzTargets")
+set(EXPORT_BASE_NAME "ozzAnimation")
+set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/cmake/darmok")
+
+set(TARGETS_EXPORT "${EXPORT_BASE_NAME}Targets")
 install(TARGETS ${OZZ_TARGETS}
-    EXPORT ${OZZ_EXPORT}
+    EXPORT ${TARGETS_EXPORT}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-install(EXPORT ${OZZ_EXPORT}
+install(EXPORT ${TARGETS_EXPORT}
     NAMESPACE ozz::
-    DESTINATION ${CMAKE_INSTALL_DATADIR}
+    DESTINATION ${CONFIG_INSTALL_DIR}
 )

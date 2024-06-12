@@ -24,7 +24,7 @@ function(darmok_process_vertex_layout)
     set(OUTPUT_SUFFIX ".dvl")
   endif()
 
-  set(VLAYOUTC_EXE "darmok::vlayoutc")
+  set(VLAYOUTC_EXE "darmok::darmok-vlayoutc")
 
   foreach(FILE_PATH ${ARGS_FILES})
     if(NOT IS_ABSOLUTE ${FILE_PATH})
