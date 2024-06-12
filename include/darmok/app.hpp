@@ -47,7 +47,7 @@ namespace darmok
 	{
 		static const AppConfig& getDefaultConfig() noexcept;
 
-		double targetUpdateDeltaTime = getDefaultConfig().targetUpdateDeltaTime;
+		float targetUpdateDeltaTime = getDefaultConfig().targetUpdateDeltaTime;
 		int maxInstantLogicUpdates = getDefaultConfig().maxInstantLogicUpdates;
 		Color clearColor = getDefaultConfig().clearColor;
 	};

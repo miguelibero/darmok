@@ -94,8 +94,8 @@ namespace darmok
 
 	float AppImpl::updateTimePassed() noexcept
 	{
-		const int64_t now = bx::getHPCounter();
-		const float timePassed = (now - _lastUpdate) / double(bx::getHPFrequency());
+		auto now = bx::getHPCounter();
+		auto timePassed = float(now - _lastUpdate) / float(bx::getHPFrequency());
 		_lastUpdate = bx::getHPCounter();
 		return timePassed;
 	}

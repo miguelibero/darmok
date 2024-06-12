@@ -393,6 +393,11 @@ namespace darmok
         _layers.resize(_animations.size());
     }
 
+    glm::vec2 OzzSkeletalAnimatorState::getBlendedPosition(float f) const noexcept
+    {
+        return _oldBlendPos + f * (_blendPos - _oldBlendPos);
+    }
+
     void OzzSkeletalAnimatorState::update(float deltaTime, const glm::vec2& blendPosition)
     {
         for (auto& anim : _animations)
@@ -410,12 +415,12 @@ namespace darmok
 
         if (_blendPos != blendPosition)
         {
+            _oldBlendPos = getBlendedPosition(_tween.peek());
             _tween.seek(0.F);
-            _oldBlendPos = _blendPos;
             _blendPos = blendPosition;
         }
         auto blendFactor = _tween.step(int(deltaTime * 1000));
-        auto pos = _oldBlendPos + blendFactor * ( _blendPos - _oldBlendPos);
+        auto pos = getBlendedPosition(blendFactor);
 
         size_t i = 0;
         auto weights = _config.calcBlendWeights(pos);

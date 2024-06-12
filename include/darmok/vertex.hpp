@@ -75,7 +75,7 @@ namespace darmok
         {
             std::array<float, 4> finput;
             convertInput(attr, input, finput);
-            for (auto i = 0; i < _size; i++)
+            for (uint32_t i = 0; i < _size; i++)
             {
                 if (overwrite || !wasWritten(attr, i))
                 {

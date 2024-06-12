@@ -11,7 +11,6 @@
 #include <charconv>
 #include <pugixml.hpp>
 
-
 namespace darmok
 {
     TextureAtlasBounds TextureAtlasElement::getBounds() const noexcept
@@ -48,7 +47,7 @@ namespace darmok
 
 	std::shared_ptr<IMesh> TextureAtlasElement::createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, Config config) const noexcept
 	{
-		uint32_t vertexAmount = getVertexAmount();
+		auto vertexAmount = uint32_t(getVertexAmount());
 		VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
 		std::vector<VertexIndex> totalIndices;
 		totalIndices.reserve(indices.size() * config.amount.x * config.amount.y);

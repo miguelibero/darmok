@@ -4,7 +4,7 @@ vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO miguelibero/darmok
     REF "v${VERSION}"
-    SHA512 8eb0f5a5b4ed693bcc8ad6d69e21ee430eda1bfd731dd613bc67b351d70e04bd2a136add704c801dff880997de964791925139e48c19874844c5de35a543b732
+    SHA512 a11bad06297ee40605c9b4c784432e8c573b73645de0d9a5d15a5a92173a58ee2d4cb3ff0aee866e4c0e2c7cc0711f74e1b65bfaa1b1abd71ad08ceb71ccdb67
 )
 
 vcpkg_cmake_configure(

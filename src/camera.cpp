@@ -85,22 +85,22 @@ namespace darmok
 
     Camera& Camera::setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept
     {
-        if (_targetTextures != textures)
+        if (_targetTextures == textures)
         {
-            if (isValid(_frameBuffer))
-            {
-                bgfx::destroy(_frameBuffer);
-            }
-            _targetTextures = textures;
-            std::vector<bgfx::TextureHandle> handles;
-            handles.reserve(textures.size());
-            for (auto& tex : textures)
-            {
-                handles.push_back(tex->getHandle());
-            }
-            _frameBuffer = bgfx::createFrameBuffer(handles.size(), &handles.front());
+            return *this;
         }
-
+        if (isValid(_frameBuffer))
+        {
+            bgfx::destroy(_frameBuffer);
+        }
+        _targetTextures = textures;
+        std::vector<bgfx::TextureHandle> handles;
+        handles.reserve(textures.size());
+        for (auto& tex : textures)
+        {
+            handles.push_back(tex->getHandle());
+        }
+        _frameBuffer = bgfx::createFrameBuffer(uint8_t(handles.size()), &handles.front());
         return *this;
     }
 

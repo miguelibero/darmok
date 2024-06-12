@@ -179,10 +179,10 @@ namespace darmok
         auto pointLights = _cam->createEntityView<PointLight>(registry);
 
         // TODO: not sure if size_hint is accurate
-        VertexDataWriter writer(_pointLightsLayout, pointLights.size_hint());
+        VertexDataWriter writer(_pointLightsLayout, uint32_t(pointLights.size_hint()));
         writer.load(std::move(_pointLights));
 
-        size_t index = 0;
+        uint32_t index = 0;
         for (auto entity : pointLights)
         {
             auto& pointLight = registry.get<const PointLight>(entity);
@@ -247,7 +247,7 @@ namespace darmok
         {
             return;
         }
-        _lightCount.x = updatePointLights();
+        _lightCount.x = float(updatePointLights());
         updateAmbientLights();
         updateCamera();
     }

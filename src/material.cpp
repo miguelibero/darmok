@@ -145,7 +145,7 @@ namespace darmok
 
 	uint8_t Material::getShininess() const noexcept
 	{
-		return _mainData.x;
+		return uint8_t(_mainData.x);
 	}
 
 	Material& Material::setShininess(uint8_t v) noexcept

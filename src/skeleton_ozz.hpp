@@ -85,6 +85,8 @@ namespace darmok
 		std::string_view getName() const noexcept override;
 		const ozz::vector<ozz::math::SoaTransform>& getLocals() const;
 	private:
+		glm::vec2 getBlendedPosition(float f) const noexcept;
+
 		using AnimationState = OzzSkeletalAnimatorAnimationState;
 		Config _config;
 		std::vector<AnimationState> _animations;
