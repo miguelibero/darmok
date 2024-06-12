@@ -23,6 +23,7 @@ set(OZZ_TARGETS
   ozz_animation_tools
   json
 )
+
 set(OZZ_EXE_TARGETS
   dump2ozz
   gltf2ozz
@@ -39,7 +40,7 @@ set_target_properties(${OZZ_TARGETS} ${OZZ_EXE_TARGETS}
 
 include(GNUInstallDirs)
 
-set(OZZ_EXPORT "ozzConfig")
+set(OZZ_EXPORT "ozzTargets")
 install(TARGETS ${OZZ_TARGETS}
     EXPORT ${OZZ_EXPORT}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -48,5 +49,5 @@ install(TARGETS ${OZZ_TARGETS}
 )
 install(EXPORT ${OZZ_EXPORT}
     NAMESPACE ozz::
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/ozz"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}
 )

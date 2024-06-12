@@ -68,7 +68,8 @@ set(INCLUDE_BASE_DIR include)
 set(INCLUDE_DIR ${INCLUDE_BASE_DIR}/darmok)
 set(LOCAL_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
-list(APPEND CMAKE_MODULE_PATH ${LOCAL_MODULE_PATH})
+list(APPEND CMAKE_MODULE_PATH 
+  ${LOCAL_MODULE_PATH} ${LOCAL_MODULE_PATH}/lib)
 
 find_package(bgfx CONFIG REQUIRED)
 
@@ -292,34 +293,9 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} PREFIX "Source Files" F
 add_library(darmok::darmok ALIAS ${LIB_NAME})
 target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 
-include(GenerateExportHeader)
-set(EXPORT_HEADER_PATH include/public/darmok/export.h)
-generate_export_header(${LIB_NAME}
-  EXPORT_FILE_NAME ${EXPORT_HEADER_PATH}
-)
-list(APPEND HEADERS ${PROJECT_BINARY_DIR}/${EXPORT_HEADER_PATH})
-
-include(GNUInstallDirs)
-set(EXPORT_NAME "${PROJECT_NAME}Config")
-install(TARGETS ${LIB_NAME} ${CORE_LIB_NAME}
-    EXPORT ${EXPORT_NAME}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    FILE_SET HEADERS
-)
-install(EXPORT ${EXPORT_NAME}
-    NAMESPACE ozz::
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/darmok"
-)
-install(FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/README.md
-  ${CMAKE_CURRENT_SOURCE_DIR}/CHANGES.md
-  ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/darmok"
-)
-
+set(DARMOK_TARGETS "")
 macro(_darmok_lib_setup TARGET)
+  list(APPEND DARMOK_TARGETS ${TARGET})
   set_property(TARGET ${TARGET} PROPERTY COMPILE_WARNING_AS_ERROR ON)
   target_include_directories(
     ${TARGET}
@@ -351,6 +327,7 @@ set(VLAYOUTC_SRC_DIR "tools/vlayoutc")
 add_executable(${VLAYOUTC_NAME}
   ${VLAYOUTC_SRC_DIR}/vlayoutc.cpp
 )
+list(APPEND DARMOK_TARGETS ${VLAYOUTC_NAME})
 target_link_libraries(${VLAYOUTC_NAME} ${CORE_LIB_NAME})
 add_executable(darmok::vlayoutc ALIAS ${VLAYOUTC_NAME})
 set_target_properties(${VLAYOUTC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
@@ -461,6 +438,7 @@ if(DARMOK_BUILD_ASSIMP)
   add_executable(${MODELC_NAME}
     ${MODELC_SRC_DIR}/modelc.cpp
   )
+  list(APPEND DARMOK_TARGETS ${MODELC_NAME})
   target_link_libraries(${MODELC_NAME} ${LIB_NAME})
   add_executable(darmok::modelc ALIAS ${MODELC_NAME})
   set_target_properties(${MODELC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
@@ -497,6 +475,7 @@ if(DARMOK_BUILD_SCRIPTING_EXE)
     ${SCRIPTING_EXE_NAME}
     src/scripting/main.cpp
   )
+  list(APPEND DARMOK_TARGETS ${SCRIPTING_EXE_NAME})
   darmok_copy_dynamic_libs(${SCRIPTING_EXE_NAME})
   add_executable(darmok::scripting ALIAS ${SCRIPTING_EXE_NAME})
   target_compile_definitions(
@@ -526,3 +505,47 @@ if(DARMOK_BUILD_OZZ)
     ozz_animation_offline
     ozz_options)
 endif()
+
+# export
+include(GenerateExportHeader)
+set(EXPORT_HEADER_PATH include/public/darmok/export.h)
+generate_export_header(${LIB_NAME}
+  EXPORT_FILE_NAME ${EXPORT_HEADER_PATH}
+)
+list(APPEND HEADERS ${PROJECT_BINARY_DIR}/${EXPORT_HEADER_PATH})
+
+include(GNUInstallDirs)
+
+set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/cmake/darmok")
+set(GENERATED_CONFIG_PATH "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    "${LOCAL_MODULE_PATH}/darmokConfig.cmake.in"
+    ${GENERATED_CONFIG_PATH}
+    INSTALL_DESTINATION ${CONFIG_INSTALL_DIR}
+)
+file(GLOB CMAKE_LIB_FILES ${LOCAL_MODULE_PATH}/lib/*.cmake)
+install(FILES
+    ${GENERATED_CONFIG_PATH}
+    ${CMAKE_LIB_FILES}
+    DESTINATION ${CONFIG_INSTALL_DIR}
+)
+
+set(EXPORT_NAME "${PROJECT_NAME}Targets")
+install(TARGETS ${DARMOK_TARGETS}
+    EXPORT ${EXPORT_NAME}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    FILE_SET HEADERS
+)
+install(EXPORT ${EXPORT_NAME}
+    NAMESPACE darmok::
+    DESTINATION ${CONFIG_INSTALL_DIR}
+)
+install(FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/README.md
+  ${CMAKE_CURRENT_SOURCE_DIR}/CHANGES.md
+  ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+  DESTINATION "${CMAKE_INSTALL_DATADIR}"
+)
