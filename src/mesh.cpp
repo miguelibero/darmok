@@ -401,12 +401,12 @@ namespace darmok
 		return IMesh::create(config.type, meshLayout, vertDataView, idxDataView);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createCube() noexcept
+	std::shared_ptr<IMesh> MeshCreator::createCuboid() noexcept
 	{
-		return createCube(Cube::standard());
+		return createCuboid(Cuboid::standard());
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createCube(const Cube& cube) noexcept
+	std::shared_ptr<IMesh> MeshCreator::createCuboid(const Cuboid& cuboid) noexcept
 	{
 		const static MeshData data = {
 			{
@@ -443,8 +443,8 @@ namespace darmok
 			}
 		};
 		auto cfg = config;
-		cfg.scale *= cube.size;
-		cfg.offset += cube.origin - glm::vec3(0.5f);
+		cfg.scale *= cuboid.size;
+		cfg.offset += cuboid.origin - glm::vec3(0.5f);
 		return createMesh(data, cfg);
 	}
 

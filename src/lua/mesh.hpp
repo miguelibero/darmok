@@ -26,7 +26,7 @@ namespace darmok
 	struct MeshCreator;
 	struct MeshData;
 	struct MeshCreationConfig;
-	struct Cube;
+	struct Cuboid;
 	struct Sphere;
 	struct Rectangle;
 	struct Line;
@@ -46,8 +46,8 @@ namespace darmok
 		std::optional<bgfx::VertexLayout> getVertexLayout() noexcept;
 
 		LuaMesh createMesh(const MeshData& meshData) noexcept;
-		LuaMesh createCube1() noexcept;
-		LuaMesh createCube2(const Cube& cube) noexcept;
+		LuaMesh createCuboid1() noexcept;
+		LuaMesh createCuboid2(const Cuboid& cuboid) noexcept;
 		LuaMesh createSphere1() noexcept;
 		LuaMesh createSphere2(const Sphere& sphere) noexcept;
 		LuaMesh createSphere3(int lod) noexcept;

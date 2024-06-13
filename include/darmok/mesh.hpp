@@ -144,7 +144,7 @@ namespace darmok
     };
 
     class Texture;
-    struct Cube;
+    struct Cuboid;
     struct Sphere;
     struct Rectangle;
     struct Ray;
@@ -158,8 +158,8 @@ namespace darmok
 
          MeshCreator(std::optional<bgfx::VertexLayout> vertexLauout = std::nullopt) noexcept;
          [[nodiscard]] std::shared_ptr<IMesh> createMesh(const MeshData& meshData) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createCube() noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createCube(const Cube& cube) noexcept;
+         [[nodiscard]] std::shared_ptr<IMesh> createCuboid() noexcept;
+         [[nodiscard]] std::shared_ptr<IMesh> createCuboid(const Cuboid& cuboid) noexcept;
          [[nodiscard]] std::shared_ptr<IMesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
          [[nodiscard]] std::shared_ptr<IMesh> createSphere(int lod = 32) noexcept;
          [[nodiscard]] std::shared_ptr<IMesh> createRectangle() noexcept;

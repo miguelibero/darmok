@@ -31,6 +31,7 @@ namespace darmok
         Transform& setLocalMatrix(const glm::mat4& v) noexcept;
 
         glm::vec3 getWorldPosition() const noexcept;
+        glm::quat getWorldRotation() const noexcept;
         glm::vec3 worldToLocalPoint(const glm::vec3& point) const noexcept;
         glm::vec3 localToWorldPoint(const glm::vec3& point) const noexcept;
 

@@ -68,14 +68,14 @@ namespace darmok
 		return LuaMesh(_creator->createMesh(meshData));
 	}
 
-	LuaMesh LuaMeshCreator::createCube1() noexcept
+	LuaMesh LuaMeshCreator::createCuboid1() noexcept
 	{
-		return LuaMesh(_creator->createCube());
+		return LuaMesh(_creator->createCuboid());
 	}
 
-	LuaMesh LuaMeshCreator::createCube2(const Cube& cube) noexcept
+	LuaMesh LuaMeshCreator::createCuboid2(const Cuboid& cuboid) noexcept
 	{
-		return LuaMesh(_creator->createCube(cube));
+		return LuaMesh(_creator->createCuboid(cuboid));
 	}
 
 	LuaMesh LuaMeshCreator::createSphere1() noexcept
@@ -170,7 +170,7 @@ namespace darmok
 			sol::constructors<LuaMeshCreator(), LuaMeshCreator(const std::optional<bgfx::VertexLayout>&)>(),
 			"config", sol::property(&LuaMeshCreator::getConfig, &LuaMeshCreator::setConfig),
 			"vertex_layout", sol::property(&LuaMeshCreator::getVertexLayout, &LuaMeshCreator::setVertexLayout),
-			"create_cube", sol::overload(&LuaMeshCreator::createCube1, &LuaMeshCreator::createCube2),
+			"create_cuboid", sol::overload(&LuaMeshCreator::createCuboid1, &LuaMeshCreator::createCuboid2),
 			"create_sphere", sol::overload(
 				&LuaMeshCreator::createSphere1, &LuaMeshCreator::createSphere2,
 				&LuaMeshCreator::createSphere3, &LuaMeshCreator::createSphere4,
@@ -185,7 +185,7 @@ namespace darmok
 			"create_ray", &LuaMeshCreator::createRay,
 			"create_lines", &LuaMeshCreator::createLines,
 			"create", sol::overload(
-				&LuaMeshCreator::createCube2,
+				&LuaMeshCreator::createCuboid2,
 				&LuaMeshCreator::createSphere2,
 				&LuaMeshCreator::createSphere3,
 				&LuaMeshCreator::createSphere4,

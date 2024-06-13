@@ -11,9 +11,9 @@ namespace darmok
         return v;
     }
 
-    const Cube& Cube::standard() noexcept
+    const Cuboid& Cuboid::standard() noexcept
     {
-        const static Cube v;
+        const static Cuboid v;
         return v;
     }
 
@@ -49,15 +49,15 @@ namespace darmok
         return { { v0, v1 }, {v1, v2}, { v2, v3 }, { v3, v0 } };
     }
 
-    Cube::Cube(const glm::vec3& size, const glm::vec3& origin) noexcept
+    Cuboid::Cuboid(const glm::vec3& size, const glm::vec3& origin) noexcept
         : size(size)
         , origin(origin)
     {
     }
 
-    std::string Cube::to_string() const noexcept
+    std::string Cuboid::to_string() const noexcept
     {
-        return "Cube(size=" + glm::to_string(size) + ", origin=" + glm::to_string(origin) + ")";
+        return "Cuboid(size=" + glm::to_string(size) + ", origin=" + glm::to_string(origin) + ")";
     }
 
     Triangle::Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept

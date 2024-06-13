@@ -20,16 +20,16 @@ namespace darmok
 			"to_lines", &Rectangle::toLines
 		);
 
-		lua.new_usertype<Cube>("Cube", sol::no_constructor,
+		lua.new_usertype<Cuboid>("Cuboid", sol::no_constructor,
 			"new", sol::overload(
-				[]() { return Cube(); },
+				[]() { return Cuboid(); },
 				[](const VarLuaTable<glm::vec3>& size) {
-					return Cube(LuaGlm::tableGet(size)); },
+					return Cuboid(LuaGlm::tableGet(size)); },
 				[](const VarLuaTable<glm::vec3>& size, const VarLuaTable<glm::vec3>& origin) {
-					return Cube(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
+					return Cuboid(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
 			),
-			"size", &Cube::size,
-			"origin", &Cube::origin
+			"size", &Cuboid::size,
+			"origin", &Cuboid::origin
 		);
 
 		lua.new_usertype<Sphere>("Sphere", sol::no_constructor,

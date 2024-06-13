@@ -168,6 +168,7 @@ set(HEADERS
   ${INCLUDE_DIR}/material.hpp
   ${INCLUDE_DIR}/skeleton.hpp
   ${INCLUDE_DIR}/model.hpp
+  ${INCLUDE_DIR}/physics3d_fwd.hpp
   ${INCLUDE_DIR}/physics3d.hpp
 
   ${INCLUDE_DIR}/entity_filter.hpp

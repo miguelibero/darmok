@@ -58,6 +58,7 @@ namespace darmok
 		}
 
 		static [[nodiscard]] glm::mat4 flipHandedness(const glm::mat4& mat) noexcept;
+		static [[nodiscard]] glm::quat flipHandedness(const glm::quat& quat) noexcept;
 
        /*
         * we cannot use the glm camera functions because they use opengl depth format 

@@ -23,15 +23,15 @@ namespace darmok
         static const Rectangle& standard() noexcept;
     };
 
-    struct DARMOK_EXPORT Cube final
+    struct DARMOK_EXPORT Cuboid final
     {
         glm::vec3 size;
         glm::vec3 origin;
 
-        Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Cuboid(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
         std::string to_string() const noexcept;
 
-        static const Cube& standard() noexcept;
+        static const Cuboid& standard() noexcept;
     };
 
     struct DARMOK_EXPORT Triangle final
@@ -61,13 +61,18 @@ namespace darmok
         glm::vec3 normal;
         glm::vec3 origin;
 
-        Plane(const glm::vec3& normal = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), const glm::vec3& origin = glm::vec3(0)) noexcept;
         std::string to_string() const noexcept;
 
         Plane operator*(const glm::mat4& transform) const noexcept;
         Plane& operator*=(const glm::mat4& transform) noexcept;
 
         static const Plane& standard() noexcept;
+    };
+
+    struct DARMOK_EXPORT Capsule final
+    {
+        // TODO
     };
 
     struct DARMOK_EXPORT NormalIntersection final

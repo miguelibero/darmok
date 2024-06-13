@@ -13,6 +13,11 @@ namespace darmok
         return zNegate * mat * zNegate;
     }
 
+    glm::quat Math::flipHandedness(const glm::quat& quat) noexcept
+    {
+        return glm::quat(quat.w, -quat.x, -quat.y, -quat.z);
+    }
+
     glm::mat4 Math::perspective(float fovy, float aspect, float near, float far) noexcept
     {
         glm::mat4 v;
