@@ -74,31 +74,32 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### Upcoming (I need them)
 * 3d physics
+* lua camera render
 * sound
-* render to fullscreen texture
 
 #### Upcoming
 * tweening in the animation blending
-* pbr
 * frustrum culling
 * modernize renderer (probably needs frame graph or similar)
     * deferred
     * other types of lights
+    * physically based renderer
     * SSAO
 
 #### In the future
 * unit tests, I know
+* performance profiling
+* 2d physics
 * separate shaders for skinning?
 * instancing meshes
 * support multiple imgui app components with different transforms
 * spine animations loading
-* unify use of allocator everywhere
-* progressive data reader
+* unify use of allocators everywhere
+* progressive asset loaders
 * async task management
-
+* lua debugging would be nice
 
 ## Interesting Related Projects
-
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced
 * [FrameGraph](https://github.com/skaarj1989/FrameGraph) renderer agnostic frame graph library 
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language

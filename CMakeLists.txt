@@ -140,6 +140,7 @@ set(SOURCES
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/anim.cpp
   ${SRC_DIR}/skeleton.cpp
+  ${SRC_DIR}/physics3d.cpp
 
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/camera.cpp
@@ -167,6 +168,7 @@ set(HEADERS
   ${INCLUDE_DIR}/material.hpp
   ${INCLUDE_DIR}/skeleton.hpp
   ${INCLUDE_DIR}/model.hpp
+  ${INCLUDE_DIR}/physics3d.hpp
 
   ${INCLUDE_DIR}/entity_filter.hpp
   ${INCLUDE_DIR}/transform.hpp
@@ -235,6 +237,10 @@ endif()
 if(DARMOK_BUILD_ASSIMP)
   list(APPEND HEADERS ${INCLUDE_DIR}/model_assimp.hpp)
   list(APPEND SOURCES ${SRC_DIR}/model_assimp.cpp)
+endif()
+
+if(DARMOK_BUILD_JOLT)
+  list(APPEND SOURCES ${SRC_DIR}/physics3d_jolt.cpp)
 endif()
 
 if(DARMOK_BUILD_LUA_EXE)

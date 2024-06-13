@@ -1,0 +1,99 @@
+
+
+#include <darmok/app.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/asset.hpp>
+#include <darmok/mesh.hpp>
+#include <darmok/transform.hpp>
+#include <darmok/light.hpp>
+#include <darmok/window.hpp>
+#include <darmok/camera.hpp>
+#include <darmok/input.hpp>
+#include <darmok/program.hpp>
+#include <darmok/program_standard.hpp>
+#include <darmok/material.hpp>
+#include <darmok/texture.hpp>
+#include <darmok/render.hpp>
+#include <darmok/render_forward.hpp>
+#include <darmok/physics3d.hpp>
+
+namespace
+{
+	using namespace darmok;
+
+	class JoltSampleApp : public App
+	{
+	public:
+		void init(const std::vector<std::string>& args) override
+		{
+			App::init(args);
+
+			auto scene = addComponent<SceneAppComponent>().getScene();
+			scene->addLogicUpdater<Physics3dSystem>(getAssets().getAllocator());
+
+			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
+
+			auto camEntity = scene->createEntity();
+			glm::vec2 winSize = getWindow().getSize();
+
+			scene->addComponent<Transform>(camEntity)
+				.setPosition({ 0, 2, -2 })
+				.setEulerAngles({ 45, 0, 0 });
+			auto& cam = scene->addComponent<Camera>(camEntity)
+				.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
+			
+			cam.addComponent<PhongLightingComponent>();
+			cam.setRenderer<ForwardRenderer>();
+
+			auto light = scene->createEntity();
+			scene->addComponent<Transform>(light)
+				.setPosition({ 1, 1, -2 });
+			scene->addComponent<PointLight>(light);
+
+			auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
+			auto greenMat = std::make_shared<Material>(prog);
+			greenMat->setTexture(MaterialTextureType::Diffuse, greenTex);
+
+			MeshCreator meshCreator(prog->getVertexLayout());
+			auto cubeMesh = meshCreator.createCube();
+			auto cube = scene->createEntity();
+			scene->addComponent<Renderable>(cube, cubeMesh, greenMat);
+			scene->addComponent<Transform>(cube)
+				.setPosition({ 1.5F, 0, 0 });
+
+			auto redTex = getAssets().getColorTextureLoader()(Colors::red());
+			auto redMat = std::make_shared<Material>(prog);
+			redMat->setTexture(MaterialTextureType::Diffuse, redTex);
+
+			auto sphereMesh = meshCreator.createSphere();
+			auto sphere = scene->createEntity();
+			scene->addComponent<Renderable>(sphere, sphereMesh, redMat);
+			auto& trans = scene->addComponent<Transform>(sphere);
+
+			auto speed = 0.01F;
+
+			auto move = [&trans, speed](const glm::vec3& d) {
+				auto pos = trans.getPosition();
+				pos += d * speed;
+				trans.setPosition(pos);
+			};
+			auto moveRight = [move]() { move({ 1, 0, 0 });};
+			auto moveLeft = [move]() { move({ -1, 0, 0 }); };
+			auto moveForward = [move]() { move({ 0, 0, 1 }); };
+			auto moveBack = [move]() { move({ 0, 0, -1 }); };
+
+			getInput().addBindings("movement", {
+				{ KeyboardBindingKey{ KeyboardKey::Right}, false, moveRight},
+				{ KeyboardBindingKey{ KeyboardKey::KeyD}, false, moveRight},
+				{ KeyboardBindingKey{ KeyboardKey::Left}, false, moveLeft},
+				{ KeyboardBindingKey{ KeyboardKey::KeyA}, false, moveLeft},
+				{ KeyboardBindingKey{ KeyboardKey::Up}, false, moveForward},
+				{ KeyboardBindingKey{ KeyboardKey::KeyW}, false, moveForward},
+				{ KeyboardBindingKey{ KeyboardKey::Down}, false, moveBack},
+				{ KeyboardBindingKey{ KeyboardKey::KeyS}, false, moveBack},
+			});
+		}
+	};
+}
+
+DARMOK_RUN_APP(JoltSampleApp);

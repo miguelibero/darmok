@@ -35,7 +35,7 @@ namespace darmok
 
 		auto camEntity = _scene->getEntity(_cam.value());
 		std::string name = _name + " " + std::to_string(camEntity);
-		bgfx::setViewName(viewId, name.c_str());
+		bgfx::setViewName(viewId, &name.front(), name.size());
 
 		_cam->beforeRenderView(encoder, viewId);
 

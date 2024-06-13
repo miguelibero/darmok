@@ -1,24 +1,32 @@
 {
   "dependencies": [
     {
-      "name" : "vcpkg-cmake",
-      "host" : true
+      "name": "vcpkg-cmake",
+      "host": true
     },
     {
-      "name" : "vcpkg-cmake-config",
-      "host" : true
+      "name": "vcpkg-cmake-config",
+      "host": true
     },
     {
       "name": "bgfx",
-      "features": [ "multithreaded", "tools" ]
+      "features": [
+        "multithreaded",
+        "tools"
+      ]
     },
     {
       "name": "imgui",
-      "features": ["freetype"]
+      "features": [
+        "freetype"
+      ]
     },
     {
       "name": "rmlui",
-      "features": ["freetype", "lua"]
+      "features": [
+        "freetype",
+        "lua"
+      ]
     },
     "glfw3",
     "assimp",
