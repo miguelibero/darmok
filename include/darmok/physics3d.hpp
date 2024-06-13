@@ -58,6 +58,16 @@ namespace darmok
         RigidBody3dImpl& getImpl() noexcept;
         const RigidBody3dImpl& getImpl() const noexcept;
 
+        RigidBody3d& setPosition(const glm::vec3& pos);
+        glm::vec3 getPosition();
+        RigidBody3d& setRotation(const glm::quat& rot);
+        glm::quat getRotation();
+
+        RigidBody3d& addTorque(const glm::vec3& torque);
+        RigidBody3d& addForce(const glm::vec3& force);
+        RigidBody3d& move(const glm::vec3& pos, const glm::quat& rot, float deltaTime);
+        RigidBody3d& movePosition(const glm::vec3& pos, float deltaTime);
+
     private:
         std::unique_ptr<RigidBody3dImpl> _impl;
     };

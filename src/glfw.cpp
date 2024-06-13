@@ -42,6 +42,7 @@ namespace darmok
 		{
 			case WindowMode::Normal:
 			{
+				// TODO: fix this
 				glfwSetWindowMonitor(glfw
 					, nullptr
 					, 0

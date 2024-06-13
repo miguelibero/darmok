@@ -17,6 +17,7 @@
 #include <Jolt/Jolt.h>
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Body/BodyID.h>
+#include <Jolt/Physics/EPhysicsUpdateError.h>
 #include <Jolt/Physics/Collision/ObjectLayer.h>
 #include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
 #include <Jolt/Core/JobSystemThreadPool.h>
@@ -99,7 +100,7 @@ namespace darmok
         Physics3dSystemImpl(bx::AllocatorI& alloc) noexcept;
         void init(Scene& scene, App& app) noexcept;
         void shutdown() noexcept;
-        void update(float deltaTime) noexcept;
+        void update(float deltaTime);
         void addUpdater(IPhysics3dUpdater& updater) noexcept;
         bool removeUpdater(IPhysics3dUpdater& updater) noexcept;
 
@@ -118,8 +119,9 @@ namespace darmok
         std::unique_ptr<JPH::JobSystemThreadPool> _threadPool;
         std::vector<OptionalRef<IPhysics3dUpdater>> _updaters;
 
-        void onRigidbodyConstructed(EntityRegistry& registry, Entity entity);
+        void onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept;
         void onRigidbodyDestroyed(EntityRegistry& registry, Entity entity);
+        static std::string getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept;
     };
 
     class RigidBody3dImpl final
@@ -130,7 +132,7 @@ namespace darmok
 
         RigidBody3dImpl(const Shape& shape, float density = 0.F, MotionType motion = MotionType::Dynamic) noexcept;
         ~RigidBody3dImpl();
-        void init(Physics3dSystemImpl& system);
+        void init(Physics3dSystemImpl& system) noexcept;
         void shutdown();
         void update(Entity entity, float deltaTime);
 
@@ -139,7 +141,19 @@ namespace darmok
         float getDensity() const noexcept;
         float getMass() const noexcept;
 
+        void setPosition(const glm::vec3& pos);
+        glm::vec3 getPosition();
+        void setRotation(const glm::quat& rot);
+        glm::quat getRotation();
+
+        void addTorque(const glm::vec3& torque);
+        void addForce(const glm::vec3& force);
+        void move(const glm::vec3& pos, const glm::quat& rot, float deltaTime );
+        void movePosition(const glm::vec3& pos, float deltaTime);
+
     private:
+        OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
+
         JPH::BodyID createBody(OptionalRef<Transform> transform) noexcept;
         OptionalRef<Physics3dSystemImpl> _system;
         Shape _shape;

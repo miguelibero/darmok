@@ -21,10 +21,10 @@ currently using:
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [cereal](https://uscilab.github.io/cereal/) for serialization
 * [tweeny](https://github.com/mobius3/tweeny) for tweening and easings
+* [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 
 planned to use:
 
-* [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [Box2D](https://box2d.org/) for 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
@@ -71,9 +71,10 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * imgui for tooling
     * RmlUI for ingame (support for multiple canvases)
 * skeletal animations using ozz (reading from binary)
+* 3d physics using jolt
 
 #### Upcoming (I need them)
-* 3d physics
+* character controller
 * lua camera render
 * sound
 

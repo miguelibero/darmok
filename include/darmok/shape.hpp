@@ -49,7 +49,7 @@ namespace darmok
         float radius;
         glm::vec3 origin;
 
-        Sphere(const glm::vec3& origin, float radius = 1) noexcept;
+        Sphere(const glm::vec3& origin, float radius = 0.5f) noexcept;
         Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
         std::string to_string() const noexcept;
 

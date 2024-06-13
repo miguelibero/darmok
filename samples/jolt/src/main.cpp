@@ -28,75 +28,83 @@ namespace
 		{
 			App::init(args);
 
-			auto scene = addComponent<SceneAppComponent>().getScene();
-			scene->addLogicUpdater<Physics3dSystem>(getAssets().getAllocator());
+			_scene = addComponent<SceneAppComponent>().getScene();
+			_scene->addLogicUpdater<Physics3dSystem>(getAssets().getAllocator());
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 
-			auto camEntity = scene->createEntity();
+			auto camEntity = _scene->createEntity();
 			glm::vec2 winSize = getWindow().getSize();
 
-			scene->addComponent<Transform>(camEntity)
+			_scene->addComponent<Transform>(camEntity)
 				.setPosition({ 0, 10, -10 })
 				.lookAt({ 0, 0, 0 });
-			auto& cam = scene->addComponent<Camera>(camEntity)
+			auto& cam = _scene->addComponent<Camera>(camEntity)
 				.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
 			
 			cam.addComponent<PhongLightingComponent>();
 			cam.setRenderer<ForwardRenderer>();
 
-			auto light = scene->createEntity();
-			scene->addComponent<Transform>(light)
-				.setPosition({ 1, 1, -2 });
-			scene->addComponent<PointLight>(light);
+			auto light = _scene->createEntity();
+			_scene->addComponent<Transform>(light)
+				.setPosition({ 1, 2, -2 });
+			_scene->addComponent<PointLight>(light);
 
-			auto floorEntity = scene->createEntity();
-			scene->addComponent<RigidBody3d>(floorEntity, Plane::standard(), RigidBody3d::MotionType::Static);
+			_scene->addComponent<AmbientLight>(_scene->createEntity(), 0.5);
+
+			auto floorEntity = _scene->createEntity();
+			_scene->addComponent<RigidBody3d>(floorEntity, Plane::standard(), RigidBody3d::MotionType::Static);
 
 			auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
-			auto greenMat = std::make_shared<Material>(prog);
-			greenMat->setTexture(MaterialTextureType::Diffuse, greenTex);
+			_cubeMat = std::make_shared<Material>(prog, greenTex);
+			_meshCreator = std::make_unique<MeshCreator>(prog->getVertexLayout());
+			_cubeMesh = _meshCreator->createCuboid();
 
-			MeshCreator meshCreator(prog->getVertexLayout());
-			auto cubeMesh = meshCreator.createCuboid();
-			auto cubeEntity = scene->createEntity();
-			scene->addComponent<Renderable>(cubeEntity, cubeMesh, greenMat);
-			scene->addComponent<Transform>(cubeEntity)
-				.setPosition({ 1.5F, 10.F, 0.F });
-			scene->addComponent<RigidBody3d>(cubeEntity, Cuboid::standard(), 1.F);
+			for (auto x = -5.F; x < 5.F; x += 1.1F)
+			{
+				for (auto z = -5.F; z < 5.F; z += 1.1F)
+				{
+					glm::vec3 rot{ 45*x, 0.F, 45.F*z };
+					createCube().setPosition({ x, 10.F, z }).setEulerAngles(rot);
+				}
+			}
 
 			auto redTex = getAssets().getColorTextureLoader()(Colors::red());
 			auto redMat = std::make_shared<Material>(prog);
 			redMat->setTexture(MaterialTextureType::Diffuse, redTex);
 
-			auto sphereMesh = meshCreator.createSphere();
-			auto sphereEntity = scene->createEntity();
-			scene->addComponent<Renderable>(sphereEntity, sphereMesh, redMat);
-			scene->addComponent<RigidBody3d>(sphereEntity, Sphere::standard(), RigidBody3d::MotionType::Kinematic);
-			auto& trans = scene->addComponent<Transform>(sphereEntity);
+			auto sphereMesh = _meshCreator->createSphere();
+			auto sphereEntity = _scene->createEntity();
+			_scene->addComponent<Renderable>(sphereEntity, sphereMesh, redMat);
+			auto& rigidBody = _scene->addComponent<RigidBody3d>(sphereEntity, Sphere::standard(), RigidBody3d::MotionType::Kinematic);
+			_scene->addComponent<Transform>(sphereEntity, glm::vec3{ 0.F, 0.5F, 0.F});
 
 			auto speed = 0.1F;
 
-			auto moveAtSpeed = [&trans, speed](const glm::vec3& d) {
-				auto pos = trans.getPosition();
+			auto moveAtSpeed = [&rigidBody, speed](const glm::vec3& d) {
+				auto pos = rigidBody.getPosition();
 				pos += d * speed;
-				trans.setPosition(pos);
+				rigidBody.setPosition(pos);
 			};
 			auto moveRight = [moveAtSpeed]() { moveAtSpeed({ 1, 0, 0 });};
 			auto moveLeft = [moveAtSpeed]() { moveAtSpeed({ -1, 0, 0 }); };
 			auto moveForward = [moveAtSpeed]() { moveAtSpeed({ 0, 0, 1 }); };
 			auto moveBack = [moveAtSpeed]() { moveAtSpeed({ 0, 0, -1 }); };
 
-			auto moveMouse = [this, &cam, &trans]()
+			Plane movePlane;
+			// ball has a radius of 0.5f;
+			movePlane.origin.y = 0.5f;
+
+			auto moveMouse = [this, &cam, &rigidBody, movePlane]()
 			{
-					auto pos = getInput().getMouse().getPosition();
-					pos = getWindow().windowToScreenPoint(pos);
-					auto ray = cam.screenPointToRay(glm::vec3(pos, 0.F));
-					auto dist = ray.intersect(Plane::standard());
-					if (dist)
-					{
-						trans.setPosition(ray * dist.value());
-					}
+			    auto pos = getInput().getMouse().getPosition();
+			    pos = getWindow().windowToScreenPoint(pos);
+			    auto ray = cam.screenPointToRay(glm::vec3(pos, 0.F));
+			    auto dist = ray.intersect(movePlane);
+			    if (dist)
+			    {
+					rigidBody.setPosition(ray * dist.value());
+			    }
 			};
 
 			getInput().addBindings("movement", {
@@ -111,6 +119,22 @@ namespace
 				{ MouseBindingKey{ MouseButton::Left}, false, moveMouse},
 			});
 		}
+
+	private:
+		std::unique_ptr<MeshCreator> _meshCreator;
+		std::shared_ptr<Scene> _scene;
+		std::shared_ptr<Material> _cubeMat;
+		std::shared_ptr<IMesh> _cubeMesh;
+
+		Transform& createCube() noexcept
+		{
+			auto entity = _scene->createEntity();
+			_scene->addComponent<RigidBody3d>(entity, Cuboid::standard(), 1.F);
+			_scene->addComponent<Renderable>(entity, _cubeMesh, _cubeMat);
+			return _scene->addComponent<Transform>(entity);
+		}
+
+
 	};
 }
 

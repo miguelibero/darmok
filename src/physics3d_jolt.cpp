@@ -23,7 +23,19 @@ namespace darmok
 {
     struct JoltUtils final
     {
+        // Jolt is right-handed, darmok is left-handed
+
         static JPH::Vec3 convert(const glm::vec3& v) noexcept
+        {
+            return JPH::Vec3(v.x, v.y, -v.z);
+        }
+
+        static glm::vec3 convert(const JPH::Vec3& v) noexcept
+        {
+            return glm::vec3(v.GetX(), v.GetY(), -v.GetZ());
+        }
+
+        static JPH::Vec3 convertSize(const glm::vec3& v) noexcept
         {
             return JPH::Vec3(v.x, v.y, v.z);
         }
@@ -37,8 +49,6 @@ namespace darmok
         {
             return glm::vec4(v.GetX(), v.GetY(), v.GetZ(), v.GetW());
         }
-
-        // Jolt is right-handed, darmok is left-handed
 
         static JPH::Mat44 convert(const glm::mat4& v) noexcept
         {
@@ -66,6 +76,12 @@ namespace darmok
         {
             auto fv = Math::flipHandedness(v);
             return JPH::Quat(fv.x, fv.y, fv.z, fv.w);
+        }
+
+        static glm::quat convert(const JPH::Quat& v) noexcept
+        {
+            glm::quat quat(v.GetX(), v.GetY(), v.GetZ(), v.GetW());
+            return Math::flipHandedness(quat);
         }
     };
 
@@ -213,7 +229,7 @@ namespace darmok
         _scene.reset();
     }
 
-    void Physics3dSystemImpl::onRigidbodyConstructed(EntityRegistry& registry, Entity entity)
+    void Physics3dSystemImpl::onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept
     {
         registry.get<RigidBody3d>(entity).getImpl().init(*this);
     }
@@ -222,8 +238,26 @@ namespace darmok
     {
         registry.get<RigidBody3d>(entity).getImpl().shutdown();
     }
+
+    std::string Physics3dSystemImpl::getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept
+    {
+        switch (err)
+        {
+        case JPH::EPhysicsUpdateError::None:
+            return "None";
+        case JPH::EPhysicsUpdateError::ManifoldCacheFull:
+            return "ManifoldCacheFull";
+        case JPH::EPhysicsUpdateError::BodyPairCacheFull:
+            return "BodyPairCacheFull";
+        case JPH::EPhysicsUpdateError::ContactConstraintsFull:
+            return "ContactConstraintsFull";
+        default:
+            JPH_ASSERT(false);
+            return "";
+        }
+    }
     
-    void Physics3dSystemImpl::update(float deltaTime) noexcept
+    void Physics3dSystemImpl::update(float deltaTime)
     {
         if (!_system)
         {
@@ -233,7 +267,11 @@ namespace darmok
         auto fdt = _config.fixedDeltaTime;
         while (_deltaTimeRest > fdt)
         {
-            _system->Update(fdt, _config.collisionSteps, &_alloc, _threadPool.get());
+            auto err = _system->Update(fdt, _config.collisionSteps, &_alloc, _threadPool.get());
+            if (err != JPH::EPhysicsUpdateError::None)
+            {
+                throw std::runtime_error(std::string("physics update error ") + getUpdateErrorString(err));
+            }
             for (auto& updater : _updaters)
             {
                 updater->fixedUpdate(fdt);
@@ -331,7 +369,7 @@ namespace darmok
         shutdown();
     }
 
-    void RigidBody3dImpl::init(Physics3dSystemImpl& system)
+    void RigidBody3dImpl::init(Physics3dSystemImpl& system) noexcept
     {
         if (_system)
         {
@@ -347,6 +385,15 @@ namespace darmok
         {
             return;
         }
+    }
+
+    OptionalRef<JPH::BodyInterface> RigidBody3dImpl::getBodyInterface() const noexcept
+    {
+        if (!_system)
+        {
+            return nullptr;
+        }
+        return _system->getBodyInterface();
     }
 
     JPH::BodyID RigidBody3dImpl::createBody(OptionalRef<Transform> trans) noexcept
@@ -366,7 +413,7 @@ namespace darmok
         JPH::ShapeRefC shape = nullptr;
         if (auto cuboid = std::get_if<Cuboid>(&_shape))
         {
-            JPH::BoxShapeSettings settings(JoltUtils::convert(cuboid->size * 0.5F));
+            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cuboid->size * 0.5F));
             pos += cuboid->origin;
             shape = settings.Create().Get();
         }
@@ -428,13 +475,14 @@ namespace darmok
         {
             _bodyId = createBody(trans);
         }
+        /*
         else if (trans && _motion == MotionType::Kinematic)
         {
             auto pos = JoltUtils::convert(trans->getWorldPosition());
             auto rot = JoltUtils::convert(trans->getWorldRotation());
             iface.SetPosition(_bodyId, pos, JPH::EActivation::Activate);
             iface.SetRotation(_bodyId, rot, JPH::EActivation::Activate);
-        }
+        }*/
         else if (trans)
         {
             auto mat = JoltUtils::convert(iface.GetWorldTransform(_bodyId));
@@ -468,7 +516,7 @@ namespace darmok
         {
             return 0.F;
         }
-        auto shape = _system->getBodyInterface().GetShape(_bodyId);
+        auto shape = getBodyInterface()->GetShape(_bodyId);
         if (!shape)
         {
             return 0.F;
@@ -476,6 +524,52 @@ namespace darmok
         return shape->GetVolume() * _density;
     }
 
+    void RigidBody3dImpl::setPosition(const glm::vec3& pos)
+    {
+        getBodyInterface()->SetPosition(_bodyId, JoltUtils::convert(pos), JPH::EActivation::Activate);
+    }
+
+    glm::vec3 RigidBody3dImpl::getPosition()
+    {
+        return JoltUtils::convert(getBodyInterface()->GetPosition(_bodyId));
+    }
+
+    void RigidBody3dImpl::setRotation(const glm::quat& rot)
+    {
+        getBodyInterface()->SetRotation(_bodyId, JoltUtils::convert(rot), JPH::EActivation::Activate);
+    }
+
+    glm::quat RigidBody3dImpl::getRotation()
+    {
+        return JoltUtils::convert(getBodyInterface()->GetRotation(_bodyId));
+    }
+
+    void RigidBody3dImpl::addTorque(const glm::vec3& torque)
+    {
+        getBodyInterface()->AddTorque(_bodyId, JoltUtils::convert(torque));
+    }
+
+    void RigidBody3dImpl::addForce(const glm::vec3& force)
+    {
+        getBodyInterface()->AddForce(_bodyId, JoltUtils::convert(force));
+    }
+
+    void RigidBody3dImpl::move(const glm::vec3& pos, const glm::quat& rot, float deltaTime)
+    {
+        getBodyInterface()->MoveKinematic(_bodyId,
+            JoltUtils::convert(pos),
+            JoltUtils::convert(rot),
+            deltaTime);
+    }
+
+    void RigidBody3dImpl::movePosition(const glm::vec3& pos, float deltaTime)
+    {
+        auto iface = getBodyInterface();
+        auto rot = iface->GetRotation(_bodyId);
+        iface->MoveKinematic(_bodyId,
+            JoltUtils::convert(pos),
+            rot, deltaTime);
+    }
 
     RigidBody3d::RigidBody3d(const Shape& shape, MotionType motion) noexcept
         : RigidBody3d(shape, 0.F, motion)
@@ -510,6 +604,51 @@ namespace darmok
     float RigidBody3d::getMass() const noexcept
     {
         return _impl->getMass();
+    }
+
+    RigidBody3d& RigidBody3d::setPosition(const glm::vec3& pos)
+    {
+        _impl->setPosition(pos);
+        return *this;
+    }
+
+    glm::vec3 RigidBody3d::getPosition()
+    {
+        return _impl->getPosition();
+    }
+
+    RigidBody3d& RigidBody3d::setRotation(const glm::quat& rot)
+    {
+        _impl->setRotation(rot);
+        return *this;
+    }
+
+    glm::quat RigidBody3d::getRotation()
+    {
+        return _impl->getRotation();
+    }
+
+    RigidBody3d& RigidBody3d::addTorque(const glm::vec3& torque)
+    {
+        _impl->addTorque(torque);
+        return *this;
+    }
+
+    RigidBody3d& RigidBody3d::addForce(const glm::vec3& force)
+    {
+        _impl->addForce(force);
+        return *this;
+    }
+
+    RigidBody3d& RigidBody3d::move(const glm::vec3& pos, const glm::quat& rot, float deltaTime)
+    {
+        _impl->move(pos, rot, deltaTime);
+        return *this;
+    }
+    RigidBody3d& RigidBody3d::movePosition(const glm::vec3& pos, float deltaTime)
+    {
+        _impl->movePosition(pos, deltaTime);
+        return *this;
     }
 
     RigidBody3dImpl& RigidBody3d::getImpl() noexcept
