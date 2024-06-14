@@ -488,7 +488,12 @@ namespace darmok
 
 	std::shared_ptr<IMesh> MeshCreator::createSphere(int lod) noexcept
 	{
-		return createSphere(Sphere::standard());
+		return createSphere(Sphere::standard(), lod);
+	}
+
+	std::shared_ptr<IMesh> MeshCreator::createCapsule(int lod) noexcept
+	{
+		return createCapsule(Capsule::standard(), lod);
 	}
 
 	std::shared_ptr<IMesh> MeshCreator::createRectangle() noexcept
@@ -558,6 +563,72 @@ namespace darmok
 		auto cfg = config;
 		cfg.scale *= glm::vec3(sphere.radius);
 		cfg.offset += sphere.origin;
+		return createMesh(data, cfg);
+	}
+
+
+	std::shared_ptr<IMesh> MeshCreator::createCapsule(const Capsule& capsule, int lod) noexcept
+	{
+		auto rings = lod;
+		auto sectors = lod;
+		float texScale = 1.f;
+
+		float R = 1.f / (float)(rings - 1);
+		float S = 1.f / (float)(sectors - 1);
+		size_t n = rings * sectors;
+		auto pi = glm::pi<float>();
+
+		MeshData data;
+		{
+			data.positions.reserve(n);
+			data.normals.reserve(n);
+			data.texCoords.reserve(n);
+			for (int r = 0; r < rings; r++)
+			{
+				auto h = capsule.cylinderHeight;
+				if (r > rings * 0.5)
+				{
+					h *= -1;
+				}
+				for (int s = 0; s < sectors; s++)
+				{
+					auto u = s * S;
+					auto v = r * R;
+					auto theta = u * 2.0f * pi;
+					auto rho = v * pi;
+					auto pos = glm::vec3(
+						cos(theta) * sin(rho),
+						sin((0.5F * pi) + rho) + h,
+						sin(theta) * sin(rho)
+					);
+					data.positions.push_back(pos);
+					data.normals.push_back(pos);
+					data.texCoords.push_back(glm::vec2(
+						u * texScale,
+						v * texScale
+					));
+				}
+			}
+		}
+
+		{
+			data.indices.reserve(n * 6);
+			for (VertexIndex r = 0; r < rings - 1; r++)
+			{
+				for (VertexIndex s = 0; s < sectors - 1; s++)
+				{
+					data.indices.push_back(r * sectors + s);
+					data.indices.push_back(r * sectors + (s + 1));
+					data.indices.push_back((r + 1) * sectors + (s + 1));
+					data.indices.push_back((r + 1) * sectors + (s + 1));
+					data.indices.push_back((r + 1) * sectors + s);
+					data.indices.push_back(r * sectors + s);
+				}
+			}
+		}
+		auto cfg = config;
+		cfg.scale *= glm::vec3(capsule.radius);
+		cfg.offset += capsule.origin;
 		return createMesh(data, cfg);
 	}
 

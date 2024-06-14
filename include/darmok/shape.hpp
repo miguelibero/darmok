@@ -72,7 +72,13 @@ namespace darmok
 
     struct DARMOK_EXPORT Capsule final
     {
-        // TODO
+        float cylinderHeight;
+        float radius;
+        glm::vec3 origin;
+
+        Capsule(float cylinderHeight = 1, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        std::string to_string() const noexcept;
+        static const Capsule& standard() noexcept;
     };
 
     struct DARMOK_EXPORT NormalIntersection final

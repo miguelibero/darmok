@@ -63,20 +63,21 @@ namespace darmok
 
 		GLFWwindow* getGlfwWindow() const noexcept;
 		PlatformEventQueue& getEvents() noexcept;
-		
+		const glm::uvec2& getNormalWindowSize() const noexcept;
 		[[nodiscard]] static void* getWindowHandle(GLFWwindow* window) noexcept;
-		static void destroyWindow(GLFWwindow* window) noexcept;
-		[[nodiscard]] static GLFWwindow* createWindow(const glm::uvec2& size, const char* title) noexcept;
 
+		
 	private:
 		GLFWwindow* _window;
 		PlatformEventQueue _events;
 		MainThreadEntry _mte;
 		bx::Thread _thread;
 		std::queue<std::unique_ptr<PlatformCmd>> _cmds;
-		glm::uvec2 _windowSize;
+		glm::uvec2 _normWinSize;
 		glm::uvec2 _framebufferSize;
 
+		static void destroyWindow(GLFWwindow* window) noexcept;
+		[[nodiscard]] static GLFWwindow* createWindow(const glm::uvec2& size, const char* title) noexcept;
 		static uint8_t translateKeyModifiers(int mods) noexcept;
 
 		using KeyMap = std::array<KeyboardKey, GLFW_KEY_LAST + 1>;
@@ -154,7 +155,7 @@ namespace darmok
 	{
 	public:
 		ChangeWindowModeCmd(WindowMode mode) noexcept;
-		void process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept;
+		void process(PlatformEventQueue& events, GLFWwindow* glfw, const glm::uvec2& normWinSize) noexcept;
 		
 	private:
 		WindowMode _mode;

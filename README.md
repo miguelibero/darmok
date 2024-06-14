@@ -74,12 +74,16 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * 3d physics using jolt
 
 #### Upcoming (I need them)
-* character controller
+* physics3d features
+    * character controller
+    * lua bindings
 * lua camera render
 * sound
 
 #### Upcoming
-* tweening in the animation blending
+* export asset folders in C++
+* replace input bindings functions with interfaces
+* better window modes with different resolutions
 * frustrum culling
 * modernize renderer (probably needs frame graph or similar)
     * deferred

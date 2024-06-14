@@ -36,20 +36,19 @@ namespace darmok
 	{
 	}
 
-	void ChangeWindowModeCmd::process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept
+	void ChangeWindowModeCmd::process(PlatformEventQueue& events, GLFWwindow* glfw, const glm::uvec2& normWinSize) noexcept
 	{
 		switch (_mode)
 		{
 			case WindowMode::Normal:
 			{
-				// TODO: fix this
 				glfwSetWindowMonitor(glfw
 					, nullptr
 					, 0
 					, 0
-					, 0
-					, 0
-					, 0
+					, normWinSize.x
+					, normWinSize.y
+					, GLFW_DONT_CARE
 				);
 				events.post<WindowModeEvent>(WindowMode::Normal);
 				break;
@@ -130,7 +129,7 @@ namespace darmok
 			static_cast<ChangeWindowCursorModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
 			break;
 		case PlatformCmd::ChangeWindowMode:
-			static_cast<ChangeWindowModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
+			static_cast<ChangeWindowModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow(), plat.getNormalWindowSize());
 			break;
 		}
 	}
@@ -139,7 +138,7 @@ namespace darmok
 
 	PlatformImpl::PlatformImpl() noexcept
 		: _window(nullptr)
-		, _windowSize(0)
+		, _normWinSize(0)
 		, _framebufferSize(0)
 	{
 	}
@@ -152,6 +151,11 @@ namespace darmok
 	PlatformEventQueue& PlatformImpl::getEvents() noexcept
 	{
 		return _events;
+	}
+
+	const glm::uvec2& PlatformImpl::getNormalWindowSize() const noexcept
+	{
+		return _normWinSize;
 	}
 
 	void* PlatformImpl::getWindowHandle(GLFWwindow* window) noexcept
@@ -485,8 +489,8 @@ namespace darmok
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		_windowSize = glm::uvec2{ DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT };
-		_window = createWindow(_windowSize, "darmok");
+		_normWinSize = glm::uvec2{ DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT };
+		_window = createWindow(_normWinSize, "darmok");
 
 		if (!_window)
 		{
@@ -497,7 +501,7 @@ namespace darmok
 
 		{
 			// send events for initial window state
-			_events.post<WindowSizeEvent>(_windowSize);
+			_events.post<WindowSizeEvent>(_normWinSize);
 			int w, h;
 			glfwGetFramebufferSize(_window, &w, &h);
 			_framebufferSize = glm::uvec2(w, h);
@@ -592,8 +596,12 @@ namespace darmok
 
 	void PlatformImpl::windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
-		_windowSize = glm::uvec2(width, height);
-		_events.post<WindowSizeEvent>(_windowSize);
+		auto size = glm::uvec2(width, height);
+		if (glfwGetWindowMonitor(_window) == nullptr)
+		{
+			_normWinSize = size;
+		}
+		_events.post<WindowSizeEvent>(size);
 	}
 
 	void PlatformImpl::framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept

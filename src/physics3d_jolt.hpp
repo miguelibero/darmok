@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <memory>
+#include <mutex>
+#include <deque>
 #include <unordered_map>
 #include <darmok/utils.hpp>
 #include <darmok/optional_ref.hpp>
@@ -18,6 +20,7 @@
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Body/BodyID.h>
 #include <Jolt/Physics/EPhysicsUpdateError.h>
+#include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/ObjectLayer.h>
 #include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
 #include <Jolt/Core/JobSystemThreadPool.h>
@@ -42,19 +45,6 @@ namespace darmok
     class RigidBody3d;
     class Transform;
 
-    struct JoltPysicsConfig final
-    {
-        JPH::uint maxBodies = 1024;
-        JPH::uint numBodyMutexes = 0;
-        JPH::uint maxBodyPairs = 1024;
-        JPH::uint maxContactConstraints = 1024;
-        float fixedDeltaTime = 1.F / 60.F;
-        JPH::uint collisionSteps = 1;
-        float planeLength = 1000.F;
-        float planeThickness = 1.F;
-        glm::vec3 gravity = { 0, -9.81F, 0 };
-    };
-
     enum class JoltLayer : uint8_t
     {
         NonMoving,
@@ -66,51 +56,61 @@ namespace darmok
     {
     public:
         JPH::uint GetNumBroadPhaseLayers() const noexcept override;
-        JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const noexcept override;
+        JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer layer) const noexcept override;
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
-        virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const noexcept override;
+        virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer layer) const noexcept override;
 #endif
     };
 
     class JoltObjectVsBroadPhaseLayerFilter final : public JPH::ObjectVsBroadPhaseLayerFilter
     {
     public:
-        bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const noexcept override;
+        bool ShouldCollide(JPH::ObjectLayer layer1, JPH::BroadPhaseLayer layer2) const noexcept override;
     };
 
     class JoltObjectLayerPairFilter final : public JPH::ObjectLayerPairFilter
     {
     public:
-        bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const noexcept override;
+        bool ShouldCollide(JPH::ObjectLayer object1, JPH::ObjectLayer object2) const noexcept override;
     };
 
     class JoltTempAllocator final : public JPH::TempAllocator
     {
     public:
         JoltTempAllocator(bx::AllocatorI& alloc) noexcept;
-        void* Allocate(JPH::uint inSize) noexcept override;
-        void Free(void* inAddress, JPH::uint inSize) noexcept override;
+        void* Allocate(JPH::uint size) noexcept override;
+        void Free(void* address, JPH::uint size) noexcept override;
     private:
         bx::AllocatorI& _alloc;
     };
 
-    class Physics3dSystemImpl final
+    class Physics3dSystemImpl final : public JPH::ContactListener
     {
     public:
-        Physics3dSystemImpl(bx::AllocatorI& alloc) noexcept;
+        using Config = Physics3dConfig;
+        Physics3dSystemImpl(bx::AllocatorI& alloc, const Config& config) noexcept;
         void init(Scene& scene, App& app) noexcept;
         void shutdown() noexcept;
         void update(float deltaTime);
         void addUpdater(IPhysics3dUpdater& updater) noexcept;
         bool removeUpdater(IPhysics3dUpdater& updater) noexcept;
+        void addListener(IPhysics3dCollisionListener& listener) noexcept;
+        bool removeListener(IPhysics3dCollisionListener& listener) noexcept;
 
-        const JoltPysicsConfig& getConfig() const noexcept;
+        const Config& getConfig() const noexcept;
         OptionalRef<Scene> getScene() const noexcept;
         JPH::BodyInterface& getBodyInterface() noexcept;
+
+        void onBodyCreated(RigidBody3d& rigidBody) noexcept;
+
+        void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override;
+        void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const  JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override;
+        void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override;
+
     private:
         OptionalRef<Scene> _scene;
         float _deltaTimeRest;
-        JoltPysicsConfig _config;
+        Config _config;
         JoltBroadPhaseLayer _broadPhaseLayer;
         JoltObjectVsBroadPhaseLayerFilter _objVsBroadPhaseLayerFilter;
         JoltObjectLayerPairFilter _objLayerPairFilter;
@@ -118,10 +118,40 @@ namespace darmok
         std::unique_ptr<JPH::PhysicsSystem> _system;
         std::unique_ptr<JPH::JobSystemThreadPool> _threadPool;
         std::vector<OptionalRef<IPhysics3dUpdater>> _updaters;
+        std::vector<OptionalRef<IPhysics3dCollisionListener>> _listeners;
 
+        struct CollisionEnterEvent final
+        {
+            Physics3dCollision collision;
+        };
+
+        struct CollisionStayEvent final
+        {
+            Physics3dCollision collision;
+        };
+
+        struct CollisionExitEvent final
+        {
+            Physics3dCollision collision;
+        };
+        using CollisionEvent = std::variant<CollisionEnterEvent, CollisionStayEvent, CollisionExitEvent>;
+
+        mutable std::mutex _rigidBodiesMutex;
+        std::unordered_map<JPH::BodyID, OptionalRef<RigidBody3d>> _rigidBodies;
+
+        mutable std::mutex _collisionEventsMutex;
+        std::deque<CollisionEvent> _pendingCollisionEvents;
+
+        void processPendingCollisionEvents();
+        static Physics3dCollision createCollision(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2, OptionalRef<const JPH::ContactManifold> manifold = nullptr) noexcept;
+        OptionalRef<RigidBody3d> getRigidBody(const JPH::BodyID& bodyId) const noexcept;
         void onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept;
         void onRigidbodyDestroyed(EntityRegistry& registry, Entity entity);
         static std::string getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept;
+
+        void onCollisionEnter(const Physics3dCollision& collision);
+        void onCollisionStay(const Physics3dCollision& collision);
+        void onCollisionExit(const Physics3dCollision& collision);
     };
 
     class RigidBody3dImpl final
@@ -132,7 +162,7 @@ namespace darmok
 
         RigidBody3dImpl(const Shape& shape, float density = 0.F, MotionType motion = MotionType::Dynamic) noexcept;
         ~RigidBody3dImpl();
-        void init(Physics3dSystemImpl& system) noexcept;
+        void init(RigidBody3d& rigidBody, Physics3dSystemImpl& system) noexcept;
         void shutdown();
         void update(Entity entity, float deltaTime);
 
@@ -140,6 +170,7 @@ namespace darmok
         MotionType getMotionType() const noexcept;
         float getDensity() const noexcept;
         float getMass() const noexcept;
+        const JPH::BodyID& getBodyId() const noexcept;
 
         void setPosition(const glm::vec3& pos);
         glm::vec3 getPosition();
@@ -151,14 +182,23 @@ namespace darmok
         void move(const glm::vec3& pos, const glm::quat& rot, float deltaTime );
         void movePosition(const glm::vec3& pos, float deltaTime);
 
+        void addListener(IPhysics3dCollisionListener& listener) noexcept;
+        bool removeListener(IPhysics3dCollisionListener& listener) noexcept;
+
+        void onCollisionEnter(const Physics3dCollision& collision);
+        void onCollisionStay(const Physics3dCollision& collision);
+        void onCollisionExit(const Physics3dCollision& collision);
+
     private:
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
-
         JPH::BodyID createBody(OptionalRef<Transform> transform) noexcept;
+
+        OptionalRef<RigidBody3d> _rigidBody;
         OptionalRef<Physics3dSystemImpl> _system;
         Shape _shape;
         MotionType _motion;
         float _density;
         JPH::BodyID _bodyId;
+        std::vector<OptionalRef<IPhysics3dCollisionListener>> _listeners;
     };
 }

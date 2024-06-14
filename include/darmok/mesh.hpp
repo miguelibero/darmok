@@ -147,6 +147,7 @@ namespace darmok
     struct Cuboid;
     struct Sphere;
     struct Rectangle;
+    struct Capsule;
     struct Ray;
     struct Line;
 
@@ -162,6 +163,8 @@ namespace darmok
          [[nodiscard]] std::shared_ptr<IMesh> createCuboid(const Cuboid& cuboid) noexcept;
          [[nodiscard]] std::shared_ptr<IMesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
          [[nodiscard]] std::shared_ptr<IMesh> createSphere(int lod = 32) noexcept;
+         [[nodiscard]] std::shared_ptr<IMesh> createCapsule(const Capsule& capsule, int lod = 32) noexcept;
+         [[nodiscard]] std::shared_ptr<IMesh> createCapsule(int lod = 32) noexcept;
          [[nodiscard]] std::shared_ptr<IMesh> createRectangle() noexcept;
          [[nodiscard]] std::shared_ptr<IMesh> createRectangle(const Rectangle& rect) noexcept;
          [[nodiscard]] std::shared_ptr<IMesh> createLineRectangle() noexcept;

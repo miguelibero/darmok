@@ -21,7 +21,7 @@ namespace
 {
 	using namespace darmok;
 
-	class JoltSampleApp : public App
+	class JoltSampleApp : public App, public IPhysics3dCollisionListener
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
@@ -53,12 +53,15 @@ namespace
 			_scene->addComponent<AmbientLight>(_scene->createEntity(), 0.5);
 
 			auto floorEntity = _scene->createEntity();
-			_scene->addComponent<RigidBody3d>(floorEntity, Plane::standard(), RigidBody3d::MotionType::Static);
+			_scene->addComponent<RigidBody3d>(floorEntity, Cuboid(glm::vec3(1000.F, 1.F, 1000.F)), RigidBody3d::MotionType::Static);
 
 			auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
-			_cubeMat = std::make_shared<Material>(prog, greenTex);
-			_meshCreator = std::make_unique<MeshCreator>(prog->getVertexLayout());
-			_cubeMesh = _meshCreator->createCuboid();
+			auto darkGreenTex = getAssets().getColorTextureLoader()(Color(0, 100, 0, 255));
+			_cubeMat = std::make_shared<Material>(prog, darkGreenTex);
+			_touchedCubeMat = std::make_shared<Material>(prog, greenTex);
+
+			MeshCreator meshCreator(prog->getVertexLayout());
+			_cubeMesh = meshCreator.createCuboid();
 
 			for (auto x = -5.F; x < 5.F; x += 1.1F)
 			{
@@ -73,11 +76,13 @@ namespace
 			auto redMat = std::make_shared<Material>(prog);
 			redMat->setTexture(MaterialTextureType::Diffuse, redTex);
 
-			auto sphereMesh = _meshCreator->createSphere();
-			auto sphereEntity = _scene->createEntity();
-			_scene->addComponent<Renderable>(sphereEntity, sphereMesh, redMat);
-			auto& rigidBody = _scene->addComponent<RigidBody3d>(sphereEntity, Sphere::standard(), RigidBody3d::MotionType::Kinematic);
-			_scene->addComponent<Transform>(sphereEntity, glm::vec3{ 0.F, 0.5F, 0.F});
+			Capsule playerShape(1.5F);
+			auto playerMesh = meshCreator.createCapsule(playerShape);
+			auto playerEntity = _scene->createEntity();
+			_scene->addComponent<Renderable>(playerEntity, playerMesh, redMat);
+			auto& rigidBody = _scene->addComponent<RigidBody3d>(playerEntity, playerShape, RigidBody3d::MotionType::Kinematic);
+			rigidBody.addListener(*this);
+			_scene->addComponent<Transform>(playerEntity, glm::vec3{ 0.F, 0.5F, 0.F});
 
 			auto speed = 0.1F;
 
@@ -97,7 +102,7 @@ namespace
 
 			auto moveMouse = [this, &cam, &rigidBody, movePlane]()
 			{
-			    auto pos = getInput().getMouse().getPosition();
+			    glm::vec2 pos = getInput().getMouse().getPosition();
 			    pos = getWindow().windowToScreenPoint(pos);
 			    auto ray = cam.screenPointToRay(glm::vec3(pos, 0.F));
 			    auto dist = ray.intersect(movePlane);
@@ -120,11 +125,28 @@ namespace
 			});
 		}
 
+		void onCollisionEnter(const Physics3dCollision& collision) override
+		{
+			getRenderable(collision.rigidBody2).setMaterial(_touchedCubeMat);
+
+		}
+
+		void onCollisionExit(const Physics3dCollision& collision) override
+		{
+			getRenderable(collision.rigidBody2).setMaterial(_cubeMat);
+		}
+
 	private:
-		std::unique_ptr<MeshCreator> _meshCreator;
 		std::shared_ptr<Scene> _scene;
 		std::shared_ptr<Material> _cubeMat;
+		std::shared_ptr<Material> _touchedCubeMat;
 		std::shared_ptr<IMesh> _cubeMesh;
+
+		Renderable& getRenderable(RigidBody3d& rigidBody)
+		{
+			auto entity = _scene->getEntity(rigidBody);
+			return _scene->getComponent<Renderable>(entity).value();
+		}
 
 		Transform& createCube() noexcept
 		{
@@ -133,8 +155,6 @@ namespace
 			_scene->addComponent<Renderable>(entity, _cubeMesh, _cubeMat);
 			return _scene->addComponent<Transform>(entity);
 		}
-
-
 	};
 }
 

@@ -252,6 +252,24 @@ namespace darmok
         return glm::closestPointOnLine(p, points[0], points[1]);
     }
 
+    Capsule::Capsule(float cylinderHeight, float radius, const glm::vec3& origin) noexcept
+        : cylinderHeight(cylinderHeight)
+        , radius(radius)
+        , origin(origin)
+    {
+    }
+
+    std::string Capsule::to_string() const noexcept
+    {
+        return "Capsule(cylinderHeight=" + std::to_string(cylinderHeight) + ", radius=" + std::to_string(radius) + ", origin=" + glm::to_string(origin) + ")";
+    }
+
+    const Capsule& Capsule::standard() noexcept
+    {
+        const static Capsule v;
+        return v;
+    }
+
     std::string NormalIntersection::to_string() const noexcept
     {
         return "NormalIntersection(position=" + glm::to_string(position) + ", normal=" + glm::to_string(normal) + ")";
