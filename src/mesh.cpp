@@ -468,7 +468,7 @@ namespace darmok
 	{
 		auto cfg = config;
 		cfg.scale *= glm::vec3(rect.size, 0);
-		cfg.offset += glm::vec3(rect.origin - glm::vec2(0.5F), 0);
+		cfg.offset += glm::vec3(rect.origin/rect.size - glm::vec2(0.5F), 0);
 		return createMesh(data, cfg);
 	}
 
@@ -562,7 +562,7 @@ namespace darmok
 		}
 		auto cfg = config;
 		cfg.scale *= glm::vec3(sphere.radius);
-		cfg.offset += sphere.origin;
+		cfg.offset += sphere.origin / sphere.radius;
 		return createMesh(data, cfg);
 	}
 
@@ -583,9 +583,10 @@ namespace darmok
 			data.positions.reserve(n);
 			data.normals.reserve(n);
 			data.texCoords.reserve(n);
+			auto halfHeight = capsule.cylinderHeight / capsule.radius * 0.5F;
 			for (int r = 0; r < rings; r++)
 			{
-				auto h = capsule.cylinderHeight * 0.5;
+				auto h = halfHeight;
 				if (r > rings * 0.5)
 				{
 					h *= -1;
@@ -628,7 +629,7 @@ namespace darmok
 		}
 		auto cfg = config;
 		cfg.scale *= glm::vec3(capsule.radius);
-		cfg.offset += capsule.origin;
+		cfg.offset += capsule.origin / capsule.radius;
 		return createMesh(data, cfg);
 	}
 

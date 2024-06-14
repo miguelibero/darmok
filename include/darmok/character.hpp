@@ -6,17 +6,53 @@
 #include <darmok/shape.hpp>
 #include <bx/bx.h>
 
-namespace darmok
+namespace darmok::physics3d
 {
-    struct DARMOK_EXPORT CharacterControllerConfig final
+    struct DARMOK_EXPORT BaseCharacterConfig
     {
-        using Shape = Physics3dShape;
+        using Shape = PhysicsShape;
         Shape shape = Capsule(1.F, 0.25F);
         glm::vec3 up = glm::vec3(0, 1, 0);
-        float maxSlopeAngle = glm::radians(50.F);
-        float maxStrength = 100.F;
         Plane supportingPlane = Plane(glm::vec3(0, 1, 0), -1.0e10f);
-        Physics3dBackFaceMode backFaceMode = Physics3dBackFaceMode::CollideWithBackFaces;
+        float maxSlopeAngle = glm::radians(50.F);
+    };
+
+    struct DARMOK_EXPORT CharacterConfig final : public BaseCharacterConfig
+    {
+        std::string layer;
+        float mass = 80.F;
+        float friction = 0.2;
+        float gravityFactor = 1.0F;
+    };
+
+    class CharacterImpl;
+
+    class DARMOK_EXPORT Character final
+    {
+    public:
+        using Shape = PhysicsShape;
+        using Config = CharacterConfig;
+        Character(const Config& config = {});
+        Character(const Shape& shape);
+        ~Character();
+
+        CharacterImpl& getImpl() noexcept;
+        const CharacterImpl& getImpl() const noexcept;
+
+        Character& setLinearVelocity(const glm::vec3& velocity);
+        glm::vec3 getLinearVelocity();
+
+        Character& setPosition(const glm::vec3& pos) noexcept;
+        glm::vec3 getPosition() const noexcept;
+
+    private:
+        std::unique_ptr<CharacterImpl> _impl;
+    };
+
+    struct DARMOK_EXPORT CharacterControllerConfig final : public BaseCharacterConfig
+    {
+        float maxStrength = 100.F;
+        BackFaceMode backFaceMode = BackFaceMode::CollideWithBackFaces;
         float padding = 0.02f;
         float penetrationRecoverySpeed = 1.0f;
         float predictiveContactDistance = 0.1f;
@@ -24,15 +60,14 @@ namespace darmok
 
     class CharacterController;
 
-    class DARMOK_EXPORT BX_NO_VTABLE ICharacterListener
+    class DARMOK_EXPORT BX_NO_VTABLE ICharacterControllerListener
     {
     public:
-        using Collision = Physics3dCollision;
-        virtual ~ICharacterListener() = default;
+        virtual ~ICharacterControllerListener() = default;
 
-        virtual void onCollisionEnter(CharacterController& character, RigidBody3d& rigidBody, const Collision& collision) {};
-        virtual void onCollisionStay(CharacterController& character, RigidBody3d& rigidBody, const Collision& collision) {};
-        virtual void onCollisionExit(CharacterController& character, RigidBody3d& rigidBody) {};
+        virtual void onCollisionEnter(CharacterController& character, RigidBody& rigidBody, const Collision& collision) {};
+        virtual void onCollisionStay(CharacterController& character, RigidBody& rigidBody, const Collision& collision) {};
+        virtual void onCollisionExit(CharacterController& character, RigidBody& rigidBody) {};
     };
 
     class CharacterControllerImpl;
@@ -40,7 +75,7 @@ namespace darmok
     class DARMOK_EXPORT CharacterController final
     {
     public:
-        using Shape = Physics3dShape;
+        using Shape = PhysicsShape;
         using Config = CharacterControllerConfig;
         CharacterController(const Config& config = {});
         CharacterController(const Shape& shape);
@@ -55,8 +90,8 @@ namespace darmok
         CharacterController& setPosition(const glm::vec3& pos) noexcept;
         glm::vec3 getPosition() const noexcept;
 
-        CharacterController& addListener(ICharacterListener& listener) noexcept;
-        bool removeListener(ICharacterListener& listener) noexcept;
+        CharacterController& addListener(ICharacterControllerListener& listener) noexcept;
+        bool removeListener(ICharacterControllerListener& listener) noexcept;
 
     private:
         std::unique_ptr<CharacterControllerImpl> _impl;

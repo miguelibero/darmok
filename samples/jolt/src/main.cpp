@@ -21,8 +21,9 @@
 namespace
 {
 	using namespace darmok;
+	using namespace darmok::physics3d;
 
-	class JoltSampleApp : public App, public ICharacterListener
+	class JoltSampleApp : public App, public ICharacterControllerListener
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
@@ -30,7 +31,7 @@ namespace
 			App::init(args);
 
 			_scene = addComponent<SceneAppComponent>().getScene();
-			_scene->addLogicUpdater<Physics3dSystem>(getAssets().getAllocator());
+			_scene->addLogicUpdater<PhysicsSystem>(getAssets().getAllocator());
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 
@@ -64,7 +65,7 @@ namespace
 				auto floorTex = getAssets().getColorTextureLoader()(Color(172, 172, 124, 255));
 				auto floorMat = std::make_shared<Material>(prog, floorTex);
 				Cuboid floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
-				_scene->addComponent<RigidBody3d>(floorEntity, floorShape, RigidBody3d::MotionType::Static);
+				_scene->addComponent<RigidBody>(floorEntity, floorShape, RigidBody::MotionType::Static);
 				auto floorMesh = meshCreator.createCuboid(floorShape);
 				_scene->addComponent<Renderable>(floorEntity, floorMesh, floorMat);
 			}
@@ -96,19 +97,18 @@ namespace
 				auto playerMesh = meshCreator.createCapsule(playerShape);
 				auto playerEntity = _scene->createEntity();
 				_scene->addComponent<Renderable>(playerEntity, playerMesh, redMat);
-				CharacterControllerConfig characterConfig;
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 				_characterCtrl->addListener(*this);
 				_scene->addComponent<Transform>(playerEntity);
 			}
 		}
 
-		void onCollisionEnter(CharacterController& character, RigidBody3d& rigidBody, const Physics3dCollision& collision) override
+		void onCollisionEnter(CharacterController& character, RigidBody& rigidBody, const Collision& collision) override
 		{
 			getRenderable(rigidBody).setMaterial(_touchedCubeMat);
 		}
 
-		void onCollisionExit(CharacterController& character, RigidBody3d& rigidBody) override
+		void onCollisionExit(CharacterController& character, RigidBody& rigidBody) override
 		{
 			getRenderable(rigidBody).setMaterial(_cubeMat);
 		}
@@ -160,7 +160,7 @@ namespace
 		std::shared_ptr<Material> _touchedCubeMat;
 		std::shared_ptr<IMesh> _cubeMesh;
 
-		Renderable& getRenderable(RigidBody3d& rigidBody)
+		Renderable& getRenderable(RigidBody& rigidBody)
 		{
 			auto entity = _scene->getEntity(rigidBody);
 			return _scene->getComponent<Renderable>(entity).value();
@@ -169,7 +169,7 @@ namespace
 		Transform& createCube() noexcept
 		{
 			auto entity = _scene->createEntity();
-			_scene->addComponent<RigidBody3d>(entity, Cuboid::standard(), 1.F);
+			_scene->addComponent<RigidBody>(entity, Cuboid::standard(), 1.F);
 			_scene->addComponent<Renderable>(entity, _cubeMesh, _cubeMat);
 			return _scene->addComponent<Transform>(entity);
 		}

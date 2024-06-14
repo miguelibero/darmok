@@ -1,15 +1,15 @@
 #pragma once
 
-namespace darmok
+namespace darmok::physics3d
 {
-    enum class RigidBody3dMotionType
+    enum class RigidBodyMotionType
     {
         Static,
         Dynamic,
         Kinematic
     };
 
-    enum class Physics3dBackFaceMode : uint8_t
+    enum class BackFaceMode : uint8_t
     {
         IgnoreBackFaces,
         CollideWithBackFaces,
