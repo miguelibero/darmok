@@ -9,6 +9,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/physics3d.hpp>
+#include <darmok/character.hpp>
 
 #include <darmok/glm.hpp>
 #include "jolt.hpp"
@@ -31,6 +32,7 @@ namespace JPH
     class PhysicsSystem;
     class BroadPhaseLayer;
     class BodyInterface;
+    class Character;
 }
 
 namespace darmok
@@ -206,6 +208,7 @@ namespace darmok::physics3d
         using MotionType = RigidBodyMotionType;
 
         RigidBodyImpl(const Config& config) noexcept;
+        RigidBodyImpl(const CharacterConfig& config) noexcept;
         ~RigidBodyImpl();
         void init(RigidBody& rigidBody, PhysicsSystemImpl& system) noexcept;
         void shutdown();
@@ -213,7 +216,6 @@ namespace darmok::physics3d
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
-        float getMass() const noexcept;
         const JPH::BodyID& getBodyId() const noexcept;
 
         void setPosition(const glm::vec3& pos);
@@ -238,13 +240,17 @@ namespace darmok::physics3d
 
     private:
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
-        JPH::BodyID createBody(OptionalRef<Transform> transform) noexcept;
+        JPH::BodyID createBody(const JPH::Vec3& pos, const JPH::Quat& rot) noexcept;
+        JPH::BodyID createCharacter(const JPH::Vec3& pos, const JPH::Quat& rot) noexcept;
         bool tryCreateBody(OptionalRef<Transform> transform) noexcept;
 
         OptionalRef<RigidBody> _rigidBody;
         OptionalRef<PhysicsSystemImpl> _system;
         Config _config;
-        JPH::BodyID _bodyId;
+        JPH::BodyID _bodyId;        
         std::vector<OptionalRef<ICollisionListener>> _listeners;
+
+        std::optional<CharacterConfig> _characterConfig;
+        JPH::Ref<JPH::Character> _character;
     };
 }

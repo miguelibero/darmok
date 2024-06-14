@@ -82,6 +82,7 @@ namespace darmok::physics3d
     };
 
     class RigidBodyImpl;
+    struct CharacterConfig;
 
     class RigidBody final
     {
@@ -92,11 +93,11 @@ namespace darmok::physics3d
 
         RigidBody(const Shape& shape, MotionType motion = MotionType::Dynamic) noexcept;
         RigidBody(const Config& config) noexcept;
+        RigidBody(const CharacterConfig& config) noexcept;
         ~RigidBody() noexcept;
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
-        float getMass() const noexcept;
         RigidBodyImpl& getImpl() noexcept;
         const RigidBodyImpl& getImpl() const noexcept;
 

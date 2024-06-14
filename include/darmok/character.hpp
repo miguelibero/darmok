@@ -8,10 +8,12 @@
 
 namespace darmok::physics3d
 {
+    // https://github.com/jrouwe/JoltPhysics/discussions/239
+
     struct DARMOK_EXPORT BaseCharacterConfig
     {
         using Shape = PhysicsShape;
-        Shape shape = Capsule(1.F, 0.25F);
+        Shape shape = Capsule(1.F, 0.25F, glm::vec3(0, 0.75F, 0));
         glm::vec3 up = glm::vec3(0, 1, 0);
         Plane supportingPlane = Plane(glm::vec3(0, 1, 0), -1.0e10f);
         float maxSlopeAngle = glm::radians(50.F);
@@ -23,30 +25,6 @@ namespace darmok::physics3d
         float mass = 80.F;
         float friction = 0.2;
         float gravityFactor = 1.0F;
-    };
-
-    class CharacterImpl;
-
-    class DARMOK_EXPORT Character final
-    {
-    public:
-        using Shape = PhysicsShape;
-        using Config = CharacterConfig;
-        Character(const Config& config = {});
-        Character(const Shape& shape);
-        ~Character();
-
-        CharacterImpl& getImpl() noexcept;
-        const CharacterImpl& getImpl() const noexcept;
-
-        Character& setLinearVelocity(const glm::vec3& velocity);
-        glm::vec3 getLinearVelocity();
-
-        Character& setPosition(const glm::vec3& pos) noexcept;
-        glm::vec3 getPosition() const noexcept;
-
-    private:
-        std::unique_ptr<CharacterImpl> _impl;
     };
 
     struct DARMOK_EXPORT CharacterControllerConfig final : public BaseCharacterConfig

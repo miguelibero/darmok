@@ -18,31 +18,6 @@ namespace darmok::physics3d
 {
     class PhysicsSystemImpl;
 
-    class CharacterImpl final
-    {
-    public:
-        using Shape = PhysicsShape;
-        using Config = CharacterConfig;
-        CharacterImpl(const Config& config);
-        ~CharacterImpl();
-
-        void init(Character& character, PhysicsSystemImpl& system);
-        void shutdown();
-        void update(Entity entity, float deltaTime);
-
-        void setLinearVelocity(const glm::vec3& velocity);
-        glm::vec3 getLinearVelocity();
-
-        void setPosition(const glm::vec3& pos) noexcept;
-        glm::vec3 getPosition() const noexcept;
-
-    private:
-        Config _config;
-        OptionalRef<PhysicsSystemImpl> _system;
-        OptionalRef<Character> _character;
-        JPH::Ref<JPH::CharacterVirtual> _jolt;
-    };
-
     class CharacterControllerImpl final : public JPH::CharacterContactListener
     {
     public:
@@ -76,5 +51,6 @@ namespace darmok::physics3d
         void onCollisionStay(RigidBody& other, const Collision& collision);
         void onCollisionExit(RigidBody& other);
         void notifyCollisionListeners(const CollisionMap& oldCollisions);
+        OptionalRef<RigidBody> getRigidBody() const noexcept;
     };
 }

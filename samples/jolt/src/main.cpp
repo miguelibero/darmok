@@ -23,7 +23,7 @@ namespace
 	using namespace darmok;
 	using namespace darmok::physics3d;
 
-	class JoltSampleApp : public App, public ICharacterControllerListener
+	class JoltSampleApp : public App, public ICollisionListener
 	{
 	public:
 		void init(const std::vector<std::string>& args) override
@@ -97,20 +97,23 @@ namespace
 				auto playerMesh = meshCreator.createCapsule(playerShape);
 				auto playerEntity = _scene->createEntity();
 				_scene->addComponent<Renderable>(playerEntity, playerMesh, redMat);
-				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
-				_characterCtrl->addListener(*this);
+				// _characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
+
+				CharacterConfig characterConfig{ playerShape };
+				_characterRigidBody = _scene->addComponent<RigidBody>(playerEntity, characterConfig);
+				_characterRigidBody->addListener(*this);
 				_scene->addComponent<Transform>(playerEntity);
 			}
 		}
 
-		void onCollisionEnter(CharacterController& character, RigidBody& rigidBody, const Collision& collision) override
+		void onCollisionEnter(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision) override
 		{
-			getRenderable(rigidBody).setMaterial(_touchedCubeMat);
+			getRenderable(rigidBody2).setMaterial(_touchedCubeMat);
 		}
 
-		void onCollisionExit(CharacterController& character, RigidBody& rigidBody) override
+		void onCollisionExit(RigidBody& rigidBody1, RigidBody& rigidBody2) override
 		{
-			getRenderable(rigidBody).setMaterial(_cubeMat);
+			getRenderable(rigidBody2).setMaterial(_cubeMat);
 		}
 	protected:
 
@@ -125,7 +128,7 @@ namespace
 				auto dist = ray.intersect(_playerMovePlane);
 				if (dist)
 				{
-					_characterCtrl->setPosition(ray * dist.value());
+					_characterRigidBody->setPosition(ray * dist.value());
 				}
 				return;
 			}
@@ -148,13 +151,14 @@ namespace
 			{
 				speed = { 0, 0, 1 };
 			}
-			_characterCtrl->setLinearVelocity(speed * 10.F);
+			_characterRigidBody->setLinearVelocity(speed * 10.F);
 		}
 
 	private:
 		Plane _playerMovePlane;
 		OptionalRef<Camera> _cam;
 		OptionalRef<CharacterController> _characterCtrl;
+		OptionalRef<RigidBody> _characterRigidBody;
 		std::shared_ptr<Scene> _scene;
 		std::shared_ptr<Material> _cubeMat;
 		std::shared_ptr<Material> _touchedCubeMat;
@@ -169,7 +173,9 @@ namespace
 		Transform& createCube() noexcept
 		{
 			auto entity = _scene->createEntity();
-			_scene->addComponent<RigidBody>(entity, Cuboid::standard(), 1.F);
+			RigidBodyConfig config;
+			config.shape = Cuboid::standard();
+			_scene->addComponent<RigidBody>(entity, config);
 			_scene->addComponent<Renderable>(entity, _cubeMesh, _cubeMat);
 			return _scene->addComponent<Transform>(entity);
 		}

@@ -5,113 +5,6 @@
 
 namespace darmok::physics3d
 {
-    CharacterImpl::CharacterImpl(const Config& config)
-        : _config(config)
-    {
-    }
-
-    CharacterImpl::~CharacterImpl()
-    {
-        shutdown();
-    }
-
-    void CharacterImpl::init(Character& character, PhysicsSystemImpl& system)
-    {
-
-    }
-
-    void CharacterImpl::shutdown()
-    {
-
-    }
-
-    void CharacterImpl::update(Entity entity, float deltaTime)
-    {
-
-    }
-
-    void CharacterImpl::setLinearVelocity(const glm::vec3& velocity)
-    {
-        if (_jolt)
-        {
-            _jolt->SetLinearVelocity(JoltUtils::convert(velocity));
-        }
-    }
-
-    glm::vec3 CharacterImpl::getLinearVelocity()
-    {
-        if (!_jolt)
-        {
-            return glm::vec3(0);
-        }
-        return JoltUtils::convert(_jolt->GetLinearVelocity());
-    }
-
-    void CharacterImpl::setPosition(const glm::vec3& pos) noexcept
-    {
-        if (_jolt)
-        {
-            _jolt->SetPosition(JoltUtils::convert(pos));
-        }
-    }
-
-    glm::vec3 CharacterImpl::getPosition() const noexcept
-    {
-        if (!_jolt)
-        {
-            return glm::vec3(0);
-        }
-        return JoltUtils::convert(_jolt->GetPosition());
-    }
-
-    Character::Character(const Config& config)
-        : _impl(std::make_unique<CharacterImpl>(config))
-    {
-    }
-
-    Character::Character(const Shape& shape)
-        : Character(Config{ shape })
-    {
-    }
-
-    Character::~Character()
-    {
-        // empty on purpose
-    }
-
-    CharacterImpl& Character::getImpl() noexcept
-    {
-        return *_impl;
-    }
-
-    const CharacterImpl& Character::getImpl() const noexcept
-    {
-        return *_impl;
-    }
-
-    Character& Character::setLinearVelocity(const glm::vec3& velocity)
-    {
-        _impl->setLinearVelocity(velocity);
-        return *this;
-    }
-
-    glm::vec3 Character::getLinearVelocity()
-    {
-        return _impl->getLinearVelocity();
-    }
-
-    Character& Character::setPosition(const glm::vec3& pos) noexcept
-    {
-        _impl->setPosition(pos);
-        return *this;
-    }
-
-    glm::vec3 Character::getPosition() const noexcept
-    {
-        return _impl->getPosition();
-    }
-
-
     CharacterControllerImpl::CharacterControllerImpl(const Config& config) noexcept
         : _config(config)
         , _jolt(nullptr)
@@ -155,6 +48,11 @@ namespace darmok::physics3d
         {
             _jolt->SetPosition(JoltUtils::convert(pos));
         }
+        auto rb = getRigidBody();
+        if (rb)
+        {
+            rb->setPosition(pos);
+        }
     }
 
     void CharacterControllerImpl::setLinearVelocity(const glm::vec3& velocity)
@@ -163,6 +61,11 @@ namespace darmok::physics3d
         {
             _jolt->SetLinearVelocity(JoltUtils::convert(velocity));
             _jolt->UpdateGroundVelocity();
+        }
+        auto rb = getRigidBody();
+        if (rb)
+        {
+            rb->setLinearVelocity(velocity);
         }
     }
 
@@ -185,8 +88,28 @@ namespace darmok::physics3d
         return JoltUtils::removeRefVector(_listeners, listener);;
     }
 
+    OptionalRef<RigidBody> CharacterControllerImpl::getRigidBody() const noexcept
+    {
+        if (!_ctrl || !_system)
+        {
+            return nullptr;
+        }
+        auto scene = _system->getScene();
+        if (!scene)
+        {
+            return nullptr;
+        }
+        auto entity = scene->getEntity(_ctrl.value());
+        return scene->getComponent<RigidBody>(entity);
+    }
+
     void CharacterControllerImpl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::CharacterContactSettings& settings)
     {
+        auto rigidBody = getRigidBody();
+        if (rigidBody && rigidBody->getImpl().getBodyId() == bodyID2)
+        {
+            return;
+        }
         auto itr = _collisions.find(bodyID2);
         if (itr == _collisions.end())
         {
@@ -195,30 +118,6 @@ namespace darmok::physics3d
         auto& collision = itr->second;
         collision.normal = JoltUtils::convert(contactNormal);
         collision.contacts.push_back(JoltUtils::convert(contactPosition));
-    }
-
-    void CharacterControllerImpl::onCollisionEnter(RigidBody& other, const Collision& collision)
-    {
-        for (auto& listener : _listeners)
-        {
-            listener->onCollisionEnter(_ctrl.value(), other, collision);
-        }
-    }
-
-    void CharacterControllerImpl::onCollisionStay(RigidBody& other, const Collision& collision)
-    {
-        for (auto& listener : _listeners)
-        {
-            listener->onCollisionStay(_ctrl.value(), other, collision);
-        }
-    }
-
-    void CharacterControllerImpl::onCollisionExit(RigidBody& other)
-    {
-        for (auto& listener : _listeners)
-        {
-            listener->onCollisionExit(_ctrl.value(), other);
-        }
     }
 
     bool CharacterControllerImpl::tryCreateCharacter(OptionalRef<Transform> trans) noexcept
@@ -315,6 +214,42 @@ namespace darmok::physics3d
             {
                 onCollisionExit(rigidBody.value());
             }
+        }
+    }
+
+    void CharacterControllerImpl::onCollisionEnter(RigidBody& other, const Collision& collision)
+    {
+        if (!_ctrl)
+        {
+            return;
+        }
+        for (auto& listener : _listeners)
+        {
+            listener->onCollisionEnter(_ctrl.value(), other, collision);
+        }
+    }
+
+    void CharacterControllerImpl::onCollisionStay(RigidBody& other, const Collision& collision)
+    {
+        if (!_ctrl)
+        {
+            return;
+        }
+        for (auto& listener : _listeners)
+        {
+            listener->onCollisionStay(_ctrl.value(), other, collision);
+        }
+    }
+
+    void CharacterControllerImpl::onCollisionExit(RigidBody& other)
+    {
+        if (!_ctrl)
+        {
+            return;
+        }
+        for (auto& listener : _listeners)
+        {
+            listener->onCollisionExit(_ctrl.value(), other);
         }
     }
 

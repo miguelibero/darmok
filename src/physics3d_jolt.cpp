@@ -15,6 +15,7 @@
 #include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Core/Factory.h>
 #include <Jolt/RegisterTypes.h>
+#include <Jolt/Physics/Character/Character.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
@@ -587,6 +588,11 @@ namespace darmok::physics3d
     {
     }
 
+    RigidBodyImpl::RigidBodyImpl(const CharacterConfig& config) noexcept
+        : _characterConfig(config)
+    {
+    }
+
     RigidBodyImpl::~RigidBodyImpl()
     {
         shutdown();
@@ -608,13 +614,18 @@ namespace darmok::physics3d
         {
             return;
         }
-        if (!_bodyId.IsInvalid())
+        auto& iface = _system->getBodyInterface();
+        iface.RemoveBody(_bodyId);
+
+        if (_character)
         {
-            auto& iface = _system->getBodyInterface();
-            iface.RemoveBody(_bodyId);
-            iface.DestroyBody(_bodyId);
-            _bodyId = JPH::BodyID();
+            _character = nullptr;
         }
+        else if (!_bodyId.IsInvalid())
+        {
+            iface.DestroyBody(_bodyId);
+        }
+        _bodyId = JPH::BodyID();
         _system.reset();
         _rigidBody.reset();
     }
@@ -628,18 +639,32 @@ namespace darmok::physics3d
         return _system->getBodyInterface();
     }
 
-    JPH::BodyID RigidBodyImpl::createBody(OptionalRef<Transform> trans) noexcept
+    JPH::BodyID RigidBodyImpl::createCharacter(const JPH::Vec3& pos, const JPH::Quat& rot) noexcept
+    {
+        if (!_characterConfig)
+        {
+            return {};
+        }
+        auto& config = _characterConfig.value();
+        JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings();
+        settings->mMaxSlopeAngle = config.maxSlopeAngle;
+        settings->mLayer = (JPH::ObjectLayer)JoltLayer::Moving;
+        settings->mShape = JoltUtils::convert(config.shape);
+        settings->mFriction = config.friction;
+        settings->mSupportingVolume = JPH::Plane(JoltUtils::convert(config.supportingPlane.normal), -config.supportingPlane.constant);
+        settings->mMass = config.mass;
+        settings->mGravityFactor = config.gravityFactor;
+        settings->mUp = JoltUtils::convert(config.up);
+        _character = new JPH::Character(settings, pos, rot, 0, &_system->getJolt());
+        _character->AddToPhysicsSystem(JPH::EActivation::Activate);
+        return _character->GetBodyID();
+    }
+
+    JPH::BodyID RigidBodyImpl::createBody(const JPH::Vec3& pos, const JPH::Quat& rot) noexcept
     {
         if (!_system)
         {
             return {};
-        }
-        glm::vec3 pos(0);
-        glm::quat rot(1, 0, 0, 0);
-        if (trans)
-        {
-            pos = trans->getWorldPosition();
-            rot = trans->getWorldRotation();
         }
 
         JPH::EMotionType joltMotion = JPH::EMotionType::Dynamic;
@@ -658,8 +683,7 @@ namespace darmok::physics3d
         }
 
         auto shape = JoltUtils::convert(_config.shape);
-        JPH::BodyCreationSettings settings(shape,
-            JoltUtils::convert(pos), JoltUtils::convert(rot),
+        JPH::BodyCreationSettings settings(shape, pos, rot,
             joltMotion, objLayer);
         settings.mGravityFactor = _config.gravityFactor;
         settings.mFriction = _config.friction;
@@ -677,7 +701,23 @@ namespace darmok::physics3d
         {
             return false;
         }
-        _bodyId = createBody(trans);
+
+        JPH::Vec3 pos(0, 0, 0);
+        JPH::Quat rot(1, 0, 0, 0);
+        if (trans)
+        {
+            pos = JoltUtils::convert(trans->getWorldPosition());
+            rot = JoltUtils::convert(trans->getWorldRotation());
+        }
+
+        if (_characterConfig)
+        {
+            _bodyId = createCharacter(pos, rot);
+        }
+        else
+        {
+            _bodyId = createBody(pos, rot);
+        }
         if (_rigidBody)
         {
             _system->onBodyCreated(_rigidBody.value());
@@ -692,11 +732,17 @@ namespace darmok::physics3d
             return;
         }
         auto trans = _system->getScene()->getComponent<Transform>(entity);
-        auto& iface = _system->getBodyInterface();
         tryCreateBody(trans);
+
+        if (_system->getScene()->getComponent<CharacterController>(entity))
+        {
+            // character controller moves the transform
+            return;
+        }
 
         if (trans)
         {
+            auto& iface = _system->getBodyInterface();
             auto mat = JoltUtils::convert(iface.GetWorldTransform(_bodyId));
             auto parent = trans->getParent();
             if (parent)
@@ -715,11 +761,6 @@ namespace darmok::physics3d
     RigidBodyImpl::MotionType RigidBodyImpl::getMotionType() const noexcept
     {
         return _config.motion;
-    }
-
-    float RigidBodyImpl::getMass() const noexcept
-    {
-        _config.mass;
     }
 
     const JPH::BodyID& RigidBodyImpl::getBodyId() const noexcept
@@ -847,8 +888,13 @@ namespace darmok::physics3d
     RigidBody::RigidBody(const Config& config) noexcept
         : _impl(std::make_unique<RigidBodyImpl>(config))
     {
-
     }
+
+    RigidBody::RigidBody(const CharacterConfig& config) noexcept
+        : _impl(std::make_unique<RigidBodyImpl>(config))
+    {
+    }
+
     RigidBody::~RigidBody() noexcept
     {
         // empty for the impl forward declaration
@@ -862,11 +908,6 @@ namespace darmok::physics3d
     RigidBody::MotionType RigidBody::getMotionType() const noexcept
     {
         return _impl->getMotionType();
-    }
-
-    float RigidBody::getMass() const noexcept
-    {
-        return _impl->getMass();
     }
 
     RigidBody& RigidBody::setPosition(const glm::vec3& pos)
