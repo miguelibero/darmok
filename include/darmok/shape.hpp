@@ -59,10 +59,12 @@ namespace darmok
     struct DARMOK_EXPORT Plane final
     {
         glm::vec3 normal;
-        glm::vec3 origin;
+        float constant;
 
-        Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float constant = 0.F) noexcept;
         std::string to_string() const noexcept;
+
+        glm::vec3 getOrigin() const noexcept;
 
         Plane operator*(const glm::mat4& transform) const noexcept;
         Plane& operator*=(const glm::mat4& transform) noexcept;
@@ -76,7 +78,7 @@ namespace darmok
         float radius;
         glm::vec3 origin;
 
-        Capsule(float cylinderHeight = 1, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
         std::string to_string() const noexcept;
         static const Capsule& standard() noexcept;
     };

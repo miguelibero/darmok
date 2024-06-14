@@ -65,12 +65,26 @@ namespace darmok
 				[]() { return Plane(); },
 				[](const VarLuaTable<glm::vec3>& normal) {
 					return Plane(LuaGlm::tableGet(normal)); },
-				[](const VarLuaTable<glm::vec3>& normal, const VarLuaTable<glm::vec3>& origin) {
-					return Plane(LuaGlm::tableGet(normal), LuaGlm::tableGet(origin)); }
+				[](const VarLuaTable<glm::vec3>& normal, float constant) {
+					return Plane(LuaGlm::tableGet(normal), constant); }
 			),
 			"normal", &Plane::normal,
-			"origin", &Plane::origin,
+			"constant", &Plane::constant,
+			"origin", sol::property(&Plane::getOrigin),
 			sol::meta_function::multiplication, &Plane::operator*
+		);
+
+		lua.new_usertype<Capsule>("Capsule", sol::no_constructor,
+			"new", sol::overload(
+				[]() { return Capsule(); },
+				[](float cylinderHeight) {
+					return Capsule(cylinderHeight); },
+					[](float cylinderHeight, float radius) {
+					return Capsule(cylinderHeight, radius); }
+			),
+			"cylinder_height", &Capsule::cylinderHeight,
+			"radius", &Capsule::radius,
+			"origin", &Capsule::origin
 		);
 
 		lua.new_usertype<Ray>("Ray", sol::no_constructor,

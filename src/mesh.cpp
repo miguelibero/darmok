@@ -444,7 +444,7 @@ namespace darmok
 		};
 		auto cfg = config;
 		cfg.scale *= cuboid.size;
-		cfg.offset += cuboid.origin - glm::vec3(0.5f);
+		cfg.offset += (cuboid.origin / cuboid.size) - glm::vec3(0.5f);
 		return createMesh(data, cfg);
 	}
 
@@ -585,7 +585,7 @@ namespace darmok
 			data.texCoords.reserve(n);
 			for (int r = 0; r < rings; r++)
 			{
-				auto h = capsule.cylinderHeight;
+				auto h = capsule.cylinderHeight * 0.5;
 				if (r > rings * 0.5)
 				{
 					h *= -1;

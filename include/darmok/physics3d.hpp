@@ -25,21 +25,18 @@ namespace darmok
 
     struct Physics3dCollision final
     {
-        RigidBody3d& rigidBody1;
-        RigidBody3d& rigidBody2;
         glm::vec3 normal;
         std::vector<glm::vec3> contacts;
-
-        Physics3dCollision swap() const noexcept;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IPhysics3dCollisionListener
     {
     public:
+        using Collision = Physics3dCollision;
         virtual ~IPhysics3dCollisionListener() = default;
-        virtual void onCollisionEnter(const Physics3dCollision& collision) {};
-        virtual void onCollisionStay(const Physics3dCollision& collision) {};
-        virtual void onCollisionExit(const Physics3dCollision& collision) {};
+        virtual void onCollisionEnter(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2, const Collision& collision) {};
+        virtual void onCollisionStay(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2, const Collision& collision) {};
+        virtual void onCollisionExit(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2) {};
     };
 
     struct Physics3dConfig final
@@ -72,7 +69,7 @@ namespace darmok
         std::unique_ptr<Physics3dSystemImpl> _impl;
     };
 
-    using RigidBody3dShape = std::variant<Cuboid, Sphere, Capsule>;
+    using Physics3dShape = std::variant<Cuboid, Sphere, Capsule>;
 
     class RigidBody3dImpl;
 
@@ -80,7 +77,7 @@ namespace darmok
     {
     public:
         using MotionType = RigidBody3dMotionType;
-        using Shape = RigidBody3dShape;
+        using Shape = Physics3dShape;
 
         RigidBody3d(const Shape& shape, MotionType motion = MotionType::Dynamic) noexcept;
         RigidBody3d(const Shape& shape, float density, MotionType motion = MotionType::Dynamic) noexcept;
@@ -97,11 +94,14 @@ namespace darmok
         glm::vec3 getPosition();
         RigidBody3d& setRotation(const glm::quat& rot);
         glm::quat getRotation();
+        RigidBody3d& setLinearVelocity(const glm::vec3& velocity);
+        glm::vec3 getLinearVelocity();
 
         RigidBody3d& addTorque(const glm::vec3& torque);
         RigidBody3d& addForce(const glm::vec3& force);
-        RigidBody3d& move(const glm::vec3& pos, const glm::quat& rot, float deltaTime);
-        RigidBody3d& movePosition(const glm::vec3& pos, float deltaTime);
+        RigidBody3d& addImpulse(const glm::vec3& impulse);
+        RigidBody3d& move(const glm::vec3& pos, const glm::quat& rot, float deltaTime = 0.F);
+        RigidBody3d& movePosition(const glm::vec3& pos, float deltaTime = 0.F);
 
         RigidBody3d& addListener(IPhysics3dCollisionListener& listener) noexcept;
         bool removeListener(IPhysics3dCollisionListener& listener) noexcept;

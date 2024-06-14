@@ -1,7 +1,5 @@
 #pragma once
 
-#include <variant>
-
 namespace darmok
 {
     enum class RigidBody3dMotionType
@@ -11,4 +9,9 @@ namespace darmok
         Kinematic
     };
 
+    enum class Physics3dBackFaceMode : uint8_t
+    {
+        IgnoreBackFaces,
+        CollideWithBackFaces,
+    };
 }

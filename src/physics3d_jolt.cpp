@@ -1,4 +1,5 @@
 #include "physics3d_jolt.hpp"
+#include "character_jolt.hpp"
 #include <darmok/physics3d.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/math.hpp>
@@ -17,73 +18,102 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 
 namespace darmok
 {
-    struct JoltUtils final
+    // Jolt is right-handed, darmok is left-handed
+
+    JPH::Vec3 JoltUtils::convert(const glm::vec3& v) noexcept
     {
-        // Jolt is right-handed, darmok is left-handed
+        return JPH::Vec3(v.x, v.y, -v.z);
+    }
 
-        static JPH::Vec3 convert(const glm::vec3& v) noexcept
-        {
-            return JPH::Vec3(v.x, v.y, -v.z);
-        }
+    glm::vec3 JoltUtils::convert(const JPH::Vec3& v) noexcept
+    {
+        return glm::vec3(v.GetX(), v.GetY(), -v.GetZ());
+    }
 
-        static glm::vec3 convert(const JPH::Vec3& v) noexcept
-        {
-            return glm::vec3(v.GetX(), v.GetY(), -v.GetZ());
-        }
+    JPH::Vec3 JoltUtils::convertSize(const glm::vec3& v) noexcept
+    {
+        return JPH::Vec3(v.x, v.y, v.z);
+    }
 
-        static JPH::Vec3 convertSize(const glm::vec3& v) noexcept
-        {
-            return JPH::Vec3(v.x, v.y, v.z);
-        }
+    JPH::Vec4 JoltUtils::convert(const glm::vec4& v) noexcept
+    {
+        return JPH::Vec4(v.x, v.y, v.z, v.w);
+    }
 
-        static JPH::Vec4 convert(const glm::vec4& v) noexcept
-        {
-            return JPH::Vec4(v.x, v.y, v.z, v.w);
-        }
+    glm::vec4 JoltUtils::convert(const JPH::Vec4& v) noexcept
+    {
+        return glm::vec4(v.GetX(), v.GetY(), v.GetZ(), v.GetW());
+    }
 
-        static glm::vec4 convert(const JPH::Vec4& v) noexcept
-        {
-            return glm::vec4(v.GetX(), v.GetY(), v.GetZ(), v.GetW());
-        }
+    JPH::Mat44 JoltUtils::convert(const glm::mat4& v) noexcept
+    {
+        auto fv = Math::flipHandedness(v);
+        return JPH::Mat44(
+            convert(fv[0]),
+            convert(fv[1]),
+            convert(fv[2]),
+            convert(fv[3])
+        );
+    }
 
-        static JPH::Mat44 convert(const glm::mat4& v) noexcept
-        {
-            auto fv = Math::flipHandedness(v);
-            return JPH::Mat44(
-                convert(fv[0]),
-                convert(fv[1]),
-                convert(fv[2]),
-                convert(fv[3])
-            );
-        }
+    glm::mat4 JoltUtils::convert(const JPH::Mat44& v) noexcept
+    {
+        glm::mat4 mat(
+            convert(v.GetColumn4(0)),
+            convert(v.GetColumn4(1)),
+            convert(v.GetColumn4(2)),
+            convert(v.GetColumn4(3))
+        );
+        return Math::flipHandedness(mat);
+    }
 
-        static glm::mat4 convert(const JPH::Mat44& v) noexcept
-        {
-            glm::mat4 mat(
-                convert(v.GetColumn4(0)),
-                convert(v.GetColumn4(1)),
-                convert(v.GetColumn4(2)),
-                convert(v.GetColumn4(3))
-            );
-            return Math::flipHandedness(mat);
-        }
+    JPH::Quat JoltUtils::convert(const glm::quat& v) noexcept
+    {
+        auto fv = Math::flipHandedness(v);
+        return JPH::Quat(fv.x, fv.y, fv.z, fv.w);
+    }
 
-        static JPH::Quat convert(const glm::quat& v) noexcept
-        {
-            auto fv = Math::flipHandedness(v);
-            return JPH::Quat(fv.x, fv.y, fv.z, fv.w);
-        }
+    glm::quat JoltUtils::convert(const JPH::Quat& v) noexcept
+    {
+        glm::quat quat(v.GetX(), v.GetY(), v.GetZ(), v.GetW());
+        return Math::flipHandedness(quat);
+    }
 
-        static glm::quat convert(const JPH::Quat& v) noexcept
+    static JPH::ShapeRefC physics3dAdjustShapeOrigin(const glm::vec3& origin, JPH::ShapeSettings& settings) noexcept
+    {
+        JPH::ShapeRefC shape = settings.Create().Get();
+        if (origin == glm::vec3(0))
         {
-            glm::quat quat(v.GetX(), v.GetY(), v.GetZ(), v.GetW());
-            return Math::flipHandedness(quat);
+            return shape;
         }
+        JPH::RotatedTranslatedShapeSettings transSettings(JoltUtils::convert(origin), JPH::Quat::sIdentity(), shape);
+        return transSettings.Create().Get();
     };
+
+    JPH::ShapeRefC JoltUtils::convert(const Shape& shape) noexcept
+    {
+        if (auto cuboid = std::get_if<Cuboid>(&shape))
+        {
+            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cuboid->size * 0.5F));
+            return physics3dAdjustShapeOrigin(cuboid->origin, settings);
+        }
+        else if (auto sphere = std::get_if<Sphere>(&shape))
+        {
+            JPH::SphereShapeSettings settings(sphere->radius);
+            return physics3dAdjustShapeOrigin(sphere->origin, settings);
+        }
+        else if (auto caps = std::get_if<Capsule>(&shape))
+        {
+            JPH::CapsuleShapeSettings settings(caps->cylinderHeight * 0.5, caps->radius);
+            return physics3dAdjustShapeOrigin(caps->origin, settings);
+        }
+        return nullptr;
+    }
 
     JPH::uint JoltBroadPhaseLayer::GetNumBroadPhaseLayers() const noexcept
     {
@@ -173,7 +203,7 @@ namespace darmok
     {
         std::stringstream ss;
         ss << file << ":" << line << ": (" << expression << ") " << (message != nullptr ? message : "");
-        throw std::runtime_error(ss.str());
+        // throw std::runtime_error(ss.str());
         return true; // breakpoint
     };
 
@@ -212,6 +242,8 @@ namespace darmok
         auto& registry = scene.getRegistry();
         registry.on_construct<RigidBody3d>().connect<&Physics3dSystemImpl::onRigidbodyConstructed>(*this);
         registry.on_destroy<RigidBody3d>().connect< &Physics3dSystemImpl::onRigidbodyDestroyed>(*this);
+        registry.on_construct<CharacterController>().connect<&Physics3dSystemImpl::onCharacterConstructed>(*this);
+        registry.on_destroy<CharacterController>().connect< &Physics3dSystemImpl::onCharacterDestroyed>(*this);
     }
 
     void Physics3dSystemImpl::shutdown() noexcept
@@ -228,6 +260,8 @@ namespace darmok
             auto& registry = _scene->getRegistry();
             registry.on_construct<RigidBody3d>().disconnect<&Physics3dSystemImpl::onRigidbodyConstructed>(*this);
             registry.on_destroy<RigidBody3d>().disconnect< &Physics3dSystemImpl::onRigidbodyDestroyed>(*this);
+            registry.on_construct<CharacterController>().disconnect<&Physics3dSystemImpl::onCharacterConstructed>(*this);
+            registry.on_destroy<CharacterController>().disconnect< &Physics3dSystemImpl::onCharacterDestroyed>(*this);
         }
 
         _system.reset();
@@ -249,6 +283,18 @@ namespace darmok
         auto& rigidBody = registry.get<RigidBody3d>(entity).getImpl();
         _rigidBodies.erase(rigidBody.getBodyId());
         rigidBody.shutdown();
+    }
+
+    void Physics3dSystemImpl::onCharacterConstructed(EntityRegistry& registry, Entity entity) noexcept
+    {
+        auto& character = registry.get<CharacterController>(entity);
+        character.getImpl().init(character, *this);
+    }
+
+    void Physics3dSystemImpl::onCharacterDestroyed(EntityRegistry& registry, Entity entity)
+    {
+        auto& character = registry.get<CharacterController>(entity).getImpl();
+        character.shutdown();
     }
 
     std::string Physics3dSystemImpl::getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept
@@ -299,51 +345,32 @@ namespace darmok
             {
                 rigidBody.getImpl().update(entity, deltaTime);
             }
+            auto charCtrls = registry.view<CharacterController>();
+            for (auto [entity, charCtrl] : charCtrls.each())
+            {
+                charCtrl.getImpl().update(entity, deltaTime);
+            }
         }
-    }
-
-    template<typename T>
-    static void physics3dAddRefVector(std::vector<OptionalRef<T>>& vector, T& elm)
-    {
-        auto ptr = &elm;
-        auto itr = std::find_if(vector.begin(), vector.end(), [ptr](auto& ref) { return ref.ptr() == ptr; });
-        if (itr == vector.end())
-        {
-            vector.emplace_back(elm);
-        }
-    }
-
-    template<typename T>
-    static bool physics3dRemoveRefVector(std::vector<OptionalRef<T>>& vector, T& elm) noexcept
-    {
-        auto ptr = &elm;
-        auto itr = std::find_if(vector.begin(), vector.end(), [ptr](auto& ref) { return ref.ptr() == ptr; });
-        if (itr == vector.end())
-        {
-            return false;
-        }
-        vector.erase(itr);
-        return true;
     }
 
     void Physics3dSystemImpl::addUpdater(IPhysics3dUpdater& updater) noexcept
     {
-        physics3dAddRefVector(_updaters, updater);
+        JoltUtils::addRefVector(_updaters, updater);
     }
     
     bool Physics3dSystemImpl::removeUpdater(IPhysics3dUpdater& updater) noexcept
     {
-        return physics3dRemoveRefVector(_updaters, updater);
+        return JoltUtils::removeRefVector(_updaters, updater);
     }
 
     void Physics3dSystemImpl::addListener(IPhysics3dCollisionListener& listener) noexcept
     {
-        physics3dAddRefVector(_listeners, listener);
+        JoltUtils::addRefVector(_listeners, listener);
     }
 
     bool Physics3dSystemImpl::removeListener(IPhysics3dCollisionListener& listener) noexcept
     {
-        return physics3dRemoveRefVector(_listeners, listener);
+        return JoltUtils::removeRefVector(_listeners, listener);
     }
 
     const Physics3dSystemImpl::Config& Physics3dSystemImpl::getConfig() const noexcept
@@ -356,9 +383,24 @@ namespace darmok
         return _scene;
     }
 
+    JPH::PhysicsSystem& Physics3dSystemImpl::getJolt() noexcept
+    {
+        return *_system;
+    }
+
     JPH::BodyInterface& Physics3dSystemImpl::getBodyInterface() noexcept
     {
         return _system->GetBodyInterface();
+    }
+
+    JoltTempAllocator& Physics3dSystemImpl::getTempAllocator() noexcept
+    {
+        return _alloc;
+    }
+
+    glm::vec3 Physics3dSystemImpl::getGravity() noexcept
+    {
+        return JoltUtils::convert(_system->GetGravity());
     }
 
     void Physics3dSystemImpl::onBodyCreated(RigidBody3d& rigidBody) noexcept
@@ -383,36 +425,30 @@ namespace darmok
         while (!_pendingCollisionEvents.empty())
         {
             auto& ev = _pendingCollisionEvents.front();
-            if (auto enter = std::get_if<CollisionEnterEvent>(&ev))
+            switch (ev.type)
             {
-                onCollisionEnter(enter->collision);
-            }
-            else if (auto stay = std::get_if<CollisionStayEvent>(&ev))
-            {
-                onCollisionStay(stay->collision);
-            }
-            else if (auto exit = std::get_if<CollisionExitEvent>(&ev))
-            {
-                onCollisionExit(exit->collision);
+            case CollisionEventType::Enter:
+                onCollisionEnter(ev.rigidBody1, ev.rigidBody2, ev.collision);
+                break;
+            case CollisionEventType::Stay:
+                onCollisionStay(ev.rigidBody1, ev.rigidBody2, ev.collision);
+                break;
+            case CollisionEventType::Exit:
+                onCollisionExit(ev.rigidBody1, ev.rigidBody2);
+                break;
             }
             _pendingCollisionEvents.pop_front();
         }
     }
 
-    Physics3dCollision Physics3dSystemImpl::createCollision(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2, OptionalRef<const JPH::ContactManifold> manifold) noexcept
+    Physics3dCollision Physics3dSystemImpl::createCollision(const JPH::ContactManifold& manifold) noexcept
     {
-        Physics3dCollision collision
+        Physics3dCollision collision;
+        collision.normal = JoltUtils::convert(manifold.mWorldSpaceNormal);
+        for (size_t i = 0; i < manifold.mRelativeContactPointsOn1.size(); i++)
         {
-            rigidBody1, rigidBody2
-        };
-        if (manifold)
-        {
-            collision.normal = JoltUtils::convert(manifold->mWorldSpaceNormal);
-            for (size_t i = 0; i < manifold->mRelativeContactPointsOn1.size(); i++)
-            {
-                auto p = manifold->GetWorldSpaceContactPointOn1(i);
-                collision.contacts.emplace_back(JoltUtils::convert(p));
-            }
+            auto p = manifold.GetWorldSpaceContactPointOn1(i);
+            collision.contacts.emplace_back(JoltUtils::convert(p));
         }
         return collision;
     }
@@ -432,16 +468,10 @@ namespace darmok
         }
 
         // queue events to main thread
-        auto collision = createCollision(rb1.value(), rb2.value(), manifold);
+        auto collision = createCollision(manifold);
         std::lock_guard<std::mutex> guard(_collisionEventsMutex);
-        if(collision.contacts.size() == 1)
-        {
-            _pendingCollisionEvents.push_back(CollisionEnterEvent{ collision });
-        }
-        else
-        {
-            _pendingCollisionEvents.push_back(CollisionStayEvent{ collision });
-        }
+        auto evType = collision.contacts.size() <= 1 ? CollisionEventType::Enter : CollisionEventType::Stay;
+        _pendingCollisionEvents.emplace_back(evType, rb1.value(), rb2.value(), collision);
     }
 
     void Physics3dSystemImpl::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
@@ -456,9 +486,9 @@ namespace darmok
         {
             return;
         }
-        auto collision = createCollision(rb1.value(), rb2.value(), manifold);
+        auto collision = createCollision(manifold);
         std::lock_guard<std::mutex> guard(_collisionEventsMutex);
-        _pendingCollisionEvents.push_back(CollisionStayEvent{ collision });
+        _pendingCollisionEvents.emplace_back(CollisionEventType::Stay, rb1.value(), rb2.value(), collision);
     }
 
     void Physics3dSystemImpl::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair)
@@ -473,40 +503,37 @@ namespace darmok
         {
             return;
         }
-        auto collision = createCollision(rb1.value(), rb2.value());
-        std::lock_guard<std::mutex> guard(_collisionEventsMutex);
-        _pendingCollisionEvents.push_back(CollisionExitEvent{ collision });
+        _pendingCollisionEvents.emplace_back(CollisionEventType::Exit, rb1.value(), rb2.value());
     }
 
-    void Physics3dSystemImpl::onCollisionEnter(const Physics3dCollision& collision)
+    void Physics3dSystemImpl::onCollisionEnter(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2, const Collision& collision)
     {
-        collision.rigidBody1.getImpl().onCollisionEnter(collision);
-        // TODO: swap
-        collision.rigidBody2.getImpl().onCollisionEnter(collision);
+        rigidBody1.getImpl().onCollisionEnter(rigidBody2, collision);
+        rigidBody2.getImpl().onCollisionEnter(rigidBody1, collision);
         for (auto& listener : _listeners)
         {
-            listener->onCollisionEnter(collision);
+            listener->onCollisionEnter(rigidBody1, rigidBody2, collision);
         }
         Physics3dCollision collision2(collision);
     }
 
-    void Physics3dSystemImpl::onCollisionStay(const Physics3dCollision& collision)
+    void Physics3dSystemImpl::onCollisionStay(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2, const Collision& collision)
     {
-        collision.rigidBody1.getImpl().onCollisionStay(collision);
-        collision.rigidBody2.getImpl().onCollisionStay(collision);
+        rigidBody1.getImpl().onCollisionStay(rigidBody2, collision);
+        rigidBody2.getImpl().onCollisionStay(rigidBody1, collision);
         for (auto& listener : _listeners)
         {
-            listener->onCollisionStay(collision);
+            listener->onCollisionStay(rigidBody1, rigidBody2, collision);
         }
     }
 
-    void Physics3dSystemImpl::onCollisionExit(const Physics3dCollision& collision)
+    void Physics3dSystemImpl::onCollisionExit(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2)
     {
-        collision.rigidBody1.getImpl().onCollisionExit(collision);
-        collision.rigidBody2.getImpl().onCollisionExit(collision);
+        rigidBody1.getImpl().onCollisionExit(rigidBody2);
+        rigidBody2.getImpl().onCollisionExit(rigidBody1);
         for (auto& listener : _listeners)
         {
-            listener->onCollisionExit(collision);
+            listener->onCollisionExit(rigidBody1, rigidBody2);
         }
     }
     
@@ -575,7 +602,6 @@ namespace darmok
         }
         _rigidBody = rigidBody;
         _system = system;
-        // delay the body creation to get the updated transform
     }
 
     void RigidBody3dImpl::shutdown()
@@ -618,26 +644,6 @@ namespace darmok
             rot = trans->getWorldRotation();
         }
 
-        JPH::ShapeRefC shape = nullptr;
-        if (auto cuboid = std::get_if<Cuboid>(&_shape))
-        {
-            pos += cuboid->origin;
-            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cuboid->size * 0.5F));
-            shape = settings.Create().Get();
-        }
-        else if (auto sphere = std::get_if<Sphere>(&_shape))
-        {
-            pos += sphere->origin;
-            JPH::SphereShapeSettings settings(sphere->radius);
-            shape = settings.Create().Get();
-        }
-        else if (auto caps = std::get_if<Capsule>(&_shape))
-        {
-            pos += caps->origin;
-            JPH::CapsuleShapeSettings settings(caps->cylinderHeight * 0.5, caps->radius);
-            shape = settings.Create().Get();
-        }
-
         JPH::EMotionType joltMotion = JPH::EMotionType::Dynamic;
         auto objLayer = (JPH::ObjectLayer)JoltLayer::Moving;
         auto activation = JPH::EActivation::Activate;
@@ -653,6 +659,7 @@ namespace darmok
             break;
         }
 
+        auto shape = JoltUtils::convert(_shape);
         JPH::BodyCreationSettings settings(shape,
             JoltUtils::convert(pos), JoltUtils::convert(rot),
             joltMotion, objLayer);
@@ -666,6 +673,20 @@ namespace darmok
         return _system->getBodyInterface().CreateAndAddBody(settings, activation);
     }
 
+    bool RigidBody3dImpl::tryCreateBody(OptionalRef<Transform> trans) noexcept
+    {
+        if (!_bodyId.IsInvalid())
+        {
+            return false;
+        }
+        _bodyId = createBody(trans);
+        if (_rigidBody)
+        {
+            _system->onBodyCreated(_rigidBody.value());
+        }
+        return true;
+    }
+
     void RigidBody3dImpl::update(Entity entity, float deltaTime)
     {
         if (!_system)
@@ -674,24 +695,9 @@ namespace darmok
         }
         auto trans = _system->getScene()->getComponent<Transform>(entity);
         auto& iface = _system->getBodyInterface();
-        if (_bodyId.IsInvalid())
-        {
-            _bodyId = createBody(trans);
-            if (_rigidBody)
-            {
-                _system->onBodyCreated(_rigidBody.value());
-            }
-        }
-        /* TODO: could be interesting to do this
-         * but we would need to check if the transform position & rotation was changed manually 
-        else if (trans && _motion == MotionType::Kinematic)
-        {
-            auto pos = JoltUtils::convert(trans->getWorldPosition());
-            auto rot = JoltUtils::convert(trans->getWorldRotation());
-            iface.SetPosition(_bodyId, pos, JPH::EActivation::Activate);
-            iface.SetRotation(_bodyId, rot, JPH::EActivation::Activate);
-        }*/
-        else if (trans)
+        tryCreateBody(trans);
+
+        if (trans)
         {
             auto mat = JoltUtils::convert(iface.GetWorldTransform(_bodyId));
             auto parent = trans->getParent();
@@ -757,6 +763,16 @@ namespace darmok
         return JoltUtils::convert(getBodyInterface()->GetRotation(_bodyId));
     }
 
+    void RigidBody3dImpl::setLinearVelocity(const glm::vec3& velocity)
+    {
+        getBodyInterface()->SetLinearVelocity(_bodyId, JoltUtils::convert(velocity));
+    }
+
+    glm::vec3 RigidBody3dImpl::getLinearVelocity()
+    {
+        return JoltUtils::convert(getBodyInterface()->GetLinearVelocity(_bodyId));
+    }
+
     void RigidBody3dImpl::addTorque(const glm::vec3& torque)
     {
         getBodyInterface()->AddTorque(_bodyId, JoltUtils::convert(torque));
@@ -767,8 +783,21 @@ namespace darmok
         getBodyInterface()->AddForce(_bodyId, JoltUtils::convert(force));
     }
 
+    void RigidBody3dImpl::addImpulse(const glm::vec3& impulse)
+    {
+        getBodyInterface()->AddImpulse(_bodyId, JoltUtils::convert(impulse));
+    }
+
     void RigidBody3dImpl::move(const glm::vec3& pos, const glm::quat& rot, float deltaTime)
     {
+        if (_system)
+        {
+            auto minTime = _system->getConfig().fixedDeltaTime;
+            if (deltaTime < minTime)
+            {
+                deltaTime = minTime;
+            }
+        }
         getBodyInterface()->MoveKinematic(_bodyId,
             JoltUtils::convert(pos),
             JoltUtils::convert(rot),
@@ -779,6 +808,14 @@ namespace darmok
     {
         auto iface = getBodyInterface();
         auto rot = iface->GetRotation(_bodyId);
+        if (_system)
+        {
+            auto minTime = _system->getConfig().fixedDeltaTime;
+            if (deltaTime < minTime)
+            {
+                deltaTime = minTime;
+            }
+        }
         iface->MoveKinematic(_bodyId,
             JoltUtils::convert(pos),
             rot, deltaTime);
@@ -786,35 +823,35 @@ namespace darmok
 
     void RigidBody3dImpl::addListener(IPhysics3dCollisionListener& listener) noexcept
     {
-        physics3dAddRefVector(_listeners, listener);
+        JoltUtils::addRefVector(_listeners, listener);
     }
 
     bool RigidBody3dImpl::removeListener(IPhysics3dCollisionListener& listener) noexcept
     {
-        return physics3dRemoveRefVector(_listeners, listener);
+        return JoltUtils::removeRefVector(_listeners, listener);
     }
 
-    void RigidBody3dImpl::onCollisionEnter(const Physics3dCollision& collision)
+    void RigidBody3dImpl::onCollisionEnter(RigidBody3d& other, const Physics3dCollision& collision)
     {
         for (auto& listener : _listeners)
         {
-            listener->onCollisionEnter(collision);
+            listener->onCollisionEnter(_rigidBody.value(), other, collision);
         }
     }
 
-    void RigidBody3dImpl::onCollisionStay(const Physics3dCollision& collision)
+    void RigidBody3dImpl::onCollisionStay(RigidBody3d& other, const Physics3dCollision& collision)
     {
         for (auto& listener : _listeners)
         {
-            listener->onCollisionStay(collision);
+            listener->onCollisionStay(_rigidBody.value(), other, collision);
         }
     }
 
-    void RigidBody3dImpl::onCollisionExit(const Physics3dCollision& collision)
+    void RigidBody3dImpl::onCollisionExit(RigidBody3d& other)
     {
         for (auto& listener : _listeners)
         {
-            listener->onCollisionExit(collision);
+            listener->onCollisionExit(_rigidBody.value(), other);
         }
     }
 
@@ -875,6 +912,17 @@ namespace darmok
         return _impl->getRotation();
     }
 
+    RigidBody3d& RigidBody3d::setLinearVelocity(const glm::vec3& velocity)
+    {
+        _impl->setLinearVelocity(velocity);
+        return *this;
+    }
+
+    glm::vec3 RigidBody3d::getLinearVelocity()
+    {
+        return _impl->getLinearVelocity();
+    }
+
     RigidBody3d& RigidBody3d::addTorque(const glm::vec3& torque)
     {
         _impl->addTorque(torque);
@@ -887,11 +935,18 @@ namespace darmok
         return *this;
     }
 
+    RigidBody3d& RigidBody3d::addImpulse(const glm::vec3& impulse)
+    {
+        _impl->addImpulse(impulse);
+        return *this;
+    }
+
     RigidBody3d& RigidBody3d::move(const glm::vec3& pos, const glm::quat& rot, float deltaTime)
     {
         _impl->move(pos, rot, deltaTime);
         return *this;
     }
+
     RigidBody3d& RigidBody3d::movePosition(const glm::vec3& pos, float deltaTime)
     {
         _impl->movePosition(pos, deltaTime);

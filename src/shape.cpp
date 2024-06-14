@@ -92,15 +92,20 @@ namespace darmok
         return "Cube(radius=" + std::to_string(radius) + ", origin=" + glm::to_string(origin) + ")";
     }
 
-    Plane::Plane(const glm::vec3& normal, const glm::vec3& origin) noexcept
+    Plane::Plane(const glm::vec3& normal, float constant) noexcept
         : normal(normal)
-        , origin(origin)
+        , constant(constant)
     {
+    }
+
+    glm::vec3 Plane::getOrigin() const noexcept
+    {
+        return normal * constant;
     }
 
     std::string Plane::to_string() const noexcept
     {
-        return "Plane(normal=" + glm::to_string(normal) + ", origin=" + glm::to_string(origin) + ")";
+        return "Plane(normal=" + glm::to_string(normal) + ", constant=" + std::to_string(constant) + ")";
     }
 
     glm::vec3 transformNormal(const glm::vec3& normal, const glm::mat4& transform) noexcept
@@ -115,13 +120,12 @@ namespace darmok
 
     Plane Plane::operator*(const glm::mat4& transform) const noexcept
     {
-        return Plane(transformNormal(normal, transform), transformPosition(origin, transform));
+        return Plane(transformNormal(normal, transform), constant);
     }
 
     Plane& Plane::operator*=(const glm::mat4& transform) noexcept
     {
         normal = transformNormal(normal, transform);
-        origin = transformPosition(origin, transform);
         return *this;
     }
 
@@ -156,7 +160,7 @@ namespace darmok
     std::optional<float> Ray::intersect(const Plane& plane) const noexcept
     {
         float dist;
-        if (glm::intersectRayPlane(origin, direction, plane.origin, plane.normal, dist))
+        if (glm::intersectRayPlane(origin, direction, plane.getOrigin(), plane.normal, dist))
         {
             return dist;
         }

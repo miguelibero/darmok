@@ -72,15 +72,17 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * RmlUI for ingame (support for multiple canvases)
 * skeletal animations using ozz (reading from binary)
 * 3d physics using jolt
+    * rigidbodies
+    * character controller
 
 #### Upcoming (I need them)
 * physics3d features
-    * character controller
     * lua bindings
 * lua camera render
 * sound
 
 #### Upcoming
+* move Rigidbody3d to use Jolt body pointer
 * export asset folders in C++
 * replace input bindings functions with interfaces
 * better window modes with different resolutions

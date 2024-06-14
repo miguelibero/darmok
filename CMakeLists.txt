@@ -139,8 +139,6 @@ set(SOURCES
   ${SRC_DIR}/material.cpp
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/anim.cpp
-  ${SRC_DIR}/skeleton.cpp
-  ${SRC_DIR}/physics3d.cpp
 
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/camera.cpp
@@ -166,10 +164,7 @@ set(HEADERS
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/material_fwd.hpp
   ${INCLUDE_DIR}/material.hpp
-  ${INCLUDE_DIR}/skeleton.hpp
   ${INCLUDE_DIR}/model.hpp
-  ${INCLUDE_DIR}/physics3d_fwd.hpp
-  ${INCLUDE_DIR}/physics3d.hpp
 
   ${INCLUDE_DIR}/entity_filter.hpp
   ${INCLUDE_DIR}/transform.hpp
@@ -231,8 +226,18 @@ if(DARMOK_BUILD_RMLUI)
 endif()
 
 if(DARMOK_BUILD_OZZ)
-  list(APPEND HEADERS ${INCLUDE_DIR}/skeleton_ozz.hpp)
-  list(APPEND SOURCES ${SRC_DIR}/skeleton_ozz.cpp)
+  list(APPEND HEADERS
+    ${INCLUDE_DIR}/skeleton.hpp
+    ${INCLUDE_DIR}/skeleton_ozz.hpp
+  )
+  list(APPEND SOURCES
+    ${SRC_DIR}/skeleton.cpp  
+    ${SRC_DIR}/skeleton_ozz.cpp
+  )
+
+  if(DARMOK_BUILD_LUA)
+    list(APPEND LUA_SOURCES ${SRC_DIR}/lua/skeleton.cpp)
+  endif()
 endif()
 
 if(DARMOK_BUILD_ASSIMP)
@@ -241,7 +246,18 @@ if(DARMOK_BUILD_ASSIMP)
 endif()
 
 if(DARMOK_BUILD_JOLT)
-  list(APPEND SOURCES ${SRC_DIR}/physics3d_jolt.cpp)
+  list(APPEND HEADERS
+    ${INCLUDE_DIR}/physics3d_fwd.hpp
+    ${INCLUDE_DIR}/physics3d.hpp
+    ${INCLUDE_DIR}/character.hpp
+  )
+  list(APPEND SOURCES
+    ${SRC_DIR}/physics3d_jolt.cpp
+    ${SRC_DIR}/character_jolt.cpp
+  )
+  if(DARMOK_BUILD_LUA)
+    list(APPEND LUA_SOURCES ${SRC_DIR}/lua/physics3d.cpp)
+  endif()
 endif()
 
 if(DARMOK_BUILD_LUA_EXE)

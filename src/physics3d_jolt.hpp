@@ -10,19 +10,15 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/physics3d.hpp>
 
-#ifndef NDEBUG
-// these seem to be missing in the library header in debug
-#define JPH_PROFILE_ENABLED
-#define JPH_DEBUG_RENDERER
-#endif
-
-#include <Jolt/Jolt.h>
+#include <darmok/glm.hpp>
+#include "jolt.hpp"
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Body/BodyID.h>
 #include <Jolt/Physics/EPhysicsUpdateError.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/ObjectLayer.h>
 #include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
+#include <Jolt/Physics/Collision/Shape/Shape.h>
 #include <Jolt/Core/JobSystemThreadPool.h>
 
 namespace bx
@@ -45,7 +41,46 @@ namespace darmok
     class RigidBody3d;
     class Transform;
 
-    enum class JoltLayer : uint8_t
+    struct JoltUtils final
+    {
+        using Shape = Physics3dShape;
+        static JPH::Vec3 convert(const glm::vec3& v) noexcept;
+        static glm::vec3 convert(const JPH::Vec3& v) noexcept;
+        static JPH::Vec3 convertSize(const glm::vec3& v) noexcept;
+        static JPH::Vec4 convert(const glm::vec4& v) noexcept;
+        static glm::vec4 convert(const JPH::Vec4& v) noexcept;
+        static JPH::Mat44 convert(const glm::mat4& v) noexcept;
+        static glm::mat4 convert(const JPH::Mat44& v) noexcept;
+        static JPH::Quat convert(const glm::quat& v) noexcept;
+        static glm::quat convert(const JPH::Quat& v) noexcept;
+        static JPH::ShapeRefC convert(const Shape& shape) noexcept;
+
+        template<typename T>
+        static void addRefVector(std::vector<OptionalRef<T>>& vector, T& elm)
+        {
+            auto ptr = &elm;
+            auto itr = std::find_if(vector.begin(), vector.end(), [ptr](auto& ref) { return ref.ptr() == ptr; });
+            if (itr == vector.end())
+            {
+                vector.emplace_back(elm);
+            }
+        }
+
+        template<typename T>
+        static bool removeRefVector(std::vector<OptionalRef<T>>& vector, T& elm) noexcept
+        {
+            auto ptr = &elm;
+            auto itr = std::find_if(vector.begin(), vector.end(), [ptr](auto& ref) { return ref.ptr() == ptr; });
+            if (itr == vector.end())
+            {
+                return false;
+            }
+            vector.erase(itr);
+            return true;
+        }
+    };
+
+    enum class JoltLayer : uint16_t
     {
         NonMoving,
         Moving,
@@ -99,7 +134,10 @@ namespace darmok
 
         const Config& getConfig() const noexcept;
         OptionalRef<Scene> getScene() const noexcept;
+        JPH::PhysicsSystem& getJolt() noexcept;
         JPH::BodyInterface& getBodyInterface() noexcept;
+        JoltTempAllocator& getTempAllocator() noexcept;
+        glm::vec3 getGravity() noexcept;
 
         void onBodyCreated(RigidBody3d& rigidBody) noexcept;
 
@@ -120,21 +158,20 @@ namespace darmok
         std::vector<OptionalRef<IPhysics3dUpdater>> _updaters;
         std::vector<OptionalRef<IPhysics3dCollisionListener>> _listeners;
 
-        struct CollisionEnterEvent final
+        using Collision = Physics3dCollision;
+
+        enum class CollisionEventType
         {
-            Physics3dCollision collision;
+            Enter, Stay, Exit
         };
 
-        struct CollisionStayEvent final
+        struct CollisionEvent
         {
-            Physics3dCollision collision;
+            CollisionEventType type;
+            RigidBody3d& rigidBody1;
+            RigidBody3d& rigidBody2;
+            Collision collision;
         };
-
-        struct CollisionExitEvent final
-        {
-            Physics3dCollision collision;
-        };
-        using CollisionEvent = std::variant<CollisionEnterEvent, CollisionStayEvent, CollisionExitEvent>;
 
         mutable std::mutex _rigidBodiesMutex;
         std::unordered_map<JPH::BodyID, OptionalRef<RigidBody3d>> _rigidBodies;
@@ -143,21 +180,25 @@ namespace darmok
         std::deque<CollisionEvent> _pendingCollisionEvents;
 
         void processPendingCollisionEvents();
-        static Physics3dCollision createCollision(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2, OptionalRef<const JPH::ContactManifold> manifold = nullptr) noexcept;
+        static Physics3dCollision createCollision(const JPH::ContactManifold& manifold) noexcept;
         OptionalRef<RigidBody3d> getRigidBody(const JPH::BodyID& bodyId) const noexcept;
+        
         void onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept;
         void onRigidbodyDestroyed(EntityRegistry& registry, Entity entity);
+        void onCharacterConstructed(EntityRegistry& registry, Entity entity) noexcept;
+        void onCharacterDestroyed(EntityRegistry& registry, Entity entity);
+
         static std::string getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept;
 
-        void onCollisionEnter(const Physics3dCollision& collision);
-        void onCollisionStay(const Physics3dCollision& collision);
-        void onCollisionExit(const Physics3dCollision& collision);
+        void onCollisionEnter(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2, const Collision& collision);
+        void onCollisionStay(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2, const Collision& collision);
+        void onCollisionExit(RigidBody3d& rigidBody1, RigidBody3d& rigidBody2);
     };
 
     class RigidBody3dImpl final
     {
     public:
-        using Shape = RigidBody3dShape;
+        using Shape = Physics3dShape;
         using MotionType = RigidBody3dMotionType;
 
         RigidBody3dImpl(const Shape& shape, float density = 0.F, MotionType motion = MotionType::Dynamic) noexcept;
@@ -176,22 +217,26 @@ namespace darmok
         glm::vec3 getPosition();
         void setRotation(const glm::quat& rot);
         glm::quat getRotation();
+        void setLinearVelocity(const glm::vec3& velocity);
+        glm::vec3 getLinearVelocity();
 
         void addTorque(const glm::vec3& torque);
         void addForce(const glm::vec3& force);
+        void addImpulse(const glm::vec3& impulse);
         void move(const glm::vec3& pos, const glm::quat& rot, float deltaTime );
         void movePosition(const glm::vec3& pos, float deltaTime);
 
         void addListener(IPhysics3dCollisionListener& listener) noexcept;
         bool removeListener(IPhysics3dCollisionListener& listener) noexcept;
 
-        void onCollisionEnter(const Physics3dCollision& collision);
-        void onCollisionStay(const Physics3dCollision& collision);
-        void onCollisionExit(const Physics3dCollision& collision);
+        void onCollisionEnter(RigidBody3d& other, const Physics3dCollision& collision);
+        void onCollisionStay(RigidBody3d& other, const Physics3dCollision& collision);
+        void onCollisionExit(RigidBody3d& other);
 
     private:
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
         JPH::BodyID createBody(OptionalRef<Transform> transform) noexcept;
+        bool tryCreateBody(OptionalRef<Transform> transform) noexcept;
 
         OptionalRef<RigidBody3d> _rigidBody;
         OptionalRef<Physics3dSystemImpl> _system;
