@@ -77,6 +77,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### Upcoming (I need them)
 * physics3d features
+    * layers
     * triggers
     * raycast
     * lua bindings
@@ -84,7 +85,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * sound
 
 #### Upcoming
-* move Rigidbody3d to use Jolt body pointer
 * export asset folders in C++
 * replace input bindings functions with interfaces
 * better window modes with different resolutions

@@ -39,14 +39,14 @@ namespace darmok::physics3d
         {
             return glm::vec3(0);
         }
-        return JoltUtils::convert(_jolt->GetPosition());
+        return JoltUtils::convertPosition(_jolt->GetPosition(), _config.shape);
     }
 
     void CharacterControllerImpl::setPosition(const glm::vec3& pos) noexcept
     {
         if (_jolt)
         {
-            _jolt->SetPosition(JoltUtils::convert(pos));
+            _jolt->SetPosition(JoltUtils::convertPosition(pos, _config.shape));
         }
         auto rb = getRigidBody();
         if (rb)
@@ -69,7 +69,7 @@ namespace darmok::physics3d
         }
     }
 
-    glm::vec3 CharacterControllerImpl::getLinearVelocity()
+    glm::vec3 CharacterControllerImpl::getLinearVelocity() const noexcept
     {
         if (!_jolt)
         {
@@ -136,15 +136,9 @@ namespace darmok::physics3d
         settings->mPredictiveContactDistance = _config.predictiveContactDistance;
         settings->mSupportingVolume = JPH::Plane(JoltUtils::convert(_config.supportingPlane.normal), _config.supportingPlane.constant);
 
-        glm::vec3 pos(0);
-        glm::quat rot(1, 0, 0, 0);
-        if (trans)
-        {
-            pos = trans->getWorldPosition();
-            rot = trans->getWorldRotation();
-        }
-
-        _jolt = new JPH::CharacterVirtual(settings, JoltUtils::convert(pos), JoltUtils::convert(rot), 0, &_system->getJolt());
+        auto [pos, rot] = JoltUtils::convert(_config.shape, trans);
+        auto userData = (uint64_t)_ctrl.ptr();
+        _jolt = new JPH::CharacterVirtual(settings, pos, rot, userData, &_system->getJolt());
         _jolt->SetListener(this);
         return true;
     }
@@ -172,21 +166,22 @@ namespace darmok::physics3d
             {}, {}, _system->getTempAllocator()
         );
 
-        if (trans)
+        notifyCollisionListeners(oldCollisions);
+
+        // if the entity has a rigid body, that component will update the transform
+        if (!getRigidBody() && trans)
         {
-            auto mat = JoltUtils::convert(_jolt->GetWorldTransform());
-            auto parent = trans->getParent();
-            if (parent)
-            {
-                mat = parent->getWorldInverse() * mat;
-            }
+            auto mat = JoltUtils::convert(_jolt->GetWorldTransform(), _config.shape, trans.value());
             trans->setLocalMatrix(mat);
         }
-        notifyCollisionListeners(oldCollisions);
     }
 
     void CharacterControllerImpl::notifyCollisionListeners(const CollisionMap& oldCollisions)
     {
+        if (!_system)
+        {
+            return;
+        }
         for (auto& elm : _collisions)
         {
             auto rigidBody = _system->getRigidBody(elm.first);
@@ -284,7 +279,7 @@ namespace darmok::physics3d
         return *this;
     }
 
-    glm::vec3 CharacterController::getLinearVelocity()
+    glm::vec3 CharacterController::getLinearVelocity() const noexcept
     {
         return _impl->getLinearVelocity();
     }

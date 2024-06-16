@@ -30,7 +30,7 @@ namespace darmok::physics3d
         glm::vec3 getPosition() const noexcept;
         void setPosition(const glm::vec3& pos) noexcept;
         void setLinearVelocity(const glm::vec3& velocity);
-        glm::vec3 getLinearVelocity();
+        glm::vec3 getLinearVelocity() const noexcept;
 
         void addListener(ICharacterControllerListener& listener) noexcept;
         bool removeListener(ICharacterControllerListener& listener) noexcept;

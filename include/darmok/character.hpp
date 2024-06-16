@@ -63,7 +63,7 @@ namespace darmok::physics3d
         const CharacterControllerImpl& getImpl() const noexcept;
 
         CharacterController& setLinearVelocity(const glm::vec3& velocity);
-        glm::vec3 getLinearVelocity();
+        glm::vec3 getLinearVelocity() const noexcept;
 
         CharacterController& setPosition(const glm::vec3& pos) noexcept;
         glm::vec3 getPosition() const noexcept;

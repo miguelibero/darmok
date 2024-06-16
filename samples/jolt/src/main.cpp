@@ -65,18 +65,18 @@ namespace
 				auto floorTex = getAssets().getColorTextureLoader()(Color(172, 172, 124, 255));
 				auto floorMat = std::make_shared<Material>(prog, floorTex);
 				Cuboid floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
-				_scene->addComponent<RigidBody>(floorEntity, floorShape, RigidBody::MotionType::Static);
+				_floorRigidBody = _scene->addComponent<RigidBody>(floorEntity, floorShape, RigidBody::MotionType::Static);
 				auto floorMesh = meshCreator.createCuboid(floorShape);
 				_scene->addComponent<Renderable>(floorEntity, floorMesh, floorMat);
 			}
 
 			{ // cubes
+
+				_cubeMesh = meshCreator.createCuboid();
 				auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
 				auto darkGreenTex = getAssets().getColorTextureLoader()(Color(0, 100, 0, 255));
 				_cubeMat = std::make_shared<Material>(prog, darkGreenTex);
 				_touchedCubeMat = std::make_shared<Material>(prog, greenTex);
-
-				_cubeMesh = meshCreator.createCuboid();
 
 				for (auto x = -5.F; x < 5.F; x += 1.1F)
 				{
@@ -94,26 +94,33 @@ namespace
 				redMat->setTexture(MaterialTextureType::Diffuse, redTex);
 
 				Capsule playerShape(1.F, 0.5F, glm::vec3(0.F, 1.F, 0.F ));
-				auto playerMesh = meshCreator.createCapsule(playerShape);
+				// Cuboid playerShape(glm::vec3(1, 2, 1), glm::vec3(0, 1, 0));
+				auto playerMesh = meshCreator.createShape(playerShape);
 				auto playerEntity = _scene->createEntity();
 				_scene->addComponent<Renderable>(playerEntity, playerMesh, redMat);
-				// _characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
+				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 
 				CharacterConfig characterConfig{ playerShape };
 				_characterRigidBody = _scene->addComponent<RigidBody>(playerEntity, characterConfig);
 				_characterRigidBody->addListener(*this);
-				_scene->addComponent<Transform>(playerEntity);
+				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
 		}
 
 		void onCollisionEnter(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision) override
 		{
-			getRenderable(rigidBody2).setMaterial(_touchedCubeMat);
+			if (_floorRigidBody != rigidBody2)
+			{
+				getRenderable(rigidBody2).setMaterial(_touchedCubeMat);
+			}
 		}
 
 		void onCollisionExit(RigidBody& rigidBody1, RigidBody& rigidBody2) override
 		{
-			getRenderable(rigidBody2).setMaterial(_cubeMat);
+			if (_floorRigidBody != rigidBody2)
+			{
+				getRenderable(rigidBody2).setMaterial(_cubeMat);
+			}
 		}
 	protected:
 
@@ -128,7 +135,7 @@ namespace
 				auto dist = ray.intersect(_playerMovePlane);
 				if (dist)
 				{
-					_characterRigidBody->setPosition(ray * dist.value());
+					_characterCtrl->setPosition(ray * dist.value());
 				}
 				return;
 			}
@@ -151,7 +158,7 @@ namespace
 			{
 				speed = { 0, 0, 1 };
 			}
-			_characterRigidBody->setLinearVelocity(speed * 10.F);
+			_characterCtrl->setLinearVelocity(speed * 10.F);
 		}
 
 	private:
@@ -159,9 +166,12 @@ namespace
 		OptionalRef<Camera> _cam;
 		OptionalRef<CharacterController> _characterCtrl;
 		OptionalRef<RigidBody> _characterRigidBody;
+		OptionalRef<Transform> _characterTrans;
+		OptionalRef<RigidBody> _floorRigidBody;
 		std::shared_ptr<Scene> _scene;
 		std::shared_ptr<Material> _cubeMat;
 		std::shared_ptr<Material> _touchedCubeMat;
+		Cuboid _cubeShape;
 		std::shared_ptr<IMesh> _cubeMesh;
 
 		Renderable& getRenderable(RigidBody& rigidBody)
@@ -173,9 +183,7 @@ namespace
 		Transform& createCube() noexcept
 		{
 			auto entity = _scene->createEntity();
-			RigidBodyConfig config;
-			config.shape = Cuboid::standard();
-			_scene->addComponent<RigidBody>(entity, config);
+			_scene->addComponent<RigidBody>(entity, _cubeShape);
 			_scene->addComponent<Renderable>(entity, _cubeMesh, _cubeMat);
 			return _scene->addComponent<Transform>(entity);
 		}

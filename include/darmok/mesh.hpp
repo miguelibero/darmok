@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include <variant>
 
 #include <darmok/export.h>
 #include <darmok/color.hpp>
@@ -156,23 +157,25 @@ namespace darmok
         using Config = MeshCreationConfig;
         Config config;
         std::optional<bgfx::VertexLayout> vertexLayout;
+        using Shape = std::variant< Cuboid, Sphere, Capsule, Rectangle, Ray, Line, MeshData>;
 
-         MeshCreator(std::optional<bgfx::VertexLayout> vertexLauout = std::nullopt) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createMesh(const MeshData& meshData) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createCuboid() noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createCuboid(const Cuboid& cuboid) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createSphere(int lod = 32) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createCapsule(const Capsule& capsule, int lod = 32) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createCapsule(int lod = 32) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createRectangle() noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createRectangle(const Rectangle& rect) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createLineRectangle() noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createLineRectangle(const Rectangle& rect) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createRay(const Ray& ray) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createLine(const Line& line) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createLines(const std::vector<Line>& lines) noexcept;
-         [[nodiscard]] std::shared_ptr<IMesh> createBone() noexcept;
+        MeshCreator(std::optional<bgfx::VertexLayout> vertexLauout = std::nullopt) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createMesh(const MeshData& meshData) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createCuboid() noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createCuboid(const Cuboid& cuboid) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createSphere(int lod = 32) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createCapsule(const Capsule& capsule, int lod = 32) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createCapsule(int lod = 32) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createRectangle() noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createRectangle(const Rectangle& rect) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createLineRectangle() noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createLineRectangle(const Rectangle& rect) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createRay(const Ray& ray) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createLine(const Line& line) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createLines(const std::vector<Line>& lines) noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createBone() noexcept;
+        [[nodiscard]] std::shared_ptr<IMesh> createShape(const Shape& shape) noexcept;
 
     private:
         static const MeshData& getRectangleMeshData() noexcept;

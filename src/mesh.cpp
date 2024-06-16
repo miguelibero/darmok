@@ -703,4 +703,37 @@ namespace darmok
 		};
 		return createMesh(data, config);
 	}
+
+	std::shared_ptr<IMesh> MeshCreator::createShape(const Shape& shape) noexcept
+	{
+		if (auto cube = std::get_if<Cuboid>(&shape))
+		{
+			return createCuboid(*cube);
+		}
+		if (auto sphere = std::get_if<Sphere>(&shape))
+		{
+			return createSphere(*sphere);
+		}
+		if (auto caps = std::get_if<Capsule>(&shape))
+		{
+			return createCapsule(*caps);
+		}
+		if (auto rect = std::get_if<Rectangle>(&shape))
+		{
+			return createRectangle(*rect);
+		}
+		if (auto ray = std::get_if<Ray>(&shape))
+		{
+			return createRay(*ray);
+		}
+		if (auto line = std::get_if<Line>(&shape))
+		{
+			return createLine(*line);
+		}
+		if (auto mesh = std::get_if<MeshData>(&shape))
+		{
+			return createMesh(*mesh);
+		}
+		return nullptr;
+	}
 }

@@ -51,6 +51,8 @@ namespace darmok::physics3d
     {
         using Shape = PhysicsShape;
         static JPH::Vec3 convert(const glm::vec3& v) noexcept;
+        static JPH::Vec3 convertPosition(const glm::vec3& pos, const Shape& shape) noexcept;
+        static glm::vec3 convertPosition(const JPH::Vec3& pos, const Shape& shape) noexcept;
         static glm::vec3 convert(const JPH::Vec3& v) noexcept;
         static JPH::Vec3 convertSize(const glm::vec3& v) noexcept;
         static JPH::Vec4 convert(const glm::vec4& v) noexcept;
@@ -59,7 +61,11 @@ namespace darmok::physics3d
         static glm::mat4 convert(const JPH::Mat44& v) noexcept;
         static JPH::Quat convert(const glm::quat& v) noexcept;
         static glm::quat convert(const JPH::Quat& v) noexcept;
+
+        static std::pair<JPH::Vec3, JPH::Quat> convert(const Shape& shape, OptionalRef<const Transform> trans) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape) noexcept;
+        static glm::vec3 getOrigin(const Shape& shape) noexcept;
+        static glm::mat4 convert(const JPH::Mat44& mat, const Shape& shape, const Transform& trans) noexcept;
 
         template<typename T>
         static void addRefVector(std::vector<OptionalRef<T>>& vector, T& elm)
@@ -141,11 +147,9 @@ namespace darmok::physics3d
         const Config& getConfig() const noexcept;
         OptionalRef<Scene> getScene() const noexcept;
         JPH::PhysicsSystem& getJolt() noexcept;
-        JPH::BodyInterface& getBodyInterface() noexcept;
+        JPH::BodyInterface& getBodyInterface() const noexcept;
         JoltTempAllocator& getTempAllocator() noexcept;
         glm::vec3 getGravity() noexcept;
-
-        void onBodyCreated(RigidBody& rigidBody) noexcept;
 
         void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override;
         void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const  JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override;
@@ -174,15 +178,12 @@ namespace darmok::physics3d
         struct CollisionEvent
         {
             CollisionEventType type;
-            RigidBody& rigidBody1;
-            RigidBody& rigidBody2;
+            JPH::BodyID bodyID1;
+            JPH::BodyID bodyID2;
             Collision collision;
         };
 
-        mutable std::mutex _rigidBodiesMutex;
-        std::unordered_map<JPH::BodyID, OptionalRef<RigidBody>> _rigidBodies;
-
-        mutable std::mutex _collisionEventsMutex;
+        mutable std::mutex _collisionMutex;
         std::deque<CollisionEvent> _pendingCollisionEvents;
 
         void processPendingCollisionEvents();
@@ -198,6 +199,7 @@ namespace darmok::physics3d
         void onCollisionEnter(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision);
         void onCollisionStay(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision);
         void onCollisionExit(RigidBody& rigidBody1, RigidBody& rigidBody2);
+
     };
 
     class RigidBodyImpl final
