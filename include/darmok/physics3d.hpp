@@ -3,9 +3,11 @@
 #include <darmok/scene.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/physics3d_fwd.hpp>
-#include <memory>
 #include <bx/bx.h>
+#include <memory>
 #include <variant>
+#include <vector>
+#include <optional>
 
 namespace bx
 {
@@ -51,6 +53,12 @@ namespace darmok::physics3d
 
     class PhysicsSystemImpl;
 
+    struct RaycastHit final
+    {
+        RigidBody& rigidBody;
+        float distance;
+    };
+
     class DARMOK_EXPORT PhysicsSystem final : public ISceneLogicUpdater
     {
     public:
@@ -64,6 +72,8 @@ namespace darmok::physics3d
         bool removeUpdater(IPhysicsUpdater& updater) noexcept;
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
+        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) noexcept;
+        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) noexcept;
     private:
         std::unique_ptr<PhysicsSystemImpl> _impl;
     };
@@ -79,6 +89,8 @@ namespace darmok::physics3d
         std::optional<float> mass = std::nullopt;
         float friction = 0.2;
         float gravityFactor = 1.0F;
+        uint8_t layer = 0;
+        bool trigger = false;
     };
 
     class RigidBodyImpl;

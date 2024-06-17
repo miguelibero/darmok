@@ -47,6 +47,14 @@ namespace darmok::physics3d
     class IPhysicsUpdater;
     class RigidBody;
 
+
+    enum class BroadPhaseLayerType
+    {
+        Moving,
+        NonMoving,
+        Count
+    };
+
     struct JoltUtils final
     {
         using Shape = PhysicsShape;
@@ -61,6 +69,10 @@ namespace darmok::physics3d
         static glm::mat4 convert(const JPH::Mat44& v) noexcept;
         static JPH::Quat convert(const glm::quat& v) noexcept;
         static glm::quat convert(const JPH::Quat& v) noexcept;
+        static RaycastHit convert(const JPH::RayCastResult& result, RigidBody& rb) noexcept;
+
+        static JPH::ObjectLayer convert(uint16_t layer, BroadPhaseLayerType bpl) noexcept;
+        static std::pair<uint16_t, BroadPhaseLayerType> convert(JPH::ObjectLayer objLayer) noexcept;
 
         static std::pair<JPH::Vec3, JPH::Quat> convert(const Shape& shape, OptionalRef<const Transform> trans) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape) noexcept;
@@ -92,13 +104,6 @@ namespace darmok::physics3d
         }
     };
 
-    enum class JoltLayer : uint16_t
-    {
-        NonMoving,
-        Moving,
-        Count
-    };
-
     class JoltBroadPhaseLayer final : public JPH::BroadPhaseLayerInterface
     {
     public:
@@ -121,6 +126,15 @@ namespace darmok::physics3d
         bool ShouldCollide(JPH::ObjectLayer object1, JPH::ObjectLayer object2) const noexcept override;
     };
 
+    class JoltObjectLayerFilter final : public JPH::ObjectLayerFilter
+    {
+    public:
+        JoltObjectLayerFilter(uint16_t layerMask) noexcept;
+        bool ShouldCollide(JPH::ObjectLayer objLayer) const noexcept override;
+    private:
+        uint16_t _layerMask;
+    };
+
     class JoltTempAllocator final : public JPH::TempAllocator
     {
     public:
@@ -130,6 +144,25 @@ namespace darmok::physics3d
     private:
         bx::AllocatorI& _alloc;
     };
+
+    template <class ResultTypeArg, class TraitsType>
+    class JoltVectorCollisionCollector final : public JPH::CollisionCollector<ResultTypeArg, TraitsType>
+    {
+    public:
+        void AddHit(const ResultTypeArg& result) noexcept override
+        {
+            _hits.push_back(result);
+        }
+
+        const std::vector<ResultTypeArg>& getHits() const noexcept
+        {
+            return _hits;
+        }
+    private:
+        std::vector<ResultTypeArg> _hits;
+    };
+
+    using JoltVectorCastRayCollector = JoltVectorCollisionCollector<JPH::RayCastResult, JPH::CollisionCollectorTraitsCastRay>;
 
     class PhysicsSystemImpl final : public JPH::ContactListener
     {
@@ -157,6 +190,8 @@ namespace darmok::physics3d
 
         OptionalRef<RigidBody> getRigidBody(const JPH::BodyID& bodyId) const noexcept;
 
+        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
+        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
     private:
         OptionalRef<Scene> _scene;
         float _deltaTimeRest;

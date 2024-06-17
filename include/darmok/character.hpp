@@ -17,11 +17,11 @@ namespace darmok::physics3d
         glm::vec3 up = glm::vec3(0, 1, 0);
         Plane supportingPlane = Plane(glm::vec3(0, 1, 0), -1.0e10f);
         float maxSlopeAngle = glm::radians(50.F);
+        uint16_t layer;
     };
 
     struct DARMOK_EXPORT CharacterConfig final : public BaseCharacterConfig
     {
-        std::string layer;
         float mass = 80.F;
         float friction = 0.2;
         float gravityFactor = 1.0F;

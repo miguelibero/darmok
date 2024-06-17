@@ -22,6 +22,9 @@
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+
 namespace darmok::physics3d
 {
     // Jolt is right-handed, darmok is left-handed
@@ -95,6 +98,26 @@ namespace darmok::physics3d
         return Math::flipHandedness(quat);
     }
 
+    RaycastHit JoltUtils::convert(const JPH::RayCastResult& result, RigidBody& rb) noexcept
+    {
+        // TODO: check how to get other RaycastHit properties
+        // https://docs.unity3d.com/ScriptReference/RaycastHit.html
+        return RaycastHit{ rb, result.mFraction };
+    }
+
+    JPH::ObjectLayer JoltUtils::convert(uint16_t layer, BroadPhaseLayerType bpl) noexcept
+    {
+        uint16_t bplv = bpl == BroadPhaseLayerType::Moving ? 0 : 1;
+        return bplv + (layer << 1);
+    }
+
+    std::pair<uint16_t, BroadPhaseLayerType> JoltUtils::convert(JPH::ObjectLayer objLayer) noexcept
+    {
+        auto type = objLayer & 1 ? BroadPhaseLayerType::NonMoving : BroadPhaseLayerType::Moving;
+        auto layer = objLayer >> 1;
+        return std::pair(layer, type);
+    }
+
     glm::vec3 JoltUtils::getOrigin(const Shape& shape) noexcept
     {
         if (auto cuboid = std::get_if<Cuboid>(&shape))
@@ -157,59 +180,57 @@ namespace darmok::physics3d
         return nullptr;
     }
 
+
     JPH::uint JoltBroadPhaseLayer::GetNumBroadPhaseLayers() const noexcept
     {
-        return to_underlying(JoltLayer::Count);
+        return JPH::uint(BroadPhaseLayerType::Count);
     }
 
-    JPH::BroadPhaseLayer JoltBroadPhaseLayer::GetBroadPhaseLayer(JPH::ObjectLayer layer) const noexcept
+    JPH::BroadPhaseLayer JoltBroadPhaseLayer::GetBroadPhaseLayer(JPH::ObjectLayer objLayer) const noexcept
     {
-        JPH_ASSERT(layer < GetNumBroadPhaseLayers());
-        return JPH::BroadPhaseLayer(layer);
+        auto [layer, bpl] = JoltUtils::convert(objLayer);
+        return JPH::BroadPhaseLayer((JPH::BroadPhaseLayer::Type)bpl);
     }
 
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
-    const char* JoltBroadPhaseLayer::GetBroadPhaseLayerName(JPH::BroadPhaseLayer layer) const noexcept
+    const char* JoltBroadPhaseLayer::GetBroadPhaseLayerName(JPH::BroadPhaseLayer bpLayer) const noexcept
     {
-        switch ((JoltLayer)layer.GetValue())
+        switch ((BroadPhaseLayerType)bpLayer.GetValue())
         {
-        case JoltLayer::NonMoving:
+        case BroadPhaseLayerType::NonMoving:
             return "NonMoving";
-        case JoltLayer::Moving:
-            return "Moving";
+            break;
+        case BroadPhaseLayerType::Moving:
+            return  "Moving";
+            break;
         default:
             JPH_ASSERT(false);
-            return "Invalid";
+            return  "Invalid";
+            break;
         }
     }
 #endif
 
     bool JoltObjectVsBroadPhaseLayerFilter::ShouldCollide(JPH::ObjectLayer layer1, JPH::BroadPhaseLayer layer2) const noexcept
     {
-        switch ((JoltLayer)layer1)
-        {
-        case JoltLayer::NonMoving:
-            return layer2.GetValue() == to_underlying(JoltLayer::Moving);
-        case JoltLayer::Moving:
-            return true;
-        default:
-            JPH_ASSERT(false);
-            return false;
-        }
+        auto [layer, bpl] = JoltUtils::convert(layer1);
+        return bpl == (BroadPhaseLayerType)layer2.GetValue();
     }
 
     bool JoltObjectLayerPairFilter::ShouldCollide(JPH::ObjectLayer object1, JPH::ObjectLayer object2) const noexcept
     {
-        switch ((JoltLayer)object1)
-        {
-        case JoltLayer::NonMoving:
-            return object2 == to_underlying(JoltLayer::Moving);
-        case JoltLayer::Moving:
-            return true;
-        default:
-            JPH_ASSERT(false);
-            return false;
-        }
+        return object1 == object2;
+    }
+
+    JoltObjectLayerFilter::JoltObjectLayerFilter(uint16_t layerMask) noexcept
+        : _layerMask(layerMask)
+    {
+    }
+
+    bool JoltObjectLayerFilter::ShouldCollide(JPH::ObjectLayer objLayer) const noexcept
+    {
+        auto [layer, motion] = JoltUtils::convert(objLayer);
+        return _layerMask & layer;
     }
 
     JoltTempAllocator::JoltTempAllocator(bx::AllocatorI& alloc) noexcept
@@ -466,12 +487,65 @@ namespace darmok::physics3d
         return *(RigidBody*)userData;
     }
 
+    std::optional<RaycastHit> PhysicsSystemImpl::raycast(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
+    {
+        if (!_system)
+        {
+            return std::nullopt;
+        }
+        JPH::RRayCast rc(JoltUtils::convert(ray.origin), JoltUtils::convert(ray.direction) * maxDistance);
+        JPH::BroadPhaseLayerFilter bpLayerFilter;
+        JoltObjectLayerFilter objLayerFilter(layerMask);
+        JPH::RayCastResult result;
+
+        if (!_system->GetNarrowPhaseQuery().CastRay(rc, result, bpLayerFilter, objLayerFilter))
+        {
+            return std::nullopt;
+        }
+        auto rb = getRigidBody(result.mBodyID);
+        if (!rb)
+        {
+            return std::nullopt;
+        }
+        return JoltUtils::convert(result, rb.value());
+    }
+
+    std::vector<RaycastHit> PhysicsSystemImpl::raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
+    {
+        std::vector<RaycastHit> hits;
+        if (!_system)
+        {
+            return hits;
+        }
+
+        JPH::RRayCast rc(JoltUtils::convert(ray.origin), JoltUtils::convert(ray.direction) * maxDistance);
+        JPH::BroadPhaseLayerFilter bpLayerFilter;
+        JoltObjectLayerFilter objLayerFilter(layerMask);
+
+        JPH::RayCastSettings settings;
+        JoltVectorCastRayCollector collector;
+
+        _system->GetNarrowPhaseQuery().CastRay(rc, settings, collector, bpLayerFilter, objLayerFilter);
+        for (auto& result : collector.getHits())
+        {
+            auto rb = getRigidBody(result.mBodyID);
+            if (rb)
+            {
+                hits.push_back(JoltUtils::convert(result, rb.value()));
+            }
+        }
+
+        return hits;
+    }
+
     void PhysicsSystemImpl::processPendingCollisionEvents()
     {
         std::lock_guard<std::mutex> guard(_collisionMutex);
         while (!_pendingCollisionEvents.empty())
         {
-            auto& ev = _pendingCollisionEvents.front();
+            auto ev = _pendingCollisionEvents.front();
+            _pendingCollisionEvents.pop_front();
+
             auto rb1 = getRigidBody(ev.bodyID1);
             if (!rb1)
             {
@@ -494,7 +568,6 @@ namespace darmok::physics3d
                 onCollisionExit(rb1.value(), rb2.value());
                 break;
             }
-            _pendingCollisionEvents.pop_front();
         }
     }
 
@@ -606,6 +679,16 @@ namespace darmok::physics3d
         return _impl->removeListener(listener);
     }
 
+    std::optional<RaycastHit> PhysicsSystem::raycast(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
+    {
+        return _impl->raycast(ray, maxDistance, layerMask);
+    }
+
+    std::vector<RaycastHit> PhysicsSystem::raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
+    {
+        return _impl->raycastAll(ray, maxDistance, layerMask);
+    }
+
     RigidBodyImpl::RigidBodyImpl(const Config& config) noexcept
         : _config(config)
     {
@@ -671,13 +754,13 @@ namespace darmok::physics3d
         auto& config = _characterConfig.value();
         JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings();
         settings->mMaxSlopeAngle = config.maxSlopeAngle;
-        settings->mLayer = (JPH::ObjectLayer)JoltLayer::Moving;
         settings->mShape = JoltUtils::convert(config.shape);
         settings->mFriction = config.friction;
         settings->mSupportingVolume = JPH::Plane(JoltUtils::convert(config.supportingPlane.normal), -config.supportingPlane.constant);
         settings->mMass = config.mass;
         settings->mGravityFactor = config.gravityFactor;
         settings->mUp = JoltUtils::convert(config.up);
+        settings->mLayer = JoltUtils::convert(config.layer, BroadPhaseLayerType::Moving);
         auto userData = (uint64_t)_rigidBody.ptr();
         _character = new JPH::Character(settings, pos, rot, userData, &_system->getJolt());
         _character->AddToPhysicsSystem(JPH::EActivation::Activate);
@@ -692,7 +775,7 @@ namespace darmok::physics3d
         }
 
         JPH::EMotionType joltMotion = JPH::EMotionType::Dynamic;
-        auto objLayer = (JPH::ObjectLayer)JoltLayer::Moving;
+        JPH::ObjectLayer objLayer = JoltUtils::convert(_config.layer, BroadPhaseLayerType::Moving);
         auto activation = JPH::EActivation::Activate;
         switch (_config.motion)
         {
@@ -701,8 +784,8 @@ namespace darmok::physics3d
             break;
         case RigidBodyMotionType::Static:
             joltMotion = JPH::EMotionType::Static;
-            objLayer = (JPH::ObjectLayer)JoltLayer::NonMoving;
             activation = JPH::EActivation::DontActivate;
+            objLayer = JoltUtils::convert(_config.layer, BroadPhaseLayerType::NonMoving);
             break;
         }
 
@@ -712,6 +795,8 @@ namespace darmok::physics3d
         settings.mGravityFactor = _config.gravityFactor;
         settings.mFriction = _config.friction;
         settings.mUserData = (uint64_t)_rigidBody.ptr();
+        settings.mObjectLayer = _config.layer;
+        settings.mIsSensor = _config.trigger;
         if (_config.mass)
         {
             settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;

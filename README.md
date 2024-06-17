@@ -77,9 +77,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### Upcoming (I need them)
 * physics3d features
-    * layers
-    * triggers
-    * raycast
     * lua bindings
 * lua camera render
 * sound

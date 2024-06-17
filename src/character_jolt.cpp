@@ -158,7 +158,7 @@ namespace darmok::physics3d
 
         JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
         auto& joltSystem = _system->getJolt();
-        auto layer = (JPH::ObjectLayer)JoltLayer::Moving;
+        auto layer = JoltUtils::convert(_config.layer, BroadPhaseLayerType::Moving);
         auto gravity = -_jolt->GetUp() * joltSystem.GetGravity().Length();
         _jolt->ExtendedUpdate(deltaTime, gravity, updateSettings,
             joltSystem.GetDefaultBroadPhaseLayerFilter(layer),

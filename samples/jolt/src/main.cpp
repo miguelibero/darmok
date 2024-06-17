@@ -70,6 +70,26 @@ namespace
 				_scene->addComponent<Renderable>(floorEntity, floorMesh, floorMat);
 			}
 
+			{ // door trigger
+
+				auto doorEntity = _scene->createEntity();
+				Cuboid doorShape(glm::vec3(1.5F, 2.F, 0.2F), glm::vec3(0, 1.F, 0));
+				RigidBodyConfig config;
+				config.trigger = true;
+				config.shape = doorShape;
+				config.motion = RigidBodyMotionType::Kinematic;
+				_doorRigidBody = _scene->addComponent<RigidBody>(doorEntity, config);
+				auto doorMesh = meshCreator.createCuboid(doorShape);
+				auto doorTex = getAssets().getColorTextureLoader()(Color(255, 200, 200, 255));
+				_doorMat = std::make_shared<Material>(prog, doorTex);
+				auto triggerTex = getAssets().getColorTextureLoader()(Colors::red());
+				_triggerDoorMat = std::make_shared<Material>(prog, triggerTex);
+				_scene->addComponent<Renderable>(doorEntity, doorMesh, _doorMat);
+				_scene->addComponent<Transform>(doorEntity)
+					.setPosition(glm::vec3(2.F, 0.F, 2.F))
+					.setEulerAngles(glm::vec3(0, 90, 0));
+			}
+
 			{ // cubes
 
 				_cubeMesh = meshCreator.createCuboid();
@@ -109,7 +129,11 @@ namespace
 
 		void onCollisionEnter(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision) override
 		{
-			if (_floorRigidBody != rigidBody2)
+			if (_doorRigidBody == rigidBody2)
+			{
+				getRenderable(rigidBody2).setMaterial(_triggerDoorMat);
+			}
+			else if (_floorRigidBody != rigidBody2)
 			{
 				getRenderable(rigidBody2).setMaterial(_touchedCubeMat);
 			}
@@ -117,7 +141,11 @@ namespace
 
 		void onCollisionExit(RigidBody& rigidBody1, RigidBody& rigidBody2) override
 		{
-			if (_floorRigidBody != rigidBody2)
+			if (_doorRigidBody == rigidBody2)
+			{
+				getRenderable(rigidBody2).setMaterial(_doorMat);
+			}
+			else if (_floorRigidBody != rigidBody2)
 			{
 				getRenderable(rigidBody2).setMaterial(_cubeMat);
 			}
@@ -168,9 +196,12 @@ namespace
 		OptionalRef<RigidBody> _characterRigidBody;
 		OptionalRef<Transform> _characterTrans;
 		OptionalRef<RigidBody> _floorRigidBody;
+		OptionalRef<RigidBody> _doorRigidBody;
 		std::shared_ptr<Scene> _scene;
 		std::shared_ptr<Material> _cubeMat;
 		std::shared_ptr<Material> _touchedCubeMat;
+		std::shared_ptr<Material> _doorMat;
+		std::shared_ptr<Material> _triggerDoorMat;
 		Cuboid _cubeShape;
 		std::shared_ptr<IMesh> _cubeMesh;
 
