@@ -15,6 +15,7 @@
 #include "rmlui.hpp"
 #include "skeleton.hpp"
 #include "utils.hpp"
+#include "physics3d.hpp"
 
 namespace darmok
 {
@@ -230,6 +231,14 @@ namespace darmok
 			"register_update", &LuaApp::registerUpdate,
 			"unregister_update", &LuaApp::unregisterUpdate
 		);
+		lua.script(R"(
+function App:add_component(type, ...)
+	return type.add_app_component(self, ...)
+end
+function App:get_shared_component(type)
+	return type.get_shared_component(self)
+end
+)");
 	}
 
 	LuaRunnerApp::LuaRunnerApp()

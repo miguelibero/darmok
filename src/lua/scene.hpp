@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <darmok/color.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/optional_ref.hpp>
 #include <sol/sol.hpp>
 
 #include "transform.hpp"
@@ -90,5 +91,21 @@ namespace darmok
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<Scene> _scene;
+	};
+
+	class SceneAppComponent;
+
+	class LuaSceneAppComponent final
+	{
+	public:
+		LuaSceneAppComponent(SceneAppComponent& comp) noexcept;
+		static LuaSceneAppComponent addAppComponent1(LuaApp& app) noexcept;
+		static LuaSceneAppComponent addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept;
+		LuaScene getScene() const noexcept;
+		LuaSceneAppComponent& setScene(const LuaScene& scene) noexcept;
+
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		OptionalRef<SceneAppComponent> _comp;
 	};
 }

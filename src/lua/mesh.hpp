@@ -31,6 +31,7 @@ namespace darmok
 	struct Rectangle;
 	struct Line;
 	struct Ray;
+	struct Capsule;
 
 	struct LuaMeshCreator final
 	{
@@ -54,6 +55,8 @@ namespace darmok
 		LuaMesh createSphere4(const Sphere& sphere, int lod) noexcept;
 		LuaMesh createSphere5(const glm::vec3& origin) noexcept;
 		LuaMesh createSphere6(const glm::vec3& origin, int lod) noexcept;
+		LuaMesh createCapsule1() noexcept;
+		LuaMesh createCapsule2(const Capsule& caps) noexcept;
 		LuaMesh createRectangle1() noexcept;
 		LuaMesh createRectangle2(const Rectangle& rectangle) noexcept;
 		LuaMesh createRectangle3(const glm::uvec2& size) noexcept;

@@ -9,7 +9,7 @@ macro(darmok_lua_sample_setup TARGET ASSETS)
     add_custom_target(${TARGET}
         COMMAND $<TARGET_FILE:darmok-lua>
         DEPENDS darmok-lua
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         SOURCES ${ASSETS}
         COMMENT "running darmok lua executable"
     )

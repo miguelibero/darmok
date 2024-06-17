@@ -1,5 +1,6 @@
 #include "light.hpp"
 #include "scene.hpp"
+#include "camera.hpp"
 #include <darmok/light.hpp>
 
 namespace darmok
@@ -181,6 +182,24 @@ namespace darmok
 
 			"intensity", sol::property(&LuaAmbientLight::getIntensity, &LuaAmbientLight::setIntensity),
 			"color", sol::property(&LuaAmbientLight::getColor, &LuaAmbientLight::setColor)
+		);
+	}
+
+	LuaPhongLightingComponent::LuaPhongLightingComponent(PhongLightingComponent& comp) noexcept
+		: _comp(comp)
+	{
+	}
+
+	LuaPhongLightingComponent LuaPhongLightingComponent::addCameraComponent(LuaCamera& cam) noexcept
+	{
+		return LuaPhongLightingComponent(cam.getReal().addComponent<PhongLightingComponent>());
+	}
+
+	void LuaPhongLightingComponent::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaPhongLightingComponent>("PhongLightingComponent",
+			sol::no_constructor,
+			"add_camera_component", &LuaPhongLightingComponent::addCameraComponent
 		);
 	}
 }

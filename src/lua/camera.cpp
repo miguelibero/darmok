@@ -2,6 +2,9 @@
 #include "program.hpp"
 #include "texture.hpp"
 #include "scene.hpp"
+#include "render_forward.hpp"
+#include "skeleton.hpp"
+#include "light.hpp"
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/light.hpp>
@@ -88,26 +91,6 @@ namespace darmok
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::addNativeComponent(LuaNativeCameraComponentType type) noexcept
-	{
-		switch (type)
-		{
-		case LuaNativeCameraComponentType::PhongLighting:
-			_camera->addComponent<PhongLightingComponent>();
-			break;
-		case LuaNativeCameraComponentType::SkeletalAnimation:
-			_camera->addComponent<SkeletalAnimationCameraComponent>();
-			break;
-		}
-		return *this;
-	}
-
-	LuaCamera& LuaCamera::setForwardRenderer() noexcept
-	{
-		_camera->setRenderer<ForwardRenderer>();
-		return *this;
-	}
-
 	std::vector<LuaTexture> LuaCamera::getTargetTextures() noexcept
 	{
 		auto& textures = _camera->getTargetTextures();
@@ -162,7 +145,12 @@ namespace darmok
 		_camera->setProjectionMatrix(LuaGlm::tableGet(matrix));
 	}
 
-	Ray LuaCamera::screenPointToRay(const VarLuaTable<glm::vec3>& point) const noexcept
+	Ray LuaCamera::screenPointToRay1(const glm::vec2& point) const noexcept
+	{
+		return _camera->screenPointToRay(glm::vec3(point, 0));
+	}
+
+	Ray LuaCamera::screenPointToRay2(const VarLuaTable<glm::vec3>& point) const noexcept
 	{
 		return _camera->screenPointToRay(LuaGlm::tableGet(point));
 	}
@@ -220,11 +208,9 @@ namespace darmok
 	void LuaCamera::bind(sol::state_view& lua) noexcept
 	{
 		LuaViewport::bind(lua);
-
-		lua.new_enum<LuaNativeCameraComponentType>("CameraComponentType", {
-			{ "PhongLighting", LuaNativeCameraComponentType::PhongLighting },
-			{ "SkeletalAnimation", LuaNativeCameraComponentType::SkeletalAnimation },
-		});
+		LuaForwardRenderer::bind(lua);
+		LuaSkeletalAnimationComponent::bind(lua);
+		LuaPhongLightingComponent::bind(lua);
 
 		lua.new_usertype<LuaCamera>("Camera", sol::no_constructor,
 			"type_id", &entt::type_hash<Camera>::value,
@@ -243,15 +229,13 @@ namespace darmok
 				&LuaCamera::setOrtho3,
 				&LuaCamera::setOrtho4
 			),
-			"set_forward_renderer", &LuaCamera::setForwardRenderer,
-			"add_component", &LuaCamera::addNativeComponent,
 			"projection_matrix", sol::property(&LuaCamera::getProjectionMatrix, &LuaCamera::setProjectionMatrix),
 			"target_textures", sol::property(&LuaCamera::getTargetTextures, &LuaCamera::setTargetTextures),
 			"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
 			"current_viewport", sol::property(&LuaCamera::getCurrentViewport),
 			"transform", sol::property(&LuaCamera::getTransform),
 			"model_matrix", sol::property(&LuaCamera::getModelMatrix),
-			"screen_point_to_ray", &LuaCamera::screenPointToRay,
+			"screen_point_to_ray", sol::overload(&LuaCamera::screenPointToRay1, &LuaCamera::screenPointToRay2),
 			"viewport_point_to_ray", &LuaCamera::viewportPointToRay,
 			"world_to_screen_point", &LuaCamera::worldToScreenPoint,
 			"world_to_viewport_point", &LuaCamera::worldToViewportPoint,
@@ -260,5 +244,14 @@ namespace darmok
 			"viewport_to_screen_point", &LuaCamera::viewportToScreenPoint,
 			"screen_to_viewport_point", &LuaCamera::screenToViewportPoint
 		);
+
+		lua.script(R"(
+function Camera:add_component(type, ...)
+	return type.add_camera_component(self, ...)
+end
+function Camera:set_renderer(type, ...)
+	return type.set_camera_renderer(self, ...)
+end
+)");
 	}
 }

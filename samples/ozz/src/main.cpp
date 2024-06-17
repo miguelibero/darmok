@@ -42,7 +42,7 @@ namespace
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
 			cam.setRenderer<ForwardRenderer>();
 			cam.addComponent<PhongLightingComponent>();
-			cam.addComponent<SkeletalAnimationCameraComponent>();
+			cam.addComponent<SkeletalAnimationComponent>();
 
 			auto lightEntity = scene.createEntity();
 			scene.addComponent<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });

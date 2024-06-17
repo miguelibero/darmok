@@ -122,14 +122,14 @@ camTrans = camEntity:add_component(Transform, { 0, 2, -2 })
 camTrans:look_at({ 0, 0, 0 })
 local cam = camEntity:add_component(Camera)
 cam:set_projection(60, { 0.3, 1000 })
-cam:set_forward_renderer(program)
-cam:add_component(CameraComponentType.PhongLighting)
+cam:set_renderer(ForwardRenderer)
+cam:add_component(PhongLightingComponent)
 
 lightEntity = app.scene:create_entity()
 lightEntity:add_component(Transform, { 1, 1, -2 })
 lightEntity:add_component(PointLight)
 
-cubeMesh = MeshCreator.new(program.vertex_layout):create_cube()
+cubeMesh = MeshCreator.new(program.vertex_layout):create_cuboid()
 greenTex = app.assets:load_color_texture(Color.green)
 app.scene:create_entity():add_component(Renderable, cubeMesh, greenTex)
 ```

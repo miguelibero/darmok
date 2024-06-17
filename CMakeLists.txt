@@ -271,6 +271,7 @@ if(DARMOK_BUILD_LUA)
     ${SRC_DIR}/lua/image.cpp
     ${SRC_DIR}/lua/material.cpp
     ${SRC_DIR}/lua/render.cpp
+    ${SRC_DIR}/lua/render_forward.cpp
     ${SRC_DIR}/lua/mesh.cpp
     ${SRC_DIR}/lua/program.cpp
     ${SRC_DIR}/lua/texture.cpp

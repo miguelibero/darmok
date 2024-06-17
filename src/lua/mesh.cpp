@@ -108,6 +108,16 @@ namespace darmok
 		return LuaMesh(_creator->createSphere(Sphere{ 1, origin }, lod));
 	}
 
+	LuaMesh LuaMeshCreator::createCapsule1() noexcept
+	{
+		return LuaMesh(_creator->createCapsule());
+	}
+
+	LuaMesh LuaMeshCreator::createCapsule2(const Capsule& caps) noexcept
+	{
+		return LuaMesh(_creator->createCapsule(caps));
+	}
+
 	LuaMesh LuaMeshCreator::createRectangle1() noexcept
 	{
 		return LuaMesh(_creator->createRectangle());
@@ -171,6 +181,7 @@ namespace darmok
 			"config", sol::property(&LuaMeshCreator::getConfig, &LuaMeshCreator::setConfig),
 			"vertex_layout", sol::property(&LuaMeshCreator::getVertexLayout, &LuaMeshCreator::setVertexLayout),
 			"create_cuboid", sol::overload(&LuaMeshCreator::createCuboid1, &LuaMeshCreator::createCuboid2),
+			"create_ccapsule", sol::overload(&LuaMeshCreator::createCapsule1, &LuaMeshCreator::createCapsule2),
 			"create_sphere", sol::overload(
 				&LuaMeshCreator::createSphere1, &LuaMeshCreator::createSphere2,
 				&LuaMeshCreator::createSphere3, &LuaMeshCreator::createSphere4,
@@ -190,6 +201,7 @@ namespace darmok
 				&LuaMeshCreator::createSphere3,
 				&LuaMeshCreator::createSphere4,
 				&LuaMeshCreator::createRectangle2,
+				&LuaMeshCreator::createCapsule2,
 				&LuaMeshCreator::createLine,
 				&LuaMeshCreator::createRay,
 				&LuaMeshCreator::createLines

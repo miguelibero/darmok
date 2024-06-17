@@ -60,12 +60,16 @@ namespace darmok
     class RmluiAppComponent;
     class LuaCamera;
     class LuaTransform;
+    class LuaApp;
 
     class LuaRmluiAppComponent final : public IRmluiMouseDelegate
     {
     public:
         LuaRmluiAppComponent(OptionalRef<RmluiAppComponent> comp) noexcept;
         ~LuaRmluiAppComponent() noexcept;
+
+        static LuaRmluiAppComponent addAppComponent1(LuaApp& app, const std::string& name) noexcept;
+        static LuaRmluiAppComponent addAppComponent2(LuaApp& app, const std::string& name, const glm::uvec2& size) noexcept;
 
         Rml::Context* getContext() noexcept;
 

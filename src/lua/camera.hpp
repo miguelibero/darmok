@@ -17,12 +17,6 @@ namespace darmok
 	class LuaScene;
 	class LuaTransform;
 
-	enum class LuaNativeCameraComponentType
-	{
-		PhongLighting,
-		SkeletalAnimation
-	};
-
 	class LuaCamera final
 	{
 	public:
@@ -39,8 +33,6 @@ namespace darmok
 		LuaCamera& setOrtho2(const VarViewport& vp) noexcept;
 		LuaCamera& setOrtho3(const VarLuaTable<glm::uvec2>& size, float near, float fare) noexcept;
 		LuaCamera& setOrtho4(const VarLuaTable<glm::uvec2>& size) noexcept;
-		LuaCamera& addNativeComponent(LuaNativeCameraComponentType type) noexcept;
-		LuaCamera& setForwardRenderer() noexcept;
 
 		const glm::mat4& getProjectionMatrix() const noexcept;
 		void setProjectionMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept;
@@ -55,7 +47,8 @@ namespace darmok
 		std::optional<LuaTransform> getTransform() const noexcept;
 		glm::mat4 getModelMatrix() const noexcept;
 
-		Ray screenPointToRay(const VarLuaTable<glm::vec3>& point) const noexcept;
+		Ray screenPointToRay1(const glm::vec2& point) const noexcept;
+		Ray screenPointToRay2(const VarLuaTable<glm::vec3>& point) const noexcept;
 		Ray viewportPointToRay(const VarLuaTable<glm::vec3>& point) const noexcept;
 		glm::vec3 worldToScreenPoint(const VarLuaTable<glm::vec3>& point) const noexcept;
 		glm::vec3 worldToViewportPoint(const VarLuaTable<glm::vec3>& point) const noexcept;
@@ -73,5 +66,4 @@ namespace darmok
 		static std::optional<LuaCamera> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
-
 }

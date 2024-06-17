@@ -23,7 +23,7 @@ namespace darmok
 		return _win->screenToWindowPoint(LuaGlm::tableGet(point));
 	}
 
-	glm::vec2 LuaWindow::windowToScreenPoint(const VarLuaTable<glm::uvec2>& point) const noexcept
+	glm::vec2 LuaWindow::windowToScreenPoint(const VarLuaTable<glm::vec2>& point) const noexcept
 	{
 		return _win->windowToScreenPoint(LuaGlm::tableGet(point));
 	}

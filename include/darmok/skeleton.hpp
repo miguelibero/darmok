@@ -280,7 +280,7 @@ namespace darmok
         std::shared_ptr<Armature> _armature;
     };
 
-    class DARMOK_EXPORT SkeletalAnimationCameraComponent final : public ICameraComponent
+    class DARMOK_EXPORT SkeletalAnimationComponent final : public ICameraComponent
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;

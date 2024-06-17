@@ -1,24 +1,26 @@
 
-local program = app.assets:load_standard_program(StandardProgramType.forward_phong)
+local program = app.assets:load_standard_program(StandardProgramType.ForwardPhong)
 local meshCreator = MeshCreator.new(program.vertex_layout)
 
-local cubeMesh = meshCreator:create_cube()
+local cubeMesh = meshCreator:create_cuboid()
 local greenTex = app.assets:load_color_texture(Color.green)
-local greenMat = Material.new(greenTex)
+local greenMat = Material.new(program, greenTex)
 
-local camEntity = app.scene:create_entity()
+local scene = app:add_component(SceneAppComponent).scene
+
+local camEntity = scene:create_entity()
 local camTrans = camEntity:add_component(Transform, { 0, 2, -2 })
 camTrans:look_at({ 0, 0, 0 })
 local cam = camEntity:add_component(Camera)
-cam:set_projection(60, app.window.size, { 0.3, 1000 })
-cam:set_forward_renderer(program)
-cam:add_component(CameraComponentType.phong_lighting)
+cam:set_perspective(60, app.window.size, 0.3, 1000)
+cam:set_renderer(ForwardRenderer)
+cam:add_component(PhongLightingComponent)
 
-local lightEntity = app.scene:create_entity()
+local lightEntity = scene:create_entity()
 lightEntity:add_component(Transform, { 1, 1, -2 })
 lightEntity:add_component(PointLight)
 
-local meshEntity = app.scene:create_entity()
+local meshEntity = scene:create_entity()
 local meshTrans = meshEntity:add_component(Transform)
 meshEntity:add_component(Renderable, cubeMesh, greenMat)
 

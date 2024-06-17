@@ -17,7 +17,7 @@ namespace darmok
 		const Window& getReal() const noexcept;
 		Window& getReal() noexcept;
 		glm::uvec2 screenToWindowPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
-		glm::vec2 windowToScreenPoint(const VarLuaTable<glm::uvec2>& point) const noexcept;
+		glm::vec2 windowToScreenPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
 		void setCursorMode(WindowCursorMode mode);
 		void setMode(WindowMode mode);
 

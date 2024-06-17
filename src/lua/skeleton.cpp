@@ -2,6 +2,7 @@
 #include "scene.hpp"
 #include "material.hpp"
 #include "mesh.hpp"
+#include "camera.hpp"
 #include <darmok/skeleton.hpp>
 
 namespace darmok
@@ -150,6 +151,23 @@ namespace darmok
             ),
             "get_entity_component", &LuaRenderableSkeleton::getEntityComponent,
             "get_entity", &LuaRenderableSkeleton::getEntity
+        );
+    }
+
+    LuaSkeletalAnimationComponent::LuaSkeletalAnimationComponent(SkeletalAnimationComponent& comp) noexcept
+        : _comp(comp)
+    {
+    }
+
+    LuaSkeletalAnimationComponent LuaSkeletalAnimationComponent::addCameraComponent(LuaCamera& cam) noexcept
+    {
+        return LuaSkeletalAnimationComponent(cam.getReal().addComponent<SkeletalAnimationComponent>());
+    }
+
+    void LuaSkeletalAnimationComponent::bind(sol::state_view& lua) noexcept
+    {
+        lua.new_usertype<LuaSkeletalAnimationComponent>("SkeletalAnimationComponent", sol::no_constructor,
+            "add_camera_component", &LuaSkeletalAnimationComponent::addCameraComponent
         );
     }
 }

@@ -214,6 +214,7 @@ end
 
 	void LuaScene::bind(sol::state_view& lua) noexcept
 	{
+		LuaSceneAppComponent::bind(lua);
 		LuaTransform::bind(lua);
 		LuaCamera::bind(lua);
 		LuaEntity::bind(lua);
@@ -235,5 +236,43 @@ function Scene:get_entity(comp)
 	return comp:get_entity(self)
 end
 )");
+	}
+
+	LuaSceneAppComponent::LuaSceneAppComponent(SceneAppComponent& comp) noexcept
+		: _comp(comp)
+	{
+	}
+
+	LuaSceneAppComponent LuaSceneAppComponent::addAppComponent1(LuaApp& app) noexcept
+	{
+		return LuaSceneAppComponent(app.getReal().addComponent<SceneAppComponent>());
+	}
+
+	LuaSceneAppComponent LuaSceneAppComponent::addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept
+	{
+		return LuaSceneAppComponent(app.getReal().addComponent<SceneAppComponent>(scene.getReal()));
+	}
+
+	LuaScene LuaSceneAppComponent::getScene() const noexcept
+	{
+		return LuaScene(_comp->getScene());
+	}
+
+	LuaSceneAppComponent& LuaSceneAppComponent::setScene(const LuaScene& scene) noexcept
+	{
+		_comp->setScene(scene.getReal());
+		return *this;
+	}
+
+	void LuaSceneAppComponent::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaSceneAppComponent>("SceneAppComponent",
+			sol::no_constructor,
+			"add_app_component", sol::overload(
+				&LuaSceneAppComponent::addAppComponent1,
+				&LuaSceneAppComponent::addAppComponent2
+			),
+			"scene", sol::property(&LuaSceneAppComponent::getScene, &LuaSceneAppComponent::setScene)
+		);
 	}
 }

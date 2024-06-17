@@ -7,6 +7,7 @@
 #include "camera.hpp"
 #include "transform.hpp"
 #include "utils.hpp"
+#include "app.hpp"
 
 namespace darmok
 {
@@ -22,6 +23,16 @@ namespace darmok
         {
             _comp->resetMouseDelegate();
         }
+    }
+
+    LuaRmluiAppComponent LuaRmluiAppComponent::addAppComponent1(LuaApp& app, const std::string& name) noexcept
+    {
+        return LuaRmluiAppComponent(app.getReal().addComponent<RmluiAppComponent>(name));
+    }
+
+    LuaRmluiAppComponent LuaRmluiAppComponent::addAppComponent2(LuaApp& app, const std::string& name, const glm::uvec2& size) noexcept
+    {
+        return LuaRmluiAppComponent(app.getReal().addComponent<RmluiAppComponent>(name, size));
     }
 
     Rml::Context* LuaRmluiAppComponent::getContext() noexcept
@@ -170,6 +181,10 @@ namespace darmok
         Rml::Lua::Initialise(lua.lua_state());
 
         lua.new_usertype<LuaRmluiAppComponent>("GuiComponent", sol::no_constructor,
+            "add_app_component", sol::overload(
+                &LuaRmluiAppComponent::addAppComponent1,
+                &LuaRmluiAppComponent::addAppComponent2
+            ),
             "name", sol::property(&LuaRmluiAppComponent::getName),
             "context", sol::property(&LuaRmluiAppComponent::getContext),
             "target_texture", sol::property(&LuaRmluiAppComponent::getTargetTexture, &LuaRmluiAppComponent::setTargetTexture),

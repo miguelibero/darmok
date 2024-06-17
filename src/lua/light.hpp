@@ -67,4 +67,17 @@ namespace darmok
 		static std::optional<LuaAmbientLight> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
+
+	class PhongLightingComponent;
+	class LuaCamera;
+
+	class LuaPhongLightingComponent final
+	{
+	public:
+		LuaPhongLightingComponent(PhongLightingComponent& comp) noexcept;
+		static LuaPhongLightingComponent addCameraComponent(LuaCamera& cam) noexcept;
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		OptionalRef<PhongLightingComponent> _comp;
+	};
 }
