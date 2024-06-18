@@ -343,6 +343,55 @@ namespace darmok
 		DataInputStream::read(data.view(), layout);
         return layout;
     }
+
+	VertexLayoutProcessor::VertexLayoutProcessor(const std::string& inputPath)
+		: _inputPath(inputPath)
+	{
+		VertexLayoutUtils::readFile(_inputPath, _layout);
+	}
+
+	VertexLayoutProcessor& VertexLayoutProcessor::setHeaderVarName(const std::string& name) noexcept
+	{
+		_headerVarName = name;
+		return *this;
+	}
+
+	const bgfx::VertexLayout& VertexLayoutProcessor::getVertexLayout() const noexcept
+	{
+		return _layout;
+	}
+
+	std::string VertexLayoutProcessor::to_string() const noexcept
+	{
+		std::stringstream ss;
+		if (!_headerVarName.empty())
+		{
+			VertexLayoutUtils::writeHeader(ss, _headerVarName, _layout);
+		}
+		else
+		{
+			ss << _layout;
+		}
+		return ss.str();
+	}
+
+	void VertexLayoutProcessor::writeFile(const std::string& outputPath)
+	{
+		std::string headerVarName = _headerVarName;
+		auto outExt = StringUtils::getPathExtension(outputPath);
+		if (headerVarName.empty() && (outExt == ".h" || outExt == ".hpp"))
+		{
+			headerVarName = outputPath.substr(0, outputPath.size() - outExt.size());
+			headerVarName += "_vlayout";
+		}
+		if (!headerVarName.empty())
+		{
+			std::ofstream os(outputPath);
+			VertexLayoutUtils::writeHeader(os, _headerVarName, _layout);
+			return;
+		}
+		VertexLayoutUtils::writeFile(outputPath, _layout);
+	}
 }
 
 std::string to_string(const bgfx::VertexLayout& layout) noexcept
@@ -355,7 +404,12 @@ std::string to_string(const bgfx::VertexLayout& layout) noexcept
 	return ss.str();
 }
 
-std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout)
+std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout) noexcept
 {
 	return out << to_string(layout);
+}
+
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::VertexLayoutProcessor& process) noexcept
+{
+	return out << process.to_string();
 }

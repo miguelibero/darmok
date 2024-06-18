@@ -178,7 +178,6 @@ static int run(const bx::CommandLine cmdLine)
 	}
 
 	auto inputPath = getString(cmdLine.findOption('i', "input"));
-	//inputPath = "D:/Projects/darmok/samples/ozz/assets/BasicMotionsDummyModel.fbx";
 	if (inputPath.empty())
 	{
 		help(name, "Input file path must be specified.");
@@ -187,7 +186,6 @@ static int run(const bx::CommandLine cmdLine)
 
 	Config config;
 	auto configPath = getString(cmdLine.findOption('c', "config"));
-	//configPath = "D:/Projects/darmok/samples/ozz/assets/BasicMotionsDummyModel.model.json";
 	if (!configPath.empty())
 	{
 		config.load(configPath);
@@ -204,7 +202,6 @@ static int run(const bx::CommandLine cmdLine)
 	auto model = assimpLoader(inputPath);
 
 	auto outputPath = getString(cmdLine.findOption('o', "output"));
-	//outputPath = "D:/Projects/darmok/build/samples/ozz/assets/BasicMotionsDummyModel.dml";
 	std::string headerVarName = getString(cmdLine.findOption('b', "bin2c"));
 
 	writeOutput(*model, outputPath, headerVarName);

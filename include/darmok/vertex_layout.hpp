@@ -44,6 +44,20 @@ namespace darmok
     private:
         IDataLoader& _dataLoader;
     };
+
+    class DARMOK_EXPORT VertexLayoutProcessor final
+    {
+    public:
+        VertexLayoutProcessor(const std::string& inputPath);
+        VertexLayoutProcessor& setHeaderVarName(const std::string& name) noexcept;
+        std::string to_string() const noexcept;
+        const bgfx::VertexLayout& getVertexLayout() const noexcept;
+        void writeFile(const std::string& outputPath);
+    private:
+        bgfx::VertexLayout _layout;
+        std::string _inputPath;
+        std::string _headerVarName;
+    };
 }
 
 namespace bgfx
@@ -65,4 +79,5 @@ namespace bgfx
 }
 
 DARMOK_EXPORT std::string to_string(const bgfx::VertexLayout& layout) noexcept;
-DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout);
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout) noexcept;
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::VertexLayoutProcessor& process) noexcept;

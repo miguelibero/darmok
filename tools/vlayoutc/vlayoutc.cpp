@@ -39,36 +39,6 @@ static std::string getString(const char* ptr)
 	return ptr == nullptr ? std::string() : std::string(ptr);
 }
 
-static void writeOutput(const bgfx::VertexLayout& layout, const std::string& path, std::string headerVarName)
-{
-	if (path.empty())
-	{
-		if (!headerVarName.empty())
-		{
-			VertexLayoutUtils::writeHeader(std::cout, headerVarName, layout);
-		}
-		else
-		{
-			std::cout << layout << std::endl;
-		}
-		return;
-	}
-
-	auto outExt = StringUtils::getPathExtension(path);
-	if (headerVarName.empty() && (outExt == ".h" || outExt == ".hpp"))
-	{
-		headerVarName = path.substr(0, path.size() - outExt.size());
-		headerVarName += "_vlayout";
-	}
-	if (!headerVarName.empty())
-	{
-		std::ofstream os(path);
-		VertexLayoutUtils::writeHeader(os, headerVarName, layout);
-		return;
-	}
-	VertexLayoutUtils::writeFile(path, layout);
-}
-
 static int run(const bx::CommandLine cmdLine)
 {
 	auto path = getString(cmdLine.get(0));
@@ -93,13 +63,18 @@ static int run(const bx::CommandLine cmdLine)
 		return bx::kExitFailure;
 	}
 
-	bgfx::VertexLayout layout;
-	VertexLayoutUtils::readFile(inputPath, layout);
+	VertexLayoutProcessor processor(inputPath);
+	processor.setHeaderVarName(cmdLine.findOption('b', "bin2c"));
 
 	auto outputPath = getString(cmdLine.findOption('o', "output"));
-	auto headerVarName = getString(cmdLine.findOption('b', "bin2c"));
-
-	writeOutput(layout, outputPath, headerVarName);
+	if(!outputPath.empty())
+	{
+		processor.writeFile(outputPath);
+	}
+	else
+	{
+		std::cout << processor << std::endl;
+	}
 	return bx::kExitSuccess;
 }
 
