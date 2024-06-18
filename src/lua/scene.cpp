@@ -236,7 +236,7 @@ end
 #endif
 
 #ifdef DARMOK_JOLT
-		physics3d::LuaRigidBody::bind(lua);
+		physics3d::LuaPhysicsBody::bind(lua);
 		physics3d::LuaPhysicsSystem::bind(lua);
 #endif
 

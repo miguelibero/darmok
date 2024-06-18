@@ -25,7 +25,10 @@ currently using:
 
 planned to use:
 
-* [Box2D](https://box2d.org/) for 2D physics
+* [miniaudio](https://miniaud.io/) for audio
+* need to decide 2D physics
+    * [Box2D](https://box2d.org/)
+    * [Chipmunk2D](https://github.com/slembcke/Chipmunk2D)
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
 * [fastgltf](https://github.com/spnda/fastgltf) for gltf asset loading (runtime)
@@ -76,15 +79,13 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * character controller
 
 #### Upcoming (I need them)
-* physics3d features
-    * lua bindings
+* export asset folders in C++
 * lua camera render
 * sound
 
 #### Upcoming
-* export asset folders in C++
 * replace input bindings functions with interfaces
-* better window modes with different resolutions
+* window modes with different resolutions
 * frustrum culling
 * modernize renderer (probably needs frame graph or similar)
     * deferred

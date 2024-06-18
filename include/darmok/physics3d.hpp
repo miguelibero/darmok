@@ -24,7 +24,7 @@ namespace darmok::physics3d
 		virtual void fixedUpdate(float fixedDeltaTime) = 0;
 	};
 
-    class RigidBody;
+    class PhysicsBody;
 
     struct Collision final
     {
@@ -36,9 +36,9 @@ namespace darmok::physics3d
     {
     public:
         virtual ~ICollisionListener() = default;
-        virtual void onCollisionEnter(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision) {};
-        virtual void onCollisionStay(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision) {};
-        virtual void onCollisionExit(RigidBody& rigidBody1, RigidBody& rigidBody2) {};
+        virtual void onCollisionEnter(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
+        virtual void onCollisionStay(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
+        virtual void onCollisionExit(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2) {};
     };
 
     struct PhysicsSystemConfig final
@@ -56,7 +56,7 @@ namespace darmok::physics3d
 
     struct RaycastHit final
     {
-        std::reference_wrapper<RigidBody> rigidBody;
+        std::reference_wrapper<PhysicsBody> physicsBody;
         float distance;
     };
 
@@ -66,6 +66,7 @@ namespace darmok::physics3d
         using Config = PhysicsSystemConfig;
         PhysicsSystem(const Config& config = {}) noexcept;
         PhysicsSystem(const Config& config, bx::AllocatorI& alloc) noexcept;
+        PhysicsSystem(bx::AllocatorI& alloc) noexcept;
         ~PhysicsSystem() noexcept;
         void init(Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
@@ -82,10 +83,10 @@ namespace darmok::physics3d
 
     using PhysicsShape = std::variant<Cuboid, Sphere, Capsule>;
 
-    struct RigidBodyConfig final
+    struct PhysicsBodyConfig final
     {
         using Shape = PhysicsShape;
-        using MotionType = RigidBodyMotionType;
+        using MotionType = PhysicsBodyMotionType;
         Shape shape;
         MotionType motion = MotionType::Dynamic;
         std::optional<float> mass = std::nullopt;
@@ -95,44 +96,44 @@ namespace darmok::physics3d
         bool trigger = false;
     };
 
-    class RigidBodyImpl;
+    class PhysicsBodyImpl;
     struct CharacterConfig;
 
-    class RigidBody final
+    class PhysicsBody final
     {
     public:
-        using MotionType = RigidBodyMotionType;
+        using MotionType = PhysicsBodyMotionType;
         using Shape = PhysicsShape;
-        using Config = RigidBodyConfig;
+        using Config = PhysicsBodyConfig;
 
-        RigidBody(const Shape& shape, MotionType motion = MotionType::Dynamic) noexcept;
-        RigidBody(const Config& config) noexcept;
-        RigidBody(const CharacterConfig& config) noexcept;
-        ~RigidBody() noexcept;
+        PhysicsBody(const Shape& shape, MotionType motion = MotionType::Dynamic) noexcept;
+        PhysicsBody(const Config& config) noexcept;
+        PhysicsBody(const CharacterConfig& config) noexcept;
+        ~PhysicsBody() noexcept;
 
-        RigidBodyImpl& getImpl() noexcept;
-        const RigidBodyImpl& getImpl() const noexcept;
+        PhysicsBodyImpl& getImpl() noexcept;
+        const PhysicsBodyImpl& getImpl() const noexcept;
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
 
-        RigidBody& setPosition(const glm::vec3& pos);
+        PhysicsBody& setPosition(const glm::vec3& pos);
         glm::vec3 getPosition();
-        RigidBody& setRotation(const glm::quat& rot);
+        PhysicsBody& setRotation(const glm::quat& rot);
         glm::quat getRotation();
-        RigidBody& setLinearVelocity(const glm::vec3& velocity);
+        PhysicsBody& setLinearVelocity(const glm::vec3& velocity);
         glm::vec3 getLinearVelocity();
 
-        RigidBody& addTorque(const glm::vec3& torque);
-        RigidBody& addForce(const glm::vec3& force);
-        RigidBody& addImpulse(const glm::vec3& impulse);
-        RigidBody& move(const glm::vec3& pos, const glm::quat& rot, float deltaTime = 0.F);
-        RigidBody& movePosition(const glm::vec3& pos, float deltaTime = 0.F);
+        PhysicsBody& addTorque(const glm::vec3& torque);
+        PhysicsBody& addForce(const glm::vec3& force);
+        PhysicsBody& addImpulse(const glm::vec3& impulse);
+        PhysicsBody& move(const glm::vec3& pos, const glm::quat& rot, float deltaTime = 0.F);
+        PhysicsBody& movePosition(const glm::vec3& pos, float deltaTime = 0.F);
 
-        RigidBody& addListener(ICollisionListener& listener) noexcept;
+        PhysicsBody& addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
 
     private:
-        std::unique_ptr<RigidBodyImpl> _impl;
+        std::unique_ptr<PhysicsBodyImpl> _impl;
     };
 }

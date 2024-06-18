@@ -48,7 +48,7 @@ namespace darmok::physics3d
         {
             _jolt->SetPosition(JoltUtils::convertPosition(pos, _config.shape));
         }
-        auto rb = getRigidBody();
+        auto rb = getPhysicsBody();
         if (rb)
         {
             rb->setPosition(pos);
@@ -62,7 +62,7 @@ namespace darmok::physics3d
             _jolt->SetLinearVelocity(JoltUtils::convert(velocity));
             _jolt->UpdateGroundVelocity();
         }
-        auto rb = getRigidBody();
+        auto rb = getPhysicsBody();
         if (rb)
         {
             rb->setLinearVelocity(velocity);
@@ -88,7 +88,7 @@ namespace darmok::physics3d
         return JoltUtils::removeRefVector(_listeners, listener);;
     }
 
-    OptionalRef<RigidBody> CharacterControllerImpl::getRigidBody() const noexcept
+    OptionalRef<PhysicsBody> CharacterControllerImpl::getPhysicsBody() const noexcept
     {
         if (!_ctrl || !_system)
         {
@@ -100,13 +100,13 @@ namespace darmok::physics3d
             return nullptr;
         }
         auto entity = scene->getEntity(_ctrl.value());
-        return scene->getComponent<RigidBody>(entity);
+        return scene->getComponent<PhysicsBody>(entity);
     }
 
     void CharacterControllerImpl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::CharacterContactSettings& settings)
     {
-        auto rigidBody = getRigidBody();
-        if (rigidBody && rigidBody->getImpl().getBodyId() == bodyID2)
+        auto body = getPhysicsBody();
+        if (body && body->getImpl().getBodyId() == bodyID2)
         {
             return;
         }
@@ -169,7 +169,7 @@ namespace darmok::physics3d
         notifyCollisionListeners(oldCollisions);
 
         // if the entity has a rigid body, that component will update the transform
-        if (!getRigidBody() && trans)
+        if (!getPhysicsBody() && trans)
         {
             auto mat = JoltUtils::convert(_jolt->GetWorldTransform(), _config.shape, trans.value());
             trans->setLocalMatrix(mat);
@@ -184,35 +184,35 @@ namespace darmok::physics3d
         }
         for (auto& elm : _collisions)
         {
-            auto rigidBody = _system->getRigidBody(elm.first);
-            if (!rigidBody)
+            auto body = _system->getPhysicsBody(elm.first);
+            if (!body)
             {
                 continue;
             }
             if (oldCollisions.contains(elm.first))
             {
-                onCollisionStay(rigidBody.value(), elm.second);
+                onCollisionStay(body.value(), elm.second);
             }
             else
             {
-                onCollisionEnter(rigidBody.value(), elm.second);
+                onCollisionEnter(body.value(), elm.second);
             }
         }
         for (auto& elm : oldCollisions)
         {
-            auto rigidBody = _system->getRigidBody(elm.first);
-            if (!rigidBody)
+            auto body = _system->getPhysicsBody(elm.first);
+            if (!body)
             {
                 continue;
             }
             if (!_collisions.contains(elm.first))
             {
-                onCollisionExit(rigidBody.value());
+                onCollisionExit(body.value());
             }
         }
     }
 
-    void CharacterControllerImpl::onCollisionEnter(RigidBody& other, const Collision& collision)
+    void CharacterControllerImpl::onCollisionEnter(PhysicsBody& other, const Collision& collision)
     {
         if (!_ctrl)
         {
@@ -224,7 +224,7 @@ namespace darmok::physics3d
         }
     }
 
-    void CharacterControllerImpl::onCollisionStay(RigidBody& other, const Collision& collision)
+    void CharacterControllerImpl::onCollisionStay(PhysicsBody& other, const Collision& collision)
     {
         if (!_ctrl)
         {
@@ -236,7 +236,7 @@ namespace darmok::physics3d
         }
     }
 
-    void CharacterControllerImpl::onCollisionExit(RigidBody& other)
+    void CharacterControllerImpl::onCollisionExit(PhysicsBody& other)
     {
         if (!_ctrl)
         {

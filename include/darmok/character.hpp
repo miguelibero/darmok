@@ -43,9 +43,9 @@ namespace darmok::physics3d
     public:
         virtual ~ICharacterControllerListener() = default;
 
-        virtual void onCollisionEnter(CharacterController& character, RigidBody& rigidBody, const Collision& collision) {};
-        virtual void onCollisionStay(CharacterController& character, RigidBody& rigidBody, const Collision& collision) {};
-        virtual void onCollisionExit(CharacterController& character, RigidBody& rigidBody) {};
+        virtual void onCollisionEnter(CharacterController& character, PhysicsBody& body, const Collision& collision) {};
+        virtual void onCollisionStay(CharacterController& character, PhysicsBody& body, const Collision& collision) {};
+        virtual void onCollisionExit(CharacterController& character, PhysicsBody& body) {};
     };
 
     class CharacterControllerImpl;

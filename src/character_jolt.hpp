@@ -47,10 +47,10 @@ namespace darmok::physics3d
         CollisionMap _collisions;
 
         bool tryCreateCharacter(OptionalRef<Transform> transform) noexcept;
-        void onCollisionEnter(RigidBody& other, const Collision& collision);
-        void onCollisionStay(RigidBody& other, const Collision& collision);
-        void onCollisionExit(RigidBody& other);
+        void onCollisionEnter(PhysicsBody& other, const Collision& collision);
+        void onCollisionStay(PhysicsBody& other, const Collision& collision);
+        void onCollisionExit(PhysicsBody& other);
         void notifyCollisionListeners(const CollisionMap& oldCollisions);
-        OptionalRef<RigidBody> getRigidBody() const noexcept;
+        OptionalRef<PhysicsBody> getPhysicsBody() const noexcept;
     };
 }

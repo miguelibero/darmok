@@ -31,7 +31,7 @@ namespace
 			App::init(args);
 
 			_scene = addComponent<SceneAppComponent>().getScene();
-			_scene->addLogicUpdater<PhysicsSystem>(getAssets().getAllocator());
+			_scene->addComponent<PhysicsSystem>(getAssets().getAllocator());
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 
@@ -65,7 +65,7 @@ namespace
 				auto floorTex = getAssets().getColorTextureLoader()(Color(172, 172, 124, 255));
 				auto floorMat = std::make_shared<Material>(prog, floorTex);
 				Cuboid floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
-				_floorRigidBody = _scene->addComponent<RigidBody>(floorEntity, floorShape, RigidBody::MotionType::Static);
+				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
 				auto floorMesh = meshCreator.createCuboid(floorShape);
 				_scene->addComponent<Renderable>(floorEntity, floorMesh, floorMat);
 			}
@@ -74,11 +74,11 @@ namespace
 
 				auto doorEntity = _scene->createEntity();
 				Cuboid doorShape(glm::vec3(1.5F, 2.F, 0.2F), glm::vec3(0, 1.F, 0));
-				RigidBodyConfig config;
+				PhysicsBodyConfig config;
 				config.trigger = true;
 				config.shape = doorShape;
-				config.motion = RigidBodyMotionType::Kinematic;
-				_doorRigidBody = _scene->addComponent<RigidBody>(doorEntity, config);
+				config.motion = PhysicsBodyMotionType::Kinematic;
+				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, config);
 				auto doorMesh = meshCreator.createCuboid(doorShape);
 				auto doorTex = getAssets().getColorTextureLoader()(Color(255, 200, 200, 255));
 				_doorMat = std::make_shared<Material>(prog, doorTex);
@@ -121,33 +121,33 @@ namespace
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 
 				CharacterConfig characterConfig{ playerShape };
-				_characterRigidBody = _scene->addComponent<RigidBody>(playerEntity, characterConfig);
-				_characterRigidBody->addListener(*this);
+				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
+				_characterBody->addListener(*this);
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
 		}
 
-		void onCollisionEnter(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision) override
+		void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override
 		{
-			if (_doorRigidBody == rigidBody2)
+			if (_doorBody == body2)
 			{
-				getRenderable(rigidBody2).setMaterial(_triggerDoorMat);
+				getRenderable(body2).setMaterial(_triggerDoorMat);
 			}
-			else if (_floorRigidBody != rigidBody2)
+			else if (_floorBody != body2)
 			{
-				getRenderable(rigidBody2).setMaterial(_touchedCubeMat);
+				getRenderable(body2).setMaterial(_touchedCubeMat);
 			}
 		}
 
-		void onCollisionExit(RigidBody& rigidBody1, RigidBody& rigidBody2) override
+		void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) override
 		{
-			if (_doorRigidBody == rigidBody2)
+			if (_doorBody == body2)
 			{
-				getRenderable(rigidBody2).setMaterial(_doorMat);
+				getRenderable(body2).setMaterial(_doorMat);
 			}
-			else if (_floorRigidBody != rigidBody2)
+			else if (_floorBody != body2)
 			{
-				getRenderable(rigidBody2).setMaterial(_cubeMat);
+				getRenderable(body2).setMaterial(_cubeMat);
 			}
 		}
 	protected:
@@ -193,10 +193,10 @@ namespace
 		Plane _playerMovePlane;
 		OptionalRef<Camera> _cam;
 		OptionalRef<CharacterController> _characterCtrl;
-		OptionalRef<RigidBody> _characterRigidBody;
+		OptionalRef<PhysicsBody> _characterBody;
 		OptionalRef<Transform> _characterTrans;
-		OptionalRef<RigidBody> _floorRigidBody;
-		OptionalRef<RigidBody> _doorRigidBody;
+		OptionalRef<PhysicsBody> _floorBody;
+		OptionalRef<PhysicsBody> _doorBody;
 		std::shared_ptr<Scene> _scene;
 		std::shared_ptr<Material> _cubeMat;
 		std::shared_ptr<Material> _touchedCubeMat;
@@ -205,7 +205,7 @@ namespace
 		Cuboid _cubeShape;
 		std::shared_ptr<IMesh> _cubeMesh;
 
-		Renderable& getRenderable(RigidBody& rigidBody)
+		Renderable& getRenderable(PhysicsBody& rigidBody)
 		{
 			auto entity = _scene->getEntity(rigidBody);
 			return _scene->getComponent<Renderable>(entity).value();
@@ -214,7 +214,7 @@ namespace
 		Transform& createCube() noexcept
 		{
 			auto entity = _scene->createEntity();
-			_scene->addComponent<RigidBody>(entity, _cubeShape);
+			_scene->addComponent<PhysicsBody>(entity, _cubeShape);
 			_scene->addComponent<Renderable>(entity, _cubeMesh, _cubeMat);
 			return _scene->addComponent<Transform>(entity);
 		}

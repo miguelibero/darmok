@@ -2,7 +2,7 @@
 
 namespace darmok::physics3d
 {
-    enum class RigidBodyMotionType
+    enum class PhysicsBodyMotionType
     {
         Static,
         Dynamic,

@@ -45,7 +45,7 @@ namespace darmok
 namespace darmok::physics3d
 {
     class IPhysicsUpdater;
-    class RigidBody;
+    class PhysicsBody;
 
 
     enum class BroadPhaseLayerType
@@ -69,7 +69,7 @@ namespace darmok::physics3d
         static glm::mat4 convert(const JPH::Mat44& v) noexcept;
         static JPH::Quat convert(const glm::quat& v) noexcept;
         static glm::quat convert(const JPH::Quat& v) noexcept;
-        static RaycastHit convert(const JPH::RayCastResult& result, RigidBody& rb) noexcept;
+        static RaycastHit convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept;
 
         static JPH::ObjectLayer convert(uint16_t layer, BroadPhaseLayerType bpl) noexcept;
         static std::pair<uint16_t, BroadPhaseLayerType> convert(JPH::ObjectLayer objLayer) noexcept;
@@ -188,7 +188,7 @@ namespace darmok::physics3d
         void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const  JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override;
         void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override;
 
-        OptionalRef<RigidBody> getRigidBody(const JPH::BodyID& bodyId) const noexcept;
+        OptionalRef<PhysicsBody> getPhysicsBody(const JPH::BodyID& bodyId) const noexcept;
 
         std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
         std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
@@ -231,23 +231,23 @@ namespace darmok::physics3d
 
         static std::string getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept;
 
-        void onCollisionEnter(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision);
-        void onCollisionStay(RigidBody& rigidBody1, RigidBody& rigidBody2, const Collision& collision);
-        void onCollisionExit(RigidBody& rigidBody1, RigidBody& rigidBody2);
+        void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);
+        void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);
+        void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2);
 
     };
 
-    class RigidBodyImpl final
+    class PhysicsBodyImpl final
     {
     public:
-        using Config = RigidBodyConfig;
+        using Config = PhysicsBodyConfig;
         using Shape = PhysicsShape;
-        using MotionType = RigidBodyMotionType;
+        using MotionType = PhysicsBodyMotionType;
 
-        RigidBodyImpl(const Config& config) noexcept;
-        RigidBodyImpl(const CharacterConfig& config) noexcept;
-        ~RigidBodyImpl();
-        void init(RigidBody& rigidBody, PhysicsSystemImpl& system) noexcept;
+        PhysicsBodyImpl(const Config& config) noexcept;
+        PhysicsBodyImpl(const CharacterConfig& config) noexcept;
+        ~PhysicsBodyImpl();
+        void init(PhysicsBody& body, PhysicsSystemImpl& system) noexcept;
         void shutdown();
         void update(Entity entity, float deltaTime);
 
@@ -271,9 +271,9 @@ namespace darmok::physics3d
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
 
-        void onCollisionEnter(RigidBody& other, const Collision& collision);
-        void onCollisionStay(RigidBody& other, const Collision& collision);
-        void onCollisionExit(RigidBody& other);
+        void onCollisionEnter(PhysicsBody& other, const Collision& collision);
+        void onCollisionStay(PhysicsBody& other, const Collision& collision);
+        void onCollisionExit(PhysicsBody& other);
 
     private:
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
@@ -281,7 +281,7 @@ namespace darmok::physics3d
         JPH::BodyID createCharacter(const JPH::Vec3& pos, const JPH::Quat& rot) noexcept;
         bool tryCreateBody(OptionalRef<Transform> transform) noexcept;
 
-        OptionalRef<RigidBody> _rigidBody;
+        OptionalRef<PhysicsBody> _body;
         OptionalRef<PhysicsSystemImpl> _system;
         Config _config;
         JPH::BodyID _bodyId;        
