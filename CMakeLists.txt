@@ -478,6 +478,7 @@ endif()
 if(DARMOK_BUILD_JOLT)
   find_package(unofficial-joltphysics CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PRIVATE unofficial::joltphysics::Jolt)
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_JOLT)
 endif()
 
 # lua sol2

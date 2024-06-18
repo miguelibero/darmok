@@ -154,20 +154,37 @@ namespace darmok
         );
     }
 
-    LuaSkeletalAnimationComponent::LuaSkeletalAnimationComponent(SkeletalAnimationComponent& comp) noexcept
+    LuaSkeletalAnimationSceneComponent::LuaSkeletalAnimationSceneComponent(SkeletalAnimationSceneComponent& comp) noexcept
         : _comp(comp)
     {
     }
 
-    LuaSkeletalAnimationComponent LuaSkeletalAnimationComponent::addCameraComponent(LuaCamera& cam) noexcept
+    LuaSkeletalAnimationSceneComponent LuaSkeletalAnimationSceneComponent::addSceneComponent(LuaScene& scene) noexcept
     {
-        return LuaSkeletalAnimationComponent(cam.getReal().addComponent<SkeletalAnimationComponent>());
+        return LuaSkeletalAnimationSceneComponent(scene.getReal()->addComponent<SkeletalAnimationSceneComponent>());
     }
 
-    void LuaSkeletalAnimationComponent::bind(sol::state_view& lua) noexcept
+    void LuaSkeletalAnimationSceneComponent::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<LuaSkeletalAnimationComponent>("SkeletalAnimationComponent", sol::no_constructor,
-            "add_camera_component", &LuaSkeletalAnimationComponent::addCameraComponent
+        lua.new_usertype<LuaSkeletalAnimationSceneComponent>("SkeletalAnimationSceneComponent", sol::no_constructor,
+            "add_scene_component", &LuaSkeletalAnimationSceneComponent::addSceneComponent
+        );
+    }
+
+    LuaSkeletalAnimationCameraComponent::LuaSkeletalAnimationCameraComponent(SkeletalAnimationCameraComponent& comp) noexcept
+        : _comp(comp)
+    {
+    }
+
+    LuaSkeletalAnimationCameraComponent LuaSkeletalAnimationCameraComponent::addCameraComponent(LuaCamera& cam) noexcept
+    {
+        return LuaSkeletalAnimationCameraComponent(cam.getReal().addComponent<SkeletalAnimationCameraComponent>());
+    }
+
+    void LuaSkeletalAnimationCameraComponent::bind(sol::state_view& lua) noexcept
+    {
+        lua.new_usertype<LuaSkeletalAnimationCameraComponent>("SkeletalAnimationCameraComponent", sol::no_constructor,
+            "add_camera_component", &LuaSkeletalAnimationCameraComponent::addCameraComponent
         );
     }
 }

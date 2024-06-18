@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "glm.hpp"
+#include <darmok/glm.hpp>
 #include <darmok/physics3d.hpp>
 #include <darmok/shape.hpp>
 #include <bx/bx.h>

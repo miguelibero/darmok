@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/glm.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/physics3d_fwd.hpp>
@@ -55,15 +56,16 @@ namespace darmok::physics3d
 
     struct RaycastHit final
     {
-        RigidBody& rigidBody;
+        std::reference_wrapper<RigidBody> rigidBody;
         float distance;
     };
 
-    class DARMOK_EXPORT PhysicsSystem final : public ISceneLogicUpdater
+    class DARMOK_EXPORT PhysicsSystem final : public ISceneComponent
     {
     public:
         using Config = PhysicsSystemConfig;
-        PhysicsSystem(bx::AllocatorI& alloc, const Config& config = {}) noexcept;
+        PhysicsSystem(const Config& config = {}) noexcept;
+        PhysicsSystem(const Config& config, bx::AllocatorI& alloc) noexcept;
         ~PhysicsSystem() noexcept;
         void init(Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
@@ -108,10 +110,11 @@ namespace darmok::physics3d
         RigidBody(const CharacterConfig& config) noexcept;
         ~RigidBody() noexcept;
 
-        const Shape& getShape() const noexcept;
-        MotionType getMotionType() const noexcept;
         RigidBodyImpl& getImpl() noexcept;
         const RigidBodyImpl& getImpl() const noexcept;
+
+        const Shape& getShape() const noexcept;
+        MotionType getMotionType() const noexcept;
 
         RigidBody& setPosition(const glm::vec3& pos);
         glm::vec3 getPosition();

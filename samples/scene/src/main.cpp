@@ -29,7 +29,7 @@ namespace
 	{
 	};
 
-	class ScreenBounceUpdater final : public ISceneLogicUpdater
+	class ScreenBounceUpdater final : public ISceneComponent
 	{
 	public:
 		ScreenBounceUpdater(Transform& trans, const glm::vec2& size = {1, 1}, float speed = 100.f)
@@ -79,7 +79,7 @@ namespace
 		glm::vec2 _dir;
 	};
 
-	class RotateUpdater final : public ISceneLogicUpdater
+	class RotateUpdater final : public ISceneComponent
 	{
 	public:
 		RotateUpdater(Transform& trans, float speed = 100.f)
@@ -107,7 +107,7 @@ namespace
 			App::init(args);
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
-			scene.addLogicUpdater<FrameAnimationUpdater>();
+			scene.addComponent<FrameAnimationUpdater>();
 			auto& registry = scene.getRegistry();
 
 			_prog = getAssets().getStandardProgramLoader()(StandardProgramType::Unlit);
@@ -162,7 +162,7 @@ namespace
 			registry.emplace<Culling2D>(spriteBorder);
 
 			registry.emplace<Culling2D>(sprite);
-			scene.addLogicUpdater<ScreenBounceUpdater>(trans, size, 100.f);
+			scene.addComponent<ScreenBounceUpdater>(trans, size, 100.f);
 		}
 
 		void createSpriteAnimation(Scene& scene)
@@ -194,14 +194,14 @@ namespace
 			auto material = std::make_shared<Material>(_prog, texture);
 			material->setColor(MaterialColorType::Diffuse, Colors::red());
 
-			auto cubeMesh = MeshCreator(_prog->getVertexLayout()).createCube();
+			auto cubeMesh = MeshCreator(_prog->getVertexLayout()).createCuboid();
 
 			auto& registry = scene.getRegistry();
 			auto cube = registry.create();
 			registry.emplace<Culling3D>(cube);
 			registry.emplace<Renderable>(cube, cubeMesh, material);
 			auto& trans = registry.emplace<Transform>(cube);
-			scene.addLogicUpdater<RotateUpdater>(trans, 100.f);
+			scene.addComponent<RotateUpdater>(trans, 100.f);
 		}
 	private:
 		std::shared_ptr<Material> _debugMaterial;

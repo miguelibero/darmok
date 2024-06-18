@@ -1,4 +1,5 @@
 #include "scene.hpp"
+#include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
@@ -11,13 +12,18 @@ namespace darmok
     {
     }
 
-    void SceneImpl::addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater)
+    SceneImpl::~SceneImpl()
+    {
+        // empty on purpose
+    }
+
+    void SceneImpl::addComponent(std::unique_ptr<ISceneComponent>&& comp)
     {
         if (_scene)
         {
-            updater->init(_scene.value(), _app.value());
+            comp->init(_scene.value(), _app.value());
         }
-        _logicUpdaters.push_back(std::move(updater));
+        _components.push_back(std::move(comp));
     }
 
     EntityRegistry& SceneImpl::getRegistry()
@@ -45,9 +51,9 @@ namespace darmok
         _scene = scene;
         _app = app;
 
-        for (auto& updater : _logicUpdaters)
+        for (auto& comp : _components)
         {
-            updater->init(scene, app);
+            comp->init(scene, app);
         }
 
         for (auto [entity, cam] : _registry.view<Camera>().each())
@@ -79,9 +85,9 @@ namespace darmok
 
     void SceneImpl::shutdown()
     {
-        for (auto& updater : _logicUpdaters)
+        for (auto& comp : _components)
         {
-            updater->shutdown();
+            comp->shutdown();
         }
 
         _registry.clear();
@@ -107,9 +113,9 @@ namespace darmok
             trans.update();
         }
 
-        for (auto& updater : _logicUpdaters)
+        for (auto& comp : _components)
         {
-            updater->update(dt);
+            comp->update(dt);
         }
     }
 
@@ -177,9 +183,9 @@ namespace darmok
         return _impl->render(viewId);
     }
 
-    void Scene::addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater)
+    void Scene::addComponent(std::unique_ptr<ISceneComponent>&& comp)
     {
-        _impl->addLogicUpdater(std::move(updater));
+        _impl->addComponent(std::move(comp));
     }
 
     SceneAppComponent::SceneAppComponent(const std::shared_ptr<Scene>& scene) noexcept

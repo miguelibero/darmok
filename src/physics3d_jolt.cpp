@@ -233,19 +233,27 @@ namespace darmok::physics3d
         return _layerMask & layer;
     }
 
-    JoltTempAllocator::JoltTempAllocator(bx::AllocatorI& alloc) noexcept
+    JoltTempAllocator::JoltTempAllocator(OptionalRef<bx::AllocatorI> alloc) noexcept
         : _alloc(alloc)
     {
     }
 
     void* JoltTempAllocator::Allocate(JPH::uint size) noexcept
     {
-        return bx::alloc(&_alloc, size);
+        if (!_alloc)
+        {
+            return malloc(size);
+        }
+        return bx::alloc(_alloc.ptr(), size);
     }
 
     void JoltTempAllocator::Free(void* addr, JPH::uint size) noexcept
     {
-        bx::free(&_alloc, addr);
+        if (!_alloc)
+        {
+            return free(addr);
+        }
+        bx::free(_alloc.ptr(), addr);
     }
 
     static void joltTraceImpl(const char* fmt, ...) noexcept
@@ -272,7 +280,7 @@ namespace darmok::physics3d
 
 #endif // JPH_ENABLE_ASSERTS
 
-    PhysicsSystemImpl::PhysicsSystemImpl(bx::AllocatorI& alloc, const Config& config) noexcept
+    PhysicsSystemImpl::PhysicsSystemImpl(const Config& config, OptionalRef<bx::AllocatorI> alloc) noexcept
         : _alloc(alloc)
         , _config(config)
         , _deltaTimeRest(0.F)
@@ -543,7 +551,7 @@ namespace darmok::physics3d
         std::lock_guard<std::mutex> guard(_collisionMutex);
         while (!_pendingCollisionEvents.empty())
         {
-            auto ev = _pendingCollisionEvents.front();
+            CollisionEvent ev = _pendingCollisionEvents.front();
             _pendingCollisionEvents.pop_front();
 
             auto rb1 = getRigidBody(ev.bodyID1);
@@ -634,9 +642,15 @@ namespace darmok::physics3d
         }
     }
     
-    PhysicsSystem::PhysicsSystem(bx::AllocatorI& alloc, const Config& config) noexcept
-        : _impl(std::make_unique<PhysicsSystemImpl>(alloc, config))
+    PhysicsSystem::PhysicsSystem(const Config& config, bx::AllocatorI& alloc) noexcept
+        : _impl(std::make_unique<PhysicsSystemImpl>(config, alloc))
     {
+    }
+
+    PhysicsSystem::PhysicsSystem(const Config& config) noexcept
+        : _impl(std::make_unique<PhysicsSystemImpl>(config))
+    {
+
     }
 
     PhysicsSystem::~PhysicsSystem() noexcept

@@ -3,12 +3,15 @@
 #include "texture.hpp"
 #include "scene.hpp"
 #include "render_forward.hpp"
-#include "skeleton.hpp"
 #include "light.hpp"
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/light.hpp>
+
+#ifdef DARMOK_OZZ
+#include "skeleton.hpp"
 #include <darmok/skeleton.hpp>
+#endif
 
 namespace darmok
 {
@@ -83,7 +86,7 @@ namespace darmok
 		{
 			if (elm.second.is<LuaTexture>())
 			{
-				auto luaTexture = elm.second.as<LuaTexture>();
+				auto& luaTexture = elm.second.as<LuaTexture>();
 				realTextures.push_back(luaTexture.getReal());
 			}
 		}
@@ -209,8 +212,11 @@ namespace darmok
 	{
 		LuaViewport::bind(lua);
 		LuaForwardRenderer::bind(lua);
-		LuaSkeletalAnimationComponent::bind(lua);
 		LuaPhongLightingComponent::bind(lua);
+
+#ifdef DARMOK_OZZ
+		LuaSkeletalAnimationCameraComponent::bind(lua);
+#endif
 
 		lua.new_usertype<LuaCamera>("Camera", sol::no_constructor,
 			"type_id", &entt::type_hash<Camera>::value,

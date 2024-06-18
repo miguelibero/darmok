@@ -17,7 +17,7 @@ namespace
 {
 	using namespace darmok;
 
-	class RotateUpdater final : public ISceneLogicUpdater
+	class RotateUpdater final : public ISceneComponent
 	{
 	public:
 		RotateUpdater(Transform& trans, float speed = 100.f)
@@ -54,7 +54,7 @@ namespace
 				if (node.name == "human")
 				{
 					auto& trans = registry.get_or_emplace<Transform>(entity);
-					scene->addLogicUpdater<RotateUpdater>(trans, 100.f);
+					scene->addComponent<RotateUpdater>(trans, 100.f);
 				}
 				auto cam = scene->getComponentInChildren<Camera>(entity);
 				if (cam)

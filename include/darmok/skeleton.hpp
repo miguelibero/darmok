@@ -244,7 +244,7 @@ namespace darmok
         std::vector<OptionalRef<Transform>> _boneTransforms;
     };
 
-    class DARMOK_EXPORT SkeletalAnimationUpdater final : public ISceneLogicUpdater
+    class DARMOK_EXPORT SkeletalAnimationSceneComponent final : public ISceneComponent
     {
     public:
         void init(Scene& scene, App& app) noexcept override;
@@ -280,7 +280,7 @@ namespace darmok
         std::shared_ptr<Armature> _armature;
     };
 
-    class DARMOK_EXPORT SkeletalAnimationComponent final : public ICameraComponent
+    class DARMOK_EXPORT SkeletalAnimationCameraComponent final : public ICameraComponent
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;

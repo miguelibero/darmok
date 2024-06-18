@@ -15,10 +15,10 @@ namespace darmok
 {    
     class Scene;
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISceneLogicUpdater
+    class DARMOK_EXPORT BX_NO_VTABLE ISceneComponent
     {
     public:
-        virtual ~ISceneLogicUpdater() = default;
+        virtual ~ISceneComponent() = default;
         virtual void init(Scene& scene, App& app) { };
         virtual void shutdown() { }
         virtual void update(float deltaTime) = 0;
@@ -33,11 +33,11 @@ namespace darmok
         ~Scene() noexcept;
 
         template<typename T, typename... A>
-        T& addLogicUpdater(A&&... args)
+        T& addComponent(A&&... args)
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addLogicUpdater(std::move(ptr));
+            addComponent(std::move(ptr));
             return ref;
         }
 
@@ -46,7 +46,7 @@ namespace darmok
         bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
 
-        void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
+        void addComponent(std::unique_ptr<ISceneComponent>&& component);
 
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;

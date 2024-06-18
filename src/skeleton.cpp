@@ -122,12 +122,12 @@ namespace darmok
         }
     }
 
-    void SkeletalAnimationUpdater::init(Scene& scene, App& app) noexcept
+    void SkeletalAnimationSceneComponent::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;
     }
 
-    void SkeletalAnimationUpdater::update(float deltaTime) noexcept
+    void SkeletalAnimationSceneComponent::update(float deltaTime) noexcept
     {
         if (!_scene)
         {
@@ -147,7 +147,7 @@ namespace darmok
         }
     }
 
-    void SkeletalAnimationComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    void SkeletalAnimationCameraComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _cam = cam;
@@ -155,7 +155,7 @@ namespace darmok
         _skinningUniform = bgfx::createUniform("u_skinning", bgfx::UniformType::Mat4, DARMOK_SKELETON_MAX_BONES);
     }
 
-    void SkeletalAnimationComponent::shutdown() noexcept
+    void SkeletalAnimationCameraComponent::shutdown() noexcept
     {
         _scene.reset();
         _cam.reset();
@@ -166,7 +166,7 @@ namespace darmok
         }
     }
 
-    OptionalRef<SkeletalAnimator> SkeletalAnimationComponent::getAnimator(Entity entity) const noexcept
+    OptionalRef<SkeletalAnimator> SkeletalAnimationCameraComponent::getAnimator(Entity entity) const noexcept
     {
         if (!_scene)
         {
@@ -175,7 +175,7 @@ namespace darmok
         return _scene->getComponentInParent<SkeletalAnimator>(entity);
     }
 
-    void SkeletalAnimationComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept
+    void SkeletalAnimationCameraComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept
     {
         auto animator = getAnimator(entity);
         if (!animator)
@@ -391,11 +391,11 @@ namespace darmok
     {
         if (config.name.empty())
         {
-            auto fixedConfig = config;
+            StateConfig fixedConfig = config;
             size_t i = 0;
             while (fixedConfig.name.empty() && i < fixedConfig.animations.size())
             {
-                auto anim = fixedConfig.animations[i++].animation;
+                auto& anim = fixedConfig.animations[i++].animation;
                 if (anim)
                 {
                     fixedConfig.name = anim->getName();

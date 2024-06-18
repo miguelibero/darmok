@@ -138,11 +138,11 @@ namespace darmok::physics3d
     class JoltTempAllocator final : public JPH::TempAllocator
     {
     public:
-        JoltTempAllocator(bx::AllocatorI& alloc) noexcept;
+        JoltTempAllocator(OptionalRef<bx::AllocatorI> alloc) noexcept;
         void* Allocate(JPH::uint size) noexcept override;
         void Free(void* address, JPH::uint size) noexcept override;
     private:
-        bx::AllocatorI& _alloc;
+        OptionalRef<bx::AllocatorI> _alloc;
     };
 
     template <class ResultTypeArg, class TraitsType>
@@ -168,7 +168,7 @@ namespace darmok::physics3d
     {
     public:
         using Config = PhysicsSystemConfig;
-        PhysicsSystemImpl(bx::AllocatorI& alloc, const Config& config) noexcept;
+        PhysicsSystemImpl(const Config& config, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
         void init(Scene& scene, App& app) noexcept;
         void shutdown() noexcept;
         void update(float deltaTime);

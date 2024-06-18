@@ -4,8 +4,15 @@
 #include "camera.hpp"
 #include "light.hpp"
 #include "render.hpp"
-#include "skeleton.hpp"
 #include <darmok/scene.hpp>
+
+#ifdef DARMOK_OZZ
+#include "skeleton.hpp"
+#endif
+
+#ifdef DARMOK_JOLT
+#include "physics3d.hpp"
+#endif
 
 namespace darmok
 {
@@ -221,8 +228,17 @@ end
 		LuaAmbientLight::bind(lua);
 		LuaPointLight::bind(lua);
 		LuaRenderable::bind(lua);
+
+#ifdef DARMOK_OZZ
 		LuaSkeletalAnimator::bind(lua);
 		LuaRenderableSkeleton::bind(lua);
+		LuaSkeletalAnimationSceneComponent::bind(lua);
+#endif
+
+#ifdef DARMOK_JOLT
+		physics3d::LuaRigidBody::bind(lua);
+		physics3d::LuaPhysicsSystem::bind(lua);
+#endif
 
 		lua.new_usertype<LuaScene>("Scene",
 			sol::constructors<LuaScene(LuaApp&)>(),
@@ -234,6 +250,9 @@ end
 		lua.script(R"(
 function Scene:get_entity(comp)
 	return comp:get_entity(self)
+end
+function Scene:add_component(type, ...)
+	return type.add_scene_component(self, ...)
 end
 )");
 	}

@@ -37,7 +37,7 @@ namespace darmok
         OptionalRef<Renderable> _renderable;
     };
 
-    class DARMOK_EXPORT FrameAnimationUpdater final : public ISceneLogicUpdater
+    class DARMOK_EXPORT FrameAnimationUpdater final : public ISceneComponent
     {
     public:
         FrameAnimationUpdater() = default;

@@ -1,19 +1,25 @@
 #pragma once
 
-#include <darmok/scene.hpp>
 #include <bgfx/bgfx.h>
 #include <darmok/glm.hpp>
+#include <darmok/optional_ref.hpp>
+#include <darmok/scene_fwd.hpp>
 #include <entt/entt.hpp>
 #include <vector>
 #include <memory>
 
 namespace darmok
 {
+    class ISceneComponent;
+    class Scene;
+    class App;
+
     class SceneImpl final
     {
     public:
         SceneImpl();
-        void addLogicUpdater(std::unique_ptr<ISceneLogicUpdater>&& updater);
+        ~SceneImpl();
+        void addComponent(std::unique_ptr<ISceneComponent>&& comp);
 
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
@@ -23,7 +29,7 @@ namespace darmok
         bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
     private:
-        std::vector<std::unique_ptr<ISceneLogicUpdater>> _logicUpdaters;
+        std::vector<std::unique_ptr<ISceneComponent>> _components;
         EntityRegistry _registry;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
