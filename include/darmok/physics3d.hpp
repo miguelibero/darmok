@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <darmok/glm.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/shape.hpp>

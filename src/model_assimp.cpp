@@ -1,15 +1,25 @@
 #include "model_assimp.hpp"
+#include <filesystem>
+#include <fstream>
+#include <bx/allocator.h>
+#include <bx/file.h>
+
 #include <darmok/model_assimp.hpp>
 #include <darmok/model.hpp>
 #include <darmok/image.hpp>
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
-#include <filesystem>
+#include <darmok/program_standard.hpp>
+#include <darmok/string.hpp>
+
 #include <assimp/vector3.h>
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
+
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/xml.hpp>
 
 namespace darmok
 {
@@ -458,4 +468,144 @@ namespace darmok
     {
         return (*_impl)(name);
     }
+
+    AssimpModelProcessor::AssimpModelProcessor(const std::string& inputPath)
+        : _inputPath(inputPath)
+        , _embedTextures(false)
+        , _vertexLayout(StandardProgramLoader::getVertexLayout(StandardProgramType::ForwardPhong))
+    {
+    }
+
+    AssimpModelProcessor& AssimpModelProcessor::setConfigFromFile(const std::string& path)
+    {
+        std::ifstream ifs(path);
+        auto json = nlohmann::ordered_json::parse(ifs);
+        return setConfig(json);
+    }
+
+    const char* AssimpModelProcessor::_vertexLayoutJsonKey = "vertex_layout";
+    const char* AssimpModelProcessor::_embedTexturesJsonKey = "embed_textures";
+
+    bgfx::VertexLayout AssimpModelProcessor::loadVertexLayout(const nlohmann::ordered_json& json)
+    {
+        bgfx::VertexLayout layout;
+        if (json.is_string())
+        {
+            std::string str = json;
+            auto standard = StandardProgramLoader::getType(str);
+            if (standard)
+            {
+                return StandardProgramLoader::getVertexLayout(standard.value());
+            }
+            VertexLayoutUtils::readFile(str, layout);
+            return layout;
+        }
+        VertexLayoutUtils::readJson(json, layout);
+        return layout;
+    }
+
+    AssimpModelProcessor& AssimpModelProcessor::setConfig(const nlohmann::ordered_json& json)
+    {
+        if (json.contains(_vertexLayoutJsonKey))
+        {
+            _vertexLayout = loadVertexLayout(json[_vertexLayoutJsonKey]);
+        }
+        if (json.contains(_embedTexturesJsonKey))
+        {
+            _embedTextures = json[_embedTexturesJsonKey];
+        }
+        _model = nullptr;
+        return *this;
+    }
+
+    AssimpModelProcessor& AssimpModelProcessor::setHeaderVarName(const std::string& name) noexcept
+    {
+        _headerVarName = name;
+        return *this;
+    }
+
+    std::shared_ptr<Model> AssimpModelProcessor::loadModel() const
+    {
+        if (_model != nullptr)
+        {
+            return _model;
+        }
+        bx::DefaultAllocator allocator;
+        bx::FileReader fileReader;
+        FileDataLoader dataLoader(fileReader, allocator);
+        DataImageLoader imgLoader(dataLoader, allocator);
+        auto optImgLoader = _embedTextures ? OptionalRef<IImageLoader>(imgLoader) : nullptr;
+        AssimpModelLoader assimpLoader(dataLoader, allocator, optImgLoader);
+        assimpLoader.setVertexLayout(_vertexLayout);
+        _model = assimpLoader(_inputPath);
+        return _model;
+    }
+
+    void AssimpModelProcessor::writeHeader(std::ostream& os, const std::string varName) const
+    {
+        Data data;
+        DataOutputStream::write(data, *loadModel());
+        os << data.view().toHeader(varName);
+    }
+
+    std::string AssimpModelProcessor::to_string() const noexcept
+    {
+        auto model = loadModel();
+        std::stringstream ss;
+        if (!_headerVarName.empty())
+        {
+            writeHeader(ss, _headerVarName);
+        }
+        else
+        {
+            ss << model;
+        }
+        return ss.str();
+    }
+
+    void AssimpModelProcessor::writeFile(const std::string& outputPath)
+    {
+        auto outExt = StringUtils::getPathExtension(outputPath);
+
+        std::string headerVarName = _headerVarName;
+        if (headerVarName.empty())
+        {
+            if (outExt == ".h" || outExt == ".hpp")
+            {
+                std::string outputStr(outputPath);
+                headerVarName = outputStr.substr(0, outputStr.size() - outExt.size());
+                headerVarName += "_model";
+            }
+        }
+
+        auto& model = *loadModel();
+        if (!headerVarName.empty())
+        {
+            std::ofstream os(outputPath);
+            writeHeader(os, headerVarName);
+        }
+        else if (outExt == ".json")
+        {
+            std::ofstream os(outputPath);
+            cereal::JSONOutputArchive archive(os);
+            archive(model);
+        }
+        else if (outExt == ".xml")
+        {
+            std::ofstream os(outputPath);
+            cereal::XMLOutputArchive archive(os);
+            archive(model);
+        }
+        else
+        {
+            std::ofstream os(outputPath, std::ios::binary);
+            cereal::BinaryOutputArchive archive(os);
+            archive(model);
+        }
+    }
+}
+
+std::ostream& operator<<(std::ostream& out, const darmok::AssimpModelProcessor& process) noexcept
+{
+    return out << process.to_string();
 }
