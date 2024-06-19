@@ -237,4 +237,41 @@ namespace darmok
 	{
 		return *_impl;
 	}
+
+	DarmokAssetProcessor::DarmokAssetProcessor(const std::string& inputPath)
+		: _processor(inputPath)
+	{
+		_processor.addTypeProcessor<AssimpModelProcessor>();
+		_processor.addTypeProcessor<OzzFbxSkeletonProcessor>();
+		_processor.addTypeProcessor<VertexLayoutProcessor>();
+		_processor.addTypeProcessor<ShaderAssetProcessor>();
+	}
+
+	DarmokAssetProcessor& DarmokAssetProcessor::setProduceHeaders(bool enabled) noexcept
+	{
+		_processor.setProduceHeaders(enabled);
+		return *this;
+	}
+
+	DarmokAssetProcessor& DarmokAssetProcessor::setHeaderVarPrefix(const std::string& prefix) noexcept
+	{
+		_processor.setHeaderVarPrefix(prefix);
+		return *this;
+	}
+
+	DarmokAssetProcessor& DarmokAssetProcessor::setOutputPath(const std::string& outputPath) noexcept
+	{
+		_processor.setOutputPath(outputPath);
+		return *this;
+	}
+
+	std::vector<std::filesystem::path> DarmokAssetProcessor::getOutputs() const noexcept
+	{
+		return _processor.getOutputs();
+	}
+
+	void DarmokAssetProcessor::operator()(std::ostream& log) const
+	{
+		return _processor(log);
+	}
 }

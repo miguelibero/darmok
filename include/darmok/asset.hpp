@@ -1,8 +1,9 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <memory>
+#include <darmok/asset_core.hpp>
 #include <bx/allocator.h>
+#include <memory>
 
 namespace darmok
 {
@@ -51,5 +52,18 @@ namespace darmok
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;
 	private:
 		std::unique_ptr<AssetContextImpl> _impl;
+	};
+
+	class DARMOK_EXPORT DarmokAssetProcessor final
+	{
+	public:
+		DarmokAssetProcessor(const std::string& inputPath);
+		DarmokAssetProcessor& setProduceHeaders(bool enabled) noexcept;
+		DarmokAssetProcessor& setHeaderVarPrefix(const std::string& prefix) noexcept;
+		DarmokAssetProcessor& setOutputPath(const std::string& outputPath) noexcept;
+		std::vector<std::filesystem::path> getOutputs() const noexcept;
+		void operator()(std::ostream& log) const;
+	private:
+		AssetProcessor _processor;
 	};
 }

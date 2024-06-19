@@ -1,0 +1,4 @@
+{
+    "output": "include/private/generated/shaders",
+    "shader_include_dir": "generated/shaders"
+}

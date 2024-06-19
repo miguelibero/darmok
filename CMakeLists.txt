@@ -74,11 +74,12 @@ list(APPEND CMAKE_MODULE_PATH
 find_package(bgfx CONFIG REQUIRED)
 
 include(darmokProcessAssets)
+include(darmokProcessCoreAssets)
 
-darmok_process_assets(
+darmok_process_core_assets(
   ASSETS "assets/shaders"
-  HEADER_OUTPUT_DIR "include/private/generated/shaders"
-  HEADER_SHADER_INCLUDE_DIR "generated/shaders"
+  OUTPUT_DIR "include/private/generated/shaders"
+  SHADER_INCLUDE_DIR "generated/shaders"
   SOURCE_GROUP_NAME "Embedded Shader Files"
 )
 
@@ -97,6 +98,7 @@ set(CORE_SOURCES
   ${SRC_DIR}/vertex_layout.cpp
   ${SRC_DIR}/viewport.cpp
   ${SRC_DIR}/program.cpp
+  ${SRC_DIR}/asset_core.cpp
 )
 
 set(CORE_HEADERS
@@ -123,6 +125,7 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/viewport.hpp
   ${INCLUDE_DIR}/program_fwd.hpp
   ${INCLUDE_DIR}/program.hpp
+  ${INCLUDE_DIR}/asset_core.hpp
 )
 
 set(SOURCES
@@ -194,11 +197,11 @@ if(DARMOK_BUILD_IMGUI)
   list(APPEND SOURCES ${SRC_DIR}/imgui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/imgui.hpp)
 
-  darmok_process_assets(
+  darmok_process_core_assets(
     ASSETS "assets/imgui"
     HEADER_VAR_PREFIX "imgui_"
-    HEADER_OUTPUT_DIR "include/private/generated/imgui/shaders"
-    HEADER_SHADER_INCLUDE_DIR "generated/imgui/shaders"
+    OUTPUT_DIR "include/private/generated/imgui/shaders"
+    SHADER_INCLUDE_DIR "generated/imgui/shaders"
     SOURCE_GROUP_NAME "Imgui Asset Files"
     SOURCES_VAR IMGUI_ASSETS
   )
@@ -213,7 +216,7 @@ if(DARMOK_BUILD_RMLUI)
     list(APPEND LUA_SOURCES ${SRC_DIR}/lua/rmlui.cpp)
   endif()
 
-  darmok_process_assets(
+  darmok_process_core_assets(
     ASSETS "assets/rmlui"
     HEADER_VAR_PREFIX "rmlui_"
     HEADER_OUTPUT_DIR "include/private/generated/rmlui/shaders"
@@ -350,18 +353,27 @@ _darmok_lib_setup(${CORE_LIB_NAME})
 set(TOOLS_FOLDER ${PROJECT_NAME}/tools)
 include(darmokCopyDynamicLibs)
 
-# vlayoutc: only depends on darmok-core to avoid dependency cycle
-# since it is used to generate standard darmok shaders
-set(VLAYOUTC_NAME "darmok-vlayoutc")
-set(VLAYOUTC_SRC_DIR "tools/vlayoutc")
-add_executable(${VLAYOUTC_NAME}
-  ${VLAYOUTC_SRC_DIR}/vlayoutc.cpp
+set(COREASSETC_NAME "darmok-coreassetc")
+set(COREASSETC_SRC_DIR "tools/coreassetc")
+add_executable(${COREASSETC_NAME}
+  ${COREASSETC_SRC_DIR}/coreassetc.cpp
 )
-list(APPEND EXPORT_TARGETS ${VLAYOUTC_NAME})
-target_link_libraries(${VLAYOUTC_NAME} ${CORE_LIB_NAME})
-add_executable(darmok::darmok-vlayoutc ALIAS ${VLAYOUTC_NAME})
-set_target_properties(${VLAYOUTC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
-darmok_copy_dynamic_libs(${VLAYOUTC_NAME})
+list(APPEND EXPORT_TARGETS ${COREASSETC_NAME})
+target_link_libraries(${COREASSETC_NAME} ${CORE_LIB_NAME})
+add_executable(darmok::darmok-coreassetc ALIAS ${COREASSETC_NAME})
+set_target_properties(${COREASSETC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
+darmok_copy_dynamic_libs(${COREASSETC_NAME})
+
+set(ASSETC_NAME "darmok-assetc")
+set(ASSETC_SRC_DIR "tools/assetc")
+add_executable(${ASSETC_NAME}
+  ${ASSETC_SRC_DIR}/assetc.cpp
+)
+list(APPEND EXPORT_TARGETS ${ASSETC_NAME})
+target_link_libraries(${ASSETC_NAME} ${LIB_NAME})
+add_executable(darmok::darmok-modelc ALIAS ${ASSETC_NAME})
+set_target_properties(${ASSETC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
+darmok_copy_dynamic_libs(${ASSETC_NAME})
 
 # samples
 if(DARMOK_BUILD_SAMPLES)
@@ -462,17 +474,6 @@ if(DARMOK_BUILD_ASSIMP)
   find_package(assimp CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PRIVATE assimp::assimp)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_ASSIMP)
-
-  set(MODELC_NAME "darmok-modelc")
-  set(MODELC_SRC_DIR "tools/modelc")
-  add_executable(${MODELC_NAME}
-    ${MODELC_SRC_DIR}/modelc.cpp
-  )
-  list(APPEND EXPORT_TARGETS ${MODELC_NAME})
-  target_link_libraries(${MODELC_NAME} ${LIB_NAME})
-  add_executable(darmok::darmok-modelc ALIAS ${MODELC_NAME})
-  set_target_properties(${MODELC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
-  darmok_copy_dynamic_libs(${MODELC_NAME})
 endif()
 
 if(DARMOK_BUILD_JOLT)
@@ -533,6 +534,7 @@ if(DARMOK_BUILD_OZZ)
     ozz_geometry
     ozz_animation
     ozz_animation_offline
+    ozz_animation_tools
     ozz_options)
 endif()
 

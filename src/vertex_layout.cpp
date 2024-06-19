@@ -132,10 +132,10 @@ namespace darmok
 		return "";
 	}
 
-	void VertexLayoutUtils::readFile(const std::string& path, bgfx::VertexLayout& layout) noexcept
+	void VertexLayoutUtils::readFile(const std::filesystem::path& path, bgfx::VertexLayout& layout)
 	{
 		layout.begin().end();
-		auto ext = StringUtils::getPathExtension(path);
+		auto ext = path.extension();
 		std::ifstream ifs(path);
 		if (ext == ".json")
 		{
@@ -152,9 +152,9 @@ namespace darmok
 		archive(layout);
 	}
 
-	void VertexLayoutUtils::writeFile(const std::string& path, const bgfx::VertexLayout& layout) noexcept
+	void VertexLayoutUtils::writeFile(const std::filesystem::path& path, const bgfx::VertexLayout& layout)
 	{
-		auto ext = StringUtils::getPathExtension(path);
+		auto ext = path.extension();
 		if (ext == ".json")
 		{
 			nlohmann::ordered_json json;
@@ -170,7 +170,7 @@ namespace darmok
 		}
 	}
 
-	void VertexLayoutUtils::readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept
+	void VertexLayoutUtils::readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout)
 	{
 		layout.begin();
 		for (auto& elm : json.items())
@@ -210,7 +210,7 @@ namespace darmok
 		layout.end();
 	}
 
-	void VertexLayoutUtils::writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout) noexcept
+	void VertexLayoutUtils::writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout)
 	{
 		std::map<uint16_t, std::pair<std::string, nlohmann::json>> items;
 		for (auto i = 0; i < bgfx::Attrib::Count; i++)
@@ -251,13 +251,6 @@ namespace darmok
 		}
 	}
 
-	void VertexLayoutUtils::writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout) noexcept
-	{
-		Data data;
-		DataOutputStream::write(data, layout);
-		os << data.view().toHeader(varName);
-	}
-
 	const std::unordered_map<std::string, bgfx::Attrib::Enum>& VertexLayoutUtils::getVaryingDefAttrs() noexcept
 	{
 		static const std::unordered_map<std::string, bgfx::Attrib::Enum> map = 
@@ -284,7 +277,7 @@ namespace darmok
 		return map;
 	}
 
-    void VertexLayoutUtils::readVaryingDef(std::istream& is, bgfx::VertexLayout& layout) noexcept
+    void VertexLayoutUtils::readVaryingDef(std::istream& is, bgfx::VertexLayout& layout)
     {
 		const std::string attr_marker = "a_";
 		const std::string instr_end = ";";
@@ -344,53 +337,122 @@ namespace darmok
         return layout;
     }
 
-	VertexLayoutProcessor::VertexLayoutProcessor(const std::string& inputPath)
-		: _inputPath(inputPath)
+	VertexLayoutProcessor::VertexLayoutProcessor() noexcept
+		: _outputFormat(OutputFormat::Binary)
 	{
-		VertexLayoutUtils::readFile(_inputPath, _layout);
 	}
 
-	VertexLayoutProcessor& VertexLayoutProcessor::setHeaderVarName(const std::string& name) noexcept
+	VertexLayoutProcessor& VertexLayoutProcessor::setOutputFormat(OutputFormat format) noexcept
 	{
-		_headerVarName = name;
+		_outputFormat = format;
 		return *this;
 	}
 
-	const bgfx::VertexLayout& VertexLayoutProcessor::getVertexLayout() const noexcept
+	bgfx::VertexLayout VertexLayoutProcessor::read(const std::filesystem::path& path) const
 	{
-		return _layout;
-	}
-
-	std::string VertexLayoutProcessor::to_string() const noexcept
-	{
-		std::stringstream ss;
-		if (!_headerVarName.empty())
+		bgfx::VertexLayout layout;
+		layout.begin().end();
+		auto ext = path.extension();
+		if (ext == ".json")
 		{
-			VertexLayoutUtils::writeHeader(ss, _headerVarName, _layout);
+			std::ifstream ifs(path);
+			auto json = nlohmann::ordered_json::parse(ifs);
+			VertexLayoutUtils::readJson(json, layout);
+		}
+		if (ext == ".varyingdef")
+		{
+			std::ifstream ifs(path);
+			VertexLayoutUtils::readVaryingDef(ifs, layout);
 		}
 		else
 		{
-			ss << _layout;
+			std::ifstream ifs(path, std::ios::binary);
+			cereal::BinaryInputArchive archive(ifs);
+			archive(layout);
 		}
-		return ss.str();
+		return layout;
 	}
 
-	void VertexLayoutProcessor::writeFile(const std::string& outputPath)
+	std::filesystem::path VertexLayoutProcessor::getFilename(const std::filesystem::path& path, OutputFormat format) noexcept
 	{
-		std::string headerVarName = _headerVarName;
-		auto outExt = StringUtils::getPathExtension(outputPath);
-		if (headerVarName.empty() && (outExt == ".h" || outExt == ".hpp"))
+		std::string outSuffix(".vlayout");
+		switch (format)
 		{
-			headerVarName = outputPath.substr(0, outputPath.size() - outExt.size());
-			headerVarName += "_vlayout";
+		case OutputFormat::Binary:
+			outSuffix += ".bin";
+			break;
+		case OutputFormat::Json:
+			outSuffix += ".json";
+			break;
 		}
-		if (!headerVarName.empty())
+		auto stem = StringUtils::getFileStem(path.filename().string());
+		return stem + outSuffix;
+	}
+
+	bool VertexLayoutProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const
+	{
+		auto ext = StringUtils::getFileExt(input.filename().string());
+		if (ext != ".varyingdef" && ext != ".vlayout.json" && ext != ".vlayout.bin")
 		{
-			std::ofstream os(outputPath);
-			VertexLayoutUtils::writeHeader(os, _headerVarName, _layout);
-			return;
+			return false;
 		}
-		VertexLayoutUtils::writeFile(outputPath, _layout);
+
+		if (ext == ".varyingdef")
+		{
+			auto basePath = input.parent_path();
+			std::vector<std::filesystem::path> betterPaths{
+				basePath / getFilename(input, OutputFormat::Json),
+				basePath / getFilename(input, OutputFormat::Binary)
+			};
+			for (auto& betterPath : betterPaths)
+			{
+				if (std::filesystem::exists(betterPath))
+				{
+					return false;
+				}
+			}
+		}
+
+		outputs.push_back(getFilename(input, _outputFormat));
+		return true;
+	}
+
+	std::ofstream VertexLayoutProcessor::createOutputStream(size_t outputIndex, const std::filesystem::path& path) const
+	{
+		switch (_outputFormat)
+		{
+		case OutputFormat::Binary:
+			return std::ofstream(path, std::ios::binary);
+		default:
+			return std::ofstream(path);
+		}
+	}
+
+	void VertexLayoutProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const
+	{
+		auto layout = read(input);
+		switch (_outputFormat)
+		{
+			case OutputFormat::Json:
+			{
+				nlohmann::ordered_json json;
+				VertexLayoutUtils::writeJson(json, layout);
+				out << json.dump(2) << std::endl;
+				break;
+			}
+			case OutputFormat::Binary:
+			{
+				cereal::BinaryOutputArchive archive(out);
+				archive(layout);
+				break;
+			}
+		}
+	}
+
+	std::string VertexLayoutProcessor::getName() const noexcept
+	{
+		static const std::string name("VertexLayout");
+		return name;
 	}
 }
 
@@ -407,9 +469,4 @@ std::string to_string(const bgfx::VertexLayout& layout) noexcept
 std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout) noexcept
 {
 	return out << to_string(layout);
-}
-
-DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::VertexLayoutProcessor& process) noexcept
-{
-	return out << process.to_string();
 }

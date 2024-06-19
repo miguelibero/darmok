@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <sstream>
 #include <charconv>
-#include <filesystem>
 
 namespace darmok
 {
@@ -68,11 +67,6 @@ namespace darmok
 		return parts;
 	}
 
-	std::string StringUtils::getPathExtension(std::string_view path) noexcept
-	{
-		return std::filesystem::path(path).extension().string();
-	}
-
 	std::string StringUtils::binToHex(uint8_t v) noexcept
 	{
 		std::string dest = "  ";
@@ -107,6 +101,26 @@ namespace darmok
 		uint8_t high = hexToBin(sv[0]);
 		uint8_t low = hexToBin(sv[1]);
 		return (high << 4) | low;
+	}
+
+	std::string StringUtils::getFileStem(const std::string& filename) noexcept
+	{
+		auto pos = filename.find('.');
+		if (pos == std::string::npos)
+		{
+			return filename;
+		}
+		return filename.substr(0, pos);
+	}
+
+	std::string StringUtils::getFileExt(const std::string& filename) noexcept
+	{
+		auto pos = filename.find('.');
+		if (pos == std::string::npos)
+		{
+			return filename;
+		}
+		return filename.substr(pos, filename.size());
 	}
 
 	void StringUtils::ltrim(std::string& str) noexcept

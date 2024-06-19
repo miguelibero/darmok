@@ -95,6 +95,14 @@ namespace darmok
 #ifdef DARMOK_ASSIMP
 		AssimpModelLoader _assimpModelLoader;
 #endif
+	};
 
+	class AssetProcessorImpl final
+	{
+	public:
+		AssetProcessorImpl(const std::string& inputPath) noexcept;
+		void run(const std::string& outputPath);
+	private:
+		std::string _inputPath;
 	};
 }

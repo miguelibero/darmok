@@ -4,7 +4,9 @@
 #include <darmok/scene.hpp>
 #include <darmok/rmlui.hpp>
 #include <darmok/string.hpp>
+#include <darmok/asset.hpp>
 #include <filesystem>
+#include <bx/commandline.h>
 #include "asset.hpp"
 #include "input.hpp"
 #include "math.hpp"
@@ -312,6 +314,36 @@ end
 	}
 
 	void LuaRunnerAppImpl::init(App& app, const std::vector<std::string>& args)
+	{
+		initLua(app, args);
+	}
+
+	void LuaRunnerAppImpl::processAssets(App& app, const std::vector<std::string>& args)
+	{
+		std::vector<const char*> argv(args.size());
+		for (auto& arg : args)
+		{
+			argv.push_back(arg.c_str());
+		}
+		bx::CommandLine cmdLine(args.size(), &argv.front());
+
+		const char* inputPath;
+		if (!cmdLine.hasArg(inputPath, 'i', "asset-input"))
+		{
+			inputPath = "asset_sources";
+		}
+		const char* outputPath;
+		if (!cmdLine.hasArg(inputPath, 'o', "asset-output"))
+		{
+			outputPath = "assets";
+		}
+
+		DarmokAssetProcessor processor(inputPath);
+		processor.setOutputPath(outputPath);
+		processor(std::cout);
+	}
+
+	void LuaRunnerAppImpl::initLua(App& app, const std::vector<std::string>& args)
 	{
 		auto mainFile = findMainLua(args);
 		auto mainDir = std::filesystem::path(mainFile).parent_path().string();

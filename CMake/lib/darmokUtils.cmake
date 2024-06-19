@@ -1,5 +1,0 @@
-macro(_darmok_replace_ext VAR INPUT_PATH EXT)
-  get_filename_component(NAME_WE ${INPUT_PATH} NAME_WE)
-  get_filename_component(INPUT_DIR ${INPUT_PATH} DIRECTORY)
-  set(${VAR} ${INPUT_DIR}/${NAME_WE}${EXT})
-endmacro()

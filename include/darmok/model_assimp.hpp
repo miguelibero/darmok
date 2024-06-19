@@ -2,9 +2,11 @@
 
 #include <darmok/export.h>
 #include <darmok/model.hpp>
+#include <darmok/asset_core.hpp>
 #include <darmok/optional_ref.hpp>
 #include <memory>
 #include <string>
+#include <filesystem>
 
 namespace bx
 {
@@ -33,29 +35,45 @@ namespace darmok
         std::unique_ptr<AssimpModelLoaderImpl> _impl;
     };
 
-    class DARMOK_EXPORT AssimpModelProcessor final
+    enum class AssimpModelProcessorOutputFormat
     {
-    public:
-        AssimpModelProcessor(const std::string& inputPath);
-        AssimpModelProcessor& setConfigFromFile(const std::string& path);
-        AssimpModelProcessor& setConfig(const nlohmann::ordered_json& config);
-        AssimpModelProcessor& setHeaderVarName(const std::string& name) noexcept;
-        std::string to_string() const noexcept;
-        void writeFile(const std::string& outputPath);
+        Binary,
+        Json,
+        Xml
+    };
+
+    struct AssimpModelProcessorConfig final
+    {
+        bgfx::VertexLayout vertexLayout;
+        bool embedTextures;
+
+        AssimpModelProcessorConfig() noexcept;
+        bool loadForModel(const std::filesystem::path& path);
+        void load(const nlohmann::ordered_json& config);
+
     private:
         static const char* _vertexLayoutJsonKey;
         static const char* _embedTexturesJsonKey;
 
-        std::string _inputPath;
-        bgfx::VertexLayout _vertexLayout;
-        bool _embedTextures;
-        std::string _headerVarName;
-        mutable std::shared_ptr<Model> _model;
+        static bgfx::VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
+    };
 
-        std::shared_ptr<Model> loadModel() const;
+    class DARMOK_EXPORT AssimpModelProcessor final : public IAssetTypeProcessor
+    {
+    public:
+        using Config = AssimpModelProcessorConfig;
+        using OutputFormat = AssimpModelProcessorOutputFormat;
+        AssimpModelProcessor();
+        std::shared_ptr<Model> read(const std::filesystem::path& input) const;
+        bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const override;
+        std::ofstream createOutputStream(size_t outputIndex, const std::filesystem::path& path) const override;
+        void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const override;
+        std::string getName() const noexcept override;
+    private:
+
+        OutputFormat _outputFormat;
+
         bgfx::VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
-        void writeHeader(std::ostream& os, const std::string varName) const;
+        static std::filesystem::path getFilename(const std::filesystem::path& path, OutputFormat format) noexcept;
     };
 }
-
-DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::AssimpModelProcessor& process) noexcept;

@@ -1,12 +1,14 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/asset_core.hpp>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <iostream>
 #include <unordered_map>
+#include <filesystem>
 
 namespace darmok
 {
@@ -16,12 +18,11 @@ namespace darmok
 		static [[nodiscard]] bgfx::AttribType::Enum getBgfxAttribType(const std::string_view name) noexcept;
         static [[nodiscard]] std::string getBgfxAttribName(bgfx::Attrib::Enum val) noexcept;
         static [[nodiscard]] std::string getBgfxAttribTypeName(bgfx::AttribType::Enum val) noexcept;
-        static void readFile(const std::string& path, bgfx::VertexLayout& layout) noexcept;
-        static void writeFile(const std::string& path, const bgfx::VertexLayout& layout) noexcept;
-		static void readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout) noexcept;
-        static void writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout) noexcept;
-        static void writeHeader(std::ostream& os, std::string_view varName, const bgfx::VertexLayout& layout) noexcept;
-        static void readVaryingDef(std::istream& is, bgfx::VertexLayout& layout) noexcept;
+        static void readFile(const std::filesystem::path& path, bgfx::VertexLayout& layout);
+        static void writeFile(const std::filesystem::path& path, const bgfx::VertexLayout& layout);
+		static void readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout);
+        static void writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout);
+        static void readVaryingDef(std::istream& is, bgfx::VertexLayout& layout);
     private:
         static const std::unordered_map<std::string, bgfx::Attrib::Enum>& getVaryingDefAttrs() noexcept;
     };
@@ -45,18 +46,29 @@ namespace darmok
         IDataLoader& _dataLoader;
     };
 
-    class DARMOK_EXPORT VertexLayoutProcessor final
+    enum class VertexLayoutProcessorOutputFormat
+    {
+        Binary,
+        Json,
+    };
+
+    class DARMOK_EXPORT VertexLayoutProcessor final : public IAssetTypeProcessor
     {
     public:
-        VertexLayoutProcessor(const std::string& inputPath);
-        VertexLayoutProcessor& setHeaderVarName(const std::string& name) noexcept;
-        std::string to_string() const noexcept;
-        const bgfx::VertexLayout& getVertexLayout() const noexcept;
-        void writeFile(const std::string& outputPath);
+        using OutputFormat = VertexLayoutProcessorOutputFormat;
+        VertexLayoutProcessor() noexcept;
+        VertexLayoutProcessor& setOutputFormat(OutputFormat format) noexcept;
+        bgfx::VertexLayout read(const std::filesystem::path& path) const;
+
+        bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const override;
+        std::ofstream createOutputStream(size_t outputIndex, const std::filesystem::path& path) const override;
+        void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const override;
+        std::string getName() const noexcept override;
+
     private:
-        bgfx::VertexLayout _layout;
-        std::string _inputPath;
-        std::string _headerVarName;
+        OutputFormat _outputFormat;
+
+        static std::filesystem::path getFilename(const std::filesystem::path& path, OutputFormat format) noexcept;
     };
 }
 
@@ -80,4 +92,3 @@ namespace bgfx
 
 DARMOK_EXPORT std::string to_string(const bgfx::VertexLayout& layout) noexcept;
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout) noexcept;
-DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::VertexLayoutProcessor& process) noexcept;

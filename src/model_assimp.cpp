@@ -92,6 +92,8 @@ namespace darmok
         _config.vertexLayout = vertexLayout;
     }
 
+
+
     std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(std::string_view path)
     {
         auto data = _config.dataLoader(path);
@@ -469,24 +471,42 @@ namespace darmok
         return (*_impl)(name);
     }
 
-    AssimpModelProcessor::AssimpModelProcessor(const std::string& inputPath)
-        : _inputPath(inputPath)
-        , _embedTextures(false)
-        , _vertexLayout(StandardProgramLoader::getVertexLayout(StandardProgramType::ForwardPhong))
+
+    const char* AssimpModelProcessorConfig::_vertexLayoutJsonKey = "vertex_layout";
+    const char* AssimpModelProcessorConfig::_embedTexturesJsonKey = "embed_textures";
+
+    AssimpModelProcessorConfig::AssimpModelProcessorConfig() noexcept
+        : embedTextures(false)
+        , vertexLayout(StandardProgramLoader::getVertexLayout(StandardProgramType::ForwardPhong))
     {
     }
 
-    AssimpModelProcessor& AssimpModelProcessor::setConfigFromFile(const std::string& path)
+    bool AssimpModelProcessorConfig::loadForModel(const std::filesystem::path& path)
     {
-        std::ifstream ifs(path);
+        auto configPath = std::filesystem::path(path.string() + ".json");
+        if (!std::filesystem::exists(configPath))
+        {
+            return false;
+        }
+        std::ifstream ifs(configPath);
         auto json = nlohmann::ordered_json::parse(ifs);
-        return setConfig(json);
+        load(json);
+        return true;
     }
 
-    const char* AssimpModelProcessor::_vertexLayoutJsonKey = "vertex_layout";
-    const char* AssimpModelProcessor::_embedTexturesJsonKey = "embed_textures";
+    void AssimpModelProcessorConfig::load(const nlohmann::ordered_json& json)
+    {
+        if (json.contains(_vertexLayoutJsonKey))
+        {
+            vertexLayout = loadVertexLayout(json[_vertexLayoutJsonKey]);
+        }
+        if (json.contains(_embedTexturesJsonKey))
+        {
+            embedTextures = json[_embedTexturesJsonKey];
+        }
+    }
 
-    bgfx::VertexLayout AssimpModelProcessor::loadVertexLayout(const nlohmann::ordered_json& json)
+    bgfx::VertexLayout AssimpModelProcessorConfig::loadVertexLayout(const nlohmann::ordered_json& json)
     {
         bgfx::VertexLayout layout;
         if (json.is_string())
@@ -504,108 +524,91 @@ namespace darmok
         return layout;
     }
 
-    AssimpModelProcessor& AssimpModelProcessor::setConfig(const nlohmann::ordered_json& json)
+    std::filesystem::path AssimpModelProcessor::getFilename(const std::filesystem::path& path, OutputFormat format) noexcept
     {
-        if (json.contains(_vertexLayoutJsonKey))
+        std::string outSuffix(".model");
+        switch (format)
         {
-            _vertexLayout = loadVertexLayout(json[_vertexLayoutJsonKey]);
+        case OutputFormat::Binary:
+            outSuffix += ".bin";
+            break;
+        case OutputFormat::Json:
+            outSuffix += ".json";
+            break;
+        case OutputFormat::Xml:
+            outSuffix += ".xml";
+            break;
         }
-        if (json.contains(_embedTexturesJsonKey))
-        {
-            _embedTextures = json[_embedTexturesJsonKey];
-        }
-        _model = nullptr;
-        return *this;
+        auto stem = StringUtils::getFileStem(path.filename().string());
+        return stem + outSuffix;
     }
 
-    AssimpModelProcessor& AssimpModelProcessor::setHeaderVarName(const std::string& name) noexcept
+    bool AssimpModelProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const
     {
-        _headerVarName = name;
-        return *this;
+        Assimp::Importer importer;
+        if (!importer.IsExtensionSupported(input.extension().string()))
+        {
+            return false;
+        }
+        outputs.push_back(getFilename(input, _outputFormat));
+        return true;
     }
 
-    std::shared_ptr<Model> AssimpModelProcessor::loadModel() const
+    std::ofstream AssimpModelProcessor::createOutputStream(size_t outputIndex, const std::filesystem::path& path) const
     {
-        if (_model != nullptr)
+        switch (_outputFormat)
         {
-            return _model;
+        case OutputFormat::Binary:
+            return std::ofstream(path, std::ios::binary);
+        default:
+            return std::ofstream(path);
         }
+    }
+
+    void AssimpModelProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const
+    {
+        auto model = read(input);
+        switch (_outputFormat)
+        {
+            case OutputFormat::Binary:
+            {
+                cereal::BinaryOutputArchive archive(out);
+                archive(*model);
+                break;
+            }
+            case OutputFormat::Json:
+            {
+                cereal::JSONOutputArchive archive(out);
+                archive(*model);
+                break;
+            }
+            case OutputFormat::Xml:
+            {
+                cereal::XMLOutputArchive archive(out);
+                archive(*model);
+                break;
+            }
+        }
+    }
+
+    std::string AssimpModelProcessor::getName() const noexcept
+    {
+        static const std::string name("AssimpModel");
+        return name;
+    }
+
+    std::shared_ptr<Model> AssimpModelProcessor::read(const std::filesystem::path& input) const
+    {
+        Config config;
+        config.loadForModel(input);
+
         bx::DefaultAllocator allocator;
         bx::FileReader fileReader;
         FileDataLoader dataLoader(fileReader, allocator);
         DataImageLoader imgLoader(dataLoader, allocator);
-        auto optImgLoader = _embedTextures ? OptionalRef<IImageLoader>(imgLoader) : nullptr;
+        auto optImgLoader = config.embedTextures ? OptionalRef<IImageLoader>(imgLoader) : nullptr;
         AssimpModelLoader assimpLoader(dataLoader, allocator, optImgLoader);
-        assimpLoader.setVertexLayout(_vertexLayout);
-        _model = assimpLoader(_inputPath);
-        return _model;
+        assimpLoader.setVertexLayout(config.vertexLayout);
+        return assimpLoader(input.string());
     }
-
-    void AssimpModelProcessor::writeHeader(std::ostream& os, const std::string varName) const
-    {
-        Data data;
-        DataOutputStream::write(data, *loadModel());
-        os << data.view().toHeader(varName);
-    }
-
-    std::string AssimpModelProcessor::to_string() const noexcept
-    {
-        auto model = loadModel();
-        std::stringstream ss;
-        if (!_headerVarName.empty())
-        {
-            writeHeader(ss, _headerVarName);
-        }
-        else
-        {
-            ss << model;
-        }
-        return ss.str();
-    }
-
-    void AssimpModelProcessor::writeFile(const std::string& outputPath)
-    {
-        auto outExt = StringUtils::getPathExtension(outputPath);
-
-        std::string headerVarName = _headerVarName;
-        if (headerVarName.empty())
-        {
-            if (outExt == ".h" || outExt == ".hpp")
-            {
-                std::string outputStr(outputPath);
-                headerVarName = outputStr.substr(0, outputStr.size() - outExt.size());
-                headerVarName += "_model";
-            }
-        }
-
-        auto& model = *loadModel();
-        if (!headerVarName.empty())
-        {
-            std::ofstream os(outputPath);
-            writeHeader(os, headerVarName);
-        }
-        else if (outExt == ".json")
-        {
-            std::ofstream os(outputPath);
-            cereal::JSONOutputArchive archive(os);
-            archive(model);
-        }
-        else if (outExt == ".xml")
-        {
-            std::ofstream os(outputPath);
-            cereal::XMLOutputArchive archive(os);
-            archive(model);
-        }
-        else
-        {
-            std::ofstream os(outputPath, std::ios::binary);
-            cereal::BinaryOutputArchive archive(os);
-            archive(model);
-        }
-    }
-}
-
-std::ostream& operator<<(std::ostream& out, const darmok::AssimpModelProcessor& process) noexcept
-{
-    return out << process.to_string();
 }
