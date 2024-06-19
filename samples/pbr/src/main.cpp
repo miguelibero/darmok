@@ -54,7 +54,7 @@ namespace
 			greenMat->setTexture(MaterialTextureType::Diffuse, greenTex);
 
 			MeshCreator meshCreator(layout);
-			auto cubeMesh = meshCreator.createCube();
+			auto cubeMesh = meshCreator.createCuboid();
 			auto cube = registry.create();
 			registry.emplace<Renderable>(cube, cubeMesh, greenMat);
 			registry.emplace<Transform>(cube)

@@ -29,7 +29,7 @@ namespace
 			App::init(args);
 			
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
-			auto& skelUpdater = scene.addLogicUpdater<SkeletalAnimationUpdater>();
+			auto& skelUpdater = scene.addComponent<SkeletalAnimationSceneComponent>();
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			
@@ -42,7 +42,7 @@ namespace
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
 			cam.setRenderer<ForwardRenderer>();
 			cam.addComponent<PhongLightingComponent>();
-			cam.addComponent<SkeletalAnimationComponent>();
+			cam.addComponent<SkeletalAnimationCameraComponent>();
 
 			auto lightEntity = scene.createEntity();
 			scene.addComponent<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
@@ -70,7 +70,6 @@ namespace
 			scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
-			getAssets().getAssimpModelLoader().setVertexLayout(prog->getVertexLayout());
 			auto model = getAssets().getModelLoader()("BasicMotionsDummyModel.dml");
 
 			auto skinEntity = scene.createEntity();

@@ -11,9 +11,6 @@
 #include <optional>
 #include <sstream>
 
-#include <ozz/animation/offline/tools/import2ozz.h>
-#include <ozz/animation/offline/fbx/fbx_skeleton.h>
-
 namespace darmok
 {
     struct OzzUtils final
@@ -787,46 +784,4 @@ namespace darmok
     {
         return _impl->play(name);
     }
-
-    OzzFbxSkeletonProcessor::OzzFbxSkeletonProcessor() noexcept
-    {
-    }
-
-    ozz::animation::offline::RawSkeleton OzzFbxSkeletonProcessor::read(const std::filesystem::path& path) const
-    {
-        ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
-        ozz::animation::offline::fbx::FbxAnimationIOSettings settings(fbxManager);
-        std::string password;
-
-        ozz::animation::offline::fbx::FbxSceneLoader sceneLoader(path.c_str(), password.c_str(), fbxManager, settings);
-
-        ozz::animation::offline::RawSkeleton skel;
-        ozz::animation::offline::OzzImporter::NodeType nodeType;
-
-        ozz::animation::offline::fbx::ExtractSkeleton(sceneLoader, nodeType, &skel);
-
-        return skel;
-    }
-
-    bool OzzFbxSkeletonProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const
-    {
-        return false;
-    }
-
-    std::ofstream OzzFbxSkeletonProcessor::createOutputStream(size_t outputIndex, const std::filesystem::path& path) const
-    {
-        return std::ofstream(path, std::ios::binary);
-    }
-
-    void OzzFbxSkeletonProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const
-    {
-        auto skel = read(input);
-    }
-
-    std::string OzzFbxSkeletonProcessor::getName() const noexcept
-    {
-        static const std::string name("OzzFbxSkeleton");
-        return name;
-    }
-
 }

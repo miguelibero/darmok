@@ -30,15 +30,12 @@ static void help(const std::string& name, const char* error = nullptr)
 	std::cout << "  -c, --header <prefix>	Output headers with the given prefix in the variable names." << std::endl;
 }
 
-static int run(const bx::CommandLine cmdLine)
+static int run(const bx::CommandLine cmdLine, const std::string& name)
 {
-	auto path = std::string(cmdLine.get(0));
-	auto name = std::filesystem::path(path).filename().string();
-
 	if (cmdLine.hasArg('h', "help"))
 	{
 		help(name);
-		return bx::kExitFailure;
+		return bx::kExitSuccess;
 	}
 
 	if (cmdLine.hasArg('v', "version"))
@@ -51,8 +48,7 @@ static int run(const bx::CommandLine cmdLine)
 	cmdLine.hasArg(inputPath, 'i', "input");
 	if (inputPath == nullptr)
 	{
-		help(name, "Input file path must be specified.");
-		return bx::kExitFailure;
+		throw std::runtime_error("Input file path must be specified.");
 	}
 
 	DarmokAssetProcessor processor(inputPath);
@@ -92,22 +88,25 @@ static int run(const bx::CommandLine cmdLine)
 
 int main(int argc, const char* argv[])
 {
+	argv = new const char* [] {
+		argv[0],
+			"-i", "../samples/assimp/assets",
+			"-o", "samples/assimp/assets",
+			"-d"
+		};
+	argc = 6;
+
+	bx::CommandLine cmdLine(argc, argv);
+	auto path = std::string(cmdLine.get(0));
+	auto name = std::filesystem::path(path).filename().string();
+
 	try
 	{
-		argv = new const char* [] {
-			argv[0],
-				"-i", "../assets/shaders",
-				"-o", "include/private/generated/shaders",
-				"-c"
-			};
-		argc = 6;
-		bx::CommandLine cmdLine(argc, argv);
-		return run(cmdLine);
+		return run(cmdLine, name);
 	}
 	catch (const std::exception& ex)
 	{
-		std::cerr << "exception thrown:" << std::endl;
-		std::cerr << ex.what() << std::endl;
+		help(name, ex.what());
 		return bx::kExitFailure;
 	}
 }

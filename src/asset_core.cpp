@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 
 namespace darmok
 {
@@ -26,7 +27,7 @@ namespace darmok
         _outputPath = outputPath;
     }
 
-    std::vector<fs::path> AssetProcessorImpl::getOutputs() const noexcept
+    std::vector<fs::path> AssetProcessorImpl::getOutputs() const
     {
         std::vector<fs::path> outputs;
         auto inputs = getInputs();
@@ -76,14 +77,13 @@ namespace darmok
         {
             for (auto& entry : fs::recursive_directory_iterator(path))
             {
-                for (auto& processor : _processors)
-                {
-                    inputs.push_back(entry.path());
-                }
+                inputs.push_back(entry.path());
             }
-            return inputs;
         }
-        inputs.push_back(path);
+        else
+        {
+            inputs.push_back(path);
+        }
         return inputs;
     }
 
@@ -112,8 +112,12 @@ namespace darmok
             {
                 output = getHeaderPath(output);
             }
-            auto relOutPath = relInPath.parent_path() / output;
-            outputs.push_back(_outputPath / relOutPath);
+            output = _outputPath / relInPath.parent_path() / output;
+            if (std::find(outputs.begin(), outputs.end(), output) != outputs.end())
+            {
+                throw std::runtime_error(std::string("multiple processors produce the same output: ") + output.string());
+            }
+            outputs.push_back(output);
         }
 
         return processorOutputs.size();
@@ -153,7 +157,7 @@ namespace darmok
             }
             else
             {
-                auto out = processor.createOutputStream(i, outPath);
+                auto out = processor.createOutputStream(path, i, outPath);
                 processor.writeOutput(path, i, out);
             }
             ++i;
@@ -212,7 +216,7 @@ namespace darmok
 
     bool ShaderAssetProcessorImpl::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const
     {
-        auto ext = input.extension();
+        auto ext = StringUtils::getFileExt(input.filename().string());
         if (ext != ".fragment.sc" && ext != ".vertex.sc")
         {
             return false;
@@ -227,7 +231,6 @@ namespace darmok
 
     void ShaderAssetProcessorImpl::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const
     {
-
     }
 
     std::string ShaderAssetProcessorImpl::getName() const noexcept
@@ -246,17 +249,17 @@ namespace darmok
         // empty on purpose
     }
 
-    bool ShaderAssetProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const
+    bool ShaderAssetProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
     {
         return _impl->getOutputs(input, outputs);
     }
 
-    std::ofstream ShaderAssetProcessor::createOutputStream(size_t outputIndex, const std::filesystem::path& path) const
+    std::ofstream ShaderAssetProcessor::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return _impl->createOutputStream(outputIndex, path);
     }
 
-    void ShaderAssetProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const
+    void ShaderAssetProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
     {
         return _impl->writeOutput(input, outputIndex, out);
     }

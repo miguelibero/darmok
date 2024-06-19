@@ -44,8 +44,9 @@ namespace
 			App::init(args);
 
 			auto scene = addComponent<SceneAppComponent>().getScene();
-			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
-			getAssets().getAssimpModelLoader().setVertexLayout(prog->getVertexLayout());
+			getAssets().getAssimpModelLoader().setConfig({
+				.standardProgram = StandardProgramType::ForwardPhong
+			});
 			auto model = getAssets().getModelLoader()("human.fbx");
 
 			ModelSceneConfigurer configurer(*scene, getAssets());

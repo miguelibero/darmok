@@ -136,18 +136,20 @@ namespace darmok
 	{
 		layout.begin().end();
 		auto ext = path.extension();
-		std::ifstream ifs(path);
 		if (ext == ".json")
 		{
+			std::ifstream ifs(path);
 			auto json = nlohmann::ordered_json::parse(ifs);
 			readJson(json, layout);
 			return;
 		}
 		if (ext == ".varyingdef")
 		{
+			std::ifstream ifs(path);
 			readVaryingDef(ifs, layout);
 			return;
 		}
+		std::ifstream ifs(path, std::ios::binary);
 		cereal::BinaryInputArchive archive(ifs);
 		archive(layout);
 	}
@@ -351,25 +353,7 @@ namespace darmok
 	bgfx::VertexLayout VertexLayoutProcessor::read(const std::filesystem::path& path) const
 	{
 		bgfx::VertexLayout layout;
-		layout.begin().end();
-		auto ext = path.extension();
-		if (ext == ".json")
-		{
-			std::ifstream ifs(path);
-			auto json = nlohmann::ordered_json::parse(ifs);
-			VertexLayoutUtils::readJson(json, layout);
-		}
-		if (ext == ".varyingdef")
-		{
-			std::ifstream ifs(path);
-			VertexLayoutUtils::readVaryingDef(ifs, layout);
-		}
-		else
-		{
-			std::ifstream ifs(path, std::ios::binary);
-			cereal::BinaryInputArchive archive(ifs);
-			archive(layout);
-		}
+		VertexLayoutUtils::readFile(path, layout);
 		return layout;
 	}
 
@@ -389,7 +373,7 @@ namespace darmok
 		return stem + outSuffix;
 	}
 
-	bool VertexLayoutProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const
+	bool VertexLayoutProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
 	{
 		auto ext = StringUtils::getFileExt(input.filename().string());
 		if (ext != ".varyingdef" && ext != ".vlayout.json" && ext != ".vlayout.bin")
@@ -417,7 +401,7 @@ namespace darmok
 		return true;
 	}
 
-	std::ofstream VertexLayoutProcessor::createOutputStream(size_t outputIndex, const std::filesystem::path& path) const
+	std::ofstream VertexLayoutProcessor::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
 	{
 		switch (_outputFormat)
 		{
@@ -428,7 +412,7 @@ namespace darmok
 		}
 	}
 
-	void VertexLayoutProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const
+	void VertexLayoutProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
 	{
 		auto layout = read(input);
 		switch (_outputFormat)

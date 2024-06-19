@@ -60,9 +60,9 @@ namespace darmok
         VertexLayoutProcessor& setOutputFormat(OutputFormat format) noexcept;
         bgfx::VertexLayout read(const std::filesystem::path& path) const;
 
-        bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const override;
-        std::ofstream createOutputStream(size_t outputIndex, const std::filesystem::path& path) const override;
-        void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const override;
+        bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) override;
+        std::ofstream createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path) override;
+        void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) override;
         std::string getName() const noexcept override;
 
     private:

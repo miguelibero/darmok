@@ -16,7 +16,7 @@ namespace darmok
         void setOutputPath(const std::filesystem::path& outputPath) noexcept;
         void setHeaderVarPrefix(const std::string& prefix) noexcept;
         void setProduceHeaders(bool headers) noexcept;
-        std::vector<std::filesystem::path> getOutputs() const noexcept;
+        std::vector<std::filesystem::path> getOutputs() const;
         void addTypeProcessor(std::unique_ptr<IAssetTypeProcessor>&& processor) noexcept;
         void operator()(std::ostream& log) const;
 	private:

@@ -15,6 +15,7 @@ namespace bgfx
 namespace darmok
 {
 	struct Model;
+	struct AssimpModelLoadConfig;
 	class AssetContext;
 	class LuaProgram;
 	class LuaTexture;
@@ -38,7 +39,7 @@ namespace darmok
 		LuaTextureAtlas loadTextureAtlas1(const std::string& name);
 		LuaTextureAtlas loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
 		std::shared_ptr<Model> loadModel1(const std::string& name);
-		std::shared_ptr<Model> loadModel2(const std::string& name, const bgfx::VertexLayout& layout);
+		std::shared_ptr<Model> loadModel2(const std::string& name, const AssimpModelLoadConfig& config);
 		LuaSkeleton loadSkeleton(const std::string& name);
 		LuaSkeletalAnimation loadSkeletalAnimation(const std::string& name);
 

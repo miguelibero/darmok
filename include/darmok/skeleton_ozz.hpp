@@ -4,6 +4,7 @@
 #include <darmok/skeleton.hpp>
 #include <darmok/asset_core.hpp>
 #include <string>
+#include <bx/bx.h>
 
 namespace ozz::animation::offline
 {
@@ -32,15 +33,26 @@ namespace darmok
 		IDataLoader& _dataLoader;
 	};
 
-	class DARMOK_EXPORT OzzFbxSkeletonProcessor final : public IAssetTypeProcessor
+	class DARMOK_EXPORT BX_NO_VTABLE IOzzRawSkeletonLoader
 	{
 	public:
-		OzzFbxSkeletonProcessor() noexcept;
-		ozz::animation::offline::RawSkeleton read(const std::filesystem::path& path) const;
-		bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const override;
-		std::ofstream createOutputStream(size_t outputIndex, const std::filesystem::path& path) const override;
-		void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const override;
-		std::string getName() const noexcept override;
+		virtual ~IOzzRawSkeletonLoader() = default;
+		using result_type = ozz::animation::offline::RawSkeleton;
+		virtual result_type operator()(std::string_view name) = 0;
 	};
 
+	class OzzSkeletonProcessorImpl;
+
+	class DARMOK_EXPORT OzzSkeletonProcessor final : public IAssetTypeProcessor
+	{
+	public:
+		OzzSkeletonProcessor(std::unique_ptr<IOzzRawSkeletonLoader>&& loader) noexcept;
+		~OzzSkeletonProcessor() noexcept;
+		bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) override;
+		std::ofstream createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path) override;
+		void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) override;
+		std::string getName() const noexcept override;
+	private:
+		std::unique_ptr<OzzSkeletonProcessorImpl> _impl;
+	};
 }

@@ -146,7 +146,6 @@ namespace darmok
 	class DARMOK_EXPORT BX_NO_VTABLE IDataLoader
 	{
 	public:
-        // TODO: change to Data to avoid having to copy memory
         using result_type = Data;
 
         virtual ~IDataLoader() = default;

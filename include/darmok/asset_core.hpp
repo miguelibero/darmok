@@ -6,6 +6,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 #include <bx/bx.h>
 
 namespace darmok
@@ -15,11 +16,11 @@ namespace darmok
     public:
         virtual ~IAssetTypeProcessor() = default;
         // return false if the processor cannot handle the input
-        virtual bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const = 0;
+        virtual bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) = 0;
 
         // outputIndex is the index of the element in the vector returned by getOutputs
-        virtual std::ofstream createOutputStream(size_t outputIndex, const std::filesystem::path& path) const = 0;
-        virtual void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const = 0;
+        virtual std::ofstream createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path) = 0;
+        virtual void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) = 0;
 
         virtual std::string getName() const noexcept = 0;
     };
@@ -73,9 +74,9 @@ namespace darmok
     public:
         ShaderAssetProcessor();
         ~ShaderAssetProcessor() noexcept;
-        bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const override;
-        std::ofstream createOutputStream(size_t outputIndex, const std::filesystem::path& path) const override;
-        void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const override;
+        bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) override;
+        std::ofstream createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path) override;
+        void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) override;
         std::string getName() const noexcept override;
     private:
         std::unique_ptr<ShaderAssetProcessorImpl> _impl;

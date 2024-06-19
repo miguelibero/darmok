@@ -72,10 +72,10 @@ namespace darmok
 		return _assets->getModelLoader()(name);
 	}
 
-	std::shared_ptr<Model> LuaAssets::loadModel2(const std::string& name, const bgfx::VertexLayout& layout)
+	std::shared_ptr<Model> LuaAssets::loadModel2(const std::string& name, const AssimpModelLoadConfig& config)
 	{
 		auto& loader = _assets->getAssimpModelLoader();
-		loader.setVertexLayout(layout);
+		loader.setConfig(config);
 		return loader(name);
 	}
 

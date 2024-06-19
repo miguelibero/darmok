@@ -241,8 +241,13 @@ namespace darmok
 	DarmokAssetProcessor::DarmokAssetProcessor(const std::string& inputPath)
 		: _processor(inputPath)
 	{
+#ifdef DARMOK_ASSIMP
 		_processor.addTypeProcessor<AssimpModelProcessor>();
-		_processor.addTypeProcessor<OzzFbxSkeletonProcessor>();
+#endif
+#ifdef DARMOK_OZZ
+		// _processor.addTypeProcessor<OzzSkeletonProcessor>();
+#endif
+
 		_processor.addTypeProcessor<VertexLayoutProcessor>();
 		_processor.addTypeProcessor<ShaderAssetProcessor>();
 	}
