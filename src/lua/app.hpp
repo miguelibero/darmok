@@ -81,7 +81,7 @@ namespace darmok
 		std::optional<LuaApp> _luaApp;
         std::unique_ptr<sol::state> _lua;
 		static std::string findMainLua(const std::vector<std::string>& args) noexcept;
-		void processAssets(App& app, const std::vector<std::string>& args);
+		void importAssets(App& app, const std::vector<std::string>& args);
 		void initLua(App& app, const std::vector<std::string>& args);
 
 		void addPackagePath(const std::string& path) noexcept;

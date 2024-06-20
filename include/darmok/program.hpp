@@ -58,6 +58,7 @@ namespace darmok
 
 		DataProgramLoader(IDataLoader& dataLoader, IVertexLayoutLoader& vertexLayoutLoader, Suffixes suffixes = getDefaultSuffixes()) noexcept;
 		[[nodiscard]] std::shared_ptr<Program> operator()(std::string_view name) override;
+		bgfx::VertexLayout loadVertexLayout(std::string_view name);
 	private:
 		IDataLoader& _dataLoader;
 		IVertexLayoutLoader& _vertexLayoutLoader;

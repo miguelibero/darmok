@@ -326,38 +326,54 @@ namespace darmok
 		layout.end();
     }
 
-	BinaryVertexLayoutLoader::BinaryVertexLayoutLoader(IDataLoader& dataLoader) noexcept
+	DataVertexLayoutLoader::DataVertexLayoutLoader(IDataLoader& dataLoader) noexcept
         : _dataLoader(dataLoader)
     {
     }
 
-    bgfx::VertexLayout BinaryVertexLayoutLoader::operator()(std::string_view name)
+    bgfx::VertexLayout DataVertexLayoutLoader::operator()(std::string_view name)
     {
         auto data = _dataLoader(name);
         bgfx::VertexLayout layout;
-		DataInputStream::read(data.view(), layout);
+		auto ext = StringUtils::getFileExt(std::string(name));
+		if (ext == ".json")
+		{
+			auto json = nlohmann::ordered_json::parse(data.stringView());
+			VertexLayoutUtils::readJson(json, layout);
+		}
+		else if (ext == ".varyingdef")
+		{
+			std::stringstream ss;
+			ss << data.stringView();
+			ss.seekp(0);
+			VertexLayoutUtils::readVaryingDef(ss, layout);
+		}
+		else
+		{
+			DataInputStream::read(data.view(), layout);
+		}
         return layout;
     }
 
-	VertexLayoutProcessor::VertexLayoutProcessor() noexcept
+	VertexLayoutImporter::VertexLayoutImporter() noexcept
 		: _outputFormat(OutputFormat::Binary)
 	{
 	}
 
-	VertexLayoutProcessor& VertexLayoutProcessor::setOutputFormat(OutputFormat format) noexcept
+	VertexLayoutImporter& VertexLayoutImporter::setOutputFormat(OutputFormat format) noexcept
 	{
 		_outputFormat = format;
 		return *this;
 	}
 
-	bgfx::VertexLayout VertexLayoutProcessor::read(const std::filesystem::path& path) const
+	bgfx::VertexLayout VertexLayoutImporter::read(const std::filesystem::path& path) const
 	{
 		bgfx::VertexLayout layout;
 		VertexLayoutUtils::readFile(path, layout);
 		return layout;
 	}
 
-	std::filesystem::path VertexLayoutProcessor::getFilename(const std::filesystem::path& path, OutputFormat format) noexcept
+	std::filesystem::path VertexLayoutImporter::getFilename(const std::filesystem::path& path, OutputFormat format) noexcept
 	{
 		std::string outSuffix(".vlayout");
 		switch (format)
@@ -373,7 +389,7 @@ namespace darmok
 		return stem + outSuffix;
 	}
 
-	bool VertexLayoutProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
+	bool VertexLayoutImporter::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
 	{
 		auto ext = StringUtils::getFileExt(input.filename().string());
 		if (ext != ".varyingdef" && ext != ".vlayout.json" && ext != ".vlayout.bin")
@@ -401,7 +417,7 @@ namespace darmok
 		return true;
 	}
 
-	std::ofstream VertexLayoutProcessor::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
+	std::ofstream VertexLayoutImporter::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
 	{
 		switch (_outputFormat)
 		{
@@ -412,7 +428,7 @@ namespace darmok
 		}
 	}
 
-	void VertexLayoutProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
+	void VertexLayoutImporter::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
 	{
 		auto layout = read(input);
 		switch (_outputFormat)
@@ -433,7 +449,7 @@ namespace darmok
 		}
 	}
 
-	std::string VertexLayoutProcessor::getName() const noexcept
+	std::string VertexLayoutImporter::getName() const noexcept
 	{
 		static const std::string name("VertexLayout");
 		return name;

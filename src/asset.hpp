@@ -78,7 +78,7 @@ namespace darmok
 		DataProgramLoader _programLoader;
 		StandardProgramLoader _standardProgramLoader;
 		ImageTextureLoader _textureLoader;
-		BinaryVertexLayoutLoader _vertexLayoutLoader;
+		DataVertexLayoutLoader _vertexLayoutLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		ColorTextureLoader _colorTextureLoader;
 		SkeletonExtLoader _skeletonLoader;

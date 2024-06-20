@@ -238,45 +238,45 @@ namespace darmok
 		return *_impl;
 	}
 
-	DarmokAssetProcessor::DarmokAssetProcessor(const std::string& inputPath)
-		: _processor(inputPath)
+	DarmokAssetImporter::DarmokAssetImporter(const std::string& inputPath)
+		: _importer(inputPath)
 	{
 #ifdef DARMOK_ASSIMP
-		_processor.addTypeProcessor<AssimpModelProcessor>();
+		_importer.addTypeImporter<AssimpModelImporter>();
 #endif
 #ifdef DARMOK_OZZ
-		// _processor.addTypeProcessor<OzzSkeletonProcessor>();
+		// _importer.addTypeImporter<OzzSkeletonImporter>();
 #endif
 
-		_processor.addTypeProcessor<VertexLayoutProcessor>();
-		_processor.addTypeProcessor<ShaderAssetProcessor>();
+		_importer.addTypeImporter<VertexLayoutImporter>();
+		_importer.addTypeImporter<ShaderAssetImporter>();
 	}
 
-	DarmokAssetProcessor& DarmokAssetProcessor::setProduceHeaders(bool enabled) noexcept
+	DarmokAssetImporter& DarmokAssetImporter::setProduceHeaders(bool enabled) noexcept
 	{
-		_processor.setProduceHeaders(enabled);
+		_importer.setProduceHeaders(enabled);
 		return *this;
 	}
 
-	DarmokAssetProcessor& DarmokAssetProcessor::setHeaderVarPrefix(const std::string& prefix) noexcept
+	DarmokAssetImporter& DarmokAssetImporter::setHeaderVarPrefix(const std::string& prefix) noexcept
 	{
-		_processor.setHeaderVarPrefix(prefix);
+		_importer.setHeaderVarPrefix(prefix);
 		return *this;
 	}
 
-	DarmokAssetProcessor& DarmokAssetProcessor::setOutputPath(const std::string& outputPath) noexcept
+	DarmokAssetImporter& DarmokAssetImporter::setOutputPath(const std::string& outputPath) noexcept
 	{
-		_processor.setOutputPath(outputPath);
+		_importer.setOutputPath(outputPath);
 		return *this;
 	}
 
-	std::vector<std::filesystem::path> DarmokAssetProcessor::getOutputs() const noexcept
+	std::vector<std::filesystem::path> DarmokAssetImporter::getOutputs() const noexcept
 	{
-		return _processor.getOutputs();
+		return _importer.getOutputs();
 	}
 
-	void DarmokAssetProcessor::operator()(std::ostream& log) const
+	void DarmokAssetImporter::operator()(std::ostream& log) const
 	{
-		return _processor(log);
+		return _importer(log);
 	}
 }

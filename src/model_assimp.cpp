@@ -122,21 +122,18 @@ namespace darmok
         return std::shared_ptr<aiScene>(scene);
     }
 
-    AssimpModelLoaderImpl::AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader, OptionalRef<IProgramLoader> progLoader) noexcept
+    AssimpModelLoaderImpl::AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader) noexcept
         : _sceneLoader(dataLoader)
         , _dataLoader(dataLoader)
         , _allocator(allocator)
         , _imgLoader(imgLoader)
-        , _progLoader(progLoader)
-        , _forceConfig(false)
     {
         _config.vertexLayout = StandardProgramLoader::getVertexLayout(_config.standardProgram);
     }
 
-    void AssimpModelLoaderImpl::setConfig(const Config& config, bool force) noexcept
+    void AssimpModelLoaderImpl::setConfig(const Config& config) noexcept
     {
         _config = config;
-        _forceConfig = force;
     }
 
     std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(std::string_view path)
@@ -145,106 +142,9 @@ namespace darmok
         auto model = std::make_shared<Model>();
         auto basePath = std::filesystem::path(path).parent_path().string();
 
-        auto& config = getConfig(std::string(path));
-        AssimpModelConverter ctxt(*scene, basePath, config, _allocator, _imgLoader);
+        AssimpModelConverter ctxt(*scene, basePath, _config, _allocator, _imgLoader);
         ctxt.update(*model);
         return model;
-    }
-
-    const char* AssimpModelLoaderImpl::_vertexLayoutJsonKey = "vertex_layout";
-    const char* AssimpModelLoaderImpl::_embedTexturesJsonKey = "embed_textures";
-    const char* AssimpModelLoaderImpl::_programJsonKey = "program";
-
-    void AssimpModelLoaderImpl::loadConfig(const nlohmann::ordered_json& json, Config& config)
-    {
-        if (json.contains(_vertexLayoutJsonKey))
-        {
-            config.vertexLayout = loadVertexLayout(json[_vertexLayoutJsonKey]);
-        }
-        if (json.contains(_embedTexturesJsonKey))
-        {
-            config.embedTextures = json[_embedTexturesJsonKey];
-        }
-        if (json.contains(_programJsonKey))
-        {
-            std::string progStr = json[_programJsonKey];
-            auto standard = StandardProgramLoader::getType(progStr);
-            auto emptyLayout = config.vertexLayout.getStride() == 0;
-            if (standard)
-            {
-                config.standardProgram = standard.value();
-                if (emptyLayout)
-                {
-                    config.vertexLayout = StandardProgramLoader::getVertexLayout(config.standardProgram);
-                }
-            }
-            else
-            {
-                config.programName = progStr;
-                if (emptyLayout && _progLoader)
-                {
-                    auto prog = _progLoader.value()(progStr);
-                    if (prog)
-                    {
-                        config.vertexLayout = prog->getVertexLayout();
-                    }
-                }
-            }
-        }
-    }
-
-    const AssimpModelLoaderImpl::Config& AssimpModelLoaderImpl::getConfig(const std::string& path) noexcept
-    {
-        if (_forceConfig)
-        {
-            return _config;
-        }
-        auto itr = _configCache.find(path);
-        if (itr != _configCache.end())
-        {
-            return itr->second;
-        }
-        itr = _configCache.emplace(path, _config).first;
-        loadConfigForModel(path, itr->second);
-        return itr->second;
-    }
-
-    bool AssimpModelLoaderImpl::loadConfigForModel(const std::string& name, Config& config)
-    {
-        auto configName = name + ".model.json";
-        try
-        {
-            auto data = _dataLoader(configName);
-            if (data.empty())
-            {
-                return false;
-            }
-            auto json = nlohmann::ordered_json::parse(data.stringView());
-            loadConfig(json, config);
-            return true;
-        }
-        catch (...)
-        {
-            return false;
-        }
-    }
-
-    bgfx::VertexLayout AssimpModelLoaderImpl::loadVertexLayout(const nlohmann::ordered_json& json)
-    {
-        bgfx::VertexLayout layout;
-        if (json.is_string())
-        {
-            std::string str = json;
-            auto standard = StandardProgramLoader::getType(str);
-            if (standard)
-            {
-                return StandardProgramLoader::getVertexLayout(standard.value());
-            }
-            VertexLayoutUtils::readFile(str, layout);
-            return layout;
-        }
-        VertexLayoutUtils::readJson(json, layout);
-        return layout;
     }
 
     AssimpModelConverter::AssimpModelConverter(const aiScene& scene, const std::string& basePath, const Config& config,
@@ -577,9 +477,9 @@ namespace darmok
         // empty to forward declare the impl pointer
     }
 
-    AssimpModelLoader& AssimpModelLoader::setConfig(const Config& config, bool force) noexcept
+    AssimpModelLoader& AssimpModelLoader::setConfig(const Config& config) noexcept
     {
-        _impl->setConfig(config, force);
+        _impl->setConfig(config);
         return *this;
     }
 
@@ -588,22 +488,24 @@ namespace darmok
         return (*_impl)(name);
     }
 
-    AssimpModelProcessorImpl::AssimpModelProcessorImpl()
+    AssimpModelImporterImpl::AssimpModelImporterImpl()
         : _dataLoader(_fileReader, _allocator)
         , _imgLoader(_dataLoader, _allocator)
         , _assimpLoader(_dataLoader, _allocator, _imgLoader)
+        , _layoutLoader(_dataLoader)
+        , _progLoader(_dataLoader, _layoutLoader)
         , _forceConfig(false)
     {
     }
 
-    void AssimpModelProcessorImpl::setConfig(const Config& config, bool force) noexcept
+    void AssimpModelImporterImpl::setConfig(const Config& config, bool force) noexcept
     {
         _config = config;
         _forceConfig = force;
         _configCache.clear();
     }
 
-    std::filesystem::path AssimpModelProcessorImpl::getFilename(const std::filesystem::path& path, OutputFormat format) noexcept
+    std::filesystem::path AssimpModelImporterImpl::getFilename(const std::filesystem::path& path, OutputFormat format) noexcept
     {
         std::string outSuffix(".model");
         switch (format)
@@ -622,7 +524,7 @@ namespace darmok
         return stem + outSuffix;
     }
 
-    bool AssimpModelProcessorImpl::loadConfigForModel(const std::filesystem::path& path, Config& config)
+    bool AssimpModelImporterImpl::loadConfigForModel(const std::filesystem::path& path, Config& config)
     {
         auto configPath = path.string() + ".model.json";
         if (!std::filesystem::exists(configPath))
@@ -635,11 +537,48 @@ namespace darmok
         return true;
     }
 
-    const char* AssimpModelProcessorImpl::_outputFormatJsonKey = "outputFormat";
+    const char* AssimpModelImporterImpl::_outputFormatJsonKey = "outputFormat";
+    const char* AssimpModelImporterImpl::_vertexLayoutJsonKey = "vertex_layout";
+    const char* AssimpModelImporterImpl::_embedTexturesJsonKey = "embed_textures";
+    const char* AssimpModelImporterImpl::_programJsonKey = "program";
 
-    void AssimpModelProcessorImpl::loadConfig(const nlohmann::ordered_json& json, Config& config)
+    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, LoadConfig& config)
     {
-        _assimpLoader.loadConfig(json, config.loadConfig);
+        if (json.contains(_vertexLayoutJsonKey))
+        {
+            config.vertexLayout = loadVertexLayout(json[_vertexLayoutJsonKey]);
+        }
+        if (json.contains(_embedTexturesJsonKey))
+        {
+            config.embedTextures = json[_embedTexturesJsonKey];
+        }
+        if (json.contains(_programJsonKey))
+        {
+            std::string progStr = json[_programJsonKey];
+            auto standard = StandardProgramLoader::getType(progStr);
+            auto emptyLayout = config.vertexLayout.getStride() == 0;
+            if (standard)
+            {
+                config.standardProgram = standard.value();
+                if (emptyLayout)
+                {
+                    config.vertexLayout = StandardProgramLoader::getVertexLayout(config.standardProgram);
+                }
+            }
+            else
+            {
+                config.programName = progStr;
+                if (emptyLayout)
+                {
+                    config.vertexLayout = _progLoader.loadVertexLayout(progStr);
+                }
+            }
+        }
+    }
+
+    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, Config& config)
+    {
+        loadConfig(json, config.loadConfig);
         if (json.contains(_outputFormatJsonKey))
         {
             std::string format = json[_outputFormatJsonKey];
@@ -658,7 +597,25 @@ namespace darmok
         }
     }
 
-    bool AssimpModelProcessorImpl::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
+    bgfx::VertexLayout AssimpModelImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
+    {
+        bgfx::VertexLayout layout;
+        if (json.is_string())
+        {
+            std::string str = json;
+            auto standard = StandardProgramLoader::getType(str);
+            if (standard)
+            {
+                return StandardProgramLoader::getVertexLayout(standard.value());
+            }
+            VertexLayoutUtils::readFile(str, layout);
+            return layout;
+        }
+        VertexLayoutUtils::readJson(json, layout);
+        return layout;
+    }
+
+    bool AssimpModelImporterImpl::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
     {
         Assimp::Importer importer;
         if (!importer.IsExtensionSupported(input.extension().string()))
@@ -674,7 +631,7 @@ namespace darmok
         return true;
     }
 
-    std::ofstream AssimpModelProcessorImpl::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpModelImporterImpl::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
     {
         auto& config = getConfig(input);
         switch (config.outputFormat)
@@ -686,7 +643,7 @@ namespace darmok
         }
     }
 
-    const AssimpModelProcessorImpl::Config& AssimpModelProcessorImpl::getConfig(const std::filesystem::path& input) noexcept
+    const AssimpModelImporterImpl::Config& AssimpModelImporterImpl::getConfig(const std::filesystem::path& input) noexcept
     {
         auto config = tryGetConfig(input);
         if (!config)
@@ -696,7 +653,7 @@ namespace darmok
         return config.value();
     }
 
-    OptionalRef<const AssimpModelProcessorImpl::Config> AssimpModelProcessorImpl::tryGetConfig(const std::filesystem::path& input) noexcept
+    OptionalRef<const AssimpModelImporterImpl::Config> AssimpModelImporterImpl::tryGetConfig(const std::filesystem::path& input) noexcept
     {
         if (_forceConfig)
         {
@@ -721,7 +678,7 @@ namespace darmok
         return itr->second.value();
     }
 
-    void AssimpModelProcessorImpl::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
+    void AssimpModelImporterImpl::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
     {
         auto& config = getConfig(input);
         auto model = read(input);
@@ -748,50 +705,50 @@ namespace darmok
         }
     }
 
-    std::string AssimpModelProcessorImpl::getName() const noexcept
+    std::string AssimpModelImporterImpl::getName() const noexcept
     {
         static const std::string name("AssimpModel");
         return name;
     }
 
-    std::shared_ptr<Model> AssimpModelProcessorImpl::read(const std::filesystem::path& input)
+    std::shared_ptr<Model> AssimpModelImporterImpl::read(const std::filesystem::path& input)
     {
         auto& config = getConfig(input);
-        _assimpLoader.setConfig(config.loadConfig, true);
+        _assimpLoader.setConfig(config.loadConfig);
         return _assimpLoader(input.string());
     }
 
-    AssimpModelProcessor::AssimpModelProcessor()
-        : _impl(std::make_unique<AssimpModelProcessorImpl>())
+    AssimpModelImporter::AssimpModelImporter()
+        : _impl(std::make_unique<AssimpModelImporterImpl>())
     {
     }
 
-    AssimpModelProcessor::~AssimpModelProcessor()
+    AssimpModelImporter::~AssimpModelImporter()
     {
         // empty on purpose
     }
 
-    std::shared_ptr<Model> AssimpModelProcessor::read(const std::filesystem::path& input) const
+    std::shared_ptr<Model> AssimpModelImporter::read(const std::filesystem::path& input) const
     {
         return _impl->read(input);
     }
 
-    bool AssimpModelProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
+    bool AssimpModelImporter::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
     {
         return _impl->getOutputs(input, outputs);
     }
 
-    std::ofstream AssimpModelProcessor::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpModelImporter::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return _impl->createOutputStream(input, outputIndex, path);
     }
 
-    void AssimpModelProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
+    void AssimpModelImporter::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
     {
         return _impl->writeOutput(input, outputIndex, out);
     }
 
-    std::string AssimpModelProcessor::getName() const noexcept
+    std::string AssimpModelImporter::getName() const noexcept
     {
         return _impl->getName();
     }

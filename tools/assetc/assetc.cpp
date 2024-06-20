@@ -51,37 +51,37 @@ static int run(const bx::CommandLine cmdLine, const std::string& name)
 		throw std::runtime_error("Input file path must be specified.");
 	}
 
-	DarmokAssetProcessor processor(inputPath);
+	DarmokAssetImporter importer(inputPath);
 
 	const char* outputPath = nullptr;
 	cmdLine.hasArg(outputPath, 'o', "output");
 	if (outputPath != nullptr)
 	{
-		processor.setOutputPath(outputPath);
+		importer.setOutputPath(outputPath);
 	}
 
 	const char* headerVarPrefix = nullptr;
 	cmdLine.hasArg(headerVarPrefix, 'c', "header");
 	if (headerVarPrefix != nullptr)
 	{
-		processor.setProduceHeaders(true);
-		processor.setHeaderVarPrefix(headerVarPrefix);
+		importer.setProduceHeaders(true);
+		importer.setHeaderVarPrefix(headerVarPrefix);
 	}
 	else if (cmdLine.hasArg('c', "header"))
 	{
-		processor.setProduceHeaders(true);
+		importer.setProduceHeaders(true);
 	}
 
 	if (cmdLine.hasArg('d', "dry"))
 	{
-		for (auto& output : processor.getOutputs())
+		for (auto& output : importer.getOutputs())
 		{
 			std::cout << output.string() << std::endl;
 		}
 	}
 	else
 	{
-		processor(std::cout);
+		importer(std::cout);
 	}
 	return bx::kExitSuccess;
 }

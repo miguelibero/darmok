@@ -10,8 +10,9 @@
 #include <darmok/material_fwd.hpp>
 #include <darmok/vertex_fwd.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/program_fwd.hpp>
+#include <darmok/program.hpp>
 #include <darmok/model_assimp.hpp>
+#include <darmok/vertex_layout.hpp>
 #include <darmok/glm.hpp>
 #include <nlohmann/json.hpp>
 #include <bx/allocator.h>
@@ -89,39 +90,26 @@ namespace darmok
     {
     public:
         using Config = AssimpModelLoadConfig;
-        AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr, OptionalRef<IProgramLoader> progLoader = nullptr) noexcept;
-        void setConfig(const Config& config, bool force = false) noexcept;
+        AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
+        void setConfig(const Config& config) noexcept;
         std::shared_ptr<Model> operator()(std::string_view path);
-
-        void loadConfig(const nlohmann::ordered_json& json, Config& config);
 
     private:
         Config _config;
-        bool _forceConfig;
         IDataLoader& _dataLoader;
         bx::AllocatorI& _allocator;
         OptionalRef<IImageLoader> _imgLoader;
-        OptionalRef<IProgramLoader> _progLoader;
         AssimpSceneLoader _sceneLoader;
-        std::unordered_map<std::string, Config> _configCache;
-
-
-        static const char* _vertexLayoutJsonKey;
-        static const char* _programJsonKey;
-        static const char* _embedTexturesJsonKey;
-
-        const Config& getConfig(const std::string& path) noexcept;
-        bool loadConfigForModel(const std::string& path, Config& config);
-        static bgfx::VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
     };
 
-    class AssimpModelProcessorImpl final
+    class AssimpModelImporterImpl final
     {
     public:
         using Config = AssimpModelProcessConfig;
-        using OutputFormat = AssimpModelProcessorOutputFormat;
+        using LoadConfig = AssimpModelLoadConfig;
+        using OutputFormat = AssimpModelImporterOutputFormat;
 
-        AssimpModelProcessorImpl();
+        AssimpModelImporterImpl();
         void setConfig(const Config& config, bool force = false) noexcept;
         std::shared_ptr<Model> read(const std::filesystem::path& input);
 
@@ -136,17 +124,24 @@ namespace darmok
         bx::FileReader _fileReader;
         FileDataLoader _dataLoader;
         DataImageLoader _imgLoader;
-        AssimpModelLoaderImpl _assimpLoader;
+        AssimpModelLoader _assimpLoader;
+        DataVertexLayoutLoader _layoutLoader;
+        DataProgramLoader _progLoader;
         std::unordered_map<std::filesystem::path, std::optional<Config>> _configCache;
 
         static std::filesystem::path getFilename(const std::filesystem::path& path, OutputFormat format) noexcept;
 
         static const char* _outputFormatJsonKey;
+        static const char* _vertexLayoutJsonKey;
+        static const char* _programJsonKey;
+        static const char* _embedTexturesJsonKey;
 
         OptionalRef<const Config> tryGetConfig(const std::filesystem::path& input) noexcept;
         const Config& getConfig(const std::filesystem::path& input) noexcept;
 
         bool loadConfigForModel(const std::filesystem::path& path, Config& config);
         void loadConfig(const nlohmann::ordered_json& json, Config& config);
+        void loadConfig(const nlohmann::ordered_json& json, LoadConfig& config);
+        static bgfx::VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
     };
 }

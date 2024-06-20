@@ -103,6 +103,11 @@ namespace darmok
 		return handle;
 	}
 
+	bgfx::VertexLayout DataProgramLoader::loadVertexLayout(std::string_view name)
+	{
+		return _vertexLayoutLoader(std::string(name) + _suffixes.vertexLayout);
+	}
+
 	std::shared_ptr<Program> DataProgramLoader::operator()(std::string_view name)
 	{
 		std::string nameStr(name);
@@ -113,7 +118,7 @@ namespace darmok
 			fsh = loadShader(nameStr + _suffixes.fragment);
 		}
 		auto handle = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
-		auto layout = _vertexLayoutLoader(nameStr + _suffixes.vertexLayout);
+		auto layout = loadVertexLayout(name);
 		return std::make_shared<Program>(handle, layout);
 	}
 }

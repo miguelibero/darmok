@@ -12,7 +12,7 @@ namespace darmok
 {
     namespace fs = std::filesystem;
 
-    AssetProcessorImpl::AssetProcessorImpl(const std::filesystem::path& inputPath)
+    AssetImporterImpl::AssetImporterImpl(const std::filesystem::path& inputPath)
         : _inputPath(inputPath)
         , _produceHeaders(false)
     {
@@ -22,54 +22,54 @@ namespace darmok
         }
     }
 
-    void AssetProcessorImpl::setOutputPath(const std::filesystem::path& outputPath) noexcept
+    void AssetImporterImpl::setOutputPath(const std::filesystem::path& outputPath) noexcept
     {
         _outputPath = outputPath;
     }
 
-    std::vector<fs::path> AssetProcessorImpl::getOutputs() const
+    std::vector<fs::path> AssetImporterImpl::getOutputs() const
     {
         std::vector<fs::path> outputs;
         auto inputs = getInputs();
         for (auto& path : inputs)
         {
-            for (auto& processor : _processors)
+            for (auto& importer : _importers)
             {
-                getOutputs(*processor, path, outputs);
+                getOutputs(*importer, path, outputs);
             }
         }
 
         return outputs;
     }
 
-    void AssetProcessorImpl::setHeaderVarPrefix(const std::string& prefix) noexcept
+    void AssetImporterImpl::setHeaderVarPrefix(const std::string& prefix) noexcept
     {
         _headerVarPrefix = prefix;
     }
 
-    void AssetProcessorImpl::setProduceHeaders(bool headers) noexcept
+    void AssetImporterImpl::setProduceHeaders(bool headers) noexcept
     {
         _produceHeaders = headers;
     }
 
-    void AssetProcessorImpl::addTypeProcessor(std::unique_ptr<IAssetTypeProcessor>&& processor) noexcept
+    void AssetImporterImpl::addTypeImporter(std::unique_ptr<IAssetTypeImporter>&& importer) noexcept
     {
-        _processors.push_back(std::move(processor));
+        _importers.push_back(std::move(importer));
     }
 
-    void AssetProcessorImpl::operator()(std::ostream& log) const
+    void AssetImporterImpl::operator()(std::ostream& log) const
     {
         auto inputs = getInputs();
         for (auto& path : inputs)
         {
-            for (auto& processor : _processors)
+            for (auto& importer : _importers)
             {
-                processFile(*processor, path, log);
+                processFile(*importer, path, log);
             }
         }
     }
 
-    std::vector<fs::path> AssetProcessorImpl::getInputs() const noexcept
+    std::vector<fs::path> AssetImporterImpl::getInputs() const noexcept
     {
         std::vector<fs::path> inputs;
         fs::path path(_inputPath);
@@ -87,26 +87,26 @@ namespace darmok
         return inputs;
     }
 
-    fs::path AssetProcessorImpl::getHeaderPath(const fs::path& path, const std::string& baseName) const noexcept
+    fs::path AssetImporterImpl::getHeaderPath(const fs::path& path, const std::string& baseName) const noexcept
     {
         return path.parent_path() / fs::path(baseName + ".h");
     }
 
-    fs::path AssetProcessorImpl::getHeaderPath(const fs::path& path) const noexcept
+    fs::path AssetImporterImpl::getHeaderPath(const fs::path& path) const noexcept
     {
         return getHeaderPath(path, path.stem().string());
     }
 
-    size_t AssetProcessorImpl::getOutputs(IAssetTypeProcessor& processor, const fs::path& path, std::vector<fs::path>& outputs) const
+    size_t AssetImporterImpl::getOutputs(IAssetTypeImporter& importer, const fs::path& path, std::vector<fs::path>& outputs) const
     {
-        std::vector<fs::path> processorOutputs;
-        if (!processor.getOutputs(path, processorOutputs))
+        std::vector<fs::path> importerOutputs;
+        if (!importer.getOutputs(path, importerOutputs))
         {
             return 0;
         }
 
         auto relInPath = fs::relative(path, _inputPath);
-        for (fs::path output : processorOutputs)
+        for (fs::path output : importerOutputs)
         {
             if (_produceHeaders)
             {
@@ -115,18 +115,18 @@ namespace darmok
             output = _outputPath / relInPath.parent_path() / output;
             if (std::find(outputs.begin(), outputs.end(), output) != outputs.end())
             {
-                throw std::runtime_error(std::string("multiple processors produce the same output: ") + output.string());
+                throw std::runtime_error(std::string("multiple importers produce the same output: ") + output.string());
             }
             outputs.push_back(output);
         }
 
-        return processorOutputs.size();
+        return importerOutputs.size();
     }
 
-    size_t AssetProcessorImpl::processFile(IAssetTypeProcessor& processor, const fs::path& path, std::ostream& log) const
+    size_t AssetImporterImpl::processFile(IAssetTypeImporter& importer, const fs::path& path, std::ostream& log) const
     {
         std::vector<fs::path> outputs;
-        if (!processor.getOutputs(path, outputs))
+        if (!importer.getOutputs(path, outputs))
         {
             return 0;
         }
@@ -145,20 +145,20 @@ namespace darmok
             auto relOutPath = relInPath.parent_path() / output;
             auto outPath = _outputPath / relOutPath;
 
-            log << processor.getName() << " " << relInPath << " -> " << relOutPath << "..." << std::endl;
+            log << importer.getName() << " " << relInPath << " -> " << relOutPath << "..." << std::endl;
 
             if (_produceHeaders)
             {
                 Data data;
                 DataOutputStream ds(data);
-                processor.writeOutput(path, i, ds);
+                importer.writeOutput(path, i, ds);
                 std::ofstream out(outPath);
                 out << data.view().toHeader(headerVarName);
             }
             else
             {
-                auto out = processor.createOutputStream(path, i, outPath);
-                processor.writeOutput(path, i, out);
+                auto out = importer.createOutputStream(path, i, outPath);
+                importer.writeOutput(path, i, out);
             }
             ++i;
         }
@@ -166,55 +166,55 @@ namespace darmok
         return outputs.size();
     }
 
-    AssetProcessor::AssetProcessor(const fs::path& inputPath)
-        : _impl(std::make_unique<AssetProcessorImpl>(inputPath))
+    AssetImporter::AssetImporter(const fs::path& inputPath)
+        : _impl(std::make_unique<AssetImporterImpl>(inputPath))
     {
     }
 
-    AssetProcessor::~AssetProcessor() noexcept
+    AssetImporter::~AssetImporter() noexcept
     {
         // empty on purpose
     }
 
-    AssetProcessor& AssetProcessor::setProduceHeaders(bool enabled) noexcept
+    AssetImporter& AssetImporter::setProduceHeaders(bool enabled) noexcept
     {
         _impl->setProduceHeaders(enabled);
         return *this;
     }
 
-    AssetProcessor& AssetProcessor::setHeaderVarPrefix(const std::string& prefix) noexcept
+    AssetImporter& AssetImporter::setHeaderVarPrefix(const std::string& prefix) noexcept
     {
         _impl->setHeaderVarPrefix(prefix);
         return *this;
     }
 
-    AssetProcessor& AssetProcessor::addTypeProcessor(std::unique_ptr<IAssetTypeProcessor>&& processor) noexcept
+    AssetImporter& AssetImporter::addTypeImporter(std::unique_ptr<IAssetTypeImporter>&& importer) noexcept
     {
-        _impl->addTypeProcessor(std::move(processor));
+        _impl->addTypeImporter(std::move(importer));
         return *this;
     }
 
-    AssetProcessor& AssetProcessor::setOutputPath(const fs::path& outputPath) noexcept
+    AssetImporter& AssetImporter::setOutputPath(const fs::path& outputPath) noexcept
     {
         _impl->setOutputPath(outputPath);
         return *this;
     }
 
-    std::vector<fs::path> AssetProcessor::getOutputs() const noexcept
+    std::vector<fs::path> AssetImporter::getOutputs() const noexcept
     {
         return _impl->getOutputs();
     }
 
-    void AssetProcessor::operator()(std::ostream& out) const
+    void AssetImporter::operator()(std::ostream& out) const
     {
         (*_impl)(out);
     }
 
-    ShaderAssetProcessorImpl::ShaderAssetProcessorImpl()
+    ShaderAssetImporterImpl::ShaderAssetImporterImpl()
     {
     }
 
-    bool ShaderAssetProcessorImpl::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const
+    bool ShaderAssetImporterImpl::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) const
     {
         auto ext = StringUtils::getFileExt(input.filename().string());
         if (ext != ".fragment.sc" && ext != ".vertex.sc")
@@ -224,83 +224,83 @@ namespace darmok
         return true;
     }
 
-    std::ofstream ShaderAssetProcessorImpl::createOutputStream(size_t outputIndex, const std::filesystem::path& path) const
+    std::ofstream ShaderAssetImporterImpl::createOutputStream(size_t outputIndex, const std::filesystem::path& path) const
     {
         return std::ofstream(path, std::ios::binary);
     }
 
-    void ShaderAssetProcessorImpl::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const
+    void ShaderAssetImporterImpl::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) const
     {
     }
 
-    std::string ShaderAssetProcessorImpl::getName() const noexcept
+    std::string ShaderAssetImporterImpl::getName() const noexcept
     {
         static const std::string name("Shader");
         return name;
     }
 
-    ShaderAssetProcessor::ShaderAssetProcessor()
-        : _impl(std::make_unique<ShaderAssetProcessorImpl>())
+    ShaderAssetImporter::ShaderAssetImporter()
+        : _impl(std::make_unique<ShaderAssetImporterImpl>())
     {
     }
 
-    ShaderAssetProcessor::~ShaderAssetProcessor() noexcept
+    ShaderAssetImporter::~ShaderAssetImporter() noexcept
     {
         // empty on purpose
     }
 
-    bool ShaderAssetProcessor::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
+    bool ShaderAssetImporter::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
     {
         return _impl->getOutputs(input, outputs);
     }
 
-    std::ofstream ShaderAssetProcessor::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream ShaderAssetImporter::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return _impl->createOutputStream(outputIndex, path);
     }
 
-    void ShaderAssetProcessor::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
+    void ShaderAssetImporter::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
     {
         return _impl->writeOutput(input, outputIndex, out);
     }
 
-    std::string ShaderAssetProcessor::getName() const noexcept
+    std::string ShaderAssetImporter::getName() const noexcept
     {
         return _impl->getName();
     }
 
-    DarmokCoreAssetProcessor::DarmokCoreAssetProcessor(const std::string& inputPath)
-        : _processor(inputPath)
+    DarmokCoreAssetImporter::DarmokCoreAssetImporter(const std::string& inputPath)
+        : _importer(inputPath)
     {
-        _processor.addTypeProcessor<VertexLayoutProcessor>();
-        _processor.addTypeProcessor<ShaderAssetProcessor>();
+        _importer.addTypeImporter<VertexLayoutImporter>();
+        _importer.addTypeImporter<ShaderAssetImporter>();
     }
 
-    DarmokCoreAssetProcessor& DarmokCoreAssetProcessor::setProduceHeaders(bool enabled) noexcept
+    DarmokCoreAssetImporter& DarmokCoreAssetImporter::setProduceHeaders(bool enabled) noexcept
     {
-        _processor.setProduceHeaders(enabled);
+        _importer.setProduceHeaders(enabled);
         return *this;
     }
 
-    DarmokCoreAssetProcessor& DarmokCoreAssetProcessor::setHeaderVarPrefix(const std::string& prefix) noexcept
+    DarmokCoreAssetImporter& DarmokCoreAssetImporter::setHeaderVarPrefix(const std::string& prefix) noexcept
     {
-        _processor.setHeaderVarPrefix(prefix);
+        _importer.setHeaderVarPrefix(prefix);
         return *this;
     }
 
-    DarmokCoreAssetProcessor& DarmokCoreAssetProcessor::setOutputPath(const std::string& outputPath) noexcept
+    DarmokCoreAssetImporter& DarmokCoreAssetImporter::setOutputPath(const std::string& outputPath) noexcept
     {
-        _processor.setOutputPath(outputPath);
+        _importer.setOutputPath(outputPath);
         return *this;
     }
 
-    std::vector<fs::path> DarmokCoreAssetProcessor::getOutputs() const noexcept
+    std::vector<fs::path> DarmokCoreAssetImporter::getOutputs() const noexcept
     {
-        return _processor.getOutputs();
+        return _importer.getOutputs();
     }
 
-    void DarmokCoreAssetProcessor::operator()(std::ostream& out) const
+    void DarmokCoreAssetImporter::operator()(std::ostream& out) const
     {
-        _processor(out);
+        _importer(out);
     }
 }

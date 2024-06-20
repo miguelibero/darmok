@@ -2,7 +2,7 @@
 
 namespace darmok
 {
-    enum class AssimpModelProcessorOutputFormat
+    enum class AssimpModelImporterOutputFormat
     {
         Binary,
         Json,

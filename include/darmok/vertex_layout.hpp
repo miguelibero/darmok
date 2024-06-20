@@ -37,27 +37,27 @@ namespace darmok
 
     class IDataLoader;
 
-    class DARMOK_EXPORT BinaryVertexLayoutLoader final : public IVertexLayoutLoader
+    class DARMOK_EXPORT DataVertexLayoutLoader final : public IVertexLayoutLoader
     {
     public:
-        BinaryVertexLayoutLoader(IDataLoader& dataLoader) noexcept;
+        DataVertexLayoutLoader(IDataLoader& dataLoader) noexcept;
         [[nodiscard]] bgfx::VertexLayout operator()(std::string_view name) override;
     private:
         IDataLoader& _dataLoader;
     };
 
-    enum class VertexLayoutProcessorOutputFormat
+    enum class VertexLayoutImporterOutputFormat
     {
         Binary,
         Json,
     };
 
-    class DARMOK_EXPORT VertexLayoutProcessor final : public IAssetTypeProcessor
+    class DARMOK_EXPORT VertexLayoutImporter final : public IAssetTypeImporter
     {
     public:
-        using OutputFormat = VertexLayoutProcessorOutputFormat;
-        VertexLayoutProcessor() noexcept;
-        VertexLayoutProcessor& setOutputFormat(OutputFormat format) noexcept;
+        using OutputFormat = VertexLayoutImporterOutputFormat;
+        VertexLayoutImporter() noexcept;
+        VertexLayoutImporter& setOutputFormat(OutputFormat format) noexcept;
         bgfx::VertexLayout read(const std::filesystem::path& path) const;
 
         bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) override;

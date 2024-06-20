@@ -315,10 +315,11 @@ end
 
 	void LuaRunnerAppImpl::init(App& app, const std::vector<std::string>& args)
 	{
+		importAssets(app, args);
 		initLua(app, args);
 	}
 
-	void LuaRunnerAppImpl::processAssets(App& app, const std::vector<std::string>& args)
+	void LuaRunnerAppImpl::importAssets(App& app, const std::vector<std::string>& args)
 	{
 		std::vector<const char*> argv(args.size());
 		for (auto& arg : args)
@@ -338,9 +339,9 @@ end
 			outputPath = "assets";
 		}
 
-		DarmokAssetProcessor processor(inputPath);
-		processor.setOutputPath(outputPath);
-		processor(std::cout);
+		DarmokAssetImporter importer(inputPath);
+		importer.setOutputPath(outputPath);
+		importer(std::cout);
 	}
 
 	void LuaRunnerAppImpl::initLua(App& app, const std::vector<std::string>& args)

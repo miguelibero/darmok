@@ -11,10 +11,10 @@
 
 namespace darmok
 {
-    class DARMOK_EXPORT BX_NO_VTABLE IAssetTypeProcessor
+    class DARMOK_EXPORT BX_NO_VTABLE IAssetTypeImporter
     {
     public:
-        virtual ~IAssetTypeProcessor() = default;
+        virtual ~IAssetTypeImporter() = default;
         // return false if the processor cannot handle the input
         virtual bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) = 0;
 
@@ -26,59 +26,59 @@ namespace darmok
     };
 
 
-    class AssetProcessorImpl;
+    class AssetImporterImpl;
 
-    class DARMOK_EXPORT AssetProcessor final
+    class DARMOK_EXPORT AssetImporter final
     {
     public:
     	public:
-		AssetProcessor(const std::filesystem::path& inputPath);
-		~AssetProcessor() noexcept;
-        AssetProcessor& setProduceHeaders(bool enabled) noexcept;
-        AssetProcessor& setHeaderVarPrefix(const std::string& prefix) noexcept;
-        AssetProcessor& setOutputPath(const std::filesystem::path& outputPath) noexcept;
-        AssetProcessor& addTypeProcessor(std::unique_ptr<IAssetTypeProcessor>&& processor) noexcept;
+		AssetImporter(const std::filesystem::path& inputPath);
+		~AssetImporter() noexcept;
+        AssetImporter& setProduceHeaders(bool enabled) noexcept;
+        AssetImporter& setHeaderVarPrefix(const std::string& prefix) noexcept;
+        AssetImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
+        AssetImporter& addTypeImporter(std::unique_ptr<IAssetTypeImporter>&& processor) noexcept;
 
         template<typename T, typename... A>
-        T& addTypeProcessor(A&&... args) noexcept
+        T& addTypeImporter(A&&... args) noexcept
         {
             auto ptr = new T(std::forward<A>(args)...);
-            addTypeProcessor(std::unique_ptr<IAssetTypeProcessor>(ptr));
+            addTypeImporter(std::unique_ptr<IAssetTypeImporter>(ptr));
             return *ptr;
         }
 
         std::vector<std::filesystem::path> getOutputs() const noexcept;
 		void operator()(std::ostream& log) const;
 	private:
-		std::unique_ptr<AssetProcessorImpl> _impl;
+		std::unique_ptr<AssetImporterImpl> _impl;
     };
 
-    class DARMOK_EXPORT DarmokCoreAssetProcessor final
+    class DARMOK_EXPORT DarmokCoreAssetImporter final
     {
     public:
-        DarmokCoreAssetProcessor(const std::string& inputPath);
-        DarmokCoreAssetProcessor& setProduceHeaders(bool enabled) noexcept;
-        DarmokCoreAssetProcessor& setHeaderVarPrefix(const std::string& prefix) noexcept;
-        DarmokCoreAssetProcessor& setOutputPath(const std::string& outputPath) noexcept;
+        DarmokCoreAssetImporter(const std::string& inputPath);
+        DarmokCoreAssetImporter& setProduceHeaders(bool enabled) noexcept;
+        DarmokCoreAssetImporter& setHeaderVarPrefix(const std::string& prefix) noexcept;
+        DarmokCoreAssetImporter& setOutputPath(const std::string& outputPath) noexcept;
         std::vector<std::filesystem::path> getOutputs() const noexcept;
         void operator()(std::ostream& log) const;
     private:
-        AssetProcessor _processor;
+        AssetImporter _importer;
     };
 
-    class ShaderAssetProcessorImpl;
+    class ShaderAssetImporterImpl;
 
-    class DARMOK_EXPORT ShaderAssetProcessor final : public IAssetTypeProcessor
+    class DARMOK_EXPORT ShaderAssetImporter final : public IAssetTypeImporter
     {
     public:
     public:
-        ShaderAssetProcessor();
-        ~ShaderAssetProcessor() noexcept;
+        ShaderAssetImporter();
+        ~ShaderAssetImporter() noexcept;
         bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) override;
         std::ofstream createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) override;
         std::string getName() const noexcept override;
     private:
-        std::unique_ptr<ShaderAssetProcessorImpl> _impl;
+        std::unique_ptr<ShaderAssetImporterImpl> _impl;
     };
 }

@@ -41,18 +41,18 @@ namespace darmok
 		virtual result_type operator()(std::string_view name) = 0;
 	};
 
-	class OzzSkeletonProcessorImpl;
+	class OzzSkeletonImporterImpl;
 
-	class DARMOK_EXPORT OzzSkeletonProcessor final : public IAssetTypeProcessor
+	class DARMOK_EXPORT OzzSkeletonImporter final : public IAssetTypeImporter
 	{
 	public:
-		OzzSkeletonProcessor(std::unique_ptr<IOzzRawSkeletonLoader>&& loader) noexcept;
-		~OzzSkeletonProcessor() noexcept;
+		OzzSkeletonImporter(std::unique_ptr<IOzzRawSkeletonLoader>&& loader) noexcept;
+		~OzzSkeletonImporter() noexcept;
 		bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) override;
 		std::ofstream createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path) override;
 		void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) override;
 		std::string getName() const noexcept override;
 	private:
-		std::unique_ptr<OzzSkeletonProcessorImpl> _impl;
+		std::unique_ptr<OzzSkeletonImporterImpl> _impl;
 	};
 }

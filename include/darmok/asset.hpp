@@ -54,16 +54,16 @@ namespace darmok
 		std::unique_ptr<AssetContextImpl> _impl;
 	};
 
-	class DARMOK_EXPORT DarmokAssetProcessor final
+	class DARMOK_EXPORT DarmokAssetImporter final
 	{
 	public:
-		DarmokAssetProcessor(const std::string& inputPath);
-		DarmokAssetProcessor& setProduceHeaders(bool enabled) noexcept;
-		DarmokAssetProcessor& setHeaderVarPrefix(const std::string& prefix) noexcept;
-		DarmokAssetProcessor& setOutputPath(const std::string& outputPath) noexcept;
+		DarmokAssetImporter(const std::string& inputPath);
+		DarmokAssetImporter& setProduceHeaders(bool enabled) noexcept;
+		DarmokAssetImporter& setHeaderVarPrefix(const std::string& prefix) noexcept;
+		DarmokAssetImporter& setOutputPath(const std::string& outputPath) noexcept;
 		std::vector<std::filesystem::path> getOutputs() const noexcept;
 		void operator()(std::ostream& log) const;
 	private:
-		AssetProcessor _processor;
+		AssetImporter _importer;
 	};
 }
