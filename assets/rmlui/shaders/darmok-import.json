@@ -1,0 +1,8 @@
+{
+    "headerVarPrefix": "rmlui_",
+    "importers": {
+        "shader": {
+            "headerIncludeDir": "generated/rmlui/shaders"
+        }
+    }
+}

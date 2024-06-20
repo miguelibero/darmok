@@ -250,18 +250,7 @@ namespace darmok
 
 		_importer.addTypeImporter<VertexLayoutImporter>();
 		_importer.addTypeImporter<ShaderAssetImporter>();
-	}
-
-	DarmokAssetImporter& DarmokAssetImporter::setProduceHeaders(bool enabled) noexcept
-	{
-		_importer.setProduceHeaders(enabled);
-		return *this;
-	}
-
-	DarmokAssetImporter& DarmokAssetImporter::setHeaderVarPrefix(const std::string& prefix) noexcept
-	{
-		_importer.setHeaderVarPrefix(prefix);
-		return *this;
+		_importer.addTypeImporter<CopyAssetImporter>();
 	}
 
 	DarmokAssetImporter& DarmokAssetImporter::setOutputPath(const std::string& outputPath) noexcept

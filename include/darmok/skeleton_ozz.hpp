@@ -48,9 +48,9 @@ namespace darmok
 	public:
 		OzzSkeletonImporter(std::unique_ptr<IOzzRawSkeletonLoader>&& loader) noexcept;
 		~OzzSkeletonImporter() noexcept;
-		bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) override;
-		std::ofstream createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path) override;
-		void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) override;
+		bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
+		std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
+		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
 		std::string getName() const noexcept override;
 	private:
 		std::unique_ptr<OzzSkeletonImporterImpl> _impl;

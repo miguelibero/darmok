@@ -27,14 +27,10 @@ static void help(const std::string& name, const char* error = nullptr)
 	std::cout << "  -i, --input <path>		Input file path (can be a file or a directory)." << std::endl;
 	std::cout << "  -o, --output <path>		Output file path (can be a file or a directory)." << std::endl;
 	std::cout << "  -d, --dry				Do not process assets, just print output files." << std::endl;
-	std::cout << "  -c, --header <prefix>	Output headers with the given prefix in the variable names." << std::endl;
 }
 
 static int run(const bx::CommandLine cmdLine, const std::string& name)
 {
-	auto path = std::string(cmdLine.get(0));
-	auto name = std::filesystem::path(path).filename().string();
-
 	if (cmdLine.hasArg('h', "help"))
 	{
 		help(name);
@@ -63,18 +59,6 @@ static int run(const bx::CommandLine cmdLine, const std::string& name)
 		importer.setOutputPath(outputPath);
 	}
 
-	const char* headerVarPrefix = nullptr;
-	cmdLine.hasArg(headerVarPrefix, 'c', "header");
-	if(headerVarPrefix != nullptr)
-	{
-		importer.setProduceHeaders(true);
-		importer.setHeaderVarPrefix(headerVarPrefix);
-	}
-	else if (cmdLine.hasArg('c', "header"))
-	{
-		importer.setProduceHeaders(true);
-	}
-
 	if(cmdLine.hasArg('d', "dry"))
 	{
 		for (auto& output : importer.getOutputs())
@@ -95,7 +79,7 @@ int main(int argc, const char* argv[])
 		argv[0],
 			"-i", "../assets/shaders",
 			"-o", "include/private/generated/shaders",
-			"-c"
+			"-d"
 		};
 	argc = 6;
 

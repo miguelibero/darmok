@@ -494,25 +494,14 @@ namespace darmok
         , _assimpLoader(_dataLoader, _allocator, _imgLoader)
         , _layoutLoader(_dataLoader)
         , _progLoader(_dataLoader, _layoutLoader)
-        , _forceConfig(false)
     {
     }
 
-    void AssimpModelImporterImpl::setConfig(const Config& config, bool force) noexcept
-    {
-        _config = config;
-        _forceConfig = force;
-        _configCache.clear();
-    }
-
-    std::filesystem::path AssimpModelImporterImpl::getFilename(const std::filesystem::path& path, OutputFormat format) noexcept
+    std::filesystem::path AssimpModelImporterImpl::getOutputFile(const std::filesystem::path& path, OutputFormat format) noexcept
     {
         std::string outSuffix(".model");
         switch (format)
         {
-        case OutputFormat::Binary:
-            outSuffix += ".bin";
-            break;
         case OutputFormat::Json:
             outSuffix += ".json";
             break;
@@ -524,23 +513,11 @@ namespace darmok
         return stem + outSuffix;
     }
 
-    bool AssimpModelImporterImpl::loadConfigForModel(const std::filesystem::path& path, Config& config)
-    {
-        auto configPath = path.string() + ".model.json";
-        if (!std::filesystem::exists(configPath))
-        {
-            return false;
-        }
-        std::ifstream ifs(configPath);
-        auto json = nlohmann::ordered_json::parse(ifs);
-        loadConfig(json, config);
-        return true;
-    }
-
-    const char* AssimpModelImporterImpl::_outputFormatJsonKey = "outputFormat";
-    const char* AssimpModelImporterImpl::_vertexLayoutJsonKey = "vertex_layout";
-    const char* AssimpModelImporterImpl::_embedTexturesJsonKey = "embed_textures";
-    const char* AssimpModelImporterImpl::_programJsonKey = "program";
+    const std::string AssimpModelImporterImpl::_outputFormatJsonKey = "outputFormat";
+    const std::string AssimpModelImporterImpl::_outputFileJsonKey = "outputFile";
+    const std::string AssimpModelImporterImpl::_vertexLayoutJsonKey = "vertexLayout";
+    const std::string AssimpModelImporterImpl::_embedTexturesJsonKey = "embedTextures";
+    const std::string AssimpModelImporterImpl::_programJsonKey = "program";
 
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, LoadConfig& config)
     {
@@ -556,22 +533,24 @@ namespace darmok
         {
             std::string progStr = json[_programJsonKey];
             auto standard = StandardProgramLoader::getType(progStr);
-            auto emptyLayout = config.vertexLayout.getStride() == 0;
             if (standard)
             {
                 config.standardProgram = standard.value();
-                if (emptyLayout)
-                {
-                    config.vertexLayout = StandardProgramLoader::getVertexLayout(config.standardProgram);
-                }
             }
             else
             {
                 config.programName = progStr;
-                if (emptyLayout)
-                {
-                    config.vertexLayout = _progLoader.loadVertexLayout(progStr);
-                }
+            }
+        }
+        if (config.vertexLayout.getStride() == 0)
+        {
+            if (config.programName.empty())
+            {
+                config.vertexLayout = StandardProgramLoader::getVertexLayout(config.standardProgram);
+            }
+            else
+            {
+                config.vertexLayout = _progLoader.loadVertexLayout(config.programName);
             }
         }
     }
@@ -595,6 +574,10 @@ namespace darmok
                 config.outputFormat = OutputFormat::Binary;
             }
         }
+        if (json.contains(_outputFileJsonKey))
+        {
+            config.outputFile = json[_outputFileJsonKey];
+        }
     }
 
     bgfx::VertexLayout AssimpModelImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
@@ -615,25 +598,35 @@ namespace darmok
         return layout;
     }
 
-    bool AssimpModelImporterImpl::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
+    bool AssimpModelImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
+        if (input.config.is_null())
+        {
+            return false;
+        }
         Assimp::Importer importer;
-        if (!importer.IsExtensionSupported(input.extension().string()))
+        if (!importer.IsExtensionSupported(input.path.extension().string()))
         {
             return false;
         }
-        auto config = tryGetConfig(input);
-        if (!config)
+
+        Config config;
+        loadConfig(input.config, config);
+        if (config.outputFile.empty())
         {
-            return false;
+            outputs.push_back(getOutputFile(input.path, config.outputFormat));
         }
-        outputs.push_back(getFilename(input, config->outputFormat));
+        else
+        {
+            outputs.push_back(config.outputFile);
+        }
         return true;
     }
 
-    std::ofstream AssimpModelImporterImpl::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpModelImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
-        auto& config = getConfig(input);
+        Config config;
+        loadConfig(input.config, config);
         switch (config.outputFormat)
         {
         case OutputFormat::Binary:
@@ -643,45 +636,11 @@ namespace darmok
         }
     }
 
-    const AssimpModelImporterImpl::Config& AssimpModelImporterImpl::getConfig(const std::filesystem::path& input) noexcept
+    void AssimpModelImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
-        auto config = tryGetConfig(input);
-        if (!config)
-        {
-            return _config;
-        }
-        return config.value();
-    }
-
-    OptionalRef<const AssimpModelImporterImpl::Config> AssimpModelImporterImpl::tryGetConfig(const std::filesystem::path& input) noexcept
-    {
-        if (_forceConfig)
-        {
-            return _config;
-        }
-        auto itr = _configCache.find(input);
-        if (itr != _configCache.end())
-        {
-            if (itr->second)
-            {
-                return itr->second.value();
-            }
-            return nullptr;
-        }
-        Config config = _config;
-        if (!loadConfigForModel(input, config))
-        {
-            _configCache.emplace(input, std::nullopt);
-            return nullptr;
-        }
-        itr = _configCache.emplace(input, config).first;
-        return itr->second.value();
-    }
-
-    void AssimpModelImporterImpl::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
-    {
-        auto& config = getConfig(input);
-        auto model = read(input);
+        Config config;
+        loadConfig(input.config, config);
+        auto model = read(input.path, config.loadConfig);
         switch (config.outputFormat)
         {
             case OutputFormat::Binary:
@@ -707,15 +666,14 @@ namespace darmok
 
     std::string AssimpModelImporterImpl::getName() const noexcept
     {
-        static const std::string name("AssimpModel");
+        static const std::string name("model");
         return name;
     }
 
-    std::shared_ptr<Model> AssimpModelImporterImpl::read(const std::filesystem::path& input)
+    std::shared_ptr<Model> AssimpModelImporterImpl::read(const std::filesystem::path& path, const LoadConfig& config)
     {
-        auto& config = getConfig(input);
-        _assimpLoader.setConfig(config.loadConfig);
-        return _assimpLoader(input.string());
+        _assimpLoader.setConfig(config);
+        return _assimpLoader(path.string());
     }
 
     AssimpModelImporter::AssimpModelImporter()
@@ -728,22 +686,22 @@ namespace darmok
         // empty on purpose
     }
 
-    std::shared_ptr<Model> AssimpModelImporter::read(const std::filesystem::path& input) const
+    std::shared_ptr<Model> AssimpModelImporter::read(const std::filesystem::path& path, const LoadConfig& config) const
     {
-        return _impl->read(input);
+        return _impl->read(path, config);
     }
 
-    bool AssimpModelImporter::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
+    bool AssimpModelImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
         return _impl->getOutputs(input, outputs);
     }
 
-    std::ofstream AssimpModelImporter::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpModelImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return _impl->createOutputStream(input, outputIndex, path);
     }
 
-    void AssimpModelImporter::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
+    void AssimpModelImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         return _impl->writeOutput(input, outputIndex, out);
     }

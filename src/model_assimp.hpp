@@ -102,24 +102,38 @@ namespace darmok
         AssimpSceneLoader _sceneLoader;
     };
 
+    enum class AssimpModelImporterOutputFormat
+    {
+        Binary,
+        Json,
+        Xml
+    };
+
+    struct AssimpModelImportConfig
+    {
+        using OutputFormat = AssimpModelImporterOutputFormat;
+        using LoadConfig = AssimpModelLoadConfig;
+        OutputFormat outputFormat = OutputFormat::Binary;
+        std::string outputFile;
+        LoadConfig loadConfig;
+    };
+
     class AssimpModelImporterImpl final
     {
     public:
-        using Config = AssimpModelProcessConfig;
+        using Input = AssetTypeImporterInput;
+        using Config = AssimpModelImportConfig;
         using LoadConfig = AssimpModelLoadConfig;
         using OutputFormat = AssimpModelImporterOutputFormat;
 
         AssimpModelImporterImpl();
-        void setConfig(const Config& config, bool force = false) noexcept;
-        std::shared_ptr<Model> read(const std::filesystem::path& input);
+        std::shared_ptr<Model> read(const std::filesystem::path& path, const LoadConfig& config);
 
-        bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs);
-        std::ofstream createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path);
-        void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out);
+        bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs);
+        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
+        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         std::string getName() const noexcept;
     private:
-        Config _config;
-        bool _forceConfig;
         bx::DefaultAllocator _allocator;
         bx::FileReader _fileReader;
         FileDataLoader _dataLoader;
@@ -127,19 +141,15 @@ namespace darmok
         AssimpModelLoader _assimpLoader;
         DataVertexLayoutLoader _layoutLoader;
         DataProgramLoader _progLoader;
-        std::unordered_map<std::filesystem::path, std::optional<Config>> _configCache;
 
-        static std::filesystem::path getFilename(const std::filesystem::path& path, OutputFormat format) noexcept;
+        static std::filesystem::path getOutputFile(const std::filesystem::path& path, OutputFormat format) noexcept;
 
-        static const char* _outputFormatJsonKey;
-        static const char* _vertexLayoutJsonKey;
-        static const char* _programJsonKey;
-        static const char* _embedTexturesJsonKey;
+        static const std::string _outputFormatJsonKey;
+        static const std::string _outputFileJsonKey;
+        static const std::string _vertexLayoutJsonKey;
+        static const std::string _programJsonKey;
+        static const std::string _embedTexturesJsonKey;
 
-        OptionalRef<const Config> tryGetConfig(const std::filesystem::path& input) noexcept;
-        const Config& getConfig(const std::filesystem::path& input) noexcept;
-
-        bool loadConfigForModel(const std::filesystem::path& path, Config& config);
         void loadConfig(const nlohmann::ordered_json& json, Config& config);
         void loadConfig(const nlohmann::ordered_json& json, LoadConfig& config);
         static bgfx::VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);

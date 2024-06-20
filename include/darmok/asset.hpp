@@ -58,8 +58,6 @@ namespace darmok
 	{
 	public:
 		DarmokAssetImporter(const std::string& inputPath);
-		DarmokAssetImporter& setProduceHeaders(bool enabled) noexcept;
-		DarmokAssetImporter& setHeaderVarPrefix(const std::string& prefix) noexcept;
 		DarmokAssetImporter& setOutputPath(const std::string& outputPath) noexcept;
 		std::vector<std::filesystem::path> getOutputs() const noexcept;
 		void operator()(std::ostream& log) const;

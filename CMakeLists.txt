@@ -79,7 +79,6 @@ include(darmokProcessCoreAssets)
 darmok_process_core_assets(
   ASSETS "assets/shaders"
   OUTPUT_DIR "include/private/generated/shaders"
-  SHADER_INCLUDE_DIR "generated/shaders"
   SOURCE_GROUP_NAME "Embedded Shader Files"
 )
 
@@ -199,9 +198,7 @@ if(DARMOK_BUILD_IMGUI)
 
   darmok_process_core_assets(
     ASSETS "assets/imgui"
-    HEADER_VAR_PREFIX "imgui_"
     OUTPUT_DIR "include/private/generated/imgui/shaders"
-    SHADER_INCLUDE_DIR "generated/imgui/shaders"
     SOURCE_GROUP_NAME "Imgui Asset Files"
     SOURCES_VAR IMGUI_ASSETS
   )
@@ -218,9 +215,7 @@ if(DARMOK_BUILD_RMLUI)
 
   darmok_process_core_assets(
     ASSETS "assets/rmlui"
-    HEADER_VAR_PREFIX "rmlui_"
     HEADER_OUTPUT_DIR "include/private/generated/rmlui/shaders"
-    HEADER_SHADER_INCLUDE_DIR "generated/rmlui/shaders"
     SOURCE_GROUP_NAME "RmlUI Asset Files"
     SOURCES_VAR RMLUI_ASSETS
   )

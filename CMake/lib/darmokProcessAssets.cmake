@@ -1,13 +1,11 @@
 # darmok_process_assets(
 #   INPUT files or pattern
 # 	OUTPUT_DIR directory
-#   HEADER_VAR_PREFIX prefix
-# 	SHADER_INCLUDE_DIR directory
 #   SOURCES_VAR variable
 #   SOURCE_GROUP_NAME name
 # )
 function(darmok_process_assets)
-  set(ONE_VALUE_ARGS INPUT OUTPUT_DIR HEADER_VAR_PREFIX SHADER_INCLUDE_DIR SOURCES_VAR SOURCE_GROUP_NAME)
+  set(ONE_VALUE_ARGS INPUT OUTPUT_DIR SOURCES_VAR SOURCE_GROUP_NAME)
   cmake_parse_arguments(ARGS "" "${ONE_VALUE_ARGS}" "" "${ARGN}")
   
   if(NOT DEFINED ARGS_INPUT)

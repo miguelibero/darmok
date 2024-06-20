@@ -389,20 +389,22 @@ namespace darmok
 		return stem + outSuffix;
 	}
 
-	bool VertexLayoutImporter::getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs)
+	bool VertexLayoutImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
 	{
-		auto ext = StringUtils::getFileExt(input.filename().string());
-		if (ext != ".varyingdef" && ext != ".vlayout.json" && ext != ".vlayout.bin")
+		auto ext = StringUtils::getFileExt(input.path.filename().string());
+		if (input.config.is_null())
 		{
-			return false;
+			if (ext != ".varyingdef" && ext != ".vlayout.json" && ext != ".vlayout.bin")
+			{
+				return false;
+			}
 		}
-
 		if (ext == ".varyingdef")
 		{
-			auto basePath = input.parent_path();
+			auto basePath = input.path.parent_path();
 			std::vector<std::filesystem::path> betterPaths{
-				basePath / getFilename(input, OutputFormat::Json),
-				basePath / getFilename(input, OutputFormat::Binary)
+				basePath / getFilename(input.path, OutputFormat::Json),
+				basePath / getFilename(input.path, OutputFormat::Binary)
 			};
 			for (auto& betterPath : betterPaths)
 			{
@@ -413,11 +415,11 @@ namespace darmok
 			}
 		}
 
-		outputs.push_back(getFilename(input, _outputFormat));
+		outputs.push_back(getFilename(input.path, _outputFormat));
 		return true;
 	}
 
-	std::ofstream VertexLayoutImporter::createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path)
+	std::ofstream VertexLayoutImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
 	{
 		switch (_outputFormat)
 		{
@@ -428,9 +430,9 @@ namespace darmok
 		}
 	}
 
-	void VertexLayoutImporter::writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out)
+	void VertexLayoutImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
-		auto layout = read(input);
+		auto layout = read(input.path);
 		switch (_outputFormat)
 		{
 			case OutputFormat::Json:
@@ -451,7 +453,7 @@ namespace darmok
 
 	std::string VertexLayoutImporter::getName() const noexcept
 	{
-		static const std::string name("VertexLayout");
+		static const std::string name("vertexLayout");
 		return name;
 	}
 }

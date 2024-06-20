@@ -1,7 +1,5 @@
 {
-    "importers": {
-        "copy": [
-            "human.png"
-        ]
+    "files": {
+        "human.png": "copy"
     }
 }

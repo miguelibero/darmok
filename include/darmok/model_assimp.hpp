@@ -42,30 +42,18 @@ namespace darmok
         std::unique_ptr<AssimpModelLoaderImpl> _impl;
     };
 
-    struct DARMOK_EXPORT AssimpModelProcessConfig final
-    {
-        using OutputFormat = AssimpModelImporterOutputFormat;
-
-        AssimpModelLoadConfig loadConfig;
-        OutputFormat outputFormat = OutputFormat::Binary;
-    };
-
     class AssimpModelImporterImpl;
 
     class DARMOK_EXPORT AssimpModelImporter final : public IAssetTypeImporter
     {
     public:
-        using Config = AssimpModelProcessConfig;
-        using OutputFormat = AssimpModelImporterOutputFormat;
+        using LoadConfig = AssimpModelLoadConfig;
         AssimpModelImporter();
         ~AssimpModelImporter();
-
-        std::shared_ptr<Model> read(const std::filesystem::path& input) const;
-        AssimpModelImporter& setConfig(Config& config, bool force = false) noexcept;
-
-        bool getOutputs(const std::filesystem::path& input, std::vector<std::filesystem::path>& outputs) override;
-        std::ofstream createOutputStream(const std::filesystem::path& input, size_t outputIndex, const std::filesystem::path& path) override;
-        void writeOutput(const std::filesystem::path& input, size_t outputIndex, std::ostream& out) override;
+        std::shared_ptr<Model> read(const std::filesystem::path& path, const LoadConfig& config) const;
+        bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
+        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
+        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         std::string getName() const noexcept override;
     private:
         std::unique_ptr<AssimpModelImporterImpl> _impl;
