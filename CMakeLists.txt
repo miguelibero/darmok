@@ -63,10 +63,10 @@ option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
 option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
-set(SRC_DIR src)
-set(INCLUDE_BASE_DIR include)
+set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
+set(INCLUDE_BASE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(INCLUDE_DIR ${INCLUDE_BASE_DIR}/darmok)
-set(LOCAL_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+set(LOCAL_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMake)
 
 list(APPEND CMAKE_MODULE_PATH 
   ${LOCAL_MODULE_PATH} ${LOCAL_MODULE_PATH}/lib)
@@ -74,16 +74,47 @@ list(APPEND CMAKE_MODULE_PATH
 find_package(bgfx CONFIG REQUIRED)
 
 include(darmokProcessAssets)
-include(darmokProcessCoreAssets)
 
-darmok_process_core_assets(
-  ASSETS "assets/shaders"
-  OUTPUT_DIR "include/private/generated/shaders"
-  SOURCE_GROUP_NAME "Embedded Shader Files"
+set(SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/shaders)
+set(SHADERS_OUTPUT include/private/generated/shaders)
+set(SHADERS
+  ${SHADERS_DIR}/darmok.include.sc
+  ${SHADERS_DIR}/darmok_compute.include.sc
+  ${SHADERS_DIR}/darmok_pbr_lighting.include.sc
+  ${SHADERS_DIR}/darmok_phong_lighting.include.sc
+  ${SHADERS_DIR}/darmok_skinning.include.sc
+  ${SHADERS_DIR}/darmok-import.json
+  ${SHADERS_DIR}/forward_pbr.fragment.sc
+  ${SHADERS_DIR}/forward_pbr.varyingdef
+  ${SHADERS_DIR}/forward_pbr.vertex.sc
+  ${SHADERS_DIR}/forward_pbr.vlayout.json
+  ${SHADERS_DIR}/forward_phong.fragment.sc
+  ${SHADERS_DIR}/forward_phong.varyingdef
+  ${SHADERS_DIR}/forward_phong.vertex.sc
+  ${SHADERS_DIR}/forward_phong.vlayout.json
+  ${SHADERS_DIR}/gui.fragment.sc
+  ${SHADERS_DIR}/gui.varyingdef
+  ${SHADERS_DIR}/gui.vertex.sc
+  ${SHADERS_DIR}/gui.vlayout.json
+  ${SHADERS_DIR}/pbr.include.sc
+  ${SHADERS_DIR}/unlit.fragment.sc
+  ${SHADERS_DIR}/unlit.varyingdef
+  ${SHADERS_DIR}/unlit.vertex.sc
+  ${SHADERS_DIR}/unlit.vlayout.json
 )
+darmok_process_assets(CORE
+  INPUT ${SHADERS_DIR}
+  OUTPUT ${SHADERS_OUTPUT}
+  DEPENDS ${SHADERS}
+)
+set(ASSET_OUTPUTS ${SHADERS_OUTPUT})
+
+source_group(TREE ${SHADERS_DIR} PREFIX "Embedded Shader Files" FILES ${SHADERS})
+set(ASSETS ${SHADERS})
 
 set(CORE_SOURCES
   ${SRC_DIR}/string.cpp
+  ${SRC_DIR}/stream.cpp
   ${SRC_DIR}/data.cpp
   ${SRC_DIR}/data_stream.cpp
   ${SRC_DIR}/utils.cpp
@@ -104,6 +135,7 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/glm.hpp
   ${INCLUDE_DIR}/utils.hpp
   ${INCLUDE_DIR}/string.hpp
+  ${INCLUDE_DIR}/stream.hpp
   ${INCLUDE_DIR}/optional_ref.hpp
   ${INCLUDE_DIR}/collection.hpp
   ${INCLUDE_DIR}/data.hpp
@@ -196,13 +228,25 @@ if(DARMOK_BUILD_IMGUI)
   list(APPEND SOURCES ${SRC_DIR}/imgui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/imgui.hpp)
 
-  darmok_process_core_assets(
-    ASSETS "assets/imgui"
-    OUTPUT_DIR "include/private/generated/imgui/shaders"
-    SOURCE_GROUP_NAME "Imgui Asset Files"
-    SOURCES_VAR IMGUI_ASSETS
+  set(IMGUI_SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/imgui/shaders)
+  set(IMGUI_SHADERS_OUTPUT include/private/generated/imgui/shaders)
+  list(APPEND ASSET_OUTPUTS ${IMGUI_SHADERS_OUTPUT})
+  set(IMGUI_SHADERS
+    ${IMGUI_SHADERS_DIR}/basic.fragment.sc
+    ${IMGUI_SHADERS_DIR}/basic.varyingdef
+    ${IMGUI_SHADERS_DIR}/basic.vertex.sc
+    ${IMGUI_SHADERS_DIR}/darmok-import.json
+    ${IMGUI_SHADERS_DIR}/lod.fragment.sc
+    ${IMGUI_SHADERS_DIR}/lod.varyingdef
+    ${IMGUI_SHADERS_DIR}/lod.vertex.sc
   )
-  list(APPEND ASSETS ${IMGUI_ASSETS})
+  darmok_process_assets(CORE
+    INPUT ${IMGUI_SHADERS_DIR}
+    OUTPUT ${IMGUI_SHADERS_OUTPUT}
+    DEPENDS ${IMGUI_SHADERS}
+  )
+  source_group(TREE ${IMGUI_SHADERS_DIR} PREFIX "Imgui Asset Files" FILES ${IMGUIMGUI_SHADERSI_ASSETS})
+  list(APPEND ASSETS ${IMGUI_SHADERS})
 endif()
 
 if(DARMOK_BUILD_RMLUI)
@@ -212,15 +256,26 @@ if(DARMOK_BUILD_RMLUI)
   if(DARMOK_BUILD_LUA)
     list(APPEND LUA_SOURCES ${SRC_DIR}/lua/rmlui.cpp)
   endif()
-
-  darmok_process_core_assets(
-    ASSETS "assets/rmlui"
-    HEADER_OUTPUT_DIR "include/private/generated/rmlui/shaders"
-    SOURCE_GROUP_NAME "RmlUI Asset Files"
-    SOURCES_VAR RMLUI_ASSETS
+  set(RMLUI_SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/rmlui/shaders)
+  set(RMLUI_SHADERS_OUTPUT include/private/generated/rmlui/shaders)
+  list(APPEND ASSET_OUTPUTS ${RMLUI_SHADERS_OUTPUT})
+  set(RMLUI_SHADERS
+    ${RMLUI_SHADERS_DIR}/basic.fragment.sc
+    ${RMLUI_SHADERS_DIR}/basic.varyingdef
+    ${RMLUI_SHADERS_DIR}/basic.vertex.sc
+    ${RMLUI_SHADERS_DIR}/basic.vlayout.json
+    ${RMLUI_SHADERS_DIR}/darmok-import.json
+    ${RMLUI_SHADERS_DIR}/solid.fragment.sc
+    ${RMLUI_SHADERS_DIR}/solid.varyingdef
+    ${RMLUI_SHADERS_DIR}/solid.vertex.sc
   )
-  list(APPEND ASSETS ${RMLUI_ASSETS})
-
+  darmok_process_assets(CORE
+    INPUT ${RMLUI_SHADERS_DIR}
+    OUTPUT ${RMLUI_SHADERS_OUTPUT}
+    DEPENDS ${RMLUI_SHADERS}
+  )
+  source_group(TREE ${RMLUI_SHADERS_DIR} PREFIX "RmlUI Asset Files" FILES ${RMLUI_SHADERS})
+  list(APPEND ASSETS ${RMLUI_SHADERS})
 endif()
 
 if(DARMOK_BUILD_OZZ)
@@ -298,7 +353,7 @@ if(DARMOK_BUILD_LUA)
   list(APPEND HEADERS
     ${INCLUDE_DIR}/lua.hpp
   )
-  source_group("Lua Binding Source Files" FILES ${LUA_SOURCES})
+  source_group(TREE ${SRC_DIR}/lua PREFIX "Lua Binding Source Files" FILES ${LUA_SOURCES})
 endif()
 
 set(CORE_LIB_NAME "darmok-core")
@@ -308,7 +363,8 @@ add_library(
   ${CORE_SOURCES}
 )
 target_sources(${CORE_LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${CORE_HEADERS})
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} PREFIX "Source Files" FILES ${CORE_SOURCES})
+source_group(TREE ${SRC_DIR} PREFIX "Source Files" FILES ${CORE_SOURCES})
+source_group(TREE ${INCLUDE_BASE_DIR} PREFIX "Header Files" FILES ${CORE_HEADERS})
 add_library(darmok::darmok-core ALIAS ${CORE_LIB_NAME})
 
 set(LIB_NAME "darmok")
@@ -317,9 +373,11 @@ add_library(
   ${SOURCES}
   ${LUA_SOURCES}
   ${ASSETS}
+  ${ASSET_OUTPUTS}
 )
 target_sources(${LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${HEADERS})
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} PREFIX "Source Files" FILES ${SOURCES})
+source_group(TREE ${SRC_DIR} PREFIX "Source Files" FILES ${SOURCES})
+source_group(TREE ${INCLUDE_BASE_DIR} PREFIX "Header Files" FILES ${HEADERS})
 add_library(darmok::darmok ALIAS ${LIB_NAME})
 target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 
@@ -336,7 +394,7 @@ macro(_darmok_lib_setup TARGET)
     ${TARGET}
     PUBLIC
     $<INSTALL_INTERFACE:include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/public>
     PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/private>
@@ -397,7 +455,7 @@ if(DARMOK_RUN_CODE_ANALYSIS)
     set_target_properties(${LIB_NAME} PROPERTIES
       VS_GLOBAL_RunCodeAnalysis true
       VS_GLOBAL_EnableMicrosoftCodeAnalysis true
-      VS_GLOBAL_CodeAnalysisRuleSet ${CMAKE_CURRENT_SOURCE_DIR}/darmok.ruleset
+      VS_GLOBAL_CodeAnalysisRuleSet ${PROJECT_SOURCE_DIR}/darmok.ruleset
       VS_GLOBAL_EnableClangTidyCodeAnalysis true
       VS_GLOBAL_ClangTidyChecks ${CLANG_TIDY_CHECKS}
     )
@@ -585,8 +643,8 @@ install(EXPORT ${EXPORT_NAME}
     DESTINATION ${CONFIG_INSTALL_DIR}
 )
 install(FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/README.md
-  ${CMAKE_CURRENT_SOURCE_DIR}/CHANGES.md
-  ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+  ${PROJECT_SOURCE_DIR}/README.md
+  ${PROJECT_SOURCE_DIR}/CHANGES.md
+  ${PROJECT_SOURCE_DIR}/LICENSE
   DESTINATION "${CMAKE_INSTALL_DATADIR}"
 )

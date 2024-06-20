@@ -1,24 +1,46 @@
 # darmok_process_assets(
-#   INPUT files or pattern
-# 	OUTPUT_DIR directory
-#   SOURCES_VAR variable
-#   SOURCE_GROUP_NAME name
+#   [CORE]
+#   INPUT file or directory
+# 	OUTPUT file or directory
+#   DEPENDS list of files
 # )
 function(darmok_process_assets)
-  set(ONE_VALUE_ARGS INPUT OUTPUT_DIR SOURCES_VAR SOURCE_GROUP_NAME)
-  cmake_parse_arguments(ARGS "" "${ONE_VALUE_ARGS}" "" "${ARGN}")
-  
+  set(OPTION_ARGS CORE)
+  set(ONE_VALUE_ARGS INPUT OUTPUT)
+  set(MULTI_VALUE_ARGS DEPENDS)
+  cmake_parse_arguments(ARGS "${OPTION_ARGS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" "${ARGN}")
+
   if(NOT DEFINED ARGS_INPUT)
     set(ARGS_INPUT assets)
   endif()
-  set(SOURCES "")
-  if(IS_DIRECTORY ${ARGS_INPUT})
-    file(GLOB_RECURSE SOURCES ${ARGS_INPUT}/*)
-  elseif(EXISTS ${ARGS_INPUT})
-    list(APPEND SOURCES ${ARGS_INPUT})
+  if(NOT DEFINED ARGS_SOURCE_GROUP_NAME)
+    set(ARGS_SOURCE_GROUP_NAME "Asset Files")
+  endif()
+  if(NOT IS_ABSOLUTE ${ARGS_INPUT})
+    set(ARGS_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ARGS_INPUT})
+  endif()
+  if(NOT IS_ABSOLUTE ${ARGS_OUTPUT})
+    set(ARGS_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${ARGS_OUTPUT})
   endif()
 
-  if(ARGS_SOURCES_VAR)
-    set(${ARGS_SOURCES_VAR} ${SOURCES} PARENT_SCOPE)
+  if(ARGS_CORE)
+    set(EXE_TARGET darmok-coreassetc)
+  else()
+    set(EXE_TARGET darmok-assetc)
   endif()
+  set(CMD $<TARGET_FILE:${EXE_TARGET}>
+    --input ${ARGS_INPUT}
+    --output ${ARGS_OUTPUT}
+    --bgfx-shaderc $<TARGET_FILE:bgfx::shaderc>
+    --bgfx-shader-include ${BGFX_SHADER_INCLUDE_PATH}
+  )
+  add_custom_command(
+    OUTPUT ${ARGS_OUTPUT}
+    COMMAND ${CMD}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    MAIN_DEPENDENCY ${ARGS_INPUT}
+    DEPENDS ${EXE_TARGET} ${ARGS_DEPENDS}
+    COMMENT "processing darmok assets in ${ARGS_INPUT}..."
+  )
+  set_property(SOURCE ${ARGS_OUTPUT} PROPERTY SYMBOLIC)
 endfunction()

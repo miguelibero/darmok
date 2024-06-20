@@ -3,6 +3,7 @@
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
+#include <darmok/stream.hpp>
 #include <darmok/utils.hpp>
 #include <bx/platform.h>
 #include <filesystem>

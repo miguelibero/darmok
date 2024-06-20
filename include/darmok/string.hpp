@@ -20,6 +20,8 @@ namespace darmok
         static [[nodiscard]] uint8_t hexToBin(std::string_view sv);
         static [[nodiscard]] std::string getFileStem(const std::string& filename) noexcept;
         static [[nodiscard]] std::string getFileExt(const std::string& filename) noexcept;
+        static [[nodiscard]] std::string escapeArgument(const std::string& arg) noexcept;
+
         static void ltrim(std::string& str) noexcept;
         static void rtrim(std::string& str) noexcept;
         static void trim(std::string& str) noexcept;

@@ -144,4 +144,41 @@ namespace darmok
 		ltrim(str);
 		rtrim(str);
 	}
+
+	std::string StringUtils::escapeArgument(const std::string& arg) noexcept
+    {
+        std::ostringstream oss;
+
+        // Check if argument needs quoting based on Windows or Unix-like rules
+        bool needsQuotes = false;
+        for (char c : arg)
+        {
+            if (c == ' ' || c == '\t' || c == '"' || c == '\\')
+            {
+                needsQuotes = true;
+                break;
+            }
+        }
+
+        // Quote the argument and escape characters inside quotes
+        if (needsQuotes)
+        {
+            oss << '"';
+            for (char c : arg)
+            {
+                if (c == '"' || c == '\\')
+                {
+                    oss << '\\'; // Escape double quotes and backslashes
+                }
+                oss << c;
+            }
+            oss << '"';
+        }
+        else
+        {
+            oss << arg;
+        }
+
+        return oss.str();
+    }
 }

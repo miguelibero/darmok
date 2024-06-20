@@ -10,7 +10,6 @@ uniform vec4 u_camPos;
 
 // https://learnopengl.com/Lighting/Basic-Lighting
 
-
 void main()
 {
 	vec4 base = texture2D(s_texColor, v_texcoord0) * v_color0;
