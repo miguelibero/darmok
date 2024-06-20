@@ -2,6 +2,8 @@
 
 #include <bx/error.h>
 #include <type_traits>
+#include <iostream>
+#include <vector>
 
 namespace darmok
 {
@@ -12,4 +14,16 @@ namespace darmok
     }
 
     void checkError(bx::Error& err);
+
+    void copyStream(std::istream& input, std::ostream& output, size_t bufferSize = 4096);
+
+    std::string escapeArgument(const std::string& arg);
+
+    struct ExecResult final
+    {
+        std::string output;
+        int returnCode;
+    };
+
+    ExecResult exec(const std::vector<std::string>& args);
 }

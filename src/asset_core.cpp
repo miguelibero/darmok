@@ -3,11 +3,13 @@
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
+#include <darmok/utils.hpp>
 #include <bx/platform.h>
 #include <filesystem>
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <cstdlib>
 
 namespace darmok
 {
@@ -309,6 +311,7 @@ namespace darmok
         {
             return outputs;
         }
+        importer.setLogOutput(log);
         size_t i = 0;
         auto relInPath = fs::relative(input.path, _inputPath);
         for (fs::path& output : outputs)
@@ -326,6 +329,7 @@ namespace darmok
 
             log << importer.getName() << " " << relInPath << " -> " << relOutPath << "..." << std::endl;
 
+            fs::create_directories(outPath.parent_path());
             if (_produceHeaders)
             {
                 Data data;
@@ -399,12 +403,8 @@ namespace darmok
 
     void CopyAssetImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
-        std::vector<char> buffer(_bufferSize);
         std::ifstream is(input.path, std::ios::binary);
-        while (is.read(&buffer.front(), _bufferSize) || is.gcount() > 0)
-        {
-            out.write(&buffer.front(), is.gcount());
-        }
+        copyStream(is, out, _bufferSize);
     }
 
     std::string CopyAssetImporter::getName() const noexcept
@@ -413,7 +413,7 @@ namespace darmok
         return name;
     }
 
-    const std::vector<std::string> ShaderAssetImporterImpl::_profiles{
+    const std::vector<std::string> ShaderImporterImpl::_profiles{
         "120", "300_es", "spirv",
 #if BX_PLATFORM_WINDOWS
         "s_4_0", "s_5_0",
@@ -423,7 +423,7 @@ namespace darmok
 #endif
     };
 
-    const std::unordered_map<std::string, std::string> ShaderAssetImporterImpl::_profileExtensions{
+    const std::unordered_map<std::string, std::string> ShaderImporterImpl::_profileExtensions{
         { "300_es", ".essl" },
         { "120", ".glsl" },
         { "spirv", ".spv" },
@@ -433,14 +433,39 @@ namespace darmok
         { "s_5_0", ".dx11" }
     };
 
-    const std::string ShaderAssetImporterImpl::_binExt = ".bin";
+    const std::string ShaderImporterImpl::_binExt = ".bin";
 
-    void ShaderAssetImporterImpl::setShadercPath(const std::filesystem::path& path) noexcept
+    ShaderImporterImpl::ShaderImporterImpl(size_t bufferSize) noexcept
+        : _shadercPath("shaderc")
+        , _bufferSize(bufferSize)
+    {
+#if BX_PLATFORM_WINDOWS
+        _shadercPath += ".exe";
+#endif
+    }
+
+    void ShaderImporterImpl::setShadercPath(const std::filesystem::path& path) noexcept
     {
         _shadercPath = path;
     }
 
-    bool ShaderAssetImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    void ShaderImporterImpl::addIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _includes.push_back(path);
+    }
+
+    void ShaderImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    {
+        _log = log;
+    }
+
+    std::filesystem::path ShaderImporterImpl::getOutputPath(const Input& input, const std::string& ext) noexcept
+    {
+        auto stem = input.path.stem().string();
+        return stem + ext + _binExt;
+    }
+
+    bool ShaderImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
         auto fileName = input.path.filename().string();
         auto ext = StringUtils::getFileExt(fileName);
@@ -448,80 +473,181 @@ namespace darmok
         {
             return false;
         }
-        auto stem = input.path.stem().string();
+        
         for (auto& profile : _profiles)
         {
             auto itr = _profileExtensions.find(profile);
             if (itr != _profileExtensions.end())
             {
-                outputs.push_back(stem + itr->second + _binExt);
+                outputs.push_back(getOutputPath(input, itr->second));
             }
         }
         return true;
     }
 
-    std::ofstream ShaderAssetImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream ShaderImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return std::ofstream(path, std::ios::binary);
     }
 
-    void ShaderAssetImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    const std::string ShaderImporterImpl::_configTypeKey = "type";
+    const std::string ShaderImporterImpl::_configVaryingDefKey = "varyingdef";
+    const std::string ShaderImporterImpl::_configIncludeDirsKey = "includeDirs";
+
+    void ShaderImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
+        if (!fs::exists(_shadercPath))
+        {
+            throw std::runtime_error("cannot find bgfx shaderc executable");
+        }
+
+        std::string type;
+        if (input.config.contains(_configTypeKey))
+        {
+            type = input.config[_configTypeKey];
+        }
+        else
+        {
+            type = input.path.stem().extension().string().substr(1);
+        }
+        fs::path varyingDef = input.path.parent_path();
+        if (input.config.contains(_configVaryingDefKey))
+        {
+            varyingDef /= input.config[_configVaryingDefKey].get<std::string>();
+        }
+        else
+        {
+            varyingDef /= input.path.stem().stem().string() + ".varyingdef";
+        }
+
+        std::vector<fs::path> includes(_includes);
+        if (input.config.contains(_configIncludeDirsKey))
+        {
+            for (auto& elm : input.config[_configIncludeDirsKey])
+            {
+                includes.emplace_back(elm.get<std::string>());
+            }
+        }
+        else
+        {
+            includes.push_back(input.path.parent_path());
+        }
+
+        auto& profile = _profiles[outputIndex];
+        fs::path tmpPath = fs::temp_directory_path() / fs::path(std::tmpnam(nullptr));
+
+        std::vector<std::string> args{
+            fixPathArgument(_shadercPath),
+            "-p", profile,
+            "-f", fixPathArgument(input.path),
+            "-o", fixPathArgument(tmpPath),
+            "--type", type,
+            "--varyingdef", fixPathArgument(varyingDef)
+        };
+        for (auto& include : includes)
+        {
+            args.push_back("-i");
+            args.push_back(fixPathArgument(include));
+        }
+
+        auto r = exec(args);
+        if (r.output.contains("Failed to build shader."))
+        {
+            if (_log)
+            {
+                *_log << "shaderc output:" << std::endl;
+                *_log << r.output;
+            }
+            throw std::runtime_error("failed to build shader");
+        }
+
+        std::ifstream is(tmpPath, std::ios::binary);
+        copyStream(is, out, _bufferSize);
     }
 
-    std::string ShaderAssetImporterImpl::getName() const noexcept
+    std::string ShaderImporterImpl::fixPathArgument(const std::filesystem::path& path) noexcept
+    {
+        auto str = fs::absolute(path).string();
+        std::replace(str.begin(), str.end(), '\\', '/');
+        return str;
+    }
+
+    std::string ShaderImporterImpl::getName() const noexcept
     {
         static const std::string name("shader");
         return name;
     }
 
-    ShaderAssetImporter::ShaderAssetImporter()
-        : _impl(std::make_unique<ShaderAssetImporterImpl>())
+    ShaderImporter::ShaderImporter()
+        : _impl(std::make_unique<ShaderImporterImpl>())
     {
     }
 
-    ShaderAssetImporter::~ShaderAssetImporter() noexcept
+    ShaderImporter::~ShaderImporter() noexcept
     {
         // empty on purpose
     }
 
-    bool ShaderAssetImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    bool ShaderImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
         return _impl->getOutputs(input, outputs);
     }
 
-    std::ofstream ShaderAssetImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream ShaderImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return _impl->createOutputStream(input, outputIndex, path);
     }
 
-    void ShaderAssetImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void ShaderImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         return _impl->writeOutput(input, outputIndex, out);
     }
 
-    std::string ShaderAssetImporter::getName() const noexcept
+    std::string ShaderImporter::getName() const noexcept
     {
         return _impl->getName();
     }
 
-    ShaderAssetImporter& ShaderAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
+    ShaderImporter& ShaderImporter::setShadercPath(const std::filesystem::path& path) noexcept
     {
         _impl->setShadercPath(path);
         return *this;
     }
 
+    ShaderImporter& ShaderImporter::addIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _impl->addIncludePath(path);
+        return *this;
+    }
+
+    void ShaderImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    {
+        _impl->setLogOutput(log);
+    }
+
     DarmokCoreAssetImporter::DarmokCoreAssetImporter(const std::filesystem::path& inputPath)
         : _importer(inputPath)
+        , _shaderImporter(_importer.addTypeImporter<ShaderImporter>())
     {
         _importer.addTypeImporter<CopyAssetImporter>();
         _importer.addTypeImporter<VertexLayoutImporter>();
-        _importer.addTypeImporter<ShaderAssetImporter>();
     }
 
     DarmokCoreAssetImporter& DarmokCoreAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
     {
         _importer.setOutputPath(outputPath);
+        return *this;
+    }
+
+    DarmokCoreAssetImporter& DarmokCoreAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
+    {
+        _shaderImporter.setShadercPath(path);
+        return *this;
+    }
+
+    DarmokCoreAssetImporter& DarmokCoreAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _shaderImporter.addIncludePath(path);
         return *this;
     }
 

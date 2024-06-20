@@ -58,19 +58,34 @@ namespace darmok
         void produceCombinedHeader(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths) const;
     };
 
-    class ShaderAssetImporterImpl final
+    class ShaderImporterImpl final
     {
     public:
         using Input = AssetTypeImporterInput;
+        ShaderImporterImpl(size_t bufferSize = 4096) noexcept;
         void setShadercPath(const std::filesystem::path& path) noexcept;
+        void addIncludePath(const std::filesystem::path& path) noexcept;
+        void setLogOutput(OptionalRef<std::ostream> log) noexcept;
         bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         std::string getName() const noexcept;
+
     private:
+        size_t _bufferSize;
         std::filesystem::path _shadercPath;
+        OptionalRef<std::ostream> _log;
+        std::vector<std::filesystem::path> _includes;
         static const std::string _binExt;
         static const std::vector<std::string> _profiles;
         static const std::unordered_map<std::string, std::string> _profileExtensions;
+        static const std::string _configTypeKey;
+        static const std::string _configVaryingDefKey;
+        static const std::string _configIncludeDirsKey;
+
+
+        std::filesystem::path getOutputPath(const Input& input, const std::string& ext) noexcept;
+        static std::string fixPathArgument(const std::filesystem::path& path) noexcept;
+
     };
 }

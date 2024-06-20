@@ -22,11 +22,13 @@ static void help(const std::string& name, const char* error = nullptr)
 	std::cout << "Usage: " << name << " -i <in> -o <out>" << std::endl;
 	std::cout << std::endl;
 	std::cout << "Options:" << std::endl;
-	std::cout << "  -h, --help				Display this help and exit." << std::endl;
-	std::cout << "  -v, --version			Output version information and exit." << std::endl;
-	std::cout << "  -i, --input <path>		Input file path (can be a file or a directory)." << std::endl;
-	std::cout << "  -o, --output <path>		Output file path (can be a file or a directory)." << std::endl;
-	std::cout << "  -d, --dry				Do not process assets, just print output files." << std::endl;
+	std::cout << "  -h, --help              Display this help and exit." << std::endl;
+	std::cout << "  -v, --version           Output version information and exit." << std::endl;
+	std::cout << "  -i, --input <path>      Input file path (can be a file or a directory)." << std::endl;
+	std::cout << "  -o, --output <path>     Output file path (can be a file or a directory)." << std::endl;
+	std::cout << "  -d, --dry               Do not process assets, just print output files." << std::endl;
+	std::cout << "  --bgfx-shaderc          Path of the bgfx shaderc executable." << std::endl;
+	std::cout << "  --bgfx-shader-include   Path of the bgfx shader include dir." << std::endl;
 }
 
 static int run(const bx::CommandLine cmdLine, const std::string& name)
@@ -43,8 +45,7 @@ static int run(const bx::CommandLine cmdLine, const std::string& name)
 		return bx::kExitSuccess;
 	}
 
-	const char* inputPath = nullptr;
-	cmdLine.hasArg(inputPath, 'i', "input");
+	const char* inputPath = cmdLine.findOption('i', "input");
 	if (inputPath == nullptr)
 	{
 		throw std::runtime_error("Input file path must be specified.");
@@ -52,11 +53,23 @@ static int run(const bx::CommandLine cmdLine, const std::string& name)
 
 	DarmokCoreAssetImporter importer(inputPath);
 
-	const char* outputPath = nullptr;
-	cmdLine.hasArg(outputPath, 'o', "output");
+	const char* outputPath = cmdLine.findOption('o', "output");
 	if(outputPath != nullptr)
 	{
 		importer.setOutputPath(outputPath);
+	}
+
+	const char* shadercPath = cmdLine.findOption("bgfx-shaderc");
+	if (shadercPath != nullptr)
+	{
+		importer.setShadercPath(shadercPath);
+	}
+
+	// TODO: support multiple includes
+	const char* shaderIncludePath = cmdLine.findOption("bgfx-shader-include");
+	if (shaderIncludePath != nullptr)
+	{
+		importer.addShaderIncludePath(shaderIncludePath);
 	}
 
 	if(cmdLine.hasArg('d', "dry"))
@@ -75,13 +88,17 @@ static int run(const bx::CommandLine cmdLine, const std::string& name)
 
 int main(int argc, const char* argv[])
 {
+	/*
 	argv = new const char* [] {
 		argv[0],
 			"-i", "../assets/shaders",
 			"-o", "include/private/generated/shaders",
+			"--bgfx-shaderc", "../../vcpkg/buildtrees/bgfx/x64-windows-rel/cmake/bgfx/shaderc.exe",
+			"--bgfx-shader-include", "../../vcpkg/installed/x64-windows/include/bgfx/",
 			"-d"
 		};
-	argc = 5;
+	argc = 9;
+	*/
 
 	bx::CommandLine cmdLine(argc, argv);
 	auto path = std::string(cmdLine.get(0));

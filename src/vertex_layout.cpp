@@ -157,7 +157,6 @@ namespace darmok
 	void VertexLayoutUtils::writeFile(const std::filesystem::path& path, const bgfx::VertexLayout& layout)
 	{
 		auto ext = path.extension();
-		std::filesystem::create_directories(path.parent_path());
 		if (ext == ".json")
 		{
 			nlohmann::ordered_json json;

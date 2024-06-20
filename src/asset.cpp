@@ -240,6 +240,7 @@ namespace darmok
 
 	DarmokAssetImporter::DarmokAssetImporter(const std::filesystem::path& inputPath)
 		: _importer(inputPath)
+		, _shaderImporter(_importer.addTypeImporter<ShaderImporter>())
 	{
 #ifdef DARMOK_ASSIMP
 		_importer.addTypeImporter<AssimpModelImporter>();
@@ -249,13 +250,24 @@ namespace darmok
 #endif
 
 		_importer.addTypeImporter<VertexLayoutImporter>();
-		_importer.addTypeImporter<ShaderAssetImporter>();
 		_importer.addTypeImporter<CopyAssetImporter>();
 	}
 
 	DarmokAssetImporter& DarmokAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
 	{
 		_importer.setOutputPath(outputPath);
+		return *this;
+	}
+
+	DarmokAssetImporter& DarmokAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
+	{
+		_shaderImporter.setShadercPath(path);
+		return *this;
+	}
+
+	DarmokAssetImporter& DarmokAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
+	{
+		_shaderImporter.addIncludePath(path);
 		return *this;
 	}
 

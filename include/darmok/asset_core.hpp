@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/optional_ref.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -24,6 +25,8 @@ namespace darmok
     public:
         using Input = AssetTypeImporterInput;
         virtual ~IAssetTypeImporter() = default;
+
+        virtual void setLogOutput(OptionalRef<std::ostream> log) noexcept { };
 
         // return false if the processor cannot handle the input
         virtual bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) = 0;
@@ -64,16 +67,20 @@ namespace darmok
 		std::unique_ptr<AssetImporterImpl> _impl;
     };
 
+    class ShaderImporter;
+
     class DARMOK_EXPORT DarmokCoreAssetImporter final
     {
     public:
         DarmokCoreAssetImporter(const std::filesystem::path& inputPath);
         DarmokCoreAssetImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
         DarmokCoreAssetImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+        DarmokCoreAssetImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
         std::vector<std::filesystem::path> getOutputs() const noexcept;
         void operator()(std::ostream& log) const;
     private:
         AssetImporter _importer;
+        ShaderImporter& _shaderImporter;
     };
 
     class DARMOK_EXPORT CopyAssetImporter final : public IAssetTypeImporter
@@ -88,19 +95,21 @@ namespace darmok
         size_t _bufferSize;
     };
 
-    class ShaderAssetImporterImpl;
+    class ShaderImporterImpl;
 
-    class DARMOK_EXPORT ShaderAssetImporter final : public IAssetTypeImporter
+    class DARMOK_EXPORT ShaderImporter final : public IAssetTypeImporter
     {
     public:
-        ShaderAssetImporter();
-        ~ShaderAssetImporter() noexcept;
-        ShaderAssetImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+        ShaderImporter();
+        ~ShaderImporter() noexcept;
+        ShaderImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+        ShaderImporter& addIncludePath(const std::filesystem::path& path) noexcept;
+        void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
         bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         std::string getName() const noexcept override;
     private:
-        std::unique_ptr<ShaderAssetImporterImpl> _impl;
+        std::unique_ptr<ShaderImporterImpl> _impl;
     };
 }
