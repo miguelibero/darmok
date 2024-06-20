@@ -16,6 +16,7 @@ namespace darmok
     {
         std::filesystem::path path;
         nlohmann::json config;
+        bool hasSpecificConfig = false;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IAssetTypeImporter
@@ -66,8 +67,9 @@ namespace darmok
     class DARMOK_EXPORT DarmokCoreAssetImporter final
     {
     public:
-        DarmokCoreAssetImporter(const std::string& inputPath);
-        DarmokCoreAssetImporter& setOutputPath(const std::string& outputPath) noexcept;
+        DarmokCoreAssetImporter(const std::filesystem::path& inputPath);
+        DarmokCoreAssetImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
+        DarmokCoreAssetImporter& setShadercPath(const std::filesystem::path& path) noexcept;
         std::vector<std::filesystem::path> getOutputs() const noexcept;
         void operator()(std::ostream& log) const;
     private:
@@ -93,6 +95,7 @@ namespace darmok
     public:
         ShaderAssetImporter();
         ~ShaderAssetImporter() noexcept;
+        ShaderAssetImporter& setShadercPath(const std::filesystem::path& path) noexcept;
         bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;

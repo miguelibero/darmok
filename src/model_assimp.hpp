@@ -114,7 +114,7 @@ namespace darmok
         using OutputFormat = AssimpModelImporterOutputFormat;
         using LoadConfig = AssimpModelLoadConfig;
         OutputFormat outputFormat = OutputFormat::Binary;
-        std::string outputFile;
+        std::filesystem::path outputPath;
         LoadConfig loadConfig;
     };
 
@@ -145,7 +145,7 @@ namespace darmok
         static std::filesystem::path getOutputFile(const std::filesystem::path& path, OutputFormat format) noexcept;
 
         static const std::string _outputFormatJsonKey;
-        static const std::string _outputFileJsonKey;
+        static const std::string _outputPathJsonKey;
         static const std::string _vertexLayoutJsonKey;
         static const std::string _programJsonKey;
         static const std::string _embedTexturesJsonKey;

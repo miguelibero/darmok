@@ -27,36 +27,50 @@ namespace darmok
 	private:
         std::filesystem::path _inputPath;
         std::unordered_map<std::filesystem::path, nlohmann::json> _inputs;
+        nlohmann::json _importersConfig;
         std::filesystem::path _outputPath;
         std::string _headerVarPrefix;
         bool _produceHeaders;
+        std::filesystem::path _headerIncludeDir;
         std::unordered_map<std::string, std::unique_ptr<IAssetTypeImporter>> _importers;
         static const std::string _globalConfigFileSuffix;
         static const std::string _inputConfigFileSuffix;
         static const std::string _globalConfigFilesKey;
+        static const std::string _globalConfigImportersKey;
         static const std::string _globalConfigHeaderVarPrefixKey;
-        static const std::string _globalConfigHeadersKey;
+        static const std::string _globalConfigProduceHeadersKey;
+        static const std::string _globalConfigHeaderIncludeDirKey;
+        static const std::string _globalConfigOutputPathKey;
 
         using ImporterInputs = std::vector<std::pair<OptionalRef<IAssetTypeImporter>, Input>>;
         ImporterInputs getImporterInputs() const;
         size_t getOutputs(IAssetTypeImporter& importer, const Input& input, std::vector<std::filesystem::path>& outputs) const;
-        size_t importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const;
+        std::vector<std::filesystem::path> importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path, const std::string& baseName) const noexcept;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path) const noexcept;
         bool loadInput(const std::filesystem::path& path);
         bool loadGlobalConfig(const std::filesystem::path& path);
         const nlohmann::json& loadInputConfig(const std::filesystem::path& path, const nlohmann::json& json) noexcept;
+        static nlohmann::json fixInputConfig(const nlohmann::json& json) noexcept;
+        static void mergeJsonObjects(nlohmann::json& json1, const nlohmann::json& json2) noexcept;
+        using PathGroups = std::unordered_map<std::filesystem::path, std::vector<std::filesystem::path>>;
+        PathGroups getPathGroups(const std::vector<std::filesystem::path>& paths) const noexcept;
+        void produceCombinedHeader(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths) const;
     };
 
     class ShaderAssetImporterImpl final
     {
     public:
         using Input = AssetTypeImporterInput;
-        ShaderAssetImporterImpl();
+        void setShadercPath(const std::filesystem::path& path) noexcept;
         bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         std::string getName() const noexcept;
     private:
+        std::filesystem::path _shadercPath;
+        static const std::string _binExt;
+        static const std::vector<std::string> _profiles;
+        static const std::unordered_map<std::string, std::string> _profileExtensions;
     };
 }

@@ -1,8 +1,4 @@
 {
-    "header": true,
-    "importers": {
-        "shader": {
-            "headerIncludeDir": "generated/shaders"
-        }
-    }
+    "produceHeaders": true,
+    "headerIncludeDir": "generated/shaders"
 }

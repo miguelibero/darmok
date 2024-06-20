@@ -81,7 +81,7 @@ int main(int argc, const char* argv[])
 			"-o", "include/private/generated/shaders",
 			"-d"
 		};
-	argc = 6;
+	argc = 5;
 
 	bx::CommandLine cmdLine(argc, argv);
 	auto path = std::string(cmdLine.get(0));

@@ -57,8 +57,8 @@ namespace darmok
 	class DARMOK_EXPORT DarmokAssetImporter final
 	{
 	public:
-		DarmokAssetImporter(const std::string& inputPath);
-		DarmokAssetImporter& setOutputPath(const std::string& outputPath) noexcept;
+		DarmokAssetImporter(const std::filesystem::path& inputPath);
+		DarmokAssetImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
 		std::vector<std::filesystem::path> getOutputs() const noexcept;
 		void operator()(std::ostream& log) const;
 	private:

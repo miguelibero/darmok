@@ -238,7 +238,7 @@ namespace darmok
 		return *_impl;
 	}
 
-	DarmokAssetImporter::DarmokAssetImporter(const std::string& inputPath)
+	DarmokAssetImporter::DarmokAssetImporter(const std::filesystem::path& inputPath)
 		: _importer(inputPath)
 	{
 #ifdef DARMOK_ASSIMP
@@ -253,7 +253,7 @@ namespace darmok
 		_importer.addTypeImporter<CopyAssetImporter>();
 	}
 
-	DarmokAssetImporter& DarmokAssetImporter::setOutputPath(const std::string& outputPath) noexcept
+	DarmokAssetImporter& DarmokAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
 	{
 		_importer.setOutputPath(outputPath);
 		return *this;

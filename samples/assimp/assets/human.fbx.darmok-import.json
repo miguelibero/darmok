@@ -1,5 +1,5 @@
 {
     "model": {
-        "outputFile": "human.dml"
+        "outputPath": "human.dml"
     }
 }

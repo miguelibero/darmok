@@ -514,7 +514,7 @@ namespace darmok
     }
 
     const std::string AssimpModelImporterImpl::_outputFormatJsonKey = "outputFormat";
-    const std::string AssimpModelImporterImpl::_outputFileJsonKey = "outputFile";
+    const std::string AssimpModelImporterImpl::_outputPathJsonKey = "outputPath";
     const std::string AssimpModelImporterImpl::_vertexLayoutJsonKey = "vertexLayout";
     const std::string AssimpModelImporterImpl::_embedTexturesJsonKey = "embedTextures";
     const std::string AssimpModelImporterImpl::_programJsonKey = "program";
@@ -558,6 +558,10 @@ namespace darmok
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, Config& config)
     {
         loadConfig(json, config.loadConfig);
+        if (json.contains(_outputPathJsonKey))
+        {
+            config.outputPath = json[_outputPathJsonKey].get<std::string>();
+        }
         if (json.contains(_outputFormatJsonKey))
         {
             std::string format = json[_outputFormatJsonKey];
@@ -574,9 +578,17 @@ namespace darmok
                 config.outputFormat = OutputFormat::Binary;
             }
         }
-        if (json.contains(_outputFileJsonKey))
+        else if (!config.outputPath.empty())
         {
-            config.outputFile = json[_outputFileJsonKey];
+            auto ext = config.outputPath.extension();
+            if (ext == ".json")
+            {
+                config.outputFormat = OutputFormat::Json;
+            }
+            else if (ext == ".xml")
+            {
+                config.outputFormat = OutputFormat::Xml;
+            }
         }
     }
 
@@ -600,7 +612,7 @@ namespace darmok
 
     bool AssimpModelImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
-        if (input.config.is_null())
+        if (!input.hasSpecificConfig)
         {
             return false;
         }
@@ -612,13 +624,13 @@ namespace darmok
 
         Config config;
         loadConfig(input.config, config);
-        if (config.outputFile.empty())
+        if (config.outputPath.empty())
         {
             outputs.push_back(getOutputFile(input.path, config.outputFormat));
         }
         else
         {
-            outputs.push_back(config.outputFile);
+            outputs.push_back(config.outputPath);
         }
         return true;
     }
