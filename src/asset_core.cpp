@@ -6,6 +6,7 @@
 #include <darmok/stream.hpp>
 #include <darmok/utils.hpp>
 #include <bx/platform.h>
+#include <bx/commandline.h>
 #include <filesystem>
 #include <iostream>
 #include <fstream>
@@ -634,25 +635,22 @@ namespace darmok
         _importer.addTypeImporter<VertexLayoutImporter>();
     }
 
-    DarmokCoreAssetImporter& DarmokCoreAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
+    void DarmokCoreAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
     {
         _importer.setOutputPath(outputPath);
-        return *this;
     }
 
-    DarmokCoreAssetImporter& DarmokCoreAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
+    void DarmokCoreAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
     {
         _shaderImporter.setShadercPath(path);
-        return *this;
     }
 
-    DarmokCoreAssetImporter& DarmokCoreAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
+    void DarmokCoreAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
     {
         _shaderImporter.addIncludePath(path);
-        return *this;
     }
 
-    std::vector<fs::path> DarmokCoreAssetImporter::getOutputs() const noexcept
+    std::vector<fs::path> DarmokCoreAssetImporter::getOutputs() const
     {
         return _importer.getOutputs();
     }
@@ -660,5 +658,119 @@ namespace darmok
     void DarmokCoreAssetImporter::operator()(std::ostream& out) const
     {
         _importer(out);
+    }
+
+    BaseCommandLineAssetImporter::BaseCommandLineAssetImporter() noexcept
+        : _impl(std::make_unique<CommandLineAssetImporterImpl>(*this))
+    {
+    }
+
+    BaseCommandLineAssetImporter::~BaseCommandLineAssetImporter() noexcept
+    {
+        // empty on purpose
+    }
+
+    int BaseCommandLineAssetImporter::operator()(int argc, const char* argv[]) noexcept
+    {
+        return (*_impl)(argc, argv);
+    }
+
+    CommandLineAssetImporterImpl::CommandLineAssetImporterImpl(BaseCommandLineAssetImporter& importer) noexcept
+      : _importer(importer)
+    {
+    }
+
+    int CommandLineAssetImporterImpl::operator()(int argc, const char* argv[]) noexcept
+    {
+        bx::CommandLine cmdLine(argc, argv);
+        auto path = std::string(cmdLine.get(0));
+        auto name = std::filesystem::path(path).filename().string();
+        try
+        {
+            return run(name, cmdLine);
+        }
+        catch (const std::exception& ex)
+        {
+            help(name, ex.what());
+            return bx::kExitFailure;
+        }
+    }
+
+    void CommandLineAssetImporterImpl::version(const std::string& name) noexcept
+    {
+	    std::cout << name << ": darmok asset compile tool." << std::endl;
+    }
+
+    void CommandLineAssetImporterImpl::help(const std::string& name, const char* error) noexcept
+    {
+        if (error)
+        {
+            std::cerr << "Error:" << std::endl << error << std::endl << std::endl;
+        }
+        version(name);
+        std::cout << "Usage: " << name << " -i <in> -o <out>" << std::endl;
+        std::cout << std::endl;
+        std::cout << "Options:" << std::endl;
+        std::cout << "  -h, --help              Display this help and exit." << std::endl;
+        std::cout << "  -v, --version           Output version information and exit." << std::endl;
+        std::cout << "  -i, --input <path>      Input file path (can be a file or a directory)." << std::endl;
+        std::cout << "  -o, --output <path>     Output file path (can be a file or a directory)." << std::endl;
+        std::cout << "  -d, --dry               Do not process assets, just print output files." << std::endl;
+        std::cout << "  --bgfx-shaderc          Path of the bgfx shaderc executable." << std::endl;
+        std::cout << "  --bgfx-shader-include   Path of the bgfx shader include dir." << std::endl;
+    }
+
+    int CommandLineAssetImporterImpl::run(const std::string& name, const bx::CommandLine cmdLine)
+    {
+        if (cmdLine.hasArg('h', "help"))
+        {
+            help(name);
+            return bx::kExitSuccess;
+        }
+
+        if (cmdLine.hasArg('v', "version"))
+        {
+            version(name);
+            return bx::kExitSuccess;
+        }
+
+        const char* inputPath = cmdLine.findOption('i', "input");
+        if (inputPath == nullptr)
+        {
+            throw std::runtime_error("Input file path must be specified.");
+        }
+        _importer.setInputPath(inputPath);
+
+        const char* outputPath = cmdLine.findOption('o', "output");
+        if (outputPath != nullptr)
+        {
+            _importer.setOutputPath(outputPath);
+        }
+
+        const char* shadercPath = cmdLine.findOption("bgfx-shaderc");
+        if (shadercPath != nullptr)
+        {
+            _importer.setShadercPath(shadercPath);
+        }
+
+        // TODO: support multiple includes
+        const char* shaderIncludePath = cmdLine.findOption("bgfx-shader-include");
+        if (shaderIncludePath != nullptr)
+        {
+            _importer.addShaderIncludePath(shaderIncludePath);
+        }
+
+        if (cmdLine.hasArg('d', "dry"))
+        {
+            for (auto& output : _importer.getOutputs())
+            {
+                std::cout << output.string() << std::endl;
+            }
+        }
+        else
+        {
+            _importer.import(std::cout);
+        }
+        return bx::kExitSuccess;
     }
 }

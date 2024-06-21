@@ -1,90 +1,42 @@
 #include <darmok/asset_core.hpp>
-#include <bx/commandline.h>
-#include <filesystem>
-#include <iostream>
 
 using namespace darmok;
 
-static void version(const std::string& name)
+class CommandLineAssetImporter final : public BaseCommandLineAssetImporter
 {
-	std::cout << name << ": darmok core asset compile tool." << std::endl;
-}
-
-static void help(const std::string& name, const char* error = nullptr)
-{
-	if (error)
+protected:
+	void setInputPath(const std::filesystem::path& inputPath) override
 	{
-		std::cerr << "Error:" << std::endl << error << std::endl << std::endl;
+		_importer.emplace(inputPath);
 	}
 
-	version(name);
-
-	std::cout << "Usage: " << name << " -i <in> -o <out>" << std::endl;
-	std::cout << std::endl;
-	std::cout << "Options:" << std::endl;
-	std::cout << "  -h, --help              Display this help and exit." << std::endl;
-	std::cout << "  -v, --version           Output version information and exit." << std::endl;
-	std::cout << "  -i, --input <path>      Input file path (can be a file or a directory)." << std::endl;
-	std::cout << "  -o, --output <path>     Output file path (can be a file or a directory)." << std::endl;
-	std::cout << "  -d, --dry               Do not process assets, just print output files." << std::endl;
-	std::cout << "  --bgfx-shaderc          Path of the bgfx shaderc executable." << std::endl;
-	std::cout << "  --bgfx-shader-include   Path of the bgfx shader include dir." << std::endl;
-}
-
-static int run(const bx::CommandLine cmdLine, const std::string& name)
-{
-	if (cmdLine.hasArg('h', "help"))
+	void setOutputPath(const std::filesystem::path& outputPath) override
 	{
-		help(name);
-		return bx::kExitSuccess;
+		_importer->setOutputPath(outputPath);
 	}
 
-	if (cmdLine.hasArg('v', "version"))
+	void setShadercPath(const std::filesystem::path& path) override
 	{
-		version(name);
-		return bx::kExitSuccess;
+		_importer->setShadercPath(path);
 	}
 
-	const char* inputPath = cmdLine.findOption('i', "input");
-	if (inputPath == nullptr)
+	void addShaderIncludePath(const std::filesystem::path& path) override
 	{
-		throw std::runtime_error("Input file path must be specified.");
+		_importer->addShaderIncludePath(path);
 	}
 
-	DarmokCoreAssetImporter importer(inputPath);
-
-	const char* outputPath = cmdLine.findOption('o', "output");
-	if(outputPath != nullptr)
+	std::vector<std::filesystem::path> getOutputs() const override
 	{
-		importer.setOutputPath(outputPath);
+		return _importer->getOutputs();
 	}
 
-	const char* shadercPath = cmdLine.findOption("bgfx-shaderc");
-	if (shadercPath != nullptr)
+	void import(std::ostream& log) const override
 	{
-		importer.setShadercPath(shadercPath);
+		return _importer.value()(log);
 	}
-
-	// TODO: support multiple includes
-	const char* shaderIncludePath = cmdLine.findOption("bgfx-shader-include");
-	if (shaderIncludePath != nullptr)
-	{
-		importer.addShaderIncludePath(shaderIncludePath);
-	}
-
-	if(cmdLine.hasArg('d', "dry"))
-	{
-		for (auto& output : importer.getOutputs())
-		{
-			std::cout << output.string() << std::endl;
-		}
-	}
-	else
-	{
-		importer(std::cout);
-	}
-	return bx::kExitSuccess;
-}
+private:
+	std::optional<DarmokCoreAssetImporter> _importer;
+};
 
 int main(int argc, const char* argv[])
 {
@@ -100,16 +52,5 @@ int main(int argc, const char* argv[])
 	argc = 9;
 	*/
 
-	bx::CommandLine cmdLine(argc, argv);
-	auto path = std::string(cmdLine.get(0));
-	auto name = std::filesystem::path(path).filename().string();
-	try
-	{
-		return run(cmdLine, name);
-	}
-	catch (const std::exception& ex)
-	{
-		help(name, ex.what());
-		return bx::kExitFailure;
-	}
+	return CommandLineAssetImporter()(argc, argv);
 }

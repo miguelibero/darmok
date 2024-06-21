@@ -253,25 +253,22 @@ namespace darmok
 		_importer.addTypeImporter<CopyAssetImporter>();
 	}
 
-	DarmokAssetImporter& DarmokAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
+	void DarmokAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
 	{
 		_importer.setOutputPath(outputPath);
-		return *this;
 	}
 
-	DarmokAssetImporter& DarmokAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
+	void DarmokAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
 	{
 		_shaderImporter.setShadercPath(path);
-		return *this;
 	}
 
-	DarmokAssetImporter& DarmokAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
+	void DarmokAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
 	{
 		_shaderImporter.addIncludePath(path);
-		return *this;
 	}
 
-	std::vector<std::filesystem::path> DarmokAssetImporter::getOutputs() const noexcept
+	std::vector<std::filesystem::path> DarmokAssetImporter::getOutputs() const
 	{
 		return _importer.getOutputs();
 	}

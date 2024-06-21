@@ -42,6 +42,26 @@ namespace darmok
         virtual std::string getName() const noexcept = 0;
     };
 
+    class CommandLineAssetImporterImpl;
+
+    class DARMOK_EXPORT BaseCommandLineAssetImporter
+    {
+    public:
+        BaseCommandLineAssetImporter() noexcept;
+        virtual ~BaseCommandLineAssetImporter() noexcept;
+        int operator()(int argc, const char* argv[]) noexcept;
+    protected:
+        virtual void setInputPath(const std::filesystem::path& inputPath) = 0;
+        virtual void setOutputPath(const std::filesystem::path& outputPath) = 0;
+        virtual void setShadercPath(const std::filesystem::path& path) = 0;
+        virtual void addShaderIncludePath(const std::filesystem::path& path) = 0;
+        virtual std::vector<std::filesystem::path> getOutputs() const = 0;
+        virtual void import(std::ostream& log) const = 0;
+    private:
+        friend class CommandLineAssetImporterImpl;
+        std::unique_ptr<CommandLineAssetImporterImpl> _impl;
+    };
+
     class AssetImporterImpl;
 
     class DARMOK_EXPORT AssetImporter final
@@ -73,10 +93,10 @@ namespace darmok
     {
     public:
         DarmokCoreAssetImporter(const std::filesystem::path& inputPath);
-        DarmokCoreAssetImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
-        DarmokCoreAssetImporter& setShadercPath(const std::filesystem::path& path) noexcept;
-        DarmokCoreAssetImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
-        std::vector<std::filesystem::path> getOutputs() const noexcept;
+        void setOutputPath(const std::filesystem::path& outputPath) noexcept;
+        void setShadercPath(const std::filesystem::path& path) noexcept;
+        void addShaderIncludePath(const std::filesystem::path& path) noexcept;
+        std::vector<std::filesystem::path> getOutputs() const;
         void operator()(std::ostream& log) const;
     private:
         AssetImporter _importer;

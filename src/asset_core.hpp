@@ -2,7 +2,6 @@
 
 #include <string>
 #include <vector>
-#include <vector>
 #include <iostream>
 #include <filesystem>
 #include <optional>
@@ -11,6 +10,11 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/optional_ref.hpp>
 #include <nlohmann/json.hpp>
+
+namespace bx
+{
+    class CommandLine;
+}
 
 namespace darmok
 {
@@ -58,6 +62,20 @@ namespace darmok
         void produceCombinedHeader(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths) const;
     };
 
+    class BaseCommandLineAssetImporter;
+
+    class CommandLineAssetImporterImpl final
+    {
+    public:
+        CommandLineAssetImporterImpl(BaseCommandLineAssetImporter& importer) noexcept;
+        int operator()(int argc, const char* argv[]) noexcept;
+    private:
+        BaseCommandLineAssetImporter& _importer;
+        void version(const std::string& name) noexcept;
+        void help(const std::string& name, const char* error = nullptr) noexcept;
+        int run(const std::string& name, const bx::CommandLine cmdLine);
+    };
+
     class ShaderImporterImpl final
     {
     public:
@@ -86,6 +104,5 @@ namespace darmok
 
         std::filesystem::path getOutputPath(const Input& input, const std::string& ext) noexcept;
         static std::string fixPathArgument(const std::filesystem::path& path) noexcept;
-
     };
 }
