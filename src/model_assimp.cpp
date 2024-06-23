@@ -82,6 +82,12 @@ namespace darmok
     {
     }
 
+    bool AssimpSceneLoader::supports(std::string_view name) const noexcept
+    {
+        Assimp::Importer importer;
+        return importer.IsExtensionSupported(std::filesystem::path(name).extension().string());
+    }
+
     std::shared_ptr<aiScene> AssimpSceneLoader::operator()(std::string_view path)
     {
         auto data = _dataLoader(path);
@@ -134,6 +140,11 @@ namespace darmok
     void AssimpModelLoaderImpl::setConfig(const Config& config) noexcept
     {
         _config = config;
+    }
+
+    bool AssimpModelLoaderImpl::supports(std::string_view name) const noexcept
+    {
+        return _sceneLoader.supports(name);
     }
 
     std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(std::string_view path)
@@ -616,12 +627,10 @@ namespace darmok
         {
             return 0;
         }
-        Assimp::Importer importer;
-        if (!importer.IsExtensionSupported(input.path.extension().string()))
+        if (!_assimpLoader.supports(input.path.string()))
         {
             return 0;
         }
-
         Config config;
         loadConfig(input.config, config);
         if (config.outputPath.empty())

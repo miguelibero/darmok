@@ -41,6 +41,7 @@ private:
 
 int main(int argc, const char* argv[])
 {
+	/*
 	argv = new const char* [] {
 		argv[0],
 			"-i", "D:/Projects/darmok/samples/scene/assets",
@@ -49,6 +50,7 @@ int main(int argc, const char* argv[])
 		};
 
 	argc = 6;
+	*/
 
 	return CommandLineAssetImporter()(argc, argv);
 }

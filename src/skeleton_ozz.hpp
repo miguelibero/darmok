@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <unordered_set>
 #include <darmok/skeleton.hpp>
 #include <darmok/data.hpp>
@@ -169,21 +170,5 @@ namespace darmok
 		ozz::animation::Skeleton& getOzz() noexcept;
 		const ozz::animation::Skeleton& getOzz() const noexcept;
 		void afterUpdate() noexcept;
-	};
-
-	struct AssetTypeImporterInput;
-
-	class  OzzSkeletonImporterImpl final
-	{
-	public:
-		using Input = AssetTypeImporterInput;
-
-		OzzSkeletonImporterImpl(std::unique_ptr<IOzzRawSkeletonLoader>&& loader) noexcept;
-		size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) noexcept;
-		std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
-		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
-		std::string getName() const noexcept;
-	private:
-		std::unique_ptr<IOzzRawSkeletonLoader> _loader;
 	};
 }

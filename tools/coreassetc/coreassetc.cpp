@@ -40,6 +40,7 @@ private:
 
 int main(int argc, const char* argv[])
 {
+	/*
 	argv = new const char* [] {
 		argv[0],
 			"-i", "../assets/shaders",
@@ -49,6 +50,6 @@ int main(int argc, const char* argv[])
 			"-d"
 		};
 	argc = 10;
-
+	*/
 	return CommandLineAssetImporter()(argc, argv);
 }

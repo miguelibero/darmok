@@ -45,6 +45,7 @@ namespace darmok
     public:
         using result_type = std::shared_ptr<aiScene>;
         AssimpSceneLoader(IDataLoader& dataLoader) noexcept;
+        bool supports(std::string_view name) const noexcept;
         result_type operator()(std::string_view name);
     private:
         IDataLoader& _dataLoader;
@@ -92,6 +93,7 @@ namespace darmok
         using Config = AssimpModelLoadConfig;
         AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
         void setConfig(const Config& config) noexcept;
+        bool supports(std::string_view name) const noexcept;
         std::shared_ptr<Model> operator()(std::string_view path);
 
     private:
@@ -138,7 +140,7 @@ namespace darmok
         bx::FileReader _fileReader;
         FileDataLoader _dataLoader;
         DataImageLoader _imgLoader;
-        AssimpModelLoader _assimpLoader;
+        AssimpModelLoaderImpl _assimpLoader;
         DataVertexLayoutLoader _layoutLoader;
         DataProgramLoader _progLoader;
 
