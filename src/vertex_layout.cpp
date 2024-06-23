@@ -373,7 +373,7 @@ namespace darmok
 		return layout;
 	}
 
-	std::filesystem::path VertexLayoutImporter::getFilename(const std::filesystem::path& path, OutputFormat format) noexcept
+	std::filesystem::path VertexLayoutImporter::getFormatPath(const std::filesystem::path& path, OutputFormat format) noexcept
 	{
 		std::string outSuffix(".vlayout");
 		switch (format)
@@ -386,37 +386,36 @@ namespace darmok
 			break;
 		}
 		auto stem = StringUtils::getFileStem(path.filename().string());
-		return stem + outSuffix;
+		return path.parent_path() / (stem + outSuffix);
 	}
 
-	bool VertexLayoutImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+	size_t VertexLayoutImporter::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
 	{
 		auto ext = StringUtils::getFileExt(input.path.filename().string());
 		if (input.config.is_null())
 		{
 			if (ext != ".varyingdef" && ext != ".vlayout.json" && ext != ".vlayout.bin")
 			{
-				return false;
+				return 0;
 			}
 		}
 		if (ext == ".varyingdef")
 		{
-			auto basePath = input.path.parent_path();
 			std::vector<std::filesystem::path> betterPaths{
-				basePath / getFilename(input.path, OutputFormat::Json),
-				basePath / getFilename(input.path, OutputFormat::Binary)
+				getFormatPath(input.path, OutputFormat::Json),
+				getFormatPath(input.path, OutputFormat::Binary)
 			};
 			for (auto& betterPath : betterPaths)
 			{
 				if (std::filesystem::exists(betterPath))
 				{
-					return false;
+					return 0;
 				}
 			}
 		}
-
-		outputs.push_back(getFilename(input.path, _outputFormat));
-		return true;
+		auto relPath = std::filesystem::relative(input.path, basePath);
+		outputs.push_back(getFormatPath(relPath, _outputFormat));
+		return 1;
 	}
 
 	std::ofstream VertexLayoutImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)

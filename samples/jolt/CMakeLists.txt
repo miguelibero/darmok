@@ -1,13 +1,7 @@
-set(SAMPLE_NAME darmok-samples-jolt)
+if(NOT ${DARMOK_BUILD_JOLT})
+  return()
+endif()
 
-add_executable(
-  ${SAMPLE_NAME}
-  src/main.cpp
+darmok_sample_setup(
+  TARGET darmok-samples-jolt
 )
-
-target_compile_definitions(
-  ${SAMPLE_NAME}
-  PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1"
-)
-
-darmok_sample_setup(${SAMPLE_NAME})

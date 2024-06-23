@@ -2,16 +2,18 @@ if(NOT ${DARMOK_BUILD_OZZ})
   return()
 endif()
 
-set(SAMPLE_NAME darmok-samples-ozz)
-
-darmok_process_assets(
-  SOURCE_GROUP_NAME "Sample Asset Files"
+darmok_sample_setup(
+  TARGET darmok-samples-ozz
+  ASSETS
+    assets/animator.json
+    assets/BasicMotions@Idle01.fbx
+    assets/BasicMotions@Idle01.skel.json
+    assets/BasicMotions@Run01.fbx
+    assets/BasicMotions@Run01.skel.json
+    assets/BasicMotions@Talk01.fbx
+    assets/BasicMotions@Talk01.skel.json
+    assets/BasicMotionsDummyModel.fbx
+    assets/BasicMotionsDummyModel.model.json
+    assets/BasicMotionsDummyModel.skel.json
+    assets/BasicMotionsTexture.png
 )
-
-add_executable(
-  ${SAMPLE_NAME}
-  src/main.cpp
-  ${ASSETS}
-)
-
-darmok_sample_setup(${SAMPLE_NAME})

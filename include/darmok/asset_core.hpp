@@ -17,7 +17,7 @@ namespace darmok
     {
         std::filesystem::path path;
         nlohmann::json config;
-        bool hasSpecificConfig = false;
+        nlohmann::json globalConfig;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IAssetTypeImporter
@@ -28,13 +28,13 @@ namespace darmok
 
         virtual void setLogOutput(OptionalRef<std::ostream> log) noexcept { };
 
-        // return false if the processor cannot handle the input
-        virtual bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) = 0;
+        // return the amount of outputs added
+        virtual size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) = 0;
 
         // outputIndex is the index of the element in the vector returned by getOutputs
-        virtual std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+        virtual std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
         {
-            return std::ofstream(input.path);
+            return std::ofstream(outputPath);
         }
 
         virtual void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) = 0;
@@ -107,7 +107,7 @@ namespace darmok
     {
     public:
         CopyAssetImporter(size_t bufferSize = 4096) noexcept;
-        bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
+        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         std::string getName() const noexcept override;
@@ -125,7 +125,7 @@ namespace darmok
         ShaderImporter& setShadercPath(const std::filesystem::path& path) noexcept;
         ShaderImporter& addIncludePath(const std::filesystem::path& path) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
-        bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
+        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         std::string getName() const noexcept override;

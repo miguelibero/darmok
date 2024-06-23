@@ -1,9 +1,7 @@
-if(NOT ${DARMOK_BUILD_SCRIPTING_EXE})
+if(NOT ${DARMOK_BUILD_LUA_EXE})
   return()
 endif()
 
-set(SAMPLE_NAME darmok-samples-lua)
-
-darmok_process_assets()
-
-darmok_lua_sample_setup(${SAMPLE_NAME} ${ASSETS})
+darmok_lua_sample_setup(
+  TARGET darmok-samples-lua
+)

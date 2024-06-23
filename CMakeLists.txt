@@ -75,8 +75,8 @@ find_package(bgfx CONFIG REQUIRED)
 
 include(darmokProcessAssets)
 
+set(SHADERS_TARGET darmok-shaders)
 set(SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/shaders)
-set(SHADERS_OUTPUT include/private/generated/shaders)
 set(SHADERS
   ${SHADERS_DIR}/darmok.include.sc
   ${SHADERS_DIR}/darmok_compute.include.sc
@@ -102,12 +102,13 @@ set(SHADERS
   ${SHADERS_DIR}/unlit.vertex.sc
   ${SHADERS_DIR}/unlit.vlayout.json
 )
-darmok_process_assets(CORE
+darmok_process_assets(
+  TARGET ${SHADERS_TARGET} CORE
   INPUT ${SHADERS_DIR}
-  OUTPUT ${SHADERS_OUTPUT}
+  OUTPUT include/private/generated/shaders
   DEPENDS ${SHADERS}
 )
-set(ASSET_OUTPUTS ${SHADERS_OUTPUT})
+set(ASSET_TARGETS ${SHADERS_TARGET})
 
 source_group(TREE ${SHADERS_DIR} PREFIX "Embedded Shader Files" FILES ${SHADERS})
 set(ASSETS ${SHADERS})
@@ -228,9 +229,9 @@ if(DARMOK_BUILD_IMGUI)
   list(APPEND SOURCES ${SRC_DIR}/imgui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/imgui.hpp)
 
+  set(IMGUI_SHADERS_TARGET darmok-imgui-shaders)
   set(IMGUI_SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/imgui/shaders)
-  set(IMGUI_SHADERS_OUTPUT include/private/generated/imgui/shaders)
-  list(APPEND ASSET_OUTPUTS ${IMGUI_SHADERS_OUTPUT})
+  list(APPEND ASSET_TARGETS ${IMGUI_SHADERS_TARGET})
   set(IMGUI_SHADERS
     ${IMGUI_SHADERS_DIR}/basic.fragment.sc
     ${IMGUI_SHADERS_DIR}/basic.varyingdef
@@ -240,9 +241,10 @@ if(DARMOK_BUILD_IMGUI)
     ${IMGUI_SHADERS_DIR}/lod.varyingdef
     ${IMGUI_SHADERS_DIR}/lod.vertex.sc
   )
-  darmok_process_assets(CORE
+  darmok_process_assets(
+    TARGET ${IMGUI_SHADERS_TARGET} CORE
     INPUT ${IMGUI_SHADERS_DIR}
-    OUTPUT ${IMGUI_SHADERS_OUTPUT}
+    OUTPUT include/private/generated/imgui/shaders
     DEPENDS ${IMGUI_SHADERS}
   )
   source_group(TREE ${IMGUI_SHADERS_DIR} PREFIX "Imgui Asset Files" FILES ${IMGUIMGUI_SHADERSI_ASSETS})
@@ -256,9 +258,9 @@ if(DARMOK_BUILD_RMLUI)
   if(DARMOK_BUILD_LUA)
     list(APPEND LUA_SOURCES ${SRC_DIR}/lua/rmlui.cpp)
   endif()
+  set(RMLUI_SHADERS_TARGET darmok-rmlui-shaders)
   set(RMLUI_SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/rmlui/shaders)
-  set(RMLUI_SHADERS_OUTPUT include/private/generated/rmlui/shaders)
-  list(APPEND ASSET_OUTPUTS ${RMLUI_SHADERS_OUTPUT})
+  list(APPEND ASSET_TARGETS ${RMLUI_SHADERS_TARGET})
   set(RMLUI_SHADERS
     ${RMLUI_SHADERS_DIR}/basic.fragment.sc
     ${RMLUI_SHADERS_DIR}/basic.varyingdef
@@ -269,9 +271,10 @@ if(DARMOK_BUILD_RMLUI)
     ${RMLUI_SHADERS_DIR}/solid.varyingdef
     ${RMLUI_SHADERS_DIR}/solid.vertex.sc
   )
-  darmok_process_assets(CORE
+  darmok_process_assets(
+    TARGET ${RMLUI_SHADERS_TARGET} CORE
     INPUT ${RMLUI_SHADERS_DIR}
-    OUTPUT ${RMLUI_SHADERS_OUTPUT}
+    OUTPUT include/private/generated/rmlui/shaders
     DEPENDS ${RMLUI_SHADERS}
   )
   source_group(TREE ${RMLUI_SHADERS_DIR} PREFIX "RmlUI Asset Files" FILES ${RMLUI_SHADERS})
@@ -373,11 +376,11 @@ add_library(
   ${SOURCES}
   ${LUA_SOURCES}
   ${ASSETS}
-  ${ASSET_OUTPUTS}
 )
 target_sources(${LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${HEADERS})
 source_group(TREE ${SRC_DIR} PREFIX "Source Files" FILES ${SOURCES})
 source_group(TREE ${INCLUDE_BASE_DIR} PREFIX "Header Files" FILES ${HEADERS})
+add_dependencies(${LIB_NAME} ${ASSET_TARGETS})
 add_library(darmok::darmok ALIAS ${LIB_NAME})
 target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 

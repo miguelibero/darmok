@@ -51,7 +51,7 @@ namespace darmok
         AssimpModelImporter();
         ~AssimpModelImporter();
         std::shared_ptr<Model> read(const std::filesystem::path& path, const LoadConfig& config) const;
-        bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
+        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         std::string getName() const noexcept override;

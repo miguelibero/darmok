@@ -784,4 +784,58 @@ namespace darmok
     {
         return _impl->play(name);
     }
+
+    OzzSkeletonImporterImpl::OzzSkeletonImporterImpl(std::unique_ptr<IOzzRawSkeletonLoader>&& loader) noexcept
+        : _loader(std::move(loader))
+    {
+    }
+
+    size_t OzzSkeletonImporterImpl::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) noexcept
+    {
+    }
+
+    std::ofstream OzzSkeletonImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    {
+
+    }
+
+    void OzzSkeletonImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    {
+
+    }
+
+    std::string OzzSkeletonImporterImpl::getName() const noexcept
+    {
+        static const std::string name("skeleton");
+        return name;
+    }
+
+    OzzSkeletonImporter::OzzSkeletonImporter(std::unique_ptr<IOzzRawSkeletonLoader>&& loader) noexcept
+        : _impl(std::make_unique<OzzSkeletonImporterImpl>(loader))
+    {
+    }
+
+    OzzSkeletonImporter::~OzzSkeletonImporter() noexcept
+    {
+    }
+
+    size_t OzzSkeletonImporter::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
+    {
+        return _impl->getOutputs(input, basePath, outputs);
+    }
+
+    std::ofstream OzzSkeletonImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    {
+        return _impl->createOutputStream(input, outputIndex, path);
+    }
+
+    void OzzSkeletonImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    {
+        return _impl->writeOutput(input, outputIndex, out);
+    }
+
+    std::string OzzSkeletonImporter::getName() const noexcept
+    {
+        return _impl->getName();
+    }
 }

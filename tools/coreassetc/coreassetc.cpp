@@ -40,7 +40,6 @@ private:
 
 int main(int argc, const char* argv[])
 {
-	/*
 	argv = new const char* [] {
 		argv[0],
 			"-i", "../assets/shaders",
@@ -49,8 +48,7 @@ int main(int argc, const char* argv[])
 			"--bgfx-shader-include", "../../vcpkg/installed/x64-windows/include/bgfx/",
 			"-d"
 		};
-	argc = 9;
-	*/
+	argc = 10;
 
 	return CommandLineAssetImporter()(argc, argv);
 }

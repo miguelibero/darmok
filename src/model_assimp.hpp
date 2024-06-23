@@ -129,7 +129,7 @@ namespace darmok
         AssimpModelImporterImpl();
         std::shared_ptr<Model> read(const std::filesystem::path& path, const LoadConfig& config);
 
-        bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs);
+        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         std::string getName() const noexcept;
@@ -142,7 +142,7 @@ namespace darmok
         DataVertexLayoutLoader _layoutLoader;
         DataProgramLoader _progLoader;
 
-        static std::filesystem::path getOutputFile(const std::filesystem::path& path, OutputFormat format) noexcept;
+        static std::filesystem::path getOutputPath(const std::filesystem::path& path, OutputFormat format) noexcept;
 
         static const std::string _outputFormatJsonKey;
         static const std::string _outputPathJsonKey;

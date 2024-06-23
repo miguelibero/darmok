@@ -1,14 +1,10 @@
-
-set(SAMPLE_NAME darmok-samples-scene)
-
-darmok_process_assets(
-  SOURCE_GROUP_NAME "Sample Asset Files"
+darmok_sample_setup(
+  TARGET darmok-samples-scene
+  ASSETS
+    assets/darmok-import.json
+    assets/brick.png
+    assets/darmok.jpg
+    assets/engine.png
+    assets/warrior-0.png
+    assets/warrior-0.xml
 )
-
-add_executable(
-  ${SAMPLE_NAME}
-  src/main.cpp
-  ${ASSETS}
-)
-
-darmok_sample_setup(${SAMPLE_NAME})

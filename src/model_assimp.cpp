@@ -445,7 +445,7 @@ namespace darmok
             }
             else
             {
-                size = assimpTex->mWidth * assimpTex->mHeight * 4;
+                size = (size_t)assimpTex->mWidth * assimpTex->mHeight * 4;
                 format = bimg::TextureFormat::RGBA8;
             }
             auto data = DataView(assimpTex->pcData, size);
@@ -497,7 +497,7 @@ namespace darmok
     {
     }
 
-    std::filesystem::path AssimpModelImporterImpl::getOutputFile(const std::filesystem::path& path, OutputFormat format) noexcept
+    std::filesystem::path AssimpModelImporterImpl::getOutputPath(const std::filesystem::path& path, OutputFormat format) noexcept
     {
         std::string outSuffix(".model");
         switch (format)
@@ -510,7 +510,7 @@ namespace darmok
             break;
         }
         auto stem = StringUtils::getFileStem(path.filename().string());
-        return stem + outSuffix;
+        return path.parent_path() / (stem + outSuffix);
     }
 
     const std::string AssimpModelImporterImpl::_outputFormatJsonKey = "outputFormat";
@@ -610,29 +610,30 @@ namespace darmok
         return layout;
     }
 
-    bool AssimpModelImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    size_t AssimpModelImporterImpl::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
     {
-        if (!input.hasSpecificConfig)
+        if (input.config.empty())
         {
-            return false;
+            return 0;
         }
         Assimp::Importer importer;
         if (!importer.IsExtensionSupported(input.path.extension().string()))
         {
-            return false;
+            return 0;
         }
 
         Config config;
         loadConfig(input.config, config);
         if (config.outputPath.empty())
         {
-            outputs.push_back(getOutputFile(input.path, config.outputFormat));
+            auto relPath = std::filesystem::relative(input.path, basePath);
+            outputs.push_back(getOutputPath(relPath, config.outputFormat));
         }
         else
         {
             outputs.push_back(config.outputPath);
         }
-        return true;
+        return 1;
     }
 
     std::ofstream AssimpModelImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
@@ -703,9 +704,9 @@ namespace darmok
         return _impl->read(path, config);
     }
 
-    bool AssimpModelImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    size_t AssimpModelImporter::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
     {
-        return _impl->getOutputs(input, outputs);
+        return _impl->getOutputs(input, basePath, outputs);
     }
 
     std::ofstream AssimpModelImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)

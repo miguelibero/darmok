@@ -37,7 +37,7 @@ namespace darmok
         bool _produceHeaders;
         std::filesystem::path _headerIncludeDir;
         std::unordered_map<std::string, std::unique_ptr<IAssetTypeImporter>> _importers;
-        static const std::string _globalConfigFileSuffix;
+        static const std::string _globalConfigFile;
         static const std::string _inputConfigFileSuffix;
         static const std::string _globalConfigFilesKey;
         static const std::string _globalConfigImportersKey;
@@ -84,7 +84,7 @@ namespace darmok
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
-        bool getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs);
+        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         std::string getName() const noexcept;
@@ -102,7 +102,7 @@ namespace darmok
         static const std::string _configIncludeDirsKey;
 
 
-        std::filesystem::path getOutputPath(const Input& input, const std::string& ext) noexcept;
+        std::filesystem::path getOutputPath(const std::filesystem::path& path, const std::string& ext) noexcept;
         static std::string fixPathArgument(const std::filesystem::path& path) noexcept;
     };
 }

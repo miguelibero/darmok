@@ -2,16 +2,11 @@ if(NOT ${DARMOK_BUILD_RMLUI})
   return()
 endif()
 
-set(SAMPLE_NAME darmok-samples-rmlui)
-
-darmok_process_assets(
-  SOURCE_GROUP_NAME "Sample Asset Files"
+darmok_sample_setup(
+  TARGET darmok-samples-rmlui
+  ASSETS 
+    assets/hello_world.rml
+    assets/LatoLatin-Regular.ttf
+    assets/NotoEmoji-Regular.ttf
+    assets/window.rcss
 )
-
-add_executable(
-  ${SAMPLE_NAME}
-  src/main.cpp
-  ${ASSETS}
-)
-
-darmok_sample_setup(${SAMPLE_NAME})

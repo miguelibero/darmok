@@ -41,17 +41,14 @@ private:
 
 int main(int argc, const char* argv[])
 {
-	/*
 	argv = new const char* [] {
 		argv[0],
-			"-i", "../assets/shaders",
-			"-o", "include/private/generated/shaders",
-			"--bgfx-shaderc", "../../vcpkg/buildtrees/bgfx/x64-windows-rel/cmake/bgfx/shaderc.exe",
-			"--bgfx-shader-include", "../../vcpkg/installed/x64-windows/include/bgfx/",
+			"-i", "D:/Projects/darmok/samples/scene/assets",
+			"-o", "D:/Projects/darmok/build/samples/scene/assets",
 			"-d"
 		};
-	argc = 9;
-	*/
+
+	argc = 6;
 
 	return CommandLineAssetImporter()(argc, argv);
 }
