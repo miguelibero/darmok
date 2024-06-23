@@ -26,7 +26,7 @@ function(darmok_process_assets)
   if(NOT IS_ABSOLUTE ${ARGS_OUTPUT})
     set(ARGS_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${ARGS_OUTPUT})
   endif()
-
+  set(CACHE_DIR ${CMAKE_CURRENT_BINARY_DIR}/darmok-assetc-cache)
   if(ARGS_CORE)
     set(EXE_TARGET darmok-coreassetc)
   else()
@@ -35,6 +35,7 @@ function(darmok_process_assets)
   set(CMD $<TARGET_FILE:${EXE_TARGET}>
     --input ${ARGS_INPUT}
     --output ${ARGS_OUTPUT}
+    --cache ${CACHE_DIR}
     --bgfx-shaderc $<TARGET_FILE:bgfx::shaderc>
     --bgfx-shader-include ${BGFX_SHADER_INCLUDE_PATH}
   )

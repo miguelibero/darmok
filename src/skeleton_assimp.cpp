@@ -53,6 +53,21 @@ namespace darmok
         return AssimpSkeletonConverter(*scene).createSkeleton();
     }
 
+    AssimpSkeletonLoader::AssimpSkeletonLoader(IDataLoader& dataLoader) noexcept
+        : _impl(std::make_unique<AssimpSkeletonLoaderImpl>(dataLoader))
+    {
+    }
+
+    AssimpSkeletonLoader::~AssimpSkeletonLoader() noexcept
+    {
+        // empty on purpose
+    }
+
+    AssimpSkeletonLoader::result_type AssimpSkeletonLoader::operator()(std::string_view name)
+    {
+        return (*_impl)(name);
+    }
+
     AssimpSkeletonImporterImpl::AssimpSkeletonImporterImpl() noexcept
         : _dataLoader(_fileReader, _allocator)
         , _sceneLoader(_dataLoader)

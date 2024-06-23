@@ -47,7 +47,7 @@ namespace
 			getAssets().getAssimpModelLoader().setConfig({
 				.standardProgram = StandardProgramType::ForwardPhong
 			});
-			auto model = getAssets().getModelLoader()("human.fbx");
+			auto model = getAssets().getModelLoader()("human.dml");
 
 			ModelSceneConfigurer configurer(*scene, getAssets());
 			configurer.run(*model, [scene](const auto& node, Entity entity) {

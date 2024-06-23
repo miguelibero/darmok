@@ -3,12 +3,11 @@
 #include <filesystem>
 #include <bx/filepath.h>
 
-#ifdef DARMOK_OZZ
-#include <darmok/skeleton_ozz.hpp>
-#endif
-
 #ifdef DARMOK_ASSIMP
 #include <darmok/model_assimp.hpp>
+#ifdef DARMOK_OZZ
+#include <darmok/skeleton_assimp.hpp>
+#endif
 #endif
 
 namespace darmok
@@ -238,34 +237,63 @@ namespace darmok
 		return *_impl;
 	}
 
+	DarmokAssetImporter::DarmokAssetImporter(const CommandLineAssetImporterConfig& config)
+		: DarmokAssetImporter(config.inputPath)
+	{
+		if (!config.cachePath.empty())
+		{
+			setCachePath(config.cachePath);
+		}
+		if (!config.outputPath.empty())
+		{
+			setOutputPath(config.outputPath);
+		}
+		if (!config.shadercPath.empty())
+		{
+			setShadercPath(config.shadercPath);
+		}
+		for (auto& path : config.shaderIncludePaths)
+		{
+			addShaderIncludePath(path);
+		}
+	}
+
 	DarmokAssetImporter::DarmokAssetImporter(const std::filesystem::path& inputPath)
 		: _importer(inputPath)
 		, _shaderImporter(_importer.addTypeImporter<ShaderImporter>())
 	{
 #ifdef DARMOK_ASSIMP
 		_importer.addTypeImporter<AssimpModelImporter>();
-#endif
 #ifdef DARMOK_OZZ
-		// _importer.addTypeImporter<OzzSkeletonImporter>();
+		_importer.addTypeImporter<AssimpSkeletonImporter>();
 #endif
-
+#endif
 		_importer.addTypeImporter<VertexLayoutImporter>();
 		_importer.addTypeImporter<CopyAssetImporter>();
 	}
 
-	void DarmokAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
+	DarmokAssetImporter& DarmokAssetImporter::setCachePath(const std::filesystem::path& cachePath) noexcept
+	{
+		_importer.setCachePath(cachePath);
+		return *this;
+	}
+
+	DarmokAssetImporter& DarmokAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
 	{
 		_importer.setOutputPath(outputPath);
+		return *this;
 	}
 
-	void DarmokAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
+	DarmokAssetImporter& DarmokAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
 	{
 		_shaderImporter.setShadercPath(path);
+		return *this;
 	}
 
-	void DarmokAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
+	DarmokAssetImporter& DarmokAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
 	{
 		_shaderImporter.addIncludePath(path);
+		return *this;
 	}
 
 	std::vector<std::filesystem::path> DarmokAssetImporter::getOutputs() const

@@ -6,37 +6,15 @@ using namespace darmok;
 class CommandLineAssetImporter final : public BaseCommandLineAssetImporter
 {
 protected:
-	void setInputPath(const std::filesystem::path& inputPath) override
+	std::vector<std::filesystem::path> getOutputs(const Config& config) const override
 	{
-		_importer.emplace(inputPath);
+		return DarmokAssetImporter(config).getOutputs();
 	}
 
-	void setOutputPath(const std::filesystem::path& outputPath) override
+	void import(const Config & config, std::ostream& log) const override
 	{
-		_importer->setOutputPath(outputPath);
+		return DarmokAssetImporter(config)(log);
 	}
-
-	void setShadercPath(const std::filesystem::path& path) override
-	{
-		_importer->setShadercPath(path);
-	}
-
-	void addShaderIncludePath(const std::filesystem::path& path) override
-	{
-		_importer->addShaderIncludePath(path);
-	}
-
-	std::vector<std::filesystem::path> getOutputs() const override
-	{
-		return _importer->getOutputs();
-	}
-
-	void import(std::ostream& log) const override
-	{
-		return _importer.value()(log);
-	}
-private:
-	std::optional<DarmokAssetImporter> _importer;
 };
 
 int main(int argc, const char* argv[])
@@ -44,12 +22,11 @@ int main(int argc, const char* argv[])
 	/*
 	argv = new const char* [] {
 		argv[0],
-			"-i", "D:/Projects/darmok/samples/scene/assets",
-			"-o", "D:/Projects/darmok/build/samples/scene/assets",
-			"-d"
+			"-i", "D:/Projects/darmok/samples/assimp/assets",
+			"-o", "D:/Projects/darmok/build/samples/assimp/assets",
+			"-c", "D:/Projects/darmok/build/darmok-assetc-cache"
 		};
-
-	argc = 6;
+	argc = 7;
 	*/
 
 	return CommandLineAssetImporter()(argc, argv);

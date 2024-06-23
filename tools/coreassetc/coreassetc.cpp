@@ -5,37 +5,15 @@ using namespace darmok;
 class CommandLineAssetImporter final : public BaseCommandLineAssetImporter
 {
 protected:
-	void setInputPath(const std::filesystem::path& inputPath) override
+	std::vector<std::filesystem::path> getOutputs(const Config& config) const override
 	{
-		_importer.emplace(inputPath);
+		return DarmokCoreAssetImporter(config).getOutputs();
 	}
 
-	void setOutputPath(const std::filesystem::path& outputPath) override
+	void import(const Config& config, std::ostream & log) const override
 	{
-		_importer->setOutputPath(outputPath);
+		return DarmokCoreAssetImporter(config)(log);
 	}
-
-	void setShadercPath(const std::filesystem::path& path) override
-	{
-		_importer->setShadercPath(path);
-	}
-
-	void addShaderIncludePath(const std::filesystem::path& path) override
-	{
-		_importer->addShaderIncludePath(path);
-	}
-
-	std::vector<std::filesystem::path> getOutputs() const override
-	{
-		return _importer->getOutputs();
-	}
-
-	void import(std::ostream& log) const override
-	{
-		return _importer.value()(log);
-	}
-private:
-	std::optional<DarmokCoreAssetImporter> _importer;
 };
 
 int main(int argc, const char* argv[])
@@ -45,11 +23,12 @@ int main(int argc, const char* argv[])
 		argv[0],
 			"-i", "../assets/shaders",
 			"-o", "include/private/generated/shaders",
+			"-c", "darmok-assetc-cache",
 			"--bgfx-shaderc", "../../vcpkg/buildtrees/bgfx/x64-windows-rel/cmake/bgfx/shaderc.exe",
 			"--bgfx-shader-include", "../../vcpkg/installed/x64-windows/include/bgfx/",
 			"-d"
 		};
-	argc = 10;
+	argc = 12;
 	*/
 	return CommandLineAssetImporter()(argc, argv);
 }

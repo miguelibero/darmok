@@ -59,10 +59,12 @@ namespace darmok
 	class DARMOK_EXPORT DarmokAssetImporter final
 	{
 	public:
+		DarmokAssetImporter(const CommandLineAssetImporterConfig& config);
 		DarmokAssetImporter(const std::filesystem::path& inputPath);
-		void setOutputPath(const std::filesystem::path& outputPath) noexcept;
-		void setShadercPath(const std::filesystem::path& path) noexcept;
-		void addShaderIncludePath(const std::filesystem::path& path) noexcept;
+		DarmokAssetImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
+		DarmokAssetImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
+		DarmokAssetImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+		DarmokAssetImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
 		std::vector<std::filesystem::path> getOutputs() const;
 		void operator()(std::ostream& log) const;
 	private:

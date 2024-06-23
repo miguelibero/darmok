@@ -12,6 +12,8 @@
 #include <fstream>
 #include <stdexcept>
 #include <cstdlib>
+#include <algorithm>
+#include <chrono>
 
 namespace darmok
 {
@@ -62,8 +64,7 @@ namespace darmok
             loadInputConfig(path, nlohmann::json());
             return false;
         }
-        std::ifstream is(configPath);
-        loadInputConfig(path, nlohmann::json::parse(is));
+        loadInputConfig(path, nlohmann::json::parse(std::ifstream(configPath)));
         return true;
     }
 
@@ -73,8 +74,7 @@ namespace darmok
         {
             return false;
         }
-        std::ifstream is(path);
-        auto config = nlohmann::json::parse(is);
+        auto config = nlohmann::json::parse(std::ifstream(path));
         if (config.contains(_globalConfigHeaderVarPrefixKey))
         {
             _headerVarPrefix = config[_globalConfigHeaderVarPrefixKey];
@@ -97,7 +97,8 @@ namespace darmok
         {
             for (auto& item : config[_globalConfigFilesKey].items())
             {
-                loadInputConfig(item.key(), item.value());
+                auto path = _inputPath / item.key();
+                loadInputConfig(path, item.value());
             }
         }
         if (config.contains(_globalConfigImportersKey))
@@ -116,7 +117,7 @@ namespace darmok
         if (json.is_primitive())
         {
             return nlohmann::json{
-                { json.get<std::string>(), nullptr }
+                { json.get<std::string>(), nlohmann::json::object() }
             };
         }
         if (json.is_array())
@@ -140,7 +141,7 @@ namespace darmok
 
     void AssetImporterImpl::mergeJsonObjects(nlohmann::json& json1, const nlohmann::json& json2) noexcept
     {
-        json1 += json2;
+        json1.update(json2);
     }
 
     const nlohmann::json& AssetImporterImpl::loadInputConfig(const std::filesystem::path& path, const nlohmann::json& json) noexcept
@@ -153,6 +154,96 @@ namespace darmok
         }
         mergeJsonObjects(itr->second, fixedJson);
         return itr->second;
+    }
+
+   std::time_t AssetImporterImpl::getUpdateTime(const std::filesystem::path& path)
+    {
+        std::filesystem::file_time_type ftime = std::filesystem::last_write_time(path);
+        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+            ftime - std::filesystem::file_time_type::clock::now() +
+            std::chrono::system_clock::now()
+        );
+        return std::chrono::system_clock::to_time_t(sctp);
+    }
+
+    void AssetImporterImpl::setCachePath(const std::filesystem::path& cachePath) noexcept
+    {
+        auto fileName = fs::absolute(_inputPath.string()).string();
+        static const std::string separators("\\/:");
+        for (auto& chr : separators)
+        {
+            std::replace(fileName.begin(), fileName.end(), chr, '_');
+        }
+        _cachePath = cachePath / (fileName + ".json");
+        auto cache = nlohmann::json::object();
+        if (fs::exists(_cachePath))
+        {
+            cache = nlohmann::json::parse(std::ifstream(_cachePath));
+        }
+        for (auto& input : _inputs)
+        {
+            auto& path = input.first;
+            auto relPath = fs::relative(path, _inputPath).string();
+            auto itr = cache.find(relPath);
+            auto cacheTime = itr == cache.end() ? 0 : itr.value().get<std::time_t>();
+            _inputCache.emplace(path, InputCacheData{ 0, cacheTime });
+        }
+    }
+
+    bool AssetImporterImpl::isCached(const std::filesystem::path& path, std::time_t* updateTime) const
+    {
+        auto itr = _inputCache.find(path);
+        if (itr == _inputCache.end())
+        {
+            itr = _inputCache.emplace(path, InputCacheData{ 0, 0 }).first;
+        }
+        auto& data = itr->second;
+        if (data.updateTime == 0)
+        {
+            data.updateTime = getUpdateTime(path);
+        }
+        if (updateTime)
+        {
+            *updateTime = data.updateTime;
+        }
+        return data.updateTime <= data.cacheTime;
+    }
+
+    bool AssetImporterImpl::writeCache(const std::vector<std::filesystem::path>& inputPaths) const
+    {
+        if (_cachePath.empty())
+        {
+            return false;
+        }
+        std::unordered_map<fs::path, std::time_t> updatedInputs;
+        for (auto& path : inputPaths)
+        {
+            std::time_t updateTime;
+            if (!isCached(path, &updateTime))
+            {
+                updatedInputs.emplace(path, updateTime);
+            }
+        }
+        if (updatedInputs.empty())
+        {
+            return false;
+        }
+        auto cache = nlohmann::json::object();
+        if (fs::exists(_cachePath))
+        {
+            std::ifstream is(_cachePath);
+            cache = nlohmann::json::parse(is);
+        }
+        for (auto& elm : updatedInputs)
+        {
+            auto relPath = fs::relative(elm.first, _inputPath).string();
+            cache[relPath] = elm.second;
+        }
+        fs::create_directories(_cachePath.parent_path());
+        std::ofstream os(_cachePath);
+        os << cache.dump(2);
+        os.close();
+        return true;
     }
 
     void AssetImporterImpl::setOutputPath(const std::filesystem::path& outputPath) noexcept
@@ -225,10 +316,28 @@ namespace darmok
         std::vector<fs::path> outputs;
         for (auto& [importer, input] : getImporterInputs())
         {
-            auto size = getOutputs(importer.value(), input, outputs);
-            if (_produceHeaders && size > 1)
+            std::vector<fs::path> inputOutputs;
+            auto size = getOutputs(importer.value(), input, inputOutputs);
+            auto allOutputsCached = true;
+            if (!isCached(input.path))
             {
-                auto groups = getPathGroups({ outputs.end() - size, outputs.end() });
+                outputs.insert(outputs.end(), inputOutputs.begin(), inputOutputs.end());
+                allOutputsCached = false;
+            }
+            else
+            {
+                for (auto& output : inputOutputs)
+                {
+                    if (!fs::exists(output))
+                    {
+                        outputs.push_back(output);
+                        allOutputsCached = false;
+                    }
+                }
+            }
+            if (_produceHeaders && size > 1 && !allOutputsCached)
+            {
+                auto groups = getPathGroups(inputOutputs);
                 for (auto& [groupPath, paths] : groups)
                 {
                     if (std::find(outputs.begin(), outputs.end(), groupPath) == outputs.end())
@@ -238,6 +347,7 @@ namespace darmok
                 }
             }
         }
+
         return outputs;
     }
 
@@ -262,18 +372,28 @@ namespace darmok
     void AssetImporterImpl::operator()(std::ostream& log) const
     {
         log << "importing " << _inputPath << " -> " << _outputPath << "..." << std::endl;
+        std::vector<fs::path> updatedInputs;
         for (auto& [importer, input] : getImporterInputs())
         {
-            auto outputs = importFile(importer.value(), input, log);
-            if (_produceHeaders)
+            auto result = importFile(importer.value(), input, log);
+            if (!result.outputs.empty() && !result.inputCached)
             {
-                auto groups = getPathGroups(outputs);
+                updatedInputs.push_back(input.path);
+            }
+            if (!result.updatedOutputs.empty())
+            {
+                auto groups = getPathGroups(result.outputs);
                 for (auto& [groupPath, paths] : groups)
                 {
-                    log << "combined header" << " " << groupPath  << "..." << std::endl;
+                    log << "combined header " << groupPath  << "..." << std::endl;
                     produceCombinedHeader(groupPath, paths);
                 }
             }
+        }
+        if (!_cachePath.empty() && !updatedInputs.empty())
+        {
+            log << "writing cache " << _cachePath << "..." << std::endl;
+            writeCache(updatedInputs);
         }
     }
 
@@ -312,17 +432,18 @@ namespace darmok
         return importerOutputs.size();
     }
 
-    std::vector<std::filesystem::path> AssetImporterImpl::importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const
+    AssetImporterImpl::FileImportResult AssetImporterImpl::importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const
     {
-        std::vector<fs::path> outputs;
-        if (!importer.getOutputs(input, _inputPath, outputs))
+        FileImportResult result;
+        if (!importer.getOutputs(input, _inputPath, result.outputs))
         {
-            return outputs;
+            return result;
         }
+        result.inputCached = isCached(input.path);
         importer.setLogOutput(log);
         size_t i = 0;
         auto relInPath = fs::relative(input.path, _inputPath);
-        for (fs::path& output : outputs)
+        for (fs::path& output : result.outputs)
         {
             std::string headerVarName;
             if (_produceHeaders)
@@ -335,8 +456,13 @@ namespace darmok
             auto relOutPath = relInPath.parent_path() / output;
             auto outPath = _outputPath / relOutPath;
 
-            log << importer.getName() << " " << relInPath << " -> " << relOutPath << "..." << std::endl;
-
+            if (result.inputCached && fs::exists(outPath))
+            {
+                // log << importer.getName() << ": skipping " << relInPath << " -> " << relOutPath << std::endl;
+                continue;
+            }
+            log << importer.getName() << ": " << relInPath << " -> " << relOutPath << "..." << std::endl;
+            result.updatedOutputs.push_back(output);
             fs::create_directories(outPath.parent_path());
             if (_produceHeaders)
             {
@@ -354,7 +480,7 @@ namespace darmok
             ++i;
         }
 
-        return outputs;
+        return result;
     }
 
     AssetImporter::AssetImporter(const fs::path& inputPath)
@@ -365,6 +491,12 @@ namespace darmok
     AssetImporter::~AssetImporter() noexcept
     {
         // empty on purpose
+    }
+
+    AssetImporter& AssetImporter::setCachePath(const std::filesystem::path& cachePath) noexcept
+    {
+        _impl->setCachePath(cachePath);
+        return *this;
     }
 
     AssetImporter& AssetImporter::addTypeImporter(std::unique_ptr<IAssetTypeImporter>&& importer) noexcept
@@ -396,7 +528,7 @@ namespace darmok
 
     size_t CopyAssetImporter::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
     {
-        if (input.config.empty() && (!input.globalConfig.is_object() || input.globalConfig["all"] != true))
+        if (input.config.is_null() && (!input.globalConfig.is_object() || input.globalConfig["all"] != true))
         {
             return 0;
         }
@@ -635,6 +767,27 @@ namespace darmok
         _impl->setLogOutput(log);
     }
 
+    DarmokCoreAssetImporter::DarmokCoreAssetImporter(const CommandLineAssetImporterConfig& config)
+        : DarmokCoreAssetImporter(config.inputPath)
+    {
+        if (!config.cachePath.empty())
+        {
+            setCachePath(config.cachePath);
+        }
+        if (!config.outputPath.empty())
+        {
+            setOutputPath(config.outputPath);
+        }
+        if (!config.shadercPath.empty())
+        {
+            setShadercPath(config.shadercPath);
+        }
+        for (auto& path : config.shaderIncludePaths)
+        {
+            addShaderIncludePath(path);
+        }
+    }
+
     DarmokCoreAssetImporter::DarmokCoreAssetImporter(const std::filesystem::path& inputPath)
         : _importer(inputPath)
         , _shaderImporter(_importer.addTypeImporter<ShaderImporter>())
@@ -643,19 +796,28 @@ namespace darmok
         _importer.addTypeImporter<VertexLayoutImporter>();
     }
 
-    void DarmokCoreAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
+    DarmokCoreAssetImporter& DarmokCoreAssetImporter::setCachePath(const std::filesystem::path& cachePath) noexcept
+    {
+        _importer.setCachePath(cachePath);
+        return *this;
+    }
+
+    DarmokCoreAssetImporter& DarmokCoreAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
     {
         _importer.setOutputPath(outputPath);
+        return *this;
     }
 
-    void DarmokCoreAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
+    DarmokCoreAssetImporter& DarmokCoreAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
     {
         _shaderImporter.setShadercPath(path);
+        return *this;
     }
 
-    void DarmokCoreAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
+    DarmokCoreAssetImporter& DarmokCoreAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
     {
         _shaderImporter.addIncludePath(path);
+        return *this;
     }
 
     std::vector<fs::path> DarmokCoreAssetImporter::getOutputs() const
@@ -723,6 +885,7 @@ namespace darmok
         std::cout << "  -v, --version           Output version information and exit." << std::endl;
         std::cout << "  -i, --input <path>      Input file path (can be a file or a directory)." << std::endl;
         std::cout << "  -o, --output <path>     Output file path (can be a file or a directory)." << std::endl;
+        std::cout << "  -c, --cache <path>      Cache file path (directory that keeps the timestamps of the inputs)." << std::endl;
         std::cout << "  -d, --dry               Do not process assets, just print output files." << std::endl;
         std::cout << "  --bgfx-shaderc          Path of the bgfx shaderc executable." << std::endl;
         std::cout << "  --bgfx-shader-include   Path of the bgfx shader include dir." << std::endl;
@@ -747,30 +910,37 @@ namespace darmok
         {
             throw std::runtime_error("Input file path must be specified.");
         }
-        _importer.setInputPath(inputPath);
+        Config config;
+        config.inputPath = inputPath;
 
         const char* outputPath = cmdLine.findOption('o', "output");
         if (outputPath != nullptr)
         {
-            _importer.setOutputPath(outputPath);
+            config.outputPath = outputPath;
+        }
+
+        const char* cachePath = cmdLine.findOption('c', "cache");
+        if (cachePath != nullptr)
+        {
+            config.cachePath = cachePath;
         }
 
         const char* shadercPath = cmdLine.findOption("bgfx-shaderc");
         if (shadercPath != nullptr)
         {
-            _importer.setShadercPath(shadercPath);
+            config.shadercPath = shadercPath;
         }
 
         // TODO: support multiple includes
         const char* shaderIncludePath = cmdLine.findOption("bgfx-shader-include");
         if (shaderIncludePath != nullptr)
         {
-            _importer.addShaderIncludePath(shaderIncludePath);
+            config.shaderIncludePaths.push_back(shaderIncludePath);
         }
 
         if (cmdLine.hasArg('d', "dry"))
         {
-            for (auto& output : _importer.getOutputs())
+            for (auto& output : _importer.getOutputs(config))
             {
                 std::cout << output.string() << std::endl;
             }
@@ -778,7 +948,7 @@ namespace darmok
         else
         {
             PrefixStream log(std::cout, name + ": ");
-            _importer.import(log);
+            _importer.import(config, log);
         }
         return bx::kExitSuccess;
     }

@@ -8,19 +8,23 @@ function(darmok_sample_setup)
     ${ARGS_SOURCES}
     ${ARGS_ASSETS}
   )
-  darmok_process_assets(
-    TARGET ${ARGS_TARGET}-assets
-    INPUT ${ARGS_INPUT}
-    OUTPUT ${ARGS_OUTPUT}
-    DEPENDS ${ASSETS}
-  )
-  source_group("Asset Files" FILES ${ASSETS})
   target_compile_definitions(${ARGS_TARGET} PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1")
   target_link_libraries(${ARGS_TARGET} PUBLIC darmok)
   darmok_copy_dynamic_libs(${ARGS_TARGET})
   set_target_properties(${ARGS_TARGET} PROPERTIES FOLDER "darmok/samples")
-  add_dependencies(${ARGS_TARGET} ${ARGS_TARGET}-assets)
-  endfunction()
+
+  if(ARGS_ASSETS)
+    darmok_process_assets(
+      TARGET ${ARGS_TARGET}-assets
+      INPUT ${ARGS_INPUT}
+      OUTPUT ${ARGS_OUTPUT}
+      DEPENDS ${ARGS_ASSETS}
+    )
+    source_group("Asset Files" FILES ${ARGS_ASSETS})
+    add_dependencies(${ARGS_TARGET} ${ARGS_TARGET}-assets)
+  endif()
+
+endfunction()
 
 function(darmok_lua_sample_setup)
   cmake_parse_arguments(ARGS "" "TARGET" "ASSETS" "${ARGN}")

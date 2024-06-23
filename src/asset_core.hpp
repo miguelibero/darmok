@@ -24,15 +24,25 @@ namespace darmok
         using Input = AssetTypeImporterInput;
 
         AssetImporterImpl(const std::filesystem::path& inputPath);
+        void setCachePath(const std::filesystem::path& cachePath) noexcept;
         void setOutputPath(const std::filesystem::path& outputPath) noexcept;
         std::vector<std::filesystem::path> getOutputs() const;
         void addTypeImporter(std::unique_ptr<IAssetTypeImporter>&& importer) noexcept;
         void operator()(std::ostream& log) const;
 	private:
         std::filesystem::path _inputPath;
+        std::filesystem::path _outputPath;
+        std::filesystem::path _cachePath;
+
+        struct InputCacheData
+        {
+            std::time_t updateTime;
+            std::time_t cacheTime;
+        };
+
+        mutable std::unordered_map<std::filesystem::path, InputCacheData> _inputCache;
         std::unordered_map<std::filesystem::path, nlohmann::json> _inputs;
         nlohmann::json _importersConfig;
-        std::filesystem::path _outputPath;
         std::string _headerVarPrefix;
         bool _produceHeaders;
         std::filesystem::path _headerIncludeDir;
@@ -49,7 +59,15 @@ namespace darmok
         using ImporterInputs = std::vector<std::pair<OptionalRef<IAssetTypeImporter>, Input>>;
         ImporterInputs getImporterInputs() const;
         size_t getOutputs(IAssetTypeImporter& importer, const Input& input, std::vector<std::filesystem::path>& outputs) const;
-        std::vector<std::filesystem::path> importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const;
+
+        struct FileImportResult final
+        {
+            std::vector<std::filesystem::path> outputs;
+            bool inputCached;
+            std::vector<std::filesystem::path> updatedOutputs;
+        };
+
+        FileImportResult importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path, const std::string& baseName) const noexcept;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path) const noexcept;
         bool loadInput(const std::filesystem::path& path);
@@ -60,6 +78,9 @@ namespace darmok
         using PathGroups = std::unordered_map<std::filesystem::path, std::vector<std::filesystem::path>>;
         PathGroups getPathGroups(const std::vector<std::filesystem::path>& paths) const noexcept;
         void produceCombinedHeader(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths) const;
+        static std::time_t getUpdateTime(const std::filesystem::path& path);
+        bool isCached(const std::filesystem::path& path, std::time_t* updateTime = nullptr) const;
+        bool writeCache(const std::vector<std::filesystem::path>& inputPaths) const;
     };
 
     class BaseCommandLineAssetImporter;
@@ -67,6 +88,7 @@ namespace darmok
     class CommandLineAssetImporterImpl final
     {
     public:
+        using Config = CommandLineAssetImporterConfig;
         CommandLineAssetImporterImpl(BaseCommandLineAssetImporter& importer) noexcept;
         int operator()(int argc, const char* argv[]) noexcept;
     private:
