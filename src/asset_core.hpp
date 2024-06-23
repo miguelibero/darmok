@@ -71,7 +71,7 @@ namespace darmok
         std::filesystem::path getHeaderPath(const std::filesystem::path& path, const std::string& baseName) const noexcept;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path) const noexcept;
         bool loadInput(const std::filesystem::path& path);
-        bool loadGlobalConfig(const std::filesystem::path& path);
+        bool loadGlobalConfig(const std::filesystem::path& path, const std::vector<std::filesystem::path>& inputPaths);
         const nlohmann::json& loadInputConfig(const std::filesystem::path& path, const nlohmann::json& json) noexcept;
         static nlohmann::json fixInputConfig(const nlohmann::json& json) noexcept;
         static void mergeJsonObjects(nlohmann::json& json1, const nlohmann::json& json2) noexcept;
@@ -106,10 +106,10 @@ namespace darmok
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
-        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs);
+        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
-        std::string getName() const noexcept;
+        const std::string& getName() const noexcept;
 
     private:
         size_t _bufferSize;

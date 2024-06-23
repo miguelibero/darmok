@@ -77,22 +77,15 @@ namespace darmok
         }
     };
 
-    AssimpSceneLoader::AssimpSceneLoader(IDataLoader& dataLoader) noexcept
-        : _dataLoader(dataLoader)
-    {
-    }
-
     bool AssimpSceneLoader::supports(std::string_view name) const noexcept
     {
         Assimp::Importer importer;
         return importer.IsExtensionSupported(std::filesystem::path(name).extension().string());
     }
 
-    std::shared_ptr<aiScene> AssimpSceneLoader::operator()(std::string_view path)
+    unsigned int AssimpSceneLoader::getImporterFlags() noexcept
     {
-        auto data = _dataLoader(path);
-
-        static const unsigned int flags = aiProcess_CalcTangentSpace |
+        return aiProcess_CalcTangentSpace |
             aiProcess_Triangulate |
             aiProcess_JoinIdenticalVertices |
             aiProcess_SortByPType |
@@ -101,17 +94,33 @@ namespace darmok
             // aiProcess_PopulateArmatureData |
             // assimp (and opengl) is right handed (+Z points towards the camera)
             // while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
-            aiProcess_ConvertToLeftHanded
-            ;
+            aiProcess_ConvertToLeftHanded;
+    }
 
+    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromFile(const std::filesystem::path& path)
+    {
         Assimp::Importer importer;
-        std::string pathStr(path);
-        auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), flags, pathStr.c_str());
+        auto ptr = importer.ReadFile(path.string(), getImporterFlags());
         if (ptr == nullptr)
         {
             throw std::runtime_error(importer.GetErrorString());
         }
+        return fixScene(importer);
+    }
 
+    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromMemory(const DataView& data, const std::string& name)
+    {
+        Assimp::Importer importer;
+        auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(), name.c_str());
+        if (ptr == nullptr)
+        {
+            throw std::runtime_error(importer.GetErrorString());
+        }
+        return fixScene(importer);
+    }
+
+    std::shared_ptr<aiScene> AssimpSceneLoader::fixScene(Assimp::Importer& importer) noexcept
+    {
         auto scene = importer.GetOrphanedScene();
 
         // scale camera clip planes, seems to be an assimp bug
@@ -124,13 +133,11 @@ namespace darmok
             cam->mClipPlaneNear *= scale;
             cam->mClipPlaneFar *= scale;
         }
-
         return std::shared_ptr<aiScene>(scene);
     }
 
     AssimpModelLoaderImpl::AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader) noexcept
-        : _sceneLoader(dataLoader)
-        , _dataLoader(dataLoader)
+        : _dataLoader(dataLoader)
         , _allocator(allocator)
         , _imgLoader(imgLoader)
     {
@@ -147,11 +154,11 @@ namespace darmok
         return _sceneLoader.supports(name);
     }
 
-    std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(std::string_view path)
+    std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(std::string_view name)
     {
-        auto scene = _sceneLoader(path);        
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name).view(), std::string(name));
         auto model = std::make_shared<Model>();
-        auto basePath = std::filesystem::path(path).parent_path().string();
+        auto basePath = std::filesystem::path(name).parent_path().string();
 
         AssimpModelConverter ctxt(*scene, basePath, _config, _allocator, _imgLoader);
         ctxt.update(*model);
@@ -502,9 +509,7 @@ namespace darmok
     AssimpModelImporterImpl::AssimpModelImporterImpl()
         : _dataLoader(_fileReader, _allocator)
         , _imgLoader(_dataLoader, _allocator)
-        , _assimpLoader(_dataLoader, _allocator, _imgLoader)
-        , _layoutLoader(_dataLoader)
-        , _progLoader(_dataLoader, _layoutLoader)
+        , _programVertexLayoutSuffix(".vlayout")
     {
     }
 
@@ -520,7 +525,7 @@ namespace darmok
             outSuffix += ".xml";
             break;
         }
-        auto stem = StringUtils::getFileStem(path.filename().string());
+        auto stem = std::string(StringUtils::getFileStem(path.filename().string()));
         return path.parent_path() / (stem + outSuffix);
     }
 
@@ -530,7 +535,7 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_embedTexturesJsonKey = "embedTextures";
     const std::string AssimpModelImporterImpl::_programJsonKey = "program";
 
-    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, LoadConfig& config)
+    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config)
     {
         if (json.contains(_vertexLayoutJsonKey))
         {
@@ -561,14 +566,15 @@ namespace darmok
             }
             else
             {
-                config.vertexLayout = _progLoader.loadVertexLayout(config.programName);
+                auto path = basePath / (config.programName + _programVertexLayoutSuffix);
+                VertexLayoutUtils::readFile(path, config.vertexLayout);
             }
         }
     }
 
-    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, Config& config)
+    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
     {
-        loadConfig(json, config.loadConfig);
+        loadConfig(json, basePath, config.loadConfig);
         if (json.contains(_outputPathJsonKey))
         {
             config.outputPath = json[_outputPathJsonKey].get<std::string>();
@@ -621,7 +627,7 @@ namespace darmok
         return layout;
     }
 
-    size_t AssimpModelImporterImpl::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
+    size_t AssimpModelImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
         if (input.config.empty())
         {
@@ -632,11 +638,10 @@ namespace darmok
             return 0;
         }
         Config config;
-        loadConfig(input.config, config);
+        loadConfig(input.config, input.basePath, config);
         if (config.outputPath.empty())
         {
-            auto relPath = std::filesystem::relative(input.path, basePath);
-            outputs.push_back(getOutputPath(relPath, config.outputFormat));
+            outputs.push_back(getOutputPath(input.getRelativePath(), config.outputFormat));
         }
         else
         {
@@ -648,7 +653,7 @@ namespace darmok
     std::ofstream AssimpModelImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
         Config config;
-        loadConfig(input.config, config);
+        loadConfig(input.config, input.basePath, config);
         switch (config.outputFormat)
         {
         case OutputFormat::Binary:
@@ -661,41 +666,49 @@ namespace darmok
     void AssimpModelImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         Config config;
-        loadConfig(input.config, config);
-        auto model = read(input.path, config.loadConfig);
+        loadConfig(input.config, input.basePath, config);
+        Model model;
+        read(input.path, config.loadConfig, model);
         switch (config.outputFormat)
         {
             case OutputFormat::Binary:
             {
                 cereal::BinaryOutputArchive archive(out);
-                archive(*model);
+                archive(model);
                 break;
             }
             case OutputFormat::Json:
             {
                 cereal::JSONOutputArchive archive(out);
-                archive(*model);
+                archive(model);
                 break;
             }
             case OutputFormat::Xml:
             {
                 cereal::XMLOutputArchive archive(out);
-                archive(*model);
+                archive(model);
                 break;
             }
         }
     }
 
-    std::string AssimpModelImporterImpl::getName() const noexcept
+    const std::string& AssimpModelImporterImpl::getName() const noexcept
     {
         static const std::string name("model");
         return name;
     }
 
-    std::shared_ptr<Model> AssimpModelImporterImpl::read(const std::filesystem::path& path, const LoadConfig& config)
+    void AssimpModelImporterImpl::read(const std::filesystem::path& path, const LoadConfig& config, Model& model)
     {
-        _assimpLoader.setConfig(config);
-        return _assimpLoader(path.string());
+        auto scene = _assimpLoader.loadFromFile(path);
+        auto basePath = std::filesystem::path(path).parent_path().string();
+        AssimpModelConverter ctxt(*scene, basePath, config, _allocator, _imgLoader);
+        ctxt.update(model);
+    }
+
+    void AssimpModelImporterImpl::setProgramVertexLayoutSuffix(const std::string& suffix)
+    {
+        _programVertexLayoutSuffix = suffix;
     }
 
     AssimpModelImporter::AssimpModelImporter()
@@ -708,14 +721,9 @@ namespace darmok
         // empty on purpose
     }
 
-    std::shared_ptr<Model> AssimpModelImporter::read(const std::filesystem::path& path, const LoadConfig& config) const
+    size_t AssimpModelImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
-        return _impl->read(path, config);
-    }
-
-    size_t AssimpModelImporter::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
-    {
-        return _impl->getOutputs(input, basePath, outputs);
+        return _impl->getOutputs(input, outputs);
     }
 
     std::ofstream AssimpModelImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
@@ -728,7 +736,7 @@ namespace darmok
         return _impl->writeOutput(input, outputIndex, out);
     }
 
-    std::string AssimpModelImporter::getName() const noexcept
+    const std::string& AssimpModelImporter::getName() const noexcept
     {
         return _impl->getName();
     }

@@ -103,7 +103,7 @@ namespace darmok
 		return (high << 4) | low;
 	}
 
-	std::string StringUtils::getFileStem(const std::string& filename) noexcept
+	std::string_view StringUtils::getFileStem(std::string_view filename) noexcept
 	{
 		auto pos = filename.find('.');
 		if (pos == std::string::npos)
@@ -113,7 +113,7 @@ namespace darmok
 		return filename.substr(0, pos);
 	}
 
-	std::string StringUtils::getFileExt(const std::string& filename) noexcept
+	std::string_view StringUtils::getFileExt(std::string_view filename) noexcept
 	{
 		auto pos = filename.find('.');
 		if (pos == std::string::npos)
@@ -145,11 +145,10 @@ namespace darmok
 		rtrim(str);
 	}
 
-	std::string StringUtils::escapeArgument(const std::string& arg) noexcept
+	std::string StringUtils::escapeArgument(std::string_view arg) noexcept
     {
         std::ostringstream oss;
 
-        // Check if argument needs quoting based on Windows or Unix-like rules
         bool needsQuotes = false;
         for (char c : arg)
         {
@@ -160,7 +159,6 @@ namespace darmok
             }
         }
 
-        // Quote the argument and escape characters inside quotes
         if (needsQuotes)
         {
             oss << '"';
@@ -168,7 +166,7 @@ namespace darmok
             {
                 if (c == '"' || c == '\\')
                 {
-                    oss << '\\'; // Escape double quotes and backslashes
+                    oss << '\\';
                 }
                 oss << c;
             }
@@ -181,4 +179,24 @@ namespace darmok
 
         return oss.str();
     }
+
+	bool StringUtils::containsGlobPattern(std::string_view sv) noexcept
+	{
+		return sv.contains('*') || sv.contains('?');
+	}
+
+	std::string StringUtils::globToRegex(std::string_view glob) noexcept
+	{
+		std::ostringstream regex("^");
+		for (char c : glob) {
+			switch (c) {
+			case '*': regex << ".*"; break;
+			case '?': regex << '.'; break;
+			case '.': regex << "\\."; break;
+			default: regex << c; break;
+			}
+		}
+		regex << '$';
+		return regex.str();
+	}
 }

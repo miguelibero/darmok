@@ -46,6 +46,7 @@ namespace darmok
         AssimpSkeletonLoaderImpl(IDataLoader& dataLoader) noexcept;
         std::shared_ptr<Skeleton> operator()(std::string_view name);
     private:
+        IDataLoader& _dataLoader;
         AssimpSceneLoader _sceneLoader;
     };
 
@@ -55,16 +56,29 @@ namespace darmok
     {
     public:
         using Input = AssetTypeImporterInput;
+        using RawSkeleton = ozz::animation::offline::RawSkeleton;
 
-        AssimpSkeletonImporterImpl() noexcept;
-        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) noexcept;
+        void read(const std::filesystem::path& path, RawSkeleton& skeleton);
+        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) noexcept;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
-        std::string getName() const noexcept;
+        const std::string& getName() const noexcept;
     private:
-        bx::DefaultAllocator _allocator;
-        bx::FileReader _fileReader;
-        FileDataLoader _dataLoader;
+        AssimpSceneLoader _sceneLoader;
+    };
+
+    class AssimpSkeletalAnimationImporterImpl final
+    {
+    public:
+        using Input = AssetTypeImporterInput;
+        using RawAnimation = ozz::animation::offline::RawAnimation;
+
+        void read(const std::filesystem::path& path, RawAnimation& anim);
+        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) noexcept;
+        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
+        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
+        const std::string& getName() const noexcept;
+    private:
         AssimpSceneLoader _sceneLoader;
     };
 }

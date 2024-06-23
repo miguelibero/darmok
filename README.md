@@ -77,14 +77,17 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * 3d physics using jolt
     * rigidbodies
     * character controller
+* tool to export asset folders 
+    * shaders & vertex layouts
+    * copy files
+    * assimp to custom binary model format
+    * ozz skeleton & animations
 
 #### Upcoming (I need them)
-* export asset folders in C++
-* lua camera render
+* lua camera renderer
 * sound
 
 #### Upcoming
-* replace input bindings functions with interfaces
 * window modes with different resolutions
 * frustrum culling
 * modernize renderer (probably needs frame graph or similar)

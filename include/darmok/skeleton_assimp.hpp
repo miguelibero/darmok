@@ -25,11 +25,26 @@ namespace darmok
     public:
         AssimpSkeletonImporter() noexcept;
         ~AssimpSkeletonImporter() noexcept;
-        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) override;
+        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-        std::string getName() const noexcept override;
+        const std::string& getName() const noexcept override;
     private:
         std::unique_ptr<AssimpSkeletonImporterImpl> _impl;
+    };
+
+    class AssimpSkeletalAnimationImporterImpl;
+
+    class DARMOK_EXPORT AssimpSkeletalAnimationImporter final : public IAssetTypeImporter
+    {
+    public:
+        AssimpSkeletalAnimationImporter() noexcept;
+        ~AssimpSkeletalAnimationImporter() noexcept;
+        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
+        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
+        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
+        const std::string& getName() const noexcept override;
+    private:
+        std::unique_ptr<AssimpSkeletalAnimationImporterImpl> _impl;
     };
 }

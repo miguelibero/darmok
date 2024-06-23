@@ -16,8 +16,15 @@ namespace darmok
     struct AssetTypeImporterInput final
     {
         std::filesystem::path path;
+        std::filesystem::path basePath;
+
         nlohmann::json config;
         nlohmann::json globalConfig;
+
+        std::filesystem::path getRelativePath() const
+        {
+            return std::filesystem::relative(path, basePath);
+        }
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IAssetTypeImporter
@@ -29,17 +36,17 @@ namespace darmok
         virtual void setLogOutput(OptionalRef<std::ostream> log) noexcept { };
 
         // return the amount of outputs added
-        virtual size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) = 0;
+        virtual size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) = 0;
 
         // outputIndex is the index of the element in the vector returned by getOutputs
         virtual std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
         {
-            return std::ofstream(outputPath);
+            return std::ofstream(outputPath, std::ios::binary);
         }
 
         virtual void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) = 0;
 
-        virtual std::string getName() const noexcept = 0;
+        virtual const std::string& getName() const noexcept = 0;
     };
 
     class CommandLineAssetImporterImpl;
@@ -116,10 +123,10 @@ namespace darmok
     {
     public:
         CopyAssetImporter(size_t bufferSize = 4096) noexcept;
-        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) override;
+        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-        std::string getName() const noexcept override;
+        const std::string& getName() const noexcept override;
     private:
         size_t _bufferSize;
     };
@@ -134,10 +141,10 @@ namespace darmok
         ShaderImporter& setShadercPath(const std::filesystem::path& path) noexcept;
         ShaderImporter& addIncludePath(const std::filesystem::path& path) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
-        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) override;
+        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-        std::string getName() const noexcept override;
+        const std::string& getName() const noexcept override;
     private:
         std::unique_ptr<ShaderImporterImpl> _impl;
     };

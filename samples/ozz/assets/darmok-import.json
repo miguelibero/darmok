@@ -1,0 +1,23 @@
+{
+    "files": {
+        "animator.json": "copy",
+        "BasicMotionsTexture.png": "copy",
+        "BasicMotions@*.fbx": {
+            "skeletal_animation": {
+                "animations":[
+                    {
+                        "filename": "*.ozz"
+                    }
+                ]
+            }
+        },
+        "BasicMotionsDummyModel.fbx": {
+            "model": {
+                "outputPath": "BasicMotionsDummyModel.dml"
+            },
+            "skeleton": {
+                "outputPath": "skeleton.ozz"
+            }
+        }
+    }
+}

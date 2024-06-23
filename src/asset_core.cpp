@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <chrono>
+#include <regex>
 
 namespace darmok
 {
@@ -22,24 +23,29 @@ namespace darmok
     AssetImporterImpl::AssetImporterImpl(const fs::path& inputPath)
         : _produceHeaders(false)
     {
+        std::vector<fs::path> inputPaths;
         if (fs::is_directory(inputPath))
         {
             _inputPath = inputPath;
-            loadGlobalConfig(inputPath / _globalConfigFile);
-            for (auto& entry : fs::recursive_directory_iterator(inputPath))
-            {
-                loadInput(entry.path());
-            }
-            return;
+            fs::recursive_directory_iterator beg(inputPath), end;
+            inputPaths.insert(inputPaths.begin(), beg, end);
+
         }
-        if (fs::exists(inputPath))
+        else if (fs::exists(inputPath))
         {
             _inputPath = inputPath.parent_path();
-            loadGlobalConfig(_inputPath / _globalConfigFile);
-            loadInput(inputPath);
-            return;
+            inputPaths.push_back(inputPath);
         }
-        throw std::runtime_error("input path does not exist");
+        else
+        {
+            throw std::runtime_error("input path does not exist");
+        }
+
+        loadGlobalConfig(inputPath / _globalConfigFile, inputPaths);
+        for (auto& path : inputPaths)
+        {
+            loadInput(path);
+        }
     }
 
     const std::string AssetImporterImpl::_globalConfigFile = "darmok-import.json";
@@ -68,7 +74,7 @@ namespace darmok
         return true;
     }
 
-    bool AssetImporterImpl::loadGlobalConfig(const fs::path& path)
+    bool AssetImporterImpl::loadGlobalConfig(const fs::path& path, const std::vector<fs::path>& inputPaths)
     {
         if (!fs::exists(path))
         {
@@ -97,8 +103,24 @@ namespace darmok
         {
             for (auto& item : config[_globalConfigFilesKey].items())
             {
-                auto path = _inputPath / item.key();
-                loadInputConfig(path, item.value());
+                auto& key = item.key();
+                if (StringUtils::containsGlobPattern(key))
+                {
+                    std::regex regex(StringUtils::globToRegex(key));
+                    for (auto& path : inputPaths)
+                    {
+                        auto relPath = fs::relative(path, _inputPath).string();
+                        if (std::regex_match(relPath, regex))
+                        {
+                            loadInputConfig(path, item.value());
+                        }
+                    }
+                }
+                else
+                {
+                    auto path = _inputPath / key;
+                    loadInputConfig(path, item.value());
+                }
             }
         }
         if (config.contains(_globalConfigImportersKey))
@@ -280,7 +302,7 @@ namespace darmok
                 {
                     globalConfig = *itr;
                 }
-                inputs.emplace_back(*importer, Input{ path, config, globalConfig });
+                inputs.emplace_back(*importer, Input{ path, _inputPath, config, globalConfig });
             }
         }
         return inputs;
@@ -410,7 +432,7 @@ namespace darmok
     size_t AssetImporterImpl::getOutputs(IAssetTypeImporter& importer, const Input& input, std::vector<fs::path>& outputs) const
     {
         std::vector<fs::path> importerOutputs;
-        if (!importer.getOutputs(input, _inputPath, importerOutputs))
+        if (!importer.getOutputs(input, importerOutputs))
         {
             return 0;
         }
@@ -435,7 +457,7 @@ namespace darmok
     AssetImporterImpl::FileImportResult AssetImporterImpl::importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const
     {
         FileImportResult result;
-        if (!importer.getOutputs(input, _inputPath, result.outputs))
+        if (!importer.getOutputs(input, result.outputs))
         {
             return result;
         }
@@ -526,13 +548,20 @@ namespace darmok
     {
     }
 
-    size_t CopyAssetImporter::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
+    size_t CopyAssetImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
         if (input.config.is_null() && (!input.globalConfig.is_object() || input.globalConfig["all"] != true))
         {
             return 0;
         }
-        outputs.push_back(fs::relative(input.path, basePath));
+        if (input.config.contains("outputPath"))
+        {
+            outputs.push_back(input.config["outputPath"]);
+        }
+        else
+        {
+            outputs.push_back(input.getRelativePath());
+        }
         return 1;
     }
 
@@ -547,7 +576,7 @@ namespace darmok
         copyStream(is, out, _bufferSize);
     }
 
-    std::string CopyAssetImporter::getName() const noexcept
+    const std::string& CopyAssetImporter::getName() const noexcept
     {
         static const std::string name("copy");
         return name;
@@ -605,7 +634,7 @@ namespace darmok
         return path.parent_path() / (stem + ext + _binExt);
     }
 
-    size_t ShaderImporterImpl::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
+    size_t ShaderImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
         auto fileName = input.path.filename().string();
         auto ext = StringUtils::getFileExt(fileName);
@@ -619,8 +648,7 @@ namespace darmok
             auto itr = _profileExtensions.find(profile);
             if (itr != _profileExtensions.end())
             {
-                auto relPath = fs::relative(input.path, basePath);
-                outputs.push_back(getOutputPath(relPath, itr->second));
+                outputs.push_back(getOutputPath(input.getRelativePath(), itr->second));
                 count++;
             }
         }
@@ -714,7 +742,7 @@ namespace darmok
         return str;
     }
 
-    std::string ShaderImporterImpl::getName() const noexcept
+    const std::string& ShaderImporterImpl::getName() const noexcept
     {
         static const std::string name("shader");
         return name;
@@ -730,9 +758,9 @@ namespace darmok
         // empty on purpose
     }
 
-    size_t ShaderImporter::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
+    size_t ShaderImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
-        return _impl->getOutputs(input, basePath, outputs);
+        return _impl->getOutputs(input, outputs);
     }
 
     std::ofstream ShaderImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
@@ -745,7 +773,7 @@ namespace darmok
         return _impl->writeOutput(input, outputIndex, out);
     }
 
-    std::string ShaderImporter::getName() const noexcept
+    const std::string& ShaderImporter::getName() const noexcept
     {
         return _impl->getName();
     }

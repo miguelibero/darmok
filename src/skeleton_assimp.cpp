@@ -5,6 +5,7 @@
 #include <ozz/animation/offline/raw_skeleton.h>
 #include <ozz/animation/offline/raw_animation.h>
 #include <ozz/animation/offline/skeleton_builder.h>
+#include <ozz/base/io/archive.h>
 
 namespace darmok
 {
@@ -39,13 +40,13 @@ namespace darmok
     }
 
     AssimpSkeletonLoaderImpl::AssimpSkeletonLoaderImpl(IDataLoader& dataLoader) noexcept
-        : _sceneLoader(dataLoader)
+        : _dataLoader(dataLoader)
     {
     }
 
     std::shared_ptr<Skeleton> AssimpSkeletonLoaderImpl::operator()(std::string_view name)
     {
-        auto scene = _sceneLoader(name);
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name).view(), std::string(name));
         if (!scene)
         {
             return nullptr;
@@ -68,13 +69,14 @@ namespace darmok
         return (*_impl)(name);
     }
 
-    AssimpSkeletonImporterImpl::AssimpSkeletonImporterImpl() noexcept
-        : _dataLoader(_fileReader, _allocator)
-        , _sceneLoader(_dataLoader)
+    void AssimpSkeletonImporterImpl::read(const std::filesystem::path& path, RawSkeleton& skeleton)
     {
+        auto scene = _sceneLoader.loadFromFile(path);
+        AssimpSkeletonConverter converter(*scene);
+        converter.update(skeleton);
     }
 
-    size_t AssimpSkeletonImporterImpl::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs) noexcept
+    size_t AssimpSkeletonImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) noexcept
     {
         if (input.config.empty())
         {
@@ -84,9 +86,8 @@ namespace darmok
         {
             return 0;
         }
-        auto relPath = std::filesystem::relative(input.path, basePath);
-        auto stem = StringUtils::getFileStem(relPath.stem().string());
-        outputs.push_back(relPath.parent_path() / (stem + ".ozz"));
+        auto stem = std::string(StringUtils::getFileStem(input.path.stem().string()));
+        outputs.push_back(input.getRelativePath().parent_path() / (stem + ".ozz"));
         return 1;
     }
 
@@ -97,9 +98,14 @@ namespace darmok
 
     void AssimpSkeletonImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
+        RawSkeleton skel;
+        read(input.path, skel);
+        ozz::io::File file(input.path.string().c_str(), "wb");
+        ozz::io::OArchive archive(&file);
+        archive << skel;
     }
 
-    std::string AssimpSkeletonImporterImpl::getName() const noexcept
+    const std::string& AssimpSkeletonImporterImpl::getName() const noexcept
     {
         static const std::string name("skeleton");
         return name;
@@ -114,9 +120,9 @@ namespace darmok
     {
     }
 
-    size_t AssimpSkeletonImporter::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
+    size_t AssimpSkeletonImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
     {
-        return _impl->getOutputs(input, basePath, outputs);
+        return _impl->getOutputs(input, outputs);
     }
 
     std::ofstream AssimpSkeletonImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
@@ -129,7 +135,80 @@ namespace darmok
         return _impl->writeOutput(input, outputIndex, out);
     }
 
-    std::string AssimpSkeletonImporter::getName() const noexcept
+    const std::string& AssimpSkeletonImporter::getName() const noexcept
+    {
+        return _impl->getName();
+    }
+
+    size_t AssimpSkeletalAnimationImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) noexcept
+    {
+        if (input.config.empty())
+        {
+            return 0;
+        }
+        if (!_sceneLoader.supports(input.path.string()))
+        {
+            return 0;
+        }
+        auto stem = std::string(StringUtils::getFileStem(input.path.stem().string()));
+        outputs.push_back(input.getRelativePath().parent_path() / (stem + ".ozz"));
+        return 1;
+    }
+
+    std::ofstream AssimpSkeletalAnimationImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    {
+        return std::ofstream(path, std::ios::binary);
+    }
+
+    void AssimpSkeletalAnimationImporterImpl::read(const std::filesystem::path& path, RawAnimation& anim)
+    {
+        auto scene = _sceneLoader.loadFromFile(path);
+        AssimpSkeletonConverter converter(*scene);
+
+        // TODO
+    }
+
+    void AssimpSkeletalAnimationImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    {
+        RawAnimation anim;
+        read(input.path, anim);
+        ozz::io::File file(input.path.string().c_str(), "wb");
+        ozz::io::OArchive archive(&file);
+        archive << anim;
+    }
+
+    const std::string& AssimpSkeletalAnimationImporterImpl::getName() const noexcept
+    {
+        static const std::string name("skeletal_animation");
+        return name;
+    }
+
+    AssimpSkeletalAnimationImporter::AssimpSkeletalAnimationImporter() noexcept
+        : _impl(std::make_unique<AssimpSkeletalAnimationImporterImpl>())
+    {
+    }
+
+    AssimpSkeletalAnimationImporter::~AssimpSkeletalAnimationImporter() noexcept
+    {
+        // empty on purpose
+    }
+
+    size_t AssimpSkeletalAnimationImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    {
+        return _impl->getOutputs(input, outputs);
+    }
+
+    std::ofstream AssimpSkeletalAnimationImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    {
+        return _impl->createOutputStream(input, outputIndex, path);
+    }
+
+    void AssimpSkeletalAnimationImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    {
+        _impl->writeOutput(input, outputIndex, out);
+    }
+
+    const std::string& AssimpSkeletalAnimationImporter::getName() const noexcept
     {
         return _impl->getName();
     }

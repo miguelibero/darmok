@@ -385,11 +385,11 @@ namespace darmok
 			outSuffix += ".json";
 			break;
 		}
-		auto stem = StringUtils::getFileStem(path.filename().string());
+		auto stem = std::string(StringUtils::getFileStem(path.filename().string()));
 		return path.parent_path() / (stem + outSuffix);
 	}
 
-	size_t VertexLayoutImporter::getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs)
+	size_t VertexLayoutImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
 	{
 		auto ext = StringUtils::getFileExt(input.path.filename().string());
 		if (input.config.is_null())
@@ -413,8 +413,7 @@ namespace darmok
 				}
 			}
 		}
-		auto relPath = std::filesystem::relative(input.path, basePath);
-		outputs.push_back(getFormatPath(relPath, _outputFormat));
+		outputs.push_back(getFormatPath(input.getRelativePath(), _outputFormat));
 		return 1;
 	}
 
@@ -450,9 +449,9 @@ namespace darmok
 		}
 	}
 
-	std::string VertexLayoutImporter::getName() const noexcept
+	const std::string& VertexLayoutImporter::getName() const noexcept
 	{
-		static const std::string name("vertexLayout");
+		static const std::string name("vertex_layout");
 		return name;
 	}
 }

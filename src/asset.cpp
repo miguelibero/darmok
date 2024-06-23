@@ -266,6 +266,7 @@ namespace darmok
 		_importer.addTypeImporter<AssimpModelImporter>();
 #ifdef DARMOK_OZZ
 		_importer.addTypeImporter<AssimpSkeletonImporter>();
+		_importer.addTypeImporter<AssimpSkeletalAnimationImporter>();
 #endif
 #endif
 		_importer.addTypeImporter<VertexLayoutImporter>();

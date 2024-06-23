@@ -26,6 +26,11 @@ struct aiScene;
 struct aiCamera;
 struct aiLight;
 
+namespace Assimp
+{
+    class Importer;
+}
+
 namespace darmok
 {
     struct Model;
@@ -44,11 +49,12 @@ namespace darmok
     {
     public:
         using result_type = std::shared_ptr<aiScene>;
-        AssimpSceneLoader(IDataLoader& dataLoader) noexcept;
         bool supports(std::string_view name) const noexcept;
-        result_type operator()(std::string_view name);
+        result_type loadFromFile(const std::filesystem::path& path);
+        result_type loadFromMemory(const DataView& data, const std::string& name);
     private:
-        IDataLoader& _dataLoader;
+        static unsigned int getImporterFlags() noexcept;
+        static result_type fixScene(Assimp::Importer& importer) noexcept;
     };
 
     class AssimpModelConverter final
@@ -94,7 +100,7 @@ namespace darmok
         AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
         void setConfig(const Config& config) noexcept;
         bool supports(std::string_view name) const noexcept;
-        std::shared_ptr<Model> operator()(std::string_view path);
+        std::shared_ptr<Model> operator()(std::string_view name);
 
     private:
         Config _config;
@@ -129,20 +135,20 @@ namespace darmok
         using OutputFormat = AssimpModelImporterOutputFormat;
 
         AssimpModelImporterImpl();
-        std::shared_ptr<Model> read(const std::filesystem::path& path, const LoadConfig& config);
+        void read(const std::filesystem::path& path, const LoadConfig& config, Model& model);
+        void setProgramVertexLayoutSuffix(const std::string& suffix);
 
-        size_t getOutputs(const Input& input, const std::filesystem::path& basePath, std::vector<std::filesystem::path>& outputs);
+        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
-        std::string getName() const noexcept;
+        const std::string& getName() const noexcept;
     private:
         bx::DefaultAllocator _allocator;
         bx::FileReader _fileReader;
         FileDataLoader _dataLoader;
         DataImageLoader _imgLoader;
-        AssimpModelLoaderImpl _assimpLoader;
-        DataVertexLayoutLoader _layoutLoader;
-        DataProgramLoader _progLoader;
+        AssimpSceneLoader _assimpLoader;
+        std::string _programVertexLayoutSuffix;
 
         static std::filesystem::path getOutputPath(const std::filesystem::path& path, OutputFormat format) noexcept;
 
@@ -152,8 +158,8 @@ namespace darmok
         static const std::string _programJsonKey;
         static const std::string _embedTexturesJsonKey;
 
-        void loadConfig(const nlohmann::ordered_json& json, Config& config);
-        void loadConfig(const nlohmann::ordered_json& json, LoadConfig& config);
+        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config);
+        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config);
         static bgfx::VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
     };
 }
