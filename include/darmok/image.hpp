@@ -35,9 +35,9 @@ namespace darmok
 		[[nodiscard]] uint16_t getLayerCount() const noexcept;
 		[[nodiscard]] bimg::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
-		[[nodiscard]] TextureConfig getTextureConfig(uint64_t flags = 0) const noexcept;
+		[[nodiscard]] TextureConfig getTextureConfig(uint64_t flags = defaultTextureLoadFlags) const noexcept;
 		[[nodiscard]] DataView getData() const noexcept;
-		[[nodiscard]] TextureType getTextureType(uint64_t flags) const noexcept;
+		[[nodiscard]] TextureType getTextureType(uint64_t flags = defaultTextureLoadFlags) const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
 
 	private:

@@ -63,13 +63,20 @@ namespace darmok
 		{
 			return TextureType::CubeMap;
 		}
-		else if (1 < getDepth())
+		auto depth = getDepth();
+		if (1 < depth)
 		{
 			return TextureType::Texture3D;
 		}
 		auto format = bgfx::TextureFormat::Enum(getFormat());
 		auto layers = getLayerCount();
-		if (bgfx::isTextureValid(0, false, layers, format, flags))
+		auto renderer = bgfx::getCaps()->rendererType;
+		if (renderer == bgfx::RendererType::Noop)
+		{
+			// command line tools
+			return TextureType::Texture2D;
+		}
+		if (bgfx::isTextureValid(depth, false, layers, format, flags))
 		{
 			return TextureType::Texture2D;
 		}
