@@ -181,12 +181,11 @@ namespace darmok
         auto data = loader(name);
         DataOzzStream stream(data.view());
         ozz::io::IArchive archive(&stream);
-        if (!archive.TestTag<T>())
+        std::optional<T> obj;
+        if (archive.TestTag<T>())
         {
-            return std::nullopt;
+            archive >> obj.emplace();
         }
-        T obj;
-        archive >> obj;
         return obj;
     }
 
@@ -262,7 +261,7 @@ namespace darmok
 
     void SkeletalAnimatorImpl::setPlaybackSpeed(float speed) noexcept
     {
-        _speed;
+        _speed = speed;
     }
 
     float SkeletalAnimatorImpl::getPlaybackSpeed() const noexcept

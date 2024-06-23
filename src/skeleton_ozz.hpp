@@ -52,7 +52,6 @@ namespace darmok
 		DataView _data;
 	};
 
-	
 	class OzzSkeletalAnimatorAnimationState final
 	{
 	public:

@@ -91,7 +91,7 @@ namespace darmok
             aiProcess_SortByPType |
             // apply UnitScaleFactor to everything
             aiProcess_GlobalScale |
-            // aiProcess_PopulateArmatureData |
+            aiProcess_PopulateArmatureData |
             // assimp (and opengl) is right handed (+Z points towards the camera)
             // while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
             aiProcess_ConvertToLeftHanded;
@@ -103,7 +103,8 @@ namespace darmok
         auto ptr = importer.ReadFile(path.string(), getImporterFlags());
         if (ptr == nullptr)
         {
-            throw std::runtime_error(importer.GetErrorString());
+            auto err = importer.GetErrorString();
+            throw std::runtime_error(err);
         }
         return fixScene(importer);
     }
@@ -114,7 +115,8 @@ namespace darmok
         auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(), name.c_str());
         if (ptr == nullptr)
         {
-            throw std::runtime_error(importer.GetErrorString());
+            auto err = importer.GetErrorString();
+            throw std::runtime_error(err);
         }
         return fixScene(importer);
     }

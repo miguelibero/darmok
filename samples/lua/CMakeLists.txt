@@ -4,4 +4,7 @@ endif()
 
 darmok_lua_sample_setup(
   TARGET darmok-samples-lua
+  ASSETS
+    assets/darmok-import.json
+    assets/main.lua
 )
