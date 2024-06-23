@@ -97,7 +97,7 @@ namespace darmok
             aiProcess_ConvertToLeftHanded;
     }
 
-    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromFile(const std::filesystem::path& path)
+    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromFile(const std::filesystem::path& path) const
     {
         Assimp::Importer importer;
         auto ptr = importer.ReadFile(path.string(), getImporterFlags());
@@ -109,7 +109,7 @@ namespace darmok
         return fixScene(importer);
     }
 
-    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromMemory(const DataView& data, const std::string& name)
+    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromMemory(const DataView& data, const std::string& name) const
     {
         Assimp::Importer importer;
         auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(), name.c_str());

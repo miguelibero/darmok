@@ -50,8 +50,8 @@ namespace darmok
     public:
         using result_type = std::shared_ptr<aiScene>;
         bool supports(std::string_view name) const noexcept;
-        result_type loadFromFile(const std::filesystem::path& path);
-        result_type loadFromMemory(const DataView& data, const std::string& name);
+        result_type loadFromFile(const std::filesystem::path& path) const ;
+        result_type loadFromMemory(const DataView& data, const std::string& name) const;
     private:
         static unsigned int getImporterFlags() noexcept;
         static result_type fixScene(Assimp::Importer& importer) noexcept;

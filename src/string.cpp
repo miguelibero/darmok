@@ -199,4 +199,21 @@ namespace darmok
 		regex << '$';
 		return regex.str();
 	}
+
+	size_t StringUtils::replace(std::string& str, const std::string& src, const std::string& dst) noexcept
+	{
+		if (src.empty())
+		{
+			return 0;
+		}
+		size_t startPos = 0;
+		size_t count = 0;
+		while ((startPos = str.find(src, startPos)) != std::string::npos)
+		{
+			str.replace(startPos, src.length(), dst);
+			startPos += dst.length();
+			++count;
+		}
+		return count;
+	}
 }

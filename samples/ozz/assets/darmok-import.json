@@ -6,14 +6,15 @@
             "skeletal_animation": {
                 "animations":[
                     {
-                        "filename": "*.ozz"
+                        "clip" : "*",
+                        "outputPath": "*.ozz"
                     }
                 ]
             }
         },
         "BasicMotionsDummyModel.fbx": {
             "model": {
-                "outputPath": "BasicMotionsDummyModel.dml"
+                "outputPath": "model.dml"
             },
             "skeleton": {
                 "outputPath": "skeleton.ozz"

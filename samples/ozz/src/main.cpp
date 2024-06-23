@@ -51,8 +51,6 @@ namespace
 			scene.addComponent<AmbientLight>(scene.createEntity(), 0.8);
 
 			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");			
-			auto runAnim = getAssets().getSkeletalAnimationLoader()("BasicMotions@Run01 - Forwards.ozz");
-			auto idleAnim = getAssets().getSkeletalAnimationLoader()("BasicMotions@Idle01.ozz");
 
 			auto animEntity = scene.createEntity();
 			auto& animTrans = scene.addComponent<Transform>(animEntity);
@@ -70,7 +68,7 @@ namespace
 			scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
-			auto model = getAssets().getModelLoader()("BasicMotionsDummyModel.dml");
+			auto model = getAssets().getModelLoader()("model.dml");
 
 			auto skinEntity = scene.createEntity();
 			scene.addComponent<Transform>(skinEntity, animTrans, glm::vec3(1, 0, 0));
