@@ -9,6 +9,7 @@
 #include "model_assimp.hpp"
 #include <ozz/animation/offline/raw_skeleton.h>
 #include <ozz/animation/offline/tools/import2ozz.h>
+#include <assimp/matrix4x4.h>
 
 namespace ozz::animation::offline
 {
@@ -22,6 +23,7 @@ namespace ozz::animation::offline
 namespace ozz::animation
 {
     class Skeleton;
+    class Animation;
 }
 
 struct aiScene;
@@ -38,26 +40,37 @@ namespace darmok
     class Skeleton;
     class SkeletalAnimation;
 
-    class AssimpSkeletonConverter final
+    class AssimpOzzSkeletonConverter final
     {
     public:
-        using OzzSkeleton = ozz::animation::Skeleton;
+        using Skeleton = ozz::animation::Skeleton;
         using RawSkeleton = ozz::animation::offline::RawSkeleton;
-        using RawAnimation = ozz::animation::offline::RawAnimation;
-        AssimpSkeletonConverter(const aiScene& scene) noexcept;
+        AssimpOzzSkeletonConverter(const aiScene& scene) noexcept;
+        Skeleton createSkeleton();
         bool update(RawSkeleton& skel) noexcept;
-        bool update(const std::string& name, const OzzSkeleton& skel, RawAnimation& anim) noexcept;
         std::vector<std::string> getSkeletonNames();
-        std::vector<std::string> getAnimationNames();
-        OzzSkeleton createSkeleton();
     private:
         const aiScene& _scene;
         aiBone* findRootBone(const aiMesh& mesh, std::vector<aiNode*>& boneNodes) noexcept;
-        bool update(const aiAnimation& assimpAnim, const OzzSkeleton& skel, RawAnimation& anim) noexcept;
         bool update(const aiMesh& mesh, RawSkeleton& skel);
         void update(const aiNode& node, RawSkeleton::Joint& parentJoint, const aiMatrix4x4& parentTrans, const std::vector<aiNode*>& boneNodes);
+    };
 
-        // void extractSkeleton(const aiNode& node) const;
+    class AssimpOzzAnimationConverter final
+    {
+    public:
+        using Animation = ozz::animation::Animation;
+        using RawAnimation = ozz::animation::offline::RawAnimation;
+        AssimpOzzAnimationConverter(const aiScene& scene) noexcept;
+        AssimpOzzAnimationConverter& setJointNames(const std::vector<std::string> jointNames) noexcept;
+        Animation createAnimation(const std::string& name);
+        Animation createAnimation();
+        bool update(const std::string& name, RawAnimation& anim);
+        std::vector<std::string> getAnimationNames();
+    private:
+        const aiScene& _scene;
+        std::vector<std::string> _jointNames;
+        void update(const aiAnimation& assimpAnim, RawAnimation& anim);
     };
 
 
@@ -110,6 +123,16 @@ namespace darmok
         AssimpSceneLoader _sceneLoader;
     };
 
+    class AssimpSkeletalAnimationLoaderImpl final
+    {
+    public:
+        AssimpSkeletalAnimationLoaderImpl(IDataLoader& dataLoader) noexcept;
+        std::shared_ptr<SkeletalAnimation> operator()(std::string_view name);
+    private:
+        IDataLoader& _dataLoader;
+        AssimpSceneLoader _sceneLoader;
+    };
+
     struct AssetTypeImporterInput;
 
     class AssimpSkeletonImporterImpl final
@@ -120,7 +143,7 @@ namespace darmok
 
         AssimpSkeletonImporterImpl(size_t bufferSize = 4096) noexcept;
         OzzSkeleton read(const std::filesystem::path& path);
-        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) noexcept;
+        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry) noexcept;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
@@ -133,17 +156,25 @@ namespace darmok
     {
     public:
         using Input = AssetTypeImporterInput;
-        using RawAnimation = ozz::animation::offline::RawAnimation;
+        using OzzAnimation = ozz::animation::Animation;
 
         AssimpSkeletalAnimationImporterImpl(size_t bufferSize = 4096) noexcept;
-        bool read(const std::filesystem::path& path, const std::string& animationName, RawAnimation& anim);
-        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) noexcept;
+        OzzAnimation read(const std::filesystem::path& path, const std::string& animationName);
+        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry);
+        void endImport(const Input& input) noexcept;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
     private:
+        void loadSkeleton(const std::filesystem::path& path);
+        std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept;
+        std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept;
+        Input _currentInput;
+        std::vector<std::string> _currentSkeletonJoints;
+        std::shared_ptr<aiScene> _currentScene;
+        std::vector<std::string> _currentAnimationNames;
+
         AssimpSceneLoader _sceneLoader;
         size_t _bufferSize;
-        std::vector<std::string> getAnimationNames(const Input& input) const;
     };
 }

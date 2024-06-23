@@ -389,7 +389,7 @@ namespace darmok
 		return path.parent_path() / (stem + outSuffix);
 	}
 
-	size_t VertexLayoutImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+	size_t VertexLayoutImporter::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
 	{
 		auto ext = StringUtils::getFileExt(input.path.filename().string());
 		if (input.config.is_null())

@@ -106,8 +106,7 @@ namespace darmok
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
-        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs);
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
+        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
 

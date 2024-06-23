@@ -432,7 +432,7 @@ namespace darmok
     size_t AssetImporterImpl::getOutputs(IAssetTypeImporter& importer, const Input& input, std::vector<fs::path>& outputs) const
     {
         std::vector<fs::path> importerOutputs;
-        if (!importer.getOutputs(input, importerOutputs))
+        if (!importer.startImport(input, importerOutputs, true))
         {
             return 0;
         }
@@ -451,13 +451,14 @@ namespace darmok
             }
             outputs.push_back(output);
         }
+        importer.endImport(input);
         return importerOutputs.size();
     }
 
     AssetImporterImpl::FileImportResult AssetImporterImpl::importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const
     {
         FileImportResult result;
-        if (!importer.getOutputs(input, result.outputs))
+        if (!importer.startImport(input, result.outputs, false))
         {
             return result;
         }
@@ -501,7 +502,7 @@ namespace darmok
             }
             ++i;
         }
-
+        importer.endImport(input);
         return result;
     }
 
@@ -548,7 +549,7 @@ namespace darmok
     {
     }
 
-    size_t CopyAssetImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    size_t CopyAssetImporter::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
     {
         if (input.config.is_null() && (!input.globalConfig.is_object() || input.globalConfig["all"] != true))
         {
@@ -563,11 +564,6 @@ namespace darmok
             outputs.push_back(input.getRelativePath());
         }
         return 1;
-    }
-
-    std::ofstream CopyAssetImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
-    {
-        return std::ofstream(outputPath, std::ios::binary);
     }
 
     void CopyAssetImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
@@ -634,7 +630,7 @@ namespace darmok
         return path.parent_path() / (stem + ext + _binExt);
     }
 
-    size_t ShaderImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    size_t ShaderImporterImpl::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
     {
         auto fileName = input.path.filename().string();
         auto ext = StringUtils::getFileExt(fileName);
@@ -653,11 +649,6 @@ namespace darmok
             }
         }
         return count;
-    }
-
-    std::ofstream ShaderImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
-    {
-        return std::ofstream(path, std::ios::binary);
     }
 
     const std::string ShaderImporterImpl::_configTypeKey = "type";
@@ -758,14 +749,9 @@ namespace darmok
         // empty on purpose
     }
 
-    size_t ShaderImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    size_t ShaderImporter::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
     {
-        return _impl->getOutputs(input, outputs);
-    }
-
-    std::ofstream ShaderImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
-    {
-        return _impl->createOutputStream(input, outputIndex, path);
+        return _impl->startImport(input, outputs, dry);
     }
 
     void ShaderImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)

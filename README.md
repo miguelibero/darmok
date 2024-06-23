@@ -88,6 +88,9 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * sound
 
 #### Upcoming
+* fixes
+    * unify skeleton and animation exporters to avoid loading the skeleton 2 times
+    * regenerate assets if config files changed
 * window modes with different resolutions
 * frustrum culling
 * modernize renderer (probably needs frame graph or similar)

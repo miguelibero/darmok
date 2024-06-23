@@ -19,6 +19,7 @@ protected:
 
 int main(int argc, const char* argv[])
 {
+	/*
 	argv = new const char* [] {
 		argv[0],
 			"-i", "D:/Projects/darmok/samples/ozz/assets",
@@ -26,6 +27,6 @@ int main(int argc, const char* argv[])
 			"-c", "D:/Projects/darmok/build/darmok-assetc-cache"
 		};
 	argc = 5;
-
+	*/
 	return CommandLineAssetImporter()(argc, argv);
 }

@@ -1,5 +1,5 @@
 function(darmok_sample_setup)
-  cmake_parse_arguments(ARGS "" "TARGET;INPUT;OUTPUT" "SOURCES;ASSETS" "${ARGN}")
+  cmake_parse_arguments(ARGS "" "TARGET;ASSETS_INPUT;ASSETS_OUTPUT" "SOURCES;ASSETS" "${ARGN}")
   if(NOT ARGS_SOURCES)
     set(ARGS_SOURCES src/main.cpp)
   endif()
@@ -14,14 +14,16 @@ function(darmok_sample_setup)
   set_target_properties(${ARGS_TARGET} PROPERTIES FOLDER "darmok/samples")
 
   if(ARGS_ASSETS)
+    set(ASSETS_TARGET ${ARGS_TARGET}-assets)
     darmok_process_assets(
-      TARGET ${ARGS_TARGET}-assets
-      INPUT ${ARGS_INPUT}
-      OUTPUT ${ARGS_OUTPUT}
+      TARGET ${ASSETS_TARGET}
+      INPUT ${ARGS_ASSETS_INPUT}
+      OUTPUT ${ARGS_ASSETS_OUTPUT}
       DEPENDS ${ARGS_ASSETS}
     )
     source_group("Asset Files" FILES ${ARGS_ASSETS})
-    add_dependencies(${ARGS_TARGET} ${ARGS_TARGET}-assets)
+    add_dependencies(${ARGS_TARGET} ${ASSETS_TARGET})
+    set_target_properties(${ASSETS_TARGET} PROPERTIES FOLDER "darmok/samples")
   endif()
 
 endfunction()
@@ -32,10 +34,22 @@ function(darmok_lua_sample_setup)
     COMMAND $<TARGET_FILE:darmok-lua>
     DEPENDS darmok-lua
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    SOURCES ${ARGS_ASSETS}
     COMMENT "running darmok lua executable"
   )
-  set_target_properties(${TARGET} PROPERTIES FOLDER "darmok/samples")
+  set_target_properties(${ARGS_TARGET} PROPERTIES FOLDER "darmok/samples")
+
+  if(ARGS_ASSETS)
+    set(ASSETS_TARGET ${ARGS_TARGET}-assets)
+    darmok_process_assets(
+      TARGET ${ASSETS_TARGET}
+      INPUT ${ARGS_ASSETS_INPUT}
+      OUTPUT ${ARGS_ASSETS_OUTPUT}
+      DEPENDS ${ARGS_ASSETS}
+    )
+    source_group("Asset Files" FILES ${ARGS_ASSETS})
+    add_dependencies(${ARGS_TARGET} ${ASSETS_TARGET})
+    set_target_properties(${ASSETS_TARGET} PROPERTIES FOLDER "darmok/samples")
+  endif()
 endfunction()
 
 add_subdirectory(imgui)

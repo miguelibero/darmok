@@ -83,24 +83,32 @@ namespace darmok
         return importer.IsExtensionSupported(std::filesystem::path(name).extension().string());
     }
 
-    unsigned int AssimpSceneLoader::getImporterFlags() noexcept
+    unsigned int AssimpSceneLoader::getImporterFlags(const Config& config) noexcept
     {
-        return aiProcess_CalcTangentSpace |
+        auto flags = aiProcess_CalcTangentSpace |
             aiProcess_Triangulate |
             aiProcess_JoinIdenticalVertices |
             aiProcess_SortByPType |
             // apply UnitScaleFactor to everything
-            aiProcess_GlobalScale |
-            aiProcess_PopulateArmatureData |
+            aiProcess_GlobalScale;
+
+        if (config.leftHanded)
+        {
             // assimp (and opengl) is right handed (+Z points towards the camera)
-            // while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
-            aiProcess_ConvertToLeftHanded;
+// while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
+            flags |= aiProcess_ConvertToLeftHanded;
+        }
+        if (config.populateArmature)
+        {
+            flags |= aiProcess_PopulateArmatureData;
+        }
+        return flags;
     }
 
-    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromFile(const std::filesystem::path& path) const
+    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromFile(const std::filesystem::path& path, const Config& config) const
     {
         Assimp::Importer importer;
-        auto ptr = importer.ReadFile(path.string(), getImporterFlags());
+        auto ptr = importer.ReadFile(path.string(), getImporterFlags(config));
         if (ptr == nullptr)
         {
             auto err = importer.GetErrorString();
@@ -109,10 +117,10 @@ namespace darmok
         return fixScene(importer);
     }
 
-    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromMemory(const DataView& data, const std::string& name) const
+    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromMemory(const DataView& data, const std::string& name, const Config& config) const
     {
         Assimp::Importer importer;
-        auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(), name.c_str());
+        auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(config), name.c_str());
         if (ptr == nullptr)
         {
             auto err = importer.GetErrorString();
@@ -629,7 +637,7 @@ namespace darmok
         return layout;
     }
 
-    size_t AssimpModelImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    size_t AssimpModelImporterImpl::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
     {
         if (input.config.empty())
         {
@@ -723,9 +731,9 @@ namespace darmok
         // empty on purpose
     }
 
-    size_t AssimpModelImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    size_t AssimpModelImporter::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
     {
-        return _impl->getOutputs(input, outputs);
+        return _impl->startImport(input, outputs, dry);
     }
 
     std::ofstream AssimpModelImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)

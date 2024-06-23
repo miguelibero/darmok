@@ -36,7 +36,7 @@ namespace darmok
         virtual void setLogOutput(OptionalRef<std::ostream> log) noexcept { };
 
         // return the amount of outputs added
-        virtual size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) = 0;
+        virtual size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry = false) = 0;
 
         // outputIndex is the index of the element in the vector returned by getOutputs
         virtual std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
@@ -45,6 +45,8 @@ namespace darmok
         }
 
         virtual void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) = 0;
+
+        virtual void endImport(const Input& input) { };
 
         virtual const std::string& getName() const noexcept = 0;
     };
@@ -123,8 +125,7 @@ namespace darmok
     {
     public:
         CopyAssetImporter(size_t bufferSize = 4096) noexcept;
-        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
+        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
     private:
@@ -141,8 +142,7 @@ namespace darmok
         ShaderImporter& setShadercPath(const std::filesystem::path& path) noexcept;
         ShaderImporter& addIncludePath(const std::filesystem::path& path) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
-        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) override;
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
+        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
     private:

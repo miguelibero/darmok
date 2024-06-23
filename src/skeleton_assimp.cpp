@@ -2,20 +2,21 @@
 #include "skeleton_ozz.hpp"
 #include <darmok/string.hpp>
 #include <darmok/skeleton_assimp.hpp>
-#include <ozz/animation/runtime/skeleton.h>
 #include <ozz/animation/offline/raw_skeleton.h>
 #include <ozz/animation/offline/raw_animation.h>
 #include <ozz/animation/offline/skeleton_builder.h>
+#include <ozz/animation/offline/animation_builder.h>
+#include <ozz/animation/runtime/skeleton.h>
 #include <ozz/base/io/archive.h>
 #include <assimp/vector3.h>
-#include <assimp/matrix4x4.h>
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
 #include <algorithm>
+#include <regex>
 
 namespace darmok
 {
-    struct OzzAssimpUtils final
+    struct AssimpOzzUtils final
     {
         static ozz::math::Float3 convert(const aiVector3D& v) noexcept
         {
@@ -56,13 +57,12 @@ namespace darmok
         }
     };
 
-
-    AssimpSkeletonConverter::AssimpSkeletonConverter(const aiScene& scene) noexcept
+    AssimpOzzSkeletonConverter::AssimpOzzSkeletonConverter(const aiScene& scene) noexcept
         : _scene(scene)
     {
     }
 
-    std::vector<std::string> AssimpSkeletonConverter::getSkeletonNames()
+    std::vector<std::string> AssimpOzzSkeletonConverter::getSkeletonNames()
     {
         std::vector<std::string> names;
         for (size_t i = 0; i < _scene.mNumMeshes; i++)
@@ -76,7 +76,7 @@ namespace darmok
         return names;
     }
 
-    bool AssimpSkeletonConverter::update(RawSkeleton& skel) noexcept
+    bool AssimpOzzSkeletonConverter::update(RawSkeleton& skel) noexcept
     {
         for (size_t i = 0; i < _scene.mNumMeshes ; i++)
         {
@@ -91,7 +91,7 @@ namespace darmok
         return false;
     }
 
-    aiBone* AssimpSkeletonConverter::findRootBone(const aiMesh& mesh, std::vector<aiNode*>& boneNodes) noexcept
+    aiBone* AssimpOzzSkeletonConverter::findRootBone(const aiMesh& mesh, std::vector<aiNode*>& boneNodes) noexcept
     {
         for (size_t i = 0; i < mesh.mNumBones; i++)
         {
@@ -117,7 +117,7 @@ namespace darmok
         return nullptr;
     }
 
-    bool AssimpSkeletonConverter::update(const aiMesh& mesh, RawSkeleton& skel)
+    bool AssimpOzzSkeletonConverter::update(const aiMesh& mesh, RawSkeleton& skel)
     {
         std::vector<aiNode*> boneNodes;
         auto rootBone = findRootBone(mesh, boneNodes);
@@ -126,8 +126,8 @@ namespace darmok
             return false;
         }
         auto& rootNode = *rootBone->mNode;
-        auto rootTrans = rootNode.mTransformation;
         auto parent = rootNode.mParent;
+        aiMatrix4x4 rootTrans;
         while (parent != nullptr)
         {
             rootTrans = parent->mTransformation * rootTrans;
@@ -135,7 +135,7 @@ namespace darmok
         }
         auto& rootJoint = skel.roots.emplace_back();
         rootJoint.name = rootNode.mName.C_Str();
-        rootJoint.transform = OzzAssimpUtils::convert(rootTrans);
+        rootJoint.transform = AssimpOzzUtils::convert(rootTrans);
         for (size_t i = 0; i < rootNode.mNumChildren; i++)
         {
             update(*rootNode.mChildren[i], rootJoint, aiMatrix4x4(), boneNodes);
@@ -143,15 +143,15 @@ namespace darmok
         return true;
     }
 
-    void AssimpSkeletonConverter::update(const aiNode& node, RawSkeleton::Joint& parentJoint, const aiMatrix4x4& parentTrans, const std::vector<aiNode*>& boneNodes)
+    void AssimpOzzSkeletonConverter::update(const aiNode& node, RawSkeleton::Joint& parentJoint, const aiMatrix4x4& parentTrans, const std::vector<aiNode*>& boneNodes)
     {
         RawSkeleton::Joint* joint = &parentJoint;
         auto trans = parentTrans * node.mTransformation;
         if (std::find(boneNodes.begin(), boneNodes.end(), &node) != boneNodes.end())
         {
-            *joint = parentJoint.children.emplace_back();
+            joint = &parentJoint.children.emplace_back();
             joint->name = node.mName.C_Str();
-            joint->transform = OzzAssimpUtils::convert(trans);
+            joint->transform = AssimpOzzUtils::convert(trans);
             trans = aiMatrix4x4();
         }
         for (size_t i = 0; i < node.mNumChildren; i++)
@@ -160,54 +160,8 @@ namespace darmok
         }
     }
 
-    bool AssimpSkeletonConverter::update(const std::string& name, const OzzSkeleton& skel, RawAnimation& anim) noexcept
-    {
-        for (size_t i = 0; i < _scene.mNumAnimations; i++)
-        {
-            auto assimpAnim = _scene.mAnimations[i];
-            if (assimpAnim == nullptr || name != assimpAnim->mName.C_Str())
-            {
-                continue;
-            }
-            update(*assimpAnim, skel, anim);
-            return true;
-        }
-        return false;
-    }
 
-    bool AssimpSkeletonConverter::update(const aiAnimation& assimpAnim, const OzzSkeleton& skel, RawAnimation& anim) noexcept
-    {
-        anim.name = assimpAnim.mName.C_Str();
-        anim.duration = float(assimpAnim.mDuration / assimpAnim.mTicksPerSecond);
-        anim.tracks.resize(skel.num_joints());
-
-        for (size_t i = 0; i < assimpAnim.mNumChannels; i++)
-        {
-            auto chan = assimpAnim.mChannels[i];
-            /*
-            const auto jointIndex =
-                ozz::animation::offline::FindJoint(skel, chan->mNodeName.C_Str());
-                */
-        }
-
-        return false;
-    }
-
-    std::vector<std::string> AssimpSkeletonConverter::getAnimationNames()
-    {
-        std::vector<std::string> names;
-        for (size_t i = 0; i < _scene.mNumAnimations; i++)
-        {
-            auto anim = _scene.mAnimations[i];
-            if (anim != nullptr)
-            {
-                names.push_back(anim->mName.C_Str());
-            }
-        }
-        return names;
-    }
-
-    AssimpSkeletonConverter::OzzSkeleton AssimpSkeletonConverter::createSkeleton()
+    AssimpOzzSkeletonConverter::Skeleton AssimpOzzSkeletonConverter::createSkeleton()
     {
         RawSkeleton rawSkel;
         if (!update(rawSkel))
@@ -222,6 +176,150 @@ namespace darmok
         return std::move(*builder(rawSkel));
     }
 
+    AssimpOzzAnimationConverter::AssimpOzzAnimationConverter(const aiScene& scene) noexcept
+        : _scene(scene)
+    {
+    }
+
+    AssimpOzzAnimationConverter& AssimpOzzAnimationConverter::setJointNames(const std::vector<std::string> jointNames) noexcept
+    {
+        _jointNames = jointNames;
+        return *this;
+    }
+
+    AssimpOzzAnimationConverter::Animation AssimpOzzAnimationConverter::createAnimation(const std::string& name)
+    {
+        RawAnimation rawAnim;
+        if (!update(name, rawAnim))
+        {
+            throw std::runtime_error("failed to update the raw animation");
+        }
+        if (!rawAnim.Validate())
+        {
+            throw std::runtime_error("created an invalid raw skeleton");
+        }
+        ozz::animation::offline::AnimationBuilder builder;
+        return std::move(*builder(rawAnim));
+    }
+
+    AssimpOzzAnimationConverter::Animation AssimpOzzAnimationConverter::createAnimation()
+    {
+        auto names = getAnimationNames();
+        if (names.empty())
+        {
+            throw std::runtime_error("no animations found");
+        }
+        return createAnimation(names.front());
+    }
+
+    bool AssimpOzzAnimationConverter::update(const std::string& name, RawAnimation& anim)
+    {
+        for (size_t i = 0; i < _scene.mNumAnimations; i++)
+        {
+            auto assimpAnim = _scene.mAnimations[i];
+            if (assimpAnim == nullptr || name != assimpAnim->mName.C_Str())
+            {
+                continue;
+            }
+            update(*assimpAnim, anim);
+            return true;
+        }
+        return false;
+    }
+
+    void AssimpOzzAnimationConverter::update(const aiAnimation& assimpAnim, RawAnimation& anim)
+    {
+        anim.name = assimpAnim.mName.C_Str();
+        anim.duration = float(assimpAnim.mDuration / assimpAnim.mTicksPerSecond);
+        anim.tracks.resize(assimpAnim.mNumChannels);
+
+        aiMatrix4x4 rootTrans;
+        if (!_jointNames.empty() && _scene.mRootNode)
+        {
+            auto& rootJoint = _jointNames[0];
+            auto rootNode = _scene.mRootNode->FindNode(rootJoint.c_str());
+            if (rootNode)
+            {
+                auto parent = rootNode->mParent;
+                while (parent)
+                {
+                    rootTrans = parent->mTransformation * rootTrans;
+                    parent = parent->mParent;
+                }
+            }
+        }
+
+        for (size_t i = 0; i < assimpAnim.mNumChannels; i++)
+        {
+            auto& chan = *assimpAnim.mChannels[i];
+            auto j = i;
+            if (!_jointNames.empty())
+            {
+                std::string jointName(chan.mNodeName.C_Str());
+                auto itr = std::find(_jointNames.begin(), _jointNames.end(), jointName);
+                if (itr == _jointNames.end())
+                {
+                    continue;
+                }
+                j = std::distance(_jointNames.begin(), itr);
+            }
+
+            aiVector3D basePos;
+            aiVector3D baseScale(1);
+            aiQuaternion baseRot;
+            aiMatrix4x4 baseTrans;
+            if (j == 0)
+            {
+                baseTrans = rootTrans;
+                baseTrans.Decompose(baseScale, baseRot, basePos);
+            }
+
+            auto& track = anim.tracks[j];
+
+            track.translations.resize(chan.mNumPositionKeys);
+            for (size_t j = 0; j < chan.mNumPositionKeys; j++)
+            {
+                auto& key = chan.mPositionKeys[j];
+                auto& elm = track.translations[j];
+                auto val =  baseTrans * key.mValue;
+                elm.value = AssimpOzzUtils::convert(val);
+                elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
+            }
+            track.rotations.resize(chan.mNumRotationKeys);
+            for (size_t j = 0; j < chan.mNumRotationKeys; j++)
+            {
+                auto& key = chan.mRotationKeys[j];
+                auto& elm = track.rotations[j];
+                auto val = baseRot * key.mValue;
+                elm.value = AssimpOzzUtils::convert(val);
+                elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
+            }
+            track.scales.resize(chan.mNumScalingKeys);
+            for (size_t j = 0; j < chan.mNumScalingKeys; j++)
+            {
+                auto& key = chan.mScalingKeys[j];
+                auto& elm = track.scales[j];
+                auto val = baseScale.SymMul(key.mValue);
+                elm.value = AssimpOzzUtils::convert(val);
+                elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
+            }
+        }
+    }
+
+    std::vector<std::string> AssimpOzzAnimationConverter::getAnimationNames()
+    {
+        std::vector<std::string> names;
+        for (size_t i = 0; i < _scene.mNumAnimations; i++)
+        {
+            auto anim = _scene.mAnimations[i];
+            if (anim != nullptr)
+            {
+                names.push_back(anim->mName.C_Str());
+            }
+        }
+        return names;
+    }
+
     AssimpSkeletonLoaderImpl::AssimpSkeletonLoaderImpl(IDataLoader& dataLoader) noexcept
         : _dataLoader(dataLoader)
     {
@@ -229,13 +327,36 @@ namespace darmok
 
     std::shared_ptr<Skeleton> AssimpSkeletonLoaderImpl::operator()(std::string_view name)
     {
-        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name).view(), std::string(name));
+        AssimpSceneLoadConfig loadConfig;
+        loadConfig.leftHanded = false;
+        loadConfig.populateArmature = true;
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name).view(), std::string(name), loadConfig);
         if (!scene)
         {
             throw new std::runtime_error("could not load assimp scene");
         }
-        auto ozz = AssimpSkeletonConverter(*scene).createSkeleton();
+        auto ozz = AssimpOzzSkeletonConverter(*scene).createSkeleton();
         return std::make_shared<Skeleton>(std::make_unique<SkeletonImpl>(std::move(ozz)));
+    }
+
+    AssimpSkeletalAnimationLoaderImpl::AssimpSkeletalAnimationLoaderImpl(IDataLoader& dataLoader) noexcept
+        : _dataLoader(dataLoader)
+    {
+    }
+
+    std::shared_ptr<SkeletalAnimation> AssimpSkeletalAnimationLoaderImpl::operator()(std::string_view name)
+    {
+        AssimpSceneLoadConfig loadConfig;
+        loadConfig.leftHanded = false;
+        loadConfig.populateArmature = false;
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name).view(), std::string(name), loadConfig);
+        if (!scene)
+        {
+            throw new std::runtime_error("could not load assimp scene");
+        }
+
+        auto ozz = AssimpOzzAnimationConverter(*scene).createAnimation();
+        return std::make_shared<SkeletalAnimation>(std::make_unique<SkeletalAnimationImpl>(std::move(ozz)));
     }
 
     AssimpSkeletonLoader::AssimpSkeletonLoader(IDataLoader& dataLoader) noexcept
@@ -261,17 +382,20 @@ namespace darmok
 
     AssimpSkeletonImporterImpl::OzzSkeleton AssimpSkeletonImporterImpl::read(const std::filesystem::path& path)
     {
-        auto scene = _sceneLoader.loadFromFile(path);
+        AssimpSceneLoadConfig loadConfig;
+        loadConfig.leftHanded = false;
+        loadConfig.populateArmature = true;
+        auto scene = _sceneLoader.loadFromFile(path, loadConfig);
         if (!scene)
         {
             throw std::runtime_error("could not load assimp scene");
         }
-        return AssimpSkeletonConverter(*scene).createSkeleton();
+        return AssimpOzzSkeletonConverter(*scene).createSkeleton();
     }
 
-    size_t AssimpSkeletonImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) noexcept
+    size_t AssimpSkeletonImporterImpl::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry) noexcept
     {
-        if (input.config.empty())
+        if (input.config.is_null())
         {
             return 0;
         }
@@ -297,7 +421,7 @@ namespace darmok
     void AssimpSkeletonImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         auto skel = read(input.path);
-        OzzAssimpUtils::writeToStream(skel, out, _bufferSize);
+        AssimpOzzUtils::writeToStream(skel, out, _bufferSize);
     }
 
     const std::string& AssimpSkeletonImporterImpl::getName() const noexcept
@@ -315,9 +439,9 @@ namespace darmok
     {
     }
 
-    size_t AssimpSkeletonImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    size_t AssimpSkeletonImporter::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
     {
-        return _impl->getOutputs(input, outputs);
+        return _impl->startImport(input, outputs, dry);
     }
 
     std::ofstream AssimpSkeletonImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
@@ -340,27 +464,45 @@ namespace darmok
     {
     }
 
-    std::vector<std::string> AssimpSkeletalAnimationImporterImpl::getAnimationNames(const Input& input) const
+    std::filesystem::path AssimpSkeletalAnimationImporterImpl::getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept
     {
-        std::vector<std::string> animNames;
-        if (input.config.contains("animationNames"))
+        std::string animOutputPath = animName + ".ozz";
+        if (!outputPath.empty())
         {
-            for (auto& elm : input.config["animationNames"])
-            {
-                animNames.emplace_back(elm);
-            }
+            animOutputPath = outputPath;
+            StringUtils::replace(animOutputPath, "*", animName);
         }
-        else
+        return input.getRelativePath().parent_path() / animOutputPath;
+    }
+
+    std::filesystem::path AssimpSkeletalAnimationImporterImpl::getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept
+    {
+        auto fixedOutputPath = outputPath;
+        if (animConfig.contains("outputPath"))
         {
-            auto scene = _sceneLoader.loadFromFile(input.path);
-            AssimpSkeletonConverter converter(*scene);
-            animNames = converter.getAnimationNames();
+            fixedOutputPath = animConfig["outputPath"];
+        }
+        return getOutputPath(input, animName, fixedOutputPath);
+    }
+
+    void AssimpSkeletalAnimationImporterImpl::loadSkeleton(const std::filesystem::path& path)
+    {
+        AssimpSceneLoadConfig loadConfig;
+        loadConfig.leftHanded = false;
+        loadConfig.populateArmature = true;
+        auto skelScene = _sceneLoader.loadFromFile(path, loadConfig);
+        auto skel = AssimpOzzSkeletonConverter(*skelScene).createSkeleton();
+
+        _currentSkeletonJoints.resize(skel.num_joints());
+        for (int i = 0; i < skel.num_joints(); ++i)
+        {
+            _currentSkeletonJoints[i] = skel.joint_names()[i];
         }
     }
 
-    size_t AssimpSkeletalAnimationImporterImpl::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs) noexcept
+    size_t AssimpSkeletalAnimationImporterImpl::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
     {
-        if (input.config.empty())
+        if (input.config.is_null())
         {
             return 0;
         }
@@ -368,34 +510,74 @@ namespace darmok
         {
             return 0;
         }
+        _currentInput = input;
+        AssimpSceneLoadConfig loadConfig;
+        loadConfig.leftHanded = false;
+        loadConfig.populateArmature = false;
+        _currentScene = _sceneLoader.loadFromFile(input.path, loadConfig);
+        if (_currentScene == nullptr)
+        {
+            throw std::runtime_error("could not load assimp scene");
+        }
         std::string outputPath;
         if (input.config.contains("outputPath"))
         {
             outputPath = input.config["outputPath"];
             if (!outputPath.contains("*"))
             {
-                outputs.push_back(outputPath);
+                outputs.push_back(input.getRelativePath().parent_path() / outputPath);
                 return 1;
             }
         }
 
-        auto animNames = getAnimationNames(input);
-        for (auto& name : animNames)
+        if (input.config.contains("skeleton") && !dry)
         {
-            std::filesystem::path animPath;
-            if (outputPath.empty())
-            {
-                animPath = input.getRelativePath().parent_path() / (name + ".ozz");
-            }
-            else
-            {
-                auto animPathStr = outputPath;
-                StringUtils::replace(animPathStr, "*", name);
-                animPath = animPathStr;
-            }
-            outputs.push_back(animPath);
+            loadSkeleton(input.path.parent_path() / input.config["skeleton"]);
         }
-        return animNames.size();
+
+        AssimpOzzAnimationConverter converter(*_currentScene);
+        auto allAnimationNames = converter.getAnimationNames();
+        if (input.config.contains("animations"))
+        {
+            for (auto& [animName, animConfig] : input.config["animations"].items())
+            {
+                if (StringUtils::containsGlobPattern(animName))
+                {
+                    auto regex = std::regex(StringUtils::globToRegex(animName));
+                    for (auto& animName : allAnimationNames)
+                    {
+                        if (std::regex_match(animName, regex))
+                        {
+                            _currentAnimationNames.emplace_back(animName);
+                            outputs.push_back(getOutputPath(input, animName, animConfig, outputPath));
+                        }
+                    }
+                }
+                else
+                {
+                    _currentAnimationNames.emplace_back(animName);
+                    outputs.push_back(getOutputPath(input, animName, animConfig, outputPath));
+                }
+            }
+        }
+        else
+        {
+            _currentAnimationNames = allAnimationNames;
+            for (auto& animName : _currentAnimationNames)
+            {
+                outputs.push_back(getOutputPath(input, animName, outputPath));
+            }
+        }
+
+        return _currentAnimationNames.size();
+    }
+
+    void AssimpSkeletalAnimationImporterImpl::endImport(const Input& input) noexcept
+    {
+        _currentInput = Input{};
+        _currentScene.reset();
+        _currentSkeletonJoints.clear();
+        _currentAnimationNames.clear();
     }
 
     std::ofstream AssimpSkeletalAnimationImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
@@ -403,21 +585,18 @@ namespace darmok
         return std::ofstream(path, std::ios::binary);
     }
 
-    bool AssimpSkeletalAnimationImporterImpl::read(const std::filesystem::path& path, const std::string& animationName, RawAnimation& anim)
+    AssimpSkeletalAnimationImporterImpl::OzzAnimation AssimpSkeletalAnimationImporterImpl::read(const std::filesystem::path& path, const std::string& animationName)
     {
-        auto scene = _sceneLoader.loadFromFile(path);
-        AssimpSkeletonConverter converter(*scene);
-        auto skel = converter.createSkeleton();
-        converter.update(animationName, skel, anim);
+        AssimpOzzAnimationConverter converter(*_currentScene);
+        converter.setJointNames(_currentSkeletonJoints);
+        return converter.createAnimation(animationName);
     }
 
     void AssimpSkeletalAnimationImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
-        auto animNames = getAnimationNames(input);
-        auto& animName = animNames[outputIndex];
-        RawAnimation anim;
-        read(input.path, animName, anim);
-        OzzAssimpUtils::writeToStream(anim, out, _bufferSize);
+        auto& animName = _currentAnimationNames[outputIndex];
+        auto anim = read(input.path, animName);
+        AssimpOzzUtils::writeToStream(anim, out, _bufferSize);
     }
 
     const std::string& AssimpSkeletalAnimationImporterImpl::getName() const noexcept
@@ -436,9 +615,14 @@ namespace darmok
         // empty on purpose
     }
 
-    size_t AssimpSkeletalAnimationImporter::getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs)
+    size_t AssimpSkeletalAnimationImporter::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
     {
-        return _impl->getOutputs(input, outputs);
+        return _impl->startImport(input, outputs, dry);
+    }
+
+    void AssimpSkeletalAnimationImporter::endImport(const Input& input)
+    {
+        return _impl->endImport(input);
     }
 
     std::ofstream AssimpSkeletalAnimationImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
@@ -459,7 +643,10 @@ namespace darmok
     bool AssimpOzzImporter::Load(const char* filename)
     {
         _path = filename;
-        _assimpScene = _sceneLoader.loadFromFile(_path);
+        AssimpSceneLoadConfig loadConfig;
+        loadConfig.leftHanded = false;
+        loadConfig.populateArmature = true;
+        _assimpScene = _sceneLoader.loadFromFile(_path, loadConfig);
         return _assimpScene != nullptr;
     }
 
@@ -469,7 +656,7 @@ namespace darmok
         {
             return false;
         }
-        AssimpSkeletonConverter converter(*_assimpScene);
+        AssimpOzzSkeletonConverter converter(*_assimpScene);
         // TODO: take NodeTypes into account?
         return converter.update(*skeleton);
     }
@@ -481,7 +668,7 @@ namespace darmok
         {
             return names;
         }
-        AssimpSkeletonConverter converter(*_assimpScene);
+        AssimpOzzAnimationConverter converter(*_assimpScene);
         for (auto& name : converter.getAnimationNames())
         {
             names.emplace_back(name);
@@ -497,9 +684,9 @@ namespace darmok
         {
             return false;
         }
-        AssimpSkeletonConverter converter(*_assimpScene);
+        AssimpOzzAnimationConverter converter(*_assimpScene);
         // TODO: check samplingRate
-        return converter.update(animationName, skeleton, *animation);
+        return converter.update(animationName, *animation);
     }
 
     AssimpOzzImporter::NodeProperties AssimpOzzImporter::GetNodeProperties(const char* nodeName)

@@ -4,12 +4,7 @@
         "BasicMotionsTexture.png": "copy",
         "BasicMotions@*.fbx": {
             "skeletal_animation": {
-                "animations":[
-                    {
-                        "clip" : "*",
-                        "outputPath": "*.ozz"
-                    }
-                ]
+                "skeleton": "BasicMotionsDummyModel.fbx"
             }
         },
         "BasicMotionsDummyModel.fbx": {

@@ -45,15 +45,22 @@ namespace darmok
     class Image;
     class Data;
 
+    struct AssimpSceneLoadConfig final
+    {
+        bool leftHanded = true;
+        bool populateArmature = false;
+    };
+
     class AssimpSceneLoader
     {
     public:
+        using Config = AssimpSceneLoadConfig;
         using result_type = std::shared_ptr<aiScene>;
         bool supports(std::string_view name) const noexcept;
-        result_type loadFromFile(const std::filesystem::path& path) const ;
-        result_type loadFromMemory(const DataView& data, const std::string& name) const;
+        result_type loadFromFile(const std::filesystem::path& path, const Config& config = {}) const ;
+        result_type loadFromMemory(const DataView& data, const std::string& name, const Config& config = {}) const;
     private:
-        static unsigned int getImporterFlags() noexcept;
+        static unsigned int getImporterFlags(const Config& config = {}) noexcept;
         static result_type fixScene(Assimp::Importer& importer) noexcept;
     };
 
@@ -138,7 +145,7 @@ namespace darmok
         void read(const std::filesystem::path& path, const LoadConfig& config, Model& model);
         void setProgramVertexLayoutSuffix(const std::string& suffix);
 
-        size_t getOutputs(const Input& input, std::vector<std::filesystem::path>& outputs);
+        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
