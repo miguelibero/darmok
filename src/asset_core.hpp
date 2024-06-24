@@ -34,13 +34,13 @@ namespace darmok
         std::filesystem::path _outputPath;
         std::filesystem::path _cachePath;
 
-        struct InputCacheData
+        struct FileCacheData
         {
             std::time_t updateTime;
             std::time_t cacheTime;
         };
 
-        mutable std::unordered_map<std::filesystem::path, InputCacheData> _inputCache;
+        mutable std::unordered_map<std::filesystem::path, FileCacheData> _fileCache;
         std::unordered_map<std::filesystem::path, nlohmann::json> _inputs;
         nlohmann::json _importersConfig;
         std::string _headerVarPrefix;
@@ -67,6 +67,9 @@ namespace darmok
             std::vector<std::filesystem::path> updatedOutputs;
         };
 
+        std::filesystem::path getGlobalConfigPath() const noexcept;
+        std::filesystem::path getInputConfigPath(const std::filesystem::path& path) const noexcept;
+        bool addFileCachePath(const std::filesystem::path& path, std::time_t cacheTime = 0) const noexcept;
         FileImportResult importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path, const std::string& baseName) const noexcept;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path) const noexcept;
@@ -79,8 +82,10 @@ namespace darmok
         PathGroups getPathGroups(const std::vector<std::filesystem::path>& paths) const noexcept;
         void produceCombinedHeader(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths) const;
         static std::time_t getUpdateTime(const std::filesystem::path& path);
-        bool isCached(const std::filesystem::path& path, std::time_t* updateTime = nullptr) const;
-        bool writeCache(const std::vector<std::filesystem::path>& inputPaths) const;
+        bool isCached(const std::filesystem::path& path, OptionalRef<std::time_t> updateTime = nullptr) const noexcept;
+        bool isPathCached(const std::filesystem::path& path) const noexcept;
+        bool isCacheUpdated() const noexcept;
+        bool writeCache() const;
     };
 
     class BaseCommandLineAssetImporter;

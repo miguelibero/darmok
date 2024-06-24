@@ -41,7 +41,7 @@ namespace darmok
             throw std::runtime_error("input path does not exist");
         }
 
-        loadGlobalConfig(inputPath / _globalConfigFile, inputPaths);
+        loadGlobalConfig(getGlobalConfigPath(), inputPaths);
         for (auto& path : inputPaths)
         {
             loadInput(path);
@@ -57,6 +57,22 @@ namespace darmok
     const std::string AssetImporterImpl::_globalConfigHeaderIncludeDirKey = "headerIncludeDir";
     const std::string AssetImporterImpl::_globalConfigOutputPathKey = "outputPath";
 
+
+    std::filesystem::path AssetImporterImpl::getGlobalConfigPath() const noexcept
+    {
+        return _inputPath / _globalConfigFile;
+    }
+
+    std::filesystem::path AssetImporterImpl::getInputConfigPath(const fs::path& path) const noexcept
+    {
+        auto absPath = path;
+        if (absPath.is_relative())
+        {
+            absPath = _inputPath / absPath;
+        }
+        return absPath.string() + _inputConfigFileSuffix;
+    }
+
     bool AssetImporterImpl::loadInput(const fs::path& path)
     {
         auto fileName = path.filename();
@@ -64,7 +80,7 @@ namespace darmok
         {
             return false;
         }
-        fs::path configPath(path.string() + _inputConfigFileSuffix);
+        auto configPath = getInputConfigPath(path);
         if (!fs::exists(configPath))
         {
             loadInputConfig(path, nlohmann::json());
@@ -178,14 +194,29 @@ namespace darmok
         return itr->second;
     }
 
-   std::time_t AssetImporterImpl::getUpdateTime(const std::filesystem::path& path)
+    std::time_t AssetImporterImpl::getUpdateTime(const std::filesystem::path& path)
     {
+        if (!fs::exists(path))
+        {
+            return 0;
+        }
         std::filesystem::file_time_type ftime = std::filesystem::last_write_time(path);
         auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
             ftime - std::filesystem::file_time_type::clock::now() +
             std::chrono::system_clock::now()
         );
         return std::chrono::system_clock::to_time_t(sctp);
+    }
+
+    bool AssetImporterImpl::addFileCachePath(const std::filesystem::path& path, std::time_t cacheTime) const noexcept
+    {
+        auto itr = _fileCache.find(path);
+        if (itr != _fileCache.end() || !fs::exists(path))
+        {
+            return false;
+        }
+        _fileCache.emplace(path, FileCacheData{ getUpdateTime(path), cacheTime }).first->second;
+        return true;
     }
 
     void AssetImporterImpl::setCachePath(const std::filesystem::path& cachePath) noexcept
@@ -197,69 +228,84 @@ namespace darmok
             std::replace(fileName.begin(), fileName.end(), chr, '_');
         }
         _cachePath = cachePath / (fileName + ".json");
-        auto cache = nlohmann::json::object();
         if (fs::exists(_cachePath))
         {
-            cache = nlohmann::json::parse(std::ifstream(_cachePath));
+            auto cache = nlohmann::json::parse(std::ifstream(_cachePath));
+            for (auto& [relPath, cacheTime] : cache.items())
+            {
+                addFileCachePath(_inputPath / relPath, cacheTime);
+            }
         }
-        for (auto& input : _inputs)
+
+        addFileCachePath(getGlobalConfigPath());
+        for (auto& [path, config] : _inputs)
         {
-            auto& path = input.first;
+            addFileCachePath(path);
             auto relPath = fs::relative(path, _inputPath).string();
-            auto itr = cache.find(relPath);
-            auto cacheTime = itr == cache.end() ? 0 : itr.value().get<std::time_t>();
-            _inputCache.emplace(path, InputCacheData{ 0, cacheTime });
+            auto configPath = getInputConfigPath(path);
+            addFileCachePath(configPath);
         }
     }
 
-    bool AssetImporterImpl::isCached(const std::filesystem::path& path, std::time_t* updateTime) const
+    bool AssetImporterImpl::isCached(const std::filesystem::path& path, OptionalRef<std::time_t> updateTime) const noexcept
     {
-        auto itr = _inputCache.find(path);
-        if (itr == _inputCache.end())
+        if (!isPathCached(getGlobalConfigPath()))
         {
-            itr = _inputCache.emplace(path, InputCacheData{ 0, 0 }).first;
+            return false;
+        }
+        if (!isPathCached(getInputConfigPath(path)))
+        {
+            return false;
+        }
+        return isPathCached(path);
+    }
+
+    bool AssetImporterImpl::isPathCached(const std::filesystem::path& path) const noexcept
+    {
+        auto itr = _fileCache.find(path);
+        if (itr == _fileCache.end())
+        {
+            return true;
         }
         auto& data = itr->second;
         if (data.updateTime == 0)
         {
             data.updateTime = getUpdateTime(path);
         }
-        if (updateTime)
+        if (data.updateTime > data.cacheTime)
         {
-            *updateTime = data.updateTime;
+            return false;
         }
-        return data.updateTime <= data.cacheTime;
+        return true;
     }
 
-    bool AssetImporterImpl::writeCache(const std::vector<std::filesystem::path>& inputPaths) const
+    bool AssetImporterImpl::isCacheUpdated() const noexcept
     {
         if (_cachePath.empty())
         {
             return false;
         }
-        std::unordered_map<fs::path, std::time_t> updatedInputs;
-        for (auto& path : inputPaths)
+        for (auto& [path, data] : _fileCache)
         {
-            std::time_t updateTime;
-            if (!isCached(path, &updateTime))
+            if (data.updateTime != data.cacheTime)
             {
-                updatedInputs.emplace(path, updateTime);
+                return true;
             }
         }
-        if (updatedInputs.empty())
+        return false;
+    }
+
+    bool AssetImporterImpl::writeCache() const
+    {
+        if (_cachePath.empty())
         {
             return false;
         }
         auto cache = nlohmann::json::object();
-        if (fs::exists(_cachePath))
-        {
-            std::ifstream is(_cachePath);
-            cache = nlohmann::json::parse(is);
-        }
-        for (auto& elm : updatedInputs)
+        for (auto& elm : _fileCache)
         {
             auto relPath = fs::relative(elm.first, _inputPath).string();
-            cache[relPath] = elm.second;
+            cache[relPath] = elm.second.updateTime;
         }
         fs::create_directories(_cachePath.parent_path());
         std::ofstream os(_cachePath);
@@ -394,14 +440,9 @@ namespace darmok
     void AssetImporterImpl::operator()(std::ostream& log) const
     {
         log << "importing " << _inputPath << " -> " << _outputPath << "..." << std::endl;
-        std::vector<fs::path> updatedInputs;
         for (auto& [importer, input] : getImporterInputs())
         {
             auto result = importFile(importer.value(), input, log);
-            if (!result.outputs.empty() && !result.inputCached)
-            {
-                updatedInputs.push_back(input.path);
-            }
             if (!result.updatedOutputs.empty())
             {
                 auto groups = getPathGroups(result.outputs);
@@ -412,10 +453,10 @@ namespace darmok
                 }
             }
         }
-        if (!_cachePath.empty() && !updatedInputs.empty())
+        if (isCacheUpdated())
         {
             log << "writing cache " << _cachePath << "..." << std::endl;
-            writeCache(updatedInputs);
+            writeCache();
         }
     }
 
