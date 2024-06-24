@@ -106,12 +106,10 @@ darmok_process_assets(
   TARGET ${SHADERS_TARGET} CORE
   INPUT ${SHADERS_DIR}
   OUTPUT include/private/generated/shaders
-  DEPENDS ${SHADERS}
+  ASSETS ${SHADERS}
 )
+set_target_properties(${SHADERS_TARGET} PROPERTIES FOLDER "darmok")
 set(ASSET_TARGETS ${SHADERS_TARGET})
-
-source_group(TREE ${SHADERS_DIR} PREFIX "Embedded Shader Files" FILES ${SHADERS})
-set(ASSETS ${SHADERS})
 
 set(CORE_SOURCES
   ${SRC_DIR}/string.cpp
@@ -231,7 +229,6 @@ if(DARMOK_BUILD_IMGUI)
 
   set(IMGUI_SHADERS_TARGET darmok-imgui-shaders)
   set(IMGUI_SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/imgui/shaders)
-  list(APPEND ASSET_TARGETS ${IMGUI_SHADERS_TARGET})
   set(IMGUI_SHADERS
     ${IMGUI_SHADERS_DIR}/basic.fragment.sc
     ${IMGUI_SHADERS_DIR}/basic.varyingdef
@@ -245,10 +242,10 @@ if(DARMOK_BUILD_IMGUI)
     TARGET ${IMGUI_SHADERS_TARGET} CORE
     INPUT ${IMGUI_SHADERS_DIR}
     OUTPUT include/private/generated/imgui/shaders
-    DEPENDS ${IMGUI_SHADERS}
+    ASSETS ${IMGUI_SHADERS}
   )
-  source_group(TREE ${IMGUI_SHADERS_DIR} PREFIX "Imgui Asset Files" FILES ${IMGUIMGUI_SHADERSI_ASSETS})
-  list(APPEND ASSETS ${IMGUI_SHADERS})
+  set_target_properties(${IMGUI_SHADERS_TARGET} PROPERTIES FOLDER "darmok")
+  list(APPEND ASSET_TARGETS ${IMGUI_SHADERS_TARGET})
 endif()
 
 if(DARMOK_BUILD_RMLUI)
@@ -260,7 +257,6 @@ if(DARMOK_BUILD_RMLUI)
   endif()
   set(RMLUI_SHADERS_TARGET darmok-rmlui-shaders)
   set(RMLUI_SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/rmlui/shaders)
-  list(APPEND ASSET_TARGETS ${RMLUI_SHADERS_TARGET})
   set(RMLUI_SHADERS
     ${RMLUI_SHADERS_DIR}/basic.fragment.sc
     ${RMLUI_SHADERS_DIR}/basic.varyingdef
@@ -275,10 +271,10 @@ if(DARMOK_BUILD_RMLUI)
     TARGET ${RMLUI_SHADERS_TARGET} CORE
     INPUT ${RMLUI_SHADERS_DIR}
     OUTPUT include/private/generated/rmlui/shaders
-    DEPENDS ${RMLUI_SHADERS}
+    ASSETS ${RMLUI_SHADERS}
   )
-  source_group(TREE ${RMLUI_SHADERS_DIR} PREFIX "RmlUI Asset Files" FILES ${RMLUI_SHADERS})
-  list(APPEND ASSETS ${RMLUI_SHADERS})
+  set_target_properties(${RMLUI_SHADERS_TARGET} PROPERTIES FOLDER "darmok")
+  list(APPEND ASSET_TARGETS ${RMLUI_SHADERS_TARGET})
 endif()
 
 if(DARMOK_BUILD_OZZ)
@@ -375,7 +371,6 @@ add_library(
   ${LIB_NAME}
   ${SOURCES}
   ${LUA_SOURCES}
-  ${ASSETS}
 )
 target_sources(${LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${HEADERS})
 source_group(TREE ${SRC_DIR} PREFIX "Source Files" FILES ${SOURCES})

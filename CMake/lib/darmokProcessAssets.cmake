@@ -3,12 +3,12 @@
 #   TARGET name of the custom target that will process the assets
 #   INPUT file or directory
 # 	OUTPUT file or directory
-#   DEPENDS list of files
+#   ASSETS list of files
 # )
 function(darmok_process_assets)
   set(OPTION_ARGS CORE)
   set(ONE_VALUE_ARGS TARGET INPUT OUTPUT)
-  set(MULTI_VALUE_ARGS DEPENDS)
+  set(MULTI_VALUE_ARGS ASSETS)
   cmake_parse_arguments(ARGS "${OPTION_ARGS}" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" "${ARGN}")
 
   if(NOT DEFINED ARGS_INPUT)
@@ -41,7 +41,8 @@ function(darmok_process_assets)
   )
   add_custom_target(${ARGS_TARGET} ${CMD}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS ${ARGS_DEPENDS}
+    DEPENDS ${ARGS_ASSETS}
+    SOURCES ${ARGS_ASSETS}
     COMMENT "processing darmok assets in ${ARGS_INPUT}..."
   )
   add_dependencies(${ARGS_TARGET} ${EXE_TARGET})

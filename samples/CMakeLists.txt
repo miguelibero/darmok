@@ -19,9 +19,8 @@ function(darmok_sample_setup)
       TARGET ${ASSETS_TARGET}
       INPUT ${ARGS_ASSETS_INPUT}
       OUTPUT ${ARGS_ASSETS_OUTPUT}
-      DEPENDS ${ARGS_ASSETS}
+      ASSETS ${ARGS_ASSETS}
     )
-    source_group("Asset Files" FILES ${ARGS_ASSETS})
     add_dependencies(${ARGS_TARGET} ${ASSETS_TARGET})
     set_target_properties(${ASSETS_TARGET} PROPERTIES FOLDER "darmok/samples")
   endif()
@@ -44,9 +43,8 @@ function(darmok_lua_sample_setup)
       TARGET ${ASSETS_TARGET}
       INPUT ${ARGS_ASSETS_INPUT}
       OUTPUT ${ARGS_ASSETS_OUTPUT}
-      DEPENDS ${ARGS_ASSETS}
+      ASSETS ${ARGS_ASSETS}
     )
-    source_group("Asset Files" FILES ${ARGS_ASSETS})
     add_dependencies(${ARGS_TARGET} ${ASSETS_TARGET})
     set_target_properties(${ASSETS_TARGET} PROPERTIES FOLDER "darmok/samples")
   endif()
