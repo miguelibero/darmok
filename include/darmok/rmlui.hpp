@@ -22,13 +22,6 @@ namespace darmok
 	class Transform;
 	struct Viewport;
 
-	class DARMOK_EXPORT BX_NO_VTABLE IRmluiMouseDelegate
-	{
-	public:
-		virtual ~IRmluiMouseDelegate() = default;
-		virtual glm::vec2 onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) = 0;
-	};
-
 	class DARMOK_EXPORT RmluiAppComponent final : public AppComponent
     {
     public:
@@ -49,10 +42,6 @@ namespace darmok
 		bool getInputActive() const noexcept;
 
 		RmluiAppComponent& setMousePosition(const glm::vec2& position) noexcept;
-
-		RmluiAppComponent& setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
-		RmluiAppComponent& resetMouseDelegate() noexcept;
-
 
 		void init(App& app) override;
 		void shutdown() noexcept override;

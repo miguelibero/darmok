@@ -617,16 +617,6 @@ namespace darmok
         return _inputActive;
     }
 
-    void RmluiAppComponentImpl::setMouseDelegate(IRmluiMouseDelegate & dlg) noexcept
-    {
-        _mouseDelegate = dlg;
-    }
-
-    void RmluiAppComponentImpl::resetMouseDelegate() noexcept
-    {
-        _mouseDelegate.reset();
-    }
-
     void RmluiAppComponentImpl::setMousePosition(const glm::vec2& pos) noexcept
     {
         auto vp = getCurrentViewport();
@@ -945,11 +935,6 @@ namespace darmok
         auto vp = getCurrentViewport();
         pos = vp.viewportToScreenPoint(pos / glm::vec2(_app->getWindow().getPixelSize()));
         
-        if (_mouseDelegate)
-        {
-            pos = _mouseDelegate->onMousePositionChange(delta, pos);
-        }
-
         setMousePosition(pos);
     }
 
@@ -1062,18 +1047,6 @@ namespace darmok
     RmluiAppComponent& RmluiAppComponent::setMousePosition(const glm::vec2& position) noexcept
     {
         _impl->setMousePosition(position);
-        return *this;
-    }
-
-    RmluiAppComponent& RmluiAppComponent::setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept
-    {
-        _impl->setMouseDelegate(dlg);
-        return *this;
-    }
-
-    RmluiAppComponent& RmluiAppComponent::resetMouseDelegate() noexcept
-    {
-        _impl->resetMouseDelegate();
         return *this;
     }
 

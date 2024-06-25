@@ -62,11 +62,10 @@ namespace darmok
     class LuaTransform;
     class LuaApp;
 
-    class LuaRmluiAppComponent final : public IRmluiMouseDelegate
+    class LuaRmluiAppComponent final
     {
     public:
         LuaRmluiAppComponent(OptionalRef<RmluiAppComponent> comp) noexcept;
-        ~LuaRmluiAppComponent() noexcept;
 
         static LuaRmluiAppComponent addAppComponent1(LuaApp& app, const std::string& name) noexcept;
         static LuaRmluiAppComponent addAppComponent2(LuaApp& app, const std::string& name, const glm::uvec2& size) noexcept;
@@ -86,9 +85,6 @@ namespace darmok
         LuaRmluiAppComponent& setInputActive(bool active) noexcept;
         bool getInputActive() const noexcept;
 
-        glm::vec2 onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept override;
-        
-        LuaRmluiAppComponent& setMouseDelegate(const sol::protected_function& func) noexcept;
         LuaRmluiAppComponent& setMousePosition(const VarLuaTable<glm::vec2>& position) noexcept;
 
         OptionalRef<RmluiAppComponent> getReal() noexcept;
@@ -102,6 +98,5 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
         OptionalRef<RmluiAppComponent> _comp;
-        sol::protected_function _mouseDelegate;
     };
 }

@@ -147,8 +147,6 @@ namespace darmok
 		RmluiFileInterface _file;
 	};
 
-	class IRmluiMouseDelegate;
-
     class RmluiAppComponentImpl final : public IWindowListener, public IKeyboardListener, public IMouseListener
     {
     public:
@@ -165,8 +163,6 @@ namespace darmok
 
 		void setInputActive(bool active) noexcept;
 		bool getInputActive() const noexcept;
-		void setMouseDelegate(IRmluiMouseDelegate& dlg) noexcept;
-		void resetMouseDelegate() noexcept;
 		void setMousePosition(const glm::vec2& position) noexcept;
 
 		OptionalRef<Rml::Context> getContext() const noexcept;
@@ -195,7 +191,6 @@ namespace darmok
 		bool _inputActive;
 		std::shared_ptr<RmluiSharedAppComponent> _shared;
 
-		OptionalRef<IRmluiMouseDelegate> _mouseDelegate;
 		glm::vec2 _mousePosition;
 		std::string _defaultMouseCursor;
 

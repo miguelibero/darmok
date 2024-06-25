@@ -14,15 +14,6 @@ namespace darmok
     LuaRmluiAppComponent::LuaRmluiAppComponent(OptionalRef<RmluiAppComponent> comp) noexcept
         : _comp(comp)
     {
-        comp->setMouseDelegate(*this);
-    }
-
-    LuaRmluiAppComponent::~LuaRmluiAppComponent() noexcept
-    {
-        if (_comp)
-        {
-            _comp->resetMouseDelegate();
-        }
     }
 
     LuaRmluiAppComponent LuaRmluiAppComponent::addAppComponent1(LuaApp& app, const std::string& name) noexcept
@@ -109,41 +100,6 @@ namespace darmok
         return *this;
     }
 
-    glm::vec2 LuaRmluiAppComponent::onMousePositionChange(const glm::vec2& delta, const glm::vec2& position) noexcept
-    {
-        if (_mouseDelegate)
-        {
-            auto result = _mouseDelegate(delta, position);
-            if (!result.valid())
-            {
-                recoveredLuaError("mouse position delegate", result);
-                return position;
-            }
-            sol::object obj = result;
-            if (obj.is<glm::ivec2>())
-            {
-                return obj.as<glm::ivec2>();
-            }
-            if (obj.is<glm::vec2>())
-            {
-                return obj.as<glm::vec2>();
-            }
-            if (obj.is<sol::table>())
-            {
-                glm::vec2 v;
-                LuaGlm::tableInit(v, obj);
-                return v;
-            }
-        }
-        return position;
-    }
-
-    LuaRmluiAppComponent& LuaRmluiAppComponent::setMouseDelegate(const sol::protected_function& func) noexcept
-    {
-        _mouseDelegate = func;
-        return *this;
-    }
-
     LuaRmluiDocument LuaRmluiAppComponent::loadDocument(const std::string& name)
     {
         return LuaRmluiDocument(getContext()->LoadDocument(name));
@@ -192,7 +148,6 @@ namespace darmok
             "current_viewport", sol::property(&LuaRmluiAppComponent::getCurrentViewport),
             "current_size", sol::property(&LuaRmluiAppComponent::getCurrentViewport),
             "input_active", sol::property(&LuaRmluiAppComponent::getInputActive, &LuaRmluiAppComponent::setInputActive),
-            "mouse_delegate", sol::property(&LuaRmluiAppComponent::setMouseDelegate),
             "mouse_position", sol::property(&LuaRmluiAppComponent::setMousePosition),
             "load_document", &LuaRmluiAppComponent::loadDocument,
             "load_font", &LuaRmluiAppComponent::loadFont,
