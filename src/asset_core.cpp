@@ -65,7 +65,7 @@ namespace darmok
 
     std::filesystem::path AssetImporterImpl::getInputConfigPath(const fs::path& path) const noexcept
     {
-        auto absPath = path;
+        fs::path absPath = path;
         if (absPath.is_relative())
         {
             absPath = _inputPath / absPath;
@@ -610,7 +610,7 @@ namespace darmok
     void CopyAssetImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         std::ifstream is(input.path, std::ios::binary);
-        copyStream(is, out, _bufferSize);
+        StreamUtils::copyStream(is, out, _bufferSize);
     }
 
     const std::string& CopyAssetImporter::getName() const noexcept
@@ -764,7 +764,7 @@ namespace darmok
         }
 
         std::ifstream is(tmpPath, std::ios::binary);
-        copyStream(is, out, _bufferSize);
+        StreamUtils::copyStream(is, out, _bufferSize);
     }
 
     std::string ShaderImporterImpl::fixPathArgument(const std::filesystem::path& path) noexcept
@@ -916,7 +916,8 @@ namespace darmok
         }
         catch (const std::exception& ex)
         {
-            help(name, ex.what());
+            std::cerr << "Exception thrown:" << std::endl;
+            std::cerr << ex.what() << std::endl;
             return bx::kExitFailure;
         }
     }

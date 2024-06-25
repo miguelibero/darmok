@@ -18,8 +18,8 @@ namespace darmok
 	{
 	public:
 		AppImpl() noexcept;
-		void configure(const AppConfig& config) noexcept;
-		void init(App& app, const std::vector<std::string>& args);
+		void setConfig(const AppConfig& config) noexcept;
+		void init(App& app);
 		void shutdown();
 
 		void updateLogic(float deltaTime);
@@ -89,5 +89,19 @@ namespace darmok
 
 		std::vector<std::unique_ptr<AppComponent>> _components;
 		std::unordered_map<size_t, std::shared_ptr<AppComponent>> _sharedComponents;
+	};
+
+	class AppRunner final
+	{
+	public:
+		AppRunner(std::unique_ptr<App>&& app) noexcept;
+		int run(const std::vector<std::string>& args) noexcept;
+	private:
+		std::unique_ptr<App> _app;
+		std::vector<std::string> _args;
+		std::optional<int> setup(const std::vector<std::string>& args) noexcept;
+		bool init() noexcept;
+		bool update() noexcept;
+		bool shutdown() noexcept;
 	};
 }

@@ -4,11 +4,17 @@
 #include <vector>
 #include <optional>
 #include <unordered_map>
+#include <filesystem>
 #include <sol/sol.hpp>
 #include "glm.hpp"
 #include "asset.hpp"
 #include "window.hpp"
 #include "input.hpp"
+
+namespace bx
+{
+	class CommandLine;
+}
 
 namespace darmok
 {
@@ -72,18 +78,26 @@ namespace darmok
     {
     public:
 		~LuaRunnerAppImpl() noexcept;
-        void init(App& app, const std::vector<std::string>& args);
+        std::optional<int> setup(const std::vector<std::string>& args);
+		void init(App& app);
         void updateLogic(float deltaTime);
 		void beforeShutdown() noexcept;
         void afterShutdown() noexcept;
 
     private:
+		static std::string _defaultAssetInputPath;
+		static std::string _defaultAssetOutputPath;
+
 		std::optional<LuaApp> _luaApp;
         std::unique_ptr<sol::state> _lua;
-		static std::string findMainLua(const std::vector<std::string>& args) noexcept;
-		void importAssets(App& app, const std::vector<std::string>& args);
-		void initLua(App& app, const std::vector<std::string>& args);
+		std::filesystem::path _mainLua;
+
+		bool findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept;
+		bool importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine);
 
 		void addPackagePath(const std::string& path) noexcept;
+
+		void version(const std::string& name) noexcept;
+		void help(const std::string& name, const char* error = nullptr) noexcept;
     };
 }

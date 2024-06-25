@@ -14,9 +14,9 @@ namespace
 	class RmluiSampleApp : public App
 	{
 	public:
-		void init(const std::vector<std::string>& args) override
+		void init() override
 		{
-			App::init(args);
+			App::init();
 
 			auto& comp = addComponent<darmok::RmluiAppComponent>("main");
 			auto context = comp.getContext();

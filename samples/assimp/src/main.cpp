@@ -39,9 +39,9 @@ namespace
 	class AssimpSampleApp : public App
 	{
 	public:
-		void init(const std::vector<std::string>& args) override
+		void init() override
 		{
-			App::init(args);
+			App::init();
 
 			auto scene = addComponent<SceneAppComponent>().getScene();
 			getAssets().getAssimpModelLoader().setConfig({

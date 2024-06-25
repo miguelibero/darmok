@@ -11,10 +11,11 @@ namespace darmok
     class DARMOK_EXPORT LuaRunnerApp final : public App
     {
     public:
-        LuaRunnerApp();
-        ~LuaRunnerApp();
-        void init(const std::vector<std::string>& args) override;
-        int shutdown() override;
+        LuaRunnerApp() noexcept;
+        ~LuaRunnerApp() noexcept;
+        std::optional<int> setup(const std::vector<std::string>& args);
+        void init() override;
+        void shutdown() override;
     protected:
         void updateLogic(float deltaTime) override;
     private:

@@ -5,15 +5,12 @@
 #include "window.hpp"
 #include <darmok/app.hpp>
 #include <darmok/color.hpp>
+#include <darmok/stream.hpp>
 
 #include <bx/filepath.h>
 #include <bx/timer.h>
 #include <iostream>
 #include <algorithm>
-
-#if BX_PLATFORM_WINDOWS
-#include <Windows.h>
-#endif
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
@@ -100,14 +97,29 @@ namespace darmok
 		return timePassed;
 	}
 
-	void AppImpl::configure(const AppConfig& config) noexcept
+	void AppImpl::setConfig(const AppConfig& config) noexcept
 	{
 		_config = config;
-		bgfx::setPaletteColor(1, Colors::toNumber(config.clearColor));
 	}
 
-	void AppImpl::init(App& app, const std::vector<std::string>& args)
+	void AppImpl::init(App& app)
 	{
+		bgfx::Init init;
+		const auto& size = _window.getSize();
+		init.platformData.ndt = _plat.getDisplayHandle();
+		init.platformData.nwh = _plat.getWindowHandle();
+		init.platformData.type = _plat.getWindowHandleType();
+		init.debug = true;
+		init.resolution.width = size.x;
+		init.resolution.height = size.y;
+		// init.resolution.reset = ?;
+		// init.type = bgfx::RendererType::Vulkan;
+		bgfx::init(init);
+
+		bgfx::setPaletteColor(0, UINT32_C(0x00000000));
+		//bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
+		bgfx::setPaletteColor(1, Colors::toNumber(_config.clearColor));
+
 		addBindings();
 
 		for (auto& elm : _sharedComponents)
@@ -339,44 +351,87 @@ namespace darmok
 
 #if BX_PLATFORM_EMSCRIPTEN
 	static App* s_app;
-	static void updateApp()
+	static void emscriptenUpdateApp()
 	{
 		s_app->update();
 	}
 #endif // BX_PLATFORM_EMSCRIPTEN
 
-	static void logAppException(std::string_view phase, const std::exception& ex) noexcept
+	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
 	{
-		auto msg = std::string("[DARMOK] exception running app ") + std::string(phase) + ": " + ex.what();
-		std::cerr << msg << std::endl;
-#if BX_PLATFORM_WINDOWS
-		OutputDebugString(msg.c_str());
-#endif
+		return AppRunner(std::move(app)).run(args);
 	}
 
-	bool tryInitApp(App& app, const std::vector<std::string>& args) noexcept
+	AppRunner::AppRunner(std::unique_ptr<App>&& app) noexcept
+		: _app(std::move(app))
+	{
+	}
+
+	int AppRunner::run(const std::vector<std::string>& args) noexcept
+	{
+		auto code = setup(args);
+		if (code)
+		{
+			return code.value(); // early exit (no platform created)
+		}
+		bool success = false;
+		if (init())
+		{
+			if (update())
+			{
+				success = true;
+			}
+		}
+		if (!shutdown())
+		{
+			success = false;
+		}
+		
+		// destroy app before the bgfx shutdown to guarantee no dangling resources
+		_app.reset();
+
+		// Shutdown bgfx.
+		bgfx::shutdown();
+
+		return success ? 0 : -1;
+	}
+
+	std::optional<int> AppRunner::setup(const std::vector<std::string>& args) noexcept
 	{
 		try
 		{
-			app.init(args);
+			return _app->setup(args);
+		}
+		catch (const std::exception& ex)
+		{
+			_app->onException(App::Phase::Setup, ex);
+			return -1;
+		}
+	}
+
+	bool AppRunner::init() noexcept
+	{
+		try
+		{
+			_app->init();
 			return true;
 		}
 		catch (const std::exception& ex)
 		{
-			logAppException("init", ex);
+			_app->onException(App::Phase::Init, ex);
 			return false;
 		}
 	}
 
-	bool tryUpdateApp(App& app) noexcept
+	bool AppRunner::update() noexcept
 	{
 		try
 		{
 #if BX_PLATFORM_EMSCRIPTEN
 			s_app = app.get();
-			emscripten_set_main_loop(&updateApp, -1, 1);
+			emscripten_set_main_loop(&emscriptenUpdateApp, -1, 1);
 #else
-			while (app.update())
+			while (_app->update())
 			{
 			}
 #endif // BX_PLATFORM_EMSCRIPTEN
@@ -384,49 +439,24 @@ namespace darmok
 		}
 		catch (const std::exception& ex)
 		{
-			logAppException("update", ex);
+			_app->onException(App::Phase::Update, ex);
 			return false;
 		}
 	}
 
-	int tryShutdownApp(App& app) noexcept
+	bool AppRunner::shutdown() noexcept
 	{
 		try
 		{
-			return app.shutdown();
+			_app->shutdown();
+			return true;
 		}
 		catch (const std::exception& ex)
 		{
-			logAppException("shutdown", ex);
-			return -1;
+			_app->onException(App::Phase::Shutdown, ex);
+			return false;
 		}
 	}
-
-	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
-	{
-		bool success = false;
-		if (tryInitApp(*app, args))
-		{
-			if (tryUpdateApp(*app))
-			{
-				success = true;
-			}
-		}
-		auto result = tryShutdownApp(*app);
-		if (!success && result == 0)
-		{
-			result = -1;
-		}
-
-		// destroy app before the bgfx shutdown to guarantee no dangling resources
-		app.reset();
-
-		// Shutdown bgfx.
-		bgfx::shutdown();
-
-		return result;
-	}
-
 	App::App() noexcept
 		: _impl(std::make_unique<AppImpl>())
 	{
@@ -437,33 +467,40 @@ namespace darmok
 		// intentionally left blank for the unique_ptr<AppImpl> forward declaration
 	}
 
-	void App::init(const std::vector<std::string>& args)
+	std::optional<int> App::setup(const std::vector<std::string>& args)
+	{
+		return std::nullopt;
+	}
+
+	void App::init()
 	{
 		_impl->processEvents();
 
-		bgfx::Init init;
-		const auto& size = _impl->getWindow().getSize();
-		auto& plat = _impl->getPlatform();
-		init.platformData.ndt = plat.getDisplayHandle();
-		init.platformData.nwh = plat.getWindowHandle();
-		init.platformData.type = plat.getWindowHandleType();
-		init.debug = true;
-		init.resolution.width = size.x;
-		init.resolution.height = size.y;
-		// init.resolution.reset = ?;
-		// init.type = bgfx::RendererType::Vulkan;
-		bgfx::init(init);
-
-		bgfx::setPaletteColor(0, UINT32_C(0x00000000));
-		bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
-
-		_impl->init(*this, args);
+		_impl->init(*this);
 	}
 
-	int App::shutdown()
+	void App::onException(Phase phase, const std::exception& ex) noexcept
+	{
+		std::stringstream ss("[DARMOK] exception running app ");
+		switch (phase)
+		{
+		case Phase::Init:
+			ss << "init";
+			break;
+		case Phase::Update:
+			ss << "update";
+			break;
+		case Phase::Shutdown:
+			ss << "shutdown";
+			break;
+		}
+		ss << ": " << ex.what();
+		StreamUtils::logDebug(ss.str());
+	}
+
+	void App::shutdown()
 	{
 		_impl->shutdown();
-		return 0;
 	}
 
 	Input& App::getInput() noexcept
@@ -527,9 +564,9 @@ namespace darmok
 	{
 	}
 
-	void App::configure(const AppConfig& config) noexcept
+	void App::setConfig(const AppConfig& config) noexcept
 	{
-		_impl->configure(config);
+		_impl->setConfig(config);
 	}
 
 	bgfx::ViewId App::render(bgfx::ViewId viewId) const

@@ -13,9 +13,10 @@ namespace
 	class ImguiSampleApp : public App, public IImguiRenderer
 	{
 	public:
-		void init(const std::vector<std::string>& args) override
+		void init() override
 		{
-			App::init(args);
+			App::init();
+
 			_textData = "hello darmok!";
 
 			// Enable debug text.

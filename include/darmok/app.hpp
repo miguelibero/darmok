@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <bgfx/bgfx.h>
 #include <darmok/app_fwd.hpp>
 #include <darmok/color_fwd.hpp>
@@ -59,9 +60,20 @@ namespace darmok
 	public:
 		App() noexcept;
 		virtual ~App() noexcept;
-		virtual void init(const std::vector<std::string>& args);
-		virtual int shutdown();
+		// return unix exit code for early exit
+		virtual std::optional<int> setup(const std::vector<std::string>& args);
+		virtual void init();
+		virtual void shutdown();
 		bool update();
+
+		enum class Phase
+		{
+			Setup,
+			Init,
+			Update,
+			Shutdown
+		};
+		virtual void onException(Phase phase, const std::exception& ex) noexcept;
 
 		[[nodiscard]] Input& getInput() noexcept;
 		[[nodiscard]] const Input& getInput() const noexcept;
@@ -94,7 +106,7 @@ namespace darmok
 		}
 
 	protected:
-		void configure(const AppConfig& config) noexcept;
+		void setConfig(const AppConfig& config) noexcept;
 
 		template<typename T>
 		static std::shared_ptr<AppComponent> createComponent()

@@ -23,10 +23,8 @@ namespace
 	class PbrSampleApp : public App
 	{
 	public:
-		void init(const std::vector<std::string>& args) override
+		void afterInit() override
 		{
-			App::init(args);
-
 			auto scene = addComponent<SceneAppComponent>().getScene();
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			auto& layout = prog->getVertexLayout();

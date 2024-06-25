@@ -24,10 +24,10 @@ namespace
 	class OzzSampleApp : public App
 	{
 	public:
-		void init(const std::vector<std::string>& args) override
+		void init()
 		{
-			App::init(args);
-			
+			App::init();
+
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			auto& skelUpdater = scene.addComponent<SkeletalAnimationSceneComponent>();
 

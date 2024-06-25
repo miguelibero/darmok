@@ -243,28 +243,32 @@ end
 )");
 	}
 
-	LuaRunnerApp::LuaRunnerApp()
+	LuaRunnerApp::LuaRunnerApp() noexcept
 		: _impl(std::make_unique<LuaRunnerAppImpl>())
 	{
 	}
 
-	LuaRunnerApp::~LuaRunnerApp()
+	LuaRunnerApp::~LuaRunnerApp() noexcept
 	{
 		// intentionally left blank for the unique_ptr<LuaRunnerAppImpl> forward declaration
 	}
 
-	void LuaRunnerApp::init(const std::vector<std::string>& args)
+	std::optional<int> LuaRunnerApp::setup(const std::vector<std::string>& args)
 	{
-		App::init(args);
-		_impl->init(*this, args);
+		return _impl->setup(args);
 	}
 
-	int LuaRunnerApp::shutdown()
+	void LuaRunnerApp::init()
+	{
+		App::init();
+		return _impl->init(*this);
+	}
+
+	void LuaRunnerApp::shutdown()
 	{
 		_impl->beforeShutdown();
-		auto r = App::shutdown();
+		App::shutdown();
 		_impl->afterShutdown();
-		return r;
 	}
 
 	void LuaRunnerApp::updateLogic(float deltaTime)
@@ -273,17 +277,66 @@ end
 		_impl->updateLogic(deltaTime);
 	}
 
-	std::string LuaRunnerAppImpl::findMainLua(const std::vector<std::string>& args) noexcept
+	LuaRunnerAppImpl::~LuaRunnerAppImpl() noexcept
 	{
-		static const std::vector<std::string> possiblePaths = {
+		_luaApp.reset();
+		_lua.reset();
+	}
+
+	std::optional<int> LuaRunnerAppImpl::setup(const std::vector<std::string>& args)
+	{
+		std::vector<const char*> argv;
+		argv.reserve(args.size());
+		for (auto& arg : args)
+		{
+			argv.push_back(arg.c_str());
+		}
+		bx::CommandLine cmdLine(args.size(), &argv.front());
+		auto cmdPath = std::string(cmdLine.get(0));
+		auto cmdName = std::filesystem::path(cmdPath).filename().string();
+		if (cmdLine.hasArg('h', "help"))
+		{
+			help(cmdName);
+			return 0;
+		}
+
+		if (cmdLine.hasArg('v', "version"))
+		{
+			version(cmdName);
+			return 0;
+		}
+
+		auto importedAssets = importAssets(cmdName, cmdLine);
+		auto mainLuaFound = findMainLua(cmdName, cmdLine);
+
+		if (!importedAssets && !mainLuaFound)
+		{
+			help(cmdName, "could not find main lua script");
+			return -1;
+		}
+
+		return std::nullopt;
+	}
+
+	bool LuaRunnerAppImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
+	{
+		static const std::vector<std::filesystem::path> possiblePaths = {
 			"main.lua",
 			"lua/main.lua",
 			"assets/main.lua"
 		};
 
-		if (args.size() > 1 && StringUtils::endsWith(args[1], ".lua"))
+		std::string mainPath;
+		const char* mainPathArg;
+		if (cmdLine.hasArg(mainPathArg, 'm', "main-lua"))
 		{
-			return args[1];
+			_mainLua = mainPathArg;
+			if (!std::filesystem::exists(_mainLua))
+			{
+				help(cmdName, "specified main lua script does not exist");
+				return false;
+			}
+			return true;
 		}
 		else
 		{
@@ -291,11 +344,12 @@ end
 			{
 				if (std::filesystem::exists(path))
 				{
-					return path;
+					_mainLua = path;
+					return true;
 				}
 			}
 		}
-		return possiblePaths[0];
+		return false;
 	}
 
 	void LuaRunnerAppImpl::addPackagePath(const std::string& path) noexcept
@@ -305,54 +359,16 @@ end
 		auto pathPattern = std::filesystem::path(path) / std::filesystem::path("?.lua");
 		current += (!current.empty() ? ";" : "") + std::filesystem::absolute(pathPattern).string();
 		lua["package"]["path"] = current;
-	}
+	}	
 
-	LuaRunnerAppImpl::~LuaRunnerAppImpl() noexcept
+	void LuaRunnerAppImpl::init(App& app)
 	{
-		_luaApp.reset();
-		_lua.reset();
-	}
-
-	void LuaRunnerAppImpl::init(App& app, const std::vector<std::string>& args)
-	{
-		importAssets(app, args);
-		initLua(app, args);
-	}
-
-	void LuaRunnerAppImpl::importAssets(App& app, const std::vector<std::string>& args)
-	{
-		std::vector<const char*> argv(args.size());
-		for (auto& arg : args)
-		{
-			argv.push_back(arg.c_str());
-		}
-		bx::CommandLine cmdLine(args.size(), &argv.front());
-
-		const char* inputPath;
-		if (!cmdLine.hasArg(inputPath, 'i', "asset-input"))
-		{
-			inputPath = "asset_sources";
-		}
-		const char* outputPath;
-		if (!cmdLine.hasArg(inputPath, 'o', "asset-output"))
-		{
-			outputPath = "assets";
-		}
-
-		DarmokAssetImporter importer(inputPath);
-		importer.setOutputPath(outputPath);
-		importer(std::cout);
-	}
-
-	void LuaRunnerAppImpl::initLua(App& app, const std::vector<std::string>& args)
-	{
-		auto mainFile = findMainLua(args);
-		auto mainDir = std::filesystem::path(mainFile).parent_path().string();
+		auto mainDir = _mainLua.parent_path().string();
 
 		_lua = std::make_unique<sol::state>();
 		auto& lua = *_lua;
 		lua.open_libraries(sol::lib::base, sol::lib::package);
-		
+
 		LuaMath::bind(lua);
 		LuaShape::bind(lua);
 		LuaAssets::bind(lua);
@@ -364,14 +380,13 @@ end
 
 		_luaApp.emplace(app);
 		lua["app"] = std::ref(_luaApp.value());
-		lua["args"] = args;
 
 		if (!mainDir.empty())
 		{
 			addPackagePath(mainDir);
 		}
-		
-		auto result = lua.script_file(mainFile);
+
+		auto result = lua.script_file(_mainLua.string());
 		if (!result.valid())
 		{
 			recoveredLuaError("running main", result);
@@ -380,6 +395,65 @@ end
 		{
 			_luaApp->registerUpdate(lua["update"]);
 		}
+
+	}
+
+	std::string LuaRunnerAppImpl::_defaultAssetInputPath = "asset_sources";
+	std::string LuaRunnerAppImpl::_defaultAssetOutputPath = "assets";
+
+	bool LuaRunnerAppImpl::importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine)
+	{
+		const char* inputPath = nullptr;
+		cmdLine.hasArg(inputPath, 'i', "asset-input");
+		if (inputPath == nullptr && std::filesystem::exists(_defaultAssetInputPath))
+		{
+			inputPath = _defaultAssetInputPath.c_str();
+		}
+		if (inputPath == nullptr)
+		{
+			return false;
+		}
+		const char* outputPath = nullptr;
+		cmdLine.hasArg(outputPath, 'o', "asset-output");
+		if (outputPath == nullptr)
+		{
+			outputPath = _defaultAssetOutputPath.c_str();
+		}
+		DarmokAssetImporter importer(inputPath);
+		importer.setOutputPath(outputPath);
+		const char* cachePath = nullptr;
+		cmdLine.hasArg(cachePath, 'c', "asset-cache");
+		if (cachePath != nullptr)
+		{
+			importer.setCachePath(cachePath);
+		}
+		importer(std::cout);
+		return true;
+	}
+
+	void LuaRunnerAppImpl::version(const std::string& name) noexcept
+	{
+		std::cout << name << ": darmok lua runner." << std::endl;
+	}
+
+	void LuaRunnerAppImpl::help(const std::string& name, const char* error) noexcept
+	{
+		if (error)
+		{
+			std::cerr << "Error:" << std::endl << error << std::endl << std::endl;
+		}
+		version(name);
+		std::cout << "Usage: " << name << " -m <main lua> -i <in> -o <out>" << std::endl;
+		std::cout << std::endl;
+		std::cout << "Options:" << std::endl;
+		std::cout << "  -h, --help                  this help and exit." << std::endl;
+		std::cout << "  -v, --version               Output version information and exit." << std::endl;
+		std::cout << "  -m, --main-lua <path>       Path to the main lua file (dir will be taken as package path)." << std::endl;
+		std::cout << "  -i, --asset-input <path>    Asset input file path." << std::endl;
+		std::cout << "  -o, --asset-output <path>   Asset output file path." << std::endl;
+		std::cout << "  -c, --asset-cache <path>    Asset cache file path (directory that keeps the timestamps of the inputs)." << std::endl;
+		std::cout << "  --bgfx-shaderc              Path of the bgfx shaderc executable (used to process bgfx shaders)." << std::endl;
+		std::cout << "  --bgfx-shader-include       Path of the bgfx shader include dir (used to process bgfx shaders)." << std::endl;
 	}
 
 	void LuaRunnerAppImpl::updateLogic(float deltaTime)

@@ -26,9 +26,9 @@ namespace
 	class JoltSampleApp : public App, public ICollisionListener
 	{
 	public:
-		void init(const std::vector<std::string>& args) override
+		void init() override
 		{
-			App::init(args);
+			App::init();
 
 			_scene = addComponent<SceneAppComponent>().getScene();
 			_scene->addComponent<PhysicsSystem>(getAssets().getAllocator());

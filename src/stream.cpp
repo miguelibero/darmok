@@ -1,14 +1,27 @@
 #include <darmok/stream.hpp>
+#include <bx/platform.h>
+
+#if BX_PLATFORM_WINDOWS
+#include <Windows.h>
+#endif
 
 namespace darmok
 {
-    void copyStream(std::istream& input, std::ostream& output, size_t bufferSize)
+    void StreamUtils::copyStream(std::istream& input, std::ostream& output, size_t bufferSize)
     {
         std::vector<char> buffer(bufferSize);
         while (input.read(&buffer.front(), bufferSize) || input.gcount() > 0)
         {
             output.write(&buffer.front(), input.gcount());
         }
+    }
+
+    void StreamUtils::logDebug(const std::string& msg) noexcept
+    {
+        std::cerr << msg << std::endl;
+#if BX_PLATFORM_WINDOWS
+        OutputDebugString(msg.c_str());
+#endif
     }
 
     PrefixBuffer::PrefixBuffer(OptionalRef<std::streambuf> buffer, const std::string& prefix) noexcept
