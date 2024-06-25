@@ -1,5 +1,6 @@
 #pragma once
 
+#include "platform.hpp"
 #include <darmok/app.hpp>
 #include <darmok/input.hpp>
 #include <darmok/window.hpp>
@@ -9,42 +10,36 @@
 #include <cstdint>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 namespace darmok
 {
-	class Platform;
-
 	class AppImpl final
 	{
 	public:
-		AppImpl() noexcept;
+		AppImpl(App& app) noexcept;
+		std::optional<int> setup(Platform& plat, const std::vector<std::string>& args);
 		void setConfig(const AppConfig& config) noexcept;
-		void init(App& app);
-		void shutdown();
-
+		void init();
 		void updateLogic(float deltaTime);
 		bgfx::ViewId render(bgfx::ViewId viewId) const;
 		void triggerExit() noexcept;
-
 		bool processEvents();
+		void shutdown();
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
 		std::shared_ptr<AppComponent> getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback);
-		
 		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
 		bool removeComponent(AppComponent& component) noexcept;
 		
 		[[nodiscard]] Input& getInput() noexcept;
 		[[nodiscard]] const Input& getInput() const noexcept;
-
 		[[nodiscard]] Window& getWindow() noexcept;
 		[[nodiscard]] const Window& getWindow() const noexcept;
-
 		[[nodiscard]] AssetContext& getAssets() noexcept;
 		[[nodiscard]] const AssetContext& getAssets() const noexcept;
-
 		[[nodiscard]] Platform& getPlatform() noexcept;
 		[[nodiscard]] const Platform& getPlatform() const noexcept;
 
@@ -78,28 +73,27 @@ namespace darmok
 		static const std::string _bindingsName;
 	
 		bool _exit;
+		bool _running;
 		uint32_t _debug;
 		uint64_t _lastUpdate;
 		AppConfig _config;
-		Platform& _plat;
-		OptionalRef<App> _app;
+		OptionalRef<Platform> _plat;
+		App& _app;
 		Input _input;
-		Window _window;
+		std::optional<Window> _window;
 		AssetContext _assets;
 
 		std::vector<std::unique_ptr<AppComponent>> _components;
 		std::unordered_map<size_t, std::shared_ptr<AppComponent>> _sharedComponents;
 	};
 
-	class AppRunner final
+	class AppRunner final : public IPlatformRunnable
 	{
 	public:
 		AppRunner(std::unique_ptr<App>&& app) noexcept;
-		int run(const std::vector<std::string>& args) noexcept;
+		int32_t operator()() noexcept override;
 	private:
 		std::unique_ptr<App> _app;
-		std::vector<std::string> _args;
-		std::optional<int> setup(const std::vector<std::string>& args) noexcept;
 		bool init() noexcept;
 		bool update() noexcept;
 		bool shutdown() noexcept;

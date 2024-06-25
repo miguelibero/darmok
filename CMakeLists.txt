@@ -220,7 +220,7 @@ endif()
   endif()
 
 if(DARMOK_PLATFORM STREQUAL "glfw")
-  list(APPEND SOURCES ${SRC_DIR}/glfw.cpp)
+  list(APPEND SOURCES ${SRC_DIR}/platform_glfw.cpp)
 endif()
 
 if(DARMOK_BUILD_IMGUI)

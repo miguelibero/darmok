@@ -14,20 +14,20 @@
 #	define DARMOK_IMPLEMENT_MAIN 0
 #endif // DARMOK_IMPLEMENT_MAIN
 
-#define DARMOK_RUN_APP_DECL(app, ...)                           \
-	int32_t darmokRunApp(const std::vector<std::string>& args)  \
-	{                                                           \
-		return darmok::runApp<app>(args, ##__VA_ARGS__);        \
-	}                                                           \
+#define DARMOK_CREATE_APP_DECL(app, ...)						\
+	std::unique_ptr<App> darmokCreateApp()						\
+	{															\
+		return darmok::createApp<app>(##__VA_ARGS__);			\
+	}															\
 
 #if DARMOK_IMPLEMENT_MAIN
 #define DARMOK_RUN_APP(app, ...)                                \
-    DARMOK_RUN_APP_DECL(app, ##__VA_ARGS__)                     \
+    DARMOK_CREATE_APP_DECL(app, ##__VA_ARGS__)                  \
                                                                 \
 	int main(int argc, const char* const* argv)                 \
 	{                                                           \
-		return darmok::main(argc, argv, darmokRunApp);          \
-	}                                                           \
+		return darmok::main(argc, argv, darmokCreateApp());		\
+	}															\
 
 #else
 #define DARMOK_RUN_APP(app, ...)                                \
@@ -37,12 +37,14 @@
 namespace darmok
 {
 	class AppComponent;
+	class App;
 	class AppImpl;
 	class Input;
 	class Window;
 	class AssetContext;
+	class Platform;
 
-	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, RunAppCallback callback);
+	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<App>&& app);
 
 	struct DARMOK_EXPORT AppConfig
 	{
@@ -61,7 +63,7 @@ namespace darmok
 		App() noexcept;
 		virtual ~App() noexcept;
 		// return unix exit code for early exit
-		virtual std::optional<int> setup(const std::vector<std::string>& args);
+		virtual std::optional<int> setup(Platform& plat, const std::vector<std::string>& args);
 		virtual void init();
 		virtual void shutdown();
 		bool update();
@@ -73,6 +75,7 @@ namespace darmok
 			Update,
 			Shutdown
 		};
+
 		virtual void onException(Phase phase, const std::exception& ex) noexcept;
 
 		[[nodiscard]] Input& getInput() noexcept;
@@ -106,6 +109,8 @@ namespace darmok
 		}
 
 	protected:
+
+
 		void setConfig(const AppConfig& config) noexcept;
 
 		template<typename T>
@@ -135,12 +140,9 @@ namespace darmok
 		virtual bgfx::ViewId render(bgfx::ViewId viewId) const { return viewId;  };
 	};
 
-	DARMOK_EXPORT int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args);
-
 	template<typename T, typename... A>
-	int runApp(const std::vector<std::string>& args, A&&... constructArgs)
+	std::unique_ptr<App> createApp(A&&... constructArgs)
 	{
-		auto app = std::unique_ptr<App>(new T(std::forward<A>(constructArgs)...));		
-		return runApp(std::move(app), args);
+		return std::unique_ptr<App>(new T(std::forward<A>(constructArgs)...));
 	};
 } // namespace darmok

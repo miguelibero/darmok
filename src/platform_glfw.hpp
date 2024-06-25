@@ -31,8 +31,7 @@ namespace darmok
 {
 	struct MainThreadEntry
 	{
-		std::vector<std::string> args;
-		RunAppCallback callback;
+		std::unique_ptr<IPlatformRunnable> runnable;
 		bool finished = false;
 
 		static int32_t threadFunc(bx::Thread* thread, void* userData);
@@ -46,9 +45,9 @@ namespace darmok
 	class PlatformImpl final
 	{
 	public:
-		PlatformImpl() noexcept;
+		PlatformImpl(Platform& plat) noexcept;
 
-		int run(const std::vector<std::string>& args, RunAppCallback callback);
+		int run(std::unique_ptr<IPlatformRunnable>&& runnable);
 		
 		void pushCmd(std::unique_ptr<PlatformCmd>&& cmd) noexcept;
 		std::unique_ptr<PlatformEvent> pollEvent() noexcept;
@@ -68,6 +67,7 @@ namespace darmok
 
 		
 	private:
+		Platform& _plat;
 		GLFWwindow* _window;
 		PlatformEventQueue _events;
 		MainThreadEntry _mte;

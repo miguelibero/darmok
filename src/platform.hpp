@@ -213,6 +213,13 @@ namespace darmok
 
 	class PlatformImpl;
 
+	class BX_NO_VTABLE IPlatformRunnable
+	{
+	public:
+		virtual ~IPlatformRunnable() = default;
+		virtual int32_t operator()() noexcept = 0;
+	};
+
 	class Platform final
 	{
 	public:
@@ -234,7 +241,7 @@ namespace darmok
 
 		[[nodiscard]] std::unique_ptr<PlatformEvent> pollEvent() noexcept;
 
-		int32_t main(const std::vector<std::string>& args, RunAppCallback callback);
+		int32_t run(std::unique_ptr<IPlatformRunnable>&& runnable);
 
 	private:
 		Platform() noexcept;

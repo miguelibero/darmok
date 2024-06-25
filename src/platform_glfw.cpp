@@ -1,7 +1,8 @@
-#include "glfw.hpp"
+#include "platform_glfw.hpp"
 
 #include "input.hpp"
 #include "window.hpp"
+#include "app.hpp"
 #include <darmok/utils.hpp>
 #include <darmok/window.hpp>
 #include <darmok/app.hpp>
@@ -136,8 +137,9 @@ namespace darmok
 
 #pragma endregion PlatformCmds
 
-	PlatformImpl::PlatformImpl() noexcept
-		: _window(nullptr)
+	PlatformImpl::PlatformImpl(Platform& plat) noexcept
+		: _plat(plat)
+		, _window(nullptr)
 		, _normWinSize(0)
 		, _framebufferSize(0)
 	{
@@ -474,10 +476,9 @@ namespace darmok
 		}
 	}
 
-	int PlatformImpl::run(const std::vector<std::string>& args, RunAppCallback callback)
+	int PlatformImpl::run(std::unique_ptr<IPlatformRunnable>&& runnable)
 	{
-		_mte.args = args;
-		_mte.callback = callback;
+		_mte.runnable = std::move(runnable);
 
 		glfwSetErrorCallback(staticErrorCallback);
 
@@ -685,15 +686,14 @@ namespace darmok
 	int32_t MainThreadEntry::threadFunc(bx::Thread* thread, void* userData)
 	{
 		BX_UNUSED(thread);
-
 		auto self = (MainThreadEntry*)userData;
-		int32_t result = self->callback(self->args);
+		auto result = (*self->runnable)();
 		self->finished = true;
 		return result;
 	}
 
 	Platform::Platform() noexcept
-		: _impl(std::make_unique<PlatformImpl>())
+		: _impl(std::make_unique<PlatformImpl>(*this))
 	{
 	}
 
@@ -706,9 +706,9 @@ namespace darmok
 		return _impl->pollEvent();
 	}
 
-	int32_t Platform::main(const std::vector<std::string>& args, RunAppCallback callback)
+	int32_t Platform::run(std::unique_ptr<IPlatformRunnable>&& runnable)
 	{
-		return _impl->run(args, callback);
+		return _impl->run(std::move(runnable));
 	}
 
 	void Platform::requestWindowDestruction() noexcept

@@ -18,24 +18,131 @@
 
 namespace darmok
 {
-	int32_t main(int32_t argc, const char* const* argv, RunAppCallback callback)
+	int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<App>&& app)
 	{
-		std::vector<std::string> args(argc);
-		for (int i = 0; i < argc; ++i)
+		auto& plat = Platform::get();
+		try
 		{
-			args[i] = argv[i];
+			std::vector<std::string> args(argc);
+			for (int i = 0; i < argc; ++i)
+			{
+				args[i] = argv[i];
+			}
+			auto r = app->setup(plat, args);
+			if (r)
+			{
+				return r.value();
+			}
 		}
-		return Platform::get().main(args, callback);
+		catch (const std::exception& ex)
+		{
+			app->onException(App::Phase::Setup, ex);
+			return -1;
+		}
+		return plat.run(std::make_unique<AppRunner>(std::move(app)));
 	}
 
-	AppImpl::AppImpl() noexcept
-		: _exit(false)
+#if BX_PLATFORM_EMSCRIPTEN
+	static App* s_app;
+	static void emscriptenUpdateApp()
+	{
+		s_app->update();
+	}
+#endif // BX_PLATFORM_EMSCRIPTEN
+
+	AppRunner::AppRunner(std::unique_ptr<App>&& app) noexcept
+		: _app(std::move(app))
+	{
+	}
+
+	int AppRunner::operator()() noexcept
+	{
+		bool success = false;
+		if (init())
+		{
+			if (update())
+			{
+				success = true;
+			}
+		}
+		if (!shutdown())
+		{
+			success = false;
+		}
+
+		// destroy app before the bgfx shutdown to guarantee no dangling resources
+		_app.reset();
+
+		// Shutdown bgfx.
+		bgfx::shutdown();
+
+		return success ? 0 : -1;
+	}
+
+	bool AppRunner::init() noexcept
+	{
+		try
+		{
+			_app->init();
+			return true;
+		}
+		catch (const std::exception& ex)
+		{
+			_app->onException(App::Phase::Init, ex);
+			return false;
+		}
+	}
+
+	bool AppRunner::update() noexcept
+	{
+		try
+		{
+#if BX_PLATFORM_EMSCRIPTEN
+			s_app = app.get();
+			emscripten_set_main_loop(&emscriptenUpdateApp, -1, 1);
+#else
+			while (_app->update())
+			{
+			}
+#endif // BX_PLATFORM_EMSCRIPTEN
+			return true;
+		}
+		catch (const std::exception& ex)
+		{
+			_app->onException(App::Phase::Update, ex);
+			return false;
+		}
+	}
+
+	bool AppRunner::shutdown() noexcept
+	{
+		try
+		{
+			_app->shutdown();
+			return true;
+		}
+		catch (const std::exception& ex)
+		{
+			_app->onException(App::Phase::Shutdown, ex);
+			return false;
+		}
+	}
+
+	AppImpl::AppImpl(App& app) noexcept
+		: _app(app)
+		, _exit(false)
+		, _running(false)
 		, _debug(BGFX_DEBUG_NONE)
 		, _lastUpdate(0)
 		, _config(AppConfig::getDefaultConfig())
-		, _plat(Platform::get())
-		, _window(_plat)
 	{
+	}
+
+	std::optional<int> AppImpl::setup(Platform& plat, const std::vector<std::string>& args)
+	{
+		_plat = plat;
+		_window.emplace(plat);
+		return std::nullopt;
 	}
 
 	Input& AppImpl::getInput() noexcept
@@ -50,12 +157,12 @@ namespace darmok
 
 	Window& AppImpl::getWindow() noexcept
 	{
-		return _window;
+		return _window.value();
 	}
 
 	const Window& AppImpl::getWindow() const noexcept
 	{
-		return _window;
+		return _window.value();
 	}
 
 	AssetContext& AppImpl::getAssets() noexcept
@@ -70,12 +177,12 @@ namespace darmok
 
 	Platform& AppImpl::getPlatform() noexcept
 	{
-		return _plat;
+		return _plat.value();
 	}
 
 	const Platform& AppImpl::getPlatform() const noexcept
 	{
-		return _plat;
+		return _plat.value();
 	}
 
 	const AppConfig& AppConfig::getDefaultConfig() noexcept
@@ -102,13 +209,13 @@ namespace darmok
 		_config = config;
 	}
 
-	void AppImpl::init(App& app)
+	void AppImpl::init()
 	{
 		bgfx::Init init;
-		const auto& size = _window.getSize();
-		init.platformData.ndt = _plat.getDisplayHandle();
-		init.platformData.nwh = _plat.getWindowHandle();
-		init.platformData.type = _plat.getWindowHandleType();
+		const auto& size = _window->getSize();
+		init.platformData.ndt = _plat->getDisplayHandle();
+		init.platformData.nwh = _plat->getWindowHandle();
+		init.platformData.type = _plat->getWindowHandleType();
 		init.debug = true;
 		init.resolution.width = size.x;
 		init.resolution.height = size.y;
@@ -124,19 +231,20 @@ namespace darmok
 
 		for (auto& elm : _sharedComponents)
 		{
-			elm.second->init(app);
+			elm.second->init(_app);
 		}
 		for (auto& component : _components)
 		{
-			component->init(app);
+			component->init(_app);
 		}
 
 		_lastUpdate = bx::getHPCounter();
-		_app = app;
+		_running = true;
 	}
 
 	void AppImpl::shutdown()
 	{
+		_running = false;
 		for (auto& component : _components)
 		{
 			component->shutdown();
@@ -148,7 +256,6 @@ namespace darmok
 		_components.clear();
 		_sharedComponents.clear();
 		_input.getImpl().clearBindings();
-		_app.reset();
 	}
 
 	void AppImpl::updateLogic(float deltaTime)
@@ -198,8 +305,8 @@ namespace darmok
 	{
 		auto exit = [this]() { triggerExit(); };
 		auto fullscreen = [this]() {
-			auto mode = (WindowMode)((to_underlying(_window.getMode()) + 1) % to_underlying(WindowMode::Count));
-			_window.requestMode(mode);
+			auto mode = (WindowMode)((to_underlying(_window->getMode()) + 1) % to_underlying(WindowMode::Count));
+			_window->requestMode(mode);
 		};
 		auto debugStats = [this]() { toggleDebugFlag(BGFX_DEBUG_STATS); };
 		auto debugText = [this]() { toggleDebugFlag(BGFX_DEBUG_TEXT); };
@@ -278,8 +385,8 @@ namespace darmok
 			{
 				break;
 			}
-			PlatformEvent::process(*patEv, _input, _window);
-			if (_window.getPhase() == WindowPhase::Destroyed)
+			PlatformEvent::process(*patEv, _input, _window.value());
+			if (_window->getPhase() == WindowPhase::Destroyed)
 			{
 				return true;
 			}
@@ -297,9 +404,9 @@ namespace darmok
 		}
 		auto component = std::shared_ptr<AppComponent>(callback());
 		auto r = _sharedComponents.emplace(typeHash, component);
-		if (_app)
+		if (_running)
 		{
-			component->init(_app.value());
+			component->init(_app);
 		}
 		return component;
 	}
@@ -321,9 +428,9 @@ namespace darmok
 
 	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
 	{
-		if (_app)
+		if (_running)
 		{
-			component->init(_app.value());
+			component->init(_app);
 		}
 		_components.push_back(std::move(component));
 	}
@@ -334,7 +441,7 @@ namespace darmok
 		auto itr1 = std::find_if(_components.begin(), _components.end(), [ptr](auto& comp) { return comp.get() == ptr;  });
 		auto itr2 = std::find_if(_sharedComponents.begin(), _sharedComponents.end(), [ptr](auto& elm) { return elm.second.get() == ptr; });
 		auto found = itr1 != _components.end() || itr2 != _sharedComponents.end();
-		if (_app && found)
+		if (_running && found)
 		{
 			component.shutdown();
 		}
@@ -349,116 +456,8 @@ namespace darmok
 		return found;
 	}
 
-#if BX_PLATFORM_EMSCRIPTEN
-	static App* s_app;
-	static void emscriptenUpdateApp()
-	{
-		s_app->update();
-	}
-#endif // BX_PLATFORM_EMSCRIPTEN
-
-	int runApp(std::unique_ptr<App>&& app, const std::vector<std::string>& args)
-	{
-		return AppRunner(std::move(app)).run(args);
-	}
-
-	AppRunner::AppRunner(std::unique_ptr<App>&& app) noexcept
-		: _app(std::move(app))
-	{
-	}
-
-	int AppRunner::run(const std::vector<std::string>& args) noexcept
-	{
-		auto code = setup(args);
-		if (code)
-		{
-			return code.value(); // early exit (no platform created)
-		}
-		bool success = false;
-		if (init())
-		{
-			if (update())
-			{
-				success = true;
-			}
-		}
-		if (!shutdown())
-		{
-			success = false;
-		}
-		
-		// destroy app before the bgfx shutdown to guarantee no dangling resources
-		_app.reset();
-
-		// Shutdown bgfx.
-		bgfx::shutdown();
-
-		return success ? 0 : -1;
-	}
-
-	std::optional<int> AppRunner::setup(const std::vector<std::string>& args) noexcept
-	{
-		try
-		{
-			return _app->setup(args);
-		}
-		catch (const std::exception& ex)
-		{
-			_app->onException(App::Phase::Setup, ex);
-			return -1;
-		}
-	}
-
-	bool AppRunner::init() noexcept
-	{
-		try
-		{
-			_app->init();
-			return true;
-		}
-		catch (const std::exception& ex)
-		{
-			_app->onException(App::Phase::Init, ex);
-			return false;
-		}
-	}
-
-	bool AppRunner::update() noexcept
-	{
-		try
-		{
-#if BX_PLATFORM_EMSCRIPTEN
-			s_app = app.get();
-			emscripten_set_main_loop(&emscriptenUpdateApp, -1, 1);
-#else
-			while (_app->update())
-			{
-			}
-#endif // BX_PLATFORM_EMSCRIPTEN
-			return true;
-		}
-		catch (const std::exception& ex)
-		{
-			_app->onException(App::Phase::Update, ex);
-			return false;
-		}
-	}
-
-	bool AppRunner::shutdown() noexcept
-	{
-		try
-		{
-			_app->shutdown();
-			return true;
-		}
-		catch (const std::exception& ex)
-		{
-			_app->onException(App::Phase::Shutdown, ex);
-			return false;
-		}
-	}
 	App::App() noexcept
-		: _impl(std::make_unique<AppImpl>())
+		: _impl(std::make_unique<AppImpl>(*this))
 	{
 	}
 
@@ -467,16 +466,15 @@ namespace darmok
 		// intentionally left blank for the unique_ptr<AppImpl> forward declaration
 	}
 
-	std::optional<int> App::setup(const std::vector<std::string>& args)
+	std::optional<int> App::setup(Platform& plat, const std::vector<std::string>& args)
 	{
-		return std::nullopt;
+		return _impl->setup(plat, args);
 	}
 
 	void App::init()
 	{
 		_impl->processEvents();
-
-		_impl->init(*this);
+		_impl->init();
 	}
 
 	void App::onException(Phase phase, const std::exception& ex) noexcept
