@@ -20,7 +20,6 @@ namespace darmok
 {
 	int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<App>&& app)
 	{
-		auto& plat = Platform::get();
 		try
 		{
 			std::vector<std::string> args(argc);
@@ -28,7 +27,7 @@ namespace darmok
 			{
 				args[i] = argv[i];
 			}
-			auto r = app->setup(plat, args);
+			auto r = app->setup(args);
 			if (r)
 			{
 				return r.value();
@@ -39,7 +38,7 @@ namespace darmok
 			app->onException(App::Phase::Setup, ex);
 			return -1;
 		}
-		return plat.run(std::make_unique<AppRunner>(std::move(app)));
+		return Platform::get().run(std::make_unique<AppRunner>(std::move(app)));
 	}
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -135,14 +134,9 @@ namespace darmok
 		, _debug(BGFX_DEBUG_NONE)
 		, _lastUpdate(0)
 		, _config(AppConfig::getDefaultConfig())
+		, _plat(Platform::get())
+		, _window(_plat)
 	{
-	}
-
-	std::optional<int> AppImpl::setup(Platform& plat, const std::vector<std::string>& args)
-	{
-		_plat = plat;
-		_window.emplace(plat);
-		return std::nullopt;
 	}
 
 	Input& AppImpl::getInput() noexcept
@@ -157,12 +151,12 @@ namespace darmok
 
 	Window& AppImpl::getWindow() noexcept
 	{
-		return _window.value();
+		return _window;
 	}
 
 	const Window& AppImpl::getWindow() const noexcept
 	{
-		return _window.value();
+		return _window;
 	}
 
 	AssetContext& AppImpl::getAssets() noexcept
@@ -177,12 +171,12 @@ namespace darmok
 
 	Platform& AppImpl::getPlatform() noexcept
 	{
-		return _plat.value();
+		return _plat;
 	}
 
 	const Platform& AppImpl::getPlatform() const noexcept
 	{
-		return _plat.value();
+		return _plat;
 	}
 
 	const AppConfig& AppConfig::getDefaultConfig() noexcept
@@ -212,10 +206,10 @@ namespace darmok
 	void AppImpl::init()
 	{
 		bgfx::Init init;
-		const auto& size = _window->getSize();
-		init.platformData.ndt = _plat->getDisplayHandle();
-		init.platformData.nwh = _plat->getWindowHandle();
-		init.platformData.type = _plat->getWindowHandleType();
+		const auto& size = _window.getSize();
+		init.platformData.ndt = _plat.getDisplayHandle();
+		init.platformData.nwh = _plat.getWindowHandle();
+		init.platformData.type = _plat.getWindowHandleType();
 		init.debug = true;
 		init.resolution.width = size.x;
 		init.resolution.height = size.y;
@@ -305,8 +299,8 @@ namespace darmok
 	{
 		auto exit = [this]() { triggerExit(); };
 		auto fullscreen = [this]() {
-			auto mode = (WindowMode)((to_underlying(_window->getMode()) + 1) % to_underlying(WindowMode::Count));
-			_window->requestMode(mode);
+			auto mode = (WindowMode)((to_underlying(_window.getMode()) + 1) % to_underlying(WindowMode::Count));
+			_window.requestMode(mode);
 		};
 		auto debugStats = [this]() { toggleDebugFlag(BGFX_DEBUG_STATS); };
 		auto debugText = [this]() { toggleDebugFlag(BGFX_DEBUG_TEXT); };
@@ -385,8 +379,8 @@ namespace darmok
 			{
 				break;
 			}
-			PlatformEvent::process(*patEv, _input, _window.value());
-			if (_window->getPhase() == WindowPhase::Destroyed)
+			PlatformEvent::process(*patEv, _input, _window);
+			if (_window.getPhase() == WindowPhase::Destroyed)
 			{
 				return true;
 			}
@@ -466,9 +460,9 @@ namespace darmok
 		// intentionally left blank for the unique_ptr<AppImpl> forward declaration
 	}
 
-	std::optional<int> App::setup(Platform& plat, const std::vector<std::string>& args)
+	std::optional<int32_t> App::setup(const std::vector<std::string>& args)
 	{
-		return _impl->setup(plat, args);
+		return std::nullopt;
 	}
 
 	void App::init()

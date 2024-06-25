@@ -24,9 +24,6 @@ namespace darmok
 	class LuaInput;
 	class LuaScene;
 	class LuaTexture;
-	class SceneAppComponent;
-	class RmluiAppComponent;
-	class LuaRmluiAppComponent;
 
 	class LuaApp final
 	{
@@ -35,19 +32,6 @@ namespace darmok
 		App& getReal() noexcept;
 		const App& getReal() const noexcept;
 
-		LuaScene& getScene() noexcept;
-		LuaScene& setScene(const LuaScene& scene) noexcept;
-		const std::vector<LuaScene>& getScenes() noexcept;
-		LuaScene& addScene1(const LuaScene& scene) noexcept;
-		LuaScene& addScene2() noexcept;
-		bool removeScene(const LuaScene& scene) noexcept;
-
-		LuaRmluiAppComponent& getMainGui() noexcept;
-		OptionalRef<LuaRmluiAppComponent>::std_t getGui(const std::string& name) noexcept;
-		LuaRmluiAppComponent& getOrAddGui(const std::string& name) noexcept;
-		LuaRmluiAppComponent& addGui(const std::string& name);
-		bool removeGui(const std::string& name) noexcept;
-		
 		LuaAssets& getAssets() noexcept;
 		LuaWindow& getWindow() noexcept;
 		LuaInput& getInput() noexcept;
@@ -63,22 +47,13 @@ namespace darmok
 		LuaAssets _assets;
 		LuaWindow _window;
 		LuaInput _input;
-
-		std::vector<OptionalRef<SceneAppComponent>> _sceneComponents;
-		std::vector<LuaScene> _scenes;
-
-		LuaScene& doAddScene() noexcept;
-		size_t findScene(const LuaScene& scene) const noexcept;
-
-		using RmluiComponents = std::unordered_map<std::string, LuaRmluiAppComponent>;
-		RmluiComponents _guiComponents;
 	};
 
 	class LuaRunnerAppImpl final
     {
     public:
 		~LuaRunnerAppImpl() noexcept;
-        std::optional<int> setup(const std::vector<std::string>& args);
+        std::optional<int32_t> setup(const std::vector<std::string>& args);
 		void init(App& app);
         void updateLogic(float deltaTime);
 		void beforeShutdown() noexcept;
@@ -92,8 +67,8 @@ namespace darmok
         std::unique_ptr<sol::state> _lua;
 		std::filesystem::path _mainLua;
 
-		bool findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept;
-		bool importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine);
+		std::optional<int32_t> findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept;
+		std::optional<int32_t> importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine);
 
 		void addPackagePath(const std::string& path) noexcept;
 

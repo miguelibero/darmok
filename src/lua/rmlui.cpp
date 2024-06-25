@@ -180,7 +180,7 @@ namespace darmok
 
         Rml::Lua::Initialise(lua.lua_state());
 
-        lua.new_usertype<LuaRmluiAppComponent>("GuiComponent", sol::no_constructor,
+        lua.new_usertype<LuaRmluiAppComponent>("GuiAppComponent", sol::no_constructor,
             "add_app_component", sol::overload(
                 &LuaRmluiAppComponent::addAppComponent1,
                 &LuaRmluiAppComponent::addAppComponent2

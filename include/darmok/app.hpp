@@ -15,7 +15,7 @@
 #endif // DARMOK_IMPLEMENT_MAIN
 
 #define DARMOK_CREATE_APP_DECL(app, ...)						\
-	std::unique_ptr<App> darmokCreateApp()						\
+	std::unique_ptr<darmok::App> darmokCreateApp()						\
 	{															\
 		return darmok::createApp<app>(##__VA_ARGS__);			\
 	}															\
@@ -42,7 +42,6 @@ namespace darmok
 	class Input;
 	class Window;
 	class AssetContext;
-	class Platform;
 
 	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<App>&& app);
 
@@ -63,7 +62,7 @@ namespace darmok
 		App() noexcept;
 		virtual ~App() noexcept;
 		// return unix exit code for early exit
-		virtual std::optional<int> setup(Platform& plat, const std::vector<std::string>& args);
+		virtual std::optional<int32_t> setup(const std::vector<std::string>& args);
 		virtual void init();
 		virtual void shutdown();
 		bool update();

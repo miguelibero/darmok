@@ -39,131 +39,6 @@ namespace darmok
 		return _app.value();
 	}
 
-	LuaScene& LuaApp::getScene() noexcept
-	{
-		if (_sceneComponents.empty())
-		{
-			return doAddScene();
-		}
-		return _scenes.front();
-	}
-
-	size_t LuaApp::findScene(const LuaScene& scene) const noexcept
-	{
-		size_t i = 0;
-		auto& real = scene.getReal();
-		for (auto& comp : _sceneComponents)
-		{
-			if (comp->getScene() == real)
-			{
-				return i;
-			}
-			i++;
-		}
-		return -1;
-	}
-
-	LuaScene& LuaApp::setScene(const LuaScene& scene) noexcept
-	{
-		if (_sceneComponents.empty())
-		{
-			auto& comp = _app->addComponent<SceneAppComponent>(scene.getReal());
-			_sceneComponents.push_back(comp);
-			return _scenes.emplace_back(scene);
-		}
-		_sceneComponents[0]->setScene(scene.getReal());
-		_scenes[0] = scene;
-		return _scenes[0];
-	}
-
-	const std::vector<LuaScene>& LuaApp::getScenes() noexcept
-	{
-		return _scenes;
-	}
-
-	LuaScene& LuaApp::addScene1(const LuaScene& scene) noexcept
-	{
-		auto i = findScene(scene);
-		if (i >= 0)
-		{
-			return _scenes[i];
-		}
-		getScene();
-		auto& comp = _app->addComponent<SceneAppComponent>(scene.getReal());
-		_sceneComponents.push_back(comp);
-		return _scenes.emplace_back(scene);
-	}
-
-	LuaScene& LuaApp::addScene2() noexcept
-	{
-		getScene();
-		return doAddScene();
-	}
-
-	LuaScene& LuaApp::doAddScene() noexcept
-	{
-		auto& comp = _app->addComponent<SceneAppComponent>();
-		_sceneComponents.push_back(comp);
-		return _scenes.emplace_back(comp.getScene());
-	}
-
-	bool LuaApp::removeScene(const LuaScene& scene) noexcept
-	{
-		auto i = findScene(scene);
-		if (i < 0)
-		{
-			return false;
-		}
-		_sceneComponents.erase(_sceneComponents.begin() + i);
-		_scenes.erase(_scenes.begin() + i);
-		return true;
-	}
-
-	LuaRmluiAppComponent& LuaApp::getMainGui() noexcept
-	{
-		static const std::string name = "";
-		return getOrAddGui(name);
-	}
-
-	OptionalRef<LuaRmluiAppComponent>::std_t LuaApp::getGui(const std::string& name) noexcept
-	{
-		auto itr = _guiComponents.find(name);
-		if (itr == _guiComponents.end())
-		{
-			return std::nullopt;
-		}
-		return itr->second;
-	}
-
-	LuaRmluiAppComponent& LuaApp::getOrAddGui(const std::string& name) noexcept
-	{
-		auto itr = _guiComponents.find(name);
-		if (itr == _guiComponents.end())
-		{
-			auto& comp = _app->addComponent<RmluiAppComponent>(name);
-			itr = _guiComponents.emplace(name, comp).first;
-		}
-		return itr->second;
-	}
-
-	LuaRmluiAppComponent& LuaApp::addGui(const std::string& name)
-	{
-		auto& comp = _app->addComponent<RmluiAppComponent>(name);
-		auto r = _guiComponents.emplace(name, comp);
-		return r.first->second;
-	}
-
-	bool LuaApp::removeGui(const std::string& name) noexcept
-	{
-		auto itr = _guiComponents.find(name);
-		if (itr == _guiComponents.end())
-		{
-			return false;
-		}
-		_guiComponents.erase(itr);
-		return true;
-	}
-
 	LuaAssets& LuaApp::getAssets() noexcept
 	{
 		return _assets;
@@ -217,16 +92,6 @@ namespace darmok
 	void LuaApp::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaApp>("App", sol::no_constructor,
-			"scene", sol::property(&LuaApp::getScene, &LuaApp::setScene),
-			"scenes", sol::property(&LuaApp::getScenes),
-			"add_scene", sol::overload(&LuaApp::addScene1, &LuaApp::addScene2),
-			"remove_scene", &LuaApp::removeScene,
-			
-			"gui", sol::property(&LuaApp::getMainGui),
-			"get_gui", &LuaApp::getGui,
-			"get_or_add_gui", &LuaApp::getOrAddGui,
-			"add_gui", &LuaApp::addGui,
-
 			"assets", sol::property(&LuaApp::getAssets),
 			"window", sol::property(&LuaApp::getWindow),
 			"input", sol::property(&LuaApp::getInput),
@@ -253,7 +118,7 @@ end
 		// intentionally left blank for the unique_ptr<LuaRunnerAppImpl> forward declaration
 	}
 
-	std::optional<int> LuaRunnerApp::setup(const std::vector<std::string>& args)
+	std::optional<int32_t> LuaRunnerApp::setup(const std::vector<std::string>& args)
 	{
 		return _impl->setup(args);
 	}
@@ -306,19 +171,15 @@ end
 			return 0;
 		}
 
-		auto importedAssets = importAssets(cmdName, cmdLine);
-		auto mainLuaFound = findMainLua(cmdName, cmdLine);
-
-		if (!importedAssets && !mainLuaFound)
+		auto r = importAssets(cmdName, cmdLine);
+		if (r)
 		{
-			help(cmdName, "could not find main lua script");
-			return -1;
+			return r.value();
 		}
-
-		return std::nullopt;
+		return findMainLua(cmdName, cmdLine);
 	}
 
-	bool LuaRunnerAppImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
+	std::optional<int32_t> LuaRunnerAppImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
 	{
 		static const std::vector<std::filesystem::path> possiblePaths = {
 			"main.lua",
@@ -331,25 +192,35 @@ end
 		if (cmdLine.hasArg(mainPathArg, 'm', "main-lua"))
 		{
 			_mainLua = mainPathArg;
-			if (!std::filesystem::exists(_mainLua))
+			if (std::filesystem::is_directory(_mainLua))
 			{
-				help(cmdName, "specified main lua script does not exist");
-				return false;
-			}
-			return true;
-		}
-		else
-		{
-			for (auto& path : possiblePaths)
-			{
-				if (std::filesystem::exists(path))
+				for (auto path : possiblePaths)
 				{
-					_mainLua = path;
-					return true;
+					path = _mainLua / path;
+					if (std::filesystem::exists(path))
+					{
+						_mainLua = path;
+						return std::nullopt;
+					}
 				}
 			}
+			if (std::filesystem::exists(_mainLua))
+			{
+				return std::nullopt;
+			}
+			help(cmdName, "could not find specified main lua script");
+			return -1;
 		}
-		return false;
+		for (auto& path : possiblePaths)
+		{
+			if (std::filesystem::exists(path))
+			{
+				_mainLua = path;
+				return std::nullopt;
+			}
+		}
+		help(cmdName, "could not find main lua script");
+		return -1;
 	}
 
 	void LuaRunnerAppImpl::addPackagePath(const std::string& path) noexcept
@@ -401,7 +272,7 @@ end
 	std::string LuaRunnerAppImpl::_defaultAssetInputPath = "asset_sources";
 	std::string LuaRunnerAppImpl::_defaultAssetOutputPath = "assets";
 
-	bool LuaRunnerAppImpl::importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine)
+	std::optional<int32_t> LuaRunnerAppImpl::importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine)
 	{
 		const char* inputPath = nullptr;
 		cmdLine.hasArg(inputPath, 'i', "asset-input");
@@ -411,7 +282,7 @@ end
 		}
 		if (inputPath == nullptr)
 		{
-			return false;
+			return std::nullopt;
 		}
 		const char* outputPath = nullptr;
 		cmdLine.hasArg(outputPath, 'o', "asset-output");
@@ -427,8 +298,18 @@ end
 		{
 			importer.setCachePath(cachePath);
 		}
+
+		if (cmdLine.hasArg('d', "dry"))
+		{
+			for (auto& output : importer.getOutputs())
+			{
+				std::cout << output.string() << std::endl;
+			}
+			return 0;
+		}
+
 		importer(std::cout);
-		return true;
+		return std::nullopt;
 	}
 
 	void LuaRunnerAppImpl::version(const std::string& name) noexcept
@@ -452,6 +333,7 @@ end
 		std::cout << "  -i, --asset-input <path>    Asset input file path." << std::endl;
 		std::cout << "  -o, --asset-output <path>   Asset output file path." << std::endl;
 		std::cout << "  -c, --asset-cache <path>    Asset cache file path (directory that keeps the timestamps of the inputs)." << std::endl;
+		std::cout << "  -d, --dry                   Do not process assets, just print output files." << std::endl;
 		std::cout << "  --bgfx-shaderc              Path of the bgfx shaderc executable (used to process bgfx shaders)." << std::endl;
 		std::cout << "  --bgfx-shader-include       Path of the bgfx shader include dir (used to process bgfx shaders)." << std::endl;
 	}

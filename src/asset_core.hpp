@@ -82,7 +82,7 @@ namespace darmok
         PathGroups getPathGroups(const std::vector<std::filesystem::path>& paths) const noexcept;
         void produceCombinedHeader(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths) const;
         static std::time_t getUpdateTime(const std::filesystem::path& path);
-        bool isCached(const std::filesystem::path& path, OptionalRef<std::time_t> updateTime = nullptr) const noexcept;
+        bool isCached(const std::filesystem::path& path) const noexcept;
         bool isPathCached(const std::filesystem::path& path) const noexcept;
         bool isCacheUpdated() const noexcept;
         bool writeCache() const;

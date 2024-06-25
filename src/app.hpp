@@ -18,7 +18,6 @@ namespace darmok
 	{
 	public:
 		AppImpl(App& app) noexcept;
-		std::optional<int> setup(Platform& plat, const std::vector<std::string>& args);
 		void setConfig(const AppConfig& config) noexcept;
 		void init();
 		void updateLogic(float deltaTime);
@@ -77,10 +76,10 @@ namespace darmok
 		uint32_t _debug;
 		uint64_t _lastUpdate;
 		AppConfig _config;
-		OptionalRef<Platform> _plat;
+		Platform& _plat;
 		App& _app;
 		Input _input;
-		std::optional<Window> _window;
+		Window _window;
 		AssetContext _assets;
 
 		std::vector<std::unique_ptr<AppComponent>> _components;

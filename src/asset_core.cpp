@@ -198,7 +198,7 @@ namespace darmok
     {
         if (!fs::exists(path))
         {
-            return 0;
+            return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         }
         std::filesystem::file_time_type ftime = std::filesystem::last_write_time(path);
         auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
@@ -247,7 +247,7 @@ namespace darmok
         }
     }
 
-    bool AssetImporterImpl::isCached(const std::filesystem::path& path, OptionalRef<std::time_t> updateTime) const noexcept
+    bool AssetImporterImpl::isCached(const std::filesystem::path& path) const noexcept
     {
         if (!isPathCached(getGlobalConfigPath()))
         {
@@ -265,7 +265,7 @@ namespace darmok
         auto itr = _fileCache.find(path);
         if (itr == _fileCache.end())
         {
-            return true;
+            return !fs::exists(path);
         }
         auto& data = itr->second;
         if (data.updateTime == 0)
@@ -478,14 +478,13 @@ namespace darmok
             return 0;
         }
 
-        auto relInPath = fs::relative(input.path, _inputPath);
         for (fs::path output : importerOutputs)
         {
             if (_produceHeaders)
             {
                 output = getHeaderPath(output);
             }
-            output = _outputPath / relInPath.parent_path() / output;
+            output = _outputPath / output;
             if (std::find(outputs.begin(), outputs.end(), output) != outputs.end())
             {
                 throw std::runtime_error(std::string("multiple importers produce the same output: ") + output.string());
@@ -516,16 +515,14 @@ namespace darmok
                 headerVarName = _headerVarPrefix + stem;
                 output = getHeaderPath(output, stem);
             }
-
-            auto relOutPath = relInPath.parent_path() / output;
-            auto outPath = _outputPath / relOutPath;
+            auto outPath = _outputPath / output;
 
             if (result.inputCached && fs::exists(outPath))
             {
                 // log << importer.getName() << ": skipping " << relInPath << " -> " << relOutPath << std::endl;
                 continue;
             }
-            log << importer.getName() << ": " << relInPath << " -> " << relOutPath << "..." << std::endl;
+            log << importer.getName() << ": " << relInPath << " -> " << output << "..." << std::endl;
             result.updatedOutputs.push_back(output);
             fs::create_directories(outPath.parent_path());
             if (_produceHeaders)
