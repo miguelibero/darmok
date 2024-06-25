@@ -389,14 +389,15 @@ namespace darmok
 		return path.parent_path() / (stem + outSuffix);
 	}
 
-	size_t VertexLayoutImporter::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
+	std::vector<std::filesystem::path> VertexLayoutImporter::getOutputs(const Input& input)
 	{
+		std::vector<std::filesystem::path> outputs;
 		auto ext = StringUtils::getFileExt(input.path.filename().string());
 		if (input.config.is_null())
 		{
 			if (ext != ".varyingdef" && ext != ".vlayout.json" && ext != ".vlayout.bin")
 			{
-				return 0;
+				return outputs;
 			}
 		}
 		if (ext == ".varyingdef")
@@ -409,12 +410,12 @@ namespace darmok
 			{
 				if (std::filesystem::exists(betterPath))
 				{
-					return 0;
+					return outputs;
 				}
 			}
 		}
 		outputs.push_back(getFormatPath(input.getRelativePath(), _outputFormat));
-		return 1;
+		return outputs;
 	}
 
 	std::ofstream VertexLayoutImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)

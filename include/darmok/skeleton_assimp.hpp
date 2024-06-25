@@ -25,7 +25,7 @@ namespace darmok
     public:
         AssimpSkeletonImporter() noexcept;
         ~AssimpSkeletonImporter() noexcept;
-        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry) override;
+        std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
@@ -40,7 +40,8 @@ namespace darmok
     public:
         AssimpSkeletalAnimationImporter() noexcept;
         ~AssimpSkeletalAnimationImporter() noexcept;
-        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry) override;
+        bool startImport(const Input& input, bool dry) override;
+        std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         void endImport(const Input& input) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;

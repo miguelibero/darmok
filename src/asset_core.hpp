@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <optional>
 #include <unordered_map>
+#include <regex>
+
 #include <darmok/vertex_layout.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/optional_ref.hpp>
@@ -34,13 +36,14 @@ namespace darmok
         std::filesystem::path _outputPath;
         std::filesystem::path _cachePath;
 
-        struct FileCacheData
+        struct FileCacheData final
         {
             std::time_t updateTime;
             std::time_t cacheTime;
         };
 
         mutable std::unordered_map<std::filesystem::path, FileCacheData> _fileCache;
+        mutable std::unordered_map<std::filesystem::path, std::vector<std::filesystem::path>> _fileDependencies;
         std::unordered_map<std::filesystem::path, nlohmann::json> _inputs;
         nlohmann::json _importersConfig;
         std::string _headerVarPrefix;
@@ -58,7 +61,9 @@ namespace darmok
 
         using ImporterInputs = std::vector<std::pair<OptionalRef<IAssetTypeImporter>, Input>>;
         ImporterInputs getImporterInputs() const;
-        size_t getOutputs(IAssetTypeImporter& importer, const Input& input, std::vector<std::filesystem::path>& outputs) const;
+        void loadDependencies(const ImporterInputs& importerInputs) const;
+        void getDependencies(const std::filesystem::path& path, const ImporterInputs& importerInputs, std::vector<std::filesystem::path>& deps) const;
+        std::vector<std::filesystem::path> getOutputs(IAssetTypeImporter& importer, const Input& input) const;
 
         struct FileImportResult final
         {
@@ -82,6 +87,8 @@ namespace darmok
         PathGroups getPathGroups(const std::vector<std::filesystem::path>& paths) const noexcept;
         void produceCombinedHeader(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths) const;
         static std::time_t getUpdateTime(const std::filesystem::path& path);
+        
+        static std::filesystem::path normalizePath(const std::filesystem::path& path) noexcept;
         bool isCached(const std::filesystem::path& path) const noexcept;
         bool isPathCached(const std::filesystem::path& path) const noexcept;
         bool isCacheUpdated() const noexcept;
@@ -111,7 +118,8 @@ namespace darmok
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
-        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry);
+        std::vector<std::filesystem::path> getOutputs(const Input& input);
+        std::vector<std::filesystem::path> getDependencies(const Input& input);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
 
@@ -126,9 +134,10 @@ namespace darmok
         static const std::string _configTypeKey;
         static const std::string _configVaryingDefKey;
         static const std::string _configIncludeDirsKey;
+        static const std::regex _includeRegex;
 
-
-        std::filesystem::path getOutputPath(const std::filesystem::path& path, const std::string& ext) noexcept;
+        std::vector<std::filesystem::path> getIncludes(const Input& input) const noexcept;
+        static std::filesystem::path getOutputPath(const std::filesystem::path& path, const std::string& ext) noexcept;
         static std::string fixPathArgument(const std::filesystem::path& path) noexcept;
     };
 }

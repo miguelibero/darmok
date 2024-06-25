@@ -545,7 +545,7 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_embedTexturesJsonKey = "embedTextures";
     const std::string AssimpModelImporterImpl::_programJsonKey = "program";
 
-    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config)
+    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
     {
         if (json.contains(_vertexLayoutJsonKey))
         {
@@ -582,7 +582,7 @@ namespace darmok
         }
     }
 
-    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
+    void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config) const
     {
         loadConfig(json, basePath, config.loadConfig);
         if (json.contains(_outputPathJsonKey))
@@ -637,15 +637,16 @@ namespace darmok
         return layout;
     }
 
-    size_t AssimpModelImporterImpl::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
+    std::vector<std::filesystem::path> AssimpModelImporterImpl::getOutputs(const Input& input) 
     {
+        std::vector<std::filesystem::path> outputs;
         if (input.config.empty())
         {
-            return 0;
+            return outputs;
         }
         if (!_assimpLoader.supports(input.path.string()))
         {
-            return 0;
+            return outputs;
         }
         Config config;
         loadConfig(input.config, input.basePath, config);
@@ -657,10 +658,10 @@ namespace darmok
         {
             outputs.push_back(config.outputPath);
         }
-        return 1;
+        return outputs;
     }
 
-    std::ofstream AssimpModelImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpModelImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const
     {
         Config config;
         loadConfig(input.config, input.basePath, config);
@@ -731,9 +732,9 @@ namespace darmok
         // empty on purpose
     }
 
-    size_t AssimpModelImporter::startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry)
+    std::vector<std::filesystem::path> AssimpModelImporter::getOutputs(const Input& input)
     {
-        return _impl->startImport(input, outputs, dry);
+        return _impl->getOutputs(input);
     }
 
     std::ofstream AssimpModelImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)

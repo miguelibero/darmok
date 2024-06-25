@@ -145,8 +145,8 @@ namespace darmok
         void read(const std::filesystem::path& path, const LoadConfig& config, Model& model);
         void setProgramVertexLayoutSuffix(const std::string& suffix);
 
-        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry);
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
+        std::vector<std::filesystem::path> getOutputs(const Input& input);
+        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
     private:
@@ -165,8 +165,8 @@ namespace darmok
         static const std::string _programJsonKey;
         static const std::string _embedTexturesJsonKey;
 
-        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config);
-        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config);
+        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config) const;
+        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const;
         static bgfx::VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
     };
 }

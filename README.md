@@ -90,7 +90,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 #### Upcoming
 * asset tools
     * support for darmok-import.json in subfolders
-    * support for assets that depend on others (shader includes)
 * window modes with different resolutions
 * frustrum culling
 * modernize renderer (probably needs frame graph or similar)

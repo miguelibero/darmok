@@ -143,7 +143,7 @@ namespace darmok
 
         AssimpSkeletonImporterImpl(size_t bufferSize = 4096) noexcept;
         OzzSkeleton read(const std::filesystem::path& path);
-        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry) noexcept;
+        std::vector<std::filesystem::path> getOutputs(const Input& input) noexcept;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
@@ -160,7 +160,8 @@ namespace darmok
 
         AssimpSkeletalAnimationImporterImpl(size_t bufferSize = 4096) noexcept;
         OzzAnimation read(const std::filesystem::path& path, const std::string& animationName);
-        size_t startImport(const Input& input, std::vector<std::filesystem::path>& outputs, bool dry);
+        bool startImport(const Input& input, bool dry);
+        std::vector<std::filesystem::path> getOutputs(const Input& input);
         void endImport(const Input& input) noexcept;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
