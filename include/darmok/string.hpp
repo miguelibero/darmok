@@ -18,8 +18,8 @@ namespace darmok
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
         static [[nodiscard]] uint8_t hexToBin(char chr);
         static [[nodiscard]] uint8_t hexToBin(std::string_view sv);
-        static [[nodiscard]] std::string_view getFileStem(std::string_view filename) noexcept;
-        static [[nodiscard]] std::string_view getFileExt(std::string_view filename) noexcept;
+        static [[nodiscard]] std::string getFileStem(std::string_view filename) noexcept;
+        static [[nodiscard]] std::string getFileExt(std::string_view filename) noexcept;
         static [[nodiscard]] std::string escapeArgument(std::string_view arg) noexcept;
         static [[nodiscard]] bool containsGlobPattern(std::string_view glob) noexcept;
         static [[nodiscard]] std::string globToRegex(std::string_view glob) noexcept;

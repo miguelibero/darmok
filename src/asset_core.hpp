@@ -45,7 +45,7 @@ namespace darmok
         mutable std::unordered_map<std::filesystem::path, FileCacheData> _fileCache;
         mutable std::unordered_map<std::filesystem::path, std::vector<std::filesystem::path>> _fileDependencies;
 
-        struct HeaderConfig
+        struct HeaderConfig final
         {
             bool produceHeaders;
             std::string varPrefix;
@@ -58,7 +58,15 @@ namespace darmok
             static const std::string _headerIncludeDirKey;
         };
 
-        struct DirConfig
+        struct Operation final
+        {
+            IAssetTypeImporter& importer;
+            Input input;
+            HeaderConfig headerConfig;
+            std::filesystem::path outputPath;
+        };
+
+        struct DirConfig final
         {
             std::filesystem::path path;
             nlohmann::json importers;
@@ -69,6 +77,8 @@ namespace darmok
             bool load(const std::filesystem::path& inputPath, const std::vector<std::filesystem::path>& filePaths);
             static std::filesystem::path getPath(const std::filesystem::path& path) noexcept;
             static bool isPath(const std::filesystem::path& path) noexcept;
+
+            void updateOperation(Operation& op, const std::string& importerName) const;
 
         private:
             static const std::string _configFileName;
@@ -82,7 +92,7 @@ namespace darmok
         std::unordered_map<std::filesystem::path, DirConfig> _dirs;
 
 
-        struct FileConfig
+        struct FileConfig final
         {
             std::filesystem::path path;
             nlohmann::json importers;
@@ -95,20 +105,13 @@ namespace darmok
         };
 
         std::unordered_map<std::filesystem::path, FileConfig> _files;
-
         std::unordered_map<std::string, std::unique_ptr<IAssetTypeImporter>> _importers;
 
-        struct Operation final
-        {
-            IAssetTypeImporter& importer;
-            Input input;
-            HeaderConfig headerConfig;
-            std::filesystem::path outputPath;
-        };
-
         std::vector<Operation> getOperations() const;
+        static void mergeConfig(nlohmann::json& json, const nlohmann::json& other);
         void loadDependencies(const std::vector<Operation>& ops) const;
         void getDependencies(const std::filesystem::path& path, const std::vector<Operation>& ops, std::vector<std::filesystem::path>& deps) const;
+        std::filesystem::path fixOutput(const std::filesystem::path& path, const Operation& op) const noexcept;
         std::vector<std::filesystem::path> getOutputs(const Operation& op) const;
 
         struct FileImportResult final
