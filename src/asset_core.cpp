@@ -20,15 +20,14 @@ namespace darmok
     namespace fs = std::filesystem;
 
     AssetImporterImpl::AssetImporterImpl(const fs::path& inputPath)
-        : _produceHeaders(false)
     {
         std::vector<fs::path> inputPaths;
         if (fs::is_directory(inputPath))
         {
             _inputPath = inputPath;
             fs::recursive_directory_iterator beg(inputPath), end;
+            inputPaths.push_back(inputPath);
             inputPaths.insert(inputPaths.begin(), beg, end);
-
         }
         else if (fs::exists(inputPath))
         {
@@ -39,113 +38,141 @@ namespace darmok
         {
             throw std::runtime_error("input path does not exist");
         }
-
-        loadGlobalConfig(getGlobalConfigPath(), inputPaths);
         for (auto& path : inputPaths)
         {
-            loadInput(path);
+            loadInput(path, inputPaths);
         }
     }
 
-    const std::string AssetImporterImpl::_globalConfigFile = "darmok-import.json";
-    const std::string AssetImporterImpl::_inputConfigFileSuffix = ".darmok-import.json";
-    const std::string AssetImporterImpl::_globalConfigFilesKey = "files";
-    const std::string AssetImporterImpl::_globalConfigImportersKey = "importers";
-    const std::string AssetImporterImpl::_globalConfigHeaderVarPrefixKey = "headerVarPrefix";
-    const std::string AssetImporterImpl::_globalConfigProduceHeadersKey = "produceHeaders";
-    const std::string AssetImporterImpl::_globalConfigHeaderIncludeDirKey = "headerIncludeDir";
-    const std::string AssetImporterImpl::_globalConfigOutputPathKey = "outputPath";
+    const std::string AssetImporterImpl::HeaderConfig::_headerVarPrefixKey = "headerVarPrefix";
+    const std::string AssetImporterImpl::HeaderConfig::_produceHeadersKey = "produceHeaders";
+    const std::string AssetImporterImpl::HeaderConfig::_headerIncludeDirKey = "headerIncludeDir";
 
-
-    fs::path AssetImporterImpl::getGlobalConfigPath() const noexcept
+    bool AssetImporterImpl::HeaderConfig::load(const nlohmann::json& json) noexcept
     {
-        return _inputPath / _globalConfigFile;
-    }
-
-    fs::path AssetImporterImpl::getInputConfigPath(const fs::path& path) const noexcept
-    {
-        fs::path absPath = path;
-        if (absPath.is_relative())
+        bool found = false;
+        if (json.contains(_headerVarPrefixKey))
         {
-            absPath = _inputPath / absPath;
+            varPrefix = json[_headerVarPrefixKey];
+            produceHeaders = true;
+            found = true;
         }
-        return absPath.string() + _inputConfigFileSuffix;
+        if (json.contains(_headerIncludeDirKey))
+        {
+            includeDir = json[_headerIncludeDirKey].get<std::string>();
+            produceHeaders = true;
+            found = true;
+        }
+        if (json.contains(_produceHeadersKey))
+        {
+            produceHeaders = json[_produceHeadersKey];
+            found = true;
+        }
+        return found;
     }
 
-    bool AssetImporterImpl::loadInput(const fs::path& path)
+    const std::string AssetImporterImpl::DirConfig::_configFileName = "darmok-import.json";
+    const std::string AssetImporterImpl::DirConfig::_filesKey = "files";
+    const std::string AssetImporterImpl::DirConfig::_importersKey = "importers";
+    const std::string AssetImporterImpl::DirConfig::_outputPathKey = "outputPath";
+
+    fs::path AssetImporterImpl::DirConfig::getPath(const fs::path& path) noexcept
     {
-        auto fileName = path.filename();
-        if (fileName == _globalConfigFile || fileName.string().ends_with(_inputConfigFileSuffix))
-        {
-            return false;
-        }
-        auto configPath = getInputConfigPath(path);
-        if (!fs::exists(configPath))
-        {
-            loadInputConfig(path, nlohmann::json());
-            return false;
-        }
-        loadInputConfig(path, nlohmann::json::parse(std::ifstream(configPath)));
-        return true;
+        return path / _configFileName;
     }
 
-    bool AssetImporterImpl::loadGlobalConfig(const fs::path& path, const std::vector<fs::path>& inputPaths)
+    bool AssetImporterImpl::DirConfig::isPath(const fs::path& path) noexcept
     {
+        return path.filename() == _configFileName;
+    }
+
+    void AssetImporterImpl::DirConfig::loadFile(const std::string& key, const nlohmann::json& config, const fs::path& basePath, const std::vector<fs::path>& filePaths) noexcept
+    {
+        auto fixedConfig = FileConfig::fix(config);
+        if (StringUtils::containsGlobPattern(key))
+        {
+            std::regex regex(StringUtils::globToRegex(key));
+            for (auto& filePath : filePaths)
+            {
+                if (isPath(filePath) || FileConfig::isPath(filePath))
+                {
+                    continue;
+                }
+                auto relPath = fs::relative(filePath, basePath).string();
+                if (std::regex_match(relPath, regex))
+                {
+                    files[filePath] = fixedConfig;
+                }
+            }
+        }
+        else
+        {
+            auto filePath = basePath / key;
+            files[filePath] = fixedConfig;
+        }
+    }
+
+    bool AssetImporterImpl::DirConfig::load(const fs::path& inputPath, const std::vector<fs::path>& filePaths)
+    {
+        path = isPath(inputPath) ? inputPath : getPath(inputPath);
         if (!fs::exists(path))
         {
             return false;
         }
         auto config = nlohmann::json::parse(std::ifstream(path));
-        if (config.contains(_globalConfigHeaderVarPrefixKey))
+
+        HeaderConfig headerConfig;
+        if (headerConfig.load(config))
         {
-            _headerVarPrefix = config[_globalConfigHeaderVarPrefixKey];
-            _produceHeaders = true;
+            header = headerConfig;
         }
-        if (config.contains(_globalConfigHeaderIncludeDirKey))
+        if (config.contains(_outputPathKey))
         {
-            _headerIncludeDir = config[_globalConfigHeaderIncludeDirKey].get<std::string>();
-            _produceHeaders = true;
+            outputPath = config[_outputPathKey].get<std::string>();
         }
-        if (config.contains(_globalConfigProduceHeadersKey))
+        if (config.contains(_filesKey))
         {
-            _produceHeaders = config[_globalConfigProduceHeadersKey];
-        }
-        if (config.contains(_globalConfigOutputPathKey))
-        {
-            _outputPath = config[_globalConfigOutputPathKey].get<std::string>();
-        }
-        if (config.contains(_globalConfigFilesKey))
-        {
-            for (auto& item : config[_globalConfigFilesKey].items())
+            for (auto& item : config[_filesKey].items())
             {
-                auto& key = item.key();
-                if (StringUtils::containsGlobPattern(key))
-                {
-                    std::regex regex(StringUtils::globToRegex(key));
-                    for (auto& path : inputPaths)
-                    {
-                        auto relPath = fs::relative(path, _inputPath).string();
-                        if (std::regex_match(relPath, regex))
-                        {
-                            loadInputConfig(path, item.value());
-                        }
-                    }
-                }
-                else
-                {
-                    auto path = _inputPath / key;
-                    loadInputConfig(path, item.value());
-                }
+                loadFile(item.key(), item.value(), path, filePaths);
             }
         }
-        if (config.contains(_globalConfigImportersKey))
+        if (config.contains(_importersKey))
         {
-            _importersConfig = config[_globalConfigImportersKey];
+            importers.update(config[_importersKey]);
         }
         return true;
     }
 
-    nlohmann::json AssetImporterImpl::fixInputConfig(const nlohmann::json& json) noexcept
+    const std::string AssetImporterImpl::FileConfig::_configFileSuffix = ".darmok-import.json";
+
+    fs::path AssetImporterImpl::FileConfig::getPath(const fs::path& path) noexcept
+    {
+        return path.string() + _configFileSuffix;
+    }
+
+    bool AssetImporterImpl::FileConfig::isPath(const fs::path& path) noexcept
+    {
+        return path.filename().string().ends_with(_configFileSuffix);
+    }
+
+    bool AssetImporterImpl::FileConfig::load(const fs::path& inputPath)
+    {
+        if (!fs::exists(path))
+        {
+            return false;
+        }
+        path = isPath(inputPath) ? inputPath : getPath(inputPath);
+        if (!fs::exists(path))
+        {
+            return false;
+        }
+        auto config = nlohmann::json::parse(std::ifstream(path));
+        importers = fix(config);
+        return true;
+    }
+
+    nlohmann::json AssetImporterImpl::FileConfig::fix(const nlohmann::json& json) noexcept
     {
         if (json.is_null())
         {
@@ -176,21 +203,32 @@ namespace darmok
         return json;
     }
 
-    void AssetImporterImpl::mergeJsonObjects(nlohmann::json& json1, const nlohmann::json& json2) noexcept
+    bool AssetImporterImpl::loadInput(const fs::path& path, const std::vector<fs::path>& paths)
     {
-        json1.update(json2);
-    }
-
-    const nlohmann::json& AssetImporterImpl::loadInputConfig(const fs::path& path, const nlohmann::json& json) noexcept
-    {
-        auto fixedJson = fixInputConfig(json);
-        auto itr = _inputs.find(path);
-        if (itr == _inputs.end())
+        if (FileConfig::isPath(path) || DirConfig::isPath(path))
         {
-            return _inputs.emplace(path, fixedJson).first->second;
+            return false;
         }
-        mergeJsonObjects(itr->second, fixedJson);
-        return itr->second;
+        if (fs::is_directory(path))
+        {
+            DirConfig config;
+            if (config.load(path, paths))
+            {
+                _dirs.emplace(path, config);
+                addFileCachePath(config.path);
+            }
+        }
+        else
+        {
+            FileConfig config;
+            if (config.load(path))
+            {
+                addFileCachePath(config.path);
+            }
+            _files.emplace(path, config);
+            addFileCachePath(path);
+        }
+        return true;
     }
 
     std::time_t AssetImporterImpl::getUpdateTime(const fs::path& path)
@@ -211,12 +249,22 @@ namespace darmok
     {
         auto normPath = normalizePath(path);
         auto itr = _fileCache.find(normPath);
-        if (itr != _fileCache.end() || !fs::exists(normPath))
+        auto updateTime = getUpdateTime(normPath);
+        if (itr == _fileCache.end())
         {
-            return false;
+            _fileCache.emplace(normPath, FileCacheData{ updateTime, cacheTime });
+            return true;
         }
-        _fileCache.emplace(normPath, FileCacheData{ getUpdateTime(normPath), cacheTime }).first->second;
-        return true;
+        auto& data = itr->second;
+        if (data.cacheTime < cacheTime)
+        {
+            data.cacheTime = cacheTime;
+        }
+        if (data.updateTime < updateTime)
+        {
+            data.updateTime = updateTime;
+        }
+        return false;
     }
 
     void AssetImporterImpl::setCachePath(const fs::path& cachePath) noexcept
@@ -236,29 +284,23 @@ namespace darmok
                 addFileCachePath(_inputPath / relPath, cacheTime);
             }
         }
-
-        addFileCachePath(getGlobalConfigPath());
-        for (auto& [path, config] : _inputs)
-        {
-            addFileCachePath(path);
-            auto relPath = fs::relative(path, _inputPath).string();
-            auto configPath = getInputConfigPath(path);
-            addFileCachePath(configPath);
-        }
     }
 
     bool AssetImporterImpl::isCached(const fs::path& path) const noexcept
     {
-        if (!isPathCached(getGlobalConfigPath()))
+        for (auto& config : getDirConfigs(path))
         {
-            return false;
+            if (!isPathCached(config->path))
+            {
+                return false;
+            }
         }
         auto itr = _fileDependencies.find(path);
         if (itr != _fileDependencies.end())
         {
             for (auto& dep : itr->second)
             {
-                if (!isPathCached(getInputConfigPath(dep)))
+                if (!isPathCached(FileConfig::getPath(dep)))
                 {
                     return false;
                 }
@@ -268,16 +310,16 @@ namespace darmok
                 }
             }
         }
-        if (!isPathCached(getInputConfigPath(path)))
+        if (!isPathCached(FileConfig::getPath(path)))
         {
             return false;
         }
         return isPathCached(path);
     }
 
-    std::filesystem::path AssetImporterImpl::normalizePath(const std::filesystem::path& path) noexcept
+    fs::path AssetImporterImpl::normalizePath(const fs::path& path) noexcept
     {
-        return std::filesystem::weakly_canonical(path).make_preferred();
+        return fs::weakly_canonical(path).make_preferred();
     }
 
     bool AssetImporterImpl::isPathCached(const fs::path& path) const noexcept
@@ -340,12 +382,29 @@ namespace darmok
         _outputPath = outputPath;
     }
 
-    AssetImporterImpl::ImporterInputs AssetImporterImpl::getImporterInputs() const
+    AssetImporterImpl::DirConfigs AssetImporterImpl::getDirConfigs(const fs::path& path) const noexcept
     {
-        ImporterInputs inputs;
-        for (auto& [path, inputConfig] : _inputs)
+        DirConfigs configs;
+        auto parentPath = path.parent_path();
+        while (!parentPath.empty())
         {
-            for (auto& [importerName, importerConfig] : inputConfig.items())
+            auto itr = _dirs.find(parentPath);
+            if (itr != _dirs.end())
+            {
+                configs.emplace_back(itr->second);
+            }
+            parentPath = parentPath.parent_path();
+        }
+        std::reverse(configs.begin(), configs.end());
+        return configs;
+    }
+
+    std::vector<AssetImporterImpl::Operation> AssetImporterImpl::getOperations() const
+    {
+        std::vector<Operation> ops;
+        for (auto& [path, fileConfig] : _files)
+        {
+            for (auto& [importerName, importerConfig] : fileConfig.importers.items())
             {
                 auto itr = _importers.find(importerName);
                 if (itr == _importers.end())
@@ -357,35 +416,54 @@ namespace darmok
             }
             for (auto& [importerName, importer] : _importers)
             {
-                nlohmann::json config;
-                nlohmann::json globalConfig;
-                auto itr = inputConfig.find(importerName);
-                if (itr != inputConfig.end())
+                auto& op = ops.emplace_back(*importer, Input{ path, _inputPath });
+                auto itr = fileConfig.importers.find(importerName);
+                if (itr != fileConfig.importers.end())
                 {
-                    config = *itr;
+                    op.input.config = *itr;
                 }
-                itr = _importersConfig.find(importerName);
-                if (itr != _importersConfig.end())
+                for (auto& dirConfig : getDirConfigs(path))
                 {
-                    globalConfig = *itr;
+                    {
+                        auto itr = dirConfig->files.find(path);
+                        if (itr != dirConfig->files.end())
+                        {
+                            op.input.config.update(*itr);
+                        }
+                    }
+                    {
+                        auto& importersConfig = dirConfig->importers;
+                        itr = importersConfig.find(importerName);
+                        if (itr != importersConfig.end())
+                        {
+                            op.input.dirConfig.update(*itr);
+                        }
+                    }
+                    if (dirConfig->header)
+                    {
+                        op.headerConfig = dirConfig->header.value();
+                    }
+                    if (dirConfig->outputPath)
+                    {
+                        op.outputPath = dirConfig->outputPath.value();
+                    }
                 }
-                inputs.emplace_back(*importer, Input{ path, _inputPath, config, globalConfig });
             }
         }
-        loadDependencies(inputs);
-        return inputs;
+        loadDependencies(ops);
+        return ops;
     }
 
-    void AssetImporterImpl::loadDependencies(const ImporterInputs& importerInputs) const
+    void AssetImporterImpl::loadDependencies(const std::vector<Operation>& ops) const
     {
-        for (auto& [importer, input] : importerInputs)
+        for (auto& op : ops)
         {
-            auto itr = _fileDependencies.find(input.path);
+            auto itr = _fileDependencies.find(op.input.path);
             if (itr == _fileDependencies.end())
             {
-                auto r = _fileDependencies.emplace(input.path, std::vector<fs::path>());
+                auto r = _fileDependencies.emplace(op.input.path, std::vector<fs::path>());
                 auto& deps = r.first->second;
-                getDependencies(input.path, importerInputs, deps);
+                getDependencies(op.input.path, ops, deps);
                 for (auto& dep : deps)
                 {
                     addFileCachePath(dep);
@@ -394,16 +472,16 @@ namespace darmok
         }
     }
 
-    void AssetImporterImpl::getDependencies(const fs::path& path, const ImporterInputs& importerInputs, std::vector<fs::path>& deps) const
+    void AssetImporterImpl::getDependencies(const fs::path& path, const std::vector<Operation>& ops, std::vector<fs::path>& deps) const
     {
         std::vector<fs::path> baseDeps;
-        for (auto& [importer, input] : importerInputs)
+        for (auto& op : ops)
         {
-            if (input.path != path)
+            if (op.input.path != path)
             {
                 continue;
             }
-            for (auto& dep : importer->getDependencies(input))
+            for (auto& dep : op.importer.getDependencies(op.input))
             {
                 if (std::find(deps.begin(), deps.end(), dep) == deps.end())
                 {
@@ -414,7 +492,7 @@ namespace darmok
         }
         for (auto& dep : baseDeps)
         {
-            getDependencies(dep, importerInputs, deps);
+            getDependencies(dep, ops, deps);
         }
     }
 
@@ -446,10 +524,9 @@ namespace darmok
     std::vector<fs::path> AssetImporterImpl::getOutputs() const
     {
         std::vector<fs::path> outputs;
-        auto importerInputs = getImporterInputs();
-        for (auto& [importer, input] : importerInputs)
+        for (auto& op : getOperations())
         {
-            auto importerOutputs = getOutputs(importer.value(), input);
+            auto importerOutputs = getOutputs(op);
             if (importerOutputs.empty())
             {
                 continue;
@@ -463,7 +540,7 @@ namespace darmok
             }
 
             auto allOutputsCached = true;
-            if (!isCached(input.path))
+            if (!isCached(op.input.path))
             {
                 outputs.insert(outputs.end(), importerOutputs.begin(), importerOutputs.end());
                 allOutputsCached = false;
@@ -479,7 +556,7 @@ namespace darmok
                     }
                 }
             }
-            if (_produceHeaders && !allOutputsCached)
+            if (op.headerConfig.produceHeaders && !allOutputsCached)
             {
                 auto groups = getPathGroups(importerOutputs);
                 for (auto& [groupPath, paths] : groups)
@@ -500,7 +577,7 @@ namespace darmok
         _importers[importer->getName()] = std::move(importer);
     }
 
-    void AssetImporterImpl::produceCombinedHeader(const fs::path& path, const std::vector<fs::path>& paths) const
+    void AssetImporterImpl::produceCombinedHeader(const fs::path& path, const std::vector<fs::path>& paths, const fs::path& includeDir) const
     {
         auto fullPath = _outputPath / path;
         fs::create_directories(fullPath.parent_path());
@@ -508,7 +585,7 @@ namespace darmok
         out << "// generated antomatically by darmok, please do not modify manually!" << std::endl;
         for (auto& path : paths)
         {
-            auto includePath = _headerIncludeDir / path.filename();
+            auto includePath = includeDir / path.filename();
             out << "#include \"" << includePath.string() << "\"" << std::endl;
         }
     }
@@ -516,16 +593,16 @@ namespace darmok
     void AssetImporterImpl::operator()(std::ostream& log) const
     {
         log << "importing " << _inputPath << " -> " << _outputPath << "..." << std::endl;
-        for (auto& [importer, input] : getImporterInputs())
+        for (auto& op : getOperations())
         {
-            auto result = importFile(importer.value(), input, log);
-            if (!result.updatedOutputs.empty())
+            auto result = importFile(op, log);
+            if (op.headerConfig.produceHeaders && !result.updatedOutputs.empty())
             {
                 auto groups = getPathGroups(result.outputs);
                 for (auto& [groupPath, paths] : groups)
                 {
                     log << "combined header " << groupPath  << "..." << std::endl;
-                    produceCombinedHeader(groupPath, paths);
+                    produceCombinedHeader(groupPath, paths, op.headerConfig.includeDir);
                 }
             }
         }
@@ -546,79 +623,79 @@ namespace darmok
         return getHeaderPath(path, path.stem().string());
     }
 
-    std::vector<fs::path> AssetImporterImpl::getOutputs(IAssetTypeImporter& importer, const Input& input) const
+    std::vector<fs::path> AssetImporterImpl::getOutputs(const Operation& op) const
     {
-        if (!importer.startImport(input, true))
+        if (!op.importer.startImport(op.input, true))
         {
             return {};
         }
-        auto outputs = importer.getOutputs(input);
-        if (_produceHeaders)
+        auto outputs = op.importer.getOutputs(op.input);
+        if (op.headerConfig.produceHeaders)
         {
             for (fs::path& output : outputs)
             {
                 output = getHeaderPath(output);
             }
         }
-        importer.endImport(input);
+        op.importer.endImport(op.input);
         return outputs;
     }
 
-    AssetImporterImpl::FileImportResult AssetImporterImpl::importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const
+    AssetImporterImpl::FileImportResult AssetImporterImpl::importFile(const Operation& op, std::ostream& log) const
     {
         FileImportResult result;
 
-        if (!importer.startImport(input, false))
+        if (!op.importer.startImport(op.input, false))
         {
             return result;
         }
 
-        result.outputs = getOutputs(importer, input);
+        result.outputs = getOutputs(op);
         if (result.outputs.empty())
         {
-            importer.endImport(input);
+            op.importer.endImport(op.input);
             return result;
         }
 
-        result.inputCached = isCached(input.path);
-        importer.setLogOutput(log);
+        result.inputCached = isCached(op.input.path);
+        op.importer.setLogOutput(log);
         size_t i = 0;
-        auto relInPath = fs::relative(input.path, _inputPath);
+        auto relInPath = fs::relative(op.input.path, _inputPath);
         for (fs::path& output : result.outputs)
         {
             std::string headerVarName;
-            if (_produceHeaders)
+            if (op.headerConfig.produceHeaders)
             {
                 auto stem = output.stem().string();
-                headerVarName = _headerVarPrefix + stem;
+                headerVarName = op.headerConfig.varPrefix + stem;
                 output = getHeaderPath(output, stem);
             }
-            auto outPath = _outputPath / output;
+            output = _outputPath / op.outputPath / output;
 
-            if (result.inputCached && fs::exists(outPath))
+            if (result.inputCached && fs::exists(output))
             {
                 // log << importer.getName() << ": skipping " << relInPath << " -> " << relOutPath << std::endl;
                 continue;
             }
-            log << importer.getName() << ": " << relInPath << " -> " << output << "..." << std::endl;
+            log << op.importer.getName() << ": " << relInPath << " -> " << output << "..." << std::endl;
             result.updatedOutputs.push_back(output);
-            fs::create_directories(outPath.parent_path());
-            if (_produceHeaders)
+            fs::create_directories(output.parent_path());
+            if (op.headerConfig.produceHeaders)
             {
                 Data data;
                 DataOutputStream ds(data);
-                importer.writeOutput(input, i, ds);
-                std::ofstream out(outPath);
-                out << data.view().toHeader(headerVarName);
+                op.importer.writeOutput(op.input, i, ds);
+                std::ofstream os(output);
+                os << data.view().toHeader(headerVarName);
             }
             else
             {
-                auto out = importer.createOutputStream(input, i, outPath);
-                importer.writeOutput(input, i, out);
+                auto out = op.importer.createOutputStream(op.input, i, output);
+                op.importer.writeOutput(op.input, i, out);
             }
             ++i;
         }
-        importer.endImport(input);
+        op.importer.endImport(op.input);
         return result;
     }
 
@@ -668,7 +745,7 @@ namespace darmok
     std::vector<fs::path> CopyAssetImporter::getOutputs(const Input& input)
     {
         std::vector<fs::path> outputs;
-        if (input.config.is_null() && (!input.globalConfig.is_object() || input.globalConfig["all"] != true))
+        if (input.config.is_null() && (!input.dirConfig.is_object() || input.dirConfig["all"] != true))
         {
             return outputs;
         }

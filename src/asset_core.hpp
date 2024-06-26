@@ -44,26 +44,72 @@ namespace darmok
 
         mutable std::unordered_map<std::filesystem::path, FileCacheData> _fileCache;
         mutable std::unordered_map<std::filesystem::path, std::vector<std::filesystem::path>> _fileDependencies;
-        std::unordered_map<std::filesystem::path, nlohmann::json> _inputs;
-        nlohmann::json _importersConfig;
-        std::string _headerVarPrefix;
-        bool _produceHeaders;
-        std::filesystem::path _headerIncludeDir;
-        std::unordered_map<std::string, std::unique_ptr<IAssetTypeImporter>> _importers;
-        static const std::string _globalConfigFile;
-        static const std::string _inputConfigFileSuffix;
-        static const std::string _globalConfigFilesKey;
-        static const std::string _globalConfigImportersKey;
-        static const std::string _globalConfigHeaderVarPrefixKey;
-        static const std::string _globalConfigProduceHeadersKey;
-        static const std::string _globalConfigHeaderIncludeDirKey;
-        static const std::string _globalConfigOutputPathKey;
 
-        using ImporterInputs = std::vector<std::pair<OptionalRef<IAssetTypeImporter>, Input>>;
-        ImporterInputs getImporterInputs() const;
-        void loadDependencies(const ImporterInputs& importerInputs) const;
-        void getDependencies(const std::filesystem::path& path, const ImporterInputs& importerInputs, std::vector<std::filesystem::path>& deps) const;
-        std::vector<std::filesystem::path> getOutputs(IAssetTypeImporter& importer, const Input& input) const;
+        struct HeaderConfig
+        {
+            bool produceHeaders;
+            std::string varPrefix;
+            std::filesystem::path includeDir;
+
+            bool load(const nlohmann::json& json) noexcept;
+        private:
+            static const std::string _headerVarPrefixKey;
+            static const std::string _produceHeadersKey;
+            static const std::string _headerIncludeDirKey;
+        };
+
+        struct DirConfig
+        {
+            std::filesystem::path path;
+            nlohmann::json importers;
+            std::unordered_map<std::filesystem::path, nlohmann::json> files;
+            std::optional<HeaderConfig> header;
+            std::optional<std::filesystem::path> outputPath;
+
+            bool load(const std::filesystem::path& inputPath, const std::vector<std::filesystem::path>& filePaths);
+            static std::filesystem::path getPath(const std::filesystem::path& path) noexcept;
+            static bool isPath(const std::filesystem::path& path) noexcept;
+
+        private:
+            static const std::string _configFileName;
+            static const std::string _filesKey;
+            static const std::string _importersKey;
+            static const std::string _outputPathKey;
+
+            void loadFile(const std::string& key, const nlohmann::json& config, const std::filesystem::path& basePath, const std::vector<std::filesystem::path>& filePaths) noexcept;
+        };
+        
+        std::unordered_map<std::filesystem::path, DirConfig> _dirs;
+
+
+        struct FileConfig
+        {
+            std::filesystem::path path;
+            nlohmann::json importers;
+            bool load(const std::filesystem::path& inputPath);
+            static nlohmann::json fix(const nlohmann::json& json) noexcept;
+            static std::filesystem::path getPath(const std::filesystem::path& path) noexcept;
+            static bool isPath(const std::filesystem::path& path) noexcept;
+        private:
+            static const std::string _configFileSuffix;
+        };
+
+        std::unordered_map<std::filesystem::path, FileConfig> _files;
+
+        std::unordered_map<std::string, std::unique_ptr<IAssetTypeImporter>> _importers;
+
+        struct Operation final
+        {
+            IAssetTypeImporter& importer;
+            Input input;
+            HeaderConfig headerConfig;
+            std::filesystem::path outputPath;
+        };
+
+        std::vector<Operation> getOperations() const;
+        void loadDependencies(const std::vector<Operation>& ops) const;
+        void getDependencies(const std::filesystem::path& path, const std::vector<Operation>& ops, std::vector<std::filesystem::path>& deps) const;
+        std::vector<std::filesystem::path> getOutputs(const Operation& op) const;
 
         struct FileImportResult final
         {
@@ -72,20 +118,16 @@ namespace darmok
             std::vector<std::filesystem::path> updatedOutputs;
         };
 
-        std::filesystem::path getGlobalConfigPath() const noexcept;
-        std::filesystem::path getInputConfigPath(const std::filesystem::path& path) const noexcept;
+        using DirConfigs = std::vector<OptionalRef<const DirConfig>>;
+        DirConfigs getDirConfigs(const std::filesystem::path& path) const noexcept;
         bool addFileCachePath(const std::filesystem::path& path, std::time_t cacheTime = 0) const noexcept;
-        FileImportResult importFile(IAssetTypeImporter& importer, const Input& input, std::ostream& log) const;
+        FileImportResult importFile(const Operation& op, std::ostream& log) const;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path, const std::string& baseName) const noexcept;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path) const noexcept;
-        bool loadInput(const std::filesystem::path& path);
-        bool loadGlobalConfig(const std::filesystem::path& path, const std::vector<std::filesystem::path>& inputPaths);
-        const nlohmann::json& loadInputConfig(const std::filesystem::path& path, const nlohmann::json& json) noexcept;
-        static nlohmann::json fixInputConfig(const nlohmann::json& json) noexcept;
-        static void mergeJsonObjects(nlohmann::json& json1, const nlohmann::json& json2) noexcept;
+        bool loadInput(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths);
         using PathGroups = std::unordered_map<std::filesystem::path, std::vector<std::filesystem::path>>;
         PathGroups getPathGroups(const std::vector<std::filesystem::path>& paths) const noexcept;
-        void produceCombinedHeader(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths) const;
+        void produceCombinedHeader(const std::filesystem::path& path, const std::vector<std::filesystem::path>& paths, const std::filesystem::path& includeDir) const;
         static std::time_t getUpdateTime(const std::filesystem::path& path);
         
         static std::filesystem::path normalizePath(const std::filesystem::path& path) noexcept;

@@ -592,8 +592,9 @@ if(DARMOK_BUILD_OZZ)
     ozz_geometry
     ozz_animation
     ozz_animation_offline
-    ozz_animation_tools
-    ozz_options)
+    # ozz_animation_tools
+    # ozz_options
+  )
 endif()
 
 # export

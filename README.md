@@ -88,8 +88,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * sound
 
 #### Upcoming
-* asset tools
-    * support for darmok-import.json in subfolders
 * window modes with different resolutions
 * frustrum culling
 * modernize renderer (probably needs frame graph or similar)

@@ -19,7 +19,7 @@ namespace darmok
         std::filesystem::path basePath;
 
         nlohmann::json config;
-        nlohmann::json globalConfig;
+        nlohmann::json dirConfig;
 
         std::filesystem::path getRelativePath() const
         {

@@ -32,11 +32,12 @@ function(darmok_process_assets)
   else()
     set(EXE_TARGET darmok-assetc)
   endif()
+  set(BGFX_SHADERC_TARGET bgfx::shaderc)
   set(CMD $<TARGET_FILE:${EXE_TARGET}>
     --input ${ARGS_INPUT}
     --output ${ARGS_OUTPUT}
     --cache ${CACHE_DIR}
-    --bgfx-shaderc $<TARGET_FILE:bgfx::shaderc>
+    --bgfx-shaderc $<TARGET_FILE:${BGFX_SHADERC_TARGET}>
     --bgfx-shader-include ${BGFX_SHADER_INCLUDE_PATH}
   )
   add_custom_target(${ARGS_TARGET} ${CMD}
@@ -45,5 +46,5 @@ function(darmok_process_assets)
     SOURCES ${ARGS_ASSETS}
     COMMENT "processing darmok assets in ${ARGS_INPUT}..."
   )
-  add_dependencies(${ARGS_TARGET} ${EXE_TARGET})
+  add_dependencies(${ARGS_TARGET} ${EXE_TARGET} ${BGFX_SHADERC_TARGET})
 endfunction()
