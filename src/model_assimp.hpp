@@ -70,6 +70,7 @@ namespace darmok
         using Config = AssimpModelLoadConfig;
         AssimpModelConverter(const aiScene& scene, const std::string& basePath, const Config& config,
             bx::AllocatorI& alloc, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
+        static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
         void update(Model& model) noexcept;
     private:
         bx::AllocatorI& _allocator;
@@ -142,12 +143,14 @@ namespace darmok
         using OutputFormat = AssimpModelImporterOutputFormat;
 
         AssimpModelImporterImpl();
-        void read(const std::filesystem::path& path, const LoadConfig& config, Model& model);
         void setProgramVertexLayoutSuffix(const std::string& suffix);
-
+        
+        bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
+        std::vector<std::filesystem::path> getDependencies(const Input& input);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
+        void endImport(const Input& input);
         const std::string& getName() const noexcept;
     private:
         bx::DefaultAllocator _allocator;
@@ -156,6 +159,8 @@ namespace darmok
         DataImageLoader _imgLoader;
         AssimpSceneLoader _assimpLoader;
         std::string _programVertexLayoutSuffix;
+        std::optional<Config> _currentConfig;
+        std::shared_ptr<aiScene> _currentScene;
 
         static std::filesystem::path getOutputPath(const std::filesystem::path& path, OutputFormat format) noexcept;
 

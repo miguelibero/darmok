@@ -51,9 +51,12 @@ namespace darmok
         AssimpModelImporter();
         ~AssimpModelImporter();
         AssimpModelImporter& setProgramVertexLayoutSuffix(const std::string& suffix);
+        bool startImport(const Input& input, bool dry = false) override;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
+        std::vector<std::filesystem::path> getDependencies(const Input& input) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
+        void endImport(const Input& input);
         const std::string& getName() const noexcept override;
     private:
         std::unique_ptr<AssimpModelImporterImpl> _impl;

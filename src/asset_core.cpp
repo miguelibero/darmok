@@ -511,7 +511,13 @@ namespace darmok
             {
                 continue;
             }
-            for (auto& dep : op.importer.getDependencies(op.input))
+            if (!op.importer.startImport(op.input, true))
+            {
+                continue;
+            }
+            auto deps = op.importer.getDependencies(op.input);
+            op.importer.endImport(op.input);
+            for (auto& dep : deps)
             {
                 if (std::find(deps.begin(), deps.end(), dep) == deps.end())
                 {

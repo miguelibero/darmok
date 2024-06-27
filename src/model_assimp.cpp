@@ -187,6 +187,40 @@ namespace darmok
         _inverseRoot = glm::inverse(AssimpUtils::convert(scene.mRootNode->mTransformation));
     }
 
+    std::vector<std::string> AssimpModelConverter::getTexturePaths(const aiScene& scene) noexcept
+    {
+        std::vector<std::string> paths;
+        for (size_t i = 0; i < scene.mNumMaterials; i++)
+        {
+            auto& assimpMat = *scene.mMaterials[i];
+            for (auto& elm : _materialTextures)
+            {
+                auto& type = elm.first;
+                auto size = assimpMat.GetTextureCount(type);
+                for (size_t i = 0; i < size; i++)
+                {
+                    aiString path("");
+                    unsigned int uvindex = 0;
+                    ai_real blend = 1.F;
+                    aiTextureMapping mapping = aiTextureMapping::aiTextureMapping_UV;
+                    aiTextureOp operation = aiTextureOp::aiTextureOp_Multiply;
+                    assimpMat.GetTexture(type, i, &path,
+                        &mapping,
+                        &uvindex,
+                        &blend,
+                        &operation
+                    );
+                    auto embeddedTex = scene.GetEmbeddedTexture(path.C_Str());
+                    if (!embeddedTex)
+                    {
+                        paths.emplace_back(path.C_Str());
+                    }
+                }
+            }
+        }
+        return paths;
+    }
+
     void AssimpModelConverter::update(Model& model) noexcept
     {
         update(model.rootNode, *_scene.mRootNode);
@@ -637,28 +671,56 @@ namespace darmok
         return layout;
     }
 
-    std::vector<std::filesystem::path> AssimpModelImporterImpl::getOutputs(const Input& input) 
+    bool AssimpModelImporterImpl::startImport(const Input& input, bool dry)
     {
         std::vector<std::filesystem::path> outputs;
         if (input.config.is_null())
         {
-            return outputs;
+            return false;
         }
         if (!_assimpLoader.supports(input.path.string()))
         {
-            return outputs;
+            return false;
         }
-        Config config;
+        auto& config = _currentConfig.emplace();
         loadConfig(input.config, input.basePath, config);
-        if (config.outputPath.empty())
+        _currentScene = _assimpLoader.loadFromFile(input.path);
+        return _currentScene != nullptr;
+    }
+
+    void AssimpModelImporterImpl::endImport(const Input& input)
+    {
+        _currentConfig.reset();
+        _currentScene.reset();
+    }
+
+    std::vector<std::filesystem::path> AssimpModelImporterImpl::getOutputs(const Input& input) 
+    {
+        std::vector<std::filesystem::path> outputs;
+        if (_currentConfig->outputPath.empty())
         {
-            outputs.push_back(getOutputPath(input.getRelativePath(), config.outputFormat));
+            outputs.push_back(getOutputPath(input.getRelativePath(), _currentConfig->outputFormat));
         }
         else
         {
-            outputs.push_back(config.outputPath);
+            outputs.push_back(_currentConfig->outputPath);
         }
         return outputs;
+    }
+
+    std::vector<std::filesystem::path> AssimpModelImporterImpl::getDependencies(const Input& input)
+    {
+        std::vector<std::filesystem::path> deps;
+        if (!_currentConfig->loadConfig.embedTextures)
+        {
+            return deps;
+        }
+        auto basePath = input.getRelativePath().parent_path();
+        for (auto& texPath : AssimpModelConverter::getTexturePaths(*_currentScene))
+        {
+            deps.push_back(basePath / texPath);
+        }
+        return deps;
     }
 
     std::ofstream AssimpModelImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const
@@ -676,11 +738,12 @@ namespace darmok
 
     void AssimpModelImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
-        Config config;
-        loadConfig(input.config, input.basePath, config);
         Model model;
-        read(input.path, config.loadConfig, model);
-        switch (config.outputFormat)
+        auto basePath = input.path.parent_path().string();
+        AssimpModelConverter ctxt(*_currentScene, basePath, _currentConfig->loadConfig, _allocator, _imgLoader);
+        ctxt.update(model);
+
+        switch (_currentConfig->outputFormat)
         {
             case OutputFormat::Binary:
             {
@@ -709,14 +772,6 @@ namespace darmok
         return name;
     }
 
-    void AssimpModelImporterImpl::read(const std::filesystem::path& path, const LoadConfig& config, Model& model)
-    {
-        auto scene = _assimpLoader.loadFromFile(path);
-        auto basePath = std::filesystem::path(path).parent_path().string();
-        AssimpModelConverter ctxt(*scene, basePath, config, _allocator, _imgLoader);
-        ctxt.update(model);
-    }
-
     void AssimpModelImporterImpl::setProgramVertexLayoutSuffix(const std::string& suffix)
     {
         _programVertexLayoutSuffix = suffix;
@@ -732,9 +787,19 @@ namespace darmok
         // empty on purpose
     }
 
+    bool AssimpModelImporter::startImport(const Input& input, bool dry)
+    {
+        return _impl->startImport(input, dry);
+    }
+
     std::vector<std::filesystem::path> AssimpModelImporter::getOutputs(const Input& input)
     {
         return _impl->getOutputs(input);
+    }
+
+    std::vector<std::filesystem::path> AssimpModelImporter::getDependencies(const Input& input)
+    {
+        return _impl->getDependencies(input);
     }
 
     std::ofstream AssimpModelImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
@@ -745,6 +810,11 @@ namespace darmok
     void AssimpModelImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         return _impl->writeOutput(input, outputIndex, out);
+    }
+
+    void AssimpModelImporter::endImport(const Input& input)
+    {
+        return _impl->endImport(input);
     }
 
     const std::string& AssimpModelImporter::getName() const noexcept
