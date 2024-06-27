@@ -5,6 +5,7 @@
 #include <darmok/rmlui.hpp>
 #include <darmok/string.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/stream.hpp>
 #include <filesystem>
 #include <bx/commandline.h>
 #include "asset.hpp"
@@ -230,7 +231,17 @@ end
 		auto pathPattern = std::filesystem::path(path) / std::filesystem::path("?.lua");
 		current += (!current.empty() ? ";" : "") + std::filesystem::absolute(pathPattern).string();
 		lua["package"]["path"] = current;
-	}	
+	}
+
+	static void luaPrint(sol::variadic_args args) noexcept
+	{
+		std::ostringstream oss;
+		for (auto arg : args)
+		{
+			oss << arg.as<std::string>() << " ";
+		}
+		StreamUtils::logDebug(oss.str());
+	}
 
 	void LuaRunnerAppImpl::init(App& app)
 	{
@@ -239,6 +250,9 @@ end
 		_lua = std::make_unique<sol::state>();
 		auto& lua = *_lua;
 		lua.open_libraries(sol::lib::base, sol::lib::package);
+#ifndef _NDEBUG
+		lua.open_libraries(sol::lib::debug);
+#endif
 
 		LuaMath::bind(lua);
 		LuaShape::bind(lua);
@@ -251,6 +265,7 @@ end
 
 		_luaApp.emplace(app);
 		lua["app"] = std::ref(_luaApp.value());
+		lua.set_function("print", luaPrint);
 
 		if (!mainDir.empty())
 		{

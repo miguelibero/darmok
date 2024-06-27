@@ -525,7 +525,7 @@ namespace darmok
 
     std::filesystem::path AssimpModelImporterImpl::getOutputPath(const std::filesystem::path& path, OutputFormat format) noexcept
     {
-        std::string outSuffix(".model");
+        std::string outSuffix(".bin");
         switch (format)
         {
         case OutputFormat::Json:
@@ -640,7 +640,7 @@ namespace darmok
     std::vector<std::filesystem::path> AssimpModelImporterImpl::getOutputs(const Input& input) 
     {
         std::vector<std::filesystem::path> outputs;
-        if (input.config.empty())
+        if (input.config.is_null())
         {
             return outputs;
         }

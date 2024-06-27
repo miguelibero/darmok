@@ -71,7 +71,7 @@ namespace darmok
 #endif
 
 		_modelLoader.setDefaultLoader(_binModelLoader);
-		_modelLoader.addLoader(".dml", _binModelLoader);
+		_modelLoader.addLoader(".dml;.bin", _binModelLoader);
 
 #ifdef DARMOK_ASSIMP
 		_modelLoader.setDefaultLoader(_assimpModelLoader);

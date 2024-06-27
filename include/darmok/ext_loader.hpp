@@ -21,7 +21,7 @@ namespace darmok
         void addLoader(const std::string& exts, L& loader) noexcept
         {
             _loaders.push_back({
-                StringUtils::split(exts, ","),
+                StringUtils::split(exts, ";"),
                 loader
             });
         }

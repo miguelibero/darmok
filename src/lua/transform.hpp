@@ -60,9 +60,9 @@ namespace darmok
 		OptionalRef<Transform> _transform;
 
 		static LuaTransform addEntityComponent1(LuaEntity& entity) noexcept;
-		static LuaTransform addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept;
-		static LuaTransform addEntityComponent3(LuaEntity& entity, LuaTransform& parent) noexcept;
-		static LuaTransform addEntityComponent4(LuaEntity& entity, LuaTransform& parent, const VarLuaTable<glm::vec3>& pos) noexcept;
+		static LuaTransform addEntityComponent2(LuaEntity& entity, LuaTransform& parent) noexcept;
+		static LuaTransform addEntityComponent3(LuaEntity& entity, LuaTransform& parent, const VarLuaTable<glm::vec3>& pos) noexcept;
+		static LuaTransform addEntityComponent4(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept;
 		static std::optional<LuaTransform> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};

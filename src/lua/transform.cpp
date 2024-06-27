@@ -188,21 +188,21 @@ namespace darmok
 		return entity.addComponent<Transform>();
 	}
 
-	LuaTransform LuaTransform::addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept
-	{
-		return entity.addComponent<Transform>(LuaGlm::tableGet(pos));
-	}
-
-	LuaTransform LuaTransform::addEntityComponent3(LuaEntity& entity, LuaTransform& parent) noexcept
+	LuaTransform LuaTransform::addEntityComponent2(LuaEntity& entity, LuaTransform& parent) noexcept
 	{
 		auto& trans = entity.addComponent<Transform>();
 		trans.setParent(parent.getReal());
 		return trans;
 	}
 
-	LuaTransform LuaTransform::addEntityComponent4(LuaEntity& entity, LuaTransform& parent, const VarLuaTable<glm::vec3>& pos) noexcept
+	LuaTransform LuaTransform::addEntityComponent3(LuaEntity& entity, LuaTransform& parent, const VarLuaTable<glm::vec3>& pos) noexcept
 	{
 		return entity.addComponent<Transform>(parent.getReal(), LuaGlm::tableGet(pos));
+	}
+
+	LuaTransform LuaTransform::addEntityComponent4(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept
+	{
+		return entity.addComponent<Transform>(LuaGlm::tableGet(pos));
 	}
 
 	std::optional<LuaTransform> LuaTransform::getEntityComponent(LuaEntity& entity) noexcept
