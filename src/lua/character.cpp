@@ -20,6 +20,12 @@ namespace darmok::physics3d
 		}
 	}
 
+	bool LuaCharacterController::isGrounded() const noexcept
+	{
+		auto state = getGroundState();
+		return state == GroundState::Grounded || state == GroundState::GroundedSteep;
+	}
+
 	GroundState LuaCharacterController::getGroundState() const noexcept
 	{
 		return _ctrl->getGroundState();
@@ -141,6 +147,8 @@ namespace darmok::physics3d
 			"get_entity", &LuaCharacterController::getEntity,
 			"add_listener", &LuaCharacterController::addListener,
 			"remove_listener", &LuaCharacterController::removeListener,
+			"grounded", sol::property(&LuaCharacterController::isGrounded),
+			"ground_state", sol::property(&LuaCharacterController::getGroundState),
 			"position", sol::property(&LuaCharacterController::getPosition, &LuaCharacterController::setPosition),
 			"linear_velocity", sol::property(&LuaCharacterController::getLinearVelocity, &LuaCharacterController::setLinearVelocity)
 		);

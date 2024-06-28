@@ -3,6 +3,7 @@
 #include "scene.hpp"
 #include "mesh.hpp"
 #include "texture.hpp"
+#include "program.hpp"
 #include <darmok/render.hpp>
 
 namespace darmok
@@ -23,9 +24,9 @@ namespace darmok
 		return entity.addComponent<Renderable>(mesh.getReal(), material.getReal());
 	}
 
-	LuaRenderable LuaRenderable::addEntityComponent4(LuaEntity& entity, const LuaMesh& mesh, const LuaTexture& texture) noexcept
+	LuaRenderable LuaRenderable::addEntityComponent4(LuaEntity& entity, const LuaMesh& mesh, const LuaProgram& prog, const LuaTexture& texture) noexcept
 	{
-		return entity.addComponent<Renderable>(mesh.getReal(), texture.getReal());
+		return entity.addComponent<Renderable>(mesh.getReal(), prog.getReal(), texture.getReal());
 	}
 
 	std::optional<LuaRenderable> LuaRenderable::getEntityComponent(LuaEntity& entity) noexcept
@@ -91,7 +92,8 @@ namespace darmok
 			"add_entity_component", sol::overload(
 				&LuaRenderable::addEntityComponent1,
 				&LuaRenderable::addEntityComponent2,
-				&LuaRenderable::addEntityComponent3
+				&LuaRenderable::addEntityComponent3,
+				&LuaRenderable::addEntityComponent4
 			),
 			"get_entity_component", &LuaRenderable::getEntityComponent,
 			"get_entity", &LuaRenderable::getEntity,

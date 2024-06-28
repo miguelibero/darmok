@@ -13,6 +13,7 @@ namespace darmok
     class LuaMesh;
     class LuaTexture;
     class LuaMaterial;
+	class LuaProgram;
 
 	class LuaRenderable final
 	{
@@ -34,7 +35,7 @@ namespace darmok
 		static LuaRenderable addEntityComponent1(LuaEntity& entity, const LuaMesh& mesh) noexcept;
 		static LuaRenderable addEntityComponent2(LuaEntity& entity, const LuaMaterial& material) noexcept;
 		static LuaRenderable addEntityComponent3(LuaEntity& entity, const LuaMesh& mesh, const LuaMaterial& material) noexcept;
-		static LuaRenderable addEntityComponent4(LuaEntity& entity, const LuaMesh& mesh, const LuaTexture& texture) noexcept;
+		static LuaRenderable addEntityComponent4(LuaEntity& entity, const LuaMesh& mesh, const LuaProgram& prog, const LuaTexture& texture) noexcept;
 		static std::optional<LuaRenderable> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};

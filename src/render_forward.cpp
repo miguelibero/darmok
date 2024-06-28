@@ -10,6 +10,12 @@
 
 namespace darmok
 {
+	ForwardRenderer& ForwardRenderer::setInvalidMaterial(const std::shared_ptr<Material>& mat) noexcept
+	{
+		_invalidMaterial = mat;
+		return *this;
+	}
+
 	void ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
 		_cam = cam;

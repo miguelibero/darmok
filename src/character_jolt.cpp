@@ -142,6 +142,7 @@ namespace darmok::physics3d
         settings->mShape = JoltUtils::convert(_config.shape);
         settings->mBackFaceMode = (JPH::EBackFaceMode)_config.backFaceMode;
         settings->mCharacterPadding = _config.padding;
+        settings->mShapeOffset = JoltUtils::convert(JoltUtils::getOrigin(_config.shape));
         settings->mPenetrationRecoverySpeed = _config.penetrationRecoverySpeed;
         settings->mPredictiveContactDistance = _config.predictiveContactDistance;
         settings->mSupportingVolume = JPH::Plane(JoltUtils::convert(_config.supportingPlane.normal), _config.supportingPlane.constant);

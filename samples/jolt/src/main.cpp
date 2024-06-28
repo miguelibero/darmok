@@ -31,7 +31,7 @@ namespace
 			App::init();
 
 			_scene = addComponent<SceneAppComponent>().getScene();
-			_scene->addComponent<PhysicsSystem>(getAssets().getAllocator());
+			_scene->addSceneComponent<PhysicsSystem>(getAssets().getAllocator());
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 

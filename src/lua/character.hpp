@@ -28,6 +28,7 @@ namespace darmok::physics3d
 		LuaCharacterController(CharacterController& ctrl, const std::shared_ptr<Scene>& scene) noexcept;
 		~LuaCharacterController() noexcept;
 
+		bool isGrounded() const noexcept;
 		GroundState getGroundState() const noexcept;
 		void setLinearVelocity(const VarLuaTable<glm::vec3>& velocity);
 		glm::vec3 getLinearVelocity() const noexcept;

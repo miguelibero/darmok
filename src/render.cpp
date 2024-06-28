@@ -12,9 +12,9 @@ namespace darmok
 	{
 	}
 
-	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Texture>& texture) noexcept
+	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept
 		: _mesh(mesh)
-		, _material(std::make_shared<Material>(texture))
+		, _material(std::make_shared<Material>(program, texture))
 	{
 	}
 
