@@ -11,6 +11,7 @@ namespace darmok
 {
     class LuaEntity;
     class LuaScene;
+    class Scene;
     struct Ray;
 }
 
@@ -25,7 +26,8 @@ namespace darmok::physics3d
     public:
         using Config = PhysicsSystemConfig;
 
-        LuaPhysicsSystem(PhysicsSystem& system) noexcept;
+        LuaPhysicsSystem(PhysicsSystem& system, const std::shared_ptr<Scene>& scene) noexcept;
+        ~LuaPhysicsSystem() noexcept;
         LuaPhysicsSystem& registerUpdate(const sol::protected_function& func) noexcept;
         bool unregisterUpdate(const sol::protected_function& func) noexcept;
         LuaPhysicsSystem& addListener(const sol::table& listener) noexcept;
@@ -50,11 +52,13 @@ namespace darmok::physics3d
         static void bind(sol::state_view& lua) noexcept;
     private:
         OptionalRef<PhysicsSystem> _system;
+        std::shared_ptr<Scene> _scene;
         std::vector<sol::protected_function> _updates;
         std::vector<sol::table> _listeners;
     };
 
     class PhysicsBody;
+    struct PhysicsBodyConfig;
 
     class LuaPhysicsBody final : public ICollisionListener
     {
@@ -63,16 +67,17 @@ namespace darmok::physics3d
         using Shape = PhysicsShape;
         using Config = PhysicsBodyConfig;
 
-        LuaPhysicsBody(PhysicsBody& body) noexcept;
+        LuaPhysicsBody(PhysicsBody& body, const std::shared_ptr<Scene>& scene) noexcept;
+        ~LuaPhysicsBody() noexcept;
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
 
-        LuaPhysicsBody& setPosition(const VarLuaTable<glm::vec3>& pos) noexcept;
+        void setPosition(const VarLuaTable<glm::vec3>& pos) noexcept;
         glm::vec3 getPosition() const noexcept;
-        LuaPhysicsBody& setRotation(const VarLuaTable<glm::quat>& rot) noexcept;
+        void setRotation(const VarLuaTable<glm::quat>& rot) noexcept;
         glm::quat getRotation() const noexcept;
-        LuaPhysicsBody& setLinearVelocity(const VarLuaTable<glm::vec3>& velocity) noexcept;
+        void setLinearVelocity(const VarLuaTable<glm::vec3>& velocity) noexcept;
         glm::vec3 getLinearVelocity() const noexcept;
 
         LuaPhysicsBody& addTorque(const VarLuaTable<glm::vec3>& torque) noexcept;
@@ -93,6 +98,7 @@ namespace darmok::physics3d
         static void bind(sol::state_view& lua) noexcept;
     private:
         OptionalRef<PhysicsBody> _body;
+        std::shared_ptr<Scene> _scene;
         std::vector<sol::table> _listeners;
 
         static LuaPhysicsBody addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept;

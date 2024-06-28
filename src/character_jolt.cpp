@@ -33,12 +33,22 @@ namespace darmok::physics3d
         _ctrl.reset();
     }
 
+    GroundState CharacterControllerImpl::getGroundState() const noexcept
+    {
+        if (!_jolt)
+        {
+            return GroundState::NotSupported;
+        }
+        return (GroundState)_jolt->GetGroundState();
+    }
+
     glm::vec3 CharacterControllerImpl::getPosition() const noexcept
     {
         if (!_jolt)
         {
             return glm::vec3(0);
         }
+        _jolt->GetGroundState();
         return JoltUtils::convertPosition(_jolt->GetPosition(), _config.shape);
     }
 
@@ -271,6 +281,11 @@ namespace darmok::physics3d
     const CharacterControllerImpl& CharacterController::getImpl() const noexcept
     {
         return *_impl;
+    }
+
+    GroundState CharacterController::getGroundState() const noexcept
+    {
+        return _impl->getGroundState();
     }
 
     CharacterController& CharacterController::setLinearVelocity(const glm::vec3& velocity)

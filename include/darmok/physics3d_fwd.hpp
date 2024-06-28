@@ -1,5 +1,14 @@
 #pragma once
 
+#include <variant>
+
+namespace darmok
+{
+    struct Cuboid;
+    struct Sphere;
+    struct Capsule;
+}
+
 namespace darmok::physics3d
 {
     enum class PhysicsBodyMotionType
@@ -14,4 +23,6 @@ namespace darmok::physics3d
         IgnoreBackFaces,
         CollideWithBackFaces,
     };
+
+    using PhysicsShape = std::variant<Cuboid, Sphere, Capsule>;
 }

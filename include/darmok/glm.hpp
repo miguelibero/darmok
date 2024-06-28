@@ -1,5 +1,9 @@
 #include <darmok/export.h>
 
+// this header adds dllexport to the glm classes
+// it should be included before any glm include
+// to guarantee that dynamic linking works
+
 #ifdef DARMOK_STATIC_DEFINE
 #  define GLM_API
 #else

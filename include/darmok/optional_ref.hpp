@@ -28,6 +28,19 @@ namespace darmok
         {
         }
 
+        OptionalRef(const std_t& value) noexcept
+            : _value(value ? &value.value().get() : nullptr)
+        {
+        }
+
+        OptionalRef(const OptionalRef<T>& other) noexcept = default;
+
+        OptionalRef(OptionalRef<T>&& other) noexcept
+            : _value(other._value)
+        {
+            other.reset();
+        }
+
         OptionalRef(T* value) noexcept
             : _value(value)
         {
@@ -38,14 +51,19 @@ namespace darmok
         {
         }
 
-        OptionalRef(const std_t& value) noexcept
-            : _value(value ? &value.value().get() : nullptr)
-        {
-        }
-
         OptionalRef<T>& operator=(std::nullopt_t) noexcept
         {
             reset();
+            return *this;
+        }
+
+        OptionalRef<T>& operator=(const OptionalRef<T>& other) noexcept = default;
+
+
+        OptionalRef<T>& operator=(OptionalRef<T>&& other) noexcept
+        {
+            _value = other._value;
+            other.reset();
             return *this;
         }
 

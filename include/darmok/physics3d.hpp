@@ -82,8 +82,6 @@ namespace darmok::physics3d
         std::unique_ptr<PhysicsSystemImpl> _impl;
     };
 
-    using PhysicsShape = std::variant<Cuboid, Sphere, Capsule>;
-
     struct PhysicsBodyConfig final
     {
         using Shape = PhysicsShape;

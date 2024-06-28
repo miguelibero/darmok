@@ -19,7 +19,9 @@ namespace darmok
     public:
         SceneImpl();
         ~SceneImpl();
-        void addComponent(std::unique_ptr<ISceneComponent>&& comp);
+        void addSceneComponent(std::unique_ptr<ISceneComponent>&& comp) noexcept;
+        bool removeSceneComponent(const ISceneComponent& comp) noexcept;
+        bool hasSceneComponent(const ISceneComponent& comp) const noexcept;
 
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;

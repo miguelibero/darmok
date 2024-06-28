@@ -17,13 +17,30 @@ namespace darmok
         // empty on purpose
     }
 
-    void SceneImpl::addComponent(std::unique_ptr<ISceneComponent>&& comp)
+    void SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& comp) noexcept
     {
         if (_scene)
         {
             comp->init(_scene.value(), _app.value());
         }
         _components.push_back(std::move(comp));
+    }
+
+    bool SceneImpl::removeSceneComponent(const ISceneComponent& comp) noexcept
+    {
+        auto itr = std::find_if(_components.begin(), _components.end(), [&comp](auto& elm) { return elm.get() == &comp; });
+        if (itr == _components.end())
+        {
+            return false;
+        }
+        _components.erase(itr);
+        return true;
+    }
+
+    bool SceneImpl::hasSceneComponent(const ISceneComponent& comp) const noexcept
+    {
+        auto itr = std::find_if(_components.begin(), _components.end(), [&comp](auto& elm) { return elm.get() == &comp; });
+        return itr != _components.end();
     }
 
     EntityRegistry& SceneImpl::getRegistry()
@@ -183,9 +200,19 @@ namespace darmok
         return _impl->render(viewId);
     }
 
-    void Scene::addComponent(std::unique_ptr<ISceneComponent>&& comp)
+    void Scene::addSceneComponent(std::unique_ptr<ISceneComponent>&& comp) noexcept
     {
-        _impl->addComponent(std::move(comp));
+        _impl->addSceneComponent(std::move(comp));
+    }
+
+    bool Scene::removeSceneComponent(const ISceneComponent& comp) noexcept
+    {
+        return _impl->removeSceneComponent(comp);
+    }
+
+    bool Scene::hasSceneComponent(const ISceneComponent& comp) const noexcept
+    {
+        return _impl->hasSceneComponent(comp);
     }
 
     SceneAppComponent::SceneAppComponent(const std::shared_ptr<Scene>& scene) noexcept

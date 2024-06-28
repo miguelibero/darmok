@@ -31,15 +31,15 @@ namespace darmok
 			return getRegistry().emplace<T>(_entity, std::forward<Args>(args)...);
 		}
 
-		template<typename T, typename L>
-		std::optional<L> getComponent()
+		template<typename T, typename L, typename... Args>
+		std::optional<L> getComponent(Args&&... args)
 		{
 			auto ptr = getRegistry().try_get<T>(_entity);
 			if (ptr == nullptr)
 			{
 				return std::nullopt;
 			}
-			return L(*ptr);
+			return L(*ptr, std::forward<Args>(args)...);
 		}
 
 		LuaScene getScene() const;

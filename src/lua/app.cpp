@@ -18,7 +18,6 @@
 #include "rmlui.hpp"
 #include "skeleton.hpp"
 #include "utils.hpp"
-#include "physics3d.hpp"
 
 namespace darmok
 {

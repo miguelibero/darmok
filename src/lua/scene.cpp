@@ -12,6 +12,7 @@
 
 #ifdef DARMOK_JOLT
 #include "physics3d.hpp"
+#include "character.hpp"
 #endif
 
 namespace darmok
@@ -236,8 +237,9 @@ end
 #endif
 
 #ifdef DARMOK_JOLT
-		physics3d::LuaPhysicsBody::bind(lua);
 		physics3d::LuaPhysicsSystem::bind(lua);
+		physics3d::LuaPhysicsBody::bind(lua);
+		physics3d::LuaCharacterController::bind(lua);
 #endif
 
 		lua.new_usertype<LuaScene>("Scene",

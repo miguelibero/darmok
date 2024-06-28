@@ -7,15 +7,27 @@
 namespace darmok::physics3d
 {
    
-    LuaPhysicsSystem::LuaPhysicsSystem(PhysicsSystem& system) noexcept
+    LuaPhysicsSystem::LuaPhysicsSystem(PhysicsSystem& system, const std::shared_ptr<Scene>& scene) noexcept
         : _system(system)
+        , _scene(scene)
     {
-        system.addListener(*this);
-        system.addUpdater(*this);
+    }
+
+    LuaPhysicsSystem::~LuaPhysicsSystem() noexcept
+    {
+        if (_system && _scene->hasSceneComponent(_system.value()))
+        {
+            _system->removeListener(*this);
+            _system->removeUpdater(*this);
+        }
     }
 
     LuaPhysicsSystem& LuaPhysicsSystem::registerUpdate(const sol::protected_function& func) noexcept
     {
+        if (_updates.empty())
+        {
+            _system->addUpdater(*this);
+        }
         _updates.emplace_back(func);
         return *this;
     }
@@ -28,11 +40,19 @@ namespace darmok::physics3d
             return false;
         }
         _updates.erase(itr);
+        if (_updates.empty())
+        {
+            _system->removeUpdater(*this);
+        }
         return true;
     }
 
     LuaPhysicsSystem& LuaPhysicsSystem::addListener(const sol::table& listener) noexcept
     {
+        if (_listeners.empty())
+        {
+            _system->addListener(*this);
+        }
         _listeners.emplace_back(listener);
         return *this;
     }
@@ -45,6 +65,10 @@ namespace darmok::physics3d
             return false;
         }
         _listeners.erase(itr);
+        if (_listeners.empty())
+        {
+            _system->removeListener(*this);
+        }
         return true;
     }
 
@@ -64,30 +88,12 @@ namespace darmok::physics3d
         }
     }
 
-    template<typename Callback>
-    static void callLuaCollisionListeners(const std::vector<sol::table>& listeners, PhysicsBody& body1, PhysicsBody& body2, const std::string& key, const std::string& desc, Callback callback)
-    {
-        LuaPhysicsBody luaBody1(body1);
-        LuaPhysicsBody luaBody2(body2);
-        for (auto& listener : listeners)
-        {
-            sol::protected_function func = listener[key];
-            if (!func)
-            {
-                continue;
-            }
-            auto result = callback(func, luaBody1, luaBody2);
-            if (!result.valid())
-            {
-                recoveredLuaError(desc, result);
-            }
-        }
-    }
-
     void LuaPhysicsSystem::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        callLuaCollisionListeners(_listeners, body1, body2, "on_collision_enter", "running physics collision enter",
-            [&collision](auto& func, auto& luaBody1, auto& luaBody2)
+        LuaPhysicsBody luaBody1(body1, _scene);
+        LuaPhysicsBody luaBody2(body2, _scene);
+        callLuaListeners(_listeners, "on_collision_enter", "running physics collision enter",
+            [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
             });
@@ -95,8 +101,10 @@ namespace darmok::physics3d
 
     void LuaPhysicsSystem::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        callLuaCollisionListeners(_listeners, body1, body2, "on_collision_stay", "running physics collision stay",
-            [&collision](auto& func, auto& luaBody1, auto& luaBody2)
+        LuaPhysicsBody luaBody1(body1, _scene);
+        LuaPhysicsBody luaBody2(body2, _scene);
+        callLuaListeners(_listeners, "on_collision_stay", "running physics collision stay",
+            [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
             });
@@ -104,8 +112,10 @@ namespace darmok::physics3d
 
     void LuaPhysicsSystem::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
     {
-        callLuaCollisionListeners(_listeners, body1, body2, "on_collision_exit", "running physics collision exit",
-            [](auto& func, auto& luaBody1, auto& luaBody2)
+        LuaPhysicsBody luaBody1(body1, _scene);
+        LuaPhysicsBody luaBody2(body2, _scene);
+        callLuaListeners(_listeners, "on_collision_exit", "running physics collision exit",
+            [&luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2);
             });
@@ -143,21 +153,32 @@ namespace darmok::physics3d
 
     LuaPhysicsSystem LuaPhysicsSystem::addSceneComponent1(LuaScene& scene) noexcept
     {
-        return LuaPhysicsSystem(scene.getReal()->addComponent<PhysicsSystem>());
+        return LuaPhysicsSystem(scene.getReal()->addSceneComponent<PhysicsSystem>(), scene.getReal());
     }
 
     LuaPhysicsSystem LuaPhysicsSystem::addSceneComponent2(LuaScene& scene, const Config& config) noexcept
     {
-        return LuaPhysicsSystem(scene.getReal()->addComponent<PhysicsSystem>(config));
+        return LuaPhysicsSystem(scene.getReal()->addSceneComponent<PhysicsSystem>(config), scene.getReal());
     }
 
     LuaPhysicsSystem LuaPhysicsSystem::addSceneComponent3(LuaScene& scene, const Config& config, bx::AllocatorI& alloc) noexcept
     {
-        return LuaPhysicsSystem(scene.getReal()->addComponent<PhysicsSystem>(config, alloc));
+        return LuaPhysicsSystem(scene.getReal()->addSceneComponent<PhysicsSystem>(config, alloc), scene.getReal());
     }
 
     void LuaPhysicsSystem::bind(sol::state_view& lua) noexcept
     {
+        lua.new_usertype<Config>("Physics3dSystemConfig",
+            sol::constructors<Config()>(),
+            "maxBodies", &Config::maxBodies,
+            "numBodyMutexes", &Config::numBodyMutexes,
+            "maxBodyPairs", &Config::maxBodyPairs,
+            "maxContactConstraints", &Config::maxContactConstraints,
+            "fixedDeltaTime", &Config::fixedDeltaTime,
+            "collisionSteps", &Config::collisionSteps,
+            "gravity", &Config::gravity
+        );
+
         lua.new_usertype<LuaPhysicsSystem>("Physics3dSystem", sol::no_constructor,
             "register_update", &LuaPhysicsSystem::registerUpdate,
             "unregister_update", &LuaPhysicsSystem::unregisterUpdate,
@@ -181,9 +202,18 @@ namespace darmok::physics3d
         );
     }
 
-    LuaPhysicsBody::LuaPhysicsBody(PhysicsBody& body) noexcept
+    LuaPhysicsBody::LuaPhysicsBody(PhysicsBody& body, const std::shared_ptr<Scene>& scene) noexcept
         : _body(body)
+        , _scene(scene)
     {
+    }
+
+    LuaPhysicsBody::~LuaPhysicsBody() noexcept
+    {
+        if (_body && _scene->hasComponent(_body.value()))
+        {
+            _body->removeListener(*this);
+        }
     }
 
     const LuaPhysicsBody::Shape& LuaPhysicsBody::getShape() const noexcept
@@ -196,10 +226,9 @@ namespace darmok::physics3d
         return _body->getMotionType();
     }
 
-    LuaPhysicsBody& LuaPhysicsBody::setPosition(const VarLuaTable<glm::vec3>& pos) noexcept
+    void LuaPhysicsBody::setPosition(const VarLuaTable<glm::vec3>& pos) noexcept
     {
         _body->setPosition(LuaGlm::tableGet(pos));
-        return *this;
     }
 
     glm::vec3 LuaPhysicsBody::getPosition() const noexcept
@@ -207,10 +236,9 @@ namespace darmok::physics3d
         return _body->getPosition();
     }
 
-    LuaPhysicsBody& LuaPhysicsBody::setRotation(const VarLuaTable<glm::quat>& rot) noexcept
+    void LuaPhysicsBody::setRotation(const VarLuaTable<glm::quat>& rot) noexcept
     {
         _body->setRotation(LuaGlm::tableGet(rot));
-        return *this;
     }
 
     glm::quat LuaPhysicsBody::getRotation() const noexcept
@@ -218,10 +246,9 @@ namespace darmok::physics3d
         return _body->getRotation();
     }
 
-    LuaPhysicsBody& LuaPhysicsBody::setLinearVelocity(const VarLuaTable<glm::vec3>& velocity) noexcept
+    void LuaPhysicsBody::setLinearVelocity(const VarLuaTable<glm::vec3>& velocity) noexcept
     {
         _body->setLinearVelocity(LuaGlm::tableGet(velocity));
-        return *this;
     }
 
     glm::vec3 LuaPhysicsBody::getLinearVelocity() const noexcept
@@ -274,6 +301,10 @@ namespace darmok::physics3d
 
     LuaPhysicsBody& LuaPhysicsBody::addListener(const sol::table& listener) noexcept
     {
+        if (_listeners.empty())
+        {
+            _body->addListener(*this);
+        }
         _listeners.emplace_back(listener);
         return *this;
     }
@@ -286,13 +317,19 @@ namespace darmok::physics3d
             return false;
         }
         _listeners.erase(itr);
+        if (_listeners.empty())
+        {
+            _body->removeListener(*this);
+        }
         return true;
     }
 
     void LuaPhysicsBody::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        callLuaCollisionListeners(_listeners, body1, body2, "on_collision_enter", "running physics collision enter",
-            [&collision](auto& func, auto& luaBody1, auto& luaBody2)
+        LuaPhysicsBody luaBody1(body1, _scene);
+        LuaPhysicsBody luaBody2(body2, _scene);
+        callLuaListeners(_listeners, "on_collision_enter", "running physics collision enter",
+            [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
             });
@@ -300,8 +337,10 @@ namespace darmok::physics3d
 
     void LuaPhysicsBody::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        callLuaCollisionListeners(_listeners, body1, body2, "on_collision_stay", "running physics collision stay",
-            [&collision](auto& func, auto& luaBody1, auto& luaBody2)
+        LuaPhysicsBody luaBody1(body1, _scene);
+        LuaPhysicsBody luaBody2(body2, _scene);
+        callLuaListeners(_listeners, "on_collision_stay", "running physics collision stay",
+            [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
             });
@@ -309,8 +348,10 @@ namespace darmok::physics3d
 
     void LuaPhysicsBody::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
     {
-        callLuaCollisionListeners(_listeners, body1, body2, "on_collision_exit", "running physics collision exit",
-            [](auto& func, auto& luaBody1, auto& luaBody2)
+        LuaPhysicsBody luaBody1(body1, _scene);
+        LuaPhysicsBody luaBody2(body2, _scene);
+        callLuaListeners(_listeners, "on_collision_exit", "running physics collision exit",
+            [&luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2);
             });
@@ -318,22 +359,22 @@ namespace darmok::physics3d
 
     LuaPhysicsBody LuaPhysicsBody::addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept
     {
-        return entity.addComponent<PhysicsBody>(shape);
+        return LuaPhysicsBody(entity.addComponent<PhysicsBody>(shape), entity.getScene().getReal());
     }
 
     LuaPhysicsBody LuaPhysicsBody::addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept
     {
-        return entity.addComponent<PhysicsBody>(shape, motion);
+        return LuaPhysicsBody(entity.addComponent<PhysicsBody>(shape, motion), entity.getScene().getReal());
     }
 
     LuaPhysicsBody LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Config& config) noexcept
     {
-        return entity.addComponent<PhysicsBody>(config);
+        return LuaPhysicsBody(entity.addComponent<PhysicsBody>(config), entity.getScene().getReal());
     }
 
     std::optional<LuaPhysicsBody> LuaPhysicsBody::getEntityComponent(LuaEntity& entity) noexcept
     {
-        return entity.getComponent<PhysicsBody, LuaPhysicsBody>();
+        return entity.getComponent<PhysicsBody, LuaPhysicsBody>(entity.getScene().getReal());
     }
 
     std::optional<LuaEntity> LuaPhysicsBody::getEntity(LuaScene& scene) noexcept
@@ -343,6 +384,11 @@ namespace darmok::physics3d
     
     void LuaPhysicsBody::bind(sol::state_view& lua) noexcept
     {
+        lua.new_enum<MotionType>("Physics3dMotionType", {
+            { "Static", MotionType::Static },
+            { "Dynamic", MotionType::Dynamic },
+            { "Kinematic", MotionType::Kinematic }
+        });
         lua.new_usertype<LuaPhysicsBody>("PhysicsBody3d", sol::no_constructor,
             "type_id", &entt::type_hash<PhysicsBody>::value,
             "add_entity_component", sol::overload(

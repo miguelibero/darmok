@@ -161,7 +161,7 @@ namespace darmok
 
     LuaSkeletalAnimationSceneComponent LuaSkeletalAnimationSceneComponent::addSceneComponent(LuaScene& scene) noexcept
     {
-        return LuaSkeletalAnimationSceneComponent(scene.getReal()->addComponent<SkeletalAnimationSceneComponent>());
+        return scene.getReal()->addSceneComponent<SkeletalAnimationSceneComponent>();
     }
 
     void LuaSkeletalAnimationSceneComponent::bind(sol::state_view& lua) noexcept

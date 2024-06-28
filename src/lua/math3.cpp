@@ -7,9 +7,11 @@ namespace darmok
 {
 	void LuaMath::bindColor(sol::state_view& lua) noexcept
 	{
-		auto color = lua.new_usertype<Color>("Color", sol::constructors<
-				Color(uint8_t, uint8_t, uint8_t, uint8_t)
-			>(),
+		auto color = lua.new_usertype<Color>("Color",
+			sol::factories(
+				[](uint8_t r, uint8_t g, uint8_t b, uint8_t a) { return Color(r, g, b, a); },
+				[](uint8_t r, uint8_t g, uint8_t b) { return Color(r, g, b, Colors::getMaxValue()); }
+			),
 			"r", &Color::r, 
 			"g", &Color::g, 
 			"b", &Color::b, 

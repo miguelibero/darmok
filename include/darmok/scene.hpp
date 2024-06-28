@@ -33,11 +33,11 @@ namespace darmok
         ~Scene() noexcept;
 
         template<typename T, typename... A>
-        T& addComponent(A&&... args)
+        T& addSceneComponent(A&&... args)
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addComponent(std::move(ptr));
+            addSceneComponent(std::move(ptr));
             return ref;
         }
 
@@ -46,7 +46,9 @@ namespace darmok
         bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
 
-        void addComponent(std::unique_ptr<ISceneComponent>&& component);
+        void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
+        bool removeSceneComponent(const ISceneComponent& component) noexcept;
+        bool hasSceneComponent(const ISceneComponent& component) const noexcept;
 
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
@@ -55,9 +57,26 @@ namespace darmok
         bool destroyEntity(Entity entity) noexcept;
 
         template<typename T>
+        auto getComponentView() const noexcept
+        {
+            return getRegistry().view<T>();
+        }
+
+        template<typename T>
         auto getComponentView() noexcept
         {
             return getRegistry().view<T>();
+        }
+
+        template<typename T>
+        bool hasComponent(const T& component) const noexcept
+        {
+            auto view = getComponentView<T>();
+            auto end = std::cend(view);
+            auto it = std::find_if(std::cbegin(view), end, [&component, &view](const auto& entity) {
+                return &view.get<T>(entity) == &component;
+            });
+            return it != end;
         }
 
         template<typename T>

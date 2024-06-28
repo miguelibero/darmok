@@ -4,6 +4,8 @@
 #include <darmok/glm.hpp>
 #include <darmok/physics3d.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/character_fwd.hpp>
+#include <darmok/export.h>
 #include <bx/bx.h>
 
 namespace darmok::physics3d
@@ -61,6 +63,8 @@ namespace darmok::physics3d
 
         CharacterControllerImpl& getImpl() noexcept;
         const CharacterControllerImpl& getImpl() const noexcept;
+
+        GroundState getGroundState() const noexcept;
 
         CharacterController& setLinearVelocity(const glm::vec3& velocity);
         glm::vec3 getLinearVelocity() const noexcept;
