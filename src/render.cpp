@@ -53,9 +53,6 @@ namespace darmok
 	void Renderable::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
 	{
 		_mesh->render(encoder);
-		auto state = _material->beforeRender(encoder, viewId);
-		encoder.setState(state);
-		auto prog = _material->getProgram();
-		encoder.submit(viewId, prog->getHandle());
+		_material->renderSubmit(encoder, viewId);
 	}
 }

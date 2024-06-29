@@ -11,15 +11,34 @@ namespace darmok
 	{
 	}
 
-	bool LuaKeyboard::getKey(const std::string& name) const noexcept
+	bool LuaKeyboard::getKey(const sol::variadic_args& args) const noexcept
 	{
-		auto optBinding = KeyboardBindingKey::read(name);
-		if (!optBinding)
+		for (auto& arg : args)
 		{
-			return false;
+			KeyboardBindingKey binding;
+			if (arg.is<std::string>())
+			{
+				auto opt = KeyboardBindingKey::read(arg.as<std::string>());
+				if (!opt)
+				{
+					return false;
+				}
+				binding = opt.value();
+			}
+			else if (arg.is<KeyboardKey>())
+			{
+				binding.key = arg.as<KeyboardKey>();
+			}
+			else
+			{
+				return false;
+			}
+			if (_kb.get().getKey(binding.key, binding.modifiers))
+			{
+				return true;
+			}
 		}
-		auto binding = optBinding.value();
-		return _kb.get().getKey(binding.key, binding.modifiers);
+		return false;
 	}
 
 	std::string LuaKeyboard::getUpdateChars() const noexcept
@@ -32,8 +51,22 @@ namespace darmok
 		return str;
 	}
 
+	static std::vector<std::pair<std::string_view, KeyboardKey>> getLuaKeyboardKeys() noexcept
+	{
+		std::vector<std::pair<std::string_view, KeyboardKey>> keys;
+		for (int i = 0; i < to_underlying(KeyboardKey::Count); i++)
+		{
+			auto key = (KeyboardKey)i;
+			keys.emplace_back(Keyboard::getKeyName(key), key);
+		}
+		return keys;
+	}
+
 	void LuaKeyboard::bind(sol::state_view& lua) noexcept
 	{
+		auto keys = getLuaKeyboardKeys();
+		lua.new_enum<KeyboardKey>("KeyboardKey",
+			std::initializer_list<std::pair<std::string_view, KeyboardKey>>(&keys.front(), &keys.front() + keys.size()));
 		lua.new_usertype<LuaKeyboard>("Keyboard", sol::no_constructor,
 			"get_key", &LuaKeyboard::getKey,
 			"chars", sol::property(&LuaKeyboard::getUpdateChars)

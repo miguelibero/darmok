@@ -308,11 +308,13 @@ if(DARMOK_BUILD_JOLT)
   list(APPEND HEADERS
     ${INCLUDE_DIR}/physics3d_fwd.hpp
     ${INCLUDE_DIR}/physics3d.hpp
+    ${INCLUDE_DIR}/physics3d_debug.hpp
     ${INCLUDE_DIR}/character_fwd.hpp
     ${INCLUDE_DIR}/character.hpp
   )
   list(APPEND SOURCES
     ${SRC_DIR}/physics3d_jolt.cpp
+    ${SRC_DIR}/physics3d_debug_jolt.cpp
     ${SRC_DIR}/character_jolt.cpp
   )
   if(DARMOK_BUILD_LUA)

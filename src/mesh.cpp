@@ -29,29 +29,29 @@ namespace darmok
 		return getMeshIndexSize(index32);
 	}
 
-	std::shared_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config) noexcept
+	std::unique_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config) noexcept
 	{
 		switch (type)
 		{
 		case MeshType::Dynamic:
-			return std::make_shared<DynamicMesh>(layout, vertices, config);
+			return std::make_unique<DynamicMesh>(layout, vertices, config);
 		case MeshType::Transient:
-			return std::make_shared<TransientMesh>(layout, vertices, config.index32);
+			return std::make_unique<TransientMesh>(layout, vertices, config.index32);
 		default:
-			return std::make_shared<Mesh>(layout, vertices, config);
+			return std::make_unique<Mesh>(layout, vertices, config);
 		}
 	}
 
-	std::shared_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config) noexcept
+	std::unique_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config) noexcept
 	{
 		switch (type)
 		{
 		case MeshType::Dynamic:
-			return std::make_shared<DynamicMesh>(layout, vertices, indices, config);
+			return std::make_unique<DynamicMesh>(layout, vertices, indices, config);
 		case MeshType::Transient:
-			return std::make_shared<TransientMesh>(layout, vertices, indices, config.index32);
+			return std::make_unique<TransientMesh>(layout, vertices, indices, config.index32);
 		default:
-			return std::make_shared<Mesh>(layout, vertices, indices, config);
+			return std::make_unique<Mesh>(layout, vertices, indices, config);
 		}
 	}
 
@@ -341,7 +341,7 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createMesh(const MeshData& meshData) noexcept
+	MeshCreator::MeshPtr MeshCreator::createMesh(const MeshData& meshData) noexcept
 	{
 		return createMesh(meshData, config);
 	}
@@ -349,49 +349,42 @@ namespace darmok
 	bgfx::VertexLayout MeshCreator::getDefaultVertexLayout(const MeshData& meshData) noexcept
 	{
 		bgfx::VertexLayout meshLayout;
-		meshLayout.begin();
-		if (!meshData.positions.empty())
-		{
-			meshLayout.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
-		}
-		if (!meshData.normals.empty())
-		{
-			meshLayout.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float);
-		}
-		if (!meshData.texCoords.empty())
-		{
-			meshLayout.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float);
-		}
-		meshLayout.end();
+		meshLayout.begin()
+		  .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+		  .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+		  .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+		  .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
+		.end();
 		return meshLayout;
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createMesh(const MeshData& meshData, const MeshCreationConfig& cfg) noexcept
+	MeshCreator::MeshPtr MeshCreator::createMesh(const MeshData& meshData, const MeshCreationConfig& cfg) noexcept
 	{
 		auto meshLayout = vertexLayout ? vertexLayout.value() : getDefaultVertexLayout(meshData);
 		
-		VertexDataWriter writer(meshLayout, uint32_t(meshData.positions.size()));
-		if (meshLayout.has(bgfx::Attrib::Position))
+		VertexDataWriter writer(meshLayout, uint32_t(meshData.vertices.size()));
+		uint32_t i = 0;
+		for (auto& vertex : meshData.vertices)
 		{
-			uint32_t i = 0;
-			for (auto& pos : meshData.positions)
+			if (meshLayout.has(bgfx::Attrib::Position))
 			{
-				auto v = cfg.scale * (pos + cfg.offset);
-				writer.write(bgfx::Attrib::Position, i++, v);
+				auto v = cfg.scale * (vertex.position + cfg.offset);
+				writer.write(bgfx::Attrib::Position, i, v);
 			}
-		}
-		if (meshLayout.has(bgfx::Attrib::TexCoord0))
-		{
-			uint32_t i = 0;
-			for (auto& texCoord : meshData.texCoords)
+			if (meshLayout.has(bgfx::Attrib::TexCoord0))
 			{
-				auto v = cfg.textureScale * (texCoord + cfg.textureOffset);
-				writer.write(bgfx::Attrib::TexCoord0, i++, v);
+				auto v = cfg.textureScale * (vertex.texCoord + cfg.textureOffset);
+				writer.write(bgfx::Attrib::TexCoord0, i, v);
 			}
-		}
-		if (meshLayout.has(bgfx::Attrib::Normal))
-		{
-			writer.write(bgfx::Attrib::Normal, meshData.normals);
+			if (meshLayout.has(bgfx::Attrib::Normal))
+			{
+				writer.write(bgfx::Attrib::Normal, i, vertex.normal);
+			}
+			if (meshLayout.has(bgfx::Attrib::Color0))
+			{
+				writer.write(bgfx::Attrib::Color0, i, vertex.color);
+			}
+			i++;
 		}
 
 		Data vertexData = writer.finish();
@@ -401,37 +394,39 @@ namespace darmok
 		return IMesh::create(config.type, meshLayout, vertDataView, idxDataView);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createCuboid() noexcept
+	MeshCreator::MeshPtr MeshCreator::createCuboid() noexcept
 	{
 		return createCuboid(Cuboid::standard());
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createCuboid(const Cuboid& cuboid) noexcept
+	MeshCreator::MeshPtr MeshCreator::createCuboid(const Cuboid& cuboid) noexcept
 	{
 		const static MeshData data = {
 			{
-				{ 1,  1,  1 }, { 0,  1,  1 }, { 0,  0,  1 }, { 1,  0,  1 },
-				{ 1,  1,  0 }, { 1,  0,  0 }, { 0,  0,  0 }, { 0,  1,  0 },
-				{ 1,  1,  1 }, { 1,  1,  0 }, { 0,  1,  0 }, { 0,  1,  1 },
-				{ 1,  0,  1 }, { 0,  0,  1 }, { 0,  0,  0 }, { 1,  0,  0 },
-				{ 1,  1,  1 }, { 1,  0,  1 }, { 1,  0,  0 }, { 1,  1,  0 },
-				{ 0,  1,  1 }, { 0,  1,  0 }, { 0,  0,  0 }, { 0,  0,  1 },
-			},
-			{
-				{  0,  0,  1 }, {  0,  0,  1 }, {  0,  0,  1 }, {  0,  0,  1 },
-				{  0,  0, -1 }, {  0,  0, -1 }, {  0,  0, -1 }, {  0,  0, -1 },
-				{  0,  1,  0 }, {  0,  1,  0 }, {  0,  1,  0 }, {  0,  1,  0 },
-				{  0, -1,  0 }, {  0, -1,  0 }, {  0, -1,  0 }, {  0, -1,  0 },
-				{  1,  0,  0 }, {  1,  0,  0 }, {  1,  0,  0 }, {  1,  0,  0 },
-				{ -1,  0,  0 }, { -1,  0,  0 }, { -1,  0,  0 }, { -1,  0,  0 },
-			},
-			{
-				{ 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 },
-				{ 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 },
-				{ 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 },
-				{ 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 },
-				{ 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 },
-				{ 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 },
+				{ { 1,  1,  1 }, {  0,  0,  1 }, { 0, 0 } },
+                { { 0,  1,  1 }, {  0,  0,  1 }, { 1, 0 } },
+				{ { 0,  0,  1 }, {  0,  0,  1 }, { 1, 1 } },
+                { { 1,  0,  1 }, {  0,  0,  1 }, { 0, 1 } },
+				{ { 1,  1,  0 }, {  0,  0, -1 }, { 1, 0 } },
+                { { 1,  0,  0 }, {  0,  0, -1 }, { 1, 1 } },
+				{ { 0,  0,  0 }, {  0,  0, -1 }, { 0, 1 } },
+                { { 0,  1,  0 }, {  0,  0, -1 }, { 0, 0 } },
+				{ { 1,  1,  1 }, {  0,  1,  0 }, { 1, 0 } },
+                { { 1,  1,  0 }, {  0,  1,  0 }, { 1, 1 } },
+				{ { 0,  1,  0 }, {  0,  1,  0 }, { 0, 1 } },
+                { { 0,  1,  1 }, {  0,  1,  0 }, { 0, 0 } },
+				{ { 1,  0,  1 }, {  0, -1,  0 }, { 1, 0 } },
+                { { 0,  0,  1 }, {  0, -1,  0 }, { 1, 1 } },
+				{ { 0,  0,  0 }, {  0, -1,  0 }, { 0, 1 } },
+                { { 1,  0,  0 }, {  0, -1,  0 }, { 0, 0 } },
+				{ { 1,  1,  1 }, {  1,  0,  0 }, { 1, 0 } },
+                { { 1,  0,  1 }, {  1,  0,  0 }, { 1, 1 } },
+				{ { 1,  0,  0 }, {  1,  0,  0 }, { 0, 1 } },
+                { { 1,  1,  0 }, {  1,  0,  0 }, { 0, 0 } },
+				{ { 0,  1,  1 }, { -1,  0,  0 }, { 0, 0 } },
+                { { 0,  1,  0 }, { -1,  0,  0 }, { 1, 0 } },
+				{ { 0,  0,  0 }, { -1,  0,  0 }, { 1, 1 } },
+			    { { 0,  0,  1 }, { -1,  0,  0 }, { 0, 1 } }
 			},
 			{
 				 0,  1,  2,  2,  3,  0,
@@ -452,19 +447,16 @@ namespace darmok
 	{
 		static const MeshData data = {
 			{
-				{ 1, 1, 0 }, { 1, 0, 0 }, { 0, 0, 0 }, { 0, 1, 0 },
-			},
-			{
-				{ 0, 0, -1 }, { 0, 0, -1 }, { 0, 0, -1 }, { 0, 0, -1 },
-			},
-			{
-				{ 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 },
+				{ { 1, 1, 0 }, { 0, 0, -1 }, { 0, 0 } },
+				{ { 1, 0, 0 }, { 0, 0, -1 }, { 1, 0 } },
+				{ { 0, 0, 0 }, { 0, 0, -1 }, { 1, 1 } },
+				{ { 0, 1, 0 }, { 0, 0, -1 }, { 0, 1 } }
 			}
 		};
 		return data;
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createRectangleMesh(const MeshData& data, const Rectangle& rect) noexcept
+	MeshCreator::MeshPtr MeshCreator::createRectangleMesh(const MeshData& data, const Rectangle& rect) noexcept
 	{
 		auto cfg = config;
 		cfg.scale *= glm::vec3(rect.size, 0);
@@ -472,41 +464,41 @@ namespace darmok
 		return createMesh(data, cfg);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createRectangle(const Rectangle& rect) noexcept
+	MeshCreator::MeshPtr MeshCreator::createRectangle(const Rectangle& rect) noexcept
 	{
 		MeshData data = getRectangleMeshData();
 		data.indices = { 0, 1, 2, 2, 3, 0 };
 		return createRectangleMesh(data, rect);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createLineRectangle(const Rectangle& rect) noexcept
+	MeshCreator::MeshPtr MeshCreator::createLineRectangle(const Rectangle& rect) noexcept
 	{
 		MeshData data = getRectangleMeshData();
 		data.indices = { 0, 1, 1, 2, 2, 3, 3, 0 };
 		return createRectangleMesh(data, rect);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createSphere(int lod) noexcept
+	MeshCreator::MeshPtr MeshCreator::createSphere(int lod) noexcept
 	{
 		return createSphere(Sphere::standard(), lod);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createCapsule(int lod) noexcept
+	MeshCreator::MeshPtr MeshCreator::createCapsule(int lod) noexcept
 	{
 		return createCapsule(Capsule::standard(), lod);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createRectangle() noexcept
+	MeshCreator::MeshPtr MeshCreator::createRectangle() noexcept
 	{
 		return createRectangle(Rectangle::standard());
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createLineRectangle() noexcept
+	MeshCreator::MeshPtr MeshCreator::createLineRectangle() noexcept
 	{
 		return createLineRectangle(Rectangle::standard());
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createSphere(const Sphere& sphere, int lod) noexcept
+	MeshCreator::MeshPtr MeshCreator::createSphere(const Sphere& sphere, int lod) noexcept
 	{
 		auto rings = lod;
 		auto sectors = lod;
@@ -519,9 +511,7 @@ namespace darmok
 
 		MeshData data;
 		{
-			data.positions.reserve(n);
-			data.normals.reserve(n);
-			data.texCoords.reserve(n);
+			data.vertices.reserve(n);
 			for (int r = 0; r < rings; r++)
 			{
 				for (int s = 0; s < sectors; s++)
@@ -535,9 +525,7 @@ namespace darmok
 						sin((0.5F * pi) + rho),
 						sin(theta) * sin(rho)
 					);
-					data.positions.push_back(pos);
-					data.normals.push_back(pos);
-					data.texCoords.push_back(glm::vec2(
+					data.vertices.emplace_back(pos, pos, glm::vec2(
 						u * texScale,
 						v * texScale
 					));
@@ -567,7 +555,7 @@ namespace darmok
 	}
 
 
-	std::shared_ptr<IMesh> MeshCreator::createCapsule(const Capsule& capsule, int lod) noexcept
+	MeshCreator::MeshPtr MeshCreator::createCapsule(const Capsule& capsule, int lod) noexcept
 	{
 		auto rings = lod;
 		auto sectors = lod;
@@ -580,9 +568,7 @@ namespace darmok
 
 		MeshData data;
 		{
-			data.positions.reserve(n);
-			data.normals.reserve(n);
-			data.texCoords.reserve(n);
+			data.vertices.reserve(n);
 			auto halfHeight = capsule.cylinderHeight / capsule.radius * 0.5F;
 			for (int r = 0; r < rings; r++)
 			{
@@ -602,9 +588,7 @@ namespace darmok
 						sin((0.5F * pi) + rho) + h,
 						sin(theta) * sin(rho)
 					);
-					data.positions.push_back(pos);
-					data.normals.push_back(pos);
-					data.texCoords.push_back(glm::vec2(
+					data.vertices.emplace_back(pos, pos, glm::vec2(
 						u * texScale,
 						v * texScale
 					));
@@ -633,35 +617,29 @@ namespace darmok
 		return createMesh(data, cfg);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createRay(const Ray& ray) noexcept
+	MeshCreator::MeshPtr MeshCreator::createRay(const Ray& ray) noexcept
 	{
 		return createLine(ray.toLine());
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createLine(const Line& line) noexcept
+	MeshCreator::MeshPtr MeshCreator::createLine(const Line& line) noexcept
 	{
 		return createLines({ line });
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createLines(const std::vector<Line>& lines) noexcept
+	MeshCreator::MeshPtr MeshCreator::createLines(const std::vector<Line>& lines) noexcept
 	{
 		MeshData data;
 		VertexIndex i = 0;
 		for (auto& line : lines)
 		{
-			data.positions.push_back(line.points[0]);
-			data.positions.push_back(line.points[1]);
-			data.normals.emplace_back();
-			data.normals.emplace_back();
-			data.texCoords.emplace_back(0, 0);
-			data.texCoords.emplace_back(1, 1);
-			data.indices.emplace_back(i++);
-			data.indices.emplace_back(i++);
+			data.vertices.emplace_back(line.points[0], glm::vec3(), glm::vec2(0, 0));
+			data.vertices.emplace_back(line.points[1], glm::vec3(), glm::vec2(1, 1));
 		}
 		return createMesh(data, config);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createBone() noexcept
+	MeshCreator::MeshPtr MeshCreator::createBone() noexcept
 	{
 		const float kInter = .2f;
 		const std::vector<glm::vec3> pos = {
@@ -684,27 +662,49 @@ namespace darmok
 			glm::normalize(glm::cross(pos[1] - pos[4], pos[1] - pos[0])),
 			glm::normalize(glm::cross(pos[4] - pos[1], pos[4] - pos[5]))
 		};
-		const MeshData data = { 
-			{ 
-				pos[0], pos[2], pos[1], pos[5], pos[1], pos[2], pos[0], pos[3],
-				pos[2], pos[5], pos[2], pos[3], pos[0], pos[4], pos[3], pos[5],
-				pos[3], pos[4], pos[0], pos[1], pos[4], pos[5], pos[4], pos[1],
-			},
+		const MeshData data = {
 			{
-				 norm[0], norm[0], norm[0], norm[1], norm[1], norm[1], norm[2], norm[2],
-				 norm[2], norm[3], norm[3], norm[3], norm[4], norm[4], norm[4], norm[5],
-				 norm[5], norm[5], norm[6], norm[6], norm[6], norm[7], norm[7], norm[7],
-			},
-			{
-				tex[0], tex[1], tex[1], tex[0], tex[2], tex[2], tex[0], tex[3],
-				tex[3], tex[0], tex[4], tex[4], tex[2], tex[5], tex[2], tex[3],
-				tex[5], tex[3], tex[4], tex[5], tex[4], tex[1], tex[5], tex[1],
+				{ pos[0], norm[0], tex[0] }, { pos[2], norm[0], tex[1] }, { pos[1], norm[0], tex[1] },
+				{ pos[5], norm[1], tex[0] }, { pos[1], norm[1], tex[2] }, { pos[2], norm[1], tex[2] },
+				{ pos[0], norm[2], tex[0] }, { pos[3], norm[2], tex[3] }, { pos[2], norm[2], tex[3] },
+				{ pos[5], norm[3], tex[0] }, { pos[2], norm[3], tex[4] }, { pos[3], norm[3], tex[4] },
+				{ pos[0], norm[4], tex[2] }, { pos[4], norm[4], tex[5] }, { pos[3], norm[4], tex[2] },
+				{ pos[5], norm[5], tex[3] }, { pos[3], norm[5], tex[5] }, { pos[4], norm[5], tex[3] },
+				{ pos[0], norm[6], tex[4] }, { pos[1], norm[6], tex[5] }, { pos[4], norm[6], tex[4] },
+				{ pos[5], norm[7], tex[1] }, { pos[4], norm[7], tex[5] }, { pos[1], norm[7], tex[1] }
 			}
 		};
 		return createMesh(data, config);
 	}
 
-	std::shared_ptr<IMesh> MeshCreator::createShape(const Shape& shape) noexcept
+	MeshCreator::MeshPtr MeshCreator::createTriangle(const Triangle& tri) noexcept
+	{
+		auto n = tri.getNormal();
+		const MeshData data = {
+			{ 
+				{ tri.vertices[0], n, { 0, 0 } },
+				{ tri.vertices[1], n, { 1, 0 } },
+				{ tri.vertices[2], n, { 1, 1 } }
+			}
+		};
+		return createMesh(data, config);
+	}
+
+	MeshCreator::MeshPtr MeshCreator::createTriangles(const std::vector<Triangle>& tris) noexcept
+	{
+		MeshData data;
+		VertexIndex i = 0;
+		for (auto& tri : tris)
+		{
+			auto n = tri.getNormal();
+			data.vertices.emplace_back(tri.vertices[0], n, glm::vec2(0, 0));
+			data.vertices.emplace_back(tri.vertices[1], n, glm::vec2(0, 1));
+			data.vertices.emplace_back(tri.vertices[2], n, glm::vec2(1, 1));
+		}
+		return createMesh(data, config);
+	}
+
+	MeshCreator::MeshPtr MeshCreator::createShape(const Shape& shape) noexcept
 	{
 		if (auto cube = std::get_if<Cuboid>(&shape))
 		{
@@ -729,6 +729,10 @@ namespace darmok
 		if (auto line = std::get_if<Line>(&shape))
 		{
 			return createLine(*line);
+		}
+		if (auto tri = std::get_if<Triangle>(&shape))
+		{
+			return createTriangle(*tri);
 		}
 		if (auto mesh = std::get_if<MeshData>(&shape))
 		{

@@ -16,7 +16,7 @@ namespace darmok
 	{
 	public:
 		LuaKeyboard(Keyboard& kb) noexcept;
-		bool getKey(const std::string& name) const noexcept;
+		bool getKey(const sol::variadic_args& names) const noexcept;
 		std::string getUpdateChars() const noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;

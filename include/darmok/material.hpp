@@ -45,7 +45,7 @@ namespace darmok
         float getSpecularStrength() const noexcept;
         Material& setSpecularStrength(float v) noexcept;
 
-        uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        void renderSubmit(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
         std::shared_ptr<Program> _program;
@@ -60,5 +60,6 @@ namespace darmok
         MaterialPrimitiveType _primitive;
 
         void destroyHandles() noexcept;
+        uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
     };
 }

@@ -64,6 +64,7 @@ namespace darmok::physics3d
         CharacterControllerImpl& getImpl() noexcept;
         const CharacterControllerImpl& getImpl() const noexcept;
 
+        bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;
 
         CharacterController& setLinearVelocity(const glm::vec3& velocity);
@@ -74,6 +75,8 @@ namespace darmok::physics3d
 
         CharacterController& addListener(ICharacterControllerListener& listener) noexcept;
         bool removeListener(ICharacterControllerListener& listener) noexcept;
+
+        static std::string getGroundStateName(GroundState state) noexcept;
 
     private:
         std::unique_ptr<CharacterControllerImpl> _impl;

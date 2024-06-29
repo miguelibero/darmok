@@ -16,14 +16,18 @@
 #include <darmok/render.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/physics3d.hpp>
+#include <darmok/physics3d_debug.hpp>
 #include <darmok/character.hpp>
+#include <darmok/imgui.hpp>
+#include <imgui.h>
+#include <glm/gtx/string_cast.hpp>
 
 namespace
 {
 	using namespace darmok;
 	using namespace darmok::physics3d;
 
-	class JoltSampleApp : public App, public ICollisionListener
+	class JoltSampleApp : public App, public ICollisionListener, public IImguiRenderer
 	{
 	public:
 		void init() override
@@ -31,7 +35,10 @@ namespace
 			App::init();
 
 			_scene = addComponent<SceneAppComponent>().getScene();
-			_scene->addSceneComponent<PhysicsSystem>(getAssets().getAllocator());
+			auto& physics = _scene->addSceneComponent<PhysicsSystem>(getAssets().getAllocator());
+
+			auto& imgui = addComponent<darmok::ImguiAppComponent>(*this);
+			ImGui::SetCurrentContext(imgui.getContext());
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 
@@ -48,6 +55,8 @@ namespace
 
 				_cam->addComponent<PhongLightingComponent>();
 				_cam->setRenderer<ForwardRenderer>();
+
+				addComponent<PhysicsDebugRenderer>(physics, _cam.value(), prog);
 			}
 
 			{ // lights
@@ -66,7 +75,7 @@ namespace
 				auto floorMat = std::make_shared<Material>(prog, floorTex);
 				Cuboid floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
 				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
-				auto floorMesh = meshCreator.createCuboid(floorShape);
+				std::shared_ptr<IMesh> floorMesh = meshCreator.createCuboid(floorShape);
 				_scene->addComponent<Renderable>(floorEntity, floorMesh, floorMat);
 			}
 
@@ -79,7 +88,7 @@ namespace
 				config.shape = doorShape;
 				config.motion = PhysicsBodyMotionType::Kinematic;
 				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, config);
-				auto doorMesh = meshCreator.createCuboid(doorShape);
+				std::shared_ptr<IMesh> doorMesh = meshCreator.createCuboid(doorShape);
 				auto doorTex = getAssets().getColorTextureLoader()(Color(255, 200, 200, 255));
 				_doorMat = std::make_shared<Material>(prog, doorTex);
 				auto triggerTex = getAssets().getColorTextureLoader()(Colors::red());
@@ -90,6 +99,7 @@ namespace
 					.setEulerAngles(glm::vec3(0, 90, 0));
 			}
 
+			/*
 			{ // cubes
 
 				_cubeMesh = meshCreator.createCuboid();
@@ -106,7 +116,7 @@ namespace
 						createCube().setPosition({ x, 10.F, z }).setEulerAngles(rot);
 					}
 				}
-			}
+			}*/
 
 			{ // player
 				auto redTex = getAssets().getColorTextureLoader()(Colors::red());
@@ -115,14 +125,14 @@ namespace
 
 				Capsule playerShape(1.F, 0.5F, glm::vec3(0.F, 1.F, 0.F ));
 				// Cuboid playerShape(glm::vec3(1, 2, 1), glm::vec3(0, 1, 0));
-				auto playerMesh = meshCreator.createShape(playerShape);
+				std::shared_ptr<IMesh> playerMesh = meshCreator.createShape(playerShape);
 				auto playerEntity = _scene->createEntity();
 				_scene->addComponent<Renderable>(playerEntity, playerMesh, redMat);
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 
-				CharacterConfig characterConfig{ playerShape };
-				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
-				_characterBody->addListener(*this);
+				//CharacterConfig characterConfig{ playerShape };
+				//_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
+				//_characterBody->addListener(*this);
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
 		}
@@ -150,10 +160,38 @@ namespace
 				getRenderable(body2).setMaterial(_cubeMat);
 			}
 		}
+
+		void imguiRender() override
+		{
+			ImGui::TextWrapped("character controller");
+			if (ImGui::BeginTable("table1", 2))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::TextWrapped("position");
+				ImGui::TableSetColumnIndex(1);
+				ImGui::TextWrapped(glm::to_string(_characterCtrl->getPosition()).c_str());
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::TextWrapped("ground state");
+				ImGui::TableSetColumnIndex(1);
+				auto groundStateName = CharacterController::getGroundStateName(_characterCtrl->getGroundState());
+				ImGui::TextWrapped(groundStateName.c_str());
+
+				ImGui::EndTable();
+			}
+			_imguiMouse = ImGui::GetIO().WantCaptureMouse;
+		}
+
 	protected:
 
 		void updateLogic(float dt) override
 		{
+			if (_imguiMouse)
+			{
+				return;
+			}
 			auto& mouse = getInput().getMouse();
 			if (mouse.getButton(MouseButton::Left))
 			{
@@ -169,24 +207,27 @@ namespace
 			}
 
 			auto& kb = getInput().getKeyboard();
-			glm::vec3 speed(0);
-			if (kb.getKey(KeyboardKey::Right) || kb.getKey(KeyboardKey::KeyD))
+			if (_characterCtrl->isGrounded())
 			{
-				speed = { 1, 0, 0 };
+				glm::vec3 speed(0);
+				if (kb.getKey(KeyboardKey::Right) || kb.getKey(KeyboardKey::KeyD))
+				{
+					speed = { 1, 0, 0 };
+				}
+				else if (kb.getKey(KeyboardKey::Left) || kb.getKey(KeyboardKey::KeyA))
+				{
+					speed = { -1, 0, 0 };
+				}
+				else if (kb.getKey(KeyboardKey::Down) || kb.getKey(KeyboardKey::KeyS))
+				{
+					speed = { 0, 0, -1 };
+				}
+				else if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
+				{
+					speed = { 0, 0, 1 };
+				}
+				_characterCtrl->setLinearVelocity(speed * 10.F);
 			}
-			else if (kb.getKey(KeyboardKey::Left) || kb.getKey(KeyboardKey::KeyA))
-			{
-				speed = { -1, 0, 0 };
-			}
-			else if (kb.getKey(KeyboardKey::Down) || kb.getKey(KeyboardKey::KeyS))
-			{
-				speed = { 0, 0, -1 };
-			}
-			else if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
-			{
-				speed = { 0, 0, 1 };
-			}
-			_characterCtrl->setLinearVelocity(speed * 10.F);
 		}
 
 	private:
@@ -204,6 +245,7 @@ namespace
 		std::shared_ptr<Material> _triggerDoorMat;
 		Cuboid _cubeShape;
 		std::shared_ptr<IMesh> _cubeMesh;
+		bool _imguiMouse = false;
 
 		Renderable& getRenderable(PhysicsBody& rigidBody)
 		{

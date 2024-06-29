@@ -33,6 +33,12 @@ namespace darmok::physics3d
         _ctrl.reset();
     }
 
+    bool CharacterControllerImpl::isGrounded() const noexcept
+    {
+        auto state = getGroundState();
+        return state == GroundState::Grounded || state == GroundState::GroundedSteep;
+    }
+
     GroundState CharacterControllerImpl::getGroundState() const noexcept
     {
         if (!_jolt)
@@ -48,7 +54,6 @@ namespace darmok::physics3d
         {
             return glm::vec3(0);
         }
-        _jolt->GetGroundState();
         return JoltUtils::convertPosition(_jolt->GetPosition(), _config.shape);
     }
 
@@ -70,7 +75,6 @@ namespace darmok::physics3d
         if (_jolt)
         {
             _jolt->SetLinearVelocity(JoltUtils::convert(velocity));
-            _jolt->UpdateGroundVelocity();
         }
         auto rb = getPhysicsBody();
         if (rb)
@@ -136,6 +140,12 @@ namespace darmok::physics3d
         {
             return false;
         }
+        auto joltSystem = _system->getJolt();
+        if (!joltSystem)
+        {
+            return false;
+        }
+
         JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
         settings->mMaxSlopeAngle = _config.maxSlopeAngle;
         settings->mMaxStrength = _config.maxStrength;
@@ -149,7 +159,7 @@ namespace darmok::physics3d
 
         auto [pos, rot] = JoltUtils::convert(_config.shape, trans);
         auto userData = (uint64_t)_ctrl.ptr();
-        _jolt = new JPH::CharacterVirtual(settings, pos, rot, userData, &_system->getJolt());
+        _jolt = new JPH::CharacterVirtual(settings, pos, rot, userData, joltSystem.ptr());
         _jolt->SetListener(this);
         return true;
     }
@@ -163,17 +173,25 @@ namespace darmok::physics3d
         auto trans = _system->getScene()->getComponent<Transform>(entity);
 
         tryCreateCharacter(trans);
+        if (!_jolt)
+        {
+            return;
+        }
+
+        auto joltSystem = _system->getJolt();
+        if (!joltSystem)
+        {
+            return;
+        }
 
         CollisionMap oldCollisions = _collisions;
         _collisions.clear();
-
         JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
-        auto& joltSystem = _system->getJolt();
-        auto layer = JoltUtils::convert(_config.layer, BroadPhaseLayerType::Moving);
-        auto gravity = -_jolt->GetUp() * joltSystem.GetGravity().Length();
+
+        auto gravity = -_jolt->GetUp() * joltSystem->GetGravity().Length();
         _jolt->ExtendedUpdate(deltaTime, gravity, updateSettings,
-            joltSystem.GetDefaultBroadPhaseLayerFilter(layer),
-            joltSystem.GetDefaultLayerFilter(layer),
+            joltSystem->GetDefaultBroadPhaseLayerFilter(_config.layer),
+            JoltObjectLayerFilter::fromDarmokLayer(_config.layer),
             {}, {}, _system->getTempAllocator()
         );
 
@@ -284,9 +302,19 @@ namespace darmok::physics3d
         return *_impl;
     }
 
+    bool CharacterController::isGrounded() const noexcept
+    {
+        return _impl->isGrounded();
+    }
+
     GroundState CharacterController::getGroundState() const noexcept
     {
         return _impl->getGroundState();
+    }
+
+    std::string CharacterController::getGroundStateName(GroundState state) noexcept
+    {
+        return JPH::CharacterBase::sToString((JPH::CharacterBase::EGroundState)state);
     }
 
     CharacterController& CharacterController::setLinearVelocity(const glm::vec3& velocity)

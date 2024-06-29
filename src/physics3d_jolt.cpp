@@ -11,17 +11,17 @@
 #include <iostream>
 #include <sstream>
 
-#include <Jolt/Physics/PhysicsSystem.h>
-#include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Core/Factory.h>
 #include <Jolt/RegisterTypes.h>
+#include <Jolt/Math/Float2.h>
+#include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/Physics/PhysicsSettings.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Character/Character.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
-#include <Jolt/Physics/Body/BodyCreationSettings.h>
-
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 
@@ -96,6 +96,26 @@ namespace darmok::physics3d
     {
         glm::quat quat(v.GetX(), v.GetY(), v.GetZ(), v.GetW());
         return Math::flipHandedness(quat);
+    }
+
+    Color JoltUtils::convert(const JPH::Color& v) noexcept
+    {
+        return Color(v.r, v.g, v.b, v.a);
+    }
+
+    glm::vec2 JoltUtils::convert(const JPH::Float2& v) noexcept
+    {
+        return glm::vec2(v.x, v.y);
+    }
+
+    glm::vec3 JoltUtils::convert(const JPH::Float3& v) noexcept
+    {
+        return glm::vec3(v.x, v.y, v.z);
+    }
+
+    glm::vec4 JoltUtils::convert(const JPH::Float4& v) noexcept
+    {
+        return glm::vec4(v.x, v.y, v.z, v.w);
     }
 
     RaycastHit JoltUtils::convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept
@@ -180,7 +200,6 @@ namespace darmok::physics3d
         return nullptr;
     }
 
-
     JPH::uint JoltBroadPhaseLayer::GetNumBroadPhaseLayers() const noexcept
     {
         return JPH::uint(BroadPhaseLayerType::Count);
@@ -220,6 +239,16 @@ namespace darmok::physics3d
     bool JoltObjectLayerPairFilter::ShouldCollide(JPH::ObjectLayer object1, JPH::ObjectLayer object2) const noexcept
     {
         return object1 == object2;
+    }
+
+    JoltObjectLayerFilter JoltObjectLayerFilter::fromDarmokLayer(uint8_t layer) noexcept
+    {
+        uint16_t mask = 0;
+        for (auto i = 0; i < to_underlying(BroadPhaseLayerType::Count); i++)
+        {
+            mask |= JoltUtils::convert(layer, (BroadPhaseLayerType)i);
+        }
+        return JoltObjectLayerFilter(mask);
     }
 
     JoltObjectLayerFilter::JoltObjectLayerFilter(uint16_t layerMask) noexcept
@@ -465,9 +494,14 @@ namespace darmok::physics3d
         return _scene;
     }
 
-    JPH::PhysicsSystem& PhysicsSystemImpl::getJolt() noexcept
+    OptionalRef<JPH::PhysicsSystem> PhysicsSystemImpl::getJolt() noexcept
     {
-        return *_system;
+        return _system != nullptr ? OptionalRef<JPH::PhysicsSystem>(*_system) : nullptr;
+    }
+
+    OptionalRef<const JPH::PhysicsSystem> PhysicsSystemImpl::getJolt() const noexcept
+    {
+        return _system != nullptr ? OptionalRef<const JPH::PhysicsSystem>(*_system) : nullptr;
     }
 
     JPH::BodyInterface& PhysicsSystemImpl::getBodyInterface() const noexcept
@@ -661,6 +695,16 @@ namespace darmok::physics3d
     {
         // implemented to do forward declaration of impl
     }
+
+    PhysicsSystemImpl& PhysicsSystem::getImpl() noexcept
+    {
+        return *_impl;
+    }
+
+    const PhysicsSystemImpl& PhysicsSystem::getImpl() const noexcept
+    {
+        return *_impl;
+    }
     
     void PhysicsSystem::init(Scene& scene, App& app) noexcept
     {
@@ -769,6 +813,12 @@ namespace darmok::physics3d
         {
             return {};
         }
+        auto joltSystem = _system->getJolt();
+        if (!joltSystem)
+        {
+            return {};
+        }
+
         auto& config = _characterConfig.value();
         JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings();
         settings->mMaxSlopeAngle = config.maxSlopeAngle;
@@ -780,7 +830,7 @@ namespace darmok::physics3d
         settings->mUp = JoltUtils::convert(config.up);
         settings->mLayer = JoltUtils::convert(config.layer, BroadPhaseLayerType::Moving);
         auto userData = (uint64_t)_body.ptr();
-        _character = new JPH::Character(settings, pos, rot, userData, &_system->getJolt());
+        _character = new JPH::Character(settings, pos, rot, userData, joltSystem.ptr());
         _character->AddToPhysicsSystem(JPH::EActivation::Activate);
         return _character->GetBodyID();
     }

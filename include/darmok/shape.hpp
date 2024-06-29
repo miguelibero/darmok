@@ -42,6 +42,7 @@ namespace darmok
         Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept;
         Triangle(const Vertices& vertices) noexcept;
         std::string to_string() const noexcept;
+        glm::vec3 getNormal() const;
     };
 
     struct DARMOK_EXPORT Sphere final
@@ -145,5 +146,4 @@ namespace darmok
         std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
         glm::vec3 closestPoint(const glm::vec3& p);
     };
-
 }

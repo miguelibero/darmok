@@ -88,6 +88,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * sound
 
 #### Upcoming
+* jolt physics debug draw
+* move lua bindings to separate library?
 * activate fly camera binding
 * defines when exporting shaders (generate all variations like Unity)
 * window modes with different resolutions

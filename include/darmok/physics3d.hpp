@@ -6,6 +6,7 @@
 #include <darmok/shape.hpp>
 #include <darmok/physics3d_fwd.hpp>
 #include <bx/bx.h>
+#include <bgfx/bgfx.h>
 #include <memory>
 #include <variant>
 #include <vector>
@@ -14,6 +15,12 @@
 namespace bx
 {
     struct AllocatorI;
+}
+
+namespace darmok
+{
+    class Camera;
+    class Program;
 }
 
 namespace darmok::physics3d
@@ -53,13 +60,13 @@ namespace darmok::physics3d
         glm::vec3 gravity = { 0, -9.81F, 0 };
     };
 
-    class PhysicsSystemImpl;
-
     struct RaycastHit final
     {
         std::reference_wrapper<PhysicsBody> physicsBody;
         float distance;
     };
+
+    class PhysicsSystemImpl;
 
     class DARMOK_EXPORT PhysicsSystem final : public ISceneComponent
     {
@@ -69,13 +76,19 @@ namespace darmok::physics3d
         PhysicsSystem(const Config& config, bx::AllocatorI& alloc) noexcept;
         PhysicsSystem(bx::AllocatorI& alloc) noexcept;
         ~PhysicsSystem() noexcept;
+
+        PhysicsSystemImpl& getImpl() noexcept;
+        const PhysicsSystemImpl& getImpl() const noexcept;
+
         void init(Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
+        
         void addUpdater(IPhysicsUpdater& updater) noexcept;
         bool removeUpdater(IPhysicsUpdater& updater) noexcept;
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
+
         std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) noexcept;
         std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) noexcept;
     private:

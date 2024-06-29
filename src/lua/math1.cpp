@@ -87,7 +87,8 @@ namespace darmok
 	void LuaMath::bindGlmVec(sol::state_view& lua) noexcept
 	{
 		auto vec4 = lua.new_usertype<glm::vec4>("Vec4", sol::constructors<
-				glm::vec4(glm::f32),
+			    glm::vec4(),
+			    glm::vec4(glm::f32),
 				glm::vec4(glm::f32, glm::f32, glm::f32, glm::f32),
 				glm::vec4(const glm::ivec4&),
 				glm::vec4(const glm::uvec4&),
@@ -105,7 +106,8 @@ namespace darmok
 		configLuaGlmFloatVec(vec4);
 		
 		auto vec3 = lua.new_usertype<glm::vec3>("Vec3", sol::constructors<
-				glm::vec3(glm::f32),
+			    glm::vec3(),
+			    glm::vec3(glm::f32),
 				glm::vec3(glm::f32, glm::f32, glm::f32),
 				glm::vec3(const glm::ivec3&),
 				glm::vec3(const glm::uvec3&),
@@ -133,6 +135,7 @@ namespace darmok
 		configLuaGlmFloatVec(vec3);
 
 		auto vec2 = lua.new_usertype<glm::vec2>("Vec2", sol::constructors<
+			glm::vec2(),
 			glm::vec2(glm::f32),
 			glm::vec2(glm::f32, glm::f32),
 			glm::vec2(const glm::ivec2&),

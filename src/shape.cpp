@@ -75,6 +75,14 @@ namespace darmok
         return "Triangle(" + glm::to_string(vertices[0]) + ", " + glm::to_string(vertices[1]) + ", " + glm::to_string(vertices[2]) + ")";
     }
 
+    glm::vec3 Triangle::getNormal() const
+    {
+        auto edge1 = vertices[1] - vertices[0];
+        auto edge2 = vertices[2] - vertices[0];
+        auto normal = glm::cross(edge1, edge2);
+        return glm::normalize(normal);
+    }
+
     Sphere::Sphere(const glm::vec3& origin, float radius) noexcept
         : radius(radius)
         , origin(origin)

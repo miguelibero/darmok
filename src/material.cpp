@@ -2,6 +2,7 @@
 #include <darmok/light.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/program.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -163,6 +164,13 @@ namespace darmok
 	{
 		_mainData.y = v;
 		return *this;
+	}
+
+	void Material::renderSubmit(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+	{
+		auto state = beforeRender(encoder, viewId);
+		encoder.setState(state);
+		encoder.submit(viewId, _program->getHandle());
 	}
 
 	uint64_t Material::beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept

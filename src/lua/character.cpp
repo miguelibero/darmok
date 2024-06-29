@@ -22,8 +22,7 @@ namespace darmok::physics3d
 
 	bool LuaCharacterController::isGrounded() const noexcept
 	{
-		auto state = getGroundState();
-		return state == GroundState::Grounded || state == GroundState::GroundedSteep;
+		return _ctrl->isGrounded();
 	}
 
 	GroundState LuaCharacterController::getGroundState() const noexcept

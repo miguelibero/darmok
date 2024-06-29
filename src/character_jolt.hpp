@@ -27,6 +27,7 @@ namespace darmok::physics3d
         void init(CharacterController& ctrl, PhysicsSystemImpl& system);
         void shutdown();
         void update(Entity entity, float deltaTime);
+        bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;
         glm::vec3 getPosition() const noexcept;
         void setPosition(const glm::vec3& pos) noexcept;

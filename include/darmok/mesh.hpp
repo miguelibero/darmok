@@ -42,8 +42,8 @@ namespace darmok
          virtual void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const = 0;
          virtual [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
 
-         static [[nodiscard]] std::shared_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config = {}) noexcept;
-         static [[nodiscard]] std::shared_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config = {}) noexcept;
+         static [[nodiscard]] std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config = {}) noexcept;
+         static [[nodiscard]] std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config = {}) noexcept;
     };
 
     class DARMOK_EXPORT Mesh final : public IMesh
@@ -136,11 +136,17 @@ namespace darmok
         MeshType type = MeshType::Static;
     };
 
+    struct DARMOK_EXPORT MeshVertexData
+    {
+        glm::vec3 position;
+        glm::vec3 normal = glm::vec3(0, 1, 0);
+        glm::vec2 texCoord;
+        Color color = Colors::white();
+    };
+
     struct DARMOK_EXPORT MeshData
     {
-        std::vector<glm::vec3> positions;
-        std::vector<glm::vec3> normals;
-        std::vector<glm::vec2> texCoords;
+        std::vector<MeshVertexData> vertices;
         std::vector<VertexIndex> indices;
     };
 
@@ -151,37 +157,40 @@ namespace darmok
     struct Capsule;
     struct Ray;
     struct Line;
+    struct Triangle;
 
     struct DARMOK_EXPORT MeshCreator final
     {
         using Config = MeshCreationConfig;
         Config config;
         std::optional<bgfx::VertexLayout> vertexLayout;
-        using Shape = std::variant< Cuboid, Sphere, Capsule, Rectangle, Ray, Line, MeshData>;
-
+        using Shape = std::variant<Cuboid, Sphere, Capsule, Rectangle, Ray, Line, Triangle, MeshData>;
+        using MeshPtr = std::unique_ptr<IMesh>;
         MeshCreator(std::optional<bgfx::VertexLayout> vertexLauout = std::nullopt) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createMesh(const MeshData& meshData) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createCuboid() noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createCuboid(const Cuboid& cuboid) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createSphere(const Sphere& sphere, int lod = 32) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createSphere(int lod = 32) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createCapsule(const Capsule& capsule, int lod = 32) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createCapsule(int lod = 32) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createRectangle() noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createRectangle(const Rectangle& rect) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createLineRectangle() noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createLineRectangle(const Rectangle& rect) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createRay(const Ray& ray) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createLine(const Line& line) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createLines(const std::vector<Line>& lines) noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createBone() noexcept;
-        [[nodiscard]] std::shared_ptr<IMesh> createShape(const Shape& shape) noexcept;
+        [[nodiscard]] MeshPtr createMesh(const MeshData& meshData) noexcept;
+        [[nodiscard]] MeshPtr createCuboid() noexcept;
+        [[nodiscard]] MeshPtr createCuboid(const Cuboid& cuboid) noexcept;
+        [[nodiscard]] MeshPtr createSphere(const Sphere& sphere, int lod = 32) noexcept;
+        [[nodiscard]] MeshPtr createSphere(int lod = 32) noexcept;
+        [[nodiscard]] MeshPtr createCapsule(const Capsule& capsule, int lod = 32) noexcept;
+        [[nodiscard]] MeshPtr createCapsule(int lod = 32) noexcept;
+        [[nodiscard]] MeshPtr createRectangle() noexcept;
+        [[nodiscard]] MeshPtr createRectangle(const Rectangle& rect) noexcept;
+        [[nodiscard]] MeshPtr createLineRectangle() noexcept;
+        [[nodiscard]] MeshPtr createLineRectangle(const Rectangle& rect) noexcept;
+        [[nodiscard]] MeshPtr createRay(const Ray& ray) noexcept;
+        [[nodiscard]] MeshPtr createLine(const Line& line) noexcept;
+        [[nodiscard]] MeshPtr createLines(const std::vector<Line>& lines) noexcept;
+        [[nodiscard]] MeshPtr createTriangle(const Triangle& tri) noexcept;
+        [[nodiscard]] MeshPtr createTriangles(const std::vector<Triangle>& tris) noexcept;
+        [[nodiscard]] MeshPtr createBone() noexcept;
+        [[nodiscard]] MeshPtr createShape(const Shape& shape) noexcept;
 
     private:
         static const MeshData& getRectangleMeshData() noexcept;
 
-        std::shared_ptr<IMesh> createMesh(const MeshData& meshData, const Config& cfg) noexcept;
-        std::shared_ptr<IMesh> createRectangleMesh(const MeshData& data, const Rectangle& quad) noexcept;
+        MeshPtr createMesh(const MeshData& meshData, const Config& cfg) noexcept;
+        MeshPtr createRectangleMesh(const MeshData& data, const Rectangle& quad) noexcept;
         static bgfx::VertexLayout getDefaultVertexLayout(const MeshData& meshData) noexcept;
     };
 }
