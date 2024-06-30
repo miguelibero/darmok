@@ -45,7 +45,7 @@ namespace darmok
 		return elm;
 	}
 
-	std::shared_ptr<IMesh> TextureAtlasElement::createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, Config config) const noexcept
+	std::unique_ptr<IMesh> TextureAtlasElement::createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config) const noexcept
 	{
 		auto vertexAmount = uint32_t(getVertexAmount());
 		VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
@@ -136,35 +136,28 @@ namespace darmok
 		return nullptr;
 	}
 
-	TextureAtlasMeshCreator::TextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const TextureAtlas& atlas) noexcept
-		: layout(layout)
-		, atlas(atlas)
-		, config{}
+	std::unique_ptr<IMesh> TextureAtlas::createSprite(std::string_view name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept
 	{
-	}
-
-	std::shared_ptr<IMesh> TextureAtlasMeshCreator::createSprite(std::string_view name) const noexcept
-	{
-		auto elm = atlas.getElement(name);
+		auto elm = getElement(name);
 		if (!elm)
 		{
 			return nullptr;
 		}
-		return elm->createSprite(layout, atlas.size, config);
+		return elm->createSprite(layout, size, config);
 	}
 
-	std::vector<AnimationFrame> TextureAtlasMeshCreator::createAnimation(std::string_view namePrefix, float frameDuration) const noexcept
+	std::vector<AnimationFrame> TextureAtlas::createAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration, const MeshConfig& config) const noexcept
 	{
 		std::vector<AnimationFrame> frames;
 
-		for (auto& elm : atlas.elements)
+		for (auto& elm : elements)
 		{
 			if (StringUtils::startsWith(elm.name, namePrefix))
 			{
-				auto mesh = elm.createSprite(layout, atlas.size, config);
+				auto mesh = elm.createSprite(layout, size, config);
 				if (mesh)
 				{
-					frames.push_back({ { mesh }, frameDuration });
+					frames.emplace_back(std::move(mesh), frameDuration);
 				}
 			}
 		}

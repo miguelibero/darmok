@@ -55,7 +55,7 @@ namespace
 				if (node.name == "human")
 				{
 					auto& trans = registry.get_or_emplace<Transform>(entity);
-					scene->addComponent<RotateUpdater>(trans, 100.f);
+					scene->addSceneComponent<RotateUpdater>(trans, 100.f);
 				}
 				auto cam = scene->getComponentInChildren<Camera>(entity);
 				if (cam)

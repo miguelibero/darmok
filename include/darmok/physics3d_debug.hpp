@@ -18,8 +18,9 @@ namespace darmok::physics3d
     class DARMOK_EXPORT PhysicsDebugRenderer : public AppComponent
     {
     public:
-        PhysicsDebugRenderer(PhysicsSystem& system, const Camera& cam, const std::shared_ptr<Program>& prog) noexcept;
+        PhysicsDebugRenderer(PhysicsSystem& system, const Camera& cam, const std::shared_ptr<Program>& prog = nullptr) noexcept;
         ~PhysicsDebugRenderer() noexcept;
+        void init(App& app) override;
         bgfx::ViewId render(bgfx::ViewId viewId) const override;
     private:
         std::unique_ptr<PhysicsDebugRendererImpl> _impl;

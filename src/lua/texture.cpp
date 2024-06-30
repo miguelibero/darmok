@@ -306,78 +306,59 @@ namespace darmok
 		return LuaTexture(_atlas->texture);
 	}
 
+	LuaMesh LuaTextureAtlas::createSprite1(const std::string& name, const bgfx::VertexLayout& layout) const noexcept
+	{
+		return LuaMesh(_atlas->createSprite(name, layout));
+	}
+
+	LuaMesh LuaTextureAtlas::createSprite2(const std::string& name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept
+	{
+		return LuaMesh(_atlas->createSprite(name, layout, config));
+	}
+
+	std::vector<AnimationFrame> LuaTextureAtlas::createAnimation1(const bgfx::VertexLayout& layout) const noexcept
+	{
+		return _atlas->createAnimation(layout);
+	}
+
+
+	std::vector<AnimationFrame> LuaTextureAtlas::createAnimation2(const bgfx::VertexLayout& layout, const std::string& namePrefix) const noexcept
+	{
+		return _atlas->createAnimation(layout, namePrefix);
+	}
+
+	std::vector<AnimationFrame> LuaTextureAtlas::createAnimation3(const bgfx::VertexLayout& layout, const std::string& namePrefix, float frameDuration) const noexcept
+	{
+		return _atlas->createAnimation(layout, namePrefix, frameDuration);
+	}
+
+	std::vector<AnimationFrame> LuaTextureAtlas::createAnimation4(const bgfx::VertexLayout& layout, const std::string& namePrefix, float frameDuration, const MeshConfig& config) const noexcept
+	{
+		return _atlas->createAnimation(layout, namePrefix, frameDuration, config);
+	}
+
 	void LuaTextureAtlas::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaTextureAtlas>("TextureAtlas", sol::no_constructor,
-			"texture", sol::property(&LuaTextureAtlas::getTexture)
-		);
-	}
-
-	LuaTextureAtlasMeshCreator::LuaTextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const LuaTextureAtlas& atlas) noexcept
-		: _creator(std::make_shared<TextureAtlasMeshCreator>(layout, *atlas.getReal()))
-		, _atlas(atlas)
-	{
-	}
-
-	LuaTextureAtlasMeshCreator::~LuaTextureAtlasMeshCreator()
-	{
-	}
-
-	LuaTextureAtlasMeshCreator::Config& LuaTextureAtlasMeshCreator::getConfig() noexcept
-	{
-		return _creator->config;
-	}
-
-	void LuaTextureAtlasMeshCreator::setConfig(const Config& config) noexcept
-	{
-		_creator->config = config;
-	}
-
-	bgfx::VertexLayout& LuaTextureAtlasMeshCreator::getVertexLayout()  noexcept
-	{
-		return _creator->layout;
-	}
-
-	const LuaTextureAtlas& LuaTextureAtlasMeshCreator::getTextureAtlas() noexcept
-	{
-		return _atlas;
-	}
-
-	LuaMesh LuaTextureAtlasMeshCreator::createSprite(const std::string& name) const noexcept
-	{
-		return LuaMesh(_creator->createSprite(name));
-	}
-
-	std::vector<AnimationFrame> LuaTextureAtlasMeshCreator::createAnimation1(const std::string& namePrefix) const noexcept
-	{
-		return _creator->createAnimation(namePrefix);
-	}
-
-	std::vector<AnimationFrame> LuaTextureAtlasMeshCreator::createAnimation2(const std::string& namePrefix, float frameDuration) const noexcept
-	{
-		return _creator->createAnimation(namePrefix, frameDuration);
-	}
-
-	void LuaTextureAtlasMeshCreator::bind(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<TextureAtlasMeshCreationConfig>("TextureAtlasMeshCreationConfig",
-			sol::constructors<MeshCreationConfig()>(),
-			"scale", &TextureAtlasMeshCreationConfig::scale,
-			"offset", &TextureAtlasMeshCreationConfig::offset,
-			"color", &TextureAtlasMeshCreationConfig::color,
-			"amount", &TextureAtlasMeshCreationConfig::amount
-		);
-
-		lua.new_usertype<LuaTextureAtlasMeshCreator>("TextureAtlasMeshCreator",
-			sol::constructors<
-				LuaTextureAtlasMeshCreator(const bgfx::VertexLayout&, const LuaTextureAtlas&)>(),
-			"config", sol::property(&LuaTextureAtlasMeshCreator::getConfig, &LuaTextureAtlasMeshCreator::setConfig),
-			"vertex_layout", sol::property(&LuaTextureAtlasMeshCreator::getVertexLayout),
-			"atlas", sol::property(&LuaTextureAtlasMeshCreator::getTextureAtlas),
-			"create_sprite", &LuaTextureAtlasMeshCreator::createSprite,
+			"texture", sol::property(&LuaTextureAtlas::getTexture),
+			"create_sprite", sol::overload(
+				&LuaTextureAtlas::createSprite1,
+				&LuaTextureAtlas::createSprite2
+			),
 			"create_animation", sol::overload(
-				&LuaTextureAtlasMeshCreator::createAnimation1,
-				&LuaTextureAtlasMeshCreator::createAnimation2)
+				&LuaTextureAtlas::createAnimation1,
+				&LuaTextureAtlas::createAnimation2,
+				&LuaTextureAtlas::createAnimation3,
+				&LuaTextureAtlas::createAnimation4
+			)
+		);
+	
+		lua.new_usertype<TextureAtlasMeshConfig>("TextureAtlasMeshConfig",
+			sol::constructors<TextureAtlasMeshConfig()>(),
+			"scale", &TextureAtlasMeshConfig::scale,
+			"offset", &TextureAtlasMeshConfig::offset,
+			"color", &TextureAtlasMeshConfig::color,
+			"amount", &TextureAtlasMeshConfig::amount
 		);
 	}
 

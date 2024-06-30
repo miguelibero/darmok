@@ -30,7 +30,9 @@ namespace darmok::physics3d
     class PhysicsDebugRendererImpl final : public JPH::DebugRenderer
     {
     public:
-        PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const Camera& cam, const std::shared_ptr<Program>& program) noexcept;
+        PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const Camera& cam, const std::shared_ptr<Program>& program = nullptr) noexcept;
+        void init(App& app);
+        void shutdown();
         bgfx::ViewId render(bgfx::ViewId viewId);
 
         void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
@@ -45,7 +47,8 @@ namespace darmok::physics3d
         Material _material;
         OptionalRef<bgfx::Encoder> _encoder;
         bgfx::ViewId _viewId;
-        MeshCreator _meshCreator;
+        bgfx::VertexLayout _vertexLayout;
+        MeshData _directDraws;
 
         void renderSubmit(EDrawMode mode = EDrawMode::Solid);
     };

@@ -140,9 +140,9 @@ namespace darmok::physics3d
 
     glm::vec3 JoltUtils::getOrigin(const Shape& shape) noexcept
     {
-        if (auto cuboid = std::get_if<Cuboid>(&shape))
+        if (auto cube = std::get_if<Cube>(&shape))
         {
-            return cuboid->origin;
+            return cube->origin;
         }
         else if (auto sphere = std::get_if<Sphere>(&shape))
         {
@@ -182,9 +182,9 @@ namespace darmok::physics3d
 
     JPH::ShapeRefC JoltUtils::convert(const Shape& shape) noexcept
     {
-        if (auto cuboid = std::get_if<Cuboid>(&shape))
+        if (auto cube = std::get_if<Cube>(&shape))
         {
-            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cuboid->size * 0.5F));
+            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cube->size * 0.5F));
             return settings.Create().Get();
         }
         else if (auto sphere = std::get_if<Sphere>(&shape))
@@ -359,7 +359,7 @@ namespace darmok::physics3d
             auto rigidBodies = registry.view<PhysicsBody>();
             for (auto [entity, body] : rigidBodies.each())
             {
-                body.getImpl().shutdown();
+                body.getImpl().shutdown(true);
             }
             auto charCtrls = registry.view<CharacterController>();
             for (auto [entity, charCtrl] : charCtrls.each())
@@ -776,22 +776,24 @@ namespace darmok::physics3d
         _system = system;
     }
 
-    void PhysicsBodyImpl::shutdown()
+    void PhysicsBodyImpl::shutdown(bool systemShutdown)
     {
         if (!_system)
         {
             return;
         }
-        auto& iface = _system->getBodyInterface();
-        iface.RemoveBody(_bodyId);
-
-        if (_character)
+        if (!systemShutdown)
         {
-            _character = nullptr;
-        }
-        else if (!_bodyId.IsInvalid())
-        {
-            iface.DestroyBody(_bodyId);
+            auto& iface = _system->getBodyInterface();
+            iface.RemoveBody(_bodyId);
+            if (_character)
+            {
+                _character = nullptr;
+            }
+            if (!_bodyId.IsInvalid())
+            {
+                iface.DestroyBody(_bodyId);
+            }
         }
         _bodyId = JPH::BodyID();
         _system.reset();

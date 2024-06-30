@@ -1,8 +1,7 @@
 
 local program = app.assets:load_standard_program(StandardProgramType.ForwardPhong)
-local meshCreator = MeshCreator.new(program.vertex_layout)
 
-local cubeMesh = meshCreator:create_cuboid()
+local cubeMesh = MeshData.cube():createMesh(program.vertex_layout)
 local greenTex = app.assets:load_color_texture(Color.green)
 local greenMat = Material.new(program, greenTex)
 

@@ -37,9 +37,6 @@ namespace
 			_scene = addComponent<SceneAppComponent>().getScene();
 			auto& physics = _scene->addSceneComponent<PhysicsSystem>(getAssets().getAllocator());
 
-			auto& imgui = addComponent<darmok::ImguiAppComponent>(*this);
-			ImGui::SetCurrentContext(imgui.getContext());
-
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 
 			// camera
@@ -56,8 +53,11 @@ namespace
 				_cam->addComponent<PhongLightingComponent>();
 				_cam->setRenderer<ForwardRenderer>();
 
-				addComponent<PhysicsDebugRenderer>(physics, _cam.value(), prog);
+				addComponent<PhysicsDebugRenderer>(physics, _cam.value());
 			}
+
+			auto& imgui = addComponent<darmok::ImguiAppComponent>(*this);
+			ImGui::SetCurrentContext(imgui.getContext());
 
 			{ // lights
 				auto light = _scene->createEntity();
@@ -67,42 +67,30 @@ namespace
 				_scene->addComponent<AmbientLight>(_scene->createEntity(), 0.5);
 			}
 
-			MeshCreator meshCreator(prog->getVertexLayout());
-
 			{ // floor
 				auto floorEntity = _scene->createEntity();
-				auto floorTex = getAssets().getColorTextureLoader()(Color(172, 172, 124, 255));
-				auto floorMat = std::make_shared<Material>(prog, floorTex);
-				Cuboid floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
-				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
-				std::shared_ptr<IMesh> floorMesh = meshCreator.createCuboid(floorShape);
-				_scene->addComponent<Renderable>(floorEntity, floorMesh, floorMat);
+				Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
+				_scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
 			}
 
 			{ // door trigger
 
 				auto doorEntity = _scene->createEntity();
-				Cuboid doorShape(glm::vec3(1.5F, 2.F, 0.2F), glm::vec3(0, 1.F, 0));
+				Cube doorShape(glm::vec3(1.5F, 2.F, 0.2F), glm::vec3(0, 1.F, 0));
 				PhysicsBodyConfig config;
 				config.trigger = true;
 				config.shape = doorShape;
 				config.motion = PhysicsBodyMotionType::Kinematic;
 				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, config);
-				std::shared_ptr<IMesh> doorMesh = meshCreator.createCuboid(doorShape);
-				auto doorTex = getAssets().getColorTextureLoader()(Color(255, 200, 200, 255));
-				_doorMat = std::make_shared<Material>(prog, doorTex);
 				auto triggerTex = getAssets().getColorTextureLoader()(Colors::red());
 				_triggerDoorMat = std::make_shared<Material>(prog, triggerTex);
-				_scene->addComponent<Renderable>(doorEntity, doorMesh, _doorMat);
 				_scene->addComponent<Transform>(doorEntity)
 					.setPosition(glm::vec3(2.F, 0.F, 2.F))
 					.setEulerAngles(glm::vec3(0, 90, 0));
 			}
 
-			/*
 			{ // cubes
 
-				_cubeMesh = meshCreator.createCuboid();
 				auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
 				auto darkGreenTex = getAssets().getColorTextureLoader()(Color(0, 100, 0, 255));
 				_cubeMat = std::make_shared<Material>(prog, darkGreenTex);
@@ -116,7 +104,7 @@ namespace
 						createCube().setPosition({ x, 10.F, z }).setEulerAngles(rot);
 					}
 				}
-			}*/
+			}
 
 			{ // player
 				auto redTex = getAssets().getColorTextureLoader()(Colors::red());
@@ -125,14 +113,12 @@ namespace
 
 				Capsule playerShape(1.F, 0.5F, glm::vec3(0.F, 1.F, 0.F ));
 				// Cuboid playerShape(glm::vec3(1, 2, 1), glm::vec3(0, 1, 0));
-				std::shared_ptr<IMesh> playerMesh = meshCreator.createShape(playerShape);
 				auto playerEntity = _scene->createEntity();
-				_scene->addComponent<Renderable>(playerEntity, playerMesh, redMat);
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 
-				//CharacterConfig characterConfig{ playerShape };
-				//_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
-				//_characterBody->addListener(*this);
+				CharacterConfig characterConfig{ playerShape };
+				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
+				_characterBody->addListener(*this);
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
 		}
@@ -141,11 +127,7 @@ namespace
 		{
 			if (_doorBody == body2)
 			{
-				getRenderable(body2).setMaterial(_triggerDoorMat);
-			}
-			else if (_floorBody != body2)
-			{
-				getRenderable(body2).setMaterial(_touchedCubeMat);
+				_inDoor = true;
 			}
 		}
 
@@ -153,11 +135,7 @@ namespace
 		{
 			if (_doorBody == body2)
 			{
-				getRenderable(body2).setMaterial(_doorMat);
-			}
-			else if (_floorBody != body2)
-			{
-				getRenderable(body2).setMaterial(_cubeMat);
+				_inDoor = false;
 			}
 		}
 
@@ -178,6 +156,12 @@ namespace
 				ImGui::TableSetColumnIndex(1);
 				auto groundStateName = CharacterController::getGroundStateName(_characterCtrl->getGroundState());
 				ImGui::TextWrapped(groundStateName.c_str());
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::TextWrapped("in door");
+				ImGui::TableSetColumnIndex(1);
+				ImGui::TextWrapped(_inDoor ? "true": "false");
 
 				ImGui::EndTable();
 			}
@@ -236,28 +220,20 @@ namespace
 		OptionalRef<CharacterController> _characterCtrl;
 		OptionalRef<PhysicsBody> _characterBody;
 		OptionalRef<Transform> _characterTrans;
-		OptionalRef<PhysicsBody> _floorBody;
 		OptionalRef<PhysicsBody> _doorBody;
 		std::shared_ptr<Scene> _scene;
 		std::shared_ptr<Material> _cubeMat;
 		std::shared_ptr<Material> _touchedCubeMat;
 		std::shared_ptr<Material> _doorMat;
 		std::shared_ptr<Material> _triggerDoorMat;
-		Cuboid _cubeShape;
-		std::shared_ptr<IMesh> _cubeMesh;
+		Cube _cubeShape;
 		bool _imguiMouse = false;
-
-		Renderable& getRenderable(PhysicsBody& rigidBody)
-		{
-			auto entity = _scene->getEntity(rigidBody);
-			return _scene->getComponent<Renderable>(entity).value();
-		}
+		bool _inDoor = false;
 
 		Transform& createCube() noexcept
 		{
 			auto entity = _scene->createEntity();
 			_scene->addComponent<PhysicsBody>(entity, _cubeShape);
-			_scene->addComponent<Renderable>(entity, _cubeMesh, _cubeMat);
 			return _scene->addComponent<Transform>(entity);
 		}
 	};

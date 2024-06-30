@@ -337,7 +337,7 @@ namespace darmok
         auto& tex = *itr->second;
 
         auto textureElm = TextureAtlasElement::create(RmluiUtils::convert(sprite.rectangle));
-        TextureAtlasMeshCreationConfig config;
+        TextureAtlasMeshConfig config;
         config.type = MeshType::Transient;
         auto mesh = textureElm.createSprite(_program->getVertexLayout(), tex.getSize(), config);
 

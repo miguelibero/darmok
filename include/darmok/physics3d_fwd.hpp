@@ -4,7 +4,7 @@
 
 namespace darmok
 {
-    struct Cuboid;
+    struct Cube;
     struct Sphere;
     struct Capsule;
 }
@@ -24,5 +24,5 @@ namespace darmok::physics3d
         CollideWithBackFaces,
     };
 
-    using PhysicsShape = std::variant<Cuboid, Sphere, Capsule>;
+    using PhysicsShape = std::variant<Cube, Sphere, Capsule>;
 }

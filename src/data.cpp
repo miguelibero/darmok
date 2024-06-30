@@ -447,11 +447,6 @@ namespace darmok
         return operator=(std::string_view(str));
     }
 
-    Data::operator DataView() const
-    {
-        return DataView(*this);
-    }
-
     FileDataLoader::FileDataLoader(bx::FileReaderI& fileReader, const OptionalRef<bx::AllocatorI>& alloc)
         : _fileReader(fileReader)
         , _allocator(alloc)

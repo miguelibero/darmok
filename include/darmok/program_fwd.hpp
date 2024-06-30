@@ -6,6 +6,7 @@ namespace darmok
 	{
 		Gui,
 		Unlit,
+		Debug,
 		ForwardPhong,
 		ForwardPhysical,
 	};

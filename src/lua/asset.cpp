@@ -94,10 +94,8 @@ namespace darmok
 		LuaProgram::bind(lua);
 		LuaTexture::bind(lua);
 		LuaTextureAtlas::bind(lua);
-		LuaTextureAtlasMeshCreator::bind(lua);
 		LuaMaterial::bind(lua);
 		LuaMesh::bind(lua);
-		LuaMeshCreator::bind(lua);
 		LuaModel::bind(lua);
 		LuaSkeleton::bind(lua);
 

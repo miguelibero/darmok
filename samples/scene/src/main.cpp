@@ -107,7 +107,7 @@ namespace
 			App::init();
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
-			scene.addComponent<FrameAnimationUpdater>();
+			scene.addSceneComponent<FrameAnimationUpdater>();
 			auto& registry = scene.getRegistry();
 
 			_prog = getAssets().getStandardProgramLoader()(StandardProgramType::Unlit);
@@ -146,23 +146,25 @@ namespace
 			trans.setPivot(glm::vec3(-0.5F));
 			float scale = 0.5;
 
-			MeshCreator meshCreator(_prog->getVertexLayout());
-			meshCreator.config.type = MeshType::Dynamic;
-			meshCreator.config.scale = glm::vec3(0.5F);
-			auto mesh = meshCreator.createRectangle(Rectangle(tex->getSize()));
+			MeshData meshData(Rectangle(tex->getSize()));
+			meshData.config.scale *= glm::vec3(0.5F);
+
+			auto mesh = meshData.createMesh(_prog->getVertexLayout());
 			auto mat = std::make_shared<Material>(_prog, tex);
-			registry.emplace<Renderable>(sprite, mesh, mat);
+			registry.emplace<Renderable>(sprite, std::move(mesh), mat);
 
 			auto spriteBorder = registry.create();
 			auto size = scale * glm::vec2(tex->getSize());
-			meshCreator.config.scale = glm::vec3(size, 0);
-			auto debugMesh = meshCreator.createLineRectangle();
-			registry.emplace<Renderable>(spriteBorder, debugMesh, _debugMaterial);
+			meshData = MeshData(Rectangle::standard(), RectangleMeshType::Outline);
+			meshData.config.scale = glm::vec3(size, 0);
+			auto debugMesh = meshData.createMesh(_prog->getVertexLayout());
+
+			registry.emplace<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);
 			registry.emplace<Transform>(spriteBorder).setParent(trans);
 			registry.emplace<Culling2D>(spriteBorder);
 
 			registry.emplace<Culling2D>(sprite);
-			scene.addComponent<ScreenBounceUpdater>(trans, size, 100.f);
+			scene.addSceneComponent<ScreenBounceUpdater>(trans, size, 100.f);
 		}
 
 		void createSpriteAnimation(Scene& scene)
@@ -173,9 +175,9 @@ namespace
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = registry.create();
 
-			TextureAtlasMeshCreator meshCreator(_prog->getVertexLayout(), *texAtlas);
-			meshCreator.config.scale = glm::vec3(2.F);
-			auto frames = meshCreator.createAnimation(animNamePrefix, 0.1f);
+			TextureAtlasMeshConfig config;
+			config.scale = glm::vec3(2.F);
+			auto frames = texAtlas->createAnimation(_prog->getVertexLayout(), animNamePrefix, 0.1F, config);
 			
 			auto material = std::make_shared<Material>(_prog, texAtlas->texture);
 			auto& renderable = registry.emplace<Renderable>(anim, material);
@@ -194,14 +196,14 @@ namespace
 			auto material = std::make_shared<Material>(_prog, texture);
 			material->setColor(MaterialColorType::Diffuse, Colors::red());
 
-			auto cubeMesh = MeshCreator(_prog->getVertexLayout()).createCuboid();
+			auto cubeMesh = MeshData(Cube()).createMesh(_prog->getVertexLayout());
 
 			auto& registry = scene.getRegistry();
 			auto cube = registry.create();
 			registry.emplace<Culling3D>(cube);
-			registry.emplace<Renderable>(cube, cubeMesh, material);
+			registry.emplace<Renderable>(cube, std::move(cubeMesh), material);
 			auto& trans = registry.emplace<Transform>(cube);
-			scene.addComponent<RotateUpdater>(trans, 100.f);
+			scene.addSceneComponent<RotateUpdater>(trans, 100.f);
 		}
 	private:
 		std::shared_ptr<Material> _debugMaterial;

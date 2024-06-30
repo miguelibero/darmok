@@ -7,6 +7,7 @@
 
 #include <darmok/export.h>
 #include <darmok/color.hpp>
+#include <darmok/data.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/vertex_fwd.hpp>
 #include <darmok/mesh_fwd.hpp>
@@ -16,8 +17,6 @@
 
 namespace darmok
 {
-    class DataView;
-
     struct DARMOK_EXPORT MeshConfig final
     {
         bool index32 = false;
@@ -42,16 +41,16 @@ namespace darmok
          virtual void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const = 0;
          virtual [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
 
-         static [[nodiscard]] std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config = {}) noexcept;
-         static [[nodiscard]] std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config = {}) noexcept;
+         static [[nodiscard]] std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
+         static [[nodiscard]] std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
     };
 
     class DARMOK_EXPORT Mesh final : public IMesh
     {
     public:
         using Config = MeshConfig;
-         Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, Config config = {}) noexcept;
-         Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config = {}) noexcept;
+         Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config = {}) noexcept;
+         Mesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {}) noexcept;
          ~Mesh() noexcept;
          Mesh(Mesh&& other) noexcept;
          Mesh& operator=(Mesh&& other) noexcept;
@@ -77,24 +76,26 @@ namespace darmok
     {
     public:
         using Config = MeshConfig;
-         DynamicMesh(const bgfx::VertexLayout& layout, const DataView& vertices, Config config = {}) noexcept;
-         DynamicMesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config = {}) noexcept;
-         ~DynamicMesh() noexcept;
-         DynamicMesh(DynamicMesh&& other) noexcept;
-         DynamicMesh& operator=(DynamicMesh&& other) noexcept;
+        DynamicMesh(const bgfx::VertexLayout& layout, DataView vertices = DataView(), Config config = {}) noexcept;
+        DynamicMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {}) noexcept;
+        ~DynamicMesh() noexcept;
+        DynamicMesh(DynamicMesh&& other) noexcept;
+        DynamicMesh& operator=(DynamicMesh&& other) noexcept;
 
         DynamicMesh(const DynamicMesh& other) = delete;
         Mesh& operator=(const DynamicMesh& other) = delete;
 
-         [[nodiscard]] bgfx::DynamicVertexBufferHandle getVertexHandle() const noexcept;
-         [[nodiscard]] bgfx::DynamicIndexBufferHandle getIndexHandle() const noexcept;
+        [[nodiscard]] bgfx::DynamicVertexBufferHandle getVertexHandle() const noexcept;
+        [[nodiscard]] bgfx::DynamicIndexBufferHandle getIndexHandle() const noexcept;
 
-         void updateVertices(const DataView& data, uint32_t offset = 0) noexcept;
-         void updateIndices(const DataView& data, uint32_t offset = 0) noexcept;
+        bool empty() const noexcept;
 
-         [[nodiscard]] std::string to_string() const noexcept override;
-         void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const override;
-         [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
+        void updateVertices(DataView data, uint32_t offset = 0) noexcept;
+        void updateIndices(DataView data, uint32_t offset = 0) noexcept;
+
+        [[nodiscard]] std::string to_string() const noexcept override;
+        void render(bgfx::Encoder& encoder, uint8_t vertexStream = 0) const override;
+        [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
     private:
         bgfx::VertexLayout _layout;
         bgfx::DynamicVertexBufferHandle _vertexBuffer;
@@ -107,8 +108,8 @@ namespace darmok
     class DARMOK_EXPORT TransientMesh final : public IMesh
     {
     public:
-         TransientMesh(const bgfx::VertexLayout& layout, const DataView& vertices, bool index32 = false);
-         TransientMesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool index32 = false);
+         TransientMesh(const bgfx::VertexLayout& layout, DataView vertices, bool index32 = false);
+         TransientMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, bool index32 = false);
          TransientMesh(TransientMesh&& other) noexcept;
          TransientMesh& operator=(TransientMesh&& other) noexcept;
 
@@ -126,7 +127,7 @@ namespace darmok
         uint32_t _idxNum;
     };
 
-    struct DARMOK_EXPORT MeshCreationConfig final
+    struct DARMOK_EXPORT MeshDataConfig final
     {
         glm::vec3 scale = glm::vec3(1);
         glm::vec3 offset = glm::vec3(0);
@@ -134,9 +135,11 @@ namespace darmok
         glm::vec2 textureOffset = glm::vec3(0);
         Color color = Colors::white();
         MeshType type = MeshType::Static;
+        bool index32 = false;
+        int16_t indexOffset = 0;
     };
 
-    struct DARMOK_EXPORT MeshVertexData
+    struct DARMOK_EXPORT MeshDataVertex final
     {
         glm::vec3 position;
         glm::vec3 normal = glm::vec3(0, 1, 0);
@@ -144,14 +147,8 @@ namespace darmok
         Color color = Colors::white();
     };
 
-    struct DARMOK_EXPORT MeshData
-    {
-        std::vector<MeshVertexData> vertices;
-        std::vector<VertexIndex> indices;
-    };
-
     class Texture;
-    struct Cuboid;
+    struct Cube;
     struct Sphere;
     struct Rectangle;
     struct Capsule;
@@ -159,38 +156,44 @@ namespace darmok
     struct Line;
     struct Triangle;
 
-    struct DARMOK_EXPORT MeshCreator final
+    enum class RectangleMeshType
     {
-        using Config = MeshCreationConfig;
+        Full,
+        Outline
+    };
+
+    enum class LineMeshType
+    {
+        Line,
+        Bone
+    };
+
+    struct DARMOK_EXPORT MeshData final
+    {
+        using Vertex = MeshDataVertex;
+        using Index = VertexIndex;
+        using Config = MeshDataConfig;
+
+        std::vector<Vertex> vertices;
+        std::vector<Index> indices;
         Config config;
-        std::optional<bgfx::VertexLayout> vertexLayout;
-        using Shape = std::variant<Cuboid, Sphere, Capsule, Rectangle, Ray, Line, Triangle, MeshData>;
-        using MeshPtr = std::unique_ptr<IMesh>;
-        MeshCreator(std::optional<bgfx::VertexLayout> vertexLauout = std::nullopt) noexcept;
-        [[nodiscard]] MeshPtr createMesh(const MeshData& meshData) noexcept;
-        [[nodiscard]] MeshPtr createCuboid() noexcept;
-        [[nodiscard]] MeshPtr createCuboid(const Cuboid& cuboid) noexcept;
-        [[nodiscard]] MeshPtr createSphere(const Sphere& sphere, int lod = 32) noexcept;
-        [[nodiscard]] MeshPtr createSphere(int lod = 32) noexcept;
-        [[nodiscard]] MeshPtr createCapsule(const Capsule& capsule, int lod = 32) noexcept;
-        [[nodiscard]] MeshPtr createCapsule(int lod = 32) noexcept;
-        [[nodiscard]] MeshPtr createRectangle() noexcept;
-        [[nodiscard]] MeshPtr createRectangle(const Rectangle& rect) noexcept;
-        [[nodiscard]] MeshPtr createLineRectangle() noexcept;
-        [[nodiscard]] MeshPtr createLineRectangle(const Rectangle& rect) noexcept;
-        [[nodiscard]] MeshPtr createRay(const Ray& ray) noexcept;
-        [[nodiscard]] MeshPtr createLine(const Line& line) noexcept;
-        [[nodiscard]] MeshPtr createLines(const std::vector<Line>& lines) noexcept;
-        [[nodiscard]] MeshPtr createTriangle(const Triangle& tri) noexcept;
-        [[nodiscard]] MeshPtr createTriangles(const std::vector<Triangle>& tris) noexcept;
-        [[nodiscard]] MeshPtr createBone() noexcept;
-        [[nodiscard]] MeshPtr createShape(const Shape& shape) noexcept;
 
-    private:
-        static const MeshData& getRectangleMeshData() noexcept;
+        MeshData() = default;
+        MeshData(const Cube& Cube) noexcept;
+        MeshData(const Sphere& sphere, int lod = 32) noexcept;
+        MeshData(const Capsule& capsule, int lod = 32) noexcept;
+        MeshData(const Rectangle& rect, RectangleMeshType type = RectangleMeshType::Full) noexcept;
+        MeshData(const Ray& ray) noexcept;
+        MeshData(const Line& line, LineMeshType type = LineMeshType::Line) noexcept;
+        MeshData(const Triangle& tri) noexcept;
 
-        MeshPtr createMesh(const MeshData& meshData, const Config& cfg) noexcept;
-        MeshPtr createRectangleMesh(const MeshData& data, const Rectangle& quad) noexcept;
-        static bgfx::VertexLayout getDefaultVertexLayout(const MeshData& meshData) noexcept;
+        [[nodiscard]] MeshData operator+(const MeshData& other) noexcept;
+        MeshData& operator+=(const MeshData& other) noexcept;
+        void normalize() noexcept;
+        void denormalize(const Config& config) noexcept;
+
+        [[nodiscard]] void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
+        [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
+        [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
     };
 }

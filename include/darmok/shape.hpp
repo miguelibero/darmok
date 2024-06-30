@@ -23,15 +23,15 @@ namespace darmok
         static const Rectangle& standard() noexcept;
     };
 
-    struct DARMOK_EXPORT Cuboid final
+    struct DARMOK_EXPORT Cube final
     {
         glm::vec3 size;
         glm::vec3 origin;
 
-        Cuboid(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
         std::string to_string() const noexcept;
 
-        static const Cuboid& standard() noexcept;
+        static const Cube& standard() noexcept;
     };
 
     struct DARMOK_EXPORT Triangle final

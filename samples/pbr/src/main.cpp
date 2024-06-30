@@ -23,8 +23,10 @@ namespace
 	class PbrSampleApp : public App
 	{
 	public:
-		void afterInit() override
+		void init() override
 		{
+			App::init();
+
 			auto scene = addComponent<SceneAppComponent>().getScene();
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			auto& layout = prog->getVertexLayout();
@@ -51,10 +53,9 @@ namespace
 			auto greenMat = std::make_shared<Material>(prog);
 			greenMat->setTexture(MaterialTextureType::Diffuse, greenTex);
 
-			MeshCreator meshCreator(layout);
-			auto cubeMesh = meshCreator.createCuboid();
+			auto cubeMesh = MeshData(Cube()).createMesh(layout);
 			auto cube = registry.create();
-			registry.emplace<Renderable>(cube, cubeMesh, greenMat);
+			registry.emplace<Renderable>(cube, std::move(cubeMesh), greenMat);
 			registry.emplace<Transform>(cube)
 				.setPosition({ 1.5F, 0, 0 });
 
@@ -62,9 +63,9 @@ namespace
 			auto redMat = std::make_shared<Material>(prog);
 			redMat->setTexture(MaterialTextureType::Diffuse, redTex);
 
-			auto sphereMesh = meshCreator.createSphere();
+			auto sphereMesh = MeshData(Sphere()).createMesh(layout);
 			auto sphere = registry.create();
-			registry.emplace<Renderable>(sphere, sphereMesh, redMat);
+			registry.emplace<Renderable>(sphere, std::move(sphereMesh), redMat);
 			auto& trans = registry.emplace<Transform>(sphere);
 
 			auto speed = 0.01F;

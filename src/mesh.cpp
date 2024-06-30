@@ -29,7 +29,7 @@ namespace darmok
 		return getMeshIndexSize(index32);
 	}
 
-	std::unique_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, Config config) noexcept
+	std::unique_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config)
 	{
 		switch (type)
 		{
@@ -42,7 +42,7 @@ namespace darmok
 		}
 	}
 
-	std::unique_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config) noexcept
+	std::unique_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
 	{
 		switch (type)
 		{
@@ -63,7 +63,7 @@ namespace darmok
 			+ std::to_string(idxNum) + " indices)";
 	}
 
-	Mesh::Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config) noexcept
+	Mesh::Mesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 		: _layout(layout)
 		, _vertexBuffer{ bgfx::kInvalidHandle }
 		, _indexBuffer{ bgfx::kInvalidHandle }
@@ -79,7 +79,7 @@ namespace darmok
 		}
 	}
 
-	Mesh::Mesh(const bgfx::VertexLayout& layout, const DataView& vertices, Config config) noexcept
+	Mesh::Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config) noexcept
 		: Mesh(layout, vertices, DataView(), config)
 	{
 	}
@@ -156,7 +156,7 @@ namespace darmok
 		}
 	}
 
-	DynamicMesh::DynamicMesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, Config config) noexcept
+	DynamicMesh::DynamicMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 		: _layout(layout)
 		, _vertexBuffer{ bgfx::kInvalidHandle }
 		, _indexBuffer{ bgfx::kInvalidHandle }
@@ -173,7 +173,7 @@ namespace darmok
 		}
 	}
 
-	DynamicMesh::DynamicMesh(const bgfx::VertexLayout& layout, const DataView& vertices, Config config) noexcept
+	DynamicMesh::DynamicMesh(const bgfx::VertexLayout& layout, DataView vertices, Config config) noexcept
 		: DynamicMesh(layout, vertices, DataView(), config)
 	{
 	}
@@ -239,14 +239,19 @@ namespace darmok
 		return getMeshDescription("DynamicMesh", _vertNum, _idxNum, getVertexLayout());
 	}
 
-	void DynamicMesh::updateVertices(const DataView& data, uint32_t offset) noexcept
+	bool DynamicMesh::empty() const noexcept
+	{
+		return _vertNum == 0;
+	}
+
+	void DynamicMesh::updateVertices(DataView data, uint32_t offset) noexcept
 	{
 		bgfx::DynamicVertexBufferHandle handle{ _vertexBuffer };
 		bgfx::update(handle, offset, data.copyMem());
 		_vertNum = data.size() / _layout.getStride();
 	}
 
-	void DynamicMesh::updateIndices(const DataView& data, uint32_t offset) noexcept
+	void DynamicMesh::updateIndices(DataView data, uint32_t offset) noexcept
 	{
 		bgfx::DynamicIndexBufferHandle handle{ _indexBuffer };
 		bgfx::update(handle, offset, data.copyMem());
@@ -266,7 +271,7 @@ namespace darmok
 		}
 	}
 
-	TransientMesh::TransientMesh(const bgfx::VertexLayout& layout, const DataView& vertices, const DataView& indices, bool index32)
+	TransientMesh::TransientMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, bool index32)
 		: _layout(layout)
 		, _vertNum(uint32_t(vertices.size() / layout.getStride()))
 		, _idxNum(uint32_t(indices.size() / getMeshIndexSize(index32)))
@@ -288,7 +293,7 @@ namespace darmok
 		}
 	}
 
-	TransientMesh::TransientMesh(const bgfx::VertexLayout& layout, const DataView& vertices, bool index32)
+	TransientMesh::TransientMesh(const bgfx::VertexLayout& layout, DataView vertices, bool index32)
 		: TransientMesh(layout, vertices, DataView(), index32)
 	{
 	}
@@ -335,170 +340,213 @@ namespace darmok
 		return _layout;
 	}
 
-	MeshCreator::MeshCreator(std::optional<bgfx::VertexLayout> vertexLauout) noexcept
-		: vertexLayout(vertexLauout)
-		, config{}
+	template<typename T>
+	void doUpdateMeshIndexData(Data& data, const std::vector<VertexIndex>& indices, T offset)
 	{
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createMesh(const MeshData& meshData) noexcept
-	{
-		return createMesh(meshData, config);
-	}
-
-	bgfx::VertexLayout MeshCreator::getDefaultVertexLayout(const MeshData& meshData) noexcept
-	{
-		bgfx::VertexLayout meshLayout;
-		meshLayout.begin()
-		  .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-		  .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-		  .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
-		  .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-		.end();
-		return meshLayout;
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createMesh(const MeshData& meshData, const MeshCreationConfig& cfg) noexcept
-	{
-		auto meshLayout = vertexLayout ? vertexLayout.value() : getDefaultVertexLayout(meshData);
-		
-		VertexDataWriter writer(meshLayout, uint32_t(meshData.vertices.size()));
-		uint32_t i = 0;
-		for (auto& vertex : meshData.vertices)
+		std::vector<T> indices32;
+		indices32.reserve(indices.size());
+		for (auto& idx : indices)
 		{
-			if (meshLayout.has(bgfx::Attrib::Position))
+			indices32.push_back(offset + idx);
+		}
+		data = indices32;
+	}
+
+	template<typename T>
+	void updateMeshIndexData(Data& data, const std::vector<VertexIndex>& indices, T offset)
+	{
+		doUpdateMeshIndexData(data, indices, offset);
+	}
+
+
+	template<>
+	void updateMeshIndexData<VertexIndex>(Data& data, const std::vector<VertexIndex>& indices, VertexIndex offset)
+	{
+		if (offset == 0)
+		{
+			data = indices;
+		}
+		else
+		{
+			doUpdateMeshIndexData(data, indices, offset);
+		}
+	}
+
+	const bgfx::VertexLayout& MeshData::getDefaultVertexLayout() noexcept
+	{
+		static bgfx::VertexLayout layout;
+		if (layout.getStride() == 0)
+		{
+			layout.begin()
+				.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+				.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+				.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+				.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
+				.end();
+		}
+		return layout;
+	}
+
+	void MeshData::normalize() noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.position = config.scale * (vertex.position + config.offset);
+			vertex.texCoord = config.textureScale * (vertex.texCoord + config.textureOffset);
+			vertex.color = config.color * vertex.color;
+		}
+		for (auto& index : indices)
+		{
+			index += config.indexOffset;
+		}
+		config.color = Colors::white();
+		config.scale = glm::vec3(1);
+		config.offset = glm::vec3(0);
+		config.textureScale = glm::vec3(1);
+		config.textureOffset = glm::vec3(0);
+		config.indexOffset = 0;
+	}
+
+	void MeshData::denormalize(const Config& newConfig) noexcept
+	{
+		normalize();
+
+		for (auto& vertex : vertices)
+		{
+			vertex.position = (vertex.position / newConfig.scale) - newConfig.offset;
+			vertex.texCoord = (vertex.texCoord / newConfig.textureScale) - newConfig.textureOffset;
+			vertex.color = vertex.color / newConfig.color;
+		}
+		for (auto& index : indices)
+		{
+			index -= config.indexOffset;
+		}
+
+		config.scale = newConfig.scale;
+		config.offset = newConfig.offset;
+		config.textureScale = newConfig.textureScale;
+		config.textureOffset = newConfig.textureOffset;
+		config.indexOffset = newConfig.indexOffset;
+	}
+
+	void MeshData::exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept
+	{
+		VertexDataWriter writer(vertexLayout, uint32_t(vertices.size()));
+		uint32_t i = 0;
+		for (auto& vertex : vertices)
+		{
+			if (vertexLayout.has(bgfx::Attrib::Position))
 			{
-				auto v = cfg.scale * (vertex.position + cfg.offset);
+				auto v = config.scale * (vertex.position + config.offset);
 				writer.write(bgfx::Attrib::Position, i, v);
 			}
-			if (meshLayout.has(bgfx::Attrib::TexCoord0))
+			if (vertexLayout.has(bgfx::Attrib::TexCoord0))
 			{
-				auto v = cfg.textureScale * (vertex.texCoord + cfg.textureOffset);
+				auto v = config.textureScale * (vertex.texCoord + config.textureOffset);
 				writer.write(bgfx::Attrib::TexCoord0, i, v);
 			}
-			if (meshLayout.has(bgfx::Attrib::Normal))
+			if (vertexLayout.has(bgfx::Attrib::Normal))
 			{
 				writer.write(bgfx::Attrib::Normal, i, vertex.normal);
 			}
-			if (meshLayout.has(bgfx::Attrib::Color0))
+			if (vertexLayout.has(bgfx::Attrib::Color0))
 			{
 				writer.write(bgfx::Attrib::Color0, i, vertex.color);
 			}
 			i++;
 		}
 
-		Data vertexData = writer.finish();
-		DataView vertDataView(vertexData);
-		DataView idxDataView(meshData.indices);
-
-		return IMesh::create(config.type, meshLayout, vertDataView, idxDataView);
+		vertexData = writer.finish();
+		if (config.index32)
+		{
+			updateMeshIndexData<int32_t>(indexData, indices, config.indexOffset);
+		}
+		else
+		{
+			updateMeshIndexData<VertexIndex>(indexData, indices, config.indexOffset);
+		}
 	}
 
-	MeshCreator::MeshPtr MeshCreator::createCuboid() noexcept
+	std::unique_ptr<IMesh> MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
 	{
-		return createCuboid(Cuboid::standard());
+		Data vertexData, indexData;
+		exportData(vertexLayout, vertexData, indexData);
+		return IMesh::create(config.type, vertexLayout, vertexData, indexData, meshConfig);
 	}
 
-	MeshCreator::MeshPtr MeshCreator::createCuboid(const Cuboid& cuboid) noexcept
+	MeshData::MeshData(const Cube& Cube) noexcept
 	{
-		const static MeshData data = {
-			{
-				{ { 1,  1,  1 }, {  0,  0,  1 }, { 0, 0 } },
-                { { 0,  1,  1 }, {  0,  0,  1 }, { 1, 0 } },
-				{ { 0,  0,  1 }, {  0,  0,  1 }, { 1, 1 } },
-                { { 1,  0,  1 }, {  0,  0,  1 }, { 0, 1 } },
-				{ { 1,  1,  0 }, {  0,  0, -1 }, { 1, 0 } },
-                { { 1,  0,  0 }, {  0,  0, -1 }, { 1, 1 } },
-				{ { 0,  0,  0 }, {  0,  0, -1 }, { 0, 1 } },
-                { { 0,  1,  0 }, {  0,  0, -1 }, { 0, 0 } },
-				{ { 1,  1,  1 }, {  0,  1,  0 }, { 1, 0 } },
-                { { 1,  1,  0 }, {  0,  1,  0 }, { 1, 1 } },
-				{ { 0,  1,  0 }, {  0,  1,  0 }, { 0, 1 } },
-                { { 0,  1,  1 }, {  0,  1,  0 }, { 0, 0 } },
-				{ { 1,  0,  1 }, {  0, -1,  0 }, { 1, 0 } },
-                { { 0,  0,  1 }, {  0, -1,  0 }, { 1, 1 } },
-				{ { 0,  0,  0 }, {  0, -1,  0 }, { 0, 1 } },
-                { { 1,  0,  0 }, {  0, -1,  0 }, { 0, 0 } },
-				{ { 1,  1,  1 }, {  1,  0,  0 }, { 1, 0 } },
-                { { 1,  0,  1 }, {  1,  0,  0 }, { 1, 1 } },
-				{ { 1,  0,  0 }, {  1,  0,  0 }, { 0, 1 } },
-                { { 1,  1,  0 }, {  1,  0,  0 }, { 0, 0 } },
-				{ { 0,  1,  1 }, { -1,  0,  0 }, { 0, 0 } },
-                { { 0,  1,  0 }, { -1,  0,  0 }, { 1, 0 } },
-				{ { 0,  0,  0 }, { -1,  0,  0 }, { 1, 1 } },
-			    { { 0,  0,  1 }, { -1,  0,  0 }, { 0, 1 } }
-			},
-			{
-				 0,  1,  2,  2,  3,  0,
-				 4,  5,  6,  6,  7,  4,
-				 8,  9, 10, 10, 11,  8,
-				12, 13, 14, 14, 15, 12,
-				16, 17, 18, 18, 19, 16,
-				20, 21, 22, 22, 23, 20,
-			}
+		const static std::vector<Vertex> basicVertices = {
+			{ { 1,  1,  1 }, {  0,  0,  1 }, { 0, 0 } },
+			{ { 0,  1,  1 }, {  0,  0,  1 }, { 1, 0 } },
+			{ { 0,  0,  1 }, {  0,  0,  1 }, { 1, 1 } },
+			{ { 1,  0,  1 }, {  0,  0,  1 }, { 0, 1 } },
+			{ { 1,  1,  0 }, {  0,  0, -1 }, { 1, 0 } },
+			{ { 1,  0,  0 }, {  0,  0, -1 }, { 1, 1 } },
+			{ { 0,  0,  0 }, {  0,  0, -1 }, { 0, 1 } },
+			{ { 0,  1,  0 }, {  0,  0, -1 }, { 0, 0 } },
+			{ { 1,  1,  1 }, {  0,  1,  0 }, { 1, 0 } },
+			{ { 1,  1,  0 }, {  0,  1,  0 }, { 1, 1 } },
+			{ { 0,  1,  0 }, {  0,  1,  0 }, { 0, 1 } },
+			{ { 0,  1,  1 }, {  0,  1,  0 }, { 0, 0 } },
+			{ { 1,  0,  1 }, {  0, -1,  0 }, { 1, 0 } },
+			{ { 0,  0,  1 }, {  0, -1,  0 }, { 1, 1 } },
+			{ { 0,  0,  0 }, {  0, -1,  0 }, { 0, 1 } },
+			{ { 1,  0,  0 }, {  0, -1,  0 }, { 0, 0 } },
+			{ { 1,  1,  1 }, {  1,  0,  0 }, { 1, 0 } },
+			{ { 1,  0,  1 }, {  1,  0,  0 }, { 1, 1 } },
+			{ { 1,  0,  0 }, {  1,  0,  0 }, { 0, 1 } },
+			{ { 1,  1,  0 }, {  1,  0,  0 }, { 0, 0 } },
+			{ { 0,  1,  1 }, { -1,  0,  0 }, { 0, 0 } },
+			{ { 0,  1,  0 }, { -1,  0,  0 }, { 1, 0 } },
+			{ { 0,  0,  0 }, { -1,  0,  0 }, { 1, 1 } },
+			{ { 0,  0,  1 }, { -1,  0,  0 }, { 0, 1 } }
 		};
-		auto cfg = config;
-		cfg.scale *= cuboid.size;
-		cfg.offset += (cuboid.origin / cuboid.size) - glm::vec3(0.5f);
-		return createMesh(data, cfg);
-	}
-
-	const MeshData& MeshCreator::getRectangleMeshData() noexcept
-	{
-		static const MeshData data = {
-			{
-				{ { 1, 1, 0 }, { 0, 0, -1 }, { 0, 0 } },
-				{ { 1, 0, 0 }, { 0, 0, -1 }, { 1, 0 } },
-				{ { 0, 0, 0 }, { 0, 0, -1 }, { 1, 1 } },
-				{ { 0, 1, 0 }, { 0, 0, -1 }, { 0, 1 } }
-			}
+		const static std::vector<Index> basicIndices
+		{
+			0,  1,  2,  2,  3,  0,
+			4,  5,  6,  6,  7,  4,
+			8,  9, 10, 10, 11,  8,
+			12, 13, 14, 14, 15, 12,
+			16, 17, 18, 18, 19, 16,
+			20, 21, 22, 22, 23, 20,
 		};
-		return data;
+
+		vertices = basicVertices;
+		indices = basicIndices;
+		config.scale *= Cube.size;
+		config.offset += (Cube.origin / Cube.size) - glm::vec3(0.5f);
 	}
 
-	MeshCreator::MeshPtr MeshCreator::createRectangleMesh(const MeshData& data, const Rectangle& rect) noexcept
+	MeshData::MeshData(const Rectangle& rect, RectangleMeshType type) noexcept
 	{
-		auto cfg = config;
-		cfg.scale *= glm::vec3(rect.size, 0);
-		cfg.offset += glm::vec3(rect.origin/rect.size - glm::vec2(0.5F), 0);
-		return createMesh(data, cfg);
+		static const std::vector<MeshData::Vertex> basicVertices = {
+			{ { 1, 1, 0 }, { 0, 0, -1 }, { 1, 0 } },
+			{ { 1, 0, 0 }, { 0, 0, -1 }, { 1, 1 } },
+			{ { 0, 0, 0 }, { 0, 0, -1 }, { 0, 1 } },
+			{ { 0, 1, 0 }, { 0, 0, -1 }, { 0, 0 } }
+		};
+		vertices = basicVertices;
+		if (type == RectangleMeshType::Outline)
+		{
+			indices = { 0, 1, 1, 2, 2, 3, 3, 0 };
+
+		}
+		else
+		{
+			indices = { 0, 1, 2, 2, 3, 0 };
+		}
+
+		config.scale *= glm::vec3(rect.size, 0);
+		config.offset += glm::vec3(rect.origin / rect.size - glm::vec2(0.5F), 0);
 	}
 
-	MeshCreator::MeshPtr MeshCreator::createRectangle(const Rectangle& rect) noexcept
+	MeshData::MeshData(const Sphere& sphere, int lod) noexcept
+		: MeshData(Capsule(0, sphere.radius, sphere.origin), lod)
 	{
-		MeshData data = getRectangleMeshData();
-		data.indices = { 0, 1, 2, 2, 3, 0 };
-		return createRectangleMesh(data, rect);
 	}
 
-	MeshCreator::MeshPtr MeshCreator::createLineRectangle(const Rectangle& rect) noexcept
-	{
-		MeshData data = getRectangleMeshData();
-		data.indices = { 0, 1, 1, 2, 2, 3, 3, 0 };
-		return createRectangleMesh(data, rect);
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createSphere(int lod) noexcept
-	{
-		return createSphere(Sphere::standard(), lod);
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createCapsule(int lod) noexcept
-	{
-		return createCapsule(Capsule::standard(), lod);
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createRectangle() noexcept
-	{
-		return createRectangle(Rectangle::standard());
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createLineRectangle() noexcept
-	{
-		return createLineRectangle(Rectangle::standard());
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createSphere(const Sphere& sphere, int lod) noexcept
+	 MeshData::MeshData(const Capsule& capsule, int lod) noexcept
 	{
 		auto rings = lod;
 		auto sectors = lod;
@@ -506,69 +554,11 @@ namespace darmok
 
 		float R = 1.f / (float)(rings - 1);
 		float S = 1.f / (float)(sectors - 1);
-		size_t n = rings * sectors;
+		auto n = (size_t)rings * sectors;
 		auto pi = glm::pi<float>();
 
-		MeshData data;
 		{
-			data.vertices.reserve(n);
-			for (int r = 0; r < rings; r++)
-			{
-				for (int s = 0; s < sectors; s++)
-				{
-					auto u = s * S;
-					auto v = r * R;
-					auto theta = u * 2.0f * pi;
-					auto rho = v * pi;
-					auto pos = glm::vec3(
-						cos(theta) * sin(rho),
-						sin((0.5F * pi) + rho),
-						sin(theta) * sin(rho)
-					);
-					data.vertices.emplace_back(pos, pos, glm::vec2(
-						u * texScale,
-						v * texScale
-					));
-				}
-			}
-		}
-
-		{
-			data.indices.reserve(n * 6);
-			for (VertexIndex r = 0; r < rings - 1; r++)
-			{
-				for (VertexIndex s = 0; s < sectors - 1; s++)
-				{
-					data.indices.push_back(r * sectors + s);
-					data.indices.push_back(r * sectors + (s + 1));
-					data.indices.push_back((r + 1) * sectors + (s + 1));
-					data.indices.push_back((r + 1) * sectors + (s + 1));
-					data.indices.push_back((r + 1) * sectors + s);
-					data.indices.push_back(r * sectors + s);
-				}
-			}
-		}
-		auto cfg = config;
-		cfg.scale *= glm::vec3(sphere.radius);
-		cfg.offset += sphere.origin / sphere.radius;
-		return createMesh(data, cfg);
-	}
-
-
-	MeshCreator::MeshPtr MeshCreator::createCapsule(const Capsule& capsule, int lod) noexcept
-	{
-		auto rings = lod;
-		auto sectors = lod;
-		float texScale = 1.f;
-
-		float R = 1.f / (float)(rings - 1);
-		float S = 1.f / (float)(sectors - 1);
-		size_t n = rings * sectors;
-		auto pi = glm::pi<float>();
-
-		MeshData data;
-		{
-			data.vertices.reserve(n);
+			vertices.reserve(n);
 			auto halfHeight = capsule.cylinderHeight / capsule.radius * 0.5F;
 			for (int r = 0; r < rings; r++)
 			{
@@ -588,7 +578,7 @@ namespace darmok
 						sin((0.5F * pi) + rho) + h,
 						sin(theta) * sin(rho)
 					);
-					data.vertices.emplace_back(pos, pos, glm::vec2(
+					vertices.emplace_back(pos, pos, glm::vec2(
 						u * texScale,
 						v * texScale
 					));
@@ -597,57 +587,39 @@ namespace darmok
 		}
 
 		{
-			data.indices.reserve(n * 6);
+			indices.reserve(n * 6);
 			for (VertexIndex r = 0; r < rings - 1; r++)
 			{
 				for (VertexIndex s = 0; s < sectors - 1; s++)
 				{
-					data.indices.push_back(r * sectors + s);
-					data.indices.push_back(r * sectors + (s + 1));
-					data.indices.push_back((r + 1) * sectors + (s + 1));
-					data.indices.push_back((r + 1) * sectors + (s + 1));
-					data.indices.push_back((r + 1) * sectors + s);
-					data.indices.push_back(r * sectors + s);
+					indices.push_back(r * sectors + s);
+					indices.push_back(r * sectors + (s + 1));
+					indices.push_back((r + 1) * sectors + (s + 1));
+					indices.push_back((r + 1) * sectors + (s + 1));
+					indices.push_back((r + 1) * sectors + s);
+					indices.push_back(r * sectors + s);
 				}
 			}
 		}
-		auto cfg = config;
-		cfg.scale *= glm::vec3(capsule.radius);
-		cfg.offset += capsule.origin / capsule.radius;
-		return createMesh(data, cfg);
+		config.scale *= glm::vec3(capsule.radius);
+		config.offset += capsule.origin / capsule.radius;
 	}
 
-	MeshCreator::MeshPtr MeshCreator::createRay(const Ray& ray) noexcept
+	MeshData::MeshData(const Line& line, LineMeshType type) noexcept
 	{
-		return createLine(ray.toLine());
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createLine(const Line& line) noexcept
-	{
-		return createLines({ line });
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createLines(const std::vector<Line>& lines) noexcept
-	{
-		MeshData data;
-		VertexIndex i = 0;
-		for (auto& line : lines)
+		if (type == LineMeshType::Line)
 		{
-			data.vertices.emplace_back(line.points[0], glm::vec3(), glm::vec2(0, 0));
-			data.vertices.emplace_back(line.points[1], glm::vec3(), glm::vec2(1, 1));
+			vertices.emplace_back(line.points[0], glm::vec3(), glm::vec2(0, 0));
+			vertices.emplace_back(line.points[1], glm::vec3(), glm::vec2(1, 1));
+			return;
 		}
-		return createMesh(data, config);
-	}
-
-	MeshCreator::MeshPtr MeshCreator::createBone() noexcept
-	{
-		const float kInter = .2f;
-		const std::vector<glm::vec3> pos = {
+		static const float kInter = .2f;
+		static const std::vector<glm::vec3> pos = {
 			{ 1.f, 0.f, 0.f		}, { kInter, .1f, .1f },
 			{ kInter, .1f, -.1f }, { kInter, -.1f, -.1f },
 			{ kInter, -.1f, .1f }, { 0.f, 0.f, 0.f }
 		};
-		const std::vector<glm::vec2> tex = {
+		static const std::vector<glm::vec2> tex = {
 			{ 0.f, 0.f		}, { .1f, .1f },
 			{ .1f, -.1f }, { -.1f, -.1f },
 			{ -.1f, .1f }, { 0.f, 0.f }
@@ -662,7 +634,7 @@ namespace darmok
 			glm::normalize(glm::cross(pos[1] - pos[4], pos[1] - pos[0])),
 			glm::normalize(glm::cross(pos[4] - pos[1], pos[4] - pos[5]))
 		};
-		const MeshData data = {
+		const std::vector<Vertex> basicVertices = {
 			{
 				{ pos[0], norm[0], tex[0] }, { pos[2], norm[0], tex[1] }, { pos[1], norm[0], tex[1] },
 				{ pos[5], norm[1], tex[0] }, { pos[1], norm[1], tex[2] }, { pos[2], norm[1], tex[2] },
@@ -674,70 +646,38 @@ namespace darmok
 				{ pos[5], norm[7], tex[1] }, { pos[4], norm[7], tex[5] }, { pos[1], norm[7], tex[1] }
 			}
 		};
-		return createMesh(data, config);
+		vertices = basicVertices;
 	}
 
-	MeshCreator::MeshPtr MeshCreator::createTriangle(const Triangle& tri) noexcept
+	MeshData::MeshData(const Triangle& tri) noexcept
 	{
 		auto n = tri.getNormal();
-		const MeshData data = {
+		vertices = {
 			{ 
 				{ tri.vertices[0], n, { 0, 0 } },
 				{ tri.vertices[1], n, { 1, 0 } },
 				{ tri.vertices[2], n, { 1, 1 } }
 			}
 		};
-		return createMesh(data, config);
 	}
 
-	MeshCreator::MeshPtr MeshCreator::createTriangles(const std::vector<Triangle>& tris) noexcept
+	MeshData MeshData::operator+(const MeshData& other) noexcept
 	{
-		MeshData data;
-		VertexIndex i = 0;
-		for (auto& tri : tris)
-		{
-			auto n = tri.getNormal();
-			data.vertices.emplace_back(tri.vertices[0], n, glm::vec2(0, 0));
-			data.vertices.emplace_back(tri.vertices[1], n, glm::vec2(0, 1));
-			data.vertices.emplace_back(tri.vertices[2], n, glm::vec2(1, 1));
-		}
-		return createMesh(data, config);
+		auto sum = *this;
+		sum += other;
+		return sum;
 	}
 
-	MeshCreator::MeshPtr MeshCreator::createShape(const Shape& shape) noexcept
+	MeshData& MeshData::operator+=(const MeshData& other) noexcept
 	{
-		if (auto cube = std::get_if<Cuboid>(&shape))
+		auto offset = vertices.size();
+		auto fother = other;
+		fother.denormalize(config);
+		for (auto& idx : fother.indices)
 		{
-			return createCuboid(*cube);
+			indices.push_back(offset + idx);
 		}
-		if (auto sphere = std::get_if<Sphere>(&shape))
-		{
-			return createSphere(*sphere);
-		}
-		if (auto caps = std::get_if<Capsule>(&shape))
-		{
-			return createCapsule(*caps);
-		}
-		if (auto rect = std::get_if<Rectangle>(&shape))
-		{
-			return createRectangle(*rect);
-		}
-		if (auto ray = std::get_if<Ray>(&shape))
-		{
-			return createRay(*ray);
-		}
-		if (auto line = std::get_if<Line>(&shape))
-		{
-			return createLine(*line);
-		}
-		if (auto tri = std::get_if<Triangle>(&shape))
-		{
-			return createTriangle(*tri);
-		}
-		if (auto mesh = std::get_if<MeshData>(&shape))
-		{
-			return createMesh(*mesh);
-		}
-		return nullptr;
+		vertices.insert(vertices.begin(), fother.vertices.begin(), fother.vertices.end());
+		return *this;
 	}
 }

@@ -29,7 +29,7 @@ namespace
 			App::init();
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
-			auto& skelUpdater = scene.addComponent<SkeletalAnimationSceneComponent>();
+			auto& skelUpdater = scene.addSceneComponent<SkeletalAnimationSceneComponent>();
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			

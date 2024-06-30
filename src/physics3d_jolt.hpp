@@ -267,7 +267,7 @@ namespace darmok::physics3d
         PhysicsBodyImpl(const CharacterConfig& config) noexcept;
         ~PhysicsBodyImpl();
         void init(PhysicsBody& body, PhysicsSystemImpl& system) noexcept;
-        void shutdown();
+        void shutdown(bool systemShutdown = false);
         void update(Entity entity, float deltaTime);
 
         const Shape& getShape() const noexcept;

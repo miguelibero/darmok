@@ -40,7 +40,8 @@ namespace darmok
 	};	
 
 	struct TextureAtlas;
-	struct MeshCreationConfig;
+	struct TextureAtlasMeshConfig;
+	class LuaMesh;
 
 	class LuaTextureAtlas final
 	{
@@ -49,34 +50,17 @@ namespace darmok
 		std::shared_ptr<TextureAtlas> getReal() const noexcept;
 		LuaTexture getTexture() const noexcept;
 
+		using MeshConfig = TextureAtlasMeshConfig;
+
+		LuaMesh createSprite1(const std::string& name, const bgfx::VertexLayout& layout) const noexcept;
+		LuaMesh createSprite2(const std::string& name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept;
+		std::vector<AnimationFrame> createAnimation1(const bgfx::VertexLayout& layout) const noexcept;
+		std::vector<AnimationFrame> createAnimation2(const bgfx::VertexLayout& layout, const std::string& namePrefix) const noexcept;
+		std::vector<AnimationFrame> createAnimation3(const bgfx::VertexLayout& layout, const std::string& namePrefix, float frameDuration) const noexcept;
+		std::vector<AnimationFrame> createAnimation4(const bgfx::VertexLayout& layout, const std::string& namePrefix, float frameDuration, const MeshConfig& config) const noexcept;
+
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<TextureAtlas> _atlas;
-	};
-
-	struct TextureAtlasMeshCreator;
-	struct TextureAtlasMeshCreationConfig;
-    class LuaMesh;
-
-	struct LuaTextureAtlasMeshCreator final
-	{
-		using Config = TextureAtlasMeshCreationConfig;
-
-		LuaTextureAtlasMeshCreator(const bgfx::VertexLayout& layout, const LuaTextureAtlas& atlas) noexcept;
-		~LuaTextureAtlasMeshCreator();
-
-		Config& getConfig() noexcept;
-		void setConfig(const Config& config) noexcept;
-		bgfx::VertexLayout& getVertexLayout()  noexcept;
-		const LuaTextureAtlas& getTextureAtlas() noexcept;
-
-		LuaMesh createSprite(const std::string& name) const noexcept;
-		std::vector<AnimationFrame> createAnimation1(const std::string& namePrefix) const noexcept;
-		std::vector<AnimationFrame> createAnimation2(const std::string& namePrefix, float frameDuration) const noexcept;
-
-		static void bind(sol::state_view& lua) noexcept;
-	private:
-		LuaTextureAtlas _atlas;
-		std::shared_ptr<TextureAtlasMeshCreator> _creator;
 	};
 }

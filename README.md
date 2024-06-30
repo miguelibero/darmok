@@ -33,6 +33,7 @@ planned to use:
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
 * [fastgltf](https://github.com/spnda/fastgltf) for gltf asset loading (runtime)
 * [taskflow](https://github.com/taskflow/taskflow) for multithreaded updates
+* [msdfgen](https://github.com/Chlumsky/msdfgen) distance field fonts
 
 Trying to use modern C++ patterns where possible.
 
@@ -89,9 +90,11 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### Upcoming
 * jolt physics debug draw
+* dynamic distance field font texture generation
 * move lua bindings to separate library?
 * activate fly camera binding
 * defines when exporting shaders (generate all variations like Unity)
+* serialize AnimatorConfig
 * window modes with different resolutions
 * frustrum culling
 * modernize renderer (probably needs frame graph or similar)
@@ -137,7 +140,7 @@ lightEntity = app.scene:create_entity()
 lightEntity:add_component(Transform, { 1, 1, -2 })
 lightEntity:add_component(PointLight)
 
-cubeMesh = MeshCreator.new(program.vertex_layout):create_cuboid()
+cubeMesh = MeshData.new_cube().createMesh(program.vertex_layout)
 greenTex = app.assets:load_color_texture(Color.green)
-app.scene:create_entity():add_component(Renderable, cubeMesh, greenTex)
+app.scene:create_entity():add_component(Renderable, cubeMesh, program, greenTex)
 ```

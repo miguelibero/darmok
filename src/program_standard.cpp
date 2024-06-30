@@ -6,6 +6,9 @@
 #include "generated/shaders/unlit.vertex.h"
 #include "generated/shaders/unlit.fragment.h"
 #include "generated/shaders/unlit.vlayout.h"
+#include "generated/shaders/debug.vertex.h"
+#include "generated/shaders/debug.fragment.h"
+#include "generated/shaders/debug.vlayout.h"
 #include "generated/shaders/forward_phong.vertex.h"
 #include "generated/shaders/forward_phong.fragment.h"
 #include "generated/shaders/forward_phong.vlayout.h"
@@ -55,6 +58,8 @@ namespace darmok
 		BGFX_EMBEDDED_SHADER(gui_fragment),
 		BGFX_EMBEDDED_SHADER(unlit_vertex),
 		BGFX_EMBEDDED_SHADER(unlit_fragment),
+		BGFX_EMBEDDED_SHADER(debug_vertex),
+		BGFX_EMBEDDED_SHADER(debug_fragment),
 		BGFX_EMBEDDED_SHADER(forward_phong_vertex),
 		BGFX_EMBEDDED_SHADER(forward_phong_fragment),
 		BGFX_EMBEDDED_SHADER(forward_pbr_vertex),
@@ -66,6 +71,7 @@ namespace darmok
 	{
 		{StandardProgramType::Gui, "gui"},
 		{StandardProgramType::Unlit, "unlit"},
+		{StandardProgramType::Debug, "debug"},
 		{StandardProgramType::ForwardPhong, "forward_phong"},
 		{StandardProgramType::ForwardPhysical, "forward_pbr"},
 	};
@@ -74,6 +80,7 @@ namespace darmok
 	{
 		{StandardProgramType::Gui, DataView::fromArray(gui_vlayout) },
 		{StandardProgramType::Unlit, DataView::fromArray(unlit_vlayout) },
+		{StandardProgramType::Debug, DataView::fromArray(debug_vlayout) },
 		{StandardProgramType::ForwardPhong, DataView::fromArray(forward_phong_vlayout) },
 		{StandardProgramType::ForwardPhysical, DataView::fromArray(forward_pbr_vlayout) },
 	};

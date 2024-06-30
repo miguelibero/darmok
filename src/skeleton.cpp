@@ -67,16 +67,16 @@ namespace darmok
     {
         if (!_boneMesh)
         {
-            MeshCreator creator;
+            auto layout = MeshData::getDefaultVertexLayout();
             if (_material)
             {
                 auto prog = _material->getProgram();
                 if (prog)
                 {
-                    creator.vertexLayout = prog->getVertexLayout();
+                    layout = prog->getVertexLayout();
                 }
             }
-            _boneMesh = creator.createBone();
+            _boneMesh = MeshData(Line(), LineMeshType::Bone).createMesh(layout);
         }
     }
    

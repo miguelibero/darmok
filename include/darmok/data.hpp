@@ -111,7 +111,6 @@ namespace darmok
         Data(std::string_view str, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
         Data& operator=(std::string_view str) noexcept;
         Data& operator=(const char* str) noexcept;
-        operator DataView() const;
         
         [[nodiscard]] void* ptr() const noexcept;
         [[nodiscard]] void* end() const noexcept;
