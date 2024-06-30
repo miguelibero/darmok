@@ -356,16 +356,15 @@ namespace darmok::physics3d
             registry.on_construct<CharacterController>().disconnect<&PhysicsSystemImpl::onCharacterConstructed>(*this);
             registry.on_destroy<CharacterController>().disconnect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
 
-            auto rigidBodies = registry.view<PhysicsBody>();
-            for (auto [entity, body] : rigidBodies.each())
+            auto bodies = registry.view<PhysicsBody>();
+            for (auto [entity, body] : bodies.each())
             {
                 body.getImpl().shutdown(true);
             }
+
+            registry.erase<PhysicsBody>(bodies.begin(), bodies.end());
             auto charCtrls = registry.view<CharacterController>();
-            for (auto [entity, charCtrl] : charCtrls.each())
-            {
-                charCtrl.getImpl().shutdown();
-            }
+            registry.erase<CharacterController>(charCtrls.begin(), charCtrls.end());
         }
 
         _system.reset();
@@ -782,18 +781,18 @@ namespace darmok::physics3d
         {
             return;
         }
-        if (!systemShutdown)
+        auto& iface = _system->getBodyInterface();
+        if (!_bodyId.IsInvalid())
         {
-            auto& iface = _system->getBodyInterface();
             iface.RemoveBody(_bodyId);
-            if (_character)
-            {
-                _character = nullptr;
-            }
-            if (!_bodyId.IsInvalid())
-            {
-                iface.DestroyBody(_bodyId);
-            }
+        }
+        if (_character)
+        {
+            _character = nullptr;
+        }
+        else if(!_bodyId.IsInvalid())
+        {
+            iface.DestroyBody(_bodyId);
         }
         _bodyId = JPH::BodyID();
         _system.reset();

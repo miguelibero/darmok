@@ -145,6 +145,10 @@ namespace darmok
         void* ptr;
         offset = fixOffset(offset, ptr);
         size = fixSize(size, offset);
+        if (size == 0)
+        {
+            return nullptr;
+        }
         return bgfx::makeRef(ptr, uint32_t(size));
     }
 
@@ -153,6 +157,10 @@ namespace darmok
         void* ptr;
         offset = fixOffset(offset, ptr);
         size = fixSize(size, offset);
+        if (size == 0)
+        {
+            return nullptr;
+        }
         return bgfx::copy(ptr, uint32_t(size));
     }
 

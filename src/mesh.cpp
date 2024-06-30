@@ -164,9 +164,11 @@ namespace darmok
 		, _idxNum(indices.size() / config.getIndexSize())
 		, _idxSize(config.getIndexSize())
 	{
-		auto flags = config.getFlags();
-		flags |= BGFX_BUFFER_ALLOW_RESIZE;
-		_vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout, flags);
+		auto flags = config.getFlags() | BGFX_BUFFER_ALLOW_RESIZE;
+		if (!vertices.empty())
+		{
+			_vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout, flags);
+		}
 		if (!indices.empty())
 		{
 			_indexBuffer = bgfx::createDynamicIndexBuffer(indices.copyMem(), flags);
@@ -246,16 +248,12 @@ namespace darmok
 
 	void DynamicMesh::updateVertices(DataView data, uint32_t offset) noexcept
 	{
-		bgfx::DynamicVertexBufferHandle handle{ _vertexBuffer };
-		bgfx::update(handle, offset, data.copyMem());
-		_vertNum = data.size() / _layout.getStride();
+		bgfx::update(_vertexBuffer, offset, data.copyMem());
 	}
 
 	void DynamicMesh::updateIndices(DataView data, uint32_t offset) noexcept
 	{
-		bgfx::DynamicIndexBufferHandle handle{ _indexBuffer };
-		bgfx::update(handle, offset, data.copyMem());
-		_idxNum = data.size() / _idxSize;
+		bgfx::update(_indexBuffer, offset, data.copyMem());
 	}
 
 	void DynamicMesh::render(bgfx::Encoder& encoder, uint8_t vertexStream) const
@@ -427,6 +425,17 @@ namespace darmok
 		config.textureScale = newConfig.textureScale;
 		config.textureOffset = newConfig.textureOffset;
 		config.indexOffset = newConfig.indexOffset;
+	}
+
+	bool MeshData::empty() const noexcept
+	{
+		return vertices.empty();
+	}
+
+	void MeshData::clear() noexcept
+	{
+		vertices.clear();
+		indices.clear();
 	}
 
 	void MeshData::exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept
@@ -663,7 +672,7 @@ namespace darmok
 
 	MeshData MeshData::operator+(const MeshData& other) noexcept
 	{
-		auto sum = *this;
+		MeshData sum = *this;
 		sum += other;
 		return sum;
 	}
@@ -671,7 +680,7 @@ namespace darmok
 	MeshData& MeshData::operator+=(const MeshData& other) noexcept
 	{
 		auto offset = vertices.size();
-		auto fother = other;
+		MeshData fother = other;
 		fother.denormalize(config);
 		for (auto& idx : fother.indices)
 		{

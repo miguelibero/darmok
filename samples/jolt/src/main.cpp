@@ -51,9 +51,8 @@ namespace
 					.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
 
 				_cam->addComponent<PhongLightingComponent>();
+				_cam->addComponent<PhysicsDebugRenderer>(physics);
 				_cam->setRenderer<ForwardRenderer>();
-
-				addComponent<PhysicsDebugRenderer>(physics, _cam.value());
 			}
 
 			auto& imgui = addComponent<darmok::ImguiAppComponent>(*this);

@@ -212,6 +212,10 @@ namespace darmok
             comp->beforeRenderEntity(entity, encoder, viewId);
         }
 
+        if (entity == entt::null)
+        {
+            return;
+        }
         const void* transMtx = nullptr;
         if (_scene)
         {

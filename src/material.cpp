@@ -117,7 +117,7 @@ namespace darmok
 		return *this;
 	}
 
-	OptionalRef<const Color> Material::getColor(MaterialColorType type) const noexcept
+	std::optional<Color> Material::getColor(MaterialColorType type) const noexcept
 	{
 		auto itr = _colors.find(type);
 		if (itr == _colors.end())
@@ -127,9 +127,16 @@ namespace darmok
 		return itr->second;
 	}
 
-	Material& Material::setColor(MaterialColorType type, const Color& color) noexcept
+	Material& Material::setColor(MaterialColorType type, const std::optional<Color>& color) noexcept
 	{
-		_colors[type] = color;
+		if (color)
+		{
+			_colors[type] = color.value();
+		}
+		else
+		{
+			_colors.erase(type);
+		}
 		return *this;
 	}
 

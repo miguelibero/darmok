@@ -33,8 +33,8 @@ namespace darmok
         std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
         Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
         
-        OptionalRef<const Color> getColor(MaterialColorType type) const noexcept;
-        Material& setColor(MaterialColorType type, const Color& color) noexcept;
+        std::optional<Color> getColor(MaterialColorType type) const noexcept;
+        Material& setColor(MaterialColorType type, const std::optional<Color>& color) noexcept;
         
         MaterialPrimitiveType getPrimitiveType() const noexcept;
         Material& setPrimitiveType(MaterialPrimitiveType type) noexcept;

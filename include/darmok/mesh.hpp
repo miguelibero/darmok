@@ -191,6 +191,8 @@ namespace darmok
         MeshData& operator+=(const MeshData& other) noexcept;
         void normalize() noexcept;
         void denormalize(const Config& config) noexcept;
+        bool empty() const noexcept;
+        void clear() noexcept;
 
         [[nodiscard]] void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;

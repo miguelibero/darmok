@@ -6,6 +6,7 @@
 #include <darmok/asset.hpp>
 #include <darmok/program_standard.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/vertex.hpp>
 #include "physics3d_jolt.hpp"
 #include <glm/gtc/type_ptr.hpp>
 #include <Jolt/Physics/Body/BodyManager.h>
@@ -31,16 +32,16 @@ namespace darmok::physics3d
         }
     }
 
-    PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const Camera& cam, const std::shared_ptr<Program>& program) noexcept
+    PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const std::shared_ptr<Program>& program) noexcept
         : _system(system)
-        , _cam(cam)
         , _material(program)
         , _viewId(-1)
     {
-        Initialize();
+        _drawLines.config.type = MeshType::Transient;
+        _drawTris.config.type = MeshType::Transient;
     }
 
-    void PhysicsDebugRendererImpl::init(App& app)
+    void PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
         if (_material.getProgram() == nullptr)
         {
@@ -48,78 +49,68 @@ namespace darmok::physics3d
             _material.setProgram(prog);
         }
         _vertexLayout = _material.getProgram()->getVertexLayout();
+        _cam = cam;
+        Initialize();
     }
 
     void PhysicsDebugRendererImpl::shutdown()
     {
     }
 
-    bgfx::ViewId PhysicsDebugRendererImpl::render(bgfx::ViewId viewId)
+    void PhysicsDebugRendererImpl::render(bgfx::Encoder& encoder, bgfx::ViewId viewId)
     {
         auto joltSystem = _system.getJolt();
         if (!joltSystem)
         {
-            return viewId;
+            return;
         }
 
-        _directDraws.vertices.clear();
-
-        _encoder = bgfx::begin();
+        _encoder = encoder;
         _viewId = viewId;
+
         JPH::BodyManager::DrawSettings settings;
-        settings.mDrawBoundingBox = true;
-        settings.mDrawGetSupportFunction = true;
-        settings.mDrawSupportDirection = true;
-        settings.mDrawGetSupportingFace = true;
-        settings.mDrawShape = true;					
-        settings.mDrawShapeWireframe = true;
-        settings.mDrawBoundingBox = true;
-        settings.mDrawCenterOfMassTransform = true;
-        settings.mDrawWorldTransform = true;
-        settings.mDrawVelocity = true;
-        settings.mDrawMassAndInertia = true;
-        settings.mDrawSleepStats = true;
-        settings.mDrawSoftBodyVertices = true;
-        settings.mDrawSoftBodyVertexVelocities = true;
-        settings.mDrawSoftBodyEdgeConstraints = true;
-        settings.mDrawSoftBodyBendConstraints = true;
-        settings.mDrawSoftBodyVolumeConstraints = true;
-        settings.mDrawSoftBodySkinConstraints = true;
-        settings.mDrawSoftBodyLRAConstraints = true;
-        settings.mDrawSoftBodyPredictedBounds = true;
+
+        _cam->beforeRenderView(_encoder.value(), _viewId);
 
         joltSystem->DrawBodies(settings, this, nullptr);
 
-        if (!_directDraws.vertices.empty())
+        if (!_drawLines.empty())
         {
-            _cam.beforeRenderView(_encoder.value(), _viewId);
-            renderSubmit(EDrawMode::Solid);
+            auto mesh = _drawLines.createMesh(_vertexLayout);
+            _drawLines.clear();
+            renderMesh(*mesh, EDrawMode::Wireframe);
+        }
+        if (!_drawTris.empty())
+        {
+            auto mesh = _drawTris.createMesh(_vertexLayout);
+            _drawTris.clear();
+            renderMesh(*mesh, EDrawMode::Solid);
         }
 
-        bgfx::end(_encoder.ptr());
         _encoder.reset();
-
-        return ++viewId;
     }
 
-    void PhysicsDebugRendererImpl::renderSubmit(EDrawMode mode)
+    void PhysicsDebugRendererImpl::renderMesh(const IMesh& mesh, EDrawMode mode)
     {
+        _cam->beforeRenderEntity(entt::null, _encoder.value(), _viewId);
+        mesh.render(_encoder.value());
         auto primType = mode == EDrawMode::Wireframe ? MaterialPrimitiveType::Line : MaterialPrimitiveType::Triangle;
         _material.setPrimitiveType(primType);
+        _material.renderSubmit(_encoder.value(), _viewId);
     }
 
     void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
     {
-        auto data = MeshData(Line(JoltUtils::convert(inTo), JoltUtils::convert(inTo)));
+        MeshData data(Line(JoltUtils::convert(inFrom), JoltUtils::convert(inTo)));
         data.config.color = JoltUtils::convert(inColor);
-        _directDraws += data;
+        _drawLines += data;
     }
 
     void PhysicsDebugRendererImpl::DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow)
     {
-        auto data = MeshData(darmok::Triangle(JoltUtils::convert(inV1), JoltUtils::convert(inV2), JoltUtils::convert(inV3)));
+        MeshData data(darmok::Triangle(JoltUtils::convert(inV1), JoltUtils::convert(inV2), JoltUtils::convert(inV3)));
         data.config.color = JoltUtils::convert(inColor);
-        _directDraws += data;
+        _drawTris += data;
         // TODO: add shadow support
     }
 
@@ -172,22 +163,23 @@ namespace darmok::physics3d
         auto& lod = inGeometry->mLODs[0];
         auto& batch = *(JoltMeshBatch*)lod.mTriangleBatch.GetPtr();
 
-        _cam.beforeRenderView(_encoder.value(), _viewId);
         auto transMtx = JoltUtils::convert(inModelMatrix);
         _encoder->setTransform(glm::value_ptr(transMtx));
 
         batch.mesh->render(_encoder.value());
+        auto oldColor = _material.getColor(MaterialColorType::Diffuse);
         _material.setColor(MaterialColorType::Diffuse, JoltUtils::convert(inModelColor));
-        renderSubmit(inDrawMode);
+        renderMesh(*batch.mesh, inDrawMode);
+        _material.setColor(MaterialColorType::Diffuse, oldColor);
     }
 
     void PhysicsDebugRendererImpl::DrawText3D(JPH::RVec3Arg inPosition, const std::string_view& inString, JPH::ColorArg inColor, float inHeight)
     {
-
+        // TODO: render text support
     }
 
-    PhysicsDebugRenderer::PhysicsDebugRenderer(PhysicsSystem& system, const Camera& cam, const std::shared_ptr<Program>& prog) noexcept
-        : _impl(std::make_unique<PhysicsDebugRendererImpl>(system.getImpl(), cam, prog))
+    PhysicsDebugRenderer::PhysicsDebugRenderer(PhysicsSystem& system, const std::shared_ptr<Program>& prog) noexcept
+        : _impl(std::make_unique<PhysicsDebugRendererImpl>(system.getImpl(), prog))
     {
     }
 
@@ -196,13 +188,18 @@ namespace darmok::physics3d
         // empty on purpose
     }
 
-    void PhysicsDebugRenderer::init(App& app)
+    void PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app)
     {
-        _impl->init(app);
+        _impl->init(cam, scene, app);
     }
 
-    bgfx::ViewId PhysicsDebugRenderer::render(bgfx::ViewId viewId) const
+    void PhysicsDebugRenderer::shutdown()
     {
-        return _impl->render(viewId);
+        _impl->shutdown();
+    }
+
+    void PhysicsDebugRenderer::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId)
+    {
+        _impl->render(encoder, viewId);
     }
 }
