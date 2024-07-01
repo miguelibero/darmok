@@ -703,7 +703,7 @@ namespace darmok
         result.inputCached = isCached(op.input.path);
         op.importer.setLogOutput(log);
         size_t i = 0;
-        auto relInPath = fs::relative(op.input.path, _inputPath);
+        auto relInput = fs::relative(op.input.path, _inputPath);
         for (fs::path& output : result.outputs)
         {
             std::string headerVarName;
@@ -718,7 +718,8 @@ namespace darmok
                 // log << importer.getName() << ": skipping " << relInPath << " -> " << relOutPath << std::endl;
                 continue;
             }
-            log << op.importer.getName() << ": " << relInPath << " -> " << output << "..." << std::endl;
+            auto relOutput = fs::relative(output, _outputPath);
+            log << op.importer.getName() << ": " << relInput << " -> " << relOutput << "..." << std::endl;
             result.updatedOutputs.push_back(output);
             fs::create_directories(output.parent_path());
             if (op.headerConfig.produceHeaders)

@@ -95,6 +95,11 @@ namespace darmok
             return _value != nullptr;
         }
 
+        bool empty() const noexcept
+        {
+            return _value == nullptr;
+        }
+
         [[nodiscard]] T& value() const
         {
             if (!*this)

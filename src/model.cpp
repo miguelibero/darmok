@@ -4,7 +4,6 @@
 #include <darmok/scene.hpp>
 #include <darmok/light.hpp>
 #include <darmok/render.hpp>
-#include <darmok/skeleton.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
@@ -367,6 +366,37 @@ namespace darmok
         DataInputStream::read(data, *model);
         return model;
     }
+
+    Armature::Armature(const std::vector<ArmatureJoint>& joints) noexcept
+        : _joints(joints)
+    {
+    }
+
+    Armature::Armature(std::vector<ArmatureJoint>&& joints) noexcept
+        : _joints(std::move(joints))
+    {
+    }
+
+    const std::vector<ArmatureJoint>& Armature::getJoints() const noexcept
+    {
+        return _joints;
+    }
+
+    Skinnable::Skinnable(const std::shared_ptr<Armature>& armature) noexcept
+        : _armature(armature)
+    {
+    }
+
+    std::shared_ptr<Armature> Skinnable::getArmature() const noexcept
+    {
+        return _armature;
+    }
+
+    void Skinnable::setArmature(const std::shared_ptr<Armature>& armature) noexcept
+    {
+        _armature = armature;
+    }
+
 }
 
 std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node)

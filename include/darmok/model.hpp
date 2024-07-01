@@ -200,7 +200,23 @@ namespace darmok
 
     class Mesh;
     class Material;
-    class Armature;
+
+    struct DARMOK_EXPORT ArmatureJoint final
+    {
+        std::string name;
+        glm::mat4 inverseBindPose;
+    };
+
+    class DARMOK_EXPORT Armature final
+    {
+    public:
+        Armature(const std::vector<ArmatureJoint>& joints) noexcept;
+        Armature(std::vector<ArmatureJoint>&& joints) noexcept;
+        const std::vector<ArmatureJoint>& getJoints() const noexcept;
+
+    private:
+        std::vector<ArmatureJoint> _joints;
+    };
 
     class DARMOK_EXPORT ModelSceneConfigurer final
     {
@@ -276,7 +292,17 @@ namespace darmok
         [[nodiscard]] result_type operator()(std::string_view name) override;
     private:
         IDataLoader& _dataLoader;
-	};
+	};    
+
+    class DARMOK_EXPORT Skinnable
+    {
+    public:
+        Skinnable(const std::shared_ptr<Armature>& armature = nullptr) noexcept;
+        std::shared_ptr<Armature> getArmature() const noexcept;
+        void setArmature(const std::shared_ptr<Armature>& armature) noexcept;
+    private:
+        std::shared_ptr<Armature> _armature;
+    };
 }
 
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node);

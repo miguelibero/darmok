@@ -150,12 +150,12 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/texture.hpp
   ${INCLUDE_DIR}/vertex.hpp
   ${INCLUDE_DIR}/vertex_layout.hpp
-  ${INCLUDE_DIR}/ext_loader.hpp
   ${INCLUDE_DIR}/collection.hpp
   ${INCLUDE_DIR}/viewport.hpp
   ${INCLUDE_DIR}/program_fwd.hpp
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/asset_core.hpp
+  ${INCLUDE_DIR}/loader.hpp
 )
 
 set(SOURCES
@@ -453,6 +453,7 @@ if(DARMOK_BUILD_TESTS)
   enable_testing()
   add_subdirectory(test)
   list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+  set_target_properties(darmok-tests PROPERTIES FOLDER ${PROJECT_NAME})
 endif()
 
 # code analysis & clang tidy

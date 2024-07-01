@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <darmok/optional_ref.hpp>
 #include <darmok/string.hpp>
 
@@ -13,6 +14,8 @@ namespace darmok
     class ExtensionLoader final : public L
     {
     public:
+        using result_type = typename L::result_type;
+
         void setDefaultLoader(L& defaultLoader) noexcept
         {
             _defaultLoader = defaultLoader;
@@ -26,7 +29,7 @@ namespace darmok
             });
         }
 
-        L::result_type operator()(std::string_view path) override
+        result_type operator()(std::string_view path) override
         {
             auto ext = std::filesystem::path(path).extension();
             for (auto& elm : _loaders)
@@ -52,5 +55,40 @@ namespace darmok
 
         std::vector<Element> _loaders;
         OptionalRef<L> _defaultLoader;
+    };
+
+    template<typename L>
+    class CachedLoader final : public L
+    {
+    public:
+        using result_type = typename L::result_type;
+
+        CachedLoader(L& loader)
+            : _loader(loader)
+        {
+        }
+
+        void clear() noexcept
+        {
+            _cache.clear();
+        }
+
+        bool erase(std::string_view name) noexcept
+        {
+            return _cache.erase(name);
+        }
+
+        result_type operator()(std::string_view name) override
+        {
+            auto itr = _cache.find(name);
+            if(itr == _cache.end())
+            {
+                itr = _cache.emplace(name, _loader(name)).first;
+            }
+            return itr->second;
+        }
+    private:
+        L& _loader;
+        std::unordered_map<std::string, result_type> _cache;
     };
 }

@@ -15,6 +15,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/render.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/freelook.hpp>
 
 namespace
 {
@@ -35,7 +36,7 @@ namespace
 			auto camEntity = registry.create();
 			glm::vec2 winSize = getWindow().getSize();
 
-			registry.emplace<Transform>(camEntity)
+			auto& camTrans = registry.emplace<Transform>(camEntity)
 				.setPosition({ 0, 2, -2 })
 				.setEulerAngles({ 45, 0, 0 });
 			auto& cam = registry.emplace<Camera>(camEntity)
@@ -43,6 +44,8 @@ namespace
 			
 			cam.addComponent<PhongLightingComponent>();
 			cam.setRenderer<ForwardRenderer>();
+
+			auto& freelook = scene->addSceneComponent<FreelookController>(camTrans);
 
 			auto light = registry.create();
 			registry.emplace<Transform>(light)
@@ -70,8 +73,12 @@ namespace
 
 			auto speed = 0.01F;
 
-			auto move = [&trans, speed](const glm::vec3& d) {
-				auto pos = trans.getPosition();
+			auto move = [&freelook, &trans, speed](const glm::vec3& d) {
+				if (freelook.isEnabled())
+				{
+					return;
+				}
+				glm::vec3 pos = trans.getPosition();
 				pos += d * speed;
 				trans.setPosition(pos);
 			};

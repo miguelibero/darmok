@@ -150,7 +150,7 @@ namespace
 
 		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override
 		{
-			settings.canPushCharacter = false;
+			// settings.canPushCharacter = false;
 			// settings.canReceiveImpulses = false;
 		}
 
@@ -243,6 +243,7 @@ namespace
 				{
 					_characterCtrl->setPosition(ray * dist.value());
 				}
+				_characterCtrl->setLinearVelocity(glm::vec3(0));
 				return;
 			}
 
@@ -272,8 +273,12 @@ namespace
 					rot.x = rot.z = 0.F; // rotate only in the y axis
 					dir = glm::quat(glm::radians(rot)) * dir;
 				}
+				_characterCtrl->setLinearVelocity(dir * 10.F);
 			}
-			_characterCtrl->setLinearVelocity(dir * 10.F);
+			else if (!_characterBody)
+			{
+				_characterCtrl->setLinearVelocity(dir);
+			}
 		}
 
 	private:

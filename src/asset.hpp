@@ -1,7 +1,6 @@
 #pragma once
 
 #include <darmok/asset.hpp>
-#include <darmok/skeleton.hpp>
 #include <darmok/model.hpp>
 #include <darmok/vertex_layout.hpp>
 #include <darmok/image.hpp>
@@ -10,9 +9,10 @@
 #include <darmok/program.hpp>
 #include <darmok/program_standard.hpp>
 #include <darmok/data.hpp>
-#include <darmok/ext_loader.hpp>
+#include <darmok/loader.hpp>
 
 #ifdef DARMOK_OZZ
+#include <darmok/skeleton.hpp>
 #include <darmok/skeleton_ozz.hpp>
 #endif
 
@@ -43,6 +43,7 @@ namespace darmok
 		std::string _basePath;
 	};
 
+
 	using ModelExtLoader = ExtensionLoader<IModelLoader>;
 	using SkeletonExtLoader = ExtensionLoader<ISkeletonLoader>;
 	using SkeletalAnimationExtLoader = ExtensionLoader<ISkeletalAnimationLoader>;
@@ -56,13 +57,16 @@ namespace darmok
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
 		[[nodiscard]] StandardProgramLoader& getStandardProgramLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
-		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
-		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
+		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
+
+#ifdef DARMOK_OZZ
+		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
 		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
 		[[nodiscard]] ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
+#endif
 
 #ifdef DARMOK_ASSIMP
 		[[nodiscard]] AssimpModelLoader& getAssimpModelLoader() noexcept;
@@ -81,13 +85,14 @@ namespace darmok
 		DataVertexLayoutLoader _vertexLayoutLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		ColorTextureLoader _colorTextureLoader;
-		SkeletonExtLoader _skeletonLoader;
-		SkeletalAnimationExtLoader _skeletalAnimationLoader;
-		JsonSkeletalAnimatorConfigLoader _skeletalAnimatorConfigLoader;
 		ModelExtLoader _modelLoader;
 		BinaryModelLoader _binModelLoader;
 
 #ifdef DARMOK_OZZ
+		SkeletonExtLoader _skeletonLoader;
+		SkeletalAnimationExtLoader _skeletalAnimationLoader;
+		SkeletalAnimatorConfigLoader _skeletalAnimatorConfigLoader;
+
 		OzzSkeletonLoader _ozzSkeletonLoader;
 		OzzSkeletalAnimationLoader _ozzSkeletalAnimationLoader;
 #endif

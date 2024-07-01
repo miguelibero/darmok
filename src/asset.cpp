@@ -52,10 +52,10 @@ namespace darmok
 		, _programLoader(_dataLoader, _vertexLayoutLoader)
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
-		, _skeletalAnimatorConfigLoader(_dataLoader)
 		, _colorTextureLoader(_allocator)
 		, _binModelLoader(_dataLoader)
 #ifdef DARMOK_OZZ
+		, _skeletalAnimatorConfigLoader(_dataLoader)
 		, _ozzSkeletonLoader(_dataLoader)
 		, _ozzSkeletalAnimationLoader(_dataLoader)
 #endif		
@@ -108,6 +108,11 @@ namespace darmok
 		return _textureLoader;
 	}
 
+	ColorTextureLoader& AssetContextImpl::getColorTextureLoader() noexcept
+	{
+		return _colorTextureLoader;
+	}
+
 	ITextureAtlasLoader& AssetContextImpl::getTextureAtlasLoader() noexcept
 	{
 		return _textureAtlasLoader;
@@ -124,12 +129,8 @@ namespace darmok
 		return _assimpModelLoader;
 	}
 #endif
-
-	ColorTextureLoader& AssetContextImpl::getColorTextureLoader() noexcept
-	{
-		return _colorTextureLoader;
-	}
 	
+#ifdef DARMOK_OZZ
 	ISkeletonLoader& AssetContextImpl::getSkeletonLoader() noexcept
 	{
 		return _skeletonLoader;
@@ -144,6 +145,7 @@ namespace darmok
 	{
 		return _skeletalAnimatorConfigLoader;
 	}
+#endif
 
 	void AssetContextImpl::setBasePath(const std::string& path) noexcept
 	{
@@ -200,6 +202,14 @@ namespace darmok
 		return _impl->getColorTextureLoader();
 	}
 
+#ifdef DARMOK_ASSIMP
+	AssimpModelLoader& AssetContext::getAssimpModelLoader() noexcept
+	{
+		return _impl->getAssimpModelLoader();
+	}
+#endif
+
+#ifdef DARMOK_OZZ
 	ISkeletonLoader& AssetContext::getSkeletonLoader() noexcept
 	{
 		return _impl->getSkeletonLoader();
@@ -213,12 +223,6 @@ namespace darmok
 	ISkeletalAnimatorConfigLoader& AssetContext::getSkeletalAnimatorConfigLoader() noexcept
 	{
 		return _impl->getSkeletalAnimatorConfigLoader();
-	}
-
-#ifdef DARMOK_ASSIMP
-	AssimpModelLoader& AssetContext::getAssimpModelLoader() noexcept
-	{
-		return _impl->getAssimpModelLoader();
 	}
 #endif
 
@@ -265,11 +269,11 @@ namespace darmok
 #ifdef DARMOK_ASSIMP
 		_importer.addTypeImporter<AssimpModelImporter>();
 #ifdef DARMOK_OZZ
+		_importer.addTypeImporter<SkeletalAnimatorConfigImporter>();
 		_importer.addTypeImporter<AssimpSkeletonImporter>();
 		_importer.addTypeImporter<AssimpSkeletalAnimationImporter>();
 #endif
 #endif
-		_importer.addTypeImporter<SkeletalAnimatorConfigImporter>();
 		_importer.addTypeImporter<VertexLayoutImporter>();
 		_importer.addTypeImporter<CopyAssetImporter>();
 	}
