@@ -32,7 +32,7 @@ namespace
 	using namespace darmok;
 	using namespace darmok::physics3d;
 
-	class JoltSampleApp : public App, public ICharacterControllerListener, public IImguiRenderer
+	class JoltSampleApp : public App, public ICollisionListener, public ICharacterControllerDelegate, public IImguiRenderer
 	{
 	public:
 		void init() override
@@ -131,10 +131,11 @@ namespace
 				// Cube playerShape(glm::vec3(1, 2, 1), glm::vec3(0, 1, 0));
 				auto playerEntity = _scene->createEntity();
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
-				_characterCtrl->addListener(*this);
+				_characterCtrl->setDelegate(*this);
 
 				CharacterConfig characterConfig{ playerShape };
 				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
+				_characterBody->addListener(*this);
 
 				auto playerTex = getAssets().getColorTextureLoader()(Colors::red());
 				auto playerMesh = MeshData(playerShape).createMesh(prog->getVertexLayout());
@@ -147,7 +148,13 @@ namespace
 #endif
 		}
 
-		void onCollisionEnter(CharacterController& ctrl, PhysicsBody& body, const Collision& collision) override
+		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override
+		{
+			settings.canPushCharacter = false;
+			// settings.canReceiveImpulses = false;
+		}
+
+		void onCollisionEnter(PhysicsBody& me, PhysicsBody& body, const Collision& collision) override
 		{
 			if (_doorBody == body)
 			{
@@ -160,7 +167,7 @@ namespace
 			setMaterial(body, _doorBody == body ? _triggerDoorMat : _touchedCubeMat);
 		}
 
-		void onCollisionExit(CharacterController& ctrl, PhysicsBody& body) override
+		void onCollisionExit(PhysicsBody& me, PhysicsBody& body) override
 		{
 			if (_doorBody == body)
 			{
@@ -240,9 +247,9 @@ namespace
 			}
 
 			auto& kb = getInput().getKeyboard();
+			glm::vec3 dir(0);
 			if (_characterCtrl->isGrounded())
 			{
-				glm::vec3 dir(0);
 				if (kb.getKey(KeyboardKey::Right) || kb.getKey(KeyboardKey::KeyD))
 				{
 					dir.x += 1;
@@ -261,10 +268,12 @@ namespace
 				}
 				if (_camTrans)
 				{
-					dir = _camTrans->getRotation() * dir;
+					auto rot = _camTrans->getEulerAngles();
+					rot.x = rot.z = 0.F; // rotate only in the y axis
+					dir = glm::quat(glm::radians(rot)) * dir;
 				}
-				_characterCtrl->setLinearVelocity(dir * 10.F);
 			}
+			_characterCtrl->setLinearVelocity(dir * 10.F);
 		}
 
 	private:

@@ -34,7 +34,7 @@ namespace darmok::physics3d
 
     class PhysicsBody;
 
-    struct Collision final
+    struct DARMOK_EXPORT Collision final
     {
         glm::vec3 normal;
         std::vector<glm::vec3> contacts;

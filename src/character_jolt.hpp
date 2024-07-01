@@ -22,6 +22,8 @@ namespace darmok::physics3d
     {
     public:
         using Config = CharacterControllerConfig;
+        using Delegate = ICharacterControllerDelegate;
+        using Contact = CharacterContact;
         CharacterControllerImpl(const Config& config) noexcept;
         ~CharacterControllerImpl() noexcept;
         void init(CharacterController& ctrl, PhysicsSystemImpl& system);
@@ -34,25 +36,21 @@ namespace darmok::physics3d
         void setLinearVelocity(const glm::vec3& velocity);
         glm::vec3 getLinearVelocity() const noexcept;
 
-        void addListener(ICharacterControllerListener& listener) noexcept;
-        bool removeListener(ICharacterControllerListener& listener) noexcept;
+        void setDelegate(const OptionalRef<Delegate>& delegate) noexcept;
 
+        void OnAdjustBodyVelocity(const JPH::CharacterVirtual* character, const JPH::Body& inBody2, JPH::Vec3& linearVelocity, JPH::Vec3& angularVelocity) override;
+        bool OnContactValidate(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2) override;
         void OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::CharacterContactSettings& settings) override;
+        void OnContactSolve(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg cntactNormal, JPH::Vec3Arg contactVelocity, const JPH::PhysicsMaterial* contactMaterial, JPH::Vec3Arg characterVelocity, JPH::Vec3& newCharacterVelocity) override;
+    
     private:
         Config _config;
         OptionalRef<PhysicsSystemImpl> _system;
         OptionalRef<CharacterController> _ctrl;
         JPH::Ref<JPH::CharacterVirtual> _jolt;
-        std::vector<OptionalRef<ICharacterControllerListener>> _listeners;
-
-        using CollisionMap = std::unordered_map<JPH::BodyID, Collision>;
-        CollisionMap _collisions;
+        OptionalRef<Delegate> _delegate;
 
         bool tryCreateCharacter(OptionalRef<Transform> transform) noexcept;
-        void onCollisionEnter(PhysicsBody& other, const Collision& collision);
-        void onCollisionStay(PhysicsBody& other, const Collision& collision);
-        void onCollisionExit(PhysicsBody& other);
-        void notifyCollisionListeners(const CollisionMap& oldCollisions);
         OptionalRef<PhysicsBody> getPhysicsBody() const noexcept;
     };
 }

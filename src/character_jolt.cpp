@@ -54,7 +54,7 @@ namespace darmok::physics3d
         {
             return glm::vec3(0);
         }
-        return JoltUtils::convertPosition(_jolt->GetPosition(), _config.shape);
+        return JoltUtils::convert(_jolt->GetPosition());
     }
 
     void CharacterControllerImpl::setPosition(const glm::vec3& pos) noexcept
@@ -66,7 +66,7 @@ namespace darmok::physics3d
         }
         if (_jolt)
         {
-            _jolt->SetPosition(JoltUtils::convertPosition(pos, _config.shape));
+            _jolt->SetPosition(JoltUtils::convert(pos));
         }
     }
 
@@ -92,14 +92,9 @@ namespace darmok::physics3d
         return JoltUtils::convert(_jolt->GetLinearVelocity());
     }
 
-    void CharacterControllerImpl::addListener(ICharacterControllerListener& listener) noexcept
+    void CharacterControllerImpl::setDelegate(const OptionalRef<Delegate>& delegate) noexcept
     {
-        JoltUtils::addRefVector(_listeners, listener);
-    }
-
-    bool CharacterControllerImpl::removeListener(ICharacterControllerListener& listener) noexcept
-    {
-        return JoltUtils::removeRefVector(_listeners, listener);;
+        _delegate = delegate;
     }
 
     OptionalRef<PhysicsBody> CharacterControllerImpl::getPhysicsBody() const noexcept
@@ -117,26 +112,80 @@ namespace darmok::physics3d
         return scene->getComponent<PhysicsBody>(entity);
     }
 
-    void CharacterControllerImpl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::CharacterContactSettings& settings)
+    void CharacterControllerImpl::OnAdjustBodyVelocity(const JPH::CharacterVirtual* character, const JPH::Body& body2, JPH::Vec3& linearVelocity, JPH::Vec3& angularVelocity)
     {
-        auto body = getPhysicsBody();
-        if (body && body->getImpl().getBodyId() == bodyID2)
+        if (!_delegate || !_ctrl || !_system)
         {
             return;
         }
-        auto itr = _collisions.find(bodyID2);
-        if (itr == _collisions.end())
+
+        auto body = _system->getPhysicsBody(body2);
+        if (!body)
         {
-            itr = _collisions.emplace(bodyID2, Collision{}).first;
+            return;
         }
-        auto& collision = itr->second;
-        collision.normal = JoltUtils::convert(contactNormal);
-        collision.contacts.push_back(JoltUtils::convert(contactPosition));
+        auto lv = JoltUtils::convert(linearVelocity);
+        auto av = JoltUtils::convert(angularVelocity);
+        _delegate->onAdjustBodyVelocity(_ctrl.value(), body.value(), lv, av);
+        linearVelocity = JoltUtils::convert(lv);
+        angularVelocity = JoltUtils::convert(av);
+    }
+
+    bool CharacterControllerImpl::OnContactValidate(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2)
+    {
+        if (!_delegate || !_ctrl || !_system)
+        {
+            return true;
+        }
+        auto body = _system->getPhysicsBody(bodyID2);
+        if (!body)
+        {
+            return true;
+        }
+        return _delegate->onContactValidate(_ctrl.value(), body.value());
+    }
+
+    void CharacterControllerImpl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::CharacterContactSettings& settings)
+    {
+        if (!_delegate || !_ctrl || !_system)
+        {
+            return;
+        }
+        auto body = _system->getPhysicsBody(bodyID2);
+        if (!body)
+        {
+            return;
+        }
+        Contact contact{ JoltUtils::convert(contactPosition), JoltUtils::convert(contactNormal) };
+        CharacterContactSettings darmokSettings
+        {
+            settings.mCanPushCharacter, settings.mCanReceiveImpulses
+        };
+        _delegate->onContactAdded(_ctrl.value(), body.value(), contact, darmokSettings);
+        settings.mCanPushCharacter = darmokSettings.canPushCharacter;
+        settings.mCanReceiveImpulses = darmokSettings.canReceiveImpulses;
+    }
+
+    void CharacterControllerImpl::OnContactSolve(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::Vec3Arg contactVelocity, const JPH::PhysicsMaterial* contactMaterial, JPH::Vec3Arg characterVelocity, JPH::Vec3& newCharacterVelocity)
+    {
+        if (!_delegate || !_ctrl || !_system)
+        {
+            return;
+        }
+        auto body = _system->getPhysicsBody(bodyID2);
+        if (!body)
+        {
+            return;
+        }
+        Contact contact{ JoltUtils::convert(contactPosition), JoltUtils::convert(contactNormal), JoltUtils::convert(contactVelocity) };
+        glm::vec3 charVel = JoltUtils::convert(characterVelocity);
+        _delegate->onContactSolve(_ctrl.value(), body.value(), contact, charVel);
+        newCharacterVelocity = JoltUtils::convert(charVel);
     }
 
     bool CharacterControllerImpl::tryCreateCharacter(OptionalRef<Transform> trans) noexcept
     {
-        if (_jolt != nullptr)
+        if (_jolt || !_system)
         {
             return false;
         }
@@ -152,7 +201,6 @@ namespace darmok::physics3d
         settings->mShape = JoltUtils::convert(_config.shape);
         settings->mBackFaceMode = (JPH::EBackFaceMode)_config.backFaceMode;
         settings->mCharacterPadding = _config.padding;
-        settings->mShapeOffset = JoltUtils::convert(JoltUtils::getOrigin(_config.shape));
         settings->mPenetrationRecoverySpeed = _config.penetrationRecoverySpeed;
         settings->mPredictiveContactDistance = _config.predictiveContactDistance;
         settings->mSupportingVolume = JPH::Plane(JoltUtils::convert(_config.supportingPlane.normal), _config.supportingPlane.constant);
@@ -190,7 +238,7 @@ namespace darmok::physics3d
         auto rb = getPhysicsBody();
         if (rb)
         {
-             auto bodyId = rb->getImpl().getBodyId();
+             auto& bodyId = rb->getImpl().getBodyId();
              bodyFilter.IgnoreBody(bodyId);
              auto& iface = joltSystem->GetBodyInterface();
              JPH::Vec3 pos;
@@ -201,8 +249,6 @@ namespace darmok::physics3d
              _jolt->SetLinearVelocity(iface.GetLinearVelocity(bodyId));
         }
 
-        CollisionMap oldCollisions = _collisions;
-        _collisions.clear();
         JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
 
         auto gravity = -_jolt->GetUp() * joltSystem->GetGravity().Length();
@@ -212,85 +258,11 @@ namespace darmok::physics3d
             bodyFilter, {}, _system->getTempAllocator()
         );
 
-        notifyCollisionListeners(oldCollisions);
-
         // if the entity has a rigid body, that component will update the transform
         if (!getPhysicsBody() && trans)
         {
-            auto mat = JoltUtils::convert(_jolt->GetWorldTransform(), _config.shape, trans.value());
+            auto mat = JoltUtils::convert(_jolt->GetWorldTransform(), trans.value());
             trans->setLocalMatrix(mat);
-        }
-    }
-
-    void CharacterControllerImpl::notifyCollisionListeners(const CollisionMap& oldCollisions)
-    {
-        if (!_system)
-        {
-            return;
-        }
-        for (auto& elm : _collisions)
-        {
-            auto body = _system->getPhysicsBody(elm.first);
-            if (!body)
-            {
-                continue;
-            }
-            if (oldCollisions.contains(elm.first))
-            {
-                onCollisionStay(body.value(), elm.second);
-            }
-            else
-            {
-                onCollisionEnter(body.value(), elm.second);
-            }
-        }
-        for (auto& elm : oldCollisions)
-        {
-            auto body = _system->getPhysicsBody(elm.first);
-            if (!body)
-            {
-                continue;
-            }
-            if (!_collisions.contains(elm.first))
-            {
-                onCollisionExit(body.value());
-            }
-        }
-    }
-
-    void CharacterControllerImpl::onCollisionEnter(PhysicsBody& other, const Collision& collision)
-    {
-        if (!_ctrl)
-        {
-            return;
-        }
-        for (auto& listener : _listeners)
-        {
-            listener->onCollisionEnter(_ctrl.value(), other, collision);
-        }
-    }
-
-    void CharacterControllerImpl::onCollisionStay(PhysicsBody& other, const Collision& collision)
-    {
-        if (!_ctrl)
-        {
-            return;
-        }
-        for (auto& listener : _listeners)
-        {
-            listener->onCollisionStay(_ctrl.value(), other, collision);
-        }
-    }
-
-    void CharacterControllerImpl::onCollisionExit(PhysicsBody& other)
-    {
-        if (!_ctrl)
-        {
-            return;
-        }
-        for (auto& listener : _listeners)
-        {
-            listener->onCollisionExit(_ctrl.value(), other);
         }
     }
 
@@ -356,14 +328,9 @@ namespace darmok::physics3d
         return _impl->getPosition();
     }
 
-    CharacterController& CharacterController::addListener(ICharacterControllerListener& listener) noexcept
+    CharacterController& CharacterController::setDelegate(const OptionalRef<Delegate>& delegate) noexcept
     {
-        _impl->addListener(listener);
+        _impl->setDelegate(delegate);
         return *this;
-    }
-
-    bool CharacterController::removeListener(ICharacterControllerListener& listener) noexcept
-    {
-        return _impl->removeListener(listener);
     }
 }

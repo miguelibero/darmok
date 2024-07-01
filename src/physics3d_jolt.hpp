@@ -57,8 +57,6 @@ namespace darmok::physics3d
     {
         using Shape = PhysicsShape;
         static JPH::Vec3 convert(const glm::vec3& v) noexcept;
-        static JPH::Vec3 convertPosition(const glm::vec3& pos, const Shape& shape) noexcept;
-        static glm::vec3 convertPosition(const JPH::Vec3& pos, const Shape& shape) noexcept;
         static glm::vec3 convert(const JPH::Vec3& v) noexcept;
         static JPH::Vec3 convertSize(const glm::vec3& v) noexcept;
         static JPH::Vec4 convert(const glm::vec4& v) noexcept;
@@ -77,7 +75,7 @@ namespace darmok::physics3d
         static std::pair<JPH::Vec3, JPH::Quat> convert(const Shape& shape, OptionalRef<const Transform> trans) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape) noexcept;
         static glm::vec3 getOrigin(const Shape& shape) noexcept;
-        static glm::mat4 convert(const JPH::Mat44& mat, const Shape& shape, const Transform& trans) noexcept;
+        static glm::mat4 convert(const JPH::Mat44& mat, const Transform& trans) noexcept;
 
         template<typename T>
         static void addRefVector(std::vector<OptionalRef<T>>& vector, T& elm)
@@ -193,6 +191,7 @@ namespace darmok::physics3d
         void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override;
 
         OptionalRef<PhysicsBody> getPhysicsBody(const JPH::BodyID& bodyId) const noexcept;
+        static OptionalRef<PhysicsBody> getPhysicsBody(const JPH::Body& body) noexcept;
 
         std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
         std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;

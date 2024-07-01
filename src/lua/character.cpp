@@ -10,13 +10,14 @@ namespace darmok::physics3d
 		: _ctrl(ctrl)
 		, _scene(scene)
 	{
+		ctrl.setDelegate(this);
 	}
 
 	LuaCharacterController::~LuaCharacterController() noexcept
 	{
 		if (_ctrl && _scene->hasComponent(_ctrl.value()))
 		{
-			_ctrl->removeListener(*this);
+			_ctrl->setDelegate(nullptr);
 		}
 	}
 
@@ -70,62 +71,79 @@ namespace darmok::physics3d
 		return scene.getEntity(_ctrl.value());
 	}
 
-	LuaCharacterController& LuaCharacterController::addListener(const sol::table& listener) noexcept
+	LuaCharacterController& LuaCharacterController::setDelegate(const sol::table& delegate) noexcept
 	{
-		if (_listeners.empty())
-		{
-			_ctrl->addListener(*this);
-		}
-		_listeners.emplace_back(listener);
+		_delegate = delegate;
 		return *this;
 	}
 
-	bool LuaCharacterController::removeListener(const sol::table& listener) noexcept
+	void LuaCharacterController::onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity)
 	{
-		auto itr = std::find(_listeners.begin(), _listeners.end(), listener);
-		if (itr == _listeners.end())
+		if (!_delegate)
 		{
-			return false;
+			return;
 		}
-		_listeners.erase(itr);
-		if (_listeners.empty())
+		LuaCharacterController luaChar(character, _scene);
+		LuaPhysicsBody luaBody(body, _scene);
+		callLuaDelegate(_delegate, "on_adjust_body_velocity", "running character adjust body velocity",
+			[&](auto& func)
+			{
+				return func(luaChar, luaBody, linearVelocity, angularVelocity);
+			}
+		);
+	}
+
+	bool LuaCharacterController::onContactValidate(CharacterController& character, PhysicsBody& body)
+	{
+		if (!_delegate)
 		{
-			_ctrl->removeListener(*this);
+			return true;
 		}
-		return true;
-	}
-
-	void LuaCharacterController::onCollisionEnter(CharacterController& character, PhysicsBody& body, const Collision& collision)
-	{
 		LuaCharacterController luaChar(character, _scene);
 		LuaPhysicsBody luaBody(body, _scene);
-		callLuaListeners(_listeners, "on_collision_enter", "running character collision enter",
-			[&collision, &luaChar, &luaBody](auto& func)
-			{
-				return func(luaChar, luaBody, collision);
-			});
-	}
-
-	void LuaCharacterController::onCollisionStay(CharacterController& character, PhysicsBody& body, const Collision& collision)
-	{
-		LuaCharacterController luaChar(character, _scene);
-		LuaPhysicsBody luaBody(body, _scene);
-		callLuaListeners(_listeners, "on_collision_stay", "running character collision stay",
-			[&collision, &luaChar, &luaBody](auto& func)
-			{
-				return func(luaChar, luaBody, collision);
-			});
-	}
-
-	void LuaCharacterController::onCollisionExit(CharacterController& character, PhysicsBody& body)
-	{
-		LuaCharacterController luaChar(character, _scene);
-		LuaPhysicsBody luaBody(body, _scene);
-		callLuaListeners(_listeners, "on_collision_exit", "running character collision exit",
-			[&luaChar, &luaBody](auto& func)
+		auto result = callLuaDelegate(_delegate, "on_contact_validate", "running character contact validate",
+			[&](auto& func)
 			{
 				return func(luaChar, luaBody);
-			});
+			}
+		);
+		if (!result.valid())
+		{
+			return true;
+		}
+		return result;
+	}
+
+	void LuaCharacterController::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings)
+	{
+		if (!_delegate)
+		{
+			return;
+		}
+		LuaCharacterController luaChar(character, _scene);
+		LuaPhysicsBody luaBody(body, _scene);
+		callLuaDelegate(_delegate, "on_contact_added", "running character contact added",
+			[&](auto& func)
+			{
+				return func(luaChar, luaBody, contact, settings);
+			}
+		);
+	}
+
+	void LuaCharacterController::onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity)
+	{
+		if (!_delegate)
+		{
+			return;
+		}
+		LuaCharacterController luaChar(character, _scene);
+		LuaPhysicsBody luaBody(body, _scene);
+		callLuaDelegate(_delegate, "on_contact_solve", "running character contact solve",
+			[&](auto& func)
+			{
+				return func(luaChar, luaBody, contact, characterVelocity);
+			}
+		);
 	}
 
 	void LuaCharacterController::bind(sol::state_view& lua) noexcept
@@ -155,8 +173,7 @@ namespace darmok::physics3d
 			),
 			"get_entity_component", &LuaCharacterController::getEntityComponent,
 			"get_entity", &LuaCharacterController::getEntity,
-			"add_listener", &LuaCharacterController::addListener,
-			"remove_listener", &LuaCharacterController::removeListener,
+			"delegate", sol::property(&LuaCharacterController::setDelegate),
 			"grounded", sol::property(&LuaCharacterController::isGrounded),
 			"ground_state", sol::property(&LuaCharacterController::getGroundState),
 			"position", sol::property(&LuaCharacterController::getPosition, &LuaCharacterController::setPosition),

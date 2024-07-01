@@ -19,7 +19,7 @@ namespace darmok::physics3d
 {
 	class CharacterController;
 
-	class LuaCharacterController final : public ICharacterControllerListener
+	class LuaCharacterController final : public ICharacterControllerDelegate
 	{
 	public:
 		using Shape = PhysicsShape;
@@ -35,18 +35,18 @@ namespace darmok::physics3d
 		void setPosition(const VarLuaTable<glm::vec3>& pos) noexcept;
 		glm::vec3 getPosition() const noexcept;
 
-		LuaCharacterController& addListener(const sol::table& listener) noexcept;
-		bool removeListener(const sol::table& listener) noexcept;
+		LuaCharacterController& setDelegate(const sol::table& delegate) noexcept;
 
-		void onCollisionEnter(CharacterController& character, PhysicsBody& body, const Collision& collision) override;
-		void onCollisionStay(CharacterController& character, PhysicsBody& body, const Collision& collision) override;
-		void onCollisionExit(CharacterController& character, PhysicsBody& body) override;
+		void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) override;
+		bool onContactValidate(CharacterController& character, PhysicsBody& body) override;
+		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override;
+		void onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) override;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<CharacterController> _ctrl;
 		std::shared_ptr<Scene> _scene;
-		std::vector<sol::table> _listeners;
+		sol::table _delegate;
 
 		static LuaCharacterController addEntityComponent1(LuaEntity& entity, const Config& config) noexcept;
 		static LuaCharacterController addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept;

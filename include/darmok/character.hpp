@@ -19,7 +19,7 @@ namespace darmok::physics3d
         glm::vec3 up = glm::vec3(0, 1, 0);
         Plane supportingPlane = Plane(glm::vec3(0, 1, 0), -1.0e10f);
         float maxSlopeAngle = glm::radians(50.F);
-        uint16_t layer;
+        uint16_t layer = 0;
     };
 
     struct DARMOK_EXPORT CharacterConfig final : public BaseCharacterConfig
@@ -27,6 +27,7 @@ namespace darmok::physics3d
         float mass = 80.F;
         float friction = 0.2;
         float gravityFactor = 1.0F;
+        float maxSeparationDistance = 0.1F;
     };
 
     struct DARMOK_EXPORT CharacterControllerConfig final : public BaseCharacterConfig
@@ -40,14 +41,30 @@ namespace darmok::physics3d
 
     class CharacterController;
 
-    class DARMOK_EXPORT BX_NO_VTABLE ICharacterControllerListener
+    struct DARMOK_EXPORT CharacterContactSettings final
+    {
+        bool canPushCharacter;
+        bool canReceiveImpulses;
+    };
+
+    struct DARMOK_EXPORT CharacterContact final
+    {
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec3 velocity;
+    };
+
+
+    class DARMOK_EXPORT BX_NO_VTABLE ICharacterControllerDelegate
     {
     public:
-        virtual ~ICharacterControllerListener() = default;
-
-        virtual void onCollisionEnter(CharacterController& character, PhysicsBody& body, const Collision& collision) {};
-        virtual void onCollisionStay(CharacterController& character, PhysicsBody& body, const Collision& collision) {};
-        virtual void onCollisionExit(CharacterController& character, PhysicsBody& body) {};
+        virtual ~ICharacterControllerDelegate() = default;
+        using Contact = CharacterContact;
+        using ContactSettings = CharacterContactSettings;
+        virtual void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) { }
+        virtual bool onContactValidate(CharacterController& character, PhysicsBody& body) { return true; }
+        virtual void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) { }
+        virtual void onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) { }
     };
 
     class CharacterControllerImpl;
@@ -57,6 +74,7 @@ namespace darmok::physics3d
     public:
         using Shape = PhysicsShape;
         using Config = CharacterControllerConfig;
+        using Delegate = ICharacterControllerDelegate;
         CharacterController(const Config& config = {});
         CharacterController(const Shape& shape);
         ~CharacterController();
@@ -73,8 +91,7 @@ namespace darmok::physics3d
         CharacterController& setPosition(const glm::vec3& pos) noexcept;
         glm::vec3 getPosition() const noexcept;
 
-        CharacterController& addListener(ICharacterControllerListener& listener) noexcept;
-        bool removeListener(ICharacterControllerListener& listener) noexcept;
+        CharacterController& setDelegate(const OptionalRef<Delegate>& delegate) noexcept;
 
         static std::string getGroundStateName(GroundState state) noexcept;
 

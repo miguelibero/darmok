@@ -34,16 +34,6 @@ namespace darmok::physics3d
         return JPH::Vec3(v.x, v.y, -v.z);
     }
 
-    JPH::Vec3 JoltUtils::convertPosition(const glm::vec3& pos, const Shape& shape) noexcept
-    {
-        return convert(pos + getOrigin(shape));
-    }
-
-    glm::vec3 JoltUtils::convertPosition(const JPH::Vec3& pos, const Shape& shape) noexcept
-    {
-        return convert(pos) - getOrigin(shape);
-    }
-
     glm::vec3 JoltUtils::convert(const JPH::Vec3& v) noexcept
     {
         return glm::vec3(v.GetX(), v.GetY(), -v.GetZ());
@@ -142,9 +132,9 @@ namespace darmok::physics3d
         return glm::vec3(0);
     }
 
-    glm::mat4 JoltUtils::convert(const JPH::Mat44& jmat, const Shape& shape, const Transform& trans) noexcept
+    glm::mat4 JoltUtils::convert(const JPH::Mat44& jmat, const Transform& trans) noexcept
     {
-        auto mat = glm::translate(convert(jmat), -getOrigin(shape));
+        auto mat = convert(jmat);
         auto parent = trans.getParent();
         if (parent)
         {
@@ -164,25 +154,31 @@ namespace darmok::physics3d
             pos += trans->getWorldPosition();
             rot *= trans->getWorldRotation();
         }
-        return std::pair(convertPosition(pos, shape), convert(rot));
+        return std::pair(convert(pos), convert(rot));
+    }
+
+    JPH::ShapeRefC joltGetOffsetShape(JPH::ShapeSettings* settings, const glm::vec3& offset) noexcept
+    {
+        JPH::RotatedTranslatedShapeSettings offsetSettings(JoltUtils::convert(offset), JPH::Quat::sIdentity(), settings);
+        return offsetSettings.Create().Get();
     }
 
     JPH::ShapeRefC JoltUtils::convert(const Shape& shape) noexcept
     {
         if (auto cube = std::get_if<Cube>(&shape))
         {
-            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cube->size * 0.5F));
-            return settings.Create().Get();
+            auto settings = new JPH::BoxShapeSettings(JoltUtils::convertSize(cube->size * 0.5F));
+            return joltGetOffsetShape(settings, cube->origin);
         }
         else if (auto sphere = std::get_if<Sphere>(&shape))
         {
-            JPH::SphereShapeSettings settings(sphere->radius);
-            return settings.Create().Get();
+            auto settings = new JPH::SphereShapeSettings(sphere->radius);
+            return joltGetOffsetShape(settings, sphere->origin);
         }
         else if (auto caps = std::get_if<Capsule>(&shape))
         {
-            JPH::CapsuleShapeSettings settings(caps->cylinderHeight * 0.5, caps->radius);
-            return settings.Create().Get();
+            auto settings = new JPH::CapsuleShapeSettings(caps->cylinderHeight * 0.5, caps->radius);
+            return joltGetOffsetShape(settings, caps->origin);
         }
         return nullptr;
     }
@@ -502,6 +498,16 @@ namespace darmok::physics3d
         return *(PhysicsBody*)userData;
     }
 
+    OptionalRef<PhysicsBody> PhysicsSystemImpl::getPhysicsBody(const JPH::Body& body) noexcept
+    {
+        auto userData = body.GetUserData();
+        if (userData == 0)
+        {
+            return nullptr;
+        }
+        return (PhysicsBody*)userData;
+    }
+
     std::optional<RaycastHit> PhysicsSystemImpl::raycast(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
     {
         if (!_system)
@@ -806,7 +812,7 @@ namespace darmok::physics3d
         settings->mLayer = config.layer;
         auto userData = (uint64_t)_body.ptr();
         _character = new JPH::Character(settings, pos, rot, userData, joltSystem.ptr());
-        _character->AddToPhysicsSystem(JPH::EActivation::Activate);
+        _character->AddToPhysicsSystem();
         return _character->GetBodyID();
     }
 
@@ -826,7 +832,6 @@ namespace darmok::physics3d
             joltMotion = JPH::EMotionType::Kinematic;
             break;
         case PhysicsBodyMotionType::Static:
-            activation = JPH::EActivation::DontActivate;
             joltMotion = JPH::EMotionType::Static;
             break;
         }
@@ -874,10 +879,14 @@ namespace darmok::physics3d
         }
         auto trans = _system->getScene()->getComponent<Transform>(entity);
         tryCreateBody(trans);
+        if (_character)
+        {
+            _character->PostSimulation(_characterConfig->maxSeparationDistance, false);
+        }
         if (trans)
         {
             auto jmat = _system->getBodyInterface().GetWorldTransform(_bodyId);
-            auto mat = JoltUtils::convert(jmat, getShape(), trans.value());
+            auto mat = JoltUtils::convert(jmat, trans.value());
             trans->setLocalMatrix(mat);
         }
     }
@@ -907,13 +916,13 @@ namespace darmok::physics3d
 
     void PhysicsBodyImpl::setPosition(const glm::vec3& pos)
     {
-        auto jpos = JoltUtils::convertPosition(pos, getShape());
+        auto jpos = JoltUtils::convert(pos);
         getBodyInterface()->SetPosition(_bodyId, jpos, JPH::EActivation::Activate);
     }
 
     glm::vec3 PhysicsBodyImpl::getPosition()
     {
-        return JoltUtils::convertPosition(getBodyInterface()->GetPosition(_bodyId), getShape());
+        return JoltUtils::convert(getBodyInterface()->GetPosition(_bodyId));
     }
 
     void PhysicsBodyImpl::setRotation(const glm::quat& rot)
