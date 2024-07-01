@@ -95,6 +95,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * defines when exporting shaders (generate all variations like Unity)
 * window modes with different resolutions
 * frustrum culling
+* binary texture atlas
 * modernize renderer (probably needs frame graph or similar)
     * deferred
     * other types of lights

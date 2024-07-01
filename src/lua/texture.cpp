@@ -354,7 +354,7 @@ namespace darmok
 		);
 	
 		lua.new_usertype<TextureAtlasMeshConfig>("TextureAtlasMeshConfig",
-			sol::constructors<TextureAtlasMeshConfig()>(),
+			sol::default_constructor,
 			"scale", &TextureAtlasMeshConfig::scale,
 			"offset", &TextureAtlasMeshConfig::offset,
 			"color", &TextureAtlasMeshConfig::color,

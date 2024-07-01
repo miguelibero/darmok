@@ -69,11 +69,32 @@ namespace darmok
 				MeshData(const Line&, LineMeshType),
 				MeshData(const Triangle&)
 			>(),
-			"new_cube", []() { return MeshData(Cube()); },
+			"new_cube", sol::overload(
+				[]() { return MeshData(Cube()); },
+				[](const glm::vec3& size) { return MeshData(Cube(size)); }
+			),
 			"new_sphere", []() { return MeshData(Sphere()); },
 			"new_capsule", []() { return MeshData(Capsule()); },
-			"new_rectangle", []() { return MeshData(Rectangle()); },
-			"new_rectangle", [](RectangleMeshType type) { return MeshData(Rectangle(), type); },
+			"new_rectangle", sol::overload(
+				[]() {
+					return MeshData(Rectangle());
+				},
+				[](const glm::uvec2& size) {
+					return MeshData(Rectangle(size));
+				},
+				[](const glm::uvec2& size, RectangleMeshType type) {
+					return MeshData(Rectangle(size), type);
+				},
+				[](const VarLuaTable<glm::vec2>& size) {
+					return MeshData(Rectangle(LuaGlm::tableGet(size)));
+				},
+				[](const VarLuaTable<glm::vec2>& size, RectangleMeshType type) {
+					return MeshData(Rectangle(LuaGlm::tableGet(size)), type);
+				},
+				[](RectangleMeshType type) {
+					return MeshData(Rectangle(), type);
+				}
+			),
 			"new_bone", []() { return MeshData(Line(), LineMeshType::Diamond); },
 			"config", &MeshData::config,
 			"default_vertex_layout", sol::property(&MeshData::getDefaultVertexLayout),
