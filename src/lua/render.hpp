@@ -24,9 +24,11 @@ namespace darmok
 		Renderable& getReal();
 
 		std::optional<LuaMesh> getMesh() const noexcept;
-		LuaRenderable& setMesh(const LuaMesh& mesh) noexcept;
+		void setMesh(const LuaMesh& mesh) noexcept;
 		LuaMaterial getMaterial() const noexcept;
-		LuaRenderable& setMaterial(const LuaMaterial& material) noexcept;
+		void setMaterial(const LuaMaterial& material) noexcept;
+		bool getEnabled() const noexcept;
+		void setEnabled(bool enabled) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:

@@ -356,6 +356,7 @@ if(DARMOK_BUILD_LUA)
     ${SRC_DIR}/lua/model.cpp
     ${SRC_DIR}/lua/utils.cpp
     ${SRC_DIR}/lua/skeleton.cpp
+    ${SRC_DIR}/lua/freelook.cpp    
   )
   list(APPEND HEADERS
     ${INCLUDE_DIR}/lua.hpp

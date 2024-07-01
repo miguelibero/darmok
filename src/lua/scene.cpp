@@ -4,6 +4,7 @@
 #include "camera.hpp"
 #include "light.hpp"
 #include "render.hpp"
+#include "freelook.hpp"
 #include <darmok/scene.hpp>
 
 #ifdef DARMOK_OZZ
@@ -229,6 +230,7 @@ end
 		LuaAmbientLight::bind(lua);
 		LuaPointLight::bind(lua);
 		LuaRenderable::bind(lua);
+		LuaFreelookController::bind(lua);
 
 #ifdef DARMOK_OZZ
 		LuaSkeletalAnimator::bind(lua);

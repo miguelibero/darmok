@@ -1,7 +1,7 @@
 
 local program = app.assets:load_standard_program(StandardProgramType.ForwardPhong)
 
-local cubeMesh = MeshData.cube():createMesh(program.vertex_layout)
+local cubeMesh = MeshData.new_cube():create_mesh(program.vertex_layout)
 local greenTex = app.assets:load_color_texture(Color.green)
 local greenMat = Material.new(program, greenTex)
 
@@ -15,6 +15,8 @@ cam:set_perspective(60, app.window.size, 0.3, 1000)
 cam:set_renderer(ForwardRenderer)
 cam:add_component(PhongLightingComponent)
 
+local freelook = scene:add_component(FreelookController, camTrans)
+
 local lightEntity = scene:create_entity()
 lightEntity:add_component(Transform, { 1, 1, -2 })
 lightEntity:add_component(PointLight)
@@ -26,6 +28,9 @@ meshEntity:add_component(Renderable, cubeMesh, greenMat)
 local speed = 0.1
 
 function move_mesh(dir)
+    if freelook.enabled then
+        return
+    end
     meshTrans.position = meshTrans.position + (dir * speed)
 end
 
@@ -48,6 +53,9 @@ end
 local groundPlane = Plane.new(Vec3.up);
 
 function move_mouse()
+    if freelook.enabled then
+        return
+    end
     local p = app.input.mouse.position
     p = app.window:window_to_screen_point(p)
     local ray = cam:screen_point_to_ray(p)

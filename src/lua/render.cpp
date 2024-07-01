@@ -68,10 +68,9 @@ namespace darmok
 		return LuaMesh(mesh);
 	}
 
-	LuaRenderable& LuaRenderable::setMesh(const LuaMesh& mesh) noexcept
+	void LuaRenderable::setMesh(const LuaMesh& mesh) noexcept
 	{
 		_renderable->setMesh(mesh.getReal());
-		return *this;
 	}
 
 	LuaMaterial LuaRenderable::getMaterial() const noexcept
@@ -79,10 +78,19 @@ namespace darmok
 		return LuaMaterial(_renderable->getMaterial());
 	}
 
-	LuaRenderable& LuaRenderable::setMaterial(const LuaMaterial& material) noexcept
+	void LuaRenderable::setMaterial(const LuaMaterial& material) noexcept
 	{
 		_renderable->setMaterial(material.getReal());
-		return *this;
+	}
+
+	bool LuaRenderable::getEnabled() const noexcept
+	{
+		return _renderable->isEnabled();
+	}
+
+	void LuaRenderable::setEnabled(bool enabled) noexcept
+	{
+		_renderable->setEnabled(enabled);
 	}
 
 	void LuaRenderable::bind(sol::state_view& lua) noexcept
@@ -98,7 +106,8 @@ namespace darmok
 			"get_entity_component", &LuaRenderable::getEntityComponent,
 			"get_entity", &LuaRenderable::getEntity,
 			"mesh", sol::property(&LuaRenderable::getMesh, &LuaRenderable::setMesh),
-			"material", sol::property(&LuaRenderable::getMaterial, &LuaRenderable::setMaterial)
+			"material", sol::property(&LuaRenderable::getMaterial, &LuaRenderable::setMaterial),
+			"enabled", sol::property(&LuaRenderable::getEnabled, &LuaRenderable::setEnabled)
 		);
 	}
 }
