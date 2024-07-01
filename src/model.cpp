@@ -9,7 +9,19 @@
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
 #include <darmok/program_standard.hpp>
+
+// to allow serialization
+#include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
+#include <cereal/archives/xml.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/memory.hpp>
+#include <darmok/data_stream.hpp>
+#include <darmok/vertex_layout.hpp>
+#include <darmok/math.hpp>
 
 namespace darmok
 {
@@ -29,6 +41,122 @@ namespace darmok
         cereal::JSONOutputArchive archive(ss);
         archive(*this);
         return ss.str();
+    }
+
+    Model::DataFormat Model::getFormat(const std::string& name) noexcept
+    {
+        if (name == "xml")
+        {
+            return DataFormat::Xml;
+        }
+        if (name == "json")
+        {
+            return DataFormat::Json;
+        }
+        return DataFormat::Binary;
+    }
+
+    Model::DataFormat Model::getExtensionFormat(const std::string& ext) noexcept
+    {
+        if (ext == ".xml")
+        {
+            return DataFormat::Xml;
+        }
+        if (ext == ".json" || ext == ".js")
+        {
+            return DataFormat::Json;
+        }
+        return DataFormat::Binary;
+    }
+
+    std::string Model::getFormatExtension(DataFormat format) noexcept
+    {
+        switch (format)
+        {
+            case DataFormat::Binary:
+            {
+                return ".bin";
+            }
+            case DataFormat::Json:
+            {
+                return ".json";
+            }
+            case DataFormat::Xml:
+            {
+                return ".xml";
+            }
+        }
+        return "";
+    }
+
+    std::string Model::getFormatName(DataFormat format) noexcept
+    {
+        switch (format)
+        {
+            case DataFormat::Binary:
+            {
+                return "binary";
+            }
+            case DataFormat::Json:
+            {
+                return "json";
+            }
+            case DataFormat::Xml:
+            {
+                return "xml";
+            }
+        }
+        return "";
+    }
+
+    void Model::read(std::istream& in, DataFormat format)
+    {
+        switch (format)
+        {
+            case DataFormat::Binary:
+            {
+                cereal::BinaryInputArchive archive(in);
+                archive(*this);
+                break;
+            }
+            case DataFormat::Json:
+            {
+                cereal::JSONInputArchive archive(in);
+                archive(*this);
+                break;
+            }
+            case DataFormat::Xml:
+            {
+                cereal::XMLInputArchive archive(in);
+                archive(*this);
+                break;
+            }
+        }
+    }
+
+    void Model::write(std::ostream& out, DataFormat format) const
+    {
+        switch (format)
+        {
+            case DataFormat::Binary:
+            {
+                cereal::BinaryOutputArchive archive(out);
+                archive(*this);
+                break;
+            }
+            case DataFormat::Json:
+            {
+                cereal::JSONOutputArchive archive(out);
+                archive(*this);
+                break;
+            }
+            case DataFormat::Xml:
+            {
+                cereal::XMLOutputArchive archive(out);
+                archive(*this);
+                break;
+            }
+        }
     }
 
     ModelSceneConfigurer::ModelSceneConfigurer(Scene& scene, AssetContext& assets)

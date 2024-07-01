@@ -7,10 +7,12 @@
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/string.hpp>
-#include <darmok/math.hpp>
 #include <stdexcept>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>
+
+// to allow serialization
+#include <darmok/math.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>

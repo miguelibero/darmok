@@ -10,15 +10,13 @@
 #include <darmok/program.hpp>
 #include <darmok/program_standard.hpp>
 #include <darmok/string.hpp>
+#include <darmok/math.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
-
-#include <cereal/archives/json.hpp>
-#include <cereal/archives/xml.hpp>
 
 namespace darmok
 {
@@ -559,18 +557,8 @@ namespace darmok
 
     std::filesystem::path AssimpModelImporterImpl::getOutputPath(const std::filesystem::path& path, OutputFormat format) noexcept
     {
-        std::string outSuffix(".bin");
-        switch (format)
-        {
-        case OutputFormat::Json:
-            outSuffix += ".json";
-            break;
-        case OutputFormat::Xml:
-            outSuffix += ".xml";
-            break;
-        }
         auto stem = std::string(StringUtils::getFileStem(path.filename().string()));
-        return path.parent_path() / (stem + outSuffix);
+        return path.parent_path() / (stem + Model::getFormatExtension(format));
     }
 
     const std::string AssimpModelImporterImpl::_outputFormatJsonKey = "outputFormat";
@@ -625,31 +613,11 @@ namespace darmok
         }
         if (json.contains(_outputFormatJsonKey))
         {
-            std::string format = json[_outputFormatJsonKey];
-            if (format == "json")
-            {
-                config.outputFormat = OutputFormat::Json;
-            }
-            else if (format == "xml")
-            {
-                config.outputFormat = OutputFormat::Xml;
-            }
-            else
-            {
-                config.outputFormat = OutputFormat::Binary;
-            }
+            config.outputFormat = Model::getFormat(json[_outputFormatJsonKey]);
         }
         else if (!config.outputPath.empty())
         {
-            auto ext = config.outputPath.extension();
-            if (ext == ".json")
-            {
-                config.outputFormat = OutputFormat::Json;
-            }
-            else if (ext == ".xml")
-            {
-                config.outputFormat = OutputFormat::Xml;
-            }
+            config.outputFormat = Model::getExtensionFormat(config.outputPath.extension().string());
         }
     }
 
@@ -742,28 +710,7 @@ namespace darmok
         auto basePath = input.path.parent_path().string();
         AssimpModelConverter ctxt(*_currentScene, basePath, _currentConfig->loadConfig, _allocator, _imgLoader);
         ctxt.update(model);
-
-        switch (_currentConfig->outputFormat)
-        {
-            case OutputFormat::Binary:
-            {
-                cereal::BinaryOutputArchive archive(out);
-                archive(model);
-                break;
-            }
-            case OutputFormat::Json:
-            {
-                cereal::JSONOutputArchive archive(out);
-                archive(model);
-                break;
-            }
-            case OutputFormat::Xml:
-            {
-                cereal::XMLOutputArchive archive(out);
-                archive(model);
-                break;
-            }
-        }
+        model.write(out, _currentConfig->outputFormat);
     }
 
     const std::string& AssimpModelImporterImpl::getName() const noexcept

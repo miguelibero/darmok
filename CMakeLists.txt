@@ -198,6 +198,7 @@ set(HEADERS
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/material_fwd.hpp
   ${INCLUDE_DIR}/material.hpp
+  ${INCLUDE_DIR}/model_fwd.hpp
   ${INCLUDE_DIR}/model.hpp
 
   ${INCLUDE_DIR}/entity_filter.hpp
@@ -296,7 +297,6 @@ endif()
 
 if(DARMOK_BUILD_ASSIMP)
   list(APPEND HEADERS
-    ${INCLUDE_DIR}/model_assimp_fwd.hpp
     ${INCLUDE_DIR}/model_assimp.hpp
   )
   list(APPEND SOURCES ${SRC_DIR}/model_assimp.cpp)

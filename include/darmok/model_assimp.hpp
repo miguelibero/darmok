@@ -5,7 +5,6 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/program_standard.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/model_assimp_fwd.hpp>
 #include <memory>
 #include <string>
 #include <filesystem>

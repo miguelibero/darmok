@@ -14,21 +14,10 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/material_fwd.hpp>
 #include <darmok/program_fwd.hpp>
+#include <darmok/model_fwd.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/glm.hpp>
-
-
-// to allow serialization
-#include <cereal/types/optional.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/memory.hpp>
-#include <darmok/data_stream.hpp>
-#include <darmok/vertex_layout.hpp>
-#include <darmok/math.hpp>
-
 
 namespace darmok
 {
@@ -189,6 +178,15 @@ namespace darmok
         }
 
         std::string to_string() const noexcept;
+
+        using DataFormat = ModelDataFormat;
+
+        static DataFormat getFormat(const std::string& name) noexcept;
+        static DataFormat getExtensionFormat(const std::string& ext) noexcept;
+        static std::string getFormatExtension(DataFormat format) noexcept;
+        static std::string getFormatName(DataFormat format) noexcept;
+        void read(std::istream& in, DataFormat format);
+        void write(std::ostream& out, DataFormat format) const;
     };
 
     class AssetContext;

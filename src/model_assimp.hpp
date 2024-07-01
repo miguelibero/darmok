@@ -118,18 +118,11 @@ namespace darmok
         AssimpSceneLoader _sceneLoader;
     };
 
-    enum class AssimpModelImporterOutputFormat
-    {
-        Binary,
-        Json,
-        Xml
-    };
-
     struct AssimpModelImportConfig
     {
-        using OutputFormat = AssimpModelImporterOutputFormat;
+        using OutputFormat = ModelDataFormat;
         using LoadConfig = AssimpModelLoadConfig;
-        OutputFormat outputFormat = OutputFormat::Binary;
+        ModelDataFormat outputFormat = OutputFormat::Binary;
         std::filesystem::path outputPath;
         LoadConfig loadConfig;
     };
@@ -140,7 +133,7 @@ namespace darmok
         using Input = AssetTypeImporterInput;
         using Config = AssimpModelImportConfig;
         using LoadConfig = AssimpModelLoadConfig;
-        using OutputFormat = AssimpModelImporterOutputFormat;
+        using OutputFormat = ModelDataFormat;
 
         AssimpModelImporterImpl();
         void setProgramVertexLayoutSuffix(const std::string& suffix);
