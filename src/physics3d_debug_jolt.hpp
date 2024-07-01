@@ -33,7 +33,10 @@ namespace darmok::physics3d
         PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const std::shared_ptr<Program>& program = nullptr) noexcept;
         void init(Camera& cam, Scene& scene, App& app);
         void shutdown();
-        void render(bgfx::Encoder& encoder, bgfx::ViewId viewId);
+        bool render(bgfx::ViewId viewId);
+
+        bool isEnabled() const noexcept;
+        void setEnabled(bool enabled) noexcept;
 
         void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
         void DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow = ECastShadow::Off) override;
@@ -42,6 +45,7 @@ namespace darmok::physics3d
         void DrawGeometry(JPH::RMat44Arg inModelMatrix, const JPH::AABox& inWorldSpaceBounds, float inLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode = ECullMode::CullBackFace, ECastShadow inCastShadow = ECastShadow::On, EDrawMode inDrawMode = EDrawMode::Solid) override;
         void DrawText3D(JPH::RVec3Arg inPosition, const std::string_view& inString, JPH::ColorArg inColor = JPH::Color::sWhite, float inHeight = 0.5f) override;
     private:
+        bool _enabled;
         PhysicsSystemImpl& _system;
         OptionalRef<Camera> _cam;
         Material _material;

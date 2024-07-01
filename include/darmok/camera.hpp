@@ -26,10 +26,12 @@ namespace darmok
         virtual ~ICameraComponent() = default;
         virtual void init(Camera& cam, Scene& scene, App& app) {};
         virtual void update(float deltaTime) {}
-        virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) {};
+        virtual bgfx::ViewId beforeRender(bgfx::ViewId viewId) { return viewId; };
+        virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) { };
         virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) {};
-        virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) {};
-        virtual void shutdown() {}
+        virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) { };
+        virtual bgfx::ViewId afterRender(bgfx::ViewId viewId) { return viewId; };
+        virtual void shutdown() {};
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE ICameraRenderer
@@ -37,7 +39,7 @@ namespace darmok
     public:
         virtual void init(Camera& cam, Scene& scene, App& app) {};
         virtual void update(float deltaTime) {}
-        virtual bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const = 0;
+        virtual bgfx::ViewId render(bgfx::ViewId viewId) const = 0;
         virtual void shutdown() {}
     };
 
@@ -130,7 +132,7 @@ namespace darmok
         glm::vec3 viewportToScreenPoint(const glm::vec3& point) const noexcept;
         glm::vec3 screenToViewportPoint(const glm::vec3& point) const noexcept;
 
-        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
+        bgfx::ViewId render(bgfx::ViewId viewId) const;
 
         void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
         void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;

@@ -2,7 +2,7 @@
 #include "scene.hpp"
 #include "utils.hpp"
 #include <darmok/physics3d.hpp>
-
+#include <darmok/character.hpp>
 
 namespace darmok::physics3d
 {

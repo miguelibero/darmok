@@ -36,6 +36,7 @@ namespace darmok::physics3d
         : _system(system)
         , _material(program)
         , _viewId(-1)
+        , _enabled(true)
     {
         _drawLines.config.type = MeshType::Transient;
         _drawTris.config.type = MeshType::Transient;
@@ -57,15 +58,19 @@ namespace darmok::physics3d
     {
     }
 
-    void PhysicsDebugRendererImpl::render(bgfx::Encoder& encoder, bgfx::ViewId viewId)
+    bool PhysicsDebugRendererImpl::render(bgfx::ViewId viewId)
     {
+        if (!_enabled)
+        {
+            return false;
+        }
         auto joltSystem = _system.getJolt();
         if (!joltSystem)
         {
-            return;
+            return false;
         }
 
-        _encoder = encoder;
+        _encoder = bgfx::begin();
         _viewId = viewId;
 
         JPH::BodyManager::DrawSettings settings;
@@ -86,8 +91,19 @@ namespace darmok::physics3d
             _drawTris.clear();
             renderMesh(*mesh, EDrawMode::Solid);
         }
-
+        bgfx::end(_encoder.ptr());
         _encoder.reset();
+        return true;
+    }
+
+    bool PhysicsDebugRendererImpl::isEnabled() const noexcept
+    {
+        return _enabled;
+    }
+
+    void PhysicsDebugRendererImpl::setEnabled(bool enabled) noexcept
+    {
+        _enabled = enabled;
     }
 
     void PhysicsDebugRendererImpl::renderMesh(const IMesh& mesh, EDrawMode mode)
@@ -198,8 +214,23 @@ namespace darmok::physics3d
         _impl->shutdown();
     }
 
-    void PhysicsDebugRenderer::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId)
+    bgfx::ViewId PhysicsDebugRenderer::afterRender(bgfx::ViewId viewId)
     {
-        _impl->render(encoder, viewId);
+        if (_impl->render(viewId))
+        {
+            viewId++;
+        }
+        return viewId;
+    }
+
+    bool PhysicsDebugRenderer::isEnabled() const noexcept
+    {
+        return _impl->isEnabled();
+    }
+
+    PhysicsDebugRenderer& PhysicsDebugRenderer::setEnabled(bool enabled) noexcept
+    {
+        _impl->setEnabled(enabled);
+        return *this;
     }
 }

@@ -34,6 +34,16 @@ namespace darmok
 			{ "Transient", MeshType::Transient }
 		});
 
+		lua.new_enum<RectangleMeshType>("RectangleMeshType", {
+			{ "Full", RectangleMeshType::Full },
+			{ "Outline", RectangleMeshType::Outline }
+		});
+
+		lua.new_enum<LineMeshType>("LineMeshType", {
+			{ "Line", LineMeshType::Line },
+			{ "Diamond", LineMeshType::Diamond }
+		});
+
 		lua.new_usertype<MeshDataConfig>("MeshDataConfig",
 			sol::constructors<MeshDataConfig()>(),
 			"scale", &MeshDataConfig::scale,
@@ -64,7 +74,7 @@ namespace darmok
 			"new_capsule", []() { return MeshData(Capsule()); },
 			"new_rectangle", []() { return MeshData(Rectangle()); },
 			"new_rectangle", [](RectangleMeshType type) { return MeshData(Rectangle(), type); },
-			"new_bone", []() { return MeshData(Line(), LineMeshType::Bone); },
+			"new_bone", []() { return MeshData(Line(), LineMeshType::Diamond); },
 			"config", &MeshData::config,
 			"default_vertex_layout", sol::property(&MeshData::getDefaultVertexLayout),
 			"create_mesh", sol::overload(

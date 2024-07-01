@@ -23,6 +23,10 @@
 #include <imgui.h>
 #include <glm/gtx/string_cast.hpp>
 
+#ifndef _NDEBUG
+#define PHYSICS_DEBUG_RENDERER
+#endif
+
 namespace
 {
 	using namespace darmok;
@@ -45,16 +49,24 @@ namespace
 				auto camEntity = _scene->createEntity();
 				glm::vec2 winSize = getWindow().getSize();
 
-				auto& camTrans = _scene->addComponent<Transform>(camEntity)
+				_camTrans = _scene->addComponent<Transform>(camEntity)
 					.setPosition({ 0, 5, -10 })
 					.lookAt({ 0, 0, 0 });
 				_cam = _scene->addComponent<Camera>(camEntity)
 					.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
 
 				_cam->addComponent<PhongLightingComponent>();
-				_cam->addComponent<PhysicsDebugRenderer>(physics);
 				_cam->setRenderer<ForwardRenderer>();
-				_freeLook = _scene->addSceneComponent<FreelookController>(camTrans);
+				_freeLook = _scene->addSceneComponent<FreelookController>(*_camTrans);
+#ifdef PHYSICS_DEBUG_RENDERER
+				_physicsDebugRenderer = _cam->addComponent<PhysicsDebugRenderer>(physics);
+
+				getInput().addBindings("physics", {
+					{ KeyboardBindingKey { KeyboardKey::F7 }, true,
+						[this]() { switchMode(); }
+					}
+				});
+#endif
 			}
 
 			_imgui = addComponent<ImguiAppComponent>(*this);
@@ -71,11 +83,13 @@ namespace
 			{ // floor
 				auto floorEntity = _scene->createEntity();
 				Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
-				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Kinematic);
+				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
+				auto floorTex = getAssets().getColorTextureLoader()(Colors::grey());
+				auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
+				_scene->addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, floorTex);
 			}
 
-			{ // door trigger
-
+			{ // door
 				auto doorEntity = _scene->createEntity();
 				Cube doorShape(glm::vec3(1.5F, 2.F, 0.2F), glm::vec3(0, 1.F, 0));
 				PhysicsBodyConfig config;
@@ -83,19 +97,24 @@ namespace
 				config.shape = doorShape;
 				config.motion = PhysicsBodyMotionType::Kinematic;
 				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, config);
-				auto triggerTex = getAssets().getColorTextureLoader()(Colors::red());
-				_triggerDoorMat = std::make_shared<Material>(prog, triggerTex);
 				_scene->addComponent<Transform>(doorEntity)
 					.setPosition(glm::vec3(2.F, 0.F, 2.F))
 					.setEulerAngles(glm::vec3(0, 90, 0));
+
+				auto doorTex = getAssets().getColorTextureLoader()(Color(255, 1000, 100, 255));
+				auto triggerTex = getAssets().getColorTextureLoader()(Colors::red());
+				_doorMat = std::make_shared<Material>(prog, doorTex);
+				_triggerDoorMat = std::make_shared<Material>(prog, triggerTex);
+				auto doorMesh = MeshData(doorShape).createMesh(prog->getVertexLayout());
+				_scene->addComponent<Renderable>(doorEntity, std::move(doorMesh), _doorMat);
 			}
 
 			{ // cubes
-				/*
-				auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
-				auto darkGreenTex = getAssets().getColorTextureLoader()(Color(0, 100, 0, 255));
-				_cubeMat = std::make_shared<Material>(prog, darkGreenTex);
-				_touchedCubeMat = std::make_shared<Material>(prog, greenTex);
+				auto tex = getAssets().getColorTextureLoader()(Color(100, 255, 100, 255));
+				auto touchedTex = getAssets().getColorTextureLoader()(Colors::green());
+				_cubeMat = std::make_shared<Material>(prog, tex);
+				_touchedCubeMat = std::make_shared<Material>(prog, touchedTex);
+				_cubeMesh = MeshData(_cubeShape).createMesh(prog->getVertexLayout());
 
 				for (auto x = -5.F; x < 5.F; x += 1.1F)
 				{
@@ -104,29 +123,28 @@ namespace
 						glm::vec3 rot{ 45 * x, 0.F, 45.F * z };
 						createCube().setPosition({ x, 10.F, z }).setEulerAngles(rot);
 					}
-				}*/
+				}
 			}
 
 			{ // player
-				auto playerTex = getAssets().getColorTextureLoader()(Colors::red());
-				auto playerMat = std::make_shared<Material>(prog);
-				playerMat->setTexture(MaterialTextureType::Diffuse, playerTex);
-
 				Capsule playerShape(1.F, 0.5F, glm::vec3(0.F, 1.F, 0.F ));
 				// Cube playerShape(glm::vec3(1, 2, 1), glm::vec3(0, 1, 0));
 				auto playerEntity = _scene->createEntity();
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 				_characterCtrl->addListener(*this);
 
-				// CharacterConfig characterConfig{ playerShape };
-				// _characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
-				// _characterBody->addListener(*this);
+				CharacterConfig characterConfig{ playerShape };
+				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
 
+				auto playerTex = getAssets().getColorTextureLoader()(Colors::red());
 				auto playerMesh = MeshData(playerShape).createMesh(prog->getVertexLayout());
-				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), playerMat);
-
+				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), prog, playerTex);
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
+
+#ifdef PHYSICS_DEBUG_RENDERER
+			switchMode();
+#endif
 		}
 
 		void onCollisionEnter(CharacterController& ctrl, PhysicsBody& body, const Collision& collision) override
@@ -135,6 +153,11 @@ namespace
 			{
 				_inDoor = true;
 			}
+			if (_floorBody == body)
+			{
+				return;
+			}
+			setMaterial(body, _doorBody == body ? _triggerDoorMat : _touchedCubeMat);
 		}
 
 		void onCollisionExit(CharacterController& ctrl, PhysicsBody& body) override
@@ -143,6 +166,11 @@ namespace
 			{
 				_inDoor = false;
 			}
+			if (_floorBody == body)
+			{
+				return;
+			}
+			setMaterial(body, _doorBody == body ? _doorMat : _cubeMat);
 		}
 
 		void imguiRender() override
@@ -168,6 +196,15 @@ namespace
 				ImGui::TextWrapped("in door");
 				ImGui::TableSetColumnIndex(1);
 				ImGui::TextWrapped(_inDoor ? "true": "false");
+
+#ifdef PHYSICS_DEBUG_RENDERER
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::TextWrapped("render mode");
+				ImGui::TableSetColumnIndex(1);
+				auto debugEnabled = _physicsDebugRenderer->isEnabled();
+				ImGui::TextWrapped(debugEnabled ? "debug renderer" : "meshes");
+#endif
 
 				ImGui::EndTable();
 			}
@@ -205,31 +242,36 @@ namespace
 			auto& kb = getInput().getKeyboard();
 			if (_characterCtrl->isGrounded())
 			{
-				glm::vec3 speed(0);
+				glm::vec3 dir(0);
 				if (kb.getKey(KeyboardKey::Right) || kb.getKey(KeyboardKey::KeyD))
 				{
-					speed = { 1, 0, 0 };
+					dir.x += 1;
 				}
 				else if (kb.getKey(KeyboardKey::Left) || kb.getKey(KeyboardKey::KeyA))
 				{
-					speed = { -1, 0, 0 };
-				}
-				else if (kb.getKey(KeyboardKey::Down) || kb.getKey(KeyboardKey::KeyS))
-				{
-					speed = { 0, 0, -1 };
+					dir.x -= 1;
 				}
 				else if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
 				{
-					speed = { 0, 0, 1 };
+					dir.z += 1;
 				}
-				_characterCtrl->setLinearVelocity(speed * 10.F);
+				else if (kb.getKey(KeyboardKey::Down) || kb.getKey(KeyboardKey::KeyS))
+				{
+					dir.z -= 1;
+				}
+				if (_camTrans)
+				{
+					dir = _camTrans->getRotation() * dir;
+				}
+				_characterCtrl->setLinearVelocity(dir * 10.F);
 			}
 		}
 
 	private:
-		Plane _playerMovePlane = Plane(glm::vec3(0, 1, 0), -0.1);
+		Plane _playerMovePlane = Plane(glm::vec3(0, 1, 0), 0.0);
 		OptionalRef<ImguiAppComponent> _imgui;
 		OptionalRef<Camera> _cam;
+		OptionalRef<Transform> _camTrans;
 		OptionalRef<CharacterController> _characterCtrl;
 		OptionalRef<PhysicsBody> _characterBody;
 		OptionalRef<Transform> _characterTrans;
@@ -237,18 +279,54 @@ namespace
 		OptionalRef<PhysicsBody> _floorBody;
 		OptionalRef<FreelookController> _freeLook;
 		std::shared_ptr<Scene> _scene;
+
+		Cube _cubeShape;
+		bool _imguiMouse = false;
+		bool _inDoor = false;
+
+		std::shared_ptr<IMesh> _cubeMesh;
 		std::shared_ptr<Material> _cubeMat;
 		std::shared_ptr<Material> _touchedCubeMat;
 		std::shared_ptr<Material> _doorMat;
 		std::shared_ptr<Material> _triggerDoorMat;
-		Cube _cubeShape;
-		bool _imguiMouse = false;
-		bool _inDoor = false;
+
+#ifdef PHYSICS_DEBUG_RENDERER
+		OptionalRef<PhysicsDebugRenderer> _physicsDebugRenderer;
+
+		void switchMode()
+		{
+			if (!_physicsDebugRenderer)
+			{
+				return;
+			}
+			auto renderablesEnabled = !_physicsDebugRenderer->isEnabled();
+			_physicsDebugRenderer->setEnabled(renderablesEnabled);
+			renderablesEnabled = !renderablesEnabled;
+			auto view = _scene->getComponentView<Renderable>();
+			for (auto [entity, renderable] : view.each())
+			{
+				renderable.setEnabled(renderablesEnabled);
+			}
+		}
+#endif
+
+		bool setMaterial(PhysicsBody& body, const std::shared_ptr<Material>& mat)
+		{
+			auto entity = _scene->getEntity(body);
+			auto renderable = _scene->getComponent<Renderable>(entity);
+			if (!renderable)
+			{
+				return false;
+			}
+			renderable->setMaterial(mat);
+			return true;
+		}
 
 		Transform& createCube() noexcept
 		{
 			auto entity = _scene->createEntity();
 			_scene->addComponent<PhysicsBody>(entity, _cubeShape);
+			_scene->addComponent<Renderable>(entity, _cubeMesh, _cubeMat);
 			return _scene->addComponent<Transform>(entity);
 		}
 	};

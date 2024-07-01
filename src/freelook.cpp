@@ -77,19 +77,19 @@ namespace darmok
         auto& kb = _input->getKeyboard();
         if (kb.getKey(KeyboardKey::Right) || kb.getKey(KeyboardKey::KeyD))
         {
-            dir.x = dir.x + 1;
+            dir.x += 1;
         }
         else if (kb.getKey(KeyboardKey::Left) || kb.getKey(KeyboardKey::KeyA))
         {
-            dir.x = dir.x - 1;
+            dir.x -= 1;
         }
         else if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
         {
-            dir.z = dir.z + 1;
+            dir.z += 1;
         }
         else if (kb.getKey(KeyboardKey::Down) || kb.getKey(KeyboardKey::KeyS))
         {
-            dir.z = dir.z - 1;
+            dir.z -= 1;
         }
         dir = rot * dir;
         auto pos = _trans->getPosition();

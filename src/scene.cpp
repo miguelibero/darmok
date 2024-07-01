@@ -138,12 +138,10 @@ namespace darmok
 
     bgfx::ViewId SceneImpl::render(bgfx::ViewId viewId)
     {
-        auto encoder = bgfx::begin();
         for (auto [entity, cam] : _registry.view<const Camera>().each())
         {
-            viewId = cam.render(*encoder, viewId);
+            viewId = cam.render(viewId);
         }
-        bgfx::end(encoder);
         return viewId;
     }
 

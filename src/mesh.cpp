@@ -614,6 +614,11 @@ namespace darmok
 		config.offset += capsule.origin / capsule.radius;
 	}
 
+	 MeshData::MeshData(const Ray& ray) noexcept
+		 : MeshData(ray.toLine(), LineMeshType::Diamond)
+	 {
+	 }
+
 	MeshData::MeshData(const Line& line, LineMeshType type) noexcept
 	{
 		if (type == LineMeshType::Line)

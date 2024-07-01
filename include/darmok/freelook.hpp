@@ -16,7 +16,7 @@ namespace darmok
     {
         float mouseSensitivity = 5.F;
         float keyboardSensitivity = 10.F;
-        glm::vec2 maxMouseAngle = glm::vec2(180, 60);
+        glm::vec2 maxMouseAngle = glm::vec2(30, 30);
         std::optional<InputBindingKey> bindingKey = KeyboardBindingKey{ KeyboardKey::F4 };
     };
     

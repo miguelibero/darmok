@@ -21,9 +21,12 @@ namespace darmok
         Renderable& setMesh(const std::shared_ptr<IMesh>& mesh) noexcept;
         std::shared_ptr<Material> getMaterial() const noexcept;
         Renderable& setMaterial(const std::shared_ptr<Material>& material) noexcept;
+        bool isEnabled() const noexcept;
+        Renderable& setEnabled(bool enabled) noexcept;
         bool valid() const noexcept;
         void render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
     private:
+        bool _enabled;
         std::shared_ptr<IMesh> _mesh;
         std::shared_ptr<Material> _material;
     };

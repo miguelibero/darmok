@@ -59,27 +59,27 @@ namespace darmok::physics3d
 
     void CharacterControllerImpl::setPosition(const glm::vec3& pos) noexcept
     {
-        if (_jolt)
-        {
-            _jolt->SetPosition(JoltUtils::convertPosition(pos, _config.shape));
-        }
         auto rb = getPhysicsBody();
         if (rb)
         {
             rb->setPosition(pos);
         }
+        if (_jolt)
+        {
+            _jolt->SetPosition(JoltUtils::convertPosition(pos, _config.shape));
+        }
     }
 
     void CharacterControllerImpl::setLinearVelocity(const glm::vec3& velocity)
     {
-        if (_jolt)
-        {
-            _jolt->SetLinearVelocity(JoltUtils::convert(velocity));
-        }
         auto rb = getPhysicsBody();
         if (rb)
         {
             rb->setLinearVelocity(velocity);
+        }
+        if (_jolt)
+        {
+            _jolt->SetLinearVelocity(JoltUtils::convert(velocity));
         }
     }
 
@@ -185,19 +185,25 @@ namespace darmok::physics3d
             return;
         }
 
+        JPH::IgnoreMultipleBodiesFilter bodyFilter;
+
+        auto rb = getPhysicsBody();
+        if (rb)
+        {
+             auto bodyId = rb->getImpl().getBodyId();
+             bodyFilter.IgnoreBody(bodyId);
+             auto& iface = joltSystem->GetBodyInterface();
+             JPH::Vec3 pos;
+             JPH::Quat rot;
+             iface.GetPositionAndRotation(bodyId, pos, rot);
+             _jolt->SetPosition(pos);
+             _jolt->SetRotation(rot);
+             _jolt->SetLinearVelocity(iface.GetLinearVelocity(bodyId));
+        }
+
         CollisionMap oldCollisions = _collisions;
         _collisions.clear();
         JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
-
-        // TODO: optimize using listeners to avoid the query on every update
-        std::vector<OptionalRef<PhysicsBody>> bodies;
-        scene.getComponentsInChildren<PhysicsBody>(entity, bodies);
-
-        JPH::IgnoreMultipleBodiesFilter bodyFilter;
-        for (auto& body : bodies)
-        {
-            bodyFilter.IgnoreBody(body->getImpl().getBodyId());
-        }
 
         auto gravity = -_jolt->GetUp() * joltSystem->GetGravity().Length();
         _jolt->ExtendedUpdate(deltaTime, gravity, updateSettings,

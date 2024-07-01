@@ -318,8 +318,9 @@ namespace darmok
 			bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filePath.c_str());
 		};
 
-		auto reload = [this]() {
-
+		auto reloadApp = [this]() {
+			_app.shutdown();
+			_app.init();
 		};
 
 		_input.addBindings(_bindingsName, {
@@ -338,12 +339,13 @@ namespace darmok
 			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::LeftShift) },	true, disableDebug },
 			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::RightShift) },	true, disableDebug },
 			{ KeyboardBindingKey { KeyboardKey::F3,			to_underlying(KeyboardModifier::None) },		true, debugWireframe },
+			{ KeyboardBindingKey { KeyboardKey::F5,			to_underlying(KeyboardModifier::None) },		true, reloadApp },
 			{ KeyboardBindingKey { KeyboardKey::F6,			to_underlying(KeyboardModifier::None) },		true, debugProfiler },
 			{ KeyboardBindingKey { KeyboardKey::Print,		to_underlying(KeyboardModifier::None) },		true, screenshot },
 			{ KeyboardBindingKey { KeyboardKey::KeyP,		to_underlying(KeyboardModifier::LeftCtrl) },	true, screenshot },
 			{ KeyboardBindingKey { KeyboardKey::KeyP,		to_underlying(KeyboardModifier::RightCtrl) },	true, screenshot },
-			{ KeyboardBindingKey { KeyboardKey::KeyR,		to_underlying(KeyboardModifier::LeftCtrl) },	true, reload },
-			{ KeyboardBindingKey { KeyboardKey::KeyR,		to_underlying(KeyboardModifier::RightCtrl) },	true, reload },
+			{ KeyboardBindingKey { KeyboardKey::KeyR,		to_underlying(KeyboardModifier::LeftCtrl) },	true, reloadApp },
+			{ KeyboardBindingKey { KeyboardKey::KeyR,		to_underlying(KeyboardModifier::RightCtrl) },	true, reloadApp },
 			});
 	}
 

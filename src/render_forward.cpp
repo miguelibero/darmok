@@ -32,18 +32,20 @@ namespace darmok
 
 	const std::string ForwardRenderer::_name = "Forward Renderer";
 
-	bgfx::ViewId ForwardRenderer::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
+	bgfx::ViewId ForwardRenderer::render(bgfx::ViewId viewId) const
 	{
 		if (!_cam)
 		{
 			return viewId;
 		}
 
+		auto encoder = bgfx::begin();
+
 		auto camEntity = _scene->getEntity(_cam.value());
 		std::string name = _name + " " + std::to_string(camEntity);
 		bgfx::setViewName(viewId, &name.front(), name.size());
 
-		_cam->beforeRenderView(encoder, viewId);
+		_cam->beforeRenderView(*encoder, viewId);
 
 		auto& registry = _scene->getRegistry();
 		auto renderables = _cam->createEntityView<Renderable>(registry);
@@ -52,11 +54,13 @@ namespace darmok
 			auto& renderable = registry.get<const Renderable>(entity);
 			if (renderable.valid())
 			{
-				_cam->beforeRenderEntity(entity, encoder, viewId);
-				renderable.render(encoder, viewId);
+				_cam->beforeRenderEntity(entity, *encoder, viewId);
+				renderable.render(*encoder, viewId);
 			}
 		}
-		_cam->afterRenderView(encoder, viewId);
+		_cam->afterRenderView(*encoder, viewId);
+
+		bgfx::end(encoder);
 
 		return ++viewId;
 	}

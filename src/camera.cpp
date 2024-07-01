@@ -159,11 +159,19 @@ namespace darmok
         }
     }
 
-    bgfx::ViewId Camera::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
+    bgfx::ViewId Camera::render(bgfx::ViewId viewId) const
     {
+        for (auto& comp : _components)
+        {
+            viewId = comp->beforeRender(viewId);
+        }
         if(_renderer != nullptr)
         {
-            viewId = _renderer->render(encoder, viewId);
+            viewId = _renderer->render(viewId);
+        }
+        for (auto& comp : _components)
+        {
+            viewId = comp->afterRender(viewId);
         }
         return viewId;
     }

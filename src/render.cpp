@@ -9,17 +9,17 @@ namespace darmok
 	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
 		: _mesh(mesh)
 		, _material(material)
+		, _enabled(true)
 	{
 	}
 
 	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept
-		: _mesh(mesh)
-		, _material(std::make_shared<Material>(program, texture))
+		: Renderable(mesh, std::make_shared<Material>(program, texture))
 	{
 	}
 
 	Renderable::Renderable(const std::shared_ptr<Material>& material) noexcept
-		: _material(material)
+		: Renderable(nullptr, material)
 	{
 	}
 
@@ -45,6 +45,17 @@ namespace darmok
 		return *this;
 	}
 
+	bool Renderable::isEnabled() const noexcept
+	{
+		return _enabled;
+	}
+
+	Renderable& Renderable::setEnabled(bool enabled) noexcept
+	{
+		_enabled = enabled;
+		return *this;
+	}
+
 	bool Renderable::valid() const noexcept
 	{
 		return _mesh != nullptr && _material != nullptr && _material->valid();
@@ -52,6 +63,10 @@ namespace darmok
 
 	void Renderable::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
 	{
+		if (!_enabled)
+		{
+			return;
+		}
 		_mesh->render(encoder);
 		_material->renderSubmit(encoder, viewId);
 	}

@@ -17,7 +17,7 @@ namespace darmok
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         ForwardRenderer& setInvalidMaterial(const std::shared_ptr<Material>& mat) noexcept;
         void shutdown() noexcept override;
-        bgfx::ViewId render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const override;
+        bgfx::ViewId render(bgfx::ViewId viewId) const override;
     private:
         const static std::string _name;
         std::shared_ptr<Material> _invalidMaterial;

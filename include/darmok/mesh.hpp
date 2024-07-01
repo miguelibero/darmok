@@ -165,7 +165,7 @@ namespace darmok
     enum class LineMeshType
     {
         Line,
-        Bone
+        Diamond
     };
 
     struct DARMOK_EXPORT MeshData final
