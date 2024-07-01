@@ -56,7 +56,7 @@ namespace darmok
 	{
 	public:
 		using Config = SkeletalAnimatorAnimationConfig;
-		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config) noexcept;
+		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationLoader& loader);
 		OzzSkeletalAnimatorAnimationState(OzzSkeletalAnimatorAnimationState&& other) noexcept;
 
 		void update(float deltaTime);
@@ -68,6 +68,7 @@ namespace darmok
 		const glm::vec2& getBlendPosition() const noexcept;
 	private:
 		Config _config;
+		std::shared_ptr<SkeletalAnimation> _animation;
 		float _normalizedTime;
 		bool _lastUpdateLooped;
 		ozz::animation::SamplingJob::Context _sampling;
@@ -79,7 +80,7 @@ namespace darmok
 	class OzzSkeletalAnimatorState final : public ISkeletalAnimatorState
 	{
 	public:
-		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config) noexcept;
+		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationLoader& loader) noexcept;
 
 		void update(float deltaTime, const glm::vec2& blendPosition);
 		std::string_view getName() const noexcept override;
@@ -133,7 +134,7 @@ namespace darmok
 		using Transition = OzzSkeletalAnimatorTransition;
 		using State = OzzSkeletalAnimatorState;
 
-		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const Config& config) noexcept;
+		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const Config& config, ISkeletalAnimationLoader& loader) noexcept;
 
 		void addListener(ISkeletalAnimatorListener& listener) noexcept;
 		bool removeListener(ISkeletalAnimatorListener& listener) noexcept;
@@ -153,7 +154,7 @@ namespace darmok
 		std::vector<glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 	private:
 		using TransitionKey = std::pair<std::string, std::string>;
-
+		ISkeletalAnimationLoader& _loader;
 		SkeletalAnimator& _animator;
 		std::shared_ptr<Skeleton> _skeleton;
 		Config _config;

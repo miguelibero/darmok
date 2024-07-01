@@ -330,7 +330,7 @@ namespace darmok
         AssimpSceneLoadConfig loadConfig;
         loadConfig.leftHanded = false;
         loadConfig.populateArmature = true;
-        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name).view(), std::string(name), loadConfig);
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), std::string(name), loadConfig);
         if (!scene)
         {
             throw new std::runtime_error("could not load assimp scene");
@@ -349,7 +349,7 @@ namespace darmok
         AssimpSceneLoadConfig loadConfig;
         loadConfig.leftHanded = false;
         loadConfig.populateArmature = false;
-        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name).view(), std::string(name), loadConfig);
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), std::string(name), loadConfig);
         if (!scene)
         {
             throw new std::runtime_error("could not load assimp scene");

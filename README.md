@@ -89,11 +89,10 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * sound
 
 #### Upcoming
-* jolt physics debug draw
+* loaders should return unique_ptr
 * dynamic distance field font texture generation
 * move lua bindings to separate library?
 * defines when exporting shaders (generate all variations like Unity)
-* serialize AnimatorConfig
 * window modes with different resolutions
 * frustrum culling
 * modernize renderer (probably needs frame graph or similar)

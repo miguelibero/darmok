@@ -179,7 +179,7 @@ namespace darmok
     static std::optional<T> loadOzzObjectFromData(IDataLoader& loader, std::string_view name) noexcept
     {
         auto data = loader(name);
-        DataOzzStream stream(data.view());
+        DataOzzStream stream(data);
         ozz::io::IArchive archive(&stream);
         std::optional<T> obj;
         if (archive.TestTag<T>())
@@ -216,11 +216,12 @@ namespace darmok
             std::make_unique<SkeletalAnimationImpl>(std::move(anim.value())));
     }
 
-    SkeletalAnimatorImpl::SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const Config& config) noexcept
+    SkeletalAnimatorImpl::SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const Config& config, ISkeletalAnimationLoader& loader) noexcept
         : _animator(animator)
         , _skeleton(skeleton)
         , _speed(1.F)
         , _config(config)
+        , _loader(loader)
     {
         auto& skel = getOzz();
         _models.resize(skel.num_joints());
@@ -301,11 +302,12 @@ namespace darmok
         return _transition.value();
     }
 
-    OzzSkeletalAnimatorAnimationState::OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config) noexcept
+    OzzSkeletalAnimatorAnimationState::OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationLoader& loader)
         : _config(config)
         , _normalizedTime(0.F)
         , _lastUpdateLooped(false)
     {
+        _animation = loader(config.animation);
         _sampling.Resize(skel.num_joints());
         _locals.resize(skel.num_soa_joints());
     }
@@ -315,17 +317,19 @@ namespace darmok
         , _normalizedTime(other._normalizedTime)
         , _locals(std::move(other._locals))
         , _lastUpdateLooped(other._lastUpdateLooped)
+        , _animation(other._animation)
     {
         _sampling.Resize(other._sampling.max_soa_tracks() * 4 - 3);
         other._normalizedTime = -bx::kFloatInfinity;
         other._locals.clear();
         other._sampling.Invalidate();
         other._sampling.Resize(0);
+        other._animation.reset();
     }
 
     ozz::animation::Animation& OzzSkeletalAnimatorAnimationState::getOzz() const noexcept
     {
-        return _config.animation->getImpl().getOzz();
+        return _animation->getImpl().getOzz();
     }
 
     float OzzSkeletalAnimatorAnimationState::getNormalizedTime() const noexcept
@@ -377,7 +381,7 @@ namespace darmok
         return _config.blendPosition;
     }
 
-    OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config) noexcept
+    OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationLoader& loader) noexcept
         : _config(config)
         , _blendPos(0.F)
         , _oldBlendPos(0.F)
@@ -387,7 +391,7 @@ namespace darmok
         _animations.reserve(_config.animations.size());
         for (auto& animConfig : _config.animations)
         {
-            _animations.emplace_back(skel, animConfig);
+            _animations.emplace_back(skel, animConfig, loader);
         }
         _layers.resize(_animations.size());
     }
@@ -594,7 +598,9 @@ namespace darmok
             auto transConfig = _config.getTransition(prevState->getName(), name);
             if (transConfig)
             {
-                _transition.emplace(transConfig.value(), State(getOzz(), stateConfig.value()), std::move(prevState.value()));
+                _transition.emplace(transConfig.value(),
+                    State(getOzz(), stateConfig.value(), _loader),
+                    std::move(prevState.value()));
                 for (auto& listener : _listeners)
                 {
                     listener->onAnimatorStateStarted(_animator, _transition->getCurrentState().getName());
@@ -614,7 +620,7 @@ namespace darmok
             }
         }
 
-        _state.emplace(getOzz(), stateConfig.value());
+        _state.emplace(getOzz(), stateConfig.value(), _loader);
         for (auto& listener : _listeners)
         {
             listener->onAnimatorStateStarted(_animator, _state->getName());
@@ -731,8 +737,8 @@ namespace darmok
         }
     }
 
-    SkeletalAnimator::SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const Config& config) noexcept
-        : _impl(std::make_unique<SkeletalAnimatorImpl>(*this, skel, config))
+    SkeletalAnimator::SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const Config& config, ISkeletalAnimationLoader& loader) noexcept
+        : _impl(std::make_unique<SkeletalAnimatorImpl>(*this, skel, config, loader))
     {
     }
 

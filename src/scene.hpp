@@ -17,8 +17,8 @@ namespace darmok
     class SceneImpl final
     {
     public:
-        SceneImpl();
-        ~SceneImpl();
+        SceneImpl(Scene& sceme) noexcept;
+        ~SceneImpl() noexcept;
         void addSceneComponent(std::unique_ptr<ISceneComponent>&& comp) noexcept;
         bool removeSceneComponent(const ISceneComponent& comp) noexcept;
         bool hasSceneComponent(const ISceneComponent& comp) const noexcept;
@@ -26,14 +26,17 @@ namespace darmok
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
 
-        void init(Scene& sceme, App& app);
+        OptionalRef<App> getApp() noexcept;
+        OptionalRef<const App> getApp() const noexcept;
+
+        void init(App& app);
         void updateLogic(float dt);
         bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
     private:
         std::vector<std::unique_ptr<ISceneComponent>> _components;
         EntityRegistry _registry;
-        OptionalRef<Scene> _scene;
+        Scene& _scene;
         OptionalRef<App> _app;
 
         void onCameraConstructed(EntityRegistry& registry, Entity entity);

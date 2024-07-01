@@ -5,9 +5,17 @@
 #include <darmok/transform.hpp>
 #include <darmok/render.hpp>
 #include <darmok/data.hpp>
-#include <glm/gtx/quaternion.hpp>
+#include <darmok/data_stream.hpp>
+#include <darmok/string.hpp>
+#include <darmok/math.hpp>
 #include <stdexcept>
+#include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
 
 namespace darmok
 {
@@ -67,7 +75,7 @@ namespace darmok
     {
         if (!_boneMesh)
         {
-            auto layout = MeshData::getDefaultVertexLayout();
+            bgfx::VertexLayout layout = MeshData::getDefaultVertexLayout();
             if (_material)
             {
                 auto prog = _material->getProgram();
@@ -222,7 +230,7 @@ namespace darmok
         }
     }
 
-    void SkeletalAnimatorAnimationConfig::readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader)
+    void SkeletalAnimatorAnimationConfig::readJson(const nlohmann::json& json)
     {
         if (json.contains("value"))
         {
@@ -238,7 +246,7 @@ namespace darmok
         }
         if (json.contains("animation"))
         {
-            animation = loader(json["animation"]);
+            animation = json["animation"];
         }
     }
 
@@ -314,21 +322,21 @@ namespace darmok
         return SkeletalAnimatorBlendType::Cartesian;
     }
 
-    void SkeletalAnimatorStateConfig::readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader)
+    void SkeletalAnimatorStateConfig::readJson(const nlohmann::json& json)
     {
         if (json.contains("elements"))
         {
             for (auto& elm : json["elements"])
             {
                 AnimationConfig config;
-                config.readJson(elm, loader);
+                config.readJson(elm);
                 animations.push_back(config);
             }
         }
         if (json.contains("animation"))
         {
             AnimationConfig config;
-            config.readJson(json, loader);
+            config.readJson(json);
             animations.push_back(config);
         }
         if (json.contains("name"))
@@ -369,13 +377,13 @@ namespace darmok
         }
     }
 
-    void SkeletalAnimatorConfig::readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader)
+    void SkeletalAnimatorConfig::readJson(const nlohmann::json& json)
     {
         for (auto& stateJson : json["states"].items())
         {
             StateConfig config;
             config.name = stateJson.key();
-            config.readJson(stateJson.value(), loader);
+            config.readJson(stateJson.value());
             addState(config);
         }
         for (auto& transitionJson : json["transitions"].items())
@@ -396,10 +404,7 @@ namespace darmok
             while (fixedConfig.name.empty() && i < fixedConfig.animations.size())
             {
                 auto& anim = fixedConfig.animations[i++].animation;
-                if (anim)
-                {
-                    fixedConfig.name = anim->getName();
-                }
+                fixedConfig.name = anim;
             }
             _states.emplace(fixedConfig.name, fixedConfig);
         }
@@ -411,9 +416,9 @@ namespace darmok
         return *this;
     }
 
-    SkeletalAnimatorConfig& SkeletalAnimatorConfig::addState(const std::shared_ptr<SkeletalAnimation>& animation, std::string_view name) noexcept
+    SkeletalAnimatorConfig& SkeletalAnimatorConfig::addState(std::string_view animation, std::string_view name) noexcept
     {
-        return addState(StateConfig{ std::string(name), { { animation } } });
+        return addState(StateConfig{ std::string(name), { { std::string(animation) } } });
     }
 
     SkeletalAnimatorConfig& SkeletalAnimatorConfig::addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept
@@ -449,17 +454,87 @@ namespace darmok
         return itr->second;
     }
 
-    JsonSkeletalAnimatorConfigLoader::JsonSkeletalAnimatorConfigLoader(IDataLoader& dataLoader, ISkeletalAnimationLoader& animLoader) noexcept
+    JsonSkeletalAnimatorConfigLoader::JsonSkeletalAnimatorConfigLoader(IDataLoader& dataLoader) noexcept
         : _dataLoader(dataLoader)
-        , _animLoader(animLoader)
     {
     }
 
     SkeletalAnimatorConfig JsonSkeletalAnimatorConfigLoader::operator()(std::string_view name)
     {
-        auto animData = _dataLoader("animator.json");
+        auto data = _dataLoader(name);
         SkeletalAnimatorConfig config;
-        config.readJson(nlohmann::json::parse(animData.stringView()), _animLoader);
+        auto ext = StringUtils::getFileExt(name);
+        if (ext == ".json")
+        {
+            config.readJson(nlohmann::json::parse(data.stringView()));
+        }
+        else
+        {
+            DataInputStream::read(data, config);
+        }
         return config;
+    }
+
+    std::vector<std::filesystem::path> SkeletalAnimatorConfigImporter::getOutputs(const Input& input) noexcept
+    {
+        std::vector<std::filesystem::path> outputs;
+        auto ext = StringUtils::getFileExt(input.path.filename().string());
+        if (input.config.is_null())
+        {
+            if (ext != ".animator.json" && ext != ".animator.bin")
+            {
+                return outputs;
+            }
+        }
+        if (input.config.contains("outputPath"))
+        {
+            outputs.push_back(input.config["outputPath"]);
+            return outputs;
+        }
+
+        auto stem = std::string(StringUtils::getFileStem(input.path.filename().string()));
+        outputs.push_back(input.path.parent_path() / (stem + ".bin"));
+        return outputs;
+    }
+
+    std::ofstream SkeletalAnimatorConfigImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
+    {
+        auto ext = StringUtils::getFileExt(input.path.filename().string());
+        if (ext == ".json")
+        {
+            return std::ofstream(outputPath);
+        }
+        return std::ofstream(outputPath, std::ios::binary);
+    }
+
+
+    SkeletalAnimatorConfig SkeletalAnimatorConfigImporter::read(const std::filesystem::path& path) const
+    {
+        SkeletalAnimatorConfig config;
+        auto ext = StringUtils::getFileExt(path.filename().string());
+        if (ext == ".json")
+        {
+            std::ifstream is(path);
+            config.readJson(nlohmann::json::parse(is));
+        }
+        return config;
+    }
+
+    void SkeletalAnimatorConfigImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    {
+        auto ext = StringUtils::getFileExt(input.path.filename().string());
+        auto config = read(input.path);
+        if (ext == ".json")
+        {
+            return;
+        }
+        cereal::BinaryOutputArchive archive(out);
+        archive(config);
+    }
+
+    const std::string& SkeletalAnimatorConfigImporter::getName() const noexcept
+    {
+        static const std::string name("animator");
+        return name;
     }
 }

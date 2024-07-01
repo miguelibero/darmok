@@ -350,7 +350,7 @@ namespace darmok
 		}
 		else
 		{
-			DataInputStream::read(data.view(), layout);
+			DataInputStream::read(data, layout);
 		}
         return layout;
     }
@@ -399,6 +399,11 @@ namespace darmok
 			{
 				return outputs;
 			}
+		}
+		if (input.config.contains("outputPath"))
+		{
+			outputs.push_back(input.config["outputPath"]);
+			return outputs;
 		}
 		if (ext == ".varyingdef")
 		{

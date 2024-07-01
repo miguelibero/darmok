@@ -3,7 +3,9 @@
 #include "material.hpp"
 #include "mesh.hpp"
 #include "camera.hpp"
+#include "asset.hpp"
 #include <darmok/skeleton.hpp>
+#include <darmok/asset.hpp>
 
 namespace darmok
 {
@@ -63,9 +65,11 @@ namespace darmok
     {
     }
 
-    LuaSkeletalAnimator LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const Config& config) noexcept
+    LuaSkeletalAnimator LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const std::string& name, LuaAssets& assets) noexcept
     {
-        return entity.addComponent<SkeletalAnimator>(skel.getReal(), config);
+        auto config = assets.getReal().getSkeletalAnimatorConfigLoader()(name);
+        auto& animLoader = assets.getReal().getSkeletalAnimationLoader();
+        return entity.addComponent<SkeletalAnimator>(skel.getReal(), config, animLoader);
     }
 
     std::optional<LuaSkeletalAnimator> LuaSkeletalAnimator::getEntityComponent(LuaEntity& entity) noexcept

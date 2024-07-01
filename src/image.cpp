@@ -160,6 +160,6 @@ namespace darmok
 	std::shared_ptr<Image> DataImageLoader::operator()(std::string_view name)
 	{
 		auto data = _dataLoader(name);
-		return std::make_shared<Image>(data.view(), _allocator);
+		return std::make_shared<Image>(data, _allocator);
 	}
 }

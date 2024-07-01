@@ -36,6 +36,7 @@ namespace darmok
     class SkeletalAnimator;
     class LuaEntity;
     class LuaScene;
+    class LuaAssets;
 
     class LuaSkeletalAnimator final
 	{
@@ -43,7 +44,7 @@ namespace darmok
         using Config = SkeletalAnimatorConfig;
         LuaSkeletalAnimator(SkeletalAnimator& animator) noexcept;
         
-        static LuaSkeletalAnimator addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const Config& config) noexcept;
+        static LuaSkeletalAnimator addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const std::string& name, LuaAssets& assets) noexcept;
 		static std::optional<LuaSkeletalAnimator> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 

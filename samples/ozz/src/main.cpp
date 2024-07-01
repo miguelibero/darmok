@@ -59,7 +59,7 @@ namespace
 
 			auto animConfig = getAssets().getSkeletalAnimatorConfigLoader()("animator.json");
 
-			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, animConfig);
+			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, animConfig, getAssets().getSkeletalAnimationLoader());
 			_animator->play("locomotion");
 
 			auto skelEntity = scene.createEntity();

@@ -166,7 +166,7 @@ namespace darmok
 
     std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(std::string_view name)
     {
-        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name).view(), std::string(name));
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), std::string(name));
         auto model = std::make_shared<Model>();
         auto basePath = std::filesystem::path(name).parent_path().string();
 

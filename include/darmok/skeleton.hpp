@@ -9,6 +9,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/render.hpp>
+#include <darmok/asset_core.hpp>
 #include <bx/bx.h>
 #include <darmok/glm.hpp>
 #include <nlohmann/json.hpp>
@@ -69,11 +70,17 @@ namespace darmok
 
     struct DARMOK_EXPORT SkeletalAnimatorAnimationConfig final
     {
-        std::shared_ptr<SkeletalAnimation> animation = nullptr;
+        std::string animation;
         glm::vec2 blendPosition = {};
-        float speed = 1;
+        float speed = 1.F;
 
-        void readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader);
+        void readJson(const nlohmann::json& json);
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(animation, blendPosition, speed);
+        }
     };
 
     enum class SkeletalAnimatorBlendType
@@ -89,6 +96,12 @@ namespace darmok
 
         tweeny::tween<float> create() const noexcept;
         void readJson(const nlohmann::json& json);
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(easing, duration);
+        }
     };
 
     struct DARMOK_EXPORT SkeletalAnimatorStateConfig final
@@ -103,8 +116,14 @@ namespace darmok
         float calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos);
         std::vector<float> calcBlendWeights(const glm::vec2& pos);
 
-        void readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader);
+        void readJson(const nlohmann::json& json);
         static SkeletalAnimatorBlendType getBlendType(const std::string_view name) noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(name, animations, blendType, threshold, tween);
+        }
     };
 
     struct DARMOK_EXPORT SkeletalAnimatorTransitionConfig final
@@ -114,6 +133,12 @@ namespace darmok
 
         static std::pair<std::string, std::string> readJsonKey(std::string_view key);
         void readJson(const nlohmann::json& json);
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(tween, offset);
+        }
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorState
@@ -153,14 +178,20 @@ namespace darmok
 
         using TransitionConfig = SkeletalAnimatorTransitionConfig;
 
-        void readJson(const nlohmann::json& json, ISkeletalAnimationLoader& loader);
+        void readJson(const nlohmann::json& json);
 
         SkeletalAnimatorConfig& addState(const StateConfig& config) noexcept;
-        SkeletalAnimatorConfig& addState(const std::shared_ptr<SkeletalAnimation>& animation, std::string_view name = "") noexcept;
+        SkeletalAnimatorConfig& addState(std::string_view animation, std::string_view name = "") noexcept;
         SkeletalAnimatorConfig& addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept;
 
         std::optional<const StateConfig> getState(std::string_view name) const noexcept;
         std::optional<const TransitionConfig> getTransition(std::string_view src, std::string_view dst) const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(_states, _transitions);
+        }
 
     private:
         std::unordered_map<std::string, StateConfig> _states;
@@ -181,11 +212,10 @@ namespace darmok
     class DARMOK_EXPORT JsonSkeletalAnimatorConfigLoader final : public ISkeletalAnimatorConfigLoader
     {
     public:
-        JsonSkeletalAnimatorConfigLoader(IDataLoader& dataLoader, ISkeletalAnimationLoader& animLoader) noexcept;
+        JsonSkeletalAnimatorConfigLoader(IDataLoader& dataLoader) noexcept;
         SkeletalAnimatorConfig operator()(std::string_view name) override;
     private:
         IDataLoader& _dataLoader;
-        ISkeletalAnimationLoader& _animLoader;
     };
 
     class SkeletalAnimator;
@@ -206,7 +236,7 @@ namespace darmok
     {
     public:
         using Config = SkeletalAnimatorConfig;
-        SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const Config&) noexcept;
+        SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const Config& config, ISkeletalAnimationLoader& loader) noexcept;
         ~SkeletalAnimator();
 
         SkeletalAnimator& addListener(ISkeletalAnimatorListener& listener) noexcept;
@@ -293,4 +323,23 @@ namespace darmok
         OptionalRef<Camera> _cam;
         OptionalRef<SkeletalAnimator> getAnimator(Entity entity) const noexcept;
     };
+
+    class DARMOK_EXPORT SkeletalAnimatorConfigImporter final : public IAssetTypeImporter
+    {
+    public:
+        SkeletalAnimatorConfig read(const std::filesystem::path& path) const;
+        std::vector<std::filesystem::path> getOutputs(const Input& input) noexcept override;
+        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath) override;
+        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
+        const std::string& getName() const noexcept override;
+    };
+}
+
+namespace std
+{
+    template<class Archive>
+    static void serialize(Archive& archive, darmok::SkeletalAnimatorConfig::TransitionKey& key)
+    {
+        archive(key.first, key.second);
+    }
 }

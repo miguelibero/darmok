@@ -52,7 +52,7 @@ namespace darmok
 		, _programLoader(_dataLoader, _vertexLayoutLoader)
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
-		, _skeletalAnimatorConfigLoader(_dataLoader, _skeletalAnimationLoader)
+		, _skeletalAnimatorConfigLoader(_dataLoader)
 		, _colorTextureLoader(_allocator)
 		, _binModelLoader(_dataLoader)
 #ifdef DARMOK_OZZ
@@ -269,6 +269,7 @@ namespace darmok
 		_importer.addTypeImporter<AssimpSkeletalAnimationImporter>();
 #endif
 #endif
+		_importer.addTypeImporter<SkeletalAnimatorConfigImporter>();
 		_importer.addTypeImporter<VertexLayoutImporter>();
 		_importer.addTypeImporter<CopyAssetImporter>();
 	}

@@ -8,20 +8,21 @@
 
 namespace darmok
 {
-    SceneImpl::SceneImpl()
+    SceneImpl::SceneImpl(Scene& scene) noexcept
+        : _scene(scene)
     {
     }
 
-    SceneImpl::~SceneImpl()
+    SceneImpl::~SceneImpl() noexcept
     {
         // empty on purpose
     }
 
     void SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& comp) noexcept
     {
-        if (_scene)
+        if (_app)
         {
-            comp->init(_scene.value(), _app.value());
+            comp->init(_scene, _app.value());
         }
         _components.push_back(std::move(comp));
     }
@@ -53,29 +54,38 @@ namespace darmok
         return _registry;
     }
 
-    void SceneImpl::init(Scene& scene, App& app)
+    OptionalRef<App> SceneImpl::getApp() noexcept
     {
-        if (_scene == scene && _app == app)
+        return _app;
+    }
+
+    OptionalRef<const App> SceneImpl::getApp() const noexcept
+    {
+        return _app;
+    }
+
+    void SceneImpl::init(App& app)
+    {
+        if (_app == app)
         {
             return;
         }
 
-        if (_scene || _app)
+        if (_app)
         {
             shutdown();
         }
 
-        _scene = scene;
         _app = app;
 
         for (auto& comp : _components)
         {
-            comp->init(scene, app);
+            comp->init(_scene, app);
         }
 
         for (auto [entity, cam] : _registry.view<Camera>().each())
         {
-            cam.init(scene, app);
+            cam.init(_scene, app);
         }
 
         _registry.on_construct<Camera>().connect<&SceneImpl::onCameraConstructed>(*this);
@@ -84,16 +94,16 @@ namespace darmok
 
     void SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity)
     {
-        if (_scene && _app)
+        if (_app)
         {
             auto& cam = registry.get<Camera>(entity);
-            cam.init(_scene.value(), _app.value());
+            cam.init(_scene, _app.value());
         }
     }
 
     void SceneImpl::onCameraDestroyed(EntityRegistry& registry, Entity entity)
     {
-        if (_scene && _app)
+        if (_app)
         {
             auto& cam = registry.get<Camera>(entity);
             cam.shutdown();
@@ -112,7 +122,6 @@ namespace darmok
         _registry.on_construct<Camera>().disconnect<&SceneImpl::onCameraConstructed>(*this);
         _registry.on_destroy<Camera>().disconnect< &SceneImpl::onCameraDestroyed>(*this);
 
-        _scene.reset();
         _app.reset();
     }
 
@@ -146,7 +155,7 @@ namespace darmok
     }
 
     Scene::Scene() noexcept
-    : _impl(std::make_unique<SceneImpl>())
+    : _impl(std::make_unique<SceneImpl>(*this))
     {
     }
 
@@ -178,9 +187,20 @@ namespace darmok
         return getRegistry().destroy(entity) > 0;
     }
 
+
+    SceneImpl& Scene::getImpl() noexcept
+    {
+        return *_impl;
+    }
+
+    const SceneImpl& Scene::getImpl() const noexcept
+    {
+        return *_impl;
+    }
+
     void Scene::init(App& app)
     {
-        _impl->init(*this, app);
+        _impl->init(app);
     }
 
     void Scene::shutdown()

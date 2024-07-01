@@ -41,6 +41,9 @@ namespace darmok
             return ref;
         }
 
+        SceneImpl& getImpl() noexcept;
+        const SceneImpl& getImpl() const noexcept;
+
         void init(App& app);
         void updateLogic(float dt);
         bgfx::ViewId render(bgfx::ViewId viewId);

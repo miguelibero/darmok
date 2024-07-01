@@ -56,7 +56,7 @@ namespace darmok
     Entity ModelSceneConfigurer::run(const ModelNode& node, Entity parent) noexcept
     {
         auto entity = add(node, parent);
-        for (auto child : node.children)
+        for (auto& child : node.children)
         {
             run(child, entity);
         }
@@ -114,7 +114,7 @@ namespace darmok
         }
         else
         {
-            tex = std::make_shared<Texture>(modelImg->data.view(), modelImg->config);
+            tex = std::make_shared<Texture>(modelImg->data, modelImg->config);
         }
         _textures.emplace(modelImg, tex);
         return tex;
@@ -168,7 +168,7 @@ namespace darmok
         {
             return itr->second;
         }
-        auto mesh = std::make_shared<Mesh>(modelMesh->vertexLayout, modelMesh->vertexData.view(), modelMesh->indexData.view(), modelMesh->config);
+        auto mesh = std::make_shared<Mesh>(modelMesh->vertexLayout, modelMesh->vertexData, modelMesh->indexData, modelMesh->config);
         _meshes.emplace(modelMesh, mesh);
         return mesh;
     }
@@ -236,7 +236,7 @@ namespace darmok
         auto data = _dataLoader(name);
         auto model = std::make_shared<Model>();
         // TODO: how to pass bx::AllocatorI to the serialization process?
-        DataInputStream::read(data.view(), *model);
+        DataInputStream::read(data, *model);
         return model;
     }
 }
