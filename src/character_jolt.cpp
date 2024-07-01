@@ -170,7 +170,8 @@ namespace darmok::physics3d
         {
             return;
         }
-        auto trans = _system->getScene()->getComponent<Transform>(entity);
+        auto& scene = *_system->getScene();
+        auto trans = scene.getComponent<Transform>(entity);
 
         tryCreateCharacter(trans);
         if (!_jolt)
@@ -188,11 +189,21 @@ namespace darmok::physics3d
         _collisions.clear();
         JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
 
+        // TODO: optimize using listeners to avoid the query on every update
+        std::vector<OptionalRef<PhysicsBody>> bodies;
+        scene.getComponentsInChildren<PhysicsBody>(entity, bodies);
+
+        JPH::IgnoreMultipleBodiesFilter bodyFilter;
+        for (auto& body : bodies)
+        {
+            bodyFilter.IgnoreBody(body->getImpl().getBodyId());
+        }
+
         auto gravity = -_jolt->GetUp() * joltSystem->GetGravity().Length();
         _jolt->ExtendedUpdate(deltaTime, gravity, updateSettings,
             joltSystem->GetDefaultBroadPhaseLayerFilter(_config.layer),
-            JoltObjectLayerFilter::fromDarmokLayer(_config.layer),
-            {}, {}, _system->getTempAllocator()
+            joltSystem->GetDefaultLayerFilter(_config.layer),
+            bodyFilter, {}, _system->getTempAllocator()
         );
 
         notifyCollisionListeners(oldCollisions);

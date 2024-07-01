@@ -16,6 +16,7 @@
 #include <darmok/input.hpp>
 #include <darmok/program.hpp>
 #include <darmok/model_assimp.hpp>
+#include <darmok/freelook.hpp>
 
 namespace
 {
@@ -34,7 +35,7 @@ namespace
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			
 			auto camEntity = scene.createEntity();
-			scene.addComponent<Transform>(camEntity)
+			auto& camTrans = scene.addComponent<Transform>(camEntity)
 				.setPosition(glm::vec3(0.f, 2, -2))
 				.lookAt(glm::vec3(0, 1, 0));
 
@@ -43,6 +44,7 @@ namespace
 			cam.setRenderer<ForwardRenderer>();
 			cam.addComponent<PhongLightingComponent>();
 			cam.addComponent<SkeletalAnimationCameraComponent>();
+			_freeLook = scene.addSceneComponent<FreelookController>(camTrans);
 
 			auto lightEntity = scene.createEntity();
 			scene.addComponent<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
@@ -99,6 +101,11 @@ namespace
 		{
 			App::updateLogic(deltaTime);
 
+			if (_freeLook->isEnabled())
+			{
+				return;
+			}
+
 			auto& kb = getInput().getKeyboard();
 			glm::vec2 dir(0);
 			if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
@@ -133,6 +140,7 @@ namespace
 	private:
 		float _animTime;
 		OptionalRef<SkeletalAnimator> _animator;
+		OptionalRef<FreelookController> _freeLook;
 	};
 }
 

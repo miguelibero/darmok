@@ -59,6 +59,7 @@ namespace darmok::physics3d
 
     class PhysicsBody;
     struct PhysicsBodyConfig;
+    struct CharacterConfig;
 
     class LuaPhysicsBody final : public ICollisionListener
     {
@@ -104,6 +105,7 @@ namespace darmok::physics3d
         static LuaPhysicsBody addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept;
         static LuaPhysicsBody addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept;
         static LuaPhysicsBody addEntityComponent3(LuaEntity& entity, const Config& config) noexcept;
+        static LuaPhysicsBody addEntityComponent4(LuaEntity& entity, const CharacterConfig& config) noexcept;
         static std::optional<LuaPhysicsBody> getEntityComponent(LuaEntity& entity) noexcept;
         std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
     };

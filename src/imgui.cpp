@@ -259,6 +259,7 @@ namespace darmok
 		, _texture{ bgfx::kInvalidHandle }
 		, _textureUniform{ bgfx::kInvalidHandle }
 		, _lodEnabledUniform{ bgfx::kInvalidHandle }
+		, _inputEnabled(true)
 	{
 		IMGUI_CHECKVERSION();
 	}
@@ -362,9 +363,19 @@ namespace darmok
 		return _imgui;
 	}
 
+	bool ImguiAppComponentImpl::getInputEnabled() const noexcept
+	{
+		return _inputEnabled;
+	}
+
+	void ImguiAppComponentImpl::setInputEnabled(bool enabled) noexcept
+	{
+		_inputEnabled = enabled;
+	}
+
 	void ImguiAppComponentImpl::updateInput(float dt) noexcept
 	{
-		if (!_app)
+		if (!_inputEnabled || !_app)
 		{
 			return;
 		}
@@ -458,5 +469,16 @@ namespace darmok
 	ImGuiContext* ImguiAppComponent::getContext() noexcept
 	{
 		return _impl->getContext();
+	}
+
+	bool ImguiAppComponent::getInputEnabled() const noexcept
+	{
+		return _impl->getInputEnabled();
+	}
+
+	ImguiAppComponent& ImguiAppComponent::setInputEnabled(bool enabled) noexcept
+	{
+		_impl->setInputEnabled(enabled);
+		return *this;
 	}
 }

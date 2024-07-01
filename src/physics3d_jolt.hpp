@@ -53,13 +53,6 @@ namespace darmok::physics3d
     class IPhysicsUpdater;
     class PhysicsBody;
 
-    enum class BroadPhaseLayerType
-    {
-        Moving,
-        NonMoving,
-        Count
-    };
-
     struct JoltUtils final
     {
         using Shape = PhysicsShape;
@@ -80,9 +73,6 @@ namespace darmok::physics3d
         static glm::vec4 convert(const JPH::Float4& v) noexcept;
 
         static RaycastHit convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept;
-
-        static JPH::ObjectLayer convert(uint16_t layer, BroadPhaseLayerType bpl) noexcept;
-        static std::pair<uint16_t, BroadPhaseLayerType> convert(JPH::ObjectLayer objLayer) noexcept;
 
         static std::pair<JPH::Vec3, JPH::Quat> convert(const Shape& shape, OptionalRef<const Transform> trans) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape) noexcept;
@@ -114,14 +104,17 @@ namespace darmok::physics3d
         }
     };
 
-    class JoltBroadPhaseLayer final : public JPH::BroadPhaseLayerInterface
+    class JoltBroadPhaseLayerInterface final : public JPH::BroadPhaseLayerInterface
     {
     public:
+        JoltBroadPhaseLayerInterface(const std::vector<std::string>& layers) noexcept;
         JPH::uint GetNumBroadPhaseLayers() const noexcept override;
         JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer layer) const noexcept override;
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
         virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer layer) const noexcept override;
 #endif
+    private:
+        std::vector<std::string> _layers;
     };
 
     class JoltObjectVsBroadPhaseLayerFilter final : public JPH::ObjectVsBroadPhaseLayerFilter
@@ -136,21 +129,13 @@ namespace darmok::physics3d
         bool ShouldCollide(JPH::ObjectLayer object1, JPH::ObjectLayer object2) const noexcept override;
     };
 
-    class JoltObjectLayerFilter final : public JPH::ObjectLayerFilter
+    class JoltObjectLayerMaskFilter : public JPH::ObjectLayerFilter
     {
     public:
-        static JoltObjectLayerFilter fromDarmokLayer(uint8_t layer) noexcept;
-        JoltObjectLayerFilter(uint16_t layerMask) noexcept;
-        bool ShouldCollide(JPH::ObjectLayer objLayer) const noexcept override;
+        JoltObjectLayerMaskFilter(uint16_t layerMask) noexcept;
+        bool ShouldCollide(JPH::ObjectLayer layer) const;
     private:
         uint16_t _layerMask;
-    };
-
-    class JoltBroadPhaseLayerFilter : public JPH::BroadPhaseLayerFilter
-    {
-    public:
-        bool ShouldCollide(JPH::BroadPhaseLayer inLayer) const noexcept override;
-    private:
     };
 
     class JoltTempAllocator final : public JPH::TempAllocator
@@ -215,7 +200,7 @@ namespace darmok::physics3d
         OptionalRef<Scene> _scene;
         float _deltaTimeRest;
         Config _config;
-        JoltBroadPhaseLayer _broadPhaseLayer;
+        JoltBroadPhaseLayerInterface _broadPhaseLayer;
         JoltObjectVsBroadPhaseLayerFilter _objVsBroadPhaseLayerFilter;
         JoltObjectLayerPairFilter _objLayerPairFilter;
         JoltTempAllocator _alloc;

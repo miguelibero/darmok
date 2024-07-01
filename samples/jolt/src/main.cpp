@@ -19,6 +19,7 @@
 #include <darmok/physics3d_debug.hpp>
 #include <darmok/character.hpp>
 #include <darmok/imgui.hpp>
+#include <darmok/freelook.hpp>
 #include <imgui.h>
 #include <glm/gtx/string_cast.hpp>
 
@@ -27,7 +28,7 @@ namespace
 	using namespace darmok;
 	using namespace darmok::physics3d;
 
-	class JoltSampleApp : public App, public ICollisionListener, public IImguiRenderer
+	class JoltSampleApp : public App, public ICharacterControllerListener, public IImguiRenderer
 	{
 	public:
 		void init() override
@@ -44,7 +45,7 @@ namespace
 				auto camEntity = _scene->createEntity();
 				glm::vec2 winSize = getWindow().getSize();
 
-				_scene->addComponent<Transform>(camEntity)
+				auto& camTrans = _scene->addComponent<Transform>(camEntity)
 					.setPosition({ 0, 5, -10 })
 					.lookAt({ 0, 0, 0 });
 				_cam = _scene->addComponent<Camera>(camEntity)
@@ -53,10 +54,11 @@ namespace
 				_cam->addComponent<PhongLightingComponent>();
 				_cam->addComponent<PhysicsDebugRenderer>(physics);
 				_cam->setRenderer<ForwardRenderer>();
+				_freeLook = _scene->addSceneComponent<FreelookController>(camTrans);
 			}
 
-			auto& imgui = addComponent<darmok::ImguiAppComponent>(*this);
-			ImGui::SetCurrentContext(imgui.getContext());
+			_imgui = addComponent<ImguiAppComponent>(*this);
+			ImGui::SetCurrentContext(_imgui->getContext());
 
 			{ // lights
 				auto light = _scene->createEntity();
@@ -69,7 +71,7 @@ namespace
 			{ // floor
 				auto floorEntity = _scene->createEntity();
 				Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
-				_scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
+				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Kinematic);
 			}
 
 			{ // door trigger
@@ -89,7 +91,7 @@ namespace
 			}
 
 			{ // cubes
-
+				/*
 				auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
 				auto darkGreenTex = getAssets().getColorTextureLoader()(Color(0, 100, 0, 255));
 				_cubeMat = std::make_shared<Material>(prog, darkGreenTex);
@@ -102,37 +104,42 @@ namespace
 						glm::vec3 rot{ 45 * x, 0.F, 45.F * z };
 						createCube().setPosition({ x, 10.F, z }).setEulerAngles(rot);
 					}
-				}
+				}*/
 			}
 
 			{ // player
-				auto redTex = getAssets().getColorTextureLoader()(Colors::red());
-				auto redMat = std::make_shared<Material>(prog);
-				redMat->setTexture(MaterialTextureType::Diffuse, redTex);
+				auto playerTex = getAssets().getColorTextureLoader()(Colors::red());
+				auto playerMat = std::make_shared<Material>(prog);
+				playerMat->setTexture(MaterialTextureType::Diffuse, playerTex);
 
 				Capsule playerShape(1.F, 0.5F, glm::vec3(0.F, 1.F, 0.F ));
-				// Cuboid playerShape(glm::vec3(1, 2, 1), glm::vec3(0, 1, 0));
+				// Cube playerShape(glm::vec3(1, 2, 1), glm::vec3(0, 1, 0));
 				auto playerEntity = _scene->createEntity();
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
+				_characterCtrl->addListener(*this);
 
-				CharacterConfig characterConfig{ playerShape };
-				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
-				_characterBody->addListener(*this);
+				// CharacterConfig characterConfig{ playerShape };
+				// _characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
+				// _characterBody->addListener(*this);
+
+				auto playerMesh = MeshData(playerShape).createMesh(prog->getVertexLayout());
+				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), playerMat);
+
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
 		}
 
-		void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override
+		void onCollisionEnter(CharacterController& ctrl, PhysicsBody& body, const Collision& collision) override
 		{
-			if (_doorBody == body2)
+			if (_doorBody == body)
 			{
 				_inDoor = true;
 			}
 		}
 
-		void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) override
+		void onCollisionExit(CharacterController& ctrl, PhysicsBody& body) override
 		{
-			if (_doorBody == body2)
+			if (_doorBody == body)
 			{
 				_inDoor = false;
 			}
@@ -171,6 +178,12 @@ namespace
 
 		void updateLogic(float dt) override
 		{
+			if (_freeLook->isEnabled())
+			{
+				_imgui->setInputEnabled(false);
+				return;
+			}
+			_imgui->setInputEnabled(true);
 			if (_imguiMouse)
 			{
 				return;
@@ -214,12 +227,15 @@ namespace
 		}
 
 	private:
-		Plane _playerMovePlane;
+		Plane _playerMovePlane = Plane(glm::vec3(0, 1, 0), -0.1);
+		OptionalRef<ImguiAppComponent> _imgui;
 		OptionalRef<Camera> _cam;
 		OptionalRef<CharacterController> _characterCtrl;
 		OptionalRef<PhysicsBody> _characterBody;
 		OptionalRef<Transform> _characterTrans;
 		OptionalRef<PhysicsBody> _doorBody;
+		OptionalRef<PhysicsBody> _floorBody;
+		OptionalRef<FreelookController> _freeLook;
 		std::shared_ptr<Scene> _scene;
 		std::shared_ptr<Material> _cubeMat;
 		std::shared_ptr<Material> _touchedCubeMat;

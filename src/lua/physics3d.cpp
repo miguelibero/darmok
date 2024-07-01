@@ -372,6 +372,11 @@ namespace darmok::physics3d
         return LuaPhysicsBody(entity.addComponent<PhysicsBody>(config), entity.getScene().getReal());
     }
 
+    LuaPhysicsBody LuaPhysicsBody::addEntityComponent4(LuaEntity& entity, const CharacterConfig& config) noexcept
+    {
+        return LuaPhysicsBody(entity.addComponent<PhysicsBody>(config), entity.getScene().getReal());
+    }
+
     std::optional<LuaPhysicsBody> LuaPhysicsBody::getEntityComponent(LuaEntity& entity) noexcept
     {
         return entity.getComponent<PhysicsBody, LuaPhysicsBody>(entity.getScene().getReal());
@@ -389,12 +394,22 @@ namespace darmok::physics3d
             { "Dynamic", MotionType::Dynamic },
             { "Kinematic", MotionType::Kinematic }
         });
+        lua.new_usertype<PhysicsBodyConfig>("Physics3dBodyConfig", sol::default_constructor,
+            "shape", &PhysicsBodyConfig::shape,
+            "motion", &PhysicsBodyConfig::motion,
+            "mass", &PhysicsBodyConfig::mass,
+            "friction", &PhysicsBodyConfig::friction,
+            "gravityFactor", &PhysicsBodyConfig::gravityFactor,
+            "layer", &PhysicsBodyConfig::layer,
+            "trigger", &PhysicsBodyConfig::trigger
+        );
         lua.new_usertype<LuaPhysicsBody>("PhysicsBody3d", sol::no_constructor,
             "type_id", &entt::type_hash<PhysicsBody>::value,
             "add_entity_component", sol::overload(
                 &LuaPhysicsBody::addEntityComponent1,
                 &LuaPhysicsBody::addEntityComponent2,
-                &LuaPhysicsBody::addEntityComponent3
+                &LuaPhysicsBody::addEntityComponent3,
+                &LuaPhysicsBody::addEntityComponent4
             ),
             "get_entity_component", &LuaPhysicsBody::getEntityComponent,
             "get_entity", &LuaPhysicsBody::getEntity,

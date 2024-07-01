@@ -30,6 +30,8 @@ namespace darmok
 		bgfx::ViewId render(bgfx::ViewId viewId) const noexcept override;
 		void updateLogic(float dt) noexcept override;
 		ImGuiContext* getContext() noexcept;
+		bool getInputEnabled() const noexcept;
+		ImguiAppComponent& setInputEnabled(bool enabled) noexcept;
 	private:
 		std::unique_ptr<ImguiAppComponentImpl> _impl;
     };

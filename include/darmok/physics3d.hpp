@@ -58,6 +58,7 @@ namespace darmok::physics3d
         float fixedDeltaTime = 1.F / 60.F;
         uint16_t collisionSteps = 1;
         glm::vec3 gravity = { 0, -9.81F, 0 };
+        std::vector<std::string> layers = { "default" };
     };
 
     struct RaycastHit final

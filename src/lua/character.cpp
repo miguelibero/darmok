@@ -136,6 +136,17 @@ namespace darmok::physics3d
 			{ "NotSupported", GroundState::NotSupported },
 			{ "Air", GroundState::Air },
 		});
+		lua.new_usertype<CharacterConfig>("Physics3dCharacterConfig", sol::default_constructor,
+			"shape", &CharacterConfig::shape,
+			"up", &CharacterConfig::up,
+			"supportingPlane", &CharacterConfig::supportingPlane,
+			"maxSlopeAngle", &CharacterConfig::maxSlopeAngle,
+			"layer", &CharacterConfig::layer,
+			"mass", &CharacterConfig::mass,
+			"friction", &CharacterConfig::friction,
+			"gravityFactor", &CharacterConfig::gravityFactor
+		);
+
 		lua.new_usertype<LuaCharacterController>("CharacterController", sol::no_constructor,
 			"type_id", &entt::type_hash<CharacterController>::value,
 			"add_entity_component", sol::overload(

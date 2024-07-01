@@ -24,6 +24,9 @@ namespace darmok
 		bool render(bgfx::ViewId viewId) const noexcept;
 		ImGuiContext* getContext() noexcept;
 
+		bool getInputEnabled() const noexcept;
+		void setInputEnabled(bool enabled) noexcept;
+
     private:
 		IImguiRenderer& _renderer;
 		OptionalRef<App> _app;
@@ -33,6 +36,7 @@ namespace darmok
 		std::unique_ptr<Program> _lodProgram;
 		bgfx::UniformHandle _lodEnabledUniform;
 		bgfx::UniformHandle _textureUniform;
+		bool _inputEnabled;
 
 		static const bgfx::EmbeddedShader _embeddedShaders[];
 		static const uint8_t _imguiAlphaBlendFlags;

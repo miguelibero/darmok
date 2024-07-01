@@ -179,6 +179,7 @@ set(SOURCES
   ${SRC_DIR}/render.cpp
   ${SRC_DIR}/render_forward.cpp
   ${SRC_DIR}/render_deferred.cpp
+  ${SRC_DIR}/freelook.cpp
 )
 
 set(HEADERS
@@ -206,6 +207,7 @@ set(HEADERS
   ${INCLUDE_DIR}/render.hpp
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
+  ${INCLUDE_DIR}/freelook.hpp
 )
 
 set(LUA_SOURCES)

@@ -92,7 +92,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * jolt physics debug draw
 * dynamic distance field font texture generation
 * move lua bindings to separate library?
-* activate fly camera binding
 * defines when exporting shaders (generate all variations like Unity)
 * serialize AnimatorConfig
 * window modes with different resolutions

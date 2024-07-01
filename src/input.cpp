@@ -840,7 +840,7 @@ namespace darmok
 
 	size_t KeyboardBindingKey::hash() const noexcept
 	{
-		return size_t(to_underlying(key)) | modifiers << 16;
+		return size_t(to_underlying(key)) | (size_t)modifiers << 16;
 	}
 
 	std::optional<KeyboardKey> KeyboardBindingKey::readKey(std::string_view name) noexcept
