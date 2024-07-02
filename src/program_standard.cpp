@@ -32,7 +32,7 @@ namespace darmok
 	{
 	}
 
-	StandardProgramLoader::result_type StandardProgramLoader::operator()(StandardProgramType type) noexcept
+	StandardProgramLoader::result_type StandardProgramLoader::operator()(StandardProgramType type)
 	{
 		return (*_impl)(type);
 	}
@@ -47,9 +47,9 @@ namespace darmok
 		return StandardProgramLoaderImpl::getVertexLayout(type);
 	}
 
-	static bgfx::VertexLayout getVertexLayout(StandardProgramType type) noexcept
+	StandardProgramLoader::result_type StandardProgramLoader::getProgram(StandardProgramType type)
 	{
-		return StandardProgramLoader::getVertexLayout(type);
+		return StandardProgramLoaderImpl::getProgram(type);
 	}
 
 	const bgfx::EmbeddedShader StandardProgramLoaderImpl::_embeddedShaders[] =
@@ -117,7 +117,12 @@ namespace darmok
 		return layout;
 	}
 
-	std::shared_ptr<Program> StandardProgramLoaderImpl::operator()(StandardProgramType type) const noexcept
+	std::shared_ptr<Program> StandardProgramLoaderImpl::operator()(StandardProgramType type) const
+	{
+		return getProgram(type);
+	}
+
+	std::shared_ptr<Program> StandardProgramLoaderImpl::getProgram(StandardProgramType type)
 	{
 		auto itr = _embeddedShaderNames.find(type);
 		if (itr == _embeddedShaderNames.end())

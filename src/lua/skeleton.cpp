@@ -77,12 +77,17 @@ namespace darmok
     {
     }
 
-    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent1(LuaEntity& entity, const LuaMaterial& mat) noexcept
+    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent1(LuaEntity& entity) noexcept
+    {
+        return entity.addComponent<RenderableSkeleton>();
+    }
+
+    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent2(LuaEntity& entity, const LuaMaterial& mat) noexcept
     {
         return entity.addComponent<RenderableSkeleton>(mat.getReal());
     }
 
-    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent2(LuaEntity& entity, const LuaMaterial& mat, const LuaMesh& boneMesh) noexcept
+    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent3(LuaEntity& entity, const LuaMaterial& mat, const LuaMesh& boneMesh) noexcept
     {
         return entity.addComponent<RenderableSkeleton>(mat.getReal(), boneMesh.getReal());
     }
@@ -107,7 +112,8 @@ namespace darmok
             "type_id", &entt::type_hash<RenderableSkeleton>::value,
             "add_entity_component", sol::overload(
                 &LuaRenderableSkeleton::addEntityComponent1,
-                &LuaRenderableSkeleton::addEntityComponent2
+                &LuaRenderableSkeleton::addEntityComponent2,
+                &LuaRenderableSkeleton::addEntityComponent3
             ),
             "get_entity_component", &LuaRenderableSkeleton::getEntityComponent,
             "get_entity", &LuaRenderableSkeleton::getEntity

@@ -23,9 +23,10 @@ namespace darmok
 
 		StandardProgramLoader() noexcept;
 		~StandardProgramLoader() noexcept;
-		virtual result_type operator()(StandardProgramType type) noexcept;
+		virtual result_type operator()(StandardProgramType type);
 		static std::optional<StandardProgramType> getType(std::string_view name) noexcept;
 		static bgfx::VertexLayout getVertexLayout(StandardProgramType type) noexcept;
+		static result_type getProgram(StandardProgramType type);
 	private:
 		std::unique_ptr<StandardProgramLoaderImpl> _impl;
 	};

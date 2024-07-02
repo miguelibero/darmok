@@ -274,7 +274,7 @@ namespace darmok
     class DARMOK_EXPORT RenderableSkeleton final
     {
     public:
-        RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh = nullptr) noexcept;
+        RenderableSkeleton(const std::shared_ptr<Material>& mat = nullptr, const std::shared_ptr<IMesh>& boneMesh = nullptr) noexcept;
         void update(Scene& scene, const std::vector<glm::mat4>& boneMatrixes) noexcept;
     private:
         std::shared_ptr<Material> _material;

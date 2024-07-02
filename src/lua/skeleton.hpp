@@ -52,9 +52,9 @@ namespace darmok
 	{
     public:
         LuaRenderableSkeleton(RenderableSkeleton& skel) noexcept;
-
-        static LuaRenderableSkeleton addEntityComponent1(LuaEntity& entity, const LuaMaterial& mat) noexcept;
-		static LuaRenderableSkeleton addEntityComponent2(LuaEntity& entity, const LuaMaterial& mat, const LuaMesh& boneMesh) noexcept;
+        static LuaRenderableSkeleton addEntityComponent1(LuaEntity& entity) noexcept;
+        static LuaRenderableSkeleton addEntityComponent2(LuaEntity& entity, const LuaMaterial& mat) noexcept;
+		static LuaRenderableSkeleton addEntityComponent3(LuaEntity& entity, const LuaMaterial& mat, const LuaMesh& boneMesh) noexcept;
 		static std::optional<LuaRenderableSkeleton> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
     

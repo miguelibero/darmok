@@ -61,16 +61,18 @@ namespace darmok
     public:
         using Animation = ozz::animation::Animation;
         using RawAnimation = ozz::animation::offline::RawAnimation;
-        AssimpOzzAnimationConverter(const aiScene& scene) noexcept;
+        AssimpOzzAnimationConverter(const aiScene& scene, OptionalRef<std::ostream> log = nullptr) noexcept;
         AssimpOzzAnimationConverter& setJointNames(const std::vector<std::string> jointNames) noexcept;
         Animation createAnimation(const std::string& name);
         Animation createAnimation();
         bool update(const std::string& name, RawAnimation& anim);
         std::vector<std::string> getAnimationNames();
     private:
+        OptionalRef<std::ostream> _log;
         const aiScene& _scene;
         std::vector<std::string> _jointNames;
         void update(const aiAnimation& assimpAnim, RawAnimation& anim);
+        bool logInfo(const aiAnimation& assimpAnim, const std::string& prefix = "") noexcept;
     };
 
 
@@ -150,6 +152,7 @@ namespace darmok
     private:
         size_t _bufferSize;
         AssimpSceneLoader _sceneLoader;
+
     };
 
     class AssimpSkeletalAnimationImporterImpl final
@@ -159,6 +162,7 @@ namespace darmok
         using OzzAnimation = ozz::animation::Animation;
 
         AssimpSkeletalAnimationImporterImpl(size_t bufferSize = 4096) noexcept;
+        void setLogOutput(OptionalRef<std::ostream> log) noexcept;
         OzzAnimation read(const std::filesystem::path& path, const std::string& animationName);
         bool startImport(const Input& input, bool dry);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
@@ -174,6 +178,7 @@ namespace darmok
         std::vector<std::string> _currentSkeletonJoints;
         std::shared_ptr<aiScene> _currentScene;
         std::vector<std::string> _currentAnimationNames;
+        OptionalRef<std::ostream> _log;
 
         AssimpSceneLoader _sceneLoader;
         size_t _bufferSize;

@@ -40,6 +40,7 @@ namespace darmok
     public:
         AssimpSkeletalAnimationImporter() noexcept;
         ~AssimpSkeletalAnimationImporter() noexcept;
+        void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
         bool startImport(const Input& input, bool dry) override;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         void endImport(const Input& input) override;

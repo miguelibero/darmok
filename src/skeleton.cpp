@@ -2,6 +2,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
+#include <darmok/program_standard.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/render.hpp>
 #include <darmok/data.hpp>
@@ -46,16 +47,22 @@ namespace darmok
         : _boneMesh(boneMesh)
         , _material(mat)
     {
+        if (!_material)
+        {
+            auto prog = StandardProgramLoader::getProgram(StandardProgramType::Debug);
+            _material = std::make_shared<Material>(prog);
+            _material->setColor(MaterialColorType::Diffuse, Colors::magenta());
+        }
         if (!_boneMesh)
         {
-            bgfx::VertexLayout layout = MeshData::getDefaultVertexLayout();
-            if (_material)
+            bgfx::VertexLayout layout;
+            if (auto prog = _material->getProgram())
             {
-                auto prog = _material->getProgram();
-                if (prog)
-                {
-                    layout = prog->getVertexLayout();
-                }
+                layout = prog->getVertexLayout();
+            }
+            else
+            {
+                layout = MeshData::getDefaultVertexLayout();
             }
             _boneMesh = MeshData(Line(), LineMeshType::Diamond).createMesh(layout);
         }

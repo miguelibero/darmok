@@ -84,6 +84,20 @@ namespace darmok
 		return parts;
 	}
 
+	std::string StringUtils::join(std::vector<std::string> strs, std::string_view sep) noexcept
+	{
+		std::ostringstream ss;
+		for (size_t i = 0; i < strs.size(); i++)
+		{
+			if (i > 0)
+			{
+				ss << sep;
+			}
+			ss << strs[i];
+		}
+		return ss.str();
+	}
+
 	std::string StringUtils::binToHex(uint8_t v) noexcept
 	{
 		std::string dest = "  ";
