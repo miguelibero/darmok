@@ -34,7 +34,14 @@
     "entt",
     "glm",
     "joltphysics",
-    "lua",
+    {
+      "name": "lua",
+      "features": [
+        "cpp",
+        "tools"
+      ]
+    },
+    "luasocket",
     "sol2",
     "nlohmann-json",
     "pugixml",

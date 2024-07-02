@@ -223,13 +223,36 @@ end
 		return -1;
 	}
 
-	void LuaRunnerAppImpl::addPackagePath(const std::string& path) noexcept
+	void LuaRunnerAppImpl::addPackagePath(const std::string& path, bool binary) noexcept
 	{
+		static const char sep = ';';
+		std::string fpath(path);
+		std::replace(fpath.begin(), fpath.end(), ',', sep);
 		auto& lua = *_lua;
-		std::string current = lua["package"]["path"];
-		auto pathPattern = std::filesystem::path(path) / std::filesystem::path("?.lua");
-		current += (!current.empty() ? ";" : "") + std::filesystem::absolute(pathPattern).string();
-		lua["package"]["path"] = current;
+		auto key = binary ? "cpath" : "path";
+		std::string current = lua["package"][key];
+
+		for (auto sub : StringUtils::split(fpath, sep))
+		{
+			std::filesystem::path spath(sub);
+			if (!spath.filename().string().contains('?') && spath.extension().empty())
+			{
+				if (binary)
+				{
+#if BX_PLATFORM_WINDOWS
+					spath /= "?.dll";
+#else
+					spath /= "?.so";
+#endif
+				}
+				else
+				{
+					spath /= "?.lua";
+				}
+			}
+			current += (!current.empty() ? ";" : "") + std::filesystem::absolute(spath).string();
+		}
+		lua["package"][key] = current;
 	}
 
 	static void luaPrint(sol::variadic_args args) noexcept
@@ -248,7 +271,11 @@ end
 
 		_lua = std::make_unique<sol::state>();
 		auto& lua = *_lua;
-		lua.open_libraries(sol::lib::base, sol::lib::package);
+		lua.open_libraries(
+			sol::lib::base, sol::lib::package, sol::lib::io,
+			sol::lib::table, sol::lib::string, sol::lib::coroutine,
+			sol::lib::math
+		);
 #ifndef _NDEBUG
 		lua.open_libraries(sol::lib::debug);
 #endif
@@ -270,6 +297,16 @@ end
 		{
 			addPackagePath(mainDir);
 		}
+
+#define XSTR(V) #V
+#define STR(V) XSTR(V)
+#ifdef LUA_PATH
+		addPackagePath(STR(LUA_PATH));
+#endif
+
+#ifdef LUA_CPATH
+		addPackagePath(STR(LUA_CPATH), true);
+#endif
 
 		auto result = lua.script_file(_mainLua.string());
 		if (!result.valid())

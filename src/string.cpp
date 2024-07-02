@@ -52,18 +52,35 @@ namespace darmok
 		return words;
 	}
 
+	std::vector<std::string> StringUtils::split(std::string_view sv, char sep) noexcept
+	{
+		std::vector<std::string> parts;
+		size_t start = 0, end = 0;
+		while ((end = sv.find(sep, start)) != std::string::npos)
+		{
+			parts.emplace_back(sv.substr(start, end - start));
+			start = end + 1;
+		}
+		if (start < sv.size() - 1)
+		{
+			parts.emplace_back(sv.substr(start));
+		}
+		return parts;
+	}
+
 	std::vector<std::string> StringUtils::split(std::string_view sv, std::string_view sep) noexcept
 	{
 		std::vector<std::string> parts;
-		size_t start = 0;
-		size_t end;
-
+		size_t start = 0, end = 0;
 		while ((end = sv.find(sep, start)) != std::string::npos)
 		{
 			parts.emplace_back(sv.substr(start, end - start));
 			start = end + sep.length();
 		}
-		parts.emplace_back(sv.substr(start));
+		if (start < sv.size() - sep.length())
+		{
+			parts.emplace_back(sv.substr(start));
+		}
 		return parts;
 	}
 
@@ -215,5 +232,15 @@ namespace darmok
 			++count;
 		}
 		return count;
+	}
+
+	std::optional<std::string> StringUtils::getEnv(const std::string& name)
+	{
+		char* val = getenv(name.c_str());
+		if (val == NULL)
+		{
+			return std::nullopt;
+		}
+		return std::string(val);
 	}
 }

@@ -8,7 +8,7 @@ function(darmok_sample_setup)
     ${ARGS_SOURCES}
     ${ARGS_ASSETS}
   )
-  target_compile_definitions(${ARGS_TARGET} PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1")
+  target_compile_definitions(${ARGS_TARGET} PRIVATE "DARMOK_IMPLEMENT_MAIN=1")
   target_link_libraries(${ARGS_TARGET} PUBLIC darmok)
   darmok_copy_dynamic_libs(${ARGS_TARGET})
   set_target_properties(${ARGS_TARGET} PROPERTIES FOLDER "darmok/samples")

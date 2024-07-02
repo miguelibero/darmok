@@ -15,6 +15,7 @@ namespace darmok
         static [[nodiscard]] std::optional<int> getIntSuffix(std::string_view name, std::string_view prefix) noexcept;
         static [[nodiscard]] std::string binToHex(uint8_t v) noexcept;
         static [[nodiscard]] std::vector<std::string> splitWords(std::string_view sv) noexcept;
+        static [[nodiscard]] std::vector<std::string> split(std::string_view sv, char sep) noexcept;
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
         static [[nodiscard]] uint8_t hexToBin(char chr);
         static [[nodiscard]] uint8_t hexToBin(std::string_view sv);
@@ -24,6 +25,7 @@ namespace darmok
         static [[nodiscard]] bool containsGlobPattern(std::string_view glob) noexcept;
         static [[nodiscard]] std::string globToRegex(std::string_view glob) noexcept;
         static [[nodiscard]] size_t replace(std::string& str, const std::string& src, const std::string& dst) noexcept;
+        static [[nodiscard]] std::optional<std::string> getEnv(const std::string& name);
 
         static void logDebug(std::string_view msg) noexcept;
         static void ltrim(std::string& str) noexcept;

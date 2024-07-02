@@ -71,6 +71,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * unlit
     * forward with phong lighting (point, ambient)
 * lua scripting
+    * lua debugging
 * multiple UI options
     * imgui for tooling
     * RmlUI for ingame (support for multiple canvases)

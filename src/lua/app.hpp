@@ -70,7 +70,7 @@ namespace darmok
 		std::optional<int32_t> findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept;
 		std::optional<int32_t> importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine);
 
-		void addPackagePath(const std::string& path) noexcept;
+		void addPackagePath(const std::string& path, bool binary = false) noexcept;
 
 		void version(const std::string& name) noexcept;
 		void help(const std::string& name, const char* error = nullptr) noexcept;

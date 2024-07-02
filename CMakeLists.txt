@@ -6,6 +6,8 @@ if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     CACHE STRING "")
 endif()
 
+set(VCPKG_BINARY_TARGET_DIR vcpkg_installed/${VCPKG_TARGET_TRIPLET})
+
 project(
   darmok
   VERSION 0.1.1
@@ -556,6 +558,30 @@ if(DARMOK_BUILD_LUA)
   target_include_directories(${LIB_NAME} PRIVATE ${LUA_INCLUDE_DIR})
   target_link_libraries(${LIB_NAME} PRIVATE ${LUA_LIBRARIES})
 
+  # luasocket
+  find_library(LUASOCKET_MIME_LIB mime.core)
+  find_library(LUASOCKET_SOCKET_LIB socket.core)
+  target_link_libraries(${LIB_NAME} PRIVATE ${LUASOCKET_MIME_LIB} ${LUASOCKET_SOCKET_LIB})
+
+  set(VCPKG_LUA_PATH
+    "${VCPKG_BINARY_TARGET_DIR}/share/lua/?.lua"
+  )
+  if(MSVC)
+    set(LUA_CPATH_EXT ".dll")
+  else()
+    set(LUA_CPATH_EXT ".so")
+  endif()
+  set(VCPKG_LUA_CPATH
+    "${VCPKG_BINARY_TARGET_DIR}/$<$<CONFIG:Debug>:debug/>bin/?${LUA_CPATH_EXT}"
+  )
+
+  string(REPLACE ";" "," LUA_PATH_DEFINE "${VCPKG_LUA_PATH}")
+  string(REPLACE ";" "," LUA_CPATH_DEFINE "${VCPKG_LUA_CPATH}")
+  target_compile_definitions(${LIB_NAME} PRIVATE
+    $<$<CONFIG:Debug>:LUA_PATH=${LUA_PATH_DEFINE}>
+    $<$<CONFIG:Debug>:LUA_CPATH=${LUA_CPATH_DEFINE}>
+  )
+
   # TODO: check how to use luajit
   #find_package(LuaJit REQUIRED)
   #target_include_directories(main PRIVATE ${LUAJIT_INCLUDE_DIR})
@@ -579,7 +605,7 @@ if(DARMOK_BUILD_LUA_EXE)
   add_executable(darmok::darmok-lua ALIAS ${LUA_EXE_NAME})
   target_compile_definitions(
     ${LUA_EXE_NAME}
-    PRIVATE "-DDARMOK_IMPLEMENT_MAIN=1"
+    PRIVATE DARMOK_IMPLEMENT_MAIN=1
   )
   set_target_properties(${LUA_EXE_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
   target_link_libraries(${LUA_EXE_NAME} ${LIB_NAME})
@@ -602,8 +628,6 @@ if(DARMOK_BUILD_OZZ)
     ozz_geometry
     ozz_animation
     ozz_animation_offline
-    # ozz_animation_tools
-    # ozz_options
   )
 endif()
 

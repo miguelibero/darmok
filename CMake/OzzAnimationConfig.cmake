@@ -5,7 +5,7 @@ FetchContent_Declare(ozz-animation
 )
 
 # FBX SDK can be downloaded from https://aps.autodesk.com/developer/overview/fbx-sdk
-set(ozz_build_tools ON CACHE BOOL "")
+set(ozz_build_tools OFF CACHE BOOL "")
 set(ozz_build_samples OFF CACHE BOOL "")
 set(ozz_build_howtos OFF CACHE BOOL "")
 set(ozz_build_tests OFF CACHE BOOL "")
@@ -14,28 +14,12 @@ set(FBX_MSVC_RT_DLL ON CACHE BOOL "")
 
 FetchContent_MakeAvailable(ozz-animation)
 
-set(OZZ_LIB_TARGETS
+set(OZZ_TARGETS
   ozz_base
   ozz_animation
   ozz_animation_offline
   ozz_geometry
-  ozz_options
-  ozz_animation_tools
-  json
 )
-
-set(OZZ_EXE_TARGETS
-  dump2ozz
-  gltf2ozz
-)
-
-if(TARGET ozz_animation_fbx)
-  list(APPEND OZZ_LIB_TARGETS ozz_animation_fbx)
-  list(APPEND OZZ_EXE_TARGETS fbx2ozz)
-endif()
-
-set(OZZ_TARGETS ${OZZ_LIB_TARGETS})
-list(APPEND OZZ_TARGETS ${OZZ_EXE_TARGETS})
 
 set_target_properties(${OZZ_TARGETS}
   PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
