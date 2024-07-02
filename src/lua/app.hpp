@@ -52,9 +52,9 @@ namespace darmok
 	class LuaRunnerAppImpl final
     {
     public:
-		~LuaRunnerAppImpl() noexcept;
+		LuaRunnerAppImpl(App& app) noexcept;
         std::optional<int32_t> setup(const std::vector<std::string>& args);
-		void init(App& app);
+		void init();
         void updateLogic(float deltaTime);
 		void beforeShutdown() noexcept;
         void afterShutdown() noexcept;
@@ -62,7 +62,7 @@ namespace darmok
     private:
 		static std::string _defaultAssetInputPath;
 		static std::string _defaultAssetOutputPath;
-
+		App& _app;
 		std::optional<LuaApp> _luaApp;
         std::unique_ptr<sol::state> _lua;
 		std::filesystem::path _mainLua;

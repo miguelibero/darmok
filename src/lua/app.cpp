@@ -109,7 +109,7 @@ end
 	}
 
 	LuaRunnerApp::LuaRunnerApp() noexcept
-		: _impl(std::make_unique<LuaRunnerAppImpl>())
+		: _impl(std::make_unique<LuaRunnerAppImpl>(*this))
 	{
 	}
 
@@ -126,7 +126,7 @@ end
 	void LuaRunnerApp::init()
 	{
 		App::init();
-		return _impl->init(*this);
+		return _impl->init();
 	}
 
 	void LuaRunnerApp::shutdown()
@@ -142,10 +142,19 @@ end
 		_impl->updateLogic(deltaTime);
 	}
 
-	LuaRunnerAppImpl::~LuaRunnerAppImpl() noexcept
+	LuaRunnerAppImpl::LuaRunnerAppImpl(App& app) noexcept
+		: _app(app)
 	{
-		_luaApp.reset();
-		_lua.reset();
+	}
+
+	static void luaPrint(sol::variadic_args args) noexcept
+	{
+		std::ostringstream oss;
+		for (auto arg : args)
+		{
+			oss << arg.as<std::string>() << " ";
+		}
+		StreamUtils::logDebug(oss.str());
 	}
 
 	std::optional<int> LuaRunnerAppImpl::setup(const std::vector<std::string>& args)
@@ -176,7 +185,60 @@ end
 		{
 			return r.value();
 		}
-		return findMainLua(cmdName, cmdLine);
+		r = findMainLua(cmdName, cmdLine);
+		if (r)
+		{
+			return r;
+		}
+
+		auto mainDir = _mainLua.parent_path().string();
+
+		_lua = std::make_unique<sol::state>();
+		auto& lua = *_lua;
+		lua.open_libraries(
+			sol::lib::base, sol::lib::package, sol::lib::io,
+			sol::lib::table, sol::lib::string, sol::lib::coroutine,
+			sol::lib::math, sol::lib::os
+		);
+#ifndef _NDEBUG
+		lua.open_libraries(sol::lib::debug);
+#endif
+
+		LuaMath::bind(lua);
+		LuaShape::bind(lua);
+		LuaAssets::bind(lua);
+		LuaScene::bind(lua);
+		LuaWindow::bind(lua);
+		LuaInput::bind(lua);
+		LuaApp::bind(lua);
+		LuaRmluiAppComponent::bind(lua);
+
+		_luaApp.emplace(_app);
+		lua["app"] = std::ref(_luaApp.value());
+		lua.set_function("print", luaPrint);
+
+		if (!mainDir.empty())
+		{
+			addPackagePath(mainDir);
+		}
+
+#define XSTR(V) #V
+#define STR(V) XSTR(V)
+#ifdef LUA_PATH
+		addPackagePath(STR(LUA_PATH));
+#endif
+
+#ifdef LUA_CPATH
+		addPackagePath(STR(LUA_CPATH), true);
+#endif
+
+		auto result = lua.script_file(_mainLua.string());
+		if (!result.valid())
+		{
+			recoveredLuaError("running main", result);
+			return -1;
+		}
+		return std::nullopt;
 	}
 
 	std::optional<int32_t> LuaRunnerAppImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
@@ -255,69 +317,19 @@ end
 		lua["package"][key] = current;
 	}
 
-	static void luaPrint(sol::variadic_args args) noexcept
+	void LuaRunnerAppImpl::init()
 	{
-		std::ostringstream oss;
-		for (auto arg : args)
-		{
-			oss << arg.as<std::string>() << " ";
-		}
-		StreamUtils::logDebug(oss.str());
-	}
-
-	void LuaRunnerAppImpl::init(App& app)
-	{
-		auto mainDir = _mainLua.parent_path().string();
-
-		_lua = std::make_unique<sol::state>();
 		auto& lua = *_lua;
-		lua.open_libraries(
-			sol::lib::base, sol::lib::package, sol::lib::io,
-			sol::lib::table, sol::lib::string, sol::lib::coroutine,
-			sol::lib::math
-		);
-#ifndef _NDEBUG
-		lua.open_libraries(sol::lib::debug);
-#endif
-
-		LuaMath::bind(lua);
-		LuaShape::bind(lua);
-		LuaAssets::bind(lua);
-		LuaScene::bind(lua);
-		LuaWindow::bind(lua);
-		LuaInput::bind(lua);
-		LuaApp::bind(lua);
-		LuaRmluiAppComponent::bind(lua);
-
-		_luaApp.emplace(app);
-		lua["app"] = std::ref(_luaApp.value());
-		lua.set_function("print", luaPrint);
-
-		if (!mainDir.empty())
+		sol::protected_function init = lua["init"];
+		if (init)
 		{
-			addPackagePath(mainDir);
+			auto result = init();
+			if (!result.valid())
+			{
+				recoveredLuaError("running init", result);
+			}
 		}
-
-#define XSTR(V) #V
-#define STR(V) XSTR(V)
-#ifdef LUA_PATH
-		addPackagePath(STR(LUA_PATH));
-#endif
-
-#ifdef LUA_CPATH
-		addPackagePath(STR(LUA_CPATH), true);
-#endif
-
-		auto result = lua.script_file(_mainLua.string());
-		if (!result.valid())
-		{
-			recoveredLuaError("running main", result);
-		}
-		else
-		{
-			_luaApp->registerUpdate(lua["update"]);
-		}
-
+		_luaApp->registerUpdate(lua["update"]);
 	}
 
 	std::string LuaRunnerAppImpl::_defaultAssetInputPath = "asset_sources";
