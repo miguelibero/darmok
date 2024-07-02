@@ -1,9 +1,7 @@
 #include <darmok/stream.hpp>
-#include <bx/platform.h>
+#include <bx/debug.h>
+#include <bx/string.h>
 
-#if BX_PLATFORM_WINDOWS
-#include <Windows.h>
-#endif
 
 namespace darmok
 {
@@ -16,12 +14,17 @@ namespace darmok
         }
     }
 
-    void StreamUtils::logDebug(const std::string& msg) noexcept
+    void StreamUtils::logDebug(const std::string& msg, bool error) noexcept
     {
-        std::cerr << msg << std::endl;
-#if BX_PLATFORM_WINDOWS
-        OutputDebugString(msg.c_str());
-#endif
+        if (error)
+        {
+            std::cerr << msg << std::endl;
+        }
+        else
+        {
+            std::cout << msg << std::endl;
+        }
+        bx::debugOutput(bx::StringView(msg.data(), msg.size()));
     }
 
     PrefixBuffer::PrefixBuffer(OptionalRef<std::streambuf> buffer, const std::string& prefix) noexcept

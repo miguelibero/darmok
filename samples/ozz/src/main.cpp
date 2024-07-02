@@ -30,7 +30,7 @@ namespace
 			App::init();
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
-			auto& skelUpdater = scene.addSceneComponent<SkeletalAnimationSceneComponent>();
+			scene.addSceneComponent<SkeletalAnimationSceneComponent>();
 
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			
@@ -59,7 +59,8 @@ namespace
 
 			auto animConfig = getAssets().getSkeletalAnimatorConfigLoader()("animator.json");
 
-			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, animConfig, getAssets().getSkeletalAnimationLoader());
+			auto anims = animConfig.loadAnimations(getAssets().getSkeletalAnimationLoader());
+			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, animConfig);
 			_animator->play("locomotion");
 
 			auto skelEntity = scene.createEntity();

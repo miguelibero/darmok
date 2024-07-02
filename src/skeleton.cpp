@@ -361,6 +361,19 @@ namespace darmok
         return v;
     }
 
+    SkeletalAnimatorConfig::AnimationMap SkeletalAnimatorConfig::loadAnimations(ISkeletalAnimationLoader& loader) const
+    {
+        AnimationMap anims;
+        for (auto& elm : _states)
+        {
+            for (auto& anim : elm.second.animations)
+            {
+                anims.emplace(anim.animation, loader(getAnimationName(anim.animation)));
+            }
+        }
+        return anims;
+    }
+
     void SkeletalAnimatorConfig::readJson(const nlohmann::json& json)
     {
         if (json.contains("animationNamePattern"))

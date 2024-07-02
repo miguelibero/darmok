@@ -97,6 +97,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * window modes with different resolutions
 * frustrum culling
 * binary texture atlas
+* loading progress
 * modernize renderer (probably needs frame graph or similar)
     * deferred
     * other types of lights

@@ -232,11 +232,12 @@ end
 		addPackagePath(STR(LUA_CPATH), true);
 #endif
 
+		// TODO: thow here if failed to load
 		auto result = lua.script_file(_mainLua.string());
-		if (!result.valid())
+		auto relm = result[0];
+		if (relm.is<int>())
 		{
-			recoveredLuaError("running main", result);
-			return -1;
+			return relm.get<int>();
 		}
 		return std::nullopt;
 	}
@@ -323,11 +324,7 @@ end
 		sol::protected_function init = lua["init"];
 		if (init)
 		{
-			auto result = init();
-			if (!result.valid())
-			{
-				recoveredLuaError("running init", result);
-			}
+			init();
 		}
 		_luaApp->registerUpdate(lua["update"]);
 	}

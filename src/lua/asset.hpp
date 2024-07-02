@@ -2,6 +2,7 @@
 
 #include <string>
 #include <memory>
+#include <unordered_map>
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/program_fwd.hpp>
@@ -20,8 +21,11 @@ namespace darmok
 	class LuaProgram;
 	class LuaTexture;
 	class LuaTextureAtlas;
-	class LuaSkeleton;
-	class LuaSkeletalAnimation;
+	class Skeleton;
+	class SkeletalAnimation;
+	struct SkeletalAnimatorConfig;
+
+	using SkeletalAnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
 
 	class LuaAssets final
 	{
@@ -40,8 +44,10 @@ namespace darmok
 		LuaTextureAtlas loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
 		std::shared_ptr<Model> loadModel1(const std::string& name);
 		std::shared_ptr<Model> loadModel2(const std::string& name, const AssimpModelLoadConfig& config);
-		LuaSkeleton loadSkeleton(const std::string& name);
-		LuaSkeletalAnimation loadSkeletalAnimation(const std::string& name);
+		std::shared_ptr<Skeleton> loadSkeleton(const std::string& name);
+		std::shared_ptr<SkeletalAnimation> loadSkeletalAnimation(const std::string& name);
+		SkeletalAnimatorConfig loadSkeletalAnimatorConfig(const std::string& name);
+		SkeletalAnimationMap loadSkeletalAnimations(const SkeletalAnimatorConfig& config);
 
 		static void bind(sol::state_view& lua) noexcept;
 

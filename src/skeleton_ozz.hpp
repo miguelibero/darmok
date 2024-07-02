@@ -133,8 +133,9 @@ namespace darmok
 		using Config = SkeletalAnimatorConfig;
 		using Transition = OzzSkeletalAnimatorTransition;
 		using State = OzzSkeletalAnimatorState;
+		using AnimationMap = SkeletalAnimationMap;
 
-		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const Config& config, ISkeletalAnimationLoader& loader) noexcept;
+		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Config& config) noexcept;
 
 		void addListener(ISkeletalAnimatorListener& listener) noexcept;
 		bool removeListener(ISkeletalAnimatorListener& listener) noexcept;
@@ -156,7 +157,7 @@ namespace darmok
 		std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override;
 	private:
 		using TransitionKey = std::pair<std::string, std::string>;
-		ISkeletalAnimationLoader& _loader;
+		AnimationMap _animations;
 		SkeletalAnimator& _animator;
 		std::shared_ptr<Skeleton> _skeleton;
 		Config _config;

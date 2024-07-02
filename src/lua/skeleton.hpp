@@ -2,49 +2,34 @@
 
 #include <darmok/optional_ref.hpp>
 #include <memory>
+#include <unordered_map>
+#include <string>
 #include <sol/sol.hpp>
 
 namespace darmok
 {
     class Skeleton;
-
-    class LuaSkeleton final
-    {
-    public:
-        LuaSkeleton(const std::shared_ptr<Skeleton>& skel) noexcept;
-        std::string to_string() const noexcept;
-        std::shared_ptr<Skeleton> getReal() const noexcept;
-        static void bind(sol::state_view& lua) noexcept;
-    private:
-        std::shared_ptr<Skeleton> _skel;
-    };
-
     class SkeletalAnimation;
-
-    class LuaSkeletalAnimation final
-    {
-    public:
-        LuaSkeletalAnimation(const std::shared_ptr<SkeletalAnimation>& anim) noexcept;
-        std::string to_string() const noexcept;
-        std::shared_ptr<SkeletalAnimation> getReal() const noexcept;
-        static void bind(sol::state_view& lua) noexcept;
-    private:
-        std::shared_ptr<SkeletalAnimation> _anim;
-    };
-
     struct SkeletalAnimatorConfig;
     class SkeletalAnimator;
+
     class LuaEntity;
     class LuaScene;
-    class LuaAssets;
+
+    struct LuaSkeleton final
+    {
+        static void bind(sol::state_view& lua) noexcept;
+    };
 
     class LuaSkeletalAnimator final
 	{
     public:
         using Config = SkeletalAnimatorConfig;
-        LuaSkeletalAnimator(SkeletalAnimator& animator) noexcept;
+        using AnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
         
-        static LuaSkeletalAnimator addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const std::string& name, LuaAssets& assets) noexcept;
+        LuaSkeletalAnimator(SkeletalAnimator& animator) noexcept;
+
+        static LuaSkeletalAnimator addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
 		static std::optional<LuaSkeletalAnimator> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 

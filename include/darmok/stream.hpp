@@ -8,7 +8,7 @@ namespace darmok
     struct StreamUtils final
     {
         static void copyStream(std::istream& input, std::ostream& output, size_t bufferSize = 4096);
-        static void logDebug(const std::string& msg) noexcept;
+        static void logDebug(const std::string& msg, bool error = false) noexcept;
     };
 
     class PrefixBuffer final : public std::streambuf

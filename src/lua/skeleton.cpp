@@ -9,54 +9,12 @@
 
 namespace darmok
 {
-    LuaSkeleton::LuaSkeleton(const std::shared_ptr<Skeleton>& skel) noexcept
-        : _skel(skel)
-    {
-    }
-
-    std::string LuaSkeleton::to_string() const noexcept
-    {
-        if (!_skel)
-        {
-            return "Skeleton(null)";
-        }
-        return _skel->to_string();
-    }
-
-    std::shared_ptr<Skeleton> LuaSkeleton::getReal() const noexcept
-    {
-        return _skel;
-    }
-
     void LuaSkeleton::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<LuaSkeleton>("Skeleton", sol::no_constructor
-        );
-        LuaSkeletalAnimation::bind(lua);
-    }
-
-    LuaSkeletalAnimation::LuaSkeletalAnimation(const std::shared_ptr<SkeletalAnimation>& anim) noexcept
-        : _anim(anim)
-    {
-    }
-
-    std::string LuaSkeletalAnimation::to_string() const noexcept
-    {
-        if (!_anim)
-        {
-            return "SkeletalAnimation(null)";
-        }
-        return _anim->to_string();
-    }
-
-    std::shared_ptr<SkeletalAnimation> LuaSkeletalAnimation::getReal() const noexcept
-    {
-        return _anim;
-    }
-
-    void LuaSkeletalAnimation::bind(sol::state_view& lua) noexcept
-    {
-        lua.new_usertype<LuaSkeletalAnimation>("SkeletalAnimation", sol::no_constructor
+        lua.new_usertype<Skeleton>("Skeleton", sol::no_constructor);
+        lua.new_usertype<SkeletalAnimation>("SkeletalAnimation", sol::no_constructor,
+            "name", sol::property(&SkeletalAnimation::getName),
+            "duration", sol::property(&SkeletalAnimation::getDuration)
         );
     }
 
@@ -65,11 +23,9 @@ namespace darmok
     {
     }
 
-    LuaSkeletalAnimator LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const LuaSkeleton& skel, const std::string& name, LuaAssets& assets) noexcept
+    LuaSkeletalAnimator LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept
     {
-        auto config = assets.getReal().getSkeletalAnimatorConfigLoader()(name);
-        auto& animLoader = assets.getReal().getSkeletalAnimationLoader();
-        return entity.addComponent<SkeletalAnimator>(skel.getReal(), config, animLoader);
+        return entity.addComponent<SkeletalAnimator>(skel, anims, config);
     }
 
     std::optional<LuaSkeletalAnimator> LuaSkeletalAnimator::getEntityComponent(LuaEntity& entity) noexcept

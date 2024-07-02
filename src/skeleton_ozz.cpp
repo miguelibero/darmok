@@ -216,12 +216,12 @@ namespace darmok
             std::make_unique<SkeletalAnimationImpl>(std::move(anim.value())));
     }
 
-    SkeletalAnimatorImpl::SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const Config& config, ISkeletalAnimationLoader& loader) noexcept
+    SkeletalAnimatorImpl::SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Config& config) noexcept
         : _animator(animator)
         , _skeleton(skeleton)
         , _speed(1.F)
         , _config(config)
-        , _loader(loader)
+        , _animations(animations)
     {
         auto& skel = getOzz();
         _models.resize(skel.num_joints());
@@ -631,7 +631,12 @@ namespace darmok
 
     std::shared_ptr<SkeletalAnimation> SkeletalAnimatorImpl::operator()(std::string_view name)
     {
-        return _loader(_config.getAnimationName(name));
+        auto itr = _animations.find(std::string(name));
+        if (itr == _animations.end())
+        {
+            return nullptr;
+        }
+        return itr->second;
     }
 
     SkeletalAnimator::~SkeletalAnimator()
@@ -742,8 +747,8 @@ namespace darmok
         }
     }
 
-    SkeletalAnimator::SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const Config& config, ISkeletalAnimationLoader& loader) noexcept
-        : _impl(std::make_unique<SkeletalAnimatorImpl>(*this, skel, config, loader))
+    SkeletalAnimator::SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept
+        : _impl(std::make_unique<SkeletalAnimatorImpl>(*this, skel, anims, config))
     {
     }
 

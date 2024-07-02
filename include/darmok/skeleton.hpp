@@ -160,6 +160,8 @@ namespace darmok
         virtual const ISkeletalAnimatorState& getPreviousState() const = 0;
     };
 
+    using SkeletalAnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
+
     struct DARMOK_EXPORT SkeletalAnimatorConfig final
     {
         using StateConfig = SkeletalAnimatorStateConfig;
@@ -180,7 +182,8 @@ namespace darmok
 
         void readJson(const nlohmann::json& json);
 
-        std::string getAnimationName(std::string_view key) const noexcept;
+        using AnimationMap = SkeletalAnimationMap;
+        AnimationMap loadAnimations(ISkeletalAnimationLoader& loader) const;
 
         SkeletalAnimatorConfig& addState(const StateConfig& config) noexcept;
         SkeletalAnimatorConfig& addState(std::string_view animation, std::string_view name = "") noexcept;
@@ -200,6 +203,7 @@ namespace darmok
         std::unordered_map<std::string, StateConfig> _states;
         std::unordered_map<TransitionKey, TransitionConfig, TransitionKeyHash> _transitions;
 
+        std::string getAnimationName(std::string_view key) const noexcept;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorConfigLoader
@@ -239,7 +243,8 @@ namespace darmok
     {
     public:
         using Config = SkeletalAnimatorConfig;
-        SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const Config& config, ISkeletalAnimationLoader& loader) noexcept;
+        using AnimationMap = SkeletalAnimationMap;
+        SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
         ~SkeletalAnimator();
 
         SkeletalAnimator& addListener(ISkeletalAnimatorListener& listener) noexcept;
