@@ -1,4 +1,5 @@
 {
+    "animationNamePattern": "BasicMotions@*.ozz",
     "states": {
         "locomotion": {
             "tween": {
@@ -6,39 +7,39 @@
             },
             "elements": [
                 {
-                    "animation": "BasicMotions@Idle01.ozz",
+                    "animation": "Idle01",
                     "value": [ 0, 0 ]
                 },
                 {
-                    "animation": "BasicMotions@Run01 - Backwards.ozz",
+                    "animation": "Run01 - Backwards",
                     "value": [ 0, -1 ]
                 },
                 {
-                    "animation": "BasicMotions@Run01 - BackwardsLeft.ozz",
+                    "animation": "Run01 - BackwardsLeft",
                     "value": [ 1, -1 ]
                 },
                 {
-                    "animation": "BasicMotions@Run01 - BackwardsRight.ozz",
+                    "animation": "Run01 - BackwardsRight",
                     "value": [ -1, -1 ]
                 },
                 {
-                    "animation": "BasicMotions@Run01 - Forwards.ozz",
+                    "animation": "Run01 - Forwards",
                     "value": [ 0, 1 ]
                 },
                 {
-                    "animation": "BasicMotions@Run01 - ForwardsLeft.ozz",
+                    "animation": "Run01 - ForwardsLeft",
                     "value": [ -1, 1 ]
                 },
                 {
-                    "animation": "BasicMotions@Run01 - ForwardsRight.ozz",
+                    "animation": "Run01 - ForwardsRight",
                     "value": [ 1, 1 ]
                 },
                 {
-                    "animation": "BasicMotions@Run01 - Left.ozz",
+                    "animation": "Run01 - Left",
                     "value": [ -1, 0 ]
                 },
                 {
-                    "animation": "BasicMotions@Run01 - Right.ozz",
+                    "animation": "Run01 - Right",
                     "value": [ 1, 0 ]
                 }
             ],
@@ -46,7 +47,7 @@
             "blend": "directional"
         },
         "talk": {
-            "animation": "BasicMotions@Talk01.ozz"
+            "animation": "Talk01"
         }
     },
     "transitions": {

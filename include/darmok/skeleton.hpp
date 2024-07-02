@@ -180,6 +180,8 @@ namespace darmok
 
         void readJson(const nlohmann::json& json);
 
+        std::string getAnimationName(std::string_view key) const noexcept;
+
         SkeletalAnimatorConfig& addState(const StateConfig& config) noexcept;
         SkeletalAnimatorConfig& addState(std::string_view animation, std::string_view name = "") noexcept;
         SkeletalAnimatorConfig& addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept;
@@ -190,10 +192,11 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(_states, _transitions);
+            archive(_states, _transitions, _animationPattern);
         }
 
     private:
+        std::string _animationPattern;
         std::unordered_map<std::string, StateConfig> _states;
         std::unordered_map<TransitionKey, TransitionConfig, TransitionKeyHash> _transitions;
 

@@ -24,7 +24,7 @@ namespace darmok
         static [[nodiscard]] std::string escapeArgument(std::string_view arg) noexcept;
         static [[nodiscard]] bool containsGlobPattern(std::string_view glob) noexcept;
         static [[nodiscard]] std::string globToRegex(std::string_view glob) noexcept;
-        static [[nodiscard]] size_t replace(std::string& str, const std::string& src, const std::string& dst) noexcept;
+        static [[nodiscard]] size_t replace(std::string& str, std::string_view src, std::string_view dst) noexcept;
         static [[nodiscard]] std::optional<std::string> getEnv(const std::string& name);
 
         static void logDebug(std::string_view msg) noexcept;

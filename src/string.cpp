@@ -217,7 +217,7 @@ namespace darmok
 		return regex.str();
 	}
 
-	size_t StringUtils::replace(std::string& str, const std::string& src, const std::string& dst) noexcept
+	size_t StringUtils::replace(std::string& str, std::string_view src, std::string_view dst) noexcept
 	{
 		if (src.empty())
 		{

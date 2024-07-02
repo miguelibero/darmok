@@ -599,7 +599,7 @@ namespace darmok
             if (transConfig)
             {
                 _transition.emplace(transConfig.value(),
-                    State(getOzz(), stateConfig.value(), _loader),
+                    State(getOzz(), stateConfig.value(), *this),
                     std::move(prevState.value()));
                 for (auto& listener : _listeners)
                 {
@@ -620,13 +620,18 @@ namespace darmok
             }
         }
 
-        _state.emplace(getOzz(), stateConfig.value(), _loader);
+        _state.emplace(getOzz(), stateConfig.value(), *this);
         for (auto& listener : _listeners)
         {
             listener->onAnimatorStateStarted(_animator, _state->getName());
         }
 
         return true;
+    }
+
+    std::shared_ptr<SkeletalAnimation> SkeletalAnimatorImpl::operator()(std::string_view name)
+    {
+        return _loader(_config.getAnimationName(name));
     }
 
     SkeletalAnimator::~SkeletalAnimator()

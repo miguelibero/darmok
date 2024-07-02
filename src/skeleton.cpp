@@ -350,21 +350,42 @@ namespace darmok
         }
     }
 
+    std::string SkeletalAnimatorConfig::getAnimationName(std::string_view key) const noexcept
+    {
+        if (_animationPattern.empty())
+        {
+            return std::string(key);
+        }
+        std::string v = _animationPattern;
+        StringUtils::replace(v, "*", key);
+        return v;
+    }
+
     void SkeletalAnimatorConfig::readJson(const nlohmann::json& json)
     {
-        for (auto& stateJson : json["states"].items())
+        if (json.contains("animationNamePattern"))
         {
-            StateConfig config;
-            config.name = stateJson.key();
-            config.readJson(stateJson.value());
-            addState(config);
+            _animationPattern = json["animationNamePattern"];
         }
-        for (auto& transitionJson : json["transitions"].items())
+        if (json.contains("states"))
         {
-            TransitionConfig config;
-            config.readJson(transitionJson.value());
-            auto [src, dst] = TransitionConfig::readJsonKey(transitionJson.key());
-            addTransition(src, dst, config);
+            for (auto& stateJson : json["states"].items())
+            {
+                StateConfig config;
+                config.name = stateJson.key();
+                config.readJson(stateJson.value());
+                addState(config);
+            }
+        }
+        if (json.contains("transitions"))
+        {
+            for (auto& transitionJson : json["transitions"].items())
+            {
+                TransitionConfig config;
+                config.readJson(transitionJson.value());
+                auto [src, dst] = TransitionConfig::readJsonKey(transitionJson.key());
+                addTransition(src, dst, config);
+            }
         }
     }
 
