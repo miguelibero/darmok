@@ -10,9 +10,9 @@ namespace darmok
 		lua.new_usertype<Rectangle>("Rectangle", sol::no_constructor,
 			"new", sol::overload(
 				[]() { return Rectangle(); },
-				[](const VarLuaTable<glm::vec2>& size) { 
+				[](const VarLuaVecTable<glm::vec2>& size) {
 					return Rectangle(LuaGlm::tableGet(size)); },
-				[](const VarLuaTable<glm::vec2>& size, const VarLuaTable<glm::vec2>& origin) {
+				[](const VarLuaVecTable<glm::vec2>& size, const VarLuaTable<glm::vec2>& origin) {
 					return Rectangle(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
 			),
 			"size", &Rectangle::size,
@@ -23,9 +23,9 @@ namespace darmok
 		lua.new_usertype<Cube>("Cube", sol::no_constructor,
 			"new", sol::overload(
 				[]() { return Cube(); },
-				[](const VarLuaTable<glm::vec3>& size) {
+				[](const VarLuaVecTable<glm::vec3>& size) {
 					return Cube(LuaGlm::tableGet(size)); },
-				[](const VarLuaTable<glm::vec3>& size, const VarLuaTable<glm::vec3>& origin) {
+				[](const VarLuaVecTable<glm::vec3>& size, const VarLuaTable<glm::vec3>& origin) {
 					return Cube(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
 			),
 			"size", &Cube::size,

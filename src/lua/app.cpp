@@ -361,10 +361,6 @@ end
 		{
 			outputPath = _defaultAssetOutputPath.c_str();
 		}
-		if (std::filesystem::is_directory(outputPath))
-		{
-			_app.getAssets().setBasePath(outputPath);
-		}
 		DarmokAssetImporter importer(inputPath);
 		importer.setOutputPath(outputPath);
 		const char* cachePath = nullptr;
@@ -388,6 +384,12 @@ end
 		}
 
 		importer(std::cout);
+
+		if (std::filesystem::is_directory(outputPath))
+		{
+			_app.getAssets().setBasePath(outputPath);
+		}
+
 		return true;
 	}
 
