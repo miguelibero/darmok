@@ -77,13 +77,13 @@ namespace darmok
             * glm::translate(-pivot);
     }
 
-    bool Math::decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale, glm::vec3& pivot) noexcept
+    bool Math::decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale) noexcept
     {
         glm::vec3 skew{};
         glm::vec4 perspective{};
         glm::decompose(trans, scale, rot, pos, skew, perspective);
         // TODO: check skew == [0, 0, 0] && persp == [0, 0, 0, 1]
-        // TODO: calc pivot
+        rot = glm::conjugate(rot);
         return true;
     }
 }

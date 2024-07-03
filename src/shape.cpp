@@ -60,6 +60,20 @@ namespace darmok
         return "Cube(size=" + glm::to_string(size) + ", origin=" + glm::to_string(origin) + ")";
     }
 
+    Cube& Cube::operator*=(float scale) noexcept
+    {
+        size *= scale;
+        origin *= scale;
+        return *this;
+    }
+
+    Cube Cube::operator*(float scale) const noexcept
+    {
+        Cube cube(*this);
+        cube *= scale;
+        return cube;
+    }
+
     Triangle::Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept
         : vertices{ vert1, vert2, vert3 }
     {
@@ -98,6 +112,20 @@ namespace darmok
     std::string Sphere::to_string() const noexcept
     {
         return "Cube(radius=" + std::to_string(radius) + ", origin=" + glm::to_string(origin) + ")";
+    }
+
+    Sphere& Sphere::operator*=(float scale) noexcept
+    {
+        origin *= scale;
+        radius *= scale;
+        return *this;
+    }
+
+    Sphere Sphere::operator*(float scale) const noexcept
+    {
+        Sphere copy(*this);
+        copy *= scale;
+        return copy;
     }
 
     Plane::Plane(const glm::vec3& normal, float constant) noexcept
@@ -280,6 +308,21 @@ namespace darmok
     {
         const static Capsule v;
         return v;
+    }
+
+    Capsule& Capsule::operator*=(float scale) noexcept
+    {
+        cylinderHeight *= scale;
+        radius *= scale;
+        origin *= scale;
+        return *this;
+    }
+
+    Capsule Capsule::operator*(float scale) const noexcept
+    {
+        Capsule copy(*this);
+        copy *= scale;
+        return copy;
     }
 
     std::string NormalIntersection::to_string() const noexcept

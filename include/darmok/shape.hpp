@@ -21,6 +21,9 @@ namespace darmok
         std::vector<Line> toLines() const noexcept;
 
         static const Rectangle& standard() noexcept;
+
+        Rectangle& operator*=(float scale) noexcept;
+        Rectangle operator*(float scale) const noexcept;
     };
 
     struct DARMOK_EXPORT Cube final
@@ -30,6 +33,9 @@ namespace darmok
 
         Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
         std::string to_string() const noexcept;
+
+        Cube& operator*=(float scale) noexcept;
+        Cube operator*(float scale) const noexcept;
 
         static const Cube& standard() noexcept;
     };
@@ -55,6 +61,9 @@ namespace darmok
         std::string to_string() const noexcept;
 
         static const Sphere& standard() noexcept;
+
+        Sphere& operator*=(float scale) noexcept;
+        Sphere operator*(float scale) const noexcept;
     };
 
     struct DARMOK_EXPORT Plane final
@@ -82,6 +91,9 @@ namespace darmok
         Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
         std::string to_string() const noexcept;
         static const Capsule& standard() noexcept;
+
+        Capsule& operator*=(float scale) noexcept;
+        Capsule operator*(float scale) const noexcept;
     };
 
     struct DARMOK_EXPORT NormalIntersection final
@@ -127,7 +139,6 @@ namespace darmok
         std::optional<DistanceIntersection> intersect(const Triangle& tri) const noexcept;
 
         static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const glm::ivec4& viewport) noexcept;
-
     };
 
     struct DARMOK_EXPORT Line final

@@ -76,7 +76,7 @@ namespace darmok
 		// methods used in Transform to generate the matrix
         static [[nodiscard]] glm::mat4 translateRotateScale(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;
         static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale, const glm::vec3& pivot = glm::vec3(0)) noexcept;
-        static bool decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale, glm::vec3& pivot) noexcept;
+        static bool decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale) noexcept;
     };
 }
 

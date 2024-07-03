@@ -1,12 +1,16 @@
 #include "camera.hpp"
-#include "program.hpp"
-#include "texture.hpp"
 #include "scene.hpp"
 #include "render_forward.hpp"
 #include "light.hpp"
+#include <darmok/program.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/light.hpp>
+
+#ifdef DARMOK_JOLT
+#include "physics3d_debug.hpp"
+#endif
 
 #ifdef DARMOK_OZZ
 #include "skeleton.hpp"
@@ -78,32 +82,14 @@ namespace darmok
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setTargetTextures(const sol::table& textures) noexcept
+	void LuaCamera::setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept
 	{
-		std::vector<std::shared_ptr<Texture>> realTextures;
-		realTextures.reserve(textures.size());
-		for (auto& elm : textures)
-		{
-			if (elm.second.is<LuaTexture>())
-			{
-				auto& luaTexture = elm.second.as<LuaTexture>();
-				realTextures.push_back(luaTexture.getReal());
-			}
-		}
-		_camera->setTargetTextures(realTextures);
-		return *this;
+		_camera->setTargetTextures(textures);
 	}
 
-	std::vector<LuaTexture> LuaCamera::getTargetTextures() noexcept
+	std::vector<std::shared_ptr<Texture>> LuaCamera::getTargetTextures() noexcept
 	{
-		auto& textures = _camera->getTargetTextures();
-		std::vector<LuaTexture> luaTextures;
-		luaTextures.reserve(textures.size());
-		for (auto& tex : textures)
-		{
-			luaTextures.push_back(LuaTexture(tex));
-		}
-		return luaTextures;
+		return _camera->getTargetTextures();
 	}
 
 	std::optional<Viewport> LuaCamera::getViewport() const noexcept
@@ -112,10 +98,9 @@ namespace darmok
 	}
 
 
-	LuaCamera& LuaCamera::setViewport(std::optional<VarViewport> viewport) noexcept
+	void LuaCamera::setViewport(std::optional<VarViewport> viewport) noexcept
 	{
 		_camera->setViewport(LuaViewport::tableGet(viewport));
-		return *this;
 	}
 
 	Viewport LuaCamera::getCurrentViewport() const noexcept
@@ -213,6 +198,10 @@ namespace darmok
 		LuaViewport::bind(lua);
 		LuaForwardRenderer::bind(lua);
 		LuaPhongLightingComponent::bind(lua);
+
+#ifdef DARMOK_JOLT
+		physics3d::LuaPhysicsDebugRenderer::bind(lua);
+#endif
 
 #ifdef DARMOK_OZZ
 		LuaSkeletalAnimationCameraComponent::bind(lua);

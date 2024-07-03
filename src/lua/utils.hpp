@@ -4,7 +4,7 @@
 
 namespace darmok
 {
-	void recoveredLuaError(const std::string& desc, const sol::error& err) noexcept;
+	void logLuaError(const std::string& desc, const sol::error& err) noexcept;
 
     template<typename Callback>
     sol::protected_function_result callLuaDelegate(const sol::table& delegate, const std::string& key, const std::string& desc, Callback callback)
@@ -13,7 +13,7 @@ namespace darmok
         auto result = callback(func);
         if (!result.valid())
         {
-            recoveredLuaError(desc, result);
+            logLuaError(desc, result);
         }
         return result;
     }

@@ -1,83 +1,13 @@
 #include "texture.hpp"
-#include "image.hpp"
-#include "mesh.hpp"
 #include <darmok/texture.hpp>
+#include <darmok/image.hpp>
+#include <darmok/mesh.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/anim.hpp>
 
 namespace darmok
 {
-    LuaTexture::LuaTexture(const std::shared_ptr<Texture>& texture) noexcept
-	: _texture(texture)
-	{
-	}
-
-	LuaTexture::LuaTexture(const LuaImage& img, uint64_t flags) noexcept
-		: _texture(std::make_shared<Texture>(*img.getReal(), flags))
-	{
-	}
-
-	LuaTexture::LuaTexture(const Config& cfg, uint64_t flags) noexcept
-		: _texture(std::make_shared<Texture>(cfg, flags))
-	{
-	}
-
-	LuaTexture::LuaTexture(const VarLuaTable<glm::uvec2>& size, bgfx::TextureFormat::Enum format, uint64_t flags) noexcept
-		: LuaTexture(Config{ LuaGlm::tableGet(size), format }, flags)
-	{
-	}
-
-	LuaTexture::LuaTexture(const VarLuaTable<glm::uvec2>& size, uint64_t flags) noexcept
-		: LuaTexture(Config{ LuaGlm::tableGet(size) }, flags)
-	{
-	}
-
-	std::shared_ptr<Texture> LuaTexture::getReal() const noexcept
-	{
-		return _texture;
-	}
-
-	TextureType LuaTexture::getType() const noexcept
-	{
-		return _texture->getType();
-	}
-
-	LuaTexture& LuaTexture::setName(const std::string& name) noexcept
-	{
-		_texture->setName(name);
-		return *this;
-	}
-
-	const glm::uvec2& LuaTexture::getSize() noexcept
-	{
-		return _texture->getSize();
-	}
-
-	bgfx::TextureFormat::Enum LuaTexture::getFormat() const noexcept
-	{
-		return _texture->getFormat();
-	}
-
-	uint16_t LuaTexture::getLayerCount() const noexcept
-	{
-		return _texture->getLayerCount();
-	}
-
-	uint16_t LuaTexture::getDepth() const noexcept
-	{
-		return _texture->getDepth();
-	}
-
-	bool LuaTexture::hasMips() const noexcept
-	{
-		return _texture->hasMips();
-	}
-
-	std::string LuaTexture::to_string() const noexcept
-	{
-		return _texture->to_string();
-	}
-
 	void LuaTexture::bind(sol::state_view& lua) noexcept
 	{
 		lua.create_named_table("TextureFlag",
@@ -269,87 +199,76 @@ namespace darmok
 			"format", &TextureConfig::format
 		);
 
-		lua.new_usertype<LuaTexture>("Texture",
-			sol::constructors<
-				LuaTexture(const LuaImage&),
-				LuaTexture(const LuaImage&, uint64_t),
-				LuaTexture(const TextureConfig&),
-				LuaTexture(const TextureConfig&, uint64_t),
-				LuaTexture(const VarLuaTable<glm::uvec2>&),
-				LuaTexture(const VarLuaTable<glm::uvec2>&, uint64_t),
-				LuaTexture(const VarLuaTable<glm::uvec2>&, const bgfx::TextureFormat::Enum&),
-				LuaTexture(const VarLuaTable<glm::uvec2>&, const bgfx::TextureFormat::Enum&, uint64_t)
-			>(),
-			"type", sol::property(&LuaTexture::getType),
-			"size", sol::property(&LuaTexture::getSize),
-			"format", sol::property(&LuaTexture::getFormat),
-			"layers", sol::property(&LuaTexture::getLayerCount),
-			"depth", sol::property(&LuaTexture::getDepth),
-			"mips", sol::property(&LuaTexture::hasMips),
-			"name", sol::property(&LuaTexture::setName)
+		lua.new_usertype<Texture>("Texture",
+			sol::factories(
+				[](const Image& img) { return std::make_shared<Texture>(img); },
+				[](const Image& img, uint64_t flags) { return std::make_shared<Texture>(img, flags); },
+				[](const TextureConfig& config) { return std::make_shared<Texture>(config); },
+				[](const TextureConfig& config, uint64_t flags) { return std::make_shared<Texture>(config, flags); },
+				[](const VarLuaTable<glm::uvec2>& size) { return std::make_shared<Texture>(createSizeConfig(size)); },
+				[](const VarLuaTable<glm::uvec2>& size, uint64_t flags)
+				{
+					return std::make_shared<Texture>(createSizeConfig(size), flags);
+				},
+				[](const VarLuaTable<glm::uvec2>& size, bgfx::TextureFormat::Enum format)
+				{
+					auto config = createSizeConfig(size);
+					config.format = format;
+					return std::make_shared<Texture>(config);
+				},
+				[](const VarLuaTable<glm::uvec2>& size, bgfx::TextureFormat::Enum format, uint64_t flags)
+				{
+					auto config = createSizeConfig(size);
+					config.format = format;
+					return std::make_shared<Texture>(config, flags);
+				}
+			),
+			"type", sol::property(&Texture::getType),
+			"size", sol::property(&Texture::getSize),
+			"format", sol::property(&Texture::getFormat),
+			"layers", sol::property(&Texture::getLayerCount),
+			"depth", sol::property(&Texture::getDepth),
+			"mips", sol::property(&Texture::hasMips),
+			"name", sol::property(&Texture::setName)
 		);
 	}
 
-	
-	LuaTextureAtlas::LuaTextureAtlas(const std::shared_ptr<TextureAtlas>& atlas) noexcept
-		: _atlas(atlas)
+	TextureConfig LuaTexture::createSizeConfig(const VarLuaTable<glm::uvec2>& size) noexcept
 	{
-	}
-
-	std::shared_ptr<TextureAtlas> LuaTextureAtlas::LuaTextureAtlas::getReal() const noexcept
-	{
-		return _atlas;
-	}
-
-	LuaTexture LuaTextureAtlas::getTexture() const noexcept
-	{
-		return LuaTexture(_atlas->texture);
-	}
-
-	LuaMesh LuaTextureAtlas::createSprite1(const std::string& name, const bgfx::VertexLayout& layout) const noexcept
-	{
-		return LuaMesh(_atlas->createSprite(name, layout));
-	}
-
-	LuaMesh LuaTextureAtlas::createSprite2(const std::string& name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept
-	{
-		return LuaMesh(_atlas->createSprite(name, layout, config));
-	}
-
-	std::vector<AnimationFrame> LuaTextureAtlas::createAnimation1(const bgfx::VertexLayout& layout) const noexcept
-	{
-		return _atlas->createAnimation(layout);
-	}
-
-
-	std::vector<AnimationFrame> LuaTextureAtlas::createAnimation2(const bgfx::VertexLayout& layout, const std::string& namePrefix) const noexcept
-	{
-		return _atlas->createAnimation(layout, namePrefix);
-	}
-
-	std::vector<AnimationFrame> LuaTextureAtlas::createAnimation3(const bgfx::VertexLayout& layout, const std::string& namePrefix, float frameDuration) const noexcept
-	{
-		return _atlas->createAnimation(layout, namePrefix, frameDuration);
-	}
-
-	std::vector<AnimationFrame> LuaTextureAtlas::createAnimation4(const bgfx::VertexLayout& layout, const std::string& namePrefix, float frameDuration, const MeshConfig& config) const noexcept
-	{
-		return _atlas->createAnimation(layout, namePrefix, frameDuration, config);
-	}
+		return TextureConfig(LuaGlm::tableGet(size));
+	};
 
 	void LuaTextureAtlas::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaTextureAtlas>("TextureAtlas", sol::no_constructor,
-			"texture", sol::property(&LuaTextureAtlas::getTexture),
+		lua.new_usertype<TextureAtlas>("TextureAtlas", sol::no_constructor,
+			"texture", &TextureAtlas::texture,
 			"create_sprite", sol::overload(
-				&LuaTextureAtlas::createSprite1,
-				&LuaTextureAtlas::createSprite2
+				[](const TextureAtlas& atlas, const std::string& name, const bgfx::VertexLayout& layout)
+				{
+					return atlas.createSprite(name, layout);
+				},
+				[](const TextureAtlas& atlas, const std::string& name, const bgfx::VertexLayout& layout, const TextureAtlas::MeshConfig& config)
+				{
+					return atlas.createSprite(name, layout, config);
+				}
 			),
 			"create_animation", sol::overload(
-				&LuaTextureAtlas::createAnimation1,
-				&LuaTextureAtlas::createAnimation2,
-				&LuaTextureAtlas::createAnimation3,
-				&LuaTextureAtlas::createAnimation4
+				[](const TextureAtlas& atlas, const bgfx::VertexLayout& layout)
+				{
+					return atlas.createAnimation(layout);
+				},
+				[](const TextureAtlas& atlas, const bgfx::VertexLayout& layout, const std::string& namePrefix)
+				{
+					return atlas.createAnimation(layout, namePrefix);
+				},
+				[](const TextureAtlas& atlas, const bgfx::VertexLayout& layout, const std::string& namePrefix, float frameDuration)
+				{
+					return atlas.createAnimation(layout, namePrefix, frameDuration);
+				},
+				[](const TextureAtlas& atlas, const bgfx::VertexLayout& layout, const std::string& namePrefix, float frameDuration, const TextureAtlas::MeshConfig& config)
+				{
+					return atlas.createAnimation(layout, namePrefix, frameDuration, config);
+				}
 			)
 		);
 	

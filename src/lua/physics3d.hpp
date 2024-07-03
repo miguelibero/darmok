@@ -11,6 +11,7 @@ namespace darmok
 {
     class LuaEntity;
     class LuaScene;
+    class LuaTransform;
     class Scene;
     struct Ray;
 }
@@ -32,6 +33,12 @@ namespace darmok::physics3d
         bool unregisterUpdate(const sol::protected_function& func) noexcept;
         LuaPhysicsSystem& addListener(const sol::table& listener) noexcept;
         bool removeListener(const sol::table& listener) noexcept;
+
+        PhysicsSystem& getReal() noexcept;
+        const PhysicsSystem& getReal() const noexcept;
+
+        std::optional<LuaTransform> getRootTransform() const noexcept;
+        void setRootTransform(std::optional<LuaTransform> root) noexcept;
 
         std::optional<RaycastHit> raycast1(const Ray& ray) noexcept;
         std::optional<RaycastHit> raycast2(const Ray& ray, float maxDistance) noexcept;

@@ -138,7 +138,7 @@ namespace darmok
 		_transform->setForward(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::setScale(const VarLuaTable<glm::vec3>& v) noexcept
+	void LuaTransform::setScale(const VarLuaVecTable<glm::vec3>& v) noexcept
 	{
 		_transform->setScale(LuaGlm::tableGet(v));
 	}

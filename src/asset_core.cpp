@@ -305,11 +305,13 @@ namespace darmok
 
     void AssetImporterImpl::setCachePath(const fs::path& cachePath) noexcept
     {
-        auto fileName = fs::absolute(_inputPath.string()).string();
+        auto basePath = fs::absolute(cachePath).parent_path();
+        auto fileName = fs::relative(fs::absolute(_inputPath), basePath).string();
+        StringUtils::replace(fileName, "..", "@");
         static const std::string separators("\\/:");
         for (auto& chr : separators)
         {
-            std::replace(fileName.begin(), fileName.end(), chr, '_');
+            std::replace(fileName.begin(), fileName.end(), chr, '-');
         }
         _cachePath = cachePath / (fileName + ".json");
         if (fs::exists(_cachePath))

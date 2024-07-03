@@ -224,19 +224,19 @@ namespace darmok
         ModelSceneConfigurer(Scene& scene, AssetContext& assets);
         ModelSceneConfigurer& setParent(Entity parent) noexcept;
 
-        Entity run(const Model& model) noexcept;
-        Entity run(const ModelNode& node) noexcept;
+        Entity operator()(const Model& model) noexcept;
+        Entity operator()(const ModelNode& node) noexcept;
 
         template<typename C>
-        Entity run(const ModelNode& node, C callback)
+        Entity operator()(const ModelNode& node, C callback)
         {
-            return run(node, _parent, callback);
+            return operator()(node, _parent, callback);
         }
 
         template<typename C>
-        Entity run(const Model& model, C callback)
+        Entity operator()(const Model& model, C callback)
         {
-            return run(model.rootNode, callback);
+            return operator()(model.rootNode, callback);
         }
 
     private:
@@ -248,16 +248,16 @@ namespace darmok
         std::unordered_map<std::shared_ptr<ModelImage>, std::shared_ptr<Texture>> _textures;
 
         Entity add(const ModelNode& node, Entity parent) noexcept;
-        Entity run(const ModelNode& node, Entity parent) noexcept;
+        Entity operator()(const ModelNode& node, Entity parent) noexcept;
 
         template<typename C>
-        Entity run(const ModelNode& node, Entity parent, C callback)
+        Entity operator()(const ModelNode& node, Entity parent, C callback)
         {
             auto entity = add(node, parent);
             callback(node, entity);
             for (auto& child : node.children)
             {
-                run(child, entity, callback);
+                operator()(child, entity, callback);
             }
             return entity;
         }

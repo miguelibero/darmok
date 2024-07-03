@@ -32,39 +32,39 @@ namespace darmok
 		return _assets.value();
 	}
 
-	LuaProgram LuaAssets::loadProgram(const std::string& name)
+	std::shared_ptr<Program> LuaAssets::loadProgram(const std::string& name)
 	{
-		return LuaProgram(_assets->getProgramLoader()(name));
+		return _assets->getProgramLoader()(name);
 	}
 
-	LuaProgram LuaAssets::loadStandardProgram(StandardProgramType type)
+	std::shared_ptr<Program> LuaAssets::loadStandardProgram(StandardProgramType type)
 	{
-		return LuaProgram(_assets->getStandardProgramLoader()(type));
+		return _assets->getStandardProgramLoader()(type);
 	}
 
-	LuaTexture LuaAssets::loadColorTexture(const Color& color)
+	std::shared_ptr<Texture> LuaAssets::loadColorTexture(const Color& color)
 	{
-		return LuaTexture(_assets->getColorTextureLoader()(color));
+		return _assets->getColorTextureLoader()(color);
+	}
+	
+	std::shared_ptr<Texture> LuaAssets::loadTexture1(const std::string& name)
+	{
+		return _assets->getTextureLoader()(name);
 	}
 
-	LuaTextureAtlas LuaAssets::loadTextureAtlas1(const std::string& name)
+	std::shared_ptr<Texture> LuaAssets::loadTexture2(const std::string& name, uint64_t flags)
 	{
-		return LuaTextureAtlas(_assets->getTextureAtlasLoader()(name));
+		return _assets->getTextureLoader()(name, flags);
 	}
 
-	LuaTextureAtlas LuaAssets::loadTextureAtlas2(const std::string& name, uint64_t textureFlags)
+	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas1(const std::string& name)
 	{
-		return LuaTextureAtlas(_assets->getTextureAtlasLoader()(name, textureFlags));
+		return _assets->getTextureAtlasLoader()(name);
 	}
 
-	LuaTexture LuaAssets::loadTexture1(const std::string& name)
+	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas2(const std::string& name, uint64_t textureFlags)
 	{
-		return LuaTexture(_assets->getTextureLoader()(name));
-	}
-
-	LuaTexture LuaAssets::loadTexture2(const std::string& name, uint64_t flags)
-	{
-		return LuaTexture(_assets->getTextureLoader()(name, flags));
+		return _assets->getTextureAtlasLoader()(name, textureFlags);
 	}
 
 	std::shared_ptr<Model> LuaAssets::loadModel1(const std::string& name)

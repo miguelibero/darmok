@@ -62,6 +62,7 @@ namespace darmok
     private:
 		static std::string _defaultAssetInputPath;
 		static std::string _defaultAssetOutputPath;
+		static std::string _defaultAssetCachePath;
 		App& _app;
 		std::optional<LuaApp> _luaApp;
         std::unique_ptr<sol::state> _lua;

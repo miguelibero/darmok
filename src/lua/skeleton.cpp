@@ -82,14 +82,14 @@ namespace darmok
         return entity.addComponent<RenderableSkeleton>();
     }
 
-    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent2(LuaEntity& entity, const LuaMaterial& mat) noexcept
+    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& mat) noexcept
     {
-        return entity.addComponent<RenderableSkeleton>(mat.getReal());
+        return entity.addComponent<RenderableSkeleton>(mat);
     }
 
-    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent3(LuaEntity& entity, const LuaMaterial& mat, const LuaMesh& boneMesh) noexcept
+    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept
     {
-        return entity.addComponent<RenderableSkeleton>(mat.getReal(), boneMesh.getReal());
+        return entity.addComponent<RenderableSkeleton>(mat, boneMesh);
     }
 
     std::optional<LuaRenderableSkeleton> LuaRenderableSkeleton::getEntityComponent(LuaEntity& entity) noexcept

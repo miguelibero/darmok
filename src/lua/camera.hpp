@@ -11,8 +11,8 @@
 namespace darmok
 {
     class Camera;
-	class LuaProgram;
-	class LuaTexture;
+	class Program;
+	class Texture;
 	class LuaEntity;
 	class LuaScene;
 	class LuaTransform;
@@ -37,11 +37,11 @@ namespace darmok
 		const glm::mat4& getProjectionMatrix() const noexcept;
 		void setProjectionMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept;
 
-		LuaCamera& setTargetTextures(const sol::table& textures) noexcept;
-		std::vector<LuaTexture> getTargetTextures() noexcept;
+		void setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
+		std::vector<std::shared_ptr<Texture>> getTargetTextures() noexcept;
 
 		std::optional<Viewport> getViewport() const noexcept;
-		LuaCamera& setViewport(std::optional<VarViewport> viewport) noexcept;
+		void setViewport(std::optional<VarViewport> viewport) noexcept;
 		Viewport getCurrentViewport() const noexcept;
 
 		std::optional<LuaTransform> getTransform() const noexcept;

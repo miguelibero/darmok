@@ -13,6 +13,9 @@ namespace darmok
 	template<typename T>
 	using VarLuaTable = std::variant<T, sol::table>;
 
+	template<typename T>
+	using VarLuaVecTable = std::variant<typename T::value_type, T, sol::table>;
+
 	struct LuaGlm final
 	{
 		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
@@ -115,6 +118,26 @@ namespace darmok
 			T val;
 			tableInit(val, std::get<sol::table>(v));
 			return val;
+		}
+
+		template<typename T>
+		static typename T tableGet(const VarLuaVecTable<T>& v) noexcept
+		{
+			using vec = T;
+			using val = typename T::value_type;
+			auto ptr1 = std::get_if<val>(&v);
+			if (ptr1 != nullptr)
+			{
+				return vec(*ptr1);
+			}
+			auto ptr2 = std::get_if<vec>(&v);
+			if (ptr2 != nullptr)
+			{
+				return *ptr2;
+			}
+			vec vecVal;
+			tableInit(vecVal, std::get<sol::table>(v));
+			return vecVal;
 		}
 	};
 }

@@ -1,32 +1,32 @@
 #include "render.hpp"
-#include "material.hpp"
 #include "scene.hpp"
-#include "mesh.hpp"
-#include "texture.hpp"
-#include "program.hpp"
 #include <darmok/render.hpp>
+#include <darmok/mesh.hpp>
+#include <darmok/material.hpp>
+#include <darmok/texture.hpp>
+#include <darmok/program.hpp>
 
 namespace darmok
 {
     
-	LuaRenderable LuaRenderable::addEntityComponent1(LuaEntity& entity, const LuaMesh& mesh) noexcept
+	LuaRenderable LuaRenderable::addEntityComponent1(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh) noexcept
 	{
-		return entity.addComponent<Renderable>(mesh.getReal());
+		return entity.addComponent<Renderable>(mesh);
 	}
 
-	LuaRenderable LuaRenderable::addEntityComponent2(LuaEntity& entity, const LuaMaterial& material) noexcept
+	LuaRenderable LuaRenderable::addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& material) noexcept
 	{
-		return entity.addComponent<Renderable>(material.getReal());
+		return entity.addComponent<Renderable>(material);
 	}
 
-	LuaRenderable LuaRenderable::addEntityComponent3(LuaEntity& entity, const LuaMesh& mesh, const LuaMaterial& material) noexcept
+	LuaRenderable LuaRenderable::addEntityComponent3(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
 	{
-		return entity.addComponent<Renderable>(mesh.getReal(), material.getReal());
+		return entity.addComponent<Renderable>(mesh, material);
 	}
 
-	LuaRenderable LuaRenderable::addEntityComponent4(LuaEntity& entity, const LuaMesh& mesh, const LuaProgram& prog, const LuaTexture& texture) noexcept
+	LuaRenderable LuaRenderable::addEntityComponent4(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& texture) noexcept
 	{
-		return entity.addComponent<Renderable>(mesh.getReal(), prog.getReal(), texture.getReal());
+		return entity.addComponent<Renderable>(mesh, prog, texture);
 	}
 
 	std::optional<LuaRenderable> LuaRenderable::getEntityComponent(LuaEntity& entity) noexcept
@@ -58,29 +58,24 @@ namespace darmok
 		return _renderable.value();
 	}
 
-	std::optional<LuaMesh> LuaRenderable::getMesh() const noexcept
+	std::shared_ptr<IMesh> LuaRenderable::getMesh() const noexcept
 	{
-		auto mesh = _renderable->getMesh();
-		if (mesh == nullptr)
-		{
-			return std::nullopt;
-		}
-		return LuaMesh(mesh);
+		return _renderable->getMesh();
 	}
 
-	void LuaRenderable::setMesh(const LuaMesh& mesh) noexcept
+	void LuaRenderable::setMesh(const std::shared_ptr<IMesh>& mesh) noexcept
 	{
-		_renderable->setMesh(mesh.getReal());
+		_renderable->setMesh(mesh);
 	}
 
-	LuaMaterial LuaRenderable::getMaterial() const noexcept
+	std::shared_ptr<Material> LuaRenderable::getMaterial() const noexcept
 	{
-		return LuaMaterial(_renderable->getMaterial());
+		return _renderable->getMaterial();
 	}
 
-	void LuaRenderable::setMaterial(const LuaMaterial& material) noexcept
+	void LuaRenderable::setMaterial(const std::shared_ptr<Material>& material) noexcept
 	{
-		_renderable->setMaterial(material.getReal());
+		_renderable->setMaterial(material);
 	}
 
 	bool LuaRenderable::getEnabled() const noexcept

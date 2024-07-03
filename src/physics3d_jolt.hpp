@@ -53,6 +53,13 @@ namespace darmok::physics3d
     class IPhysicsUpdater;
     class PhysicsBody;
 
+    struct JoltTransform
+    {
+        JPH::Vec3 position;
+        JPH::Quat rotation;
+        float scale;
+    };
+
     struct JoltUtils final
     {
         using Shape = PhysicsShape;
@@ -71,9 +78,8 @@ namespace darmok::physics3d
         static glm::vec4 convert(const JPH::Float4& v) noexcept;
 
         static RaycastHit convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept;
-
-        static std::pair<JPH::Vec3, JPH::Quat> convert(const Shape& shape, OptionalRef<const Transform> trans) noexcept;
-        static JPH::ShapeRefC convert(const Shape& shape) noexcept;
+        static JoltTransform convert(OptionalRef<const Transform> trans, OptionalRef<const Transform> root = nullptr);
+        static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);
         static glm::vec3 getOrigin(const Shape& shape) noexcept;
         static glm::mat4 convert(const JPH::Mat44& mat, const Transform& trans) noexcept;
 
@@ -186,6 +192,9 @@ namespace darmok::physics3d
         JoltTempAllocator& getTempAllocator() noexcept;
         glm::vec3 getGravity() noexcept;
 
+        void setRootTransform(OptionalRef<Transform> root) noexcept;
+        OptionalRef<Transform> getRootTransform() noexcept;
+
         void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override;
         void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const  JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override;
         void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override;
@@ -199,6 +208,7 @@ namespace darmok::physics3d
         OptionalRef<Scene> _scene;
         float _deltaTimeRest;
         Config _config;
+        OptionalRef<Transform> _root;
         JoltBroadPhaseLayerInterface _broadPhaseLayer;
         JoltObjectVsBroadPhaseLayerFilter _objVsBroadPhaseLayerFilter;
         JoltObjectLayerPairFilter _objLayerPairFilter;
@@ -280,9 +290,9 @@ namespace darmok::physics3d
 
     private:
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
-        JPH::BodyID createBody(const JPH::Vec3& pos, const JPH::Quat& rot) noexcept;
-        JPH::BodyID createCharacter(const JPH::Vec3& pos, const JPH::Quat& rot) noexcept;
-        bool tryCreateBody(OptionalRef<Transform> transform) noexcept;
+        JPH::BodyID createBody(const JoltTransform& trans);
+        JPH::BodyID createCharacter(const JoltTransform& trans);
+        bool tryCreateBody(OptionalRef<Transform> transform);
 
         OptionalRef<PhysicsBody> _body;
         OptionalRef<PhysicsSystemImpl> _system;

@@ -71,9 +71,8 @@ namespace darmok
 				glm::vec3 pos;
 				glm::quat rot;
 				glm::vec3 scale;
-				glm::vec3 pivot;
-				Math::decompose(mat, pos, rot, scale, pivot);
-				return std::make_tuple( pos, rot, scale, pivot );
+				Math::decompose(mat, pos, rot, scale);
+				return std::make_tuple( pos, rot, scale );
 			},
 			"translate_rotate_scale", &Math::translateRotateScale
 		);

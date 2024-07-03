@@ -73,6 +73,9 @@ namespace darmok
         const std::optional<Viewport>& getViewport() const noexcept;
         Viewport getCurrentViewport() const noexcept;
 
+        bool isEnabled() const noexcept;
+        Camera& setEnabled(bool enabled) noexcept;
+
         OptionalRef<Transform> getTransform() const noexcept;
         glm::mat4 getModelMatrix() const noexcept;
 
@@ -139,6 +142,7 @@ namespace darmok
         void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
+        bool _enabled;
         glm::mat4 _proj;
         std::optional<Viewport> _viewport;
         std::unique_ptr<IEntityFilter> _entityFilter;

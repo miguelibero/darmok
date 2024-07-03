@@ -42,7 +42,7 @@ namespace darmok
 		void setRotation(const VarLuaTable<glm::quat>& v) noexcept;
 		void setEulerAngles(const VarLuaTable<glm::vec3>& v) noexcept;
 		void setForward(const VarLuaTable<glm::vec3>& v) noexcept;
-		void setScale(const VarLuaTable<glm::vec3>& v) noexcept;
+		void setScale(const VarLuaVecTable<glm::vec3>& v) noexcept;
 		void setPivot(const VarLuaTable<glm::vec3>& v) noexcept;
 		void setMatrix(const VarLuaTable<glm::mat4>& v) noexcept;
 

@@ -195,7 +195,7 @@ namespace darmok::physics3d
         newCharacterVelocity = JoltUtils::convert(charVel);
     }
 
-    bool CharacterControllerImpl::tryCreateCharacter(OptionalRef<Transform> trans) noexcept
+    bool CharacterControllerImpl::tryCreateCharacter(OptionalRef<Transform> trans)
     {
         if (_jolt || !_system)
         {
@@ -206,20 +206,20 @@ namespace darmok::physics3d
         {
             return false;
         }
+        auto joltTrans = JoltUtils::convert(trans, _system->getRootTransform());
 
         JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
         settings->mMaxSlopeAngle = _config.maxSlopeAngle;
         settings->mMaxStrength = _config.maxStrength;
-        settings->mShape = JoltUtils::convert(_config.shape);
+        settings->mShape = JoltUtils::convert(_config.shape, joltTrans.scale);
         settings->mBackFaceMode = (JPH::EBackFaceMode)_config.backFaceMode;
         settings->mCharacterPadding = _config.padding;
         settings->mPenetrationRecoverySpeed = _config.penetrationRecoverySpeed;
         settings->mPredictiveContactDistance = _config.predictiveContactDistance;
         settings->mSupportingVolume = JPH::Plane(JoltUtils::convert(_config.supportingPlane.normal), _config.supportingPlane.constant);
 
-        auto [pos, rot] = JoltUtils::convert(_config.shape, trans);
         auto userData = (uint64_t)_ctrl.ptr();
-        _jolt = new JPH::CharacterVirtual(settings, pos, rot, userData, joltSystem.ptr());
+        _jolt = new JPH::CharacterVirtual(settings, joltTrans.position, joltTrans.rotation, userData, joltSystem.ptr());
         _jolt->SetListener(this);
         return true;
     }

@@ -33,10 +33,10 @@ namespace darmok::physics3d
     }
 
     PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const std::shared_ptr<Program>& program) noexcept
-        : _system(system)
-        , _material(program)
+        : _material(program)
         , _viewId(-1)
         , _enabled(true)
+        , _system(system)
     {
         _drawLines.config.type = MeshType::Transient;
         _drawTris.config.type = MeshType::Transient;

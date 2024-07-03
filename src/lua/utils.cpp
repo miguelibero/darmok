@@ -7,7 +7,7 @@
 
 namespace darmok
 {
-    void recoveredLuaError(const std::string& desc, const sol::error& err) noexcept
+    void logLuaError(const std::string& desc, const sol::error& err) noexcept
 	{
 		std::stringstream ss;
 		ss << "recovered lua error " << desc << ":" << std::endl;

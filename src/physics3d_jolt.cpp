@@ -144,41 +144,69 @@ namespace darmok::physics3d
         return mat;
     }
 
-
-    std::pair<JPH::Vec3, JPH::Quat> JoltUtils::convert(const Shape& shape, OptionalRef<const Transform> trans) noexcept
+    JoltTransform JoltUtils::convert(OptionalRef<const Transform> trans, OptionalRef<const Transform> root)
     {
-        glm::vec3 pos(0);
-        glm::quat rot(1, 0, 0, 0);
+        glm::mat4 mat;
         if (trans)
         {
-            pos += trans->getWorldPosition();
-            rot *= trans->getWorldRotation();
+            mat = trans->getWorldMatrix();
         }
-        return std::pair(convert(pos), convert(rot));
+        if (root)
+        {
+            mat = root->getWorldInverse() * mat;
+        }
+
+        glm::vec3 pos(0);
+        glm::quat rot(1, 0, 0, 0);
+        glm::vec3 scale(1);
+        Math::decompose(mat, pos, rot, scale);
+        if (scale.x != scale.y || scale.x != scale.z)
+        {
+            throw std::runtime_error("non-uniform scale not supported");
+        }
+        return JoltTransform{ convert(pos), convert(rot), scale.x };
     }
 
-    JPH::ShapeRefC joltGetOffsetShape(JPH::ShapeSettings* settings, const glm::vec3& offset) noexcept
+    static JPH::Ref<JPH::Shape> getShape(JPH::ShapeSettings& settings)
     {
-        JPH::RotatedTranslatedShapeSettings offsetSettings(JoltUtils::convert(offset), JPH::Quat::sIdentity(), settings);
-        return offsetSettings.Create().Get();
+        auto result = settings.Create();
+        if (result.HasError())
+        {
+            throw std::runtime_error(result.GetError().c_str());
+        }
+        return result.Get();
     }
 
-    JPH::ShapeRefC JoltUtils::convert(const Shape& shape) noexcept
+    JPH::ShapeRefC joltGetOffsetShape(JPH::ShapeSettings& settings, const glm::vec3& offset)
     {
-        if (auto cube = std::get_if<Cube>(&shape))
+        auto shape = getShape(settings);
+        if (offset == glm::vec3(0))
         {
-            auto settings = new JPH::BoxShapeSettings(JoltUtils::convertSize(cube->size * 0.5F));
-            return joltGetOffsetShape(settings, cube->origin);
+            return shape;
         }
-        else if (auto sphere = std::get_if<Sphere>(&shape))
+        JPH::RotatedTranslatedShapeSettings offsetSettings(JoltUtils::convert(offset), JPH::Quat::sIdentity(), shape);
+        return getShape(offsetSettings);
+    }
+
+    JPH::ShapeRefC JoltUtils::convert(const Shape& shape, float scale)
+    {
+        if (auto cubePtr = std::get_if<Cube>(&shape))
         {
-            auto settings = new JPH::SphereShapeSettings(sphere->radius);
-            return joltGetOffsetShape(settings, sphere->origin);
+            auto cube = *cubePtr * scale;
+            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cube.size * 0.5F));
+            return joltGetOffsetShape(settings, cube.origin);
         }
-        else if (auto caps = std::get_if<Capsule>(&shape))
+        else if (auto spherePtr = std::get_if<Sphere>(&shape))
         {
-            auto settings = new JPH::CapsuleShapeSettings(caps->cylinderHeight * 0.5, caps->radius);
-            return joltGetOffsetShape(settings, caps->origin);
+            auto sphere = *spherePtr * scale;
+            JPH::SphereShapeSettings settings(sphere.radius);
+            return joltGetOffsetShape(settings, sphere.origin);
+        }
+        else if (auto capsPtr = std::get_if<Capsule>(&shape))
+        {
+            auto caps = *capsPtr * scale;
+            JPH::CapsuleShapeSettings settings(caps.cylinderHeight * 0.5, caps.radius);
+            return joltGetOffsetShape(settings, caps.origin);
         }
         return nullptr;
     }
@@ -488,6 +516,16 @@ namespace darmok::physics3d
         return JoltUtils::convert(_system->GetGravity());
     }
 
+    void PhysicsSystemImpl::setRootTransform(OptionalRef<Transform> root) noexcept
+    {
+        _root = root;
+    }
+
+    OptionalRef<Transform> PhysicsSystemImpl::getRootTransform() noexcept
+    {
+        return _root;
+    }
+
     OptionalRef<PhysicsBody> PhysicsSystemImpl::getPhysicsBody(const JPH::BodyID& bodyId) const noexcept
     {
         auto userData = getBodyInterface().GetUserData(bodyId);
@@ -684,6 +722,17 @@ namespace darmok::physics3d
     {
         return *_impl;
     }
+
+    PhysicsSystem& PhysicsSystem::setRootTransform(OptionalRef<Transform> root) noexcept
+    {
+        _impl->setRootTransform(root);
+        return *this;
+    }
+
+    OptionalRef<Transform> PhysicsSystem::getRootTransform() noexcept
+    {
+        return _impl->getRootTransform();
+    }
     
     void PhysicsSystem::init(Scene& scene, App& app) noexcept
     {
@@ -788,7 +837,7 @@ namespace darmok::physics3d
         return _system->getBodyInterface();
     }
 
-    JPH::BodyID PhysicsBodyImpl::createCharacter(const JPH::Vec3& pos, const JPH::Quat& rot) noexcept
+    JPH::BodyID PhysicsBodyImpl::createCharacter(const JoltTransform& trans)
     {
         if (!_characterConfig)
         {
@@ -803,7 +852,7 @@ namespace darmok::physics3d
         auto& config = _characterConfig.value();
         JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings();
         settings->mMaxSlopeAngle = config.maxSlopeAngle;
-        settings->mShape = JoltUtils::convert(config.shape);
+        settings->mShape = JoltUtils::convert(config.shape, trans.scale);
         settings->mFriction = config.friction;
         settings->mSupportingVolume = JPH::Plane(JoltUtils::convert(config.supportingPlane.normal), -config.supportingPlane.constant);
         settings->mMass = config.mass;
@@ -811,12 +860,12 @@ namespace darmok::physics3d
         settings->mUp = JoltUtils::convert(config.up);
         settings->mLayer = config.layer;
         auto userData = (uint64_t)_body.ptr();
-        _character = new JPH::Character(settings, pos, rot, userData, joltSystem.ptr());
+        _character = new JPH::Character(settings, trans.position, trans.rotation, userData, joltSystem.ptr());
         _character->AddToPhysicsSystem();
         return _character->GetBodyID();
     }
 
-    JPH::BodyID PhysicsBodyImpl::createBody(const JPH::Vec3& pos, const JPH::Quat& rot) noexcept
+    JPH::BodyID PhysicsBodyImpl::createBody(const JoltTransform& trans)
     {
         if (!_system)
         {
@@ -836,8 +885,8 @@ namespace darmok::physics3d
             break;
         }
 
-        auto shape = JoltUtils::convert(_config.shape);
-        JPH::BodyCreationSettings settings(shape, pos, rot,
+        auto shape = JoltUtils::convert(_config.shape, trans.scale);
+        JPH::BodyCreationSettings settings(shape, trans.position, trans.rotation,
             joltMotion, objLayer);
         settings.mGravityFactor = _config.gravityFactor;
         settings.mFriction = _config.friction;
@@ -852,25 +901,30 @@ namespace darmok::physics3d
         return _system->getBodyInterface().CreateAndAddBody(settings, activation);
     }
 
-    bool PhysicsBodyImpl::tryCreateBody(OptionalRef<Transform> trans) noexcept
+    bool PhysicsBodyImpl::tryCreateBody(OptionalRef<Transform> trans)
     {
         if (!_bodyId.IsInvalid())
         {
             return false;
         }
 
-        auto [pos, rot] = JoltUtils::convert(getShape(), trans);
+        OptionalRef<const Transform> root;
+        if (_system)
+        {
+            root = _system->getRootTransform();
+        }
+        auto joltTrans = JoltUtils::convert(trans, root);
         if (!_characterConfig && _config.motion == MotionType::Character)
         {
             _characterConfig.emplace().load(_config);
         }
         if (_characterConfig)
         {
-            _bodyId = createCharacter(pos, rot);
+            _bodyId = createCharacter(joltTrans);
         }
         else
         {
-            _bodyId = createBody(pos, rot);
+            _bodyId = createBody(joltTrans);
         }
         return true;
     }

@@ -2,8 +2,8 @@
 #include "scene.hpp"
 #include "asset.hpp"
 #include "utils.hpp"
-#include "program.hpp"
 #include <darmok/scene.hpp>
+#include <darmok/program.hpp>
 
 namespace darmok
 {
@@ -21,7 +21,7 @@ namespace darmok
 			auto result = _callback(node, LuaEntity(entity, _scene));
 			if (!result.valid())
 			{
-				recoveredLuaError("adding model to scene", result);
+				logLuaError("adding model to scene", result);
 			}
 		}
 
@@ -61,7 +61,7 @@ namespace darmok
 		lua.new_usertype<LuaModelSceneConfigurer>("ModelSceneConfigurer",
 			sol::constructors<LuaModelSceneConfigurer(const LuaScene&, LuaAssets&)>(),
 			"parent", sol::property(&LuaModelSceneConfigurer::setParent),
-			"run", sol::overload(
+			sol::meta_function::call, sol::overload(
 				&LuaModelSceneConfigurer::run1,
 				&LuaModelSceneConfigurer::run2,
 				&LuaModelSceneConfigurer::run3,
@@ -72,25 +72,25 @@ namespace darmok
 
 	LuaEntity LuaModelSceneConfigurer::run1(const Model& model)
 	{
-		auto entity = _configurer.run(model);
+		auto entity = _configurer(model);
 		return LuaEntity(entity, _scene);
 	}
 
 	LuaEntity LuaModelSceneConfigurer::run2(const Model& model, sol::protected_function callback)
 	{
-		auto entity = _configurer.run(model, LuaModelAddToSceneCallback(_scene, callback));
+		auto entity = _configurer(model, LuaModelAddToSceneCallback(_scene, callback));
 		return LuaEntity(entity, _scene);
 	}
 
 	LuaEntity LuaModelSceneConfigurer::run3(const ModelNode& node)
 	{
-		auto entity = _configurer.run(node);
+		auto entity = _configurer(node);
 		return LuaEntity(entity, _scene);
 	}
 
 	LuaEntity LuaModelSceneConfigurer::run4(const ModelNode& node, sol::protected_function callback)
 	{
-		auto entity = _configurer.run(node, LuaModelAddToSceneCallback(_scene, callback));
+		auto entity = _configurer(node, LuaModelAddToSceneCallback(_scene, callback));
 		return LuaEntity(entity, _scene);
 	}
 }

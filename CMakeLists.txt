@@ -324,6 +324,7 @@ if(DARMOK_BUILD_JOLT)
   if(DARMOK_BUILD_LUA)
     list(APPEND LUA_SOURCES
       ${SRC_DIR}/lua/physics3d.cpp
+      ${SRC_DIR}/lua/physics3d_debug.cpp
       ${SRC_DIR}/lua/character.cpp
     )
   endif()

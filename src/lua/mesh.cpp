@@ -1,31 +1,16 @@
 #include "mesh.hpp"
-#include "material.hpp"
-#include "texture.hpp"
-#include "scene.hpp"
+#include "glm.hpp"
 #include <darmok/mesh.hpp>
+#include <darmok/material.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/shape.hpp>
 #include <entt/entt.hpp>
 
 namespace darmok
 {
-	LuaMesh::LuaMesh(const std::shared_ptr<IMesh>& mesh) noexcept
-		: _mesh(mesh)
-	{
-	}
-
-	std::string LuaMesh::to_string() const noexcept
-	{
-		return _mesh->to_string();
-	}
-
-	std::shared_ptr<IMesh> LuaMesh::getReal() const noexcept
-	{
-		return _mesh;
-	}
-
 	void LuaMesh::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaMesh>("Mesh", sol::no_constructor
+		lua.new_usertype<IMesh>("Mesh", sol::no_constructor
 		);
 
 		lua.new_enum<MeshType>("MeshType", {
@@ -101,11 +86,11 @@ namespace darmok
 			"create_mesh", sol::overload(
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout)
 				{ 
-					return LuaMesh(data.createMesh(vertexLayout));
+					return std::shared_ptr<IMesh>(data.createMesh(vertexLayout));
 				},
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout, const MeshConfig& config)
-				{ 
-					return LuaMesh(data.createMesh(vertexLayout, config));
+				{
+					return std::shared_ptr<IMesh>(data.createMesh(vertexLayout, config));
 				}
 			)
 		);

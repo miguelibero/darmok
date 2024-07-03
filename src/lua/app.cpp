@@ -84,7 +84,7 @@ namespace darmok
 			auto result = update(deltaTime);
 			if (!result.valid())
 			{
-				recoveredLuaError("running update", result);
+				logLuaError("running update", result);
 			}
 		}
 	}
@@ -235,8 +235,12 @@ end
 		addPackagePath(STR(LUA_CPATH), true);
 #endif
 
-		// TODO: thow here if failed to load
 		auto result = lua.script_file(mainPath.string());
+		if (!result.valid())
+		{
+			logLuaError("running main", result);
+			throw std::runtime_error("running lua main");
+		}
 		auto relm = result[0];
 		if (relm.is<int>())
 		{
@@ -322,17 +326,22 @@ end
 	void LuaRunnerAppImpl::init()
 	{
 		auto& lua = *_lua;
-		// TODO: check that this throws in case of error
-		sol::unsafe_function init = lua["init"];
+		sol::safe_function init = lua["init"];
 		if (init)
 		{
-			init();
+			auto result = init();
+			if (!result.valid())
+			{
+				logLuaError("running init", result);
+				throw std::runtime_error("running lua init");
+			}
 		}
 		_luaApp->registerUpdate(lua["update"]);
 	}
 
 	std::string LuaRunnerAppImpl::_defaultAssetInputPath = "assets";
 	std::string LuaRunnerAppImpl::_defaultAssetOutputPath = "runtime_assets";
+	std::string LuaRunnerAppImpl::_defaultAssetCachePath = "asset_cache";
 
 	bool LuaRunnerAppImpl::importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine)
 	{
@@ -360,6 +369,10 @@ end
 		importer.setOutputPath(outputPath);
 		const char* cachePath = nullptr;
 		cmdLine.hasArg(cachePath, 'c', "asset-cache");
+		if (cachePath == nullptr && (cmdLine.hasArg('c', "asset-cache") || std::filesystem::is_directory(_defaultAssetCachePath)))
+		{
+			cachePath = _defaultAssetCachePath.c_str();
+		}
 		if (cachePath != nullptr)
 		{
 			importer.setCachePath(cachePath);

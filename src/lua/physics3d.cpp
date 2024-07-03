@@ -6,7 +6,6 @@
 
 namespace darmok::physics3d
 {
-   
     LuaPhysicsSystem::LuaPhysicsSystem(PhysicsSystem& system, const std::shared_ptr<Scene>& scene) noexcept
         : _system(system)
         , _scene(scene)
@@ -72,6 +71,42 @@ namespace darmok::physics3d
         return true;
     }
 
+    PhysicsSystem& LuaPhysicsSystem::getReal() noexcept
+    {
+        return *_system;
+    }
+
+    const PhysicsSystem& LuaPhysicsSystem::getReal() const noexcept
+    {
+        return *_system;
+    }
+
+    std::optional<LuaTransform> LuaPhysicsSystem::getRootTransform() const noexcept
+    {
+        if (!_system)
+        {
+            return std::nullopt;
+        }
+        auto trans = _system->getRootTransform();
+        if(!trans)
+        {
+            return std::nullopt;
+        }
+        return LuaTransform(trans.value());
+    }
+
+    void LuaPhysicsSystem::setRootTransform(std::optional<LuaTransform> root) noexcept
+    {
+        if (root)
+        {
+            _system->setRootTransform(root->getReal());
+        }
+        else
+        {
+            _system->setRootTransform(nullptr);
+        }
+    }
+
     void LuaPhysicsSystem::fixedUpdate(float fixedDeltaTime)
     {
         for (auto& update : _updates)
@@ -83,7 +118,7 @@ namespace darmok::physics3d
             auto result = update(fixedDeltaTime);
             if (!result.valid())
             {
-                recoveredLuaError("running fixed update", result);
+                logLuaError("running fixed update", result);
             }
         }
     }
@@ -184,6 +219,7 @@ namespace darmok::physics3d
             "unregister_update", &LuaPhysicsSystem::unregisterUpdate,
             "add_listener", &LuaPhysicsSystem::addListener,
             "remove_listener", &LuaPhysicsSystem::removeListener,
+            "root_transform", sol::property(&LuaPhysicsSystem::getRootTransform, &LuaPhysicsSystem::setRootTransform),
             "raycast", sol::overload(
                 &LuaPhysicsSystem::raycast1,
                 &LuaPhysicsSystem::raycast2,

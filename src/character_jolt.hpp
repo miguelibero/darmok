@@ -50,7 +50,7 @@ namespace darmok::physics3d
         JPH::Ref<JPH::CharacterVirtual> _jolt;
         OptionalRef<Delegate> _delegate;
 
-        bool tryCreateCharacter(OptionalRef<Transform> transform) noexcept;
+        bool tryCreateCharacter(OptionalRef<Transform> transform);
         OptionalRef<PhysicsBody> getPhysicsBody() const noexcept;
     };
 }

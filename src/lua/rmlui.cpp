@@ -3,7 +3,7 @@
 #include <RmlUi/Lua.h>
 #include <darmok/rmlui.hpp>
 #include <darmok/viewport.hpp>
-#include "texture.hpp"
+#include <darmok/texture.hpp>
 #include "camera.hpp"
 #include "transform.hpp"
 #include "utils.hpp"
@@ -41,21 +41,15 @@ namespace darmok
         return getContext()->GetName();
     }
 
-    std::optional<LuaTexture> LuaRmluiAppComponent::getTargetTexture() const noexcept
+    std::shared_ptr<Texture> LuaRmluiAppComponent::getTargetTexture() const noexcept
     {
-        auto tex = _comp->getTargetTexture();
-        if (tex == nullptr)
-        {
-            return std::nullopt;
-        }
-        return LuaTexture(tex);
+        return _comp->getTargetTexture();
     }
 
-    void LuaRmluiAppComponent::setTargetTexture(const std::optional<LuaTexture>& texture) noexcept
+    void LuaRmluiAppComponent::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
     {
-        _comp->setTargetTexture(texture ? texture->getReal() : nullptr);
+        _comp->setTargetTexture(texture);
     }
-
 
     std::optional<Viewport> LuaRmluiAppComponent::getViewport() const noexcept
     {

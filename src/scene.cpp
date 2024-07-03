@@ -149,6 +149,10 @@ namespace darmok
     {
         for (auto [entity, cam] : _registry.view<const Camera>().each())
         {
+            if (!cam.isEnabled())
+            {
+                continue;
+            }
             viewId = cam.render(viewId);
         }
         return viewId;

@@ -81,6 +81,9 @@ namespace darmok::physics3d
         PhysicsSystemImpl& getImpl() noexcept;
         const PhysicsSystemImpl& getImpl() const noexcept;
 
+        PhysicsSystem& setRootTransform(OptionalRef<Transform> root) noexcept;
+        OptionalRef<Transform> getRootTransform() noexcept;
+
         void init(Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;

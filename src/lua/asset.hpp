@@ -18,9 +18,9 @@ namespace darmok
 	struct Model;
 	struct AssimpModelLoadConfig;
 	class AssetContext;
-	class LuaProgram;
-	class LuaTexture;
-	class LuaTextureAtlas;
+	class Program;
+	class Texture;
+	class TextureAtlas;
 	class Skeleton;
 	class SkeletalAnimation;
 	struct SkeletalAnimatorConfig;
@@ -35,13 +35,13 @@ namespace darmok
 		AssetContext& getReal() noexcept;
 		const AssetContext& getReal() const noexcept;
 
-		LuaProgram loadProgram(const std::string& name);
-		LuaProgram loadStandardProgram(StandardProgramType type);
-		LuaTexture loadTexture1(const std::string& name);
-		LuaTexture loadTexture2(const std::string& name, uint64_t flags);
-		LuaTexture loadColorTexture(const Color& color);
-		LuaTextureAtlas loadTextureAtlas1(const std::string& name);
-		LuaTextureAtlas loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
+		std::shared_ptr<Program> loadProgram(const std::string& name);
+		std::shared_ptr<Program> loadStandardProgram(StandardProgramType type);
+		std::shared_ptr<Texture> loadTexture1(const std::string& name);
+		std::shared_ptr<Texture> loadTexture2(const std::string& name, uint64_t flags);
+		std::shared_ptr<Texture> loadColorTexture(const Color& color);
+		std::shared_ptr<TextureAtlas> loadTextureAtlas1(const std::string& name);
+		std::shared_ptr<TextureAtlas> loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
 		std::shared_ptr<Model> loadModel1(const std::string& name);
 		std::shared_ptr<Model> loadModel2(const std::string& name, const AssimpModelLoadConfig& config);
 		std::shared_ptr<Skeleton> loadSkeleton(const std::string& name);

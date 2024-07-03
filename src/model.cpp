@@ -170,22 +170,22 @@ namespace darmok
         return *this;
     }
 
-    Entity ModelSceneConfigurer::run(const Model& model) noexcept
+    Entity ModelSceneConfigurer::operator()(const Model& model) noexcept
     {
-        return run(model.rootNode);
+        return operator()(model.rootNode);
     }
 
-    Entity ModelSceneConfigurer::run(const ModelNode& node) noexcept
+    Entity ModelSceneConfigurer::operator()(const ModelNode& node) noexcept
     {
-        return run(node, _parent);
+        return operator()(node, _parent);
     }
 
-    Entity ModelSceneConfigurer::run(const ModelNode& node, Entity parent) noexcept
+    Entity ModelSceneConfigurer::operator()(const ModelNode& node, Entity parent) noexcept
     {
         auto entity = add(node, parent);
         for (auto& child : node.children)
         {
-            run(child, entity);
+            operator()(child, entity);
         }
         return entity;
     }

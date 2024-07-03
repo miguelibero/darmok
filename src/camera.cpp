@@ -14,6 +14,7 @@ namespace darmok
     Camera::Camera(const glm::mat4& projMatrix) noexcept
         : _proj(projMatrix)
         , _frameBuffer{ bgfx::kInvalidHandle }
+        , _enabled(true)
     {
     }
 
@@ -23,6 +24,17 @@ namespace darmok
         {
             bgfx::destroy(_frameBuffer);
         }
+    }
+
+    bool Camera::isEnabled() const noexcept
+    {
+        return _enabled;
+    }
+
+    Camera& Camera::setEnabled(bool enabled) noexcept
+    {
+        _enabled = enabled;
+        return *this;
     }
 
     const glm::mat4& Camera::getProjectionMatrix() const noexcept

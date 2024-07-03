@@ -280,7 +280,7 @@ namespace darmok
 		auto result = fn();
 		if (!result.valid())
 		{
-			recoveredLuaError(std::string("triggering input binding '") + key + "'", result);
+			logLuaError(std::string("triggering input binding '") + key + "'", result);
 		}
 	}
 

@@ -56,7 +56,7 @@ namespace darmok
         Rml::DataModelConstructor _construct;
     };
 
-    class LuaTexture;
+    class Texture;
     class RmluiAppComponent;
     class LuaCamera;
     class LuaTransform;
@@ -72,8 +72,8 @@ namespace darmok
 
         Rml::Context* getContext() noexcept;
 
-        std::optional<LuaTexture> getTargetTexture() const noexcept;
-        void setTargetTexture(const std::optional<LuaTexture>& texture) noexcept;
+        std::shared_ptr<Texture> getTargetTexture() const noexcept;
+        void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
 
         std::optional<Viewport> getViewport() const noexcept;
         LuaRmluiAppComponent& setViewport(std::optional<VarViewport> viewport) noexcept;

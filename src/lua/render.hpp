@@ -10,10 +10,10 @@ namespace darmok
     class Renderable;
 	class LuaEntity;
 	class LuaScene;
-    class LuaMesh;
-    class LuaTexture;
-    class LuaMaterial;
-	class LuaProgram;
+    class IMesh;
+    class Texture;
+    class Material;
+	class Program;
 
 	class LuaRenderable final
 	{
@@ -23,10 +23,10 @@ namespace darmok
 		const Renderable& getReal() const;
 		Renderable& getReal();
 
-		std::optional<LuaMesh> getMesh() const noexcept;
-		void setMesh(const LuaMesh& mesh) noexcept;
-		LuaMaterial getMaterial() const noexcept;
-		void setMaterial(const LuaMaterial& material) noexcept;
+		std::shared_ptr<IMesh> getMesh() const noexcept;
+		void setMesh(const std::shared_ptr<IMesh>& mesh) noexcept;
+		std::shared_ptr<Material> getMaterial() const noexcept;
+		void setMaterial(const std::shared_ptr<Material>& material) noexcept;
 		bool getEnabled() const noexcept;
 		void setEnabled(bool enabled) noexcept;
 
@@ -34,10 +34,10 @@ namespace darmok
 	private:
 		OptionalRef<Renderable> _renderable;
 
-		static LuaRenderable addEntityComponent1(LuaEntity& entity, const LuaMesh& mesh) noexcept;
-		static LuaRenderable addEntityComponent2(LuaEntity& entity, const LuaMaterial& material) noexcept;
-		static LuaRenderable addEntityComponent3(LuaEntity& entity, const LuaMesh& mesh, const LuaMaterial& material) noexcept;
-		static LuaRenderable addEntityComponent4(LuaEntity& entity, const LuaMesh& mesh, const LuaProgram& prog, const LuaTexture& texture) noexcept;
+		static LuaRenderable addEntityComponent1(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh) noexcept;
+		static LuaRenderable addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& material) noexcept;
+		static LuaRenderable addEntityComponent3(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept;
+		static LuaRenderable addEntityComponent4(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& texture) noexcept;
 		static std::optional<LuaRenderable> getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
