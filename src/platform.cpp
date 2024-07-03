@@ -175,6 +175,16 @@ namespace darmok
 		win.getImpl().setMode(_mode);
 	}
 
+	WindowCursorModeEvent::WindowCursorModeEvent(WindowCursorMode mode) noexcept
+		: PlatformEvent(Type::WindowCursorMode)
+		, _mode(mode)
+	{
+	}
+
+	void WindowCursorModeEvent::process(Window& win) noexcept
+	{
+		win.getImpl().setCursorMode(_mode);
+	}
 
 	void PlatformEvent::process(PlatformEvent& ev, Input& input, Window& window) noexcept
 	{
@@ -215,6 +225,9 @@ namespace darmok
 			break;
 		case PlatformEvent::Type::WindowMode:
 			static_cast<WindowModeEvent&>(ev).process(window);
+			break;
+		case PlatformEvent::Type::WindowCursorMode:
+			static_cast<WindowCursorModeEvent&>(ev).process(window);
 			break;
 		default:
 			break;

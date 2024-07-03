@@ -10,8 +10,8 @@
 
 namespace darmok
 {
-    class Transform;
     class Window;
+    class Camera;
 
     struct DARMOK_EXPORT FreelookConfig final
     {
@@ -25,21 +25,23 @@ namespace darmok
     {
     public:
         using Config = FreelookConfig;
-        FreelookController(Transform& trans, const Config& config = {});
-        void init(Scene& scene, App& app) override;
-        void shutdown() override;
-        void update(float deltaTime) override;
+        FreelookController(Camera& cam, const Config& config = {}) noexcept;
+        void init(Scene& scene, App& app) noexcept override;
+        void shutdown() noexcept override;
+        void update(float deltaTime) noexcept override;
         FreelookController& setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;
     private:
         static const std::string _bindingsName;
-        OptionalRef<Transform> _trans;
         OptionalRef<Input> _input;
         OptionalRef<Window> _win;
+        Camera& _cam;
         WindowCursorMode _winCursorMode;
+        glm::quat _rot;
+        glm::vec3 _pos;
+        glm::vec3 _scale;
         bool _enabled;
         Config _config;
-        std::optional<glm::mat4> _initialMatrix;
 
         void onBindingTriggered() noexcept;
 

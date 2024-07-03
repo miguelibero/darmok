@@ -7,7 +7,7 @@ namespace darmok
 {
     class FreelookController;
     class LuaEntity;
-    class LuaTransform;
+    class LuaCamera;
     class LuaScene;
     struct FreelookConfig;
 
@@ -21,7 +21,7 @@ namespace darmok
     private:
         OptionalRef<FreelookController> _ctrl;
         using Config = FreelookConfig;
-        static LuaFreelookController addSceneComponent1(LuaScene& scene, LuaTransform& trans) noexcept;
-		static LuaFreelookController addSceneComponent2(LuaScene& scene, LuaTransform& trans, const Config& config) noexcept;
+        static LuaFreelookController addSceneComponent1(LuaScene& scene, LuaCamera& cam) noexcept;
+		static LuaFreelookController addSceneComponent2(LuaScene& scene, LuaCamera& cam, const Config& config) noexcept;
     };
 }

@@ -59,6 +59,7 @@ namespace darmok
 			WindowSize,
 			WindowPhase,
 			WindowMode,
+			WindowCursorMode,
 
 			Count,
 		};
@@ -189,6 +190,15 @@ namespace darmok
 		void process(Window& win) noexcept;
 	private:
 		WindowMode _mode;
+	};
+
+	class WindowCursorModeEvent final : public PlatformEvent
+	{
+	public:
+		WindowCursorModeEvent(WindowCursorMode mode) noexcept;
+		void process(Window& win) noexcept;
+	private:
+		WindowCursorMode _mode;
 	};
 
 	class PlatformEventQueue final

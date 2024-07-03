@@ -45,7 +45,7 @@ namespace
 			cam.addComponent<PhongLightingComponent>();
 			cam.setRenderer<ForwardRenderer>();
 
-			auto& freelook = scene->addSceneComponent<FreelookController>(camTrans);
+			auto& freelook = scene->addSceneComponent<FreelookController>(cam);
 
 			auto light = registry.create();
 			registry.emplace<Transform>(light)

@@ -79,6 +79,8 @@ namespace darmok
         OptionalRef<Transform> getTransform() const noexcept;
         glm::mat4 getModelMatrix() const noexcept;
 
+        Camera& setModelMatrix(std::optional<glm::mat4> mat) noexcept;
+
         template<typename T>
         Camera& setEntityComponentFilter() noexcept
         {
@@ -144,6 +146,8 @@ namespace darmok
     private:
         bool _enabled;
         glm::mat4 _proj;
+        std::optional<glm::mat4> _model;
+
         std::optional<Viewport> _viewport;
         std::unique_ptr<IEntityFilter> _entityFilter;
         std::unique_ptr<ICameraRenderer> _renderer;

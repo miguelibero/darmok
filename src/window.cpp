@@ -6,6 +6,7 @@ namespace darmok
 	WindowImpl::WindowImpl() noexcept
 		: _phase(WindowPhase::Unknown)
 		, _mode(WindowMode::Normal)
+		, _cursorMode(WindowCursorMode::Normal)
 		, _size(0)
 		, _pixelSize(0)
 	{
@@ -67,6 +68,20 @@ namespace darmok
 		return true;
 	}
 
+	bool WindowImpl::setCursorMode(WindowCursorMode mode) noexcept
+	{
+		if (_cursorMode == mode)
+		{
+			return false;
+		}
+		for (auto& listener : _listeners)
+		{
+			listener->onCursorMode(mode);
+		}
+		_cursorMode = mode;
+		return true;
+	}
+
 	const glm::uvec2& WindowImpl::getSize() const noexcept
 	{
 		return _size;
@@ -85,6 +100,11 @@ namespace darmok
 	WindowMode WindowImpl::getMode() const noexcept
 	{
 		return _mode;
+	}
+
+	WindowCursorMode WindowImpl::getCursorMode() const noexcept
+	{
+		return _cursorMode;
 	}
 
 	glm::vec2 WindowImpl::getScreenToWindowFactor() const noexcept
@@ -173,6 +193,11 @@ namespace darmok
 	WindowMode Window::getMode() const noexcept
 	{
 		return _impl->getMode();
+	}
+
+	WindowCursorMode Window::getCursorMode() const noexcept
+	{
+		return _impl->getCursorMode();
 	}
 
 	glm::vec2 Window::windowToScreenPoint(const glm::vec2& pos) const noexcept

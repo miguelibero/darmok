@@ -19,10 +19,12 @@ namespace darmok
 		bool setPixelSize(const glm::uvec2& size) noexcept;
 		bool setPhase(WindowPhase phase) noexcept;
 		bool setMode(WindowMode mode) noexcept;
+		bool setCursorMode(WindowCursorMode mode) noexcept;
 		
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
 		[[nodiscard]] WindowMode getMode() const noexcept;
+		[[nodiscard]] WindowCursorMode getCursorMode() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 
 		[[nodiscard]] glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
@@ -36,6 +38,7 @@ namespace darmok
 		glm::uvec2 _pixelSize;
 		WindowPhase _phase;
 		WindowMode _mode;
+		WindowCursorMode _cursorMode;
 		std::unordered_set<OptionalRef<IWindowListener>> _listeners;
 
 		glm::vec2 getScreenToWindowFactor() const noexcept;

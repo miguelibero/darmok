@@ -21,6 +21,7 @@ namespace darmok
 		virtual void onWindowPixelSize(const glm::uvec2& size) {};
 		virtual void onWindowPhase(WindowPhase phase) {};
 		virtual void onWindowMode(WindowMode phase) {};
+		virtual void onCursorMode(WindowCursorMode phase) {};
 	};
 
 	class DARMOK_EXPORT Window final
@@ -39,6 +40,7 @@ namespace darmok
 		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 		[[nodiscard]] WindowMode getMode() const noexcept;
+		[[nodiscard]] WindowCursorMode getCursorMode() const noexcept;
 
 		[[nodiscard]] glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
 		[[nodiscard]] glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;

@@ -205,12 +205,14 @@ namespace darmok
         {
             auto projPtr = glm::value_ptr(_proj);
             const void* viewPtr = nullptr;
-            auto& registry = _scene->getRegistry();
 
-            auto entity = entt::to_entity(registry.storage<Camera>(), *this);
-            if (entity != entt::null)
+            if (_model)
             {
-                auto trans = registry.try_get<const Transform>(entity);
+                viewPtr = glm::value_ptr(_model.value());
+            }
+            else
+            {
+                auto trans = getTransform();
                 if (trans != nullptr)
                 {
                     viewPtr = glm::value_ptr(trans->getWorldInverse());
@@ -323,12 +325,22 @@ namespace darmok
 
     glm::mat4 Camera::getModelMatrix() const noexcept
     {
+        if (_model)
+        {
+            return _model.value();
+        }
         auto trans = getTransform();
         if (trans)
         {
             return trans->getWorldInverse();
         }
         return glm::mat4(1);
+    }
+
+    Camera& Camera::setModelMatrix(std::optional<glm::mat4> mat) noexcept
+    {
+        _model = mat;
+        return *this;
     }
 
     Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept

@@ -83,7 +83,6 @@ namespace darmok
         glm::vec4 perspective{};
         glm::decompose(trans, scale, rot, pos, skew, perspective);
         // TODO: check skew == [0, 0, 0] && persp == [0, 0, 0, 1]
-        rot = glm::conjugate(rot);
         return true;
     }
 }
