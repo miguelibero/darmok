@@ -28,19 +28,19 @@ namespace darmok
 	class FileReader final : public bx::FileReader
 	{
 	public:
-		void setBasePath(const std::string& basePath) noexcept;
+		void setBasePath(const std::filesystem::path& basePath) noexcept;
 		bool open(const bx::FilePath& filePath, bx::Error* err) override;
 	private:
-		std::string _basePath;
+		std::filesystem::path _basePath;
 	};
 
 	class FileWriter final : public bx::FileWriter
 	{
 	public:
-		void setBasePath(const std::string& basePath) noexcept;
+		void setBasePath(const std::filesystem::path& basePath) noexcept;
 		virtual bool open(const bx::FilePath& filePath, bool append, bx::Error* err) override;
 	private:
-		std::string _basePath;
+		std::filesystem::path _basePath;
 	};
 
 
@@ -72,7 +72,7 @@ namespace darmok
 		[[nodiscard]] AssimpModelLoader& getAssimpModelLoader() noexcept;
 #endif
 
-		void setBasePath(const std::string& path) noexcept;
+		void setBasePath(const std::filesystem::path& path) noexcept;
 	private:
 		FileReader _fileReader;
 		FileWriter _fileWriter;

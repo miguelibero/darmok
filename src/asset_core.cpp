@@ -355,7 +355,10 @@ namespace darmok
 
     fs::path AssetImporterImpl::normalizePath(const fs::path& path) noexcept
     {
-        return fs::weakly_canonical(path).make_preferred();
+        std::string pathStr(path.string());
+        StringUtils::replace(pathStr, "*", "_");
+        StringUtils::replace(pathStr, "?", "_");
+        return fs::weakly_canonical(pathStr).make_preferred();
     }
 
     bool AssetImporterImpl::isPathCached(const fs::path& path) const noexcept
@@ -425,7 +428,7 @@ namespace darmok
     AssetImporterImpl::DirConfigs AssetImporterImpl::getDirConfigs(const fs::path& path) const noexcept
     {
         DirConfigs configs;
-        auto parentPath = fs::absolute(path).parent_path();
+        auto parentPath = path.parent_path();
         while (parentPath != parentPath.root_path())
         {
             auto itr = _dirs.find(parentPath);

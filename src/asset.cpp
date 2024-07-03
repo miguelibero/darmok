@@ -12,37 +12,31 @@
 
 namespace darmok
 {
-	static std::string addBasePath(const std::string& path, const std::string& basePath) noexcept
+	static std::filesystem::path fixAssetFilePath(const bx::FilePath& filePath, const std::filesystem::path& basePath) noexcept
 	{
-		std::filesystem::path p(path);
-
-		if (p.is_absolute())
-		{
-			return path;
-		}
-		return (std::filesystem::path(basePath) / p).string();
+		return basePath / std::filesystem::path(filePath.getCPtr());
 	}
 
-	void FileReader::setBasePath(const std::string& basePath) noexcept
+	void FileReader::setBasePath(const std::filesystem::path& basePath) noexcept
 	{
 		_basePath = basePath;
 	}
 
 	bool FileReader::open(const bx::FilePath& filePath, bx::Error* err)
 	{
-		auto absFilePath = addBasePath(filePath.getCPtr(), _basePath);
-		return bx::FileReader::open(absFilePath.c_str(), err);
+		auto path = fixAssetFilePath(filePath, _basePath).string();
+		return bx::FileReader::open(path.c_str(), err);
 	}
 
-	void FileWriter::setBasePath(const std::string& basePath) noexcept
+	void FileWriter::setBasePath(const std::filesystem::path& basePath) noexcept
 	{
 		_basePath = basePath;
 	}
 
 	bool FileWriter::open(const bx::FilePath& filePath, bool append, bx::Error* err)
 	{
-		auto absFilePath = addBasePath(filePath.getCPtr(), _basePath);
-		return bx::FileWriter::open(absFilePath.c_str(), append, err);
+		auto path = fixAssetFilePath(filePath, _basePath).string();
+		return bx::FileWriter::open(path.c_str(), append, err);
 	}
 
 	AssetContextImpl::AssetContextImpl()
@@ -147,7 +141,7 @@ namespace darmok
 	}
 #endif
 
-	void AssetContextImpl::setBasePath(const std::string& path) noexcept
+	void AssetContextImpl::setBasePath(const std::filesystem::path& path) noexcept
 	{
 		_fileReader.setBasePath(path);
 		_fileWriter.setBasePath(path);
@@ -239,6 +233,12 @@ namespace darmok
 	const AssetContextImpl& AssetContext::getImpl() const noexcept
 	{
 		return *_impl;
+	}
+
+	AssetContext& AssetContext::setBasePath(const std::filesystem::path& path) noexcept
+	{
+		_impl->setBasePath(path);
+		return *this;
 	}
 
 	DarmokAssetImporter::DarmokAssetImporter(const CommandLineAssetImporterConfig& config)

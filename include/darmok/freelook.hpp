@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
 #include <darmok/scene.hpp>
@@ -31,9 +32,6 @@ namespace darmok
         FreelookController& setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;
     private:
-
-        void onBindingTriggered() noexcept;
-
         static const std::string _bindingsName;
         OptionalRef<Transform> _trans;
         OptionalRef<Input> _input;
@@ -41,6 +39,9 @@ namespace darmok
         WindowCursorMode _winCursorMode;
         bool _enabled;
         Config _config;
+        std::optional<glm::mat4> _initialMatrix;
+
+        void onBindingTriggered() noexcept;
 
     };
 }

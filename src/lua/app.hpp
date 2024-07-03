@@ -65,10 +65,10 @@ namespace darmok
 		App& _app;
 		std::optional<LuaApp> _luaApp;
         std::unique_ptr<sol::state> _lua;
-		std::filesystem::path _mainLua;
 
-		std::optional<int32_t> findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept;
-		std::optional<int32_t> importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine);
+		std::optional<std::filesystem::path> findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept;
+		bool importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine);
+		std::optional<int32_t> loadLua(const std::filesystem::path& mainPath);
 
 		void addPackagePath(const std::string& path, bool binary = false) noexcept;
 

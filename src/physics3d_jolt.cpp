@@ -860,6 +860,10 @@ namespace darmok::physics3d
         }
 
         auto [pos, rot] = JoltUtils::convert(getShape(), trans);
+        if (!_characterConfig && _config.motion == MotionType::Character)
+        {
+            _characterConfig.emplace().load(_config);
+        }
         if (_characterConfig)
         {
             _bodyId = createCharacter(pos, rot);

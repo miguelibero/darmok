@@ -15,7 +15,8 @@ namespace darmok::physics3d
     {
         Static,
         Dynamic,
-        Kinematic
+        Kinematic,
+        Character
     };
 
     enum class BackFaceMode : uint8_t

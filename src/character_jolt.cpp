@@ -5,6 +5,18 @@
 
 namespace darmok::physics3d
 {
+    void CharacterConfig::load(const PhysicsBodyConfig& bodyConfig) noexcept
+    {
+        shape = bodyConfig.shape;
+        if (bodyConfig.mass)
+        {
+            mass = bodyConfig.mass.value();
+        }
+        friction = bodyConfig.friction;
+        gravityFactor = bodyConfig.gravityFactor;
+        layer = bodyConfig.layer;
+    }
+
     CharacterControllerImpl::CharacterControllerImpl(const Config& config) noexcept
         : _config(config)
         , _jolt(nullptr)

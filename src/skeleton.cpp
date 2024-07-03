@@ -127,10 +127,11 @@ namespace darmok
         {
             anim.update(deltaTime);
             skeletons.clear();
+            auto matrixes = anim.getBoneModelMatrixes();
             _scene->getComponentsInChildren<RenderableSkeleton>(entity, skeletons);
             for (auto& skel : skeletons)
             {
-                skel->update(_scene.value(), anim.getBoneModelMatrixes());
+                skel->update(_scene.value(), matrixes);
             }
         }
     }

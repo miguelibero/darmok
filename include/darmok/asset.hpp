@@ -4,6 +4,7 @@
 #include <darmok/asset_core.hpp>
 #include <bx/allocator.h>
 #include <memory>
+#include <filesystem>
 
 namespace darmok
 {
@@ -50,6 +51,8 @@ namespace darmok
 
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;
+
+		AssetContext& setBasePath(const std::filesystem::path& path) noexcept;
 	private:
 		std::unique_ptr<AssetContextImpl> _impl;
 	};

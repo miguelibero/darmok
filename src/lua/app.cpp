@@ -180,18 +180,21 @@ end
 			return 0;
 		}
 
-		auto r = importAssets(cmdName, cmdLine);
-		if (r)
+		if (!importAssets(cmdName, cmdLine))
 		{
-			return r.value();
+			return -3;
 		}
-		r = findMainLua(cmdName, cmdLine);
-		if (r)
+		auto mainPath = findMainLua(cmdName, cmdLine);
+		if (!mainPath)
 		{
-			return r;
+			return -2;
 		}
+		return loadLua(mainPath.value());
+	}
 
-		auto mainDir = _mainLua.parent_path().string();
+	std::optional<int32_t> LuaRunnerAppImpl::loadLua(const std::filesystem::path& mainPath)
+	{
+		auto mainDir = mainPath.parent_path().string();
 
 		_lua = std::make_unique<sol::state>();
 		auto& lua = *_lua;
@@ -233,7 +236,7 @@ end
 #endif
 
 		// TODO: thow here if failed to load
-		auto result = lua.script_file(_mainLua.string());
+		auto result = lua.script_file(mainPath.string());
 		auto relm = result[0];
 		if (relm.is<int>())
 		{
@@ -242,7 +245,7 @@ end
 		return std::nullopt;
 	}
 
-	std::optional<int32_t> LuaRunnerAppImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
+	std::optional<std::filesystem::path> LuaRunnerAppImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
 	{
 		static const std::vector<std::filesystem::path> possiblePaths = {
 			"main.lua",
@@ -254,36 +257,34 @@ end
 		const char* mainPathArg;
 		if (cmdLine.hasArg(mainPathArg, 'm', "main-lua"))
 		{
-			_mainLua = mainPathArg;
-			if (std::filesystem::is_directory(_mainLua))
+			mainPath = mainPathArg;
+			if (std::filesystem::is_directory(mainPath))
 			{
 				for (auto path : possiblePaths)
 				{
-					path = _mainLua / path;
+					path = mainPath / path;
 					if (std::filesystem::exists(path))
 					{
-						_mainLua = path;
-						return std::nullopt;
+						return path;
 					}
 				}
 			}
-			if (std::filesystem::exists(_mainLua))
+			if (std::filesystem::exists(mainPath))
 			{
-				return std::nullopt;
+				return mainPath;
 			}
 			help(cmdName, "could not find specified main lua script");
-			return -1;
+			return std::nullopt;
 		}
 		for (auto& path : possiblePaths)
 		{
 			if (std::filesystem::exists(path))
 			{
-				_mainLua = path;
-				return std::nullopt;
+				return path;
 			}
 		}
 		help(cmdName, "could not find main lua script");
-		return -1;
+		return std::nullopt;
 	}
 
 	void LuaRunnerAppImpl::addPackagePath(const std::string& path, bool binary) noexcept
@@ -321,7 +322,8 @@ end
 	void LuaRunnerAppImpl::init()
 	{
 		auto& lua = *_lua;
-		sol::protected_function init = lua["init"];
+		// TODO: check that this throws in case of error
+		sol::unsafe_function init = lua["init"];
 		if (init)
 		{
 			init();
@@ -329,10 +331,10 @@ end
 		_luaApp->registerUpdate(lua["update"]);
 	}
 
-	std::string LuaRunnerAppImpl::_defaultAssetInputPath = "asset_sources";
-	std::string LuaRunnerAppImpl::_defaultAssetOutputPath = "assets";
+	std::string LuaRunnerAppImpl::_defaultAssetInputPath = "assets";
+	std::string LuaRunnerAppImpl::_defaultAssetOutputPath = "runtime_assets";
 
-	std::optional<int32_t> LuaRunnerAppImpl::importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine)
+	bool LuaRunnerAppImpl::importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine)
 	{
 		const char* inputPath = nullptr;
 		cmdLine.hasArg(inputPath, 'i', "asset-input");
@@ -342,13 +344,17 @@ end
 		}
 		if (inputPath == nullptr)
 		{
-			return std::nullopt;
+			return true;
 		}
 		const char* outputPath = nullptr;
 		cmdLine.hasArg(outputPath, 'o', "asset-output");
 		if (outputPath == nullptr)
 		{
 			outputPath = _defaultAssetOutputPath.c_str();
+		}
+		if (std::filesystem::is_directory(outputPath))
+		{
+			_app.getAssets().setBasePath(outputPath);
 		}
 		DarmokAssetImporter importer(inputPath);
 		importer.setOutputPath(outputPath);
@@ -365,11 +371,11 @@ end
 			{
 				std::cout << output.string() << std::endl;
 			}
-			return 0;
+			return false;
 		}
 
 		importer(std::cout);
-		return std::nullopt;
+		return true;
 	}
 
 	void LuaRunnerAppImpl::version(const std::string& name) noexcept

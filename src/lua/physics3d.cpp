@@ -392,7 +392,8 @@ namespace darmok::physics3d
         lua.new_enum<MotionType>("Physics3dMotionType", {
             { "Static", MotionType::Static },
             { "Dynamic", MotionType::Dynamic },
-            { "Kinematic", MotionType::Kinematic }
+            { "Kinematic", MotionType::Kinematic },
+            { "Character", MotionType::Character },
         });
         lua.new_usertype<PhysicsBodyConfig>("Physics3dBodyConfig", sol::default_constructor,
             "shape", &PhysicsBodyConfig::shape,

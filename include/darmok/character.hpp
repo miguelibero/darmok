@@ -28,6 +28,8 @@ namespace darmok::physics3d
         float friction = 0.2;
         float gravityFactor = 1.0F;
         float maxSeparationDistance = 0.1F;
+
+        void load(const PhysicsBodyConfig& bodyConfig) noexcept;
     };
 
     struct DARMOK_EXPORT CharacterControllerConfig final : public BaseCharacterConfig
@@ -53,7 +55,6 @@ namespace darmok::physics3d
         glm::vec3 normal;
         glm::vec3 velocity;
     };
-
 
     class DARMOK_EXPORT BX_NO_VTABLE ICharacterControllerDelegate
     {

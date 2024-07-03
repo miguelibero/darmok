@@ -50,6 +50,14 @@ namespace darmok
         {
             _win->requestCursorMode(_enabled ? WindowCursorMode::Disabled : _winCursorMode);
         }
+        if (_enabled)
+        {
+            _initialMatrix = _trans->getLocalMatrix();
+        }
+        else if(_initialMatrix)
+        {
+            _trans->setLocalMatrix(_initialMatrix.value());
+        }
         return *this;
     }
 

@@ -551,9 +551,14 @@ namespace darmok
             throw std::runtime_error("could not load assimp scene");
         }
 
-        if (input.config.contains("skeleton") && !dry)
+        if (!dry)
         {
-            loadSkeleton(input.path.parent_path() / input.config["skeleton"]);
+            std::filesystem::path skelPath = input.path;
+            if (input.config.contains("skeleton"))
+            {
+                skelPath = input.path.parent_path() / input.config["skeleton"];
+            }
+            loadSkeleton(skelPath);
         }
         return true;
     }
@@ -566,11 +571,6 @@ namespace darmok
         if (input.config.contains("outputPath"))
         {
             outputPath = input.config["outputPath"];
-            if (!outputPath.contains("*"))
-            {
-                outputs.push_back(input.getRelativePath().parent_path() / outputPath);
-                return outputs;
-            }
         }
 
         AssimpOzzAnimationConverter converter(*_currentScene);
