@@ -255,27 +255,18 @@ namespace darmok
         return true;
     }
 
+    bool AssimpOzzAnimationConverter::isJoint(const aiNode& node) const noexcept
+    {
+        std::string name = node.mName.C_Str();
+        return std::find(_jointNames.begin(), _jointNames.end(), name) != _jointNames.end();
+    }
+
     void AssimpOzzAnimationConverter::update(const aiAnimation& assimpAnim, RawAnimation& anim)
     {
         anim.name = assimpAnim.mName.C_Str();
         anim.duration = float(assimpAnim.mDuration / assimpAnim.mTicksPerSecond);
         anim.tracks.resize(_jointNames.size());
 
-        aiMatrix4x4 rootTrans;
-        if (!_jointNames.empty() && _scene.mRootNode)
-        {
-            auto& rootJoint = _jointNames[0];
-            auto rootNode = _scene.mRootNode->FindNode(rootJoint.c_str());
-            if (rootNode)
-            {
-                auto parent = rootNode->mParent;
-                while (parent)
-                {
-                    rootTrans = parent->mTransformation * rootTrans;
-                    parent = parent->mParent;
-                }
-            }
-        }
         for (size_t i = 0; i < _jointNames.size(); i++)
         {
             auto& jointName = _jointNames[i];
@@ -296,15 +287,25 @@ namespace darmok
                 logInfo(assimpAnim, err);
                 throw std::runtime_error(err);
             }
+
+            aiMatrix4x4 baseTrans;
+
+            auto node = _scene.mRootNode->FindNode(jointName.c_str());
+            if (node)
+            {
+                auto parent = node->mParent;
+                while (parent != nullptr && !isJoint(*parent))
+                {
+                    baseTrans = parent->mTransformation * baseTrans;
+                    parent = parent->mParent;
+                }
+            }
+
             aiVector3D basePos;
             aiVector3D baseScale(1);
             aiQuaternion baseRot;
-            aiMatrix4x4 baseTrans;
-            if (i == 0)
-            {
-                baseTrans = rootTrans;
-                baseTrans.Decompose(baseScale, baseRot, basePos);
-            }
+            baseTrans.Decompose(baseScale, baseRot, basePos);
+
             auto& track = anim.tracks[i];
             auto& chan = *assimpAnim.mChannels[j];
 

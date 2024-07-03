@@ -72,6 +72,7 @@ namespace darmok
         const aiScene& _scene;
         std::vector<std::string> _jointNames;
         void update(const aiAnimation& assimpAnim, RawAnimation& anim);
+        bool isJoint(const aiNode& node) const noexcept;
         bool logInfo(const aiAnimation& assimpAnim, const std::string& prefix = "") noexcept;
     };
 
