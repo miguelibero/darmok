@@ -160,7 +160,8 @@ namespace darmok::physics3d
         glm::quat rot(1, 0, 0, 0);
         glm::vec3 scale(1);
         Math::decompose(mat, pos, rot, scale);
-        if (scale.x != scale.y || scale.x != scale.z)
+        static const int epsilonFactor = 100;
+        if (!Math::almostEqual(scale.x, scale.y, epsilonFactor) || !Math::almostEqual(scale.x, scale.z, epsilonFactor))
         {
             throw std::runtime_error("non-uniform scale not supported");
         }

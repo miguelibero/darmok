@@ -7,6 +7,13 @@
 
 namespace darmok
 {
+    bool Math::almostEqual(float a, float b, int factor) noexcept
+    {
+        double min_a = a - (a - std::nextafter(a, std::numeric_limits<float>::lowest())) * factor;
+        double max_a = a + (std::nextafter(a, std::numeric_limits<float>::max()) - a) * factor;
+        return min_a <= b && max_a >= b;
+    }
+
     glm::mat4 Math::flipHandedness(const glm::mat4& mat) noexcept
     {
         static const glm::mat4 zNegate = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));

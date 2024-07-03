@@ -56,16 +56,11 @@ namespace
 					.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
 
 				_cam->addComponent<PhongLightingComponent>();
-				_cam->setRenderer<ForwardRenderer>();
-				_freeLook = _scene->addSceneComponent<FreelookController>(*_camTrans);
+				_renderer = _cam->setRenderer<ForwardRenderer>();
+				_freeLook = _scene->addSceneComponent<FreelookController>(*_cam);
 #ifdef PHYSICS_DEBUG_RENDERER
 				_physicsDebugRenderer = _cam->addComponent<PhysicsDebugRenderer>(physics);
-
-				getInput().addBindings("physics", {
-					{ KeyboardBindingKey { KeyboardKey::F7 }, true,
-						[this]() { switchMode(); }
-					}
-				});
+				_physicsDebugRenderer->setEnabled(false);
 #endif
 			}
 
@@ -142,10 +137,6 @@ namespace
 				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), prog, playerTex);
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
-
-#ifdef PHYSICS_DEBUG_RENDERER
-			switchMode();
-#endif
 		}
 
 		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override
@@ -292,6 +283,7 @@ namespace
 		OptionalRef<PhysicsBody> _doorBody;
 		OptionalRef<PhysicsBody> _floorBody;
 		OptionalRef<FreelookController> _freeLook;
+		OptionalRef<ForwardRenderer> _renderer;
 		std::shared_ptr<Scene> _scene;
 
 		Cube _cubeShape;
@@ -306,22 +298,6 @@ namespace
 
 #ifdef PHYSICS_DEBUG_RENDERER
 		OptionalRef<PhysicsDebugRenderer> _physicsDebugRenderer;
-
-		void switchMode()
-		{
-			if (!_physicsDebugRenderer)
-			{
-				return;
-			}
-			auto renderablesEnabled = !_physicsDebugRenderer->isEnabled();
-			_physicsDebugRenderer->setEnabled(renderablesEnabled);
-			renderablesEnabled = !renderablesEnabled;
-			auto view = _scene->getComponentView<Renderable>();
-			for (auto [entity, renderable] : view.each())
-			{
-				renderable.setEnabled(renderablesEnabled);
-			}
-		}
 #endif
 
 		bool setMaterial(PhysicsBody& body, const std::shared_ptr<Material>& mat)

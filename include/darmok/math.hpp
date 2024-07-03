@@ -57,6 +57,7 @@ namespace darmok
 			return result;
 		}
 
+		static bool almostEqual(float a, float b, int factor = 1) noexcept;
 		static [[nodiscard]] glm::mat4 flipHandedness(const glm::mat4& mat) noexcept;
 		static [[nodiscard]] glm::quat flipHandedness(const glm::quat& quat) noexcept;
 

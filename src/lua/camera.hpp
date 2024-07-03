@@ -47,6 +47,12 @@ namespace darmok
 		std::optional<LuaTransform> getTransform() const noexcept;
 		glm::mat4 getModelMatrix() const noexcept;
 
+		bool getEnabled() const noexcept;
+		void setEnabled(bool enabled) noexcept;
+
+		bool getRendererEnabled() const noexcept;
+		void setRendererEnabled(bool enabled) noexcept;
+
 		Ray screenPointToRay1(const glm::vec2& point) const noexcept;
 		Ray screenPointToRay2(const VarLuaTable<glm::vec3>& point) const noexcept;
 		Ray viewportPointToRay(const VarLuaTable<glm::vec3>& point) const noexcept;

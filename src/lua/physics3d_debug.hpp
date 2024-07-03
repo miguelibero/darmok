@@ -14,10 +14,12 @@ namespace darmok::physics3d
 {
     class PhysicsDebugRenderer;
     class LuaPhysicsSystem;
+    struct PhysicsDebugConfig;
 
     class LuaPhysicsDebugRenderer final
     {
     public:
+        using Config = PhysicsDebugConfig;
         LuaPhysicsDebugRenderer(PhysicsDebugRenderer& renderer) noexcept;
         bool getEnabled() const noexcept;
         void setEnabled(bool enabled) noexcept;
@@ -27,6 +29,6 @@ namespace darmok::physics3d
         OptionalRef<PhysicsDebugRenderer> _renderer;
 
         static LuaPhysicsDebugRenderer addCameraComponent1(LuaCamera& cam, LuaPhysicsSystem& system) noexcept;
-        static LuaPhysicsDebugRenderer addCameraComponent2(LuaCamera& cam, LuaPhysicsSystem& system, const std::shared_ptr<Program>& prog) noexcept;
+        static LuaPhysicsDebugRenderer addCameraComponent2(LuaCamera& cam, LuaPhysicsSystem& system, const Config& config) noexcept;
     };
 }

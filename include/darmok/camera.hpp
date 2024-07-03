@@ -76,6 +76,9 @@ namespace darmok
         bool isEnabled() const noexcept;
         Camera& setEnabled(bool enabled) noexcept;
 
+        bool isRendererEnabled() const noexcept;
+        Camera& setRendererEnabled(bool enabled) noexcept;
+
         OptionalRef<Transform> getTransform() const noexcept;
         glm::mat4 getModelMatrix() const noexcept;
 
@@ -145,6 +148,7 @@ namespace darmok
 
     private:
         bool _enabled;
+        bool _rendererEnabled;
         glm::mat4 _proj;
         std::optional<glm::mat4> _model;
 

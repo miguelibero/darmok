@@ -15,6 +15,7 @@ namespace darmok
         : _proj(projMatrix)
         , _frameBuffer{ bgfx::kInvalidHandle }
         , _enabled(true)
+        , _rendererEnabled(true)
     {
     }
 
@@ -34,6 +35,18 @@ namespace darmok
     Camera& Camera::setEnabled(bool enabled) noexcept
     {
         _enabled = enabled;
+        return *this;
+    }
+
+
+    bool Camera::isRendererEnabled() const noexcept
+    {
+        return _rendererEnabled;
+    }
+
+    Camera& Camera::setRendererEnabled(bool enabled) noexcept
+    {
+        _rendererEnabled = enabled;
         return *this;
     }
 
@@ -177,7 +190,7 @@ namespace darmok
         {
             viewId = comp->beforeRender(viewId);
         }
-        if(_renderer != nullptr)
+        if(_rendererEnabled && _renderer != nullptr)
         {
             viewId = _renderer->render(viewId);
         }

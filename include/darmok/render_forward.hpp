@@ -14,6 +14,7 @@ namespace darmok
     class DARMOK_EXPORT ForwardRenderer final : public ICameraRenderer
     {
     public:
+        ForwardRenderer() noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         ForwardRenderer& setInvalidMaterial(const std::shared_ptr<Material>& mat) noexcept;
         void shutdown() noexcept override;

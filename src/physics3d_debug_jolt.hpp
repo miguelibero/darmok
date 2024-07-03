@@ -2,6 +2,7 @@
 
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
+#include <darmok/physics3d_debug.hpp>
 #include "jolt.hpp"
 #include <Jolt/Renderer/DebugRenderer.h>
 
@@ -12,6 +13,7 @@ namespace darmok
     class App;
     class Camera;
     class Program;
+    class Input;
 }
 
 namespace darmok::physics3d
@@ -26,11 +28,13 @@ namespace darmok::physics3d
     };
 
     class PhysicsSystemImpl;
+    struct PhysicsDebugConfig;
 
     class PhysicsDebugRendererImpl final : public JPH::DebugRenderer
     {
     public:
-        PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const std::shared_ptr<Program>& program = nullptr) noexcept;
+        using Config = PhysicsDebugConfig;
+        PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app);
         void shutdown();
         bool render(bgfx::ViewId viewId);
@@ -48,13 +52,16 @@ namespace darmok::physics3d
         bool _enabled;
         PhysicsSystemImpl& _system;
         OptionalRef<Camera> _cam;
-        Material _material;
+        OptionalRef<Input> _input;
+        Config _config;
         OptionalRef<bgfx::Encoder> _encoder;
         bgfx::ViewId _viewId;
         bgfx::VertexLayout _vertexLayout;
         MeshData _drawLines;
         MeshData _drawTris;
+        static const std::string _bindingsName;
 
+        void onBindingTriggered();
         void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid);
     };
 }

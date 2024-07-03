@@ -1,13 +1,15 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <darmok/export.h>
 #include <darmok/camera.hpp>
+#include <darmok/input.hpp>
 
 namespace darmok
 {
     class Camera;
-    class Program;
+    class Material;
 }
 
 namespace darmok::physics3d
@@ -15,10 +17,17 @@ namespace darmok::physics3d
     class PhysicsDebugRendererImpl;
     class PhysicsSystem;
 
+    struct DARMOK_EXPORT PhysicsDebugConfig final
+    {
+        std::shared_ptr<Material> material;
+        std::optional<InputBindingKey> bindingKey = KeyboardBindingKey{ KeyboardKey::F7 };
+    };
+
     class DARMOK_EXPORT PhysicsDebugRenderer : public ICameraComponent
     {
     public:
-        PhysicsDebugRenderer(PhysicsSystem& system, const std::shared_ptr<Program>& prog = nullptr) noexcept;
+        using Config = PhysicsDebugConfig;
+        PhysicsDebugRenderer(PhysicsSystem& system, const Config& = {}) noexcept;
         ~PhysicsDebugRenderer() noexcept;
         void init(Camera& cam, Scene& scene, App& app) override;
         void shutdown() override;

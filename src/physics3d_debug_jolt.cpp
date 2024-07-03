@@ -4,6 +4,7 @@
 #include <darmok/program.hpp>
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/input.hpp>
 #include <darmok/program_standard.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/vertex.hpp>
@@ -32,8 +33,8 @@ namespace darmok::physics3d
         }
     }
 
-    PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const std::shared_ptr<Program>& program) noexcept
-        : _material(program)
+    PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const Config& config) noexcept
+        : _config(config)
         , _viewId(-1)
         , _enabled(true)
         , _system(system)
@@ -42,20 +43,45 @@ namespace darmok::physics3d
         _drawTris.config.type = MeshType::Transient;
     }
 
+    const std::string PhysicsDebugRendererImpl::_bindingsName = "physics_debug";
+
     void PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
-        if (_material.getProgram() == nullptr)
+        _input = app.getInput();
+        if (_config.bindingKey)
+        {
+            _input->addBindings(_bindingsName, {
+               { _config.bindingKey.value(), true,
+                   [this]() { onBindingTriggered(); }
+               }
+            });
+        }
+        if (_config.material == nullptr)
+        {
+            _config.material = std::make_shared<Material>();
+        }
+        if (_config.material->getProgram() == nullptr)
         {
             auto prog = app.getAssets().getStandardProgramLoader()(StandardProgramType::Debug);
-            _material.setProgram(prog);
+            _config.material->setProgram(prog);
         }
-        _vertexLayout = _material.getProgram()->getVertexLayout();
+        _vertexLayout = _config.material->getProgram()->getVertexLayout();
         _cam = cam;
         Initialize();
     }
 
     void PhysicsDebugRendererImpl::shutdown()
     {
+        if (_input && _config.bindingKey)
+        {
+            _input->removeBindings(_bindingsName);
+        }
+    }
+
+    void PhysicsDebugRendererImpl::onBindingTriggered()
+    {
+        _enabled = !_enabled;
+        _cam->setRendererEnabled(!_enabled);
     }
 
     bool PhysicsDebugRendererImpl::render(bgfx::ViewId viewId)
@@ -66,6 +92,10 @@ namespace darmok::physics3d
         }
         auto joltSystem = _system.getJolt();
         if (!joltSystem)
+        {
+            return false;
+        }
+        if (!_config.material)
         {
             return false;
         }
@@ -111,8 +141,8 @@ namespace darmok::physics3d
         _cam->beforeRenderEntity(entt::null, _encoder.value(), _viewId);
         mesh.render(_encoder.value());
         auto primType = mode == EDrawMode::Wireframe ? MaterialPrimitiveType::Line : MaterialPrimitiveType::Triangle;
-        _material.setPrimitiveType(primType);
-        _material.renderSubmit(_encoder.value(), _viewId);
+        _config.material->setPrimitiveType(primType);
+        _config.material->renderSubmit(_encoder.value(), _viewId);
     }
 
     void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
@@ -183,10 +213,10 @@ namespace darmok::physics3d
         _encoder->setTransform(glm::value_ptr(transMtx));
 
         batch.mesh->render(_encoder.value());
-        auto oldColor = _material.getColor(MaterialColorType::Diffuse);
-        _material.setColor(MaterialColorType::Diffuse, JoltUtils::convert(inModelColor));
+        auto oldColor = _config.material->getColor(MaterialColorType::Diffuse);
+        _config.material->setColor(MaterialColorType::Diffuse, JoltUtils::convert(inModelColor));
         renderMesh(*batch.mesh, inDrawMode);
-        _material.setColor(MaterialColorType::Diffuse, oldColor);
+        _config.material->setColor(MaterialColorType::Diffuse, oldColor);
     }
 
     void PhysicsDebugRendererImpl::DrawText3D(JPH::RVec3Arg inPosition, const std::string_view& inString, JPH::ColorArg inColor, float inHeight)
@@ -194,8 +224,8 @@ namespace darmok::physics3d
         // TODO: render text support
     }
 
-    PhysicsDebugRenderer::PhysicsDebugRenderer(PhysicsSystem& system, const std::shared_ptr<Program>& prog) noexcept
-        : _impl(std::make_unique<PhysicsDebugRendererImpl>(system.getImpl(), prog))
+    PhysicsDebugRenderer::PhysicsDebugRenderer(PhysicsSystem& system, const Config& config) noexcept
+        : _impl(std::make_unique<PhysicsDebugRendererImpl>(system.getImpl(), config))
     {
     }
 
