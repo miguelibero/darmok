@@ -80,8 +80,7 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::onBindingTriggered()
     {
-        _enabled = !_enabled;
-        _cam->setRendererEnabled(!_enabled);
+        setEnabled(!_enabled);
     }
 
     bool PhysicsDebugRendererImpl::render(bgfx::ViewId viewId)
@@ -104,6 +103,8 @@ namespace darmok::physics3d
         _viewId = viewId;
 
         JPH::BodyManager::DrawSettings settings;
+        settings.mDrawShape = true;
+        settings.mDrawShapeWireframe = true;
 
         _cam->beforeRenderView(_encoder.value(), _viewId);
 
@@ -142,7 +143,13 @@ namespace darmok::physics3d
         mesh.render(_encoder.value());
         auto primType = mode == EDrawMode::Wireframe ? MaterialPrimitiveType::Line : MaterialPrimitiveType::Triangle;
         _config.material->setPrimitiveType(primType);
+
+        static const MaterialColorType colorType = MaterialColorType::Diffuse;
+        auto origColor = _config.material->getColor(colorType);
+        auto color = origColor.value_or(Colors::white());
+        _config.material->setColor(colorType, Color(color.r, color.g, color.b, color.a * _config.alpha));
         _config.material->renderSubmit(_encoder.value(), _viewId);
+        _config.material->setColor(colorType, origColor);
     }
 
     void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)

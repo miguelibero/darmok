@@ -7,6 +7,7 @@
 #include <bx/bx.h>
 #include <queue>
 #include <memory>
+#include <mutex>
 
 #ifndef DARMOK_PLATFORM_NOOP
 #	define DARMOK_PLATFORM_NOOP 0
@@ -216,6 +217,7 @@ namespace darmok
 
 		std::unique_ptr<PlatformEvent> poll() noexcept;
 	private:
+		std::mutex _mutex;
 		std::queue<std::unique_ptr<PlatformEvent>> _events;
 	};
 

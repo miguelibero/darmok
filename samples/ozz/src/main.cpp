@@ -35,7 +35,7 @@ namespace
 			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
 			
 			auto camEntity = scene.createEntity();
-			auto& camTrans = scene.addComponent<Transform>(camEntity)
+			scene.addComponent<Transform>(camEntity)
 				.setPosition(glm::vec3(0.f, 2, -2))
 				.lookAt(glm::vec3(0, 1, 0));
 
@@ -44,7 +44,7 @@ namespace
 			cam.setRenderer<ForwardRenderer>();
 			cam.addComponent<PhongLightingComponent>();
 			cam.addComponent<SkeletalAnimationCameraComponent>();
-			_freeLook = scene.addSceneComponent<FreelookController>(camTrans);
+			_freeLook = scene.addSceneComponent<FreelookController>(cam);
 
 			auto lightEntity = scene.createEntity();
 			scene.addComponent<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
@@ -78,7 +78,7 @@ namespace
 
 			ModelSceneConfigurer configurer(scene, getAssets());
 			configurer.setParent(skinEntity);
-			configurer.run(*model, [&scene, modelTex](const auto& node, Entity entity)
+			configurer(*model, [&scene, modelTex](const auto& node, Entity entity)
 			{
 				auto renderable = scene.getComponent<Renderable>(entity);
 				if (renderable)

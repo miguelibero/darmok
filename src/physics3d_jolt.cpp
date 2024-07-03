@@ -339,10 +339,23 @@ namespace darmok::physics3d
         _system->SetContactListener(this);
 
         auto& registry = scene.getRegistry();
+
         registry.on_construct<PhysicsBody>().connect<&PhysicsSystemImpl::onRigidbodyConstructed>(*this);
         registry.on_destroy<PhysicsBody>().connect< &PhysicsSystemImpl::onRigidbodyDestroyed>(*this);
         registry.on_construct<CharacterController>().connect<&PhysicsSystemImpl::onCharacterConstructed>(*this);
         registry.on_destroy<CharacterController>().connect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
+
+        auto rigidBodies = registry.view<PhysicsBody>();
+        for (auto [entity, body] : rigidBodies.each())
+        {
+            body.getImpl().init(body, *this);
+        }
+        auto charCtrls = registry.view<CharacterController>();
+        for (auto [entity, charCtrl] : charCtrls.each())
+        {
+            charCtrl.getImpl().init(charCtrl, *this);
+        }
+
     }
 
     void PhysicsSystemImpl::shutdown() noexcept

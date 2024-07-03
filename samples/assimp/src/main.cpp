@@ -50,7 +50,7 @@ namespace
 			auto model = getAssets().getModelLoader()("human.dml");
 
 			ModelSceneConfigurer configurer(*scene, getAssets());
-			configurer.run(*model, [scene](const auto& node, Entity entity) {
+			configurer(*model, [scene](const auto& node, Entity entity) {
 				auto& registry = scene->getRegistry();
 				if (node.name == "human")
 				{

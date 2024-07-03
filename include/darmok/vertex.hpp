@@ -44,6 +44,8 @@ namespace darmok
     public:
         VertexDataWriter(const bgfx::VertexLayout& layout, uint32_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
         void load(Data&& data) noexcept;
+        const bgfx::VertexLayout& getLayout() const noexcept;
+        uint32_t getSize() const noexcept;
 
         template<typename Iter, typename Filter>
         VertexDataWriter& write(bgfx::Attrib::Enum attr, Iter begin, Iter end, Filter filter) noexcept
@@ -65,7 +67,7 @@ namespace darmok
         template<typename T>
         VertexDataWriter& write(bgfx::Attrib::Enum attr, uint32_t index, const Input<T>& input) noexcept
         {
-            std::array<float, 4> finput;
+            std::array<float, 4> finput{};
             convertInput(attr, input, finput);
             write(attr, index, finput);
             return *this;
@@ -74,7 +76,7 @@ namespace darmok
         template<typename T>
         VertexDataWriter& write(bgfx::Attrib::Enum attr, const Input<T>& input, bool overwrite = true) noexcept
         {
-            std::array<float, 4> finput;
+            std::array<float, 4> finput{};
             convertInput(attr, input, finput);
             for (uint32_t i = 0; i < _size; i++)
             {

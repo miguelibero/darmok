@@ -236,11 +236,13 @@ namespace darmok
 
 	void PlatformEventQueue::post(std::unique_ptr<PlatformEvent>&& ev) noexcept
 	{
+		std::lock_guard lock(_mutex);
 		_events.push(std::move(ev));
 	}
 
 	std::unique_ptr<PlatformEvent> PlatformEventQueue::poll() noexcept
 	{
+		std::lock_guard lock(_mutex);
 		if (_events.empty())
 		{
 			return nullptr;

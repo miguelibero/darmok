@@ -31,6 +31,16 @@ namespace darmok
         _data = std::move(data);
     }
 
+    const bgfx::VertexLayout& VertexDataWriter::getLayout() const noexcept
+    {
+        return _layout;
+    }
+
+    uint32_t VertexDataWriter::getSize() const noexcept
+    {
+        return _size;
+    }
+
     void* VertexDataWriter::prepareData() noexcept
     {
         auto size = _layout.getSize(_size);

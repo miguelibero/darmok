@@ -55,6 +55,18 @@ namespace darmok
                 output.write(&buffer.front(), count);
             }
         }
+
+        static aiMatrix4x4 getWorldTransform(const aiNode& node)
+        {
+            auto parent = node.mParent;
+            aiMatrix4x4 trans = node.mTransformation;
+            while (parent != nullptr)
+            {
+                trans = parent->mTransformation * trans;
+                parent = parent->mParent;
+            }
+            return trans;
+        }
     };
 
     AssimpOzzSkeletonConverter::AssimpOzzSkeletonConverter(const aiScene& scene) noexcept
@@ -126,13 +138,7 @@ namespace darmok
             return false;
         }
         auto& rootNode = *rootBone->mNode;
-        auto parent = rootNode.mParent;
-        aiMatrix4x4 rootTrans;
-        while (parent != nullptr)
-        {
-            rootTrans = parent->mTransformation * rootTrans;
-            parent = parent->mParent;
-        }
+        auto rootTrans = AssimpOzzUtils::getWorldTransform(rootNode);
         auto& rootJoint = skel.roots.emplace_back();
         rootJoint.name = rootNode.mName.C_Str();
         rootJoint.transform = AssimpOzzUtils::convert(rootTrans);
@@ -508,7 +514,7 @@ namespace darmok
 
     std::filesystem::path AssimpSkeletalAnimationImporterImpl::getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept
     {
-        auto fixedOutputPath = outputPath;
+        std::string fixedOutputPath = outputPath;
         if (animConfig.contains("outputPath"))
         {
             fixedOutputPath = animConfig["outputPath"];

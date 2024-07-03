@@ -21,6 +21,7 @@ namespace darmok::physics3d
     {
         std::shared_ptr<Material> material;
         std::optional<InputBindingKey> bindingKey = KeyboardBindingKey{ KeyboardKey::F7 };
+        float alpha = 0.3F;
     };
 
     class DARMOK_EXPORT PhysicsDebugRenderer : public ICameraComponent

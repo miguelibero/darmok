@@ -1,6 +1,7 @@
 #include "model_assimp.hpp"
 #include <filesystem>
 #include <fstream>
+#include <map>
 
 #include <darmok/model_assimp.hpp>
 #include <darmok/model.hpp>
@@ -168,8 +169,8 @@ namespace darmok
         auto model = std::make_shared<Model>();
         auto basePath = std::filesystem::path(name).parent_path().string();
 
-        AssimpModelConverter ctxt(*scene, basePath, _config, _allocator, _imgLoader);
-        ctxt.update(*model);
+        AssimpModelConverter converter(*scene, basePath, _config, _allocator, _imgLoader);
+        converter.update(*model);
         return model;
     }
 
@@ -217,6 +218,21 @@ namespace darmok
             }
         }
         return paths;
+    }
+
+    void AssimpModelConverter::setBoneNames(const std::vector<std::string>& names) noexcept
+    {
+        _boneNames = names;
+    }
+
+    bool AssimpModelConverter::isValidBone(const aiBone& bone) const
+    {
+        if (!_boneNames)
+        {
+            return true;
+        }
+        auto itr = std::find(_boneNames->begin(), _boneNames->end(), std::string(bone.mName.C_Str()));
+        return itr != _boneNames->end();
     }
 
     void AssimpModelConverter::update(Model& model) noexcept
@@ -351,7 +367,7 @@ namespace darmok
         }
     }
 
-    Data AssimpModelConverter::createVertexData(const aiMesh& assimpMesh) const noexcept
+    Data AssimpModelConverter::createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept
     {
         auto vertexCount = assimpMesh.mNumVertices;
         VertexDataWriter writer(_config.vertexLayout, vertexCount, _allocator);
@@ -391,36 +407,54 @@ namespace darmok
                 }
             }
         }
+        updateBoneData(bones, writer);
+        return writer.finish();
+    }
 
-        if(assimpMesh.HasBones())
+    bool AssimpModelConverter::updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept
+    {
+        if (bones.empty())
         {
-            int boneIndex = 0;
-            std::vector<int> boneCount(vertexCount);
-            std::vector<glm::vec4> boneIndices(vertexCount);
-            std::fill(boneIndices.begin(), boneIndices.end(), glm::vec4(-1));
-            std::vector<glm::vec4> boneWeights(vertexCount);
-            std::fill(boneWeights.begin(), boneWeights.end(), glm::vec4(1, 0, 0, 0));
-            for(size_t i = 0; i < assimpMesh.mNumBones; i++)
-            {
-                auto bone = assimpMesh.mBones[i];
-                for(size_t j = 0; j < bone->mNumWeights; j++)
-                {
-                    auto& weight = bone->mWeights[j];
-                    auto i = weight.mVertexId;
-                    auto c = boneCount[i]++;
-                    if (c <= 3)
-                    {
-                        boneIndices[i][c] = boneIndex;
-                        boneWeights[i][c] = weight.mWeight;
-                    }
-                }
-                ++boneIndex;
-            }
-            writer.write(bgfx::Attrib::Indices, boneIndices);
-            writer.write(bgfx::Attrib::Weight, boneWeights);
+            return false;
+        }
+        if (!writer.getLayout().has(bgfx::Attrib::Weight) && !writer.getLayout().has(bgfx::Attrib::Indices))
+        {
+            return false;
         }
 
-        return writer.finish();
+        std::map<size_t, std::vector<std::pair<size_t, float>>> data;
+        size_t i = 0;
+        for (auto bone : bones)
+        {
+            for (size_t j = 0; j < bone->mNumWeights; j++)
+            {
+                auto& weight = bone->mWeights[j];
+                if (weight.mWeight > 0.F)
+                {
+                    data[weight.mVertexId].emplace_back(i, weight.mWeight);
+                }
+            }
+            i++;
+        }
+        for (auto& [i, vert] : data)
+        {
+            glm::vec4 weights(1, 0, 0, 0);
+            glm::vec4 indices(-1);
+            size_t j = 0;
+            std::sort(vert.begin(), vert.end(), [](auto& a, auto& b) { return a.second > b.second; });
+            for (auto& [index, weight] : vert)
+            {
+                indices[j] = index;
+                weights[j] = weight;
+                if (++j > 3)
+                {
+                    break;
+                }
+            }
+            writer.write(bgfx::Attrib::Indices, i, indices);
+            writer.write(bgfx::Attrib::Weight, i, weights);
+        }
+        return true;
     }
 
     std::vector<VertexIndex> AssimpModelConverter::createIndexData(const aiMesh& assimpMesh) const noexcept
@@ -445,18 +479,24 @@ namespace darmok
 
     void AssimpModelConverter::update(ModelMesh& modelMesh, const aiMesh& assimpMesh) noexcept
     {
-        modelMesh.vertexData = createVertexData(assimpMesh);
-        modelMesh.indexData = createIndexData(assimpMesh);
-        modelMesh.vertexLayout = _config.vertexLayout;
-
-        for(size_t i = 0; i < assimpMesh.mNumBones; i++)
+        std::vector<aiBone*> bones;
+        for (size_t i = 0; i < assimpMesh.mNumBones; i++)
         {
             auto bone = assimpMesh.mBones[i];
+            if (!isValidBone(*bone))
+            {
+                continue;
+            }
+            bones.push_back(bone);
             modelMesh.joints.push_back(ModelArmatureJoint{
                 std::string(bone->mName.C_Str()),
                 AssimpUtils::convert(bone->mOffsetMatrix) * _inverseRoot
             });
         }
+
+        modelMesh.vertexData = createVertexData(assimpMesh, bones);
+        modelMesh.indexData = createIndexData(assimpMesh);
+        modelMesh.vertexLayout = _config.vertexLayout;
     }
     
     std::shared_ptr<ModelMesh> AssimpModelConverter::getMesh(const aiMesh* assimpMesh) noexcept
@@ -708,8 +748,12 @@ namespace darmok
     {
         Model model;
         auto basePath = input.path.parent_path().string();
-        AssimpModelConverter ctxt(*_currentScene, basePath, _currentConfig->loadConfig, _allocator, _imgLoader);
-        ctxt.update(model);
+        AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _allocator, _imgLoader);
+        if (input.config.contains("bones"))
+        {
+            converter.setBoneNames(input.config["bones"]);
+        }
+        converter.update(model);
         model.write(out, _currentConfig->outputFormat);
     }
 

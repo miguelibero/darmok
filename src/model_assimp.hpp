@@ -25,6 +25,7 @@ struct aiMesh;
 struct aiScene;
 struct aiCamera;
 struct aiLight;
+struct aiBone;
 
 namespace Assimp
 {
@@ -44,6 +45,7 @@ namespace darmok
     class IProgramLoader;
     class Image;
     class Data;
+    class VertexDataWriter;
 
     struct AssimpSceneLoadConfig final
     {
@@ -71,6 +73,7 @@ namespace darmok
         AssimpModelConverter(const aiScene& scene, const std::string& basePath, const Config& config,
             bx::AllocatorI& alloc, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
+        void setBoneNames(const std::vector<std::string>& names) noexcept;
         void update(Model& model) noexcept;
     private:
         bx::AllocatorI& _allocator;
@@ -79,6 +82,9 @@ namespace darmok
         std::string _basePath;
         Config _config;
         glm::mat4 _inverseRoot;
+        std::optional<std::vector<std::string>> _boneNames;
+
+        bool isValidBone(const aiBone& bone) const;
 
         static const std::unordered_map<aiTextureType, MaterialTextureType> _materialTextures;
 
@@ -97,8 +103,9 @@ namespace darmok
         void update(ModelNode& modelNode, const aiCamera& assimpCam) noexcept;
         void update(ModelNode& modelNode, const aiLight& assimpLight) noexcept;
 
-        Data createVertexData(const aiMesh& assimpMesh) const noexcept;
+        Data createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept;
         std::vector<VertexIndex> createIndexData(const aiMesh& assimpMesh) const noexcept;
+        bool updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept;
     };
 
     class AssimpModelLoaderImpl final
