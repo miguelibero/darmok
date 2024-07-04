@@ -132,42 +132,6 @@ namespace darmok::physics3d
         return glm::vec3(0);
     }
 
-    glm::mat4 JoltUtils::convert(const JPH::Mat44& jmat, const Transform& trans) noexcept
-    {
-        auto mat = convert(jmat);
-        auto parent = trans.getParent();
-        if (parent)
-        {
-            // TODO check this
-            mat = parent->getWorldInverse() * mat;
-        }
-        return mat;
-    }
-
-    JoltTransform JoltUtils::convert(OptionalRef<const Transform> trans, OptionalRef<const Transform> root)
-    {
-        glm::mat4 mat;
-        if (trans)
-        {
-            mat = trans->getWorldMatrix();
-        }
-        if (root)
-        {
-            mat = root->getWorldInverse() * mat;
-        }
-
-        glm::vec3 pos(0);
-        glm::quat rot(1, 0, 0, 0);
-        glm::vec3 scale(1);
-        Math::decompose(mat, pos, rot, scale);
-        static const int epsilonFactor = 100;
-        if (!Math::almostEqual(scale.x, scale.y, epsilonFactor) || !Math::almostEqual(scale.x, scale.z, epsilonFactor))
-        {
-            throw std::runtime_error("non-uniform scale not supported");
-        }
-        return JoltTransform{ convert(pos), convert(rot), scale.x };
-    }
-
     static JPH::Ref<JPH::Shape> getShape(JPH::ShapeSettings& settings)
     {
         auto result = settings.Create();
@@ -538,6 +502,48 @@ namespace darmok::physics3d
     OptionalRef<Transform> PhysicsSystemImpl::getRootTransform() noexcept
     {
         return _root;
+    }
+
+    JoltTransform PhysicsSystemImpl::loadTransform(Transform& trans)
+    {
+        trans.update();
+        auto mat = trans.getWorldMatrix();
+        if (_root)
+        {
+            mat = _root->getWorldInverse() * mat;
+        }
+
+        glm::vec3 pos(0);
+        glm::quat rot(1, 0, 0, 0);
+        glm::vec3 scale(1);
+        Math::decompose(mat, pos, rot, scale);
+        static const int epsilonFactor = 100;
+        if (!Math::almostEqual(scale.x, scale.y, epsilonFactor) || !Math::almostEqual(scale.x, scale.z, epsilonFactor))
+        {
+            throw std::runtime_error("non-uniform scale not supported");
+        }
+        return JoltTransform{ JoltUtils::convert(pos), JoltUtils::convert(rot), scale.x };
+    }
+
+    void PhysicsSystemImpl::updateTransform(Transform& trans, const JPH::Mat44& jmtx) noexcept
+    {
+        auto mtx = JoltUtils::convert(jmtx);
+        auto parent = trans.getParent();
+        if (parent)
+        {
+            mtx = parent->getWorldInverse() * mtx;
+        }
+        if (_root)
+        {
+            mtx = _root->getWorldMatrix() * mtx;
+        }
+        glm::vec3 pos;
+        glm::quat rot;
+        glm::vec3 scale;
+        Math::decompose(mtx, pos, rot, scale);
+        // do not apply scale
+        trans.setPosition(pos);
+        trans.setRotation(rot);
     }
 
     OptionalRef<PhysicsBody> PhysicsSystemImpl::getPhysicsBody(const JPH::BodyID& bodyId) const noexcept
@@ -917,17 +923,16 @@ namespace darmok::physics3d
 
     bool PhysicsBodyImpl::tryCreateBody(OptionalRef<Transform> trans)
     {
-        if (!_bodyId.IsInvalid())
+        if (!_bodyId.IsInvalid() || !_system)
         {
             return false;
         }
 
-        OptionalRef<const Transform> root;
-        if (_system)
+        JoltTransform joltTrans;
+        if (trans)
         {
-            root = _system->getRootTransform();
+            joltTrans = _system->loadTransform(trans.value());
         }
-        auto joltTrans = JoltUtils::convert(trans, root);
         if (!_characterConfig && _config.motion == MotionType::Character)
         {
             _characterConfig.emplace().load(_config);
@@ -950,6 +955,10 @@ namespace darmok::physics3d
             return;
         }
         auto trans = _system->getScene()->getComponent<Transform>(entity);
+        if (!trans && _config.motion != MotionType::Static)
+        {
+            trans = _system->getScene()->addComponent<Transform>(entity);
+        }
         tryCreateBody(trans);
         if (_character)
         {
@@ -957,9 +966,7 @@ namespace darmok::physics3d
         }
         if (trans)
         {
-            auto jmat = _system->getBodyInterface().GetWorldTransform(_bodyId);
-            auto mat = JoltUtils::convert(jmat, trans.value());
-            trans->setLocalMatrix(mat);
+            _system->updateTransform(trans.value(), _system->getBodyInterface().GetWorldTransform(_bodyId));
         }
     }
 

@@ -1,4 +1,5 @@
 #include <darmok/transform.hpp>
+#include <darmok/math.hpp>
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -46,7 +47,23 @@ namespace darmok
 
     std::string Transform::to_string() const noexcept
     {
-        return glm::to_string(_localMatrix);
+        std::string str = glm::to_string(_localMatrix);
+        if (!_name.empty())
+        {
+            str = _name + " " + str;
+        }
+        return str;
+    }
+
+    const std::string& Transform::getName() const noexcept
+    {
+        return _name;
+    }
+
+    Transform& Transform::setName(const std::string& name) noexcept
+    {
+        _name = name;
+        return *this;
     }
 
     const glm::vec3& Transform::getPosition() const noexcept
@@ -204,11 +221,7 @@ namespace darmok
     {
         if (_matrixChanged)
         {
-            _localMatrix = glm::translate(_position)
-                * glm::mat4_cast(_rotation)
-                * glm::scale(_scale)
-                * glm::translate(-_pivot)
-                ;
+            _localMatrix = Math::transform(_position, _rotation, _scale, _pivot);
             _localInverse = glm::inverse(_localMatrix);
         }
         auto changed = _parentChanged || _matrixChanged;

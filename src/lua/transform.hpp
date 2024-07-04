@@ -24,6 +24,9 @@ namespace darmok
 		std::optional<LuaTransform> getParent() noexcept;
 		void setParent(std::optional<LuaTransform> parent) noexcept;
 
+		const std::string& getName() const noexcept;
+		void setName(const std::string& name) noexcept;
+
 		const glm::vec3& getPosition() const noexcept;
 		const glm::quat& getRotation() const noexcept;
 		glm::vec3 getEulerAngles() const noexcept;

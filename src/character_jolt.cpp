@@ -195,7 +195,7 @@ namespace darmok::physics3d
         newCharacterVelocity = JoltUtils::convert(charVel);
     }
 
-    bool CharacterControllerImpl::tryCreateCharacter(OptionalRef<Transform> trans)
+    bool CharacterControllerImpl::tryCreateCharacter(Transform& trans)
     {
         if (_jolt || !_system)
         {
@@ -206,7 +206,7 @@ namespace darmok::physics3d
         {
             return false;
         }
-        auto joltTrans = JoltUtils::convert(trans, _system->getRootTransform());
+        auto joltTrans = _system->loadTransform(trans);
 
         JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
         settings->mMaxSlopeAngle = _config.maxSlopeAngle;
@@ -231,7 +231,7 @@ namespace darmok::physics3d
             return;
         }
         auto& scene = *_system->getScene();
-        auto trans = scene.getComponent<Transform>(entity);
+        auto trans = scene.getOrAddComponent<Transform>(entity);
 
         tryCreateCharacter(trans);
         if (!_jolt)
@@ -271,10 +271,9 @@ namespace darmok::physics3d
         );
 
         // if the entity has a rigid body, that component will update the transform
-        if (!getPhysicsBody() && trans)
+        if (!getPhysicsBody())
         {
-            auto mat = JoltUtils::convert(_jolt->GetWorldTransform(), trans.value());
-            trans->setLocalMatrix(mat);
+            _system->updateTransform(trans, _jolt->GetWorldTransform());
         }
     }
 

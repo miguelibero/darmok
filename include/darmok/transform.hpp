@@ -20,6 +20,9 @@ namespace darmok
 
         std::string to_string() const noexcept;
 
+        const std::string& getName() const noexcept;
+        Transform& setName(const std::string& name) noexcept;
+
         const glm::vec3& getPosition() const noexcept;
         const glm::quat& getRotation() const noexcept;
         const glm::vec3& getScale() const noexcept;
@@ -63,6 +66,7 @@ namespace darmok
         glm::quat _rotation;
         glm::vec3 _scale;
         glm::vec3 _pivot;
+        std::string _name;
 
         glm::mat4 _localMatrix;
         glm::mat4 _localInverse;

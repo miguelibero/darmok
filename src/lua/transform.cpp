@@ -45,6 +45,16 @@ namespace darmok
 		_transform->setParent(p);
 	}
 
+	const std::string& LuaTransform::getName() const noexcept
+	{
+		return _transform->getName();
+	}
+
+	void LuaTransform::setName(const std::string& name) noexcept
+	{
+		_transform->setName(name);
+	}
+
 	const glm::vec3& LuaTransform::getPosition() const noexcept
 	{
 		return _transform->getPosition();
@@ -228,6 +238,7 @@ namespace darmok
 			"get_entity_component", &LuaTransform::getEntityComponent,
 			"get_entity", &LuaTransform::getEntity,
 
+			"name", sol::property(&LuaTransform::getName, &LuaTransform::setName),
 			"position", sol::property(&LuaTransform::getPosition, &LuaTransform::setPosition),
 			"world_position", sol::property(&LuaTransform::getWorldPosition),
 			"rotation", sol::property(&LuaTransform::getRotation, &LuaTransform::setRotation),

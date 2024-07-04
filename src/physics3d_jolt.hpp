@@ -55,9 +55,9 @@ namespace darmok::physics3d
 
     struct JoltTransform
     {
-        JPH::Vec3 position;
-        JPH::Quat rotation;
-        float scale;
+        JPH::Vec3 position = JPH::Vec3(0, 0, 0);
+        JPH::Quat rotation = JPH::Quat::sIdentity();
+        float scale = 1.F;
     };
 
     struct JoltUtils final
@@ -78,10 +78,8 @@ namespace darmok::physics3d
         static glm::vec4 convert(const JPH::Float4& v) noexcept;
 
         static RaycastHit convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept;
-        static JoltTransform convert(OptionalRef<const Transform> trans, OptionalRef<const Transform> root = nullptr);
         static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);
         static glm::vec3 getOrigin(const Shape& shape) noexcept;
-        static glm::mat4 convert(const JPH::Mat44& mat, const Transform& trans) noexcept;
 
         template<typename T>
         static void addRefVector(std::vector<OptionalRef<T>>& vector, T& elm)
@@ -204,6 +202,9 @@ namespace darmok::physics3d
 
         std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
         std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
+
+        JoltTransform loadTransform(Transform& trans);
+        void updateTransform(Transform& trans, const JPH::Mat44& mtx) noexcept;
     private:
         OptionalRef<Scene> _scene;
         float _deltaTimeRest;
