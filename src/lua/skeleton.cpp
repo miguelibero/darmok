@@ -47,15 +47,19 @@ namespace darmok
         return _animator->play(name);
     }
 
-    LuaSkeletalAnimator& LuaSkeletalAnimator::setPlaybackSpeed(float speed) noexcept
+    void LuaSkeletalAnimator::setPlaybackSpeed(float speed) noexcept
     {
         _animator->setPlaybackSpeed(speed);
-        return *this;
     }
 
     float LuaSkeletalAnimator::getPlaybackSpeed() const noexcept
     {
         return _animator->getPlaybackSpeed();
+    }
+
+    void LuaSkeletalAnimator::setBlendPosition(const VarLuaVecTable<glm::vec2>& pos) noexcept
+    {
+        _animator->setBlendPosition(LuaGlm::tableGet(pos));
     }
 
     void LuaSkeletalAnimator::bind(sol::state_view& lua) noexcept
@@ -68,7 +72,8 @@ namespace darmok
             "get_entity_component", &LuaSkeletalAnimator::getEntityComponent,
             "get_entity", &LuaSkeletalAnimator::getEntity,
             "play", sol::overload(&LuaSkeletalAnimator::play),
-            "playback_speed", sol::property(&LuaSkeletalAnimator::getPlaybackSpeed, &LuaSkeletalAnimator::setPlaybackSpeed)
+            "playback_speed", sol::property(&LuaSkeletalAnimator::getPlaybackSpeed, &LuaSkeletalAnimator::setPlaybackSpeed),
+            "blend_position", sol::property(&LuaSkeletalAnimator::setBlendPosition)
         );
     }
 

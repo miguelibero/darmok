@@ -74,6 +74,7 @@ namespace darmok
     const std::string AssetImporterImpl::DirConfig::_configFileName = "darmok-import.json";
     const std::string AssetImporterImpl::DirConfig::_filesKey = "files";
     const std::string AssetImporterImpl::DirConfig::_importersKey = "importers";
+    const std::string AssetImporterImpl::DirConfig::_includesKey = "includes";
     const std::string AssetImporterImpl::DirConfig::_outputPathKey = "outputPath";
 
     fs::path AssetImporterImpl::DirConfig::getPath(const fs::path& path) noexcept
@@ -171,12 +172,24 @@ namespace darmok
         }
         if (config.contains(_importersKey))
         {
-            importers.update(config[_importersKey]);
+            importers = FileConfig::fix(config[_importersKey]);
+        }
+        if (config.contains(_includesKey))
+        {
+            auto includes = config[_includesKey];
+            FileConfig::replaceIncludes(importers, includes);
+            for (auto& elm : files)
+            {
+                FileConfig::replaceIncludes(elm.second, includes);
+            }
         }
         return true;
     }
 
     const std::string AssetImporterImpl::FileConfig::_configFileSuffix = ".darmok-import.json";
+    const std::string AssetImporterImpl::FileConfig::_importersKey = "importers";
+    const std::string AssetImporterImpl::FileConfig::_includesKey = "includes";
+    const std::string AssetImporterImpl::FileConfig::_includePrefix = "include:";
 
     fs::path AssetImporterImpl::FileConfig::getPath(const fs::path& path) noexcept
     {
@@ -200,7 +213,20 @@ namespace darmok
             return false;
         }
         auto config = nlohmann::json::parse(std::ifstream(path));
-        importers = fix(config);
+        config = fix(config);
+        if (config.contains(_importersKey))
+        {
+            importers = fix(config[_importersKey]);
+            if (config.contains(_includesKey))
+            {
+                auto includes = config[_includesKey];
+                replaceIncludes(importers, includes);
+            }
+        }
+        else
+        {
+            importers = config;
+        }
         return true;
     }
 
@@ -233,6 +259,57 @@ namespace darmok
             return obj;
         }
         return json;
+    }
+
+    bool AssetImporterImpl::FileConfig::replaceIncludes(nlohmann::json& json, const nlohmann::json& includes) noexcept
+    {
+        auto replace = [&includes](nlohmann::json& elm)
+        {
+            if (!elm.is_string())
+            {
+                return false;
+            }
+            std::string str = elm;
+            if (!str.starts_with(_includePrefix))
+            {
+                return false;
+            }
+            auto name = str.substr(_includePrefix.size());
+            auto itr = includes.find(name);
+            if (itr == includes.end())
+            {
+                return false;
+            }
+            elm = itr.value();
+            return true;
+        };
+
+        auto changed = false;
+        if (json.is_array())
+        {
+            for (auto& elm : json)
+            {
+                if (replaceIncludes(elm, includes))
+                {
+                    changed = true;
+                }
+            }
+        }
+        else if (json.is_object())
+        {
+            for (auto& elm : json.items())
+            {
+                if (replaceIncludes(elm.value(), includes))
+                {
+                    changed = true;
+                }
+            }
+        }
+        else if(replace(json))
+        {
+            changed = true;
+        }
+        return changed;
     }
 
     bool AssetImporterImpl::loadInput(const fs::path& path, const std::vector<fs::path>& paths)

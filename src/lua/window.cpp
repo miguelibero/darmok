@@ -28,14 +28,29 @@ namespace darmok
 		return _win->windowToScreenPoint(LuaGlm::tableGet(point));
 	}
 
-	void LuaWindow::setCursorMode(WindowCursorMode mode)
+	void LuaWindow::setCursorMode(WindowCursorMode mode) noexcept
 	{
 		_win->requestCursorMode(mode);
 	}
 
-	void LuaWindow::setVideoMode(const VideoMode& mode)
+	WindowCursorMode LuaWindow::getCursorMode() const noexcept
+	{
+		return _win->getCursorMode();
+	}
+
+	void LuaWindow::setVideoMode(const VideoMode& mode) noexcept
 	{
 		_win->requestVideoMode(mode);
+	}
+
+	const VideoMode& LuaWindow::getVideoMode() const noexcept
+	{
+		return _win->getVideoMode();
+	}
+
+	const VideoModeInfo& LuaWindow::getVideoModeInfo() const noexcept
+	{
+		return _win->getVideoModeInfo();
 	}
 
 	const Window& LuaWindow::getReal() const noexcept
@@ -69,11 +84,22 @@ namespace darmok
 			"monitor", &VideoMode::monitor
 		);
 
+		lua.new_usertype<MonitorInfo>("MonitorInfo", sol::default_constructor,
+			"size", &MonitorInfo::name,
+			"workarea", &MonitorInfo::workarea
+		);
+
+		lua.new_usertype<VideoModeInfo>("VideoModeInfo", sol::default_constructor,
+			"modes", &VideoModeInfo::modes,
+			"monitors", &VideoModeInfo::monitors
+		);
+
 		lua.new_usertype<LuaWindow>("Window", sol::no_constructor,
 			"size", sol::property(&LuaWindow::getSize),
 			"pixel_size", sol::property(&LuaWindow::getPixelSize),
-			"video_mode", sol::property(&LuaWindow::setVideoMode),
-			"cursor_mode", sol::property(&LuaWindow::setCursorMode),
+			"video_mode", sol::property(&LuaWindow::getVideoMode, &LuaWindow::setVideoMode),
+			"video_mode_info", sol::property(&LuaWindow::getVideoModeInfo),
+			"cursor_mode", sol::property(&LuaWindow::getCursorMode, &LuaWindow::setCursorMode),
 			"screen_to_window_point", &LuaWindow::screenToWindowPoint,
 			"window_to_screen_point", &LuaWindow::windowToScreenPoint
 		);

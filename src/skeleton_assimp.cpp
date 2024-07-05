@@ -74,6 +74,41 @@ namespace darmok
     {
     }
 
+    AssimpOzzSkeletonConverter& AssimpOzzSkeletonConverter::setBoneNames(const std::vector<std::string>& names) noexcept
+    {
+        _boneNames.clear();
+        for (auto& name : names)
+        {
+            _boneNames.emplace(name, name);
+        }
+        return *this;
+    }
+
+    AssimpOzzSkeletonConverter& AssimpOzzSkeletonConverter::setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept
+    {
+        _boneNames = names;
+        return *this;
+    }
+
+    AssimpOzzSkeletonConverter& AssimpOzzSkeletonConverter::setConfig(const nlohmann::json& config) noexcept
+    {
+        if (config.contains("bones"))
+        {
+            auto bonesConfig = config["bones"];
+            if (bonesConfig.is_array())
+            {
+                std::vector<std::string> boneNames = bonesConfig;
+                setBoneNames(boneNames);
+            }
+            else
+            {
+                std::unordered_map<std::string, std::string> boneNames = bonesConfig;
+                setBoneNames(boneNames);
+            }
+        }
+        return *this;
+    }
+
     std::vector<std::string> AssimpOzzSkeletonConverter::getSkeletonNames()
     {
         std::vector<std::string> names;
@@ -103,11 +138,23 @@ namespace darmok
         return false;
     }
 
-    aiBone* AssimpOzzSkeletonConverter::findRootBone(const aiMesh& mesh, std::vector<aiNode*>& boneNodes) noexcept
+    aiBone* AssimpOzzSkeletonConverter::findRootBone(const aiMesh& mesh, BoneNodes& boneNodes) noexcept
     {
         for (size_t i = 0; i < mesh.mNumBones; i++)
         {
-            boneNodes.push_back(mesh.mBones[i]->mNode);
+            auto bone = mesh.mBones[i];
+            if (!_boneNames.empty())
+            {
+                auto itr = _boneNames.find(bone->mName.C_Str());
+                if (itr != _boneNames.end())
+                {
+                    boneNodes.emplace(bone->mNode, itr->second);
+                }
+            }
+            else
+            {
+                boneNodes.emplace(bone->mNode, "");
+            }
         }
         for (size_t i = 0; i < mesh.mNumBones; i++)
         {
@@ -117,7 +164,7 @@ namespace darmok
                 continue;
             }
             auto parent = bone->mNode->mParent;
-            while (std::find(boneNodes.begin(), boneNodes.end(), parent) == boneNodes.end())
+            while (boneNodes.find(parent) == boneNodes.end())
             {
                 if (parent == nullptr)
                 {
@@ -131,7 +178,7 @@ namespace darmok
 
     bool AssimpOzzSkeletonConverter::update(const aiMesh& mesh, RawSkeleton& skel)
     {
-        std::vector<aiNode*> boneNodes;
+        BoneNodes boneNodes;
         auto rootBone = findRootBone(mesh, boneNodes);
         if (rootBone == nullptr)
         {
@@ -140,7 +187,8 @@ namespace darmok
         auto& rootNode = *rootBone->mNode;
         auto rootTrans = AssimpOzzUtils::getWorldTransform(rootNode);
         auto& rootJoint = skel.roots.emplace_back();
-        rootJoint.name = rootNode.mName.C_Str();
+        auto itr = boneNodes.find(&rootNode);
+        rootJoint.name = itr == boneNodes.end() || itr->second.empty() ? rootNode.mName.C_Str() : itr->second;
         rootJoint.transform = AssimpOzzUtils::convert(rootTrans);
         for (size_t i = 0; i < rootNode.mNumChildren; i++)
         {
@@ -149,14 +197,15 @@ namespace darmok
         return true;
     }
 
-    void AssimpOzzSkeletonConverter::update(const aiNode& node, RawSkeleton::Joint& parentJoint, const aiMatrix4x4& parentTrans, const std::vector<aiNode*>& boneNodes)
+    void AssimpOzzSkeletonConverter::update(const aiNode& node, RawSkeleton::Joint& parentJoint, const aiMatrix4x4& parentTrans, const BoneNodes& boneNodes)
     {
         RawSkeleton::Joint* joint = &parentJoint;
         auto trans = parentTrans * node.mTransformation;
-        if (std::find(boneNodes.begin(), boneNodes.end(), &node) != boneNodes.end())
+        auto itr = boneNodes.find(&node);
+        if (itr != boneNodes.end())
         {
             joint = &parentJoint.children.emplace_back();
-            joint->name = node.mName.C_Str();
+            joint->name = itr->second.empty() ? node.mName.C_Str() : itr->second;
             joint->transform = AssimpOzzUtils::convert(trans);
             trans = aiMatrix4x4();
         }
@@ -188,9 +237,9 @@ namespace darmok
     {
     }
 
-    AssimpOzzAnimationConverter& AssimpOzzAnimationConverter::setJointNames(const std::vector<std::string> jointNames) noexcept
+    AssimpOzzAnimationConverter& AssimpOzzAnimationConverter::setBoneNames(const std::vector<std::string>& boneNames) noexcept
     {
-        _jointNames = jointNames;
+        _boneNames = boneNames;
         return *this;
     }
 
@@ -250,31 +299,31 @@ namespace darmok
         {
             log << prefix << std::endl;
         }
-        log << "skeleton joint names: " << StringUtils::join(_jointNames, ", ") << std::endl;
+        log << "skeleton bone names: " << StringUtils::join(_boneNames, ", ") << std::endl;
         log << "animation channels: " << StringUtils::join(animChannels, ", ") << std::endl;
         return true;
     }
 
-    bool AssimpOzzAnimationConverter::isJoint(const aiNode& node) const noexcept
+    bool AssimpOzzAnimationConverter::isBone(const aiNode& node) const noexcept
     {
         std::string name = node.mName.C_Str();
-        return std::find(_jointNames.begin(), _jointNames.end(), name) != _jointNames.end();
+        return std::find(_boneNames.begin(), _boneNames.end(), name) != _boneNames.end();
     }
 
     void AssimpOzzAnimationConverter::update(const aiAnimation& assimpAnim, RawAnimation& anim)
     {
         anim.name = assimpAnim.mName.C_Str();
         anim.duration = float(assimpAnim.mDuration / assimpAnim.mTicksPerSecond);
-        anim.tracks.resize(_jointNames.size());
+        anim.tracks.resize(_boneNames.size());
 
-        for (size_t i = 0; i < _jointNames.size(); i++)
+        for (size_t i = 0; i < _boneNames.size(); i++)
         {
-            auto& jointName = _jointNames[i];
+            auto& boneName = _boneNames[i];
             size_t j = 0;
             bool found = false;
             for (; j < assimpAnim.mNumChannels; j++)
             {
-                if (jointName == assimpAnim.mChannels[j]->mNodeName.C_Str())
+                if (boneName == assimpAnim.mChannels[j]->mNodeName.C_Str())
                 {
                     found = true;
                     break;
@@ -282,7 +331,7 @@ namespace darmok
             }
             if (!found)
             {
-                std::string err = "could not find skeleton joint \"" + jointName
+                std::string err = "could not find skeleton bone \"" + boneName
                     + "\" in animation \"" + assimpAnim.mName.C_Str() + "\"";
                 logInfo(assimpAnim, err);
                 throw std::runtime_error(err);
@@ -290,11 +339,11 @@ namespace darmok
 
             aiMatrix4x4 baseTrans;
 
-            auto node = _scene.mRootNode->FindNode(jointName.c_str());
+            auto node = _scene.mRootNode->FindNode(boneName.c_str());
             if (node)
             {
                 auto parent = node->mParent;
-                while (parent != nullptr && !isJoint(*parent))
+                while (parent != nullptr && !isBone(*parent))
                 {
                     baseTrans = parent->mTransformation * baseTrans;
                     parent = parent->mParent;
@@ -412,7 +461,7 @@ namespace darmok
     {
     }
 
-    AssimpSkeletonImporterImpl::OzzSkeleton AssimpSkeletonImporterImpl::read(const std::filesystem::path& path)
+    AssimpSkeletonImporterImpl::OzzSkeleton AssimpSkeletonImporterImpl::read(const std::filesystem::path& path, const nlohmann::json& config)
     {
         AssimpSceneLoadConfig loadConfig;
         loadConfig.leftHanded = false;
@@ -422,7 +471,9 @@ namespace darmok
         {
             throw std::runtime_error("could not load assimp scene");
         }
-        return AssimpOzzSkeletonConverter(*scene).createSkeleton();
+        AssimpOzzSkeletonConverter converter(*scene);
+        converter.setConfig(config);
+        return converter.createSkeleton();
     }
 
     std::vector<std::filesystem::path> AssimpSkeletonImporterImpl::getOutputs(const Input& input) noexcept
@@ -453,7 +504,7 @@ namespace darmok
 
     void AssimpSkeletonImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
-        auto skel = read(input.path);
+        auto skel = read(input.path, input.config);
         AssimpOzzUtils::writeToStream(skel, out, _bufferSize);
     }
 
@@ -523,13 +574,15 @@ namespace darmok
         return getOutputPath(input, animName, fixedOutputPath);
     }
 
-    void AssimpSkeletalAnimationImporterImpl::loadSkeleton(const std::filesystem::path& path)
+    void AssimpSkeletalAnimationImporterImpl::loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config)
     {
         AssimpSceneLoadConfig loadConfig;
         loadConfig.leftHanded = false;
         loadConfig.populateArmature = true;
         auto skelScene = _sceneLoader.loadFromFile(path, loadConfig);
-        auto skel = AssimpOzzSkeletonConverter(*skelScene).createSkeleton();
+        AssimpOzzSkeletonConverter converter(*skelScene);
+        converter.setConfig(config);
+        auto skel = converter.createSkeleton();
 
         _currentSkeletonJoints.resize(skel.num_joints());
         for (int i = 0; i < skel.num_joints(); ++i)
@@ -565,7 +618,7 @@ namespace darmok
             {
                 skelPath = input.path.parent_path() / input.config["skeleton"];
             }
-            loadSkeleton(skelPath);
+            loadSkeleton(skelPath, input.config);
         }
         return true;
     }
@@ -633,7 +686,7 @@ namespace darmok
     AssimpSkeletalAnimationImporterImpl::OzzAnimation AssimpSkeletalAnimationImporterImpl::read(const std::filesystem::path& path, const std::string& animationName)
     {
         AssimpOzzAnimationConverter converter(*_currentScene, _log);
-        converter.setJointNames(_currentSkeletonJoints);
+        converter.setBoneNames(_currentSkeletonJoints);
         return converter.createAnimation(animationName);
     }
 

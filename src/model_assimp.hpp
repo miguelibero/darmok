@@ -73,7 +73,9 @@ namespace darmok
         AssimpModelConverter(const aiScene& scene, const std::string& basePath, const Config& config,
             bx::AllocatorI& alloc, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
-        void setBoneNames(const std::vector<std::string>& names) noexcept;
+        AssimpModelConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
+        AssimpModelConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
+        AssimpModelConverter& setConfig(const nlohmann::json& config) noexcept;
         void update(Model& model) noexcept;
     private:
         bx::AllocatorI& _allocator;
@@ -82,9 +84,7 @@ namespace darmok
         std::string _basePath;
         Config _config;
         glm::mat4 _inverseRoot;
-        std::optional<std::vector<std::string>> _boneNames;
-
-        bool isValidBone(const aiBone& bone) const;
+        std::unordered_map<std::string, std::string> _boneNames;
 
         static const std::unordered_map<aiTextureType, MaterialTextureType> _materialTextures;
 

@@ -222,6 +222,7 @@ namespace darmok
         , _speed(1.F)
         , _config(config)
         , _animations(animations)
+        , _blendPosition(0)
     {
         auto& skel = getOzz();
         _models.resize(skel.num_joints());

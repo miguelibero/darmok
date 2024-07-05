@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <string>
 #include <sol/sol.hpp>
+#include "glm.hpp"
 
 namespace darmok
 {
@@ -34,8 +35,9 @@ namespace darmok
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 
         bool play(const std::string& name) noexcept;
-        LuaSkeletalAnimator& setPlaybackSpeed(float speed) noexcept;
+        void setPlaybackSpeed(float speed) noexcept;
         float getPlaybackSpeed() const noexcept;
+        void setBlendPosition(const VarLuaVecTable<glm::vec2>& pos) noexcept;
         
         static void bind(sol::state_view& lua) noexcept;
 

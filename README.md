@@ -115,6 +115,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * progressive asset loaders
 * async task management
 * lua debugging would be nice
+* particle systems (maybe effekseer)
 
 ## Interesting Related Projects
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced

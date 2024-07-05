@@ -220,19 +220,39 @@ namespace darmok
         return paths;
     }
 
-    void AssimpModelConverter::setBoneNames(const std::vector<std::string>& names) noexcept
+    AssimpModelConverter& AssimpModelConverter::setBoneNames(const std::vector<std::string>& names) noexcept
     {
-        _boneNames = names;
+        _boneNames.clear();
+        for (auto& name : names)
+        {
+            _boneNames.emplace(name, name);
+        }
+        return *this;
     }
 
-    bool AssimpModelConverter::isValidBone(const aiBone& bone) const
+    AssimpModelConverter& AssimpModelConverter::setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept
     {
-        if (!_boneNames)
+        _boneNames = names;
+        return *this;
+    }
+
+    AssimpModelConverter& AssimpModelConverter::setConfig(const nlohmann::json& config) noexcept
+    {
+        if (config.contains("bones"))
         {
-            return true;
+            auto bonesConfig = config["bones"];
+            if (bonesConfig.is_array())
+            {
+                std::vector<std::string> boneNames = bonesConfig;
+                setBoneNames(boneNames);
+            }
+            else
+            {
+                std::unordered_map<std::string, std::string> boneNames = bonesConfig;
+                setBoneNames(boneNames);
+            }
         }
-        auto itr = std::find(_boneNames->begin(), _boneNames->end(), std::string(bone.mName.C_Str()));
-        return itr != _boneNames->end();
+        return *this;
     }
 
     void AssimpModelConverter::update(Model& model) noexcept
@@ -483,13 +503,19 @@ namespace darmok
         for (size_t i = 0; i < assimpMesh.mNumBones; i++)
         {
             auto bone = assimpMesh.mBones[i];
-            if (!isValidBone(*bone))
+            std::string boneName(bone->mName.C_Str());
+            if (!_boneNames.empty())
             {
-                continue;
+                auto itr = _boneNames.find(boneName);
+                if (itr == _boneNames.end())
+                {
+                    continue;
+                }
+                boneName = itr->second;
             }
             bones.push_back(bone);
             modelMesh.joints.push_back(ModelArmatureJoint{
-                std::string(bone->mName.C_Str()),
+                boneName,
                 AssimpUtils::convert(bone->mOffsetMatrix) * _inverseRoot
             });
         }
@@ -749,10 +775,7 @@ namespace darmok
         Model model;
         auto basePath = input.path.parent_path().string();
         AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _allocator, _imgLoader);
-        if (input.config.contains("bones"))
-        {
-            converter.setBoneNames(input.config["bones"]);
-        }
+        converter.setConfig(input.config);
         converter.update(model);
         model.write(out, _currentConfig->outputFormat);
     }

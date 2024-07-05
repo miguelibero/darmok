@@ -18,8 +18,11 @@ namespace darmok
 		Window& getReal() noexcept;
 		glm::uvec2 screenToWindowPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
 		glm::vec2 windowToScreenPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
-		void setCursorMode(WindowCursorMode mode);
-		void setVideoMode(const VideoMode& mode);
+		void setCursorMode(WindowCursorMode mode) noexcept;
+		WindowCursorMode getCursorMode() const noexcept;
+		void setVideoMode(const VideoMode& mode) noexcept;
+		const VideoMode& getVideoMode() const noexcept;
+		const VideoModeInfo& getVideoModeInfo() const noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:

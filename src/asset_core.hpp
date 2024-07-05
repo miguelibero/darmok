@@ -84,6 +84,7 @@ namespace darmok
             static const std::string _configFileName;
             static const std::string _filesKey;
             static const std::string _importersKey;
+            static const std::string _includesKey;
             static const std::string _outputPathKey;
 
             void loadFile(const std::string& key, const nlohmann::json& config, const std::filesystem::path& basePath, const std::vector<std::filesystem::path>& filePaths) noexcept;
@@ -98,10 +99,14 @@ namespace darmok
             nlohmann::json importers;
             bool load(const std::filesystem::path& inputPath);
             static nlohmann::json fix(const nlohmann::json& json) noexcept;
+            static bool replaceIncludes(nlohmann::json& json, const nlohmann::json& includes) noexcept;
             static std::filesystem::path getPath(const std::filesystem::path& path) noexcept;
             static bool isPath(const std::filesystem::path& path) noexcept;
         private:
             static const std::string _configFileSuffix;
+            static const std::string _importersKey;
+            static const std::string _includesKey;
+            static const std::string _includePrefix;
         };
 
         std::unordered_map<std::filesystem::path, FileConfig> _files;

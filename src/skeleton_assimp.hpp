@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <filesystem>
+#include <unordered_map>
+#include <map>
 #include <darmok/data.hpp>
 #include <bx/allocator.h>
 #include <bx/file.h>
@@ -49,11 +51,18 @@ namespace darmok
         Skeleton createSkeleton();
         bool update(RawSkeleton& skel) noexcept;
         std::vector<std::string> getSkeletonNames();
+        AssimpOzzSkeletonConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
+        AssimpOzzSkeletonConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
+        AssimpOzzSkeletonConverter& setConfig(const nlohmann::json& config) noexcept;
     private:
         const aiScene& _scene;
-        aiBone* findRootBone(const aiMesh& mesh, std::vector<aiNode*>& boneNodes) noexcept;
+        std::unordered_map<std::string, std::string> _boneNames;
+
+        using BoneNodes = std::unordered_map<const aiNode*, std::string>;
+
+        aiBone* findRootBone(const aiMesh& mesh, BoneNodes& boneNodes) noexcept;
         bool update(const aiMesh& mesh, RawSkeleton& skel);
-        void update(const aiNode& node, RawSkeleton::Joint& parentJoint, const aiMatrix4x4& parentTrans, const std::vector<aiNode*>& boneNodes);
+        void update(const aiNode& node, RawSkeleton::Joint& parentJoint, const aiMatrix4x4& parentTrans, const BoneNodes& boneNodes);
     };
 
     class AssimpOzzAnimationConverter final
@@ -62,7 +71,7 @@ namespace darmok
         using Animation = ozz::animation::Animation;
         using RawAnimation = ozz::animation::offline::RawAnimation;
         AssimpOzzAnimationConverter(const aiScene& scene, OptionalRef<std::ostream> log = nullptr) noexcept;
-        AssimpOzzAnimationConverter& setJointNames(const std::vector<std::string> jointNames) noexcept;
+        AssimpOzzAnimationConverter& setBoneNames(const std::vector<std::string>& boneNames) noexcept;
         Animation createAnimation(const std::string& name);
         Animation createAnimation();
         bool update(const std::string& name, RawAnimation& anim);
@@ -70,9 +79,9 @@ namespace darmok
     private:
         OptionalRef<std::ostream> _log;
         const aiScene& _scene;
-        std::vector<std::string> _jointNames;
+        std::vector<std::string> _boneNames;
         void update(const aiAnimation& assimpAnim, RawAnimation& anim);
-        bool isJoint(const aiNode& node) const noexcept;
+        bool isBone(const aiNode& node) const noexcept;
         bool logInfo(const aiAnimation& assimpAnim, const std::string& prefix = "") noexcept;
     };
 
@@ -145,7 +154,7 @@ namespace darmok
         using OzzSkeleton = ozz::animation::Skeleton;
 
         AssimpSkeletonImporterImpl(size_t bufferSize = 4096) noexcept;
-        OzzSkeleton read(const std::filesystem::path& path);
+        OzzSkeleton read(const std::filesystem::path& path, const nlohmann::json& config);
         std::vector<std::filesystem::path> getOutputs(const Input& input) noexcept;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
@@ -172,7 +181,7 @@ namespace darmok
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
     private:
-        void loadSkeleton(const std::filesystem::path& path);
+        void loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config);
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept;
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept;
         Input _currentInput;
