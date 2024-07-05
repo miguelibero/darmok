@@ -8,6 +8,7 @@
 #include <queue>
 #include <memory>
 #include <mutex>
+#include <string>
 
 #ifndef DARMOK_PLATFORM_NOOP
 #	define DARMOK_PLATFORM_NOOP 0
@@ -59,8 +60,10 @@ namespace darmok
 
 			WindowSize,
 			WindowPhase,
-			WindowMode,
+			WindowVideoMode,
 			WindowCursorMode,
+			WindowSupportedVideoModes,
+			WindowError,
 
 			Count,
 		};
@@ -184,13 +187,31 @@ namespace darmok
 		WindowPhase _phase;
 	};
 
-	class WindowModeEvent final : public PlatformEvent
+	class WindowErrorEvent final : public PlatformEvent
 	{
 	public:
-		WindowModeEvent(WindowMode mode) noexcept;
+		WindowErrorEvent(const std::string& err) noexcept;
 		void process(Window& win) noexcept;
 	private:
-		WindowMode _mode;
+		std::string _error;
+	};
+
+	class WindowVideoModeEvent final : public PlatformEvent
+	{
+	public:
+		WindowVideoModeEvent(const VideoMode& mode) noexcept;
+		void process(Window& win) noexcept;
+	private:
+		VideoMode _mode;
+	};
+
+	class WindowSupportedVideoModesEvent final : public PlatformEvent
+	{
+	public:
+		WindowSupportedVideoModesEvent(const VideoModeInfo& info) noexcept;
+		void process(Window& win) noexcept;
+	private:
+		VideoModeInfo _info;
 	};
 
 	class WindowCursorModeEvent final : public PlatformEvent
@@ -244,8 +265,9 @@ namespace darmok
 		PlatformImpl& getImpl() noexcept;
 
 		void requestWindowDestruction() noexcept;
-		void requestWindowModeChange(WindowMode mode) noexcept;
-		void requestCursorModeChange(WindowCursorMode mode) noexcept;
+		void requestSupportedWindowVideoModes() noexcept;
+		void requestWindowVideoModeChange(const VideoMode& mode) noexcept;
+		void requestWindowCursorModeChange(WindowCursorMode mode) noexcept;
 
 		[[nodiscard]] void* getWindowHandle() const noexcept;
 		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getWindowHandleType() const noexcept;

@@ -1,8 +1,8 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
-#include <darmok/export.h>
 
 namespace darmok
 {

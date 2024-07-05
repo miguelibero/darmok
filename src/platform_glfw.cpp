@@ -31,64 +31,114 @@ namespace darmok
 		glfwSetWindowShouldClose(glfw, true);
 	}
 
-	ChangeWindowModeCmd::ChangeWindowModeCmd(WindowMode mode) noexcept
-		: PlatformCmd(ChangeWindowMode)
+	RequestSupportedWindowVideoModesCmd::RequestSupportedWindowVideoModesCmd() noexcept
+		: PlatformCmd(RequestSupporedWindowVideoModes)
+	{
+	}
+
+	void RequestSupportedWindowVideoModesCmd::process(PlatformEventQueue& events) noexcept
+	{
+		auto info = PlatformImpl::getVideoModeInfo();
+		events.post<WindowSupportedVideoModesEvent>(info);
+	}
+
+	ChangeWindowVideoModeCmd::ChangeWindowVideoModeCmd(const VideoMode& mode) noexcept
+		: PlatformCmd(ChangeWindowVideoMode)
 		, _mode(mode)
 	{
 	}
 
-	void ChangeWindowModeCmd::process(PlatformEventQueue& events, GLFWwindow* glfw, const glm::uvec2& normWinSize) noexcept
+	std::expected<GLFWmonitor*, std::string> ChangeWindowVideoModeCmd::getMonitor() noexcept
 	{
-		switch (_mode)
+		if (_mode.monitor <= 0)
 		{
-			case WindowMode::Normal:
+			return glfwGetPrimaryMonitor();
+		}
+		int monCount;
+		auto monitors = glfwGetMonitors(&monCount);
+		if (_mode.monitor >= monCount)
+		{
+			return std::unexpected("invalid monitor");
+		}
+		return monitors[_mode.monitor];
+	}
+
+	void ChangeWindowVideoModeCmd::process(PlatformEventQueue& events, GLFWwindow* glfw, const glm::uvec2& position) noexcept
+	{
+		auto expMonitor = getMonitor();
+		if (!expMonitor)
+		{
+			events.post<WindowErrorEvent>(expMonitor.error());
+			return;
+		}
+		auto monitor = expMonitor.value();
+		auto refreshRate = _mode.refreshRate == 0 ? GLFW_DONT_CARE : _mode.refreshRate;
+		switch (_mode.screenMode)
+		{
+			case WindowScreenMode::Normal:
 			{
+				int x, y, w, h;
+				glfwGetMonitorWorkarea(monitor, &x, &y, &w, &h);
+				if (w < _mode.size.x || h < _mode.size.y)
+				{
+					events.post<WindowErrorEvent>("window would not fit in workarea");
+					return;
+				}
+				glm::uvec2 fixPos(position);
+				if (fixPos.x + _mode.size.x > w)
+				{
+					fixPos.x = w - _mode.size.x;
+				}
+				if (fixPos.y + _mode.size.y > h)
+				{
+					fixPos.y = h - _mode.size.y;
+				}
 				glfwSetWindowMonitor(glfw
 					, nullptr
-					, 0
-					, 0
-					, normWinSize.x
-					, normWinSize.y
-					, GLFW_DONT_CARE
+					, fixPos.x
+					, fixPos.y
+					, _mode.size.x
+					, _mode.size.y
+					, refreshRate
 				);
-				events.post<WindowModeEvent>(WindowMode::Normal);
+				glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 				break;
 			}
-			case WindowMode::Fullscreen:
+			case WindowScreenMode::Fullscreen:
 			{
-				GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-				if (monitor == nullptr)
-				{
-					break;
-				}
-				const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 				glfwSetWindowMonitor(glfw
 					, monitor
 					, 0
 					, 0
-					, mode->width
-					, mode->height
-					, mode->refreshRate
+					, _mode.size.x
+					, _mode.size.y
+					, refreshRate
 				);
-				events.post<WindowModeEvent>(WindowMode::Fullscreen);
 				break;
 			}
-			case WindowMode::WindowedFullscreen:
+			case WindowScreenMode::WindowedFullscreen:
 			{
-				GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-				if (monitor == nullptr)
-				{
-					break;
-				}
-				const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-				glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-				glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-				glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-				glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-
-				events.post<WindowModeEvent>(WindowMode::WindowedFullscreen);
+				int x, y, w, h;
+				glfwGetMonitorWorkarea(monitor, &x, &y, &w, &h);
+				glfwSetWindowMonitor(glfw
+					, nullptr
+					, x
+					, y
+					, w
+					, h
+					, refreshRate
+				);
+				glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+				events.post<WindowSizeEvent>(_mode.size, true);
 				break;
 			}
+
+			glfwWindowHint(GLFW_RED_BITS, _mode.depth.r);
+			glfwWindowHint(GLFW_GREEN_BITS, _mode.depth.g);
+			glfwWindowHint(GLFW_BLUE_BITS, _mode.depth.b);
+			glfwWindowHint(GLFW_REFRESH_RATE, refreshRate);
+
+			events.post<WindowVideoModeEvent>(_mode);
 		}
 	}
 
@@ -123,24 +173,28 @@ namespace darmok
 		// explicit cast to avoid virtual method for performance
 		switch (cmd._type)
 		{
+		case PlatformCmd::RequestSupporedWindowVideoModes:
+			static_cast<RequestSupportedWindowVideoModesCmd&>(cmd).process(plat.getEvents());
+			break;
 		case PlatformCmd::DestroyWindow:
 			static_cast<DestroyWindowCmd&>(cmd).process(plat.getGlfwWindow());
 			break;
 		case PlatformCmd::ChangeWindowCursorMode:
 			static_cast<ChangeWindowCursorModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
 			break;
-		case PlatformCmd::ChangeWindowMode:
-			static_cast<ChangeWindowModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow(), plat.getNormalWindowSize());
+		case PlatformCmd::ChangeWindowVideoMode:
+			static_cast<ChangeWindowVideoModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow(), plat.getNormalWindowPosition());
 			break;
 		}
 	}
 
-#pragma endregion PlatformCmds
+#pragma endregion PlatformCmds	
 
 	PlatformImpl::PlatformImpl(Platform& plat) noexcept
 		: _plat(plat)
 		, _window(nullptr)
 		, _normWinSize(0)
+		, _normWinPosition(0)
 		, _framebufferSize(0)
 	{
 	}
@@ -158,6 +212,11 @@ namespace darmok
 	const glm::uvec2& PlatformImpl::getNormalWindowSize() const noexcept
 	{
 		return _normWinSize;
+	}
+
+	const glm::uvec2& PlatformImpl::getNormalWindowPosition() const noexcept
+	{
+		return _normWinPosition;
 	}
 
 	void* PlatformImpl::getWindowHandle(GLFWwindow* window) noexcept
@@ -232,6 +291,7 @@ namespace darmok
 		glfwSetMouseButtonCallback(window, staticMouseButtonCallback);
 		glfwSetJoystickCallback(staticJoystickCallback);
 		glfwSetWindowSizeCallback(window, staticWindowSizeCallback);
+		glfwSetWindowPosCallback(window, staticWindowPosCallback);
 		glfwSetFramebufferSizeCallback(window, staticFramebufferSizeCallback);
 
 		return window;
@@ -503,6 +563,12 @@ namespace darmok
 		{
 			// send events for initial window state
 			_events.post<WindowSizeEvent>(_normWinSize);
+
+			int x, y;
+			glfwGetWindowPos(_window, &x, &y);
+			_normWinPosition.x = x;
+			_normWinPosition.y = y;
+
 			int w, h;
 			glfwGetFramebufferSize(_window, &w, &h);
 			_framebufferSize = glm::uvec2(w, h);
@@ -522,12 +588,12 @@ namespace darmok
 		while (!glfwWindowShouldClose(_window) && !_mte.finished)
 		{
 			glfwWaitEventsTimeout(0.016);
-
 			updateGamepads();
 
+			std::lock_guard cmdsLock(_cmdsMutex);
 			while (!_cmds.empty())
 			{
-				auto cmd = std::move(_cmds.front());
+				std::unique_ptr<PlatformCmd> cmd = std::move(_cmds.front());
 				_cmds.pop();
 				PlatformCmd::process(*cmd, *this);
 			}
@@ -593,6 +659,15 @@ namespace darmok
 			translateMouseButton(button)
 			, down
 		);
+	}
+
+	void PlatformImpl::windowPosCallback(GLFWwindow* window, int32_t x, int32_t y) noexcept
+	{
+		auto pos = glm::uvec2(x, y);
+		if (glfwGetWindowMonitor(_window) == nullptr)
+		{
+			_normWinPosition = pos;
+		}
 	}
 
 	void PlatformImpl::windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
@@ -668,6 +743,11 @@ namespace darmok
 		Platform::get().getImpl().windowSizeCallback(window, width, height);
 	}
 
+	void PlatformImpl::staticWindowPosCallback(GLFWwindow* window, int32_t x, int32_t y) noexcept
+	{
+		Platform::get().getImpl().windowPosCallback(window, x, y);
+	}
+
 	void PlatformImpl::staticFramebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
 		Platform::get().getImpl().framebufferSizeCallback(window, width, height);
@@ -675,7 +755,55 @@ namespace darmok
 
 	void PlatformImpl::pushCmd(std::unique_ptr<PlatformCmd>&& cmd) noexcept
 	{
+		std::lock_guard cmdsLock(_cmdsMutex);
 		_cmds.push(std::move(cmd));
+	}
+
+	VideoModeInfo PlatformImpl::getVideoModeInfo() noexcept
+	{
+		int monitorCount;
+		VideoModeInfo info;
+		auto monitors = glfwGetMonitors(&monitorCount);
+		for (int i = 0; i < monitorCount; i++)
+		{
+			auto glfwMon = monitors[i];
+			auto& mon = info.monitors.emplace_back();
+			mon.name = glfwGetMonitorName(glfwMon);
+			int modeCount;
+			auto glfwModes = glfwGetVideoModes(glfwMon, &modeCount);
+			int x, y, w, h;
+			glfwGetMonitorWorkarea(glfwMon, &x, &y, &w, &h);
+			mon.workarea = Viewport(x, y, w, h);
+			auto monSize = mon.workarea.size - mon.workarea.origin;
+			for (int j = 0; j < modeCount; j++)
+			{
+				auto glfwMode = glfwModes[j];
+				VideoMode mode;
+				mode.size.x = glfwMode.width;
+				mode.size.y = glfwMode.height;
+				mode.depth.r = glfwMode.redBits;
+				mode.depth.g = glfwMode.greenBits;
+				mode.depth.b = glfwMode.blueBits;
+				mode.refreshRate = glfwMode.refreshRate;
+				mode.monitor = i;
+
+				auto& fsMode = info.modes.emplace_back();
+				fsMode = mode;
+				fsMode.screenMode = WindowScreenMode::Fullscreen;
+
+				// TODO: is there a way of checking if GLFW_DECORATED=false is supported in the platform?
+				auto& wfMode = info.modes.emplace_back();
+				wfMode = mode;
+				wfMode.screenMode = WindowScreenMode::WindowedFullscreen;
+				if (mode.size.x <= monSize.x && mode.size.y <= monSize.y)
+				{
+					auto& winMode = info.modes.emplace_back();
+					winMode = mode;
+					winMode.screenMode = WindowScreenMode::Normal;
+				}
+			}
+		}
+		return info;
 	}
 
 	std::unique_ptr<PlatformEvent> PlatformImpl::pollEvent() noexcept
@@ -716,12 +844,17 @@ namespace darmok
 		_impl->pushCmd<DestroyWindowCmd>();
 	}
 
-	void Platform::requestWindowModeChange(WindowMode mode) noexcept
+	void Platform::requestSupportedWindowVideoModes() noexcept
 	{
-		_impl->pushCmd<ChangeWindowModeCmd>(mode);
+		_impl->pushCmd<RequestSupportedWindowVideoModesCmd>();
 	}
 
-	void Platform::requestCursorModeChange(WindowCursorMode mode) noexcept
+	void Platform::requestWindowVideoModeChange(const VideoMode& mode) noexcept
+	{
+		_impl->pushCmd<ChangeWindowVideoModeCmd>(mode);
+	}
+
+	void Platform::requestWindowCursorModeChange(WindowCursorMode mode) noexcept
 	{
 		_impl->pushCmd<ChangeWindowCursorModeCmd>(mode);
 	}

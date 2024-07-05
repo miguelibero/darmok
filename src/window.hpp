@@ -15,15 +15,17 @@ namespace darmok
 		WindowImpl(const WindowImpl& other) = delete;
 		WindowImpl(WindowImpl&& other) = delete;
 
-		bool setSize(const glm::uvec2& size) noexcept;
-		bool setPixelSize(const glm::uvec2& size) noexcept;
-		bool setPhase(WindowPhase phase) noexcept;
-		bool setMode(WindowMode mode) noexcept;
-		bool setCursorMode(WindowCursorMode mode) noexcept;
-		
+		bool setSize(const glm::uvec2& size);
+		bool setPixelSize(const glm::uvec2& size);
+		bool setPhase(WindowPhase phase);
+		bool setVideoMode(const VideoMode& mode);
+		bool setCursorMode(WindowCursorMode mode);
+		void onSupportedVideoModes(const VideoModeInfo& info);
+		void onError(const std::string& error);
+
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
-		[[nodiscard]] WindowMode getMode() const noexcept;
+		[[nodiscard]] const VideoMode& getVideoMode() const noexcept;
 		[[nodiscard]] WindowCursorMode getCursorMode() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 
@@ -37,7 +39,7 @@ namespace darmok
 		glm::uvec2 _size;
 		glm::uvec2 _pixelSize;
 		WindowPhase _phase;
-		WindowMode _mode;
+		VideoMode _videoMode;
 		WindowCursorMode _cursorMode;
 		std::unordered_set<OptionalRef<IWindowListener>> _listeners;
 

@@ -299,8 +299,9 @@ namespace darmok
 	{
 		auto exit = [this]() { triggerExit(); };
 		auto fullscreen = [this]() {
-			auto mode = (WindowMode)((to_underlying(_window.getMode()) + 1) % to_underlying(WindowMode::Count));
-			_window.requestMode(mode);
+			auto mode = _window.getVideoMode();
+			mode.screenMode = (WindowScreenMode)((to_underlying(mode.screenMode) + 1) % to_underlying(WindowScreenMode::Count));
+			_window.requestVideoMode(mode);
 		};
 		auto debugStats = [this]() { toggleDebugFlag(BGFX_DEBUG_STATS); };
 		auto debugText = [this]() { toggleDebugFlag(BGFX_DEBUG_TEXT); };

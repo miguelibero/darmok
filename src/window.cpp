@@ -1,18 +1,79 @@
 #include "window.hpp"
 #include "platform.hpp"
+#include <sstream>
 
 namespace darmok
 {
+	bool VideoMode::operator==(const VideoMode& other) const noexcept
+	{
+		return screenMode == other.screenMode
+			&& size == other.size
+			&& depth == other.depth
+			&& refreshRate == other.refreshRate
+			&& monitor == other.monitor;
+	}
+
+	bool VideoMode::operator!=(const VideoMode& other) const noexcept
+	{
+		return !operator==(other);
+	}
+
+	std::string VideoMode::toShortString() const noexcept
+	{
+		std::ostringstream ss;
+		ss << size.x << "x" << size.y;
+		if (refreshRate > 0)
+		{
+			ss << " " << refreshRate << "Hz";
+		}
+		if (depth.r > 0 || depth.g > 0 || depth.b > 0)
+		{
+			ss << " ";
+			if (depth.r == depth.g && depth.r == depth.b)
+			{
+				ss << (unsigned int)depth.r;
+			}
+			else
+			{
+				ss << (unsigned int)depth.r << "-" << (unsigned int)depth.g << "-" << (unsigned int)depth.b;
+			}
+			ss << "bpp";
+		}
+		return ss.str();
+	}
+
+	std::string VideoMode::to_string() const noexcept
+	{
+		std::ostringstream ss;
+		switch (screenMode)
+		{
+		case WindowScreenMode::Normal:
+			ss << "Windowed ";
+			break;
+		case WindowScreenMode::Fullscreen:
+			ss << "Fullscreen ";
+			break;
+		case WindowScreenMode::WindowedFullscreen:
+			ss << "Borderless Windowed ";
+			break;
+		}
+		ss << toShortString();
+		if (monitor >= 0)
+		{
+			ss << " monitor " << monitor;
+		}
+		return ss.str();
+	}
+
 	WindowImpl::WindowImpl() noexcept
 		: _phase(WindowPhase::Unknown)
-		, _mode(WindowMode::Normal)
 		, _cursorMode(WindowCursorMode::Normal)
 		, _size(0)
 		, _pixelSize(0)
 	{
 	}
 
-	bool WindowImpl::setSize(const glm::uvec2& size) noexcept
+	bool WindowImpl::setSize(const glm::uvec2& size)
 	{
 		if (_size == size)
 		{
@@ -26,7 +87,7 @@ namespace darmok
 		return true;
 	}
 
-	bool WindowImpl::setPixelSize(const glm::uvec2& size) noexcept
+	bool WindowImpl::setPixelSize(const glm::uvec2& size)
 	{
 		if (_pixelSize == size)
 		{
@@ -40,7 +101,7 @@ namespace darmok
 		return true;
 	}
 
-	bool WindowImpl::setPhase(WindowPhase phase) noexcept
+	bool WindowImpl::setPhase(WindowPhase phase)
 	{
 		if (_phase == phase)
 		{
@@ -54,21 +115,37 @@ namespace darmok
 		return true;
 	}
 
-	bool WindowImpl::setMode(WindowMode mode) noexcept
+	bool WindowImpl::setVideoMode(const VideoMode& mode)
 	{
-		if (_mode == mode)
+		if (_videoMode == mode)
 		{
 			return false;
 		}
 		for (auto& listener : _listeners)
 		{
-			listener->onWindowMode(mode);
+			listener->onWindowVideoMode(mode);
 		}
-		_mode = mode;
+		_videoMode = mode;
 		return true;
 	}
 
-	bool WindowImpl::setCursorMode(WindowCursorMode mode) noexcept
+	void WindowImpl::onSupportedVideoModes(const VideoModeInfo& info)
+	{
+		for (auto& listener : _listeners)
+		{
+			listener->onWindowSupportedVideoModes(info);
+		}
+	}
+
+	void WindowImpl::onError(const std::string& error)
+	{
+		for (auto& listener : _listeners)
+		{
+			listener->onWindowError(error);
+		}
+	}
+
+	bool WindowImpl::setCursorMode(WindowCursorMode mode)
 	{
 		if (_cursorMode == mode)
 		{
@@ -76,7 +153,7 @@ namespace darmok
 		}
 		for (auto& listener : _listeners)
 		{
-			listener->onCursorMode(mode);
+			listener->onWindowCursorMode(mode);
 		}
 		_cursorMode = mode;
 		return true;
@@ -97,9 +174,9 @@ namespace darmok
 		return _phase;
 	}
 
-	WindowMode WindowImpl::getMode() const noexcept
+	const VideoMode& WindowImpl::getVideoMode() const noexcept
 	{
-		return _mode;
+		return _videoMode;
 	}
 
 	WindowCursorMode WindowImpl::getCursorMode() const noexcept
@@ -170,14 +247,19 @@ namespace darmok
 		return _impl->getPixelSize();
 	}
 
-	void Window::requestMode(WindowMode mode) noexcept
+	void Window::requestSupportedVideoModes() noexcept
 	{
-		_plat.requestWindowModeChange(mode);
+		_plat.requestSupportedWindowVideoModes();
+	}
+
+	void Window::requestVideoMode(const VideoMode& mode) noexcept
+	{
+		_plat.requestWindowVideoModeChange(mode);
 	}
 
 	void Window::requestCursorMode(WindowCursorMode mode) noexcept
 	{
-		_plat.requestCursorModeChange(mode);
+		_plat.requestWindowCursorModeChange(mode);
 	}
 
 	void Window::requestDestruction() noexcept
@@ -190,9 +272,9 @@ namespace darmok
 		return _impl->getPhase();
 	}
 
-	WindowMode Window::getMode() const noexcept
+	const VideoMode& Window::getVideoMode() const noexcept
 	{
-		return _impl->getMode();
+		return _impl->getVideoMode();
 	}
 
 	WindowCursorMode Window::getCursorMode() const noexcept

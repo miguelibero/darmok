@@ -94,7 +94,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * dynamic distance field font texture generation
 * move lua bindings to separate library?
 * defines when exporting shaders (generate all variations like Unity)
-* window modes with different resolutions
 * frustrum culling
 * binary texture atlas
 * loading progress

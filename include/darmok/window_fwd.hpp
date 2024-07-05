@@ -11,7 +11,7 @@ namespace darmok
 		Count,
 	};
 
-	enum class WindowMode
+	enum class WindowScreenMode
 	{
 		Normal,
 		Fullscreen,

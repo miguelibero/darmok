@@ -512,7 +512,6 @@ namespace darmok::physics3d
         {
             mat = _root->getWorldInverse() * mat;
         }
-
         glm::vec3 pos(0);
         glm::quat rot(1, 0, 0, 0);
         glm::vec3 scale(1);
@@ -532,10 +531,6 @@ namespace darmok::physics3d
         if (parent)
         {
             mtx = parent->getWorldInverse() * mtx;
-        }
-        if (_root)
-        {
-            mtx = _root->getWorldMatrix() * mtx;
         }
         glm::vec3 pos;
         glm::quat rot;

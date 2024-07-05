@@ -164,15 +164,37 @@ namespace darmok
 		win.getImpl().setPhase(_phase);
 	}
 
-	WindowModeEvent::WindowModeEvent(WindowMode mode) noexcept
-		: PlatformEvent(Type::WindowMode)
+	WindowErrorEvent::WindowErrorEvent(const std::string& err) noexcept
+		: PlatformEvent(Type::WindowError)
+		, _error(err)
+	{
+	}
+
+	void WindowErrorEvent::process(Window& win) noexcept
+	{
+		win.getImpl().onError(_error);
+	}
+
+	WindowVideoModeEvent::WindowVideoModeEvent(const VideoMode& mode) noexcept
+		: PlatformEvent(Type::WindowVideoMode)
 		, _mode(mode)
 	{
 	}
 
-	void WindowModeEvent::process(Window& win) noexcept
+	void WindowVideoModeEvent::process(Window& win) noexcept
 	{
-		win.getImpl().setMode(_mode);
+		win.getImpl().setVideoMode(_mode);
+	}
+
+	WindowSupportedVideoModesEvent::WindowSupportedVideoModesEvent(const VideoModeInfo& info) noexcept
+		: PlatformEvent(Type::WindowSupportedVideoModes)
+		, _info(info)
+	{
+	}
+
+	void WindowSupportedVideoModesEvent::process(Window& win) noexcept
+	{
+		win.getImpl().onSupportedVideoModes(_info);
 	}
 
 	WindowCursorModeEvent::WindowCursorModeEvent(WindowCursorMode mode) noexcept
@@ -223,11 +245,17 @@ namespace darmok
 		case PlatformEvent::Type::WindowPhase:
 			static_cast<WindowPhaseEvent&>(ev).process(window);
 			break;
-		case PlatformEvent::Type::WindowMode:
-			static_cast<WindowModeEvent&>(ev).process(window);
+		case PlatformEvent::Type::WindowVideoMode:
+			static_cast<WindowVideoModeEvent&>(ev).process(window);
+			break;
+		case PlatformEvent::Type::WindowSupportedVideoModes:
+			static_cast<WindowSupportedVideoModesEvent&>(ev).process(window);
 			break;
 		case PlatformEvent::Type::WindowCursorMode:
 			static_cast<WindowCursorModeEvent&>(ev).process(window);
+			break;
+		case PlatformEvent::Type::WindowError:
+			static_cast<WindowErrorEvent&>(ev).process(window);
 			break;
 		default:
 			break;

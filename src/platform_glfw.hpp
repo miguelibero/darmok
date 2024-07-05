@@ -4,6 +4,8 @@
 #include <darmok/window_fwd.hpp>
 #include <darmok/app_fwd.hpp>
 #include <bx/thread.h>
+#include <expected>
+#include <mutex>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -63,8 +65,10 @@ namespace darmok
 		GLFWwindow* getGlfwWindow() const noexcept;
 		PlatformEventQueue& getEvents() noexcept;
 		const glm::uvec2& getNormalWindowSize() const noexcept;
+		const glm::uvec2& getNormalWindowPosition() const noexcept;
 		[[nodiscard]] static void* getWindowHandle(GLFWwindow* window) noexcept;
 
+		static VideoModeInfo getVideoModeInfo() noexcept;
 		
 	private:
 		Platform& _plat;
@@ -72,8 +76,10 @@ namespace darmok
 		PlatformEventQueue _events;
 		MainThreadEntry _mte;
 		bx::Thread _thread;
+		std::mutex _cmdsMutex;
 		std::queue<std::unique_ptr<PlatformCmd>> _cmds;
 		glm::uvec2 _normWinSize;
+		glm::uvec2 _normWinPosition;
 		glm::uvec2 _framebufferSize;
 
 		static void destroyWindow(GLFWwindow* window) noexcept;
@@ -108,6 +114,7 @@ namespace darmok
 		void cursorEnterCallback(GLFWwindow* window, int entered) noexcept;
 		void mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
 		void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
+		void windowPosCallback(GLFWwindow* window, int32_t x, int32_t y) noexcept;
 		void framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
 
 		static void staticJoystickCallback(int jid, int action) noexcept;
@@ -119,6 +126,7 @@ namespace darmok
 		static void staticCursorEnterCallback(GLFWwindow* window, int entered) noexcept;
 		static void staticMouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
 		static void staticWindowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
+		static void staticWindowPosCallback(GLFWwindow* window, int32_t x, int32_t y) noexcept;
 		static void staticFramebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
 	};
 
@@ -133,7 +141,8 @@ namespace darmok
 		{
 			CreateWindow,
 			DestroyWindow,
-			ChangeWindowMode,
+			RequestSupporedWindowVideoModes,
+			ChangeWindowVideoMode,
 			ChangeWindowCursorMode,
 		};
 
@@ -151,14 +160,22 @@ namespace darmok
 		void process(GLFWwindow* glfw) noexcept;
 	};
 
-	class ChangeWindowModeCmd final : public PlatformCmd
+	class RequestSupportedWindowVideoModesCmd final : public PlatformCmd
 	{
 	public:
-		ChangeWindowModeCmd(WindowMode mode) noexcept;
-		void process(PlatformEventQueue& events, GLFWwindow* glfw, const glm::uvec2& normWinSize) noexcept;
-		
+		RequestSupportedWindowVideoModesCmd() noexcept;
+		void process(PlatformEventQueue& events) noexcept;
+	};
+
+	class ChangeWindowVideoModeCmd final : public PlatformCmd
+	{
+	public:
+		ChangeWindowVideoModeCmd(const VideoMode& mode) noexcept;
+		void process(PlatformEventQueue& events, GLFWwindow* glfw, const glm::uvec2& position) noexcept;
 	private:
-		WindowMode _mode;
+		VideoMode _mode;
+
+		std::expected<GLFWmonitor*, std::string> getMonitor() noexcept;
 	};
 
 	class ChangeWindowCursorModeCmd final : public PlatformCmd
