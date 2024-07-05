@@ -389,12 +389,14 @@ namespace darmok
 		}
 
 		auto& mouse = input.getMouse();
-		auto& size = _app->getWindow().getPixelSize();
-		io.DisplaySize = ImVec2((float)size.x, (float)size.y);
+		auto& fbSize = _app->getWindow().getFramebufferSize();
+		auto& pixelSize = _app->getWindow().getPixelSize();
+		io.DisplaySize = ImVec2((float)pixelSize.x, (float)pixelSize.y);
 
 		auto& buttons = mouse.getButtons();
-		auto& pos = mouse.getPosition();
+		auto pos = mouse.getPosition() * glm::vec2(pixelSize) / glm::vec2(fbSize);
 		io.AddMousePosEvent(pos.x, pos.y);
+
 		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);

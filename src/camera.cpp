@@ -316,7 +316,7 @@ namespace darmok
         }
         if (_app)
         {
-            return Viewport(_app->getWindow().getPixelSize());
+            return Viewport(_app->getWindow().getFramebufferSize());
         }
         return Viewport();
     }

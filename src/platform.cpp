@@ -130,26 +130,27 @@ namespace darmok
 		}
 	}
 
-	WindowSizeEvent::WindowSizeEvent(const glm::uvec2& size, bool pixel) noexcept
+	WindowSizeEvent::WindowSizeEvent(const glm::uvec2& size, WindowSizeType type) noexcept
 		: PlatformEvent(Type::WindowSize)
 		, _size(size)
-		, _pixel(pixel)
+		, _type(type)
 	{
 	}
 
 	void WindowSizeEvent::process(Window& win) noexcept
 	{
-		if (_pixel)
+		auto& impl = win.getImpl();
+		switch (_type)
 		{
-			win.getImpl().setPixelSize(_size);
-			if (win.getPhase() == WindowPhase::Running)
-			{
-				bgfx::reset(_size.x, _size.y);
-			}
-		}
-		else
-		{
-			win.getImpl().setSize(_size);
+		case WindowSizeType::Size:
+			impl.setSize(_size);
+			break;
+		case WindowSizeType::Framebuffer:
+			impl.setFramebufferSize(_size);
+			break;
+		case WindowSizeType::Pixel:
+			impl.setPixelSize(_size);
+			break;
 		}
 	}
 
@@ -186,15 +187,15 @@ namespace darmok
 		win.getImpl().setVideoMode(_mode);
 	}
 
-	WindowSupportedVideoModesEvent::WindowSupportedVideoModesEvent(const VideoModeInfo& info) noexcept
-		: PlatformEvent(Type::WindowSupportedVideoModes)
+	VideoModeInfoEvent::VideoModeInfoEvent(const VideoModeInfo& info) noexcept
+		: PlatformEvent(Type::VideoModeInfo)
 		, _info(info)
 	{
 	}
 
-	void WindowSupportedVideoModesEvent::process(Window& win) noexcept
+	void VideoModeInfoEvent::process(Window& win) noexcept
 	{
-		win.getImpl().onSupportedVideoModes(_info);
+		win.getImpl().setVideoModeInfo(_info);
 	}
 
 	WindowCursorModeEvent::WindowCursorModeEvent(WindowCursorMode mode) noexcept
@@ -248,14 +249,14 @@ namespace darmok
 		case PlatformEvent::Type::WindowVideoMode:
 			static_cast<WindowVideoModeEvent&>(ev).process(window);
 			break;
-		case PlatformEvent::Type::WindowSupportedVideoModes:
-			static_cast<WindowSupportedVideoModesEvent&>(ev).process(window);
-			break;
 		case PlatformEvent::Type::WindowCursorMode:
 			static_cast<WindowCursorModeEvent&>(ev).process(window);
 			break;
 		case PlatformEvent::Type::WindowError:
 			static_cast<WindowErrorEvent&>(ev).process(window);
+			break;
+		case PlatformEvent::Type::VideoModeInfo:
+			static_cast<VideoModeInfoEvent&>(ev).process(window);
 			break;
 		default:
 			break;

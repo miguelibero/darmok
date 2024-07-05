@@ -24,6 +24,7 @@ namespace darmok
 
 		std::string toShortString() const noexcept;
 		std::string to_string() const noexcept;
+		bool complete() const noexcept;
 
 		bool operator==(const VideoMode& other) const noexcept;
 		bool operator!=(const VideoMode& other) const noexcept;
@@ -49,9 +50,9 @@ namespace darmok
 		virtual void onWindowSize(const glm::uvec2& size) {};
 		virtual void onWindowPixelSize(const glm::uvec2& size) {};
 		virtual void onWindowPhase(WindowPhase phase) {};
-		virtual void onWindowVideoMode(const VideoMode& phase) {};
+		virtual void onWindowVideoMode(const VideoMode& mode) {};
 		virtual void onWindowCursorMode(WindowCursorMode phase) {};
-		virtual void onWindowSupportedVideoModes(const VideoModeInfo& info) {};
+		virtual void onWindowVideoModeInfo(const VideoModeInfo& info) {};
 		virtual void onWindowError(const std::string& error) {};
 	};
 
@@ -65,16 +66,18 @@ namespace darmok
 		Window(const Window& other) = delete;
 		Window(Window&& other) = delete;
 
-		void requestSupportedVideoModes() noexcept;
 		void requestVideoMode(const VideoMode& mode) noexcept;
 		void requestCursorMode(WindowCursorMode mode) noexcept;
 		void requestDestruction() noexcept;
+		void requestVideoModeInfo() noexcept;
 
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
+		[[nodiscard]] const glm::uvec2& getFramebufferSize() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
-		[[nodiscard]] const VideoMode& getVideoMode() const noexcept;
 		[[nodiscard]] WindowCursorMode getCursorMode() const noexcept;
+		[[nodiscard]] const VideoMode& getVideoMode() const noexcept;
+		[[nodiscard]] const VideoModeInfo& getVideoModeInfo() const noexcept;
 
 		[[nodiscard]] glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
 		[[nodiscard]] glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;

@@ -43,6 +43,13 @@ namespace darmok
 
 	class PlatformEvent;
 	class PlatformCmd;
+	struct Viewport;
+
+	struct WindowFrameSize final
+	{
+		glm::uvec2 topLeft;
+		glm::uvec2 botRight;
+	};
 
 	class PlatformImpl final
 	{
@@ -62,25 +69,24 @@ namespace darmok
 			return *ptr;
 		}
 
-		GLFWwindow* getGlfwWindow() const noexcept;
-		PlatformEventQueue& getEvents() noexcept;
-		const glm::uvec2& getNormalWindowSize() const noexcept;
-		const glm::uvec2& getNormalWindowPosition() const noexcept;
+		[[nodiscard]] GLFWwindow* getGlfwWindow() const noexcept;
+		[[nodiscard]] const WindowFrameSize& getWindowFrameSize() const noexcept;
+		[[nodiscard]] PlatformEventQueue& getEvents() noexcept;
 		[[nodiscard]] static void* getWindowHandle(GLFWwindow* window) noexcept;
 
-		static VideoModeInfo getVideoModeInfo() noexcept;
-		
+		static VideoModeInfo getVideoModeInfo(const WindowFrameSize& frame) noexcept;
+		static Viewport getMonitorWorkarea(GLFWmonitor* mon) noexcept;
+		static VideoMode getVideoMode(GLFWwindow* win = nullptr, GLFWmonitor* mon = nullptr) noexcept;
+
 	private:
 		Platform& _plat;
 		GLFWwindow* _window;
+		WindowFrameSize _winFrameSize;
 		PlatformEventQueue _events;
 		MainThreadEntry _mte;
 		bx::Thread _thread;
 		std::mutex _cmdsMutex;
 		std::queue<std::unique_ptr<PlatformCmd>> _cmds;
-		glm::uvec2 _normWinSize;
-		glm::uvec2 _normWinPosition;
-		glm::uvec2 _framebufferSize;
 
 		static void destroyWindow(GLFWwindow* window) noexcept;
 		[[nodiscard]] static GLFWwindow* createWindow(const glm::uvec2& size, const char* title) noexcept;
@@ -114,7 +120,6 @@ namespace darmok
 		void cursorEnterCallback(GLFWwindow* window, int entered) noexcept;
 		void mouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
 		void windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
-		void windowPosCallback(GLFWwindow* window, int32_t x, int32_t y) noexcept;
 		void framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
 
 		static void staticJoystickCallback(int jid, int action) noexcept;
@@ -126,7 +131,6 @@ namespace darmok
 		static void staticCursorEnterCallback(GLFWwindow* window, int entered) noexcept;
 		static void staticMouseButtonCallback(GLFWwindow* window, int32_t button, int32_t action, int32_t mods) noexcept;
 		static void staticWindowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
-		static void staticWindowPosCallback(GLFWwindow* window, int32_t x, int32_t y) noexcept;
 		static void staticFramebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept;
 	};
 
@@ -141,7 +145,7 @@ namespace darmok
 		{
 			CreateWindow,
 			DestroyWindow,
-			RequestSupporedWindowVideoModes,
+			RequestVideoModeInfo,
 			ChangeWindowVideoMode,
 			ChangeWindowCursorMode,
 		};
@@ -160,18 +164,18 @@ namespace darmok
 		void process(GLFWwindow* glfw) noexcept;
 	};
 
-	class RequestSupportedWindowVideoModesCmd final : public PlatformCmd
+	class RequestVideoModeInfoCmd final : public PlatformCmd
 	{
 	public:
-		RequestSupportedWindowVideoModesCmd() noexcept;
-		void process(PlatformEventQueue& events) noexcept;
+		RequestVideoModeInfoCmd() noexcept;
+		void process(PlatformEventQueue& events, const WindowFrameSize& frame) noexcept;
 	};
 
 	class ChangeWindowVideoModeCmd final : public PlatformCmd
 	{
 	public:
 		ChangeWindowVideoModeCmd(const VideoMode& mode) noexcept;
-		void process(PlatformEventQueue& events, GLFWwindow* glfw, const glm::uvec2& position) noexcept;
+		void process(PlatformEventQueue& events, GLFWwindow* glfw, const WindowFrameSize& frame) noexcept;
 	private:
 		VideoMode _mode;
 

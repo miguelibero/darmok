@@ -62,8 +62,9 @@ namespace darmok
 			WindowPhase,
 			WindowVideoMode,
 			WindowCursorMode,
-			WindowSupportedVideoModes,
 			WindowError,
+
+			VideoModeInfo,
 
 			Count,
 		};
@@ -168,14 +169,21 @@ namespace darmok
 		bool _connected;
 	};
 
+	enum class WindowSizeType
+	{
+		Size,
+		Framebuffer,
+		Pixel
+	};
+
 	class WindowSizeEvent final : public PlatformEvent
 	{
 	public:
-		WindowSizeEvent(const glm::uvec2& size, bool pixel = false) noexcept;
+		WindowSizeEvent(const glm::uvec2& size, WindowSizeType type) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		glm::uvec2 _size;
-		bool _pixel;
+		WindowSizeType _type;
 	};
 
 	class WindowPhaseEvent final : public PlatformEvent
@@ -205,10 +213,10 @@ namespace darmok
 		VideoMode _mode;
 	};
 
-	class WindowSupportedVideoModesEvent final : public PlatformEvent
+	class VideoModeInfoEvent final : public PlatformEvent
 	{
 	public:
-		WindowSupportedVideoModesEvent(const VideoModeInfo& info) noexcept;
+		VideoModeInfoEvent(const VideoModeInfo& info) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		VideoModeInfo _info;
@@ -264,8 +272,8 @@ namespace darmok
 		const PlatformImpl& getImpl() const noexcept;
 		PlatformImpl& getImpl() noexcept;
 
+		void requestVideoModeInfo() noexcept;
 		void requestWindowDestruction() noexcept;
-		void requestSupportedWindowVideoModes() noexcept;
 		void requestWindowVideoModeChange(const VideoMode& mode) noexcept;
 		void requestWindowCursorModeChange(WindowCursorMode mode) noexcept;
 

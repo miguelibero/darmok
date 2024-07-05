@@ -65,11 +65,20 @@ namespace darmok
 		return ss.str();
 	}
 
+	bool VideoMode::complete() const noexcept
+	{
+		return screenMode != WindowScreenMode::Count
+			&& size.x > 0 && size.y > 0
+			&& depth.r > 0 && depth.g > 0 && depth.b > 0
+			&& refreshRate > 0;
+	}
+
 	WindowImpl::WindowImpl() noexcept
 		: _phase(WindowPhase::Unknown)
 		, _cursorMode(WindowCursorMode::Normal)
 		, _size(0)
 		, _pixelSize(0)
+		, _fbSize(0)
 	{
 	}
 
@@ -79,11 +88,11 @@ namespace darmok
 		{
 			return false;
 		}
+		_size = size;
 		for (auto& listener : _listeners)
 		{
 			listener->onWindowSize(size);
 		}
-		_size = size;
 		return true;
 	}
 
@@ -93,12 +102,40 @@ namespace darmok
 		{
 			return false;
 		}
+		_pixelSize = size;
+		glm::uvec2 fsize = size;
+		if (fsize.x == 0 && fsize.y == 0)
+		{
+			fsize = _fbSize;
+		}
+		bgfxReset(fsize);
+		return true;
+	}
+
+	bool WindowImpl::setFramebufferSize(const glm::uvec2& size)
+	{
+		if (_fbSize == size)
+		{
+			return false;
+		}
+		_fbSize = size;
+		if (_pixelSize.x == 0 && _pixelSize.y == 0)
+		{
+			bgfxReset(_fbSize);
+		}
+		return true;
+	}
+
+	void WindowImpl::bgfxReset(const glm::uvec2& size) const noexcept
+	{
+		if (_phase == WindowPhase::Running || _phase == WindowPhase::Suspended)
+		{
+			bgfx::reset(size.x, size.y);
+		}
 		for (auto& listener : _listeners)
 		{
 			listener->onWindowPixelSize(size);
 		}
-		_pixelSize = size;
-		return true;
 	}
 
 	bool WindowImpl::setPhase(WindowPhase phase)
@@ -121,19 +158,20 @@ namespace darmok
 		{
 			return false;
 		}
+		_videoMode = mode;
 		for (auto& listener : _listeners)
 		{
 			listener->onWindowVideoMode(mode);
 		}
-		_videoMode = mode;
 		return true;
 	}
 
-	void WindowImpl::onSupportedVideoModes(const VideoModeInfo& info)
+	void WindowImpl::setVideoModeInfo(const VideoModeInfo& info)
 	{
+		_videoModeInfo = info;
 		for (auto& listener : _listeners)
 		{
-			listener->onWindowSupportedVideoModes(info);
+			listener->onWindowVideoModeInfo(info);
 		}
 	}
 
@@ -166,7 +204,16 @@ namespace darmok
 
 	const glm::uvec2& WindowImpl::getPixelSize() const noexcept
 	{
+		if (_pixelSize.x == 0 && _pixelSize.y == 0)
+		{
+			return _fbSize;
+		}
 		return _pixelSize;
+	}
+
+	const glm::uvec2& WindowImpl::getFramebufferSize() const noexcept
+	{
+		return _fbSize;
 	}
 
 	WindowPhase WindowImpl::getPhase() const noexcept
@@ -179,6 +226,11 @@ namespace darmok
 		return _videoMode;
 	}
 
+	const VideoModeInfo& WindowImpl::getVideoModeInfo() const noexcept
+	{
+		return _videoModeInfo;
+	}
+
 	WindowCursorMode WindowImpl::getCursorMode() const noexcept
 	{
 		return _cursorMode;
@@ -186,7 +238,11 @@ namespace darmok
 
 	glm::vec2 WindowImpl::getScreenToWindowFactor() const noexcept
 	{
-		return glm::vec2(_size) / glm::vec2(_pixelSize);
+		if (_fbSize.x == 0 || _fbSize.y == 0)
+		{
+			return glm::vec2(0);
+		}
+		return glm::vec2(_size) / glm::vec2(_fbSize);
 	}
 
 	glm::vec2 WindowImpl::screenToWindowPoint(const glm::vec2& point) const noexcept
@@ -247,9 +303,14 @@ namespace darmok
 		return _impl->getPixelSize();
 	}
 
-	void Window::requestSupportedVideoModes() noexcept
+	const glm::uvec2& Window::getFramebufferSize() const noexcept
 	{
-		_plat.requestSupportedWindowVideoModes();
+		return _impl->getFramebufferSize();
+	}
+
+	void Window::requestVideoModeInfo() noexcept
+	{
+		_plat.requestVideoModeInfo();
 	}
 
 	void Window::requestVideoMode(const VideoMode& mode) noexcept
@@ -275,6 +336,11 @@ namespace darmok
 	const VideoMode& Window::getVideoMode() const noexcept
 	{
 		return _impl->getVideoMode();
+	}
+
+	const VideoModeInfo& Window::getVideoModeInfo() const noexcept
+	{
+		return _impl->getVideoModeInfo();
 	}
 
 	WindowCursorMode Window::getCursorMode() const noexcept

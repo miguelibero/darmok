@@ -27,8 +27,9 @@ namespace
 			// to set the static in this part
 			ImGui::SetCurrentContext(imgui.getContext());
 
+			_videoModeState.update(getWindow().getVideoModeInfo());
+			_videoModeState.onWindowVideoMode(getWindow().getVideoMode());
 			getWindow().addListener(*this);
-			getWindow().requestSupportedVideoModes();
 		}
 
 		void shutdown() override
@@ -42,12 +43,14 @@ namespace
 			ImGui::TextWrapped("lala");
 			ImGui::InputText("text", static_cast<char*>(_textData.ptr()), _textData.size());
 
+
 			_videoModeState.imguiRender(getWindow());
 		}
 
-		void onWindowSupportedVideoModes(const VideoModeInfo& info) override
+
+		void onWindowVideoMode(const VideoMode& mode) override
 		{
-			_videoModeState.update(info);
+			_videoModeState.onWindowVideoMode(mode);
 		}
 
 	protected:
@@ -55,6 +58,27 @@ namespace
 
 		struct VideoModeState final
 		{
+			void onWindowVideoMode(const VideoMode& mode)
+			{
+				_screenMode = (int)mode.screenMode;
+				_monitor = mode.monitor;
+				_resolution = -1;
+
+				int i = 0;
+				for (auto& elm : _info.modes)
+				{
+					if (mode.monitor == elm.monitor && mode.screenMode == elm.screenMode)
+					{
+						if (mode == elm)
+						{
+							_resolution = i;
+							break;
+						}
+						i++;
+					}
+				}
+			}
+
 			void update(const VideoModeInfo& info)
 			{
 				_info = info;
@@ -75,6 +99,7 @@ namespace
 				if (!_screenModes.empty())
 				{
 					ImGui::Combo("Screen Mode", &_screenMode, &_screenModes.front(), _screenModes.size());
+					_resolution = 0;
 				}
 				auto resCount = getResolutionCount();
 				if (resCount > 0)
@@ -123,13 +148,25 @@ namespace
 				return true;
 			};
 
+			bool isSelectableMode(const VideoMode& mode) const
+			{
+				if (mode.monitor >= 0 && mode.monitor != _monitor)
+				{
+					return false;
+				}
+				if (mode.screenMode != (WindowScreenMode)_screenMode)
+				{
+					return false;
+				}
+				return true;
+			}
+
 			int getResolutionCount()
 			{
 				int count = 0;
-				auto screenMode = (WindowScreenMode)_screenMode;
 				for (auto& mode : _info.modes)
 				{
-					if (mode.monitor == _monitor && mode.screenMode == screenMode)
+					if (isSelectableMode(mode))
 					{
 						count++;
 					}
@@ -143,13 +180,9 @@ namespace
 				auto screenMode = (WindowScreenMode)_screenMode;
 				for (size_t i = 0; i < _info.modes.size(); i++)
 				{
-					auto& mode = _info.modes[i];
-					if (mode.monitor == _monitor && mode.screenMode == screenMode)
+					if (isSelectableMode(_info.modes[i]) && j++ == idx)
 					{
-						if (j++ == idx)
-						{
-							return i;
-						}
+						return i;
 					}
 				}
 				return std::nullopt;
@@ -191,6 +224,8 @@ namespace
 				, stats->textWidth
 				, stats->textHeight
 			);
+
+			bgfx::dbgTextPrintf(0, 3, 0x0f, "Darmok Window VideoMode: %s", getWindow().getVideoMode().to_string().c_str());
 
 			return viewId;
 		}

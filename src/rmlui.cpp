@@ -565,7 +565,7 @@ namespace darmok
         }
         else if (_app)
         {
-            auto& winSize = _app->getWindow().getPixelSize();
+            auto& winSize = _app->getWindow().getFramebufferSize();
             _context->SetDimensions(RmluiUtils::convert<int>(winSize));
         }
     }
@@ -933,7 +933,7 @@ namespace darmok
         auto pos = _app->getWindow().windowToScreenPoint(absolute);
         // transform from window screen to viewport screen
         auto vp = getCurrentViewport();
-        pos = vp.viewportToScreenPoint(pos / glm::vec2(_app->getWindow().getPixelSize()));
+        pos = vp.viewportToScreenPoint(pos / glm::vec2(_app->getWindow().getFramebufferSize()));
         
         setMousePosition(pos);
     }

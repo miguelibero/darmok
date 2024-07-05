@@ -3,6 +3,7 @@
 #include <darmok/app.hpp>
 #include <darmok/rmlui.hpp>
 #include <darmok/data.hpp>
+#include <darmok/window.hpp>
 #include <bgfx/bgfx.h>
 
 #include <RmlUi/Core.h>
@@ -44,6 +45,12 @@ namespace
 			Rml::Element* element = document->GetElementById("world");
 			element->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));
 			element->SetProperty("font-size", "1.5em");
+
+			// testing that rmlui works on borderless fullscreen
+			getWindow().requestVideoMode({
+				.screenMode = WindowScreenMode::WindowedFullscreen,
+				.size = {1024, 768},
+			});
 		}
 	private:
 		bool _show_text = true;
