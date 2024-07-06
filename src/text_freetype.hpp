@@ -1,18 +1,36 @@
 #pragma once
 
 #include <darmok/text.hpp>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+
+struct FT_FaceRec_;
+typedef struct FT_FaceRec_* FT_Face;
 
 namespace darmok
 {
+    class IDataLoader;
+
     class FreetypeFontLoaderImpl final
     {
     public:
+        FreetypeFontLoaderImpl(IDataLoader& dataLoader);
+        ~FreetypeFontLoaderImpl();
         std::shared_ptr<Font> operator()(std::string_view name);
+    private:
+        IDataLoader& _dataLoader;
+        FT_Library _library;
     };
+
 
     class FontImpl final
     {
-
+    public:
+        FontImpl(FT_Face face) noexcept;
+        ~FontImpl() noexcept;
+    private:
+        FT_Face _face;
     };
 
     class TextImpl final

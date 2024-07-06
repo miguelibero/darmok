@@ -5,12 +5,13 @@
 
 namespace darmok
 {
+    class IDataLoader;
     class FreetypeFontLoaderImpl;
 
     class DARMOK_EXPORT FreetypeFontLoader final : public IFontLoader
     {
     public:
-        FreetypeFontLoader() noexcept;
+        FreetypeFontLoader(IDataLoader& dataLoader);
         ~FreetypeFontLoader() noexcept;
         std::shared_ptr<Font> operator()(std::string_view name) override;
     private:

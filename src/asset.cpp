@@ -56,6 +56,9 @@ namespace darmok
 #ifdef DARMOK_ASSIMP
 		, _assimpModelLoader(_dataLoader, _allocator, _imageLoader)
 #endif		
+#ifdef DARMOK_FREETYPE
+		, _freetypeFontLoader(_dataLoader)
+#endif	
 	{
 		setBasePath("assets");
 
