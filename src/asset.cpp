@@ -156,6 +156,16 @@ namespace darmok
 		_fileWriter.setBasePath(path);
 	}
 
+	void AssetContextImpl::init(App& app)
+	{
+		_freetypeFontLoader.init(app);
+	}
+
+	void AssetContextImpl::shutdown()
+	{
+		_freetypeFontLoader.shutdown();
+	}
+
 	AssetContext::AssetContext() noexcept
 		: _impl(std::make_unique<AssetContextImpl>())
 	{
@@ -255,6 +265,16 @@ namespace darmok
 	{
 		_impl->setBasePath(path);
 		return *this;
+	}
+
+	void AssetContext::init(App& app)
+	{
+		_impl->init(app);
+	}
+
+	void AssetContext::shutdown()
+	{
+		_impl->shutdown();
 	}
 
 	DarmokAssetImporter::DarmokAssetImporter(const CommandLineAssetImporterConfig& config)

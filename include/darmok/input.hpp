@@ -13,26 +13,11 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/input_fwd.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/string.hpp>
 #include <bx/bx.h>
 
 namespace darmok
 {
-#pragma region Utf8Char
-
-	struct DARMOK_EXPORT Utf8Char final
-	{
-		uint32_t data;
-		uint8_t len;
-
-		Utf8Char(uint32_t data = 0, uint8_t len = 0) noexcept;
-		[[nodiscard]] static Utf8Char encode(uint32_t scancode) noexcept;
-		std::string_view stringView() const noexcept;
-		std::string to_string() const noexcept;
-	};
-
-#pragma endregion Utf8Char
-
-
 	using KeyboardKeys = std::array<uint32_t, to_underlying(KeyboardKey::Count)>;
 	using KeyboardChars = std::vector<Utf8Char>;
 	class KeyboardImpl;

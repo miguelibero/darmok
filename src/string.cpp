@@ -258,48 +258,140 @@ namespace darmok
 		return std::string(val);
 	}
 
-	uint32_t StringUtils::getUtf8Char(std::string_view& str) noexcept
+#pragma region Utf8Char
+
+	Utf8Char::Utf8Char(uint32_t data, uint8_t len) noexcept
+		: data(data)
+		, len(len)
 	{
-		uint32_t u8char = 0;
-		auto s = &str.front();
-		if (*s < 0x80)
-		{
-			u8char = *s;
-			s++;
-		}
-		else if ((*s >> 5) == 0x6)
-		{
-			u8char = (*s & 0x1F) << 6;
-			s++;
-			u8char |= (*s & 0x3F);
-			s++;
-		}
-		else if ((*s >> 4) == 0xE)
-		{
-			u8char = (*s & 0xF) << 12;
-			s++;
-			u8char |= ((*s & 0x3F) << 6);
-			s++;
-			u8char |= (*s & 0x3F);
-			s++;
-		}
-		else if ((*s >> 3) == 0x1E)
-		{
-			u8char = (*s & 0x7) << 18;
-			s++;
-			u8char |= ((*s & 0x3F) << 12);
-			s++;
-			u8char |= ((*s & 0x3F) << 6);
-			s++;
-			u8char |= ((*s) & 0x3F);
-			s++;
-		}
-		else
-		{
-			// Invalid UTF-8 character
-			s++;
-		}
-		str = std::string_view(s, &str.back() + 1);
-		return u8char;
 	}
+
+	Utf8Char::Utf8Char() noexcept
+		: data(0)
+		, len(0)
+	{
+	}
+
+	uint32_t Utf8Char::encode() const noexcept
+	{
+		uint32_t strData = 0;
+
+		if (len == 1)
+		{
+			strData = data & 0x7F;
+		}
+		else if (len == 2)
+		{
+			strData = ((data >> 8) & 0x1F) << 6;
+			strData |= data & 0x3F;
+		}
+		else if (len == 3)
+		{
+			strData = ((data >> 16) & 0x0F) << 12;
+			strData |= ((data >> 8) & 0x3F) << 6;
+			strData |= data & 0x3F;
+		}
+		else if (len == 4)
+		{
+			strData = ((data >> 24) & 0x07) << 18;
+			strData |= ((data >> 16) & 0x3F) << 12;
+			strData |= ((data >> 8) & 0x3F) << 6;
+			strData |= data & 0x3F;
+		}
+		return strData;
+	}
+
+	Utf8Char::operator std::string_view() const noexcept
+	{
+		return std::string_view((const char*)&data, len);
+	}
+
+	Utf8Char::operator bool() const noexcept
+	{
+		return len > 0 && len <= 4;
+	}
+
+	std::string Utf8Char::to_string() const noexcept
+	{
+		return std::string((const char*)&data, len);
+	}
+
+	bool Utf8Char::operator==(const Utf8Char& other) const noexcept
+	{
+		return data == other.data && len == other.len;
+	}
+
+	bool Utf8Char::operator!=(const Utf8Char& other) const noexcept
+	{
+		return !operator==(other);
+	}
+
+
+	Utf8Char Utf8Char::read(std::string_view& str) noexcept
+	{
+		if (str.size() < 4)
+		{
+			return Utf8Char();
+		}
+		auto data = (uint32_t)str.front();
+		auto chr = Utf8Char(data);
+		auto beg = &str.front();
+		auto end = &str.back() + 1;
+		if (!chr)
+		{
+			str = std::string_view(beg+1, end);
+			return chr;
+		}
+		str = std::string_view(beg + chr.len, end);
+		return chr;
+	}
+
+	std::vector<Utf8Char> Utf8Char::tokenize(std::string_view str) noexcept
+	{
+		std::vector<Utf8Char> chars;
+		while (!str.empty())
+		{
+			auto chr = Utf8Char::read(str);
+			if (chr)
+			{
+				chars.emplace_back(chr);
+			}
+		}
+		return chars;
+	}
+
+	// Based on cutef8 by Jeff Bezanson (Public Domain)
+	Utf8Char::Utf8Char(uint32_t strData) noexcept
+		: data(0)
+		, len(0)
+	{
+		if (strData < 0x80)
+		{
+			data = strData;
+			len = 1;
+		}
+		else if (strData < 0x800)
+		{
+			data = (strData >> 6) | 0xc0;
+			data += ((strData & 0x3f) | 0x80) >> 8;
+			len = 2;
+		}
+		else if (strData < 0x10000)
+		{
+			data = (strData >> 12) | 0xe0;
+			data += (((strData >> 6) & 0x3f) | 0x80) >> 8;
+			data += ((strData & 0x3f) | 0x80) >> 16;
+			len = 3;
+		}
+		else if (strData < 0x110000)
+		{
+			data = (strData >> 18) | 0xf0;
+			data += (((strData >> 12) & 0x3f) | 0x80) >> 8;
+			data += (((strData >> 6) & 0x3f) | 0x80) >> 16;
+			data += ((strData & 0x3f) | 0x80) >> 24;
+			len = 4;
+		}
+	}
+
+#pragma endregion Utf8Char
 }

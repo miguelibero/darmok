@@ -4,10 +4,12 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <filesystem>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
-#include <darmok/glm.hpp>
+#include <pugixml.hpp>
 
+#include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/color.hpp>
 #include <darmok/texture_fwd.hpp>
@@ -52,19 +54,29 @@ namespace darmok
 		using MeshConfig = TextureAtlasMeshConfig;
 
 		std::unique_ptr<IMesh> createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config = {}) const noexcept;
-
 		static TextureAtlasElement create(const TextureAtlasBounds& bounds) noexcept;
+		void read(const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept;
+	};
+
+	class ImageAtlas;
+
+	struct DARMOK_EXPORT TextureAtlasData final
+	{
+		std::filesystem::path imagePath;
+		std::vector<TextureAtlasElement> elements;
+		glm::uvec2 size;
+
+		bool read(const pugi::xml_document& doc, const std::filesystem::path& basePath = "");
+		bool read(const pugi::xml_node& node, const std::filesystem::path& basePath = "");
 	};
 
 	class Texture;
-
 	struct AnimationFrame;
 
 	struct DARMOK_EXPORT TextureAtlas final
 	{
 		std::shared_ptr<Texture> texture;
 		std::vector<TextureAtlasElement> elements;
-		glm::uvec2 size;
 
 		TextureAtlasBounds getBounds(std::string_view prefix) const noexcept;
 		OptionalRef<TextureAtlasElement> getElement(std::string_view name) noexcept;

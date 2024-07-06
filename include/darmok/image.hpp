@@ -11,11 +11,23 @@
 #include <memory>
 #include <string_view>
 #include <unordered_map>
+#include <iostream>
 
 namespace darmok
 {
+	class Data;
 	class DataView;
 	struct TextureConfig;
+
+	enum class ImageEncoding
+	{
+		Tga,
+		Png,
+		Exr,
+		Hdr,
+		Dds,
+		Ktx
+	};
 
     class DARMOK_EXPORT Image final
 	{
@@ -42,6 +54,9 @@ namespace darmok
 		[[nodiscard]] DataView getData() const noexcept;		
 		[[nodiscard]] TextureType getTextureType(uint64_t flags = defaultTextureLoadFlags) const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
+		[[nodiscard]] void encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept;
+		[[nodiscard]] Data encode(ImageEncoding encoding) const noexcept;
+		void write(ImageEncoding encoding, std::ostream& stream) const noexcept;
 
 		void update(const glm::uvec2& pos, const glm::uvec2& size, DataView data);
 

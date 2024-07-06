@@ -53,6 +53,22 @@ namespace darmok
         rdbuf(&_buffer);
     }
 
+    DataMemoryBlock::DataMemoryBlock(Data& data) noexcept
+        : _data(data)
+    {
+    }
+
+    void* DataMemoryBlock::more(uint32_t size)
+    {
+        _data.resize(size);
+        return _data.ptr();
+    }
+
+    uint32_t DataMemoryBlock::getSize()
+    {
+        return _data.size();
+    }
+
     void save(cereal::BinaryOutputArchive& archive, const DataView& data)
     {
         archive << data.size();

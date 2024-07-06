@@ -3,5 +3,8 @@
         "copy": {
             "all": true
         }
+    },
+    "files": {
+        "COMIC.TTF": "font_atlas"
     }
 }

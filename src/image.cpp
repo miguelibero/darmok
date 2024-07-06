@@ -3,8 +3,11 @@
 #include <darmok/utils.hpp>
 #include <darmok/color.hpp>
 #include <darmok/data.hpp>
+#include <darmok/data_stream.hpp>
+#include <darmok/stream.hpp>
 #include <darmok/texture.hpp>
 #include <stdexcept>
+#include <bx/readerwriter.h>
 
 namespace darmok
 {
@@ -108,6 +111,57 @@ namespace darmok
 	bx::AllocatorI& Image::getAllocator() const noexcept
 	{
 		return *_container->m_allocator;
+	}
+
+	void Image::encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept
+	{
+		auto size = getSize();
+		auto info = getTextureInfo();
+		uint32_t pitch = info.bitsPerPixel / 8 * size.x;
+		auto ptr = _container->m_data;
+		auto grayscale = false;
+		auto format = _container->m_format;
+		auto ori = _container->m_orientation;
+		auto yflip = ori == bimg::Orientation::HFlip || ori == bimg::Orientation::HFlipR90 || ori == bimg::Orientation::HFlipR270;
+		bx::Error err;
+		
+		switch (encoding)
+		{
+		case ImageEncoding::Tga:
+			bimg::imageWriteTga(&writer, size.x, size.y, pitch, ptr, grayscale, yflip, &err);
+			break;
+		case ImageEncoding::Png:
+			bimg::imageWritePng(&writer, size.x, size.y, pitch, ptr, format, yflip, &err);
+			break;
+		case ImageEncoding::Exr:
+			bimg::imageWriteExr(&writer, size.x, size.y, pitch, ptr, format, yflip, &err);
+			break;
+		case ImageEncoding::Hdr:
+			bimg::imageWriteHdr(&writer, size.x, size.y, pitch, ptr, format, yflip, &err);
+			break;
+		case ImageEncoding::Dds:
+			bimg::imageWriteDds(&writer, *_container, ptr, info.storageSize, &err);
+			break;
+		case ImageEncoding::Ktx:
+			bool srgb = true;
+			bimg::imageWriteKtx(&writer, format, isCubeMap(), size.x, size.y, getDepth(), getMipCount(), getLayerCount(), srgb, ptr, &err);
+			break;
+		}
+	}
+
+	Data Image::encode(ImageEncoding encoding) const noexcept
+	{
+		Data data;
+		DataMemoryBlock block(data);
+		bx::MemoryWriter writer(&block);
+		encode(encoding, writer);
+		return data;
+	}
+
+	void Image::write(ImageEncoding encoding, std::ostream& stream) const noexcept
+	{
+		StreamWriter writer(stream);
+		encode(encoding, writer);
 	}
 
 	bool Image::empty() const noexcept

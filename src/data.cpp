@@ -481,6 +481,11 @@ namespace darmok
             bx::close(&_fileReader);
             throw;
         }
-
     }
+}
+
+std::ostream& operator<<(std::ostream& out, const darmok::DataView& data)
+{
+    out.write((const char*)data.ptr(), data.size());
+    return out;
 }

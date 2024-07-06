@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <darmok/optional_ref.hpp>
+#include <bx/readerwriter.h>
 
 namespace darmok
 {
@@ -29,5 +30,23 @@ namespace darmok
         PrefixStream(std::ostream& os, const std::string& prefix) noexcept;
     private:
         PrefixBuffer _buffer;
+    };
+
+    class StreamWriter final : public bx::WriterI
+    {
+    public:
+        StreamWriter(std::ostream& stream) noexcept;
+        int32_t write(const void* data, int32_t size, bx::Error* err) override;
+    private:
+        std::ostream& _stream;
+    };
+
+    class StreamReader final : public bx::ReaderI
+    {
+    public:
+        StreamReader(std::istream& stream) noexcept;
+        int32_t read(void* data, int32_t size, bx::Error* err) override;
+    private:
+        std::istream& _stream;
     };
 }

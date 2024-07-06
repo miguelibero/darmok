@@ -223,6 +223,8 @@ namespace darmok
 
 		addBindings();
 
+		_assets.init(_app);
+
 		for (auto& elm : _sharedComponents)
 		{
 			elm.second->init(_app);
@@ -239,6 +241,7 @@ namespace darmok
 	void AppImpl::shutdown()
 	{
 		_running = false;
+		_assets.shutdown();
 		for (auto& component : _components)
 		{
 			component->shutdown();

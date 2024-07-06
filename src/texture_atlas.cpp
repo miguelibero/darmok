@@ -98,79 +98,7 @@ namespace darmok
 		return IMesh::create(config.type, layout, DataView(vertexData), DataView(totalIndices));
 	}
 
-	TextureAtlasBounds TextureAtlas::getBounds(std::string_view prefix) const noexcept
-	{
-		TextureAtlasBounds bounds{};
-		for (auto& elm : elements)
-		{
-			if (StringUtils::startsWith(elm.name, prefix))
-			{
-				// TODO: algorithm to combine bounds
-				bounds = elm.getBounds();
-			}
-		}
-		return bounds;
-	}
-
-	OptionalRef<TextureAtlasElement> TextureAtlas::getElement(std::string_view name) noexcept
-	{
-		for (auto& elm : elements)
-		{
-			if (elm.name == name)
-			{
-				return elm;
-			}
-		}
-		return nullptr;
-	}
-
-	OptionalRef<const TextureAtlasElement> TextureAtlas::getElement(std::string_view name) const noexcept
-	{
-		for (auto& elm : elements)
-		{
-			if (elm.name == name)
-			{
-				return elm;
-			}
-		}
-		return nullptr;
-	}
-
-	std::unique_ptr<IMesh> TextureAtlas::createSprite(std::string_view name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept
-	{
-		auto elm = getElement(name);
-		if (!elm)
-		{
-			return nullptr;
-		}
-		return elm->createSprite(layout, size, config);
-	}
-
-	std::vector<AnimationFrame> TextureAtlas::createAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration, const MeshConfig& config) const noexcept
-	{
-		std::vector<AnimationFrame> frames;
-
-		for (auto& elm : elements)
-		{
-			if (StringUtils::startsWith(elm.name, namePrefix))
-			{
-				auto mesh = elm.createSprite(layout, size, config);
-				if (mesh)
-				{
-					frames.emplace_back(std::move(mesh), frameDuration);
-				}
-			}
-		}
-		return frames;
-	}
-
-    TexturePackerTextureAtlasLoader::TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept
-		: _dataLoader(dataLoader)
-		, _textureLoader(textureLoader)
-	{
-	}
-
-	namespace texture_packer_xml
+	struct TexturePackerUtils
 	{
 		static std::pair<int, size_t> readInt(std::string_view str, size_t i) noexcept
 		{
@@ -244,102 +172,207 @@ namespace darmok
 			}
 			return list;
 		}
-	}
+	};
 
-	TextureAtlasElement loadElement(pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept
+	void TextureAtlasElement::read(const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept
 	{
-		TextureAtlasElement elm{ xml.attribute("n").value() };
+		name = xml.attribute("n").value();
 
-		elm.texturePosition = glm::uvec2(0);
-		elm.size = textureSize;
+		texturePosition = glm::uvec2(0);
+		size = textureSize;
 
 		auto xmlX = xml.attribute("x");
 		if (xmlX)
 		{
-			elm.texturePosition.x = xmlX.as_int();
+			texturePosition.x = xmlX.as_int();
 		}
 		auto xmlY = xml.attribute("y");
 		if (xmlY)
 		{
-			elm.texturePosition.y = xmlY.as_int();
+			texturePosition.y = xmlY.as_int();
 		}
 		auto xmlW = xml.attribute("w");
 		if (xmlW)
 		{
-			elm.size.x = xmlW.as_int();
+			size.x = xmlW.as_int();
 		}
 		auto xmlH = xml.attribute("h");
 		if (xmlH)
 		{
-			elm.size.y = xmlH.as_int();
+			size.y = xmlH.as_int();
 		}
 
-		elm.offset = glm::uvec2(0);
+		offset = glm::uvec2(0);
 		auto xmlOriginalX = xml.attribute("oX");
 		if (xmlOriginalX)
 		{
-			elm.offset.x = xmlOriginalX.as_int();
+			offset.x = xmlOriginalX.as_int();
 		}
 		auto xmlOriginalY = xml.attribute("oY");
 		if (xmlOriginalY)
 		{
-			elm.offset.y = xmlOriginalY.as_int();
+			offset.y = xmlOriginalY.as_int();
 		}
 
 		auto xmlVertices = xml.child("vertices");
 		if (xmlVertices)
 		{
-			elm.positions = texture_packer_xml::readTextureVec2List(xmlVertices.text().get());
+			positions = TexturePackerUtils::readTextureVec2List(xmlVertices.text().get());
 		}
 		else
 		{
-			elm.positions = {
-				glm::uvec2(elm.size.x, 0), elm.size,
-				glm::uvec2(0, elm.size.y), glm::uvec2(0),
+			positions = {
+				glm::uvec2(size.x, 0), size,
+				glm::uvec2(0, size.y), glm::uvec2(0),
 			};
 		}
 
 		auto xmlVerticesUV = xml.child("verticesUV");
 		if (xmlVerticesUV)
 		{
-			elm.texCoords = texture_packer_xml::readTextureVec2List(xmlVerticesUV.text().get());
+			texCoords = TexturePackerUtils::readTextureVec2List(xmlVerticesUV.text().get());
 		}
 		else
 		{
-			elm.texCoords.reserve(elm.positions.size());
-			for (auto& p : elm.positions)
+			texCoords.reserve(positions.size());
+			for (auto& p : positions)
 			{
-				elm.texCoords.push_back(elm.texturePosition + p);
+				texCoords.push_back(texturePosition + p);
 			}
 		}
 
 		auto xmlTriangles = xml.child("triangles");
 		if (xmlTriangles)
 		{
-			elm.indices = texture_packer_xml::readTextureIndexList(xmlTriangles.text().get());
+			indices = TexturePackerUtils::readTextureIndexList(xmlTriangles.text().get());
 		}
 		else
 		{
-			elm.indices = { 0, 1, 2, 2, 3, 0 };
+			indices = { 0, 1, 2, 2, 3, 0 };
 		}
-		
-		elm.originalSize = elm.size;
+
+		originalSize = size;
 		auto xmlOriginalW = xml.attribute("oW");
 		if (xmlOriginalW)
 		{
-			elm.originalSize.x = xmlOriginalW.as_int();
+			originalSize.x = xmlOriginalW.as_int();
 		}
 		auto xmlOriginalH = xml.attribute("oH");
 		if (xmlOriginalH)
 		{
-			elm.originalSize.y = xmlOriginalH.as_int();
+			originalSize.y = xmlOriginalH.as_int();
 		}
 
-		elm.pivot = { xml.attribute("pX").as_float(), xml.attribute("pY").as_float() };
-		elm.rotated = std::string(xml.attribute("r").value()) == "y";
-
-		return elm;
+		pivot = { xml.attribute("pX").as_float(), xml.attribute("pY").as_float() };
+		rotated = std::string(xml.attribute("r").value()) == "y";
 	}
+
+	TextureAtlasBounds TextureAtlas::getBounds(std::string_view prefix) const noexcept
+	{
+		TextureAtlasBounds bounds{};
+		for (auto& elm : elements)
+		{
+			if (StringUtils::startsWith(elm.name, prefix))
+			{
+				// TODO: algorithm to combine bounds
+				bounds = elm.getBounds();
+			}
+		}
+		return bounds;
+	}
+
+	OptionalRef<TextureAtlasElement> TextureAtlas::getElement(std::string_view name) noexcept
+	{
+		for (auto& elm : elements)
+		{
+			if (elm.name == name)
+			{
+				return elm;
+			}
+		}
+		return nullptr;
+	}
+
+	OptionalRef<const TextureAtlasElement> TextureAtlas::getElement(std::string_view name) const noexcept
+	{
+		for (auto& elm : elements)
+		{
+			if (elm.name == name)
+			{
+				return elm;
+			}
+		}
+		return nullptr;
+	}
+
+	std::unique_ptr<IMesh> TextureAtlas::createSprite(std::string_view name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept
+	{
+		auto elm = getElement(name);
+		if (!elm)
+		{
+			return nullptr;
+		}
+		auto size = texture->getSize();
+		return elm->createSprite(layout, size, config);
+	}
+
+	std::vector<AnimationFrame> TextureAtlas::createAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration, const MeshConfig& config) const noexcept
+	{
+		std::vector<AnimationFrame> frames;
+		auto size = texture->getSize();
+
+		for (auto& elm : elements)
+		{
+			if (StringUtils::startsWith(elm.name, namePrefix))
+			{
+				auto mesh = elm.createSprite(layout, size, config);
+				if (mesh)
+				{
+					frames.emplace_back(std::move(mesh), frameDuration);
+				}
+			}
+		}
+		return frames;
+	}
+
+	bool TextureAtlasData::read(const pugi::xml_document& doc, const std::filesystem::path& basePath)
+	{
+		if (doc.empty())
+		{
+			return false;
+		}
+		return read(doc.child("TextureAtlas"), basePath);
+	}
+
+	bool TextureAtlasData::read(const pugi::xml_node& atlasXml, const std::filesystem::path& basePath)
+	{
+		if (atlasXml.empty())
+		{
+			return false;
+		}
+
+		imagePath = basePath / std::filesystem::path(atlasXml.attribute("imagePath").value());
+
+		size = glm::uvec2{
+			atlasXml.attribute("width").as_int(),
+			atlasXml.attribute("height").as_int(),
+		};
+
+		static const char* spriteTag = "sprite";
+		std::vector<TextureAtlasElement> elements;
+		for (pugi::xml_node spriteXml = atlasXml.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
+		{
+			elements.emplace_back().read(spriteXml, size);
+		}
+
+		return true;
+	}
+
+    TexturePackerTextureAtlasLoader::TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept
+		: _dataLoader(dataLoader)
+		, _textureLoader(textureLoader)
+	{
+	}	
 
 	std::shared_ptr<TextureAtlas> TexturePackerTextureAtlasLoader::operator()(std::string_view name, uint64_t textureFlags)
 	{
@@ -355,29 +388,13 @@ namespace darmok
 		{
 			throw std::runtime_error(result.description());
 		}
-		auto atlasXml = doc.child("TextureAtlas");
-		auto imagePath = atlasXml.attribute("imagePath").value();
-
-		std::filesystem::path p(imagePath);
-		if (!p.has_parent_path())
+		TextureAtlasData atlasData;
+		if (!atlasData.read(doc, std::filesystem::absolute(name).parent_path()))
 		{
-			p = std::filesystem::path(name).parent_path() / p;
-		}
-		auto atlasFullName = p.string();
-		auto texture = _textureLoader(atlasFullName, textureFlags);
-
-		glm::uvec2 size{
-			atlasXml.attribute("width").as_int(),
-			atlasXml.attribute("height").as_int(),
-		};
-
-		static const char* spriteTag = "sprite";
-		std::vector<TextureAtlasElement> elements;
-		for (pugi::xml_node spriteXml = atlasXml.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
-		{
-			elements.push_back(loadElement(spriteXml, size));
+			throw std::runtime_error("failed to read texture packer xml");
 		}
 
-		return std::make_shared<TextureAtlas>(TextureAtlas{ texture, elements, size });
+		auto texture = _textureLoader(atlasData.imagePath.string(), textureFlags);
+		return std::make_shared<TextureAtlas>(TextureAtlas{ texture, atlasData.elements });
 	}
 }

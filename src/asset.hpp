@@ -81,6 +81,8 @@ namespace darmok
 #endif
 
 		void setBasePath(const std::filesystem::path& path) noexcept;
+		void init(App& app);
+		void shutdown();
 	private:
 		FileReader _fileReader;
 		FileWriter _fileWriter;

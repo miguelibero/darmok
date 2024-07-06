@@ -46,7 +46,7 @@ namespace darmok
 		std::string str;
 		for (auto& chr : _kb.get().getUpdateChars())
 		{
-			str += chr.stringView();
+			str += chr;
 		}
 		return str;
 	}

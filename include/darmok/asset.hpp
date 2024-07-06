@@ -8,6 +8,7 @@
 
 namespace darmok
 {
+	class App;
 	class AssetContextImpl;
 	class IDataLoader;
 	class IImageLoader;
@@ -67,6 +68,8 @@ namespace darmok
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;
 
 		AssetContext& setBasePath(const std::filesystem::path& path) noexcept;
+		void init(App& app);
+		void shutdown();
 	private:
 		std::unique_ptr<AssetContextImpl> _impl;
 	};

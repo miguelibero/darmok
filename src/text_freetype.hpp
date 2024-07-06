@@ -4,9 +4,15 @@
 #include <darmok/glm.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/camera.hpp>
+#include <darmok/app.hpp>
+#include <darmok/texture_atlas.hpp>
+#include <darmok/string.hpp>
 #include <unordered_set>
+#include <unordered_map>
 #include <optional>
+#include <bx/allocator.h>
 #include <ft2build.h>
+#include <string_view>
 #include FT_FREETYPE_H
 
 
@@ -23,11 +29,14 @@ namespace darmok
     public:
         FreetypeFontLoaderImpl(IDataLoader& dataLoader, const glm::uvec2& defaultFontSize = glm::uvec2(48, 48));
         ~FreetypeFontLoaderImpl();
+        void init(App& app);
+        void shutdown();
         std::shared_ptr<Font> operator()(std::string_view name);
     private:
         IDataLoader& _dataLoader;
-        FT_Library _library;
         glm::uvec2 _defaultFontSize;
+        FT_Library _library;
+
     };
 
     class TextRendererImpl final
@@ -45,7 +54,7 @@ namespace darmok
     class FontImpl final
     {
     public:
-        FontImpl(FT_Face face, Data&& data) noexcept;
+        FontImpl(FT_Face face, FT_Library library, Data&& data) noexcept;
         ~FontImpl() noexcept;
         void removeContent(std::string_view content);
         void addContent(std::string_view content);
@@ -55,8 +64,9 @@ namespace darmok
         std::optional<Texture> _tex;
         FT_Face _face;
         Data _data;
-        std::unordered_set<FT_ULong> _renderedChars;
-        std::unordered_set<FT_ULong> _chars;
+        FT_Library _library;
+        std::unordered_set<Utf8Char> _renderedChars;
+        std::unordered_set<Utf8Char> _chars;
     };
 
     class TextImpl final
@@ -73,29 +83,47 @@ namespace darmok
         std::string _content;
     };
 
+    struct FontAtlas
+    {
+        Image image;
+        std::vector<TextureAtlasElement> elements;
+    };
+
     class FreetypeFontAtlasGenerator final
     {
     public:
-        FreetypeFontAtlasGenerator(FT_Face face, bx::AllocatorI& alloc) noexcept;
+        FreetypeFontAtlasGenerator(FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept;
         FreetypeFontAtlasGenerator& setSize(const glm::uvec2& size) noexcept;
-        glm::uvec2 calcSpace(const std::unordered_set<FT_ULong>& chars) noexcept;
-        Image operator()(const std::unordered_set<FT_ULong>& chars);
+        glm::uvec2 calcSpace(const std::unordered_set<Utf8Char>& chars) noexcept;
+        FontAtlas operator()(const std::unordered_set<Utf8Char>& chars);
+        FontAtlas operator()(std::string_view str);
     private:
         FT_Face _face;
+        FT_Library _library;
         bx::AllocatorI& _alloc;
         glm::uvec2 _size;
 
-        std::vector<FT_Bitmap> getBitmaps(const std::unordered_set<FT_ULong>& chars);
+        std::unordered_map<Utf8Char, FT_UInt> getIndices(const std::unordered_set<Utf8Char>& chars) const;
+        const FT_Bitmap& renderBitmap(FT_UInt index);
     };
 
     class FreetypeFontAtlasImporterImpl final
     {
     public:
         using Input = AssetTypeImporterInput;
+        FreetypeFontAtlasImporterImpl();
+        ~FreetypeFontAtlasImporterImpl();
+        bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
+        void endImport(const Input& input);
+    private:
+        FT_Face _face;
+        FT_Library _library;
+        bx::DefaultAllocator _alloc;
+        std::optional<FontAtlas> _atlas;
     };
 
 }

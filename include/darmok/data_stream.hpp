@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <iostream>
 #include <cereal/archives/binary.hpp>
+#include <bx/readerwriter.h>
 
 namespace cereal
 {
@@ -64,6 +65,16 @@ namespace darmok
         }
     private:
         DataStreamBuffer _buffer;
+    };
+
+    class DARMOK_EXPORT DataMemoryBlock final : public bx::MemoryBlockI
+    {
+    public:
+        DataMemoryBlock(Data& data)noexcept;
+        void* more(uint32_t size = 0) override;
+        uint32_t getSize() override;
+    private:
+        Data& _data;
     };
 
     DARMOK_EXPORT void save(cereal::BinaryOutputArchive& archive, const DataView& data);

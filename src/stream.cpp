@@ -58,4 +58,26 @@ namespace darmok
       , _buffer(os.rdbuf(), prefix)
     {
     }
+
+    StreamWriter::StreamWriter(std::ostream& stream) noexcept
+        : _stream(stream)
+    {
+    }
+
+    int32_t StreamWriter::write(const void* data, int32_t size, bx::Error* err)
+    {
+        _stream.write((const char*)data, size);
+        return size;
+    }
+
+    StreamReader::StreamReader(std::istream& stream) noexcept
+        : _stream(stream)
+    {
+    }
+
+    int32_t StreamReader::read(void* data, int32_t size, bx::Error* err)
+    {
+        _stream.read((char*)data, size);
+        return size;
+    }
 }

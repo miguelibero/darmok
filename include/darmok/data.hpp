@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <iostream>
 #include <darmok/optional_ref.hpp>
 
 #include <bgfx/bgfx.h>
@@ -161,3 +162,5 @@ namespace darmok
 		OptionalRef<bx::AllocatorI> _allocator;
 	};
 }
+
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::DataView& data);

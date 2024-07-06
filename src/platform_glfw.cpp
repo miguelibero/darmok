@@ -647,12 +647,12 @@ namespace darmok
 	void PlatformImpl::charCallback(GLFWwindow* window, uint32_t scancode) noexcept
 	{
 		BX_UNUSED(window);
-		auto data = Utf8Char::encode(scancode);
-		if (!data.len)
+		Utf8Char chr(scancode);
+		if (!chr)
 		{
 			return;
 		}
-		_events.post<KeyboardCharEvent>(data);
+		_events.post<KeyboardCharEvent>(chr);
 	}
 
 	void PlatformImpl::scrollCallback(GLFWwindow* window, double dx, double dy) noexcept
