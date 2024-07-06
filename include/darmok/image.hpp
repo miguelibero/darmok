@@ -20,8 +20,9 @@ namespace darmok
     class DARMOK_EXPORT Image final
 	{
 	public:
-		Image(const DataView& data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
+		Image(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
 		Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
+		Image(const glm::uvec2& size, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
 		Image(bimg::ImageContainer* container);
 		~Image() noexcept;
 		Image(Image&& other) noexcept;
@@ -42,7 +43,7 @@ namespace darmok
 		[[nodiscard]] TextureType getTextureType(uint64_t flags = defaultTextureLoadFlags) const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
 
-		void update(const glm::uvec2& pos, DataView data);
+		void update(const glm::uvec2& pos, const glm::uvec2& size, DataView data);
 
 	private:
 		bimg::ImageContainer* _container;

@@ -4,7 +4,6 @@
 #include <bx/filepath.h>
 
 #ifdef DARMOK_ASSIMP
-#include <darmok/model_assimp.hpp>
 #ifdef DARMOK_OZZ
 #include <darmok/skeleton_assimp.hpp>
 #endif
@@ -290,6 +289,9 @@ namespace darmok
 		_importer.addTypeImporter<AssimpSkeletonImporter>();
 		_importer.addTypeImporter<AssimpSkeletalAnimationImporter>();
 #endif
+#endif
+#ifdef DARMOK_FREETYPE
+		_importer.addTypeImporter<FreetypeFontAtlasImporter>();
 #endif
 		_importer.addTypeImporter<VertexLayoutImporter>();
 		_importer.addTypeImporter<CopyAssetImporter>();

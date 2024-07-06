@@ -8,7 +8,7 @@
 
 namespace darmok
 {
-	Image::Image(const DataView& data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
+	Image::Image(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
 		: _container(nullptr)
 	{
 		if(data.empty())
@@ -26,12 +26,17 @@ namespace darmok
 	}
 
 	Image::Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size) noexcept
-		: _container(bimg::imageAlloc(
-			&alloc, bimg::TextureFormat::RGBA8, size.x, size.y, 0, 1, false, false
-		))
+		: Image(size, alloc, bimg::TextureFormat::RGBA8)
 	{
 		auto c = Colors::toReverseNumber(color);
 		bimg::imageSolid(_container->m_data, size.x, size.y, c);
+	}
+
+	Image::Image(const glm::uvec2& size, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
+		: _container(bimg::imageAlloc(
+			&alloc, format, size.x, size.y, 0, 1, false, false
+		))
+	{
 	}
 
     Image::Image(bimg::ImageContainer* container)
@@ -110,9 +115,27 @@ namespace darmok
 		return _container == nullptr || _container->m_size == 0;
 	}
 
-	void Image::update(const glm::uvec2& pos, DataView data)
+	void Image::update(const glm::uvec2& pos, const glm::uvec2& size, DataView data)
 	{
-		// TODO
+		auto imgSize = getSize();
+		if (pos.x + size.x > imgSize.x || pos.y + size.y > imgSize.y)
+		{
+			throw std::runtime_error("size does not fit");
+		}
+		auto bpp = getTextureInfo().bitsPerPixel / 8;
+		if (data.size() < size.x * size.y * bpp)
+		{
+			throw std::runtime_error("data is too small");
+		}
+		auto imgStart = pos.x + pos.y * imgSize.x;
+		auto rowSize = size.x * bpp;
+		auto imgData = (uint8_t*)_container->m_data;
+		for (size_t y = 0; y < size.y; y++)
+		{
+			auto row = data.view(y * rowSize, rowSize);
+			auto ptr = &imgData[ (imgStart + imgSize.x * y) * bpp ];
+			std::memcpy(ptr, row.ptr(), rowSize);
+		}
 	}
 
 	glm::uvec2 Image::getSize() const noexcept

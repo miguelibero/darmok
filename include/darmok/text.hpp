@@ -62,18 +62,4 @@ namespace darmok
     private:
         std::unique_ptr<TextRendererImpl> _impl;
     };
-
-    class Image;
-
-    class FontAtlasGeneratorImpl;
-
-    class DARMOK_EXPORT FontAtlasGenerator final
-    {
-    public:
-        FontAtlasGenerator(const Font& font, bx::AllocatorI& alloc) noexcept;
-        ~FontAtlasGenerator() noexcept;
-        Image operator()(std::string_view chars);
-    private:
-        std::unique_ptr<FontAtlasGeneratorImpl> _impl;
-    };
 }

@@ -21,7 +21,7 @@ namespace darmok
     class FreetypeFontLoaderImpl final
     {
     public:
-        FreetypeFontLoaderImpl(IDataLoader& dataLoader, const glm::uvec2& defaultFontSize = glm::uvec2(0, 48));
+        FreetypeFontLoaderImpl(IDataLoader& dataLoader, const glm::uvec2& defaultFontSize = glm::uvec2(48, 48));
         ~FreetypeFontLoaderImpl();
         std::shared_ptr<Font> operator()(std::string_view name);
     private:
@@ -45,7 +45,7 @@ namespace darmok
     class FontImpl final
     {
     public:
-        FontImpl(FT_Face face) noexcept;
+        FontImpl(FT_Face face, Data&& data) noexcept;
         ~FontImpl() noexcept;
         void removeContent(std::string_view content);
         void addContent(std::string_view content);
@@ -54,6 +54,7 @@ namespace darmok
     private:
         std::optional<Texture> _tex;
         FT_Face _face;
+        Data _data;
         std::unordered_set<FT_ULong> _renderedChars;
         std::unordered_set<FT_ULong> _chars;
     };
@@ -72,14 +73,29 @@ namespace darmok
         std::string _content;
     };
 
-    class FontAtlasGeneratorImpl final
+    class FreetypeFontAtlasGenerator final
     {
     public:
-        FontAtlasGeneratorImpl(FT_Face face, bx::AllocatorI& alloc) noexcept;
+        FreetypeFontAtlasGenerator(FT_Face face, bx::AllocatorI& alloc) noexcept;
+        FreetypeFontAtlasGenerator& setSize(const glm::uvec2& size) noexcept;
+        glm::uvec2 calcSpace(const std::unordered_set<FT_ULong>& chars) noexcept;
         Image operator()(const std::unordered_set<FT_ULong>& chars);
     private:
         FT_Face _face;
         bx::AllocatorI& _alloc;
+        glm::uvec2 _size;
+
+        std::vector<FT_Bitmap> getBitmaps(const std::unordered_set<FT_ULong>& chars);
+    };
+
+    class FreetypeFontAtlasImporterImpl final
+    {
+    public:
+        using Input = AssetTypeImporterInput;
+        std::vector<std::filesystem::path> getOutputs(const Input& input);
+        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
+        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
+        const std::string& getName() const noexcept;
     };
 
 }

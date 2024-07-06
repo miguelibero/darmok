@@ -30,7 +30,7 @@ namespace
 			auto tex = getAssets().getColorTextureLoader()(Colors::white());
 			auto mat = std::make_shared<Material>(prog, tex);
 
-			auto font = getAssets().getFontLoader()("COMIC.TTF");
+			auto font = getAssets().getFontLoader()("ARIALUNI.TTF");
 
 			auto camEntity = registry.create();
 			registry.emplace<Transform>(camEntity)
@@ -45,7 +45,7 @@ namespace
 
 			auto textEntity = scene.createEntity();
 
-			scene.addComponent<Text>(textEntity, font, "comic sans baby!");
+			scene.addComponent<Text>(textEntity, font, "darmok engine rules!");
 		}
 	};
 }
