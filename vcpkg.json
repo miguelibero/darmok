@@ -45,6 +45,7 @@
     "sol2",
     "nlohmann-json",
     "pugixml",
+    "freetype",
     "tweeny",
     "catch2"
   ]

@@ -20,6 +20,10 @@
 #include <darmok/model_assimp.hpp>
 #endif
 
+#ifdef DARMOK_FREETYPE
+#include <darmok/text_freetype.hpp>
+#endif
+
 #include <string>
 #include <bx/file.h>
 
@@ -72,6 +76,10 @@ namespace darmok
 		[[nodiscard]] AssimpModelLoader& getAssimpModelLoader() noexcept;
 #endif
 
+#ifdef DARMOK_FREETYPE
+		[[nodiscard]] IFontLoader& getFontLoader() noexcept;
+#endif
+
 		void setBasePath(const std::filesystem::path& path) noexcept;
 	private:
 		FileReader _fileReader;
@@ -99,6 +107,10 @@ namespace darmok
 
 #ifdef DARMOK_ASSIMP
 		AssimpModelLoader _assimpModelLoader;
+#endif
+
+#ifdef DARMOK_FREETYPE
+		FreetypeFontLoader _freetypeFontLoader;
 #endif
 	};
 }

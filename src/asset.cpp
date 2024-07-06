@@ -141,6 +141,13 @@ namespace darmok
 	}
 #endif
 
+#ifdef DARMOK_FREETYPE
+	IFontLoader& AssetContextImpl::getFontLoader() noexcept
+	{
+		return _freetypeFontLoader;
+	}
+#endif
+
 	void AssetContextImpl::setBasePath(const std::filesystem::path& path) noexcept
 	{
 		_fileReader.setBasePath(path);
@@ -217,6 +224,13 @@ namespace darmok
 	ISkeletalAnimatorConfigLoader& AssetContext::getSkeletalAnimatorConfigLoader() noexcept
 	{
 		return _impl->getSkeletalAnimatorConfigLoader();
+	}
+#endif
+
+#ifdef DARMOK_FREETYPE
+	IFontLoader& AssetContext::getFontLoader() noexcept
+	{
+		return _impl->getFontLoader();
 	}
 #endif
 

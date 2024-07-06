@@ -17,13 +17,20 @@ namespace darmok
 	class ITextureAtlasLoader;
 	class ColorTextureLoader;
     class AssetContext;
-	class ISkeletonLoader;
-	class ISkeletalAnimationLoader;
-	class ISkeletalAnimatorConfigLoader;
 	class IModelLoader;
 
 #ifdef DARMOK_ASSIMP
 	class AssimpModelLoader;
+#endif
+
+#ifdef DARMOK_OZZ
+	class ISkeletonLoader;
+	class ISkeletalAnimationLoader;
+	class ISkeletalAnimatorConfigLoader;
+#endif
+
+#ifdef DARMOK_FREETYPE
+	class IFontLoader;
 #endif
 
 	class DARMOK_EXPORT AssetContext final
@@ -39,14 +46,21 @@ namespace darmok
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
-		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
-		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
-		[[nodiscard]] ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
 
 #ifdef DARMOK_ASSIMP
 		[[nodiscard]] AssimpModelLoader& getAssimpModelLoader() noexcept;
+#endif
+
+#ifdef DARMOK_OZZ
+		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
+		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
+		[[nodiscard]] ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
+#endif
+
+#ifdef DARMOK_FREETYPE
+		[[nodiscard]] IFontLoader& getFontLoader() noexcept;
 #endif
 
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;

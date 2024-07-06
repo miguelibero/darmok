@@ -10,6 +10,7 @@
                 "DARMOK_BUILD_TESTS": true,
                 "DARMOK_BUILD_LUA": true,
                 "DARMOK_BUILD_LUA_EXE": true,
+                "DARMOK_BUILD_FREETYPE": true,
                 "DARMOK_BUILD_IMGUI": true,
                 "DARMOK_BUILD_RMLUI": true,
                 "DARMOK_BUILD_ASSIMP": true,

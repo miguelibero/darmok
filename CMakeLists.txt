@@ -58,6 +58,7 @@ option(DARMOK_BUILD_SAMPLES "build darmok samples" OFF)
 option(DARMOK_BUILD_TESTS "build darmok unit tests" OFF)
 option(DARMOK_BUILD_LUA "build darmok with lua support" OFF)
 option(DARMOK_BUILD_LUA_EXE "build the darmok lua executable" OFF)
+option(DARMOK_BUILD_FREETYPE "build darmok with freetype support" OFF)
 option(DARMOK_BUILD_IMGUI "build darmok with imGUI support" OFF)
 option(DARMOK_BUILD_RMLUI "build darmok with RmlUI support" OFF)
 option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
@@ -226,6 +227,21 @@ endif()
 
 if(DARMOK_PLATFORM STREQUAL "glfw")
   list(APPEND SOURCES ${SRC_DIR}/platform_glfw.cpp)
+endif()
+
+if(DARMOK_BUILD_FREETYPE)
+  list(APPEND HEADERS
+    ${INCLUDE_DIR}/text.hpp
+    ${INCLUDE_DIR}/text_freetype.hpp
+  )
+  list(APPEND SOURCES
+    ${SRC_DIR}/text_freetype.cpp
+  )
+  if(DARMOK_BUILD_LUA)
+    list(APPEND LUA_SOURCES
+      ${SRC_DIR}/lua/text.cpp
+    )
+  endif()
 endif()
 
 if(DARMOK_BUILD_IMGUI)
@@ -520,13 +536,20 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
   endif()
 endif()
 
+# freetype
+if(DARMOK_BUILD_FREETYPE)
+  find_package(Freetype REQUIRED)
+  target_link_libraries(${LIB_NAME} PRIVATE Freetype::Freetype)
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_FREETYPE)
+endif()
+
 # imgui
 if(DARMOK_BUILD_IMGUI)
   find_package(imgui CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PUBLIC imgui::imgui)
 endif()
 
-# imgui
+# rmlgui
 if(DARMOK_BUILD_RMLUI)
   find_package(RmlUi CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PUBLIC RmlCore)
@@ -547,6 +570,7 @@ if(DARMOK_BUILD_ASSIMP)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_ASSIMP)
 endif()
 
+# jolt physics
 if(DARMOK_BUILD_JOLT)
   find_package(unofficial-joltphysics CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PRIVATE unofficial::joltphysics::Jolt)
