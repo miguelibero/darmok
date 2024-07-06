@@ -248,7 +248,7 @@ namespace darmok
 		return count;
 	}
 
-	std::optional<std::string> StringUtils::getEnv(const std::string& name)
+	std::optional<std::string> StringUtils::getEnv(const std::string& name) noexcept
 	{
 		char* val = getenv(name.c_str());
 		if (val == NULL)
@@ -256,5 +256,50 @@ namespace darmok
 			return std::nullopt;
 		}
 		return std::string(val);
+	}
+
+	uint32_t StringUtils::getUtf8Char(std::string_view& str) noexcept
+	{
+		uint32_t u8char = 0;
+		auto s = &str.front();
+		if (*s < 0x80)
+		{
+			u8char = *s;
+			s++;
+		}
+		else if ((*s >> 5) == 0x6)
+		{
+			u8char = (*s & 0x1F) << 6;
+			s++;
+			u8char |= (*s & 0x3F);
+			s++;
+		}
+		else if ((*s >> 4) == 0xE)
+		{
+			u8char = (*s & 0xF) << 12;
+			s++;
+			u8char |= ((*s & 0x3F) << 6);
+			s++;
+			u8char |= (*s & 0x3F);
+			s++;
+		}
+		else if ((*s >> 3) == 0x1E)
+		{
+			u8char = (*s & 0x7) << 18;
+			s++;
+			u8char |= ((*s & 0x3F) << 12);
+			s++;
+			u8char |= ((*s & 0x3F) << 6);
+			s++;
+			u8char |= ((*s) & 0x3F);
+			s++;
+		}
+		else
+		{
+			// Invalid UTF-8 character
+			s++;
+		}
+		str = std::string_view(s, &str.back() + 1);
+		return u8char;
 	}
 }

@@ -51,6 +51,23 @@ namespace darmok
 		}
 	}
 
+	Image::Image(Image&& other) noexcept
+		: _container(other._container)
+	{
+		other._container = nullptr;
+	}
+
+	Image& Image::operator=(Image&& other) noexcept
+	{
+		if (_container != nullptr)
+		{
+			bimg::imageFree(_container);
+		}
+		_container = other._container;
+		other._container = nullptr;
+		return *this;
+	}
+
 	DataView Image::getData() const noexcept
 	{
 		return DataView(_container->m_data
@@ -91,6 +108,11 @@ namespace darmok
 	bool Image::empty() const noexcept
 	{
 		return _container == nullptr || _container->m_size == 0;
+	}
+
+	void Image::update(const glm::uvec2& pos, DataView data)
+	{
+		// TODO
 	}
 
 	glm::uvec2 Image::getSize() const noexcept

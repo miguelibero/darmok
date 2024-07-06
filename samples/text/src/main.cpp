@@ -32,16 +32,20 @@ namespace
 
 			auto font = getAssets().getFontLoader()("COMIC.TTF");
 
-			auto cam3d = registry.create();
-			registry.emplace<Transform>(cam3d)
+			auto camEntity = registry.create();
+			registry.emplace<Transform>(camEntity)
 				.setPosition(glm::vec3(0.f, 2.f, -2.f))
 				.lookAt(glm::vec3(0, 0, 0));
 
-			registry.emplace<Camera>(cam3d)
-				.setPerspective(60, getWindow().getSize(), 0.3, 1000)
-				.setRenderer<ForwardRenderer>();
+			auto& cam = registry.emplace<Camera>(camEntity)
+				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
 
+			cam.addComponent<TextRenderer>();
+			cam.setRenderer<ForwardRenderer>();
 
+			auto textEntity = scene.createEntity();
+
+			scene.addComponent<Text>(textEntity, font, "comic sans baby!");
 		}
 	};
 }

@@ -60,8 +60,10 @@ namespace darmok
 			{
 				_cam->beforeRenderEntity(entity, *encoder, viewId);
 				renderable.render(*encoder, viewId);
+				_cam->afterRenderEntity(entity, *encoder, viewId);
 			}
 		}
+
 		_cam->afterRenderView(*encoder, viewId);
 
 		bgfx::end(encoder);

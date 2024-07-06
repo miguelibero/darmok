@@ -264,6 +264,14 @@ namespace darmok
         encoder.setTransform(transMtx);
     }
 
+    void Camera::afterRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+    {
+        for (auto& comp : _components)
+        {
+            comp->afterRenderEntity(entity, encoder, viewId);
+        }
+    }
+
     void Camera::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
     {
         for (auto& comp : _components)

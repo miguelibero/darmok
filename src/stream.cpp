@@ -1,7 +1,11 @@
 #include <darmok/stream.hpp>
 #include <bx/debug.h>
 #include <bx/string.h>
+#include <bx/platform.h>
 
+#if BX_PLATFORM_WINDOWS
+#include <windows.h>
+#endif
 
 namespace darmok
 {
@@ -24,6 +28,9 @@ namespace darmok
         {
             std::cout << msg << std::endl;
         }
+#if BX_PLATFORM_WINDOWS
+        OutputDebugString(msg.c_str());
+#endif
         bx::debugOutput(bx::StringView(msg.data(), msg.size()));
     }
 

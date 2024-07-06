@@ -29,6 +29,7 @@ namespace darmok
         virtual bgfx::ViewId beforeRender(bgfx::ViewId viewId) { return viewId; };
         virtual void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) { };
         virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) {};
+        virtual void afterRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) {};
         virtual void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) { };
         virtual bgfx::ViewId afterRender(bgfx::ViewId viewId) { return viewId; };
         virtual void shutdown() {};
@@ -145,6 +146,7 @@ namespace darmok
         void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
         void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        void afterRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
 
     private:
         bool _enabled;

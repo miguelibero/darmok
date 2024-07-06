@@ -24,6 +24,8 @@ namespace darmok
 		Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
 		Image(bimg::ImageContainer* container);
 		~Image() noexcept;
+		Image(Image&& other) noexcept;
+		Image& operator=(Image&& other) noexcept;
 		Image(const Image& other) = delete;
 		Image& operator=(const Image& other) = delete;
 
@@ -36,9 +38,11 @@ namespace darmok
 		[[nodiscard]] bimg::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
 		[[nodiscard]] TextureConfig getTextureConfig(uint64_t flags = defaultTextureLoadFlags) const noexcept;
-		[[nodiscard]] DataView getData() const noexcept;
+		[[nodiscard]] DataView getData() const noexcept;		
 		[[nodiscard]] TextureType getTextureType(uint64_t flags = defaultTextureLoadFlags) const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
+
+		void update(const glm::uvec2& pos, DataView data);
 
 	private:
 		bimg::ImageContainer* _container;
