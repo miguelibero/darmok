@@ -6,35 +6,33 @@
 #include <darmok/texture.hpp>
 #include <darmok/text.hpp>
 #include <darmok/camera.hpp>
-#include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
-#include <darmok/material.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/imgui.hpp>
+#include <darmok/string.hpp>
+#include <imgui.h>
+#include <imgui_stdlib.h>
 
 namespace
 {
 	using namespace darmok;
 
-	class SceneTextApp : public App
+	class SceneTextApp : public App, public IImguiRenderer
 	{
 	public:
 		void init() override
 		{
 			App::init();
 
+			auto& imgui = addComponent<darmok::ImguiAppComponent>(*this);
+
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			auto& registry = scene.getRegistry();
 
-			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::Unlit);
-
-			auto tex = getAssets().getColorTextureLoader()(Colors::white());
-			auto mat = std::make_shared<Material>(prog, tex);
-
-			auto font = getAssets().getFontLoader()("ARIALUNI.TTF");
+			auto font = getAssets().getFontLoader()("COMIC.TTF");
 
 			auto camEntity = registry.create();
 			registry.emplace<Transform>(camEntity)
-				.setPosition(glm::vec3(0.f, 2.f, -2.f))
+				.setPosition(glm::vec3(0.f, 1.f, -1.f))
 				.lookAt(glm::vec3(0, 0, 0));
 
 			auto& cam = registry.emplace<Camera>(camEntity)
@@ -45,8 +43,25 @@ namespace
 
 			auto textEntity = scene.createEntity();
 
-			scene.addComponent<Text>(textEntity, font, "darmok engine rules!");
+			_text = scene.addComponent<Text>(textEntity, font, _textStr);
 		}
+
+		void imguiRender()
+		{
+			if (ImGui::InputText("Text", &_textStr) && _text)
+			{
+				// casting because ImGui::InputText does not have an std::u8string method
+				_text->setContent(StringUtils::utf8Cast(_textStr));
+			}
+			if (ImGui::ColorPicker4("Color", &_color[0]))
+			{
+				_text->setColor(Colors::denormalize(_color));
+			}
+		}
+	private:
+		OptionalRef<Text> _text;
+		std::string _textStr = "darmok engine rules!";
+		glm::vec4 _color = glm::vec4(1);
 	};
 }
 

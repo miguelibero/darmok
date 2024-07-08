@@ -242,7 +242,7 @@ namespace darmok
 
 						encoder->setState(state);
 						encoder->setTexture(0, _textureUniform, th);
-						mesh->render(*encoder, 0);
+						mesh->render(*encoder);
 						encoder->submit(viewId, program);
 					}
 				}

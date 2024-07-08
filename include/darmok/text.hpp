@@ -5,6 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/utf8.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/color.hpp>
 #include <memory>
 #include <string>
 #include <optional>
@@ -21,13 +22,14 @@ namespace darmok
 {
     struct DARMOK_EXPORT Glyph final
     {
-        glm::uvec2 size;
-        glm::uvec2 position;
+        glm::uvec2 size = {};
+        glm::uvec2 texturePosition = {};
+        glm::vec2 offset = {};
+        glm::uvec2 originalSize = {};
     };
 
     class Material;
     class Text;
-    using TextContent = std::vector<Utf8Char>;
 
     class DARMOK_EXPORT BX_NO_VTABLE IFont
     {
@@ -37,7 +39,7 @@ namespace darmok
         virtual std::optional<Glyph> getGlyph(const Utf8Char& chr) const = 0;
         virtual const Material& getMaterial() const = 0;
         virtual void update() {};
-        virtual void onTextContentChanged(Text& text, const TextContent& oldContent, const TextContent& newContent) {};
+        virtual void onTextContentChanged(Text& text, const Utf8Vector& oldContent, const Utf8Vector& newContent) {};
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IFontLoader
@@ -59,13 +61,24 @@ namespace darmok
         std::string getContentString();
         Text& setContent(const std::string& str);
         Text& setContent(const std::u8string& str);
+        Text& setContent(const Utf8Vector& content);
+        const Color& getColor() const noexcept;
+        Text& setColor(const Color& color) noexcept;
 
         bool update();
         bool render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
+
+        static MeshData createMeshData(const Utf8Vector& content, const IFont& font);
     private:
         std::shared_ptr<IFont> _font;
-        TextContent _content;
+        Utf8Vector _content;
         std::optional<DynamicMesh> _mesh;
+        Color _color;
+        bool _changed;
+        uint32_t _vertexNum;
+        uint32_t _indexNum;
+
+        void onContentChanged(const Utf8Vector& oldContent);
     };
 
     class DARMOK_EXPORT TextRenderer final : public ICameraComponent
@@ -78,5 +91,6 @@ namespace darmok
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
+        static const std::string _name;
     };
 }

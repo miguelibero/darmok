@@ -135,22 +135,24 @@ namespace darmok
 
 	std::string StringUtils::getFileStem(std::string_view filename) noexcept
 	{
-		auto pos = filename.find('.');
+		auto lowerFilename = toLower(filename);
+		auto pos = lowerFilename.find('.');
 		if (pos == std::string::npos)
 		{
-			return std::string(filename);
+			return lowerFilename;
 		}
-		return std::string(filename.substr(0, pos));
+		return lowerFilename.substr(0, pos);
 	}
 
 	std::string StringUtils::getFileExt(std::string_view filename) noexcept
 	{
+		auto lowerFilename = toLower(filename);
 		auto pos = filename.find('.');
 		if (pos == std::string::npos)
 		{
-			return std::string(filename);
+			return lowerFilename;
 		}
-		return std::string(filename.substr(pos, filename.size()));
+		return lowerFilename.substr(pos, filename.size());
 	}
 
 	void StringUtils::ltrim(std::string& str) noexcept
@@ -255,5 +257,10 @@ namespace darmok
 			return std::nullopt;
 		}
 		return std::string(val);
+	}
+
+	std::u8string StringUtils::utf8Cast(const std::string& str) noexcept
+	{
+		return std::u8string(reinterpret_cast<const char8_t*>(str.data()), str.size());
 	}
 }

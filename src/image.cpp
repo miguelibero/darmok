@@ -6,6 +6,7 @@
 #include <darmok/data_stream.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/string.hpp>
 #include <stdexcept>
 #include <bx/readerwriter.h>
 
@@ -160,6 +161,32 @@ namespace darmok
 		return data;
 	}
 
+	ImageEncoding Image::getEncodingForPath(const std::filesystem::path& path) noexcept
+	{
+		auto ext = StringUtils::getFileExt(path.filename().string());
+		if (ext == ".png")
+		{
+			return ImageEncoding::Png;
+		}
+		if (ext == ".exr")
+		{
+			return ImageEncoding::Exr;
+		}
+		if (ext == ".hdr")
+		{
+			return ImageEncoding::Hdr;
+		}
+		if (ext == ".dds")
+		{
+			return ImageEncoding::Dds;
+		}
+		if (ext == ".ktx")
+		{
+			return ImageEncoding::Ktx;
+		}
+		return ImageEncoding::Tga;
+	}
+
 	void Image::write(ImageEncoding encoding, std::ostream& stream) const noexcept
 	{
 		StreamWriter writer(stream);
@@ -171,7 +198,7 @@ namespace darmok
 		return _container == nullptr || _container->m_size == 0;
 	}
 
-	void Image::update(const glm::uvec2& pos, const glm::uvec2& size, DataView data)
+	void Image::update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset, size_t elmSize)
 	{
 		auto imgSize = getSize();
 		if (pos.x + size.x > imgSize.x || pos.y + size.y > imgSize.y)
@@ -179,19 +206,32 @@ namespace darmok
 			throw std::runtime_error("size does not fit");
 		}
 		auto bpp = getTextureInfo().bitsPerPixel / 8;
-		size_t updateSize = size.x * size.y * bpp;
+		elmOffset = elmOffset < 0 ? 0 : elmOffset;
+		elmSize = elmSize <= 0 || elmSize > bpp ? bpp : elmSize;
+		size_t updateSize = size.x * size.y * elmSize;
 		if (data.size() < updateSize)
 		{
 			throw std::runtime_error("data is too small");
 		}
 		auto imgStart = pos.x + (pos.y * imgSize.x);
-		auto rowSize = size.x * bpp;
+		auto rowSize = size.x * elmSize;
 		auto imgData = (uint8_t*)_container->m_data;
 		for (size_t y = 0; y < size.y; y++)
 		{
+			auto rowPtr = &imgData[elmOffset + ((imgStart + (y * imgSize.x)) * bpp)];
 			auto row = data.view(y * rowSize, rowSize);
-			auto ptr = &imgData[(imgStart + (y * imgSize.x)) * bpp];
-			std::memcpy(ptr, row.ptr(), rowSize);
+			if (elmSize == bpp)
+			{
+				std::memcpy(rowPtr, row.ptr(), rowSize);
+			}
+			else
+			{
+				for (size_t x = 0; x < size.x; x++)
+				{
+					auto pix = row.view(x, elmSize);
+					std::memcpy(&rowPtr[x * bpp], pix.ptr(), elmSize);
+				}
+			}
 		}
 	}
 

@@ -8,6 +8,8 @@
 #include <darmok/program_standard.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/text.hpp>
+#include <darmok/utf8.hpp>
 #include "physics3d_jolt.hpp"
 #include <glm/gtc/type_ptr.hpp>
 #include <Jolt/Physics/Body/BodyManager.h>
@@ -137,6 +139,11 @@ namespace darmok::physics3d
         _enabled = enabled;
     }
 
+    void PhysicsDebugRendererImpl::setFont(const std::shared_ptr<IFont>& font) noexcept
+    {
+        _font = font;
+    }
+
     void PhysicsDebugRendererImpl::renderMesh(const IMesh& mesh, EDrawMode mode)
     {
         _cam->beforeRenderEntity(entt::null, _encoder.value(), _viewId);
@@ -226,9 +233,15 @@ namespace darmok::physics3d
         _config.material->setColor(MaterialColorType::Diffuse, oldColor);
     }
 
-    void PhysicsDebugRendererImpl::DrawText3D(JPH::RVec3Arg inPosition, const std::string_view& inString, JPH::ColorArg inColor, float inHeight)
+    void PhysicsDebugRendererImpl::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
     {
-        // TODO: render text support
+        if (!_font)
+        {
+            return;
+        }
+        Utf8Vector content;
+        Utf8Char::read(str, content);
+        _drawTris += Text::createMeshData(content, *_font);
     }
 
     PhysicsDebugRenderer::PhysicsDebugRenderer(PhysicsSystem& system, const Config& config) noexcept

@@ -7,6 +7,10 @@
 
 namespace darmok
 {
+    struct Utf8Char;
+
+    using Utf8Vector = std::vector<Utf8Char>;
+
     struct DARMOK_EXPORT Utf8Char final
     {
         uint32_t code;
@@ -19,11 +23,11 @@ namespace darmok
         Utf8Char(std::u8string_view str);
 
         [[nodiscard]] static Utf8Char read(std::string_view& str);
-        static size_t read(std::string_view str, std::vector<Utf8Char>& chars);
+        static size_t read(std::string_view str, Utf8Vector& chars);
         [[nodiscard]] static Utf8Char read(std::u8string_view& str);
-        static size_t read(std::u8string_view str, std::vector<Utf8Char>& chars);
-        static std::string toString(const std::vector<Utf8Char>& chars);
-        static std::u8string toUtf8String(const std::vector<Utf8Char>& chars);
+        static size_t read(std::u8string_view str, Utf8Vector& chars);
+        static std::string toString(const Utf8Vector& chars);
+        static std::u8string toUtf8String(const Utf8Vector& chars);
 
         operator bool() const noexcept;
         operator std::string() const;
@@ -35,11 +39,12 @@ namespace darmok
         std::u8string toUtf8String() const;
         bool operator==(const Utf8Char& other) const noexcept;
         bool operator!=(const Utf8Char& other) const noexcept;
+        bool operator<(const Utf8Char& other) const noexcept;
 
     private:
 
         template<typename T>
-        static std::basic_string<T> vectorToString(const std::vector<Utf8Char>& chars)
+        static std::basic_string<T> vectorToString(const Utf8Vector& chars)
         {
             std::basic_string<T> str;
             for (auto& chr : chars)
@@ -50,7 +55,7 @@ namespace darmok
         }
 
         template<typename T>
-        static size_t doRead(std::basic_string_view<T> str, std::vector<Utf8Char>& chars)
+        static size_t doRead(std::basic_string_view<T> str, Utf8Vector& chars)
         {
             size_t count = 0;
             while (!str.empty())

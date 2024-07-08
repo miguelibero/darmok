@@ -146,6 +146,10 @@ namespace darmok
 		{
 			return;
 		}
+		if (data.size() < memSize)
+		{
+			throw std::runtime_error("data is smaller that expected size");
+		}
 		bgfx::updateTexture2D(_handle, layer, mip,
 			origin.x, origin.y, size.x, size.y,
 			data.copyMem(0, memSize));

@@ -150,6 +150,7 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/mesh.hpp
   ${INCLUDE_DIR}/color_fwd.hpp
   ${INCLUDE_DIR}/color.hpp
+  ${INCLUDE_DIR}/image_fwd.hpp
   ${INCLUDE_DIR}/image.hpp
   ${INCLUDE_DIR}/texture_fwd.hpp
   ${INCLUDE_DIR}/texture.hpp

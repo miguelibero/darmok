@@ -3,6 +3,7 @@
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/program.hpp>
 #include <darmok/program_standard.hpp>
 
@@ -10,6 +11,10 @@ namespace darmok
 {
 	Text::Text(const std::shared_ptr<IFont>& font, const std::string& content) noexcept
 		: _font(font)
+		, _color(Colors::white())
+		, _changed(false)
+		, _vertexNum(0)
+		, _indexNum(0)
 	{
 		setContent(content);
 	}
@@ -20,6 +25,21 @@ namespace darmok
 		{
 			_font->onTextContentChanged(*this, _content, {});
 		}
+	}
+
+	const Color& Text::getColor() const noexcept
+	{
+		return _color;
+	}
+
+	Text& Text::setColor(const Color& color) noexcept
+	{
+		if (_color != color)
+		{
+			_color = color;
+			_changed = true;
+		}
+		return *this;
 	}
 
 	std::shared_ptr<IFont> Text::getFont() noexcept
@@ -38,6 +58,7 @@ namespace darmok
 			_font->onTextContentChanged(*this, _content, {});
 		}
 		_font = font;
+		_changed = true;
 		if (_font)
 		{
 			_font->onTextContentChanged(*this, {}, _content);
@@ -53,24 +74,37 @@ namespace darmok
 
 	Text& Text::setContent(const std::string& str)
 	{
-		TextContent oldContent = _content;
+		Utf8Vector oldContent = _content;
+		_content.clear();
 		Utf8Char::read(str, _content);
-		if (_font)
-		{
-			_font->onTextContentChanged(*this, oldContent, _content);
-		}
+		onContentChanged(oldContent);
 		return *this;
 	}
 
 	Text& Text::setContent(const std::u8string& str)
 	{
-		TextContent oldContent = _content;
+		Utf8Vector oldContent = _content;
+		_content.clear();
 		Utf8Char::read(str, _content);
+		onContentChanged(oldContent);
+		return *this;
+	}
+
+	Text& Text::setContent(const Utf8Vector& content)
+	{
+		Utf8Vector oldContent = _content;
+		_content = content;
+		onContentChanged(oldContent);
+		return *this;
+	}
+
+	void Text::onContentChanged(const Utf8Vector& oldContent)
+	{
 		if (_font)
 		{
 			_font->onTextContentChanged(*this, oldContent, _content);
 		}
-		return *this;
+		_changed = true;
 	}
 
 	bool Text::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
@@ -79,39 +113,41 @@ namespace darmok
 		{
 			return false;
 		}
-		_mesh->render(encoder);
+		if (_vertexNum == 0 || _indexNum == 0)
+		{
+			return false;
+		}
+		_mesh->render(encoder, {
+			.numVertices = _vertexNum,
+			.numIndices = _indexNum,
+		});
 		_font->getMaterial().renderSubmit(encoder, viewId);
 		return true;
 	}
 
 	bool Text::update()
 	{
-		if (!_font)
+		if (!_font || !_changed)
 		{
 			return false;
 		}
 
-		auto prog = _font->getMaterial().getProgram();
+		auto& mat = _font->getMaterial();
+		auto prog = mat.getProgram();
 		if (!prog)
 		{
 			return false;
 		}
-		auto layout = prog->getVertexLayout();
 
-		glm::uvec2 pos(0);
-		MeshData data;
-		for (auto& chr : _content)
+		auto data = createMeshData(_content, *_font);
+		if (data.empty())
 		{
-			auto glyph = _font->getGlyph(chr);
-			if (!glyph)
-			{
-				continue;
-			}
-			MeshData glyphData(Rectangle(glyph->size, glyph->position));
-			data.config.offset = glm::vec3(pos.x, pos.y, 0);
-			pos.x += glyph->size.x;
-			data += glyphData;
+			return false;
 		}
+
+		auto layout = prog->getVertexLayout();
+		data.config.color = _color;
+
 		Data vertexData;
 		Data indexData;
 		data.exportData(layout, vertexData, indexData);
@@ -124,7 +160,47 @@ namespace darmok
 			_mesh->updateVertices(vertexData);
 			_mesh->updateIndices(indexData);
 		}
+		_vertexNum = data.vertices.size();
+		_indexNum = data.indices.size();
+		_changed = false;
 		return true;
+	}
+
+	MeshData Text::createMeshData(const Utf8Vector& content, const IFont& font)
+	{
+		auto& mat = font.getMaterial();
+
+		// TODO: maybe add getter of the size to the font interface
+		// to not assume that the size is the diffuse texture size
+		auto tex = mat.getTexture(MaterialTextureType::Diffuse);
+		auto texScale = glm::vec2(1);
+		if (tex)
+		{
+			texScale /= glm::vec2(tex->getSize());
+		}
+
+		glm::uvec2 pos(0);
+		MeshData data;
+		for (auto& chr : content)
+		{
+			auto glyph = font.getGlyph(chr);
+			if (!glyph)
+			{
+				continue;
+			}
+			MeshData glyphData(Rectangle(glyph->size));
+			glyphData.config.textureScale = glyph->size;
+			glyphData.config.offset = glm::vec3(0);
+			glyphData.normalize();
+			glyphData.config.textureOffset = glyph->texturePosition;
+			glyphData.config.offset = glm::vec3(pos, 0) + glm::vec3(glyph->offset, 0);
+			data += glyphData;
+			pos.x += glyph->originalSize.x;
+		}
+		data.config.textureScale = texScale;
+		data.config.scale = glm::vec3(texScale, 0);
+
+		return data;
 	}
 
 	void TextRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
@@ -161,6 +237,8 @@ namespace darmok
 		}
 	}
 
+	const std::string TextRenderer::_name = "Text Renderer";
+
 	bgfx::ViewId TextRenderer::afterRender(bgfx::ViewId viewId)
 	{
 		if (!_scene || !_cam)
@@ -172,6 +250,8 @@ namespace darmok
 		{
 			return viewId;
 		}
+
+		bgfx::setViewName(viewId, &_name.front(), _name.size());
 
 		auto encoder = bgfx::begin();
 		_cam->beforeRenderView(*encoder, viewId);

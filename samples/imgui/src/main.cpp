@@ -6,6 +6,7 @@
 #include <darmok/window.hpp>
 #include <bgfx/bgfx.h>
 #include <imgui.h>
+#include <imgui_stdlib.h>
 
 namespace
 {
@@ -17,8 +18,6 @@ namespace
 		void init() override
 		{
 			App::init();
-
-			_textData = "hello darmok!";
 
 			// Enable debug text.
 			setDebugFlag(BGFX_DEBUG_TEXT);
@@ -41,7 +40,7 @@ namespace
 		void imguiRender()
 		{
 			ImGui::TextWrapped("lala");
-			ImGui::InputText("text", static_cast<char*>(_textData.ptr()), _textData.size());
+			ImGui::InputText("text", &_text);
 
 
 			_videoModeState.imguiRender(getWindow());
@@ -54,7 +53,7 @@ namespace
 		}
 
 	protected:
-		Data _textData = Data(1024);
+		std::string _text = "hello darmok!";
 
 		struct VideoModeState final
 		{

@@ -48,12 +48,12 @@ namespace darmok
 		return toUtf8String();
 	}
 
-	std::string Utf8Char::toString(const std::vector<Utf8Char>& chars)
+	std::string Utf8Char::toString(const Utf8Vector& chars)
 	{
 		return vectorToString<char>(chars);
 	}
 
-	std::u8string Utf8Char::toUtf8String(const std::vector<Utf8Char>& chars)
+	std::u8string Utf8Char::toUtf8String(const Utf8Vector& chars)
 	{
 		return vectorToString<char8_t>(chars);
 	}
@@ -99,12 +99,17 @@ namespace darmok
 		return !operator==(other);
 	}
 
+	bool Utf8Char::operator<(const Utf8Char& other) const noexcept
+	{
+		return code < other.code;
+	}
+
 	Utf8Char Utf8Char::read(std::string_view& str)
 	{
 		return readCode(str);
 	}
 
-	size_t Utf8Char::read(std::string_view str, std::vector<Utf8Char>& chars)
+	size_t Utf8Char::read(std::string_view str, Utf8Vector& chars)
 	{
 		return doRead(str, chars);
 	}
@@ -114,7 +119,7 @@ namespace darmok
 		return readCode(str);
 	}
 
-	size_t Utf8Char::read(std::u8string_view str, std::vector<Utf8Char>& chars)
+	size_t Utf8Char::read(std::u8string_view str, Utf8Vector& chars)
 	{
 		return doRead(str, chars);
 	}

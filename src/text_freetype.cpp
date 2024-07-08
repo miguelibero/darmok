@@ -32,26 +32,6 @@ namespace darmok
 				throw std::runtime_error(getErrorMessage(err));
 			}
 		}
-
-		static void tokenize(std::string_view str, std::unordered_set<Utf8Char>& chars, bool remove = false)
-		{
-			while(!str.empty())
-			{
-				auto chr = Utf8Char::read(str);
-				if (!chr)
-				{
-					continue;
-				}
-				if (remove)
-				{
-					chars.erase(chr);
-				}
-				else
-				{
-					chars.emplace(chr);
-				}
-			}
-		}
 	};
 
 	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& alloc, const glm::uvec2& defaultFontSize)
@@ -161,7 +141,7 @@ namespace darmok
 		return _material;
 	}
 
-	void FreetypeFont::onTextContentChanged(Text& text, const TextContent& oldContent, const TextContent& newContent)
+	void FreetypeFont::onTextContentChanged(Text& text, const Utf8Vector& oldContent, const Utf8Vector& newContent)
 	{
 		for (auto& chr : oldContent)
 		{
@@ -177,22 +157,17 @@ namespace darmok
 
 	void FreetypeFont::update()
 	{
-		if (_renderedChars == _chars)
+		if (_renderedChars == _chars || _chars.empty())
 		{
 			return;
 		}
 		FreetypeFontAtlasGenerator generator(_face, _library, _alloc);
+		generator.setImageFormat(bimg::TextureFormat::RGBA8);
 		auto atlas = generator(_chars);
 
-		if (_texture && _texture->getSize() == atlas.image.getSize())
-		{
-			_texture->update(atlas.image.getData());
-		}
-		else
-		{
-			_texture = std::make_shared<Texture>(atlas.image);
-			_material.setTexture(MaterialTextureType::Diffuse, _texture);
-		}
+		// TODO: should use Texture::update but I can't get it to work
+		_texture = std::make_shared<Texture>(atlas.image);
+		_material.setTexture(MaterialTextureType::Diffuse, _texture);
 
 		_glyphs = atlas.glyphs;
 		_renderedChars = _chars;
@@ -203,6 +178,8 @@ namespace darmok
 		, _library(library)
 		, _alloc(alloc)
 		, _size(1024)
+		, _renderMode(FT_RENDER_MODE_NORMAL)
+		, _imageFormat(bimg::TextureFormat::A8)
 	{
 	}
 
@@ -212,7 +189,19 @@ namespace darmok
 		return *this;
 	}
 
-	glm::uvec2 FreetypeFontAtlasGenerator::calcSpace(const std::unordered_set<Utf8Char>& chars) noexcept
+	FreetypeFontAtlasGenerator& FreetypeFontAtlasGenerator::setImageFormat(bimg::TextureFormat::Enum format) noexcept
+	{
+		_imageFormat = format;
+		return *this;
+	}
+
+	FreetypeFontAtlasGenerator& FreetypeFontAtlasGenerator::setRenderMode(FT_Render_Mode mode) noexcept
+	{
+		_renderMode = mode;
+		return *this;
+	}
+
+	glm::uvec2 FreetypeFontAtlasGenerator::calcSpace(const std::set<Utf8Char>& chars) noexcept
 	{
 		glm::uvec2 pos(0);
 		FT_UInt fontHeight = _face->size->metrics.y_ppem;
@@ -229,9 +218,9 @@ namespace darmok
 		return pos;
 	}
 
-	std::unordered_map<Utf8Char, FT_UInt> FreetypeFontAtlasGenerator::getIndices(const std::unordered_set<Utf8Char>& chars) const
+	std::map<Utf8Char, FT_UInt> FreetypeFontAtlasGenerator::getIndices(const std::set<Utf8Char>& chars) const
 	{
-		std::unordered_map<Utf8Char, FT_UInt> indices;
+		std::map<Utf8Char, FT_UInt> indices;
 		if (chars.empty())
 		{
 			FT_UInt idx;
@@ -264,17 +253,19 @@ namespace darmok
 	{
 		auto err = FT_Load_Glyph(_face, index, FT_LOAD_DEFAULT);
 		FreetypeUtils::checkError(err);
-		err = FT_Render_Glyph(_face->glyph, FT_RENDER_MODE_NORMAL);
+		err = FT_Render_Glyph(_face->glyph, _renderMode);
 		FreetypeUtils::checkError(err);
 		return _face->glyph->bitmap;
 	}
 
-	FontAtlas FreetypeFontAtlasGenerator::operator()(const std::unordered_set<Utf8Char>& chars)
+	FontAtlas FreetypeFontAtlasGenerator::operator()(const std::set<Utf8Char>& chars)
 	{
 		glm::uvec2 pos(0);
 		FT_UInt fontHeight = _face->size->metrics.y_ppem;
-		FontAtlas atlas(Image(_size, _alloc, bimg::TextureFormat::R8));
+		FontAtlas atlas(Image(_size, _alloc, _imageFormat));
 		auto indices = getIndices(chars);
+
+		auto bytesPerPixel = atlas.image.getTextureInfo().bitsPerPixel / 8;
 		for(auto& [chr, idx] : indices)
 		{
 			auto& bitmap = renderBitmap(idx);
@@ -287,10 +278,25 @@ namespace darmok
 					throw std::runtime_error("Texture overflow\n");
 				}
 			}
-			glm::uvec2 size(bitmap.width, bitmap.rows);
-			atlas.glyphs.emplace(chr, Glyph{ size, pos });
-			atlas.image.update(pos, size, DataView(bitmap.buffer, bitmap.rows * bitmap.pitch));
-			pos.x += bitmap.width;
+
+			auto& metrics = _face->glyph->metrics;
+			// TODO: implement for vertical layouts
+			Glyph glyph
+			{
+				.size = glm::vec2(metrics.width >> 6, metrics.height >> 6),
+				.texturePosition = pos,
+				.offset = glm::vec2(metrics.horiBearingX >> 6, metrics.horiBearingY >> 6),
+				.originalSize = glm::uvec2(metrics.horiAdvance >> 6, fontHeight),
+			};
+			glyph.offset.y -= glyph.size.y;
+			atlas.glyphs.emplace(chr, glyph);
+			glm::uvec2 bsize(bitmap.width, bitmap.rows);
+			DataView bitmapData(bitmap.buffer, bsize.y * bitmap.pitch);
+			for (size_t pixelOffset = 0; pixelOffset < bytesPerPixel; pixelOffset++)
+			{
+				atlas.image.update(pos, bsize, bitmapData, pixelOffset, 1);
+			}
+			pos.x += glyph.size.x;
 		}
 		return atlas;
 	}
@@ -299,7 +305,7 @@ namespace darmok
 	{
 		std::vector<Utf8Char> chars;
 		Utf8Char::read(str, chars);
-		return (*this)(std::unordered_set<Utf8Char>(chars.begin(), chars.end()));
+		return (*this)(std::set<Utf8Char>(chars.begin(), chars.end()));
 	}
 
 	FreetypeFontAtlasImporterImpl::FreetypeFontAtlasImporterImpl()
@@ -327,7 +333,7 @@ namespace darmok
 			return true;
 		}
 
-		glm::uvec2 size(24);
+		glm::uvec2 size(0, 48);
 		if (input.config.contains("fontSize"))
 		{
 			auto& sizeConfig = input.config["fontSize"];
@@ -350,6 +356,7 @@ namespace darmok
 		FreetypeUtils::checkError(err);
 
 		FreetypeFontAtlasGenerator generator(_face, _library, _alloc);
+		generator.setImageFormat(bimg::TextureFormat::RGBA8);
 		std::string chars;
 		if (input.config.contains("characters"))
 		{
@@ -370,8 +377,7 @@ namespace darmok
 		}
 		else
 		{
-			_imagePath /= std::filesystem::path(stem + ".tga");
-
+			_imagePath /= std::filesystem::path(stem + ".png");
 		}
 
 		if (input.config.contains("atlasPath"))
@@ -411,7 +417,8 @@ namespace darmok
 	{
 		if (outputIndex == 0)
 		{
-			_atlas->image.write(ImageEncoding::Tga, out);
+			auto encoding = Image::getEncodingForPath(_imagePath);
+			_atlas->image.write(encoding, out);
 			return;
 		}
 		auto relImagePath = std::filesystem::relative(_imagePath, _atlasPath.parent_path());
@@ -424,8 +431,9 @@ namespace darmok
 		{
 			atlasData.elements.emplace_back(TextureAtlasElement{
 				.name = name,
-				.texturePosition = glyph.position,
+				.texturePosition = glyph.texturePosition,
 				.size = glyph.size,
+				.offset = glyph.offset
 			});
 		}
 

@@ -14,6 +14,7 @@ namespace darmok
     class Camera;
     class Program;
     class Input;
+    class IFont;
 }
 
 namespace darmok::physics3d
@@ -41,6 +42,7 @@ namespace darmok::physics3d
 
         bool isEnabled() const noexcept;
         void setEnabled(bool enabled) noexcept;
+        void setFont(const std::shared_ptr<IFont>& font) noexcept;
 
         void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
         void DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow = ECastShadow::Off) override;
@@ -59,6 +61,7 @@ namespace darmok::physics3d
         bgfx::VertexLayout _vertexLayout;
         MeshData _drawLines;
         MeshData _drawTris;
+        std::shared_ptr<IFont> _font;
         static const std::string _bindingsName;
 
         void onBindingTriggered();

@@ -136,6 +136,28 @@ namespace darmok
         );
     }
 
+    Color Colors::denormalize(const glm::vec4& v) noexcept
+    {
+        return Color(
+            v.r * getMaxValue(),
+            v.g * getMaxValue(),
+            v.b * getMaxValue(),
+            v.a * getMaxValue()
+        );
+    }
+
+    Color3 Colors::denormalize(const glm::vec3& v) noexcept
+    {
+        return Color3(
+            v.r * getMaxValue(),
+            v.g * getMaxValue(),
+            v.b * getMaxValue()
+        );
+    }
+
+
+    // TODO: check that this works as expected with bimg::solid, I think alpha is not working
+
     Color Colors::fromNumber(uint32_t v) noexcept
     {
         return Color(v >> 24, v >> 16, v >> 8, v);
@@ -160,4 +182,25 @@ namespace darmok
     {
         return 0xff << 24 | uint32_t(color.b) << 16 | uint32_t(color.g) << 8 | uint32_t(color.r);
     }
+
+    Color Colors::multiply(const Color& a, const Color& b) noexcept
+    {
+        return glm::vec4(a) * normalize(b);
+    }
+
+    Color3 Colors::multiply(const Color3& a, const Color3& b) noexcept
+    {
+        return glm::vec3(a) * normalize(b);
+    }
+
+    Color Colors::divide(const Color& a, const Color& b) noexcept
+    {
+        return glm::vec4(a) / normalize(b);
+    }
+
+    Color3 Colors::divide(const Color3& a, const Color3& b) noexcept
+    {
+        return glm::vec3(a) / normalize(b);
+    }
+
 }

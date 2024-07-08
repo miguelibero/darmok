@@ -138,21 +138,37 @@ namespace darmok
 		return _indexBuffer;
 	}
 
-	std::string Mesh::to_string() const noexcept
+	std::string Mesh::toString() const noexcept
 	{
 		return getMeshDescription("Mesh", _vertNum, _idxNum, getVertexLayout());
 	}
 
-	void Mesh::render(bgfx::Encoder& encoder, uint8_t vertexStream) const
+	void MeshRenderConfig::fix(uint32_t maxVertices, uint32_t maxIndices) noexcept
+	{
+		auto max = maxVertices - startVertex;
+		if (numVertices == 0 || numVertices > max)
+		{
+			numVertices = max;
+		}
+		max = maxIndices - startVertex;
+		if (numIndices == 0 || numIndices > max)
+		{
+			numIndices = max;
+		}
+	}
+
+	void Mesh::render(bgfx::Encoder& encoder, RenderConfig config) const
 	{
 		if (!isValid(_vertexBuffer))
 		{
 			throw std::runtime_error("invalid mesh vertex buffer");
 		}
-		encoder.setVertexBuffer(vertexStream, _vertexBuffer);
+
+		config.fix(_vertNum, _idxNum);
+		encoder.setVertexBuffer(config.vertexStream, _vertexBuffer, config.startVertex, config.numVertices);
 		if (isValid(_indexBuffer))
 		{
-			encoder.setIndexBuffer(_indexBuffer);
+			encoder.setIndexBuffer(_indexBuffer, config.startIndex, config.numIndices);
 		}
 	}
 
@@ -236,7 +252,7 @@ namespace darmok
 		return _indexBuffer;
 	}
 
-	std::string DynamicMesh::to_string() const noexcept
+	std::string DynamicMesh::toString() const noexcept
 	{
 		return getMeshDescription("DynamicMesh", _vertNum, _idxNum, getVertexLayout());
 	}
@@ -248,24 +264,33 @@ namespace darmok
 
 	void DynamicMesh::updateVertices(DataView data, uint32_t offset) noexcept
 	{
+		if (data.empty())
+		{
+			return;
+		}
 		bgfx::update(_vertexBuffer, offset, data.copyMem());
 	}
 
 	void DynamicMesh::updateIndices(DataView data, uint32_t offset) noexcept
 	{
+		if (data.empty())
+		{
+			return;
+		}
 		bgfx::update(_indexBuffer, offset, data.copyMem());
 	}
 
-	void DynamicMesh::render(bgfx::Encoder& encoder, uint8_t vertexStream) const
+	void DynamicMesh::render(bgfx::Encoder& encoder, RenderConfig config) const
 	{
 		if (!isValid(_vertexBuffer))
 		{
 			throw std::runtime_error("invalid mesh vertex buffer");
 		}
-		encoder.setVertexBuffer(vertexStream, _vertexBuffer);
+		config.fix(_vertNum, _idxNum);
+		encoder.setVertexBuffer(config.vertexStream, _vertexBuffer, config.startVertex, config.numVertices);
 		if (isValid(_indexBuffer))
 		{
-			encoder.setIndexBuffer(_indexBuffer);
+			encoder.setIndexBuffer(_indexBuffer, config.startIndex, config.numIndices);
 		}
 	}
 
@@ -319,17 +344,18 @@ namespace darmok
 		return *this;
 	}
 
-	std::string TransientMesh::to_string() const noexcept
+	std::string TransientMesh::toString() const noexcept
 	{
 		return getMeshDescription("TransientMesh", _vertNum, _idxNum, getVertexLayout());
 	}
 
-	void TransientMesh::render(bgfx::Encoder& encoder, uint8_t vertexStream) const
+	void TransientMesh::render(bgfx::Encoder& encoder, RenderConfig config) const
 	{
-		encoder.setVertexBuffer(vertexStream, &_vertexBuffer);
+		config.fix(_vertNum, _idxNum);
+		encoder.setVertexBuffer(config.vertexStream, &_vertexBuffer, config.startVertex, config.numVertices);
 		if (_idxNum > 0)
 		{
-			encoder.setIndexBuffer(&_indexBuffer);
+			encoder.setIndexBuffer(&_indexBuffer, config.startIndex, config.numIndices);
 		}
 	}
 
@@ -355,7 +381,6 @@ namespace darmok
 	{
 		doUpdateMeshIndexData(data, indices, offset);
 	}
-
 
 	template<>
 	void updateMeshIndexData<VertexIndex>(Data& data, const std::vector<VertexIndex>& indices, VertexIndex offset)
@@ -391,7 +416,7 @@ namespace darmok
 		{
 			vertex.position = config.scale * (vertex.position + config.offset);
 			vertex.texCoord = config.textureScale * (vertex.texCoord + config.textureOffset);
-			vertex.color = config.color * vertex.color;
+			vertex.color = Colors::multiply(config.color, vertex.color);
 		}
 		for (auto& index : indices)
 		{
@@ -413,7 +438,7 @@ namespace darmok
 		{
 			vertex.position = (vertex.position / newConfig.scale) - newConfig.offset;
 			vertex.texCoord = (vertex.texCoord / newConfig.textureScale) - newConfig.textureOffset;
-			vertex.color = vertex.color / newConfig.color;
+			vertex.color = Colors::divide(vertex.color, newConfig.color);
 		}
 		for (auto& index : indices)
 		{
@@ -460,7 +485,7 @@ namespace darmok
 			}
 			if (vertexLayout.has(bgfx::Attrib::Color0))
 			{
-				writer.write(bgfx::Attrib::Color0, i, vertex.color);
+				writer.write(bgfx::Attrib::Color0, i, Colors::multiply(config.color, vertex.color));
 			}
 			i++;
 		}
@@ -687,11 +712,13 @@ namespace darmok
 		auto offset = vertices.size();
 		MeshData fother = other;
 		fother.denormalize(config);
+		indices.reserve(indices.size() + other.indices.size());
 		for (auto& idx : fother.indices)
 		{
 			indices.push_back(offset + idx);
 		}
-		vertices.insert(vertices.begin(), fother.vertices.begin(), fother.vertices.end());
+		vertices.reserve(vertices.size() + other.vertices.size());
+		vertices.insert(vertices.end(), fother.vertices.begin(), fother.vertices.end());
 		return *this;
 	}
 }

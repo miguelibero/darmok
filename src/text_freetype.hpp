@@ -6,10 +6,11 @@
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
 #include <darmok/material.hpp>
-#include <unordered_set>
-#include <unordered_map>
+#include <set>
+#include <map>
 #include <optional>
 #include <string_view>
+#include <bimg/bimg.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -48,25 +49,25 @@ namespace darmok
         std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
         const Material& getMaterial() const noexcept override;
 
-        void onTextContentChanged(Text& text, const TextContent& oldContent, const TextContent& newContent) override;
+        void onTextContentChanged(Text& text, const Utf8Vector& oldContent, const Utf8Vector& newContent) override;
         void update() override;
         FT_Face getFace() const noexcept;
     private:
         Material _material;
         std::shared_ptr<Texture> _texture;
-        std::unordered_map<Utf8Char, Glyph> _glyphs;
+        std::map<Utf8Char, Glyph> _glyphs;
         FT_Face _face;
         Data _data;
         FT_Library _library;
         bx::AllocatorI& _alloc;
-        std::unordered_set<Utf8Char> _renderedChars;
-        std::unordered_set<Utf8Char> _chars;
+        std::set<Utf8Char> _renderedChars;
+        std::set<Utf8Char> _chars;
     };
 
     struct FontAtlas
     {
         Image image;
-        std::unordered_map<Utf8Char, Glyph> glyphs;
+        std::map<Utf8Char, Glyph> glyphs;
     };
 
     class FreetypeFontAtlasGenerator final
@@ -74,16 +75,20 @@ namespace darmok
     public:
         FreetypeFontAtlasGenerator(FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept;
         FreetypeFontAtlasGenerator& setSize(const glm::uvec2& size) noexcept;
-        glm::uvec2 calcSpace(const std::unordered_set<Utf8Char>& chars) noexcept;
-        FontAtlas operator()(const std::unordered_set<Utf8Char>& chars);
+        FreetypeFontAtlasGenerator& setImageFormat(bimg::TextureFormat::Enum format) noexcept;
+        FreetypeFontAtlasGenerator& setRenderMode(FT_Render_Mode mode) noexcept;
+        glm::uvec2 calcSpace(const std::set<Utf8Char>& chars) noexcept;
+        FontAtlas operator()(const std::set<Utf8Char>& chars);
         FontAtlas operator()(std::string_view str);
     private:
         FT_Face _face;
         FT_Library _library;
         bx::AllocatorI& _alloc;
         glm::uvec2 _size;
+        FT_Render_Mode _renderMode;
+        bimg::TextureFormat::Enum _imageFormat;
 
-        std::unordered_map<Utf8Char, FT_UInt> getIndices(const std::unordered_set<Utf8Char>& chars) const;
+        std::map<Utf8Char, FT_UInt> getIndices(const std::set<Utf8Char>& chars) const;
         const FT_Bitmap& renderBitmap(FT_UInt index);
     };
 

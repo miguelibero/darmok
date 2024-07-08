@@ -7,27 +7,19 @@
 #include <darmok/export.h>
 #include <darmok/texture_fwd.hpp>
 #include <darmok/color_fwd.hpp>
+#include <darmok/image_fwd.hpp>
 
 #include <memory>
 #include <string_view>
 #include <unordered_map>
 #include <iostream>
+#include <filesystem>
 
 namespace darmok
 {
 	class Data;
 	class DataView;
 	struct TextureConfig;
-
-	enum class ImageEncoding
-	{
-		Tga,
-		Png,
-		Exr,
-		Hdr,
-		Dds,
-		Ktx
-	};
 
     class DARMOK_EXPORT Image final
 	{
@@ -58,7 +50,9 @@ namespace darmok
 		[[nodiscard]] Data encode(ImageEncoding encoding) const noexcept;
 		void write(ImageEncoding encoding, std::ostream& stream) const noexcept;
 
-		void update(const glm::uvec2& pos, const glm::uvec2& size, DataView data);
+		void update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset = 0, size_t elmSize = 1);
+
+		static ImageEncoding getEncodingForPath(const std::filesystem::path& path) noexcept;
 
 	private:
 		bimg::ImageContainer* _container;

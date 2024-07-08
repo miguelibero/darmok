@@ -39,6 +39,7 @@ namespace darmok
         static [[nodiscard]] std::string globToRegex(std::string_view glob) noexcept;
         static [[nodiscard]] size_t replace(std::string& str, std::string_view src, std::string_view dst) noexcept;
         static [[nodiscard]] std::optional<std::string> getEnv(const std::string& name) noexcept;
+        static [[nodiscard]] std::u8string utf8Cast(const std::string& str) noexcept;
 
         static void ltrim(std::string& str) noexcept;
         static void rtrim(std::string& str) noexcept;

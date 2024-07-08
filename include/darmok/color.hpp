@@ -31,11 +31,19 @@ namespace darmok
 
         static glm::vec4 normalize(const Color& color) noexcept;
         static glm::vec3 normalize(const Color3& color) noexcept;
+        static Color denormalize(const glm::vec4& v) noexcept;
+        static Color3 denormalize(const glm::vec3& v) noexcept;
+
         static Color fromNumber(uint32_t color) noexcept;
         static uint32_t toNumber(const Color& color) noexcept;
         static uint32_t toNumber(const Color3& color) noexcept;
         static uint32_t toReverseNumber(const Color& color) noexcept;
         static uint32_t toReverseNumber(const Color3& color) noexcept;
+
+        static Color multiply(const Color& a, const Color& b) noexcept;
+        static Color3 multiply(const Color3& a, const Color3& b) noexcept;
+        static Color divide(const Color& a, const Color& b) noexcept;
+        static Color3 divide(const Color3& a, const Color3& b) noexcept;
     };
 }
 

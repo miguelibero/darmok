@@ -181,7 +181,7 @@ namespace darmok
         DataView vertData(vertices, numVertices * sizeof(Rml::Vertex));
         DataView idxData(indices, numIndices * sizeof(int));
         TransientMesh mesh(_layout, vertData, idxData, true);
-        mesh.render(_encoder.value(), 0);
+        mesh.render(_encoder.value());
 
         submitGeometry(texture, translation);
     }
@@ -347,7 +347,7 @@ namespace darmok
         auto trans = glm::translate(glm::mat4(1), p);
         _encoder->setTransform(glm::value_ptr(trans));
 
-        mesh->render(_encoder.value(), 0);
+        mesh->render(_encoder.value());
         _encoder->setState(_state);
         _encoder->submit(_viewId.value(), _program->getHandle());
     }
