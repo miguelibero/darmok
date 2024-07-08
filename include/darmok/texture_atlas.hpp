@@ -37,25 +37,35 @@ namespace darmok
 
 	struct DARMOK_EXPORT TextureAtlasElement final
 	{
-		std::string name;
+		std::string name = "";
 		std::vector<glm::uvec2> positions;
 		std::vector<glm::uvec2> texCoords;
 		std::vector<TextureAtlasIndex> indices;
-		glm::uvec2 texturePosition;
-		glm::uvec2 size;
-		glm::uvec2 offset;
-		glm::uvec2 originalSize;
-		glm::vec2 pivot;
-		bool rotated;
+		glm::uvec2 texturePosition = {};
+		glm::uvec2 size = {};
+		glm::uvec2 offset = {};
+		glm::uvec2 originalSize = {};
+		glm::vec2 pivot = {};
+		bool rotated = false;
 
 		TextureAtlasBounds getBounds() const noexcept;
 		size_t getVertexAmount() const noexcept;
+		bool isRect() const noexcept;
 
 		using MeshConfig = TextureAtlasMeshConfig;
 
 		std::unique_ptr<IMesh> createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config = {}) const noexcept;
 		static TextureAtlasElement create(const TextureAtlasBounds& bounds) noexcept;
 		void read(const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept;
+		void write(pugi::xml_node& xml) const noexcept;
+
+	private:
+		static std::pair<int, size_t> readInt(std::string_view str, size_t i) noexcept;
+		static std::vector<TextureAtlasIndex> readIndexList(std::string_view str) noexcept;
+		static std::pair<std::optional<glm::uvec2>, size_t> readVec2(std::string_view str, size_t i) noexcept;
+		static std::vector<glm::uvec2> readVec2List(std::string_view data) noexcept;
+		static std::string writeVec2List(const std::vector<glm::uvec2>& list) noexcept;
+		static std::string writeIndexList(const std::vector<TextureAtlasIndex>& list) noexcept;
 	};
 
 	class ImageAtlas;
@@ -68,6 +78,8 @@ namespace darmok
 
 		bool read(const pugi::xml_document& doc, const std::filesystem::path& basePath = "");
 		bool read(const pugi::xml_node& node, const std::filesystem::path& basePath = "");
+		void write(pugi::xml_document& doc) const noexcept;
+		void write(pugi::xml_node& node) const noexcept;
 	};
 
 	class Texture;

@@ -98,81 +98,103 @@ namespace darmok
 		return IMesh::create(config.type, layout, DataView(vertexData), DataView(totalIndices));
 	}
 
-	struct TexturePackerUtils
+	std::pair<int, size_t> TextureAtlasElement::readInt(std::string_view str, size_t i) noexcept
 	{
-		static std::pair<int, size_t> readInt(std::string_view str, size_t i) noexcept
+		if (str.size() == 0 || i == std::string::npos || i >= str.size())
 		{
-			if (str.size() == 0 || i == std::string::npos || i >= str.size())
-			{
-				return { -1, std::string::npos };
-			}
-			auto ni = str.find(' ', i);
-			if (ni == std::string::npos)
-			{
-				ni = str.size();
-			}
-			int v;
-			std::from_chars(str.data() + i, str.data() + ni, v);
-			return { v, ni + 1 };
+			return { -1, std::string::npos };
 		}
-
-		static std::vector<TextureAtlasIndex> readTextureIndexList(std::string_view str) noexcept
+		auto ni = str.find(' ', i);
+		if (ni == std::string::npos)
 		{
-			std::vector<TextureAtlasIndex> list;
-			size_t ii = 0;
-			while (ii != std::string::npos)
-			{
-				auto p = readInt(str, ii);
-				if (p.first < 0)
-				{
-					break;
-				}
-				list.push_back(p.first);
-				ii = p.second;
-			}
-			return list;
+			ni = str.size();
 		}
+		int v;
+		std::from_chars(str.data() + i, str.data() + ni, v);
+		return { v, ni + 1 };
+	}
 
-		static std::pair<std::optional<glm::uvec2>, size_t> readTextureVec2(std::string_view str, size_t i) noexcept
+	std::vector<TextureAtlasIndex> TextureAtlasElement::readIndexList(std::string_view str) noexcept
+	{
+		std::vector<TextureAtlasIndex> list;
+		size_t ii = 0;
+		while (ii != std::string::npos)
 		{
-			auto p = readInt(str, i);
+			auto p = readInt(str, ii);
 			if (p.first < 0)
 			{
-				return { std::nullopt, std::string::npos };
+				break;
 			}
-			glm::uvec2 v = { p.first, 0 };
-			i = p.second;
-			if (i == std::string::npos)
-			{
-				return { v, i };
-			}
-			p = readInt(str, i);
-			if (p.first < 0)
-			{
-				return { std::nullopt, std::string::npos };
-			}
-			v.y = p.first;
-			i = p.second;
+			list.push_back(p.first);
+			ii = p.second;
+		}
+		return list;
+	}
+
+	std::pair<std::optional<glm::uvec2>, size_t> TextureAtlasElement::readVec2(std::string_view str, size_t i) noexcept
+	{
+		auto p = readInt(str, i);
+		if (p.first < 0)
+		{
+			return { std::nullopt, std::string::npos };
+		}
+		glm::uvec2 v = { p.first, 0 };
+		i = p.second;
+		if (i == std::string::npos)
+		{
 			return { v, i };
 		}
-
-		static std::vector<glm::uvec2> readTextureVec2List(std::string_view data) noexcept
+		p = readInt(str, i);
+		if (p.first < 0)
 		{
-			std::vector<glm::uvec2> list;
-			size_t pi = 0;
-			while (pi != std::string::npos)
-			{
-				auto pp = readTextureVec2(data, pi);
-				if (!pp.first.has_value())
-				{
-					break;
-				}
-				list.push_back(pp.first.value());
-				pi = pp.second;
-			}
-			return list;
+			return { std::nullopt, std::string::npos };
 		}
-	};
+		v.y = p.first;
+		i = p.second;
+		return { v, i };
+	}
+
+	std::vector<glm::uvec2> TextureAtlasElement::readVec2List(std::string_view data) noexcept
+	{
+		std::vector<glm::uvec2> list;
+		size_t pi = 0;
+		while (pi != std::string::npos)
+		{
+			auto pp = readVec2(data, pi);
+			if (!pp.first.has_value())
+			{
+				break;
+			}
+			list.push_back(pp.first.value());
+			pi = pp.second;
+		}
+		return list;
+	}
+
+	bool TextureAtlasElement::isRect() const noexcept
+	{
+		if (positions.size() != 4)
+		{
+			return false;
+		}
+		if (positions[0] != glm::uvec2(size.x, 0))
+		{
+			return false;
+		}
+		if (positions[1] != size)
+		{
+			return false;
+		}
+		if (positions[2] != glm::uvec2(0, size.y))
+		{
+			return false;
+		}
+		if (positions[3] != glm::uvec2(0))
+		{
+			return false;
+		}
+		return true;
+	}
 
 	void TextureAtlasElement::read(const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept
 	{
@@ -217,7 +239,7 @@ namespace darmok
 		auto xmlVertices = xml.child("vertices");
 		if (xmlVertices)
 		{
-			positions = TexturePackerUtils::readTextureVec2List(xmlVertices.text().get());
+			positions = readVec2List(xmlVertices.text().get());
 		}
 		else
 		{
@@ -230,7 +252,7 @@ namespace darmok
 		auto xmlVerticesUV = xml.child("verticesUV");
 		if (xmlVerticesUV)
 		{
-			texCoords = TexturePackerUtils::readTextureVec2List(xmlVerticesUV.text().get());
+			texCoords = readVec2List(xmlVerticesUV.text().get());
 		}
 		else
 		{
@@ -244,7 +266,7 @@ namespace darmok
 		auto xmlTriangles = xml.child("triangles");
 		if (xmlTriangles)
 		{
-			indices = TexturePackerUtils::readTextureIndexList(xmlTriangles.text().get());
+			indices = readIndexList(xmlTriangles.text().get());
 		}
 		else
 		{
@@ -265,6 +287,72 @@ namespace darmok
 
 		pivot = { xml.attribute("pX").as_float(), xml.attribute("pY").as_float() };
 		rotated = std::string(xml.attribute("r").value()) == "y";
+	}
+
+	void TextureAtlasElement::write(pugi::xml_node& xml) const noexcept
+	{
+		xml.append_attribute("n").set_value(name.c_str());
+		xml.append_attribute("x").set_value(texturePosition.x);
+		xml.append_attribute("y").set_value(texturePosition.y);
+		xml.append_attribute("w").set_value(size.x);
+		xml.append_attribute("h").set_value(size.y);
+		if (offset.x > 0)
+		{
+			xml.append_attribute("oX").set_value(offset.x);
+		}
+		if (offset.y > 0)
+		{
+			xml.append_attribute("oY").set_value(offset.y);
+		}
+		if (originalSize.x > 0)
+		{
+			xml.append_attribute("oW").set_value(originalSize.x);
+		}
+		if (originalSize.y > 0)
+		{
+			xml.append_attribute("oW").set_value(originalSize.y);
+		}
+		if (pivot.x != 0)
+		{
+			xml.append_attribute("pX").set_value(pivot.x);
+		}
+		if (pivot.y != 0)
+		{
+			xml.append_attribute("pY").set_value(pivot.y);
+		}
+		if (rotated)
+		{
+			xml.append_attribute("r").set_value("y");
+		}
+		if (!isRect())
+		{
+			if (!positions.empty())
+			{
+				xml.append_child("vertices").set_value(writeVec2List(positions).c_str());
+			}
+			if (!texCoords.empty())
+			{
+				xml.append_child("verticesUV").set_value(writeVec2List(texCoords).c_str());
+			}
+			if (!indices.empty())
+			{
+				xml.append_child("triangles").set_value(writeIndexList(indices).c_str());
+			}
+		}
+	}
+
+	std::string TextureAtlasElement::writeVec2List(const std::vector<glm::uvec2>& list) noexcept
+	{
+		return StringUtils::join(" ", list, [](auto& v) {
+			return std::to_string(v.x) + " " + std::to_string(v.y);
+		});
+	}
+
+	std::string TextureAtlasElement::writeIndexList(const std::vector<TextureAtlasIndex>& list) noexcept
+	{
+		return StringUtils::join(" ", list, [](auto& v) {
+			return std::to_string(v);
+		});
 	}
 
 	TextureAtlasBounds TextureAtlas::getBounds(std::string_view prefix) const noexcept
@@ -312,14 +400,14 @@ namespace darmok
 		{
 			return nullptr;
 		}
-		auto size = texture->getSize();
+		auto& size = texture->getSize();
 		return elm->createSprite(layout, size, config);
 	}
 
 	std::vector<AnimationFrame> TextureAtlas::createAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration, const MeshConfig& config) const noexcept
 	{
 		std::vector<AnimationFrame> frames;
-		auto size = texture->getSize();
+		auto& size = texture->getSize();
 
 		for (auto& elm : elements)
 		{
@@ -366,6 +454,25 @@ namespace darmok
 		}
 
 		return true;
+	}
+
+	void TextureAtlasData::write(pugi::xml_document& doc) const noexcept
+	{
+		pugi::xml_node decl = doc.prepend_child(pugi::node_declaration);
+		decl.append_attribute("version") = "1.0";
+		decl.append_attribute("encoding") = "utf-8";
+		auto node = doc.append_child("TextureAtlas");
+		write(node);
+	}
+
+	void TextureAtlasData::write(pugi::xml_node& xml) const noexcept
+	{
+		xml.append_attribute("imagePath").set_value(imagePath.c_str());
+		for (auto& elm : elements)
+		{
+			auto sprite = xml.append_child("sprite");
+			elm.write(sprite);
+		}
 	}
 
     TexturePackerTextureAtlasLoader::TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept

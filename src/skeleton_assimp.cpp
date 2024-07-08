@@ -94,7 +94,7 @@ namespace darmok
     {
         if (config.contains("bones"))
         {
-            auto bonesConfig = config["bones"];
+            auto& bonesConfig = config["bones"];
             if (bonesConfig.is_array())
             {
                 std::vector<std::string> boneNames = bonesConfig;
@@ -299,8 +299,8 @@ namespace darmok
         {
             log << prefix << std::endl;
         }
-        log << "skeleton bone names: " << StringUtils::join(_boneNames, ", ") << std::endl;
-        log << "animation channels: " << StringUtils::join(animChannels, ", ") << std::endl;
+        log << "skeleton bone names: " << StringUtils::join(", ", _boneNames) << std::endl;
+        log << "animation channels: " << StringUtils::join(", ", animChannels) << std::endl;
         return true;
     }
 

@@ -17,7 +17,19 @@ namespace darmok
         static [[nodiscard]] std::vector<std::string> splitWords(std::string_view sv) noexcept;
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, char sep) noexcept;
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
-        static [[nodiscard]] std::string join(std::vector<std::string> strs, std::string_view sep) noexcept;
+        static [[nodiscard]] std::string join(std::string_view sep, std::vector<std::string> strs) noexcept;
+
+        template<typename T, typename C>
+        static [[nodiscard]] std::string join(std::string_view sep, std::vector<T> elements,  C callback) noexcept
+        {
+            std::vector<std::string> strs;
+            for (auto& elm : elements)
+            {
+                strs.emplace_back(callback(elm));
+            }
+            return join(sep, strs);
+        }
+
         static [[nodiscard]] uint8_t hexToBin(char chr);
         static [[nodiscard]] uint8_t hexToBin(std::string_view sv);
         static [[nodiscard]] std::string getFileStem(std::string_view filename) noexcept;

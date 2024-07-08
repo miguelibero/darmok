@@ -40,6 +40,7 @@ namespace darmok
 			&alloc, format, size.x, size.y, 0, 1, false, false
 		))
 	{
+		std::memset(_container->m_data, 0, _container->m_size);
 	}
 
     Image::Image(bimg::ImageContainer* container)
@@ -117,18 +118,19 @@ namespace darmok
 	{
 		auto size = getSize();
 		auto info = getTextureInfo();
-		uint32_t pitch = info.bitsPerPixel / 8 * size.x;
+		auto bpp = info.bitsPerPixel / 8;
+		uint32_t pitch = bpp * size.x;
 		auto ptr = _container->m_data;
-		auto grayscale = false;
 		auto format = _container->m_format;
 		auto ori = _container->m_orientation;
 		auto yflip = ori == bimg::Orientation::HFlip || ori == bimg::Orientation::HFlipR90 || ori == bimg::Orientation::HFlipR270;
+		bool srgb = format == bimg::TextureFormat::RGB8S;
 		bx::Error err;
 		
 		switch (encoding)
 		{
 		case ImageEncoding::Tga:
-			bimg::imageWriteTga(&writer, size.x, size.y, pitch, ptr, grayscale, yflip, &err);
+			bimg::imageWriteTga(&writer, size.x, size.y, pitch, ptr, bpp == 1, yflip, &err);
 			break;
 		case ImageEncoding::Png:
 			bimg::imageWritePng(&writer, size.x, size.y, pitch, ptr, format, yflip, &err);
@@ -143,10 +145,10 @@ namespace darmok
 			bimg::imageWriteDds(&writer, *_container, ptr, info.storageSize, &err);
 			break;
 		case ImageEncoding::Ktx:
-			bool srgb = true;
 			bimg::imageWriteKtx(&writer, format, isCubeMap(), size.x, size.y, getDepth(), getMipCount(), getLayerCount(), srgb, ptr, &err);
 			break;
 		}
+		checkError(err);
 	}
 
 	Data Image::encode(ImageEncoding encoding) const noexcept
@@ -177,17 +179,18 @@ namespace darmok
 			throw std::runtime_error("size does not fit");
 		}
 		auto bpp = getTextureInfo().bitsPerPixel / 8;
-		if (data.size() < size.x * size.y * bpp)
+		size_t updateSize = size.x * size.y * bpp;
+		if (data.size() < updateSize)
 		{
 			throw std::runtime_error("data is too small");
 		}
-		auto imgStart = pos.x + pos.y * imgSize.x;
+		auto imgStart = pos.x + (pos.y * imgSize.x);
 		auto rowSize = size.x * bpp;
 		auto imgData = (uint8_t*)_container->m_data;
 		for (size_t y = 0; y < size.y; y++)
 		{
 			auto row = data.view(y * rowSize, rowSize);
-			auto ptr = &imgData[ (imgStart + imgSize.x * y) * bpp ];
+			auto ptr = &imgData[(imgStart + (y * imgSize.x)) * bpp];
 			std::memcpy(ptr, row.ptr(), rowSize);
 		}
 	}

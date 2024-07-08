@@ -3,6 +3,7 @@
 #include <darmok/data.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/stream.hpp>
 #include "text_freetype.hpp"
 #include <stdexcept>
 
@@ -360,7 +361,7 @@ namespace darmok
 		}
 		else
 		{
-			for (auto chr : chars)
+			for (auto& chr : chars)
 			{
 				auto idx = FT_Get_Char_Index(_face, chr.data);
 				if (idx != 0)
@@ -376,7 +377,7 @@ namespace darmok
 	{
 		auto err = FT_Load_Glyph(_face, index, FT_LOAD_DEFAULT);
 		FreetypeUtils::checkError(err);
-		err = FT_Render_Glyph(_face->glyph, FT_RENDER_MODE_SDF);
+		err = FT_Render_Glyph(_face->glyph, FT_RENDER_MODE_NORMAL);
 		FreetypeUtils::checkError(err);
 		return _face->glyph->bitmap;
 	}
@@ -385,7 +386,7 @@ namespace darmok
 	{
 		glm::uvec2 pos(0);
 		FT_UInt fontHeight = _face->size->metrics.y_ppem;
-		FontAtlas atlas(Image(_size, _alloc, bimg::TextureFormat::A8));
+		FontAtlas atlas(Image(_size, _alloc, bimg::TextureFormat::R8));
 		for(auto& [chr, idx] : getIndices(chars))
 		{
 			auto& bitmap = renderBitmap(idx);
@@ -439,7 +440,7 @@ namespace darmok
 			return true;
 		}
 
-		glm::uvec2 size(48);
+		glm::uvec2 size(100);
 		if (input.config.contains("fontSize"))
 		{
 			auto& sizeConfig = input.config["fontSize"];
@@ -470,6 +471,31 @@ namespace darmok
 
 		_atlas = generator(chars);
 
+		auto basePath = input.getRelativePath().parent_path();
+		auto stem = StringUtils::getFileStem(input.path.filename().string());
+
+		_imagePath = basePath;
+		_atlasPath = basePath;
+
+		if (input.config.contains("imagePath"))
+		{
+			_imagePath /= input.config["imagePath"];
+		}
+		else
+		{
+			_imagePath /= std::filesystem::path(stem + ".tga");
+
+		}
+
+		if (input.config.contains("atlasPath"))
+		{
+			_atlasPath /= input.config["atlasPath"];
+		}
+		else
+		{
+			_atlasPath /= std::filesystem::path(stem + ".xml");
+		}
+
 		return true;
 	}
 
@@ -482,44 +508,35 @@ namespace darmok
 
 	std::vector<std::filesystem::path> FreetypeFontAtlasImporterImpl::getOutputs(const Input& input)
 	{
-		std::vector<std::filesystem::path> outputs;
-		auto basePath = input.getRelativePath().parent_path();
-		auto stem = StringUtils::getFileStem(input.path.filename().string());
-		if (input.config.contains("atlasPath"))
-		{
-			outputs.push_back(basePath / input.config["atlasPath"]);
-		}
-		else
-		{
-			outputs.push_back(basePath / std::filesystem::path(stem + ".xml"));
-		}
-		if (input.config.contains("imagePath"))
-		{
-			outputs.push_back(basePath / input.config["imagePath"]);
-		}
-		else
-		{
-			outputs.push_back(basePath / std::filesystem::path(stem + ".png"));
-
-		}
-		return outputs;
+		return { _imagePath, _atlasPath };
 	}
 
 	std::ofstream FreetypeFontAtlasImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
 	{
 		if (outputIndex == 0)
 		{
-			return std::ofstream(path);
+			return std::ofstream(path, std::ios::binary);
 		}
-		return std::ofstream(path, std::ios::binary);
+		return std::ofstream(path);
 	}
 
 	void FreetypeFontAtlasImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
-		if (outputIndex == 1)
+		if (outputIndex == 0)
 		{
-			_atlas->image.write(ImageEncoding::Png, out);
+			_atlas->image.write(ImageEncoding::Tga, out);
+			return;
 		}
+		auto relImagePath = std::filesystem::relative(_imagePath, _atlasPath.parent_path());
+		TextureAtlasData atlasData
+		{
+			.imagePath = relImagePath,
+			.elements = _atlas->elements,
+			.size = _atlas->image.getSize()
+		};
+		pugi::xml_document doc;
+		atlasData.write(doc);
+		doc.save(out, PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);
 	}
 
 	const std::string& FreetypeFontAtlasImporterImpl::getName() const noexcept

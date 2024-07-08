@@ -11,8 +11,10 @@
 #include <unordered_map>
 #include <optional>
 #include <bx/allocator.h>
-#include <ft2build.h>
 #include <string_view>
+#include <pugixml.hpp>
+
+#include <ft2build.h>
 #include FT_FREETYPE_H
 
 
@@ -124,6 +126,8 @@ namespace darmok
         FT_Library _library;
         bx::DefaultAllocator _alloc;
         std::optional<FontAtlas> _atlas;
+        std::filesystem::path _imagePath;
+        std::filesystem::path _atlasPath;
     };
 
 }

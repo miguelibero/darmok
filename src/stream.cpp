@@ -2,6 +2,7 @@
 #include <bx/debug.h>
 #include <bx/string.h>
 #include <bx/platform.h>
+#include <fstream>
 
 #if BX_PLATFORM_WINDOWS
 #include <windows.h>
@@ -9,7 +10,7 @@
 
 namespace darmok
 {
-    void StreamUtils::copyStream(std::istream& input, std::ostream& output, size_t bufferSize)
+    void StreamUtils::copy(std::istream& input, std::ostream& output, size_t bufferSize)
     {
         std::vector<char> buffer(bufferSize);
         while (input.read(&buffer.front(), bufferSize) || input.gcount() > 0)
@@ -32,6 +33,13 @@ namespace darmok
         OutputDebugString(msg.c_str());
 #endif
         bx::debugOutput(bx::StringView(msg.data(), msg.size()));
+    }
+
+    static const unsigned char _utf8Bom[3] = { 0xEF, 0xBB, 0xBF };
+
+    void StreamUtils::writeUtf8Bom(std::ostream& out)
+    {
+        out << _utf8Bom;
     }
 
     PrefixBuffer::PrefixBuffer(OptionalRef<std::streambuf> buffer, const std::string& prefix) noexcept

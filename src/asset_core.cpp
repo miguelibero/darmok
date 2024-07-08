@@ -93,7 +93,7 @@ namespace darmok
             auto itr = files.find(op.input.path);
             if (itr != files.end())
             {
-                auto fileConfig = itr->second;
+                auto& fileConfig = itr->second;
                 auto itr2 = fileConfig.find(importerName);
                 if (itr2 != fileConfig.end())
                 {
@@ -176,7 +176,7 @@ namespace darmok
         }
         if (config.contains(_includesKey))
         {
-            auto includes = config[_includesKey];
+            auto& includes = config[_includesKey];
             FileConfig::replaceIncludes(importers, includes);
             for (auto& elm : files)
             {
@@ -219,7 +219,7 @@ namespace darmok
             importers = fix(config[_importersKey]);
             if (config.contains(_includesKey))
             {
-                auto includes = config[_includesKey];
+                auto& includes = config[_includesKey];
                 replaceIncludes(importers, includes);
             }
         }
@@ -743,7 +743,7 @@ namespace darmok
 
     std::filesystem::path AssetImporterImpl::fixOutput(const std::filesystem::path& path, const Operation& op) const noexcept
     {
-        auto output = path;
+        std::filesystem::path output = path;
         if (op.headerConfig.produceHeaders)
         {
             output = getHeaderPath(output);
@@ -887,7 +887,7 @@ namespace darmok
     void CopyAssetImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         std::ifstream is(input.path, std::ios::binary);
-        StreamUtils::copyStream(is, out, _bufferSize);
+        StreamUtils::copy(is, out, _bufferSize);
     }
 
     const std::string& CopyAssetImporter::getName() const noexcept
@@ -1081,7 +1081,7 @@ namespace darmok
         }
 
         std::ifstream is(tmpPath, std::ios::binary);
-        StreamUtils::copyStream(is, out, _bufferSize);
+        StreamUtils::copy(is, out, _bufferSize);
     }
 
     std::string ShaderImporterImpl::fixPathArgument(const fs::path& path) noexcept
