@@ -7,10 +7,10 @@
 #include <darmok/app.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/string.hpp>
+#include <darmok/data.hpp>
 #include <unordered_set>
 #include <unordered_map>
 #include <optional>
-#include <bx/allocator.h>
 #include <string_view>
 #include <pugixml.hpp>
 
@@ -29,15 +29,16 @@ namespace darmok
     class FreetypeFontLoaderImpl final
     {
     public:
-        FreetypeFontLoaderImpl(IDataLoader& dataLoader, const glm::uvec2& defaultFontSize = glm::uvec2(48, 48));
+        FreetypeFontLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& alloc, const glm::uvec2& defaultFontSize = glm::uvec2(48, 48));
         ~FreetypeFontLoaderImpl();
         void init(App& app);
         void shutdown();
-        std::shared_ptr<Font> operator()(std::string_view name);
+        std::shared_ptr<IFont> operator()(std::string_view name);
     private:
         IDataLoader& _dataLoader;
         glm::uvec2 _defaultFontSize;
         FT_Library _library;
+        bx::AllocatorI& _alloc;
 
     };
 
@@ -46,49 +47,40 @@ namespace darmok
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept;
         void shutdown() noexcept;
-        bool update();
+        void update();
         bgfx::ViewId afterRender(bgfx::ViewId viewId);
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<bx::AllocatorI> _alloc;
     };
 
-    class FontImpl final
+    class FreetypeFont final : public IFont
     {
     public:
-        FontImpl(FT_Face face, FT_Library library, Data&& data) noexcept;
-        ~FontImpl() noexcept;
-        void removeContent(std::string_view content);
-        void addContent(std::string_view content);
-        bool update(bx::AllocatorI& alloc);
+        FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept;
+        ~FreetypeFont() noexcept;
+
+        std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
+        OptionalRef<const Texture> getTexture() const noexcept override;
+
+        void onTextContentChanged(Text& text, const std::string& oldContent, const std::string& newContent) override;
+        void update() override;
         FT_Face getFace() const noexcept;
     private:
         std::optional<Texture> _tex;
+        std::unordered_map<Utf8Char, Glyph> _glyphs;
         FT_Face _face;
         Data _data;
         FT_Library _library;
+        bx::AllocatorI& _alloc;
         std::unordered_set<Utf8Char> _renderedChars;
         std::unordered_set<Utf8Char> _chars;
-    };
-
-    class TextImpl final
-    {
-    public:
-        TextImpl(const std::shared_ptr<Font>& font, const std::string& content = "") noexcept;
-
-        std::shared_ptr<Font> getFont() noexcept;
-        void setFont(const std::shared_ptr<Font>& font) noexcept;
-        const std::string& getContent() noexcept;
-        void setContent(const std::string& str) noexcept;
-    private:
-        std::shared_ptr<Font> _font;
-        std::string _content;
     };
 
     struct FontAtlas
     {
         Image image;
-        std::vector<TextureAtlasElement> elements;
+        std::unordered_map<Utf8Char, Glyph> glyphs;
     };
 
     class FreetypeFontAtlasGenerator final

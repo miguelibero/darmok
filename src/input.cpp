@@ -115,7 +115,7 @@ namespace darmok
 		while (true)
 		{
 			c = popChar();
-			if (c.len == 0)
+			if (!c)
 			{
 				break;
 			}

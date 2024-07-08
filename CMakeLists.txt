@@ -116,6 +116,7 @@ set(ASSET_TARGETS ${SHADERS_TARGET})
 
 set(CORE_SOURCES
   ${SRC_DIR}/string.cpp
+  ${SRC_DIR}/utf8.cpp
   ${SRC_DIR}/stream.cpp
   ${SRC_DIR}/data.cpp
   ${SRC_DIR}/data_stream.cpp
@@ -137,6 +138,7 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/glm.hpp
   ${INCLUDE_DIR}/utils.hpp
   ${INCLUDE_DIR}/string.hpp
+  ${INCLUDE_DIR}/utf8.hpp
   ${INCLUDE_DIR}/stream.hpp
   ${INCLUDE_DIR}/optional_ref.hpp
   ${INCLUDE_DIR}/collection.hpp

@@ -310,7 +310,7 @@ namespace darmok
 		}
 		if (originalSize.y > 0)
 		{
-			xml.append_attribute("oW").set_value(originalSize.y);
+			xml.append_attribute("oH").set_value(originalSize.y);
 		}
 		if (pivot.x != 0)
 		{
@@ -447,7 +447,6 @@ namespace darmok
 		};
 
 		static const char* spriteTag = "sprite";
-		std::vector<TextureAtlasElement> elements;
 		for (pugi::xml_node spriteXml = atlasXml.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
 		{
 			elements.emplace_back().read(spriteXml, size);
@@ -496,7 +495,7 @@ namespace darmok
 			throw std::runtime_error(result.description());
 		}
 		TextureAtlasData atlasData;
-		if (!atlasData.read(doc, std::filesystem::absolute(name).parent_path()))
+		if (!atlasData.read(doc, std::filesystem::path(name).parent_path()))
 		{
 			throw std::runtime_error("failed to read texture packer xml");
 		}

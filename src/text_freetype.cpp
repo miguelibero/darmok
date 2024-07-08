@@ -4,6 +4,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/utf8.hpp>
 #include "text_freetype.hpp"
 #include <stdexcept>
 
@@ -50,10 +51,11 @@ namespace darmok
 		}
 	};
 
-	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(IDataLoader& dataLoader, const glm::uvec2& defaultFontSize)
+	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& alloc, const glm::uvec2& defaultFontSize)
 		: _dataLoader(dataLoader)
 		, _defaultFontSize(defaultFontSize)
 		, _library(nullptr)
+		, _alloc(alloc)
 	{
 	}
 
@@ -80,7 +82,7 @@ namespace darmok
 		}
 	}
 
-	std::shared_ptr<Font> FreetypeFontLoaderImpl::operator()(std::string_view name)
+	std::shared_ptr<IFont> FreetypeFontLoaderImpl::operator()(std::string_view name)
 	{
 		if (!_library)
 		{
@@ -96,11 +98,11 @@ namespace darmok
 		err = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 		FreetypeUtils::checkError(err);
 
-		return std::make_shared<Font>(std::make_unique<FontImpl>(face, _library, std::move(data)));
+		return std::make_shared<FreetypeFont>(face, std::move(data), _library, _alloc);
 	}
 
-	FreetypeFontLoader::FreetypeFontLoader(IDataLoader& dataLoader)
-		: _impl(std::make_unique<FreetypeFontLoaderImpl>(dataLoader))
+	FreetypeFontLoader::FreetypeFontLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc)
+		: _impl(std::make_unique<FreetypeFontLoaderImpl>(dataLoader, alloc))
 	{
 	}
 
@@ -119,7 +121,7 @@ namespace darmok
 		_impl->shutdown();
 	}
 
-	std::shared_ptr<Font> FreetypeFontLoader::operator()(std::string_view name)
+	std::shared_ptr<IFont> FreetypeFontLoader::operator()(std::string_view name)
 	{
 		return (*_impl)(name);
 	}
@@ -136,27 +138,22 @@ namespace darmok
 		_alloc.reset();
 	}
 
-	bool TextRendererImpl::update()
+	void TextRendererImpl::update()
 	{
 		if (!_scene || !_alloc)
 		{
-			return false;
+			return;
 		}
 		auto texts = _scene->getComponentView<Text>();
-		std::unordered_set<std::shared_ptr<Font>> fonts;
+		std::unordered_set<std::shared_ptr<IFont>> fonts;
 		for (auto [entity, text] : texts.each())
 		{
-			fonts.insert(text.getImpl().getFont());
+			fonts.insert(text.getFont());
 		}
-		bool changed = false;
 		for (auto& font : fonts)
 		{
-			if (font->getImpl().update(_alloc.value()))
-			{
-				changed = true;
-			}
+			font->update();
 		}
-		return changed;
 	}
 
 	bgfx::ViewId TextRendererImpl::afterRender(bgfx::ViewId viewId)
@@ -194,40 +191,56 @@ namespace darmok
 		return _impl->afterRender(viewId);
 	}
 
-	FontImpl::FontImpl(FT_Face face, FT_Library library, Data&& data) noexcept
+	FreetypeFont::FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept
 		: _face(face)
 		, _data(std::move(data))
 		, _library(library)
+		, _alloc(alloc)
 	{
 	}
 
-	FontImpl::~FontImpl() noexcept
+	FreetypeFont::~FreetypeFont() noexcept
 	{
 		FT_Done_Face(_face);
 	}
 
-	void FontImpl::removeContent(std::string_view content)
+	std::optional<Glyph> FreetypeFont::getGlyph(const Utf8Char& chr) const noexcept
 	{
-		FreetypeUtils::tokenize(content, _chars, true);
+		auto itr = _glyphs.find(chr);
+		if (itr == _glyphs.end())
+		{
+			return std::nullopt;
+		}
+		return itr->second;
 	}
 
-	void FontImpl::addContent(std::string_view content)
+	OptionalRef<const Texture> FreetypeFont::getTexture() const noexcept
 	{
-		FreetypeUtils::tokenize(content, _chars);
+		if (_tex)
+		{
+			return _tex.value();
+		}
+		return nullptr;
 	}
 
-	FT_Face FontImpl::getFace() const  noexcept
+	void FreetypeFont::onTextContentChanged(Text& text, const std::string& oldContent, const std::string& newContent)
+	{
+		FreetypeUtils::tokenize(oldContent, _chars, true);
+		FreetypeUtils::tokenize(newContent, _chars);
+	}
+
+	FT_Face FreetypeFont::getFace() const  noexcept
 	{
 		return _face;
 	}
 
-	bool FontImpl::update(bx::AllocatorI& alloc)
+	void FreetypeFont::update()
 	{
 		if (_renderedChars == _chars)
 		{
-			return false;
+			return;
 		}
-		FreetypeFontAtlasGenerator generator(_face, _library, alloc);
+		FreetypeFontAtlasGenerator generator(_face, _library, _alloc);
 		auto atlas = generator(_chars);
 
 		if (_tex && _tex->getSize() == atlas.image.getSize())
@@ -238,77 +251,58 @@ namespace darmok
 		{
 			_tex.emplace(atlas.image);
 		}
-		
+		_glyphs = atlas.glyphs;
 		_renderedChars = _chars;
-		return true;
 	}
 
-	Font::Font(std::unique_ptr<FontImpl>&& impl) noexcept
-		: _impl(std::move(impl))
-	{
-	}
-
-	Font::~Font()
-	{
-		// intentionally left blank
-	}
-
-	FontImpl& Font::getImpl()
-	{
-		return *_impl;
-	}
-
-	const FontImpl& Font::getImpl() const
-	{
-		return *_impl;
-	}
-
-	TextImpl::TextImpl(const std::shared_ptr<Font>& font, const std::string& content) noexcept
+	Text::Text(const std::shared_ptr<IFont>& font, const std::string& content) noexcept
 		: _font(font)
 	{
 		setContent(content);
 	}
 
-	std::shared_ptr<Font> TextImpl::getFont() noexcept
+	Text::~Text()
+	{
+		if (_font)
+		{
+			_font->onTextContentChanged(*this, _content, "");
+		}
+	}
+
+	std::shared_ptr<IFont> Text::getFont() noexcept
 	{
 		return _font;
 	}
 
-	void TextImpl::setFont(const std::shared_ptr<Font>& font) noexcept
+	void Text::setFont(const std::shared_ptr<IFont>& font) noexcept
 	{
+		if (_font == font)
+		{
+			return;
+		}
+		if (_font)
+		{
+			_font->onTextContentChanged(*this, _content, "");
+		}
 		_font = font;
+		if (_font)
+		{
+			_font->onTextContentChanged(*this, "", _content);
+		}
 	}
 
-	const std::string& TextImpl::getContent() noexcept
+	const std::string& Text::getContent() noexcept
 	{
 		return _content;
 	}
 
-	void TextImpl::setContent(const std::string& str) noexcept
+	void Text::setContent(const std::string& str) noexcept
 	{
-		_font->getImpl().removeContent(_content);
-		_font->getImpl().addContent(str);
+		if (_font)
+		{
+			_font->onTextContentChanged(*this, _content, str);
+		}
 		_content = str;
-	}
-
-	Text::Text(const std::shared_ptr<Font>& font, const std::string& content) noexcept
-		: _impl(std::make_unique<TextImpl>(font, content))
-	{
-	}
-
-	Text::~Text()
-	{
-		// intentionally left blank
-	}
-
-	TextImpl& Text::getImpl()
-	{
-		return *_impl;
-	}
-
-	const TextImpl& Text::getImpl() const
-	{
-		return *_impl;
 	}
 
 	FreetypeFontAtlasGenerator::FreetypeFontAtlasGenerator(FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept
@@ -363,7 +357,7 @@ namespace darmok
 		{
 			for (auto& chr : chars)
 			{
-				auto idx = FT_Get_Char_Index(_face, chr.data);
+				auto idx = FT_Get_Char_Index(_face, chr.code);
 				if (idx != 0)
 				{
 					indices.emplace(chr, idx);
@@ -387,7 +381,8 @@ namespace darmok
 		glm::uvec2 pos(0);
 		FT_UInt fontHeight = _face->size->metrics.y_ppem;
 		FontAtlas atlas(Image(_size, _alloc, bimg::TextureFormat::R8));
-		for(auto& [chr, idx] : getIndices(chars))
+		auto indices = getIndices(chars);
+		for(auto& [chr, idx] : indices)
 		{
 			auto& bitmap = renderBitmap(idx);
 			if (pos.x + bitmap.width >= _size.x)
@@ -399,11 +394,9 @@ namespace darmok
 					throw std::runtime_error("Texture overflow\n");
 				}
 			}
-			auto& elm = atlas.elements.emplace_back();
-			elm.size = glm::uvec2(bitmap.width, bitmap.rows);
-			elm.texturePosition = pos;
-			elm.name = chr;
-			atlas.image.update(pos, elm.size, DataView(bitmap.buffer, bitmap.rows * bitmap.pitch));
+			glm::uvec2 size(bitmap.width, bitmap.rows);
+			atlas.glyphs.emplace(chr, Glyph{ size, pos });
+			atlas.image.update(pos, size, DataView(bitmap.buffer, bitmap.rows * bitmap.pitch));
 			pos.x += bitmap.width;
 		}
 		return atlas;
@@ -411,7 +404,8 @@ namespace darmok
 
 	FontAtlas FreetypeFontAtlasGenerator::operator()(std::string_view str)
 	{
-		auto chars = Utf8Char::tokenize(str);
+		std::vector<Utf8Char> chars;
+		Utf8Char::read(str, chars);
 		return (*this)(std::unordered_set<Utf8Char>(chars.begin(), chars.end()));
 	}
 
@@ -440,7 +434,7 @@ namespace darmok
 			return true;
 		}
 
-		glm::uvec2 size(100);
+		glm::uvec2 size(24);
 		if (input.config.contains("fontSize"))
 		{
 			auto& sizeConfig = input.config["fontSize"];
@@ -531,9 +525,17 @@ namespace darmok
 		TextureAtlasData atlasData
 		{
 			.imagePath = relImagePath,
-			.elements = _atlas->elements,
 			.size = _atlas->image.getSize()
 		};
+		for (auto& [name, glyph] : _atlas->glyphs)
+		{
+			atlasData.elements.emplace_back(TextureAtlasElement{
+				.name = name.to_string(),
+				.texturePosition = glyph.position,
+				.size = glyph.size,
+			});
+		}
+
 		pugi::xml_document doc;
 		atlasData.write(doc);
 		doc.save(out, PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);

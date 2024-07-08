@@ -4,6 +4,11 @@
 #include <darmok/text.hpp>
 #include <darmok/asset_core.hpp>
 
+namespace bx
+{
+    struct AllocatorI;
+}
+
 namespace darmok
 {
     class IDataLoader;
@@ -13,11 +18,11 @@ namespace darmok
     class DARMOK_EXPORT FreetypeFontLoader final : public IFontLoader
     {
     public:
-        FreetypeFontLoader(IDataLoader& dataLoader);
+        FreetypeFontLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc);
         ~FreetypeFontLoader() noexcept;
         void init(App& app);
         void shutdown();
-        std::shared_ptr<Font> operator()(std::string_view name) override;
+        std::shared_ptr<IFont> operator()(std::string_view name) override;
     private:
         std::unique_ptr<FreetypeFontLoaderImpl> _impl;
     };

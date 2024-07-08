@@ -3,6 +3,7 @@
 #include "utils.hpp"
 #include <darmok/input.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <sstream>
 
 namespace darmok
 {
@@ -43,12 +44,12 @@ namespace darmok
 
 	std::string LuaKeyboard::getUpdateChars() const noexcept
 	{
-		std::string str;
+		std::stringstream ss;
 		for (auto& chr : _kb.get().getUpdateChars())
 		{
-			str += chr;
+			ss << chr;
 		}
-		return str;
+		return ss.str();
 	}
 
 	static std::vector<std::pair<std::string_view, KeyboardKey>> getLuaKeyboardKeys() noexcept

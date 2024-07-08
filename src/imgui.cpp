@@ -385,7 +385,7 @@ namespace darmok
 
 		for (auto& inputChar : input.getImpl().getKeyboard().getUpdateChars())
 		{
-			io.AddInputCharacter(inputChar.data);
+			io.AddInputCharacter(inputChar.code);
 		}
 
 		auto& mouse = input.getMouse();

@@ -2,8 +2,10 @@
 
 #include <darmok/export.h>
 #include <darmok/camera.hpp>
+#include <darmok/optional_ref.hpp>
 #include <memory>
 #include <string>
+#include <optional>
 #include <bx/bx.h>
 
 namespace bx
@@ -13,39 +15,47 @@ namespace bx
 
 namespace darmok
 {
-    class FontImpl;
+    struct DARMOK_EXPORT Glyph final
+    {
+        glm::uvec2 size;
+        glm::uvec2 position;
+    };
 
-    class DARMOK_EXPORT Font final
+    class Text;
+    struct Utf8Char;
+
+    class DARMOK_EXPORT BX_NO_VTABLE IFont
     {
     public:
-        Font(std::unique_ptr<FontImpl>&& impl) noexcept;
-        ~Font();
-        FontImpl& getImpl();
-        const FontImpl& getImpl() const;
-    private:
-        std::unique_ptr<FontImpl> _impl;
+        virtual ~IFont() = default;
+
+        virtual std::optional<Glyph> getGlyph(const Utf8Char& chr) const = 0;
+        virtual OptionalRef<const Texture> getTexture() const = 0;
+        virtual void update() {};
+        virtual void onTextContentChanged(Text& text, const std::string& oldContent, const std::string& newContent) {};
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IFontLoader
     {
     public:
-        using result_type = std::shared_ptr<Font>;
+        using result_type = std::shared_ptr<IFont>;
 
         virtual ~IFontLoader() = default;
         virtual result_type operator()(std::string_view name) = 0;
     };
 
-    class TextImpl;
-
     class DARMOK_EXPORT Text final
     {
     public:
-        Text(const std::shared_ptr<Font>& font, const std::string& content = "") noexcept;
+        Text(const std::shared_ptr<IFont>& font, const std::string& content = "") noexcept;
         ~Text();
-        TextImpl& getImpl();
-        const TextImpl& getImpl() const;
+        std::shared_ptr<IFont> getFont() noexcept;
+        void setFont(const std::shared_ptr<IFont>& font) noexcept;
+        const std::string& getContent() noexcept;
+        void setContent(const std::string& str) noexcept;
     private:
-        std::unique_ptr<TextImpl> _impl;
+        std::shared_ptr<IFont> _font;
+        std::string _content;
     };
 
     class TextRendererImpl;

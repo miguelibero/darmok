@@ -13,7 +13,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/input_fwd.hpp>
 #include <darmok/glm.hpp>
-#include <darmok/string.hpp>
+#include <darmok/utf8.hpp>
 #include <bx/bx.h>
 
 namespace darmok
