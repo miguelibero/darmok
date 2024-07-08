@@ -241,7 +241,6 @@ namespace darmok
 	void AppImpl::shutdown()
 	{
 		_running = false;
-		_assets.shutdown();
 		for (auto& component : _components)
 		{
 			component->shutdown();
@@ -253,6 +252,7 @@ namespace darmok
 		_components.clear();
 		_sharedComponents.clear();
 		_input.getImpl().clearBindings();
+		_assets.shutdown();
 	}
 
 	void AppImpl::updateLogic(float deltaTime)

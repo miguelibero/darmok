@@ -1,12 +1,12 @@
 #include <darmok/text.hpp>
 #include <darmok/text_freetype.hpp>
+#include <darmok/texture_atlas.hpp>
 #include <darmok/data.hpp>
-#include <darmok/scene.hpp>
-#include <darmok/asset.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/utf8.hpp>
 #include "text_freetype.hpp"
 #include <stdexcept>
+#include <pugixml.hpp>
 
 namespace darmok
 {
@@ -126,71 +126,6 @@ namespace darmok
 		return (*_impl)(name);
 	}
 
-	void TextRendererImpl::init(Camera& cam, Scene& scene, App& app) noexcept
-	{
-		_scene = scene;
-		_alloc = app.getAssets().getAllocator();
-	}
-
-	void TextRendererImpl::shutdown() noexcept
-	{
-		_scene.reset();
-		_alloc.reset();
-	}
-
-	void TextRendererImpl::update()
-	{
-		if (!_scene || !_alloc)
-		{
-			return;
-		}
-		auto texts = _scene->getComponentView<Text>();
-		std::unordered_set<std::shared_ptr<IFont>> fonts;
-		for (auto [entity, text] : texts.each())
-		{
-			fonts.insert(text.getFont());
-		}
-		for (auto& font : fonts)
-		{
-			font->update();
-		}
-	}
-
-	bgfx::ViewId TextRendererImpl::afterRender(bgfx::ViewId viewId)
-	{
-		return viewId;
-	}
-
-	TextRenderer::TextRenderer() noexcept
-		: _impl(std::make_unique<TextRendererImpl>())
-	{
-	}
-
-	TextRenderer::~TextRenderer() noexcept
-	{
-		// intentionally left empty
-	}
-
-	void TextRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
-	{
-		_impl->init(cam, scene, app);
-	}
-
-	void TextRenderer::shutdown() noexcept
-	{
-		_impl->shutdown();
-	}
-
-	void TextRenderer::update(float deltaTime)
-	{
-		_impl->update();
-	}
-
-	bgfx::ViewId TextRenderer::afterRender(bgfx::ViewId viewId)
-	{
-		return _impl->afterRender(viewId);
-	}
-
 	FreetypeFont::FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept
 		: _face(face)
 		, _data(std::move(data))
@@ -223,10 +158,13 @@ namespace darmok
 		return nullptr;
 	}
 
-	void FreetypeFont::onTextContentChanged(Text& text, const std::string& oldContent, const std::string& newContent)
+	void FreetypeFont::onTextContentChanged(Text& text, const TextContent& oldContent, const TextContent& newContent)
 	{
-		FreetypeUtils::tokenize(oldContent, _chars, true);
-		FreetypeUtils::tokenize(newContent, _chars);
+		for (auto& chr : oldContent)
+		{
+			_chars.erase(chr);
+		}
+		_chars.insert(newContent.begin(), newContent.end());
 	}
 
 	FT_Face FreetypeFont::getFace() const  noexcept
@@ -253,56 +191,6 @@ namespace darmok
 		}
 		_glyphs = atlas.glyphs;
 		_renderedChars = _chars;
-	}
-
-	Text::Text(const std::shared_ptr<IFont>& font, const std::string& content) noexcept
-		: _font(font)
-	{
-		setContent(content);
-	}
-
-	Text::~Text()
-	{
-		if (_font)
-		{
-			_font->onTextContentChanged(*this, _content, "");
-		}
-	}
-
-	std::shared_ptr<IFont> Text::getFont() noexcept
-	{
-		return _font;
-	}
-
-	void Text::setFont(const std::shared_ptr<IFont>& font) noexcept
-	{
-		if (_font == font)
-		{
-			return;
-		}
-		if (_font)
-		{
-			_font->onTextContentChanged(*this, _content, "");
-		}
-		_font = font;
-		if (_font)
-		{
-			_font->onTextContentChanged(*this, "", _content);
-		}
-	}
-
-	const std::string& Text::getContent() noexcept
-	{
-		return _content;
-	}
-
-	void Text::setContent(const std::string& str) noexcept
-	{
-		if (_font)
-		{
-			_font->onTextContentChanged(*this, _content, str);
-		}
-		_content = str;
 	}
 
 	FreetypeFontAtlasGenerator::FreetypeFontAtlasGenerator(FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept
@@ -530,7 +418,7 @@ namespace darmok
 		for (auto& [name, glyph] : _atlas->glyphs)
 		{
 			atlasData.elements.emplace_back(TextureAtlasElement{
-				.name = name.to_string(),
+				.name = name,
 				.texturePosition = glyph.position,
 				.size = glyph.size,
 			});

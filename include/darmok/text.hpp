@@ -3,10 +3,13 @@
 #include <darmok/export.h>
 #include <darmok/camera.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/utf8.hpp>
 #include <memory>
 #include <string>
 #include <optional>
+#include <vector>
 #include <bx/bx.h>
+#include <bgfx/bgfx.h>
 
 namespace bx
 {
@@ -22,7 +25,7 @@ namespace darmok
     };
 
     class Text;
-    struct Utf8Char;
+    using TextContent = std::vector<Utf8Char>;
 
     class DARMOK_EXPORT BX_NO_VTABLE IFont
     {
@@ -32,7 +35,7 @@ namespace darmok
         virtual std::optional<Glyph> getGlyph(const Utf8Char& chr) const = 0;
         virtual OptionalRef<const Texture> getTexture() const = 0;
         virtual void update() {};
-        virtual void onTextContentChanged(Text& text, const std::string& oldContent, const std::string& newContent) {};
+        virtual void onTextContentChanged(Text& text, const TextContent& oldContent, const TextContent& newContent) {};
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IFontLoader
@@ -50,26 +53,25 @@ namespace darmok
         Text(const std::shared_ptr<IFont>& font, const std::string& content = "") noexcept;
         ~Text();
         std::shared_ptr<IFont> getFont() noexcept;
-        void setFont(const std::shared_ptr<IFont>& font) noexcept;
-        const std::string& getContent() noexcept;
-        void setContent(const std::string& str) noexcept;
+        Text& setFont(const std::shared_ptr<IFont>& font) noexcept;
+        std::string getContentString();
+        Text& setContent(const std::string& str);
+        Text& setContent(const std::u8string& str);
+        void render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
     private:
         std::shared_ptr<IFont> _font;
-        std::string _content;
+        TextContent _content;
     };
-
-    class TextRendererImpl;
 
     class DARMOK_EXPORT TextRenderer final : public ICameraComponent
     {
     public:
-        TextRenderer() noexcept;
-        ~TextRenderer() noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) override;
         bgfx::ViewId afterRender(bgfx::ViewId viewId) override;
     private:
-        std::unique_ptr<TextRendererImpl> _impl;
+        OptionalRef<Scene> _scene;
+        OptionalRef<bx::AllocatorI> _alloc;
     };
 }

@@ -185,6 +185,7 @@ set(SOURCES
   ${SRC_DIR}/render_forward.cpp
   ${SRC_DIR}/render_deferred.cpp
   ${SRC_DIR}/freelook.cpp
+  ${SRC_DIR}/text.cpp
 )
 
 set(HEADERS
@@ -214,6 +215,7 @@ set(HEADERS
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
   ${INCLUDE_DIR}/freelook.hpp
+  ${INCLUDE_DIR}/text.hpp
 )
 
 set(LUA_SOURCES)
@@ -233,7 +235,6 @@ endif()
 
 if(DARMOK_BUILD_FREETYPE)
   list(APPEND HEADERS
-    ${INCLUDE_DIR}/text.hpp
     ${INCLUDE_DIR}/text_freetype.hpp
   )
   list(APPEND SOURCES

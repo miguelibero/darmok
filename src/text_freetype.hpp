@@ -3,16 +3,12 @@
 #include <darmok/text.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/texture.hpp>
-#include <darmok/camera.hpp>
-#include <darmok/app.hpp>
-#include <darmok/texture_atlas.hpp>
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
 #include <unordered_set>
 #include <unordered_map>
 #include <optional>
 #include <string_view>
-#include <pugixml.hpp>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -42,18 +38,6 @@ namespace darmok
 
     };
 
-    class TextRendererImpl final
-    {
-    public:
-        void init(Camera& cam, Scene& scene, App& app) noexcept;
-        void shutdown() noexcept;
-        void update();
-        bgfx::ViewId afterRender(bgfx::ViewId viewId);
-    private:
-        OptionalRef<Scene> _scene;
-        OptionalRef<bx::AllocatorI> _alloc;
-    };
-
     class FreetypeFont final : public IFont
     {
     public:
@@ -63,7 +47,7 @@ namespace darmok
         std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
         OptionalRef<const Texture> getTexture() const noexcept override;
 
-        void onTextContentChanged(Text& text, const std::string& oldContent, const std::string& newContent) override;
+        void onTextContentChanged(Text& text, const TextContent& oldContent, const TextContent& newContent) override;
         void update() override;
         FT_Face getFace() const noexcept;
     private:

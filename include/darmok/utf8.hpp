@@ -22,6 +22,8 @@ namespace darmok
         static size_t read(std::string_view str, std::vector<Utf8Char>& chars);
         [[nodiscard]] static Utf8Char read(std::u8string_view& str);
         static size_t read(std::u8string_view str, std::vector<Utf8Char>& chars);
+        static std::string toString(const std::vector<Utf8Char>& chars);
+        static std::u8string toUtf8String(const std::vector<Utf8Char>& chars);
 
         operator bool() const noexcept;
         operator std::string() const;
@@ -29,12 +31,23 @@ namespace darmok
         bool valid() const noexcept;
         bool empty() const noexcept;
         uint8_t length() const noexcept;
-        std::string to_string() const;
-        std::u8string to_u8string() const;
+        std::string toString() const;
+        std::u8string toUtf8String() const;
         bool operator==(const Utf8Char& other) const noexcept;
         bool operator!=(const Utf8Char& other) const noexcept;
 
     private:
+
+        template<typename T>
+        static std::basic_string<T> vectorToString(const std::vector<Utf8Char>& chars)
+        {
+            std::basic_string<T> str;
+            for (auto& chr : chars)
+            {
+                chr.appendToString(str);
+            }
+            return str;
+        }
 
         template<typename T>
         static size_t doRead(std::basic_string_view<T> str, std::vector<Utf8Char>& chars)
@@ -50,9 +63,8 @@ namespace darmok
         }
 
         template<typename T>
-        std::basic_string<T> doString() const
+        void appendToString(std::basic_string<T>& str) const
         {
-            std::basic_string<T> str;
             if (code <= 0x7F)
             {
                 str.push_back(static_cast<char>(code));
@@ -79,7 +91,6 @@ namespace darmok
             {
                 throw std::runtime_error("invalid Unicode code point");
             }
-            return str;
         }
 
         template<typename T>

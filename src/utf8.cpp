@@ -40,22 +40,36 @@ namespace darmok
 
 	Utf8Char::operator std::string() const
 	{
-		return to_string();
+		return toString();
 	}
 
 	Utf8Char::operator std::u8string() const
 	{
-		return to_u8string();
+		return toUtf8String();
 	}
 
-	std::string Utf8Char::to_string() const
+	std::string Utf8Char::toString(const std::vector<Utf8Char>& chars)
 	{
-		return doString<char>();
+		return vectorToString<char>(chars);
 	}
 
-	std::u8string Utf8Char::to_u8string() const
+	std::u8string Utf8Char::toUtf8String(const std::vector<Utf8Char>& chars)
 	{
-		return doString<char8_t>();
+		return vectorToString<char8_t>(chars);
+	}
+
+	std::string Utf8Char::toString() const
+	{
+		std::string str;
+		appendToString(str);
+		return str;
+	}
+
+	std::u8string Utf8Char::toUtf8String() const
+	{
+		std::u8string str;
+		appendToString(str);
+		return str;
 	}
 
 	const uint32_t Utf8Char::invalidCode = 0x110000;

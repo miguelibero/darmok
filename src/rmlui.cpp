@@ -908,7 +908,7 @@ namespace darmok
         {
             return;
         }
-        _context->ProcessTextInput(chr.to_string());
+        _context->ProcessTextInput(chr.toString());
     }
 
     void RmluiAppComponentImpl::onMouseActive(bool active) noexcept
