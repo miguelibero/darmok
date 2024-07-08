@@ -7,6 +7,7 @@
 
 #include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
+#include <bx/bx.h>
 
 #include <vector>
 #include <string_view>
@@ -24,6 +25,7 @@ namespace darmok
         Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
         Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
         ~Material();
+        Material(const Material& other) noexcept;
 
         bool valid() const noexcept;
 
@@ -59,7 +61,16 @@ namespace darmok
         glm::vec4 _mainData;
         MaterialPrimitiveType _primitive;
 
+        void createHandles() noexcept;
         void destroyHandles() noexcept;
         uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader
+    {
+    public:
+        using result_type = std::shared_ptr<Material>;
+        virtual ~IMaterialLoader() = default;
+        virtual [[nodiscard]] result_type operator()(std::string_view name) = 0;
     };
 }

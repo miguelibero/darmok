@@ -1,6 +1,9 @@
 #include <darmok/text.hpp>
 #include <darmok/text_freetype.hpp>
 #include <darmok/texture_atlas.hpp>
+#include <darmok/app.hpp>
+#include <darmok/asset.hpp>
+#include <darmok/program_standard.hpp>
 #include <darmok/data.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/utf8.hpp>
@@ -67,9 +70,11 @@ namespace darmok
 	void FreetypeFontLoaderImpl::init(App& app)
 	{
 		shutdown();
-
 		auto err = FT_Init_FreeType(&_library);
 		FreetypeUtils::checkError(err);
+
+		auto prog = app.getAssets().getStandardProgramLoader()(StandardProgramType::Gui);
+		_material.emplace(prog);
 	}
 
 	void FreetypeFontLoaderImpl::shutdown()
@@ -80,6 +85,7 @@ namespace darmok
 			_library = nullptr;
 			FreetypeUtils::checkError(err);
 		}
+		_material.reset();
 	}
 
 	std::shared_ptr<IFont> FreetypeFontLoaderImpl::operator()(std::string_view name)
@@ -98,7 +104,7 @@ namespace darmok
 		err = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 		FreetypeUtils::checkError(err);
 
-		return std::make_shared<FreetypeFont>(face, std::move(data), _library, _alloc);
+		return std::make_shared<FreetypeFont>(face, std::move(data), _material.value(), _library, _alloc);
 	}
 
 	FreetypeFontLoader::FreetypeFontLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc)
@@ -126,9 +132,10 @@ namespace darmok
 		return (*_impl)(name);
 	}
 
-	FreetypeFont::FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept
+	FreetypeFont::FreetypeFont(FT_Face face, Data&& data, const Material& mat, FT_Library library, bx::AllocatorI& alloc) noexcept
 		: _face(face)
 		, _data(std::move(data))
+		, _material(mat)
 		, _library(library)
 		, _alloc(alloc)
 	{
@@ -149,13 +156,9 @@ namespace darmok
 		return itr->second;
 	}
 
-	OptionalRef<const Texture> FreetypeFont::getTexture() const noexcept
+	const Material& FreetypeFont::getMaterial() const noexcept
 	{
-		if (_tex)
-		{
-			return _tex.value();
-		}
-		return nullptr;
+		return _material;
 	}
 
 	void FreetypeFont::onTextContentChanged(Text& text, const TextContent& oldContent, const TextContent& newContent)
@@ -181,14 +184,16 @@ namespace darmok
 		FreetypeFontAtlasGenerator generator(_face, _library, _alloc);
 		auto atlas = generator(_chars);
 
-		if (_tex && _tex->getSize() == atlas.image.getSize())
+		if (_texture && _texture->getSize() == atlas.image.getSize())
 		{
-			_tex->update(atlas.image.getData());
+			_texture->update(atlas.image.getData());
 		}
 		else
 		{
-			_tex.emplace(atlas.image);
+			_texture = std::make_shared<Texture>(atlas.image);
+			_material.setTexture(MaterialTextureType::Diffuse, _texture);
 		}
+
 		_glyphs = atlas.glyphs;
 		_renderedChars = _chars;
 	}

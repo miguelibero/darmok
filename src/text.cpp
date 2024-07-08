@@ -2,6 +2,9 @@
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/material.hpp>
+#include <darmok/program.hpp>
+#include <darmok/program_standard.hpp>
 
 namespace darmok
 {
@@ -50,7 +53,7 @@ namespace darmok
 
 	Text& Text::setContent(const std::string& str)
 	{
-		auto oldContent = _content;
+		TextContent oldContent = _content;
 		Utf8Char::read(str, _content);
 		if (_font)
 		{
@@ -61,7 +64,7 @@ namespace darmok
 
 	Text& Text::setContent(const std::u8string& str)
 	{
-		auto oldContent = _content;
+		TextContent oldContent = _content;
 		Utf8Char::read(str, _content);
 		if (_font)
 		{
@@ -70,25 +73,75 @@ namespace darmok
 		return *this;
 	}
 
-	void Text::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
+	bool Text::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
 	{
+		if (!_font || !_mesh)
+		{
+			return false;
+		}
+		_mesh->render(encoder);
+		_font->getMaterial().renderSubmit(encoder, viewId);
+		return true;
+	}
+
+	bool Text::update()
+	{
+		if (!_font)
+		{
+			return false;
+		}
+
+		auto prog = _font->getMaterial().getProgram();
+		if (!prog)
+		{
+			return false;
+		}
+		auto layout = prog->getVertexLayout();
+
+		glm::uvec2 pos(0);
+		MeshData data;
+		for (auto& chr : _content)
+		{
+			auto glyph = _font->getGlyph(chr);
+			if (!glyph)
+			{
+				continue;
+			}
+			MeshData glyphData(Rectangle(glyph->size, glyph->position));
+			data.config.offset = glm::vec3(pos.x, pos.y, 0);
+			pos.x += glyph->size.x;
+			data += glyphData;
+		}
+		Data vertexData;
+		Data indexData;
+		data.exportData(layout, vertexData, indexData);
+		if (!_mesh)
+		{
+			_mesh.emplace(layout, vertexData, indexData);
+		}
+		else
+		{
+			_mesh->updateVertices(vertexData);
+			_mesh->updateIndices(indexData);
+		}
+		return true;
 	}
 
 	void TextRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
 		_scene = scene;
-		_alloc = app.getAssets().getAllocator();
+		_cam = cam;
 	}
 
 	void TextRenderer::shutdown() noexcept
 	{
 		_scene.reset();
-		_alloc.reset();
+		_cam.reset();
 	}
 
 	void TextRenderer::update(float deltaTime)
 	{
-		if (!_scene || !_alloc)
+		if (!_scene || !_cam)
 		{
 			return;
 		}
@@ -102,19 +155,32 @@ namespace darmok
 		{
 			font->update();
 		}
+		for (auto [entity, text] : texts.each())
+		{
+			text.update();
+		}
 	}
 
 	bgfx::ViewId TextRenderer::afterRender(bgfx::ViewId viewId)
 	{
-		auto texts = _scene->getComponentView<Text>();
-		if (texts.empty())
+		if (!_scene || !_cam)
 		{
 			return viewId;
 		}
-		auto encoder = bgfx::begin();
-		for (auto [entity, text] : texts.each())
+		auto texts = _cam->createEntityView<Text>();
+		if (texts.size_hint() == 0)
 		{
-			text.render(*encoder, viewId);
+			return viewId;
+		}
+
+		auto encoder = bgfx::begin();
+		_cam->beforeRenderView(*encoder, viewId);
+
+		for (auto entity : texts)
+		{
+			auto text = _scene->getComponent<Text>(entity);
+			_cam->beforeRenderEntity(entity, *encoder, viewId);
+			text->render(*encoder, viewId);
 		}
 		bgfx::end(encoder);
 		return ++viewId;

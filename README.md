@@ -90,8 +90,10 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * sound
 
 #### Upcoming
-* loaders should return unique_ptr
 * dynamic distance field font texture generation
+* render graph
+* serialize materials
+* loaders should return unique_ptr
 * move lua bindings to separate library?
 * defines when exporting shaders (generate all variations like Unity)
 * frustrum culling

@@ -27,6 +27,11 @@ namespace darmok
         }
     }
 
+    const EntityRegistry& Camera::getRegistry() const
+    {
+        return _scene->getRegistry();
+    }
+
     bool Camera::isEnabled() const noexcept
     {
         return _enabled;

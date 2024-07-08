@@ -4,6 +4,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/utf8.hpp>
+#include <darmok/mesh.hpp>
 #include <memory>
 #include <string>
 #include <optional>
@@ -24,6 +25,7 @@ namespace darmok
         glm::uvec2 position;
     };
 
+    class Material;
     class Text;
     using TextContent = std::vector<Utf8Char>;
 
@@ -33,7 +35,7 @@ namespace darmok
         virtual ~IFont() = default;
 
         virtual std::optional<Glyph> getGlyph(const Utf8Char& chr) const = 0;
-        virtual OptionalRef<const Texture> getTexture() const = 0;
+        virtual const Material& getMaterial() const = 0;
         virtual void update() {};
         virtual void onTextContentChanged(Text& text, const TextContent& oldContent, const TextContent& newContent) {};
     };
@@ -57,10 +59,13 @@ namespace darmok
         std::string getContentString();
         Text& setContent(const std::string& str);
         Text& setContent(const std::u8string& str);
-        void render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
+
+        bool update();
+        bool render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
     private:
         std::shared_ptr<IFont> _font;
         TextContent _content;
+        std::optional<DynamicMesh> _mesh;
     };
 
     class DARMOK_EXPORT TextRenderer final : public ICameraComponent
@@ -72,6 +77,6 @@ namespace darmok
         bgfx::ViewId afterRender(bgfx::ViewId viewId) override;
     private:
         OptionalRef<Scene> _scene;
-        OptionalRef<bx::AllocatorI> _alloc;
+        OptionalRef<Camera> _cam;
     };
 }

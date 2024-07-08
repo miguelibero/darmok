@@ -45,6 +45,15 @@ namespace darmok
 		, _mainHandle{ bgfx::kInvalidHandle }
 		, _program(program)
 	{
+		if (diffuseTexture != nullptr)
+		{
+			setTexture(MaterialTextureType::Diffuse, diffuseTexture);
+		}
+		createHandles();
+	}
+
+	void Material::createHandles() noexcept
+	{
 		for (auto& pair : _materialSamplerDefinitions)
 		{
 			_textureHandles.emplace(pair.first, bgfx::createUniform(pair.second.name.c_str(), bgfx::UniformType::Sampler));
@@ -54,10 +63,16 @@ namespace darmok
 			_colorHandles.emplace(pair.first, bgfx::createUniform(pair.second.name.c_str(), bgfx::UniformType::Vec4));
 		}
 		_mainHandle = bgfx::createUniform("u_material", bgfx::UniformType::Vec4);
-		if (diffuseTexture != nullptr)
-		{
-			setTexture(MaterialTextureType::Diffuse, diffuseTexture);
-		}
+	}
+
+	Material::Material(const Material& other) noexcept
+		: _program(other._program)
+		, _textures(other._textures)
+		, _colors(other._colors)
+		, _mainData(other._mainData)
+		, _primitive(other._primitive)
+	{
+		createHandles();
 	}
 
 	Material::~Material()

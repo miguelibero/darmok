@@ -5,6 +5,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
+#include <darmok/material.hpp>
 #include <unordered_set>
 #include <unordered_map>
 #include <optional>
@@ -35,23 +36,24 @@ namespace darmok
         glm::uvec2 _defaultFontSize;
         FT_Library _library;
         bx::AllocatorI& _alloc;
-
+        std::optional<Material> _material;
     };
 
     class FreetypeFont final : public IFont
     {
     public:
-        FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept;
+        FreetypeFont(FT_Face face, Data&& data, const Material& mat, FT_Library library, bx::AllocatorI& alloc) noexcept;
         ~FreetypeFont() noexcept;
 
         std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
-        OptionalRef<const Texture> getTexture() const noexcept override;
+        const Material& getMaterial() const noexcept override;
 
         void onTextContentChanged(Text& text, const TextContent& oldContent, const TextContent& newContent) override;
         void update() override;
         FT_Face getFace() const noexcept;
     private:
-        std::optional<Texture> _tex;
+        Material _material;
+        std::shared_ptr<Texture> _texture;
         std::unordered_map<Utf8Char, Glyph> _glyphs;
         FT_Face _face;
         Data _data;

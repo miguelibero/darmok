@@ -94,6 +94,12 @@ namespace darmok
         void filterEntityView(EntityRuntimeView& view) const noexcept;
 
         template<typename T>
+        EntityRuntimeView createEntityView() const
+        {
+            return createEntityView<T>(getRegistry());
+        }
+
+        template<typename T>
         EntityRuntimeView createEntityView(const EntityRegistry& registry) const noexcept
         {
             EntityRuntimeView view;
@@ -162,5 +168,8 @@ namespace darmok
         OptionalRef<App> _app;
         std::vector<std::shared_ptr<Texture>> _targetTextures;
         bgfx::FrameBufferHandle _frameBuffer;
+
+
+        const EntityRegistry& getRegistry() const;
     };
 }
