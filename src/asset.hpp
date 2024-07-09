@@ -10,6 +10,7 @@
 #include <darmok/program_standard.hpp>
 #include <darmok/data.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/text.hpp>
 
 #ifdef DARMOK_OZZ
 #include <darmok/skeleton.hpp>
@@ -51,6 +52,7 @@ namespace darmok
 	using ModelExtLoader = ExtensionLoader<IModelLoader>;
 	using SkeletonExtLoader = ExtensionLoader<ISkeletonLoader>;
 	using SkeletalAnimationExtLoader = ExtensionLoader<ISkeletalAnimationLoader>;
+	using FontExtLoader = ExtensionLoader<IFontLoader>;
 
 	class AssetContextImpl final
 	{
@@ -97,6 +99,8 @@ namespace darmok
 		ColorTextureLoader _colorTextureLoader;
 		ModelExtLoader _modelLoader;
 		BinaryModelLoader _binModelLoader;
+		TextureAtlasFontLoader _textureAtlasFontLoader;
+		FontExtLoader _fontLoader;
 
 #ifdef DARMOK_OZZ
 		SkeletonExtLoader _skeletonLoader;
@@ -110,6 +114,7 @@ namespace darmok
 #ifdef DARMOK_ASSIMP
 		AssimpModelLoader _assimpModelLoader;
 #endif
+
 
 #ifdef DARMOK_FREETYPE
 		FreetypeFontLoader _freetypeFontLoader;

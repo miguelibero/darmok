@@ -84,20 +84,23 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * copy files
     * assimp to custom binary model format
     * ozz skeleton & animations
+* dynamic font texture generation
 
 #### Upcoming (I need them)
 * lua camera renderer
 * sound
 
 #### Upcoming
-* dynamic distance field font texture generation
+* dynamic distance field text
 * render graph
-* serialize materials
+* clipboard text support (UTF8)
 * loaders should return unique_ptr
 * move lua bindings to separate library?
 * defines when exporting shaders (generate all variations like Unity)
 * frustrum culling
-* binary texture atlas
+* more stuff serialization
+    * binary texture atlas
+    * material
 * loading progress
 * modernize renderer (probably needs frame graph or similar)
     * deferred

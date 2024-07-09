@@ -4,6 +4,8 @@
 #include <darmok/asset.hpp>
 #include <darmok/window.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/texture_atlas.hpp>
+#include <darmok/program_standard.hpp>
 #include <darmok/text.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
@@ -28,7 +30,8 @@ namespace
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			auto& registry = scene.getRegistry();
 
-			auto font = getAssets().getFontLoader()("COMIC.TTF");
+			auto arial = getAssets().getFontLoader()("ARIALUNI.TTF");
+			auto comic = getAssets().getFontLoader()("COMIC.xml");
 
 			auto camEntity = registry.create();
 			registry.emplace<Transform>(camEntity)
@@ -41,25 +44,36 @@ namespace
 			cam.addComponent<TextRenderer>();
 			cam.setRenderer<ForwardRenderer>();
 
-			auto textEntity = scene.createEntity();
+			auto text1Entity = scene.createEntity();
+			_text1 = scene.addComponent<Text>(text1Entity, arial, _textStr);
+			scene.addComponent<Transform>(text1Entity, glm::vec3(0, 0.5, 0))
+				.setScale(glm::vec3(2));
 
-			_text = scene.addComponent<Text>(textEntity, font, _textStr);
+			auto text2Entity = scene.createEntity();
+			_text2 = scene.addComponent<Text>(text2Entity, comic, _textStr);
+			scene.addComponent<Transform>(text2Entity, glm::vec3(0, -0.5, 0))
+				.setScale(glm::vec3(2));
 		}
 
 		void imguiRender()
 		{
-			if (ImGui::InputText("Text", &_textStr) && _text)
+			if (ImGui::InputText("Text", &_textStr))
 			{
 				// casting because ImGui::InputText does not have an std::u8string method
-				_text->setContent(StringUtils::utf8Cast(_textStr));
+				auto u8str = StringUtils::utf8Cast(_textStr);
+				_text1->setContent(u8str);
+				_text2->setContent(u8str);
 			}
 			if (ImGui::ColorPicker4("Color", &_color[0]))
 			{
-				_text->setColor(Colors::denormalize(_color));
+				auto c = Colors::denormalize(_color);
+				_text1->setColor(c);
+				_text2->setColor(c);
 			}
 		}
 	private:
-		OptionalRef<Text> _text;
+		OptionalRef<Text> _text1;
+		OptionalRef<Text> _text2;
 		std::string _textStr = "darmok engine rules!";
 		glm::vec4 _color = glm::vec4(1);
 	};

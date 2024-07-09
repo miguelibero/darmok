@@ -6,6 +6,8 @@
 #include <darmok/utf8.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/color.hpp>
+#include <darmok/material.hpp>
+
 #include <memory>
 #include <string>
 #include <optional>
@@ -24,11 +26,10 @@ namespace darmok
     {
         glm::uvec2 size = {};
         glm::uvec2 texturePosition = {};
-        glm::vec2 offset = {};
+        glm::ivec2 offset = {};
         glm::uvec2 originalSize = {};
     };
 
-    class Material;
     class Text;
 
     class DARMOK_EXPORT BX_NO_VTABLE IFont
@@ -92,5 +93,34 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
         static const std::string _name;
+    };
+
+    struct TextureAtlas;
+    class Program;
+
+    class TextureAtlasFont final : public IFont
+    {
+    public:
+        TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas, const std::shared_ptr<Program>& prog) noexcept;
+        std::optional<Glyph> getGlyph(const Utf8Char& chr) const override;
+        const Material& getMaterial() const override;
+    private:
+        std::shared_ptr<TextureAtlas> _atlas;
+        Material _material;
+    };
+
+    class ITextureAtlasLoader;
+    class App;
+
+    class TextureAtlasFontLoader final : public IFontLoader
+    {
+    public:
+        TextureAtlasFontLoader(ITextureAtlasLoader& atlasLoader) noexcept;
+        void init(App& app);
+        void shutdown();
+        std::shared_ptr<IFont> operator()(std::string_view name) override;
+    private:
+        ITextureAtlasLoader& _atlasLoader;
+        std::shared_ptr<Program> _program;
     };
 }

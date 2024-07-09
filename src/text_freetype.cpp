@@ -433,7 +433,8 @@ namespace darmok
 				.name = name,
 				.texturePosition = glyph.texturePosition,
 				.size = glyph.size,
-				.offset = glyph.offset
+				.offset = glyph.offset,
+				.originalSize = glyph.originalSize
 			});
 		}
 

@@ -54,7 +54,7 @@ namespace darmok
 
 		glm::vec2 fatlasSize(textureSize);
 
-		auto baseOffset = config.offset - glm::vec3(pivot * glm::vec2(originalSize), 0);
+		auto baseOffset = config.offset - glm::vec3(pivot * glm::ivec2(originalSize), 0);
 		// don't think this is needed since it's already factored into the position values
 		// baseOffset += glm::vec3(offset, 0);
 		auto amountStep = glm::vec2(originalSize);
@@ -291,38 +291,38 @@ namespace darmok
 
 	void TextureAtlasElement::write(pugi::xml_node& xml) const noexcept
 	{
-		xml.append_attribute("n").set_value(name.c_str());
-		xml.append_attribute("x").set_value(texturePosition.x);
-		xml.append_attribute("y").set_value(texturePosition.y);
-		xml.append_attribute("w").set_value(size.x);
-		xml.append_attribute("h").set_value(size.y);
-		if (offset.x > 0)
+		xml.append_attribute("n") = name.c_str();
+		xml.append_attribute("x") = texturePosition.x;
+		xml.append_attribute("y") = texturePosition.y;
+		xml.append_attribute("w") = size.x;
+		xml.append_attribute("h") = size.y;
+		if (offset.x != 0)
 		{
-			xml.append_attribute("oX").set_value(offset.x);
+			xml.append_attribute("oX") = offset.x;
 		}
-		if (offset.y > 0)
+		if (offset.y != 0)
 		{
-			xml.append_attribute("oY").set_value(offset.y);
+			xml.append_attribute("oY") = offset.y;
 		}
-		if (originalSize.x > 0)
+		if (originalSize.x != 0)
 		{
-			xml.append_attribute("oW").set_value(originalSize.x);
+			xml.append_attribute("oW") = originalSize.x;
 		}
-		if (originalSize.y > 0)
+		if (originalSize.y != 0)
 		{
-			xml.append_attribute("oH").set_value(originalSize.y);
+			xml.append_attribute("oH") = originalSize.y;
 		}
 		if (pivot.x != 0)
 		{
-			xml.append_attribute("pX").set_value(pivot.x);
+			xml.append_attribute("pX") = pivot.x;
 		}
 		if (pivot.y != 0)
 		{
-			xml.append_attribute("pY").set_value(pivot.y);
+			xml.append_attribute("pY") = pivot.y;
 		}
 		if (rotated)
 		{
-			xml.append_attribute("r").set_value("y");
+			xml.append_attribute("r") = "y";
 		}
 		if (!isRect())
 		{
@@ -466,7 +466,7 @@ namespace darmok
 
 	void TextureAtlasData::write(pugi::xml_node& xml) const noexcept
 	{
-		xml.append_attribute("imagePath").set_value(imagePath.c_str());
+		xml.append_attribute("imagePath") = imagePath.string().c_str();
 		for (auto& elm : elements)
 		{
 			auto sprite = xml.append_child("sprite");

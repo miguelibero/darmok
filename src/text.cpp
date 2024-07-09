@@ -2,8 +2,8 @@
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
-#include <darmok/material.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/texture_atlas.hpp>
 #include <darmok/program.hpp>
 #include <darmok/program_standard.hpp>
 
@@ -264,6 +264,57 @@ namespace darmok
 		}
 		bgfx::end(encoder);
 		return ++viewId;
+	}
+
+	TextureAtlasFont::TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas, const std::shared_ptr<Program>& prog) noexcept
+		: _atlas(atlas)
+		, _material(prog, _atlas->texture)
+	{
+	}
+
+	std::optional<Glyph> TextureAtlasFont::getGlyph(const Utf8Char& chr) const
+	{
+		auto elm = _atlas->getElement(chr.toString());
+		if (!elm)
+		{
+			return std::nullopt;
+		}
+		return Glyph{
+			.size = elm->size,
+			.texturePosition = elm->texturePosition,
+			.offset = elm->offset,
+			.originalSize = elm->originalSize,
+		};
+	}
+
+	const Material& TextureAtlasFont::getMaterial() const
+	{
+		return _material;
+	}
+
+	TextureAtlasFontLoader::TextureAtlasFontLoader(ITextureAtlasLoader& atlasLoader) noexcept
+		: _atlasLoader(atlasLoader)
+	{
+	}
+
+	void TextureAtlasFontLoader::init(App& app)
+	{
+		_program = app.getAssets().getStandardProgramLoader()(StandardProgramType::Gui);
+	}
+
+	void TextureAtlasFontLoader::shutdown()
+	{
+		_program.reset();
+	}
+
+	std::shared_ptr<IFont> TextureAtlasFontLoader::operator()(std::string_view name)
+	{
+		auto atlas = _atlasLoader(name);
+		if (!atlas)
+		{
+			return nullptr;
+		}
+		return std::make_shared<TextureAtlasFont>(atlas, _program);
 	}
 
 }

@@ -47,6 +47,7 @@ namespace darmok
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
 		, _colorTextureLoader(_allocator)
 		, _binModelLoader(_dataLoader)
+		, _textureAtlasFontLoader(_textureAtlasLoader)
 #ifdef DARMOK_OZZ
 		, _skeletalAnimatorConfigLoader(_dataLoader)
 		, _ozzSkeletonLoader(_dataLoader)
@@ -71,6 +72,12 @@ namespace darmok
 
 #ifdef DARMOK_ASSIMP
 		_modelLoader.setDefaultLoader(_assimpModelLoader);
+#endif
+
+		_fontLoader.setDefaultLoader(_textureAtlasFontLoader);
+		_fontLoader.addLoader(".xml", _textureAtlasFontLoader);
+#ifdef DARMOK_FREETYPE
+		_fontLoader.setDefaultLoader(_freetypeFontLoader);
 #endif
 	}
 
@@ -146,7 +153,7 @@ namespace darmok
 #ifdef DARMOK_FREETYPE
 	IFontLoader& AssetContextImpl::getFontLoader() noexcept
 	{
-		return _freetypeFontLoader;
+		return _fontLoader;
 	}
 #endif
 
@@ -159,11 +166,13 @@ namespace darmok
 	void AssetContextImpl::init(App& app)
 	{
 		_freetypeFontLoader.init(app);
+		_textureAtlasFontLoader.init(app);
 	}
 
 	void AssetContextImpl::shutdown()
 	{
 		_freetypeFontLoader.shutdown();
+		_textureAtlasFontLoader.shutdown();
 	}
 
 	AssetContext::AssetContext() noexcept
