@@ -35,12 +35,15 @@ namespace
 			auto comic = getAssets().getFontLoader()("COMIC.xml");
 
 			auto camEntity = registry.create();
-			registry.emplace<Transform>(camEntity)
-				.setPosition(glm::vec3(0.f, -1.f, -1.f))
+			auto& camTrans = registry.emplace<Transform>(camEntity);
+			auto& cam = registry.emplace<Camera>(camEntity);
+			/*
+				camTrans.setPosition(glm::vec3(0.f, -1.f, -1.f))
 				.lookAt(glm::vec3(0, 0, 0));
+				cam.setPerspective(60, getWindow().getSize(), 0.3, 1000);
+			*/
 
-			auto& cam = registry.emplace<Camera>(camEntity)
-				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
+			cam.setOrtho(Viewport(glm::uvec2(2)));
 
 			cam.addComponent<TextRenderer>();
 			cam.setRenderer<ForwardRenderer>();

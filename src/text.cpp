@@ -15,8 +15,6 @@ namespace darmok
 		, _changed(false)
 		, _vertexNum(0)
 		, _indexNum(0)
-		, _contentSize(0)
-		, _orientation(Orientation::Left)
 	{
 		setContent(content);
 	}
@@ -44,25 +42,41 @@ namespace darmok
 		return *this;
 	}
 
-	const glm::vec2& Text::getContentSize() const noexcept
+	const Text::RenderConfig& Text::getRenderConfig() const noexcept
 	{
-		return _contentSize;
+		return _renderConfig;
 	}
 
-	Text& Text::setContentSize(const glm::vec2& size) noexcept
+	Text::RenderConfig& Text::getRenderConfig() noexcept
 	{
-		_contentSize = size;
+		return _renderConfig;
+	}
+
+	Text& Text::setRenderConfig(const RenderConfig& config) noexcept
+	{
+		_renderConfig = config;
+		return *this;
+	}
+
+	const glm::uvec2& Text::getContentSize() const noexcept
+	{
+		return _renderConfig.contentSize;
+	}
+
+	Text& Text::setContentSize(const glm::uvec2& size) noexcept
+	{
+		_renderConfig.contentSize = size;
 		return *this;
 	}
 
 	Text::Orientation Text::getOrientation() const noexcept
 	{
-		return _orientation;
+		return _renderConfig.orientation;
 	}
 
 	Text& Text::setOrientation(Orientation ori) noexcept
 	{
-		_orientation = ori;
+		_renderConfig.orientation = ori;
 		return *this;
 	}
 
@@ -164,7 +178,7 @@ namespace darmok
 			return false;
 		}
 
-		auto data = createMeshData(_content, *_font, _contentSize, _orientation);
+		auto data = createMeshData(_content, *_font, _renderConfig);
 		if (data.empty())
 		{
 			_vertexNum = 0;
@@ -193,9 +207,81 @@ namespace darmok
 		return true;
 	}
 
-	MeshData Text::createMeshData(const Utf8Vector& content, const IFont& font, const glm::vec2& size, Orientation ori)
+	glm::vec2 TextRenderConfig::getGlyphAdvanceFactor() const noexcept
+	{
+		auto f = direction == Direction::Negative ? -1 : 1;
+		if (axis == Axis::Vertical)
+		{
+			return glm::vec2(0, f);
+
+		}
+		return glm::vec2(f, 0);
+	}
+
+	bool TextRenderConfig::fixEndOfLine(glm::vec2& pos, float lineStep) const
+	{
+		glm::uint lineSize = 0;
+		float linePos = 0;
+		switch (axis)
+		{
+		case Axis::Horizontal:
+			lineSize = contentSize.x;
+			linePos = pos.x;
+			break;
+		case Axis::Vertical:
+			lineSize = contentSize.y;
+			linePos = pos.y;
+			break;
+		}
+		if (lineSize == 0 || lineSize > linePos)
+		{
+			return false;
+		}
+
+		auto f = lineDirection == Direction::Negative ? -lineStep : lineStep;
+		switch (axis)
+		{
+		case Axis::Horizontal:
+			pos.x = 0;
+			pos.y += f;
+			break;
+		case Axis::Vertical:
+			pos.y = 0;
+			pos.y += f;
+			break;
+		}
+		return true;
+
+	}
+
+	MeshData Text::createMeshData(const Utf8Vector& content, const IFont& font, const RenderConfig& config)
 	{
 		auto& mat = font.getMaterial();
+
+		glm::vec2 pos(0);
+		MeshData data;
+		auto lineSize = font.getLineSize();
+		auto glyphAdv = config.getGlyphAdvanceFactor();
+		for (auto& chr : content)
+		{
+			auto glyph = font.getGlyph(chr);
+			if (!glyph)
+			{
+				continue;
+			}
+
+			config.fixEndOfLine(pos, lineSize);
+
+			MeshData glyphData(Rectangle(glyph->size));
+			glyphData.config.textureScale = glyph->size;
+			glyphData.config.offset = glm::vec3(0);
+			glyphData.normalize();
+			glyphData.config.textureOffset = glyph->texturePosition;
+			glyphData.config.offset = glm::vec3(pos, 0) + glm::vec3(glyph->offset, 0);
+			data += glyphData;
+
+			pos += glyphAdv * glm::vec2(glyph->originalSize);
+		}
 
 		// TODO: maybe add getter of the size to the font interface
 		// to not assume that the size is the diffuse texture size
@@ -206,24 +292,6 @@ namespace darmok
 			texScale /= glm::vec2(tex->getSize());
 		}
 
-		glm::uvec2 pos(0);
-		MeshData data;
-		for (auto& chr : content)
-		{
-			auto glyph = font.getGlyph(chr);
-			if (!glyph)
-			{
-				continue;
-			}
-			MeshData glyphData(Rectangle(glyph->size));
-			glyphData.config.textureScale = glyph->size;
-			glyphData.config.offset = glm::vec3(0);
-			glyphData.normalize();
-			glyphData.config.textureOffset = glyph->texturePosition;
-			glyphData.config.offset = glm::vec3(pos, 0) + glm::vec3(glyph->offset, 0);
-			data += glyphData;
-			pos.x += glyph->originalSize.x;
-		}
 		data.config.textureScale = texScale;
 		data.config.scale = glm::vec3(texScale, 0);
 

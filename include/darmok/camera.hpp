@@ -63,8 +63,8 @@ namespace darmok
         Camera& setPerspective(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
         Camera& setPerspective(float fovy, const glm::uvec2& size, float near, float far) noexcept;
         
-        Camera& setOrtho(const Viewport& viewport, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
-        Camera& setOrtho(const glm::uvec2& size, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+        Camera& setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+        Camera& setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
         Camera& setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;

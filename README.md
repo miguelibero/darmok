@@ -91,7 +91,9 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * sound
 
 #### Upcoming
-* dynamic distance field text
+* text improvements
+    * finish all the TextRenderConfig options
+    * dynamic distance field rendering with border support
 * render graph
 * clipboard text support (UTF8)
 * loaders should return unique_ptr

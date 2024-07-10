@@ -54,7 +54,7 @@ namespace darmok
 
 		glm::vec2 fatlasSize(textureSize);
 
-		auto baseOffset = config.offset - glm::vec3(pivot * glm::ivec2(originalSize), 0);
+		auto baseOffset = config.offset - glm::vec3(pivot * glm::vec2(originalSize), 0);
 		// don't think this is needed since it's already factored into the position values
 		// baseOffset += glm::vec3(offset, 0);
 		auto amountStep = glm::vec2(originalSize);
@@ -228,12 +228,12 @@ namespace darmok
 		auto xmlOriginalX = xml.attribute("oX");
 		if (xmlOriginalX)
 		{
-			offset.x = xmlOriginalX.as_int();
+			offset.x = xmlOriginalX.as_float();
 		}
 		auto xmlOriginalY = xml.attribute("oY");
 		if (xmlOriginalY)
 		{
-			offset.y = xmlOriginalY.as_int();
+			offset.y = xmlOriginalY.as_float();
 		}
 
 		auto xmlVertices = xml.child("vertices");

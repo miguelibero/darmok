@@ -29,10 +29,12 @@ namespace darmok
 		LuaCamera& setPerspective2(float fovy, float aspect, float near) noexcept;
 		LuaCamera& setPerspective3(float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept;
 		LuaCamera& setPerspective4(float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept;
-		LuaCamera& setOrtho1(const VarViewport& vp, float near, float far) noexcept;
-		LuaCamera& setOrtho2(const VarViewport& vp) noexcept;
-		LuaCamera& setOrtho3(const VarLuaTable<glm::uvec2>& size, float near, float fare) noexcept;
-		LuaCamera& setOrtho4(const VarLuaTable<glm::uvec2>& size) noexcept;
+		LuaCamera& setOrtho1(const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
+		LuaCamera& setOrtho2(const VarViewport& vp, const VarLuaTable<glm::vec2>& center) noexcept;
+		LuaCamera& setOrtho3(const VarViewport& vp) noexcept;
+		LuaCamera& setOrtho4(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
+		LuaCamera& setOrtho5(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept;
+		LuaCamera& setOrtho6(const VarLuaTable<glm::uvec2>& size) noexcept;
 
 		const glm::mat4& getProjectionMatrix() const noexcept;
 		void setProjectionMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept;

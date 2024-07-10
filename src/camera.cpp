@@ -90,17 +90,15 @@ namespace darmok
         return setPerspective(fovy, aspect, near, far);
     }
 
-    Camera& Camera::setOrtho(const Viewport& vp, float near, float far) noexcept
+    Camera& Camera::setOrtho(const Viewport& vp, const glm::vec2& center, float near, float far) noexcept
     {
-        auto bot = glm::vec2(vp.origin);
-        auto top = bot + glm::vec2(vp.size);
-        _proj = Math::ortho(bot.x, top.x, bot.y, top.y, near, far);
+        _proj = Math::ortho(vp, center, near, far);
         return *this;
     }
 
-    Camera& Camera::setOrtho(const glm::uvec2& size, float near, float far) noexcept
+    Camera& Camera::setOrtho(const glm::uvec2& size, const glm::vec2& center, float near, float far) noexcept
     {
-        return setOrtho(Viewport(size), near, far);
+        return setOrtho(Viewport(size), center, near, far);
     }
 
     Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept

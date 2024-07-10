@@ -58,25 +58,37 @@ namespace darmok
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho1(const VarViewport& vp, float near, float far) noexcept
+	LuaCamera& LuaCamera::setOrtho1(const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
 	{
-		_camera->setOrtho(LuaViewport::tableGet(vp), near, far);
+		_camera->setOrtho(LuaViewport::tableGet(vp), LuaGlm::tableGet(center), near, far);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho2(const VarViewport& vp) noexcept
+	LuaCamera& LuaCamera::setOrtho2(const VarViewport& vp, const VarLuaTable<glm::vec2>& center) noexcept
+	{
+		_camera->setOrtho(LuaViewport::tableGet(vp), LuaGlm::tableGet(center));
+		return *this;
+	}
+
+	LuaCamera& LuaCamera::setOrtho3(const VarViewport& vp) noexcept
 	{
 		_camera->setOrtho(LuaViewport::tableGet(vp));
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho3(const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept
+	LuaCamera& LuaCamera::setOrtho4(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
 	{
-		_camera->setOrtho(LuaGlm::tableGet(size), near, far);
+		_camera->setOrtho(LuaGlm::tableGet(size), LuaGlm::tableGet(center), near, far);
 		return *this;
 	}
 
-	LuaCamera& LuaCamera::setOrtho4(const VarLuaTable<glm::uvec2>& size) noexcept
+	LuaCamera& LuaCamera::setOrtho5(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept
+	{
+		_camera->setOrtho(LuaGlm::tableGet(size), LuaGlm::tableGet(center));
+		return *this;
+	}
+
+	LuaCamera& LuaCamera::setOrtho6(const VarLuaTable<glm::uvec2>& size) noexcept
 	{
 		_camera->setOrtho(LuaGlm::tableGet(size));
 		return *this;
@@ -242,7 +254,9 @@ namespace darmok
 				&LuaCamera::setOrtho1,
 				&LuaCamera::setOrtho2,
 				&LuaCamera::setOrtho3,
-				&LuaCamera::setOrtho4
+				&LuaCamera::setOrtho4,
+				&LuaCamera::setOrtho5,
+				&LuaCamera::setOrtho6
 			),
 			"enabled", sol::property(&LuaCamera::getEnabled, &LuaCamera::setEnabled),
 			"renderer_enabled", sol::property(&LuaCamera::getRendererEnabled, &LuaCamera::setRendererEnabled),

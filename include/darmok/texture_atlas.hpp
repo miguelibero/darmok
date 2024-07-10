@@ -43,9 +43,9 @@ namespace darmok
 		std::vector<TextureAtlasIndex> indices;
 		glm::uvec2 texturePosition = {};
 		glm::uvec2 size = {};
-		glm::ivec2 offset = {};
-		glm::uvec2 originalSize = {};
-		glm::ivec2 pivot = {};
+		glm::vec2 offset = {};
+		glm::vec2 originalSize = {};
+		glm::vec2 pivot = {};
 		bool rotated = false;
 
 		TextureAtlasBounds getBounds() const noexcept;

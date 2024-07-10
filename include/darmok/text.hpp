@@ -27,8 +27,8 @@ namespace darmok
     {
         glm::uvec2 size = {};
         glm::uvec2 texturePosition = {};
-        glm::ivec2 offset = {};
-        glm::uvec2 originalSize = {};
+        glm::vec2 offset = {};
+        glm::vec2 originalSize = {};
     };
 
     class Text;
@@ -55,10 +55,27 @@ namespace darmok
         virtual result_type operator()(std::string_view name) = 0;
     };
 
+    struct DARMOK_EXPORT TextRenderConfig
+    {
+        using Axis = TextLayoutAxis;
+        using Direction = TextLayoutDirection;
+        using Orientation = TextOrientation;
+        Axis axis = Axis::Horizontal;
+        Direction direction = Direction::Positive;
+        Direction lineDirection = Direction::Negative;
+        Orientation orientation = Orientation::Left;
+        glm::uvec2 contentSize = glm::uvec2(0);
+
+        glm::vec2 getGlyphAdvanceFactor() const noexcept;
+        bool fixEndOfLine(glm::vec2& pos, float lineStep) const;
+    };
+
     class DARMOK_EXPORT Text final
     {
     public:
         using Orientation = TextOrientation;
+        using RenderConfig = TextRenderConfig;
+
         Text(const std::shared_ptr<IFont>& font, const std::string& content = "") noexcept;
         ~Text();
         std::shared_ptr<IFont> getFont() noexcept;
@@ -69,15 +86,19 @@ namespace darmok
         Text& setContent(const Utf8Vector& content);
         const Color& getColor() const noexcept;
         Text& setColor(const Color& color) noexcept;
-        const glm::vec2& getContentSize() const noexcept;
-        Text& setContentSize(const glm::vec2& size) noexcept;
+        
+        const RenderConfig& getRenderConfig() const noexcept;
+        RenderConfig& getRenderConfig() noexcept;
+        Text& setRenderConfig(const RenderConfig& config) noexcept;
+        const glm::uvec2& getContentSize() const noexcept;
+        Text& setContentSize(const glm::uvec2& size) noexcept;
         Orientation getOrientation() const noexcept;
         Text& setOrientation(Orientation ori) noexcept;
 
         bool update();
         bool render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
 
-        static MeshData createMeshData(const Utf8Vector& content, const IFont& font, const glm::vec2& size = glm::vec2(0), Orientation ori = Orientation::Left);
+        static MeshData createMeshData(const Utf8Vector& content, const IFont& font, const RenderConfig& config = {});
     private:
         std::shared_ptr<IFont> _font;
         Utf8Vector _content;
@@ -86,8 +107,7 @@ namespace darmok
         bool _changed;
         uint32_t _vertexNum;
         uint32_t _indexNum;
-        glm::vec2 _contentSize;
-        Orientation _orientation;
+        RenderConfig _renderConfig;
 
         void onContentChanged(const Utf8Vector& oldContent);
     };

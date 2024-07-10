@@ -116,7 +116,7 @@ namespace darmok
                 scene.addComponent<Text>(boneEntity, _font, name)
                     .setColor(Colors::black())
                     .setContentSize(glm::vec2(1, _font->getLineSize()))
-                    .setOrientation(TextOrientation::HorizontalCenter);
+                    .setOrientation(TextOrientation::Center);
             }
             else
             {

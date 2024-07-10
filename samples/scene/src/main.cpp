@@ -114,7 +114,7 @@ namespace
 
 			auto cam2d = registry.create();
 			registry.emplace<Camera>(cam2d)
-				.setOrtho(getWindow().getSize())
+				.setOrtho(getWindow().getSize(), glm::vec2(0))
 				.setEntityComponentFilter<Culling2D>()
 				.setRenderer<ForwardRenderer>();
 
