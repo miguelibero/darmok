@@ -11,10 +11,12 @@ namespace darmok
 {
 	Text::Text(const std::shared_ptr<IFont>& font, const std::string& content) noexcept
 		: _font(font)
-		, _color(Colors::white())
+		, _color(Colors::black())
 		, _changed(false)
 		, _vertexNum(0)
 		, _indexNum(0)
+		, _contentSize(0)
+		, _orientation(Orientation::Left)
 	{
 		setContent(content);
 	}
@@ -23,7 +25,7 @@ namespace darmok
 	{
 		if (_font)
 		{
-			_font->onTextContentChanged(*this, _content, {});
+			_font->removeContent(_content);
 		}
 	}
 
@@ -42,6 +44,28 @@ namespace darmok
 		return *this;
 	}
 
+	const glm::vec2& Text::getContentSize() const noexcept
+	{
+		return _contentSize;
+	}
+
+	Text& Text::setContentSize(const glm::vec2& size) noexcept
+	{
+		_contentSize = size;
+		return *this;
+	}
+
+	Text::Orientation Text::getOrientation() const noexcept
+	{
+		return _orientation;
+	}
+
+	Text& Text::setOrientation(Orientation ori) noexcept
+	{
+		_orientation = ori;
+		return *this;
+	}
+
 	std::shared_ptr<IFont> Text::getFont() noexcept
 	{
 		return _font;
@@ -55,13 +79,13 @@ namespace darmok
 		}
 		if (_font)
 		{
-			_font->onTextContentChanged(*this, _content, {});
+			_font->removeContent(_content);
 		}
 		_font = font;
 		_changed = true;
 		if (_font)
 		{
-			_font->onTextContentChanged(*this, {}, _content);
+			_font->addContent(_content);
 		}
 
 		return *this;
@@ -102,7 +126,8 @@ namespace darmok
 	{
 		if (_font)
 		{
-			_font->onTextContentChanged(*this, oldContent, _content);
+			_font->removeContent(oldContent);
+			_font->addContent(_content);
 		}
 		_changed = true;
 	}
@@ -139,9 +164,11 @@ namespace darmok
 			return false;
 		}
 
-		auto data = createMeshData(_content, *_font);
+		auto data = createMeshData(_content, *_font, _contentSize, _orientation);
 		if (data.empty())
 		{
+			_vertexNum = 0;
+			_indexNum = 0;
 			return false;
 		}
 
@@ -166,7 +193,7 @@ namespace darmok
 		return true;
 	}
 
-	MeshData Text::createMeshData(const Utf8Vector& content, const IFont& font)
+	MeshData Text::createMeshData(const Utf8Vector& content, const IFont& font, const glm::vec2& size, Orientation ori)
 	{
 		auto& mat = font.getMaterial();
 
@@ -261,7 +288,9 @@ namespace darmok
 			auto text = _scene->getComponent<Text>(entity);
 			_cam->beforeRenderEntity(entity, *encoder, viewId);
 			text->render(*encoder, viewId);
+			_cam->afterRenderEntity(entity, *encoder, viewId);
 		}
+		_cam->afterRenderView(*encoder, viewId);
 		bgfx::end(encoder);
 		return ++viewId;
 	}
@@ -272,7 +301,7 @@ namespace darmok
 	{
 	}
 
-	std::optional<Glyph> TextureAtlasFont::getGlyph(const Utf8Char& chr) const
+	std::optional<Glyph> TextureAtlasFont::getGlyph(const Utf8Char& chr) const noexcept
 	{
 		auto elm = _atlas->getElement(chr.toString());
 		if (!elm)
@@ -287,9 +316,31 @@ namespace darmok
 		};
 	}
 
-	const Material& TextureAtlasFont::getMaterial() const
+	const Material& TextureAtlasFont::getMaterial() const noexcept
 	{
 		return _material;
+	}
+
+	float TextureAtlasFont::getLineSize() const noexcept
+	{
+		auto elm = _atlas->getElement("line");
+		if (elm)
+		{
+			return std::max(elm->originalSize.x, elm->originalSize.y);
+		}
+		float size = 0;
+		for (auto& elm : _atlas->elements)
+		{
+			if (elm.originalSize.x > size)
+			{
+				size = elm.originalSize.x;
+			}
+			if (elm.originalSize.y > size)
+			{
+				size = elm.originalSize.y;
+			}
+		}
+		return size;
 	}
 
 	TextureAtlasFontLoader::TextureAtlasFontLoader(ITextureAtlasLoader& atlasLoader) noexcept

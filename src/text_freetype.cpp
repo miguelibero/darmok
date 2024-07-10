@@ -141,13 +141,41 @@ namespace darmok
 		return _material;
 	}
 
-	void FreetypeFont::onTextContentChanged(Text& text, const Utf8Vector& oldContent, const Utf8Vector& newContent)
+	float FreetypeFont::getLineSize() const noexcept
 	{
-		for (auto& chr : oldContent)
+		return _face->size->metrics.height >> 6;
+	}
+
+	void FreetypeFont::addContent(const Utf8Vector& content)
+	{
+		for (auto& chr : content)
 		{
-			_chars.erase(chr);
+			auto itr = _chars.find(chr);
+			if (itr == _chars.end())
+			{
+				_chars.emplace(chr, 1);
+			}
+			else
+			{
+				itr->second++;
+			}
 		}
-		_chars.insert(newContent.begin(), newContent.end());
+	}
+
+	void FreetypeFont::removeContent(const Utf8Vector& content)
+	{
+		for (auto& chr : content)
+		{
+			auto itr = _chars.find(chr);
+			if (itr != _chars.end())
+			{
+				itr->second--;
+				if (itr->second <= 0)
+				{
+					_chars.erase(itr);
+				}
+			}
+		}
 	}
 
 	FT_Face FreetypeFont::getFace() const  noexcept
@@ -157,20 +185,32 @@ namespace darmok
 
 	void FreetypeFont::update()
 	{
-		if (_renderedChars == _chars || _chars.empty())
+		Utf8Vector chars;
+		for (auto& [chr, count] : _chars)
+		{
+			if (count > 0)
+			{
+				chars.push_back(chr);
+			}
+		}
+
+		if (_renderedChars == chars || _chars.empty())
 		{
 			return;
 		}
 		FreetypeFontAtlasGenerator generator(_face, _library, _alloc);
 		generator.setImageFormat(bimg::TextureFormat::RGBA8);
-		auto atlas = generator(_chars);
+		auto atlas = generator(chars);
 
-		// TODO: should use Texture::update but I can't get it to work
-		_texture = std::make_shared<Texture>(atlas.image);
-		_material.setTexture(MaterialTextureType::Diffuse, _texture);
+		if (!_texture || _texture->getSize() != atlas.image.getSize())
+		{
+			_texture = std::make_shared<Texture>(atlas.image.getTextureConfig());
+			_material.setTexture(MaterialTextureType::Diffuse, _texture);
+		}
+		_texture->update(atlas.image.getData());
 
 		_glyphs = atlas.glyphs;
-		_renderedChars = _chars;
+		_renderedChars = chars;
 	}
 
 	FreetypeFontAtlasGenerator::FreetypeFontAtlasGenerator(FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept
@@ -201,7 +241,7 @@ namespace darmok
 		return *this;
 	}
 
-	glm::uvec2 FreetypeFontAtlasGenerator::calcSpace(const std::set<Utf8Char>& chars) noexcept
+	glm::uvec2 FreetypeFontAtlasGenerator::calcSpace(const Utf8Vector& chars) noexcept
 	{
 		glm::uvec2 pos(0);
 		FT_UInt fontHeight = _face->size->metrics.y_ppem;
@@ -218,7 +258,7 @@ namespace darmok
 		return pos;
 	}
 
-	std::map<Utf8Char, FT_UInt> FreetypeFontAtlasGenerator::getIndices(const std::set<Utf8Char>& chars) const
+	std::map<Utf8Char, FT_UInt> FreetypeFontAtlasGenerator::getIndices(const Utf8Vector& chars) const
 	{
 		std::map<Utf8Char, FT_UInt> indices;
 		if (chars.empty())
@@ -258,7 +298,7 @@ namespace darmok
 		return _face->glyph->bitmap;
 	}
 
-	FontAtlas FreetypeFontAtlasGenerator::operator()(const std::set<Utf8Char>& chars)
+	FontAtlas FreetypeFontAtlasGenerator::operator()(const Utf8Vector& chars)
 	{
 		glm::uvec2 pos(0);
 		FT_UInt fontHeight = _face->size->metrics.y_ppem;
@@ -280,7 +320,7 @@ namespace darmok
 			}
 
 			auto& metrics = _face->glyph->metrics;
-			// TODO: implement for vertical layouts
+			// https://freetype.org/freetype2/docs/glyphs/glyphs-3.html
 			Glyph glyph
 			{
 				.size = glm::vec2(metrics.width >> 6, metrics.height >> 6),
@@ -303,9 +343,9 @@ namespace darmok
 
 	FontAtlas FreetypeFontAtlasGenerator::operator()(std::string_view str)
 	{
-		std::vector<Utf8Char> chars;
+		Utf8Vector chars;
 		Utf8Char::read(str, chars);
-		return (*this)(std::set<Utf8Char>(chars.begin(), chars.end()));
+		return (*this)(chars);
 	}
 
 	FreetypeFontAtlasImporterImpl::FreetypeFontAtlasImporterImpl()

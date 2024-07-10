@@ -6,7 +6,6 @@
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
 #include <darmok/material.hpp>
-#include <set>
 #include <map>
 #include <optional>
 #include <string_view>
@@ -48,8 +47,9 @@ namespace darmok
 
         std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
         const Material& getMaterial() const noexcept override;
-
-        void onTextContentChanged(Text& text, const Utf8Vector& oldContent, const Utf8Vector& newContent) override;
+        float getLineSize() const noexcept override;
+        void addContent(const Utf8Vector& content) override;
+        void removeContent(const Utf8Vector& content) override;
         void update() override;
         FT_Face getFace() const noexcept;
     private:
@@ -60,8 +60,8 @@ namespace darmok
         Data _data;
         FT_Library _library;
         bx::AllocatorI& _alloc;
-        std::set<Utf8Char> _renderedChars;
-        std::set<Utf8Char> _chars;
+        Utf8Vector _renderedChars;
+        std::map<Utf8Char, size_t> _chars;
     };
 
     struct FontAtlas
@@ -77,8 +77,8 @@ namespace darmok
         FreetypeFontAtlasGenerator& setSize(const glm::uvec2& size) noexcept;
         FreetypeFontAtlasGenerator& setImageFormat(bimg::TextureFormat::Enum format) noexcept;
         FreetypeFontAtlasGenerator& setRenderMode(FT_Render_Mode mode) noexcept;
-        glm::uvec2 calcSpace(const std::set<Utf8Char>& chars) noexcept;
-        FontAtlas operator()(const std::set<Utf8Char>& chars);
+        glm::uvec2 calcSpace(const Utf8Vector& chars) noexcept;
+        FontAtlas operator()(const Utf8Vector& chars);
         FontAtlas operator()(std::string_view str);
     private:
         FT_Face _face;
@@ -88,7 +88,7 @@ namespace darmok
         FT_Render_Mode _renderMode;
         bimg::TextureFormat::Enum _imageFormat;
 
-        std::map<Utf8Char, FT_UInt> getIndices(const std::set<Utf8Char>& chars) const;
+        std::map<Utf8Char, FT_UInt> getIndices(const Utf8Vector& chars) const;
         const FT_Bitmap& renderBitmap(FT_UInt index);
     };
 

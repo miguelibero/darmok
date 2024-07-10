@@ -9,6 +9,7 @@
 #include <darmok/data_stream.hpp>
 #include <darmok/string.hpp>
 #include <darmok/model.hpp>
+#include <darmok/text.hpp>
 #include <stdexcept>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>
@@ -67,17 +68,25 @@ namespace darmok
             _boneMesh = MeshData(Line(), LineMeshType::Diamond).createMesh(layout);
         }
     }
-   
-    void RenderableSkeleton::update(Scene& scene, const std::vector<glm::mat4>& boneMatrixes) noexcept
+
+    RenderableSkeleton& RenderableSkeleton::setFont(const std::shared_ptr<IFont>& font) noexcept
     {
-        while (_boneTransforms.size() > boneMatrixes.size())
+        _font = font;
+        return *this;
+    }
+   
+    void RenderableSkeleton::update(Scene& scene, const std::unordered_map<std::string, glm::mat4>& boneMatrixes) noexcept
+    {
+        for (auto itr = _boneTransforms.begin(); itr != _boneTransforms.end(); )
         {
-            auto boneEntity = scene.getEntity(_boneTransforms.back());
-            if (boneEntity != entt::null)
+            if (!boneMatrixes.contains(itr->first))
             {
-                scene.destroyEntity(boneEntity);
+                itr = _boneTransforms.erase(itr);
             }
-            _boneTransforms.pop_back();
+            else
+            {
+                ++itr;
+            }
         }
         if (boneMatrixes.empty())
         {
@@ -92,21 +101,27 @@ namespace darmok
 
         auto& trans = scene.getOrAddComponent<Transform>(entity);
 
-        size_t i = 0;
-        for (auto& mtx : boneMatrixes)
+        for (auto& [name, mtx] : boneMatrixes)
         {
-            if (i >= _boneTransforms.size())
+            auto itr = _boneTransforms.find(name);
+            if (itr == _boneTransforms.end())
             {
                 auto boneEntity = scene.createEntity();
                 scene.addComponent<Renderable>(boneEntity, _boneMesh, _material);
                 auto& boneTrans = scene.addComponent<Transform>(boneEntity, mtx, trans);
-                _boneTransforms.emplace_back(boneTrans);
+                boneTrans.setName(name);
+                _boneTransforms.emplace(name, boneTrans);
+
+                // TODO: add border
+                scene.addComponent<Text>(boneEntity, _font, name)
+                    .setColor(Colors::black())
+                    .setContentSize(glm::vec2(1, _font->getLineSize()))
+                    .setOrientation(TextOrientation::HorizontalCenter);
             }
             else
             {
-                _boneTransforms[i]->setLocalMatrix(mtx);
+                itr->second->setLocalMatrix(mtx);
             }
-            ++i;
         }
     }
 

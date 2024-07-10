@@ -7,6 +7,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/color.hpp>
 #include <darmok/material.hpp>
+#include <darmok/text_fwd.hpp>
 
 #include <memory>
 #include <string>
@@ -39,8 +40,10 @@ namespace darmok
 
         virtual std::optional<Glyph> getGlyph(const Utf8Char& chr) const = 0;
         virtual const Material& getMaterial() const = 0;
+        virtual float getLineSize() const = 0;
         virtual void update() {};
-        virtual void onTextContentChanged(Text& text, const Utf8Vector& oldContent, const Utf8Vector& newContent) {};
+        virtual void addContent(const Utf8Vector& content) {};
+        virtual void removeContent(const Utf8Vector& content) {};
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IFontLoader
@@ -55,6 +58,7 @@ namespace darmok
     class DARMOK_EXPORT Text final
     {
     public:
+        using Orientation = TextOrientation;
         Text(const std::shared_ptr<IFont>& font, const std::string& content = "") noexcept;
         ~Text();
         std::shared_ptr<IFont> getFont() noexcept;
@@ -65,11 +69,15 @@ namespace darmok
         Text& setContent(const Utf8Vector& content);
         const Color& getColor() const noexcept;
         Text& setColor(const Color& color) noexcept;
+        const glm::vec2& getContentSize() const noexcept;
+        Text& setContentSize(const glm::vec2& size) noexcept;
+        Orientation getOrientation() const noexcept;
+        Text& setOrientation(Orientation ori) noexcept;
 
         bool update();
         bool render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
 
-        static MeshData createMeshData(const Utf8Vector& content, const IFont& font);
+        static MeshData createMeshData(const Utf8Vector& content, const IFont& font, const glm::vec2& size = glm::vec2(0), Orientation ori = Orientation::Left);
     private:
         std::shared_ptr<IFont> _font;
         Utf8Vector _content;
@@ -78,6 +86,8 @@ namespace darmok
         bool _changed;
         uint32_t _vertexNum;
         uint32_t _indexNum;
+        glm::vec2 _contentSize;
+        Orientation _orientation;
 
         void onContentChanged(const Utf8Vector& oldContent);
     };
@@ -102,8 +112,9 @@ namespace darmok
     {
     public:
         TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas, const std::shared_ptr<Program>& prog) noexcept;
-        std::optional<Glyph> getGlyph(const Utf8Char& chr) const override;
-        const Material& getMaterial() const override;
+        std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
+        const Material& getMaterial() const noexcept override;
+        float getLineSize() const noexcept override;
     private:
         std::shared_ptr<TextureAtlas> _atlas;
         Material _material;

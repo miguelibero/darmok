@@ -1,5 +1,6 @@
 {
     "files": {
+        "noto.ttf": "copy",
         "animator.json": "copy",
         "BasicMotionsTexture.png": "copy",
         "BasicMotions@*.fbx": {

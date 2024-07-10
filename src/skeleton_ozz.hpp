@@ -152,7 +152,7 @@ namespace darmok
 		void update(float deltaTime);
 
 		glm::mat4 getJointModelMatrix(const std::string& joint) const noexcept;
-		std::vector<glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
+		std::unordered_map<std::string, glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 
 		std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override;
 	private:

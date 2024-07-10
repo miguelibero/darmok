@@ -149,6 +149,7 @@ namespace darmok
         MeshType type = MeshType::Static;
         bool index32 = false;
         int16_t indexOffset = 0;
+        glm::mat4 transform = glm::mat4(1);
     };
 
     struct DARMOK_EXPORT MeshDataVertex final

@@ -20,6 +20,7 @@
 #include <darmok/character.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/freelook.hpp>
+#include <darmok/text.hpp>
 #include <imgui.h>
 #include <glm/gtx/string_cast.hpp>
 
@@ -60,6 +61,10 @@ namespace
 				_freeLook = _scene->addSceneComponent<FreelookController>(*_cam);
 #ifdef PHYSICS_DEBUG_RENDERER
 				_physicsDebugRenderer = _cam->addComponent<PhysicsDebugRenderer>(physics);
+#ifdef DARMOK_FREETYPE
+				auto font = getAssets().getFontLoader()("noto.ttf");
+				_physicsDebugRenderer->setFont(font);
+#endif
 				_physicsDebugRenderer->setEnabled(false);
 #endif
 			}

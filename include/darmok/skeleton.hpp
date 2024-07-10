@@ -261,7 +261,7 @@ namespace darmok
         bool play(std::string_view name) noexcept;
         
         glm::mat4 getJointModelMatrix(const std::string& node) const noexcept;
-        std::vector<glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
+        std::unordered_map<std::string, glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 
         void update(float deltaTime);
     private:
@@ -270,16 +270,19 @@ namespace darmok
 
     class Transform;
     class Material;
+    class IFont;
 
     class DARMOK_EXPORT RenderableSkeleton final
     {
     public:
         RenderableSkeleton(const std::shared_ptr<Material>& mat = nullptr, const std::shared_ptr<IMesh>& boneMesh = nullptr) noexcept;
-        void update(Scene& scene, const std::vector<glm::mat4>& boneMatrixes) noexcept;
+        RenderableSkeleton& setFont(const std::shared_ptr<IFont>& font) noexcept;
+        void update(Scene& scene, const std::unordered_map<std::string, glm::mat4>& boneMatrixes) noexcept;
     private:
+        std::shared_ptr<IFont> _font;
         std::shared_ptr<Material> _material;
         std::shared_ptr<IMesh> _boneMesh;
-        std::vector<OptionalRef<Transform>> _boneTransforms;
+        std::unordered_map<std::string, OptionalRef<Transform>> _boneTransforms;
     };
 
     class DARMOK_EXPORT SkeletalAnimationSceneComponent final : public ISceneComponent

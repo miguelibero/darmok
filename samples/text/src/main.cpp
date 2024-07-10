@@ -31,11 +31,12 @@ namespace
 			auto& registry = scene.getRegistry();
 
 			auto arial = getAssets().getFontLoader()("ARIALUNI.TTF");
+			auto noto = getAssets().getFontLoader()("noto.ttf");
 			auto comic = getAssets().getFontLoader()("COMIC.xml");
 
 			auto camEntity = registry.create();
 			registry.emplace<Transform>(camEntity)
-				.setPosition(glm::vec3(0.f, 1.f, -1.f))
+				.setPosition(glm::vec3(0.f, -1.f, -1.f))
 				.lookAt(glm::vec3(0, 0, 0));
 
 			auto& cam = registry.emplace<Camera>(camEntity)
@@ -51,7 +52,13 @@ namespace
 
 			auto text2Entity = scene.createEntity();
 			_text2 = scene.addComponent<Text>(text2Entity, comic, _textStr);
-			scene.addComponent<Transform>(text2Entity, glm::vec3(0, -0.5, 0))
+			scene.addComponent<Transform>(text2Entity, glm::vec3(0, 0, 0))
+				.setScale(glm::vec3(2));
+
+			auto text3Entity = scene.createEntity();
+			_text3 = scene.addComponent<Text>(text3Entity, noto, _textStr);
+			_text3->setContentSize(glm::vec2(200, noto->getLineSize()));
+			scene.addComponent<Transform>(text3Entity, glm::vec3(0, -0.5, 0))
 				.setScale(glm::vec3(2));
 		}
 
@@ -63,17 +70,20 @@ namespace
 				auto u8str = StringUtils::utf8Cast(_textStr);
 				_text1->setContent(u8str);
 				_text2->setContent(u8str);
+				_text3->setContent(u8str);
 			}
 			if (ImGui::ColorPicker4("Color", &_color[0]))
 			{
 				auto c = Colors::denormalize(_color);
 				_text1->setColor(c);
 				_text2->setColor(c);
+				_text3->setColor(c);
 			}
 		}
 	private:
 		OptionalRef<Text> _text1;
 		OptionalRef<Text> _text2;
+		OptionalRef<Text> _text3;
 		std::string _textStr = "darmok engine rules!";
 		glm::vec4 _color = glm::vec4(1);
 	};

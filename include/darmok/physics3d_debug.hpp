@@ -10,6 +10,7 @@ namespace darmok
 {
     class Camera;
     class Material;
+    class IFont;
 }
 
 namespace darmok::physics3d
@@ -35,6 +36,7 @@ namespace darmok::physics3d
         bgfx::ViewId afterRender(bgfx::ViewId viewId) override;
         bool isEnabled() const noexcept;
         PhysicsDebugRenderer& setEnabled(bool enabled) noexcept;
+        PhysicsDebugRenderer& setFont(const std::shared_ptr<IFont>& font) noexcept;
     private:
         std::unique_ptr<PhysicsDebugRendererImpl> _impl;
     };

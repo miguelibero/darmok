@@ -415,6 +415,7 @@ namespace darmok
 		for (auto& vertex : vertices)
 		{
 			vertex.position = config.scale * (vertex.position + config.offset);
+			vertex.position = config.transform * glm::vec4(vertex.position, 1);
 			vertex.texCoord = config.textureScale * (vertex.texCoord + config.textureOffset);
 			vertex.color = Colors::multiply(config.color, vertex.color);
 		}
@@ -434,8 +435,11 @@ namespace darmok
 	{
 		normalize();
 
+		auto inv = glm::inverse(newConfig.transform);
+
 		for (auto& vertex : vertices)
 		{
+			vertex.position = inv * glm::vec4(vertex.position, 1);
 			vertex.position = (vertex.position / newConfig.scale) - newConfig.offset;
 			vertex.texCoord = (vertex.texCoord / newConfig.textureScale) - newConfig.textureOffset;
 			vertex.color = Colors::divide(vertex.color, newConfig.color);
@@ -472,6 +476,7 @@ namespace darmok
 			if (vertexLayout.has(bgfx::Attrib::Position))
 			{
 				auto v = config.scale * (vertex.position + config.offset);
+				v = config.transform * glm::vec4(v, 1);
 				writer.write(bgfx::Attrib::Position, i, v);
 			}
 			if (vertexLayout.has(bgfx::Attrib::TexCoord0))

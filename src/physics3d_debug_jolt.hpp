@@ -59,12 +59,11 @@ namespace darmok::physics3d
         OptionalRef<bgfx::Encoder> _encoder;
         bgfx::ViewId _viewId;
         bgfx::VertexLayout _vertexLayout;
-        MeshData _drawLines;
-        MeshData _drawTris;
         std::shared_ptr<IFont> _font;
         static const std::string _bindingsName;
 
         void onBindingTriggered();
         void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid);
+        void renderSubmit(const Material& mat);
     };
 }

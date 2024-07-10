@@ -130,16 +130,23 @@ namespace darmok
 		return _config.getInfo().bitsPerPixel;
 	}
 
-	void Texture::update(const DataView& data, uint16_t layer, uint8_t mip)
+	void Texture::update(const DataView& data, uint8_t mip)
 	{
-		update(data, getSize(), glm::uvec2(0), layer, mip);
+		if (_config.type == TextureType::Texture3D)
+		{
+			update(data, glm::uvec3(getSize(), getDepth()), glm::uvec3(0), mip);
+		}
+		else
+		{
+			update(data, getSize(), glm::uvec2(0), mip);
+		}
 	}
 
-	void Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint16_t layer, uint8_t mip)
+	void Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint8_t mip, uint16_t layer, uint8_t side)
 	{
-		if (_config.type != TextureType::Texture2D)
+		if (_config.type == TextureType::Texture3D)
 		{
-			throw std::runtime_error("only works on 2D textures");
+			throw std::runtime_error("does not work on 3D textures");
 		}
 		auto memSize = size.x * size.y * getBitsPerPixel() / 8;
 		if (memSize == 0)
@@ -150,9 +157,39 @@ namespace darmok
 		{
 			throw std::runtime_error("data is smaller that expected size");
 		}
-		bgfx::updateTexture2D(_handle, layer, mip,
-			origin.x, origin.y, size.x, size.y,
+		if (_config.type == TextureType::Texture2D)
+		{
+			bgfx::updateTexture2D(_handle, layer, mip,
+				origin.x, origin.y, size.x, size.y,
+				data.copyMem(0, memSize));
+		}
+		else
+		{
+			bgfx::updateTextureCube(_handle, layer, side, mip,
+				origin.x, origin.y, size.x, size.y,
+				data.copyMem(0, memSize));
+		}
+	}
+
+	void Texture::update(const DataView& data, const glm::uvec3& size, const glm::uvec3& origin, uint8_t mip)
+	{
+		if (_config.type != TextureType::Texture3D)
+		{
+			throw std::runtime_error("does only work on 3D textures");
+		}
+		auto memSize = size.x * size.y * size.z * getBitsPerPixel() / 8;
+		if (memSize == 0)
+		{
+			return;
+		}
+		if (data.size() < memSize)
+		{
+			throw std::runtime_error("data is smaller that expected size");
+		}
+		bgfx::updateTexture3D(_handle, mip,
+			origin.x, origin.y, origin.y, size.x, size.y, size.z,
 			data.copyMem(0, memSize));
+
 	}
 
 	uint32_t Texture::read(Data& data) noexcept

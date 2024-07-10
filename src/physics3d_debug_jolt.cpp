@@ -41,8 +41,6 @@ namespace darmok::physics3d
         , _enabled(true)
         , _system(system)
     {
-        _drawLines.config.type = MeshType::Transient;
-        _drawTris.config.type = MeshType::Transient;
     }
 
     const std::string PhysicsDebugRendererImpl::_bindingsName = "physics_debug";
@@ -107,23 +105,13 @@ namespace darmok::physics3d
         JPH::BodyManager::DrawSettings settings;
         settings.mDrawShape = true;
         settings.mDrawShapeWireframe = true;
+        settings.mDrawWorldTransform = true;
+        settings.mDrawSleepStats = true;
 
         _cam->beforeRenderView(_encoder.value(), _viewId);
 
         joltSystem->DrawBodies(settings, this, nullptr);
 
-        if (!_drawLines.empty())
-        {
-            auto mesh = _drawLines.createMesh(_vertexLayout);
-            _drawLines.clear();
-            renderMesh(*mesh, EDrawMode::Wireframe);
-        }
-        if (!_drawTris.empty())
-        {
-            auto mesh = _drawTris.createMesh(_vertexLayout);
-            _drawTris.clear();
-            renderMesh(*mesh, EDrawMode::Solid);
-        }
         bgfx::end(_encoder.ptr());
         _encoder.reset();
         return true;
@@ -146,32 +134,44 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::renderMesh(const IMesh& mesh, EDrawMode mode)
     {
+        if (!_config.material)
+        {
+            return;
+        }
         _cam->beforeRenderEntity(entt::null, _encoder.value(), _viewId);
         mesh.render(_encoder.value());
         auto primType = mode == EDrawMode::Wireframe ? MaterialPrimitiveType::Line : MaterialPrimitiveType::Triangle;
         _config.material->setPrimitiveType(primType);
+        renderSubmit(*_config.material);
+    }
 
+    void PhysicsDebugRendererImpl::renderSubmit(const Material& mat)
+    {
         static const MaterialColorType colorType = MaterialColorType::Diffuse;
-        auto origColor = _config.material->getColor(colorType);
-        auto color = origColor.value_or(Colors::white());
-        _config.material->setColor(colorType, Color(color.r, color.g, color.b, color.a * _config.alpha));
-        _config.material->renderSubmit(_encoder.value(), _viewId);
-        _config.material->setColor(colorType, origColor);
+        auto color = _config.material->getColor(colorType).value_or(Colors::white());
+        color.a *= _config.alpha;
+        Material mat2(mat);
+        mat2.setColor(colorType, color);
+        mat2.renderSubmit(_encoder.value(), _viewId);
     }
 
-    void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
+    void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color)
     {
-        MeshData data(Line(JoltUtils::convert(inFrom), JoltUtils::convert(inTo)));
-        data.config.color = JoltUtils::convert(inColor);
-        _drawLines += data;
+        /*
+        MeshData data(Line(JoltUtils::convert(from), JoltUtils::convert(to)));
+        data.config.color = JoltUtils::convert(color);
+        data.config.type = MeshType::Transient;
+        renderMesh(*data.createMesh(_vertexLayout), EDrawMode::Wireframe);
+        */
     }
 
-    void PhysicsDebugRendererImpl::DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow)
+    void PhysicsDebugRendererImpl::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow)
     {
-        MeshData data(darmok::Triangle(JoltUtils::convert(inV1), JoltUtils::convert(inV2), JoltUtils::convert(inV3)));
-        data.config.color = JoltUtils::convert(inColor);
-        _drawTris += data;
-        // TODO: add shadow support
+        MeshData data(darmok::Triangle(JoltUtils::convert(v1), JoltUtils::convert(v2), JoltUtils::convert(v3)));
+        data.config.color = JoltUtils::convert(color);
+        data.config.type = MeshType::Transient;
+        auto mode = castShadow == ECastShadow::On ? EDrawMode::Solid : EDrawMode::Wireframe;
+        renderMesh(*data.createMesh(_vertexLayout), mode);
     }
 
     JPH::DebugRenderer::Batch PhysicsDebugRendererImpl::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* inTriangles, int inTriangleCount)
@@ -241,7 +241,22 @@ namespace darmok::physics3d
         }
         Utf8Vector content;
         Utf8Char::read(str, content);
-        _drawTris += Text::createMeshData(content, *_font);
+        if (content.empty())
+        {
+            return;
+        }
+        _font->addContent(content);
+        _font->update();
+        auto data = Text::createMeshData(content, *_font);
+        data.config.color = JoltUtils::convert(color);
+        data.config.type = MeshType::Transient;
+
+        auto trans = glm::translate(glm::scale(glm::mat4(1), glm::vec3(height*4)), JoltUtils::convert(pos));
+        _encoder->setTransform(glm::value_ptr(trans));
+
+        _cam->beforeRenderEntity(entt::null, _encoder.value(), _viewId);
+        data.createMesh(_vertexLayout)->render(_encoder.value());
+        renderSubmit(_font->getMaterial());
     }
 
     PhysicsDebugRenderer::PhysicsDebugRenderer(PhysicsSystem& system, const Config& config) noexcept
@@ -281,6 +296,12 @@ namespace darmok::physics3d
     PhysicsDebugRenderer& PhysicsDebugRenderer::setEnabled(bool enabled) noexcept
     {
         _impl->setEnabled(enabled);
+        return *this;
+    }
+
+    PhysicsDebugRenderer& PhysicsDebugRenderer::setFont(const std::shared_ptr<IFont>& font) noexcept
+    {
+        _impl->setFont(font);
         return *this;
     }
 }

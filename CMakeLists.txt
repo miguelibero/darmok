@@ -216,6 +216,7 @@ set(HEADERS
   ${INCLUDE_DIR}/render_forward.hpp
   ${INCLUDE_DIR}/render_deferred.hpp
   ${INCLUDE_DIR}/freelook.hpp
+  ${INCLUDE_DIR}/text_fwd.hpp
   ${INCLUDE_DIR}/text.hpp
 )
 

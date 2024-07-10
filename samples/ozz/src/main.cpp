@@ -17,6 +17,7 @@
 #include <darmok/program.hpp>
 #include <darmok/model_assimp.hpp>
 #include <darmok/freelook.hpp>
+#include <darmok/text.hpp>
 
 namespace
 {
@@ -68,7 +69,11 @@ namespace
 			
 			auto boneTex = getAssets().getColorTextureLoader()(Colors::grey());
 			auto boneMat = std::make_shared<Material>(prog, boneTex);
-			scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
+			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
+#ifdef DARMOK_FREETYPE
+			renderSkel.setFont(getAssets().getFontLoader()("noto.ttf"));
+			cam.addComponent<TextRenderer>();
+#endif
 
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
 			auto model = getAssets().getModelLoader()("model.dml");
