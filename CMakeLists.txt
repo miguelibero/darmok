@@ -132,6 +132,7 @@ set(CORE_SOURCES
   ${SRC_DIR}/viewport.cpp
   ${SRC_DIR}/program.cpp
   ${SRC_DIR}/asset_core.cpp
+  ${SRC_DIR}/render_graph.cpp
 )
 
 set(CORE_HEADERS
@@ -162,6 +163,7 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/asset_core.hpp
   ${INCLUDE_DIR}/loader.hpp
+  ${INCLUDE_DIR}/render_graph.hpp
 )
 
 set(SOURCES

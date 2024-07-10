@@ -30,5 +30,4 @@ namespace darmok
         std::shared_ptr<IMesh> _mesh;
         std::shared_ptr<Material> _material;
     };
-
 }

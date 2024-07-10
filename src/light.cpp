@@ -240,7 +240,6 @@ namespace darmok
         }
     }
 
-
     void PhongLightingComponent::update(float deltaTime) noexcept
     {
         if (!_scene)
