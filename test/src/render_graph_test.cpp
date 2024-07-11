@@ -55,7 +55,7 @@ class DeferredLightingRenderPass final : public IRenderPass
 {
 public:
     DeferredLightingRenderPass()
-        : _hdrTexture{ glm::uvec2(1024), bgfx::TextureFormat::RGBA8 }
+        : _outTexture{ glm::uvec2(1024), bgfx::TextureFormat::RGBA8 }
     {
     }
 
@@ -72,7 +72,7 @@ public:
             .add("normal", _normalTexture)
             .add("albedo", _albedoTexture);
         def.getOutputs()
-            .add("hdr", _hdrTexture);
+            .add(_outTexture);
     }
 
     void onRenderPassExecute(RenderGraphResources& res) override
@@ -81,7 +81,7 @@ public:
         res.get("normal", _depthTexture);
         res.get("albedo", _albedoTexture);
         // render!
-        res.setRef("hdr", _hdrTexture);
+        res.setRef(_outTexture);
 
     }
 
@@ -89,7 +89,40 @@ private:
     OptionalRef<const TestTexture> _depthTexture;
     OptionalRef<const TestTexture> _normalTexture;
     OptionalRef<const TestTexture> _albedoTexture;
-    TestTexture _hdrTexture;
+    TestTexture _outTexture;
+};
+
+class PostprocessRenderPass final : public IRenderPass
+{
+public:
+    PostprocessRenderPass()
+        : _outTexture{ glm::uvec2(1024), bgfx::TextureFormat::RGBA8 }
+    {
+    }
+
+    const std::string& getRenderPassName() const noexcept override
+    {
+        static const std::string name("Deferred Lighting");
+        return name;
+    }
+
+    void onRenderPassDefine(RenderPassDefinition& def) override
+    {
+        def.getInputs()
+            .add<TestTexture>();
+        def.getOutputs()
+            .add<TestTexture>();
+    }
+
+    void onRenderPassExecute(RenderGraphResources& res) override
+    {
+        auto inTex = res.get<TestTexture>();
+        // render!
+        res.setRef(_outTexture);
+
+    }
+private:
+    TestTexture _outTexture;
 };
 
 TEST_CASE( "Compile graph dependencies", "[darmok-core]" ) {

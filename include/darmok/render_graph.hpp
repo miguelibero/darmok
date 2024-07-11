@@ -36,7 +36,7 @@ namespace darmok
         ConstIterator end() const;
 
         template<typename T>
-        RenderResourceGroupDefinition& add(std::string_view name)
+        RenderResourceGroupDefinition& add(std::string_view name = "")
         {
             _resources.push_back(Resource::create<T>(name));
             return *this;
@@ -58,6 +58,24 @@ namespace darmok
         RenderResourceGroupDefinition& add(std::string_view name, const OptionalRef<T>& value)
         {
             return add<T>(name);
+        }
+
+        template<typename T>
+        RenderResourceGroupDefinition& add(const T& value)
+        {
+            return add<T>("");
+        }
+
+        template<typename T>
+        RenderResourceGroupDefinition& add(const OptionalRef<const T>& value)
+        {
+            return add<T>("");
+        }
+
+        template<typename T>
+        RenderResourceGroupDefinition& add(const OptionalRef<T>& value)
+        {
+            return add<T>("");
         }
 
     private:
@@ -82,16 +100,27 @@ namespace darmok
         }
 
         template<typename T>
-        RenderGraphResources& setRef(std::string_view name, T& value) noexcept
+        RenderGraphResources& set(T&& value) noexcept
         {
-            _data[getKey<T>(name)] = std::reference_wrapper<T>(value);
-            return *this;
+            return set("", std::forward(value));
         }
 
         template<typename T>
-        OptionalRef<const T> constGet(std::string_view name) const noexcept
+        RenderGraphResources& setRef(const T& value) noexcept
         {
-            return get<T>(name);
+            return setRef("", value);
+        }
+
+        template<typename T>
+        void get(std::string_view name, T& ref) const noexcept
+        {
+            ref = get<T>(name);
+        }
+
+        template<typename T>
+        void get(T& ref) const noexcept
+        {
+            ref = get<T>();
         }
 
         template<typename T>
@@ -101,7 +130,13 @@ namespace darmok
         }
 
         template<typename T>
-        OptionalRef<const T> get(std::string_view name) const noexcept
+        void get(OptionalRef<const T>& ref) const noexcept
+        {
+            ref = get<T>();
+        }
+
+        template<typename T>
+        OptionalRef<const T> get(std::string_view name = "") const noexcept
         {
             auto itr = _data.find(getKey<T>(name));
             if (itr == _data.end())
@@ -120,32 +155,6 @@ namespace darmok
             if (auto constRef = entt::any_cast<std::reference_wrapper<const T>>(ptr))
             {
                 return constRef->get();
-            }
-            return nullptr;
-        }
-
-        template<typename T>
-        void get(std::string_view name, OptionalRef<T>& ref) noexcept
-        {
-            ref = get<T>(name);
-        }
-
-        template<typename T>
-        OptionalRef<T> get(std::string_view name) noexcept
-        {
-            auto itr = _data.find(getKey<T>(name));
-            if (itr == _data.end())
-            {
-                return std::nullopt;
-            }
-            auto ptr = &itr->second;
-            if (auto val = entt::any_cast<T>(ptr))
-            {
-                return val;
-            }
-            if (auto ref = entt::any_cast<std::reference_wrapper<T>>(ptr))
-            {
-                return ref->get();
             }
             return nullptr;
         }
