@@ -8,6 +8,8 @@
 #include <darmok/stream.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
+#include <darmok/collection.hpp>
+#include <nlohmann/json.hpp>
 
 namespace darmok
 {
@@ -175,29 +177,76 @@ namespace darmok
         _log = log;
     }
 
-    fs::path ShaderImporterImpl::getOutputPath(const fs::path& path, const std::string& ext) noexcept
+    const std::string ShaderImporterImpl::_enableDefineSuffix = "_enabled";
+    const std::string ShaderImporterImpl::_manifestFileSuffix = ".manifest.json";
+
+    fs::path ShaderImporterImpl::getOutputPath(const fs::path& path, const std::string& profileExt, const Defines& defines) noexcept
     {
-        auto stem = path.stem().string();
-        return path.parent_path() / (stem + ext + _binExt);
+        auto suffix = StringUtils::join("-", defines, [](std::string define) {
+            define = StringUtils::toLower(define);
+            if (StringUtils::endsWith(define, _enableDefineSuffix))
+            {
+                define = define.substr(0, define.size() - _enableDefineSuffix.size());
+            }
+            return define;
+        });
+        if (!suffix.empty())
+        {
+            suffix = "-" + suffix;
+        }
+        auto stem = StringUtils::getFileStem(path.string());
+        auto ext = StringUtils::getFileExt(path.string());
+        return path.parent_path() / (stem + suffix + ext + profileExt + _binExt);
+    }
+
+    std::vector<ShaderImporterImpl::Defines> ShaderImporterImpl::getDefineCombinations(const Input& input) const noexcept
+    {
+        Defines defines;
+        if (input.config.contains("defines"))
+        {
+            defines = input.config["defines"];
+        }
+        return CollectionUtils::combinations(defines);
     }
 
     std::vector<fs::path> ShaderImporterImpl::getOutputs(const Input& input)
     {
+        _outputConfigs.clear();
         std::vector<fs::path> outputs;
         auto fileName = input.path.filename().string();
-        auto ext = StringUtils::getFileExt(fileName);
-        if (ext != ".fragment.sc" && ext != ".vertex.sc")
+        if (input.config.is_null())
         {
-            return outputs;
+            auto ext = StringUtils::getFileExt(fileName);
+            if (ext != ".fragment.sc" && ext != ".vertex.sc")
+            {
+                return outputs;
+            }
         }
+        auto basePath = input.getRelativePath();
+        // manifest file
+        outputs.push_back(basePath.stem().string() + _manifestFileSuffix);
+
+        if (input.config.contains("outputPath"))
+        {
+            basePath = input.config["outputPath"].get<fs::path>();
+        }
+        auto defcombs = getDefineCombinations(input);
         for (auto& profile : _profiles)
         {
             auto itr = _profileExtensions.find(profile);
-            if (itr != _profileExtensions.end())
+            if (itr == _profileExtensions.end())
             {
-                outputs.push_back(getOutputPath(input.getRelativePath(), itr->second));
+                continue;
+            }
+            for (auto& defines : defcombs)
+            {
+                auto path = getOutputPath(basePath, itr->second, defines);
+                outputs.push_back(path);
+                _outputConfigs.emplace_back(path, profile, defines);
             }
         }
+
+
         return outputs;
     }
 
@@ -263,6 +312,25 @@ namespace darmok
         {
             throw std::runtime_error("cannot find bgfx shaderc executable");
         }
+        if (outputIndex == 0)
+        {
+            // manifest file
+            auto json = nlohmann::json::object();
+            for (auto& config : _outputConfigs)
+            {
+                auto& configJson = json[config.path.string()];
+                configJson["profile"] = config.profile;
+                configJson["defines"] = config.defines;
+            }
+            out << json.dump(2);
+            return;
+        }
+
+        outputIndex--;
+        if (outputIndex < 0 || outputIndex >= _outputConfigs.size())
+        {
+            throw std::runtime_error("cannot find output config");
+        }
 
         std::string type;
         if (input.config.contains(_configTypeKey))
@@ -285,17 +353,22 @@ namespace darmok
 
         auto includes = getIncludes(input);
 
-        auto& profile = _profiles[outputIndex];
+        auto& config = _outputConfigs[outputIndex];
         fs::path tmpPath = fs::temp_directory_path() / fs::path(std::tmpnam(nullptr));
 
         std::vector<std::string> args{
             fixPathArgument(_shadercPath),
-            "-p", profile,
+            "-p", config.profile,
             "-f", fixPathArgument(input.path),
             "-o", fixPathArgument(tmpPath),
             "--type", type,
             "--varyingdef", fixPathArgument(varyingDef)
         };
+        if (!config.defines.empty())
+        {
+            args.emplace_back("--define");
+            args.emplace_back(StringUtils::join(",", config.defines));
+        }
         for (auto& include : includes)
         {
             args.push_back("-i");

@@ -3,14 +3,18 @@
     "headerIncludeDir": "generated/shaders",
     "files": {
         "forward_phong.vertex.sc": {
-            "defines": [
-                "SKINNING_ENABLED"
-            ]
+            "shader": {
+                "defines": [
+                    "SKINNING_ENABLED"
+                ]
+            }
         },
         "forward_phong.fragment.sc": {
-            "defines": [
-                "TEXTURE_ENABLED"
-            ]
+            "shader": {
+                "defines": [
+                    "TEXTURE_ENABLED"
+                ]
+            }
         }
     }
 }

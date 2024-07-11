@@ -23,6 +23,16 @@ namespace darmok
         std::filesystem::path _shadercPath;
         OptionalRef<std::ostream> _log;
         std::vector<std::filesystem::path> _includes;
+
+        using Defines = std::vector<std::string>;
+        struct OutputConfig final
+        {
+            std::filesystem::path path;
+            std::string profile;
+            Defines defines;
+        };
+        std::vector<OutputConfig> _outputConfigs;
+
         static const std::string _binExt;
         static const std::vector<std::string> _profiles;
         static const std::unordered_map<std::string, std::string> _profileExtensions;
@@ -30,9 +40,12 @@ namespace darmok
         static const std::string _configVaryingDefKey;
         static const std::string _configIncludeDirsKey;
         static const std::regex _includeRegex;
+        static const std::string _enableDefineSuffix;
+        static const std::string _manifestFileSuffix;
 
         std::vector<std::filesystem::path> getIncludes(const Input& input) const noexcept;
-        static std::filesystem::path getOutputPath(const std::filesystem::path& path, const std::string& ext) noexcept;
+        static std::filesystem::path getOutputPath(const std::filesystem::path& path, const std::string& profileExt, const Defines& defines) noexcept;
         static std::string fixPathArgument(const std::filesystem::path& path) noexcept;
+        std::vector<Defines> getDefineCombinations(const Input& input) const noexcept;
     };
 }

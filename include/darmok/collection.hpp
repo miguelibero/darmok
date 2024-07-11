@@ -1,14 +1,41 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <iterator>
 #include <stdexcept>
 #include <unordered_map>
+#include <vector>
 #include <bx/bx.h>
 #include <bx/allocator.h>
 #include <darmok/optional_ref.hpp>
 
 namespace darmok
 {
+    struct DARMOK_EXPORT CollectionUtils
+    {
+        template<typename T>
+        static std::vector<std::vector<T>> combinations(const std::vector<T>& elms) noexcept
+        {
+            std::vector<std::vector<T>> combs;
+            int n = elms.size();
+            int size = std::pow(2, n);
+
+            for (size_t i = 0; i < size; ++i)
+            {
+                auto& comb = combs.emplace_back();
+                for (int j = 0; j < n; ++j)
+                {
+                    if (i & (1 << j))
+                    {
+                        comb.push_back(elms[j]);
+                    }
+                }
+            }
+            return combs;
+        }
+    };
+
+
     template<typename C, typename T>
     struct RefIterator final
     {
