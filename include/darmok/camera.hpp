@@ -151,8 +151,14 @@ namespace darmok
 
         void beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
         void afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
-        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
-        void afterRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+
+        template<typename T>
+        void renderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId, T callback)
+        {
+            beforeRenderEntity(entity, encoder, viewId);
+            callback();
+            afterRenderEntity(entity, encoder, viewId);
+        }
 
     private:
         bool _enabled;
@@ -171,5 +177,7 @@ namespace darmok
 
 
         const EntityRegistry& getRegistry() const;
+        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        void afterRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
     };
 }

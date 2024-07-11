@@ -12,7 +12,10 @@ uniform vec4 u_camPos;
 
 void main()
 {
-	vec4 base = texture2D(s_texColor, v_texcoord0) * v_color0;
+	vec4 base = v_color0;
+#if TEXTURE_ENABLED
+	base = base * texture2D(s_texColor, v_texcoord0);
+#endif
 	vec3 ambient = getAmbientLight().color;
 
 	vec3 diffuse = vec3_splat(0);

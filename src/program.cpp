@@ -1,12 +1,18 @@
 #include <darmok/program.hpp>
+#include "program.hpp"
 #include "embedded_shader.hpp"
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/vertex_layout.hpp>
+#include <darmok/stream.hpp>
+#include <darmok/utils.hpp>
+#include <darmok/string.hpp>
 
 namespace darmok
 {
+    namespace fs = std::filesystem;
+
 	Program::Program(const std::string& name, const bgfx::EmbeddedShader* embeddedShaders, const DataView& vertexLayout)
 		: _handle{ bgfx::kInvalidHandle }
 	{
@@ -121,4 +127,254 @@ namespace darmok
 		auto layout = loadVertexLayout(name);
 		return std::make_shared<Program>(handle, layout);
 	}
+
+
+    const std::vector<std::string> ShaderImporterImpl::_profiles{
+        "120", "300_es", "spirv",
+#if BX_PLATFORM_WINDOWS
+        "s_4_0", "s_5_0",
+#endif
+#if BX_PLATFORM_OSX
+        "metal",
+#endif
+    };
+
+    const std::unordered_map<std::string, std::string> ShaderImporterImpl::_profileExtensions{
+        { "300_es", ".essl" },
+        { "120", ".glsl" },
+        { "spirv", ".spv" },
+        { "metal", ".mtl" },
+        { "s_3_0", ".dx9" },
+        { "s_4_0", ".dx10" },
+        { "s_5_0", ".dx11" }
+    };
+
+    const std::string ShaderImporterImpl::_binExt = ".bin";
+
+    ShaderImporterImpl::ShaderImporterImpl(size_t bufferSize) noexcept
+        : _shadercPath("shaderc")
+        , _bufferSize(bufferSize)
+    {
+#if BX_PLATFORM_WINDOWS
+        _shadercPath += ".exe";
+#endif
+    }
+
+    void ShaderImporterImpl::setShadercPath(const fs::path& path) noexcept
+    {
+        _shadercPath = path;
+    }
+
+    void ShaderImporterImpl::addIncludePath(const fs::path& path) noexcept
+    {
+        _includes.push_back(path);
+    }
+
+    void ShaderImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    {
+        _log = log;
+    }
+
+    fs::path ShaderImporterImpl::getOutputPath(const fs::path& path, const std::string& ext) noexcept
+    {
+        auto stem = path.stem().string();
+        return path.parent_path() / (stem + ext + _binExt);
+    }
+
+    std::vector<fs::path> ShaderImporterImpl::getOutputs(const Input& input)
+    {
+        std::vector<fs::path> outputs;
+        auto fileName = input.path.filename().string();
+        auto ext = StringUtils::getFileExt(fileName);
+        if (ext != ".fragment.sc" && ext != ".vertex.sc")
+        {
+            return outputs;
+        }
+        for (auto& profile : _profiles)
+        {
+            auto itr = _profileExtensions.find(profile);
+            if (itr != _profileExtensions.end())
+            {
+                outputs.push_back(getOutputPath(input.getRelativePath(), itr->second));
+            }
+        }
+        return outputs;
+    }
+
+    std::vector<fs::path> ShaderImporterImpl::getDependencies(const Input& input)
+    {
+        std::vector<fs::path> deps;
+        if (!fs::exists(input.path))
+        {
+            return deps;
+        }
+        auto includes = getIncludes(input);
+        std::ifstream is(input.path);
+        std::string line;
+        while (std::getline(is, line))
+        {
+            std::smatch match;
+            if (!std::regex_search(line, match, _includeRegex))
+            {
+                continue;
+            }
+            auto name = match[1].str();
+            for (auto& include : includes)
+            {
+                auto path = include / name;
+                if (fs::exists(path))
+                {
+                    if (std::find(deps.begin(), deps.end(), path) == deps.end())
+                    {
+                        deps.push_back(path);
+                    }
+                    break;
+                }
+            }
+        }
+        return deps;
+    }
+
+    const std::string ShaderImporterImpl::_configTypeKey = "type";
+    const std::string ShaderImporterImpl::_configVaryingDefKey = "varyingdef";
+    const std::string ShaderImporterImpl::_configIncludeDirsKey = "includeDirs";
+    const std::regex ShaderImporterImpl::_includeRegex = std::regex("#include <([^>]+)>");
+
+    std::vector<fs::path> ShaderImporterImpl::getIncludes(const Input& input) const noexcept
+    {
+        std::vector<fs::path> includes(_includes);
+        if (input.config.contains(_configIncludeDirsKey))
+        {
+            for (auto& elm : input.config[_configIncludeDirsKey])
+            {
+                includes.emplace_back(input.basePath / elm.get<std::string>());
+            }
+        }
+        else
+        {
+            includes.push_back(input.path.parent_path());
+        }
+        return includes;
+    }
+
+    void ShaderImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    {
+        if (!fs::exists(_shadercPath))
+        {
+            throw std::runtime_error("cannot find bgfx shaderc executable");
+        }
+
+        std::string type;
+        if (input.config.contains(_configTypeKey))
+        {
+            type = input.config[_configTypeKey];
+        }
+        else
+        {
+            type = input.path.stem().extension().string().substr(1);
+        }
+        fs::path varyingDef = input.path.parent_path();
+        if (input.config.contains(_configVaryingDefKey))
+        {
+            varyingDef /= input.config[_configVaryingDefKey].get<std::string>();
+        }
+        else
+        {
+            varyingDef /= input.path.stem().stem().string() + ".varyingdef";
+        }
+
+        auto includes = getIncludes(input);
+
+        auto& profile = _profiles[outputIndex];
+        fs::path tmpPath = fs::temp_directory_path() / fs::path(std::tmpnam(nullptr));
+
+        std::vector<std::string> args{
+            fixPathArgument(_shadercPath),
+            "-p", profile,
+            "-f", fixPathArgument(input.path),
+            "-o", fixPathArgument(tmpPath),
+            "--type", type,
+            "--varyingdef", fixPathArgument(varyingDef)
+        };
+        for (auto& include : includes)
+        {
+            args.push_back("-i");
+            args.push_back(fixPathArgument(include));
+        }
+
+        auto r = exec(args);
+        if (r.output.contains("Failed to build shader."))
+        {
+            if (_log)
+            {
+                *_log << "shaderc output:" << std::endl;
+                *_log << r.output;
+            }
+            throw std::runtime_error("failed to build shader");
+        }
+
+        std::ifstream is(tmpPath, std::ios::binary);
+        StreamUtils::copy(is, out, _bufferSize);
+    }
+
+    std::string ShaderImporterImpl::fixPathArgument(const fs::path& path) noexcept
+    {
+        auto str = fs::absolute(path).string();
+        std::replace(str.begin(), str.end(), '\\', '/');
+        return str;
+    }
+
+    const std::string& ShaderImporterImpl::getName() const noexcept
+    {
+        static const std::string name("shader");
+        return name;
+    }
+
+    ShaderImporter::ShaderImporter()
+        : _impl(std::make_unique<ShaderImporterImpl>())
+    {
+    }
+
+    ShaderImporter::~ShaderImporter() noexcept
+    {
+        // empty on purpose
+    }
+
+    std::vector<fs::path> ShaderImporter::getOutputs(const Input& input)
+    {
+        return _impl->getOutputs(input);
+    }
+
+    std::vector<fs::path> ShaderImporter::getDependencies(const Input& input)
+    {
+        return _impl->getDependencies(input);
+    }
+
+    void ShaderImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    {
+        return _impl->writeOutput(input, outputIndex, out);
+    }
+
+    const std::string& ShaderImporter::getName() const noexcept
+    {
+        return _impl->getName();
+    }
+
+    ShaderImporter& ShaderImporter::setShadercPath(const fs::path& path) noexcept
+    {
+        _impl->setShadercPath(path);
+        return *this;
+    }
+
+    ShaderImporter& ShaderImporter::addIncludePath(const fs::path& path) noexcept
+    {
+        _impl->addIncludePath(path);
+        return *this;
+    }
+
+    void ShaderImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    {
+        _impl->setLogOutput(log);
+    }
+
 }

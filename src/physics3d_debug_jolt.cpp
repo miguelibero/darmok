@@ -134,15 +134,18 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::renderMesh(const IMesh& mesh, EDrawMode mode)
     {
-        if (!_config.material)
+        if (!_config.material || !_encoder)
         {
             return;
         }
-        _cam->beforeRenderEntity(entt::null, _encoder.value(), _viewId);
-        mesh.render(_encoder.value());
+        auto& encoder = _encoder.value();
+        auto material = *_config.material;
         auto primType = mode == EDrawMode::Wireframe ? MaterialPrimitiveType::Line : MaterialPrimitiveType::Triangle;
-        _config.material->setPrimitiveType(primType);
-        renderSubmit(*_config.material);
+        material.setPrimitiveType(primType);
+        _cam->renderEntity(entt::null, encoder, _viewId, [this, &mesh, &encoder, &material]() {
+            mesh.render(encoder);
+            renderSubmit(material);
+        });
     }
 
     void PhysicsDebugRendererImpl::renderSubmit(const Material& mat)
@@ -235,7 +238,7 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
     {
-        if (!_font)
+        if (!_font || !_encoder)
         {
             return;
         }
@@ -254,9 +257,13 @@ namespace darmok::physics3d
         auto trans = glm::translate(glm::scale(glm::mat4(1), glm::vec3(height*4)), JoltUtils::convert(pos));
         _encoder->setTransform(glm::value_ptr(trans));
 
-        _cam->beforeRenderEntity(entt::null, _encoder.value(), _viewId);
-        data.createMesh(_vertexLayout)->render(_encoder.value());
-        renderSubmit(_font->getMaterial());
+        auto& encoder = _encoder.value();
+        auto mesh = data.createMesh(_vertexLayout);
+        auto& material = _font->getMaterial();
+        _cam->renderEntity(entt::null, encoder, _viewId, [this, &mesh, &material]() {
+            mesh->render(_encoder.value());
+            renderSubmit(material);
+        });
     }
 
     PhysicsDebugRenderer::PhysicsDebugRenderer(PhysicsSystem& system, const Config& config) noexcept

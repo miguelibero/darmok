@@ -354,9 +354,9 @@ namespace darmok
 		for (auto entity : texts)
 		{
 			auto text = _scene->getComponent<Text>(entity);
-			_cam->beforeRenderEntity(entity, *encoder, viewId);
-			text->render(*encoder, viewId);
-			_cam->afterRenderEntity(entity, *encoder, viewId);
+			_cam->renderEntity(entity, *encoder, viewId, [&text, encoder, viewId]() {
+				text->render(*encoder, viewId);
+			});
 		}
 		_cam->afterRenderView(*encoder, viewId);
 		bgfx::end(encoder);

@@ -6,6 +6,7 @@
 #include <string>
 #include <darmok/export.h>
 #include <darmok/program_fwd.hpp>
+#include <darmok/asset_core.hpp>
 
 namespace bgfx
 {
@@ -65,5 +66,24 @@ namespace darmok
 		Suffixes _suffixes;
 
 		bgfx::ShaderHandle loadShader(const std::string& filePath);
+	};
+
+	class ShaderImporterImpl;
+
+	class DARMOK_EXPORT ShaderImporter final : public IAssetTypeImporter
+	{
+	public:
+		ShaderImporter();
+		~ShaderImporter() noexcept;
+		ShaderImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+		ShaderImporter& addIncludePath(const std::filesystem::path& path) noexcept;
+		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
+		std::vector<std::filesystem::path> getOutputs(const Input& input) override;
+		std::vector<std::filesystem::path> getDependencies(const Input& input) override;
+
+		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
+		const std::string& getName() const noexcept override;
+	private:
+		std::unique_ptr<ShaderImporterImpl> _impl;
 	};
 }

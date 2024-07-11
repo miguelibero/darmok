@@ -13,7 +13,7 @@
 
 namespace darmok
 {
-    struct AssetTypeImporterInput final
+    struct DARMOK_EXPORT AssetTypeImporterInput final
     {
         std::filesystem::path path;
         std::filesystem::path basePath;
@@ -131,24 +131,5 @@ namespace darmok
         const std::string& getName() const noexcept override;
     private:
         size_t _bufferSize;
-    };
-
-    class ShaderImporterImpl;
-
-    class DARMOK_EXPORT ShaderImporter final : public IAssetTypeImporter
-    {
-    public:
-        ShaderImporter();
-        ~ShaderImporter() noexcept;
-        ShaderImporter& setShadercPath(const std::filesystem::path& path) noexcept;
-        ShaderImporter& addIncludePath(const std::filesystem::path& path) noexcept;
-        void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
-        std::vector<std::filesystem::path> getOutputs(const Input& input) override;
-        std::vector<std::filesystem::path> getDependencies(const Input& input) override;
-
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-        const std::string& getName() const noexcept override;
-    private:
-        std::unique_ptr<ShaderImporterImpl> _impl;
     };
 }

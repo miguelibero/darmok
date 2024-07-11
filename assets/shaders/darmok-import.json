@@ -1,4 +1,16 @@
 {
     "produceHeaders": true,
-    "headerIncludeDir": "generated/shaders"
+    "headerIncludeDir": "generated/shaders",
+    "files": {
+        "forward_phong.vertex.sc": {
+            "defines": [
+                "SKINNING_ENABLED"
+            ]
+        },
+        "forward_phong.fragment.sc": {
+            "defines": [
+                "TEXTURE_ENABLED"
+            ]
+        }
+    }
 }

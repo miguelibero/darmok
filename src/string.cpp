@@ -133,26 +133,26 @@ namespace darmok
 		return (high << 4) | low;
 	}
 
-	std::string StringUtils::getFileStem(std::string_view filename) noexcept
+	std::string StringUtils::getFileStem(std::string_view filename, bool lower) noexcept
 	{
-		auto lowerFilename = toLower(filename);
-		auto pos = lowerFilename.find('.');
+		auto filenameStr = lower ? toLower(filename) : std::string(filename);
+		auto pos = filenameStr.find('.');
 		if (pos == std::string::npos)
 		{
-			return lowerFilename;
+			return filenameStr;
 		}
-		return lowerFilename.substr(0, pos);
+		return filenameStr.substr(0, pos);
 	}
 
-	std::string StringUtils::getFileExt(std::string_view filename) noexcept
+	std::string StringUtils::getFileExt(std::string_view filename, bool lower) noexcept
 	{
-		auto lowerFilename = toLower(filename);
+		auto filenameStr = lower ? toLower(filename) : std::string(filename);
 		auto pos = filename.find('.');
 		if (pos == std::string::npos)
 		{
-			return lowerFilename;
+			return filenameStr;
 		}
-		return lowerFilename.substr(pos, filename.size());
+		return filenameStr.substr(pos, filename.size());
 	}
 
 	void StringUtils::ltrim(std::string& str) noexcept
