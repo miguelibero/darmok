@@ -24,7 +24,10 @@ namespace darmok
             return { std::string(name), entt::type_hash<T>::value() };
         }
 
-        size_t hash() const noexcept;
+        entt::id_type hash() const noexcept;
+        bool operator==(const RenderResourceDefinition& other) const noexcept;
+        bool operator!=(const RenderResourceDefinition& other) const noexcept;
+        bool operator<(const RenderResourceDefinition& other) const noexcept;
     };
 
     class DARMOK_EXPORT RenderResourceGroupDefinition
@@ -34,6 +37,8 @@ namespace darmok
         using ConstIterator = std::vector<Resource>::const_iterator;
         ConstIterator begin() const;
         ConstIterator end() const;
+        bool contains(const Resource& res) const noexcept;
+
 
         template<typename T>
         RenderResourceGroupDefinition& add(std::string_view name = "")
@@ -187,12 +192,14 @@ namespace darmok
 
         RenderPassDefinition& setDelegate(IRenderPassDelegate& dlg) noexcept;
         OptionalRef<IRenderPassDelegate> getDelegate() const noexcept;
-             
+
         Resources& getInputs() noexcept;
         const Resources& getInputs() const noexcept;
         Resources& getOutputs() noexcept;
         const Resources& getOutputs() const noexcept;
+        bool getSync() const noexcept;
 
+        entt::id_type hash() const noexcept;
     private:
         std::string _name;
         Resources _inputs;
@@ -225,6 +232,7 @@ namespace darmok
         void writeGraphviz(std::ostream& out) const;
     private:
         std::vector<RenderPassDefinition> _passes;
+        std::vector<size_t> _passMap;
         std::optional<Matrix> _matrix;
     };
 

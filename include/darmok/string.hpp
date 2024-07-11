@@ -17,10 +17,9 @@ namespace darmok
         static [[nodiscard]] std::vector<std::string> splitWords(std::string_view sv) noexcept;
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, char sep) noexcept;
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
-        static [[nodiscard]] std::string join(std::string_view sep, std::vector<std::string> strs) noexcept;
 
         template<typename T, typename C>
-        static [[nodiscard]] std::string join(std::string_view sep, std::vector<T> elements,  C callback) noexcept
+        static [[nodiscard]] std::string join(std::string_view sep, const std::vector<T>& elements,  C callback) noexcept
         {
             std::vector<std::string> strs;
             for (auto& elm : elements)
@@ -28,6 +27,18 @@ namespace darmok
                 strs.emplace_back(callback(elm));
             }
             return join(sep, strs);
+        }
+
+        template<typename T>
+        static [[nodiscard]] std::string join(std::string_view sep, const std::vector<T>& elements) noexcept
+        {
+            return join(sep, elements, [](auto& elm) { return std::to_string(elm);  });
+        }
+
+        template<>
+        static [[nodiscard]] std::string join<std::string>(std::string_view sep, const std::vector<std::string>& elements) noexcept
+        {
+            return doJoin(sep, elements);
         }
 
         static [[nodiscard]] uint8_t hexToBin(char chr);
@@ -44,5 +55,8 @@ namespace darmok
         static void ltrim(std::string& str) noexcept;
         static void rtrim(std::string& str) noexcept;
         static void trim(std::string& str) noexcept;
+
+    private:
+        static [[nodiscard]] std::string doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept;
     };
 }

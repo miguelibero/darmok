@@ -83,7 +83,7 @@ namespace darmok
 		return parts;
 	}
 
-	std::string StringUtils::join(std::string_view sep, std::vector<std::string> strs) noexcept
+	std::string StringUtils::doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept
 	{
 		std::ostringstream ss;
 		for (size_t i = 0; i < strs.size(); i++)

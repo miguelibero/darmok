@@ -3,6 +3,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
+#include <fstream>
 
 using namespace darmok;
 
@@ -102,7 +103,7 @@ public:
 
     const std::string& getRenderPassName() const noexcept override
     {
-        static const std::string name("Deferred Lighting");
+        static const std::string name("Postprocess");
         return name;
     }
 
@@ -130,10 +131,15 @@ TEST_CASE( "Compile graph dependencies", "[darmok-core]" ) {
 
     GbufferRenderPass gbufferPass;
     DeferredLightingRenderPass lightingPass;
+    PostprocessRenderPass postPass;
 
-    graph.addPass(gbufferPass);
+    graph.addPass(postPass);
     graph.addPass(lightingPass);
+    graph.addPass(gbufferPass);
 
     graph.compile();
     graph.execute();
+
+    std::ofstream out("lala.graphviz");
+    graph.writeGraphviz(out);
 }

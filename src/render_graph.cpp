@@ -1,14 +1,30 @@
 #include <darmok/render_graph.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/string.hpp>
 #include <stdexcept>
 
 namespace darmok
 {
-    size_t RenderResourceDefinition::hash() const noexcept
+    entt::id_type RenderResourceDefinition::hash() const noexcept
     {
         std::size_t hash;
         hash_combine(hash, name, type);
         return hash;
+    }
+
+    bool RenderResourceDefinition::operator==(const RenderResourceDefinition& other) const noexcept
+    {
+        return hash() == other.hash();
+    }
+
+    bool RenderResourceDefinition::operator!=(const RenderResourceDefinition& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
+    bool RenderResourceDefinition::operator<(const RenderResourceDefinition& other) const noexcept
+    {
+        return hash() < other.hash();
     }
 
     RenderResourceGroupDefinition::ConstIterator RenderResourceGroupDefinition::begin() const
@@ -19,6 +35,11 @@ namespace darmok
     RenderResourceGroupDefinition::ConstIterator RenderResourceGroupDefinition::end() const
     {
         return _resources.end();
+    }
+
+    bool RenderResourceGroupDefinition::contains(const Resource& res) const noexcept
+    {
+        return std::find(_resources.begin(), _resources.end(), res) != _resources.end();
     }
 
     RenderPassDefinition::RenderPassDefinition(const std::string& name) noexcept
@@ -62,8 +83,37 @@ namespace darmok
         return _outputs;
     }
 
+    entt::id_type RenderPassDefinition::hash() const noexcept
+    {
+        return entt::hashed_string(_name.c_str());
+    }
+
+    bool RenderPassDefinition::getSync() const noexcept
+    {
+        // if all inputs of the pass are also outputs
+        // it means the pass is not producing anything new
+        // just modifying some resources
+        for (auto& res : _inputs)
+        {
+            if (!_outputs.contains(res))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     RenderPassDefinition& RenderGraph::addPass(const std::string& name)
     {
+        if (_matrix)
+        {
+            throw std::runtime_error("render graph already compiled");
+        }
+        auto itr = std::find_if(_passes.begin(), _passes.end(), [&name](auto& pass) { return pass.getName() == name; });
+        if (itr != _passes.end())
+        {
+            throw std::invalid_argument("pass name already exists");
+        }
         return _passes.emplace_back(name);
     }
 
@@ -80,7 +130,7 @@ namespace darmok
         entt::flow builder;
         for (auto& pass : _passes)
         {
-            builder.bind(entt::hashed_string(pass.getName().c_str()));
+            builder.bind(pass.hash());
             for (auto& input : pass.getInputs())
             {
                 builder.ro(input.hash());
@@ -89,8 +139,20 @@ namespace darmok
             {
                 builder.rw(output.hash());
             }
+            if (pass.getSync())
+            {
+                builder.sync();
+            }
         }
         _matrix = builder.graph();
+
+        _passMap.clear();
+        for (size_t i = 0; i < builder.size(); i++)
+        {
+            auto hash = builder[i];
+            auto itr = std::find_if(_passes.begin(), _passes.end(), [&hash](auto& pass) { return pass.hash() == hash; });
+            _passMap.push_back(std::distance(_passes.begin(), itr));
+        }
         return _matrix.value();
     }
 
@@ -107,13 +169,23 @@ namespace darmok
         {
             throw std::runtime_error("render graph needs to be compiled first");
         }
+        std::cout << StringUtils::join(", ", _passMap) << std::endl;
         auto& mtx = _matrix.value();
         for (auto&& vertex : mtx.vertices())
         {
-            if (auto in_edges = mtx.in_edges(vertex); in_edges.begin() == in_edges.end())
+            std::cout << "vertex:" << vertex << std::endl;
+            std::cout << "    in edges:";
+            for (auto [lhs, rhs] : mtx.in_edges(vertex))
             {
-                std::cout << "vertex:" << vertex << std::endl;
+                std::cout << lhs << " -> " << rhs << ", ";
             }
+            std::cout << std::endl;
+            std::cout << "    out edges:";
+            for (auto [lhs, rhs] : mtx.out_edges(vertex))
+            {
+                std::cout << lhs << " -> " << rhs << ", ";
+            }
+            std::cout << std::endl;
         }
     }
 
@@ -125,7 +197,7 @@ namespace darmok
         }
         entt::dot(out, _matrix.value(), [this, &out](auto& output, auto vertex)
         {
-            out << "label=\"v\"" << vertex << ",shape=\"box\"";
+            // out << "label=\"v\"" << vertex << ",shape=\"box\"";
         });
     }
 }
