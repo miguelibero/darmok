@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 #include <entt/entt.hpp>
 
 namespace darmok
@@ -119,13 +120,13 @@ namespace darmok
         template<typename T>
         void get(std::string_view name, T& ref) const noexcept
         {
-            ref = get<T>(name);
+            ref = get<T>(name).value();
         }
 
         template<typename T>
         void get(T& ref) const noexcept
         {
-            ref = get<T>();
+            ref = get<T>().value();
         }
 
         template<typename T>
@@ -178,7 +179,7 @@ namespace darmok
     {
     public:
         virtual ~IRenderPassDelegate() = default;
-        virtual void onRenderPassExecute(RenderGraphResources& res) = 0;
+        virtual void renderPassExecute(RenderGraphResources& res) = 0;
     };
 
 
@@ -191,7 +192,7 @@ namespace darmok
         const std::string& getName() const noexcept;
 
         RenderPassDefinition& setDelegate(IRenderPassDelegate& dlg) noexcept;
-        OptionalRef<IRenderPassDelegate> getDelegate() const noexcept;
+        bool operator()(RenderGraphResources& res) const;
 
         Resources& getInputs() noexcept;
         const Resources& getInputs() const noexcept;
@@ -212,7 +213,7 @@ namespace darmok
     public:
         virtual ~IRenderPass() = default;
         virtual const std::string& getRenderPassName() const noexcept = 0;
-        virtual void onRenderPassDefine(RenderPassDefinition& def) = 0;
+        virtual void renderPassDefine(RenderPassDefinition& def) = 0;
     };
 
     class DARMOK_EXPORT RenderBlackboard final
@@ -230,10 +231,14 @@ namespace darmok
         Resources execute() const;
         void execute(Resources& res) const;
         void writeGraphviz(std::ostream& out) const;
+
+        static std::string getMatrixDebugInfo(const Matrix& mtx) noexcept;
+
     private:
         std::vector<RenderPassDefinition> _passes;
-        std::vector<size_t> _passMap;
         std::optional<Matrix> _matrix;
+
+        bool execute(Resources& res, std::unordered_set<size_t>& executed) const;
     };
 
 }

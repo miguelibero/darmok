@@ -8,19 +8,15 @@
 using namespace darmok;
 
 // cannot create real textures in the tests
-struct TestTexture final
-{
-    glm::uvec2 size;
-    bgfx::TextureFormat::Enum format;
-};
+using TestTexture = std::string;
 
 class GbufferRenderPass final : public IRenderPass
 {
 public:
     GbufferRenderPass()
-        : _depthTexture{ glm::uvec2(1024), bgfx::TextureFormat::D16 }
-        , _normalTexture{ glm::uvec2(1024), bgfx::TextureFormat::RGB8 }
-        , _albedoTexture{ glm::uvec2(1024), bgfx::TextureFormat::RGBA8 }
+        : _depthTexture{ "depth" }
+        , _normalTexture{ "normal" }
+        , _albedoTexture{ "albedo" }
     {
     }
 
@@ -30,7 +26,7 @@ public:
         return name;
     }
 
-    void onRenderPassDefine(RenderPassDefinition& def) override
+    void renderPassDefine(RenderPassDefinition& def) override
     {
         def.getOutputs()
             .add("depth", _depthTexture)
@@ -38,7 +34,7 @@ public:
             .add("albedo", _albedoTexture);
     }
 
-    void onRenderPassExecute(RenderGraphResources& res) override
+    void renderPassExecute(RenderGraphResources& res) override
     {
         // render!
         res
@@ -56,7 +52,7 @@ class DeferredLightingRenderPass final : public IRenderPass
 {
 public:
     DeferredLightingRenderPass()
-        : _outTexture{ glm::uvec2(1024), bgfx::TextureFormat::RGBA8 }
+        : _outTexture{ "lighting:"}
     {
     }
 
@@ -66,7 +62,7 @@ public:
         return name;
     }
 
-    void onRenderPassDefine(RenderPassDefinition& def) override
+    void renderPassDefine(RenderPassDefinition& def) override
     {
         def.getInputs()
             .add("depth", _depthTexture)
@@ -76,20 +72,22 @@ public:
             .add(_outTexture);
     }
 
-    void onRenderPassExecute(RenderGraphResources& res) override
+    void renderPassExecute(RenderGraphResources& res) override
     {
         res.get("depth", _depthTexture);
-        res.get("normal", _depthTexture);
+        res.get("normal", _normalTexture);
         res.get("albedo", _albedoTexture);
-        // render!
-        res.setRef(_outTexture);
 
+        // render!
+        _outTexture += _depthTexture.value() + "+" + _normalTexture.value() + "+" + _albedoTexture;
+
+        res.setRef(_outTexture);
     }
 
 private:
     OptionalRef<const TestTexture> _depthTexture;
     OptionalRef<const TestTexture> _normalTexture;
-    OptionalRef<const TestTexture> _albedoTexture;
+    TestTexture _albedoTexture;
     TestTexture _outTexture;
 };
 
@@ -97,7 +95,7 @@ class PostprocessRenderPass final : public IRenderPass
 {
 public:
     PostprocessRenderPass()
-        : _outTexture{ glm::uvec2(1024), bgfx::TextureFormat::RGBA8 }
+        : _outTexture{ "postprocess:"}
     {
     }
 
@@ -107,7 +105,7 @@ public:
         return name;
     }
 
-    void onRenderPassDefine(RenderPassDefinition& def) override
+    void renderPassDefine(RenderPassDefinition& def) override
     {
         def.getInputs()
             .add<TestTexture>();
@@ -115,16 +113,21 @@ public:
             .add<TestTexture>();
     }
 
-    void onRenderPassExecute(RenderGraphResources& res) override
+    void renderPassExecute(RenderGraphResources& res) override
     {
         auto inTex = res.get<TestTexture>();
         // render!
+        _outTexture += inTex.value();
+
         res.setRef(_outTexture);
 
     }
 private:
     TestTexture _outTexture;
 };
+
+using namespace entt::literals;
+
 
 TEST_CASE( "Compile graph dependencies", "[darmok-core]" ) {
     RenderGraph graph;
@@ -133,12 +136,17 @@ TEST_CASE( "Compile graph dependencies", "[darmok-core]" ) {
     DeferredLightingRenderPass lightingPass;
     PostprocessRenderPass postPass;
 
-    graph.addPass(postPass);
-    graph.addPass(lightingPass);
     graph.addPass(gbufferPass);
+    graph.addPass(lightingPass);
+    graph.addPass(postPass);
 
     graph.compile();
-    graph.execute();
+    auto res = graph.execute();
+
+    auto outTexture = res.get<TestTexture>();
+
+    REQUIRE(outTexture);
+    REQUIRE(outTexture.value() == "postprocess:lighting:depth+normal+albedo");
 
     std::ofstream out("lala.graphviz");
     graph.writeGraphviz(out);

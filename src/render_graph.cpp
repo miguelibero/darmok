@@ -2,6 +2,7 @@
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
 #include <stdexcept>
+#include <sstream>
 
 namespace darmok
 {
@@ -58,9 +59,14 @@ namespace darmok
         return *this;
     }
 
-    OptionalRef<IRenderPassDelegate> RenderPassDefinition::getDelegate() const noexcept
+    bool RenderPassDefinition::operator()(RenderGraphResources& res) const
     {
-        return _delegate;
+        if (!_delegate)
+        {
+            return false;
+        }
+        _delegate->renderPassExecute(res);
+        return true;
     }
 
     const RenderPassDefinition::Resources& RenderPassDefinition::getInputs() const noexcept
@@ -121,7 +127,7 @@ namespace darmok
     {
         auto& def = addPass(pass.getRenderPassName());
         def.setDelegate(pass);
-        pass.onRenderPassDefine(def);
+        pass.renderPassDefine(def);
         return def;
     }
 
@@ -145,14 +151,6 @@ namespace darmok
             }
         }
         _matrix = builder.graph();
-
-        _passMap.clear();
-        for (size_t i = 0; i < builder.size(); i++)
-        {
-            auto hash = builder[i];
-            auto itr = std::find_if(_passes.begin(), _passes.end(), [&hash](auto& pass) { return pass.hash() == hash; });
-            _passMap.push_back(std::distance(_passes.begin(), itr));
-        }
         return _matrix.value();
     }
 
@@ -169,24 +167,79 @@ namespace darmok
         {
             throw std::runtime_error("render graph needs to be compiled first");
         }
-        std::cout << StringUtils::join(", ", _passMap) << std::endl;
+
         auto& mtx = _matrix.value();
+        std::unordered_set<size_t> executed;
+        execute(res, executed);
+    }
+
+    bool RenderGraph::execute(Resources& res, std::unordered_set<size_t>& executed) const
+    {
+        auto& mtx = _matrix.value();
+        std::vector<size_t> readyVertices;
+        auto pending = false;
         for (auto&& vertex : mtx.vertices())
         {
-            std::cout << "vertex:" << vertex << std::endl;
-            std::cout << "    in edges:";
+            if (executed.contains(vertex))
+            {
+                continue;
+            }
+            pending = true;
+            auto in_edges = mtx.in_edges(vertex);
+            auto ready = true;
+            for (auto [lhs, rhs] : in_edges)
+            {
+                if (!executed.contains(lhs))
+                {
+                    ready = false;
+                    break;
+                }
+            }
+            if (!ready)
+            {
+                continue;
+            }
+            readyVertices.push_back(vertex);
+        }
+        if (!pending)
+        {
+            return true;
+        }
+        if (readyVertices.empty())
+        {
+            return false;
+        }
+        for (auto& vertex : readyVertices)
+        {
+            // TODO: run passes in parallel
+            auto& pass = _passes[vertex];
+            pass(res);
+            executed.insert(vertex);
+        }
+        return execute(res, executed);
+    }
+
+    std::string RenderGraph::getMatrixDebugInfo(const Matrix& mtx) noexcept
+    {
+        std::ostringstream ss;
+
+        for (auto&& vertex : mtx.vertices())
+        {
+            ss << "vertex:" << vertex << std::endl;
+            ss << "  in edges:";
             for (auto [lhs, rhs] : mtx.in_edges(vertex))
             {
-                std::cout << lhs << " -> " << rhs << ", ";
+                ss << "    " << lhs << " -> " << rhs << std::endl;
             }
-            std::cout << std::endl;
-            std::cout << "    out edges:";
+            ss << std::endl;
+            ss << "  out edges:";
             for (auto [lhs, rhs] : mtx.out_edges(vertex))
             {
-                std::cout << lhs << " -> " << rhs << ", ";
+                ss << "    " << lhs << " -> " << rhs << std::endl;
             }
-            std::cout << std::endl;
+            ss << std::endl;
         }
+        return ss.str();
     }
 
     void RenderGraph::writeGraphviz(std::ostream& out) const
@@ -197,7 +250,8 @@ namespace darmok
         }
         entt::dot(out, _matrix.value(), [this, &out](auto& output, auto vertex)
         {
-            // out << "label=\"v\"" << vertex << ",shape=\"box\"";
+            auto& pass = _passes[vertex];
+            out << "label=\"" << pass.getName() << "\",shape=\"box\"";
         });
     }
 }
