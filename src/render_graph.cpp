@@ -109,12 +109,8 @@ namespace darmok
         return true;
     }
 
-    RenderPassDefinition& RenderGraph::addPass(const std::string& name)
+    RenderPassDefinition& RenderGraphDefinition::addPass(const std::string& name)
     {
-        if (_matrix)
-        {
-            throw std::runtime_error("render graph already compiled");
-        }
         auto itr = std::find_if(_passes.begin(), _passes.end(), [&name](auto& pass) { return pass.getName() == name; });
         if (itr != _passes.end())
         {
@@ -123,7 +119,7 @@ namespace darmok
         return _passes.emplace_back(name);
     }
 
-    const RenderPassDefinition& RenderGraph::addPass(IRenderPass& pass)
+    const RenderPassDefinition& RenderGraphDefinition::addPass(IRenderPass& pass)
     {
         auto& def = addPass(pass.getRenderPassName());
         def.setDelegate(pass);
@@ -131,7 +127,16 @@ namespace darmok
         return def;
     }
 
-    const RenderGraph::Matrix& RenderGraph::compile()
+    const RenderPassDefinition& RenderGraphDefinition::getPass(size_t vertex) const
+    {
+        if (vertex < 0 || vertex >= _passes.size())
+        {
+            throw std::invalid_argument("pass does not exist");
+        }
+        return _passes[vertex];
+    }
+
+    RenderGraph RenderGraphDefinition::compile() const
     {
         entt::flow builder;
         for (auto& pass : _passes)
@@ -150,8 +155,13 @@ namespace darmok
                 builder.sync();
             }
         }
-        _matrix = builder.graph();
-        return _matrix.value();
+        return RenderGraph(builder.graph(), *this);
+    }
+
+    RenderGraph::RenderGraph(const Matrix& matrix, const Definition& def) noexcept
+        : _matrix(matrix)
+        , _def(def)
+    {
     }
 
     RenderGraph::Resources RenderGraph::execute() const
@@ -163,29 +173,22 @@ namespace darmok
 
     void RenderGraph::execute(Resources& res) const
     {
-        if (!_matrix)
-        {
-            throw std::runtime_error("render graph needs to be compiled first");
-        }
-
-        auto& mtx = _matrix.value();
         std::unordered_set<size_t> executed;
         execute(res, executed);
     }
 
     bool RenderGraph::execute(Resources& res, std::unordered_set<size_t>& executed) const
     {
-        auto& mtx = _matrix.value();
         std::vector<size_t> readyVertices;
         auto pending = false;
-        for (auto&& vertex : mtx.vertices())
+        for (auto&& vertex : _matrix.vertices())
         {
             if (executed.contains(vertex))
             {
                 continue;
             }
             pending = true;
-            auto in_edges = mtx.in_edges(vertex);
+            auto in_edges = _matrix.in_edges(vertex);
             auto ready = true;
             for (auto [lhs, rhs] : in_edges)
             {
@@ -212,7 +215,7 @@ namespace darmok
         for (auto& vertex : readyVertices)
         {
             // TODO: run passes in parallel
-            auto& pass = _passes[vertex];
+            auto& pass = _def.getPass(vertex);
             pass(res);
             executed.insert(vertex);
         }
@@ -244,13 +247,9 @@ namespace darmok
 
     void RenderGraph::writeGraphviz(std::ostream& out) const
     {
-        if (!_matrix)
+        entt::dot(out, _matrix, [this, &out](auto& output, auto vertex)
         {
-            throw std::runtime_error("render graph needs to be compiled first");
-        }
-        entt::dot(out, _matrix.value(), [this, &out](auto& output, auto vertex)
-        {
-            auto& pass = _passes[vertex];
+            auto& pass = _def.getPass(vertex);
             out << "label=\"" << pass.getName() << "\",shape=\"box\"";
         });
     }

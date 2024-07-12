@@ -130,17 +130,17 @@ using namespace entt::literals;
 
 
 TEST_CASE( "Compile graph dependencies", "[darmok-core]" ) {
-    RenderGraph graph;
+    RenderGraphDefinition def;
 
     GbufferRenderPass gbufferPass;
     DeferredLightingRenderPass lightingPass;
     PostprocessRenderPass postPass;
 
-    graph.addPass(gbufferPass);
-    graph.addPass(lightingPass);
-    graph.addPass(postPass);
+    def.addPass(gbufferPass);
+    def.addPass(lightingPass);
+    def.addPass(postPass);
 
-    graph.compile();
+    auto graph = def.compile();
     auto res = graph.execute();
 
     auto outTexture = res.get<TestTexture>();

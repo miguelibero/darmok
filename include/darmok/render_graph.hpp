@@ -216,8 +216,17 @@ namespace darmok
         virtual void renderPassDefine(RenderPassDefinition& def) = 0;
     };
 
-    class DARMOK_EXPORT RenderBlackboard final
+    class RenderGraph;
+
+    class DARMOK_EXPORT RenderGraphDefinition final
     {
+    public:
+        RenderPassDefinition& addPass(const std::string& name);
+        const RenderPassDefinition& addPass(IRenderPass& pass);
+        const RenderPassDefinition& getPass(size_t vertex) const;
+        RenderGraph compile() const;
+    private:
+        std::vector<RenderPassDefinition> _passes;
     };
 
     class DARMOK_EXPORT RenderGraph final
@@ -225,9 +234,10 @@ namespace darmok
     public:
         using Matrix = entt::adjacency_matrix<entt::directed_tag>;
         using Resources = RenderGraphResources;
-        RenderPassDefinition& addPass(const std::string& name);
-        const RenderPassDefinition& addPass(IRenderPass& pass);
-        const Matrix& compile();
+        using Definition = RenderGraphDefinition;
+
+        RenderGraph(const Matrix& matrix, const Definition& def) noexcept;
+
         Resources execute() const;
         void execute(Resources& res) const;
         void writeGraphviz(std::ostream& out) const;
@@ -235,8 +245,8 @@ namespace darmok
         static std::string getMatrixDebugInfo(const Matrix& mtx) noexcept;
 
     private:
-        std::vector<RenderPassDefinition> _passes;
-        std::optional<Matrix> _matrix;
+        Matrix _matrix;
+        Definition _def;
 
         bool execute(Resources& res, std::unordered_set<size_t>& executed) const;
     };
