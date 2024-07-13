@@ -2,7 +2,6 @@
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/render.hpp>
 #include <darmok/data.hpp>
@@ -50,8 +49,7 @@ namespace darmok
     {
         if (!_material)
         {
-            auto prog = StandardProgramLoader::getProgram(StandardProgramType::Debug);
-            _material = std::make_shared<Material>(prog);
+            _material = std::make_shared<Material>();
             _material->setColor(MaterialColorType::Diffuse, Colors::magenta());
         }
         if (!_boneMesh)

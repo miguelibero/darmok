@@ -13,7 +13,7 @@ namespace darmok
 	class IDataLoader;
 	class IImageLoader;
 	class IProgramLoader;
-	class StandardProgramLoader;
+	class IProgramGroupLoader;
 	class ITextureLoader;
 	class ITextureAtlasLoader;
 	class ColorTextureLoader;
@@ -43,7 +43,7 @@ namespace darmok
 		[[nodiscard]] IDataLoader& getDataLoader() noexcept;
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
-		[[nodiscard]] StandardProgramLoader& getStandardProgramLoader() noexcept;
+		[[nodiscard]] IProgramGroupLoader& getProgramGroupLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;

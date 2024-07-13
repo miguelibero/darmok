@@ -5,7 +5,6 @@
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
 
 namespace darmok
 {
@@ -389,6 +388,11 @@ namespace darmok
 		return _material;
 	}
 
+	Material& TextureAtlasFont::getMaterial() noexcept
+	{
+		return _material;
+	}
+
 	float TextureAtlasFont::getLineSize() const noexcept
 	{
 		auto elm = _atlas->getElement("line");
@@ -418,7 +422,7 @@ namespace darmok
 
 	void TextureAtlasFontLoader::init(App& app)
 	{
-		_program = app.getAssets().getStandardProgramLoader()(StandardProgramType::Gui);
+		_program = app.getAssets().getProgramLoader()("gui");
 	}
 
 	void TextureAtlasFontLoader::shutdown()

@@ -3,7 +3,6 @@
 #include <darmok/export.h>
 #include <darmok/model.hpp>
 #include <darmok/asset_core.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/optional_ref.hpp>
 #include <memory>
 #include <string>
@@ -20,8 +19,7 @@ namespace darmok
     struct DARMOK_EXPORT AssimpModelLoadConfig final
     {
         bgfx::VertexLayout vertexLayout;
-        StandardProgramType standardProgram = StandardProgramType::ForwardPhong;
-        std::string programName;
+        std::string program;
         bool embedTextures = true;
     };
 

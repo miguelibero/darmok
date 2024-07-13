@@ -9,7 +9,6 @@
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/string.hpp>
 #include <darmok/math.hpp>
 
@@ -150,7 +149,6 @@ namespace darmok
         , _allocator(allocator)
         , _imgLoader(imgLoader)
     {
-        _config.vertexLayout = StandardProgramLoader::getVertexLayout(_config.standardProgram);
     }
 
     void AssimpModelLoaderImpl::setConfig(const Config& config) noexcept
@@ -373,8 +371,7 @@ namespace darmok
 
     void AssimpModelConverter::update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept
     {
-        modelMat.standardProgram = _config.standardProgram;
-        modelMat.programName = _config.programName;
+        modelMat.program = _config.program;
         for (auto& elm : _materialTextures)
         {
             auto size = assimpMat.GetTextureCount(elm.first);
@@ -645,26 +642,13 @@ namespace darmok
         }
         if (json.contains(_programJsonKey))
         {
-            std::string progStr = json[_programJsonKey];
-            auto standard = StandardProgramLoader::getType(progStr);
-            if (standard)
-            {
-                config.standardProgram = standard.value();
-            }
-            else
-            {
-                config.programName = progStr;
-            }
+            config.program = json[_programJsonKey];
         }
         if (config.vertexLayout.getStride() == 0)
         {
-            if (config.programName.empty())
+            if (!config.program.empty())
             {
-                config.vertexLayout = StandardProgramLoader::getVertexLayout(config.standardProgram);
-            }
-            else
-            {
-                auto path = basePath / (config.programName + _programVertexLayoutSuffix);
+                auto path = basePath / (config.program + _programVertexLayoutSuffix);
                 VertexLayoutUtils::readFile(path, config.vertexLayout);
             }
         }
@@ -693,11 +677,6 @@ namespace darmok
         if (json.is_string())
         {
             std::string str = json;
-            auto standard = StandardProgramLoader::getType(str);
-            if (standard)
-            {
-                return StandardProgramLoader::getVertexLayout(standard.value());
-            }
             VertexLayoutUtils::readFile(str, layout);
             return layout;
         }

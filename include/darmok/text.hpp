@@ -134,6 +134,7 @@ namespace darmok
         TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas, const std::shared_ptr<Program>& prog) noexcept;
         std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
         const Material& getMaterial() const noexcept override;
+        Material& getMaterial() noexcept;
         float getLineSize() const noexcept override;
     private:
         std::shared_ptr<TextureAtlas> _atlas;

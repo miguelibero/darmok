@@ -13,7 +13,6 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/material_fwd.hpp>
-#include <darmok/program_fwd.hpp>
 #include <darmok/model_fwd.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
@@ -83,8 +82,7 @@ namespace darmok
 
     struct DARMOK_EXPORT ModelMaterial final
     {
-        StandardProgramType standardProgram;
-        std::string programName;
+        std::string program;
         MaterialPrimitiveType primitiveType;
         std::unordered_map<MaterialTextureType, std::vector<ModelTexture>> textures;
         std::unordered_map<MaterialColorType, Color> colors;
@@ -93,8 +91,7 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(
-                standardProgram,
-                programName,
+                program,
                 primitiveType,
                 textures,
                 colors

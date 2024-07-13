@@ -43,6 +43,7 @@ namespace darmok
 		, _imageLoader(_dataLoader, _allocator)
 		, _vertexLayoutLoader(_dataLoader)
 		, _programLoader(_dataLoader, _vertexLayoutLoader)
+		, _programGroupLoader(_dataLoader, _programLoader)
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
 		, _colorTextureLoader(_allocator)
@@ -101,9 +102,9 @@ namespace darmok
 		return _programLoader;
 	}
 
-	StandardProgramLoader& AssetContextImpl::getStandardProgramLoader() noexcept
+	IProgramGroupLoader& AssetContextImpl::getProgramGroupLoader() noexcept
 	{
-		return _standardProgramLoader;
+		return _programGroupLoader;
 	}
 
 	ITextureLoader& AssetContextImpl::getTextureLoader() noexcept
@@ -199,9 +200,9 @@ namespace darmok
 		return _impl->getProgramLoader();
 	}
 
-	StandardProgramLoader& AssetContext::getStandardProgramLoader() noexcept
+	IProgramGroupLoader& AssetContext::getProgramGroupLoader() noexcept
 	{
-		return _impl->getStandardProgramLoader();
+		return _impl->getProgramGroupLoader();
 	}
 
 	ITextureLoader& AssetContext::getTextureLoader() noexcept

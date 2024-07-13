@@ -168,7 +168,6 @@ set(CORE_HEADERS
 
 set(SOURCES
   ${SRC_DIR}/platform.cpp
-  ${SRC_DIR}/program_standard.cpp
   ${SRC_DIR}/asset.cpp
 
   ${SRC_DIR}/app.cpp
@@ -192,7 +191,6 @@ set(SOURCES
 )
 
 set(HEADERS
-  ${INCLUDE_DIR}/program_standard.hpp
   ${INCLUDE_DIR}/asset.hpp
 
   ${INCLUDE_DIR}/app_fwd.hpp

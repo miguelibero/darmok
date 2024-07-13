@@ -5,7 +5,6 @@
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/input.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/text.hpp>
@@ -62,7 +61,7 @@ namespace darmok::physics3d
         }
         if (_config.material->getProgram() == nullptr)
         {
-            auto prog = app.getAssets().getStandardProgramLoader()(StandardProgramType::Debug);
+            auto prog = app.getAssets().getProgramLoader()("debug");
             _config.material->setProgram(prog);
         }
         _vertexLayout = _config.material->getProgram()->getVertexLayout();

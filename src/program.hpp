@@ -49,4 +49,18 @@ namespace darmok
         static std::string fixPathArgument(const std::filesystem::path& path) noexcept;
         std::vector<Defines> getDefineCombinations(const Input& input) const noexcept;
     };
+
+    class ProgramImporterImpl final
+    {
+    public:
+        using Input = AssetTypeImporterInput;
+
+        bool startImport(const Input& input, bool dry = false);
+        std::vector<std::filesystem::path> getOutputs(const Input& input);
+        std::vector<std::filesystem::path> getDependencies(const Input& input);
+        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
+        void endImport(const Input& input);
+
+        const std::string& getName() const noexcept;
+    };
 }

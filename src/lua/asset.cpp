@@ -9,7 +9,6 @@
 #include <darmok/shape.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/skeleton.hpp>
@@ -35,11 +34,6 @@ namespace darmok
 	std::shared_ptr<Program> LuaAssets::loadProgram(const std::string& name)
 	{
 		return _assets->getProgramLoader()(name);
-	}
-
-	std::shared_ptr<Program> LuaAssets::loadStandardProgram(StandardProgramType type)
-	{
-		return _assets->getStandardProgramLoader()(type);
 	}
 
 	std::shared_ptr<Texture> LuaAssets::loadColorTexture(const Color& color)
@@ -115,7 +109,6 @@ namespace darmok
 				&LuaAssets::loadModel2
 			),
 			"load_program", &LuaAssets::loadProgram,
-			"load_standard_program", &LuaAssets::loadStandardProgram,
 			"load_texture", sol::overload(&LuaAssets::loadTexture1, &LuaAssets::loadTexture2),
 			"load_color_texture", &LuaAssets::loadColorTexture,
 			"load_texture_atlas", sol::overload(&LuaAssets::loadTextureAtlas1, &LuaAssets::loadTextureAtlas2),

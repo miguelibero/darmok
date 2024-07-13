@@ -9,48 +9,109 @@
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
 #include <nlohmann/json.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/unordered_set.hpp>
+#include <cereal/types/string.hpp>
 
 namespace darmok
 {
     namespace fs = std::filesystem;
 
-	Program::Program(const std::string& name, const bgfx::EmbeddedShader* embeddedShaders, const DataView& vertexLayout)
-		: _handle{ bgfx::kInvalidHandle }
+    void ProgramShaderDefinition::read(const nlohmann::ordered_json& json)
+    {
+        if (json.contains("vertex"))
+        {
+            vertex = json["vertex"];
+        }
+        if (json.contains("fragment"))
+        {
+            fragment = json["fragment"];
+        }
+        if (json.contains("defines"))
+        {
+            defines = json["defines"];
+        }
+    }
+    void ProgramShaderDefinition::write(nlohmann::ordered_json& json)
+    {
+        json["vertex"] = vertex;
+        json["fragment"] = fragment;
+        json["defines"] = defines;
+    }
+
+    void ProgramDefinition::read(const nlohmann::ordered_json& json)
+    {
+        if (json.contains("shaders"))
+        {
+            for (auto& shaderJson : json["shaders"])
+            {
+                shaders.emplace_back().read(shaderJson);
+            }
+        }
+        if (json.contains("vertexLayout"))
+        {
+            VertexLayoutUtils::readJson(json["vertexLayout"], vertexLayout);
+        }
+    }
+
+    void ProgramDefinition::write(nlohmann::ordered_json& json)
+    {
+        auto& shadersJson = json["shaders"];
+        for (auto& shader : shaders)
+        {
+            shader.write(shadersJson.emplace_back());
+        }
+        VertexLayoutUtils::writeJson(json["vertexLayout"], vertexLayout);
+    }
+
+	Program::Program(const bgfx::EmbeddedShader* embeddedShaders, const DataView& definitionData)
 	{
-		auto renderer = bgfx::getRendererType();
-		auto vertName = name + "_vertex";
-		auto vertHandle = bgfx::createEmbeddedShader(embeddedShaders, renderer, vertName.c_str());
-		if (!isValid(vertHandle))
-		{
-			throw std::runtime_error("could not load embedded vertex shader" + vertName);
-		}
-		auto fragName = name + "_fragment";
-		auto fragHandle = bgfx::createEmbeddedShader(embeddedShaders, renderer, fragName.c_str());
-		if (!isValid(fragHandle))
-		{
-			throw std::runtime_error("could not load embedded fragment shader" + fragName);
-		}
-		DataInputStream::read(vertexLayout, _layout);
-		_handle = bgfx::createProgram(vertHandle, fragHandle, true);
+        ProgramDefinition def;
+        DataInputStream::read(definitionData, def);
+        _layout = def.vertexLayout;
+
+        for (auto& shader : def.shaders)
+        {
+            auto renderer = bgfx::getRendererType();
+            auto vertHandle = bgfx::createEmbeddedShader(embeddedShaders, renderer, shader.vertex.c_str());
+            if (!isValid(vertHandle))
+            {
+                throw std::runtime_error("could not load embedded vertex shader \"" + shader.vertex + "\"");
+            }
+            auto fragHandle = bgfx::createEmbeddedShader(embeddedShaders, renderer, shader.fragment.c_str());
+            if (!isValid(fragHandle))
+            {
+                throw std::runtime_error("could not load embedded fragment shader \"" + shader.fragment + "\"");
+            }
+            _handles[shader.defines] = bgfx::createProgram(vertHandle, fragHandle, true);
+        }
 	}
 
-    Program::Program(const bgfx::ProgramHandle& handle, const bgfx::VertexLayout& layout) noexcept
-		: _handle(handle)
+    Program::Program(const Handles& handles, const bgfx::VertexLayout& layout) noexcept
+		: _handles(handles)
 		, _layout(layout)
 	{
 	}
 
     Program::~Program() noexcept
     {
-		if (isValid(_handle))
-		{
-			bgfx::destroy(_handle);
-		}
+        for (auto& [defines, handle] : _handles)
+        {
+            if (isValid(handle))
+            {
+                bgfx::destroy(handle);
+            }
+        }
     }
 
-	const bgfx::ProgramHandle& Program::getHandle() const noexcept
+	bgfx::ProgramHandle Program::getHandle(const Defines& defines) const noexcept
 	{
-		return _handle;
+        auto itr = _handles.find(defines);
+        if (itr != _handles.end())
+        {
+            return itr->second;
+        }
+        return { bgfx::kInvalidHandle };
 	}
 
 	const bgfx::VertexLayout& Program::getVertexLayout() const noexcept
@@ -58,16 +119,8 @@ namespace darmok
 		return _layout;
 	}
 
-	const DataProgramLoader::Suffixes& DataProgramLoader::getDefaultSuffixes() noexcept
-	{
-		static const DataProgramLoader::Suffixes suffixes{ "_vertex", "_fragment", "_vertex_layout" };
-		return suffixes;
-	}
-
-	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader, IVertexLayoutLoader& vertexLayoutLoader, Suffixes suffixes) noexcept
+	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader) noexcept
 		: _dataLoader(dataLoader)
-		, _vertexLayoutLoader(vertexLayoutLoader)
-		, _suffixes(suffixes)
 	{
 	}
 
@@ -110,67 +163,24 @@ namespace darmok
 		return handle;
 	}
 
-	bgfx::VertexLayout DataProgramLoader::loadVertexLayout(std::string_view name)
-	{
-		return _vertexLayoutLoader(std::string(name) + _suffixes.vertexLayout);
-	}
-
 	std::shared_ptr<Program> DataProgramLoader::operator()(std::string_view name)
 	{
 		std::string nameStr(name);
-		const bgfx::ShaderHandle vsh = loadShader(nameStr + _suffixes.vertex);
-		bgfx::ShaderHandle fsh = BGFX_INVALID_HANDLE;
-		if (!name.empty())
-		{
-			fsh = loadShader(nameStr + _suffixes.fragment);
-		}
-		auto handle = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
-		auto layout = loadVertexLayout(name);
-		return std::make_shared<Program>(handle, layout);
+
+        auto defData = _dataLoader(name);
+        ProgramDefinition def;
+        DataInputStream::read(defData, def);
+        Program::Handles handles;
+
+        for (auto& shader : def.shaders)
+        {
+            auto vsh = loadShader(shader.vertex);
+            auto fsh = loadShader(shader.fragment);
+            auto handle = bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
+            handles[shader.defines] = handle;
+        }
+		return std::make_shared<Program>(handles, def.vertexLayout);
 	}
-
-    std::shared_ptr<Program> ProgramGroup::getProgram(const Defines& defines) const noexcept
-    {
-        auto itr = _programs.find(defines);
-        if (itr == _programs.end())
-        {
-            return nullptr;
-        }
-        return itr->second;
-    }
-
-    void ProgramGroup::setProgram(const std::shared_ptr<Program>& prog, const Defines& defines) noexcept
-    {
-        _programs[defines] = prog;
-    }
-
-    void ProgramGroup::read(const nlohmann::json& json, IProgramLoader& prog) noexcept
-    {
-        for (auto& [key, val] : json.items())
-        {
-        }
-    }
-
-    JsonProgramGroupLoader::JsonProgramGroupLoader(IDataLoader& dataLoader, IProgramLoader& programLoader, const std::string& manifestSuffix) noexcept
-        : _dataLoader(dataLoader)
-        , _progLoader(programLoader)
-        , _manifestSuffix(manifestSuffix)
-    {
-    }
-
-    std::shared_ptr<ProgramGroup> JsonProgramGroupLoader::operator()(std::string_view name)
-    {
-        auto manifestName = std::string(name) + _manifestSuffix;
-        auto data = _dataLoader(manifestName);
-        if (data.empty())
-        {
-            return nullptr;
-        }
-        auto group = std::make_shared<ProgramGroup>();
-        auto json = nlohmann::json::parse(data.stringView());
-        group->read(json, _progLoader);
-        return group;
-    }
 
     const std::vector<std::string> ShaderImporterImpl::_profiles{
         "120", "300_es", "spirv",
@@ -286,7 +296,6 @@ namespace darmok
                 _outputConfigs.emplace_back(path, profile, defines);
             }
         }
-
 
         return outputs;
     }
@@ -491,4 +500,75 @@ namespace darmok
         _impl->setLogOutput(log);
     }
 
+    bool ProgramImporterImpl::startImport(const Input& input, bool dry)
+    {
+        return true;
+    }
+
+    std::vector<std::filesystem::path> ProgramImporterImpl::getOutputs(const Input& input)
+    {
+        std::vector<std::filesystem::path> outputs;
+        return outputs;
+    }
+
+    std::vector<std::filesystem::path> ProgramImporterImpl::getDependencies(const Input& input)
+    {
+        std::vector<std::filesystem::path> deps;
+        return deps;
+    }
+
+    void ProgramImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    {
+    }
+
+    void ProgramImporterImpl::endImport(const Input& input)
+    {
+    }
+
+    const std::string& ProgramImporterImpl::getName() const noexcept
+    {
+        static const std::string name("program");
+        return name;
+    }
+
+    ProgramImporter::ProgramImporter()
+        : _impl(std::make_unique<ProgramImporterImpl>())
+    {
+
+    }
+
+    ProgramImporter::~ProgramImporter() noexcept
+    {
+        // empty on purpose
+    }
+
+    bool ProgramImporter::startImport(const Input& input, bool dry)
+    {
+        return _impl->startImport(input, dry);
+    }
+
+    std::vector<std::filesystem::path> ProgramImporter::getOutputs(const Input& input)
+    {
+        return _impl->getOutputs(input);
+    }
+
+    std::vector<std::filesystem::path> ProgramImporter::getDependencies(const Input& input)
+    {
+        return _impl->getDependencies(input);
+    }
+
+    void ProgramImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    {
+        _impl->writeOutput(input, outputIndex, out);
+    }
+
+    const std::string& ProgramImporter::getName() const noexcept
+    {
+        return _impl->getName();
+    }
+
+    void ProgramImporter::endImport(const Input& input)
+    {
+        return _impl->endImport(input);
+    }
 }

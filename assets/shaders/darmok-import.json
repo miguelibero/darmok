@@ -1,19 +1,33 @@
 {
-    "produceHeaders": true,
-    "headerIncludeDir": "generated/shaders",
-    "files": {
-        "forward_phong.vertex.sc": {
+    "includes": {
+        "vertex_shader": {
             "shader": {
                 "defines": [
                     "SKINNING_ENABLED"
                 ]
             }
         },
-        "forward_phong.fragment.sc": {
+        "fragment_shader": {
             "shader": {
                 "defines": [
                     "TEXTURE_ENABLED"
                 ]
+            }
+        }
+    },
+    "produceHeaders": true,
+    "headerIncludeDir": "generated/shaders",
+    "files": {
+        "forward_phong.vertex.sc": "include:vertex_shader",
+        "forward_phong.fragment.sc": "include:fragment_shader",
+        "unlit.vertex.sc": "include:vertex_shader",
+        "unlit.fragment.sc": "include:fragment_shader",
+        "gui.fragment.sc": "include:fragment_shader",
+        "unlit.program.json": {
+            "program": {
+                "vertex": "unlit.vertex.sc",
+                "fragment": "unlit.fragment.sc",
+                "vertexLayout": "unlit.vlayout.json"
             }
         }
     }

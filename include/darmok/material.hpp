@@ -4,6 +4,7 @@
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/material_fwd.hpp>
+#include <darmok/program.hpp>
 
 #include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
@@ -29,8 +30,12 @@ namespace darmok
 
         bool valid() const noexcept;
 
+        const ProgramDefines& getProgramDefines() noexcept;
+        Material& setProgramDefines(const ProgramDefines& defines) noexcept;
+        Material& setProgramDefine(const std::string& define, bool enabled = true) noexcept;
+
         std::shared_ptr<Program> getProgram() const noexcept;
-        Material& setProgram(const std::shared_ptr<Program>& program) noexcept;
+        Material& setProgram(const std::shared_ptr<Program>& prog) const noexcept;
 
         std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
         Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
@@ -51,6 +56,7 @@ namespace darmok
 
     private:
         std::shared_ptr<Program> _program;
+        ProgramDefines _programDefines;
         std::unordered_map<MaterialTextureType, bgfx::UniformHandle> _textureHandles;
         std::unordered_map<MaterialColorType, bgfx::UniformHandle> _colorHandles;
         bgfx::UniformHandle _mainHandle;

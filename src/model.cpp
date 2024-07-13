@@ -7,7 +7,6 @@
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
 
 // to allow serialization
 #include <cereal/archives/binary.hpp>
@@ -259,14 +258,7 @@ namespace darmok
             return itr->second;
         }
         std::shared_ptr<Program> prog;
-        if (!modelMat->programName.empty())
-        {
-            prog = _config.assets.getProgramLoader()(modelMat->programName);
-        }
-        if (!prog)
-        {
-            prog = _config.assets.getStandardProgramLoader()(modelMat->standardProgram);
-        }
+        prog = _config.assets.getProgramLoader()(modelMat->program);
         auto mat = std::make_shared<Material>(prog);
         for (auto& elm : modelMat->textures)
         {

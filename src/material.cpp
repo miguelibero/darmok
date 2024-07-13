@@ -102,7 +102,31 @@ namespace darmok
 
 	bool Material::valid() const noexcept
 	{
-		return _program != nullptr;
+		return isValid(_program->getHandle(_programDefines));
+	}
+
+	const ProgramDefines& Material::getProgramDefines() noexcept
+	{
+		return _programDefines;
+	}
+
+	Material& Material::setProgramDefines(const ProgramDefines& defines) noexcept
+	{
+		_programDefines = defines;
+		return *this;
+	}
+
+	Material& Material::setProgramDefine(const std::string& define, bool enabled = true) noexcept
+	{
+		if (enabled)
+		{
+			_programDefines.insert(define);
+		}
+		else
+		{
+			_programDefines.erase(define);
+		}
+		return *this;
 	}
 
 	std::shared_ptr<Program> Material::getProgram() const noexcept
@@ -110,9 +134,9 @@ namespace darmok
 		return _program;
 	}
 
-	Material& Material::setProgram(const std::shared_ptr<Program>& program) noexcept
+	Material& Material::setProgram(const std::shared_ptr<Program>& prog) const noexcept
 	{
-		_program = program;
+		_program = prog;
 		return *this;
 	}
 
@@ -192,7 +216,7 @@ namespace darmok
 	{
 		auto state = beforeRender(encoder, viewId);
 		encoder.setState(state);
-		encoder.submit(viewId, _program->getHandle());
+		encoder.submit(viewId, _program->getHandle(_programDefines));
 	}
 
 	uint64_t Material::beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept

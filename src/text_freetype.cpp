@@ -3,9 +3,9 @@
 #include <darmok/texture_atlas.hpp>
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/data.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/program.hpp>
 #include <darmok/utf8.hpp>
 #include "text_freetype.hpp"
 #include <stdexcept>
@@ -53,7 +53,7 @@ namespace darmok
 		auto err = FT_Init_FreeType(&_library);
 		FreetypeUtils::checkError(err);
 
-		auto prog = app.getAssets().getStandardProgramLoader()(StandardProgramType::Gui);
+		auto prog = app.getAssets().getProgramLoader()("gui");
 		_material.emplace(prog);
 	}
 

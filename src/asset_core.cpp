@@ -162,10 +162,22 @@ namespace darmok
         {
             outputPath = config[_outputPathKey].get<std::string>();
         }
+
+        nlohmann::json includes;
+        if (config.contains(_includesKey))
+        {
+            includes = config[_includesKey];
+        }
+
         if (config.contains(_filesKey))
         {
+            auto filesJson = config[_filesKey];
+            if (!includes.empty())
+            {
+                FileConfig::replaceIncludes(filesJson, includes);
+            }
             auto basePath = path.parent_path();
-            for (auto& item : config[_filesKey].items())
+            for (auto& item : filesJson.items())
             {
                 loadFile(item.key(), item.value(), basePath, filePaths);
             }
@@ -173,14 +185,9 @@ namespace darmok
         if (config.contains(_importersKey))
         {
             importers = FileConfig::fix(config[_importersKey]);
-        }
-        if (config.contains(_includesKey))
-        {
-            auto& includes = config[_includesKey];
-            FileConfig::replaceIncludes(importers, includes);
-            for (auto& elm : files)
+            if (!includes.empty())
             {
-                FileConfig::replaceIncludes(elm.second, includes);
+                FileConfig::replaceIncludes(importers, includes);
             }
         }
         return true;
@@ -923,6 +930,7 @@ namespace darmok
     {
         _importer.addTypeImporter<CopyAssetImporter>();
         _importer.addTypeImporter<VertexLayoutImporter>();
+        _importer.addTypeImporter<ProgramImporter>();
     }
 
     DarmokCoreAssetImporter& DarmokCoreAssetImporter::setCachePath(const fs::path& cachePath) noexcept

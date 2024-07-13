@@ -5,7 +5,6 @@
 #include <darmok/skeleton.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/model.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/render_forward.hpp>
@@ -33,7 +32,7 @@ namespace
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<SkeletalAnimationSceneComponent>();
 
-			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
+			auto prog = getAssets().getProgramLoader()("forward");
 			
 			auto camEntity = scene.createEntity();
 			scene.addComponent<Transform>(camEntity)
