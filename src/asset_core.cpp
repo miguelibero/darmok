@@ -42,6 +42,21 @@ namespace darmok
         {
             loadInput(path, inputPaths);
         }
+
+        for (auto& [dirPath, dirConfig] : _dirs)
+        {
+            for (auto& [filePath, dirFileConfig] : dirConfig.files)
+            {
+                auto path = dirPath / filePath;
+                if (_files.contains(path))
+                {
+                    continue;
+                }
+                FileConfig config;
+                config.load(dirFileConfig);
+                _files.emplace(path, config);
+            }
+        }
     }
 
     const std::string AssetImporterImpl::HeaderConfig::_headerVarPrefixKey = "headerVarPrefix";
@@ -219,8 +234,13 @@ namespace darmok
         {
             return false;
         }
-        auto config = nlohmann::json::parse(std::ifstream(path));
-        config = fix(config);
+        load(nlohmann::json::parse(std::ifstream(path)));
+        return true;
+    }
+
+    void AssetImporterImpl::FileConfig::load(const nlohmann::json& json)
+    {
+        auto config = fix(json);
         if (config.contains(_importersKey))
         {
             importers = fix(config[_importersKey]);
@@ -234,7 +254,6 @@ namespace darmok
         {
             importers = config;
         }
-        return true;
     }
 
     nlohmann::json AssetImporterImpl::FileConfig::fix(const nlohmann::json& json) noexcept
@@ -341,9 +360,10 @@ namespace darmok
             {
                 addFileCachePath(config.path);
             }
-            _files.emplace(path, config);
             addFileCachePath(path);
+            _files.emplace(path, config);
         }
+
         return true;
     }
 

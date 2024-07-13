@@ -105,12 +105,14 @@ namespace darmok
 		~ShaderImporter() noexcept;
 		ShaderImporter& setShadercPath(const std::filesystem::path& path) noexcept;
 		ShaderImporter& addIncludePath(const std::filesystem::path& path) noexcept;
+		bool startImport(const Input& input, bool dry = false) override;
 		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
 		std::vector<std::filesystem::path> getOutputs(const Input& input) override;
 		std::vector<std::filesystem::path> getDependencies(const Input& input) override;
 
 		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
 		const std::string& getName() const noexcept override;
+		void endImport(const Input& input) override;
 	private:
 		std::unique_ptr<ShaderImporterImpl> _impl;
 	};
@@ -127,7 +129,7 @@ namespace darmok
 		std::vector<std::filesystem::path> getOutputs(const Input& input) override;
 		std::vector<std::filesystem::path> getDependencies(const Input& input) override;
 		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-		virtual void endImport(const Input& input) override;
+		void endImport(const Input& input) override;
 
 		const std::string& getName() const noexcept override;
 	private:

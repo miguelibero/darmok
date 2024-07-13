@@ -260,23 +260,19 @@ namespace darmok
         return CollectionUtils::combinations(defines);
     }
 
-    std::vector<fs::path> ShaderImporterImpl::getOutputs(const Input& input)
+    bool ShaderImporterImpl::startImport(const Input& input, bool dry)
     {
-        _outputConfigs.clear();
-        std::vector<fs::path> outputs;
-        auto fileName = input.path.filename().string();
         if (input.config.is_null())
         {
+            auto fileName = input.path.filename().string();
             auto ext = StringUtils::getFileExt(fileName);
             if (ext != ".fragment.sc" && ext != ".vertex.sc")
             {
-                return outputs;
+                return false;
             }
         }
+        _outputConfigs.clear();
         auto basePath = input.getRelativePath();
-        // manifest file
-        outputs.push_back(basePath.stem().string() + _manifestFileSuffix);
-
         if (input.config.contains("outputPath"))
         {
             basePath = input.config["outputPath"].get<fs::path>();
@@ -292,9 +288,29 @@ namespace darmok
             for (auto& defines : defcombs)
             {
                 auto path = getOutputPath(basePath, itr->second, defines);
-                outputs.push_back(path);
                 _outputConfigs.emplace_back(path, profile, defines);
             }
+        }
+
+        return true;
+    }
+
+    void ShaderImporterImpl::endImport(const Input& input)
+    {
+        _outputConfigs.clear();
+    }
+
+    std::vector<fs::path> ShaderImporterImpl::getOutputs(const Input& input)
+    {
+        std::vector<fs::path> outputs;
+        auto basePath = input.getRelativePath();
+
+        // manifest file
+        outputs.push_back(basePath.stem().string() + _manifestFileSuffix);
+
+        for (auto& conf : _outputConfigs)
+        {
+            outputs.push_back(conf.path);
         }
 
         return outputs;
@@ -463,6 +479,11 @@ namespace darmok
         // empty on purpose
     }
 
+    bool ShaderImporter::startImport(const Input& input, bool dry)
+    {
+        return _impl->startImport(input, dry);
+    }
+
     std::vector<fs::path> ShaderImporter::getOutputs(const Input& input)
     {
         return _impl->getOutputs(input);
@@ -500,8 +521,22 @@ namespace darmok
         _impl->setLogOutput(log);
     }
 
+    void ShaderImporter::endImport(const Input& input)
+    {
+        _impl->endImport(input);
+    }
+
     bool ProgramImporterImpl::startImport(const Input& input, bool dry)
     {
+        if (input.config.is_null())
+        {
+            auto fileName = input.path.filename().string();
+            auto ext = StringUtils::getFileExt(fileName);
+            if (ext != ".program.json")
+            {
+                return false;
+            }
+        }
         return true;
     }
 

@@ -1,7 +1,7 @@
 #ifndef DARMOK_PHONG_LIGHTING_HEADER
 #define DARMOK_PHONG_LIGHTING_HEADER
 
-#include <darmok_compute.include.sc>
+#include <bgfx_compute.sh>
 
 uniform vec4 u_lightCount;
 uniform vec4 u_lightingData;
