@@ -3,7 +3,8 @@
 
 using namespace darmok;
 
-TEST_CASE( "optional ref keeps a reference", "[darmok-core]" ) {
+TEST_CASE( "optional ref keeps a reference", "[optional-ref]" )
+{
     int v = 42;
     OptionalRef<int> ref;
     REQUIRE(!ref);

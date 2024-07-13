@@ -28,6 +28,8 @@ namespace darmok
         return hash() < other.hash();
     }
 
+    const std::string RenderResourceGroupDefinition::defaultName = "";
+
     RenderResourceGroupDefinition::ConstIterator RenderResourceGroupDefinition::begin() const
     {
         return _resources.begin();
@@ -42,6 +44,8 @@ namespace darmok
     {
         return std::find(_resources.begin(), _resources.end(), res) != _resources.end();
     }
+
+    const std::string RenderGraphResources::defaultName = "";
 
     RenderPassDefinition::RenderPassDefinition(const std::string& name) noexcept
         : _name(name)

@@ -7,8 +7,10 @@
 
 using namespace darmok;
 
-// cannot create real textures in the tests
-using TestTexture = std::string;
+struct TestTexture final
+{
+    std::string content;
+};
 
 class GbufferRenderPass final : public IRenderPass
 {
@@ -79,7 +81,7 @@ public:
         res.get("albedo", _albedoTexture);
 
         // render!
-        _outTexture += _depthTexture.value() + "+" + _normalTexture.value() + "+" + _albedoTexture;
+        _outTexture.content += _depthTexture->content + "+" + _normalTexture->content + "+" + _albedoTexture.content;
 
         res.setRef(_outTexture);
     }
@@ -117,7 +119,7 @@ public:
     {
         auto inTex = res.get<TestTexture>();
         // render!
-        _outTexture += inTex.value();
+        _outTexture.content += inTex->content;
 
         res.setRef(_outTexture);
 
@@ -126,10 +128,8 @@ private:
     TestTexture _outTexture;
 };
 
-using namespace entt::literals;
-
-
-TEST_CASE( "Compile graph dependencies", "[darmok-core]" ) {
+TEST_CASE( "Compile & run render graph dependencies", "[render-graph]" )
+{
     RenderGraphDefinition def;
 
     GbufferRenderPass gbufferPass;
@@ -146,8 +146,59 @@ TEST_CASE( "Compile graph dependencies", "[darmok-core]" ) {
     auto outTexture = res.get<TestTexture>();
 
     REQUIRE(outTexture);
-    REQUIRE(outTexture.value() == "postprocess:lighting:depth+normal+albedo");
+    REQUIRE(outTexture->content == "postprocess:lighting:depth+normal+albedo");
 
     std::ofstream out("lala.graphviz");
     graph.writeGraphviz(out);
+}
+
+struct TestCamera final
+{
+    std::string name;
+};
+
+class CameraRenderPass final : public IRenderPass
+{
+public:
+    const std::string& getRenderPassName() const noexcept override
+    {
+        static const std::string name("Camera");
+        return name;
+    }
+
+    void renderPassDefine(RenderPassDefinition& def) override
+    {
+        def.getInputs()
+            .add<TestCamera>();
+        def.getOutputs()
+            .add<TestTexture>();
+    }
+
+    void renderPassExecute(RenderGraphResources& res) override
+    {
+        auto cam = res.get<TestCamera>();
+        res.emplaceDef<TestTexture>(cam->name);
+    }
+};
+
+TEST_CASE("Iterable render graph dependencies", "[render-graph]")
+{
+    RenderGraphDefinition def;
+    CameraRenderPass camPass;
+    PostprocessRenderPass postPass;
+
+    def.addPass(camPass);
+    def.addPass(postPass);
+
+    auto graph = def.compile();
+
+    RenderGraphResources res;
+    std::vector<TestCamera> cams{
+        {"one"}, {"two"}, {"three"}
+    };
+    res.setCollection(cams.begin(), cams.end());
+
+    graph.execute(res);
+
+
 }
