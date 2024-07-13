@@ -2,6 +2,7 @@
 
 #include <darmok/asset_core.hpp>
 #include <regex>
+#include <unordered_set>
 
 namespace darmok
 {
@@ -24,7 +25,7 @@ namespace darmok
         OptionalRef<std::ostream> _log;
         std::vector<std::filesystem::path> _includes;
 
-        using Defines = std::vector<std::string>;
+        using Defines = std::unordered_set<std::string>;
         struct OutputConfig final
         {
             std::filesystem::path path;

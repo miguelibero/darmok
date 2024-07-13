@@ -4,30 +4,34 @@
 #include <iterator>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <bx/bx.h>
 #include <bx/allocator.h>
 #include <darmok/optional_ref.hpp>
+#include <darmok/utils.hpp>
+
 
 namespace darmok
 {
     struct DARMOK_EXPORT CollectionUtils
     {
         template<typename T>
-        static std::vector<std::vector<T>> combinations(const std::vector<T>& elms) noexcept
+        static std::vector<std::unordered_set<T>> combinations(const std::unordered_set<T>& set) noexcept
         {
-            std::vector<std::vector<T>> combs;
-            int n = elms.size();
-            int size = std::pow(2, n);
+            std::vector<T> elms(set.begin(), set.end());
+            std::vector<std::unordered_set<T>> combs;
+            size_t n = elms.size();
+            size_t size = std::pow(2, n);
 
             for (size_t i = 0; i < size; ++i)
             {
                 auto& comb = combs.emplace_back();
-                for (int j = 0; j < n; ++j)
+                for (size_t j = 0; j < n; ++j)
                 {
                     if (i & (1 << j))
                     {
-                        comb.push_back(elms[j]);
+                        comb.insert(elms[j]);
                     }
                 }
             }
@@ -233,3 +237,22 @@ namespace darmok
         [[nodiscard]] virtual V operator[](size_t pos) const = 0;
     };
 }
+
+namespace std
+{
+    template<typename T>
+    struct hash;
+}
+
+template<typename T> struct std::hash<std::unordered_set<T>>
+{
+    std::size_t operator()(const std::unordered_set<T>& key) const noexcept
+    {
+        size_t hash = 0;
+        for (auto& elm : key)
+        {
+            darmok::hash_combine(hash, elm);
+        }
+        return hash;
+    }
+};

@@ -8,7 +8,6 @@
 #include <darmok/stream.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
-#include <darmok/collection.hpp>
 #include <nlohmann/json.hpp>
 
 namespace darmok
@@ -130,6 +129,48 @@ namespace darmok
 		return std::make_shared<Program>(handle, layout);
 	}
 
+    std::shared_ptr<Program> ProgramGroup::getProgram(const Defines& defines) const noexcept
+    {
+        auto itr = _programs.find(defines);
+        if (itr == _programs.end())
+        {
+            return nullptr;
+        }
+        return itr->second;
+    }
+
+    void ProgramGroup::setProgram(const std::shared_ptr<Program>& prog, const Defines& defines) noexcept
+    {
+        _programs[defines] = prog;
+    }
+
+    void ProgramGroup::read(const nlohmann::json& json, IProgramLoader& prog) noexcept
+    {
+        for (auto& [key, val] : json.items())
+        {
+        }
+    }
+
+    JsonProgramGroupLoader::JsonProgramGroupLoader(IDataLoader& dataLoader, IProgramLoader& programLoader, const std::string& manifestSuffix) noexcept
+        : _dataLoader(dataLoader)
+        , _progLoader(programLoader)
+        , _manifestSuffix(manifestSuffix)
+    {
+    }
+
+    std::shared_ptr<ProgramGroup> JsonProgramGroupLoader::operator()(std::string_view name)
+    {
+        auto manifestName = std::string(name) + _manifestSuffix;
+        auto data = _dataLoader(manifestName);
+        if (data.empty())
+        {
+            return nullptr;
+        }
+        auto group = std::make_shared<ProgramGroup>();
+        auto json = nlohmann::json::parse(data.stringView());
+        group->read(json, _progLoader);
+        return group;
+    }
 
     const std::vector<std::string> ShaderImporterImpl::_profiles{
         "120", "300_es", "spirv",
@@ -182,7 +223,7 @@ namespace darmok
 
     fs::path ShaderImporterImpl::getOutputPath(const fs::path& path, const std::string& profileExt, const Defines& defines) noexcept
     {
-        auto suffix = StringUtils::join("-", defines, [](std::string define) {
+        auto suffix = StringUtils::join("-", defines.begin(), defines.end(), [](std::string define) {
             define = StringUtils::toLower(define);
             if (StringUtils::endsWith(define, _enableDefineSuffix))
             {
@@ -367,7 +408,7 @@ namespace darmok
         if (!config.defines.empty())
         {
             args.emplace_back("--define");
-            args.emplace_back(StringUtils::join(",", config.defines));
+            args.emplace_back(StringUtils::join(",", config.defines.begin(), config.defines.end()));
         }
         for (auto& include : includes)
         {

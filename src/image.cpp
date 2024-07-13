@@ -208,13 +208,13 @@ namespace darmok
 		auto bpp = getTextureInfo().bitsPerPixel / 8;
 		elmOffset = elmOffset < 0 ? 0 : elmOffset;
 		elmSize = elmSize <= 0 || elmSize > bpp ? bpp : elmSize;
-		size_t updateSize = size.x * size.y * elmSize;
+		size_t updateSize = elmSize * size.x * size.y;
 		if (data.size() < updateSize)
 		{
 			throw std::runtime_error("data is too small");
 		}
 		auto imgStart = pos.x + (pos.y * imgSize.x);
-		auto rowSize = size.x * elmSize;
+		auto rowSize = elmSize * size.x;
 		auto imgData = (uint8_t*)_container->m_data;
 		for (size_t y = 0; y < size.y; y++)
 		{

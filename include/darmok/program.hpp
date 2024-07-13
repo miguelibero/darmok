@@ -4,9 +4,12 @@
 #include <bgfx/bgfx.h>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <darmok/export.h>
 #include <darmok/program_fwd.hpp>
 #include <darmok/asset_core.hpp>
+#include <darmok/collection.hpp>
+#include <nlohmann/json.hpp>
 
 namespace bgfx
 {
@@ -85,5 +88,38 @@ namespace darmok
 		const std::string& getName() const noexcept override;
 	private:
 		std::unique_ptr<ShaderImporterImpl> _impl;
+	};
+
+	using ProgramDefines = std::unordered_set<std::string>;
+
+	class DARMOK_EXPORT ProgramGroup final
+	{
+	public:
+		using Defines = ProgramDefines;
+		std::shared_ptr<Program> getProgram(const Defines& defines) const noexcept;
+		void setProgram(const std::shared_ptr<Program>& prog, const Defines& defines) noexcept;
+		void read(const nlohmann::json& json, IProgramLoader& prog) noexcept;
+	private:
+		std::unordered_map<Defines, std::shared_ptr<Program>> _programs;
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramGroupLoader
+	{
+	public:
+		using result_type = std::shared_ptr<ProgramGroup>;
+
+		virtual ~IProgramGroupLoader() = default;
+		virtual [[nodiscard]] result_type operator()(std::string_view name) = 0;
+	};
+
+	class DARMOK_EXPORT JsonProgramGroupLoader final : public IProgramGroupLoader
+	{
+	public:
+		JsonProgramGroupLoader(IDataLoader& dataLoader, IProgramLoader& programLoader, const std::string& manifestSuffix = ".manifest.json") noexcept;
+		[[nodiscard]] std::shared_ptr<ProgramGroup> operator()(std::string_view name) override;
+	private:
+		IDataLoader& _dataLoader;
+		IProgramLoader& _progLoader;
+		std::string _manifestSuffix;
 	};
 }

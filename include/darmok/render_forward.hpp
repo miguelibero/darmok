@@ -3,6 +3,7 @@
 #include <memory>
 #include <darmok/export.h>
 #include <darmok/camera.hpp>
+#include <darmok/render_graph.hpp>
 
 namespace darmok
 {

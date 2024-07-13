@@ -18,27 +18,33 @@ namespace darmok
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, char sep) noexcept;
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
 
-        template<typename T, typename C>
-        static [[nodiscard]] std::string join(std::string_view sep, const std::vector<T>& elements,  C callback) noexcept
+        template<typename Iter, typename C>
+        static [[nodiscard]] std::string join(std::string_view sep, Iter begin, Iter end, C callback) noexcept
         {
             std::vector<std::string> strs;
-            for (auto& elm : elements)
+            for (auto itr = begin; itr != end; ++ itr)
             {
-                strs.emplace_back(callback(elm));
+                strs.emplace_back(callback(*itr));
             }
-            return join(sep, strs);
+            return doJoin(sep, strs);
+        }
+
+        template<typename T, typename C>
+        static [[nodiscard]] std::string join(std::string_view sep, const std::vector<T>& elements, C callback) noexcept
+        {
+            return join(sep, elements.begin(), elements.end(), callback);
         }
 
         template<typename T>
         static [[nodiscard]] std::string join(std::string_view sep, const std::vector<T>& elements) noexcept
         {
-            return join(sep, elements, [](auto& elm) { return std::to_string(elm);  });
+            return join(sep, elements.begin(), elements.end());
         }
 
-        template<>
-        static [[nodiscard]] std::string join<std::string>(std::string_view sep, const std::vector<std::string>& elements) noexcept
+        template<typename Iter>
+        static [[nodiscard]] std::string join(std::string_view sep, Iter begin, Iter end) noexcept
         {
-            return doJoin(sep, elements);
+            return joinImpl<Iter, typename std::iterator_traits<Iter>::value_type>::run(sep, begin, end);
         }
 
         static [[nodiscard]] uint8_t hexToBin(char chr);
@@ -58,5 +64,32 @@ namespace darmok
 
     private:
         static [[nodiscard]] std::string doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept;
+
+        template<typename Iter, typename V>
+        struct joinImpl final
+        {
+            static std::string run(std::string_view sep, Iter begin, Iter end)
+            {
+                return join(sep, begin, end, [](auto& elm) { return std::to_string(elm);  });
+            }
+        };
+
+        template<typename Iter>
+        struct joinImpl<Iter, std::string> final
+        {
+            static std::string run(std::string_view sep, Iter begin, Iter end)
+            {
+                return join(sep, begin, end, [](auto& elm) { return elm;  });
+            }
+        };
+
+        template<typename Iter>
+        struct joinImpl<Iter, std::string_view> final
+        {
+            static std::string run(std::string_view sep, Iter begin, Iter end)
+            {
+                return join(sep, begin, end, [](auto& elm) { return elm;  });
+            }
+        };
     };
 }
