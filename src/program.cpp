@@ -13,140 +13,102 @@
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/archives/xml.hpp>
+#include <cereal/archives/binary.hpp>
 
 namespace darmok
 {
     namespace fs = std::filesystem;
 
-    struct ShaderDataUtils final
+    void ProgramProfileDefinition::read(const nlohmann::json& json)
     {
-        static std::string getRendererTypeName(bgfx::RendererType::Enum type)
+        auto readMap = [](const nlohmann::json& json, Map& map)
         {
-            switch (type)
+            for (auto& elm: json)
             {
-                case bgfx::RendererType::Noop:
-                    return "noop";
-                case bgfx::RendererType::Direct3D11:
-                    return "dx11";
-                case bgfx::RendererType::Direct3D12:
-                    return "dx12";
-                case bgfx::RendererType::Agc:
-                    return "agc";
-                case bgfx::RendererType::Gnm:
-                    return "gnm";
-                case bgfx::RendererType::Metal:
-                    return "metal";
-                case bgfx::RendererType::Nvn:
-                    return "nvn";
-                case bgfx::RendererType::OpenGL:
-                    return "glsl";
-                case bgfx::RendererType::OpenGLES:
-                    return "essl";
-                case bgfx::RendererType::Vulkan:
-                    return "spv";
+                std::string data;
+                Defines defs;
+                if (elm.is_string())
+                {
+                    data = elm;
+                }
+                else if (elm.is_object())
+                {
+                    if (elm.contains("defines"))
+                    {
+                        defs = elm["defines"];
+                    }
+                    if (elm.contains("data"))
+                    {
+                        data = elm["data"];
+                    }
+                }
+                else if (elm.is_array())
+                {
+                    defs = elm[0];
+                    data = elm[1];
+                }
+                else
+                {
+                    continue;
+                }
+                map.emplace(defs, Data::fromHex(data));
             }
-            throw std::runtime_error("unknown renderer type");
+        };
+        if (json.contains("vertex"))
+        {
+            readMap(json["vertex"], vertexShaders);
         }
-
-        static bgfx::RendererType::Enum getRendererType(std::string_view name)
+        if (json.contains("fragment"))
         {
-            auto lowerName = StringUtils::toLower(name);
-            if (name == "noop")
-            {
-                return bgfx::RendererType::Noop;
-            }
-            if (name == "dx11")
-            {
-                return bgfx::RendererType::Direct3D11;
-            }
-            if (name == "dx12")
-            {
-                return bgfx::RendererType::Direct3D12;
-            }
-            if (name == "agc")
-            {
-                return bgfx::RendererType::Agc;
-            }
-            if (name == "gnm")
-            {
-                return bgfx::RendererType::Gnm;
-            }
-            if (name == "metal")
-            {
-                return bgfx::RendererType::Metal;
-            }
-            if (name == "nvn")
-            {
-                return bgfx::RendererType::Nvn;
-            }
-            if (name == "glsl")
-            {
-                return bgfx::RendererType::OpenGL;
-            }
-            if (name == "essl")
-            {
-                return bgfx::RendererType::OpenGLES;
-            }
-            if (name == "spv")
-            {
-                return bgfx::RendererType::Vulkan;
-            }
-            throw std::runtime_error("unknown renderer type");
-        }
-
-        static void read(const nlohmann::json& json, ShaderData& data)
-        {
-            for (auto& elm : json.items())
-            {
-                auto type = getRendererType(elm.key());
-                data[type] = Data::fromHex(elm.value().get<std::string>());
-            }
-        }
-
-        static void write(nlohmann::json& json, const ShaderData& data)
-        {
-            for (auto& elm : data)
-            {
-                json[getRendererTypeName(elm.first)] = elm.second.view().toHex();
-            }
-        }
-        
-        static bgfx::ShaderHandle createShader(const ShaderData& data)
-        {
-            auto itr = data.find(bgfx::getRendererType());
-            if (itr == data.end())
-            {
-                throw std::invalid_argument("missing shader renderer data");
-            }
-            auto handle = bgfx::createShader(itr->second.makeRef());
-            if (!isValid(handle))
-            {
-                throw std::runtime_error("failed to load shader");
-            }
-            return handle;
-        }
-    };
-
-    void ProgramShaderDefinition::read(const nlohmann::json& json)
-    {
-        if (json.contains("vertexShader"))
-        {
-            ShaderDataUtils::read(json["vertexShader"], vertexShader);
-        }
-        if (json.contains("fragmentShader"))
-        {
-            ShaderDataUtils::read(json["fragmentShader"], fragmentShader);
-        }
-        if (json.contains("defines"))
-        {
-            defines = json["defines"];
+            readMap(json["fragment"], fragmentShaders);
         }
     }
-    void ProgramShaderDefinition::write(nlohmann::json& json)
+
+    void ProgramProfileDefinition::write(nlohmann::json& json) const
     {
-        ShaderDataUtils::write(json["vertexShader"], vertexShader);
-        ShaderDataUtils::write(json["fragmentShader"], fragmentShader);
-        json["defines"] = defines;
+        auto writeMap = [](nlohmann::json& json, const Map& map)
+        {
+            for (auto& [defines, data] : map)
+            {
+                auto& elmJson = json.emplace_back();
+                elmJson["defines"] = defines;
+                elmJson["data"] = data.view().toHex();
+            }
+        };
+
+        writeMap(json["vertex"], vertexShaders);
+        writeMap(json["fragment"], fragmentShaders);
+    }
+
+    const std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>> ProgramDefinition::_rendererProfiles
+    {
+        { bgfx::RendererType::Direct3D11, { "s_4_0" }},
+        { bgfx::RendererType::Direct3D12, { "s_5_0", "s_4_0" }},
+        { bgfx::RendererType::Metal, { "metal" }},
+        { bgfx::RendererType::OpenGLES, { "320_es", "310_es", "300_es", "100_es" }},
+        { bgfx::RendererType::OpenGL, { "440", "430", "420", "410", "400", "330", "150", "140", "130", "120" }},
+        { bgfx::RendererType::Vulkan, { "spirv" }},
+    };
+
+    const ProgramDefinition::Profile& ProgramDefinition::getCurrentProfile() const
+    {
+        auto render = bgfx::getRendererType();
+        auto itr = _rendererProfiles.find(render);
+        if (itr == _rendererProfiles.end())
+        {
+            throw std::invalid_argument("could not find renderer profiles");
+        }
+        for (auto& profile : itr->second)
+        {
+            auto itr = profiles.find(profile);
+            if (itr == profiles.end())
+            {
+                continue;
+            }
+            return itr->second;
+        }
+        throw std::invalid_argument("no valid profile found");
     }
 
     void ProgramDefinition::read(const nlohmann::ordered_json& json)
@@ -155,44 +117,66 @@ namespace darmok
         {
             name = json["name"];
         }
-        if (json.contains("shaders"))
-        {
-            for (auto& shaderJson : json["shaders"])
-            {
-                shaders.emplace_back().read(shaderJson);
-            }
-        }
         if (json.contains("vertexLayout"))
         {
             VertexLayoutUtils::readJson(json["vertexLayout"], vertexLayout);
         }
+        if (json.contains("profiles"))
+        {
+            for (auto& [name, profileJson] : json["profiles"].items())
+            {
+                profiles[name].read(profileJson);
+            }
+        }
     }
 
-    void ProgramDefinition::write(nlohmann::ordered_json& json)
+    void ProgramDefinition::write(nlohmann::ordered_json& json) const
     {
-        json["name"] = name;
-        nlohmann::json shadersJson = json["shaders"];
-        for (auto& shader : shaders)
+        if (!name.empty())
         {
-            shader.write(shadersJson.emplace_back());
+            json["name"] = name;
         }
         VertexLayoutUtils::writeJson(json["vertexLayout"], vertexLayout);
+        nlohmann::json profilesJson;
+        for (auto& [name, profile] : profiles)
+        {
+            profile.write(profilesJson[name]);
+        }
+        json["profiles"] = profilesJson;
+    }
+
+    Program::ShaderHandles Program::createShaders(const ProgramProfileDefinition::Map& defMap, const std::string& name)
+    {
+        ShaderHandles handles;
+        for (auto& [defines, data] : defMap)
+        {
+            auto handle = bgfx::createShader(data.copyMem());
+            auto defName = name + StringUtils::join(" ", defines.begin(), defines.end());
+            if (!isValid(handle))
+            {
+                throw std::runtime_error("failed to compile shader: " + defName);
+            }
+            bgfx::setName(handle, defName.c_str());
+            _vertexHandles[defines] = handle;
+        }
+        return handles;
     }
 
 	Program::Program(const Definition& def)
+        : _layout(def.vertexLayout)
 	{
-        _layout = def.vertexLayout;
+        auto& profile = def.getCurrentProfile();
+        _vertexHandles = createShaders(profile.vertexShaders, def.name + " vertex ");
+        _fragmentHandles = createShaders(profile.fragmentShaders, def.name + " fragment ");
 
-        for (auto& shader : def.shaders)
+        for (auto& [vertDefines, vertHandle] : _vertexHandles)
         {
-            auto baseName = def.name + " " + StringUtils::join(" ", shader.defines.begin(), shader.defines.end());
-            auto vertHandle = ShaderDataUtils::createShader(shader.vertexShader);
-            auto vertName = baseName + " vertex";
-            bgfx::setName(vertHandle, vertName.c_str());
-            auto fragHandle = ShaderDataUtils::createShader(shader.fragmentShader);
-            auto fragName = baseName + " fragment";
-            bgfx::setName(fragHandle, fragName.c_str());
-            _handles[shader.defines] = bgfx::createProgram(vertHandle, fragHandle, true);
+            for (auto& [fragDefines, fragHandle] : _fragmentHandles)
+            {
+                auto defines = vertDefines;
+                defines.insert(fragDefines.begin(), fragDefines.end());
+                _handles[defines] = bgfx::createProgram(vertHandle, fragHandle);
+            }
         }
 	}
 
@@ -204,6 +188,20 @@ namespace darmok
 
     Program::~Program() noexcept
     {
+        for (auto& [defines, handle] : _vertexHandles)
+        {
+            if (isValid(handle))
+            {
+                bgfx::destroy(handle);
+            }
+        }
+        for (auto& [defines, handle] : _fragmentHandles)
+        {
+            if (isValid(handle))
+            {
+                bgfx::destroy(handle);
+            }
+        }
         for (auto& [defines, handle] : _handles)
         {
             if (isValid(handle))
@@ -254,25 +252,33 @@ namespace darmok
 #endif
     }
 
-    ShaderCompiler& ShaderCompiler::setShadercPath(const std::filesystem::path& path) noexcept
+    void ShaderCompiler::reset() noexcept
+    {
+        _includes.clear();
+        _defines.clear();
+        _varyingDef = "";
+        _shaderType = ShaderType::Unknown;
+    }
+
+    ShaderCompiler& ShaderCompiler::setShadercPath(const fs::path& path) noexcept
     {
         _shadercPath = path;
         return *this;
     }
 
-    ShaderCompiler& ShaderCompiler::setIncludePaths(const std::vector<std::filesystem::path>& paths) noexcept
+    ShaderCompiler& ShaderCompiler::setIncludePaths(const std::vector<fs::path>& paths) noexcept
     {
         _includes = paths;
         return *this;
     }
 
-    ShaderCompiler& ShaderCompiler::addIncludePath(const std::filesystem::path& path) noexcept
+    ShaderCompiler& ShaderCompiler::addIncludePath(const fs::path& path) noexcept
     {
         _includes.push_back(path);
         return *this;
     }
 
-    ShaderCompiler& ShaderCompiler::setVaryingDef(const std::filesystem::path& path) noexcept
+    ShaderCompiler& ShaderCompiler::setVaryingDef(const fs::path& path) noexcept
     {
         _varyingDef = path;
         return *this;
@@ -343,7 +349,7 @@ namespace darmok
     }
 
     const std::vector<std::string> ShaderCompiler::_profiles{
-    "120", "300_es", "spirv",
+        "120", "300_es", "spirv",
 #if BX_PLATFORM_WINDOWS
         "s_4_0", "s_5_0",
 #endif
@@ -362,9 +368,9 @@ namespace darmok
         { "s_5_0",  ".dx11" }
     };
 
-    int ShaderCompiler::operator()(const std::filesystem::path& input, const Output& output) const
+    int ShaderCompiler::operator()(const fs::path& input, const Output& output) const
     {
-        auto varyingDef = _varyingDef;
+        fs::path varyingDef = _varyingDef;
         if (varyingDef.empty())
         {
             varyingDef = input.parent_path() / (StringUtils::getFileStem(input.string()) + ".varyingdef");
@@ -388,8 +394,6 @@ namespace darmok
             args.push_back("-i");
             args.push_back(fixPathArgument(include));
         }
-        args.push_back("-i");
-        args.push_back(fixPathArgument(input.parent_path()));
 
         auto r = exec(args);
         if (r.output.contains("Failed to build shader."))
@@ -406,10 +410,10 @@ namespace darmok
 
     const std::regex ShaderCompiler::_includeRegex = std::regex("#include <([^>]+)>");
 
-    std::vector<std::filesystem::path> ShaderCompiler::getDependencies(std::istream& in) const noexcept
+    size_t ShaderCompiler::getDependencies(std::istream& in, Dependencies& deps) const noexcept
     {
-        std::vector<fs::path> deps;
         std::string line;
+        size_t count = 0;
         while (std::getline(in, line))
         {
             std::smatch match;
@@ -421,23 +425,24 @@ namespace darmok
             for (auto& include : _includes)
             {
                 auto path = include / name;
-                if (fs::exists(path))
+                if (!fs::exists(path))
                 {
-                    if (std::find(deps.begin(), deps.end(), path) == deps.end())
-                    {
-                        deps.push_back(path);
-                    }
-                    break;
+                    continue;
                 }
+                if (deps.insert(path).second)
+                {
+                    count++;
+                }
+                break;
             }
         }
-        return deps;
+        return count;
     }
 
     const std::string ShaderCompiler::_binExt = ".bin";
     const std::string ShaderCompiler::_enableDefineSuffix = "_enabled";
 
-    ShaderType ShaderCompiler::getShaderType(const std::filesystem::path& path) const noexcept
+    ShaderType ShaderCompiler::getShaderType(const fs::path& path) const noexcept
     {
         if (_shaderType != ShaderType::Unknown)
         {
@@ -475,13 +480,13 @@ namespace darmok
         return path.parent_path() / (stem + suffix + type + profileExt + _binExt);
     }
 
-    std::vector<ShaderCompiler::Output> ShaderCompiler::getOutputs(const std::filesystem::path& basePath) const noexcept
+    std::vector<ShaderCompiler::Output> ShaderCompiler::getOutputs(const fs::path& basePath) const noexcept
     {
         auto defineCombs = CollectionUtils::combinations(_defines);
         std::vector<Output> outputs;
         for (auto& profile : _profiles)
         {
-            auto profileExt = profile;
+            std::string profileExt = profile;
             auto itr = _profileExtensions.find(profile);
             if (itr != _profileExtensions.end())
             {
@@ -521,8 +526,43 @@ namespace darmok
 
     const std::string ShaderImporterImpl::_manifestFileSuffix = ".manifest.json";
     const std::string ShaderImporterImpl::_configTypeKey = "type";
-    const std::string ShaderImporterImpl::_configVaryingDefKey = "varyingdef";
-    const std::string ShaderImporterImpl::_configIncludeDirsKey = "includeDirs";
+    const std::string ShaderImporterImpl::_configVaryingDefKey = "varyingDef";
+
+
+    struct ShaderCompilerUtils final
+    {
+        static void configureIncludes(ShaderCompiler& compiler, const AssetTypeImporterInput& input) noexcept
+        {
+            if (input.config.contains(_configIncludeDirsKey))
+            {
+                addIncludes(compiler, input.config[_configIncludeDirsKey], input.basePath);
+            }
+            if (input.dirConfig.contains(_configIncludeDirsKey))
+            {
+                addIncludes(compiler, input.dirConfig[_configIncludeDirsKey], input.basePath);
+            }
+            compiler.addIncludePath(input.path.parent_path());
+        }
+
+        static fs::path getTempPath() noexcept
+        {
+            return fs::temp_directory_path() / fs::path(std::tmpnam(nullptr));
+        }
+
+    private:
+
+        static void addIncludes(ShaderCompiler& compiler, const nlohmann::json& json, const fs::path& basePath) noexcept
+        {
+            for (auto& elm : json)
+            {
+                compiler.addIncludePath(basePath / elm.get<std::string>());
+            }
+        }
+
+        static const std::string _configIncludeDirsKey;
+    };
+    const std::string ShaderCompilerUtils::_configIncludeDirsKey = "includeDirs";
+
 
     bool ShaderImporterImpl::startImport(const Input& input, bool dry)
     {
@@ -531,22 +571,13 @@ namespace darmok
             return false;
         }
         
-        _compiler.setDefines({});
+        _compiler.reset();
         _compiler.setIncludePaths(_includes);
-        _compiler.setVaryingDef("");
-        _compiler.setShaderType(ShaderType::Unknown);
+        ShaderCompilerUtils::configureIncludes(_compiler, input);
 
         if (input.config.contains("defines"))
         {
             _compiler.setDefines(input.config["defines"]);
-        }
-
-        if (input.config.contains(_configIncludeDirsKey))
-        {
-            for (auto& elm : input.config[_configIncludeDirsKey])
-            {
-                _compiler.addIncludePath(input.basePath / elm.get<std::string>());
-            }
         }
 
         if (input.config.contains(_configVaryingDefKey))
@@ -590,15 +621,16 @@ namespace darmok
         return outputs;
     }
 
-    std::vector<fs::path> ShaderImporterImpl::getDependencies(const Input& input)
+    ShaderImporterImpl::Dependencies ShaderImporterImpl::getDependencies(const Input& input)
     {
-        std::vector<fs::path> deps;
+        Dependencies deps;
         if (!fs::exists(input.path))
         {
             return deps;
         }
         std::ifstream is(input.path);
-        return _compiler.getDependencies(is);
+        _compiler.getDependencies(is, deps);
+        return deps;
     }
 
     void ShaderImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
@@ -623,8 +655,8 @@ namespace darmok
             throw std::runtime_error("cannot find output config");
         }
 
-        auto output = _outputs[outputIndex];
-        output.path = fs::temp_directory_path() / fs::path(std::tmpnam(nullptr));
+        ShaderCompilerOutput output = _outputs[outputIndex];
+        output.path = ShaderCompilerUtils::getTempPath();
         _compiler(input.path, output);
         std::ifstream is(output.path, std::ios::binary);
         StreamUtils::copy(is, out, _bufferSize);
@@ -651,12 +683,12 @@ namespace darmok
         return _impl->startImport(input, dry);
     }
 
-    std::vector<fs::path> ShaderImporter::getOutputs(const Input& input)
+    ShaderImporter::Outputs ShaderImporter::getOutputs(const Input& input)
     {
         return _impl->getOutputs(input);
     }
 
-    std::vector<fs::path> ShaderImporter::getDependencies(const Input& input)
+    ShaderImporter::Dependencies ShaderImporter::getDependencies(const Input& input)
     {
         return _impl->getDependencies(input);
     }
@@ -693,7 +725,7 @@ namespace darmok
         _impl->endImport(input);
     }
 
-    void ShaderImportDefinition::read(const nlohmann::json& json, std::filesystem::path basePath)
+    void ShaderImportConfig::read(const nlohmann::json& json, fs::path basePath)
     {
         if (json.is_string())
         {
@@ -710,19 +742,12 @@ namespace darmok
         }
     }
 
-    void ProgramImportDefinition::loadDefault(const std::filesystem::path& path)
+    void ProgramImportConfig::read(const nlohmann::ordered_json& json, fs::path basePath)
     {
-        auto basePath = path.parent_path();
-        auto fileName = path.filename();
-        auto stem = StringUtils::getFileStem(fileName.string());
-        varyingDefPath = basePath / (stem + ".varyingdef");
-        vertexShader.path = basePath / (stem + ".vertex.sc");
-        fragmentShader.path = basePath / (stem + ".fragment.sc");
-        vertexLayoutPath = basePath / (stem + ".vlayout.json");
-    }
-
-    void ProgramImportDefinition::read(const nlohmann::ordered_json& json, std::filesystem::path basePath)
-    {
+        if (json.contains("name"))
+        {
+            name = json["name"];
+        }
         if (json.contains("vertexShader"))
         {
             vertexShader.read(json["vertexShader"], basePath);
@@ -730,6 +755,10 @@ namespace darmok
         if (json.contains("fragmentShader"))
         {
             fragmentShader.read(json["fragmentShader"], basePath);
+        }
+        if (json.contains("varyingDef"))
+        {
+            varyingDefPath = basePath / json["varyingDef"].get<std::string>();
         }
         if (json.contains("vertexLayout"))
         {
@@ -745,77 +774,179 @@ namespace darmok
         }
     }
 
+    void ProgramImportConfig::load(const AssetTypeImporterInput& input)
+    {
+        auto basePath = input.path.parent_path();
+        auto fileName = input.path.filename();
+        auto stem = StringUtils::getFileStem(fileName.string());
+        varyingDefPath = basePath / (stem + ".varyingdef");
+        vertexShader.path = basePath / (stem + ".vertex.sc");
+        fragmentShader.path = basePath / (stem + ".fragment.sc");
+        vertexLayoutPath = basePath / (stem + ".vlayout.json");
+
+        if (input.config.is_object())
+        {
+            read(input.config, input.basePath);
+        }
+        if (fs::exists(input.path))
+        {
+            std::ifstream is(input.path);
+            auto fileJson = nlohmann::ordered_json::parse(is);
+            read(fileJson, input.basePath);
+        }
+        if (!fs::exists(varyingDefPath))
+        {
+            throw std::runtime_error(std::string("missing varyingdef: ") + varyingDefPath.string());
+        }
+        if (!fs::exists(vertexShader.path))
+        {
+            throw std::runtime_error(std::string("missing vertex shader: ") + vertexShader.path.string());
+        }
+        if (!fs::exists(fragmentShader.path))
+        {
+            throw std::runtime_error(std::string("missing fragment shader: ") + fragmentShader.path.string());
+        }
+        if (vertexLayout.getStride() == 0 && fs::exists(vertexLayoutPath))
+        {
+            VertexLayoutUtils::readFile(vertexLayoutPath, vertexLayout);
+        }
+        if (vertexLayout.getStride() == 0)
+        {
+            std::ifstream is(varyingDefPath);
+            VertexLayoutUtils::readVaryingDef(is, vertexLayout);
+        }
+        if (vertexLayout.getStride() == 0)
+        {
+            throw std::runtime_error("empty vertex layout");
+        }
+    }
+
+    ProgramImporterImpl::ProgramImporterImpl(size_t bufferSize) noexcept
+        : _bufferSize(bufferSize)
+    {
+    }
+
+    void ProgramImporterImpl::setShadercPath(const std::filesystem::path& path) noexcept
+    {
+        _compiler.setShadercPath(path);
+    }
+
+    void ProgramImporterImpl::addIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _includes.push_back(path);
+    }
+
     bool ProgramImporterImpl::startImport(const Input& input, bool dry)
     {
         if (input.config.is_null())
         {
             return false;
         }
-        auto& def = _def.emplace();
 
-        def.loadDefault(input.path);
-        if (input.config.is_object())
+        _compiler.reset();
+        _compiler.setIncludePaths(_includes);
+        ShaderCompilerUtils::configureIncludes(_compiler, input);
+
+        _config.emplace().load(input);
+
+        _outputPath = input.getRelativePath().parent_path();
+        if (input.config.contains("outputPath"))
         {
-            def.read(input.config, input.basePath);
+            _outputPath /= input.config["outputPath"].get<fs::path>();
         }
-        if (fs::exists(input.path))
+        else
         {
-            std::ifstream is(input.path);
-            auto fileJson = nlohmann::ordered_json::parse(is);
-            def.read(fileJson, input.basePath);
-        }
-        if (!def.vertexLayoutPath.empty())
-        {
-            VertexLayoutUtils::readFile(def.vertexLayoutPath, def.vertexLayout);
+            _outputPath /= input.path.stem().string() + ".bin";
         }
         return true;
     }
 
-    std::vector<std::filesystem::path> ProgramImporterImpl::getOutputs(const Input& input)
+    std::vector<fs::path> ProgramImporterImpl::getOutputs(const Input& input)
     {
-        std::vector<std::filesystem::path> outputs;
-        auto path = input.getRelativePath();
-        if (input.config.contains("outputPath"))
-        {
-            path = input.config["outputPath"].get<fs::path>();
-        }
-        else
-        {
-            path = path.stem().string() + ".bin";
-        }
-        outputs.push_back(path);
-        return outputs;
+        return { _outputPath };
     }
 
-    std::vector<std::filesystem::path> ProgramImporterImpl::getDependencies(const Input& input)
+    ProgramImporterImpl::Dependencies ProgramImporterImpl::getDependencies(const Input& input)
     {
-        std::vector<std::filesystem::path> deps;
-        if (!_def)
+        Dependencies deps;
+        if (!_config)
         {
             return deps;
         }
-        if (!_def->vertexShader.path.empty())
+
+        auto addShaderDeps = [this, &deps](const fs::path& path) {
+            deps.insert(path);
+            std::ifstream is(path);
+            _compiler.getDependencies(is, deps);
+        };
+
+        auto& config = _config.value();
+        addShaderDeps(config.vertexShader.path);
+        addShaderDeps(config.fragmentShader.path);
+        deps.insert(config.varyingDefPath);
+        if (!config.vertexLayoutPath.empty())
         {
-            deps.push_back(_def->vertexShader.path);
-        }
-        if (!_def->fragmentShader.path.empty())
-        {
-            deps.push_back(_def->fragmentShader.path);
-        }
-        if (!_def->vertexLayoutPath.empty())
-        {
-            deps.push_back(_def->vertexLayoutPath);
+            deps.insert(config.vertexLayoutPath);
         }
         return deps;
     }
 
     void ProgramImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
+        if (!_config)
+        {
+            return;
+        }
+        auto& config = _config.value();
+        ProgramDefinition def
+        {
+            .name = config.name,
+            .vertexLayout = config.vertexLayout,
+        };
+        auto tmpPath = ShaderCompilerUtils::getTempPath();
+
+        _compiler.setShaderType(ShaderType::Vertex);
+        _compiler.setDefines(config.vertexShader.defines);
+        for (auto output : _compiler.getOutputs())
+        {
+            output.path = tmpPath;
+            _compiler(config.vertexShader.path, output);
+            auto data = Data::fromFile(tmpPath);
+            def.profiles[output.profile].vertexShaders[output.defines] = data;
+        }
+        _compiler.setShaderType(ShaderType::Fragment);
+        _compiler.setDefines(config.fragmentShader.defines);
+        for (auto output : _compiler.getOutputs())
+        {
+            output.path = tmpPath;
+            _compiler(config.fragmentShader.path, output);
+            auto data = Data::fromFile(tmpPath);
+            def.profiles[output.profile].fragmentShaders[output.defines] = data;
+        }
+
+        auto ext = _outputPath.extension();
+        if (ext == ".json")
+        {
+            auto json = nlohmann::ordered_json::object();
+            def.write(json);
+            out << json.dump(2);
+        }
+        else if (ext == ".xml")
+        {
+            cereal::XMLOutputArchive archive(out);
+            archive(def);
+        }
+        else
+        {
+            cereal::BinaryOutputArchive archive(out);
+            archive(def);
+        }
     }
 
     void ProgramImporterImpl::endImport(const Input& input)
     {
-        _def.reset();
+        _config.reset();
+        _outputPath = "";
     }
 
     const std::string& ProgramImporterImpl::getName() const noexcept
@@ -835,17 +966,29 @@ namespace darmok
         // empty on purpose
     }
 
+    ProgramImporter& ProgramImporter::setShadercPath(const fs::path& path) noexcept
+    {
+        _impl->setShadercPath(path);
+        return *this;
+    }
+
+    ProgramImporter& ProgramImporter::addIncludePath(const fs::path& path) noexcept
+    {
+        _impl->addIncludePath(path);
+        return *this;
+    }
+
     bool ProgramImporter::startImport(const Input& input, bool dry)
     {
         return _impl->startImport(input, dry);
     }
 
-    std::vector<std::filesystem::path> ProgramImporter::getOutputs(const Input& input)
+    ProgramImporter::Outputs ProgramImporter::getOutputs(const Input& input)
     {
         return _impl->getOutputs(input);
     }
 
-    std::vector<std::filesystem::path> ProgramImporter::getDependencies(const Input& input)
+    ProgramImporter::Dependencies ProgramImporter::getDependencies(const Input& input)
     {
         return _impl->getDependencies(input);
     }

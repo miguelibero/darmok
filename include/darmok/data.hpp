@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <filesystem>
 #include <darmok/optional_ref.hpp>
 
 #include <bgfx/bgfx.h>
@@ -133,7 +134,7 @@ namespace darmok
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] static Data fromHex(std::string_view hex);
-        [[nodiscard]] static Data fromFile(const std::string& path);
+        [[nodiscard]] static Data fromFile(const std::filesystem::path& path);
 
     private:
         void* _ptr;

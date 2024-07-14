@@ -1,24 +1,25 @@
 {
     "includes": {
-        "vertexShader": {
-            "defines": [
-            "SKINNING_ENABLED"
-            ]
-        },
-        "fragmentShader": {
-            "defines": [
-                "TEXTURE_ENABLED"
-            ]
+        "program": {
+            "program": {
+                "vertexShader": {
+                    "defines": [
+                        "SKINNING_ENABLED"
+                    ]
+                },
+                "fragmentShader": {
+                    "defines": [
+                        "TEXTURE_ENABLED"
+                    ]
+                }
+            }
         }
     },
     "produceHeaders": true,
     "headerIncludeDir": "generated/shaders",
     "files": {
-        "unlit.program.json": {
-            "program": {
-                "vertexShader": "include:vertexShader",
-                "fragmentShader": "include:fragmentShader"
-            }
-        }
+        "unlit.program.json": "include:program",
+        "forward.program.json": "include:program",
+        "gui.program.json": "include:program"
     }
 }

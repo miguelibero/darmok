@@ -28,7 +28,9 @@ namespace darmok
     public:
         using Defines = ShaderDefines;
         using Output = ShaderCompilerOutput;
+        using Dependencies = AssetImportDependencies;
         ShaderCompiler() noexcept;
+        void reset() noexcept;
         ShaderCompiler& setShadercPath(const std::filesystem::path& path) noexcept;
         ShaderCompiler& setIncludePaths(const std::vector<std::filesystem::path>& paths) noexcept;
         ShaderCompiler& addIncludePath(const std::filesystem::path& path) noexcept;
@@ -39,8 +41,8 @@ namespace darmok
         ShaderCompiler& setDefines(const Defines& defines) noexcept;
 
         int operator()(const std::filesystem::path& input, const Output& output) const;
-        std::vector<std::filesystem::path> getDependencies(std::istream& in) const noexcept;
-        std::vector<Output> getOutputs(const std::filesystem::path& basePath) const noexcept;
+        size_t getDependencies(std::istream& in, Dependencies& deps) const noexcept;
+        std::vector<Output> getOutputs(const std::filesystem::path& basePath = "") const noexcept;
     private:
         std::filesystem::path _shadercPath;
         std::filesystem::path _varyingDef;
@@ -68,13 +70,15 @@ namespace darmok
     public:
         using Input = AssetTypeImporterInput;
         using Defines = ShaderDefines;
+        using Dependencies = AssetImportDependencies;
+
         ShaderImporterImpl(size_t bufferSize = 4096) noexcept;
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
-        std::vector<std::filesystem::path> getDependencies(const Input& input);
+        Dependencies getDependencies(const Input& input);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
         void endImport(const Input& input);
@@ -88,11 +92,10 @@ namespace darmok
         
         static const std::string _configTypeKey;
         static const std::string _configVaryingDefKey;
-        static const std::string _configIncludeDirsKey;
         static const std::string _manifestFileSuffix;
     };
 
-    struct ShaderImportDefinition final
+    struct ShaderImportConfig final
     {
         std::filesystem::path path;
         ShaderDefines defines;
@@ -100,15 +103,18 @@ namespace darmok
         void read(const nlohmann::json& json, std::filesystem::path basePath);
     };
 
-    struct ProgramImportDefinition final
+    struct ProgramImportConfig final
     {
-        ShaderImportDefinition vertexShader;
-        ShaderImportDefinition fragmentShader;
+        using Shader = ShaderImportConfig;
+        Shader vertexShader;
+        Shader fragmentShader;
         std::filesystem::path varyingDefPath;
         std::filesystem::path vertexLayoutPath;
         bgfx::VertexLayout vertexLayout;
+        std::string name;
 
-        void loadDefault(const std::filesystem::path& path);
+        void load(const AssetTypeImporterInput& input);
+    private:
         void read(const nlohmann::ordered_json& json, std::filesystem::path basePath);
     };
 
@@ -116,15 +122,23 @@ namespace darmok
     {
     public:
         using Input = AssetTypeImporterInput;
-
+        using Dependencies = AssetImportDependencies;
+        using Config = ProgramImportConfig;
+        ProgramImporterImpl(size_t bufferSize = 4096) noexcept;
+        void setShadercPath(const std::filesystem::path& path) noexcept;
+        void addIncludePath(const std::filesystem::path& path) noexcept;
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
-        std::vector<std::filesystem::path> getDependencies(const Input& input);
+        Dependencies getDependencies(const Input& input);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         void endImport(const Input& input);
 
         const std::string& getName() const noexcept;
     private:
-        std::optional<ProgramImportDefinition> _def;
+        size_t _bufferSize;
+        std::optional<Config> _config;
+        std::filesystem::path _outputPath;
+        ShaderCompiler _compiler;
+        std::vector<std::filesystem::path> _includes;
     };
 }

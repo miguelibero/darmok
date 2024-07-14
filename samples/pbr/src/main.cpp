@@ -10,7 +10,6 @@
 #include <darmok/camera.hpp>
 #include <darmok/input.hpp>
 #include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/render.hpp>
@@ -29,7 +28,7 @@ namespace
 			App::init();
 
 			auto scene = addComponent<SceneAppComponent>().getScene();
-			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
+			auto prog = getAssets().getProgramLoader()("forward");
 			auto& layout = prog->getVertexLayout();
 			auto& registry = scene->getRegistry();
 

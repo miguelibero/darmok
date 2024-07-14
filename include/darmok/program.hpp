@@ -15,46 +15,52 @@ namespace darmok
 {
 	class DataView;
 	using ProgramDefines = std::unordered_set<std::string>;
-	using ShaderData = std::unordered_map<bgfx::RendererType::Enum, Data>;
 
-	struct DARMOK_EXPORT ProgramShaderDefinition final
+
+	struct DARMOK_EXPORT ProgramProfileDefinition final
 	{
-		ShaderData vertexShader;
-		ShaderData fragmentShader;
-		ProgramDefines defines;
+		using Defines = ProgramDefines;
+		using Map = std::unordered_map<Defines, Data>;
+		Map vertexShaders;
+		Map fragmentShaders;
 
 		void read(const nlohmann::json& json);
-		void write(nlohmann::json& json);
+		void write(nlohmann::json& json) const;
 
 		template<class Archive>
 		void serialize(Archive& archive)
 		{
-			archive(vertexShader, fragmentShader, defines);
+			archive(vertexShaders, fragmentShaders);
 		}
 	};
 	
 	struct DARMOK_EXPORT ProgramDefinition final
 	{
-		using Shader = ProgramShaderDefinition;
+		using Profile = ProgramProfileDefinition;
 
 		std::string name;
-		std::vector<Shader> shaders;
+		std::unordered_map<std::string, Profile> profiles;
 		bgfx::VertexLayout vertexLayout;
 
+		const Profile& getCurrentProfile() const;
+
 		void read(const nlohmann::ordered_json& json);
-		void write(nlohmann::ordered_json& json);
+		void write(nlohmann::ordered_json& json) const;
 
 		template<class Archive>
 		void serialize(Archive& archive)
 		{
-			archive(shaders, vertexLayout);
+			archive(name, profiles, vertexLayout);
 		}
+	private:
+		static const std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>> _rendererProfiles;
 	};
 
 	class DARMOK_EXPORT Program final
 	{
 	public:
 		using Defines = ProgramDefines;
+		using ShaderHandles = std::unordered_map<Defines, bgfx::ShaderHandle>;
 		using Handles = std::unordered_map<Defines, bgfx::ProgramHandle>;
 		using Definition = ProgramDefinition;
 
@@ -69,6 +75,11 @@ namespace darmok
 		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines) const noexcept;
 		[[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
 	private:
+
+		ShaderHandles createShaders(const ProgramProfileDefinition::Map& defMap, const std::string& name);
+
+		ShaderHandles _vertexHandles;
+		ShaderHandles _fragmentHandles;
 		Handles _handles;
 		bgfx::VertexLayout _layout;
 	};
@@ -105,8 +116,8 @@ namespace darmok
 		ShaderImporter& addIncludePath(const std::filesystem::path& path) noexcept;
 		bool startImport(const Input& input, bool dry = false) override;
 		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
-		std::vector<std::filesystem::path> getOutputs(const Input& input) override;
-		std::vector<std::filesystem::path> getDependencies(const Input& input) override;
+		Outputs getOutputs(const Input& input) override;
+		Dependencies getDependencies(const Input& input) override;
 
 		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
 		const std::string& getName() const noexcept override;
@@ -122,10 +133,12 @@ namespace darmok
 	public:
 		ProgramImporter();
 		~ProgramImporter() noexcept;
+		ProgramImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+		ProgramImporter& addIncludePath(const std::filesystem::path& path) noexcept;
 
 		bool startImport(const Input& input, bool dry = false) override;
-		std::vector<std::filesystem::path> getOutputs(const Input& input) override;
-		std::vector<std::filesystem::path> getDependencies(const Input& input) override;
+		Outputs getOutputs(const Input& input) override;
+		Dependencies getDependencies(const Input& input) override;
 		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
 		void endImport(const Input& input) override;
 

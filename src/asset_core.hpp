@@ -24,6 +24,7 @@ namespace darmok
     {
     public:
         using Input = AssetTypeImporterInput;
+        using Dependencies = AssetImportDependencies;
 
         AssetImporterImpl(const std::filesystem::path& inputPath);
         void setCachePath(const std::filesystem::path& cachePath) noexcept;
@@ -43,7 +44,7 @@ namespace darmok
         };
 
         mutable std::unordered_map<std::filesystem::path, FileCacheData> _fileCache;
-        mutable std::unordered_map<std::filesystem::path, std::vector<std::filesystem::path>> _fileDependencies;
+        mutable std::unordered_map<std::filesystem::path, Dependencies> _fileDependencies;
 
         struct HeaderConfig final
         {
@@ -116,7 +117,7 @@ namespace darmok
         std::vector<Operation> getOperations() const;
         static void mergeConfig(nlohmann::json& json, const nlohmann::json& other);
         void loadDependencies(const std::vector<Operation>& ops) const;
-        void getDependencies(const std::filesystem::path& path, const std::vector<Operation>& ops, std::vector<std::filesystem::path>& deps) const;
+        void getDependencies(const std::filesystem::path& path, const std::vector<Operation>& ops, Dependencies& deps) const;
         std::filesystem::path fixOutput(const std::filesystem::path& path, const Operation& op) const noexcept;
         std::vector<std::filesystem::path> getOutputs(const Operation& op) const;
 

@@ -369,10 +369,10 @@ namespace darmok
         return data;
     }
 
-    Data Data::fromFile(const std::string& path)
+    Data Data::fromFile(const std::filesystem::path& path)
     {
         FILE* fh;
-        auto err = fopen_s(&fh, path.c_str(), "rb");
+        auto err = fopen_s(&fh, path.string().c_str(), "rb");
         if (err)
         {
             throw std::runtime_error("failed to open file");

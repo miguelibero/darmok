@@ -186,7 +186,7 @@ namespace darmok
 
         if (config.contains(_filesKey))
         {
-            auto filesJson = config[_filesKey];
+            nlohmann::json filesJson = config[_filesKey];
             if (!includes.empty())
             {
                 FileConfig::replaceIncludes(filesJson, includes);
@@ -600,7 +600,7 @@ namespace darmok
             auto itr = _fileDependencies.find(op.input.path);
             if (itr == _fileDependencies.end())
             {
-                auto r = _fileDependencies.emplace(op.input.path, std::vector<fs::path>());
+                auto r = _fileDependencies.emplace(op.input.path, Dependencies());
                 auto& deps = r.first->second;
                 getDependencies(op.input.path, ops, deps);
                 for (auto& dep : deps)
@@ -611,9 +611,9 @@ namespace darmok
         }
     }
 
-    void AssetImporterImpl::getDependencies(const fs::path& path, const std::vector<Operation>& ops, std::vector<fs::path>& deps) const
+    void AssetImporterImpl::getDependencies(const fs::path& path, const std::vector<Operation>& ops, Dependencies& deps) const
     {
-        std::vector<fs::path> baseDeps;
+        Dependencies baseDeps;
         for (auto& op : ops)
         {
             if (op.input.path != path)
@@ -630,8 +630,8 @@ namespace darmok
             {
                 if (std::find(deps.begin(), deps.end(), dep) == deps.end())
                 {
-                    deps.push_back(dep);
-                    baseDeps.push_back(dep);
+                    deps.insert(dep);
+                    baseDeps.insert(dep);
                 }
             }
         }
@@ -947,10 +947,10 @@ namespace darmok
     DarmokCoreAssetImporter::DarmokCoreAssetImporter(const fs::path& inputPath)
         : _importer(inputPath)
         , _shaderImporter(_importer.addTypeImporter<ShaderImporter>())
+        , _progImporter(_importer.addTypeImporter<ProgramImporter>())
     {
         _importer.addTypeImporter<CopyAssetImporter>();
         _importer.addTypeImporter<VertexLayoutImporter>();
-        _importer.addTypeImporter<ProgramImporter>();
     }
 
     DarmokCoreAssetImporter& DarmokCoreAssetImporter::setCachePath(const fs::path& cachePath) noexcept
@@ -968,12 +968,14 @@ namespace darmok
     DarmokCoreAssetImporter& DarmokCoreAssetImporter::setShadercPath(const fs::path& path) noexcept
     {
         _shaderImporter.setShadercPath(path);
+        _progImporter.setShadercPath(path);
         return *this;
     }
 
     DarmokCoreAssetImporter& DarmokCoreAssetImporter::addShaderIncludePath(const fs::path& path) noexcept
     {
         _shaderImporter.addIncludePath(path);
+        _progImporter.addIncludePath(path);
         return *this;
     }
 

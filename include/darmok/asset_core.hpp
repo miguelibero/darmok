@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <unordered_set>
 #include <bx/bx.h>
 #include <nlohmann/json.hpp>
 
@@ -27,18 +28,22 @@ namespace darmok
         }
     };
 
+    using AssetImportDependencies = std::unordered_set<std::filesystem::path>;
+
     class DARMOK_EXPORT BX_NO_VTABLE IAssetTypeImporter
     {
     public:
         using Input = AssetTypeImporterInput;
+        using Dependencies = AssetImportDependencies;
+        using Outputs = std::vector<std::filesystem::path>;
 
         virtual ~IAssetTypeImporter() = default;
         virtual void setLogOutput(OptionalRef<std::ostream> log) noexcept {};
 
         virtual bool startImport(const Input& input, bool dry = false) { return true; };
 
-        virtual std::vector<std::filesystem::path> getOutputs(const Input& input) = 0;
-        virtual std::vector<std::filesystem::path> getDependencies(const Input& input) { return {}; };
+        virtual Outputs getOutputs(const Input& input) = 0;
+        virtual Dependencies getDependencies(const Input& input) { return {}; };
 
         // outputIndex is the index of the element in the vector returned by getOutputs
         virtual std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
@@ -82,7 +87,6 @@ namespace darmok
     class DARMOK_EXPORT AssetImporter final
     {
     public:
-    	public:
 		AssetImporter(const std::filesystem::path& inputPath);
 		~AssetImporter() noexcept;
         AssetImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
@@ -104,6 +108,7 @@ namespace darmok
     };
 
     class ShaderImporter;
+    class ProgramImporter;
 
     class DARMOK_EXPORT DarmokCoreAssetImporter final
     {
@@ -119,6 +124,7 @@ namespace darmok
     private:
         AssetImporter _importer;
         ShaderImporter& _shaderImporter;
+        ProgramImporter& _progImporter;
     };
 
     class DARMOK_EXPORT CopyAssetImporter final : public IAssetTypeImporter
