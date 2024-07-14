@@ -8,31 +8,28 @@
 #include <darmok/export.h>
 #include <darmok/asset_core.hpp>
 #include <darmok/collection.hpp>
+#include <darmok/data.hpp>
 #include <nlohmann/json.hpp>
-
-namespace bgfx
-{
-	struct EmbeddedShader;
-}
 
 namespace darmok
 {
 	class DataView;
 	using ProgramDefines = std::unordered_set<std::string>;
+	using ShaderData = std::unordered_map<bgfx::RendererType::Enum, Data>;
 
 	struct DARMOK_EXPORT ProgramShaderDefinition final
 	{
-		std::string vertex;
-		std::string fragment;
+		ShaderData vertexShader;
+		ShaderData fragmentShader;
 		ProgramDefines defines;
 
-		void read(const nlohmann::ordered_json& json);
-		void write(nlohmann::ordered_json& json);
+		void read(const nlohmann::json& json);
+		void write(nlohmann::json& json);
 
 		template<class Archive>
 		void serialize(Archive& archive)
 		{
-			archive(vertex, fragment, defines);
+			archive(vertexShader, fragmentShader, defines);
 		}
 	};
 	
@@ -40,6 +37,7 @@ namespace darmok
 	{
 		using Shader = ProgramShaderDefinition;
 
+		std::string name;
 		std::vector<Shader> shaders;
 		bgfx::VertexLayout vertexLayout;
 
@@ -58,8 +56,9 @@ namespace darmok
 	public:
 		using Defines = ProgramDefines;
 		using Handles = std::unordered_map<Defines, bgfx::ProgramHandle>;
+		using Definition = ProgramDefinition;
 
-		Program(const bgfx::EmbeddedShader* embeddedShaders, const DataView& definitionData);
+		Program(const Definition& definition);
 		Program(const Handles& handles, const bgfx::VertexLayout& layout) noexcept;
 		~Program() noexcept;
 		Program(const Program& other) = delete;
@@ -93,7 +92,6 @@ namespace darmok
 		[[nodiscard]] std::shared_ptr<Program> operator()(std::string_view name) override;
 	private:
 		IDataLoader& _dataLoader;
-		bgfx::ShaderHandle loadShader(const std::string& filePath);
 	};
 
 	class ShaderImporterImpl;

@@ -395,10 +395,7 @@ namespace darmok
 		auto ext = StringUtils::getFileExt(input.path.filename().string());
 		if (input.config.is_null())
 		{
-			if (ext != ".varyingdef" && ext != ".vlayout.json" && ext != ".vlayout.bin")
-			{
-				return outputs;
-			}
+			return outputs;
 		}
 		if (input.config.contains("outputPath"))
 		{

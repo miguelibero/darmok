@@ -82,24 +82,17 @@ set(SHADERS_TARGET darmok-shaders)
 set(SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/shaders)
 set(SHADERS
   ${SHADERS_DIR}/darmok.include.sc
-  ${SHADERS_DIR}/darmok_compute.include.sc
-  ${SHADERS_DIR}/darmok_pbr_lighting.include.sc
   ${SHADERS_DIR}/darmok_phong_lighting.include.sc
   ${SHADERS_DIR}/darmok_skinning.include.sc
   ${SHADERS_DIR}/darmok-import.json
-  ${SHADERS_DIR}/forward_pbr.fragment.sc
-  ${SHADERS_DIR}/forward_pbr.varyingdef
-  ${SHADERS_DIR}/forward_pbr.vertex.sc
-  ${SHADERS_DIR}/forward_pbr.vlayout.json
-  ${SHADERS_DIR}/forward_phong.fragment.sc
-  ${SHADERS_DIR}/forward_phong.varyingdef
-  ${SHADERS_DIR}/forward_phong.vertex.sc
-  ${SHADERS_DIR}/forward_phong.vlayout.json
+  ${SHADERS_DIR}/forward.fragment.sc
+  ${SHADERS_DIR}/forward.varyingdef
+  ${SHADERS_DIR}/forward.vertex.sc
+  ${SHADERS_DIR}/forward.vlayout.json
   ${SHADERS_DIR}/gui.fragment.sc
   ${SHADERS_DIR}/gui.varyingdef
   ${SHADERS_DIR}/gui.vertex.sc
   ${SHADERS_DIR}/gui.vlayout.json
-  ${SHADERS_DIR}/pbr.include.sc
   ${SHADERS_DIR}/unlit.fragment.sc
   ${SHADERS_DIR}/unlit.varyingdef
   ${SHADERS_DIR}/unlit.vertex.sc
@@ -159,7 +152,6 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/vertex_layout.hpp
   ${INCLUDE_DIR}/collection.hpp
   ${INCLUDE_DIR}/viewport.hpp
-  ${INCLUDE_DIR}/program_fwd.hpp
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/asset_core.hpp
   ${INCLUDE_DIR}/loader.hpp

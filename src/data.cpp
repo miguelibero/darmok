@@ -67,7 +67,7 @@ namespace darmok
         return !(*this == other);
     }
 
-    std::string DataView::to_string() const noexcept
+    std::string DataView::toString() const noexcept
     {
         return toHex();
     }
@@ -351,9 +351,9 @@ namespace darmok
         }
     }
 
-    std::string Data::to_string() const noexcept
+    std::string Data::toString() const noexcept
     {
-        return view().to_string();
+        return view().toString();
     }
 
     Data Data::fromHex(std::string_view hex)

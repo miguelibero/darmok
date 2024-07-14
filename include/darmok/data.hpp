@@ -61,7 +61,7 @@ namespace darmok
         [[nodiscard]] const bgfx::Memory* copyMem(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] std::string toHex(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] std::string toHeader(std::string_view varName, size_t offset = 0, size_t size = -1) const noexcept;
-        [[nodiscard]] std::string to_string() const noexcept;
+        [[nodiscard]] std::string toString() const noexcept;
 
         template<typename T>
         [[nodiscard]] static DataView fromArray(const T& arr) noexcept
@@ -131,7 +131,7 @@ namespace darmok
         void resize(size_t size) noexcept;
         void fill(const DataView& data) noexcept;
 
-        [[nodiscard]] std::string to_string() const noexcept;
+        [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] static Data fromHex(std::string_view hex);
         [[nodiscard]] static Data fromFile(const std::string& path);
 

@@ -90,7 +90,7 @@ namespace darmok
 
     void save(cereal::XMLOutputArchive& archive, const DataView& data)
     {
-        archive(data.view().to_string());
+        archive(data.view().toString());
     }
 
     void save(cereal::XMLOutputArchive& archive, const Data& data)
@@ -100,7 +100,7 @@ namespace darmok
 
     void save(cereal::JSONOutputArchive& archive, const DataView& data)
     {
-        archive(data.view().to_string());
+        archive(data.view().toString());
     }
 
     void save(cereal::JSONOutputArchive& archive, const Data& data)
