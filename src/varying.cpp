@@ -10,7 +10,6 @@
 #include <cereal/archives/xml.hpp>
 #include <cereal/archives/binary.hpp>
 
-
 namespace darmok
 {
 	size_t AttribUtils::getDisabledGroups(const AttribDefines& defines, AttribGroups& disabledGroups) noexcept
@@ -691,15 +690,7 @@ namespace darmok
 		layout.begin();
 		for (auto& attr : attributes)
 		{
-			auto enabled = true;
-			for (auto& group : disabledGroups)
-			{
-				if (attr.inGroup(group))
-				{
-					enabled = false;
-				}
-			}
-			if (!enabled)
+			if (attr.inGroups(disabledGroups))
 			{
 				continue;
 			}

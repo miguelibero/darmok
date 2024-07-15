@@ -5,7 +5,6 @@
 #include <darmok/window.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/text.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>

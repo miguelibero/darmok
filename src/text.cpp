@@ -422,7 +422,7 @@ namespace darmok
 
 	void TextureAtlasFontLoader::init(App& app)
 	{
-		_program = app.getAssets().getProgramLoader()("gui");
+		_program = std::make_unique<Program>(StandardProgramType::Gui);
 	}
 
 	void TextureAtlasFontLoader::shutdown()

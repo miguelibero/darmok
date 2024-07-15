@@ -119,7 +119,7 @@ set(CORE_SOURCES
   ${SRC_DIR}/vertex.cpp
   ${SRC_DIR}/varying.cpp
   ${SRC_DIR}/viewport.cpp
-  ${SRC_DIR}/program.cpp
+  ${SRC_DIR}/program_core.cpp
   ${SRC_DIR}/asset_core.cpp
   ${SRC_DIR}/render_graph.cpp
 )
@@ -148,7 +148,7 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/varying.hpp
   ${INCLUDE_DIR}/collection.hpp
   ${INCLUDE_DIR}/viewport.hpp
-  ${INCLUDE_DIR}/program.hpp
+  ${INCLUDE_DIR}/program_core.hpp
   ${INCLUDE_DIR}/asset_core.hpp
   ${INCLUDE_DIR}/loader.hpp
   ${INCLUDE_DIR}/render_graph.hpp
@@ -167,6 +167,7 @@ set(SOURCES
   ${SRC_DIR}/material.cpp
   ${SRC_DIR}/model.cpp
   ${SRC_DIR}/anim.cpp
+  ${SRC_DIR}/program.cpp
 
   ${SRC_DIR}/transform.cpp
   ${SRC_DIR}/camera.cpp
@@ -193,6 +194,7 @@ set(HEADERS
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/material_fwd.hpp
   ${INCLUDE_DIR}/material.hpp
+  ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/model_fwd.hpp
   ${INCLUDE_DIR}/model.hpp
 

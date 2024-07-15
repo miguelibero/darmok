@@ -45,6 +45,12 @@ namespace darmok
 		, _mainHandle{ bgfx::kInvalidHandle }
 		, _program(program)
 	{
+		if (_program == nullptr)
+		{
+			_program = std::make_shared<Program>(StandardProgramType::Unlit);
+			setColor(ColorType::Diffuse, Colors::magenta());
+		}
+
 		if (diffuseTexture != nullptr)
 		{
 			setTexture(MaterialTextureType::Diffuse, diffuseTexture);
@@ -140,7 +146,7 @@ namespace darmok
 		return *this;
 	}
 
-	std::shared_ptr<Texture> Material::getTexture(MaterialTextureType type) const noexcept
+	std::shared_ptr<Texture> Material::getTexture(TextureType type) const noexcept
 	{
 		auto itr = _textures.find(type);
 		if (itr == _textures.end())
@@ -150,13 +156,13 @@ namespace darmok
 		return itr->second;
 	}
 
-	Material& Material::setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept
+	Material& Material::setTexture(TextureType type, const std::shared_ptr<Texture>& texture) noexcept
 	{
 		_textures[type] = texture;
 		return *this;
 	}
 
-	std::optional<Color> Material::getColor(MaterialColorType type) const noexcept
+	std::optional<Color> Material::getColor(ColorType type) const noexcept
 	{
 		auto itr = _colors.find(type);
 		if (itr == _colors.end())
@@ -166,7 +172,7 @@ namespace darmok
 		return itr->second;
 	}
 
-	Material& Material::setColor(MaterialColorType type, const std::optional<Color>& color) noexcept
+	Material& Material::setColor(ColorType type, const std::optional<Color>& color) noexcept
 	{
 		if (color)
 		{
@@ -179,12 +185,12 @@ namespace darmok
 		return *this;
 	}
 
-	MaterialPrimitiveType Material::getPrimitiveType() const noexcept
+	Material::PrimitiveType Material::getPrimitiveType() const noexcept
 	{
 		return _primitive;
 	}
 
-	Material& Material::setPrimitiveType(MaterialPrimitiveType type) noexcept
+	Material& Material::setPrimitiveType(PrimitiveType type) noexcept
 	{
 		_primitive = type;
 		return *this;

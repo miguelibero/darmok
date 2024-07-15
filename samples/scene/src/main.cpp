@@ -12,7 +12,6 @@
 #include <darmok/camera.hpp>
 #include <darmok/window.hpp>
 #include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/material.hpp>
 #include <darmok/render.hpp>
 #include <darmok/render_forward.hpp>
@@ -110,7 +109,7 @@ namespace
 			scene.addSceneComponent<FrameAnimationUpdater>();
 			auto& registry = scene.getRegistry();
 
-			_prog = getAssets().getStandardProgramLoader()(StandardProgramType::Unlit);
+			_prog = std::make_shared<Program>(StandardProgramType::Unlit);
 
 			auto cam2d = registry.create();
 			registry.emplace<Camera>(cam2d)

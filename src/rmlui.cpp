@@ -275,7 +275,8 @@ namespace darmok
     {
         _alloc = app.getAssets().getAllocator();
 
-        auto progDef = ProgramDefinition::fromStaticMem(rmlui_program);
+        ProgramDefinition progDef;
+        progDef.loadStaticMem(rmlui_program);
         _program = std::make_unique<Program>(progDef);
         _layout = _program->getVertexLayout();
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);

@@ -23,6 +23,10 @@ namespace darmok
     class DARMOK_EXPORT Material final
     {
     public:
+        using ColorType = MaterialColorType;
+        using TextureType = MaterialTextureType;
+        using PrimitiveType = MaterialPrimitiveType;
+
         Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
         Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
         ~Material();
@@ -37,14 +41,14 @@ namespace darmok
         std::shared_ptr<Program> getProgram() const noexcept;
         Material& setProgram(const std::shared_ptr<Program>& prog) noexcept;
 
-        std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
-        Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
+        std::shared_ptr<Texture> getTexture(TextureType type) const noexcept;
+        Material& setTexture(TextureType type, const std::shared_ptr<Texture>& texture) noexcept;
         
-        std::optional<Color> getColor(MaterialColorType type) const noexcept;
-        Material& setColor(MaterialColorType type, const std::optional<Color>& color) noexcept;
+        std::optional<Color> getColor(ColorType type) const noexcept;
+        Material& setColor(ColorType type, const std::optional<Color>& color) noexcept;
         
-        MaterialPrimitiveType getPrimitiveType() const noexcept;
-        Material& setPrimitiveType(MaterialPrimitiveType type) noexcept;
+        PrimitiveType getPrimitiveType() const noexcept;
+        Material& setPrimitiveType(PrimitiveType type) noexcept;
         
         uint8_t getShininess() const noexcept;
         Material& setShininess(uint8_t v) noexcept;
@@ -57,15 +61,15 @@ namespace darmok
     private:
         std::shared_ptr<Program> _program;
         ProgramDefines _programDefines;
-        std::unordered_map<MaterialTextureType, bgfx::UniformHandle> _textureHandles;
-        std::unordered_map<MaterialColorType, bgfx::UniformHandle> _colorHandles;
+        std::unordered_map<TextureType, bgfx::UniformHandle> _textureHandles;
+        std::unordered_map<ColorType, bgfx::UniformHandle> _colorHandles;
         bgfx::UniformHandle _mainHandle;
 
-        std::unordered_map<MaterialTextureType, std::shared_ptr<Texture>> _textures;
-        std::unordered_map<MaterialColorType, Color> _colors;
+        std::unordered_map<TextureType, std::shared_ptr<Texture>> _textures;
+        std::unordered_map<ColorType, Color> _colors;
 
         glm::vec4 _mainData;
-        MaterialPrimitiveType _primitive;
+        PrimitiveType _primitive;
 
         void createHandles() noexcept;
         void destroyHandles() noexcept;

@@ -650,7 +650,8 @@ namespace darmok
                 auto progData = _dataLoader(config.program);
                 if (!progData.empty())
                 {
-                    auto def = ProgramDefinition::fromMem(progData);
+                    ProgramDefinition def;
+                    def.load(progData);
                     config.vertexLayout = def.vertexLayout;
                 }
             }

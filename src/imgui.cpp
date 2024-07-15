@@ -146,7 +146,7 @@ namespace darmok
 		const ImVec2 clipPos = drawData->DisplayPos;       // (0,0) unless using multi-viewports
 		const ImVec2 clipScale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
-		auto& layout = _program->getVertexLayout(); // both programs have the same layout
+		auto& layout = _program->getVertexLayout();
 		bgfx::Encoder* encoder = bgfx::begin();
 
 		// Render command lists
@@ -162,7 +162,7 @@ namespace darmok
 			std::optional<TransientMesh> mesh;
 			try
 			{
-				mesh.emplace(layout.getBgfx(), vertData, idxData);
+				mesh.emplace(layout, vertData, idxData);
 			}
 			catch (...)
 			{
@@ -256,7 +256,8 @@ namespace darmok
 		_app = app;
 		ImGui::SetAllocatorFunctions(memAlloc, memFree, &app.getAssets().getAllocator());
 
-		auto progDef = ProgramDefinition::fromStaticMem(imgui_program);
+		ProgramDefinition progDef;
+		progDef.loadStaticMem(imgui_program);
 		_program = std::make_unique<Program>(progDef);
 		_lodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
 		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);

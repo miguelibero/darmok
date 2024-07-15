@@ -53,8 +53,7 @@ namespace darmok
 		auto err = FT_Init_FreeType(&_library);
 		FreetypeUtils::checkError(err);
 
-		auto prog = app.getAssets().getProgramLoader()("gui");
-		_material.emplace(prog);
+		_material.emplace(std::make_shared<Program>(StandardProgramType::Gui));
 	}
 
 	void FreetypeFontLoaderImpl::shutdown()
