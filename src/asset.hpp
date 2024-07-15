@@ -5,7 +5,7 @@
 #include <darmok/image.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
-#include <darmok/program.hpp>
+#include <darmok/program_core.hpp>
 #include <darmok/data.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/text.hpp>

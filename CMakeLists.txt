@@ -194,6 +194,7 @@ set(HEADERS
   ${INCLUDE_DIR}/anim.hpp
   ${INCLUDE_DIR}/material_fwd.hpp
   ${INCLUDE_DIR}/material.hpp
+  ${INCLUDE_DIR}/program_fwd.hpp
   ${INCLUDE_DIR}/program.hpp
   ${INCLUDE_DIR}/model_fwd.hpp
   ${INCLUDE_DIR}/model.hpp

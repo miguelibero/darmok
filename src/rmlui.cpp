@@ -8,6 +8,7 @@
 #include <darmok/transform.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/texture_atlas.hpp>
+#include <darmok/program_core.hpp>
 #include <darmok/math.hpp>
 #include "rmlui.hpp"
 #include <darmok/glm.hpp>
@@ -224,8 +225,6 @@ namespace darmok
         auto trans = glm::translate(glm::mat4(1), glm::vec3(translation.x, translation.y, 0.0f));
         _encoder->setTransform(glm::value_ptr(trans));
 
-
-        ProgramDefines defines;
         if (texture)
         {
             auto itr = _textures.find(texture);
@@ -234,14 +233,8 @@ namespace darmok
                 _encoder->setTexture(0, _textureUniform, itr->second->getHandle());
             }
         }
-        else
-        {
-            defines.insert("TEXTURE_DISABLE");
-        }
-        bgfx::ProgramHandle progHandle = _program->getHandle(defines);
-
         _encoder->setState(_state);
-        _encoder->submit(_viewId.value(), progHandle);
+        _encoder->submit(_viewId.value(), _program->getHandle());
         _rendered = true;
     }
 

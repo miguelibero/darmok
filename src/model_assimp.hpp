@@ -154,7 +154,7 @@ namespace darmok
     private:
         bx::DefaultAllocator _allocator;
         bx::FileReader _fileReader;
-        mutable FileDataLoader _dataLoader;
+        FileDataLoader _dataLoader;
         DataImageLoader _imgLoader;
         AssimpSceneLoader _assimpLoader;
         std::optional<Config> _currentConfig;

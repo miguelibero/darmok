@@ -257,7 +257,14 @@ namespace darmok
             return itr->second;
         }
         std::shared_ptr<Program> prog;
-        prog = _config.assets.getProgramLoader()(modelMat->program);
+        if (!modelMat->program.empty())
+        {
+            prog = _config.assets.getProgramLoader()(modelMat->program);
+        }
+        else
+        {
+            prog = std::make_shared<Program>(modelMat->standardProgram);
+        }
         auto mat = std::make_shared<Material>(prog);
         for (auto& elm : modelMat->textures)
         {

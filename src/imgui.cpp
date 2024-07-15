@@ -7,6 +7,7 @@
 #include <darmok/window.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/math.hpp>
+#include <darmok/program_core.hpp>
 #include <bx/allocator.h>
 #include "generated/imgui/imgui.program.h"
 

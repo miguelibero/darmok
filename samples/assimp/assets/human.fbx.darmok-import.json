@@ -1,6 +1,8 @@
 {
     "model": {
-        "outputPath": "human.dml"
-    }
+        "outputPath": "human.dml",
+        "program": "forward"
+    },
+    "copy": {}
 }
 

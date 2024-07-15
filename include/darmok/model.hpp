@@ -17,6 +17,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/program_fwd.hpp>
 
 namespace darmok
 {
@@ -83,6 +84,7 @@ namespace darmok
     struct DARMOK_EXPORT ModelMaterial final
     {
         std::string program;
+        StandardProgramType standardProgram;
         MaterialPrimitiveType primitiveType;
         std::unordered_map<MaterialTextureType, std::vector<ModelTexture>> textures;
         std::unordered_map<MaterialColorType, Color> colors;
@@ -92,6 +94,7 @@ namespace darmok
         {
             archive(
                 program,
+                standardProgram,
                 primitiveType,
                 textures,
                 colors

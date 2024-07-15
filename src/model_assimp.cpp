@@ -8,7 +8,7 @@
 #include <darmok/image.hpp>
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
-#include <darmok/program.hpp>
+#include <darmok/program_core.hpp>
 #include <darmok/string.hpp>
 #include <darmok/math.hpp>
 
@@ -72,6 +72,26 @@ namespace darmok
                 convertColorComp(c.g),
                 convertColorComp(c.b)
             };
+        }
+
+        static bool fixModelLoadConfig(IDataLoader& dataLoader, AssimpModelLoadConfig& config)
+        {
+            if (config.vertexLayout.getStride() > 0)
+            {
+                return false;
+            }
+            if (!config.program.empty())
+            {
+                ProgramDefinition def;
+                def.load(dataLoader(config.program));
+                config.vertexLayout = def.vertexLayout;
+            }
+            if (config.vertexLayout.getStride() == 0)
+            {
+                auto def = Program::getStandardDefinition(config.standardProgram);
+                config.vertexLayout = def.vertexLayout;
+            }
+            return true;
         }
     };
 
@@ -154,6 +174,7 @@ namespace darmok
     void AssimpModelLoaderImpl::setConfig(const Config& config) noexcept
     {
         _config = config;
+        AssimpUtils::fixModelLoadConfig(_dataLoader, _config);
     }
 
     bool AssimpModelLoaderImpl::supports(std::string_view name) const noexcept
@@ -372,6 +393,7 @@ namespace darmok
     void AssimpModelConverter::update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept
     {
         modelMat.program = _config.program;
+        modelMat.standardProgram = _config.standardProgram;
         for (auto& elm : _materialTextures)
         {
             auto size = assimpMat.GetTextureCount(elm.first);
@@ -635,26 +657,22 @@ namespace darmok
         {
             config.vertexLayout = loadVertexLayout(json[_vertexLayoutJsonKey]);
         }
+        if (json.contains(_programJsonKey))
+        {
+            std::string val = json[_programJsonKey];
+            auto standard = Program::getStandardType(val);
+            if (standard)
+            {
+                config.standardProgram = standard.value();
+            }
+            else
+            {
+                config.program = val;
+            }
+        }
         if (json.contains(_embedTexturesJsonKey))
         {
             config.embedTextures = json[_embedTexturesJsonKey];
-        }
-        if (json.contains(_programJsonKey))
-        {
-            config.program = json[_programJsonKey];
-        }
-        if (config.vertexLayout.empty())
-        {
-            if (!config.program.empty())
-            {
-                auto progData = _dataLoader(config.program);
-                if (!progData.empty())
-                {
-                    ProgramDefinition def;
-                    def.load(progData);
-                    config.vertexLayout = def.vertexLayout;
-                }
-            }
         }
     }
 
@@ -702,6 +720,7 @@ namespace darmok
         }
         auto& config = _currentConfig.emplace();
         loadConfig(input.config, input.basePath, config);
+        AssimpUtils::fixModelLoadConfig(_dataLoader, _currentConfig->loadConfig);
         _currentScene = _assimpLoader.loadFromFile(input.path);
         return _currentScene != nullptr;
     }

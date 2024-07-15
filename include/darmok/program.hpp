@@ -5,25 +5,24 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <optional>
 #include <darmok/export.h>
 #include <darmok/asset_core.hpp>
-#include <darmok/program_core.hpp>
+#include <darmok/program_fwd.hpp>
 #include <darmok/varying.hpp>
 #include <darmok/data.hpp>
+#include <darmok/collection.hpp>
 
 namespace darmok
 {
-	enum class StandardProgramType
-	{
-		Gui,
-		Unlit,
-		Forward
-	};
-
+	struct ProgramDefinition;
+	using ProgramDefines = std::unordered_set<std::string>;
+	
 	class DARMOK_EXPORT Program final
 	{
 	public:
 		using Defines = ProgramDefines;
+		using DefinesDataMap = std::unordered_map<Defines, Data>;
 		using ShaderHandles = std::unordered_map<Defines, bgfx::ShaderHandle>;
 		using Handles = std::unordered_map<Defines, bgfx::ProgramHandle>;
 		using Definition = ProgramDefinition;
@@ -37,9 +36,12 @@ namespace darmok
 
 		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
 		[[nodiscard]] const VertexLayout& getVertexLayout() const noexcept;
+
+		static std::optional<StandardProgramType> getStandardType(std::string_view val) noexcept;
+		static Definition getStandardDefinition(StandardProgramType type) noexcept;
+
 	private:
-		void load(const Definition& definition);
-		ShaderHandles createShaders(const ProgramProfileDefinition::Map& defMap, const std::string& name);
+		ShaderHandles createShaders(const DefinesDataMap& defMap, const std::string& name);
 
 		ShaderHandles _vertexHandles;
 		ShaderHandles _fragmentHandles;

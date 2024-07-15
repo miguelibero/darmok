@@ -10,7 +10,6 @@
 #include <darmok/light.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/render_forward.hpp>
 
 namespace
@@ -45,7 +44,7 @@ namespace
 
 			auto scene = addComponent<SceneAppComponent>().getScene();
 			getAssets().getAssimpModelLoader().setConfig({
-				.standardProgram = StandardProgramType::ForwardPhong
+				.standardProgram = StandardProgramType::Forward
 			});
 			auto model = getAssets().getModelLoader()("human.dml");
 

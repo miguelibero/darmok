@@ -4,7 +4,7 @@
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/stream.hpp>
-#include <darmok/program.hpp>
+#include <darmok/program_core.hpp>
 #include <bx/platform.h>
 #include <bx/commandline.h>
 #include <filesystem>

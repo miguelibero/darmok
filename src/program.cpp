@@ -7,7 +7,7 @@
 
 namespace darmok
 {    
-    Program::ShaderHandles Program::createShaders(const ProgramProfileDefinition::Map& defMap, const std::string& name)
+    Program::ShaderHandles Program::createShaders(const DefinesDataMap& defMap, const std::string& name)
     {
         ShaderHandles handles;
         for (auto& [defines, data] : defMap)
@@ -24,7 +24,25 @@ namespace darmok
         return handles;
     }
 
-    Program::Program(StandardProgramType type)
+    std::optional<StandardProgramType> Program::getStandardType(std::string_view val) noexcept
+    {
+        auto lower = StringUtils::toLower(val);
+        if (lower == "gui")
+        {
+            return StandardProgramType::Gui;
+        }
+        if (lower == "unlit")
+        {
+            return StandardProgramType::Unlit;
+        }
+        if (lower == "forward")
+        {
+            return StandardProgramType::Forward;
+        }
+        return std::nullopt;
+    }
+
+    Program::Definition Program::getStandardDefinition(StandardProgramType type) noexcept
     {
         Definition def;
         switch (type)
@@ -39,17 +57,17 @@ namespace darmok
             def.loadStaticMem(forward_program);
             break;
         }
-        load(def);
+        return def;
+    }
+
+    Program::Program(StandardProgramType type)
+        : Program(getStandardDefinition(type))
+    {
     }
 
 	Program::Program(const Definition& def)
+        : _vertexLayout(def.vertexLayout)
 	{
-        load(def);
-	}
-
-    void Program::load(const Definition& def)
-    {
-        _vertexLayout = def.vertexLayout;
         auto& profile = def.getCurrentProfile();
         _vertexHandles = createShaders(profile.vertexShaders, def.name + " vertex ");
         _fragmentHandles = createShaders(profile.fragmentShaders, def.name + " fragment ");
