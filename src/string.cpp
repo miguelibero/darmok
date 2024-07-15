@@ -14,6 +14,15 @@ namespace darmok
 		return s;
 	}
 
+	std::string StringUtils::toUpper(std::string_view sv) noexcept
+	{
+		std::string s(sv);
+		std::transform(s.begin(), s.end(), s.begin(),
+			[](unsigned char c) { return std::toupper(c); }
+		);
+		return s;
+	}
+
 	bool StringUtils::startsWith(std::string_view sv, std::string_view start) noexcept
 	{
 		return sv.find(start) == 0;

@@ -3,7 +3,7 @@
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/vertex.hpp>
-#include <darmok/vertex_layout.hpp>
+#include <darmok/varying.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
@@ -119,7 +119,7 @@ namespace darmok
         }
         if (json.contains("vertexLayout"))
         {
-            VertexLayoutUtils::read(json["vertexLayout"], vertexLayout);
+            vertexLayout.read(json["vertexLayout"]);
         }
         if (json.contains("profiles"))
         {
@@ -136,7 +136,7 @@ namespace darmok
         {
             json["name"] = name;
         }
-        VertexLayoutUtils::write(json["vertexLayout"], vertexLayout);
+        vertexLayout.write(json["vertexLayout"]);
         nlohmann::json profilesJson;
         for (auto& [name, profile] : profiles)
         {
@@ -163,7 +163,7 @@ namespace darmok
     }
 
 	Program::Program(const Definition& def)
-        : _layout(def.vertexLayout)
+        : _vertexLayout(def.vertexLayout)
 	{
         auto& profile = def.getCurrentProfile();
         _vertexHandles = createShaders(profile.vertexShaders, def.name + " vertex ");
@@ -173,16 +173,16 @@ namespace darmok
         {
             for (auto& [fragDefines, fragHandle] : _fragmentHandles)
             {
-                auto defines = vertDefines;
+                Defines defines = vertDefines;
                 defines.insert(fragDefines.begin(), fragDefines.end());
                 _handles[defines] = bgfx::createProgram(vertHandle, fragHandle);
             }
         }
 	}
 
-    Program::Program(const Handles& handles, const bgfx::VertexLayout& layout) noexcept
+    Program::Program(const Handles& handles, const VertexLayout& layout) noexcept
 		: _handles(handles)
-		, _layout(layout)
+		, _vertexLayout(layout)
 	{
 	}
 
@@ -221,9 +221,9 @@ namespace darmok
         return { bgfx::kInvalidHandle };
 	}
 
-	const bgfx::VertexLayout& Program::getVertexLayout() const noexcept
+	const VertexLayout& Program::getVertexLayout() const noexcept
 	{
-		return _layout;
+		return _vertexLayout;
 	}
 
 	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader) noexcept
@@ -341,6 +341,14 @@ namespace darmok
         return *this;
     }
 
+    ShaderCompiler& ShaderCompiler::setDefines(const std::filesystem::path& shaderPath) noexcept
+    {
+        std::ifstream in(shaderPath);
+        _defines.clear();
+        getDefines(in, _defines);
+        return *this;
+    }
+
     std::string ShaderCompiler::fixPathArgument(const fs::path& path) noexcept
     {
         auto str = fs::absolute(path).string();
@@ -439,7 +447,7 @@ namespace darmok
         return count;
     }
 
-    const std::regex ShaderCompiler::_ifdefRegex = std::regex("#if <([^>]+)>");
+    const std::regex ShaderCompiler::_ifdefRegex = std::regex("#if ([^\\s]+)");
 
     size_t ShaderCompiler::getDefines(std::istream& in, Defines& defines) noexcept
     {
@@ -540,7 +548,7 @@ namespace darmok
         {
             fragmentShader = basePath / json["fragmentShader"].get<std::string>();
         }
-        attributes.read(json);
+        varying.read(json);
     }
 
     void ProgramImportConfig::load(const AssetTypeImporterInput& input)
@@ -586,6 +594,11 @@ namespace darmok
         _includes.push_back(path);
     }
 
+    void ProgramImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    {
+        _compiler.setLogOutput(log);
+    }
+
     void ProgramImporterImpl::addIncludes(const nlohmann::json& json, const fs::path& basePath) noexcept
     {
         for (auto& elm : json)
@@ -600,7 +613,11 @@ namespace darmok
     {
         if (input.config.is_null())
         {
-            return false;
+            auto ext = StringUtils::getFileExt(input.path.filename().string());
+            if (ext != ".program.json")
+            {
+                return false;
+            }
         }
 
         _compiler.reset();
@@ -615,17 +632,29 @@ namespace darmok
         }
         _compiler.addIncludePath(input.path.parent_path());
 
+        _config.emplace().load(input);
+
         _outputPath = input.getRelativePath().parent_path();
         if (input.config.contains("outputPath"))
         {
             _outputPath /= input.config["outputPath"].get<fs::path>();
+        }
+        else if(input.dirConfig.contains("outputPath"))
+        {
+            std::string v = input.dirConfig["outputPath"];
+            auto name = _config->name;
+            if (name.empty())
+            {
+                name = StringUtils::getFileStem(input.getRelativePath().string());
+            }
+            StringUtils::replace(v, "*", name);
+            _outputPath /= v;
         }
         else
         {
             _outputPath /= input.path.stem().string() + ".bin";
         }
 
-        _config.emplace().load(input);
 
         return true;
     }
@@ -665,29 +694,41 @@ namespace darmok
         ProgramDefinition def
         {
             .name = config.name,
-            .vertexLayout = config.attributes.getVertexLayout(),
+            .vertexLayout = config.varying.vertex,
         };
-        auto tmpPath = getTempPath();
+        auto ext = _outputPath.extension().string();
+        auto outputPath = getTempPath("-darmok.program" + ext);
+        auto varyingDefPath = getTempPath("-darmok.varyingdef");
+        _compiler.setVaryingDef(varyingDefPath);
 
+        _compiler.setDefines(config.vertexShader);
         _compiler.setShaderType(ShaderType::Vertex);
-        for (auto output : _compiler.getOutputs())
+        for (ShaderCompilerOutput output : _compiler.getOutputs())
         {
-            output.path = tmpPath;
+            {
+                std::ofstream out(varyingDefPath);
+                config.varying.writeBgfx(out, output.defines);
+            }
+            output.path = outputPath;
             _compiler(config.vertexShader, output);
-            auto data = Data::fromFile(tmpPath);
+            auto data = Data::fromFile(output.path);
             def.profiles[output.profile].vertexShaders[output.defines] = data;
         }
 
+        _compiler.setDefines(config.fragmentShader);
         _compiler.setShaderType(ShaderType::Fragment);
-        for (auto output : _compiler.getOutputs())
+        for (ShaderCompilerOutput output : _compiler.getOutputs())
         {
-            output.path = tmpPath;
+            {
+                std::ofstream out(varyingDefPath);
+                config.varying.writeBgfx(out, output.defines);
+            }
+            output.path = outputPath;
             _compiler(config.fragmentShader, output);
-            auto data = Data::fromFile(tmpPath);
+            auto data = Data::fromFile(output.path);
             def.profiles[output.profile].fragmentShaders[output.defines] = data;
         }
 
-        auto ext = _outputPath.extension();
         if (ext == ".json")
         {
             auto json = nlohmann::ordered_json::object();
@@ -739,6 +780,11 @@ namespace darmok
     {
         _impl->addIncludePath(path);
         return *this;
+    }
+
+    void ProgramImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    {
+        _impl->setLogOutput(log);
     }
 
     bool ProgramImporter::startImport(const Input& input, bool dry)

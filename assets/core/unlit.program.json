@@ -1,5 +1,5 @@
 {
-    "vertexLayout": {
+    "vertexAttributes": {
         "position": { 
             "type": "float",
             "num": 3

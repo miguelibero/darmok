@@ -10,6 +10,7 @@ namespace darmok
     struct DARMOK_EXPORT StringUtils final
     {
         static [[nodiscard]] std::string toLower(std::string_view sv) noexcept;
+        static [[nodiscard]] std::string toUpper(std::string_view sv) noexcept;
         static [[nodiscard]] bool startsWith(std::string_view sv, std::string_view start) noexcept;
         static [[nodiscard]] bool endsWith(std::string_view sv, std::string_view end) noexcept;
         static [[nodiscard]] std::optional<int> getIntSuffix(std::string_view name, std::string_view prefix) noexcept;

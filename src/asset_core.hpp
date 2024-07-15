@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <regex>
 
-#include <darmok/vertex_layout.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/optional_ref.hpp>
 #include <nlohmann/json.hpp>

@@ -8,6 +8,7 @@
 #include <darmok/export.h>
 #include <darmok/asset_core.hpp>
 #include <darmok/collection.hpp>
+#include <darmok/varying.hpp>
 #include <darmok/data.hpp>
 #include <nlohmann/json.hpp>
 
@@ -39,7 +40,7 @@ namespace darmok
 
 		std::string name;
 		std::unordered_map<std::string, Profile> profiles;
-		bgfx::VertexLayout vertexLayout;
+		VertexLayout vertexLayout;
 
 		const Profile& getCurrentProfile() const;
 
@@ -64,7 +65,7 @@ namespace darmok
 		using Definition = ProgramDefinition;
 
 		Program(const Definition& definition);
-		Program(const Handles& handles, const bgfx::VertexLayout& layout) noexcept;
+		Program(const Handles& handles, const VertexLayout& layout) noexcept;
 		~Program() noexcept;
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
@@ -72,7 +73,7 @@ namespace darmok
 		static Program loadBasic(const std::string& name);
 
 		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
-		[[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
+		[[nodiscard]] const VertexLayout& getVertexLayout() const noexcept;
 	private:
 
 		ShaderHandles createShaders(const ProgramProfileDefinition::Map& defMap, const std::string& name);
@@ -80,7 +81,7 @@ namespace darmok
 		ShaderHandles _vertexHandles;
 		ShaderHandles _fragmentHandles;
 		Handles _handles;
-		bgfx::VertexLayout _layout;
+		VertexLayout _vertexLayout;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader
@@ -114,6 +115,7 @@ namespace darmok
 		ProgramImporter& setShadercPath(const std::filesystem::path& path) noexcept;
 		ProgramImporter& addIncludePath(const std::filesystem::path& path) noexcept;
 
+		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
 		bool startImport(const Input& input, bool dry = false) override;
 		Outputs getOutputs(const Input& input) override;
 		Dependencies getDependencies(const Input& input) override;

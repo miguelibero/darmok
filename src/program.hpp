@@ -1,7 +1,7 @@
 #pragma once
 
 #include <darmok/asset_core.hpp>
-#include <darmok/vertex_layout.hpp>
+#include <darmok/varying.hpp>
 #include <regex>
 #include <unordered_set>
 
@@ -40,6 +40,7 @@ namespace darmok
         ShaderCompiler& setShaderType(const std::string& type);
         ShaderCompiler& setLogOutput(OptionalRef<std::ostream> log) noexcept;
         ShaderCompiler& setDefines(const Defines& defines) noexcept;
+        ShaderCompiler& setDefines(const std::filesystem::path& shaderPath) noexcept;
 
         int operator()(const std::filesystem::path& input, const Output& output) const;
         size_t getDependencies(std::istream& in, Dependencies& deps) const noexcept;
@@ -72,7 +73,7 @@ namespace darmok
         std::string name;
         std::filesystem::path vertexShader;
         std::filesystem::path fragmentShader;
-        ProgramAttributes attributes;
+        VaryingDefinition varying;
 
         void load(const AssetTypeImporterInput& input);
     private:
@@ -88,6 +89,7 @@ namespace darmok
         ProgramImporterImpl(size_t bufferSize = 4096) noexcept;
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
+        void setLogOutput(OptionalRef<std::ostream> log) noexcept;
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
         Dependencies getDependencies(const Input& input);

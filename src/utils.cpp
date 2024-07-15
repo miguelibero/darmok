@@ -49,8 +49,10 @@ namespace darmok
         return result;
     }
 
-    std::filesystem::path getTempPath() noexcept
+    std::filesystem::path getTempPath(std::string_view suffix) noexcept
     {
-        return std::filesystem::temp_directory_path() / std::filesystem::path(std::tmpnam(nullptr));
+        std::string name = std::tmpnam(nullptr);
+        name += suffix;
+        return std::filesystem::temp_directory_path() / name;
     }
 }

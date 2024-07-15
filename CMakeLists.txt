@@ -78,34 +78,30 @@ find_package(bgfx CONFIG REQUIRED)
 
 include(darmokProcessAssets)
 
-set(SHADERS_TARGET darmok-shaders)
-set(SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/shaders)
-set(SHADERS
-  ${SHADERS_DIR}/darmok.include.sc
-  ${SHADERS_DIR}/darmok_phong_lighting.include.sc
-  ${SHADERS_DIR}/darmok_skinning.include.sc
-  ${SHADERS_DIR}/darmok-import.json
-  ${SHADERS_DIR}/forward.fragment.sc
-  ${SHADERS_DIR}/forward.varyingdef
-  ${SHADERS_DIR}/forward.vertex.sc
-  ${SHADERS_DIR}/forward.vlayout.json
-  ${SHADERS_DIR}/gui.fragment.sc
-  ${SHADERS_DIR}/gui.varyingdef
-  ${SHADERS_DIR}/gui.vertex.sc
-  ${SHADERS_DIR}/gui.vlayout.json
-  ${SHADERS_DIR}/unlit.fragment.sc
-  ${SHADERS_DIR}/unlit.varyingdef
-  ${SHADERS_DIR}/unlit.vertex.sc
-  ${SHADERS_DIR}/unlit.vlayout.json
+set(CORE_ASSETS_TARGET darmok-core-assets)
+set(CORE_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets/core)
+set(CORE_ASSETS
+  ${CORE_ASSETS_DIR}/darmok_phong_lighting.include.sc
+  ${CORE_ASSETS_DIR}/darmok_skinning.include.sc
+  ${CORE_ASSETS_DIR}/darmok-import.json
+  ${CORE_ASSETS_DIR}/forward.fragment.sc
+  ${CORE_ASSETS_DIR}/forward.vertex.sc
+  ${CORE_ASSETS_DIR}/forward.program.json
+  ${CORE_ASSETS_DIR}/gui.fragment.sc
+  ${CORE_ASSETS_DIR}/gui.vertex.sc
+  ${CORE_ASSETS_DIR}/gui.program.json
+  ${CORE_ASSETS_DIR}/unlit.fragment.sc
+  ${CORE_ASSETS_DIR}/unlit.vertex.sc
+  ${CORE_ASSETS_DIR}/unlit.program.json
 )
 darmok_process_assets(
-  TARGET ${SHADERS_TARGET} CORE
-  INPUT ${SHADERS_DIR}
-  OUTPUT include/private/generated/shaders
-  ASSETS ${SHADERS}
+  TARGET ${CORE_ASSETS_TARGET} CORE
+  INPUT ${CORE_ASSETS_DIR}
+  OUTPUT include/private/generated
+  ASSETS ${CORE_ASSETS}
 )
-set_target_properties(${SHADERS_TARGET} PROPERTIES FOLDER "darmok")
-set(ASSET_TARGETS ${SHADERS_TARGET})
+set_target_properties(${CORE_ASSETS_TARGET} PROPERTIES FOLDER "darmok")
+set(ASSET_TARGETS ${CORE_ASSETS_TARGET})
 
 set(CORE_SOURCES
   ${SRC_DIR}/string.cpp
@@ -121,7 +117,7 @@ set(CORE_SOURCES
   ${SRC_DIR}/texture.cpp
   ${SRC_DIR}/mesh.cpp
   ${SRC_DIR}/vertex.cpp
-  ${SRC_DIR}/vertex_layout.cpp
+  ${SRC_DIR}/varying.cpp
   ${SRC_DIR}/viewport.cpp
   ${SRC_DIR}/program.cpp
   ${SRC_DIR}/asset_core.cpp
@@ -149,7 +145,7 @@ set(CORE_HEADERS
   ${INCLUDE_DIR}/texture_fwd.hpp
   ${INCLUDE_DIR}/texture.hpp
   ${INCLUDE_DIR}/vertex.hpp
-  ${INCLUDE_DIR}/vertex_layout.hpp
+  ${INCLUDE_DIR}/varying.hpp
   ${INCLUDE_DIR}/collection.hpp
   ${INCLUDE_DIR}/viewport.hpp
   ${INCLUDE_DIR}/program.hpp
@@ -245,25 +241,22 @@ if(DARMOK_BUILD_IMGUI)
   list(APPEND SOURCES ${SRC_DIR}/imgui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/imgui.hpp)
 
-  set(IMGUI_SHADERS_TARGET darmok-imgui-shaders)
-  set(IMGUI_SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/imgui/shaders)
-  set(IMGUI_SHADERS
-    ${IMGUI_SHADERS_DIR}/basic.fragment.sc
-    ${IMGUI_SHADERS_DIR}/basic.varyingdef
-    ${IMGUI_SHADERS_DIR}/basic.vertex.sc
-    ${IMGUI_SHADERS_DIR}/darmok-import.json
-    ${IMGUI_SHADERS_DIR}/lod.fragment.sc
-    ${IMGUI_SHADERS_DIR}/lod.varyingdef
-    ${IMGUI_SHADERS_DIR}/lod.vertex.sc
+  set(IMGUI_ASSETS_TARGET darmok-imgui-assets)
+  set(IMGUI_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets/imgui)
+  set(IMGUI_ASSETS
+    ${IMGUI_ASSETS_DIR}/imgui.fragment.sc
+    ${IMGUI_ASSETS_DIR}/imgui.vertex.sc
+    ${IMGUI_ASSETS_DIR}/imgui.program.json
+    ${IMGUI_ASSETS_DIR}/darmok-import.json
   )
   darmok_process_assets(
-    TARGET ${IMGUI_SHADERS_TARGET} CORE
-    INPUT ${IMGUI_SHADERS_DIR}
-    OUTPUT include/private/generated/imgui/shaders
-    ASSETS ${IMGUI_SHADERS}
+    TARGET ${IMGUI_ASSETS_TARGET} CORE
+    INPUT ${IMGUI_ASSETS_DIR}
+    OUTPUT include/private/generated/imgui
+    ASSETS ${IMGUI_ASSETS}
   )
-  set_target_properties(${IMGUI_SHADERS_TARGET} PROPERTIES FOLDER "darmok")
-  list(APPEND ASSET_TARGETS ${IMGUI_SHADERS_TARGET})
+  set_target_properties(${IMGUI_ASSETS_TARGET} PROPERTIES FOLDER "darmok")
+  list(APPEND ASSET_TARGETS ${IMGUI_ASSETS_TARGET})
 endif()
 
 if(DARMOK_BUILD_RMLUI)
@@ -273,26 +266,22 @@ if(DARMOK_BUILD_RMLUI)
   if(DARMOK_BUILD_LUA)
     list(APPEND LUA_SOURCES ${SRC_DIR}/lua/rmlui.cpp)
   endif()
-  set(RMLUI_SHADERS_TARGET darmok-rmlui-shaders)
-  set(RMLUI_SHADERS_DIR ${PROJECT_SOURCE_DIR}/assets/rmlui/shaders)
-  set(RMLUI_SHADERS
-    ${RMLUI_SHADERS_DIR}/basic.fragment.sc
-    ${RMLUI_SHADERS_DIR}/basic.varyingdef
-    ${RMLUI_SHADERS_DIR}/basic.vertex.sc
-    ${RMLUI_SHADERS_DIR}/basic.vlayout.json
-    ${RMLUI_SHADERS_DIR}/darmok-import.json
-    ${RMLUI_SHADERS_DIR}/solid.fragment.sc
-    ${RMLUI_SHADERS_DIR}/solid.varyingdef
-    ${RMLUI_SHADERS_DIR}/solid.vertex.sc
+  set(RMLUI_ASSETS_TARGET darmok-rmlui-assets)
+  set(RMLUI_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets/rmlui)
+  set(RMLUI_ASSETS
+    ${RMLUI_ASSETS_DIR}/rmlui.fragment.sc
+    ${RMLUI_ASSETS_DIR}/rmlui.vertex.sc
+    ${RMLUI_ASSETS_DIR}/rmlui.program.json
+    ${RMLUI_ASSETS_DIR}/darmok-import.json
   )
   darmok_process_assets(
-    TARGET ${RMLUI_SHADERS_TARGET} CORE
-    INPUT ${RMLUI_SHADERS_DIR}
-    OUTPUT include/private/generated/rmlui/shaders
-    ASSETS ${RMLUI_SHADERS}
+    TARGET ${RMLUI_ASSETS_TARGET} CORE
+    INPUT ${RMLUI_ASSETS_DIR}
+    OUTPUT include/private/generated/rmlui
+    ASSETS ${RMLUI_ASSETS}
   )
-  set_target_properties(${RMLUI_SHADERS_TARGET} PROPERTIES FOLDER "darmok")
-  list(APPEND ASSET_TARGETS ${RMLUI_SHADERS_TARGET})
+  set_target_properties(${RMLUI_ASSETS_TARGET} PROPERTIES FOLDER "darmok")
+  list(APPEND ASSET_TARGETS ${RMLUI_ASSETS_TARGET})
 endif()
 
 if(DARMOK_BUILD_OZZ)

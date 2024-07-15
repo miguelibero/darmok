@@ -1,0 +1,18 @@
+{
+    "vertex": {
+        "position": { 
+            "type": "float",
+            "num": 2
+        },
+        "texCoord0": { 
+            "type": "float",
+            "num": 2
+        },
+        "color0": { 
+            "type": "uint8",
+            "num": 4,
+            "normalize": true
+        }
+    },
+    "fragment": ["texCoord0", "color0"]
+}

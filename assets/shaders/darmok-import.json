@@ -1,7 +1,0 @@
-{
-    "produceHeaders": false,
-    "headerIncludeDir": "generated/shaders",
-    "files": {
-        "unlit.program.json": "program"
-    }
-}

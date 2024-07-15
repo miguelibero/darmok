@@ -1,0 +1,4 @@
+{
+    "produceHeaders": true,
+    "headerIncludeDir": "generated"
+}

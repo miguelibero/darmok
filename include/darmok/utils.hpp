@@ -25,7 +25,7 @@ namespace darmok
 
     ExecResult exec(const std::vector<std::string>& args);
 
-    std::filesystem::path getTempPath() noexcept;
+    std::filesystem::path getTempPath(std::string_view suffix = "") noexcept;
 
     inline void hash_combine(std::size_t& seed) { }
 
