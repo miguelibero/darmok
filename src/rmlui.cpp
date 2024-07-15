@@ -13,11 +13,7 @@
 #include <darmok/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "generated/rmlui/shaders/basic.vertex.h"
-#include "generated/rmlui/shaders/basic.fragment.h"
-#include "generated/rmlui/shaders/solid.vertex.h"
-#include "generated/rmlui/shaders/solid.fragment.h"
-#include "generated/rmlui/shaders/basic.vlayout.h"
+#include "generated/rmlui/rmlui.program.h"
 
 namespace darmok
 {
@@ -228,8 +224,8 @@ namespace darmok
         auto trans = glm::translate(glm::mat4(1), glm::vec3(translation.x, translation.y, 0.0f));
         _encoder->setTransform(glm::value_ptr(trans));
 
-        bgfx::ProgramHandle progHandle = _program->getHandle();
 
+        ProgramDefines defines;
         if (texture)
         {
             auto itr = _textures.find(texture);
@@ -240,8 +236,9 @@ namespace darmok
         }
         else
         {
-            progHandle = _solidProgram->getHandle();
+            defines.insert("TEXTURE_DISABLE");
         }
+        bgfx::ProgramHandle progHandle = _program->getHandle(defines);
 
         _encoder->setState(_state);
         _encoder->submit(_viewId.value(), progHandle);
@@ -274,20 +271,12 @@ namespace darmok
         }
     }
 
-    const bgfx::EmbeddedShader RmluiRenderInterface::_embeddedShaders[] =
-    {
-        BGFX_EMBEDDED_SHADER(rmlui_basic_vertex),
-        BGFX_EMBEDDED_SHADER(rmlui_basic_fragment),
-        BGFX_EMBEDDED_SHADER(rmlui_solid_vertex),
-        BGFX_EMBEDDED_SHADER(rmlui_solid_fragment),
-        BGFX_EMBEDDED_SHADER_END()
-    };
-
     void RmluiRenderInterface::init(App& app)
     {
         _alloc = app.getAssets().getAllocator();
-        _program = std::make_unique<Program>("rmlui_basic", _embeddedShaders, DataView::fromArray(rmlui_basic_vlayout));
-        _solidProgram = std::make_unique<Program>("rmlui_solid", _embeddedShaders, DataView::fromArray(rmlui_basic_vlayout));
+
+        auto progDef = ProgramDefinition::fromStaticMem(rmlui_program);
+        _program = std::make_unique<Program>(progDef);
         _layout = _program->getVertexLayout();
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
         _scissorEnabled = false;

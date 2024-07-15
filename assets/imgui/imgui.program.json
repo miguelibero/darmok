@@ -14,5 +14,5 @@
             "num": 2
         }
     },
-    "fragment": ["texCoor0", "color0"]
+    "fragment": ["texCoord0", "color0"]
 }

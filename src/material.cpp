@@ -134,7 +134,7 @@ namespace darmok
 		return _program;
 	}
 
-	Material& Material::setProgram(const std::shared_ptr<Program>& prog) const noexcept
+	Material& Material::setProgram(const std::shared_ptr<Program>& prog) noexcept
 	{
 		_program = prog;
 		return *this;

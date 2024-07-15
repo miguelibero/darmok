@@ -17,6 +17,13 @@ namespace darmok
 	class DataView;
 	using ProgramDefines = std::unordered_set<std::string>;
 
+	enum class ProgramDefinitionFormat
+	{
+		Binary,
+		Json,
+		Xml
+	};
+
 	struct DARMOK_EXPORT ProgramProfileDefinition final
 	{
 		using Defines = ProgramDefines;
@@ -44,8 +51,23 @@ namespace darmok
 
 		const Profile& getCurrentProfile() const;
 
+		using Format = ProgramDefinitionFormat;
+
+		void read(const std::filesystem::path& path);
+		void write(const std::filesystem::path& path) const noexcept;
+		void read(std::istream& in, Format format = Format::Binary);
+		void write(std::ostream& out, Format format = Format::Binary) const noexcept;
 		void read(const nlohmann::ordered_json& json);
 		void write(nlohmann::ordered_json& json) const;
+		static Format getPathFormat(const std::filesystem::path& path) noexcept;
+
+		template<typename T>
+		static ProgramDefinition fromStaticMem(const T& mem)
+		{
+			return fromMem(DataView(mem, sizeof(mem)));
+		}
+
+		static ProgramDefinition fromMem(DataView data);
 
 		template<class Archive>
 		void serialize(Archive& archive)

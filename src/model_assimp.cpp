@@ -614,7 +614,6 @@ namespace darmok
     AssimpModelImporterImpl::AssimpModelImporterImpl()
         : _dataLoader(_fileReader, _allocator)
         , _imgLoader(_dataLoader, _allocator)
-        , _programVertexLayoutSuffix(".vlayout")
     {
     }
 
@@ -644,12 +643,16 @@ namespace darmok
         {
             config.program = json[_programJsonKey];
         }
-        if (config.vertexLayout.getStride() == 0)
+        if (config.vertexLayout.empty())
         {
             if (!config.program.empty())
             {
-                auto path = basePath / (config.program + _programVertexLayoutSuffix);
-                VertexLayoutUtils::readFile(path, config.vertexLayout);
+                auto progData = _dataLoader(config.program);
+                if (!progData.empty())
+                {
+                    auto def = ProgramDefinition::fromMem(progData);
+                    config.vertexLayout = def.vertexLayout;
+                }
             }
         }
     }
@@ -671,16 +674,17 @@ namespace darmok
         }
     }
 
-    bgfx::VertexLayout AssimpModelImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
+    VertexLayout AssimpModelImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
     {
-        bgfx::VertexLayout layout;
+        VertexLayout layout;
         if (json.is_string())
         {
-            std::string str = json;
-            VertexLayoutUtils::readFile(str, layout);
-            return layout;
+            layout.read(json.get<std::filesystem::path>());
         }
-        VertexLayoutUtils::readJson(json, layout);
+        else
+        {
+            layout.read(json);
+        }
         return layout;
     }
 
@@ -763,11 +767,6 @@ namespace darmok
     {
         static const std::string name("model");
         return name;
-    }
-
-    void AssimpModelImporterImpl::setProgramVertexLayoutSuffix(const std::string& suffix)
-    {
-        _programVertexLayoutSuffix = suffix;
     }
 
     AssimpModelImporter::AssimpModelImporter()

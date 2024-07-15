@@ -6,7 +6,7 @@ $input a_position, a_color0, a_indices, a_weight
 $output v_color0
 #endif
 
-#include <darmok.include.sc>
+#include <bgfx_shader.sh>
 
 #if SKINNING_ENABLED
 #include <darmok_skinning.include.sc>

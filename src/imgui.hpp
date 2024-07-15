@@ -2,10 +2,10 @@
 
 #include <darmok/input_fwd.hpp>
 #include <darmok/optional_ref.hpp>
-#include "embedded_shader.hpp"
 #include <imgui.h>
 #include <unordered_map>
 #include <memory>
+#include <bgfx/bgfx.h>
 
 namespace darmok
 {
@@ -32,13 +32,11 @@ namespace darmok
 		OptionalRef<App> _app;
 		ImGuiContext* _imgui;
 		bgfx::TextureHandle _texture;
-		std::unique_ptr<Program> _basicProgram;
-		std::unique_ptr<Program> _lodProgram;
+		std::unique_ptr<Program> _program;
 		bgfx::UniformHandle _lodEnabledUniform;
 		bgfx::UniformHandle _textureUniform;
 		bool _inputEnabled;
 
-		static const bgfx::EmbeddedShader _embeddedShaders[];
 		static const uint8_t _imguiAlphaBlendFlags;
 		using KeyboardMap = std::unordered_map<KeyboardKey, ImGuiKey>;
 		using GamepadMap = std::unordered_map<GamepadButton, ImGuiKey>;

@@ -8,19 +8,10 @@
 #include <darmok/mesh.hpp>
 #include <darmok/math.hpp>
 #include <bx/allocator.h>
-#include "generated/shaders/imgui.program.h"
+#include "generated/imgui/imgui.program.h"
 
 namespace darmok
 {
-	const bgfx::EmbeddedShader ImguiAppComponentImpl::_embeddedShaders[] =
-	{
-		BGFX_EMBEDDED_SHADER(imgui_basic_vertex),
-		BGFX_EMBEDDED_SHADER(imgui_basic_fragment),
-		BGFX_EMBEDDED_SHADER(imgui_lod_vertex),
-		BGFX_EMBEDDED_SHADER(imgui_lod_fragment),
-		BGFX_EMBEDDED_SHADER_END()
-	};
-
 	const uint8_t ImguiAppComponentImpl::_imguiAlphaBlendFlags = 0x01;
 
 	const ImguiAppComponentImpl::KeyboardMap& ImguiAppComponentImpl::getKeyboardMap() noexcept
@@ -155,7 +146,7 @@ namespace darmok
 		const ImVec2 clipPos = drawData->DisplayPos;       // (0,0) unless using multi-viewports
 		const ImVec2 clipScale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
-		auto& layout = _basicProgram->getVertexLayout(); // both programs have the same layout
+		auto& layout = _program->getVertexLayout(); // both programs have the same layout
 		bgfx::Encoder* encoder = bgfx::begin();
 
 		// Render command lists
@@ -171,7 +162,7 @@ namespace darmok
 			std::optional<TransientMesh> mesh;
 			try
 			{
-				mesh.emplace(layout, vertData, idxData);
+				mesh.emplace(layout.getBgfx(), vertData, idxData);
 			}
 			catch (...)
 			{
@@ -194,7 +185,7 @@ namespace darmok
 						;
 
 					bgfx::TextureHandle th = texture;
-					bgfx::ProgramHandle program = _basicProgram->getHandle();
+					bgfx::ProgramHandle program = _program->getHandle();
 
 					if (NULL != cmd->TextureId)
 					{
@@ -207,7 +198,7 @@ namespace darmok
 						auto mipEnabled = 0 != texture.s.mip;
 						if (mipEnabled)
 						{
-							program = _lodProgram->getHandle();
+							program = _program->getHandle({ "LOD_ENABLED" });
 							const float lodEnabled[4] = { float(texture.s.mip), mipEnabled ? 1.0F : 0.0F, 0.0F, 0.0F };
 							bgfx::setUniform(_lodEnabledUniform, lodEnabled);
 						}
@@ -265,8 +256,8 @@ namespace darmok
 		_app = app;
 		ImGui::SetAllocatorFunctions(memAlloc, memFree, &app.getAssets().getAllocator());
 
-		_basicProgram = std::make_unique<Program>("imgui_basic", _embeddedShaders, DataView::fromArray(gui_vlayout));
-		_lodProgram = std::make_unique<Program>("imgui_lod", _embeddedShaders, DataView::fromArray(gui_vlayout));
+		auto progDef = ProgramDefinition::fromStaticMem(imgui_program);
+		_program = std::make_unique<Program>(progDef);
 		_lodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
 		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 

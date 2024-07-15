@@ -4,10 +4,10 @@
 #include <darmok/model.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/varying.hpp>
 #include <memory>
 #include <string>
 #include <filesystem>
-#include <bgfx/bgfx.h>
 
 namespace bx
 {
@@ -18,7 +18,7 @@ namespace darmok
 {
     struct DARMOK_EXPORT AssimpModelLoadConfig final
     {
-        bgfx::VertexLayout vertexLayout;
+        VertexLayout vertexLayout;
         std::string program;
         bool embedTextures = true;
     };

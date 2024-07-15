@@ -1,7 +1,7 @@
 $input a_position, a_normal, a_color0, a_texcoord0, a_indices, a_weight
 $output v_position, v_normal, v_color0, v_texcoord0
 
-#include <darmok.include.sc>
+#include <bgfx_shader.sh>
 
 #if SKINNING_ENABLED
 #include <darmok_skinning.include.sc>

@@ -8,7 +8,6 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/data.hpp>
 #include <darmok/viewport.hpp>
-#include "embedded_shader.hpp"
 #include <unordered_map>
 #include <variant>
 #include <optional>
@@ -62,10 +61,8 @@ namespace darmok
 		Viewport _viewport;
 		OptionalRef<bgfx::Encoder> _encoder;
 		std::unique_ptr<Program> _program;
-		std::unique_ptr<Program> _solidProgram;
 		bgfx::VertexLayout _layout;
 		bgfx::UniformHandle _textureUniform;
-		static const bgfx::EmbeddedShader _embeddedShaders[];
 		glm::mat4 _transform;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;

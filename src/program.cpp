@@ -111,6 +111,71 @@ namespace darmok
         throw std::invalid_argument("no valid profile found");
     }
 
+    ProgramDefinition::Format ProgramDefinition::getPathFormat(const std::filesystem::path& path) noexcept
+    {
+        auto ext = path.extension();
+        if (ext == ".json")
+        {
+            return Format::Json;
+        }
+        if (ext == ".xml")
+        {
+            return Format::Xml;
+        }
+        return Format::Binary;
+    }
+
+    void ProgramDefinition::read(const std::filesystem::path& path)
+    {
+        std::ifstream in(path);
+        read(in, getPathFormat(path));
+    }
+
+    void ProgramDefinition::write(const std::filesystem::path& path) const noexcept
+    {
+        std::ofstream out(path);
+        write(out, getPathFormat(path));
+    }
+
+    void ProgramDefinition::read(std::istream& in, Format format)
+    {
+        if (format == Format::Json)
+        {
+            auto json = nlohmann::ordered_json::parse(in);
+            read(json);
+        }
+        else if (format == Format::Xml)
+        {
+            cereal::XMLInputArchive archive(in);
+            archive(*this);
+        }
+        else
+        {
+            cereal::BinaryInputArchive archive(in);
+            archive(*this);
+        }
+    }
+
+    void ProgramDefinition::write(std::ostream& out, Format format) const noexcept
+    {
+        if (format == Format::Json)
+        {
+            auto json = nlohmann::ordered_json::object();
+            write(json);
+            out << json.dump(2);
+        }
+        else if (format == Format::Xml)
+        {
+            cereal::XMLOutputArchive archive(out);
+            archive(*this);
+        }
+        else
+        {
+            cereal::BinaryOutputArchive archive(out);
+            archive(*this);
+        }
+    }
+
     void ProgramDefinition::read(const nlohmann::ordered_json& json)
     {
         if (json.contains("name"))
@@ -143,6 +208,13 @@ namespace darmok
             profile.write(profilesJson[name]);
         }
         json["profiles"] = profilesJson;
+    }
+
+    ProgramDefinition ProgramDefinition::fromMem(DataView data)
+    {
+        ProgramDefinition def;
+        DataInputStream::read(data, def);
+        return def;
     }
 
     Program::ShaderHandles Program::createShaders(const ProgramProfileDefinition::Map& defMap, const std::string& name)
@@ -642,7 +714,7 @@ namespace darmok
         else if(input.dirConfig.contains("outputPath"))
         {
             std::string v = input.dirConfig["outputPath"];
-            auto name = _config->name;
+            std::string name = _config->name;
             if (name.empty())
             {
                 name = StringUtils::getFileStem(input.getRelativePath().string());
@@ -728,23 +800,8 @@ namespace darmok
             auto data = Data::fromFile(output.path);
             def.profiles[output.profile].fragmentShaders[output.defines] = data;
         }
-
-        if (ext == ".json")
-        {
-            auto json = nlohmann::ordered_json::object();
-            def.write(json);
-            out << json.dump(2);
-        }
-        else if (ext == ".xml")
-        {
-            cereal::XMLOutputArchive archive(out);
-            archive(def);
-        }
-        else
-        {
-            cereal::BinaryOutputArchive archive(out);
-            archive(def);
-        }
+        auto format = ProgramDefinition::getPathFormat(_outputPath);
+        def.write(out, format);
     }
 
     void ProgramImporterImpl::endImport(const Input& input)

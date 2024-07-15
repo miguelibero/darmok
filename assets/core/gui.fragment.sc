@@ -1,6 +1,6 @@
 $input v_texcoord0, v_color0
 
-#include <darmok.include.sc>
+#include <bgfx_shader.sh>
 
 #if TEXTURE_ENABLED
 SAMPLER2D(s_texColor, 0);

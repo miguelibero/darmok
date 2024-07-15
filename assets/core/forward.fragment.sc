@@ -1,6 +1,6 @@
 $input v_position, v_normal, v_color0, v_texcoord0
 
-#include <darmok.include.sc>
+#include <bgfx_shader.sh>
 #include <darmok_phong_lighting.include.sc>
 
 SAMPLER2D(s_texColor, 0);

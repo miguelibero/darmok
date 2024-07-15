@@ -12,7 +12,6 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/program.hpp>
 #include <darmok/model_assimp.hpp>
-#include <darmok/vertex_layout.hpp>
 #include <darmok/glm.hpp>
 #include <nlohmann/json.hpp>
 #include <bx/allocator.h>
@@ -144,7 +143,6 @@ namespace darmok
         using Dependencies = AssetImportDependencies;
 
         AssimpModelImporterImpl();
-        void setProgramVertexLayoutSuffix(const std::string& suffix);
         
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
@@ -156,10 +154,9 @@ namespace darmok
     private:
         bx::DefaultAllocator _allocator;
         bx::FileReader _fileReader;
-        FileDataLoader _dataLoader;
+        mutable FileDataLoader _dataLoader;
         DataImageLoader _imgLoader;
         AssimpSceneLoader _assimpLoader;
-        std::string _programVertexLayoutSuffix;
         std::optional<Config> _currentConfig;
         std::shared_ptr<aiScene> _currentScene;
 
@@ -173,6 +170,6 @@ namespace darmok
 
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config) const;
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const;
-        static bgfx::VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
+        static VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
     };
 }

@@ -80,6 +80,13 @@ namespace darmok
         }
     };
 
+    enum class VertexLayoutFormat
+    {
+        Binary,
+        Json,
+        Xml
+    };
+
     struct DARMOK_EXPORT VertexLayout final
     {
         std::vector<VertexAttribute> attributes;
@@ -87,13 +94,22 @@ namespace darmok
         VertexLayout(const std::vector<VertexAttribute>& attribs = {}) noexcept;
         VertexLayout(const bgfx::VertexLayout& layout) noexcept;
 
+        bool empty() const noexcept;
+
         bgfx::VertexLayout getBgfx(const AttribGroups& disabledGroups = {}) const noexcept;
-        bgfx::VertexLayout getBgfx(const AttribDefines& defines = {}) const noexcept;
+        bgfx::VertexLayout getBgfx(const AttribDefines& defines) const noexcept;
         void setBgfx(const bgfx::VertexLayout& layout) noexcept;
 
         VertexLayout& operator=(const bgfx::VertexLayout& layout) noexcept;
         operator bgfx::VertexLayout() const noexcept;
 
+        using Format = VertexLayoutFormat;
+
+        static Format getPathFormat(const std::filesystem::path& path) noexcept;
+        void read(const std::filesystem::path& path);
+        void write(const std::filesystem::path& path) const noexcept;
+        void read(std::istream& in, Format format = Format::Binary);
+        void write(std::ostream& out, Format format = Format::Binary) const noexcept;
         void read(const nlohmann::ordered_json& json);
         void write(nlohmann::ordered_json& json) const noexcept;
 
@@ -104,16 +120,40 @@ namespace darmok
         }
     };
 
+
+    enum class VaryingDefinitionFormat
+    {
+        Binary,
+        Json,
+        Xml,
+        Bgfx
+    };
+
     struct DARMOK_EXPORT VaryingDefinition final
     {
+        using Format = VaryingDefinitionFormat;
+
         VertexLayout vertex;
         std::vector<FragmentAttribute> fragment;
 
         void read(const nlohmann::ordered_json& json);
         void write(nlohmann::ordered_json& json) const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(vertex, fragment);
+        }
+
+        static Format getPathFormat(const std::filesystem::path& path) noexcept;
+        void read(const std::filesystem::path& path);
+        void write(const std::filesystem::path& path) const noexcept;
+        void read(std::istream& in, Format format = Format::Binary);
+        void write(std::ostream& out, Format format = Format::Binary) const noexcept;
+
         void readBgfx(std::istream& in);
         void writeBgfx(std::ostream& out, const AttribGroups& disabledGroups = {}) const noexcept;
-        void writeBgfx(std::ostream& out, const AttribDefines& defines = {}) const noexcept;
+        void writeBgfx(std::ostream& out, const AttribDefines& defines) const noexcept;
     private:
 
         void readFragments(const nlohmann::ordered_json& json);

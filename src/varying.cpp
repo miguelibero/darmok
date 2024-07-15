@@ -6,6 +6,10 @@
 #include <sstream>
 #include <fstream>
 #include <map>
+#include <cereal/types/vector.hpp>
+#include <cereal/archives/xml.hpp>
+#include <cereal/archives/binary.hpp>
+
 
 namespace darmok
 {
@@ -444,6 +448,83 @@ namespace darmok
 		}
 	}
 
+	VaryingDefinition::Format VaryingDefinition::getPathFormat(const std::filesystem::path& path) noexcept
+	{
+		auto ext = path.extension();
+		if (ext == ".json")
+		{
+			return Format::Json;
+		}
+		if (ext == ".xml")
+		{
+			return Format::Xml;
+		}
+		if (ext == ".varyingdef")
+		{
+			return Format::Bgfx;
+		}
+		return Format::Binary;
+	}
+
+	void VaryingDefinition::read(const std::filesystem::path& path)
+	{
+		std::ifstream in(path);
+		read(in, getPathFormat(path));
+	}
+
+	void VaryingDefinition::write(const std::filesystem::path& path) const noexcept
+	{
+		std::ofstream out(path);
+		write(out, getPathFormat(path));
+	}
+
+	void VaryingDefinition::read(std::istream& in, Format format)
+	{
+		if (format == Format::Json)
+		{
+			auto json = nlohmann::ordered_json::parse(in);
+			read(json);
+		}
+		else if (format == Format::Xml)
+		{
+			cereal::XMLInputArchive archive(in);
+			archive(*this);
+		}
+		else if (format == Format::Bgfx)
+		{
+			readBgfx(in);
+		}
+		else
+		{
+			cereal::BinaryInputArchive archive(in);
+			archive(*this);
+		}
+	}
+
+	void VaryingDefinition::write(std::ostream& out, Format format) const noexcept
+	{
+		if (format == Format::Json)
+		{
+			auto json = nlohmann::ordered_json::object();
+			write(json);
+			out << json.dump(2);
+		}
+		else if (format == Format::Xml)
+		{
+			cereal::XMLOutputArchive archive(out);
+			archive(*this);
+		}
+		else if (format == Format::Bgfx)
+		{
+			writeBgfx(out);
+		}
+		else
+		{
+			cereal::BinaryOutputArchive archive(out);
+			archive(*this);
+		}
+	}
+
 	const std::string VaryingDefinition::_bgfxVertMarker = "a_";
 	const std::string VaryingDefinition::_bgfxFragMarker = "v_";
 	const std::string VaryingDefinition::_bgfxInstMarker = "i_";
@@ -599,6 +680,11 @@ namespace darmok
 		setBgfx(layout);
 	}
 
+	bool VertexLayout::empty() const noexcept
+	{
+		return attributes.empty();
+	}
+
 	bgfx::VertexLayout VertexLayout::getBgfx(const AttribGroups& disabledGroups) const noexcept
 	{
 		bgfx::VertexLayout layout;
@@ -638,7 +724,7 @@ namespace darmok
 
 	VertexLayout::operator bgfx::VertexLayout() const noexcept
 	{
-		return getBgfx(AttribGroups{});
+		return getBgfx();
 	}
 
 	void VertexLayout::setBgfx(const bgfx::VertexLayout& layout) noexcept
@@ -660,6 +746,71 @@ namespace darmok
 		for (auto& [offset, val] : items)
 		{
 			attributes.push_back(val);
+		}
+	}
+
+	VertexLayout::Format VertexLayout::getPathFormat(const std::filesystem::path& path) noexcept
+	{
+		auto ext = path.extension();
+		if (ext == ".json")
+		{
+			return Format::Json;
+		}
+		if (ext == ".xml")
+		{
+			return Format::Xml;
+		}
+		return Format::Binary;
+	}
+
+	void VertexLayout::read(const std::filesystem::path& path)
+	{
+		std::ifstream in(path);
+		read(in, getPathFormat(path));
+	}
+
+	void VertexLayout::write(const std::filesystem::path& path) const noexcept
+	{
+		std::ofstream out(path);
+		write(out, getPathFormat(path));
+	}
+
+	void VertexLayout::read(std::istream& in, Format format)
+	{
+		if (format == Format::Json)
+		{
+			auto json = nlohmann::ordered_json::parse(in);
+			read(json);
+		}
+		else if (format == Format::Xml)
+		{
+			cereal::XMLInputArchive archive(in);
+			archive(*this);
+		}
+		else
+		{
+			cereal::BinaryInputArchive archive(in);
+			archive(*this);
+		}
+	}
+
+	void VertexLayout::write(std::ostream& out, Format format) const noexcept
+	{
+		if (format == Format::Json)
+		{
+			auto json = nlohmann::ordered_json::object();
+			write(json);
+			out << json.dump(2);
+		}
+		else if (format == Format::Xml)
+		{
+			cereal::XMLOutputArchive archive(out);
+			archive(*this);
+		}
+		else
+		{
+			cereal::BinaryOutputArchive archive(out);
+			archive(*this);
 		}
 	}
 

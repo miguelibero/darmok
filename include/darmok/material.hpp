@@ -35,7 +35,7 @@ namespace darmok
         Material& setProgramDefine(const std::string& define, bool enabled = true) noexcept;
 
         std::shared_ptr<Program> getProgram() const noexcept;
-        Material& setProgram(const std::shared_ptr<Program>& prog) const noexcept;
+        Material& setProgram(const std::shared_ptr<Program>& prog) noexcept;
 
         std::shared_ptr<Texture> getTexture(MaterialTextureType type) const noexcept;
         Material& setTexture(MaterialTextureType type, const std::shared_ptr<Texture>& texture) noexcept;
