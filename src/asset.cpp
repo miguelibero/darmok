@@ -41,9 +41,7 @@ namespace darmok
 	AssetContextImpl::AssetContextImpl()
 		: _dataLoader(_fileReader, _allocator)
 		, _imageLoader(_dataLoader, _allocator)
-		, _vertexLayoutLoader(_dataLoader)
-		, _programLoader(_dataLoader, _vertexLayoutLoader)
-		, _programGroupLoader(_dataLoader, _programLoader)
+		, _programLoader(_dataLoader)
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
 		, _colorTextureLoader(_allocator)
@@ -100,11 +98,6 @@ namespace darmok
 	IProgramLoader& AssetContextImpl::getProgramLoader() noexcept
 	{
 		return _programLoader;
-	}
-
-	IProgramGroupLoader& AssetContextImpl::getProgramGroupLoader() noexcept
-	{
-		return _programGroupLoader;
 	}
 
 	ITextureLoader& AssetContextImpl::getTextureLoader() noexcept
@@ -198,11 +191,6 @@ namespace darmok
 	IProgramLoader& AssetContext::getProgramLoader() noexcept
 	{
 		return _impl->getProgramLoader();
-	}
-
-	IProgramGroupLoader& AssetContext::getProgramGroupLoader() noexcept
-	{
-		return _impl->getProgramGroupLoader();
 	}
 
 	ITextureLoader& AssetContext::getTextureLoader() noexcept

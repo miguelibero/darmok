@@ -9,7 +9,13 @@
 
 namespace darmok
 {
-    bgfx::Attrib::Enum VertexLayoutUtils::getBgfxAttrib(const std::string_view name) noexcept
+
+	bool VertexAttribute::inGroup(bgfx::Attrib::Enum attrib, ShaderAttributeGroup group) noexcept
+	{
+		return true;
+	}
+
+    bgfx::Attrib::Enum VertexAttribute::getBgfx(const std::string_view name) noexcept
 	{
 		auto sname = StringUtils::toLower(name);
 		if (sname == "position" || sname == "pos")
@@ -58,7 +64,7 @@ namespace darmok
 		return bgfx::Attrib::Count;
 	}
 
-	bgfx::AttribType::Enum VertexLayoutUtils::getBgfxAttribType(const std::string_view name) noexcept
+	bgfx::AttribType::Enum VertexAttribute::getBgfxType(const std::string_view name) noexcept
 	{
 		auto sname = StringUtils::toLower(name);
 		if (sname == "u8" || sname == "uint8")
@@ -84,7 +90,7 @@ namespace darmok
 		return bgfx::AttribType::Count;
 	}
 
-	std::string VertexLayoutUtils::getBgfxAttribName(bgfx::Attrib::Enum val) noexcept
+	std::string VertexAttribute::getBgfxName(bgfx::Attrib::Enum val) noexcept
 	{
 		switch (val)
 		{
@@ -114,7 +120,7 @@ namespace darmok
 		return "";
 	}
 
-	std::string VertexLayoutUtils::getBgfxAttribTypeName(bgfx::AttribType::Enum val) noexcept
+	std::string VertexAttribute::getBgfxTypeName(bgfx::AttribType::Enum val) noexcept
 	{
 		switch (val)
 		{
@@ -132,130 +138,65 @@ namespace darmok
 		return "";
 	}
 
-	void VertexLayoutUtils::readFile(const std::filesystem::path& path, bgfx::VertexLayout& layout)
-	{
-		layout.begin().end();
-		auto ext = path.extension();
-		if (ext == ".json")
-		{
-			std::ifstream ifs(path);
-			auto json = nlohmann::ordered_json::parse(ifs);
-			readJson(json, layout);
-			return;
-		}
-		if (ext == ".varyingdef")
-		{
-			std::ifstream ifs(path);
-			readVaryingDef(ifs, layout);
-			return;
-		}
-		std::ifstream ifs(path, std::ios::binary);
-		cereal::BinaryInputArchive archive(ifs);
-		archive(layout);
-	}
 
-	void VertexLayoutUtils::writeFile(const std::filesystem::path& path, const bgfx::VertexLayout& layout)
+	void VertexAttribute::read(const std::string& key, const nlohmann::json& json)
 	{
-		auto ext = path.extension();
-		if (ext == ".json")
+		attrib = getBgfx(key);
+		if (attrib == bgfx::Attrib::Count)
 		{
-			nlohmann::ordered_json json;
-			VertexLayoutUtils::writeJson(json, layout);
-			std::ofstream os(path);
-			os << json.dump(2) << std::endl;
+			throw std::invalid_argument("invalid key: " + key);
 		}
-		else
+		if (json.contains("type"))
 		{
-			std::ofstream os(path, std::ios::binary);
-			cereal::BinaryOutputArchive archive(os);
-			archive(layout);
-		}
-	}
-
-	void VertexLayoutUtils::readJson(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout)
-	{
-		layout.begin();
-		for (auto& elm : json.items())
-		{
-			auto attrib = getBgfxAttrib(elm.key());
-			if (attrib == bgfx::Attrib::Count)
-			{
-				continue;
-			}
-			auto type = bgfx::AttribType::Float;
-			nlohmann::json val = elm.value();
-			if (val.contains("type"))
-			{
-				type = getBgfxAttribType(val["type"].get<std::string_view>());
-			}
+			auto typeStr = json["type"].get<std::string_view>();
+			type = getBgfxType(typeStr);
 			if (type == bgfx::AttribType::Count)
 			{
-				continue;
+				throw std::invalid_argument("invalid type: " + key);
 			}
-			uint8_t num = 1;
-			if (val.contains("num"))
-			{
-				num = val["num"].get<uint8_t>();
-			}
-			auto normalize = false;
-			if (val.contains("normalize"))
-			{
-				normalize = val["normalize"].get<bool>();
-			}
-			auto asInt = false;
-			if (val.contains("int"))
-			{
-				asInt = val["int"].get<bool>();
-			}
-			layout.add(attrib, num, type, normalize, asInt);
 		}
-		layout.end();
-	}
-
-	void VertexLayoutUtils::writeJson(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout)
-	{
-		std::map<uint16_t, std::pair<std::string, nlohmann::json>> items;
-		for (auto i = 0; i < bgfx::Attrib::Count; i++)
+		if (json.contains("num"))
 		{
-			const auto attr = static_cast<bgfx::Attrib::Enum>(i);
-			if (!layout.has(attr))
-			{
-				continue;
-			}
-			uint8_t num;
-			bgfx::AttribType::Enum type;
-			bool normalize;
-			bool asInt;
-			auto offset = layout.getOffset(attr);
-			layout.decode(attr, num, type, normalize, asInt);
-
-			nlohmann::json itemJson;
-			auto typeName = getBgfxAttribTypeName(type);
-			auto attrName = getBgfxAttribName(attr);
-			if (!typeName.empty())
-			{
-				itemJson["type"] = typeName;
-			}
-			if (asInt)
-			{
-				itemJson["int"] = true;
-			}
-			if (normalize)
-			{
-				itemJson["normalize"] = true;
-			}
-			itemJson["num"] = num;
-			items[offset] = std::make_pair(attrName, itemJson);
+			num = json["num"].get<uint8_t>();
 		}
-		for (auto& elm : items)
+		if (json.contains("normalize"))
 		{
-			json.emplace(elm.second.first, elm.second.second);
+			normalize = json["normalize"].get<bool>();
+		}
+		if (json.contains("int"))
+		{
+			asInt = json["int"].get<bool>();
 		}
 	}
 
-	const std::unordered_map<std::string, bgfx::Attrib::Enum>& VertexLayoutUtils::getVaryingDefAttrs() noexcept
+	std::string VertexAttribute::write(nlohmann::json& json) const noexcept
 	{
-		static const std::unordered_map<std::string, bgfx::Attrib::Enum> map = 
+		json["type"] = getBgfxTypeName(type);
+		if (asInt)
+		{
+			json["int"] = true;
+		}
+		if (normalize)
+		{
+			json["normalize"] = true;
+		}
+		json["num"] = num;
+		return getBgfxName(attrib);
+	}
+
+	void VertexAttribute::addTo(bgfx::VertexLayout& layout) const noexcept
+	{
+		layout.add(attrib, num, type, normalize, asInt);
+	}
+
+	bool VertexAttribute::inGroup(ShaderAttributeGroup group) const noexcept
+	{
+		return inGroup(attrib, group);
+	}
+
+	const std::unordered_map<std::string, bgfx::Attrib::Enum>& ProgramAttributes::getVaryingDefAttrs() noexcept
+	{
+		static const std::unordered_map<std::string, bgfx::Attrib::Enum> map =
 		{
 			{ "POSITION",		bgfx::Attrib::Position },
 			{ "NORMAL",			bgfx::Attrib::Normal },
@@ -279,13 +220,47 @@ namespace darmok
 		return map;
 	}
 
-    void VertexLayoutUtils::readVaryingDef(std::istream& is, bgfx::VertexLayout& layout)
-    {
-		const std::string attr_marker = "a_";
+	bgfx::VertexLayout ProgramAttributes::getVertexLayout(const std::vector<ShaderAttributeGroup>& disabledGroups)
+	{
+		bgfx::VertexLayout layout;
+		layout.begin();
+		for (auto& attr : vertex)
+		{
+			auto enabled = true;
+			for (auto& group : disabledGroups)
+			{
+				if (attr.inGroup(group))
+				{
+					enabled = false;
+				}
+			}
+			if (!enabled)
+			{
+				continue;
+			}
+			attr.addTo(layout);
+		}
+		layout.end();
+		return layout;
+	}
+
+	void ProgramAttributes::read(const nlohmann::ordered_json& json) noexcept
+	{
+
+	}
+
+	void ProgramAttributes::write(nlohmann::ordered_json& json) const noexcept
+	{
+
+	}
+
+	void ProgramAttributes::readVaryingDef(std::istream& is)
+	{
+		const std::string vert_marker = "a_";
+		const std::string frag_marker = "v_";
 		const std::string instr_end = ";";
 		const std::string comment = "//";
 		std::string line;
-		layout.begin();
 		auto& varyingDefAttrs = getVaryingDefAttrs();
 		while (std::getline(is, line))
 		{
@@ -299,170 +274,130 @@ namespace darmok
 				line = line.substr(0, line.size() - instr_end.size());
 			}
 			auto words = StringUtils::splitWords(line);
-			if (words.size() < 4 || !words[1].starts_with(attr_marker))
+			if (words.size() < 4)
 			{
 				continue;
 			}
-			auto num = StringUtils::getIntSuffix(words[0], "vec");
-			if (!num)
+			auto optNum = StringUtils::getIntSuffix(words[0], "vec");
+			if (!optNum)
 			{
 				continue;
 			}
+			uint8_t num = optNum.value();
 			auto itr = varyingDefAttrs.find(words[3]);
 			if (itr == varyingDefAttrs.end())
 			{
 				continue;
 			}
 			auto attr = itr->second;
-			auto normalize = false;
-			auto type = bgfx::AttribType::Float;
-			if (attr >= bgfx::Attrib::Color0 && attr <= bgfx::Attrib::Color3)
+			auto& name = words[1];
+			if (name.starts_with(vert_marker))
 			{
-				type = bgfx::AttribType::Uint8;
-				normalize = true;
+				auto& elm = vertex.emplace_back(attr);
+				elm.num = num;
+				if (attr >= bgfx::Attrib::Color0 && attr <= bgfx::Attrib::Color3)
+				{
+					elm.type = bgfx::AttribType::Uint8;
+					elm.normalize = true;
+				}
 			}
-			layout.add(attr, num.value(), type, normalize);
+			if (name.starts_with(frag_marker))
+			{
+				auto& elm = fragment.emplace_back(attr);
+				elm.num = num;
+				// TODO: read default value
+			}
 		}
-		layout.end();
-    }
+	}
 
-	DataVertexLayoutLoader::DataVertexLayoutLoader(IDataLoader& dataLoader) noexcept
-        : _dataLoader(dataLoader)
-    {
-    }
+	void ProgramAttributes::writeVaryingDef(std::ostream& out)
+	{
 
-    bgfx::VertexLayout DataVertexLayoutLoader::operator()(std::string_view name)
-    {
-        auto data = _dataLoader(name);
-        bgfx::VertexLayout layout;
-		auto ext = StringUtils::getFileExt(std::string(name));
+	}
+
+	void VertexLayoutUtils::read(const std::filesystem::path& path, bgfx::VertexLayout& layout)
+	{
+		layout.begin().end();
+		auto ext = path.extension();
 		if (ext == ".json")
 		{
-			auto json = nlohmann::ordered_json::parse(data.stringView());
-			VertexLayoutUtils::readJson(json, layout);
+			std::ifstream ifs(path);
+			auto json = nlohmann::ordered_json::parse(ifs);
+			read(json, layout);
+			return;
 		}
-		else if (ext == ".varyingdef")
+		auto fullExt = StringUtils::getFileExt(path.filename().string());
+		if (ext == ".varyingdef" || fullExt == "varying.def.sc")
 		{
-			std::stringstream ss;
-			ss << data.stringView();
-			ss.seekp(0);
-			VertexLayoutUtils::readVaryingDef(ss, layout);
+			std::ifstream ifs(path);
+			ProgramAttributes progAttrs;
+			progAttrs.readVaryingDef(ifs);
+			layout = progAttrs.getVertexLayout();
+			return;
+		}
+		std::ifstream ifs(path, std::ios::binary);
+		cereal::BinaryInputArchive archive(ifs);
+		archive(layout);
+	}
+
+	void VertexLayoutUtils::write(const std::filesystem::path& path, const bgfx::VertexLayout& layout)
+	{
+		auto ext = path.extension();
+		if (ext == ".json")
+		{
+			nlohmann::ordered_json json;
+			VertexLayoutUtils::write(json, layout);
+			std::ofstream os(path);
+			os << json.dump(2) << std::endl;
 		}
 		else
 		{
-			DataInputStream::read(data, layout);
+			std::ofstream os(path, std::ios::binary);
+			cereal::BinaryOutputArchive archive(os);
+			archive(layout);
 		}
-        return layout;
-    }
-
-	VertexLayoutImporter::VertexLayoutImporter() noexcept
-		: _outputFormat(OutputFormat::Binary)
-	{
 	}
 
-	VertexLayoutImporter& VertexLayoutImporter::setOutputFormat(OutputFormat format) noexcept
+	void VertexLayoutUtils::read(const nlohmann::ordered_json& json, bgfx::VertexLayout& layout)
 	{
-		_outputFormat = format;
-		return *this;
+		layout.begin();
+		for (auto& elm : json.items())
+		{
+			VertexAttribute attr;
+			attr.read(elm.key(), elm.value());
+			attr.addTo(layout);
+		}
+		layout.end();
 	}
 
-	bgfx::VertexLayout VertexLayoutImporter::read(const std::filesystem::path& path) const
+	void VertexLayoutUtils::write(nlohmann::ordered_json& json, const bgfx::VertexLayout& layout)
 	{
-		bgfx::VertexLayout layout;
-		VertexLayoutUtils::readFile(path, layout);
-		return layout;
-	}
-
-	std::filesystem::path VertexLayoutImporter::getFormatPath(const std::filesystem::path& path, OutputFormat format) noexcept
-	{
-		std::string outSuffix(".vlayout");
-		switch (format)
+		std::map<uint16_t, VertexAttribute> items;
+		for (auto i = 0; i < bgfx::Attrib::Count; i++)
 		{
-		case OutputFormat::Binary:
-			outSuffix += ".bin";
-			break;
-		case OutputFormat::Json:
-			outSuffix += ".json";
-			break;
-		}
-		auto stem = std::string(StringUtils::getFileStem(path.filename().string()));
-		return path.parent_path() / (stem + outSuffix);
-	}
-
-	std::vector<std::filesystem::path> VertexLayoutImporter::getOutputs(const Input& input)
-	{
-		std::vector<std::filesystem::path> outputs;
-		auto ext = StringUtils::getFileExt(input.path.filename().string());
-		if (input.config.is_null())
-		{
-			return outputs;
-		}
-		if (input.config.contains("outputPath"))
-		{
-			outputs.push_back(input.config["outputPath"]);
-			return outputs;
-		}
-		if (ext == ".varyingdef")
-		{
-			std::vector<std::filesystem::path> betterPaths{
-				getFormatPath(input.path, OutputFormat::Json),
-				getFormatPath(input.path, OutputFormat::Binary)
-			};
-			for (auto& betterPath : betterPaths)
+			const auto attr = static_cast<bgfx::Attrib::Enum>(i);
+			if (!layout.has(attr))
 			{
-				if (std::filesystem::exists(betterPath))
-				{
-					return outputs;
-				}
+				continue;
 			}
+			auto offset = layout.getOffset(attr);
+			VertexAttribute val;
+			layout.decode(val.attrib, val.num, val.type, val.normalize, val.asInt);
+			items.emplace(offset, val);
 		}
-		outputs.push_back(getFormatPath(input.getRelativePath(), _outputFormat));
-		return outputs;
-	}
-
-	std::ofstream VertexLayoutImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
-	{
-		switch (_outputFormat)
+		for (auto& [offset, val] : items)
 		{
-		case OutputFormat::Binary:
-			return std::ofstream(path, std::ios::binary);
-		default:
-			return std::ofstream(path);
+			nlohmann::json itemJson;
+			auto attrName = val.write(itemJson);
+			json.emplace(attrName, itemJson);
 		}
-	}
-
-	void VertexLayoutImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
-	{
-		auto layout = read(input.path);
-		switch (_outputFormat)
-		{
-			case OutputFormat::Json:
-			{
-				nlohmann::ordered_json json;
-				VertexLayoutUtils::writeJson(json, layout);
-				out << json.dump(2) << std::endl;
-				break;
-			}
-			case OutputFormat::Binary:
-			{
-				cereal::BinaryOutputArchive archive(out);
-				archive(layout);
-				break;
-			}
-		}
-	}
-
-	const std::string& VertexLayoutImporter::getName() const noexcept
-	{
-		static const std::string name("vertex_layout");
-		return name;
 	}
 }
 
 std::string to_string(const bgfx::VertexLayout& layout) noexcept
 {
 	nlohmann::ordered_json json;
-	darmok::VertexLayoutUtils::writeJson(json, layout);
+	darmok::VertexLayoutUtils::write(json, layout);
 	std::stringstream ss;
 	ss << "VertexLayout:" << std::endl;
 	ss << json.dump(2) << std::endl;

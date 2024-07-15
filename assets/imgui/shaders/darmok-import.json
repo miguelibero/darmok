@@ -4,5 +4,8 @@
         "shader": {
             "headerIncludeDir": "generated/imgui/shaders"
         }
+    },
+    "files": {
+        "imgui.program.json": "program"
     }
 }

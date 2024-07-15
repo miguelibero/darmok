@@ -8,11 +8,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/math.hpp>
 #include <bx/allocator.h>
-#include "generated/imgui/shaders/basic.vertex.h"
-#include "generated/imgui/shaders/basic.fragment.h"
-#include "generated/imgui/shaders/lod.vertex.h"
-#include "generated/imgui/shaders/lod.fragment.h"
-#include "generated/shaders/gui.vlayout.h"
+#include "generated/shaders/imgui.program.h"
 
 namespace darmok
 {

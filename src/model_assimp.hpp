@@ -141,13 +141,14 @@ namespace darmok
         using Config = AssimpModelImportConfig;
         using LoadConfig = AssimpModelLoadConfig;
         using OutputFormat = ModelDataFormat;
+        using Dependencies = AssetImportDependencies;
 
         AssimpModelImporterImpl();
         void setProgramVertexLayoutSuffix(const std::string& suffix);
         
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
-        std::vector<std::filesystem::path> getDependencies(const Input& input);
+        Dependencies getDependencies(const Input& input);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         void endImport(const Input& input);

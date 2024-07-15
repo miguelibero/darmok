@@ -1,10 +1,6 @@
 {
     "position": { 
         "type": "float",
-        "num": 3
-    },
-    "texCoord0": { 
-        "type": "float",
         "num": 2
     },
     "color0": { 
@@ -12,12 +8,8 @@
         "num": 4,
         "normalize": true
     },
-    "indices": {
+    "texCoord0": { 
         "type": "float",
-        "num": 4
-    },
-    "weights": {
-        "type": "float",
-        "num": 4
+        "num": 2
     }
 }

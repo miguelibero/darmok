@@ -48,4 +48,9 @@ namespace darmok
         result.returnCode = pclose(pipe);
         return result;
     }
+
+    std::filesystem::path getTempPath() noexcept
+    {
+        return std::filesystem::temp_directory_path() / std::filesystem::path(std::tmpnam(nullptr));
+    }
 }

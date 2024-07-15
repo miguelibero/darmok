@@ -107,7 +107,6 @@ namespace darmok
 		std::unique_ptr<AssetImporterImpl> _impl;
     };
 
-    class ShaderImporter;
     class ProgramImporter;
 
     class DARMOK_EXPORT DarmokCoreAssetImporter final
@@ -123,7 +122,6 @@ namespace darmok
         void operator()(std::ostream& log) const;
     private:
         AssetImporter _importer;
-        ShaderImporter& _shaderImporter;
         ProgramImporter& _progImporter;
     };
 

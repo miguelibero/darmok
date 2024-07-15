@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <type_traits>
+#include <filesystem>
 
 namespace darmok
 {
@@ -22,7 +23,9 @@ namespace darmok
         int returnCode;
     };
 
-    ExecResult exec(const std::vector<std::string>& args);    
+    ExecResult exec(const std::vector<std::string>& args);
+
+    std::filesystem::path getTempPath() noexcept;
 
     inline void hash_combine(std::size_t& seed) { }
 

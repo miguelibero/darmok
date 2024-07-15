@@ -946,11 +946,9 @@ namespace darmok
 
     DarmokCoreAssetImporter::DarmokCoreAssetImporter(const fs::path& inputPath)
         : _importer(inputPath)
-        , _shaderImporter(_importer.addTypeImporter<ShaderImporter>())
         , _progImporter(_importer.addTypeImporter<ProgramImporter>())
     {
         _importer.addTypeImporter<CopyAssetImporter>();
-        _importer.addTypeImporter<VertexLayoutImporter>();
     }
 
     DarmokCoreAssetImporter& DarmokCoreAssetImporter::setCachePath(const fs::path& cachePath) noexcept
@@ -967,14 +965,12 @@ namespace darmok
 
     DarmokCoreAssetImporter& DarmokCoreAssetImporter::setShadercPath(const fs::path& path) noexcept
     {
-        _shaderImporter.setShadercPath(path);
         _progImporter.setShadercPath(path);
         return *this;
     }
 
     DarmokCoreAssetImporter& DarmokCoreAssetImporter::addShaderIncludePath(const fs::path& path) noexcept
     {
-        _shaderImporter.addIncludePath(path);
         _progImporter.addIncludePath(path);
         return *this;
     }

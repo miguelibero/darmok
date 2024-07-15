@@ -16,7 +16,6 @@ namespace darmok
 	class DataView;
 	using ProgramDefines = std::unordered_set<std::string>;
 
-
 	struct DARMOK_EXPORT ProgramProfileDefinition final
 	{
 		using Defines = ProgramDefines;
@@ -72,7 +71,7 @@ namespace darmok
 
 		static Program loadBasic(const std::string& name);
 
-		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines) const noexcept;
+		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
 		[[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
 	private:
 
@@ -103,27 +102,6 @@ namespace darmok
 		[[nodiscard]] std::shared_ptr<Program> operator()(std::string_view name) override;
 	private:
 		IDataLoader& _dataLoader;
-	};
-
-	class ShaderImporterImpl;
-
-	class DARMOK_EXPORT ShaderImporter final : public IAssetTypeImporter
-	{
-	public:
-		ShaderImporter();
-		~ShaderImporter() noexcept;
-		ShaderImporter& setShadercPath(const std::filesystem::path& path) noexcept;
-		ShaderImporter& addIncludePath(const std::filesystem::path& path) noexcept;
-		bool startImport(const Input& input, bool dry = false) override;
-		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
-		Outputs getOutputs(const Input& input) override;
-		Dependencies getDependencies(const Input& input) override;
-
-		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-		const std::string& getName() const noexcept override;
-		void endImport(const Input& input) override;
-	private:
-		std::unique_ptr<ShaderImporterImpl> _impl;
 	};
 
 	class ProgramImporterImpl;

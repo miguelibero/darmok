@@ -116,7 +116,7 @@ namespace darmok
 		return *this;
 	}
 
-	Material& Material::setProgramDefine(const std::string& define, bool enabled = true) noexcept
+	Material& Material::setProgramDefine(const std::string& define, bool enabled) noexcept
 	{
 		if (enabled)
 		{

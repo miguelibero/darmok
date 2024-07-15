@@ -238,7 +238,7 @@ namespace darmok
     {
         if (config.contains("bones"))
         {
-            auto bonesConfig = config["bones"];
+            auto& bonesConfig = config["bones"];
             if (bonesConfig.is_array())
             {
                 std::vector<std::string> boneNames = bonesConfig;
@@ -721,9 +721,9 @@ namespace darmok
         return outputs;
     }
 
-    std::vector<std::filesystem::path> AssimpModelImporterImpl::getDependencies(const Input& input)
+    AssimpModelImporterImpl::Dependencies AssimpModelImporterImpl::getDependencies(const Input& input)
     {
-        std::vector<std::filesystem::path> deps;
+        Dependencies deps;
         if (!_currentConfig->loadConfig.embedTextures)
         {
             return deps;
@@ -731,7 +731,7 @@ namespace darmok
         auto basePath = input.getRelativePath().parent_path();
         for (auto& texPath : AssimpModelConverter::getTexturePaths(*_currentScene))
         {
-            deps.push_back(basePath / texPath);
+            deps.insert(basePath / texPath);
         }
         return deps;
     }
@@ -790,7 +790,7 @@ namespace darmok
         return _impl->getOutputs(input);
     }
 
-    std::vector<std::filesystem::path> AssimpModelImporter::getDependencies(const Input& input)
+    AssimpModelImporter::Dependencies AssimpModelImporter::getDependencies(const Input& input)
     {
         return _impl->getDependencies(input);
     }

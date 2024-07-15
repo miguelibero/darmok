@@ -1,4 +1,8 @@
+#if TEXTURE_ENABLED
 $input v_color0, v_texcoord0
+#else
+$input v_color0
+#endif
 
 #include <darmok.include.sc>
 

@@ -2,7 +2,6 @@
 
 #include <darmok/asset.hpp>
 #include <darmok/model.hpp>
-#include <darmok/vertex_layout.hpp>
 #include <darmok/image.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
@@ -60,7 +59,6 @@ namespace darmok
 		[[nodiscard]] IDataLoader& getDataLoader() noexcept;
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
-		[[nodiscard]] IProgramGroupLoader& getProgramGroupLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
@@ -91,9 +89,7 @@ namespace darmok
 		FileDataLoader _dataLoader;
 		DataImageLoader _imageLoader;
 		DataProgramLoader _programLoader;
-		JsonProgramGroupLoader _programGroupLoader;
 		ImageTextureLoader _textureLoader;
-		DataVertexLayoutLoader _vertexLayoutLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
 		ColorTextureLoader _colorTextureLoader;
 		ModelExtLoader _modelLoader;
