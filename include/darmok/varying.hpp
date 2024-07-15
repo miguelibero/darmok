@@ -25,6 +25,13 @@ namespace darmok
         Count
     };
 
+    enum class VaryingDefinitionFormat
+    {
+        Binary,
+        Json,
+        Xml,
+    };
+
     using AttribDefines = std::unordered_set<std::string>;
     using AttribGroups = std::unordered_set<AttribGroup>;
 
@@ -32,11 +39,13 @@ namespace darmok
     {
         static [[nodiscard]] size_t getDisabledGroups(const AttribDefines& defines, AttribGroups& disabledGroups) noexcept;
         static [[nodiscard]] AttribGroup getGroup(bgfx::Attrib::Enum attrib) noexcept;
-        static [[nodiscard]] bgfx::Attrib::Enum getBgfx(const std::string_view name) noexcept;
-        static [[nodiscard]] bgfx::AttribType::Enum getBgfxType(const std::string_view name) noexcept;
+        static [[nodiscard]] bgfx::Attrib::Enum getBgfx(std::string_view name) noexcept;
+        static [[nodiscard]] bgfx::AttribType::Enum getBgfxType(std::string_view name) noexcept;
 
         static [[nodiscard]] std::string getBgfxName(bgfx::Attrib::Enum val) noexcept;
         static [[nodiscard]] std::string getBgfxTypeName(bgfx::AttribType::Enum val) noexcept;
+
+        static [[nodiscard]] VaryingDefinitionFormat getPathFormat(const std::filesystem::path& path) noexcept;
     };
 
     struct DARMOK_EXPORT VertexAttribute final
@@ -80,21 +89,19 @@ namespace darmok
         }
     };
 
-    enum class VertexLayoutFormat
-    {
-        Binary,
-        Json,
-        Xml
-    };
-
     struct DARMOK_EXPORT VertexLayout final
     {
-        std::vector<VertexAttribute> attributes;
+        using Format = VaryingDefinitionFormat;
+        using Attribute = VertexAttribute;
+        using ConstIterator = std::vector<Attribute>::const_iterator;
 
-        VertexLayout(const std::vector<VertexAttribute>& attribs = {}) noexcept;
+        VertexLayout(const std::vector<Attribute>& attribs = {}) noexcept;
         VertexLayout(const bgfx::VertexLayout& layout) noexcept;
 
         bool empty() const noexcept;
+        bool has(bgfx::Attrib::Enum attrib) const noexcept;
+        ConstIterator begin() const noexcept;
+        ConstIterator end() const noexcept;
 
         bgfx::VertexLayout getBgfx(const AttribGroups& disabledGroups = {}) const noexcept;
         bgfx::VertexLayout getBgfx(const AttribDefines& defines) const noexcept;
@@ -103,9 +110,6 @@ namespace darmok
         VertexLayout& operator=(const bgfx::VertexLayout& layout) noexcept;
         operator bgfx::VertexLayout() const noexcept;
 
-        using Format = VertexLayoutFormat;
-
-        static Format getPathFormat(const std::filesystem::path& path) noexcept;
         void read(const std::filesystem::path& path);
         void write(const std::filesystem::path& path) const noexcept;
         void read(std::istream& in, Format format = Format::Binary);
@@ -116,17 +120,40 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(attributes);
+            archive(_attributes);
         }
+    private:
+        std::vector<Attribute> _attributes;
     };
 
-
-    enum class VaryingDefinitionFormat
+    struct DARMOK_EXPORT FragmentLayout final
     {
-        Binary,
-        Json,
-        Xml,
-        Bgfx
+        using Format = VaryingDefinitionFormat;
+        using Attribute = FragmentAttribute;
+        using ConstIterator = std::vector<Attribute>::const_iterator;
+
+        FragmentLayout(const std::vector<Attribute>& attribs = {}) noexcept;
+
+        bool empty() const noexcept;
+        bool has(bgfx::Attrib::Enum attrib) const noexcept;
+        bgfx::Attrib::Enum getUnusedAttrib() const noexcept;
+        ConstIterator begin() const noexcept;
+        ConstIterator end() const noexcept;
+
+        void read(const std::filesystem::path& path);
+        void write(const std::filesystem::path& path) const noexcept;
+        void read(std::istream& in, Format format = Format::Binary);
+        void write(std::ostream& out, Format format = Format::Binary) const noexcept;
+        void read(const nlohmann::ordered_json& json);
+        void write(nlohmann::ordered_json& json) const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(_attributes);
+        }
+    private:
+        std::vector<Attribute> _attributes;
     };
 
     struct DARMOK_EXPORT VaryingDefinition final
@@ -134,7 +161,8 @@ namespace darmok
         using Format = VaryingDefinitionFormat;
 
         VertexLayout vertex;
-        std::vector<FragmentAttribute> fragment;
+        FragmentLayout fragment;
+        uint8_t instanceAttribs = 0;
 
         void read(const nlohmann::ordered_json& json);
         void write(nlohmann::ordered_json& json) const noexcept;
@@ -145,28 +173,19 @@ namespace darmok
             archive(vertex, fragment);
         }
 
-        static Format getPathFormat(const std::filesystem::path& path) noexcept;
         void read(const std::filesystem::path& path);
         void write(const std::filesystem::path& path) const noexcept;
         void read(std::istream& in, Format format = Format::Binary);
         void write(std::ostream& out, Format format = Format::Binary) const noexcept;
 
-        void readBgfx(std::istream& in);
         void writeBgfx(std::ostream& out, const AttribGroups& disabledGroups = {}) const noexcept;
         void writeBgfx(std::ostream& out, const AttribDefines& defines) const noexcept;
     private:
-
-        void readFragments(const nlohmann::ordered_json& json);
-
-        static const std::unordered_map<std::string, bgfx::Attrib::Enum>& getAttrs() noexcept;
         static const std::string _vertexJsonKey;
         static const std::string _fragmentJsonKey;
 
-        static const std::string _bgfxVertMarker;
-        static const std::string _bgfxFragMarker;
-        static const std::string _bgfxInstMarker;
-        static const std::string _bgfxInstrEnd;
-        static const std::string _bgfxComment;
+        static [[nodiscard]] std::string getBgfxTypeName(bgfx::Attrib::Enum val) noexcept;
+        static [[nodiscard]] std::string getBgfxVarTypeName(uint8_t num) noexcept;
     };
 }
 

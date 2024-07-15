@@ -54,8 +54,8 @@ namespace darmok
 		}
 		return AttribGroup::Count;
 	}
-	
-    bgfx::Attrib::Enum AttribUtils::getBgfx(const std::string_view name) noexcept
+
+	bgfx::Attrib::Enum AttribUtils::getBgfx(const std::string_view name) noexcept
 	{
 		auto sname = StringUtils::toLower(name);
 		if (sname == "position" || sname == "pos")
@@ -164,20 +164,33 @@ namespace darmok
 	{
 		switch (val)
 		{
-			case bgfx::AttribType::Uint8:
-				return "uint8";
-			case bgfx::AttribType::Uint10:
-				return "uint10";
-			case bgfx::AttribType::Int16:
-				return "int";
-			case bgfx::AttribType::Half:
-				return "half";
-			case bgfx::AttribType::Float:
-				return "float";
+		case bgfx::AttribType::Uint8:
+			return "uint8";
+		case bgfx::AttribType::Uint10:
+			return "uint10";
+		case bgfx::AttribType::Int16:
+			return "int";
+		case bgfx::AttribType::Half:
+			return "half";
+		case bgfx::AttribType::Float:
+			return "float";
 		}
 		return "";
 	}
 
+	VaryingDefinitionFormat AttribUtils::getPathFormat(const std::filesystem::path& path) noexcept
+	{
+		auto ext = path.extension();
+		if (ext == ".json")
+		{
+			return VaryingDefinitionFormat::Json;
+		}
+		if (ext == ".xml")
+		{
+			return VaryingDefinitionFormat::Xml;
+		}
+		return VaryingDefinitionFormat::Binary;
+	}
 
 	void VertexAttribute::read(const std::string& key)
 	{
@@ -362,32 +375,6 @@ namespace darmok
 		return AttribUtils::getBgfxName(attrib);
 	}
 
-	const std::unordered_map<std::string, bgfx::Attrib::Enum>& VaryingDefinition::getAttrs() noexcept
-	{
-		static const std::unordered_map<std::string, bgfx::Attrib::Enum> map =
-		{
-			{ "POSITION",		bgfx::Attrib::Position },
-			{ "NORMAL",			bgfx::Attrib::Normal },
-			{ "TANGENT",		bgfx::Attrib::Tangent },
-			{ "BITANGENT",		bgfx::Attrib::Bitangent },
-			{ "COLOR0",			bgfx::Attrib::Color0 },
-			{ "COLOR1",			bgfx::Attrib::Color1 },
-			{ "COLOR2",			bgfx::Attrib::Color2 },
-			{ "COLOR3",			bgfx::Attrib::Color3 },
-			{ "BLENDINDICES",	bgfx::Attrib::Indices },
-			{ "BLENDWEIGHT",	bgfx::Attrib::Weight },
-			{ "TEXCOORD0",		bgfx::Attrib::TexCoord0 },
-			{ "TEXCOORD1",		bgfx::Attrib::TexCoord1 },
-			{ "TEXCOORD2",		bgfx::Attrib::TexCoord2 },
-			{ "TEXCOORD3",		bgfx::Attrib::TexCoord3 },
-			{ "TEXCOORD4",		bgfx::Attrib::TexCoord4 },
-			{ "TEXCOORD5",		bgfx::Attrib::TexCoord5 },
-			{ "TEXCOORD6",		bgfx::Attrib::TexCoord6 },
-			{ "TEXCOORD7",		bgfx::Attrib::TexCoord7 },
-		};
-		return map;
-	}
-
 	const std::string VaryingDefinition::_vertexJsonKey = "vertex";
 	const std::string VaryingDefinition::_fragmentJsonKey = "fragment";
 
@@ -398,39 +385,10 @@ namespace darmok
 			if (elm.key().starts_with(_vertexJsonKey))
 			{
 				vertex.read(elm.value());
-				continue;
 			}
-			if (elm.key().starts_with(_fragmentJsonKey))
+			else if (elm.key().starts_with(_fragmentJsonKey))
 			{
-				readFragments(elm.value());
-			}
-		}
-	}
-
-	void VaryingDefinition::readFragments(const nlohmann::ordered_json& json)
-	{
-		if (json.is_object())
-		{
-			for (auto& elm : json.items())
-			{
-				fragment.emplace_back().read(elm.key(), elm.value());
-			}
-			return;
-		}
-		if (!json.is_array())
-		{
-			return;
-		}
-		for (auto& elm : json)
-		{
-			auto& frag = fragment.emplace_back();
-			if (elm.is_object())
-			{
-				frag.read(elm["name"], elm);
-			}
-			else
-			{
-				frag.read(elm);
+				fragment.read(elm.value());
 			}
 		}
 	}
@@ -438,43 +396,19 @@ namespace darmok
 	void VaryingDefinition::write(nlohmann::ordered_json& json) const noexcept
 	{
 		vertex.write(json[_vertexJsonKey]);
-		auto& fragmentJson = json[_fragmentJsonKey];
-		for (auto& attr : fragment)
-		{
-			nlohmann::json attrJson;
-			auto key = attr.write(attrJson);
-			fragmentJson.emplace(key, attrJson);
-		}
-	}
-
-	VaryingDefinition::Format VaryingDefinition::getPathFormat(const std::filesystem::path& path) noexcept
-	{
-		auto ext = path.extension();
-		if (ext == ".json")
-		{
-			return Format::Json;
-		}
-		if (ext == ".xml")
-		{
-			return Format::Xml;
-		}
-		if (ext == ".varyingdef")
-		{
-			return Format::Bgfx;
-		}
-		return Format::Binary;
+		fragment.write(json[_fragmentJsonKey]);
 	}
 
 	void VaryingDefinition::read(const std::filesystem::path& path)
 	{
 		std::ifstream in(path);
-		read(in, getPathFormat(path));
+		read(in, AttribUtils::getPathFormat(path));
 	}
 
 	void VaryingDefinition::write(const std::filesystem::path& path) const noexcept
 	{
 		std::ofstream out(path);
-		write(out, getPathFormat(path));
+		write(out, AttribUtils::getPathFormat(path));
 	}
 
 	void VaryingDefinition::read(std::istream& in, Format format)
@@ -488,10 +422,6 @@ namespace darmok
 		{
 			cereal::XMLInputArchive archive(in);
 			archive(*this);
-		}
-		else if (format == Format::Bgfx)
-		{
-			readBgfx(in);
 		}
 		else
 		{
@@ -513,10 +443,6 @@ namespace darmok
 			cereal::XMLOutputArchive archive(out);
 			archive(*this);
 		}
-		else if (format == Format::Bgfx)
-		{
-			writeBgfx(out);
-		}
 		else
 		{
 			cereal::BinaryOutputArchive archive(out);
@@ -524,104 +450,31 @@ namespace darmok
 		}
 	}
 
-	const std::string VaryingDefinition::_bgfxVertMarker = "a_";
-	const std::string VaryingDefinition::_bgfxFragMarker = "v_";
-	const std::string VaryingDefinition::_bgfxInstMarker = "i_";
-	const std::string VaryingDefinition::_bgfxInstrEnd = ";";
-	const std::string VaryingDefinition::_bgfxComment = "//";
-
-	void VaryingDefinition::readBgfx(std::istream& is)
+	std::string VaryingDefinition::getBgfxTypeName(bgfx::Attrib::Enum val) noexcept
 	{
-		std::string line;
-		auto& varyingDefAttrs = getAttrs();
-		while (std::getline(is, line))
+		if (val == bgfx::Attrib::Indices)
 		{
-			StringUtils::trim(line);
-			if (line.starts_with(_bgfxComment))
-			{
-				continue;
-			}
-			if (line.ends_with(_bgfxInstrEnd))
-			{
-				line = line.substr(0, line.size() - _bgfxInstrEnd.size());
-			}
-			auto words = StringUtils::splitWords(line);
-			if (words.size() < 4)
-			{
-				continue;
-			}
-			std::optional<int> optNum;
-			if (words[0] == "float")
-			{
-				optNum = 1;
-			}
-			else
-			{
-				optNum = StringUtils::getIntSuffix(words[0], "vec");
-			}
-			if (!optNum)
-			{
-				continue;
-			}
-			uint8_t num = optNum.value();
-			auto itr = varyingDefAttrs.find(words[3]);
-			if (itr == varyingDefAttrs.end())
-			{
-				continue;
-			}
-			auto attr = itr->second;
-			auto& name = words[1];
-			if (name.starts_with(_bgfxVertMarker))
-			{
-				auto& elm = vertex.attributes.emplace_back(attr);
-				elm.num = num;
-				if (attr >= bgfx::Attrib::Color0 && attr <= bgfx::Attrib::Color3)
-				{
-					elm.type = bgfx::AttribType::Uint8;
-					elm.normalize = true;
-				}
-			}
-			if (name.starts_with(_bgfxFragMarker))
-			{
-				auto& elm = fragment.emplace_back(attr);
-				elm.num = num;
-				// TODO: read default value
-			}
-
-			// TODO: support instance attributes
-			// vec4 i_data0 : TEXCOORD7;
-			// https://bkaradzic.github.io/bgfx/tools.html#vertex-shader-attributes
+			return "BLENDINDICES";
 		}
+		if (val == bgfx::Attrib::Weight)
+		{
+			return "BLENDWEIGHT";
+		}
+		return StringUtils::toUpper(AttribUtils::getBgfxName(val));
+	}
+
+	std::string VaryingDefinition::getBgfxVarTypeName(uint8_t num) noexcept
+	{
+		if (num <= 1)
+		{
+			return "float";
+		}
+		return "vec" + std::to_string(num);
 	}
 
 	void VaryingDefinition::writeBgfx(std::ostream& out, const AttribGroups& disabledGroups) const noexcept
 	{
-		auto writeLine = [&out](unsigned int num, const std::string& marker, bgfx::Attrib::Enum attrib, bgfx::Attrib::Enum type = bgfx::Attrib::Count)
-		{
-			if (num > 1)
-			{
-				out << "vec" << num;
-			}
-			else
-			{
-				out << "float";
-			}
-			auto name = AttribUtils::getBgfxName(attrib);
-			auto typeStr = type == bgfx::Attrib::Count ? name : AttribUtils::getBgfxName(type);
-			out << " " << marker << StringUtils::toLower(name) << " : " << StringUtils::toUpper(typeStr);
-		};
-
-		auto firstEmptyTexture = bgfx::Attrib::Count;
-		for (auto i = bgfx::Attrib::TexCoord0; i < bgfx::Attrib::TexCoord7; i = (bgfx::Attrib::Enum)(i + 1))
-		{
-			auto itr = std::find_if(fragment.begin(), fragment.end(), [i](auto& elm) { return elm.attrib == i; });
-			if (itr == fragment.end())
-			{
-				firstEmptyTexture = i;
-				break;
-			}
-		}
-
+		static const std::string instrEnd = ";";
 		for (auto& attr : fragment)
 		{
 			if (attr.inGroups(disabledGroups))
@@ -631,10 +484,10 @@ namespace darmok
 			auto type = attr.attrib;
 			if (type == bgfx::Attrib::Position)
 			{
-				// using position type in fragment attributes fails to compile
-				type = firstEmptyTexture;
+				type = fragment.getUnusedAttrib();
 			}
-			writeLine(attr.num, _bgfxFragMarker, attr.attrib, type);
+			out << getBgfxVarTypeName(attr.num) << " v_" << AttribUtils::getBgfxName(attr.attrib);
+			out << " : " << getBgfxTypeName(type);
 			if (!attr.defaultValue.empty())
 			{
 				auto size = attr.defaultValue.size();
@@ -648,18 +501,22 @@ namespace darmok
 					out << StringUtils::join(", ", attr.defaultValue) << ")";
 				}
 			}
-			out << _bgfxInstrEnd << std::endl;
+			out << instrEnd << std::endl;
 		}
 		out << std::endl;
-		for (auto& attr : vertex.attributes)
+		for (auto& attr : vertex)
 		{
 			if (attr.inGroups(disabledGroups))
 			{
 				continue;
 			}
-			writeLine(attr.num, _bgfxVertMarker, attr.attrib);
-			out << _bgfxInstrEnd << std::endl;
+			out << getBgfxVarTypeName(attr.num) << " a_" << AttribUtils::getBgfxName(attr.attrib);
+			out << " : " << getBgfxTypeName(attr.attrib) << instrEnd << std::endl;
 		}
+
+		// TODO: support instance attributes
+		// vec4 i_data0 : TEXCOORD7;
+		// https://bkaradzic.github.io/bgfx/tools.html#vertex-shader-attributes
 	}
 
 	void VaryingDefinition::writeBgfx(std::ostream& out, const AttribDefines& defines) const noexcept
@@ -670,7 +527,7 @@ namespace darmok
 	}
 
 	VertexLayout::VertexLayout(const std::vector<VertexAttribute>& attribs) noexcept
-		: attributes(attribs)
+		: _attributes(attribs)
 	{
 	}
 
@@ -681,14 +538,30 @@ namespace darmok
 
 	bool VertexLayout::empty() const noexcept
 	{
-		return attributes.empty();
+		return _attributes.empty();
+	}
+
+	bool VertexLayout::has(bgfx::Attrib::Enum attrib) const noexcept
+	{
+		auto itr = std::find_if(_attributes.begin(), _attributes.end(), [attrib](auto& elm) { return elm.attrib == attrib; });
+		return itr != _attributes.end();
+	}
+
+	VertexLayout::ConstIterator VertexLayout::begin() const noexcept
+	{
+		return _attributes.begin();
+	}
+
+	VertexLayout::ConstIterator VertexLayout::end() const noexcept
+	{
+		return _attributes.end();
 	}
 
 	bgfx::VertexLayout VertexLayout::getBgfx(const AttribGroups& disabledGroups) const noexcept
 	{
 		bgfx::VertexLayout layout;
 		layout.begin();
-		for (auto& attr : attributes)
+		for (auto& attr : _attributes)
 		{
 			if (attr.inGroups(disabledGroups))
 			{
@@ -733,37 +606,23 @@ namespace darmok
 			layout.decode(val.attrib, val.num, val.type, val.normalize, val.asInt);
 			items.emplace(offset, val);
 		}
-		attributes.clear();
+		_attributes.clear();
 		for (auto& [offset, val] : items)
 		{
-			attributes.push_back(val);
+			_attributes.push_back(val);
 		}
-	}
-
-	VertexLayout::Format VertexLayout::getPathFormat(const std::filesystem::path& path) noexcept
-	{
-		auto ext = path.extension();
-		if (ext == ".json")
-		{
-			return Format::Json;
-		}
-		if (ext == ".xml")
-		{
-			return Format::Xml;
-		}
-		return Format::Binary;
 	}
 
 	void VertexLayout::read(const std::filesystem::path& path)
 	{
 		std::ifstream in(path);
-		read(in, getPathFormat(path));
+		read(in, AttribUtils::getPathFormat(path));
 	}
 
 	void VertexLayout::write(const std::filesystem::path& path) const noexcept
 	{
 		std::ofstream out(path);
-		write(out, getPathFormat(path));
+		write(out, AttribUtils::getPathFormat(path));
 	}
 
 	void VertexLayout::read(std::istream& in, Format format)
@@ -811,7 +670,7 @@ namespace darmok
 		{
 			for (auto& elm : json.items())
 			{
-				attributes.emplace_back().read(elm.key(), elm.value());
+				_attributes.emplace_back().read(elm.key(), elm.value());
 			}
 			return;
 		}
@@ -821,7 +680,7 @@ namespace darmok
 		}
 		for (auto& elm : json)
 		{
-			auto& attrib = attributes.emplace_back();
+			auto& attrib = _attributes.emplace_back();
 			if (elm.is_object())
 			{
 				attrib.read(elm["name"], elm);
@@ -835,7 +694,135 @@ namespace darmok
 
 	void VertexLayout::write(nlohmann::ordered_json& json) const noexcept
 	{
-		for (auto& attr : attributes)
+		for (auto& attr : _attributes)
+		{
+			nlohmann::json attrJson;
+			auto key = attr.write(attrJson);
+			json.emplace(key, attrJson);
+		}
+	}
+
+	FragmentLayout::FragmentLayout(const std::vector<Attribute>& attribs) noexcept
+		: _attributes(attribs)
+	{
+	}
+
+	bool FragmentLayout::empty() const noexcept
+	{
+		return _attributes.empty();
+	}
+
+	bool FragmentLayout::has(bgfx::Attrib::Enum attrib) const noexcept
+	{
+		auto itr = std::find_if(_attributes.begin(), _attributes.end(), [attrib](auto& elm) { return elm.attrib == attrib; });
+		return itr != _attributes.end();
+	}
+
+	FragmentLayout::ConstIterator FragmentLayout::begin() const noexcept
+	{
+		return _attributes.begin();
+	}
+
+	FragmentLayout::ConstIterator FragmentLayout::end() const noexcept
+	{
+		return _attributes.end();
+	}
+
+	bgfx::Attrib::Enum FragmentLayout::getUnusedAttrib() const noexcept
+	{
+		for (auto i = bgfx::Attrib::TexCoord0; i < bgfx::Attrib::TexCoord7; i = (bgfx::Attrib::Enum)(i + 1))
+		{
+			auto itr = std::find_if(_attributes.begin(), _attributes.end(), [i](auto& elm) { return elm.attrib == i; });
+			if (itr == _attributes.end())
+			{
+				return i;
+			}
+		}
+		return bgfx::Attrib::Count;
+	}
+
+	void FragmentLayout::read(const std::filesystem::path& path)
+	{
+		std::ifstream in(path);
+		read(in, AttribUtils::getPathFormat(path));
+	}
+
+	void FragmentLayout::write(const std::filesystem::path& path) const noexcept
+	{
+		std::ofstream out(path);
+		write(out, AttribUtils::getPathFormat(path));
+	}
+
+	void FragmentLayout::read(std::istream& in, Format format)
+	{
+		if (format == Format::Json)
+		{
+			auto json = nlohmann::ordered_json::parse(in);
+			read(json);
+		}
+		else if (format == Format::Xml)
+		{
+			cereal::XMLInputArchive archive(in);
+			archive(*this);
+		}
+		else
+		{
+			cereal::BinaryInputArchive archive(in);
+			archive(*this);
+		}
+	}
+
+	void FragmentLayout::write(std::ostream& out, Format format) const noexcept
+	{
+		if (format == Format::Json)
+		{
+			auto json = nlohmann::ordered_json::object();
+			write(json);
+			out << json.dump(2);
+		}
+		else if (format == Format::Xml)
+		{
+			cereal::XMLOutputArchive archive(out);
+			archive(*this);
+		}
+		else
+		{
+			cereal::BinaryOutputArchive archive(out);
+			archive(*this);
+		}
+	}
+
+	void FragmentLayout::read(const nlohmann::ordered_json& json)
+	{
+		if (json.is_object())
+		{
+			for (auto& elm : json.items())
+			{
+				_attributes.emplace_back().read(elm.key(), elm.value());
+			}
+			return;
+		}
+		if (!json.is_array())
+		{
+			return;
+		}
+		for (auto& elm : json)
+		{
+			auto& attrib = _attributes.emplace_back();
+			if (elm.is_object())
+			{
+				attrib.read(elm["name"], elm);
+			}
+			else
+			{
+				attrib.read(elm);
+			}
+		}
+	}
+
+	void FragmentLayout::write(nlohmann::ordered_json& json) const noexcept
+	{
+		for (auto& attr : _attributes)
 		{
 			nlohmann::json attrJson;
 			auto key = attr.write(attrJson);

@@ -36,13 +36,12 @@ namespace darmok
         glm::uvec2 _defaultFontSize;
         FT_Library _library;
         bx::AllocatorI& _alloc;
-        std::optional<Material> _material;
     };
 
     class FreetypeFont final : public IFont
     {
     public:
-        FreetypeFont(FT_Face face, Data&& data, const Material& mat, FT_Library library, bx::AllocatorI& alloc) noexcept;
+        FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept;
         ~FreetypeFont() noexcept;
 
         std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;

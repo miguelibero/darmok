@@ -22,8 +22,5 @@
             "num": 4
         }
     },
-    "fragmentAttributes": {
-        "texCoord0": [0, 0],
-        "color0": [1, 1, 1, 1]
-    }
+    "fragmentAttributes": ["texCoord0", "color0"]
 }

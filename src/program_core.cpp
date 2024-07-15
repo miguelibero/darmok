@@ -77,8 +77,8 @@ namespace darmok
 
     const std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>> ProgramDefinition::_rendererProfiles
     {
-        { bgfx::RendererType::Direct3D11, { "s_4_0" }},
-        { bgfx::RendererType::Direct3D12, { "s_5_0", "s_4_0" }},
+        { bgfx::RendererType::Direct3D11, { "s_5_0" }},
+        { bgfx::RendererType::Direct3D12, { "s_5_0" }},
         { bgfx::RendererType::Metal, { "metal" }},
         { bgfx::RendererType::OpenGLES, { "320_es", "310_es", "300_es", "100_es" }},
         { bgfx::RendererType::OpenGL, { "440", "430", "420", "410", "400", "330", "150", "140", "130", "120" }},
@@ -325,7 +325,7 @@ namespace darmok
     const std::vector<std::string> ShaderCompiler::_profiles{
         "120", "300_es", "spirv",
 #if BX_PLATFORM_WINDOWS
-        "s_4_0", "s_5_0",
+        "s_5_0",
 #endif
 #if BX_PLATFORM_OSX
         "metal",
@@ -697,6 +697,9 @@ namespace darmok
         }
         auto format = ProgramDefinition::getPathFormat(_outputPath);
         def.write(out, format);
+
+        fs::remove(outputPath);
+        fs::remove(varyingDefPath);
     }
 
     void ProgramImporterImpl::endImport(const Input& input)
