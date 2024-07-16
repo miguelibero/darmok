@@ -107,7 +107,7 @@ namespace darmok::physics3d
         settings.mDrawShape = true;
         settings.mDrawShapeWireframe = true;
         settings.mDrawWorldTransform = true;
-        settings.mDrawSleepStats = true;
+        // settings.mDrawSleepStats = true;
 
         _cam->beforeRenderView(_encoder.value(), _viewId);
 

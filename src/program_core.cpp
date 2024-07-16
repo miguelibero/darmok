@@ -413,7 +413,7 @@ namespace darmok
         return count;
     }
 
-    const std::regex ShaderCompiler::_ifdefRegex = std::regex("#if ([^\\s]+)");
+    const std::regex ShaderCompiler::_ifdefRegex = std::regex("#(if|ifdef|ifndef) !?([^\\s]+)");
 
     size_t ShaderCompiler::getDefines(std::istream& in, Defines& defines) noexcept
     {
@@ -426,7 +426,7 @@ namespace darmok
             {
                 continue;
             }
-            auto define = match[1].str();
+            auto define = match[2].str();
             if (defines.insert(define).second)
             {
                 count++;
@@ -679,7 +679,7 @@ namespace darmok
             output.path = outputPath;
             _compiler(config.vertexShader, output);
             auto data = Data::fromFile(output.path);
-            def.profiles[output.profile].vertexShaders[output.defines] = data;
+            def.profiles[output.profile].vertexShaders[output.defines] = std::move(data);
         }
 
         _compiler.setDefines(config.fragmentShader);
@@ -693,7 +693,7 @@ namespace darmok
             output.path = outputPath;
             _compiler(config.fragmentShader, output);
             auto data = Data::fromFile(output.path);
-            def.profiles[output.profile].fragmentShaders[output.defines] = data;
+            def.profiles[output.profile].fragmentShaders[output.defines] = std::move(data);
         }
         auto format = ProgramDefinition::getPathFormat(_outputPath);
         def.write(out, format);

@@ -225,16 +225,18 @@ namespace darmok
         auto trans = glm::translate(glm::mat4(1), glm::vec3(translation.x, translation.y, 0.0f));
         _encoder->setTransform(glm::value_ptr(trans));
 
+        ProgramDefines defines{ "TEXTURE_DISABLE" };
         if (texture)
         {
             auto itr = _textures.find(texture);
             if (itr != _textures.end())
             {
                 _encoder->setTexture(0, _textureUniform, itr->second->getHandle());
+                defines.clear();
             }
         }
         _encoder->setState(_state);
-        _encoder->submit(_viewId.value(), _program->getHandle());
+        _encoder->submit(_viewId.value(), _program->getHandle(defines));
         _rendered = true;
     }
 

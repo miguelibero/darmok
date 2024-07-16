@@ -28,7 +28,7 @@ namespace
 			// Tell RmlUi to load the given fonts.
 			Rml::LoadFontFace("LatoLatin-Regular.ttf");
 			// Fonts can be registered as fallback fonts, as in this case to display emojis.
-			Rml::LoadFontFace("../../assets/noto.ttf", true);
+			Rml::LoadFontFace("NotoEmoji-Regular.ttf", true);
 
 			// Set up data bindings to synchronize application data.
 			if (Rml::DataModelConstructor constructor = context->CreateDataModel("animals"))
