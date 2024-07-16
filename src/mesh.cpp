@@ -71,8 +71,10 @@ namespace darmok
 		, _idxNum(indices.size() / config.getIndexSize())
 	{
 		auto flags = config.getFlags();
-		// TODO: do we need to always copy the memory?
-		_vertexBuffer = bgfx::createVertexBuffer(vertices.copyMem(), layout, flags);
+		if (!vertices.empty())
+		{
+			_vertexBuffer = bgfx::createVertexBuffer(vertices.copyMem(), layout, flags);
+		}
 		if (!indices.empty())
 		{
 			_indexBuffer = bgfx::createIndexBuffer(indices.copyMem(), flags);
@@ -157,19 +159,24 @@ namespace darmok
 		}
 	}
 
-	void Mesh::render(bgfx::Encoder& encoder, RenderConfig config) const
+	bool Mesh::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		if (!isValid(_vertexBuffer))
 		{
-			throw std::runtime_error("invalid mesh vertex buffer");
+			return false;
 		}
 
 		config.fix(_vertNum, _idxNum);
+		if (config.numVertices == 0)
+		{
+			return false;
+		}
 		encoder.setVertexBuffer(config.vertexStream, _vertexBuffer, config.startVertex, config.numVertices);
 		if (isValid(_indexBuffer))
 		{
 			encoder.setIndexBuffer(_indexBuffer, config.startIndex, config.numIndices);
 		}
+		return true;
 	}
 
 	DynamicMesh::DynamicMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
@@ -280,18 +287,23 @@ namespace darmok
 		bgfx::update(_indexBuffer, offset, data.copyMem());
 	}
 
-	void DynamicMesh::render(bgfx::Encoder& encoder, RenderConfig config) const
+	bool DynamicMesh::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		if (!isValid(_vertexBuffer))
 		{
-			throw std::runtime_error("invalid mesh vertex buffer");
+			return false;
 		}
 		config.fix(_vertNum, _idxNum);
+		if (config.numVertices == 0)
+		{
+			return false;
+		}
 		encoder.setVertexBuffer(config.vertexStream, _vertexBuffer, config.startVertex, config.numVertices);
 		if (isValid(_indexBuffer))
 		{
 			encoder.setIndexBuffer(_indexBuffer, config.startIndex, config.numIndices);
 		}
+		return true;
 	}
 
 	TransientMesh::TransientMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, bool index32)
@@ -299,12 +311,21 @@ namespace darmok
 		, _vertNum(uint32_t(vertices.size() / layout.getStride()))
 		, _idxNum(uint32_t(indices.size() / getMeshIndexSize(index32)))
 	{
-		if (!bgfx::getAvailTransientVertexBuffer(_vertNum, layout))
+		if (!vertices.empty())
 		{
-			throw std::runtime_error("not enought transient vertex buffer space");
+			if (_vertNum > 0 && !bgfx::getAvailTransientVertexBuffer(_vertNum, layout))
+			{
+				throw std::runtime_error("not enought transient vertex buffer space");
+			}
+			bgfx::allocTransientVertexBuffer(&_vertexBuffer, _vertNum, layout);
+			bx::memCopy(_vertexBuffer.data, vertices.ptr(), vertices.size());
 		}
-		bgfx::allocTransientVertexBuffer(&_vertexBuffer, _vertNum, layout);
-		bx::memCopy(_vertexBuffer.data, vertices.ptr(), vertices.size());
+		else
+		{
+			_vertexBuffer.data = nullptr;
+			_vertexBuffer.size = 0;
+			_vertexBuffer.handle.idx = bgfx::kInvalidHandle;
+		}
 		if (!indices.empty())
 		{
 			if (!bgfx::getAvailTransientIndexBuffer(_idxNum, index32))
@@ -313,6 +334,12 @@ namespace darmok
 			}
 			bgfx::allocTransientIndexBuffer(&_indexBuffer, _idxNum, index32);
 			bx::memCopy(_indexBuffer.data, indices.ptr(), indices.size());
+		}
+		else
+		{
+			_indexBuffer.data = nullptr;
+			_indexBuffer.size = 0;
+			_indexBuffer.handle.idx = bgfx::kInvalidHandle;
 		}
 	}
 
@@ -349,14 +376,19 @@ namespace darmok
 		return getMeshDescription("TransientMesh", _vertNum, _idxNum, getVertexLayout());
 	}
 
-	void TransientMesh::render(bgfx::Encoder& encoder, RenderConfig config) const
+	bool TransientMesh::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		config.fix(_vertNum, _idxNum);
+		if(config.numVertices == 0)
+		{
+			return false;
+		}
 		encoder.setVertexBuffer(config.vertexStream, &_vertexBuffer, config.startVertex, config.numVertices);
-		if (_idxNum > 0)
+		if (config.numIndices > 0)
 		{
 			encoder.setIndexBuffer(&_indexBuffer, config.startIndex, config.numIndices);
 		}
+		return true;
 	}
 
 	const bgfx::VertexLayout& TransientMesh::getVertexLayout() const noexcept

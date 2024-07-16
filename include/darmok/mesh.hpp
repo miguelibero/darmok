@@ -50,7 +50,7 @@ namespace darmok
 
         virtual ~IMesh() = default;
          virtual [[nodiscard]] std::string toString() const noexcept = 0;
-         virtual void render(bgfx::Encoder& encoder, RenderConfig config = {}) const = 0;
+         virtual bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const = 0;
          virtual [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
 
          static [[nodiscard]] std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
@@ -74,7 +74,7 @@ namespace darmok
          [[nodiscard]] bgfx::IndexBufferHandle getIndexHandle() const noexcept;
 
          [[nodiscard]] std::string toString() const noexcept override;
-         void render(bgfx::Encoder& encoder, RenderConfig config = {}) const override;
+         bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept override;
          [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
     private:
         bgfx::VertexLayout _layout;
@@ -106,7 +106,7 @@ namespace darmok
         void updateIndices(DataView data, uint32_t offset = 0) noexcept;
 
         [[nodiscard]] std::string toString() const noexcept override;
-        void render(bgfx::Encoder& encoder, RenderConfig config = {}) const override;
+        bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept override;
         [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
     private:
         bgfx::VertexLayout _layout;
@@ -125,11 +125,11 @@ namespace darmok
          TransientMesh(TransientMesh&& other) noexcept;
          TransientMesh& operator=(TransientMesh&& other) noexcept;
 
-        TransientMesh(const Mesh& other) = delete;
-        TransientMesh& operator=(const TransientMesh& other) = delete;
+         TransientMesh(const Mesh& other) = delete;
+         TransientMesh& operator=(const TransientMesh& other) = delete;
 
          [[nodiscard]] std::string toString() const noexcept override;
-         void render(bgfx::Encoder& encoder, RenderConfig config = {}) const override;
+         bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept override;
          [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
     private:
         bgfx::VertexLayout _layout;

@@ -20,10 +20,6 @@ namespace darmok
 
 	Text::~Text()
 	{
-		if (_font)
-		{
-			_font->removeContent(_content);
-		}
 	}
 
 	const Color& Text::getColor() const noexcept
@@ -90,59 +86,42 @@ namespace darmok
 		{
 			return *this;
 		}
-		if (_font)
-		{
-			_font->removeContent(_content);
-		}
 		_font = font;
 		_changed = true;
-		if (_font)
-		{
-			_font->addContent(_content);
-		}
-
 		return *this;
 	}
 
-	std::string Text::getContentString()
+	std::string Text::getContentString() const
 	{
 		return Utf8Char::toString(_content);
 	}
 
+	const Utf8Vector& Text::getContent() const noexcept
+	{
+		return _content;
+	}
+
 	Text& Text::setContent(const std::string& str)
 	{
-		Utf8Vector oldContent = _content;
 		_content.clear();
 		Utf8Char::read(str, _content);
-		onContentChanged(oldContent);
+		_changed = true;
 		return *this;
 	}
 
 	Text& Text::setContent(const std::u8string& str)
 	{
-		Utf8Vector oldContent = _content;
 		_content.clear();
 		Utf8Char::read(str, _content);
-		onContentChanged(oldContent);
+		_changed = true;
 		return *this;
 	}
 
 	Text& Text::setContent(const Utf8Vector& content)
 	{
-		Utf8Vector oldContent = _content;
 		_content = content;
-		onContentChanged(oldContent);
-		return *this;
-	}
-
-	void Text::onContentChanged(const Utf8Vector& oldContent)
-	{
-		if (_font)
-		{
-			_font->removeContent(oldContent);
-			_font->addContent(_content);
-		}
 		_changed = true;
+		return *this;
 	}
 
 	bool Text::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
@@ -316,14 +295,15 @@ namespace darmok
 			return;
 		}
 		auto texts = _scene->getComponentView<Text>();
-		std::unordered_set<std::shared_ptr<IFont>> fonts;
+		std::unordered_map<std::shared_ptr<IFont>, std::unordered_set<Utf8Char>> fontChars;
 		for (auto [entity, text] : texts.each())
 		{
-			fonts.insert(text.getFont());
+			auto content = text.getContent();
+			fontChars[text.getFont()].insert(content.begin(), content.end());
 		}
-		for (auto& font : fonts)
+		for (auto& [font, chars] : fontChars)
 		{
-			font->update();
+			font->update(chars);
 		}
 		for (auto [entity, text] : texts.each())
 		{

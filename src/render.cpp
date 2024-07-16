@@ -67,7 +67,10 @@ namespace darmok
 		{
 			return;
 		}
-		_mesh->render(encoder);
+		if (!_mesh->render(encoder))
+		{
+			return;
+		}
 		_material->renderSubmit(encoder, viewId);
 	}
 }

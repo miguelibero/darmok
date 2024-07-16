@@ -39,6 +39,7 @@ namespace darmok::physics3d
         , _viewId(-1)
         , _enabled(true)
         , _system(system)
+        , _meshBatchSize(32 * 1024)
     {
         _solidMeshData.config.type = MeshType::Transient;
         _wireMeshData.config.type = MeshType::Transient;
@@ -106,21 +107,65 @@ namespace darmok::physics3d
         settings.mDrawShape = true;
         settings.mDrawShapeWireframe = true;
         settings.mDrawWorldTransform = true;
-        settings.mDrawMassAndInertia = true;
+        settings.mDrawSleepStats = true;
 
         _cam->beforeRenderView(_encoder.value(), _viewId);
 
         joltSystem->DrawBodies(settings, this, nullptr);
 
-        renderMesh(*_wireMeshData.createMesh(_vertexLayout), EDrawMode::Wireframe);
-        renderMesh(*_solidMeshData.createMesh(_vertexLayout), EDrawMode::Solid);
-
-        _solidMeshData.clear();
-        _wireMeshData.clear();
+        renderMesh(_wireMeshData, EDrawMode::Wireframe);
+        renderMesh(_solidMeshData, EDrawMode::Solid);
+        renderText();
 
         bgfx::end(_encoder.ptr());
         _encoder.reset();
         return true;
+    }
+
+    bool PhysicsDebugRendererImpl::tryRenderMeshBatch(MeshData& meshData, EDrawMode mode)
+    {
+        if (meshData.vertices.size() < _meshBatchSize)
+        {
+            return false;
+        }
+        renderMesh(meshData, mode);
+        return true;
+    }
+
+    void PhysicsDebugRendererImpl::renderMesh(MeshData& meshData, EDrawMode mode)
+    {
+        if (meshData.empty())
+        {
+            return;
+        }
+        auto mesh = meshData.createMesh(_vertexLayout);
+        meshData.clear();
+        renderMesh(*mesh, EDrawMode::Wireframe);
+    }
+
+    void PhysicsDebugRendererImpl::renderText()
+    {
+        std::unordered_set<Utf8Char> chars;
+        for (auto& textData : _textData)
+        {
+            chars.insert(textData.content.begin(), textData.content.end());
+        }
+        _font->update(chars);
+
+        MeshData meshData;
+        meshData.config.type = MeshType::Transient;
+        for (auto& textData : _textData)
+        {
+            auto textMeshData = Text::createMeshData(textData.content, *_font);
+            textMeshData.config.color = textData.color;
+            textMeshData.config.offset = textData.position;
+            textMeshData.config.scale = glm::vec3(textData.height);
+
+            meshData += textMeshData;
+            tryRenderMeshBatch(meshData, EDrawMode::Solid);
+        }
+        _textData.clear();
+        renderMesh(meshData, EDrawMode::Solid);
     }
 
     bool PhysicsDebugRendererImpl::isEnabled() const noexcept
@@ -138,6 +183,11 @@ namespace darmok::physics3d
         _font = font;
     }
 
+    void PhysicsDebugRendererImpl::setMeshBatchSize(size_t size) noexcept
+    {
+        _meshBatchSize = size;
+    }
+
     void PhysicsDebugRendererImpl::renderMesh(const IMesh& mesh, EDrawMode mode)
     {
         if (!_config.material || !_encoder)
@@ -149,8 +199,10 @@ namespace darmok::physics3d
         auto primType = mode == EDrawMode::Wireframe ? MaterialPrimitiveType::Line : MaterialPrimitiveType::Triangle;
         material.setPrimitiveType(primType);
         _cam->renderEntity(entt::null, encoder, _viewId, [this, &mesh, &encoder, &material]() {
-            mesh.render(encoder);
-            renderSubmit(material);
+            if (mesh.render(encoder))
+            {
+                renderSubmit(material);
+            }
         });
     }
 
@@ -169,6 +221,7 @@ namespace darmok::physics3d
         MeshData data(Line(JoltUtils::convert(from), JoltUtils::convert(to)));
         data.config.color = JoltUtils::convert(color);
         _wireMeshData += data;
+        tryRenderMeshBatch(_wireMeshData, EDrawMode::Wireframe);
     }
 
     void PhysicsDebugRendererImpl::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow)
@@ -178,10 +231,12 @@ namespace darmok::physics3d
         if (castShadow == ECastShadow::On)
         {
             _solidMeshData += data;
+            tryRenderMeshBatch(_solidMeshData, EDrawMode::Solid);
         }
         else
         {
             _wireMeshData += data;
+            tryRenderMeshBatch(_wireMeshData, EDrawMode::Wireframe);
         }
     }
 
@@ -197,13 +252,13 @@ namespace darmok::physics3d
         {
             return;
         }
-        _font->addContent(content);
-        _font->update();
-        auto data = Text::createMeshData(content, *_font);
-        data.config.color = JoltUtils::convert(color);
-        data.config.offset += JoltUtils::convert(pos);
-        data.config.scale *= height;
-        _solidMeshData += data;
+
+        _textData.push_back(TextData{
+            .position = JoltUtils::convert(pos),
+            .content = content,
+            .color = JoltUtils::convert(color),
+            .height = height,
+        });
     }
 
     JPH::DebugRenderer::Batch PhysicsDebugRendererImpl::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* inTriangles, int inTriangleCount)

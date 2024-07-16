@@ -13,6 +13,7 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <unordered_set>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 
@@ -41,9 +42,7 @@ namespace darmok
         virtual std::optional<Glyph> getGlyph(const Utf8Char& chr) const = 0;
         virtual const Material& getMaterial() const = 0;
         virtual float getLineSize() const = 0;
-        virtual void update() {};
-        virtual void addContent(const Utf8Vector& content) {};
-        virtual void removeContent(const Utf8Vector& content) {};
+        virtual void update(const std::unordered_set<Utf8Char>& chars) {};
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IFontLoader
@@ -80,7 +79,8 @@ namespace darmok
         ~Text();
         std::shared_ptr<IFont> getFont() noexcept;
         Text& setFont(const std::shared_ptr<IFont>& font) noexcept;
-        std::string getContentString();
+        std::string getContentString() const;
+        const Utf8Vector& getContent() const noexcept;
         Text& setContent(const std::string& str);
         Text& setContent(const std::u8string& str);
         Text& setContent(const Utf8Vector& content);
@@ -108,8 +108,6 @@ namespace darmok
         uint32_t _vertexNum;
         uint32_t _indexNum;
         RenderConfig _renderConfig;
-
-        void onContentChanged(const Utf8Vector& oldContent);
     };
 
     class DARMOK_EXPORT TextRenderer final : public ICameraComponent

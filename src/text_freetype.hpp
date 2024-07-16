@@ -47,9 +47,7 @@ namespace darmok
         std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
         const Material& getMaterial() const noexcept override;
         float getLineSize() const noexcept override;
-        void addContent(const Utf8Vector& content) override;
-        void removeContent(const Utf8Vector& content) override;
-        void update() override;
+        void update(const std::unordered_set<Utf8Char>& chars) override;
         FT_Face getFace() const noexcept;
     private:
         Material _material;
@@ -59,8 +57,7 @@ namespace darmok
         Data _data;
         FT_Library _library;
         bx::AllocatorI& _alloc;
-        Utf8Vector _renderedChars;
-        std::map<Utf8Char, size_t> _chars;
+        std::unordered_set<Utf8Char> _renderedChars;
     };
 
     struct FontAtlas

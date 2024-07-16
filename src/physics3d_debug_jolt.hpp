@@ -43,6 +43,7 @@ namespace darmok::physics3d
         bool isEnabled() const noexcept;
         void setEnabled(bool enabled) noexcept;
         void setFont(const std::shared_ptr<IFont>& font) noexcept;
+        void setMeshBatchSize(size_t size) noexcept;
 
         void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
         void DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow = ECastShadow::Off) override;
@@ -51,6 +52,15 @@ namespace darmok::physics3d
         void DrawGeometry(JPH::RMat44Arg inModelMatrix, const JPH::AABox& inWorldSpaceBounds, float inLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode = ECullMode::CullBackFace, ECastShadow inCastShadow = ECastShadow::On, EDrawMode inDrawMode = EDrawMode::Solid) override;
         void DrawText3D(JPH::RVec3Arg inPosition, const std::string_view& inString, JPH::ColorArg inColor = JPH::Color::sWhite, float inHeight = 0.5f) override;
     private:
+
+        struct TextData final
+        {
+            glm::vec3 position;
+            Utf8Vector content;
+            Color color;
+            float height;
+        };
+        size_t _meshBatchSize;
         bool _enabled;
         PhysicsSystemImpl& _system;
         OptionalRef<Camera> _cam;
@@ -63,9 +73,14 @@ namespace darmok::physics3d
         static const std::string _bindingsName;
         MeshData _solidMeshData;
         MeshData _wireMeshData;
+        std::vector<TextData> _textData;
 
         void onBindingTriggered();
         void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid);
+        void renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid);
         void renderSubmit(const Material& mat);
+        void renderText();
+
+        bool tryRenderMeshBatch(MeshData& meshData, EDrawMode mode = EDrawMode::Solid);
     };
 }

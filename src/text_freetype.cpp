@@ -142,61 +142,20 @@ namespace darmok
 		return _face->size->metrics.height >> 6;
 	}
 
-	void FreetypeFont::addContent(const Utf8Vector& content)
-	{
-		for (auto& chr : content)
-		{
-			auto itr = _chars.find(chr);
-			if (itr == _chars.end())
-			{
-				_chars.emplace(chr, 1);
-			}
-			else
-			{
-				itr->second++;
-			}
-		}
-	}
-
-	void FreetypeFont::removeContent(const Utf8Vector& content)
-	{
-		for (auto& chr : content)
-		{
-			auto itr = _chars.find(chr);
-			if (itr != _chars.end())
-			{
-				itr->second--;
-				if (itr->second <= 0)
-				{
-					_chars.erase(itr);
-				}
-			}
-		}
-	}
-
 	FT_Face FreetypeFont::getFace() const  noexcept
 	{
 		return _face;
 	}
 
-	void FreetypeFont::update()
+	void FreetypeFont::update(const std::unordered_set<Utf8Char>& chars)
 	{
-		Utf8Vector chars;
-		for (auto& [chr, count] : _chars)
-		{
-			if (count > 0)
-			{
-				chars.push_back(chr);
-			}
-		}
-
-		if (_renderedChars == chars || _chars.empty())
+		if (_renderedChars == chars || chars.empty())
 		{
 			return;
 		}
 		FreetypeFontAtlasGenerator generator(_face, _library, _alloc);
 		generator.setImageFormat(bimg::TextureFormat::RGBA8);
-		auto atlas = generator(chars);
+		auto atlas = generator(Utf8Vector(chars.begin(), chars.end()));
 
 		if (!_texture || _texture->getSize() != atlas.image.getSize())
 		{
