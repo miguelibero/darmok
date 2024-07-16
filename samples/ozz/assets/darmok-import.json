@@ -1,6 +1,5 @@
 {
     "files": {
-        "noto.ttf": "copy",
         "animator.json": "copy",
         "BasicMotionsTexture.png": "copy",
         "BasicMotions@*.fbx": {
@@ -10,7 +9,8 @@
         },
         "BasicMotionsDummyModel.fbx": {
             "model": {
-                "outputPath": "model.dml"
+                "outputPath": "model.dml",
+                "program": "forward"
             },
             "skeleton": {
                 "outputPath": "skeleton.ozz"

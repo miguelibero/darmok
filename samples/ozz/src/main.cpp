@@ -32,7 +32,7 @@ namespace
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<SkeletalAnimationSceneComponent>();
 
-			auto prog = getAssets().getProgramLoader()("forward");
+			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
 			
 			auto camEntity = scene.createEntity();
 			scene.addComponent<Transform>(camEntity)
@@ -70,7 +70,7 @@ namespace
 			auto boneMat = std::make_shared<Material>(prog, boneTex);
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 #ifdef DARMOK_FREETYPE
-			renderSkel.setFont(getAssets().getFontLoader()("noto.ttf"));
+			renderSkel.setFont(getAssets().getFontLoader()("../assets/noto.ttf"));
 			cam.addComponent<TextRenderer>();
 #endif
 
@@ -88,6 +88,7 @@ namespace
 				if (renderable)
 				{
 					auto mat = renderable->getMaterial();
+					mat->setProgramDefine("SKINNING_ENABLED");
 					mat->setTexture(MaterialTextureType::Diffuse, modelTex);
 				}
 			});

@@ -59,11 +59,6 @@ namespace darmok::physics3d
         {
             _config.material = std::make_shared<Material>();
         }
-        if (_config.material->getProgram() == nullptr)
-        {
-            auto prog = app.getAssets().getProgramLoader()("debug");
-            _config.material->setProgram(prog);
-        }
         _vertexLayout = _config.material->getProgram()->getVertexLayout();
         _cam = cam;
         Initialize();

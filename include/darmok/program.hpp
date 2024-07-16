@@ -29,7 +29,6 @@ namespace darmok
 
 		Program(StandardProgramType type);
 		Program(const Definition& definition);
-		Program(const Handles& handles, const VertexLayout& layout) noexcept;
 		~Program() noexcept;
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
@@ -43,6 +42,7 @@ namespace darmok
 	private:
 		ShaderHandles createShaders(const DefinesDataMap& defMap, const std::string& name);
 
+		Defines _allDefines;
 		ShaderHandles _vertexHandles;
 		ShaderHandles _fragmentHandles;
 		Handles _handles;

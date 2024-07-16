@@ -47,7 +47,6 @@ namespace darmok
 		if (_program == nullptr)
 		{
 			_program = std::make_shared<Program>(StandardProgramType::Unlit);
-			setColor(ColorType::Diffuse, Colors::magenta());
 		}
 
 		if (diffuseTexture != nullptr)

@@ -79,15 +79,10 @@ namespace darmok
                 Defines defines = vertDefines;
                 defines.insert(fragDefines.begin(), fragDefines.end());
                 _handles[defines] = bgfx::createProgram(vertHandle, fragHandle);
+                _allDefines.insert(defines.begin(), defines.end());
             }
         }
     }
-
-    Program::Program(const Handles& handles, const VertexLayout& layout) noexcept
-		: _handles(handles)
-		, _vertexLayout(layout)
-	{
-	}
 
     Program::~Program() noexcept
     {
@@ -116,7 +111,15 @@ namespace darmok
 
 	bgfx::ProgramHandle Program::getHandle(const Defines& defines) const noexcept
 	{
-        auto itr = _handles.find(defines);
+        Defines existingDefines;
+        for (auto& define : defines)
+        {
+            if (_allDefines.contains(define))
+            {
+                existingDefines.insert(define);
+            }
+        }
+        auto itr = _handles.find(existingDefines);
         if (itr != _handles.end())
         {
             return itr->second;

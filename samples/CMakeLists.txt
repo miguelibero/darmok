@@ -1,3 +1,12 @@
+set(SHARED_ASSETS_TARGET darmok-samples-assets)
+darmok_process_assets(
+  TARGET ${SHARED_ASSETS_TARGET}
+  ASSETS
+    assets/darmok-import.json
+    assets/noto.ttf
+)
+set_target_properties(${SHARED_ASSETS_TARGET} PROPERTIES FOLDER "darmok/samples")
+
 function(darmok_sample_setup)
   cmake_parse_arguments(ARGS "" "TARGET;ASSETS_INPUT;ASSETS_OUTPUT" "SOURCES;ASSETS" "${ARGN}")
   if(NOT ARGS_SOURCES)
@@ -12,6 +21,7 @@ function(darmok_sample_setup)
   target_link_libraries(${ARGS_TARGET} PUBLIC darmok)
   darmok_copy_dynamic_libs(${ARGS_TARGET})
   set_target_properties(${ARGS_TARGET} PROPERTIES FOLDER "darmok/samples")
+  add_dependencies(${ARGS_TARGET} ${SHARED_ASSETS_TARGET})
 
   if(ARGS_ASSETS)
     set(ASSETS_TARGET ${ARGS_TARGET}-assets)
@@ -36,7 +46,8 @@ function(darmok_lua_sample_setup)
     COMMENT "running darmok lua executable"
   )
   set_target_properties(${ARGS_TARGET} PROPERTIES FOLDER "darmok/samples")
-
+  add_dependencies(${ARGS_TARGET} ${SHARED_ASSETS_TARGET})
+  
   if(ARGS_ASSETS)
     set(ASSETS_TARGET ${ARGS_TARGET}-assets)
     darmok_process_assets(

@@ -10,7 +10,6 @@
 #include <darmok/camera.hpp>
 #include <darmok/input.hpp>
 #include <darmok/program.hpp>
-#include <darmok/program_standard.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/render.hpp>
@@ -43,7 +42,7 @@ namespace
 			_scene = addComponent<SceneAppComponent>().getScene();
 			auto& physics = _scene->addSceneComponent<PhysicsSystem>(getAssets().getAllocator());
 
-			auto prog = getAssets().getStandardProgramLoader()(StandardProgramType::ForwardPhong);
+			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
 
 			// camera
 			{
@@ -62,7 +61,7 @@ namespace
 #ifdef PHYSICS_DEBUG_RENDERER
 				_physicsDebugRenderer = _cam->addComponent<PhysicsDebugRenderer>(physics);
 #ifdef DARMOK_FREETYPE
-				auto font = getAssets().getFontLoader()("noto.ttf");
+				auto font = getAssets().getFontLoader()("../assets/noto.ttf");
 				_physicsDebugRenderer->setFont(font);
 #endif
 				_physicsDebugRenderer->setEnabled(false);

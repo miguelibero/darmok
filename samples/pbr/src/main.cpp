@@ -28,7 +28,7 @@ namespace
 			App::init();
 
 			auto scene = addComponent<SceneAppComponent>().getScene();
-			auto prog = getAssets().getProgramLoader()("forward");
+			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
 			auto& layout = prog->getVertexLayout();
 			auto& registry = scene->getRegistry();
 
