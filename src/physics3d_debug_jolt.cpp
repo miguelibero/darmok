@@ -40,6 +40,8 @@ namespace darmok::physics3d
         , _enabled(true)
         , _system(system)
     {
+        _solidMeshData.config.type = MeshType::Transient;
+        _wireMeshData.config.type = MeshType::Transient;
     }
 
     const std::string PhysicsDebugRendererImpl::_bindingsName = "physics_debug";
@@ -58,6 +60,8 @@ namespace darmok::physics3d
         if (_config.material == nullptr)
         {
             _config.material = std::make_shared<Material>();
+            auto diffuse = app.getAssets().getColorTextureLoader()(Colors::white());
+            _config.material->setTexture(MaterialTextureType::Diffuse, diffuse);
         }
         _vertexLayout = _config.material->getProgram()->getVertexLayout();
         _cam = cam;
@@ -93,6 +97,8 @@ namespace darmok::physics3d
             return false;
         }
 
+        bgfx::setViewName(viewId, "Jolt Physics Debug");
+
         _encoder = bgfx::begin();
         _viewId = viewId;
 
@@ -100,11 +106,17 @@ namespace darmok::physics3d
         settings.mDrawShape = true;
         settings.mDrawShapeWireframe = true;
         settings.mDrawWorldTransform = true;
-        settings.mDrawSleepStats = true;
+        settings.mDrawMassAndInertia = true;
 
         _cam->beforeRenderView(_encoder.value(), _viewId);
 
         joltSystem->DrawBodies(settings, this, nullptr);
+
+        renderMesh(*_wireMeshData.createMesh(_vertexLayout), EDrawMode::Wireframe);
+        renderMesh(*_solidMeshData.createMesh(_vertexLayout), EDrawMode::Solid);
+
+        _solidMeshData.clear();
+        _wireMeshData.clear();
 
         bgfx::end(_encoder.ptr());
         _encoder.reset();
@@ -154,21 +166,44 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color)
     {
-        /*
         MeshData data(Line(JoltUtils::convert(from), JoltUtils::convert(to)));
         data.config.color = JoltUtils::convert(color);
-        data.config.type = MeshType::Transient;
-        renderMesh(*data.createMesh(_vertexLayout), EDrawMode::Wireframe);
-        */
+        _wireMeshData += data;
     }
 
     void PhysicsDebugRendererImpl::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow)
     {
         MeshData data(darmok::Triangle(JoltUtils::convert(v1), JoltUtils::convert(v2), JoltUtils::convert(v3)));
         data.config.color = JoltUtils::convert(color);
-        data.config.type = MeshType::Transient;
-        auto mode = castShadow == ECastShadow::On ? EDrawMode::Solid : EDrawMode::Wireframe;
-        renderMesh(*data.createMesh(_vertexLayout), mode);
+        if (castShadow == ECastShadow::On)
+        {
+            _solidMeshData += data;
+        }
+        else
+        {
+            _wireMeshData += data;
+        }
+    }
+
+    void PhysicsDebugRendererImpl::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
+    {
+        if (!_font || !_encoder)
+        {
+            return;
+        }
+        Utf8Vector content;
+        Utf8Char::read(str, content);
+        if (content.empty())
+        {
+            return;
+        }
+        _font->addContent(content);
+        _font->update();
+        auto data = Text::createMeshData(content, *_font);
+        data.config.color = JoltUtils::convert(color);
+        data.config.offset += JoltUtils::convert(pos);
+        data.config.scale *= height;
+        _solidMeshData += data;
     }
 
     JPH::DebugRenderer::Batch PhysicsDebugRendererImpl::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* inTriangles, int inTriangleCount)
@@ -228,36 +263,6 @@ namespace darmok::physics3d
         _config.material->setColor(MaterialColorType::Diffuse, JoltUtils::convert(inModelColor));
         renderMesh(*batch.mesh, inDrawMode);
         _config.material->setColor(MaterialColorType::Diffuse, oldColor);
-    }
-
-    void PhysicsDebugRendererImpl::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
-    {
-        if (!_font || !_encoder)
-        {
-            return;
-        }
-        Utf8Vector content;
-        Utf8Char::read(str, content);
-        if (content.empty())
-        {
-            return;
-        }
-        _font->addContent(content);
-        _font->update();
-        auto data = Text::createMeshData(content, *_font);
-        data.config.color = JoltUtils::convert(color);
-        data.config.type = MeshType::Transient;
-
-        auto trans = glm::translate(glm::scale(glm::mat4(1), glm::vec3(height*4)), JoltUtils::convert(pos));
-        _encoder->setTransform(glm::value_ptr(trans));
-
-        auto& encoder = _encoder.value();
-        auto mesh = data.createMesh(_vertexLayout);
-        auto& material = _font->getMaterial();
-        _cam->renderEntity(entt::null, encoder, _viewId, [this, &mesh, &material]() {
-            mesh->render(_encoder.value());
-            renderSubmit(material);
-        });
     }
 
     PhysicsDebugRenderer::PhysicsDebugRenderer(PhysicsSystem& system, const Config& config) noexcept

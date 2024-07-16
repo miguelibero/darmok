@@ -61,7 +61,7 @@ namespace
 #ifdef PHYSICS_DEBUG_RENDERER
 				_physicsDebugRenderer = _cam->addComponent<PhysicsDebugRenderer>(physics);
 #ifdef DARMOK_FREETYPE
-				auto font = getAssets().getFontLoader()("../assets/noto.ttf");
+				auto font = getAssets().getFontLoader()("../../assets/noto.ttf");
 				_physicsDebugRenderer->setFont(font);
 #endif
 				_physicsDebugRenderer->setEnabled(false);

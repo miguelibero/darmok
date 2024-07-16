@@ -61,6 +61,8 @@ namespace darmok::physics3d
         bgfx::VertexLayout _vertexLayout;
         std::shared_ptr<IFont> _font;
         static const std::string _bindingsName;
+        MeshData _solidMeshData;
+        MeshData _wireMeshData;
 
         void onBindingTriggered();
         void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid);

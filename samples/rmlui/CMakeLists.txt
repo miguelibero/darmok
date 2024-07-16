@@ -7,6 +7,5 @@ darmok_sample_setup(
   ASSETS 
     assets/hello_world.rml
     assets/LatoLatin-Regular.ttf
-    assets/NotoEmoji-Regular.ttf
     assets/window.rcss
 )
