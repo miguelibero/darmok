@@ -6,6 +6,7 @@
 #include <string>
 #include <type_traits>
 #include <filesystem>
+#include <entt/entt.hpp>
 
 namespace darmok
 {
@@ -27,13 +28,21 @@ namespace darmok
 
     std::filesystem::path getTempPath(std::string_view suffix = "") noexcept;
 
-    inline void hash_combine(std::size_t& seed) { }
+    inline void hashCombine(std::size_t& seed) { }
 
     template <typename T, typename... Rest>
-    inline void hash_combine(std::size_t& seed, const T& v, Rest... rest)
+    inline void hashCombine(std::size_t& seed, const T& v, Rest... rest)
     {
         std::hash<T> hasher;
         seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        hash_combine(seed, rest...);
+        hashCombine(seed, rest...);
     }
+
+    inline entt::id_type idTypeCombine(entt::id_type seed, entt::id_type other)
+    {
+        seed ^= other + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        return seed;
+    }
+
+    entt::id_type randomIdType() noexcept;
 }

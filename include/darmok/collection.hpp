@@ -251,7 +251,7 @@ template<typename T> struct std::hash<std::unordered_set<T>>
         size_t hash = 0;
         for (auto& elm : key)
         {
-            darmok::hash_combine(hash, elm);
+            darmok::hashCombine(hash, elm);
         }
         return hash;
     }

@@ -1,5 +1,4 @@
 #include <darmok/render_graph.hpp>
-#include <darmok/utils.hpp>
 #include <darmok/string.hpp>
 #include <stdexcept>
 #include <sstream>
@@ -8,9 +7,12 @@ namespace darmok
 {
     entt::id_type RenderResourceDefinition::hash() const noexcept
     {
-        std::size_t hash;
-        hash_combine(hash, name, type);
-        return hash;
+        return idTypeCombine(name, type);
+    }
+
+    RenderResourceDefinition::operator entt::id_type() const noexcept
+    {
+        return hash();
     }
 
     bool RenderResourceDefinition::operator==(const RenderResourceDefinition& other) const noexcept
@@ -28,27 +30,35 @@ namespace darmok
         return hash() < other.hash();
     }
 
-    const std::string RenderResourceGroupDefinition::defaultName = "";
-
-    RenderResourceGroupDefinition::ConstIterator RenderResourceGroupDefinition::begin() const
+    RenderResourcesDefinition::ConstIterator RenderResourcesDefinition::begin() const
     {
         return _resources.begin();
     }
 
-    RenderResourceGroupDefinition::ConstIterator RenderResourceGroupDefinition::end() const
+    RenderResourcesDefinition::ConstIterator RenderResourcesDefinition::end() const
     {
         return _resources.end();
     }
 
-    bool RenderResourceGroupDefinition::contains(const Resource& res) const noexcept
+    bool RenderResourcesDefinition::contains(const Resource& res) const noexcept
     {
         return std::find(_resources.begin(), _resources.end(), res) != _resources.end();
     }
 
-    const std::string RenderGraphResources::defaultName = "";
+    RenderGraphResources::RenderGraphResources(entt::id_type group) noexcept
+        : _group(group)
+    {
+    }
 
-    RenderPassDefinition::RenderPassDefinition(const std::string& name) noexcept
+    RenderGraphResources& RenderGraphResources::setGroup(entt::id_type group) noexcept
+    {
+        _group = group;
+        return *this;
+    }
+
+    RenderPassDefinition::RenderPassDefinition(const std::string& name, entt::id_type group) noexcept
         : _name(name)
+        , _group(group)
     {
     }
 
@@ -63,14 +73,14 @@ namespace darmok
         return *this;
     }
 
-    bool RenderPassDefinition::operator()(RenderGraphResources& res) const
+    void RenderPassDefinition::operator()(RenderGraphResources& res) const noexcept
     {
-        if (!_delegate)
+        if (_delegate)
         {
-            return false;
+            res.setGroup(_group);
+            _delegate->renderPassExecute(res);
+            res.setGroup(0);
         }
-        _delegate->renderPassExecute(res);
-        return true;
     }
 
     const RenderPassDefinition::Resources& RenderPassDefinition::getInputs() const noexcept
@@ -93,6 +103,11 @@ namespace darmok
         return _outputs;
     }
 
+    RenderPassDefinition::operator entt::id_type() const noexcept
+    {
+        return hash();
+    }
+
     entt::id_type RenderPassDefinition::hash() const noexcept
     {
         return entt::hashed_string(_name.c_str());
@@ -113,6 +128,26 @@ namespace darmok
         return true;
     }
 
+    RenderGraphDefinition::RenderGraphDefinition() noexcept
+        : _hash(randomIdType())
+    {
+    }
+
+    entt::id_type RenderGraphDefinition::hash() const noexcept
+    {
+        return _hash;
+    }
+
+    RenderGraphDefinition::operator entt::id_type() const noexcept
+    {
+        return hash();
+    }
+
+    void RenderGraphDefinition::addChild(const RenderGraphDefinition& child) noexcept
+    {
+        _children.push_back(child);
+    }
+
     RenderPassDefinition& RenderGraphDefinition::addPass(const std::string& name)
     {
         auto itr = std::find_if(_passes.begin(), _passes.end(), [&name](auto& pass) { return pass.getName() == name; });
@@ -120,10 +155,10 @@ namespace darmok
         {
             throw std::invalid_argument("pass name already exists");
         }
-        return _passes.emplace_back(name);
+        return _passes.emplace_back(name, _hash);
     }
 
-    const RenderPassDefinition& RenderGraphDefinition::addPass(IRenderPass& pass)
+    const RenderGraphDefinition::Pass& RenderGraphDefinition::addPass(IRenderPass& pass)
     {
         auto& def = addPass(pass.getRenderPassName());
         def.setDelegate(pass);
@@ -131,34 +166,90 @@ namespace darmok
         return def;
     }
 
-    const RenderPassDefinition& RenderGraphDefinition::getPass(size_t vertex) const
+    size_t RenderGraphDefinition::size() const noexcept
     {
-        if (vertex < 0 || vertex >= _passes.size())
+        size_t s = _passes.size();
+        for (auto& child : _children)
+        {
+            s += child.size();
+        }
+        return s;
+    }
+
+    const RenderGraphDefinition::Pass& RenderGraphDefinition::operator[](size_t vertex) const
+    {
+        return getPass(vertex);
+    }
+
+    const RenderGraphDefinition::Pass& RenderGraphDefinition::getPass(size_t vertex) const
+    {
+        if (vertex < 0)
         {
             throw std::invalid_argument("pass does not exist");
         }
-        return _passes[vertex];
+        auto s = _passes.size();
+        if (vertex < s)
+        {
+            return _passes[vertex];
+        }
+        vertex -= s;
+        for (auto& child : _children)
+        {
+            s = child.size();
+            if (vertex < s)
+            {
+                return child.getPass(vertex);
+            }
+            vertex -= s;
+        }
+        throw std::invalid_argument("pass does not exist");
     }
 
-    RenderGraph RenderGraphDefinition::compile() const
+    RenderGraphDefinition::ConstIterator RenderGraphDefinition::begin() const
     {
-        entt::flow builder;
+        return _passes.begin();
+    }
+    
+    RenderGraphDefinition::ConstIterator RenderGraphDefinition::end() const
+    {
+        return _passes.end();
+    }
+
+    void RenderGraphDefinition::configureFlow(entt::flow& builder) const noexcept
+    {
+        auto baseHash = hash();
+
+        auto getHash = [&baseHash](const auto& v)
+        {
+            return idTypeCombine(baseHash, v.hash());
+        };
+
         for (auto& pass : _passes)
         {
-            builder.bind(pass.hash());
+            builder.bind(getHash(pass));
             for (auto& input : pass.getInputs())
             {
-                builder.ro(input.hash());
+                builder.ro(getHash(input));
             }
             for (auto& output : pass.getOutputs())
             {
-                builder.rw(output.hash());
+                builder.rw(getHash(output));
             }
             if (pass.getSync())
             {
                 builder.sync();
             }
         }
+        for (auto& child : _children)
+        {
+            child.configureFlow(builder);
+        }
+    }
+
+    RenderGraph RenderGraphDefinition::compile() const
+    {
+        entt::flow builder;
+        configureFlow(builder);
         return RenderGraph(builder.graph(), *this);
     }
 
@@ -219,8 +310,7 @@ namespace darmok
         for (auto& vertex : readyVertices)
         {
             // TODO: run passes in parallel
-            auto& pass = _def.getPass(vertex);
-            pass(res);
+            _def.getPass(vertex)(res);
             executed.insert(vertex);
         }
         return execute(res, executed);

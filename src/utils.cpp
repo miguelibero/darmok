@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <cstdio>
 #include <array>
+#include <random>
 
 namespace darmok
 {
@@ -54,5 +55,13 @@ namespace darmok
         std::string name = std::tmpnam(nullptr);
         name += suffix;
         return std::filesystem::temp_directory_path() / name;
+    }
+
+    entt::id_type randomIdType() noexcept
+    {
+        std::random_device dev;
+        std::mt19937 rng(dev());
+        std::uniform_int_distribution<entt::id_type> uni;
+        return uni(rng);
     }
 }

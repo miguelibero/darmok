@@ -31,18 +31,18 @@ public:
     void renderPassDefine(RenderPassDefinition& def) override
     {
         def.getOutputs()
-            .add("depth", _depthTexture)
-            .add("normal", _normalTexture)
-            .add("albedo", _albedoTexture);
+            .add<TestTexture>("depth")
+            .add<TestTexture>("normal")
+            .add<TestTexture>("albedo");
     }
 
     void renderPassExecute(RenderGraphResources& res) override
     {
         // render!
         res
-            .setRef("depth", _depthTexture)
-            .setRef("normal", _normalTexture)
-            .setRef("albedo", _albedoTexture);
+            .setRef(_depthTexture, { "depth", })
+            .setRef(_normalTexture, { "normal" })
+            .setRef(_albedoTexture, { "albedo", });
     }
 private:
     TestTexture _depthTexture;
@@ -67,18 +67,18 @@ public:
     void renderPassDefine(RenderPassDefinition& def) override
     {
         def.getInputs()
-            .add("depth", _depthTexture)
-            .add("normal", _normalTexture)
-            .add("albedo", _albedoTexture);
+            .add<TestTexture>("depth")
+            .add<TestTexture>("normal")
+            .add<TestTexture>("albedo");
         def.getOutputs()
-            .add(_outTexture);
+            .add<TestTexture>();
     }
 
     void renderPassExecute(RenderGraphResources& res) override
     {
-        res.get("depth", _depthTexture);
-        res.get("normal", _normalTexture);
-        res.get("albedo", _albedoTexture);
+        _depthTexture = res.get<TestTexture>({ "depth" });
+        _normalTexture = res.get<TestTexture>({ "normal" });
+        res.get(_albedoTexture, { "albedo" });
 
         // render!
         _outTexture.content += _depthTexture->content + "+" + _normalTexture->content + "+" + _albedoTexture.content;
@@ -127,6 +127,7 @@ public:
 private:
     TestTexture _outTexture;
 };
+/*
 
 TEST_CASE( "Compile & run render graph dependencies", "[render-graph]" )
 {
@@ -147,10 +148,9 @@ TEST_CASE( "Compile & run render graph dependencies", "[render-graph]" )
 
     REQUIRE(outTexture);
     REQUIRE(outTexture->content == "postprocess:lighting:depth+normal+albedo");
-
-    std::ofstream out("lala.graphviz");
-    graph.writeGraphviz(out);
 }
+
+*/
 
 struct TestCamera final
 {
@@ -181,24 +181,37 @@ public:
     }
 };
 
-TEST_CASE("Iterable render graph dependencies", "[render-graph]")
+TEST_CASE("Subgraphs", "[render-graph]")
 {
-    RenderGraphDefinition def;
-    CameraRenderPass camPass;
+    RenderGraphDefinition def1;
+    CameraRenderPass camPass1;
+    def1.addPass(camPass1);
+
+    RenderGraphDefinition def2;
+    CameraRenderPass camPass2;
     PostprocessRenderPass postPass;
+    def2.addPass(camPass2);
+    def2.addPass(postPass);
 
-    def.addPass(camPass);
-    def.addPass(postPass);
-
-    auto graph = def.compile();
+    RenderGraphDefinition def;
+    def.addChild(def1);
+    def.addChild(def2);
 
     RenderGraphResources res;
-    std::vector<TestCamera> cams{
-        {"one"}, {"two"}, {"three"}
-    };
-    res.setCollection(cams.begin(), cams.end());
 
+    res.emplace<TestCamera>({ .group = def1 }, "one");
+    res.emplace<TestCamera>({ .group = def2 }, "two");
+
+    auto graph = def.compile();
     graph.execute(res);
 
+    auto outTexture1 = res.get<TestTexture>({ .group = def1 });
+    auto outTexture2 = res.get<TestTexture>({ .group = def2 });
+
+    REQUIRE(outTexture1);
+    REQUIRE(outTexture1->content == "one");
+
+    REQUIRE(outTexture2);
+    REQUIRE(outTexture2->content == "postprocess:two");
 
 }

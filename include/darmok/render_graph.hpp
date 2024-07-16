@@ -1,6 +1,8 @@
 #pragma once
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
+#include <darmok/utils.hpp>
+
 #include <bx/bx.h>
 #include <memory>
 #include <vector>
@@ -16,73 +18,42 @@ namespace darmok
 
     struct RenderResourceDefinition final
     {
-        std::string name;
+        entt::hashed_string name;
         entt::id_type type;
 
         template<typename T>
-        static RenderResourceDefinition create(std::string_view name) noexcept
+        static RenderResourceDefinition create(entt::hashed_string name) noexcept
         {
-            return { std::string(name), entt::type_hash<T>::value() };
+            return { name, entt::type_hash<T>::value() };
         }
 
+        operator entt::id_type() const noexcept;
         entt::id_type hash() const noexcept;
         bool operator==(const RenderResourceDefinition& other) const noexcept;
         bool operator!=(const RenderResourceDefinition& other) const noexcept;
         bool operator<(const RenderResourceDefinition& other) const noexcept;
     };
 
-    class DARMOK_EXPORT RenderResourceGroupDefinition
+    class DARMOK_EXPORT RenderResourcesDefinition
     {
     public:
-        static const std::string defaultName;
         using Resource = RenderResourceDefinition;
         using ConstIterator = std::vector<Resource>::const_iterator;
         ConstIterator begin() const;
         ConstIterator end() const;
         bool contains(const Resource& res) const noexcept;
 
+        template<typename T>
+        bool contains(entt::hashed_string name = "") const noexcept
+        {
+            return contains(Resource::create<T>(name));
+        }
 
         template<typename T>
-        RenderResourceGroupDefinition& add(std::string_view name = defaultName)
+        RenderResourcesDefinition& add(entt::hashed_string name = "")
         {
             _resources.push_back(Resource::create<T>(name));
             return *this;
-        }
-
-        template<typename T>
-        RenderResourceGroupDefinition& add(std::string_view name, const T& value)
-        {
-            return add<T>(name);
-        }
-
-        template<typename T>
-        RenderResourceGroupDefinition& add(std::string_view name, const OptionalRef<const T>& value)
-        {
-            return add<T>(name);
-        }
-
-        template<typename T>
-        RenderResourceGroupDefinition& add(std::string_view name, const OptionalRef<T>& value)
-        {
-            return add<T>(name);
-        }
-
-        template<typename T>
-        RenderResourceGroupDefinition& add(const T& value)
-        {
-            return add<T>(defaultName);
-        }
-
-        template<typename T>
-        RenderResourceGroupDefinition& add(const OptionalRef<const T>& value)
-        {
-            return add<T>(defaultName);
-        }
-
-        template<typename T>
-        RenderResourceGroupDefinition& add(const OptionalRef<T>& value)
-        {
-            return add<T>(defaultName);
         }
 
     private:
@@ -92,87 +63,57 @@ namespace darmok
     class DARMOK_EXPORT RenderGraphResources final
     {
     public:
-        static const std::string defaultName;
+        template<typename T>
+        struct Key final
+        {
+            entt::hashed_string name = "";
+            entt::id_type group = 0;
+
+            entt::id_type hash() const noexcept
+            {
+                auto v = idTypeCombine(name.value(), entt::type_hash<T>::value());
+                if (group != 0)
+                {
+                    v = idTypeCombine(v, group);
+                }
+                return v;
+            }
+        };
+
+        RenderGraphResources(entt::id_type group = 0) noexcept;
+        RenderGraphResources& setGroup(entt::id_type group) noexcept;
 
         template<typename T>
-        RenderGraphResources& set(std::string_view name, T&& value) noexcept
+        RenderGraphResources& set(T&& value, const Key<T>& key = {}) noexcept
         {
-            createKey<T>(name).push_back(std::forward(value));
+            getAny(key) = value;
             return *this;
         }
 
-        template<typename T>
-        RenderGraphResources& set(T&& value) noexcept
-        {
-            return set(defaultName, std::forward(value));
-        }
-
         template<typename T, typename... A>
-        RenderGraphResources& emplace(std::string_view name, A&&... args) noexcept
+        RenderGraphResources& emplace(const Key<T>& key, A&&... args) noexcept
         {
-            createKey<T>(name).push_back(T(std::forward<A>(args)...));
+            getAny(key).emplace<T>(std::forward<A>(args)...);
             return *this;
         }
 
         template<typename T, typename... A>
         RenderGraphResources& emplaceDef(A&&... args) noexcept
         {
-            return emplace<T>(defaultName, std::forward<A>(args)...);
+            return emplace<T>({}, std::forward<A>(args)...);
         }
 
         template<typename T>
-        RenderGraphResources& setRef(std::string_view name, const T& value) noexcept
+        RenderGraphResources& setRef(const T& value, const Key<T>& key = {}) noexcept
         {
-            createKey<T>(name).push_back(std::reference_wrapper<const T>(value));
+            getAny(key) = std::reference_wrapper<const T>(value);
             return *this;
         }
 
         template<typename T>
-        RenderGraphResources& setRef(const T& value) noexcept
+        bool get(T& val, const Key<T>& key = {}) const noexcept
         {
-            return setRef(defaultName, value);
-        }
-
-        template<typename Iter>
-        RenderGraphResources& setCollection(Iter begin, Iter end) noexcept
-        {
-            return setCollection(defaultName, begin, end);
-        }
-
-        template<typename Iter>
-        RenderGraphResources& setCollection(std::string_view name, Iter begin, Iter end) noexcept
-        {
-            using T = Iter::value_type;
-            auto& values = createKey<T>(name);
-            for (auto itr = begin; itr != end; ++itr)
-            {
-                values.push_back(*itr);
-            }
-            return *this;
-        }
-
-        template<typename Iter>
-        RenderGraphResources& setRefCollection(Iter begin, Iter end) noexcept
-        {
-            return setRefCollection(defaultName, begin, end);
-        }
-
-        template<typename Iter>
-        RenderGraphResources& setRefCollection(std::string_view name, Iter begin, Iter end) noexcept
-        {
-            using T = Iter::value_type;
-            auto& values = createKey<T>(name);
-            for (auto itr = begin; itr != end; ++itr)
-            {
-                values.push_back(std::reference_wrapper<const T>(*itr));
-            }
-            return *this;
-        }
-
-        template<typename T>
-        bool get(std::string_view name, T& val, size_t pos = -1) const noexcept
-        {
-            if (auto ref = get<T>(name, pos))
+            if (auto ref = get(key))
             {
                 val = ref.value();
                 return true;
@@ -181,124 +122,40 @@ namespace darmok
         }
 
         template<typename T>
-        bool get(T& val, size_t pos = 0) const noexcept
+        OptionalRef<const T> get(const Key<T>& key = {}) const noexcept
         {
-            return get(defaultName, val, pos);
-        }
-
-        template<typename T>
-        void get(std::string_view name, OptionalRef<const T>& ref, size_t pos = std::string::npos) const noexcept
-        {
-            ref = get<T>(name, pos);
-        }
-
-        template<typename T>
-        void get(OptionalRef<const T>& ref, size_t pos = 0) const noexcept
-        {
-            ref = get<T>(defaultName, pos);
-        }
-
-        template<typename T>
-        size_t get(std::vector<T>& results) const noexcept
-        {
-            return get(defaultName, results);
-        }
-        
-        template<typename T>
-        size_t get(std::string_view name, std::vector<T>& results) const noexcept
-        {
-            auto itr = _data.find(getKey<T>(name));
-            if (itr == _data.end())
+            if (_group != 0 && key.group == 0)
             {
-                return 0;
-            }
-            size_t count = 0;
-            for (auto& val : itr->second)
-            {
-                if (auto ref = castAny(val))
+                auto groupKey = key;
+                groupKey.group = _group;
+                auto itr = _data.find(groupKey.hash());
+                if (itr != _data.end())
                 {
-                    results.emplace_back(ref.value());
-                    count++;
+                    return castAny<T>(itr->second);
                 }
             }
-            return count;
-        }
-
-        template<typename T>
-        size_t get(std::vector<OptionalRef<const T>>& results) const noexcept
-        {
-            return get(defaultName, results);
-        }
-
-        template<typename T>
-        size_t get(std::string_view name, std::vector<OptionalRef<const T>>& results) const noexcept
-        {
-            auto itr = _data.find(getKey<T>(name));
-            if (itr == _data.end())
-            {
-                return 0;
-            }
-            for (auto& val : itr->second)
-            {
-                results.push_back(castAny(val));
-            }
-            return itr->second.size();
-        }
-
-        template<typename T>
-        OptionalRef<const T> get(std::string_view name = defaultName, size_t pos = std::string::npos) const noexcept
-        {
-            auto itr = _data.find(getKey<T>(name));
-            if (itr == _data.end())
-            {
-                return nullptr;
-            }
-            auto& values = itr->second;
-            if (pos == std::string::npos)
-            {
-                pos = values.size() - 1;
-            }
-            if (pos < 0 || pos >= values.size())
-            {
-                return nullptr;
-            }
-            return castAny<T>(values[pos]);
-        }
-
-        template<typename T>
-        size_t size(std::string_view name = defaultName) const noexcept
-        {
-            auto itr = _data.find(getKey<T>(name));
-            if (itr == _data.end())
-            {
-                return 0;
-            }
-            return itr->second.size();
-        }
-
-    private:
-        std::unordered_map<entt::id_type, std::vector<entt::any>> _data;
-
-        template<typename T>
-        std::vector<entt::any>& createKey(std::string_view name) noexcept
-        {
-            auto key = getKey<T>(name);
-            auto itr = _data.find(key);
+            auto itr = _data.find(key.hash());
             if (itr != _data.end())
             {
-                itr->second.clear();
+                return castAny<T>(itr->second);
             }
-            else
-            {
-                itr = _data.emplace(key, std::vector<entt::any>{}).first;
-            }
-            return itr->second;
-        }
+            return nullptr;
+        }        
+
+    private:
+        std::unordered_map<entt::id_type, entt::any> _data;
+        entt::id_type _group;
 
         template<typename T>
-        static entt::id_type getKey(std::string_view name = defaultName) noexcept
+        entt::any& getAny(const Key<T>& key = {}) noexcept
         {
-            return RenderResourceDefinition::create<T>(name).hash();
+            if (key.group == 0 && _group != 0)
+            {
+                auto groupKey = key;
+                groupKey.group = _group;
+                return _data[groupKey.hash()];
+            }
+            return _data[key.hash()];
         }
 
         template<typename T>
@@ -308,10 +165,6 @@ namespace darmok
             if (auto val = entt::any_cast<T>(ptr))
             {
                 return val;
-            }
-            if (auto ref = entt::any_cast<std::reference_wrapper<T>>(ptr))
-            {
-                return ref->get();
             }
             if (auto constRef = entt::any_cast<std::reference_wrapper<const T>>(ptr))
             {
@@ -332,13 +185,13 @@ namespace darmok
     class DARMOK_EXPORT RenderPassDefinition final
     {
     public:
-        using Resources = RenderResourceGroupDefinition;
+        using Resources = RenderResourcesDefinition;
 
-        RenderPassDefinition(const std::string& name) noexcept;
+        RenderPassDefinition(const std::string& name, entt::id_type group = 0) noexcept;
         const std::string& getName() const noexcept;
 
         RenderPassDefinition& setDelegate(IRenderPassDelegate& dlg) noexcept;
-        bool operator()(RenderGraphResources& res) const;
+        void operator()(RenderGraphResources& res) const noexcept;
 
         Resources& getInputs() noexcept;
         const Resources& getInputs() const noexcept;
@@ -346,12 +199,14 @@ namespace darmok
         const Resources& getOutputs() const noexcept;
         bool getSync() const noexcept;
 
+        operator entt::id_type() const noexcept;
         entt::id_type hash() const noexcept;
     private:
         std::string _name;
         Resources _inputs;
         Resources _outputs;
         OptionalRef<IRenderPassDelegate> _delegate;
+        entt::id_type _group;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderPass : public IRenderPassDelegate
@@ -367,12 +222,29 @@ namespace darmok
     class DARMOK_EXPORT RenderGraphDefinition final
     {
     public:
-        RenderPassDefinition& addPass(const std::string& name);
-        const RenderPassDefinition& addPass(IRenderPass& pass);
-        const RenderPassDefinition& getPass(size_t vertex) const;
+        using Pass = RenderPassDefinition;
+        RenderGraphDefinition() noexcept;
+        void addChild(const RenderGraphDefinition& child) noexcept;
+        Pass& addPass(const std::string& name);
+        const Pass& addPass(IRenderPass& pass);
+
+        const Pass& getPass(size_t vertex) const;
+        size_t size() const noexcept;
+        const Pass& operator[](size_t vertex) const;
+
+        using ConstIterator = std::vector<Pass>::const_iterator;
+        ConstIterator begin() const;
+        ConstIterator end() const;
+
         RenderGraph compile() const;
+        entt::id_type hash() const noexcept;
+        operator entt::id_type() const noexcept;
     private:
-        std::vector<RenderPassDefinition> _passes;
+        std::vector<Pass> _passes;
+        std::vector<RenderGraphDefinition> _children;
+        entt::id_type _hash;
+
+        void configureFlow(entt::flow& builder) const noexcept;
     };
 
     class DARMOK_EXPORT RenderGraph final
