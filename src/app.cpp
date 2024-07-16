@@ -386,22 +386,6 @@ namespace darmok
 		_components.push_back(std::move(component));
 	}
 
-	bool AppImpl::removeComponent(AppComponent& component) noexcept
-	{
-		auto ptr = &component;
-		auto itr = std::find_if(_components.begin(), _components.end(), [ptr](auto& comp) { return comp.get() == ptr;  });
-		auto found = itr != _components.end();
-		if (found)
-		{
-			if (_running)
-			{
-				component.shutdown();
-			}
-			_components.erase(itr);
-		}
-		return found;
-	}
-
 	App::App() noexcept
 		: _impl(std::make_unique<AppImpl>(*this))
 	{
@@ -540,10 +524,5 @@ namespace darmok
 	void App::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
 	{
 		_impl->addComponent(std::move(component));
-	}
-
-	bool App::removeComponent(AppComponent& component) noexcept
-	{
-		return _impl->removeComponent(component);
 	}
 }

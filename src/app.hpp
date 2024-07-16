@@ -30,7 +30,6 @@ namespace darmok
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
 		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
-		bool removeComponent(AppComponent& component) noexcept;
 		
 		[[nodiscard]] Input& getInput() noexcept;
 		[[nodiscard]] const Input& getInput() const noexcept;

@@ -90,7 +90,6 @@ namespace darmok
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
 		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
-		bool removeComponent(AppComponent& component) noexcept;
 
 		template<typename T, typename... A>
 		T& addComponent(A&&... args) noexcept
