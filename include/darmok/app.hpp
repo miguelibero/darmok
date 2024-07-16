@@ -15,7 +15,7 @@
 #endif // DARMOK_IMPLEMENT_MAIN
 
 #define DARMOK_CREATE_APP_DECL(app, ...)						\
-	std::unique_ptr<darmok::App> darmokCreateApp()						\
+	std::unique_ptr<darmok::App> darmokCreateApp()				\
 	{															\
 		return darmok::createApp<app>(##__VA_ARGS__);			\
 	}															\
@@ -100,13 +100,6 @@ namespace darmok
 			return *ptr;
 		}
 
-		template<typename T>
-		std::shared_ptr<T> getSharedComponent()
-		{
-			auto comp = getSharedComponent(typeid(T).hash_code(), createComponent<T>);
-			return std::static_pointer_cast<T>(comp);
-		}
-
 	protected:
 
 
@@ -117,8 +110,6 @@ namespace darmok
 		{
 			return std::make_shared<T>();
 		}
-
-		std::shared_ptr<AppComponent> getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback);
 
 		virtual void updateLogic(float deltaTime);
 		virtual bgfx::ViewId render(bgfx::ViewId viewId) const;

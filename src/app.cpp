@@ -225,10 +225,6 @@ namespace darmok
 
 		_assets.init(_app);
 
-		for (auto& elm : _sharedComponents)
-		{
-			elm.second->init(_app);
-		}
 		for (auto& component : _components)
 		{
 			component->init(_app);
@@ -245,23 +241,13 @@ namespace darmok
 		{
 			component->shutdown();
 		}
-		for (auto& elm : _sharedComponents)
-		{
-			elm.second->shutdown();
-		}
 		_components.clear();
-		_sharedComponents.clear();
 		_input.getImpl().clearBindings();
 		_assets.shutdown();
 	}
 
 	void AppImpl::updateLogic(float deltaTime)
 	{
-		cleanSharedComponents();
-		for (auto& elm : _sharedComponents)
-		{
-			elm.second->updateLogic(deltaTime);
-		}
 		for (auto& component : _components)
 		{
 			component->updateLogic(deltaTime);
@@ -271,10 +257,6 @@ namespace darmok
 
 	bgfx::ViewId AppImpl::render(bgfx::ViewId viewId) const
 	{
-		for (auto& elm : _sharedComponents)
-		{
-			viewId = elm.second->render(viewId);
-		}
 		for (auto& component : _components)
 		{
 			viewId = component->render(viewId);
@@ -302,7 +284,7 @@ namespace darmok
 	{
 		auto exit = [this]() { triggerExit(); };
 		auto cycleScreenMode = [this]() {
-			auto mode = _window.getVideoMode();
+			VideoMode mode = _window.getVideoMode();
 			mode.screenMode = (WindowScreenMode)((to_underlying(mode.screenMode) + 1) % to_underlying(WindowScreenMode::Count));
 			_window.requestVideoMode(mode);
 		};
@@ -394,37 +376,6 @@ namespace darmok
 		_input.processBindings();
 		return _exit;
 	}
-	std::shared_ptr<AppComponent> AppImpl::getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback)
-	{
-		cleanSharedComponents();
-		auto itr = _sharedComponents.find(typeHash);
-		if (itr != _sharedComponents.end())
-		{
-			return itr->second;
-		}
-		auto component = std::shared_ptr<AppComponent>(callback());
-		auto r = _sharedComponents.emplace(typeHash, component);
-		if (_running)
-		{
-			component->init(_app);
-		}
-		return component;
-	}
-
-	void AppImpl::cleanSharedComponents() noexcept
-	{
-		for (auto itr = _sharedComponents.begin(), last = _sharedComponents.end(); itr != last;)
-		{
-			if (itr->second.use_count() == 1)
-			{
-				itr = _sharedComponents.erase(itr);
-			}
-			else
-			{
-				++itr;
-			}
-		}
-	}
 
 	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
 	{
@@ -438,20 +389,15 @@ namespace darmok
 	bool AppImpl::removeComponent(AppComponent& component) noexcept
 	{
 		auto ptr = &component;
-		auto itr1 = std::find_if(_components.begin(), _components.end(), [ptr](auto& comp) { return comp.get() == ptr;  });
-		auto itr2 = std::find_if(_sharedComponents.begin(), _sharedComponents.end(), [ptr](auto& elm) { return elm.second.get() == ptr; });
-		auto found = itr1 != _components.end() || itr2 != _sharedComponents.end();
-		if (_running && found)
+		auto itr = std::find_if(_components.begin(), _components.end(), [ptr](auto& comp) { return comp.get() == ptr;  });
+		auto found = itr != _components.end();
+		if (found)
 		{
-			component.shutdown();
-		}
-		if (itr1 != _components.end())
-		{
-			_components.erase(itr1);
-		}
-		if (itr2 != _sharedComponents.end())
-		{
-			_sharedComponents.erase(itr2);
+			if (_running)
+			{
+				component.shutdown();
+			}
+			_components.erase(itr);
 		}
 		return found;
 	}
@@ -551,11 +497,6 @@ namespace darmok
 		bgfx::frame();
 
 		return true;
-	}
-
-	std::shared_ptr<AppComponent> App::getSharedComponent(size_t typeHash, SharedAppComponentCreationCallback callback)
-	{
-		return _impl->getSharedComponent(typeHash, callback);
 	}
 
 	void App::updateLogic(float deltaTime)

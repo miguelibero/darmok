@@ -59,6 +59,7 @@ namespace darmok
 		std::unordered_map<Rml::CompiledGeometryHandle, CompiledGeometry> _compiledGeometries;
 		std::optional<bgfx::ViewId> _viewId;
 		Viewport _viewport;
+
 		OptionalRef<bgfx::Encoder> _encoder;
 		std::unique_ptr<Program> _program;
 		bgfx::VertexLayout _layout;
@@ -86,7 +87,7 @@ namespace darmok
 		void update(float dt) noexcept;
 		double GetElapsedTime() override;
 
-		const std::string& getMouseCursor() noexcept;
+		const std::string& getMouseCursor() const noexcept;
 		void SetMouseCursor(const Rml::String& name) noexcept override;
 	private:
 		double _elapsedTime;
@@ -129,21 +130,6 @@ namespace darmok
 		virtual void onRmluiShutdown() = 0;
 	};
 
-	class RmluiSharedAppComponent final : public AppComponent
-	{
-	public:
-		void init(App& app) noexcept;
-		void shutdown() noexcept;
-		void update(float dt) noexcept;
-
-		const std::string& getMouseCursor() noexcept;
-
-	private:
-		static size_t _initCount;
-		RmluiSystemInterface _system;
-		RmluiFileInterface _file;
-	};
-
     class RmluiAppComponentImpl final : public IWindowListener, public IKeyboardListener, public IMouseListener
     {
     public:
@@ -179,6 +165,9 @@ namespace darmok
 		void onMouseButton(MouseButton button, bool down) noexcept override;
 
 	private:
+		RmluiSystemInterface _system;
+		RmluiFileInterface _file;
+
 		std::string _name;
 		OptionalRef<Rml::Context> _context;
 		OptionalRef<App> _app;
@@ -186,7 +175,6 @@ namespace darmok
 		mutable RmluiRenderInterface _render;
 		std::optional<Viewport> _viewport;
 		bool _inputActive;
-		std::shared_ptr<RmluiSharedAppComponent> _shared;
 
 		glm::vec2 _mousePosition;
 		std::string _defaultMouseCursor;

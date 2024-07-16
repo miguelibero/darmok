@@ -396,7 +396,7 @@ namespace darmok
         _mouseCursor = name;
     }
 
-    const std::string& RmluiSystemInterface::getMouseCursor() noexcept
+    const std::string& RmluiSystemInterface::getMouseCursor() const noexcept
     {
         return _mouseCursor;
     }
@@ -628,7 +628,7 @@ namespace darmok
         return _render;
     }
 
-    void RmluiSharedAppComponent::init(App& app) noexcept
+    void RmluiAppComponentImpl::init(App& app)
     {
         _system.init(app);
         _file.init(app);
@@ -637,27 +637,8 @@ namespace darmok
         Rml::SetFileInterface(&_file);
 
         Rml::Initialise();
-    }
 
-    void RmluiSharedAppComponent::shutdown() noexcept
-    {
-        Rml::Shutdown();
-    }
-
-    void RmluiSharedAppComponent::update(float dt) noexcept
-    {
-        _system.update(dt);
-    }
-
-    const std::string& RmluiSharedAppComponent::getMouseCursor() noexcept
-    {
-        return _system.getMouseCursor();
-    }
-
-    void RmluiAppComponentImpl::init(App& app)
-    {
         _app = app;
-        _shared = app.getSharedComponent<RmluiSharedAppComponent>();
 
         _render.init(app);
         auto size = getCurrentViewport().size;
@@ -690,9 +671,10 @@ namespace darmok
         Rml::RemoveContext(_context->GetName());
         Rml::ReleaseTextures();
 
-        _shared.reset();
         _context.reset();
         _app.reset();
+
+        Rml::Shutdown();
     }
 
     OptionalRef<const Rml::Sprite> RmluiAppComponentImpl::getMouseCursorSprite() const noexcept
@@ -716,8 +698,7 @@ namespace darmok
             return nullptr;
         }
 
-
-        std::string cursorName = _shared->getMouseCursor();
+        std::string cursorName = _system.getMouseCursor();
         auto getSprite = [&]() -> const Rml::Sprite*
         { 
             if (cursorName.empty())
@@ -759,6 +740,7 @@ namespace darmok
 
     bool RmluiAppComponentImpl::update(float dt) noexcept
     {
+        _system.update(dt);
         return _context->Update();
     }
 
