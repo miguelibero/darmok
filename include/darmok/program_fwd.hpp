@@ -4,8 +4,8 @@ namespace darmok
 {
     enum class StandardProgramType
 	{
-		Gui,
 		Unlit,
+		Gui,
 		Forward
 	};
 }

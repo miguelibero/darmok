@@ -84,8 +84,8 @@ namespace darmok
     struct DARMOK_EXPORT ModelMaterial final
     {
         std::string program;
-        StandardProgramType standardProgram;
-        MaterialPrimitiveType primitiveType;
+        StandardProgramType standardProgram = StandardProgramType::Unlit;
+        MaterialPrimitiveType primitiveType = MaterialPrimitiveType::Triangle;
         std::unordered_map<MaterialTextureType, std::vector<ModelTexture>> textures;
         std::unordered_map<MaterialColorType, Color> colors;
 

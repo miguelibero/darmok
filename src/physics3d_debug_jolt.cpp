@@ -145,6 +145,10 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::renderText()
     {
+        if (!_font)
+        {
+            return;
+        }
         std::unordered_set<Utf8Char> chars;
         for (auto& textData : _textData)
         {

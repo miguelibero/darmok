@@ -102,24 +102,22 @@ namespace darmok
         for (auto& [name, mtx] : boneMatrixes)
         {
             auto itr = _boneTransforms.find(name);
-            if (itr == _boneTransforms.end())
-            {
-                auto boneEntity = scene.createEntity();
-                scene.addComponent<Renderable>(boneEntity, _boneMesh, _material);
-                auto& boneTrans = scene.addComponent<Transform>(boneEntity, mtx, trans);
-                boneTrans.setName(name);
-                _boneTransforms.emplace(name, boneTrans);
-
-                // TODO: add border
-                scene.addComponent<Text>(boneEntity, _font, name)
-                    .setColor(Colors::black())
-                    .setContentSize(glm::vec2(1, _font->getLineSize()))
-                    .setOrientation(TextOrientation::Center);
-            }
-            else
+            if (itr != _boneTransforms.end())
             {
                 itr->second->setLocalMatrix(mtx);
+                continue;
             }
+
+            auto boneEntity = scene.createEntity();
+            scene.addComponent<Renderable>(boneEntity, _boneMesh, _material);
+            auto& boneTrans = scene.addComponent<Transform>(boneEntity, mtx, trans);
+            boneTrans.setName(name);
+            _boneTransforms.emplace(name, boneTrans);
+
+            // TODO: add border
+            scene.addComponent<Text>(boneEntity, _font, name)
+                .setColor(Colors::black())
+                .setOrientation(TextOrientation::Center);
         }
     }
 

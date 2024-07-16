@@ -45,9 +45,8 @@ namespace darmok
 
         for (auto& [dirPath, dirConfig] : _dirs)
         {
-            for (auto& [filePath, dirFileConfig] : dirConfig.files)
+            for (auto& [path, dirFileConfig] : dirConfig.files)
             {
-                auto path = dirPath / filePath;
                 if (_files.contains(path))
                 {
                     continue;
