@@ -28,17 +28,19 @@ namespace darmok
 		void setInputEnabled(bool enabled) noexcept;
 
 		void renderPassDefine(RenderPassDefinition& def) noexcept override;
+		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
 		void renderPassExecute(RenderGraphResources& res) noexcept override;
 
     private:
 		IImguiRenderer& _renderer;
 		OptionalRef<App> _app;
 		ImGuiContext* _imgui;
-		bgfx::TextureHandle _texture;
+		bgfx::TextureHandle _fonts;
 		std::unique_ptr<Program> _program;
 		bgfx::UniformHandle _lodEnabledUniform;
 		bgfx::UniformHandle _textureUniform;
 		bool _inputEnabled;
+		bgfx::ViewId _viewId;
 
 		static const uint8_t _imguiAlphaBlendFlags;
 		using KeyboardMap = std::unordered_map<KeyboardKey, ImGuiKey>;
@@ -52,11 +54,10 @@ namespace darmok
 
 		static inline bool checkAvailTransientBuffers(uint32_t numVertices, const bgfx::VertexLayout& layout, uint32_t numIndices) noexcept;
 
-		bool render(bgfx::ViewId viewId) const noexcept;
-		bool render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData) const noexcept;
+		bool render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept;
 		void updateInput(float dt) noexcept;
 		void beginFrame() const noexcept;
-		bool endFrame(bgfx::ViewId viewId) const noexcept;
+		bool endFrame(bgfx::Encoder& encoder) const noexcept;
     };
 
 }

@@ -22,7 +22,7 @@ namespace darmok
 		void setConfig(const AppConfig& config) noexcept;
 		void init();
 		void updateLogic(float deltaTime);
-		void render(bgfx::ViewId viewId) const;
+		void render() const;
 		void triggerExit() noexcept;
 		bool processEvents();
 		void shutdown();

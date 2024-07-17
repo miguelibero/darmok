@@ -121,18 +121,36 @@ namespace darmok
 			;
 	}
 
-	bool ImguiAppComponentImpl::render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData) const noexcept
+	void ImguiAppComponentImpl::renderPassDefine(RenderPassDefinition& def) noexcept
+	{
+		def.setName("Imgui");
+	}
+
+	void ImguiAppComponentImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept
+	{
+		_viewId = viewId;
+		bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+	}
+
+	void ImguiAppComponentImpl::renderPassExecute(RenderGraphResources& res) noexcept
+	{
+		ImGui::SetCurrentContext(_imgui);
+		beginFrame();
+		_renderer.imguiRender();
+		auto& encoder = res.get<bgfx::Encoder>().value();
+		endFrame(encoder);
+		ImGui::SetCurrentContext(nullptr);
+	}
+
+	bool ImguiAppComponentImpl::render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept
 	{
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
-		int fb_width = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
-		int fb_height = (int)(drawData->DisplaySize.y * drawData->FramebufferScale.y);
-		if (fb_width <= 0 || fb_height <= 0)
+		int fbWidth = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
+		int fbHeight = (int)(drawData->DisplaySize.y * drawData->FramebufferScale.y);
+		if (fbWidth <= 0 || fbHeight <= 0)
 		{
 			return false;
 		}
-
-		bgfx::setViewName(viewId, "ImGui");
-		bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
 		{
 			float x = drawData->DisplayPos.x;
@@ -140,15 +158,14 @@ namespace darmok
 			float width = drawData->DisplaySize.x;
 			float height = drawData->DisplaySize.y;
 			auto ortho = Math::ortho(x, x + width, y + height, y);
-			bgfx::setViewTransform(viewId, NULL, glm::value_ptr(ortho));
-			bgfx::setViewRect(viewId, 0, 0, uint16_t(width), uint16_t(height));
+			bgfx::setViewTransform(_viewId, NULL, glm::value_ptr(ortho));
+			bgfx::setViewRect(_viewId, 0, 0, uint16_t(width), uint16_t(height));
 		}
 
 		const ImVec2 clipPos = drawData->DisplayPos;       // (0,0) unless using multi-viewports
 		const ImVec2 clipScale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
 		auto& layout = _program->getVertexLayout();
-		bgfx::Encoder* encoder = bgfx::begin();
 
 		// Render command lists
 		for (int32_t ii = 0, num = drawData->CmdListsCount; ii < num; ++ii)
@@ -185,8 +202,8 @@ namespace darmok
 						| BGFX_STATE_MSAA
 						;
 
-					bgfx::TextureHandle th = texture;
-					bgfx::ProgramHandle program = _program->getHandle();
+					auto th = _fonts;
+					auto program = _program->getHandle();
 
 					if (NULL != cmd->TextureId)
 					{
@@ -216,39 +233,37 @@ namespace darmok
 					clipRect.z = (cmd->ClipRect.z - clipPos.x) * clipScale.x;
 					clipRect.w = (cmd->ClipRect.w - clipPos.y) * clipScale.y;
 
-					if (clipRect.x < fb_width
-						&& clipRect.y < fb_height
+					if (clipRect.x < fbWidth
+						&& clipRect.y < fbHeight
 						&& clipRect.z >= 0.0f
 						&& clipRect.w >= 0.0f)
 					{
 						const uint16_t xx = uint16_t(bx::max(clipRect.x, 0.0f));
 						const uint16_t yy = uint16_t(bx::max(clipRect.y, 0.0f));
-						encoder->setScissor(xx, yy
+						encoder.setScissor(xx, yy
 							, uint16_t(bx::min(clipRect.z, 65535.0f) - xx)
 							, uint16_t(bx::min(clipRect.w, 65535.0f) - yy)
 						);
 
-						encoder->setState(state);
-						encoder->setTexture(0, _textureUniform, th);
-						mesh->render(*encoder);
-						encoder->submit(viewId, program);
+						encoder.setState(state);
+						encoder.setTexture(0, _textureUniform, th);
+						mesh->render(encoder);
+						encoder.submit(_viewId, program);
 					}
 				}
 			}
 		}
-
-		bgfx::end(encoder);
 
 		return true;
 	}
 
 	ImguiAppComponentImpl::ImguiAppComponentImpl(IImguiRenderer& renderer, float fontSize)
 		: _renderer(renderer)
-		, _texture{ bgfx::kInvalidHandle }
 		, _textureUniform{ bgfx::kInvalidHandle }
 		, _lodEnabledUniform{ bgfx::kInvalidHandle }
 		, _inputEnabled(true)
 		, _imgui(nullptr)
+		, _viewId(0)
 	{
 		IMGUI_CHECKVERSION();
 	}
@@ -299,7 +314,7 @@ namespace darmok
 
 		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height);
 
-		_texture = bgfx::createTexture2D(
+		_fonts = bgfx::createTexture2D(
 			(uint16_t)width
 			, (uint16_t)height
 			, false
@@ -336,31 +351,6 @@ namespace darmok
 		ImGui::SetCurrentContext(_imgui);
 		updateInput(dt);
 		ImGui::SetCurrentContext(nullptr);
-	}
-
-	bool ImguiAppComponentImpl::render(bgfx::ViewId viewId) const noexcept
-	{
-		ImGui::SetCurrentContext(_imgui);
-		beginFrame();
-		_renderer.imguiRender();
-		auto rendered = endFrame(viewId);
-
-		ImGui::SetCurrentContext(nullptr);
-
-		return rendered;
-	}
-
-	void ImguiAppComponentImpl::renderPassDefine(RenderPassDefinition& def) noexcept
-	{
-		def.setName("Imgui");
-	}
-
-	void ImguiAppComponentImpl::renderPassExecute(RenderGraphResources& res) noexcept
-	{
-		if (auto viewId = res.get<bgfx::ViewId>())
-		{
-			render(viewId.value());
-		}
 	}
 
 	ImGuiContext* ImguiAppComponentImpl::getContext() noexcept
@@ -433,10 +423,10 @@ namespace darmok
 		ImGui::NewFrame();
 	}
 
-	bool ImguiAppComponentImpl::endFrame(bgfx::ViewId viewId) const noexcept
+	bool ImguiAppComponentImpl::endFrame(bgfx::Encoder& encoder) const noexcept
 	{
 		ImGui::Render();
-		return render(viewId, _texture, ImGui::GetDrawData());
+		return render(encoder, ImGui::GetDrawData());
 	}
 
 	ImguiAppComponent::ImguiAppComponent(IImguiRenderer& renderer, float fontSize) noexcept

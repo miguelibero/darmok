@@ -267,20 +267,22 @@ namespace darmok
         }
     }
 
-    void RmluiRenderInterface::beforeRender(bgfx::ViewId viewId, const Viewport& vp) noexcept
+    void RmluiRenderInterface::beforeRender(bgfx::Encoder& encoder) noexcept
     {
-        if (_encoder)
-        {
-            bgfx::end(_encoder.ptr());
-        }
-
-        _viewId = viewId;
-        _viewport = vp;
-
-        _encoder = bgfx::begin();
+        _encoder = encoder;
         _rendered = false;
         _viewSetup = false;
         _transform = glm::mat4(1);
+    }
+
+    void RmluiRenderInterface::setViewId(bgfx::ViewId viewId) noexcept
+    {
+        _viewId = viewId;
+    }
+
+    void RmluiRenderInterface::setViewport(const Viewport& vp) noexcept
+    {
+        _viewport = vp;
     }
 
     void RmluiRenderInterface::renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept
@@ -544,6 +546,7 @@ namespace darmok
     void RmluiViewImpl::setViewport(const Viewport& vp) noexcept
     {
         _viewport = vp;
+        _render.setViewport(vp);
         _context->SetDimensions(RmluiUtils::convert<int>(vp.size));
     }
 
@@ -583,10 +586,14 @@ namespace darmok
         def.setName("Rmlui " + getName());
     }
 
+    void RmluiViewImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept
+    {
+        _render.setViewId(viewId);
+    }
+
     void RmluiViewImpl::renderPassExecute(RenderGraphResources& res) noexcept
     {
-        auto viewId = res.get<bgfx::ViewId>().value();
-        _render.beforeRender(viewId, _viewport);
+        _render.beforeRender(res.get<bgfx::Encoder>().value());
         if (!_context->Render())
         {
             return;

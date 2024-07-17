@@ -131,6 +131,8 @@ namespace darmok
 		if (_phase == WindowPhase::Running || _phase == WindowPhase::Suspended)
 		{
 			bgfx::reset(size.x, size.y);
+			bgfx::ViewId viewId = 0;
+			bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
 		}
 		for (auto& listener : _listeners)
 		{

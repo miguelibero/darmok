@@ -4,6 +4,8 @@
 #include <darmok/utils.hpp>
 
 #include <bx/bx.h>
+#include <bgfx/bgfx.h>
+
 #include <memory>
 #include <vector>
 #include <string>
@@ -64,7 +66,6 @@ namespace darmok
             return *this;
         }
 
-
     private:
         std::vector<Resource> _resources;
     };
@@ -115,9 +116,9 @@ namespace darmok
         }
 
         template<typename T>
-        RenderGraphResources& setRef(const T& value, const Key<T>& key = {}) noexcept
+        RenderGraphResources& setRef(T& value, const Key<T>& key = {}) noexcept
         {
-            getAny(key) = std::reference_wrapper<const T>(value);
+            getAny(key) = std::reference_wrapper<T>(value);
             return *this;
         }
 
@@ -134,6 +135,27 @@ namespace darmok
 
         template<typename T>
         OptionalRef<const T> get(const Key<T>& key = {}) const noexcept
+        {
+            if (key.group == defaultGroup)
+            {
+                auto groupKey = key;
+                groupKey.group = _group;
+                auto itr = _data.find(groupKey);
+                if (itr != _data.end())
+                {
+                    return castAny<T>(itr->second);
+                }
+            }
+            auto itr = _data.find(key);
+            if (itr != _data.end())
+            {
+                return castAny<T>(itr->second);
+            }
+            return nullptr;
+        }
+
+        template<typename T>
+        OptionalRef<T> get(const Key<T>& key = {}) noexcept
         {
             if (key.group == defaultGroup)
             {
@@ -177,7 +199,22 @@ namespace darmok
             {
                 return val;
             }
-            if (auto constRef = entt::any_cast<std::reference_wrapper<const T>>(ptr))
+            if (auto constRef = entt::any_cast<std::reference_wrapper<T>>(ptr))
+            {
+                return constRef->get();
+            }
+            return nullptr;
+        }
+
+        template<typename T>
+        static OptionalRef<T> castAny(entt::any& value) noexcept
+        {
+            auto ptr = &value;
+            if (auto val = entt::any_cast<T>(ptr))
+            {
+                return val;
+            }
+            if (auto constRef = entt::any_cast<std::reference_wrapper<T>>(ptr))
             {
                 return constRef->get();
             }
@@ -189,6 +226,7 @@ namespace darmok
     {
     public:
         virtual ~IRenderPassDelegate() = default;
+        virtual void renderPassConfigure(bgfx::ViewId viewId) { };
         virtual void renderPassExecute(RenderGraphResources& res) = 0;
     };
 
@@ -203,12 +241,14 @@ namespace darmok
         bool operator!=(const RenderPassDefinition& other) const noexcept;
 
         RenderGraphId getGroup() const noexcept;
+        bgfx::ViewId getViewId() const noexcept;
 
         RenderPassDefinition& setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
 
         RenderPassDefinition& setDelegate(IRenderPassDelegate& dlg) noexcept;
         void operator()(RenderGraphResources& res) const noexcept;
+        void onGraphCompiled(bgfx::ViewId viewId) noexcept;
 
         Resources& getInputs() noexcept;
         const Resources& getInputs() const noexcept;
@@ -225,6 +265,7 @@ namespace darmok
         Resources _outputs;
         OptionalRef<IRenderPassDelegate> _delegate;
         RenderGraphId _group;
+        bgfx::ViewId _viewId;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderPass : public IRenderPassDelegate
@@ -251,6 +292,7 @@ namespace darmok
         bool removePass(const std::string& name);
 
         const Pass& getPass(size_t vertex) const;
+        Pass& getPass(size_t vertex);
         size_t size() const noexcept;
         const Pass& operator[](size_t vertex) const;
 
@@ -258,7 +300,7 @@ namespace darmok
         ConstIterator begin() const;
         ConstIterator end() const;
 
-        RenderGraph compile() const;
+        RenderGraph compile(bgfx::ViewId viewId = 0, bool dry = false);
 
         RenderGraphId id() const noexcept;
         operator RenderGraphId() const noexcept;
@@ -277,7 +319,7 @@ namespace darmok
         using Resources = RenderGraphResources;
         using Definition = RenderGraphDefinition;
 
-        RenderGraph(const Matrix& matrix, const Definition& def) noexcept;
+        RenderGraph(Matrix&& matrix, const Definition& def) noexcept;
 
         size_t size() const noexcept;
         const Definition& getDefinition() const noexcept;

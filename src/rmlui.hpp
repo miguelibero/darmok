@@ -40,7 +40,10 @@ namespace darmok
 		void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 		
-		void beforeRender(bgfx::ViewId viewId, const Viewport& vp) noexcept;
+		void beforeRender(bgfx::Encoder& encoder) noexcept;
+		void setViewId(bgfx::ViewId viewId) noexcept;
+		void setViewport(const Viewport& vp) noexcept;
+
 		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
 		bool afterRender() noexcept;
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
@@ -145,6 +148,7 @@ namespace darmok
 		bool update() noexcept;
 
 		void renderPassDefine(RenderPassDefinition& def) noexcept override;
+		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
 		void renderPassExecute(RenderGraphResources& res) noexcept override;
 
 	private:

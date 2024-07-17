@@ -55,8 +55,10 @@ namespace
 			}
 			if (!_screenModes.empty())
 			{
-				ImGui::Combo("Screen Mode", &_screenMode, &_screenModes.front(), _screenModes.size());
-				_resolution = 0;
+				if (ImGui::Combo("Screen Mode", &_screenMode, &_screenModes.front(), _screenModes.size()))
+				{
+					_resolution = 0;
+				}
 			}
 			auto resCount = getResolutionCount();
 			if (resCount > 0)
@@ -162,14 +164,12 @@ namespace
 		};
 	};
 
-	class ImguiSampleApp : public App, public IImguiRenderer, IWindowListener, IRenderPass
+	class ImguiSampleApp : public App, public IImguiRenderer, IWindowListener
 	{
 	public:
 		void init() override
 		{
 			App::init();
-
-			getRenderGraph().addPass(*this);
 
 			// Enable debug text.
 			setDebugFlag(BGFX_DEBUG_TEXT);
@@ -202,12 +202,7 @@ namespace
 			_videoModeState.onWindowVideoMode(mode);
 		}
 
-		void renderPassDefine(RenderPassDefinition& def) noexcept override
-		{
-			def.setName("Sample debug info");
-		}
-
-		void renderPassExecute(RenderGraphResources& res) noexcept override
+		void render() const override
 		{
 			const bgfx::Stats* stats = bgfx::getStats();
 
@@ -224,6 +219,8 @@ namespace
 			);
 
 			bgfx::dbgTextPrintf(0, 3, 0x0f, "Darmok Window VideoMode: %s", getWindow().getVideoMode().to_string().c_str());
+
+			App::render();
 		}
 
 	protected:

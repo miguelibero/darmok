@@ -232,8 +232,9 @@ namespace darmok
 		bgfx::setPaletteColor(1, Colors::toNumber(_config.clearColor));
 
 		// we use initial view 0 to clear the screen
-		bgfx::setViewRect(0, 0, 0, size.x, size.y);
-		bgfx::setViewClear(0, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
+		bgfx::ViewId viewId = 0;
+		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
 
 		addBindings();
 
@@ -269,19 +270,26 @@ namespace darmok
 		_input.getImpl().update();
 		if (!_renderGraph || _renderGraph->size() != _renderGraphDef.size())
 		{
-			_renderGraph = _renderGraphDef.compile();
+			_renderGraph = _renderGraphDef.compile(1);
 		}
 	}
 
-	void AppImpl::render(bgfx::ViewId viewId) const
+	void AppImpl::render() const
 	{
 		if (!_renderGraph)
 		{
 			return;
 		}
 		RenderGraphResources res;
-		res.set(viewId);
+
+		// TODO: run passes in parallel using [taskflow](https://github.com/taskflow/taskflow)
+		// will also require creating different encoders for each thread
+		auto encoder = bgfx::begin();
+		res.setRef(*encoder);
+
 		_renderGraph.value()(res);
+
+		bgfx::end(encoder);
 	}
 
 	const std::string AppImpl::_bindingsName = "debug";
@@ -523,17 +531,11 @@ namespace darmok
 
 	void App::render() const
 	{
-		auto& size = getWindow().getSize();
-
 		bgfx::ViewId viewId = 0;
 		bgfx::touch(viewId);
 		bgfx::dbgTextClear(); // use debug font to print information
-		viewId++;
 
-		_impl->render(viewId);
-
-		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
-		bgfx::touch(viewId);
+		_impl->render();
 	}
 
 	void App::toggleDebugFlag(uint32_t flag) noexcept

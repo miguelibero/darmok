@@ -71,6 +71,7 @@ namespace darmok
     RenderPassDefinition::RenderPassDefinition(RenderGraphId group) noexcept
         : _group(group)
         , _id(randomIdType())
+        , _viewId(-1)
     {
     }
 
@@ -88,6 +89,11 @@ namespace darmok
     RenderGraphId RenderPassDefinition::getGroup() const noexcept
     {
         return _group;
+    }
+
+    bgfx::ViewId RenderPassDefinition::getViewId() const noexcept
+    {
+        return _viewId;
     }
 
     bool RenderPassDefinition::operator==(const RenderPassDefinition& other) const noexcept
@@ -113,6 +119,15 @@ namespace darmok
             return;
         }
         _delegate->renderPassExecute(res);
+    }
+
+    void RenderPassDefinition::onGraphCompiled(bgfx::ViewId viewId) noexcept
+    {
+        _viewId = viewId;
+        if (_delegate)
+        {
+            _delegate->renderPassConfigure(viewId);
+        }
     }
 
     const RenderPassDefinition::Resources& RenderPassDefinition::getInputs() const noexcept
@@ -263,7 +278,31 @@ namespace darmok
         auto s = _passes.size();
         if (vertex < s)
         {
-            return _passes[vertex];
+            return _passes.at(vertex);
+        }
+        vertex -= s;
+        for (auto& child : _children)
+        {
+            s = child.size();
+            if (vertex < s)
+            {
+                return child.getPass(vertex);
+            }
+            vertex -= s;
+        }
+        throw std::invalid_argument("pass does not exist");
+    }
+
+    RenderGraphDefinition::Pass& RenderGraphDefinition::getPass(size_t vertex)
+    {
+        if (vertex < 0)
+        {
+            throw std::invalid_argument("pass does not exist");
+        }
+        auto s = _passes.size();
+        if (vertex < s)
+        {
+            return _passes.at(vertex);
         }
         vertex -= s;
         for (auto& child : _children)
@@ -319,15 +358,27 @@ namespace darmok
         }
     }
 
-    RenderGraph RenderGraphDefinition::compile() const
+    RenderGraph RenderGraphDefinition::compile(bgfx::ViewId initialViewId, bool dry)
     {
         entt::flow builder;
         configureFlow(builder);
-        return RenderGraph(builder.graph(), *this);
+        auto matrix = builder.graph();
+        for (auto&& vertex : matrix.vertices())
+        {
+            auto& pass = getPass(vertex);
+            auto viewId = initialViewId + vertex;
+            if (!dry)
+            {
+                bgfx::resetView(viewId);
+                bgfx::setViewName(viewId, pass.getName().c_str());
+            }
+            pass.onGraphCompiled(viewId);
+        }
+        return RenderGraph(std::move(matrix), *this);
     }
 
-    RenderGraph::RenderGraph(const Matrix& matrix, const Definition& def) noexcept
-        : _matrix(matrix)
+    RenderGraph::RenderGraph(Matrix&& matrix, const Definition& def) noexcept
+        : _matrix(std::move(matrix))
         , _def(def)
     {
     }
@@ -391,14 +442,15 @@ namespace darmok
             return false;
         }
         auto mainGroup = _def.id();
+
         for (auto& vertex : readyVertices)
         {
-            // TODO: run passes in parallel using [taskflow](https://github.com/taskflow/taskflow)
             auto& pass = _def.getPass(vertex);
             auto group = pass.getGroup();
             auto main = group == mainGroup;
             if (!main)
             {
+                // we're in a child graph, set the group to the graph id
                 res.setGroup(group);
             }
             pass(res);
@@ -408,6 +460,7 @@ namespace darmok
                 res.setGroup();
             }
         }
+
         return execute(res, executed);
     }
 
