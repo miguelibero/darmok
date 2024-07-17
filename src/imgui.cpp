@@ -329,6 +329,12 @@ namespace darmok
 
 	void ImguiAppComponentImpl::shutdown() noexcept
 	{
+		if (_app)
+		{
+			_app->getRenderGraph().removePass(*this);
+			_app.reset();
+		}
+
 		if (_imgui != nullptr)
 		{
 			ImGui::DestroyContext(_imgui);

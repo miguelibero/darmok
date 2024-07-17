@@ -121,7 +121,7 @@ TEST_CASE( "Compile & run render graph dependencies", "[render-graph]" )
     def.addPass(lightingPass);
     def.addPass(postPass);
 
-    auto graph = def.compile(0, true);
+    auto graph = def.compile();
     auto res = graph();
 
     auto outTexture = res.get<TestTexture>();
@@ -175,7 +175,7 @@ TEST_CASE("Subgraphs", "[render-graph]")
     res.emplace<TestCamera>({ .group = def1 }, "one");
     res.emplace<TestCamera>({ .group = def2 }, "two");
 
-    auto graph = def.compile(0, true);
+    auto graph = def.compile();
     graph(res);
 
     auto outTexture1 = res.get<TestTexture>({ .group = def1 });

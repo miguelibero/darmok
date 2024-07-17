@@ -231,8 +231,8 @@ namespace darmok
 		//bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
 		bgfx::setPaletteColor(1, Colors::toNumber(_config.clearColor));
 
-		// we use initial view 0 to clear the screen
 		bgfx::ViewId viewId = 0;
+		bgfx::setViewName(viewId, "darmok");
 		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
 		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
 
@@ -270,7 +270,9 @@ namespace darmok
 		_input.getImpl().update();
 		if (!_renderGraph || _renderGraph->size() != _renderGraphDef.size())
 		{
-			_renderGraph = _renderGraphDef.compile(1);
+			_renderGraph = _renderGraphDef.compile();
+			// we use initial view 0 to clear the screen
+			_renderGraph->configureViews(1);
 		}
 	}
 
@@ -531,11 +533,11 @@ namespace darmok
 
 	void App::render() const
 	{
-		bgfx::ViewId viewId = 0;
-		bgfx::touch(viewId);
-		bgfx::dbgTextClear(); // use debug font to print information
+		bgfx::touch(0);
 
 		_impl->render();
+
+		bgfx::dbgTextClear(); // use debug font to print information
 	}
 
 	void App::toggleDebugFlag(uint32_t flag) noexcept

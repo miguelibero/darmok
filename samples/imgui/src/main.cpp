@@ -204,6 +204,8 @@ namespace
 
 		void render() const override
 		{
+			App::render();
+
 			const bgfx::Stats* stats = bgfx::getStats();
 
 			bgfx::dbgTextPrintf(0, 1, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");
@@ -220,7 +222,6 @@ namespace
 
 			bgfx::dbgTextPrintf(0, 3, 0x0f, "Darmok Window VideoMode: %s", getWindow().getVideoMode().to_string().c_str());
 
-			App::render();
 		}
 
 	protected:

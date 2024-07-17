@@ -45,7 +45,7 @@ namespace darmok
 		void setViewport(const Viewport& vp) noexcept;
 
 		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
-		bool afterRender() noexcept;
+		void afterRender() noexcept;
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		std::shared_ptr<Texture> getTargetTexture() const noexcept;
 
@@ -59,7 +59,7 @@ namespace darmok
 
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
 		std::unordered_map<Rml::CompiledGeometryHandle, CompiledGeometry> _compiledGeometries;
-		std::optional<bgfx::ViewId> _viewId;
+		bgfx::ViewId _viewId;
 		Viewport _viewport;
 
 		OptionalRef<bgfx::Encoder> _encoder;
@@ -68,15 +68,12 @@ namespace darmok
 		glm::mat4 _transform;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
-		bool _rendered;
-		bool _viewSetup;
 		std::shared_ptr<Texture> _targetTexture;
 		bgfx::FrameBufferHandle _frameBuffer;
 		bx::AllocatorI& _alloc;
 		static const uint64_t _state;
 
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
-		void setupView() noexcept;
 
 	};
 

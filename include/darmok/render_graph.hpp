@@ -247,8 +247,9 @@ namespace darmok
         const std::string& getName() const noexcept;
 
         RenderPassDefinition& setDelegate(IRenderPassDelegate& dlg) noexcept;
+        OptionalRef<IRenderPassDelegate> getDelegate() const noexcept;
         void operator()(RenderGraphResources& res) const noexcept;
-        void onGraphCompiled(bgfx::ViewId viewId) noexcept;
+        void configureView(bgfx::ViewId viewId) noexcept;
 
         Resources& getInputs() noexcept;
         const Resources& getInputs() const noexcept;
@@ -289,7 +290,7 @@ namespace darmok
         Pass& addPass() noexcept;
         const Pass& addPass(IRenderPass& pass);
         bool hasPass(const std::string& name) const noexcept;
-        bool removePass(const std::string& name);
+        bool removePass(IRenderPassDelegate& dlg);
 
         const Pass& getPass(size_t vertex) const;
         Pass& getPass(size_t vertex);
@@ -300,7 +301,7 @@ namespace darmok
         ConstIterator begin() const;
         ConstIterator end() const;
 
-        RenderGraph compile(bgfx::ViewId viewId = 0, bool dry = false);
+        RenderGraph compile();
 
         RenderGraphId id() const noexcept;
         operator RenderGraphId() const noexcept;
@@ -320,6 +321,8 @@ namespace darmok
         using Definition = RenderGraphDefinition;
 
         RenderGraph(Matrix&& matrix, const Definition& def) noexcept;
+
+        void configureViews(bgfx::ViewId viewId = 0);
 
         size_t size() const noexcept;
         const Definition& getDefinition() const noexcept;

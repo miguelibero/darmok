@@ -112,6 +112,11 @@ namespace darmok
         return *this;
     }
 
+    OptionalRef<IRenderPassDelegate> RenderPassDefinition::getDelegate() const noexcept
+    {
+        return _delegate;
+    }
+
     void RenderPassDefinition::operator()(RenderGraphResources& res) const noexcept
     {
         if (!_delegate)
@@ -121,7 +126,7 @@ namespace darmok
         _delegate->renderPassExecute(res);
     }
 
-    void RenderPassDefinition::onGraphCompiled(bgfx::ViewId viewId) noexcept
+    void RenderPassDefinition::configureView(bgfx::ViewId viewId) noexcept
     {
         _viewId = viewId;
         if (_delegate)
@@ -235,10 +240,9 @@ namespace darmok
         return false;
     }
 
-
-    bool RenderGraphDefinition::removePass(const std::string& name)
+    bool RenderGraphDefinition::removePass(IRenderPassDelegate& dlg)
     {
-        auto itr = std::find_if(_passes.begin(), _passes.end(), [&name](auto& pass) { return pass.getName() == name; });
+        auto itr = std::find_if(_passes.begin(), _passes.end(), [&dlg](auto& pass) { return pass.getDelegate() == dlg; });
         if (itr != _passes.end())
         {
             _passes.erase(itr);
@@ -246,7 +250,7 @@ namespace darmok
         }
         for (auto& child : _children)
         {
-            if (child.removePass(name))
+            if (child.removePass(dlg))
             {
                 return true;
             }
@@ -358,29 +362,29 @@ namespace darmok
         }
     }
 
-    RenderGraph RenderGraphDefinition::compile(bgfx::ViewId initialViewId, bool dry)
+    RenderGraph RenderGraphDefinition::compile()
     {
         entt::flow builder;
         configureFlow(builder);
-        auto matrix = builder.graph();
-        for (auto&& vertex : matrix.vertices())
-        {
-            auto& pass = getPass(vertex);
-            auto viewId = initialViewId + vertex;
-            if (!dry)
-            {
-                bgfx::resetView(viewId);
-                bgfx::setViewName(viewId, pass.getName().c_str());
-            }
-            pass.onGraphCompiled(viewId);
-        }
-        return RenderGraph(std::move(matrix), *this);
+        return RenderGraph(builder.graph(), *this);
     }
 
     RenderGraph::RenderGraph(Matrix&& matrix, const Definition& def) noexcept
         : _matrix(std::move(matrix))
         , _def(def)
     {
+    }
+
+    void RenderGraph::configureViews(bgfx::ViewId initialViewId)
+    {
+        for (auto&& vertex : _matrix.vertices())
+        {
+            auto& pass = _def.getPass(vertex);
+            auto viewId = initialViewId + vertex;
+            bgfx::resetView(viewId);
+            bgfx::setViewName(viewId, pass.getName().c_str());
+            pass.configureView(viewId);
+        }
     }
 
     size_t RenderGraph::size() const noexcept
