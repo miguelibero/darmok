@@ -4,6 +4,7 @@
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/render_graph.hpp>
 #include <bx/bx.h>
 #include <string>
 #include <optional>
@@ -68,7 +69,6 @@ namespace darmok
 		
 		void init(App& app) override;
 		void shutdown() noexcept override;
-		bgfx::ViewId render(bgfx::ViewId viewId) const noexcept override;
 		void updateLogic(float dt) noexcept override;
 	private:
 		std::unique_ptr<RmluiAppComponentImpl> _impl;

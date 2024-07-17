@@ -42,6 +42,7 @@ namespace darmok
 	class Input;
 	class Window;
 	class AssetContext;
+	class RenderGraphDefinition;
 
 	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<App>&& app);
 
@@ -86,6 +87,9 @@ namespace darmok
 		[[nodiscard]] AssetContext& getAssets() noexcept;
 		[[nodiscard]] const AssetContext& getAssets() const noexcept;
 
+		[[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
+		[[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
+
 		void toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
@@ -100,8 +104,6 @@ namespace darmok
 		}
 
 	protected:
-
-
 		void setConfig(const AppConfig& config) noexcept;
 
 		template<typename T>
@@ -111,7 +113,7 @@ namespace darmok
 		}
 
 		virtual void updateLogic(float deltaTime);
-		virtual bgfx::ViewId render(bgfx::ViewId viewId) const;
+		virtual void render() const;
 
 	private:
 		std::unique_ptr<AppImpl> _impl;
@@ -126,7 +128,6 @@ namespace darmok
 		virtual void init(App& app) {};
 		virtual void shutdown() {};
 		virtual void updateLogic(float deltaTime) {};
-		virtual bgfx::ViewId render(bgfx::ViewId viewId) const { return viewId;  };
 	};
 
 	template<typename T, typename... A>

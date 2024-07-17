@@ -10,6 +10,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/render_graph.hpp>
 
 namespace darmok
 {    
@@ -46,7 +47,6 @@ namespace darmok
 
         void init(App& app);
         void updateLogic(float dt);
-        bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
 
         void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
@@ -201,8 +201,8 @@ namespace darmok
 
         void init(App& app) override;
         void shutdown() override;
-        bgfx::ViewId render(bgfx::ViewId viewId) const override;
         void updateLogic(float dt) override;
+
     private:
         std::shared_ptr<Scene> _scene;
         OptionalRef<App> _app;

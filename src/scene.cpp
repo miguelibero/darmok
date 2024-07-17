@@ -217,11 +217,6 @@ namespace darmok
         _impl->updateLogic(dt);
     }
 
-    bgfx::ViewId Scene::render(bgfx::ViewId viewId)
-    {
-        return _impl->render(viewId);
-    }
-
     void Scene::addSceneComponent(std::unique_ptr<ISceneComponent>&& comp) noexcept
     {
         _impl->addSceneComponent(std::move(comp));
@@ -285,15 +280,6 @@ namespace darmok
         {
             _scene->shutdown();
         }
-    }
-
-    bgfx::ViewId SceneAppComponent::render(bgfx::ViewId viewId) const
-    {
-        if (_scene)
-        {
-            viewId = _scene->render(viewId);
-        }
-        return viewId;
     }
 
     void SceneAppComponent::updateLogic(float deltaTime)

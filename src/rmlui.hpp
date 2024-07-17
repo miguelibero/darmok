@@ -8,6 +8,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/data.hpp>
 #include <darmok/viewport.hpp>
+#include <darmok/render_graph.hpp>
 #include <unordered_map>
 #include <variant>
 #include <optional>
@@ -120,7 +121,7 @@ namespace darmok
 
 	class RmluiAppComponentImpl;
 
-	class RmluiViewImpl final
+	class RmluiViewImpl final : public IRenderPass
 	{
 	public:
 		RmluiViewImpl(const std::string& name, const Viewport& vp, RmluiAppComponentImpl& comp);
@@ -142,7 +143,9 @@ namespace darmok
 		void setMousePosition(const glm::vec2& position) noexcept;
 
 		bool update() noexcept;
-		bgfx::ViewId render(bgfx::ViewId viewId) const noexcept;
+
+		void renderPassDefine(RenderPassDefinition& def) noexcept override;
+		void renderPassExecute(RenderGraphResources& res) noexcept override;
 
 	private:
 		OptionalRef<Rml::Context> _context;
@@ -165,7 +168,6 @@ namespace darmok
 
 		void init(App& app);
 		void shutdown() noexcept;
-		bgfx::ViewId render(bgfx::ViewId viewId) const noexcept;
 		void update(float dt) noexcept;
 
 		RmluiSystemInterface& getSystem() noexcept;

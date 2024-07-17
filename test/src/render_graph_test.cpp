@@ -22,12 +22,6 @@ public:
     {
     }
 
-    const std::string& getRenderPassName() const noexcept override
-    {
-        static const std::string name("GBuffer Pass");
-        return name;
-    }
-
     void renderPassDefine(RenderPassDefinition& def) override
     {
         def.getOutputs()
@@ -56,12 +50,6 @@ public:
     DeferredLightingRenderPass()
         : _outTexture{ "lighting:"}
     {
-    }
-
-    const std::string& getRenderPassName() const noexcept override
-    {
-        static const std::string name("Deferred Lighting");
-        return name;
     }
 
     void renderPassDefine(RenderPassDefinition& def) override
@@ -101,12 +89,6 @@ public:
     {
     }
 
-    const std::string& getRenderPassName() const noexcept override
-    {
-        static const std::string name("Postprocess");
-        return name;
-    }
-
     void renderPassDefine(RenderPassDefinition& def) override
     {
         def.getInputs()
@@ -122,12 +104,10 @@ public:
         _outTexture.content += inTex->content;
 
         res.setRef(_outTexture);
-
     }
 private:
     TestTexture _outTexture;
 };
-/*
 
 TEST_CASE( "Compile & run render graph dependencies", "[render-graph]" )
 {
@@ -142,15 +122,13 @@ TEST_CASE( "Compile & run render graph dependencies", "[render-graph]" )
     def.addPass(postPass);
 
     auto graph = def.compile();
-    auto res = graph.execute();
+    auto res = graph();
 
     auto outTexture = res.get<TestTexture>();
 
     REQUIRE(outTexture);
     REQUIRE(outTexture->content == "postprocess:lighting:depth+normal+albedo");
 }
-
-*/
 
 struct TestCamera final
 {
@@ -160,12 +138,7 @@ struct TestCamera final
 class CameraRenderPass final : public IRenderPass
 {
 public:
-    const std::string& getRenderPassName() const noexcept override
-    {
-        static const std::string name("Camera");
-        return name;
-    }
-
+    
     void renderPassDefine(RenderPassDefinition& def) override
     {
         def.getInputs()
@@ -203,7 +176,7 @@ TEST_CASE("Subgraphs", "[render-graph]")
     res.emplace<TestCamera>({ .group = def2 }, "two");
 
     auto graph = def.compile();
-    graph.execute(res);
+    graph(res);
 
     auto outTexture1 = res.get<TestTexture>({ .group = def1 });
     auto outTexture2 = res.get<TestTexture>({ .group = def2 });

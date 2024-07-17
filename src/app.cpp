@@ -179,6 +179,16 @@ namespace darmok
 		return _plat;
 	}
 
+	RenderGraphDefinition& AppImpl::getRenderGraph() noexcept
+	{
+		return _renderGraphDef;
+	}
+
+	const RenderGraphDefinition& AppImpl::getRenderGraph() const noexcept
+	{
+		return _renderGraphDef;
+	}
+
 	const AppConfig& AppConfig::getDefaultConfig() noexcept
 	{
 		static const AppConfig config
@@ -221,6 +231,10 @@ namespace darmok
 		//bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
 		bgfx::setPaletteColor(1, Colors::toNumber(_config.clearColor));
 
+		// we use initial view 0 to clear the screen
+		bgfx::setViewRect(0, 0, 0, size.x, size.y);
+		bgfx::setViewClear(0, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
+
 		addBindings();
 
 		_assets.init(_app);
@@ -253,15 +267,21 @@ namespace darmok
 			component->updateLogic(deltaTime);
 		}
 		_input.getImpl().update();
+		if (!_renderGraph || _renderGraph->size() != _renderGraphDef.size())
+		{
+			_renderGraph = _renderGraphDef.compile();
+		}
 	}
 
-	bgfx::ViewId AppImpl::render(bgfx::ViewId viewId) const
+	void AppImpl::render(bgfx::ViewId viewId) const
 	{
-		for (auto& component : _components)
+		if (!_renderGraph)
 		{
-			viewId = component->render(viewId);
+			return;
 		}
-		return viewId;
+		RenderGraphResources res;
+		res.set(viewId);
+		_renderGraph.value()(res);
 	}
 
 	const std::string AppImpl::_bindingsName = "debug";
@@ -461,6 +481,16 @@ namespace darmok
 		return _impl->getAssets();
 	}
 
+	RenderGraphDefinition& App::getRenderGraph() noexcept
+	{
+		return _impl->getRenderGraph();
+	}
+
+	const RenderGraphDefinition& App::getRenderGraph() const noexcept
+	{
+		return _impl->getRenderGraph();
+	}
+
 	bool App::update()
 	{
 		if (_impl->processEvents())
@@ -473,8 +503,7 @@ namespace darmok
 			_impl->updateLogic(deltaTime);
 		});
 
-		bgfx::ViewId viewId = 0;
-		viewId = render(viewId);
+		render();
 
 		// advance to next frame. Rendering thread will be kicked to
 		// process submitted rendering primitives.
@@ -492,23 +521,19 @@ namespace darmok
 		_impl->setConfig(config);
 	}
 
-	bgfx::ViewId App::render(bgfx::ViewId viewId) const
+	void App::render() const
 	{
 		auto& size = getWindow().getSize();
 
-		// initial view 0 to clear the screen
-		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+		bgfx::ViewId viewId = 0;
 		bgfx::touch(viewId);
 		bgfx::dbgTextClear(); // use debug font to print information
-		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
 		viewId++;
 
-		viewId = _impl->render(viewId);
+		_impl->render(viewId);
 
 		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
 		bgfx::touch(viewId);
-
-		return viewId;
 	}
 
 	void App::toggleDebugFlag(uint32_t flag) noexcept

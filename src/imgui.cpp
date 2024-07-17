@@ -248,12 +248,15 @@ namespace darmok
 		, _textureUniform{ bgfx::kInvalidHandle }
 		, _lodEnabledUniform{ bgfx::kInvalidHandle }
 		, _inputEnabled(true)
+		, _imgui(nullptr)
 	{
 		IMGUI_CHECKVERSION();
 	}
 
 	void ImguiAppComponentImpl::init(App& app)
 	{
+		app.getRenderGraph().addPass(*this);
+
 		_app = app;
 		ImGui::SetAllocatorFunctions(memAlloc, memFree, &app.getAssets().getAllocator());
 
@@ -345,6 +348,19 @@ namespace darmok
 		ImGui::SetCurrentContext(nullptr);
 
 		return rendered;
+	}
+
+	void ImguiAppComponentImpl::renderPassDefine(RenderPassDefinition& def) noexcept
+	{
+		def.setName("Imgui");
+	}
+
+	void ImguiAppComponentImpl::renderPassExecute(RenderGraphResources& res) noexcept
+	{
+		if (auto viewId = res.get<bgfx::ViewId>())
+		{
+			render(viewId.value());
+		}
 	}
 
 	ImGuiContext* ImguiAppComponentImpl::getContext() noexcept
@@ -446,15 +462,6 @@ namespace darmok
 	void ImguiAppComponent::updateLogic(float dt) noexcept
 	{
 		_impl->updateLogic(dt);
-	}
-
-	bgfx::ViewId ImguiAppComponent::render(bgfx::ViewId viewId) const noexcept
-	{
-		if (_impl->render(viewId))
-		{
-			++viewId;
-		}
-		return viewId;
 	}
 
 	ImGuiContext* ImguiAppComponent::getContext() noexcept

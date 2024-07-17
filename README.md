@@ -31,9 +31,7 @@ planned to use:
     * [Chipmunk2D](https://github.com/slembcke/Chipmunk2D)
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
-* [fastgltf](https://github.com/spnda/fastgltf) for gltf asset loading (runtime)
 * [taskflow](https://github.com/taskflow/taskflow) for multithreaded updates
-* [msdfgen](https://github.com/Chlumsky/msdfgen) distance field fonts
 
 Trying to use modern C++ patterns where possible.
 

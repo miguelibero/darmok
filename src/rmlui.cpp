@@ -578,12 +578,18 @@ namespace darmok
         return _context->Update();
     }
 
-    bgfx::ViewId RmluiViewImpl::render(bgfx::ViewId viewId) const noexcept
+    void RmluiViewImpl::renderPassDefine(RenderPassDefinition& def) noexcept
     {
+        def.setName("Rmlui " + getName());
+    }
+
+    void RmluiViewImpl::renderPassExecute(RenderGraphResources& res) noexcept
+    {
+        auto viewId = res.get<bgfx::ViewId>().value();
         _render.beforeRender(viewId, _viewport);
         if (!_context->Render())
         {
-            return viewId;
+            return;
         }
         auto cursorSprite = getMouseCursorSprite();
         if (cursorSprite)
@@ -591,7 +597,6 @@ namespace darmok
             _render.renderMouseCursor(cursorSprite.value(), _mousePosition);
         }
         _render.afterRender();
-        return ++viewId;
     }
 
     OptionalRef<const Rml::Sprite> RmluiViewImpl::getMouseCursorSprite() const noexcept
@@ -821,16 +826,8 @@ namespace darmok
             auto impl = std::make_unique<RmluiViewImpl>(name, size, *this);
             itr = _views.emplace(name, std::move(impl)).first;
         }
+        _app->getRenderGraph().addPass(itr->second.getImpl());
         return itr->second;
-    }
-
-    bgfx::ViewId RmluiAppComponentImpl::render(bgfx::ViewId viewId) const noexcept
-    {
-        for (auto& elm : _views)
-        {
-            viewId = elm.second.getImpl().render(viewId);
-        }
-        return viewId;
     }
 
     void RmluiAppComponentImpl::update(float dt) noexcept
@@ -1097,11 +1094,6 @@ namespace darmok
     void RmluiAppComponent::shutdown() noexcept
     {
         _impl->shutdown();
-    }
-
-    bgfx::ViewId RmluiAppComponent::render(bgfx::ViewId viewId) const noexcept
-    {
-        return _impl->render(viewId);
     }
 
     void RmluiAppComponent::updateLogic(float dt) noexcept

@@ -6,6 +6,7 @@
 #include <darmok/window.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/render_graph.hpp>
 #include <string>
 #include <cstdint>
 #include <vector>
@@ -21,7 +22,7 @@ namespace darmok
 		void setConfig(const AppConfig& config) noexcept;
 		void init();
 		void updateLogic(float deltaTime);
-		bgfx::ViewId render(bgfx::ViewId viewId) const;
+		void render(bgfx::ViewId viewId) const;
 		void triggerExit() noexcept;
 		bool processEvents();
 		void shutdown();
@@ -39,6 +40,9 @@ namespace darmok
 		[[nodiscard]] const AssetContext& getAssets() const noexcept;
 		[[nodiscard]] Platform& getPlatform() noexcept;
 		[[nodiscard]] const Platform& getPlatform() const noexcept;
+		[[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
+		[[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
+
 
 		template <typename F>
 		void update(const F& logicCallback)
@@ -78,6 +82,8 @@ namespace darmok
 		Input _input;
 		Window _window;
 		AssetContext _assets;
+		RenderGraphDefinition _renderGraphDef;
+		std::optional<RenderGraph> _renderGraph;
 
 		std::vector<std::unique_ptr<AppComponent>> _components;
 	};

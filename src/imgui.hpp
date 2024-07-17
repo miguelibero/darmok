@@ -2,6 +2,7 @@
 
 #include <darmok/input_fwd.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/render_graph.hpp>
 #include <imgui.h>
 #include <unordered_map>
 #include <memory>
@@ -13,7 +14,7 @@ namespace darmok
 	class IImguiRenderer;
 	class Program;
 
-    class ImguiAppComponentImpl final
+    class ImguiAppComponentImpl final : public IRenderPass
     {
     public:
 		ImguiAppComponentImpl(IImguiRenderer& renderer, float fontSize = 18.0f);
@@ -21,11 +22,13 @@ namespace darmok
 		void init(App& app);
 		void shutdown() noexcept;
 		void updateLogic(float dt) noexcept;
-		bool render(bgfx::ViewId viewId) const noexcept;
 		ImGuiContext* getContext() noexcept;
 
 		bool getInputEnabled() const noexcept;
 		void setInputEnabled(bool enabled) noexcept;
+
+		void renderPassDefine(RenderPassDefinition& def) noexcept override;
+		void renderPassExecute(RenderGraphResources& res) noexcept override;
 
     private:
 		IImguiRenderer& _renderer;
@@ -49,6 +52,7 @@ namespace darmok
 
 		static inline bool checkAvailTransientBuffers(uint32_t numVertices, const bgfx::VertexLayout& layout, uint32_t numIndices) noexcept;
 
+		bool render(bgfx::ViewId viewId) const noexcept;
 		bool render(bgfx::ViewId viewId, const bgfx::TextureHandle& texture, ImDrawData* drawData) const noexcept;
 		void updateInput(float dt) noexcept;
 		void beginFrame() const noexcept;
