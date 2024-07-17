@@ -24,7 +24,7 @@ namespace darmok
 	class RmluiRenderInterface final : public Rml::RenderInterface
 	{
 	public:
-		RmluiRenderInterface() noexcept;
+		RmluiRenderInterface(const std::shared_ptr<Program>& prog, bx::AllocatorI& alloc) noexcept;
 		~RmluiRenderInterface() noexcept;
 		void RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept override;
 		void EnableScissorRegion(bool enable) noexcept override;
@@ -39,13 +39,11 @@ namespace darmok
 		void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 		
-		void init(App& app);
 		void beforeRender(bgfx::ViewId viewId, const Viewport& vp) noexcept;
 		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
 		bool afterRender() noexcept;
-		void shutdown() noexcept;
 		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
-		std::shared_ptr<Texture> getTargetTexture() noexcept;
+		std::shared_ptr<Texture> getTargetTexture() const noexcept;
 
 	private:
 
@@ -61,8 +59,7 @@ namespace darmok
 		Viewport _viewport;
 
 		OptionalRef<bgfx::Encoder> _encoder;
-		std::unique_ptr<Program> _program;
-		bgfx::VertexLayout _layout;
+		std::shared_ptr<Program> _program;
 		bgfx::UniformHandle _textureUniform;
 		glm::mat4 _transform;
 		glm::ivec4 _scissor;
@@ -71,7 +68,7 @@ namespace darmok
 		bool _viewSetup;
 		std::shared_ptr<Texture> _targetTexture;
 		bgfx::FrameBufferHandle _frameBuffer;
-		OptionalRef<bx::AllocatorI> _alloc;
+		bx::AllocatorI& _alloc;
 		static const uint64_t _state;
 
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
@@ -121,40 +118,69 @@ namespace darmok
 		OptionalRef<Element> find(Rml::FileHandle file) noexcept;
 	};
 
-	class BX_NO_VTABLE IRmluiListener
+	class RmluiAppComponentImpl;
+
+	class RmluiViewImpl final
 	{
 	public:
-		virtual ~IRmluiListener() noexcept = default;
-		virtual void onRmluiInitialized() = 0;
-		virtual void onRmluiContextCreated(Rml::Context& context) = 0;
-		virtual void onRmluiShutdown() = 0;
+		RmluiViewImpl(const std::string& name, const Viewport& vp, RmluiAppComponentImpl& comp);
+		~RmluiViewImpl() noexcept;
+
+		std::string getName() const noexcept;
+
+		Rml::Context& getContext() noexcept;
+		const Rml::Context& getContext() const noexcept;
+
+		const Viewport& getViewport() const noexcept;
+		void setViewport(const Viewport& viewport) noexcept;
+
+		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
+		std::shared_ptr<Texture> getTargetTexture() const noexcept;
+
+		bool getInputActive() const noexcept;
+		void setInputActive(bool active) noexcept;
+		void setMousePosition(const glm::vec2& position) noexcept;
+
+		bool update() noexcept;
+		bgfx::ViewId render(bgfx::ViewId viewId) const noexcept;
+
+	private:
+		OptionalRef<Rml::Context> _context;
+		RmluiAppComponentImpl& _comp;
+		std::string _name;
+		mutable RmluiRenderInterface _render;
+		bool _inputActive;
+		glm::vec2 _mousePosition;
+		Viewport _viewport;
+
+		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
+		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
+
 	};
 
     class RmluiAppComponentImpl final : public IWindowListener, public IKeyboardListener, public IMouseListener
     {
     public:
-		RmluiAppComponentImpl(const std::string& name) noexcept;
-		RmluiAppComponentImpl(const std::string& name, const Viewport& viewport) noexcept;
 		~RmluiAppComponentImpl() noexcept;
-
-		void setViewport(const std::optional<Viewport>& viewport) noexcept;
-		const std::optional<Viewport>& getViewport() const noexcept;
-		Viewport getCurrentViewport() const noexcept;
-
-		void setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
-		std::shared_ptr<Texture> getTargetTexture() const noexcept;
-
-		void setInputActive(bool active) noexcept;
-		bool getInputActive() const noexcept;
-		void setMousePosition(const glm::vec2& position) noexcept;
-
-		OptionalRef<Rml::Context> getContext() const noexcept;
-		RmluiRenderInterface& getRenderInterface() noexcept;
 
 		void init(App& app);
 		void shutdown() noexcept;
-		bool render(bgfx::ViewId viewId) const noexcept;
-		bool update(float dt) noexcept;
+		bgfx::ViewId render(bgfx::ViewId viewId) const noexcept;
+		void update(float dt) noexcept;
+
+		RmluiSystemInterface& getSystem() noexcept;
+		bx::AllocatorI& getAllocator() noexcept;
+		std::shared_ptr<Program> getProgram() const noexcept;
+		int getKeyModifierState() const noexcept;
+
+		RmluiView& getDefaultView() noexcept;
+		const RmluiView& getDefaultView() const noexcept;
+
+		OptionalRef<const RmluiView> getView(const std::string& name) const noexcept;
+		RmluiView& getView(const std::string& name);
+		
+		bool hasView(const std::string& name) const noexcept;
+		bool removeView(const std::string& name);
 
 		void onWindowPixelSize(const glm::uvec2& size) noexcept override;
 		void onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept override;
@@ -167,26 +193,14 @@ namespace darmok
 	private:
 		RmluiSystemInterface _system;
 		RmluiFileInterface _file;
-
-		std::string _name;
-		OptionalRef<Rml::Context> _context;
 		OptionalRef<App> _app;
-		
-		mutable RmluiRenderInterface _render;
-		std::optional<Viewport> _viewport;
-		bool _inputActive;
-
-		glm::vec2 _mousePosition;
-		std::string _defaultMouseCursor;
+		std::shared_ptr<Program> _program;
+		std::unordered_map<std::string, RmluiView> _views;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;
 		static const KeyboardMap& getKeyboardMap() noexcept;
 
 		using KeyboardModifierMap = std::unordered_map<std::variant<uint8_t, KeyboardKey>, Rml::Input::KeyModifier>;
 		static const KeyboardModifierMap& getKeyboardModifierMap() noexcept;
-
-		int getKeyModifierState() const noexcept;
-		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
-		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
     };
 }

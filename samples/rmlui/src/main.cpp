@@ -19,8 +19,8 @@ namespace
 		{
 			App::init();
 
-			auto& comp = addComponent<darmok::RmluiAppComponent>("main");
-			auto context = comp.getContext();
+			auto& comp = addComponent<darmok::RmluiAppComponent>();
+			auto& context = comp.getDefaultView().getContext();
 
 			// sample taken from the RmlUI README
 			// https://github.com/mikke89/RmlUi
@@ -31,14 +31,14 @@ namespace
 			Rml::LoadFontFace("NotoEmoji-Regular.ttf", true);
 
 			// Set up data bindings to synchronize application data.
-			if (Rml::DataModelConstructor constructor = context->CreateDataModel("animals"))
+			if (Rml::DataModelConstructor constructor = context.CreateDataModel("animals"))
 			{
 				constructor.Bind("show_text", &_show_text);
 				constructor.Bind("animal", &_animal);
 			}
 
 			// Now we are ready to load our document.
-			Rml::ElementDocument* document = context->LoadDocument("hello_world.rml");
+			Rml::ElementDocument* document = context.LoadDocument("hello_world.rml");
 			document->Show();
 
 			// Replace and style some text in the loaded document.

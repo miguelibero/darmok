@@ -16,33 +16,56 @@ namespace Rml
 namespace darmok
 {
 	class RmluiAppComponent;
-	class RmluiAppComponentImpl;
 	class Texture;
 	class Camera;
 	class Transform;
 	struct Viewport;
 
+	class RmluiViewImpl;
+
+	class DARMOK_EXPORT RmluiView final
+	{
+	public:
+		RmluiView(std::unique_ptr<RmluiViewImpl>&& impl) noexcept;
+		~RmluiView() noexcept;
+
+		std::string getName() const noexcept;
+
+		RmluiView& setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
+		std::shared_ptr<Texture> getTargetTexture() noexcept;
+
+		const Viewport& getViewport() const noexcept;
+		void setViewport(const Viewport& vp) noexcept;
+
+		RmluiView& setInputActive(bool active) noexcept;
+		bool getInputActive() const noexcept;
+
+		RmluiView& setMousePosition(const glm::vec2& position) noexcept;
+
+		Rml::Context& getContext() noexcept;
+		const Rml::Context& getContext() const noexcept;
+
+		RmluiViewImpl& getImpl() noexcept;
+		const RmluiViewImpl& getImpl() const noexcept;
+	private:
+		std::unique_ptr<RmluiViewImpl> _impl;
+	};
+
+	class RmluiAppComponentImpl;
+
 	class DARMOK_EXPORT RmluiAppComponent final : public AppComponent
     {
     public:
-		RmluiAppComponent(const std::string& name) noexcept;
-		RmluiAppComponent(const std::string& name, const glm::uvec2& size) noexcept;
+		RmluiAppComponent() noexcept;
 		~RmluiAppComponent() noexcept;
 
-		OptionalRef<Rml::Context> getContext() const noexcept;
+		const RmluiView& getDefaultView() const noexcept;
+		RmluiView& getDefaultView() noexcept;
+		OptionalRef<const RmluiView> getView(const std::string& name) const noexcept;
+		RmluiView& getView(const std::string& name);
+		bool hasView(const std::string& name) const noexcept;
+		bool removeView(const std::string& name);
 		
-		RmluiAppComponent& setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
-		std::shared_ptr<Texture> getTargetTexture() noexcept;
-
-		RmluiAppComponent& setViewport(const std::optional<Viewport>& viewport) noexcept;
-		const std::optional<Viewport>& getViewport() const noexcept;
-		Viewport getCurrentViewport() const noexcept;
-
-		RmluiAppComponent& setInputActive(bool active) noexcept;
-		bool getInputActive() const noexcept;
-
-		RmluiAppComponent& setMousePosition(const glm::vec2& position) noexcept;
-
 		void init(App& app) override;
 		void shutdown() noexcept override;
 		bgfx::ViewId render(bgfx::ViewId viewId) const noexcept override;
