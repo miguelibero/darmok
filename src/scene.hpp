@@ -4,6 +4,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/render_graph.hpp>
 #include <entt/entt.hpp>
 #include <vector>
 #include <memory>
@@ -26,18 +27,21 @@ namespace darmok
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
 
+        RenderGraphDefinition& getRenderGraph() noexcept;
+        const RenderGraphDefinition& getRenderGraph() const noexcept;
+
         OptionalRef<App> getApp() noexcept;
         OptionalRef<const App> getApp() const noexcept;
 
         void init(App& app);
         void updateLogic(float dt);
-        bgfx::ViewId render(bgfx::ViewId viewId);
         void shutdown();
     private:
         std::vector<std::unique_ptr<ISceneComponent>> _components;
         EntityRegistry _registry;
         Scene& _scene;
         OptionalRef<App> _app;
+        RenderGraphDefinition _renderGraph;
 
         void onCameraConstructed(EntityRegistry& registry, Entity entity);
         void onCameraDestroyed(EntityRegistry& registry, Entity entity);

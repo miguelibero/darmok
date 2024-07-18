@@ -2,8 +2,8 @@
 #include "scene.hpp"
 #include "material.hpp"
 #include "mesh.hpp"
-#include "camera.hpp"
 #include "asset.hpp"
+#include "render.hpp"
 #include <darmok/skeleton.hpp>
 #include <darmok/asset.hpp>
 
@@ -142,20 +142,20 @@ namespace darmok
         );
     }
 
-    LuaSkeletalAnimationCameraComponent::LuaSkeletalAnimationCameraComponent(SkeletalAnimationCameraComponent& comp) noexcept
+    LuaSkeletalAnimationRenderComponent::LuaSkeletalAnimationRenderComponent(SkeletalAnimationRenderComponent& comp) noexcept
         : _comp(comp)
     {
     }
 
-    LuaSkeletalAnimationCameraComponent LuaSkeletalAnimationCameraComponent::addCameraComponent(LuaCamera& cam) noexcept
+    LuaSkeletalAnimationRenderComponent LuaSkeletalAnimationRenderComponent::addRenderComponent(LuaRenderer& renderer) noexcept
     {
-        return LuaSkeletalAnimationCameraComponent(cam.getReal().addComponent<SkeletalAnimationCameraComponent>());
+        return renderer.getReal().addComponent<SkeletalAnimationRenderComponent>();
     }
 
-    void LuaSkeletalAnimationCameraComponent::bind(sol::state_view& lua) noexcept
+    void LuaSkeletalAnimationRenderComponent::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<LuaSkeletalAnimationCameraComponent>("SkeletalAnimationCameraComponent", sol::no_constructor,
-            "add_camera_component", &LuaSkeletalAnimationCameraComponent::addCameraComponent
+        lua.new_usertype<LuaSkeletalAnimationRenderComponent>("SkeletalAnimationRenderComponent", sol::no_constructor,
+            "add_render_component", &LuaSkeletalAnimationRenderComponent::addRenderComponent
         );
     }
 }

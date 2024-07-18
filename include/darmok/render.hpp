@@ -1,11 +1,55 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/optional_ref.hpp>
+#include <darmok/scene_fwd.hpp>
 #include <memory>
+#include <vector>
+#include <stdexcept>
 #include <bgfx/bgfx.h>
+#include <bx/bx.h>
 
 namespace darmok
 {
+    class Camera;
+    class App;
+    class Scene;
+
+    class DARMOK_EXPORT BX_NO_VTABLE IRenderComponent
+    {
+    public:
+        virtual ~IRenderComponent() = default;
+        virtual void init(Camera& cam, Scene& scene, App& app) {};
+        virtual void update(float deltaTime) {}
+        virtual void shutdown() {};
+
+        virtual void beforeRenderView(bgfx::ViewId viewId) {};
+        virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) {};
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE IRenderer
+    {
+    public:
+        virtual ~IRenderer() = default;
+        virtual void init(Camera& cam, Scene& scene, App& app) {};
+        virtual void update(float deltaTime) {};
+        virtual void shutdown() {};
+
+        virtual void addComponent(std::unique_ptr<IRenderComponent>&& comp)
+        {
+            throw std::runtime_error("not supported");
+        };
+
+        template<typename T, typename... A>
+        T& addComponent(A&&... args)
+        {
+            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+            auto& ref = *ptr;
+            addComponent(std::move(ptr));
+            return ref;
+        }
+    };
+
     class Material;
     class Texture;
     class IMesh;

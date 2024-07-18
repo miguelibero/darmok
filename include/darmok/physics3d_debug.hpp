@@ -3,7 +3,7 @@
 #include <memory>
 #include <optional>
 #include <darmok/export.h>
-#include <darmok/camera.hpp>
+#include <darmok/render.hpp>
 #include <darmok/input.hpp>
 
 namespace darmok
@@ -25,7 +25,7 @@ namespace darmok::physics3d
         float alpha = 0.3F;
     };
 
-    class DARMOK_EXPORT PhysicsDebugRenderer : public ICameraComponent
+    class DARMOK_EXPORT PhysicsDebugRenderer : public IRenderer
     {
     public:
         using Config = PhysicsDebugConfig;
@@ -33,7 +33,9 @@ namespace darmok::physics3d
         ~PhysicsDebugRenderer() noexcept;
         void init(Camera& cam, Scene& scene, App& app) override;
         void shutdown() override;
-        bgfx::ViewId afterRender(bgfx::ViewId viewId) override;
+
+        void addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept override;
+
         bool isEnabled() const noexcept;
         PhysicsDebugRenderer& setEnabled(bool enabled) noexcept;
         PhysicsDebugRenderer& setFont(const std::shared_ptr<IFont>& font) noexcept;

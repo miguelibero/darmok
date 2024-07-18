@@ -7,7 +7,6 @@
 #include <vector>
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/camera.hpp>
 #include <darmok/render.hpp>
 #include <darmok/asset_core.hpp>
 #include <bx/bx.h>
@@ -294,11 +293,11 @@ namespace darmok
         OptionalRef<Scene> _scene;
     };
 
-    class DARMOK_EXPORT SkeletalAnimationCameraComponent final : public ICameraComponent
+    class DARMOK_EXPORT SkeletalAnimationRenderComponent final : public IRenderComponent
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept override;
+        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) noexcept override;
         void shutdown() noexcept override;
     private:
         bgfx::UniformHandle _skinningUniform;

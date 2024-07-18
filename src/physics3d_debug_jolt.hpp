@@ -3,6 +3,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/physics3d_debug.hpp>
+#include <darmok/render_graph.hpp>
 #include "jolt.hpp"
 #include <Jolt/Renderer/DebugRenderer.h>
 
@@ -31,14 +32,17 @@ namespace darmok::physics3d
     class PhysicsSystemImpl;
     struct PhysicsDebugConfig;
 
-    class PhysicsDebugRendererImpl final : public JPH::DebugRenderer
+    class PhysicsDebugRendererImpl final : public JPH::DebugRenderer, public IRenderer, IRenderPass
     {
     public:
         using Config = PhysicsDebugConfig;
         PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app);
         void shutdown();
-        bool render(bgfx::ViewId viewId);
+
+        void renderPassDefine(RenderPassDefinition& def) noexcept override;
+        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
+        void renderPassExecute(RenderGraphResources& res) override;
 
         bool isEnabled() const noexcept;
         void setEnabled(bool enabled) noexcept;
@@ -52,7 +56,6 @@ namespace darmok::physics3d
         void DrawGeometry(JPH::RMat44Arg inModelMatrix, const JPH::AABox& inWorldSpaceBounds, float inLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode = ECullMode::CullBackFace, ECastShadow inCastShadow = ECastShadow::On, EDrawMode inDrawMode = EDrawMode::Solid) override;
         void DrawText3D(JPH::RVec3Arg inPosition, const std::string_view& inString, JPH::ColorArg inColor = JPH::Color::sWhite, float inHeight = 0.5f) override;
     private:
-
         struct TextData final
         {
             glm::vec3 position;

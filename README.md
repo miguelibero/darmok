@@ -17,7 +17,7 @@ currently using:
 * [nlohmann-json](https://github.com/nlohmann/json) for parsing json
 * [pugixml](https://pugixml.org/) for parsing xml
 * [imgui](https://github.com/ocornut/imgui) for editor UI
-* [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI to replace CEGUI
+* [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [cereal](https://uscilab.github.io/cereal/) for serialization
 * [tweeny](https://github.com/mobius3/tweeny) for tweening and easings
@@ -84,42 +84,37 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * ozz skeleton & animations
 * dynamic font texture generation
 
-#### Upcoming (I need them)
-* lua camera renderer
-* sound
-
 #### Upcoming
 * render graph
-* replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
+* sound
+* maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
 * text improvements
     * finish all the TextRenderConfig options
     * dynamic distance field rendering with border support
 * clipboard text support (UTF8)
 * loaders should return unique_ptr
 * move lua bindings to separate library?
-* defines when exporting shaders (generate all variations like Unity)
 * frustrum culling
 * more stuff serialization
     * binary texture atlas
     * material
 * loading progress
-* modernize renderer (probably needs frame graph or similar)
-    * deferred
+* more renderer features once render graph is working
     * other types of lights
-    * physically based renderer
+    * deferred
+    * PBR
     * SSAO
 
 #### In the future
-* unit tests, I know
+* more unit tests
 * performance profiling
 * 2d physics
-* separate shaders for skinning?
-* instancing meshes
+* instancing
 * support multiple imgui app components with different transforms
 * spine animations loading
 * unify use of allocators everywhere
 * progressive asset loaders
-* async task management
+* multithreaded rendering with [taskflow](https://github.com/taskflow/taskflow)
 * lua debugging would be nice
 * particle systems (maybe effekseer)
 
@@ -133,14 +128,14 @@ I'm still learning CMake, so if you see something that should be fixed please le
 ## Example code
 
 ```lua
-program = app.assets:load_standard_program(StandardProgramType.ForwardPhong)
+program = Program.new(StandardProgramType.Forward)
 
 camEntity = app.scene:create_entity()
 camTrans = camEntity:add_component(Transform, { 0, 2, -2 })
 camTrans:look_at({ 0, 0, 0 })
 local cam = camEntity:add_component(Camera)
 cam:set_projection(60, { 0.3, 1000 })
-cam:set_renderer(ForwardRenderer)
+cam:add_component(ForwardRenderer)
 cam:add_component(PhongLightingComponent)
 
 lightEntity = app.scene:create_entity()

@@ -54,6 +54,16 @@ namespace darmok
         return _registry;
     }
 
+    RenderGraphDefinition& SceneImpl::getRenderGraph() noexcept
+    {
+        return _renderGraph;
+    }
+
+    const RenderGraphDefinition& SceneImpl::getRenderGraph() const noexcept
+    {
+        return _renderGraph;
+    }
+
     OptionalRef<App> SceneImpl::getApp() noexcept
     {
         return _app;
@@ -128,6 +138,7 @@ namespace darmok
     void SceneImpl::updateLogic(float dt)
     {
         auto camView = _registry.view<Camera>();
+        auto& renderGraph = _app->getRenderGraph();
         for (auto [entity, cam] : camView.each())
         {
             cam.update(dt);
@@ -143,19 +154,6 @@ namespace darmok
         {
             comp->update(dt);
         }
-    }
-
-    bgfx::ViewId SceneImpl::render(bgfx::ViewId viewId)
-    {
-        for (auto [entity, cam] : _registry.view<const Camera>().each())
-        {
-            if (!cam.isEnabled())
-            {
-                continue;
-            }
-            viewId = cam.render(viewId);
-        }
-        return viewId;
     }
 
     Scene::Scene() noexcept

@@ -150,16 +150,6 @@ namespace darmok
 		_camera->setEnabled(enabled);
 	}
 
-	bool LuaCamera::getRendererEnabled() const noexcept
-	{
-		return _camera->isRendererEnabled();
-	}
-
-	void LuaCamera::setRendererEnabled(bool enabled) noexcept
-	{
-		_camera->setRendererEnabled(enabled);
-	}
-
 	void LuaCamera::setProjectionMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept
 	{
 		_camera->setProjectionMatrix(LuaGlm::tableGet(matrix));
@@ -236,7 +226,7 @@ namespace darmok
 #endif
 
 #ifdef DARMOK_OZZ
-		LuaSkeletalAnimationCameraComponent::bind(lua);
+		LuaSkeletalAnimationRenderComponent::bind(lua);
 #endif
 
 		lua.new_usertype<LuaCamera>("Camera", sol::no_constructor,
@@ -259,7 +249,6 @@ namespace darmok
 				&LuaCamera::setOrtho6
 			),
 			"enabled", sol::property(&LuaCamera::getEnabled, &LuaCamera::setEnabled),
-			"renderer_enabled", sol::property(&LuaCamera::getRendererEnabled, &LuaCamera::setRendererEnabled),
 			"projection_matrix", sol::property(&LuaCamera::getProjectionMatrix, &LuaCamera::setProjectionMatrix),
 			"target_textures", sol::property(&LuaCamera::getTargetTextures, &LuaCamera::setTargetTextures),
 			"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
@@ -277,11 +266,8 @@ namespace darmok
 		);
 
 		lua.script(R"(
-function Camera:add_component(type, ...)
-	return type.add_camera_component(self, ...)
-end
-function Camera:set_renderer(type, ...)
-	return type.set_camera_renderer(self, ...)
+function Camera:add_renderer(type, ...)
+	return type.add_renderer(self, ...)
 end
 )");
 	}

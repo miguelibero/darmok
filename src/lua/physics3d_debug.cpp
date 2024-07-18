@@ -3,6 +3,7 @@
 #include "camera.hpp"
 #include <darmok/physics3d_debug.hpp>
 #include <darmok/material.hpp>
+#include <darmok/camera.hpp>
 
 namespace darmok::physics3d
 {
@@ -21,14 +22,14 @@ namespace darmok::physics3d
         _renderer->setEnabled(enabled);
     }
 
-    LuaPhysicsDebugRenderer LuaPhysicsDebugRenderer::addCameraComponent1(LuaCamera& cam, LuaPhysicsSystem& system) noexcept
+    LuaPhysicsDebugRenderer LuaPhysicsDebugRenderer::addRenderer1(LuaCamera& cam, LuaPhysicsSystem& system) noexcept
     {
-        return LuaPhysicsDebugRenderer(cam.getReal().addComponent<PhysicsDebugRenderer>(system.getReal()));
+        return LuaPhysicsDebugRenderer(cam.getReal().addRenderer<PhysicsDebugRenderer>(system.getReal()));
     }
 
-    LuaPhysicsDebugRenderer LuaPhysicsDebugRenderer::addCameraComponent2(LuaCamera& cam, LuaPhysicsSystem& system, const Config& config) noexcept
+    LuaPhysicsDebugRenderer LuaPhysicsDebugRenderer::addRenderer2(LuaCamera& cam, LuaPhysicsSystem& system, const Config& config) noexcept
     {
-        return LuaPhysicsDebugRenderer(cam.getReal().addComponent<PhysicsDebugRenderer>(system.getReal(), config));
+        return LuaPhysicsDebugRenderer(cam.getReal().addRenderer<PhysicsDebugRenderer>(system.getReal(), config));
     }
 
     void LuaPhysicsDebugRenderer::bind(sol::state_view& lua) noexcept
@@ -40,9 +41,9 @@ namespace darmok::physics3d
         lua.new_usertype<LuaPhysicsDebugRenderer>("PhysicsDebugRenderer",
             sol::no_constructor,
             "enabled", sol::property(&LuaPhysicsDebugRenderer::getEnabled, &LuaPhysicsDebugRenderer::setEnabled),
-            "add_camera_component", sol::overload(
-                &LuaPhysicsDebugRenderer::addCameraComponent1,
-                &LuaPhysicsDebugRenderer::addCameraComponent2
+            "add_renderer", sol::overload(
+                &LuaPhysicsDebugRenderer::addRenderer1,
+                &LuaPhysicsDebugRenderer::addRenderer2
             )
         );
     }

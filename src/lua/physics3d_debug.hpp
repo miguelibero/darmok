@@ -28,7 +28,7 @@ namespace darmok::physics3d
     private:
         OptionalRef<PhysicsDebugRenderer> _renderer;
 
-        static LuaPhysicsDebugRenderer addCameraComponent1(LuaCamera& cam, LuaPhysicsSystem& system) noexcept;
-        static LuaPhysicsDebugRenderer addCameraComponent2(LuaCamera& cam, LuaPhysicsSystem& system, const Config& config) noexcept;
+        static LuaPhysicsDebugRenderer addRenderer1(LuaCamera& cam, LuaPhysicsSystem& system) noexcept;
+        static LuaPhysicsDebugRenderer addRenderer2(LuaCamera& cam, LuaPhysicsSystem& system, const Config& config) noexcept;
     };
 }

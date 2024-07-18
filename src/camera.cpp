@@ -6,6 +6,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
 #include <darmok/math.hpp>
+#include <darmok/render.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <bx/math.h>
 
@@ -15,7 +16,7 @@ namespace darmok
         : _proj(projMatrix)
         , _frameBuffer{ bgfx::kInvalidHandle }
         , _enabled(true)
-        , _rendererEnabled(true)
+        , _renderGraphSize(0)
     {
     }
 
@@ -43,16 +44,14 @@ namespace darmok
         return *this;
     }
 
-
-    bool Camera::isRendererEnabled() const noexcept
+    RenderGraphDefinition& Camera::getRenderGraph() noexcept
     {
-        return _rendererEnabled;
+        return _renderGraph;
     }
 
-    Camera& Camera::setRendererEnabled(bool enabled) noexcept
+    const RenderGraphDefinition& Camera::getRenderGraph() const noexcept
     {
-        _rendererEnabled = enabled;
-        return *this;
+        return _renderGraph;
     }
 
     const glm::mat4& Camera::getProjectionMatrix() const noexcept
@@ -149,111 +148,66 @@ namespace darmok
     {
         _scene = scene;
         _app = app;
+        _renderGraph.clear();
+        _renderGraphSize = 0;
         if (_entityFilter != nullptr)
         {
             _entityFilter->init(scene.getRegistry());
         }
-        if (_renderer != nullptr)
+        for(auto& renderer : _renderers)
         {
-            _renderer->init(*this, scene, app);
-        }
-        for(auto& component : _components)
-        {
-            component->init(*this, scene, app);
+            renderer->init(*this, scene, app);
         }
     }
 
     void Camera::shutdown()
     {
-        if (_renderer != nullptr)
+        for (auto& renderer : _renderers)
         {
-            _renderer->shutdown();
-        }
-        for (auto& component : _components)
-        {
-            component->shutdown();
+            renderer->shutdown();
         }
     }
 
     void Camera::update(float deltaTime)
     {
-        if (_renderer != nullptr)
+        for (auto& renderer : _renderers)
         {
-            _renderer->update(deltaTime);
+            renderer->update(deltaTime);
         }
-        for (auto& component : _components)
+
+        auto rgSize = _renderGraph.size();
+        if (_renderGraphSize != rgSize)
         {
-            component->update(deltaTime);
+            // if the size of the camera render graph changed
+            // passes changed so we need to update the app render graph
+            auto& rg = _app->getRenderGraph();
+            rg.setChild(_renderGraph);
+            _renderGraphSize = rgSize;
         }
     }
 
-    bgfx::ViewId Camera::render(bgfx::ViewId viewId) const
+    void Camera::beforeRenderView(bgfx::ViewId viewId) const noexcept
     {
-        for (auto& comp : _components)
+        auto projPtr = glm::value_ptr(_proj);
+        const void* viewPtr = nullptr;
+
+        if (_model)
         {
-            viewId = comp->beforeRender(viewId);
+            viewPtr = glm::value_ptr(_model.value());
         }
-        if(_rendererEnabled && _renderer != nullptr)
+        else
         {
-            viewId = _renderer->render(viewId);
-        }
-        for (auto& comp : _components)
-        {
-            viewId = comp->afterRender(viewId);
-        }
-        return viewId;
-    }
-
-    void Camera::beforeRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
-    {
-        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
-        
-        bgfx::setViewFrameBuffer(viewId, _frameBuffer);
-
-        getCurrentViewport().bgfxSetup(viewId);
-
-        // this dummy draw call is here to make sure that view is cleared
-        // if no other draw calls are submitted to view.
-        bgfx::touch(viewId);
-
-        if (_scene)
-        {
-            auto projPtr = glm::value_ptr(_proj);
-            const void* viewPtr = nullptr;
-
-            if (_model)
+            auto trans = getTransform();
+            if (trans != nullptr)
             {
-                viewPtr = glm::value_ptr(_model.value());
+                viewPtr = glm::value_ptr(trans->getWorldInverse());
             }
-            else
-            {
-                auto trans = getTransform();
-                if (trans != nullptr)
-                {
-                    viewPtr = glm::value_ptr(trans->getWorldInverse());
-                }
-            }
-
-            bgfx::setViewTransform(viewId, viewPtr, projPtr);
         }
-        for (auto& comp : _components)
-        {
-            comp->beforeRenderView(encoder, viewId);
-        }
+        bgfx::setViewTransform(viewId, viewPtr, projPtr);
     }
 
-    void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+    void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept
     {
-        for (auto& comp : _components)
-        {
-            comp->beforeRenderEntity(entity, encoder, viewId);
-        }
-
-        if (entity == entt::null)
-        {
-            return;
-        }
         const void* transMtx = nullptr;
         if (_scene)
         {
@@ -267,39 +221,13 @@ namespace darmok
         encoder.setTransform(transMtx);
     }
 
-    void Camera::afterRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
-    {
-        for (auto& comp : _components)
-        {
-            comp->afterRenderEntity(entity, encoder, viewId);
-        }
-    }
-
-    void Camera::afterRenderView(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
-    {
-        for (auto& comp : _components)
-        {
-            comp->afterRenderView(encoder, viewId);
-        }
-    }
-
-    Camera& Camera::setRenderer(std::unique_ptr<ICameraRenderer>&& renderer) noexcept
+    Camera& Camera::addRenderer(std::unique_ptr<IRenderer>&& renderer) noexcept
     {
         if (_scene)
         {
             renderer->init(*this, _scene.value(), _app.value());
         }
-        _renderer = std::move(renderer);
-        return *this;
-    }
-
-    Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept
-    {
-        if (_scene)
-        {
-            component->init(*this, _scene.value(), _app.value());
-        }
-        _components.push_back(std::move(component));
+        _renderers.push_back(std::move(renderer));
         return *this;
     }
 

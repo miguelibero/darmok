@@ -286,7 +286,7 @@ namespace darmok
         bool operator==(const RenderGraphDefinition& other) const noexcept;
         bool operator!=(const RenderGraphDefinition& other) const noexcept;
 
-        void addChild(const RenderGraphDefinition& child) noexcept;
+        bool setChild(const RenderGraphDefinition& child) noexcept;
         Pass& addPass() noexcept;
         const Pass& addPass(IRenderPass& pass);
         bool hasPass(const std::string& name) const noexcept;
@@ -294,6 +294,8 @@ namespace darmok
 
         const Pass& getPass(size_t vertex) const;
         Pass& getPass(size_t vertex);
+
+        void clear();
         size_t size() const noexcept;
         const Pass& operator[](size_t vertex) const;
 

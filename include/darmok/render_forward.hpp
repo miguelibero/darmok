@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <darmok/export.h>
-#include <darmok/camera.hpp>
+#include <darmok/render.hpp>
 #include <darmok/render_graph.hpp>
 
 namespace darmok
@@ -12,19 +12,26 @@ namespace darmok
     class App;
     class Material;
 
-    class DARMOK_EXPORT ForwardRenderer final : public ICameraRenderer
+    class DARMOK_EXPORT ForwardRenderer final : public IRenderer, public IRenderPass
     {
     public:
         ForwardRenderer() noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        ForwardRenderer& setInvalidMaterial(const std::shared_ptr<Material>& mat) noexcept;
         void shutdown() noexcept override;
-        bgfx::ViewId render(bgfx::ViewId viewId) const override;
+
+        void renderPassDefine(RenderPassDefinition& def) noexcept override;
+        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
+        void renderPassExecute(RenderGraphResources& res) noexcept override;
+
+        void addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept override;
     private:
         const static std::string _name;
-        std::shared_ptr<Material> _invalidMaterial;
+        bgfx::ViewId _viewId;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
-        OptionalRef<App> _app;
+        std::vector<std::unique_ptr<IRenderComponent>> _components;
+
+        void beforeRenderView(bgfx::ViewId viewId);
+        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder);
     };
 }

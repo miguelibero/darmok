@@ -7,6 +7,21 @@
 
 namespace darmok
 {
+	class IRenderer;
+
+	class LuaRenderer final
+	{
+	public:
+		LuaRenderer(IRenderer& renderer) noexcept;
+
+		IRenderer& getReal() noexcept;
+		const IRenderer& getReal() const noexcept;
+
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		OptionalRef<IRenderer> _renderer;
+	};
+
     class Renderable;
 	class LuaEntity;
 	class LuaScene;

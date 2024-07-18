@@ -12,7 +12,7 @@ namespace darmok
     {
     public:
         LuaForwardRenderer(ForwardRenderer& renderer) noexcept;
-        static LuaForwardRenderer setCameraRenderer(LuaCamera& cam) noexcept;
+        static LuaForwardRenderer addRenderer(LuaCamera& cam) noexcept;
 
         static void bind(sol::state_view& lua) noexcept;
     private:

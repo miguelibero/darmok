@@ -205,9 +205,17 @@ namespace darmok
         return id();
     }
 
-    void RenderGraphDefinition::addChild(const RenderGraphDefinition& child) noexcept
+    bool RenderGraphDefinition::setChild(const RenderGraphDefinition& child) noexcept
     {
+        auto id = child.id();
+        auto itr = std::find_if(_children.begin(), _children.end(), [id](auto& elm) { return elm.id() == id; });
+        if (itr != _children.end())
+        {
+            *itr = child;
+            return false;
+        }
         _children.push_back(child);
+        return true;
     }
 
     RenderPassDefinition& RenderGraphDefinition::addPass() noexcept
@@ -256,6 +264,12 @@ namespace darmok
             }
         }
         return false;
+    }
+
+    void RenderGraphDefinition::clear()
+    {
+        _passes.clear();
+        _children.clear();
     }
 
     size_t RenderGraphDefinition::size() const noexcept

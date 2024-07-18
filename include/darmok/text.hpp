@@ -1,7 +1,8 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <darmok/camera.hpp>
+#include <darmok/render.hpp>
+#include <darmok/render_graph.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/utf8.hpp>
 #include <darmok/mesh.hpp>
@@ -110,17 +111,19 @@ namespace darmok
         RenderConfig _renderConfig;
     };
 
-    class DARMOK_EXPORT TextRenderer final : public ICameraComponent
+    class DARMOK_EXPORT TextRenderer final : public IRenderer, IRenderPass
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) override;
-        bgfx::ViewId afterRender(bgfx::ViewId viewId) override;
+        void renderPassDefine(RenderPassDefinition& def) noexcept override;
+        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
+        void renderPassExecute(RenderGraphResources& res) noexcept override;
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
-        static const std::string _name;
+        bgfx::ViewId _viewId;
     };
 
     struct TextureAtlas;

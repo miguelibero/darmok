@@ -1,6 +1,6 @@
 #include "light.hpp"
 #include "scene.hpp"
-#include "camera.hpp"
+#include "render.hpp"
 #include <darmok/light.hpp>
 
 namespace darmok
@@ -190,16 +190,16 @@ namespace darmok
 	{
 	}
 
-	LuaPhongLightingComponent LuaPhongLightingComponent::addCameraComponent(LuaCamera& cam) noexcept
+	LuaPhongLightingComponent LuaPhongLightingComponent::addRenderComponent(LuaRenderer& renderer) noexcept
 	{
-		return LuaPhongLightingComponent(cam.getReal().addComponent<PhongLightingComponent>());
+		return renderer.getReal().addComponent<PhongLightingComponent>();
 	}
 
 	void LuaPhongLightingComponent::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaPhongLightingComponent>("PhongLightingComponent",
 			sol::no_constructor,
-			"add_camera_component", &LuaPhongLightingComponent::addCameraComponent
+			"add_render_component", &LuaPhongLightingComponent::addRenderComponent
 		);
 	}
 }

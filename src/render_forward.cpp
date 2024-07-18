@@ -11,45 +11,44 @@
 namespace darmok
 {
 	ForwardRenderer::ForwardRenderer() noexcept
+		: _viewId(-1)
 	{
-	}
-
-	ForwardRenderer& ForwardRenderer::setInvalidMaterial(const std::shared_ptr<Material>& mat) noexcept
-	{
-		_invalidMaterial = mat;
-		return *this;
 	}
 
 	void ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
 		_cam = cam;
 		_scene = scene;
-		_app = app;
+		cam.getRenderGraph().addPass(*this);
 	}
 
 	void ForwardRenderer::shutdown() noexcept
 	{
+		if (_cam)
+		{
+			_cam->getRenderGraph().removePass(*this);
+		}
+		_viewId = -1;
 		_cam = nullptr;
 		_scene = nullptr;
-		_app = nullptr;
 	}
 
-	const std::string ForwardRenderer::_name = "Forward Renderer";
-
-	bgfx::ViewId ForwardRenderer::render(bgfx::ViewId viewId) const
+	void ForwardRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
 	{
-		if (!_cam)
-		{
-			return viewId;
-		}
-
-		auto encoder = bgfx::begin();
-
 		auto camEntity = _scene->getEntity(_cam.value());
-		std::string name = _name + " " + std::to_string(camEntity);
-		bgfx::setViewName(viewId, &name.front(), name.size());
+		def.setName("Forward Renderer " + std::to_string(camEntity));
+	}
 
-		_cam->beforeRenderView(*encoder, viewId);
+	void ForwardRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
+	{
+		_viewId = viewId;
+	}
+
+	void ForwardRenderer::renderPassExecute(RenderGraphResources& res) noexcept
+	{
+		auto& encoder = res.get<bgfx::Encoder>().value();
+
+		beforeRenderView(_viewId);
 
 		auto renderables = _scene->getComponentView<Renderable>();
 		for (auto entity : renderables)
@@ -59,15 +58,31 @@ namespace darmok
 			{
 				continue;
 			}
-			_cam->renderEntity(entity, *encoder, viewId, [renderable, encoder, viewId]() {
-				renderable->render(*encoder, viewId);
-			});
+			beforeRenderEntity(entity, encoder);
+			renderable->render(encoder, _viewId);
 		}
+	}
 
-		_cam->afterRenderView(*encoder, viewId);
+	void ForwardRenderer::beforeRenderView(bgfx::ViewId viewId)
+	{
+		_cam->beforeRenderView(viewId);
+		for (auto& comp : _components)
+		{
+			comp->beforeRenderView(viewId);
+		}
+	}
 
-		bgfx::end(encoder);
+	void ForwardRenderer::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder)
+	{
+		_cam->beforeRenderEntity(entity, encoder);
+		for (auto& comp : _components)
+		{
+			comp->beforeRenderEntity(entity, encoder);
+		}
+	}
 
-		return ++viewId;
+	void ForwardRenderer::addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept
+	{
+		_components.push_back(std::move(comp));
 	}
 }

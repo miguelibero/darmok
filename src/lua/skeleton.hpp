@@ -78,17 +78,17 @@ namespace darmok
         OptionalRef<SkeletalAnimationSceneComponent> _comp;
     };
 
-    class SkeletalAnimationCameraComponent;
-    class LuaCamera;
+    class SkeletalAnimationRenderComponent;
+    class LuaRenderer;
 
-    class LuaSkeletalAnimationCameraComponent final
+    class LuaSkeletalAnimationRenderComponent final
     {
     public:
-        LuaSkeletalAnimationCameraComponent(SkeletalAnimationCameraComponent& comp) noexcept;
-        static LuaSkeletalAnimationCameraComponent addCameraComponent(LuaCamera& cam) noexcept;
+        LuaSkeletalAnimationRenderComponent(SkeletalAnimationRenderComponent& comp) noexcept;
+        static LuaSkeletalAnimationRenderComponent addRenderComponent(LuaRenderer& renderer) noexcept;
 
         static void bind(sol::state_view& lua) noexcept;
     private:
-        OptionalRef<SkeletalAnimationCameraComponent> _comp;
+        OptionalRef<SkeletalAnimationRenderComponent> _comp;
     };
 }

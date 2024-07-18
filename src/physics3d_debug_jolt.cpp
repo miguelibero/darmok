@@ -82,26 +82,37 @@ namespace darmok::physics3d
         setEnabled(!_enabled);
     }
 
-    bool PhysicsDebugRendererImpl::render(bgfx::ViewId viewId)
+
+    void PhysicsDebugRendererImpl::renderPassDefine(RenderPassDefinition& def) noexcept
+    {
+
+    }
+
+    void PhysicsDebugRendererImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept
+    {
+        _viewId = viewId;
+    }
+
+    void PhysicsDebugRendererImpl::renderPassExecute(RenderGraphResources& res)
     {
         if (!_enabled)
         {
-            return false;
+            return;
         }
         auto joltSystem = _system.getJolt();
         if (!joltSystem)
         {
-            return false;
+            return;
         }
         if (!_config.material)
         {
-            return false;
+            return;
         }
 
-        bgfx::setViewName(viewId, "Jolt Physics Debug");
+        bgfx::setViewName(_viewId, "Jolt Physics Debug");
 
         _encoder = bgfx::begin();
-        _viewId = viewId;
+        auto& encoder = res.get<bgfx::Encoder>().value();
 
         JPH::BodyManager::DrawSettings settings;
         settings.mDrawShape = true;
@@ -109,17 +120,13 @@ namespace darmok::physics3d
         settings.mDrawWorldTransform = true;
         // settings.mDrawSleepStats = true;
 
-        _cam->beforeRenderView(_encoder.value(), _viewId);
+        _cam->beforeRenderView(_viewId);
 
         joltSystem->DrawBodies(settings, this, nullptr);
 
         renderMesh(_wireMeshData, EDrawMode::Wireframe);
         renderMesh(_solidMeshData, EDrawMode::Solid);
         renderText();
-
-        bgfx::end(_encoder.ptr());
-        _encoder.reset();
-        return true;
     }
 
     bool PhysicsDebugRendererImpl::tryRenderMeshBatch(MeshData& meshData, EDrawMode mode)
@@ -199,15 +206,14 @@ namespace darmok::physics3d
             return;
         }
         auto& encoder = _encoder.value();
-        auto material = *_config.material;
+        Material material = *_config.material;
         auto primType = mode == EDrawMode::Wireframe ? MaterialPrimitiveType::Line : MaterialPrimitiveType::Triangle;
         material.setPrimitiveType(primType);
-        _cam->renderEntity(entt::null, encoder, _viewId, [this, &mesh, &encoder, &material]() {
-            if (mesh.render(encoder))
-            {
-                renderSubmit(material);
-            }
-        });
+
+        if (mesh.render(encoder))
+        {
+            renderSubmit(material);
+        }
     }
 
     void PhysicsDebugRendererImpl::renderSubmit(const Material& mat)
@@ -246,10 +252,6 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
     {
-        if (!_font || !_encoder)
-        {
-            return;
-        }
         Utf8Vector content;
         Utf8Char::read(str, content);
         if (content.empty())
@@ -344,13 +346,9 @@ namespace darmok::physics3d
         _impl->shutdown();
     }
 
-    bgfx::ViewId PhysicsDebugRenderer::afterRender(bgfx::ViewId viewId)
+    void PhysicsDebugRenderer::addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept
     {
-        if (_impl->render(viewId))
-        {
-            viewId++;
-        }
-        return viewId;
+        _impl->addComponent(std::move(comp));
     }
 
     bool PhysicsDebugRenderer::isEnabled() const noexcept

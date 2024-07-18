@@ -5,6 +5,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/program.hpp>
+#include <darmok/camera.hpp>
 
 namespace darmok
 {
@@ -164,7 +165,7 @@ namespace darmok
 			return false;
 		}
 
-		auto layout = prog->getVertexLayout();
+		auto& layout = prog->getVertexLayout();
 		data.config.color = _color;
 
 		Data vertexData;
@@ -280,10 +281,15 @@ namespace darmok
 	{
 		_scene = scene;
 		_cam = cam;
+		cam.getRenderGraph().addPass(*this);
 	}
 
 	void TextRenderer::shutdown() noexcept
 	{
+		if (_cam)
+		{
+			_cam->getRenderGraph().removePass(*this);
+		}
 		_scene.reset();
 		_cam.reset();
 	}
@@ -298,7 +304,7 @@ namespace darmok
 		std::unordered_map<std::shared_ptr<IFont>, std::unordered_set<Utf8Char>> fontChars;
 		for (auto [entity, text] : texts.each())
 		{
-			auto content = text.getContent();
+			auto& content = text.getContent();
 			fontChars[text.getFont()].insert(content.begin(), content.end());
 		}
 		for (auto& [font, chars] : fontChars)
@@ -311,35 +317,37 @@ namespace darmok
 		}
 	}
 
-	const std::string TextRenderer::_name = "Text Renderer";
+	void TextRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
+	{
+		def.setName("Text Renderer");
+	}
 
-	bgfx::ViewId TextRenderer::afterRender(bgfx::ViewId viewId)
+	void TextRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
+	{
+		_viewId = viewId;
+	}
+
+	void TextRenderer::renderPassExecute(RenderGraphResources& res) noexcept
 	{
 		if (!_scene || !_cam)
 		{
-			return viewId;
+			return;
 		}
 		auto texts = _cam->createEntityView<Text>();
 		if (texts.size_hint() == 0)
 		{
-			return viewId;
+			return;
 		}
 
-		bgfx::setViewName(viewId, &_name.front(), _name.size());
+		_cam->beforeRenderView(_viewId);
 
-		auto encoder = bgfx::begin();
-		_cam->beforeRenderView(*encoder, viewId);
-
+		auto& encoder = res.get<bgfx::Encoder>().value();
 		for (auto entity : texts)
 		{
 			auto text = _scene->getComponent<Text>(entity);
-			_cam->renderEntity(entity, *encoder, viewId, [&text, encoder, viewId]() {
-				text->render(*encoder, viewId);
-			});
+			_cam->beforeRenderEntity(entity, encoder);
+			text->render(encoder, _viewId);
 		}
-		_cam->afterRenderView(*encoder, viewId);
-		bgfx::end(encoder);
-		return ++viewId;
 	}
 
 	TextureAtlasFont::TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas, const std::shared_ptr<Program>& prog) noexcept

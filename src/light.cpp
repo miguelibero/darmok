@@ -251,7 +251,7 @@ namespace darmok
         updateCamera();
     }
 
-    void PhongLightingComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept
+    void PhongLightingComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) noexcept
     {
         if (isValid(_lightCountUniform))
         {

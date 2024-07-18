@@ -115,7 +115,7 @@ namespace
 			registry.emplace<Camera>(cam2d)
 				.setOrtho(getWindow().getSize(), glm::vec2(0))
 				.setEntityComponentFilter<Culling2D>()
-				.setRenderer<ForwardRenderer>();
+				.addRenderer<ForwardRenderer>();
 
 			auto cam3d = registry.create();
 			registry.emplace<Transform>(cam3d)
@@ -125,7 +125,7 @@ namespace
 			registry.emplace<Camera>(cam3d)
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000)
 				.setEntityComponentFilter<Culling3D>()
-				.setRenderer<ForwardRenderer>();
+				.addRenderer<ForwardRenderer>();
 
 			auto debugTexture = getAssets().getColorTextureLoader()(Colors::red());
 			_debugMaterial = std::make_shared<Material>(_prog, debugTexture);

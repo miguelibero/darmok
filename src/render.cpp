@@ -2,10 +2,10 @@
 #include <darmok/material.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/program.hpp>
+#include <darmok/camera.hpp>
 
 namespace darmok
 {
-    
 	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
 		: _mesh(mesh)
 		, _material(material)

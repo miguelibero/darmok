@@ -2,7 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
-#include <darmok/camera.hpp>
+#include <darmok/render.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
 #include <unordered_map>
@@ -53,7 +53,7 @@ namespace darmok
     };
 
 
-    class DARMOK_EXPORT PhongLightingComponent final : public ICameraComponent
+    class DARMOK_EXPORT PhongLightingComponent final : public IRenderComponent
     {
     public:
         PhongLightingComponent() noexcept;
@@ -61,7 +61,7 @@ namespace darmok
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown()  noexcept override;
         void update(float deltaTime)  noexcept override;
-        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder, bgfx::ViewId viewId) noexcept override;
+        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) noexcept override;
 
     private:
         OptionalRef<Scene> _scene;
