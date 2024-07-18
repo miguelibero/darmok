@@ -110,6 +110,7 @@ namespace darmok
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;
         
+        void configureView(bgfx::ViewId viewId) const noexcept;
         void beforeRenderView(bgfx::ViewId viewId) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept;
 

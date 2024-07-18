@@ -186,6 +186,12 @@ namespace darmok
         }
     }
 
+    void Camera::configureView(bgfx::ViewId viewId) const noexcept
+    {
+        bgfx::setViewFrameBuffer(viewId, _frameBuffer);
+        getCurrentViewport().configureView(viewId);
+    }
+
     void Camera::beforeRenderView(bgfx::ViewId viewId) const noexcept
     {
         auto projPtr = glm::value_ptr(_proj);
@@ -204,6 +210,8 @@ namespace darmok
             }
         }
         bgfx::setViewTransform(viewId, viewPtr, projPtr);
+
+        bgfx::touch(viewId);
     }
 
     void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept

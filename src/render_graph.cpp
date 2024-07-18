@@ -187,7 +187,7 @@ namespace darmok
 
     bool RenderGraphDefinition::operator==(const RenderGraphDefinition& other) const noexcept
     {
-        return _passes != other._passes && _children != other._children;
+        return _frontPasses != other._frontPasses && _children != other._children && _backPasses != other._backPasses;
     }
 
     bool RenderGraphDefinition::operator!=(const RenderGraphDefinition& other) const noexcept
@@ -218,9 +218,22 @@ namespace darmok
         return true;
     }
 
+    RenderGraphDefinition::Pass& RenderGraphDefinition::addFrontPass() noexcept
+    {
+        return *_frontPasses.emplace(_frontPasses.begin(), _id);
+    }
+
+    const RenderGraphDefinition::Pass& RenderGraphDefinition::addFrontPass(IRenderPass& pass)
+    {
+        auto& def = addFrontPass();
+        def.setDelegate(pass);
+        pass.renderPassDefine(def);
+        return def;
+    }
+
     RenderPassDefinition& RenderGraphDefinition::addPass() noexcept
     {
-        return _passes.emplace_back(_id);
+        return _backPasses.emplace_back(_id);
     }
 
     const RenderGraphDefinition::Pass& RenderGraphDefinition::addPass(IRenderPass& pass)
@@ -231,10 +244,15 @@ namespace darmok
         return def;
     }
 
+    bool hasRenderPass(const std::string& name, const std::vector<RenderPassDefinition>& passes) noexcept
+    {
+        auto itr = std::find_if(passes.begin(), passes.end(), [&name](auto& pass) { return pass.getName() == name; });
+        return itr != passes.end();
+    }
+
     bool RenderGraphDefinition::hasPass(const std::string& name) const noexcept
     {
-        auto itr = std::find_if(_passes.begin(), _passes.end(), [&name](auto& pass) { return pass.getName() == name; });
-        if (itr != _passes.end())
+        if (hasRenderPass(name, _frontPasses))
         {
             return true;
         }
@@ -245,15 +263,24 @@ namespace darmok
                 return true;
             }
         }
+        return hasRenderPass(name, _backPasses);
+    }
+
+    bool removeRenderPass(IRenderPassDelegate& dlg, std::vector<RenderPassDefinition>& passes) noexcept
+    {
+        auto itr = std::find_if(passes.begin(), passes.end(), [&dlg](auto& pass) { return pass.getDelegate() == dlg; });
+        if (itr != passes.end())
+        {
+            passes.erase(itr);
+            return true;
+        }
         return false;
     }
 
     bool RenderGraphDefinition::removePass(IRenderPassDelegate& dlg)
     {
-        auto itr = std::find_if(_passes.begin(), _passes.end(), [&dlg](auto& pass) { return pass.getDelegate() == dlg; });
-        if (itr != _passes.end())
+        if (removeRenderPass(dlg, _frontPasses))
         {
-            _passes.erase(itr);
             return true;
         }
         for (auto& child : _children)
@@ -263,40 +290,37 @@ namespace darmok
                 return true;
             }
         }
-        return false;
+        return removeRenderPass(dlg, _backPasses);
     }
 
     void RenderGraphDefinition::clear()
     {
-        _passes.clear();
+        _frontPasses.clear();
         _children.clear();
+        _backPasses.clear();
     }
 
     size_t RenderGraphDefinition::size() const noexcept
     {
-        size_t s = _passes.size();
+        size_t s = _frontPasses.size();
         for (auto& child : _children)
         {
             s += child.size();
         }
+        s += _backPasses.size();
         return s;
     }
 
     const RenderGraphDefinition::Pass& RenderGraphDefinition::operator[](size_t vertex) const
     {
-        return getPass(vertex);
-    }
-
-    const RenderGraphDefinition::Pass& RenderGraphDefinition::getPass(size_t vertex) const
-    {
         if (vertex < 0)
         {
             throw std::invalid_argument("pass does not exist");
         }
-        auto s = _passes.size();
+        auto s = _frontPasses.size();
         if (vertex < s)
         {
-            return _passes.at(vertex);
+            return _frontPasses.at(vertex);
         }
         vertex -= s;
         for (auto& child : _children)
@@ -304,23 +328,28 @@ namespace darmok
             s = child.size();
             if (vertex < s)
             {
-                return child.getPass(vertex);
+                return child[vertex];
             }
             vertex -= s;
+        }
+        s = _backPasses.size();
+        if (vertex < s)
+        {
+            return _backPasses.at(vertex);
         }
         throw std::invalid_argument("pass does not exist");
     }
 
-    RenderGraphDefinition::Pass& RenderGraphDefinition::getPass(size_t vertex)
+    RenderGraphDefinition::Pass& RenderGraphDefinition::operator[](size_t vertex)
     {
         if (vertex < 0)
         {
             throw std::invalid_argument("pass does not exist");
         }
-        auto s = _passes.size();
+        auto s = _frontPasses.size();
         if (vertex < s)
         {
-            return _passes.at(vertex);
+            return _frontPasses.at(vertex);
         }
         vertex -= s;
         for (auto& child : _children)
@@ -328,33 +357,26 @@ namespace darmok
             s = child.size();
             if (vertex < s)
             {
-                return child.getPass(vertex);
+                return child[vertex];
             }
             vertex -= s;
+        }
+        s = _backPasses.size();
+        if (vertex < s)
+        {
+            return _backPasses.at(vertex);
         }
         throw std::invalid_argument("pass does not exist");
     }
 
-    RenderGraphDefinition::ConstIterator RenderGraphDefinition::begin() const
+    void configureRenderFlow(entt::flow& builder, entt::id_type baseId, const std::vector<RenderPassDefinition>& passes) noexcept
     {
-        return _passes.begin();
-    }
-    
-    RenderGraphDefinition::ConstIterator RenderGraphDefinition::end() const
-    {
-        return _passes.end();
-    }
-
-    void RenderGraphDefinition::configureFlow(entt::flow& builder) const noexcept
-    {
-        auto baseId = id();
-
         auto getId = [&baseId](const auto& v)
         {
             return idTypeCombine(baseId, v.id());
         };
 
-        for (auto& pass : _passes)
+        for (auto& pass : passes)
         {
             builder.bind(getId(pass));
             for (auto& input : pass.getInputs())
@@ -370,10 +392,18 @@ namespace darmok
                 builder.sync();
             }
         }
+    }
+
+
+    void RenderGraphDefinition::configureFlow(entt::flow& builder) const noexcept
+    {
+        auto baseId = id();
+        configureRenderFlow(builder, baseId, _frontPasses);
         for (auto& child : _children)
         {
             child.configureFlow(builder);
         }
+        configureRenderFlow(builder, baseId, _backPasses);
     }
 
     RenderGraph RenderGraphDefinition::compile()
@@ -393,7 +423,7 @@ namespace darmok
     {
         for (auto&& vertex : _matrix.vertices())
         {
-            auto& pass = _def.getPass(vertex);
+            auto& pass = _def[vertex];
             auto viewId = initialViewId + vertex;
             bgfx::resetView(viewId);
             bgfx::setViewName(viewId, pass.getName().c_str());
@@ -463,7 +493,7 @@ namespace darmok
 
         for (auto& vertex : readyVertices)
         {
-            auto& pass = _def.getPass(vertex);
+            auto& pass = _def[vertex];
             auto group = pass.getGroup();
             auto main = group == mainGroup;
             if (!main)
@@ -509,7 +539,7 @@ namespace darmok
     {
         entt::dot(out, _matrix, [this, &out](auto& output, auto vertex)
         {
-            auto& pass = _def.getPass(vertex);
+            auto& pass = _def[vertex];
             out << "label=\"" << pass.getName() << "\",shape=\"box\"";
         });
     }

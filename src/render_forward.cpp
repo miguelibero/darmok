@@ -17,8 +17,7 @@ namespace darmok
 
 	void ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
-		_cam = cam;
-		_scene = scene;
+		Renderer::init(cam, scene, app);
 		cam.getRenderGraph().addPass(*this);
 	}
 
@@ -29,8 +28,7 @@ namespace darmok
 			_cam->getRenderGraph().removePass(*this);
 		}
 		_viewId = -1;
-		_cam = nullptr;
-		_scene = nullptr;
+		Renderer::shutdown();
 	}
 
 	void ForwardRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
@@ -42,6 +40,11 @@ namespace darmok
 	void ForwardRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
 	{
 		_viewId = viewId;
+
+		static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+
+		_cam->configureView(viewId);
 	}
 
 	void ForwardRenderer::renderPassExecute(RenderGraphResources& res) noexcept
@@ -50,7 +53,7 @@ namespace darmok
 
 		beforeRenderView(_viewId);
 
-		auto renderables = _scene->getComponentView<Renderable>();
+		auto renderables = _cam->createEntityView<Renderable>();
 		for (auto entity : renderables)
 		{
 			auto renderable = _scene->getComponent<const Renderable>(entity);
@@ -61,28 +64,5 @@ namespace darmok
 			beforeRenderEntity(entity, encoder);
 			renderable->render(encoder, _viewId);
 		}
-	}
-
-	void ForwardRenderer::beforeRenderView(bgfx::ViewId viewId)
-	{
-		_cam->beforeRenderView(viewId);
-		for (auto& comp : _components)
-		{
-			comp->beforeRenderView(viewId);
-		}
-	}
-
-	void ForwardRenderer::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder)
-	{
-		_cam->beforeRenderEntity(entity, encoder);
-		for (auto& comp : _components)
-		{
-			comp->beforeRenderEntity(entity, encoder);
-		}
-	}
-
-	void ForwardRenderer::addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept
-	{
-		_components.push_back(std::move(comp));
 	}
 }

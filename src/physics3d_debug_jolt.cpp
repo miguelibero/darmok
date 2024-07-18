@@ -67,14 +67,23 @@ namespace darmok::physics3d
         _vertexLayout = _config.material->getProgram()->getVertexLayout();
         _cam = cam;
         Initialize();
+
+        cam.getRenderGraph().addPass(*this);
     }
 
     void PhysicsDebugRendererImpl::shutdown()
     {
+        if (_cam)
+        {
+            _cam->getRenderGraph().removePass(*this);
+        }
         if (_input && _config.bindingKey)
         {
             _input->removeBindings(_bindingsName);
         }
+        _input.reset();
+        _cam.reset();
+        _viewId = -1;
     }
 
     void PhysicsDebugRendererImpl::onBindingTriggered()
@@ -82,15 +91,15 @@ namespace darmok::physics3d
         setEnabled(!_enabled);
     }
 
-
     void PhysicsDebugRendererImpl::renderPassDefine(RenderPassDefinition& def) noexcept
     {
-
+        def.setName("Jolt Physics Debug");
     }
 
     void PhysicsDebugRendererImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept
     {
         _viewId = viewId;
+        _cam->configureView(viewId);
     }
 
     void PhysicsDebugRendererImpl::renderPassExecute(RenderGraphResources& res)
@@ -109,10 +118,7 @@ namespace darmok::physics3d
             return;
         }
 
-        bgfx::setViewName(_viewId, "Jolt Physics Debug");
-
-        _encoder = bgfx::begin();
-        auto& encoder = res.get<bgfx::Encoder>().value();
+        _encoder = res.get<bgfx::Encoder>();
 
         JPH::BodyManager::DrawSettings settings;
         settings.mDrawShape = true;
@@ -344,11 +350,6 @@ namespace darmok::physics3d
     void PhysicsDebugRenderer::shutdown()
     {
         _impl->shutdown();
-    }
-
-    void PhysicsDebugRenderer::addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept
-    {
-        _impl->addComponent(std::move(comp));
     }
 
     bool PhysicsDebugRenderer::isEnabled() const noexcept

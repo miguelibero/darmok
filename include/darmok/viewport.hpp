@@ -26,6 +26,6 @@ namespace darmok
         [[nodiscard]] glm::vec2 project(const glm::vec2& point) const noexcept;
         [[nodiscard]] glm::vec2 unproject(const glm::vec2& point) const noexcept;
 
-        void bgfxSetup(bgfx::ViewId viewId) const noexcept;
+        void configureView(bgfx::ViewId viewId) const noexcept;
     };
 }

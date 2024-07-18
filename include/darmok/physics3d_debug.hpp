@@ -34,8 +34,6 @@ namespace darmok::physics3d
         void init(Camera& cam, Scene& scene, App& app) override;
         void shutdown() override;
 
-        void addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept override;
-
         bool isEnabled() const noexcept;
         PhysicsDebugRenderer& setEnabled(bool enabled) noexcept;
         PhysicsDebugRenderer& setFont(const std::shared_ptr<IFont>& font) noexcept;

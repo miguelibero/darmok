@@ -325,6 +325,7 @@ namespace darmok
 	void TextRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
 	{
 		_viewId = viewId;
+		_cam->configureView(viewId);
 	}
 
 	void TextRenderer::renderPassExecute(RenderGraphResources& res) noexcept

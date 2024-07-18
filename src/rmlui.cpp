@@ -253,7 +253,7 @@ namespace darmok
     void RmluiRenderInterface::setViewport(const Viewport& vp) noexcept
     {
         _viewport = vp;
-        _viewport.bgfxSetup(_viewId);
+        _viewport.configureView(_viewId);
 
         auto bot = glm::vec2(_viewport.origin);
         auto top = bot + glm::vec2(_viewport.size);

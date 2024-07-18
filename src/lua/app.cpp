@@ -264,7 +264,7 @@ end
 			mainPath = mainPathArg;
 			if (std::filesystem::is_directory(mainPath))
 			{
-				for (auto path : possiblePaths)
+				for (std::filesystem::path path : possiblePaths)
 				{
 					path = mainPath / path;
 					if (std::filesystem::exists(path))
@@ -300,7 +300,7 @@ end
 		auto key = binary ? "cpath" : "path";
 		std::string current = lua["package"][key];
 
-		for (auto sub : StringUtils::split(fpath, sep))
+		for (auto& sub : StringUtils::split(fpath, sep))
 		{
 			std::filesystem::path spath(sub);
 			if (!spath.filename().string().contains('?') && spath.extension().empty())

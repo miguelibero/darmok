@@ -44,8 +44,9 @@ namespace
 
 			cam.setOrtho(Viewport(glm::uvec2(2)));
 
-			cam.addComponent<TextRenderer>();
-			cam.setRenderer<ForwardRenderer>();
+			cam.addRenderer<ForwardRenderer>();
+			cam.addRenderer<TextRenderer>();
+
 
 			auto text1Entity = scene.createEntity();
 			_text1 = scene.addComponent<Text>(text1Entity, arial, _textStr);

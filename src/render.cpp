@@ -6,6 +6,63 @@
 
 namespace darmok
 {
+	void Renderer::init(Camera& cam, Scene& scene, App& app)
+	{
+		_cam = cam;
+		_scene = scene;
+		_app = app;
+		for (auto& comp : _components)
+		{
+			comp->init(cam, scene, app);
+		}
+	}
+
+	void Renderer::update(float deltaTime)
+	{
+		for (auto& comp : _components)
+		{
+			comp->update(deltaTime);
+		}
+	}
+
+	void Renderer::shutdown()
+	{
+		_cam.reset();
+		_scene.reset();
+		_app.reset();
+		for (auto& comp : _components)
+		{
+			comp->shutdown();
+		}
+	}
+
+	void Renderer::addComponent(std::unique_ptr<IRenderComponent>&& comp)
+	{
+		if (_cam)
+		{
+			comp->init(_cam.value(), _scene.value(), _app.value());
+		}
+		_components.push_back(std::move(comp));
+	}
+
+	void Renderer::beforeRenderView(bgfx::ViewId viewId)
+	{
+		_cam->beforeRenderView(viewId);
+		for (auto& comp : _components)
+		{
+			comp->beforeRenderView(viewId);
+		}
+	}
+
+	void Renderer::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder)
+	{
+		_cam->beforeRenderEntity(entity, encoder);
+		for (auto& comp : _components)
+		{
+			comp->beforeRenderEntity(entity, encoder);
+		}
+	}
+
 	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
 		: _mesh(mesh)
 		, _material(material)

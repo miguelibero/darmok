@@ -55,11 +55,12 @@ namespace
 				_cam = _scene->addComponent<Camera>(camEntity)
 					.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
 
-				_cam->addComponent<PhongLightingComponent>();
-				_renderer = _cam->setRenderer<ForwardRenderer>();
+				_renderer = _cam->addRenderer<ForwardRenderer>();
+				_renderer->addComponent<PhongLightingComponent>();
+
 				_freeLook = _scene->addSceneComponent<FreelookController>(*_cam);
 #ifdef PHYSICS_DEBUG_RENDERER
-				_physicsDebugRenderer = _cam->addComponent<PhysicsDebugRenderer>(physics);
+				_physicsDebugRenderer = _cam->addRenderer<PhysicsDebugRenderer>(physics);
 #ifdef DARMOK_FREETYPE
 				auto font = getAssets().getFontLoader()("../../assets/noto.ttf");
 				_physicsDebugRenderer->setFont(font);

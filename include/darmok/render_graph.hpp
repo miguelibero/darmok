@@ -287,28 +287,29 @@ namespace darmok
         bool operator!=(const RenderGraphDefinition& other) const noexcept;
 
         bool setChild(const RenderGraphDefinition& child) noexcept;
+
+        Pass& addFrontPass() noexcept;
+        const Pass& addFrontPass(IRenderPass& pass);
+        
         Pass& addPass() noexcept;
         const Pass& addPass(IRenderPass& pass);
+
         bool hasPass(const std::string& name) const noexcept;
         bool removePass(IRenderPassDelegate& dlg);
 
-        const Pass& getPass(size_t vertex) const;
-        Pass& getPass(size_t vertex);
-
         void clear();
         size_t size() const noexcept;
-        const Pass& operator[](size_t vertex) const;
 
-        using ConstIterator = std::vector<Pass>::const_iterator;
-        ConstIterator begin() const;
-        ConstIterator end() const;
+        const Pass& operator[](size_t vertex) const;
+        Pass& operator[](size_t vertex);
 
         RenderGraph compile();
 
         RenderGraphId id() const noexcept;
         operator RenderGraphId() const noexcept;
     private:
-        std::vector<Pass> _passes;
+        std::vector<Pass> _frontPasses;
+        std::vector<Pass> _backPasses;
         std::vector<RenderGraphDefinition> _children;
         RenderGraphId _id;
 

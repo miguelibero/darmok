@@ -41,9 +41,9 @@ namespace
 
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000);
-			cam.setRenderer<ForwardRenderer>();
-			cam.addComponent<PhongLightingComponent>();
-			cam.addComponent<SkeletalAnimationCameraComponent>();
+			auto& renderer = cam.addRenderer<ForwardRenderer>();
+			renderer.addComponent<PhongLightingComponent>();
+			renderer.addComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = scene.addSceneComponent<FreelookController>(cam);
 
 			auto lightEntity = scene.createEntity();
@@ -71,7 +71,7 @@ namespace
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 #ifdef DARMOK_FREETYPE
 			renderSkel.setFont(getAssets().getFontLoader()("../assets/noto.ttf"));
-			cam.addComponent<TextRenderer>();
+			cam.addRenderer<TextRenderer>();
 #endif
 
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");

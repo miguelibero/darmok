@@ -61,7 +61,7 @@ namespace darmok
         return (p * 2.F) - 1.F;
     }
 
-    void Viewport::bgfxSetup(bgfx::ViewId viewId) const noexcept
+    void Viewport::configureView(bgfx::ViewId viewId) const noexcept
     {
         bgfx::setViewRect(viewId, origin.x, origin.y, size.x, size.y);
     }
