@@ -2,6 +2,7 @@
 #include "scene.hpp"
 #include "render.hpp"
 #include <darmok/light.hpp>
+#include <darmok/render_forward.hpp>
 
 namespace darmok
 {
@@ -190,9 +191,9 @@ namespace darmok
 	{
 	}
 
-	LuaPhongLightingComponent LuaPhongLightingComponent::addRenderComponent(LuaRenderer& renderer) noexcept
+	LuaPhongLightingComponent LuaPhongLightingComponent::addRenderComponent(ForwardRenderer& renderer) noexcept
 	{
-		return renderer.getReal().addComponent<PhongLightingComponent>();
+		return renderer.addComponent<PhongLightingComponent>();
 	}
 
 	void LuaPhongLightingComponent::bind(sol::state_view& lua) noexcept

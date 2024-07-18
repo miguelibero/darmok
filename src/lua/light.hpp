@@ -69,13 +69,13 @@ namespace darmok
 	};
 
 	class PhongLightingComponent;
-	class LuaRenderer;
+	class ForwardRenderer;
 
 	class LuaPhongLightingComponent final
 	{
 	public:
 		LuaPhongLightingComponent(PhongLightingComponent& comp) noexcept;
-		static LuaPhongLightingComponent addRenderComponent(LuaRenderer& renderer) noexcept;
+		static LuaPhongLightingComponent addRenderComponent(ForwardRenderer& renderer) noexcept;
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<PhongLightingComponent> _comp;

@@ -34,50 +34,7 @@ namespace darmok
         virtual void init(Camera& cam, Scene& scene, App& app) {};
         virtual void update(float deltaTime) {};
         virtual void shutdown() {};
-
-        virtual void addComponent(std::unique_ptr<IRenderComponent>&& comp)
-        {
-            throw std::runtime_error("not supported");
-        }
-
-        template<typename T, typename... A>
-        T& addComponent(A&&... args)
-        {
-            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
-            auto& ref = *ptr;
-            addComponent(std::move(ptr));
-            return ref;
-        }
     };
-
-    class DARMOK_EXPORT Renderer : public IRenderer
-    {
-    public:
-        virtual void init(Camera& cam, Scene& scene, App& app) override;
-        virtual void update(float deltaTime) override;
-        virtual void shutdown() override;
-
-        virtual void addComponent(std::unique_ptr<IRenderComponent>&& comp) override;
-
-        template<typename T, typename... A>
-        T& addComponent(A&&... args)
-        {
-            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
-            auto& ref = *ptr;
-            addComponent(std::move(ptr));
-            return ref;
-        }
-
-    protected:
-        OptionalRef<Camera> _cam;
-        OptionalRef<Scene> _scene;
-        OptionalRef<App> _app;
-        std::vector<std::unique_ptr<IRenderComponent>> _components;
-
-        void beforeRenderView(bgfx::ViewId viewId);
-        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder);
-    };
-
 
     class Material;
     class Texture;

@@ -49,6 +49,14 @@ namespace darmok
 		LuaInput _input;
 	};
 
+	class LuaError final : std::runtime_error
+	{
+	public:
+		LuaError(const std::string& msg, const sol::error& error);
+	private:
+		sol::error error;
+	};
+
 	class LuaRunnerAppImpl final
     {
     public:

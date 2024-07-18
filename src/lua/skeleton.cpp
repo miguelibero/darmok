@@ -6,6 +6,7 @@
 #include "render.hpp"
 #include <darmok/skeleton.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/render_forward.hpp>
 
 namespace darmok
 {
@@ -147,9 +148,9 @@ namespace darmok
     {
     }
 
-    LuaSkeletalAnimationRenderComponent LuaSkeletalAnimationRenderComponent::addRenderComponent(LuaRenderer& renderer) noexcept
+    LuaSkeletalAnimationRenderComponent LuaSkeletalAnimationRenderComponent::addRenderComponent(ForwardRenderer& renderer) noexcept
     {
-        return renderer.getReal().addComponent<SkeletalAnimationRenderComponent>();
+        return renderer.addComponent<SkeletalAnimationRenderComponent>();
     }
 
     void LuaSkeletalAnimationRenderComponent::bind(sol::state_view& lua) noexcept

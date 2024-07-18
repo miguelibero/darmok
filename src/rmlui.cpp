@@ -245,14 +245,19 @@ namespace darmok
     void RmluiRenderInterface::setViewId(bgfx::ViewId viewId) noexcept
     {
         _viewId = viewId;
+        configureView();
+    }
+
+    bool RmluiRenderInterface::configureView() noexcept
+    {
+        if (_viewId == (bgfx::ViewId)-1)
+        {
+            return false;
+        }
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
         bgfx::setViewClear(_viewId, clearFlags, 1.F, 0U, 1);
         bgfx::setViewMode(_viewId, bgfx::ViewMode::Sequential);
-    }
 
-    void RmluiRenderInterface::setViewport(const Viewport& vp) noexcept
-    {
-        _viewport = vp;
         _viewport.configureView(_viewId);
 
         auto bot = glm::vec2(_viewport.origin);
@@ -261,6 +266,14 @@ namespace darmok
 
         bgfx::setViewTransform(_viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
         bgfx::setViewFrameBuffer(_viewId, _frameBuffer);
+
+        return true;
+    }
+
+    void RmluiRenderInterface::setViewport(const Viewport& vp) noexcept
+    {
+        _viewport = vp;
+        configureView();
     }
 
     void RmluiRenderInterface::renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept

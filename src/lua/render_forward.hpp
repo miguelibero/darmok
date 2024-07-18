@@ -11,8 +11,7 @@ namespace darmok
     class LuaForwardRenderer final
     {
     public:
-        LuaForwardRenderer(ForwardRenderer& renderer) noexcept;
-        static LuaForwardRenderer addRenderer(LuaCamera& cam) noexcept;
+        static std::reference_wrapper<ForwardRenderer> addRenderer(LuaCamera& cam) noexcept;
 
         static void bind(sol::state_view& lua) noexcept;
     private:

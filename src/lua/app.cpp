@@ -108,6 +108,12 @@ end
 )");
 	}
 
+	LuaError::LuaError(const std::string& msg, const sol::error& error)
+		: std::runtime_error(msg)
+		, error(error)
+	{
+	}
+
 	LuaRunnerApp::LuaRunnerApp() noexcept
 		: _impl(std::make_unique<LuaRunnerAppImpl>(*this))
 	{
@@ -239,7 +245,7 @@ end
 		if (!result.valid())
 		{
 			logLuaError("running main", result);
-			throw std::runtime_error("running lua main");
+			throw LuaError("running lua main", result);
 		}
 		auto relm = result[0];
 		if (relm.is<int>())
@@ -333,7 +339,7 @@ end
 			if (!result.valid())
 			{
 				logLuaError("running init", result);
-				throw std::runtime_error("running lua init");
+				throw LuaError("running init", result);
 			}
 		}
 		_luaApp->registerUpdate(lua["update"]);

@@ -8,26 +8,6 @@
 
 namespace darmok
 {
-	LuaRenderer::LuaRenderer(IRenderer& renderer) noexcept
-		: _renderer(renderer)
-	{
-	}
-
-	IRenderer& LuaRenderer::getReal() noexcept
-	{
-		return _renderer.value();
-	}
-
-	const IRenderer& LuaRenderer::getReal() const noexcept
-	{
-		return _renderer.value();
-	}
-
-	void LuaRenderer::bind(sol::state_view& lua) noexcept
-	{
-
-	}
-
 	LuaRenderable LuaRenderable::addEntityComponent1(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh) noexcept
 	{
 		return entity.addComponent<Renderable>(mesh);

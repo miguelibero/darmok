@@ -74,7 +74,7 @@ namespace darmok
 		static const uint64_t _state;
 
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
-
+		bool configureView() noexcept;
 	};
 
 	class RmluiSystemInterface final : public Rml::SystemInterface

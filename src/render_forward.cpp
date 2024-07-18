@@ -17,8 +17,22 @@ namespace darmok
 
 	void ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
-		Renderer::init(cam, scene, app);
+		_cam = cam;
+		_scene = scene;
+		_app = app;
+		for (auto& comp : _components)
+		{
+			comp->init(cam, scene, app);
+		}
 		cam.getRenderGraph().addPass(*this);
+	}
+
+	void ForwardRenderer::update(float deltaTime)
+	{
+		for (auto& comp : _components)
+		{
+			comp->update(deltaTime);
+		}
 	}
 
 	void ForwardRenderer::shutdown() noexcept
@@ -28,7 +42,40 @@ namespace darmok
 			_cam->getRenderGraph().removePass(*this);
 		}
 		_viewId = -1;
-		Renderer::shutdown();
+		_cam.reset();
+		_scene.reset();
+		_app.reset();
+		for (auto& comp : _components)
+		{
+			comp->shutdown();
+		}
+	}
+
+	void ForwardRenderer::addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept
+	{
+		if (_cam)
+		{
+			comp->init(_cam.value(), _scene.value(), _app.value());
+		}
+		_components.push_back(std::move(comp));
+	}
+
+	void ForwardRenderer::beforeRenderView(bgfx::ViewId viewId)
+	{
+		_cam->beforeRenderView(viewId);
+		for (auto& comp : _components)
+		{
+			comp->beforeRenderView(viewId);
+		}
+	}
+
+	void ForwardRenderer::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder)
+	{
+		_cam->beforeRenderEntity(entity, encoder);
+		for (auto& comp : _components)
+		{
+			comp->beforeRenderEntity(entity, encoder);
+		}
 	}
 
 	void ForwardRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
