@@ -60,12 +60,14 @@ I'm still learning CMake, so if you see something that should be fixed please le
 ### Working features
 
 * bgfx window setup (GLFW on windows & linux)
-* scene using entt
 * update logic methods with delta time
+* entity component scene using entt
+    * transform, camera
 * sprites and spritesheets
 * loading models using assimp (FBX, etc...)
 * serializing models from assimp into binary using cereal
 * renderer
+    * render graph that compiles passes inputs and outputs
     * unlit
     * forward with phong lighting (point, ambient)
 * lua scripting
@@ -85,25 +87,26 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * dynamic font texture generation
 
 #### Upcoming
-* render graph
 * sound
-* maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
-* text improvements
-    * finish all the TextRenderConfig options
-    * dynamic distance field rendering with border support
-* clipboard text support (UTF8)
-* loaders should return unique_ptr
-* move lua bindings to separate library?
-* frustrum culling
-* more stuff serialization
-    * binary texture atlas
-    * material
-* loading progress
-* more renderer features once render graph is working
+* object culling
+* more renderer features
     * other types of lights
     * deferred
     * PBR
     * SSAO
+* [taskflow](https://github.com/taskflow/taskflow) multithreaded rendering
+* text improvements
+    * finish all the TextRenderConfig options
+    * dynamic distance field rendering with border support
+* clipboard text support (UTF8)
+* asset loading progress
+* possible refactors
+    * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
+    * loaders should return unique_ptr
+    * move lua bindings to separate library?
+* more stuff serialization
+    * binary texture atlas
+    * material
 
 #### In the future
 * more unit tests
