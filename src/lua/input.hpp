@@ -28,6 +28,13 @@ namespace darmok
 
 	class Mouse;
 
+	enum class LuaMouseListenerType
+	{
+		Position,
+		Scroll,
+		Button
+	};
+
 	class LuaMouse final : public IMouseListener
 	{
 	public:
@@ -36,10 +43,10 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
+		using ListenerType = LuaMouseListenerType;
+
 		std::reference_wrapper<Mouse> _mouse;
-		std::vector<sol::protected_function> _positionListeners;
-		std::vector<sol::protected_function> _scrollListeners;
-		std::vector<sol::protected_function> _buttonListeners;
+		std::unordered_map<ListenerType, std::vector<sol::protected_function>> _listeners;
 
 		const glm::vec2& getPosition() const noexcept;
 		glm::vec2 getPositionDelta() const noexcept;
@@ -55,24 +62,8 @@ namespace darmok
 		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) override;
 		void onMouseButton(MouseButton button, bool down) override;
 
-		void registerPositionListener(const sol::protected_function& func) noexcept;
-		bool unregisterPositionListener(const sol::protected_function& func) noexcept;
-		void registerScrollListener(const sol::protected_function& func) noexcept;
-		bool unregisterScrollListener(const sol::protected_function& func) noexcept;
-		void registerButtonListener(const sol::protected_function& func) noexcept;
-		bool unregisterButtonListener(const sol::protected_function& func) noexcept;
-
-		template<typename T>
-		static bool unregisterListener(std::vector<T> listeners, const T& elm) noexcept
-		{
-			auto itr = std::remove(listeners.begin(), listeners.end(), elm);
-			if (itr == listeners.end())
-			{
-				return false;
-			}
-			listeners.erase(itr, listeners.end());
-			return true;
-		}
+		void registerListener(ListenerType type, const sol::protected_function& func) noexcept;
+		bool unregisterListener(ListenerType type, const sol::protected_function& func) noexcept;
 	};
 
 	class Gamepad;

@@ -51,7 +51,7 @@ namespace darmok
 		virtual void onWindowPixelSize(const glm::uvec2& size) {};
 		virtual void onWindowPhase(WindowPhase phase) {};
 		virtual void onWindowVideoMode(const VideoMode& mode) {};
-		virtual void onWindowCursorMode(WindowCursorMode phase) {};
+		virtual void onWindowCursorMode(WindowCursorMode mode) {};
 		virtual void onWindowVideoModeInfo(const VideoModeInfo& info) {};
 		virtual void onWindowError(const std::string& error) {};
 	};

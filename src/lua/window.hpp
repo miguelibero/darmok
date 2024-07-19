@@ -8,13 +8,36 @@
 
 namespace darmok
 {
-	class LuaWindow final
+	enum class LuaWindowListenerType
+	{
+		Size,
+		PixelSize,
+		Phase,
+		VideoMode,
+		CursorMode,
+	};
+
+	class LuaWindow final : public IWindowListener
 	{
 	public:
 		LuaWindow(Window& win) noexcept;
+		~LuaWindow() noexcept;
+
+		void onWindowSize(const glm::uvec2& size) override;
+		void onWindowPixelSize(const glm::uvec2& size) override;
+		void onWindowPhase(WindowPhase phase) override;
+		void onWindowVideoMode(const VideoMode& mode) override;
+		void onWindowCursorMode(WindowCursorMode mode) override;
+
 		static void bind(sol::state_view& lua) noexcept;
 	private:
+		using ListenerType = LuaWindowListenerType;
+
 		std::reference_wrapper<Window> _win;
+		std::unordered_map<ListenerType, std::vector<sol::protected_function>> _listeners;
+
+		void registerListener(ListenerType type, const sol::protected_function& func) noexcept;
+		bool unregisterListener(ListenerType type, const sol::protected_function& func) noexcept;
 
 		const glm::uvec2& getSize() const noexcept;
 		const glm::uvec2& getPixelSize() const noexcept;

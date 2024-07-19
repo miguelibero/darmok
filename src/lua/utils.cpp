@@ -15,4 +15,14 @@ namespace darmok
 
 		StreamUtils::logDebug(ss.str(), true);
 	}
+
+	bool checkLuaResult(const std::string& desc, const sol::protected_function_result& result) noexcept
+	{
+		if (!result.valid())
+		{
+			logLuaError(desc, result);
+			return false;
+		}
+		return true;
+	}
 }

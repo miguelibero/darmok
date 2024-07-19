@@ -111,7 +111,7 @@ namespace darmok::physics3d
     {
         LuaPhysicsBody luaBody1(body1, _scene);
         LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaListeners(_listeners, "on_collision_enter", "running physics collision enter",
+        callLuaTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
@@ -122,7 +122,7 @@ namespace darmok::physics3d
     {
         LuaPhysicsBody luaBody1(body1, _scene);
         LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaListeners(_listeners, "on_collision_stay", "running physics collision stay",
+        callLuaTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
@@ -133,7 +133,7 @@ namespace darmok::physics3d
     {
         LuaPhysicsBody luaBody1(body1, _scene);
         LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaListeners(_listeners, "on_collision_exit", "running physics collision exit",
+        callLuaTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
             [&luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2);
@@ -348,7 +348,7 @@ namespace darmok::physics3d
     {
         LuaPhysicsBody luaBody1(body1, _scene);
         LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaListeners(_listeners, "on_collision_enter", "running physics collision enter",
+        callLuaTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
@@ -359,7 +359,7 @@ namespace darmok::physics3d
     {
         LuaPhysicsBody luaBody1(body1, _scene);
         LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaListeners(_listeners, "on_collision_stay", "running physics collision stay",
+        callLuaTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
@@ -370,7 +370,7 @@ namespace darmok::physics3d
     {
         LuaPhysicsBody luaBody1(body1, _scene);
         LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaListeners(_listeners, "on_collision_exit", "running physics collision exit",
+        callLuaTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
             [&luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2);

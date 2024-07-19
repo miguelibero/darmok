@@ -85,7 +85,7 @@ namespace darmok::physics3d
 		}
 		LuaCharacterController luaChar(character, _scene);
 		LuaPhysicsBody luaBody(body, _scene);
-		callLuaDelegate(_delegate, "on_adjust_body_velocity", "running character adjust body velocity",
+		callLuaTableDelegate(_delegate, "on_adjust_body_velocity", "running character adjust body velocity",
 			[&](auto& func)
 			{
 				return func(luaChar, luaBody, linearVelocity, angularVelocity);
@@ -101,7 +101,7 @@ namespace darmok::physics3d
 		}
 		LuaCharacterController luaChar(character, _scene);
 		LuaPhysicsBody luaBody(body, _scene);
-		auto result = callLuaDelegate(_delegate, "on_contact_validate", "running character contact validate",
+		auto result = callLuaTableDelegate(_delegate, "on_contact_validate", "running character contact validate",
 			[&](auto& func)
 			{
 				return func(luaChar, luaBody);
@@ -122,7 +122,7 @@ namespace darmok::physics3d
 		}
 		LuaCharacterController luaChar(character, _scene);
 		LuaPhysicsBody luaBody(body, _scene);
-		callLuaDelegate(_delegate, "on_contact_added", "running character contact added",
+		callLuaTableDelegate(_delegate, "on_contact_added", "running character contact added",
 			[&](auto& func)
 			{
 				return func(luaChar, luaBody, contact, settings);
@@ -138,7 +138,7 @@ namespace darmok::physics3d
 		}
 		LuaCharacterController luaChar(character, _scene);
 		LuaPhysicsBody luaBody(body, _scene);
-		callLuaDelegate(_delegate, "on_contact_solve", "running character contact solve",
+		callLuaTableDelegate(_delegate, "on_contact_solve", "running character contact solve",
 			[&](auto& func)
 			{
 				return func(luaChar, luaBody, contact, characterVelocity);
