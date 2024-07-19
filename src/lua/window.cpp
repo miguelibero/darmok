@@ -95,12 +95,12 @@ namespace darmok
 		_win.get().requestCursorMode(mode);
 	}
 
-	glm::vec2 LuaWindow::screenToWindowPoint(const Window& win, const VarLuaTable<glm::vec2>& point) const noexcept
+	glm::vec2 LuaWindow::screenToWindowPoint(const VarLuaTable<glm::vec2>& point) const noexcept
 	{
 		return _win.get().screenToWindowPoint(LuaGlm::tableGet(point));
 	}
 
-	glm::vec2 LuaWindow::windowToScreenPoint(const Window& win, const VarLuaTable<glm::vec2>& point) const noexcept
+	glm::vec2 LuaWindow::windowToScreenPoint(const VarLuaTable<glm::vec2>& point) const noexcept
 	{
 		return _win.get().windowToScreenPoint(LuaGlm::tableGet(point));
 	}

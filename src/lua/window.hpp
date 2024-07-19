@@ -47,7 +47,7 @@ namespace darmok
 		WindowCursorMode getCursorMode() const noexcept;
 		void setCursorMode(WindowCursorMode mode) const noexcept;
 
-		glm::vec2 screenToWindowPoint(const Window& win, const VarLuaTable<glm::vec2>& point) const noexcept;
-		glm::vec2 windowToScreenPoint(const Window& win, const VarLuaTable<glm::vec2>& point) const noexcept;
+		glm::vec2 screenToWindowPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
+		glm::vec2 windowToScreenPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
 	};
 }

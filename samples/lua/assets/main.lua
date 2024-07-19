@@ -1,7 +1,7 @@
 
 
 function init()
-    local program = app.assets:load_standard_program(StandardProgramType.ForwardPhong)
+    local program = Program.new(StandardProgramType.Forward)
 
     local cubeMesh = MeshData.new_cube():create_mesh(program.vertex_layout)
     local greenTex = app.assets:load_color_texture(Color.green)
@@ -14,8 +14,8 @@ function init()
     camTrans:look_at({ 0, 0, 0 })
     local cam = camEntity:add_component(Camera)
     cam:set_perspective(60, app.window.size, 0.3, 1000)
-    cam:set_renderer(ForwardRenderer)
-    cam:add_component(PhongLightingComponent)
+    local renderer = cam:add_renderer(ForwardRenderer)
+    renderer:add_component(PhongLightingComponent)
 
     local freelook = scene:add_component(FreelookController, cam)
 
