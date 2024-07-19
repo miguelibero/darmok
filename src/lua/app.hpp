@@ -19,11 +19,8 @@ namespace bx
 namespace darmok
 {
 	class App;
-	class LuaAssets;
-	class LuaWindow;
-	class LuaInput;
-	class LuaScene;
-	class LuaTexture;
+	class AssetContext;
+	class Window;
 
 	class LuaApp final
 	{
@@ -32,7 +29,7 @@ namespace darmok
 		App& getReal() noexcept;
 		const App& getReal() const noexcept;
 
-		LuaAssets& getAssets() noexcept;
+		AssetContext& getAssets() noexcept;
 		LuaWindow& getWindow() noexcept;
 		LuaInput& getInput() noexcept;
 
@@ -43,10 +40,9 @@ namespace darmok
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::vector<sol::protected_function> _updates;
-		OptionalRef<App> _app;
-		LuaAssets _assets;
-		LuaWindow _window;
+		std::reference_wrapper<App> _app;
 		LuaInput _input;
+		LuaWindow _win;
 	};
 
 	class LuaError final : std::runtime_error

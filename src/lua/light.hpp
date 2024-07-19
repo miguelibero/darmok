@@ -14,32 +14,19 @@ namespace darmok
 	class LuaPointLight final
 	{
 	public:
-		LuaPointLight(PointLight& light) noexcept;
-
-		const PointLight& getReal() const;
-		PointLight& getReal();
-
-		void setIntensity(float intensity) noexcept;
-		void setRadius(float radius) noexcept;
-		void setAttenuation(const VarLuaTable<glm::vec3>& attn) noexcept;
-		void setColor(const VarLuaTable<Color3>& color) noexcept;
-		void setDiffuseColor(const VarLuaTable<Color3>& color) noexcept;
-		void setSpecularColor(const VarLuaTable<Color3>& color) noexcept;
-
-		float getIntensity() const noexcept;
-		float getRadius() const noexcept;
-		const glm::vec3& getAttenuation() const noexcept;
-		const Color3& getDiffuseColor() const noexcept;
-		const Color3& getSpecularColor() const noexcept;
-
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<PointLight> _light;
 
-		static LuaPointLight addEntityComponent1(LuaEntity& entity) noexcept;
-		static LuaPointLight addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
-		static std::optional<LuaPointLight> getEntityComponent(LuaEntity& entity) noexcept;
-		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
+		static void setAttenuation(PointLight& light, const VarLuaTable<glm::vec3>& attn) noexcept;
+		static void setColor(PointLight& light, const VarLuaTable<Color3>& color) noexcept;
+		static void setDiffuseColor(PointLight& light, const VarLuaTable<Color3>& color) noexcept;
+		static void setSpecularColor(PointLight& light, const VarLuaTable<Color3>& color) noexcept;
+
+		static PointLight& addEntityComponent1(LuaEntity& entity) noexcept;
+		static PointLight& addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
+		static OptionalRef<PointLight>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+		static std::optional<LuaEntity> getEntity(const PointLight& light, LuaScene& scene) noexcept;
 	};
 
 	class AmbientLight;
@@ -47,25 +34,14 @@ namespace darmok
 	class LuaAmbientLight final
 	{
 	public:
-		LuaAmbientLight(AmbientLight& light) noexcept;
-
-		const AmbientLight& getReal() const;
-		AmbientLight& getReal();
-
-		void setIntensity(float intensity) noexcept;
-		void setColor(const VarLuaTable<Color3>& color) noexcept;
-
-		const Color3& getColor() const noexcept;
-		float getIntensity() const noexcept;
-
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<AmbientLight> _light;
+		static void setColor(AmbientLight& light, const VarLuaTable<Color3>& color) noexcept;
 
-		static LuaAmbientLight addEntityComponent1(LuaEntity& entity) noexcept;
-		static LuaAmbientLight addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
-		static std::optional<LuaAmbientLight> getEntityComponent(LuaEntity& entity) noexcept;
-		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
+		static AmbientLight& addEntityComponent1(LuaEntity& entity) noexcept;
+		static AmbientLight& addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
+		static OptionalRef<AmbientLight>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+		static std::optional<LuaEntity> getEntity(const AmbientLight& light, LuaScene& scene) noexcept;
 	};
 
 	class PhongLightingComponent;
@@ -74,10 +50,8 @@ namespace darmok
 	class LuaPhongLightingComponent final
 	{
 	public:
-		LuaPhongLightingComponent(PhongLightingComponent& comp) noexcept;
-		static LuaPhongLightingComponent addRenderComponent(ForwardRenderer& renderer) noexcept;
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<PhongLightingComponent> _comp;
+		static PhongLightingComponent& addRenderComponent(ForwardRenderer& renderer) noexcept;
 	};
 }

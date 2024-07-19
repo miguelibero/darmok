@@ -15,40 +15,40 @@ namespace darmok::physics3d
 
 	LuaCharacterController::~LuaCharacterController() noexcept
 	{
-		if (_ctrl && _scene->hasComponent(_ctrl.value()))
+		if ( _scene->hasComponent(_ctrl.get()))
 		{
-			_ctrl->setDelegate(nullptr);
+			_ctrl.get().setDelegate(nullptr);
 		}
 	}
 
 	bool LuaCharacterController::isGrounded() const noexcept
 	{
-		return _ctrl->isGrounded();
+		return _ctrl.get().isGrounded();
 	}
 
 	GroundState LuaCharacterController::getGroundState() const noexcept
 	{
-		return _ctrl->getGroundState();
+		return _ctrl.get().getGroundState();
 	}
 
 	void LuaCharacterController::setLinearVelocity(const VarLuaTable<glm::vec3>& velocity)
 	{
-		_ctrl->setLinearVelocity(LuaGlm::tableGet(velocity));
+		_ctrl.get().setLinearVelocity(LuaGlm::tableGet(velocity));
 	}
 
 	glm::vec3 LuaCharacterController::getLinearVelocity() const noexcept
 	{
-		return _ctrl->getLinearVelocity();
+		return _ctrl.get().getLinearVelocity();
 	}
 
 	void LuaCharacterController::setPosition(const VarLuaTable<glm::vec3>& pos) noexcept
 	{
-		_ctrl->setPosition(LuaGlm::tableGet(pos));
+		_ctrl.get().setPosition(LuaGlm::tableGet(pos));
 	}
 
 	glm::vec3 LuaCharacterController::getPosition() const noexcept
 	{
-		return _ctrl->getPosition();
+		return _ctrl.get().getPosition();
 	}
 
 	LuaCharacterController LuaCharacterController::addEntityComponent1(LuaEntity& entity, const Config& config) noexcept
@@ -68,7 +68,7 @@ namespace darmok::physics3d
 
 	std::optional<LuaEntity> LuaCharacterController::getEntity(LuaScene& scene) noexcept
 	{
-		return scene.getEntity(_ctrl.value());
+		return scene.getEntity(_ctrl.get());
 	}
 
 	LuaCharacterController& LuaCharacterController::setDelegate(const sol::table& delegate) noexcept
@@ -164,7 +164,6 @@ namespace darmok::physics3d
 			"friction", &CharacterConfig::friction,
 			"gravityFactor", &CharacterConfig::gravityFactor
 		);
-
 		lua.new_usertype<LuaCharacterController>("CharacterController", sol::no_constructor,
 			"type_id", &entt::type_hash<CharacterController>::value,
 			"add_entity_component", sol::overload(

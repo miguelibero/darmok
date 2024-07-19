@@ -52,7 +52,7 @@ namespace darmok
 		return ss.str();
 	}
 
-	static std::vector<std::pair<std::string_view, KeyboardKey>> getLuaKeyboardKeys() noexcept
+	std::vector<std::pair<std::string_view, KeyboardKey>> LuaKeyboard::getKeyboardKeys() noexcept
 	{
 		std::vector<std::pair<std::string_view, KeyboardKey>> keys;
 		for (int i = 0; i < to_underlying(KeyboardKey::Count); i++)
@@ -65,7 +65,7 @@ namespace darmok
 
 	void LuaKeyboard::bind(sol::state_view& lua) noexcept
 	{
-		auto keys = getLuaKeyboardKeys();
+		auto keys = getKeyboardKeys();
 		lua.new_enum<KeyboardKey>("KeyboardKey",
 			std::initializer_list<std::pair<std::string_view, KeyboardKey>>(&keys.front(), &keys.front() + keys.size()));
 		lua.new_usertype<LuaKeyboard>("Keyboard", sol::no_constructor,
@@ -157,18 +157,6 @@ namespace darmok
 	void LuaMouse::registerPositionListener(const sol::protected_function& func) noexcept
 	{
 		_positionListeners.push_back(func);
-	}
-
-	template<typename T>
-	bool unregisterListener(std::vector<T> listeners, const T& elm) noexcept
-	{
-		auto itr = std::remove(listeners.begin(), listeners.end(), elm);
-		if (itr == listeners.end())
-		{
-			return false;
-		}
-		listeners.erase(itr, listeners.end());
-		return true;
 	}
 
 	bool LuaMouse::unregisterPositionListener(const sol::protected_function& func) noexcept

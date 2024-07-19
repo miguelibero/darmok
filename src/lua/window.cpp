@@ -10,57 +10,47 @@ namespace darmok
 
 	const glm::uvec2& LuaWindow::getSize() const noexcept
 	{
-		return _win->getSize();
+		return _win.get().getSize();
 	}
 
-	glm::uvec2 LuaWindow::getPixelSize() const noexcept
+	const glm::uvec2& LuaWindow::getPixelSize() const noexcept
 	{
-		return _win->getPixelSize();
-	}
-
-	glm::uvec2 LuaWindow::screenToWindowPoint(const VarLuaTable<glm::vec2>& point) const noexcept
-	{
-		return _win->screenToWindowPoint(LuaGlm::tableGet(point));
-	}
-
-	glm::vec2 LuaWindow::windowToScreenPoint(const VarLuaTable<glm::vec2>& point) const noexcept
-	{
-		return _win->windowToScreenPoint(LuaGlm::tableGet(point));
-	}
-
-	void LuaWindow::setCursorMode(WindowCursorMode mode) noexcept
-	{
-		_win->requestCursorMode(mode);
-	}
-
-	WindowCursorMode LuaWindow::getCursorMode() const noexcept
-	{
-		return _win->getCursorMode();
-	}
-
-	void LuaWindow::setVideoMode(const VideoMode& mode) noexcept
-	{
-		_win->requestVideoMode(mode);
+		return _win.get().getPixelSize();
 	}
 
 	const VideoMode& LuaWindow::getVideoMode() const noexcept
 	{
-		return _win->getVideoMode();
+		return _win.get().getVideoMode();
 	}
 
-	const VideoModeInfo& LuaWindow::getVideoModeInfo() const noexcept
+	void LuaWindow::setVideoMode(const VideoMode& mode) noexcept
 	{
-		return _win->getVideoModeInfo();
+		return _win.get().requestVideoMode(mode);
 	}
 
-	const Window& LuaWindow::getReal() const noexcept
+	const VideoModeInfo& LuaWindow::getVideoModeInfo() noexcept
 	{
-		return _win.value();
+		return _win.get().getVideoModeInfo();
 	}
 
-	Window& LuaWindow::getReal() noexcept
+	WindowCursorMode LuaWindow::getCursorMode() const noexcept
 	{
-		return _win.value();
+		return _win.get().getCursorMode();
+	}
+
+	void LuaWindow::setCursorMode(WindowCursorMode mode) const noexcept
+	{
+		_win.get().requestCursorMode(mode);
+	}
+
+	glm::vec2 LuaWindow::screenToWindowPoint(const Window& win, const VarLuaTable<glm::vec2>& point) const noexcept
+	{
+		return _win.get().screenToWindowPoint(LuaGlm::tableGet(point));
+	}
+
+	glm::vec2 LuaWindow::windowToScreenPoint(const Window& win, const VarLuaTable<glm::vec2>& point) const noexcept
+	{
+		return _win.get().windowToScreenPoint(LuaGlm::tableGet(point));
 	}
 
 	void LuaWindow::bind(sol::state_view& lua) noexcept

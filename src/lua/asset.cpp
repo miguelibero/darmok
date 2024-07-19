@@ -16,81 +16,66 @@
 
 namespace darmok
 {	
-	LuaAssets::LuaAssets(AssetContext& assets) noexcept
-		: _assets(assets)
+	std::shared_ptr<Program> LuaAssets::loadProgram(AssetContext& assets, const std::string& name)
 	{
+		return assets.getProgramLoader()(name);
 	}
 
-	AssetContext& LuaAssets::getReal() noexcept
+	std::shared_ptr<Texture> LuaAssets::loadColorTexture(AssetContext& assets, const Color& color)
 	{
-		return _assets.value();
-	}
-
-	const AssetContext& LuaAssets::getReal() const noexcept
-	{
-		return _assets.value();
-	}
-
-	std::shared_ptr<Program> LuaAssets::loadProgram(const std::string& name)
-	{
-		return _assets->getProgramLoader()(name);
-	}
-
-	std::shared_ptr<Texture> LuaAssets::loadColorTexture(const Color& color)
-	{
-		return _assets->getColorTextureLoader()(color);
+		return assets.getColorTextureLoader()(color);
 	}
 	
-	std::shared_ptr<Texture> LuaAssets::loadTexture1(const std::string& name)
+	std::shared_ptr<Texture> LuaAssets::loadTexture1(AssetContext& assets, const std::string& name)
 	{
-		return _assets->getTextureLoader()(name);
+		return assets.getTextureLoader()(name);
 	}
 
-	std::shared_ptr<Texture> LuaAssets::loadTexture2(const std::string& name, uint64_t flags)
+	std::shared_ptr<Texture> LuaAssets::loadTexture2(AssetContext& assets, const std::string& name, uint64_t flags)
 	{
-		return _assets->getTextureLoader()(name, flags);
+		return assets.getTextureLoader()(name, flags);
 	}
 
-	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas1(const std::string& name)
+	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas1(AssetContext& assets, const std::string& name)
 	{
-		return _assets->getTextureAtlasLoader()(name);
+		return assets.getTextureAtlasLoader()(name);
 	}
 
-	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas2(const std::string& name, uint64_t textureFlags)
+	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas2(AssetContext& assets, const std::string& name, uint64_t textureFlags)
 	{
-		return _assets->getTextureAtlasLoader()(name, textureFlags);
+		return assets.getTextureAtlasLoader()(name, textureFlags);
 	}
 
-	std::shared_ptr<Model> LuaAssets::loadModel1(const std::string& name)
+	std::shared_ptr<Model> LuaAssets::loadModel1(AssetContext& assets, const std::string& name)
 	{
-		return _assets->getModelLoader()(name);
+		return assets.getModelLoader()(name);
 	}
 
-	std::shared_ptr<Model> LuaAssets::loadModel2(const std::string& name, const AssimpModelLoadConfig& config)
+	std::shared_ptr<Model> LuaAssets::loadModel2(AssetContext& assets, const std::string& name, const AssimpModelLoadConfig& config)
 	{
-		auto& loader = _assets->getAssimpModelLoader();
+		auto& loader = assets.getAssimpModelLoader();
 		loader.setConfig(config);
 		return loader(name);
 	}
 
-	std::shared_ptr<Skeleton> LuaAssets::loadSkeleton(const std::string& name)
+	std::shared_ptr<Skeleton> LuaAssets::loadSkeleton(AssetContext& assets, const std::string& name)
 	{
-		return _assets->getSkeletonLoader()(name);
+		return assets.getSkeletonLoader()(name);
 	}
 
-	std::shared_ptr<SkeletalAnimation> LuaAssets::loadSkeletalAnimation(const std::string& name)
+	std::shared_ptr<SkeletalAnimation> LuaAssets::loadSkeletalAnimation(AssetContext& assets, const std::string& name)
 	{
-		return _assets->getSkeletalAnimationLoader()(name);
+		return assets.getSkeletalAnimationLoader()(name);
 	}
 
-	SkeletalAnimatorConfig LuaAssets::loadSkeletalAnimatorConfig(const std::string& name)
+	SkeletalAnimatorConfig LuaAssets::loadSkeletalAnimatorConfig(AssetContext& assets, const std::string& name)
 	{
-		return _assets->getSkeletalAnimatorConfigLoader()(name);
+		return assets.getSkeletalAnimatorConfigLoader()(name);
 	}
 
-	SkeletalAnimationMap LuaAssets::loadSkeletalAnimations(const SkeletalAnimatorConfig& config)
+	SkeletalAnimationMap LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorConfig& config)
 	{
-		return config.loadAnimations(_assets->getSkeletalAnimationLoader());
+		return config.loadAnimations(assets.getSkeletalAnimationLoader());
 	}
 
 	void LuaAssets::bind(sol::state_view& lua) noexcept
@@ -103,7 +88,7 @@ namespace darmok
 		LuaModel::bind(lua);
 		LuaSkeleton::bind(lua);
 
-		lua.new_usertype<LuaAssets>("Assets", sol::no_constructor,
+		lua.new_usertype<AssetContext>("Assets", sol::no_constructor,
 			"load_model", sol::overload(
 				&LuaAssets::loadModel1,
 				&LuaAssets::loadModel2

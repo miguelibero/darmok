@@ -23,30 +23,29 @@ namespace darmok
 {
     LuaApp::LuaApp(App& app) noexcept
 		: _app(app)
-		, _assets(app.getAssets())
-		, _window(app.getWindow())
 		, _input(app.getInput())
+		, _win(app.getWindow())
 	{
 	}
 
 	App& LuaApp::getReal() noexcept
 	{
-		return _app.value();
+		return _app.get();
 	}
 
 	const App& LuaApp::getReal() const noexcept
 	{
-		return _app.value();
+		return _app.get();
 	}
 
-	LuaAssets& LuaApp::getAssets() noexcept
+	AssetContext& LuaApp::getAssets() noexcept
 	{
-		return _assets;
+		return _app.get().getAssets();
 	}
 
 	LuaWindow& LuaApp::getWindow() noexcept
 	{
-		return _window;
+		return _win;
 	}
 
 	LuaInput& LuaApp::getInput() noexcept

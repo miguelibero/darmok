@@ -16,12 +16,14 @@ namespace darmok
 	{
 	public:
 		LuaKeyboard(Keyboard& kb) noexcept;
-		bool getKey(const sol::variadic_args& names) const noexcept;
-		std::string getUpdateChars() const noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::reference_wrapper<Keyboard> _kb;
+
+		bool getKey(const sol::variadic_args& names) const noexcept;
+		std::string getUpdateChars() const noexcept;
+		static std::vector<std::pair<std::string_view, KeyboardKey>> getKeyboardKeys() noexcept;
 	};
 
 	class Mouse;
@@ -31,6 +33,14 @@ namespace darmok
 	public:
 		LuaMouse(Mouse& mouse) noexcept;
 		~LuaMouse() noexcept;
+
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		std::reference_wrapper<Mouse> _mouse;
+		std::vector<sol::protected_function> _positionListeners;
+		std::vector<sol::protected_function> _scrollListeners;
+		std::vector<sol::protected_function> _buttonListeners;
+
 		const glm::vec2& getPosition() const noexcept;
 		glm::vec2 getPositionDelta() const noexcept;
 		const glm::vec2& getScroll() const noexcept;
@@ -52,12 +62,17 @@ namespace darmok
 		void registerButtonListener(const sol::protected_function& func) noexcept;
 		bool unregisterButtonListener(const sol::protected_function& func) noexcept;
 
-		static void bind(sol::state_view& lua) noexcept;
-	private:
-		std::reference_wrapper<Mouse> _mouse;
-		std::vector<sol::protected_function> _positionListeners;
-		std::vector<sol::protected_function> _scrollListeners;
-		std::vector<sol::protected_function> _buttonListeners;
+		template<typename T>
+		static bool unregisterListener(std::vector<T> listeners, const T& elm) noexcept
+		{
+			auto itr = std::remove(listeners.begin(), listeners.end(), elm);
+			if (itr == listeners.end())
+			{
+				return false;
+			}
+			listeners.erase(itr, listeners.end());
+			return true;
+		}
 	};
 
 	class Gamepad;
@@ -67,14 +82,14 @@ namespace darmok
 	public:
 		LuaGamepad(Gamepad& gamepad) noexcept;
 
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		std::reference_wrapper<Gamepad> _gamepad;
+
 		bool getButton(const std::string& name) const noexcept;
 		const glm::vec3& getLeftStick() const noexcept;
 		const glm::vec3& getRightStick() const noexcept;
 		bool isConnected() const noexcept;
-
-		static void bind(sol::state_view& lua) noexcept;
-	private:
-		std::reference_wrapper<Gamepad> _gamepad;
 	};
 
 	class Input;
@@ -83,17 +98,19 @@ namespace darmok
 	{
 	public:
 		LuaInput(Input& input) noexcept;
-		void addBindings(const std::string& name, const sol::table& data) noexcept;
-		LuaKeyboard& getKeyboard() noexcept;
-		LuaMouse& getMouse() noexcept;
-		OptionalRef<LuaGamepad>::std_t getGamepad(uint8_t num = 0) noexcept;
-		const std::vector<LuaGamepad>& getGamepads() noexcept;
-
+		
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		OptionalRef<Input> _input;
 		LuaKeyboard _keyboard;
 		LuaMouse _mouse;
 		std::vector<LuaGamepad> _gamepads;
+
+		void addBindings(const std::string& name, const sol::table& data) noexcept;
+		LuaKeyboard& getKeyboard() noexcept;
+		LuaMouse& getMouse() noexcept;
+		OptionalRef<LuaGamepad>::std_t getGamepad(uint8_t num = 0) noexcept;
+		const std::vector<LuaGamepad>& getGamepads() noexcept;
+
 	};
 }

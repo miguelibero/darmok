@@ -25,25 +25,17 @@ namespace darmok
     class LuaSkeletalAnimator final
 	{
     public:
+        static void bind(sol::state_view& lua) noexcept;
+    private:
+
         using Config = SkeletalAnimatorConfig;
         using AnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
-        
-        LuaSkeletalAnimator(SkeletalAnimator& animator) noexcept;
 
-        static LuaSkeletalAnimator addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
-		static std::optional<LuaSkeletalAnimator> getEntityComponent(LuaEntity& entity) noexcept;
-		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
+        static void setBlendPosition(SkeletalAnimator& animator, const VarLuaVecTable<glm::vec2>& pos) noexcept;
 
-        bool play(const std::string& name) noexcept;
-        void setPlaybackSpeed(float speed) noexcept;
-        float getPlaybackSpeed() const noexcept;
-        void setBlendPosition(const VarLuaVecTable<glm::vec2>& pos) noexcept;
-        
-        static void bind(sol::state_view& lua) noexcept;
-
-
-    private:
-        OptionalRef<SkeletalAnimator> _animator;
+        static SkeletalAnimator& addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
+        static OptionalRef<SkeletalAnimator>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+        static std::optional<LuaEntity> getEntity(const SkeletalAnimator& animator, LuaScene& scene) noexcept;
     };
 
     class RenderableSkeleton;
@@ -53,16 +45,14 @@ namespace darmok
     class LuaRenderableSkeleton final
 	{
     public:
-        LuaRenderableSkeleton(RenderableSkeleton& skel) noexcept;
-        static LuaRenderableSkeleton addEntityComponent1(LuaEntity& entity) noexcept;
-        static LuaRenderableSkeleton addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& mat) noexcept;
-		static LuaRenderableSkeleton addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept;
-		static std::optional<LuaRenderableSkeleton> getEntityComponent(LuaEntity& entity) noexcept;
-		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
+        static RenderableSkeleton& addEntityComponent1(LuaEntity& entity) noexcept;
+        static RenderableSkeleton& addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& mat) noexcept;
+		static RenderableSkeleton& addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept;
+		static OptionalRef<RenderableSkeleton>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+		static std::optional<LuaEntity> getEntity(const RenderableSkeleton& skel, LuaScene& scene) noexcept;
     
         static void bind(sol::state_view& lua) noexcept;
     private:
-        OptionalRef<RenderableSkeleton> _skel;
     };
 
     class SkeletalAnimationSceneComponent;
@@ -70,12 +60,9 @@ namespace darmok
     class LuaSkeletalAnimationSceneComponent final
     {
     public:
-        LuaSkeletalAnimationSceneComponent(SkeletalAnimationSceneComponent& comp) noexcept;
-        static LuaSkeletalAnimationSceneComponent addSceneComponent(LuaScene& scene) noexcept;
-
         static void bind(sol::state_view& lua) noexcept;
     private:
-        OptionalRef<SkeletalAnimationSceneComponent> _comp;
+        static SkeletalAnimationSceneComponent& addSceneComponent(LuaScene& scene) noexcept;
     };
 
     class SkeletalAnimationRenderComponent;
@@ -84,11 +71,8 @@ namespace darmok
     class LuaSkeletalAnimationRenderComponent final
     {
     public:
-        LuaSkeletalAnimationRenderComponent(SkeletalAnimationRenderComponent& comp) noexcept;
-        static LuaSkeletalAnimationRenderComponent addRenderComponent(ForwardRenderer& renderer) noexcept;
-
         static void bind(sol::state_view& lua) noexcept;
     private:
-        OptionalRef<SkeletalAnimationRenderComponent> _comp;
+        static SkeletalAnimationRenderComponent& addRenderComponent(ForwardRenderer& renderer) noexcept;
     };
 }

@@ -31,6 +31,12 @@ namespace darmok
 			return getRegistry().emplace<T>(_entity, std::forward<Args>(args)...);
 		}
 
+		template<typename T>
+		OptionalRef<T> getComponent()
+		{
+			return getRegistry().try_get<T>(_entity);
+		}
+
 		template<typename T, typename L, typename... Args>
 		std::optional<L> getComponent(Args&&... args)
 		{
@@ -61,7 +67,7 @@ namespace darmok
 	class LuaScene final
 	{
 	public:
-		using VarParent = std::variant<Entity, LuaTransform>;
+		using VarParent = std::variant<Entity, Transform>;
 
 		LuaScene(const std::shared_ptr<Scene>& scene) noexcept;
 		LuaScene(LuaApp& app) noexcept;
@@ -106,6 +112,6 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<SceneAppComponent> _comp;
+		std::reference_wrapper<SceneAppComponent> _comp;
 	};
 }

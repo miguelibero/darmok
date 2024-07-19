@@ -6,7 +6,7 @@
 
 namespace darmok
 {
-    class LuaCamera;
+    class Camera;
     class Program;
 }
 
@@ -19,16 +19,11 @@ namespace darmok::physics3d
     class LuaPhysicsDebugRenderer final
     {
     public:
-        using Config = PhysicsDebugConfig;
-        LuaPhysicsDebugRenderer(PhysicsDebugRenderer& renderer) noexcept;
-        bool getEnabled() const noexcept;
-        void setEnabled(bool enabled) noexcept;
-
         static void bind(sol::state_view& lua) noexcept;
     private:
-        OptionalRef<PhysicsDebugRenderer> _renderer;
+        using Config = PhysicsDebugConfig;
 
-        static LuaPhysicsDebugRenderer addRenderer1(LuaCamera& cam, LuaPhysicsSystem& system) noexcept;
-        static LuaPhysicsDebugRenderer addRenderer2(LuaCamera& cam, LuaPhysicsSystem& system, const Config& config) noexcept;
+        static PhysicsDebugRenderer& addRenderer1(Camera& cam, LuaPhysicsSystem& system) noexcept;
+        static PhysicsDebugRenderer& addRenderer2(Camera& cam, LuaPhysicsSystem& system, const Config& config) noexcept;
     };
 }

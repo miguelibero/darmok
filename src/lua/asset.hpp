@@ -7,16 +7,11 @@
 #include <darmok/optional_ref.hpp>
 #include <sol/sol.hpp>
 
-namespace bgfx
-{
-	struct VertexLayout;
-}
-
 namespace darmok
 {
+	class AssetContext;
 	struct Model;
 	struct AssimpModelLoadConfig;
-	class AssetContext;
 	class Program;
 	class Texture;
 	class TextureAtlas;
@@ -29,27 +24,19 @@ namespace darmok
 	class LuaAssets final
 	{
 	public:
-		LuaAssets(AssetContext& assets) noexcept;
-
-		AssetContext& getReal() noexcept;
-		const AssetContext& getReal() const noexcept;
-
-		std::shared_ptr<Program> loadProgram(const std::string& name);
-		std::shared_ptr<Texture> loadTexture1(const std::string& name);
-		std::shared_ptr<Texture> loadTexture2(const std::string& name, uint64_t flags);
-		std::shared_ptr<Texture> loadColorTexture(const Color& color);
-		std::shared_ptr<TextureAtlas> loadTextureAtlas1(const std::string& name);
-		std::shared_ptr<TextureAtlas> loadTextureAtlas2(const std::string& name, uint64_t textureFlags);
-		std::shared_ptr<Model> loadModel1(const std::string& name);
-		std::shared_ptr<Model> loadModel2(const std::string& name, const AssimpModelLoadConfig& config);
-		std::shared_ptr<Skeleton> loadSkeleton(const std::string& name);
-		std::shared_ptr<SkeletalAnimation> loadSkeletalAnimation(const std::string& name);
-		SkeletalAnimatorConfig loadSkeletalAnimatorConfig(const std::string& name);
-		SkeletalAnimationMap loadSkeletalAnimations(const SkeletalAnimatorConfig& config);
-
 		static void bind(sol::state_view& lua) noexcept;
-
 	private:
-		OptionalRef<AssetContext> _assets;
+		static std::shared_ptr<Program> loadProgram(AssetContext& assets, const std::string& name);
+		static std::shared_ptr<Texture> loadTexture1(AssetContext& assets, const std::string& name);
+		static std::shared_ptr<Texture> loadTexture2(AssetContext& assets, const std::string& name, uint64_t flags);
+		static std::shared_ptr<Texture> loadColorTexture(AssetContext& assets, const Color& color);
+		static std::shared_ptr<TextureAtlas> loadTextureAtlas1(AssetContext& assets, const std::string& name);
+		static std::shared_ptr<TextureAtlas> loadTextureAtlas2(AssetContext& assets, const std::string& name, uint64_t textureFlags);
+		static std::shared_ptr<Model> loadModel1(AssetContext& assets, const std::string& name);
+		static std::shared_ptr<Model> loadModel2(AssetContext& assets, const std::string& name, const AssimpModelLoadConfig& config);
+		static std::shared_ptr<Skeleton> loadSkeleton(AssetContext& assets, const std::string& name);
+		static std::shared_ptr<SkeletalAnimation> loadSkeletalAnimation(AssetContext& assets, const std::string& name);
+		static SkeletalAnimatorConfig loadSkeletalAnimatorConfig(AssetContext& assets, const std::string& name);
+		static SkeletalAnimationMap loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorConfig& config);
 	};
 }

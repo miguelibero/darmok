@@ -10,7 +10,7 @@ namespace darmok
 {
 	class LuaEntity;
 	class LuaScene;
-	class LuaAssets;
+	class AssetContext;
 	class LuaModelNode;
 	class Scene;
 	struct Model;
@@ -24,7 +24,7 @@ namespace darmok
 	class LuaModelSceneConfigurer final
 	{
 	public:
-		LuaModelSceneConfigurer(const LuaScene& scene, LuaAssets& assets) noexcept;
+		LuaModelSceneConfigurer(const LuaScene& scene, AssetContext& assets) noexcept;
 		LuaModelSceneConfigurer& setParent(const LuaEntity& parent) noexcept;
 
 		LuaEntity run1(const Model& model);

@@ -1,43 +1,28 @@
 #include "freelook.hpp"
 #include "scene.hpp"
-#include "camera.hpp"
+#include <darmok/camera.hpp>
 #include <darmok/freelook.hpp>
 
 namespace darmok
 {
-    LuaFreelookController::LuaFreelookController(FreelookController& ctrl) noexcept
-        : _ctrl(ctrl)
+    FreelookController& LuaFreelookController::LuaFreelookController::addSceneComponent1(LuaScene& scene, Camera& cam) noexcept
     {
+        return scene.getReal()->addSceneComponent<FreelookController>(cam);
     }
 
-    void LuaFreelookController::setEnabled(bool enabled) noexcept
+    FreelookController& LuaFreelookController::addSceneComponent2(LuaScene& scene, Camera& cam, const Config& config) noexcept
     {
-        _ctrl->setEnabled(enabled);
-    }
-
-    bool LuaFreelookController::getEnabled() const noexcept
-    {
-        return _ctrl->isEnabled();
-    }
-
-    LuaFreelookController LuaFreelookController::LuaFreelookController::addSceneComponent1(LuaScene& scene, LuaCamera& cam) noexcept
-    {
-        return scene.getReal()->addSceneComponent<FreelookController>(cam.getReal());
-    }
-
-    LuaFreelookController LuaFreelookController::addSceneComponent2(LuaScene& scene, LuaCamera& cam, const Config& config) noexcept
-    {
-        return scene.getReal()->addSceneComponent<FreelookController>(cam.getReal(), config);
+        return scene.getReal()->addSceneComponent<FreelookController>(cam, config);
     }
 
     void LuaFreelookController::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<LuaFreelookController>("FreelookController", sol::no_constructor,
+        lua.new_usertype<FreelookController>("FreelookController", sol::no_constructor,
             "add_scene_component", sol::overload(
                 &LuaFreelookController::addSceneComponent1,
                 &LuaFreelookController::addSceneComponent2
             ),
-            "enabled", sol::property(&LuaFreelookController::getEnabled, &LuaFreelookController::setEnabled)
+            "enabled", sol::property(&FreelookController::isEnabled, &FreelookController::setEnabled)
         );
     }
 

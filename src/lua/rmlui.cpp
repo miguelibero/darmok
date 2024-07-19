@@ -16,34 +16,9 @@
 
 namespace darmok
 {
-    LuaRmluiAppComponent::LuaRmluiAppComponent(RmluiAppComponent& comp) noexcept
-        : _comp(comp)
-    {
-    }
-
-    LuaRmluiAppComponent LuaRmluiAppComponent::addAppComponent(LuaApp& app) noexcept
+    RmluiAppComponent& LuaRmluiAppComponent::addAppComponent(LuaApp& app) noexcept
     {
         return app.getReal().addComponent<RmluiAppComponent>();
-    }
-
-    std::reference_wrapper<RmluiView> LuaRmluiAppComponent::getDefaultView() noexcept
-    {
-        return _comp->getDefaultView();
-    }
-
-    std::reference_wrapper<RmluiView> LuaRmluiAppComponent::getView(const std::string& name) noexcept
-    {
-        return _comp->getView(name);
-    }
-
-    bool LuaRmluiAppComponent::hasView(const std::string& name)
-    {
-        return _comp->hasView(name);
-    }
-
-    bool LuaRmluiAppComponent::removeView(const std::string& name)
-    {
-        return _comp->removeView(name);
     }
 
     void LuaRmluiAppComponent::loadFont(const std::string& path) noexcept
@@ -63,11 +38,11 @@ namespace darmok
         // TODO: probably will remove this dependency
         // Rml::Lua::Initialise(lua.lua_state());
 
-        lua.new_usertype<LuaRmluiAppComponent>("GuiAppComponent", sol::no_constructor,
-            "default_view", sol::property(&LuaRmluiAppComponent::getDefaultView),
-            "get_view", &LuaRmluiAppComponent::getView,
-            "has_view", &LuaRmluiAppComponent::hasView,
-            "remove_view", &LuaRmluiAppComponent::removeView,
+        lua.new_usertype<RmluiAppComponent>("GuiAppComponent", sol::no_constructor,
+            "default_view", sol::property(sol::resolve<RmluiView&()>(&RmluiAppComponent::getDefaultView)),
+            "get_view", sol::resolve<RmluiView&(const std::string&)>(&RmluiAppComponent::getView),
+            "has_view", &RmluiAppComponent::hasView,
+            "remove_view", &RmluiAppComponent::removeView,
             "add_app_component", &LuaRmluiAppComponent::addAppComponent,
             "load_font", &LuaRmluiAppComponent::loadFont,
             "load_fallback_font", &LuaRmluiAppComponent::loadFallbackFont

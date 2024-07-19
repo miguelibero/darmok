@@ -175,10 +175,10 @@ end
 
 	static OptionalRef<Transform> getVarParentTransform(EntityRegistry& registry, LuaScene::VarParent parent) noexcept
 	{
-		auto luaTrans = std::get_if<LuaTransform>(&parent);
-		if (luaTrans != nullptr)
+		auto trans = std::get_if<Transform>(&parent);
+		if (trans != nullptr)
 		{
-			return luaTrans->getReal();
+			return trans;
 		}
 		auto parentEntity = std::get<Entity>(parent);
 		if (parentEntity == entt::null)
@@ -278,12 +278,12 @@ end
 
 	LuaScene LuaSceneAppComponent::getScene() const noexcept
 	{
-		return LuaScene(_comp->getScene());
+		return LuaScene(_comp.get().getScene());
 	}
 
 	LuaSceneAppComponent& LuaSceneAppComponent::setScene(const LuaScene& scene) noexcept
 	{
-		_comp->setScene(scene.getReal());
+		_comp.get().setScene(scene.getReal());
 		return *this;
 	}
 

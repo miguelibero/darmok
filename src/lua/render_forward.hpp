@@ -6,15 +6,14 @@
 namespace darmok
 {
     class ForwardRenderer;
-    class LuaCamera;
+    class Camera;
 
     class LuaForwardRenderer final
     {
     public:
-        static std::reference_wrapper<ForwardRenderer> addRenderer(LuaCamera& cam) noexcept;
-
         static void bind(sol::state_view& lua) noexcept;
     private:
-        OptionalRef<ForwardRenderer> _renderer;
+
+        static ForwardRenderer& addRenderer(Camera& cam) noexcept;
     };
 }

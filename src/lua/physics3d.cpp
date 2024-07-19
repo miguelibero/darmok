@@ -81,30 +81,14 @@ namespace darmok::physics3d
         return *_system;
     }
 
-    std::optional<LuaTransform> LuaPhysicsSystem::getRootTransform() const noexcept
+    OptionalRef<Transform>::std_t LuaPhysicsSystem::getRootTransform() const noexcept
     {
-        if (!_system)
-        {
-            return std::nullopt;
-        }
-        auto trans = _system->getRootTransform();
-        if(!trans)
-        {
-            return std::nullopt;
-        }
-        return LuaTransform(trans.value());
+        return _system->getRootTransform();
     }
 
-    void LuaPhysicsSystem::setRootTransform(std::optional<LuaTransform> root) noexcept
+    void LuaPhysicsSystem::setRootTransform(OptionalRef<Transform>::std_t root) noexcept
     {
-        if (root)
-        {
-            _system->setRootTransform(root->getReal());
-        }
-        else
-        {
-            _system->setRootTransform(nullptr);
-        }
+        _system->setRootTransform(root);
     }
 
     void LuaPhysicsSystem::fixedUpdate(float fixedDeltaTime)

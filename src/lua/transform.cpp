@@ -5,229 +5,126 @@
 
 namespace darmok
 {
-    LuaTransform::LuaTransform(Transform& transform) noexcept
-		: _transform(transform)
+	OptionalRef<Transform>::std_t LuaTransform::getParent(Transform& trans) noexcept
 	{
+		return trans.getParent();
 	}
 
-	const Transform& LuaTransform::getReal() const
+	void LuaTransform::setParent(Transform& trans, OptionalRef<Transform>::std_t parent) noexcept
 	{
-		return _transform.value();
+		trans.setParent(parent);
 	}
 
-	Transform& LuaTransform::getReal()
+	glm::vec3 LuaTransform::worldToLocalPoint(const Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		return _transform.value();
+		return trans.worldToLocalPoint(LuaGlm::tableGet(v));
 	}
 
-	std::string LuaTransform::to_string() const noexcept
+	glm::vec3 LuaTransform::localToWorldPoint(const Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		return std::string("Transform(") + _transform->to_string() + ")";
+		return trans.worldToLocalPoint(LuaGlm::tableGet(v));
 	}
 
-	std::optional<LuaTransform> LuaTransform::getParent() noexcept
+	void LuaTransform::setPosition(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		auto parent = _transform->getParent();
-		if (parent)
-		{
-			return LuaTransform(parent.value());
-		}
-		return std::nullopt;
+		trans.setPosition(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::setParent(std::optional<LuaTransform> parent) noexcept
+	void LuaTransform::setEulerAngles(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		OptionalRef<Transform> p = nullptr;
-		if (parent.has_value())
-		{
-			p = parent.value()._transform;
-		}
-		_transform->setParent(p);
+		trans.setEulerAngles(LuaGlm::tableGet(v));
 	}
 
-	const std::string& LuaTransform::getName() const noexcept
+	void LuaTransform::setRotation(Transform& trans, const VarLuaTable<glm::quat>& v) noexcept
 	{
-		return _transform->getName();
+		trans.setRotation(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::setName(const std::string& name) noexcept
+	void LuaTransform::setForward(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		_transform->setName(name);
+		trans.setForward(LuaGlm::tableGet(v));
 	}
 
-	const glm::vec3& LuaTransform::getPosition() const noexcept
+	void LuaTransform::setScale(Transform& trans, const VarLuaVecTable<glm::vec3>& v) noexcept
 	{
-		return _transform->getPosition();
+		trans.setScale(LuaGlm::tableGet(v));
 	}
 
-	const glm::quat& LuaTransform::getRotation() const noexcept
+	void LuaTransform::setPivot(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		return _transform->getRotation();
+		trans.setPivot(LuaGlm::tableGet(v));
 	}
 
-	glm::vec3 LuaTransform::getEulerAngles() const noexcept
+	void LuaTransform::lookDir1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		return glm::degrees(glm::eulerAngles(getRotation()));
+		trans.lookDir(LuaGlm::tableGet(v));
 	}
 
-	glm::vec3 LuaTransform::getForward() const noexcept
+	void LuaTransform::lookDir2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
 	{
-		static const glm::vec3 dir(0, 0, 1);
-		return _transform->getRotation() * dir;
+		trans.lookDir(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
 	}
 
-	glm::vec3 LuaTransform::getRight() const noexcept
+	void LuaTransform::lookAt1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		static const glm::vec3 dir(1, 0, 0);
-		return _transform->getRotation() * dir;
+		trans.lookAt(LuaGlm::tableGet(v));
 	}
 
-	glm::vec3 LuaTransform::getUp() const noexcept
+	void LuaTransform::lookAt2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
 	{
-		static const glm::vec3 dir(0, 1, 0);
-		return _transform->getRotation() * dir;
+		trans.lookAt(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
 	}
 
-	const glm::vec3& LuaTransform::getScale() const noexcept
+	void LuaTransform::setMatrix(Transform& trans, const VarLuaTable<glm::mat4>& v) noexcept
 	{
-		return _transform->getScale();
+		trans.setLocalMatrix(LuaGlm::tableGet(v));
 	}
 
-	const glm::vec3& LuaTransform::getPivot() const noexcept
+	void LuaTransform::rotate1(Transform& trans, float x, float y, float z) noexcept
 	{
-		return _transform->getPivot();
-	}
-	
-	const glm::mat4& LuaTransform::getMatrix() const noexcept
-	{
-		return _transform->getLocalMatrix();
+		trans.rotate(glm::vec3(x, y, z));
 	}
 
-	const glm::mat4& LuaTransform::getLocalToWorldMatrix() const noexcept
+	void LuaTransform::rotate2(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		return _transform->getWorldMatrix();
+		trans.rotate(LuaGlm::tableGet(v));
 	}
 
-	const glm::mat4& LuaTransform::getWorldToLocalMatrix() const noexcept
-	{
-		return _transform->getWorldInverse();
-	}
-
-	glm::vec3 LuaTransform::getWorldPosition() const noexcept
-	{
-		return _transform->getWorldPosition();
-	}
-
-	glm::vec3 LuaTransform::worldToLocalPoint(const VarLuaTable<glm::vec3>& v) const noexcept
-	{
-		return _transform->worldToLocalPoint(LuaGlm::tableGet(v));
-	}
-
-	glm::vec3 LuaTransform::localToWorldPoint(const VarLuaTable<glm::vec3>& v) const noexcept
-	{
-		return _transform->worldToLocalPoint(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::setPosition(const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		_transform->setPosition(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::setEulerAngles(const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		_transform->setEulerAngles(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::setRotation(const VarLuaTable<glm::quat>& v) noexcept
-	{
-		_transform->setRotation(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::setForward(const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		_transform->setForward(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::setScale(const VarLuaVecTable<glm::vec3>& v) noexcept
-	{
-		_transform->setScale(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::setPivot(const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		_transform->setPivot(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::lookDir1(const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		_transform->lookDir(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::lookDir2(const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
-	{
-		_transform->lookDir(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
-	}
-
-	void LuaTransform::lookAt1(const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		_transform->lookAt(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::lookAt2(const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
-	{
-		_transform->lookAt(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
-	}
-
-	void LuaTransform::setMatrix(const VarLuaTable<glm::mat4>& v) noexcept
-	{
-		_transform->setLocalMatrix(LuaGlm::tableGet(v));
-	}
-
-	void LuaTransform::rotate1(float x, float y, float z) noexcept
-	{
-		_transform->rotate(glm::vec3(x, y, z));
-	}
-
-	void LuaTransform::rotate2(const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		_transform->rotate(LuaGlm::tableGet(v));
-	}
-
-	LuaTransform LuaTransform::addEntityComponent1(LuaEntity& entity) noexcept
+	Transform& LuaTransform::addEntityComponent1(LuaEntity& entity) noexcept
 	{
 		return entity.addComponent<Transform>();
 	}
 
-	LuaTransform LuaTransform::addEntityComponent2(LuaEntity& entity, LuaTransform& parent) noexcept
+	Transform& LuaTransform::addEntityComponent2(LuaEntity& entity, Transform& parent) noexcept
 	{
 		auto& trans = entity.addComponent<Transform>();
-		trans.setParent(parent.getReal());
+		trans.setParent(parent);
 		return trans;
 	}
 
-	LuaTransform LuaTransform::addEntityComponent3(LuaEntity& entity, LuaTransform& parent, const VarLuaTable<glm::vec3>& pos) noexcept
+	Transform& LuaTransform::addEntityComponent3(LuaEntity& entity, Transform& parent, const VarLuaTable<glm::vec3>& pos) noexcept
 	{
-		return entity.addComponent<Transform>(parent.getReal(), LuaGlm::tableGet(pos));
+		return entity.addComponent<Transform>(parent, LuaGlm::tableGet(pos));
 	}
 
-	LuaTransform LuaTransform::addEntityComponent4(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept
+	Transform& LuaTransform::addEntityComponent4(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept
 	{
 		return entity.addComponent<Transform>(LuaGlm::tableGet(pos));
 	}
 
-	std::optional<LuaTransform> LuaTransform::getEntityComponent(LuaEntity& entity) noexcept
+	OptionalRef<Transform>::std_t LuaTransform::getEntityComponent(LuaEntity& entity) noexcept
 	{
-		return entity.getComponent<Transform, LuaTransform>();
+		return entity.getComponent<Transform>();
 	}
 
-	std::optional<LuaEntity> LuaTransform::getEntity(LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaTransform::getEntity(const Transform& trans, LuaScene& scene) noexcept
 	{
-		return scene.getEntity(_transform.value());
+		return scene.getEntity(trans);
 	}
 
 	void LuaTransform::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaTransform>("Transform", sol::no_constructor,
+		lua.new_usertype<Transform>("Transform", sol::no_constructor,
 			"type_id", &entt::type_hash<Transform>::value,
 			"add_entity_component", sol::overload(
 				&LuaTransform::addEntityComponent1,
@@ -238,19 +135,19 @@ namespace darmok
 			"get_entity_component", &LuaTransform::getEntityComponent,
 			"get_entity", &LuaTransform::getEntity,
 
-			"name", sol::property(&LuaTransform::getName, &LuaTransform::setName),
-			"position", sol::property(&LuaTransform::getPosition, &LuaTransform::setPosition),
-			"world_position", sol::property(&LuaTransform::getWorldPosition),
-			"rotation", sol::property(&LuaTransform::getRotation, &LuaTransform::setRotation),
-			"euler_angles", sol::property(&LuaTransform::getEulerAngles, &LuaTransform::setEulerAngles),
-			"forward", sol::property(&LuaTransform::getForward),
-			"right", sol::property(&LuaTransform::getRight),
-			"up", sol::property(&LuaTransform::getUp),
-			"scale", sol::property(&LuaTransform::getScale, &LuaTransform::setScale),
-			"pivot", sol::property(&LuaTransform::getPivot, &LuaTransform::setPivot),
-			"matrix", sol::property(&LuaTransform::getMatrix, &LuaTransform::setMatrix),
-			"local_to_world_matrix", sol::property(&LuaTransform::getLocalToWorldMatrix),
-			"world_to_local_matrix", sol::property(&LuaTransform::getWorldToLocalMatrix),
+			"name", sol::property(&Transform::getName, &Transform::setName),
+			"position", sol::property(&Transform::getPosition, &LuaTransform::setPosition),
+			"world_position", sol::property(&Transform::getWorldPosition),
+			"rotation", sol::property(&Transform::getRotation, &LuaTransform::setRotation),
+			"euler_angles", sol::property(&Transform::getEulerAngles, &LuaTransform::setEulerAngles),
+			"forward", sol::property(&Transform::getForward),
+			"right", sol::property(&Transform::getRight),
+			"up", sol::property(&Transform::getUp),
+			"scale", sol::property(&Transform::getScale, &LuaTransform::setScale),
+			"pivot", sol::property(&Transform::getPivot, &LuaTransform::setPivot),
+			"matrix", sol::property(&Transform::getWorldMatrix, &LuaTransform::setMatrix),
+			"local_to_world_matrix", sol::property(&Transform::getWorldMatrix),
+			"world_to_local_matrix", sol::property(&Transform::getWorldInverse),
 			"parent", sol::property(&LuaTransform::getParent, &LuaTransform::setParent),
 			"rotate", sol::overload(&LuaTransform::rotate1, &LuaTransform::rotate2),
 			"look_dir", sol::overload(&LuaTransform::lookDir1, &LuaTransform::lookDir2),

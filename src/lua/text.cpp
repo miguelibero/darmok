@@ -3,5 +3,7 @@
 
 namespace darmok
 {
-    
+    void LuaText::bind(sol::state_view& lua) noexcept
+    {
+    }
 }

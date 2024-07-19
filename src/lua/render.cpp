@@ -8,88 +8,39 @@
 
 namespace darmok
 {
-	LuaRenderable LuaRenderable::addEntityComponent1(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh) noexcept
+	Renderable& LuaRenderable::addEntityComponent1(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh) noexcept
 	{
 		return entity.addComponent<Renderable>(mesh);
 	}
 
-	LuaRenderable LuaRenderable::addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& material) noexcept
+	Renderable& LuaRenderable::addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& material) noexcept
 	{
 		return entity.addComponent<Renderable>(material);
 	}
 
-	LuaRenderable LuaRenderable::addEntityComponent3(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
+	Renderable& LuaRenderable::addEntityComponent3(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
 	{
 		return entity.addComponent<Renderable>(mesh, material);
 	}
 
-	LuaRenderable LuaRenderable::addEntityComponent4(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& texture) noexcept
+	Renderable& LuaRenderable::addEntityComponent4(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& texture) noexcept
 	{
 		return entity.addComponent<Renderable>(mesh, prog, texture);
 	}
 
-	std::optional<LuaRenderable> LuaRenderable::getEntityComponent(LuaEntity& entity) noexcept
+	OptionalRef<Renderable>::std_t LuaRenderable::getEntityComponent(LuaEntity& entity) noexcept
 	{
-		return entity.getComponent<Renderable, LuaRenderable>();
+		return entity.getComponent<Renderable>();
 	}
 
-	std::optional<LuaEntity> LuaRenderable::getEntity(LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaRenderable::getEntity(const Renderable& renderable, LuaScene& scene) noexcept
 	{
-		if (!_renderable)
-		{
-			return std::nullopt;
-		}
-		return scene.getEntity(_renderable.value());
-	}
-
-	LuaRenderable::LuaRenderable(Renderable& renderable) noexcept
-		: _renderable(renderable)
-	{
-	}
-
-	const Renderable& LuaRenderable::getReal() const
-	{
-		return _renderable.value();
-	}
-
-	Renderable& LuaRenderable::getReal()
-	{
-		return _renderable.value();
-	}
-
-	std::shared_ptr<IMesh> LuaRenderable::getMesh() const noexcept
-	{
-		return _renderable->getMesh();
-	}
-
-	void LuaRenderable::setMesh(const std::shared_ptr<IMesh>& mesh) noexcept
-	{
-		_renderable->setMesh(mesh);
-	}
-
-	std::shared_ptr<Material> LuaRenderable::getMaterial() const noexcept
-	{
-		return _renderable->getMaterial();
-	}
-
-	void LuaRenderable::setMaterial(const std::shared_ptr<Material>& material) noexcept
-	{
-		_renderable->setMaterial(material);
-	}
-
-	bool LuaRenderable::getEnabled() const noexcept
-	{
-		return _renderable->isEnabled();
-	}
-
-	void LuaRenderable::setEnabled(bool enabled) noexcept
-	{
-		_renderable->setEnabled(enabled);
+		return scene.getEntity(renderable);
 	}
 
 	void LuaRenderable::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaRenderable>("Renderable", sol::no_constructor,
+		lua.new_usertype<Renderable>("Renderable", sol::no_constructor,
 			"type_id", &entt::type_hash<Renderable>::value,
 			"add_entity_component", sol::overload(
 				&LuaRenderable::addEntityComponent1,
@@ -99,9 +50,9 @@ namespace darmok
 			),
 			"get_entity_component", &LuaRenderable::getEntityComponent,
 			"get_entity", &LuaRenderable::getEntity,
-			"mesh", sol::property(&LuaRenderable::getMesh, &LuaRenderable::setMesh),
-			"material", sol::property(&LuaRenderable::getMaterial, &LuaRenderable::setMaterial),
-			"enabled", sol::property(&LuaRenderable::getEnabled, &LuaRenderable::setEnabled)
+			"mesh", sol::property(&Renderable::getMesh, &Renderable::setMesh),
+			"material", sol::property(&Renderable::getMaterial, &Renderable::setMaterial),
+			"enabled", sol::property(&Renderable::isEnabled, &Renderable::setEnabled)
 		);
 	}
 }

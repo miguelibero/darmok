@@ -1,7 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <darmok/optional_ref.hpp>
+#include <sol/sol.hpp>
 
 namespace darmok
 {
@@ -11,8 +11,6 @@ namespace darmok
     class LuaText final
     {
     public:
-        LuaText(Text& text) noexcept;
-    private:
-        OptionalRef<Text> _text;
+        static void bind(sol::state_view& lua) noexcept;
     };
 }

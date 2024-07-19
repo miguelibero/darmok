@@ -19,102 +19,69 @@ namespace darmok
         );
     }
 
-    LuaSkeletalAnimator::LuaSkeletalAnimator(SkeletalAnimator& animator) noexcept
-        : _animator(animator)
-    {
-    }
-
-    LuaSkeletalAnimator LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept
+    SkeletalAnimator& LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept
     {
         return entity.addComponent<SkeletalAnimator>(skel, anims, config);
     }
 
-    std::optional<LuaSkeletalAnimator> LuaSkeletalAnimator::getEntityComponent(LuaEntity& entity) noexcept
+    OptionalRef<SkeletalAnimator>::std_t LuaSkeletalAnimator::getEntityComponent(LuaEntity& entity) noexcept
     {
-        return entity.getComponent<SkeletalAnimator, LuaSkeletalAnimator>();
+        return entity.getComponent<SkeletalAnimator>();
     }
 
-    std::optional<LuaEntity> LuaSkeletalAnimator::getEntity(LuaScene& scene) noexcept
+    std::optional<LuaEntity> LuaSkeletalAnimator::getEntity(const SkeletalAnimator& animator, LuaScene& scene) noexcept
     {
-        if (!_animator)
-        {
-            return std::nullopt;
-        }
-        return scene.getEntity(_animator.value());
+        return scene.getEntity(animator);
     }
 
-    bool LuaSkeletalAnimator::play(const std::string& name) noexcept
+    void LuaSkeletalAnimator::setBlendPosition(SkeletalAnimator& animator, const VarLuaVecTable<glm::vec2>& pos) noexcept
     {
-        return _animator->play(name);
-    }
-
-    void LuaSkeletalAnimator::setPlaybackSpeed(float speed) noexcept
-    {
-        _animator->setPlaybackSpeed(speed);
-    }
-
-    float LuaSkeletalAnimator::getPlaybackSpeed() const noexcept
-    {
-        return _animator->getPlaybackSpeed();
-    }
-
-    void LuaSkeletalAnimator::setBlendPosition(const VarLuaVecTable<glm::vec2>& pos) noexcept
-    {
-        _animator->setBlendPosition(LuaGlm::tableGet(pos));
+        animator.setBlendPosition(LuaGlm::tableGet(pos));
     }
 
     void LuaSkeletalAnimator::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<LuaSkeletalAnimator>("SkeletalAnimator", sol::no_constructor,
+        lua.new_usertype<SkeletalAnimator>("SkeletalAnimator", sol::no_constructor,
             "type_id", &entt::type_hash<SkeletalAnimator>::value,
             "add_entity_component", sol::overload(
                 &LuaSkeletalAnimator::addEntityComponent
             ),
             "get_entity_component", &LuaSkeletalAnimator::getEntityComponent,
             "get_entity", &LuaSkeletalAnimator::getEntity,
-            "play", sol::overload(&LuaSkeletalAnimator::play),
-            "playback_speed", sol::property(&LuaSkeletalAnimator::getPlaybackSpeed, &LuaSkeletalAnimator::setPlaybackSpeed),
+            "play", sol::overload(&SkeletalAnimator::play),
+            "playback_speed", sol::property(&SkeletalAnimator::getPlaybackSpeed, &SkeletalAnimator::setPlaybackSpeed),
             "blend_position", sol::property(&LuaSkeletalAnimator::setBlendPosition)
         );
     }
 
-    LuaRenderableSkeleton::LuaRenderableSkeleton(RenderableSkeleton& skel) noexcept
-        : _skel(skel)
-    {
-    }
-
-    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent1(LuaEntity& entity) noexcept
+    RenderableSkeleton& LuaRenderableSkeleton::addEntityComponent1(LuaEntity& entity) noexcept
     {
         return entity.addComponent<RenderableSkeleton>();
     }
 
-    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& mat) noexcept
+    RenderableSkeleton& LuaRenderableSkeleton::addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& mat) noexcept
     {
         return entity.addComponent<RenderableSkeleton>(mat);
     }
 
-    LuaRenderableSkeleton LuaRenderableSkeleton::addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept
+    RenderableSkeleton& LuaRenderableSkeleton::addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept
     {
         return entity.addComponent<RenderableSkeleton>(mat, boneMesh);
     }
 
-    std::optional<LuaRenderableSkeleton> LuaRenderableSkeleton::getEntityComponent(LuaEntity& entity) noexcept
+    OptionalRef<RenderableSkeleton>::std_t LuaRenderableSkeleton::getEntityComponent(LuaEntity& entity) noexcept
     {
-        return entity.getComponent<RenderableSkeleton, LuaRenderableSkeleton>();
+        return entity.getComponent<RenderableSkeleton>();
     }
 
-    std::optional<LuaEntity> LuaRenderableSkeleton::getEntity(LuaScene& scene) noexcept
+    std::optional<LuaEntity> LuaRenderableSkeleton::getEntity(const RenderableSkeleton& skel, LuaScene& scene) noexcept
     {
-        if (!_skel)
-        {
-            return std::nullopt;
-        }
-        return scene.getEntity(_skel.value());
+        return scene.getEntity(skel);
     }
 
     void LuaRenderableSkeleton::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<LuaRenderableSkeleton>("RenderableSkeleton", sol::no_constructor,
+        lua.new_usertype<RenderableSkeleton>("RenderableSkeleton", sol::no_constructor,
             "type_id", &entt::type_hash<RenderableSkeleton>::value,
             "add_entity_component", sol::overload(
                 &LuaRenderableSkeleton::addEntityComponent1,
@@ -126,12 +93,7 @@ namespace darmok
         );
     }
 
-    LuaSkeletalAnimationSceneComponent::LuaSkeletalAnimationSceneComponent(SkeletalAnimationSceneComponent& comp) noexcept
-        : _comp(comp)
-    {
-    }
-
-    LuaSkeletalAnimationSceneComponent LuaSkeletalAnimationSceneComponent::addSceneComponent(LuaScene& scene) noexcept
+    SkeletalAnimationSceneComponent& LuaSkeletalAnimationSceneComponent::addSceneComponent(LuaScene& scene) noexcept
     {
         return scene.getReal()->addSceneComponent<SkeletalAnimationSceneComponent>();
     }
@@ -143,19 +105,14 @@ namespace darmok
         );
     }
 
-    LuaSkeletalAnimationRenderComponent::LuaSkeletalAnimationRenderComponent(SkeletalAnimationRenderComponent& comp) noexcept
-        : _comp(comp)
-    {
-    }
-
-    LuaSkeletalAnimationRenderComponent LuaSkeletalAnimationRenderComponent::addRenderComponent(ForwardRenderer& renderer) noexcept
+    SkeletalAnimationRenderComponent& LuaSkeletalAnimationRenderComponent::addRenderComponent(ForwardRenderer& renderer) noexcept
     {
         return renderer.addComponent<SkeletalAnimationRenderComponent>();
     }
 
     void LuaSkeletalAnimationRenderComponent::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<LuaSkeletalAnimationRenderComponent>("SkeletalAnimationRenderComponent", sol::no_constructor,
+        lua.new_usertype<SkeletalAnimationRenderComponent>("SkeletalAnimationRenderComponent", sol::no_constructor,
             "add_render_component", &LuaSkeletalAnimationRenderComponent::addRenderComponent
         );
     }

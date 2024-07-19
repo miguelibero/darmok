@@ -12,20 +12,19 @@ namespace darmok
 	{
 	public:
 		LuaWindow(Window& win) noexcept;
-		const glm::uvec2& getSize() const noexcept;
-		glm::uvec2 getPixelSize() const noexcept;
-		const Window& getReal() const noexcept;
-		Window& getReal() noexcept;
-		glm::uvec2 screenToWindowPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
-		glm::vec2 windowToScreenPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
-		void setCursorMode(WindowCursorMode mode) noexcept;
-		WindowCursorMode getCursorMode() const noexcept;
-		void setVideoMode(const VideoMode& mode) noexcept;
-		const VideoMode& getVideoMode() const noexcept;
-		const VideoModeInfo& getVideoModeInfo() const noexcept;
-
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<Window> _win;
+		std::reference_wrapper<Window> _win;
+
+		const glm::uvec2& getSize() const noexcept;
+		const glm::uvec2& getPixelSize() const noexcept;
+		const VideoMode& getVideoMode() const noexcept;
+		void setVideoMode(const VideoMode& mode) noexcept;
+		const VideoModeInfo& getVideoModeInfo() noexcept;
+		WindowCursorMode getCursorMode() const noexcept;
+		void setCursorMode(WindowCursorMode mode) const noexcept;
+
+		glm::vec2 screenToWindowPoint(const Window& win, const VarLuaTable<glm::vec2>& point) const noexcept;
+		glm::vec2 windowToScreenPoint(const Window& win, const VarLuaTable<glm::vec2>& point) const noexcept;
 	};
 }
