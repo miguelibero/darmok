@@ -2,6 +2,7 @@
 #include <glm/gtx/intersect.hpp>
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <darmok/string.hpp>
 
 namespace darmok
 {
@@ -35,7 +36,7 @@ namespace darmok
     {
     }
 
-    std::string Rectangle::to_string() const noexcept
+    std::string Rectangle::toString() const noexcept
     {
         return "Rectangle(size=" + glm::to_string(size) + ", origin=" + glm::to_string(origin) + ")";
     }
@@ -55,7 +56,7 @@ namespace darmok
     {
     }
 
-    std::string Cube::to_string() const noexcept
+    std::string Cube::toString() const noexcept
     {
         return "Cube(size=" + glm::to_string(size) + ", origin=" + glm::to_string(origin) + ")";
     }
@@ -84,7 +85,7 @@ namespace darmok
     {
     }
 
-    std::string Triangle::to_string() const noexcept
+    std::string Triangle::toString() const noexcept
     {
         return "Triangle(" + glm::to_string(vertices[0]) + ", " + glm::to_string(vertices[1]) + ", " + glm::to_string(vertices[2]) + ")";
     }
@@ -95,6 +96,54 @@ namespace darmok
         auto edge2 = vertices[2] - vertices[0];
         auto normal = glm::cross(edge1, edge2);
         return glm::normalize(normal);
+    }
+
+    Triangle& Triangle::operator*=(float scale) noexcept
+    {
+        for (auto& vert : vertices)
+        {
+            vert *= scale;
+        }
+        return *this;
+    }
+
+    Triangle Triangle::operator*(float scale) const noexcept
+    {
+        Triangle tri = *this;
+        tri *= scale;
+        return tri;
+    }
+
+    Polygon::Polygon(const Triangles& tris, const glm::vec3& origin) noexcept
+        : triangles(tris)
+        , origin(origin)
+    {
+    }
+
+    std::string Polygon::toString() const noexcept
+    {
+        std::string str = "Polygon(" + StringUtils::join(", ", triangles);
+        if (origin != glm::vec3(0))
+        {
+            str += ", origin = " + glm::to_string(origin);
+        }
+        return str +")";
+    }
+
+    Polygon& Polygon::operator*=(float scale) noexcept
+    {
+        for (auto& tri : triangles)
+        {
+            tri *= scale;
+        }
+        return *this;
+    }
+
+    Polygon Polygon::operator*(float scale) const noexcept
+    {
+        Polygon poly = *this;
+        poly *= scale;
+        return poly;
     }
 
     Sphere::Sphere(const glm::vec3& origin, float radius) noexcept
@@ -109,7 +158,7 @@ namespace darmok
     {
     }
 
-    std::string Sphere::to_string() const noexcept
+    std::string Sphere::toString() const noexcept
     {
         return "Cube(radius=" + std::to_string(radius) + ", origin=" + glm::to_string(origin) + ")";
     }
@@ -139,7 +188,7 @@ namespace darmok
         return normal * constant;
     }
 
-    std::string Plane::to_string() const noexcept
+    std::string Plane::toString() const noexcept
     {
         return "Plane(normal=" + glm::to_string(normal) + ", constant=" + std::to_string(constant) + ")";
     }
@@ -183,7 +232,7 @@ namespace darmok
         return *this;
     }
 
-    std::string Ray::to_string() const noexcept
+    std::string Ray::toString() const noexcept
     {
         return "Ray(direction=" + glm::to_string(direction) + ", origin=" + glm::to_string(origin) + ")";
     }
@@ -256,7 +305,7 @@ namespace darmok
     {
     }
 
-    std::string Line::to_string() const noexcept
+    std::string Line::toString() const noexcept
     {
         return "Line(" + glm::to_string(points[0]) + ", " + glm::to_string(points[1]) + ")";
     }
@@ -299,7 +348,7 @@ namespace darmok
     {
     }
 
-    std::string Capsule::to_string() const noexcept
+    std::string Capsule::toString() const noexcept
     {
         return "Capsule(cylinderHeight=" + std::to_string(cylinderHeight) + ", radius=" + std::to_string(radius) + ", origin=" + glm::to_string(origin) + ")";
     }
@@ -325,12 +374,12 @@ namespace darmok
         return copy;
     }
 
-    std::string NormalIntersection::to_string() const noexcept
+    std::string NormalIntersection::toString() const noexcept
     {
         return "NormalIntersection(position=" + glm::to_string(position) + ", normal=" + glm::to_string(normal) + ")";
     }
 
-    std::string DistanceIntersection::to_string() const noexcept
+    std::string DistanceIntersection::toString() const noexcept
     {
         return "DistanceIntersection(position=" + glm::to_string(position) + ", distance=" + std::to_string(distance) + ")";
     }

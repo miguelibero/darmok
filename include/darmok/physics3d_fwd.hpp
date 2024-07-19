@@ -25,5 +25,5 @@ namespace darmok::physics3d
         CollideWithBackFaces,
     };
 
-    using PhysicsShape = std::variant<Cube, Sphere, Capsule>;
+    using PhysicsShape = std::variant<Cube, Sphere, Capsule, Polygon>;
 }

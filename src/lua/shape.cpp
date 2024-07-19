@@ -50,7 +50,6 @@ namespace darmok
 
 		lua.new_usertype<Triangle>("Triangle", sol::no_constructor,
 			"new", sol::overload(
-				[]() { return Line(); },
 				[](const Triangle::Vertices& vertices) {
 					return Triangle(vertices); },
 				[](const VarLuaTable<glm::vec3>& p1, const VarLuaTable<glm::vec3>& p2, const VarLuaTable<glm::vec3>& p3) {
@@ -58,6 +57,31 @@ namespace darmok
 				}
 			),
 			"vertices", &Triangle::vertices
+		);
+
+		lua.new_usertype<Polygon>("Polygon", sol::no_constructor,
+			"new", sol::overload(
+				[]() {
+					return Polygon(); },
+				[](const Polygon::Triangles& triangles) {
+					return Polygon(triangles); },
+				[](const sol::table& table) {
+					Polygon poly;
+					size_t count = table.size();
+					poly.triangles.resize(count);
+					for (size_t i = 0; i < count; i++)
+					{
+						sol::table elm = table[i + 1];
+						auto& tri = poly.triangles[i];
+						LuaGlm::tableInit(tri.vertices[0], elm[1]);
+						LuaGlm::tableInit(tri.vertices[1], elm[2]);
+						LuaGlm::tableInit(tri.vertices[2], elm[3]);
+					}
+					return poly;
+				}
+			),
+			"triangles", &Polygon::triangles,
+			"origin", &Polygon::origin
 		);
 
 		lua.new_usertype<Plane>("Plane", sol::no_constructor,

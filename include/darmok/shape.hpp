@@ -17,7 +17,7 @@ namespace darmok
         glm::vec2 origin;
 
         Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
         std::vector<Line> toLines() const noexcept;
 
         static const Rectangle& standard() noexcept;
@@ -32,7 +32,7 @@ namespace darmok
         glm::vec3 origin;
 
         Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
 
         Cube& operator*=(float scale) noexcept;
         Cube operator*(float scale) const noexcept;
@@ -46,9 +46,26 @@ namespace darmok
         Vertices vertices;
 
         Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept;
-        Triangle(const Vertices& vertices) noexcept;
-        std::string to_string() const noexcept;
+        Triangle(const Vertices& vertices = {}) noexcept;
+        std::string toString() const noexcept;
         glm::vec3 getNormal() const;
+
+        Triangle& operator*=(float scale) noexcept;
+        Triangle operator*(float scale) const noexcept;
+    };
+
+    struct DARMOK_EXPORT Polygon final
+    {
+        using Triangles = std::vector<Triangle>;
+
+        Triangles triangles;
+        glm::vec3 origin;
+
+        Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        std::string toString() const noexcept;
+
+        Polygon& operator*=(float scale) noexcept;
+        Polygon operator*(float scale) const noexcept;
     };
 
     struct DARMOK_EXPORT Sphere final
@@ -58,7 +75,7 @@ namespace darmok
 
         Sphere(const glm::vec3& origin, float radius = 0.5f) noexcept;
         Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
 
         static const Sphere& standard() noexcept;
 
@@ -72,7 +89,7 @@ namespace darmok
         float constant;
 
         Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float constant = 0.F) noexcept;
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
 
         glm::vec3 getOrigin() const noexcept;
 
@@ -89,7 +106,7 @@ namespace darmok
         glm::vec3 origin;
 
         Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
         static const Capsule& standard() noexcept;
 
         Capsule& operator*=(float scale) noexcept;
@@ -101,7 +118,7 @@ namespace darmok
         glm::vec3 position;
         glm::vec3 normal;
 
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
     };
 
     struct DARMOK_EXPORT DistanceIntersection final
@@ -109,7 +126,7 @@ namespace darmok
         glm::vec2 position;
         float distance;
 
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
     };
 
     struct Line;
@@ -120,18 +137,18 @@ namespace darmok
         glm::vec3 origin;
 
         Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 1, 0)) noexcept;
-        
+
         Ray operator*(const glm::mat4& transform) const noexcept;
         Ray& operator*=(const glm::mat4& transform) noexcept;
 
         glm::vec3 operator*(float dist) const noexcept;
-        
-        std::string to_string() const noexcept;
+
+        std::string toString() const noexcept;
         Line toLine() const noexcept;
 
         // returns distance to ray origin
         std::optional<float> intersect(const Plane& plane) const noexcept;
-        
+
         // returns distance to ray origin
         std::optional<float> intersect(const Sphere& sphere) const noexcept;
 
@@ -149,7 +166,7 @@ namespace darmok
         Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 1, 0)) noexcept;
         Line(const Points& points) noexcept;
 
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
 
         glm::vec3 operator*(float dist) const noexcept;
 
@@ -157,4 +174,63 @@ namespace darmok
         std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
         glm::vec3 closestPoint(const glm::vec3& p);
     };
+
+}
+
+namespace std
+{
+    inline std::string to_string(const darmok::Rectangle & v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Cube& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Triangle& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Polygon& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Sphere& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Plane& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Capsule& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::NormalIntersection& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::DistanceIntersection& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Ray& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Line& v)
+    {
+        return v.toString();
+    }
 }

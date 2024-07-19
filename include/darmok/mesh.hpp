@@ -168,6 +168,7 @@ namespace darmok
     struct Ray;
     struct Line;
     struct Triangle;
+    struct Polygon;
 
     enum class RectangleMeshType
     {
@@ -199,6 +200,7 @@ namespace darmok
         MeshData(const Ray& ray) noexcept;
         MeshData(const Line& line, LineMeshType type = LineMeshType::Line) noexcept;
         MeshData(const Triangle& tri) noexcept;
+        MeshData(const Polygon& poly) noexcept;
 
         [[nodiscard]] MeshData operator+(const MeshData& other) noexcept;
         MeshData& operator+=(const MeshData& other) noexcept;

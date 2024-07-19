@@ -737,6 +737,15 @@ namespace darmok
 		};
 	}
 
+	MeshData::MeshData(const Polygon& poly) noexcept
+	{
+		for (auto& tri : poly.triangles)
+		{
+			*this += MeshData(tri);
+		}
+		config.offset += poly.origin;
+	}
+
 	MeshData MeshData::operator+(const MeshData& other) noexcept
 	{
 		MeshData sum = *this;

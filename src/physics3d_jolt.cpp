@@ -22,6 +22,7 @@
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 
@@ -108,6 +109,22 @@ namespace darmok::physics3d
         return glm::vec4(v.x, v.y, v.z, v.w);
     }
 
+    JPH::Triangle JoltUtils::convert(const Triangle& v) noexcept
+    {
+        return JPH::Triangle(convert(v.vertices[0]), convert(v.vertices[1]), convert(v.vertices[2]));
+    }
+
+    JPH::TriangleList JoltUtils::convert(const Polygon& v) noexcept
+    {
+        JPH::TriangleList tris;
+        tris.reserve(v.triangles.size());
+        for (auto& tri : v.triangles)
+        {
+            tris.push_back(convert(tri));
+        }
+        return tris;
+    }
+
     RaycastHit JoltUtils::convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept
     {
         // TODO: check how to get other RaycastHit properties
@@ -173,6 +190,16 @@ namespace darmok::physics3d
             JPH::CapsuleShapeSettings settings(caps.cylinderHeight * 0.5, caps.radius);
             return joltGetOffsetShape(settings, caps.origin);
         }
+        else if (auto polyPtr = std::get_if<Polygon>(&shape))
+        {
+            auto poly = *polyPtr * scale;
+            auto tris = JoltUtils::convert(poly);
+            JPH::MeshShapeSettings settings(tris);
+            return joltGetOffsetShape(settings, poly.origin);
+        }
+
+        JPH::MeshShapeSettings settings;
+
         return nullptr;
     }
 

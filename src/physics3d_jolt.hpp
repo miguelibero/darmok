@@ -76,6 +76,8 @@ namespace darmok::physics3d
         static glm::vec2 convert(const JPH::Float2& v) noexcept;
         static glm::vec3 convert(const JPH::Float3& v) noexcept;
         static glm::vec4 convert(const JPH::Float4& v) noexcept;
+        static JPH::Triangle convert(const Triangle& v) noexcept;
+        static JPH::TriangleList convert(const Polygon& v) noexcept;
 
         static RaycastHit convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);

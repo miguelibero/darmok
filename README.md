@@ -113,8 +113,9 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * performance profiling
 * 2d physics
 * instancing
+* 3d physics materials
 * support multiple imgui app components with different transforms
-* spine animations loading
+* spine animations
 * unify use of allocators everywhere
 * progressive asset loaders
 * multithreaded rendering with [taskflow](https://github.com/taskflow/taskflow)

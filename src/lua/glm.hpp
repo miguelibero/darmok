@@ -68,42 +68,30 @@ namespace darmok
 		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
 		static void tableInit(glm::vec<L, T, Q>& vec, const sol::table& table)
 		{
-			glm::length_t i = 0;
-			for (auto& elm : table)
+			size_t count = table.size();
+			for (glm::length_t i = 0; i < count && i < L; i++)
 			{
-				vec[i++] = elm.second.as<T>();
-				if (i >= L)
-				{
-					break;
-				}
+				vec[i] = table[i + 1];
 			}
 		}
 
 		template<typename T, glm::qualifier Q = glm::defaultp>
 		static void tableInit(glm::qua<T, Q>& qua, const sol::table& table)
 		{
-			glm::length_t i = 0;
-			for (auto& elm : table)
+			size_t count = table.size();
+			for (glm::length_t i = 0; i < count && i < qua.length(); i++)
 			{
-				qua[i++] = elm.second.as<T>();
-				if (i >= qua.length())
-				{
-					break;
-				}
+				qua[i] = table[i + 1];
 			}
 		}
 
 		template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
 		static void tableInit(glm::mat<L1, L2, T, Q>& mat, const sol::table& table)
 		{
-			glm::length_t i = 0;
-			for (auto& elm : table)
+			size_t count = table.size();
+			for (glm::length_t i = 0; i < count && i < L1; i++)
 			{
-				tableInit(mat[i++], elm.second);
-				if (i >= L1)
-				{
-					break;
-				}
+				tableInit(mat[i], table[i + 1]);
 			}
 		}
 
