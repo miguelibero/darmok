@@ -14,33 +14,27 @@ namespace darmok
     {
     }
 
-    const std::string FreelookController::_bindingsName = "freelook";
-
     void FreelookController::init(Scene& scene, App& app) noexcept
     {
         _input = app.getInput();
         _win = app.getWindow();
-        if (_config.bindingKey)
+        if (_config.inputEvent)
         {
-            _input->addBindings(_bindingsName, {
-                { _config.bindingKey.value(), true,
-                    [this]() { onBindingTriggered(); }
-                }
-            });
+            _input->addListener(*_config.inputEvent, *this);
         }
     };
 
     void FreelookController::shutdown() noexcept
     {
-        if (_input && _config.bindingKey)
+        if (_input && _config.inputEvent)
         {
-            _input->removeBindings(_bindingsName);
+            _input->removeListener(*this);
         }
         _input.reset();
         _win.reset();
     }
 
-    void FreelookController::onBindingTriggered() noexcept
+    void FreelookController::onInputEvent(const IInputEvent& ev) noexcept
     {
         setEnabled(!_enabled);
     }

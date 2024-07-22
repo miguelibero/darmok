@@ -32,7 +32,7 @@ namespace darmok::physics3d
     class PhysicsSystemImpl;
     struct PhysicsDebugConfig;
 
-    class PhysicsDebugRendererImpl final : public JPH::DebugRenderer, public IRenderer, IRenderPass
+    class PhysicsDebugRendererImpl final : public JPH::DebugRenderer, public IRenderer, public IRenderPass, public IInputEventListener
     {
     public:
         using Config = PhysicsDebugConfig;
@@ -43,6 +43,8 @@ namespace darmok::physics3d
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
         void renderPassExecute(RenderGraphResources& res) override;
+
+        void onInputEvent(const IInputEvent& ev) noexcept override;
 
         bool isEnabled() const noexcept;
         void setEnabled(bool enabled) noexcept;
@@ -73,12 +75,10 @@ namespace darmok::physics3d
         bgfx::ViewId _viewId;
         bgfx::VertexLayout _vertexLayout;
         std::shared_ptr<IFont> _font;
-        static const std::string _bindingsName;
         MeshData _solidMeshData;
         MeshData _wireMeshData;
         std::vector<TextData> _textData;
 
-        void onBindingTriggered();
         void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid);
         void renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid);
         void renderSubmit(const Material& mat);

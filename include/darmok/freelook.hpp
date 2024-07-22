@@ -18,10 +18,10 @@ namespace darmok
         float mouseSensitivity = 5.F;
         float keyboardSensitivity = 10.F;
         glm::vec2 maxMouseAngle = glm::vec2(30, 30);
-        std::optional<InputBindingKey> bindingKey = KeyboardBindingKey{ KeyboardKey::F4 };
+        std::shared_ptr<IInputEvent> inputEvent = std::make_shared<KeyboardInputEvent>( KeyboardKey::F4 );
     };
     
-    class DARMOK_EXPORT FreelookController final : public ISceneComponent
+    class DARMOK_EXPORT FreelookController final : public ISceneComponent, public IInputEventListener
     {
     public:
         using Config = FreelookConfig;
@@ -29,10 +29,10 @@ namespace darmok
         void init(Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
+        void onInputEvent(const IInputEvent& ev) noexcept override;
         FreelookController& setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;
     private:
-        static const std::string _bindingsName;
         OptionalRef<Input> _input;
         OptionalRef<Window> _win;
         Camera& _cam;
@@ -42,8 +42,5 @@ namespace darmok
         glm::vec3 _scale;
         bool _enabled;
         Config _config;
-
-        void onBindingTriggered() noexcept;
-
     };
 }

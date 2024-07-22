@@ -45,18 +45,12 @@ namespace darmok::physics3d
         _wireMeshData.config.type = MeshType::Transient;
     }
 
-    const std::string PhysicsDebugRendererImpl::_bindingsName = "physics_debug";
-
     void PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
         _input = app.getInput();
-        if (_config.bindingKey)
+        if (_config.inputEvent)
         {
-            _input->addBindings(_bindingsName, {
-               { _config.bindingKey.value(), true,
-                   [this]() { onBindingTriggered(); }
-               }
-            });
+            _input->addListener(*_config.inputEvent, *this);
         }
         if (_config.material == nullptr)
         {
@@ -77,16 +71,16 @@ namespace darmok::physics3d
         {
             _cam->getRenderGraph().removePass(*this);
         }
-        if (_input && _config.bindingKey)
+        if (_input && _config.inputEvent)
         {
-            _input->removeBindings(_bindingsName);
+            _input->removeListener(*this);
         }
         _input.reset();
         _cam.reset();
         _viewId = -1;
     }
 
-    void PhysicsDebugRendererImpl::onBindingTriggered()
+    void PhysicsDebugRendererImpl::onInputEvent(const IInputEvent& ev) noexcept
     {
         setEnabled(!_enabled);
     }

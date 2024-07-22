@@ -21,7 +21,7 @@ namespace darmok::physics3d
     struct DARMOK_EXPORT PhysicsDebugConfig final
     {
         std::shared_ptr<Material> material;
-        std::optional<InputBindingKey> bindingKey = KeyboardBindingKey{ KeyboardKey::F7 };
+        std::shared_ptr<IInputEvent> inputEvent = std::make_shared<KeyboardInputEvent>(KeyboardKey::F7);
         float alpha = 0.3F;
     };
 

@@ -236,8 +236,7 @@ namespace darmok
 		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
 		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
 
-		addBindings();
-
+		_input.getKeyboard().addListener(*this);
 		_assets.init(_app);
 
 		for (auto& component : _components)
@@ -257,7 +256,7 @@ namespace darmok
 			component->shutdown();
 		}
 		_components.clear();
-		_input.getImpl().clearBindings();
+		_input.getKeyboard().removeListener(*this);
 		_assets.shutdown();
 	}
 
@@ -294,13 +293,6 @@ namespace darmok
 		bgfx::end(encoder);
 	}
 
-	const std::string AppImpl::_bindingsName = "debug";
-
-	void AppImpl::removeBindings() noexcept
-	{
-		_input.removeBindings(_bindingsName);
-	}
-
 	static uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled) noexcept
 	{
 		if (enabled)
@@ -310,59 +302,70 @@ namespace darmok
 		return flags & ~flag;
 	}
 
-	void AppImpl::addBindings() noexcept
+	void AppImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
 	{
-		auto exit = [this]() { triggerExit(); };
-		auto cycleScreenMode = [this]() {
+		static const KeyboardModifiers ctrl{ KeyboardModifier::Ctrl };
+		static const KeyboardModifiers alt{ KeyboardModifier::Alt };
+		static const KeyboardModifiers shift{ KeyboardModifier::Shift };
+
+		if ((key == KeyboardKey::Esc && modifiers.empty())
+			|| (key == KeyboardKey::KeyQ && modifiers == ctrl))
+		{
+			triggerExit();
+			return;
+		}
+		if ((key == KeyboardKey::Return && modifiers == alt)
+			|| (key == KeyboardKey::KeyF && modifiers == ctrl))
+		{
 			VideoMode mode = _window.getVideoMode();
 			mode.screenMode = (WindowScreenMode)((to_underlying(mode.screenMode) + 1) % to_underlying(WindowScreenMode::Count));
 			_window.requestVideoMode(mode);
-		};
-		auto debugStats = [this]() { toggleDebugFlag(BGFX_DEBUG_STATS); };
-		auto debugText = [this]() { toggleDebugFlag(BGFX_DEBUG_TEXT); };
-		auto debugIfh = [this]() { toggleDebugFlag(BGFX_DEBUG_IFH); };
-		auto debugWireframe = [this]() { toggleDebugFlag(BGFX_DEBUG_WIREFRAME); };
-		auto debugProfiler = [this]() { toggleDebugFlag(BGFX_DEBUG_PROFILER); };
-		auto disableDebug = [this]() { 
-			setDebugFlag(BGFX_DEBUG_STATS, false);
-			setDebugFlag(BGFX_DEBUG_TEXT, false);
-		};
-		auto screenshot = [this]() {
+			return;
+		}
+		if (key == KeyboardKey::F1)
+		{
+			if (modifiers == alt)
+			{
+				toggleDebugFlag(BGFX_DEBUG_TEXT);
+			}
+			else if (modifiers == ctrl)
+			{
+				toggleDebugFlag(BGFX_DEBUG_IFH);
+			}
+			else if (modifiers == shift)
+			{
+				setDebugFlag(BGFX_DEBUG_STATS, false);
+				setDebugFlag(BGFX_DEBUG_TEXT, false);
+			}
+			else
+			{
+				toggleDebugFlag(BGFX_DEBUG_STATS);
+			}
+			return;
+		}
+		if (key == KeyboardKey::F3)
+		{
+			toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
+			return;
+		}
+		if (key == KeyboardKey::F5 
+			|| (key == KeyboardKey::KeyR && modifiers == ctrl))
+		{
+			triggerExit();
+			return;
+		}
+		if (key == KeyboardKey::F6)
+		{
+			toggleDebugFlag(BGFX_DEBUG_PROFILER);
+			return;
+		}
+		if (key == KeyboardKey::Print || (key == KeyboardKey::KeyP && modifiers == ctrl))
+		{
 			time_t timeVal;
 			time(&timeVal);
 			auto filePath = "temp/screenshot-" + std::to_string(timeVal);
 			bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filePath.c_str());
-		};
-
-		auto reloadApp = [this]() {
-			_app.shutdown();
-			_app.init();
-		};
-
-		_input.addBindings(_bindingsName, {
-			{ KeyboardBindingKey { KeyboardKey::Esc,		to_underlying(KeyboardModifier::None) },		true, exit },
-			{ KeyboardBindingKey { KeyboardKey::KeyQ,		to_underlying(KeyboardModifier::LeftCtrl) },	true, exit },
-			{ KeyboardBindingKey { KeyboardKey::KeyQ,		to_underlying(KeyboardModifier::RightCtrl) },	true, exit },
-			{ KeyboardBindingKey { KeyboardKey::KeyF,		to_underlying(KeyboardModifier::LeftCtrl) },	true, cycleScreenMode },
-			{ KeyboardBindingKey { KeyboardKey::KeyF,		to_underlying(KeyboardModifier::RightCtrl) },	true, cycleScreenMode },
-			{ KeyboardBindingKey { KeyboardKey::Return,		to_underlying(KeyboardModifier::LeftAlt) },		true, cycleScreenMode },
-			{ KeyboardBindingKey { KeyboardKey::Return,		to_underlying(KeyboardModifier::RightAlt) },	true, cycleScreenMode },
-			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::None) },		true, debugStats },
-			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::LeftAlt) },		true, debugText },
-			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::RightAlt) },	true, debugText },
-			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::LeftCtrl) },	true, debugIfh },
-			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::RightCtrl) },	true, debugIfh },
-			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::LeftShift) },	true, disableDebug },
-			{ KeyboardBindingKey { KeyboardKey::F1,			to_underlying(KeyboardModifier::RightShift) },	true, disableDebug },
-			{ KeyboardBindingKey { KeyboardKey::F3,			to_underlying(KeyboardModifier::None) },		true, debugWireframe },
-			{ KeyboardBindingKey { KeyboardKey::F5,			to_underlying(KeyboardModifier::None) },		true, reloadApp },
-			{ KeyboardBindingKey { KeyboardKey::F6,			to_underlying(KeyboardModifier::None) },		true, debugProfiler },
-			{ KeyboardBindingKey { KeyboardKey::Print,		to_underlying(KeyboardModifier::None) },		true, screenshot },
-			{ KeyboardBindingKey { KeyboardKey::KeyP,		to_underlying(KeyboardModifier::LeftCtrl) },	true, screenshot },
-			{ KeyboardBindingKey { KeyboardKey::KeyP,		to_underlying(KeyboardModifier::RightCtrl) },	true, screenshot },
-			{ KeyboardBindingKey { KeyboardKey::KeyR,		to_underlying(KeyboardModifier::LeftCtrl) },	true, reloadApp },
-			{ KeyboardBindingKey { KeyboardKey::KeyR,		to_underlying(KeyboardModifier::RightCtrl) },	true, reloadApp },
-			});
+		}
 	}
 
 	bool AppImpl::toggleDebugFlag(uint32_t flag) noexcept
@@ -403,7 +406,6 @@ namespace darmok
 				return true;
 			}
 		};
-		_input.processBindings();
 		return _exit;
 	}
 

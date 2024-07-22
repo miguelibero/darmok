@@ -21,7 +21,7 @@ namespace darmok::physics3d
     {
         lua.new_usertype<PhysicsDebugConfig>("PhysicsDebugConfig", sol::default_constructor,
             "material", &PhysicsDebugConfig::material,
-            "binding_key", &PhysicsDebugConfig::bindingKey
+            "input_event", &PhysicsDebugConfig::inputEvent
         );
         lua.new_usertype<PhysicsDebugRenderer>("PhysicsDebugRenderer",
             sol::no_constructor,

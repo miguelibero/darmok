@@ -1,6 +1,8 @@
 #pragma once
 
 #include <sol/sol.hpp>
+#include <vector>
+#include <string>
 
 namespace darmok
 {
@@ -24,5 +26,25 @@ namespace darmok
         {
             callLuaTableDelegate(listener, key, desc, callback);
         }
+    }
+
+    template<typename T>
+    void newLuaEnumFunc(sol::state_view& lua, std::string_view name, T count, const std::string&(*func)(T))
+    {
+        std::vector<std::pair<std::string_view, T>> values;
+        auto size = to_underlying(count);
+        for (int i = 0; i < size; i++)
+        {
+            auto elm = (T)i;
+            values.emplace_back(func(elm), elm);
+        }
+        newLuaEnumVector(lua, name, values);
+    }
+
+    template<typename T>
+    void newLuaEnumVector(sol::state_view& lua, std::string_view name, const std::vector<std::pair<std::string_view, T>>& values)
+    {
+        lua.new_enum<T>(name,
+            std::initializer_list<std::pair<std::string_view, T>>(&values.front(), &values.front() + values.size()));
     }
 }

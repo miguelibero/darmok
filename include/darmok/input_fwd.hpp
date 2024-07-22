@@ -4,26 +4,14 @@
 
 namespace darmok
 {
-    enum class KeyboardModifier : uint8_t
+    enum class KeyboardModifier
 	{
-		None = 0,
-		LeftAlt = 0x01,
-		RightAlt = 0x02,
-		LeftCtrl = 0x04,
-		RightCtrl = 0x08,
-		LeftShift = 0x10,
-		RightShift = 0x20,
-		LeftMeta = 0x40,
-		RightMeta = 0x80,
-	};
+		Alt,
+		Ctrl,
+		Shift,
+		Meta,
 
-    enum class KeyboardModifierGroup : uint8_t
-	{
-		None = 0,
-		Alt = to_underlying(KeyboardModifier::LeftAlt) | to_underlying(KeyboardModifier::RightAlt),
-		Ctrl = to_underlying(KeyboardModifier::LeftCtrl) | to_underlying(KeyboardModifier::RightCtrl),
-		Shift = to_underlying(KeyboardModifier::LeftShift) | to_underlying(KeyboardModifier::RightShift),
-		Meta = to_underlying(KeyboardModifier::LeftMeta) | to_underlying(KeyboardModifier::RightMeta),
+		Count
 	};
 
 	enum class KeyboardKey
@@ -122,6 +110,22 @@ namespace darmok
 		Count
 	};
 
+	enum class InputAxisType
+	{
+		Horizontal,
+		Vertical,
+
+		Count
+	};
+
+	enum class MouseInputType
+	{
+		Position,
+		Scroll,
+		
+		Count
+	};
+
     enum class MouseButton
 	{
 		Left,
@@ -131,7 +135,7 @@ namespace darmok
 		Count
 	};
 
-    	enum class GamepadStick
+    enum class GamepadStick
 	{
 		Left,
 		Right,

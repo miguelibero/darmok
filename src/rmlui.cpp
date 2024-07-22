@@ -909,10 +909,10 @@ namespace darmok
     {
         static KeyboardModifierMap map
         {
-            { to_underlying(KeyboardModifierGroup::Ctrl), Rml::Input::KM_CTRL },
-            { to_underlying(KeyboardModifierGroup::Shift), Rml::Input::KM_SHIFT },
-            { to_underlying(KeyboardModifierGroup::Alt), Rml::Input::KM_ALT },
-            { to_underlying(KeyboardModifierGroup::Meta), Rml::Input::KM_META },
+            { KeyboardModifier::Ctrl, Rml::Input::KM_CTRL },
+            { KeyboardModifier::Shift, Rml::Input::KM_SHIFT },
+            { KeyboardModifier::Alt, Rml::Input::KM_ALT },
+            { KeyboardModifier::Meta, Rml::Input::KM_META },
             { KeyboardKey::CapsLock, Rml::Input::KM_CAPSLOCK },
             { KeyboardKey::NumLock, Rml::Input::KM_NUMLOCK },
             { KeyboardKey::ScrollLock, Rml::Input::KM_SCROLLLOCK },
@@ -928,12 +928,12 @@ namespace darmok
             return state;
         }
         auto& kb = _app->getInput().getKeyboard();
-        auto mods = kb.getModifiers();
+        auto& mods = kb.getModifiers();
 
         for (auto& elm : getKeyboardModifierMap())
         {
-            auto modPtr = std::get_if<uint8_t>(&elm.first);
-            if (modPtr != nullptr && mods | *modPtr)
+            auto modPtr = std::get_if<KeyboardModifier>(&elm.first);
+            if (mods.contains(*modPtr))
             {
                 state |= elm.second;
             }
@@ -945,7 +945,7 @@ namespace darmok
         return 0;
     }
 
-    void RmluiAppComponentImpl::onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept
+    void RmluiAppComponentImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& mods, bool down) noexcept
     {
         auto& keyMap = getKeyboardMap();
         auto itr = keyMap.find(key);
@@ -972,8 +972,6 @@ namespace darmok
                 ctxt.ProcessKeyUp(rmlKey, state);
             }
         }
-
-        
     }
 
     void RmluiAppComponentImpl::onKeyboardChar(const Utf8Char& chr) noexcept

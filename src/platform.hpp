@@ -81,11 +81,11 @@ namespace darmok
 	class KeyboardKeyEvent final : public PlatformEvent
 	{
 	public:
-		KeyboardKeyEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
+		KeyboardKeyEvent(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept;
 		void process(Input& input) noexcept;
 	private:
 		KeyboardKey _key;
-		uint8_t _modifiers;
+		KeyboardModifiers _modifiers;
 		bool _down;
 	};
 

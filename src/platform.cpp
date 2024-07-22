@@ -11,7 +11,7 @@ namespace darmok
 	{
 	}
 
-	KeyboardKeyEvent::KeyboardKeyEvent(KeyboardKey key, uint8_t modifiers, bool down) noexcept
+	KeyboardKeyEvent::KeyboardKeyEvent(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
 		: PlatformEvent(Type::KeyboardKey)
 		, _key(key)
 		, _modifiers(modifiers)

@@ -8,18 +8,19 @@
 #include <variant>
 #include <memory>
 #include <cstdint>
-#include <functional>
 #include <unordered_set>
 #include <darmok/utils.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/input_fwd.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/utf8.hpp>
+#include <nlohmann/json.hpp>
 #include <bx/bx.h>
 
 namespace darmok
 {
 	using KeyboardKeys = std::unordered_set<KeyboardKey>;
+	using KeyboardModifiers = std::unordered_set<KeyboardModifier>;
 	using KeyboardChars = Utf8Vector;
 	class KeyboardImpl;
 
@@ -27,7 +28,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IKeyboardListener() = default;
-		virtual void onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down) {};
+		virtual void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) {};
 		virtual void onKeyboardChar(const Utf8Char& chr) {};
 	};
 
@@ -41,9 +42,7 @@ namespace darmok
 
 		[[nodiscard]] bool getKey(KeyboardKey key) const noexcept;
 		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
-		[[nodiscard]] uint8_t getModifiers() const noexcept;
-		[[nodiscard]] bool hasModifiers(uint8_t mods) const noexcept;
-		[[nodiscard]] bool hasModifiers(std::initializer_list<KeyboardModifier> mods) const noexcept;
+		[[nodiscard]] const KeyboardModifiers& getModifiers() const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
 		void addListener(IKeyboardListener& listener) noexcept;
@@ -52,9 +51,11 @@ namespace darmok
 		[[nodiscard]] const KeyboardImpl& getImpl() const noexcept;
 		[[nodiscard]] KeyboardImpl& getImpl() noexcept;
 
-		[[nodiscard]] static char keyToAscii(KeyboardKey key, uint8_t modifiers) noexcept;
+		[[nodiscard]] static char keyToAscii(KeyboardKey key, bool upper) noexcept;
 		[[nodiscard]] static const std::string& getKeyName(KeyboardKey key) noexcept;
-
+		[[nodiscard]] static const std::string& getModifierName(KeyboardModifier key) noexcept;
+		[[nodiscard]] static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<KeyboardModifier> readModifier(std::string_view name) noexcept;
 
 	private:
 		std::unique_ptr<KeyboardImpl> _impl;
@@ -98,14 +99,14 @@ namespace darmok
 		[[nodiscard]] const MouseImpl& getImpl() const noexcept;
 		[[nodiscard]] MouseImpl& getImpl() noexcept;
 
+		[[nodiscard]] static std::optional<MouseButton> readButton(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<MouseInputType> readInputType(std::string_view name) noexcept;
 	private:
 		std::unique_ptr<MouseImpl> _impl;
 	};
 
 	using GamepadButtons = std::array<bool, to_underlying(GamepadButton::Count)>;
 	using GamepadSticks = std::array<glm::vec3, to_underlying(GamepadButton::Count)>;
-
-	class GamepadImpl;
 
 	class DARMOK_EXPORT BX_NO_VTABLE IGamepadListener
 	{
@@ -115,6 +116,8 @@ namespace darmok
 		virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
 		virtual void onGamepadConnect(uint8_t num, bool connected) {};
 	};
+
+	class GamepadImpl;
 
 	class DARMOK_EXPORT Gamepad final
 	{
@@ -141,62 +144,130 @@ namespace darmok
 		[[nodiscard]] const GamepadImpl& getImpl() const noexcept;
 		[[nodiscard]] GamepadImpl& getImpl() noexcept;
 
+		[[nodiscard]] static std::optional<GamepadButton> readButton(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<GamepadStick> readStick(std::string_view name) noexcept;
+
 	private:
 		std::unique_ptr<GamepadImpl> _impl;
 	};
 
-	struct DARMOK_EXPORT KeyboardBindingKey final
+	class Input;
+
+	struct DARMOK_EXPORT BX_NO_VTABLE IInputEvent
 	{
-		KeyboardKey key;
-		uint8_t modifiers;
-
-		size_t hash() const noexcept;
-
-		static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
-		static uint8_t readModifiers(std::string_view name) noexcept;
-		static std::optional<KeyboardBindingKey> read(std::string_view name) noexcept;
+		virtual ~IInputEvent() = default;
+		virtual bool check(const Input& input) const = 0;
+		virtual std::unique_ptr<IInputEvent> copy() const noexcept = 0;
+		static std::unique_ptr<IInputEvent> read(const nlohmann::json& json) noexcept;
 	};
 
-	struct DARMOK_EXPORT MouseBindingKey final
+	struct DARMOK_EXPORT KeyboardInputEvent final : public IInputEvent
+	{
+		KeyboardKey key;
+		KeyboardModifiers modifiers;
+
+		KeyboardInputEvent(KeyboardKey key, const KeyboardModifiers& mods = {}) noexcept;
+		bool check(const Input& input) const noexcept override;
+		std::unique_ptr<IInputEvent> copy() const noexcept override;
+		static std::unique_ptr<KeyboardInputEvent> read(const nlohmann::json& json) noexcept;
+	};
+
+	struct DARMOK_EXPORT MouseInputEvent final : public IInputEvent
 	{
 		MouseButton button;
 
-		size_t hash() const noexcept;
-
-		static std::optional<MouseButton> readButton(std::string_view name) noexcept;
-		static std::optional<MouseBindingKey> read(std::string_view name) noexcept;
+		MouseInputEvent(MouseButton button) noexcept;
+		bool check(const Input& input) const noexcept override;
+		std::unique_ptr<IInputEvent> copy() const noexcept override;
+		static std::unique_ptr<MouseInputEvent> read(const nlohmann::json& json) noexcept;
 	};
 
-	struct DARMOK_EXPORT GamepadBindingKey final
+	struct DARMOK_EXPORT GamepadInputEvent final : public IInputEvent
 	{
 		GamepadButton button;
-		uint8_t gamepad = Gamepad::Any;
+		uint8_t gamepad;
 
-		size_t hash() const noexcept;
-
-		static std::optional<GamepadButton> readButton(std::string_view name) noexcept;
-		static std::optional<GamepadBindingKey> read(std::string_view name) noexcept;
+		GamepadInputEvent(GamepadButton button, uint8_t gamepad = Gamepad::Any) noexcept;
+		bool check(const Input& input) const noexcept override;
+		std::unique_ptr<IInputEvent> copy() const noexcept override;
+		static std::unique_ptr<GamepadInputEvent> read(const nlohmann::json& json) noexcept;
 	};
 
-	using InputBindingKey = std::variant<KeyboardBindingKey, MouseBindingKey, GamepadBindingKey>;
-
-
-
-	struct DARMOK_EXPORT InputBinding final
+	struct DARMOK_EXPORT CombinedInputEvent final : public IInputEvent
 	{
-		static std::size_t hashKey(const InputBindingKey& key) noexcept;
+		using Events = std::vector<std::unique_ptr<IInputEvent>>;
+		Events events;
 
-		InputBindingKey key;
-		bool once;
-		std::function<void()> fn;
+		CombinedInputEvent(Events&& events) noexcept;
+		bool check(const Input& input) const noexcept override;
+		std::unique_ptr<IInputEvent> copy() const noexcept override;
+		static std::unique_ptr<CombinedInputEvent> read(const nlohmann::json& json) noexcept;
+	};
 
-		static std::optional<InputBindingKey> readKey(std::string_view name) noexcept;
-		static std::optional<InputBinding> read(std::string_view name, std::function<void()>&& fn) noexcept;
+	struct DARMOK_EXPORT BX_NO_VTABLE IInputAxis
+	{
+		virtual float get(const Input& input) const = 0;
+		virtual std::unique_ptr<IInputAxis> copy() const = 0;
+		static std::unique_ptr<IInputAxis> read(const nlohmann::json& json) noexcept;
+		static const float getValue(const glm::vec2& v, InputAxisType type) noexcept;
+	};
+
+	struct DARMOK_EXPORT MouseInputAxis final : public IInputAxis
+	{
+		MouseInputType input;
+		InputAxisType type;
+
+		MouseInputAxis(MouseInputType input = MouseInputType::Position, InputAxisType type = InputAxisType::Horizontal) noexcept;
+		float get(const Input& input) const noexcept override;
+		std::unique_ptr<IInputAxis> copy() const noexcept override;
+		static std::optional<MouseInputAxis> read(const nlohmann::json& json) noexcept;
+	};
+
+	struct DARMOK_EXPORT GamepadInputAxis final : public IInputAxis
+	{
+		GamepadStick stick;
+		InputAxisType type;
+		uint8_t gamepad;
+
+		GamepadInputAxis(GamepadStick stick = GamepadStick::Left, InputAxisType type = InputAxisType::Horizontal, uint8_t gamepad = Gamepad::Any) noexcept;
+		float get(const Input& input) const noexcept override;
+		std::unique_ptr<IInputAxis> copy() const noexcept override;
+		static std::optional<GamepadInputAxis> read(const nlohmann::json& json) noexcept;
+	};
+
+	struct DARMOK_EXPORT ActionInputAxis final : public IInputAxis
+	{
+		std::unique_ptr<IInputEvent> positive;
+		std::unique_ptr<IInputEvent> negative;
+		float factor;
+
+		ActionInputAxis(std::unique_ptr<IInputEvent>&& positive, std::unique_ptr<IInputEvent>&& negative, float factor = 1.F) noexcept;
+		float get(const Input& input) const noexcept override;
+		std::unique_ptr<IInputAxis> copy() const noexcept override;
+		static std::optional<ActionInputAxis> read(const nlohmann::json& json) noexcept;
+	};
+
+	struct DARMOK_EXPORT CombinedInputAxis final : public IInputAxis
+	{
+		using Axes = std::vector<std::unique_ptr<IInputAxis>>;
+		Axes axes;
+
+		CombinedInputAxis(const Axes& axes) noexcept;
+		float get(const Input& input) const noexcept override;
+		std::unique_ptr<IInputAxis> copy() const noexcept override;
+		static std::optional<ActionInputAxis> read(const nlohmann::json& json) noexcept;
 	};
 
 	using Gamepads = std::array<Gamepad, Gamepad::MaxAmount>;
 
 	class InputImpl;
+
+	class DARMOK_EXPORT BX_NO_VTABLE IInputEventListener
+	{
+	public:
+		virtual ~IInputEventListener() = default;
+		virtual void onInputEvent(const IInputEvent& ev) = 0;
+	};
 
 	class DARMOK_EXPORT Input final
 	{
@@ -205,12 +276,6 @@ namespace darmok
 		~Input() noexcept;
 		Input(const Input& other) = delete;
 		Input(Input&& other) = delete;
-
-		void processBindings() noexcept;
-		void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
-		void removeBindings(std::string_view name) noexcept;
-		bool checkBinding(const InputBindingKey& key) const noexcept;
-
 
 		[[nodiscard]] Keyboard& getKeyboard() noexcept;
 		[[nodiscard]] Mouse& getMouse() noexcept;
@@ -225,64 +290,12 @@ namespace darmok
 		[[nodiscard]] const InputImpl& getImpl() const noexcept;
 		[[nodiscard]] InputImpl& getImpl() noexcept;
 
+		void addListener(const IInputEvent& ev, IInputEventListener& listener) noexcept;
+		bool removeListener(IInputEventListener& listener) noexcept;
+
+		[[nodiscard]] static std::optional<InputAxisType> readAxisType(std::string_view name) noexcept;
+
 	private:
 		std::unique_ptr<InputImpl> _impl;
 	};
 }
-
-template<> struct std::hash<darmok::KeyboardBindingKey>
-{
-	std::size_t operator()(darmok::KeyboardBindingKey const& key) const noexcept
-	{
-		return key.hash();
-	}
-};
-
-template<> struct std::equal_to<darmok::KeyboardBindingKey>
-{
-	bool operator()(const darmok::KeyboardBindingKey& lhs, const darmok::KeyboardBindingKey& rhs) const
-	{
-		return lhs.key == rhs.key && lhs.modifiers == rhs.modifiers;
-	}
-};
-
-template<> struct std::hash<darmok::MouseBindingKey>
-{
-	std::size_t operator()(darmok::MouseBindingKey const& key) const noexcept
-	{
-		return key.hash();
-	}
-};
-
-template<> struct std::equal_to<darmok::MouseBindingKey>
-{
-	bool operator()(const darmok::MouseBindingKey& lhs, const darmok::MouseBindingKey& rhs) const
-	{
-		return lhs.button == rhs.button;
-	}
-};
-
-template<> struct std::hash<darmok::GamepadBindingKey>
-{
-	std::size_t operator()(darmok::GamepadBindingKey const& key) const noexcept
-	{
-		return key.hash();
-	}
-};
-
-template<> struct std::equal_to<darmok::GamepadBindingKey>
-{
-	bool operator()(const darmok::GamepadBindingKey& lhs, const darmok::GamepadBindingKey& rhs) const
-	{
-		return lhs.gamepad == rhs.gamepad && lhs.button == rhs.button;
-	}
-};
-
-
-template<> struct std::equal_to<darmok::InputBindingKey>
-{
-	bool operator()(const darmok::InputBindingKey& lhs, const darmok::InputBindingKey& rhs) const
-	{
-		return std::hash<darmok::InputBindingKey>{}(lhs) == std::hash<darmok::InputBindingKey>{}(rhs);
-	}
-};

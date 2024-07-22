@@ -314,28 +314,28 @@ namespace darmok
 		return window;
 	}
 
-	uint8_t PlatformImpl::translateKeyModifiers(int glfw) noexcept
+	KeyboardModifiers PlatformImpl::translateKeyModifiers(int glfw) noexcept
 	{
-		uint8_t modifiers = 0;
+		KeyboardModifiers modifiers;
 
 		if (static_cast<bool>(glfw & GLFW_MOD_ALT))
 		{
-			modifiers |= to_underlying(KeyboardModifier::LeftAlt);
+			modifiers.insert(KeyboardModifier::Alt);
 		}
 
 		if (static_cast<bool>(glfw & GLFW_MOD_CONTROL))
 		{
-			modifiers |= to_underlying(KeyboardModifier::LeftCtrl);
+			modifiers.insert(KeyboardModifier::Ctrl);
 		}
 
 		if (static_cast<bool>(glfw & GLFW_MOD_SUPER))
 		{
-			modifiers |= to_underlying(KeyboardModifier::LeftMeta);
+			modifiers.insert(KeyboardModifier::Meta);
 		}
 
 		if (static_cast<bool>(glfw & GLFW_MOD_SHIFT))
 		{
-			modifiers |= to_underlying(KeyboardModifier::LeftShift);
+			modifiers.insert(KeyboardModifier::Shift);
 		}
 
 		return modifiers;
@@ -634,8 +634,8 @@ namespace darmok
 		{
 			return;
 		}
-		int mods2 = translateKeyModifiers(mods);
-		KeyboardKey key2 = translateKey(key);
+		auto mods2 = translateKeyModifiers(mods);
+		auto key2 = translateKey(key);
 		if (key2 == KeyboardKey::Count)
 		{
 			return;

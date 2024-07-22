@@ -186,7 +186,7 @@ namespace darmok
 		bool removeView(const std::string& name);
 
 		void onWindowPixelSize(const glm::uvec2& size) noexcept override;
-		void onKeyboardKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept override;
+		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
 		void onKeyboardChar(const Utf8Char& chr) noexcept override;
 		void onMouseActive(bool active) noexcept override;
 		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
@@ -203,7 +203,7 @@ namespace darmok
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;
 		static const KeyboardMap& getKeyboardMap() noexcept;
 
-		using KeyboardModifierMap = std::unordered_map<std::variant<uint8_t, KeyboardKey>, Rml::Input::KeyModifier>;
+		using KeyboardModifierMap = std::unordered_map<std::variant<KeyboardModifier, KeyboardKey>, Rml::Input::KeyModifier>;
 		static const KeyboardModifierMap& getKeyboardModifierMap() noexcept;
     };
 }

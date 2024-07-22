@@ -406,11 +406,11 @@ namespace darmok
 		io.AddMouseWheelEvent(scroll.x, scroll.y);
 
 		auto& kb = input.getKeyboard();
-		uint8_t modifiers = kb.getModifiers();
-		io.AddKeyEvent(ImGuiMod_Shift, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Shift)));
-		io.AddKeyEvent(ImGuiMod_Ctrl, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Ctrl)));
-		io.AddKeyEvent(ImGuiMod_Alt, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Alt)));
-		io.AddKeyEvent(ImGuiMod_Super, 0 != (modifiers & to_underlying(KeyboardModifierGroup::Meta)));
+		auto& modifiers = kb.getModifiers();
+		io.AddKeyEvent(ImGuiMod_Shift, modifiers.contains(KeyboardModifier::Shift));
+		io.AddKeyEvent(ImGuiMod_Ctrl, modifiers.contains(KeyboardModifier::Ctrl));
+		io.AddKeyEvent(ImGuiMod_Alt, modifiers.contains(KeyboardModifier::Alt));
+		io.AddKeyEvent(ImGuiMod_Super, modifiers.contains(KeyboardModifier::Meta));
 		for (auto& elm : getKeyboardMap())
 		{
 			io.AddKeyEvent(elm.second, kb.getKey(elm.first));

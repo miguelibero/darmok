@@ -15,7 +15,7 @@
 
 namespace darmok
 {
-	class AppImpl final
+	class AppImpl final : public IKeyboardListener
 	{
 	public:
 		AppImpl(App& app) noexcept;
@@ -26,6 +26,8 @@ namespace darmok
 		void triggerExit() noexcept;
 		bool processEvents();
 		void shutdown();
+
+		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
@@ -64,14 +66,9 @@ namespace darmok
 		}
 
 	private:
-		void addBindings() noexcept;
-		void removeBindings() noexcept;
-
 		[[nodiscard]] float updateTimePassed() noexcept;
 		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
 		
-		static const std::string _bindingsName;
-	
 		bool _exit;
 		bool _running;
 		uint32_t _debug;

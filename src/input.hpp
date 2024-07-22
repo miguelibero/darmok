@@ -20,9 +20,8 @@ namespace darmok
 
 		[[nodiscard]] bool getKey(KeyboardKey key) const noexcept;
 		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
-		[[nodiscard]] uint8_t getModifiers() const noexcept;
-		[[nodiscard]] bool hasModifiers(uint8_t mods) const noexcept;
-		[[nodiscard]] bool hasModifiers(std::initializer_list<KeyboardModifier> mods) const noexcept;
+		[[nodiscard]] const KeyboardModifiers& getModifiers() const noexcept;
+		[[nodiscard]] bool hasModifier(KeyboardModifier mod) const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
 		void addListener(IKeyboardListener& listener) noexcept;
@@ -30,21 +29,34 @@ namespace darmok
 
 		void flush() noexcept;
 		void reset() noexcept;
-		void setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
+		void setKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept;
 		void pushChar(const Utf8Char& data) noexcept;
 
 		void update() noexcept;
+
+		[[nodiscard]] static char keyToAscii(KeyboardKey key, bool upper = false) noexcept;
+		
+		[[nodiscard]] static const std::string& getKeyName(KeyboardKey key) noexcept;
+		[[nodiscard]] static const std::string& getModifierName(KeyboardModifier mod) noexcept;
+
+		[[nodiscard]] static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<KeyboardModifier> readModifier(std::string_view name) noexcept;
 
 	private:
 		Utf8Char popChar() noexcept;
 
 		KeyboardKeys _keys;
 		KeyboardChars _updateChars;
-		uint8_t _modifiers;
+		KeyboardModifiers _modifiers;
 		std::array<Utf8Char, 256> _chars;
 		size_t _charsRead;
 		size_t _charsWrite;
 		std::unordered_set<OptionalRef<IKeyboardListener>> _listeners;
+
+
+		static const std::array<std::string, to_underlying(KeyboardKey::Count)> _keyNames;
+		static const std::array<std::string, to_underlying(KeyboardModifier::Count)> _modNames;
+		static const std::unordered_map<std::string, uint8_t> _modifierNames;
 	};
 
 #pragma endregion Keyboard
@@ -76,6 +88,10 @@ namespace darmok
 
 		void update() noexcept;
 
+		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
+		[[nodiscard]] static std::optional<MouseButton> readButton(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<MouseInputType> readInputType(std::string_view name) noexcept;
+
 	private:
 		glm::vec2 _position;
 		glm::vec2 _lastPosition;
@@ -86,6 +102,9 @@ namespace darmok
 		bool _active;
 		bool _hasBeenInactive;
 		std::unordered_set<OptionalRef<IMouseListener>> _listeners;
+
+		static const std::array<std::string, to_underlying(MouseButton::Count)> _buttonNames;
+		static const std::array<std::string, to_underlying(MouseInputType::Count)> _inputTypeNames;
 	};
 
 #pragma endregion Mouse
@@ -115,12 +134,18 @@ namespace darmok
 
 		bool setStick(GamepadStick stick, const glm::vec3& value) noexcept;
 		bool setButton(GamepadButton button, bool down) noexcept;
+
+		[[nodiscard]] static std::optional<GamepadButton> readButton(std::string_view name) noexcept;
+		[[nodiscard]] static const std::string& getButtonName(GamepadButton button) noexcept;
 	private:
 		uint8_t _num;
 		bool _connected;
 		GamepadButtons _buttons;
 		GamepadSticks _sticks;
 		std::unordered_set<OptionalRef<IGamepadListener>> _listeners;
+
+		static const std::array<std::string, to_underlying(GamepadButton::Count)> _buttonNames;
+		static const std::array<std::string, to_underlying(GamepadStick::Count)> _stickNames;
 
 		void clear() noexcept;
 	};
@@ -132,16 +157,10 @@ namespace darmok
 	class InputImpl final
 	{
 	public:
-		InputImpl() noexcept;
+		InputImpl(Input& input) noexcept;
 		InputImpl(const InputImpl& other) = delete;
 		InputImpl(InputImpl&& other) = delete;
 
-		void processBindings() noexcept;
-		void resetOnceBindings() noexcept;
-		void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
-		void removeBindings(std::string_view name) noexcept;
-		bool checkBinding(const InputBindingKey& bindingKey) const noexcept;
-		void clearBindings() noexcept;
 		Keyboard& getKeyboard() noexcept;
 		Mouse& getMouse() noexcept;
 		OptionalRef<Gamepad> getGamepad(uint8_t num) noexcept;
@@ -151,17 +170,20 @@ namespace darmok
 		OptionalRef<const Gamepad> getGamepad(uint8_t num) const noexcept;
 		const Gamepads& getGamepads() const noexcept;
 
+		void addListener(const IInputEvent& ev, IInputEventListener& listener) noexcept;
+		bool removeListener(IInputEventListener& listener) noexcept;
+
 		void update() noexcept;
 
 	private:
-		void processBinding(InputBinding& binding) noexcept;
+		Input& _input;
+		using EventSet = std::unordered_set<OptionalRef<IInputEvent>>;
+		EventSet _updateEvents;
+		std::unordered_map<std::unique_ptr<IInputEvent>, OptionalRef<IInputEventListener>> _listeners;
 
 		Keyboard _keyboard;
 		Mouse _mouse;
 		Gamepads _gamepads;
-
-		std::unordered_map<std::string, std::vector<InputBinding>> _bindings;
-		std::unordered_set<InputBindingKey> _bindingOnce;
 	};
 
 #pragma endregion Input

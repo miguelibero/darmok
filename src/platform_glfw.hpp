@@ -90,7 +90,7 @@ namespace darmok
 
 		static void destroyWindow(GLFWwindow* window) noexcept;
 		[[nodiscard]] static GLFWwindow* createWindow(const glm::uvec2& size, const char* title) noexcept;
-		static uint8_t translateKeyModifiers(int mods) noexcept;
+		static KeyboardModifiers translateKeyModifiers(int mods) noexcept;
 
 		using KeyMap = std::array<KeyboardKey, GLFW_KEY_LAST + 1>;
 		static KeyMap createKeyMap() noexcept;
