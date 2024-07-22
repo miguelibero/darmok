@@ -2,6 +2,7 @@
 #include "window.hpp"
 #include "utils.hpp"
 #include <darmok/input.hpp>
+#include <darmok/string.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <sstream>
 
@@ -12,29 +13,35 @@ namespace darmok
 	{
 	}
 
+	std::optional<KeyboardBindingKey> LuaKeyboard::getBindingKey(const sol::object& arg) noexcept
+	{
+		if (arg.is<std::string>())
+		{
+			return KeyboardBindingKey::read(arg.as<std::string>());
+		}
+		else if (arg.is<KeyboardKey>())
+		{
+			return KeyboardBindingKey{ arg.as<KeyboardKey>() };
+		}
+		else if (arg.is<KeyboardBindingKey>())
+		{
+			return arg.as<KeyboardBindingKey>();
+		}
+		return std::nullopt;
+	}
+
 	bool LuaKeyboard::getKey(const sol::variadic_args& args) const noexcept
 	{
 		for (auto& arg : args)
 		{
-			KeyboardBindingKey binding;
-			if (arg.is<std::string>())
+			auto r = getBindingKey(arg);
+			if (!r)
 			{
-				auto opt = KeyboardBindingKey::read(arg.as<std::string>());
-				if (!opt)
-				{
-					return false;
-				}
-				binding = opt.value();
+				continue;
 			}
-			else if (arg.is<KeyboardKey>())
-			{
-				binding.key = arg.as<KeyboardKey>();
-			}
-			else
-			{
-				return false;
-			}
-			if (_kb.get().getKey(binding.key, binding.modifiers))
+			auto& binding = r.value();
+			auto& kb = _kb.get();
+			if (kb.getKey(binding.key) && kb.hasModifiers(binding.modifiers))
 			{
 				return true;
 			}
@@ -68,6 +75,10 @@ namespace darmok
 		auto keys = getKeyboardKeys();
 		lua.new_enum<KeyboardKey>("KeyboardKey",
 			std::initializer_list<std::pair<std::string_view, KeyboardKey>>(&keys.front(), &keys.front() + keys.size()));
+		lua.new_usertype<KeyboardBindingKey>("KeyboardBindingKey", sol::default_constructor,
+			"key", &KeyboardBindingKey::key,
+			"modifiers", &KeyboardBindingKey::modifiers
+		);
 		lua.new_usertype<LuaKeyboard>("Keyboard", sol::no_constructor,
 			"get_key", &LuaKeyboard::getKey,
 			"chars", sol::property(&LuaKeyboard::getUpdateChars)
@@ -179,6 +190,23 @@ namespace darmok
 		_listeners[type].push_back(func);
 	}
 
+	std::optional<MouseBindingKey> LuaMouse::getBindingKey(const sol::object& arg) noexcept
+	{
+		if (arg.is<std::string>())
+		{
+			return MouseBindingKey::read(arg.as<std::string>());
+		}
+		else if (arg.is<MouseButton>())
+		{
+			return MouseBindingKey{ arg.as<MouseButton>() };
+		}
+		else if (arg.is<MouseBindingKey>())
+		{
+			return arg.as<MouseBindingKey>();
+		}
+		return std::nullopt;
+	}
+
 	void LuaMouse::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_enum<MouseButton>("MouseButton", {
@@ -192,6 +220,10 @@ namespace darmok
 			{ "Scroll", LuaMouseListenerType::Scroll },
 			{ "Button", LuaMouseListenerType::Button },
 		});
+		
+		lua.new_usertype<MouseBindingKey>("MouseBindingKey", sol::default_constructor,
+			"button", &MouseBindingKey::button
+		);
 
 		lua.new_usertype<LuaMouse>("Mouse", sol::no_constructor,
 			"active", sol::property(&LuaMouse::getActive),
@@ -211,6 +243,23 @@ namespace darmok
 	LuaGamepad::LuaGamepad(Gamepad& gamepad) noexcept
 		: _gamepad(gamepad)
 	{
+	}
+
+	std::optional<GamepadBindingKey> LuaGamepad::getBindingKey(const sol::object& arg) noexcept
+	{
+		if (arg.is<std::string>())
+		{
+			return GamepadBindingKey::read(arg.as<std::string>());
+		}
+		else if (arg.is<GamepadButton>())
+		{
+			return GamepadBindingKey{ arg.as<GamepadButton>() };
+		}
+		else if (arg.is<GamepadBindingKey>())
+		{
+			return arg.as<GamepadBindingKey>();
+		}
+		return std::nullopt;
 	}
 
 	bool LuaGamepad::getButton(const std::string& name) const noexcept
@@ -240,6 +289,27 @@ namespace darmok
 
 	void LuaGamepad::bind(sol::state_view& lua) noexcept
 	{
+		lua.new_enum<GamepadButton>("GamepadButton", {
+			{ "A", GamepadButton::A },
+			{ "B", GamepadButton::B },
+			{ "X", GamepadButton::X },
+			{ "Y", GamepadButton::Y },
+			{ "ThumbL", GamepadButton::ThumbL },
+			{ "ThumbR", GamepadButton::ThumbR },
+			{ "ShoulderL", GamepadButton::ShoulderL },
+			{ "ShoulderR", GamepadButton::ShoulderR },
+			{ "Up", GamepadButton::Up },
+			{ "Down", GamepadButton::Down },
+			{ "Left", GamepadButton::Left },
+			{ "Right", GamepadButton::Right },
+			{ "Back", GamepadButton::Back },
+			{ "Start", GamepadButton::Start },
+			{ "Guide", GamepadButton::Guide }
+		});
+		lua.new_usertype<GamepadBindingKey>("GamepadBindingKey", sol::default_constructor,
+			"gamepad", &GamepadBindingKey::gamepad,
+			"button", &GamepadBindingKey::button
+		);
 		lua.new_usertype<LuaGamepad>("Gamepad", sol::no_constructor,
 			"get_button", &LuaGamepad::getButton,
 			"connected", sol::property(&LuaGamepad::isConnected),
@@ -261,13 +331,9 @@ namespace darmok
 		}
 	}
 
-	static void callLuaBinding(std::string key, sol::protected_function fn)
+	static void callLuaInputBinding(std::string key, sol::protected_function fn)
 	{
-		auto result = fn();
-		if (!result.valid())
-		{
-			logLuaError(std::string("triggering input binding '") + key + "'", result);
-		}
+		checkLuaResult(std::string("triggering input binding '") + key + "'", fn());
 	}
 
 	void LuaInput::addBindings(const std::string& name, const sol::table& data) noexcept
@@ -282,13 +348,61 @@ namespace darmok
 			}
 			auto key = elm.first.as<std::string>();
 			auto func = elm.second.as<sol::protected_function>();
-			auto binding = InputBinding::read(key, std::bind(&callLuaBinding, key, func));
+			auto binding = InputBinding::read(key, std::bind(&callLuaInputBinding, key, func));
 			if (binding)
 			{
 				bindings.push_back(std::move(binding.value()));
 			}
 		}
 		_input->addBindings(name, std::move(bindings));
+	}
+
+	std::optional<InputBindingKey> LuaInput::getBindingKey(const sol::object& key) noexcept
+	{
+		if (key.is<std::string>())
+		{
+			auto name = StringUtils::toLower(key.as<std::string>());
+			return InputBinding::readKey(name);
+		}
+		auto kb = LuaKeyboard::getBindingKey(key);
+		if (kb)
+		{
+			return kb.value();
+		}
+		auto mouse = LuaMouse::getBindingKey(key);
+		if (mouse)
+		{
+			return mouse.value();
+		}
+		auto gamepad = LuaGamepad::getBindingKey(key);
+		if (gamepad)
+		{
+			return gamepad.value();
+		}
+		return std::nullopt;
+	}
+
+	bool LuaInput::checkBinding1(const sol::table& keys) const noexcept
+	{
+		auto count = keys.size();
+		for(size_t i = 1; i <= count; i++)
+		{
+			if (checkBinding2(keys[i]))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool LuaInput::checkBinding2(const sol::object& arg) const noexcept
+	{
+		auto key = getBindingKey(arg);
+		if (!key)
+		{
+			return false;
+		}
+		return _input->checkBinding(key.value());
 	}
 
 	LuaKeyboard& LuaInput::getKeyboard() noexcept
@@ -323,6 +437,10 @@ namespace darmok
 
 		lua.new_usertype<LuaInput>("Input", sol::no_constructor,
 			"add_bindings",		&LuaInput::addBindings,
+			"check_binding",	sol::overload(
+				&LuaInput::checkBinding1,
+				&LuaInput::checkBinding2
+			),
 			"keyboard",			sol::property(&LuaInput::getKeyboard),
 			"mouse",			sol::property(&LuaInput::getMouse),
 			"gamepads",			sol::property(&LuaInput::getGamepads),

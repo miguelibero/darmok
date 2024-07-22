@@ -21,7 +21,8 @@ namespace darmok
 
 	void KeyboardKeyEvent::process(Input& input) noexcept
 	{
-		input.getKeyboard().getImpl().setKey(_key, _modifiers, _down);
+		auto& kb = input.getKeyboard().getImpl();
+		kb.setKey(_key, _modifiers, _down);
 	}
 
 	KeyboardCharEvent::KeyboardCharEvent(const Utf8Char& data) noexcept
@@ -276,7 +277,7 @@ namespace darmok
 		{
 			return nullptr;
 		}
-		auto platEv = std::move(_events.front());
+		std::unique_ptr<PlatformEvent> platEv = std::move(_events.front());
 		_events.pop();
 		return platEv;
 	}

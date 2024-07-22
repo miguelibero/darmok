@@ -18,6 +18,8 @@ namespace darmok
 		LuaKeyboard(Keyboard& kb) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
+		static std::optional<KeyboardBindingKey> getBindingKey(const sol::object& arg) noexcept;
+
 	private:
 		std::reference_wrapper<Keyboard> _kb;
 
@@ -41,6 +43,7 @@ namespace darmok
 		LuaMouse(Mouse& mouse) noexcept;
 		~LuaMouse() noexcept;
 
+		static std::optional<MouseBindingKey> getBindingKey(const sol::object& arg) noexcept;
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		using ListenerType = LuaMouseListenerType;
@@ -72,7 +75,7 @@ namespace darmok
 	{
 	public:
 		LuaGamepad(Gamepad& gamepad) noexcept;
-
+		static std::optional<GamepadBindingKey> getBindingKey(const sol::object& arg) noexcept;
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::reference_wrapper<Gamepad> _gamepad;
@@ -97,7 +100,11 @@ namespace darmok
 		LuaMouse _mouse;
 		std::vector<LuaGamepad> _gamepads;
 
+		static std::optional<InputBindingKey> getBindingKey(const sol::object& key) noexcept;
+
 		void addBindings(const std::string& name, const sol::table& data) noexcept;
+		bool checkBinding1(const sol::table& keys) const noexcept;
+		bool checkBinding2(const sol::object& key) const noexcept;
 		LuaKeyboard& getKeyboard() noexcept;
 		LuaMouse& getMouse() noexcept;
 		OptionalRef<LuaGamepad>::std_t getGamepad(uint8_t num = 0) noexcept;

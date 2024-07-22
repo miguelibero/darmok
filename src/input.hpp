@@ -19,9 +19,10 @@ namespace darmok
 		KeyboardImpl(KeyboardImpl&& other) = delete;
 
 		[[nodiscard]] bool getKey(KeyboardKey key) const noexcept;
-		[[nodiscard]] bool getKey(KeyboardKey key, uint8_t& modifiers) const noexcept;
 		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
 		[[nodiscard]] uint8_t getModifiers() const noexcept;
+		[[nodiscard]] bool hasModifiers(uint8_t mods) const noexcept;
+		[[nodiscard]] bool hasModifiers(std::initializer_list<KeyboardModifier> mods) const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
 		void addListener(IKeyboardListener& listener) noexcept;
@@ -29,20 +30,18 @@ namespace darmok
 
 		void flush() noexcept;
 		void reset() noexcept;
-		bool setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
+		void setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept;
 		void pushChar(const Utf8Char& data) noexcept;
 
 		void update() noexcept;
 
 	private:
-		static uint32_t encodeKey(bool down, uint8_t modifiers) noexcept;
-		static bool decodeKey(uint32_t state, uint8_t& modifiers) noexcept;
-
 		Utf8Char popChar() noexcept;
 
 		KeyboardKeys _keys;
-		std::array<Utf8Char, 256> _chars;
 		KeyboardChars _updateChars;
+		uint8_t _modifiers;
+		std::array<Utf8Char, 256> _chars;
 		size_t _charsRead;
 		size_t _charsWrite;
 		std::unordered_set<OptionalRef<IKeyboardListener>> _listeners;
@@ -141,16 +140,20 @@ namespace darmok
 		void resetOnceBindings() noexcept;
 		void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
 		void removeBindings(std::string_view name) noexcept;
+		bool checkBinding(const InputBindingKey& bindingKey) const noexcept;
 		void clearBindings() noexcept;
 		Keyboard& getKeyboard() noexcept;
 		Mouse& getMouse() noexcept;
 		OptionalRef<Gamepad> getGamepad(uint8_t num) noexcept;
 		Gamepads& getGamepads() noexcept;
+		const Keyboard& getKeyboard() const noexcept;
+		const Mouse& getMouse() const noexcept;
+		OptionalRef<const Gamepad> getGamepad(uint8_t num) const noexcept;
+		const Gamepads& getGamepads() const noexcept;
 
 		void update() noexcept;
 
 	private:
-		bool bindingTriggered(InputBinding& binding) noexcept;
 		void processBinding(InputBinding& binding) noexcept;
 
 		Keyboard _keyboard;

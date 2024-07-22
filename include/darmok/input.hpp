@@ -9,6 +9,7 @@
 #include <memory>
 #include <cstdint>
 #include <functional>
+#include <unordered_set>
 #include <darmok/utils.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/input_fwd.hpp>
@@ -18,8 +19,8 @@
 
 namespace darmok
 {
-	using KeyboardKeys = std::array<uint32_t, to_underlying(KeyboardKey::Count)>;
-	using KeyboardChars = std::vector<Utf8Char>;
+	using KeyboardKeys = std::unordered_set<KeyboardKey>;
+	using KeyboardChars = Utf8Vector;
 	class KeyboardImpl;
 
 	class DARMOK_EXPORT BX_NO_VTABLE IKeyboardListener
@@ -39,9 +40,10 @@ namespace darmok
 		Keyboard(Keyboard&& other) = delete;
 
 		[[nodiscard]] bool getKey(KeyboardKey key) const noexcept;
-		[[nodiscard]] bool getKey(KeyboardKey key, uint8_t& modifiers) const noexcept;
 		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
 		[[nodiscard]] uint8_t getModifiers() const noexcept;
+		[[nodiscard]] bool hasModifiers(uint8_t mods) const noexcept;
+		[[nodiscard]] bool hasModifiers(std::initializer_list<KeyboardModifier> mods) const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
 		void addListener(IKeyboardListener& listener) noexcept;
@@ -118,6 +120,7 @@ namespace darmok
 	{
 	public:
 		const static uint8_t MaxAmount = 4;
+		const static uint8_t Any = 5;
 
 		Gamepad() noexcept;
 		~Gamepad() noexcept;
@@ -167,7 +170,7 @@ namespace darmok
 	struct DARMOK_EXPORT GamepadBindingKey final
 	{
 		GamepadButton button;
-		uint8_t gamepad = -1;
+		uint8_t gamepad = Gamepad::Any;
 
 		size_t hash() const noexcept;
 
@@ -176,6 +179,8 @@ namespace darmok
 	};
 
 	using InputBindingKey = std::variant<KeyboardBindingKey, MouseBindingKey, GamepadBindingKey>;
+
+
 
 	struct DARMOK_EXPORT InputBinding final
 	{
@@ -204,6 +209,8 @@ namespace darmok
 		void processBindings() noexcept;
 		void addBindings(std::string_view name, std::vector<InputBinding>&& bindings) noexcept;
 		void removeBindings(std::string_view name) noexcept;
+		bool checkBinding(const InputBindingKey& key) const noexcept;
+
 
 		[[nodiscard]] Keyboard& getKeyboard() noexcept;
 		[[nodiscard]] Mouse& getMouse() noexcept;

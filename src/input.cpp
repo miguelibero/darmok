@@ -8,20 +8,6 @@ namespace darmok
 {
 #pragma region Keyboard
 
-	uint32_t KeyboardImpl::encodeKey(bool down, uint8_t modifiers) noexcept
-	{
-		uint32_t state = 0;
-		state |= uint32_t(down ? modifiers : 0) << 16;
-		state |= uint32_t(down) << 8;
-		return state;
-	}
-
-	bool KeyboardImpl::decodeKey(uint32_t state, uint8_t& modifiers) noexcept
-	{
-		modifiers = (state >> 16) & 0xff;
-		return 0 != ((state >> 8) & 0xff);
-	}
-
 	KeyboardImpl::KeyboardImpl() noexcept
 		: _keys{}
 		, _charsRead(0)
@@ -31,29 +17,21 @@ namespace darmok
 
 	void KeyboardImpl::reset() noexcept
 	{
-		_keys.fill(0);
 		flush();
 	}
 
-	bool KeyboardImpl::setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept
+	void KeyboardImpl::setKey(KeyboardKey key, uint8_t modifiers, bool down) noexcept
 	{
-		auto k = to_underlying(key);
-		if (k > _keys.size())
+		if (down)
 		{
-			return false;
+			_keys.insert(key);
+			_modifiers = _modifiers | modifiers;
 		}
-		auto& oldValue = _keys[k];
-		auto value = encodeKey(down, modifiers);
-		if (oldValue == value)
+		else
 		{
-			return false;
+			_keys.erase(key);
+			_modifiers = _modifiers & ~modifiers;
 		}
-		_keys[k] = value;
-		for (auto& listener : _listeners)
-		{
-			listener->onKeyboardKey(key, modifiers, down);
-		}
-		return true;
 	}
 
 	void KeyboardImpl::pushChar(const Utf8Char& data) noexcept
@@ -68,12 +46,7 @@ namespace darmok
 
 	bool KeyboardImpl::getKey(KeyboardKey key) const noexcept
 	{
-		return _keys[to_underlying(key)];
-	}
-
-	bool KeyboardImpl::getKey(KeyboardKey key, uint8_t& modifiers) const noexcept
-	{
-		return decodeKey(_keys[to_underlying(key)], modifiers);
+		return _keys.contains(key);
 	}
 
 	const KeyboardKeys& KeyboardImpl::getKeys() const noexcept
@@ -83,13 +56,22 @@ namespace darmok
 
 	uint8_t KeyboardImpl::getModifiers() const noexcept
 	{
-		uint8_t modifiers = 0;
-		constexpr auto max = (uint32_t)to_underlying(KeyboardKey::Count);
-		for (uint32_t i = 0; i < max; ++i)
+		return _modifiers;
+	}
+
+	bool KeyboardImpl::hasModifiers(uint8_t mods) const noexcept
+	{
+		return (_modifiers | mods) != 0;
+	}
+
+	bool KeyboardImpl::hasModifiers(std::initializer_list<KeyboardModifier> mods) const noexcept
+	{
+		uint8_t mask = 0;
+		for (auto mod : mods)
 		{
-			modifiers |= (_keys[i] >> 16) & 0xff;
+			mask |= to_underlying(mod);
 		}
-		return modifiers;
+		return hasModifiers(mask);
 	}
 
 	Utf8Char KeyboardImpl::popChar() noexcept
@@ -297,11 +279,6 @@ namespace darmok
 		return _impl->getKey(key);
 	}
 
-	bool Keyboard::getKey(KeyboardKey key, uint8_t& modifiers) const noexcept
-	{
-		return _impl->getKey(key, modifiers);
-	}
-
 	const KeyboardKeys& Keyboard::getKeys() const noexcept
 	{
 		return _impl->getKeys();
@@ -315,6 +292,16 @@ namespace darmok
 	uint8_t Keyboard::getModifiers() const noexcept
 	{
 		return _impl->getModifiers();
+	}
+
+	bool Keyboard::hasModifiers(uint8_t mods) const noexcept
+	{
+		return _impl->hasModifiers(mods);
+	}
+
+	bool Keyboard::hasModifiers(std::initializer_list<KeyboardModifier> mods) const noexcept
+	{
+		return _impl->hasModifiers(mods);
 	}
 
 	const KeyboardImpl& Keyboard::getImpl() const noexcept
@@ -1014,45 +1001,9 @@ namespace darmok
 		}
 	}
 
-	bool InputImpl::bindingTriggered(InputBinding& binding) noexcept
-	{
-		if (auto v = std::get_if<KeyboardBindingKey>(&binding.key))
-		{
-			uint8_t modifiers;
-			if (!getKeyboard().getKey(v->key, modifiers))
-			{
-				return false;
-			}
-			return modifiers == v->modifiers;
-		}
-		if (auto v = std::get_if<MouseBindingKey>(&binding.key))
-		{
-			return getMouse().getButton(v->button);
-		}
-		if (auto v = std::get_if<GamepadBindingKey>(&binding.key))
-		{
-			auto gamepad = getGamepad(v->gamepad);
-			if (gamepad)
-			{
-				return gamepad->getButton(v->button);
-			}
-			else
-			{
-				for (auto& gamepad : getGamepads())
-				{
-					if (gamepad.getButton(v->button))
-					{
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-
 	void InputImpl::processBinding(InputBinding& binding) noexcept
 	{
-		bool triggered = bindingTriggered(binding);
+		bool triggered = checkBinding(binding.key);
 		if (binding.once)
 		{
 			if (triggered)
@@ -1119,6 +1070,45 @@ namespace darmok
 		_bindings.clear();
 	}
 
+	bool InputImpl::checkBinding(const InputBindingKey& bindingKey) const noexcept
+	{
+		if (auto v = std::get_if<KeyboardBindingKey>(&bindingKey))
+		{
+			if (!_keyboard.getKey(v->key))
+			{
+				return false;
+			}
+			if (!_keyboard.hasModifiers(v->modifiers))
+			{
+				return false;
+			}
+			return true;
+		}
+		if (auto v = std::get_if<MouseBindingKey>(&bindingKey))
+		{
+			return _mouse.getButton(v->button);
+		}
+		if (auto v = std::get_if<GamepadBindingKey>(&bindingKey))
+		{
+			auto gamepad = getGamepad(v->gamepad);
+			if (gamepad)
+			{
+				return gamepad->getButton(v->button);
+			}
+			else
+			{
+				for (auto& gamepad : getGamepads())
+				{
+					if (gamepad.getButton(v->button))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	Keyboard& InputImpl::getKeyboard() noexcept
 	{
 		return _keyboard;
@@ -1139,6 +1129,30 @@ namespace darmok
 	}
 
 	Gamepads& InputImpl::getGamepads() noexcept
+	{
+		return _gamepads;
+	}
+
+	const Keyboard& InputImpl::getKeyboard() const noexcept
+	{
+		return _keyboard;
+	}
+
+	const Mouse& InputImpl::getMouse() const noexcept
+	{
+		return _mouse;
+	}
+
+	OptionalRef<const Gamepad> InputImpl::getGamepad(uint8_t num) const noexcept
+	{
+		if (num > 0 || num < Gamepad::MaxAmount)
+		{
+			return _gamepads[num];
+		}
+		return nullptr;
+	}
+
+	const Gamepads& InputImpl::getGamepads() const noexcept
 	{
 		return _gamepads;
 	}
@@ -1167,6 +1181,11 @@ namespace darmok
 	void Input::removeBindings(std::string_view name) noexcept
 	{
 		_impl->removeBindings(name);
+	}
+
+	bool Input::checkBinding(const InputBindingKey& key) const noexcept
+	{
+		return _impl->checkBinding(key);
 	}
 
 	void Input::processBindings() noexcept
