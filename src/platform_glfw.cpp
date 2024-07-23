@@ -585,7 +585,6 @@ namespace darmok
 		glfwGetFramebufferSize(_window, &w, &h);
 		glm::uvec2 fbSize(w, h);
 
-
 		{
 			// send events for initial window state
 			_events.post<VideoModeInfoEvent>(getVideoModeInfo(_winFrameSize));

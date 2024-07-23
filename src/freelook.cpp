@@ -88,7 +88,7 @@ namespace darmok
         lookRot = glm::clamp(lookRot, -_config.maxLookAngle, _config.maxLookAngle);
         lookRot = glm::radians(lookRot);
         
-        _rot = glm::quat(glm::vec3(0, lookRot.x, 0)) * _rot * glm::quat(glm::vec3(lookRot.y, 0, 0));
+        _rot = glm::quat(glm::vec3(0, lookRot.x, 0)) * _rot * glm::quat(glm::vec3(-lookRot.y, 0, 0));
 
         glm::vec3 dir(
             _input->getAxis(_config.moveRight, _config.moveLeft),

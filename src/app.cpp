@@ -266,13 +266,14 @@ namespace darmok
 		{
 			component->updateLogic(deltaTime);
 		}
-		_input.getImpl().update();
 		if (!_renderGraph || _renderGraph->size() != _renderGraphDef.size())
 		{
 			_renderGraph = _renderGraphDef.compile();
 			// we use initial view 0 to clear the screen
 			_renderGraph->configureViews(1);
 		}
+
+		_input.getImpl().update();
 	}
 
 	void AppImpl::render() const

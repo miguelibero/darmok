@@ -401,7 +401,7 @@ namespace darmok
 		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);
 		
-		auto scroll = mouse.getScrollDelta();
+		auto scroll = mouse.getScroll();
 		io.AddMouseWheelEvent(scroll.x, scroll.y);
 
 		auto& kb = input.getKeyboard();

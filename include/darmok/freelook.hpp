@@ -15,7 +15,7 @@ namespace darmok
 
     struct DARMOK_EXPORT FreelookConfig final
     {
-        float lookSensitivity = 5.F;
+        float lookSensitivity = 50.F;
         float moveSensitivity = 10.F;
         glm::vec2 maxLookAngle = glm::vec2(30, 30);
         std::optional<InputEvent> enableEvent = KeyboardInputEvent{ KeyboardKey::F4 };

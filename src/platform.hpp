@@ -171,8 +171,17 @@ namespace darmok
 
 	enum class WindowSizeType
 	{
-		Size,
-		Framebuffer,
+		// represents the real size of the window
+		Size, 
+
+		// represents the size of the window framebuffer
+		// usually the same as window size, but can be different for example
+		// in apple displays
+		Framebuffer, 
+
+		// represents the size of the bgfx backbuffer
+		// if this is set to zero, bgfx uses the framebuffer size
+		// but they can be different for example in borderless mode
 		Pixel
 	};
 
@@ -180,7 +189,7 @@ namespace darmok
 	{
 	public:
 		WindowSizeEvent(const glm::uvec2& size, WindowSizeType type) noexcept;
-		void process(Window& win) noexcept;
+		void process(Window& win, Mouse& mouse) noexcept;
 	private:
 		glm::uvec2 _size;
 		WindowSizeType _type;

@@ -83,9 +83,10 @@ namespace darmok
 		Mouse(Mouse&& other) = delete;
 
 		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
+		[[nodiscard]] glm::vec2 getNormPosition() const noexcept;
 		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
+		[[nodiscard]] glm::vec2 getNormPositionDelta() const noexcept;
 		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
-		[[nodiscard]] glm::vec2 getScrollDelta() const noexcept;
 		[[nodiscard]] bool getActive() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
@@ -214,6 +215,13 @@ namespace darmok
 		virtual void onInputEvent(const std::string& tag) = 0;
 	};
 
+	struct DARMOK_EXPORT InputSensitivity
+	{
+		float mouse = 0.1F;
+		float gamepad = 1.F;
+		float event = 1.F;
+	};
+
 	class DARMOK_EXPORT Input final
 	{
 	public:
@@ -224,19 +232,21 @@ namespace darmok
 
 		[[nodiscard]] Keyboard& getKeyboard() noexcept;
 		[[nodiscard]] Mouse& getMouse() noexcept;
-		[[nodiscard]] OptionalRef<Gamepad> getGamepad(uint8_t num = 0) noexcept;
+		[[nodiscard]] OptionalRef<Gamepad> getGamepad(uint8_t num = Gamepad::Any) noexcept;
 		[[nodiscard]] Gamepads& getGamepads() noexcept;
 
 		[[nodiscard]] const Keyboard& getKeyboard() const noexcept;
 		[[nodiscard]] const Mouse& getMouse() const noexcept;
-		[[nodiscard]] OptionalRef<const Gamepad> getGamepad(uint8_t num = 0) const noexcept;
+		[[nodiscard]] OptionalRef<const Gamepad> getGamepad(uint8_t num = Gamepad::Any) const noexcept;
 		[[nodiscard]] const Gamepads& getGamepads() const noexcept;
 		
 		[[nodiscard]] const InputImpl& getImpl() const noexcept;
 		[[nodiscard]] InputImpl& getImpl() noexcept;
 
 		bool checkEvent(const InputEvent& ev) const noexcept;
-		float getAxis(const InputDirs& positive, const InputDirs& negative) const noexcept;
+
+		using Sensitivity = InputSensitivity;
+		float getAxis(const InputDirs& positive, const InputDirs& negative, const Sensitivity& sensitivity = {}) const noexcept;
 		
 		void addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept;
 		bool removeListener(const std::string& tag, IInputEventListener& listener) noexcept;

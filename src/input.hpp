@@ -73,10 +73,10 @@ namespace darmok
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 		[[nodiscard]] bool getActive() const noexcept;
 		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
+		[[nodiscard]] glm::vec2 getNormPosition() const noexcept;
 		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
+		[[nodiscard]] glm::vec2 getNormPositionDelta() const noexcept;
 		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
-		[[nodiscard]] glm::vec2 getScrollDelta() const noexcept;
-		[[nodiscard]] glm::vec2 getDelta(MouseAnalog analog) const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 
 		void addListener(IMouseListener& listener) noexcept;
@@ -85,6 +85,7 @@ namespace darmok
 		bool setActive(bool active) noexcept;
 		bool setPosition(const glm::vec2& pos) noexcept;
 		bool setScroll(const glm::vec2& scroll) noexcept;
+		bool setWindowSize(const glm::uvec2& size) noexcept;
 		bool setButton(MouseButton button, bool down) noexcept;
 
 		void update() noexcept;
@@ -97,10 +98,10 @@ namespace darmok
 		[[nodiscard]] static std::optional<MouseInputDir> readDir(std::string_view name) noexcept;
 
 	private:
+		glm::uvec2 _windowSize;
 		glm::vec2 _position;
 		glm::vec2 _lastPosition;
 		glm::vec2 _scroll;
-		glm::vec2 _lastScroll;
 
 		MouseButtons _buttons;
 		bool _active;
@@ -185,7 +186,11 @@ namespace darmok
 		bool removeListener(IInputEventListener& listener) noexcept;
 
 		bool checkEvent(const InputEvent& ev) const noexcept;
-		float getAxis(const std::vector<InputDir>& positive, const std::vector<InputDir>& negative) const noexcept;
+
+		using Sensitivity = InputSensitivity;
+		using Dirs = InputDirs;
+		using Dir = InputDir;
+		float getAxis(const Dirs& pos, const Dirs& neg, const Sensitivity& sensi) const noexcept;
 
 		void update() noexcept;
 
@@ -217,7 +222,7 @@ namespace darmok
 		std::vector<ListenerData> _listeners;
 		static const std::array<std::string, to_underlying(InputDirType::Count)> _dirTypeNames;
 
-		float getDir(const InputDir& dir) const noexcept;
+		float getDir(const Dir& dir, const Sensitivity& sensi) const noexcept;
 		static float getDir(const glm::vec2& vec, InputDirType dir) noexcept;
 	};
 

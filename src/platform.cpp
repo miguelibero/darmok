@@ -138,13 +138,16 @@ namespace darmok
 	{
 	}
 
-	void WindowSizeEvent::process(Window& win) noexcept
+	void WindowSizeEvent::process(Window& win, Mouse& mouse) noexcept
 	{
 		auto& impl = win.getImpl();
 		switch (_type)
 		{
 		case WindowSizeType::Size:
 			impl.setSize(_size);
+			// setting the window size in the mouse
+			// so that we can get normalized delta positions
+			mouse.getImpl().setWindowSize(_size);
 			break;
 		case WindowSizeType::Framebuffer:
 			impl.setFramebufferSize(_size);
@@ -242,7 +245,7 @@ namespace darmok
 			static_cast<MouseButtonEvent&>(ev).process(input);
 			break;
 		case PlatformEvent::Type::WindowSize:
-			static_cast<WindowSizeEvent&>(ev).process(window);
+			static_cast<WindowSizeEvent&>(ev).process(window, input.getMouse());
 			break;
 		case PlatformEvent::Type::WindowPhase:
 			static_cast<WindowPhaseEvent&>(ev).process(window);

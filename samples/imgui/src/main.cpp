@@ -4,10 +4,11 @@
 #include <darmok/imgui.hpp>
 #include <darmok/data.hpp>
 #include <darmok/window.hpp>
-#include <darmok/render_graph.hpp>
+#include <darmok/input.hpp>
 #include <bgfx/bgfx.h>
 #include <imgui.h>
 #include <imgui_stdlib.h>
+#include <glm/gtx/string_cast.hpp>
 
 namespace
 {
@@ -194,7 +195,17 @@ namespace
 			ImGui::TextWrapped("lala");
 			ImGui::InputText("text", &_text);
 
+			ImGui::Spacing();
+
 			_videoModeState.imguiRender(getWindow());
+
+			ImGui::Spacing();
+
+			if (ImGui::Button("Reset max deltas"))
+			{
+				_mouseNormPosDeltaMax = glm::vec2(0);
+				_mouseScrollMax = glm::vec2(0);
+			}
 		}
 
 		void onWindowVideoMode(const VideoMode& mode) override
@@ -220,13 +231,62 @@ namespace
 				, stats->textHeight
 			);
 
-			bgfx::dbgTextPrintf(0, 3, 0x0f, "Darmok Window VideoMode: %s", getWindow().getVideoMode().to_string().c_str());
-
+			bgfx::dbgTextPrintf(0, 3, 0x0f, "Window: mode %s size %s"
+				, getWindow().getVideoMode().toString().c_str()
+				, glm::to_string(getWindow().getSize()).c_str()
+			);
+			bgfx::dbgTextPrintf(0, 4, 0x0f, "Mouse: position %s norm %s"
+				, glm::to_string(getInput().getMouse().getPosition()).c_str()
+				, glm::to_string(getInput().getMouse().getNormPosition()).c_str()
+			);
+			bgfx::dbgTextPrintf(0, 5, 0x0f, "Mouse position delta: %s norm %s max %s"
+				, glm::to_string(_mousePosDelta).c_str()
+				, glm::to_string(_mouseNormPosDelta).c_str()
+				, glm::to_string(_mouseNormPosDeltaMax).c_str()
+			);
+			bgfx::dbgTextPrintf(0, 6, 0x0f, "Mouse scroll: %s max %s"
+				, glm::to_string(_mouseScroll).c_str()
+				, glm::to_string(_mouseScrollMax).c_str()
+			);
+			bgfx::dbgTextPrintf(0, 7, 0x0f, "Gamepad Sticks: %s %s"
+				, glm::to_string(getInput().getGamepad()->getStick(GamepadStick::Left)).c_str()
+				, glm::to_string(getInput().getGamepad()->getStick(GamepadStick::Right)).c_str()
+			);
 		}
 
 	protected:
 		std::string _text = "hello darmok!";
 		VideoModeState _videoModeState;
+		glm::vec2 _mousePosDelta = glm::vec2(0);
+		glm::vec2 _mouseNormPosDelta = glm::vec2(0);
+		glm::vec2 _mouseNormPosDeltaMax = glm::vec2(0);
+		glm::vec2 _mouseScroll = glm::vec2(0);
+		glm::vec2 _mouseScrollMax = glm::vec2(0);
+
+		void updateLogic(float deltaTime) override
+		{
+			_mousePosDelta = getInput().getMouse().getPositionDelta();
+			_mouseNormPosDelta = getInput().getMouse().getNormPositionDelta();
+			updateMaxVec(_mouseNormPosDelta, _mouseNormPosDeltaMax);
+			_mouseScroll = getInput().getMouse().getScroll();
+			updateMaxVec(_mouseScroll, _mouseScrollMax);
+		}
+
+		static void updateMaxVec(const glm::vec2& v, glm::vec2& max)
+		{
+			auto x = std::abs(v.x);
+			if (max.x < x)
+			{
+				max.x = x;
+			}
+			auto y = std::abs(v.y);
+			if (max.y < y)
+			{
+				max.y = y;
+			}
+		}
+
+
 	};
 
 }

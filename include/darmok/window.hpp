@@ -23,7 +23,7 @@ namespace darmok
 		int monitor = -1;
 
 		std::string toShortString() const noexcept;
-		std::string to_string() const noexcept;
+		std::string toString() const noexcept;
 		bool complete() const noexcept;
 
 		bool operator==(const VideoMode& other) const noexcept;

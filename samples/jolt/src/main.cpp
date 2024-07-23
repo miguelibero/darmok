@@ -208,7 +208,6 @@ namespace
 				auto debugEnabled = _physicsDebugRenderer->isEnabled();
 				ImGui::TextWrapped(debugEnabled ? "debug renderer" : "meshes");
 #endif
-
 				ImGui::EndTable();
 			}
 			_imguiMouse = ImGui::GetIO().WantCaptureMouse;

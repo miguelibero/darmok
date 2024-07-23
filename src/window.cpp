@@ -42,7 +42,7 @@ namespace darmok
 		return ss.str();
 	}
 
-	std::string VideoMode::to_string() const noexcept
+	std::string VideoMode::toString() const noexcept
 	{
 		std::ostringstream ss;
 		switch (screenMode)
