@@ -73,9 +73,7 @@ namespace darmok
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 		[[nodiscard]] bool getActive() const noexcept;
 		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
-		[[nodiscard]] glm::vec2 getNormPosition() const noexcept;
-		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
-		[[nodiscard]] glm::vec2 getNormPositionDelta() const noexcept;
+		[[nodiscard]] const glm::vec2& getVelocity() const noexcept;
 		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 
@@ -85,10 +83,10 @@ namespace darmok
 		bool setActive(bool active) noexcept;
 		bool setPosition(const glm::vec2& pos) noexcept;
 		bool setScroll(const glm::vec2& scroll) noexcept;
-		bool setWindowSize(const glm::uvec2& size) noexcept;
 		bool setButton(MouseButton button, bool down) noexcept;
+		bool setWindowSize(const glm::uvec2& size) noexcept;
 
-		void update() noexcept;
+		void update(float deltaTime) noexcept;
 
 		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
 		[[nodiscard]] static std::optional<MouseButton> readButton(std::string_view name) noexcept;
@@ -98,10 +96,11 @@ namespace darmok
 		[[nodiscard]] static std::optional<MouseInputDir> readDir(std::string_view name) noexcept;
 
 	private:
-		glm::uvec2 _windowSize;
 		glm::vec2 _position;
 		glm::vec2 _lastPosition;
+		glm::vec2 _velocity;
 		glm::vec2 _scroll;
+		glm::uvec2 _windowSize;
 
 		MouseButtons _buttons;
 		bool _active;
@@ -192,7 +191,7 @@ namespace darmok
 		using Dir = InputDir;
 		float getAxis(const Dirs& pos, const Dirs& neg, const Sensitivity& sensi) const noexcept;
 
-		void update() noexcept;
+		void update(float deltaTime) noexcept;
 
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void onMouseButton(MouseButton button, bool down) override;
@@ -211,6 +210,7 @@ namespace darmok
 		static const std::string _keyboardPrefix;
 		static const std::string _mousePrefix;
 		static const std::string _gamepadPrefix;
+		static const float _mouseVelocityDirFactor;
 
 		struct ListenerData final
 		{

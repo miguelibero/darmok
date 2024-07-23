@@ -203,7 +203,7 @@ namespace
 
 			if (ImGui::Button("Reset max deltas"))
 			{
-				_mouseNormPosDeltaMax = glm::vec2(0);
+				_mouseVelocityMax = glm::vec2(0);
 				_mouseScrollMax = glm::vec2(0);
 			}
 		}
@@ -235,20 +235,16 @@ namespace
 				, getWindow().getVideoMode().toString().c_str()
 				, glm::to_string(getWindow().getSize()).c_str()
 			);
-			bgfx::dbgTextPrintf(0, 4, 0x0f, "Mouse: position %s norm %s"
+			bgfx::dbgTextPrintf(0, 4, 0x0f, "Mouse: position %s velocity %s velocity max %s"
 				, glm::to_string(getInput().getMouse().getPosition()).c_str()
-				, glm::to_string(getInput().getMouse().getNormPosition()).c_str()
+				, glm::to_string(_mouseVelocity).c_str()
+				, glm::to_string(_mouseVelocityMax).c_str()
 			);
-			bgfx::dbgTextPrintf(0, 5, 0x0f, "Mouse position delta: %s norm %s max %s"
-				, glm::to_string(_mousePosDelta).c_str()
-				, glm::to_string(_mouseNormPosDelta).c_str()
-				, glm::to_string(_mouseNormPosDeltaMax).c_str()
-			);
-			bgfx::dbgTextPrintf(0, 6, 0x0f, "Mouse scroll: %s max %s"
+			bgfx::dbgTextPrintf(0, 5, 0x0f, "Mouse scroll: %s max %s"
 				, glm::to_string(_mouseScroll).c_str()
 				, glm::to_string(_mouseScrollMax).c_str()
 			);
-			bgfx::dbgTextPrintf(0, 7, 0x0f, "Gamepad Sticks: %s %s"
+			bgfx::dbgTextPrintf(0, 6, 0x0f, "Gamepad Sticks: %s %s"
 				, glm::to_string(getInput().getGamepad()->getStick(GamepadStick::Left)).c_str()
 				, glm::to_string(getInput().getGamepad()->getStick(GamepadStick::Right)).c_str()
 			);
@@ -257,17 +253,15 @@ namespace
 	protected:
 		std::string _text = "hello darmok!";
 		VideoModeState _videoModeState;
-		glm::vec2 _mousePosDelta = glm::vec2(0);
-		glm::vec2 _mouseNormPosDelta = glm::vec2(0);
-		glm::vec2 _mouseNormPosDeltaMax = glm::vec2(0);
+		glm::vec2 _mouseVelocity = glm::vec2(0);
+		glm::vec2 _mouseVelocityMax = glm::vec2(0);
 		glm::vec2 _mouseScroll = glm::vec2(0);
 		glm::vec2 _mouseScrollMax = glm::vec2(0);
 
 		void updateLogic(float deltaTime) override
 		{
-			_mousePosDelta = getInput().getMouse().getPositionDelta();
-			_mouseNormPosDelta = getInput().getMouse().getNormPositionDelta();
-			updateMaxVec(_mouseNormPosDelta, _mouseNormPosDeltaMax);
+			_mouseVelocity = getInput().getMouse().getVelocity();
+			updateMaxVec(_mouseVelocity, _mouseVelocityMax);
 			_mouseScroll = getInput().getMouse().getScroll();
 			updateMaxVec(_mouseScroll, _mouseScrollMax);
 		}

@@ -417,10 +417,11 @@ namespace darmok
 		: _buttons{}
 		, _position(0)
 		, _lastPosition(0)
+		, _velocity(0)
 		, _scroll(0)
+		, _windowSize(0)
 		, _active(false)
 		, _hasBeenInactive(true)
-		, _windowSize(0)
 	{
 	}
 
@@ -478,16 +479,6 @@ namespace darmok
 		return true;
 	}
 
-	bool MouseImpl::setWindowSize(const glm::uvec2& size) noexcept
-	{
-		if (_windowSize == size)
-		{
-			return false;
-		}
-		_windowSize = size;
-		return true;
-	}
-
 	bool MouseImpl::setButton(MouseButton button, bool down) noexcept
 	{
 		auto idx = to_underlying(button);
@@ -503,8 +494,27 @@ namespace darmok
 		return true;
 	}
 
-	void MouseImpl::update() noexcept
+	bool MouseImpl::setWindowSize(const glm::uvec2& size) noexcept
 	{
+		if (_windowSize == size)
+		{
+			return false;
+		}
+		_windowSize = size;
+		return true;
+	}
+
+	void MouseImpl::update(float deltaTime) noexcept
+	{
+		if (deltaTime == 0.F)
+		{
+			_velocity = glm::vec2(0);
+		}
+		else
+		{
+			auto dist = _position - _lastPosition;
+			_velocity = dist / deltaTime;
+		}
 		_lastPosition = _position;
 		_scroll = glm::vec2(0);
 		if (_active)
@@ -533,31 +543,9 @@ namespace darmok
 		return _position;
 	}
 
-	glm::vec2 MouseImpl::getNormPosition() const noexcept
+	const glm::vec2& MouseImpl::getVelocity() const noexcept
 	{
-		if (_windowSize.x == 0 || _windowSize.y == 0)
-		{
-			return glm::vec2(0);
-		}
-		return _position / glm::vec2(_windowSize);
-	}
-
-	glm::vec2 MouseImpl::getPositionDelta() const noexcept
-	{
-		if (_hasBeenInactive)
-		{
-			return glm::vec2(0);
-		}
-		return _position - _lastPosition;
-	}
-
-	glm::vec2 MouseImpl::getNormPositionDelta() const noexcept
-	{
-		if (_windowSize.x == 0 || _windowSize.y == 0)
-		{
-			return glm::vec2(0);
-		}
-		return getPositionDelta() / glm::vec2(_windowSize);
+		return _velocity;
 	}
 
 	const glm::vec2& MouseImpl::getScroll() const noexcept
@@ -683,19 +671,9 @@ namespace darmok
 		return _impl->getPosition();
 	}
 
-	glm::vec2 Mouse::getNormPosition() const noexcept
+	const glm::vec2& Mouse::getVelocity() const noexcept
 	{
-		return _impl->getNormPosition();
-	}
-
-	glm::vec2 Mouse::getPositionDelta() const noexcept
-	{
-		return _impl->getPositionDelta();
-	}
-
-	glm::vec2 Mouse::getNormPositionDelta() const noexcept
-	{
-		return _impl->getNormPositionDelta();
+		return _impl->getVelocity();
 	}
 
 	const glm::vec2& Mouse::getScroll() const noexcept
@@ -1208,10 +1186,10 @@ namespace darmok
 				v = vec.x;
 				break;
 		}
-		v = v < -1.F ? -1.F : v;
-		v = v > 1.F ? 1.F : v;
 		return v;
 	}
+
+	const float InputImpl::_mouseVelocityDirFactor = 0.0005F;
 
 	float InputImpl::getDir(const InputDir& dir, const Sensitivity& sensi) const noexcept
 	{
@@ -1224,8 +1202,7 @@ namespace darmok
 			}
 			else
 			{
-				vec = _mouse.getPositionDelta();
-				vec.y *= -1.F;
+				vec = _mouse.getVelocity() * glm::vec2(_mouseVelocityDirFactor, -_mouseVelocityDirFactor);
 			}
 			return getDir(vec * sensi.mouse, v->type);
 		}
@@ -1236,7 +1213,7 @@ namespace darmok
 			{
 				return 0.F;
 			}
-			auto vec = gamepad->getStick(v->stick);
+			auto& vec = gamepad->getStick(v->stick);
 			return getDir(vec * sensi.gamepad, v->type);
 		}
 		if (auto v = std::get_if<InputEvent>(&dir))
@@ -1257,8 +1234,6 @@ namespace darmok
 		{
 			v -= getDir(dir, sensi);
 		}
-		v = v < -1.F ? -1.F : v;
-		v = v > 1.F ? 1.F : v;
 		return v;
 	}
 
@@ -1450,10 +1425,10 @@ namespace darmok
 		return _gamepads;
 	}
 
-	void InputImpl::update() noexcept
+	void InputImpl::update(float deltaTime) noexcept
 	{
 		_keyboard.getImpl().update();
-		_mouse.getImpl().update();
+		_mouse.getImpl().update(deltaTime);
 	}
 
 	Input::Input() noexcept

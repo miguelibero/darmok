@@ -145,8 +145,6 @@ namespace darmok
 		{
 		case WindowSizeType::Size:
 			impl.setSize(_size);
-			// setting the window size in the mouse
-			// so that we can get normalized delta positions
 			mouse.getImpl().setWindowSize(_size);
 			break;
 		case WindowSizeType::Framebuffer:

@@ -83,9 +83,7 @@ namespace darmok
 		Mouse(Mouse&& other) = delete;
 
 		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
-		[[nodiscard]] glm::vec2 getNormPosition() const noexcept;
-		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
-		[[nodiscard]] glm::vec2 getNormPositionDelta() const noexcept;
+		[[nodiscard]] const glm::vec2& getVelocity() const noexcept;
 		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
 		[[nodiscard]] bool getActive() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
@@ -217,7 +215,7 @@ namespace darmok
 
 	struct DARMOK_EXPORT InputSensitivity
 	{
-		float mouse = 0.1F;
+		float mouse = 1.F;
 		float gamepad = 1.F;
 		float event = 1.F;
 	};

@@ -76,7 +76,7 @@ namespace darmok
 		std::unordered_map<ListenerType, std::vector<sol::protected_function>> _listeners;
 
 		const glm::vec2& getPosition() const noexcept;
-		glm::vec2 getPositionDelta() const noexcept;
+		const glm::vec2& getVelocity() const noexcept;
 		const glm::vec2& getScroll() const noexcept;
 		bool getButton(MouseButton button) const noexcept;
 		bool getLeftButton() const noexcept;

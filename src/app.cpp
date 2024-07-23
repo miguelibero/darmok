@@ -273,7 +273,7 @@ namespace darmok
 			_renderGraph->configureViews(1);
 		}
 
-		_input.getImpl().update();
+		_input.getImpl().update(deltaTime);
 	}
 
 	void AppImpl::render() const
