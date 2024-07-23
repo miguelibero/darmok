@@ -11,19 +11,31 @@ namespace darmok
 	LuaKeyboard::LuaKeyboard(Keyboard& kb) noexcept
 		: _kb(kb)
 	{
+		_kb.get().addListener(*this);
+	}
+
+	LuaKeyboard::~LuaKeyboard() noexcept
+	{
+		_kb.get().removeListener(*this);
 	}
 
 	void LuaKeyboard::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
 	{
-		for (auto func : _listeners[ListenerType::Key])
+		static const std::string desc("on keyboard key");
+		for (auto& listener : _listeners[ListenerType::Key])
 		{
-
+			checkLuaResult(desc, listener.call(key, modifiers, down));
 		}
 	}
 
 	void LuaKeyboard::onKeyboardChar(const Utf8Char& chr)
 	{
-
+		auto str = chr.toString();
+		static const std::string desc("on keyboard char");
+		for (auto& listener : _listeners[ListenerType::Char])
+		{
+			checkLuaResult(desc, listener.call(str));
+		}
 	}
 
 	std::string LuaKeyboard::getUpdateChars() const noexcept
@@ -34,6 +46,34 @@ namespace darmok
 			ss << chr;
 		}
 		return ss.str();
+	}
+
+	void LuaKeyboard::registerListener(ListenerType type, const sol::protected_function& func) noexcept
+	{
+		_listeners[type].push_back(func);
+	}
+
+	template<typename T>
+	static bool unregisterLuaInputListener(T type, const sol::protected_function& func, std::unordered_map<T, std::vector<sol::protected_function>>& listeners) noexcept
+	{
+		auto itr = listeners.find(type);
+		if (itr == listeners.end())
+		{
+			return false;
+		}
+		auto& typeListeners = itr->second;
+		auto itr2 = std::remove(typeListeners.begin(), typeListeners.end(), func);
+		if (itr2 == typeListeners.end())
+		{
+			return false;
+		}
+		typeListeners.erase(itr2, typeListeners.end());
+		return true;
+	}
+
+	bool LuaKeyboard::unregisterListener(ListenerType type, const sol::protected_function& func) noexcept
+	{
+		return unregisterLuaInputListener(type, func, _listeners);
 	}
 
 	bool LuaKeyboard::getKey(KeyboardKey key) const noexcept
@@ -58,7 +98,9 @@ namespace darmok
 
 		lua.new_usertype<LuaKeyboard>("Keyboard", sol::no_constructor,
 			"get_key", &LuaKeyboard::getKey,
-			"chars", sol::property(&LuaKeyboard::getUpdateChars)
+			"chars", sol::property(&LuaKeyboard::getUpdateChars),
+			"register_listener", &LuaKeyboard::registerListener,
+			"unregister_listener", &LuaKeyboard::unregisterListener
 		);
 	}
 
@@ -147,19 +189,7 @@ namespace darmok
 
 	bool LuaMouse::unregisterListener(ListenerType type, const sol::protected_function& func) noexcept
 	{
-		auto itr = _listeners.find(type);
-		if (itr == _listeners.end())
-		{
-			return false;
-		}
-		auto& listeners = itr->second;
-		auto itr2 = std::remove(listeners.begin(), listeners.end(), func);
-		if (itr2 == listeners.end())
-		{
-			return false;
-		}
-		listeners.erase(itr2, listeners.end());
-		return true;
+		return unregisterLuaInputListener(type, func, _listeners);
 	}
 
 	void LuaMouse::registerListener(ListenerType type, const sol::protected_function& func) noexcept
@@ -195,6 +225,49 @@ namespace darmok
 	LuaGamepad::LuaGamepad(Gamepad& gamepad) noexcept
 		: _gamepad(gamepad)
 	{
+		_gamepad.get().addListener(*this);
+	}
+
+	LuaGamepad::~LuaGamepad() noexcept
+	{
+		_gamepad.get().removeListener(*this);
+	}
+
+	void LuaGamepad::onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute)
+	{
+		static const std::string desc("on gamepad stick change");
+		for (auto& listener : _listeners[ListenerType::Stick])
+		{
+			checkLuaResult(desc, listener.call(num, stick, delta, absolute));
+		}
+	}
+
+	void LuaGamepad::onGamepadButton(uint8_t num, GamepadButton button, bool down)
+	{
+		static const std::string desc("on gamepad button");
+		for (auto& listener : _listeners[ListenerType::Button])
+		{
+			checkLuaResult(desc, listener.call(num, button, down));
+		}
+	}
+
+	void LuaGamepad::onGamepadConnect(uint8_t num, bool connected)
+	{
+		static const std::string desc("on gamepad connect");
+		for (auto& listener : _listeners[ListenerType::Connect])
+		{
+			checkLuaResult(desc, listener.call(num, connected));
+		}
+	}
+
+	void LuaGamepad::registerListener(ListenerType type, const sol::protected_function& func) noexcept
+	{
+		_listeners[type].push_back(func);
+	}
+
+	bool LuaGamepad::unregisterListener(ListenerType type, const sol::protected_function& func) noexcept
+	{
+		return unregisterLuaInputListener(type, func, _listeners);
 	}
 
 	bool LuaGamepad::getButton(GamepadButton button) const noexcept
@@ -229,7 +302,9 @@ namespace darmok
 			"get_button", &LuaGamepad::getButton,
 			"connected", sol::property(&LuaGamepad::isConnected),
 			"left_stick", sol::property(&LuaGamepad::getLeftStick),
-			"right_stick", sol::property(&LuaGamepad::getRightStick)
+			"right_stick", sol::property(&LuaGamepad::getRightStick),
+			"register_listener", &LuaGamepad::registerListener,
+			"unregister_listener", &LuaGamepad::unregisterListener
 		);
 	}
 
@@ -273,6 +348,333 @@ namespace darmok
 	const std::vector<LuaGamepad>& LuaInput::getGamepads() noexcept
 	{
 		return _gamepads;
+	}
+
+	void LuaInput::onInputEvent(const InputEvent& ev)
+	{
+		for (auto& elm : _listeners)
+		{
+
+		}
+	}
+
+	void LuaInput::addListener(const InputEvent& ev, const sol::protected_function& func) noexcept
+	{
+		_input->addListener(ev, *this);
+		_listeners.emplace_back(ev, func);
+	}
+
+	bool LuaInput::removeListener(const sol::protected_function& func) noexcept
+	{
+		std::vector<InputEvent> events;
+		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [func, &events](auto& elm) {
+			if (elm.second != func)
+			{
+				return false;
+			}
+			events.push_back(elm.first);
+			return true;
+		});
+		if (events.empty())
+		{
+			return false;
+		}
+		_listeners.erase(itr, _listeners.end());
+		for (auto& ev : events)
+		{
+			_input->removeListener(ev, *this);
+		}
+		return true;
+	}
+
+	bool LuaInput::checkEvent(const sol::object& val) const noexcept
+	{
+		auto ev = readEvent(val);
+		if (!ev)
+		{
+			return false;
+		}
+		return _input->checkEvent(ev.value());
+	}
+
+	float LuaInput::getAxis(const sol::object& posObj, const sol::object& negObj) const noexcept
+	{
+		auto pos = readDirs(posObj);
+		auto neg = readDirs(negObj);
+		return _input->getAxis(pos, neg);
+	}
+
+	std::optional<KeyboardKey> LuaInput::readKeyboardKey(const sol::object& val) noexcept
+	{
+		if (val.is<KeyboardKey>())
+		{
+			return val.as<KeyboardKey>();
+		}
+		if (val.is<std::string>())
+		{
+			return Keyboard::readKey(val.as<std::string>());
+		}
+		return std::nullopt;
+	}
+
+	std::optional<KeyboardModifier> LuaInput::readKeyboardModifier(const sol::object& val) noexcept
+	{
+		if (val.is<KeyboardModifier>())
+		{
+			return val.as<KeyboardModifier>();
+		}
+		if (val.is<std::string>())
+		{
+			return Keyboard::readModifier(val.as<std::string>());
+		}
+		return std::nullopt;
+	}
+
+	std::optional<KeyboardInputEvent> LuaInput::readKeyboardEvent(const sol::object& val) noexcept
+	{
+		if (auto key = readKeyboardKey(val))
+		{
+			return KeyboardInputEvent{ key.value() };
+		}
+		if (!val.is<sol::table>())
+		{
+			return std::nullopt;
+		}
+		auto tab = val.as<sol::table>();
+		auto size = tab.size();
+		if (size == 0)
+		{
+			return std::nullopt;
+		}
+		auto key = readKeyboardKey(tab[1]);
+		if (!key)
+		{
+			return std::nullopt;
+		}
+		KeyboardModifiers mods;
+		for (size_t i = 2; i <= size; i++)
+		{
+			if (auto mod = readKeyboardModifier(tab[i]))
+			{
+				mods.insert(mod.value());
+			}
+		}
+		return KeyboardInputEvent{ key.value(), mods};
+	}
+
+	std::optional<MouseInputEvent> LuaInput::readMouseEvent(const sol::object& val) noexcept
+	{
+		if (val.is<MouseButton>())
+		{
+			return MouseInputEvent{ val.as<MouseButton>() };
+		}
+		if (val.is<std::string>())
+		{
+			if (auto button = Mouse::readButton(val.as<std::string>()))
+			{
+				return MouseInputEvent{ button.value() };
+			}
+		}
+		return std::nullopt;
+	}
+
+	std::optional<GamepadButton> LuaInput::readGamepadButton(const sol::object& val) noexcept
+	{
+		if (val.is<GamepadButton>())
+		{
+			return val.as<GamepadButton>();
+		}
+		if (val.is<std::string>())
+		{
+			return Gamepad::readButton(val.as<std::string>());
+		}
+		return std::nullopt;
+	}
+
+	std::optional<GamepadInputEvent> LuaInput::readGamepadEvent(const sol::object& val) noexcept
+	{
+		if (auto button = readGamepadButton(val))
+		{
+			return GamepadInputEvent{ button.value() };
+		}
+		if (!val.is<sol::table>())
+		{
+			return std::nullopt;
+		}
+		auto tab = val.as<sol::table>();
+		auto size = tab.size();
+		if (size == 0)
+		{
+			return std::nullopt;
+		}
+		auto button = readGamepadButton(tab[1]);
+		if (!button)
+		{
+			return std::nullopt;
+		}
+		auto gamepad = Gamepad::Any;
+		if (size > 1 && tab[2].is<int>())
+		{
+			gamepad = tab[2];
+		}
+		return GamepadInputEvent{ button.value(), gamepad };
+	}
+
+	std::optional<InputEvent> LuaInput::readEvent(const sol::object& val) noexcept
+	{
+		if (val.is<std::string>())
+		{
+			if (auto ev = Input::readEvent(val.as<std::string>()))
+			{
+				return ev.value();
+			}
+		}
+		if (auto ev = readKeyboardEvent(val))
+		{
+			return ev;
+		}
+		if (auto ev = readMouseEvent(val))
+		{
+			return ev;
+		}
+		if (auto ev = readGamepadEvent(val))
+		{
+			return ev;
+		}
+		return std::nullopt;
+	}
+
+	std::optional<MouseInputDir> LuaInput::readMouseDir(const sol::object& val) noexcept
+	{
+		if (!val.is<sol::table>())
+		{
+			return std::nullopt;
+		}
+		auto tab = val.as<sol::table>();
+		auto size = tab.size();
+		if (size < 2)
+		{
+			return std::nullopt;
+		}
+		return std::nullopt;
+	}
+
+	std::optional<MouseAnalog> readMouseAnalog(const sol::object& val) noexcept
+	{
+		if (val.is<MouseAnalog>())
+		{
+			return val.as<MouseAnalog>();
+		}
+		if (val.is<std::string>())
+		{
+			return Mouse::readAnalog(val.as<std::string>());
+		}
+		return std::nullopt;
+	}
+
+	std::optional<GamepadStick> LuaInput::readGamepadStick(const sol::object& val) noexcept
+	{
+		if (val.is<GamepadStick>())
+		{
+			return val.as<GamepadStick>();
+		}
+		if (val.is<std::string>())
+		{
+			return Gamepad::readStick(val.as<std::string>());
+		}
+		return std::nullopt;
+	}
+
+	std::optional<InputDirType> LuaInput::readDirType(const sol::object& val) noexcept
+	{
+		if (val.is<InputDirType>())
+		{
+			return val.as<InputDirType>();
+		}
+		if (val.is<std::string>())
+		{
+			return Input::readDirType(val.as<std::string>());
+		}
+		return std::nullopt;
+	}
+
+	std::optional<GamepadInputDir> LuaInput::readGamepadDir(const sol::object& val) noexcept
+	{
+		if (!val.is<sol::table>())
+		{
+			return std::nullopt;
+		}
+		auto tab = val.as<sol::table>();
+		auto size = tab.size();
+		if (size < 2)
+		{
+			return std::nullopt;
+		}
+		auto stick = readGamepadStick(tab[1]);
+		if (!stick)
+		{
+			return std::nullopt;
+		}
+		auto dirType = readDirType(tab[2]);
+		if (!dirType)
+		{
+			return std::nullopt;
+		}
+		uint8_t gamepad = Gamepad::Any;
+		if (size > 2 && tab[3].is<int>())
+		{
+			gamepad = tab[3];
+		}
+		return GamepadInputDir{ stick.value(), dirType.value(), gamepad };
+	}
+
+	std::optional<InputDir> LuaInput::readDir(const sol::object& val) noexcept
+	{
+		if (val.is<std::string>())
+		{
+			if (auto dir = Input::readDir(val.as<std::string>()))
+			{
+				return dir.value();
+			}
+		}
+		if (auto dir = readMouseDir(val))
+		{
+			return dir;
+		}
+		if (auto dir = readGamepadDir(val))
+		{
+			return dir;
+		}
+		if (auto ev = readEvent(val))
+		{
+			return ev;
+		}
+		return std::nullopt;
+	}
+
+	std::vector<InputDir> LuaInput::readDirs(const sol::object& val) noexcept
+	{
+		std::vector<InputDir> dirs;
+		if (val.is<sol::table>())
+		{
+			for (auto& elm : val.as<sol::table>())
+			{
+				auto dir = readDir(val);
+				if (dir)
+				{
+					dirs.push_back(dir.value());
+				}
+			}
+		}
+		else
+		{
+			auto dir = readDir(val);
+			if (dir)
+			{
+				dirs.push_back(dir.value());
+			}
+		}
+		return dirs;
 	}
 
 	void LuaInput::bind(sol::state_view& lua) noexcept

@@ -14,7 +14,6 @@
 #include <darmok/input_fwd.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/utf8.hpp>
-#include <nlohmann/json.hpp>
 #include <bx/bx.h>
 
 namespace darmok
@@ -100,7 +99,7 @@ namespace darmok
 		[[nodiscard]] MouseImpl& getImpl() noexcept;
 
 		[[nodiscard]] static std::optional<MouseButton> readButton(std::string_view name) noexcept;
-		[[nodiscard]] static std::optional<MouseInputType> readInputType(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<MouseAnalog> readAnalog(std::string_view name) noexcept;
 	private:
 		std::unique_ptr<MouseImpl> _impl;
 	};
@@ -153,110 +152,53 @@ namespace darmok
 
 	class Input;
 
-	struct DARMOK_EXPORT BX_NO_VTABLE IInputEvent
+	struct DARMOK_EXPORT KeyboardInputEvent final
 	{
-		virtual ~IInputEvent() = default;
-		virtual bool check(const Input& input) const = 0;
-		virtual std::unique_ptr<IInputEvent> copy() const noexcept = 0;
-		static std::unique_ptr<IInputEvent> read(const nlohmann::json& json) noexcept;
+		KeyboardKey key = KeyboardKey::Count;
+		KeyboardModifiers modifiers = {};
+
+		bool operator==(const KeyboardInputEvent& other) const noexcept;
 	};
 
-	struct DARMOK_EXPORT KeyboardInputEvent final : public IInputEvent
+	struct DARMOK_EXPORT MouseInputEvent final
 	{
-		KeyboardKey key;
-		KeyboardModifiers modifiers;
+		MouseButton button = MouseButton::Left;
 
-		KeyboardInputEvent(KeyboardKey key, const KeyboardModifiers& mods = {}) noexcept;
-		bool check(const Input& input) const noexcept override;
-		std::unique_ptr<IInputEvent> copy() const noexcept override;
-		static std::unique_ptr<KeyboardInputEvent> read(const nlohmann::json& json) noexcept;
+		bool operator==(const MouseInputEvent& other) const noexcept;
 	};
 
-	struct DARMOK_EXPORT MouseInputEvent final : public IInputEvent
+	struct DARMOK_EXPORT GamepadInputEvent final
 	{
-		MouseButton button;
+		GamepadButton button = GamepadButton::A;
+		uint8_t gamepad = Gamepad::Any;
 
-		MouseInputEvent(MouseButton button) noexcept;
-		bool check(const Input& input) const noexcept override;
-		std::unique_ptr<IInputEvent> copy() const noexcept override;
-		static std::unique_ptr<MouseInputEvent> read(const nlohmann::json& json) noexcept;
+		bool operator==(const GamepadInputEvent& other) const noexcept;
 	};
 
-	struct DARMOK_EXPORT GamepadInputEvent final : public IInputEvent
-	{
-		GamepadButton button;
-		uint8_t gamepad;
+	using InputEvent = std::variant<KeyboardInputEvent, MouseInputEvent, GamepadInputEvent>;
 
-		GamepadInputEvent(GamepadButton button, uint8_t gamepad = Gamepad::Any) noexcept;
-		bool check(const Input& input) const noexcept override;
-		std::unique_ptr<IInputEvent> copy() const noexcept override;
-		static std::unique_ptr<GamepadInputEvent> read(const nlohmann::json& json) noexcept;
+	static bool operator==(const InputEvent& a, const InputEvent& b) noexcept;
+
+	struct DARMOK_EXPORT MouseInputDir final
+	{
+		MouseAnalog analog = MouseAnalog::Position;
+		InputDirType type = InputDirType::Count;
+
+		bool operator==(const MouseInputDir& other) const noexcept;
 	};
 
-	struct DARMOK_EXPORT CombinedInputEvent final : public IInputEvent
+	struct DARMOK_EXPORT GamepadInputDir final
 	{
-		using Events = std::vector<std::unique_ptr<IInputEvent>>;
-		Events events;
+		GamepadStick stick = GamepadStick::Left;
+		InputDirType type = InputDirType::Count;
+		uint8_t gamepad = Gamepad::Any;
 
-		CombinedInputEvent(Events&& events) noexcept;
-		bool check(const Input& input) const noexcept override;
-		std::unique_ptr<IInputEvent> copy() const noexcept override;
-		static std::unique_ptr<CombinedInputEvent> read(const nlohmann::json& json) noexcept;
+		bool operator==(const GamepadInputDir& other) const noexcept;
 	};
 
-	struct DARMOK_EXPORT BX_NO_VTABLE IInputAxis
-	{
-		virtual float get(const Input& input) const = 0;
-		virtual std::unique_ptr<IInputAxis> copy() const = 0;
-		static std::unique_ptr<IInputAxis> read(const nlohmann::json& json) noexcept;
-		static const float getValue(const glm::vec2& v, InputAxisType type) noexcept;
-	};
+	using InputDir = std::variant<MouseInputDir, GamepadInputDir, InputEvent>;
 
-	struct DARMOK_EXPORT MouseInputAxis final : public IInputAxis
-	{
-		MouseInputType input;
-		InputAxisType type;
-
-		MouseInputAxis(MouseInputType input = MouseInputType::Position, InputAxisType type = InputAxisType::Horizontal) noexcept;
-		float get(const Input& input) const noexcept override;
-		std::unique_ptr<IInputAxis> copy() const noexcept override;
-		static std::optional<MouseInputAxis> read(const nlohmann::json& json) noexcept;
-	};
-
-	struct DARMOK_EXPORT GamepadInputAxis final : public IInputAxis
-	{
-		GamepadStick stick;
-		InputAxisType type;
-		uint8_t gamepad;
-
-		GamepadInputAxis(GamepadStick stick = GamepadStick::Left, InputAxisType type = InputAxisType::Horizontal, uint8_t gamepad = Gamepad::Any) noexcept;
-		float get(const Input& input) const noexcept override;
-		std::unique_ptr<IInputAxis> copy() const noexcept override;
-		static std::optional<GamepadInputAxis> read(const nlohmann::json& json) noexcept;
-	};
-
-	struct DARMOK_EXPORT ActionInputAxis final : public IInputAxis
-	{
-		std::unique_ptr<IInputEvent> positive;
-		std::unique_ptr<IInputEvent> negative;
-		float factor;
-
-		ActionInputAxis(std::unique_ptr<IInputEvent>&& positive, std::unique_ptr<IInputEvent>&& negative, float factor = 1.F) noexcept;
-		float get(const Input& input) const noexcept override;
-		std::unique_ptr<IInputAxis> copy() const noexcept override;
-		static std::optional<ActionInputAxis> read(const nlohmann::json& json) noexcept;
-	};
-
-	struct DARMOK_EXPORT CombinedInputAxis final : public IInputAxis
-	{
-		using Axes = std::vector<std::unique_ptr<IInputAxis>>;
-		Axes axes;
-
-		CombinedInputAxis(const Axes& axes) noexcept;
-		float get(const Input& input) const noexcept override;
-		std::unique_ptr<IInputAxis> copy() const noexcept override;
-		static std::optional<ActionInputAxis> read(const nlohmann::json& json) noexcept;
-	};
+	static bool operator==(const InputDir& a, const InputDir& b) noexcept;
 
 	using Gamepads = std::array<Gamepad, Gamepad::MaxAmount>;
 
@@ -266,7 +208,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IInputEventListener() = default;
-		virtual void onInputEvent(const IInputEvent& ev) = 0;
+		virtual void onInputEvent(const InputEvent& ev) = 0;
 	};
 
 	class DARMOK_EXPORT Input final
@@ -290,10 +232,16 @@ namespace darmok
 		[[nodiscard]] const InputImpl& getImpl() const noexcept;
 		[[nodiscard]] InputImpl& getImpl() noexcept;
 
-		void addListener(const IInputEvent& ev, IInputEventListener& listener) noexcept;
-		bool removeListener(IInputEventListener& listener) noexcept;
+		bool checkEvent(const InputEvent& ev) const noexcept;
+		float getAxis(const std::vector<InputDir>& positive, const std::vector<InputDir>& negative) const noexcept;
+		
+		void addListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
+		bool removeListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
 
-		[[nodiscard]] static std::optional<InputAxisType> readAxisType(std::string_view name) noexcept;
+		[[nodiscard]] static bool matchesEvent(const InputEvent& condition, const InputEvent& real) noexcept;
+		[[nodiscard]] static std::optional<InputEvent> readEvent(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<InputDir> readDir(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<InputDirType> readDirType(std::string_view name) noexcept;
 
 	private:
 		std::unique_ptr<InputImpl> _impl;

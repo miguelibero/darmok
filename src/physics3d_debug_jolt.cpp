@@ -73,14 +73,14 @@ namespace darmok::physics3d
         }
         if (_input && _config.inputEvent)
         {
-            _input->removeListener(*this);
+            _input->removeListener(*_config.inputEvent, *this);
         }
         _input.reset();
         _cam.reset();
         _viewId = -1;
     }
 
-    void PhysicsDebugRendererImpl::onInputEvent(const IInputEvent& ev) noexcept
+    void PhysicsDebugRendererImpl::onInputEvent(const InputEvent& ev) noexcept
     {
         setEnabled(!_enabled);
     }

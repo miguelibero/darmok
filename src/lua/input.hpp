@@ -22,6 +22,7 @@ namespace darmok
 	{
 	public:
 		LuaKeyboard(Keyboard& kb) noexcept;
+		~LuaKeyboard() noexcept;
 
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void onKeyboardChar(const Utf8Char& chr) override;
@@ -83,15 +84,33 @@ namespace darmok
 		bool unregisterListener(ListenerType type, const sol::protected_function& func) noexcept;
 	};
 
+	enum class LuaGamepadListenerType
+	{
+		Stick,
+		Button,
+		Connect
+	};
+
 	class Gamepad;
 
-	class LuaGamepad final
+	class LuaGamepad final : public IGamepadListener
 	{
 	public:
 		LuaGamepad(Gamepad& gamepad) noexcept;
+		~LuaGamepad() noexcept;
 		static void bind(sol::state_view& lua) noexcept;
 	private:
+		using ListenerType = LuaGamepadListenerType;
+
 		std::reference_wrapper<Gamepad> _gamepad;
+		std::unordered_map<ListenerType, std::vector<sol::protected_function>> _listeners;
+
+		void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) override;
+		void onGamepadButton(uint8_t num, GamepadButton button, bool down) override;
+		void onGamepadConnect(uint8_t num, bool connected) override;
+
+		void registerListener(ListenerType type, const sol::protected_function& func) noexcept;
+		bool unregisterListener(ListenerType type, const sol::protected_function& func) noexcept;
 
 		bool getButton(GamepadButton button) const noexcept;
 		const glm::vec3& getLeftStick() const noexcept;
@@ -101,7 +120,7 @@ namespace darmok
 
 	class Input;
 
-	class LuaInput final
+	class LuaInput final : public IInputEventListener
 	{
 	public:
 		LuaInput(Input& input) noexcept;
@@ -112,8 +131,11 @@ namespace darmok
 		LuaKeyboard _keyboard;
 		LuaMouse _mouse;
 		std::vector<LuaGamepad> _gamepads;
+		std::vector<std::pair<InputEvent, sol::protected_function>> _listeners;
 
-		void addListener(const IInputEvent& ev, const sol::protected_function& func) noexcept;
+		void onInputEvent(const InputEvent& ev) override;
+
+		void addListener(const InputEvent& ev, const sol::protected_function& func) noexcept;
 		bool removeListener(const sol::protected_function& func) noexcept;
 
 		LuaKeyboard& getKeyboard() noexcept;
@@ -121,5 +143,22 @@ namespace darmok
 		OptionalRef<LuaGamepad>::std_t getGamepad(uint8_t num = 0) noexcept;
 		const std::vector<LuaGamepad>& getGamepads() noexcept;
 
+		bool checkEvent(const sol::object& ev) const noexcept;
+		float getAxis(const sol::object& positive, const sol::object& negative) const noexcept;
+
+		static std::optional<InputEvent> readEvent(const sol::object& val) noexcept;
+		static std::optional<KeyboardKey> readKeyboardKey(const sol::object& val) noexcept;
+		static std::optional<KeyboardModifier> readKeyboardModifier(const sol::object& val) noexcept;
+		static std::optional<KeyboardInputEvent> readKeyboardEvent(const sol::object& val) noexcept;
+		static std::optional<MouseInputEvent> readMouseEvent(const sol::object& val) noexcept;
+		static std::optional<GamepadInputEvent> readGamepadEvent(const sol::object& val) noexcept;
+		static std::optional<GamepadButton> readGamepadButton(const sol::object& val) noexcept;
+		static std::optional<GamepadStick> readGamepadStick(const sol::object& val) noexcept;
+		static std::optional<InputDirType> readDirType(const sol::object& val) noexcept;
+		static std::optional<MouseInputDir> readMouseDir(const sol::object& val) noexcept;
+		static std::optional<MouseAnalog> readMouseAnalog(const sol::object& val) noexcept;
+		static std::optional<GamepadInputDir> readGamepadDir(const sol::object& val) noexcept;
+		static std::optional<InputDir> readDir(const sol::object& val) noexcept;
+		static std::vector<InputDir> readDirs(const sol::object& val) noexcept;
 	};
 }

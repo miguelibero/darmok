@@ -304,6 +304,10 @@ namespace darmok
 
 	void AppImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
 	{
+		if (!down)
+		{
+			return;
+		}
 		static const KeyboardModifiers ctrl{ KeyboardModifier::Ctrl };
 		static const KeyboardModifiers alt{ KeyboardModifier::Alt };
 		static const KeyboardModifiers shift{ KeyboardModifier::Shift };
@@ -343,23 +347,24 @@ namespace darmok
 			}
 			return;
 		}
-		if (key == KeyboardKey::F3)
+		if (key == KeyboardKey::F3 && modifiers.empty())
 		{
 			toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
 			return;
 		}
-		if (key == KeyboardKey::F5 
+		if ((key == KeyboardKey::F5 && modifiers.empty())
 			|| (key == KeyboardKey::KeyR && modifiers == ctrl))
 		{
 			triggerExit();
 			return;
 		}
-		if (key == KeyboardKey::F6)
+		if (key == KeyboardKey::F6 && modifiers.empty())
 		{
 			toggleDebugFlag(BGFX_DEBUG_PROFILER);
 			return;
 		}
-		if (key == KeyboardKey::Print || (key == KeyboardKey::KeyP && modifiers == ctrl))
+		if ((key == KeyboardKey::Print && modifiers.empty())
+			|| (key == KeyboardKey::KeyP && modifiers == ctrl))
 		{
 			time_t timeVal;
 			time(&timeVal);

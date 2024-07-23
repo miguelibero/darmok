@@ -73,7 +73,6 @@ namespace darmok
 	{
 		static GamepadMap map
 		{
-			{ GamepadButton::None, ImGuiKey_None },
 			{ GamepadButton::Start, ImGuiKey_GamepadStart },
 			{ GamepadButton::Back, ImGuiKey_GamepadBack },
 			{ GamepadButton::Y, ImGuiKey_GamepadFaceUp },

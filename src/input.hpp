@@ -41,6 +41,7 @@ namespace darmok
 
 		[[nodiscard]] static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<KeyboardModifier> readModifier(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<KeyboardInputEvent> readEvent(std::string_view name) noexcept;
 
 	private:
 		Utf8Char popChar() noexcept;
@@ -52,7 +53,6 @@ namespace darmok
 		size_t _charsRead;
 		size_t _charsWrite;
 		std::unordered_set<OptionalRef<IKeyboardListener>> _listeners;
-
 
 		static const std::array<std::string, to_underlying(KeyboardKey::Count)> _keyNames;
 		static const std::array<std::string, to_underlying(KeyboardModifier::Count)> _modNames;
@@ -76,6 +76,8 @@ namespace darmok
 		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
 		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
 		[[nodiscard]] glm::vec2 getScrollDelta() const noexcept;
+		[[nodiscard]] const glm::vec2& getAnalog(MouseAnalog analog) const noexcept;
+		[[nodiscard]] glm::vec2 getAnalogDelta(MouseAnalog analog) const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 
 		void addListener(IMouseListener& listener) noexcept;
@@ -90,7 +92,10 @@ namespace darmok
 
 		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
 		[[nodiscard]] static std::optional<MouseButton> readButton(std::string_view name) noexcept;
-		[[nodiscard]] static std::optional<MouseInputType> readInputType(std::string_view name) noexcept;
+		[[nodiscard]] static const std::string& getAnalogName(MouseAnalog analog) noexcept;
+		[[nodiscard]] static std::optional<MouseAnalog> readAnalog(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<MouseInputEvent> readEvent(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<MouseInputDir> readDir(std::string_view name) noexcept;
 
 	private:
 		glm::vec2 _position;
@@ -104,7 +109,7 @@ namespace darmok
 		std::unordered_set<OptionalRef<IMouseListener>> _listeners;
 
 		static const std::array<std::string, to_underlying(MouseButton::Count)> _buttonNames;
-		static const std::array<std::string, to_underlying(MouseInputType::Count)> _inputTypeNames;
+		static const std::array<std::string, to_underlying(MouseAnalog::Count)> _analogNames;
 	};
 
 #pragma endregion Mouse
@@ -137,6 +142,12 @@ namespace darmok
 
 		[[nodiscard]] static std::optional<GamepadButton> readButton(std::string_view name) noexcept;
 		[[nodiscard]] static const std::string& getButtonName(GamepadButton button) noexcept;
+		[[nodiscard]] static std::optional<GamepadStick> readStick(std::string_view name) noexcept;
+		[[nodiscard]] static const std::string& getStickName(GamepadStick stick) noexcept;
+
+		[[nodiscard]] static std::optional<uint8_t> readNum(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<GamepadInputEvent> readEvent(std::string_view name) noexcept;
+		[[nodiscard]] static std::optional<GamepadInputDir> readDir(std::string_view name) noexcept;
 	private:
 		uint8_t _num;
 		bool _connected;
@@ -154,7 +165,7 @@ namespace darmok
 
 #pragma region Input
 
-	class InputImpl final
+	class InputImpl final : public IKeyboardListener, public IMouseListener, public IGamepadListener
 	{
 	public:
 		InputImpl(Input& input) noexcept;
@@ -170,20 +181,35 @@ namespace darmok
 		OptionalRef<const Gamepad> getGamepad(uint8_t num) const noexcept;
 		const Gamepads& getGamepads() const noexcept;
 
-		void addListener(const IInputEvent& ev, IInputEventListener& listener) noexcept;
-		bool removeListener(IInputEventListener& listener) noexcept;
+		void addListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
+		bool removeListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
+
+		bool checkEvent(const InputEvent& ev) const noexcept;
+		float getAxis(const std::vector<InputDir>& positive, const std::vector<InputDir>& negative) const noexcept;
 
 		void update() noexcept;
 
+		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
+		void onMouseButton(MouseButton button, bool down) override;
+		void onGamepadButton(uint8_t num, GamepadButton button, bool down) override;
+
+		static std::optional<InputDirType> readDirType(std::string_view name) noexcept;
+		static std::optional<InputEvent> readEvent(std::string_view name) noexcept;
+		static std::optional<InputDir> readDir(std::string_view name) noexcept;
+
 	private:
 		Input& _input;
-		using EventSet = std::unordered_set<OptionalRef<IInputEvent>>;
-		EventSet _updateEvents;
-		std::unordered_map<std::unique_ptr<IInputEvent>, OptionalRef<IInputEventListener>> _listeners;
-
 		Keyboard _keyboard;
 		Mouse _mouse;
 		Gamepads _gamepads;
+		static const std::string _keyboardPrefix;
+		static const std::string _mousePrefix;
+		static const std::string _gamepadPrefix;
+		std::vector<std::pair<InputEvent, OptionalRef<IInputEventListener>>> _listeners;
+		static const std::array<std::string, to_underlying(InputDirType::Count)> _dirTypeNames;
+
+		float getDir(const InputDir& dir) const noexcept;
+		static float getDir(const glm::vec2& vec, InputDirType dir) noexcept;
 	};
 
 #pragma endregion Input

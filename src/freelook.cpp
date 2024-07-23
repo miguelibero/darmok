@@ -28,13 +28,13 @@ namespace darmok
     {
         if (_input && _config.inputEvent)
         {
-            _input->removeListener(*this);
+            _input->removeListener(*_config.inputEvent, *this);
         }
         _input.reset();
         _win.reset();
     }
 
-    void FreelookController::onInputEvent(const IInputEvent& ev) noexcept
+    void FreelookController::onInputEvent(const InputEvent& ev) noexcept
     {
         setEnabled(!_enabled);
     }

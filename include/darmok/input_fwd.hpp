@@ -110,15 +110,17 @@ namespace darmok
 		Count
 	};
 
-	enum class InputAxisType
+	enum class InputDirType
 	{
-		Horizontal,
-		Vertical,
+		Up,
+		Down,
+		Left,
+		Right,
 
 		Count
 	};
 
-	enum class MouseInputType
+	enum class MouseAnalog
 	{
 		Position,
 		Scroll,
@@ -144,8 +146,6 @@ namespace darmok
 
 	enum class GamepadButton
 	{
-		None = 0,
-		
 		A,
 		B,
 		X,

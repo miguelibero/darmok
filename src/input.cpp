@@ -6,6 +6,33 @@
 
 namespace darmok
 {
+	template<typename T, size_t S>
+	static const std::string& getInputEnumName(T v, const std::array<std::string, S>& names) noexcept
+	{
+		auto idx = to_underlying(v);
+		if (idx >= names.size())
+		{
+			static const std::string empty;
+			return empty;
+		}
+		return names[idx];
+	}
+
+	template<typename T, size_t S>
+	static std::optional<T> readInputEnum(std::string_view name, const std::array<std::string, S>& names) noexcept
+	{
+		auto lowerName = StringUtils::toLower(name);
+		for (auto i = 0; i < names.size(); i++)
+		{
+			auto keyName = StringUtils::toLower(names[i]);
+			if (keyName == lowerName)
+			{
+				return (T)i;
+			}
+		}
+		return std::nullopt;
+	}
+
 #pragma region Keyboard
 
 	KeyboardImpl::KeyboardImpl() noexcept
@@ -22,19 +49,32 @@ namespace darmok
 
 	void KeyboardImpl::setKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
 	{
+		bool changed = false;
 		if (down)
 		{
-			_keys.insert(key);
+			if (_keys.insert(key).second)
+			{
+				changed = true;
+			}
 		}
 		else
 		{
-			_keys.erase(key);
+			if (_keys.erase(key))
+			{
+				changed = true;
+			}
 		}
-		_modifiers = modifiers;
-
-		for (auto& listener : _listeners)
+		if (_modifiers != modifiers)
 		{
-			listener->onKeyboardKey(key, modifiers, down);
+			_modifiers = modifiers;
+			changed = true;
+		}
+		if (changed)
+		{
+			for (auto& listener : _listeners)
+			{
+				listener->onKeyboardKey(key, modifiers, down);
+			}
 		}
 	}
 
@@ -248,33 +288,12 @@ namespace darmok
 
 	const std::string& KeyboardImpl::getKeyName(KeyboardKey key) noexcept
 	{
-		auto idx = to_underlying(key);
-		if (idx >= _keyNames.size())
-		{
-			static const std::string empty;
-			return empty;
-		}
-		return _keyNames[idx];
+		return getInputEnumName(key, _keyNames);
 	}
 
 	std::optional<KeyboardKey> KeyboardImpl::readKey(std::string_view name) noexcept
 	{
-		auto lowerName = StringUtils::toLower(name);
-		static const std::string keyPrefix = "key";
-		std::string keyStr;
-		if (StringUtils::startsWith(lowerName, keyPrefix))
-		{
-			keyStr = lowerName.substr(keyPrefix.size());
-		}
-		for (auto i = 0; i < _keyNames.size(); i++)
-		{
-			auto keyName = StringUtils::toLower(_keyNames[i]);
-			if (keyName == lowerName || keyName == keyStr)
-			{
-				return (KeyboardKey)i;
-			}
-		}
-		return std::nullopt;
+		return readInputEnum<KeyboardKey>(name, _keyNames);
 	}
 
 	const std::array<std::string, to_underlying(KeyboardModifier::Count)> KeyboardImpl::_modNames
@@ -287,27 +306,32 @@ namespace darmok
 
 	const std::string& KeyboardImpl::getModifierName(KeyboardModifier mod) noexcept
 	{
-		auto idx = to_underlying(mod);
-		if (idx >= _modNames.size())
-		{
-			static const std::string empty;
-			return empty;
-		}
-		return _keyNames[idx];
+		return getInputEnumName(mod, _modNames);
 	}
 
 	std::optional<KeyboardModifier> KeyboardImpl::readModifier(std::string_view name) noexcept
 	{
-		auto lowerName = StringUtils::toLower(name);
-		for (auto i = 0; i < _modNames.size(); i++)
+		return readInputEnum<KeyboardModifier>(name, _modNames);
+	}
+
+	std::optional<KeyboardInputEvent> KeyboardImpl::readEvent(std::string_view name) noexcept
+	{
+		auto parts = StringUtils::split("+", name);
+		auto key = Keyboard::readKey(parts[0]);
+		if (!key)
 		{
-			auto keyName = StringUtils::toLower(_modNames[i]);
-			if (keyName == lowerName)
+			return std::nullopt;
+		}
+		KeyboardModifiers mods;
+		for (size_t i = 1; i < parts.size(); i++)
+		{
+			auto mod = Keyboard::readModifier(parts[i]);
+			if (mod)
 			{
-				return (KeyboardModifier)i;
+				mods.insert(mod.value());
 			}
 		}
-		return std::nullopt;
+		return KeyboardInputEvent{ key.value(), mods };
 	}
 
 	Keyboard::Keyboard() noexcept
@@ -514,6 +538,27 @@ namespace darmok
 		return _scroll - _lastScroll;
 	}
 
+	const glm::vec2& MouseImpl::getAnalog(MouseAnalog analog) const noexcept
+	{
+		if (analog == MouseAnalog::Scroll)
+		{
+			return _scroll;
+		}
+		return _position;
+	}
+
+	glm::vec2 MouseImpl::getAnalogDelta(MouseAnalog analog) const noexcept
+	{
+		switch (analog)
+		{
+		case MouseAnalog::Scroll:
+			return getScrollDelta();
+		case MouseAnalog::Position:
+			return getPositionDelta();
+		}
+		return glm::vec2(0);
+	}
+
 	const MouseButtons& MouseImpl::getButtons() const noexcept
 	{
 		return _buttons;
@@ -538,26 +583,58 @@ namespace darmok
 
 	std::optional<MouseButton> MouseImpl::readButton(std::string_view name) noexcept
 	{
-		auto lowerName = StringUtils::toLower(name);
-		for (auto i = 0; i < _buttonNames.size(); i++)
-		{
-			if (StringUtils::toLower(_buttonNames[i]) == lowerName)
-			{
-				return (MouseButton)i;
-			}
-		}
-		return std::nullopt;
+		return readInputEnum<MouseButton>(name, _buttonNames);
 	}
 
 	const std::string& MouseImpl::getButtonName(MouseButton button) noexcept
 	{
-		auto idx = to_underlying(button);
-		if (idx >= _buttonNames.size())
+		return getInputEnumName(button, _buttonNames);
+	}
+
+	const std::array<std::string, to_underlying(MouseAnalog::Count)> MouseImpl::_analogNames =
+	{
+		"Position",
+		"Scroll"
+	};
+
+	std::optional<MouseAnalog> MouseImpl::readAnalog(std::string_view name) noexcept
+	{
+		return readInputEnum<MouseAnalog>(name, _analogNames);
+	}
+
+	const std::string& MouseImpl::getAnalogName(MouseAnalog analog) noexcept
+	{
+		return getInputEnumName(analog, _analogNames);
+	}
+
+	std::optional<MouseInputEvent> MouseImpl::readEvent(std::string_view name) noexcept
+	{
+		if (auto button = readButton(name))
 		{
-			static const std::string empty;
-			return empty;
+			return MouseInputEvent{ button.value() };
 		}
-		return _buttonNames[idx];
+		return std::nullopt;
+	}
+
+	std::optional<MouseInputDir> MouseImpl::readDir(std::string_view name) noexcept
+	{
+		auto parts = StringUtils::split(":", name);
+		auto size = parts.size();
+		if (size < 2)
+		{
+			return std::nullopt;
+		}
+		auto analog = readAnalog(parts[0]);
+		if (!analog)
+		{
+			return std::nullopt;
+		}
+		auto type = InputImpl::readDirType(parts[1]);
+		if (!type)
+		{
+			return std::nullopt;
+		}
+		return MouseInputDir{ analog.value(), type.value() };
 	}
 
 	std::optional<MouseButton> Mouse::readButton(std::string_view name) noexcept
@@ -761,7 +838,6 @@ namespace darmok
 
 	const std::array<std::string, to_underlying(GamepadButton::Count)> GamepadImpl::_buttonNames =
 	{
-		"None",
 		"A",
 		"B",
 		"X",
@@ -781,26 +857,77 @@ namespace darmok
 
 	std::optional<GamepadButton> GamepadImpl::readButton(std::string_view name) noexcept
 	{
-		auto lowerName = StringUtils::toLower(name);
-		for (auto i = 0; i < _buttonNames.size(); i++)
-		{
-			if (StringUtils::toLower(_buttonNames[i]) == lowerName)
-			{
-				return (GamepadButton)i;
-			}
-		}
-		return std::nullopt;
+		return readInputEnum<GamepadButton>(name, _buttonNames);
 	}
 
 	const std::string& GamepadImpl::getButtonName(GamepadButton button) noexcept
 	{
-		auto idx = to_underlying(button);
-		if (idx >= _buttonNames.size())
+		return getInputEnumName(button, _buttonNames);
+	}
+
+	const std::array<std::string, to_underlying(GamepadStick::Count)> GamepadImpl::_stickNames =
+	{
+		"Left",
+		"Right"
+	};
+
+	std::optional<GamepadStick> GamepadImpl::readStick(std::string_view name) noexcept
+	{
+		return readInputEnum<GamepadStick>(name, _stickNames);
+	}
+
+	const std::string& GamepadImpl::getStickName(GamepadStick stick) noexcept
+	{
+		return getInputEnumName(stick, _stickNames);
+	}
+
+	std::optional<uint8_t> GamepadImpl::readNum(std::string_view name) noexcept
+	{
+		auto ul = std::stoul(std::string(name));
+		if (ul > std::numeric_limits<uint8_t>::max())
 		{
-			static const std::string empty;
-			return empty;
+			return Gamepad::Any;
 		}
-		return _buttonNames[idx];
+		return static_cast<uint8_t>(ul);
+	}
+
+	std::optional<GamepadInputEvent> GamepadImpl::readEvent(std::string_view name) noexcept
+	{
+		auto parts = StringUtils::split(":", name);
+		auto size = parts.size();
+		if (size == 0)
+		{
+			return std::nullopt;
+		}
+		auto button = readButton(parts[0]);
+		if (!button)
+		{
+			return std::nullopt;
+		}
+		auto gamepad = readNum(parts[1]).value_or(Gamepad::Any);
+		return GamepadInputEvent{ button.value(), gamepad };
+	}
+
+	std::optional<GamepadInputDir> GamepadImpl::readDir(std::string_view name) noexcept
+	{
+		auto parts = StringUtils::split(":", name);
+		auto size = parts.size();
+		if (size < 2)
+		{
+			return std::nullopt;
+		}
+		auto stick = readStick(parts[0]);
+		if (!stick)
+		{
+			return std::nullopt;
+		}
+		auto type = InputImpl::readDirType(parts[1]);
+		if (!type)
+		{
+			return std::nullopt;
+		}
+		auto gamepad = readNum(parts[1]).value_or(Gamepad::Any);
+		return GamepadInputDir{ stick.value(), type.value(), gamepad };
 	}
 
 	Gamepad::Gamepad() noexcept
@@ -872,227 +999,87 @@ namespace darmok
 
 #pragma region Events
 
-	std::unique_ptr<IInputEvent> IInputEvent::read(const nlohmann::json& json) noexcept
+	bool KeyboardInputEvent::operator==(const KeyboardInputEvent& other) const noexcept
 	{
-		if (json.is_array())
+		return key == other.key && modifiers == other.modifiers;
+	}
+
+	bool MouseInputEvent::operator==(const MouseInputEvent& other) const noexcept
+	{
+		return button == other.button;
+	}
+
+	bool GamepadInputEvent::operator==(const GamepadInputEvent& other) const noexcept
+	{
+		return button == other.button && gamepad == other.gamepad;
+	}
+
+	bool MouseInputDir::operator==(const MouseInputDir& other) const noexcept
+	{
+		return analog == other.analog && type == other.type;
+	}
+
+	bool GamepadInputDir::operator==(const GamepadInputDir& other) const noexcept
+	{
+		return stick == other.stick && type == other.type && gamepad == other.gamepad;
+	}
+
+	bool operator==(const InputEvent& a, const InputEvent& b) noexcept
+	{
+		if (auto v1 = std::get_if<KeyboardInputEvent>(&a))
 		{
-			return CombinedInputEvent::read(json);
-		}
-		if (json.is_object())
-		{
-			auto type = json["type"];
-			if (type == "keyboard")
+			if (auto v2 = std::get_if<KeyboardInputEvent>(&b))
 			{
-				return KeyboardInputEvent::read(json);
+				return *v1 == *v2;
 			}
-			if (type == "mouse")
-			{
-				return MouseInputEvent::read(json);
-			}
-			if (type == "gamepad")
-			{
-				return GamepadInputEvent::read(json);
-			}
-			return nullptr;
-		}
-		auto kb = KeyboardInputEvent::read(json);
-		if (kb)
-		{
-			return kb;
-		}
-		auto mouse = MouseInputEvent::read(json);
-		if (mouse)
-		{
-			return mouse;
-		}
-		auto gamepad = GamepadInputEvent::read(json);
-		if (gamepad)
-		{
-			return gamepad;
-		}
-		return nullptr;
-	}
-
-	KeyboardInputEvent::KeyboardInputEvent(KeyboardKey key, const KeyboardModifiers& mods) noexcept
-		: key(key), modifiers(mods)
-	{
-	}
-
-	bool KeyboardInputEvent::check(const Input& input) const noexcept
-	{
-		auto& kb = input.getKeyboard();
-		return kb.getKey(key) && kb.getModifiers() == modifiers;
-	}
-
-	std::unique_ptr<IInputEvent> KeyboardInputEvent::copy() const noexcept
-	{
-		return std::make_unique<KeyboardInputEvent>(key, modifiers);
-	}
-
-	std::unique_ptr<KeyboardInputEvent> KeyboardInputEvent::read(const nlohmann::json& json) noexcept
-	{
-		if (json.is_string())
-		{
-			auto parts = StringUtils::split("+", json.get<std::string>());
-			auto key = Keyboard::readKey(parts[0]);
-			if (!key)
-			{
-				return nullptr;
-			}
-			KeyboardModifiers mods;
-			for (auto i = 0; i < parts.size(); i++)
-			{
-				auto mod = Keyboard::readModifier(parts[i]);
-				if (mod)
-				{
-					mods.insert(mod.value());
-				}
-			}
-			return std::make_unique<KeyboardInputEvent>(key.value(), mods);
-		}
-
-		if (!json.contains("key"))
-		{
-			return nullptr;
-		}
-		auto key = Keyboard::readKey(json["key"]);
-		if (!key)
-		{
-			return nullptr;
-		}
-		KeyboardModifiers mods;
-		if(json.contains("modifiers"))
-		{
-			for (auto& item : json["modifiers"])
-			{
-				auto mod = Keyboard::readModifier(item);
-				if (mod)
-				{
-					mods.insert(mod.value());
-				}
-			}
-		}
-		return std::make_unique<KeyboardInputEvent>(key.value(), mods);
-	}
-
-	MouseInputEvent::MouseInputEvent(MouseButton button) noexcept
-		: button(button)
-	{
-	}
-
-	bool MouseInputEvent::check(const Input& input) const noexcept
-	{
-		return input.getMouse().getButton(button);
-	}
-
-	std::unique_ptr<IInputEvent> MouseInputEvent::copy() const noexcept
-	{
-		return std::make_unique<MouseInputEvent>(button);
-	}
-
-	std::unique_ptr<MouseInputEvent> MouseInputEvent::read(const nlohmann::json& json) noexcept
-	{
-		if (!json.contains("button"))
-		{
-			return nullptr;
-		}
-		auto button = Mouse::readButton(json["button"]);
-		if (!button)
-		{
-			return nullptr;
-		}
-		return std::make_unique<MouseInputEvent>(button.value());
-	}
-
-	GamepadInputEvent::GamepadInputEvent(GamepadButton button, uint8_t gamepad) noexcept
-		: button(button), gamepad(gamepad)
-	{
-	}
-
-	bool GamepadInputEvent::check(const Input& input) const noexcept
-	{
-		auto gp = input.getGamepad(gamepad);
-		if (!gp)
-		{
-			for (auto& elm : input.getGamepads())
-			{
-				if (elm.isConnected())
-				{
-					gp = elm;
-					break;
-				}
-			}
-		}
-		if (!gp)
-		{
 			return false;
 		}
-		return gp->getButton(button);
-	}
-
-	std::unique_ptr<IInputEvent> GamepadInputEvent::copy() const noexcept
-	{
-		return std::make_unique<GamepadInputEvent>(button, gamepad);
-	}
-
-	std::unique_ptr<GamepadInputEvent> GamepadInputEvent::read(const nlohmann::json& json) noexcept
-	{
-		if (!json.contains("button"))
+		if (auto v1 = std::get_if<MouseInputEvent>(&a))
 		{
-			return nullptr;
-		}
-		auto button = Gamepad::readButton(json["button"]);
-		if (!button)
-		{
-			return nullptr;
-		}
-		auto gamepad = Gamepad::Any;
-		if (json.contains("gamepad"))
-		{
-			gamepad = json["gamepad"];
-		}
-		return std::make_unique<GamepadInputEvent>(button.value(), gamepad);
-	}
-
-	CombinedInputEvent::CombinedInputEvent(Events&& events) noexcept
-		: events(std::move(events))
-	{
-	}
-
-	bool CombinedInputEvent::check(const Input& input) const noexcept
-	{
-		for (auto& ev : events)
-		{
-			if (!ev->check(input))
+			if (auto v2 = std::get_if<MouseInputEvent>(&b))
 			{
-				return false;
+				return *v1 == *v2;
 			}
+			return false;
 		}
-		return true;
+		if (auto v1 = std::get_if<GamepadInputEvent>(&a))
+		{
+			if (auto v2 = std::get_if<GamepadInputEvent>(&b))
+			{
+				return *v1 == *v2;
+			}
+			return false;
+		}
+		return false;
 	}
 
-	std::unique_ptr<IInputEvent> CombinedInputEvent::copy() const noexcept
+	bool operator==(const InputDir& a, const InputDir& b) noexcept
 	{
-		std::vector<std::unique_ptr<IInputEvent>> copyEvents;
-		for (auto& ev : events)
+		if (auto v1 = std::get_if<MouseInputDir>(&a))
 		{
-			copyEvents.push_back(ev->copy());
+			if (auto v2 = std::get_if<MouseInputDir>(&b))
+			{
+				return *v1 == *v2;
+			}
+			return false;
 		}
-		return std::make_unique<CombinedInputEvent>(std::move(copyEvents));
-	}
-
-	std::unique_ptr<CombinedInputEvent> CombinedInputEvent::read(const nlohmann::json& json) noexcept
-	{
-		if (!json.is_array())
+		if (auto v1 = std::get_if<GamepadInputDir>(&a))
 		{
-			return nullptr;
+			if (auto v2 = std::get_if<GamepadInputDir>(&b))
+			{
+				return *v1 == *v2;
+			}
+			return false;
 		}
-		std::vector<std::unique_ptr<IInputEvent>> events;
-		for (auto& elm : json)
+		if (auto v1 = std::get_if<InputEvent>(&a))
 		{
-			events.push_back(IInputEvent::read(elm));
+			if (auto v2 = std::get_if<InputEvent>(&b))
+			{
+				return *v1 == *v2;
+			}
+			return false;
 		}
-		return std::make_unique<CombinedInputEvent>(std::move(events));
+		return false;
 	}
 
 #pragma endregion Events
@@ -1106,17 +1093,224 @@ namespace darmok
 		for (auto& gamepad : _gamepads)
 		{
 			gamepad.getImpl().setNumber(num++);
+			gamepad.addListener(*this);
+		}
+		_keyboard.addListener(*this);
+		_mouse.addListener(*this);
+	}
+
+	void InputImpl::addListener(const InputEvent& ev, IInputEventListener& listener) noexcept
+	{
+		_listeners.emplace_back(ev, listener);
+	}
+
+	bool InputImpl::removeListener(const InputEvent& ev, IInputEventListener& listener) noexcept
+	{
+		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&ev, &listener](auto& elm)
+		{
+			return elm.first == ev && elm.second == listener;
+		});
+		if (itr == _listeners.end())
+		{
+			return false;
+		}
+		_listeners.erase(itr, _listeners.end());
+		return true;
+	}
+
+	bool InputImpl::checkEvent(const InputEvent& ev) const noexcept
+	{
+		if (auto v = std::get_if<KeyboardInputEvent>(&ev))
+		{
+			if (!_keyboard.getKey(v->key))
+			{
+				return false;
+			}
+			return _keyboard.getModifiers() == v->modifiers;
+		}
+		if (auto v = std::get_if<MouseInputEvent>(&ev))
+		{
+			return _mouse.getButton(v->button);
+		}
+		if (auto v = std::get_if<GamepadInputEvent>(&ev))
+		{
+			auto gamepad = getGamepad(v->gamepad);
+			if(!gamepad)
+			{
+				return false;
+			}
+			return gamepad->getButton(v->button);
+		}
+		return false;
+	}
+
+	float InputImpl::getDir(const glm::vec2& vec, InputDirType dir) noexcept
+	{
+		switch (dir)
+		{
+			case InputDirType::Up:
+				return vec.y;
+			case InputDirType::Down:
+				return -vec.y;
+			case InputDirType::Left:
+				return -vec.x;
+			case InputDirType::Right:
+				return vec.x;
+		}
+		return 0.F;
+	}
+
+	float InputImpl::getDir(const InputDir& dir) const noexcept
+	{
+		if (auto v = std::get_if<MouseInputDir>(&dir))
+		{
+			glm::vec2 vec = _mouse.getImpl().getAnalog(v->analog);
+			return getDir(vec, v->type);
+		}
+		if (auto v = std::get_if<GamepadInputDir>(&dir))
+		{
+			auto gamepad = getGamepad(v->gamepad);
+			if (!gamepad)
+			{
+				return 0.F;
+			}
+			return getDir(gamepad->getStick(v->stick), v->type);
+		}
+		if (auto v = std::get_if<InputEvent>(&dir))
+		{
+			return checkEvent(*v) ? 1.F : 0.F;
+		}
+		return 0.F;
+	}
+
+	float InputImpl::getAxis(const std::vector<InputDir>& positive, const std::vector<InputDir>& negative) const noexcept
+	{
+		float v = 0;
+		for (auto& dir : positive)
+		{
+			v += getDir(dir);
+		}
+		for (auto& dir : negative)
+		{
+			v -= getDir(dir);
+		}
+		return v;
+	}
+
+	void InputImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
+	{
+		if (!down)
+		{
+			return;
+		}
+		KeyboardInputEvent ev{ key, modifiers };
+		for (auto& elm : _listeners)
+		{
+			auto other = std::get_if<KeyboardInputEvent>(&elm.first);
+			if (!other)
+			{
+				continue;
+			}
+			if (other->key == key && other->modifiers == modifiers)
+			{
+				elm.second->onInputEvent(ev);
+			}
 		}
 	}
 
-	void InputImpl::addListener(const IInputEvent& ev, IInputEventListener& listener) noexcept
+	void InputImpl::onMouseButton(MouseButton button, bool down)
 	{
-		_listeners[ev.copy()] = listener;
+		if (!down)
+		{
+			return;
+		}
+		MouseInputEvent ev{ button };
+		for (auto& elm : _listeners)
+		{
+			auto other = std::get_if<MouseInputEvent>(&elm.first);
+			if (!other)
+			{
+				continue;
+			}
+			if (other->button == button)
+			{
+				elm.second->onInputEvent(ev);
+			}
+		}
 	}
 
-	bool InputImpl::removeListener(IInputEventListener& listener) noexcept
+	void InputImpl::onGamepadButton(uint8_t num, GamepadButton button, bool down)
 	{
-		return false;
+		if (!down)
+		{
+			return;
+		}
+		GamepadInputEvent ev{ button, num };
+		for (auto& elm : _listeners)
+		{
+			auto other = std::get_if<GamepadInputEvent>(&elm.first);
+			if (!other)
+			{
+				continue;
+			}
+			if ((other->gamepad == num || other->gamepad == Gamepad::Any) && other->button == button)
+			{
+				elm.second->onInputEvent(ev);
+			}
+		}
+	}
+
+	const std::array<std::string, to_underlying(InputDirType::Count)> InputImpl::_dirTypeNames =
+	{
+		"Up",
+		"Down",
+		"Left",
+		"Right"
+	};
+
+	std::optional<InputDirType> InputImpl::readDirType(std::string_view name) noexcept
+	{
+		return readInputEnum<InputDirType>(name, _dirTypeNames);
+	}
+
+	const std::string InputImpl::_keyboardPrefix = "keyboard:";
+	const std::string InputImpl::_mousePrefix = "mouse:";
+	const std::string InputImpl::_gamepadPrefix = "gamepad:";
+
+	std::optional<InputEvent> InputImpl::readEvent(std::string_view name) noexcept
+	{
+		if (name.starts_with(_keyboardPrefix))
+		{
+			return KeyboardImpl::readEvent(name.substr(_keyboardPrefix.size()));
+		}
+		if (name.starts_with(_mousePrefix))
+		{
+			return MouseImpl::readEvent(name.substr(_mousePrefix.size()));
+		}
+		if (name.starts_with(_gamepadPrefix))
+		{
+			return GamepadImpl::readEvent(name.substr(_gamepadPrefix.size()));
+		}
+		return std::nullopt;
+	}
+
+	std::optional<InputDir> InputImpl::readDir(std::string_view name) noexcept
+	{
+		if (name.starts_with(_gamepadPrefix))
+		{
+			if (auto dir = GamepadImpl::readDir(name.substr(_gamepadPrefix.size())))
+			{
+				return dir;
+			}
+		}
+		if (name.starts_with(_mousePrefix))
+		{
+			if (auto dir = GamepadImpl::readDir(name.substr(_mousePrefix.size())))
+			{
+				return dir;
+			}
+		}
+		return readEvent(name);
 	}
 
 	Keyboard& InputImpl::getKeyboard() noexcept
@@ -1155,6 +1349,17 @@ namespace darmok
 
 	OptionalRef<const Gamepad> InputImpl::getGamepad(uint8_t num) const noexcept
 	{
+		if (num == Gamepad::Any)
+		{
+			for (auto& gamepad : _gamepads)
+			{
+				if (gamepad.isConnected())
+				{
+					return gamepad;
+				}
+			}
+			return nullptr;
+		}
 		if (num > 0 || num < Gamepad::MaxAmount)
 		{
 			return _gamepads[num];
@@ -1171,22 +1376,6 @@ namespace darmok
 	{
 		_keyboard.getImpl().update();
 		_mouse.getImpl().update();
-		
-		EventSet lastUpdateEvents = _updateEvents;
-		_updateEvents.clear();
-		for (auto& elm : _listeners)
-		{
-			auto& ev = *elm.first;
-			if (!ev.check(_input))
-			{
-				continue;
-			}
-			_updateEvents.insert(ev);
-			if (!lastUpdateEvents.contains(ev))
-			{
-				elm.second->onInputEvent(ev);
-			}
-		}
 	}
 
 	Input::Input() noexcept
@@ -1249,14 +1438,24 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Input::addListener(const IInputEvent& ev, IInputEventListener& listener) noexcept
+	void Input::addListener(const InputEvent& ev, IInputEventListener& listener) noexcept
 	{
 		_impl->addListener(ev, listener);
 	}
 
-	bool Input::removeListener(IInputEventListener& listener) noexcept
+	bool Input::removeListener(const InputEvent& ev, IInputEventListener& listener) noexcept
 	{
-		return _impl->removeListener(listener);
+		return _impl->removeListener(ev, listener);
+	}
+
+	std::optional<InputEvent> Input::readEvent(std::string_view name) noexcept
+	{
+		return InputImpl::readEvent(name);
+	}
+
+	std::optional<InputDir> Input::readDir(std::string_view name) noexcept
+	{
+		return InputImpl::readDir(name);
 	}
 
 #pragma endregion Input
