@@ -15,9 +15,9 @@ namespace darmok
 
     struct DARMOK_EXPORT FreelookConfig final
     {
-        float mouseSensitivity = 5.F;
-        float keyboardSensitivity = 10.F;
-        glm::vec2 maxMouseAngle = glm::vec2(30, 30);
+        float lookSensitivity = 5.F;
+        float moveSensitivity = 10.F;
+        glm::vec2 maxLookAngle = glm::vec2(30, 30);
         std::optional<InputEvent> enableEvent = KeyboardInputEvent{ KeyboardKey::F4 };
 
         InputDirs moveLeft = {
@@ -42,19 +42,19 @@ namespace darmok
         };
         InputDirs lookLeft = {
             MouseInputDir{ MouseAnalog::Position, InputDirType::Left },
-            GamepadInputDir{ GamepadStick::Left, InputDirType::Left }
+            GamepadInputDir{ GamepadStick::Right, InputDirType::Left }
         };
         InputDirs lookRight = {
             MouseInputDir{ MouseAnalog::Position, InputDirType::Right },
-            GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
+            GamepadInputDir{ GamepadStick::Right, InputDirType::Right }
         };
         InputDirs lookUp = {
             MouseInputDir{ MouseAnalog::Position, InputDirType::Up },
-            GamepadInputDir{ GamepadStick::Left, InputDirType::Up }
+            GamepadInputDir{ GamepadStick::Right, InputDirType::Up }
         };
         InputDirs lookDown = {
             MouseInputDir{ MouseAnalog::Position, InputDirType::Down },
-            GamepadInputDir{ GamepadStick::Left, InputDirType::Down }
+            GamepadInputDir{ GamepadStick::Right, InputDirType::Down }
         };
     };
     

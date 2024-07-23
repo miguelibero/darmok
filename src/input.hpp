@@ -76,8 +76,7 @@ namespace darmok
 		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
 		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
 		[[nodiscard]] glm::vec2 getScrollDelta() const noexcept;
-		[[nodiscard]] const glm::vec2& getAnalog(MouseAnalog analog) const noexcept;
-		[[nodiscard]] glm::vec2 getAnalogDelta(MouseAnalog analog) const noexcept;
+		[[nodiscard]] glm::vec2 getDelta(MouseAnalog analog) const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 
 		void addListener(IMouseListener& listener) noexcept;

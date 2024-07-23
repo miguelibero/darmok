@@ -543,16 +543,7 @@ namespace darmok
 		return _scroll - _lastScroll;
 	}
 
-	const glm::vec2& MouseImpl::getAnalog(MouseAnalog analog) const noexcept
-	{
-		if (analog == MouseAnalog::Scroll)
-		{
-			return _scroll;
-		}
-		return _position;
-	}
-
-	glm::vec2 MouseImpl::getAnalogDelta(MouseAnalog analog) const noexcept
+	glm::vec2 MouseImpl::getDelta(MouseAnalog analog) const noexcept
 	{
 		switch (analog)
 		{
@@ -1202,8 +1193,6 @@ namespace darmok
 				v = vec.x;
 				break;
 		}
-		v = v < -1.F ? -1.F : v;
-		v = v > 1.F ? 1.F : v;
 		return v;
 	}
 
@@ -1211,7 +1200,7 @@ namespace darmok
 	{
 		if (auto v = std::get_if<MouseInputDir>(&dir))
 		{
-			glm::vec2 vec = _mouse.getImpl().getAnalog(v->analog);
+			glm::vec2 vec = _mouse.getImpl().getDelta(v->analog);
 			return getDir(vec, v->type);
 		}
 		if (auto v = std::get_if<GamepadInputDir>(&dir))
@@ -1241,8 +1230,6 @@ namespace darmok
 		{
 			v -= getDir(dir);
 		}
-		v = v < -1.F ? -1.F : v;
-		v = v > 1.F ? 1.F : v;
 		return v;
 	}
 

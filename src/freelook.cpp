@@ -80,12 +80,15 @@ namespace darmok
         {
             return;
         }
-        auto mouseRot = _input->getMouse().getPositionDelta();
-        mouseRot *= _config.mouseSensitivity * deltaTime;
-        mouseRot = glm::clamp(mouseRot, -_config.maxMouseAngle, _config.maxMouseAngle);
-        mouseRot = glm::radians(mouseRot);
+        glm::vec2 lookRot(
+            _input->getAxis(_config.lookRight, _config.lookLeft),
+            _input->getAxis(_config.lookUp, _config.lookDown)
+        );
+        lookRot *= _config.lookSensitivity * deltaTime;
+        lookRot = glm::clamp(lookRot, -_config.maxLookAngle, _config.maxLookAngle);
+        lookRot = glm::radians(lookRot);
         
-        _rot = glm::quat(glm::vec3(0, mouseRot.x, 0)) * _rot * glm::quat(glm::vec3(mouseRot.y, 0, 0));
+        _rot = glm::quat(glm::vec3(0, lookRot.x, 0)) * _rot * glm::quat(glm::vec3(lookRot.y, 0, 0));
 
         glm::vec3 dir(
             _input->getAxis(_config.moveRight, _config.moveLeft),
@@ -94,7 +97,7 @@ namespace darmok
         );
 
         dir = _rot * dir;
-        _pos += dir * _config.keyboardSensitivity * deltaTime;
+        _pos += dir * _config.moveSensitivity * deltaTime;
 
         auto mtx = Math::transform(_pos, _rot, _scale);
         _cam.setModelMatrix(glm::inverse(mtx));
