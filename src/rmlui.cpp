@@ -932,10 +932,12 @@ namespace darmok
 
         for (auto& elm : getKeyboardModifierMap())
         {
-            auto modPtr = std::get_if<KeyboardModifier>(&elm.first);
-            if (mods.contains(*modPtr))
+            if (auto modPtr = std::get_if<KeyboardModifier>(&elm.first))
             {
-                state |= elm.second;
+                if (mods.contains(*modPtr))
+                {
+                    state |= elm.second;
+                }
             }
             else if (kb.getKey(std::get<KeyboardKey>(elm.first)))
             {

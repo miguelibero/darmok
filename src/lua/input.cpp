@@ -199,6 +199,7 @@ namespace darmok
 
 	void LuaMouse::bind(sol::state_view& lua) noexcept
 	{
+		newLuaEnumFunc(lua, "MouseAnalog", MouseAnalog::Count, &Mouse::getAnalogName);
 		newLuaEnumFunc(lua, "MouseButton", MouseButton::Count, &Mouse::getButtonName);
 
 		lua.new_enum<LuaMouseListenerType>("MouseListenerType", {
@@ -293,6 +294,7 @@ namespace darmok
 	void LuaGamepad::bind(sol::state_view& lua) noexcept
 	{
 		newLuaEnumFunc(lua, "GamepadButton", GamepadButton::Count, &Gamepad::getButtonName);
+		newLuaEnumFunc(lua, "GamepadStick", GamepadStick::Count, &Gamepad::getStickName);
 
 		lua.new_enum<GamepadStick>("GamepadStick", {
 			{ "Left", GamepadStick::Left },
@@ -358,13 +360,18 @@ namespace darmok
 		}
 	}
 
-	void LuaInput::addListener(const InputEvent& ev, const sol::protected_function& func) noexcept
+	void LuaInput::registerListener(const sol::object& evObj, const sol::protected_function& func)
 	{
-		_input->addListener(ev, *this);
-		_listeners.emplace_back(ev, func);
+		auto ev = readEvent(evObj);
+		if (!ev)
+		{
+			throw std::invalid_argument("could not parse event");
+		}
+		_input->addListener(ev.value(), *this);
+		_listeners.emplace_back(ev.value(), func);
 	}
 
-	bool LuaInput::removeListener(const sol::protected_function& func) noexcept
+	bool LuaInput::unregisterListener(const sol::protected_function& func) noexcept
 	{
 		std::vector<InputEvent> events;
 		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [func, &events](auto& elm) {
@@ -657,9 +664,11 @@ namespace darmok
 		std::vector<InputDir> dirs;
 		if (val.is<sol::table>())
 		{
-			for (auto& elm : val.as<sol::table>())
+			auto tab = val.as<sol::table>();
+			auto size = tab.size();
+			for(auto i = 1; i <= size; i++)
 			{
-				auto dir = readDir(val);
+				auto dir = readDir(tab[i]);
 				if (dir)
 				{
 					dirs.push_back(dir.value());
@@ -683,11 +692,17 @@ namespace darmok
 		LuaMouse::bind(lua);
 		LuaGamepad::bind(lua);
 
+		newLuaEnumFunc(lua, "InputDirType", InputDirType::Count, &Input::getDirTypeName);
+
 		lua.new_usertype<LuaInput>("Input", sol::no_constructor,
-			"keyboard",			sol::property(&LuaInput::getKeyboard),
-			"mouse",			sol::property(&LuaInput::getMouse),
-			"gamepads",			sol::property(&LuaInput::getGamepads),
-			"get_gamepad",		&LuaInput::getGamepad
+			"keyboard", sol::property(&LuaInput::getKeyboard),
+			"mouse", sol::property(&LuaInput::getMouse),
+			"gamepads",	sol::property(&LuaInput::getGamepads),
+			"get_gamepad", &LuaInput::getGamepad,
+			"get_axis", &LuaInput::getAxis,
+			"check_event", &LuaInput::checkEvent,
+			"register_listener", &LuaInput::registerListener,
+			"unregister_listener", &LuaInput::unregisterListener
 		);
 	}
 }

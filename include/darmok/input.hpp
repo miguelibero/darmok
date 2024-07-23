@@ -52,7 +52,7 @@ namespace darmok
 
 		[[nodiscard]] static char keyToAscii(KeyboardKey key, bool upper) noexcept;
 		[[nodiscard]] static const std::string& getKeyName(KeyboardKey key) noexcept;
-		[[nodiscard]] static const std::string& getModifierName(KeyboardModifier key) noexcept;
+		[[nodiscard]] static const std::string& getModifierName(KeyboardModifier mod) noexcept;
 		[[nodiscard]] static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<KeyboardModifier> readModifier(std::string_view name) noexcept;
 
@@ -82,8 +82,6 @@ namespace darmok
 		Mouse(const Mouse& other) = delete;
 		Mouse(Mouse&& other) = delete;
 
-		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
-
 		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
 		[[nodiscard]] glm::vec2 getPositionDelta() const noexcept;
 		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
@@ -99,7 +97,10 @@ namespace darmok
 		[[nodiscard]] MouseImpl& getImpl() noexcept;
 
 		[[nodiscard]] static std::optional<MouseButton> readButton(std::string_view name) noexcept;
+		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
 		[[nodiscard]] static std::optional<MouseAnalog> readAnalog(std::string_view name) noexcept;
+		[[nodiscard]] static const std::string& getAnalogName(MouseAnalog analog) noexcept;
+
 	private:
 		std::unique_ptr<MouseImpl> _impl;
 	};
@@ -129,7 +130,6 @@ namespace darmok
 		Gamepad(const Gamepad& other) = delete;
 		Gamepad(Gamepad&& other) = delete;
 		
-		[[nodiscard]] static const std::string& getButtonName(GamepadButton button) noexcept;
 		
 		[[nodiscard]] const glm::vec3& getStick(GamepadStick stick) const noexcept;
 		[[nodiscard]] const GamepadSticks& getSticks() const noexcept;
@@ -144,7 +144,9 @@ namespace darmok
 		[[nodiscard]] GamepadImpl& getImpl() noexcept;
 
 		[[nodiscard]] static std::optional<GamepadButton> readButton(std::string_view name) noexcept;
+		[[nodiscard]] static const std::string& getButtonName(GamepadButton button) noexcept;
 		[[nodiscard]] static std::optional<GamepadStick> readStick(std::string_view name) noexcept;
+		[[nodiscard]] static const std::string& getStickName(GamepadStick stick) noexcept;
 
 	private:
 		std::unique_ptr<GamepadImpl> _impl;
@@ -233,7 +235,8 @@ namespace darmok
 		[[nodiscard]] InputImpl& getImpl() noexcept;
 
 		bool checkEvent(const InputEvent& ev) const noexcept;
-		float getAxis(const std::vector<InputDir>& positive, const std::vector<InputDir>& negative) const noexcept;
+		using Dirs = std::vector<InputDir>;
+		float getAxis(const Dirs& positive, const Dirs& negative) const noexcept;
 		
 		void addListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
 		bool removeListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
@@ -242,6 +245,7 @@ namespace darmok
 		[[nodiscard]] static std::optional<InputEvent> readEvent(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<InputDir> readDir(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<InputDirType> readDirType(std::string_view name) noexcept;
+		[[nodiscard]] static const std::string& getDirTypeName(InputDirType type) noexcept;
 
 	private:
 		std::unique_ptr<InputImpl> _impl;

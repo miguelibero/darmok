@@ -194,6 +194,7 @@ namespace darmok
 		void onGamepadButton(uint8_t num, GamepadButton button, bool down) override;
 
 		static std::optional<InputDirType> readDirType(std::string_view name) noexcept;
+		static const std::string& getDirTypeName(InputDirType type) noexcept;
 		static std::optional<InputEvent> readEvent(std::string_view name) noexcept;
 		static std::optional<InputDir> readDir(std::string_view name) noexcept;
 

@@ -135,8 +135,8 @@ namespace darmok
 
 		void onInputEvent(const InputEvent& ev) override;
 
-		void addListener(const InputEvent& ev, const sol::protected_function& func) noexcept;
-		bool removeListener(const sol::protected_function& func) noexcept;
+		void registerListener(const sol::object& ev, const sol::protected_function& func);
+		bool unregisterListener(const sol::protected_function& func) noexcept;
 
 		LuaKeyboard& getKeyboard() noexcept;
 		LuaMouse& getMouse() noexcept;

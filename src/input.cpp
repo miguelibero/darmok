@@ -404,6 +404,11 @@ namespace darmok
 		return KeyboardImpl::readModifier(name);
 	}
 
+	const std::string& Keyboard::getModifierName(KeyboardModifier mod) noexcept
+	{
+		return KeyboardImpl::getModifierName(mod);
+	}
+
 #pragma endregion Keyboard
 
 #pragma region Mouse
@@ -645,6 +650,16 @@ namespace darmok
 	const std::string& Mouse::getButtonName(MouseButton button) noexcept
 	{
 		return MouseImpl::getButtonName(button);
+	}
+
+	std::optional<MouseAnalog> Mouse::readAnalog(std::string_view name) noexcept
+	{
+		return MouseImpl::readAnalog(name);
+	}
+
+	const std::string& Mouse::getAnalogName(MouseAnalog analog) noexcept
+	{
+		return MouseImpl::getAnalogName(analog);
 	}
 
 	Mouse::Mouse() noexcept
@@ -945,9 +960,19 @@ namespace darmok
 		return GamepadImpl::readButton(name);
 	}
 
+	std::optional<GamepadStick> Gamepad::readStick(std::string_view name) noexcept
+	{
+		return GamepadImpl::readStick(name);
+	}
+
 	const std::string& Gamepad::getButtonName(GamepadButton button) noexcept
 	{
 		return GamepadImpl::getButtonName(button);
+	}
+
+	const std::string& Gamepad::getStickName(GamepadStick stick) noexcept
+	{
+		return GamepadImpl::getStickName(stick);
 	}
 
 	const glm::vec3& Gamepad::getStick(GamepadStick stick) const noexcept
@@ -1273,6 +1298,11 @@ namespace darmok
 		return readInputEnum<InputDirType>(name, _dirTypeNames);
 	}
 
+	const std::string& InputImpl::getDirTypeName(InputDirType type) noexcept
+	{
+		return getInputEnumName(type, _dirTypeNames);
+	}
+
 	const std::string InputImpl::_keyboardPrefix = "keyboard:";
 	const std::string InputImpl::_mousePrefix = "mouse:";
 	const std::string InputImpl::_gamepadPrefix = "gamepad:";
@@ -1456,6 +1486,26 @@ namespace darmok
 	std::optional<InputDir> Input::readDir(std::string_view name) noexcept
 	{
 		return InputImpl::readDir(name);
+	}
+
+	std::optional<InputDirType> Input::readDirType(std::string_view name) noexcept
+	{
+		return InputImpl::readDirType(name);
+	}
+
+	const std::string& Input::getDirTypeName(InputDirType type) noexcept
+	{
+		return InputImpl::getDirTypeName(type);
+	}
+
+	bool Input::checkEvent(const InputEvent& ev) const noexcept
+	{
+		return _impl->checkEvent(ev);
+	}
+
+	float Input::getAxis(const Dirs& positive, const Dirs& negative) const noexcept
+	{
+		return _impl->getAxis(positive, negative);
 	}
 
 #pragma endregion Input
