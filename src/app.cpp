@@ -56,17 +56,29 @@ namespace darmok
 
 	int AppRunner::operator()() noexcept
 	{
-		bool success = false;
-		if (init())
+		bool success = true;
+		while (success)
 		{
-			if (update())
+			auto result = AppUpdateResult::Continue;
+			if (init())
 			{
-				success = true;
+				while (result == AppUpdateResult::Continue)
+				{
+					result = update();
+				}
 			}
-		}
-		if (!shutdown())
-		{
-			success = false;
+			else
+			{
+				success = false;
+			}
+			if (!shutdown())
+			{
+				success = false;
+			}
+			if (result == AppUpdateResult::Exit)
+			{
+				break;
+			}
 		}
 
 		// destroy app before the bgfx shutdown to guarantee no dangling resources
@@ -92,7 +104,7 @@ namespace darmok
 		}
 	}
 
-	bool AppRunner::update() noexcept
+	AppUpdateResult AppRunner::update() noexcept
 	{
 		try
 		{
@@ -100,16 +112,18 @@ namespace darmok
 			s_app = app.get();
 			emscripten_set_main_loop(&emscriptenUpdateApp, -1, 1);
 #else
-			while (_app->update())
+			auto result = AppUpdateResult::Continue;
+			while (result == AppUpdateResult::Continue)
 			{
+				result = _app->update();
 			}
 #endif // BX_PLATFORM_EMSCRIPTEN
-			return true;
+			return result;
 		}
 		catch (const std::exception& ex)
 		{
 			_app->onException(App::Phase::Update, ex);
-			return false;
+			return AppUpdateResult::Exit;
 		}
 	}
 
@@ -129,7 +143,7 @@ namespace darmok
 
 	AppImpl::AppImpl(App& app) noexcept
 		: _app(app)
-		, _exit(false)
+		, _updateResult(AppUpdateResult::Continue)
 		, _running(false)
 		, _debug(BGFX_DEBUG_NONE)
 		, _lastUpdate(0)
@@ -215,6 +229,9 @@ namespace darmok
 
 	void AppImpl::init()
 	{
+		_lastUpdate = bx::getHPCounter();
+		_updateResult = AppUpdateResult::Continue;
+
 		bgfx::Init init;
 		const auto& size = _window.getSize();
 		init.platformData.ndt = _plat.getDisplayHandle();
@@ -244,18 +261,21 @@ namespace darmok
 			component->init(_app);
 		}
 
-		_lastUpdate = bx::getHPCounter();
 		_running = true;
 	}
 
 	void AppImpl::shutdown()
 	{
 		_running = false;
+		_renderGraphDef.clear();
+		_renderGraph.reset();
+
 		for (auto& component : _components)
 		{
 			component->shutdown();
 		}
 		_components.clear();
+		
 		_input.getKeyboard().removeListener(*this);
 		_assets.shutdown();
 	}
@@ -316,7 +336,7 @@ namespace darmok
 		if ((key == KeyboardKey::Esc && modifiers.empty())
 			|| (key == KeyboardKey::KeyQ && modifiers == ctrl))
 		{
-			triggerExit();
+			_updateResult = AppUpdateResult::Exit;
 			return;
 		}
 		if ((key == KeyboardKey::Return && modifiers == alt)
@@ -356,7 +376,7 @@ namespace darmok
 		if ((key == KeyboardKey::F5 && modifiers.empty())
 			|| (key == KeyboardKey::KeyR && modifiers == ctrl))
 		{
-			triggerExit();
+			_updateResult = AppUpdateResult::Restart;
 			return;
 		}
 		if (key == KeyboardKey::F6 && modifiers.empty())
@@ -392,14 +412,9 @@ namespace darmok
 		return static_cast<bool>(_debug & flag);
 	}
 
-	void AppImpl::triggerExit() noexcept
+	AppUpdateResult AppImpl::processEvents()
 	{
-		_exit = true;
-	}
-
-	bool AppImpl::processEvents()
-	{
-		while (!_exit)
+		while (_updateResult == AppUpdateResult::Continue)
 		{
 			auto patEv = getPlatform().pollEvent();
 			if (patEv == nullptr)
@@ -409,10 +424,10 @@ namespace darmok
 			PlatformEvent::process(*patEv, _input, _window);
 			if (_window.getPhase() == WindowPhase::Destroyed)
 			{
-				return true;
+				return AppUpdateResult::Exit;
 			}
 		};
-		return _exit;
+		return _updateResult;
 	}
 
 	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
@@ -509,11 +524,12 @@ namespace darmok
 		return _impl->getRenderGraph();
 	}
 
-	bool App::update()
+	AppUpdateResult App::update()
 	{
-		if (_impl->processEvents())
+		auto result = _impl->processEvents();
+		if (result != AppUpdateResult::Continue)
 		{
-			return false;
+			return result;
 		}
 
 		_impl->update([this](float deltaTime) {
@@ -527,7 +543,7 @@ namespace darmok
 		// process submitted rendering primitives.
 		bgfx::frame();
 
-		return true;
+		return AppUpdateResult::Continue;
 	}
 
 	void App::updateLogic(float deltaTime)

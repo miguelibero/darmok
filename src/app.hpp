@@ -23,8 +23,7 @@ namespace darmok
 		void init();
 		void updateLogic(float deltaTime);
 		void render() const;
-		void triggerExit() noexcept;
-		bool processEvents();
+		AppUpdateResult processEvents();
 		void shutdown();
 
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
@@ -69,7 +68,7 @@ namespace darmok
 		[[nodiscard]] float updateTimePassed() noexcept;
 		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
 		
-		bool _exit;
+		AppUpdateResult _updateResult;
 		bool _running;
 		uint32_t _debug;
 		uint64_t _lastUpdate;
@@ -93,7 +92,7 @@ namespace darmok
 	private:
 		std::unique_ptr<App> _app;
 		bool init() noexcept;
-		bool update() noexcept;
+		AppUpdateResult update() noexcept;
 		bool shutdown() noexcept;
 	};
 }

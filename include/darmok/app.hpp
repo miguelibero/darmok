@@ -66,7 +66,7 @@ namespace darmok
 		virtual std::optional<int32_t> setup(const std::vector<std::string>& args);
 		virtual void init();
 		virtual void shutdown();
-		bool update();
+		AppUpdateResult update();
 
 		enum class Phase
 		{
