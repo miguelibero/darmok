@@ -136,9 +136,8 @@ end
 
 	void LuaRunnerApp::shutdown()
 	{
-		_impl->beforeShutdown();
+		_impl->shutdown();
 		App::shutdown();
-		_impl->afterShutdown();
 	}
 
 	void LuaRunnerApp::updateLogic(float deltaTime)
@@ -194,7 +193,8 @@ end
 		{
 			return -2;
 		}
-		return loadLua(mainPath.value());
+		_mainLuaPath = mainPath.value();
+		return loadLua(_mainLuaPath);
 	}
 
 	std::optional<int32_t> LuaRunnerAppImpl::loadLua(const std::filesystem::path& mainPath)
@@ -252,6 +252,12 @@ end
 			return relm.get<int>();
 		}
 		return std::nullopt;
+	}
+
+	void LuaRunnerAppImpl::unloadLua() noexcept
+	{
+		_luaApp.reset();
+		_lua.reset();
 	}
 
 	std::optional<std::filesystem::path> LuaRunnerAppImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
@@ -330,6 +336,10 @@ end
 
 	void LuaRunnerAppImpl::init()
 	{
+		if (_lua == nullptr)
+		{
+			auto r = loadLua(_mainLuaPath);
+		}
 		auto& lua = *_lua;
 		sol::safe_function init = lua["init"];
 		if (init)
@@ -432,13 +442,8 @@ end
 		}
 	}
 
-	void LuaRunnerAppImpl::beforeShutdown() noexcept
+	void LuaRunnerAppImpl::shutdown() noexcept
 	{
-		_luaApp.reset();
-	}
-
-	void LuaRunnerAppImpl::afterShutdown() noexcept
-	{
-		_lua.reset();
+		unloadLua();
 	}
 }
