@@ -181,8 +181,9 @@ namespace darmok
 		OptionalRef<const Gamepad> getGamepad(uint8_t num) const noexcept;
 		const Gamepads& getGamepads() const noexcept;
 
-		void addListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
-		bool removeListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept;
+		bool removeListener(const std::string& tag, IInputEventListener& listener) noexcept;
+		bool removeListener(IInputEventListener& listener) noexcept;
 
 		bool checkEvent(const InputEvent& ev) const noexcept;
 		float getAxis(const std::vector<InputDir>& positive, const std::vector<InputDir>& negative) const noexcept;
@@ -206,7 +207,15 @@ namespace darmok
 		static const std::string _keyboardPrefix;
 		static const std::string _mousePrefix;
 		static const std::string _gamepadPrefix;
-		std::vector<std::pair<InputEvent, OptionalRef<IInputEventListener>>> _listeners;
+
+		struct ListenerData final
+		{
+			std::string tag;
+			InputEvent event;
+			OptionalRef<IInputEventListener> listener;
+		};
+
+		std::vector<ListenerData> _listeners;
 		static const std::array<std::string, to_underlying(InputDirType::Count)> _dirTypeNames;
 
 		float getDir(const InputDir& dir) const noexcept;

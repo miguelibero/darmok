@@ -27,6 +27,10 @@ namespace darmok
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void onKeyboardChar(const Utf8Char& chr) override;
 
+		static std::optional<KeyboardKey> readKey(const sol::object& val) noexcept;
+		static std::optional<KeyboardModifier> readModifier(const sol::object& val) noexcept;
+		static std::optional<KeyboardInputEvent> readEvent(const sol::object& val) noexcept;
+
 		static void bind(sol::state_view& lua) noexcept;
 
 	private:
@@ -60,6 +64,11 @@ namespace darmok
 		~LuaMouse() noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
+
+		static std::optional<MouseInputEvent> readEvent(const sol::object& val) noexcept;
+		static std::optional<MouseInputDir> readDir(const sol::object& val) noexcept;
+		static std::optional<MouseAnalog> readAnalog(const sol::object& val) noexcept;
+
 	private:
 		using ListenerType = LuaMouseListenerType;
 
@@ -99,6 +108,12 @@ namespace darmok
 		LuaGamepad(Gamepad& gamepad) noexcept;
 		~LuaGamepad() noexcept;
 		static void bind(sol::state_view& lua) noexcept;
+
+		static std::optional<GamepadInputEvent> readEvent(const sol::object& val) noexcept;
+		static std::optional<GamepadButton> readButton(const sol::object& val) noexcept;
+		static std::optional<GamepadStick> readStick(const sol::object& val) noexcept;
+		static std::optional<GamepadInputDir> readDir(const sol::object& val) noexcept;
+
 	private:
 		using ListenerType = LuaGamepadListenerType;
 
@@ -118,25 +133,40 @@ namespace darmok
 		bool isConnected() const noexcept;
 	};
 
+	class LuaInputEventListener final : public IInputEventListener
+	{
+	public:
+		LuaInputEventListener(const std::string& tag, const sol::protected_function& func) noexcept;
+		void onInputEvent(const std::string& tag) override;
+		const std::string& getTag() const noexcept;
+		const sol::protected_function& getFunc() const noexcept;
+	private:
+		sol::protected_function _func;
+		std::string _tag;
+	};
+
 	class Input;
 
-	class LuaInput final : public IInputEventListener
+	class LuaInput final
 	{
 	public:
 		LuaInput(Input& input) noexcept;
+		~LuaInput() noexcept;
 		
 		static void bind(sol::state_view& lua) noexcept;
+
+		static std::optional<InputDirType> readDirType(const sol::object& val) noexcept;
+
 	private:
 		OptionalRef<Input> _input;
 		LuaKeyboard _keyboard;
 		LuaMouse _mouse;
 		std::vector<LuaGamepad> _gamepads;
-		std::vector<std::pair<InputEvent, sol::protected_function>> _listeners;
+		std::vector<LuaInputEventListener> _listeners;
 
-		void onInputEvent(const InputEvent& ev) override;
-
-		void registerListener(const sol::object& ev, const sol::protected_function& func);
-		bool unregisterListener(const sol::protected_function& func) noexcept;
+		void registerListener(const std::string& tag, const sol::object& ev, const sol::protected_function& func);
+		bool unregisterListener1(const std::string& tag, const sol::protected_function& func) noexcept;
+		bool unregisterListener2(const sol::protected_function& func) noexcept;
 
 		LuaKeyboard& getKeyboard() noexcept;
 		LuaMouse& getMouse() noexcept;
@@ -144,21 +174,10 @@ namespace darmok
 		const std::vector<LuaGamepad>& getGamepads() noexcept;
 
 		bool checkEvent(const sol::object& ev) const noexcept;
-		float getAxis(const sol::object& positive, const sol::object& negative) const noexcept;
+		float getAxis(const sol::object& positive, const sol::object& negative) const noexcept;	
 
 		static std::optional<InputEvent> readEvent(const sol::object& val) noexcept;
-		static std::optional<KeyboardKey> readKeyboardKey(const sol::object& val) noexcept;
-		static std::optional<KeyboardModifier> readKeyboardModifier(const sol::object& val) noexcept;
-		static std::optional<KeyboardInputEvent> readKeyboardEvent(const sol::object& val) noexcept;
-		static std::optional<MouseInputEvent> readMouseEvent(const sol::object& val) noexcept;
-		static std::optional<GamepadInputEvent> readGamepadEvent(const sol::object& val) noexcept;
-		static std::optional<GamepadButton> readGamepadButton(const sol::object& val) noexcept;
-		static std::optional<GamepadStick> readGamepadStick(const sol::object& val) noexcept;
-		static std::optional<InputDirType> readDirType(const sol::object& val) noexcept;
-		static std::optional<MouseInputDir> readMouseDir(const sol::object& val) noexcept;
-		static std::optional<MouseAnalog> readMouseAnalog(const sol::object& val) noexcept;
-		static std::optional<GamepadInputDir> readGamepadDir(const sol::object& val) noexcept;
 		static std::optional<InputDir> readDir(const sol::object& val) noexcept;
-		static std::vector<InputDir> readDirs(const sol::object& val) noexcept;
+		static InputDirs readDirs(const sol::object& val) noexcept;
 	};
 }

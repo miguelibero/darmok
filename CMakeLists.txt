@@ -350,7 +350,8 @@ if(DARMOK_BUILD_LUA)
     ${SRC_DIR}/lua/mesh.cpp
     ${SRC_DIR}/lua/program.cpp
     ${SRC_DIR}/lua/texture.cpp
-    ${SRC_DIR}/lua/input.cpp
+    ${SRC_DIR}/lua/input1.cpp
+    ${SRC_DIR}/lua/input2.cpp
     ${SRC_DIR}/lua/math1.cpp
     ${SRC_DIR}/lua/math2.cpp
     ${SRC_DIR}/lua/math3.cpp

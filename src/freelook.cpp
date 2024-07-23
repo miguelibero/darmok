@@ -18,23 +18,23 @@ namespace darmok
     {
         _input = app.getInput();
         _win = app.getWindow();
-        if (_config.inputEvent)
+        if (_config.enableEvent)
         {
-            _input->addListener(*_config.inputEvent, *this);
+            _input->addListener("enable", * _config.enableEvent, *this);
         }
     };
 
     void FreelookController::shutdown() noexcept
     {
-        if (_input && _config.inputEvent)
+        if (_input)
         {
-            _input->removeListener(*_config.inputEvent, *this);
+            _input->removeListener(*this);
         }
         _input.reset();
         _win.reset();
     }
 
-    void FreelookController::onInputEvent(const InputEvent& ev) noexcept
+    void FreelookController::onInputEvent(const std::string& tag) noexcept
     {
         setEnabled(!_enabled);
     }
@@ -87,24 +87,12 @@ namespace darmok
         
         _rot = glm::quat(glm::vec3(0, mouseRot.x, 0)) * _rot * glm::quat(glm::vec3(mouseRot.y, 0, 0));
 
-        glm::vec3 dir(0);
-        auto& kb = _input->getKeyboard();
-        if (kb.getKey(KeyboardKey::Right) || kb.getKey(KeyboardKey::KeyD))
-        {
-            dir.x += 1;
-        }
-        else if (kb.getKey(KeyboardKey::Left) || kb.getKey(KeyboardKey::KeyA))
-        {
-            dir.x -= 1;
-        }
-        else if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
-        {
-            dir.z += 1;
-        }
-        else if (kb.getKey(KeyboardKey::Down) || kb.getKey(KeyboardKey::KeyS))
-        {
-            dir.z -= 1;
-        }
+        glm::vec3 dir(
+            _input->getAxis(_config.moveRight, _config.moveLeft),
+            0,
+            _input->getAxis(_config.moveForward, _config.moveBackward)
+        );
+
         dir = _rot * dir;
         _pos += dir * _config.keyboardSensitivity * deltaTime;
 

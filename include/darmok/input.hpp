@@ -199,6 +199,7 @@ namespace darmok
 	};
 
 	using InputDir = std::variant<MouseInputDir, GamepadInputDir, InputEvent>;
+	using InputDirs = std::vector<InputDir>;
 
 	static bool operator==(const InputDir& a, const InputDir& b) noexcept;
 
@@ -210,7 +211,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IInputEventListener() = default;
-		virtual void onInputEvent(const InputEvent& ev) = 0;
+		virtual void onInputEvent(const std::string& tag) = 0;
 	};
 
 	class DARMOK_EXPORT Input final
@@ -235,11 +236,11 @@ namespace darmok
 		[[nodiscard]] InputImpl& getImpl() noexcept;
 
 		bool checkEvent(const InputEvent& ev) const noexcept;
-		using Dirs = std::vector<InputDir>;
-		float getAxis(const Dirs& positive, const Dirs& negative) const noexcept;
+		float getAxis(const InputDirs& positive, const InputDirs& negative) const noexcept;
 		
-		void addListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
-		bool removeListener(const InputEvent& ev, IInputEventListener& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept;
+		bool removeListener(const std::string& tag, IInputEventListener& listener) noexcept;
+		bool removeListener(IInputEventListener& listener) noexcept;
 
 		[[nodiscard]] static bool matchesEvent(const InputEvent& condition, const InputEvent& real) noexcept;
 		[[nodiscard]] static std::optional<InputEvent> readEvent(std::string_view name) noexcept;

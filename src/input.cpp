@@ -1124,16 +1124,31 @@ namespace darmok
 		_mouse.addListener(*this);
 	}
 
-	void InputImpl::addListener(const InputEvent& ev, IInputEventListener& listener) noexcept
+	void InputImpl::addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept
 	{
-		_listeners.emplace_back(ev, listener);
+		_listeners.push_back(ListenerData{ tag, ev, listener });
 	}
 
-	bool InputImpl::removeListener(const InputEvent& ev, IInputEventListener& listener) noexcept
+	bool InputImpl::removeListener(const std::string& tag, IInputEventListener& listener) noexcept
 	{
-		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&ev, &listener](auto& elm)
+		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&tag, &listener](auto& data)
 		{
-			return elm.first == ev && elm.second == listener;
+			return data.tag == tag && data.listener == listener;
+		});
+
+		if (itr == _listeners.end())
+		{
+			return false;
+		}
+		_listeners.erase(itr, _listeners.end());
+		return true;
+	}
+
+	bool InputImpl::removeListener(IInputEventListener& listener) noexcept
+	{
+		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&listener](auto& data)
+		{
+			return data.listener == listener;
 		});
 		if (itr == _listeners.end())
 		{
@@ -1171,18 +1186,25 @@ namespace darmok
 
 	float InputImpl::getDir(const glm::vec2& vec, InputDirType dir) noexcept
 	{
+		float v = 0.F;
 		switch (dir)
 		{
 			case InputDirType::Up:
-				return vec.y;
+				v = vec.y;
+				break;
 			case InputDirType::Down:
-				return -vec.y;
+				v = -vec.y;
+				break;
 			case InputDirType::Left:
-				return -vec.x;
+				v = -vec.x;
+				break;
 			case InputDirType::Right:
-				return vec.x;
+				v = vec.x;
+				break;
 		}
-		return 0.F;
+		v = v < -1.F ? -1.F : v;
+		v = v > 1.F ? 1.F : v;
+		return v;
 	}
 
 	float InputImpl::getDir(const InputDir& dir) const noexcept
@@ -1219,6 +1241,8 @@ namespace darmok
 		{
 			v -= getDir(dir);
 		}
+		v = v < -1.F ? -1.F : v;
+		v = v > 1.F ? 1.F : v;
 		return v;
 	}
 
@@ -1228,17 +1252,16 @@ namespace darmok
 		{
 			return;
 		}
-		KeyboardInputEvent ev{ key, modifiers };
-		for (auto& elm : _listeners)
+		for (auto& data : _listeners)
 		{
-			auto other = std::get_if<KeyboardInputEvent>(&elm.first);
-			if (!other)
+			auto ev = std::get_if<KeyboardInputEvent>(&data.event);
+			if (!ev)
 			{
 				continue;
 			}
-			if (other->key == key && other->modifiers == modifiers)
+			if (ev->key == key && ev->modifiers == modifiers)
 			{
-				elm.second->onInputEvent(ev);
+				data.listener->onInputEvent(data.tag);
 			}
 		}
 	}
@@ -1249,17 +1272,16 @@ namespace darmok
 		{
 			return;
 		}
-		MouseInputEvent ev{ button };
-		for (auto& elm : _listeners)
+		for (auto& data : _listeners)
 		{
-			auto other = std::get_if<MouseInputEvent>(&elm.first);
-			if (!other)
+			auto ev = std::get_if<MouseInputEvent>(&data.event);
+			if (!ev)
 			{
 				continue;
 			}
-			if (other->button == button)
+			if (ev->button == button)
 			{
-				elm.second->onInputEvent(ev);
+				data.listener->onInputEvent(data.tag);
 			}
 		}
 	}
@@ -1270,17 +1292,16 @@ namespace darmok
 		{
 			return;
 		}
-		GamepadInputEvent ev{ button, num };
-		for (auto& elm : _listeners)
+		for (auto& data : _listeners)
 		{
-			auto other = std::get_if<GamepadInputEvent>(&elm.first);
-			if (!other)
+			auto ev = std::get_if<GamepadInputEvent>(&data.event);
+			if (!ev)
 			{
 				continue;
 			}
-			if ((other->gamepad == num || other->gamepad == Gamepad::Any) && other->button == button)
+			if ((ev->gamepad == num || ev->gamepad == Gamepad::Any) && ev->button == button)
 			{
-				elm.second->onInputEvent(ev);
+				data.listener->onInputEvent(data.tag);
 			}
 		}
 	}
@@ -1468,14 +1489,19 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Input::addListener(const InputEvent& ev, IInputEventListener& listener) noexcept
+	void Input::addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept
 	{
-		_impl->addListener(ev, listener);
+		_impl->addListener(tag, ev, listener);
 	}
 
-	bool Input::removeListener(const InputEvent& ev, IInputEventListener& listener) noexcept
+	bool Input::removeListener(IInputEventListener& listener) noexcept
 	{
-		return _impl->removeListener(ev, listener);
+		return _impl->removeListener(listener);
+	}
+
+	bool Input::removeListener(const std::string& tag, IInputEventListener& listener) noexcept
+	{
+		return _impl->removeListener(tag, listener);
 	}
 
 	std::optional<InputEvent> Input::readEvent(std::string_view name) noexcept
@@ -1503,7 +1529,7 @@ namespace darmok
 		return _impl->checkEvent(ev);
 	}
 
-	float Input::getAxis(const Dirs& positive, const Dirs& negative) const noexcept
+	float Input::getAxis(const InputDirs& positive, const InputDirs& negative) const noexcept
 	{
 		return _impl->getAxis(positive, negative);
 	}

@@ -18,7 +18,44 @@ namespace darmok
         float mouseSensitivity = 5.F;
         float keyboardSensitivity = 10.F;
         glm::vec2 maxMouseAngle = glm::vec2(30, 30);
-        std::optional<InputEvent> inputEvent = KeyboardInputEvent{ KeyboardKey::F4 };
+        std::optional<InputEvent> enableEvent = KeyboardInputEvent{ KeyboardKey::F4 };
+
+        InputDirs moveLeft = {
+            KeyboardInputEvent{ KeyboardKey::Left },
+            KeyboardInputEvent{ KeyboardKey::KeyA },
+            GamepadInputDir{ GamepadStick::Left, InputDirType::Left }
+        };
+        InputDirs moveRight = {
+            KeyboardInputEvent{ KeyboardKey::Right },
+            KeyboardInputEvent{ KeyboardKey::KeyD },
+            GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
+        };
+        InputDirs moveForward = {
+            KeyboardInputEvent{ KeyboardKey::Up },
+            KeyboardInputEvent{ KeyboardKey::KeyW },
+            GamepadInputDir{ GamepadStick::Left, InputDirType::Up }
+        };
+        InputDirs moveBackward = {
+            KeyboardInputEvent{ KeyboardKey::Down },
+            KeyboardInputEvent{ KeyboardKey::KeyS },
+            GamepadInputDir{ GamepadStick::Left, InputDirType::Down }
+        };
+        InputDirs lookLeft = {
+            MouseInputDir{ MouseAnalog::Position, InputDirType::Left },
+            GamepadInputDir{ GamepadStick::Left, InputDirType::Left }
+        };
+        InputDirs lookRight = {
+            MouseInputDir{ MouseAnalog::Position, InputDirType::Right },
+            GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
+        };
+        InputDirs lookUp = {
+            MouseInputDir{ MouseAnalog::Position, InputDirType::Up },
+            GamepadInputDir{ GamepadStick::Left, InputDirType::Up }
+        };
+        InputDirs lookDown = {
+            MouseInputDir{ MouseAnalog::Position, InputDirType::Down },
+            GamepadInputDir{ GamepadStick::Left, InputDirType::Down }
+        };
     };
     
     class DARMOK_EXPORT FreelookController final : public ISceneComponent, public IInputEventListener
@@ -29,7 +66,7 @@ namespace darmok
         void init(Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
-        void onInputEvent(const InputEvent& ev) noexcept override;
+        void onInputEvent(const std::string& tag) noexcept override;
         FreelookController& setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;
     private:

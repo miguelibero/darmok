@@ -48,9 +48,9 @@ namespace darmok::physics3d
     void PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
         _input = app.getInput();
-        if (_config.inputEvent)
+        if (_config.enableEvent)
         {
-            _input->addListener(*_config.inputEvent, *this);
+            _input->addListener("enable", *_config.enableEvent, *this);
         }
         if (_config.material == nullptr)
         {
@@ -71,16 +71,16 @@ namespace darmok::physics3d
         {
             _cam->getRenderGraph().removePass(*this);
         }
-        if (_input && _config.inputEvent)
+        if (_input)
         {
-            _input->removeListener(*_config.inputEvent, *this);
+            _input->removeListener(*this);
         }
         _input.reset();
         _cam.reset();
         _viewId = -1;
     }
 
-    void PhysicsDebugRendererImpl::onInputEvent(const InputEvent& ev) noexcept
+    void PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept
     {
         setEnabled(!_enabled);
     }
