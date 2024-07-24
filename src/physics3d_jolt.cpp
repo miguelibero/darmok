@@ -85,7 +85,7 @@ namespace darmok::physics3d
 
     glm::quat JoltUtils::convert(const JPH::Quat& v) noexcept
     {
-        glm::quat quat(v.GetX(), v.GetY(), v.GetZ(), v.GetW());
+        glm::quat quat(v.GetW(), v.GetX(), v.GetY(), v.GetZ());
         return Math::flipHandedness(quat);
     }
 
