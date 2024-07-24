@@ -15,7 +15,7 @@
 
 namespace darmok
 {
-	class AppImpl final : public IKeyboardListener
+	class AppImpl final : public IKeyboardListener, public IWindowListener
 	{
 	public:
 		AppImpl(App& app) noexcept;
@@ -26,6 +26,7 @@ namespace darmok
 		AppUpdateResult processEvents();
 		void shutdown();
 
+		void onWindowPixelSize(const glm::uvec2& size) override;
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
@@ -67,6 +68,8 @@ namespace darmok
 	private:
 		[[nodiscard]] float updateTimePassed() noexcept;
 		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
+
+		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
 		
 		AppUpdateResult _updateResult;
 		bool _running;

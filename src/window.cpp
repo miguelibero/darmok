@@ -128,12 +128,6 @@ namespace darmok
 
 	void WindowImpl::bgfxReset(const glm::uvec2& size) const noexcept
 	{
-		if (_phase == WindowPhase::Running || _phase == WindowPhase::Suspended)
-		{
-			bgfx::reset(size.x, size.y);
-			bgfx::ViewId viewId = 0;
-			bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
-		}
 		for (auto& listener : _listeners)
 		{
 			listener->onWindowPixelSize(size);

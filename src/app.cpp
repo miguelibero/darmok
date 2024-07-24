@@ -254,6 +254,7 @@ namespace darmok
 		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
 
 		_input.getKeyboard().addListener(*this);
+		_window.addListener(*this);
 		_assets.init(_app);
 
 		for (auto& component : _components)
@@ -262,6 +263,20 @@ namespace darmok
 		}
 
 		_running = true;
+	}
+
+	void AppImpl::onWindowPixelSize(const glm::uvec2& size)
+	{
+		if (!_running)
+		{
+			return;
+		}
+
+		bgfx::reset(size.x, size.y);
+		bgfx::ViewId viewId = 0;
+		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+
+		_renderGraph.reset();
 	}
 
 	void AppImpl::shutdown()
@@ -277,6 +292,7 @@ namespace darmok
 		_components.clear();
 		
 		_input.getKeyboard().removeListener(*this);
+		_window.removeListener(*this);
 		_assets.shutdown();
 	}
 
@@ -329,6 +345,12 @@ namespace darmok
 		{
 			return;
 		}
+		// TODO: only enable these in debug builds
+		handleDebugShortcuts(key, modifiers);
+	}
+
+	void AppImpl::handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers & modifiers)
+	{
 		static const KeyboardModifiers ctrl{ KeyboardModifier::Ctrl };
 		static const KeyboardModifiers alt{ KeyboardModifier::Alt };
 		static const KeyboardModifiers shift{ KeyboardModifier::Shift };
