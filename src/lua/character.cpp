@@ -51,6 +51,31 @@ namespace darmok::physics3d
 		return _ctrl.get().getPosition();
 	}
 
+	void LuaCharacterController::setRotation(const VarLuaTable<glm::quat>& rot) noexcept
+	{
+		_ctrl.get().setRotation(LuaGlm::tableGet(rot));
+	}
+
+	glm::quat LuaCharacterController::getRotation() const noexcept
+	{
+		return _ctrl.get().getRotation();
+	}
+
+	glm::vec3 LuaCharacterController::getGroundNormal() const noexcept
+	{
+		return _ctrl.get().getGroundNormal();
+	}
+
+	glm::vec3 LuaCharacterController::getGroundPosition() const noexcept
+	{
+		return _ctrl.get().getGroundPosition();
+	}
+
+	glm::vec3 LuaCharacterController::getGroundVelocity() const noexcept
+	{
+		return _ctrl.get().getGroundVelocity();
+	}
+
 	LuaCharacterController LuaCharacterController::addEntityComponent1(LuaEntity& entity, const Config& config) noexcept
 	{
 		return LuaCharacterController(entity.addComponent<CharacterController>(config), entity.getScene().getReal());
@@ -176,7 +201,11 @@ namespace darmok::physics3d
 			"grounded", sol::property(&LuaCharacterController::isGrounded),
 			"ground_state", sol::property(&LuaCharacterController::getGroundState),
 			"position", sol::property(&LuaCharacterController::getPosition, &LuaCharacterController::setPosition),
-			"linear_velocity", sol::property(&LuaCharacterController::getLinearVelocity, &LuaCharacterController::setLinearVelocity)
+			"rotation", sol::property(&LuaCharacterController::getRotation, &LuaCharacterController::setRotation),
+			"linear_velocity", sol::property(&LuaCharacterController::getLinearVelocity, &LuaCharacterController::setLinearVelocity),
+			"ground_position", sol::property(&LuaCharacterController::getGroundPosition),
+			"ground_normal", sol::property(&LuaCharacterController::getGroundNormal),
+			"ground_velocity", sol::property(&LuaCharacterController::getGroundVelocity)
 		);
 	}
 }

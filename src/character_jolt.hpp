@@ -31,10 +31,16 @@ namespace darmok::physics3d
         void update(Entity entity, float deltaTime);
         bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;
+
         glm::vec3 getPosition() const noexcept;
         void setPosition(const glm::vec3& pos) noexcept;
         void setLinearVelocity(const glm::vec3& velocity);
         glm::vec3 getLinearVelocity() const noexcept;
+        glm::quat getRotation() const noexcept;
+        void setRotation(const glm::quat& rot) noexcept;
+        glm::vec3 getGroundNormal() const noexcept;
+        glm::vec3 getGroundPosition() const noexcept;
+        glm::vec3 getGroundVelocity() const noexcept;
 
         void setDelegate(const OptionalRef<Delegate>& delegate) noexcept;
 

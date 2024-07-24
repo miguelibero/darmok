@@ -380,20 +380,38 @@ namespace darmok
         );
 
         modelTex.image = getImage(path.C_Str());
+
+        // assimpMat.Get(AI_MATKEY_BASE_COLOR)
+
         // TODO: add support for other texture params
     }
 
     const std::unordered_map<aiTextureType, MaterialTextureType> AssimpModelConverter::_materialTextures =
-    {
+    {        
         { aiTextureType_DIFFUSE, MaterialTextureType::Diffuse },
         { aiTextureType_SPECULAR, MaterialTextureType::Specular },
         { aiTextureType_NORMALS, MaterialTextureType::Normal },
+
+        // TODO: temporary
+        { aiTextureType_UNKNOWN, MaterialTextureType::Diffuse },
+        { aiTextureType_BASE_COLOR, MaterialTextureType::Diffuse },
+    };
+
+    const std::vector<AssimpModelConverter::AssimpMaterialColor> AssimpModelConverter::_materialColors =
+    {
+        { AI_MATKEY_COLOR_DIFFUSE, MaterialColorType::Diffuse },
+        { AI_MATKEY_COLOR_AMBIENT, MaterialColorType::Ambient },
+        { AI_MATKEY_COLOR_SPECULAR, MaterialColorType::Specular },
+        { AI_MATKEY_COLOR_EMISSIVE, MaterialColorType::Emissive },
+        { AI_MATKEY_COLOR_TRANSPARENT, MaterialColorType::Transparent },
+        { AI_MATKEY_COLOR_REFLECTIVE, MaterialColorType::Reflective },
     };
 
     void AssimpModelConverter::update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept
     {
         modelMat.program = _config.program;
         modelMat.standardProgram = _config.standardProgram;
+
         for (auto& elm : _materialTextures)
         {
             auto size = assimpMat.GetTextureCount(elm.first);
@@ -403,6 +421,38 @@ namespace darmok
                 auto& modelTexture = modelTextures.emplace_back();
                 update(modelTexture, assimpMat, elm.first, 0);
             }
+        }
+
+        float shininess;
+        if (assimpMat.Get(AI_MATKEY_SHININESS, shininess))
+        {
+            modelMat.shininess = shininess;
+        }
+
+        float opacity = 1.F;
+        assimpMat.Get(AI_MATKEY_OPACITY, opacity);
+        aiColor3D aiColor;
+
+        for (auto& elm : _materialColors)
+        {
+            if (!assimpMat.Get(elm.name, elm.type, elm.idx, aiColor))
+            {
+                continue;
+            }
+            auto color = Color(AssimpUtils::convert(aiColor), Colors::getMaxValue() * opacity);
+            modelMat.colors[elm.darmokType] = color;
+        }
+        
+        int blendMode = aiBlendMode_Default;
+        assimpMat.Get(AI_MATKEY_BLEND_FUNC, blendMode);
+        switch (blendMode)
+        {
+            case aiBlendMode_Additive:
+            modelMat.blendMode = ModelMaterialBlendMode::Additive;
+            break;
+            case aiBlendMode_Default:
+            modelMat.blendMode = ModelMaterialBlendMode::Default;
+            break;
         }
     }
 
@@ -719,7 +769,12 @@ namespace darmok
             return false;
         }
         auto& config = _currentConfig.emplace();
-        loadConfig(input.config, input.basePath, config);
+        nlohmann::json configJson = input.config;
+        if (!input.dirConfig.empty())
+        {
+            configJson.update(input.dirConfig);
+        }
+        loadConfig(configJson, input.basePath, config);
         AssimpUtils::fixModelLoadConfig(_dataLoader, _currentConfig->loadConfig);
         _currentScene = _assimpLoader.loadFromFile(input.path);
         return _currentScene != nullptr;
@@ -777,7 +832,12 @@ namespace darmok
     {
         Model model;
         auto basePath = input.path.parent_path().string();
-        AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _allocator, _imgLoader);
+        OptionalRef<IImageLoader> imgLoader = _imgLoader;
+        if (_currentConfig && !_currentConfig->loadConfig.embedTextures)
+        {
+            imgLoader = nullptr;
+        }
+        AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _allocator, imgLoader);
         converter.setConfig(input.config);
         converter.update(model);
         model.write(out, _currentConfig->outputFormat);

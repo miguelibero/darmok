@@ -56,11 +56,18 @@ namespace darmok
 		return *this;
 	}
 
+	LuaModelSceneConfigurer& LuaModelSceneConfigurer::setTextureFlags(uint64_t flags) noexcept
+	{
+		_configurer.setTextureFlags(flags);
+		return *this;
+	}
+
 	void LuaModelSceneConfigurer::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaModelSceneConfigurer>("ModelSceneConfigurer",
 			sol::constructors<LuaModelSceneConfigurer(const LuaScene&, AssetContext&)>(),
 			"parent", sol::property(&LuaModelSceneConfigurer::setParent),
+			"texture_flags", sol::property(&LuaModelSceneConfigurer::setTextureFlags),
 			sol::meta_function::call, sol::overload(
 				&LuaModelSceneConfigurer::run1,
 				&LuaModelSceneConfigurer::run2,

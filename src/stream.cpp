@@ -4,10 +4,6 @@
 #include <bx/platform.h>
 #include <fstream>
 
-#if BX_PLATFORM_WINDOWS
-#include <windows.h>
-#endif
-
 namespace darmok
 {
     void StreamUtils::copy(std::istream& input, std::ostream& output, size_t bufferSize)
@@ -29,9 +25,6 @@ namespace darmok
         {
             std::cout << msg << std::endl;
         }
-#if BX_PLATFORM_WINDOWS
-        OutputDebugString(msg.c_str());
-#endif
         bx::debugOutput(bx::StringView(msg.data(), msg.size()));
     }
 

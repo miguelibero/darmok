@@ -25,4 +25,9 @@ namespace darmok
 		}
 		return true;
 	}
+
+	int luaDeny(lua_State* L)
+	{
+		return luaL_error(L, "operation not allowed");
+	}
 }

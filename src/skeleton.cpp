@@ -7,7 +7,6 @@
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/string.hpp>
-#include <darmok/model.hpp>
 #include <darmok/text.hpp>
 #include <darmok/shape.hpp>
 #include <stdexcept>
@@ -563,5 +562,36 @@ namespace darmok
     {
         static const std::string name("animator");
         return name;
+    }
+
+
+    Armature::Armature(const std::vector<ArmatureJoint>& joints) noexcept
+        : _joints(joints)
+    {
+    }
+
+    Armature::Armature(std::vector<ArmatureJoint>&& joints) noexcept
+        : _joints(std::move(joints))
+    {
+    }
+
+    const std::vector<ArmatureJoint>& Armature::getJoints() const noexcept
+    {
+        return _joints;
+    }
+
+    Skinnable::Skinnable(const std::shared_ptr<Armature>& armature) noexcept
+        : _armature(armature)
+    {
+    }
+
+    std::shared_ptr<Armature> Skinnable::getArmature() const noexcept
+    {
+        return _armature;
+    }
+
+    void Skinnable::setArmature(const std::shared_ptr<Armature>& armature) noexcept
+    {
+        _armature = armature;
     }
 }

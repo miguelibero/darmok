@@ -13,4 +13,17 @@ namespace darmok
 		Texture2D,
 		Texture3D,
 	};
+
+    enum class TextureSamplingType
+    {
+        Min, // minification
+        Mag, // magnification
+        Mip  // mip level
+    };
+
+    enum class TextureSamplingMode
+    {
+        Anisotropic,
+        Point
+    };
 }

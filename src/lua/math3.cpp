@@ -62,7 +62,11 @@ namespace darmok
 			sol::meta_function::addition, sol::resolve<glm::quat(const glm::quat&, const glm::quat&)>(glm::operator+),
 			sol::meta_function::subtraction, sol::resolve<glm::quat(const glm::quat&, const glm::quat&)>(glm::operator-),
 			sol::meta_function::unary_minus, sol::resolve<glm::quat(const glm::quat&)>(glm::operator-),
-			sol::meta_function::multiplication, sol::overload(sol::resolve<glm::quat(const glm::quat&, const glm::quat&)>(glm::operator*), sol::resolve<glm::quat(const glm::quat&, const float&)>(glm::operator*)),
+			sol::meta_function::multiplication, sol::overload(
+				sol::resolve<glm::quat(const glm::quat&, const glm::quat&)>(glm::operator*),
+				sol::resolve<glm::quat(const glm::quat&, const float&)>(glm::operator*),
+				sol::resolve<glm::vec3(const glm::quat&, const glm::vec3&)>(glm::operator*)
+			),
 			sol::meta_function::division, sol::resolve<glm::quat(const glm::quat&, const float&)>(glm::operator/),
 			sol::meta_function::to_string, sol::resolve<std::string(const glm::quat&)>(glm::to_string),
 			"x", &glm::quat::x,
@@ -70,7 +74,7 @@ namespace darmok
 			"z", &glm::quat::z,
 			"w", &glm::quat::w,
 			"zero", sol::var(glm::quat()),
-			"euler", &quatEuler,
+			"new_euler", &quatEuler,
 			"slerp", sol::resolve<glm::quat(const glm::quat&, const glm::quat&, float)>(&glm::slerp),
 			"euler_angles", sol::resolve<glm::vec3(const glm::quat&)>(&glm::eulerAngles),
 			"angle_axis", sol::resolve<glm::quat(const float&, const glm::vec3&)>(&glm::angleAxis),

@@ -29,7 +29,7 @@ namespace darmok
     }
 
     template<typename T>
-    void newLuaEnumFunc(sol::state_view& lua, std::string_view name, T count, const std::string&(*func)(T))
+    void newLuaEnumFunc(sol::state_view& lua, std::string_view name, T count, const std::string&(*func)(T), bool string = false)
     {
         std::vector<std::pair<std::string_view, T>> values;
         auto size = to_underlying(count);
@@ -38,13 +38,33 @@ namespace darmok
             auto elm = (T)i;
             values.emplace_back(func(elm), elm);
         }
-        newLuaEnumVector(lua, name, values);
+        newLuaEnumVector(lua, name, values, string);
     }
 
+    int luaDeny(lua_State* L);
+
     template<typename T>
-    void newLuaEnumVector(sol::state_view& lua, std::string_view name, const std::vector<std::pair<std::string_view, T>>& values)
+    void newLuaEnumVector(sol::state_view& lua, std::string_view name, const std::vector<std::pair<std::string_view, T>>& values, bool string)
     {
-        lua.new_enum<T>(name,
-            std::initializer_list<std::pair<std::string_view, T>>(&values.front(), &values.front() + values.size()));
+        if (!string)
+        {
+            lua.new_enum<T>(name,
+                std::initializer_list<std::pair<std::string_view, T>>(
+                    &values.front(), &values.front() + values.size()));
+            return;
+        }
+    
+        auto metatable = lua.create_table_with();
+        auto prefix = std::string(name) + ".";
+        for (auto& elm : values)
+        {
+            std::string valueName(elm.first);
+            metatable[valueName] = prefix + valueName;
+        }
+
+        auto table = lua.create_named_table(name);
+        metatable[sol::meta_function::new_index] = luaDeny;
+        metatable[sol::meta_function::index] = metatable;
+        table[sol::metatable_key] = metatable;
     }
 }

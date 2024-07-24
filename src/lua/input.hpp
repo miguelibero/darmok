@@ -65,6 +65,7 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 
+		static std::optional<MouseButton> readButton(const sol::object& val) noexcept;
 		static std::optional<MouseInputEvent> readEvent(const sol::object& val) noexcept;
 		static std::optional<MouseInputDir> readDir(const sol::object& val) noexcept;
 		static std::optional<MouseAnalog> readAnalog(const sol::object& val) noexcept;

@@ -7,6 +7,7 @@
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
+#include <darmok/skeleton.hpp>
 
 // to allow serialization
 #include <cereal/archives/binary.hpp>
@@ -159,12 +160,19 @@ namespace darmok
     ModelSceneConfigurer::ModelSceneConfigurer(Scene& scene, AssetContext& assets)
         : _config{ scene, assets }
         , _parent(entt::null)
+        , _textureFlags(defaultTextureLoadFlags)
     {
     }
 
     ModelSceneConfigurer& ModelSceneConfigurer::setParent(Entity parent) noexcept
     {
         _parent = parent;
+        return *this;
+    }
+
+    ModelSceneConfigurer& ModelSceneConfigurer::setTextureFlags(uint64_t flags) noexcept
+    {
+        _textureFlags = flags;
         return *this;
     }
 
@@ -235,11 +243,11 @@ namespace darmok
         std::shared_ptr<Texture> tex;
         if (modelImg->data.empty())
         {
-            tex = _config.assets.getTextureLoader()(modelImg->name);
+            tex = _config.assets.getTextureLoader()(modelImg->name, _textureFlags);
         }
         else
         {
-            tex = std::make_shared<Texture>(modelImg->data, modelImg->config);
+            tex = std::make_shared<Texture>(modelImg->data, modelImg->config, _textureFlags);
         }
         _textures.emplace(modelImg, tex);
         return tex;
@@ -364,37 +372,6 @@ namespace darmok
         DataInputStream::read(data, *model);
         return model;
     }
-
-    Armature::Armature(const std::vector<ArmatureJoint>& joints) noexcept
-        : _joints(joints)
-    {
-    }
-
-    Armature::Armature(std::vector<ArmatureJoint>&& joints) noexcept
-        : _joints(std::move(joints))
-    {
-    }
-
-    const std::vector<ArmatureJoint>& Armature::getJoints() const noexcept
-    {
-        return _joints;
-    }
-
-    Skinnable::Skinnable(const std::shared_ptr<Armature>& armature) noexcept
-        : _armature(armature)
-    {
-    }
-
-    std::shared_ptr<Armature> Skinnable::getArmature() const noexcept
-    {
-        return _armature;
-    }
-
-    void Skinnable::setArmature(const std::shared_ptr<Armature>& armature) noexcept
-    {
-        _armature = armature;
-    }
-
 }
 
 std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node)

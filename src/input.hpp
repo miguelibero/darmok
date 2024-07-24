@@ -54,9 +54,10 @@ namespace darmok
 		size_t _charsWrite;
 		std::unordered_set<OptionalRef<IKeyboardListener>> _listeners;
 
+		static const std::string _keyPrefix;
 		static const std::array<std::string, to_underlying(KeyboardKey::Count)> _keyNames;
+		static const std::string _modPrefix;
 		static const std::array<std::string, to_underlying(KeyboardModifier::Count)> _modNames;
-		static const std::unordered_map<std::string, uint8_t> _modifierNames;
 	};
 
 #pragma endregion Keyboard
@@ -107,7 +108,9 @@ namespace darmok
 		bool _hasBeenInactive;
 		std::unordered_set<OptionalRef<IMouseListener>> _listeners;
 
+		static const std::string _buttonPrefix;
 		static const std::array<std::string, to_underlying(MouseButton::Count)> _buttonNames;
+		static const std::string _analogPrefix;
 		static const std::array<std::string, to_underlying(MouseAnalog::Count)> _analogNames;
 	};
 
@@ -154,7 +157,9 @@ namespace darmok
 		GamepadSticks _sticks;
 		std::unordered_set<OptionalRef<IGamepadListener>> _listeners;
 
+		static const std::string _buttonPrefix;
 		static const std::array<std::string, to_underlying(GamepadButton::Count)> _buttonNames;
+		static const std::string _stickPrefix;
 		static const std::array<std::string, to_underlying(GamepadStick::Count)> _stickNames;
 
 		void clear() noexcept;
@@ -220,6 +225,8 @@ namespace darmok
 		};
 
 		std::vector<ListenerData> _listeners;
+
+		static const std::string _dirTypePrefix;
 		static const std::array<std::string, to_underlying(InputDirType::Count)> _dirTypeNames;
 
 		float getDir(const Dir& dir, const Sensitivity& sensi) const noexcept;

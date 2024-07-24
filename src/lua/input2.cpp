@@ -150,10 +150,6 @@ namespace darmok
 
 	std::optional<InputDirType> LuaInput::readDirType(const sol::object& val) noexcept
 	{
-		if (val.is<InputDirType>())
-		{
-			return val.as<InputDirType>();
-		}
 		if (val.is<std::string>())
 		{
 			return Input::readDirType(val.as<std::string>());
@@ -218,7 +214,7 @@ namespace darmok
 		LuaMouse::bind(lua);
 		LuaGamepad::bind(lua);
 
-		newLuaEnumFunc(lua, "InputDirType", InputDirType::Count, &Input::getDirTypeName);
+		newLuaEnumFunc(lua, "InputDirType", InputDirType::Count, &Input::getDirTypeName, true);
 
 		lua.new_usertype<LuaInput>("Input", sol::no_constructor,
 			"keyboard", sol::property(&LuaInput::getKeyboard),

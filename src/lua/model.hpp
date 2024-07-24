@@ -26,6 +26,7 @@ namespace darmok
 	public:
 		LuaModelSceneConfigurer(const LuaScene& scene, AssetContext& assets) noexcept;
 		LuaModelSceneConfigurer& setParent(const LuaEntity& parent) noexcept;
+		LuaModelSceneConfigurer& setTextureFlags(uint64_t flags) noexcept;
 
 		LuaEntity run1(const Model& model);
 		LuaEntity run2(const Model& model, sol::protected_function callback);

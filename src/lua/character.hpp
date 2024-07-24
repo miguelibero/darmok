@@ -45,6 +45,11 @@ namespace darmok::physics3d
 		glm::vec3 getLinearVelocity() const noexcept;
 		void setPosition(const VarLuaTable<glm::vec3>& pos) noexcept;
 		glm::vec3 getPosition() const noexcept;
+		void setRotation(const VarLuaTable<glm::quat>& rot) noexcept;
+		glm::quat getRotation() const noexcept;
+		glm::vec3 getGroundNormal() const noexcept;
+		glm::vec3 getGroundPosition() const noexcept;
+		glm::vec3 getGroundVelocity() const noexcept;
 
 		LuaCharacterController& setDelegate(const sol::table& delegate) noexcept;
 

@@ -87,6 +87,16 @@ namespace darmok
 
         static const std::unordered_map<aiTextureType, MaterialTextureType> _materialTextures;
 
+        struct AssimpMaterialColor final
+        {
+            const char* name;
+            unsigned int type;
+            unsigned int idx;
+            MaterialColorType darmokType;
+        };
+
+        static const std::vector<AssimpMaterialColor> _materialColors;
+
         std::unordered_map<const aiMesh*, std::shared_ptr<ModelMesh>> _meshes;
         std::unordered_map<const aiMaterial*, std::shared_ptr<ModelMaterial>> _materials;
         std::unordered_map<std::string, std::shared_ptr<ModelImage>> _images;

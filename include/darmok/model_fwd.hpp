@@ -8,4 +8,10 @@ namespace darmok
         Json,
         Xml
     };
+
+    enum class ModelMaterialBlendMode
+    {
+        Default,
+        Additive
+    };
 }

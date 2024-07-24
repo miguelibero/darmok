@@ -316,6 +316,33 @@ namespace darmok
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
     };
+
+    struct DARMOK_EXPORT ArmatureJoint final
+    {
+        std::string name;
+        glm::mat4 inverseBindPose;
+    };
+
+    class DARMOK_EXPORT Armature final
+    {
+    public:
+        Armature(const std::vector<ArmatureJoint>& joints) noexcept;
+        Armature(std::vector<ArmatureJoint>&& joints) noexcept;
+        const std::vector<ArmatureJoint>& getJoints() const noexcept;
+
+    private:
+        std::vector<ArmatureJoint> _joints;
+    };
+
+    class DARMOK_EXPORT Skinnable
+    {
+    public:
+        Skinnable(const std::shared_ptr<Armature>& armature = nullptr) noexcept;
+        std::shared_ptr<Armature> getArmature() const noexcept;
+        void setArmature(const std::shared_ptr<Armature>& armature) noexcept;
+    private:
+        std::shared_ptr<Armature> _armature;
+    };
 }
 
 namespace std

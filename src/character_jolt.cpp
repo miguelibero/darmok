@@ -104,6 +104,55 @@ namespace darmok::physics3d
         return JoltUtils::convert(_jolt->GetLinearVelocity());
     }
 
+    glm::quat CharacterControllerImpl::getRotation() const noexcept
+    {
+        if (!_jolt)
+        {
+            return glm::vec3(0);
+        }
+        return JoltUtils::convert(_jolt->GetRotation());
+    }
+
+    void CharacterControllerImpl::setRotation(const glm::quat& rot) noexcept
+    {
+        auto rb = getPhysicsBody();
+        if (rb)
+        {
+            rb->setRotation(rot);
+        }
+        if (_jolt)
+        {
+            _jolt->SetRotation(JoltUtils::convert(rot));
+        }
+    }
+
+    glm::vec3 CharacterControllerImpl::getGroundVelocity() const noexcept
+    {
+        if (!_jolt)
+        {
+            return glm::vec3(0);
+        }
+        return JoltUtils::convert(_jolt->GetGroundVelocity());
+    }
+
+    glm::vec3 CharacterControllerImpl::getGroundNormal() const noexcept
+    {
+        if (!_jolt)
+        {
+            return glm::vec3(0);
+        }
+        return JoltUtils::convert(_jolt->GetGroundNormal());
+    }
+
+    glm::vec3 CharacterControllerImpl::getGroundPosition() const noexcept
+    {
+        if (!_jolt)
+        {
+            return glm::vec3(0);
+        }
+        return JoltUtils::convert(_jolt->GetGroundPosition());
+    }
+
     void CharacterControllerImpl::setDelegate(const OptionalRef<Delegate>& delegate) noexcept
     {
         _delegate = delegate;
@@ -337,6 +386,32 @@ namespace darmok::physics3d
     glm::vec3 CharacterController::getPosition() const noexcept
     {
         return _impl->getPosition();
+    }
+
+    CharacterController& CharacterController::setRotation(const glm::quat& rot) noexcept
+    {
+        _impl->setRotation(rot);
+        return *this;
+    }
+
+    glm::quat CharacterController::getRotation() const noexcept
+    {
+        return _impl->getRotation();
+    }
+
+    glm::vec3 CharacterController::getGroundNormal() const noexcept
+    {
+        return _impl->getGroundNormal();
+    }
+
+    glm::vec3 CharacterController::getGroundPosition() const noexcept
+    {
+        return _impl->getGroundPosition();
+    }
+
+    glm::vec3 CharacterController::getGroundVelocity() const noexcept
+    {
+        return _impl->getGroundVelocity();
     }
 
     CharacterController& CharacterController::setDelegate(const OptionalRef<Delegate>& delegate) noexcept
