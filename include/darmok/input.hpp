@@ -177,6 +177,7 @@ namespace darmok
 	};
 
 	using InputEvent = std::variant<KeyboardInputEvent, MouseInputEvent, GamepadInputEvent>;
+	using InputEvents = std::vector<InputEvent>;
 
 	static bool operator==(const InputEvent& a, const InputEvent& b) noexcept;
 
@@ -247,6 +248,7 @@ namespace darmok
 		float getAxis(const InputDirs& positive, const InputDirs& negative, const Sensitivity& sensitivity = {}) const noexcept;
 		
 		void addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
 		bool removeListener(const std::string& tag, IInputEventListener& listener) noexcept;
 		bool removeListener(IInputEventListener& listener) noexcept;
 

@@ -276,6 +276,11 @@ namespace darmok
         _blendPosition = value;
     }
 
+    const glm::vec2& SkeletalAnimatorImpl::getBlendPosition() const noexcept
+    {
+        return _blendPosition;
+    }
+
     const SkeletalAnimatorImpl::Config& SkeletalAnimatorImpl::getConfig() const noexcept
     {
         return _config;
@@ -780,6 +785,11 @@ namespace darmok
     {
         _impl->setBlendPosition(value);
         return *this;
+    }
+
+    const glm::vec2& SkeletalAnimator::getBlendPosition() const noexcept
+    {
+        return _impl->getBlendPosition();
     }
 
     const SkeletalAnimator::Config& SkeletalAnimator::getConfig() const noexcept

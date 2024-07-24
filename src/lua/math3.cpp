@@ -75,6 +75,7 @@ namespace darmok
 			"w", &glm::quat::w,
 			"zero", sol::var(glm::quat()),
 			"new_euler", &quatEuler,
+			"norm", sol::resolve<glm::quat(const glm::quat&)>(glm::normalize),
 			"slerp", sol::resolve<glm::quat(const glm::quat&, const glm::quat&, float)>(&glm::slerp),
 			"euler_angles", sol::resolve<glm::vec3(const glm::quat&)>(&glm::eulerAngles),
 			"angle_axis", sol::resolve<glm::quat(const float&, const glm::vec3&)>(&glm::angleAxis),

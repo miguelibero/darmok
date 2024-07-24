@@ -349,11 +349,7 @@ namespace darmok
 		}
 		if (key == KeyboardKey::F1)
 		{
-			if (modifiers == alt)
-			{
-				toggleDebugFlag(BGFX_DEBUG_TEXT);
-			}
-			else if (modifiers == ctrl)
+			if (modifiers == ctrl)
 			{
 				toggleDebugFlag(BGFX_DEBUG_IFH);
 			}
@@ -362,10 +358,15 @@ namespace darmok
 				setDebugFlag(BGFX_DEBUG_STATS, false);
 				setDebugFlag(BGFX_DEBUG_TEXT, false);
 			}
-			else
+			else if(modifiers.empty())
 			{
 				toggleDebugFlag(BGFX_DEBUG_STATS);
 			}
+			return;
+		}
+		if (key == KeyboardKey::F2 && modifiers.empty())
+		{
+			toggleDebugFlag(BGFX_DEBUG_TEXT);
 			return;
 		}
 		if (key == KeyboardKey::F3 && modifiers.empty())

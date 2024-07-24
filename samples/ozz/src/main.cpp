@@ -17,17 +17,19 @@
 #include <darmok/model_assimp.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/text.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 namespace
 {
 	using namespace darmok;
 
-	class OzzSampleApp : public App
+	class OzzSampleApp : public App, public IInputEventListener
 	{
 	public:
 		void init()
 		{
 			App::init();
+			setDebugFlag(BGFX_DEBUG_TEXT);
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<SkeletalAnimationSceneComponent>();
@@ -93,15 +95,50 @@ namespace
 				}
 			});
 
-			auto talk = [this]() { _animator->play("talk"); };
+			getInput().addListener("talk", _talkInputs, *this);
+		}
 
-			getInput().addBindings("talk", {
-				{ KeyboardBindingKey{ KeyboardKey::Return }, true, talk },
-				{ GamepadBindingKey{ GamepadButton::A, 0 }, true, talk },
-			});
+		void onInputEvent(const std::string& tag) override
+		{
+			_animator->play(tag);
+		}
+
+		void render() const override
+		{
+			App::render();
+
+			const bgfx::Stats* stats = bgfx::getStats();
+
+			bgfx::dbgTextPrintf(0, 1, 0x0f, "Blend position: %s", glm::to_string(_animator->getBlendPosition()).c_str());
+
 		}
 
 	protected:
+
+		const InputEvents _talkInputs = {
+			KeyboardInputEvent{ KeyboardKey::Return },
+			GamepadInputEvent{ GamepadButton::A },
+		};
+		const InputDirs _moveForward = {
+			KeyboardInputEvent{ KeyboardKey::Up },
+			KeyboardInputEvent{ KeyboardKey::KeyW },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Up }
+		};
+		const InputDirs _moveBackward = {
+			KeyboardInputEvent{ KeyboardKey::Down },
+			KeyboardInputEvent{ KeyboardKey::KeyS },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Down }
+		};
+		const InputDirs _moveLeft = {
+			KeyboardInputEvent{ KeyboardKey::Left },
+			KeyboardInputEvent{ KeyboardKey::KeyA },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Left }
+		};
+		const InputDirs _moveRight = {
+			KeyboardInputEvent{ KeyboardKey::Right },
+			KeyboardInputEvent{ KeyboardKey::KeyD },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
+		};
 
 		void updateLogic(float deltaTime) noexcept override
 		{
@@ -112,33 +149,13 @@ namespace
 				return;
 			}
 
-			auto& kb = getInput().getKeyboard();
-			glm::vec2 dir(0);
-			if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
-			{
-				dir.y += 1;
-			}
-			if (kb.getKey(KeyboardKey::Down) || kb.getKey(KeyboardKey::KeyS))
-			{
-				dir.y -= 1;
-			}
-			if (kb.getKey(KeyboardKey::Right) || kb.getKey(KeyboardKey::KeyD))
-			{
-				dir.x += 1;
-			}
-			if (kb.getKey(KeyboardKey::Left) || kb.getKey(KeyboardKey::KeyA))
-			{
-				dir.x -= 1;
-			}
-
-			auto gp = getInput().getGamepad(0);
-			if (gp)
-			{
-				dir += glm::vec2(gp->getStick(GamepadStick::Left));
-			}
+			glm::vec2 dir(
+				getInput().getAxis(_moveRight, _moveLeft),
+				getInput().getAxis(_moveForward, _moveBackward)
+			);
 
 			_animator->setBlendPosition(dir);
-			if (dir != glm::vec2(0))
+			if (glm::length(dir) > 0.1F)
 			{
 				_animator->play("locomotion");
 			}

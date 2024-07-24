@@ -170,8 +170,6 @@ namespace darmok
         std::optional<Config> _currentConfig;
         std::shared_ptr<aiScene> _currentScene;
 
-        static std::filesystem::path getOutputPath(const std::filesystem::path& path, OutputFormat format) noexcept;
-
         static const std::string _outputFormatJsonKey;
         static const std::string _outputPathJsonKey;
         static const std::string _vertexLayoutJsonKey;

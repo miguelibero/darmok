@@ -186,6 +186,7 @@ namespace darmok
 		const Gamepads& getGamepads() const noexcept;
 
 		void addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
 		bool removeListener(const std::string& tag, IInputEventListener& listener) noexcept;
 		bool removeListener(IInputEventListener& listener) noexcept;
 

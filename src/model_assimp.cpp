@@ -689,12 +689,6 @@ namespace darmok
     {
     }
 
-    std::filesystem::path AssimpModelImporterImpl::getOutputPath(const std::filesystem::path& path, OutputFormat format) noexcept
-    {
-        auto stem = std::string(StringUtils::getFileStem(path.filename().string()));
-        return path.parent_path() / (stem + Model::getFormatExtension(format));
-    }
-
     const std::string AssimpModelImporterImpl::_outputFormatJsonKey = "outputFormat";
     const std::string AssimpModelImporterImpl::_outputPathJsonKey = "outputPath";
     const std::string AssimpModelImporterImpl::_vertexLayoutJsonKey = "vertexLayout";
@@ -789,14 +783,14 @@ namespace darmok
     std::vector<std::filesystem::path> AssimpModelImporterImpl::getOutputs(const Input& input) 
     {
         std::vector<std::filesystem::path> outputs;
-        if (_currentConfig->outputPath.empty())
+        auto outputPath = _currentConfig->outputPath;
+        if (outputPath.empty())
         {
-            outputs.push_back(getOutputPath(input.getRelativePath(), _currentConfig->outputFormat));
+            std::string stem = StringUtils::getFileStem(input.path.filename().string());
+            outputPath = stem + Model::getFormatExtension(_currentConfig->outputFormat);
         }
-        else
-        {
-            outputs.push_back(_currentConfig->outputPath);
-        }
+        auto basePath = input.getRelativePath().parent_path();
+        outputs.push_back(basePath / outputPath);
         return outputs;
     }
 

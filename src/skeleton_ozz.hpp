@@ -142,7 +142,9 @@ namespace darmok
 
 		void setPlaybackSpeed(float speed) noexcept;
 		float getPlaybackSpeed() const noexcept;
+
 		void setBlendPosition(const glm::vec2& value) noexcept;
+		const glm::vec2& getBlendPosition() const noexcept;
 
 		const Config& getConfig() const noexcept;
 		OptionalRef<const ISkeletalAnimatorState> getCurrentState() const noexcept;

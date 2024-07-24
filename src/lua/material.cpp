@@ -12,6 +12,20 @@ namespace darmok
 			{ "Line", MaterialPrimitiveType::Line }
 		});
 
+		lua.new_enum<MaterialTextureType>("MaterialTextureType", {
+			{ "Diffuse", MaterialTextureType::Diffuse },
+			{ "Specular", MaterialTextureType::Specular },
+			{ "Normal", MaterialTextureType::Normal },
+		});
+		lua.new_enum<MaterialColorType>("MaterialColorType", {
+			{ "Diffuse", MaterialColorType::Diffuse },
+			{ "Specular", MaterialColorType::Specular },
+			{ "Ambient", MaterialColorType::Ambient },
+			{ "Emissive", MaterialColorType::Emissive },
+			{ "Transparent", MaterialColorType::Transparent },
+			{ "Reflective", MaterialColorType::Reflective },
+		});
+
 		lua.new_usertype<Material>("Material",
 			sol::factories(
 				[]() { return std::make_shared<Material>();  },
@@ -22,7 +36,16 @@ namespace darmok
 			"shininess", sol::property(&Material::getShininess, &Material::setShininess),
 			"program", sol::property(&Material::getProgram, &Material::setProgram),
 			"specular_strength", sol::property(&Material::getSpecularStrength, &Material::setSpecularStrength),
-			"primitive_type", sol::property(&Material::getPrimitiveType, &Material::setPrimitiveType)
+			"primitive_type", sol::property(&Material::getPrimitiveType, &Material::setPrimitiveType),
+			"set_texture", &Material::setTexture,
+			"get_texture", &Material::getTexture,
+			"set_color", &Material::setColor,
+			"get_color", &Material::getColor,
+			"set_define", sol::overload(
+				&Material::setProgramDefine,
+				[](Material& mat, const std::string& define) { return mat.setProgramDefine(define); }
+			),
+			"set_defines", &Material::setProgramDefines
 		);
 	}
 }

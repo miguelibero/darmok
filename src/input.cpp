@@ -1124,6 +1124,14 @@ namespace darmok
 		_listeners.push_back(ListenerData{ tag, ev, listener });
 	}
 
+	void InputImpl::addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept
+	{
+		for (auto& ev : evs)
+		{
+			addListener(tag, ev, listener);
+		}
+	}
+
 	bool InputImpl::removeListener(const std::string& tag, IInputEventListener& listener) noexcept
 	{
 		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&tag, &listener](auto& data)
@@ -1185,22 +1193,22 @@ namespace darmok
 		switch (dir)
 		{
 			case InputDirType::Up:
-				v = vec.y;
+				v = vec.y > 0.F ? vec.y : 0.F;
 				break;
 			case InputDirType::Down:
-				v = -vec.y;
-				break;
-			case InputDirType::Left:
-				v = -vec.x;
+				v = vec.y < 0.F ? -vec.y : 0.F;
 				break;
 			case InputDirType::Right:
-				v = vec.x;
+				v = vec.x > 0.F ? vec.x : 0.F;
+				break;
+			case InputDirType::Left:
+				v = vec.x < 0.F ? -vec.x : 0.F;
 				break;
 		}
 		return v;
 	}
 
-	const float InputImpl::_mouseVelocityDirFactor = 0.0005F;
+	const float InputImpl::_mouseVelocityDirFactor = 0.0004F;
 
 	float InputImpl::getDir(const InputDir& dir, const Sensitivity& sensi) const noexcept
 	{
@@ -1506,6 +1514,11 @@ namespace darmok
 	void Input::addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept
 	{
 		_impl->addListener(tag, ev, listener);
+	}
+
+	void Input::addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept
+	{
+		_impl->addListener(tag, evs, listener);
 	}
 
 	bool Input::removeListener(IInputEventListener& listener) noexcept
