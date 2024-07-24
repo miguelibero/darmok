@@ -76,6 +76,7 @@ namespace darmok
 
 		static VideoModeInfo getVideoModeInfo(const WindowFrameSize& frame) noexcept;
 		static Viewport getMonitorWorkarea(GLFWmonitor* mon) noexcept;
+		static void resetWindowMonitor(GLFWwindow* win, const glm::uvec2& pos = glm::uvec2(0), const glm::uvec2& size = glm::uvec2(1)) noexcept;
 		static VideoMode getVideoMode(GLFWwindow* win = nullptr, GLFWmonitor* mon = nullptr) noexcept;
 
 	private:

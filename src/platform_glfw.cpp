@@ -75,8 +75,9 @@ namespace darmok
 		auto refreshRate = _mode.refreshRate == 0 ? GLFW_DONT_CARE : _mode.refreshRate;
 		glm::uvec2 pixelSize(0);
 
-		// reset window monitor
-		glfwSetWindowMonitor(win, nullptr, 0, 0, 1, 1, GLFW_DONT_CARE);
+		// is there a better way of doing this?
+		// need to reset to normal window to get the desktop workarea
+		PlatformImpl::resetWindowMonitor(win, frame.topLeft);
 
 		if (_mode.size.x == 0 || _mode.size.y == 0)
 		{
@@ -99,7 +100,7 @@ namespace darmok
 				glfwSetWindowMonitor(win
 					, nullptr
 					, workArea.origin.x + frame.topLeft.x
-					, workArea.origin.x + frame.topLeft.y
+					, workArea.origin.y + frame.topLeft.y
 					, _mode.size.x
 					, _mode.size.y
 					, refreshRate
@@ -764,6 +765,16 @@ namespace darmok
 		int x, y, w, h;
 		glfwGetMonitorWorkarea(mon, &x, &y, &w, &h);
 		return Viewport(x, y, w, h);
+	}
+
+	void PlatformImpl::resetWindowMonitor(GLFWwindow* win, const glm::uvec2& pos, const glm::uvec2& size) noexcept
+	{
+		glfwSetWindowSizeCallback(win, nullptr);
+		glfwSetFramebufferSizeCallback(win, nullptr);
+		glfwSetWindowMonitor(win, nullptr,
+			pos.x, pos.y, size.x, size.y, GLFW_DONT_CARE);
+		glfwSetWindowSizeCallback(win, staticWindowSizeCallback);
+		glfwSetFramebufferSizeCallback(win, staticFramebufferSizeCallback);
 	}
 
 	VideoMode PlatformImpl::getVideoMode(GLFWwindow* win, GLFWmonitor* mon) noexcept

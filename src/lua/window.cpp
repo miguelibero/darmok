@@ -141,7 +141,14 @@ namespace darmok
 			{ "Hidden", WindowCursorMode::Hidden }
 		});
 
-		lua.new_usertype<VideoMode>("VideoMode", sol::default_constructor,
+		lua.new_usertype<VideoMode>("VideoMode",
+			sol::factories(
+				[]() { return VideoMode(); },
+				[](const VarLuaTable<glm::uvec2>& size) { return VideoMode{ .size = LuaGlm::tableGet(size) }; },
+				[](WindowScreenMode mode) { return VideoMode{ mode }; },
+				[](WindowScreenMode mode, const VarLuaTable<glm::uvec2>& size) {
+					return VideoMode{ mode, LuaGlm::tableGet(size) }; }
+			),
 			"size", &VideoMode::size,
 			"depth", &VideoMode::depth,
 			"refreshRate", &VideoMode::refreshRate,
