@@ -32,13 +32,27 @@ namespace darmok
 
 	void LuaModel::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<ModelNode>("ModelNode", sol::no_constructor,
+		lua.new_usertype<ModelMesh>("ModelMesh", sol::default_constructor,
+			// "vertex_layout", &ModelMesh::vertexLayout,
+			"bounding_box", &ModelMesh::boundingBox,
+			sol::meta_function::to_string, &ModelMesh::toString
+		);
+		lua.new_usertype<ModelRenderable>("ModelRenderable", sol::default_constructor,
+			"mesh", &ModelRenderable::mesh,
+			"material", &ModelRenderable::material,
+			sol::meta_function::to_string, &ModelRenderable::toString
+		);
+		lua.new_usertype<ModelNode>("ModelNode", sol::default_constructor,
 			"name", &ModelNode::name,
 			"transform", &ModelNode::transform,
-			"children", &ModelNode::children
+			"renderables", &ModelNode::renderables,
+			"children", &ModelNode::children,
+			"bounding_box", sol::property(&ModelNode::getBoundingBox),
+			sol::meta_function::to_string, &ModelNode::toString
 		);
-		lua.new_usertype<Model>("Model", sol::no_constructor,
-			"root_node", &Model::rootNode
+		lua.new_usertype<Model>("Model", sol::default_constructor,
+			"root_node", &Model::rootNode,
+			sol::meta_function::to_string, &Model::toString
 		);
 
 		LuaModelSceneConfigurer::bind(lua);

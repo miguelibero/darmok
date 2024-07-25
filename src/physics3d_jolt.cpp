@@ -172,34 +172,41 @@ namespace darmok::physics3d
 
     JPH::ShapeRefC JoltUtils::convert(const Shape& shape, float scale)
     {
+        std::optional<Cube> optCube;
         if (auto cubePtr = std::get_if<Cube>(&shape))
         {
-            auto cube = *cubePtr * scale;
+            optCube = *cubePtr;
+        }
+        else if (auto bbPtr = std::get_if<BoundingBox>(&shape))
+        {
+            optCube = bbPtr->getCube();
+        }
+        if (optCube)
+        {
+            auto cube = optCube.value() * scale;
             JPH::BoxShapeSettings settings(JoltUtils::convertSize(cube.size * 0.5F));
             return joltGetOffsetShape(settings, cube.origin);
         }
-        else if (auto spherePtr = std::get_if<Sphere>(&shape))
+
+        if (auto spherePtr = std::get_if<Sphere>(&shape))
         {
             auto sphere = *spherePtr * scale;
             JPH::SphereShapeSettings settings(sphere.radius);
             return joltGetOffsetShape(settings, sphere.origin);
         }
-        else if (auto capsPtr = std::get_if<Capsule>(&shape))
+        if (auto capsPtr = std::get_if<Capsule>(&shape))
         {
             auto caps = *capsPtr * scale;
             JPH::CapsuleShapeSettings settings(caps.cylinderHeight * 0.5, caps.radius);
             return joltGetOffsetShape(settings, caps.origin);
         }
-        else if (auto polyPtr = std::get_if<Polygon>(&shape))
+        if (auto polyPtr = std::get_if<Polygon>(&shape))
         {
             auto poly = *polyPtr * scale;
             auto tris = JoltUtils::convert(poly);
             JPH::MeshShapeSettings settings(tris);
             return joltGetOffsetShape(settings, poly.origin);
         }
-
-        JPH::MeshShapeSettings settings;
-
         return nullptr;
     }
 

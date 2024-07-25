@@ -24,6 +24,12 @@ namespace darmok
 
         Rectangle& operator*=(float scale) noexcept;
         Rectangle operator*(float scale) const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(size, origin);
+        }
     };
 
     struct DARMOK_EXPORT Cube final
@@ -38,6 +44,12 @@ namespace darmok
         Cube operator*(float scale) const noexcept;
 
         static const Cube& standard() noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(size, origin);
+        }
     };
 
     struct DARMOK_EXPORT Triangle final
@@ -52,6 +64,12 @@ namespace darmok
 
         Triangle& operator*=(float scale) noexcept;
         Triangle operator*(float scale) const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(vertices);
+        }
     };
 
     struct DARMOK_EXPORT Polygon final
@@ -66,6 +84,12 @@ namespace darmok
 
         Polygon& operator*=(float scale) noexcept;
         Polygon operator*(float scale) const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(triangles, origin);
+        }
     };
 
     struct DARMOK_EXPORT Sphere final
@@ -81,6 +105,12 @@ namespace darmok
 
         Sphere& operator*=(float scale) noexcept;
         Sphere operator*(float scale) const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(radius, origin);
+        }
     };
 
     struct DARMOK_EXPORT Plane final
@@ -97,6 +127,12 @@ namespace darmok
         Plane& operator*=(const glm::mat4& transform) noexcept;
 
         static const Plane& standard() noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(normal, constant);
+        }
     };
 
     struct DARMOK_EXPORT Capsule final
@@ -111,22 +147,40 @@ namespace darmok
 
         Capsule& operator*=(float scale) noexcept;
         Capsule operator*(float scale) const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(cylinderHeight, radius, origin);
+        }
     };
 
     struct DARMOK_EXPORT NormalIntersection final
     {
-        glm::vec3 position;
-        glm::vec3 normal;
+        glm::vec3 position = glm::vec3(0);
+        glm::vec3 normal = glm::vec3(0, 1, 0);
 
         std::string toString() const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(position, normal);
+        }
     };
 
     struct DARMOK_EXPORT DistanceIntersection final
     {
-        glm::vec2 position;
-        float distance;
+        glm::vec2 position = glm::vec3(0);
+        float distance = 0.F;
 
         std::string toString() const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(position, distance);
+        }
     };
 
     struct Line;
@@ -156,6 +210,12 @@ namespace darmok
         std::optional<DistanceIntersection> intersect(const Triangle& tri) const noexcept;
 
         static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const glm::ivec4& viewport) noexcept;
+    
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(direction, origin);
+        }
     };
 
     struct DARMOK_EXPORT Line final
@@ -173,6 +233,35 @@ namespace darmok
         std::optional<std::array<NormalIntersection, 2>> intersect(const Sphere& sphere) const noexcept;
         std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
         glm::vec3 closestPoint(const glm::vec3& p);
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(points);
+        }
+    };
+
+    struct DARMOK_EXPORT BoundingBox final
+    {
+        glm::vec3 min;
+        glm::vec3 max;
+
+        BoundingBox() noexcept;
+        BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
+
+        BoundingBox& operator+=(const BoundingBox& bb) noexcept;
+        BoundingBox operator+(const BoundingBox& bb) noexcept;
+
+        Cube getCube() const noexcept;
+        operator Cube() const noexcept;
+
+        std::string toString() const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(min, max);
+        }
     };
 
 }
@@ -230,6 +319,11 @@ namespace std
     }
 
     inline std::string to_string(const darmok::Line& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::BoundingBox& v)
     {
         return v.toString();
     }

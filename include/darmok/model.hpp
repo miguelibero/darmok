@@ -18,6 +18,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/program_fwd.hpp>
+#include <darmok/shape.hpp>
 
 namespace darmok
 {
@@ -106,6 +107,8 @@ namespace darmok
                 blendMode
             );
         }
+
+        std::string toString() const noexcept;
     };
 
     struct DARMOK_EXPORT ModelArmatureJoint final
@@ -126,13 +129,16 @@ namespace darmok
         Data indexData;
         bgfx::VertexLayout vertexLayout;
         MeshConfig config;
+        BoundingBox boundingBox;
         std::vector<ModelArmatureJoint> joints;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(vertexData, indexData, vertexLayout, config, joints);
+            archive(vertexData, indexData, vertexLayout, config, boundingBox, joints);
         }
+
+        std::string toString() const noexcept;
     };
 
     struct DARMOK_EXPORT ModelRenderable final
@@ -145,6 +151,8 @@ namespace darmok
         {
             archive(mesh, material);
         }
+
+        std::string toString() const noexcept;
     };
 
     struct DARMOK_EXPORT ModelNode final
@@ -156,6 +164,8 @@ namespace darmok
         std::optional<ModelAmbientLight> ambientLight;
         std::vector<ModelRenderable> renderables;
         std::vector<ModelNode> children;
+
+        BoundingBox getBoundingBox() const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -170,7 +180,7 @@ namespace darmok
                 children);
         }
 
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
     };
 
     struct DARMOK_EXPORT Model final
@@ -183,7 +193,7 @@ namespace darmok
             archive(rootNode);
         }
 
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
 
         using DataFormat = ModelDataFormat;
 
@@ -287,5 +297,8 @@ namespace darmok
 	};    
 }
 
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelMaterial& material);
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelMesh& mesh);
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelRenderable& renderable);
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node);
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::Model& model);

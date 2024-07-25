@@ -326,6 +326,16 @@ namespace darmok
         return std::nullopt;
     }
 
+    std::string NormalIntersection::toString() const noexcept
+    {
+        return "NormalIntersection(position=" + glm::to_string(position) + ", normal=" + glm::to_string(normal) + ")";
+    }
+
+    std::string DistanceIntersection::toString() const noexcept
+    {
+        return "DistanceIntersection(position=" + glm::to_string(position) + ", distance=" + std::to_string(distance) + ")";
+    }
+
     std::optional<glm::vec3> Line::intersect(const Triangle& tri) const noexcept
     {
         glm::vec3 pos;
@@ -374,13 +384,44 @@ namespace darmok
         return copy;
     }
 
-    std::string NormalIntersection::toString() const noexcept
+    BoundingBox::BoundingBox() noexcept
+        : min(0), max(0)
     {
-        return "NormalIntersection(position=" + glm::to_string(position) + ", normal=" + glm::to_string(normal) + ")";
     }
 
-    std::string DistanceIntersection::toString() const noexcept
+    BoundingBox::BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept
+        : min(min), max(max)
     {
-        return "DistanceIntersection(position=" + glm::to_string(position) + ", distance=" + std::to_string(distance) + ")";
+    }
+
+    BoundingBox& BoundingBox::operator+=(const BoundingBox& bb) noexcept
+    {
+        min = glm::min(min, bb.min);
+        max = glm::max(max, bb.max);
+        return *this;
+    }
+
+    BoundingBox BoundingBox::operator+(const BoundingBox& bb) noexcept
+    {
+        BoundingBox sum = *this;
+        sum += bb;
+        return sum;
+    }
+
+    Cube BoundingBox::getCube() const noexcept
+    {
+        auto size = max - min;
+        auto origin = min + (size * 0.5F);
+        return Cube(size, origin);
+    }
+
+    BoundingBox::operator Cube() const noexcept
+    {
+        return getCube();
+    }
+
+    std::string BoundingBox::toString() const noexcept
+    {
+        return "BoundingBox(" + glm::to_string(min) + ", " + glm::to_string(max) + ")";
     }
 }

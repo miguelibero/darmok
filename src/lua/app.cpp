@@ -212,6 +212,19 @@ end
 		lua.open_libraries(sol::lib::debug);
 #endif
 
+		lua.script(R"(
+
+function table.contains(table, element)
+  for _, value in pairs(table) do
+    if value == element then
+      return true
+    end
+  end
+  return false
+end
+
+)");
+
 		LuaMath::bind(lua);
 		LuaShape::bind(lua);
 		LuaAssets::bind(lua);

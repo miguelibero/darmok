@@ -107,6 +107,8 @@ namespace darmok
             aiProcess_Triangulate |
             aiProcess_JoinIdenticalVertices |
             aiProcess_SortByPType |
+            aiProcess_GenSmoothNormals |
+            aiProcess_GenBoundingBoxes |
             // apply UnitScaleFactor to everything
             aiProcess_GlobalScale;
 
@@ -592,6 +594,9 @@ namespace darmok
         modelMesh.vertexData = createVertexData(assimpMesh, bones);
         modelMesh.indexData = createIndexData(assimpMesh);
         modelMesh.vertexLayout = _config.vertexLayout;
+
+        modelMesh.boundingBox.min = AssimpUtils::convert(assimpMesh.mAABB.mMin);
+        modelMesh.boundingBox.max = AssimpUtils::convert(assimpMesh.mAABB.mMax);
     }
     
     std::shared_ptr<ModelMesh> AssimpModelConverter::getMesh(const aiMesh* assimpMesh) noexcept

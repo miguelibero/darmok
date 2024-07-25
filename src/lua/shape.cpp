@@ -7,8 +7,8 @@ namespace darmok
 {
     void LuaShape::bind(sol::state_view& lua) noexcept
     {
-		lua.new_usertype<Rectangle>("Rectangle", sol::no_constructor,
-			"new", sol::overload(
+		lua.new_usertype<Rectangle>("Rectangle",
+			sol::factories(
 				[]() { return Rectangle(); },
 				[](const VarLuaVecTable<glm::vec2>& size) {
 					return Rectangle(LuaGlm::tableGet(size)); },
@@ -20,8 +20,8 @@ namespace darmok
 			"to_lines", &Rectangle::toLines
 		);
 
-		lua.new_usertype<Cube>("Cube", sol::no_constructor,
-			"new", sol::overload(
+		lua.new_usertype<Cube>("Cube",
+			sol::factories(
 				[]() { return Cube(); },
 				[](const VarLuaVecTable<glm::vec3>& size) {
 					return Cube(LuaGlm::tableGet(size)); },
@@ -32,8 +32,8 @@ namespace darmok
 			"origin", &Cube::origin
 		);
 
-		lua.new_usertype<Sphere>("Sphere", sol::no_constructor,
-			"new", sol::overload(
+		lua.new_usertype<Sphere>("Sphere",
+			sol::factories(
 				[]() { return Sphere(); },
 				[](const VarLuaTable<glm::vec3>& origin) {
 					return Sphere(LuaGlm::tableGet(origin)); },
@@ -48,8 +48,8 @@ namespace darmok
 			"origin", &Sphere::origin
 		);
 
-		lua.new_usertype<Triangle>("Triangle", sol::no_constructor,
-			"new", sol::overload(
+		lua.new_usertype<Triangle>("Triangle",
+			sol::factories(
 				[](const Triangle::Vertices& vertices) {
 					return Triangle(vertices); },
 				[](const VarLuaTable<glm::vec3>& p1, const VarLuaTable<glm::vec3>& p2, const VarLuaTable<glm::vec3>& p3) {
@@ -59,8 +59,8 @@ namespace darmok
 			"vertices", &Triangle::vertices
 		);
 
-		lua.new_usertype<Polygon>("Polygon", sol::no_constructor,
-			"new", sol::overload(
+		lua.new_usertype<Polygon>("Polygon",
+			sol::factories(
 				[]() {
 					return Polygon(); },
 				[](const Polygon::Triangles& triangles) {
@@ -84,8 +84,8 @@ namespace darmok
 			"origin", &Polygon::origin
 		);
 
-		lua.new_usertype<Plane>("Plane", sol::no_constructor,
-			"new", sol::overload(
+		lua.new_usertype<Plane>("Plane",
+			sol::factories(
 				[]() { return Plane(); },
 				[](const VarLuaTable<glm::vec3>& normal) {
 					return Plane(LuaGlm::tableGet(normal)); },
@@ -98,8 +98,8 @@ namespace darmok
 			sol::meta_function::multiplication, &Plane::operator*
 		);
 
-		lua.new_usertype<Capsule>("Capsule", sol::no_constructor,
-			"new", sol::overload(
+		lua.new_usertype<Capsule>("Capsule",
+			sol::factories(
 				[]() { return Capsule(); },
 				[](float cylinderHeight) {
 					return Capsule(cylinderHeight); },
@@ -111,8 +111,8 @@ namespace darmok
 			"origin", &Capsule::origin
 		);
 
-		lua.new_usertype<Ray>("Ray", sol::no_constructor,
-			"new", sol::overload(
+		lua.new_usertype<Ray>("Ray",
+			sol::factories(
 				[]() { return Ray(); },
 				[](const VarLuaTable<glm::vec3>& dir) {
 					return Ray(LuaGlm::tableGet(dir)); },
@@ -134,8 +134,8 @@ namespace darmok
 			"to_line", &Ray::toLine
 		);
 
-		lua.new_usertype<Line>("Line", sol::no_constructor,
-			"new", sol::overload(
+		lua.new_usertype<Line>("Line",
+			sol::factories(
 				[]() { return Line(); },
 				[](const Line::Points& points) {
 					return Line(points); },
@@ -145,6 +145,18 @@ namespace darmok
 			),
 			"points", &Line::points,
 			sol::meta_function::multiplication, &Line::operator*
+		);
+
+		lua.new_usertype<BoundingBox>("BoundingBox",
+			sol::factories(
+				[]() { return BoundingBox(); },
+				[](const VarLuaTable<glm::vec3>& min, const VarLuaTable<glm::vec3>& max) {
+					return BoundingBox(LuaGlm::tableGet(min), LuaGlm::tableGet(max));
+				}
+			),
+			"min", &BoundingBox::min,
+			"max", &BoundingBox::max,
+			"cube", sol::property(&BoundingBox::getCube)
 		);
     }
 }

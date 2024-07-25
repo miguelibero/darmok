@@ -23,22 +23,52 @@
 
 namespace darmok
 {
-    std::string ModelNode::to_string() const noexcept
+    template<typename T>
+    static std::string getModelString(const T& obj, std::string_view name) noexcept
     {
         std::stringstream ss;
-        ss << "ModelNode:" << std::endl;
+        ss << name << ":" << std::endl;
         cereal::JSONOutputArchive archive(ss);
-        archive(*this);
+        archive(obj);
         return ss.str();
     }
 
-    std::string Model::to_string() const noexcept
+    std::string ModelMaterial::toString() const noexcept
     {
-        std::stringstream ss;
-        ss << "Model:" << std::endl;
-        cereal::JSONOutputArchive archive(ss);
-        archive(*this);
-        return ss.str();
+        return getModelString(*this, "ModelMaterial");
+    }
+
+    std::string ModelMesh::toString() const noexcept
+    {
+        return getModelString(*this, "ModelMesh");
+    }
+
+    std::string ModelRenderable::toString() const noexcept
+    {
+        return getModelString(*this, "ModelRenderable");
+    }
+
+    std::string ModelNode::toString() const noexcept
+    {
+        return getModelString(*this, "ModelNode");
+    }
+
+    std::string Model::toString() const noexcept
+    {
+        return getModelString(*this, "Model");
+    }
+
+    BoundingBox ModelNode::getBoundingBox() const noexcept
+    {
+        BoundingBox bb;
+        for (auto& renderable : renderables)
+        {
+            if (renderable.mesh)
+            {
+                bb += renderable.mesh->boundingBox;
+            }
+        }
+        return bb;
     }
 
     Model::DataFormat Model::getFormat(const std::string& name) noexcept
@@ -374,14 +404,32 @@ namespace darmok
     }
 }
 
+std::ostream& operator<<(std::ostream& out, const darmok::ModelMaterial& material)
+{
+    out << material.toString();
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const darmok::ModelMesh& mesh)
+{
+    out << mesh.toString();
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const darmok::ModelRenderable& renderable)
+{
+    out << renderable.toString();
+    return out;
+}
+
 std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node)
 {
-    out << node.to_string();
+    out << node.toString();
     return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const darmok::Model& model)
 {
-    out << model.to_string();
+    out << model.toString();
     return out;
 }
