@@ -61,6 +61,7 @@ namespace darmok
 		void init();
         void updateLogic(float deltaTime);
 		void shutdown() noexcept;
+		void render() noexcept;
 
     private:
 		static std::string _defaultAssetInputPath;
@@ -71,12 +72,21 @@ namespace darmok
         std::unique_ptr<sol::state> _lua;
 		std::filesystem::path _mainLuaPath;
 
+		struct DbgText final
+		{
+			glm::uvec2 pos;
+			std::string message;
+		};
+
+		std::vector<DbgText> _dbgTexts;
+
 		std::optional<std::filesystem::path> findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept;
 		bool importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine);
 		std::optional<int32_t> loadLua(const std::filesystem::path& mainPath);
 		void unloadLua() noexcept;
 
 		void addPackagePath(const std::string& path, bool binary = false) noexcept;
+		void luaDbgTextPrint(const glm::uvec2& pos, const std::string& msg) noexcept;
 
 		void version(const std::string& name) noexcept;
 		void help(const std::string& name, const char* error = nullptr) noexcept;

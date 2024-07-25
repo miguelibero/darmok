@@ -48,7 +48,7 @@ namespace darmok::physics3d
     bool CharacterControllerImpl::isGrounded() const noexcept
     {
         auto state = getGroundState();
-        return state == GroundState::Grounded || state == GroundState::GroundedSteep;
+        return state == GroundState::Grounded;
     }
 
     GroundState CharacterControllerImpl::getGroundState() const noexcept

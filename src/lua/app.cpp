@@ -150,6 +150,12 @@ end
 		_impl->updateLogic(deltaTime);
 	}
 
+	void LuaRunnerApp::render() const
+	{
+		App::render();
+		_impl->render();
+	}
+
 	LuaRunnerAppImpl::LuaRunnerAppImpl(App& app) noexcept
 		: _app(app)
 	{
@@ -163,6 +169,11 @@ end
 			oss << arg.as<std::string>() << " ";
 		}
 		StreamUtils::logDebug(oss.str());
+	}
+
+	void LuaRunnerAppImpl::luaDbgTextPrint(const glm::uvec2& pos, const std::string& msg) noexcept
+	{
+		_dbgTexts.emplace_back(pos, msg);
 	}
 
 	std::optional<int> LuaRunnerAppImpl::setup(const std::vector<std::string>& args)
@@ -236,6 +247,9 @@ end
 		_luaApp.emplace(_app);
 		lua["app"] = std::ref(_luaApp.value());
 		lua.set_function("print", luaPrint);
+		lua.set_function("dbgTextPrint", [this](const VarLuaTable<glm::uvec2>& pos, const std::string& msg) {
+			luaDbgTextPrint(LuaGlm::tableGet(pos), msg);
+		});
 
 		if (!mainDir.empty())
 		{
@@ -452,6 +466,15 @@ end
 		{
 			_luaApp->update(deltaTime);
 		}
+	}
+
+	void LuaRunnerAppImpl::render() noexcept
+	{
+		for (auto text : _dbgTexts)
+		{
+			bgfx::dbgTextPrintf(text.pos.x, text.pos.y, 0x0f, text.message.c_str());
+		}
+		_dbgTexts.clear();
 	}
 
 	void LuaRunnerAppImpl::shutdown() noexcept

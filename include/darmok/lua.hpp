@@ -16,6 +16,7 @@ namespace darmok
         std::optional<int32_t> setup(const std::vector<std::string>& args);
         void init() override;
         void shutdown() override;
+        void render() const override;
     protected:
         void updateLogic(float deltaTime) override;
     private:

@@ -181,6 +181,7 @@ namespace darmok
 			return;
 		}
 		glfwSetInputMode(glfw, GLFW_CURSOR, v);
+		events.post<WindowCursorModeEvent>(_value);
 	}
 
 	void PlatformCmd::process(PlatformCmd& cmd, PlatformImpl& plat) noexcept

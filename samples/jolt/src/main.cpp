@@ -215,6 +215,27 @@ namespace
 
 	protected:
 
+		const InputDirs _moveForward = {
+			KeyboardInputEvent{ KeyboardKey::Up },
+			KeyboardInputEvent{ KeyboardKey::KeyW },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Up }
+		};
+		const InputDirs _moveBackward = {
+			KeyboardInputEvent{ KeyboardKey::Down },
+			KeyboardInputEvent{ KeyboardKey::KeyS },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Down }
+		};
+		const InputDirs _moveLeft = {
+			KeyboardInputEvent{ KeyboardKey::Left },
+			KeyboardInputEvent{ KeyboardKey::KeyA },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Left }
+		};
+		const InputDirs _moveRight = {
+			KeyboardInputEvent{ KeyboardKey::Right },
+			KeyboardInputEvent{ KeyboardKey::KeyD },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
+		};
+
 		void updateLogic(float dt) override
 		{
 			if (_freeLook->isEnabled())
@@ -246,22 +267,9 @@ namespace
 			glm::vec3 dir(0);
 			if (_characterCtrl->isGrounded())
 			{
-				if (kb.getKey(KeyboardKey::Right) || kb.getKey(KeyboardKey::KeyD))
-				{
-					dir.x += 1;
-				}
-				else if (kb.getKey(KeyboardKey::Left) || kb.getKey(KeyboardKey::KeyA))
-				{
-					dir.x -= 1;
-				}
-				else if (kb.getKey(KeyboardKey::Up) || kb.getKey(KeyboardKey::KeyW))
-				{
-					dir.z += 1;
-				}
-				else if (kb.getKey(KeyboardKey::Down) || kb.getKey(KeyboardKey::KeyS))
-				{
-					dir.z -= 1;
-				}
+				dir.x = getInput().getAxis(_moveRight, _moveLeft);
+				dir.z = getInput().getAxis(_moveForward, _moveBackward);
+
 				if (_camTrans)
 				{
 					auto rot = _camTrans->getEulerAngles();
