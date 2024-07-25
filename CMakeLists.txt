@@ -100,7 +100,6 @@ darmok_process_assets(
   OUTPUT include/private/generated
   ASSETS ${CORE_ASSETS}
 )
-set_target_properties(${CORE_ASSETS_TARGET} PROPERTIES FOLDER "darmok")
 set(ASSET_TARGETS ${CORE_ASSETS_TARGET})
 
 set(CORE_SOURCES
@@ -258,7 +257,6 @@ if(DARMOK_BUILD_IMGUI)
     OUTPUT include/private/generated/imgui
     ASSETS ${IMGUI_ASSETS}
   )
-  set_target_properties(${IMGUI_ASSETS_TARGET} PROPERTIES FOLDER "darmok")
   list(APPEND ASSET_TARGETS ${IMGUI_ASSETS_TARGET})
 endif()
 
@@ -283,7 +281,6 @@ if(DARMOK_BUILD_RMLUI)
     OUTPUT include/private/generated/rmlui
     ASSETS ${RMLUI_ASSETS}
   )
-  set_target_properties(${RMLUI_ASSETS_TARGET} PROPERTIES FOLDER "darmok")
   list(APPEND ASSET_TARGETS ${RMLUI_ASSETS_TARGET})
 endif()
 
@@ -371,6 +368,21 @@ if(DARMOK_BUILD_LUA)
     ${INCLUDE_DIR}/lua.hpp
   )
   source_group(TREE ${SRC_DIR}/lua PREFIX "Lua Binding Source Files" FILES ${LUA_SOURCES})
+
+  set(LUA_ASSETS_TARGET darmok-lua-assets)
+  set(LUA_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets/lua)
+  set(LUA_ASSETS
+    ${LUA_ASSETS_DIR}/string.lua
+    ${LUA_ASSETS_DIR}/table.lua
+  )
+  darmok_process_assets(
+    TARGET ${LUA_ASSETS_TARGET} CORE
+    INPUT ${LUA_ASSETS_DIR}
+    OUTPUT include/private/generated/lua
+    ASSETS ${LUA_ASSETS}
+  )
+  list(APPEND ASSET_TARGETS ${LUA_ASSETS_TARGET})
+
 endif()
 
 set(CORE_LIB_NAME "darmok-core")
@@ -393,7 +405,12 @@ add_library(
 target_sources(${LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${HEADERS})
 source_group(TREE ${SRC_DIR} PREFIX "Source Files" FILES ${SOURCES})
 source_group(TREE ${INCLUDE_BASE_DIR} PREFIX "Header Files" FILES ${HEADERS})
+
 add_dependencies(${LIB_NAME} ${ASSET_TARGETS})
+foreach(TARGET ${ASSET_TARGETS})
+  set_target_properties(${TARGET} PROPERTIES FOLDER "darmok/assets")
+endforeach()
+
 add_library(darmok::darmok ALIAS ${LIB_NAME})
 target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 

@@ -65,9 +65,9 @@ namespace darmok
         [[nodiscard]] std::string toString() const noexcept;
 
         template<typename T>
-        [[nodiscard]] static DataView fromArray(const T& arr) noexcept
+        [[nodiscard]] static DataView fromStatic(const T& data) noexcept
         {
-            return DataView(&arr, sizeof(T));
+            return DataView(&data, sizeof(T));
         }
 
     private:

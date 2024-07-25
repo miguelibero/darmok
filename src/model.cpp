@@ -58,6 +58,19 @@ namespace darmok
         return getModelString(*this, "Model");
     }
 
+    bool ModelMesh::empty() const noexcept
+    {
+        if (vertexLayout.getStride() == 0)
+        {
+            return true;
+        }
+        if (vertexData.empty())
+        {
+            return true;
+        }
+        return false;
+    }
+
     BoundingBox ModelNode::getBoundingBox() const noexcept
     {
         BoundingBox bb;
@@ -234,7 +247,8 @@ namespace darmok
 		{
 			parentTrans = _config.scene.getOrAddComponent<Transform>(parent);
 		}
-		_config.scene.addComponent<Transform>(entity, node.transform, parentTrans);
+		auto& trans = _config.scene.addComponent<Transform>(entity, node.transform, parentTrans);
+        trans.setName(node.name);
         configureEntity(node, entity);
         return entity;
     }
@@ -323,6 +337,10 @@ namespace darmok
     std::shared_ptr<Mesh> ModelSceneConfigurer::loadMesh(const std::shared_ptr<ModelMesh>& modelMesh) noexcept
     {
         if (!modelMesh)
+        {
+            return nullptr;
+        }
+        if (modelMesh->empty())
         {
             return nullptr;
         }

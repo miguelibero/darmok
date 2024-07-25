@@ -30,6 +30,57 @@ namespace darmok
         setp(base, base + size);
     }
 
+    size_t DataStreamBuffer::size() const noexcept
+    {
+        return _data.size();
+    }
+
+    std::streampos DataStreamBuffer::seekoff(std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which)
+    {
+        if (which & std::ios_base::out)
+        {
+            std::streamoff newpos;
+            if (way == std::ios_base::beg)
+            {
+                newpos = off;
+            }
+            else if (way == std::ios_base::cur)
+            {
+                newpos = (pptr() - pbase()) + off;
+            }
+            else if (way == std::ios_base::end)
+            {
+                newpos = size() + off;
+            }
+            else {
+                return -1;
+            }
+            if (newpos < 0 || newpos > size())
+            {
+                return -1;
+            }
+            setp(pbase(), epptr());
+            pbump(newpos);
+            return newpos;
+        }
+        return -1;
+    }
+
+    std::streampos DataStreamBuffer::seekpos(std::streampos pos, std::ios_base::openmode which)
+    {
+        if (which & std::ios_base::out)
+        {
+            if (pos < 0 || pos > size())
+            {
+                return -1;
+            }
+            setp(pbase(), epptr());
+            pbump(pos);
+            return pos;
+        }
+        return -1;
+    }
+
     DataStreamBuffer::int_type DataStreamBuffer::overflow(int_type ch)
     {
         if (ch != EOF)

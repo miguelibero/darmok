@@ -45,6 +45,8 @@ namespace darmok
 
         static const Cube& standard() noexcept;
 
+        bool empty() const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -254,6 +256,8 @@ namespace darmok
 
         Cube getCube() const noexcept;
         operator Cube() const noexcept;
+
+        bool empty() const noexcept;
 
         std::string toString() const noexcept;
 

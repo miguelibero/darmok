@@ -44,8 +44,11 @@ namespace darmok
     {
     public:
         DataStreamBuffer(Data& data, size_t overflowSizeIncrease = 64) noexcept;
+        size_t size() const noexcept;
     protected:
         int_type overflow(int_type ch) override;
+        std::streampos seekoff(std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which) override;
+        std::streampos seekpos(std::streampos pos, std::ios_base::openmode which) override;
     private:
         Data& _data;
         size_t _overflowSizeIncrease;
@@ -55,6 +58,8 @@ namespace darmok
     {
     public:
         DataOutputStream(Data& data) noexcept;
+
+        std::streamsize getWriteSize() const noexcept;
 
         template<typename T>
         static void write(Data& data, const T& val)

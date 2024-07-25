@@ -285,6 +285,7 @@ namespace darmok
     {
         modelNode.name = AssimpUtils::getStringView(assimpNode.mName);
         modelNode.transform = AssimpUtils::convert(assimpNode.mTransformation);
+
         for(size_t i = 0; i < assimpNode.mNumMeshes; i++)
         {
             auto& modelRenderable = modelNode.renderables.emplace_back();
@@ -570,6 +571,24 @@ namespace darmok
 
     void AssimpModelConverter::update(ModelMesh& modelMesh, const aiMesh& assimpMesh) noexcept
     {
+        modelMesh.boundingBox.min = AssimpUtils::convert(assimpMesh.mAABB.mMin);
+        modelMesh.boundingBox.max = AssimpUtils::convert(assimpMesh.mAABB.mMax);
+
+        std::string name(assimpMesh.mName.C_Str());
+        auto skip = false;
+        for (auto& regex : _config.skipMeshes)
+        {
+            if (std::regex_match(name, regex))
+            {
+                skip = true;
+                break;
+            }
+        }
+        if (skip)
+        {
+            return;
+        }
+
         std::vector<aiBone*> bones;
         for (size_t i = 0; i < assimpMesh.mNumBones; i++)
         {
@@ -594,9 +613,6 @@ namespace darmok
         modelMesh.vertexData = createVertexData(assimpMesh, bones);
         modelMesh.indexData = createIndexData(assimpMesh);
         modelMesh.vertexLayout = _config.vertexLayout;
-
-        modelMesh.boundingBox.min = AssimpUtils::convert(assimpMesh.mAABB.mMin);
-        modelMesh.boundingBox.max = AssimpUtils::convert(assimpMesh.mAABB.mMax);
     }
     
     std::shared_ptr<ModelMesh> AssimpModelConverter::getMesh(const aiMesh* assimpMesh) noexcept
@@ -699,6 +715,7 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_vertexLayoutJsonKey = "vertexLayout";
     const std::string AssimpModelImporterImpl::_embedTexturesJsonKey = "embedTextures";
     const std::string AssimpModelImporterImpl::_programJsonKey = "program";
+    const std::string AssimpModelImporterImpl::_skipMeshesJsonKey = "skipMeshes";
 
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
     {
@@ -717,6 +734,21 @@ namespace darmok
             else
             {
                 config.program = val;
+            }
+        }
+        if (json.contains(_skipMeshesJsonKey))
+        {
+            auto& jsonVal = json[_skipMeshesJsonKey];
+            if (jsonVal.is_array())
+            {
+                for (auto& elm : jsonVal)
+                {
+                    config.skipMeshes.emplace_back(StringUtils::globToRegex(elm));
+                }
+            }
+            else
+            {
+                config.skipMeshes.emplace_back(StringUtils::globToRegex(jsonVal));
             }
         }
         if (json.contains(_embedTexturesJsonKey))

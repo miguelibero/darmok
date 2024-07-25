@@ -4,6 +4,7 @@
 #include <darmok/math.hpp>
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/norm.hpp>
 
 namespace darmok
 {
@@ -34,6 +35,8 @@ namespace darmok
 		);
 		usertype["dot"] = &glm::dot<L, val, Q>;
 		usertype["lerp"] = &Math::lerp<vec>;
+		usertype["length"] = sol::resolve<val(const vec&)>(&glm::length);
+		usertype["length2"] = sol::resolve<val(const vec&)>(&glm::length2);
 	}
 
 	void LuaMath::bindGlmMat(sol::state_view& lua) noexcept
@@ -156,7 +159,10 @@ namespace darmok
 		auto degrees = sol::resolve<float(float)>(&glm::degrees);
 		auto radians = sol::resolve<float(float)>(&glm::radians);
 		lua.create_named_table("Math",
-			"clamp", sol::overload(&glm::clamp<float>, &glm::clamp<int>),
+			"clamp", sol::overload(
+				sol::resolve<float(float, float, float)>(&glm::clamp<float>),
+				sol::resolve<int(int, int, int)>(&glm::clamp<int>)
+			),
 			"lerp", sol::overload(&Math::lerp<float>, &Math::lerp<int>),
 			"degrees", degrees,
 			"radians", radians,

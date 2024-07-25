@@ -139,6 +139,7 @@ namespace darmok
         }
 
         std::string toString() const noexcept;
+        bool empty() const noexcept;
     };
 
     struct DARMOK_EXPORT ModelRenderable final

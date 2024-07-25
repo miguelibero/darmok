@@ -8,6 +8,8 @@
 #include <memory>
 #include <string>
 #include <filesystem>
+#include <regex>
+#include <vector>
 
 namespace bx
 {
@@ -20,6 +22,7 @@ namespace darmok
     {
         std::string program;
         StandardProgramType standardProgram = StandardProgramType::Unlit;
+        std::vector<std::regex> skipMeshes;
         bgfx::VertexLayout vertexLayout;
         bool embedTextures = true;
     };

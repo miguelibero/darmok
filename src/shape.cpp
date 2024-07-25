@@ -3,6 +3,7 @@
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <darmok/string.hpp>
+#include <glm/gtx/norm.hpp>
 
 namespace darmok
 {
@@ -16,6 +17,11 @@ namespace darmok
     {
         const static Cube v;
         return v;
+    }
+
+    bool Cube::empty() const noexcept
+    {
+        return glm::length2(size) == 0.F;
     }
 
     const Sphere& Sphere::standard() noexcept
@@ -418,6 +424,11 @@ namespace darmok
     BoundingBox::operator Cube() const noexcept
     {
         return getCube();
+    }
+
+    bool BoundingBox::empty() const noexcept
+    {
+        return glm::distance2(min, max) == 0.F;
     }
 
     std::string BoundingBox::toString() const noexcept

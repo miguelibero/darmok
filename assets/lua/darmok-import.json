@@ -1,0 +1,9 @@
+{
+    "headerIncludeDir": "generated/lua",
+    "headerVarPrefix": "lua_darmok_lib_",
+    "importers": {
+        "copy": {
+            "all": true
+        }
+    }
+}

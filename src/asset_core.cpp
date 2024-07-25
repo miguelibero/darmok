@@ -835,8 +835,9 @@ namespace darmok
                 Data data;
                 DataOutputStream ds(data);
                 op.importer.writeOutput(op.input, i, ds);
+                std::streamoff pos = ds.tellp();
                 std::ofstream os(output);
-                os << data.view().toHeader(headerVarName);
+                os << data.view(0, pos).toHeader(headerVarName);
             }
             else
             {

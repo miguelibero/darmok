@@ -6,6 +6,7 @@
 #include <darmok/string.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/data.hpp>
 #include <filesystem>
 #include <bx/commandline.h>
 #include "asset.hpp"
@@ -18,6 +19,9 @@
 #include "rmlui.hpp"
 #include "skeleton.hpp"
 #include "utils.hpp"
+
+#include "generated/lua/string.h"
+#include "generated/lua/table.h"
 
 namespace darmok
 {
@@ -212,18 +216,13 @@ end
 		lua.open_libraries(sol::lib::debug);
 #endif
 
-		lua.script(R"(
+		auto addStaticLib = [&lua](auto& lib, const std::string& name)
+		{
+			lua.script(DataView::fromStatic(lib).stringView(), name);
+		};
 
-function table.contains(table, element)
-  for _, value in pairs(table) do
-    if value == element then
-      return true
-    end
-  end
-  return false
-end
-
-)");
+		addStaticLib(lua_darmok_lib_table, "darmok/table.lua");
+		addStaticLib(lua_darmok_lib_string, "darmok/string.lua");
 
 		LuaMath::bind(lua);
 		LuaShape::bind(lua);
