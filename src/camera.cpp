@@ -91,7 +91,7 @@ namespace darmok
 
     Camera& Camera::setOrtho(const Viewport& vp, const glm::vec2& center, float near, float far) noexcept
     {
-        _proj = Math::ortho(vp, center, near, far);
+        _proj = vp.ortho(center, near, far);
         return *this;
     }
 

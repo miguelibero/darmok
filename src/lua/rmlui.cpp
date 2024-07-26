@@ -80,7 +80,7 @@ namespace darmok
             "target_texture", sol::property(&RmluiView::getTargetTexture, &RmluiView::setTargetTexture),
             "viewport", sol::property(&RmluiView::getViewport, &RmluiView::setViewport),
             "input_active", sol::property(&RmluiView::getInputActive, &RmluiView::setInputActive),
-            "mouse_position", sol::property(&RmluiView::setMousePosition),
+            "mouse_position", sol::property(&RmluiView::getMousePosition, &RmluiView::setMousePosition),
 
             "load_document", [](RmluiView& view, const std::string& name) {
                 return view.getContext().LoadDocument(name);

@@ -153,7 +153,8 @@ namespace darmok
 			"look_dir", sol::overload(&LuaTransform::lookDir1, &LuaTransform::lookDir2),
 			"look_at", sol::overload(&LuaTransform::lookAt1, &LuaTransform::lookAt2),
 			"world_to_local_point", &LuaTransform::worldToLocalPoint,
-			"local_to_world_point", &LuaTransform::localToWorldPoint
+			"local_to_world_point", &LuaTransform::localToWorldPoint,
+			sol::meta_function::to_string, &Transform::toString
 		);
 	}
 }

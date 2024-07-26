@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
+#include <bx/bx.h>
 
 namespace darmok
 {
@@ -27,5 +28,6 @@ namespace darmok
         [[nodiscard]] glm::vec2 unproject(const glm::vec2& point) const noexcept;
 
         void configureView(bgfx::ViewId viewId) const noexcept;
+        glm::mat4 ortho(const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) const noexcept;
     };
 }

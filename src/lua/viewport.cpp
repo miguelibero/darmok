@@ -33,7 +33,29 @@ namespace darmok
 
     void LuaViewport::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<Viewport>("Viewport", sol::no_constructor,
+        lua.new_usertype<Viewport>("Viewport",
+            sol::factories(
+                []()
+                {
+                    return Viewport();
+                },
+                [](const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::uvec2>& origin)
+                {
+                    return Viewport(LuaGlm::tableGet(size), LuaGlm::tableGet(origin));
+                },
+                [](const VarLuaTable<glm::uvec2>& size)
+                {
+                    return Viewport(LuaGlm::tableGet(size));
+                },
+                [](const VarLuaTable<glm::uvec4>& values)
+                {
+                    return Viewport(LuaGlm::tableGet(values));
+                },
+                [](glm::uint x, glm::uint y, glm::uint w, glm::uint h)
+                {
+                    return Viewport(x, y, w, h);
+                }
+            ),
 			"size", &Viewport::size,
 			"origin", &Viewport::origin,
             "values", sol::property(&Viewport::getValues, &Viewport::setValues),
@@ -42,8 +64,8 @@ namespace darmok
             "project", &Viewport::project,
             "unproject", &Viewport::unproject,
             "ortho", sol::overload(
-                [](const Viewport& vp, VarLuaTable<glm::vec2> center) { return Math::ortho(vp, LuaGlm::tableGet(center)); },
-                [](const Viewport& vp, VarLuaTable<glm::vec2> center, float near, float far) { return Math::ortho(vp, LuaGlm::tableGet(center), near, far); }
+                [](const Viewport& vp, VarLuaTable<glm::vec2> center) { return vp.ortho(LuaGlm::tableGet(center)); },
+                [](const Viewport& vp, VarLuaTable<glm::vec2> center, float near, float far) { return vp.ortho(LuaGlm::tableGet(center), near, far); }
             )
 		);
 

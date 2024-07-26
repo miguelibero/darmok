@@ -45,7 +45,7 @@ namespace darmok
     {
     }
 
-    std::string Transform::to_string() const noexcept
+    std::string Transform::toString() const noexcept
     {
         std::string str = glm::to_string(_localMatrix);
         if (!_name.empty())

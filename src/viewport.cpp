@@ -65,4 +65,13 @@ namespace darmok
     {
         bgfx::setViewRect(viewId, origin.x, origin.y, size.x, size.y);
     }
+
+    glm::mat4 Viewport::ortho(const glm::vec2& center, float near, float far) const noexcept
+    {
+        glm::vec2 a(origin);
+        glm::vec2 s(size);
+        auto botLeft = a - (center * s);
+        auto topRight = a + ((glm::vec2(1) - center) * s);
+        return Math::ortho(botLeft, topRight, near, far);
+    }
 }

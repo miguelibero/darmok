@@ -17,7 +17,8 @@ namespace darmok
 			),
 			"size", &Rectangle::size,
 			"origin", &Rectangle::origin,
-			"to_lines", &Rectangle::toLines
+			"to_lines", &Rectangle::toLines,
+			sol::meta_function::to_string, &Rectangle::toString
 		);
 
 		lua.new_usertype<Cube>("Cube",
@@ -29,7 +30,8 @@ namespace darmok
 					return Cube(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
 			),
 			"size", &Cube::size,
-			"origin", &Cube::origin
+			"origin", &Cube::origin,
+			sol::meta_function::to_string, &Cube::toString
 		);
 
 		lua.new_usertype<Sphere>("Sphere",
@@ -45,7 +47,8 @@ namespace darmok
 					return Sphere(LuaGlm::tableGet(origin), radius); }
 			),
 			"radius", &Sphere::radius,
-			"origin", &Sphere::origin
+			"origin", &Sphere::origin,
+			sol::meta_function::to_string, &Sphere::toString
 		);
 
 		lua.new_usertype<Triangle>("Triangle",
@@ -56,7 +59,8 @@ namespace darmok
 					return Triangle(LuaGlm::tableGet(p1), LuaGlm::tableGet(p2), LuaGlm::tableGet(p3));
 				}
 			),
-			"vertices", &Triangle::vertices
+			"vertices", &Triangle::vertices,
+			sol::meta_function::to_string, &Triangle::toString
 		);
 
 		lua.new_usertype<Polygon>("Polygon",
@@ -81,7 +85,8 @@ namespace darmok
 				}
 			),
 			"triangles", &Polygon::triangles,
-			"origin", &Polygon::origin
+			"origin", &Polygon::origin,
+			sol::meta_function::to_string, &Polygon::toString
 		);
 
 		lua.new_usertype<Plane>("Plane",
@@ -95,7 +100,8 @@ namespace darmok
 			"normal", &Plane::normal,
 			"constant", &Plane::constant,
 			"origin", sol::property(&Plane::getOrigin),
-			sol::meta_function::multiplication, &Plane::operator*
+			sol::meta_function::multiplication, &Plane::operator*,
+			sol::meta_function::to_string, &Plane::toString
 		);
 
 		lua.new_usertype<Capsule>("Capsule",
@@ -108,7 +114,8 @@ namespace darmok
 			),
 			"cylinder_height", &Capsule::cylinderHeight,
 			"radius", &Capsule::radius,
-			"origin", &Capsule::origin
+			"origin", &Capsule::origin,
+			sol::meta_function::to_string, &Capsule::toString
 		);
 
 		lua.new_usertype<Ray>("Ray",
@@ -131,7 +138,8 @@ namespace darmok
 				sol::resolve<std::optional<float>(const Sphere&) const>(&Ray::intersect)
 			),
 			"intersect_normal", &Ray::intersectNormal,
-			"to_line", &Ray::toLine
+			"to_line", &Ray::toLine,
+			sol::meta_function::to_string, &Ray::toString
 		);
 
 		lua.new_usertype<Line>("Line",
@@ -144,7 +152,8 @@ namespace darmok
 				}
 			),
 			"points", &Line::points,
-			sol::meta_function::multiplication, &Line::operator*
+			sol::meta_function::multiplication, &Line::operator*,
+			sol::meta_function::to_string, &Line::toString
 		);
 
 		lua.new_usertype<BoundingBox>("BoundingBox",
@@ -156,7 +165,8 @@ namespace darmok
 			),
 			"min", &BoundingBox::min,
 			"max", &BoundingBox::max,
-			"cube", sol::property(&BoundingBox::getCube)
+			"cube", sol::property(&BoundingBox::getCube),
+			sol::meta_function::to_string, &BoundingBox::toString
 		);
     }
 }

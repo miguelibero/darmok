@@ -167,7 +167,14 @@ namespace darmok
 			"degrees", degrees,
 			"radians", radians,
 			"rad2deg", degrees,
-			"deg2rad", radians
+			"deg2rad", radians,
+			"ortho", sol::overload(
+				sol::resolve<glm::mat4(float, float, float, float, float, float)>(&Math::ortho),
+				[](const VarLuaTable<glm::vec2>& bottomLeft, const VarLuaTable<glm::vec2>& rightTop, float near, float far)
+				{
+					return Math::ortho(LuaGlm::tableGet(bottomLeft), LuaGlm::tableGet(rightTop), near, far);
+				}
+			) 
 		);
 
 		bindGlmMat(lua);

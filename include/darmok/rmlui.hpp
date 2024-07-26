@@ -42,6 +42,7 @@ namespace darmok
 		bool getInputActive() const noexcept;
 
 		RmluiView& setMousePosition(const glm::vec2& position) noexcept;
+		const glm::vec2& getMousePosition() const noexcept;
 
 		Rml::Context& getContext() noexcept;
 		const Rml::Context& getContext() const noexcept;

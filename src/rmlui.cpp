@@ -564,6 +564,11 @@ namespace darmok
         _context->ProcessMouseMove(p.x, p.y, _comp.getKeyModifierState());
     }
 
+    const glm::vec2& RmluiViewImpl::getMousePosition() const noexcept
+    {
+        return _mousePosition;
+    }
+
     bool RmluiViewImpl::update() noexcept
     {
         return _context->Update();
@@ -694,6 +699,11 @@ namespace darmok
     {
         _impl->setMousePosition(position);
         return *this;
+    }
+
+    const glm::vec2& RmluiView::getMousePosition() const noexcept
+    {
+        return _impl->getMousePosition();
     }
 
     Rml::Context& RmluiView::getContext() noexcept
@@ -1035,7 +1045,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
-        auto rmlDelta = RmluiUtils::convert<float>(delta);
+        auto rmlDelta = RmluiUtils::convert<float>(delta) * -1;
         auto state = getKeyModifierState();
         for (auto& elm : _views)
         {

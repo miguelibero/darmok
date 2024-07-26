@@ -1,5 +1,4 @@
 #include <darmok/math.hpp>
-#include <darmok/viewport.hpp>
 #include <bx/math.h>
 #include <bgfx/bgfx.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -49,15 +48,6 @@ namespace darmok
     glm::mat4 Math::ortho(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near, float far) noexcept
     {
         return ortho(bottomLeft.x, rightTop.x, bottomLeft.y, rightTop.y, near, far);
-    }
-
-    glm::mat4 Math::ortho(const Viewport& vp, const glm::vec2& center, float near, float far) noexcept
-    {
-        glm::vec2 a(vp.origin);
-        glm::vec2 s(vp.size);
-        auto botLeft = a - (center * s);
-        auto topRight = a + ((glm::vec2(1) - center) * s);
-        return ortho(botLeft, topRight, near, far);
     }
 
     glm::mat4 Math::frustrum(float left, float right, float bottom, float top, float near, float far) noexcept

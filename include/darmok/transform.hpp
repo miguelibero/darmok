@@ -18,7 +18,7 @@ namespace darmok
         Transform(const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3(), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
         Transform(const OptionalRef<Transform>& parent, const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3()) noexcept;
 
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
 
         const std::string& getName() const noexcept;
         Transform& setName(const std::string& name) noexcept;
