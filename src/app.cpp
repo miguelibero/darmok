@@ -323,6 +323,7 @@ namespace darmok
 		}
 
 		_input.getImpl().update(deltaTime);
+		_assets.update();
 	}
 
 	void AppImpl::render() const
@@ -559,6 +560,20 @@ namespace darmok
 	{
 		return _impl->getRenderGraph();
 	}
+
+#ifdef DARMOK_MINIAUDIO
+
+	AudioSystem& App::getAudio() noexcept
+	{
+		return _impl->getAudio();
+	}
+
+	const AudioSystem& App::getAudio() const noexcept
+	{
+		return _impl->getAudio();
+	}
+
+#endif
 
 	AppUpdateResult App::update()
 	{

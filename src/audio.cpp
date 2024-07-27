@@ -64,7 +64,8 @@ namespace darmok
         {
             return false;
         }
-        return _player.play(itr->second);
+        _player.play(itr->second);
+        return true;
     }
 
     bool AudioSystem::playMusic(std::string_view name) noexcept
@@ -74,7 +75,8 @@ namespace darmok
         {
             return false;
         }
-        return _player.play(itr->second);
+        _player.play(itr->second);
+        return true;
     }
 
     bool AudioSystem::stopMusic()

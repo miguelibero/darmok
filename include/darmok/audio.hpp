@@ -14,8 +14,11 @@ namespace darmok
 
     class DARMOK_EXPORT Sound final
     {
+    public:
         Sound(std::unique_ptr<SoundImpl>&& impl);
         ~Sound();
+        SoundImpl& getImpl() noexcept;
+        const SoundImpl& getImpl() const noexcept;
     private:
         std::unique_ptr<SoundImpl> _impl;
     };
@@ -27,6 +30,8 @@ namespace darmok
     public:
         Music(std::unique_ptr<MusicImpl>&& impl);
         ~Music();
+        MusicImpl& getImpl() noexcept;
+        const MusicImpl& getImpl() const noexcept;
     private:
         std::unique_ptr<MusicImpl> _impl;
     };
@@ -41,9 +46,9 @@ namespace darmok
 
         void init();
         void shutdown();
-        bool play(const std::shared_ptr<Sound>& sound) noexcept;
-        bool play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept;
-        bool play(const std::shared_ptr<Music>& music) noexcept;
+        void play(const std::shared_ptr<Sound>& sound) noexcept;
+        void play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept;
+        void play(const std::shared_ptr<Music>& music) noexcept;
         bool stopMusic();
         bool pauseMusic();
         std::shared_ptr<Music> getRunningMusic() noexcept;

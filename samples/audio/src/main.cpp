@@ -2,6 +2,7 @@
 
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
+#include <darmok/audio.hpp>
 #include <bgfx/bgfx.h>
 #include <imgui.h>
 #include <imgui_stdlib.h>
@@ -24,12 +25,15 @@ namespace
 			// the current imgui context is static, we have to do this if darmok is dynamically linked
 			// to set the static in this part
 			ImGui::SetCurrentContext(imgui.getContext());
+
+			getAudio().loadSound("sound", "sound.wav");
 		}
 
 		void imguiRender()
 		{
 			if (ImGui::Button("Play Sound"))
 			{
+				getAudio().playSound("sound");
 			}
 		}
 
