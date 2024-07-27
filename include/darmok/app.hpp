@@ -41,6 +41,7 @@ namespace darmok
 	class AppImpl;
 	class Input;
 	class Window;
+	class Audio;
 	class AssetContext;
 	class RenderGraphDefinition;
 
@@ -83,6 +84,9 @@ namespace darmok
 
 		[[nodiscard]] Window& getWindow() noexcept;
 		[[nodiscard]] const Window& getWindow() const noexcept;
+
+		[[nodiscard]] Audio& getAudio() noexcept;
+		[[nodiscard]] const Audio& getAudio() const noexcept;
 
 		[[nodiscard]] AssetContext& getAssets() noexcept;
 		[[nodiscard]] const AssetContext& getAssets() const noexcept;

@@ -23,6 +23,10 @@
 #include <darmok/text_freetype.hpp>
 #endif
 
+#ifdef DARMOK_MINIAUDIO
+#include <darmok/audio_mini.hpp>
+#endif
+
 #include <string>
 #include <bx/file.h>
 
@@ -79,6 +83,11 @@ namespace darmok
 		[[nodiscard]] IFontLoader& getFontLoader() noexcept;
 #endif
 
+#ifdef DARMOK_MINIAUDIO
+		[[nodiscard]] ISoundLoader& getSoundLoader() noexcept;
+		[[nodiscard]] IMusicLoader& getMusicLoader() noexcept;
+#endif
+
 		void setBasePath(const std::filesystem::path& path) noexcept;
 		void init(App& app);
 		void shutdown();
@@ -110,9 +119,13 @@ namespace darmok
 		AssimpModelLoader _assimpModelLoader;
 #endif
 
-
 #ifdef DARMOK_FREETYPE
 		FreetypeFontLoader _freetypeFontLoader;
+#endif
+
+#ifdef DARMOK_MINIAUDIO
+		MiniaudioSoundLoader _miniaudioSoundLoader;
+		MiniaudioMusicLoader _miniaudioMusicLoader;
 #endif
 	};
 }

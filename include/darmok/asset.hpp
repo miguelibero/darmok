@@ -33,6 +33,11 @@ namespace darmok
 	class IFontLoader;
 #endif
 
+#ifdef DARMOK_MINIAUDIO
+	class ISoundLoader;
+	class IMusicLoader;
+#endif
+
 	class DARMOK_EXPORT AssetContext final
 	{
 	public:
@@ -60,6 +65,11 @@ namespace darmok
 
 #ifdef DARMOK_FREETYPE
 		[[nodiscard]] IFontLoader& getFontLoader() noexcept;
+#endif
+
+#ifdef DARMOK_MINIAUDIO
+		[[nodiscard]] ISoundLoader& getSoundLoader() noexcept;
+		[[nodiscard]] IMusicLoader& getMusicLoader() noexcept;
 #endif
 
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;

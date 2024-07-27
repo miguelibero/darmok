@@ -203,6 +203,18 @@ namespace darmok
 		return _renderGraphDef;
 	}
 
+#ifdef DARMOK_MINIAUDIO
+	AudioSystem& AppImpl::getAudio() noexcept
+	{
+		return _audio;
+	}
+
+	const AudioSystem& AppImpl::getAudio() const noexcept
+	{
+		return _audio;
+	}
+#endif
+
 	const AppConfig& AppConfig::getDefaultConfig() noexcept
 	{
 		static const AppConfig config
@@ -240,7 +252,6 @@ namespace darmok
 		init.debug = true;
 		init.resolution.width = size.x;
 		init.resolution.height = size.y;
-		// init.resolution.reset = ?;
 		// init.type = bgfx::RendererType::Vulkan;
 		bgfx::init(init);
 
@@ -256,6 +267,7 @@ namespace darmok
 		_input.getKeyboard().addListener(*this);
 		_window.addListener(*this);
 		_assets.init(_app);
+		_audio.init(_assets);
 
 		for (auto& component : _components)
 		{
@@ -294,6 +306,7 @@ namespace darmok
 		_input.getKeyboard().removeListener(*this);
 		_window.removeListener(*this);
 		_assets.shutdown();
+		_audio.shutdown();
 	}
 
 	void AppImpl::updateLogic(float deltaTime)

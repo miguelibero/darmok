@@ -5,6 +5,7 @@
 #include <darmok/input.hpp>
 #include <darmok/window.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/audio.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_graph.hpp>
 #include <string>
@@ -45,6 +46,10 @@ namespace darmok
 		[[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
 		[[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
 
+#ifdef DARMOK_MINIAUDIO
+		[[nodiscard]] AudioSystem& getAudio() noexcept;
+		[[nodiscard]] const AudioSystem& getAudio() const noexcept;
+#endif
 
 		template <typename F>
 		void update(const F& logicCallback)
@@ -80,6 +85,9 @@ namespace darmok
 		App& _app;
 		Input _input;
 		Window _window;
+#ifdef DARMOK_MINIAUDIO
+		AudioSystem _audio;
+#endif
 		AssetContext _assets;
 		RenderGraphDefinition _renderGraphDef;
 		std::optional<RenderGraph> _renderGraph;

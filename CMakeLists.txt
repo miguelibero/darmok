@@ -64,6 +64,7 @@ option(DARMOK_BUILD_RMLUI "build darmok with RmlUI support" OFF)
 option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
 option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
 option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
+option(DARMOK_BUILD_MINIAUDIO "build darmok with miniaudio support" OFF)
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -332,6 +333,20 @@ if(DARMOK_BUILD_JOLT)
   endif()
 endif()
 
+if(DARMOK_BUILD_MINIAUDIO)
+  list(APPEND HEADERS
+    ${INCLUDE_DIR}/audio.hpp
+    ${INCLUDE_DIR}/audio_mini.hpp
+  )
+  list(APPEND SOURCES
+    ${SRC_DIR}/audio.cpp  
+    ${SRC_DIR}/audio_mini.cpp
+  )
+  if(DARMOK_BUILD_LUA)
+    list(APPEND LUA_SOURCES ${SRC_DIR}/lua/audio.cpp)
+  endif()
+endif()
+
 if(DARMOK_BUILD_LUA_EXE)
   set(DARMOK_BUILD_LUA ON CACHE BOOL "")
 endif()
@@ -582,6 +597,12 @@ if(DARMOK_BUILD_JOLT)
   find_package(unofficial-joltphysics CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PRIVATE unofficial::joltphysics::Jolt)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_JOLT)
+endif()
+
+if(DARMOK_BUILD_MINIAUDIO)
+find_path(MINIAUDIO_INCLUDE_DIRS "miniaudio.h")
+target_include_directories(${LIB_NAME} PRIVATE ${MINIAUDIO_INCLUDE_DIRS})
+target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_MINIAUDIO)
 endif()
 
 # lua sol2

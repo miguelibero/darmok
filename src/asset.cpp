@@ -57,7 +57,11 @@ namespace darmok
 #endif		
 #ifdef DARMOK_FREETYPE
 		, _freetypeFontLoader(_dataLoader, _allocator)
-#endif	
+#endif
+#ifdef DARMOK_MINIAUDIO
+		, _miniaudioSoundLoader(_dataLoader)
+		, _miniaudioMusicLoader(_dataLoader)
+#endif
 	{
 		setBasePath("assets");
 
@@ -151,6 +155,18 @@ namespace darmok
 	}
 #endif
 
+#ifdef DARMOK_MINIAUDIO
+	ISoundLoader& AssetContextImpl::getSoundLoader() noexcept
+	{
+		return _miniaudioSoundLoader;
+	}
+
+	IMusicLoader& AssetContextImpl::getMusicLoader() noexcept
+	{
+		return _miniaudioMusicLoader;
+	}
+#endif
+
 	void AssetContextImpl::setBasePath(const std::filesystem::path& path) noexcept
 	{
 		_fileReader.setBasePath(path);
@@ -241,6 +257,18 @@ namespace darmok
 	IFontLoader& AssetContext::getFontLoader() noexcept
 	{
 		return _impl->getFontLoader();
+	}
+#endif
+
+#ifdef DARMOK_MINIAUDIO
+	ISoundLoader& AssetContext::getSoundLoader() noexcept
+	{
+		return _impl->getSoundLoader();
+	}
+
+	IMusicLoader& AssetContext::getMusicLoader() noexcept
+	{
+		return _impl->getMusicLoader();
 	}
 #endif
 
