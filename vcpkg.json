@@ -47,6 +47,7 @@
     "pugixml",
     "freetype",
     "tweeny",
-    "catch2"
+    "catch2",
+    "miniaudio"
   ]
 }

@@ -26,20 +26,22 @@ currently using:
 planned to use:
 
 * [miniaudio](https://miniaud.io/) for audio
+* [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & update loop
+* [tracy](https://github.com/wolfpld/tracy) for frame profiling
+* [recast navigation](http://recastnav.com/) for pathfinding
+* [BehaviorTree.CPP](https://www.behaviortree.dev/) for behavior trees
 * need to decide 2D physics
     * [Box2D](https://box2d.org/)
     * [Chipmunk2D](https://github.com/slembcke/Chipmunk2D)
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
-* [taskflow](https://github.com/taskflow/taskflow) for multithreaded updates
-
-Trying to use modern C++ patterns where possible.
 
 Trying to target the following platforms:
 * desktop (windows, macos, linux)
 * mobile (iOS, Android) (pending)
 
 Some philosofical decisions (could be controversial)
+* use modern C++ (20) patterns where possible
 * no game editor, will use external tools (blender, ldtk, etc...)
 * use as much stl as possible (need to look into memory management at some point)
 * no naked pointers
@@ -61,15 +63,14 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 * bgfx window setup (GLFW on windows & linux)
 * update logic methods with delta time
+* renderer: render graph that compiles passes inputs and outputs
+    * unlit
+    * forward with phong lighting (point, ambient)
 * entity component scene using entt
     * transform, camera
 * sprites and spritesheets
 * loading models using assimp (FBX, etc...)
 * serializing models from assimp into binary using cereal
-* renderer
-    * render graph that compiles passes inputs and outputs
-    * unlit
-    * forward with phong lighting (point, ambient)
 * lua scripting
     * lua debugging
 * multiple UI options
