@@ -45,6 +45,7 @@ namespace darmok
         ~AudioPlayer() noexcept;
 
         void init();
+        void update();
         void shutdown();
         void play(const std::shared_ptr<Sound>& sound) noexcept;
         void play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept;
@@ -81,6 +82,7 @@ namespace darmok
         AudioSystem() noexcept;
 
         void init(AssetContext& assets);
+        void update();
         void shutdown();
 
         bool loadSound(std::string_view name, std::string_view loadName = "");

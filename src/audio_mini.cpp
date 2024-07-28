@@ -27,18 +27,11 @@ namespace darmok
     SoundImpl::SoundImpl(Data&& data)
         : _data(std::move(data))
     {
-        auto result = ma_decoder_init_memory(_data.ptr(), _data.size(), nullptr, &_decoder);
-        AudioUtils::checkResult(result);
     }
 
-    SoundImpl::~SoundImpl() noexcept
+    DataView SoundImpl::getData() noexcept
     {
-        ma_decoder_uninit(&_decoder);
-    }
-
-    ma_decoder& SoundImpl::getDataSource() noexcept
-    {
-        return _decoder;
+        return _data;
     }
 
     Sound::Sound(std::unique_ptr<SoundImpl>&& impl)
@@ -101,6 +94,49 @@ namespace darmok
         return nullptr;
     }
 
+
+    MiniaudioDecoder::MiniaudioDecoder(DataView data) noexcept
+    {
+        auto result = ma_decoder_init_memory(data.ptr(), data.size(), nullptr, &_decoder);
+        AudioUtils::checkResult(result);
+        // ma_decoder_seek_to_pcm_frame(&_decoder, 0);
+    }
+
+    MiniaudioDecoder::~MiniaudioDecoder() noexcept
+    {
+        ma_decoder_uninit(&_decoder);
+    }
+
+    MiniaudioDecoder::operator ma_decoder* () noexcept
+    {
+        return &_decoder;
+    }
+
+    MiniaudioSound::MiniaudioSound(DataView data, ma_engine& engine) noexcept
+        : _decoder(data)
+    {
+        auto config = ma_sound_config_init();
+        config.pDataSource = _decoder;
+        auto result = ma_sound_init_ex(&engine, &config, &_sound);
+        AudioUtils::checkResult(result);
+    }
+
+    MiniaudioSound::~MiniaudioSound() noexcept
+    {
+        ma_sound_uninit(&_sound);
+    }
+
+    bool MiniaudioSound::atEnd() const noexcept
+    {
+        return ma_sound_at_end(&_sound);
+    }
+
+    void MiniaudioSound::play()
+    {
+        auto result = ma_sound_start(&_sound);
+        AudioUtils::checkResult(result);
+    }
+
     void AudioPlayerImpl::init()
     {
         ma_engine_config config = ma_engine_config_init();
@@ -110,17 +146,24 @@ namespace darmok
 
     void AudioPlayerImpl::shutdown()
     {
+        _sounds.clear();
         ma_engine_uninit(&_engine);
+    }
+
+    void AudioPlayerImpl::update()
+    {
+        auto it = std::remove_if(_sounds.begin(), _sounds.end(), [](auto& sound) {
+            return sound->atEnd();
+        });
+        _sounds.erase(it, _sounds.end());
     }
 
     void AudioPlayerImpl::play(const std::shared_ptr<Sound>& sound)
     {
-        auto& source = sound->getImpl().getDataSource();
-        auto& maSound = _playingSounds.emplace_back();
-        auto result = ma_sound_init_from_data_source(&_engine, &source, 0, nullptr, &maSound);
-        AudioUtils::checkResult(result);
-        result = ma_sound_start(&maSound);
-        AudioUtils::checkResult(result);
+        // ma_engine_play_sound(&_engine, "assets/sound.wav", nullptr);
+        auto& maSound = _sounds.emplace_back(
+            std::make_unique<MiniaudioSound>(sound->getImpl().getData(), _engine));
+        maSound->play();
     }
 
     void AudioPlayerImpl::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos)
@@ -146,6 +189,11 @@ namespace darmok
         return nullptr;
     }
 
+    ma_engine& AudioPlayerImpl::getEngine()
+    {
+        return _engine;
+    }
+
     AudioPlayer::AudioPlayer() noexcept
         : _impl(std::make_unique<AudioPlayerImpl>())
     {
@@ -159,6 +207,11 @@ namespace darmok
     void AudioPlayer::init()
     {
         _impl->init();
+    }
+
+    void AudioPlayer::update()
+    {
+        _impl->update();
     }
 
     void AudioPlayer::shutdown()

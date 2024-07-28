@@ -305,8 +305,8 @@ namespace darmok
 		
 		_input.getKeyboard().removeListener(*this);
 		_window.removeListener(*this);
-		_assets.shutdown();
 		_audio.shutdown();
+		_assets.shutdown();
 	}
 
 	void AppImpl::updateLogic(float deltaTime)
@@ -324,6 +324,7 @@ namespace darmok
 
 		_input.getImpl().update(deltaTime);
 		_assets.update();
+		_audio.update();
 	}
 
 	void AppImpl::render() const

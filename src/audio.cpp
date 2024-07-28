@@ -14,8 +14,14 @@ namespace darmok
         _player.init();
     }
 
+    void AudioSystem::update()
+    {
+        _player.update();
+    }
+
     void AudioSystem::shutdown()
     {
+        _sounds.clear();
         _player.shutdown();
     }
 
