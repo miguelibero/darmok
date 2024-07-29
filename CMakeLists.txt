@@ -80,142 +80,166 @@ find_package(bgfx CONFIG REQUIRED)
 include(darmokProcessAssets)
 
 set(CORE_ASSETS_TARGET darmok-core-assets)
-set(CORE_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets/core)
-set(CORE_ASSETS
-  ${CORE_ASSETS_DIR}/darmok_phong_lighting.include.sc
-  ${CORE_ASSETS_DIR}/darmok_skinning.include.sc
-  ${CORE_ASSETS_DIR}/darmok-import.json
-  ${CORE_ASSETS_DIR}/forward.fragment.sc
-  ${CORE_ASSETS_DIR}/forward.vertex.sc
-  ${CORE_ASSETS_DIR}/forward.program.json
-  ${CORE_ASSETS_DIR}/gui.fragment.sc
-  ${CORE_ASSETS_DIR}/gui.vertex.sc
-  ${CORE_ASSETS_DIR}/gui.program.json
-  ${CORE_ASSETS_DIR}/unlit.fragment.sc
-  ${CORE_ASSETS_DIR}/unlit.vertex.sc
-  ${CORE_ASSETS_DIR}/unlit.program.json
-)
 darmok_process_assets(
   TARGET ${CORE_ASSETS_TARGET} CORE
-  INPUT ${CORE_ASSETS_DIR}
+  INPUT ${PROJECT_SOURCE_DIR}/assets/core
   OUTPUT include/private/generated
-  ASSETS ${CORE_ASSETS}
+  ASSETS
+    darmok_phong_lighting.include.sc
+    darmok_skinning.include.sc
+    darmok-import.json
+    forward.fragment.sc
+    forward.vertex.sc
+    forward.program.json
+    gui.fragment.sc
+    gui.vertex.sc
+    gui.program.json
+    unlit.fragment.sc
+    unlit.vertex.sc
+    unlit.program.json
 )
 set(ASSET_TARGETS ${CORE_ASSETS_TARGET})
 
+set(CORE_DEBUG_SOURCES)
 set(CORE_SOURCES
-  ${SRC_DIR}/string.cpp
-  ${SRC_DIR}/utf8.cpp
-  ${SRC_DIR}/stream.cpp
-  ${SRC_DIR}/data.cpp
-  ${SRC_DIR}/data_stream.cpp
-  ${SRC_DIR}/utils.cpp
-  ${SRC_DIR}/math.cpp
-  ${SRC_DIR}/color.cpp
-  ${SRC_DIR}/image.cpp
-  ${SRC_DIR}/shape.cpp
-  ${SRC_DIR}/texture.cpp
-  ${SRC_DIR}/mesh.cpp
-  ${SRC_DIR}/vertex.cpp
-  ${SRC_DIR}/varying.cpp
-  ${SRC_DIR}/viewport.cpp
-  ${SRC_DIR}/program_core.cpp
-  ${SRC_DIR}/asset_core.cpp
-  ${SRC_DIR}/render_graph.cpp
+  string.cpp
+  utf8.cpp
+  stream.cpp
+  data.cpp
+  data_stream.cpp
+  utils.cpp
+  math.cpp
+  color.cpp
+  image.cpp
+  shape.cpp
+  texture.cpp
+  mesh.cpp
+  vertex.cpp
+  varying.cpp
+  viewport.cpp
+  program_core.cpp
+  asset_core.cpp
+  render_graph.cpp
 )
 
+set(CORE_DEBUG_HEADERS)
 set(CORE_HEADERS
-  ${INCLUDE_DIR}/glm.hpp
-  ${INCLUDE_DIR}/utils.hpp
-  ${INCLUDE_DIR}/string.hpp
-  ${INCLUDE_DIR}/utf8.hpp
-  ${INCLUDE_DIR}/stream.hpp
-  ${INCLUDE_DIR}/optional_ref.hpp
-  ${INCLUDE_DIR}/collection.hpp
-  ${INCLUDE_DIR}/data.hpp
-  ${INCLUDE_DIR}/data_stream.hpp
-  ${INCLUDE_DIR}/math.hpp
-  ${INCLUDE_DIR}/shape.hpp
-  ${INCLUDE_DIR}/mesh_fwd.hpp
-  ${INCLUDE_DIR}/mesh.hpp
-  ${INCLUDE_DIR}/color_fwd.hpp
-  ${INCLUDE_DIR}/color.hpp
-  ${INCLUDE_DIR}/image_fwd.hpp
-  ${INCLUDE_DIR}/image.hpp
-  ${INCLUDE_DIR}/texture_fwd.hpp
-  ${INCLUDE_DIR}/texture.hpp
-  ${INCLUDE_DIR}/vertex.hpp
-  ${INCLUDE_DIR}/varying.hpp
-  ${INCLUDE_DIR}/collection.hpp
-  ${INCLUDE_DIR}/viewport.hpp
-  ${INCLUDE_DIR}/program_core.hpp
-  ${INCLUDE_DIR}/asset_core.hpp
-  ${INCLUDE_DIR}/loader.hpp
-  ${INCLUDE_DIR}/render_graph.hpp
-)
-
-set(SOURCES
-  ${SRC_DIR}/platform.cpp
-  ${SRC_DIR}/asset.cpp
-
-  ${SRC_DIR}/app.cpp
-  ${SRC_DIR}/window.cpp
-  ${SRC_DIR}/input.cpp
-  ${SRC_DIR}/scene.cpp
-
-  ${SRC_DIR}/texture_atlas.cpp
-  ${SRC_DIR}/material.cpp
-  ${SRC_DIR}/model.cpp
-  ${SRC_DIR}/anim.cpp
-  ${SRC_DIR}/program.cpp
-
-  ${SRC_DIR}/transform.cpp
-  ${SRC_DIR}/camera.cpp
-  ${SRC_DIR}/light.cpp
-  ${SRC_DIR}/render.cpp
-  ${SRC_DIR}/render_forward.cpp
-  ${SRC_DIR}/render_deferred.cpp
-  ${SRC_DIR}/freelook.cpp
-  ${SRC_DIR}/text.cpp
+  glm.hpp
+  utils.hpp
+  string.hpp
+  utf8.hpp
+  stream.hpp
+  optional_ref.hpp
+  collection.hpp
+  data.hpp
+  data_stream.hpp
+  math.hpp
+  shape.hpp
+  mesh_fwd.hpp
+  mesh.hpp
+  color_fwd.hpp
+  color.hpp
+  image_fwd.hpp
+  image.hpp
+  texture_fwd.hpp
+  texture.hpp
+  vertex.hpp
+  varying.hpp
+  collection.hpp
+  viewport.hpp
+  program_core.hpp
+  asset_core.hpp
+  loader.hpp
+  render_graph.hpp
 )
 
 set(DEBUG_SOURCES)
+set(SOURCES
+  platform.cpp
+  asset.cpp
 
-set(HEADERS
-  ${INCLUDE_DIR}/asset.hpp
+  app.cpp
+  window.cpp
+  input.cpp
+  scene.cpp
 
-  ${INCLUDE_DIR}/app_fwd.hpp
-  ${INCLUDE_DIR}/app.hpp
-  ${INCLUDE_DIR}/input_fwd.hpp
-  ${INCLUDE_DIR}/input.hpp
-  ${INCLUDE_DIR}/window.hpp
-  ${INCLUDE_DIR}/scene_fwd.hpp
-  ${INCLUDE_DIR}/scene.hpp
+  texture_atlas.cpp
+  material.cpp
+  model.cpp
+  anim.cpp
+  program.cpp
 
-  ${INCLUDE_DIR}/texture_atlas.hpp
-  ${INCLUDE_DIR}/anim.hpp
-  ${INCLUDE_DIR}/material_fwd.hpp
-  ${INCLUDE_DIR}/material.hpp
-  ${INCLUDE_DIR}/program_fwd.hpp
-  ${INCLUDE_DIR}/program.hpp
-  ${INCLUDE_DIR}/model_fwd.hpp
-  ${INCLUDE_DIR}/model.hpp
-
-  ${INCLUDE_DIR}/entity_filter.hpp
-  ${INCLUDE_DIR}/transform.hpp
-  ${INCLUDE_DIR}/camera.hpp
-  ${INCLUDE_DIR}/light.hpp
-  ${INCLUDE_DIR}/render.hpp
-  ${INCLUDE_DIR}/render_forward.hpp
-  ${INCLUDE_DIR}/render_deferred.hpp
-  ${INCLUDE_DIR}/freelook.hpp
-  ${INCLUDE_DIR}/text_fwd.hpp
-  ${INCLUDE_DIR}/text.hpp
+  transform.cpp
+  camera.cpp
+  light.cpp
+  render.cpp
+  render_forward.cpp
+  render_deferred.cpp
+  freelook.cpp
+  text.cpp
 )
 
 set(DEBUG_HEADERS)
-set(LUA_SOURCES)
+set(HEADERS
+  asset.hpp
+
+  app_fwd.hpp
+  app.hpp
+  input_fwd.hpp
+  input.hpp
+  window.hpp
+  scene_fwd.hpp
+  scene.hpp
+
+  texture_atlas.hpp
+  anim.hpp
+  material_fwd.hpp
+  material.hpp
+  program_fwd.hpp
+  program.hpp
+  model_fwd.hpp
+  model.hpp
+
+  entity_filter.hpp
+  transform.hpp
+  camera.hpp
+  light.hpp
+  render.hpp
+  render_forward.hpp
+  render_deferred.hpp
+  freelook.hpp
+  text_fwd.hpp
+  text.hpp
+)
+
 set(LUA_DEBUG_SOURCES)
+set(LUA_SOURCES
+  app.cpp
+  asset.cpp
+  image.cpp
+  material.cpp
+  render.cpp
+  render_forward.cpp
+  mesh.cpp
+  program.cpp
+  texture.cpp
+  input1.cpp
+  input2.cpp
+  math1.cpp
+  math2.cpp
+  math3.cpp
+  shape.cpp
+  scene.cpp
+  transform.cpp
+  light.cpp
+  viewport.cpp
+  camera.cpp
+  window.cpp
+  model.cpp
+  utils.cpp
+  skeleton.cpp
+  freelook.cpp    
+)
 
 if(NOT DARMOK_PLATFORM)
     set(DARMOK_PLATFORM glfw)
@@ -227,124 +251,119 @@ endif()
   endif()
 
 if(DARMOK_PLATFORM STREQUAL "glfw")
-  list(APPEND SOURCES ${SRC_DIR}/platform_glfw.cpp)
+  list(APPEND SOURCES platform_glfw.cpp)
 endif()
 
 if(DARMOK_BUILD_FREETYPE)
   list(APPEND HEADERS
-    ${INCLUDE_DIR}/text_freetype.hpp
+    text_freetype.hpp
   )
   list(APPEND SOURCES
-    ${SRC_DIR}/text_freetype.cpp
+    text_freetype.cpp
   )
   list(APPEND LUA_SOURCES
-    ${SRC_DIR}/lua/text.cpp
+    text.cpp
   )
 endif()
 
 if(DARMOK_BUILD_IMGUI)
-  list(APPEND SOURCES ${SRC_DIR}/imgui.cpp)
-  list(APPEND HEADERS ${INCLUDE_DIR}/imgui.hpp)
+  list(APPEND SOURCES imgui.cpp)
+  list(APPEND HEADERS imgui.hpp)
 
   set(IMGUI_ASSETS_TARGET darmok-imgui-assets)
-  set(IMGUI_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets/imgui)
-  set(IMGUI_ASSETS
-    ${IMGUI_ASSETS_DIR}/imgui.fragment.sc
-    ${IMGUI_ASSETS_DIR}/imgui.vertex.sc
-    ${IMGUI_ASSETS_DIR}/imgui.program.json
-    ${IMGUI_ASSETS_DIR}/darmok-import.json
-  )
   darmok_process_assets(
     TARGET ${IMGUI_ASSETS_TARGET} CORE
-    INPUT ${IMGUI_ASSETS_DIR}
+    INPUT ${PROJECT_SOURCE_DIR}/assets/imgui
     OUTPUT include/private/generated/imgui
-    ASSETS ${IMGUI_ASSETS}
+    ASSETS
+      imgui.fragment.sc
+      imgui.vertex.sc
+      imgui.program.json
+      darmok-import.json
   )
   list(APPEND ASSET_TARGETS ${IMGUI_ASSETS_TARGET})
 endif()
 
 if(DARMOK_BUILD_RMLUI)
-  list(APPEND SOURCES ${SRC_DIR}/rmlui.cpp)
-  list(APPEND HEADERS ${INCLUDE_DIR}/rmlui.hpp)
-  list(APPEND LUA_SOURCES ${SRC_DIR}/lua/rmlui.cpp)
+  list(APPEND SOURCES rmlui.cpp)
+  list(APPEND HEADERS rmlui.hpp)
+  list(APPEND LUA_SOURCES rmlui.cpp)
 
   set(RMLUI_ASSETS_TARGET darmok-rmlui-assets)
-  set(RMLUI_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets/rmlui)
-  set(RMLUI_ASSETS
-    ${RMLUI_ASSETS_DIR}/rmlui.fragment.sc
-    ${RMLUI_ASSETS_DIR}/rmlui.vertex.sc
-    ${RMLUI_ASSETS_DIR}/rmlui.program.json
-    ${RMLUI_ASSETS_DIR}/darmok-import.json
-  )
   darmok_process_assets(
     TARGET ${RMLUI_ASSETS_TARGET} CORE
-    INPUT ${RMLUI_ASSETS_DIR}
+    INPUT ${PROJECT_SOURCE_DIR}/assets/rmlui
     OUTPUT include/private/generated/rmlui
-    ASSETS ${RMLUI_ASSETS}
+    ASSETS
+      rmlui.fragment.sc
+      rmlui.vertex.sc
+      rmlui.program.json
+      darmok-import.json
   )
   list(APPEND ASSET_TARGETS ${RMLUI_ASSETS_TARGET})
 endif()
 
 if(DARMOK_BUILD_OZZ)
   list(APPEND HEADERS
-    ${INCLUDE_DIR}/skeleton.hpp
-    ${INCLUDE_DIR}/skeleton_ozz.hpp
+    skeleton.hpp
+    skeleton_ozz.hpp
   )
   list(APPEND SOURCES
-    ${SRC_DIR}/skeleton.cpp  
-    ${SRC_DIR}/skeleton_ozz.cpp
+    skeleton.cpp  
+    skeleton_ozz.cpp
   )
 
-  list(APPEND LUA_SOURCES ${SRC_DIR}/lua/skeleton.cpp)
+  list(APPEND LUA_SOURCES skeleton.cpp)
 endif()
 
 if(DARMOK_BUILD_ASSIMP)
   list(APPEND HEADERS
-    ${INCLUDE_DIR}/model_assimp.hpp
+    model_assimp.hpp
   )
-  list(APPEND SOURCES ${SRC_DIR}/model_assimp.cpp)
+  list(APPEND SOURCES model_assimp.cpp)
   if(DARMOK_BUILD_OZZ)
-    list(APPEND HEADERS ${INCLUDE_DIR}/skeleton_assimp.hpp)
-    list(APPEND SOURCES ${SRC_DIR}/skeleton_assimp.cpp)
+    list(APPEND HEADERS skeleton_assimp.hpp)
+    list(APPEND SOURCES skeleton_assimp.cpp)
   endif()  
 endif()
 
 if(DARMOK_BUILD_JOLT)
   list(APPEND HEADERS
-    ${INCLUDE_DIR}/physics3d_fwd.hpp
-    ${INCLUDE_DIR}/physics3d.hpp
-    ${INCLUDE_DIR}/character_fwd.hpp
-    ${INCLUDE_DIR}/character.hpp
+    physics3d_fwd.hpp
+    physics3d.hpp
+    character_fwd.hpp
+    character.hpp
   )
   list(APPEND DEBUG_HEADERS
-    ${INCLUDE_DIR}/physics3d_debug.hpp
+    physics3d_debug.hpp
   )
   list(APPEND SOURCES
-    ${SRC_DIR}/physics3d_jolt.cpp
-    ${SRC_DIR}/character_jolt.cpp
+    physics3d_jolt.cpp
+    character_jolt.cpp
   )
   list(APPEND DEBUG_SOURCES
-    ${SRC_DIR}/physics3d_debug_jolt.cpp
+    physics3d_debug_jolt.cpp
   )
+
   list(APPEND LUA_SOURCES
-    ${SRC_DIR}/lua/physics3d.cpp
-    ${SRC_DIR}/lua/character.cpp
+    physics3d.cpp
+    character.cpp
   )
   list(APPEND LUA_DEBUG_SOURCES
-    ${SRC_DIR}/lua/physics3d_debug.cpp
+    physics3d_debug.cpp
   )
 endif()
 
 if(DARMOK_BUILD_MINIAUDIO)
   list(APPEND HEADERS
-    ${INCLUDE_DIR}/audio.hpp
-    ${INCLUDE_DIR}/audio_mini.hpp
+    audio_fwd.hpp  
+    audio.hpp
+    audio_mini.hpp
   )
   list(APPEND SOURCES
-    ${SRC_DIR}/audio.cpp  
-    ${SRC_DIR}/audio_mini.cpp
+    audio_mini.cpp
   )
-  list(APPEND LUA_SOURCES ${SRC_DIR}/lua/audio.cpp)
+  list(APPEND LUA_SOURCES audio.cpp)
 endif()
 
 if(DARMOK_BUILD_LUA_EXE)
@@ -352,53 +371,26 @@ if(DARMOK_BUILD_LUA_EXE)
 endif()
 
 if(DARMOK_BUILD_LUA)
-  list(APPEND LUA_SOURCES
-    ${SRC_DIR}/lua/app.cpp
-    ${SRC_DIR}/lua/asset.cpp
-    ${SRC_DIR}/lua/image.cpp
-    ${SRC_DIR}/lua/material.cpp
-    ${SRC_DIR}/lua/render.cpp
-    ${SRC_DIR}/lua/render_forward.cpp
-    ${SRC_DIR}/lua/mesh.cpp
-    ${SRC_DIR}/lua/program.cpp
-    ${SRC_DIR}/lua/texture.cpp
-    ${SRC_DIR}/lua/input1.cpp
-    ${SRC_DIR}/lua/input2.cpp
-    ${SRC_DIR}/lua/math1.cpp
-    ${SRC_DIR}/lua/math2.cpp
-    ${SRC_DIR}/lua/math3.cpp
-    ${SRC_DIR}/lua/shape.cpp
-    ${SRC_DIR}/lua/scene.cpp
-    ${SRC_DIR}/lua/transform.cpp
-    ${SRC_DIR}/lua/light.cpp
-    ${SRC_DIR}/lua/viewport.cpp
-    ${SRC_DIR}/lua/camera.cpp
-    ${SRC_DIR}/lua/window.cpp
-    ${SRC_DIR}/lua/model.cpp
-    ${SRC_DIR}/lua/utils.cpp
-    ${SRC_DIR}/lua/skeleton.cpp
-    ${SRC_DIR}/lua/freelook.cpp    
-  )
-  list(APPEND HEADERS
-    ${INCLUDE_DIR}/lua.hpp
-  )
-  source_group(TREE ${SRC_DIR}/lua PREFIX "Lua Binding Source Files" FILES ${LUA_SOURCES})
+  list(APPEND HEADERS lua.hpp)
 
   set(LUA_ASSETS_TARGET darmok-lua-assets)
-  set(LUA_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets/lua)
-  set(LUA_ASSETS
-    ${LUA_ASSETS_DIR}/string.lua
-    ${LUA_ASSETS_DIR}/table.lua
-  )
   darmok_process_assets(
     TARGET ${LUA_ASSETS_TARGET} CORE
-    INPUT ${LUA_ASSETS_DIR}
+    INPUT ${PROJECT_SOURCE_DIR}/assets/lua
     OUTPUT include/private/generated/lua
-    ASSETS ${LUA_ASSETS}
+    ASSETS
+      string.lua
+      table.lua
   )
   list(APPEND ASSET_TARGETS ${LUA_ASSETS_TARGET})
 
 endif()
+
+list(TRANSFORM CORE_HEADERS PREPEND "${INCLUDE_DIR}/")
+list(TRANSFORM CORE_SOURCES PREPEND "${SRC_DIR}/")
+list(TRANSFORM HEADERS PREPEND "${INCLUDE_DIR}/")
+list(TRANSFORM SOURCES PREPEND "${SRC_DIR}/")
+list(TRANSFORM LUA_SOURCES PREPEND "${SRC_DIR}/lua/")
 
 set(CORE_LIB_NAME "darmok-core")
 add_library(
@@ -420,6 +412,7 @@ add_library(
 target_sources(${LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${HEADERS})
 source_group(TREE ${SRC_DIR} PREFIX "Source Files" FILES ${SOURCES})
 source_group(TREE ${INCLUDE_BASE_DIR} PREFIX "Header Files" FILES ${HEADERS})
+source_group(TREE ${SRC_DIR}/lua PREFIX "Lua Binding Source Files" FILES ${LUA_SOURCES})
 
 add_dependencies(${LIB_NAME} ${ASSET_TARGETS})
 foreach(TARGET ${ASSET_TARGETS})

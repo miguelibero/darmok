@@ -58,7 +58,7 @@ namespace darmok
 		return _input;
 	}
 
-	LuaAudio& LuaApp::getAudio() noexcept
+	LuaAudioSystem& LuaApp::getAudio() noexcept
 	{
 		return _audio;
 	}
@@ -112,7 +112,7 @@ namespace darmok
 		LuaAssets::bind(lua);
 		LuaWindow::bind(lua);
 		LuaInput::bind(lua);
-		LuaAudio::bind(lua);
+		LuaAudioSystem::bind(lua);
 
 		lua.new_usertype<LuaApp>("App", sol::no_constructor,
 			"assets", sol::property(&LuaApp::getAssets),
@@ -489,7 +489,7 @@ end
 
 	void LuaRunnerAppImpl::render() noexcept
 	{
-		for (auto text : _dbgTexts)
+		for (auto& text : _dbgTexts)
 		{
 			bgfx::dbgTextPrintf(text.pos.x, text.pos.y, 0x0f, text.message.c_str());
 		}

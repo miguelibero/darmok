@@ -21,7 +21,6 @@ namespace darmok
 {
 	class App;
 	class AssetContext;
-	class Window;
 
 	class LuaApp final
 	{
@@ -29,6 +28,10 @@ namespace darmok
 		LuaApp(App& app) noexcept;
 		App& getReal() noexcept;
 		const App& getReal() const noexcept;
+
+		void update(float deltaTime) noexcept;
+		void registerUpdate(const sol::protected_function& func) noexcept;
+		bool unregisterUpdate(const sol::protected_function& func) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
@@ -44,10 +47,6 @@ namespace darmok
 		LuaAudioSystem& getAudio() noexcept;
 
 		static bool getDebug() noexcept;
-
-		void registerUpdate(const sol::protected_function& func) noexcept;
-		bool unregisterUpdate(const sol::protected_function& func) noexcept;
-		void update(float deltaTime) noexcept;
 	};
 
 	class LuaError final : std::runtime_error

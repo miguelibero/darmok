@@ -13,6 +13,7 @@
 #include <darmok/texture_atlas.hpp>
 #include <darmok/skeleton.hpp>
 #include <darmok/model_assimp.hpp>
+#include <darmok/audio.hpp>
 
 namespace darmok
 {	
@@ -44,6 +45,16 @@ namespace darmok
 	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas2(AssetContext& assets, const std::string& name, uint64_t textureFlags)
 	{
 		return assets.getTextureAtlasLoader()(name, textureFlags);
+	}
+
+	std::shared_ptr<Sound> LuaAssets::loadSound(AssetContext& assets, const std::string& name)
+	{
+		return assets.getSoundLoader()(name);
+	}
+
+	std::shared_ptr<Music> LuaAssets::loadMusic(AssetContext& assets, const std::string& name)
+	{
+		return assets.getMusicLoader()(name);
 	}
 
 	std::shared_ptr<Model> LuaAssets::loadModel1(AssetContext& assets, const std::string& name)
@@ -97,6 +108,8 @@ namespace darmok
 			"load_texture", sol::overload(&LuaAssets::loadTexture1, &LuaAssets::loadTexture2),
 			"load_color_texture", &LuaAssets::loadColorTexture,
 			"load_texture_atlas", sol::overload(&LuaAssets::loadTextureAtlas1, &LuaAssets::loadTextureAtlas2),
+			"load_sound", &LuaAssets::loadSound,
+			"load_music", &LuaAssets::loadMusic,
 			"load_skeleton", &LuaAssets::loadSkeleton,
 			"load_skeletal_animation", &LuaAssets::loadSkeletalAnimation,
 			"load_skeletal_animator_config", &LuaAssets::loadSkeletalAnimatorConfig,

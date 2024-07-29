@@ -5,6 +5,6 @@ endif()
 darmok_sample_setup(
   TARGET darmok-samples-text
   ASSETS
-    assets/darmok-import.json
-    assets/COMIC.ttf
+    darmok-import.json
+    COMIC.ttf
 )

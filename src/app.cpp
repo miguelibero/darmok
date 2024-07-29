@@ -267,7 +267,7 @@ namespace darmok
 		_input.getKeyboard().addListener(*this);
 		_window.addListener(*this);
 		_assets.init(_app);
-		_audio.init(_assets);
+		_audio.init();
 
 		for (auto& component : _components)
 		{

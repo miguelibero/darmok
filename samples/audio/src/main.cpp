@@ -3,6 +3,7 @@
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/audio.hpp>
+#include <darmok/asset.hpp>
 #include <bgfx/bgfx.h>
 #include <imgui.h>
 #include <imgui_stdlib.h>
@@ -26,11 +27,18 @@ namespace
 			// to set the static in this part
 			ImGui::SetCurrentContext(imgui.getContext());
 
+			_sound = getAssets().getSoundLoader()("sound.wav");
+			_music = getAssets().getMusicLoader()("music.mp3");
 			auto& audio = getAudio();
-			audio.loadSound("sound", "sound.wav");
-			audio.loadMusic("music", "music.mp3");
 			_soundVolume = audio.getVolume(AudioGroup::Sound);
 			_musicVolume = audio.getVolume(AudioGroup::Music);
+		}
+
+		void shutdown() override
+		{
+			_sound.reset();
+			_music.reset();
+			App::shutdown();
 		}
 
 		void imguiRender()
@@ -38,7 +46,7 @@ namespace
 			auto& audio = getAudio();
 			if (ImGui::Button("Play Sound"))
 			{
-				audio.playSound("sound");
+				audio.play(_sound);
 			}
 
 			if (ImGui::SliderFloat("Sound Volume", &_soundVolume, 0.F, 1.F))
@@ -46,16 +54,25 @@ namespace
 				audio.setVolume(AudioGroup::Sound, _soundVolume);
 			}
 
-			auto playing = !audio.getRunningMusic().empty();
-			if (ImGui::Button(playing ? "Stop Music" : "Play Music"))
+			auto musicState = audio.getMusicState();
+			auto running = musicState != MusicState::Stopped;
+			if (ImGui::Button(running ? "Stop Music" : "Play Music"))
 			{
-				if (playing)
+				if (running)
 				{
 					audio.stopMusic();
 				}
 				else
 				{
-					audio.playMusic("music");
+					audio.play(_music);
+				}
+			}
+			if (running)
+			{
+				auto playing = musicState == MusicState::Playing;
+				if (ImGui::Button(playing ? "Pause Music" : "Play Music"))
+				{
+					audio.pauseMusic();
 				}
 			}
 
@@ -69,11 +86,14 @@ namespace
 		{
 			App::render();
 
-			bgfx::dbgTextPrintf(0, 6, 0x0f, "Audio");
+			bgfx::dbgTextPrintf(1, 1, 0x0f, "Sound Duration %f", _sound->getDuration());
+			bgfx::dbgTextPrintf(1, 2, 0x0f, "Music Duration %f", _music->getDuration());
 		}
 	private:
-		float _soundVolume;
-		float _musicVolume;
+		float _soundVolume = 0.F;
+		float _musicVolume = 0.F;
+		std::shared_ptr<Sound> _sound;
+		std::shared_ptr<Music> _music;
 	};
 
 }

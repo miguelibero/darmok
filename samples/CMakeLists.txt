@@ -2,8 +2,8 @@ set(SHARED_ASSETS_TARGET darmok-samples-assets)
 darmok_process_assets(
   TARGET ${SHARED_ASSETS_TARGET}
   ASSETS
-    assets/darmok-import.json
-    assets/noto.ttf
+    darmok-import.json
+    noto.ttf
 )
 set_target_properties(${SHARED_ASSETS_TARGET} PROPERTIES FOLDER "darmok/samples")
 
@@ -15,7 +15,6 @@ function(darmok_sample_setup)
   add_executable(
     ${ARGS_TARGET}
     ${ARGS_SOURCES}
-    ${ARGS_ASSETS}
   )
   target_compile_definitions(${ARGS_TARGET} PRIVATE "DARMOK_IMPLEMENT_MAIN=1")
   target_link_libraries(${ARGS_TARGET} PUBLIC darmok)

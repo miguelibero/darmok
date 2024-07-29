@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
+#include <darmok/audio_fwd.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -17,6 +18,7 @@ namespace darmok
     public:
         Sound(std::unique_ptr<SoundImpl>&& impl);
         ~Sound();
+        float getDuration() const;
         SoundImpl& getImpl() noexcept;
         const SoundImpl& getImpl() const noexcept;
     private:
@@ -30,25 +32,20 @@ namespace darmok
     public:
         Music(std::unique_ptr<MusicImpl>&& impl);
         ~Music();
+        float getDuration() const;
         MusicImpl& getImpl() noexcept;
         const MusicImpl& getImpl() const noexcept;
     private:
         std::unique_ptr<MusicImpl> _impl;
     };
 
-    enum class AudioGroup
-    {
-        Sound,
-        Music
-    };
+    class AudioSystemImpl;
 
-    class AudioPlayerImpl;
-
-    class DARMOK_EXPORT AudioPlayer final
+    class DARMOK_EXPORT AudioSystem final
     {
     public:
-        AudioPlayer() noexcept;
-        ~AudioPlayer() noexcept;
+        AudioSystem() noexcept;
+        ~AudioSystem() noexcept;
 
         void init();
         void update();
@@ -63,10 +60,10 @@ namespace darmok
 
         void stopMusic();
         void pauseMusic();
-        std::shared_ptr<Music> getRunningMusic() noexcept;
+        MusicState getMusicState() const noexcept;
 
     private:
-        std::unique_ptr<AudioPlayerImpl> _impl;
+        std::unique_ptr<AudioSystemImpl> _impl;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE ISoundLoader
@@ -83,40 +80,5 @@ namespace darmok
         using result_type = std::shared_ptr<Music>;
         virtual ~IMusicLoader() = default;
         virtual result_type operator()(std::string_view name) = 0;
-    };
-
-    class AssetContext;
-
-    class DARMOK_EXPORT AudioSystem final
-    {
-    public:
-        AudioSystem() noexcept;
-
-        void init(AssetContext& assets);
-        void update();
-        void shutdown();
-
-        bool loadSound(std::string_view name, std::string_view loadName = "");
-        bool isSoundLoaded(std::string_view name) const noexcept;
-        bool loadMusic(std::string_view name, std::string_view loadName = "");
-        bool isMusicLoaded(std::string_view name) const noexcept;
-
-        bool playSound(std::string_view name) noexcept;
-        bool playMusic(std::string_view name) noexcept;
-
-        float getVolume(AudioGroup group) const;
-        void setVolume(AudioGroup group, float v);
-
-        void stopMusic();
-        void pauseMusic();
-
-        const std::string& getRunningMusic() noexcept;
-
-    private:
-        AudioPlayer _player;
-        OptionalRef<ISoundLoader> _soundLoader;
-        OptionalRef<IMusicLoader> _musicLoader;
-        std::unordered_map<std::string, std::shared_ptr<Sound>> _sounds;
-        std::unordered_map<std::string, std::shared_ptr<Music>> _music;
     };
 }

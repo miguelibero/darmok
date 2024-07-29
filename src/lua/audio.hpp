@@ -1,10 +1,15 @@
 #pragma once
 
 #include <sol/sol.hpp>
+#include "glm.hpp"
+#include <memory>
+#include <darmok/audio_fwd.hpp>
 
 namespace darmok
 {
     class AudioSystem;
+    class Sound;
+    class Music;
 
     class LuaAudioSystem final
     {
@@ -18,13 +23,9 @@ namespace darmok
     private:
         std::reference_wrapper<AudioSystem> _audio;
 
-        bool loadSound(const std::string& name, const std::string& loadName = "");
-        bool isSoundLoaded(const std::string& name) const noexcept;
-        bool loadMusic(const std::string& name, const std::string& loadName = "");
-        bool isMusicLoaded(const std::string& name) const noexcept;
-
-        bool playSound(const std::string& name) noexcept;
-        bool playMusic(const std::string& name) noexcept;
+        void play1(const std::shared_ptr<Sound>& sound) noexcept;
+        void play2(const std::shared_ptr<Sound>& sound, const VarLuaTable<glm::vec3>& pos) noexcept;
+        void play3(const std::shared_ptr<Music>& music) noexcept;
 
         float getSoundVolume() const;
         void setSoundVolume(float v);
@@ -35,6 +36,9 @@ namespace darmok
         void stopMusic();
         void pauseMusic();
 
-        const std::string& getRunningMusic() noexcept;
-    }
+        MusicState getMusicState() const noexcept;
+        bool getMusicPlaying() const noexcept;
+        bool getMusicStopped() const noexcept;
+        bool getMusicPaused() const noexcept;
+    };
 }

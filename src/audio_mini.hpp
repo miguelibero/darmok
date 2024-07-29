@@ -16,13 +16,29 @@ namespace bx
 
 namespace darmok
 {
+	class MiniaudioDecoder final
+	{
+	public:
+		MiniaudioDecoder(DataView data) noexcept;
+		~MiniaudioDecoder() noexcept;
+		MiniaudioDecoder(const MiniaudioDecoder& other) = delete;
+		MiniaudioDecoder operator=(const MiniaudioDecoder& other) = delete;
+
+		float getDuration() const;
+		operator ma_decoder* () noexcept;
+	private:
+		mutable ma_decoder _decoder;
+	};
+
 	class SoundImpl final
 	{
 	public:
 		SoundImpl(Data&& data);
 		DataView getData() noexcept;
+		float getDuration() const;
 	private:
 		Data _data;
+		MiniaudioDecoder _decoder;
 	};
 
 	class MusicImpl final
@@ -30,18 +46,10 @@ namespace darmok
 	public:
 		MusicImpl(Data&& data);
 		DataView getData() noexcept;
+		float getDuration() const;
 	private:
 		Data _data;
-	};
-
-	class MiniaudioDecoder final
-	{
-	public:
-		MiniaudioDecoder(DataView data) noexcept;
-		~MiniaudioDecoder() noexcept;
-		operator ma_decoder*() noexcept;
-	private:
-		ma_decoder _decoder;
+		MiniaudioDecoder _decoder;
 	};
 
 	class MiniaudioSoundGroup final
@@ -49,6 +57,9 @@ namespace darmok
 	public:
 		MiniaudioSoundGroup(ma_engine& engine, ma_uint32 flags = 0) noexcept;
 		~MiniaudioSoundGroup() noexcept;
+		MiniaudioSoundGroup(const MiniaudioSoundGroup& other) = delete;
+		MiniaudioSoundGroup operator=(const MiniaudioSoundGroup& other) = delete;
+
 		operator ma_sound_group*() noexcept;
 		float getVolume() const noexcept;
 		void setVolume(float v) noexcept;
@@ -61,6 +72,10 @@ namespace darmok
 	public:
 		MiniaudioSound(DataView data, ma_engine& engine, const OptionalRef<MiniaudioSoundGroup>& group = nullptr) noexcept;
 		~MiniaudioSound() noexcept;
+
+		MiniaudioSound(const MiniaudioSound& other) = delete;
+		MiniaudioSound operator=(const MiniaudioSound& other) = delete;
+
 		void start();
 		void stop();
 		bool atEnd() const noexcept;
@@ -72,7 +87,7 @@ namespace darmok
 		MiniaudioDecoder _decoder;
 	};
 
-	class AudioPlayerImpl final
+	class AudioSystemImpl final
 	{
 	public:
 		void init();
@@ -86,8 +101,7 @@ namespace darmok
 		void setVolume(AudioGroup group, float v);
 		void stopMusic();
 		void pauseMusic();
-		std::shared_ptr<Music> getRunningMusic() noexcept;
-		ma_engine& getEngine();
+		MusicState getMusicState() const noexcept;
 	private:
 		ma_engine _engine;
 		std::unique_ptr<MiniaudioSoundGroup> _soundGroup;

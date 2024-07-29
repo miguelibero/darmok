@@ -75,6 +75,9 @@ namespace darmok
 		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
 
 		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
+
+		// first since it contains the allocator
+		AssetContext _assets;
 		
 		AppUpdateResult _updateResult;
 		bool _running;
@@ -88,7 +91,6 @@ namespace darmok
 #ifdef DARMOK_MINIAUDIO
 		AudioSystem _audio;
 #endif
-		AssetContext _assets;
 		RenderGraphDefinition _renderGraphDef;
 		std::optional<RenderGraph> _renderGraph;
 

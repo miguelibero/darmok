@@ -40,6 +40,9 @@ function(darmok_process_assets)
     --bgfx-shaderc $<TARGET_FILE:${BGFX_SHADERC_TARGET}>
     --bgfx-shader-include ${BGFX_SHADER_INCLUDE_PATH}
   )
+
+  list(TRANSFORM ARGS_ASSETS PREPEND "${ARGS_INPUT}/")
+
   add_custom_target(${ARGS_TARGET} ${CMD}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${ARGS_ASSETS}

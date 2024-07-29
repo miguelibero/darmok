@@ -18,34 +18,19 @@ namespace darmok
         return _audio.get();
     }
 
-    bool LuaAudioSystem::loadSound(const std::string& name, const std::string& loadName)
+    void LuaAudioSystem::play1(const std::shared_ptr<Sound>& sound) noexcept
     {
-        return getReal().loadSound(name, loadName);
+        getReal().play(sound);
     }
 
-    bool LuaAudioSystem::isSoundLoaded(const std::string& name) const noexcept
+    void LuaAudioSystem::play2(const std::shared_ptr<Sound>& sound, const VarLuaTable<glm::vec3>& pos) noexcept
     {
-        return getReal().isSoundLoaded(name);
+        getReal().play(sound, LuaGlm::tableGet(pos));
     }
 
-    bool LuaAudioSystem::loadMusic(const std::string& name, const std::string& loadName)
+    void LuaAudioSystem::play3(const std::shared_ptr<Music>& music) noexcept
     {
-        return getReal().loadMusic(name, loadName);
-    }
-
-    bool LuaAudioSystem::isMusicLoaded(const std::string& name) const noexcept
-    {
-        return getReal().isMusicLoaded(name);
-    }
-
-    bool LuaAudioSystem::playSound(const std::string& name) noexcept
-    {
-        return getReal().playSound(name);
-    }
-
-    bool LuaAudioSystem::playMusic(const std::string& name) noexcept
-    {
-        return getReal().playMusic(name);
+        getReal().play(music);
     }
 
     float LuaAudioSystem::getSoundVolume() const
@@ -78,25 +63,54 @@ namespace darmok
         return getReal().pauseMusic();
     }
 
-    const std::string& LuaAudioSystem::getRunningMusic() noexcept
+    MusicState LuaAudioSystem::getMusicState() const noexcept
     {
-        return getReal().getRunningMusic();
+        return getReal().getMusicState();
     }
 
-    static void LuaAudioSystem::bind(sol::state_view& lua) noexcept
+    bool LuaAudioSystem::getMusicPlaying() const noexcept
     {
+        return getMusicState() == MusicState::Playing;
+    }
+
+    bool LuaAudioSystem::getMusicStopped() const noexcept
+    {
+        return getMusicState() == MusicState::Stopped;
+    }
+
+    bool LuaAudioSystem::getMusicPaused() const noexcept
+    {
+        return getMusicState() == MusicState::Paused;
+    }
+
+    void LuaAudioSystem::bind(sol::state_view& lua) noexcept
+    {
+        lua.new_enum<MusicState>("MusicState", {
+            { "Stopped", MusicState::Stopped },
+            { "Playing", MusicState::Playing },
+            { "Paused", MusicState::Paused }
+        });
+
+        lua.new_usertype<Sound>("Sound", sol::no_constructor
+        );
+
+        lua.new_usertype<Music>("Music", sol::no_constructor
+        );
+
         lua.new_usertype<LuaAudioSystem>("AudioSystem", sol::no_constructor,
-            "load_sound", &LuaAudioSystem::loadSound,
-            "is_sound_loaded", &LuaAudioSystem::isSoundLoaded,
-            "load_music", &LuaAudioSystem::loadMusic,
-            "is_music_loaded", &LuaAudioSystem::isMusicLoaded,
-            "play_sound", &LuaAudioSystem::playSound,
-            "play_music", &LuaAudioSystem::playMusic,
+            "play", sol::overload(
+                &LuaAudioSystem::play1,
+                &LuaAudioSystem::play2,
+                &LuaAudioSystem::play3
+            ),
 			"sound_volume", sol::property(&LuaAudioSystem::getSoundVolume, &LuaAudioSystem::setSoundVolume),
             "music_volume", sol::property(&LuaAudioSystem::getMusicVolume, &LuaAudioSystem::setMusicVolume),
             "stop_music", &LuaAudioSystem::stopMusic,
             "pause_music", &LuaAudioSystem::pauseMusic,
-			"running_music", sol::property(&LuaAudioSystem::getRunningMusic)
+			"music_state", sol::property(&LuaAudioSystem::getMusicState),
+            "music_paused", sol::property(&LuaAudioSystem::getMusicPaused),
+            "music_playing", sol::property(&LuaAudioSystem::getMusicPlaying),
+            "music_stopped", sol::property(&LuaAudioSystem::getMusicStopped)
 		);
     }
 }

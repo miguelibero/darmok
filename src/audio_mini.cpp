@@ -4,7 +4,6 @@
 #include <bx/bx.h>
 #include <fstream>
 
-
 #ifdef __APPLE__
 #define MA_NO_RUNTIME_LINKING
 #endif
@@ -26,7 +25,13 @@ namespace darmok
 
     SoundImpl::SoundImpl(Data&& data)
         : _data(std::move(data))
+        , _decoder(_data)
     {
+    }
+
+    float SoundImpl::getDuration() const
+    {
+        return _decoder.getDuration();
     }
 
     DataView SoundImpl::getData() noexcept
@@ -44,6 +49,11 @@ namespace darmok
         // empty on purpose
     }
 
+    float Sound::getDuration() const
+    {
+        return _impl->getDuration();
+    }
+
     SoundImpl& Sound::getImpl() noexcept
     {
         return *_impl;
@@ -56,7 +66,13 @@ namespace darmok
 
     MusicImpl::MusicImpl(Data&& data)
         : _data(std::move(data))
+        , _decoder(_data)
     {
+    }
+
+    float MusicImpl::getDuration() const
+    {
+        return _decoder.getDuration();
     }
 
     DataView MusicImpl::getData() noexcept
@@ -72,6 +88,11 @@ namespace darmok
     Music::~Music()
     {
         // empty on purpose
+    }
+
+    float Music::getDuration() const
+    {
+        return _impl->getDuration();
     }
 
     MusicImpl& Music::getImpl() noexcept
@@ -116,6 +137,14 @@ namespace darmok
     MiniaudioDecoder::~MiniaudioDecoder() noexcept
     {
         ma_decoder_uninit(&_decoder);
+    }
+
+    float MiniaudioDecoder::getDuration() const
+    {
+        float len;
+        auto result = ma_data_source_get_length_in_seconds(&_decoder, &len);
+        AudioUtils::checkResult(result);
+        return len;
     }
 
     MiniaudioDecoder::operator ma_decoder* () noexcept
@@ -199,7 +228,7 @@ namespace darmok
         AudioUtils::checkResult(result);
     }
 
-    void AudioPlayerImpl::init()
+    void AudioSystemImpl::init()
     {
         ma_engine_config config = ma_engine_config_init();
         auto result = ma_engine_init(&config, &_engine);
@@ -209,15 +238,16 @@ namespace darmok
         _musicGroup = std::make_unique<MiniaudioSoundGroup>(_engine, MA_SOUND_FLAG_STREAM);
     }
 
-    void AudioPlayerImpl::shutdown()
+    void AudioSystemImpl::shutdown()
     {
+        _sounds.clear();
+        _music.reset();
         _soundGroup.reset();
         _musicGroup.reset();
-        _sounds.clear();
         ma_engine_uninit(&_engine);
     }
 
-    void AudioPlayerImpl::update()
+    void AudioSystemImpl::update()
     {
         auto it = std::remove_if(_sounds.begin(), _sounds.end(), [](auto& elm) {
             return elm.miniaudio->atEnd();
@@ -225,7 +255,7 @@ namespace darmok
         _sounds.erase(it, _sounds.end());
     }
 
-    MiniaudioSound& AudioPlayerImpl::createMiniaudioSound(const std::shared_ptr<Sound>& sound)
+    MiniaudioSound& AudioSystemImpl::createMiniaudioSound(const std::shared_ptr<Sound>& sound)
     {
         auto& elm = _sounds.emplace_back(
             std::make_unique<MiniaudioSound>(
@@ -234,20 +264,20 @@ namespace darmok
         return *elm.miniaudio;
     }
 
-    void AudioPlayerImpl::play(const std::shared_ptr<Sound>& sound)
+    void AudioSystemImpl::play(const std::shared_ptr<Sound>& sound)
     {
         auto& maSound = createMiniaudioSound(sound);
         maSound.start();
     }
 
-    void AudioPlayerImpl::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos)
+    void AudioSystemImpl::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos)
     {
         auto& maSound = createMiniaudioSound(sound);
         maSound.setPosition(pos);
         maSound.start();
     }
 
-    void AudioPlayerImpl::play(const std::shared_ptr<Music>& music)
+    void AudioSystemImpl::play(const std::shared_ptr<Music>& music)
     {
         _music = MusicElement{
             std::make_unique<MiniaudioSound>(
@@ -260,7 +290,7 @@ namespace darmok
         maSound.start();
     }
 
-    float AudioPlayerImpl::getVolume(AudioGroup group) const
+    float AudioSystemImpl::getVolume(AudioGroup group) const
     {
         switch (group)
         {
@@ -280,7 +310,7 @@ namespace darmok
         return 0.F;
     }
 
-    void AudioPlayerImpl::setVolume(AudioGroup group, float v)
+    void AudioSystemImpl::setVolume(AudioGroup group, float v)
     {
         switch (group)
         {
@@ -299,12 +329,12 @@ namespace darmok
         }
     }
 
-    void AudioPlayerImpl::stopMusic()
+    void AudioSystemImpl::stopMusic()
     {
         _music.reset();
     }
 
-    void AudioPlayerImpl::pauseMusic()
+    void AudioSystemImpl::pauseMusic()
     {
         if (!_music || !_music->miniaudio)
         {
@@ -320,82 +350,79 @@ namespace darmok
         }
     }
 
-    std::shared_ptr<Music> AudioPlayerImpl::getRunningMusic() noexcept
+    MusicState AudioSystemImpl::getMusicState() const noexcept
     {
-        if (_music && _music->miniaudio && _music->miniaudio->isPlaying())
+        if (!_music || !_music->miniaudio)
         {
-            return _music->darmok;
+            return MusicState::Stopped;
         }
-        return nullptr;
+        auto& ma = *_music->miniaudio;
+        return ma.isPlaying() ? MusicState::Playing : MusicState::Paused;
     }
 
-    ma_engine& AudioPlayerImpl::getEngine()
-    {
-        return _engine;
-    }
 
-    AudioPlayer::AudioPlayer() noexcept
-        : _impl(std::make_unique<AudioPlayerImpl>())
+    AudioSystem::AudioSystem() noexcept
+        : _impl(std::make_unique<AudioSystemImpl>())
     {
     }
 
-    AudioPlayer::~AudioPlayer() noexcept
+    AudioSystem::~AudioSystem() noexcept
     {
         // empty on purpose
     }
 
-    void AudioPlayer::init()
+    void AudioSystem::init()
     {
         _impl->init();
     }
 
-    void AudioPlayer::update()
+    void AudioSystem::update()
     {
         _impl->update();
     }
 
-    void AudioPlayer::shutdown()
+    void AudioSystem::shutdown()
     {
         _impl->shutdown();
     }
 
-    void AudioPlayer::play(const std::shared_ptr<Sound>& sound) noexcept
+    void AudioSystem::play(const std::shared_ptr<Sound>& sound) noexcept
     {
         return _impl->play(sound);
     }
 
-    void AudioPlayer::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept
+    void AudioSystem::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept
     {
         return _impl->play(sound, pos);
     }
 
-    void AudioPlayer::play(const std::shared_ptr<Music>& music) noexcept
+    void AudioSystem::play(const std::shared_ptr<Music>& music) noexcept
     {
         return _impl->play(music);
     }
 
-    float AudioPlayer::getVolume(AudioGroup group) const
+    float AudioSystem::getVolume(AudioGroup group) const
     {
         return _impl->getVolume(group);
     }
 
-    void AudioPlayer::setVolume(AudioGroup group, float v)
+    void AudioSystem::setVolume(AudioGroup group, float v)
     {
         _impl->setVolume(group, v);
     }
 
-    void AudioPlayer::stopMusic()
+    void AudioSystem::stopMusic()
     {
         return _impl->stopMusic();
     }
 
-    void AudioPlayer::pauseMusic()
+    void AudioSystem::pauseMusic()
     {
         return _impl->pauseMusic();
     }
 
-    std::shared_ptr<Music> AudioPlayer::getRunningMusic() noexcept
+    MusicState AudioSystem::getMusicState()  const noexcept
     {
-        return _impl->getRunningMusic();
+        return _impl->getMusicState();
     }
 }

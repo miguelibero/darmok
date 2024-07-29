@@ -5,7 +5,7 @@ endif()
 darmok_sample_setup(
   TARGET darmok-samples-rmlui
   ASSETS 
-    assets/hello_world.rml
-    assets/LatoLatin-Regular.ttf
-    assets/window.rcss
+    hello_world.rml
+    LatoLatin-Regular.ttf
+    window.rcss
 )
