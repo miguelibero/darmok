@@ -179,6 +179,8 @@ set(SOURCES
   ${SRC_DIR}/text.cpp
 )
 
+set(DEBUG_SOURCES)
+
 set(HEADERS
   ${INCLUDE_DIR}/asset.hpp
 
@@ -211,7 +213,9 @@ set(HEADERS
   ${INCLUDE_DIR}/text.hpp
 )
 
+set(DEBUG_HEADERS)
 set(LUA_SOURCES)
+set(LUA_DEBUG_SOURCES)
 
 if(NOT DARMOK_PLATFORM)
     set(DARMOK_PLATFORM glfw)
@@ -233,11 +237,9 @@ if(DARMOK_BUILD_FREETYPE)
   list(APPEND SOURCES
     ${SRC_DIR}/text_freetype.cpp
   )
-  if(DARMOK_BUILD_LUA)
-    list(APPEND LUA_SOURCES
-      ${SRC_DIR}/lua/text.cpp
-    )
-  endif()
+  list(APPEND LUA_SOURCES
+    ${SRC_DIR}/lua/text.cpp
+  )
 endif()
 
 if(DARMOK_BUILD_IMGUI)
@@ -264,10 +266,8 @@ endif()
 if(DARMOK_BUILD_RMLUI)
   list(APPEND SOURCES ${SRC_DIR}/rmlui.cpp)
   list(APPEND HEADERS ${INCLUDE_DIR}/rmlui.hpp)
+  list(APPEND LUA_SOURCES ${SRC_DIR}/lua/rmlui.cpp)
 
-  if(DARMOK_BUILD_LUA)
-    list(APPEND LUA_SOURCES ${SRC_DIR}/lua/rmlui.cpp)
-  endif()
   set(RMLUI_ASSETS_TARGET darmok-rmlui-assets)
   set(RMLUI_ASSETS_DIR ${PROJECT_SOURCE_DIR}/assets/rmlui)
   set(RMLUI_ASSETS
@@ -295,9 +295,7 @@ if(DARMOK_BUILD_OZZ)
     ${SRC_DIR}/skeleton_ozz.cpp
   )
 
-  if(DARMOK_BUILD_LUA)
-    list(APPEND LUA_SOURCES ${SRC_DIR}/lua/skeleton.cpp)
-  endif()
+  list(APPEND LUA_SOURCES ${SRC_DIR}/lua/skeleton.cpp)
 endif()
 
 if(DARMOK_BUILD_ASSIMP)
@@ -315,22 +313,26 @@ if(DARMOK_BUILD_JOLT)
   list(APPEND HEADERS
     ${INCLUDE_DIR}/physics3d_fwd.hpp
     ${INCLUDE_DIR}/physics3d.hpp
-    ${INCLUDE_DIR}/physics3d_debug.hpp
     ${INCLUDE_DIR}/character_fwd.hpp
     ${INCLUDE_DIR}/character.hpp
   )
+  list(APPEND DEBUG_HEADERS
+    ${INCLUDE_DIR}/physics3d_debug.hpp
+  )
   list(APPEND SOURCES
     ${SRC_DIR}/physics3d_jolt.cpp
-    ${SRC_DIR}/physics3d_debug_jolt.cpp
     ${SRC_DIR}/character_jolt.cpp
   )
-  if(DARMOK_BUILD_LUA)
-    list(APPEND LUA_SOURCES
-      ${SRC_DIR}/lua/physics3d.cpp
-      ${SRC_DIR}/lua/physics3d_debug.cpp
-      ${SRC_DIR}/lua/character.cpp
-    )
-  endif()
+  list(APPEND DEBUG_SOURCES
+    ${SRC_DIR}/physics3d_debug_jolt.cpp
+  )
+  list(APPEND LUA_SOURCES
+    ${SRC_DIR}/lua/physics3d.cpp
+    ${SRC_DIR}/lua/character.cpp
+  )
+  list(APPEND LUA_DEBUG_SOURCES
+    ${SRC_DIR}/lua/physics3d_debug.cpp
+  )
 endif()
 
 if(DARMOK_BUILD_MINIAUDIO)
@@ -342,9 +344,7 @@ if(DARMOK_BUILD_MINIAUDIO)
     ${SRC_DIR}/audio.cpp  
     ${SRC_DIR}/audio_mini.cpp
   )
-  if(DARMOK_BUILD_LUA)
-    list(APPEND LUA_SOURCES ${SRC_DIR}/lua/audio.cpp)
-  endif()
+  list(APPEND LUA_SOURCES ${SRC_DIR}/lua/audio.cpp)
 endif()
 
 if(DARMOK_BUILD_LUA_EXE)

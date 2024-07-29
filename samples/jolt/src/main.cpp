@@ -15,7 +15,6 @@
 #include <darmok/render.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/physics3d.hpp>
-#include <darmok/physics3d_debug.hpp>
 #include <darmok/character.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/freelook.hpp>
@@ -23,8 +22,10 @@
 #include <imgui.h>
 #include <glm/gtx/string_cast.hpp>
 
+
 #ifndef _NDEBUG
 #define PHYSICS_DEBUG_RENDERER
+#include <darmok/physics3d_debug.hpp>
 #endif
 
 namespace

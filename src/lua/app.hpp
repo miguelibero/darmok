@@ -10,6 +10,7 @@
 #include "asset.hpp"
 #include "window.hpp"
 #include "input.hpp"
+#include "audio.hpp"
 
 namespace bx
 {
@@ -29,20 +30,24 @@ namespace darmok
 		App& getReal() noexcept;
 		const App& getReal() const noexcept;
 
-		AssetContext& getAssets() noexcept;
-		LuaWindow& getWindow() noexcept;
-		LuaInput& getInput() noexcept;
-
-		void registerUpdate(const sol::protected_function& func) noexcept;
-		bool unregisterUpdate(const sol::protected_function& func) noexcept;
-		void update(float deltaTime) noexcept;
-
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::vector<sol::protected_function> _updates;
 		std::reference_wrapper<App> _app;
 		LuaInput _input;
 		LuaWindow _win;
+		LuaAudioSystem _audio;
+
+		AssetContext& getAssets() noexcept;
+		LuaWindow& getWindow() noexcept;
+		LuaInput& getInput() noexcept;
+		LuaAudioSystem& getAudio() noexcept;
+
+		static bool getDebug() noexcept;
+
+		void registerUpdate(const sol::protected_function& func) noexcept;
+		bool unregisterUpdate(const sol::protected_function& func) noexcept;
+		void update(float deltaTime) noexcept;
 	};
 
 	class LuaError final : std::runtime_error

@@ -29,6 +29,7 @@ namespace darmok
 		: _app(app)
 		, _input(app.getInput())
 		, _win(app.getWindow())
+		, _audio(app.getAudio())
 	{
 	}
 
@@ -55,6 +56,11 @@ namespace darmok
 	LuaInput& LuaApp::getInput() noexcept
 	{
 		return _input;
+	}
+
+	LuaAudio& LuaApp::getAudio() noexcept
+	{
+		return _audio;
 	}
 
 	void LuaApp::registerUpdate(const sol::protected_function& func) noexcept
@@ -92,12 +98,28 @@ namespace darmok
 		}
 	}
 
+	bool LuaApp::getDebug() noexcept
+	{
+#if _DEBUG
+		return true;
+#else
+		return false;
+#endif
+	}
+
 	void LuaApp::bind(sol::state_view& lua) noexcept
 	{
+		LuaAssets::bind(lua);
+		LuaWindow::bind(lua);
+		LuaInput::bind(lua);
+		LuaAudio::bind(lua);
+
 		lua.new_usertype<LuaApp>("App", sol::no_constructor,
 			"assets", sol::property(&LuaApp::getAssets),
 			"window", sol::property(&LuaApp::getWindow),
 			"input", sol::property(&LuaApp::getInput),
+			"audio", sol::property(&LuaApp::getAudio),
+			"debug", sol::property(&LuaApp::getDebug),
 			"register_update", &LuaApp::registerUpdate,
 			"unregister_update", &LuaApp::unregisterUpdate
 		);
@@ -237,10 +259,7 @@ end
 
 		LuaMath::bind(lua);
 		LuaShape::bind(lua);
-		LuaAssets::bind(lua);
 		LuaScene::bind(lua);
-		LuaWindow::bind(lua);
-		LuaInput::bind(lua);
 		LuaApp::bind(lua);
 		LuaRmluiAppComponent::bind(lua);
 
