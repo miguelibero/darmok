@@ -22,12 +22,12 @@ currently using:
 * [cereal](https://uscilab.github.io/cereal/) for serialization
 * [tweeny](https://github.com/mobius3/tweeny) for tweening and easings
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
+* [miniaudio](https://miniaud.io/) for audio
 
 planned to use:
 
-* [miniaudio](https://miniaud.io/) for audio
-* [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & update loop
 * [tracy](https://github.com/wolfpld/tracy) for frame profiling
+* [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & update loop
 * [recast navigation](http://recastnav.com/) for pathfinding
 * [BehaviorTree.CPP](https://www.behaviortree.dev/) for behavior trees
 * need to decide 2D physics
@@ -86,9 +86,9 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * assimp to custom binary model format
     * ozz skeleton & animations
 * dynamic font texture generation
+* play sounds and music (wav & mp3)
 
 #### Upcoming
-* sound
 * object culling
 * more renderer features
     * other types of lights

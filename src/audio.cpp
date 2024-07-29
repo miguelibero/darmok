@@ -22,6 +22,7 @@ namespace darmok
     void AudioSystem::shutdown()
     {
         _sounds.clear();
+        _music.clear();
         _player.shutdown();
     }
 
@@ -85,18 +86,36 @@ namespace darmok
         return true;
     }
 
-    bool AudioSystem::stopMusic()
+    float AudioSystem::getVolume(AudioGroup group) const
     {
-        return true;
+        return _player.getVolume(group);
     }
 
-    bool AudioSystem::pauseMusic()
+    void AudioSystem::setVolume(AudioGroup group, float v)
     {
-        return true;
+        _player.setVolume(group, v);
+    }
+
+    void AudioSystem::stopMusic()
+    {
+        _player.stopMusic();
+    }
+
+    void AudioSystem::pauseMusic()
+    {
+        _player.pauseMusic();
     }
 
     const std::string& AudioSystem::getRunningMusic() noexcept
     {
-        return _runningMusic;
+        static const std::string empty;
+
+        auto music = _player.getRunningMusic();
+        auto itr = std::find_if(_music.begin(), _music.end(), [music](auto& elm) { return elm.second == music; });
+        if (itr == _music.end())
+        {
+            return empty;
+        }
+        return itr->first;
     }
 }

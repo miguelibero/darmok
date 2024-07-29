@@ -1,4 +1,4 @@
-
+﻿
 
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
@@ -26,14 +26,42 @@ namespace
 			// to set the static in this part
 			ImGui::SetCurrentContext(imgui.getContext());
 
-			getAudio().loadSound("sound", "sound.wav");
+			auto& audio = getAudio();
+			audio.loadSound("sound", "sound.wav");
+			audio.loadMusic("music", "music.mp3");
+			_soundVolume = audio.getVolume(AudioGroup::Sound);
+			_musicVolume = audio.getVolume(AudioGroup::Music);
 		}
 
 		void imguiRender()
 		{
+			auto& audio = getAudio();
 			if (ImGui::Button("Play Sound"))
 			{
-				getAudio().playSound("sound");
+				audio.playSound("sound");
+			}
+
+			if (ImGui::SliderFloat("Sound Volume", &_soundVolume, 0.F, 1.F))
+			{
+				audio.setVolume(AudioGroup::Sound, _soundVolume);
+			}
+
+			auto playing = !audio.getRunningMusic().empty();
+			if (ImGui::Button(playing ? "Stop Music" : "Play Music"))
+			{
+				if (playing)
+				{
+					audio.stopMusic();
+				}
+				else
+				{
+					audio.playMusic("music");
+				}
+			}
+
+			if (ImGui::SliderFloat("Music Volume", &_musicVolume, 0.F, 1.F))
+			{
+				audio.setVolume(AudioGroup::Music, _musicVolume);
 			}
 		}
 
@@ -43,6 +71,9 @@ namespace
 
 			bgfx::dbgTextPrintf(0, 6, 0x0f, "Audio");
 		}
+	private:
+		float _soundVolume;
+		float _musicVolume;
 	};
 
 }

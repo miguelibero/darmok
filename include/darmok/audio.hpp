@@ -36,6 +36,12 @@ namespace darmok
         std::unique_ptr<MusicImpl> _impl;
     };
 
+    enum class AudioGroup
+    {
+        Sound,
+        Music
+    };
+
     class AudioPlayerImpl;
 
     class DARMOK_EXPORT AudioPlayer final
@@ -47,11 +53,16 @@ namespace darmok
         void init();
         void update();
         void shutdown();
+        
         void play(const std::shared_ptr<Sound>& sound) noexcept;
         void play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept;
         void play(const std::shared_ptr<Music>& music) noexcept;
-        bool stopMusic();
-        bool pauseMusic();
+
+        float getVolume(AudioGroup group) const;
+        void setVolume(AudioGroup group, float v);
+
+        void stopMusic();
+        void pauseMusic();
         std::shared_ptr<Music> getRunningMusic() noexcept;
 
     private:
@@ -92,8 +103,12 @@ namespace darmok
 
         bool playSound(std::string_view name) noexcept;
         bool playMusic(std::string_view name) noexcept;
-        bool stopMusic();
-        bool pauseMusic();
+
+        float getVolume(AudioGroup group) const;
+        void setVolume(AudioGroup group, float v);
+
+        void stopMusic();
+        void pauseMusic();
 
         const std::string& getRunningMusic() noexcept;
 
@@ -103,6 +118,5 @@ namespace darmok
         OptionalRef<IMusicLoader> _musicLoader;
         std::unordered_map<std::string, std::shared_ptr<Sound>> _sounds;
         std::unordered_map<std::string, std::shared_ptr<Music>> _music;
-        std::string _runningMusic;
     };
 }
