@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef _DEBUG
+
 #include <memory>
 #include <optional>
 #include <darmok/export.h>
@@ -41,3 +43,5 @@ namespace darmok::physics3d
         std::unique_ptr<PhysicsDebugRendererImpl> _impl;
     };
 }
+
+#endif

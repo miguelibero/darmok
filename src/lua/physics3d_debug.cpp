@@ -1,3 +1,6 @@
+
+#ifdef _DEBUG
+
 #include "physics3d_debug.hpp"
 #include "physics3d.hpp"
 #include <darmok/physics3d_debug.hpp>
@@ -32,5 +35,6 @@ namespace darmok::physics3d
             )
         );
     }
-
 }
+
+#endif

@@ -1,3 +1,5 @@
+#ifdef _DEBUG
+
 #include "physics3d_debug_jolt.hpp"
 #include <darmok/physics3d_debug.hpp>
 #include <darmok/camera.hpp>
@@ -363,3 +365,5 @@ namespace darmok::physics3d
         return *this;
     }
 }
+
+#endif

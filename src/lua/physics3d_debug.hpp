@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef _DEBUG
+
 #include <sol/sol.hpp>
 #include <memory>
 #include <darmok/optional_ref.hpp>
@@ -27,3 +29,5 @@ namespace darmok::physics3d
         static PhysicsDebugRenderer& addRenderer2(Camera& cam, LuaPhysicsSystem& system, const Config& config) noexcept;
     };
 }
+
+#endif

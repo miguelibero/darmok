@@ -100,7 +100,6 @@ darmok_process_assets(
 )
 set(ASSET_TARGETS ${CORE_ASSETS_TARGET})
 
-set(CORE_DEBUG_SOURCES)
 set(CORE_SOURCES
   string.cpp
   utf8.cpp
@@ -122,7 +121,6 @@ set(CORE_SOURCES
   render_graph.cpp
 )
 
-set(CORE_DEBUG_HEADERS)
 set(CORE_HEADERS
   glm.hpp
   utils.hpp
@@ -153,7 +151,6 @@ set(CORE_HEADERS
   render_graph.hpp
 )
 
-set(DEBUG_SOURCES)
 set(SOURCES
   platform.cpp
   asset.cpp
@@ -179,7 +176,6 @@ set(SOURCES
   text.cpp
 )
 
-set(DEBUG_HEADERS)
 set(HEADERS
   asset.hpp
 
@@ -212,7 +208,6 @@ set(HEADERS
   text.hpp
 )
 
-set(LUA_DEBUG_SOURCES)
 set(LUA_SOURCES
   app.cpp
   asset.cpp
@@ -333,23 +328,17 @@ if(DARMOK_BUILD_JOLT)
     physics3d.hpp
     character_fwd.hpp
     character.hpp
-  )
-  list(APPEND DEBUG_HEADERS
     physics3d_debug.hpp
   )
   list(APPEND SOURCES
     physics3d_jolt.cpp
     character_jolt.cpp
-  )
-  list(APPEND DEBUG_SOURCES
     physics3d_debug_jolt.cpp
   )
 
   list(APPEND LUA_SOURCES
     physics3d.cpp
     character.cpp
-  )
-  list(APPEND LUA_DEBUG_SOURCES
     physics3d_debug.cpp
   )
 endif()

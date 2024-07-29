@@ -22,8 +22,7 @@
 #include <imgui.h>
 #include <glm/gtx/string_cast.hpp>
 
-
-#ifndef _NDEBUG
+#ifdef _DEBUG
 #define PHYSICS_DEBUG_RENDERER
 #include <darmok/physics3d_debug.hpp>
 #endif
