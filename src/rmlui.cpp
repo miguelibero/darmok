@@ -584,9 +584,10 @@ namespace darmok
         _render.setViewId(viewId);
     }
 
-    void RmluiViewImpl::renderPassExecute(RenderGraphResources& res) noexcept
+    void RmluiViewImpl::renderPassExecute(IRenderGraphContext& context) noexcept
     {
-        _render.beforeRender(res.get<bgfx::Encoder>().value());
+        auto& encoder = context.getEncoder();
+        _render.beforeRender(encoder);
         if (!_context->Render())
         {
             return;

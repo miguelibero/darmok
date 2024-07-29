@@ -97,7 +97,7 @@ namespace darmok
         Text& setOrientation(Orientation ori) noexcept;
 
         bool update();
-        bool render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
+        bool render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const;
 
         static MeshData createMeshData(const Utf8Vector& content, const IFont& font, const RenderConfig& config = {});
     private:
@@ -119,7 +119,7 @@ namespace darmok
         void update(float deltaTime) override;
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(RenderGraphResources& res) noexcept override;
+        void renderPassExecute(IRenderGraphContext& context) noexcept override;
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;

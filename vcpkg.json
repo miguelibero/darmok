@@ -48,6 +48,7 @@
     "freetype",
     "tweeny",
     "catch2",
-    "miniaudio"
+    "miniaudio",
+    "taskflow"
   ]
 }

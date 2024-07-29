@@ -131,13 +131,12 @@ namespace darmok
 		bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 	}
 
-	void ImguiAppComponentImpl::renderPassExecute(RenderGraphResources& res) noexcept
+	void ImguiAppComponentImpl::renderPassExecute(IRenderGraphContext& context) noexcept
 	{
 		ImGui::SetCurrentContext(_imgui);
 		beginFrame();
 		_renderer.imguiRender();
-		auto& encoder = res.get<bgfx::Encoder>().value();
-		endFrame(encoder);
+		endFrame(context.getEncoder());
 		ImGui::SetCurrentContext(nullptr);
 	}
 

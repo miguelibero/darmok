@@ -56,7 +56,7 @@ namespace darmok
         float getSpecularStrength() const noexcept;
         Material& setSpecularStrength(float v) noexcept;
 
-        void renderSubmit(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
+        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
     private:
         std::shared_ptr<Program> _program;
@@ -73,7 +73,6 @@ namespace darmok
 
         void createHandles() noexcept;
         void destroyHandles() noexcept;
-        uint64_t beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader

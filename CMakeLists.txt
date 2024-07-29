@@ -65,7 +65,6 @@ option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
 option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
 option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
 option(DARMOK_BUILD_MINIAUDIO "build darmok with miniaudio support" OFF)
-option(DARMOK_BUILD_TRACY "build darmok with tracy support" OFF)
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -541,11 +540,15 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
   endif()
 endif()
 
+# taskflow
+find_package(Taskflow CONFIG REQUIRED)
+target_link_libraries(${LIB_NAME} PRIVATE Taskflow::Taskflow)
+
 # freetype
 if(DARMOK_BUILD_FREETYPE)
   find_package(Freetype REQUIRED)
   target_link_libraries(${LIB_NAME} PRIVATE Freetype::Freetype)
-  target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_FREETYPE)
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_FREETYPE)
 endif()
 
 # imgui

@@ -195,6 +195,13 @@ namespace darmok
 		return result;
 	}
 
+	std::string StringUtils::getTimeSuffix() noexcept
+	{
+		time_t val;
+		time(&val);
+		return std::to_string(val);
+	}
+
 	std::string StringUtils::escapeArgument(std::string_view arg) noexcept
     {
         std::ostringstream oss;

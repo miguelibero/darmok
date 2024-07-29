@@ -12,6 +12,36 @@ struct TestTexture final
     std::string content;
 };
 
+struct TestCamera final
+{
+    std::string name;
+};
+
+TEST_CASE("RenderGraphResources stores and retrieves data", "[render-graph]")
+{
+    RenderGraphResources res;
+
+    REQUIRE(!res.get<TestTexture>());
+
+    res.set(TestTexture{ "lala" });
+
+    REQUIRE(res.get<TestTexture>().value().content == "lala");
+
+    res.set(TestCamera{ "cam" });
+
+    REQUIRE(res.get<TestCamera>().value().name == "cam");
+    REQUIRE(res.size() == 2);
+
+    res.set(TestTexture{ "lolo" }, "name");
+
+    REQUIRE(res.get<TestTexture>("name").value().content == "lolo");
+
+    res.remove<TestTexture>();
+
+    REQUIRE(!res.get<TestTexture>());
+    REQUIRE(res.get<TestTexture>("name").value().content == "lolo");
+}
+
 class GbufferRenderPass final : public IRenderPass
 {
 public:
@@ -30,9 +60,10 @@ public:
             .add<TestTexture>("albedo");
     }
 
-    void renderPassExecute(RenderGraphResources& res) override
+    void renderPassExecute(IRenderGraphContext& context) override
     {
         // render!
+        auto& res = context.getResources();
         res
             .setRef(_depthTexture, { "depth", })
             .setRef(_normalTexture, { "normal" })
@@ -62,8 +93,9 @@ public:
             .add<TestTexture>();
     }
 
-    void renderPassExecute(RenderGraphResources& res) override
+    void renderPassExecute(IRenderGraphContext& context) override
     {
+        auto& res = context.getResources();
         _depthTexture = res.get<TestTexture>({ "depth" });
         _normalTexture = res.get<TestTexture>({ "normal" });
         res.get(_albedoTexture, { "albedo" });
@@ -97,8 +129,9 @@ public:
             .add<TestTexture>();
     }
 
-    void renderPassExecute(RenderGraphResources& res) override
+    void renderPassExecute(IRenderGraphContext& context) override
     {
+        auto& res = context.getResources();
         auto inTex = res.get<TestTexture>();
         // render!
         _outTexture.content += inTex->content;
@@ -121,19 +154,16 @@ TEST_CASE( "Compile & run render graph dependencies", "[render-graph]" )
     def.addPass(lightingPass);
     def.addPass(postPass);
 
-    auto graph = def.compile();
-    auto res = graph();
+    RenderGraph graph(def);
 
-    auto outTexture = res.get<TestTexture>();
+    tf::Executor executor;
+    graph(executor);
+
+    auto outTexture = graph.getResources().get<TestTexture>();
 
     REQUIRE(outTexture);
     REQUIRE(outTexture->content == "postprocess:lighting:depth+normal+albedo");
 }
-
-struct TestCamera final
-{
-    std::string name;
-};
 
 class CameraRenderPass final : public IRenderPass
 {
@@ -147,8 +177,9 @@ public:
             .add<TestTexture>();
     }
 
-    void renderPassExecute(RenderGraphResources& res) override
+    void renderPassExecute(IRenderGraphContext& context) override
     {
+        auto& res = context.getResources();
         auto cam = res.get<TestCamera>();
         res.emplaceDef<TestTexture>(cam->name);
     }
@@ -156,35 +187,37 @@ public:
 
 TEST_CASE("Subgraphs", "[render-graph]")
 {
-    RenderGraphDefinition def1;
+    RenderGraphDefinition def1("one");
     CameraRenderPass camPass1;
     def1.addPass(camPass1);
 
-    RenderGraphDefinition def2;
+    RenderGraphDefinition def2("two");
     CameraRenderPass camPass2;
     PostprocessRenderPass postPass;
     def2.addPass(camPass2);
     def2.addPass(postPass);
 
     RenderGraphDefinition def;
-    def.addChild(def1);
-    def.addChild(def2);
+    def.setChild(def1);
+    def.setChild(def2);
 
-    RenderGraphResources res;
+    RenderGraph graph(def);
 
-    res.emplace<TestCamera>({ .group = def1 }, "one");
-    res.emplace<TestCamera>({ .group = def2 }, "two");
+    auto& res1 = graph.getResources(def1.id());
+    auto& res2 = graph.getResources(def2.id());
 
-    auto graph = def.compile();
-    graph(res);
+    res1.emplaceDef<TestCamera>("one");
+    res2.emplaceDef<TestCamera>("two");
 
-    auto outTexture1 = res.get<TestTexture>({ .group = def1 });
-    auto outTexture2 = res.get<TestTexture>({ .group = def2 });
+    tf::Executor executor;
+    graph(executor);
+
+    auto outTexture1 = res1.get<TestTexture>();
+    auto outTexture2 = res2.get<TestTexture>();
 
     REQUIRE(outTexture1);
     REQUIRE(outTexture1->content == "one");
 
     REQUIRE(outTexture2);
     REQUIRE(outTexture2->content == "postprocess:two");
-
 }

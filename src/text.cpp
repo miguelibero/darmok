@@ -125,7 +125,7 @@ namespace darmok
 		return *this;
 	}
 
-	bool Text::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
+	bool Text::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const
 	{
 		if (!_font || !_mesh)
 		{
@@ -139,7 +139,7 @@ namespace darmok
 			.numVertices = _vertexNum,
 			.numIndices = _indexNum,
 		});
-		_font->getMaterial().renderSubmit(encoder, viewId);
+		_font->getMaterial().renderSubmit(viewId, encoder);
 		return true;
 	}
 
@@ -328,7 +328,7 @@ namespace darmok
 		_cam->configureView(viewId);
 	}
 
-	void TextRenderer::renderPassExecute(RenderGraphResources& res) noexcept
+	void TextRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
 	{
 		if (!_scene || !_cam)
 		{
@@ -340,14 +340,14 @@ namespace darmok
 			return;
 		}
 
-		_cam->beforeRenderView(_viewId);
+		auto& encoder = context.getEncoder();
+		_cam->beforeRenderView(_viewId, encoder);
 
-		auto& encoder = res.get<bgfx::Encoder>().value();
 		for (auto entity : texts)
 		{
 			auto text = _scene->getComponent<Text>(entity);
 			_cam->beforeRenderEntity(entity, encoder);
-			text->render(encoder, _viewId);
+			text->render(_viewId, encoder);
 		}
 	}
 

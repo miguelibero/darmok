@@ -5,14 +5,16 @@
 
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
+#include <entt/entt.hpp>
+#include <taskflow/taskflow.hpp>
 
 #include <memory>
 #include <vector>
 #include <string>
-#include <iostream>
+#include <mutex>
 #include <unordered_map>
-#include <unordered_set>
-#include <entt/entt.hpp>
+#include <map>
+
 
 namespace darmok
 {
@@ -35,9 +37,8 @@ namespace darmok
         bool operator!=(const RenderResourceDefinition& other) const noexcept;
         bool operator<(const RenderResourceDefinition& other) const noexcept;
 
-        operator RenderGraphId() const noexcept;
         RenderGraphId id() const noexcept;
-
+        size_t hash() const noexcept;
     };
 
     class DARMOK_EXPORT RenderResourcesDefinition
@@ -66,6 +67,8 @@ namespace darmok
             return *this;
         }
 
+        size_t hash() const noexcept;
+
     private:
         std::vector<Resource> _resources;
     };
@@ -73,59 +76,43 @@ namespace darmok
     class DARMOK_EXPORT RenderGraphResources final
     {
     public:
-        static const RenderGraphId defaultGroup;
+        RenderGraphResources() noexcept = default;
+        RenderGraphResources(const RenderGraphResources& other) noexcept;
 
         template<typename T>
-        struct Key final
+        RenderGraphResources& set(const T& value, entt::hashed_string name = "") noexcept
         {
-            entt::hashed_string name = "";
-            RenderGraphId group = defaultGroup;
-
-            operator RenderGraphId() const noexcept
-            {
-                auto v = idTypeCombine(name.value(), entt::type_hash<T>::value());
-                if (group != defaultGroup && group != 0)
-                {
-                    v = idTypeCombine(v, group);
-                }
-                return v;
-            }
-        };
-
-        RenderGraphResources(RenderGraphId group = defaultGroup) noexcept;
-        RenderGraphResources& setGroup(RenderGraphId group = defaultGroup) noexcept;
-
-        template<typename T>
-        RenderGraphResources& set(const T& value, const Key<T>& key = {}) noexcept
-        {
-            getAny(key) = value;
+            std::scoped_lock lock(_mutex);
+            getAny<T>(name) = value;
             return *this;
         }
 
         template<typename T, typename... A>
-        RenderGraphResources& emplace(const Key<T>& key, A&&... args) noexcept
+        RenderGraphResources& emplace(entt::hashed_string name, A&&... args) noexcept
         {
-            getAny(key).emplace<T>(std::forward<A>(args)...);
+            std::scoped_lock lock(_mutex);
+            getAny<T>(name).emplace<T>(std::forward<A>(args)...);
             return *this;
         }
 
         template<typename T, typename... A>
         RenderGraphResources& emplaceDef(A&&... args) noexcept
         {
-            return emplace<T>({}, std::forward<A>(args)...);
+            return emplace<T>("", std::forward<A>(args)...);
         }
 
         template<typename T>
-        RenderGraphResources& setRef(T& value, const Key<T>& key = {}) noexcept
+        RenderGraphResources& setRef(T& value, entt::hashed_string name = "") noexcept
         {
-            getAny(key) = std::reference_wrapper<T>(value);
+            std::scoped_lock lock(_mutex);
+            getAny<T>(name) = std::reference_wrapper<T>(value);
             return *this;
         }
 
         template<typename T>
-        bool get(T& val, const Key<T>& key = {}) const noexcept
+        bool get(T& val, entt::hashed_string name = "") const noexcept
         {
-            if (auto ref = get(key))
+            if (auto ref = get<T>(name))
             {
                 val = ref.value();
                 return true;
@@ -134,19 +121,10 @@ namespace darmok
         }
 
         template<typename T>
-        OptionalRef<const T> get(const Key<T>& key = {}) const noexcept
+        OptionalRef<const T> get(entt::hashed_string name = "") const noexcept
         {
-            if (key.group == defaultGroup)
-            {
-                auto groupKey = key;
-                groupKey.group = _group;
-                auto itr = _data.find(groupKey);
-                if (itr != _data.end())
-                {
-                    return castAny<T>(itr->second);
-                }
-            }
-            auto itr = _data.find(key);
+            std::scoped_lock lock(_mutex);
+            auto itr = _data.find(getKey<T>(name));
             if (itr != _data.end())
             {
                 return castAny<T>(itr->second);
@@ -155,40 +133,56 @@ namespace darmok
         }
 
         template<typename T>
-        OptionalRef<T> get(const Key<T>& key = {}) noexcept
+        OptionalRef<T> get(entt::hashed_string name = "") noexcept
         {
-            if (key.group == defaultGroup)
-            {
-                auto groupKey = key;
-                groupKey.group = _group;
-                auto itr = _data.find(groupKey);
-                if (itr != _data.end())
-                {
-                    return castAny<T>(itr->second);
-                }
-            }
-            auto itr = _data.find(key);
+            std::scoped_lock lock(_mutex);
+            auto itr = _data.find(getKey<T>(name));
             if (itr != _data.end())
             {
                 return castAny<T>(itr->second);
             }
             return nullptr;
+        }
+
+        template<typename T>
+        bool remove(entt::hashed_string name = "") noexcept
+        {
+            std::scoped_lock lock(_mutex);
+            auto itr = _data.find(getKey<T>(name));
+            if (itr == _data.end())
+            {
+                return false;
+            }
+            _data.erase(itr);
+            return true;
+        }
+
+        bool empty() const noexcept
+        {
+            std::scoped_lock lock(_mutex);
+            return _data.empty();
+        }
+
+        size_t size() const noexcept
+        {
+            std::scoped_lock lock(_mutex);
+            return _data.size();
         }
 
     private:
+        mutable std::mutex _mutex;
         std::unordered_map<RenderGraphId, entt::any> _data;
-        RenderGraphId _group;
 
         template<typename T>
-        entt::any& getAny(const Key<T>& key = {}) noexcept
+        static RenderGraphId getKey(entt::hashed_string name = "")
         {
-            if (key.group == defaultGroup)
-            {
-                auto groupKey = key;
-                groupKey.group = _group;
-                return _data[groupKey];
-            }
-            return _data[key];
+            return idTypeCombine(name.value(), entt::type_hash<T>::value());
+        };
+
+        template<typename T>
+        entt::any& getAny(entt::hashed_string name = "") noexcept
+        {
+            return _data[getKey<T>(name)];
         }
 
         template<typename T>
@@ -199,9 +193,9 @@ namespace darmok
             {
                 return val;
             }
-            if (auto constRef = entt::any_cast<std::reference_wrapper<T>>(ptr))
+            if (auto ref = entt::any_cast<std::reference_wrapper<T>>(ptr))
             {
-                return constRef->get();
+                return ref->get();
             }
             return nullptr;
         }
@@ -214,12 +208,34 @@ namespace darmok
             {
                 return val;
             }
-            if (auto constRef = entt::any_cast<std::reference_wrapper<T>>(ptr))
+            if (auto ref = entt::any_cast<std::reference_wrapper<T>>(ptr))
             {
-                return constRef->get();
+                return ref->get();
             }
             return nullptr;
         }
+    };
+
+    class RenderGraph;
+
+    class DARMOK_EXPORT BX_NO_VTABLE IRenderGraphContext
+    {
+    public:
+        virtual ~IRenderGraphContext() = default;
+        virtual bgfx::Encoder& getEncoder() noexcept = 0;
+        virtual RenderGraphResources& getResources() noexcept = 0;
+    };
+
+    class DARMOK_EXPORT RenderGraphContext : public IRenderGraphContext
+    {
+    public:
+        RenderGraphContext(RenderGraph& graph, RenderGraphId id);
+        bgfx::Encoder& getEncoder() noexcept override;
+        RenderGraphResources& getResources() noexcept override;
+        RenderGraphContext createChild(RenderGraphId id) const noexcept;
+    private:
+        std::reference_wrapper<RenderGraph> _graph;
+        RenderGraphId _id;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderPassDelegate
@@ -227,20 +243,35 @@ namespace darmok
     public:
         virtual ~IRenderPassDelegate() = default;
         virtual void renderPassConfigure(bgfx::ViewId viewId) { };
-        virtual void renderPassExecute(RenderGraphResources& res) = 0;
+        virtual void renderPassExecute(IRenderGraphContext& context) = 0;
     };
 
-    class DARMOK_EXPORT RenderPassDefinition final
+    class DARMOK_EXPORT BX_NO_VTABLE IRenderGraphNode
+    {
+    public:
+        using Resources = RenderResourcesDefinition;
+        virtual ~IRenderGraphNode() = default;
+        virtual RenderGraphId id() const = 0;
+        virtual size_t hash() const = 0;
+        virtual const Resources& getInputs() const = 0;
+        virtual const Resources& getOutputs() const = 0;
+        virtual bgfx::ViewId configureView(bgfx::ViewId viewId) = 0;
+        virtual tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) = 0;
+        virtual std::unique_ptr<IRenderGraphNode> copyNode() const = 0;
+        
+        virtual bool hasPassDelegate(IRenderPassDelegate& dlg) const { return false; }
+    };
+
+    class DARMOK_EXPORT RenderPassDefinition final : public IRenderGraphNode
     {
     public:
         using Resources = RenderResourcesDefinition;
 
-        RenderPassDefinition(RenderGraphId group = 0) noexcept;
+        RenderPassDefinition(const std::string& name = "") noexcept;
 
         bool operator==(const RenderPassDefinition& other) const noexcept;
         bool operator!=(const RenderPassDefinition& other) const noexcept;
 
-        RenderGraphId getGroup() const noexcept;
         bgfx::ViewId getViewId() const noexcept;
 
         RenderPassDefinition& setName(const std::string& name) noexcept;
@@ -248,24 +279,26 @@ namespace darmok
 
         RenderPassDefinition& setDelegate(IRenderPassDelegate& dlg) noexcept;
         OptionalRef<IRenderPassDelegate> getDelegate() const noexcept;
-        void operator()(RenderGraphResources& res) const noexcept;
-        void configureView(bgfx::ViewId viewId) noexcept;
+        bool hasPassDelegate(IRenderPassDelegate& dlg) const noexcept override;
+
+        bgfx::ViewId configureView(bgfx::ViewId viewId) noexcept override;
+        tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept override;
+        std::unique_ptr<IRenderGraphNode> copyNode() const noexcept override;
 
         Resources& getInputs() noexcept;
-        const Resources& getInputs() const noexcept;
+        const Resources& getInputs() const noexcept override;
         Resources& getOutputs() noexcept;
-        const Resources& getOutputs() const noexcept;
+        const Resources& getOutputs() const noexcept override;
         bool getSync() const noexcept;
 
-        operator RenderGraphId() const noexcept;
-        RenderGraphId id() const noexcept;
+        RenderGraphId id() const noexcept override;
+        size_t hash() const noexcept override;
     private:
         std::string _name;
         RenderGraphId _id;
         Resources _inputs;
         Resources _outputs;
         OptionalRef<IRenderPassDelegate> _delegate;
-        RenderGraphId _group;
         bgfx::ViewId _viewId;
     };
 
@@ -281,66 +314,113 @@ namespace darmok
     class DARMOK_EXPORT RenderGraphDefinition final
     {
     public:
+        using INode = IRenderGraphNode;
         using Pass = RenderPassDefinition;
-        RenderGraphDefinition() noexcept;
+        using Resources = RenderResourcesDefinition;
+
+        RenderGraphDefinition(const std::string& name = "") noexcept;
+        RenderGraphDefinition(const RenderGraphDefinition& other) noexcept;
+
         bool operator==(const RenderGraphDefinition& other) const noexcept;
         bool operator!=(const RenderGraphDefinition& other) const noexcept;
 
-        bool setChild(const RenderGraphDefinition& child) noexcept;
+        RenderGraphDefinition& setName(const std::string& name) noexcept;
+        const std::string& getName() const noexcept;
 
-        Pass& addFrontPass() noexcept;
-        const Pass& addFrontPass(IRenderPass& pass);
+        Pass& addPassFront() noexcept;
+        const Pass& addPassFront(IRenderPass& pass);
         
         Pass& addPass() noexcept;
         const Pass& addPass(IRenderPass& pass);
+        bool removePass(IRenderPassDelegate& pass) noexcept;
 
-        bool hasPass(const std::string& name) const noexcept;
-        bool removePass(IRenderPassDelegate& dlg);
+        bool setChild(const RenderGraphDefinition& def) noexcept;
+        bool setChildFront(const RenderGraphDefinition& def) noexcept;
+
+        bool hasNode(RenderGraphId id) const noexcept;
+        bool removeNode(RenderGraphId id) noexcept;
+        OptionalRef<INode> getNode(RenderGraphId id) noexcept;
+        OptionalRef<const INode> getNode(RenderGraphId id) const noexcept;
+
+        Resources& getInputs() noexcept;
+        const Resources& getInputs() const noexcept;
+        Resources& getOutputs() noexcept;
+        const Resources& getOutputs() const noexcept;
 
         void clear();
         size_t size() const noexcept;
 
-        const Pass& operator[](size_t vertex) const;
-        Pass& operator[](size_t vertex);
+        const INode& operator[](size_t vertex) const;
+        INode& operator[](size_t vertex);
 
-        RenderGraph compile();
-
+        size_t hash() const noexcept;
         RenderGraphId id() const noexcept;
-        operator RenderGraphId() const noexcept;
     private:
-        std::vector<Pass> _frontPasses;
-        std::vector<Pass> _backPasses;
-        std::vector<RenderGraphDefinition> _children;
+        std::string _name;
+        using Nodes = std::vector<std::unique_ptr<INode>>;
+        Nodes _nodes;
+        Resources _inputs;
+        Resources _outputs;
         RenderGraphId _id;
 
-        void configureFlow(entt::flow& builder) const noexcept;
+        Pass& doAddPass(bool front) noexcept;
+        bool doSetChild(const RenderGraphDefinition& def, bool front) noexcept;
+
+        Nodes::iterator findNode(RenderGraphId id) noexcept;
+        Nodes::const_iterator findNode(RenderGraphId id) const noexcept;
+    };
+
+    class DARMOK_EXPORT RenderGraphNode final : public IRenderGraphNode
+    {
+    public:
+        using Matrix = entt::adjacency_matrix<entt::directed_tag>;
+        using Definition = RenderGraphDefinition;
+        using ResourcesDefinition = RenderResourcesDefinition;
+        using Resources = RenderGraphResources;
+
+        RenderGraphNode(const Definition& def) noexcept;
+
+        const ResourcesDefinition& getInputs() const noexcept override;
+        const ResourcesDefinition& getOutputs() const noexcept override;
+        bgfx::ViewId configureView(bgfx::ViewId viewId = 0) override;
+        tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept override;
+        std::unique_ptr<IRenderGraphNode> copyNode() const noexcept override;
+        RenderGraphId id() const noexcept override;
+        size_t hash() const noexcept override;
+
+        bool empty() const noexcept;
+        size_t size() const noexcept;
+        const Definition& getDefinition() const noexcept;
+        Definition& getDefinition() noexcept;
+        void configureTasks(tf::FlowBuilder& builder, RenderGraphContext& context);
+
+    private:
+        Matrix _matrix;
+        Definition _def;
     };
 
     class DARMOK_EXPORT RenderGraph final
     {
     public:
-        using Matrix = entt::adjacency_matrix<entt::directed_tag>;
         using Resources = RenderGraphResources;
         using Definition = RenderGraphDefinition;
+        RenderGraph(const Definition& def) noexcept;
+        size_t hash() const noexcept;
+        void dump(std::ostream& out) const;
 
-        RenderGraph(Matrix&& matrix, const Definition& def) noexcept;
+        bgfx::ViewId configureView(bgfx::ViewId viewId = 0);
 
-        void configureViews(bgfx::ViewId viewId = 0);
+        void operator()(tf::Executor& executor) const;
 
-        size_t size() const noexcept;
-        const Definition& getDefinition() const noexcept;
-
-        Resources operator()() const;
-        void operator()(Resources& res) const;
-        void writeGraphviz(std::ostream& out) const;
-
-        static std::string getMatrixDebugInfo(const Matrix& mtx) noexcept;
+        bgfx::Encoder& getEncoder() noexcept;
+        Resources& getResources() noexcept;
+        RenderGraphResources& getResources(RenderGraphId id) noexcept;
 
     private:
-        Matrix _matrix;
-        Definition _def;
-
-        bool execute(Resources& res, std::unordered_set<size_t>& executed) const;
+        RenderGraphNode _root;
+        mutable tf::Taskflow _taskflow;
+        std::mutex _encoderMutex;
+        mutable std::unordered_map<std::thread::id, bgfx::Encoder*> _encoders;
+        std::unordered_map<RenderGraphId, Resources> _resources;
     };
-
 }

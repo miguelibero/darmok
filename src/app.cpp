@@ -299,7 +299,6 @@ namespace darmok
 	void AppImpl::shutdown()
 	{
 		_running = false;
-		_renderGraphDef.clear();
 		_renderGraph.reset();
 
 		for (auto& component : _components)
@@ -320,35 +319,25 @@ namespace darmok
 		{
 			component->updateLogic(deltaTime);
 		}
-		if (!_renderGraph || _renderGraph->size() != _renderGraphDef.size())
-		{
-			_renderGraph = _renderGraphDef.compile();
-			// we use initial view 0 to clear the screen
-			_renderGraph->configureViews(1);
-		}
 
 		_input.getImpl().update(deltaTime);
 		_assets.update();
 		_audio.update();
+
+		auto rgHash = _renderGraphDef.hash();
+		if (!_renderGraph || _renderGraph->hash() != rgHash)
+		{
+			auto& rg = _renderGraph.emplace(_renderGraphDef);
+			rg.configureView(1); // viewId 0 used for clearing
+		}
 	}
 
 	void AppImpl::render() const
 	{
-		if (!_renderGraph)
+		if (_renderGraph)
 		{
-			return;
+			_renderGraph.value()(_taskExecutor);
 		}
-
-		RenderGraphResources res;
-
-		// TODO: run passes in parallel using [taskflow](https://github.com/taskflow/taskflow)
-		// will also require creating different encoders for each thread
-		auto encoder = bgfx::begin();
-		res.setRef(*encoder);
-
-		_renderGraph.value()(res);
-
-		bgfx::end(encoder);
 	}
 
 	static uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled) noexcept
@@ -431,10 +420,39 @@ namespace darmok
 		if ((key == KeyboardKey::Print && modifiers.empty())
 			|| (key == KeyboardKey::KeyP && modifiers == ctrl))
 		{
-			time_t timeVal;
-			time(&timeVal);
-			auto filePath = "temp/screenshot-" + std::to_string(timeVal);
+			auto filePath = "temp/screenshot-" + StringUtils::getTimeSuffix();
 			bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filePath.c_str());
+			return;
+		}
+		if (key == KeyboardKey::Print && modifiers == ctrl)
+		{
+			toggleTaskflowProfile();
+			return;
+		}
+	}
+
+	void AppImpl::toggleTaskflowProfile()
+	{
+		if (_taskObserver == nullptr)
+		{
+			_taskObserver = _taskExecutor.make_observer<tf::TFProfObserver>();
+			return;
+		}
+		std::filesystem::path basePath = "temp";
+		auto suffix = StringUtils::getTimeSuffix();
+		{
+			auto filePath = basePath / ("taskflow-" + suffix + ".json");
+			std::ofstream out(filePath);
+			out << "[\n";
+			_taskObserver->dump(out);
+			_taskObserver.reset();
+			out << "]\n";
+		}
+
+		{
+			auto filePath = basePath / ("taskflow-" + suffix + ".graphviz");
+			std::ofstream out(filePath);
+			_renderGraph->dump(out);
 		}
 	}
 

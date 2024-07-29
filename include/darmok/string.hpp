@@ -65,6 +65,7 @@ namespace darmok
         static void trim(std::string& str) noexcept;
 
         static std::string vsprintf(const std::string& fmt, va_list args);
+        static std::string getTimeSuffix() noexcept;
 
     private:
         static [[nodiscard]] std::string doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept;

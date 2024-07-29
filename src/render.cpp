@@ -61,7 +61,7 @@ namespace darmok
 		return _mesh != nullptr && _material != nullptr && _material->valid();
 	}
 
-	void Renderable::render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const
+	void Renderable::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const
 	{
 		if (!_enabled)
 		{
@@ -71,6 +71,6 @@ namespace darmok
 		{
 			return;
 		}
-		_material->renderSubmit(encoder, viewId);
+		_material->renderSubmit(viewId, encoder);
 	}
 }

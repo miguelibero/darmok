@@ -98,7 +98,7 @@ namespace darmok::physics3d
         _cam->configureView(viewId);
     }
 
-    void PhysicsDebugRendererImpl::renderPassExecute(RenderGraphResources& res)
+    void PhysicsDebugRendererImpl::renderPassExecute(IRenderGraphContext& context)
     {
         if (!_enabled)
         {
@@ -114,7 +114,8 @@ namespace darmok::physics3d
             return;
         }
 
-        _encoder = res.get<bgfx::Encoder>();
+        auto& encoder = context.getEncoder();
+        _encoder = encoder;
 
         JPH::BodyManager::DrawSettings settings;
         settings.mDrawShape = true;
@@ -122,7 +123,7 @@ namespace darmok::physics3d
         settings.mDrawWorldTransform = true;
         // settings.mDrawSleepStats = true;
 
-        _cam->beforeRenderView(_viewId);
+        _cam->beforeRenderView(_viewId, encoder);
 
         joltSystem->DrawBodies(settings, this, nullptr);
 
@@ -225,7 +226,7 @@ namespace darmok::physics3d
         color.a *= _config.alpha;
         Material mat2(mat);
         mat2.setColor(colorType, color);
-        mat2.renderSubmit(_encoder.value(), _viewId);
+        mat2.renderSubmit(_viewId, _encoder.value());
     }
 
     void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color)

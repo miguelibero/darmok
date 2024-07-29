@@ -2,6 +2,8 @@
 #include <darmok/string.hpp>
 #include <stdexcept>
 #include <sstream>
+#include <taskflow/taskflow.hpp>
+#include <thread>
 
 namespace darmok
 {
@@ -10,9 +12,11 @@ namespace darmok
         return idTypeCombine(name, type);
     }
 
-    RenderResourceDefinition::operator RenderGraphId() const noexcept
+    size_t RenderResourceDefinition::hash() const noexcept
     {
-        return id();
+        size_t hash = 0;
+        hashCombine(hash, name.value(), type);
+        return hash;
     }
 
     bool RenderResourceDefinition::operator==(const RenderResourceDefinition& other) const noexcept
@@ -55,23 +59,25 @@ namespace darmok
         return std::find(_resources.begin(), _resources.end(), res) != _resources.end();
     }
 
-    const RenderGraphId RenderGraphResources::defaultGroup = (RenderGraphId)-1;
+    size_t RenderResourcesDefinition::hash() const noexcept
+    {
+        size_t hash = 0;
+        for (auto& res : _resources)
+        {
+            hashCombine(hash, res.hash());
+        }
+        return hash;
+    }
 
-    RenderGraphResources::RenderGraphResources(RenderGraphId group) noexcept
-        : _group(group)
+    RenderGraphResources::RenderGraphResources(const RenderGraphResources& other) noexcept
+        : _data(other._data)
     {
     }
 
-    RenderGraphResources& RenderGraphResources::setGroup(RenderGraphId group) noexcept
-    {
-        _group = group;
-        return *this;
-    }
-
-    RenderPassDefinition::RenderPassDefinition(RenderGraphId group) noexcept
-        : _group(group)
-        , _id(randomIdType())
+    RenderPassDefinition::RenderPassDefinition(const std::string& name) noexcept
+        : _id(randomIdType())
         , _viewId(-1)
+        , _name(name)
     {
     }
 
@@ -86,11 +92,6 @@ namespace darmok
         return _name;
     }
 
-    RenderGraphId RenderPassDefinition::getGroup() const noexcept
-    {
-        return _group;
-    }
-
     bgfx::ViewId RenderPassDefinition::getViewId() const noexcept
     {
         return _viewId;
@@ -98,7 +99,7 @@ namespace darmok
 
     bool RenderPassDefinition::operator==(const RenderPassDefinition& other) const noexcept
     {
-        return _name == other._name && _inputs == other._inputs && _outputs == other._outputs;
+        return hash() == other.hash();
     }
 
     bool RenderPassDefinition::operator!=(const RenderPassDefinition& other) const noexcept
@@ -117,22 +118,42 @@ namespace darmok
         return _delegate;
     }
 
-    void RenderPassDefinition::operator()(RenderGraphResources& res) const noexcept
+    bool RenderPassDefinition::hasPassDelegate(IRenderPassDelegate& dlg) const noexcept
     {
-        if (!_delegate)
-        {
-            return;
-        }
-        _delegate->renderPassExecute(res);
+        return _delegate == dlg;
     }
 
-    void RenderPassDefinition::configureView(bgfx::ViewId viewId) noexcept
+    bgfx::ViewId RenderPassDefinition::configureView(bgfx::ViewId viewId) noexcept
     {
         _viewId = viewId;
+
+        bgfx::resetView(viewId);
+        bgfx::setViewName(viewId, _name.c_str());
+
         if (_delegate)
         {
             _delegate->renderPassConfigure(viewId);
         }
+
+        return viewId + 1;
+    }
+
+    tf::Task RenderPassDefinition::createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept
+    {
+        auto task = flowBuilder.emplace([this, context]() mutable {
+            if (!_delegate)
+            {
+                return;
+            }
+            _delegate->renderPassExecute(context);
+        });
+        task.name(_name);
+        return task;
+    }
+
+    std::unique_ptr<IRenderGraphNode> RenderPassDefinition::copyNode() const noexcept
+    {
+        return std::make_unique<RenderPassDefinition>(*this);
     }
 
     const RenderPassDefinition::Resources& RenderPassDefinition::getInputs() const noexcept
@@ -155,39 +176,51 @@ namespace darmok
         return _outputs;
     }
 
-    RenderPassDefinition::operator RenderGraphId() const noexcept
-    {
-        return id();
-    }
-
     RenderGraphId RenderPassDefinition::id() const noexcept
     {
         return _id;
     }
 
-    bool RenderPassDefinition::getSync() const noexcept
+    size_t RenderPassDefinition::hash() const noexcept
     {
-        // if all inputs of the pass are also outputs
-        // it means the pass is not producing anything new
-        // just modifying some resources
-        for (auto& res : _inputs)
-        {
-            if (!_outputs.contains(res))
-            {
-                return false;
-            }
-        }
-        return true;
+        size_t hash = 0;
+        hashCombine(hash, _inputs.hash(), _outputs.hash(), _name, _viewId);
+        return hash;
     }
 
-    RenderGraphDefinition::RenderGraphDefinition() noexcept
+    RenderGraphDefinition::RenderGraphDefinition(const std::string& name) noexcept
         : _id(randomIdType())
+        , _name(name)
     {
+    }
+
+    RenderGraphDefinition::RenderGraphDefinition(const RenderGraphDefinition& other) noexcept
+        : _id(other._id)
+        , _name(other._name)
+        , _inputs(other._inputs)
+        , _outputs(other._outputs)
+    {
+        _nodes.reserve(other._nodes.size());
+        for (auto& node : other._nodes)
+        {
+            _nodes.push_back(node->copyNode());
+        }
+    }
+
+    RenderGraphDefinition& RenderGraphDefinition::setName(const std::string& name) noexcept
+    {
+        _name = name;
+        return *this;
+    }
+
+    const std::string& RenderGraphDefinition::getName() const noexcept
+    {
+        return _name;
     }
 
     bool RenderGraphDefinition::operator==(const RenderGraphDefinition& other) const noexcept
     {
-        return _frontPasses != other._frontPasses && _children != other._children && _backPasses != other._backPasses;
+        return hash() != other.hash();
     }
 
     bool RenderGraphDefinition::operator!=(const RenderGraphDefinition& other) const noexcept
@@ -200,40 +233,48 @@ namespace darmok
         return _id;
     }
 
-    RenderGraphDefinition::operator RenderGraphId() const noexcept
+    size_t RenderGraphDefinition::hash() const noexcept
     {
-        return id();
-    }
-
-    bool RenderGraphDefinition::setChild(const RenderGraphDefinition& child) noexcept
-    {
-        auto id = child.id();
-        auto itr = std::find_if(_children.begin(), _children.end(), [id](auto& elm) { return elm.id() == id; });
-        if (itr != _children.end())
+        size_t hash = 0;
+        hashCombine(hash, _inputs.hash(), _outputs.hash(), _name);
+        for (auto& node : _nodes)
         {
-            *itr = child;
-            return false;
+            hashCombine(hash, node->hash());
         }
-        _children.push_back(child);
-        return true;
+        return hash;
     }
 
-    RenderGraphDefinition::Pass& RenderGraphDefinition::addFrontPass() noexcept
+    RenderGraphDefinition::Pass& RenderGraphDefinition::doAddPass(bool front) noexcept
     {
-        return *_frontPasses.emplace(_frontPasses.begin(), _id);
+        auto ptr = std::make_unique<Pass>();
+        auto& ref = *ptr;
+        if (front)
+        {
+            _nodes.insert(_nodes.begin(), std::move(ptr));
+        }
+        else
+        {
+            _nodes.push_back(std::move(ptr));
+        }
+        return ref;
     }
 
-    const RenderGraphDefinition::Pass& RenderGraphDefinition::addFrontPass(IRenderPass& pass)
+    RenderGraphDefinition::Pass& RenderGraphDefinition::addPassFront() noexcept
     {
-        auto& def = addFrontPass();
-        def.setDelegate(pass);
-        pass.renderPassDefine(def);
-        return def;
+        return doAddPass(true);
     }
 
     RenderPassDefinition& RenderGraphDefinition::addPass() noexcept
     {
-        return _backPasses.emplace_back(_id);
+        return doAddPass(false);
+    }
+
+    const RenderGraphDefinition::Pass& RenderGraphDefinition::addPassFront(IRenderPass& pass)
+    {
+        auto& def = addPassFront();
+        def.setDelegate(pass);
+        pass.renderPassDefine(def);
+        return def;
     }
 
     const RenderGraphDefinition::Pass& RenderGraphDefinition::addPass(IRenderPass& pass)
@@ -244,303 +285,338 @@ namespace darmok
         return def;
     }
 
-    bool hasRenderPass(const std::string& name, const std::vector<RenderPassDefinition>& passes) noexcept
+    bool RenderGraphDefinition::removePass(IRenderPassDelegate& dlg) noexcept
     {
-        auto itr = std::find_if(passes.begin(), passes.end(), [&name](auto& pass) { return pass.getName() == name; });
-        return itr != passes.end();
+        auto itr = std::remove_if(_nodes.begin(), _nodes.end(), [&dlg](auto& node) { return node->hasPassDelegate(dlg); });
+        if (itr == _nodes.end())
+        {
+            return false;
+        }
+        _nodes.erase(itr, _nodes.end());
+        return true;
     }
 
-    bool RenderGraphDefinition::hasPass(const std::string& name) const noexcept
+    bool RenderGraphDefinition::setChild(const RenderGraphDefinition& def) noexcept
     {
-        if (hasRenderPass(name, _frontPasses))
-        {
-            return true;
-        }
-        for (auto& child : _children)
-        {
-            if (child.hasPass(name))
-            {
-                return true;
-            }
-        }
-        return hasRenderPass(name, _backPasses);
+        return doSetChild(def, false);
     }
 
-    bool removeRenderPass(IRenderPassDelegate& dlg, std::vector<RenderPassDefinition>& passes) noexcept
+    bool RenderGraphDefinition::setChildFront(const RenderGraphDefinition& def) noexcept
     {
-        auto itr = std::find_if(passes.begin(), passes.end(), [&dlg](auto& pass) { return pass.getDelegate() == dlg; });
-        if (itr != passes.end())
+        return doSetChild(def, true);
+    }
+
+    bool RenderGraphDefinition::doSetChild(const RenderGraphDefinition& def, bool front) noexcept
+    {
+        auto itr = findNode(def.id());
+        auto found = itr != _nodes.end();
+        if (found && (*itr)->hash() == def.hash())
         {
-            passes.erase(itr);
+            return false;
+        }
+
+        auto ptr = std::make_unique<RenderGraphNode>(def);
+        auto& ref = *ptr;
+
+        if (found)
+        {
+            *itr = std::move(ptr);
+        }
+        else if (front)
+        {
+            _nodes.insert(_nodes.begin(), std::move(ptr));
+        }
+        else
+        {
+            _nodes.push_back(std::move(ptr));
+        }
+        return true;
+    }
+
+    RenderGraphDefinition::Nodes::iterator RenderGraphDefinition::findNode(RenderGraphId id) noexcept
+    {
+        return std::find_if(_nodes.begin(), _nodes.end(), [id](auto& node) { return node->id() == id; });
+    }
+
+    RenderGraphDefinition::Nodes::const_iterator RenderGraphDefinition::findNode(RenderGraphId id) const noexcept
+    {
+        return std::find_if(_nodes.begin(), _nodes.end(), [id](auto& node) { return node->id() == id; });
+    }
+
+    bool RenderGraphDefinition::hasNode(RenderGraphId id) const noexcept
+    {
+        auto itr = findNode(id);
+        return itr != _nodes.end();
+    }
+
+    OptionalRef<RenderGraphDefinition::INode> RenderGraphDefinition::getNode(RenderGraphId id) noexcept
+    {
+        auto itr = findNode(id);
+        if (itr == _nodes.end())
+        {
+            return nullptr;
+        }
+        return itr->get();
+    }
+
+    OptionalRef<const RenderGraphDefinition::INode> RenderGraphDefinition::getNode(RenderGraphId id) const noexcept
+    {
+        auto itr = findNode(id);
+        if (itr == _nodes.end())
+        {
+            return nullptr;
+        }
+        return itr->get();
+    }
+
+    bool RenderGraphDefinition::removeNode(RenderGraphId id) noexcept
+    {
+        auto itr = findNode(id);
+        if (itr != _nodes.end())
+        {
+            _nodes.erase(itr, _nodes.end());
             return true;
         }
         return false;
     }
 
-    bool RenderGraphDefinition::removePass(IRenderPassDelegate& dlg)
-    {
-        if (removeRenderPass(dlg, _frontPasses))
-        {
-            return true;
-        }
-        for (auto& child : _children)
-        {
-            if (child.removePass(dlg))
-            {
-                return true;
-            }
-        }
-        return removeRenderPass(dlg, _backPasses);
-    }
-
     void RenderGraphDefinition::clear()
     {
-        _frontPasses.clear();
-        _children.clear();
-        _backPasses.clear();
+        _nodes.clear();
     }
 
     size_t RenderGraphDefinition::size() const noexcept
     {
-        size_t s = _frontPasses.size();
-        for (auto& child : _children)
-        {
-            s += child.size();
-        }
-        s += _backPasses.size();
-        return s;
+        return _nodes.size();
     }
 
-    const RenderGraphDefinition::Pass& RenderGraphDefinition::operator[](size_t vertex) const
+    RenderGraphDefinition::Resources& RenderGraphDefinition::getInputs() noexcept
     {
-        if (vertex < 0)
-        {
-            throw std::invalid_argument("pass does not exist");
-        }
-        auto s = _frontPasses.size();
-        if (vertex < s)
-        {
-            return _frontPasses.at(vertex);
-        }
-        vertex -= s;
-        for (auto& child : _children)
-        {
-            s = child.size();
-            if (vertex < s)
-            {
-                return child[vertex];
-            }
-            vertex -= s;
-        }
-        s = _backPasses.size();
-        if (vertex < s)
-        {
-            return _backPasses.at(vertex);
-        }
-        throw std::invalid_argument("pass does not exist");
+        return _inputs;
     }
 
-    RenderGraphDefinition::Pass& RenderGraphDefinition::operator[](size_t vertex)
+    const RenderGraphDefinition::Resources& RenderGraphDefinition::getInputs() const noexcept
     {
-        if (vertex < 0)
-        {
-            throw std::invalid_argument("pass does not exist");
-        }
-        auto s = _frontPasses.size();
-        if (vertex < s)
-        {
-            return _frontPasses.at(vertex);
-        }
-        vertex -= s;
-        for (auto& child : _children)
-        {
-            s = child.size();
-            if (vertex < s)
-            {
-                return child[vertex];
-            }
-            vertex -= s;
-        }
-        s = _backPasses.size();
-        if (vertex < s)
-        {
-            return _backPasses.at(vertex);
-        }
-        throw std::invalid_argument("pass does not exist");
+        return _inputs;
     }
 
-    void configureRenderFlow(entt::flow& builder, entt::id_type baseId, const std::vector<RenderPassDefinition>& passes) noexcept
+    RenderGraphDefinition::Resources& RenderGraphDefinition::getOutputs() noexcept
     {
-        auto getId = [&baseId](const auto& v)
-        {
-            return idTypeCombine(baseId, v.id());
-        };
+        return _outputs;
+    }
 
-        for (auto& pass : passes)
+    const RenderGraphDefinition::Resources& RenderGraphDefinition::getOutputs() const noexcept
+    {
+        return _outputs;
+    }
+
+    const RenderGraphDefinition::INode& RenderGraphDefinition::operator[](size_t vertex) const
+    {
+        return *_nodes.at(vertex);
+    }
+
+    RenderGraphDefinition::INode& RenderGraphDefinition::operator[](size_t vertex)
+    {
+        return *_nodes.at(vertex);
+    }
+
+    RenderGraphNode::RenderGraphNode(const Definition& def) noexcept
+        : _def(def)
+    {
+        entt::flow builder;
+        for(size_t i =0; i<def.size(); i++)
         {
-            builder.bind(getId(pass));
-            for (auto& input : pass.getInputs())
+            auto& node = def[i];
+            builder.bind(node.id());
+            auto& inputs = node.getInputs();
+            auto& outputs = node.getOutputs();
+            auto sync = true;
+            for (auto& input : inputs)
             {
-                builder.ro(getId(input));
+                builder.ro(input.id());
+                if (!outputs.contains(input))
+                {
+                    // if all inputs of the node are also outputs
+                    // it means the node is not producing anything new
+                    // just modifying some resources
+                    sync = false;
+                }
             }
-            for (auto& output : pass.getOutputs())
+            for (auto& output : node.getOutputs())
             {
-                builder.rw(getId(output));
+                builder.rw(output.id());
             }
-            if (pass.getSync())
+            if (sync)
             {
                 builder.sync();
             }
         }
+        _matrix = builder.graph();
     }
 
-
-    void RenderGraphDefinition::configureFlow(entt::flow& builder) const noexcept
+    const RenderGraphNode::ResourcesDefinition& RenderGraphNode::getInputs() const noexcept
     {
-        auto baseId = id();
-        configureRenderFlow(builder, baseId, _frontPasses);
-        for (auto& child : _children)
-        {
-            child.configureFlow(builder);
-        }
-        configureRenderFlow(builder, baseId, _backPasses);
+        return _def.getInputs();
     }
 
-    RenderGraph RenderGraphDefinition::compile()
+    const RenderGraphNode::ResourcesDefinition& RenderGraphNode::getOutputs() const noexcept
     {
-        entt::flow builder;
-        configureFlow(builder);
-        return RenderGraph(builder.graph(), *this);
+        return _def.getOutputs();
     }
 
-    RenderGraph::RenderGraph(Matrix&& matrix, const Definition& def) noexcept
-        : _matrix(std::move(matrix))
-        , _def(def)
-    {
-    }
-
-    void RenderGraph::configureViews(bgfx::ViewId initialViewId)
+    bgfx::ViewId RenderGraphNode::configureView(bgfx::ViewId viewId)
     {
         for (auto&& vertex : _matrix.vertices())
         {
-            auto& pass = _def[vertex];
-            auto viewId = initialViewId + vertex;
-            bgfx::resetView(viewId);
-            bgfx::setViewName(viewId, pass.getName().c_str());
-            pass.configureView(viewId);
+            auto& node = _def[vertex];
+            viewId = node.configureView(viewId);
+        }
+        return viewId;
+    }
+
+    tf::Task RenderGraphNode::createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept
+    {
+        // TODO: add delegate to copy data from parent context
+        auto childContext = context.createChild(id());
+        auto task = flowBuilder.emplace([this, childContext](tf::Subflow& subflow) mutable {
+            configureTasks(subflow, childContext);
+        });
+        task.name(_def.getName());
+        return task;
+    }
+
+    void RenderGraphNode::configureTasks(tf::FlowBuilder& builder, RenderGraphContext& context)
+    {
+        std::unordered_map<size_t, tf::Task> tasks;
+        for (auto&& vertex : _matrix.vertices())
+        {
+            auto& node = _def[vertex];
+            tasks[vertex] = node.createTask(builder, context);
+        }
+        for (auto& [vertex, task] : tasks)
+        {
+            auto in_edges = _matrix.in_edges(vertex);
+            for (auto [lhs, rhs] : in_edges)
+            {
+                task.succeed(tasks[lhs]);
+            }
         }
     }
 
-    size_t RenderGraph::size() const noexcept
+    std::unique_ptr<IRenderGraphNode> RenderGraphNode::copyNode() const noexcept
+    {
+        return std::make_unique<RenderGraphNode>(*this);
+    }
+
+    RenderGraphId RenderGraphNode::id() const noexcept
+    {
+        return _def.id();
+    }
+
+    size_t RenderGraphNode::hash() const noexcept
+    {
+        return _def.hash();
+    }
+
+    bool RenderGraphNode::empty() const noexcept
+    {
+        return size() == 0;
+    }
+
+    size_t RenderGraphNode::size() const noexcept
     {
         return _matrix.size();
     }
 
-    const RenderGraph::Definition& RenderGraph::getDefinition() const noexcept
+    const RenderGraphNode::Definition& RenderGraphNode::getDefinition() const noexcept
     {
         return _def;
     }
 
-    RenderGraph::Resources RenderGraph::operator()() const
+    RenderGraphNode::Definition& RenderGraphNode::getDefinition() noexcept
     {
-        Resources res;
-        operator()(res);
-        return res;
+        return _def;
     }
 
-    void RenderGraph::operator()(Resources& res) const
+    RenderGraph::RenderGraph(const Definition& def) noexcept
+        : _root(def)
     {
-        std::unordered_set<size_t> executed;
-        execute(res, executed);
+        RenderGraphContext context(*this, _root.id());
+        _root.configureTasks(_taskflow, context);
     }
 
-    bool RenderGraph::execute(Resources& res, std::unordered_set<size_t>& executed) const
+    size_t RenderGraph::hash() const noexcept
     {
-        std::vector<size_t> readyVertices;
-        auto pending = false;
-        for (auto&& vertex : _matrix.vertices())
-        {
-            if (executed.contains(vertex))
-            {
-                continue;
-            }
-            pending = true;
-            auto in_edges = _matrix.in_edges(vertex);
-            auto ready = true;
-            for (auto [lhs, rhs] : in_edges)
-            {
-                if (!executed.contains(lhs))
-                {
-                    ready = false;
-                    break;
-                }
-            }
-            if (!ready)
-            {
-                continue;
-            }
-            readyVertices.push_back(vertex);
-        }
-        if (!pending)
-        {
-            return true;
-        }
-        if (readyVertices.empty())
-        {
-            return false;
-        }
-        auto mainGroup = _def.id();
-
-        for (auto& vertex : readyVertices)
-        {
-            auto& pass = _def[vertex];
-            auto group = pass.getGroup();
-            auto main = group == mainGroup;
-            if (!main)
-            {
-                // we're in a child graph, set the group to the graph id
-                res.setGroup(group);
-            }
-            pass(res);
-            executed.insert(vertex);
-            if (!main)
-            {
-                res.setGroup();
-            }
-        }
-
-        return execute(res, executed);
+        return _root.hash();
     }
 
-    std::string RenderGraph::getMatrixDebugInfo(const Matrix& mtx) noexcept
+    void RenderGraph::dump(std::ostream& out) const
     {
-        std::ostringstream ss;
+        _taskflow.dump(out);
+    }
 
-        for (auto&& vertex : mtx.vertices())
+    bgfx::ViewId RenderGraph::configureView(bgfx::ViewId viewId)
+    {
+        return _root.configureView(viewId);
+    }
+
+    bgfx::Encoder& RenderGraph::getEncoder() noexcept
+    {
+        std::scoped_lock lock(_encoderMutex);
+        auto id = std::this_thread::get_id();
+        auto itr = _encoders.find(id);
+        if (itr == _encoders.end())
         {
-            ss << "vertex:" << vertex << std::endl;
-            ss << "  in edges:";
-            for (auto [lhs, rhs] : mtx.in_edges(vertex))
-            {
-                ss << "    " << lhs << " -> " << rhs << std::endl;
-            }
-            ss << std::endl;
-            ss << "  out edges:";
-            for (auto [lhs, rhs] : mtx.out_edges(vertex))
-            {
-                ss << "    " << lhs << " -> " << rhs << std::endl;
-            }
-            ss << std::endl;
+            itr = _encoders.emplace(id, bgfx::begin()).first;
         }
-        return ss.str();
+        return *itr->second;
     }
 
-    void RenderGraph::writeGraphviz(std::ostream& out) const
+    RenderGraphResources& RenderGraph::getResources() noexcept
     {
-        entt::dot(out, _matrix, [this, &out](auto& output, auto vertex)
-        {
-            auto& pass = _def[vertex];
-            out << "label=\"" << pass.getName() << "\",shape=\"box\"";
-        });
+        return getResources(_root.id());
     }
+
+    RenderGraphResources& RenderGraph::getResources(RenderGraphId id) noexcept
+    {
+        auto itr = _resources.find(id);
+        if (itr == _resources.end())
+        {
+            itr = _resources.emplace(id, Resources()).first;
+        }
+        return itr->second;
+    }
+
+    void RenderGraph::operator()(tf::Executor& executor) const
+    {
+        _encoders.clear();
+        executor.run(_taskflow).wait();
+        for (auto& [thread_id, encoder] : _encoders)
+        {
+            bgfx::end(encoder);
+        }
+        _encoders.clear();
+    }
+
+    RenderGraphContext::RenderGraphContext(RenderGraph& graph, RenderGraphId id)
+        : _graph(graph)
+        , _id(id)
+    {
+    }
+
+    bgfx::Encoder& RenderGraphContext::getEncoder() noexcept
+    {
+        return _graph.get().getEncoder();
+    }
+
+    RenderGraphResources& RenderGraphContext::getResources() noexcept
+    {
+        return _graph.get().getResources(_id);
+    }
+
+    RenderGraphContext RenderGraphContext::createChild(RenderGraphId id) const noexcept
+    {
+        return RenderGraphContext(_graph, id);
+    }
+
 }

@@ -16,7 +16,6 @@ namespace darmok
         : _proj(projMatrix)
         , _frameBuffer{ bgfx::kInvalidHandle }
         , _enabled(true)
-        , _renderGraphSize(0)
     {
     }
 
@@ -149,7 +148,7 @@ namespace darmok
         _scene = scene;
         _app = app;
         _renderGraph.clear();
-        _renderGraphSize = 0;
+        _renderGraph.setName("Render Camera " + scene.getEntity(*this));
         if (_entityFilter != nullptr)
         {
             _entityFilter->init(scene.getRegistry());
@@ -175,15 +174,7 @@ namespace darmok
             renderer->update(deltaTime);
         }
 
-        auto rgSize = _renderGraph.size();
-        if (_renderGraphSize != rgSize)
-        {
-            // if the size of the camera render graph changed
-            // passes changed so we need to update the app render graph
-            auto& rg = _app->getRenderGraph();
-            rg.setChild(_renderGraph);
-            _renderGraphSize = rgSize;
-        }
+        _app->getRenderGraph().setChild(_renderGraph);
     }
 
     void Camera::configureView(bgfx::ViewId viewId) const noexcept
@@ -192,7 +183,7 @@ namespace darmok
         getCurrentViewport().configureView(viewId);
     }
 
-    void Camera::beforeRenderView(bgfx::ViewId viewId) const noexcept
+    void Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
         auto projPtr = glm::value_ptr(_proj);
         const void* viewPtr = nullptr;
@@ -210,8 +201,7 @@ namespace darmok
             }
         }
         bgfx::setViewTransform(viewId, viewPtr, projPtr);
-
-        bgfx::touch(viewId);
+        encoder.touch(viewId);
     }
 
     void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept

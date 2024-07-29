@@ -111,7 +111,7 @@ namespace darmok
         const RenderGraphDefinition& getRenderGraph() const noexcept;
         
         void configureView(bgfx::ViewId viewId) const noexcept;
-        void beforeRenderView(bgfx::ViewId viewId) const noexcept;
+        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept;
 
     private:
@@ -127,7 +127,6 @@ namespace darmok
         std::vector<std::shared_ptr<Texture>> _targetTextures;
         bgfx::FrameBufferHandle _frameBuffer;
         RenderGraphDefinition _renderGraph;
-        size_t _renderGraphSize;
 
         const EntityRegistry& getRegistry() const;
     };

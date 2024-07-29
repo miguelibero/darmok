@@ -42,7 +42,7 @@ namespace darmok::physics3d
 
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(RenderGraphResources& res) override;
+        void renderPassExecute(IRenderGraphContext& context) override;
 
         void onInputEvent(const std::string& tag) noexcept override;
 

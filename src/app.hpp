@@ -14,6 +14,7 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <taskflow/taskflow.hpp>
 
 namespace darmok
 {
@@ -154,6 +155,7 @@ namespace darmok
 		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
 
 		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
+		void toggleTaskflowProfile();
 
 		// first since it contains the allocator
 		AssetContext _assets;
@@ -170,6 +172,9 @@ namespace darmok
 #ifdef DARMOK_MINIAUDIO
 		AudioSystem _audio;
 #endif
+		mutable tf::Executor _taskExecutor;
+		std::shared_ptr<tf::TFProfObserver> _taskObserver;
+
 		RenderGraphDefinition _renderGraphDef;
 		std::optional<RenderGraph> _renderGraph;
 

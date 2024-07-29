@@ -60,12 +60,12 @@ namespace darmok
 		_components.push_back(std::move(comp));
 	}
 
-	void ForwardRenderer::beforeRenderView(bgfx::ViewId viewId)
+	void ForwardRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
 	{
-		_cam->beforeRenderView(viewId);
+		_cam->beforeRenderView(viewId, encoder);
 		for (auto& comp : _components)
 		{
-			comp->beforeRenderView(viewId);
+			comp->beforeRenderView(viewId, encoder);
 		}
 	}
 
@@ -94,11 +94,10 @@ namespace darmok
 		_cam->configureView(viewId);
 	}
 
-	void ForwardRenderer::renderPassExecute(RenderGraphResources& res) noexcept
+	void ForwardRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
 	{
-		auto& encoder = res.get<bgfx::Encoder>().value();
-
-		beforeRenderView(_viewId);
+		auto& encoder = context.getEncoder();
+		beforeRenderView(_viewId, encoder);
 
 		auto renderables = _cam->createEntityView<Renderable>();
 		for (auto entity : renderables)
@@ -109,7 +108,7 @@ namespace darmok
 				continue;
 			}
 			beforeRenderEntity(entity, encoder);
-			renderable->render(encoder, _viewId);
+			renderable->render(_viewId, encoder);
 		}
 	}
 }

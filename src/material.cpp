@@ -216,14 +216,7 @@ namespace darmok
 		return *this;
 	}
 
-	void Material::renderSubmit(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
-	{
-		auto state = beforeRender(encoder, viewId);
-		encoder.setState(state);
-		encoder.submit(viewId, _program->getHandle(_programDefines));
-	}
-
-	uint64_t Material::beforeRender(bgfx::Encoder& encoder, bgfx::ViewId viewId) const noexcept
+	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
 	{
 		for (auto& pair : _textureHandles)
 		{
@@ -284,6 +277,7 @@ namespace darmok
 			state |= BGFX_STATE_PT_LINES;
 		}
 
-		return state;
+		encoder.setState(state);
+		encoder.submit(viewId, _program->getHandle(_programDefines));
 	}
 }

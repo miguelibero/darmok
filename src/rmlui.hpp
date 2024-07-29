@@ -148,7 +148,7 @@ namespace darmok
 
 		void renderPassDefine(RenderPassDefinition& def) noexcept override;
 		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-		void renderPassExecute(RenderGraphResources& res) noexcept override;
+		void renderPassExecute(IRenderGraphContext& context) noexcept override;
 
 	private:
 		OptionalRef<Rml::Context> _context;

@@ -23,7 +23,7 @@ namespace darmok
         virtual void update(float deltaTime) {}
         virtual void shutdown() {};
 
-        virtual void beforeRenderView(bgfx::ViewId viewId) {};
+        virtual void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) {};
         virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) {};
     };
 
@@ -54,7 +54,7 @@ namespace darmok
         bool isEnabled() const noexcept;
         Renderable& setEnabled(bool enabled) noexcept;
         bool valid() const noexcept;
-        void render(bgfx::Encoder& encoder, bgfx::ViewId viewId) const;
+        void render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const;
     private:
         bool _enabled;
         std::shared_ptr<IMesh> _mesh;

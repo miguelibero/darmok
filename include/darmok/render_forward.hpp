@@ -22,7 +22,7 @@ namespace darmok
 
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(RenderGraphResources& res) noexcept override;
+        void renderPassExecute(IRenderGraphContext& context) noexcept override;
 
         void addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept;
 
@@ -42,7 +42,7 @@ namespace darmok
         OptionalRef<App> _app;
         std::vector<std::unique_ptr<IRenderComponent>> _components;
 
-        void beforeRenderView(bgfx::ViewId viewId);
+        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder);
         void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder);
     };
 }
