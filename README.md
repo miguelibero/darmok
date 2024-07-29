@@ -27,6 +27,8 @@ currently using:
 planned to use:
 
 * [tracy](https://github.com/wolfpld/tracy) for frame profiling
+    (blocked because of [bgfx#3308](https://github.com/bkaradzic/bgfx/pull/3308)
+    and the vcpkg bgfx build not having a profiler feature)
 * [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & update loop
 * [recast navigation](http://recastnav.com/) for pathfinding
 * [BehaviorTree.CPP](https://www.behaviortree.dev/) for behavior trees

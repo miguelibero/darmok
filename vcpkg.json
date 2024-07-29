@@ -48,7 +48,6 @@
     "freetype",
     "tweeny",
     "catch2",
-    "miniaudio",
-    "tracy"
+    "miniaudio"
   ]
 }

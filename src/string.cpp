@@ -159,7 +159,7 @@ namespace darmok
 		auto pos = filename.find('.');
 		if (pos == std::string::npos)
 		{
-			return filenameStr;
+			return "";
 		}
 		return filenameStr.substr(pos, filename.size());
 	}
@@ -184,6 +184,15 @@ namespace darmok
 	{
 		ltrim(str);
 		rtrim(str);
+	}
+
+	std::string StringUtils::vsprintf(const std::string& fmt, va_list args)
+	{
+		auto len = _vscprintf(fmt.c_str(), args);
+		std::string result;
+		result.resize(len);
+		vsprintf_s(result.data(), len + 1, fmt.c_str(), args);
+		return result;
 	}
 
 	std::string StringUtils::escapeArgument(std::string_view arg) noexcept

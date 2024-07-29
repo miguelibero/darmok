@@ -1,16 +1,20 @@
-
 #include "app.hpp"
 #include "platform.hpp"
 #include "input.hpp"
 #include "window.hpp"
+
 #include <darmok/app.hpp>
 #include <darmok/color.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/string.hpp>
 
 #include <bx/filepath.h>
 #include <bx/timer.h>
 #include <iostream>
 #include <algorithm>
+
+#include <bx/file.h>
+#include <bimg/bimg.h>
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
@@ -252,6 +256,7 @@ namespace darmok
 		init.debug = true;
 		init.resolution.width = size.x;
 		init.resolution.height = size.y;
+		init.callback = &BgfxCallbacks::get();
 		// init.type = bgfx::RendererType::Vulkan;
 		bgfx::init(init);
 
@@ -302,7 +307,7 @@ namespace darmok
 			component->shutdown();
 		}
 		_components.clear();
-		
+
 		_input.getKeyboard().removeListener(*this);
 		_window.removeListener(*this);
 		_audio.shutdown();
@@ -333,6 +338,7 @@ namespace darmok
 		{
 			return;
 		}
+
 		RenderGraphResources res;
 
 		// TODO: run passes in parallel using [taskflow](https://github.com/taskflow/taskflow)
@@ -411,15 +417,15 @@ namespace darmok
 			toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
 			return;
 		}
+		if (key == KeyboardKey::F4 && modifiers.empty())
+		{
+			toggleDebugFlag(BGFX_DEBUG_PROFILER);
+			return;
+		}
 		if ((key == KeyboardKey::F5 && modifiers.empty())
 			|| (key == KeyboardKey::KeyR && modifiers == ctrl))
 		{
 			_updateResult = AppUpdateResult::Restart;
-			return;
-		}
-		if (key == KeyboardKey::F6 && modifiers.empty())
-		{
-			toggleDebugFlag(BGFX_DEBUG_PROFILER);
 			return;
 		}
 		if ((key == KeyboardKey::Print && modifiers.empty())
@@ -629,5 +635,154 @@ namespace darmok
 	void App::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
 	{
 		_impl->addComponent(std::move(component));
+	}
+
+	BgfxFatalException::BgfxFatalException(const char* filePath, uint16_t line, bgfx::Fatal::Enum code, const char* msg)
+		: std::exception(msg)
+		, filePath(filePath)
+		, line(line)
+		, code(code)
+	{
+	}
+
+	BgfxCallbacks& BgfxCallbacks::get() noexcept
+	{
+		static BgfxCallbacks instance;
+		return instance;
+	}
+
+	void BgfxCallbacks::fatal(
+		const char* filePath
+		, uint16_t line
+		, bgfx::Fatal::Enum code
+		, const char* str
+	)
+	{
+		if (bgfx::Fatal::DebugCheck == code)
+		{
+			bx::debugBreak();
+			return;
+		}
+		throw BgfxFatalException(filePath, line, code, str);
+	}
+
+	void BgfxCallbacks::traceVargs(
+		const char* filePath
+		, uint16_t line
+		, const char* format
+		, va_list argList
+	)
+	{
+		auto str = StringUtils::vsprintf(format, argList);
+		bx::debugOutput(bx::StringView(str.data(), str.size()));
+	}
+
+	// bgfx tracy integration problems
+	// https://github.com/bkaradzic/bgfx/pull/3308
+
+	void BgfxCallbacks::profilerBegin(
+		const char* name
+		, uint32_t abgr
+		, const char* filePath
+		, uint16_t line
+	)
+	{
+		// TODO: vcpkg bgfx build without profiler enabled
+	}
+
+	void BgfxCallbacks::profilerBeginLiteral(
+		const char* name
+		, uint32_t abgr
+		, const char* filePath
+		, uint16_t line
+	)
+	{
+		// TODO: vcpkg bgfx build without profiler enabled
+	}
+
+	void BgfxCallbacks::profilerEnd()
+	{
+		// TODO: vcpkg bgfx build without profiler enabled
+	}
+
+	uint32_t BgfxCallbacks::cacheReadSize(uint64_t id)
+	{
+		std::scoped_lock lock(_cacheMutex);
+		auto itr = _cache.find(id);
+		if (itr == _cache.end())
+		{
+			return 0;
+		}
+		return itr->second.size();
+	}
+
+	bool BgfxCallbacks::cacheRead(uint64_t id, void* dataPtr, uint32_t size)
+	{
+		std::scoped_lock lock(_cacheMutex);
+		auto itr = _cache.find(id);
+		if (itr == _cache.end())
+		{
+			return false;
+		}
+		auto& data = itr->second;
+		if (data.size() < size)
+		{
+			size = data.size();
+		}
+		std::memcpy(dataPtr, data.ptr(), size);
+		return true;
+	}
+
+	void BgfxCallbacks::cacheWrite(uint64_t id, const void* data, uint32_t size)
+	{
+		_cache.emplace(id, Data(data, size));
+	}
+
+	void BgfxCallbacks::screenShot(
+		const char* filePath
+		, uint32_t width
+		, uint32_t height
+		, uint32_t pitch
+		, const void* data
+		, uint32_t size
+		, bool yflip
+	)
+	{
+		std::filesystem::path path(filePath);
+		auto ext = StringUtils::getFileExt(path.filename().string());
+		if (ext.empty())
+		{
+			path += ".png";
+		}
+		bx::FileWriter writer;
+		if (bx::open(&writer, path.string().c_str()))
+		{
+			auto format = bimg::TextureFormat::BGRA8;
+			bx::Error err;
+			bimg::imageWritePng(&writer, width, height, pitch, data, format, yflip, &err);
+			bx::close(&writer);
+			checkError(err);
+		}
+	}
+
+	void BgfxCallbacks::captureBegin(
+		uint32_t width
+		, uint32_t height
+		, uint32_t pitch
+		, bgfx::TextureFormat::Enum format
+		, bool yflip
+	)
+	{
+		// TODO
+	}
+
+	void BgfxCallbacks::captureEnd()
+	{
+		// TODO
+	}
+
+	void BgfxCallbacks::captureFrame(const void* data, uint32_t size)
+	{
+		// TODO
 	}
 }

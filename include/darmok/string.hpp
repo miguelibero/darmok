@@ -4,6 +4,7 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <cstdarg>
 
 namespace darmok
 {
@@ -62,6 +63,8 @@ namespace darmok
         static void ltrim(std::string& str) noexcept;
         static void rtrim(std::string& str) noexcept;
         static void trim(std::string& str) noexcept;
+
+        static std::string vsprintf(const std::string& fmt, va_list args);
 
     private:
         static [[nodiscard]] std::string doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept;
