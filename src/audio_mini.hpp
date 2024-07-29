@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
+#include <optional>
 #include <miniaudio.h>
 
 namespace bx
@@ -64,6 +65,7 @@ namespace darmok
 		void stop();
 		bool atEnd() const noexcept;
 		bool isPlaying() const noexcept;
+		void setPosition(const glm::vec3& pos) noexcept;
 		void setLooping(bool v) noexcept;
 	private:
 		ma_sound _sound;
@@ -88,11 +90,25 @@ namespace darmok
 		ma_engine& getEngine();
 	private:
 		ma_engine _engine;
-		std::shared_ptr<Music> _music;
+		std::unique_ptr<MiniaudioSoundGroup> _soundGroup;
+		std::unique_ptr<MiniaudioSoundGroup> _musicGroup;
 
-		std::vector<std::unique_ptr<MiniaudioSound>> _maSounds;
-		std::unique_ptr<MiniaudioSound> _maMusic;
-		std::unique_ptr<MiniaudioSoundGroup> _maSoundGroup;
-		std::unique_ptr<MiniaudioSoundGroup> _maMusicGroup;
+		MiniaudioSound& createMiniaudioSound(const std::shared_ptr<Sound>& sound);
+
+		struct MusicElement
+		{
+			std::unique_ptr<MiniaudioSound> miniaudio;
+			std::shared_ptr<Music> darmok;
+		};
+
+		std::optional<MusicElement> _music;
+
+		struct SoundElement
+		{
+			std::unique_ptr<MiniaudioSound> miniaudio;
+			std::shared_ptr<Sound> darmok;
+		};
+
+		std::vector<SoundElement> _sounds;
 	};
 }

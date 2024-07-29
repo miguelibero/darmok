@@ -172,9 +172,14 @@ namespace darmok
         return ma_sound_at_end(&_sound);
     }
 
-    bool  MiniaudioSound::isPlaying() const noexcept
+    bool MiniaudioSound::isPlaying() const noexcept
     {
         return ma_sound_is_playing(&_sound);
+    }
+
+    void MiniaudioSound::setPosition(const glm::vec3& pos) noexcept
+    {
+        ma_sound_set_position(&_sound, pos.x, pos.y, pos.z);
     }
 
     void MiniaudioSound::setLooping(bool v) noexcept
@@ -200,53 +205,59 @@ namespace darmok
         auto result = ma_engine_init(&config, &_engine);
         AudioUtils::checkResult(result);
 
-        _maSoundGroup = std::make_unique<MiniaudioSoundGroup>(_engine);
-        _maMusicGroup = std::make_unique<MiniaudioSoundGroup>(_engine, MA_SOUND_FLAG_STREAM);
+        _soundGroup = std::make_unique<MiniaudioSoundGroup>(_engine);
+        _musicGroup = std::make_unique<MiniaudioSoundGroup>(_engine, MA_SOUND_FLAG_STREAM);
     }
 
     void AudioPlayerImpl::shutdown()
     {
-        _maSoundGroup.reset();
-        _maMusicGroup.reset();
-        _maSounds.clear();
+        _soundGroup.reset();
+        _musicGroup.reset();
+        _sounds.clear();
         ma_engine_uninit(&_engine);
     }
 
     void AudioPlayerImpl::update()
     {
-        auto it = std::remove_if(_maSounds.begin(), _maSounds.end(), [](auto& sound) {
-            return sound->atEnd();
+        auto it = std::remove_if(_sounds.begin(), _sounds.end(), [](auto& elm) {
+            return elm.miniaudio->atEnd();
         });
-        _maSounds.erase(it, _maSounds.end());
+        _sounds.erase(it, _sounds.end());
+    }
 
-        if (_maMusic && !_maMusic->isPlaying())
-        {
-            _maMusic.reset();
-            _music.reset();
-        }
+    MiniaudioSound& AudioPlayerImpl::createMiniaudioSound(const std::shared_ptr<Sound>& sound)
+    {
+        auto& elm = _sounds.emplace_back(
+            std::make_unique<MiniaudioSound>(
+                sound->getImpl().getData(), _engine, _soundGroup.get())
+        );
+        return *elm.miniaudio;
     }
 
     void AudioPlayerImpl::play(const std::shared_ptr<Sound>& sound)
     {
-        // ma_engine_play_sound(&_engine, "assets/sound.wav", nullptr);
-        auto& maSound = _maSounds.emplace_back(
-            std::make_unique<MiniaudioSound>(
-                sound->getImpl().getData(), _engine, _maSoundGroup.get())
-        );
-        maSound->start();
+        auto& maSound = createMiniaudioSound(sound);
+        maSound.start();
     }
 
     void AudioPlayerImpl::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos)
     {
+        auto& maSound = createMiniaudioSound(sound);
+        maSound.setPosition(pos);
+        maSound.start();
     }
 
     void AudioPlayerImpl::play(const std::shared_ptr<Music>& music)
     {
-        _maMusic = std::make_unique<MiniaudioSound>(
-            music->getImpl().getData(), _engine, _maMusicGroup.get());
-        _music = music;
-        _maMusic->setLooping(true);
-        _maMusic->start();
+        _music = MusicElement{
+            std::make_unique<MiniaudioSound>(
+                music->getImpl().getData(), _engine, _musicGroup.get()
+            ),
+            music
+        };
+        auto& maSound = *_music->miniaudio;
+        maSound.setLooping(true);
+        maSound.start();
     }
 
     float AudioPlayerImpl::getVolume(AudioGroup group) const
@@ -254,15 +265,15 @@ namespace darmok
         switch (group)
         {
         case AudioGroup::Sound:
-            if (_maSoundGroup)
+            if (_soundGroup)
             {
-                return _maSoundGroup->getVolume();
+                return _soundGroup->getVolume();
             }
             break;
         case AudioGroup::Music:
-            if (_maMusicGroup)
+            if (_musicGroup)
             {
-                return _maMusicGroup->getVolume();
+                return _musicGroup->getVolume();
             }
             break;
         }
@@ -274,15 +285,15 @@ namespace darmok
         switch (group)
         {
         case AudioGroup::Sound:
-            if (_maSoundGroup)
+            if (_soundGroup)
             {
-                _maSoundGroup->setVolume(v);
+                _soundGroup->setVolume(v);
             }
             break;
         case AudioGroup::Music:
-            if (_maMusicGroup)
+            if (_musicGroup)
             {
-                _maMusicGroup->setVolume(v);
+                _musicGroup->setVolume(v);
             }
             break;
         }
@@ -291,30 +302,29 @@ namespace darmok
     void AudioPlayerImpl::stopMusic()
     {
         _music.reset();
-        _maMusic.reset();
     }
 
     void AudioPlayerImpl::pauseMusic()
     {
-        if (!_maMusic)
+        if (!_music || !_music->miniaudio)
         {
             return;
         }
-        if(_maMusic->isPlaying())
+        if(_music->miniaudio->isPlaying())
         {
-            _maMusic->stop();
+            _music->miniaudio->stop();
         }
         else
         {
-            _maMusic->start();
+            _music->miniaudio->start();
         }
     }
 
     std::shared_ptr<Music> AudioPlayerImpl::getRunningMusic() noexcept
     {
-        if (_maMusic && _maMusic->isPlaying())
+        if (_music && _music->miniaudio && _music->miniaudio->isPlaying())
         {
-            return _music;
+            return _music->darmok;
         }
         return nullptr;
     }

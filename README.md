@@ -122,6 +122,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * multithreaded rendering with [taskflow](https://github.com/taskflow/taskflow)
 * lua debugging would be nice
 * particle systems (maybe effekseer)
+* more sound options (spatialization, effects)
 
 ## Interesting Related Projects
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced
