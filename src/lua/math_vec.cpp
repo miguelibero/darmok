@@ -81,7 +81,9 @@ namespace darmok
 			"rotate", sol::resolve<glm::vec3(const glm::vec3&, const float&, const glm::vec3&)>(glm::rotate),
 			"rotate_x", sol::resolve<glm::vec3(const glm::vec3&, const glm::f32&)>(glm::rotateX),
 			"rotate_y", sol::resolve<glm::vec3(const glm::vec3&, const glm::f32&)>(glm::rotateY),
-			"rotate_z", sol::resolve<glm::vec3(const glm::vec3&, const glm::f32&)>(glm::rotateZ)
+			"rotate_z", sol::resolve<glm::vec3(const glm::vec3&, const glm::f32&)>(glm::rotateZ),
+			"move_towards", &Math::moveTowards,
+			"rotate_towards", sol::resolve<glm::vec3(const glm::vec3&, const glm::vec3&, float, float)>(&Math::rotateTowards)
 		);
 		configLuaGlmFloatVec(vec3);
 		vec3[sol::meta_function::multiplication] = sol::overload(

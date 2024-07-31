@@ -41,7 +41,8 @@ namespace darmok
 			"rotate_y", [](const glm::quat& quat, float f) { return glm::rotateNormalizedAxis(quat, f, glm::vec3(0, 1, 0)); },
 			"rotate_z", [](const glm::quat& quat, float f) { return glm::rotateNormalizedAxis(quat, f, glm::vec3(0, 0, 1)); },
 			"dot", sol::resolve<float(const glm::quat&, const glm::quat&)>(&glm::dot),
-			"distance", &Math::distance
+			"distance", &Math::distance,
+			"rotate_towards", sol::resolve<glm::quat(const glm::quat&, const glm::quat&, float)>(&Math::rotateTowards)
 		);
     }
 }

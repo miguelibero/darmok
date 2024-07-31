@@ -91,6 +91,9 @@ namespace darmok
         static bool decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale) noexcept;
     
 		static float distance(const glm::quat& quad1, const glm::quat& quad2) noexcept;
+		static glm::vec3 moveTowards(const glm::vec3& current, const glm::vec3& target, float maxDistanceDelta) noexcept;
+		static glm::vec3 rotateTowards(const glm::vec3& current, const glm::vec3& target, float maxRadiansDelta, float maxDistanceDelta) noexcept;
+		static glm::quat rotateTowards(const glm::quat& current, const glm::quat& target, float maxRadiansDelta) noexcept;
 	};
 }
 

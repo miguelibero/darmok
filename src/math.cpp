@@ -91,7 +91,56 @@ namespace darmok
     float Math::distance(const glm::quat& quad1, const glm::quat& quad2) noexcept
     {
         float v = glm::dot(quad1, quad2);
-        v = glm::clamp(v, -1.0f, 1.0f);
-        return 2.0f * std::acos(std::abs(v));
+        v = clamp(v, -1.0f, 1.0f);
+        return std::acos(std::abs(v));
+    }
+
+    glm::vec3 Math::moveTowards(const glm::vec3& current, const glm::vec3& target, float maxDistanceDelta) noexcept
+    {
+        // TODO: check this works OK, has not been tested
+        auto dist = glm::distance(current, target);
+
+        if (std::abs(dist) <= maxDistanceDelta)
+        {
+            return target;
+        }
+        float t = std::min(1.0f, maxDistanceDelta / dist);
+        return lerp(current, target, t);
+    }
+
+    glm::vec3 Math::rotateTowards(const glm::vec3& current, const glm::vec3& target, float maxRadiansDelta, float maxDistanceDelta) noexcept
+    {
+        // TODO: check this works OK, has not been tested
+        auto normCurrent = glm::normalize(current);
+        auto normTarget = glm::normalize(target);
+
+        float dot = glm::dot(normCurrent, normTarget);
+        dot = clamp(dot, -1.0f, 1.0f);
+        float angle = std::acos(dot);
+        if (std::abs(angle) < maxRadiansDelta)
+        {
+            return normTarget;
+        }
+        float t = std::min(1.0f, maxRadiansDelta / angle);
+
+        glm::quat currentQuat(normCurrent);
+        glm::quat targetQuat(normTarget);
+        currentQuat = glm::slerp(currentQuat, targetQuat, t);
+
+        return currentQuat * glm::vec3(0.0f, 0.0f, 1.0f);
+    }
+        
+    glm::quat Math::rotateTowards(const glm::quat& current, const glm::quat& target, float maxRadiansDelta) noexcept
+    {
+        auto dist = distance(current, target);
+        if (std::abs(dist) < maxRadiansDelta)
+        {
+            return target;
+        }
+
+        float t = std::min(1.0f, maxRadiansDelta / dist);
+        return glm::slerp(current, target, t);
+
+        return target;
     }
 }
