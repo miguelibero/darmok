@@ -379,11 +379,12 @@ namespace darmok
         using Resources = RenderGraphResources;
 
         RenderGraphNode(const Definition& def) noexcept;
+        RenderGraphNode(const RenderGraphNode& other) noexcept;
 
         const ResourcesDefinition& getInputs() const noexcept override;
         const ResourcesDefinition& getOutputs() const noexcept override;
         bgfx::ViewId configureView(bgfx::ViewId viewId = 0) override;
-        tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept override;
+        tf::Task createTask(tf::FlowBuilder& builder, RenderGraphContext& context) noexcept override;
         std::unique_ptr<IRenderGraphNode> copyNode() const noexcept override;
         RenderGraphId id() const noexcept override;
         size_t hash() const noexcept override;
@@ -397,6 +398,7 @@ namespace darmok
     private:
         Matrix _matrix;
         Definition _def;
+        tf::Taskflow _taskflow;
     };
 
     class DARMOK_EXPORT RenderGraph final

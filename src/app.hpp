@@ -125,6 +125,8 @@ namespace darmok
 		[[nodiscard]] const Platform& getPlatform() const noexcept;
 		[[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
 		[[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
+		[[nodiscard]] tf::Executor& getTaskExecutor() noexcept;
+		[[nodiscard]] const tf::Executor& getTaskExecutor() const noexcept;
 
 #ifdef DARMOK_MINIAUDIO
 		[[nodiscard]] AudioSystem& getAudio() noexcept;

@@ -10,17 +10,20 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/physics3d.hpp>
 #include <darmok/character.hpp>
-
 #include <darmok/glm.hpp>
+
 #include "jolt.hpp"
 #include <Jolt/Core/TempAllocator.h>
+#include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Physics/Body/BodyID.h>
 #include <Jolt/Physics/EPhysicsUpdateError.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/ObjectLayer.h>
 #include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
 #include <Jolt/Physics/Collision/Shape/Shape.h>
-#include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Core/JobSystemWithBarrier.h>
+
+#include <taskflow/taskflow.hpp>
 
 namespace bx
 {
@@ -108,6 +111,29 @@ namespace darmok::physics3d
         }
     };
 
+    class JoltJobSystemTaskflow : public JPH::JobSystemWithBarrier
+    {
+    public:
+        JoltJobSystemTaskflow() noexcept;
+        ~JoltJobSystemTaskflow();
+
+        void init(tf::Executor& executor, JPH::uint maxBarriers = JPH::cMaxPhysicsBarriers) noexcept;
+        void shutdown();
+
+        const tf::Taskflow& getTaskflow() const;
+
+        int GetMaxConcurrency() const override;
+        JobHandle CreateJob(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JPH::uint32 numDependencies = 0) override;
+        void QueueJob(Job* job) override;
+        void QueueJobs(Job** jobs, JPH::uint numJobs) override;
+        void FreeJob(Job* job) override;
+    private:
+        OptionalRef<tf::Executor> _taskExecutor;
+        tf::Taskflow _taskflow;
+        tf::Future<void> _future;
+        static const std::string _prefix;
+    };
+
     class JoltBroadPhaseLayerInterface final : public JPH::BroadPhaseLayerInterface
     {
     public:
@@ -184,6 +210,7 @@ namespace darmok::physics3d
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
 
+        const tf::Taskflow& getTaskflow() const;
         const Config& getConfig() const noexcept;
         OptionalRef<Scene> getScene() const noexcept;
         OptionalRef<JPH::PhysicsSystem> getJolt() noexcept;
@@ -217,7 +244,7 @@ namespace darmok::physics3d
         JoltObjectLayerPairFilter _objLayerPairFilter;
         JoltTempAllocator _alloc;
         std::unique_ptr<JPH::PhysicsSystem> _system;
-        std::unique_ptr<JPH::JobSystemThreadPool> _threadPool;
+        JoltJobSystemTaskflow _jobSystem;
         std::vector<OptionalRef<IPhysicsUpdater>> _updaters;
         std::vector<OptionalRef<ICollisionListener>> _listeners;
 

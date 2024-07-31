@@ -15,7 +15,6 @@
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Math/Float2.h>
 #include <Jolt/Physics/PhysicsSystem.h>
-#include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Character/Character.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
@@ -210,6 +209,78 @@ namespace darmok::physics3d
         return nullptr;
     }
 
+    const std::string JoltJobSystemTaskflow::_prefix = "JoltPhysics";
+
+    JoltJobSystemTaskflow::JoltJobSystemTaskflow() noexcept
+        : _taskflow(_prefix)
+    {
+    }
+
+    JoltJobSystemTaskflow::~JoltJobSystemTaskflow()
+    {
+        shutdown();
+    }
+
+    void JoltJobSystemTaskflow::init(tf::Executor& executor, JPH::uint maxBarriers) noexcept
+    {
+        _taskExecutor = executor;
+        JobSystemWithBarrier::Init(maxBarriers);
+        _future = executor.run(_taskflow);
+    }
+
+    void JoltJobSystemTaskflow::shutdown()
+    {
+        _future.wait();
+        _taskflow.clear();
+    }
+
+    const tf::Taskflow& JoltJobSystemTaskflow::getTaskflow() const
+    {
+        return _taskflow;
+    }
+
+    int JoltJobSystemTaskflow::GetMaxConcurrency() const
+    {
+        return _taskExecutor ? _taskExecutor->num_workers() : 0;
+    }
+
+    JoltJobSystemTaskflow::JobHandle JoltJobSystemTaskflow::CreateJob(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JPH::uint32 numDependencies)
+    {
+        return JobHandle(new Job(name, color, this, jobFunction, numDependencies));
+    }
+
+    void JoltJobSystemTaskflow::QueueJob(Job* job)
+    {
+        auto task = _taskflow.emplace([job]() { job->Execute();  });
+        task.data(job);
+        task.name(_prefix + " " + job->GetName());
+    }
+
+    void JoltJobSystemTaskflow::QueueJobs(Job** jobs, JPH::uint numJobs)
+    {
+        for (JPH::uint i = 0; i < numJobs; ++i)
+        {
+            QueueJob(jobs[i]);
+        }
+    }
+
+    void JoltJobSystemTaskflow::FreeJob(Job* job)
+    {
+        std::vector<tf::Task> tasks;
+        _taskflow.for_each_task([job, &tasks](auto task)
+        {
+            if (task.data() == job)
+            {
+                tasks.push_back(task);
+            }
+        });
+        for (auto& task : tasks)
+        {
+            _taskflow.erase(task);
+        }
+        delete job;
+    }
+
     JoltBroadPhaseLayerInterface::JoltBroadPhaseLayerInterface(const std::vector<std::string>& layers) noexcept
         : _layers(layers)
     {
@@ -325,9 +396,7 @@ namespace darmok::physics3d
         _scene = scene;
         JPH::Factory::sInstance = new JPH::Factory();
         JPH::RegisterTypes();
-        _threadPool = std::make_unique<JPH::JobSystemThreadPool>(
-            JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1
-        );
+        _jobSystem.init(app.getTaskExecutor());
         _system = std::make_unique<JPH::PhysicsSystem>();
         _system->Init(_config.maxBodies, _config.numBodyMutexes,
             _config.maxBodyPairs, _config.maxContactConstraints,
@@ -378,7 +447,7 @@ namespace darmok::physics3d
         }
 
         _system.reset();
-        _threadPool.reset();
+        _jobSystem.shutdown();
         JPH::UnregisterTypes();
         delete JPH::Factory::sInstance;
         JPH::Factory::sInstance = nullptr;
@@ -447,7 +516,7 @@ namespace darmok::physics3d
             // TODO: skeletal animations here? or maybe with an updater
             // probably important for ragdolls or inverse kinematics
 
-            auto err = _system->Update(fdt, _config.collisionSteps, &_alloc, _threadPool.get());
+            auto err = _system->Update(fdt, _config.collisionSteps, &_alloc, &_jobSystem);
             _deltaTimeRest -= fdt;
             if (err != JPH::EPhysicsUpdateError::None)
             {
@@ -491,6 +560,11 @@ namespace darmok::physics3d
     bool PhysicsSystemImpl::removeListener(ICollisionListener& listener) noexcept
     {
         return JoltUtils::removeRefVector(_listeners, listener);
+    }
+
+    const tf::Taskflow& PhysicsSystemImpl::getTaskflow() const
+    {
+        return _jobSystem.getTaskflow();
     }
 
     const PhysicsSystemImpl::Config& PhysicsSystemImpl::getConfig() const noexcept
@@ -683,7 +757,7 @@ namespace darmok::physics3d
     {
         Collision collision;
         collision.normal = JoltUtils::convert(manifold.mWorldSpaceNormal);
-        for (size_t i = 0; i < manifold.mRelativeContactPointsOn1.size(); i++)
+        for (size_t i = 0; i < manifold.mRelativeContactPointsOn1.size(); ++i)
         {
             auto p = manifold.GetWorldSpaceContactPointOn1(i);
             collision.contacts.emplace_back(JoltUtils::convert(p));

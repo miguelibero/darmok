@@ -34,6 +34,11 @@
 	DARMOK_RUN_APP_DECL(app, ...)
 #endif // DARMOK_IMPLEMENT_MAIN
 
+namespace tf
+{
+	class Executor;
+}
+
 namespace darmok
 {
 	class AppComponent;
@@ -90,6 +95,9 @@ namespace darmok
 
 		[[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
 		[[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
+
+		[[nodiscard]] tf::Executor& getTaskExecutor() noexcept;
+		[[nodiscard]] const tf::Executor& getTaskExecutor() const noexcept;
 
 #ifdef DARMOK_MINIAUDIO
 		[[nodiscard]] AudioSystem& getAudio() noexcept;

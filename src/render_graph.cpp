@@ -78,6 +78,7 @@ namespace darmok
         : _id(randomIdType())
         , _viewId(-1)
         , _name(name)
+        , _delegate(nullptr)
     {
     }
 
@@ -422,6 +423,7 @@ namespace darmok
 
     RenderGraphNode::RenderGraphNode(const Definition& def) noexcept
         : _def(def)
+        , _taskflow(_def.getName())
     {
         entt::flow builder;
         for(size_t i =0; i<def.size(); i++)
@@ -454,6 +456,13 @@ namespace darmok
         _matrix = builder.graph();
     }
 
+    RenderGraphNode::RenderGraphNode(const RenderGraphNode& other) noexcept
+        : _def(other._def)
+        , _matrix(other._matrix)
+        , _taskflow(_def.getName())
+    {
+    }
+
     const RenderGraphNode::ResourcesDefinition& RenderGraphNode::getInputs() const noexcept
     {
         return _def.getInputs();
@@ -474,13 +483,13 @@ namespace darmok
         return viewId;
     }
 
-    tf::Task RenderGraphNode::createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept
+    tf::Task RenderGraphNode::createTask(tf::FlowBuilder& builder, RenderGraphContext& context) noexcept
     {
         // TODO: add delegate to copy data from parent context
         auto childContext = context.createChild(id());
-        auto task = flowBuilder.emplace([this, childContext](tf::Subflow& subflow) mutable {
-            configureTasks(subflow, childContext);
-        });
+        _taskflow.clear();
+        configureTasks(_taskflow, childContext);
+        auto task = builder.composed_of(_taskflow);
         task.name(_def.getName());
         return task;
     }
@@ -541,6 +550,12 @@ namespace darmok
     RenderGraph::RenderGraph(const Definition& def) noexcept
         : _root(def)
     {
+        auto& rootDef = _root.getDefinition();
+        if (rootDef.getName().empty())
+        {
+            rootDef.setName("root");
+        }
+        _taskflow.name(rootDef.getName());
         RenderGraphContext context(*this, _root.id());
         _root.configureTasks(_taskflow, context);
     }

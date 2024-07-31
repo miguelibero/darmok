@@ -148,7 +148,7 @@ namespace darmok
         _scene = scene;
         _app = app;
         _renderGraph.clear();
-        _renderGraph.setName("Render Camera " + scene.getEntity(*this));
+        _renderGraph.setName("Render Camera " + std::to_string(scene.getEntity(*this)));
         if (_entityFilter != nullptr)
         {
             _entityFilter->init(scene.getRegistry());
@@ -165,6 +165,7 @@ namespace darmok
         {
             renderer->shutdown();
         }
+        _renderGraph.clear();
     }
 
     void Camera::update(float deltaTime)

@@ -23,13 +23,13 @@ currently using:
 * [tweeny](https://github.com/mobius3/tweeny) for tweening and easings
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [miniaudio](https://miniaud.io/) for audio
+* [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & physics
 
 planned to use:
 
 * [tracy](https://github.com/wolfpld/tracy) for frame profiling
     (blocked because of [bgfx#3308](https://github.com/bkaradzic/bgfx/pull/3308)
     and the vcpkg bgfx build not having a profiler feature)
-* [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & update loop
 * [recast navigation](http://recastnav.com/) for pathfinding
 * [BehaviorTree.CPP](https://www.behaviortree.dev/) for behavior trees
 * need to decide 2D physics
@@ -65,7 +65,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 * bgfx window setup (GLFW on windows & linux)
 * update logic methods with delta time
-* renderer: render graph that compiles passes inputs and outputs
+* renderer: threaded render graph that compiles passes inputs and outputs
     * unlit
     * forward with phong lighting (point, ambient)
 * entity component scene using entt
@@ -97,7 +97,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * deferred
     * PBR
     * SSAO
-* [taskflow](https://github.com/taskflow/taskflow) multithreaded rendering
 * text improvements
     * finish all the TextRenderConfig options
     * dynamic distance field rendering with border support
@@ -107,6 +106,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
     * loaders should return unique_ptr
     * move lua bindings to separate library?
+    * coroutines could be useful in some places
 * more stuff serialization
     * binary texture atlas
     * material
@@ -117,6 +117,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * 2d physics
 * instancing
 * 3d physics materials
+* multithreaded updates ([Ubisoft](https://www.youtube.com/watch?v=X1T3IQ4N-3g))
 * support multiple imgui app components with different transforms
 * spine animations
 * unify use of allocators everywhere

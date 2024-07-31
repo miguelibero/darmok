@@ -207,6 +207,16 @@ namespace darmok
 		return _renderGraphDef;
 	}
 
+	tf::Executor& AppImpl::getTaskExecutor() noexcept
+	{
+		return _taskExecutor;
+	}
+
+	const tf::Executor& AppImpl::getTaskExecutor() const noexcept
+	{
+		return _taskExecutor;
+	}
+
 #ifdef DARMOK_MINIAUDIO
 	AudioSystem& AppImpl::getAudio() noexcept
 	{
@@ -247,6 +257,7 @@ namespace darmok
 	{
 		_lastUpdate = bx::getHPCounter();
 		_updateResult = AppUpdateResult::Continue;
+		_renderGraphDef.clear();
 
 		bgfx::Init init;
 		const auto& size = _window.getSize();
@@ -294,12 +305,16 @@ namespace darmok
 		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
 
 		_renderGraph.reset();
+		_renderGraphDef.clear();
 	}
 
 	void AppImpl::shutdown()
 	{
+		_taskExecutor.wait_for_all();
+
 		_running = false;
 		_renderGraph.reset();
+		_renderGraphDef.clear();
 
 		for (auto& component : _components)
 		{
@@ -443,14 +458,14 @@ namespace darmok
 		{
 			auto filePath = basePath / ("taskflow-" + suffix + ".json");
 			std::ofstream out(filePath);
-			out << "[\n";
+			out << "[";
 			_taskObserver->dump(out);
 			_taskObserver.reset();
-			out << "]\n";
+			out << "]";
 		}
 
 		{
-			auto filePath = basePath / ("taskflow-" + suffix + ".graphviz");
+			auto filePath = basePath / ("rendergraph-" + suffix + ".graphviz");
 			std::ofstream out(filePath);
 			_renderGraph->dump(out);
 		}
@@ -584,6 +599,16 @@ namespace darmok
 	const RenderGraphDefinition& App::getRenderGraph() const noexcept
 	{
 		return _impl->getRenderGraph();
+	}
+
+	tf::Executor& App::getTaskExecutor() noexcept
+	{
+		return _impl->getTaskExecutor();
+	}
+
+	const tf::Executor& App::getTaskExecutor() const noexcept
+	{
+		return _impl->getTaskExecutor();
 	}
 
 #ifdef DARMOK_MINIAUDIO
