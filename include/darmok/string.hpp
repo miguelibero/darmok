@@ -16,6 +16,7 @@ namespace darmok
         static [[nodiscard]] bool endsWith(std::string_view sv, std::string_view end) noexcept;
         static [[nodiscard]] std::optional<int> getIntSuffix(std::string_view name, std::string_view prefix) noexcept;
         static [[nodiscard]] std::string binToHex(uint8_t v) noexcept;
+        static [[nodiscard]] std::string binToHex(void* v) noexcept;
         static [[nodiscard]] std::vector<std::string> splitWords(std::string_view sv) noexcept;
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, char sep) noexcept;
         static [[nodiscard]] std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
@@ -65,6 +66,9 @@ namespace darmok
         static void trim(std::string& str) noexcept;
 
         static std::string vsprintf(const std::string& fmt, va_list args);
+        static std::string sprintf(const std::string& fmt, ...);
+
+
         static std::string getTimeSuffix() noexcept;
 
     private:

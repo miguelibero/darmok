@@ -3,6 +3,7 @@
 #include <darmok/physics3d.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/math.hpp>
+#include <darmok/string.hpp>
 #include <bx/allocator.h>
 #include <glm/gtx/quaternion.hpp>
 #include <thread>
@@ -253,7 +254,11 @@ namespace darmok::physics3d
     {
         auto task = _taskflow.emplace([job]() { job->Execute();  });
         task.data(job);
+#if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
         task.name(_prefix + " " + job->GetName());
+#else
+        task.name(_prefix + " " + StringUtils::binToHex(job));
+#endif
     }
 
     void JoltJobSystemTaskflow::QueueJobs(Job** jobs, JPH::uint numJobs)

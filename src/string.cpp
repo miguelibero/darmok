@@ -113,6 +113,11 @@ namespace darmok
 		return dest;
 	}
 
+	std::string StringUtils::binToHex(void* v) noexcept
+	{
+		return StringUtils::sprintf("%p", v);
+	}
+
 	uint8_t StringUtils::hexToBin(char chr)
 	{
 		if (chr >= '0' && chr <= '9')
@@ -193,6 +198,15 @@ namespace darmok
 		result.resize(len);
 		vsprintf_s(result.data(), len + 1, fmt.c_str(), args);
 		return result;
+	}
+
+	std::string StringUtils::sprintf(const std::string& fmt, ...)
+	{
+		va_list args;
+		va_start(args, &fmt);
+		auto str = vsprintf(fmt, args);
+		va_end(args);
+		return str;
 	}
 
 	std::string StringUtils::getTimeSuffix() noexcept
