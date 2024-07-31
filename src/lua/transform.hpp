@@ -36,7 +36,7 @@ namespace darmok
 		static void setForward(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
 		static void setScale(Transform& trans, const VarLuaVecTable<glm::vec3>& v) noexcept;
 		static void setPivot(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
-		static void setMatrix(Transform& trans, const VarLuaTable<glm::mat4>& v) noexcept;
+		static void setLocalMatrix(Transform& trans, const VarLuaTable<glm::mat4>& v) noexcept;
 		static void rotate1(Transform& trans, float x, float y, float z) noexcept;
 		static void rotate2(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
 		static void lookDir1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;

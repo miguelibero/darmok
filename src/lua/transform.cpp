@@ -75,7 +75,7 @@ namespace darmok
 		trans.lookAt(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
 	}
 
-	void LuaTransform::setMatrix(Transform& trans, const VarLuaTable<glm::mat4>& v) noexcept
+	void LuaTransform::setLocalMatrix(Transform& trans, const VarLuaTable<glm::mat4>& v) noexcept
 	{
 		trans.setLocalMatrix(LuaGlm::tableGet(v));
 	}
@@ -145,7 +145,7 @@ namespace darmok
 			"up", sol::property(&Transform::getUp),
 			"scale", sol::property(&Transform::getScale, &LuaTransform::setScale),
 			"pivot", sol::property(&Transform::getPivot, &LuaTransform::setPivot),
-			"matrix", sol::property(&Transform::getWorldMatrix, &LuaTransform::setMatrix),
+			"matrix", sol::property(&Transform::getLocalMatrix, &LuaTransform::setLocalMatrix),
 			"local_to_world_matrix", sol::property(&Transform::getWorldMatrix),
 			"world_to_local_matrix", sol::property(&Transform::getWorldInverse),
 			"parent", sol::property(&LuaTransform::getParent, &LuaTransform::setParent),

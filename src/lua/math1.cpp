@@ -42,12 +42,15 @@ namespace darmok
 	void LuaMath::bindGlmMat(sol::state_view& lua) noexcept
 	{
 		auto mat3 = lua.new_usertype<glm::mat3>("Mat3", sol::constructors<
-			glm::mat3(glm::f32),
-			glm::mat3(glm::vec3, glm::vec3, glm::vec3)
-		>());
+				glm::mat3(glm::f32),
+				glm::mat3(glm::vec3, glm::vec3, glm::vec3)
+			>()
+		);
 		configLuaGlmMat(mat3);
 		mat3[sol::meta_function::multiplication] = sol::overload(
-			[](const glm::mat3 mat, const glm::vec3& vec) { return mat * vec;  }
+			[](const glm::mat3& mat1, const glm::mat3& mat2) { return mat1 * mat2;  },
+			[](const glm::mat3& mat, float val) { return mat * val; },
+			[](const glm::mat3& mat, const glm::vec3& vec) { return mat * vec;  }
 		);
 		auto mat4 = lua.new_usertype<glm::mat4>("Mat4", sol::constructors <
 			glm::mat4(glm::f32),
@@ -66,9 +69,18 @@ namespace darmok
 				sol::resolve<glm::mat4(const glm::vec2&, const glm::vec2&, float, float)>(&Math::frustrum)
 			),
 			"look_at", sol::resolve<glm::mat4(const glm::vec3&, const glm::vec3&, const glm::vec3&)>(&glm::lookAt),
-			"rotate", sol::resolve<glm::mat4(const glm::quat&)>(&glm::mat4_cast),
-			"scale", sol::resolve<glm::mat4(const glm::vec3&)>(&glm::scale),
-			"translate", sol::resolve<glm::mat4(const glm::vec3&)>(&glm::translate),
+			"rotate", sol::overload(
+				sol::resolve<glm::mat4(const glm::quat&)>(&glm::mat4_cast),
+				[](const glm::mat4& mat, const glm::quat& quat) { return mat * glm::mat4_cast(quat); }
+			),
+			"scale", sol::overload(
+				sol::resolve<glm::mat4(const glm::vec3&)>(&glm::scale),
+				sol::resolve<glm::mat4(const glm::mat4&, const glm::vec3&)>(&glm::scale)
+			),
+			"translate", sol::overload(
+				sol::resolve<glm::mat4(const glm::vec3&)>(&glm::translate),
+				sol::resolve<glm::mat4(const glm::mat4&, const glm::vec3&)>(&glm::translate)
+			),
 			"transform", sol::overload(&Math::transform, &Math::translateRotateScale),
 			"decompose", [](const glm::mat4& mat) {
 				glm::vec3 pos;
@@ -81,8 +93,11 @@ namespace darmok
 		);
 		configLuaGlmMat(mat4);
 		mat4[sol::meta_function::multiplication] = sol::overload(
-			[](const glm::mat4 mat, const glm::vec3& vec) -> glm::vec3 { return mat * glm::vec4(vec, 1);  },
-			[](const glm::mat4 mat, const glm::vec4& vec) { return mat * vec;  }
+			[](const glm::mat4& mat1, const glm::mat4& mat2) { return mat1 * mat2;  },
+			[](const glm::mat4& mat, float val) { return mat * val; },
+			[](const glm::mat4& mat, const glm::vec3& vec) -> glm::vec3 { return mat * glm::vec4(vec, 1); },
+			[](const glm::mat4& mat, const glm::vec4& vec) { return mat * vec; },
+			[](const glm::mat4& mat, const glm::quat& quat) { return mat * glm::mat4_cast(quat); }
 		);
 	}
 

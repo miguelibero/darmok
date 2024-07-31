@@ -620,7 +620,7 @@ namespace darmok::physics3d
     JoltTransform PhysicsSystemImpl::loadTransform(Transform& trans)
     {
         trans.update();
-        auto mat = trans.getWorldMatrix();
+        glm::mat4 mat = trans.getWorldMatrix();
         if (_root)
         {
             mat = _root->getWorldInverse() * mat;
