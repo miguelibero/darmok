@@ -26,8 +26,8 @@ namespace darmok
 			configUsertype(usertype);
 			usertype["zero"] = sol::var(vec(0));
 			usertype["one"] = sol::var(vec(1));
-			usertype["max"] = sol::resolve<val(const vec&)>(&Math::vecMax);
-			usertype["min"] = sol::resolve<val(const vec&)>(&Math::vecMin);
+			usertype["max"] = sol::resolve<val(const vec&)>(&Math::max);
+			usertype["min"] = sol::resolve<val(const vec&)>(&Math::min);
 		}
 
 		template<typename T>

@@ -2,6 +2,8 @@
 #include "glm.hpp"
 #include <darmok/color.hpp>
 #include <glm/gtx/rotate_normalized_axis.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/norm.hpp>
 
 namespace darmok
 {

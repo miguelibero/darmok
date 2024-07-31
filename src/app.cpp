@@ -634,8 +634,8 @@ namespace darmok
 		}
 
 		_impl->update([this](float deltaTime) {
-			updateLogic(deltaTime);
 			_impl->updateLogic(deltaTime);
+			updateLogic(deltaTime);
 		});
 
 		render();

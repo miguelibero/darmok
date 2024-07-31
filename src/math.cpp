@@ -82,4 +82,11 @@ namespace darmok
         // TODO: check skew == [0, 0, 0] && persp == [0, 0, 0, 1]
         return true;
     }
+
+    float Math::slerpDistance(const glm::quat& quad1, const glm::quat& quad2) noexcept
+    {
+        float v = glm::dot(quad1, quad2);
+        v = glm::clamp(v, -1.0f, 1.0f);
+        return 2.0f * std::acos(std::abs(v));
+    }
 }

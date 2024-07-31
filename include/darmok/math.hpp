@@ -21,13 +21,26 @@ namespace darmok
 			return x < min ? min : x;
 		}
 
+		template<glm::length_t L, glm::qualifier Q = glm::defaultp>
+		static bool almostZero(const glm::vec<L, glm::f32, Q>& v, int factor = 1) noexcept
+		{
+			for (glm::length_t i = 0; i < L; ++i)
+			{
+				if (!almostEqual(v[i], 0.F, factor))
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
 		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
-		static T vecMax(const glm::vec<L, T, Q>& v) noexcept
+		static T max(const glm::vec<L, T, Q>& v) noexcept
 		{
 			using vec = glm::vec<L, T, Q>;
 			using val = T;
 			val result = std::numeric_limits<val>::min();
-			for (glm::length_t i = 0; i < vec::length(); i++)
+			for (glm::length_t i = 0; i < L; ++i)
 			{
 				auto j = v[i];
 				if (j > result)
@@ -39,12 +52,12 @@ namespace darmok
 		}
 
 		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
-		static T vecMin(const glm::vec<L, T, Q>& v) noexcept
+		static T min(const glm::vec<L, T, Q>& v) noexcept
 		{
 			using vec = glm::vec<L, T, Q>;
 			using val = T;
 			val result = std::numeric_limits<val>::max();
-			for (glm::length_t i = 0; i < vec::length(); i++)
+			for (glm::length_t i = 0; i < L; i++)
 			{
 				auto j = v[i];
 				if (j < result)
@@ -75,7 +88,9 @@ namespace darmok
         static [[nodiscard]] glm::mat4 translateRotateScale(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;
         static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale, const glm::vec3& pivot = glm::vec3(0)) noexcept;
         static bool decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale) noexcept;
-    };
+    
+		static float slerpDistance(const glm::quat& quad1, const glm::quat& quad2) noexcept;
+	};
 }
 
 namespace glm

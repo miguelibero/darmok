@@ -220,9 +220,12 @@ set(LUA_SOURCES
   texture.cpp
   input1.cpp
   input2.cpp
-  math1.cpp
-  math2.cpp
-  math3.cpp
+  math_base.cpp
+  math_color.cpp
+  math_mat.cpp
+  math_quat.cpp
+  math_uvec.cpp
+  math_vec.cpp
   shape.cpp
   scene.cpp
   transform.cpp
