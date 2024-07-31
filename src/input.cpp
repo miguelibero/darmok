@@ -129,7 +129,7 @@ namespace darmok
 		return _updateChars;
 	}
 
-	void KeyboardImpl::update() noexcept
+	void KeyboardImpl::lateUpdate() noexcept
 	{
 		_updateChars.clear();
 		Utf8Char c;
@@ -511,7 +511,7 @@ namespace darmok
 		return true;
 	}
 
-	void MouseImpl::update(float deltaTime) noexcept
+	void MouseImpl::lateUpdate(float deltaTime) noexcept
 	{
 		if (deltaTime == 0.F)
 		{
@@ -1209,6 +1209,7 @@ namespace darmok
 	}
 
 	const float InputImpl::_mouseVelocityDirFactor = 0.0004F;
+	const float InputImpl::_mouseScrollDirFactor = 5.F;
 
 	float InputImpl::getDir(const InputDir& dir, const Sensitivity& sensi) const noexcept
 	{
@@ -1217,7 +1218,7 @@ namespace darmok
 			glm::vec2 vec(0);
 			if (v->analog == MouseAnalog::Scroll)
 			{
-				vec = _mouse.getScroll();
+				vec = _mouse.getScroll() * _mouseScrollDirFactor;
 			}
 			else
 			{
@@ -1445,10 +1446,10 @@ namespace darmok
 		return _gamepads;
 	}
 
-	void InputImpl::update(float deltaTime) noexcept
+	void InputImpl::lateUpdate(float deltaTime) noexcept
 	{
-		_keyboard.getImpl().update();
-		_mouse.getImpl().update(deltaTime);
+		_keyboard.getImpl().lateUpdate();
+		_mouse.getImpl().lateUpdate(deltaTime);
 	}
 
 	Input::Input() noexcept

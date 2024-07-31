@@ -103,6 +103,7 @@ namespace darmok
 		void setConfig(const AppConfig& config) noexcept;
 		void init();
 		void updateLogic(float deltaTime);
+		void lateUpdateLogic(float deltaTime);
 		void render() const;
 		AppUpdateResult processEvents();
 		void shutdown();

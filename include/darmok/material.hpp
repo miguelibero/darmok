@@ -28,7 +28,9 @@ namespace darmok
         using PrimitiveType = MaterialPrimitiveType;
 
         Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
-        Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
+        Material(const std::shared_ptr<Program>& program) noexcept;
+        Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture) noexcept;
+        Material(const std::shared_ptr<Program>& program, const Color& diffuseColor) noexcept;
         ~Material();
         Material(const Material& other) noexcept;
 

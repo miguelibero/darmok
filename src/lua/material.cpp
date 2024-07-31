@@ -1,4 +1,5 @@
 #include "material.hpp"
+#include "glm.hpp"
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/program.hpp>
@@ -29,9 +30,12 @@ namespace darmok
 		lua.new_usertype<Material>("Material",
 			sol::factories(
 				[]() { return std::make_shared<Material>();  },
+				[](const std::shared_ptr<Program>& prog){ return std::make_shared<Material>(prog); },
 				[](const std::shared_ptr<Texture>& tex) { return std::make_shared<Material>(tex);  },
 				[](const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& tex)
-					{ return std::make_shared<Material>(prog, tex); }
+					{ return std::make_shared<Material>(prog, tex); },
+				[](const std::shared_ptr<Program>& prog, const VarLuaTable<Color>& color)
+					{ return std::make_shared<Material>(prog, LuaGlm::tableGet(color)); }
 			),
 			"shininess", sol::property(&Material::getShininess, &Material::setShininess),
 			"program", sol::property(&Material::getProgram, &Material::setProgram),

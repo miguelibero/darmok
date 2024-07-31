@@ -334,8 +334,6 @@ namespace darmok
 		{
 			component->updateLogic(deltaTime);
 		}
-
-		_input.getImpl().update(deltaTime);
 		_assets.update();
 		_audio.update();
 
@@ -345,6 +343,11 @@ namespace darmok
 			auto& rg = _renderGraph.emplace(_renderGraphDef);
 			rg.configureView(1); // viewId 0 used for clearing
 		}
+	}
+
+	void AppImpl::lateUpdateLogic(float deltaTime)
+	{
+		_input.getImpl().lateUpdate(deltaTime);
 	}
 
 	void AppImpl::render() const
@@ -636,6 +639,7 @@ namespace darmok
 		_impl->update([this](float deltaTime) {
 			_impl->updateLogic(deltaTime);
 			updateLogic(deltaTime);
+			_impl->lateUpdateLogic(deltaTime);
 		});
 
 		render();

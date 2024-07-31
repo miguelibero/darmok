@@ -29,12 +29,7 @@ namespace darmok
 		{ MaterialColorType::Specular, { "u_specularColor", Colors::white() }}
 	};
 
-	Material::Material(const std::shared_ptr<Texture>& diffuseTexture) noexcept
-		: Material(nullptr, diffuseTexture)
-	{
-	}
-
-	Material::Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture) noexcept
+	Material::Material(const std::shared_ptr<Program>& program) noexcept
 		: _primitive(MaterialPrimitiveType::Triangle)
 		, _mainData{
 			32,  // shininess
@@ -48,12 +43,27 @@ namespace darmok
 		{
 			_program = std::make_shared<Program>(StandardProgramType::Unlit);
 		}
+		createHandles();
+	}
 
+	Material::Material(const std::shared_ptr<Texture>& diffuseTexture) noexcept
+		: Material(nullptr, diffuseTexture)
+	{
+	}
+
+	Material::Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture) noexcept
+		: Material(program)
+	{
 		if (diffuseTexture != nullptr)
 		{
-			setTexture(MaterialTextureType::Diffuse, diffuseTexture);
+			setTexture(TextureType::Diffuse, diffuseTexture);
 		}
-		createHandles();
+	}
+
+	Material::Material(const std::shared_ptr<Program>& program, const Color& diffuseColor) noexcept
+		: Material(program)
+	{
+		setColor(ColorType::Diffuse, diffuseColor);
 	}
 
 	void Material::createHandles() noexcept
@@ -272,7 +282,7 @@ namespace darmok
 			| BGFX_STATE_BLEND_ALPHA
 			;
 
-		if (_primitive == MaterialPrimitiveType::Line)
+		if (_primitive == PrimitiveType::Line)
 		{
 			state |= BGFX_STATE_PT_LINES;
 		}

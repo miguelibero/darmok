@@ -69,6 +69,7 @@ namespace darmok
 		}
 
 		static bool almostEqual(float a, float b, int factor = 1) noexcept;
+		static bool almostZero(float a, int factor = 1) noexcept;
 		static [[nodiscard]] glm::mat4 flipHandedness(const glm::mat4& mat) noexcept;
 		static [[nodiscard]] glm::quat flipHandedness(const glm::quat& quat) noexcept;
 
@@ -89,7 +90,7 @@ namespace darmok
         static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale, const glm::vec3& pivot = glm::vec3(0)) noexcept;
         static bool decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale) noexcept;
     
-		static float slerpDistance(const glm::quat& quad1, const glm::quat& quad2) noexcept;
+		static float distance(const glm::quat& quad1, const glm::quat& quad2) noexcept;
 	};
 }
 

@@ -9,6 +9,14 @@ namespace darmok
 		auto degrees = sol::resolve<float(float)>(&glm::degrees);
 		auto radians = sol::resolve<float(float)>(&glm::radians);
 		lua.create_named_table("Math",
+			"almost_equal", sol::overload(
+				[](float a, float b) { return Math::almostEqual(a, b); },
+				[](float a, float b, int factor) { return Math::almostEqual(a, b, factor); }
+			),
+			"almost_zero", sol::overload(
+				[](float v) { return Math::almostZero(v); },
+				[](float v, int factor) { return Math::almostZero(v, factor); }
+			),
 			"clamp", sol::overload(
 				sol::resolve<float(float, float, float)>(&glm::clamp<float>),
 				sol::resolve<int(int, int, int)>(&glm::clamp<int>)

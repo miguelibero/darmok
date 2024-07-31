@@ -13,6 +13,11 @@ namespace darmok
         return min_a <= b && max_a >= b;
     }
 
+    bool Math::almostZero(float a, int factor) noexcept
+    {
+        return almostEqual(a, 0, factor);
+    }
+
     glm::mat4 Math::flipHandedness(const glm::mat4& mat) noexcept
     {
         static const glm::mat4 zNegate = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, -1.0f));
@@ -83,7 +88,7 @@ namespace darmok
         return true;
     }
 
-    float Math::slerpDistance(const glm::quat& quad1, const glm::quat& quad2) noexcept
+    float Math::distance(const glm::quat& quad1, const glm::quat& quad2) noexcept
     {
         float v = glm::dot(quad1, quad2);
         v = glm::clamp(v, -1.0f, 1.0f);
