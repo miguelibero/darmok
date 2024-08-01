@@ -19,7 +19,7 @@ namespace darmok::physics3d
 {
 	class CharacterController;
 
-	class LuaCharacterController final : public ICharacterControllerDelegate
+	class LuaCharacterController final : ICharacterControllerDelegate
 	{
 	public:
 		using Shape = PhysicsShape;
@@ -28,16 +28,16 @@ namespace darmok::physics3d
 		LuaCharacterController(CharacterController& ctrl, const std::shared_ptr<Scene>& scene) noexcept;
 		~LuaCharacterController() noexcept;
 
-		void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) override;
-		bool onContactValidate(CharacterController& character, PhysicsBody& body) override;
-		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override;
-		void onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) override;
-
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::reference_wrapper<CharacterController> _ctrl;
 		std::shared_ptr<Scene> _scene;
 		sol::table _delegate;
+
+		void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) override;
+		bool onContactValidate(CharacterController& character, PhysicsBody& body) override;
+		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override;
+		void onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) override;
 
 		bool isGrounded() const noexcept;
 		GroundState getGroundState() const noexcept;

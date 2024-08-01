@@ -96,6 +96,16 @@ namespace darmok
 		return storage->find(_entity) != storage->end();
 	}
 
+	bool LuaEntity::hasLuaComponent(const sol::table& table) const
+	{
+		return false;
+	}
+
+	void LuaEntity::addLuaComponent(const sol::table& table)
+	{
+
+	}
+
 	std::optional<entt::id_type> LuaEntity::getComponentTypeId(const sol::object& obj) noexcept
 	{
 		switch (obj.get_type())
@@ -119,7 +129,9 @@ namespace darmok
 		lua.new_usertype<LuaEntity>("Entity", sol::no_constructor,
 			"scene", sol::property(&LuaEntity::getScene),
 			"remove_component", &LuaEntity::removeComponent,
-			"has_component", &LuaEntity::hasComponent
+			"has_component", &LuaEntity::hasComponent,
+			"has_lua_component", &LuaEntity::hasLuaComponent,
+			"add_lua_component", &LuaEntity::addLuaComponent
 		);
 
 		lua.script(R"(

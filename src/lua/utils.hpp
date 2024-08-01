@@ -11,12 +11,16 @@ namespace darmok
     bool checkLuaResult(const std::string& desc, const sol::protected_function_result& result) noexcept;
 
     template<typename Callback>
-    sol::protected_function_result callLuaTableDelegate(const sol::table& delegate, const std::string& key, const std::string& desc, Callback callback)
+    bool callLuaTableDelegate(const sol::table& delegate, const std::string& key, const std::string& desc, Callback callback)
     {
-        sol::protected_function func = delegate[key];
+        auto elm = delegate[key];
+        if (!elm.is<sol::function>())
+        {
+            return true;
+        }
+        sol::protected_function func = elm;
         auto result = callback(func);
-        checkLuaResult(desc, result);
-        return result;
+        return checkLuaResult(desc, result);
     }
 
     template<typename Callback>

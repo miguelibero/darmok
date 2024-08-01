@@ -25,6 +25,9 @@ namespace darmok
 		bool removeComponent(const sol::object& type);
 		bool hasComponent(const sol::object& type) const;
 
+		bool hasLuaComponent(const sol::table& table) const;
+		void addLuaComponent(const sol::table& table);
+
 		template<typename T, typename... Args>
 		T& addComponent(Args&&... args) noexcept
 		{

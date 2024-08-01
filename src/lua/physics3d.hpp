@@ -22,20 +22,28 @@ namespace darmok::physics3d
     class PhysicsBody;
     struct RaycastHit;
 
-    class LuaPhysicsSystem final : public IPhysicsUpdater, public ICollisionListener
+    class LuaPhysicsSystem final : IPhysicsUpdater, ICollisionListener
     {
     public:
         using Config = PhysicsSystemConfig;
 
         LuaPhysicsSystem(PhysicsSystem& system, const std::shared_ptr<Scene>& scene) noexcept;
         ~LuaPhysicsSystem() noexcept;
+
+        PhysicsSystem& getReal() noexcept;
+        const PhysicsSystem& getReal() const noexcept;
+
+        static void bind(sol::state_view& lua) noexcept;
+    private:
+        OptionalRef<PhysicsSystem> _system;
+        std::shared_ptr<Scene> _scene;
+        std::vector<sol::protected_function> _updates;
+        std::vector<sol::table> _listeners;
+
         LuaPhysicsSystem& registerUpdate(const sol::protected_function& func) noexcept;
         bool unregisterUpdate(const sol::protected_function& func) noexcept;
         LuaPhysicsSystem& addListener(const sol::table& listener) noexcept;
         bool removeListener(const sol::table& listener) noexcept;
-
-        PhysicsSystem& getReal() noexcept;
-        const PhysicsSystem& getReal() const noexcept;
 
         OptionalRef<Transform>::std_t getRootTransform() const noexcept;
         void setRootTransform(OptionalRef<Transform>::std_t root) noexcept;
@@ -56,19 +64,13 @@ namespace darmok::physics3d
         void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) override;
 
-        static void bind(sol::state_view& lua) noexcept;
-    private:
-        OptionalRef<PhysicsSystem> _system;
-        std::shared_ptr<Scene> _scene;
-        std::vector<sol::protected_function> _updates;
-        std::vector<sol::table> _listeners;
     };
 
     class PhysicsBody;
     struct PhysicsBodyConfig;
     struct CharacterConfig;
 
-    class LuaPhysicsBody final : public ICollisionListener
+    class LuaPhysicsBody final : ICollisionListener
     {
     public:
         using MotionType = PhysicsBodyMotionType;
@@ -77,6 +79,13 @@ namespace darmok::physics3d
 
         LuaPhysicsBody(PhysicsBody& body, const std::shared_ptr<Scene>& scene) noexcept;
         ~LuaPhysicsBody() noexcept;
+        
+        static void bind(sol::state_view& lua) noexcept;
+    private:
+        OptionalRef<PhysicsBody> _body;
+        std::shared_ptr<Scene> _scene;
+        std::vector<sol::table> _listeners;
+
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
@@ -87,6 +96,7 @@ namespace darmok::physics3d
         glm::quat getRotation() const noexcept;
         void setLinearVelocity(const VarLuaTable<glm::vec3>& velocity) noexcept;
         glm::vec3 getLinearVelocity() const noexcept;
+        std::string toString() const noexcept;
 
         LuaPhysicsBody& addTorque(const VarLuaTable<glm::vec3>& torque) noexcept;
         LuaPhysicsBody& addForce(const VarLuaTable<glm::vec3>& force) noexcept;
@@ -102,12 +112,6 @@ namespace darmok::physics3d
         void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) override;
-        
-        static void bind(sol::state_view& lua) noexcept;
-    private:
-        OptionalRef<PhysicsBody> _body;
-        std::shared_ptr<Scene> _scene;
-        std::vector<sol::table> _listeners;
 
         static LuaPhysicsBody addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept;
         static LuaPhysicsBody addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept;

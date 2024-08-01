@@ -88,11 +88,11 @@ namespace darmok
         return true;
     }
 
-    float Math::distance(const glm::quat& quad1, const glm::quat& quad2) noexcept
+    float Math::distance(const glm::quat& rot1, const glm::quat& rot2) noexcept
     {
-        float v = glm::dot(quad1, quad2);
+        float v = glm::dot(rot1, rot2);
         v = clamp(v, -1.0f, 1.0f);
-        return std::acos(std::abs(v));
+        return 2.F * std::acos(std::abs(v));
     }
 
     glm::vec3 Math::moveTowards(const glm::vec3& current, const glm::vec3& target, float maxDistanceDelta) noexcept

@@ -115,7 +115,7 @@ namespace darmok::physics3d
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
-            });
+        });
     }
 
     void LuaPhysicsSystem::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
@@ -126,7 +126,7 @@ namespace darmok::physics3d
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
-            });
+        });
     }
 
     void LuaPhysicsSystem::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
@@ -137,7 +137,7 @@ namespace darmok::physics3d
             [&luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2);
-            });
+        });
     }
 
     std::optional<RaycastHit> LuaPhysicsSystem::raycast1(const Ray& ray) noexcept
@@ -274,6 +274,11 @@ namespace darmok::physics3d
     glm::vec3 LuaPhysicsBody::getLinearVelocity() const noexcept
     {
         return _body->getLinearVelocity();
+    }
+
+    std::string LuaPhysicsBody::toString() const noexcept
+    {
+        return _body->toString();
     }
 
     LuaPhysicsBody& LuaPhysicsBody::addTorque(const VarLuaTable<glm::vec3>& torque) noexcept
@@ -426,6 +431,7 @@ namespace darmok::physics3d
         );
         lua.new_usertype<LuaPhysicsBody>("PhysicsBody3d", sol::no_constructor,
             "type_id", &entt::type_hash<PhysicsBody>::value,
+            sol::meta_function::to_string, &LuaPhysicsBody::toString,
             "add_entity_component", sol::overload(
                 &LuaPhysicsBody::addEntityComponent1,
                 &LuaPhysicsBody::addEntityComponent2,

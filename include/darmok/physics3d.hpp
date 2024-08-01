@@ -38,6 +38,8 @@ namespace darmok::physics3d
     {
         glm::vec3 normal;
         std::vector<glm::vec3> contacts;
+
+        std::string toString() const noexcept;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE ICollisionListener
@@ -65,6 +67,8 @@ namespace darmok::physics3d
     {
         std::reference_wrapper<PhysicsBody> physicsBody;
         float distance;
+
+        std::string toString() const noexcept;
     };
 
     class PhysicsSystemImpl;
@@ -148,6 +152,8 @@ namespace darmok::physics3d
 
         PhysicsBody& addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
+
+        std::string toString() const noexcept;
 
     private:
         std::unique_ptr<PhysicsBodyImpl> _impl;

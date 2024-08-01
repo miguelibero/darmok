@@ -193,7 +193,7 @@ end
 		StreamUtils::logDebug(oss.str());
 	}
 
-	void LuaRunnerAppImpl::luaDbgTextPrint(const glm::uvec2& pos, const std::string& msg) noexcept
+	void LuaRunnerAppImpl::luaDebugScreenText(const glm::uvec2& pos, const std::string& msg) noexcept
 	{
 		_dbgTexts.emplace_back(pos, msg);
 	}
@@ -231,7 +231,12 @@ end
 			return -2;
 		}
 		_mainLuaPath = mainPath.value();
-		return loadLua(_mainLuaPath);
+		auto result = loadLua(_mainLuaPath);
+		if (result)
+		{
+			unloadLua();
+		}
+		return result;
 	}
 
 	std::optional<int32_t> LuaRunnerAppImpl::loadLua(const std::filesystem::path& mainPath)
@@ -266,8 +271,8 @@ end
 		_luaApp.emplace(_app);
 		lua["app"] = std::ref(_luaApp.value());
 		lua.set_function("print", luaPrint);
-		lua.set_function("dbgTextPrint", [this](const VarLuaTable<glm::uvec2>& pos, const std::string& msg) {
-			luaDbgTextPrint(LuaGlm::tableGet(pos), msg);
+		lua.set_function("debug_screen_text", [this](const VarLuaTable<glm::uvec2>& pos, const std::string& msg) {
+			luaDebugScreenText(LuaGlm::tableGet(pos), msg);
 		});
 
 		if (!mainDir.empty())

@@ -6,6 +6,7 @@
 #include <darmok/string.hpp>
 #include <bx/allocator.h>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <thread>
 #include <cstdarg>
 #include <stdexcept>
@@ -1078,6 +1079,39 @@ namespace darmok::physics3d
         }
     }
 
+    const std::unordered_map<PhysicsBodyImpl::MotionType, std::string> PhysicsBodyImpl::_motionTypeNames = {
+        { MotionType::Static, "Static"},
+        { MotionType::Dynamic, "Dynamic"},
+        { MotionType::Kinematic, "Kinematic"},
+        { MotionType::Character, "Character"},
+    };
+
+    const std::string& PhysicsBodyImpl::getMotionTypeName(MotionType motion) noexcept
+    {
+        auto itr = _motionTypeNames.find(motion);
+        if (itr == _motionTypeNames.end())
+        {
+            static const std::string empty;
+            return empty;
+        }
+        return itr->second;
+    }
+
+    std::string PhysicsBodyImpl::toString() const noexcept
+    {
+        std::ostringstream ss;
+        ss << "PhysicsBody(" << _bodyId.GetIndex();
+        auto seq = _bodyId.GetSequenceNumber();
+        if (seq != 0)
+        {
+            ss << ":" << (int)seq;
+        }
+        ss << ", type=" << getMotionTypeName(getMotionType());
+        ss << ", pos=" << glm::to_string(getPosition());
+        ss << ", rot=" << glm::to_string(getRotation()) << ")";
+        return ss.str();
+    }
+
     const PhysicsBodyImpl::Shape& PhysicsBodyImpl::getShape() const noexcept
     {
         if (_characterConfig)
@@ -1107,7 +1141,7 @@ namespace darmok::physics3d
         getBodyInterface()->SetPosition(_bodyId, jpos, JPH::EActivation::Activate);
     }
 
-    glm::vec3 PhysicsBodyImpl::getPosition()
+    glm::vec3 PhysicsBodyImpl::getPosition() const
     {
         return JoltUtils::convert(getBodyInterface()->GetPosition(_bodyId));
     }
@@ -1117,7 +1151,7 @@ namespace darmok::physics3d
         getBodyInterface()->SetRotation(_bodyId, JoltUtils::convert(rot), JPH::EActivation::Activate);
     }
 
-    glm::quat PhysicsBodyImpl::getRotation()
+    glm::quat PhysicsBodyImpl::getRotation() const
     {
         return JoltUtils::convert(getBodyInterface()->GetRotation(_bodyId));
     }
@@ -1127,9 +1161,19 @@ namespace darmok::physics3d
         getBodyInterface()->SetLinearVelocity(_bodyId, JoltUtils::convert(velocity));
     }
 
-    glm::vec3 PhysicsBodyImpl::getLinearVelocity()
+    glm::vec3 PhysicsBodyImpl::getLinearVelocity() const
     {
         return JoltUtils::convert(getBodyInterface()->GetLinearVelocity(_bodyId));
+    }
+
+    void PhysicsBodyImpl::setAngularVelocity(const glm::vec3& velocity)
+    {
+        getBodyInterface()->SetAngularVelocity(_bodyId, JoltUtils::convert(velocity));
+    }
+
+    glm::vec3 PhysicsBodyImpl::getAngularVelocity() const
+    {
+        return JoltUtils::convert(getBodyInterface()->GetAngularVelocity(_bodyId));
     }
 
     void PhysicsBodyImpl::addTorque(const glm::vec3& torque)
@@ -1326,5 +1370,26 @@ namespace darmok::physics3d
     bool PhysicsBody::removeListener(ICollisionListener& listener) noexcept
     {
         return _impl->removeListener(listener);
+    }
+
+    std::string PhysicsBody::toString() const noexcept
+    {
+        return _impl->toString();
+    }
+
+    std::string Collision::toString() const noexcept
+    {
+        std::ostringstream ss;
+        ss << "Collision(normal=" << glm::to_string(normal) << " contacts=(";
+        ss << StringUtils::join(", ", contacts, [](auto& contact) { return glm::to_string(contact);  }) << "))";
+        return ss.str();
+    }
+
+    std::string RaycastHit::toString() const noexcept
+    {
+        std::ostringstream ss;
+        ss << "RaycastHit(dist=" << distance << ", ";
+        ss << physicsBody.get().toString() << ")";
+        return ss.str();
     }
 }

@@ -126,17 +126,12 @@ namespace darmok::physics3d
 		}
 		LuaCharacterController luaChar(character, _scene);
 		LuaPhysicsBody luaBody(body, _scene);
-		auto result = callLuaTableDelegate(_delegate, "on_contact_validate", "running character contact validate",
+		return callLuaTableDelegate(_delegate, "on_contact_validate", "running character contact validate",
 			[&](auto& func)
 			{
 				return func(luaChar, luaBody);
 			}
 		);
-		if (!result.valid())
-		{
-			return true;
-		}
-		return result;
 	}
 
 	void LuaCharacterController::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings)

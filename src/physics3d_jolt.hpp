@@ -293,17 +293,20 @@ namespace darmok::physics3d
         void init(PhysicsBody& body, PhysicsSystemImpl& system) noexcept;
         void shutdown(bool systemShutdown = false);
         void update(Entity entity, float deltaTime);
+        std::string toString() const noexcept;
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
         const JPH::BodyID& getBodyId() const noexcept;
 
         void setPosition(const glm::vec3& pos);
-        glm::vec3 getPosition();
+        glm::vec3 getPosition() const;
         void setRotation(const glm::quat& rot);
-        glm::quat getRotation();
+        glm::quat getRotation() const;
         void setLinearVelocity(const glm::vec3& velocity);
-        glm::vec3 getLinearVelocity();
+        glm::vec3 getLinearVelocity() const;
+        void setAngularVelocity(const glm::vec3& velocity);
+        glm::vec3 getAngularVelocity() const;
 
         void addTorque(const glm::vec3& torque);
         void addForce(const glm::vec3& force);
@@ -318,7 +321,10 @@ namespace darmok::physics3d
         void onCollisionStay(PhysicsBody& other, const Collision& collision);
         void onCollisionExit(PhysicsBody& other);
 
+        static const std::string& getMotionTypeName(MotionType motion) noexcept;
+
     private:
+        static const std::unordered_map<MotionType, std::string> _motionTypeNames;
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
         JPH::BodyID createBody(const JoltTransform& trans);
         JPH::BodyID createCharacter(const JoltTransform& trans);

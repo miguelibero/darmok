@@ -90,7 +90,7 @@ namespace darmok
 		void unloadLua() noexcept;
 
 		void addPackagePath(const std::string& path, bool binary = false) noexcept;
-		void luaDbgTextPrint(const glm::uvec2& pos, const std::string& msg) noexcept;
+		void luaDebugScreenText(const glm::uvec2& pos, const std::string& msg) noexcept;
 
 		void version(const std::string& name) noexcept;
 		void help(const std::string& name, const char* error = nullptr) noexcept;
