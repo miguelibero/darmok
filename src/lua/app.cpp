@@ -156,8 +156,8 @@ namespace darmok
 
 	void LuaRunnerApp::shutdown()
 	{
-		_impl->shutdown();
 		App::shutdown();
+		_impl->shutdown();
 	}
 
 	void LuaRunnerApp::updateLogic(float deltaTime)

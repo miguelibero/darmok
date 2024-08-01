@@ -425,7 +425,7 @@ namespace darmok::physics3d
             "motion", &PhysicsBodyConfig::motion,
             "mass", &PhysicsBodyConfig::mass,
             "friction", &PhysicsBodyConfig::friction,
-            "gravityFactor", &PhysicsBodyConfig::gravityFactor,
+            "gravity_factor", &PhysicsBodyConfig::gravityFactor,
             "layer", &PhysicsBodyConfig::layer,
             "trigger", &PhysicsBodyConfig::trigger
         );

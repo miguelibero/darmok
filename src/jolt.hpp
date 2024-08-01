@@ -1,6 +1,6 @@
 #pragma once
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 // these seem to be missing in the library header in debug
 #define JPH_PROFILE_ENABLED
 #define JPH_DEBUG_RENDERER

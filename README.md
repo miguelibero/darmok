@@ -91,6 +91,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * play sounds and music (wav & mp3)
 
 #### Upcoming
+* check memory leak when reloading darmok-lua
 * object culling
 * more renderer features
     * other types of lights
