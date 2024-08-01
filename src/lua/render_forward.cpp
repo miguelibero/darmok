@@ -14,10 +14,5 @@ namespace darmok
         lua.new_usertype<ForwardRenderer>("ForwardRenderer", sol::no_constructor,
             "add_renderer", &LuaForwardRenderer::addRenderer
         );
-        lua.script(R"(
-function ForwardRenderer:add_component(type, ...)
-	return type.add_render_component(self, ...)
-end
-)");
     }
 }

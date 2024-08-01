@@ -22,6 +22,8 @@
 
 #include "generated/lua/string.h"
 #include "generated/lua/table.h"
+#include "generated/lua/class.h"
+#include "generated/lua/base.h"
 
 namespace darmok
 {
@@ -123,14 +125,6 @@ namespace darmok
 			"register_update", &LuaApp::registerUpdate,
 			"unregister_update", &LuaApp::unregisterUpdate
 		);
-		lua.script(R"(
-function App:add_component(type, ...)
-	return type.add_app_component(self, ...)
-end
-function App:get_shared_component(type)
-	return type.get_shared_component(self)
-end
-)");
 	}
 
 	LuaError::LuaError(const std::string& msg, const sol::error& error)
@@ -259,14 +253,16 @@ end
 			lua.script(DataView::fromStatic(lib).stringView(), name);
 		};
 
-		addStaticLib(lua_darmok_lib_table, "darmok/table.lua");
-		addStaticLib(lua_darmok_lib_string, "darmok/string.lua");
-
 		LuaMath::bind(lua);
 		LuaShape::bind(lua);
 		LuaScene::bind(lua);
 		LuaApp::bind(lua);
 		LuaRmluiAppComponent::bind(lua);
+
+		addStaticLib(lua_darmok_lib_table, "darmok/table.lua");
+		addStaticLib(lua_darmok_lib_string, "darmok/string.lua");
+		addStaticLib(lua_darmok_lib_class, "darmok/class.lua");
+		addStaticLib(lua_darmok_lib_base, "darmok/base.lua");
 
 		_luaApp.emplace(_app);
 		lua["app"] = std::ref(_luaApp.value());

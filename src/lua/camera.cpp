@@ -201,11 +201,5 @@ namespace darmok
 			"viewport_to_screen_point", &LuaCamera::viewportToScreenPoint,
 			"screen_to_viewport_point", &LuaCamera::screenToViewportPoint
 		);
-
-		lua.script(R"(
-function Camera:add_renderer(type, ...)
-	return type.add_renderer(self, ...)
-end
-)");
 	}
 }

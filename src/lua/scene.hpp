@@ -16,17 +16,26 @@ namespace darmok
     class Scene;
 	class LuaScene;
 
+	class LuaComponent final
+	{
+	public:
+		bool hasComponent(const sol::object& type) const noexcept;
+		void addComponent(const sol::table& comp);
+		bool removeComponent(const sol::object& type) noexcept;
+		sol::object getComponent(const sol::object& type) noexcept;
+	private:
+		std::unordered_map<size_t, sol::table> _components;
+
+		static size_t getHash(const sol::object& obj) noexcept;
+	};
+
 	class LuaEntity final
 	{
 	public:
 		LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept;
-		std::string to_string() const noexcept;
-		bool isValid() const noexcept;
-		bool removeComponent(const sol::object& type);
-		bool hasComponent(const sol::object& type) const;
-
-		bool hasLuaComponent(const sol::table& table) const;
-		void addLuaComponent(const sol::table& table);
+		
+		const Entity& getReal() const noexcept;
+		LuaScene getScene() const;
 
 		template<typename T, typename... Args>
 		T& addComponent(Args&&... args) noexcept
@@ -51,18 +60,25 @@ namespace darmok
 			return L(*ptr, std::forward<Args>(args)...);
 		}
 
-		LuaScene getScene() const;
-		const Entity& getReal() const noexcept;
-
 		static void bind(sol::state_view& lua) noexcept;
-		[[nodiscard]] static std::optional<entt::id_type> getComponentTypeId(const sol::object& obj) noexcept;
 
 	private:
 		Entity _entity;
 		std::weak_ptr<Scene> _scene;
+		OptionalRef<LuaComponent> _lua;
 
 		EntityRegistry& getRegistry();
 		const EntityRegistry& getRegistry() const;
+
+		std::string toString() const noexcept;
+		bool isValid() const noexcept;
+		bool removeComponent(const sol::object& type);
+		bool hasComponent(const sol::object& type) const;
+
+		bool hasLuaComponent(const sol::object& type) const noexcept;
+		void addLuaComponent(const sol::table& comp);
+		bool removeLuaComponent(const sol::object& type) noexcept;
+		sol::object getLuaComponent(const sol::object& type) noexcept;
 	};
 
 	class LuaApp;
@@ -75,7 +91,7 @@ namespace darmok
 		LuaScene(const std::shared_ptr<Scene>& scene) noexcept;
 		LuaScene(LuaApp& app) noexcept;
 
-		std::string to_string() const noexcept;
+		std::string toString() const noexcept;
 		EntityRegistry& getRegistry() noexcept;
 		LuaEntity createEntity1() noexcept;
 		LuaEntity createEntity2(const VarLuaTable<glm::vec3>& position) noexcept;
