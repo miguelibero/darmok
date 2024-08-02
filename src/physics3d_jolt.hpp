@@ -201,7 +201,7 @@ namespace darmok::physics3d
     {
     public:
         using Config = PhysicsSystemConfig;
-        PhysicsSystemImpl(const Config& config, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
+        PhysicsSystemImpl(PhysicsSystem& system, const Config& config, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
         void init(Scene& scene, App& app) noexcept;
         void shutdown() noexcept;
         void update(float deltaTime);
@@ -235,6 +235,7 @@ namespace darmok::physics3d
         JoltTransform loadTransform(Transform& trans);
         void updateTransform(Transform& trans, const JPH::Mat44& mtx) noexcept;
     private:
+        PhysicsSystem& _system;
         OptionalRef<Scene> _scene;
         float _deltaTimeRest;
         Config _config;
@@ -243,7 +244,7 @@ namespace darmok::physics3d
         JoltObjectVsBroadPhaseLayerFilter _objVsBroadPhaseLayerFilter;
         JoltObjectLayerPairFilter _objLayerPairFilter;
         JoltTempAllocator _alloc;
-        std::unique_ptr<JPH::PhysicsSystem> _system;
+        std::unique_ptr<JPH::PhysicsSystem> _joltSystem;
         JoltJobSystemTaskflow _jobSystem;
         std::vector<OptionalRef<IPhysicsUpdater>> _updaters;
         std::vector<OptionalRef<ICollisionListener>> _listeners;
@@ -290,10 +291,13 @@ namespace darmok::physics3d
         PhysicsBodyImpl(const Config& config) noexcept;
         PhysicsBodyImpl(const CharacterConfig& config) noexcept;
         ~PhysicsBodyImpl();
-        void init(PhysicsBody& body, PhysicsSystemImpl& system) noexcept;
+        void init(PhysicsBody& body, PhysicsSystem& system) noexcept;
         void shutdown(bool systemShutdown = false);
         void update(Entity entity, float deltaTime);
         std::string toString() const noexcept;
+
+        OptionalRef<PhysicsSystem> getSystem() noexcept;
+        OptionalRef<const PhysicsSystem> getSystem() const noexcept;
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
@@ -329,9 +333,10 @@ namespace darmok::physics3d
         JPH::BodyID createBody(const JoltTransform& trans);
         JPH::BodyID createCharacter(const JoltTransform& trans);
         bool tryCreateBody(OptionalRef<Transform> transform);
+        PhysicsSystemImpl& getSystemImpl();
 
         OptionalRef<PhysicsBody> _body;
-        OptionalRef<PhysicsSystemImpl> _system;
+        OptionalRef<PhysicsSystem> _system;
         Config _config;
         JPH::BodyID _bodyId;        
         std::vector<OptionalRef<ICollisionListener>> _listeners;

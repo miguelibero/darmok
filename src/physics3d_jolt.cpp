@@ -382,8 +382,9 @@ namespace darmok::physics3d
 
 #endif // JPH_ENABLE_ASSERTS
 
-    PhysicsSystemImpl::PhysicsSystemImpl(const Config& config, OptionalRef<bx::AllocatorI> alloc) noexcept
-        : _alloc(alloc)
+    PhysicsSystemImpl::PhysicsSystemImpl(PhysicsSystem& system, const Config& config, OptionalRef<bx::AllocatorI> alloc) noexcept
+        : _system(system)
+        , _alloc(alloc)
         , _config(config)
         , _deltaTimeRest(0.F)
         , _broadPhaseLayer(config.layers)
@@ -403,13 +404,13 @@ namespace darmok::physics3d
         JPH::Factory::sInstance = new JPH::Factory();
         JPH::RegisterTypes();
         _jobSystem.init(app.getTaskExecutor());
-        _system = std::make_unique<JPH::PhysicsSystem>();
-        _system->Init(_config.maxBodies, _config.numBodyMutexes,
+        _joltSystem = std::make_unique<JPH::PhysicsSystem>();
+        _joltSystem->Init(_config.maxBodies, _config.numBodyMutexes,
             _config.maxBodyPairs, _config.maxContactConstraints,
             _broadPhaseLayer, _objVsBroadPhaseLayerFilter, _objLayerPairFilter);
         _deltaTimeRest = 0.F;
-        _system->SetGravity(JoltUtils::convert(_config.gravity));
-        _system->SetContactListener(this);
+        _joltSystem->SetGravity(JoltUtils::convert(_config.gravity));
+        _joltSystem->SetContactListener(this);
 
         auto& registry = scene.getRegistry();
 
@@ -421,12 +422,12 @@ namespace darmok::physics3d
         auto rigidBodies = registry.view<PhysicsBody>();
         for (auto [entity, body] : rigidBodies.each())
         {
-            body.getImpl().init(body, *this);
+            body.getImpl().init(body, _system);
         }
         auto charCtrls = registry.view<CharacterController>();
         for (auto [entity, charCtrl] : charCtrls.each())
         {
-            charCtrl.getImpl().init(charCtrl, *this);
+            charCtrl.getImpl().init(charCtrl, _system);
         }
     }
 
@@ -451,7 +452,7 @@ namespace darmok::physics3d
             registry.erase<CharacterController>(charCtrls.begin(), charCtrls.end());
         }
 
-        _system.reset();
+        _joltSystem.reset();
         _jobSystem.shutdown();
         JPH::UnregisterTypes();
         delete JPH::Factory::sInstance;
@@ -462,7 +463,7 @@ namespace darmok::physics3d
     void PhysicsSystemImpl::onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept
     {
         auto& body = registry.get<PhysicsBody>(entity);
-        body.getImpl().init(body, *this);
+        body.getImpl().init(body, _system);
     }
 
     void PhysicsSystemImpl::onRigidbodyDestroyed(EntityRegistry& registry, Entity entity)
@@ -474,7 +475,7 @@ namespace darmok::physics3d
     void PhysicsSystemImpl::onCharacterConstructed(EntityRegistry& registry, Entity entity) noexcept
     {
         auto& character = registry.get<CharacterController>(entity);
-        character.getImpl().init(character, *this);
+        character.getImpl().init(character, _system);
     }
 
     void PhysicsSystemImpl::onCharacterDestroyed(EntityRegistry& registry, Entity entity)
@@ -503,7 +504,7 @@ namespace darmok::physics3d
     
     void PhysicsSystemImpl::update(float deltaTime)
     {
-        if (!_system)
+        if (!_joltSystem)
         {
             return;
         }
@@ -521,7 +522,7 @@ namespace darmok::physics3d
             // TODO: skeletal animations here? or maybe with an updater
             // probably important for ragdolls or inverse kinematics
 
-            auto err = _system->Update(fdt, _config.collisionSteps, &_alloc, &_jobSystem);
+            auto err = _joltSystem->Update(fdt, _config.collisionSteps, &_alloc, &_jobSystem);
             _deltaTimeRest -= fdt;
             if (err != JPH::EPhysicsUpdateError::None)
             {
@@ -584,17 +585,17 @@ namespace darmok::physics3d
 
     OptionalRef<JPH::PhysicsSystem> PhysicsSystemImpl::getJolt() noexcept
     {
-        return _system != nullptr ? OptionalRef<JPH::PhysicsSystem>(*_system) : nullptr;
+        return _joltSystem != nullptr ? OptionalRef<JPH::PhysicsSystem>(*_joltSystem) : nullptr;
     }
 
     OptionalRef<const JPH::PhysicsSystem> PhysicsSystemImpl::getJolt() const noexcept
     {
-        return _system != nullptr ? OptionalRef<const JPH::PhysicsSystem>(*_system) : nullptr;
+        return _joltSystem != nullptr ? OptionalRef<const JPH::PhysicsSystem>(*_joltSystem) : nullptr;
     }
 
     JPH::BodyInterface& PhysicsSystemImpl::getBodyInterface() const noexcept
     {
-        return _system->GetBodyInterface();
+        return _joltSystem->GetBodyInterface();
     }
 
     JoltTempAllocator& PhysicsSystemImpl::getTempAllocator() noexcept
@@ -604,7 +605,7 @@ namespace darmok::physics3d
 
     glm::vec3 PhysicsSystemImpl::getGravity() noexcept
     {
-        return JoltUtils::convert(_system->GetGravity());
+        return JoltUtils::convert(_joltSystem->GetGravity());
     }
 
     void PhysicsSystemImpl::setRootTransform(OptionalRef<Transform> root) noexcept
@@ -676,7 +677,7 @@ namespace darmok::physics3d
 
     std::optional<RaycastHit> PhysicsSystemImpl::raycast(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
     {
-        if (!_system)
+        if (!_joltSystem)
         {
             return std::nullopt;
         }
@@ -685,7 +686,7 @@ namespace darmok::physics3d
         JoltObjectLayerMaskFilter objLayerFilter(layerMask);
         JPH::RayCastResult result;
 
-        if (!_system->GetNarrowPhaseQuery().CastRay(rc, result, bpLayerFilter, objLayerFilter))
+        if (!_joltSystem->GetNarrowPhaseQuery().CastRay(rc, result, bpLayerFilter, objLayerFilter))
         {
             return std::nullopt;
         }
@@ -700,7 +701,7 @@ namespace darmok::physics3d
     std::vector<RaycastHit> PhysicsSystemImpl::raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
     {
         std::vector<RaycastHit> hits;
-        if (!_system)
+        if (!_joltSystem)
         {
             return hits;
         }
@@ -712,7 +713,7 @@ namespace darmok::physics3d
         JPH::RayCastSettings settings;
         JoltVectorCastRayCollector collector;
 
-        _system->GetNarrowPhaseQuery().CastRay(rc, settings, collector, bpLayerFilter, objLayerFilter);
+        _joltSystem->GetNarrowPhaseQuery().CastRay(rc, settings, collector, bpLayerFilter, objLayerFilter);
         for (auto& result : collector.getHits())
         {
             auto rb = getPhysicsBody(result.mBodyID);
@@ -822,17 +823,17 @@ namespace darmok::physics3d
     }
     
     PhysicsSystem::PhysicsSystem(const Config& config, bx::AllocatorI& alloc) noexcept
-        : _impl(std::make_unique<PhysicsSystemImpl>(config, alloc))
+        : _impl(std::make_unique<PhysicsSystemImpl>(*this, config, alloc))
     {
     }
 
     PhysicsSystem::PhysicsSystem(const Config& config) noexcept
-        : _impl(std::make_unique<PhysicsSystemImpl>(config))
+        : _impl(std::make_unique<PhysicsSystemImpl>(*this, config))
     {
     }
 
     PhysicsSystem::PhysicsSystem(bx::AllocatorI& alloc) noexcept
-        : _impl(std::make_unique<PhysicsSystemImpl>(Config{}, alloc))
+        : _impl(std::make_unique<PhysicsSystemImpl>(*this, Config{}, alloc))
     {
     }
 
@@ -849,6 +850,17 @@ namespace darmok::physics3d
     const PhysicsSystemImpl& PhysicsSystem::getImpl() const noexcept
     {
         return *_impl;
+    }
+
+
+    OptionalRef<Scene> PhysicsSystem::getScene() noexcept
+    {
+        return _impl->getScene();
+    }
+
+    OptionalRef<const Scene> PhysicsSystem::getScene() const noexcept
+    {
+        return _impl->getScene();
     }
 
     PhysicsSystem& PhysicsSystem::setRootTransform(OptionalRef<Transform> root) noexcept
@@ -922,7 +934,7 @@ namespace darmok::physics3d
         shutdown();
     }
 
-    void PhysicsBodyImpl::init(PhysicsBody& body, PhysicsSystemImpl& system) noexcept
+    void PhysicsBodyImpl::init(PhysicsBody& body, PhysicsSystem& system) noexcept
     {
         if (_system)
         {
@@ -938,7 +950,7 @@ namespace darmok::physics3d
         {
             return;
         }
-        auto& iface = _system->getBodyInterface();
+        auto& iface = getSystemImpl().getBodyInterface();
         if (!_bodyId.IsInvalid())
         {
             iface.RemoveBody(_bodyId);
@@ -962,7 +974,7 @@ namespace darmok::physics3d
         {
             return nullptr;
         }
-        return _system->getBodyInterface();
+        return _system->getImpl().getBodyInterface();
     }
 
     JPH::BodyID PhysicsBodyImpl::createCharacter(const JoltTransform& trans)
@@ -971,7 +983,7 @@ namespace darmok::physics3d
         {
             return {};
         }
-        auto joltSystem = _system->getJolt();
+        auto joltSystem = getSystemImpl().getJolt();
         if (!joltSystem)
         {
             return {};
@@ -1026,7 +1038,7 @@ namespace darmok::physics3d
             settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;
             settings.mMassPropertiesOverride.mMass = _config.mass.value();
         }
-        return _system->getBodyInterface().CreateAndAddBody(settings, activation);
+        return getBodyInterface()->CreateAndAddBody(settings, activation);
     }
 
     bool PhysicsBodyImpl::tryCreateBody(OptionalRef<Transform> trans)
@@ -1039,7 +1051,7 @@ namespace darmok::physics3d
         JoltTransform joltTrans;
         if (trans)
         {
-            joltTrans = _system->loadTransform(trans.value());
+            joltTrans = getSystemImpl().loadTransform(trans.value());
         }
         if (!_characterConfig && _config.motion == MotionType::Character)
         {
@@ -1074,7 +1086,7 @@ namespace darmok::physics3d
         }
         if (trans)
         {
-            _system->updateTransform(trans.value(), _system->getBodyInterface().GetWorldTransform(_bodyId));
+            getSystemImpl().updateTransform(trans.value(), getBodyInterface()->GetWorldTransform(_bodyId));
         }
     }
 
@@ -1109,6 +1121,21 @@ namespace darmok::physics3d
         ss << ", pos=" << glm::to_string(getPosition());
         ss << ", rot=" << glm::to_string(getRotation()) << ")";
         return ss.str();
+    }
+
+    OptionalRef<PhysicsSystem> PhysicsBodyImpl::getSystem() noexcept
+    {
+        return _system;
+    }
+
+    OptionalRef<const PhysicsSystem> PhysicsBodyImpl::getSystem() const noexcept
+    {
+        return _system;
+    }
+
+    PhysicsSystemImpl& PhysicsBodyImpl::getSystemImpl()
+    {
+        return _system->getImpl();
     }
 
     const PhysicsBodyImpl::Shape& PhysicsBodyImpl::getShape() const noexcept
@@ -1192,13 +1219,10 @@ namespace darmok::physics3d
 
     void PhysicsBodyImpl::move(const glm::vec3& pos, const glm::quat& rot, float deltaTime)
     {
-        if (_system)
+        auto minTime = getSystemImpl().getConfig().fixedDeltaTime;
+        if (deltaTime < minTime)
         {
-            auto minTime = _system->getConfig().fixedDeltaTime;
-            if (deltaTime < minTime)
-            {
-                deltaTime = minTime;
-            }
+            deltaTime = minTime;
         }
         getBodyInterface()->MoveKinematic(_bodyId,
             JoltUtils::convert(pos),
@@ -1210,13 +1234,11 @@ namespace darmok::physics3d
     {
         auto iface = getBodyInterface();
         auto rot = iface->GetRotation(_bodyId);
-        if (_system)
+
+        auto minTime = getSystemImpl().getConfig().fixedDeltaTime;
+        if (deltaTime < minTime)
         {
-            auto minTime = _system->getConfig().fixedDeltaTime;
-            if (deltaTime < minTime)
-            {
-                deltaTime = minTime;
-            }
+            deltaTime = minTime;
         }
         iface->MoveKinematic(_bodyId,
             JoltUtils::convert(pos),
@@ -1358,6 +1380,16 @@ namespace darmok::physics3d
     const PhysicsBodyImpl& PhysicsBody::getImpl() const noexcept
     {
         return *_impl;
+    }
+
+    OptionalRef<PhysicsSystem> PhysicsBody::getSystem() noexcept
+    {
+        return _impl->getSystem();
+    }
+
+    OptionalRef<const PhysicsSystem> PhysicsBody::getSystem() const noexcept
+    {
+        return _impl->getSystem();
     }
 
     PhysicsBody& PhysicsBody::addListener(ICollisionListener& listener) noexcept

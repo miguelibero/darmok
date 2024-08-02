@@ -61,10 +61,8 @@ namespace darmok
 		RmluiAppComponent() noexcept;
 		~RmluiAppComponent() noexcept;
 
-		const RmluiView& getDefaultView() const noexcept;
-		RmluiView& getDefaultView() noexcept;
-		OptionalRef<const RmluiView> getView(const std::string& name) const noexcept;
-		RmluiView& getView(const std::string& name);
+		OptionalRef<const RmluiView> getView(const std::string& name = "") const noexcept;
+		RmluiView& getView(const std::string& name = "");
 		bool hasView(const std::string& name) const noexcept;
 		bool removeView(const std::string& name);
 		

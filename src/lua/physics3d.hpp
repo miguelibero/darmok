@@ -21,6 +21,7 @@ namespace darmok::physics3d
     class PhysicsSystem;
     class PhysicsBody;
     struct RaycastHit;
+    class LuaPhysicsBody;
 
     class LuaPhysicsSystem final : IPhysicsUpdater, ICollisionListener, public ISceneComponent
     {
@@ -33,6 +34,8 @@ namespace darmok::physics3d
 
         PhysicsSystem& getReal() noexcept;
         const PhysicsSystem& getReal() const noexcept;
+
+        OptionalRef<LuaPhysicsBody> getLuaBody(PhysicsBody& body) const noexcept;
 
         static void bind(sol::state_view& lua) noexcept;
     private:
@@ -60,6 +63,7 @@ namespace darmok::physics3d
         static LuaPhysicsSystem& addSceneComponent3(LuaScene& scene, const Config& config, bx::AllocatorI& alloc) noexcept;
 
         void fixedUpdate(float fixedDeltaTime) override;
+
         void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) override;
@@ -107,6 +111,7 @@ namespace darmok::physics3d
         LuaPhysicsBody& addListener(const sol::table& listener) noexcept;
         bool removeListener(const sol::table& listener) noexcept;
 
+        OptionalRef<LuaPhysicsBody> getLuaBody(PhysicsBody& body) const noexcept;
         void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) override;

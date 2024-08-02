@@ -103,10 +103,27 @@ namespace darmok::physics3d
         }
     }
 
+
+    OptionalRef<LuaPhysicsBody> LuaPhysicsSystem::getLuaBody(PhysicsBody& body) const noexcept
+    {
+        auto optScene = _system.getScene();
+        if (!optScene)
+        {
+            return nullptr;
+        }
+        auto& scene = optScene.value();
+        auto entity = scene.getEntity(body);
+        if (entity == entt::null)
+        {
+            return nullptr;
+        }
+        return scene.getComponent<LuaPhysicsBody>(entity);
+    }
+
     void LuaPhysicsSystem::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        LuaPhysicsBody luaBody1(body1);
-        LuaPhysicsBody luaBody2(body2);
+        auto& luaBody1 = getLuaBody(body1).value();
+        auto& luaBody2 = getLuaBody(body2).value();
         LuaUtils::callTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
@@ -116,8 +133,8 @@ namespace darmok::physics3d
 
     void LuaPhysicsSystem::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        LuaPhysicsBody luaBody1(body1);
-        LuaPhysicsBody luaBody2(body2);
+        auto& luaBody1 = getLuaBody(body1).value();
+        auto& luaBody2 = getLuaBody(body2).value();
         LuaUtils::callTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
@@ -127,8 +144,8 @@ namespace darmok::physics3d
 
     void LuaPhysicsSystem::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
     {
-        LuaPhysicsBody luaBody1(body1);
-        LuaPhysicsBody luaBody2(body2);
+        auto& luaBody1 = getLuaBody(body1).value();
+        auto& luaBody2 = getLuaBody(body2).value();
         LuaUtils::callTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
             [&luaBody1, &luaBody2](auto& func)
             {
@@ -341,10 +358,30 @@ namespace darmok::physics3d
         return true;
     }
 
+    OptionalRef<LuaPhysicsBody> LuaPhysicsBody::getLuaBody(PhysicsBody& body) const noexcept
+    {
+        if (!_body.getSystem())
+        {
+            return nullptr;
+        }
+        auto optScene = _body.getSystem()->getScene();
+        if (!optScene)
+        {
+            return nullptr;
+        }
+        auto& scene = optScene.value();
+        auto entity = scene.getEntity(body);
+        if (entity == entt::null)
+        {
+            return nullptr;
+        }
+        return scene.getComponent<LuaPhysicsBody>(entity);
+    }
+
     void LuaPhysicsBody::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        LuaPhysicsBody luaBody1(body1);
-        LuaPhysicsBody luaBody2(body2);
+        auto& luaBody1 = getLuaBody(body1).value();
+        auto& luaBody2 = getLuaBody(body2).value();
         LuaUtils::callTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
@@ -354,8 +391,8 @@ namespace darmok::physics3d
 
     void LuaPhysicsBody::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        LuaPhysicsBody luaBody1(body1);
-        LuaPhysicsBody luaBody2(body2);
+        auto& luaBody1 = getLuaBody(body1).value();
+        auto& luaBody2 = getLuaBody(body2).value();
         LuaUtils::callTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
@@ -365,8 +402,8 @@ namespace darmok::physics3d
 
     void LuaPhysicsBody::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
     {
-        LuaPhysicsBody luaBody1(body1);
-        LuaPhysicsBody luaBody2(body2);
+        auto& luaBody1 = getLuaBody(body1).value();
+        auto& luaBody2 = getLuaBody(body2).value();
         LuaUtils::callTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
             [&luaBody1, &luaBody2](auto& func)
             {

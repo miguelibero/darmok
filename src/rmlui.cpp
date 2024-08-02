@@ -798,16 +798,6 @@ namespace darmok
         return _program;
     }
 
-    RmluiView& RmluiAppComponentImpl::getDefaultView() noexcept
-    {
-        return _views.at("");
-    }
-
-    const RmluiView& RmluiAppComponentImpl::getDefaultView() const noexcept
-    {
-        return _views.at("");
-    }
-
     bool RmluiAppComponentImpl::hasView(const std::string& name) const noexcept
     {
         return _views.contains(name);
@@ -859,7 +849,7 @@ namespace darmok
 
     void RmluiAppComponentImpl::onWindowPixelSize(const glm::uvec2& size) noexcept
     {
-        getDefaultView().getImpl().setViewport(size);
+        getView().getImpl().setViewport(size);
     }
 
     const RmluiAppComponentImpl::KeyboardMap& RmluiAppComponentImpl::getKeyboardMap() noexcept
@@ -1117,16 +1107,6 @@ namespace darmok
     void RmluiAppComponent::updateLogic(float dt) noexcept
     {
         _impl->update(dt);
-    }
-
-    const RmluiView& RmluiAppComponent::getDefaultView() const noexcept
-    {
-        return _impl->getDefaultView();
-    }
-
-    RmluiView& RmluiAppComponent::getDefaultView() noexcept
-    {
-        return _impl->getDefaultView();
     }
 
     bool RmluiAppComponent::removeView(const std::string& name)

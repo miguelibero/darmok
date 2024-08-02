@@ -26,7 +26,7 @@ namespace darmok::physics3d
         using Contact = CharacterContact;
         CharacterControllerImpl(const Config& config) noexcept;
         ~CharacterControllerImpl() noexcept;
-        void init(CharacterController& ctrl, PhysicsSystemImpl& system);
+        void init(CharacterController& ctrl, PhysicsSystem& system);
         void shutdown();
         void update(Entity entity, float deltaTime);
         bool isGrounded() const noexcept;
@@ -51,10 +51,12 @@ namespace darmok::physics3d
     
     private:
         Config _config;
-        OptionalRef<PhysicsSystemImpl> _system;
+        OptionalRef<PhysicsSystem> _system;
         OptionalRef<CharacterController> _ctrl;
         JPH::Ref<JPH::CharacterVirtual> _jolt;
         OptionalRef<Delegate> _delegate;
+
+        PhysicsSystemImpl& getSystemImpl();
 
         bool tryCreateCharacter(Transform& transform);
         OptionalRef<PhysicsBody> getPhysicsBody() const noexcept;

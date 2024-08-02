@@ -85,6 +85,9 @@ namespace darmok::physics3d
         PhysicsSystemImpl& getImpl() noexcept;
         const PhysicsSystemImpl& getImpl() const noexcept;
 
+        OptionalRef<Scene> getScene() noexcept;
+        OptionalRef<const Scene> getScene() const noexcept;
+
         PhysicsSystem& setRootTransform(OptionalRef<Transform> root) noexcept;
         OptionalRef<Transform> getRootTransform() noexcept;
 
@@ -133,6 +136,9 @@ namespace darmok::physics3d
 
         PhysicsBodyImpl& getImpl() noexcept;
         const PhysicsBodyImpl& getImpl() const noexcept;
+
+        OptionalRef<PhysicsSystem> getSystem() noexcept;
+        OptionalRef<const PhysicsSystem> getSystem() const noexcept;
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;

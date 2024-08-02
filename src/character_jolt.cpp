@@ -28,7 +28,12 @@ namespace darmok::physics3d
         shutdown();
     }
 
-    void CharacterControllerImpl::init(CharacterController& ctrl, PhysicsSystemImpl& system)
+    PhysicsSystemImpl& CharacterControllerImpl::getSystemImpl()
+    {
+        return _system->getImpl();
+    }
+
+    void CharacterControllerImpl::init(CharacterController& ctrl, PhysicsSystem& system)
     {
         if (_system)
         {
@@ -180,7 +185,7 @@ namespace darmok::physics3d
             return;
         }
 
-        auto body = _system->getPhysicsBody(body2);
+        auto body = getSystemImpl().getPhysicsBody(body2);
         if (!body)
         {
             return;
@@ -198,7 +203,7 @@ namespace darmok::physics3d
         {
             return true;
         }
-        auto body = _system->getPhysicsBody(bodyID2);
+        auto body = getSystemImpl().getPhysicsBody(bodyID2);
         if (!body)
         {
             return true;
@@ -212,7 +217,7 @@ namespace darmok::physics3d
         {
             return;
         }
-        auto body = _system->getPhysicsBody(bodyID2);
+        auto body = getSystemImpl().getPhysicsBody(bodyID2);
         if (!body)
         {
             return;
@@ -233,7 +238,7 @@ namespace darmok::physics3d
         {
             return;
         }
-        auto body = _system->getPhysicsBody(bodyID2);
+        auto body = getSystemImpl().getPhysicsBody(bodyID2);
         if (!body)
         {
             return;
@@ -250,12 +255,12 @@ namespace darmok::physics3d
         {
             return false;
         }
-        auto joltSystem = _system->getJolt();
+        auto joltSystem = getSystemImpl().getJolt();
         if (!joltSystem)
         {
             return false;
         }
-        auto joltTrans = _system->loadTransform(trans);
+        auto joltTrans = getSystemImpl().loadTransform(trans);
 
         JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
         settings->mMaxSlopeAngle = _config.maxSlopeAngle;
@@ -288,7 +293,7 @@ namespace darmok::physics3d
             return;
         }
 
-        auto joltSystem = _system->getJolt();
+        auto joltSystem = getSystemImpl().getJolt();
         if (!joltSystem)
         {
             return;
@@ -316,13 +321,13 @@ namespace darmok::physics3d
         _jolt->ExtendedUpdate(deltaTime, gravity, updateSettings,
             joltSystem->GetDefaultBroadPhaseLayerFilter(_config.layer),
             joltSystem->GetDefaultLayerFilter(_config.layer),
-            bodyFilter, {}, _system->getTempAllocator()
+            bodyFilter, {}, getSystemImpl().getTempAllocator()
         );
 
         // if the entity has a rigid body, that component will update the transform
         if (!getPhysicsBody())
         {
-            _system->updateTransform(trans, _jolt->GetWorldTransform());
+            getSystemImpl().updateTransform(trans, _jolt->GetWorldTransform());
         }
     }
 

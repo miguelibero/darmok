@@ -39,7 +39,7 @@ namespace darmok
         // Rml::Lua::Initialise(lua.lua_state());
 
         lua.new_usertype<RmluiAppComponent>("GuiAppComponent", sol::no_constructor,
-            "default_view", sol::property(sol::resolve<RmluiView&()>(&RmluiAppComponent::getDefaultView)),
+            "view", sol::property([](RmluiAppComponent& comp) -> RmluiView& { return comp.getView(); }),
             "get_view", sol::resolve<RmluiView&(const std::string&)>(&RmluiAppComponent::getView),
             "has_view", &RmluiAppComponent::hasView,
             "remove_view", &RmluiAppComponent::removeView,
