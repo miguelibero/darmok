@@ -176,7 +176,16 @@ namespace darmok
         {
             renderer->update(deltaTime);
         }
+        _app->getRenderGraph().setChild(_renderGraph);
+    }
 
+    void Camera::renderReset()
+    {
+        _renderGraph.clear();
+        for (auto& renderer : _renderers)
+        {
+            renderer->renderReset();
+        }
         _app->getRenderGraph().setChild(_renderGraph);
     }
 

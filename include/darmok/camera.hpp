@@ -84,6 +84,7 @@ namespace darmok
 
         void init(Scene& scene, App& app);
         void update(float deltaTime);
+        void renderReset();
         void shutdown();
 
         Camera& addRenderer(std::unique_ptr<IRenderer>&& renderer) noexcept;

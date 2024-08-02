@@ -283,9 +283,18 @@ if(DARMOK_BUILD_IMGUI)
 endif()
 
 if(DARMOK_BUILD_RMLUI)
-  list(APPEND SOURCES rmlui.cpp)
-  list(APPEND HEADERS rmlui.hpp)
-  list(APPEND LUA_SOURCES rmlui.cpp)
+  list(APPEND SOURCES
+    rmlui.cpp
+    rmlui_debug.cpp
+  )
+  list(APPEND HEADERS
+    rmlui.hpp
+    rmlui_debug.hpp
+  )
+  list(APPEND LUA_SOURCES
+    rmlui.cpp
+    rmlui_debug.cpp
+  )
 
   set(RMLUI_ASSETS_TARGET darmok-rmlui-assets)
   darmok_process_assets(

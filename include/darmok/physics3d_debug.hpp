@@ -35,6 +35,7 @@ namespace darmok::physics3d
         ~PhysicsDebugRenderer() noexcept;
         void init(Camera& cam, Scene& scene, App& app) override;
         void shutdown() override;
+        void renderReset() override;
 
         bool isEnabled() const noexcept;
         PhysicsDebugRenderer& setEnabled(bool enabled) noexcept;

@@ -59,7 +59,7 @@ namespace
 				auto cam = scene->getComponentInChildren<Camera>(entity);
 				if (cam)
 				{
-					cam->addRenderer<ForwardRenderer>();
+					cam->addRenderer<ForwardRenderer>()
 						.addComponent<PhongLightingComponent>();
 				}
 			});

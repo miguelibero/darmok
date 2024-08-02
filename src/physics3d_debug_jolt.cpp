@@ -67,6 +67,14 @@ namespace darmok::physics3d
         cam.getRenderGraph().addPass(*this);
     }
 
+    void PhysicsDebugRendererImpl::renderReset()
+    {
+        if (_cam)
+        {
+            _cam->getRenderGraph().addPass(*this);
+        }
+    }
+
     void PhysicsDebugRendererImpl::shutdown()
     {
         if (_cam)
@@ -347,6 +355,11 @@ namespace darmok::physics3d
     void PhysicsDebugRenderer::shutdown()
     {
         _impl->shutdown();
+    }
+
+    void PhysicsDebugRenderer::renderReset()
+    {
+        _impl->renderReset();
     }
 
     bool PhysicsDebugRenderer::isEnabled() const noexcept

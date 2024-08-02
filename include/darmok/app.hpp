@@ -138,6 +138,7 @@ namespace darmok
 
 		virtual void init(App& app) {};
 		virtual void shutdown() {};
+		virtual void renderReset() {};
 		virtual void updateLogic(float deltaTime) {};
 	};
 

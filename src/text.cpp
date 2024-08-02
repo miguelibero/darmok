@@ -317,6 +317,14 @@ namespace darmok
 		}
 	}
 
+	void TextRenderer::renderReset() noexcept
+	{
+		if (_cam)
+		{
+			_cam->getRenderGraph().addPass(*this);
+		}
+	}
+
 	void TextRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
 	{
 		def.setName("Text Renderer");

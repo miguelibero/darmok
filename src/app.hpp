@@ -164,6 +164,7 @@ namespace darmok
 		void renderPassDefine(RenderPassDefinition& def) override;
 
 		void onWindowPixelSize(const glm::uvec2& size) override;
+		void renderReset();
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 
 		// first since it contains the allocator

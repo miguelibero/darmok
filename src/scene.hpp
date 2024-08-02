@@ -35,6 +35,7 @@ namespace darmok
 
         void init(App& app);
         void updateLogic(float dt);
+        void renderReset();
         void shutdown();
     private:
         std::vector<std::unique_ptr<ISceneComponent>> _components;

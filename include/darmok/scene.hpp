@@ -47,6 +47,7 @@ namespace darmok
 
         void init(App& app);
         void updateLogic(float dt);
+        void renderReset();
         void shutdown();
 
         void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
@@ -201,6 +202,7 @@ namespace darmok
 
         void init(App& app) override;
         void shutdown() override;
+        void renderReset() override;
         void updateLogic(float dt) override;
 
     private:

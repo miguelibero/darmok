@@ -325,6 +325,14 @@ namespace darmok
 		ImGui::SetCurrentContext(nullptr);
 	}
 
+	void ImguiAppComponentImpl::renderReset() noexcept
+	{
+		if (_app)
+		{
+			_app->getRenderGraph().addPass(*this);
+		}
+	}
+
 	void ImguiAppComponentImpl::shutdown() noexcept
 	{
 		if (_app)
@@ -451,6 +459,11 @@ namespace darmok
 	void ImguiAppComponent::shutdown() noexcept
 	{
 		_impl->shutdown();
+	}
+
+	void ImguiAppComponent::renderReset() noexcept
+	{
+		_impl->renderReset();
 	}
 
 	void ImguiAppComponent::updateLogic(float dt) noexcept

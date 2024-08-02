@@ -35,6 +35,14 @@ namespace darmok
 		}
 	}
 
+	void ForwardRenderer::renderReset() noexcept
+	{
+		if (_cam)
+		{
+			_cam->getRenderGraph().addPass(*this);
+		}
+	}
+
 	void ForwardRenderer::shutdown() noexcept
 	{
 		if (_cam)

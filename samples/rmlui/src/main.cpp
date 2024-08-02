@@ -8,6 +8,11 @@
 
 #include <RmlUi/Core.h>
 
+#ifdef _DEBUG
+#define RMLUI_DEBUGGER
+#include <darmok/rmlui_debug.hpp>
+#endif
+
 namespace
 {
 	using namespace darmok;
@@ -20,7 +25,12 @@ namespace
 			App::init();
 
 			auto& comp = addComponent<darmok::RmluiAppComponent>();
-			auto& context = comp.getDefaultView().getContext();
+			auto& context = comp.getView().getContext();
+			comp.getView().setInputActive(true);
+
+#ifdef RMLUI_DEBUGGER
+			addComponent<darmok::RmluiDebuggerAppComponent>(comp);
+#endif
 
 			// sample taken from the RmlUI README
 			// https://github.com/mikke89/RmlUi

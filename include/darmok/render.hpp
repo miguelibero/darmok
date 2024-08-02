@@ -33,6 +33,7 @@ namespace darmok
         virtual ~IRenderer() = default;
         virtual void init(Camera& cam, Scene& scene, App& app) {};
         virtual void update(float deltaTime) {};
+        virtual void renderReset() {};
         virtual void shutdown() {};
     };
 

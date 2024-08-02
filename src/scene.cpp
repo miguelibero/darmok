@@ -93,9 +93,10 @@ namespace darmok
             comp->init(_scene, app);
         }
 
-        for (auto [entity, cam] : _registry.view<Camera>().each())
+        auto& cams = _registry.storage<Camera>();
+        for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            cam.init(_scene, app);
+            itr->init(_scene, app);
         }
 
         _registry.on_construct<Camera>().connect<&SceneImpl::onCameraConstructed>(*this);
@@ -126,7 +127,7 @@ namespace darmok
 
         for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
         {
-                (*itr)->shutdown();
+            (*itr)->shutdown();
         }
 
         _registry.on_construct<Camera>().disconnect<&SceneImpl::onCameraConstructed>(*this);
@@ -135,19 +136,28 @@ namespace darmok
         _app.reset();
     }
 
+    void SceneImpl::renderReset()
+    {
+        // iteration in reverse to maintain the order in wich the cameras where added
+        auto& cams = _registry.storage<Camera>();
+        for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
+        {
+            itr->renderReset();
+        }
+    }
+
     void SceneImpl::updateLogic(float dt)
     {
-        auto camView = _registry.view<Camera>();
-        auto& renderGraph = _app->getRenderGraph();
-        for (auto [entity, cam] : camView.each())
+        auto& cams = _registry.storage<Camera>();
+        for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            cam.update(dt);
+            itr->update(dt);
         }
 
-        auto transView = _registry.view<Transform>();
-        for (auto [entity, trans] : transView.each())
+        auto& trans = _registry.storage<Transform>();
+        for (auto itr = trans.rbegin(), last = trans.rend(); itr != last; ++itr)
         {
-            trans.update();
+            itr->update();
         }
 
         for (auto& comp : _components)
@@ -203,6 +213,11 @@ namespace darmok
     void Scene::init(App& app)
     {
         _impl->init(app);
+    }
+
+    void Scene::renderReset()
+    {
+        _impl->renderReset();
     }
 
     void Scene::shutdown()
@@ -268,6 +283,14 @@ namespace darmok
         if(_scene)
         {
             _scene->init(app);
+        }
+    }
+
+    void SceneAppComponent::renderReset()
+    {
+        if (_scene)
+        {
+            _scene->renderReset();
         }
     }
 

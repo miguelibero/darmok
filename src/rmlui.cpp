@@ -14,7 +14,6 @@
 #include <darmok/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <RmlUi/Debugger.h>
 #include "generated/rmlui/rmlui.program.h"
 
 namespace darmok
@@ -262,7 +261,7 @@ namespace darmok
         }
         auto viewId = _viewId.value();
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
+        // bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
         bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
         _viewport.configureView(viewId);
@@ -752,11 +751,6 @@ namespace darmok
         return *_impl;
     }
 
-    RmluiAppComponentImpl::RmluiAppComponentImpl(const Config& config) noexcept
-        : _config(config)
-    {
-    }
-
     RmluiAppComponentImpl::~RmluiAppComponentImpl() noexcept
     {
         if (_app)
@@ -785,12 +779,6 @@ namespace darmok
         defaultView.setFullscreen(true);
         defaultView.setInputActive(true);
 
-        if (_config.enableDebuggerEvent)
-        {
-            Rml::Debugger::Initialise(&defaultView.getContext());
-            app.getInput().addListener("debugger", _config.enableDebuggerEvent.value(), *this);
-        }
-
         onWindowPixelSize(app.getWindow().getPixelSize());
         onMousePositionChange({}, app.getInput().getMouse().getPosition());
 
@@ -813,11 +801,6 @@ namespace darmok
             _app->getRenderGraph().removePass(view.getImpl());
         }
 
-        if (_config.enableDebuggerEvent)
-        {
-            Rml::Debugger::Shutdown();
-        }
-
         Rml::ReleaseTextures();
 
         _views.clear();
@@ -826,53 +809,7 @@ namespace darmok
 
         Rml::Shutdown();
     }
-
-    void RmluiAppComponentImpl::onInputEvent(const std::string& tag) noexcept
-    {
-        if (tag == "debugger")
-        {
-            toggleDebugger();
-        }
-    }
-
-    void RmluiAppComponentImpl::toggleDebugger() noexcept
-    {
-        if (!_debuggingView)
-        {
-            if (!_views.empty())
-            {
-                _debuggingView = _views.begin()->second;
-            }
-        }
-        else
-        {
-            auto ptr = &_debuggingView.value();
-            auto itr = std::find_if(_views.begin(), _views.end(), [ptr](auto& elm) { return &elm.second == ptr; });
-            if (itr != _views.end())
-            {
-                ++itr;
-            }
-            if (itr == _views.end())
-            {
-                _debuggingView.reset();
-            }
-            else
-            {
-                _debuggingView = itr->second;
-            }
-        }
-        if (_debuggingView)
-        {
-            Rml::Debugger::SetVisible(true);
-            Rml::Debugger::SetContext(&_debuggingView->getContext());
-        }
-        else
-        {
-            Rml::Debugger::SetVisible(false);
-            Rml::Debugger::SetContext(nullptr);
-        }
-    }
-
+    
     RmluiSystemInterface& RmluiAppComponentImpl::getSystem() noexcept
     {
         return _system;
@@ -886,6 +823,11 @@ namespace darmok
     std::shared_ptr<Program> RmluiAppComponentImpl::getProgram() const noexcept
     {
         return _program;
+    }
+
+    RmluiAppComponentImpl::Views& RmluiAppComponentImpl::getViews() noexcept
+    {
+        return _views;
     }
 
     bool RmluiAppComponentImpl::hasView(const std::string& name) const noexcept
@@ -934,6 +876,15 @@ namespace darmok
         for (auto& elm : _views)
         {
             elm.second.getImpl().update();
+        }
+    }
+
+    void RmluiAppComponentImpl::renderReset() noexcept
+    {
+        auto& graph = _app->getRenderGraph();
+        for (auto& [name, view] : _views)
+        {
+            graph.addPass(view.getImpl());
         }
     }
 
@@ -1181,14 +1132,24 @@ namespace darmok
         }
     }
 
-    RmluiAppComponent::RmluiAppComponent(const Config& config) noexcept
-        : _impl(std::make_unique<RmluiAppComponentImpl>(config))
+    RmluiAppComponent::RmluiAppComponent() noexcept
+        : _impl(std::make_unique<RmluiAppComponentImpl>())
     {
     }
 
     RmluiAppComponent::~RmluiAppComponent() noexcept
     {
         // left empty to get the forward declaration of the impl working
+    }
+
+    RmluiAppComponentImpl& RmluiAppComponent::getImpl() noexcept
+    {
+        return *_impl;
+    }
+
+    const RmluiAppComponentImpl& RmluiAppComponent::getImpl() const noexcept
+    {
+        return *_impl;
     }
 
     void RmluiAppComponent::init(App& app)
@@ -1199,6 +1160,11 @@ namespace darmok
     void RmluiAppComponent::shutdown() noexcept
     {
         _impl->shutdown();
+    }
+
+    void RmluiAppComponent::renderReset() noexcept
+    {
+        _impl->renderReset();
     }
 
     void RmluiAppComponent::updateLogic(float dt) noexcept

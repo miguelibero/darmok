@@ -111,20 +111,19 @@ namespace
 
 			_prog = std::make_shared<Program>(StandardProgramType::Unlit);
 
-			auto cam2d = registry.create();
-			registry.emplace<Camera>(cam2d)
-				.setOrtho(getWindow().getSize(), glm::vec2(0))
-				.setEntityComponentFilter<Culling2D>()
-				.addRenderer<ForwardRenderer>();
-
 			auto cam3d = registry.create();
 			registry.emplace<Transform>(cam3d)
 				.setPosition(glm::vec3(0.f, 2.f, -2.f))
 				.lookAt(glm::vec3(0, 0, 0));
-
 			registry.emplace<Camera>(cam3d)
 				.setPerspective(60, getWindow().getSize(), 0.3, 1000)
 				.setEntityComponentFilter<Culling3D>()
+				.addRenderer<ForwardRenderer>();
+
+			auto cam2d = registry.create();
+			registry.emplace<Camera>(cam2d)
+				.setOrtho(getWindow().getSize(), glm::vec2(0))
+				.setEntityComponentFilter<Culling2D>()
 				.addRenderer<ForwardRenderer>();
 
 			auto debugTexture = getAssets().getColorTextureLoader()(Colors::red());

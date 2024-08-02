@@ -111,19 +111,22 @@ namespace darmok
         RenderConfig _renderConfig;
     };
 
+    // TODO: add PIMPL class
     class DARMOK_EXPORT TextRenderer final : public IRenderer, IRenderPass
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) override;
-        void renderPassDefine(RenderPassDefinition& def) noexcept override;
-        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(IRenderGraphContext& context) noexcept override;
+        void renderReset() noexcept override;
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
         bgfx::ViewId _viewId;
+
+        void renderPassDefine(RenderPassDefinition& def) noexcept override;
+        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
+        void renderPassExecute(IRenderGraphContext& context) noexcept override;
     };
 
     struct TextureAtlas;

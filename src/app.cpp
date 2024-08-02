@@ -297,8 +297,20 @@ namespace darmok
 		}
 
 		bgfx::reset(size.x, size.y);
+		renderReset();
+	}
+
+	void AppImpl::renderReset()
+	{
 		_renderGraph.reset();
 		_renderGraphDef.clear();
+
+		_renderGraphDef.addPass(*this);
+
+		for (auto& component : _components)
+		{
+			component->renderReset();
+		}
 	}
 
 	void AppImpl::shutdown()

@@ -39,6 +39,7 @@ namespace darmok::physics3d
         PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app);
         void shutdown();
+        void renderReset();
 
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;

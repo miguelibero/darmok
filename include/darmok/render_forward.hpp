@@ -18,6 +18,7 @@ namespace darmok
         ForwardRenderer() noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void update(float deltaTime) override;
+        void renderReset() noexcept override;
         void shutdown() noexcept override;
 
         void renderPassDefine(RenderPassDefinition& def) noexcept override;

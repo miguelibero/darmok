@@ -170,16 +170,16 @@ namespace darmok
 
 	};
 
-    class RmluiAppComponentImpl final : IWindowListener, IKeyboardListener, IMouseListener, IInputEventListener
+    class RmluiAppComponentImpl final : IWindowListener, IKeyboardListener, IMouseListener
     {
     public:
-		using Config = RmluiAppComponentConfig;
-		RmluiAppComponentImpl(const Config& config = {}) noexcept;
+		using Views = std::unordered_map<std::string, RmluiView>;
 		~RmluiAppComponentImpl() noexcept;
 
 		void init(App& app);
 		void shutdown() noexcept;
 		void update(float dt) noexcept;
+		void renderReset() noexcept;
 
 		RmluiSystemInterface& getSystem() noexcept;
 		bx::AllocatorI& getAllocator() noexcept;
@@ -188,21 +188,18 @@ namespace darmok
 
 		OptionalRef<const RmluiView> getView(const std::string& name = "") const noexcept;
 		RmluiView& getView(const std::string& name = "");
+
+		Views& getViews() noexcept;
 		
 		bool hasView(const std::string& name) const noexcept;
 		bool removeView(const std::string& name);
 
 	private:
-		Config _config;
-		OptionalRef<RmluiView> _debuggingView;
 		RmluiSystemInterface _system;
 		RmluiFileInterface _file;
 		OptionalRef<App> _app;
 		std::shared_ptr<Program> _program;
-		std::unordered_map<std::string, RmluiView> _views;
-
-		void toggleDebugger() noexcept;
-		void onInputEvent(const std::string& tag) noexcept override;
+		Views _views;
 
 		void onWindowPixelSize(const glm::uvec2& size) noexcept override;
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;

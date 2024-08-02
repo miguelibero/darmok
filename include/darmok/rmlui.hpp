@@ -5,7 +5,6 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/render_graph.hpp>
-#include <darmok/input.hpp>
 #include <bx/bx.h>
 #include <string>
 #include <optional>
@@ -59,17 +58,14 @@ namespace darmok
 
 	class RmluiAppComponentImpl;
 
-	struct DARMOK_EXPORT RmluiAppComponentConfig
-	{
-		std::optional<InputEvent> enableDebuggerEvent = KeyboardInputEvent{ KeyboardKey::F9 };
-	};
-
 	class DARMOK_EXPORT RmluiAppComponent final : public IAppComponent
     {
     public:
-		using Config = RmluiAppComponentConfig;
-		RmluiAppComponent(const Config& config = {}) noexcept;
+		RmluiAppComponent() noexcept;
 		~RmluiAppComponent() noexcept;
+
+		RmluiAppComponentImpl& getImpl() noexcept;
+		const RmluiAppComponentImpl& getImpl() const noexcept;
 
 		OptionalRef<const RmluiView> getView(const std::string& name = "") const noexcept;
 		RmluiView& getView(const std::string& name = "");
@@ -78,6 +74,7 @@ namespace darmok
 		
 		void init(App& app) override;
 		void shutdown() noexcept override;
+		void renderReset() noexcept override;
 		void updateLogic(float dt) noexcept override;
 	private:
 		std::unique_ptr<RmluiAppComponentImpl> _impl;
