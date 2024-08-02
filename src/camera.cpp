@@ -157,6 +157,8 @@ namespace darmok
         {
             renderer->init(*this, scene, app);
         }
+
+        _app->getRenderGraph().setChild(_renderGraph);
     }
 
     void Camera::shutdown()

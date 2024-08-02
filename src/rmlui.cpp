@@ -14,6 +14,7 @@
 #include <darmok/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <RmlUi/Debugger.h>
 #include "generated/rmlui/rmlui.program.h"
 
 namespace darmok
@@ -485,10 +486,11 @@ namespace darmok
 
     RmluiViewImpl::RmluiViewImpl(const std::string& name, const Viewport& vp, RmluiAppComponentImpl& comp)
         : _render(comp.getProgram(), comp.getAllocator())
-        , _inputActive(true)
+        , _inputActive(false)
         , _mousePosition(0)
         , _comp(comp)
         , _viewport(vp)
+        , _fullscreen(false)
     {
         _context = Rml::CreateContext(name, RmluiUtils::convert<int>(vp.size), &_render);
         if (!_context)
@@ -511,6 +513,16 @@ namespace darmok
     std::string RmluiViewImpl::getName() const noexcept
     {
         return _context->GetName();
+    }
+
+    bool RmluiViewImpl::getFullscreen() const noexcept
+    {
+        return _fullscreen;
+    }
+
+    void RmluiViewImpl::setFullscreen(bool enabled) noexcept
+    {
+        _fullscreen = enabled;
     }
 
     Rml::Context& RmluiViewImpl::getContext() noexcept
@@ -666,6 +678,17 @@ namespace darmok
         return _impl->getName();
     }
 
+    bool RmluiView::getFullscreen() const noexcept
+    {
+        return _impl->getFullscreen();
+    }
+
+    RmluiView& RmluiView::setFullscreen(bool enabled) noexcept
+    {
+        _impl->setFullscreen(enabled);
+        return *this;
+    }
+
     const Viewport& RmluiView::getViewport() const noexcept
     {
         return _impl->getViewport();
@@ -729,6 +752,11 @@ namespace darmok
         return *_impl;
     }
 
+    RmluiAppComponentImpl::RmluiAppComponentImpl(const Config& config) noexcept
+        : _config(config)
+    {
+    }
+
     RmluiAppComponentImpl::~RmluiAppComponentImpl() noexcept
     {
         if (_app)
@@ -753,8 +781,17 @@ namespace darmok
 
         _app = app;
 
-        getView("");
+        auto& defaultView = getView();
+        defaultView.setFullscreen(true);
+        defaultView.setInputActive(true);
 
+        if (_config.enableDebuggerEvent)
+        {
+            Rml::Debugger::Initialise(&defaultView.getContext());
+            app.getInput().addListener("debugger", _config.enableDebuggerEvent.value(), *this);
+        }
+
+        onWindowPixelSize(app.getWindow().getPixelSize());
         onMousePositionChange({}, app.getInput().getMouse().getPosition());
 
         app.getWindow().addListener(*this);
@@ -776,6 +813,11 @@ namespace darmok
             _app->getRenderGraph().removePass(view.getImpl());
         }
 
+        if (_config.enableDebuggerEvent)
+        {
+            Rml::Debugger::Shutdown();
+        }
+
         Rml::ReleaseTextures();
 
         _views.clear();
@@ -783,6 +825,52 @@ namespace darmok
         _program.reset();
 
         Rml::Shutdown();
+    }
+
+    void RmluiAppComponentImpl::onInputEvent(const std::string& tag) noexcept
+    {
+        if (tag == "debugger")
+        {
+            toggleDebugger();
+        }
+    }
+
+    void RmluiAppComponentImpl::toggleDebugger() noexcept
+    {
+        if (!_debuggingView)
+        {
+            if (!_views.empty())
+            {
+                _debuggingView = _views.begin()->second;
+            }
+        }
+        else
+        {
+            auto ptr = &_debuggingView.value();
+            auto itr = std::find_if(_views.begin(), _views.end(), [ptr](auto& elm) { return &elm.second == ptr; });
+            if (itr != _views.end())
+            {
+                ++itr;
+            }
+            if (itr == _views.end())
+            {
+                _debuggingView.reset();
+            }
+            else
+            {
+                _debuggingView = itr->second;
+            }
+        }
+        if (_debuggingView)
+        {
+            Rml::Debugger::SetVisible(true);
+            Rml::Debugger::SetContext(&_debuggingView->getContext());
+        }
+        else
+        {
+            Rml::Debugger::SetVisible(false);
+            Rml::Debugger::SetContext(nullptr);
+        }
     }
 
     RmluiSystemInterface& RmluiAppComponentImpl::getSystem() noexcept
@@ -851,7 +939,14 @@ namespace darmok
 
     void RmluiAppComponentImpl::onWindowPixelSize(const glm::uvec2& size) noexcept
     {
-        getView().getImpl().setViewport(size);
+        for (auto& [name, view] : _views)
+        {
+            if (!view.getFullscreen())
+            {
+                continue;
+            }
+            view.setViewport(size);
+        }
     }
 
     const RmluiAppComponentImpl::KeyboardMap& RmluiAppComponentImpl::getKeyboardMap() noexcept
@@ -1086,8 +1181,8 @@ namespace darmok
         }
     }
 
-    RmluiAppComponent::RmluiAppComponent() noexcept
-        : _impl(std::make_unique<RmluiAppComponentImpl>())
+    RmluiAppComponent::RmluiAppComponent(const Config& config) noexcept
+        : _impl(std::make_unique<RmluiAppComponentImpl>(config))
     {
     }
 

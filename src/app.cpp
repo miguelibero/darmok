@@ -340,7 +340,6 @@ namespace darmok
 
 	void AppImpl::renderPassConfigure(bgfx::ViewId viewId)
 	{
-		bgfx::setViewName(viewId, "darmok");
 		auto& size = _window.getPixelSize();
 		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
 		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);

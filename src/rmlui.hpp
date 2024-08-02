@@ -13,6 +13,7 @@
 #include <variant>
 #include <optional>
 #include <memory>
+#include <mutex>
 
 namespace darmok
 {
@@ -129,6 +130,9 @@ namespace darmok
 
 		std::string getName() const noexcept;
 
+		bool getFullscreen() const noexcept;
+		void setFullscreen(bool enabled) noexcept;
+
 		Rml::Context& getContext() noexcept;
 		const Rml::Context& getContext() const noexcept;
 
@@ -151,6 +155,7 @@ namespace darmok
 		void renderPassExecute(IRenderGraphContext& context) noexcept override;
 
 	private:
+		std::mutex _mutex;
 		OptionalRef<Rml::Context> _context;
 		RmluiAppComponentImpl& _comp;
 		std::string _name;
@@ -158,15 +163,18 @@ namespace darmok
 		bool _inputActive;
 		glm::vec2 _mousePosition;
 		Viewport _viewport;
+		bool _fullscreen;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 
 	};
 
-    class RmluiAppComponentImpl final : public IWindowListener, public IKeyboardListener, public IMouseListener
+    class RmluiAppComponentImpl final : IWindowListener, IKeyboardListener, IMouseListener, IInputEventListener
     {
     public:
+		using Config = RmluiAppComponentConfig;
+		RmluiAppComponentImpl(const Config& config = {}) noexcept;
 		~RmluiAppComponentImpl() noexcept;
 
 		void init(App& app);
@@ -184,6 +192,18 @@ namespace darmok
 		bool hasView(const std::string& name) const noexcept;
 		bool removeView(const std::string& name);
 
+	private:
+		Config _config;
+		OptionalRef<RmluiView> _debuggingView;
+		RmluiSystemInterface _system;
+		RmluiFileInterface _file;
+		OptionalRef<App> _app;
+		std::shared_ptr<Program> _program;
+		std::unordered_map<std::string, RmluiView> _views;
+
+		void toggleDebugger() noexcept;
+		void onInputEvent(const std::string& tag) noexcept override;
+
 		void onWindowPixelSize(const glm::uvec2& size) noexcept override;
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
 		void onKeyboardChar(const Utf8Char& chr) noexcept override;
@@ -191,13 +211,6 @@ namespace darmok
 		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseButton(MouseButton button, bool down) noexcept override;
-
-	private:
-		RmluiSystemInterface _system;
-		RmluiFileInterface _file;
-		OptionalRef<App> _app;
-		std::shared_ptr<Program> _program;
-		std::unordered_map<std::string, RmluiView> _views;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;
 		static const KeyboardMap& getKeyboardMap() noexcept;

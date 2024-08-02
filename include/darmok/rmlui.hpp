@@ -5,6 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/render_graph.hpp>
+#include <darmok/input.hpp>
 #include <bx/bx.h>
 #include <string>
 #include <optional>
@@ -32,6 +33,9 @@ namespace darmok
 
 		std::string getName() const noexcept;
 
+		bool getFullscreen() const noexcept;
+		RmluiView& setFullscreen(bool enabled) noexcept;
+
 		RmluiView& setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		std::shared_ptr<Texture> getTargetTexture() noexcept;
 
@@ -55,10 +59,16 @@ namespace darmok
 
 	class RmluiAppComponentImpl;
 
+	struct DARMOK_EXPORT RmluiAppComponentConfig
+	{
+		std::optional<InputEvent> enableDebuggerEvent = KeyboardInputEvent{ KeyboardKey::F9 };
+	};
+
 	class DARMOK_EXPORT RmluiAppComponent final : public IAppComponent
     {
     public:
-		RmluiAppComponent() noexcept;
+		using Config = RmluiAppComponentConfig;
+		RmluiAppComponent(const Config& config = {}) noexcept;
 		~RmluiAppComponent() noexcept;
 
 		OptionalRef<const RmluiView> getView(const std::string& name = "") const noexcept;
