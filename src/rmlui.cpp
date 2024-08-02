@@ -156,7 +156,7 @@ namespace darmok
         , _transform(1)
         , _alloc(alloc)
         , _program(prog)
-        , _viewId(-1)
+        , _viewId(0)
     {
     }
 
@@ -192,7 +192,7 @@ namespace darmok
 
     void RmluiRenderInterface::submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
     {
-        if (_program == nullptr || !_encoder)
+        if (!_program || !_encoder || !_viewId)
         {
             return;
         }
@@ -211,19 +211,24 @@ namespace darmok
             }
         }
         _encoder->setState(_state);
-        _encoder->submit(_viewId, _program->getHandle(defines));
+        _encoder->submit(_viewId.value(), _program->getHandle(defines));
     }
 
     void RmluiRenderInterface::EnableScissorRegion(bool enable) noexcept
     {
+        if (!_viewId)
+        {
+            return;
+        }
         _scissorEnabled = enable;
+        auto viewId = _viewId.value();
         if (enable)
         {
-            bgfx::setViewScissor(_viewId, _scissor.x, _scissor.y, _scissor.z, _scissor.w);
+            bgfx::setViewScissor(viewId, _scissor.x, _scissor.y, _scissor.z, _scissor.w);
         }
         else
         {
-            bgfx::setViewScissor(_viewId);
+            bgfx::setViewScissor(viewId);
         }
     }
 
@@ -250,22 +255,23 @@ namespace darmok
 
     bool RmluiRenderInterface::configureView() noexcept
     {
-        if (_viewId == (bgfx::ViewId)-1)
+        if (!_viewId)
         {
             return false;
         }
+        auto viewId = _viewId.value();
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-        bgfx::setViewClear(_viewId, clearFlags, 1.F, 0U, 1);
-        bgfx::setViewMode(_viewId, bgfx::ViewMode::Sequential);
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
+        bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
-        _viewport.configureView(_viewId);
+        _viewport.configureView(viewId);
 
         auto bot = glm::vec2(_viewport.origin);
         auto top = bot + glm::vec2(_viewport.size);
         auto proj = Math::ortho(bot.x, top.x, top.y, bot.y);
 
-        bgfx::setViewTransform(_viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
-        bgfx::setViewFrameBuffer(_viewId, _frameBuffer);
+        bgfx::setViewTransform(viewId, glm::value_ptr(_transform), glm::value_ptr(proj));
+        bgfx::setViewFrameBuffer(viewId, _frameBuffer);
 
         return true;
     }
@@ -278,7 +284,7 @@ namespace darmok
 
     void RmluiRenderInterface::renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept
     {
-        if (!_viewId || !_program)
+        if (!_encoder || !_program || !_viewId)
         {
             return;
         }
@@ -304,16 +310,12 @@ namespace darmok
 
         mesh->render(_encoder.value());
         _encoder->setState(_state);
-        _encoder->submit(_viewId, _program->getHandle());
+        _encoder->submit(_viewId.value(), _program->getHandle());
     }
 
     void RmluiRenderInterface::afterRender() noexcept
     {
-        if (_encoder)
-        {
-            bgfx::end(_encoder.ptr());
-            _encoder.reset();
-        }
+        _encoder.reset();
         SetTransform(nullptr);
     }
 

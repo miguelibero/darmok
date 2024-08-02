@@ -96,7 +96,7 @@ namespace darmok
 		BgfxCallbacks() = default;
 	};
 
-	class AppImpl final : public IKeyboardListener, public IWindowListener
+	class AppImpl final : IKeyboardListener, IWindowListener, IRenderPass
 	{
 	public:
 		AppImpl(App& app) noexcept;
@@ -107,9 +107,6 @@ namespace darmok
 		void render() const;
 		AppUpdateResult processEvents();
 		void shutdown();
-
-		void onWindowPixelSize(const glm::uvec2& size) override;
-		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
@@ -161,6 +158,13 @@ namespace darmok
 
 		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
 		void toggleTaskflowProfile();
+
+		void renderPassConfigure(bgfx::ViewId viewId) override;
+		void renderPassExecute(IRenderGraphContext& context) override;
+		void renderPassDefine(RenderPassDefinition& def) override;
+
+		void onWindowPixelSize(const glm::uvec2& size) override;
+		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 
 		// first since it contains the allocator
 		AssetContext _assets;

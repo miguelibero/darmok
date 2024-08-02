@@ -272,8 +272,6 @@ namespace darmok
         bool operator==(const RenderPassDefinition& other) const noexcept;
         bool operator!=(const RenderPassDefinition& other) const noexcept;
 
-        bgfx::ViewId getViewId() const noexcept;
-
         RenderPassDefinition& setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
 
@@ -299,7 +297,6 @@ namespace darmok
         Resources _inputs;
         Resources _outputs;
         OptionalRef<IRenderPassDelegate> _delegate;
-        bgfx::ViewId _viewId;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderPass : public IRenderPassDelegate

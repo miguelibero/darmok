@@ -275,15 +275,11 @@ namespace darmok
 		//bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
 		bgfx::setPaletteColor(1, Colors::toNumber(_config.clearColor));
 
-		bgfx::ViewId viewId = 0;
-		bgfx::setViewName(viewId, "darmok");
-		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
-		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
-
 		_input.getKeyboard().addListener(*this);
 		_window.addListener(*this);
 		_assets.init(_app);
 		_audio.init();
+		_renderGraphDef.addPass(*this);
 
 		for (auto& component : _components)
 		{
@@ -301,9 +297,6 @@ namespace darmok
 		}
 
 		bgfx::reset(size.x, size.y);
-		bgfx::ViewId viewId = 0;
-		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
-
 		_renderGraph.reset();
 		_renderGraphDef.clear();
 	}
@@ -341,8 +334,28 @@ namespace darmok
 		if (!_renderGraph || _renderGraph->hash() != rgHash)
 		{
 			auto& rg = _renderGraph.emplace(_renderGraphDef);
-			rg.configureView(1); // viewId 0 used for clearing
+			rg.configureView(0);
 		}
+	}
+
+	void AppImpl::renderPassConfigure(bgfx::ViewId viewId)
+	{
+		bgfx::setViewName(viewId, "darmok");
+		auto& size = _window.getPixelSize();
+		bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
+	}
+
+	void AppImpl::renderPassExecute(IRenderGraphContext& context)
+	{
+		// just clear the screen
+		bgfx::ViewId viewId = 0;
+		context.getEncoder().touch(viewId);
+	}
+
+	void AppImpl::renderPassDefine(RenderPassDefinition& def)
+	{
+		def.setName("App clear");
 	}
 
 	void AppImpl::lateUpdateLogic(float deltaTime)

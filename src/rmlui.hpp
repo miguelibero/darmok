@@ -59,7 +59,7 @@ namespace darmok
 
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
 		std::unordered_map<Rml::CompiledGeometryHandle, CompiledGeometry> _compiledGeometries;
-		bgfx::ViewId _viewId;
+		std::optional<bgfx::ViewId> _viewId;
 		Viewport _viewport;
 
 		OptionalRef<bgfx::Encoder> _encoder;

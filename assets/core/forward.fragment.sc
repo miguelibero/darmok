@@ -3,7 +3,10 @@ $input v_position, v_normal, v_color0, v_texcoord0
 #include <bgfx_shader.sh>
 #include <darmok_phong_lighting.include.sc>
 
+#ifndef TEXTURE_DISABLED
 SAMPLER2D(s_texColor, 0);
+#endif
+
 uniform vec4 u_diffuseColor;
 uniform vec4 u_specularColor;
 uniform vec4 u_camPos;
@@ -13,7 +16,9 @@ uniform vec4 u_camPos;
 void main()
 {
 	vec4 base = v_color0;
+#ifndef TEXTURE_DISABLED
 	base = base * texture2D(s_texColor, v_texcoord0);
+#endif
 	vec3 ambient = getAmbientLight().color;
 
 	vec3 diffuse = vec3_splat(0);

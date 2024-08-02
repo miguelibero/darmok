@@ -76,7 +76,6 @@ namespace darmok
 
     RenderPassDefinition::RenderPassDefinition(const std::string& name) noexcept
         : _id(randomIdType())
-        , _viewId(-1)
         , _name(name)
         , _delegate(nullptr)
     {
@@ -91,11 +90,6 @@ namespace darmok
     const std::string& RenderPassDefinition::getName() const noexcept
     {
         return _name;
-    }
-
-    bgfx::ViewId RenderPassDefinition::getViewId() const noexcept
-    {
-        return _viewId;
     }
 
     bool RenderPassDefinition::operator==(const RenderPassDefinition& other) const noexcept
@@ -126,8 +120,6 @@ namespace darmok
 
     bgfx::ViewId RenderPassDefinition::configureView(bgfx::ViewId viewId) noexcept
     {
-        _viewId = viewId;
-
         bgfx::resetView(viewId);
         bgfx::setViewName(viewId, _name.c_str());
 
@@ -185,7 +177,7 @@ namespace darmok
     size_t RenderPassDefinition::hash() const noexcept
     {
         size_t hash = 0;
-        hashCombine(hash, _inputs.hash(), _outputs.hash(), _name, _viewId);
+        hashCombine(hash, _inputs.hash(), _outputs.hash(), _name);
         return hash;
     }
 
@@ -550,12 +542,7 @@ namespace darmok
     RenderGraph::RenderGraph(const Definition& def) noexcept
         : _root(def)
     {
-        auto& rootDef = _root.getDefinition();
-        if (rootDef.getName().empty())
-        {
-            rootDef.setName("root");
-        }
-        _taskflow.name(rootDef.getName());
+        _taskflow.name("root");
         RenderGraphContext context(*this, _root.id());
         _root.configureTasks(_taskflow, context);
     }
