@@ -55,7 +55,7 @@ namespace darmok
 
 	class RmluiAppComponentImpl;
 
-	class DARMOK_EXPORT RmluiAppComponent final : public AppComponent
+	class DARMOK_EXPORT RmluiAppComponent final : public IAppComponent
     {
     public:
 		RmluiAppComponent() noexcept;

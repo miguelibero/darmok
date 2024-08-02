@@ -428,7 +428,6 @@ namespace darmok::physics3d
         {
             charCtrl.getImpl().init(charCtrl, *this);
         }
-
     }
 
     void PhysicsSystemImpl::shutdown() noexcept

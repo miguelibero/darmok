@@ -9,6 +9,7 @@
 #include <bgfx/bgfx.h>
 #include <darmok/app_fwd.hpp>
 #include <darmok/color_fwd.hpp>
+#include <bx/bx.h>
 
 #ifndef DARMOK_IMPLEMENT_MAIN
 #	define DARMOK_IMPLEMENT_MAIN 0
@@ -41,7 +42,7 @@ namespace tf
 
 namespace darmok
 {
-	class AppComponent;
+	class IAppComponent;
 	class App;
 	class AppImpl;
 	class Input;
@@ -60,8 +61,6 @@ namespace darmok
 		int maxInstantLogicUpdates = getDefaultConfig().maxInstantLogicUpdates;
 		Color clearColor = getDefaultConfig().clearColor;
 	};
-
-	typedef std::shared_ptr<AppComponent>(*SharedAppComponentCreationCallback)();
 
 	class DARMOK_EXPORT App
 	{
@@ -107,24 +106,23 @@ namespace darmok
 		void toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
-		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
+		void addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
+		bool removeComponent(const IAppComponent& component) noexcept;
+		bool hasComponent(const IAppComponent& component) const noexcept;
 
 		template<typename T, typename... A>
-		T& addComponent(A&&... args) noexcept
+		T& addComponent(A&&... args)
 		{
-			auto ptr = new T(std::forward<A>(args)...);
-			addComponent(std::unique_ptr<AppComponent>(ptr));
-			return *ptr;
+			auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+			auto& ref = *ptr;
+			addComponent(std::move(ptr));
+			return ref;
 		}
+
+
 
 	protected:
 		void setConfig(const AppConfig& config) noexcept;
-
-		template<typename T>
-		static std::shared_ptr<AppComponent> createComponent()
-		{
-			return std::make_shared<T>();
-		}
 
 		virtual void updateLogic(float deltaTime);
 		virtual void render() const;
@@ -133,11 +131,10 @@ namespace darmok
 		std::unique_ptr<AppImpl> _impl;
 	};
 
-	class DARMOK_EXPORT AppComponent
+	class DARMOK_EXPORT BX_NO_VTABLE IAppComponent
 	{
 	public:
-		AppComponent() = default;
-		virtual ~AppComponent() = default;
+		virtual ~IAppComponent() = default;
 
 		virtual void init(App& app) {};
 		virtual void shutdown() {};

@@ -6,26 +6,22 @@
 
 namespace darmok::physics3d
 {
-    LuaPhysicsSystem::LuaPhysicsSystem(PhysicsSystem& system, const std::shared_ptr<Scene>& scene) noexcept
+    LuaPhysicsSystem::LuaPhysicsSystem(PhysicsSystem& system) noexcept
         : _system(system)
-        , _scene(scene)
     {
     }
 
-    LuaPhysicsSystem::~LuaPhysicsSystem() noexcept
+    void LuaPhysicsSystem::shutdown() noexcept
     {
-        if (_system && _scene->hasSceneComponent(_system.value()))
-        {
-            _system->removeListener(*this);
-            _system->removeUpdater(*this);
-        }
+        _system.removeListener(*this);
+        _system.removeUpdater(*this);
     }
 
     LuaPhysicsSystem& LuaPhysicsSystem::registerUpdate(const sol::protected_function& func) noexcept
     {
         if (_updates.empty())
         {
-            _system->addUpdater(*this);
+            _system.addUpdater(*this);
         }
         _updates.emplace_back(func);
         return *this;
@@ -41,7 +37,7 @@ namespace darmok::physics3d
         _updates.erase(itr);
         if (_updates.empty())
         {
-            _system->removeUpdater(*this);
+            _system.removeUpdater(*this);
         }
         return true;
     }
@@ -50,7 +46,7 @@ namespace darmok::physics3d
     {
         if (_listeners.empty())
         {
-            _system->addListener(*this);
+            _system.addListener(*this);
         }
         _listeners.emplace_back(listener);
         return *this;
@@ -66,29 +62,29 @@ namespace darmok::physics3d
         _listeners.erase(itr);
         if (_listeners.empty())
         {
-            _system->removeListener(*this);
+            _system.removeListener(*this);
         }
         return true;
     }
 
     PhysicsSystem& LuaPhysicsSystem::getReal() noexcept
     {
-        return *_system;
+        return _system;
     }
 
     const PhysicsSystem& LuaPhysicsSystem::getReal() const noexcept
     {
-        return *_system;
+        return _system;
     }
 
     OptionalRef<Transform>::std_t LuaPhysicsSystem::getRootTransform() const noexcept
     {
-        return _system->getRootTransform();
+        return _system.getRootTransform();
     }
 
     void LuaPhysicsSystem::setRootTransform(OptionalRef<Transform>::std_t root) noexcept
     {
-        _system->setRootTransform(root);
+        _system.setRootTransform(root);
     }
 
     void LuaPhysicsSystem::fixedUpdate(float fixedDeltaTime)
@@ -102,16 +98,16 @@ namespace darmok::physics3d
             auto result = update(fixedDeltaTime);
             if (!result.valid())
             {
-                logLuaError("running fixed update", result);
+                LuaUtils::logError("running fixed update", result);
             }
         }
     }
 
     void LuaPhysicsSystem::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        LuaPhysicsBody luaBody1(body1, _scene);
-        LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
+        LuaPhysicsBody luaBody1(body1);
+        LuaPhysicsBody luaBody2(body2);
+        LuaUtils::callTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
@@ -120,9 +116,9 @@ namespace darmok::physics3d
 
     void LuaPhysicsSystem::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        LuaPhysicsBody luaBody1(body1, _scene);
-        LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
+        LuaPhysicsBody luaBody1(body1);
+        LuaPhysicsBody luaBody2(body2);
+        LuaUtils::callTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
@@ -131,9 +127,9 @@ namespace darmok::physics3d
 
     void LuaPhysicsSystem::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
     {
-        LuaPhysicsBody luaBody1(body1, _scene);
-        LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
+        LuaPhysicsBody luaBody1(body1);
+        LuaPhysicsBody luaBody2(body2);
+        LuaUtils::callTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
             [&luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2);
@@ -142,47 +138,47 @@ namespace darmok::physics3d
 
     std::optional<RaycastHit> LuaPhysicsSystem::raycast1(const Ray& ray) noexcept
     {
-        return _system->raycast(ray);
+        return _system.raycast(ray);
     }
 
     std::optional<RaycastHit> LuaPhysicsSystem::raycast2(const Ray& ray, float maxDistance) noexcept
     {
-        return _system->raycast(ray, maxDistance);
+        return _system.raycast(ray, maxDistance);
     }
 
     std::optional<RaycastHit> LuaPhysicsSystem::raycast3(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
     {
-        return _system->raycast(ray, maxDistance, layerMask);
+        return _system.raycast(ray, maxDistance, layerMask);
     }
 
     std::vector<RaycastHit> LuaPhysicsSystem::raycastAll1(const Ray& ray) noexcept
     {
-        return _system->raycastAll(ray);
+        return _system.raycastAll(ray);
     }
 
     std::vector<RaycastHit> LuaPhysicsSystem::raycastAll2(const Ray& ray, float maxDistance) noexcept
     {
-        return _system->raycastAll(ray, maxDistance);
+        return _system.raycastAll(ray, maxDistance);
     }
 
     std::vector<RaycastHit> LuaPhysicsSystem::raycastAll3(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
     {
-        return _system->raycastAll(ray, maxDistance, layerMask);
+        return _system.raycastAll(ray, maxDistance, layerMask);
     }
 
-    LuaPhysicsSystem LuaPhysicsSystem::addSceneComponent1(LuaScene& scene) noexcept
+    LuaPhysicsSystem& LuaPhysicsSystem::addSceneComponent1(LuaScene& scene) noexcept
     {
-        return LuaPhysicsSystem(scene.getReal()->addSceneComponent<PhysicsSystem>(), scene.getReal());
+        return scene.addSceneComponent<LuaPhysicsSystem, PhysicsSystem>();
     }
 
-    LuaPhysicsSystem LuaPhysicsSystem::addSceneComponent2(LuaScene& scene, const Config& config) noexcept
+    LuaPhysicsSystem& LuaPhysicsSystem::addSceneComponent2(LuaScene& scene, const Config& config) noexcept
     {
-        return LuaPhysicsSystem(scene.getReal()->addSceneComponent<PhysicsSystem>(config), scene.getReal());
+        return scene.addSceneComponent<LuaPhysicsSystem, PhysicsSystem>(config);
     }
 
-    LuaPhysicsSystem LuaPhysicsSystem::addSceneComponent3(LuaScene& scene, const Config& config, bx::AllocatorI& alloc) noexcept
+    LuaPhysicsSystem& LuaPhysicsSystem::addSceneComponent3(LuaScene& scene, const Config& config, bx::AllocatorI& alloc) noexcept
     {
-        return LuaPhysicsSystem(scene.getReal()->addSceneComponent<PhysicsSystem>(config, alloc), scene.getReal());
+        return scene.addSceneComponent<LuaPhysicsSystem, PhysicsSystem>(config, alloc);
     }
 
     void LuaPhysicsSystem::bind(sol::state_view& lua) noexcept
@@ -222,105 +218,101 @@ namespace darmok::physics3d
         );
     }
 
-    LuaPhysicsBody::LuaPhysicsBody(PhysicsBody& body, const std::shared_ptr<Scene>& scene) noexcept
+    LuaPhysicsBody::LuaPhysicsBody(PhysicsBody& body) noexcept
         : _body(body)
-        , _scene(scene)
     {
     }
 
     LuaPhysicsBody::~LuaPhysicsBody() noexcept
     {
-        if (_body && _scene->hasComponent(_body.value()))
-        {
-            _body->removeListener(*this);
-        }
+        _body.removeListener(*this);
     }
 
     const LuaPhysicsBody::Shape& LuaPhysicsBody::getShape() const noexcept
     {
-        return _body->getShape();
+        return _body.getShape();
     }
 
     LuaPhysicsBody::MotionType LuaPhysicsBody::getMotionType() const noexcept
     {
-        return _body->getMotionType();
+        return _body.getMotionType();
     }
 
     void LuaPhysicsBody::setPosition(const VarLuaTable<glm::vec3>& pos) noexcept
     {
-        _body->setPosition(LuaGlm::tableGet(pos));
+        _body.setPosition(LuaGlm::tableGet(pos));
     }
 
     glm::vec3 LuaPhysicsBody::getPosition() const noexcept
     {
-        return _body->getPosition();
+        return _body.getPosition();
     }
 
     void LuaPhysicsBody::setRotation(const VarLuaTable<glm::quat>& rot) noexcept
     {
-        _body->setRotation(LuaGlm::tableGet(rot));
+        _body.setRotation(LuaGlm::tableGet(rot));
     }
 
     glm::quat LuaPhysicsBody::getRotation() const noexcept
     {
-        return _body->getRotation();
+        return _body.getRotation();
     }
 
     void LuaPhysicsBody::setLinearVelocity(const VarLuaTable<glm::vec3>& velocity) noexcept
     {
-        _body->setLinearVelocity(LuaGlm::tableGet(velocity));
+        _body.setLinearVelocity(LuaGlm::tableGet(velocity));
     }
 
     glm::vec3 LuaPhysicsBody::getLinearVelocity() const noexcept
     {
-        return _body->getLinearVelocity();
+        return _body.getLinearVelocity();
     }
 
     std::string LuaPhysicsBody::toString() const noexcept
     {
-        return _body->toString();
+        return _body.toString();
     }
 
     LuaPhysicsBody& LuaPhysicsBody::addTorque(const VarLuaTable<glm::vec3>& torque) noexcept
     {
-        _body->addTorque(LuaGlm::tableGet(torque));
+        _body.addTorque(LuaGlm::tableGet(torque));
         return *this;
     }
 
     LuaPhysicsBody& LuaPhysicsBody::addForce(const VarLuaTable<glm::vec3>& force) noexcept
     {
-        _body->addForce(LuaGlm::tableGet(force));
+        _body.addForce(LuaGlm::tableGet(force));
         return *this;
     }
 
     LuaPhysicsBody& LuaPhysicsBody::addImpulse(const VarLuaTable<glm::vec3>& impulse) noexcept
     {
-        _body->addImpulse(LuaGlm::tableGet(impulse));
+        _body.addImpulse(LuaGlm::tableGet(impulse));
         return *this;
     }
 
     LuaPhysicsBody& LuaPhysicsBody::move1(const VarLuaTable<glm::vec3>& pos, const VarLuaTable<glm::quat>& rot) noexcept
     {
-        _body->move(LuaGlm::tableGet(pos), LuaGlm::tableGet(rot));
+        _body.move(LuaGlm::tableGet(pos), LuaGlm::tableGet(rot));
         return *this;
     }
 
     LuaPhysicsBody& LuaPhysicsBody::move2(const VarLuaTable<glm::vec3>& pos, const VarLuaTable<glm::quat>& rot, float deltaTime) noexcept
     {
-        _body->move(LuaGlm::tableGet(pos), LuaGlm::tableGet(rot), deltaTime);
+        _body.move(LuaGlm::tableGet(pos), LuaGlm::tableGet(rot), deltaTime);
         return *this;
     }
 
 
     LuaPhysicsBody& LuaPhysicsBody::movePosition1(const VarLuaTable<glm::vec3>& pos) noexcept
     {
-        _body->movePosition(LuaGlm::tableGet(pos));
+        _body.movePosition(LuaGlm::tableGet(pos));
         return *this;
     }
 
     LuaPhysicsBody& LuaPhysicsBody::movePosition2(const VarLuaTable<glm::vec3>& pos, float deltaTime) noexcept
     {
-        _body->movePosition(LuaGlm::tableGet(pos), deltaTime);
+        _body.movePosition(LuaGlm::tableGet(pos), deltaTime);
         return *this;
     }
 
@@ -328,7 +320,7 @@ namespace darmok::physics3d
     {
         if (_listeners.empty())
         {
-            _body->addListener(*this);
+            _body.addListener(*this);
         }
         _listeners.emplace_back(listener);
         return *this;
@@ -344,16 +336,16 @@ namespace darmok::physics3d
         _listeners.erase(itr);
         if (_listeners.empty())
         {
-            _body->removeListener(*this);
+            _body.removeListener(*this);
         }
         return true;
     }
 
     void LuaPhysicsBody::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        LuaPhysicsBody luaBody1(body1, _scene);
-        LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
+        LuaPhysicsBody luaBody1(body1);
+        LuaPhysicsBody luaBody2(body2);
+        LuaUtils::callTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
@@ -362,9 +354,9 @@ namespace darmok::physics3d
 
     void LuaPhysicsBody::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
-        LuaPhysicsBody luaBody1(body1, _scene);
-        LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
+        LuaPhysicsBody luaBody1(body1);
+        LuaPhysicsBody luaBody2(body2);
+        LuaUtils::callTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
             [&collision, &luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2, collision);
@@ -373,43 +365,43 @@ namespace darmok::physics3d
 
     void LuaPhysicsBody::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
     {
-        LuaPhysicsBody luaBody1(body1, _scene);
-        LuaPhysicsBody luaBody2(body2, _scene);
-        callLuaTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
+        LuaPhysicsBody luaBody1(body1);
+        LuaPhysicsBody luaBody2(body2);
+        LuaUtils::callTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
             [&luaBody1, &luaBody2](auto& func)
             {
                 return func(luaBody1, luaBody2);
             });
     }
 
-    LuaPhysicsBody LuaPhysicsBody::addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept
+    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept
     {
-        return LuaPhysicsBody(entity.addComponent<PhysicsBody>(shape), entity.getScene().getReal());
+        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(shape);
     }
 
-    LuaPhysicsBody LuaPhysicsBody::addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept
+    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept
     {
-        return LuaPhysicsBody(entity.addComponent<PhysicsBody>(shape, motion), entity.getScene().getReal());
+        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(shape, motion);
     }
 
-    LuaPhysicsBody LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Config& config) noexcept
+    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Config& config) noexcept
     {
-        return LuaPhysicsBody(entity.addComponent<PhysicsBody>(config), entity.getScene().getReal());
+        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(config);
     }
 
-    LuaPhysicsBody LuaPhysicsBody::addEntityComponent4(LuaEntity& entity, const CharacterConfig& config) noexcept
+    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent4(LuaEntity& entity, const CharacterConfig& config) noexcept
     {
-        return LuaPhysicsBody(entity.addComponent<PhysicsBody>(config), entity.getScene().getReal());
+        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(config);
     }
 
-    std::optional<LuaPhysicsBody> LuaPhysicsBody::getEntityComponent(LuaEntity& entity) noexcept
+    OptionalRef<LuaPhysicsBody>::std_t LuaPhysicsBody::getEntityComponent(LuaEntity& entity) noexcept
     {
-        return entity.getComponent<PhysicsBody, LuaPhysicsBody>(entity.getScene().getReal());
+        return entity.getComponent<LuaPhysicsBody>();
     }
 
     std::optional<LuaEntity> LuaPhysicsBody::getEntity(LuaScene& scene) noexcept
     {
-        return scene.getEntity(_body.value());
+        return scene.getEntity(_body);
     }
     
     void LuaPhysicsBody::bind(sol::state_view& lua) noexcept

@@ -6,19 +6,15 @@
 
 namespace darmok::physics3d
 {
-	LuaCharacterController::LuaCharacterController(CharacterController& ctrl, const std::shared_ptr<Scene>& scene) noexcept
+	LuaCharacterController::LuaCharacterController(CharacterController& ctrl) noexcept
 		: _ctrl(ctrl)
-		, _scene(scene)
 	{
 		ctrl.setDelegate(this);
 	}
 
 	LuaCharacterController::~LuaCharacterController() noexcept
 	{
-		if ( _scene->hasComponent(_ctrl.get()))
-		{
-			_ctrl.get().setDelegate(nullptr);
-		}
+		_ctrl.get().setDelegate(nullptr);
 	}
 
 	bool LuaCharacterController::isGrounded() const noexcept
@@ -78,17 +74,17 @@ namespace darmok::physics3d
 
 	LuaCharacterController LuaCharacterController::addEntityComponent1(LuaEntity& entity, const Config& config) noexcept
 	{
-		return LuaCharacterController(entity.addComponent<CharacterController>(config), entity.getScene().getReal());
+		return LuaCharacterController(entity.addComponent<CharacterController>(config));
 	}
 
 	LuaCharacterController LuaCharacterController::addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept
 	{
-		return LuaCharacterController(entity.addComponent<CharacterController>(shape), entity.getScene().getReal());
+		return LuaCharacterController(entity.addComponent<CharacterController>(shape));
 	}
 
 	std::optional<LuaCharacterController> LuaCharacterController::getEntityComponent(LuaEntity& entity) noexcept
 	{
-		return entity.getComponent<CharacterController, LuaCharacterController>(entity.getScene().getReal());
+		return entity.getComponent<CharacterController, LuaCharacterController>();
 	}
 
 	std::optional<LuaEntity> LuaCharacterController::getEntity(LuaScene& scene) noexcept
@@ -108,9 +104,9 @@ namespace darmok::physics3d
 		{
 			return;
 		}
-		LuaCharacterController luaChar(character, _scene);
-		LuaPhysicsBody luaBody(body, _scene);
-		callLuaTableDelegate(_delegate, "on_adjust_body_velocity", "running character adjust body velocity",
+		LuaCharacterController luaChar(character);
+		LuaPhysicsBody luaBody(body);
+		LuaUtils::callTableDelegate(_delegate, "on_adjust_body_velocity", "running character adjust body velocity",
 			[&](auto& func)
 			{
 				return func(luaChar, luaBody, linearVelocity, angularVelocity);
@@ -124,9 +120,9 @@ namespace darmok::physics3d
 		{
 			return true;
 		}
-		LuaCharacterController luaChar(character, _scene);
-		LuaPhysicsBody luaBody(body, _scene);
-		return callLuaTableDelegate(_delegate, "on_contact_validate", "running character contact validate",
+		LuaCharacterController luaChar(character);
+		LuaPhysicsBody luaBody(body);
+		return LuaUtils::callTableDelegate(_delegate, "on_contact_validate", "running character contact validate",
 			[&](auto& func)
 			{
 				return func(luaChar, luaBody);
@@ -140,9 +136,9 @@ namespace darmok::physics3d
 		{
 			return;
 		}
-		LuaCharacterController luaChar(character, _scene);
-		LuaPhysicsBody luaBody(body, _scene);
-		callLuaTableDelegate(_delegate, "on_contact_added", "running character contact added",
+		LuaCharacterController luaChar(character);
+		LuaPhysicsBody luaBody(body);
+		LuaUtils::callTableDelegate(_delegate, "on_contact_added", "running character contact added",
 			[&](auto& func)
 			{
 				return func(luaChar, luaBody, contact, settings);
@@ -156,9 +152,9 @@ namespace darmok::physics3d
 		{
 			return;
 		}
-		LuaCharacterController luaChar(character, _scene);
-		LuaPhysicsBody luaBody(body, _scene);
-		callLuaTableDelegate(_delegate, "on_contact_solve", "running character contact solve",
+		LuaCharacterController luaChar(character);
+		LuaPhysicsBody luaBody(body);
+		LuaUtils::callTableDelegate(_delegate, "on_contact_solve", "running character contact solve",
 			[&](auto& func)
 			{
 				return func(luaChar, luaBody, contact, characterVelocity);

@@ -4,10 +4,11 @@
 #include <bx/debug.h>
 #include <bx/string.h>
 #include <darmok/stream.hpp>
+#include <darmok/utils.hpp>
 
 namespace darmok
 {
-    void logLuaError(const std::string& desc, const sol::error& err) noexcept
+    void LuaUtils::logError(const std::string& desc, const sol::error& err) noexcept
 	{
 		std::stringstream ss;
 		ss << "recovered lua error " << desc << ":" << std::endl;
@@ -16,17 +17,17 @@ namespace darmok
 		StreamUtils::logDebug(ss.str(), true);
 	}
 
-	bool checkLuaResult(const std::string& desc, const sol::protected_function_result& result) noexcept
+	bool LuaUtils::checkResult(const std::string& desc, const sol::protected_function_result& result) noexcept
 	{
 		if (!result.valid())
 		{
-			logLuaError(desc, result);
+			logError(desc, result);
 			return false;
 		}
 		return true;
 	}
 
-	int luaDeny(lua_State* L)
+	int LuaUtils::deny(lua_State* L)
 	{
 		return luaL_error(L, "operation not allowed");
 	}

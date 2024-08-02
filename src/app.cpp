@@ -316,9 +316,9 @@ namespace darmok
 		_renderGraph.reset();
 		_renderGraphDef.clear();
 
-		for (auto& component : _components)
+		for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
 		{
-			component->shutdown();
+			(*itr)->shutdown();
 		}
 		_components.clear();
 
@@ -510,13 +510,30 @@ namespace darmok
 		return _updateResult;
 	}
 
-	void AppImpl::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
+	void AppImpl::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
 	{
 		if (_running)
 		{
 			component->init(_app);
 		}
 		_components.push_back(std::move(component));
+	}
+
+	bool AppImpl::removeComponent(const IAppComponent& comp) noexcept
+	{
+		auto itr = std::find_if(_components.begin(), _components.end(), [&comp](auto& elm) { return elm.get() == &comp; });
+		if (itr == _components.end())
+		{
+			return false;
+		}
+		_components.erase(itr);
+		return true;
+	}
+
+	bool AppImpl::hasComponent(const IAppComponent& comp) const noexcept
+	{
+		auto itr = std::find_if(_components.begin(), _components.end(), [&comp](auto& elm) { return elm.get() == &comp; });
+		return itr != _components.end();
 	}
 
 	App::App() noexcept
@@ -679,7 +696,7 @@ namespace darmok
 		_impl->setDebugFlag(flag, enabled);
 	}
 
-	void App::addComponent(std::unique_ptr<AppComponent>&& component) noexcept
+	void App::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
 	{
 		_impl->addComponent(std::move(component));
 	}

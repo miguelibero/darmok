@@ -95,7 +95,7 @@ namespace darmok
 			auto result = update(deltaTime);
 			if (!result.valid())
 			{
-				logLuaError("running update", result);
+				LuaUtils::logError("running update", result);
 			}
 		}
 	}
@@ -289,7 +289,7 @@ namespace darmok
 		auto result = lua.script_file(mainPath.string());
 		if (!result.valid())
 		{
-			logLuaError("running main", result);
+			LuaUtils::logError("running main", result);
 			throw LuaError("running lua main", result);
 		}
 		auto relm = result[0];
@@ -393,7 +393,7 @@ namespace darmok
 			auto result = init();
 			if (!result.valid())
 			{
-				logLuaError("running init", result);
+				LuaUtils::logError("running init", result);
 				throw LuaError("running init", result);
 			}
 		}

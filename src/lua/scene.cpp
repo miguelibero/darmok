@@ -18,9 +18,11 @@
 
 namespace darmok
 {
+	const std::string LuaComponent::_typeKey = "class";
+
 	bool LuaComponent::removeComponent(const sol::object& type) noexcept
 	{
-		auto itr = _components.find(getHash(type));
+		auto itr = _components.find(getKey(type));
 		if (itr == _components.end())
 		{
 			return false;
@@ -31,35 +33,34 @@ namespace darmok
 
 	bool LuaComponent::hasComponent(const sol::object& type) const noexcept
 	{
-		auto itr = _components.find(getHash(type));
+		auto itr = _components.find(getKey(type));
 		return itr != _components.end();
 	}
 
 	void LuaComponent::addComponent(const sol::table& comp)
 	{
-		auto metatable = comp[sol::metatable_key];
-		auto hash = getHash(metatable);
-		auto itr = _components.find(hash);
+		auto key = getKey(comp[_typeKey]);
+		auto itr = _components.find(key);
 		if (itr != _components.end())
 		{
 			throw std::invalid_argument("component of type already exists");
 		}
-		_components.emplace(hash, comp);
+		_components.emplace(key, comp);
 	}
 
 	sol::object LuaComponent::getComponent(const sol::object& type) noexcept
 	{
-		auto itr = _components.find(getHash(type));
-		if (itr != _components.end())
+		auto itr = _components.find(getKey(type));
+		if (itr == _components.end())
 		{
-			return itr->second;
+			return sol::nil;
 		}
-		return sol::nil;
+		return itr->second;
 	}
 
-	size_t LuaComponent::getHash(const sol::object& obj) noexcept
+	LuaComponent::Key LuaComponent::getKey(const sol::object& type) noexcept
 	{
-		return sol::reference_hash()(obj);
+		return type.pointer();
 	}
 
 	LuaEntity::LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept
@@ -319,14 +320,14 @@ namespace darmok
 	{
 	}
 
-	LuaSceneAppComponent LuaSceneAppComponent::addAppComponent1(LuaApp& app) noexcept
+	LuaSceneAppComponent& LuaSceneAppComponent::addAppComponent1(LuaApp& app) noexcept
 	{
-		return LuaSceneAppComponent(app.getReal().addComponent<SceneAppComponent>());
+		return app.addComponent<LuaSceneAppComponent, SceneAppComponent>();
 	}
 
-	LuaSceneAppComponent LuaSceneAppComponent::addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept
+	LuaSceneAppComponent& LuaSceneAppComponent::addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept
 	{
-		return LuaSceneAppComponent(app.getReal().addComponent<SceneAppComponent>(scene.getReal()));
+		return app.addComponent<LuaSceneAppComponent, SceneAppComponent>(scene.getReal());
 	}
 
 	LuaScene LuaSceneAppComponent::getScene() const noexcept

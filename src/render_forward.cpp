@@ -41,14 +41,14 @@ namespace darmok
 		{
 			_cam->getRenderGraph().removePass(*this);
 		}
+		for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
+		{
+			(*itr)->shutdown();
+		}
 		_viewId = -1;
 		_cam.reset();
 		_scene.reset();
 		_app.reset();
-		for (auto& comp : _components)
-		{
-			comp->shutdown();
-		}
 	}
 
 	void ForwardRenderer::addComponent(std::unique_ptr<IRenderComponent>&& comp) noexcept

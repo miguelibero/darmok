@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/optional_ref.hpp>
+#include <darmok/app.hpp>
 #include <vector>
 #include <optional>
 #include <unordered_map>
@@ -19,7 +20,6 @@ namespace bx
 
 namespace darmok
 {
-	class App;
 	class AssetContext;
 
 	class LuaApp final
@@ -32,6 +32,13 @@ namespace darmok
 		void update(float deltaTime) noexcept;
 		void registerUpdate(const sol::protected_function& func) noexcept;
 		bool unregisterUpdate(const sol::protected_function& func) noexcept;
+
+		template<typename T, typename R, typename... A>
+		T& addComponent(A&&... args)
+		{
+			auto& real = getReal().addComponent<R>(std::forward<A>(args)...);
+			return getReal().addComponent<T>(real);
+		}
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:

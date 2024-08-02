@@ -20,7 +20,7 @@ namespace darmok
 		static const std::string desc("on window size");
 		for (auto& listener : _listeners[ListenerType::Size])
 		{
-			checkLuaResult(desc, listener.call(size));
+			LuaUtils::checkResult(desc, listener.call(size));
 		}
 	}
 
@@ -29,7 +29,7 @@ namespace darmok
 		static const std::string desc("on window pixel size");
 		for (auto& listener : _listeners[ListenerType::PixelSize])
 		{
-			checkLuaResult(desc, listener.call(size));
+			LuaUtils::checkResult(desc, listener.call(size));
 		}
 	}
 
@@ -38,7 +38,7 @@ namespace darmok
 		static const std::string desc("on window phase");
 		for (auto& listener : _listeners[ListenerType::Phase])
 		{
-			checkLuaResult(desc, listener.call(phase));
+			LuaUtils::checkResult(desc, listener.call(phase));
 		}
 	}
 
@@ -47,7 +47,7 @@ namespace darmok
 		static const std::string desc("on window video mode");
 		for (auto& listener : _listeners[ListenerType::VideoMode])
 		{
-			checkLuaResult(desc, listener.call(mode));
+			LuaUtils::checkResult(desc, listener.call(mode));
 		}
 	}
 
@@ -56,7 +56,7 @@ namespace darmok
 		static const std::string desc("on window cursor mode");
 		for (auto& listener : _listeners[ListenerType::CursorMode])
 		{
-			checkLuaResult(desc, listener.call(phase));
+			LuaUtils::checkResult(desc, listener.call(phase));
 		}
 	}
 

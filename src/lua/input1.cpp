@@ -24,7 +24,7 @@ namespace darmok
 		static const std::string desc("on keyboard key");
 		for (auto& listener : _listeners[ListenerType::Key])
 		{
-			checkLuaResult(desc, listener.call(key, modifiers, down));
+			LuaUtils::checkResult(desc, listener.call(key, modifiers, down));
 		}
 	}
 
@@ -34,7 +34,7 @@ namespace darmok
 		static const std::string desc("on keyboard char");
 		for (auto& listener : _listeners[ListenerType::Char])
 		{
-			checkLuaResult(desc, listener.call(str));
+			LuaUtils::checkResult(desc, listener.call(str));
 		}
 	}
 
@@ -148,8 +148,8 @@ namespace darmok
 
 	void LuaKeyboard::bind(sol::state_view& lua) noexcept
 	{
-		newLuaEnumFunc(lua, "KeyboardKey", KeyboardKey::Count, &Keyboard::getKeyName, true);
-		newLuaEnumFunc(lua, "KeyboardModifier", KeyboardModifier::Count, Keyboard::getModifierName, true);
+		LuaUtils::newEnumFunc(lua, "KeyboardKey", KeyboardKey::Count, &Keyboard::getKeyName, true);
+		LuaUtils::newEnumFunc(lua, "KeyboardModifier", KeyboardModifier::Count, Keyboard::getModifierName, true);
 
 		lua.new_usertype<KeyboardInputEvent>("KeyboardInputEvent", sol::default_constructor,
 			"key", &KeyboardInputEvent::key,
@@ -220,7 +220,7 @@ namespace darmok
 		static const std::string desc("on mouse position change");
 		for (auto& listener : _listeners[ListenerType::Position])
 		{
-			checkLuaResult(desc, listener.call(delta, absolute));
+			LuaUtils::checkResult(desc, listener.call(delta, absolute));
 		}
 	}
 
@@ -229,7 +229,7 @@ namespace darmok
 		static const std::string desc("on mouse scroll change");
 		for (auto& listener : _listeners[ListenerType::Scroll])
 		{
-			checkLuaResult(desc, listener.call(delta, absolute));
+			LuaUtils::checkResult(desc, listener.call(delta, absolute));
 		}
 	}
 
@@ -238,7 +238,7 @@ namespace darmok
 		static const std::string desc("on mouse button");
 		for (auto& listener : _listeners[ListenerType::Button])
 		{
-			checkLuaResult(desc, listener.call(button, down));
+			LuaUtils::checkResult(desc, listener.call(button, down));
 		}
 	}
 
@@ -315,8 +315,8 @@ namespace darmok
 
 	void LuaMouse::bind(sol::state_view& lua) noexcept
 	{
-		newLuaEnumFunc(lua, "MouseAnalog", MouseAnalog::Count, &Mouse::getAnalogName, true);
-		newLuaEnumFunc(lua, "MouseButton", MouseButton::Count, &Mouse::getButtonName, true);
+		LuaUtils::newEnumFunc(lua, "MouseAnalog", MouseAnalog::Count, &Mouse::getAnalogName, true);
+		LuaUtils::newEnumFunc(lua, "MouseButton", MouseButton::Count, &Mouse::getButtonName, true);
 
 		lua.new_enum<LuaMouseListenerType>("MouseListenerType", {
 			{ "Position", LuaMouseListenerType::Position },
@@ -363,7 +363,7 @@ namespace darmok
 		static const std::string desc("on gamepad stick change");
 		for (auto& listener : _listeners[ListenerType::Stick])
 		{
-			checkLuaResult(desc, listener.call(num, stick, delta, absolute));
+			LuaUtils::checkResult(desc, listener.call(num, stick, delta, absolute));
 		}
 	}
 
@@ -372,7 +372,7 @@ namespace darmok
 		static const std::string desc("on gamepad button");
 		for (auto& listener : _listeners[ListenerType::Button])
 		{
-			checkLuaResult(desc, listener.call(num, button, down));
+			LuaUtils::checkResult(desc, listener.call(num, button, down));
 		}
 	}
 
@@ -381,7 +381,7 @@ namespace darmok
 		static const std::string desc("on gamepad connect");
 		for (auto& listener : _listeners[ListenerType::Connect])
 		{
-			checkLuaResult(desc, listener.call(num, connected));
+			LuaUtils::checkResult(desc, listener.call(num, connected));
 		}
 	}
 
@@ -502,8 +502,8 @@ namespace darmok
 
 	void LuaGamepad::bind(sol::state_view& lua) noexcept
 	{
-		newLuaEnumFunc(lua, "GamepadButton", GamepadButton::Count, &Gamepad::getButtonName, true);
-		newLuaEnumFunc(lua, "GamepadStick", GamepadStick::Count, &Gamepad::getStickName, true);
+		LuaUtils::newEnumFunc(lua, "GamepadButton", GamepadButton::Count, &Gamepad::getButtonName, true);
+		LuaUtils::newEnumFunc(lua, "GamepadStick", GamepadStick::Count, &Gamepad::getStickName, true);
 
 		lua.new_usertype<GamepadInputEvent>("GamepadInputEvent", sol::default_constructor,
 			"key", &GamepadInputEvent::button,

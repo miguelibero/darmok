@@ -10,10 +10,10 @@
 #include <sol/sol.hpp>
 
 #include "transform.hpp"
+#include "utils.hpp"
 
 namespace darmok
 {
-    class Scene;
 	class LuaScene;
 
 	class LuaComponent final
@@ -24,9 +24,10 @@ namespace darmok
 		bool removeComponent(const sol::object& type) noexcept;
 		sol::object getComponent(const sol::object& type) noexcept;
 	private:
-		std::unordered_map<size_t, sol::table> _components;
-
-		static size_t getHash(const sol::object& obj) noexcept;
+		using Key = const void*;
+		std::unordered_map<Key, sol::table> _components;
+		static const std::string _typeKey;
+		static Key getKey(const sol::object& type) noexcept;
 	};
 
 	class LuaEntity final
@@ -41,6 +42,13 @@ namespace darmok
 		T& addComponent(Args&&... args) noexcept
 		{
 			return getRegistry().emplace<T>(_entity, std::forward<Args>(args)...);
+		}
+
+		template<typename T, typename R, typename... Args>
+		T& addWrapperComponent(Args&&... args) noexcept
+		{
+			auto& real = addComponent<R>(std::forward<Args>(args)...);
+			return addComponent<T>(real);
 		}
 
 		template<typename T>
@@ -91,6 +99,13 @@ namespace darmok
 		LuaScene(const std::shared_ptr<Scene>& scene) noexcept;
 		LuaScene(LuaApp& app) noexcept;
 
+		template<typename T, typename R, typename... A>
+		T& addSceneComponent(A&&... args)
+		{
+			auto& real = getReal()->addSceneComponent<R>(std::forward<A>(args)...);
+			return getReal()->addSceneComponent<T>(real);
+		}
+
 		std::string toString() const noexcept;
 		EntityRegistry& getRegistry() noexcept;
 		LuaEntity createEntity1() noexcept;
@@ -120,12 +135,12 @@ namespace darmok
 
 	class SceneAppComponent;
 
-	class LuaSceneAppComponent final
+	class LuaSceneAppComponent final : public IAppComponent
 	{
 	public:
 		LuaSceneAppComponent(SceneAppComponent& comp) noexcept;
-		static LuaSceneAppComponent addAppComponent1(LuaApp& app) noexcept;
-		static LuaSceneAppComponent addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept;
+		static LuaSceneAppComponent& addAppComponent1(LuaApp& app) noexcept;
+		static LuaSceneAppComponent& addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept;
 		LuaScene getScene() const noexcept;
 		LuaSceneAppComponent& setScene(const LuaScene& scene) noexcept;
 

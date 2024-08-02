@@ -22,7 +22,7 @@ namespace darmok
         virtual ~ISceneComponent() = default;
         virtual void init(Scene& scene, App& app) { };
         virtual void shutdown() { }
-        virtual void update(float deltaTime) = 0;
+        virtual void update(float deltaTime) { };
     };
 
     class SceneImpl;
@@ -192,7 +192,7 @@ namespace darmok
         std::unique_ptr<SceneImpl> _impl;
     };
 
-    class DARMOK_EXPORT SceneAppComponent final : public AppComponent
+    class DARMOK_EXPORT SceneAppComponent final : public IAppComponent
     {
     public:
         SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;

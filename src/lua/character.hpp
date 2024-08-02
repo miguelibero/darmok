@@ -25,13 +25,12 @@ namespace darmok::physics3d
 		using Shape = PhysicsShape;
 		using Config = CharacterControllerConfig;
 
-		LuaCharacterController(CharacterController& ctrl, const std::shared_ptr<Scene>& scene) noexcept;
+		LuaCharacterController(CharacterController& ctrl) noexcept;
 		~LuaCharacterController() noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::reference_wrapper<CharacterController> _ctrl;
-		std::shared_ptr<Scene> _scene;
 		sol::table _delegate;
 
 		void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) override;

@@ -21,7 +21,7 @@ namespace darmok
 			auto result = _callback(node, LuaEntity(entity, _scene));
 			if (!result.valid())
 			{
-				logLuaError("adding model to scene", result);
+				LuaUtils::logError("adding model to scene", result);
 			}
 		}
 

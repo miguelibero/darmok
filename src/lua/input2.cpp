@@ -12,7 +12,7 @@ namespace darmok
 	void LuaInputEventListener::onInputEvent(const std::string& tag)
 	{
 		auto desc = "on input event " + tag;
-		checkLuaResult(desc, _func.call(tag));
+		LuaUtils::checkResult(desc, _func.call(tag));
 	}
 
 	const std::string& LuaInputEventListener::getTag() const noexcept
@@ -214,7 +214,7 @@ namespace darmok
 		LuaMouse::bind(lua);
 		LuaGamepad::bind(lua);
 
-		newLuaEnumFunc(lua, "InputDirType", InputDirType::Count, &Input::getDirTypeName, true);
+		LuaUtils::newEnumFunc(lua, "InputDirType", InputDirType::Count, &Input::getDirTypeName, true);
 
 		lua.new_usertype<LuaInput>("Input", sol::no_constructor,
 			"keyboard", sol::property(&LuaInput::getKeyboard),

@@ -122,12 +122,12 @@ namespace darmok
 
     void SceneImpl::shutdown()
     {
-        for (auto& comp : _components)
-        {
-            comp->shutdown();
-        }
-
         _registry.clear();
+
+        for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
+        {
+                (*itr)->shutdown();
+        }
 
         _registry.on_construct<Camera>().disconnect<&SceneImpl::onCameraConstructed>(*this);
         _registry.on_destroy<Camera>().disconnect< &SceneImpl::onCameraDestroyed>(*this);

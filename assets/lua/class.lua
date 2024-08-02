@@ -51,7 +51,9 @@ function Class:new(super)
     end
 
     function class:new(...)
-        local obj = setmetatable({}, self.metatable)
+        local obj = setmetatable({
+            class = class
+        }, self.metatable)
         if obj.__new then
             obj:__new(...)
         end

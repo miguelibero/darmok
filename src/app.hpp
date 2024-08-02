@@ -114,8 +114,10 @@ namespace darmok
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
-		void addComponent(std::unique_ptr<AppComponent>&& component) noexcept;
-		
+		void addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
+		bool removeComponent(const IAppComponent& component) noexcept;
+		bool hasComponent(const IAppComponent& component) const noexcept;
+
 		[[nodiscard]] Input& getInput() noexcept;
 		[[nodiscard]] const Input& getInput() const noexcept;
 		[[nodiscard]] Window& getWindow() noexcept;
@@ -181,7 +183,7 @@ namespace darmok
 		RenderGraphDefinition _renderGraphDef;
 		std::optional<RenderGraph> _renderGraph;
 
-		std::vector<std::unique_ptr<AppComponent>> _components;
+		std::vector<std::unique_ptr<IAppComponent>> _components;
 	};
 
 	class AppRunner final : public IPlatformRunnable
