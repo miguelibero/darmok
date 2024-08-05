@@ -249,12 +249,14 @@ namespace darmok
     class DARMOK_EXPORT BX_NO_VTABLE IRenderGraphNode
     {
     public:
+        static const int kMaxPriority;
         using Resources = RenderResourcesDefinition;
         virtual ~IRenderGraphNode() = default;
         virtual RenderGraphId id() const = 0;
         virtual size_t hash() const = 0;
         virtual const Resources& getInputs() const = 0;
         virtual const Resources& getOutputs() const = 0;
+        virtual int getPriority() const = 0;
         virtual bgfx::ViewId configureView(bgfx::ViewId viewId) = 0;
         virtual tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) = 0;
         virtual std::unique_ptr<IRenderGraphNode> copyNode() const = 0;
@@ -275,6 +277,9 @@ namespace darmok
         RenderPassDefinition& setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
 
+        RenderPassDefinition& setPriority(int prio) noexcept;
+        int getPriority() const noexcept override;
+
         RenderPassDefinition& setDelegate(IRenderPassDelegate& dlg) noexcept;
         OptionalRef<IRenderPassDelegate> getDelegate() const noexcept;
         bool hasPassDelegate(IRenderPassDelegate& dlg) const noexcept override;
@@ -293,6 +298,7 @@ namespace darmok
         size_t hash() const noexcept override;
     private:
         std::string _name;
+        int _priority;
         RenderGraphId _id;
         Resources _inputs;
         Resources _outputs;
@@ -324,15 +330,11 @@ namespace darmok
         RenderGraphDefinition& setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
 
-        Pass& addPassFront() noexcept;
-        const Pass& addPassFront(IRenderPass& pass);
-        
         Pass& addPass() noexcept;
         const Pass& addPass(IRenderPass& pass);
         bool removePass(IRenderPassDelegate& pass) noexcept;
 
         bool setChild(const RenderGraphDefinition& def) noexcept;
-        bool setChildFront(const RenderGraphDefinition& def) noexcept;
 
         bool hasNode(RenderGraphId id) const noexcept;
         bool removeNode(RenderGraphId id) noexcept;
@@ -380,6 +382,7 @@ namespace darmok
 
         const ResourcesDefinition& getInputs() const noexcept override;
         const ResourcesDefinition& getOutputs() const noexcept override;
+        int getPriority() const noexcept override;
         bgfx::ViewId configureView(bgfx::ViewId viewId = 0) override;
         tf::Task createTask(tf::FlowBuilder& builder, RenderGraphContext& context) noexcept override;
         std::unique_ptr<IRenderGraphNode> copyNode() const noexcept override;
@@ -395,7 +398,11 @@ namespace darmok
     private:
         Matrix _matrix;
         Definition _def;
+        std::vector<size_t> _indices;
+        int _priority;
         tf::Taskflow _taskflow;
+
+        IRenderGraphNode& getVertexNode(int vertex);
     };
 
     class DARMOK_EXPORT RenderGraph final

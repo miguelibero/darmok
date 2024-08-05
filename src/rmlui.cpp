@@ -148,7 +148,7 @@ namespace darmok
         }
     }
 
-    RmluiRenderInterface::RmluiRenderInterface(const std::shared_ptr<Program>& prog, bx::AllocatorI& alloc) noexcept
+    RmluiRenderInterface::RmluiRenderInterface(const std::shared_ptr<Program>& prog, const Viewport& vp, bx::AllocatorI& alloc) noexcept
         : _frameBuffer{ bgfx::kInvalidHandle }
         , _textureUniform(bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler))
         , _scissorEnabled(false)
@@ -157,6 +157,7 @@ namespace darmok
         , _alloc(alloc)
         , _program(prog)
         , _viewId(0)
+        , _viewport(vp)
     {
     }
 
@@ -483,14 +484,15 @@ namespace darmok
         }
     }
 
-    RmluiViewImpl::RmluiViewImpl(const std::string& name, const Viewport& vp, RmluiAppComponentImpl& comp)
-        : _render(comp.getProgram(), comp.getAllocator())
+    RmluiViewImpl::RmluiViewImpl(const std::string& name, int priority, const Viewport& vp, RmluiAppComponentImpl& comp)
+        : _render(comp.getProgram(), vp, comp.getAllocator())
         , _inputActive(false)
         , _mousePosition(0)
         , _comp(comp)
         , _viewport(vp)
         , _fullscreen(false)
         , _enabled(true)
+        , _priority(priority)
     {
         _context = Rml::CreateContext(name, RmluiUtils::convert<int>(vp.size), &_render);
         if (!_context)
@@ -557,6 +559,7 @@ namespace darmok
 
     void RmluiViewImpl::setViewport(const Viewport& vp) noexcept
     {
+        std::scoped_lock lock(_mutex);
         _viewport = vp;
         _render.setViewport(vp);
         _context->SetDimensions(RmluiUtils::convert<int>(vp.size));
@@ -578,6 +581,7 @@ namespace darmok
 
     void RmluiViewImpl::setMousePosition(const glm::vec2& position) noexcept
     {
+        std::scoped_lock lock(_mutex);
         glm::vec2 p = position;
 
         // invert vertical since that's how rmlui works
@@ -593,8 +597,73 @@ namespace darmok
         return _mousePosition;
     }
 
+    void RmluiViewImpl::processKey(Rml::Input::KeyIdentifier key, int state, bool down) noexcept
+    {
+        std::scoped_lock lock(_mutex);
+        if (!_inputActive)
+        {
+            return;
+        }
+        if (down)
+        {
+            _context->ProcessKeyDown(key, state);
+        }
+        else
+        {
+            _context->ProcessKeyUp(key, state);
+        }
+    }
+
+    void RmluiViewImpl::processTextInput(const Rml::String& str) noexcept
+    {
+        std::scoped_lock lock(_mutex);
+        if (!_inputActive)
+        {
+            return;
+        }
+        _context->ProcessTextInput(str);
+    }
+
+    void RmluiViewImpl::processMouseLeave() noexcept
+    {
+        std::scoped_lock lock(_mutex);
+        if (!_inputActive)
+        {
+            return;
+        }
+        _context->ProcessMouseLeave();
+    }
+
+    void RmluiViewImpl::processMouseWheel(const Rml::Vector2f& val, int keyState) noexcept
+    {
+        std::scoped_lock lock(_mutex);
+        if (!_inputActive)
+        {
+            return;
+        }
+        _context->ProcessMouseWheel(val, keyState);
+    }
+
+    void RmluiViewImpl::processMouseButton(int num, int keyState, bool down) noexcept
+    {
+        std::scoped_lock lock(_mutex);
+        if (!_inputActive)
+        {
+            return;
+        }
+        if (down)
+        {
+            _context->ProcessMouseButtonDown(num, keyState);
+        }
+        else
+        {
+            _context->ProcessMouseButtonUp(num, keyState);
+        }
+    }
+
     bool RmluiViewImpl::update() noexcept
     {
+        std::scoped_lock lock(_mutex);
         if (!_enabled)
         {
             return false;
@@ -605,6 +674,7 @@ namespace darmok
     void RmluiViewImpl::renderPassDefine(RenderPassDefinition& def) noexcept
     {
         def.setName("Rmlui " + getName());
+        def.setPriority(_priority);
     }
 
     void RmluiViewImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept
@@ -614,6 +684,7 @@ namespace darmok
 
     void RmluiViewImpl::renderPassExecute(IRenderGraphContext& context) noexcept
     {
+        std::scoped_lock lock(_mutex);
         if (!_enabled)
         {
             return;
@@ -644,7 +715,6 @@ namespace darmok
         }
         return nullptr;
     }
-
 
     OptionalRef<const Rml::Sprite> RmluiViewImpl::getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept
     {
@@ -899,11 +969,11 @@ namespace darmok
         return itr->get();
     }
 
-    std::unique_ptr<RmluiView> RmluiAppComponentImpl::createView(const std::string& name) noexcept
+    std::unique_ptr<RmluiView> RmluiAppComponentImpl::createView(const std::string& name, int priority) noexcept
     {
         auto& size = _app->getWindow().getFramebufferSize();
         return std::make_unique<RmluiView>(
-            std::make_unique<RmluiViewImpl>(name, size, *this)
+            std::make_unique<RmluiViewImpl>(name, priority, size, *this)
         );
     }
 
@@ -919,15 +989,15 @@ namespace darmok
         return *view;
     }
 
-    RmluiView& RmluiAppComponentImpl::addViewFront(const std::string& name)
+    RmluiView& RmluiAppComponentImpl::addView(const std::string& name, int priority)
     {
         auto itr = findView(name);
         if (itr != _views.end())
         {
             throw std::runtime_error("view name already exists");
         }
-        auto& view = *_views.emplace(_views.begin(), createView(name));
-        _app->getRenderGraph().addPassFront(view->getImpl());
+        auto& view = *_views.emplace(_views.begin(), createView(name, priority));
+        _app->getRenderGraph().addPass(view->getImpl());
         return *view;
     }
 
@@ -1069,32 +1139,16 @@ namespace darmok
         auto state = getKeyModifierState();
         for (auto& view : _views)
         {
-            if (!view->getInputActive())
-            {
-                continue;
-            }
-            auto& ctxt = view->getContext();
-            if (down)
-            {
-                ctxt.ProcessKeyDown(rmlKey, state);
-            }
-            else
-            {
-                ctxt.ProcessKeyUp(rmlKey, state);
-            }
+            view->getImpl().processKey(rmlKey, state, down);
         }
     }
 
     void RmluiAppComponentImpl::onKeyboardChar(const Utf8Char& chr) noexcept
     {
-        auto str = chr.toString();
+        Rml::String str = chr.toString();
         for (auto& view : _views)
         {
-            if (!view->getInputActive())
-            {
-                continue;
-            }
-            view->getContext().ProcessTextInput(str);
+            view->getImpl().processTextInput(str);
         }
     }
 
@@ -1106,11 +1160,7 @@ namespace darmok
         }
         for (auto& view : _views)
         {
-            if (!view->getInputActive())
-            {
-                continue;
-            }
-            view->getContext().ProcessMouseLeave();
+            view->getImpl().processMouseLeave();
         }
     }
 
@@ -1145,11 +1195,7 @@ namespace darmok
         auto state = getKeyModifierState();
         for (auto& view : _views)
         {
-            if (!view->getInputActive())
-            {
-                continue;
-            }
-            view->getContext().ProcessMouseWheel(rmlDelta, state);
+            view->getImpl().processMouseWheel(rmlDelta, state);
         }
     }
 
@@ -1171,19 +1217,7 @@ namespace darmok
         auto state = getKeyModifierState();
         for (auto& view : _views)
         {
-            if (!view->getInputActive())
-            {
-                continue;
-            }
-            auto& ctxt = view->getContext();
-            if (down)
-            {
-                ctxt.ProcessMouseButtonDown(i, state);
-            }
-            else
-            {
-                ctxt.ProcessMouseButtonUp(i, state);
-            }
+            view->getImpl().processMouseButton(i, state, down);
         }
     }
 
@@ -1247,8 +1281,8 @@ namespace darmok
         return _impl->getView(name);
     }
 
-    RmluiView& RmluiAppComponent::addViewFront(const std::string& name)
+    RmluiView& RmluiAppComponent::addView(const std::string& name, int priority)
     {
-        return _impl->addViewFront(name);
+        return _impl->addView(name, priority);
     }
 }

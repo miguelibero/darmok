@@ -22,11 +22,6 @@ namespace darmok
 
 	void RmluiDebuggerAppComponentImpl::init(App& app) noexcept
 	{
-        auto& hostView = _comp.addViewFront(_tag);
-        hostView.setInputActive(true);
-        hostView.setFullscreen(true);
-        hostView.setEnabled(false);
-		Rml::Debugger::Initialise(&hostView.getContext());
         _input = app.getInput();
         if (_config.enableEvent)
         {
@@ -40,8 +35,10 @@ namespace darmok
         {
             return;
         }
-        _comp.removeView(_tag);
-        Rml::Debugger::Shutdown();
+        if (_view)
+        {
+            Rml::Debugger::Shutdown();
+        }
         _input->removeListener(_tag, *this);
         _input.reset();
     }
@@ -58,6 +55,10 @@ namespace darmok
 
     void RmluiDebuggerAppComponentImpl::toggle() noexcept
     {
+        if (_view)
+        {
+            Rml::Debugger::Shutdown();
+        }
         auto& views = _comp.getImpl().getViews();
         if (!_view)
         {
@@ -83,12 +84,20 @@ namespace darmok
                 _view = **itr;
             }
         }
+
         bool active = !_view.empty();
-        auto& hostView = _comp.getView(_tag);
-        hostView.setEnabled(active);
-        hostView.setInputActive(active);
-        Rml::Debugger::SetVisible(active);
-        Rml::Debugger::SetContext(active ? &_view->getContext() : nullptr);
+        if (active)
+        {
+            auto ctxt = &_view->getContext();
+            Rml::Debugger::Initialise(ctxt);
+            Rml::Debugger::SetContext(ctxt);
+            Rml::Debugger::SetVisible(true);
+        }
+        else
+        {
+            Rml::Debugger::Shutdown();
+        }
+
     }
 
     RmluiDebuggerAppComponent::RmluiDebuggerAppComponent(RmluiAppComponent& comp, const Config& config) noexcept

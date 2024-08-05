@@ -72,7 +72,7 @@ namespace darmok
 
 		OptionalRef<const RmluiView> getView(const std::string& name = "") const noexcept;
 		RmluiView& getView(const std::string& name = "");
-		RmluiView& addViewFront(const std::string& name = "");
+		RmluiView& addView(const std::string& name = "", int priority = 0);
 
 		bool hasView(const std::string& name) const noexcept;
 		bool removeView(const std::string& name);

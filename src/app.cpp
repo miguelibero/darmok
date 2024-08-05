@@ -367,6 +367,7 @@ namespace darmok
 	void AppImpl::renderPassDefine(RenderPassDefinition& def)
 	{
 		def.setName("App clear");
+		def.setPriority(-IRenderGraphNode::kMaxPriority);
 	}
 
 	void AppImpl::lateUpdateLogic(float deltaTime)

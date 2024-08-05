@@ -74,10 +74,13 @@ namespace darmok
     {
     }
 
+    const int IRenderGraphNode::kMaxPriority = std::numeric_limits<int>::max();
+
     RenderPassDefinition::RenderPassDefinition(const std::string& name) noexcept
         : _id(randomIdType())
         , _name(name)
         , _delegate(nullptr)
+        , _priority(0)
     {
     }
 
@@ -90,6 +93,17 @@ namespace darmok
     const std::string& RenderPassDefinition::getName() const noexcept
     {
         return _name;
+    }
+
+    RenderPassDefinition& RenderPassDefinition::setPriority(int prio) noexcept
+    {
+        _priority = prio;
+        return *this;
+    }
+
+    int RenderPassDefinition::getPriority() const noexcept
+    {
+        return _priority;
     }
 
     bool RenderPassDefinition::operator==(const RenderPassDefinition& other) const noexcept
@@ -237,37 +251,12 @@ namespace darmok
         return hash;
     }
 
-    RenderGraphDefinition::Pass& RenderGraphDefinition::doAddPass(bool front) noexcept
+    RenderPassDefinition& RenderGraphDefinition::addPass() noexcept
     {
         auto ptr = std::make_unique<Pass>();
         auto& ref = *ptr;
-        if (front)
-        {
-            _nodes.insert(_nodes.begin(), std::move(ptr));
-        }
-        else
-        {
-            _nodes.push_back(std::move(ptr));
-        }
+        _nodes.push_back(std::move(ptr));
         return ref;
-    }
-
-    RenderGraphDefinition::Pass& RenderGraphDefinition::addPassFront() noexcept
-    {
-        return doAddPass(true);
-    }
-
-    RenderPassDefinition& RenderGraphDefinition::addPass() noexcept
-    {
-        return doAddPass(false);
-    }
-
-    const RenderGraphDefinition::Pass& RenderGraphDefinition::addPassFront(IRenderPass& pass)
-    {
-        auto& def = addPassFront();
-        def.setDelegate(pass);
-        pass.renderPassDefine(def);
-        return def;
     }
 
     const RenderGraphDefinition::Pass& RenderGraphDefinition::addPass(IRenderPass& pass)
@@ -291,16 +280,6 @@ namespace darmok
 
     bool RenderGraphDefinition::setChild(const RenderGraphDefinition& def) noexcept
     {
-        return doSetChild(def, false);
-    }
-
-    bool RenderGraphDefinition::setChildFront(const RenderGraphDefinition& def) noexcept
-    {
-        return doSetChild(def, true);
-    }
-
-    bool RenderGraphDefinition::doSetChild(const RenderGraphDefinition& def, bool front) noexcept
-    {
         auto itr = findNode(def.id());
         auto found = itr != _nodes.end();
         if (found && (*itr)->hash() == def.hash())
@@ -314,10 +293,6 @@ namespace darmok
         if (found)
         {
             *itr = std::move(ptr);
-        }
-        else if (front)
-        {
-            _nodes.insert(_nodes.begin(), std::move(ptr));
         }
         else
         {
@@ -416,11 +391,29 @@ namespace darmok
     RenderGraphNode::RenderGraphNode(const Definition& def) noexcept
         : _def(def)
         , _taskflow(_def.getName())
+        , _priority(0)
     {
-        entt::flow builder;
-        for(size_t i =0; i<def.size(); i++)
+
+        // sort nodes based on priority
+        std::vector<std::pair<size_t, int>> prios;
+        prios.reserve(_def.size());
+        for (size_t i = 0; i < def.size(); i++)
         {
-            auto& node = def[i];
+            auto& def = _def[i];
+            auto prio = std::make_pair(i, def.getPriority());
+            prios.insert(std::upper_bound(prios.begin(), prios.end(), prio,
+                [](auto& a, auto& b) { return a.second < b.second; }), prio);
+        }
+        _indices.reserve(prios.size());
+        for (auto& prio : prios)
+        {
+            _indices.push_back(prio.first);
+        }
+
+        entt::flow builder;
+        for(auto& i : _indices)
+        {
+            auto& node = _def[i];
             builder.bind(node.id());
             auto& inputs = node.getInputs();
             auto& outputs = node.getOutputs();
@@ -452,6 +445,8 @@ namespace darmok
         : _def(other._def)
         , _matrix(other._matrix)
         , _taskflow(_def.getName())
+        , _priority(other._priority)
+        , _indices(other._indices)
     {
     }
 
@@ -465,11 +460,21 @@ namespace darmok
         return _def.getOutputs();
     }
 
+    int RenderGraphNode::getPriority() const noexcept
+    {
+        return _priority;
+    }
+
+    IRenderGraphNode& RenderGraphNode::getVertexNode(int vertex)
+    {
+        return _def[_indices[vertex]];
+    }
+
     bgfx::ViewId RenderGraphNode::configureView(bgfx::ViewId viewId)
     {
         for (auto&& vertex : _matrix.vertices())
         {
-            auto& node = _def[vertex];
+            auto& node = getVertexNode(vertex);
             viewId = node.configureView(viewId);
         }
         return viewId;
@@ -491,7 +496,7 @@ namespace darmok
         std::unordered_map<size_t, tf::Task> tasks;
         for (auto&& vertex : _matrix.vertices())
         {
-            auto& node = _def[vertex];
+            auto& node = getVertexNode(vertex);
             tasks[vertex] = node.createTask(builder, context);
         }
         for (auto& [vertex, task] : tasks)

@@ -26,7 +26,7 @@ namespace darmok
 	class RmluiRenderInterface final : public Rml::RenderInterface
 	{
 	public:
-		RmluiRenderInterface(const std::shared_ptr<Program>& prog, bx::AllocatorI& alloc) noexcept;
+		RmluiRenderInterface(const std::shared_ptr<Program>& prog, const Viewport& vp, bx::AllocatorI& alloc) noexcept;
 		~RmluiRenderInterface() noexcept;
 		void RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept override;
 		void EnableScissorRegion(bool enable) noexcept override;
@@ -125,7 +125,7 @@ namespace darmok
 	class RmluiViewImpl final : public IRenderPass
 	{
 	public:
-		RmluiViewImpl(const std::string& name, const Viewport& vp, RmluiAppComponentImpl& comp);
+		RmluiViewImpl(const std::string& name, int priority, const Viewport& vp, RmluiAppComponentImpl& comp);
 		~RmluiViewImpl() noexcept;
 
 		std::string getName() const noexcept;
@@ -151,17 +151,24 @@ namespace darmok
 		void setMousePosition(const glm::vec2& position) noexcept;
 		const glm::vec2& getMousePosition() const noexcept;
 
+		void processKey(Rml::Input::KeyIdentifier key, int state, bool down) noexcept;
+		void processTextInput(const Rml::String& text) noexcept;
+		void processMouseLeave() noexcept;
+		void processMouseWheel(const Rml::Vector2f& val, int keyState) noexcept;
+		void processMouseButton(int num, int keyState, bool down) noexcept;
+
 		bool update() noexcept;
 
 		void renderPassDefine(RenderPassDefinition& def) noexcept override;
 		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
 		void renderPassExecute(IRenderGraphContext& context) noexcept override;
 
+
 	private:
 		std::mutex _mutex;
 		OptionalRef<Rml::Context> _context;
 		RmluiAppComponentImpl& _comp;
-		std::string _name;
+		int _priority;
 		mutable RmluiRenderInterface _render;
 		bool _inputActive;
 		glm::vec2 _mousePosition;
@@ -192,7 +199,7 @@ namespace darmok
 
 		OptionalRef<const RmluiView> getView(const std::string& name = "") const noexcept;
 		RmluiView& getView(const std::string& name = "");
-		RmluiView& addViewFront(const std::string& name = "");
+		RmluiView& addView(const std::string& name = "", int priority = 0);
 
 		Views& getViews() noexcept;
 		
@@ -207,7 +214,7 @@ namespace darmok
 		Views _views;
 
 		Views::iterator findView(const std::string& name) noexcept;
-		std::unique_ptr<RmluiView> createView(const std::string& name) noexcept;
+		std::unique_ptr<RmluiView> createView(const std::string& name, int priority = 0) noexcept;
 		Views::const_iterator findView(const std::string& name) const noexcept;
 
 		void onWindowPixelSize(const glm::uvec2& size) noexcept override;
