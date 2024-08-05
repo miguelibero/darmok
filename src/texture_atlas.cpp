@@ -7,6 +7,7 @@
 #include <darmok/string.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/data_stream.hpp>
 #include <bx/platform.h>
 
 #include <filesystem>
@@ -476,6 +477,26 @@ namespace darmok
 		}
 	}
 
+	void TextureAtlasData::writeRmlui(std::ostream& out, const std::string& name, float res) const noexcept
+	{
+		auto fname = name;
+		if (fname.empty())
+		{
+			fname = imagePath.stem().string();
+		}
+		out << "@spritesheet " << fname << std::endl;
+		out << "{" << std::endl;
+		out << "    src: " << imagePath.string() << ";" << std::endl;
+		out << "    resolution: " << res << "x;" << std::endl;
+		for (auto& elm : elements)
+		{
+			glm::uvec4 v(elm.texturePosition, elm.size);
+			auto name = StringUtils::getFileStem(elm.name);
+			out << "    " << name << ": " << v.x << "px " << v.y << "px " << v.z << "px " << v.w << "px;" << std::endl;
+		}
+		out << "}" << std::endl;
+	}
+
     TexturePackerTextureAtlasLoader::TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept
 		: _dataLoader(dataLoader)
 		, _textureLoader(textureLoader)
@@ -547,9 +568,25 @@ namespace darmok
 		return itr->second;
 	}
 
+	const std::unordered_map<std::string, std::string> TexturePackerTextureAtlasImporter::_sheetFormatExts = {
+		{ "rmlui", ".rcss"},
+		{ "libRocket", ".rcss"},
+	};
+
+	std::string TexturePackerTextureAtlasImporter::getSheetFormatExt(const std::string& format) noexcept
+	{
+		auto itr = _sheetFormatExts.find(format);
+		if (itr == _sheetFormatExts.end())
+		{
+			return std::string(".") + format;
+		}
+		return itr->second;
+	}
+
 	const std::string TexturePackerTextureAtlasImporter::_outputPathOption = "outputPath";
 	const std::string TexturePackerTextureAtlasImporter::_outputFormatOption = "outputFormat";
 	const std::string TexturePackerTextureAtlasImporter::_textureFormatOption = "textureFormat";
+	const std::string TexturePackerTextureAtlasImporter::_rmluiResolutionOption = "rmluiResolution";
 
 	bool TexturePackerTextureAtlasImporter::startImport(const Input& input, bool dry)
 	{
@@ -559,21 +596,47 @@ namespace darmok
 		}
 		_xmlDoc.load_file(input.path.c_str());
 
+		std::string sheetFormat;
+		if (input.config.contains(_outputFormatOption))
+		{
+			sheetFormat = input.config[_outputFormatOption].get<std::string>();
+		}
 		auto basePath = input.getRelativePath().parent_path();
 
 		if (input.config.contains(_outputPathOption))
 		{
-			_spritesheetPath = input.config[_outputPathOption].get<std::filesystem::path>();
+			_sheetPath = input.config[_outputPathOption].get<std::filesystem::path>();
 		}
 		else
 		{
-			auto spritesheetNode = _xmlDoc.select_node(
+			auto sheetNode = _xmlDoc.select_node(
 				"//map[@type='GFileNameMap']/struct[@type='DataFile']"
 				"/key[text()='name']/following::filename");
-			_spritesheetPath = basePath / spritesheetNode.node().text().as_string();
+			if (sheetNode)
+			{
+				std::string val = sheetNode.node().text().as_string();
+				if (!val.empty())
+				{
+					_sheetPath = basePath / val;
+				}
+			}
+		}
+		if (_sheetPath.empty())
+		{
+			if (sheetFormat.empty())
+			{
+				auto sheetFormatNode = _xmlDoc.select_node(
+					"//key[text()='dataFormat']/following::string");
+				if (sheetFormatNode)
+				{
+					sheetFormat = sheetFormatNode.node().text().as_string();
+				}
+			}
+			auto ext = getSheetFormatExt(sheetFormat);
+			_sheetPath = basePath / (input.path.stem().string() + ext);
 		}
 
-		basePath = _spritesheetPath.parent_path();
+		basePath = _sheetPath.parent_path();
 
 		auto textureNode = _xmlDoc.select_node(
 			"//key[text()='textureSubPath']/following::string");
@@ -596,7 +659,7 @@ namespace darmok
 				ext = getTextureFormatExt(textureFormatNode.node().text().as_string());
 			}
 
-			_texturePath = basePath / (_spritesheetPath.stem().string() + ext);
+			_texturePath = basePath / (_sheetPath.stem().string() + ext);
 		}
 
 		auto tempSpritesheetPath = getTempPath();
@@ -608,11 +671,19 @@ namespace darmok
 			"--data", tempSpritesheetPath,
 			"--verbose"
 		};
-		if (input.config.contains(_outputFormatOption))
+
+		auto convertRmlui = sheetFormat == "rmlui";
+		if (convertRmlui)
+		{
+			sheetFormat = "xml";
+		}
+		
+		if (!sheetFormat.empty())
 		{
 			args.push_back("--format");
-			args.push_back(input.config[_outputFormatOption].get<std::string>());
+			args.push_back(sheetFormat);
 		}
+
 		if (input.config.contains(_textureFormatOption))
 		{
 			args.push_back("--texture-format");
@@ -631,8 +702,34 @@ namespace darmok
 			throw std::runtime_error("failed to run texture packer");
 		}
 
-		_spritesheetData = Data::fromFile(tempSpritesheetPath);
+		_sheetData = Data::fromFile(tempSpritesheetPath);
 		_textureData = Data::fromFile(tempTexturePath);
+
+		if (convertRmlui)
+		{
+			pugi::xml_document doc;
+			auto result = doc.load_buffer_inplace(_sheetData.ptr(), _sheetData.size());
+			if (result.status != pugi::status_ok)
+			{
+				throw std::runtime_error(result.description());
+			}
+			TextureAtlasData atlasData;
+			if (!atlasData.read(doc, basePath))
+			{
+				throw std::runtime_error("failed to read texture packer xml");
+			}
+			atlasData.imagePath = std::filesystem::relative(_texturePath, basePath);
+			_sheetData.clear();
+			DataOutputStream out(_sheetData);
+			auto res = 1.F;
+			if (input.config.contains(_rmluiResolutionOption))
+			{
+				res = input.config[_rmluiResolutionOption];
+			}
+			atlasData.writeRmlui(out, "", res);
+			_sheetData.resize(out.tellp());
+		}
+
 
 		return true;
 	}
@@ -640,15 +737,15 @@ namespace darmok
 	void TexturePackerTextureAtlasImporter::endImport(const Input& input)
 	{
 		_xmlDoc.reset();
-		_spritesheetPath.clear();
+		_sheetPath.clear();
 		_texturePath.clear();
-		_spritesheetData.clear();
+		_sheetData.clear();
 		_textureData.clear();
 	}
 
 	TexturePackerTextureAtlasImporter::Outputs TexturePackerTextureAtlasImporter::getOutputs(const Input& input)
 	{
-		return { _spritesheetPath, _texturePath };
+		return { _sheetPath, _texturePath };
 	}
 
 	TexturePackerTextureAtlasImporter::Dependencies TexturePackerTextureAtlasImporter::getDependencies(const Input& input)
@@ -673,7 +770,7 @@ namespace darmok
 	{
 		if (outputIndex == 0)
 		{
-			out << _spritesheetData;
+			out << _sheetData;
 		}
 		else
 		{

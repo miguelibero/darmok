@@ -82,6 +82,7 @@ namespace darmok
 		bool read(const pugi::xml_node& node, const std::filesystem::path& basePath = "");
 		void write(pugi::xml_document& doc) const noexcept;
 		void write(pugi::xml_node& node) const noexcept;
+		void writeRmlui(std::ostream& out, const std::string& name = "", float res = 1.F) const noexcept;
 	};
 
 	class Texture;
@@ -137,17 +138,20 @@ namespace darmok
 		void endImport(const Input& input) override;
 	private:
 		static const std::unordered_map<std::string, std::string> _textureFormatExts;
+		static const std::unordered_map<std::string, std::string> _sheetFormatExts;
 		static const std::string _outputPathOption;
 		static const std::string _outputFormatOption;
 		static const std::string _textureFormatOption;
+		static const std::string _rmluiResolutionOption;
 		std::filesystem::path _exePath;
 		pugi::xml_document _xmlDoc;
 		std::filesystem::path _texturePath;
-		std::filesystem::path _spritesheetPath;
+		std::filesystem::path _sheetPath;
 		Data _textureData;
-		Data _spritesheetData;
+		Data _sheetData;
 		OptionalRef<std::ostream> _log;
 
 		static std::string getTextureFormatExt(const std::string& format) noexcept;
+		static std::string getSheetFormatExt(const std::string& format) noexcept;
 	};
 }
