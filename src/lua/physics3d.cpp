@@ -421,12 +421,20 @@ namespace darmok::physics3d
         return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(shape, motion);
     }
 
-    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Config& config) noexcept
+    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Shape& shape, MotionType motion, bool trigger) noexcept
+    {
+        Config config;
+        config.motion = motion;
+        config.trigger = trigger;
+        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(config);
+    }
+
+    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent4(LuaEntity& entity, const Config& config) noexcept
     {
         return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(config);
     }
 
-    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent4(LuaEntity& entity, const CharacterConfig& config) noexcept
+    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent5(LuaEntity& entity, const CharacterConfig& config) noexcept
     {
         return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(config);
     }
@@ -465,7 +473,8 @@ namespace darmok::physics3d
                 &LuaPhysicsBody::addEntityComponent1,
                 &LuaPhysicsBody::addEntityComponent2,
                 &LuaPhysicsBody::addEntityComponent3,
-                &LuaPhysicsBody::addEntityComponent4
+                &LuaPhysicsBody::addEntityComponent4,
+                &LuaPhysicsBody::addEntityComponent5
             ),
             "get_entity_component", &LuaPhysicsBody::getEntityComponent,
             "get_entity", &LuaPhysicsBody::getEntity,

@@ -254,6 +254,9 @@ namespace darmok
         BoundingBox& operator+=(const BoundingBox& bb) noexcept;
         BoundingBox operator+(const BoundingBox& bb) noexcept;
 
+        BoundingBox expand(const glm::vec3& size) const noexcept;
+        BoundingBox contract(const glm::vec3& size) const noexcept;
+
         Cube getCube() const noexcept;
         operator Cube() const noexcept;
 

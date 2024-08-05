@@ -226,7 +226,8 @@ set(LUA_SOURCES
   math_quat.cpp
   math_uvec.cpp
   math_vec.cpp
-  shape.cpp
+  shape1.cpp
+  shape2.cpp
   scene.cpp
   transform.cpp
   light.cpp

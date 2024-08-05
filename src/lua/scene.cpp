@@ -226,44 +226,46 @@ namespace darmok
 		return LuaEntity(getRegistry().create(), _scene);
 	}
 
-	LuaEntity LuaScene::createEntity2(const VarLuaTable<glm::vec3>& position) noexcept
+	LuaEntity LuaScene::createEntity2(LuaEntity& parent) noexcept
+	{
+		auto& registry = getRegistry();
+		auto entity = registry.create();
+		registry.emplace<Transform>(entity)
+			.setParent(registry.get_or_emplace<Transform>(parent.getReal()));
+		return LuaEntity(entity, _scene);
+	}
+
+	LuaEntity LuaScene::createEntity3(Transform& parent) noexcept
+	{
+		auto& registry = getRegistry();
+		auto entity = registry.create();
+		registry.emplace<Transform>(entity)
+			.setParent(parent);
+		return LuaEntity(entity, _scene);
+	}
+
+	LuaEntity LuaScene::createEntity4(LuaEntity& parent, const VarLuaTable<glm::vec3>& position) noexcept
+	{
+		auto& registry = getRegistry();
+		auto entity = registry.create();
+		auto& parentTrans = registry.get_or_emplace<Transform>(parent.getReal());
+		registry.emplace<Transform>(entity, parentTrans, LuaGlm::tableGet(position));
+		return LuaEntity(entity, _scene);
+	}
+
+	LuaEntity LuaScene::createEntity5(Transform& parent, const VarLuaTable<glm::vec3>& position) noexcept
+	{
+		auto& registry = getRegistry();
+		auto entity = registry.create();
+		registry.emplace<Transform>(entity, parent, LuaGlm::tableGet(position));
+		return LuaEntity(entity, _scene);
+	}
+
+	LuaEntity LuaScene::createEntity6(const VarLuaTable<glm::vec3>& position) noexcept
 	{
 		auto& registry = getRegistry();
 		auto entity = registry.create();
 		registry.emplace<Transform>(entity, LuaGlm::tableGet(position));
-		return LuaEntity(entity, _scene);
-	}
-
-	static OptionalRef<Transform> getVarParentTransform(EntityRegistry& registry, LuaScene::VarParent parent) noexcept
-	{
-		auto trans = std::get_if<Transform>(&parent);
-		if (trans != nullptr)
-		{
-			return trans;
-		}
-		auto parentEntity = std::get<Entity>(parent);
-		if (parentEntity == entt::null)
-		{
-			return nullptr;
-		}
-		return registry.get_or_emplace<Transform>(parentEntity);
-	}
-
-	LuaEntity LuaScene::createEntity3(const VarParent& parent) noexcept
-	{
-		auto& registry = getRegistry();
-		auto entity = registry.create();
-		auto parentTrans = getVarParentTransform(registry, parent);
-		registry.emplace<Transform>(entity, parentTrans);
-		return LuaEntity(entity, _scene);
-	}
-
-	LuaEntity LuaScene::createEntity4(const VarParent& parent, const VarLuaTable<glm::vec3>& position) noexcept
-	{
-		auto& registry = getRegistry();
-		auto entity = registry.create();
-		auto parentTrans = getVarParentTransform(registry, parent);
-		registry.emplace<Transform>(entity, parentTrans, LuaGlm::tableGet(position));
 		return LuaEntity(entity, _scene);
 	}
 
@@ -309,7 +311,8 @@ namespace darmok
 			sol::constructors<LuaScene(LuaApp&)>(),
 			"create_entity",	sol::overload(
 				&LuaScene::createEntity1, &LuaScene::createEntity2,
-				&LuaScene::createEntity3, &LuaScene::createEntity4),
+				&LuaScene::createEntity3, &LuaScene::createEntity4,
+				&LuaScene::createEntity5, &LuaScene::createEntity6),
 			"destroy_entity",	&LuaScene::destroyEntity,
 			sol::meta_function::to_string, &LuaScene::toString
 		);

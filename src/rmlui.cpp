@@ -677,6 +677,10 @@ namespace darmok
     {
         def.setName("Rmlui " + getName());
         def.setPriority(_priority);
+        // we need to guarantee that the views are rendered one after the other
+        // as it seems that there are accesses to shared data
+        // that don't allow them to be rendered in parallel
+        def.getWriteResources().add<Rml::Context>();
     }
 
     void RmluiViewImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept
@@ -867,6 +871,8 @@ namespace darmok
         _system.init(app);
         _file.init(app);
 
+        _app = app;
+
         Rml::SetSystemInterface(&_system);
         Rml::SetFileInterface(&_file);
 
@@ -875,8 +881,6 @@ namespace darmok
         ProgramDefinition progDef;
         progDef.loadStaticMem(rmlui_program);
         _program = std::make_shared<Program>(progDef);
-
-        _app = app;
 
         auto& defaultView = getView();
         defaultView.setFullscreen(true);

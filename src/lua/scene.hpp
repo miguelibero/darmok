@@ -94,8 +94,6 @@ namespace darmok
 	class LuaScene final
 	{
 	public:
-		using VarParent = std::variant<Entity, Transform>;
-
 		LuaScene(const std::shared_ptr<Scene>& scene) noexcept;
 		LuaScene(LuaApp& app) noexcept;
 
@@ -109,9 +107,12 @@ namespace darmok
 		std::string toString() const noexcept;
 		EntityRegistry& getRegistry() noexcept;
 		LuaEntity createEntity1() noexcept;
-		LuaEntity createEntity2(const VarLuaTable<glm::vec3>& position) noexcept;
-		LuaEntity createEntity3(const VarParent& parent) noexcept;
-		LuaEntity createEntity4(const VarParent& parent, const VarLuaTable<glm::vec3>& position) noexcept;
+		LuaEntity createEntity2(LuaEntity& parent) noexcept;
+		LuaEntity createEntity3(Transform& parent) noexcept;
+		LuaEntity createEntity4(LuaEntity& parent, const VarLuaTable<glm::vec3>& position) noexcept;
+		LuaEntity createEntity5(Transform& parent, const VarLuaTable<glm::vec3>& position) noexcept;
+		LuaEntity createEntity6(const VarLuaTable<glm::vec3>& position) noexcept;
+
 		bool destroyEntity(const LuaEntity& entity) noexcept;
 
 		template<typename T>

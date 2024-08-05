@@ -163,24 +163,24 @@ namespace darmok
         return std::make_unique<RenderPassDefinition>(*this);
     }
 
-    const RenderPassDefinition::Resources& RenderPassDefinition::getInputs() const noexcept
+    const RenderPassDefinition::Resources& RenderPassDefinition::getReadResources() const noexcept
     {
-        return _inputs;
+        return _read;
     }
 
-    const RenderPassDefinition::Resources& RenderPassDefinition::getOutputs() const noexcept
+    const RenderPassDefinition::Resources& RenderPassDefinition::getWriteResources() const noexcept
     {
-        return _outputs;
+        return _write;
     }
 
-    RenderPassDefinition::Resources& RenderPassDefinition::getInputs() noexcept
+    RenderPassDefinition::Resources& RenderPassDefinition::getReadResources() noexcept
     {
-        return _inputs;
+        return _read;
     }
 
-    RenderPassDefinition::Resources& RenderPassDefinition::getOutputs() noexcept
+    RenderPassDefinition::Resources& RenderPassDefinition::getWriteResources() noexcept
     {
-        return _outputs;
+        return _write;
     }
 
     RenderGraphId RenderPassDefinition::id() const noexcept
@@ -191,7 +191,7 @@ namespace darmok
     size_t RenderPassDefinition::hash() const noexcept
     {
         size_t hash = 0;
-        hashCombine(hash, _inputs.hash(), _outputs.hash(), _name);
+        hashCombine(hash, _read.hash(), _write.hash(), _name);
         return hash;
     }
 
@@ -204,8 +204,8 @@ namespace darmok
     RenderGraphDefinition::RenderGraphDefinition(const RenderGraphDefinition& other) noexcept
         : _id(other._id)
         , _name(other._name)
-        , _inputs(other._inputs)
-        , _outputs(other._outputs)
+        , _read(other._read)
+        , _write(other._write)
     {
         _nodes.reserve(other._nodes.size());
         for (auto& node : other._nodes)
@@ -243,7 +243,7 @@ namespace darmok
     size_t RenderGraphDefinition::hash() const noexcept
     {
         size_t hash = 0;
-        hashCombine(hash, _inputs.hash(), _outputs.hash(), _name);
+        hashCombine(hash, _read.hash(), _write.hash(), _name);
         for (auto& node : _nodes)
         {
             hashCombine(hash, node->hash());
@@ -358,24 +358,24 @@ namespace darmok
         return _nodes.size();
     }
 
-    RenderGraphDefinition::Resources& RenderGraphDefinition::getInputs() noexcept
+    RenderGraphDefinition::Resources& RenderGraphDefinition::getReadResources() noexcept
     {
-        return _inputs;
+        return _read;
     }
 
-    const RenderGraphDefinition::Resources& RenderGraphDefinition::getInputs() const noexcept
+    const RenderGraphDefinition::Resources& RenderGraphDefinition::getReadResources() const noexcept
     {
-        return _inputs;
+        return _read;
     }
 
-    RenderGraphDefinition::Resources& RenderGraphDefinition::getOutputs() noexcept
+    RenderGraphDefinition::Resources& RenderGraphDefinition::getWriteResources() noexcept
     {
-        return _outputs;
+        return _write;
     }
 
-    const RenderGraphDefinition::Resources& RenderGraphDefinition::getOutputs() const noexcept
+    const RenderGraphDefinition::Resources& RenderGraphDefinition::getWriteResources() const noexcept
     {
-        return _outputs;
+        return _write;
     }
 
     const RenderGraphDefinition::INode& RenderGraphDefinition::operator[](size_t vertex) const
@@ -415,8 +415,8 @@ namespace darmok
         {
             auto& node = _def[i];
             builder.bind(node.id());
-            auto& inputs = node.getInputs();
-            auto& outputs = node.getOutputs();
+            auto& inputs = node.getReadResources();
+            auto& outputs = node.getWriteResources();
             auto sync = true;
             for (auto& input : inputs)
             {
@@ -429,7 +429,7 @@ namespace darmok
                     sync = false;
                 }
             }
-            for (auto& output : node.getOutputs())
+            for (auto& output : node.getWriteResources())
             {
                 builder.rw(output.id());
             }
@@ -450,14 +450,14 @@ namespace darmok
     {
     }
 
-    const RenderGraphNode::ResourcesDefinition& RenderGraphNode::getInputs() const noexcept
+    const RenderGraphNode::ResourcesDefinition& RenderGraphNode::getReadResources() const noexcept
     {
-        return _def.getInputs();
+        return _def.getReadResources();
     }
 
-    const RenderGraphNode::ResourcesDefinition& RenderGraphNode::getOutputs() const noexcept
+    const RenderGraphNode::ResourcesDefinition& RenderGraphNode::getWriteResources() const noexcept
     {
-        return _def.getOutputs();
+        return _def.getWriteResources();
     }
 
     int RenderGraphNode::getPriority() const noexcept

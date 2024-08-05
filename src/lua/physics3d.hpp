@@ -118,8 +118,9 @@ namespace darmok::physics3d
 
         static LuaPhysicsBody& addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept;
         static LuaPhysicsBody& addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept;
-        static LuaPhysicsBody& addEntityComponent3(LuaEntity& entity, const Config& config) noexcept;
-        static LuaPhysicsBody& addEntityComponent4(LuaEntity& entity, const CharacterConfig& config) noexcept;
+        static LuaPhysicsBody& addEntityComponent3(LuaEntity& entity, const Shape& shape, MotionType motion, bool trigger) noexcept;
+        static LuaPhysicsBody& addEntityComponent4(LuaEntity& entity, const Config& config) noexcept;
+        static LuaPhysicsBody& addEntityComponent5(LuaEntity& entity, const CharacterConfig& config) noexcept;
         static OptionalRef<LuaPhysicsBody>::std_t getEntityComponent(LuaEntity& entity) noexcept;
         std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
     };

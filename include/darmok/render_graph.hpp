@@ -254,8 +254,8 @@ namespace darmok
         virtual ~IRenderGraphNode() = default;
         virtual RenderGraphId id() const = 0;
         virtual size_t hash() const = 0;
-        virtual const Resources& getInputs() const = 0;
-        virtual const Resources& getOutputs() const = 0;
+        virtual const Resources& getReadResources() const = 0;
+        virtual const Resources& getWriteResources() const = 0;
         virtual int getPriority() const = 0;
         virtual bgfx::ViewId configureView(bgfx::ViewId viewId) = 0;
         virtual tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) = 0;
@@ -288,10 +288,10 @@ namespace darmok
         tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept override;
         std::unique_ptr<IRenderGraphNode> copyNode() const noexcept override;
 
-        Resources& getInputs() noexcept;
-        const Resources& getInputs() const noexcept override;
-        Resources& getOutputs() noexcept;
-        const Resources& getOutputs() const noexcept override;
+        Resources& getReadResources() noexcept;
+        const Resources& getReadResources() const noexcept override;
+        Resources& getWriteResources() noexcept;
+        const Resources& getWriteResources() const noexcept override;
         bool getSync() const noexcept;
 
         RenderGraphId id() const noexcept override;
@@ -300,8 +300,8 @@ namespace darmok
         std::string _name;
         int _priority;
         RenderGraphId _id;
-        Resources _inputs;
-        Resources _outputs;
+        Resources _read;
+        Resources _write;
         OptionalRef<IRenderPassDelegate> _delegate;
     };
 
@@ -341,10 +341,10 @@ namespace darmok
         OptionalRef<INode> getNode(RenderGraphId id) noexcept;
         OptionalRef<const INode> getNode(RenderGraphId id) const noexcept;
 
-        Resources& getInputs() noexcept;
-        const Resources& getInputs() const noexcept;
-        Resources& getOutputs() noexcept;
-        const Resources& getOutputs() const noexcept;
+        Resources& getReadResources() noexcept;
+        const Resources& getReadResources() const noexcept;
+        Resources& getWriteResources() noexcept;
+        const Resources& getWriteResources() const noexcept;
 
         void clear();
         size_t size() const noexcept;
@@ -358,8 +358,8 @@ namespace darmok
         std::string _name;
         using Nodes = std::vector<std::unique_ptr<INode>>;
         Nodes _nodes;
-        Resources _inputs;
-        Resources _outputs;
+        Resources _read;
+        Resources _write;
         RenderGraphId _id;
 
         Pass& doAddPass(bool front) noexcept;
@@ -380,8 +380,8 @@ namespace darmok
         RenderGraphNode(const Definition& def) noexcept;
         RenderGraphNode(const RenderGraphNode& other) noexcept;
 
-        const ResourcesDefinition& getInputs() const noexcept override;
-        const ResourcesDefinition& getOutputs() const noexcept override;
+        const ResourcesDefinition& getReadResources() const noexcept override;
+        const ResourcesDefinition& getWriteResources() const noexcept override;
         int getPriority() const noexcept override;
         bgfx::ViewId configureView(bgfx::ViewId viewId = 0) override;
         tf::Task createTask(tf::FlowBuilder& builder, RenderGraphContext& context) noexcept override;

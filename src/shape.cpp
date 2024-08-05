@@ -414,6 +414,16 @@ namespace darmok
         return sum;
     }
 
+    BoundingBox BoundingBox::expand(const glm::vec3& size) const noexcept
+    {
+        return BoundingBox(min - size, max + size);
+    }
+
+    BoundingBox BoundingBox::contract(const glm::vec3& size) const noexcept
+    {
+        return BoundingBox(min + size, max - size);
+    }
+
     Cube BoundingBox::getCube() const noexcept
     {
         auto size = max - min;
