@@ -22,6 +22,51 @@ namespace darmok
 	class Mesh;
 	class Texture;
 	struct Viewport;
+	struct TextureAtlasBounds;
+
+	struct RmluiUtils final
+	{
+		template<typename T>
+		static Rml::Vector2<T> convert(const glm::vec<2, T>& v) noexcept
+		{
+			return { v.x, v.y };
+		}
+
+		template<typename T>
+		static glm::vec<2, T> convert(const Rml::Vector2<T>& v) noexcept
+		{
+			return { v.x, v.y };
+		}
+
+		template<typename T>
+		static Rml::Vector3<T> convert(const glm::vec<3, T>& v) noexcept
+		{
+			return { v.x, v.y, v.z };
+		}
+
+		template<typename T>
+		static glm::vec<3, T> convert(const Rml::Vector3<T>& v) noexcept
+		{
+			return { v.x, v.y, v.z };
+		}
+
+		template<typename T>
+		static Rml::Vector4<T> convert(const glm::vec<4, T>& v) noexcept
+		{
+			return { v.x, v.y, v.z, v.w };
+		}
+
+		template<typename T>
+		static glm::vec<4, T> convert(const Rml::Vector4<T>& v) noexcept
+		{
+			return { v.x, v.y, v.z, v.w };
+		}
+
+		static Color convert(const Rml::Colourf& v) noexcept;
+		static Color convert(const Rml::Colourb& v) noexcept;
+		static Rml::Colourb convert(const Color& v) noexcept;
+		static TextureAtlasBounds convert(const Rml::Rectangle& v) noexcept;
+	};
 
 	class RmluiRenderInterface final : public Rml::RenderInterface
 	{

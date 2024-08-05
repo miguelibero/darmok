@@ -18,25 +18,27 @@
 
 namespace darmok
 {
-    struct RmluiUtils final
+
+    Color RmluiUtils::convert(const Rml::Colourf& v) noexcept
     {
-        template<typename T>
-        static Rml::Vector2<T> convert(const glm::vec2& v)
-        {
-            return { (T)v.x, (T)v.y };
-        }
+        auto f = Colors::getMaxValue();
+        return Color(v.red * f, v.green * f, v.blue * f, v.alpha * f);
+    }
 
-        template<typename T>
-        static glm::vec<2, T> convert(const Rml::Vector2<T>& v)
-        {
-            return { v.x, v.y };
-        }
+    Color RmluiUtils::convert(const Rml::Colourb& v) noexcept
+    {
+        return Color(v.red, v.green, v.blue, v.alpha);
+    }
 
-        static TextureAtlasBounds convert(const Rml::Rectangle& v)
-        {
-            return TextureAtlasBounds{ glm::vec2(v.width, v.height), glm::vec2(v.x, v.y) };
-        }
-    };
+    Rml::Colourb RmluiUtils::convert(const Color& v) noexcept
+    {
+        return Rml::Colourb(v.r, v.g, v.b, v.a);
+    }
+
+    TextureAtlasBounds RmluiUtils::convert(const Rml::Rectangle& v) noexcept
+    {
+        return TextureAtlasBounds{ glm::vec2(v.width, v.height), glm::vec2(v.x, v.y) };
+    }
 
     Rml::CompiledGeometryHandle RmluiRenderInterface::CompileGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture) noexcept
     {
