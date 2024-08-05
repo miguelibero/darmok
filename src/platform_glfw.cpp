@@ -180,6 +180,11 @@ namespace darmok
 		default:
 			return;
 		}
+		auto old = glfwGetInputMode(glfw, GLFW_CURSOR);
+		if (old == v)
+		{
+			return;
+		}
 		glfwSetInputMode(glfw, GLFW_CURSOR, v);
 		events.post<WindowCursorModeEvent>(_value);
 	}

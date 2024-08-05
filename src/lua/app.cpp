@@ -2,7 +2,6 @@
 #include <darmok/app.hpp>
 #include <darmok/lua.hpp>
 #include <darmok/scene.hpp>
-#include <darmok/rmlui.hpp>
 #include <darmok/string.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/stream.hpp>
@@ -16,7 +15,6 @@
 #include "scene.hpp"
 #include "window.hpp"
 #include "texture.hpp"
-#include "rmlui.hpp"
 #include "skeleton.hpp"
 #include "utils.hpp"
 
@@ -24,6 +22,15 @@
 #include "generated/lua/table.h"
 #include "generated/lua/class.h"
 #include "generated/lua/base.h"
+
+#ifdef DARMOK_RMLUI
+#include <darmok/rmlui.hpp>
+#include "rmlui.hpp"
+#ifdef _DEBUG
+#define RMLUI_DEBUGGER
+#include "rmlui_debug.hpp"
+#endif
+#endif
 
 namespace darmok
 {
@@ -257,7 +264,13 @@ namespace darmok
 		LuaShape::bind(lua);
 		LuaScene::bind(lua);
 		LuaApp::bind(lua);
+
+#ifdef DARMOK_RMLUI
 		LuaRmluiAppComponent::bind(lua);
+#ifdef RMLUI_DEBUGGER
+		LuaRmluiDebuggerAppComponent::bind(lua);
+#endif
+#endif
 
 		addStaticLib(lua_darmok_lib_table, "darmok/table.lua");
 		addStaticLib(lua_darmok_lib_string, "darmok/string.lua");

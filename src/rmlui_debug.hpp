@@ -19,6 +19,7 @@ namespace darmok
 		void init(App& app) noexcept;
 		void shutdown() noexcept;
 
+		bool isEnabled() const noexcept;
 		void toggle() noexcept;
 
 	private:
@@ -26,6 +27,7 @@ namespace darmok
 		RmluiAppComponent& _comp;
 		Config _config;
 		OptionalRef<RmluiView> _view;
+		static const std::string _tag;
 		
 		void onInputEvent(const std::string& tag) noexcept override;
 	};

@@ -567,6 +567,7 @@ endif()
 if(DARMOK_BUILD_IMGUI)
   find_package(imgui CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PUBLIC imgui::imgui)
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_IMGUI)
 endif()
 
 # rmlgui
@@ -577,6 +578,7 @@ if(DARMOK_BUILD_RMLUI)
   if(DARMOK_BUILD_LUA)
     target_link_libraries(${LIB_NAME} PRIVATE RmlLua)
   endif()
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_RMLUI)
 endif()
 
 # entt

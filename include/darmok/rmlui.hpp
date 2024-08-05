@@ -41,6 +41,9 @@ namespace darmok
 		const Viewport& getViewport() const noexcept;
 		void setViewport(const Viewport& vp) noexcept;
 
+		RmluiView& setEnabled(bool enabled) noexcept;
+		bool getEnabled() const noexcept;
+
 		RmluiView& setInputActive(bool active) noexcept;
 		bool getInputActive() const noexcept;
 
@@ -69,6 +72,8 @@ namespace darmok
 
 		OptionalRef<const RmluiView> getView(const std::string& name = "") const noexcept;
 		RmluiView& getView(const std::string& name = "");
+		RmluiView& addViewFront(const std::string& name = "");
+
 		bool hasView(const std::string& name) const noexcept;
 		bool removeView(const std::string& name);
 		

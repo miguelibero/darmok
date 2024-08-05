@@ -133,6 +133,9 @@ namespace darmok
 		bool getFullscreen() const noexcept;
 		void setFullscreen(bool enabled) noexcept;
 
+		void setEnabled(bool enabled) noexcept;
+		bool getEnabled() const noexcept;
+
 		Rml::Context& getContext() noexcept;
 		const Rml::Context& getContext() const noexcept;
 
@@ -164,6 +167,7 @@ namespace darmok
 		glm::vec2 _mousePosition;
 		Viewport _viewport;
 		bool _fullscreen;
+		bool _enabled;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
@@ -173,7 +177,7 @@ namespace darmok
     class RmluiAppComponentImpl final : IWindowListener, IKeyboardListener, IMouseListener
     {
     public:
-		using Views = std::unordered_map<std::string, RmluiView>;
+		using Views = std::vector<std::unique_ptr<RmluiView>>;
 		~RmluiAppComponentImpl() noexcept;
 
 		void init(App& app);
@@ -188,6 +192,7 @@ namespace darmok
 
 		OptionalRef<const RmluiView> getView(const std::string& name = "") const noexcept;
 		RmluiView& getView(const std::string& name = "");
+		RmluiView& addViewFront(const std::string& name = "");
 
 		Views& getViews() noexcept;
 		
@@ -200,6 +205,10 @@ namespace darmok
 		OptionalRef<App> _app;
 		std::shared_ptr<Program> _program;
 		Views _views;
+
+		Views::iterator findView(const std::string& name) noexcept;
+		std::unique_ptr<RmluiView> createView(const std::string& name) noexcept;
+		Views::const_iterator findView(const std::string& name) const noexcept;
 
 		void onWindowPixelSize(const glm::uvec2& size) noexcept override;
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;

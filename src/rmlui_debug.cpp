@@ -18,29 +18,42 @@ namespace darmok
 		shutdown();
 	}
 
+    const std::string RmluiDebuggerAppComponentImpl::_tag = "debugger";
+
 	void RmluiDebuggerAppComponentImpl::init(App& app) noexcept
 	{
-		Rml::Debugger::Initialise(&_comp.getView().getContext());
+        auto& hostView = _comp.addViewFront(_tag);
+        hostView.setInputActive(true);
+        hostView.setFullscreen(true);
+        hostView.setEnabled(false);
+		Rml::Debugger::Initialise(&hostView.getContext());
         _input = app.getInput();
         if (_config.enableEvent)
         {
-            _input->addListener("debugger", _config.enableEvent.value(), *this);
+            _input->addListener(_tag, _config.enableEvent.value(), *this);
         }
 	}
 
     void RmluiDebuggerAppComponentImpl::shutdown() noexcept
     {
-        Rml::Debugger::Shutdown();
-        if (_input)
+        if (!_input)
         {
-            _input->removeListener("debugger", *this);
-            _input.reset();
+            return;
         }
+        _comp.removeView(_tag);
+        Rml::Debugger::Shutdown();
+        _input->removeListener(_tag, *this);
+        _input.reset();
     }
 
     void RmluiDebuggerAppComponentImpl::onInputEvent(const std::string& tag) noexcept
     {
         toggle();
+    }
+
+    bool RmluiDebuggerAppComponentImpl::isEnabled() const noexcept
+    {
+        return !_view.empty();
     }
 
     void RmluiDebuggerAppComponentImpl::toggle() noexcept
@@ -50,13 +63,13 @@ namespace darmok
         {
             if (!views.empty())
             {
-                _view = views.begin()->second;
+                _view = *views.front();
             }
         }
         else
         {
             auto ptr = &_view.value();
-            auto itr = std::find_if(views.begin(), views.end(), [ptr](auto& elm) { return &elm.second == ptr; });
+            auto itr = std::find_if(views.begin(), views.end(), [ptr](auto& view) { return view.get() == ptr; });
             if (itr != views.end())
             {
                 ++itr;
@@ -67,19 +80,15 @@ namespace darmok
             }
             else
             {
-                _view = itr->second;
+                _view = **itr;
             }
         }
-        if (_view)
-        {
-            Rml::Debugger::SetVisible(true);
-            Rml::Debugger::SetContext(&_view->getContext());
-        }
-        else
-        {
-            Rml::Debugger::SetVisible(false);
-            Rml::Debugger::SetContext(nullptr);
-        }
+        bool active = !_view.empty();
+        auto& hostView = _comp.getView(_tag);
+        hostView.setEnabled(active);
+        hostView.setInputActive(active);
+        Rml::Debugger::SetVisible(active);
+        Rml::Debugger::SetContext(active ? &_view->getContext() : nullptr);
     }
 
     RmluiDebuggerAppComponent::RmluiDebuggerAppComponent(RmluiAppComponent& comp, const Config& config) noexcept
@@ -90,6 +99,16 @@ namespace darmok
     RmluiDebuggerAppComponent::~RmluiDebuggerAppComponent() noexcept
     {
         // empty on purpose
+    }
+
+    void RmluiDebuggerAppComponent::toggle() noexcept
+    {
+        return _impl->toggle();
+    }
+
+    bool RmluiDebuggerAppComponent::isEnabled() const noexcept
+    {
+        return _impl->isEnabled();
     }
 
     void RmluiDebuggerAppComponent::init(App& app)

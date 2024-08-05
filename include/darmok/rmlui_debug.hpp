@@ -23,6 +23,10 @@ namespace darmok
 		RmluiDebuggerAppComponent(RmluiAppComponent& comp, const Config& config = {}) noexcept;
 		~RmluiDebuggerAppComponent() noexcept;
 
+		void toggle() noexcept;
+
+		bool isEnabled() const noexcept;
+
 		void init(App& app) override;
 		void shutdown() noexcept override;
 	private:
