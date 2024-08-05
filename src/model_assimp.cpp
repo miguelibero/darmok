@@ -790,7 +790,6 @@ namespace darmok
 
     bool AssimpModelImporterImpl::startImport(const Input& input, bool dry)
     {
-        std::vector<std::filesystem::path> outputs;
         if (input.config.is_null())
         {
             return false;

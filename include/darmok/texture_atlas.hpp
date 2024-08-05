@@ -15,6 +15,8 @@
 #include <darmok/texture_fwd.hpp>
 #include <darmok/texture_atlas_fwd.hpp>
 #include <darmok/mesh_fwd.hpp>
+#include <darmok/asset_core.hpp>
+#include <darmok/data.hpp>
 
 namespace darmok
 {
@@ -119,5 +121,33 @@ namespace darmok
 	private:
 		IDataLoader& _dataLoader;
 		ITextureLoader& _textureLoader;
+	};
+
+
+	class DARMOK_EXPORT TexturePackerTextureAtlasImporter final : public IAssetTypeImporter
+	{
+	public:
+		TexturePackerTextureAtlasImporter(const std::filesystem::path& exePath = "") noexcept;
+		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
+		bool startImport(const Input& input, bool dry) override;
+		Outputs getOutputs(const Input& input) override;
+		Dependencies getDependencies(const Input& input) override;
+		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
+		const std::string& getName() const noexcept override;
+		void endImport(const Input& input) override;
+	private:
+		static const std::unordered_map<std::string, std::string> _textureFormatExts;
+		static const std::string _outputPathOption;
+		static const std::string _outputFormatOption;
+		static const std::string _textureFormatOption;
+		std::filesystem::path _exePath;
+		pugi::xml_document _xmlDoc;
+		std::filesystem::path _texturePath;
+		std::filesystem::path _spritesheetPath;
+		Data _textureData;
+		Data _spritesheetData;
+		OptionalRef<std::ostream> _log;
+
+		static std::string getTextureFormatExt(const std::string& format) noexcept;
 	};
 }

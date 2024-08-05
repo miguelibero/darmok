@@ -25,12 +25,26 @@ namespace darmok
     #define pclose _pclose
 #endif
 
-    ExecResult exec(const std::vector<std::string>& args)
+    Exec::Result Exec::run(const std::vector<Arg>& args)
     {
         std::ostringstream cmd;
         for (const auto& arg : args)
         {
-            cmd << StringUtils::escapeArgument(arg) << " ";
+            std::string strArg;
+            if (auto path = std::get_if<std::filesystem::path>(&arg))
+            {
+                strArg = path->string();
+                std::replace(strArg.begin(), strArg.end(), '\\', '/');
+            }
+            else if (auto constChar = std::get_if<const char*>(&arg))
+            {
+                strArg = *constChar;
+            }
+            else
+            {
+                strArg = std::get<std::string>(arg);
+            }
+            cmd << StringUtils::escapeArgument(strArg) << " ";
         }
 
         FILE* pipe = popen(cmd.str().c_str(), "r");
@@ -39,7 +53,7 @@ namespace darmok
             throw std::runtime_error("popen() failed!");
         }
 
-        ExecResult result;
+        Result result;
         std::array<char, 128> buffer;
         while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
         {

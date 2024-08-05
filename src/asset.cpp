@@ -349,6 +349,7 @@ namespace darmok
 		_importer.addTypeImporter<FreetypeFontAtlasImporter>();
 #endif
 		_importer.addTypeImporter<CopyAssetImporter>();
+		_importer.addTypeImporter<TexturePackerTextureAtlasImporter>();
 	}
 
 	DarmokAssetImporter& DarmokAssetImporter::setCachePath(const std::filesystem::path& cachePath) noexcept

@@ -62,7 +62,6 @@ namespace darmok
         static const std::string _enableDefineSuffix;
 
         std::filesystem::path getOutputPath(const std::filesystem::path& path, const std::string& profileExt, const Defines& defines) const noexcept;
-        static std::string fixPathArgument(const std::filesystem::path& path) noexcept;
         static ShaderType getShaderType(const std::string& name) noexcept;
         ShaderType getShaderType(const std::filesystem::path& path) const noexcept;
         static std::string getShaderTypeName(ShaderType type);

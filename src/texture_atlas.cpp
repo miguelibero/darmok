@@ -6,6 +6,8 @@
 #include <darmok/texture.hpp>
 #include <darmok/string.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/utils.hpp>
+#include <bx/platform.h>
 
 #include <filesystem>
 #include <charconv>
@@ -502,5 +504,181 @@ namespace darmok
 
 		auto texture = _textureLoader(atlasData.imagePath.string(), textureFlags);
 		return std::make_shared<TextureAtlas>(TextureAtlas{ texture, atlasData.elements });
+	}
+
+	TexturePackerTextureAtlasImporter::TexturePackerTextureAtlasImporter(const std::filesystem::path& exePath) noexcept
+		: _exePath(exePath)
+	{
+		if (_exePath.empty())
+		{
+			_exePath = "TexturePacker";
+		}
+#if BX_PLATFORM_WINDOWS
+		_exePath += ".exe";
+#endif
+	}
+
+	void TexturePackerTextureAtlasImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+	{
+		_log = log;
+	}
+
+	const std::string& TexturePackerTextureAtlasImporter::getName() const noexcept
+	{
+		static const std::string name("texture_packer");
+		return name;
+	}
+
+	const std::unordered_map<std::string, std::string> TexturePackerTextureAtlasImporter::_textureFormatExts = {
+		{ "png8", ".png"},
+		{ "pvr3", ".pvr"},
+		{ "pvr3gz", ".pvr.gz"},
+		{ "pvr3ccz", ".pvr.ccz"},
+		{ "pvr3ccz", ".pvr.ccz"},
+	};
+
+	std::string TexturePackerTextureAtlasImporter::getTextureFormatExt(const std::string& format) noexcept
+	{
+		auto itr = _textureFormatExts.find(format);
+		if (itr == _textureFormatExts.end())
+		{
+			return std::string(".") + format;
+		}
+		return itr->second;
+	}
+
+	const std::string TexturePackerTextureAtlasImporter::_outputPathOption = "outputPath";
+	const std::string TexturePackerTextureAtlasImporter::_outputFormatOption = "outputFormat";
+	const std::string TexturePackerTextureAtlasImporter::_textureFormatOption = "textureFormat";
+
+	bool TexturePackerTextureAtlasImporter::startImport(const Input& input, bool dry)
+	{
+		if (input.config.is_null())
+		{
+			return false;
+		}
+		_xmlDoc.load_file(input.path.c_str());
+
+		auto basePath = input.getRelativePath().parent_path();
+
+		if (input.config.contains(_outputPathOption))
+		{
+			_spritesheetPath = input.config[_outputPathOption].get<std::filesystem::path>();
+		}
+		else
+		{
+			auto spritesheetNode = _xmlDoc.select_node(
+				"//map[@type='GFileNameMap']/struct[@type='DataFile']"
+				"/key[text()='name']/following::filename");
+			_spritesheetPath = basePath / spritesheetNode.node().text().as_string();
+		}
+
+		basePath = _spritesheetPath.parent_path();
+
+		auto textureNode = _xmlDoc.select_node(
+			"//key[text()='textureSubPath']/following::string");
+		if (textureNode)
+		{
+			std::string val = textureNode.node().text().as_string();
+			if (!val.empty())
+			{
+				_texturePath = basePath / val;
+			}
+		}
+		if(_texturePath.empty())
+		{
+			auto textureFormatNode = _xmlDoc.select_node(
+				"//key[text()='textureFormat']/following::enum[@type='SettingsBase::TextureFormat']");
+
+			std::string ext = ".png";
+			if (textureFormatNode)
+			{
+				ext = getTextureFormatExt(textureFormatNode.node().text().as_string());
+			}
+
+			_texturePath = basePath / (_spritesheetPath.stem().string() + ext);
+		}
+
+		auto tempSpritesheetPath = getTempPath();
+		auto tempTexturePath = getTempPath();
+
+		std::vector<Exec::Arg> args{
+			_exePath, input.path,
+			"--sheet", tempTexturePath,
+			"--data", tempSpritesheetPath,
+			"--verbose"
+		};
+		if (input.config.contains(_outputFormatOption))
+		{
+			args.push_back("--format");
+			args.push_back(input.config[_outputFormatOption].get<std::string>());
+		}
+		if (input.config.contains(_textureFormatOption))
+		{
+			args.push_back("--texture-format");
+			args.push_back(input.config[_textureFormatOption].get<std::string>());
+		}
+
+		auto r = Exec::run(args);
+
+		if (r.returnCode != 0)
+		{
+			if (_log)
+			{
+				*_log << "TexturePacker output:" << std::endl;
+				*_log << r.output;
+			}
+			throw std::runtime_error("failed to run texture packer");
+		}
+
+		_spritesheetData = Data::fromFile(tempSpritesheetPath);
+		_textureData = Data::fromFile(tempTexturePath);
+
+		return true;
+	}
+
+	void TexturePackerTextureAtlasImporter::endImport(const Input& input)
+	{
+		_xmlDoc.reset();
+		_spritesheetPath.clear();
+		_texturePath.clear();
+		_spritesheetData.clear();
+		_textureData.clear();
+	}
+
+	TexturePackerTextureAtlasImporter::Outputs TexturePackerTextureAtlasImporter::getOutputs(const Input& input)
+	{
+		return { _spritesheetPath, _texturePath };
+	}
+
+	TexturePackerTextureAtlasImporter::Dependencies TexturePackerTextureAtlasImporter::getDependencies(const Input& input)
+	{
+		Dependencies deps;
+
+		auto basePath = input.path.parent_path();
+
+		auto nodes = _xmlDoc.select_nodes(
+			"//struct[@type='SpriteSheet']/key[text()='files']"
+			"/following::array/filename");
+		for (auto& node : nodes)
+		{
+			auto path = node.node().text().as_string();
+			deps.insert(basePath / path);
+		}
+
+		return deps;
+	}
+
+	void TexturePackerTextureAtlasImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+	{
+		if (outputIndex == 0)
+		{
+			out << _spritesheetData;
+		}
+		else
+		{
+			out << _textureData;
+		}
+		
 	}
 }

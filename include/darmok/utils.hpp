@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <vector>
 #include <string>
+#include <variant>
 #include <type_traits>
 #include <filesystem>
 #include <entt/entt.hpp>
@@ -18,13 +19,17 @@ namespace darmok
 
     void checkError(bx::Error& err);
 
-    struct ExecResult final
+    struct Exec final
     {
-        std::string output;
-        int returnCode;
-    };
+        struct Result final
+        {
+            std::string output;
+            int returnCode;
+        };
 
-    ExecResult exec(const std::vector<std::string>& args);
+        using Arg = std::variant<const char*, std::string, std::filesystem::path>;
+        static Result run(const std::vector<Arg>& args);
+    };
 
     std::filesystem::path getTempPath(std::string_view suffix = "") noexcept;
 

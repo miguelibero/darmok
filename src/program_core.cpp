@@ -315,13 +315,6 @@ namespace darmok
         return *this;
     }
 
-    std::string ShaderCompiler::fixPathArgument(const fs::path& path) noexcept
-    {
-        auto str = fs::absolute(path).string();
-        std::replace(str.begin(), str.end(), '\\', '/');
-        return str;
-    }
-
     const std::vector<std::string> ShaderCompiler::_profiles{
         "120", "300_es", "spirv",
 #if BX_PLATFORM_WINDOWS
@@ -350,13 +343,13 @@ namespace darmok
             varyingDef = input.parent_path() / (StringUtils::getFileStem(input.string()) + ".varyingdef");
         }
         auto shaderType = getShaderType(input);
-        std::vector<std::string> args{
-            fixPathArgument(_shadercPath),
+        std::vector<Exec::Arg> args{
+            _shadercPath,
             "-p", output.profile,
-            "-f", fixPathArgument(input),
-            "-o", fixPathArgument(output.path),
+            "-f", input,
+            "-o", output.path,
             "--type", getShaderTypeName(shaderType),
-            "--varyingdef", fixPathArgument(varyingDef)
+            "--varyingdef", varyingDef
         };
         if (!output.defines.empty())
         {
@@ -366,10 +359,10 @@ namespace darmok
         for (auto& include : _includes)
         {
             args.push_back("-i");
-            args.push_back(fixPathArgument(include));
+            args.push_back(include);
         }
 
-        auto r = exec(args);
+        auto r = Exec::run(args);
         if (r.output.contains("Failed to build shader."))
         {
             if (_log)
