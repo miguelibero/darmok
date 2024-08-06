@@ -4,10 +4,12 @@
 
 #include <darmok/rmlui_debug.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/window_fwd.hpp>
 
 namespace darmok
 {
 	class RmluiView;
+	class Window;
 
 	class RmluiDebuggerAppComponentImpl final : IInputEventListener
 	{
@@ -24,6 +26,8 @@ namespace darmok
 
 	private:
 		OptionalRef<Input> _input;
+		OptionalRef<Window> _win;
+		WindowCursorMode _originalCursorMode;
 		RmluiAppComponent& _comp;
 		Config _config;
 		OptionalRef<RmluiView> _view;

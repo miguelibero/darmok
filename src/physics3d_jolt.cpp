@@ -1033,6 +1033,7 @@ namespace darmok::physics3d
         settings.mUserData = (uint64_t)_body.ptr();
         settings.mObjectLayer = _config.layer;
         settings.mIsSensor = _config.trigger;
+        settings.mInertiaMultiplier = _config.inertiaFactor;
         if (_config.mass)
         {
             settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;
@@ -1052,10 +1053,6 @@ namespace darmok::physics3d
         if (trans)
         {
             joltTrans = getSystemImpl().loadTransform(trans.value());
-        }
-        if (!_characterConfig && _config.motion == MotionType::Character)
-        {
-            _characterConfig.emplace().load(_config);
         }
         if (_characterConfig)
         {
@@ -1093,8 +1090,7 @@ namespace darmok::physics3d
     const std::unordered_map<PhysicsBodyImpl::MotionType, std::string> PhysicsBodyImpl::_motionTypeNames = {
         { MotionType::Static, "Static"},
         { MotionType::Dynamic, "Dynamic"},
-        { MotionType::Kinematic, "Kinematic"},
-        { MotionType::Character, "Character"},
+        { MotionType::Kinematic, "Kinematic"}
     };
 
     const std::string& PhysicsBodyImpl::getMotionTypeName(MotionType motion) noexcept

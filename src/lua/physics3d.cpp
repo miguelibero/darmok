@@ -455,18 +455,28 @@ namespace darmok::physics3d
             { "Static", MotionType::Static },
             { "Dynamic", MotionType::Dynamic },
             { "Kinematic", MotionType::Kinematic },
-            { "Character", MotionType::Character },
         });
         lua.new_usertype<PhysicsBodyConfig>("Physics3dBodyConfig", sol::default_constructor,
             "shape", &PhysicsBodyConfig::shape,
             "motion", &PhysicsBodyConfig::motion,
             "mass", &PhysicsBodyConfig::mass,
+            "inertiaFactor", &PhysicsBodyConfig::inertiaFactor,
             "friction", &PhysicsBodyConfig::friction,
             "gravity_factor", &PhysicsBodyConfig::gravityFactor,
             "layer", &PhysicsBodyConfig::layer,
             "trigger", &PhysicsBodyConfig::trigger
         );
-        lua.new_usertype<LuaPhysicsBody>("PhysicsBody3d", sol::no_constructor,
+        lua.new_usertype<CharacterConfig>("Physics3dCharacterConfig", sol::default_constructor,
+            "shape", &CharacterConfig::shape,
+            "up", &CharacterConfig::up,
+            "supportingPlane", &CharacterConfig::supportingPlane,
+            "maxSlopeAngle", &CharacterConfig::maxSlopeAngle,
+            "layer", &CharacterConfig::layer,
+            "mass", &CharacterConfig::mass,
+            "friction", &CharacterConfig::friction,
+            "gravityFactor", &CharacterConfig::gravityFactor
+        );
+        lua.new_usertype<LuaPhysicsBody>("Physics3dBody", sol::no_constructor,
             "type_id", &entt::type_hash<PhysicsBody>::value,
             sol::meta_function::to_string, &LuaPhysicsBody::toString,
             "add_entity_component", sol::overload(

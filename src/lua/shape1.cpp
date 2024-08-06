@@ -140,7 +140,7 @@ namespace darmok
 				[]() { return Capsule(); },
 				[](float cylinderHeight) {
 					return Capsule(cylinderHeight); },
-					[](float cylinderHeight, float radius) {
+				[](float cylinderHeight, float radius) {
 					return Capsule(cylinderHeight, radius); }
 			),
 			"cylinder_height", &Capsule::cylinderHeight,

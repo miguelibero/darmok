@@ -191,9 +191,14 @@ namespace darmok
 	}
 
 	LuaError::LuaError(const std::string& msg, const sol::error& error)
-		: std::runtime_error(msg)
+		: _msg(msg)
 		, error(error)
 	{
+	}
+
+	const char* LuaError::what() const noexcept
+	{
+		return _msg.c_str();
 	}
 
 	LuaRunnerApp::LuaRunnerApp() noexcept

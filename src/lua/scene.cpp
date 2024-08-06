@@ -78,7 +78,6 @@ namespace darmok
 
 	bool LuaEntity::removeComponent(const sol::object& type)
 	{
-
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
 			return getRegistry().storage(typeId.value())->remove(_entity);
@@ -96,8 +95,22 @@ namespace darmok
 		return hasLuaComponent(type);
 	}
 
+	bool LuaEntity::tryGetLuaComponentContainer() const noexcept
+	{
+		if (_luaComponents)
+		{
+			return true;
+		}
+		if (auto scene = _scene.lock())
+		{
+			_luaComponents = scene->getComponent<LuaComponentContainer>(_entity);
+		}
+		return !_luaComponents.empty();
+	}
+
 	bool LuaEntity::hasLuaComponent(const sol::object& type) const noexcept
 	{
+		tryGetLuaComponentContainer();
 		return _luaComponents && _luaComponents->contains(type);
 	}
 
@@ -107,7 +120,7 @@ namespace darmok
 		{
 			if (auto scene = _scene.lock())
 			{
-				_luaComponents = scene->addComponent<LuaComponentContainer>(_entity);
+				_luaComponents = scene->getOrAddComponent<LuaComponentContainer>(_entity);
 			}
 			else
 			{
@@ -119,11 +132,13 @@ namespace darmok
 
 	bool LuaEntity::removeLuaComponent(const sol::object& type) noexcept
 	{
+		tryGetLuaComponentContainer();
 		return _luaComponents && _luaComponents->remove(type);
 	}
 
 	sol::object LuaEntity::getLuaComponent(const sol::object& type) noexcept
 	{
+		tryGetLuaComponentContainer();
 		if (!_luaComponents)
 		{
 			return sol::nil;
@@ -222,8 +237,19 @@ namespace darmok
 		return hasLuaSceneComponent(type);
 	}
 
+	bool LuaScene::tryGetLuaComponentContainer() const noexcept
+	{
+		if (_luaComponents)
+		{
+			return true;
+		}
+		_luaComponents = _scene->getSceneComponent<LuaSceneComponentContainer>();
+		return !_luaComponents.empty();
+	}
+
 	bool LuaScene::hasLuaSceneComponent(const sol::object& type) const noexcept
 	{
+		tryGetLuaComponentContainer();
 		return _luaComponents && _luaComponents->contains(type);
 	}
 
@@ -238,15 +264,13 @@ namespace darmok
 
 	bool LuaScene::removeLuaSceneComponent(const sol::object& type) noexcept
 	{
-		if (!_luaComponents)
-		{
-			return false;
-		}
-		return _luaComponents->remove(type);
+		tryGetLuaComponentContainer();
+		return _luaComponents && _luaComponents->remove(type);
 	}
 
 	sol::object LuaScene::getLuaSceneComponent(const sol::object& type) noexcept
 	{
+		tryGetLuaComponentContainer();
 		if (!_luaComponents)
 		{
 			return sol::nil;

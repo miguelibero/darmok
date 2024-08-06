@@ -50,7 +50,7 @@ namespace darmok
 	private:
 		Entity _entity;
 		std::weak_ptr<Scene> _scene;
-		OptionalRef<LuaComponentContainer> _luaComponents;
+		mutable OptionalRef<LuaComponentContainer> _luaComponents;
 
 		EntityRegistry& getRegistry();
 		const EntityRegistry& getRegistry() const;
@@ -64,6 +64,7 @@ namespace darmok
 		void addLuaComponent(const sol::table& comp);
 		bool removeLuaComponent(const sol::object& type) noexcept;
 		sol::object getLuaComponent(const sol::object& type) noexcept;
+		bool tryGetLuaComponentContainer() const noexcept;
 
 		bool forEachChild(const sol::protected_function& callback);
 		bool forEachParent(const sol::protected_function& callback);
@@ -102,7 +103,7 @@ namespace darmok
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<Scene> _scene;
-		OptionalRef<LuaSceneComponentContainer> _luaComponents;
+		mutable OptionalRef<LuaSceneComponentContainer> _luaComponents;
 
 		bool removeSceneComponent(const sol::object& type);
 		bool hasSceneComponent(const sol::object& type) const;
@@ -110,6 +111,7 @@ namespace darmok
 		void addLuaSceneComponent(const sol::table& comp);
 		bool removeLuaSceneComponent(const sol::object& type) noexcept;
 		sol::object getLuaSceneComponent(const sol::object& type) noexcept;
+		bool tryGetLuaComponentContainer() const noexcept;
 
 		std::string toString() const noexcept;
 		EntityRegistry& getRegistry() noexcept;

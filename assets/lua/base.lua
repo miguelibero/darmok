@@ -18,11 +18,14 @@ end
 
 
 -- AppComponent
-AppComponent = Class:new()
+AppComponent = Class:new("AppComponent")
 
 function AppComponent.static.add_app_component(class, app, ...)
-	local comp = class:new(...)
-    app:add_lua_component(comp)
+	local comp = class:alloc()
+	if comp then
+		app:add_lua_component(comp)
+		comp:init(...)
+	end
     return comp
 end
 
@@ -54,11 +57,15 @@ end
 
 
 -- SceneComponent
-SceneComponent = Class:new()
+SceneComponent = Class:new("SceneComponent")
 
 function SceneComponent.static.add_scene_component(class, scene, ...)
-	local comp = class:new(...)
-    scene:add_lua_component(comp)
+	local comp = class:alloc()
+	comp.scene = scene
+	if comp then
+    	scene:add_lua_component(comp)
+		comp:init(...)
+	end
     return comp
 end
 
@@ -68,13 +75,15 @@ end
 
 
 -- EntityComponent
-EntityComponent = Class:new()
+EntityComponent = Class:new("EntityComponent")
 
 function EntityComponent.static.add_entity_component(class, entity, ...)
-	local comp = class:alloc({
-		entity = entity
-	}, ...)
-    entity:add_lua_component(comp)
+	local comp = class:alloc()
+	comp.entity = entity
+	if comp then
+    	entity:add_lua_component(comp)
+		comp:init(...)
+	end
     return comp
 end
 

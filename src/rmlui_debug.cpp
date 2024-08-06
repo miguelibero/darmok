@@ -3,6 +3,7 @@
 #include "rmlui_debug.hpp"
 #include <RmlUi/Debugger.h>
 #include <darmok/rmlui.hpp>
+#include <darmok/window.hpp>
 #include "rmlui.hpp"
 
 namespace darmok
@@ -23,6 +24,8 @@ namespace darmok
 	void RmluiDebuggerAppComponentImpl::init(App& app) noexcept
 	{
         _input = app.getInput();
+        _win = app.getWindow();
+        _originalCursorMode = _win->getCursorMode();
         if (_config.enableEvent)
         {
             _input->addListener(_tag, _config.enableEvent.value(), *this);
@@ -38,9 +41,11 @@ namespace darmok
         if (_view)
         {
             Rml::Debugger::Shutdown();
+            _win->requestCursorMode(_originalCursorMode);
         }
         _input->removeListener(_tag, *this);
         _input.reset();
+        _win.reset();
     }
 
     void RmluiDebuggerAppComponentImpl::onInputEvent(const std::string& tag) noexcept
@@ -92,10 +97,12 @@ namespace darmok
             Rml::Debugger::Initialise(ctxt);
             Rml::Debugger::SetContext(ctxt);
             Rml::Debugger::SetVisible(true);
+            _win->requestCursorMode(WindowCursorMode::Normal);
         }
         else
         {
             Rml::Debugger::Shutdown();
+            _win->requestCursorMode(_originalCursorMode);
         }
 
     }

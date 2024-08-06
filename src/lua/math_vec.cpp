@@ -102,6 +102,7 @@ namespace darmok
 		>(),
 			"x", &glm::vec2::x,
 			"y", &glm::vec2::y,
+			"rotate", [](const glm::vec2& v, float angle) { return glm::rotate(v, angle); },
 			"angle", sol::property([](const glm::vec2& v) { return std::atan2(v.y, v.x); }),
 			"vert_angle", sol::property([](const glm::vec2& v) { return std::atan2(v.x, v.y); })
 		);

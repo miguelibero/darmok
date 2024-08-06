@@ -25,7 +25,7 @@ namespace darmok::physics3d
     struct DARMOK_EXPORT CharacterConfig final : public BaseCharacterConfig
     {
         float mass = 80.F;
-        float friction = 0.2;
+        float friction = 1.F;
         float gravityFactor = 1.0F;
         float maxSeparationDistance = 0.1F;
 

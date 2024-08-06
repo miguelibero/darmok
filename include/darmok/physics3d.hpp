@@ -113,6 +113,7 @@ namespace darmok::physics3d
         Shape shape;
         MotionType motion = MotionType::Dynamic;
         std::optional<float> mass = std::nullopt;
+        float inertiaFactor = 1.0F;
         float friction = 0.2;
         float gravityFactor = 1.0F;
         uint8_t layer = 0;

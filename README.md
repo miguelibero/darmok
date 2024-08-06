@@ -93,7 +93,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 #### Upcoming
 * move miniaudio to use taskflow tasks
 * check memory leak when reloading darmok-lua
-* object culling
+* camera frustrum culling
 * more renderer features
     * other types of lights
     * deferred
@@ -112,6 +112,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * more stuff serialization
     * binary texture atlas
     * material
+* custom UI module (rmlui is nice but slow)
 
 #### In the future
 * more unit tests
