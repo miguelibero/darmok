@@ -112,7 +112,7 @@ namespace darmok
         return *this;
     }
 
-    const std::unordered_set<OptionalRef<Transform>>& Transform::getChildren() const noexcept
+    const Transform::Children& Transform::getChildren() const noexcept
     {
         return _children;
     }
@@ -133,7 +133,7 @@ namespace darmok
     {
         for (auto& child : _children)
         {
-            child->setParentChanged();
+            child.get().setParentChanged();
         }
     }
 

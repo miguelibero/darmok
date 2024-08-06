@@ -9,7 +9,9 @@
 #include <bgfx/bgfx.h>
 #include <darmok/app_fwd.hpp>
 #include <darmok/color_fwd.hpp>
+#include <darmok/optional_ref.hpp>
 #include <bx/bx.h>
+#include <entt/entt.hpp>
 
 #ifndef DARMOK_IMPLEMENT_MAIN
 #	define DARMOK_IMPLEMENT_MAIN 0
@@ -71,7 +73,7 @@ namespace darmok
 		virtual std::optional<int32_t> setup(const std::vector<std::string>& args);
 		virtual void init();
 		virtual void shutdown();
-		AppUpdateResult update();
+		AppRunResult run();
 
 		enum class Phase
 		{
@@ -106,25 +108,47 @@ namespace darmok
 		void toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
-		void addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
-		bool removeComponent(const IAppComponent& component) noexcept;
-		bool hasComponent(const IAppComponent& component) const noexcept;
+		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
+		bool removeComponent(entt::id_type type) noexcept;
+		bool hasComponent(entt::id_type type) const noexcept;
+		OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
+		OptionalRef<const IAppComponent> getComponent(entt::id_type type) const noexcept;
+
+		template<typename T>
+		OptionalRef<T> getComponent() noexcept
+		{
+			auto ref = getComponent(entt::type_hash<T>::value());
+			if (ref)
+			{
+				return (T*)ref.ptr();
+			}
+			return nullptr;
+		}
+
+		template<typename T>
+		OptionalRef<const T> getComponent() const noexcept
+		{
+			auto ref = getComponent(entt::type_hash<T>::value());
+			if (ref)
+			{
+				return (const T*)ref.ptr();
+			}
+			return nullptr;
+		}
 
 		template<typename T, typename... A>
 		T& addComponent(A&&... args)
 		{
 			auto ptr = std::make_unique<T>(std::forward<A>(args)...);
 			auto& ref = *ptr;
-			addComponent(std::move(ptr));
+			addComponent(entt::type_hash<T>::value(), std::move(ptr));
 			return ref;
 		}
-
-
 
 	protected:
 		void setConfig(const AppConfig& config) noexcept;
 
-		virtual void updateLogic(float deltaTime);
+		virtual void update(float deltaTime);
 		virtual void render() const;
 
 	private:
@@ -139,7 +163,7 @@ namespace darmok
 		virtual void init(App& app) {};
 		virtual void shutdown() {};
 		virtual void renderReset() {};
-		virtual void updateLogic(float deltaTime) {};
+		virtual void update(float deltaTime) {};
 	};
 
 	template<typename T, typename... A>

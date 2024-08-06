@@ -27,6 +27,25 @@ namespace darmok
 		return true;
 	}
 
+
+	std::optional<entt::id_type> LuaUtils::getTypeId(const sol::object& type) noexcept
+	{
+		auto luaType = type.get_type();
+		if (luaType == sol::type::number)
+		{
+			return type.template as<entt::id_type>();
+		}
+		if (luaType == sol::type::table)
+		{
+			auto entry = type.as<sol::table>()["type_id"];
+			if (entry)
+			{
+				return entry.get<entt::id_type>();
+			}
+		}
+		return std::nullopt;
+	}
+
 	int LuaUtils::deny(lua_State* L)
 	{
 		return luaL_error(L, "operation not allowed");

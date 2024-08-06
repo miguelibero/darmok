@@ -129,7 +129,7 @@ namespace darmok
 		return _updateChars;
 	}
 
-	void KeyboardImpl::lateUpdate() noexcept
+	void KeyboardImpl::afterUpdate() noexcept
 	{
 		_updateChars.clear();
 		Utf8Char c;
@@ -511,7 +511,7 @@ namespace darmok
 		return true;
 	}
 
-	void MouseImpl::lateUpdate(float deltaTime) noexcept
+	void MouseImpl::afterUpdate(float deltaTime) noexcept
 	{
 		if (deltaTime == 0.F)
 		{
@@ -1446,10 +1446,10 @@ namespace darmok
 		return _gamepads;
 	}
 
-	void InputImpl::lateUpdate(float deltaTime) noexcept
+	void InputImpl::afterUpdate(float deltaTime) noexcept
 	{
-		_keyboard.getImpl().lateUpdate();
-		_mouse.getImpl().lateUpdate(deltaTime);
+		_keyboard.getImpl().afterUpdate();
+		_mouse.getImpl().afterUpdate(deltaTime);
 	}
 
 	Input::Input() noexcept

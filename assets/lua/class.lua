@@ -50,14 +50,22 @@ function Class:new(super)
         rawset(self, key, value)
     end
 
-    function class:new(...)
-        local obj = setmetatable({
-            class = class
-        }, self.metatable)
+    function class:alloc(data, ...)
+        if type(data) ~= "table" then
+            data = {}
+        end
+        if not data.class then
+            data.class = class
+        end
+        local obj = setmetatable(data, self.metatable)
         if obj.__new then
             obj:__new(...)
         end
         return obj
+    end
+
+    function class:new(...)
+        return self:alloc({}, ...)
     end
 
     function class:extend()

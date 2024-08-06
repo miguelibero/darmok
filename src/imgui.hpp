@@ -22,7 +22,7 @@ namespace darmok
 		void init(App& app);
 		void shutdown() noexcept;
 		void renderReset() noexcept;
-		void updateLogic(float dt) noexcept;
+		void update(float dt) noexcept;
 		ImGuiContext* getContext() noexcept;
 
 		bool getInputEnabled() const noexcept;

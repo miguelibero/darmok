@@ -3,6 +3,8 @@
 #include <sol/sol.hpp>
 #include <vector>
 #include <string>
+#include <optional>
+#include <entt/entt.hpp>
 
 namespace darmok
 {
@@ -11,6 +13,8 @@ namespace darmok
         static void logError(const std::string& desc, const sol::error& err) noexcept;
 
         static bool checkResult(const std::string& desc, const sol::protected_function_result& result) noexcept;
+
+        static std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;
 
         template<typename Callback>
         static bool callTableDelegate(const sol::table& delegate, const std::string& key, const std::string& desc, Callback callback)

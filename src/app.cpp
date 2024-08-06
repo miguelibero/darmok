@@ -45,14 +45,6 @@ namespace darmok
 		return Platform::get().run(std::make_unique<AppRunner>(std::move(app)));
 	}
 
-#if BX_PLATFORM_EMSCRIPTEN
-	static App* s_app;
-	static void emscriptenUpdateApp()
-	{
-		s_app->update();
-	}
-#endif // BX_PLATFORM_EMSCRIPTEN
-
 	AppRunner::AppRunner(std::unique_ptr<App>&& app) noexcept
 		: _app(std::move(app))
 	{
@@ -63,12 +55,12 @@ namespace darmok
 		bool success = true;
 		while (success)
 		{
-			auto result = AppUpdateResult::Continue;
+			auto result = AppRunResult::Continue;
 			if (init())
 			{
-				while (result == AppUpdateResult::Continue)
+				while (result == AppRunResult::Continue)
 				{
-					result = update();
+					result = run();
 				}
 			}
 			else
@@ -79,7 +71,7 @@ namespace darmok
 			{
 				success = false;
 			}
-			if (result == AppUpdateResult::Exit)
+			if (result == AppRunResult::Exit)
 			{
 				break;
 			}
@@ -108,18 +100,29 @@ namespace darmok
 		}
 	}
 
-	AppUpdateResult AppRunner::update() noexcept
+#if BX_PLATFORM_EMSCRIPTEN
+	static App* s_app;
+	static AppRunResult s_appRunResult;
+	static void emscriptenRunApp()
+	{
+		s_appRunResult = s_app->run();
+	}
+#endif // BX_PLATFORM_EMSCRIPTEN
+
+	AppRunResult AppRunner::run() noexcept
 	{
 		try
 		{
+			auto result = AppRunResult::Continue;
+
 #if BX_PLATFORM_EMSCRIPTEN
 			s_app = app.get();
-			emscripten_set_main_loop(&emscriptenUpdateApp, -1, 1);
+			emscripten_set_main_loop(&emscriptenRunApp, -1, 1);
+			result = s_appRunResult;
 #else
-			auto result = AppUpdateResult::Continue;
-			while (result == AppUpdateResult::Continue)
+			while (result == AppRunResult::Continue)
 			{
-				result = _app->update();
+				result = _app->run();
 			}
 #endif // BX_PLATFORM_EMSCRIPTEN
 			return result;
@@ -127,7 +130,7 @@ namespace darmok
 		catch (const std::exception& ex)
 		{
 			_app->onException(App::Phase::Update, ex);
-			return AppUpdateResult::Exit;
+			return AppRunResult::Exit;
 		}
 	}
 
@@ -147,7 +150,7 @@ namespace darmok
 
 	AppImpl::AppImpl(App& app) noexcept
 		: _app(app)
-		, _updateResult(AppUpdateResult::Continue)
+		, _runResult(AppRunResult::Continue)
 		, _running(false)
 		, _debug(BGFX_DEBUG_NONE)
 		, _lastUpdate(0)
@@ -256,7 +259,7 @@ namespace darmok
 	void AppImpl::init()
 	{
 		_lastUpdate = bx::getHPCounter();
-		_updateResult = AppUpdateResult::Continue;
+		_runResult = AppRunResult::Continue;
 		_renderGraphDef.clear();
 
 		bgfx::Init init;
@@ -281,7 +284,7 @@ namespace darmok
 		_audio.init();
 		_renderGraphDef.addPass(*this);
 
-		for (auto& component : _components)
+		for (auto& [type, component] : _components)
 		{
 			component->init(_app);
 		}
@@ -307,7 +310,7 @@ namespace darmok
 
 		_renderGraphDef.addPass(*this);
 
-		for (auto& component : _components)
+		for (auto& [type, component] : _components)
 		{
 			component->renderReset();
 		}
@@ -323,7 +326,7 @@ namespace darmok
 
 		for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
 		{
-			(*itr)->shutdown();
+			itr->second->shutdown();
 		}
 		_components.clear();
 
@@ -333,11 +336,11 @@ namespace darmok
 		_assets.shutdown();
 	}
 
-	void AppImpl::updateLogic(float deltaTime)
+	void AppImpl::update(float deltaTime)
 	{
-		for (auto& component : _components)
+		for (auto& [type, component] : _components)
 		{
-			component->updateLogic(deltaTime);
+			component->update(deltaTime);
 		}
 		_assets.update();
 		_audio.update();
@@ -370,9 +373,9 @@ namespace darmok
 		def.setPriority(-IRenderGraphNode::kMaxPriority);
 	}
 
-	void AppImpl::lateUpdateLogic(float deltaTime)
+	void AppImpl::afterUpdate(float deltaTime)
 	{
-		_input.getImpl().lateUpdate(deltaTime);
+		_input.getImpl().afterUpdate(deltaTime);
 	}
 
 	void AppImpl::render() const
@@ -411,7 +414,7 @@ namespace darmok
 		if ((key == KeyboardKey::Esc && modifiers.empty())
 			|| (key == KeyboardKey::KeyQ && modifiers == ctrl))
 		{
-			_updateResult = AppUpdateResult::Exit;
+			_runResult = AppRunResult::Exit;
 			return;
 		}
 		if ((key == KeyboardKey::Return && modifiers == alt)
@@ -457,7 +460,7 @@ namespace darmok
 		if ((key == KeyboardKey::F5 && modifiers.empty())
 			|| (key == KeyboardKey::KeyR && modifiers == ctrl))
 		{
-			_updateResult = AppUpdateResult::Restart;
+			_runResult = AppRunResult::Restart;
 			return;
 		}
 		if ((key == KeyboardKey::Print && modifiers.empty())
@@ -517,9 +520,9 @@ namespace darmok
 		return static_cast<bool>(_debug & flag);
 	}
 
-	AppUpdateResult AppImpl::processEvents()
+	AppRunResult AppImpl::processEvents()
 	{
-		while (_updateResult == AppUpdateResult::Continue)
+		while (_runResult == AppRunResult::Continue)
 		{
 			auto patEv = getPlatform().pollEvent();
 			if (patEv == nullptr)
@@ -529,24 +532,34 @@ namespace darmok
 			PlatformEvent::process(*patEv, _input, _window);
 			if (_window.getPhase() == WindowPhase::Destroyed)
 			{
-				return AppUpdateResult::Exit;
+				return AppRunResult::Exit;
 			}
 		};
-		return _updateResult;
+		return _runResult;
 	}
 
-	void AppImpl::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
+	void AppImpl::addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept
 	{
 		if (_running)
 		{
 			component->init(_app);
 		}
-		_components.push_back(std::move(component));
+		_components.emplace_back(type, std::move(component));
 	}
 
-	bool AppImpl::removeComponent(const IAppComponent& comp) noexcept
+	AppImpl::Components::iterator AppImpl::findComponent(entt::id_type type) noexcept
 	{
-		auto itr = std::find_if(_components.begin(), _components.end(), [&comp](auto& elm) { return elm.get() == &comp; });
+		return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+	}
+
+	AppImpl::Components::const_iterator AppImpl::findComponent(entt::id_type type) const noexcept
+	{
+		return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+	}
+
+	bool AppImpl::removeComponent(entt::id_type type) noexcept
+	{
+		auto itr = findComponent(type);
 		if (itr == _components.end())
 		{
 			return false;
@@ -555,10 +568,30 @@ namespace darmok
 		return true;
 	}
 
-	bool AppImpl::hasComponent(const IAppComponent& comp) const noexcept
+	bool AppImpl::hasComponent(entt::id_type type) const noexcept
 	{
-		auto itr = std::find_if(_components.begin(), _components.end(), [&comp](auto& elm) { return elm.get() == &comp; });
+		auto itr = findComponent(type);
 		return itr != _components.end();
+	}
+
+	OptionalRef<IAppComponent> AppImpl::getComponent(entt::id_type type) noexcept
+	{
+		auto itr = findComponent(type);
+		if (itr == _components.end())
+		{
+			return nullptr;
+		}
+		return itr->second.get();
+	}
+
+	OptionalRef<const IAppComponent> AppImpl::getComponent(entt::id_type type) const noexcept
+	{
+		auto itr = findComponent(type);
+		if (itr == _components.end())
+		{
+			return nullptr;
+		}
+		return itr->second.get();
 	}
 
 	App::App() noexcept
@@ -670,18 +703,18 @@ namespace darmok
 
 #endif
 
-	AppUpdateResult App::update()
+	AppRunResult App::run()
 	{
 		auto result = _impl->processEvents();
-		if (result != AppUpdateResult::Continue)
+		if (result != AppRunResult::Continue)
 		{
 			return result;
 		}
 
-		_impl->update([this](float deltaTime) {
-			_impl->updateLogic(deltaTime);
-			updateLogic(deltaTime);
-			_impl->lateUpdateLogic(deltaTime);
+		_impl->deltaTimeCall([this](float deltaTime) {
+			_impl->update(deltaTime);
+			update(deltaTime);
+			_impl->afterUpdate(deltaTime);
 		});
 
 		render();
@@ -690,10 +723,10 @@ namespace darmok
 		// process submitted rendering primitives.
 		bgfx::frame();
 
-		return AppUpdateResult::Continue;
+		return AppRunResult::Continue;
 	}
 
-	void App::updateLogic(float deltaTime)
+	void App::update(float deltaTime)
 	{
 	}
 
@@ -721,9 +754,29 @@ namespace darmok
 		_impl->setDebugFlag(flag, enabled);
 	}
 
-	void App::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
+	void App::addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept
 	{
-		_impl->addComponent(std::move(component));
+		_impl->addComponent(type, std::move(component));
+	}
+
+	bool App::removeComponent(entt::id_type type) noexcept
+	{
+		return _impl->removeComponent(type);
+	}
+
+	bool App::hasComponent(entt::id_type type) const noexcept
+	{
+		return _impl->hasComponent(type);
+	}
+
+	OptionalRef<IAppComponent> App::getComponent(entt::id_type type) noexcept
+	{
+		return _impl->getComponent(type);
+	}
+
+	OptionalRef<const IAppComponent> App::getComponent(entt::id_type type) const noexcept
+	{
+		return _impl->getComponent(type);
 	}
 
 	BgfxFatalException::BgfxFatalException(const char* filePath, uint16_t line, bgfx::Fatal::Enum code, const char* msg)

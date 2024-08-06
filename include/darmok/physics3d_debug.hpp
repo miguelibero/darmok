@@ -31,7 +31,7 @@ namespace darmok::physics3d
     {
     public:
         using Config = PhysicsDebugConfig;
-        PhysicsDebugRenderer(PhysicsSystem& system, const Config& = {}) noexcept;
+        PhysicsDebugRenderer(const Config& = {}) noexcept;
         ~PhysicsDebugRenderer() noexcept;
         void init(Camera& cam, Scene& scene, App& app) override;
         void shutdown() override;

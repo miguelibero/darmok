@@ -2,7 +2,7 @@
 
 namespace darmok
 {
-	enum class AppUpdateResult
+	enum class AppRunResult
 	{
 		Continue,
 		Exit,

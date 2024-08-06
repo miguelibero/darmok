@@ -358,7 +358,7 @@ namespace darmok
 		}
 	}
 
-	void ImguiAppComponentImpl::updateLogic(float dt) noexcept
+	void ImguiAppComponentImpl::update(float dt) noexcept
 	{
 		ImGui::SetCurrentContext(_imgui);
 		updateInput(dt);
@@ -408,7 +408,7 @@ namespace darmok
 		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);
 		
-		auto scroll = mouse.getScroll();
+		auto& scroll = mouse.getScroll();
 		io.AddMouseWheelEvent(scroll.x, scroll.y);
 
 		auto& kb = input.getKeyboard();
@@ -466,9 +466,9 @@ namespace darmok
 		_impl->renderReset();
 	}
 
-	void ImguiAppComponent::updateLogic(float dt) noexcept
+	void ImguiAppComponent::update(float dt) noexcept
 	{
-		_impl->updateLogic(dt);
+		_impl->update(dt);
 	}
 
 	ImGuiContext* ImguiAppComponent::getContext() noexcept

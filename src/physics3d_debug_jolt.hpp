@@ -36,7 +36,7 @@ namespace darmok::physics3d
     {
     public:
         using Config = PhysicsDebugConfig;
-        PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const Config& config = {}) noexcept;
+        PhysicsDebugRendererImpl(const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app);
         void shutdown();
         void renderReset();
@@ -68,7 +68,7 @@ namespace darmok::physics3d
         };
         size_t _meshBatchSize;
         bool _enabled;
-        PhysicsSystemImpl& _system;
+        OptionalRef<PhysicsSystemImpl> _system;
         OptionalRef<Camera> _cam;
         OptionalRef<Input> _input;
         Config _config;

@@ -20,9 +20,12 @@ namespace darmok
     public:
         SceneImpl(Scene& sceme) noexcept;
         ~SceneImpl() noexcept;
-        void addSceneComponent(std::unique_ptr<ISceneComponent>&& comp) noexcept;
-        bool removeSceneComponent(const ISceneComponent& comp) noexcept;
-        bool hasSceneComponent(const ISceneComponent& comp) const noexcept;
+
+        void addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept;
+        bool removeSceneComponent(entt::id_type type) noexcept;
+        bool hasSceneComponent(entt::id_type type) const noexcept;
+        OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
+        OptionalRef<const ISceneComponent> getSceneComponent(entt::id_type type) const noexcept;
 
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
@@ -34,15 +37,20 @@ namespace darmok
         OptionalRef<const App> getApp() const noexcept;
 
         void init(App& app);
-        void updateLogic(float dt);
+        void update(float dt);
         void renderReset();
         void shutdown();
     private:
-        std::vector<std::unique_ptr<ISceneComponent>> _components;
+        using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ISceneComponent>>>;
+
+        Components _components;
         EntityRegistry _registry;
         Scene& _scene;
         OptionalRef<App> _app;
         RenderGraphDefinition _renderGraph;
+
+        Components::iterator findComponent(entt::id_type type) noexcept;
+        Components::const_iterator findComponent(entt::id_type type) const noexcept;
 
         void onCameraConstructed(EntityRegistry& registry, Entity entity);
         void onCameraDestroyed(EntityRegistry& registry, Entity entity);

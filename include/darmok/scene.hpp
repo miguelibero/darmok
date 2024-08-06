@@ -20,9 +20,10 @@ namespace darmok
     {
     public:
         virtual ~ISceneComponent() = default;
-        virtual void init(Scene& scene, App& app) { };
+        virtual void init(Scene& scene, App& app) { }
         virtual void shutdown() { }
-        virtual void update(float deltaTime) { };
+        virtual void renderReset() { }
+        virtual void update(float deltaTime) { }
     };
 
     class SceneImpl;
@@ -33,26 +34,50 @@ namespace darmok
         Scene() noexcept;
         ~Scene() noexcept;
 
+        SceneImpl& getImpl() noexcept;
+        const SceneImpl& getImpl() const noexcept;
+
+        void init(App& app);
+        void update(float dt);
+        void renderReset();
+        void shutdown();
+
+        void addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept;
+        bool removeSceneComponent(entt::id_type type) noexcept;
+        bool hasSceneComponent(entt::id_type type) const noexcept;
+        OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
+        OptionalRef<const ISceneComponent> getSceneComponent(entt::id_type type) const noexcept;
+
+        template<typename T>
+        OptionalRef<T> getSceneComponent() noexcept
+        {
+            auto ref = getSceneComponent(entt::type_hash<T>::value());
+            if (ref)
+            {
+                return (T*)ref.ptr();
+            }
+            return nullptr;
+        }
+
+        template<typename T>
+        OptionalRef<const T> getSceneComponent() const noexcept
+        {
+            auto ref = getSceneComponent(entt::type_hash<T>::value());
+            if (ref)
+            {
+                return (const T*)ref.ptr();
+            }
+            return nullptr;
+        }
+
         template<typename T, typename... A>
         T& addSceneComponent(A&&... args)
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addSceneComponent(std::move(ptr));
+            addSceneComponent(entt::type_hash<T>::value(), std::move(ptr));
             return ref;
         }
-
-        SceneImpl& getImpl() noexcept;
-        const SceneImpl& getImpl() const noexcept;
-
-        void init(App& app);
-        void updateLogic(float dt);
-        void renderReset();
-        void shutdown();
-
-        void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
-        bool removeSceneComponent(const ISceneComponent& component) noexcept;
-        bool hasSceneComponent(const ISceneComponent& component) const noexcept;
 
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
@@ -114,79 +139,90 @@ namespace darmok
             return getRegistry().remove<T>(entity) > 0;
         }
 
-        template<typename T>
-        OptionalRef<T> getComponentInParent(Entity entity) noexcept
+        template<typename C>
+        bool forEachParent(Entity entity, const C& callback)
         {
-            auto& registry = getRegistry();
-            auto comp = registry.try_get<T>(entity);
-            if (comp != nullptr)
+            if (entity == entt::null)
             {
-                return OptionalRef<T>(comp);
+                return false;
             }
-            auto trans = registry.try_get<Transform>(entity);
+            auto trans = getRegistry().try_get<Transform>(entity);
             if (trans == nullptr)
             {
-                return nullptr;
+                return false;
+            }
+            if (callback(entity, *trans))
+            {
+                return true;
             }
             auto parent = trans->getParent();
             if (!parent)
             {
-                return nullptr;
+                return false;
             }
-            return getComponentInParent<T>(getEntity(parent.value()));
+            entity = getEntity(parent.value());
+            return forEachParent(entity, callback);
+        }
+
+        template<typename C>
+        bool forEachChild(Entity entity, const C& callback)
+        {
+            if (entity == entt::null)
+            {
+                return false;
+            }
+            auto trans = getRegistry().try_get<Transform>(entity);
+            if (trans == nullptr)
+            {
+                return false;
+            }
+            if (callback(entity, *trans))
+            {
+                return true;
+            }
+            for (auto& child : trans->getChildren())
+            {
+                entity = getEntity(child.get());
+                if (forEachChild(entity, callback))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        template<typename T>
+        OptionalRef<T> getComponentInParent(Entity entity) noexcept
+        {
+            OptionalRef<T> comp;
+            forEachParent(entity, [&comp, this](auto entity, auto& trans) {
+                comp = getComponent<T>(entity);
+                return !comp.empty();
+            });
+            return comp;
         }
 
         template<typename T>
         OptionalRef<T> getComponentInChildren(Entity entity) noexcept
         {
-            auto& registry = getRegistry();
-            auto comp = registry.try_get<T>(entity);
-            if (comp != nullptr)
-            {
-                return OptionalRef<T>(comp);
-            }
-            auto trans = registry.try_get<Transform>(entity);
-            if (trans == nullptr)
-            {
-                return nullptr;
-            }
-            for (auto& child : trans->getChildren())
-            {
-                auto childEntity = getEntity(child.value());
-                if (childEntity != entt::null)
-                {
-                    auto comp = getComponentInChildren<T>(childEntity);
-                    if (comp)
-                    {
-                        return comp;
-                    }
-                }
-            }
-            return nullptr;
+            OptionalRef<T> comp;
+            forEachChild(entity, [&comp, this](auto entity, auto& trans) {
+                comp = getComponent<T>(entity);
+                return !comp.empty();
+            });
+            return comp;
         }
 
         template<typename T, typename C>
         void getComponentsInChildren(Entity entity, C& container) noexcept
         {
-            auto& registry = getRegistry();
-            auto comp = registry.try_get<T>(entity);
-            if (comp != nullptr)
-            {
-                container.emplace_back(comp);
-            }
-            auto trans = registry.try_get<Transform>(entity);
-            if (trans == nullptr)
-            {
-                return;
-            }
-            for (auto& child : trans->getChildren())
-            {
-                auto childEntity = getEntity(child.value());
-                if (childEntity != entt::null)
+            forEachChild(entity, [&container, this](auto entity, auto& trans) {
+                if (auto comp = getComponent<T>(entity))
                 {
-                    getComponentsInChildren<T, C>(childEntity, container);
+                    container.emplace_back(comp);
                 }
-            }
+                return false;
+            });
         }
 
     private:
@@ -203,7 +239,7 @@ namespace darmok
         void init(App& app) override;
         void shutdown() override;
         void renderReset() override;
-        void updateLogic(float dt) override;
+        void update(float dt) override;
 
     private:
         std::shared_ptr<Scene> _scene;

@@ -72,7 +72,7 @@ namespace
 			auto boneMat = std::make_shared<Material>(prog, boneTex);
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 #ifdef DARMOK_FREETYPE
-			renderSkel.setFont(getAssets().getFontLoader()("../assets/noto.ttf"));
+			renderSkel.setFont(getAssets().getFontLoader()("../../assets/noto.ttf"));
 			cam.addRenderer<TextRenderer>();
 #endif
 
@@ -140,9 +140,9 @@ namespace
 			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
 		};
 
-		void updateLogic(float deltaTime) noexcept override
+		void update(float deltaTime) noexcept override
 		{
-			App::updateLogic(deltaTime);
+			App::update(deltaTime);
 
 			if (_freeLook->isEnabled())
 			{

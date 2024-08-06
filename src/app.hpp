@@ -102,18 +102,20 @@ namespace darmok
 		AppImpl(App& app) noexcept;
 		void setConfig(const AppConfig& config) noexcept;
 		void init();
-		void updateLogic(float deltaTime);
-		void lateUpdateLogic(float deltaTime);
+		void update(float deltaTime);
+		void afterUpdate(float deltaTime);
 		void render() const;
-		AppUpdateResult processEvents();
+		AppRunResult processEvents();
 		void shutdown();
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
 
-		void addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
-		bool removeComponent(const IAppComponent& component) noexcept;
-		bool hasComponent(const IAppComponent& component) const noexcept;
+		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
+		bool removeComponent(entt::id_type type) noexcept;
+		bool hasComponent(entt::id_type type) const noexcept;
+		OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
+		OptionalRef<const IAppComponent> getComponent(entt::id_type type) const noexcept;
 
 		[[nodiscard]] Input& getInput() noexcept;
 		[[nodiscard]] const Input& getInput() const noexcept;
@@ -134,7 +136,7 @@ namespace darmok
 #endif
 
 		template <typename F>
-		void update(const F& logicCallback)
+		void deltaTimeCall(const F& logicCallback)
 		{
 			if (getWindow().getPhase() != WindowPhase::Running)
 			{
@@ -153,6 +155,11 @@ namespace darmok
 		}
 
 	private:
+		using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<IAppComponent>>>;
+
+		Components::iterator findComponent(entt::id_type type) noexcept;
+		Components::const_iterator findComponent(entt::id_type type) const noexcept;
+
 		[[nodiscard]] float updateTimePassed() noexcept;
 		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
 
@@ -170,7 +177,7 @@ namespace darmok
 		// first since it contains the allocator
 		AssetContext _assets;
 		
-		AppUpdateResult _updateResult;
+		AppRunResult _runResult;
 		bool _running;
 		uint32_t _debug;
 		uint64_t _lastUpdate;
@@ -188,7 +195,7 @@ namespace darmok
 		RenderGraphDefinition _renderGraphDef;
 		std::optional<RenderGraph> _renderGraph;
 
-		std::vector<std::unique_ptr<IAppComponent>> _components;
+		Components _components;
 	};
 
 	class AppRunner final : public IPlatformRunnable
@@ -199,7 +206,7 @@ namespace darmok
 	private:
 		std::unique_ptr<App> _app;
 		bool init() noexcept;
-		AppUpdateResult update() noexcept;
+		AppRunResult run() noexcept;
 		bool shutdown() noexcept;
 	};
 }

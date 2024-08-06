@@ -1262,7 +1262,7 @@ namespace darmok
         _impl->renderReset();
     }
 
-    void RmluiAppComponent::updateLogic(float dt) noexcept
+    void RmluiAppComponent::update(float dt) noexcept
     {
         _impl->update(dt);
     }

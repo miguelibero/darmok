@@ -32,7 +32,7 @@ namespace darmok
 		void setKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept;
 		void pushChar(const Utf8Char& data) noexcept;
 
-		void lateUpdate() noexcept;
+		void afterUpdate() noexcept;
 
 		[[nodiscard]] static char keyToAscii(KeyboardKey key, bool upper = false) noexcept;
 		
@@ -87,7 +87,7 @@ namespace darmok
 		bool setButton(MouseButton button, bool down) noexcept;
 		bool setWindowSize(const glm::uvec2& size) noexcept;
 
-		void lateUpdate(float deltaTime) noexcept;
+		void afterUpdate(float deltaTime) noexcept;
 
 		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
 		[[nodiscard]] static std::optional<MouseButton> readButton(std::string_view name) noexcept;
@@ -197,7 +197,7 @@ namespace darmok
 		using Dir = InputDir;
 		float getAxis(const Dirs& pos, const Dirs& neg, const Sensitivity& sensi) const noexcept;
 
-		void lateUpdate(float deltaTime) noexcept;
+		void afterUpdate(float deltaTime) noexcept;
 
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void onMouseButton(MouseButton button, bool down) override;

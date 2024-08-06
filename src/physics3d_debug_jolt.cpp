@@ -36,11 +36,10 @@ namespace darmok::physics3d
         }
     }
 
-    PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(PhysicsSystemImpl& system, const Config& config) noexcept
+    PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(const Config& config) noexcept
         : _config(config)
         , _viewId(-1)
         , _enabled(true)
-        , _system(system)
         , _meshBatchSize(32 * 1024)
     {
         _solidMeshData.config.type = MeshType::Transient;
@@ -49,6 +48,10 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
+        if (auto system = app.getComponent<PhysicsSystem>())
+        {
+            _system = system->getImpl();
+        }
         _input = app.getInput();
         if (_config.enableEvent)
         {
@@ -87,6 +90,7 @@ namespace darmok::physics3d
         }
         _input.reset();
         _cam.reset();
+        _system.reset();
         _viewId = -1;
     }
 
@@ -108,16 +112,12 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::renderPassExecute(IRenderGraphContext& context)
     {
-        if (!_enabled)
+        if (!_enabled || !_system || !_config.material)
         {
             return;
         }
-        auto joltSystem = _system.getJolt();
+        auto joltSystem = _system->getJolt();
         if (!joltSystem)
-        {
-            return;
-        }
-        if (!_config.material)
         {
             return;
         }
@@ -337,8 +337,8 @@ namespace darmok::physics3d
         _config.material->setColor(MaterialColorType::Diffuse, oldColor);
     }
 
-    PhysicsDebugRenderer::PhysicsDebugRenderer(PhysicsSystem& system, const Config& config) noexcept
-        : _impl(std::make_unique<PhysicsDebugRendererImpl>(system.getImpl(), config))
+    PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept
+        : _impl(std::make_unique<PhysicsDebugRendererImpl>(config))
     {
     }
 

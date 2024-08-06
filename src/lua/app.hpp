@@ -21,6 +21,7 @@ namespace bx
 namespace darmok
 {
 	class AssetContext;
+	class LuaAppComponentContainer;
 
 	class LuaApp final
 	{
@@ -30,8 +31,6 @@ namespace darmok
 		const App& getReal() const noexcept;
 
 		void update(float deltaTime) noexcept;
-		void registerUpdate(const sol::protected_function& func) noexcept;
-		bool unregisterUpdate(const sol::protected_function& func) noexcept;
 
 		template<typename T, typename R, typename... A>
 		T& addComponent(A&&... args)
@@ -40,6 +39,9 @@ namespace darmok
 			return getReal().addComponent<T>(real);
 		}
 
+		void registerUpdate(const sol::protected_function& func) noexcept;
+		bool unregisterUpdate(const sol::protected_function& func) noexcept;
+
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::vector<sol::protected_function> _updates;
@@ -47,11 +49,19 @@ namespace darmok
 		LuaInput _input;
 		LuaWindow _win;
 		LuaAudioSystem _audio;
+		OptionalRef<LuaAppComponentContainer> _luaComponents;
 
 		AssetContext& getAssets() noexcept;
 		LuaWindow& getWindow() noexcept;
 		LuaInput& getInput() noexcept;
 		LuaAudioSystem& getAudio() noexcept;
+
+		bool removeComponent(const sol::object& type);
+		bool hasComponent(const sol::object& type) const;
+		bool hasLuaComponent(const sol::object& type) const noexcept;
+		void addLuaComponent(const sol::table& comp);
+		bool removeLuaComponent(const sol::object& type) noexcept;
+		sol::object getLuaComponent(const sol::object& type) noexcept;
 
 		static bool getDebug() noexcept;
 	};
@@ -70,7 +80,7 @@ namespace darmok
 		LuaRunnerAppImpl(App& app) noexcept;
         std::optional<int32_t> setup(const std::vector<std::string>& args);
 		void init();
-        void updateLogic(float deltaTime);
+        void update(float deltaTime);
 		void shutdown() noexcept;
 		void render() noexcept;
 

@@ -17,6 +17,8 @@
 #include "texture.hpp"
 #include "skeleton.hpp"
 #include "utils.hpp"
+#include "component.hpp"
+
 
 #include "generated/lua/string.h"
 #include "generated/lua/table.h"
@@ -91,6 +93,56 @@ namespace darmok
 		return true;
 	}
 
+	bool LuaApp::removeComponent(const sol::object& type)
+	{
+		if (auto typeId = LuaUtils::getTypeId(type))
+		{
+			return getReal().removeComponent(typeId.value());
+		}
+		return removeLuaComponent(type);
+	}
+
+	bool LuaApp::hasComponent(const sol::object& type) const
+	{
+		if (auto typeId = LuaUtils::getTypeId(type))
+		{
+			return getReal().hasComponent(typeId.value());
+		}
+		return hasLuaComponent(type);
+	}
+
+	bool LuaApp::hasLuaComponent(const sol::object& type) const noexcept
+	{
+		return _luaComponents && _luaComponents->contains(type);
+	}
+
+	void LuaApp::addLuaComponent(const sol::table& comp)
+	{
+		if (!_luaComponents)
+		{
+			_luaComponents = getReal().addComponent<LuaAppComponentContainer>();
+		}
+		_luaComponents->add(comp);
+	}
+
+	bool LuaApp::removeLuaComponent(const sol::object& type) noexcept
+	{
+		if (!_luaComponents)
+		{
+			return false;
+		}
+		return _luaComponents->remove(type);
+	}
+
+	sol::object LuaApp::getLuaComponent(const sol::object& type) noexcept
+	{
+		if (!_luaComponents)
+		{
+			return sol::nil;
+		}
+		return _luaComponents->get(type);
+	}
+
 	void LuaApp::update(float deltaTime) noexcept
 	{
 		for(auto& update : _updates)
@@ -130,7 +182,11 @@ namespace darmok
 			"audio", sol::property(&LuaApp::getAudio),
 			"debug", sol::property(&LuaApp::getDebug),
 			"register_update", &LuaApp::registerUpdate,
-			"unregister_update", &LuaApp::unregisterUpdate
+			"unregister_update", &LuaApp::unregisterUpdate,
+			"has_component", &LuaApp::hasComponent,
+			"remove_component", &LuaApp::removeComponent,
+			"add_lua_component", &LuaApp::addLuaComponent,
+			"get_lua_component", &LuaApp::getLuaComponent
 		);
 	}
 
@@ -167,10 +223,10 @@ namespace darmok
 		_impl->shutdown();
 	}
 
-	void LuaRunnerApp::updateLogic(float deltaTime)
+	void LuaRunnerApp::update(float deltaTime)
 	{
-		App::updateLogic(deltaTime);
-		_impl->updateLogic(deltaTime);
+		App::update(deltaTime);
+		_impl->update(deltaTime);
 	}
 
 	void LuaRunnerApp::render() const
@@ -493,7 +549,7 @@ namespace darmok
 		std::cout << "  --bgfx-shader-include       Path of the bgfx shader include dir (used to process bgfx shaders)." << std::endl;
 	}
 
-	void LuaRunnerAppImpl::updateLogic(float deltaTime)
+	void LuaRunnerAppImpl::update(float deltaTime)
 	{
 		if (_luaApp)
 		{

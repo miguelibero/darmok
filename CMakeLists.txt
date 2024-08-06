@@ -209,6 +209,7 @@ set(HEADERS
 )
 
 set(LUA_SOURCES
+  component.cpp
   app.cpp
   asset.cpp
   image.cpp

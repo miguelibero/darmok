@@ -28,7 +28,7 @@ namespace darmok
 		void init(App& app) override;
 		void shutdown() noexcept override;
 		void renderReset() noexcept override;
-		void updateLogic(float dt) noexcept override;
+		void update(float dt) noexcept override;
 		ImGuiContext* getContext() noexcept;
 		bool getInputEnabled() const noexcept;
 		ImguiAppComponent& setInputEnabled(bool enabled) noexcept;

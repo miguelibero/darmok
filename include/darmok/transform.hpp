@@ -40,7 +40,9 @@ namespace darmok
         OptionalRef<const Transform> getParent() const noexcept;
         OptionalRef<Transform> getParent() noexcept;
         Transform& setParent(const OptionalRef<Transform>& parent) noexcept;
-        const std::unordered_set<OptionalRef<Transform>>& getChildren() const noexcept;
+
+        using Children = std::unordered_set<std::reference_wrapper<Transform>>;
+        const Children& getChildren() const noexcept;
 
         const glm::mat4& getLocalMatrix() const noexcept;
         const glm::mat4& getLocalInverse() const noexcept;
@@ -76,7 +78,7 @@ namespace darmok
         bool _matrixChanged;
         bool _parentChanged;
         OptionalRef<Transform> _parent;
-        std::unordered_set<OptionalRef<Transform>> _children;
+        Children _children;
 
         void setMatrixChanged() noexcept;
         void setParentChanged() noexcept;

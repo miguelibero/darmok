@@ -18,7 +18,7 @@ namespace darmok
         void shutdown() override;
         void render() const override;
     protected:
-        void updateLogic(float deltaTime) override;
+        void update(float deltaTime) override;
     private:
         std::unique_ptr<LuaRunnerAppImpl> _impl;
     };

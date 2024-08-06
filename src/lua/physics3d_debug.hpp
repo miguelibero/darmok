@@ -15,7 +15,6 @@ namespace darmok
 namespace darmok::physics3d
 {
     class PhysicsDebugRenderer;
-    class LuaPhysicsSystem;
     struct PhysicsDebugConfig;
 
     class LuaPhysicsDebugRenderer final
@@ -25,8 +24,8 @@ namespace darmok::physics3d
     private:
         using Config = PhysicsDebugConfig;
 
-        static PhysicsDebugRenderer& addRenderer1(Camera& cam, LuaPhysicsSystem& system) noexcept;
-        static PhysicsDebugRenderer& addRenderer2(Camera& cam, LuaPhysicsSystem& system, const Config& config) noexcept;
+        static PhysicsDebugRenderer& addRenderer1(Camera& cam) noexcept;
+        static PhysicsDebugRenderer& addRenderer2(Camera& cam, const Config& config) noexcept;
     };
 }
 

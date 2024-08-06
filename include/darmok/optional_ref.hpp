@@ -215,10 +215,29 @@ namespace darmok
 #endif
 }
 
-template<typename T> struct std::hash<darmok::OptionalRef<T>>
+template<typename T>
+struct std::hash<darmok::OptionalRef<T>>
 {
     std::size_t operator()(const darmok::OptionalRef<T>& key) const noexcept
     {
         return (std::size_t)key.ptr();
     }
 };
+
+template<typename T>
+struct std::hash<std::reference_wrapper<T>>
+{
+    std::size_t operator()(const std::reference_wrapper<T>& key) const noexcept
+    {
+        return (std::size_t)&key.get();
+    }
+};
+
+namespace std
+{
+    template<typename T>
+    static bool operator==(const reference_wrapper<T>& a, const reference_wrapper<T>& b) noexcept
+    {
+        return &a.get() == &b.get();
+    }
+}
