@@ -39,7 +39,7 @@ namespace darmok::physics3d
     PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(const Config& config) noexcept
         : _config(config)
         , _viewId(-1)
-        , _enabled(true)
+        , _enabled(false)
         , _meshBatchSize(32 * 1024)
     {
         _solidMeshData.config.type = MeshType::Transient;
@@ -48,7 +48,7 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
-        if (auto system = app.getComponent<PhysicsSystem>())
+        if (auto system = scene.getSceneComponent<PhysicsSystem>())
         {
             _system = system->getImpl();
         }
