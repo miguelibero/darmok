@@ -45,17 +45,6 @@ namespace darmok
 			return getRegistry().try_get<T>(_entity);
 		}
 
-		template<typename T, typename L, typename... Args>
-		std::optional<L> getComponent(Args&&... args)
-		{
-			auto ptr = getRegistry().try_get<T>(_entity);
-			if (ptr == nullptr)
-			{
-				return std::nullopt;
-			}
-			return L(*ptr, std::forward<Args>(args)...);
-		}
-
 		static void bind(sol::state_view& lua) noexcept;
 
 	private:
@@ -78,6 +67,7 @@ namespace darmok
 
 		bool forEachChild(const sol::protected_function& callback);
 		bool forEachParent(const sol::protected_function& callback);
+		static bool checkForEachResult(const std::string& desc, const sol::protected_function_result& result);
 	};
 
 	class LuaApp;

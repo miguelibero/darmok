@@ -14,82 +14,82 @@ namespace darmok::physics3d
 
 	LuaCharacterController::~LuaCharacterController() noexcept
 	{
-		_ctrl.get().setDelegate(nullptr);
+		_ctrl.setDelegate(nullptr);
 	}
 
 	bool LuaCharacterController::isGrounded() const noexcept
 	{
-		return _ctrl.get().isGrounded();
+		return _ctrl.isGrounded();
 	}
 
 	GroundState LuaCharacterController::getGroundState() const noexcept
 	{
-		return _ctrl.get().getGroundState();
+		return _ctrl.getGroundState();
 	}
 
 	void LuaCharacterController::setLinearVelocity(const VarLuaTable<glm::vec3>& velocity)
 	{
-		_ctrl.get().setLinearVelocity(LuaGlm::tableGet(velocity));
+		_ctrl.setLinearVelocity(LuaGlm::tableGet(velocity));
 	}
 
 	glm::vec3 LuaCharacterController::getLinearVelocity() const noexcept
 	{
-		return _ctrl.get().getLinearVelocity();
+		return _ctrl.getLinearVelocity();
 	}
 
 	void LuaCharacterController::setPosition(const VarLuaTable<glm::vec3>& pos) noexcept
 	{
-		_ctrl.get().setPosition(LuaGlm::tableGet(pos));
+		_ctrl.setPosition(LuaGlm::tableGet(pos));
 	}
 
 	glm::vec3 LuaCharacterController::getPosition() const noexcept
 	{
-		return _ctrl.get().getPosition();
+		return _ctrl.getPosition();
 	}
 
 	void LuaCharacterController::setRotation(const VarLuaTable<glm::quat>& rot) noexcept
 	{
-		_ctrl.get().setRotation(LuaGlm::tableGet(rot));
+		_ctrl.setRotation(LuaGlm::tableGet(rot));
 	}
 
 	glm::quat LuaCharacterController::getRotation() const noexcept
 	{
-		return _ctrl.get().getRotation();
+		return _ctrl.getRotation();
 	}
 
 	glm::vec3 LuaCharacterController::getGroundNormal() const noexcept
 	{
-		return _ctrl.get().getGroundNormal();
+		return _ctrl.getGroundNormal();
 	}
 
 	glm::vec3 LuaCharacterController::getGroundPosition() const noexcept
 	{
-		return _ctrl.get().getGroundPosition();
+		return _ctrl.getGroundPosition();
 	}
 
 	glm::vec3 LuaCharacterController::getGroundVelocity() const noexcept
 	{
-		return _ctrl.get().getGroundVelocity();
+		return _ctrl.getGroundVelocity();
 	}
 
-	LuaCharacterController LuaCharacterController::addEntityComponent1(LuaEntity& entity, const Config& config) noexcept
+	LuaCharacterController& LuaCharacterController::addEntityComponent1(LuaEntity& entity, const Config& config) noexcept
 	{
-		return LuaCharacterController(entity.addComponent<CharacterController>(config));
+		return entity.addWrapperComponent<LuaCharacterController, CharacterController>(config);
 	}
 
-	LuaCharacterController LuaCharacterController::addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept
+	LuaCharacterController& LuaCharacterController::addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept
 	{
-		return LuaCharacterController(entity.addComponent<CharacterController>(shape));
+		return entity.addWrapperComponent<LuaCharacterController, CharacterController>(shape);
 	}
 
-	std::optional<LuaCharacterController> LuaCharacterController::getEntityComponent(LuaEntity& entity) noexcept
+	OptionalRef<LuaCharacterController>::std_t LuaCharacterController::getEntityComponent(LuaEntity& entity) noexcept
 	{
-		return entity.getComponent<CharacterController, LuaCharacterController>();
+		return entity.getComponent<LuaCharacterController>();
 	}
 
 	std::optional<LuaEntity> LuaCharacterController::getEntity(LuaScene& scene) noexcept
 	{
-		return scene.getEntity(_ctrl.get());
+		return scene.getEntity(_ctrl);
 	}
 
 	LuaCharacterController& LuaCharacterController::setDelegate(const sol::table& delegate) noexcept

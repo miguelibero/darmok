@@ -10,7 +10,7 @@ end
 
 function App:get_or_add_component(type, ...)
 	local comp = self:get_component(type)
-	if comp ~= nil then
+	if comp then
 		return comp
 	end
 	return self:add_component(type, ...)
@@ -46,7 +46,7 @@ end
 
 function Scene:get_or_add_component(type, ...)
 	local comp = self:get_component(type)
-	if comp ~= nil then
+	if comp then
 		return comp
 	end
 	return self:add_component(type, ...)
@@ -94,7 +94,7 @@ end
 
 function Entity:get_or_add_component(type, ...)
 	local comp = self:get_component(type)
-	if comp ~= nil then
+	if comp then
 		return comp
 	end
 	return self:add_component(type, ...)
@@ -102,7 +102,7 @@ end
 
 function Entity:get_component_in_children(type)
 	local comp = nil
-	self.for_each_child(function(entity)
+	self:for_each_child(function(entity)
 		comp = entity:get_component(type)
 		return comp
 	end)
@@ -111,7 +111,7 @@ end
 
 function Entity:get_components_in_children(type)
 	local comps = {}
-	self.for_each_child(function(entity)
+	self:for_each_child(function(entity)
 		local comp = entity:get_component(type)
 		if comp then
 			table.insert(comps, comp)
@@ -122,7 +122,7 @@ end
 
 function Entity:get_component_in_parent(type)
 	local comp = nil
-	self.for_each_parent(function(entity)
+	self:for_each_parent(function(entity)
 		comp = entity:get_component(type)
 		return comp
 	end)

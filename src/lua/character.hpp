@@ -30,7 +30,7 @@ namespace darmok::physics3d
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		std::reference_wrapper<CharacterController> _ctrl;
+		CharacterController& _ctrl;
 		sol::table _delegate;
 
 		void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) override;
@@ -52,9 +52,9 @@ namespace darmok::physics3d
 
 		LuaCharacterController& setDelegate(const sol::table& delegate) noexcept;
 
-		static LuaCharacterController addEntityComponent1(LuaEntity& entity, const Config& config) noexcept;
-		static LuaCharacterController addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept;
-		static std::optional<LuaCharacterController> getEntityComponent(LuaEntity& entity) noexcept;
+		static LuaCharacterController& addEntityComponent1(LuaEntity& entity, const Config& config) noexcept;
+		static LuaCharacterController& addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept;
+		static OptionalRef<LuaCharacterController>::std_t getEntityComponent(LuaEntity& entity) noexcept;
 		std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 	};
 }
