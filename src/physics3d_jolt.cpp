@@ -1157,6 +1157,20 @@ namespace darmok::physics3d
         return _bodyId;
     }
 
+    bool PhysicsBodyImpl::isGrounded() const noexcept
+    {
+        return getGroundState() == GroundState::Grounded;
+    }
+
+    GroundState PhysicsBodyImpl::getGroundState() const noexcept
+    {
+        if (!_character)
+        {
+            return GroundState::NotSupported;
+        }
+        return (GroundState)_character->GetGroundState();
+    }
+
     void PhysicsBodyImpl::setPosition(const glm::vec3& pos)
     {
         auto jpos = JoltUtils::convert(pos);
@@ -1303,6 +1317,16 @@ namespace darmok::physics3d
     PhysicsBody::MotionType PhysicsBody::getMotionType() const noexcept
     {
         return _impl->getMotionType();
+    }
+
+    bool PhysicsBody::isGrounded() const noexcept
+    {
+        return _impl->isGrounded();
+    }
+
+    GroundState PhysicsBody::getGroundState() const noexcept
+    {
+        return _impl->getGroundState();
     }
 
     PhysicsBody& PhysicsBody::setPosition(const glm::vec3& pos)

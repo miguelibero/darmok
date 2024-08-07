@@ -19,6 +19,14 @@ namespace darmok::physics3d
         Kinematic
     };
 
+    enum class GroundState
+    {
+        Grounded,
+        GroundedSteep,
+        NotSupported,
+        Air,
+    };
+
     enum class BackFaceMode : uint8_t
     {
         IgnoreBackFaces,

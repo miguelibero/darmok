@@ -144,6 +144,9 @@ namespace darmok::physics3d
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
 
+        bool isGrounded() const noexcept;
+        GroundState getGroundState() const noexcept;
+
         PhysicsBody& setPosition(const glm::vec3& pos);
         glm::vec3 getPosition();
         PhysicsBody& setRotation(const glm::quat& rot);

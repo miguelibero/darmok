@@ -20,21 +20,21 @@ namespace darmok
         static bool callTableDelegate(const sol::table& delegate, const std::string& key, const std::string& desc, Callback callback)
         {
             auto elm = delegate[key];
-            if (!elm.is<sol::function>())
+            if (elm.get_type() != sol::type::function)
             {
                 return true;
             }
             sol::protected_function func = elm;
-            auto result = callback(func);
+            auto result = callback(func, delegate);
             return checkResult(desc, result);
         }
 
         template<typename Callback>
-        static void callTableListeners(const std::vector<sol::table>& listeners, const std::string& key, const std::string& desc, Callback callback)
+        static void callTableDelegates(const std::vector<sol::table>& delegates, const std::string& key, const std::string& desc, Callback callback)
         {
-            for (auto& listener : listeners)
+            for (auto& delegate : delegates)
             {
-                callTableDelegate(listener, key, desc, callback);
+                callTableDelegate(delegate, key, desc, callback);
             }
         }
 

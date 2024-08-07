@@ -74,22 +74,40 @@ namespace darmok
 		return _audio;
 	}
 
-	void LuaApp::registerUpdate(const sol::protected_function& func) noexcept
+	LuaApp& LuaApp::addUpdater1(const sol::protected_function& func) noexcept
 	{
 		if (func)
 		{
-			_updates.push_back(func);
+			_updaterFunctions.push_back(func);
 		}
+		return *this;
 	}
 
-	bool LuaApp::unregisterUpdate(const sol::protected_function& func) noexcept
+	LuaApp& LuaApp::addUpdater2(const sol::table& table) noexcept
 	{
-		auto itr = std::find(_updates.begin(), _updates.end(), func);
-		if (itr == _updates.end())
+		_updaterTables.push_back(table);
+		return *this;
+	}
+
+	bool LuaApp::removeUpdater1(const sol::protected_function& func) noexcept
+	{
+		auto itr = std::find(_updaterFunctions.begin(), _updaterFunctions.end(), func);
+		if (itr == _updaterFunctions.end())
 		{
 			return false;
 		}
-		_updates.erase(itr);
+		_updaterFunctions.erase(itr);
+		return true;
+	}
+
+	bool LuaApp::removeUpdater2(const sol::table& table) noexcept
+	{
+		auto itr = std::find(_updaterTables.begin(), _updaterTables.end(), table);
+		if (itr == _updaterTables.end())
+		{
+			return false;
+		}
+		_updaterTables.erase(itr);
 		return true;
 	}
 
@@ -145,18 +163,15 @@ namespace darmok
 
 	void LuaApp::update(float deltaTime) noexcept
 	{
-		for(auto& update : _updates)
+		for(auto& func : _updaterFunctions)
 		{
-			if (!update)
-			{
-				continue;
-			}
-			auto result = update(deltaTime);
-			if (!result.valid())
-			{
-				LuaUtils::logError("running update", result);
-			}
+			auto result = func(deltaTime);
+			LuaUtils::checkResult("running function updater", result);
 		}
+		LuaUtils::callTableDelegates(_updaterTables, "update", "running table updater",
+			[deltaTime](auto& func, auto& self) {
+				return func(self, deltaTime);
+			});
 	}
 
 	bool LuaApp::getDebug() noexcept
@@ -181,8 +196,8 @@ namespace darmok
 			"input", sol::property(&LuaApp::getInput),
 			"audio", sol::property(&LuaApp::getAudio),
 			"debug", sol::property(&LuaApp::getDebug),
-			"register_update", &LuaApp::registerUpdate,
-			"unregister_update", &LuaApp::unregisterUpdate,
+			"add_updater", sol::overload(&LuaApp::addUpdater1, &LuaApp::addUpdater2),
+			"remove_updater", sol::overload(&LuaApp::removeUpdater1, &LuaApp::removeUpdater2),
 			"has_component", &LuaApp::hasComponent,
 			"remove_component", &LuaApp::removeComponent,
 			"add_lua_component", &LuaApp::addLuaComponent,
@@ -471,7 +486,7 @@ namespace darmok
 				throw LuaError("running init", result);
 			}
 		}
-		_luaApp->registerUpdate(lua["update"]);
+		_luaApp->addUpdater1(lua["update"]);
 	}
 
 	std::string LuaRunnerAppImpl::_defaultAssetInputPath = "assets";

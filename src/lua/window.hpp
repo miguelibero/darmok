@@ -36,8 +36,8 @@ namespace darmok
 		std::reference_wrapper<Window> _win;
 		std::unordered_map<ListenerType, std::vector<sol::protected_function>> _listeners;
 
-		void registerListener(ListenerType type, const sol::protected_function& func) noexcept;
-		bool unregisterListener(ListenerType type, const sol::protected_function& func) noexcept;
+		void addListener(ListenerType type, const sol::protected_function& func) noexcept;
+		bool removeListener(ListenerType type, const sol::protected_function& func) noexcept;
 
 		const glm::uvec2& getSize() const noexcept;
 		const glm::uvec2& getPixelSize() const noexcept;

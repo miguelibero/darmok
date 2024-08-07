@@ -39,12 +39,15 @@ namespace darmok
 			return getReal().addComponent<T>(real);
 		}
 
-		void registerUpdate(const sol::protected_function& func) noexcept;
-		bool unregisterUpdate(const sol::protected_function& func) noexcept;
+		LuaApp& addUpdater1(const sol::protected_function& func) noexcept;
+		LuaApp& addUpdater2(const sol::table& table) noexcept;
+		bool removeUpdater1(const sol::protected_function& func) noexcept;
+		bool removeUpdater2(const sol::table& table) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		std::vector<sol::protected_function> _updates;
+		std::vector<sol::protected_function> _updaterFunctions;
+		std::vector<sol::table> _updaterTables;
 		std::reference_wrapper<App> _app;
 		LuaInput _input;
 		LuaWindow _win;

@@ -35,7 +35,7 @@ function Class:new(super, name)
         if static.tostring then
             return static.tostring(self)
         end
-        return class.name
+        return class.name or "Class"
     end
 
     local props = {}

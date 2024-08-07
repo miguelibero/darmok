@@ -38,8 +38,8 @@ namespace darmok
 		std::reference_wrapper<Keyboard> _kb;
 		std::unordered_map<ListenerType, std::vector<sol::protected_function>> _listeners;
 
-		void registerListener(ListenerType type, const sol::protected_function& func) noexcept;
-		bool unregisterListener(ListenerType type, const sol::protected_function& func) noexcept;
+		void addListener(ListenerType type, const sol::protected_function& func) noexcept;
+		bool removeListener(ListenerType type, const sol::protected_function& func) noexcept;
 
 		bool getKey(KeyboardKey key) const noexcept;
 		const KeyboardKeys& getKeys() const noexcept;
@@ -89,8 +89,8 @@ namespace darmok
 		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) override;
 		void onMouseButton(MouseButton button, bool down) override;
 
-		void registerListener(ListenerType type, const sol::protected_function& func) noexcept;
-		bool unregisterListener(ListenerType type, const sol::protected_function& func) noexcept;
+		void addListener(ListenerType type, const sol::protected_function& func) noexcept;
+		bool removeListener(ListenerType type, const sol::protected_function& func) noexcept;
 	};
 
 	enum class LuaGamepadListenerType
@@ -124,8 +124,8 @@ namespace darmok
 		void onGamepadButton(uint8_t num, GamepadButton button, bool down) override;
 		void onGamepadConnect(uint8_t num, bool connected) override;
 
-		void registerListener(ListenerType type, const sol::protected_function& func) noexcept;
-		bool unregisterListener(ListenerType type, const sol::protected_function& func) noexcept;
+		void addListener(ListenerType type, const sol::protected_function& func) noexcept;
+		bool removeListener(ListenerType type, const sol::protected_function& func) noexcept;
 
 		bool getButton(GamepadButton button) const noexcept;
 		const glm::vec3& getLeftStick() const noexcept;
@@ -164,9 +164,9 @@ namespace darmok
 		std::vector<LuaGamepad> _gamepads;
 		std::vector<LuaInputEventListener> _listeners;
 
-		void registerListener(const std::string& tag, const sol::object& ev, const sol::protected_function& func);
-		bool unregisterListener1(const std::string& tag, const sol::protected_function& func) noexcept;
-		bool unregisterListener2(const sol::protected_function& func) noexcept;
+		void addListener(const std::string& tag, const sol::object& ev, const sol::protected_function& func);
+		bool removeListener1(const std::string& tag, const sol::protected_function& func) noexcept;
+		bool removeListener2(const sol::protected_function& func) noexcept;
 
 		LuaKeyboard& getKeyboard() noexcept;
 		LuaMouse& getMouse() noexcept;

@@ -70,7 +70,7 @@ namespace darmok
 		return _gamepads;
 	}
 
-	void LuaInput::registerListener(const std::string& tag, const sol::object& evObj, const sol::protected_function& func)
+	void LuaInput::addListener(const std::string& tag, const sol::object& evObj, const sol::protected_function& func)
 	{
 		auto ev = readEvent(evObj);
 		if (!ev)
@@ -81,7 +81,7 @@ namespace darmok
 		_input->addListener(tag, ev.value(), listener);
 	}
 
-	bool LuaInput::unregisterListener1(const std::string& tag, const sol::protected_function& func) noexcept
+	bool LuaInput::removeListener1(const std::string& tag, const sol::protected_function& func) noexcept
 	{
 		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&tag, &func](auto& listener) {
 			return listener.getTag() == tag && listener.getFunc() == func;
@@ -94,7 +94,7 @@ namespace darmok
 		return true;
 	}
 
-	bool LuaInput::unregisterListener2(const sol::protected_function& func) noexcept
+	bool LuaInput::removeListener2(const sol::protected_function& func) noexcept
 	{
 		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&func](auto& listener) {
 			return listener.getFunc() == func;
@@ -223,10 +223,10 @@ namespace darmok
 			"get_gamepad", &LuaInput::getGamepad,
 			"get_axis", &LuaInput::getAxis,
 			"check_event", &LuaInput::checkEvent,
-			"register_listener", &LuaInput::registerListener,
-			"unregister_listener", sol::overload(
-				&LuaInput::unregisterListener1,
-				&LuaInput::unregisterListener2
+			"add_listener", &LuaInput::addListener,
+			"remove_listener", sol::overload(
+				&LuaInput::removeListener1,
+				&LuaInput::removeListener2
 			)
 		);
 	}

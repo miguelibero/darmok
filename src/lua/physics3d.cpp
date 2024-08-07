@@ -9,6 +9,7 @@ namespace darmok::physics3d
     LuaPhysicsSystem::LuaPhysicsSystem(PhysicsSystem& system) noexcept
         : _system(system)
     {
+        _system.addUpdater(*this);
     }
 
     void LuaPhysicsSystem::shutdown() noexcept
@@ -17,28 +18,40 @@ namespace darmok::physics3d
         _system.removeUpdater(*this);
     }
 
-    LuaPhysicsSystem& LuaPhysicsSystem::registerUpdate(const sol::protected_function& func) noexcept
+    LuaPhysicsSystem& LuaPhysicsSystem::addUpdater1(const sol::protected_function& func) noexcept
     {
-        if (_updates.empty())
+        if (func)
         {
-            _system.addUpdater(*this);
+            _updaterFunctions.emplace_back(func);
         }
-        _updates.emplace_back(func);
         return *this;
     }
 
-    bool LuaPhysicsSystem::unregisterUpdate(const sol::protected_function& func) noexcept
+    LuaPhysicsSystem& LuaPhysicsSystem::addUpdater2(const sol::table& table) noexcept
     {
-        auto itr = std::find(_updates.begin(), _updates.end(), func);
-        if (itr == _updates.end())
+        _updaterTables.emplace_back(table);
+        return *this;
+    }
+
+    bool LuaPhysicsSystem::removeUpdater1(const sol::protected_function& func) noexcept
+    {
+        auto itr = std::find(_updaterFunctions.begin(), _updaterFunctions.end(), func);
+        if (itr == _updaterFunctions.end())
         {
             return false;
         }
-        _updates.erase(itr);
-        if (_updates.empty())
+        _updaterFunctions.erase(itr);
+        return true;
+    }
+
+    bool LuaPhysicsSystem::removeUpdater2(const sol::table& table) noexcept
+    {
+        auto itr = std::find(_updaterTables.begin(), _updaterTables.end(), table);
+        if (itr == _updaterTables.end())
         {
-            _system.removeUpdater(*this);
+            return false;
         }
+        _updaterTables.erase(itr);
         return true;
     }
 
@@ -89,18 +102,15 @@ namespace darmok::physics3d
 
     void LuaPhysicsSystem::fixedUpdate(float fixedDeltaTime)
     {
-        for (auto& update : _updates)
+        for (auto& func : _updaterFunctions)
         {
-            if (!update)
-            {
-                continue;
-            }
-            auto result = update(fixedDeltaTime);
-            if (!result.valid())
-            {
-                LuaUtils::logError("running fixed update", result);
-            }
+            auto result = func(fixedDeltaTime);
+            LuaUtils::checkResult("running fixed function updater", result);
         }
+        LuaUtils::callTableDelegates(_updaterTables, "update", "running fixed table updater",
+            [fixedDeltaTime](auto& func, auto& self) {
+                return func(self, fixedDeltaTime);
+            });
     }
 
 
@@ -124,10 +134,10 @@ namespace darmok::physics3d
     {
         auto& luaBody1 = getLuaBody(body1).value();
         auto& luaBody2 = getLuaBody(body2).value();
-        LuaUtils::callTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
-            [&collision, &luaBody1, &luaBody2](auto& func)
+        LuaUtils::callTableDelegates(_listeners, "on_collision_enter", "running physics collision enter",
+            [&collision, &luaBody1, &luaBody2](auto& func, auto& self)
             {
-                return func(luaBody1, luaBody2, collision);
+                return func(self, luaBody1, luaBody2, collision);
         });
     }
 
@@ -135,10 +145,10 @@ namespace darmok::physics3d
     {
         auto& luaBody1 = getLuaBody(body1).value();
         auto& luaBody2 = getLuaBody(body2).value();
-        LuaUtils::callTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
-            [&collision, &luaBody1, &luaBody2](auto& func)
+        LuaUtils::callTableDelegates(_listeners, "on_collision_stay", "running physics collision stay",
+            [&collision, &luaBody1, &luaBody2](auto& func, auto& self)
             {
-                return func(luaBody1, luaBody2, collision);
+                return func(self, luaBody1, luaBody2, collision);
         });
     }
 
@@ -146,10 +156,10 @@ namespace darmok::physics3d
     {
         auto& luaBody1 = getLuaBody(body1).value();
         auto& luaBody2 = getLuaBody(body2).value();
-        LuaUtils::callTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
-            [&luaBody1, &luaBody2](auto& func)
+        LuaUtils::callTableDelegates(_listeners, "on_collision_exit", "running physics collision exit",
+            [&luaBody1, &luaBody2](auto& func, auto& self)
             {
-                return func(luaBody1, luaBody2);
+                return func(self, luaBody1, luaBody2);
         });
     }
 
@@ -212,8 +222,8 @@ namespace darmok::physics3d
         );
 
         lua.new_usertype<LuaPhysicsSystem>("Physics3dSystem", sol::no_constructor,
-            "register_update", &LuaPhysicsSystem::registerUpdate,
-            "unregister_update", &LuaPhysicsSystem::unregisterUpdate,
+            "add_updater", sol::overload(&LuaPhysicsSystem::addUpdater1, &LuaPhysicsSystem::addUpdater2),
+            "remove_updater", sol::overload(&LuaPhysicsSystem::removeUpdater1, &LuaPhysicsSystem::removeUpdater2),
             "add_listener", &LuaPhysicsSystem::addListener,
             "remove_listener", &LuaPhysicsSystem::removeListener,
             "root_transform", sol::property(&LuaPhysicsSystem::getRootTransform, &LuaPhysicsSystem::setRootTransform),
@@ -243,6 +253,16 @@ namespace darmok::physics3d
     LuaPhysicsBody::~LuaPhysicsBody() noexcept
     {
         _body.removeListener(*this);
+    }
+
+    bool LuaPhysicsBody::isGrounded() const noexcept
+    {
+        return _body.isGrounded();
+    }
+
+    GroundState LuaPhysicsBody::getGroundState() const noexcept
+    {
+        return _body.getGroundState();
     }
 
     const LuaPhysicsBody::Shape& LuaPhysicsBody::getShape() const noexcept
@@ -382,10 +402,10 @@ namespace darmok::physics3d
     {
         auto& luaBody1 = getLuaBody(body1).value();
         auto& luaBody2 = getLuaBody(body2).value();
-        LuaUtils::callTableListeners(_listeners, "on_collision_enter", "running physics collision enter",
-            [&collision, &luaBody1, &luaBody2](auto& func)
+        LuaUtils::callTableDelegates(_listeners, "on_collision_enter", "running physics collision enter",
+            [&collision, &luaBody1, &luaBody2](auto& func, auto& self)
             {
-                return func(luaBody1, luaBody2, collision);
+                return func(self, luaBody1, luaBody2, collision);
             });
     }
 
@@ -393,10 +413,10 @@ namespace darmok::physics3d
     {
         auto& luaBody1 = getLuaBody(body1).value();
         auto& luaBody2 = getLuaBody(body2).value();
-        LuaUtils::callTableListeners(_listeners, "on_collision_stay", "running physics collision stay",
-            [&collision, &luaBody1, &luaBody2](auto& func)
+        LuaUtils::callTableDelegates(_listeners, "on_collision_stay", "running physics collision stay",
+            [&collision, &luaBody1, &luaBody2](auto& func, auto& self)
             {
-                return func(luaBody1, luaBody2, collision);
+                return func(self, luaBody1, luaBody2, collision);
             });
     }
 
@@ -404,10 +424,10 @@ namespace darmok::physics3d
     {
         auto& luaBody1 = getLuaBody(body1).value();
         auto& luaBody2 = getLuaBody(body2).value();
-        LuaUtils::callTableListeners(_listeners, "on_collision_exit", "running physics collision exit",
-            [&luaBody1, &luaBody2](auto& func)
+        LuaUtils::callTableDelegates(_listeners, "on_collision_exit", "running physics collision exit",
+            [&luaBody1, &luaBody2](auto& func, auto& self)
             {
-                return func(luaBody1, luaBody2);
+                return func(self, luaBody1, luaBody2);
             });
     }
 
@@ -456,6 +476,12 @@ namespace darmok::physics3d
             { "Dynamic", MotionType::Dynamic },
             { "Kinematic", MotionType::Kinematic },
         });
+        lua.new_enum<GroundState>("Physics3dGroundState", {
+            { "Grounded", GroundState::Grounded },
+            { "GroundedSteep", GroundState::GroundedSteep },
+            { "NotSupported", GroundState::NotSupported },
+            { "Air", GroundState::Air },
+        });
         lua.new_usertype<PhysicsBodyConfig>("Physics3dBodyConfig", sol::default_constructor,
             "shape", &PhysicsBodyConfig::shape,
             "motion", &PhysicsBodyConfig::motion,
@@ -490,6 +516,8 @@ namespace darmok::physics3d
             "get_entity", &LuaPhysicsBody::getEntity,
             "add_listener", &LuaPhysicsBody::addListener,
             "remove_listener", &LuaPhysicsBody::removeListener,
+            "grounded", sol::property(&LuaPhysicsBody::isGrounded),
+            "ground_state", sol::property(&LuaPhysicsBody::getGroundState),
             "shape", sol::property(&LuaPhysicsBody::getShape),
             "motion_type", sol::property(&LuaPhysicsBody::getMotionType),
             "position", sol::property(&LuaPhysicsBody::getPosition, &LuaPhysicsBody::setPosition),

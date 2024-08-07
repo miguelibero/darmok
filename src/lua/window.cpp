@@ -105,12 +105,12 @@ namespace darmok
 		return _win.get().windowToScreenPoint(LuaGlm::tableGet(point));
 	}
 
-	void LuaWindow::registerListener(ListenerType type, const sol::protected_function& func) noexcept
+	void LuaWindow::addListener(ListenerType type, const sol::protected_function& func) noexcept
 	{
 		_listeners[type].push_back(func);
 	}
 
-	bool LuaWindow::unregisterListener(ListenerType type, const sol::protected_function& func) noexcept
+	bool LuaWindow::removeListener(ListenerType type, const sol::protected_function& func) noexcept
 	{
 		auto itr = _listeners.find(type);
 		if (itr == _listeners.end())
@@ -181,8 +181,8 @@ namespace darmok
 			"cursor_mode", sol::property(&LuaWindow::getCursorMode, &LuaWindow::setCursorMode),
 			"screen_to_window_point", &LuaWindow::screenToWindowPoint,
 			"window_to_screen_point", &LuaWindow::windowToScreenPoint,
-			"register_listener", &LuaWindow::registerListener,
-			"unregister_listener", &LuaWindow::unregisterListener
+			"add_listener", &LuaWindow::addListener,
+			"remove_listener", &LuaWindow::removeListener
 		);
 	}
 

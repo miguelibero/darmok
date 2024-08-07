@@ -40,11 +40,15 @@ namespace darmok::physics3d
         static void bind(sol::state_view& lua) noexcept;
     private:
         PhysicsSystem& _system;
-        std::vector<sol::protected_function> _updates;
+        std::vector<sol::protected_function> _updaterFunctions;
+        std::vector<sol::table> _updaterTables;
         std::vector<sol::table> _listeners;
 
-        LuaPhysicsSystem& registerUpdate(const sol::protected_function& func) noexcept;
-        bool unregisterUpdate(const sol::protected_function& func) noexcept;
+        LuaPhysicsSystem& addUpdater1(const sol::protected_function& func) noexcept;
+        LuaPhysicsSystem& addUpdater2(const sol::table& table) noexcept;
+        bool removeUpdater1(const sol::protected_function& func) noexcept;
+        bool removeUpdater2(const sol::table& table) noexcept;
+
         LuaPhysicsSystem& addListener(const sol::table& listener) noexcept;
         bool removeListener(const sol::table& listener) noexcept;
 
@@ -91,6 +95,9 @@ namespace darmok::physics3d
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
+
+        bool isGrounded() const noexcept;
+        GroundState getGroundState() const noexcept;
 
         void setPosition(const VarLuaTable<glm::vec3>& pos) noexcept;
         glm::vec3 getPosition() const noexcept;

@@ -107,9 +107,9 @@ namespace darmok::physics3d
 		LuaCharacterController luaChar(character);
 		LuaPhysicsBody luaBody(body);
 		LuaUtils::callTableDelegate(_delegate, "on_adjust_body_velocity", "running character adjust body velocity",
-			[&](auto& func)
+			[&](auto& func, auto& self)
 			{
-				return func(luaChar, luaBody, linearVelocity, angularVelocity);
+				return func(self, luaChar, luaBody, linearVelocity, angularVelocity);
 			}
 		);
 	}
@@ -123,9 +123,9 @@ namespace darmok::physics3d
 		LuaCharacterController luaChar(character);
 		LuaPhysicsBody luaBody(body);
 		return LuaUtils::callTableDelegate(_delegate, "on_contact_validate", "running character contact validate",
-			[&](auto& func)
+			[&](auto& func, auto& self)
 			{
-				return func(luaChar, luaBody);
+				return func(self, luaChar, luaBody);
 			}
 		);
 	}
@@ -139,9 +139,9 @@ namespace darmok::physics3d
 		LuaCharacterController luaChar(character);
 		LuaPhysicsBody luaBody(body);
 		LuaUtils::callTableDelegate(_delegate, "on_contact_added", "running character contact added",
-			[&](auto& func)
+			[&](auto& func, auto& self)
 			{
-				return func(luaChar, luaBody, contact, settings);
+				return func(self, luaChar, luaBody, contact, settings);
 			}
 		);
 	}
@@ -155,21 +155,15 @@ namespace darmok::physics3d
 		LuaCharacterController luaChar(character);
 		LuaPhysicsBody luaBody(body);
 		LuaUtils::callTableDelegate(_delegate, "on_contact_solve", "running character contact solve",
-			[&](auto& func)
+			[&](auto& func, auto& self)
 			{
-				return func(luaChar, luaBody, contact, characterVelocity);
+				return func(self, luaChar, luaBody, contact, characterVelocity);
 			}
 		);
 	}
 
 	void LuaCharacterController::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_enum<GroundState>("Physics3dGroundState", {
-			{ "Grounded", GroundState::Grounded },
-			{ "GroundedSteep", GroundState::GroundedSteep },
-			{ "NotSupported", GroundState::NotSupported },
-			{ "Air", GroundState::Air },
-		});
 		lua.new_usertype<Config>("CharacterControllerConfig", sol::default_constructor,
 			"shape", &CharacterControllerConfig::shape,
 			"up", &CharacterControllerConfig::up,

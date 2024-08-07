@@ -48,7 +48,7 @@ namespace darmok
 		return ss.str();
 	}
 
-	void LuaKeyboard::registerListener(ListenerType type, const sol::protected_function& func) noexcept
+	void LuaKeyboard::addListener(ListenerType type, const sol::protected_function& func) noexcept
 	{
 		_listeners[type].push_back(func);
 	}
@@ -71,7 +71,7 @@ namespace darmok
 		return true;
 	}
 
-	bool LuaKeyboard::unregisterListener(ListenerType type, const sol::protected_function& func) noexcept
+	bool LuaKeyboard::removeListener(ListenerType type, const sol::protected_function& func) noexcept
 	{
 		return unregisterLuaInputListener(type, func, _listeners);
 	}
@@ -159,8 +159,8 @@ namespace darmok
 		lua.new_usertype<LuaKeyboard>("Keyboard", sol::no_constructor,
 			"get_key", &LuaKeyboard::getKey,
 			"chars", sol::property(&LuaKeyboard::getUpdateChars),
-			"register_listener", &LuaKeyboard::registerListener,
-			"unregister_listener", &LuaKeyboard::unregisterListener
+			"add_listener", &LuaKeyboard::addListener,
+			"remove_listener", &LuaKeyboard::removeListener
 		);
 	}
 
@@ -242,12 +242,12 @@ namespace darmok
 		}
 	}
 
-	bool LuaMouse::unregisterListener(ListenerType type, const sol::protected_function& func) noexcept
+	bool LuaMouse::removeListener(ListenerType type, const sol::protected_function& func) noexcept
 	{
 		return unregisterLuaInputListener(type, func, _listeners);
 	}
 
-	void LuaMouse::registerListener(ListenerType type, const sol::protected_function& func) noexcept
+	void LuaMouse::addListener(ListenerType type, const sol::protected_function& func) noexcept
 	{
 		_listeners[type].push_back(func);
 	}
@@ -342,8 +342,8 @@ namespace darmok
 			"middle_button", sol::property(&LuaMouse::getMiddleButton),
 			"right_button", sol::property(&LuaMouse::getRightButton),
 			"get_button", &LuaMouse::getButton,
-			"register_listener", &LuaMouse::registerListener,
-			"unregister_listener", &LuaMouse::unregisterListener
+			"add_listener", &LuaMouse::addListener,
+			"remove_listener", &LuaMouse::removeListener
 		);
 	}
 
@@ -385,12 +385,12 @@ namespace darmok
 		}
 	}
 
-	void LuaGamepad::registerListener(ListenerType type, const sol::protected_function& func) noexcept
+	void LuaGamepad::addListener(ListenerType type, const sol::protected_function& func) noexcept
 	{
 		_listeners[type].push_back(func);
 	}
 
-	bool LuaGamepad::unregisterListener(ListenerType type, const sol::protected_function& func) noexcept
+	bool LuaGamepad::removeListener(ListenerType type, const sol::protected_function& func) noexcept
 	{
 		return unregisterLuaInputListener(type, func, _listeners);
 	}
@@ -521,8 +521,8 @@ namespace darmok
 			"connected", sol::property(&LuaGamepad::isConnected),
 			"left_stick", sol::property(&LuaGamepad::getLeftStick),
 			"right_stick", sol::property(&LuaGamepad::getRightStick),
-			"register_listener", &LuaGamepad::registerListener,
-			"unregister_listener", &LuaGamepad::unregisterListener
+			"add_listener", &LuaGamepad::addListener,
+			"remove_listener", &LuaGamepad::removeListener
 		);
 	}
 }
