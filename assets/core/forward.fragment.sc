@@ -3,9 +3,7 @@ $input v_position, v_normal, v_color0, v_texcoord0
 #include <bgfx_shader.sh>
 #include <darmok_phong_lighting.include.sc>
 
-#ifndef TEXTURE_DISABLED
 SAMPLER2D(s_texColor, 0);
-#endif
 
 uniform vec4 u_diffuseColor;
 uniform vec4 u_specularColor;
