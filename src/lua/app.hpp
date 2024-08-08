@@ -48,6 +48,7 @@ namespace darmok
 	private:
 		std::vector<sol::protected_function> _updaterFunctions;
 		std::vector<sol::table> _updaterTables;
+		std::vector<sol::coroutine> _coroutines;
 		std::reference_wrapper<App> _app;
 		LuaInput _input;
 		LuaWindow _win;
@@ -65,6 +66,9 @@ namespace darmok
 		void addLuaComponent(const sol::table& comp);
 		bool removeLuaComponent(const sol::object& type) noexcept;
 		sol::object getLuaComponent(const sol::object& type) noexcept;
+
+		void startCoroutine(const sol::coroutine& coroutine) noexcept;
+		bool stopCoroutine(const sol::coroutine& coroutine) noexcept;
 
 		static bool getDebug() noexcept;
 	};

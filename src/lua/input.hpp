@@ -174,6 +174,7 @@ namespace darmok
 		const std::vector<LuaGamepad>& getGamepads() noexcept;
 
 		bool checkEvent(const sol::object& ev) const noexcept;
+		bool checkEvents(const sol::table& evs) const noexcept;
 		float getAxis(const sol::object& positive, const sol::object& negative) const noexcept;	
 
 		static std::optional<InputEvent> readEvent(const sol::object& val) noexcept;

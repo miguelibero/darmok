@@ -117,6 +117,19 @@ namespace darmok
 		return _input->checkEvent(ev.value());
 	}
 
+	bool LuaInput::checkEvents(const sol::table& evs) const noexcept
+	{
+		auto size = evs.size();
+		for(auto i = 1; i <= size; ++i)
+		{
+			if(checkEvent(evs[i]))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	float LuaInput::getAxis(const sol::object& posObj, const sol::object& negObj) const noexcept
 	{
 		auto pos = readDirs(posObj);
@@ -188,7 +201,7 @@ namespace darmok
 		{
 			auto tab = val.as<sol::table>();
 			auto size = tab.size();
-			for(auto i = 1; i <= size; i++)
+			for(auto i = 1; i <= size; ++i)
 			{
 				auto dir = readDir(tab[i]);
 				if (dir)
@@ -223,6 +236,7 @@ namespace darmok
 			"get_gamepad", &LuaInput::getGamepad,
 			"get_axis", &LuaInput::getAxis,
 			"check_event", &LuaInput::checkEvent,
+			"check_events", &LuaInput::checkEvents,
 			"add_listener", &LuaInput::addListener,
 			"remove_listener", sol::overload(
 				&LuaInput::removeListener1,

@@ -111,6 +111,22 @@ namespace darmok
 		return true;
 	}
 
+	void LuaApp::startCoroutine(const sol::coroutine& coroutine) noexcept
+	{
+		_coroutines.push_back(coroutine);
+	}
+
+	bool LuaApp::stopCoroutine(const sol::coroutine& coroutine) noexcept
+	{
+		auto itr = std::find(_coroutines.begin(), _coroutines.end(), coroutine);
+		if (itr == _coroutines.end())
+		{
+			return false;
+		}
+		_coroutines.erase(itr);
+		return true;
+	}
+
 	bool LuaApp::removeComponent(const sol::object& type)
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
@@ -163,15 +179,57 @@ namespace darmok
 
 	void LuaApp::update(float deltaTime) noexcept
 	{
+		std::vector<sol::protected_function> finishedFunctions;
 		for(auto& func : _updaterFunctions)
 		{
 			auto result = func(deltaTime);
-			LuaUtils::checkResult("running function updater", result);
+			auto finished = LuaUtils::checkResult("running function updater", result);
+			if (finished)
+			{
+				finishedFunctions.push_back(func);
+			}
 		}
-		LuaUtils::callTableDelegates(_updaterTables, "update", "running table updater",
-			[deltaTime](auto& func, auto& self) {
-				return func(self, deltaTime);
-			});
+		for (auto& func : finishedFunctions)
+		{
+			removeUpdater1(func);
+		}
+
+		std::vector<sol::table> finishedTables;
+		for (auto& tab : _updaterTables)
+		{
+			auto finished = LuaUtils::callTableDelegate(tab, "update", "running table updater",
+				[deltaTime](auto& func, auto& self) {
+					return func(self, deltaTime);
+				});
+			if (finished)
+			{
+				finishedTables.push_back(tab);
+			}
+		}
+		for (auto& tab : finishedTables)
+		{
+			removeUpdater2(tab);
+		}
+
+		std::vector<sol::coroutine> finishedCoroutines;
+		for (auto& coroutine : _coroutines)
+		{
+			if (!coroutine.runnable())
+			{
+				finishedCoroutines.push_back(coroutine);
+				continue;
+			}
+			auto result = coroutine(deltaTime);
+			auto finished = LuaUtils::checkResult("running coroutine", result);
+			if (finished)
+			{
+				finishedCoroutines.push_back(coroutine);
+			}
+		}
+		for (auto& coroutine : finishedCoroutines)
+		{
+			stopCoroutine(coroutine);
+		}
 	}
 
 	bool LuaApp::getDebug() noexcept
@@ -198,6 +256,8 @@ namespace darmok
 			"debug", sol::property(&LuaApp::getDebug),
 			"add_updater", sol::overload(&LuaApp::addUpdater1, &LuaApp::addUpdater2),
 			"remove_updater", sol::overload(&LuaApp::removeUpdater1, &LuaApp::removeUpdater2),
+			"start_coroutine", &LuaApp::startCoroutine,
+			"stop_coroutine", &LuaApp::stopCoroutine,
 			"has_component", &LuaApp::hasComponent,
 			"remove_component", &LuaApp::removeComponent,
 			"add_lua_component", &LuaApp::addLuaComponent,

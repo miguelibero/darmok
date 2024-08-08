@@ -24,9 +24,14 @@ namespace darmok
 			logError(desc, result);
 			return false;
 		}
-		return true;
-	}
 
+		sol::object obj = result;
+		if (obj.get_type() == sol::type::boolean)
+		{
+			return obj.as<bool>();
+		}
+		return obj != sol::nil;
+	}
 
 	std::optional<entt::id_type> LuaUtils::getTypeId(const sol::object& type) noexcept
 	{

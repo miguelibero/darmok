@@ -191,6 +191,7 @@ namespace darmok
 		bool removeListener(IInputEventListener& listener) noexcept;
 
 		bool checkEvent(const InputEvent& ev) const noexcept;
+		bool checkEvents(const InputEvents& evs) const noexcept;
 
 		using Sensitivity = InputSensitivity;
 		using Dirs = InputDirs;

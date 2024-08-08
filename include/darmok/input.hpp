@@ -243,6 +243,7 @@ namespace darmok
 		[[nodiscard]] InputImpl& getImpl() noexcept;
 
 		bool checkEvent(const InputEvent& ev) const noexcept;
+		bool checkEvents(const InputEvents& evs) const noexcept;
 
 		using Sensitivity = InputSensitivity;
 		float getAxis(const InputDirs& positive, const InputDirs& negative, const Sensitivity& sensitivity = {}) const noexcept;

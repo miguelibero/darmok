@@ -1161,6 +1161,18 @@ namespace darmok
 		return true;
 	}
 
+	bool InputImpl::checkEvents(const InputEvents& evs) const noexcept
+	{
+		for(auto& ev : evs)
+		{
+			if(checkEvent(ev))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	bool InputImpl::checkEvent(const InputEvent& ev) const noexcept
 	{
 		if (auto v = std::get_if<KeyboardInputEvent>(&ev))
@@ -1555,6 +1567,11 @@ namespace darmok
 	bool Input::checkEvent(const InputEvent& ev) const noexcept
 	{
 		return _impl->checkEvent(ev);
+	}
+
+	bool Input::checkEvents(const InputEvents& evs) const noexcept
+	{
+		return _impl->checkEvents(evs);
 	}
 
 	float Input::getAxis(const InputDirs& positive, const InputDirs& negative, const Sensitivity& sensi) const noexcept

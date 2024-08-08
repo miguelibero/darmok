@@ -57,7 +57,6 @@ namespace darmok
 
     glm::mat4 Math::frustrum(float left, float right, float bottom, float top, float near, float far) noexcept
     {
-        // TODO: check how to calculate glm::frustrum with bx
         return glm::frustum(left, right, bottom, top, near, far);
     }
 
@@ -97,15 +96,15 @@ namespace darmok
 
     glm::vec3 Math::moveTowards(const glm::vec3& current, const glm::vec3& target, float maxDistanceDelta) noexcept
     {
-        // TODO: check this works OK, has not been tested
-        auto dist = glm::distance(current, target);
+        auto delta = target - current;
+        auto dist = glm::length(delta);
 
         if (std::abs(dist) <= maxDistanceDelta)
         {
             return target;
         }
         float t = std::min(1.0f, maxDistanceDelta / dist);
-        return lerp(current, target, t);
+        return current + lerp(glm::vec3(0), delta, t);
     }
 
     glm::vec3 Math::rotateTowards(const glm::vec3& current, const glm::vec3& target, float maxRadiansDelta, float maxDistanceDelta) noexcept
