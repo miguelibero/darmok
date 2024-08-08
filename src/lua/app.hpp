@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <filesystem>
 #include <sol/sol.hpp>
+#include <bx/bx.h>
 #include "glm.hpp"
 #include "asset.hpp"
 #include "window.hpp"
@@ -22,6 +23,25 @@ namespace darmok
 {
 	class AssetContext;
 	class LuaAppComponentContainer;
+
+	class LuaApp;
+
+	class BX_NO_VTABLE ILuaYieldInstruction
+	{
+	public:
+		virtual ~ILuaYieldInstruction() = default;
+		virtual void update(float deltaTime) {};
+		virtual bool finished() const = 0;
+	};
+
+	class LuaAppCoroutine final : public ILuaYieldInstruction
+	{
+	public:
+		LuaAppCoroutine(const sol::coroutine& coroutine) noexcept;
+		bool finished() const noexcept override;
+	private:
+		sol::coroutine _coroutine;
+	};
 
 	class LuaApp final
 	{
@@ -49,6 +69,7 @@ namespace darmok
 		std::vector<sol::protected_function> _updaterFunctions;
 		std::vector<sol::table> _updaterTables;
 		std::vector<sol::coroutine> _coroutines;
+		std::unordered_map<const void*, std::reference_wrapper<ILuaYieldInstruction>> _coroutineAwaits;
 		std::reference_wrapper<App> _app;
 		LuaInput _input;
 		LuaWindow _win;
@@ -67,8 +88,11 @@ namespace darmok
 		bool removeLuaComponent(const sol::object& type) noexcept;
 		sol::object getLuaComponent(const sol::object& type) noexcept;
 
-		void startCoroutine(const sol::coroutine& coroutine) noexcept;
+		LuaAppCoroutine startCoroutine(const sol::coroutine& coroutine) noexcept;
 		bool stopCoroutine(const sol::coroutine& coroutine) noexcept;
+
+		void updateUpdaters(float deltaTime) noexcept;
+		void updateCoroutines(float deltaTime) noexcept;
 
 		static bool getDebug() noexcept;
 	};

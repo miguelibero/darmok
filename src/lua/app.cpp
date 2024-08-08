@@ -91,40 +91,56 @@ namespace darmok
 
 	bool LuaApp::removeUpdater1(const sol::protected_function& func) noexcept
 	{
-		auto itr = std::find(_updaterFunctions.begin(), _updaterFunctions.end(), func);
+		auto itr = std::remove(_updaterFunctions.begin(), _updaterFunctions.end(), func);
 		if (itr == _updaterFunctions.end())
 		{
 			return false;
 		}
-		_updaterFunctions.erase(itr);
+		_updaterFunctions.erase(itr, _updaterFunctions.end());
 		return true;
 	}
 
 	bool LuaApp::removeUpdater2(const sol::table& table) noexcept
 	{
-		auto itr = std::find(_updaterTables.begin(), _updaterTables.end(), table);
+		auto itr = std::remove(_updaterTables.begin(), _updaterTables.end(), table);
 		if (itr == _updaterTables.end())
 		{
 			return false;
 		}
-		_updaterTables.erase(itr);
+		_updaterTables.erase(itr, _updaterTables.end());
 		return true;
 	}
 
-	void LuaApp::startCoroutine(const sol::coroutine& coroutine) noexcept
+	LuaAppCoroutine::LuaAppCoroutine(const sol::coroutine& coroutine) noexcept
+		: _coroutine(coroutine)
+	{
+	}
+
+	bool LuaAppCoroutine::finished() const noexcept
+	{
+		return !_coroutine.valid();
+	}
+
+	LuaAppCoroutine LuaApp::startCoroutine(const sol::coroutine& coroutine) noexcept
 	{
 		_coroutines.push_back(coroutine);
+		return LuaAppCoroutine(coroutine);
 	}
 
 	bool LuaApp::stopCoroutine(const sol::coroutine& coroutine) noexcept
 	{
-		auto itr = std::find(_coroutines.begin(), _coroutines.end(), coroutine);
-		if (itr == _coroutines.end())
+		auto itr = std::remove(_coroutines.begin(), _coroutines.end(), coroutine);
+		auto found = itr != _coroutines.end();
+		if (found)
 		{
-			return false;
+			_coroutines.erase(itr, _coroutines.end());
 		}
-		_coroutines.erase(itr);
-		return true;
+		auto itr2 = _coroutineAwaits.find(coroutine.pointer());
+		if (itr2 != _coroutineAwaits.end())
+		{
+			_coroutineAwaits.erase(itr2);
+		}
+		return found;
 	}
 
 	bool LuaApp::removeComponent(const sol::object& type)
@@ -179,8 +195,14 @@ namespace darmok
 
 	void LuaApp::update(float deltaTime) noexcept
 	{
+		updateUpdaters(deltaTime);
+		updateCoroutines(deltaTime);
+	}
+
+	void LuaApp::updateUpdaters(float deltaTime) noexcept
+	{
 		std::vector<sol::protected_function> finishedFunctions;
-		for(auto& func : _updaterFunctions)
+		for (auto& func : _updaterFunctions)
 		{
 			auto result = func(deltaTime);
 			auto finished = LuaUtils::checkResult("running function updater", result);
@@ -210,23 +232,50 @@ namespace darmok
 		{
 			removeUpdater2(tab);
 		}
+	}
 
-		std::vector<sol::coroutine> finishedCoroutines;
-		for (auto& coroutine : _coroutines)
+	void LuaApp::updateCoroutines(float deltaTime) noexcept
+	{
+		std::vector<sol::coroutine> finished;
+		std::vector<sol::coroutine> coroutines(_coroutines);
+		for (auto& coroutine : coroutines)
 		{
+			auto itr = _coroutineAwaits.find(coroutine.pointer());
+			if (itr != _coroutineAwaits.end())
+			{
+				auto& instr = itr->second.get();
+				instr.update(deltaTime);
+				if (instr.finished())
+				{
+					_coroutineAwaits.erase(itr);
+				}
+				else
+				{
+					continue;
+				}
+			}
 			if (!coroutine.runnable())
 			{
-				finishedCoroutines.push_back(coroutine);
+				continue;
+			}
+			if (!coroutine.valid())
+			{
+				finished.emplace_back(coroutine);
 				continue;
 			}
 			auto result = coroutine(deltaTime);
-			auto finished = LuaUtils::checkResult("running coroutine", result);
-			if (finished)
+			LuaUtils::checkResult("running coroutine", result);
+			sol::object obj = result;
+			if (obj.get_type() == sol::type::boolean && obj.as<bool>() == true)
 			{
-				finishedCoroutines.push_back(coroutine);
+				finished.emplace_back(coroutine);
+			}
+			else if (obj.is<ILuaYieldInstruction>())
+			{
+				_coroutineAwaits.emplace(coroutine.pointer(), obj.as<ILuaYieldInstruction>());
 			}
 		}
-		for (auto& coroutine : finishedCoroutines)
+		for (auto& coroutine : finished)
 		{
 			stopCoroutine(coroutine);
 		}
