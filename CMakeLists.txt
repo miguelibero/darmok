@@ -238,7 +238,8 @@ set(LUA_SOURCES
   model.cpp
   utils.cpp
   skeleton.cpp
-  freelook.cpp    
+  freelook.cpp
+  coroutine.cpp 
 )
 
 if(NOT DARMOK_PLATFORM)

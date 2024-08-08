@@ -7,12 +7,12 @@
 #include <unordered_map>
 #include <filesystem>
 #include <sol/sol.hpp>
-#include <bx/bx.h>
 #include "glm.hpp"
 #include "asset.hpp"
 #include "window.hpp"
 #include "input.hpp"
 #include "audio.hpp"
+#include "coroutine.hpp"
 
 namespace bx
 {
@@ -22,49 +22,7 @@ namespace bx
 namespace darmok
 {
 	class AssetContext;
-	class LuaAppComponentContainer;
-
-	class LuaApp;
-
-	class BX_NO_VTABLE ILuaYieldInstruction
-	{
-	public:
-		virtual ~ILuaYieldInstruction() = default;
-		virtual void update(float deltaTime) {};
-		virtual bool finished() const = 0;
-	};
-
-	class LuaCombinedYieldInstruction final : public ILuaYieldInstruction
-	{
-	public:
-		LuaCombinedYieldInstruction(const std::vector<std::shared_ptr<ILuaYieldInstruction>>& instructions) noexcept;
-		void update(float deltaTime) override;
-		bool finished() const noexcept override;
-	private:
-		std::vector<std::shared_ptr<ILuaYieldInstruction>> _instructions;
-	};
-
-	class LuaWaitForSeconds final : public ILuaYieldInstruction
-	{
-	public:
-		LuaWaitForSeconds(float secs) noexcept;
-		void update(float deltaTime) noexcept override;
-		bool finished() const noexcept override;
-
-		static void bind(sol::state_view& lua) noexcept;
-	private:
-		float _secs;
-	};
-
-	class LuaCoroutineThread final : public ILuaYieldInstruction
-	{
-	public:
-		LuaCoroutineThread(const sol::thread& thread) noexcept;
-		bool finished() const noexcept override;
-		const sol::thread& getReal() const noexcept;
-	private:
-		sol::thread _thread;
-	};
+	class LuaAppComponentContainer;	
 
 	class LuaApp final
 	{
@@ -91,8 +49,7 @@ namespace darmok
 	private:
 		std::vector<sol::protected_function> _updaterFunctions;
 		std::vector<sol::table> _updaterTables;
-		std::vector<sol::thread> _coroutineThreads;
-		std::unordered_map<const void*, std::shared_ptr<ILuaYieldInstruction>> _coroutineAwaits;
+		LuaCoroutineRunner _coroutineRunner;
 		std::reference_wrapper<App> _app;
 		LuaInput _input;
 		LuaWindow _win;
@@ -113,11 +70,8 @@ namespace darmok
 
 		LuaCoroutineThread startCoroutine(const sol::function& func, sol::this_state ts) noexcept;
 		bool stopCoroutine(const LuaCoroutineThread& thread) noexcept;
-		bool doStopCoroutine(const sol::thread& thread) noexcept;
 
 		void updateUpdaters(float deltaTime) noexcept;
-		void updateCoroutines(float deltaTime, sol::state_view& lua) noexcept;
-		static std::shared_ptr<ILuaYieldInstruction> readYieldInstruction(const sol::object& obj) noexcept;
 
 		static bool getDebug() noexcept;
 	};

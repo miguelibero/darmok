@@ -45,6 +45,16 @@ namespace darmok
     {
     }
 
+    void Transform::reset() noexcept
+    {
+        _position = glm::vec3();
+        _rotation = glm::quat();
+        _scale = glm::vec3(1);
+        _localMatrix = glm::mat4(1);
+        _localInverse = glm::mat4(1);
+        _matrixChanged = true;
+    }
+
     std::string Transform::toString() const noexcept
     {
         std::string str = glm::to_string(_localMatrix);
@@ -271,7 +281,12 @@ namespace darmok
 
     glm::vec3 Transform::getWorldPosition() const noexcept
     {
-        return _worldMatrix * glm::vec4(0, 0, 0, 1);
+        return glm::vec3(_worldMatrix[3]);
+    }
+
+    glm::quat Transform::getWorldRotation() const noexcept
+    {
+        return glm::quat_cast(_worldMatrix);
     }
 
     glm::vec3 Transform::worldToLocalPoint(const glm::vec3& point) const noexcept

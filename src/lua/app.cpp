@@ -35,71 +35,7 @@
 #endif
 
 namespace darmok
-{
-	LuaCoroutineThread::LuaCoroutineThread(const sol::thread& thread) noexcept
-		: _thread(thread)
-	{
-	}
-
-	bool LuaCoroutineThread::finished() const noexcept
-	{
-		return _thread.status() == sol::thread_status::dead;
-	}
-
-	const sol::thread& LuaCoroutineThread::getReal() const noexcept
-	{
-		return _thread;
-	}
-
-	LuaCombinedYieldInstruction::LuaCombinedYieldInstruction(const std::vector<std::shared_ptr<ILuaYieldInstruction>>& instructions) noexcept
-		: _instructions(instructions)
-	{
-	}
-
-	void LuaCombinedYieldInstruction::update(float deltaTime)
-	{
-		for (auto& instr : _instructions)
-		{
-			instr->update(deltaTime);
-		}
-	}
-
-	bool LuaCombinedYieldInstruction::finished() const noexcept
-	{
-		for (auto& instr : _instructions)
-		{
-			if (!instr->finished())
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
-	LuaWaitForSeconds::LuaWaitForSeconds(float secs) noexcept
-		: _secs(secs)
-	{
-	}
-
-	void LuaWaitForSeconds::update(float deltaTime) noexcept
-	{
-		_secs -= deltaTime;
-	}
-
-	bool LuaWaitForSeconds::finished() const noexcept
-	{
-		return _secs <= 0;
-	}
-
-	void LuaWaitForSeconds::bind(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<LuaWaitForSeconds>("WaitForSeconds",
-			sol::factories(
-				[](float secs) { return std::make_shared<LuaWaitForSeconds>(secs); }
-			)
-		);
-	}
-
+{	
     LuaApp::LuaApp(App& app) noexcept
 		: _app(app)
 		, _input(app.getInput())
@@ -177,31 +113,12 @@ namespace darmok
 
 	LuaCoroutineThread LuaApp::startCoroutine(const sol::function& func, sol::this_state ts) noexcept
 	{
-		sol::state_view lua(ts);
-		sol::thread thread = lua["coroutine"]["create"](func);
-		_coroutineThreads.push_back(thread);
-		return LuaCoroutineThread(thread);
+		return _coroutineRunner.startCoroutine(func, ts);
 	}
 
 	bool LuaApp::stopCoroutine(const LuaCoroutineThread& thread) noexcept
 	{
-		return doStopCoroutine(thread.getReal());
-	}
-
-	bool LuaApp::doStopCoroutine(const sol::thread& thread) noexcept
-	{
-		auto itr = std::remove(_coroutineThreads.begin(), _coroutineThreads.end(), thread);
-		auto found = itr != _coroutineThreads.end();
-		if (found)
-		{
-			_coroutineThreads.erase(itr, _coroutineThreads.end());
-		}
-		auto itr2 = _coroutineAwaits.find(thread.pointer());
-		if (itr2 != _coroutineAwaits.end())
-		{
-			_coroutineAwaits.erase(itr2);
-		}
-		return found;
+		return _coroutineRunner.stopCoroutine(thread);
 	}
 
 	bool LuaApp::removeComponent(const sol::object& type)
@@ -257,7 +174,7 @@ namespace darmok
 	void LuaApp::update(float deltaTime, sol::state_view& lua) noexcept
 	{
 		updateUpdaters(deltaTime);
-		updateCoroutines(deltaTime, lua);
+		_coroutineRunner.update(deltaTime, lua);
 	}
 
 	void LuaApp::updateUpdaters(float deltaTime) noexcept
@@ -293,92 +210,7 @@ namespace darmok
 		{
 			removeUpdater2(tab);
 		}
-	}
-
-	void LuaApp::updateCoroutines(float deltaTime, sol::state_view& lua) noexcept
-	{
-		std::vector<sol::thread> finished;
-		std::vector<sol::thread> threads(_coroutineThreads);
-		sol::protected_function resume = lua["coroutine"]["resume"];
-		for (auto& thread : threads)
-		{
-			auto itr = _coroutineAwaits.find(thread.pointer());
-			if (itr != _coroutineAwaits.end())
-			{
-				auto& instr = *itr->second;
-				instr.update(deltaTime);
-				if (instr.finished())
-				{
-					_coroutineAwaits.erase(itr);
-				}
-				else
-				{
-					continue;
-				}
-			}
-			auto status = thread.status();
-			if (status == sol::thread_status::yielded)
-			{
-				auto result = resume(thread, deltaTime);
-				LuaUtils::checkResult("resuming coroutine", result);
-				std::tuple<bool, sol::object> r = result;
-				if (!std::get<bool>(r))
-				{
-					status = sol::thread_status::dead;
-				}
-				else if (auto instr = readYieldInstruction(std::get<sol::object>(r)))
-				{
-					_coroutineAwaits.emplace(thread.pointer(), std::move(instr));
-				}
-			}
-			if (status == sol::thread_status::dead)
-			{
-				finished.emplace_back(thread);
-				continue;
-			}
-		}
-		for (auto& coroutine : finished)
-		{
-			doStopCoroutine(coroutine);
-		}
-	}
-
-	std::shared_ptr<ILuaYieldInstruction> LuaApp::readYieldInstruction(const sol::object& obj) noexcept
-	{
-		auto type = obj.get_type();
-		if (type == sol::type::table)
-		{
-			auto table = obj.as<sol::table>();
-			size_t count = table.size();
-			std::vector<std::shared_ptr<ILuaYieldInstruction>> instructions;
-			instructions.reserve(count);
-			for (size_t i = 1; i <= count; ++i)
-			{
-				if (auto instr = readYieldInstruction(table[i]))
-				{
-					instructions.push_back(instr);
-				}
-			}
-			return std::make_shared<LuaCombinedYieldInstruction>(instructions);
-		}
-		if (obj.is<std::shared_ptr<ILuaYieldInstruction>>())
-		{
-			return obj.as<std::shared_ptr<ILuaYieldInstruction>>();
-		}
-		if (obj.is<LuaCombinedYieldInstruction>())
-		{
-			return std::make_shared<LuaCombinedYieldInstruction>(obj.as<LuaCombinedYieldInstruction>());
-		}
-		if (obj.is<LuaWaitForSeconds>())
-		{
-			return std::make_shared<LuaWaitForSeconds>(obj.as<LuaWaitForSeconds>());
-		}
-		if (obj.is<LuaCoroutineThread>())
-		{
-			return std::make_shared<LuaCoroutineThread>(obj.as<LuaCoroutineThread>());
-		}
-		return nullptr;
-	}
+	}	
 
 	bool LuaApp::getDebug() noexcept
 	{
@@ -395,7 +227,7 @@ namespace darmok
 		LuaWindow::bind(lua);
 		LuaInput::bind(lua);
 		LuaAudioSystem::bind(lua);
-		LuaWaitForSeconds::bind(lua);
+		LuaCoroutineRunner::bind(lua);
 
 		lua.new_usertype<LuaApp>("App", sol::no_constructor,
 			"assets", sol::property(&LuaApp::getAssets),
