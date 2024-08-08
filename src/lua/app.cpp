@@ -36,6 +36,66 @@
 
 namespace darmok
 {
+	LuaAppCoroutine::LuaAppCoroutine(const LuaApp& app, const sol::coroutine& coroutine) noexcept
+		: _app(app)
+		, _coroutine(coroutine)
+	{
+	}
+
+	bool LuaAppCoroutine::finished() const noexcept
+	{
+		return !_app.get().isCoroutineRunning(_coroutine);
+	}
+
+	LuaCombinedYieldInstruction::LuaCombinedYieldInstruction(const std::vector<std::shared_ptr<ILuaYieldInstruction>>& instructions) noexcept
+		: _instructions(instructions)
+	{
+	}
+
+	void LuaCombinedYieldInstruction::update(float deltaTime)
+	{
+		for (auto& instr : _instructions)
+		{
+			instr->update(deltaTime);
+		}
+	}
+
+	bool LuaCombinedYieldInstruction::finished() const noexcept
+	{
+		for (auto& instr : _instructions)
+		{
+			if (!instr->finished())
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	LuaWaitForSeconds::LuaWaitForSeconds(float secs) noexcept
+		: _secs(secs)
+	{
+	}
+
+	void LuaWaitForSeconds::update(float deltaTime) noexcept
+	{
+		_secs -= deltaTime;
+	}
+
+	bool LuaWaitForSeconds::finished() const noexcept
+	{
+		return _secs <= 0;
+	}
+
+	void LuaWaitForSeconds::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaWaitForSeconds>("WaitForSeconds",
+			sol::factories(
+				[](float secs) { return std::make_shared<LuaWaitForSeconds>(secs); }
+			)
+		);
+	}
+
     LuaApp::LuaApp(App& app) noexcept
 		: _app(app)
 		, _input(app.getInput())
@@ -111,20 +171,16 @@ namespace darmok
 		return true;
 	}
 
-	LuaAppCoroutine::LuaAppCoroutine(const sol::coroutine& coroutine) noexcept
-		: _coroutine(coroutine)
-	{
-	}
-
-	bool LuaAppCoroutine::finished() const noexcept
-	{
-		return !_coroutine.valid();
-	}
-
 	LuaAppCoroutine LuaApp::startCoroutine(const sol::coroutine& coroutine) noexcept
 	{
 		_coroutines.push_back(coroutine);
-		return LuaAppCoroutine(coroutine);
+		return LuaAppCoroutine(*this, coroutine);
+	}
+
+	bool LuaApp::isCoroutineRunning(const sol::coroutine& coroutine) const noexcept
+	{
+		auto itr = std::find(_coroutines.begin(), _coroutines.end(), coroutine);
+		return itr != _coroutines.end();
 	}
 
 	bool LuaApp::stopCoroutine(const sol::coroutine& coroutine) noexcept
@@ -243,7 +299,7 @@ namespace darmok
 			auto itr = _coroutineAwaits.find(coroutine.pointer());
 			if (itr != _coroutineAwaits.end())
 			{
-				auto& instr = itr->second.get();
+				auto& instr = *itr->second;
 				instr.update(deltaTime);
 				if (instr.finished())
 				{
@@ -270,15 +326,52 @@ namespace darmok
 			{
 				finished.emplace_back(coroutine);
 			}
-			else if (obj.is<ILuaYieldInstruction>())
+			else if (auto instr = readYieldInstruction(obj))
 			{
-				_coroutineAwaits.emplace(coroutine.pointer(), obj.as<ILuaYieldInstruction>());
+				_coroutineAwaits.emplace(coroutine.pointer(), std::move(instr));
 			}
 		}
 		for (auto& coroutine : finished)
 		{
 			stopCoroutine(coroutine);
 		}
+	}
+
+	std::shared_ptr<ILuaYieldInstruction> LuaApp::readYieldInstruction(const sol::object& obj) noexcept
+	{
+		auto type = obj.get_type();
+		if (type == sol::type::table)
+		{
+			auto table = obj.as<sol::table>();
+			size_t count = table.size();
+			std::vector<std::shared_ptr<ILuaYieldInstruction>> instructions;
+			instructions.reserve(count);
+			for (size_t i = 1; i <= count; ++i)
+			{
+				if (auto instr = readYieldInstruction(table[i]))
+				{
+					instructions.push_back(instr);
+				}
+			}
+			return std::make_shared<LuaCombinedYieldInstruction>(instructions);
+		}
+		if (obj.is<std::shared_ptr<ILuaYieldInstruction>>())
+		{
+			return obj.as<std::shared_ptr<ILuaYieldInstruction>>();
+		}
+		if (obj.is<LuaCombinedYieldInstruction>())
+		{
+			return std::make_shared<LuaCombinedYieldInstruction>(obj.as<LuaCombinedYieldInstruction>());
+		}
+		if (obj.is<LuaWaitForSeconds>())
+		{
+			return std::make_shared<LuaWaitForSeconds>(obj.as<LuaWaitForSeconds>());
+		}
+		if (obj.is<LuaAppCoroutine>())
+		{
+			return std::make_shared<LuaAppCoroutine>(obj.as<LuaAppCoroutine>());
+		}
+		return nullptr;
 	}
 
 	bool LuaApp::getDebug() noexcept
@@ -296,6 +389,7 @@ namespace darmok
 		LuaWindow::bind(lua);
 		LuaInput::bind(lua);
 		LuaAudioSystem::bind(lua);
+		LuaWaitForSeconds::bind(lua);
 
 		lua.new_usertype<LuaApp>("App", sol::no_constructor,
 			"assets", sol::property(&LuaApp::getAssets),

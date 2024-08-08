@@ -34,12 +34,36 @@ namespace darmok
 		virtual bool finished() const = 0;
 	};
 
+
+	class LuaCombinedYieldInstruction final : public ILuaYieldInstruction
+	{
+	public:
+		LuaCombinedYieldInstruction(const std::vector<std::shared_ptr<ILuaYieldInstruction>>& instructions) noexcept;
+		void update(float deltaTime) override;
+		bool finished() const noexcept override;
+	private:
+		std::vector<std::shared_ptr<ILuaYieldInstruction>> _instructions;
+	};
+
+	class LuaWaitForSeconds final : public ILuaYieldInstruction
+	{
+	public:
+		LuaWaitForSeconds(float secs) noexcept;
+		void update(float deltaTime) noexcept override;
+		bool finished() const noexcept override;
+
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		float _secs;
+	};
+
 	class LuaAppCoroutine final : public ILuaYieldInstruction
 	{
 	public:
-		LuaAppCoroutine(const sol::coroutine& coroutine) noexcept;
+		LuaAppCoroutine(const LuaApp& app, const sol::coroutine& coroutine) noexcept;
 		bool finished() const noexcept override;
 	private:
+		std::reference_wrapper<const LuaApp> _app;
 		sol::coroutine _coroutine;
 	};
 
@@ -64,12 +88,14 @@ namespace darmok
 		bool removeUpdater1(const sol::protected_function& func) noexcept;
 		bool removeUpdater2(const sol::table& table) noexcept;
 
+		bool isCoroutineRunning(const sol::coroutine& coroutine) const noexcept;
+
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::vector<sol::protected_function> _updaterFunctions;
 		std::vector<sol::table> _updaterTables;
 		std::vector<sol::coroutine> _coroutines;
-		std::unordered_map<const void*, std::reference_wrapper<ILuaYieldInstruction>> _coroutineAwaits;
+		std::unordered_map<const void*, std::shared_ptr<ILuaYieldInstruction>> _coroutineAwaits;
 		std::reference_wrapper<App> _app;
 		LuaInput _input;
 		LuaWindow _win;
@@ -93,6 +119,7 @@ namespace darmok
 
 		void updateUpdaters(float deltaTime) noexcept;
 		void updateCoroutines(float deltaTime) noexcept;
+		static std::shared_ptr<ILuaYieldInstruction> readYieldInstruction(const sol::object& obj) noexcept;
 
 		static bool getDebug() noexcept;
 	};

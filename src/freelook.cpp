@@ -20,7 +20,7 @@ namespace darmok
         _win = app.getWindow();
         if (_config.enableEvent)
         {
-            _input->addListener("enable", * _config.enableEvent, *this);
+            _input->addListener("freelook", * _config.enableEvent, *this);
         }
     };
 

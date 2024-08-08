@@ -69,7 +69,7 @@ namespace darmok
 		static void tableInit(glm::vec<L, T, Q>& vec, const sol::table& table)
 		{
 			size_t count = table.size();
-			for (glm::length_t i = 0; i < count && i < L; i++)
+			for (glm::length_t i = 0; i < count && i < L; ++i)
 			{
 				vec[i] = table[i + 1];
 			}
@@ -79,7 +79,7 @@ namespace darmok
 		static void tableInit(glm::qua<T, Q>& qua, const sol::table& table)
 		{
 			size_t count = table.size();
-			for (glm::length_t i = 0; i < count && i < qua.length(); i++)
+			for (glm::length_t i = 0; i < count && i < qua.length(); ++i)
 			{
 				qua[i] = table[i + 1];
 			}
@@ -89,7 +89,7 @@ namespace darmok
 		static void tableInit(glm::mat<L1, L2, T, Q>& mat, const sol::table& table)
 		{
 			size_t count = table.size();
-			for (glm::length_t i = 0; i < count && i < L1; i++)
+			for (glm::length_t i = 0; i < count && i < L1; ++i)
 			{
 				tableInit(mat[i], table[i + 1]);
 			}

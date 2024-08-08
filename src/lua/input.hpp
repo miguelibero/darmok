@@ -133,15 +133,27 @@ namespace darmok
 		bool isConnected() const noexcept;
 	};
 
-	class LuaInputEventListener final : public IInputEventListener
+	class LuaFunctionInputEventListener final : public IInputEventListener
 	{
 	public:
-		LuaInputEventListener(const std::string& tag, const sol::protected_function& func) noexcept;
+		LuaFunctionInputEventListener(const std::string& tag, const sol::protected_function& func) noexcept;
 		void onInputEvent(const std::string& tag) override;
 		const std::string& getTag() const noexcept;
-		const sol::protected_function& getFunc() const noexcept;
+		const sol::protected_function& getFunction() const noexcept;
 	private:
 		sol::protected_function _func;
+		std::string _tag;
+	};
+
+	class LuaTableInputEventListener final : public IInputEventListener
+	{
+	public:
+		LuaTableInputEventListener(const std::string& tag, const sol::table& table) noexcept;
+		void onInputEvent(const std::string& tag) override;
+		const std::string& getTag() const noexcept;
+		const sol::table& getTable() const noexcept;
+	private:
+		sol::table _table;
 		std::string _tag;
 	};
 
@@ -162,11 +174,15 @@ namespace darmok
 		LuaKeyboard _keyboard;
 		LuaMouse _mouse;
 		std::vector<LuaGamepad> _gamepads;
-		std::vector<LuaInputEventListener> _listeners;
+		std::vector<std::unique_ptr<LuaFunctionInputEventListener>> _funcListeners;
+		std::vector<std::unique_ptr<LuaTableInputEventListener>> _tabListeners;
 
-		void addListener(const std::string& tag, const sol::object& ev, const sol::protected_function& func);
+		void addListener1(const std::string& tag, const sol::object& ev, const sol::protected_function& func);
+		void addListener2(const std::string& tag, const sol::object& ev, const sol::table& tab);
 		bool removeListener1(const std::string& tag, const sol::protected_function& func) noexcept;
 		bool removeListener2(const sol::protected_function& func) noexcept;
+		bool removeListener3(const std::string& tag, const sol::table& tab) noexcept;
+		bool removeListener4(const sol::table& tab) noexcept;
 
 		LuaKeyboard& getKeyboard() noexcept;
 		LuaMouse& getMouse() noexcept;
@@ -178,6 +194,7 @@ namespace darmok
 		float getAxis(const sol::object& positive, const sol::object& negative) const noexcept;	
 
 		static std::optional<InputEvent> readEvent(const sol::object& val) noexcept;
+		static InputEvents readEvents(const sol::object& val) noexcept;
 		static std::optional<InputDir> readDir(const sol::object& val) noexcept;
 		static InputDirs readDirs(const sol::object& val) noexcept;
 	};
