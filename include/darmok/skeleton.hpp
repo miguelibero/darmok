@@ -12,7 +12,7 @@
 #include <bx/bx.h>
 #include <darmok/glm.hpp>
 #include <nlohmann/json.hpp>
-#include <tweeny/tweeny.h>
+#include <darmok/easing.hpp>
 
 #ifndef DARMOK_SKELETON_MAX_BONES
 #define DARMOK_SKELETON_MAX_BONES 64
@@ -90,10 +90,10 @@ namespace darmok
 
     struct DARMOK_EXPORT SkeletalAnimatorTweenConfig final
     {
-        tweeny::easing::enumerated easing = tweeny::easing::enumerated::linear;
+        EasingType easing = EasingType::Linear;
         float duration = 0.F;
 
-        tweeny::tween<float> create() const noexcept;
+        float operator()(float position) const noexcept;
         void readJson(const nlohmann::json& json);
 
         template<class Archive>

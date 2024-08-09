@@ -205,9 +205,9 @@ namespace darmok
         encoder.setUniform(_skinningUniform, &_skinning.front(), uint16_t(_skinning.size()));
     }
 
-    tweeny::tween<float> SkeletalAnimatorTweenConfig::create() const noexcept
+    float SkeletalAnimatorTweenConfig::operator()(float position) const noexcept
     {
-        return tweeny::from(0.F).to(1.F).via(easing).during(duration * 1000);
+        return Easing::apply(easing, position, 0.F, 1.F);
     }
 
     void SkeletalAnimatorTweenConfig::readJson(const nlohmann::json& json)

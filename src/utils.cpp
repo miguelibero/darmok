@@ -14,7 +14,7 @@ namespace darmok
         {
             auto& msg = err.getMessage();
 			std::stringstream ss;
-			ss << std::string_view(msg.getPtr(), msg.getLength());
+			ss << std::string_view(msg.getCPtr(), msg.getLength());
 			ss << "( " << err.get().code << ")";
             throw std::runtime_error(ss.str());
         }

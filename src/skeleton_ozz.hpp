@@ -12,7 +12,6 @@
 #include <ozz/animation/runtime/animation.h>
 #include <ozz/animation/runtime/sampling_job.h>
 #include <ozz/animation/runtime/blending_job.h>
-#include <tweeny/tween.h>
 
 namespace darmok
 {
@@ -93,9 +92,9 @@ namespace darmok
 		std::vector<AnimationState> _animations;
 		ozz::vector<ozz::math::SoaTransform> _locals;
 		ozz::vector<ozz::animation::BlendingJob::Layer> _layers;
-		tweeny::tween<float> _tween;
 		glm::vec2 _blendPos;
 		glm::vec2 _oldBlendPos;
+		float _normalizedTime;
 	};
 
 	class OzzSkeletalAnimatorTransition final : public ISkeletalAnimatorTransition
@@ -124,7 +123,6 @@ namespace darmok
 		State _previousState;
 		ozz::vector<ozz::math::SoaTransform> _locals;
 		float _normalizedTime;
-		tweeny::tween<float> _tween;
 	};
 
 	class SkeletalAnimatorImpl final : public ISkeletalAnimationLoader

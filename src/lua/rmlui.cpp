@@ -1,6 +1,5 @@
 #include "rmlui.hpp"
 #include <RmlUi/Core.h>
-#include <RmlUi/Lua.h>
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/DataModelHandle.h>
 #include <darmok/rmlui.hpp>

@@ -20,7 +20,6 @@ currently using:
 * [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [cereal](https://uscilab.github.io/cereal/) for serialization
-* [tweeny](https://github.com/mobius3/tweeny) for tweening and easings
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [miniaudio](https://miniaud.io/) for audio
 * [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & physics

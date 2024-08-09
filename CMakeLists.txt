@@ -119,6 +119,7 @@ set(CORE_SOURCES
   program_core.cpp
   asset_core.cpp
   render_graph.cpp
+  easing.cpp
 )
 
 set(CORE_HEADERS
@@ -149,6 +150,8 @@ set(CORE_HEADERS
   asset_core.hpp
   loader.hpp
   render_graph.hpp
+  easing_fwd.hpp
+  easing.hpp
 )
 
 set(SOURCES
@@ -529,10 +532,6 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC pugixml::pugixml)
 find_package(nlohmann_json CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PUBLIC nlohmann_json::nlohmann_json)
 
-# tween
-find_package(Tweeny CONFIG REQUIRED)
-target_link_libraries(${CORE_LIB_NAME} PUBLIC tweeny)
-
 # cereal
 find_package(cereal CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PUBLIC cereal::cereal)
@@ -578,9 +577,6 @@ if(DARMOK_BUILD_RMLUI)
   find_package(RmlUi CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PUBLIC RmlCore)
   target_link_libraries(${LIB_NAME} PRIVATE debug RmlDebugger)
-  if(DARMOK_BUILD_LUA)
-    target_link_libraries(${LIB_NAME} PRIVATE RmlLua)
-  endif()
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_RMLUI)
 endif()
 

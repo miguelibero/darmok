@@ -3,6 +3,7 @@
 #include <darmok/data.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
+#include <darmok/easing.hpp>
 #include <ozz/base/io/archive.h>
 #include <ozz/base/span.h>
 #include <ozz/base/maths/simd_math.h>
@@ -391,7 +392,7 @@ namespace darmok
         : _config(config)
         , _blendPos(0.F)
         , _oldBlendPos(0.F)
-        , _tween(_config.tween.create())
+        , _normalizedTime(0.F)
     {
         _locals.resize(skel.num_soa_joints());
         _animations.reserve(_config.animations.size());
@@ -424,11 +425,17 @@ namespace darmok
 
         if (_blendPos != blendPosition)
         {
-            _oldBlendPos = getBlendedPosition(_tween.peek());
-            _tween.seek(0.F);
+            auto blendFactor = _config.tween(_normalizedTime);
+            _oldBlendPos = getBlendedPosition(blendFactor);
+            _normalizedTime = 0.F;
             _blendPos = blendPosition;
         }
-        auto blendFactor = _tween.step(int(deltaTime * 1000));
+        _normalizedTime += deltaTime / _config.tween.duration;
+        if (_normalizedTime >= 1.F)
+        {
+            _normalizedTime = 1.F;
+        }
+        auto blendFactor = _config.tween(_normalizedTime);
         auto pos = getBlendedPosition(blendFactor);
 
         size_t i = 0;
@@ -485,7 +492,6 @@ namespace darmok
         , _previousState(std::move(previousState))
         , _locals(_previousState.getLocals())
         , _normalizedTime(0.F)
-        , _tween(_config.tween.create())
     {
     }
 
@@ -520,7 +526,7 @@ namespace darmok
         }
         _currentState.update(currentStateDeltaTime, blendPosition);
         _normalizedTime += deltaTime / getDuration();
-        auto v = _tween.step(int(deltaTime * 1000));
+        auto v = _config.tween(_normalizedTime);
 
         std::array<ozz::animation::BlendingJob::Layer, 2> layers;
         layers[0].weight = 1.F - v;
