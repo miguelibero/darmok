@@ -6,6 +6,7 @@
 #include <sol/sol.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <darmok/easing_fwd.hpp>
 
 namespace darmok
 {
@@ -68,6 +69,40 @@ namespace darmok
 		std::reference_wrapper<Transform> _trans;
 		glm::quat _rotation;
 		float _speed;
+	};
+
+	class LuaEasePosition final : public ILuaYieldInstruction
+	{
+	public:
+		LuaEasePosition(Transform& trans, const glm::vec3& position, float duration = 1.F, EasingType easing = EasingType::Linear) noexcept;
+		void update(float deltaTime) noexcept override;
+		bool finished() const noexcept override;
+
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		std::reference_wrapper<Transform> _trans;
+		glm::vec3 _startPosition;
+		glm::vec3 _endPosition;
+		float _duration;
+		float _normalizedTime;
+		EasingType _easing;
+	};
+
+	class LuaEaseRotation final : public ILuaYieldInstruction
+	{
+	public:
+		LuaEaseRotation(Transform& trans, const glm::quat& rotation, float duration = 1.F, EasingType easing = EasingType::Linear) noexcept;
+		void update(float deltaTime) noexcept override;
+		bool finished() const noexcept override;
+
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		std::reference_wrapper<Transform> _trans;
+		glm::quat _startRotation;
+		glm::quat _endRotation;
+		float _duration;
+		float _normalizedTime;
+		EasingType _easing;
 	};
 
 	class LuaCoroutineThread final : public ILuaYieldInstruction

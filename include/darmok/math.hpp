@@ -11,7 +11,7 @@ namespace darmok
         template<typename T>
         static T lerp(const T& a, const T& b, float p) noexcept
         {
-            return a + (b * p);
+            return a + (p * (b - a));
         }
 
 		template<typename T>

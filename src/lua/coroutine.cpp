@@ -3,6 +3,7 @@
 #include "glm.hpp"
 #include <darmok/transform.hpp>
 #include <darmok/math.hpp>
+#include <darmok/easing.hpp>
 
 namespace darmok
 {
@@ -131,6 +132,86 @@ namespace darmok
 		);
 	}
 
+	LuaEasePosition::LuaEasePosition(Transform& trans, const glm::vec3& position, float duration, EasingType easing) noexcept
+		: _trans(trans)
+		, _startPosition(trans.getPosition())
+		, _endPosition(position)
+		, _duration(duration)
+		, _normalizedTime(0.F)
+		, _easing(easing)
+	{
+	}
+
+	void LuaEasePosition::update(float deltaTime) noexcept
+	{
+		_normalizedTime += deltaTime / _duration;
+		if (_normalizedTime > 1.F)
+		{
+			_trans.get().setPosition(_endPosition);
+			_normalizedTime = 1.F;
+			return;
+		}
+		auto f = Easing::apply(_easing, _normalizedTime, 0.F, 1.F);
+		auto pos = Math::lerp(_startPosition, _endPosition, f);
+		_trans.get().setPosition(pos);
+	}
+
+	bool LuaEasePosition::finished() const noexcept
+	{
+		return _trans.get().getPosition() == _endPosition;
+	}
+
+	void LuaEasePosition::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaEasePosition>("EasePosition",
+			sol::factories(
+				[](Transform& trans, const VarLuaTable<glm::vec3>& pos, float duration, EasingType easing) -> std::shared_ptr<ILuaYieldInstruction> {
+					return std::make_shared<LuaEasePosition>(trans, LuaGlm::tableGet(pos), duration, easing);
+				}
+			)
+		);
+	}
+
+	LuaEaseRotation::LuaEaseRotation(Transform& trans, const glm::quat& rotation, float duration, EasingType easing) noexcept
+		: _trans(trans)
+		, _startRotation(trans.getRotation())
+		, _endRotation(rotation)
+		, _duration(duration)
+		, _normalizedTime(0.F)
+		, _easing(easing)
+	{
+	}
+
+	void LuaEaseRotation::update(float deltaTime) noexcept
+	{
+		_normalizedTime += deltaTime / _duration;
+		if (_normalizedTime > 1.F)
+		{
+			_trans.get().setRotation(_endRotation);
+			_normalizedTime = 1.F;
+			return;
+		}
+		auto f = Easing::apply(_easing, _normalizedTime, 0.F, 1.F);
+		auto rot = glm::slerp(_startRotation, _endRotation, f);
+		_trans.get().setRotation(rot);
+	}
+
+	bool LuaEaseRotation::finished() const noexcept
+	{
+		return _trans.get().getRotation() == _endRotation;
+	}
+
+	void LuaEaseRotation::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaEaseRotation>("EaseRotation",
+			sol::factories(
+				[](Transform& trans, const VarLuaTable<glm::quat>& rot, float duration, EasingType easing) -> std::shared_ptr<ILuaYieldInstruction> {
+					return std::make_shared<LuaEaseRotation>(trans, LuaGlm::tableGet(rot), duration, easing);
+				}
+			)
+		);
+	}
+
     LuaCoroutineThread LuaCoroutineRunner::startCoroutine(const sol::function& func, sol::this_state ts) noexcept
 	{
 		sol::state_view lua(ts);
@@ -250,6 +331,10 @@ namespace darmok
 		LuaWaitForSeconds::bind(lua);
 		LuaMoveTowards::bind(lua);
 		LuaRotateTowards::bind(lua);
+		LuaEasePosition::bind(lua);
+		LuaEaseRotation::bind(lua);
+
+		LuaUtils::newEnumFunc<EasingType>(lua, "EasingType", EasingType::Count, &Easing::getTypeName);
 	}
 
 }

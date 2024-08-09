@@ -5,6 +5,7 @@
 #include <string>
 #include <optional>
 #include <entt/entt.hpp>
+#include <darmok/utils.hpp>
 
 namespace darmok
 {

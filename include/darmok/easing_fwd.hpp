@@ -35,6 +35,7 @@ namespace darmok
         ElasticInOut,
         BackIn,
         BackOut,
-        BackInOut
+        BackInOut,
+        Count
     };
 }
