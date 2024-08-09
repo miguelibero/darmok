@@ -514,6 +514,12 @@ namespace darmok
         _inputActive = active;
     }
 
+    void RmluiViewImpl::setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept
+    {
+        std::scoped_lock lock(_mutex);
+        _context->SetDefaultScrollBehavior(behaviour, speedFactor);
+    }
+
     bool RmluiViewImpl::getEnabled() const noexcept
     {
         return _enabled;
@@ -788,9 +794,10 @@ namespace darmok
         return _impl->getViewport();
     }
 
-    void RmluiView::setViewport(const Viewport& viewport) noexcept
+    RmluiView& RmluiView::setViewport(const Viewport& viewport) noexcept
     {
         _impl->setViewport(viewport);
+        return *this;
     }
 
     RmluiView& RmluiView::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
@@ -825,6 +832,11 @@ namespace darmok
     bool RmluiView::getInputActive() const noexcept
     {
         return _impl->getInputActive();
+    }
+
+    void RmluiView::setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept
+    {
+        _impl->setScrollBehavior(behaviour, speedFactor);
     }
 
     RmluiView& RmluiView::setMousePosition(const glm::vec2& position) noexcept
@@ -884,7 +896,6 @@ namespace darmok
 
         auto& defaultView = getView();
         defaultView.setFullscreen(true);
-        defaultView.setInputActive(true);
 
         onWindowPixelSize(app.getWindow().getPixelSize());
         onMousePositionChange({}, app.getInput().getMouse().getPosition());

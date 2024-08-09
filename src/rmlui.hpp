@@ -193,6 +193,8 @@ namespace darmok
 		bool getInputActive() const noexcept;
 		void setInputActive(bool active) noexcept;
 
+		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
+
 		void setMousePosition(const glm::vec2& position) noexcept;
 		const glm::vec2& getMousePosition() const noexcept;
 

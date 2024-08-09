@@ -8,6 +8,7 @@
 #include <bx/bx.h>
 #include <string>
 #include <optional>
+#include <RmlUi/Core/ScrollTypes.h>
 
 namespace Rml
 {
@@ -38,14 +39,16 @@ namespace darmok
 		RmluiView& setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
 		std::shared_ptr<Texture> getTargetTexture() noexcept;
 
+		RmluiView& setViewport(const Viewport& vp) noexcept;
 		const Viewport& getViewport() const noexcept;
-		void setViewport(const Viewport& vp) noexcept;
 
 		RmluiView& setEnabled(bool enabled) noexcept;
 		bool getEnabled() const noexcept;
 
 		RmluiView& setInputActive(bool active) noexcept;
 		bool getInputActive() const noexcept;
+
+		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 
 		RmluiView& setMousePosition(const glm::vec2& position) noexcept;
 		const glm::vec2& getMousePosition() const noexcept;

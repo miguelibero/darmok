@@ -16,9 +16,54 @@
 
 namespace darmok
 {
-    RmluiAppComponent& LuaRmluiAppComponent::addAppComponent(LuaApp& app) noexcept
+    LuaRmluiAppComponent::LuaRmluiAppComponent(RmluiAppComponent& comp) noexcept
+        : _comp(comp)
     {
-        return app.getReal().addComponent<RmluiAppComponent>();
+    }
+
+    RmluiAppComponent& LuaRmluiAppComponent::getReal() noexcept
+    {
+        return _comp;
+    }
+
+    const RmluiAppComponent& LuaRmluiAppComponent::getReal() const noexcept
+    {
+        return _comp;
+    }
+
+    LuaRmluiView& LuaRmluiAppComponent::getView1() noexcept
+    {
+        return getView2("");
+    }
+
+    LuaRmluiView& LuaRmluiAppComponent::getView2(const std::string& name) noexcept
+    {
+        auto itr = _views.find(name);
+        if (itr == _views.end())
+        {
+            itr = _views.emplace(name, _comp.getView(name)).first;
+        }
+        return itr->second;
+    }
+
+    bool LuaRmluiAppComponent::hasView(const std::string& name) const noexcept
+    {
+        return _views.contains(name);
+    }
+
+    bool LuaRmluiAppComponent::removeView(const std::string& name) noexcept
+    {
+        auto itr = _views.find(name);
+        if (itr != _views.end())
+        {
+            _views.erase(itr);
+        }
+        return _comp.removeView(name);
+    }
+
+    LuaRmluiAppComponent& LuaRmluiAppComponent::addAppComponent(LuaApp& app) noexcept
+    {
+        return app.addComponent<LuaRmluiAppComponent, RmluiAppComponent>();
     }
 
     void LuaRmluiAppComponent::loadFont(const std::string& path) noexcept
@@ -38,11 +83,11 @@ namespace darmok
         // TODO: probably will remove this dependency
         // Rml::Lua::Initialise(lua.lua_state());
 
-        lua.new_usertype<RmluiAppComponent>("GuiAppComponent", sol::no_constructor,
-            "view", sol::property([](RmluiAppComponent& comp) -> RmluiView& { return comp.getView(); }),
-            "get_view", sol::resolve<RmluiView&(const std::string&)>(&RmluiAppComponent::getView),
-            "has_view", &RmluiAppComponent::hasView,
-            "remove_view", &RmluiAppComponent::removeView,
+        lua.new_usertype<LuaRmluiAppComponent>("GuiAppComponent", sol::no_constructor,
+            "view", sol::property(&LuaRmluiAppComponent::getView1),
+            "get_view", &LuaRmluiAppComponent::getView2,
+            "has_view", &LuaRmluiAppComponent::hasView,
+            "remove_view", &LuaRmluiAppComponent::removeView,
             "add_app_component", &LuaRmluiAppComponent::addAppComponent,
             "load_font", &LuaRmluiAppComponent::loadFont,
             "load_fallback_font", &LuaRmluiAppComponent::loadFallbackFont
@@ -154,9 +199,85 @@ namespace darmok
         */
     }
 
-    void LuaRmluiView::createDataModel(RmluiView& view, const std::string& name, sol::table table) noexcept
+    std::string LuaRmluiView::getName() const noexcept
     {
-        auto constr = view.getContext().CreateDataModel(name);
+        return _view.getName();
+    }
+
+    LuaRmluiView& LuaRmluiView::setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept
+    {
+        _view.setTargetTexture(texture);
+        return *this;
+    }
+
+    std::shared_ptr<Texture> LuaRmluiView::getTargetTexture() noexcept
+    {
+        return _view.getTargetTexture();
+    }
+
+    const Viewport& LuaRmluiView::getViewport() const noexcept
+    {
+        return _view.getViewport();
+    }
+
+    LuaRmluiView& LuaRmluiView::setViewport(const Viewport& vp) noexcept
+    {
+        _view.setViewport(vp);
+        return *this;
+    }
+
+    LuaRmluiView& LuaRmluiView::setEnabled(bool enabled) noexcept
+    {
+        _view.setEnabled(enabled);
+        return *this;
+    }
+
+    bool LuaRmluiView::getEnabled() const noexcept
+    {
+        return _view.getEnabled();
+    }
+
+    LuaRmluiView& LuaRmluiView::setInputActive(bool active) noexcept
+    {
+        _view.setInputActive(active);
+        return *this;
+    }
+
+    bool LuaRmluiView::getInputActive() const noexcept
+    {
+        return _view.getInputActive();
+    }
+
+    LuaRmluiView& LuaRmluiView::setMousePosition(const glm::vec2& position) noexcept
+    {
+        _view.setMousePosition(position);
+        return *this;
+    }
+
+    const glm::vec2& LuaRmluiView::getMousePosition() const noexcept
+    {
+        return _view.getMousePosition();
+    }
+
+    LuaRmluiView& LuaRmluiView::setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept
+    {
+        _view.setScrollBehavior(behaviour, speedFactor);
+        return *this;
+    }
+
+    Rml::ElementDocument& LuaRmluiView::loadDocument(const std::string& name)
+    {
+        return *_view.getContext().LoadDocument(name);
+    }
+
+    LuaRmluiView::LuaRmluiView(RmluiView& view) noexcept
+        : _view(view)
+    {
+    }
+
+    void LuaRmluiView::createDataModel(const std::string& name, sol::table table) noexcept
+    {
+        auto constr = _view.getContext().CreateDataModel(name);
         if (!constr)
         {
             return;
@@ -186,6 +307,16 @@ namespace darmok
         );
     }
 
+    Rml::DataModelHandle LuaRmluiView::getDataModel(const std::string& name) const noexcept
+    {
+        return _view.getContext().GetDataModel(name).GetModelHandle();
+    }
+
+    bool LuaRmluiView::removeDataModel(const std::string& name) noexcept
+    {
+        return _view.getContext().RemoveDataModel(name);
+    }
+
     void LuaRmluiView::bind(sol::state_view& lua) noexcept
     {
         lua.new_enum<Rml::ModalFlag>("GuiDocumentMode", {
@@ -199,6 +330,12 @@ namespace darmok
             { "Document", Rml::FocusFlag::Document },
             { "Keep", Rml::FocusFlag::Keep },
             { "Auto", Rml::FocusFlag::Auto },
+        });
+
+        lua.new_enum<Rml::ScrollBehavior>("GuiScrollBehavior", {
+            { "Auto", Rml::ScrollBehavior::Auto },
+            { "Smooth", Rml::ScrollBehavior::Smooth },
+            { "Instant", Rml::ScrollBehavior::Instant }
         });
 
         lua.new_usertype<Rml::ElementDocument>("GuiDocument", sol::no_constructor,
@@ -217,26 +354,17 @@ namespace darmok
             )
         );
 
-        lua.new_usertype<RmluiView>("GuiView", sol::no_constructor,
-            "name", sol::property(&RmluiView::getName),
-            "context", sol::property(
-                sol::resolve<Rml::Context&()>(&RmluiView::getContext)
-            ),
-            "target_texture", sol::property(&RmluiView::getTargetTexture, &RmluiView::setTargetTexture),
-            "viewport", sol::property(&RmluiView::getViewport, &RmluiView::setViewport),
-            "input_active", sol::property(&RmluiView::getInputActive, &RmluiView::setInputActive),
-            "mouse_position", sol::property(&RmluiView::getMousePosition, &RmluiView::setMousePosition),
-
-            "load_document", [](RmluiView& view, const std::string& name) {
-                return view.getContext().LoadDocument(name);
-            },
+        lua.new_usertype<LuaRmluiView>("GuiView", sol::no_constructor,
+            "name", sol::property(&LuaRmluiView::getName),
+            "target_texture", sol::property(&LuaRmluiView::getTargetTexture, &LuaRmluiView::setTargetTexture),
+            "viewport", sol::property(&LuaRmluiView::getViewport, &LuaRmluiView::setViewport),
+            "input_active", sol::property(&LuaRmluiView::getInputActive, &LuaRmluiView::setInputActive),
+            "mouse_position", sol::property(&LuaRmluiView::getMousePosition, &LuaRmluiView::setMousePosition),
+            "set_scroll_behavior", &LuaRmluiView::setScrollBehavior,
+            "load_document", &LuaRmluiView::loadDocument,
             "create_data_model", &LuaRmluiView::createDataModel,
-            "get_data_model", [](RmluiView& view, const std::string& name) {
-                return view.getContext().GetDataModel(name).GetModelHandle();
-            },
-            "remove_data_model", [](RmluiView& view, const std::string& name) {
-                return view.getContext().RemoveDataModel(name);
-            }
+            "get_data_model", &LuaRmluiView::getDataModel,
+            "remove_data_model", &LuaRmluiView::removeDataModel
         );
     }
 }

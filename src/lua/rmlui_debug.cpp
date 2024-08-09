@@ -1,20 +1,21 @@
 #ifdef _DEBUG
 
 #include "app.hpp"
+#include "rmlui.hpp"
 #include "rmlui_debug.hpp"
 #include <darmok/rmlui.hpp>
 #include <darmok/rmlui_debug.hpp>
 
 namespace darmok
 {
-    RmluiDebuggerAppComponent& LuaRmluiDebuggerAppComponent::addAppComponent1(LuaApp& app, RmluiAppComponent& comp) noexcept
+    RmluiDebuggerAppComponent& LuaRmluiDebuggerAppComponent::addAppComponent1(LuaApp& app, LuaRmluiAppComponent& comp) noexcept
     {
-        return app.getReal().addComponent<RmluiDebuggerAppComponent>(comp);
+        return app.getReal().addComponent<RmluiDebuggerAppComponent>(comp.getReal());
     }
 
-    RmluiDebuggerAppComponent& LuaRmluiDebuggerAppComponent::addAppComponent2(LuaApp& app, RmluiAppComponent& comp, const Config& config) noexcept
+    RmluiDebuggerAppComponent& LuaRmluiDebuggerAppComponent::addAppComponent2(LuaApp& app, LuaRmluiAppComponent& comp, const Config& config) noexcept
     {
-        return app.getReal().addComponent<RmluiDebuggerAppComponent>(comp, config);
+        return app.getReal().addComponent<RmluiDebuggerAppComponent>(comp.getReal(), config);
     }
 
 	void LuaRmluiDebuggerAppComponent::bind(sol::state_view& lua) noexcept
