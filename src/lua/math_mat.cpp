@@ -65,7 +65,7 @@ namespace darmok
 				sol::resolve<glm::mat4(const glm::vec3&)>(&glm::translate),
 				sol::resolve<glm::mat4(const glm::mat4&, const glm::vec3&)>(&glm::translate)
 			),
-			"transform", sol::overload(&Math::transform, &Math::translateRotateScale),
+			"transform", &Math::transform,
 			"decompose", [](const glm::mat4& mat) {
 				glm::vec3 pos;
 				glm::quat rot;
@@ -73,7 +73,7 @@ namespace darmok
 				Math::decompose(mat, pos, rot, scale);
 				return std::make_tuple( pos, rot, scale );
 			},
-			"translate_rotate_scale", &Math::translateRotateScale
+			"translate_rotate_scale", &Math::transform
 		);
 		configLuaGlmMat(mat4);
 		mat4[sol::meta_function::multiplication] = sol::overload(

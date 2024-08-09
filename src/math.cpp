@@ -65,17 +65,11 @@ namespace darmok
         return frustrum(bottomLeft.x, rightTop.x, bottomLeft.y, rightTop.y, near, far);
     }
 
-    glm::mat4 Math::translateRotateScale(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept
-    {
-        return transform(pos, rot, scale);
-    }
-
-    glm::mat4 Math::transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale, const glm::vec3& pivot) noexcept
+    glm::mat4 Math::transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept
     {
         return glm::translate(pos)
             * glm::mat4_cast(rot)
-            * glm::scale(scale)
-            * glm::translate(-pivot);
+            * glm::scale(scale);
     }
 
     bool Math::decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale) noexcept

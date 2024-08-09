@@ -86,8 +86,7 @@ namespace darmok
 		static [[nodiscard]] glm::mat4 frustrum(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
         
 		// methods used in Transform to generate the matrix
-        static [[nodiscard]] glm::mat4 translateRotateScale(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;
-        static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale, const glm::vec3& pivot = glm::vec3(0)) noexcept;
+        static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;
         static bool decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale) noexcept;
     
 		static float distance(const glm::quat& rot1, const glm::quat& rot2) noexcept;

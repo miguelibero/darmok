@@ -54,7 +54,7 @@ public:
 
     void renderPassDefine(RenderPassDefinition& def) override
     {
-        def.getOutputs()
+        def.getWriteResources()
             .add<TestTexture>("depth")
             .add<TestTexture>("normal")
             .add<TestTexture>("albedo");
@@ -85,11 +85,11 @@ public:
 
     void renderPassDefine(RenderPassDefinition& def) override
     {
-        def.getInputs()
+        def.getReadResources()
             .add<TestTexture>("depth")
             .add<TestTexture>("normal")
             .add<TestTexture>("albedo");
-        def.getOutputs()
+        def.getWriteResources()
             .add<TestTexture>();
     }
 
@@ -123,9 +123,9 @@ public:
 
     void renderPassDefine(RenderPassDefinition& def) override
     {
-        def.getInputs()
+        def.getReadResources()
             .add<TestTexture>();
-        def.getOutputs()
+        def.getWriteResources()
             .add<TestTexture>();
     }
 
@@ -171,9 +171,9 @@ public:
     
     void renderPassDefine(RenderPassDefinition& def) override
     {
-        def.getInputs()
+        def.getReadResources()
             .add<TestCamera>();
-        def.getOutputs()
+        def.getWriteResources()
             .add<TestTexture>();
     }
 

@@ -15,8 +15,8 @@ namespace darmok
         static constexpr auto in_place_delete = true;
 
         Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent = std::nullopt) noexcept;
-        Transform(const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3(), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
-        Transform(const OptionalRef<Transform>& parent, const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const glm::vec3& pivot = glm::vec3()) noexcept;
+        Transform(const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
+        Transform(const OptionalRef<Transform>& parent, const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1)) noexcept;
 
         std::string toString() const noexcept;
 
@@ -26,11 +26,9 @@ namespace darmok
         const glm::vec3& getPosition() const noexcept;
         const glm::quat& getRotation() const noexcept;
         const glm::vec3& getScale() const noexcept;
-        const glm::vec3& getPivot() const noexcept;
         Transform& setPosition(const glm::vec3& v) noexcept;
         Transform& setRotation(const glm::quat& v) noexcept;
         Transform& setScale(const glm::vec3& v) noexcept;
-        Transform& setPivot(const glm::vec3& v) noexcept;
         Transform& setLocalMatrix(const glm::mat4& v) noexcept;
 
         glm::vec3 getWorldPosition() const noexcept;
@@ -69,7 +67,6 @@ namespace darmok
         glm::vec3 _position;
         glm::quat _rotation;
         glm::vec3 _scale;
-        glm::vec3 _pivot;
         std::string _name;
 
         glm::mat4 _localMatrix;

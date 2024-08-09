@@ -13,7 +13,6 @@ namespace darmok
         : _position()
         , _rotation()
         , _scale(1)
-        , _pivot()
         , _localMatrix(1)
         , _localInverse(1)
         , _worldMatrix(1)
@@ -25,11 +24,10 @@ namespace darmok
         setLocalMatrix(mat);
     }
 
-    Transform::Transform(const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale, const glm::vec3& pivot, const OptionalRef<Transform>& parent) noexcept
+    Transform::Transform(const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale, const OptionalRef<Transform>& parent) noexcept
         : _position(position)
         , _rotation(rotation)
         , _scale(scale)
-        , _pivot(pivot)
         , _localMatrix(1)
         , _localInverse(1)
         , _worldMatrix(1)
@@ -40,8 +38,8 @@ namespace darmok
         setParent(parent);
     }
 
-    Transform::Transform(const OptionalRef<Transform>& parent, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale, const glm::vec3& pivot) noexcept
-        : Transform(position, rotation, scale, pivot, parent)
+    Transform::Transform(const OptionalRef<Transform>& parent, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale) noexcept
+        : Transform(position, rotation, scale, parent)
     {
     }
 
@@ -89,11 +87,6 @@ namespace darmok
     const glm::vec3& Transform::getScale() const noexcept
     {
         return _scale;
-    }
-
-    const glm::vec3& Transform::getPivot() const noexcept
-    {
-        return _pivot;
     }
 
     OptionalRef<const Transform> Transform::getParent() const noexcept
@@ -217,21 +210,11 @@ namespace darmok
         return *this;
     }
 
-    Transform& Transform::setPivot(const glm::vec3& v) noexcept
-    {
-        if (v != _pivot)
-        {
-            _pivot = v;
-            setMatrixChanged();
-        }
-        return *this;
-    }
-
     bool Transform::update() noexcept
     {
         if (_matrixChanged)
         {
-            _localMatrix = Math::transform(_position, _rotation, _scale, _pivot);
+            _localMatrix = Math::transform(_position, _rotation, _scale);
             _localInverse = glm::inverse(_localMatrix);
         }
         auto changed = _parentChanged || _matrixChanged;

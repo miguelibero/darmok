@@ -50,11 +50,6 @@ namespace darmok
 		trans.setScale(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::setPivot(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		trans.setPivot(LuaGlm::tableGet(v));
-	}
-
 	void LuaTransform::lookDir1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
 		trans.lookDir(LuaGlm::tableGet(v));
@@ -146,7 +141,6 @@ namespace darmok
 			"right", sol::property(&Transform::getRight),
 			"up", sol::property(&Transform::getUp),
 			"scale", sol::property(&Transform::getScale, &LuaTransform::setScale),
-			"pivot", sol::property(&Transform::getPivot, &LuaTransform::setPivot),
 			"matrix", sol::property(&Transform::getLocalMatrix, &LuaTransform::setLocalMatrix),
 			"world_matrix", sol::property(&Transform::getWorldMatrix),
 			"world_inverse", sol::property(&Transform::getWorldInverse),
