@@ -20,11 +20,11 @@ namespace darmok
 
 	void LuaRmluiDebuggerAppComponent::bind(sol::state_view& lua) noexcept
 	{
-        lua.new_usertype<RmluiDebuggerAppComponentConfig>("GuiDebuggerAppComponentConfig",
+        lua.new_usertype<RmluiDebuggerAppComponentConfig>("RmluiDebuggerAppComponentConfig",
             sol::default_constructor,
             "enableEvent", &RmluiDebuggerAppComponentConfig::enableEvent
         );
-        lua.new_usertype<RmluiDebuggerAppComponent>("GuiDebuggerAppComponent", sol::no_constructor,
+        lua.new_usertype<RmluiDebuggerAppComponent>("RmluiDebuggerAppComponent", sol::no_constructor,
             "toggle", &RmluiDebuggerAppComponent::toggle,
             "enabled", sol::property(&RmluiDebuggerAppComponent::isEnabled),
             "add_app_component", sol::overload(

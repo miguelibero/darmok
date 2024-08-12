@@ -592,9 +592,13 @@ namespace darmok
         std::scoped_lock lock(_mutex);
         glm::vec2 p = position;
 
+        auto size = _context->GetDimensions();
+
         // invert vertical since that's how rmlui works
-        auto h = _context->GetDimensions().y;
-        p.y = h - p.y;
+        p.y = size.y - p.y;
+
+        p.x = Math::clamp(p.x, 0.F, (float)size.x);
+        p.y = Math::clamp(p.y, 0.F, (float)size.y);
 
         _mousePosition = p;
         _context->ProcessMouseMove(p.x, p.y, _comp.getKeyModifierState());

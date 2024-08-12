@@ -298,7 +298,8 @@ if(DARMOK_BUILD_RMLUI)
     rmlui_debug.hpp
   )
   list(APPEND LUA_SOURCES
-    rmlui.cpp
+    rmlui_comp.cpp
+    rmlui_view.cpp
     rmlui_debug.cpp
   )
 

@@ -5,6 +5,8 @@
 #include <darmok/app.hpp>
 #include <glm/glm.hpp>
 #include <RmlUi/Core/ScrollTypes.h>
+#include <RmlUi/Core/EventListener.h>
+#include <RmlUi/Core/EventListenerInstancer.h>
 #include <unordered_map>
 
 namespace Rml
@@ -21,21 +23,69 @@ namespace darmok
     class RmluiView;
     struct Viewport;
 
+    class LuaFunctionRmluiEventListener final : public Rml::EventListener
+    {
+    public:
+        LuaFunctionRmluiEventListener(const std::string& ev, const sol::protected_function& func) noexcept;
+        void ProcessEvent(Rml::Event& event) override;
+        const sol::protected_function& getFunction() const;
+        const std::string& getEvent() const;
+    private:
+        std::string _event;
+        sol::protected_function _func;
+    };
+
+    class LuaTableRmluiEventListener final : public Rml::EventListener
+    {
+    public:
+        LuaTableRmluiEventListener(const std::string& ev, const sol::table& tab) noexcept;
+        void ProcessEvent(Rml::Event& event) override;
+        const sol::table& getTable() const;
+        const std::string& getEvent() const;
+    private:
+        std::string _event;
+        sol::table _tab;
+    };
+
+    class LuaRmluiAppComponent;
+
+    class LuaCustomRmluiEventListener final : public Rml::EventListener
+    {
+    public:
+        LuaCustomRmluiEventListener(const std::string& value, LuaRmluiAppComponent& comp) noexcept;
+        void ProcessEvent(Rml::Event& event) override;
+    private:
+        std::vector<std::string> _params;
+        LuaRmluiAppComponent& _comp;
+    };
+
     class LuaRmluiView final
     {
     public:
         LuaRmluiView(RmluiView& view) noexcept;
-
+        ~LuaRmluiView() noexcept;
         static void bind(sol::state_view& lua) noexcept;
+
+        size_t processCustomEvent(const std::string& name, Rml::Event& event);
 
     private:
         RmluiView& _view;
+        std::vector<std::unique_ptr<LuaTableRmluiEventListener>> _tabEventListeners;
+        std::vector<std::unique_ptr<LuaFunctionRmluiEventListener>> _funcEventListeners;
 
         void createDataModel(const std::string& name, sol::table table) noexcept;
         Rml::DataModelHandle getDataModel(const std::string& name) const noexcept;
         bool removeDataModel(const std::string& name) noexcept;
 
         std::string getName() const noexcept;
+
+        LuaRmluiView& addEventListener1(const std::string& ev, const sol::table& tab) noexcept;
+        bool removeEventListener1(const std::string& ev, const sol::table& tab) noexcept;
+        bool removeEventListener2(const sol::table& tab) noexcept;
+
+        LuaRmluiView& addEventListener2(const std::string& ev, const sol::protected_function& func) noexcept;
+        bool removeEventListener4(const std::string& ev, const sol::protected_function& func) noexcept;
+        bool removeEventListener3(const sol::protected_function& func) noexcept;
 
         LuaRmluiView& setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
         std::shared_ptr<Texture> getTargetTexture() noexcept;
@@ -57,33 +107,50 @@ namespace darmok
         Rml::ElementDocument& loadDocument(const std::string& name);
 
         static void setRmlVariant(Rml::Variant& variant, sol::object obj) noexcept;
-        static void getRmlVariant(const Rml::Variant& variant, sol::table table, sol::object key) noexcept;
-
+        static sol::object getRmlVariant(lua_State* lua, const Rml::Variant& variant) noexcept;
     };
 
     class LuaApp;
 
-    class LuaRmluiAppComponent final : public IAppComponent
+    class LuaRmluiAppComponent final : public IAppComponent, public Rml::EventListenerInstancer
     {
     public:
         LuaRmluiAppComponent(RmluiAppComponent& comp) noexcept;
 
+        void init(App& app) noexcept override;
+        void shutdown() noexcept override;
+
+        Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override;
+        void processCustomEvent(const std::vector<std::string>& params, Rml::Event& event);
+
         RmluiAppComponent& getReal() noexcept;
         const RmluiAppComponent& getReal() const noexcept;
+
+        LuaRmluiView& getView2(const std::string& name) noexcept;
 
         static void bind(sol::state_view& lua) noexcept;
     private:
         RmluiAppComponent& _comp;
         std::unordered_map<std::string, LuaRmluiView> _views;
+        std::vector<std::unique_ptr<LuaCustomRmluiEventListener>> _customEventListeners;
+        std::unordered_map<std::string, std::vector<sol::protected_function>> _funcEventListeners;
+        std::unordered_map<std::string, std::vector<sol::table>> _tabEventListeners;
 
-        static LuaRmluiAppComponent& addAppComponent(LuaApp& app) noexcept;
+        static LuaRmluiAppComponent& addAppComponent(LuaApp& app, sol::this_state ts) noexcept;
 
         LuaRmluiView& getView1() noexcept;
-        LuaRmluiView& getView2(const std::string& name) noexcept;
         bool hasView(const std::string& name) const noexcept;
         bool removeView(const std::string& name) noexcept;
 
         static void loadFont(const std::string& path) noexcept;
         static void loadFallbackFont(const std::string& path) noexcept;
+
+        LuaRmluiAppComponent& addCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept;
+        bool removeCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept;
+        bool removeCustomEventListener2(const sol::table& tab) noexcept;
+
+        LuaRmluiAppComponent& addCustomEventListener2(const std::string& ev, const sol::protected_function& func) noexcept;
+        bool removeCustomEventListener4(const std::string& ev, const sol::protected_function& func) noexcept;
+        bool removeCustomEventListener3(const sol::protected_function& func) noexcept;
     };
 }
