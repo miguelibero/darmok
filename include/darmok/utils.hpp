@@ -23,12 +23,13 @@ namespace darmok
     {
         struct Result final
         {
-            std::string output;
+            std::string out;
+            std::string err;
             int returnCode;
         };
 
         using Arg = std::variant<const char*, std::string, std::filesystem::path>;
-        static Result run(const std::vector<Arg>& args);
+        static Result run(const std::vector<Arg>& args, const std::filesystem::path& cwd = "");
     };
 
     std::filesystem::path getTempPath(std::string_view suffix = "") noexcept;

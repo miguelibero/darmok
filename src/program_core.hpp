@@ -42,7 +42,7 @@ namespace darmok
         ShaderCompiler& setDefines(const Defines& defines) noexcept;
         ShaderCompiler& setDefines(const std::filesystem::path& shaderPath) noexcept;
 
-        int operator()(const std::filesystem::path& input, const Output& output) const;
+        void operator()(const std::filesystem::path& input, const Output& output) const;
         size_t getDependencies(std::istream& in, Dependencies& deps) const noexcept;
         static size_t getDefines(std::istream& in, Defines& defines) noexcept;
         std::vector<Output> getOutputs(const std::filesystem::path& basePath = "") const noexcept;
@@ -104,6 +104,7 @@ namespace darmok
         std::vector<std::filesystem::path> _includes;
 
         static const std::string _configIncludeDirsKey;
+        static const std::string _shadercPathKey;
         void addIncludes(const nlohmann::json& json, const std::filesystem::path& basePath) noexcept;
     };
 }

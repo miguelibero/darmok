@@ -623,9 +623,9 @@ namespace darmok
             {
                 continue;
             }
-            auto deps = op.importer.getDependencies(op.input);
+            auto importerDeps = op.importer.getDependencies(op.input);
             op.importer.endImport(op.input);
-            for (auto& dep : deps)
+            for (auto& dep : importerDeps)
             {
                 if (std::find(deps.begin(), deps.end(), dep) == deps.end())
                 {

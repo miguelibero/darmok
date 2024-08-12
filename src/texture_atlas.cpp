@@ -697,7 +697,9 @@ namespace darmok
 			if (_log)
 			{
 				*_log << "TexturePacker output:" << std::endl;
-				*_log << r.output;
+				*_log << r.out;
+				*_log << "TexturePacker error output:" << std::endl;
+				*_log << r.err;
 			}
 			throw std::runtime_error("failed to run texture packer");
 		}

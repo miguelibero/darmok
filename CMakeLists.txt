@@ -543,6 +543,10 @@ set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
 target_compile_definitions(glm::glm-header-only INTERFACE ${GLM_DEFINES})
 target_link_libraries(${CORE_LIB_NAME} PUBLIC glm::glm-header-only)
 
+# tiny-process
+find_package(tiny-process-library CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PRIVATE tiny-process-library::tiny-process-library)
+
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
   find_package(glfw3 CONFIG REQUIRED)

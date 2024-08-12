@@ -23,6 +23,7 @@ currently using:
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [miniaudio](https://miniaud.io/) for audio
 * [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & physics
+* [tiny-process-lib](https://gitlab.com/eidheim/tiny-process-library) to run os processes
 
 planned to use:
 

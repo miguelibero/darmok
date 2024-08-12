@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <array>
 #include <random>
+#include <process.hpp>
 
 namespace darmok
 {
@@ -25,7 +26,7 @@ namespace darmok
     #define pclose _pclose
 #endif
 
-    Exec::Result Exec::run(const std::vector<Arg>& args)
+    Exec::Result Exec::run(const std::vector<Arg>& args, const std::filesystem::path& path)
     {
         std::ostringstream cmd;
         for (const auto& arg : args)
@@ -47,21 +48,24 @@ namespace darmok
             cmd << StringUtils::escapeArgument(strArg) << " ";
         }
 
-        FILE* pipe = popen(cmd.str().c_str(), "r");
-        if (!pipe)
-        {
-            throw std::runtime_error("popen() failed!");
-        }
-
-        Result result;
-        std::array<char, 128> buffer;
-        while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
-        {
-            result.output += buffer.data();
-        }
-
-        result.returnCode = pclose(pipe);
-        return result;
+        std::ostringstream out;
+        std::ostringstream err;
+        TinyProcessLib::Process process(cmd.str(), path.string(),
+            [&out](const char* bytes, size_t n)
+            {
+                out.write(bytes, n);
+            },
+            [&err](const char* bytes, size_t n)
+            {
+                err.write(bytes, n);
+            }
+        );
+        auto code = process.get_exit_status();
+        return Result{
+            .out = out.str(),
+            .err = err.str(),
+            .returnCode = code
+        };
     }
 
     std::filesystem::path getTempPath(std::string_view suffix) noexcept

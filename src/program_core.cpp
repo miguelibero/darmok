@@ -335,8 +335,12 @@ namespace darmok
         { "s_5_0",  ".dx11" }
     };
 
-    int ShaderCompiler::operator()(const fs::path& input, const Output& output) const
+    void ShaderCompiler::operator()(const fs::path& input, const Output& output) const
     {
+        if (!fs::exists(_shadercPath))
+        {
+            throw std::runtime_error("could not find shaderc.exe");
+        }
         fs::path varyingDef = _varyingDef;
         if (varyingDef.empty())
         {
@@ -363,16 +367,17 @@ namespace darmok
         }
 
         auto r = Exec::run(args);
-        if (r.output.contains("Failed to build shader."))
+        if (r.returnCode != 0 || r.out.contains("Failed to build shader."))
         {
             if (_log)
             {
                 *_log << "shaderc output:" << std::endl;
-                *_log << r.output;
+                *_log << r.out;
+                *_log << "shaderc error output:" << std::endl;
+                *_log << r.err;
             }
             throw std::runtime_error("failed to build shader");
         }
-        return r.returnCode;
     }
 
     const std::regex ShaderCompiler::_includeRegex = std::regex("#include <([^>]+)>");
@@ -568,6 +573,7 @@ namespace darmok
     }
 
     const std::string ProgramImporterImpl::_configIncludeDirsKey = "includeDirs";
+    const std::string ProgramImporterImpl::_shadercPathKey = "shadercPath";
 
     bool ProgramImporterImpl::startImport(const Input& input, bool dry)
     {
@@ -591,6 +597,12 @@ namespace darmok
             addIncludes(input.dirConfig[_configIncludeDirsKey], input.basePath);
         }
         _compiler.addIncludePath(input.path.parent_path());
+
+        if (input.dirConfig.contains(_shadercPathKey))
+        {
+            fs::path shadercPath = input.dirConfig[_shadercPathKey];
+            _compiler.setShadercPath(input.basePath / shadercPath);
+        }
 
         _config.emplace().load(input);
 
