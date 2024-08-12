@@ -7,8 +7,9 @@
 
 namespace darmok
 {
-    LuaRmluiAppComponent::LuaRmluiAppComponent(RmluiAppComponent& comp) noexcept
+    LuaRmluiAppComponent::LuaRmluiAppComponent(RmluiAppComponent& comp, const sol::state_view& lua) noexcept
         : _comp(comp)
+        , _lua(lua)
     {
     }
 
@@ -28,110 +29,18 @@ namespace darmok
         return _customEventListeners.emplace_back(std::make_unique<LuaCustomRmluiEventListener>(value, *this)).get();
     }
 
-    void LuaRmluiAppComponent::processCustomEvent(const std::vector<std::string>& params, Rml::Event& event)
+    void LuaRmluiAppComponent::processCustomEvent(Rml::Event& event, const std::vector<std::string>& params)
     {
         auto name = params[0];
-
-        auto arg = StringUtils::join(":", ++params.begin(), params.end());
-
+        auto args = _lua.create_table();
+        for (size_t i = 1; i < params.size(); ++i)
         {
-            auto itr = _funcEventListeners.find(name);
-            if (itr != _funcEventListeners.end())
-            {
-                for (auto& func : itr->second)
-                {
-                    auto result = func(arg, event);
-                    LuaUtils::checkResult("running custom function event", result);
-                }
-            }
+            args[i] = params[i];
         }
+        for (auto& [viewName, view] : _views)
         {
-            auto itr = _tabEventListeners.find(name);
-            if (itr != _tabEventListeners.end())
-            {
-                for (auto& tab : itr->second)
-                {
-                    LuaUtils::callTableDelegate(tab, "on_rmlui_custom_event", "running custom table event",
-                        [&arg, &event](auto& func, auto& self) {
-                            return func(self, arg, event);
-                        });
-                }
-            }
+            view.processCustomEvent(event, name, args);
         }
-    }
-
-    LuaRmluiAppComponent& LuaRmluiAppComponent::addCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept
-    {
-        _tabEventListeners[ev].push_back(tab);
-        return *this;
-    }
-
-    bool LuaRmluiAppComponent::removeCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept
-    {
-        auto itr1 = _tabEventListeners.find(ev);
-        if (itr1 == _tabEventListeners.end())
-        {
-            return false;
-        }
-        auto itr2 = std::find(itr1->second.begin(), itr1->second.end(), tab);
-        if (itr2 == itr1->second.end())
-        {
-            return false;
-        }
-        itr1->second.erase(itr2);
-        return true;
-    }
-
-    bool LuaRmluiAppComponent::removeCustomEventListener2(const sol::table& tab) noexcept
-    {
-        auto found = false;
-        for (auto& [ev, listeners] : _tabEventListeners)
-        {
-            auto itr = std::find(listeners.begin(), listeners.end(), tab);
-            if (itr != listeners.end())
-            {
-                found = true;
-                listeners.erase(itr);
-            }
-        }
-        return found;
-    }
-
-    LuaRmluiAppComponent& LuaRmluiAppComponent::addCustomEventListener2(const std::string& ev, const sol::protected_function& func) noexcept
-    {
-        _funcEventListeners[ev].push_back(func);
-        return *this;
-    }
-
-    bool LuaRmluiAppComponent::removeCustomEventListener4(const std::string& ev, const sol::protected_function& func) noexcept
-    {
-        auto itr1 = _funcEventListeners.find(ev);
-        if (itr1 == _funcEventListeners.end())
-        {
-            return false;
-        }
-        auto itr2 = std::find(itr1->second.begin(), itr1->second.end(), func);
-        if (itr2 == itr1->second.end())
-        {
-            return false;
-        }
-        itr1->second.erase(itr2);
-        return true;
-    }
-
-    bool LuaRmluiAppComponent::removeCustomEventListener3(const sol::protected_function& func) noexcept
-    {
-        auto found = false;
-        for (auto& [ev, listeners] : _funcEventListeners)
-        {
-            auto itr = std::find(listeners.begin(), listeners.end(), func);
-            if (itr != listeners.end())
-            {
-                found = true;
-                listeners.erase(itr);
-            }
-        }
-        return found;
     }
 
     RmluiAppComponent& LuaRmluiAppComponent::getReal() noexcept
@@ -177,7 +86,7 @@ namespace darmok
     LuaRmluiAppComponent& LuaRmluiAppComponent::addAppComponent(LuaApp& app, sol::this_state ts) noexcept
     {
         auto& real = app.getReal().addComponent<RmluiAppComponent>();
-        return app.getReal().addComponent<LuaRmluiAppComponent>(real);
+        return app.getReal().addComponent<LuaRmluiAppComponent>(real, ts);
     }
 
     void LuaRmluiAppComponent::loadFont(const std::string& path) noexcept
@@ -204,17 +113,7 @@ namespace darmok
             "remove_view", &LuaRmluiAppComponent::removeView,
             "add_app_component", &LuaRmluiAppComponent::addAppComponent,
             "load_font", &LuaRmluiAppComponent::loadFont,
-            "load_fallback_font", &LuaRmluiAppComponent::loadFallbackFont,
-            "add_custom_event_listener", sol::overload(
-                &LuaRmluiAppComponent::addCustomEventListener1,
-                &LuaRmluiAppComponent::addCustomEventListener2
-            ),
-            "remove_custom_event_listener", sol::overload(
-                &LuaRmluiAppComponent::removeCustomEventListener1,
-                &LuaRmluiAppComponent::removeCustomEventListener2,
-                &LuaRmluiAppComponent::removeCustomEventListener3,
-                &LuaRmluiAppComponent::removeCustomEventListener4
-            )
+            "load_fallback_font", &LuaRmluiAppComponent::loadFallbackFont
         );
     }
 
@@ -226,6 +125,6 @@ namespace darmok
 
     void LuaCustomRmluiEventListener::ProcessEvent(Rml::Event& event)
     {
-        _comp.processCustomEvent(_params, event);
+        _comp.processCustomEvent(event, _params);
     }
 }

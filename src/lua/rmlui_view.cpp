@@ -227,14 +227,14 @@ namespace darmok
         );
     }
 
-    size_t LuaRmluiView::processCustomEvent(const std::string& name, Rml::Event& event)
+    size_t LuaRmluiView::processCustomEvent(Rml::Event& event, const std::string& name, const sol::table& args)
     {
         size_t count = 0;
         for (auto& listener : _funcEventListeners)
         {
             if (listener->getEvent() == name)
             {
-                listener->ProcessEvent(event);
+                listener->processCustomEvent(event, name, args);
                 ++count;
             }
         }
@@ -242,7 +242,7 @@ namespace darmok
         {
             if (listener->getEvent() == name)
             {
-                listener->ProcessEvent(event);
+                listener->processCustomEvent(event, name, args);
                 ++count;
             }
         }
@@ -360,6 +360,8 @@ namespace darmok
             "set_class", &Rml::Element::SetClass,
             "has_class", &Rml::Element::IsClassSet,
             "class_names", sol::property(&Rml::Element::GetClassNames, &Rml::Element::SetClassNames),
+            "id", sol::property(&Rml::Element::GetId, &Rml::Element::SetId),
+            "tag_name", sol::property(&Rml::Element::GetTagName),
             "stylesheet", sol::property(&Rml::Element::GetStyleSheet),
             "address", sol::property(&Rml::Element::GetAddress),
             "visible", sol::property(&Rml::Element::IsVisible),
@@ -371,6 +373,31 @@ namespace darmok
                     return prop->ToString();
                 }
                 return std::nullopt;
+            },
+            "get_attribute", [](Rml::Element& elm, const std::string& name, sol::this_state ts) -> sol::object
+            {
+                auto& attrs = elm.GetAttributes();
+                auto itr = attrs.find(name);
+                if (itr == attrs.end())
+                {
+                    return sol::nil;
+                }
+                return getRmlVariant(ts.lua_state(), itr->second);
+            },
+            "set_attribute", [](Rml::Element& elm, const std::string& name, const sol::object& val)
+            {
+                switch (val.get_type())
+                {
+                case sol::type::string:
+                    elm.SetAttribute(name, val.as<std::string>());
+                    break;
+                case sol::type::number:
+                    elm.SetAttribute(name, val.as<float>());
+                    break;
+                case sol::type::boolean:
+                    elm.SetAttribute(name, val.as<bool>());
+                    break;
+                }
             }
         );
 
@@ -504,6 +531,12 @@ namespace darmok
         LuaUtils::checkResult("rmlui function event: " + event.GetType(), result);
     }
 
+    void LuaFunctionRmluiEventListener::processCustomEvent(Rml::Event& event, const std::string& name, const sol::table& args)
+    {
+        auto result = _func(event, args);
+        LuaUtils::checkResult("rmlui custom function event: " + event.GetType(), result);
+    }
+
     const sol::protected_function& LuaFunctionRmluiEventListener::getFunction() const
     {
         return _func;
@@ -535,6 +568,14 @@ namespace darmok
         LuaUtils::callTableDelegate(_tab, "on_rmlui_event", "rmlui table event: " + event.GetType(),
             [&event](auto& func, auto& self) {
                 return func(self, event);
+        });
+    }
+
+    void LuaTableRmluiEventListener::processCustomEvent(Rml::Event& event, const std::string& name, const sol::table& args)
+    {
+        LuaUtils::callTableDelegate(_tab, "on_rmlui_event", "rmlui table event: " + event.GetType(),
+            [&event, &args](auto& func, auto& self) {
+                return func(self, event, args);
         });
     }
 }
