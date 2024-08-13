@@ -140,7 +140,7 @@ namespace darmok
 				return;
 		}
 
-		glfwSetWindowAspectRatio(win, _mode.size.x, _mode.size.y);
+		// glfwSetWindowAspectRatio(win, _mode.size.x, _mode.size.y);
 		glfwWindowHint(GLFW_RED_BITS, _mode.depth.r);
 		glfwWindowHint(GLFW_GREEN_BITS, _mode.depth.g);
 		glfwWindowHint(GLFW_BLUE_BITS, _mode.depth.b);
@@ -306,7 +306,7 @@ namespace darmok
 			return window;
 		}
 
-		glfwSetWindowAspectRatio(window, size.x, size.y);
+		// glfwSetWindowAspectRatio(window, size.x, size.y);
 		
 		glfwSetKeyCallback(window, staticKeyCallback);
 		glfwSetCharCallback(window, staticCharCallback);
@@ -688,12 +688,20 @@ namespace darmok
 
 	void PlatformImpl::windowSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
+		if (width == 0 || height == 0)
+		{
+			return;
+		}
 		glm::uvec2 size(width, height);
 		_events.post<WindowSizeEvent>(size, WindowSizeType::Size);
 	}
 
 	void PlatformImpl::framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
 	{
+		if (width == 0 || height == 0)
+		{
+			return;
+		}
 		glm::uvec2 size(width, height);
 		_events.post<WindowSizeEvent>(size, WindowSizeType::Framebuffer);
 	}

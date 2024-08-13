@@ -141,7 +141,6 @@ namespace
 			auto tex = getAssets().getTextureLoader()("engine.png");
 			auto sprite = registry.create();
 			auto& trans = registry.emplace<Transform>(sprite);
-			trans.setPivot(glm::vec3(-0.5F));
 			float scale = 0.5;
 
 			MeshData meshData(Rectangle(tex->getSize()));
@@ -174,6 +173,7 @@ namespace
 			auto anim = registry.create();
 
 			TextureAtlasMeshConfig config;
+			config.offset = - glm::vec3(animBounds.size.x, animBounds.size.y, 0.f) / 2.f;
 			config.scale = glm::vec3(2.F);
 			auto frames = texAtlas->createAnimation(_prog->getVertexLayout(), animNamePrefix, 0.1F, config);
 			
@@ -183,9 +183,7 @@ namespace
 			
 			registry.emplace<Culling2D>(anim);
 			auto& winSize = getWindow().getSize();
-			registry.emplace<Transform>(anim)
-				.setPosition(glm::vec3(winSize, 0) / 2.f)
-				.setPivot(glm::vec3(animBounds.size.x, animBounds.size.y, 0.f) / 2.f);
+			registry.emplace<Transform>(anim, glm::vec3(winSize, 0) / 2.f);
 		}
 
 		void createRotatingCube(Scene& scene)

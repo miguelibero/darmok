@@ -48,6 +48,9 @@ namespace
 			});
 			auto model = getAssets().getModelLoader()("human.dml");
 
+			auto ambientLightEntity = scene->createEntity();
+			scene->addComponent<AmbientLight>(ambientLightEntity, 0.5);
+
 			ModelSceneConfigurer configurer(*scene, getAssets());
 			configurer(*model, [scene](const auto& node, Entity entity) {
 				auto& registry = scene->getRegistry();

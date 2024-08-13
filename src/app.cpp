@@ -256,30 +256,35 @@ namespace darmok
 		_config = config;
 	}
 
+	void AppImpl::bgfxInit()
+	{
+		bgfx::Init init;
+		_pixelSize = _window.getPixelSize();
+		init.platformData.ndt = _plat.getDisplayHandle();
+		init.platformData.nwh = _plat.getWindowHandle();
+		init.platformData.type = _plat.getWindowHandleType();
+		init.debug = true;
+		init.resolution.width = _pixelSize.x;
+		init.resolution.height = _pixelSize.y;
+		init.callback = &BgfxCallbacks::get();
+		init.type = bgfx::RendererType::Vulkan;
+		//init.type = bgfx::RendererType::OpenGL;
+		bgfx::init(init);
+
+		bgfx::setPaletteColor(0, UINT32_C(0x00000000));
+		//bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
+		bgfx::setPaletteColor(1, Colors::toNumber(_config.clearColor));
+	}
+
 	void AppImpl::init()
 	{
 		_lastUpdate = bx::getHPCounter();
 		_runResult = AppRunResult::Continue;
 		_renderGraphDef.clear();
 
-		bgfx::Init init;
-		const auto& size = _window.getSize();
-		init.platformData.ndt = _plat.getDisplayHandle();
-		init.platformData.nwh = _plat.getWindowHandle();
-		init.platformData.type = _plat.getWindowHandleType();
-		init.debug = true;
-		init.resolution.width = size.x;
-		init.resolution.height = size.y;
-		init.callback = &BgfxCallbacks::get();
-		// init.type = bgfx::RendererType::Vulkan;
-		bgfx::init(init);
-
-		bgfx::setPaletteColor(0, UINT32_C(0x00000000));
-		//bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
-		bgfx::setPaletteColor(1, Colors::toNumber(_config.clearColor));
+		bgfxInit();
 
 		_input.getKeyboard().addListener(*this);
-		_window.addListener(*this);
 		_assets.init(_app);
 		_audio.init();
 		_renderGraphDef.addPass(*this);
@@ -292,22 +297,10 @@ namespace darmok
 		_running = true;
 	}
 
-	void AppImpl::onWindowPixelSize(const glm::uvec2& size)
-	{
-		if (!_running)
-		{
-			return;
-		}
-
-		bgfx::reset(size.x, size.y);
-		renderReset();
-	}
-
 	void AppImpl::renderReset()
 	{
 		_renderGraph.reset();
 		_renderGraphDef.clear();
-
 		_renderGraphDef.addPass(*this);
 
 		for (auto& [type, component] : _components)
@@ -331,7 +324,6 @@ namespace darmok
 		_components.clear();
 
 		_input.getKeyboard().removeListener(*this);
-		_window.removeListener(*this);
 		_audio.shutdown();
 		_assets.shutdown();
 	}
@@ -344,6 +336,14 @@ namespace darmok
 		}
 		_assets.update();
 		_audio.update();
+
+		auto& pixelSize = _app.getWindow().getPixelSize();
+		if (_pixelSize != pixelSize)
+		{
+			_pixelSize = pixelSize;
+			bgfx::reset(pixelSize.x, pixelSize.y);
+			renderReset();
+		}
 
 		auto rgHash = _renderGraphDef.hash();
 		if (!_renderGraph || _renderGraph->hash() != rgHash)

@@ -355,6 +355,9 @@ namespace darmok
             "--type", getShaderTypeName(shaderType),
             "--varyingdef", varyingDef
         };
+#ifdef _DEBUG
+        args.push_back("--debug");
+#endif
         if (!output.defines.empty())
         {
             args.emplace_back("--define");

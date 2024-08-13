@@ -258,7 +258,7 @@ namespace
 		glm::vec2 _mouseScroll = glm::vec2(0);
 		glm::vec2 _mouseScrollMax = glm::vec2(0);
 
-		void updateLogic(float deltaTime) override
+		void update(float deltaTime) override
 		{
 			_mouseVelocity = getInput().getMouse().getVelocity();
 			updateMaxVec(_mouseVelocity, _mouseVelocityMax);

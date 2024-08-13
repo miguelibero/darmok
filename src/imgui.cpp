@@ -173,8 +173,8 @@ namespace darmok
 			auto numVertices = (uint32_t)drawList->VtxBuffer.size();
 			auto numIndices = (uint32_t)drawList->IdxBuffer.size();
 
-			DataView vertData(drawList->VtxBuffer.begin(), numVertices * sizeof(ImDrawVert));
-			DataView idxData(drawList->IdxBuffer.begin(), numIndices * sizeof(ImDrawIdx));
+			DataView vertData(&drawList->VtxBuffer.front(), numVertices * sizeof(ImDrawVert));
+			DataView idxData(&drawList->IdxBuffer.front(), numIndices * sizeof(ImDrawIdx));
 			std::optional<TransientMesh> mesh;
 			try
 			{
@@ -282,7 +282,7 @@ namespace darmok
 		_imgui = ImGui::CreateContext();
 		ImGui::SetCurrentContext(_imgui);
 
-		ImGuiIO& io = ImGui::GetIO();
+		auto& io = ImGui::GetIO();
 
 		io.DeltaTime = 1.0f / 60.0f;
 		io.IniFilename = NULL;

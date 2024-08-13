@@ -96,7 +96,7 @@ namespace darmok
 		BgfxCallbacks() = default;
 	};
 
-	class AppImpl final : IKeyboardListener, IWindowListener, IRenderPass
+	class AppImpl final : IKeyboardListener, IRenderPass
 	{
 	public:
 		AppImpl(App& app) noexcept;
@@ -170,15 +170,16 @@ namespace darmok
 		void renderPassExecute(IRenderGraphContext& context) override;
 		void renderPassDefine(RenderPassDefinition& def) override;
 
-		void onWindowPixelSize(const glm::uvec2& size) override;
 		void renderReset();
+		void bgfxInit();
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 
 		// first since it contains the allocator
 		AssetContext _assets;
-		
+
 		AppRunResult _runResult;
 		bool _running;
+		glm::uvec2 _pixelSize;
 		uint32_t _debug;
 		uint64_t _lastUpdate;
 		AppConfig _config;
