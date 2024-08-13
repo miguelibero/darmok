@@ -42,6 +42,16 @@ namespace darmok
 		return cam.setPerspective(fovy, LuaGlm::tableGet(size), near);
 	}
 
+	Camera& LuaCamera::setWindowPerspective1(Camera& cam, float fovy, float near) noexcept
+	{
+		return cam.setWindowPerspective(fovy, near);
+	}
+
+	Camera& LuaCamera::setWindowPerspective2(Camera& cam, float fovy, float near, float far) noexcept
+	{
+		return cam.setWindowPerspective(fovy, near, far);
+	}
+
 	Camera& LuaCamera::setOrtho1(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
 	{
 		return cam.setOrtho(LuaViewport::tableGet(vp), LuaGlm::tableGet(center), near, far);
@@ -70,6 +80,16 @@ namespace darmok
 	Camera& LuaCamera::setOrtho6(Camera& cam, const VarLuaTable<glm::uvec2>& size) noexcept
 	{
 		return cam.setOrtho(LuaGlm::tableGet(size));
+	}
+
+	Camera& LuaCamera::setWindowOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept
+	{
+		return cam.setWindowOrtho(LuaGlm::tableGet(center));
+	}
+
+	Camera& LuaCamera::setWindowOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
+	{
+		return cam.setWindowOrtho(LuaGlm::tableGet(center), near, far);
 	}
 
 	void LuaCamera::setViewport(Camera& cam, std::optional<VarViewport> viewport) noexcept
@@ -184,6 +204,14 @@ namespace darmok
 				&LuaCamera::setOrtho4,
 				&LuaCamera::setOrtho5,
 				&LuaCamera::setOrtho6
+			),
+			"set_window_perspective", sol::overload(
+				&LuaCamera::setWindowPerspective1,
+				&LuaCamera::setWindowPerspective2
+			),
+			"set_window_ortho", sol::overload(
+				&LuaCamera::setWindowOrtho1,
+				&LuaCamera::setWindowOrtho2
 			),
 			"enabled", sol::property(&Camera::isEnabled, &Camera::setEnabled),
 			"projection_matrix", sol::property(&Camera::getProjectionMatrix, &LuaCamera::setProjectionMatrix),

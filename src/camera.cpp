@@ -66,12 +66,14 @@ namespace darmok
 
     Camera& Camera::setPerspective(float fovy, float aspect, float near) noexcept
     {
+        _winProj.reset();
         _proj = Math::perspective(glm::radians(fovy), aspect, near);
         return *this;
     }
 
     Camera& Camera::setPerspective(float fovy, float aspect, float near, float far) noexcept
     {
+        _winProj.reset();
         _proj = Math::perspective(glm::radians(fovy), aspect, near, far);
         return *this;
     }
@@ -90,6 +92,7 @@ namespace darmok
 
     Camera& Camera::setOrtho(const Viewport& vp, const glm::vec2& center, float near, float far) noexcept
     {
+        _winProj.reset();
         _proj = vp.ortho(center, near, far);
         return *this;
     }
@@ -97,6 +100,48 @@ namespace darmok
     Camera& Camera::setOrtho(const glm::uvec2& size, const glm::vec2& center, float near, float far) noexcept
     {
         return setOrtho(Viewport(size), center, near, far);
+    }
+
+    Camera& Camera::setWindowPerspective(float fovy, float near, float far) noexcept
+    {
+        _winProj = WindowPerspectiveData(fovy, near, far);
+        if (_app)
+        {
+            updateWindowProjection();
+        }
+        return *this;
+    }
+
+    Camera& Camera::setWindowOrtho(const glm::vec2& center, float near, float far) noexcept
+    {
+        _winProj = WindowOrthoData(center, near, far);
+        if (_app)
+        {
+            updateWindowProjection();
+        }
+        return *this;
+    }
+
+    bool Camera::updateWindowProjection() noexcept
+    {
+        if (!_app || !_winProj)
+        {
+            return false;
+        }
+        auto& size = _app->getWindow().getPixelSize();
+        auto ptr = &_winProj.value();
+        if (auto winPersp = std::get_if<WindowPerspectiveData>(ptr))
+        {
+            float aspect = (float)size.x / size.y;
+            _proj = Math::perspective(glm::radians(winPersp->fovy), aspect, winPersp->near, winPersp->far);
+            return true;
+        }
+        else if (auto winOrtho = std::get_if<WindowOrthoData>(ptr))
+        {
+            _proj = Viewport(size).ortho(winOrtho->center, winOrtho->near, winOrtho->far);
+            return true;
+        }
+        return false;
     }
 
     Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept
@@ -186,7 +231,11 @@ namespace darmok
         {
             renderer->renderReset();
         }
-        _app->getRenderGraph().setChild(_renderGraph);
+        if (_app)
+        {
+            updateWindowProjection();
+            _app->getRenderGraph().setChild(_renderGraph);
+        }
     }
 
     void Camera::configureView(bgfx::ViewId viewId) const noexcept

@@ -375,7 +375,8 @@ namespace darmok
         auto err = fopen_s(&fh, path.string().c_str(), "rb");
         if (err)
         {
-            throw std::runtime_error("failed to open file");
+            std::string error = strerror(err);
+            throw std::runtime_error("failed to open file: " + error);
         }
         fseek(fh, 0, SEEK_END);
         long size = ftell(fh);

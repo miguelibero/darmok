@@ -31,12 +31,16 @@ namespace darmok
 		static Camera& setPerspective2(Camera& cam, float fovy, float aspect, float near) noexcept;
 		static Camera& setPerspective3(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept;
 		static Camera& setPerspective4(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept;
+		static Camera& setWindowPerspective1(Camera& cam, float fovy, float near) noexcept;
+		static Camera& setWindowPerspective2(Camera& cam, float fovy, float near, float far) noexcept;
 		static Camera& setOrtho1(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
 		static Camera& setOrtho2(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center) noexcept;
 		static Camera& setOrtho3(Camera& cam, const VarViewport& vp) noexcept;
 		static Camera& setOrtho4(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
 		static Camera& setOrtho5(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept;
 		static Camera& setOrtho6(Camera& cam, const VarLuaTable<glm::uvec2>& size) noexcept;
+		static Camera& setWindowOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept;
+		static Camera& setWindowOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
 
 		static void setProjectionMatrix(Camera& cam, const VarLuaTable<glm::mat4>& matrix) noexcept;
 		static void setViewport(Camera& cam, std::optional<VarViewport> viewport) noexcept;

@@ -173,6 +173,7 @@ namespace darmok
         static const std::string _outputFormatJsonKey;
         static const std::string _outputPathJsonKey;
         static const std::string _vertexLayoutJsonKey;
+        static const std::string _programPathJsonKey;
         static const std::string _programJsonKey;
         static const std::string _skipMeshesJsonKey;
         static const std::string _embedTexturesJsonKey;

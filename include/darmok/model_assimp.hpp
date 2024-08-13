@@ -20,8 +20,9 @@ namespace darmok
 {
     struct DARMOK_EXPORT AssimpModelLoadConfig final
     {
-        std::string program;
+        std::filesystem::path programPath;
         StandardProgramType standardProgram = StandardProgramType::Unlit;
+        std::string program;
         std::vector<std::regex> skipMeshes;
         bgfx::VertexLayout vertexLayout;
         bool embedTextures = true;

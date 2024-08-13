@@ -38,6 +38,10 @@ namespace darmok
         
         Camera& setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
         Camera& setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+
+        Camera& setWindowPerspective(float fovy, float near = 0.f, float far = bx::kFloatLargest) noexcept;
+        Camera& setWindowOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
         Camera& setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
@@ -120,6 +124,23 @@ namespace darmok
         glm::mat4 _proj;
         std::optional<glm::mat4> _model;
 
+        struct WindowPerspectiveData final
+        {
+            float fovy;
+            float near;
+            float far;
+        };
+
+        struct WindowOrthoData final
+        {
+            glm::vec2 center;
+            float near;
+            float far;
+        };
+
+        using WindowProjectionData = std::variant<WindowPerspectiveData, WindowOrthoData>;
+        std::optional<WindowProjectionData> _winProj;
+
         std::optional<Viewport> _viewport;
         std::unique_ptr<IEntityFilter> _entityFilter;
         std::vector<std::unique_ptr<IRenderer>> _renderers;
@@ -130,5 +151,7 @@ namespace darmok
         RenderGraphDefinition _renderGraph;
 
         const EntityRegistry& getRegistry() const;
+
+        bool updateWindowProjection() noexcept;
     };
 }

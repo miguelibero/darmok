@@ -80,10 +80,10 @@ namespace darmok
             {
                 return false;
             }
-            if (!config.program.empty())
+            if (!config.programPath.empty())
             {
                 ProgramDefinition def;
-                def.load(dataLoader(config.program));
+                def.read(config.programPath);
                 config.vertexLayout = def.vertexLayout;
             }
             if (config.vertexLayout.getStride() == 0)
@@ -714,6 +714,7 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_outputPathJsonKey = "outputPath";
     const std::string AssimpModelImporterImpl::_vertexLayoutJsonKey = "vertexLayout";
     const std::string AssimpModelImporterImpl::_embedTexturesJsonKey = "embedTextures";
+    const std::string AssimpModelImporterImpl::_programPathJsonKey = "programPath";
     const std::string AssimpModelImporterImpl::_programJsonKey = "program";
     const std::string AssimpModelImporterImpl::_skipMeshesJsonKey = "skipMeshes";
 
@@ -722,6 +723,10 @@ namespace darmok
         if (json.contains(_vertexLayoutJsonKey))
         {
             config.vertexLayout = loadVertexLayout(json[_vertexLayoutJsonKey]);
+        }
+        if (json.contains(_programPathJsonKey))
+        {
+            config.programPath = basePath / json[_programPathJsonKey];
         }
         if (json.contains(_programJsonKey))
         {
@@ -736,6 +741,11 @@ namespace darmok
                 config.program = val;
             }
         }
+        else if (!config.programPath.empty())
+        {
+            config.program = StringUtils::getFileStem(config.programPath.string()) + ".bin";
+        }
+
         if (json.contains(_skipMeshesJsonKey))
         {
             auto& jsonVal = json[_skipMeshesJsonKey];
