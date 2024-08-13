@@ -51,6 +51,8 @@ namespace darmok
 
 		using Format = ProgramDefinitionFormat;
 
+		bool empty() const noexcept;
+
 		void read(const std::filesystem::path& path);
 		void write(const std::filesystem::path& path) const noexcept;
 		void read(std::istream& in, Format format = Format::Binary);

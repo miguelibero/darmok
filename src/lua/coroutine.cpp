@@ -167,6 +167,9 @@ namespace darmok
 			sol::factories(
 				[](Transform& trans, const VarLuaTable<glm::vec3>& pos, float duration, EasingType easing) -> std::shared_ptr<ILuaYieldInstruction> {
 					return std::make_shared<LuaEasePosition>(trans, LuaGlm::tableGet(pos), duration, easing);
+				},
+				[](Transform& trans, const VarLuaTable<glm::vec3>& pos, float duration) -> std::shared_ptr<ILuaYieldInstruction> {
+					return std::make_shared<LuaEasePosition>(trans, LuaGlm::tableGet(pos), duration);
 				}
 			)
 		);
@@ -207,6 +210,9 @@ namespace darmok
 			sol::factories(
 				[](Transform& trans, const VarLuaTable<glm::quat>& rot, float duration, EasingType easing) -> std::shared_ptr<ILuaYieldInstruction> {
 					return std::make_shared<LuaEaseRotation>(trans, LuaGlm::tableGet(rot), duration, easing);
+				},
+				[](Transform& trans, const VarLuaTable<glm::quat>& rot, float duration) -> std::shared_ptr<ILuaYieldInstruction> {
+					return std::make_shared<LuaEaseRotation>(trans, LuaGlm::tableGet(rot), duration);
 				}
 			)
 		);

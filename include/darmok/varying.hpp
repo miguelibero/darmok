@@ -74,6 +74,7 @@ namespace darmok
     {
         bgfx::Attrib::Enum attrib = bgfx::Attrib::Count;
         uint8_t num = 1;
+        std::string name;
         std::vector<float> defaultValue;
 
         void read(const std::string& key);
@@ -136,7 +137,7 @@ namespace darmok
 
         bool empty() const noexcept;
         bool has(bgfx::Attrib::Enum attrib) const noexcept;
-        bgfx::Attrib::Enum getUnusedAttrib() const noexcept;
+        bgfx::Attrib::Enum getUnusedAttrib(const std::vector<bgfx::Attrib::Enum>& used = {}) const noexcept;
         ConstIterator begin() const noexcept;
         ConstIterator end() const noexcept;
 

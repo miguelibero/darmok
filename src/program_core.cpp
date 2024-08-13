@@ -105,6 +105,11 @@ namespace darmok
         throw std::invalid_argument("no valid profile found");
     }
 
+    bool ProgramDefinition::empty() const noexcept
+    {
+        return vertexLayout.empty();
+    }
+
     ProgramDefinition::Format ProgramDefinition::getPathFormat(const std::filesystem::path& path) noexcept
     {
         auto ext = path.extension();

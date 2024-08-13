@@ -26,5 +26,11 @@
             "num": 4
         }
     },
-    "fragment": ["position", "normal", "texCoord0", "color0"]
+    "fragment": [
+        "position",
+        "normal",
+        "texCoord0",
+        "color0",
+        ["viewDir", 3]
+    ]
 }

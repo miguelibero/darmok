@@ -308,7 +308,11 @@ namespace darmok
 		attrib = AttribUtils::getBgfx(key);
 		if (attrib == bgfx::Attrib::Count)
 		{
-			throw std::invalid_argument("invalid key: " + key);
+			name = key;
+		}
+		else
+		{
+			name = AttribUtils::getBgfxName(attrib);
 		}
 		auto group = AttribUtils::getGroup(attrib);
 		if (group == AttribGroup::Color)
@@ -340,15 +344,17 @@ namespace darmok
 
 	void FragmentAttribute::read(const std::string& key, const nlohmann::json& json)
 	{
-		attrib = AttribUtils::getBgfx(key);
-		if (attrib == bgfx::Attrib::Count)
-		{
-			throw std::invalid_argument("invalid key: " + key);
-		}
-		if (json.is_array())
+		read(key);
+		auto type = json.type();
+		if(type == nlohmann::json::value_t::array)
 		{
 			defaultValue = json.get<std::vector<float>>();
 			num = defaultValue.size();
+			return;
+		}
+		if (type != nlohmann::json::value_t::object)
+		{
+			num = json;
 			return;
 		}
 		if (json.contains("default"))
@@ -475,6 +481,7 @@ namespace darmok
 	void VaryingDefinition::writeBgfx(std::ostream& out, const AttribGroups& disabledGroups) const noexcept
 	{
 		static const std::string instrEnd = ";";
+		std::vector<bgfx::Attrib::Enum> usedTypes;
 		for (auto& attr : fragment)
 		{
 			if (attr.inGroups(disabledGroups))
@@ -482,11 +489,12 @@ namespace darmok
 				continue;
 			}
 			auto type = attr.attrib;
-			if (type == bgfx::Attrib::Position)
+			if (type == bgfx::Attrib::Position || type == bgfx::Attrib::Count)
 			{
-				type = fragment.getUnusedAttrib();
+				type = fragment.getUnusedAttrib(usedTypes);
 			}
-			out << getBgfxVarTypeName(attr.num) << " v_" << AttribUtils::getBgfxName(attr.attrib);
+			usedTypes.push_back(type);
+			out << getBgfxVarTypeName(attr.num) << " v_" << attr.name;
 			out << " : " << getBgfxTypeName(type);
 			if (!attr.defaultValue.empty())
 			{
@@ -666,7 +674,8 @@ namespace darmok
 
 	void VertexLayout::read(const nlohmann::ordered_json& json)
 	{
-		if (json.is_object())
+		auto type = json.type();
+		if (type == nlohmann::json::value_t::object)
 		{
 			for (auto& elm : json.items())
 			{
@@ -674,7 +683,7 @@ namespace darmok
 			}
 			return;
 		}
-		if (!json.is_array())
+		if (type != nlohmann::json::value_t::array)
 		{
 			return;
 		}
@@ -728,12 +737,17 @@ namespace darmok
 		return _attributes.end();
 	}
 
-	bgfx::Attrib::Enum FragmentLayout::getUnusedAttrib() const noexcept
+	bgfx::Attrib::Enum FragmentLayout::getUnusedAttrib(const std::vector<bgfx::Attrib::Enum>& used) const noexcept
 	{
 		for (auto i = bgfx::Attrib::TexCoord0; i < bgfx::Attrib::TexCoord7; i = (bgfx::Attrib::Enum)(i + 1))
 		{
-			auto itr = std::find_if(_attributes.begin(), _attributes.end(), [i](auto& elm) { return elm.attrib == i; });
-			if (itr == _attributes.end())
+			auto itr1 = std::find(used.begin(), used.end(), i);
+			if (itr1 != used.end())
+			{
+				continue;
+			}
+			auto itr2 = std::find_if(_attributes.begin(), _attributes.end(), [i](auto& elm) { return elm.attrib == i; });
+			if (itr2 == _attributes.end())
 			{
 				return i;
 			}
@@ -794,7 +808,8 @@ namespace darmok
 
 	void FragmentLayout::read(const nlohmann::ordered_json& json)
 	{
-		if (json.is_object())
+		auto type = json.type();
+		if (type == nlohmann::json::value_t::object)
 		{
 			for (auto& elm : json.items())
 			{
@@ -802,16 +817,21 @@ namespace darmok
 			}
 			return;
 		}
-		if (!json.is_array())
+		if (type != nlohmann::json::value_t::array)
 		{
 			return;
 		}
 		for (auto& elm : json)
 		{
 			auto& attrib = _attributes.emplace_back();
-			if (elm.is_object())
+			auto type = elm.type();
+			if (type == nlohmann::json::value_t::object)
 			{
 				attrib.read(elm["name"], elm);
+			}
+			else if (type == nlohmann::json::value_t::array)
+			{
+				attrib.read(elm[0], elm[1]);
 			}
 			else
 			{

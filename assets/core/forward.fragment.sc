@@ -1,4 +1,4 @@
-$input v_position, v_normal, v_color0, v_texcoord0
+$input v_position, v_normal, v_color0, v_texcoord0, v_viewDir
 
 #include <bgfx_shader.sh>
 #include <darmok_phong_lighting.include.sc>
@@ -7,7 +7,6 @@ SAMPLER2D(s_texColor, 0);
 
 uniform vec4 u_diffuseColor;
 uniform vec4 u_specularColor;
-uniform vec4 u_camPos;
 
 // https://learnopengl.com/Lighting/Basic-Lighting
 
@@ -21,9 +20,8 @@ void main()
 
 	vec3 diffuse = vec3_splat(0);
 	vec3 specular = vec3_splat(0);
-	vec3 viewDir = normalize(u_camPos.xyz - v_position);
-	vec3 norm = normalize(v_normal);
 	Material material = getMaterial();
+	vec3 norm = normalize(v_normal);
 
 	uint c = getPointLightCount();
     for(uint i = 0; i < c; i++)
@@ -35,7 +33,7 @@ void main()
 		diffuse += diff * light.diffuse;
 
 		vec3 reflectDir = reflect(-lightDir, norm);  
-		float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+		float spec = pow(max(dot(v_viewDir, reflectDir), 0.0), material.shininess);
 		specular += material.specularStrength * spec * light.specular;
 	}
 	

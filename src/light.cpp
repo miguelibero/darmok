@@ -138,6 +138,7 @@ namespace darmok
 
     void PhongLightingComponent::createHandles() noexcept
     {
+        // TODO: does not work in OpenGL as the unfirm handles need to be createdd before the program
         _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
         _lightCountUniform = bgfx::createUniform("u_lightCount", bgfx::UniformType::Vec4);
         _lightDataUniform = bgfx::createUniform("u_lightingData", bgfx::UniformType::Vec4);
@@ -146,10 +147,17 @@ namespace darmok
 
     void PhongLightingComponent::destroyHandles() noexcept
     {
-        if (isValid(_lightCountUniform))
+        std::vector<std::reference_wrapper<bgfx::UniformHandle>> handles = {
+            _lightCountUniform, _lightDataUniform, _camPosUniform
+        };
+
+        for (auto& handle : handles)
         {
-            bgfx::destroy(_lightCountUniform);
-            _lightCountUniform.idx = bgfx::kInvalidHandle;
+            if (isValid(handle))
+            {
+                bgfx::destroy(handle);
+                handle.get().idx = bgfx::kInvalidHandle;
+            }
         }
         if (isValid(_lightDataUniform))
         {
@@ -160,11 +168,6 @@ namespace darmok
         {
             bgfx::destroy(_pointLightBuffer);
             _pointLightBuffer.idx = bgfx::kInvalidHandle;
-        }
-        if (isValid(_camPosUniform))
-        {
-            bgfx::destroy(_camPosUniform);
-            _camPosUniform.idx = bgfx::kInvalidHandle;
         }
     }
 
@@ -262,14 +265,15 @@ namespace darmok
         {
             encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
         }
-        if (isValid(_camPosUniform))
-        {
-            encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
-        }
         if (isValid(_pointLightBuffer))
         {
             static const uint8_t lightsBufferStage = 6;
             encoder.setBuffer(lightsBufferStage, _pointLightBuffer, bgfx::Access::Read);
+        }
+        // could be made generic
+        if (isValid(_camPosUniform))
+        {
+            encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
         }
     }
 }

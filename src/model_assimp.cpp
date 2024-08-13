@@ -84,7 +84,20 @@ namespace darmok
             {
                 ProgramDefinition def;
                 def.read(config.programPath);
-                config.vertexLayout = def.vertexLayout;
+                if (!def.empty())
+                {
+                    config.vertexLayout = def.vertexLayout;
+                }
+                else
+                {
+                    VaryingDefinition def;
+                    def.read(config.programPath);
+                    config.vertexLayout = def.vertex;
+                }
+                if (config.vertexLayout.getStride() == 0)
+                {
+                    throw std::runtime_error("failed to load vertex layout from program path");
+                }
             }
             if (config.vertexLayout.getStride() == 0)
             {
