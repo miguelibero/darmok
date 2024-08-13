@@ -189,7 +189,8 @@ namespace darmok
             auto trans = registry.try_get<const Transform>(entity);
             if (trans != nullptr)
             {
-                writer.write(bgfx::Attrib::Position, index, trans->getWorldPosition());
+                auto pos = trans->getWorldPosition();
+                writer.write(bgfx::Attrib::Position, index, pos);
             }
             auto c = Colors::normalize(pointLight.getDiffuseColor()) * pointLight.getIntensity();
             writer.write(bgfx::Attrib::Color0, index, c);
@@ -235,7 +236,7 @@ namespace darmok
             auto camTrans = registry.try_get<const Transform>(camEntity);
             if (camTrans != nullptr)
             {
-                _camPos = glm::vec4(camTrans->getPosition(), 0);
+                _camPos = glm::vec4(camTrans->getWorldPosition(), 0);
             }
         }
     }

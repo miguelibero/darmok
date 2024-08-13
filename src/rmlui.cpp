@@ -590,17 +590,15 @@ namespace darmok
     void RmluiViewImpl::setMousePosition(const glm::vec2& position) noexcept
     {
         std::scoped_lock lock(_mutex);
+
         glm::vec2 p = position;
 
         auto size = _context->GetDimensions();
-
-        // invert vertical since that's how rmlui works
-        p.y = size.y - p.y;
-
         p.x = Math::clamp(p.x, 0.F, (float)size.x);
         p.y = Math::clamp(p.y, 0.F, (float)size.y);
 
         _mousePosition = p;
+
         _context->ProcessMouseMove(p.x, p.y, _comp.getKeyModifierState());
     }
 
@@ -1191,10 +1189,9 @@ namespace darmok
         {
             return;
         }
-        // transform from window to window screen
-        auto pos = _app->getWindow().windowToScreenPoint(absolute);
+        auto& win = _app->getWindow();
         // transform to normalized position
-        pos = pos / glm::vec2(_app->getWindow().getFramebufferSize());
+        auto ndelta = delta / glm::vec2(win.getFramebufferSize());
 
         for (auto& view : _views)
         {
@@ -1203,11 +1200,14 @@ namespace darmok
                 continue;
             }
             auto& vp = view->getViewport();
-            // transform from normalized to viewport screen
-            auto screenPos = vp.viewportToScreenPoint(pos);
-            view->setMousePosition(screenPos);
+            if (vp.size.x == 0 || vp.size.y == 0)
+            {
+                continue;
+            }
+            glm::vec2 vpSize(vp.size);
+            auto pos = view->getMousePosition() / vpSize;
+            view->setMousePosition((pos + ndelta) * vpSize);
         }
-
     }
 
     void RmluiAppComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept

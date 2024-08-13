@@ -126,9 +126,20 @@ namespace darmok
         return _view.getViewport();
     }
 
-    LuaRmluiView& LuaRmluiView::setViewport(const Viewport& vp) noexcept
+    LuaRmluiView& LuaRmluiView::setViewport(const VarViewport& vp) noexcept
     {
-        _view.setViewport(vp);
+        _view.setViewport(LuaViewport::tableGet(vp));
+        return *this;
+    }
+
+    glm::uvec2 LuaRmluiView::getSize() const noexcept
+    {
+        return _view.getViewport().size;
+    }
+
+    LuaRmluiView& LuaRmluiView::setSize(const VarLuaTable<glm::uvec2>& size) noexcept
+    {
+        _view.setViewport(Viewport(LuaGlm::tableGet(size)));
         return *this;
     }
 
@@ -502,6 +513,7 @@ namespace darmok
             "name", sol::property(&LuaRmluiView::getName),
             "target_texture", sol::property(&LuaRmluiView::getTargetTexture, &LuaRmluiView::setTargetTexture),
             "viewport", sol::property(&LuaRmluiView::getViewport, &LuaRmluiView::setViewport),
+            "size", sol::property(&LuaRmluiView::getSize, &LuaRmluiView::setSize),
             "input_active", sol::property(&LuaRmluiView::getInputActive, &LuaRmluiView::setInputActive),
             "mouse_position", sol::property(&LuaRmluiView::getMousePosition, &LuaRmluiView::setMousePosition),
             "set_scroll_behavior", &LuaRmluiView::setScrollBehavior,

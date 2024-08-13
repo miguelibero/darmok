@@ -456,18 +456,15 @@ namespace darmok
 		{
 			return false;
 		}
-		if (_hasBeenInactive)
-		{
-			_lastPosition = pos;
-		}
-		auto delta = _lastPosition - _position;
-		_position = pos;
+		glm::vec2 delta(0);
 		if (!_hasBeenInactive)
 		{
-			for (auto& listener : _listeners)
-			{
-				listener->onMousePositionChange(delta, _position);
-			}
+			delta = pos - _position;
+		}
+		_position = pos;
+		for (auto& listener : _listeners)
+		{
+			listener->onMousePositionChange(delta, _position);
 		}
 		return true;
 	}
@@ -513,7 +510,7 @@ namespace darmok
 
 	void MouseImpl::afterUpdate(float deltaTime) noexcept
 	{
-		if (deltaTime == 0.F)
+		if (deltaTime == 0.F || _hasBeenInactive)
 		{
 			_velocity = glm::vec2(0);
 		}

@@ -8,6 +8,8 @@
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/EventListenerInstancer.h>
 #include <unordered_map>
+#include "viewport.hpp"
+#include "glm.hpp"
 
 namespace Rml
 {
@@ -93,7 +95,10 @@ namespace darmok
         std::shared_ptr<Texture> getTargetTexture() noexcept;
 
         const Viewport& getViewport() const noexcept;
-        LuaRmluiView& setViewport(const Viewport& vp) noexcept;
+        LuaRmluiView& setViewport(const VarViewport& vp) noexcept;
+
+        glm::uvec2 getSize() const noexcept;
+        LuaRmluiView& setSize(const VarLuaTable<glm::uvec2>& size) noexcept;
 
         LuaRmluiView& setEnabled(bool enabled) noexcept;
         bool getEnabled() const noexcept;
