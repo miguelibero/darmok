@@ -1,5 +1,4 @@
 #include "app.hpp"
-#include "platform.hpp"
 #include "input.hpp"
 #include "window.hpp"
 
@@ -152,9 +151,12 @@ namespace darmok
 		: _app(app)
 		, _runResult(AppRunResult::Continue)
 		, _running(false)
-		, _debug(BGFX_DEBUG_NONE)
+		, _debugFlags(BGFX_DEBUG_NONE)
+		, _resetFlags(BGFX_RESET_NONE)
+		, _clearColor(Colors::fromNumber(0x303030ff))
+		, _activeResetFlags(BGFX_RESET_NONE)
 		, _lastUpdate(0)
-		, _config(AppConfig::getDefaultConfig())
+		, _updateConfig(AppUpdateConfig::getDefaultConfig())
 		, _plat(Platform::get())
 		, _window(_plat)
 	{
@@ -232,13 +234,12 @@ namespace darmok
 	}
 #endif
 
-	const AppConfig& AppConfig::getDefaultConfig() noexcept
+	const AppUpdateConfig& AppUpdateConfig::getDefaultConfig() noexcept
 	{
-		static const AppConfig config
+		static const AppUpdateConfig config
 		{
 			1.0F / 30.0F,
-			10,
-			Colors::fromNumber(0x303030ff)
+			10
 		};
 		return config;
 	}
@@ -251,29 +252,33 @@ namespace darmok
 		return timePassed;
 	}
 
-	void AppImpl::setConfig(const AppConfig& config) noexcept
+	void AppImpl::setUpdateConfig(const AppUpdateConfig& config) noexcept
 	{
-		_config = config;
+		_updateConfig = config;
 	}
 
 	void AppImpl::bgfxInit()
 	{
 		bgfx::Init init;
 		_pixelSize = _window.getPixelSize();
+		_videoMode = _window.getVideoMode();
 		init.platformData.ndt = _plat.getDisplayHandle();
 		init.platformData.nwh = _plat.getWindowHandle();
 		init.platformData.type = _plat.getWindowHandleType();
 		init.debug = true;
 		init.resolution.width = _pixelSize.x;
 		init.resolution.height = _pixelSize.y;
+		init.resolution.reset = _resetFlags;
 		init.callback = &BgfxCallbacks::get();
 		// init.type = bgfx::RendererType::Vulkan;
-		//init.type = bgfx::RendererType::OpenGL;
+		// init.type = bgfx::RendererType::OpenGL;
 		bgfx::init(init);
+
+		_activeResetFlags = _resetFlags;
 
 		bgfx::setPaletteColor(0, UINT32_C(0x00000000));
 		//bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
-		bgfx::setPaletteColor(1, Colors::toNumber(_config.clearColor));
+		bgfx::setPaletteColor(1, Colors::toNumber(_clearColor));
 	}
 
 	void AppImpl::init()
@@ -299,6 +304,7 @@ namespace darmok
 
 	void AppImpl::renderReset()
 	{
+		bgfx::reset(_pixelSize.x, _pixelSize.y, _activeResetFlags);
 		_renderGraph.reset();
 		_renderGraphDef.clear();
 		_renderGraphDef.addPass(*this);
@@ -337,14 +343,6 @@ namespace darmok
 		_assets.update();
 		_audio.update();
 
-		auto& pixelSize = _app.getWindow().getPixelSize();
-		if (_pixelSize != pixelSize)
-		{
-			_pixelSize = pixelSize;
-			bgfx::reset(pixelSize.x, pixelSize.y);
-			renderReset();
-		}
-
 		auto rgHash = _renderGraphDef.hash();
 		if (!_renderGraph || _renderGraph->hash() != rgHash)
 		{
@@ -376,6 +374,16 @@ namespace darmok
 	void AppImpl::afterUpdate(float deltaTime)
 	{
 		_input.getImpl().afterUpdate(deltaTime);
+
+		auto& pixelSize = _app.getWindow().getPixelSize();
+		auto& videoMode = _app.getWindow().getVideoMode();
+		if (_pixelSize != pixelSize || _videoMode != videoMode || _activeResetFlags != _resetFlags)
+		{
+			_pixelSize = pixelSize;
+			_videoMode = videoMode;
+			_activeResetFlags = _resetFlags;
+			renderReset();
+		}
 	}
 
 	void AppImpl::render() const
@@ -405,7 +413,7 @@ namespace darmok
 		handleDebugShortcuts(key, modifiers);
 	}
 
-	void AppImpl::handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers & modifiers)
+	void AppImpl::handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers)
 	{
 		static const KeyboardModifiers ctrl{ KeyboardModifier::Ctrl };
 		static const KeyboardModifiers alt{ KeyboardModifier::Alt };
@@ -511,13 +519,39 @@ namespace darmok
 
 	void AppImpl::setDebugFlag(uint32_t flag, bool enabled) noexcept
 	{
-		_debug = setFlag(_debug, flag, enabled);
-		bgfx::setDebug(_debug);
+		_debugFlags = setFlag(_debugFlags, flag, enabled);
+		bgfx::setDebug(_debugFlags);
 	}
 
 	bool AppImpl::getDebugFlag(uint32_t flag) const noexcept
 	{
-		return static_cast<bool>(_debug & flag);
+		return static_cast<bool>(_debugFlags & flag);
+	}
+
+	bool AppImpl::toggleResetFlag(uint32_t flag) noexcept
+	{
+		auto value = !getResetFlag(flag);
+		setResetFlag(flag, value);
+		return value;
+	}
+
+	void AppImpl::setResetFlag(uint32_t flag, bool enabled) noexcept
+	{
+		_resetFlags = setFlag(_resetFlags, flag, enabled);
+	}
+
+	bool AppImpl::getResetFlag(uint32_t flag) const noexcept
+	{
+		return static_cast<bool>(_resetFlags & flag);
+	}
+
+	void AppImpl::setClearColor(const Color& color) noexcept
+	{
+		if (_clearColor != color)
+		{
+			_clearColor = color;
+			bgfx::setPaletteColor(1, Colors::toNumber(_clearColor));
+		}
 	}
 
 	AppRunResult AppImpl::processEvents()
@@ -730,9 +764,9 @@ namespace darmok
 	{
 	}
 
-	void App::setConfig(const AppConfig& config) noexcept
+	void App::setUpdateConfig(const AppUpdateConfig& config) noexcept
 	{
-		_impl->setConfig(config);
+		_impl->setUpdateConfig(config);
 	}
 
 	void App::render() const
@@ -744,14 +778,34 @@ namespace darmok
 		bgfx::dbgTextClear(); // use debug font to print information
 	}
 
-	void App::toggleDebugFlag(uint32_t flag) noexcept
+	bool App::toggleDebugFlag(uint32_t flag) noexcept
 	{
-		_impl->toggleDebugFlag(flag);
+		return _impl->toggleDebugFlag(flag);
 	}
 
 	void App::setDebugFlag(uint32_t flag, bool enabled) noexcept
 	{
 		_impl->setDebugFlag(flag, enabled);
+	}
+
+	bool App::getDebugFlag(uint32_t flag) const noexcept
+	{
+		return _impl->getDebugFlag(flag);
+	}
+
+	bool App::toggleResetFlag(uint32_t flag) noexcept
+	{
+		return _impl->toggleResetFlag(flag);
+	}
+
+	void App::setResetFlag(uint32_t flag, bool enabled) noexcept
+	{
+		_impl->setResetFlag(flag, enabled);
+	}
+
+	bool App::getResetFlag(uint32_t flag) const noexcept
+	{
+		return _impl->getResetFlag(flag);
 	}
 
 	void App::addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept

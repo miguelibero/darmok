@@ -9,6 +9,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_graph.hpp>
 #include <darmok/data.hpp>
+#include <darmok/color.hpp>
 #include <string>
 #include <cstdint>
 #include <vector>
@@ -100,7 +101,6 @@ namespace darmok
 	{
 	public:
 		AppImpl(App& app) noexcept;
-		void setConfig(const AppConfig& config) noexcept;
 		void init();
 		void update(float deltaTime);
 		void afterUpdate(float deltaTime);
@@ -110,6 +110,14 @@ namespace darmok
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
+		bool getDebugFlag(uint32_t flag) const noexcept;
+		
+		bool toggleResetFlag(uint32_t flag) noexcept;
+		void setResetFlag(uint32_t flag, bool enabled = true) noexcept;
+		bool getResetFlag(uint32_t flag) const noexcept;
+
+		void setClearColor(const Color& color) noexcept;
+		void setUpdateConfig(const AppUpdateConfig& config) noexcept;
 
 		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
@@ -143,9 +151,9 @@ namespace darmok
 				return;
 			}
 			auto timePassed = updateTimePassed();
-			const auto dt = _config.targetUpdateDeltaTime;
+			const auto dt = _updateConfig.deltaTime;
 			auto i = 0;
-			while (timePassed > dt && i < _config.maxInstantLogicUpdates)
+			while (timePassed > dt && i < _updateConfig.maxInstant)
 			{
 				logicCallback(dt);
 				timePassed -= dt;
@@ -161,7 +169,6 @@ namespace darmok
 		Components::const_iterator findComponent(entt::id_type type) const noexcept;
 
 		[[nodiscard]] float updateTimePassed() noexcept;
-		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
 
 		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
 		void toggleTaskflowProfile();
@@ -180,9 +187,13 @@ namespace darmok
 		AppRunResult _runResult;
 		bool _running;
 		glm::uvec2 _pixelSize;
-		uint32_t _debug;
+		VideoMode _videoMode;
+		uint32_t _debugFlags;
+		uint32_t _resetFlags;
+		uint32_t _activeResetFlags;
+		Color _clearColor;
 		uint64_t _lastUpdate;
-		AppConfig _config;
+		AppUpdateConfig _updateConfig;
 		Platform& _plat;
 		App& _app;
 		Input _input;

@@ -54,6 +54,46 @@ namespace darmok
 		return _app.get();
 	}
 
+	bool LuaApp::toggleDebugFlag(uint32_t flag) noexcept
+	{
+		return _app.get().toggleDebugFlag(flag);
+	}
+
+	void LuaApp::setDebugFlag1(uint32_t flag) noexcept
+	{
+		return _app.get().setDebugFlag(flag);
+	}
+
+	void LuaApp::setDebugFlag2(uint32_t flag, bool enabled) noexcept
+	{
+		return _app.get().setDebugFlag(flag, enabled);
+	}
+
+	bool LuaApp::getDebugFlag(uint32_t flag) const noexcept
+	{
+		return _app.get().getDebugFlag(flag);
+	}
+
+	bool LuaApp::toggleResetFlag(uint32_t flag) noexcept
+	{
+		return _app.get().toggleResetFlag(flag);
+	}
+
+	bool LuaApp::getResetFlag(uint32_t flag) const noexcept
+	{
+		return _app.get().getResetFlag(flag);
+	}
+
+	void LuaApp::setResetFlag1(uint32_t flag) noexcept
+	{
+		return _app.get().setResetFlag(flag);
+	}
+
+	void LuaApp::setResetFlag2(uint32_t flag, bool enabled) noexcept
+	{
+		return _app.get().setResetFlag(flag, enabled);
+	}
+
 	AssetContext& LuaApp::getAssets() noexcept
 	{
 		return _app.get().getAssets();
@@ -229,6 +269,31 @@ namespace darmok
 		LuaAudioSystem::bind(lua);
 		LuaCoroutineRunner::bind(lua);
 
+		lua.create_named_table("DebugFlag",
+			"NONE", BGFX_DEBUG_NONE,
+			"WIREFRAME", BGFX_DEBUG_WIREFRAME,
+			"IFH", BGFX_DEBUG_IFH,
+			"STATS", BGFX_DEBUG_STATS,
+			"TEXT", BGFX_DEBUG_TEXT,
+			"PROFILER", BGFX_DEBUG_PROFILER
+		);
+
+		lua.create_named_table("ResetFlag",
+			"NONE", BGFX_RESET_NONE,
+			"FULLSCREEN", BGFX_RESET_FULLSCREEN,
+			"VSYNC", BGFX_RESET_VSYNC,
+			"MAXANISOTROPY", BGFX_RESET_MAXANISOTROPY,
+			"CAPTURE", BGFX_RESET_CAPTURE,
+			"FLUSH_AFTER_RENDER", BGFX_RESET_FLUSH_AFTER_RENDER,
+			"FLIP_AFTER_RENDER", BGFX_RESET_FLIP_AFTER_RENDER,
+			"SRGB_BACKBUFFER", BGFX_RESET_SRGB_BACKBUFFER,
+			"HDR10", BGFX_RESET_HDR10,
+			"HIDPI", BGFX_RESET_HIDPI,
+			"DEPTH_CLAMP", BGFX_RESET_DEPTH_CLAMP,
+			"SUSPEND", BGFX_RESET_SUSPEND,
+			"TRANSPARENT_BACKBUFFER", BGFX_RESET_TRANSPARENT_BACKBUFFER
+		);
+
 		lua.new_usertype<LuaApp>("App", sol::no_constructor,
 			"assets", sol::property(&LuaApp::getAssets),
 			"window", sol::property(&LuaApp::getWindow),
@@ -242,7 +307,13 @@ namespace darmok
 			"has_component", &LuaApp::hasComponent,
 			"remove_component", &LuaApp::removeComponent,
 			"add_lua_component", &LuaApp::addLuaComponent,
-			"get_lua_component", &LuaApp::getLuaComponent
+			"get_lua_component", &LuaApp::getLuaComponent,
+			"get_debug_flag", &LuaApp::getDebugFlag,
+			"toggle_debug_flag", &LuaApp::toggleDebugFlag,
+			"set_debug_flag", sol::overload(&LuaApp::setDebugFlag1, &LuaApp::setDebugFlag2),
+			"get_reset_flag", &LuaApp::getResetFlag,
+			"toggle_reset_flag", &LuaApp::toggleResetFlag,
+			"set_debug_flag", sol::overload(&LuaApp::setResetFlag1, &LuaApp::setResetFlag2)
 		);
 	}
 

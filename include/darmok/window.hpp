@@ -2,7 +2,7 @@
 
 #include <darmok/export.h>
 #include <memory>
-#include <string_view>
+#include <string>
 #include <darmok/glm.hpp>
 #include <darmok/color.hpp>
 #include <darmok/viewport.hpp>
@@ -90,7 +90,6 @@ namespace darmok
 
 	private:
 		std::unique_ptr<WindowImpl> _impl;
-		Platform& _plat;
 	};
 
 } // namespace darmok

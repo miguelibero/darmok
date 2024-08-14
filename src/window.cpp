@@ -73,8 +73,9 @@ namespace darmok
 			&& refreshRate > 0;
 	}
 
-	WindowImpl::WindowImpl() noexcept
-		: _phase(WindowPhase::Unknown)
+	WindowImpl::WindowImpl(Platform& plat) noexcept
+		: _plat(plat)
+		, _phase(WindowPhase::Unknown)
 		, _cursorMode(WindowCursorMode::Normal)
 		, _size(0)
 		, _pixelSize(0)
@@ -217,6 +218,26 @@ namespace darmok
 		return _phase;
 	}
 
+	void WindowImpl::requestVideoModeInfo() noexcept
+	{
+		_plat.requestVideoModeInfo();
+	}
+
+	void WindowImpl::requestVideoMode(const VideoMode& mode) noexcept
+	{
+		_plat.requestWindowVideoModeChange(mode);
+	}
+
+	void WindowImpl::requestCursorMode(WindowCursorMode mode) noexcept
+	{
+		_plat.requestWindowCursorModeChange(mode);
+	}
+
+	void WindowImpl::requestDestruction() noexcept
+	{
+		_plat.requestWindowDestruction();
+	}
+
 	const VideoMode& WindowImpl::getVideoMode() const noexcept
 	{
 		return _videoMode;
@@ -269,8 +290,7 @@ namespace darmok
 	}
 
 	Window::Window(Platform& plat) noexcept
-		: _impl(std::make_unique<WindowImpl>())
-		, _plat(plat)
+		: _impl(std::make_unique<WindowImpl>(plat))
 	{
 	}
 
@@ -306,22 +326,22 @@ namespace darmok
 
 	void Window::requestVideoModeInfo() noexcept
 	{
-		_plat.requestVideoModeInfo();
+		_impl->requestVideoModeInfo();
 	}
 
 	void Window::requestVideoMode(const VideoMode& mode) noexcept
 	{
-		_plat.requestWindowVideoModeChange(mode);
+		_impl->requestVideoMode(mode);
 	}
 
 	void Window::requestCursorMode(WindowCursorMode mode) noexcept
 	{
-		_plat.requestWindowCursorModeChange(mode);
+		_impl->requestCursorMode(mode);
 	}
 
 	void Window::requestDestruction() noexcept
 	{
-		_plat.requestWindowDestruction();
+		_impl->requestDestruction();
 	}
 
 	WindowPhase Window::getPhase() const noexcept

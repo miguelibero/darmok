@@ -268,11 +268,18 @@ namespace darmok
             configureEntity(*node.ambientLight, entity);
         }
 
-        for (auto& renderable : node.renderables)
+        if (node.renderables.size() == 1)
         {
-            auto childEntity = _config.scene.createEntity();
-            _config.scene.addComponent<Transform>(childEntity).setParent(trans);
-            configureEntity(renderable, childEntity);
+            configureEntity(node.renderables[0], entity);
+        }
+        else
+        {
+            for (auto& renderable : node.renderables)
+            {
+                auto childEntity = _config.scene.createEntity();
+                _config.scene.addComponent<Transform>(childEntity).setParent(trans);
+                configureEntity(renderable, childEntity);
+            }
         }
     }
 

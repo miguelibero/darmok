@@ -55,13 +55,11 @@ namespace darmok
 
 	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<App>&& app);
 
-	struct DARMOK_EXPORT AppConfig
+	struct DARMOK_EXPORT AppUpdateConfig
 	{
-		static const AppConfig& getDefaultConfig() noexcept;
-
-		float targetUpdateDeltaTime = getDefaultConfig().targetUpdateDeltaTime;
-		int maxInstantLogicUpdates = getDefaultConfig().maxInstantLogicUpdates;
-		Color clearColor = getDefaultConfig().clearColor;
+		static const AppUpdateConfig& getDefaultConfig() noexcept;
+		float deltaTime = getDefaultConfig().deltaTime;
+		int maxInstant = getDefaultConfig().maxInstant;
 	};
 
 	class DARMOK_EXPORT App
@@ -105,17 +103,25 @@ namespace darmok
 		[[nodiscard]] const AudioSystem& getAudio() const noexcept;
 #endif
 
-		void toggleDebugFlag(uint32_t flag) noexcept;
+		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
+		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
+
+		bool toggleResetFlag(uint32_t flag) noexcept;
+		void setResetFlag(uint32_t flag, bool enabled = true) noexcept;
+		[[nodiscard]] bool getResetFlag(uint32_t flag) const noexcept;
+
+		void setClearColor(const Color& color) noexcept;
+		void setUpdateConfig(const AppUpdateConfig& config) noexcept;
 
 		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
-		bool hasComponent(entt::id_type type) const noexcept;
-		OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
-		OptionalRef<const IAppComponent> getComponent(entt::id_type type) const noexcept;
+		[[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
+		[[nodiscard]] OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
+		[[nodiscard]] OptionalRef<const IAppComponent> getComponent(entt::id_type type) const noexcept;
 
 		template<typename T>
-		OptionalRef<T> getComponent() noexcept
+		[[nodiscard]] OptionalRef<T> getComponent() noexcept
 		{
 			auto ref = getComponent(entt::type_hash<T>::value());
 			if (ref)
@@ -126,7 +132,7 @@ namespace darmok
 		}
 
 		template<typename T>
-		OptionalRef<const T> getComponent() const noexcept
+		[[nodiscard]] OptionalRef<const T> getComponent() const noexcept
 		{
 			auto ref = getComponent(entt::type_hash<T>::value());
 			if (ref)
@@ -146,8 +152,6 @@ namespace darmok
 		}
 
 	protected:
-		void setConfig(const AppConfig& config) noexcept;
-
 		virtual void update(float deltaTime);
 		virtual void render() const;
 

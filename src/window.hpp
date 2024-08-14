@@ -11,7 +11,7 @@ namespace darmok
 	class WindowImpl final
 	{
 	public:
-		WindowImpl() noexcept;
+		WindowImpl(Platform& plat) noexcept;
 		WindowImpl(const WindowImpl& other) = delete;
 		WindowImpl(WindowImpl&& other) = delete;
 
@@ -32,6 +32,11 @@ namespace darmok
 		[[nodiscard]] WindowCursorMode getCursorMode() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 
+		void requestVideoModeInfo() noexcept;
+		void requestVideoMode(const VideoMode& mode) noexcept;
+		void requestCursorMode(WindowCursorMode mode) noexcept;
+		void requestDestruction() noexcept;
+
 		[[nodiscard]] glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
 		[[nodiscard]] glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
 
@@ -47,6 +52,7 @@ namespace darmok
 		VideoModeInfo _videoModeInfo;
 		WindowCursorMode _cursorMode;
 		std::unordered_set<OptionalRef<IWindowListener>> _listeners;
+		Platform& _plat;
 
 		glm::vec2 getScreenToWindowFactor() const noexcept;
 		void bgfxReset(const glm::uvec2& size) const noexcept;

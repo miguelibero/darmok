@@ -89,7 +89,7 @@ namespace darmok
 	void ForwardRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
 	{
 		auto camEntity = _scene->getEntity(_cam.value());
-		def.setName("Forward Renderer " + std::to_string(camEntity));
+		def.setName("Forward");
 		def.getWriteResources().add<Texture>();
 	}
 

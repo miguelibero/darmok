@@ -31,6 +31,16 @@ namespace darmok
 		App& getReal() noexcept;
 		const App& getReal() const noexcept;
 
+		bool toggleDebugFlag(uint32_t flag) noexcept;
+		bool getDebugFlag(uint32_t flag) const noexcept;
+		void setDebugFlag1(uint32_t flag) noexcept;
+		void setDebugFlag2(uint32_t flag, bool enabled) noexcept;
+
+		bool toggleResetFlag(uint32_t flag) noexcept;
+		bool getResetFlag(uint32_t flag) const noexcept;
+		void setResetFlag1(uint32_t flag) noexcept;
+		void setResetFlag2(uint32_t flag, bool enabled) noexcept;
+
 		void update(float deltaTime, sol::state_view& lua) noexcept;
 
 		template<typename T, typename R, typename... A>

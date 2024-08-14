@@ -11,7 +11,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/program.hpp>
 #include <darmok/freelook.hpp>
-#include <darmok/render_forward.hpp>
+#include <darmok/render_deferred.hpp>
 
 namespace
 {
@@ -40,8 +40,7 @@ namespace
 			scene->addComponent<Transform>(camEntity)
 				.setPosition(glm::vec3(0, 2, 0))
 				.lookAt(glm::vec3(2, 2, 0));
-			cam.addRenderer<ForwardRenderer>()
-				.addComponent<PhongLightingComponent>();
+			cam.addRenderer<DeferredRenderer>();
 			scene->addSceneComponent<FreelookController>(cam);
 
 			ModelSceneConfigurer configurer(*scene, getAssets());
