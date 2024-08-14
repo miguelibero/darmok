@@ -40,27 +40,26 @@ namespace
 			App::init();
 
 			_scene = addComponent<SceneAppComponent>().getScene();
-			auto& physics = _scene->addSceneComponent<PhysicsSystem>(getAssets().getAllocator());
+			_scene->addSceneComponent<PhysicsSystem>(getAssets().getAllocator());
 
 			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
 
 			// camera
 			{
 				auto camEntity = _scene->createEntity();
-				glm::vec2 winSize = getWindow().getSize();
 
 				_camTrans = _scene->addComponent<Transform>(camEntity)
 					.setPosition({ 0, 5, -10 })
 					.lookAt({ 0, 0, 0 });
 				_cam = _scene->addComponent<Camera>(camEntity)
-					.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
+					.setWindowPerspective(60, 0.3, 1000);
 
 				_renderer = _cam->addRenderer<ForwardRenderer>();
 				_renderer->addComponent<PhongLightingComponent>();
 
 				_freeLook = _scene->addSceneComponent<FreelookController>(*_cam);
 #ifdef PHYSICS_DEBUG_RENDERER
-				_physicsDebugRenderer = _cam->addRenderer<PhysicsDebugRenderer>(physics);
+				_physicsDebugRenderer = _cam->addRenderer<PhysicsDebugRenderer>();
 #ifdef DARMOK_FREETYPE
 				auto font = getAssets().getFontLoader()("../../assets/noto.ttf");
 				_physicsDebugRenderer->setFont(font);
@@ -236,7 +235,7 @@ namespace
 			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
 		};
 
-		void updateLogic(float dt) override
+		void update(float dt) override
 		{
 			if (_freeLook->isEnabled())
 			{

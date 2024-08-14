@@ -433,6 +433,10 @@ namespace darmok
                 continue;
             }
             auto define = match[2].str();
+            if (define.starts_with("BGFX_"))
+            {
+                continue;
+            }
             if (defines.insert(define).second)
             {
                 count++;
@@ -520,7 +524,15 @@ namespace darmok
         {
             fragmentShader = basePath / json["fragmentShader"].get<std::string>();
         }
-        varying.read(json);
+        if (json.contains("varyingDef"))
+        {
+            fs::path varyingPath = basePath / json["varyingDef"].get<std::string>();
+            varying.read(varyingPath);
+        }
+        else
+        {
+            varying.read(json);
+        }
     }
 
     void ProgramImportConfig::load(const AssetTypeImporterInput& input)
@@ -540,7 +552,7 @@ namespace darmok
         {
             std::ifstream is(input.path);
             auto fileJson = nlohmann::ordered_json::parse(is);
-            read(fileJson, input.basePath);
+            read(fileJson, input.path.parent_path());
         }
         if (!fs::exists(vertexShader))
         {

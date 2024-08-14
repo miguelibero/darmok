@@ -1,0 +1,5 @@
+{
+    "vertexShader": "light.vertex.sc",
+    "fragmentShader": "light-img.fragment.sc",
+    "varyingDef": "varyingdef.json"
+}

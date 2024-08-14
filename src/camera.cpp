@@ -208,9 +208,9 @@ namespace darmok
 
     void Camera::shutdown()
     {
-        for (auto& renderer : _renderers)
+        for (auto itr = _renderers.rbegin(); itr != _renderers.rend(); ++itr)
         {
-            renderer->shutdown();
+            (*itr)->shutdown();
         }
         _renderGraph.clear();
     }
@@ -240,6 +240,9 @@ namespace darmok
 
     void Camera::configureView(bgfx::ViewId viewId) const noexcept
     {
+        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+
         bgfx::setViewFrameBuffer(viewId, _frameBuffer);
         getCurrentViewport().configureView(viewId);
     }
@@ -262,7 +265,6 @@ namespace darmok
             }
         }
         bgfx::setViewTransform(viewId, viewPtr, projPtr);
-        encoder.touch(viewId);
     }
 
     void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept

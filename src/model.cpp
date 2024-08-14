@@ -249,11 +249,11 @@ namespace darmok
 		}
 		auto& trans = _config.scene.addComponent<Transform>(entity, node.transform, parentTrans);
         trans.setName(node.name);
-        configureEntity(node, entity);
+        configureEntity(node, entity, trans);
         return entity;
     }
 
-    void ModelSceneConfigurer::configureEntity(const ModelNode& node, Entity entity) noexcept
+    void ModelSceneConfigurer::configureEntity(const ModelNode& node, Entity entity, Transform& trans) noexcept
     {
         if (node.camera)
         {
@@ -267,9 +267,12 @@ namespace darmok
         {
             configureEntity(*node.ambientLight, entity);
         }
+
         for (auto& renderable : node.renderables)
         {
-            configureEntity(renderable, entity);
+            auto childEntity = _config.scene.createEntity();
+            _config.scene.addComponent<Transform>(childEntity).setParent(trans);
+            configureEntity(renderable, childEntity);
         }
     }
 

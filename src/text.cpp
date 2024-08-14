@@ -328,6 +328,7 @@ namespace darmok
 	void TextRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
 	{
 		def.setName("Text Renderer");
+		def.getWriteResources().add<Texture>();
 	}
 
 	void TextRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept

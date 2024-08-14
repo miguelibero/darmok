@@ -335,6 +335,21 @@ namespace darmok
 			num = 4;
 			defaultValue = { 1.F, 0.F, 0.F, 0.F };
 		}
+		else if (attrib == bgfx::Attrib::Normal)
+		{
+			num = 3;
+			defaultValue = { 0.F, 0.F, 1.F };
+		}
+		else if (attrib == bgfx::Attrib::Tangent)
+		{
+			num = 3;
+			defaultValue = { 1.F, 0.F, 0.F };
+		}
+		else if (attrib == bgfx::Attrib::Bitangent)
+		{
+			num = 3;
+			defaultValue = { 0.F, 1.F, 0.F };
+		}
 		else
 		{
 			num = 3;
@@ -465,6 +480,10 @@ namespace darmok
 		if (val == bgfx::Attrib::Weight)
 		{
 			return "BLENDWEIGHT";
+		}
+		if (val == bgfx::Attrib::Bitangent)
+		{
+			return "BINORMAL";
 		}
 		return StringUtils::toUpper(AttribUtils::getBgfxName(val));
 	}

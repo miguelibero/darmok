@@ -102,6 +102,7 @@ namespace darmok::physics3d
     void PhysicsDebugRendererImpl::renderPassDefine(RenderPassDefinition& def) noexcept
     {
         def.setName("Jolt Physics Debug");
+        def.getWriteResources().add<Texture>();
     }
 
     void PhysicsDebugRendererImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept

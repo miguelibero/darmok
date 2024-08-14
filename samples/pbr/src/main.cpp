@@ -33,18 +33,17 @@ namespace
 			auto& registry = scene->getRegistry();
 
 			auto camEntity = registry.create();
-			glm::vec2 winSize = getWindow().getSize();
 
 			auto& camTrans = registry.emplace<Transform>(camEntity)
 				.setPosition({ 0, 2, -2 })
 				.setEulerAngles({ 45, 0, 0 });
 			auto& cam = registry.emplace<Camera>(camEntity)
-				.setPerspective(60, winSize.x / winSize.y, 0.3, 1000);
+				.setWindowPerspective(60, 0.3, 1000);
 			
-			cam.addComponent<PhongLightingComponent>();
-			cam.setRenderer<ForwardRenderer>();
+			cam.addRenderer<ForwardRenderer>()
+				.addComponent<PhongLightingComponent>();
 
-			auto& freelook = scene->addSceneComponent<FreelookController>(cam);
+			_freelook = scene->addSceneComponent<FreelookController>(cam);
 
 			auto light = registry.create();
 			registry.emplace<Transform>(light)
@@ -68,35 +67,46 @@ namespace
 			auto sphereMesh = MeshData(Sphere()).createMesh(layout);
 			auto sphere = registry.create();
 			registry.emplace<Renderable>(sphere, std::move(sphereMesh), redMat);
-			auto& trans = registry.emplace<Transform>(sphere);
-
-			auto speed = 0.01F;
-
-			auto move = [&freelook, &trans, speed](const glm::vec3& d) {
-				if (freelook.isEnabled())
-				{
-					return;
-				}
-				glm::vec3 pos = trans.getPosition();
-				pos += d * speed;
-				trans.setPosition(pos);
-			};
-			auto moveRight = [move]() { move({ 1, 0, 0 });};
-			auto moveLeft = [move]() { move({ -1, 0, 0 }); };
-			auto moveForward = [move]() { move({ 0, 0, 1 }); };
-			auto moveBack = [move]() { move({ 0, 0, -1 }); };
-
-			getInput().addBindings("movement", {
-				{ KeyboardBindingKey{ KeyboardKey::Right}, false, moveRight},
-				{ KeyboardBindingKey{ KeyboardKey::KeyD}, false, moveRight},
-				{ KeyboardBindingKey{ KeyboardKey::Left}, false, moveLeft},
-				{ KeyboardBindingKey{ KeyboardKey::KeyA}, false, moveLeft},
-				{ KeyboardBindingKey{ KeyboardKey::Up}, false, moveForward},
-				{ KeyboardBindingKey{ KeyboardKey::KeyW}, false, moveForward},
-				{ KeyboardBindingKey{ KeyboardKey::Down}, false, moveBack},
-				{ KeyboardBindingKey{ KeyboardKey::KeyS}, false, moveBack},
-			});
+			_trans = registry.emplace<Transform>(sphere);
 		}
+
+		void update(float deltaTime) override
+		{
+			if (_freelook && _freelook->isEnabled())
+			{
+				return;
+			}
+			glm::vec3 dir(0);
+			dir.x = getInput().getAxis(_moveRight, _moveLeft);
+			dir.z = getInput().getAxis(_moveForward, _moveBackward);
+
+			auto pos = _trans->getPosition();
+			_trans->setPosition(pos + (dir * deltaTime));
+		}
+
+		OptionalRef<FreelookController> _freelook;
+		OptionalRef<Transform> _trans;
+
+		const InputDirs _moveForward = {
+			KeyboardInputEvent{ KeyboardKey::Up },
+			KeyboardInputEvent{ KeyboardKey::KeyW },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Up }
+		};
+		const InputDirs _moveBackward = {
+			KeyboardInputEvent{ KeyboardKey::Down },
+			KeyboardInputEvent{ KeyboardKey::KeyS },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Down }
+		};
+		const InputDirs _moveLeft = {
+			KeyboardInputEvent{ KeyboardKey::Left },
+			KeyboardInputEvent{ KeyboardKey::KeyA },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Left }
+		};
+		const InputDirs _moveRight = {
+			KeyboardInputEvent{ KeyboardKey::Right },
+			KeyboardInputEvent{ KeyboardKey::KeyD },
+			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
+		};
 	};
 
 }

@@ -218,6 +218,7 @@ namespace darmok
     class Mesh;
     class Material;
     class Armature;
+    class Transform;
 
     class DARMOK_EXPORT ModelSceneConfigurer final
     {
@@ -270,7 +271,7 @@ namespace darmok
         std::shared_ptr<Armature> loadArmature(const std::shared_ptr<ModelMesh>& modelMesh) noexcept;
         std::shared_ptr<Texture> loadTexture(const std::shared_ptr<ModelImage>& modelImg) noexcept;
 
-        void configureEntity(const ModelNode& node, Entity entity) noexcept;
+        void configureEntity(const ModelNode& node, Entity entity, Transform& trans) noexcept;
         void configureEntity(const ModelRenderable& renderable, Entity entity) noexcept;
         void configureEntity(const ModelCamera& cam, Entity entity) noexcept;
         void configureEntity(const ModelPointLight& light, Entity entity) noexcept;

@@ -90,14 +90,12 @@ namespace darmok
 	{
 		auto camEntity = _scene->getEntity(_cam.value());
 		def.setName("Forward Renderer " + std::to_string(camEntity));
+		def.getWriteResources().add<Texture>();
 	}
 
 	void ForwardRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
 	{
 		_viewId = viewId;
-
-		static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
 
 		_cam->configureView(viewId);
 	}

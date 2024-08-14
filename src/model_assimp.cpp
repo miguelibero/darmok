@@ -842,7 +842,7 @@ namespace darmok
     std::vector<std::filesystem::path> AssimpModelImporterImpl::getOutputs(const Input& input) 
     {
         std::vector<std::filesystem::path> outputs;
-        auto outputPath = _currentConfig->outputPath;
+        std::filesystem::path outputPath = _currentConfig->outputPath;
         if (outputPath.empty())
         {
             std::string stem = StringUtils::getFileStem(input.path.filename().string());

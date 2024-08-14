@@ -116,13 +116,13 @@ namespace
 				.setPosition(glm::vec3(0.f, 2.f, -2.f))
 				.lookAt(glm::vec3(0, 0, 0));
 			registry.emplace<Camera>(cam3d)
-				.setPerspective(60, getWindow().getSize(), 0.3, 1000)
+				.setWindowPerspective(60, 0.3, 1000)
 				.setEntityComponentFilter<Culling3D>()
 				.addRenderer<ForwardRenderer>();
 
 			auto cam2d = registry.create();
 			registry.emplace<Camera>(cam2d)
-				.setOrtho(getWindow().getSize(), glm::vec2(0))
+				.setWindowOrtho(glm::vec2(0))
 				.setEntityComponentFilter<Culling2D>()
 				.addRenderer<ForwardRenderer>();
 
