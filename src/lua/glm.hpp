@@ -7,6 +7,7 @@
 #include <optional>
 #include <darmok/color_fwd.hpp>
 #include <darmok/math.hpp>
+#include <glm/gtx/component_wise.hpp>
 
 namespace darmok
 {
@@ -26,8 +27,8 @@ namespace darmok
 			configUsertype(usertype);
 			usertype["zero"] = sol::var(vec(0));
 			usertype["one"] = sol::var(vec(1));
-			usertype["max"] = sol::resolve<val(const vec&)>(&Math::max);
-			usertype["min"] = sol::resolve<val(const vec&)>(&Math::min);
+			usertype["max"] = sol::resolve<val(const vec&)>(&glm::compMax);
+			usertype["min"] = sol::resolve<val(const vec&)>(&glm::compMin);
 		}
 
 		template<typename T>

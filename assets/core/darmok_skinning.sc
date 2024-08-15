@@ -1,8 +1,6 @@
 #ifndef DARMOK_SKINNING_HEADER
 #define DARMOK_SKINNING_HEADER
 
-#include <darmok.include.sc>
-
 uniform mat4 u_skinning[64];
 
 mat4 getSkinningMatrixPart(float v)
@@ -40,4 +38,4 @@ vec4 applySkinning(vec4 v, vec4 indices, vec4 weights)
     return v;
 }
 
-#endif
+#endif // DARMOK_SKINNING_HEADER

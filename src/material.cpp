@@ -3,47 +3,101 @@
 #include <darmok/asset.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/program.hpp>
-
+#include <darmok/image.hpp>
+#include <darmok/app.hpp>
+#include <darmok/asset.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "render_samplers.hpp"
 
 namespace darmok
 {
-	struct MaterialSamplerDefinition
+
+	struct Material::StaticConfig final
 	{
-		std::string name;
-		uint8_t stage;
+	public:
+		StaticConfig(App& app)
+		{
+			samplerUniforms = std::vector<Sampler>{
+				{ TextureType::Base, bgfx::createUniform("s_texBaseColor", bgfx::UniformType::Sampler), RenderSamplers::PBR_BASECOLOR},
+				{ TextureType::MetallicRoughness, bgfx::createUniform("s_texMetallicRoughness", bgfx::UniformType::Sampler), RenderSamplers::PBR_METALROUGHNESS},
+				{ TextureType::Normal, bgfx::createUniform("s_texNormal", bgfx::UniformType::Sampler), RenderSamplers::PBR_NORMAL},
+				{ TextureType::Occlusion, bgfx::createUniform("s_texOcclusion", bgfx::UniformType::Sampler), RenderSamplers::PBR_OCCLUSION},
+				{ TextureType::Emissive, bgfx::createUniform("s_texEmissive", bgfx::UniformType::Sampler), RenderSamplers::PBR_EMISSIVE},
+			};
+			baseColorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
+			metallicRoughnessNormalOcclusionUniform = bgfx::createUniform("u_metallicRoughnessNormalOcclusionFactor", bgfx::UniformType::Vec4);
+			emissiveColorUniform = bgfx::createUniform("u_emissiveFactorVec", bgfx::UniformType::Vec4);
+			hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
+			multipleScatteringUniform = bgfx::createUniform("u_multipleScatteringVec", bgfx::UniformType::Vec4);
+
+			Image img(Colors::white(), app.getAssets().getAllocator());
+			defaultTexture = std::make_shared<Texture>(img);
+		}
+
+		~StaticConfig()
+		{
+			for (auto& elm : samplerUniforms)
+			{
+				bgfx::destroy(elm.handle);
+			}
+			bgfx::destroy(baseColorUniform);
+			bgfx::destroy(metallicRoughnessNormalOcclusionUniform);
+			bgfx::destroy(emissiveColorUniform);
+			bgfx::destroy(hasTexturesUniform);
+			bgfx::destroy(multipleScatteringUniform);
+
+			defaultTexture.reset();
+		}
+
+		using TextureType = MaterialTextureType;
+
+		struct Sampler final
+		{
+			TextureType type;
+			bgfx::UniformHandle handle;
+			uint8_t stage;
+		};
+
+		std::vector<Sampler> samplerUniforms;
+		bgfx::UniformHandle baseColorUniform;
+		bgfx::UniformHandle metallicRoughnessNormalOcclusionUniform;
+		bgfx::UniformHandle emissiveColorUniform;
+		bgfx::UniformHandle hasTexturesUniform;
+		bgfx::UniformHandle multipleScatteringUniform;
+
+		std::shared_ptr<Texture> defaultTexture;
 	};
 
-	struct MaterialColorUniformDefinition
+	std::unique_ptr<Material::StaticConfig> Material::_staticConfig;
+
+	void Material::staticInit(App& app) noexcept
 	{
-		std::string name;
-		Color defaultValue;
-	};
+		_staticConfig = std::make_unique<StaticConfig>(app);
+	}
 
-	static const std::unordered_map<MaterialTextureType, MaterialSamplerDefinition> _materialSamplerDefinitions = {
-		{ MaterialTextureType::Diffuse, { "s_texColor", 0 } }
-	};
-
-	static const std::unordered_map<MaterialColorType, MaterialColorUniformDefinition> _materialColorDefinitions = {
-		{ MaterialColorType::Diffuse, { "u_diffuseColor", Colors::white() }},
-		{ MaterialColorType::Specular, { "u_specularColor", Colors::white() }}
-	};
+	void Material::staticShutdown() noexcept
+	{
+		_staticConfig.reset();
+	}
 
 	Material::Material(const std::shared_ptr<Program>& program) noexcept
 		: _primitive(MaterialPrimitiveType::Triangle)
-		, _mainData{
-			32,  // shininess
-			0.5, // specular strenth
-			0, 0 // unused
-		}
-		, _mainHandle{ bgfx::kInvalidHandle }
 		, _program(program)
+		, _baseColor(Colors::magenta())
+		, _metallicFactor(0.F)
+		, _roughnessFactor(0.F)
+		, _normalScale(1.F)
+		, _occlusionStrength(0.F)
+		, _emissiveColor(Colors::white())
+		, _multipleScattering(false)
+		, _whiteFurnance(0.F)
+		, _opaque(false)
+		, _twoSided(false)
 	{
 		if (_program == nullptr)
 		{
 			_program = std::make_shared<Program>(StandardProgramType::Unlit);
 		}
-		createHandles();
 	}
 
 	Material::Material(const std::shared_ptr<Texture>& diffuseTexture) noexcept
@@ -56,62 +110,14 @@ namespace darmok
 	{
 		if (diffuseTexture != nullptr)
 		{
-			setTexture(TextureType::Diffuse, diffuseTexture);
+			setTexture(TextureType::Base, diffuseTexture);
 		}
 	}
 
-	Material::Material(const std::shared_ptr<Program>& program, const Color& diffuseColor) noexcept
+	Material::Material(const std::shared_ptr<Program>& program, const Color& color) noexcept
 		: Material(program)
 	{
-		setColor(ColorType::Diffuse, diffuseColor);
-	}
-
-	void Material::createHandles() noexcept
-	{
-		for (auto& pair : _materialSamplerDefinitions)
-		{
-			_textureHandles.emplace(pair.first, bgfx::createUniform(pair.second.name.c_str(), bgfx::UniformType::Sampler));
-		}
-		for (auto& pair : _materialColorDefinitions)
-		{
-			_colorHandles.emplace(pair.first, bgfx::createUniform(pair.second.name.c_str(), bgfx::UniformType::Vec4));
-		}
-		_mainHandle = bgfx::createUniform("u_material", bgfx::UniformType::Vec4);
-	}
-
-	Material::Material(const Material& other) noexcept
-		: _program(other._program)
-		, _textures(other._textures)
-		, _colors(other._colors)
-		, _mainData(other._mainData)
-		, _primitive(other._primitive)
-	{
-		createHandles();
-	}
-
-	Material::~Material()
-	{
-		destroyHandles();
-	}
-
-	void Material::destroyHandles() noexcept
-	{
-		for (auto& pair : _textureHandles)
-		{
-			bgfx::destroy(pair.second);
-		}
-		_textureHandles.clear();
-		for (auto& pair : _colorHandles)
-		{
-			bgfx::destroy(pair.second);
-		}
-		_colorHandles.clear();
-
-		if (isValid(_mainHandle))
-		{
-			bgfx::destroy(_mainHandle);
-			_mainHandle.idx = bgfx::kInvalidHandle;
-		}
+		setBaseColor(color);
 	}
 
 	bool Material::valid() const noexcept
@@ -154,6 +160,15 @@ namespace darmok
 		return *this;
 	}
 
+	bgfx::ProgramHandle Material::getProgramHandle() const noexcept
+	{
+		if (_program == nullptr)
+		{
+			return { bgfx::kInvalidHandle };
+		}
+		return _program->getHandle(_programDefines);
+	}
+
 	std::shared_ptr<Texture> Material::getTexture(TextureType type) const noexcept
 	{
 		auto itr = _textures.find(type);
@@ -164,32 +179,14 @@ namespace darmok
 		return itr->second;
 	}
 
+	Material& Material::setTexture(const std::shared_ptr<Texture>& texture) noexcept
+	{
+		return setTexture(TextureType::Base, texture);
+	}
+
 	Material& Material::setTexture(TextureType type, const std::shared_ptr<Texture>& texture) noexcept
 	{
 		_textures[type] = texture;
-		return *this;
-	}
-
-	std::optional<Color> Material::getColor(ColorType type) const noexcept
-	{
-		auto itr = _colors.find(type);
-		if (itr == _colors.end())
-		{
-			return std::nullopt;
-		}
-		return itr->second;
-	}
-
-	Material& Material::setColor(ColorType type, const std::optional<Color>& color) noexcept
-	{
-		if (color)
-		{
-			_colors[type] = color.value();
-		}
-		else
-		{
-			_colors.erase(type);
-		}
 		return *this;
 	}
 
@@ -204,74 +201,133 @@ namespace darmok
 		return *this;
 	}
 
-	uint8_t Material::getShininess() const noexcept
+	const Color& Material::getBaseColor() const noexcept
 	{
-		return uint8_t(_mainData.x);
+		return _baseColor;
 	}
 
-	Material& Material::setShininess(uint8_t v) noexcept
+	Material& Material::setBaseColor(const Color& v) noexcept
 	{
-		_mainData.x = v;
+		_baseColor = v;
 		return *this;
 	}
 
-	float Material::getSpecularStrength() const noexcept
+	float Material::getMetallicFactor() const noexcept
 	{
-		return _mainData.y;
+		return _metallicFactor;
 	}
 
-	Material& Material::setSpecularStrength(float v) noexcept
+	Material& Material::setMetallicFactor(float v) noexcept
 	{
-		_mainData.y = v;
+		_metallicFactor = v;
 		return *this;
+	}
+
+	float Material::getRoughnessFactor() const noexcept
+	{
+		return _roughnessFactor;
+	}
+
+	Material& Material::setRoughnessFactor(float v) noexcept
+	{
+		_roughnessFactor = v;
+		return *this;
+	}
+
+	float Material::getNormalScale() const noexcept
+	{
+		return _normalScale;
+	}
+
+	Material& Material::setNormalScale(float v) noexcept
+	{
+		_normalScale = v;
+		return *this;
+	}
+
+	float Material::getOcclusionStrength() const noexcept
+	{
+		return _occlusionStrength;
+	}
+
+	Material& Material::setOcclusionStrength(float v) noexcept
+	{
+		_occlusionStrength = v;
+		return *this;
+	}
+
+	const Color3& Material::getEmissiveColor() const noexcept
+	{
+		return _emissiveColor;
+	}
+
+	Material& Material::setEmissiveColor(const Color3& v) noexcept
+	{
+		_emissiveColor = v;
+		return *this;
+	}
+
+	Material& Material::setTwoSided(bool enabled) noexcept
+	{
+		_twoSided = enabled;
+		return *this;
+	}
+
+	bool Material::getTwoSided() const noexcept
+	{
+		return _twoSided;
+	}
+
+	Material& Material::setMultipleScattering(bool enabled) noexcept
+	{
+		_multipleScattering = enabled;
+		return *this;
+	}
+
+	bool Material::getMultipleScattering() const noexcept
+	{
+		return _multipleScattering;
+	}
+
+	Material& Material::setWhiteFurnanceFactor(float v) noexcept
+	{
+		_whiteFurnance = v;
+		return *this;
+	}
+
+	float Material::getWhiteFurnanceFactor() const noexcept
+	{
+		return _whiteFurnance;
 	}
 
 	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
 	{
-		for (auto& pair : _textureHandles)
+		if (_staticConfig == nullptr)
 		{
-			uint8_t stage = 0;
-			{
-				auto itr = _materialSamplerDefinitions.find(pair.first);
-				if (itr != _materialSamplerDefinitions.end())
-				{
-					stage = itr->second.stage;
-				}
-			}
-			std::shared_ptr<Texture> tex;
-			auto itr = _textures.find(pair.first);
-			if (itr != _textures.end())
-			{
-				tex = itr->second;
-			}
-			if (tex != nullptr)
-			{
-				encoder.setTexture(stage, pair.second, tex->getHandle());
-			}
+			return;
 		}
-		for (auto& pair : _colorHandles)
+		glm::vec4 hasTextures(0);
+		for (uint8_t i = 0; i < _staticConfig->samplerUniforms.size(); i++)
 		{
-			auto itr = _colors.find(pair.first);
-			Color c = Colors::magenta();
-			if (itr != _colors.end())
+			auto& def = _staticConfig->samplerUniforms[i];
+			auto tex = getTexture(def.type);
+			if (!tex)
 			{
-				c = itr->second;
+				tex = _staticConfig->defaultTexture;
 			}
-			else
-			{
-				auto itr = _materialColorDefinitions.find(pair.first);
-				if (itr != _materialColorDefinitions.end())
-				{
-					c = itr->second.defaultValue;
-				}
-			}
-			encoder.setUniform(pair.second, glm::value_ptr(Colors::normalize(c)));
+			hasTextures.x += 1 << i;
+			encoder.setTexture(def.stage, def.handle, tex->getHandle());
 		}
+		encoder.setUniform(_staticConfig->hasTexturesUniform, glm::value_ptr(hasTextures));
 
-		if (isValid(_mainHandle))
-		{
-			encoder.setUniform(_mainHandle, glm::value_ptr(_mainData));
-		}
+		auto v = Colors::normalize(getBaseColor());
+		encoder.setUniform(_staticConfig->baseColorUniform, glm::value_ptr(v));
+		v = glm::vec4(getMetallicFactor(), getRoughnessFactor(), getNormalScale(), getOcclusionStrength());
+		encoder.setUniform(_staticConfig->metallicRoughnessNormalOcclusionUniform, glm::value_ptr(v));
+		v = glm::vec4(getEmissiveColor(), 0);
+		encoder.setUniform(_staticConfig->emissiveColorUniform, glm::value_ptr(v));
+		v = glm::vec4(getMultipleScattering() ? 1.F : 0.F, getWhiteFurnanceFactor(), 0, 0);
+		encoder.setUniform(_staticConfig->multipleScatteringUniform, glm::value_ptr(v));
 
 		uint64_t state = BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
@@ -282,12 +338,12 @@ namespace darmok
 			| BGFX_STATE_BLEND_ALPHA
 			;
 
-		if (_primitive == PrimitiveType::Line)
+		if (getPrimitiveType() == MaterialPrimitiveType::Line)
 		{
 			state |= BGFX_STATE_PT_LINES;
 		}
 
 		encoder.setState(state);
-		encoder.submit(viewId, _program->getHandle(_programDefines));
+		encoder.submit(viewId, getProgramHandle());
 	}
 }

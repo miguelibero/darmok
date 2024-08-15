@@ -85,17 +85,14 @@ namespace darmok
         glm::mat4 _inverseRoot;
         std::unordered_map<std::string, std::string> _boneNames;
 
-        static const std::unordered_map<aiTextureType, MaterialTextureType> _materialTextures;
-
-        struct AssimpMaterialColor final
+        struct AssimpMaterialTexture final
         {
-            const char* name;
-            unsigned int type;
-            unsigned int idx;
-            MaterialColorType darmokType;
+            aiTextureType assimpType;
+            unsigned int assimpIndex;
+            MaterialTextureType darmokType;
         };
 
-        static const std::vector<AssimpMaterialColor> _materialColors;
+        static const std::vector<AssimpMaterialTexture> _materialTextures;
 
         std::unordered_map<const aiMesh*, std::shared_ptr<ModelMesh>> _meshes;
         std::unordered_map<const aiMaterial*, std::shared_ptr<ModelMaterial>> _materials;

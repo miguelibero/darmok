@@ -5,13 +5,14 @@
 #include <darmok/material.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/scene.hpp>
+#include <glm/gtx/matrix_operation.hpp>
+#include <glm/gtx/component_wise.hpp>
+#include "render_samplers.hpp"
 
 namespace darmok
 {
     PointLight::PointLight(float intensity) noexcept
         : _intensity(intensity)
-        , _attenuation(0)
-        , _radius(0)
         , _diffuseColor(Colors::white3())
         , _specularColor(Colors::white3())
     {
@@ -20,12 +21,6 @@ namespace darmok
     PointLight& PointLight::setIntensity(float intensity) noexcept
     {
         _intensity = intensity;
-        return *this;
-    }
-
-    PointLight& PointLight::setRadius(float radius) noexcept
-    {
-        _radius = radius;
         return *this;
     }
 
@@ -61,7 +56,9 @@ namespace darmok
 
     float PointLight::getRadius() const noexcept
     {
-        return _radius;
+        // could be calculated from the attenuation
+        float v = glm::max(1.0f, 0.05f * _intensity) / _intensity;
+        return 1.0f / sqrtf(v);
     }
 
     const glm::vec3& PointLight::getAttenuation() const noexcept
@@ -112,6 +109,7 @@ namespace darmok
         , _lightDataUniform{ bgfx::kInvalidHandle }
         , _camPosUniform{ bgfx::kInvalidHandle }
         , _pointLightBuffer{ bgfx::kInvalidHandle }
+        , _normalMatrixUniform{ bgfx::kInvalidHandle }
         , _lightCount(0)
         , _lightData(0)
         , _camPos(0)
@@ -121,6 +119,8 @@ namespace darmok
             .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
             .add(bgfx::Attrib::Color1, 4, bgfx::AttribType::Float)
             .end();
+
+        createHandles();
     }
 
     PhongLightingComponent::~PhongLightingComponent() noexcept
@@ -132,25 +132,23 @@ namespace darmok
     {
         _scene = scene;
         _cam = cam;
-
-        createHandles();
     }
 
     void PhongLightingComponent::createHandles() noexcept
     {
-        // TODO: does not work in OpenGL as the unfirm handles need to be createdd before the program
+        // TODO: does not work in OpenGL as the unfirm handles need to be created before the program
         _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-        _lightCountUniform = bgfx::createUniform("u_lightCount", bgfx::UniformType::Vec4);
-        _lightDataUniform = bgfx::createUniform("u_lightingData", bgfx::UniformType::Vec4);
+        _lightCountUniform = bgfx::createUniform("u_lightCountVec", bgfx::UniformType::Vec4);
+        _lightDataUniform = bgfx::createUniform("u_ambientLightIrradiance", bgfx::UniformType::Vec4);
         _camPosUniform = bgfx::createUniform("u_camPos", bgfx::UniformType::Vec4);
+        _normalMatrixUniform = bgfx::createUniform("u_normalMatrix", bgfx::UniformType::Mat3);
     }
 
     void PhongLightingComponent::destroyHandles() noexcept
     {
         std::vector<std::reference_wrapper<bgfx::UniformHandle>> handles = {
-            _lightCountUniform, _lightDataUniform, _camPosUniform
+            _lightCountUniform, _lightDataUniform, _camPosUniform, _normalMatrixUniform
         };
-
         for (auto& handle : handles)
         {
             if (isValid(handle))
@@ -195,9 +193,13 @@ namespace darmok
                 auto pos = trans->getWorldPosition();
                 writer.write(bgfx::Attrib::Position, index, pos);
             }
-            auto c = Colors::normalize(pointLight.getDiffuseColor()) * pointLight.getIntensity();
+            glm::vec4 c(
+                Colors::normalize(pointLight.getDiffuseColor()) * pointLight.getIntensity(),
+                pointLight.getRadius());
             writer.write(bgfx::Attrib::Color0, index, c);
-            c = Colors::normalize(pointLight.getSpecularColor()) * pointLight.getIntensity();
+            c = glm::vec4(
+                Colors::normalize(pointLight.getSpecularColor()) * pointLight.getIntensity(),
+                pointLight.getRadius());
             writer.write(bgfx::Attrib::Color1, index, c);
             index++;
         }
@@ -220,8 +222,8 @@ namespace darmok
         for (auto entity : ambientLights)
         {
             auto& ambientLight = registry.get<const AmbientLight>(entity);
-            auto c = Colors::normalize(ambientLight.getColor());
-            _lightData += glm::vec4(c, 0.F) * ambientLight.getIntensity();
+            auto c = Colors::normalize(ambientLight.getColor()) * ambientLight.getIntensity();
+            _lightData += glm::vec4(c, 0.F);
         }
     }
 
@@ -257,23 +259,15 @@ namespace darmok
 
     void PhongLightingComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) noexcept
     {
-        if (isValid(_lightCountUniform))
+        encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
+        encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
+        encoder.setBuffer(RenderSamplers::LIGHTS_POINTLIGHTS, _pointLightBuffer, bgfx::Access::Read);
+        encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
+
+        if (auto trans = _scene->getComponent<Transform>(entity))
         {
-            encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
-        }
-        if (isValid(_lightDataUniform))
-        {
-            encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
-        }
-        if (isValid(_pointLightBuffer))
-        {
-            static const uint8_t lightsBufferStage = 6;
-            encoder.setBuffer(lightsBufferStage, _pointLightBuffer, bgfx::Access::Read);
-        }
-        // could be made generic
-        if (isValid(_camPosUniform))
-        {
-            encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
+            auto mtx = glm::transpose(glm::adjugate(glm::mat3(trans->getWorldMatrix())));
+            encoder.setUniform(_normalMatrixUniform, glm::value_ptr(mtx));
         }
     }
 }

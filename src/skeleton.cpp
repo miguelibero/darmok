@@ -50,7 +50,6 @@ namespace darmok
         if (!_material)
         {
             _material = std::make_shared<Material>();
-            _material->setColor(MaterialColorType::Diffuse, Colors::magenta());
         }
         if (!_boneMesh)
         {

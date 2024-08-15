@@ -50,20 +50,14 @@ namespace
 				.setPosition({ 1, 1, -2 });
 			registry.emplace<PointLight>(light);
 
-			auto greenTex = getAssets().getColorTextureLoader()(Colors::green());
-			auto greenMat = std::make_shared<Material>(prog);
-			greenMat->setTexture(MaterialTextureType::Diffuse, greenTex);
-
+			auto greenMat = std::make_shared<Material>(prog, Colors::green());
 			auto cubeMesh = MeshData(Cube()).createMesh(layout);
 			auto cube = registry.create();
 			registry.emplace<Renderable>(cube, std::move(cubeMesh), greenMat);
 			registry.emplace<Transform>(cube)
 				.setPosition({ 1.5F, 0, 0 });
 
-			auto redTex = getAssets().getColorTextureLoader()(Colors::red());
-			auto redMat = std::make_shared<Material>(prog);
-			redMat->setTexture(MaterialTextureType::Diffuse, redTex);
-
+			auto redMat = std::make_shared<Material>(prog, Colors::red());
 			auto sphereMesh = MeshData(Sphere()).createMesh(layout);
 			auto sphere = registry.create();
 			registry.emplace<Renderable>(sphere, std::move(sphereMesh), redMat);

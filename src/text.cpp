@@ -135,10 +135,13 @@ namespace darmok
 		{
 			return false;
 		}
-		_mesh->render(encoder, {
+		if (!_mesh->render(encoder, {
 			.numVertices = _vertexNum,
 			.numIndices = _indexNum,
-		});
+			}))
+		{
+			return false;
+		}
 		_font->getMaterial().renderSubmit(viewId, encoder);
 		return true;
 	}
@@ -264,7 +267,7 @@ namespace darmok
 
 		// TODO: maybe add getter of the size to the font interface
 		// to not assume that the size is the diffuse texture size
-		auto tex = mat.getTexture(MaterialTextureType::Diffuse);
+		auto tex = mat.getTexture(MaterialTextureType::Base);
 		auto texScale = glm::vec2(1);
 		if (tex)
 		{

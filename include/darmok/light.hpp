@@ -18,8 +18,8 @@ namespace darmok
         PointLight(float intensity = 1.F) noexcept;
 
         PointLight& setIntensity(float intensity) noexcept;
-        PointLight& setRadius(float radius) noexcept;
         PointLight& setAttenuation(const glm::vec3& attn) noexcept;
+
         PointLight& setColor(const Color3& color) noexcept;
         PointLight& setDiffuseColor(const Color3& color) noexcept;
         PointLight& setSpecularColor(const Color3& color) noexcept;
@@ -32,7 +32,6 @@ namespace darmok
     private:
         float _intensity;
         glm::vec3 _attenuation;
-        float _radius;
         Color3 _diffuseColor;
         Color3 _specularColor;
     };
@@ -70,6 +69,7 @@ namespace darmok
         bgfx::UniformHandle _lightCountUniform;
         bgfx::UniformHandle _lightDataUniform;
         bgfx::UniformHandle _camPosUniform;
+        bgfx::UniformHandle _normalMatrixUniform;
         bgfx::DynamicVertexBufferHandle _pointLightBuffer;
 
         bgfx::VertexLayout _pointLightsLayout;

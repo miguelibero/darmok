@@ -24,14 +24,15 @@ namespace darmok
 {
     struct DARMOK_EXPORT ModelPointLight final
     {
-        glm::vec3 attenuation;
+        float intensity;
         Color3 diffuseColor;
         Color3 specularColor;
+        glm::vec3 attenuation;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(attenuation, diffuseColor, specularColor);
+            archive(intensity, diffuseColor, specularColor, attenuation);
         }
     };
 
@@ -88,9 +89,16 @@ namespace darmok
         std::string program;
         StandardProgramType standardProgram = StandardProgramType::Unlit;
         MaterialPrimitiveType primitiveType = MaterialPrimitiveType::Triangle;
-        std::unordered_map<MaterialTextureType, std::vector<ModelTexture>> textures;
-        std::unordered_map<MaterialColorType, Color> colors;
-        float shininess = 1.F;
+        std::unordered_map<MaterialTextureType, ModelTexture> textures;
+
+        Color baseColor = Colors::white();
+        float metallicFactor = 0.F;
+        float roughnessFactor = 0.F;
+        float normalScale = 0.F;
+        float occlusionStrength = 0.F;
+        Color3 emissiveColor = Colors::white();
+        bool twoSided = false;
+
         using BlendMode = ModelMaterialBlendMode;
         BlendMode blendMode = BlendMode::Default;
 
@@ -102,8 +110,13 @@ namespace darmok
                 standardProgram,
                 primitiveType,
                 textures,
-                colors,
-                shininess,
+                baseColor,
+                metallicFactor,
+                roughnessFactor,
+                normalScale,
+                occlusionStrength,
+                emissiveColor,
+                twoSided,
                 blendMode
             );
         }

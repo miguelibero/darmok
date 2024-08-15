@@ -60,8 +60,6 @@ namespace darmok::physics3d
         if (_config.material == nullptr)
         {
             _config.material = std::make_shared<Material>();
-            auto diffuse = app.getAssets().getColorTextureLoader()(Colors::white());
-            _config.material->setTexture(MaterialTextureType::Diffuse, diffuse);
         }
         _vertexLayout = _config.material->getProgram()->getVertexLayout();
         _cam = cam;
@@ -230,11 +228,10 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::renderSubmit(const Material& mat)
     {
-        static const MaterialColorType colorType = MaterialColorType::Diffuse;
-        auto color = _config.material->getColor(colorType).value_or(Colors::white());
+        Color color = _config.material->getBaseColor();
         color.a *= _config.alpha;
         Material mat2(mat);
-        mat2.setColor(colorType, color);
+        mat2.setBaseColor(color);
         mat2.renderSubmit(_viewId, _encoder.value());
     }
 
@@ -332,10 +329,10 @@ namespace darmok::physics3d
         _encoder->setTransform(glm::value_ptr(transMtx));
 
         batch.mesh->render(_encoder.value());
-        auto oldColor = _config.material->getColor(MaterialColorType::Diffuse);
-        _config.material->setColor(MaterialColorType::Diffuse, JoltUtils::convert(inModelColor));
+        Color oldColor = _config.material->getBaseColor();
+        _config.material->setBaseColor(JoltUtils::convert(inModelColor));
         renderMesh(*batch.mesh, inDrawMode);
-        _config.material->setColor(MaterialColorType::Diffuse, oldColor);
+        _config.material->setBaseColor(oldColor);
     }
 
     PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept

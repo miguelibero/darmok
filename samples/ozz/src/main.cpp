@@ -91,7 +91,7 @@ namespace
 				{
 					auto mat = renderable->getMaterial();
 					mat->setProgramDefine("SKINNING_ENABLED");
-					mat->setTexture(MaterialTextureType::Diffuse, modelTex);
+					mat->setTexture(modelTex);
 				}
 			});
 

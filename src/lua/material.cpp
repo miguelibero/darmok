@@ -14,17 +14,11 @@ namespace darmok
 		});
 
 		lua.new_enum<MaterialTextureType>("MaterialTextureType", {
-			{ "Diffuse", MaterialTextureType::Diffuse },
-			{ "Specular", MaterialTextureType::Specular },
+			{ "Base", MaterialTextureType::Base },
+			{ "MetallicRoughness", MaterialTextureType::MetallicRoughness },
 			{ "Normal", MaterialTextureType::Normal },
-		});
-		lua.new_enum<MaterialColorType>("MaterialColorType", {
-			{ "Diffuse", MaterialColorType::Diffuse },
-			{ "Specular", MaterialColorType::Specular },
-			{ "Ambient", MaterialColorType::Ambient },
-			{ "Emissive", MaterialColorType::Emissive },
-			{ "Transparent", MaterialColorType::Transparent },
-			{ "Reflective", MaterialColorType::Reflective },
+			{ "Occlusion", MaterialTextureType::Occlusion },
+			{ "Emissive", MaterialTextureType::Emissive },
 		});
 
 		lua.new_usertype<Material>("Material",
@@ -37,19 +31,27 @@ namespace darmok
 				[](const std::shared_ptr<Program>& prog, const VarLuaTable<Color>& color)
 					{ return std::make_shared<Material>(prog, LuaGlm::tableGet(color)); }
 			),
-			"shininess", sol::property(&Material::getShininess, &Material::setShininess),
 			"program", sol::property(&Material::getProgram, &Material::setProgram),
-			"specular_strength", sol::property(&Material::getSpecularStrength, &Material::setSpecularStrength),
 			"primitive_type", sol::property(&Material::getPrimitiveType, &Material::setPrimitiveType),
-			"set_texture", &Material::setTexture,
+			"set_texture", sol::overload(
+				sol::resolve<Material&(const std::shared_ptr<Texture>&)>(&Material::setTexture),
+				sol::resolve<Material&(MaterialTextureType, const std::shared_ptr<Texture>&)>(&Material::setTexture)
+			), 
 			"get_texture", &Material::getTexture,
-			"set_color", &Material::setColor,
-			"get_color", &Material::getColor,
 			"set_define", sol::overload(
 				&Material::setProgramDefine,
 				[](Material& mat, const std::string& define) { return mat.setProgramDefine(define); }
 			),
-			"set_defines", &Material::setProgramDefines
+			"set_defines", &Material::setProgramDefines,
+			"base_color", sol::property(&Material::getBaseColor, &Material::setBaseColor),
+			"metallic_factor", sol::property(&Material::getMetallicFactor, &Material::setMetallicFactor),
+			"roughness_factor", sol::property(&Material::getRoughnessFactor, &Material::setRoughnessFactor),
+			"normal_scale", sol::property(&Material::getNormalScale, &Material::setNormalScale),
+			"occlusion_strength", sol::property(&Material::getOcclusionStrength, &Material::setOcclusionStrength),
+			"emissive_color", sol::property(&Material::getEmissiveColor, &Material::setEmissiveColor),
+			"two_sided", sol::property(&Material::getTwoSided, &Material::setTwoSided),
+			"multiple_scattering", sol::property(&Material::getMultipleScattering, &Material::setMultipleScattering),
+			"white_furnance_factor", sol::property(&Material::getWhiteFurnanceFactor, &Material::setWhiteFurnanceFactor)
 		);
 	}
 }

@@ -328,18 +328,21 @@ namespace darmok
             prog = std::make_shared<Program>(modelMat->standardProgram);
         }
         auto mat = std::make_shared<Material>(prog);
-        for (auto& elm : modelMat->textures)
+        for (auto& [type, modelTex] : modelMat->textures)
         {
-            // TODO: support for multiple textures of the same type
-            if (!elm.second.empty())
+            if (modelTex.image)
             {
-                mat->setTexture(elm.first, loadTexture(elm.second.at(0).image));
+                mat->setTexture(type, loadTexture(modelTex.image));
             }
         }
-        for (auto& elm : modelMat->colors)
-        {
-            mat->setColor(elm.first, elm.second);
-        }
+        mat->setBaseColor(modelMat->baseColor)
+            .setMetallicFactor(modelMat->metallicFactor)
+            .setRoughnessFactor(modelMat->roughnessFactor)
+            .setNormalScale(modelMat->normalScale)
+            .setOcclusionStrength(modelMat->occlusionStrength)
+            .setEmissiveColor(modelMat->emissiveColor)
+            .setTwoSided(modelMat->twoSided);
+
         _materials.emplace(modelMat, mat);
         return mat;
     }
@@ -405,6 +408,7 @@ namespace darmok
     void ModelSceneConfigurer::configureEntity(const ModelPointLight& light, Entity entity) noexcept
     {
         _config.scene.addComponent<PointLight>(entity)
+            .setIntensity(light.intensity)
             .setAttenuation(light.attenuation)
             .setDiffuseColor(light.diffuseColor)
             .setSpecularColor(light.specularColor);

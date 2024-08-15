@@ -366,7 +366,13 @@ namespace darmok
         if (!output.defines.empty())
         {
             args.emplace_back("--define");
-            args.emplace_back(StringUtils::join(",", output.defines.begin(), output.defines.end()));
+            std::vector<std::string> realDefines;
+            realDefines.reserve(output.defines.size());
+            for (auto& define : output.defines)
+            {
+                realDefines.push_back(_definePrefix + define);
+            }
+            args.emplace_back(StringUtils::join(",", realDefines));
         }
         for (auto& include : _includes)
         {
@@ -420,6 +426,7 @@ namespace darmok
     }
 
     const std::regex ShaderCompiler::_ifdefRegex = std::regex("#(if|ifdef|ifndef) !?([^\\s]+)");
+    const std::string ShaderCompiler::_definePrefix = "DARMOK_VARIANT_";
 
     size_t ShaderCompiler::getDefines(std::istream& in, Defines& defines) noexcept
     {
@@ -433,10 +440,11 @@ namespace darmok
                 continue;
             }
             auto define = match[2].str();
-            if (define.starts_with("BGFX_"))
+            if (!define.starts_with(_definePrefix))
             {
                 continue;
             }
+            define = define.substr(_definePrefix.size());
             if (defines.insert(define).second)
             {
                 count++;
@@ -504,7 +512,7 @@ namespace darmok
                     .path = getOutputPath(basePath, profileExt, defines),
                     .profile = profile,
                     .defines = defines,
-                    });
+                });
             }
         }
         return outputs;

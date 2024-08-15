@@ -78,7 +78,13 @@ namespace darmok
             {
                 Defines defines = vertDefines;
                 defines.insert(fragDefines.begin(), fragDefines.end());
-                _handles[defines] = bgfx::createProgram(vertHandle, fragHandle);
+                auto handle = bgfx::createProgram(vertHandle, fragHandle);
+                if (!isValid(handle))
+                {
+                    auto definesStr = StringUtils::join(", ", defines.begin(), defines.end());
+                    throw std::runtime_error("failed to create program: " + definesStr);
+                }
+                _handles[defines] = handle;
                 _allDefines.insert(defines.begin(), defines.end());
             }
         }

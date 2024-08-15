@@ -134,7 +134,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 ## Interesting Related Projects
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced
-* [FrameGraph](https://github.com/skaarj1989/FrameGraph) renderer agnostic frame graph library 
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
 * [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx

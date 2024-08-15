@@ -17,6 +17,9 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
+#include <assimp/GltfMaterial.h>
+
+#include <glm/gtx/component_wise.hpp>
 
 namespace darmok
 {
@@ -64,7 +67,12 @@ namespace darmok
             };
         }
 
-        static inline Color3 convert(const aiColor3D& c) noexcept
+        static inline float getIntensity(const aiColor3D& c) noexcept
+        {
+            return glm::compMax(convert(c));
+        }
+
+        static inline Color3 convert(aiColor3D c) noexcept
         {
             return Color3
             {
@@ -228,26 +236,15 @@ namespace darmok
             auto& assimpMat = *scene.mMaterials[i];
             for (auto& elm : _materialTextures)
             {
-                auto& type = elm.first;
-                auto size = assimpMat.GetTextureCount(type);
-                for (size_t i = 0; i < size; i++)
+                aiString path("");
+                if (assimpMat.GetTexture(elm.assimpType, elm.assimpIndex, &path) != AI_SUCCESS)
                 {
-                    aiString path("");
-                    unsigned int uvindex = 0;
-                    ai_real blend = 1.F;
-                    aiTextureMapping mapping = aiTextureMapping::aiTextureMapping_UV;
-                    aiTextureOp operation = aiTextureOp::aiTextureOp_Multiply;
-                    assimpMat.GetTexture(type, i, &path,
-                        &mapping,
-                        &uvindex,
-                        &blend,
-                        &operation
-                    );
-                    auto embeddedTex = scene.GetEmbeddedTexture(path.C_Str());
-                    if (!embeddedTex)
-                    {
-                        paths.emplace_back(path.C_Str());
-                    }
+                    continue;
+                }
+                auto embeddedTex = scene.GetEmbeddedTexture(path.C_Str());
+                if (!embeddedTex)
+                {
+                    paths.emplace_back(path.C_Str());
                 }
             }
         }
@@ -370,57 +367,39 @@ namespace darmok
                 assimpLight.mAttenuationLinear,
                 assimpLight.mAttenuationQuadratic
             );
-            pointLight.diffuseColor = AssimpUtils::convert(assimpLight.mColorDiffuse);
-            pointLight.specularColor = AssimpUtils::convert(assimpLight.mColorSpecular);
+            pointLight.intensity = std::max(
+                AssimpUtils::getIntensity(assimpLight.mColorDiffuse),
+                AssimpUtils::getIntensity(assimpLight.mColorSpecular));
+            float f = 1.F / pointLight.intensity;
+            pointLight.diffuseColor = AssimpUtils::convert(assimpLight.mColorDiffuse * f);
+            pointLight.specularColor = AssimpUtils::convert(assimpLight.mColorSpecular * f);
         }
         else if (assimpLight.mType == aiLightSource_AMBIENT)
         {
             auto& ambLight = lightNode.ambientLight.emplace();
-            ambLight.color = AssimpUtils::convert(assimpLight.mColorAmbient);
+            ambLight.intensity = AssimpUtils::getIntensity(assimpLight.mColorAmbient);
+            ambLight.color = AssimpUtils::convert(assimpLight.mColorAmbient * (1.F / ambLight.intensity));
         }
     }
 
     void AssimpModelConverter::update(ModelTexture& modelTex, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
     {
         aiString path("");
-        unsigned int uvindex = 0;
-        ai_real blend = 1.F;
-        aiTextureMapping mapping = aiTextureMapping::aiTextureMapping_UV;
-        aiTextureOp operation = aiTextureOp::aiTextureOp_Multiply;
-
-        assimpMat.GetTexture(type, index, &path,
-            &mapping,
-            &uvindex,
-            &blend,
-            &operation
-        );
-
-        modelTex.image = getImage(path.C_Str());
-
-        // assimpMat.Get(AI_MATKEY_BASE_COLOR)
-
-        // TODO: add support for other texture params
+        if (assimpMat.GetTexture(type, index, &path) == AI_SUCCESS)
+        {
+            modelTex.image = getImage(path.C_Str());
+        }
     }
 
-    const std::unordered_map<aiTextureType, MaterialTextureType> AssimpModelConverter::_materialTextures =
+    const std::vector<AssimpModelConverter::AssimpMaterialTexture> AssimpModelConverter::_materialTextures =
     {        
-        { aiTextureType_DIFFUSE, MaterialTextureType::Diffuse },
-        { aiTextureType_SPECULAR, MaterialTextureType::Specular },
-        { aiTextureType_NORMALS, MaterialTextureType::Normal },
-
-        // TODO: temporary
-        { aiTextureType_UNKNOWN, MaterialTextureType::Diffuse },
-        { aiTextureType_BASE_COLOR, MaterialTextureType::Diffuse },
-    };
-
-    const std::vector<AssimpModelConverter::AssimpMaterialColor> AssimpModelConverter::_materialColors =
-    {
-        { AI_MATKEY_COLOR_DIFFUSE, MaterialColorType::Diffuse },
-        { AI_MATKEY_COLOR_AMBIENT, MaterialColorType::Ambient },
-        { AI_MATKEY_COLOR_SPECULAR, MaterialColorType::Specular },
-        { AI_MATKEY_COLOR_EMISSIVE, MaterialColorType::Emissive },
-        { AI_MATKEY_COLOR_TRANSPARENT, MaterialColorType::Transparent },
-        { AI_MATKEY_COLOR_REFLECTIVE, MaterialColorType::Reflective },
+        { AI_MATKEY_BASE_COLOR_TEXTURE, MaterialTextureType::Base },
+        { AI_MATKEY_METALLIC_TEXTURE, MaterialTextureType::MetallicRoughness },
+        { AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, MaterialTextureType::MetallicRoughness },
+        { aiTextureType_NORMALS, 0, MaterialTextureType::Normal },
+        { aiTextureType_AMBIENT_OCCLUSION, 0, MaterialTextureType::Occlusion },
+        { aiTextureType_LIGHTMAP, 0, MaterialTextureType::Occlusion },
+        { aiTextureType_EMISSIVE, 0, MaterialTextureType::Emissive },
     };
 
     void AssimpModelConverter::update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept
@@ -430,45 +409,55 @@ namespace darmok
 
         for (auto& elm : _materialTextures)
         {
-            auto size = assimpMat.GetTextureCount(elm.first);
-            auto& modelTextures = modelMat.textures[elm.second];
-            for(size_t i = 0; i < size; i++)
-            {
-                auto& modelTexture = modelTextures.emplace_back();
-                update(modelTexture, assimpMat, elm.first, 0);
-            }
+            auto& modelTexture = modelMat.textures[elm.darmokType];
+            update(modelTexture, assimpMat, elm.assimpType, elm.assimpIndex);
         }
 
-        float shininess;
-        if (assimpMat.Get(AI_MATKEY_SHININESS, shininess))
+        // TODO: convert aiTextureType_METALNESS + aiTextureType_DIFFUSE_ROUGHNESS
+        // TODO: also other conversions from FBX
+
+        assimpMat.Get(AI_MATKEY_TWOSIDED, modelMat.twoSided);
+
+        aiColor4D baseColorFactor;
+        if (assimpMat.Get(AI_MATKEY_BASE_COLOR, baseColorFactor) == AI_SUCCESS)
         {
-            modelMat.shininess = shininess;
+            modelMat.baseColor = AssimpUtils::convert(baseColorFactor);
         }
-
-        float opacity = 1.F;
-        assimpMat.Get(AI_MATKEY_OPACITY, opacity);
-        aiColor3D aiColor;
-
-        for (auto& elm : _materialColors)
+        ai_real v;
+        if (assimpMat.Get(AI_MATKEY_METALLIC_FACTOR, v) == AI_SUCCESS)
         {
-            if (!assimpMat.Get(elm.name, elm.type, elm.idx, aiColor))
-            {
-                continue;
-            }
-            auto color = Color(AssimpUtils::convert(aiColor), Colors::getMaxValue() * opacity);
-            modelMat.colors[elm.darmokType] = color;
+            modelMat.metallicFactor = glm::clamp(v, 0.0f, 1.0f);
         }
-        
+        if (assimpMat.Get(AI_MATKEY_ROUGHNESS_FACTOR, v) == AI_SUCCESS)
+        {
+            modelMat.roughnessFactor = glm::clamp(v, 0.0f, 1.0f);
+        }
+        if (assimpMat.Get(AI_MATKEY_GLTF_TEXTURE_SCALE(aiTextureType_NORMALS, 0), v) == AI_SUCCESS)
+        {
+            modelMat.normalScale = v;
+        }
+        if (assimpMat.Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(aiTextureType_LIGHTMAP, 0), v) == AI_SUCCESS)
+        {
+            modelMat.occlusionStrength = glm::clamp(v, 0.0f, 1.0f);
+        }
+        aiColor3D emissiveColor;
+        if (assimpMat.Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
+        {
+            modelMat.emissiveColor = AssimpUtils::convert(emissiveColor);
+        }
+
         int blendMode = aiBlendMode_Default;
-        assimpMat.Get(AI_MATKEY_BLEND_FUNC, blendMode);
-        switch (blendMode)
+        if (assimpMat.Get(AI_MATKEY_BLEND_FUNC, blendMode) == AI_SUCCESS)
         {
+            switch (blendMode)
+            {
             case aiBlendMode_Additive:
-            modelMat.blendMode = ModelMaterialBlendMode::Additive;
-            break;
+                modelMat.blendMode = ModelMaterialBlendMode::Additive;
+                break;
             case aiBlendMode_Default:
-            modelMat.blendMode = ModelMaterialBlendMode::Default;
-            break;
+                modelMat.blendMode = ModelMaterialBlendMode::Default;
+                break;
+            }
         }
     }
 

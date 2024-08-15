@@ -19,20 +19,18 @@ namespace darmok
 {
     class Texture;
     class Program;
+    class App;
 
     class DARMOK_EXPORT Material final
     {
     public:
-        using ColorType = MaterialColorType;
         using TextureType = MaterialTextureType;
         using PrimitiveType = MaterialPrimitiveType;
 
-        Material(const std::shared_ptr<Texture>& diffuseTexture = nullptr) noexcept;
+        Material(const std::shared_ptr<Texture>& texture = nullptr) noexcept;
         Material(const std::shared_ptr<Program>& program) noexcept;
-        Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture) noexcept;
-        Material(const std::shared_ptr<Program>& program, const Color& diffuseColor) noexcept;
-        ~Material();
-        Material(const Material& other) noexcept;
+        Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept;
+        Material(const std::shared_ptr<Program>& program, const Color& color) noexcept;
 
         bool valid() const noexcept;
 
@@ -42,39 +40,69 @@ namespace darmok
 
         std::shared_ptr<Program> getProgram() const noexcept;
         Material& setProgram(const std::shared_ptr<Program>& prog) noexcept;
+        bgfx::ProgramHandle getProgramHandle() const noexcept;
 
-        std::shared_ptr<Texture> getTexture(TextureType type) const noexcept;
-        Material& setTexture(TextureType type, const std::shared_ptr<Texture>& texture) noexcept;
-        
-        std::optional<Color> getColor(ColorType type) const noexcept;
-        Material& setColor(ColorType type, const std::optional<Color>& color) noexcept;
-        
         PrimitiveType getPrimitiveType() const noexcept;
         Material& setPrimitiveType(PrimitiveType type) noexcept;
-        
-        uint8_t getShininess() const noexcept;
-        Material& setShininess(uint8_t v) noexcept;
 
-        float getSpecularStrength() const noexcept;
-        Material& setSpecularStrength(float v) noexcept;
+        std::shared_ptr<Texture> getTexture(TextureType type) const noexcept;
+        Material& setTexture(const std::shared_ptr<Texture>& texture) noexcept;
+        Material& setTexture(TextureType type, const std::shared_ptr<Texture>& texture) noexcept;
+        
+        const Color& getBaseColor() const noexcept;
+        Material& setBaseColor(const Color& v) noexcept;
+
+        float getMetallicFactor() const noexcept;
+        Material& setMetallicFactor(float v) noexcept;
+
+        float getRoughnessFactor() const noexcept;
+        Material& setRoughnessFactor(float v) noexcept;
+
+        float getNormalScale() const noexcept;
+        Material& setNormalScale(float v) noexcept;
+
+        float getOcclusionStrength() const noexcept;
+        Material& setOcclusionStrength(float v) noexcept;
+
+        const Color3& getEmissiveColor() const noexcept;
+        Material& setEmissiveColor(const Color3& v) noexcept;
+
+        Material& setTwoSided(bool enabled) noexcept;
+        bool getTwoSided() const noexcept;
+
+        Material& setMultipleScattering(bool enabled) noexcept;
+        bool getMultipleScattering() const noexcept;
+
+        Material& setWhiteFurnanceFactor(float v) noexcept;
+        float getWhiteFurnanceFactor() const noexcept;
 
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+
+        static void staticInit(App& app) noexcept;
+        static void staticShutdown() noexcept;
 
     private:
         std::shared_ptr<Program> _program;
         ProgramDefines _programDefines;
-        std::unordered_map<TextureType, bgfx::UniformHandle> _textureHandles;
-        std::unordered_map<ColorType, bgfx::UniformHandle> _colorHandles;
-        bgfx::UniformHandle _mainHandle;
 
         std::unordered_map<TextureType, std::shared_ptr<Texture>> _textures;
-        std::unordered_map<ColorType, Color> _colors;
 
-        glm::vec4 _mainData;
+        Color _baseColor;
+        float _metallicFactor;
+        float _roughnessFactor;
+        float _normalScale;
+        float _occlusionStrength;
+        Color3 _emissiveColor;
+        bool _opaque;
+        bool _twoSided;
+
+        bool _multipleScattering;
+        float _whiteFurnance;
+
         PrimitiveType _primitive;
 
-        void createHandles() noexcept;
-        void destroyHandles() noexcept;
+        struct StaticConfig;
+        static std::unique_ptr<StaticConfig> _staticConfig;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader

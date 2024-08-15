@@ -4,7 +4,7 @@ $output v_color0, v_texcoord0
 #include <bgfx_shader.sh>
 
 #if SKINNING_ENABLED
-#include <darmok_skinning.include.sc>
+#include <darmok_skinning.sc>
 #endif
 
 void main()
@@ -14,6 +14,6 @@ void main()
 	pos = applySkinning(pos, a_indices, a_weight);
 #endif
 	gl_Position = mul(u_modelViewProj, pos);
-	v_color0    = a_color0;
+	v_color0 = a_color0;
 	v_texcoord0 = a_texcoord0;
 }

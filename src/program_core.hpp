@@ -56,6 +56,7 @@ namespace darmok
         
         static const std::regex _includeRegex;
         static const std::regex _ifdefRegex;
+        static const std::string _definePrefix;
         static const std::vector<std::string> _profiles;
         static const std::unordered_map<std::string, std::string> _profileExtensions;
         static const std::string _binExt;

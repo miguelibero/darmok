@@ -160,7 +160,7 @@ namespace darmok
 		if (!_texture || _texture->getSize() != atlas.image.getSize())
 		{
 			_texture = std::make_shared<Texture>(atlas.image.getTextureConfig());
-			_material.setTexture(MaterialTextureType::Diffuse, _texture);
+			_material.setTexture(MaterialTextureType::Base, _texture);
 		}
 		_texture->update(atlas.image.getData());
 

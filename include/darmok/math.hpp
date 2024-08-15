@@ -34,40 +34,6 @@ namespace darmok
 			return true;
 		}
 
-		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
-		static T max(const glm::vec<L, T, Q>& v) noexcept
-		{
-			using vec = glm::vec<L, T, Q>;
-			using val = T;
-			val result = std::numeric_limits<val>::min();
-			for (glm::length_t i = 0; i < L; ++i)
-			{
-				auto j = v[i];
-				if (j > result)
-				{
-					result = j;
-				}
-			}
-			return result;
-		}
-
-		template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
-		static T min(const glm::vec<L, T, Q>& v) noexcept
-		{
-			using vec = glm::vec<L, T, Q>;
-			using val = T;
-			val result = std::numeric_limits<val>::max();
-			for (glm::length_t i = 0; i < L; i++)
-			{
-				auto j = v[i];
-				if (j < result)
-				{
-					result = j;
-				}
-			}
-			return result;
-		}
-
 		static bool almostEqual(float a, float b, int factor = 1) noexcept;
 		static bool almostZero(float a, int factor = 1) noexcept;
 		static [[nodiscard]] glm::mat4 flipHandedness(const glm::mat4& mat) noexcept;

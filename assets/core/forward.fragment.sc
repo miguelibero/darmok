@@ -1,45 +1,67 @@
-$input v_position, v_normal, v_color0, v_texcoord0, v_viewDir
+$input v_position, v_normal, v_tangent, v_texcoord0
+
+// all unit-vectors need to be normalized in the fragment shader, the interpolation of vertex shader output doesn't preserve length
+
+// define samplers and uniforms for retrieving material parameters
+#define READ_MATERIAL
 
 #include <bgfx_shader.sh>
-#include <darmok_phong_lighting.include.sc>
+#include <bgfx_compute.sh>
+#include <darmok_util.sc>
+#include <darmok_pbr.sc>
+#include <darmok_lights.sc>
 
-SAMPLER2D(s_texColor, 0);
-
-uniform vec4 u_diffuseColor;
-uniform vec4 u_specularColor;
-
-// https://learnopengl.com/Lighting/Basic-Lighting
+uniform vec4 u_camPos;
 
 void main()
 {
-	vec4 base = v_color0;
-#ifndef TEXTURE_DISABLED
-	base = base * texture2D(s_texColor, v_texcoord0);
-#endif
-	vec3 ambient = getAmbientLight().color;
+    PBRMaterial mat = pbrMaterial(v_texcoord0);
+    // convert normal map from tangent space -> world space (= space of v_tangent, etc.)
+    vec3 N = convertTangentNormal(v_normal, v_tangent, mat.normal);
+    mat.a = specularAntiAliasing(N, mat.a);
 
-	vec3 diffuse = vec3_splat(0);
-	vec3 specular = vec3_splat(0);
-	Material material = getMaterial();
-	vec3 norm = normalize(v_normal);
+    // shading
 
-	uint c = getPointLightCount();
-    for(uint i = 0; i < c; i++)
+    vec3 camPos = u_camPos.xyz;
+    vec3 fragPos = v_position;
+
+    vec3 V = normalize(camPos - fragPos);
+    float NoV = abs(dot(N, V)) + 1e-5;
+
+    if(whiteFurnaceEnabled())
     {
-		PointLight light = getPointLight(i);
+        mat.F0 = vec3_splat(1.0);
+        vec3 msFactor = multipleScatteringFactor(mat, NoV);
+        vec3 radianceOut = whiteFurnace(NoV, mat) * msFactor;
+        gl_FragColor = vec4(radianceOut, 1.0);
+        return;
+    }
 
-		vec3 lightDir = normalize(light.position - v_position);
-		float diff = max(dot(norm, lightDir), 0.0);
-		diffuse += diff * light.diffuse;
+    vec3 msFactor = multipleScatteringFactor(mat, NoV);
 
-		vec3 reflectDir = reflect(-lightDir, norm);  
-		float spec = pow(max(dot(v_viewDir, reflectDir), 0.0), material.shininess);
-		specular += material.specularStrength * spec * light.specular;
-	}
-	
-	diffuse *= u_diffuseColor.xyz;
-	specular *= u_specularColor.xyz;
+    vec3 radianceOut = vec3_splat(0.0);
 
-	gl_FragColor.rgb = base.rgb * (ambient + diffuse + specular);
-	gl_FragColor.a = base.a;
+    uint lights = pointLightCount();
+    for(uint i = 0; i < lights; i++)
+    {
+        PointLight light = getPointLight(i);
+        float dist = distance(light.position, fragPos);
+        float attenuation = smoothAttenuation(dist, light.radius);
+        if(attenuation > 0.0)
+        {
+            vec3 L = normalize(light.position - fragPos);
+            vec3 radianceIn = light.intensity * attenuation;
+            float NoL = saturate(dot(N, L));
+            radianceOut += BRDF(V, L, N, NoV, NoL, mat) * msFactor * radianceIn * NoL;
+        }
+    }
+
+    radianceOut += getAmbientLight().irradiance * mat.diffuseColor * mat.occlusion;
+    radianceOut += mat.emissive;
+
+    // output goes straight to HDR framebuffer, no clamping
+    // tonemapping happens in final blit
+
+    gl_FragColor.rgb = radianceOut;
+    gl_FragColor.a = mat.albedo.a;
 }

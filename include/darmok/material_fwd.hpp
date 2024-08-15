@@ -4,21 +4,11 @@ namespace darmok
 {
     enum class MaterialTextureType
     {
-        Unknown,
-        Diffuse,
-        Specular,
+        Base,
+        MetallicRoughness,
         Normal,
-        Count,
-    };
-
-    enum class MaterialColorType
-    {
-        Diffuse,
-        Specular,
-        Ambient,
-        Emissive,
-        Transparent,
-        Reflective,
+        Occlusion,
+        Emissive
     };
 
     enum class MaterialPrimitiveType

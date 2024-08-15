@@ -8,14 +8,13 @@
             "type": "float",
             "num": 3
         },
+        "tangent": { 
+            "type": "float",
+            "num": 3
+        },
         "texCoord0": { 
             "type": "float",
             "num": 2
-        },
-        "color0": { 
-            "type": "uint8",
-            "num": 4,
-            "normalize": true
         },
         "indices": {
             "type": "float",
@@ -29,8 +28,8 @@
     "fragment": [
         "position",
         "normal",
+        "tangent",
         "texCoord0",
-        "color0",
-        ["viewDir", 3]
+        "color0"
     ]
 }

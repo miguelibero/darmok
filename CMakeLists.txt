@@ -85,8 +85,11 @@ darmok_process_assets(
   INPUT ${PROJECT_SOURCE_DIR}/assets/core
   OUTPUT include/private/generated
   ASSETS
-    darmok_phong_lighting.include.sc
-    darmok_skinning.include.sc
+    darmok_lights.sc
+    darmok_pbr.sc
+    darmok_samplers.sc
+    darmok_skinning.sc
+    darmok_util.sc
     darmok-import.json
     forward.fragment.sc
     forward.vertex.sc
