@@ -55,7 +55,7 @@ namespace darmok
         bool isEnabled() const noexcept;
         Renderable& setEnabled(bool enabled) noexcept;
         bool valid() const noexcept;
-        bool render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const;
+        bool render(bgfx::Encoder& encoder) const;
     private:
         bool _enabled;
         std::shared_ptr<IMesh> _mesh;

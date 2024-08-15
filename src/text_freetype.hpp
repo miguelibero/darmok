@@ -45,12 +45,11 @@ namespace darmok
         ~FreetypeFont() noexcept;
 
         std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
-        const Material& getMaterial() const noexcept override;
         float getLineSize() const noexcept override;
+        std::shared_ptr<Texture> getTexture() const override;
         void update(const std::unordered_set<Utf8Char>& chars) override;
         FT_Face getFace() const noexcept;
     private:
-        Material _material;
         std::shared_ptr<Texture> _texture;
         std::map<Utf8Char, Glyph> _glyphs;
         FT_Face _face;

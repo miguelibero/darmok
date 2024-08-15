@@ -10,7 +10,7 @@ namespace darmok
     class Program;
     class Scene;
     class App;
-    class Material;
+    class MaterialRenderComponent;
 
     class DARMOK_EXPORT ForwardRenderer final : public IRenderer, public IRenderPass
     {
@@ -41,6 +41,7 @@ namespace darmok
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
+        OptionalRef<MaterialRenderComponent> _materials;
         std::vector<std::unique_ptr<IRenderComponent>> _components;
 
         void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder);

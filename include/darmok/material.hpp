@@ -5,6 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/material_fwd.hpp>
 #include <darmok/program.hpp>
+#include <darmok/render.hpp>
 
 #include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
@@ -20,6 +21,32 @@ namespace darmok
     class Texture;
     class Program;
     class App;
+
+    class DARMOK_EXPORT MaterialRenderComponent : public IRenderComponent
+    {
+    public:
+        void init(Camera& cam, Scene& scene, App& app) override;
+        void shutdown() override;
+        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept;
+    private:
+        using TextureType = MaterialTextureType;
+
+        struct Sampler final
+        {
+            TextureType type;
+            bgfx::UniformHandle handle;
+            uint8_t stage;
+        };
+
+        std::vector<Sampler> _samplerUniforms;
+        bgfx::UniformHandle _baseColorUniform;
+        bgfx::UniformHandle _metallicRoughnessNormalOcclusionUniform;
+        bgfx::UniformHandle _emissiveColorUniform;
+        bgfx::UniformHandle _hasTexturesUniform;
+        bgfx::UniformHandle _multipleScatteringUniform;
+
+        std::shared_ptr<Texture> _defaultTexture;
+    };
 
     class DARMOK_EXPORT Material final
     {
@@ -76,10 +103,6 @@ namespace darmok
         Material& setWhiteFurnanceFactor(float v) noexcept;
         float getWhiteFurnanceFactor() const noexcept;
 
-        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
-
-        static void staticInit(App& app) noexcept;
-        static void staticShutdown() noexcept;
 
     private:
         std::shared_ptr<Program> _program;
@@ -100,9 +123,6 @@ namespace darmok
         float _whiteFurnance;
 
         PrimitiveType _primitive;
-
-        struct StaticConfig;
-        static std::unique_ptr<StaticConfig> _staticConfig;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader

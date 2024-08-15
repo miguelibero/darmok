@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <optional>
 #include <darmok/export.h>
 #include <darmok/asset_core.hpp>

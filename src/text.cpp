@@ -135,27 +135,15 @@ namespace darmok
 		{
 			return false;
 		}
-		if (!_mesh->render(encoder, {
+		return _mesh->render(encoder, {
 			.numVertices = _vertexNum,
 			.numIndices = _indexNum,
-			}))
-		{
-			return false;
-		}
-		_font->getMaterial().renderSubmit(viewId, encoder);
-		return true;
+		});
 	}
 
-	bool Text::update()
+	bool Text::update(const bgfx::VertexLayout& layout)
 	{
 		if (!_font || !_changed)
-		{
-			return false;
-		}
-
-		auto& mat = _font->getMaterial();
-		auto prog = mat.getProgram();
-		if (!prog)
 		{
 			return false;
 		}
@@ -168,7 +156,6 @@ namespace darmok
 			return false;
 		}
 
-		auto& layout = prog->getVertexLayout();
 		data.config.color = _color;
 
 		Data vertexData;
@@ -238,8 +225,6 @@ namespace darmok
 
 	MeshData Text::createMeshData(const Utf8Vector& content, const IFont& font, const RenderConfig& config)
 	{
-		auto& mat = font.getMaterial();
-
 		glm::vec2 pos(0);
 		MeshData data;
 		auto lineSize = font.getLineSize();
@@ -267,7 +252,7 @@ namespace darmok
 
 		// TODO: maybe add getter of the size to the font interface
 		// to not assume that the size is the diffuse texture size
-		auto tex = mat.getTexture(MaterialTextureType::Base);
+		auto tex = font.getTexture();
 		auto texScale = glm::vec2(1);
 		if (tex)
 		{
@@ -280,11 +265,22 @@ namespace darmok
 		return data;
 	}
 
+	TextRenderer::TextRenderer(const std::shared_ptr<Program>& prog) noexcept
+		: _prog(prog)
+	{
+		if (_prog == nullptr)
+		{
+			_prog = std::make_shared<Program>(StandardProgramType::Gui);
+		}
+	}
+
 	void TextRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
 		_scene = scene;
 		_cam = cam;
 		cam.getRenderGraph().addPass(*this);
+		_colorUniform = bgfx::createUniform("u_color", bgfx::UniformType::Vec4);
+		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 	}
 
 	void TextRenderer::shutdown() noexcept
@@ -295,6 +291,16 @@ namespace darmok
 		}
 		_scene.reset();
 		_cam.reset();
+
+		std::vector<bgfx::UniformHandle> uniforms = { _colorUniform, _textureUniform };
+		for (auto& uniform : uniforms)
+		{
+			if (isValid(uniform))
+			{
+				bgfx::destroy(uniform);
+				uniform.idx = bgfx::kInvalidHandle;
+			}
+		}
 	}
 
 	void TextRenderer::update(float deltaTime)
@@ -316,7 +322,7 @@ namespace darmok
 		}
 		for (auto [entity, text] : texts.each())
 		{
-			text.update();
+			text.update(_prog->getVertexLayout());
 		}
 	}
 
@@ -355,18 +361,43 @@ namespace darmok
 		auto& encoder = context.getEncoder();
 		_cam->beforeRenderView(_viewId, encoder);
 
+		uint64_t state = BGFX_STATE_WRITE_RGB
+			| BGFX_STATE_WRITE_A
+			| BGFX_STATE_DEPTH_TEST_LEQUAL
+			| BGFX_STATE_MSAA
+			| BGFX_STATE_BLEND_ALPHA
+			;
+
 		for (auto entity : texts)
 		{
 			auto text = _scene->getComponent<Text>(entity);
+			if (!text->getFont() || !text->getFont()->getTexture())
+			{
+				continue;
+			}
+
 			_cam->beforeRenderEntity(entity, encoder);
-			text->render(_viewId, encoder);
+			if (!text->render(_viewId, encoder))
+			{
+				continue;
+			}
+			auto v = Colors::normalize(text->getColor());
+			encoder.setUniform(_colorUniform, glm::value_ptr(v));
+			encoder.setTexture(0, _textureUniform, text->getFont()->getTexture()->getHandle());
+
+			encoder.setState(state);
+			encoder.submit(_viewId, _prog->getHandle());
 		}
 	}
 
-	TextureAtlasFont::TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas, const std::shared_ptr<Program>& prog) noexcept
+	TextureAtlasFont::TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas) noexcept
 		: _atlas(atlas)
-		, _material(prog, _atlas->texture)
 	{
+	}
+
+	std::shared_ptr<Texture> TextureAtlasFont::getTexture() const
+	{
+		return _atlas->texture;
 	}
 
 	std::optional<Glyph> TextureAtlasFont::getGlyph(const Utf8Char& chr) const noexcept
@@ -382,16 +413,6 @@ namespace darmok
 			.offset = elm->offset,
 			.originalSize = elm->originalSize,
 		};
-	}
-
-	const Material& TextureAtlasFont::getMaterial() const noexcept
-	{
-		return _material;
-	}
-
-	Material& TextureAtlasFont::getMaterial() noexcept
-	{
-		return _material;
 	}
 
 	float TextureAtlasFont::getLineSize() const noexcept
@@ -421,16 +442,6 @@ namespace darmok
 	{
 	}
 
-	void TextureAtlasFontLoader::init(App& app)
-	{
-		_program = std::make_unique<Program>(StandardProgramType::Gui);
-	}
-
-	void TextureAtlasFontLoader::shutdown()
-	{
-		_program.reset();
-	}
-
 	std::shared_ptr<IFont> TextureAtlasFontLoader::operator()(std::string_view name)
 	{
 		auto atlas = _atlasLoader(name);
@@ -438,7 +449,7 @@ namespace darmok
 		{
 			return nullptr;
 		}
-		return std::make_shared<TextureAtlasFont>(atlas, _program);
+		return std::make_shared<TextureAtlasFont>(atlas);
 	}
 
 }

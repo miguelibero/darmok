@@ -176,7 +176,6 @@ namespace darmok
 	void AssetContextImpl::init(App& app)
 	{
 		_freetypeFontLoader.init(app);
-		_textureAtlasFontLoader.init(app);
 	}
 
 	void AssetContextImpl::update()
@@ -186,7 +185,6 @@ namespace darmok
 	void AssetContextImpl::shutdown()
 	{
 		_freetypeFontLoader.shutdown();
-		_textureAtlasFontLoader.shutdown();
 	}
 
 	AssetContext::AssetContext() noexcept

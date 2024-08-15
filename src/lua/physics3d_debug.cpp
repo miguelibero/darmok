@@ -4,7 +4,7 @@
 #include "physics3d_debug.hpp"
 #include "physics3d.hpp"
 #include <darmok/physics3d_debug.hpp>
-#include <darmok/material.hpp>
+#include <darmok/program.hpp>
 #include <darmok/camera.hpp>
 
 namespace darmok::physics3d
@@ -23,7 +23,7 @@ namespace darmok::physics3d
     void LuaPhysicsDebugRenderer::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<PhysicsDebugConfig>("PhysicsDebugConfig", sol::default_constructor,
-            "material", &PhysicsDebugConfig::material,
+            "program", &PhysicsDebugConfig::program,
             "enable_event", &PhysicsDebugConfig::enableEvent
         );
         lua.new_usertype<PhysicsDebugRenderer>("PhysicsDebugRenderer",

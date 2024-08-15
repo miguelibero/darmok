@@ -6,7 +6,6 @@
 #include <darmok/color.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/string.hpp>
-#include <darmok/material.hpp>
 
 #include <bx/filepath.h>
 #include <bx/timer.h>
@@ -294,8 +293,6 @@ namespace darmok
 		_assets.init(_app);
 		_audio.init();
 
-		Material::staticInit(_app);
-
 		_renderGraphDef.addPass(*this);
 
 		for (auto& [type, component] : _components)
@@ -332,8 +329,6 @@ namespace darmok
 			itr->second->shutdown();
 		}
 		_components.clear();
-
-		Material::staticShutdown();
 
 		_input.getKeyboard().removeListener(*this);
 		_audio.shutdown();

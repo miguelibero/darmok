@@ -13,6 +13,7 @@ namespace darmok
 	ForwardRenderer::ForwardRenderer() noexcept
 		: _viewId(-1)
 	{
+		_materials = addComponent<MaterialRenderComponent>();
 	}
 
 	void ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
@@ -114,7 +115,11 @@ namespace darmok
 				continue;
 			}
 			beforeRenderEntity(entity, encoder);
-			renderable->render(_viewId, encoder);
+			if (!renderable->render(encoder))
+			{
+				continue;
+			}
+			_materials->renderSubmit(_viewId, encoder, *renderable->getMaterial());
 		}
 	}
 }

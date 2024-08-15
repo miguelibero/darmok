@@ -79,10 +79,11 @@ namespace darmok::physics3d
         MeshData _solidMeshData;
         MeshData _wireMeshData;
         std::vector<TextData> _textData;
+        bgfx::UniformHandle _colorUniform;
 
-        void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid);
-        void renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid);
-        void renderSubmit(const Material& mat);
+        void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
+        void renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
+        void renderSubmit(EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
         void renderText();
 
         bool tryRenderMeshBatch(MeshData& meshData, EDrawMode mode = EDrawMode::Solid);

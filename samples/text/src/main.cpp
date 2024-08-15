@@ -30,7 +30,7 @@ namespace
 			auto& registry = scene.getRegistry();
 
 			auto arial = getAssets().getFontLoader()("ARIALUNI.TTF");
-			auto noto = getAssets().getFontLoader()("noto.ttf");
+			auto noto = getAssets().getFontLoader()("../../assets/noto.ttf");
 			auto comic = getAssets().getFontLoader()("COMIC.xml");
 
 			auto camEntity = registry.create();
@@ -42,27 +42,26 @@ namespace
 				cam.setPerspective(60, getWindow().getSize(), 0.3, 1000);
 			*/
 
-			cam.setOrtho(Viewport(glm::uvec2(2)));
+			cam.setWindowOrtho();
 
 			cam.addRenderer<ForwardRenderer>();
 			cam.addRenderer<TextRenderer>();
 
-
 			auto text1Entity = scene.createEntity();
 			_text1 = scene.addComponent<Text>(text1Entity, arial, _textStr);
-			scene.addComponent<Transform>(text1Entity, glm::vec3(0, 0.5, 0))
-				.setScale(glm::vec3(2));
+			scene.addComponent<Transform>(text1Entity, glm::vec3(0, 200, 0))
+				.setScale(glm::vec3(1000));
 
 			auto text2Entity = scene.createEntity();
 			_text2 = scene.addComponent<Text>(text2Entity, comic, _textStr);
 			scene.addComponent<Transform>(text2Entity, glm::vec3(0, 0, 0))
-				.setScale(glm::vec3(2));
+				.setScale(glm::vec3(1000));
 
 			auto text3Entity = scene.createEntity();
 			_text3 = scene.addComponent<Text>(text3Entity, noto, _textStr);
 			_text3->setContentSize(glm::vec2(200, noto->getLineSize()));
-			scene.addComponent<Transform>(text3Entity, glm::vec3(0, -0.5, 0))
-				.setScale(glm::vec3(2));
+			scene.addComponent<Transform>(text3Entity, glm::vec3(0, -200, 0))
+				.setScale(glm::vec3(1000));
 		}
 
 		void imguiRender()

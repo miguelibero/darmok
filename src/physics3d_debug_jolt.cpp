@@ -57,15 +57,17 @@ namespace darmok::physics3d
         {
             _input->addListener("enable", *_config.enableEvent, *this);
         }
-        if (_config.material == nullptr)
+        if (_config.program == nullptr)
         {
-            _config.material = std::make_shared<Material>();
+            _config.program = std::make_shared<Program>(StandardProgramType::Unlit);
+            _config.programDefines = { "TEXTURE_DISABLED" };
         }
-        _vertexLayout = _config.material->getProgram()->getVertexLayout();
+        _vertexLayout = _config.program->getVertexLayout();
         _cam = cam;
         Initialize();
 
         cam.getRenderGraph().addPass(*this);
+        _colorUniform = bgfx::createUniform("u_color", bgfx::UniformType::Vec4);
     }
 
     void PhysicsDebugRendererImpl::renderReset()
@@ -90,6 +92,11 @@ namespace darmok::physics3d
         _cam.reset();
         _system.reset();
         _viewId = -1;
+        if (isValid(_colorUniform))
+        {
+            bgfx::destroy(_colorUniform);
+            _colorUniform.idx = bgfx::kInvalidHandle;
+        }
     }
 
     void PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept
@@ -111,7 +118,7 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::renderPassExecute(IRenderGraphContext& context)
     {
-        if (!_enabled || !_system || !_config.material)
+        if (!_enabled || !_system)
         {
             return;
         }
@@ -149,7 +156,7 @@ namespace darmok::physics3d
         return true;
     }
 
-    void PhysicsDebugRendererImpl::renderMesh(MeshData& meshData, EDrawMode mode)
+    void PhysicsDebugRendererImpl::renderMesh(MeshData& meshData, EDrawMode mode, const Color& color)
     {
         if (meshData.empty())
         {
@@ -157,7 +164,7 @@ namespace darmok::physics3d
         }
         auto mesh = meshData.createMesh(_vertexLayout);
         meshData.clear();
-        renderMesh(*mesh, EDrawMode::Wireframe);
+        renderMesh(*mesh, mode, color);
     }
 
     void PhysicsDebugRendererImpl::renderText()
@@ -209,30 +216,41 @@ namespace darmok::physics3d
         _meshBatchSize = size;
     }
 
-    void PhysicsDebugRendererImpl::renderMesh(const IMesh& mesh, EDrawMode mode)
+    void PhysicsDebugRendererImpl::renderMesh(const IMesh& mesh, EDrawMode mode, const Color& color)
     {
-        if (!_config.material || !_encoder)
+        if (!_encoder)
         {
             return;
         }
         auto& encoder = _encoder.value();
-        Material material = *_config.material;
-        auto primType = mode == EDrawMode::Wireframe ? MaterialPrimitiveType::Line : MaterialPrimitiveType::Triangle;
-        material.setPrimitiveType(primType);
-
         if (mesh.render(encoder))
         {
-            renderSubmit(material);
+            renderSubmit(mode, color);
         }
     }
 
-    void PhysicsDebugRendererImpl::renderSubmit(const Material& mat)
+    void PhysicsDebugRendererImpl::renderSubmit(EDrawMode mode, const Color& color)
     {
-        Color color = _config.material->getBaseColor();
-        color.a *= _config.alpha;
-        Material mat2(mat);
-        mat2.setBaseColor(color);
-        mat2.renderSubmit(_viewId, _encoder.value());
+        auto v = Colors::normalize(color);
+        _encoder->setUniform(_colorUniform, glm::value_ptr(v));
+
+        uint64_t state = BGFX_STATE_WRITE_RGB
+            | BGFX_STATE_WRITE_A
+            | BGFX_STATE_WRITE_Z
+            | BGFX_STATE_DEPTH_TEST_LEQUAL
+            | BGFX_STATE_CULL_CCW
+            | BGFX_STATE_MSAA
+            | BGFX_STATE_BLEND_ALPHA
+            ;
+
+        if (mode == EDrawMode::Wireframe)
+        {
+            state |= BGFX_STATE_PT_LINES;
+        }
+
+        _encoder->setState(state);
+        auto prog = _config.program->getHandle(_config.programDefines);
+        _encoder->submit(_viewId, prog);
     }
 
     void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color)
@@ -276,14 +294,14 @@ namespace darmok::physics3d
         });
     }
 
-    JPH::DebugRenderer::Batch PhysicsDebugRendererImpl::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* inTriangles, int inTriangleCount)
+    JPH::DebugRenderer::Batch PhysicsDebugRendererImpl::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* triangles, int triangleCount)
     {
         MeshData data;
-        for (int i = 0; i < inTriangleCount; i++)
+        for (int i = 0; i < triangleCount; i++)
         {
             for (int j = 0; j < 3; j++)
             {
-                auto vert = inTriangles[i].mV[j];
+                auto vert = triangles[i].mV[j];
                 data.vertices.emplace_back(
                     JoltUtils::convert(vert.mPosition),
                     JoltUtils::convert(vert.mNormal),
@@ -295,12 +313,12 @@ namespace darmok::physics3d
         return new JoltMeshBatch(data.createMesh(_vertexLayout));
     }
 
-    JPH::DebugRenderer::Batch PhysicsDebugRendererImpl::CreateTriangleBatch(const JPH::DebugRenderer::Vertex* inVertices, int inVertexCount, const JPH::uint32* inIndices, int inIndexCount)
+    JPH::DebugRenderer::Batch PhysicsDebugRendererImpl::CreateTriangleBatch(const JPH::DebugRenderer::Vertex* vertices, int vertexCount, const JPH::uint32* indices, int indexCount)
     {
         MeshData data;
-        for (int i = 0; i < inVertexCount; i++)
+        for (int i = 0; i < vertexCount; i++)
         {
-            auto vert = inVertices[i];
+            auto vert = vertices[i];
             data.vertices.emplace_back(
                 JoltUtils::convert(vert.mPosition),
                 JoltUtils::convert(vert.mNormal),
@@ -308,31 +326,28 @@ namespace darmok::physics3d
                 JoltUtils::convert(vert.mColor)
             );
         }
-        for (int i = 0; i < inIndexCount; i++)
+        for (int i = 0; i < indexCount; i++)
         {
-            data.indices.emplace_back(inIndices[i]);
+            data.indices.emplace_back(indices[i]);
         }
         return new JoltMeshBatch(data.createMesh(_vertexLayout));
     }
 
-    void PhysicsDebugRendererImpl::DrawGeometry(JPH::RMat44Arg inModelMatrix, const JPH::AABox& inWorldSpaceBounds, float inLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode, ECastShadow inCastShadow, EDrawMode inDrawMode)
+    void PhysicsDebugRendererImpl::DrawGeometry(JPH::RMat44Arg modelMatrix, const JPH::AABox& worldSpaceBounds, float inLODScaleSq, JPH::ColorArg modelColor, const GeometryRef& geometry, ECullMode cullMode, ECastShadow castShadow, EDrawMode drawMode)
     {
-        if (inGeometry->mLODs.empty())
+        if (geometry->mLODs.empty())
         {
             return;
         }
         // TODO: decide lod
-        auto& lod = inGeometry->mLODs[0];
+        auto& lod = geometry->mLODs[0];
         auto& batch = *(JoltMeshBatch*)lod.mTriangleBatch.GetPtr();
 
-        auto transMtx = JoltUtils::convert(inModelMatrix);
+        auto transMtx = JoltUtils::convert(modelMatrix);
         _encoder->setTransform(glm::value_ptr(transMtx));
 
         batch.mesh->render(_encoder.value());
-        Color oldColor = _config.material->getBaseColor();
-        _config.material->setBaseColor(JoltUtils::convert(inModelColor));
-        renderMesh(*batch.mesh, inDrawMode);
-        _config.material->setBaseColor(oldColor);
+        renderMesh(*batch.mesh, drawMode, JoltUtils::convert(modelColor));
     }
 
     PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept

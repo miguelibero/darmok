@@ -41,7 +41,7 @@ namespace darmok
         virtual ~IFont() = default;
 
         virtual std::optional<Glyph> getGlyph(const Utf8Char& chr) const = 0;
-        virtual const Material& getMaterial() const = 0;
+        virtual std::shared_ptr<Texture> getTexture() const = 0;
         virtual float getLineSize() const = 0;
         virtual void update(const std::unordered_set<Utf8Char>& chars) {};
     };
@@ -96,7 +96,7 @@ namespace darmok
         Orientation getOrientation() const noexcept;
         Text& setOrientation(Orientation ori) noexcept;
 
-        bool update();
+        bool update(const bgfx::VertexLayout& layout);
         bool render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const;
 
         static MeshData createMeshData(const Utf8Vector& content, const IFont& font, const RenderConfig& config = {});
@@ -115,6 +115,7 @@ namespace darmok
     class DARMOK_EXPORT TextRenderer final : public IRenderer, IRenderPass
     {
     public:
+        TextRenderer(const std::shared_ptr<Program>& prog = nullptr) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) override;
@@ -123,6 +124,9 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
         bgfx::ViewId _viewId;
+        std::shared_ptr<Program> _prog;
+        bgfx::UniformHandle _colorUniform;
+        bgfx::UniformHandle _textureUniform;
 
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
@@ -135,14 +139,12 @@ namespace darmok
     class TextureAtlasFont final : public IFont
     {
     public:
-        TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas, const std::shared_ptr<Program>& prog) noexcept;
+        TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas) noexcept;
         std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
-        const Material& getMaterial() const noexcept override;
-        Material& getMaterial() noexcept;
         float getLineSize() const noexcept override;
+        std::shared_ptr<Texture> getTexture() const override;
     private:
         std::shared_ptr<TextureAtlas> _atlas;
-        Material _material;
     };
 
     class ITextureAtlasLoader;
@@ -152,11 +154,8 @@ namespace darmok
     {
     public:
         TextureAtlasFontLoader(ITextureAtlasLoader& atlasLoader) noexcept;
-        void init(App& app);
-        void shutdown();
         std::shared_ptr<IFont> operator()(std::string_view name) override;
     private:
         ITextureAtlasLoader& _atlasLoader;
-        std::shared_ptr<Program> _program;
     };
 }

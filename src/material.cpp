@@ -11,75 +11,6 @@
 
 namespace darmok
 {
-
-	struct Material::StaticConfig final
-	{
-	public:
-		StaticConfig(App& app)
-		{
-			samplerUniforms = std::vector<Sampler>{
-				{ TextureType::Base, bgfx::createUniform("s_texBaseColor", bgfx::UniformType::Sampler), RenderSamplers::PBR_BASECOLOR},
-				{ TextureType::MetallicRoughness, bgfx::createUniform("s_texMetallicRoughness", bgfx::UniformType::Sampler), RenderSamplers::PBR_METALROUGHNESS},
-				{ TextureType::Normal, bgfx::createUniform("s_texNormal", bgfx::UniformType::Sampler), RenderSamplers::PBR_NORMAL},
-				{ TextureType::Occlusion, bgfx::createUniform("s_texOcclusion", bgfx::UniformType::Sampler), RenderSamplers::PBR_OCCLUSION},
-				{ TextureType::Emissive, bgfx::createUniform("s_texEmissive", bgfx::UniformType::Sampler), RenderSamplers::PBR_EMISSIVE},
-			};
-			baseColorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
-			metallicRoughnessNormalOcclusionUniform = bgfx::createUniform("u_metallicRoughnessNormalOcclusionFactor", bgfx::UniformType::Vec4);
-			emissiveColorUniform = bgfx::createUniform("u_emissiveFactorVec", bgfx::UniformType::Vec4);
-			hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
-			multipleScatteringUniform = bgfx::createUniform("u_multipleScatteringVec", bgfx::UniformType::Vec4);
-
-			Image img(Colors::white(), app.getAssets().getAllocator());
-			defaultTexture = std::make_shared<Texture>(img);
-		}
-
-		~StaticConfig()
-		{
-			for (auto& elm : samplerUniforms)
-			{
-				bgfx::destroy(elm.handle);
-			}
-			bgfx::destroy(baseColorUniform);
-			bgfx::destroy(metallicRoughnessNormalOcclusionUniform);
-			bgfx::destroy(emissiveColorUniform);
-			bgfx::destroy(hasTexturesUniform);
-			bgfx::destroy(multipleScatteringUniform);
-
-			defaultTexture.reset();
-		}
-
-		using TextureType = MaterialTextureType;
-
-		struct Sampler final
-		{
-			TextureType type;
-			bgfx::UniformHandle handle;
-			uint8_t stage;
-		};
-
-		std::vector<Sampler> samplerUniforms;
-		bgfx::UniformHandle baseColorUniform;
-		bgfx::UniformHandle metallicRoughnessNormalOcclusionUniform;
-		bgfx::UniformHandle emissiveColorUniform;
-		bgfx::UniformHandle hasTexturesUniform;
-		bgfx::UniformHandle multipleScatteringUniform;
-
-		std::shared_ptr<Texture> defaultTexture;
-	};
-
-	std::unique_ptr<Material::StaticConfig> Material::_staticConfig;
-
-	void Material::staticInit(App& app) noexcept
-	{
-		_staticConfig = std::make_unique<StaticConfig>(app);
-	}
-
-	void Material::staticShutdown() noexcept
-	{
-		_staticConfig.reset();
-	}
-
 	Material::Material(const std::shared_ptr<Program>& program) noexcept
 		: _primitive(MaterialPrimitiveType::Triangle)
 		, _program(program)
@@ -300,34 +231,64 @@ namespace darmok
 		return _whiteFurnance;
 	}
 
-	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+	void MaterialRenderComponent::init(Camera& cam, Scene& scene, App& app)
 	{
-		if (_staticConfig == nullptr)
+		_samplerUniforms = std::vector<Sampler>{
+			{ TextureType::Base, bgfx::createUniform("s_texBaseColor", bgfx::UniformType::Sampler), RenderSamplers::PBR_BASECOLOR},
+			{ TextureType::MetallicRoughness, bgfx::createUniform("s_texMetallicRoughness", bgfx::UniformType::Sampler), RenderSamplers::PBR_METALROUGHNESS},
+			{ TextureType::Normal, bgfx::createUniform("s_texNormal", bgfx::UniformType::Sampler), RenderSamplers::PBR_NORMAL},
+			{ TextureType::Occlusion, bgfx::createUniform("s_texOcclusion", bgfx::UniformType::Sampler), RenderSamplers::PBR_OCCLUSION},
+			{ TextureType::Emissive, bgfx::createUniform("s_texEmissive", bgfx::UniformType::Sampler), RenderSamplers::PBR_EMISSIVE},
+		};
+		_baseColorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
+		_metallicRoughnessNormalOcclusionUniform = bgfx::createUniform("u_metallicRoughnessNormalOcclusionFactor", bgfx::UniformType::Vec4);
+		_emissiveColorUniform = bgfx::createUniform("u_emissiveFactorVec", bgfx::UniformType::Vec4);
+		_hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
+		_multipleScatteringUniform = bgfx::createUniform("u_multipleScatteringVec", bgfx::UniformType::Vec4);
+
+		Image img(Colors::white(), app.getAssets().getAllocator());
+		_defaultTexture = std::make_shared<Texture>(img);
+	}
+
+	void MaterialRenderComponent::shutdown()
+	{
+		for (auto& elm : _samplerUniforms)
 		{
-			return;
+			bgfx::destroy(elm.handle);
 		}
+		bgfx::destroy(_baseColorUniform);
+		bgfx::destroy(_metallicRoughnessNormalOcclusionUniform);
+		bgfx::destroy(_emissiveColorUniform);
+		bgfx::destroy(_hasTexturesUniform);
+		bgfx::destroy(_multipleScatteringUniform);
+
+		_defaultTexture.reset();
+	}
+
+	void MaterialRenderComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept
+	{
 		glm::vec4 hasTextures(0);
-		for (uint8_t i = 0; i < _staticConfig->samplerUniforms.size(); i++)
+		for (uint8_t i = 0; i < _samplerUniforms.size(); i++)
 		{
-			auto& def = _staticConfig->samplerUniforms[i];
-			auto tex = getTexture(def.type);
+			auto& def = _samplerUniforms[i];
+			auto tex = mat.getTexture(def.type);
 			if (!tex)
 			{
-				tex = _staticConfig->defaultTexture;
+				tex = _defaultTexture;
 			}
 			hasTextures.x += 1 << i;
 			encoder.setTexture(def.stage, def.handle, tex->getHandle());
 		}
-		encoder.setUniform(_staticConfig->hasTexturesUniform, glm::value_ptr(hasTextures));
+		encoder.setUniform(_hasTexturesUniform, glm::value_ptr(hasTextures));
 
-		auto v = Colors::normalize(getBaseColor());
-		encoder.setUniform(_staticConfig->baseColorUniform, glm::value_ptr(v));
-		v = glm::vec4(getMetallicFactor(), getRoughnessFactor(), getNormalScale(), getOcclusionStrength());
-		encoder.setUniform(_staticConfig->metallicRoughnessNormalOcclusionUniform, glm::value_ptr(v));
-		v = glm::vec4(getEmissiveColor(), 0);
-		encoder.setUniform(_staticConfig->emissiveColorUniform, glm::value_ptr(v));
-		v = glm::vec4(getMultipleScattering() ? 1.F : 0.F, getWhiteFurnanceFactor(), 0, 0);
-		encoder.setUniform(_staticConfig->multipleScatteringUniform, glm::value_ptr(v));
+		auto v = Colors::normalize(mat.getBaseColor());
+		encoder.setUniform(_baseColorUniform, glm::value_ptr(v));
+		v = glm::vec4(mat.getMetallicFactor(), mat.getRoughnessFactor(), mat.getNormalScale(), mat.getOcclusionStrength());
+		encoder.setUniform(_metallicRoughnessNormalOcclusionUniform, glm::value_ptr(v));
+		v = glm::vec4(mat.getEmissiveColor(), 0);
+		encoder.setUniform(_emissiveColorUniform, glm::value_ptr(v));
+		v = glm::vec4(mat.getMultipleScattering() ? 1.F : 0.F, mat.getWhiteFurnanceFactor(), 0, 0);
+		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(v));
 
 		uint64_t state = BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
@@ -338,12 +299,12 @@ namespace darmok
 			| BGFX_STATE_BLEND_ALPHA
 			;
 
-		if (getPrimitiveType() == MaterialPrimitiveType::Line)
+		if (mat.getPrimitiveType() == MaterialPrimitiveType::Line)
 		{
 			state |= BGFX_STATE_PT_LINES;
 		}
 
 		encoder.setState(state);
-		encoder.submit(viewId, getProgramHandle());
+		encoder.submit(viewId, mat.getProgramHandle());
 	}
 }

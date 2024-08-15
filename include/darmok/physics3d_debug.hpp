@@ -4,6 +4,8 @@
 
 #include <memory>
 #include <optional>
+#include <unordered_set>
+
 #include <darmok/export.h>
 #include <darmok/render.hpp>
 #include <darmok/input.hpp>
@@ -11,8 +13,9 @@
 namespace darmok
 {
     class Camera;
-    class Material;
     class IFont;
+    class Program;
+    using ProgramDefines = std::unordered_set<std::string>;
 }
 
 namespace darmok::physics3d
@@ -22,9 +25,10 @@ namespace darmok::physics3d
 
     struct DARMOK_EXPORT PhysicsDebugConfig final
     {
-        std::shared_ptr<Material> material;
         std::optional<InputEvent> enableEvent = KeyboardInputEvent{ KeyboardKey::F8 };
         float alpha = 0.3F;
+        std::shared_ptr<Program> program;
+        ProgramDefines programDefines;
     };
 
     class DARMOK_EXPORT PhysicsDebugRenderer : public IRenderer

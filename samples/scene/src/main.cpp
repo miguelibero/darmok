@@ -190,7 +190,7 @@ namespace
 		{
 			auto texture = getAssets().getTextureLoader()("brick.png");
 			auto material = std::make_shared<Material>(_prog, texture);
-			material->setColor(MaterialColorType::Diffuse, Colors::red());
+			material->setBaseColor(Colors::red());
 
 			auto cubeMesh = MeshData(Cube()).createMesh(_prog->getVertexLayout());
 

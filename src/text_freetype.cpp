@@ -111,7 +111,6 @@ namespace darmok
 	FreetypeFont::FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept
 		: _face(face)
 		, _data(std::move(data))
-		, _material(std::make_shared<Program>(StandardProgramType::Gui))
 		, _library(library)
 		, _alloc(alloc)
 	{
@@ -132,11 +131,6 @@ namespace darmok
 		return itr->second;
 	}
 
-	const Material& FreetypeFont::getMaterial() const noexcept
-	{
-		return _material;
-	}
-
 	float FreetypeFont::getLineSize() const noexcept
 	{
 		return _face->size->metrics.height >> 6;
@@ -145,6 +139,11 @@ namespace darmok
 	FT_Face FreetypeFont::getFace() const  noexcept
 	{
 		return _face;
+	}
+
+	std::shared_ptr<Texture> FreetypeFont::getTexture() const
+	{
+		return _texture;
 	}
 
 	void FreetypeFont::update(const std::unordered_set<Utf8Char>& chars)
@@ -160,7 +159,6 @@ namespace darmok
 		if (!_texture || _texture->getSize() != atlas.image.getSize())
 		{
 			_texture = std::make_shared<Texture>(atlas.image.getTextureConfig());
-			_material.setTexture(MaterialTextureType::Base, _texture);
 		}
 		_texture->update(atlas.image.getData());
 
