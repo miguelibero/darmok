@@ -309,7 +309,7 @@ namespace darmok
         [[nodiscard]] result_type operator()(std::string_view name) override;
     private:
         IDataLoader& _dataLoader;
-	};    
+	};
 }
 
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelMaterial& material);

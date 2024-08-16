@@ -139,25 +139,13 @@ namespace darmok
         uint32_t _idxNum;
     };
 
-    struct DARMOK_EXPORT MeshDataConfig final
-    {
-        glm::vec3 scale = glm::vec3(1);
-        glm::vec3 offset = glm::vec3(0);
-        glm::vec2 textureScale = glm::vec2(1);
-        glm::vec2 textureOffset = glm::vec3(0);
-        Color color = Colors::white();
-        MeshType type = MeshType::Static;
-        bool index32 = false;
-        int16_t indexOffset = 0;
-        glm::mat4 transform = glm::mat4(1);
-    };
-
     struct DARMOK_EXPORT MeshDataVertex final
     {
         glm::vec3 position;
-        glm::vec3 normal = glm::vec3(0, 1, 0);
         glm::vec2 texCoord;
+        glm::vec3 normal = glm::vec3(0, 1, 0);
         Color color = Colors::white();
+        glm::vec4 tangent = glm::vec4(0, 0, 0, 0);
     };
 
     class Texture;
@@ -186,31 +174,33 @@ namespace darmok
     {
         using Vertex = MeshDataVertex;
         using Index = VertexIndex;
-        using Config = MeshDataConfig;
 
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
-        Config config;
+        MeshType type = MeshType::Static;
 
         MeshData() = default;
         MeshData(const Cube& Cube) noexcept;
-        MeshData(const Sphere& sphere, int lod = 32) noexcept;
-        MeshData(const Capsule& capsule, int lod = 32) noexcept;
+        MeshData(const Sphere& sphere, unsigned int lod = 32) noexcept;
+        MeshData(const Capsule& capsule, unsigned int lod = 32) noexcept;
         MeshData(const Rectangle& rect, RectangleMeshType type = RectangleMeshType::Full) noexcept;
         MeshData(const Ray& ray) noexcept;
         MeshData(const Line& line, LineMeshType type = LineMeshType::Line) noexcept;
         MeshData(const Triangle& tri) noexcept;
         MeshData(const Polygon& poly) noexcept;
 
-        [[nodiscard]] MeshData operator+(const MeshData& other) noexcept;
         MeshData& operator+=(const MeshData& other) noexcept;
-        void normalize() noexcept;
-        void denormalize(const Config& config) noexcept;
+        MeshData& operator*=(const glm::mat4& transform) noexcept;
+        MeshData& operator*=(const glm::mat2& textureTransform) noexcept;
+        MeshData& operator*=(const Color& color) noexcept;
+        MeshData& operator*=(const glm::uvec2& textureScale) noexcept;
+        MeshData& operator+=(const glm::uvec2& textureOffset) noexcept;
+
+        MeshData& shiftIndices(Index offset) noexcept;
+        MeshData& calcTangents() noexcept;
+
         bool empty() const noexcept;
         void clear() noexcept;
-
-        using IndexTriangle = std::array<Index, 3>;
-        std::vector<IndexTriangle> getTriangleIndices() const noexcept;
 
         [[nodiscard]] void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;

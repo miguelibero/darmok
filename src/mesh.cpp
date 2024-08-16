@@ -1,8 +1,9 @@
-#include <darmok/mesh.hpp>
+﻿#include <darmok/mesh.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/data.hpp>
 #include <array>
+#include <mikktspace.h>
 
 namespace darmok
 {
@@ -397,37 +398,6 @@ namespace darmok
 		return _layout;
 	}
 
-	template<typename T>
-	void doUpdateMeshIndexData(Data& data, const std::vector<VertexIndex>& indices, T offset)
-	{
-		std::vector<T> indices32;
-		indices32.reserve(indices.size());
-		for (auto& idx : indices)
-		{
-			indices32.push_back(offset + idx);
-		}
-		data = indices32;
-	}
-
-	template<typename T>
-	void updateMeshIndexData(Data& data, const std::vector<VertexIndex>& indices, T offset)
-	{
-		doUpdateMeshIndexData(data, indices, offset);
-	}
-
-	template<>
-	void updateMeshIndexData<VertexIndex>(Data& data, const std::vector<VertexIndex>& indices, VertexIndex offset)
-	{
-		if (offset == 0)
-		{
-			data = indices;
-		}
-		else
-		{
-			doUpdateMeshIndexData(data, indices, offset);
-		}
-	}
-
 	const bgfx::VertexLayout& MeshData::getDefaultVertexLayout() noexcept
 	{
 		static bgfx::VertexLayout layout;
@@ -443,52 +413,6 @@ namespace darmok
 		return layout;
 	}
 
-	void MeshData::normalize() noexcept
-	{
-		for (auto& vertex : vertices)
-		{
-			vertex.position = config.scale * (vertex.position + config.offset);
-			vertex.position = config.transform * glm::vec4(vertex.position, 1);
-			vertex.texCoord = config.textureScale * (vertex.texCoord + config.textureOffset);
-			vertex.color = Colors::multiply(config.color, vertex.color);
-		}
-		for (auto& index : indices)
-		{
-			index += config.indexOffset;
-		}
-		config.color = Colors::white();
-		config.scale = glm::vec3(1);
-		config.offset = glm::vec3(0);
-		config.textureScale = glm::vec3(1);
-		config.textureOffset = glm::vec3(0);
-		config.indexOffset = 0;
-	}
-
-	void MeshData::denormalize(const Config& newConfig) noexcept
-	{
-		normalize();
-
-		auto inv = glm::inverse(newConfig.transform);
-
-		for (auto& vertex : vertices)
-		{
-			vertex.position = inv * glm::vec4(vertex.position, 1);
-			vertex.position = (vertex.position / newConfig.scale) - newConfig.offset;
-			vertex.texCoord = (vertex.texCoord / newConfig.textureScale) - newConfig.textureOffset;
-			vertex.color = Colors::divide(vertex.color, newConfig.color);
-		}
-		for (auto& index : indices)
-		{
-			index -= config.indexOffset;
-		}
-
-		config.scale = newConfig.scale;
-		config.offset = newConfig.offset;
-		config.textureScale = newConfig.textureScale;
-		config.textureOffset = newConfig.textureOffset;
-		config.indexOffset = newConfig.indexOffset;
-	}
-
 	bool MeshData::empty() const noexcept
 	{
 		return vertices.empty();
@@ -500,125 +424,74 @@ namespace darmok
 		indices.clear();
 	}
 
-	std::vector<MeshData::IndexTriangle> MeshData::getTriangleIndices() const noexcept
-	{
-		std::vector<std::array<Index, 3>> tris;
-		if (indices.empty())
-		{
-			tris.reserve(vertices.size() / 3);
-			for (Index i = 0; i < vertices.size() - 2; i += 3)
-			{
-				std::array<Index, 3> v = { (Index)(i + 0), (Index)(i + 1), (Index)(i + 2) };
-				tris.push_back(v);
-			}
-			return tris;
-		}
-		tris.reserve(indices.size() / 3);
-		for (size_t i = 0; i < indices.size() - 2; i += 3)
-		{
-			std::array<Index, 3> v = { indices[i + 0], indices[i + 1], indices[i + 2] };
-			tris.push_back(v);
-		}
-		return tris;
-	}
-
 	void MeshData::exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept
 	{
 		VertexDataWriter writer(vertexLayout, uint32_t(vertices.size()));
-
-		std::vector<glm::vec3> positions;
-		positions.reserve(vertices.size());
-		std::vector<glm::vec2> texCoords;
-		texCoords.reserve(vertices.size());
 
 		uint32_t i = 0;
 		for (auto& vertex : vertices)
 		{
 			if (vertexLayout.has(bgfx::Attrib::Position))
 			{
-				auto pos = config.scale * (vertex.position + config.offset);
-				pos = config.transform * glm::vec4(pos, 1);
-				positions.push_back(pos);
-				writer.write(bgfx::Attrib::Position, i, pos);
+				writer.write(bgfx::Attrib::Position, i, vertex.position);
 			}
 			if (vertexLayout.has(bgfx::Attrib::TexCoord0))
 			{
-				auto texCoord = config.textureScale * (vertex.texCoord + config.textureOffset);
-				texCoords.push_back(texCoord);
-				writer.write(bgfx::Attrib::TexCoord0, i, texCoord);
+				writer.write(bgfx::Attrib::TexCoord0, i, vertex.texCoord);
 			}
 			if (vertexLayout.has(bgfx::Attrib::Normal))
 			{
 				writer.write(bgfx::Attrib::Normal, i, vertex.normal);
 			}
+			if (vertexLayout.has(bgfx::Attrib::Tangent))
+			{
+				writer.write(bgfx::Attrib::Tangent, i, vertex.tangent);
+			}
 			if (vertexLayout.has(bgfx::Attrib::Color0))
 			{
-				writer.write(bgfx::Attrib::Color0, i, Colors::multiply(config.color, vertex.color));
+				writer.write(bgfx::Attrib::Color0, i, vertex.color);
 			}
 			++i;
 		}
 
-		if (vertexLayout.has(bgfx::Attrib::Tangent) && !positions.empty() && !texCoords.empty())
-		{
-			uint32_t i = 0;
-			for (auto& idx : getTriangleIndices())
-			{
-				Triangle tri(positions[idx[0]], positions[idx[1]], positions[idx[2]]);
-				TextureTriangle texTri(texCoords[idx[0]], texCoords[idx[1]], texCoords[idx[2]]);
-				for (size_t j = 0; j < 3; ++j)
-				{
-					auto& normal = vertices[idx[j]].normal;
-					writer.write(bgfx::Attrib::Tangent, i, tri.getTangent(texTri, normal));
-					++i;
-				}
-			}
-		}
-
 		vertexData = writer.finish();
-		if (config.index32)
-		{
-			updateMeshIndexData<int32_t>(indexData, indices, config.indexOffset);
-		}
-		else
-		{
-			updateMeshIndexData<Index>(indexData, indices, config.indexOffset);
-		}
+		indexData = indices;
 	}
 
 	std::unique_ptr<IMesh> MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
 	{
 		Data vertexData, indexData;
 		exportData(vertexLayout, vertexData, indexData);
-		return IMesh::create(config.type, vertexLayout, vertexData, indexData, meshConfig);
+		return IMesh::create(type, vertexLayout, vertexData, indexData, meshConfig);
 	}
 
 	MeshData::MeshData(const Cube& Cube) noexcept
 	{
 		const static std::vector<Vertex> basicVertices = {
-			{ { 1,  1,  1 }, {  0,  0,  1 }, { 0, 0 } },
-			{ { 0,  1,  1 }, {  0,  0,  1 }, { 1, 0 } },
-			{ { 0,  0,  1 }, {  0,  0,  1 }, { 1, 1 } },
-			{ { 1,  0,  1 }, {  0,  0,  1 }, { 0, 1 } },
-			{ { 1,  1,  0 }, {  0,  0, -1 }, { 1, 0 } },
-			{ { 1,  0,  0 }, {  0,  0, -1 }, { 1, 1 } },
-			{ { 0,  0,  0 }, {  0,  0, -1 }, { 0, 1 } },
-			{ { 0,  1,  0 }, {  0,  0, -1 }, { 0, 0 } },
-			{ { 1,  1,  1 }, {  0,  1,  0 }, { 1, 0 } },
-			{ { 1,  1,  0 }, {  0,  1,  0 }, { 1, 1 } },
-			{ { 0,  1,  0 }, {  0,  1,  0 }, { 0, 1 } },
-			{ { 0,  1,  1 }, {  0,  1,  0 }, { 0, 0 } },
-			{ { 1,  0,  1 }, {  0, -1,  0 }, { 1, 0 } },
-			{ { 0,  0,  1 }, {  0, -1,  0 }, { 1, 1 } },
-			{ { 0,  0,  0 }, {  0, -1,  0 }, { 0, 1 } },
-			{ { 1,  0,  0 }, {  0, -1,  0 }, { 0, 0 } },
-			{ { 1,  1,  1 }, {  1,  0,  0 }, { 1, 0 } },
-			{ { 1,  0,  1 }, {  1,  0,  0 }, { 1, 1 } },
-			{ { 1,  0,  0 }, {  1,  0,  0 }, { 0, 1 } },
-			{ { 1,  1,  0 }, {  1,  0,  0 }, { 0, 0 } },
-			{ { 0,  1,  1 }, { -1,  0,  0 }, { 0, 0 } },
-			{ { 0,  1,  0 }, { -1,  0,  0 }, { 1, 0 } },
-			{ { 0,  0,  0 }, { -1,  0,  0 }, { 1, 1 } },
-			{ { 0,  0,  1 }, { -1,  0,  0 }, { 0, 1 } }
+			{ { 1,  1,  1 }, { 0, 0 }, {  0,  0,  1 } },
+			{ { 0,  1,  1 }, { 1, 0 }, {  0,  0,  1 } },
+			{ { 0,  0,  1 }, { 1, 1 }, {  0,  0,  1 } },
+			{ { 1,  0,  1 }, { 0, 1 }, {  0,  0,  1 } },
+			{ { 1,  1,  0 }, { 0, 0 }, {  0,  0, -1 } },
+			{ { 1,  0,  0 }, { 1, 0 }, {  0,  0, -1 } },
+			{ { 0,  0,  0 }, { 1, 1 }, {  0,  0, -1 } },
+			{ { 0,  1,  0 }, { 0, 1 }, {  0,  0, -1 } },
+			{ { 1,  1,  1 }, { 0, 0 }, {  0,  1,  0 } },
+			{ { 1,  1,  0 }, { 1, 0 }, {  0,  1,  0 } },
+			{ { 0,  1,  0 }, { 1, 1 }, {  0,  1,  0 } },
+			{ { 0,  1,  1 }, { 0, 1 }, {  0,  1,  0 } },
+			{ { 1,  0,  1 }, { 0, 0 }, {  0, -1,  0 } },
+			{ { 0,  0,  1 }, { 1, 0 }, {  0, -1,  0 } },
+			{ { 0,  0,  0 }, { 1, 1 }, {  0, -1,  0 } },
+			{ { 1,  0,  0 }, { 0, 1 }, {  0, -1,  0 } },
+			{ { 1,  1,  1 }, { 0, 0 }, {  1,  0,  0 } },
+			{ { 1,  0,  1 }, { 1, 0 }, {  1,  0,  0 } },
+			{ { 1,  0,  0 }, { 1, 1 }, {  1,  0,  0 } },
+			{ { 1,  1,  0 }, { 0, 1 }, {  1,  0,  0 } },
+			{ { 0,  1,  1 }, { 0, 0 }, { -1,  0,  0 } },
+			{ { 0,  1,  0 }, { 1, 0 }, { -1,  0,  0 } },
+			{ { 0,  0,  0 }, { 1, 1 }, { -1,  0,  0 } },
+			{ { 0,  0,  1 }, { 0, 1 }, { -1,  0,  0 } }
 		};
 		const static std::vector<Index> basicIndices
 		{
@@ -632,17 +505,21 @@ namespace darmok
 
 		vertices = basicVertices;
 		indices = basicIndices;
-		config.scale *= Cube.size;
-		config.offset += (Cube.origin / Cube.size) - glm::vec3(0.5f);
+
+		auto trans = glm::scale(glm::mat4(1), Cube.size);
+		trans = glm::translate(trans, (Cube.origin / Cube.size) - glm::vec3(0.5f));
+		*this *= trans;
+
+		calcTangents();
 	}
 
 	MeshData::MeshData(const Rectangle& rect, RectangleMeshType type) noexcept
 	{
 		static const std::vector<MeshData::Vertex> basicVertices = {
-			{ { 1, 1, 0 }, { 0, 0, -1 }, { 1, 0 } },
-			{ { 1, 0, 0 }, { 0, 0, -1 }, { 1, 1 } },
-			{ { 0, 0, 0 }, { 0, 0, -1 }, { 0, 1 } },
-			{ { 0, 1, 0 }, { 0, 0, -1 }, { 0, 0 } }
+			{ { 1, 1, 0 }, { 1, 0 }, { 0, 0, -1 } },
+			{ { 1, 0, 0 }, { 1, 1 }, { 0, 0, -1 } },
+			{ { 0, 0, 0 }, { 0, 1 }, { 0, 0, -1 } },
+			{ { 0, 1, 0 }, { 0, 0 }, { 0, 0, -1 } }
 		};
 		vertices = basicVertices;
 		if (type == RectangleMeshType::Outline)
@@ -655,16 +532,19 @@ namespace darmok
 			indices = { 0, 1, 2, 2, 3, 0 };
 		}
 
-		config.scale *= glm::vec3(rect.size, 0);
-		config.offset += glm::vec3(rect.origin / rect.size - glm::vec2(0.5F), 0);
+		auto trans = glm::scale(glm::mat4(1), glm::vec3(rect.size, 0));
+		trans = glm::translate(trans, glm::vec3(rect.origin / rect.size - glm::vec2(0.5F), 0));
+		*this *= trans;
+
+		calcTangents();
 	}
 
-	MeshData::MeshData(const Sphere& sphere, int lod) noexcept
+	MeshData::MeshData(const Sphere& sphere, unsigned int lod) noexcept
 		: MeshData(Capsule(0, sphere.radius, sphere.origin), lod)
 	{
 	}
 
-	 MeshData::MeshData(const Capsule& capsule, int lod) noexcept
+	MeshData::MeshData(const Capsule& capsule, unsigned int lod) noexcept
 	{
 		auto rings = lod;
 		auto sectors = lod;
@@ -678,14 +558,14 @@ namespace darmok
 		{
 			vertices.reserve(n);
 			auto halfHeight = capsule.cylinderHeight / capsule.radius * 0.5F;
-			for (int r = 0; r < rings; ++r)
+			for (int r = 0; r < rings; r++)
 			{
 				auto h = halfHeight;
 				if (r > rings * 0.5)
 				{
 					h *= -1;
 				}
-				for (int s = 0; s < sectors; ++s)
+				for (int s = 0; s < sectors; s++)
 				{
 					auto u = s * S;
 					auto v = r * R;
@@ -696,19 +576,19 @@ namespace darmok
 						sin((0.5F * pi) + rho) + h,
 						sin(theta) * sin(rho)
 					);
-					vertices.emplace_back(pos, pos, glm::vec2(
+					vertices.emplace_back(pos, glm::vec2(
 						u * texScale,
 						v * texScale
-					));
+					), pos);
 				}
 			}
 		}
 
 		{
 			indices.reserve(n * 6);
-			for (VertexIndex r = 0; r < rings - 1; ++r)
+			for (VertexIndex r = 0; r < rings - 1; r++)
 			{
-				for (VertexIndex s = 0; s < sectors - 1; ++s)
+				for (VertexIndex s = 0; s < sectors - 1; s++)
 				{
 					indices.push_back(r * sectors + s);
 					indices.push_back(r * sectors + (s + 1));
@@ -719,9 +599,11 @@ namespace darmok
 				}
 			}
 		}
-		config.scale *= glm::vec3(capsule.radius);
-		config.offset += capsule.origin / capsule.radius;
-	}
+		auto trans = glm::translate(glm::mat4(capsule.radius), capsule.origin / capsule.radius);
+		*this *= trans;
+
+		calcTangents();
+    }
 
 	 MeshData::MeshData(const Ray& ray) noexcept
 		 : MeshData(ray.toLine(), LineMeshType::Diamond)
@@ -732,8 +614,9 @@ namespace darmok
 	{
 		if (type == LineMeshType::Line)
 		{
-			vertices.emplace_back(line.points[0], glm::vec3(), glm::vec2(0, 0));
-			vertices.emplace_back(line.points[1], glm::vec3(), glm::vec2(1, 1));
+			vertices.emplace_back(line.points[0], glm::vec2(0, 0));
+			vertices.emplace_back(line.points[1], glm::vec2(1, 1));
+			calcTangents();
 			return;
 		}
 		static const float kInter = .2f;
@@ -743,7 +626,7 @@ namespace darmok
 			{ kInter, -.1f, .1f }, { 0.f, 0.f, 0.f }
 		};
 		static const std::vector<glm::vec2> tex = {
-			{ 0.f, 0.f		}, { .1f, .1f },
+			{ 0.f, 0.f	}, { .1f, .1f },
 			{ .1f, -.1f }, { -.1f, -.1f },
 			{ -.1f, .1f }, { 0.f, 0.f }
 		};
@@ -759,17 +642,19 @@ namespace darmok
 		};
 		const std::vector<Vertex> basicVertices = {
 			{
-				{ pos[0], norm[0], tex[0] }, { pos[2], norm[0], tex[1] }, { pos[1], norm[0], tex[1] },
-				{ pos[5], norm[1], tex[0] }, { pos[1], norm[1], tex[2] }, { pos[2], norm[1], tex[2] },
-				{ pos[0], norm[2], tex[0] }, { pos[3], norm[2], tex[3] }, { pos[2], norm[2], tex[3] },
-				{ pos[5], norm[3], tex[0] }, { pos[2], norm[3], tex[4] }, { pos[3], norm[3], tex[4] },
-				{ pos[0], norm[4], tex[2] }, { pos[4], norm[4], tex[5] }, { pos[3], norm[4], tex[2] },
-				{ pos[5], norm[5], tex[3] }, { pos[3], norm[5], tex[5] }, { pos[4], norm[5], tex[3] },
-				{ pos[0], norm[6], tex[4] }, { pos[1], norm[6], tex[5] }, { pos[4], norm[6], tex[4] },
-				{ pos[5], norm[7], tex[1] }, { pos[4], norm[7], tex[5] }, { pos[1], norm[7], tex[1] }
+				{ pos[0], tex[0], norm[0] }, { pos[2], tex[1], norm[0] }, { pos[1], tex[1], norm[0] },
+				{ pos[5], tex[0], norm[1] }, { pos[1], tex[2], norm[1] }, { pos[2], tex[2], norm[1] },
+				{ pos[0], tex[0], norm[2] }, { pos[3], tex[3], norm[2] }, { pos[2], tex[3], norm[2] },
+				{ pos[5], tex[0], norm[3] }, { pos[2], tex[4], norm[3] }, { pos[3], tex[4], norm[3] },
+				{ pos[0], tex[2], norm[4] }, { pos[4], tex[5], norm[4] }, { pos[3], tex[2], norm[4] },
+				{ pos[5], tex[3], norm[5] }, { pos[3], tex[5], norm[5] }, { pos[4], tex[3], norm[5] },
+				{ pos[0], tex[4], norm[6] }, { pos[1], tex[5], norm[6] }, { pos[4], tex[4], norm[6] },
+				{ pos[5], tex[1], norm[7] }, { pos[4], tex[5], norm[7] }, { pos[1], tex[1], norm[7] }
 			}
 		};
 		vertices = basicVertices;
+
+		calcTangents();
 	}
 
 	MeshData::MeshData(const Triangle& tri) noexcept
@@ -777,11 +662,12 @@ namespace darmok
 		auto n = tri.getNormal();
 		vertices = {
 			{ 
-				{ tri.vertices[0], n, { 0, 0 } },
-				{ tri.vertices[1], n, { 1, 0 } },
-				{ tri.vertices[2], n, { 1, 1 } }
+				{ tri.vertices[0], { 0, 0 }, n },
+				{ tri.vertices[1], { 1, 0 }, n },
+				{ tri.vertices[2], { 1, 1 }, n }
 			}
 		};
+		calcTangents();
 	}
 
 	MeshData::MeshData(const Polygon& poly) noexcept
@@ -790,21 +676,13 @@ namespace darmok
 		{
 			*this += MeshData(tri);
 		}
-		config.offset += poly.origin;
-	}
-
-	MeshData MeshData::operator+(const MeshData& other) noexcept
-	{
-		MeshData sum = *this;
-		sum += other;
-		return sum;
+		*this *= glm::translate(glm::mat4(1), poly.origin);
 	}
 
 	MeshData& MeshData::operator+=(const MeshData& other) noexcept
 	{
 		auto offset = vertices.size();
 		MeshData fother = other;
-		fother.denormalize(config);
 		indices.reserve(indices.size() + other.indices.size());
 		for (auto& idx : fother.indices)
 		{
@@ -812,6 +690,168 @@ namespace darmok
 		}
 		vertices.reserve(vertices.size() + other.vertices.size());
 		vertices.insert(vertices.end(), fother.vertices.begin(), fother.vertices.end());
+		return *this;
+	}
+
+	MeshData& MeshData::operator*=(const glm::mat4& transform) noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.position = transform * glm::vec4(vertex.position, 1.F);
+			vertex.normal = transform * glm::vec4(vertex.normal, 0.F);
+			vertex.tangent = transform * vertex.tangent;
+		}
+		return *this;
+	}
+
+	MeshData& MeshData::operator*=(const glm::mat2& textureTransform) noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.texCoord = textureTransform * vertex.texCoord;
+		}
+		return *this;
+	}
+
+	MeshData& MeshData::operator*=(const Color& color) noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.color *= Colors::normalize(color);
+		}
+		return *this;
+	}
+
+	MeshData& MeshData::operator*=(const glm::uvec2& textureScale) noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.texCoord *= textureScale;
+		}
+		return *this;
+	}
+
+	MeshData& MeshData::operator+=(const glm::uvec2& textureOffset) noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.texCoord += textureOffset;
+		}
+		return *this;
+	}
+
+	MeshData& MeshData::shiftIndices(Index offset) noexcept
+	{
+		for (auto& idx : indices)
+		{
+			idx += offset;
+		}
+		return *this;
+	}
+
+
+	struct CalcTangentsOperation final
+	{
+	public:
+		CalcTangentsOperation() noexcept
+		{
+			iface.m_getNumFaces = getNumFaces;
+			iface.m_getNumVerticesOfFace = getNumFaceVertices;
+			iface.m_getNormal = getNormal;
+			iface.m_getPosition = getPosition;
+			iface.m_getTexCoord = getTexCoords;
+			iface.m_setTSpaceBasic = setTangent;
+
+			context.m_pInterface = &iface;
+		}
+
+		void operator()(MeshData& mesh) noexcept
+		{
+			context.m_pUserData = &mesh;
+			genTangSpaceDefault(&this->context);
+		}
+
+	private:
+		SMikkTSpaceInterface iface{};
+		SMikkTSpaceContext context{};
+
+		static MeshData& getMeshDataFromContext(const SMikkTSpaceContext* context) noexcept
+		{
+			return *static_cast<MeshData*>(context->m_pUserData);
+		}
+
+		static int getVertexIndex(const SMikkTSpaceContext* context, int iFace, int iVert) noexcept
+		{
+			MeshData& mesh = getMeshDataFromContext(context);
+			auto faceSize = getNumFaceVertices(context, iFace);
+			auto index = (iFace * faceSize) + iVert;
+			if (mesh.indices.empty())
+			{
+				return index;
+			}
+			return mesh.indices[index];
+		}
+
+		static int getNumFaces(const SMikkTSpaceContext* context) noexcept
+		{
+			MeshData& mesh = getMeshDataFromContext(context);
+			if (mesh.indices.empty())
+			{
+				return mesh.vertices.size() / 3;
+			}
+			return mesh.indices.size() / 3;
+		}
+
+		static int getNumFaceVertices(const SMikkTSpaceContext* context, int iFace) noexcept
+		{
+			return 3;
+		}
+
+		static void getPosition(const SMikkTSpaceContext* context, float outpos[], int iFace, int iVert) noexcept
+		{
+			MeshData& mesh = getMeshDataFromContext(context);
+			auto index = getVertexIndex(context, iFace, iVert);
+			auto& vert = mesh.vertices[index];
+			outpos[0] = vert.position.x;
+			outpos[1] = vert.position.y;
+			outpos[2] = vert.position.z;
+		}
+
+		static void getNormal(const SMikkTSpaceContext* context, float outnormal[], int iFace, int iVert) noexcept
+		{
+			MeshData& mesh = getMeshDataFromContext(context);
+			auto index = getVertexIndex(context, iFace, iVert);
+			auto& vert = mesh.vertices[index];
+			outnormal[0] = vert.normal.x;
+			outnormal[1] = vert.normal.y;
+			outnormal[2] = vert.normal.z;
+		}
+
+		static void getTexCoords(const SMikkTSpaceContext* context, float outuv[], int iFace, int iVert) noexcept
+		{
+			MeshData& mesh = getMeshDataFromContext(context);
+			auto index = getVertexIndex(context, iFace, iVert);
+			auto& vert = mesh.vertices[index];
+			outuv[0] = vert.texCoord.x;
+			outuv[1] = vert.texCoord.y;
+		}
+
+		static void setTangent(const SMikkTSpaceContext* context, const float tangentu[], float fSign, int iFace, int iVert) noexcept
+		{
+			MeshData& mesh = getMeshDataFromContext(context);
+			auto index = getVertexIndex(context, iFace, iVert);
+			auto& vert = mesh.vertices[index];
+			vert.tangent.x = tangentu[0];
+			vert.tangent.y = tangentu[1];
+			vert.tangent.z = tangentu[2];
+			vert.tangent.w = fSign;
+		}
+	};
+
+	MeshData& MeshData::calcTangents() noexcept
+	{
+		CalcTangentsOperation op;
+		op(*this);
 		return *this;
 	}
 }

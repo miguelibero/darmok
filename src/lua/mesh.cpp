@@ -29,16 +29,6 @@ namespace darmok
 			{ "Diamond", LineMeshType::Diamond }
 		});
 
-		lua.new_usertype<MeshDataConfig>("MeshDataConfig",
-			sol::constructors<MeshDataConfig()>(),
-			"scale", &MeshDataConfig::scale,
-			"offset", &MeshDataConfig::offset,
-			"texture_scale", &MeshDataConfig::textureScale,
-			"texture_offset", &MeshDataConfig::textureOffset,
-			"color", &MeshDataConfig::color,
-			"type", &MeshDataConfig::type
-		);
-
 		lua.new_usertype<MeshData>("MeshData",
 			sol::constructors<
 				MeshData(),
@@ -81,7 +71,6 @@ namespace darmok
 				}
 			),
 			"new_bone", []() { return MeshData(Line(), LineMeshType::Diamond); },
-			"config", &MeshData::config,
 			"default_vertex_layout", sol::property(&MeshData::getDefaultVertexLayout),
 			"create_mesh", sol::overload(
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout)

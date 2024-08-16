@@ -54,7 +54,7 @@ namespace
 
 			scene.addComponent<AmbientLight>(scene.createEntity(), 0.5);
 
-			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");			
+			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");
 
 			auto animEntity = scene.createEntity();
 			auto& animTrans = scene.addComponent<Transform>(animEntity);

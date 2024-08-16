@@ -550,6 +550,10 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC glm::glm-header-only)
 find_package(tiny-process-library CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PRIVATE tiny-process-library::tiny-process-library)
 
+# mikktspace
+find_package(mikktspace CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PRIVATE mikktspace::mikktspace)
+
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")
   find_package(glfw3 CONFIG REQUIRED)

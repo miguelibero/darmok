@@ -25,7 +25,7 @@ namespace darmok
 		{
 			comp->init(cam, scene, app);
 		}
-		cam.getRenderGraph().addPass(*this);
+		renderReset();
 	}
 
 	void ForwardRenderer::update(float deltaTime)
@@ -97,7 +97,6 @@ namespace darmok
 	void ForwardRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
 	{
 		_viewId = viewId;
-
 		_cam->configureView(viewId);
 	}
 

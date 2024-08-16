@@ -75,7 +75,7 @@ namespace
 				auto light = _scene->createEntity();
 				_scene->addComponent<Transform>(light)
 					.setPosition({ 1, 2, -2 });
-				_scene->addComponent<PointLight>(light);
+				_scene->addComponent<PointLight>(light, 10);
 				_scene->addComponent<AmbientLight>(_scene->createEntity(), 0.5);
 			}
 

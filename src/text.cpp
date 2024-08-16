@@ -156,7 +156,7 @@ namespace darmok
 			return false;
 		}
 
-		data.config.color = _color;
+		data *= _color;
 
 		Data vertexData;
 		Data indexData;
@@ -240,11 +240,11 @@ namespace darmok
 			config.fixEndOfLine(pos, lineSize);
 
 			MeshData glyphData(Rectangle(glyph->size));
-			glyphData.config.textureScale = glyph->size;
-			glyphData.config.offset = glm::vec3(0);
-			glyphData.normalize();
-			glyphData.config.textureOffset = glyph->texturePosition;
-			glyphData.config.offset = glm::vec3(pos, 0) + glm::vec3(glyph->offset, 0);
+			
+			glyphData *= glyph->size;
+			glyphData += glyph->texturePosition;
+			auto offset = glm::vec3(pos, 0) + glm::vec3(glyph->offset, 0);
+			glyphData *= glm::translate(glm::mat4(1), offset);
 			data += glyphData;
 
 			pos += glyphAdv * glm::vec2(glyph->originalSize);
@@ -259,8 +259,8 @@ namespace darmok
 			texScale /= glm::vec2(tex->getSize());
 		}
 
-		data.config.textureScale = texScale;
-		data.config.scale = glm::vec3(texScale, 0);
+		data *= texScale;
+		data *= glm::scale(glm::mat4(1), glm::vec3(texScale, 0));
 
 		return data;
 	}

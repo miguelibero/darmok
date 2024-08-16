@@ -402,6 +402,15 @@ namespace darmok
         { aiTextureType_EMISSIVE, 0, MaterialTextureType::Emissive },
     };
 
+    /*
+    const std::vector<AssimpModelConverter::AssimpMaterialTexture> AssimpModelConverter::_classicMaterialTextures =
+    {
+        { aiTextureType_DIFFUSE, 0, ... },
+        { aiTextureType_SPECULAR, 0, ... },
+        { aiTextureType_AMBIENT, 0, ... },
+    };
+    */
+
     void AssimpModelConverter::update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept
     {
         modelMat.program = _config.program;

@@ -48,6 +48,7 @@
     "catch2",
     "miniaudio",
     "taskflow",
-    "tiny-process-library"
+    "tiny-process-library",
+    "mikktspace"
   ]
 }

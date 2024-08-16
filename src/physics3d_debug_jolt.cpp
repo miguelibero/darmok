@@ -42,8 +42,8 @@ namespace darmok::physics3d
         , _enabled(false)
         , _meshBatchSize(32 * 1024)
     {
-        _solidMeshData.config.type = MeshType::Transient;
-        _wireMeshData.config.type = MeshType::Transient;
+        _solidMeshData.type = MeshType::Transient;
+        _wireMeshData.type = MeshType::Transient;
     }
 
     void PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app)
@@ -181,13 +181,12 @@ namespace darmok::physics3d
         _font->update(chars);
 
         MeshData meshData;
-        meshData.config.type = MeshType::Transient;
+        meshData.type = MeshType::Transient;
         for (auto& textData : _textData)
         {
             auto textMeshData = Text::createMeshData(textData.content, *_font);
-            textMeshData.config.color = textData.color;
-            textMeshData.config.offset = textData.position;
-            textMeshData.config.scale = glm::vec3(textData.height);
+            textMeshData *= textData.color;
+            textMeshData *= glm::translate(glm::mat4(textData.height), textData.position);
 
             meshData += textMeshData;
             tryRenderMeshBatch(meshData, EDrawMode::Solid);
@@ -234,15 +233,7 @@ namespace darmok::physics3d
         auto v = Colors::normalize(color);
         _encoder->setUniform(_colorUniform, glm::value_ptr(v));
 
-        uint64_t state = BGFX_STATE_WRITE_RGB
-            | BGFX_STATE_WRITE_A
-            | BGFX_STATE_WRITE_Z
-            | BGFX_STATE_DEPTH_TEST_LEQUAL
-            | BGFX_STATE_CULL_CCW
-            | BGFX_STATE_MSAA
-            | BGFX_STATE_BLEND_ALPHA
-            ;
-
+        uint64_t state = BGFX_STATE_DEFAULT;
         if (mode == EDrawMode::Wireframe)
         {
             state |= BGFX_STATE_PT_LINES;
@@ -256,7 +247,7 @@ namespace darmok::physics3d
     void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color)
     {
         MeshData data(Line(JoltUtils::convert(from), JoltUtils::convert(to)));
-        data.config.color = JoltUtils::convert(color);
+        data *= JoltUtils::convert(color);
         _wireMeshData += data;
         tryRenderMeshBatch(_wireMeshData, EDrawMode::Wireframe);
     }
@@ -264,7 +255,7 @@ namespace darmok::physics3d
     void PhysicsDebugRendererImpl::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow)
     {
         MeshData data(darmok::Triangle(JoltUtils::convert(v1), JoltUtils::convert(v2), JoltUtils::convert(v3)));
-        data.config.color = JoltUtils::convert(color);
+        data *= JoltUtils::convert(color);
         if (castShadow == ECastShadow::On)
         {
             _solidMeshData += data;
@@ -304,8 +295,8 @@ namespace darmok::physics3d
                 auto vert = triangles[i].mV[j];
                 data.vertices.emplace_back(
                     JoltUtils::convert(vert.mPosition),
-                    JoltUtils::convert(vert.mNormal),
                     JoltUtils::convert(vert.mUV),
+                    JoltUtils::convert(vert.mNormal),
                     JoltUtils::convert(vert.mColor)
                 );
             }
@@ -321,8 +312,8 @@ namespace darmok::physics3d
             auto vert = vertices[i];
             data.vertices.emplace_back(
                 JoltUtils::convert(vert.mPosition),
-                JoltUtils::convert(vert.mNormal),
                 JoltUtils::convert(vert.mUV),
+                JoltUtils::convert(vert.mNormal),
                 JoltUtils::convert(vert.mColor)
             );
         }

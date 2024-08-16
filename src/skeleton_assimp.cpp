@@ -331,10 +331,13 @@ namespace darmok
             }
             if (!found)
             {
+                /*
                 std::string err = "could not find skeleton bone \"" + boneName
                     + "\" in animation \"" + assimpAnim.mName.C_Str() + "\"";
                 logInfo(assimpAnim, err);
                 throw std::runtime_error(err);
+                */
+                continue;
             }
 
             aiMatrix4x4 baseTrans;
