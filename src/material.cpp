@@ -19,7 +19,7 @@ namespace darmok
 		, _roughnessFactor(0.F)
 		, _normalScale(1.F)
 		, _occlusionStrength(0.F)
-		, _emissiveColor(Colors::white())
+		, _emissiveColor(Colors::black())
 		, _multipleScattering(false)
 		, _whiteFurnance(0.F)
 		, _opaque(false)
@@ -285,19 +285,12 @@ namespace darmok
 		encoder.setUniform(_baseColorUniform, glm::value_ptr(v));
 		v = glm::vec4(mat.getMetallicFactor(), mat.getRoughnessFactor(), mat.getNormalScale(), mat.getOcclusionStrength());
 		encoder.setUniform(_metallicRoughnessNormalOcclusionUniform, glm::value_ptr(v));
-		v = glm::vec4(mat.getEmissiveColor(), 0);
+		v = glm::vec4(Colors::normalize(mat.getEmissiveColor()), 0);
 		encoder.setUniform(_emissiveColorUniform, glm::value_ptr(v));
 		v = glm::vec4(mat.getMultipleScattering() ? 1.F : 0.F, mat.getWhiteFurnanceFactor(), 0, 0);
 		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(v));
 
-		uint64_t state = BGFX_STATE_WRITE_RGB
-			| BGFX_STATE_WRITE_A
-			| BGFX_STATE_WRITE_Z
-			| BGFX_STATE_DEPTH_TEST_LEQUAL
-			| BGFX_STATE_CULL_CCW
-			| BGFX_STATE_MSAA
-			| BGFX_STATE_BLEND_ALPHA
-			;
+		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
 
 		if (mat.getPrimitiveType() == MaterialPrimitiveType::Line)
 		{

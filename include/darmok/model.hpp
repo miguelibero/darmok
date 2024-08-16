@@ -96,7 +96,7 @@ namespace darmok
         float roughnessFactor = 0.F;
         float normalScale = 0.F;
         float occlusionStrength = 0.F;
-        Color3 emissiveColor = Colors::white();
+        Color3 emissiveColor = Colors::black();
         bool twoSided = false;
 
         using BlendMode = ModelMaterialBlendMode;

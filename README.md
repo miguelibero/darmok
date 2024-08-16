@@ -24,6 +24,7 @@ currently using:
 * [miniaudio](https://miniaud.io/) for audio
 * [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & physics
 * [tiny-process-lib](https://gitlab.com/eidheim/tiny-process-library) to run os processes
+* [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
 
 planned to use:
 
@@ -66,8 +67,9 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * bgfx window setup (GLFW on windows & linux)
 * update logic methods with delta time
 * renderer: threaded render graph that compiles passes inputs and outputs
+    * forward render
     * unlit
-    * forward with phong lighting (point, ambient)
+    * PBR metallic-roughness (point & ambient lights)
 * entity component scene using entt
     * transform, camera
 * sprites and spritesheets
@@ -99,7 +101,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * more renderer features
     * other types of lights
     * deferred
-    * PBR
     * SSAO
 * text improvements
     * finish all the TextRenderConfig options
@@ -136,7 +137,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
-* [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
 
 ## Example code
 
@@ -149,7 +149,7 @@ camTrans:look_at({ 0, 0, 0 })
 local cam = camEntity:add_component(Camera)
 cam:set_projection(60, { 0.3, 1000 })
 local renderer = cam:add_renderer(ForwardRenderer)
-renderer:add_component(PhongLightingComponent)
+renderer:add_component(LightingRenderComponent)
 
 local lightEntity = app.scene:create_entity()
 lightEntity:add_component(Transform, { 1, 1, -2 })

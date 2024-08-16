@@ -176,7 +176,7 @@ namespace darmok
 	{
 		LuaViewport::bind(lua);
 		LuaForwardRenderer::bind(lua);
-		LuaPhongLightingComponent::bind(lua);
+		LuaLightingRenderComponent::bind(lua);
 
 #ifdef PHYSICS_DEBUG_RENDERER
 		physics3d::LuaPhysicsDebugRenderer::bind(lua);

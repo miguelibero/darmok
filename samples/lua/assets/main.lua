@@ -15,7 +15,7 @@ function init()
     local cam = camEntity:add_component(Camera)
     cam:set_perspective(60, app.window.size, 0.3, 1000)
     local renderer = cam:add_renderer(ForwardRenderer)
-    renderer:add_component(PhongLightingComponent)
+    renderer:add_component(LightingRenderComponent)
 
     local freelook = scene:add_component(FreelookController, cam)
 

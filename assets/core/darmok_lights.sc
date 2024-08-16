@@ -61,10 +61,11 @@ uint pointLightCount()
 PointLight getPointLight(uint i)
 {
     PointLight light;
-    light.position = b_pointLights[2 * i + 0].xyz;
-    vec4 intensityRadiusVec = b_pointLights[2 * i + 1];
+    light.position = b_pointLights[3 * i + 0].xyz;
+    vec4 intensityRadiusVec = b_pointLights[3 * i + 1];
     light.intensity = intensityRadiusVec.xyz;
     light.radius = intensityRadiusVec.w;
+    light.specularIntensity = b_pointLights[3 * i + 2].xyz;
     return light;
 }
 

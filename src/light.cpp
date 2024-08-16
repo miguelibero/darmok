@@ -11,10 +11,11 @@
 
 namespace darmok
 {
-    PointLight::PointLight(float intensity) noexcept
+    PointLight::PointLight(float intensity, const Color3& color) noexcept
         : _intensity(intensity)
-        , _diffuseColor(Colors::white3())
-        , _specularColor(Colors::white3())
+        , _diffuseColor(color)
+        , _specularColor(color)
+        , _attenuation(0, 1, 0)
     {
     }
 
@@ -56,9 +57,32 @@ namespace darmok
 
     float PointLight::getRadius() const noexcept
     {
-        // could be calculated from the attenuation
-        float v = glm::max(1.0f, 0.05f * _intensity) / _intensity;
-        return 1.0f / sqrtf(v);
+        static const float intensityThreshold = 1.0f;
+        auto intensity = glm::compMax(Colors::normalize(_diffuseColor) * _intensity);
+        auto thres = intensity / intensityThreshold;
+
+        auto quat = _attenuation[2];
+        auto lin = _attenuation[1];
+        auto cons = _attenuation[0];
+
+        if (quat == 0.F)
+        {
+            if (lin == 0)
+            {
+                return 0.0f;
+            }
+            return (thres - cons) / lin;
+        }
+
+        float disc = lin * lin - 4 * quat * (cons - thres);
+        if (disc < 0.0f)
+        {
+            return 0.0f;
+        }
+
+        float d1 = (-lin + sqrt(disc)) / (2 * quat);
+        float d2 = (-lin - sqrt(disc)) / (2 * quat);
+        return glm::max(d1, d2);
     }
 
     const glm::vec3& PointLight::getAttenuation() const noexcept
@@ -104,7 +128,7 @@ namespace darmok
         return _intensity;
     }
 
-    PhongLightingComponent::PhongLightingComponent() noexcept
+    LightingRenderComponent::LightingRenderComponent() noexcept
         : _lightCountUniform{ bgfx::kInvalidHandle }
         , _lightDataUniform{ bgfx::kInvalidHandle }
         , _camPosUniform{ bgfx::kInvalidHandle }
@@ -123,18 +147,18 @@ namespace darmok
         createHandles();
     }
 
-    PhongLightingComponent::~PhongLightingComponent() noexcept
+    LightingRenderComponent::~LightingRenderComponent() noexcept
     {
         destroyHandles();
     }
 
-    void PhongLightingComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    void LightingRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _cam = cam;
     }
 
-    void PhongLightingComponent::createHandles() noexcept
+    void LightingRenderComponent::createHandles() noexcept
     {
         // TODO: does not work in OpenGL as the unfirm handles need to be created before the program
         _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
@@ -144,7 +168,7 @@ namespace darmok
         _normalMatrixUniform = bgfx::createUniform("u_normalMatrix", bgfx::UniformType::Mat3);
     }
 
-    void PhongLightingComponent::destroyHandles() noexcept
+    void LightingRenderComponent::destroyHandles() noexcept
     {
         std::vector<std::reference_wrapper<bgfx::UniformHandle>> handles = {
             _lightCountUniform, _lightDataUniform, _camPosUniform, _normalMatrixUniform
@@ -169,12 +193,12 @@ namespace darmok
         }
     }
 
-    void PhongLightingComponent::shutdown() noexcept
+    void LightingRenderComponent::shutdown() noexcept
     {
         destroyHandles();
     }
 
-    size_t PhongLightingComponent::updatePointLights() noexcept
+    size_t LightingRenderComponent::updatePointLights() noexcept
     {
         auto& registry = _scene->getRegistry();
         auto pointLights = _cam->createEntityView<PointLight>(registry);
@@ -201,7 +225,7 @@ namespace darmok
                 Colors::normalize(pointLight.getSpecularColor()) * pointLight.getIntensity(),
                 pointLight.getRadius());
             writer.write(bgfx::Attrib::Color1, index, c);
-            index++;
+            ++index;
         }
         _pointLights = writer.finish();
         auto ptr = _pointLights.ptr();
@@ -214,7 +238,7 @@ namespace darmok
         return index;
     }
 
-    void PhongLightingComponent::updateAmbientLights() noexcept
+    void LightingRenderComponent::updateAmbientLights() noexcept
     {
         auto& registry = _scene->getRegistry();
         auto ambientLights = _cam->createEntityView<AmbientLight>(registry);
@@ -227,7 +251,7 @@ namespace darmok
         }
     }
 
-    void PhongLightingComponent::updateCamera() noexcept
+    void LightingRenderComponent::updateCamera() noexcept
     {
         _camPos = glm::vec4(0);
         if (!_cam || !_scene)
@@ -246,7 +270,7 @@ namespace darmok
         }
     }
 
-    void PhongLightingComponent::update(float deltaTime) noexcept
+    void LightingRenderComponent::update(float deltaTime) noexcept
     {
         if (!_scene)
         {
@@ -257,7 +281,7 @@ namespace darmok
         updateCamera();
     }
 
-    void PhongLightingComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) noexcept
+    void LightingRenderComponent::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) noexcept
     {
         encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
         encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));

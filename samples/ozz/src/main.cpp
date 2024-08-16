@@ -44,15 +44,15 @@ namespace
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setWindowPerspective(60, 0.3, 1000);
 			auto& renderer = cam.addRenderer<ForwardRenderer>();
-			renderer.addComponent<PhongLightingComponent>();
+			renderer.addComponent<LightingRenderComponent>();
 			renderer.addComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = scene.addSceneComponent<FreelookController>(cam);
 
 			auto lightEntity = scene.createEntity();
-			scene.addComponent<Transform>(lightEntity, glm::vec3{ 50, 50, -100 });
-			scene.addComponent<PointLight>(lightEntity);
+			// scene.addComponent<Transform>(lightEntity, glm::vec3{ 5, 5, -10 });
+			scene.addComponent<PointLight>(lightEntity, 10);
 
-			scene.addComponent<AmbientLight>(scene.createEntity(), 0.8);
+			scene.addComponent<AmbientLight>(scene.createEntity(), 0.5);
 
 			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");			
 
@@ -68,14 +68,12 @@ namespace
 			auto skelEntity = scene.createEntity();
 			scene.addComponent<Transform>(skelEntity, animTrans, glm::vec3(-1, 0, 0));
 			
-			auto boneTex = getAssets().getColorTextureLoader()(Colors::grey());
-			auto boneMat = std::make_shared<Material>(prog, boneTex);
+			auto boneMat = std::make_shared<Material>(prog, Colors::grey());
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 #ifdef DARMOK_FREETYPE
 			renderSkel.setFont(getAssets().getFontLoader()("../../assets/noto.ttf"));
 			cam.addRenderer<TextRenderer>();
 #endif
-
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
 			auto model = getAssets().getModelLoader()("model.dml");
 

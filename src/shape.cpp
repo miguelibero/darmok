@@ -104,6 +104,36 @@ namespace darmok
         return glm::normalize(normal);
     }
 
+    glm::vec3 Triangle::getTangent(const TextureTriangle& texTri) const noexcept
+    {
+        glm::vec3 edge1 = vertices[1] - vertices[0];
+        glm::vec3 edge2 = vertices[2] - vertices[0];
+        glm::vec2 deltaUV1 = texTri.coordinates[1] - texTri.coordinates[0];
+        glm::vec2 deltaUV2 = texTri.coordinates[2] - texTri.coordinates[0];
+
+        glm::vec3 tangent;
+        float r = deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y;
+        if (r != 0.0F)
+        {
+            tangent.x = (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x) / r;
+            tangent.y = (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y) / r;
+            tangent.z = (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z) / r;
+        }
+        tangent = glm::normalize(tangent);
+        return tangent;
+    }
+
+    glm::vec3 Triangle::getTangent(const TextureTriangle& texTri, const glm::vec3& normal) const noexcept
+    {
+        auto tangent = getTangent(texTri);
+        auto d = glm::dot(normal, tangent);
+        if (!isnan(d))
+        {
+            tangent = glm::normalize(tangent - normal * d);
+        }
+        return tangent;
+    }
+
     Triangle& Triangle::operator*=(float scale) noexcept
     {
         for (auto& vert : vertices)
@@ -116,6 +146,37 @@ namespace darmok
     Triangle Triangle::operator*(float scale) const noexcept
     {
         Triangle tri = *this;
+        tri *= scale;
+        return tri;
+    }
+
+    TextureTriangle::TextureTriangle(const glm::vec2& coord1, const glm::vec2& coord2, const glm::vec2& coord3) noexcept
+        : coordinates{ coord1, coord2, coord3 }
+    {
+    }
+
+    TextureTriangle::TextureTriangle(const Coordinates& coordinates) noexcept
+        : coordinates(coordinates)
+    {
+    }
+
+    std::string TextureTriangle::toString() const noexcept
+    {
+        return "TextureTriangle(" + glm::to_string(coordinates[0]) + ", " + glm::to_string(coordinates[1]) + ", " + glm::to_string(coordinates[2]) + ")";
+    }
+
+    TextureTriangle& TextureTriangle::operator*=(float scale) noexcept
+    {
+        for (auto& coord : coordinates)
+        {
+            coord *= scale;
+        }
+        return *this;
+    }
+
+    TextureTriangle TextureTriangle::operator*(float scale) const noexcept
+    {
+        TextureTriangle tri = *this;
         tri *= scale;
         return tri;
     }

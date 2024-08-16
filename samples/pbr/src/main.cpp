@@ -41,14 +41,15 @@ namespace
 				.setWindowPerspective(60, 0.3, 1000);
 			
 			cam.addRenderer<ForwardRenderer>()
-				.addComponent<PhongLightingComponent>();
+				.addComponent<LightingRenderComponent>();
 
 			_freelook = scene->addSceneComponent<FreelookController>(cam);
 
 			auto light = registry.create();
 			registry.emplace<Transform>(light)
 				.setPosition({ 1, 1, -2 });
-			registry.emplace<PointLight>(light);
+			registry.emplace<PointLight>(light, 10.F);
+			registry.emplace<AmbientLight>(light, 0.2F);
 
 			auto greenMat = std::make_shared<Material>(prog, Colors::green());
 			auto cubeMesh = MeshData(Cube()).createMesh(layout);

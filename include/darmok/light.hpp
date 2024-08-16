@@ -15,7 +15,7 @@ namespace darmok
     class DARMOK_EXPORT PointLight final
     {
     public:
-        PointLight(float intensity = 1.F) noexcept;
+        PointLight(float intensity = 1.F, const Color3& color = Colors::white3()) noexcept;
 
         PointLight& setIntensity(float intensity) noexcept;
         PointLight& setAttenuation(const glm::vec3& attn) noexcept;
@@ -52,11 +52,11 @@ namespace darmok
     };
 
 
-    class DARMOK_EXPORT PhongLightingComponent final : public IRenderComponent
+    class DARMOK_EXPORT LightingRenderComponent final : public IRenderComponent
     {
     public:
-        PhongLightingComponent() noexcept;
-        ~PhongLightingComponent() noexcept;
+        LightingRenderComponent() noexcept;
+        ~LightingRenderComponent() noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown()  noexcept override;
         void update(float deltaTime)  noexcept override;

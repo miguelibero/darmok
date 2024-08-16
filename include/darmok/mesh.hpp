@@ -209,6 +209,9 @@ namespace darmok
         bool empty() const noexcept;
         void clear() noexcept;
 
+        using IndexTriangle = std::array<Index, 3>;
+        std::vector<IndexTriangle> getTriangleIndices() const noexcept;
+
         [[nodiscard]] void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;

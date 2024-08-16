@@ -54,6 +54,8 @@ namespace darmok
         }
     };
 
+    struct TextureTriangle;
+
     struct DARMOK_EXPORT Triangle final
     {
         using Vertices = std::array<glm::vec3, 3>;
@@ -62,7 +64,10 @@ namespace darmok
         Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept;
         Triangle(const Vertices& vertices = {}) noexcept;
         std::string toString() const noexcept;
+
         glm::vec3 getNormal() const;
+        glm::vec3 getTangent(const TextureTriangle& texTri) const noexcept;
+        glm::vec3 getTangent(const TextureTriangle& texTri, const glm::vec3& normal) const noexcept;
 
         Triangle& operator*=(float scale) noexcept;
         Triangle operator*(float scale) const noexcept;
@@ -71,6 +76,25 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(vertices);
+        }
+    };
+
+    struct DARMOK_EXPORT TextureTriangle final
+    {
+        using Coordinates = std::array<glm::vec2, 3>;
+        Coordinates coordinates;
+
+        TextureTriangle(const glm::vec2& coord1, const glm::vec2& coord2, const glm::vec2& coord3) noexcept;
+        TextureTriangle(const Coordinates& coordinates = {}) noexcept;
+        std::string toString() const noexcept;
+
+        TextureTriangle& operator*=(float scale) noexcept;
+        TextureTriangle operator*(float scale) const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(coordinates);
         }
     };
 

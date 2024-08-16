@@ -55,7 +55,7 @@ namespace
 					.setWindowPerspective(60, 0.3, 1000);
 
 				_renderer = _cam->addRenderer<ForwardRenderer>();
-				_renderer->addComponent<PhongLightingComponent>();
+				_renderer->addComponent<LightingRenderComponent>();
 
 				_freeLook = _scene->addSceneComponent<FreelookController>(*_cam);
 #ifdef PHYSICS_DEBUG_RENDERER

@@ -2,6 +2,7 @@
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/data.hpp>
+#include <array>
 
 namespace darmok
 {
@@ -499,22 +500,52 @@ namespace darmok
 		indices.clear();
 	}
 
+	std::vector<MeshData::IndexTriangle> MeshData::getTriangleIndices() const noexcept
+	{
+		std::vector<std::array<Index, 3>> tris;
+		if (indices.empty())
+		{
+			tris.reserve(vertices.size() / 3);
+			for (Index i = 0; i < vertices.size() - 2; i += 3)
+			{
+				std::array<Index, 3> v = { (Index)(i + 0), (Index)(i + 1), (Index)(i + 2) };
+				tris.push_back(v);
+			}
+			return tris;
+		}
+		tris.reserve(indices.size() / 3);
+		for (size_t i = 0; i < indices.size() - 2; i += 3)
+		{
+			std::array<Index, 3> v = { indices[i + 0], indices[i + 1], indices[i + 2] };
+			tris.push_back(v);
+		}
+		return tris;
+	}
+
 	void MeshData::exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept
 	{
 		VertexDataWriter writer(vertexLayout, uint32_t(vertices.size()));
+
+		std::vector<glm::vec3> positions;
+		positions.reserve(vertices.size());
+		std::vector<glm::vec2> texCoords;
+		texCoords.reserve(vertices.size());
+
 		uint32_t i = 0;
 		for (auto& vertex : vertices)
 		{
 			if (vertexLayout.has(bgfx::Attrib::Position))
 			{
-				auto v = config.scale * (vertex.position + config.offset);
-				v = config.transform * glm::vec4(v, 1);
-				writer.write(bgfx::Attrib::Position, i, v);
+				auto pos = config.scale * (vertex.position + config.offset);
+				pos = config.transform * glm::vec4(pos, 1);
+				positions.push_back(pos);
+				writer.write(bgfx::Attrib::Position, i, pos);
 			}
 			if (vertexLayout.has(bgfx::Attrib::TexCoord0))
 			{
-				auto v = config.textureScale * (vertex.texCoord + config.textureOffset);
-				writer.write(bgfx::Attrib::TexCoord0, i, v);
+				auto texCoord = config.textureScale * (vertex.texCoord + config.textureOffset);
+				texCoords.push_back(texCoord);
+				writer.write(bgfx::Attrib::TexCoord0, i, texCoord);
 			}
 			if (vertexLayout.has(bgfx::Attrib::Normal))
 			{
@@ -524,7 +555,23 @@ namespace darmok
 			{
 				writer.write(bgfx::Attrib::Color0, i, Colors::multiply(config.color, vertex.color));
 			}
-			i++;
+			++i;
+		}
+
+		if (vertexLayout.has(bgfx::Attrib::Tangent) && !positions.empty() && !texCoords.empty())
+		{
+			uint32_t i = 0;
+			for (auto& idx : getTriangleIndices())
+			{
+				Triangle tri(positions[idx[0]], positions[idx[1]], positions[idx[2]]);
+				TextureTriangle texTri(texCoords[idx[0]], texCoords[idx[1]], texCoords[idx[2]]);
+				for (size_t j = 0; j < 3; ++j)
+				{
+					auto& normal = vertices[idx[j]].normal;
+					writer.write(bgfx::Attrib::Tangent, i, tri.getTangent(texTri, normal));
+					++i;
+				}
+			}
 		}
 
 		vertexData = writer.finish();
@@ -534,7 +581,7 @@ namespace darmok
 		}
 		else
 		{
-			updateMeshIndexData<VertexIndex>(indexData, indices, config.indexOffset);
+			updateMeshIndexData<Index>(indexData, indices, config.indexOffset);
 		}
 	}
 
@@ -631,14 +678,14 @@ namespace darmok
 		{
 			vertices.reserve(n);
 			auto halfHeight = capsule.cylinderHeight / capsule.radius * 0.5F;
-			for (int r = 0; r < rings; r++)
+			for (int r = 0; r < rings; ++r)
 			{
 				auto h = halfHeight;
 				if (r > rings * 0.5)
 				{
 					h *= -1;
 				}
-				for (int s = 0; s < sectors; s++)
+				for (int s = 0; s < sectors; ++s)
 				{
 					auto u = s * S;
 					auto v = r * R;
@@ -659,9 +706,9 @@ namespace darmok
 
 		{
 			indices.reserve(n * 6);
-			for (VertexIndex r = 0; r < rings - 1; r++)
+			for (VertexIndex r = 0; r < rings - 1; ++r)
 			{
-				for (VertexIndex s = 0; s < sectors - 1; s++)
+				for (VertexIndex s = 0; s < sectors - 1; ++s)
 				{
 					indices.push_back(r * sectors + s);
 					indices.push_back(r * sectors + (s + 1));
