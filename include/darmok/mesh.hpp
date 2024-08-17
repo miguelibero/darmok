@@ -145,7 +145,7 @@ namespace darmok
         glm::vec2 texCoord;
         glm::vec3 normal = glm::vec3(0, 1, 0);
         Color color = Colors::white();
-        glm::vec4 tangent = glm::vec4(0, 0, 0, 0);
+        glm::vec3 tangent = glm::vec3(0, 0, 0);
     };
 
     class Texture;

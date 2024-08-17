@@ -18,6 +18,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 #include <assimp/GltfMaterial.h>
+#include <mikktspace.h>
 
 #include <glm/gtx/component_wise.hpp>
 
@@ -124,7 +125,7 @@ namespace darmok
 
     unsigned int AssimpSceneLoader::getImporterFlags(const Config& config) noexcept
     {
-        auto flags = aiProcess_CalcTangentSpace |
+        auto flags = // aiProcess_CalcTangentSpace | // produces weird tangents, we use mikktspace instead
             aiProcess_Triangulate |
             aiProcess_JoinIdenticalVertices |
             aiProcess_SortByPType |
@@ -470,10 +471,112 @@ namespace darmok
         }
     }
 
+    struct AssimpCalcTangentsOperation final
+    {
+    public:
+        AssimpCalcTangentsOperation() noexcept
+        {
+            _iface.m_getNumFaces = getNumFaces;
+            _iface.m_getNumVerticesOfFace = getNumFaceVertices;
+            _iface.m_getNormal = getNormal;
+            _iface.m_getPosition = getPosition;
+            _iface.m_getTexCoord = getTexCoords;
+            _iface.m_setTSpaceBasic = setTangent;
+
+            _context.m_pInterface = &_iface;
+        }
+
+        std::vector<glm::vec3> operator()(const aiMesh& mesh) noexcept
+        {
+            _mesh = mesh;
+            _tangents.clear();
+            _tangents.resize(mesh.mNumVertices);
+            _context.m_pUserData = this;
+            genTangSpaceDefault(&_context);
+            _mesh.reset();
+            return _tangents;
+        }
+
+    private:
+        SMikkTSpaceInterface _iface{};
+        SMikkTSpaceContext _context{};
+        OptionalRef<const aiMesh> _mesh;
+        std::vector<glm::vec3> _tangents;
+
+        static const aiMesh& getMeshFromContext(const SMikkTSpaceContext* context) noexcept
+        {
+            return *static_cast<AssimpCalcTangentsOperation*>(context->m_pUserData)->_mesh;
+        }
+
+        static int getVertexIndex(const SMikkTSpaceContext* context, int iFace, int iVert) noexcept
+        {
+            auto& mesh = getMeshFromContext(context);
+            return mesh.mFaces[iFace].mIndices[iVert];
+        }
+
+        static int getNumFaces(const SMikkTSpaceContext* context) noexcept
+        {
+            auto& mesh = getMeshFromContext(context);
+            return mesh.mNumFaces;
+        }
+
+        static int getNumFaceVertices(const SMikkTSpaceContext* context, int iFace) noexcept
+        {
+            auto& mesh = getMeshFromContext(context);
+            return mesh.mFaces[iFace].mNumIndices;
+        }
+
+        static void getPosition(const SMikkTSpaceContext* context, float outpos[], int iFace, int iVert) noexcept
+        {
+            auto& mesh = getMeshFromContext(context);
+            auto index = getVertexIndex(context, iFace, iVert);
+            auto& pos = mesh.mVertices[index];
+            outpos[0] = pos.x;
+            outpos[1] = pos.y;
+            outpos[2] = pos.z;
+        }
+
+        static void getNormal(const SMikkTSpaceContext* context, float outnormal[], int iFace, int iVert) noexcept
+        {
+            auto& mesh = getMeshFromContext(context);
+            auto index = getVertexIndex(context, iFace, iVert);
+            auto& norm = mesh.mNormals[index];
+            outnormal[0] = norm.x;
+            outnormal[1] = norm.y;
+            outnormal[2] = norm.z;
+        }
+
+        static void getTexCoords(const SMikkTSpaceContext* context, float outuv[], int iFace, int iVert) noexcept
+        {
+            auto& mesh = getMeshFromContext(context);
+            auto index = getVertexIndex(context, iFace, iVert);
+            auto& texCoord = mesh.mTextureCoords[0][index];
+            outuv[0] = texCoord.x;
+            outuv[1] = texCoord.y;
+        }
+
+        static void setTangent(const SMikkTSpaceContext* context, const float tangentu[], float fSign, int iFace, int iVert) noexcept
+        {
+            auto& op = *static_cast<AssimpCalcTangentsOperation*>(context->m_pUserData);
+            auto index = getVertexIndex(context, iFace, iVert);
+            auto& tangent = op._tangents[index];
+            tangent.x = tangentu[0];
+            tangent.y = tangentu[1];
+            tangent.z = tangentu[2];
+        }
+    };
+
     Data AssimpModelConverter::createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept
     {
         auto vertexCount = assimpMesh.mNumVertices;
         VertexDataWriter writer(_config.vertexLayout, vertexCount, _allocator);
+
+        std::vector<glm::vec3> tangents;
+        if (assimpMesh.mTangents == nullptr && _config.vertexLayout.has(bgfx::Attrib::Tangent))
+        {
+            AssimpCalcTangentsOperation op;
+            tangents = op(assimpMesh);
+        }
 
         for(size_t i = 0; i < assimpMesh.mNumVertices; i++)
         {
@@ -489,9 +592,9 @@ namespace darmok
             {
                 writer.write(bgfx::Attrib::Tangent, i, AssimpUtils::convert(assimpMesh.mTangents[i]));
             }
-            if(assimpMesh.mBitangents)
+            else if (tangents.size() > i)
             {
-                writer.write(bgfx::Attrib::Bitangent, i, AssimpUtils::convert(assimpMesh.mBitangents[i]));
+                writer.write(bgfx::Attrib::Tangent, i, tangents[i]);
             }
             for(size_t j = 0; j < AI_MAX_NUMBER_OF_COLOR_SETS; j++)
             {

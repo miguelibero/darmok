@@ -546,59 +546,89 @@ namespace darmok
 
 	MeshData::MeshData(const Capsule& capsule, unsigned int lod) noexcept
 	{
-		auto rings = lod;
-		auto sectors = lod;
-		float texScale = 1.f;
+		unsigned int radialSegments = lod;
+		unsigned int capSegments = lod;
+		auto halfLength = 0.5F * capsule.cylinderHeight;
 
-		float R = 1.f / (float)(rings - 1);
-		float S = 1.f / (float)(sectors - 1);
-		auto n = (size_t)rings * sectors;
-		auto pi = glm::pi<float>();
-
+		auto calcCapVertices = [this, capSegments, radialSegments, halfLength](bool topCap)
 		{
-			vertices.reserve(n);
-			auto halfHeight = capsule.cylinderHeight / capsule.radius * 0.5F;
-			for (int r = 0; r < rings; r++)
+			int baseIndex = static_cast<int>(vertices.size());
+			float f = topCap ? 1.F : -1.F;
+			for (int i = 0; i <= capSegments; ++i)
 			{
-				auto h = halfHeight;
-				if (r > rings * 0.5)
+				float v = float(i) / capSegments;
+				float phi = v * glm::half_pi<float>();
+				float yCap = glm::sin(phi);
+
+				for (int j = 0; j <= radialSegments; ++j)
 				{
-					h *= -1;
-				}
-				for (int s = 0; s < sectors; s++)
-				{
-					auto u = s * S;
-					auto v = r * R;
-					auto theta = u * 2.0f * pi;
-					auto rho = v * pi;
-					auto pos = glm::vec3(
-						cos(theta) * sin(rho),
-						sin((0.5F * pi) + rho) + h,
-						sin(theta) * sin(rho)
+					float u = float(j) / radialSegments;
+					float theta = u * glm::two_pi<float>();
+					float x = glm::cos(theta) * glm::cos(phi);
+					float z = glm::sin(theta) * glm::cos(phi);
+
+					auto pos = glm::vec3(x, f * yCap, z);
+
+					vertices.emplace_back(
+						pos + glm::vec3(0, f * halfLength, 0),
+						glm::vec2(u, topCap ? v : 1.0f - v),
+						glm::normalize(pos)
 					);
-					vertices.emplace_back(pos, glm::vec2(
-						u * texScale,
-						v * texScale
-					), pos);
+
+					if (j < radialSegments && i < capSegments)
+					{
+						int current = baseIndex + i * (radialSegments + 1) + j;
+						int next = current + radialSegments + 1;
+
+						indices.push_back(current);
+						indices.push_back(next);
+						indices.push_back(current + 1);
+						indices.push_back(current + 1);
+						indices.push_back(next);
+						indices.push_back(next + 1);
+					}
+				}
+			}
+		};
+		
+		calcCapVertices(true);
+		calcCapVertices(false);
+
+		// body
+		for (int i = 0; i < 2; ++i)
+		{
+			float v = float(i);
+			float y = ((v * 2.F) - 1.F) * halfLength;
+
+			for (int j = 0; j <= radialSegments; ++j)
+			{
+				float u = float(j) / radialSegments;
+				float theta = u * glm::two_pi<float>();
+				float x = glm::cos(theta);
+				float z = glm::sin(theta);
+
+				vertices.emplace_back(
+					glm::vec3(x, y, z),
+					glm::vec2(u, (1.F + v) * 0.5F),
+					glm::normalize(glm::vec3(x, 0, z))
+				);
+
+				if (j < radialSegments && i == 0)
+				{
+					int current = j;
+					int next = current + radialSegments + 1;
+
+					indices.push_back(current);
+					indices.push_back(next);
+					indices.push_back(current + 1);
+
+					indices.push_back(current + 1);
+					indices.push_back(next);
+					indices.push_back(next + 1);
 				}
 			}
 		}
 
-		{
-			indices.reserve(n * 6);
-			for (VertexIndex r = 0; r < rings - 1; r++)
-			{
-				for (VertexIndex s = 0; s < sectors - 1; s++)
-				{
-					indices.push_back(r * sectors + s);
-					indices.push_back(r * sectors + (s + 1));
-					indices.push_back((r + 1) * sectors + (s + 1));
-					indices.push_back((r + 1) * sectors + (s + 1));
-					indices.push_back((r + 1) * sectors + s);
-					indices.push_back(r * sectors + s);
-				}
-			}
-		}
 		auto trans = glm::translate(glm::mat4(capsule.radius), capsule.origin / capsule.radius);
 		*this *= trans;
 
@@ -699,7 +729,7 @@ namespace darmok
 		{
 			vertex.position = transform * glm::vec4(vertex.position, 1.F);
 			vertex.normal = transform * glm::vec4(vertex.normal, 0.F);
-			vertex.tangent = transform * vertex.tangent;
+			vertex.tangent = transform * glm::vec4(vertex.tangent, 0.F);
 		}
 		return *this;
 	}
@@ -750,30 +780,30 @@ namespace darmok
 	}
 
 
-	struct CalcTangentsOperation final
+	struct MeshDataCalcTangentsOperation final
 	{
 	public:
-		CalcTangentsOperation() noexcept
+		MeshDataCalcTangentsOperation() noexcept
 		{
-			iface.m_getNumFaces = getNumFaces;
-			iface.m_getNumVerticesOfFace = getNumFaceVertices;
-			iface.m_getNormal = getNormal;
-			iface.m_getPosition = getPosition;
-			iface.m_getTexCoord = getTexCoords;
-			iface.m_setTSpaceBasic = setTangent;
+			_iface.m_getNumFaces = getNumFaces;
+			_iface.m_getNumVerticesOfFace = getNumFaceVertices;
+			_iface.m_getNormal = getNormal;
+			_iface.m_getPosition = getPosition;
+			_iface.m_getTexCoord = getTexCoords;
+			_iface.m_setTSpaceBasic = setTangent;
 
-			context.m_pInterface = &iface;
+			_context.m_pInterface = &_iface;
 		}
 
 		void operator()(MeshData& mesh) noexcept
 		{
-			context.m_pUserData = &mesh;
-			genTangSpaceDefault(&this->context);
+			_context.m_pUserData = &mesh;
+			genTangSpaceDefault(&_context);
 		}
 
 	private:
-		SMikkTSpaceInterface iface{};
-		SMikkTSpaceContext context{};
+		SMikkTSpaceInterface _iface{};
+		SMikkTSpaceContext _context{};
 
 		static MeshData& getMeshDataFromContext(const SMikkTSpaceContext* context) noexcept
 		{
@@ -844,13 +874,12 @@ namespace darmok
 			vert.tangent.x = tangentu[0];
 			vert.tangent.y = tangentu[1];
 			vert.tangent.z = tangentu[2];
-			vert.tangent.w = fSign;
 		}
 	};
 
 	MeshData& MeshData::calcTangents() noexcept
 	{
-		CalcTangentsOperation op;
+		MeshDataCalcTangentsOperation op;
 		op(*this);
 		return *this;
 	}
