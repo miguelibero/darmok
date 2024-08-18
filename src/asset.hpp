@@ -64,7 +64,6 @@ namespace darmok
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
-		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
@@ -101,7 +100,6 @@ namespace darmok
 		DataProgramLoader _programLoader;
 		ImageTextureLoader _textureLoader;
 		TexturePackerTextureAtlasLoader _textureAtlasLoader;
-		ColorTextureLoader _colorTextureLoader;
 		ModelExtLoader _modelLoader;
 		BinaryModelLoader _binModelLoader;
 		TextureAtlasFontLoader _textureAtlasFontLoader;

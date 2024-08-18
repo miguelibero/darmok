@@ -407,6 +407,8 @@ namespace darmok
 				.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
 				.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
 				.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+				.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+				.add(bgfx::Attrib::Tangent, 3, bgfx::AttribType::Float)
 				.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
 				.end();
 		}
@@ -431,26 +433,11 @@ namespace darmok
 		uint32_t i = 0;
 		for (auto& vertex : vertices)
 		{
-			if (vertexLayout.has(bgfx::Attrib::Position))
-			{
-				writer.write(bgfx::Attrib::Position, i, vertex.position);
-			}
-			if (vertexLayout.has(bgfx::Attrib::TexCoord0))
-			{
-				writer.write(bgfx::Attrib::TexCoord0, i, vertex.texCoord);
-			}
-			if (vertexLayout.has(bgfx::Attrib::Normal))
-			{
-				writer.write(bgfx::Attrib::Normal, i, vertex.normal);
-			}
-			if (vertexLayout.has(bgfx::Attrib::Tangent))
-			{
-				writer.write(bgfx::Attrib::Tangent, i, vertex.tangent);
-			}
-			if (vertexLayout.has(bgfx::Attrib::Color0))
-			{
-				writer.write(bgfx::Attrib::Color0, i, vertex.color);
-			}
+			writer.write(bgfx::Attrib::Position, i, vertex.position);
+			writer.write(bgfx::Attrib::TexCoord0, i, vertex.texCoord);
+			writer.write(bgfx::Attrib::Normal, i, vertex.normal);
+			writer.write(bgfx::Attrib::Tangent, i, vertex.tangent);
+			writer.write(bgfx::Attrib::Color0, i, vertex.color);
 			++i;
 		}
 
@@ -468,30 +455,30 @@ namespace darmok
 	MeshData::MeshData(const Cube& Cube) noexcept
 	{
 		const static std::vector<Vertex> basicVertices = {
-			{ { 1,  1,  1 }, { 0, 0 }, {  0,  0,  1 } },
-			{ { 0,  1,  1 }, { 1, 0 }, {  0,  0,  1 } },
-			{ { 0,  0,  1 }, { 1, 1 }, {  0,  0,  1 } },
-			{ { 1,  0,  1 }, { 0, 1 }, {  0,  0,  1 } },
-			{ { 1,  1,  0 }, { 0, 0 }, {  0,  0, -1 } },
-			{ { 1,  0,  0 }, { 1, 0 }, {  0,  0, -1 } },
-			{ { 0,  0,  0 }, { 1, 1 }, {  0,  0, -1 } },
-			{ { 0,  1,  0 }, { 0, 1 }, {  0,  0, -1 } },
-			{ { 1,  1,  1 }, { 0, 0 }, {  0,  1,  0 } },
-			{ { 1,  1,  0 }, { 1, 0 }, {  0,  1,  0 } },
-			{ { 0,  1,  0 }, { 1, 1 }, {  0,  1,  0 } },
-			{ { 0,  1,  1 }, { 0, 1 }, {  0,  1,  0 } },
-			{ { 1,  0,  1 }, { 0, 0 }, {  0, -1,  0 } },
-			{ { 0,  0,  1 }, { 1, 0 }, {  0, -1,  0 } },
-			{ { 0,  0,  0 }, { 1, 1 }, {  0, -1,  0 } },
-			{ { 1,  0,  0 }, { 0, 1 }, {  0, -1,  0 } },
-			{ { 1,  1,  1 }, { 0, 0 }, {  1,  0,  0 } },
-			{ { 1,  0,  1 }, { 1, 0 }, {  1,  0,  0 } },
-			{ { 1,  0,  0 }, { 1, 1 }, {  1,  0,  0 } },
-			{ { 1,  1,  0 }, { 0, 1 }, {  1,  0,  0 } },
-			{ { 0,  1,  1 }, { 0, 0 }, { -1,  0,  0 } },
-			{ { 0,  1,  0 }, { 1, 0 }, { -1,  0,  0 } },
-			{ { 0,  0,  0 }, { 1, 1 }, { -1,  0,  0 } },
-			{ { 0,  0,  1 }, { 0, 1 }, { -1,  0,  0 } }
+			{ { 1,  1,  1 }, { 0, 0 }, {  0,  0,  1 }, {  1,  0,  0 } },
+			{ { 0,  1,  1 }, { 1, 0 }, {  0,  0,  1 }, {  1,  0,  0 } },
+			{ { 0,  0,  1 }, { 1, 1 }, {  0,  0,  1 }, {  1,  0,  0 } },
+			{ { 1,  0,  1 }, { 0, 1 }, {  0,  0,  1 }, {  1,  0,  0 } },
+			{ { 1,  1,  0 }, { 0, 0 }, {  0,  0, -1 }, { -1,  0,  0 } },
+			{ { 1,  0,  0 }, { 1, 0 }, {  0,  0, -1 }, { -1,  0,  0 } },
+			{ { 0,  0,  0 }, { 1, 1 }, {  0,  0, -1 }, { -1,  0,  0 } },
+			{ { 0,  1,  0 }, { 0, 1 }, {  0,  0, -1 }, { -1,  0,  0 } },
+			{ { 1,  1,  1 }, { 0, 0 }, {  0,  1,  0 }, {  0,  0,  1 } },
+			{ { 1,  1,  0 }, { 1, 0 }, {  0,  1,  0 }, {  0,  0,  1 } },
+			{ { 0,  1,  0 }, { 1, 1 }, {  0,  1,  0 }, {  0,  0,  1 } },
+			{ { 0,  1,  1 }, { 0, 1 }, {  0,  1,  0 }, {  0,  0,  1 } },
+			{ { 1,  0,  1 }, { 0, 0 }, {  0, -1,  0 }, {  0,  0, -1 } },
+			{ { 0,  0,  1 }, { 1, 0 }, {  0, -1,  0 }, {  0,  0, -1 } },
+			{ { 0,  0,  0 }, { 1, 1 }, {  0, -1,  0 }, {  0,  0, -1 } },
+			{ { 1,  0,  0 }, { 0, 1 }, {  0, -1,  0 }, {  0,  0, -1 } },
+			{ { 1,  1,  1 }, { 0, 0 }, {  1,  0,  0 }, {  0,  1,  0 } },
+			{ { 1,  0,  1 }, { 1, 0 }, {  1,  0,  0 }, {  0,  1,  0 } },
+			{ { 1,  0,  0 }, { 1, 1 }, {  1,  0,  0 }, {  0,  1,  0 } },
+			{ { 1,  1,  0 }, { 0, 1 }, {  1,  0,  0 }, {  0,  1,  0 } },
+			{ { 0,  1,  1 }, { 0, 0 }, { -1,  0,  0 }, {  0, -1,  0 } },
+			{ { 0,  1,  0 }, { 1, 0 }, { -1,  0,  0 }, {  0, -1,  0 } },
+			{ { 0,  0,  0 }, { 1, 1 }, { -1,  0,  0 }, {  0, -1,  0 } },
+			{ { 0,  0,  1 }, { 0, 1 }, { -1,  0,  0 }, {  0, -1,  0 } }
 		};
 		const static std::vector<Index> basicIndices
 		{
@@ -509,17 +496,15 @@ namespace darmok
 		auto trans = glm::scale(glm::mat4(1), Cube.size);
 		trans = glm::translate(trans, (Cube.origin / Cube.size) - glm::vec3(0.5f));
 		*this *= trans;
-
-		calcTangents();
 	}
 
 	MeshData::MeshData(const Rectangle& rect, RectangleMeshType type) noexcept
 	{
 		static const std::vector<MeshData::Vertex> basicVertices = {
-			{ { 1, 1, 0 }, { 1, 0 }, { 0, 0, -1 } },
-			{ { 1, 0, 0 }, { 1, 1 }, { 0, 0, -1 } },
-			{ { 0, 0, 0 }, { 0, 1 }, { 0, 0, -1 } },
-			{ { 0, 1, 0 }, { 0, 0 }, { 0, 0, -1 } }
+			{ { 1, 1, 0 }, { 1, 0 }, { 0, 0, -1 }, { 1, 0, 0} },
+			{ { 1, 0, 0 }, { 1, 1 }, { 0, 0, -1 }, { 1, 0, 0} },
+			{ { 0, 0, 0 }, { 0, 1 }, { 0, 0, -1 }, { 1, 0, 0} },
+			{ { 0, 1, 0 }, { 0, 0 }, { 0, 0, -1 }, { 1, 0, 0} }
 		};
 		vertices = basicVertices;
 		if (type == RectangleMeshType::Outline)
@@ -535,8 +520,6 @@ namespace darmok
 		auto trans = glm::scale(glm::mat4(1), glm::vec3(rect.size, 0));
 		trans = glm::translate(trans, glm::vec3(rect.origin / rect.size - glm::vec2(0.5F), 0));
 		*this *= trans;
-
-		calcTangents();
 	}
 
 	MeshData::MeshData(const Sphere& sphere, unsigned int lod) noexcept
@@ -548,7 +531,7 @@ namespace darmok
 	{
 		unsigned int radialSegments = lod;
 		unsigned int capSegments = lod;
-		auto halfLength = 0.5F * capsule.cylinderHeight;
+		auto halfLength = capsule.cylinderHeight / capsule.radius * 0.5F;
 
 		auto calcCapVertices = [this, capSegments, radialSegments, halfLength](bool topCap)
 		{
@@ -557,22 +540,32 @@ namespace darmok
 			for (int i = 0; i <= capSegments; ++i)
 			{
 				float v = float(i) / capSegments;
-				float phi = v * glm::half_pi<float>();
-				float yCap = glm::sin(phi);
+				float theta = v * glm::half_pi<float>();
+				float sinTheta = glm::sin(theta);
+				float cosTheta = glm::cos(theta);
 
 				for (int j = 0; j <= radialSegments; ++j)
 				{
 					float u = float(j) / radialSegments;
-					float theta = u * glm::two_pi<float>();
-					float x = glm::cos(theta) * glm::cos(phi);
-					float z = glm::sin(theta) * glm::cos(phi);
+					float phi = u * glm::two_pi<float>();
+					float sinPhi = glm::sin(phi);
+					float cosPhi = glm::cos(phi);
 
-					auto pos = glm::vec3(x, f * yCap, z);
+					auto normPos = glm::vec3(
+						cosPhi * cosTheta,
+						f * sinTheta,
+						sinPhi * cosTheta);
 
+					auto tangent = glm::vec3(1, 0, 0);
+					if (i < capSegments)
+					{
+						tangent = glm::vec3(-sinPhi, 0, cosPhi);
+					}
 					vertices.emplace_back(
-						pos + glm::vec3(0, f * halfLength, 0),
+						normPos + glm::vec3(0, f * halfLength, 0),
 						glm::vec2(u, topCap ? v : 1.0f - v),
-						glm::normalize(pos)
+						normPos,
+						tangent
 					);
 
 					if (j < radialSegments && i < capSegments)
@@ -595,6 +588,7 @@ namespace darmok
 		calcCapVertices(false);
 
 		// body
+		int baseIndex = static_cast<int>(vertices.size());
 		for (int i = 0; i < 2; ++i)
 		{
 			float v = float(i);
@@ -603,19 +597,20 @@ namespace darmok
 			for (int j = 0; j <= radialSegments; ++j)
 			{
 				float u = float(j) / radialSegments;
-				float theta = u * glm::two_pi<float>();
-				float x = glm::cos(theta);
-				float z = glm::sin(theta);
+				float phi = u * glm::two_pi<float>();
+				float sinPhi = glm::sin(phi);
+				float cosPhi = glm::cos(phi);
 
 				vertices.emplace_back(
-					glm::vec3(x, y, z),
+					glm::vec3(cosPhi, y, sinPhi),
 					glm::vec2(u, (1.F + v) * 0.5F),
-					glm::normalize(glm::vec3(x, 0, z))
+					glm::vec3(cosPhi, 0, sinPhi),
+					glm::vec3(-sinPhi, 0, cosPhi)
 				);
 
 				if (j < radialSegments && i == 0)
 				{
-					int current = j;
+					int current = baseIndex + j;
 					int next = current + radialSegments + 1;
 
 					indices.push_back(current);
@@ -631,8 +626,6 @@ namespace darmok
 
 		auto trans = glm::translate(glm::mat4(capsule.radius), capsule.origin / capsule.radius);
 		*this *= trans;
-
-		calcTangents();
     }
 
 	 MeshData::MeshData(const Ray& ray) noexcept
@@ -644,9 +637,8 @@ namespace darmok
 	{
 		if (type == LineMeshType::Line)
 		{
-			vertices.emplace_back(line.points[0], glm::vec2(0, 0));
-			vertices.emplace_back(line.points[1], glm::vec2(1, 1));
-			calcTangents();
+			vertices.emplace_back(line.points[0], glm::vec2{ 0, 0 });
+			vertices.emplace_back(line.points[1], glm::vec2{ 1, 1 });
 			return;
 		}
 		static const float kInter = .2f;
@@ -660,30 +652,19 @@ namespace darmok
 			{ .1f, -.1f }, { -.1f, -.1f },
 			{ -.1f, .1f }, { 0.f, 0.f }
 		};
-		const std::vector<glm::vec3> norm = {
-			glm::normalize(glm::cross(pos[2] - pos[1], pos[2] - pos[0])),
-			glm::normalize(glm::cross(pos[1] - pos[2], pos[1] - pos[5])),
-			glm::normalize(glm::cross(pos[3] - pos[2], pos[3] - pos[0])),
-			glm::normalize(glm::cross(pos[2] - pos[3], pos[2] - pos[5])),
-			glm::normalize(glm::cross(pos[4] - pos[3], pos[4] - pos[0])),
-			glm::normalize(glm::cross(pos[3] - pos[4], pos[3] - pos[5])),
-			glm::normalize(glm::cross(pos[1] - pos[4], pos[1] - pos[0])),
-			glm::normalize(glm::cross(pos[4] - pos[1], pos[4] - pos[5]))
-		};
-		const std::vector<Vertex> basicVertices = {
+		vertices = {
 			{
-				{ pos[0], tex[0], norm[0] }, { pos[2], tex[1], norm[0] }, { pos[1], tex[1], norm[0] },
-				{ pos[5], tex[0], norm[1] }, { pos[1], tex[2], norm[1] }, { pos[2], tex[2], norm[1] },
-				{ pos[0], tex[0], norm[2] }, { pos[3], tex[3], norm[2] }, { pos[2], tex[3], norm[2] },
-				{ pos[5], tex[0], norm[3] }, { pos[2], tex[4], norm[3] }, { pos[3], tex[4], norm[3] },
-				{ pos[0], tex[2], norm[4] }, { pos[4], tex[5], norm[4] }, { pos[3], tex[2], norm[4] },
-				{ pos[5], tex[3], norm[5] }, { pos[3], tex[5], norm[5] }, { pos[4], tex[3], norm[5] },
-				{ pos[0], tex[4], norm[6] }, { pos[1], tex[5], norm[6] }, { pos[4], tex[4], norm[6] },
-				{ pos[5], tex[1], norm[7] }, { pos[4], tex[5], norm[7] }, { pos[1], tex[1], norm[7] }
+				{ pos[0], tex[0] }, { pos[2], tex[1] }, { pos[1], tex[1] },
+				{ pos[5], tex[0] }, { pos[1], tex[2] }, { pos[2], tex[2] },
+				{ pos[0], tex[0] }, { pos[3], tex[3] }, { pos[2], tex[3] },
+				{ pos[5], tex[0] }, { pos[2], tex[4] }, { pos[3], tex[4] },
+				{ pos[0], tex[2] }, { pos[4], tex[5] }, { pos[3], tex[2] },
+				{ pos[5], tex[3] }, { pos[3], tex[5] }, { pos[4], tex[3] },
+				{ pos[0], tex[4] }, { pos[1], tex[5] }, { pos[4], tex[4] },
+				{ pos[5], tex[1] }, { pos[4], tex[5] }, { pos[1], tex[1] }
 			}
 		};
-		vertices = basicVertices;
-
+		calcNormals();
 		calcTangents();
 	}
 
@@ -882,5 +863,50 @@ namespace darmok
 		MeshDataCalcTangentsOperation op;
 		op(*this);
 		return *this;
+	}
+
+	MeshData& MeshData::calcNormals() noexcept
+	{
+		for (auto& face : getFaces())
+		{
+			auto& vert1 = vertices[face[0]];
+			auto& vert2 = vertices[face[1]];
+			auto& vert3 = vertices[face[2]];
+			auto edge1 = vert2.position - vert1.position;
+			auto edge2 = vert3.position - vert1.position;
+
+			auto normal = glm::cross(edge1, edge2);
+			normal = glm::normalize(normal);
+
+			vert1.normal = normal;
+			vert2.normal = normal;
+			vert3.normal = normal;
+		}
+		return *this;
+	}
+
+	std::vector<MeshData::Face> MeshData::getFaces() const noexcept
+	{
+		std::vector<Face> faces;
+		if (indices.empty())
+		{
+			faces.reserve(vertices.size() / 3);
+			for (Index i = 0; i < vertices.size(); i += 3)
+			{
+				Face face = { (Index)i, (Index)(i + 1), (Index)(i + 2) };
+				faces.push_back(std::move(face));
+			}
+		}
+		else
+		{
+			faces.reserve(indices.size() / 3);
+			for (size_t i = 0; i < indices.size() - 2; i += 3)
+			{
+				Face face = { indices[i], indices[i + 1], indices[i + 2] };
+				faces.push_back(std::move(face));
+			}
+		}
+
+		return faces;
 	}
 }

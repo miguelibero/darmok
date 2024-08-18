@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/color_fwd.hpp>
 #include <memory>
 #include <vector>
 #include <stdexcept>
@@ -47,6 +48,7 @@ namespace darmok
     public:
         Renderable(const std::shared_ptr<IMesh>& mesh = nullptr, const std::shared_ptr<Material>& material = nullptr) noexcept;
         Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept;
+        Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& program, const Color& color) noexcept;
         Renderable(const std::shared_ptr<Material>& material) noexcept;
         std::shared_ptr<IMesh> getMesh() const noexcept;
         Renderable& setMesh(const std::shared_ptr<IMesh>& mesh) noexcept;

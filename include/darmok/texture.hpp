@@ -99,16 +99,4 @@ namespace darmok
 	private:
 		IImageLoader& _imgLoader;
 	};
-
-	class DARMOK_EXPORT ColorTextureLoader final
-	{
-	public:
-		using result_type = std::shared_ptr<Texture>;
-		ColorTextureLoader(bx::AllocatorI& alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
-		[[nodiscard]] result_type operator()(const Color& color) noexcept;
-	private:
-		bx::AllocatorI& _alloc;
-		glm::uvec2 _size;
-		std::unordered_map<Color, std::shared_ptr<Texture>> _cache;
-	};
 }

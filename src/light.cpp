@@ -212,18 +212,18 @@ namespace darmok
         {
             auto& pointLight = registry.get<const PointLight>(entity);
             auto trans = registry.try_get<const Transform>(entity);
+            float scale = 1.F;
             if (trans != nullptr)
             {
                 auto pos = trans->getWorldPosition();
+                scale = glm::compMax(trans->getWorldScale());
                 writer.write(bgfx::Attrib::Position, index, pos);
             }
-            glm::vec4 c(
-                Colors::normalize(pointLight.getDiffuseColor()) * pointLight.getIntensity(),
-                pointLight.getRadius());
+            auto radius = pointLight.getRadius() * scale;
+            auto intensity = pointLight.getIntensity();
+            glm::vec4 c(Colors::normalize(pointLight.getDiffuseColor()) * intensity, radius);
             writer.write(bgfx::Attrib::Color0, index, c);
-            c = glm::vec4(
-                Colors::normalize(pointLight.getSpecularColor()) * pointLight.getIntensity(),
-                pointLight.getRadius());
+            c = glm::vec4(Colors::normalize(pointLight.getSpecularColor()) * intensity, radius);
             writer.write(bgfx::Attrib::Color1, index, c);
             ++index;
         }

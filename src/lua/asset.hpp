@@ -32,7 +32,6 @@ namespace darmok
 
 		static std::shared_ptr<Texture> loadTexture1(AssetContext& assets, const std::string& name);
 		static std::shared_ptr<Texture> loadTexture2(AssetContext& assets, const std::string& name, uint64_t flags);
-		static std::shared_ptr<Texture> loadColorTexture(AssetContext& assets, const Color& color);
 		static std::shared_ptr<TextureAtlas> loadTextureAtlas1(AssetContext& assets, const std::string& name);
 		static std::shared_ptr<TextureAtlas> loadTextureAtlas2(AssetContext& assets, const std::string& name, uint64_t textureFlags);
 

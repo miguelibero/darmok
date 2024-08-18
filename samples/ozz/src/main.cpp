@@ -18,10 +18,31 @@
 #include <darmok/freelook.hpp>
 #include <darmok/text.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 namespace
 {
 	using namespace darmok;
+
+	class CircleUpdater final : public ISceneComponent
+	{
+	public:
+		CircleUpdater(Transform& trans, float speed = 1.f)
+			: _trans(trans)
+			, _speed(speed)
+		{
+		}
+
+		void update(float dt) override
+		{
+			auto pos = glm::rotateZ(_trans.getPosition(), dt * _speed);
+			_trans.setPosition(pos);
+		}
+
+	private:
+		Transform& _trans;
+		float _speed;
+	};
 
 	class OzzSampleApp : public App, public IInputEventListener
 	{
@@ -48,11 +69,19 @@ namespace
 			renderer.addComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = scene.addSceneComponent<FreelookController>(cam);
 
-			auto lightEntity = scene.createEntity();
-			// scene.addComponent<Transform>(lightEntity, glm::vec3{ 5, 5, -10 });
-			scene.addComponent<PointLight>(lightEntity, 10);
+			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
+			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
+			debugMat->setProgramDefine("TEXTURE_DISABLED");
 
-			scene.addComponent<AmbientLight>(scene.createEntity(), 0.5);
+			auto lightRootEntity = scene.createEntity();
+			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
+			auto lightEntity = scene.createEntity();
+			auto& lightTrans = scene.addComponent<Transform>(lightEntity, lightRootTrans, glm::vec3{ 0, 1, 0 });
+			std::shared_ptr<IMesh> lightMesh = MeshData(Sphere(0.01)).createMesh(unlitProg->getVertexLayout());
+			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
+			scene.addSceneComponent<CircleUpdater>(lightTrans);
+			scene.addComponent<PointLight>(lightEntity, 5);
+			scene.addComponent<AmbientLight>(lightEntity, 0.5);
 
 			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");
 

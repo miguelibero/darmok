@@ -6,6 +6,7 @@
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
 #include <unordered_map>
+#include <darmok/glm.hpp>
 
 namespace darmok
 {

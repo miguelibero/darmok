@@ -58,6 +58,7 @@ namespace darmok
 			"get_entity", &LuaPointLight::getEntity,
 			"intensity", sol::property(&PointLight::getIntensity, &PointLight::setIntensity),
 			"attenuation", sol::property(&PointLight::getAttenuation, &LuaPointLight::setAttenuation),
+			"radius", sol::property(&PointLight::getRadius),
 			"diffuse_color", sol::property(&PointLight::getDiffuseColor, &LuaPointLight::setDiffuseColor),
 			"specular_color", sol::property(&PointLight::getSpecularColor, &LuaPointLight::setSpecularColor),
 			"color", sol::property(&PointLight::getDiffuseColor, &LuaPointLight::setColor)

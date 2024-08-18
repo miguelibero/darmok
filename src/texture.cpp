@@ -266,23 +266,4 @@ namespace darmok
 		}
 		return tex;
 	}
-
-	ColorTextureLoader::ColorTextureLoader(bx::AllocatorI& alloc, const glm::uvec2& size) noexcept
-		: _alloc(alloc)
-		, _size(size)
-	{
-	}
-
-	std::shared_ptr<Texture> ColorTextureLoader::operator()(const Color& color) noexcept
-	{
-		auto itr = _cache.find(color);
-		if (itr != _cache.end())
-		{
-			return itr->second;
-		}
-		auto tex = std::make_shared<Texture>(Image(color, _alloc, _size));
-		_cache.emplace(color, tex);
-		return tex;
-	}
-
 }

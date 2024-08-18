@@ -267,6 +267,15 @@ namespace darmok
         return glm::vec3(_worldMatrix[3]);
     }
 
+    glm::vec3 Transform::getWorldScale() const noexcept
+    {
+        return {
+            glm::length(glm::vec3(_worldMatrix[0])),
+            glm::length(glm::vec3(_worldMatrix[1])),
+            glm::length(glm::vec3(_worldMatrix[2]))
+        };
+    }
+
     glm::quat Transform::getWorldRotation() const noexcept
     {
         return glm::quat_cast(_worldMatrix);

@@ -22,11 +22,6 @@ namespace darmok
 		return assets.getProgramLoader()(name);
 	}
 
-	std::shared_ptr<Texture> LuaAssets::loadColorTexture(AssetContext& assets, const Color& color)
-	{
-		return assets.getColorTextureLoader()(color);
-	}
-	
 	std::shared_ptr<Texture> LuaAssets::loadTexture1(AssetContext& assets, const std::string& name)
 	{
 		return assets.getTextureLoader()(name);
@@ -106,7 +101,6 @@ namespace darmok
 			),
 			"load_program", &LuaAssets::loadProgram,
 			"load_texture", sol::overload(&LuaAssets::loadTexture1, &LuaAssets::loadTexture2),
-			"load_color_texture", &LuaAssets::loadColorTexture,
 			"load_texture_atlas", sol::overload(&LuaAssets::loadTextureAtlas1, &LuaAssets::loadTextureAtlas2),
 			"load_sound", &LuaAssets::loadSound,
 			"load_music", &LuaAssets::loadMusic,

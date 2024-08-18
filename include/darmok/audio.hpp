@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <bx/bx.h>
-#include <glm/glm.hpp>
+#include <darmok/glm.hpp>
 
 namespace darmok
 {

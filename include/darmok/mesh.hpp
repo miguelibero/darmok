@@ -144,8 +144,8 @@ namespace darmok
         glm::vec3 position;
         glm::vec2 texCoord;
         glm::vec3 normal = glm::vec3(0, 1, 0);
-        Color color = Colors::white();
         glm::vec3 tangent = glm::vec3(0, 0, 0);
+        Color color = Colors::white();
     };
 
     class Texture;
@@ -197,7 +197,11 @@ namespace darmok
         MeshData& operator+=(const glm::uvec2& textureOffset) noexcept;
 
         MeshData& shiftIndices(Index offset) noexcept;
+        MeshData& calcNormals() noexcept;
         MeshData& calcTangents() noexcept;
+
+        using Face = std::array<Index, 3>;
+        std::vector<Face> getFaces() const noexcept;
 
         bool empty() const noexcept;
         void clear() noexcept;

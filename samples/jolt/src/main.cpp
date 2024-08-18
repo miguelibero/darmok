@@ -83,9 +83,8 @@ namespace
 				auto floorEntity = _scene->createEntity();
 				Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
 				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
-				auto floorTex = getAssets().getColorTextureLoader()(Colors::grey());
 				auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
-				_scene->addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, floorTex);
+				_scene->addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::grey());
 			}
 
 			{ // door
@@ -100,19 +99,15 @@ namespace
 					.setPosition(glm::vec3(2.F, 0.F, 2.F))
 					.setEulerAngles(glm::vec3(0, 90, 0));
 
-				auto doorTex = getAssets().getColorTextureLoader()(Color(255, 1000, 100, 255));
-				auto triggerTex = getAssets().getColorTextureLoader()(Colors::red());
-				_doorMat = std::make_shared<Material>(prog, doorTex);
-				_triggerDoorMat = std::make_shared<Material>(prog, triggerTex);
+				_doorMat = std::make_shared<Material>(prog, Color(255, 1000, 100, 255));
+				_triggerDoorMat = std::make_shared<Material>(prog, Colors::red());
 				auto doorMesh = MeshData(doorShape).createMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(doorEntity, std::move(doorMesh), _doorMat);
 			}
 
 			{ // cubes
-				auto tex = getAssets().getColorTextureLoader()(Color(100, 255, 100, 255));
-				auto touchedTex = getAssets().getColorTextureLoader()(Colors::green());
-				_cubeMat = std::make_shared<Material>(prog, tex);
-				_touchedCubeMat = std::make_shared<Material>(prog, touchedTex);
+				_cubeMat = std::make_shared<Material>(prog, Color(100, 255, 100, 255));
+				_touchedCubeMat = std::make_shared<Material>(prog, Colors::green());
 				_cubeMesh = MeshData(_cubeShape).createMesh(prog->getVertexLayout());
 
 				for (auto x = -5.F; x < 5.F; x += 1.1F)
@@ -136,9 +131,8 @@ namespace
 				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
 				_characterBody->addListener(*this);
 
-				auto playerTex = getAssets().getColorTextureLoader()(Colors::red());
 				auto playerMesh = MeshData(playerShape).createMesh(prog->getVertexLayout());
-				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), prog, playerTex);
+				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), prog, Colors::red());
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
 		}

@@ -44,7 +44,6 @@ namespace darmok
 		, _programLoader(_dataLoader)
 		, _textureLoader(_imageLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
-		, _colorTextureLoader(_allocator)
 		, _binModelLoader(_dataLoader)
 		, _textureAtlasFontLoader(_textureAtlasLoader)
 #ifdef DARMOK_OZZ
@@ -107,11 +106,6 @@ namespace darmok
 	ITextureLoader& AssetContextImpl::getTextureLoader() noexcept
 	{
 		return _textureLoader;
-	}
-
-	ColorTextureLoader& AssetContextImpl::getColorTextureLoader() noexcept
-	{
-		return _colorTextureLoader;
 	}
 
 	ITextureAtlasLoader& AssetContextImpl::getTextureAtlasLoader() noexcept
@@ -224,11 +218,6 @@ namespace darmok
 	IModelLoader& AssetContext::getModelLoader() noexcept
 	{
 		return _impl->getModelLoader();
-	}
-
-	ColorTextureLoader& AssetContext::getColorTextureLoader() noexcept
-	{
-		return _impl->getColorTextureLoader();
 	}
 
 #ifdef DARMOK_ASSIMP

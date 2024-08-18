@@ -15,7 +15,6 @@ namespace darmok
 	class IProgramLoader;
 	class ITextureLoader;
 	class ITextureAtlasLoader;
-	class ColorTextureLoader;
     class AssetContext;
 	class IModelLoader;
 
@@ -49,7 +48,6 @@ namespace darmok
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
-		[[nodiscard]] ColorTextureLoader& getColorTextureLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
 
