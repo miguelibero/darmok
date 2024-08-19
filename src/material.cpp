@@ -14,7 +14,7 @@ namespace darmok
 	Material::Material(const std::shared_ptr<Program>& program) noexcept
 		: _primitive(MaterialPrimitiveType::Triangle)
 		, _program(program)
-		, _baseColor(Colors::magenta())
+		, _baseColor(Colors::white())
 		, _specularColor(Colors::black3())
 		, _metallicFactor(0.F)
 		, _roughnessFactor(0.F)
@@ -339,12 +339,18 @@ namespace darmok
 		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(v));
 
 		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
-
+		if (!mat.getTwoSided())
+		{
+			state |= BGFX_STATE_CULL_CCW;
+		}
 		if (mat.getPrimitiveType() == MaterialPrimitiveType::Line)
 		{
 			state |= BGFX_STATE_PT_LINES;
 		}
-
+		if (mat.getOpacity() == MaterialOpacity::Transparent)
+		{
+			state |= BGFX_STATE_BLEND_ALPHA;
+		}
 		encoder.setState(state);
 		encoder.submit(viewId, mat.getProgramHandle());
 	}

@@ -26,6 +26,7 @@ namespace
 			setResetFlag(BGFX_RESET_SRGB_BACKBUFFER);
 			setResetFlag(BGFX_RESET_MSAA_X4);
 			setResetFlag(BGFX_RESET_MAXANISOTROPY);
+			setDebugFlag(BGFX_DEBUG_TEXT);
 
 			App::init();
 
@@ -62,7 +63,28 @@ namespace
 			ModelSceneConfigurer configurer(*scene, getAssets());
 			configurer.setTextureFlags(BGFX_TEXTURE_NONE | BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC);
 			configurer(*model);
+
+			_mouseVel = glm::vec2(0);
 		}
+
+	protected:
+
+		void render() const override
+		{
+			App::render();
+			bgfx::dbgTextPrintf(1, 1, 0x01f, "mouse velocity %f %f", _mouseVel.x, _mouseVel.y);
+		}
+
+		void update(float deltaTime) override
+		{
+			App::update(deltaTime);
+			auto& mouse = getInput().getMouse();
+			auto vel = mouse.getVelocity() * 0.0004F;
+			_mouseVel = glm::max(_mouseVel, glm::abs(vel));
+		}
+
+	private:
+		glm::vec2 _mouseVel;
 
 		struct PointLightConfig final
 		{

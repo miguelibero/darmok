@@ -20,20 +20,14 @@ void main()
     {
 		PointLight light = getPointLight(i);
 		float dist = distance(light.position, fragPos);
-		float attenuation = smoothAttenuation(dist, light.radius);
 
-		if(attenuation > 0.0)
-		{
-			vec3 radianceIn = light.intensity * attenuation;
+		vec3 lightDir = normalize(light.position - fragPos);
+		float diff = max(dot(norm, lightDir), 0.0);
+		diffuse += diff * light.intensity;
 
-			vec3 lightDir = normalize(light.position - fragPos);
-			float diff = max(dot(norm, lightDir), 0.0);
-			diffuse += diff * radianceIn;
-
-			vec3 reflectDir = reflect(-lightDir, norm);  
-			float spec = pow(max(dot(viewDir, reflectDir), 0.0), mat.shininess);
-			specular += spec * radianceIn;
-		}
+		vec3 reflectDir = reflect(-lightDir, norm);  
+		float spec = pow(max(dot(viewDir, reflectDir), 0.0), mat.shininess);
+		specular += spec * light.intensity;
 	}
 	
 	ambient *= mat.diffuse;

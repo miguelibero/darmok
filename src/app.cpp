@@ -274,6 +274,7 @@ namespace darmok
 		// init.type = bgfx::RendererType::OpenGL;
 		bgfx::init(init);
 
+		bgfx::setDebug(_debugFlags);
 		_activeResetFlags = _resetFlags;
 
 		bgfx::setPaletteColor(0, UINT32_C(0x00000000));
@@ -521,7 +522,10 @@ namespace darmok
 	void AppImpl::setDebugFlag(uint32_t flag, bool enabled) noexcept
 	{
 		_debugFlags = setFlag(_debugFlags, flag, enabled);
-		bgfx::setDebug(_debugFlags);
+		if (_running)
+		{
+			bgfx::setDebug(_debugFlags);
+		}
 	}
 
 	bool AppImpl::getDebugFlag(uint32_t flag) const noexcept

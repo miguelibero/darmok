@@ -69,8 +69,9 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * update logic methods with delta time
 * renderer: threaded render graph that compiles passes inputs and outputs
     * forward render
-    * unlit
-    * PBR metallic-roughness (point & ambient lights)
+        * unlit, gui
+        * basic phong
+        * PBR metallic-roughness (point & ambient lights)
 * entity component scene using entt
     * transform, camera
 * sprites and spritesheets
@@ -101,7 +102,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * camera frustrum culling
 * more renderer features
     * other types of lights
-    * deferred
+    * deferred, clustered
     * SSAO
 * text improvements
     * finish all the TextRenderConfig options

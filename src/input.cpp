@@ -424,6 +424,7 @@ namespace darmok
 		: _buttons{}
 		, _position(0)
 		, _lastPosition(0)
+		, _lastPositionTimePassed(0)
 		, _velocity(0)
 		, _scroll(0)
 		, _windowSize(0)
@@ -443,6 +444,7 @@ namespace darmok
 		{
 			_hasBeenInactive = true;
 		}
+		_lastPositionTimePassed = 0.F;
 		for (auto& listener : _listeners)
 		{
 			listener->onMouseActive(active);
@@ -510,16 +512,18 @@ namespace darmok
 
 	void MouseImpl::afterUpdate(float deltaTime) noexcept
 	{
-		if (deltaTime == 0.F || _hasBeenInactive)
+		static const float velocityInterval = 0.05F;
+		if (_lastPositionTimePassed >= velocityInterval)
 		{
-			_velocity = glm::vec2(0);
+			auto dist = _position - _lastPosition;
+			_lastPosition = _position;
+			_velocity = dist / _lastPositionTimePassed;
+			_lastPositionTimePassed = 0.F;
 		}
 		else
 		{
-			auto dist = _position - _lastPosition;
-			_velocity = dist / deltaTime;
+			_lastPositionTimePassed += deltaTime;
 		}
-		_lastPosition = _position;
 		_scroll = glm::vec2(0);
 		if (_active)
 		{

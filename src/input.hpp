@@ -99,6 +99,7 @@ namespace darmok
 	private:
 		glm::vec2 _position;
 		glm::vec2 _lastPosition;
+		float _lastPositionTimePassed;
 		glm::vec2 _velocity;
 		glm::vec2 _scroll;
 		glm::uvec2 _windowSize;
