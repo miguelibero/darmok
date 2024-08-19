@@ -223,6 +223,7 @@ namespace darmok
     public:
         virtual ~IRenderGraphContext() = default;
         virtual bgfx::Encoder& getEncoder() noexcept = 0;
+        virtual bgfx::ViewId getViewId() const = 0;
         virtual RenderGraphResources& getResources() noexcept = 0;
     };
 
@@ -231,11 +232,14 @@ namespace darmok
     public:
         RenderGraphContext(RenderGraph& graph, RenderGraphId id);
         bgfx::Encoder& getEncoder() noexcept override;
+        bgfx::ViewId getViewId() const override;
+        void setViewId(bgfx::ViewId viewId = -1) noexcept;
         RenderGraphResources& getResources() noexcept override;
         RenderGraphContext createChild(RenderGraphId id) const noexcept;
     private:
         std::reference_wrapper<RenderGraph> _graph;
         RenderGraphId _id;
+        bgfx::ViewId _viewId;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderPassDelegate
@@ -300,6 +304,7 @@ namespace darmok
         std::string _name;
         int _priority;
         RenderGraphId _id;
+        bgfx::ViewId _viewId;
         Resources _read;
         Resources _write;
         OptionalRef<IRenderPassDelegate> _delegate;

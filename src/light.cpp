@@ -81,6 +81,34 @@ namespace darmok
         return _color;
     }
 
+    DirectionalLight::DirectionalLight(float intensity) noexcept
+        : _intensity(intensity)
+        , _color(Colors::white3())
+    {
+    }
+
+    DirectionalLight& DirectionalLight::setIntensity(float intensity) noexcept
+    {
+        _intensity = intensity;
+        return *this;
+    }
+
+    DirectionalLight& DirectionalLight::setColor(const Color3& color) noexcept
+    {
+        _color = color;
+        return *this;
+    }
+
+    const Color3& DirectionalLight::getColor() const noexcept
+    {
+        return _color;
+    }
+
+    float DirectionalLight::getIntensity() const noexcept
+    {
+        return _intensity;
+    }
+
     AmbientLight::AmbientLight(float intensity) noexcept
         : _intensity(intensity)
         , _color(Colors::white3())
@@ -109,6 +137,33 @@ namespace darmok
         return _intensity;
     }
 
+    SpotLight::SpotLight(float intensity) noexcept
+        : _intensity(intensity)
+    {
+    }
+
+    SpotLight& SpotLight::setIntensity(float intensity) noexcept
+    {
+        _intensity = intensity;
+        return *this;
+    }
+
+    SpotLight& SpotLight::setColor(const Color3& color) noexcept
+    {
+        _color = color;
+        return *this;
+    }
+
+    const Color3& SpotLight::getColor() const noexcept
+    {
+        return _color;
+    }
+
+    float SpotLight::getIntensity() const noexcept
+    {
+        return _intensity;
+    }
+
     LightingRenderComponent::LightingRenderComponent() noexcept
         : _lightCountUniform{ bgfx::kInvalidHandle }
         , _lightDataUniform{ bgfx::kInvalidHandle }
@@ -121,6 +176,11 @@ namespace darmok
     {
         _pointLightsLayout.begin()
             .add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
+            .end();
+
+        _dirLightsLayout.begin()
+            .add(bgfx::Attrib::Normal, 4, bgfx::AttribType::Float)
             .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
             .end();
 
@@ -140,8 +200,9 @@ namespace darmok
 
     void LightingRenderComponent::createHandles() noexcept
     {
-        // TODO: does not work in OpenGL as the unfirm handles need to be created before the program
+        // TODO: does not work in OpenGL as the unform handles need to be created before the program
         _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
+        _dirLightBuffer = bgfx::createDynamicVertexBuffer(1, _dirLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
         _lightCountUniform = bgfx::createUniform("u_lightCountVec", bgfx::UniformType::Vec4);
         _lightDataUniform = bgfx::createUniform("u_ambientLightIrradiance", bgfx::UniformType::Vec4);
         _camPosUniform = bgfx::createUniform("u_camPos", bgfx::UniformType::Vec4);
@@ -150,26 +211,31 @@ namespace darmok
 
     void LightingRenderComponent::destroyHandles() noexcept
     {
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> handles = {
-            _lightCountUniform, _lightDataUniform, _camPosUniform, _normalMatrixUniform
-        };
-        for (auto& handle : handles)
         {
-            if (isValid(handle))
+            std::vector<std::reference_wrapper<bgfx::UniformHandle>> handles = {
+                _lightCountUniform, _lightDataUniform, _camPosUniform, _normalMatrixUniform
+            };
+            for (auto& handle : handles)
             {
-                bgfx::destroy(handle);
-                handle.get().idx = bgfx::kInvalidHandle;
+                if (isValid(handle))
+                {
+                    bgfx::destroy(handle);
+                    handle.get().idx = bgfx::kInvalidHandle;
+                }
             }
         }
-        if (isValid(_lightDataUniform))
         {
-            bgfx::destroy(_lightDataUniform);
-            _lightDataUniform.idx = bgfx::kInvalidHandle;
-        }
-        if (isValid(_pointLightBuffer))
-        {
-            bgfx::destroy(_pointLightBuffer);
-            _pointLightBuffer.idx = bgfx::kInvalidHandle;
+            std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> handles = {
+                _pointLightBuffer, _dirLightBuffer
+            };
+            for (auto& handle : handles)
+            {
+                if (isValid(handle))
+                {
+                    bgfx::destroy(handle);
+                    handle.get().idx = bgfx::kInvalidHandle;
+                }
+            }
         }
     }
 
@@ -178,19 +244,49 @@ namespace darmok
         destroyHandles();
     }
 
+    size_t LightingRenderComponent::updateDirLights() noexcept
+    {
+        auto& registry = _scene->getRegistry();
+        auto lights = _cam->createEntityView<DirectionalLight>(registry);
+
+        VertexDataWriter writer(_dirLightsLayout, uint32_t(lights.size_hint()));
+
+        uint32_t index = 0;
+        for (auto entity : lights)
+        {
+            auto& light = registry.get<const DirectionalLight>(entity);
+            auto trans = registry.try_get<const Transform>(entity);
+            if (trans != nullptr)
+            {
+                auto norm = trans->getWorldRotation() * glm::vec3(0, 0, 1);
+                writer.write(bgfx::Attrib::Normal, index, norm);
+            }
+            auto intensity = light.getIntensity();
+            glm::vec4 c(Colors::normalize(light.getColor()) * intensity, 0);
+            writer.write(bgfx::Attrib::Color0, index, c);
+            ++index;
+        }
+        auto data = writer.finish();
+        if (!data.empty())
+        {
+            auto size = writer.getLayout().getSize(index);
+            bgfx::update(_dirLightBuffer, 0, data.copyMem());
+        }
+
+        return index;
+    }
+
     size_t LightingRenderComponent::updatePointLights() noexcept
     {
         auto& registry = _scene->getRegistry();
-        auto pointLights = _cam->createEntityView<PointLight>(registry);
+        auto lights = _cam->createEntityView<PointLight>(registry);
 
-        // TODO: not sure if size_hint is accurate
-        VertexDataWriter writer(_pointLightsLayout, uint32_t(pointLights.size_hint()));
-        writer.load(std::move(_pointLights));
+        VertexDataWriter writer(_pointLightsLayout, uint32_t(lights.size_hint()));
 
         uint32_t index = 0;
-        for (auto entity : pointLights)
+        for (auto entity : lights)
         {
-            auto& pointLight = registry.get<const PointLight>(entity);
+            auto& light = registry.get<const PointLight>(entity);
             auto trans = registry.try_get<const Transform>(entity);
             float scale = 1.F;
             if (trans != nullptr)
@@ -199,18 +295,17 @@ namespace darmok
                 scale = glm::compMax(trans->getWorldScale());
                 writer.write(bgfx::Attrib::Position, index, pos);
             }
-            auto radius = pointLight.getRadius() * scale;
-            auto intensity = pointLight.getIntensity();
-            glm::vec4 c(Colors::normalize(pointLight.getColor()) * intensity, radius);
+            auto radius = light.getRadius() * scale;
+            auto intensity = light.getIntensity();
+            glm::vec4 c(Colors::normalize(light.getColor()) * intensity, radius);
             writer.write(bgfx::Attrib::Color0, index, c);
             ++index;
         }
-        _pointLights = writer.finish();
-        auto ptr = _pointLights.ptr();
-        if (ptr != nullptr)
+        auto data = writer.finish();
+        if (!data.empty())
         {
-            auto size = _pointLightsLayout.getSize(index);
-            bgfx::update(_pointLightBuffer, 0, bgfx::makeRef(ptr, size));
+            auto size = writer.getLayout().getSize(index);
+            bgfx::update(_pointLightBuffer, 0, data.copyMem());
         }
 
         return index;
@@ -255,6 +350,7 @@ namespace darmok
             return;
         }
         _lightCount.x = float(updatePointLights());
+        _lightCount.y = float(updateDirLights());
         updateAmbientLights();
         updateCamera();
     }

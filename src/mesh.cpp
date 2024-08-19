@@ -547,6 +547,10 @@ namespace darmok
 				for (int j = 0; j <= radialSegments; ++j)
 				{
 					float u = float(j) / radialSegments;
+					if (!topCap)
+					{
+						u = 1.F - u;
+					}
 					float phi = u * glm::two_pi<float>();
 					float sinPhi = glm::sin(phi);
 					float cosPhi = glm::cos(phi);
@@ -556,11 +560,7 @@ namespace darmok
 						f * sinTheta,
 						sinPhi * cosTheta);
 
-					auto tangent = glm::vec3(1, 0, 0);
-					if (i < capSegments)
-					{
-						tangent = glm::vec3(-sinPhi, 0, cosPhi);
-					}
+					auto tangent = f * glm::vec3(-sinPhi, 0, cosPhi);
 					vertices.emplace_back(
 						normPos + glm::vec3(0, f * halfLength, 0),
 						glm::vec2(u, topCap ? v : 1.0f - v),
@@ -576,6 +576,7 @@ namespace darmok
 						indices.push_back(current);
 						indices.push_back(next);
 						indices.push_back(current + 1);
+
 						indices.push_back(current + 1);
 						indices.push_back(next);
 						indices.push_back(next + 1);
@@ -690,6 +691,13 @@ namespace darmok
 		*this *= glm::translate(glm::mat4(1), poly.origin);
 	}
 
+	MeshData MeshData::operator+(const MeshData& other) const noexcept
+	{
+		MeshData r(*this);
+		r += other;
+		return r;
+	}
+
 	MeshData& MeshData::operator+=(const MeshData& other) noexcept
 	{
 		auto offset = vertices.size();
@@ -704,22 +712,51 @@ namespace darmok
 		return *this;
 	}
 
-	MeshData& MeshData::operator*=(const glm::mat4& transform) noexcept
+	MeshData& MeshData::operator*=(const glm::mat4& trans) noexcept
 	{
 		for (auto& vertex : vertices)
 		{
-			vertex.position = transform * glm::vec4(vertex.position, 1.F);
-			vertex.normal = transform * glm::vec4(vertex.normal, 0.F);
-			vertex.tangent = transform * glm::vec4(vertex.tangent, 0.F);
+			vertex.position = trans * glm::vec4(vertex.position, 1.F);
+			vertex.normal = trans * glm::vec4(vertex.normal, 0.F);
+			vertex.tangent = trans * glm::vec4(vertex.tangent, 0.F);
 		}
 		return *this;
 	}
 
-	MeshData& MeshData::operator*=(const glm::mat2& textureTransform) noexcept
+	MeshData& MeshData::operator*=(const glm::mat2& trans) noexcept
 	{
 		for (auto& vertex : vertices)
 		{
-			vertex.texCoord = textureTransform * vertex.texCoord;
+			vertex.texCoord = trans * vertex.texCoord;
+		}
+		return *this;
+	}
+
+	MeshData& MeshData::operator+=(const glm::vec3& offset) noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.position += offset;
+		}
+		return *this;
+	}
+
+	MeshData& MeshData::operator*=(const glm::vec3& scale) noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.position *= scale;
+		}
+		return *this;
+	}
+
+	MeshData& MeshData::operator*=(const glm::quat& rot) noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.position = rot * vertex.position;
+			vertex.normal = rot * vertex.normal;
+			vertex.tangent = rot * vertex.tangent;
 		}
 		return *this;
 	}

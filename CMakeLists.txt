@@ -88,7 +88,7 @@ darmok_process_assets(
     darmok_light.sc
     darmok_material.sc
     darmok_material_basic.sc
-    darmok_samplers.sc
+    darmok_sampler.sc
     darmok_skinning.sc
     darmok_util.sc
     darmok-import.json
@@ -182,6 +182,7 @@ set(SOURCES
   render.cpp
   render_forward.cpp
   render_deferred.cpp
+  render_shadow.cpp
   freelook.cpp
   text.cpp
 )
@@ -213,6 +214,7 @@ set(HEADERS
   render.hpp
   render_forward.hpp
   render_deferred.hpp
+  render_shadow.hpp
   freelook.hpp
   text_fwd.hpp
   text.hpp

@@ -2,7 +2,7 @@
 #define DARMOK_LIGHTS_HEADER
 
 #include <bgfx_compute.sh>
-#include <darmok_samplers.sc>
+#include <darmok_sampler.sc>
 
 uniform vec4 u_lightCountVec;
 #define u_pointLightCount uint(u_lightCountVec.x)

@@ -3,6 +3,11 @@
 
 #include <bgfx_shader.sh>
 
+bool getBitfieldValue(vec4 field, int pos)
+{
+    return (uint(field.x) & uint(1 << pos)) != uint(0);
+}
+
 // from screen coordinates (gl_FragCoord) to eye space
 vec4 screen2Eye(vec4 coord)
 {

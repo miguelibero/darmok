@@ -35,6 +35,33 @@ namespace darmok
         }
     };
 
+    struct DARMOK_EXPORT ModelSpotLight final
+    {
+        float intensity;
+        Color3 color;
+        float innerAngle = 0.F;
+        float outerAngle = 0.F;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(intensity, color, innerAngle, outerAngle);
+        }
+    };
+
+    struct DARMOK_EXPORT ModelDirectionalLight final
+    {
+        float intensity;
+        Color3 color;
+        glm::vec3 direction;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(intensity, color, direction);
+        }
+    };
+
     struct DARMOK_EXPORT ModelAmbientLight final
     {
         float intensity;
@@ -178,6 +205,8 @@ namespace darmok
         glm::mat4 transform;
         std::optional<ModelCamera> camera;
         std::optional<ModelPointLight> pointLight;
+        std::optional<ModelSpotLight> spotLight;
+        std::optional<ModelDirectionalLight> dirLight;
         std::optional<ModelAmbientLight> ambientLight;
         std::vector<ModelRenderable> renderables;
         std::vector<ModelNode> children;

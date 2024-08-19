@@ -13,6 +13,7 @@
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/render.hpp>
+#include <darmok/render_shadow.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/freelook.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -49,7 +50,7 @@ namespace
 			App::init();
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
-			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
+			auto prog = std::make_shared<Program>(StandardProgramType::ForwardBasic);
 			auto& layout = prog->getVertexLayout();
 
 			auto camEntity = scene.createEntity();
@@ -60,6 +61,7 @@ namespace
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setWindowPerspective(60, 0.3, 1000);
 			
+			cam.addRenderer<ShadowRenderer>();
 			cam.addRenderer<ForwardRenderer>()
 				.addComponent<LightingRenderComponent>();
 
@@ -67,7 +69,6 @@ namespace
 
 			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
-			debugMat->setProgramDefine("TEXTURE_DISABLED");
 
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
@@ -76,7 +77,14 @@ namespace
 			std::shared_ptr<IMesh> lightMesh = MeshData(Sphere(0.01)).createMesh(unlitProg->getVertexLayout());
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
-			scene.addComponent<PointLight>(lightEntity, 5);
+			scene.addComponent<PointLight>(lightEntity, 1);
+
+			{
+				auto lightEntity2 = scene.createEntity();
+				scene.addComponent<Transform>(lightEntity2, lightRootTrans, glm::vec3{ 0, 1, -4 });
+				scene.addComponent<PointLight>(lightEntity2, 1);
+			}
+
 			scene.addComponent<AmbientLight>(lightEntity, 0.2);
 
 			auto greenMat = std::make_shared<Material>(prog, Colors::green());
@@ -85,15 +93,25 @@ namespace
 			goldMat->setMetallicFactor(0.5F);
 			goldMat->setBaseColor(Colors::denormalize({ 0.944F, 0.776F, 0.373F, 1.F }));
 
-			auto cubeMesh = MeshData(Cube()).createMesh(layout);
+			Cube cubeShape;
+			cubeShape.origin.y += 0.75F;
+			auto cubeMesh = MeshData(cubeShape).createMesh(layout);
 			auto cube = scene.createEntity();
 			scene.addComponent<Renderable>(cube, std::move(cubeMesh), greenMat);
 			scene.addComponent<Transform>(cube, glm::vec3{ 1.F, 0, 0 });
 
-			auto sphereMesh = MeshData(Sphere()).createMesh(layout);
+			Sphere shereShape;
+			shereShape.origin.y += 0.75F;
+			MeshData shereMeshData(shereShape);
+			auto sphereMesh = shereMeshData.createMesh(layout);
 			auto sphere = scene.createEntity();
 			scene.addComponent<Renderable>(sphere, std::move(sphereMesh), goldMat);
 			_trans = scene.addComponent<Transform>(sphere, glm::vec3{ -1.F, 0, 0 });
+
+			auto floorEntity = scene.createEntity();
+			Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
+			auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
+			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::red());
 		}
 
 		void update(float deltaTime) override

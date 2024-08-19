@@ -360,19 +360,35 @@ namespace darmok
         auto pos = AssimpUtils::convert(assimpLight.mPosition);
         lightNode.transform = glm::translate(glm::mat4(1), pos);
 
+        auto intensity = AssimpUtils::getIntensity(assimpLight.mColorDiffuse);
+        auto color = AssimpUtils::convert(assimpLight.mColorDiffuse * (1.F / intensity));
+
         if (assimpLight.mType == aiLightSource_POINT)
         {
-            auto& pointLight = lightNode.pointLight.emplace();
-            pointLight.attenuation = glm::vec3(
+            auto& light = lightNode.pointLight.emplace();
+            light.attenuation = glm::vec3(
                 assimpLight.mAttenuationConstant,
                 assimpLight.mAttenuationLinear,
                 assimpLight.mAttenuationQuadratic
             );
-            auto color = assimpLight.mColorDiffuse;
-            pointLight.intensity = AssimpUtils::getIntensity(color);
-            float f = 1.F / pointLight.intensity;
-            pointLight.color = AssimpUtils::convert(color * f);
+            light.intensity = intensity;
+            light.color = color;
             // we're not supporting different specular color in lights
+        }
+        else if (assimpLight.mType == aiLightSource_DIRECTIONAL)
+        {
+            auto& light = lightNode.dirLight.emplace();
+            light.intensity = intensity;
+            light.color = color;
+            light.direction = AssimpUtils::convert(assimpLight.mDirection);
+        }
+        else if (assimpLight.mType == aiLightSource_SPOT)
+        {
+            auto& light = lightNode.spotLight.emplace();
+            light.intensity = intensity;
+            light.color = color;
+            light.innerAngle = assimpLight.mAngleInnerCone;
+            light.outerAngle = assimpLight.mAngleOuterCone;
         }
         else if (assimpLight.mType == aiLightSource_AMBIENT)
         {

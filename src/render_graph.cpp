@@ -81,6 +81,7 @@ namespace darmok
         , _name(name)
         , _delegate(nullptr)
         , _priority(0)
+        , _viewId(-1)
     {
     }
 
@@ -134,6 +135,7 @@ namespace darmok
 
     bgfx::ViewId RenderPassDefinition::configureView(bgfx::ViewId viewId) noexcept
     {
+        _viewId = viewId;
         bgfx::resetView(viewId);
         bgfx::setViewName(viewId, _name.c_str());
 
@@ -152,7 +154,9 @@ namespace darmok
             {
                 return;
             }
+            context.setViewId(_viewId);
             _delegate->renderPassExecute(context);
+            context.setViewId();
         });
         task.name(_name);
         return task;
@@ -608,7 +612,22 @@ namespace darmok
     RenderGraphContext::RenderGraphContext(RenderGraph& graph, RenderGraphId id)
         : _graph(graph)
         , _id(id)
+        , _viewId(-1)
     {
+    }
+
+    bgfx::ViewId RenderGraphContext::getViewId() const
+    {
+        if (_viewId == -1)
+        {
+            throw std::runtime_error("no view id set");
+        }
+        return _viewId;
+    }
+
+    void RenderGraphContext::setViewId(bgfx::ViewId viewId) noexcept
+    {
+        _viewId = viewId;
     }
 
     bgfx::Encoder& RenderGraphContext::getEncoder() noexcept

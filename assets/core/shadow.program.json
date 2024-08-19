@@ -1,0 +1,16 @@
+{
+    "vertexAttributes": {
+        "position": { 
+            "type": "float",
+            "num": 3
+        },
+        "indices": {
+            "type": "float",
+            "num": 4
+        },
+        "weights": {
+            "type": "float",
+            "num": 4
+        }
+    }
+}

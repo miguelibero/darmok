@@ -1,7 +1,7 @@
 #ifndef DARMOK_MATERIAL_PBR_HEADER
 #define DARMOK_MATERIAL_PBR_HEADER
 
-#include <darmok_samplers.sc>
+#include <darmok_sampler.sc>
 
 #ifdef WRITE_LUT
 IMAGE2D_WR(i_texAlbedoLUT, rgba32f, DARMOK_SAMPLER_MATERIAL_ALBEDO_LUT);

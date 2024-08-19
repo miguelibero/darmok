@@ -33,6 +33,21 @@ namespace darmok
         Color3 _color;
     };
 
+    class DARMOK_EXPORT DirectionalLight final
+    {
+    public:
+        DirectionalLight(float intensity = 1.F) noexcept;
+
+        DirectionalLight& setIntensity(float intensity) noexcept;
+        DirectionalLight& setColor(const Color3& color) noexcept;
+
+        [[nodiscard]] const Color3& getColor() const noexcept;
+        [[nodiscard]] float getIntensity() const noexcept;
+    private:
+        float _intensity;
+        Color3 _color;
+    };
+
     class DARMOK_EXPORT AmbientLight final
     {
     public:
@@ -48,6 +63,20 @@ namespace darmok
         Color3 _color;
     };
 
+    class DARMOK_EXPORT SpotLight final
+    {
+    public:
+        SpotLight(float intensity = 1.F) noexcept;
+
+        SpotLight& setIntensity(float intensity) noexcept;
+        SpotLight& setColor(const Color3& color) noexcept;
+
+        [[nodiscard]] const Color3& getColor() const noexcept;
+        [[nodiscard]] float getIntensity() const noexcept;
+    private:
+        float _intensity;
+        Color3 _color;
+    };
 
     class DARMOK_EXPORT LightingRenderComponent final : public IRenderComponent
     {
@@ -68,15 +97,17 @@ namespace darmok
         bgfx::UniformHandle _camPosUniform;
         bgfx::UniformHandle _normalMatrixUniform;
         bgfx::DynamicVertexBufferHandle _pointLightBuffer;
+        bgfx::DynamicVertexBufferHandle _dirLightBuffer;
 
         bgfx::VertexLayout _pointLightsLayout;
+        bgfx::VertexLayout _dirLightsLayout;
 
         glm::vec4 _lightCount;
         glm::vec4 _lightData;
         glm::vec4 _camPos;
-        Data _pointLights;
 
         size_t updatePointLights() noexcept;
+        size_t updateDirLights() noexcept;
         void updateAmbientLights() noexcept;
         void updateCamera() noexcept;
 

@@ -122,7 +122,6 @@ namespace
 
 			{ // player
 				Capsule playerShape(1.F, 0.5F, glm::vec3(0.F, 1.F, 0.F ));
-				// Cube playerShape(glm::vec3(1, 2, 1), glm::vec3(0, 1, 0));
 				auto playerEntity = _scene->createEntity();
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 				_characterCtrl->setDelegate(*this);
