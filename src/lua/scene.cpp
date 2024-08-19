@@ -379,41 +379,64 @@ namespace darmok
 		);
 	}
 
-	LuaSceneAppComponent::LuaSceneAppComponent(SceneAppComponent& comp) noexcept
-		: _comp(comp)
+	SceneAppComponent& LuaSceneAppComponent::addAppComponent1(LuaApp& app) noexcept
 	{
+		return app.getReal().addComponent<SceneAppComponent>();
 	}
 
-	LuaSceneAppComponent& LuaSceneAppComponent::addAppComponent1(LuaApp& app) noexcept
+	SceneAppComponent& LuaSceneAppComponent::addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept
 	{
-		return app.addComponent<LuaSceneAppComponent, SceneAppComponent>();
+		return app.getReal().addComponent<SceneAppComponent>(scene.getReal());
 	}
 
-	LuaSceneAppComponent& LuaSceneAppComponent::addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept
+	std::optional<LuaScene> LuaSceneAppComponent::getScene1(const SceneAppComponent& comp) noexcept
 	{
-		return app.addComponent<LuaSceneAppComponent, SceneAppComponent>(scene.getReal());
+		return getScene2(comp, 0);
 	}
 
-	LuaScene LuaSceneAppComponent::getScene() const noexcept
+	std::optional<LuaScene> LuaSceneAppComponent::getScene2(const SceneAppComponent& comp, size_t i) noexcept
 	{
-		return LuaScene(_comp.get().getScene());
+		if (auto scene = comp.getScene(i))
+		{
+			return LuaScene(scene);
+		}
+		return std::nullopt;
 	}
 
-	LuaSceneAppComponent& LuaSceneAppComponent::setScene(const LuaScene& scene) noexcept
+	SceneAppComponent& LuaSceneAppComponent::setScene1(SceneAppComponent& comp, const LuaScene& scene) noexcept
 	{
-		_comp.get().setScene(scene.getReal());
-		return *this;
+		return setScene2(comp, scene, 0);
+	}
+
+	SceneAppComponent& LuaSceneAppComponent::setScene2(SceneAppComponent& comp, const LuaScene& scene, size_t i) noexcept
+	{
+		comp.setScene(scene.getReal(), i);
+		return comp;
+	}
+
+	LuaScene LuaSceneAppComponent::addScene1(SceneAppComponent& comp) noexcept
+	{
+		return LuaScene(comp.addScene());
+	}
+
+	SceneAppComponent& LuaSceneAppComponent::addScene2(SceneAppComponent& comp, LuaScene& scene) noexcept
+	{
+		comp.addScene(scene.getReal());
+		return comp;
 	}
 
 	void LuaSceneAppComponent::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaSceneAppComponent>("SceneAppComponent",
+		lua.new_usertype<SceneAppComponent>("SceneAppComponent",
 			sol::no_constructor,
 			"add_app_component", sol::overload(
 				&LuaSceneAppComponent::addAppComponent1,
 				&LuaSceneAppComponent::addAppComponent2
 			),
-			"scene", sol::property(&LuaSceneAppComponent::getScene, &LuaSceneAppComponent::setScene)
+			"scene", sol::property(&LuaSceneAppComponent::getScene1, &LuaSceneAppComponent::setScene1),
+			"get_scene", sol::overload(&LuaSceneAppComponent::getScene1, &LuaSceneAppComponent::getScene2),
+			"set_scene", sol::overload(&LuaSceneAppComponent::setScene1, &LuaSceneAppComponent::setScene2),
+			"add_scene", sol::overload(&LuaSceneAppComponent::addScene1, &LuaSceneAppComponent::addScene2)
 		);
 	}
 }

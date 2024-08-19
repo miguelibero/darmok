@@ -286,29 +286,55 @@ namespace darmok
     }
 
     SceneAppComponent::SceneAppComponent(const std::shared_ptr<Scene>& scene) noexcept
-        : _scene(scene == nullptr ? std::make_shared<Scene>() : scene)
     {
+        _scenes.push_back(scene == nullptr ? std::make_shared<Scene>() : scene);
     }
 
-    std::shared_ptr<Scene> SceneAppComponent::getScene() const noexcept
+    std::shared_ptr<Scene> SceneAppComponent::getScene(size_t i) const noexcept
     {
-        return _scene;
+        if (i < 0 || i >= _scenes.size())
+        {
+            return nullptr;
+        }
+        return _scenes[i];
     }
 
-    SceneAppComponent& SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene) noexcept
+    SceneAppComponent& SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene, size_t i) noexcept
     {
-        if (_scene == scene)
+        if (i < 0)
         {
             return *this;
         }
-        if (_app && _scene)
+        if (i >= _scenes.size())
         {
-            _scene->shutdown();
+            _scenes.resize(i + 1);
         }
-        _scene = scene;
-        if (_app && _scene)
+        auto oldScene = _scenes[i];
+        if (_app && oldScene)
         {
-            _scene->init(*_app);
+            oldScene->shutdown();
+        }
+        _scenes[i] = scene;
+        if (_app && scene)
+        {
+            scene->init(*_app);
+        }
+        return *this;
+    }
+
+    std::shared_ptr<Scene> SceneAppComponent::addScene() noexcept
+    {
+        auto scene = std::make_shared<Scene>();
+        addScene(scene);
+        return scene;
+    }
+
+    SceneAppComponent& SceneAppComponent::addScene(const std::shared_ptr<Scene>& scene) noexcept
+    {
+        _scenes.push_back(scene);
+        if (_app && scene)
+        {
+            scene->init(*_app);
         }
         return *this;
     }
@@ -320,34 +346,44 @@ namespace darmok
             shutdown();
         }
         _app = app;
-        if(_scene)
+        for(auto& scene : _scenes)
         {
-            _scene->init(app);
+            scene->init(app);
         }
     }
 
     void SceneAppComponent::renderReset()
     {
-        if (_scene)
+        for (auto& scene : _scenes)
         {
-            _scene->renderReset();
+            if (scene)
+            {
+                scene->renderReset();
+            }
         }
     }
 
     void SceneAppComponent::shutdown()
     {
         _app = nullptr;
-        if (_scene)
+        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
         {
-            _scene->shutdown();
+            auto scene = *itr;
+            if (scene)
+            {
+                scene->shutdown();
+            }
         }
     }
 
     void SceneAppComponent::update(float deltaTime)
     {
-        if (_scene)
+        for (auto& scene : _scenes)
         {
-            _scene->update(deltaTime);
+            if (scene)
+            {
+                scene->update(deltaTime);
+            }
         }
     }
 }

@@ -130,14 +130,15 @@ namespace darmok
 	class LuaSceneAppComponent final : public IAppComponent
 	{
 	public:
-		LuaSceneAppComponent(SceneAppComponent& comp) noexcept;
-		static LuaSceneAppComponent& addAppComponent1(LuaApp& app) noexcept;
-		static LuaSceneAppComponent& addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept;
-		LuaScene getScene() const noexcept;
-		LuaSceneAppComponent& setScene(const LuaScene& scene) noexcept;
-
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		std::reference_wrapper<SceneAppComponent> _comp;
+		static SceneAppComponent& addAppComponent1(LuaApp& app) noexcept;
+		static SceneAppComponent& addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept;
+		static std::optional<LuaScene> getScene1(const SceneAppComponent& comp) noexcept;
+		static std::optional<LuaScene> getScene2(const SceneAppComponent& comp, size_t i) noexcept;
+		static LuaScene addScene1(SceneAppComponent& comp) noexcept;
+		static SceneAppComponent& addScene2(SceneAppComponent& comp, LuaScene& scene) noexcept;
+		static SceneAppComponent& setScene1(SceneAppComponent& comp, const LuaScene& scene) noexcept;
+		static SceneAppComponent& setScene2(SceneAppComponent& comp, const LuaScene& scene, size_t i) noexcept;
 	};
 }

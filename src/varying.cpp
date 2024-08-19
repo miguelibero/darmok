@@ -365,11 +365,11 @@ namespace darmok
 		{
 			defaultValue = json.get<std::vector<float>>();
 			num = defaultValue.size();
-			return;
 		}
 		if (type != nlohmann::json::value_t::object)
 		{
 			num = json;
+			defaultValue.resize(num);
 			return;
 		}
 		if (json.contains("default"))
@@ -379,6 +379,7 @@ namespace darmok
 		if (json.contains("num"))
 		{
 			num = json["num"].get<uint8_t>();
+			defaultValue.resize(num);
 		}
 		else
 		{

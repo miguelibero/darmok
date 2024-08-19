@@ -233,8 +233,10 @@ namespace darmok
     {
     public:
         SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;
-        std::shared_ptr<Scene> getScene() const noexcept;
-        SceneAppComponent& setScene(const std::shared_ptr<Scene>& scene) noexcept;
+        std::shared_ptr<Scene> getScene(size_t i = 0) const noexcept;
+        SceneAppComponent& setScene(const std::shared_ptr<Scene>& scene, size_t i = 0) noexcept;
+        std::shared_ptr<Scene> addScene() noexcept;
+        SceneAppComponent& addScene(const std::shared_ptr<Scene>& scene) noexcept;
 
         void init(App& app) override;
         void shutdown() override;
@@ -242,7 +244,8 @@ namespace darmok
         void update(float dt) override;
 
     private:
-        std::shared_ptr<Scene> _scene;
+        using Scenes = std::vector<std::shared_ptr<Scene>>;
+        Scenes _scenes;
         OptionalRef<App> _app;
     };
 }
