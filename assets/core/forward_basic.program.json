@@ -8,10 +8,6 @@
             "type": "float",
             "num": 3
         },
-        "tangent": { 
-            "type": "float",
-            "num": 3
-        },
         "texCoord0": { 
             "type": "float",
             "num": 2
@@ -28,7 +24,6 @@
     "fragment": [
         "position",
         "normal",
-        "tangent",
         "texCoord0",
         "color0",
         ["viewDir", 3]

@@ -25,14 +25,13 @@ namespace darmok
     struct DARMOK_EXPORT ModelPointLight final
     {
         float intensity;
-        Color3 diffuseColor;
-        Color3 specularColor;
+        Color3 color;
         glm::vec3 attenuation;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(intensity, diffuseColor, specularColor, attenuation);
+            archive(intensity, color, attenuation);
         }
     };
 
@@ -93,6 +92,7 @@ namespace darmok
 
         Color baseColor = Colors::white();
         Color specularColor = Colors::white();
+        float shininess = 0.F;
         float metallicFactor = 0.F;
         float roughnessFactor = 0.F;
         float normalScale = 0.F;
@@ -100,7 +100,7 @@ namespace darmok
         Color3 emissiveColor = Colors::black();
         bool twoSided = false;
 
-        using Opacity = ModelMaterialOpacity;
+        using Opacity = MaterialOpacity;
         Opacity opacity = Opacity::Opaque;
 
         template<class Archive>
@@ -113,6 +113,7 @@ namespace darmok
                 textures,
                 baseColor,
                 specularColor,
+                shininess,
                 metallicFactor,
                 roughnessFactor,
                 normalScale,

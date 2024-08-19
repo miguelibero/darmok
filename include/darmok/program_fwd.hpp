@@ -6,6 +6,7 @@ namespace darmok
 	{
 		Unlit,
 		Gui,
-		Forward
+		Forward,
+		ForwardBasic
 	};
 }

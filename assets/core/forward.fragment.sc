@@ -1,4 +1,4 @@
-$input v_position, v_normal, v_tangent, v_texcoord0
+$input v_position, v_normal, v_tangent, v_texcoord0, v_viewDir
 
 // all unit-vectors need to be normalized in the fragment shader, the interpolation of vertex shader output doesn't preserve length
 
@@ -11,8 +11,6 @@ $input v_position, v_normal, v_tangent, v_texcoord0
 #include <darmok_material.sc>
 #include <darmok_light.sc>
 
-uniform vec4 u_camPos;
-
 void main()
 {
     Material mat = getMaterial(v_texcoord0);
@@ -20,12 +18,8 @@ void main()
     vec3 N = convertTangentNormal(v_normal, v_tangent, mat.normal);
     mat.a = specularAntiAliasing(N, mat.a);
 
-    // shading
-
-    vec3 camPos = u_camPos.xyz;
     vec3 fragPos = v_position;
-
-    vec3 V = normalize(camPos - fragPos);
+    vec3 V = v_viewDir;
     float NoV = abs(dot(N, V)) + 1e-5;
 
     if(whiteFurnaceEnabled())
@@ -56,11 +50,8 @@ void main()
         }
     }
 
-    radianceOut += getAmbientLight().irradiance * mat.diffuseColor * mat.occlusion;
+    radianceOut += getAmbientLight().irradiance * mat.diffuse * mat.occlusion;
     radianceOut += mat.emissive;
-
-    // output goes straight to HDR framebuffer, no clamping
-    // tonemapping happens in final blit
 
     gl_FragColor.rgb = radianceOut;
     gl_FragColor.a = mat.albedo.a;

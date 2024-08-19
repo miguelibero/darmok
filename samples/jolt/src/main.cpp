@@ -42,7 +42,7 @@ namespace
 			_scene = addComponent<SceneAppComponent>().getScene();
 			_scene->addSceneComponent<PhysicsSystem>(getAssets().getAllocator());
 
-			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
+			auto prog = std::make_shared<Program>(StandardProgramType::ForwardBasic);
 
 			// camera
 			{

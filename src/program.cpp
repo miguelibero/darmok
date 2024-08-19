@@ -4,6 +4,7 @@
 #include "generated/gui.program.h"
 #include "generated/unlit.program.h"
 #include "generated/forward.program.h"
+#include "generated/forward_basic.program.h"
 
 namespace darmok
 {    
@@ -39,6 +40,10 @@ namespace darmok
         {
             return StandardProgramType::Forward;
         }
+        if (lower == "forward_basic")
+        {
+            return StandardProgramType::ForwardBasic;
+        }
         return std::nullopt;
     }
 
@@ -55,6 +60,9 @@ namespace darmok
             break;
         case StandardProgramType::Forward:
             def.loadStaticMem(forward_program);
+            break;
+        case StandardProgramType::ForwardBasic:
+            def.loadStaticMem(forward_basic_program);
             break;
         }
         return def;

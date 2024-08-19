@@ -39,6 +39,7 @@ namespace darmok
         };
 
         std::vector<Sampler> _samplerUniforms;
+        bgfx::UniformHandle _albedoLutSamplerUniform;
         bgfx::UniformHandle _baseColorUniform;
         bgfx::UniformHandle _specularColorUniform;
         bgfx::UniformHandle _metallicRoughnessNormalOcclusionUniform;
@@ -54,6 +55,7 @@ namespace darmok
     public:
         using TextureType = MaterialTextureType;
         using PrimitiveType = MaterialPrimitiveType;
+        using Opacity = MaterialOpacity;
 
         Material(const std::shared_ptr<Texture>& texture = nullptr) noexcept;
         Material(const std::shared_ptr<Program>& program) noexcept;
@@ -80,9 +82,6 @@ namespace darmok
         const Color& getBaseColor() const noexcept;
         Material& setBaseColor(const Color& v) noexcept;
 
-        const Color& getSpecularColor() const noexcept;
-        Material& setSpecularColor(const Color& v) noexcept;
-
         float getMetallicFactor() const noexcept;
         Material& setMetallicFactor(float v) noexcept;
 
@@ -98,6 +97,9 @@ namespace darmok
         const Color3& getEmissiveColor() const noexcept;
         Material& setEmissiveColor(const Color3& v) noexcept;
 
+        Opacity getOpacity() const noexcept;
+        Material& setOpacity(Opacity v) noexcept;
+
         Material& setTwoSided(bool enabled) noexcept;
         bool getTwoSided() const noexcept;
 
@@ -107,6 +109,13 @@ namespace darmok
         Material& setWhiteFurnanceFactor(float v) noexcept;
         float getWhiteFurnanceFactor() const noexcept;
 
+        // for basic material (phong lighting)
+
+        const Color3& getSpecularColor() const noexcept;
+        Material& setSpecularColor(const Color3& v) noexcept;
+
+        uint16_t getShininess() const noexcept;
+        Material& setShininess(uint16_t v) noexcept;
 
     private:
         std::shared_ptr<Program> _program;
@@ -115,13 +124,14 @@ namespace darmok
         std::unordered_map<TextureType, std::shared_ptr<Texture>> _textures;
 
         Color _baseColor;
-        Color _specularColor;
+        Color3 _specularColor;
         float _metallicFactor;
         float _roughnessFactor;
         float _normalScale;
         float _occlusionStrength;
         Color3 _emissiveColor;
-        bool _opaque;
+        Opacity _opacity;
+        uint16_t _shininess;
         bool _twoSided;
 
         bool _multipleScattering;

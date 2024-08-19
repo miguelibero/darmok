@@ -13,8 +13,7 @@ namespace darmok
 {
     PointLight::PointLight(float intensity, const Color3& color) noexcept
         : _intensity(intensity)
-        , _diffuseColor(color)
-        , _specularColor(color)
+        , _color(color)
         , _attenuation(0, 1, 0)
     {
     }
@@ -33,20 +32,7 @@ namespace darmok
 
     PointLight& PointLight::setColor(const Color3& color) noexcept
     {
-        _diffuseColor = color;
-        _specularColor = color;
-        return *this;
-    }
-
-    PointLight& PointLight::setDiffuseColor(const Color3& color) noexcept
-    {
-        _diffuseColor = color;
-        return *this;
-    }
-
-    PointLight& PointLight::setSpecularColor(const Color3& color) noexcept
-    {
-        _specularColor = color;
+        _color = color;
         return *this;
     }
 
@@ -58,7 +44,7 @@ namespace darmok
     float PointLight::getRadius() const noexcept
     {
         static const float intensityThreshold = 1.0f;
-        auto intensity = glm::compMax(Colors::normalize(_diffuseColor) * _intensity);
+        auto intensity = glm::compMax(Colors::normalize(_color) * _intensity);
         auto thres = intensity / intensityThreshold;
 
         auto quat = _attenuation[2];
@@ -90,14 +76,9 @@ namespace darmok
         return _attenuation;
     }
 
-    const Color3& PointLight::getDiffuseColor() const noexcept
+    const Color3& PointLight::getColor() const noexcept
     {
-        return _diffuseColor;
-    }
-
-    const Color3& PointLight::getSpecularColor() const noexcept
-    {
-        return _specularColor;
+        return _color;
     }
 
     AmbientLight::AmbientLight(float intensity) noexcept
@@ -141,7 +122,6 @@ namespace darmok
         _pointLightsLayout.begin()
             .add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
             .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color1, 4, bgfx::AttribType::Float)
             .end();
 
         createHandles();
@@ -221,10 +201,8 @@ namespace darmok
             }
             auto radius = pointLight.getRadius() * scale;
             auto intensity = pointLight.getIntensity();
-            glm::vec4 c(Colors::normalize(pointLight.getDiffuseColor()) * intensity, radius);
+            glm::vec4 c(Colors::normalize(pointLight.getColor()) * intensity, radius);
             writer.write(bgfx::Attrib::Color0, index, c);
-            c = glm::vec4(Colors::normalize(pointLight.getSpecularColor()) * intensity, radius);
-            writer.write(bgfx::Attrib::Color1, index, c);
             ++index;
         }
         _pointLights = writer.finish();

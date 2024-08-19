@@ -8,11 +8,4 @@ namespace darmok
         Json,
         Xml
     };
-
-    enum class ModelMaterialOpacity
-    {
-        Opaque,
-        Cutout,
-        Transparent
-    };
 }

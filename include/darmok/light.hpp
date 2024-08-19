@@ -22,19 +22,15 @@ namespace darmok
         PointLight& setAttenuation(const glm::vec3& attn) noexcept;
 
         PointLight& setColor(const Color3& color) noexcept;
-        PointLight& setDiffuseColor(const Color3& color) noexcept;
-        PointLight& setSpecularColor(const Color3& color) noexcept;
 
         [[nodiscard]] float getRadius() const noexcept;
         [[nodiscard]] float getIntensity() const noexcept;
         [[nodiscard]] const glm::vec3& getAttenuation() const noexcept;
-        [[nodiscard]] const Color3& getDiffuseColor() const noexcept;
-        [[nodiscard]] const Color3& getSpecularColor() const noexcept;
+        [[nodiscard]] const Color3& getColor() const noexcept;
     private:
         float _intensity;
         glm::vec3 _attenuation;
-        Color3 _diffuseColor;
-        Color3 _specularColor;
+        Color3 _color;
     };
 
     class DARMOK_EXPORT AmbientLight final

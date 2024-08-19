@@ -20,8 +20,6 @@ namespace darmok
 
 		static void setAttenuation(PointLight& light, const VarLuaTable<glm::vec3>& attn) noexcept;
 		static void setColor(PointLight& light, const VarLuaTable<Color3>& color) noexcept;
-		static void setDiffuseColor(PointLight& light, const VarLuaTable<Color3>& color) noexcept;
-		static void setSpecularColor(PointLight& light, const VarLuaTable<Color3>& color) noexcept;
 
 		static PointLight& addEntityComponent1(LuaEntity& entity) noexcept;
 		static PointLight& addEntityComponent2(LuaEntity& entity, float intensity) noexcept;

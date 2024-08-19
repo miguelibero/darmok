@@ -410,8 +410,7 @@ namespace darmok
         _config.scene.addComponent<PointLight>(entity)
             .setIntensity(light.intensity)
             .setAttenuation(light.attenuation)
-            .setDiffuseColor(light.diffuseColor)
-            .setSpecularColor(light.specularColor);
+            .setColor(light.color);
     }
 
     void ModelSceneConfigurer::configureEntity(const ModelAmbientLight& light, Entity entity) noexcept

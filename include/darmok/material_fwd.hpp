@@ -17,4 +17,11 @@ namespace darmok
         Triangle,
         Line
     };
+
+    enum class MaterialOpacity
+    {
+        Opaque,
+        Cutout,
+        Transparent
+    };
 }

@@ -368,12 +368,11 @@ namespace darmok
                 assimpLight.mAttenuationLinear,
                 assimpLight.mAttenuationQuadratic
             );
-            pointLight.intensity = std::max(
-                AssimpUtils::getIntensity(assimpLight.mColorDiffuse),
-                AssimpUtils::getIntensity(assimpLight.mColorSpecular));
+            auto color = assimpLight.mColorDiffuse;
+            pointLight.intensity = AssimpUtils::getIntensity(color);
             float f = 1.F / pointLight.intensity;
-            pointLight.diffuseColor = AssimpUtils::convert(assimpLight.mColorDiffuse * f);
-            pointLight.specularColor = AssimpUtils::convert(assimpLight.mColorSpecular * f);
+            pointLight.color = AssimpUtils::convert(color * f);
+            // we're not supporting different specular color in lights
         }
         else if (assimpLight.mType == aiLightSource_AMBIENT)
         {
@@ -440,6 +439,10 @@ namespace darmok
         {
             modelMat.metallicFactor = glm::clamp(v, 0.0f, 1.0f);
         }
+        if (assimpMat.Get(AI_MATKEY_SHININESS, v) == AI_SUCCESS)
+        {
+            modelMat.shininess = v;
+        }
         if (assimpMat.Get(AI_MATKEY_ROUGHNESS_FACTOR, v) == AI_SUCCESS)
         {
             modelMat.roughnessFactor = glm::clamp(v, 0.0f, 1.0f);
@@ -465,10 +468,10 @@ namespace darmok
             switch (blendMode)
             {
             case aiBlendMode_Additive:
-                modelMat.opacity = ModelMaterialOpacity::Transparent;
+                modelMat.opacity = MaterialOpacity::Transparent;
                 break;
             case aiBlendMode_Default:
-                modelMat.opacity = ModelMaterialOpacity::Opaque;
+                modelMat.opacity = MaterialOpacity::Opaque;
                 break;
             }
         }

@@ -1,5 +1,5 @@
-#ifndef DARMOK_MATERIAL_HEADER
-#define DARMOK_MATERIAL_HEADER
+#ifndef DARMOK_MATERIAL_PBR_HEADER
+#define DARMOK_MATERIAL_PBR_HEADER
 
 #include <darmok_samplers.sc>
 
@@ -14,26 +14,22 @@ SAMPLER2D(s_texAlbedoLUT, DARMOK_SAMPLER_MATERIAL_ALBEDO_LUT);
 #ifdef READ_MATERIAL
 
 SAMPLER2D(s_texBaseColor,         DARMOK_SAMPLER_MATERIAL_BASECOLOR);
-SAMPLER2D(s_texSpecular,          DARMOK_SAMPLER_MATERIAL_SPECULAR);
 SAMPLER2D(s_texMetallicRoughness, DARMOK_SAMPLER_MATERIAL_METALLIC_ROUGHNESS);
 SAMPLER2D(s_texNormal,            DARMOK_SAMPLER_MATERIAL_NORMAL);
 SAMPLER2D(s_texOcclusion,         DARMOK_SAMPLER_MATERIAL_OCCLUSION);
 SAMPLER2D(s_texEmissive,          DARMOK_SAMPLER_MATERIAL_EMISSIVE);
 
 uniform vec4 u_baseColorFactor;
-uniform vec4 u_specularFactorVec;
 uniform vec4 u_metallicRoughnessNormalOcclusionFactor;
 uniform vec4 u_emissiveFactorVec;
 uniform vec4 u_hasTextures;
 
 #define u_hasBaseColorTexture         ((uint(u_hasTextures.x) & (1 << 0)) != 0)
-#define u_hasSpecularTexture          ((uint(u_hasTextures.x) & (1 << 1)) != 0)
 #define u_hasMetallicRoughnessTexture ((uint(u_hasTextures.x) & (1 << 2)) != 0)
 #define u_hasNormalTexture            ((uint(u_hasTextures.x) & (1 << 3)) != 0)
 #define u_hasOcclusionTexture         ((uint(u_hasTextures.x) & (1 << 4)) != 0)
 #define u_hasEmissiveTexture          ((uint(u_hasTextures.x) & (1 << 5)) != 0)
 
-#define u_specularFactor          (u_specularFactorVec.xyz)
 #define u_metallicRoughnessFactor (u_metallicRoughnessNormalOcclusionFactor.xy)
 #define u_normalScale             (u_metallicRoughnessNormalOcclusionFactor.z)
 #define u_occlusionStrength       (u_metallicRoughnessNormalOcclusionFactor.w)
@@ -52,7 +48,6 @@ uniform vec4 u_multipleScatteringVec;
 struct Material
 {
     vec4 albedo;
-    vec3 specular;
     float metallic;
     float roughness;
     vec3 normal;
@@ -61,7 +56,7 @@ struct Material
 
     // calculated from the above
 
-    vec3 diffuseColor; // this becomes black for higher metalness
+    vec3 diffuse; // this becomes black for higher metalness
     vec3 F0; // Fresnel reflectance at normal incidence
     float a; // remapped roughness (^2)
 };
@@ -77,18 +72,6 @@ vec4 materialAlbedoValue(vec2 texcoord)
     else
     {
         return u_baseColorFactor;
-    }
-}
-
-vec3 materialSpecularValue(vec2 texcoord)
-{
-    if(u_hasSpecularTexture)
-    {
-        return texture2D(s_texSpecular, texcoord).rgb * u_specularFactor;
-    }
-    else
-    {
-        return u_specularFactor;
     }
 }
 
@@ -155,7 +138,6 @@ Material getMaterial(vec2 texcoord)
     // Read textures/uniforms
 
     mat.albedo = materialAlbedoValue(texcoord);
-    mat.specular = materialSpecularValue(texcoord);
     vec2 metallicRoughness = materialMetallicRoughnessValue(texcoord);
     mat.metallic  = metallicRoughness.r;
     mat.roughness = metallicRoughness.g;
@@ -180,7 +162,7 @@ Material initMaterial(Material mat)
 
     // metals have no diffuse reflection so the albedo value stores F0 (reflectance at normal incidence) instead
     // dielectrics are assumed to have F0 = 0.04 which equals an IOR of 1.5
-    mat.diffuseColor = mix(mat.albedo.rgb * (vec3_splat(1.0) - dielectricSpecular), black, mat.metallic);
+    mat.diffuse = mix(mat.albedo.rgb * (vec3_splat(1.0) - dielectricSpecular), black, mat.metallic);
     mat.F0 = mix(dielectricSpecular, mat.albedo.rgb, mat.metallic);
     // perceptual roughness to roughness
     mat.a = mat.roughness * mat.roughness;
@@ -344,9 +326,9 @@ vec3 BRDF(vec3 v, vec3 l, vec3 n, float NoV, float NoL, Material mat)
     vec3 Fr = F * (V * D);
 
     // diffuse BRDF
-    vec3 Fd = mat.diffuseColor * Fd_Lambert();
+    vec3 Fd = mat.diffuse * Fd_Lambert();
 
     return Fr + (1.0 - F) * Fd;
 }
 
-#endif // DARMOK_MATERIAL_HEADER
+#endif // DARMOK_MATERIAL_PBR_HEADER

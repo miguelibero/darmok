@@ -15,15 +15,16 @@ namespace darmok
 		: _primitive(MaterialPrimitiveType::Triangle)
 		, _program(program)
 		, _baseColor(Colors::magenta())
-		, _specularColor(Colors::black())
+		, _specularColor(Colors::black3())
 		, _metallicFactor(0.F)
 		, _roughnessFactor(0.F)
 		, _normalScale(1.F)
 		, _occlusionStrength(0.F)
-		, _emissiveColor(Colors::black())
+		, _emissiveColor(Colors::black3())
 		, _multipleScattering(false)
 		, _whiteFurnance(0.F)
-		, _opaque(false)
+		, _opacity(Opacity::Opaque)
+		, _shininess(32)
 		, _twoSided(false)
 	{
 		if (_program == nullptr)
@@ -144,12 +145,12 @@ namespace darmok
 		return *this;
 	}
 
-	const Color& Material::getSpecularColor() const noexcept
+	const Color3& Material::getSpecularColor() const noexcept
 	{
 		return _specularColor;
 	}
 
-	Material& Material::setSpecularColor(const Color& v) noexcept
+	Material& Material::setSpecularColor(const Color3& v) noexcept
 	{
 		_specularColor = v;
 		return *this;
@@ -243,6 +244,28 @@ namespace darmok
 		return _whiteFurnance;
 	}
 
+	uint16_t Material::getShininess() const noexcept
+	{
+		return _shininess;
+	}
+
+	Material& Material::setShininess(uint16_t v) noexcept
+	{
+		_shininess = v;
+		return *this;
+	}
+
+	Material::Opacity Material::getOpacity() const noexcept
+	{
+		return _opacity;
+	}
+
+	Material& Material::setOpacity(Opacity v) noexcept
+	{
+		_opacity = v;
+		return *this;
+	}
+
 	void MaterialRenderComponent::init(Camera& cam, Scene& scene, App& app)
 	{
 		_samplerUniforms = std::vector<Sampler>{
@@ -253,6 +276,7 @@ namespace darmok
 			{ TextureType::Occlusion, bgfx::createUniform("s_texOcclusion", bgfx::UniformType::Sampler), RenderSamplers::MATERIAL_OCCLUSION},
 			{ TextureType::Emissive, bgfx::createUniform("s_texEmissive", bgfx::UniformType::Sampler), RenderSamplers::MATERIAL_EMISSIVE},
 		};
+		_albedoLutSamplerUniform = bgfx::createUniform("s_texAlbedoLUT", bgfx::UniformType::Sampler);
 		_baseColorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
 		_specularColorUniform = bgfx::createUniform("u_specularFactorVec", bgfx::UniformType::Vec4);
 		_metallicRoughnessNormalOcclusionUniform = bgfx::createUniform("u_metallicRoughnessNormalOcclusionFactor", bgfx::UniformType::Vec4);
@@ -270,6 +294,7 @@ namespace darmok
 		{
 			bgfx::destroy(elm.handle);
 		}
+		bgfx::destroy(_albedoLutSamplerUniform);
 		bgfx::destroy(_baseColorUniform);
 		bgfx::destroy(_specularColorUniform);
 		bgfx::destroy(_metallicRoughnessNormalOcclusionUniform);
@@ -299,10 +324,13 @@ namespace darmok
 		}
 		encoder.setUniform(_hasTexturesUniform, glm::value_ptr(hasTextures));
 
+		encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO_LUT, _albedoLutSamplerUniform, _defaultTexture->getHandle());
+
 		auto v = Colors::normalize(mat.getBaseColor());
 		encoder.setUniform(_baseColorUniform, glm::value_ptr(v));
-		v = Colors::normalize(mat.getSpecularColor());
+		v = glm::vec4(Colors::normalize(mat.getSpecularColor()), mat.getShininess());
 		encoder.setUniform(_specularColorUniform, glm::value_ptr(v));
+		
 		v = glm::vec4(mat.getMetallicFactor(), mat.getRoughnessFactor(), mat.getNormalScale(), mat.getOcclusionStrength());
 		encoder.setUniform(_metallicRoughnessNormalOcclusionUniform, glm::value_ptr(v));
 		v = glm::vec4(Colors::normalize(mat.getEmissiveColor()), 0);

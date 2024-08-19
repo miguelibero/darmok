@@ -87,6 +87,7 @@ darmok_process_assets(
   ASSETS
     darmok_light.sc
     darmok_material.sc
+    darmok_material_basic.sc
     darmok_samplers.sc
     darmok_skinning.sc
     darmok_util.sc
@@ -94,6 +95,9 @@ darmok_process_assets(
     forward.fragment.sc
     forward.vertex.sc
     forward.program.json
+    forward_basic.fragment.sc
+    forward_basic.vertex.sc
+    forward_basic.program.json
     gui.fragment.sc
     gui.vertex.sc
     gui.program.json
