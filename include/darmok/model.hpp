@@ -92,6 +92,7 @@ namespace darmok
         std::unordered_map<MaterialTextureType, ModelTexture> textures;
 
         Color baseColor = Colors::white();
+        Color specularColor = Colors::white();
         float metallicFactor = 0.F;
         float roughnessFactor = 0.F;
         float normalScale = 0.F;
@@ -99,8 +100,8 @@ namespace darmok
         Color3 emissiveColor = Colors::black();
         bool twoSided = false;
 
-        using BlendMode = ModelMaterialBlendMode;
-        BlendMode blendMode = BlendMode::Default;
+        using Opacity = ModelMaterialOpacity;
+        Opacity opacity = Opacity::Opaque;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -111,13 +112,14 @@ namespace darmok
                 primitiveType,
                 textures,
                 baseColor,
+                specularColor,
                 metallicFactor,
                 roughnessFactor,
                 normalScale,
                 occlusionStrength,
                 emissiveColor,
                 twoSided,
-                blendMode
+                opacity
             );
         }
 

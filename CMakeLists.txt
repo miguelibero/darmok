@@ -85,8 +85,8 @@ darmok_process_assets(
   INPUT ${PROJECT_SOURCE_DIR}/assets/core
   OUTPUT include/private/generated
   ASSETS
-    darmok_lights.sc
-    darmok_pbr.sc
+    darmok_light.sc
+    darmok_material.sc
     darmok_samplers.sc
     darmok_skinning.sc
     darmok_util.sc

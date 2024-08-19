@@ -394,7 +394,9 @@ namespace darmok
 
     const std::vector<AssimpModelConverter::AssimpMaterialTexture> AssimpModelConverter::_materialTextures =
     {        
-        { AI_MATKEY_BASE_COLOR_TEXTURE, MaterialTextureType::Base },
+        { AI_MATKEY_BASE_COLOR_TEXTURE, MaterialTextureType::BaseColor },
+        { aiTextureType_DIFFUSE, 0, MaterialTextureType::BaseColor },
+        { aiTextureType_SPECULAR, 0, MaterialTextureType::Specular },
         { AI_MATKEY_METALLIC_TEXTURE, MaterialTextureType::MetallicRoughness },
         { AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, MaterialTextureType::MetallicRoughness },
         { aiTextureType_NORMALS, 0, MaterialTextureType::Normal },
@@ -402,15 +404,6 @@ namespace darmok
         { aiTextureType_LIGHTMAP, 0, MaterialTextureType::Occlusion },
         { aiTextureType_EMISSIVE, 0, MaterialTextureType::Emissive },
     };
-
-    /*
-    const std::vector<AssimpModelConverter::AssimpMaterialTexture> AssimpModelConverter::_classicMaterialTextures =
-    {
-        { aiTextureType_DIFFUSE, 0, ... },
-        { aiTextureType_SPECULAR, 0, ... },
-        { aiTextureType_AMBIENT, 0, ... },
-    };
-    */
 
     void AssimpModelConverter::update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept
     {
@@ -428,10 +421,19 @@ namespace darmok
 
         assimpMat.Get(AI_MATKEY_TWOSIDED, modelMat.twoSided);
 
-        aiColor4D baseColorFactor;
-        if (assimpMat.Get(AI_MATKEY_BASE_COLOR, baseColorFactor) == AI_SUCCESS)
+        aiColor4D baseColor;
+        if (assimpMat.Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS)
         {
-            modelMat.baseColor = AssimpUtils::convert(baseColorFactor);
+            modelMat.baseColor = AssimpUtils::convert(baseColor);
+        }
+        else if (assimpMat.Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS)
+        {
+            modelMat.baseColor = AssimpUtils::convert(baseColor);
+        }
+        aiColor4D specularColor;
+        if (assimpMat.Get(AI_MATKEY_COLOR_SPECULAR, specularColor) == AI_SUCCESS)
+        {
+            modelMat.specularColor = AssimpUtils::convert(specularColor);
         }
         ai_real v;
         if (assimpMat.Get(AI_MATKEY_METALLIC_FACTOR, v) == AI_SUCCESS)
@@ -457,15 +459,16 @@ namespace darmok
         }
 
         int blendMode = aiBlendMode_Default;
+        // TODO: detect cutout
         if (assimpMat.Get(AI_MATKEY_BLEND_FUNC, blendMode) == AI_SUCCESS)
         {
             switch (blendMode)
             {
             case aiBlendMode_Additive:
-                modelMat.blendMode = ModelMaterialBlendMode::Additive;
+                modelMat.opacity = ModelMaterialOpacity::Transparent;
                 break;
             case aiBlendMode_Default:
-                modelMat.blendMode = ModelMaterialBlendMode::Default;
+                modelMat.opacity = ModelMaterialOpacity::Opaque;
                 break;
             }
         }

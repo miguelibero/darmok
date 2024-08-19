@@ -12,7 +12,7 @@ uniform vec4 u_ambientLightIrradiance;
 // for each light:
 //   vec4 position (w is padding)
 //   vec4 intensity + radius (xyz is intensity, w is radius)
-BUFFER_RO(b_pointLights, vec4, SAMPLER_LIGHTS_POINTLIGHTS);
+BUFFER_RO(b_pointLights, vec4, DARMOK_SAMPLER_LIGHTS_POINTLIGHTS);
 
 struct PointLight
 {
@@ -76,4 +76,4 @@ AmbientLight getAmbientLight()
     return light;
 }
 
-#endif // LIGHTS_SH_HEADER_GUARD
+#endif // DARMOK_LIGHTS_HEADER

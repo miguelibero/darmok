@@ -14,7 +14,8 @@ namespace darmok
 		});
 
 		lua.new_enum<MaterialTextureType>("MaterialTextureType", {
-			{ "Base", MaterialTextureType::Base },
+			{ "BaseColor", MaterialTextureType::BaseColor },
+			{ "Specular", MaterialTextureType::Specular },
 			{ "MetallicRoughness", MaterialTextureType::MetallicRoughness },
 			{ "Normal", MaterialTextureType::Normal },
 			{ "Occlusion", MaterialTextureType::Occlusion },
@@ -44,6 +45,7 @@ namespace darmok
 			),
 			"set_defines", &Material::setProgramDefines,
 			"base_color", sol::property(&Material::getBaseColor, &Material::setBaseColor),
+			"specular_color", sol::property(&Material::getSpecularColor, &Material::setSpecularColor),
 			"metallic_factor", sol::property(&Material::getMetallicFactor, &Material::setMetallicFactor),
 			"roughness_factor", sol::property(&Material::getRoughnessFactor, &Material::setRoughnessFactor),
 			"normal_scale", sol::property(&Material::getNormalScale, &Material::setNormalScale),

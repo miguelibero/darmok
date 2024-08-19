@@ -4,7 +4,8 @@ namespace darmok
 {
     enum class MaterialTextureType
     {
-        Base,
+        BaseColor,
+        Specular,
         MetallicRoughness,
         Normal,
         Occlusion,

@@ -1,35 +1,39 @@
-#ifndef DARMOK_PBR_HEADER
-#define DARMOK_PBR_HEADER
+#ifndef DARMOK_MATERIAL_HEADER
+#define DARMOK_MATERIAL_HEADER
 
 #include <darmok_samplers.sc>
 
 #ifdef WRITE_LUT
-IMAGE2D_WR(i_texAlbedoLUT, rgba32f, SAMPLER_PBR_ALBEDO_LUT);
+IMAGE2D_WR(i_texAlbedoLUT, rgba32f, DARMOK_SAMPLER_MATERIAL_ALBEDO_LUT);
 #else
-SAMPLER2D(s_texAlbedoLUT, SAMPLER_PBR_ALBEDO_LUT);
+SAMPLER2D(s_texAlbedoLUT, DARMOK_SAMPLER_MATERIAL_ALBEDO_LUT);
 #endif
 
 // only define this if you need to retrieve the material parameters
 // without it you can still use the struct definition or BRDF functions
 #ifdef READ_MATERIAL
 
-SAMPLER2D(s_texBaseColor,         SAMPLER_PBR_BASECOLOR);
-SAMPLER2D(s_texMetallicRoughness, SAMPLER_PBR_METALROUGHNESS);
-SAMPLER2D(s_texNormal,            SAMPLER_PBR_NORMAL);
-SAMPLER2D(s_texOcclusion,         SAMPLER_PBR_OCCLUSION);
-SAMPLER2D(s_texEmissive,          SAMPLER_PBR_EMISSIVE);
+SAMPLER2D(s_texBaseColor,         DARMOK_SAMPLER_MATERIAL_BASECOLOR);
+SAMPLER2D(s_texSpecular,          DARMOK_SAMPLER_MATERIAL_SPECULAR);
+SAMPLER2D(s_texMetallicRoughness, DARMOK_SAMPLER_MATERIAL_METALLIC_ROUGHNESS);
+SAMPLER2D(s_texNormal,            DARMOK_SAMPLER_MATERIAL_NORMAL);
+SAMPLER2D(s_texOcclusion,         DARMOK_SAMPLER_MATERIAL_OCCLUSION);
+SAMPLER2D(s_texEmissive,          DARMOK_SAMPLER_MATERIAL_EMISSIVE);
 
 uniform vec4 u_baseColorFactor;
+uniform vec4 u_specularFactorVec;
 uniform vec4 u_metallicRoughnessNormalOcclusionFactor;
 uniform vec4 u_emissiveFactorVec;
 uniform vec4 u_hasTextures;
 
 #define u_hasBaseColorTexture         ((uint(u_hasTextures.x) & (1 << 0)) != 0)
-#define u_hasMetallicRoughnessTexture ((uint(u_hasTextures.x) & (1 << 1)) != 0)
-#define u_hasNormalTexture            ((uint(u_hasTextures.x) & (1 << 2)) != 0)
-#define u_hasOcclusionTexture         ((uint(u_hasTextures.x) & (1 << 3)) != 0)
-#define u_hasEmissiveTexture          ((uint(u_hasTextures.x) & (1 << 4)) != 0)
+#define u_hasSpecularTexture          ((uint(u_hasTextures.x) & (1 << 1)) != 0)
+#define u_hasMetallicRoughnessTexture ((uint(u_hasTextures.x) & (1 << 2)) != 0)
+#define u_hasNormalTexture            ((uint(u_hasTextures.x) & (1 << 3)) != 0)
+#define u_hasOcclusionTexture         ((uint(u_hasTextures.x) & (1 << 4)) != 0)
+#define u_hasEmissiveTexture          ((uint(u_hasTextures.x) & (1 << 5)) != 0)
 
+#define u_specularFactor          (u_specularFactorVec.xyz)
 #define u_metallicRoughnessFactor (u_metallicRoughnessNormalOcclusionFactor.xy)
 #define u_normalScale             (u_metallicRoughnessNormalOcclusionFactor.z)
 #define u_occlusionStrength       (u_metallicRoughnessNormalOcclusionFactor.w)
@@ -38,16 +42,17 @@ uniform vec4 u_hasTextures;
 #endif
 
 uniform vec4 u_multipleScatteringVec;
-#define u_multipleScattering      (u_multipleScatteringVec.x != 0.0)
-#define u_whiteFurnaceRadiance    (u_multipleScatteringVec.y)
-#define u_whiteFurnace            (u_whiteFurnaceRadiance > 0.0)
+#define u_multipleScattering   (u_multipleScatteringVec.x != 0.0)
+#define u_whiteFurnaceRadiance (u_multipleScatteringVec.y)
+#define u_whiteFurnace         (u_whiteFurnaceRadiance > 0.0)
 
 #define PI     (3.14159265359)
 #define INV_PI (0.31830988618)
 
-struct PBRMaterial
+struct Material
 {
     vec4 albedo;
+    vec3 specular;
     float metallic;
     float roughness;
     vec3 normal;
@@ -63,7 +68,7 @@ struct PBRMaterial
 
 #ifdef READ_MATERIAL
 
-vec4 pbrBaseColor(vec2 texcoord)
+vec4 materialAlbedoValue(vec2 texcoord)
 {
     if(u_hasBaseColorTexture)
     {
@@ -75,7 +80,19 @@ vec4 pbrBaseColor(vec2 texcoord)
     }
 }
 
-vec2 pbrMetallicRoughness(vec2 texcoord)
+vec3 materialSpecularValue(vec2 texcoord)
+{
+    if(u_hasSpecularTexture)
+    {
+        return texture2D(s_texSpecular, texcoord).rgb * u_specularFactor;
+    }
+    else
+    {
+        return u_specularFactor;
+    }
+}
+
+vec2 materialMetallicRoughnessValue(vec2 texcoord)
 {
     if(u_hasMetallicRoughnessTexture)
     {
@@ -87,13 +104,13 @@ vec2 pbrMetallicRoughness(vec2 texcoord)
     }
 }
 
-vec3 pbrNormal(vec2 texcoord)
+vec3 materialNormalValue(vec2 texcoord)
 {
     if(u_hasNormalTexture)
     {
         // the normal scale can cause problems and serves no real purpose
         // normal compression and BRDF calculations assume unit length
-        return normalize((texture2D(s_texNormal, texcoord).rgb * 2.0) - 1.0); // * u_normalScale;
+        return normalize((texture2D(s_texNormal, texcoord).rgb * 2.0) - 1.0) * u_normalScale;
     }
     else
     {
@@ -103,7 +120,7 @@ vec3 pbrNormal(vec2 texcoord)
     }
 }
 
-float pbrOcclusion(vec2 texcoord)
+float materialOcclusionValue(vec2 texcoord)
 {
     if(u_hasOcclusionTexture)
     {
@@ -117,7 +134,7 @@ float pbrOcclusion(vec2 texcoord)
     }
 }
 
-vec3 pbrEmissive(vec2 texcoord)
+vec3 materialEmissiveValue(vec2 texcoord)
 {
     if(u_hasEmissiveTexture)
     {
@@ -129,30 +146,31 @@ vec3 pbrEmissive(vec2 texcoord)
     }
 }
 
-PBRMaterial pbrInitMaterial(PBRMaterial mat);
+Material initMaterial(Material mat);
 
-PBRMaterial pbrMaterial(vec2 texcoord)
+Material getMaterial(vec2 texcoord)
 {
-    PBRMaterial mat;
+    Material mat;
 
     // Read textures/uniforms
 
-    mat.albedo = pbrBaseColor(texcoord);
-    vec2 metallicRoughness = pbrMetallicRoughness(texcoord);
+    mat.albedo = materialAlbedoValue(texcoord);
+    mat.specular = materialSpecularValue(texcoord);
+    vec2 metallicRoughness = materialMetallicRoughnessValue(texcoord);
     mat.metallic  = metallicRoughness.r;
     mat.roughness = metallicRoughness.g;
-    mat.normal = pbrNormal(texcoord);
-    mat.occlusion = pbrOcclusion(texcoord);
-    mat.emissive = pbrEmissive(texcoord);
+    mat.normal = materialNormalValue(texcoord);
+    mat.occlusion = materialOcclusionValue(texcoord);
+    mat.emissive = materialEmissiveValue(texcoord);
 
-    mat = pbrInitMaterial(mat);
+    mat = initMaterial(mat);
 
     return mat;
 }
 
 #endif // READ_MATERIAL
 
-PBRMaterial pbrInitMaterial(PBRMaterial mat)
+Material initMaterial(Material mat)
 {
     // Taken directly from GLTF 2.0 specs
     // this can be precalculated instead of evaluating it in the BRDF for every light
@@ -267,7 +285,7 @@ float Fd_Lambert()
 
 // Turquin. 2018. Practical multiple scattering compensation for microfacet models.
 // https://blog.selfshadow.com/publications/turquin/ms_comp_final.pdf
-vec3 multipleScatteringFactor(PBRMaterial mat, float NoV)
+vec3 multipleScatteringFactor(Material mat, float NoV)
 {
     if(u_multipleScattering)
     {
@@ -298,7 +316,7 @@ bool whiteFurnaceEnabled()
 // White furnace test: lighting integral against a constant white environment
 // Used to visualize energy loss/gain
 // This is exactly what the multiple scattering LUT calculates
-vec3 whiteFurnace(float NoV, PBRMaterial mat)
+vec3 whiteFurnace(float NoV, Material mat)
 {
     vec2 Es = texture2D(s_texAlbedoLUT, vec2(NoV, mat.a)).xy;
     float E = mix(Es.y, Es.x, mat.metallic);
@@ -308,7 +326,7 @@ vec3 whiteFurnace(float NoV, PBRMaterial mat)
 #endif
 
 // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#appendix-b-brdf-implementation
-vec3 BRDF(vec3 v, vec3 l, vec3 n, float NoV, float NoL, PBRMaterial mat)
+vec3 BRDF(vec3 v, vec3 l, vec3 n, float NoV, float NoL, Material mat)
 {
     // V is the normalized vector from the shading location to the eye
     // L is the normalized vector from the shading location to the light
@@ -331,4 +349,4 @@ vec3 BRDF(vec3 v, vec3 l, vec3 n, float NoV, float NoL, PBRMaterial mat)
     return Fr + (1.0 - F) * Fd;
 }
 
-#endif // PBR_SH_HEADER_GUARD
+#endif // DARMOK_MATERIAL_HEADER

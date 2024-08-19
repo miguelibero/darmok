@@ -15,6 +15,7 @@ namespace darmok
 		: _primitive(MaterialPrimitiveType::Triangle)
 		, _program(program)
 		, _baseColor(Colors::magenta())
+		, _specularColor(Colors::black())
 		, _metallicFactor(0.F)
 		, _roughnessFactor(0.F)
 		, _normalScale(1.F)
@@ -31,17 +32,17 @@ namespace darmok
 		}
 	}
 
-	Material::Material(const std::shared_ptr<Texture>& diffuseTexture) noexcept
-		: Material(nullptr, diffuseTexture)
+	Material::Material(const std::shared_ptr<Texture>& texture) noexcept
+		: Material(nullptr, texture)
 	{
 	}
 
-	Material::Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& diffuseTexture) noexcept
+	Material::Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept
 		: Material(program)
 	{
-		if (diffuseTexture != nullptr)
+		if (texture != nullptr)
 		{
-			setTexture(TextureType::Base, diffuseTexture);
+			setTexture(texture);
 		}
 	}
 
@@ -112,7 +113,7 @@ namespace darmok
 
 	Material& Material::setTexture(const std::shared_ptr<Texture>& texture) noexcept
 	{
-		return setTexture(TextureType::Base, texture);
+		return setTexture(TextureType::BaseColor, texture);
 	}
 
 	Material& Material::setTexture(TextureType type, const std::shared_ptr<Texture>& texture) noexcept
@@ -140,6 +141,17 @@ namespace darmok
 	Material& Material::setBaseColor(const Color& v) noexcept
 	{
 		_baseColor = v;
+		return *this;
+	}
+
+	const Color& Material::getSpecularColor() const noexcept
+	{
+		return _specularColor;
+	}
+
+	Material& Material::setSpecularColor(const Color& v) noexcept
+	{
+		_specularColor = v;
 		return *this;
 	}
 
@@ -234,13 +246,15 @@ namespace darmok
 	void MaterialRenderComponent::init(Camera& cam, Scene& scene, App& app)
 	{
 		_samplerUniforms = std::vector<Sampler>{
-			{ TextureType::Base, bgfx::createUniform("s_texBaseColor", bgfx::UniformType::Sampler), RenderSamplers::PBR_BASECOLOR},
-			{ TextureType::MetallicRoughness, bgfx::createUniform("s_texMetallicRoughness", bgfx::UniformType::Sampler), RenderSamplers::PBR_METALROUGHNESS},
-			{ TextureType::Normal, bgfx::createUniform("s_texNormal", bgfx::UniformType::Sampler), RenderSamplers::PBR_NORMAL},
-			{ TextureType::Occlusion, bgfx::createUniform("s_texOcclusion", bgfx::UniformType::Sampler), RenderSamplers::PBR_OCCLUSION},
-			{ TextureType::Emissive, bgfx::createUniform("s_texEmissive", bgfx::UniformType::Sampler), RenderSamplers::PBR_EMISSIVE},
+			{ TextureType::BaseColor, bgfx::createUniform("s_texBaseColor", bgfx::UniformType::Sampler), RenderSamplers::MATERIAL_ALBEDO},
+			{ TextureType::Specular, bgfx::createUniform("s_texSpecular", bgfx::UniformType::Sampler), RenderSamplers::MATERIAL_SPECULAR},
+			{ TextureType::MetallicRoughness, bgfx::createUniform("s_texMetallicRoughness", bgfx::UniformType::Sampler), RenderSamplers::MATERIAL_METALLIC_ROUGHNESS},
+			{ TextureType::Normal, bgfx::createUniform("s_texNormal", bgfx::UniformType::Sampler), RenderSamplers::MATERIAL_NORMAL},
+			{ TextureType::Occlusion, bgfx::createUniform("s_texOcclusion", bgfx::UniformType::Sampler), RenderSamplers::MATERIAL_OCCLUSION},
+			{ TextureType::Emissive, bgfx::createUniform("s_texEmissive", bgfx::UniformType::Sampler), RenderSamplers::MATERIAL_EMISSIVE},
 		};
 		_baseColorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
+		_specularColorUniform = bgfx::createUniform("u_specularFactorVec", bgfx::UniformType::Vec4);
 		_metallicRoughnessNormalOcclusionUniform = bgfx::createUniform("u_metallicRoughnessNormalOcclusionFactor", bgfx::UniformType::Vec4);
 		_emissiveColorUniform = bgfx::createUniform("u_emissiveFactorVec", bgfx::UniformType::Vec4);
 		_hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
@@ -257,6 +271,7 @@ namespace darmok
 			bgfx::destroy(elm.handle);
 		}
 		bgfx::destroy(_baseColorUniform);
+		bgfx::destroy(_specularColorUniform);
 		bgfx::destroy(_metallicRoughnessNormalOcclusionUniform);
 		bgfx::destroy(_emissiveColorUniform);
 		bgfx::destroy(_hasTexturesUniform);
@@ -272,17 +287,22 @@ namespace darmok
 		{
 			auto& def = _samplerUniforms[i];
 			auto tex = mat.getTexture(def.type);
-			if (!tex)
+			if (tex)
+			{
+				hasTextures.x += 1 << i;
+			}
+			else
 			{
 				tex = _defaultTexture;
 			}
-			hasTextures.x += 1 << i;
 			encoder.setTexture(def.stage, def.handle, tex->getHandle());
 		}
 		encoder.setUniform(_hasTexturesUniform, glm::value_ptr(hasTextures));
 
 		auto v = Colors::normalize(mat.getBaseColor());
 		encoder.setUniform(_baseColorUniform, glm::value_ptr(v));
+		v = Colors::normalize(mat.getSpecularColor());
+		encoder.setUniform(_specularColorUniform, glm::value_ptr(v));
 		v = glm::vec4(mat.getMetallicFactor(), mat.getRoughnessFactor(), mat.getNormalScale(), mat.getOcclusionStrength());
 		encoder.setUniform(_metallicRoughnessNormalOcclusionUniform, glm::value_ptr(v));
 		v = glm::vec4(Colors::normalize(mat.getEmissiveColor()), 0);

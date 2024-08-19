@@ -8,14 +8,14 @@ $input v_position, v_normal, v_tangent, v_texcoord0
 #include <bgfx_shader.sh>
 #include <bgfx_compute.sh>
 #include <darmok_util.sc>
-#include <darmok_pbr.sc>
-#include <darmok_lights.sc>
+#include <darmok_material.sc>
+#include <darmok_light.sc>
 
 uniform vec4 u_camPos;
 
 void main()
 {
-    PBRMaterial mat = pbrMaterial(v_texcoord0);
+    Material mat = getMaterial(v_texcoord0);
     // convert normal map from tangent space -> world space (= space of v_tangent, etc.)
     vec3 N = convertTangentNormal(v_normal, v_tangent, mat.normal);
     mat.a = specularAntiAliasing(N, mat.a);

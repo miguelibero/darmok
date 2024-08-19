@@ -82,9 +82,8 @@ namespace
 			auto greenMat = std::make_shared<Material>(prog, Colors::green());
 
 			auto goldMat = std::make_shared<Material>(prog);
-			goldMat->setMetallicFactor(1.F);
+			goldMat->setMetallicFactor(0.5F);
 			goldMat->setBaseColor(Colors::denormalize({ 0.944F, 0.776F, 0.373F, 1.F }));
-			// goldMat->setEmissiveColor(Colors::denormalize({ 0.998, 0.981, 0.751 })); // should be specular
 
 			auto cubeMesh = MeshData(Cube()).createMesh(layout);
 			auto cube = scene.createEntity();
@@ -93,7 +92,7 @@ namespace
 
 			auto sphereMesh = MeshData(Sphere()).createMesh(layout);
 			auto sphere = scene.createEntity();
-			scene.addComponent<Renderable>(sphere, std::move(sphereMesh), greenMat);
+			scene.addComponent<Renderable>(sphere, std::move(sphereMesh), goldMat);
 			_trans = scene.addComponent<Transform>(sphere, glm::vec3{ -1.F, 0, 0 });
 		}
 

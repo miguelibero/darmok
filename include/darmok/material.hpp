@@ -40,6 +40,7 @@ namespace darmok
 
         std::vector<Sampler> _samplerUniforms;
         bgfx::UniformHandle _baseColorUniform;
+        bgfx::UniformHandle _specularColorUniform;
         bgfx::UniformHandle _metallicRoughnessNormalOcclusionUniform;
         bgfx::UniformHandle _emissiveColorUniform;
         bgfx::UniformHandle _hasTexturesUniform;
@@ -79,6 +80,9 @@ namespace darmok
         const Color& getBaseColor() const noexcept;
         Material& setBaseColor(const Color& v) noexcept;
 
+        const Color& getSpecularColor() const noexcept;
+        Material& setSpecularColor(const Color& v) noexcept;
+
         float getMetallicFactor() const noexcept;
         Material& setMetallicFactor(float v) noexcept;
 
@@ -111,6 +115,7 @@ namespace darmok
         std::unordered_map<TextureType, std::shared_ptr<Texture>> _textures;
 
         Color _baseColor;
+        Color _specularColor;
         float _metallicFactor;
         float _roughnessFactor;
         float _normalScale;

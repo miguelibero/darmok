@@ -9,9 +9,10 @@ namespace darmok
         Xml
     };
 
-    enum class ModelMaterialBlendMode
+    enum class ModelMaterialOpacity
     {
-        Default,
-        Additive
+        Opaque,
+        Cutout,
+        Transparent
     };
 }
