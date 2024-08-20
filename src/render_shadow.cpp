@@ -19,6 +19,7 @@ namespace darmok
         , _depthScaleOffsetUniform{ bgfx::kInvalidHandle }
         , _shadowFb{ bgfx::kInvalidHandle }
         , _depthScaleOffset(0)
+        , _camOrtho(1)
     {
     }
 
@@ -37,7 +38,7 @@ namespace darmok
         _lightMtxUniform = bgfx::createUniform("u_lightMtx", bgfx::UniformType::Mat4);
         _depthScaleOffsetUniform = bgfx::createUniform("u_depthScaleOffset", bgfx::UniformType::Vec4);
 
-        const bgfx::Caps* caps = bgfx::getCaps();
+        auto caps = bgfx::getCaps();
         _depthScaleOffset = glm::vec4{ 1.0f, 0.0f, 0.0f, 0.0f };
         if (caps->homogeneousDepth)
         {
@@ -48,38 +49,71 @@ namespace darmok
         TextureConfig texConfig;
         texConfig.size = _mapSize;
         texConfig.format = bgfx::TextureFormat::D16;
-        texConfig.type = TextureType::CubeMap;
+        // texConfig.type = TextureType::CubeMap;
+
+        auto supported = 0 != (caps->supported & BGFX_CAPS_TEXTURE_COMPARE_LEQUAL);
+
         _shadowTex = std::make_unique<Texture>(texConfig, BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL);
 
         _shadowFb = bgfx::createFrameBuffer(1, &_shadowTex->getHandle(), true);
 
-        updatePointLights();
+        updateLights();
 		renderReset();
     }
 
-    bool ShadowRenderer::updatePointLights() noexcept
+    bool ShadowRenderer::updateLights() noexcept
     {
-        auto view = _cam->createEntityView<PointLight>();
-        std::vector<Entity> pointLights;
-        pointLights.reserve(view.size_hint());
-        for (auto entity : view)
+        auto dirView = _cam->createEntityView<DirectionalLight>();
+        auto pointView = _cam->createEntityView<PointLight>();
+        auto spotView = _cam->createEntityView<SpotLight>();
+        std::vector<Entity> lights;
+        lights.reserve(dirView.size_hint()
+            + pointView.size_hint()
+            + spotView.size_hint()
+        );
+        for (auto entity : dirView)
         {
-            pointLights.push_back(entity);
+            lights.push_back(entity);
         }
-        if (_pointLights == pointLights)
+        for (auto entity : pointView)
         {
-            return false;
+            lights.push_back(entity);
         }
-        _pointLights = pointLights;
-        return true;
+        for (auto entity : spotView)
+        {
+            lights.push_back(entity);
+        }
+        if (_lights != lights)
+        {
+            _lights = lights;
+            return true;
+        }
+        return false;
     }
 
     void ShadowRenderer::update(float deltaTime)
     {
-        if (updatePointLights())
+        if (updateLights())
         {
             renderReset();
         }
+        updateCamera();
+    }
+
+    void ShadowRenderer::updateCamera() noexcept
+    {
+        if (!_cam)
+        {
+            return;
+        }
+        auto camProj = _cam->getProjectionMatrix();
+        if (auto camTrans = _cam->getTransform())
+        {
+            camProj = camTrans->getWorldInverse() * camProj;
+        }
+        auto bb = BoundingBox::forFrustum(camProj);
+        bb.expand(glm::vec3(2));
+        _camOrtho = Math::ortho(bb.min.x, bb.max.x, bb.min.y, bb.max.y, bb.min.z, bb.max.z);
     }
 
     void ShadowRenderer::renderReset() noexcept
@@ -88,8 +122,8 @@ namespace darmok
 		{
             return;
 		}
-        _pointLightsByViewId.clear();
-        for (size_t i = 0; i < _pointLights.size(); ++i)
+        _lightsByViewId.clear();
+        for (size_t i = 0; i < _lights.size(); ++i)
         {
             _cam->getRenderGraph().addPass(*this);
         }
@@ -111,8 +145,8 @@ namespace darmok
         _shadowProg.reset();
         _shadowTex.reset();
 
-        _pointLights.clear();
-        _pointLightsByViewId.clear();
+        _lights.clear();
+        _lightsByViewId.clear();
 
 		_cam.reset();
 		_scene.reset();
@@ -130,13 +164,10 @@ namespace darmok
         bgfx::setUniform(_depthScaleOffsetUniform, glm::value_ptr(_depthScaleOffset));
         bgfx::setViewRect(viewId, 0, 0, _mapSize.x, _mapSize.y);
         bgfx::setViewFrameBuffer(viewId, _shadowFb);
-        bgfx::setViewClear(viewId
-            , BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH
-            , 0x303030ff, 1.0f, 0
-        );
+        bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH);
 
-        auto entity = _pointLights[_pointLightsByViewId.size()];
-        _pointLightsByViewId[entity] = viewId;
+        auto entity = _lights[_lightsByViewId.size()];
+        _lightsByViewId[viewId] = entity;
     }
 
     void ShadowRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
@@ -144,25 +175,34 @@ namespace darmok
         auto& encoder = context.getEncoder();
         auto viewId = context.getViewId();
 
-        static const uint64_t renderState = BGFX_STATE_WRITE_RGB
-            | BGFX_STATE_WRITE_A
-            | BGFX_STATE_WRITE_Z
+        auto lightEntity = _lightsByViewId[viewId];      
+
+        if (auto dirLight = _scene->getComponent<const DirectionalLight>(lightEntity))
+        {
+            const void* viewPtr = nullptr;
+            if (auto trans = _scene->getComponent<const Transform>(lightEntity))
+            {
+                viewPtr = glm::value_ptr(trans->getWorldInverse());
+            }
+            bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(_camOrtho));
+        }
+        else
+        {
+            return;
+        }
+
+        renderEntities(viewId, encoder);
+        context.getResources().setRef<Texture>(*_shadowTex, "shadow");
+    }
+
+    void ShadowRenderer::renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        static const uint64_t renderState =
+            BGFX_STATE_WRITE_Z
             | BGFX_STATE_DEPTH_TEST_LESS
             | BGFX_STATE_CULL_CCW
             | BGFX_STATE_MSAA
-        ;
-
-        auto lightEntity = _pointLightsByViewId[viewId];
-
-        auto pointLight = _scene->getComponent<const PointLight>(lightEntity);
-        auto projSize = pointLight->getRadius() * 100.F;
-        glm::mat4 lightView(1);
-        glm::mat4 lightProj = Math::ortho(-glm::vec2(projSize), glm::vec2(projSize), 100.0f, 0.0f);
-        if (auto trans = _scene->getComponent<const Transform>(lightEntity))
-        {
-            lightView = glm::lookAt(trans->getWorldPosition(), glm::vec3(0), glm::vec3(0, 1, 0));
-        }
-        bgfx::setViewTransform(viewId, glm::value_ptr(lightView), glm::value_ptr(lightProj));
+            ;
 
         auto renderables = _cam->createEntityView<Renderable>();
         for (auto entity : renderables)
@@ -181,7 +221,5 @@ namespace darmok
             encoder.setState(renderState);
             encoder.submit(viewId, _shadowProg->getHandle());
         }
-
-        context.getResources().setRef<Texture>(*_shadowTex, "shadow");
     }
 }

@@ -79,13 +79,13 @@ namespace
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 1);
 
-			{
-				auto lightEntity2 = scene.createEntity();
-				scene.addComponent<Transform>(lightEntity2, lightRootTrans, glm::vec3{ 0, 1, -4 });
-				scene.addComponent<PointLight>(lightEntity2, 1);
-			}
+			auto dirLightEntity = scene.createEntity();
+			scene.addComponent<Transform>(dirLightEntity, glm::vec3{ 0, 4, -4 })
+				.lookAt(glm::vec3(0, 0, 0));
+			scene.addComponent<DirectionalLight>(dirLightEntity, 0.2);
 
-			scene.addComponent<AmbientLight>(lightEntity, 0.2);
+			// auto ambientLightEntity = scene.createEntity();
+			// scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
 
 			auto greenMat = std::make_shared<Material>(prog, Colors::green());
 

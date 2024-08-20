@@ -4,6 +4,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <darmok/string.hpp>
 #include <glm/gtx/norm.hpp>
+#include <bx/bx.h>
 
 namespace darmok
 {
@@ -461,6 +462,34 @@ namespace darmok
     {
     }
 
+    BoundingBox BoundingBox::forFrustum(const glm::mat4& proj) noexcept
+    {
+        static const std::vector<glm::vec4> corners = {
+            glm::vec4(-1, -1, -1, 1), // near bottom left
+            glm::vec4( 1, -1, -1, 1), // near bottom right
+            glm::vec4(-1,  1, -1, 1), // near top left
+            glm::vec4( 1,  1, -1, 1), // near top right
+            glm::vec4(-1, -1,  1, 1), // far bottom left
+            glm::vec4( 1, -1,  1, 1), // far bottom right
+            glm::vec4(-1,  1,  1, 1), // far top left
+            glm::vec4( 1,  1,  1, 1)  // far top right
+        };
+        BoundingBox bb(
+            glm::vec3(bx::kFloatInfinity),
+            glm::vec3(-bx::kFloatInfinity)
+        );
+
+        // Transform the frustum corners into world space and find the min/max points
+        for (auto corner : corners)
+        {
+            corner = proj * corner;
+            corner /= corner.w;
+            bb.min = glm::min(bb.min, glm::vec3(corner));
+            bb.max = glm::max(bb.max, glm::vec3(corner));
+        }
+        return bb;
+    }
+
     BoundingBox& BoundingBox::operator+=(const BoundingBox& bb) noexcept
     {
         min = glm::min(min, bb.min);
@@ -475,14 +504,52 @@ namespace darmok
         return sum;
     }
 
-    BoundingBox BoundingBox::expand(const glm::vec3& size) const noexcept
+
+    BoundingBox BoundingBox::operator*(const glm::mat4& trans) const noexcept
     {
-        return BoundingBox(min - size, max + size);
+        BoundingBox r(*this);
+        r *= trans;
+        return r;
     }
 
-    BoundingBox BoundingBox::contract(const glm::vec3& size) const noexcept
+    BoundingBox& BoundingBox::operator*=(const glm::mat4& trans) noexcept
     {
-        return BoundingBox(min + size, max - size);
+        const glm::vec3 corners[8] = {
+            glm::vec3(trans * glm::vec4(min.x, min.y, min.z, 1.0f)),
+            glm::vec3(trans * glm::vec4(min.x, max.y, min.z, 1.0f)),
+            glm::vec3(trans * glm::vec4(min.x, min.y, max.z, 1.0f)),
+            glm::vec3(trans * glm::vec4(min.x, max.y, max.z, 1.0f)),
+            glm::vec3(trans * glm::vec4(max.x, min.y, min.z, 1.0f)),
+            glm::vec3(trans * glm::vec4(max.x, max.y, min.z, 1.0f)),
+            glm::vec3(trans * glm::vec4(max.x, min.y, max.z, 1.0f)),
+            glm::vec3(trans * glm::vec4(max.x, max.y, max.z, 1.0f))
+        };
+
+        min = corners[0];
+        max = min;
+
+        for (size_t i = 1; i < 8; ++i)
+        {
+            const glm::vec3& current = corners[i];
+            min = glm::min(min, current);
+            max = glm::max(max, current);
+        }
+
+        return *this;
+    }
+
+    BoundingBox& BoundingBox::expand(const glm::vec3& size) noexcept
+    {
+        min -= size;
+        max += size;
+        return *this;
+    }
+
+    BoundingBox& BoundingBox::contract(const glm::vec3& size) noexcept
+    {
+        min += size;
+        max -= size;
+        return *this;
     }
 
     Cube BoundingBox::getCube() const noexcept

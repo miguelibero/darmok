@@ -58,18 +58,18 @@ namespace darmok
 				}
 			),
 			"expand", sol::overload(
-				[](const BoundingBox& bb, const VarLuaTable<glm::vec3>& v) {
+				[](BoundingBox& bb, const VarLuaTable<glm::vec3>& v) {
 					return bb.expand(LuaGlm::tableGet(v));
 				},
-				[](const BoundingBox& bb, float v) {
+				[](BoundingBox& bb, float v) {
 					return bb.expand(glm::vec3(v));
 				}
 			),
 			"contract", sol::overload(
-				[](const BoundingBox& bb, const VarLuaTable<glm::vec3>& v) {
+				[](BoundingBox& bb, const VarLuaTable<glm::vec3>& v) {
 					return bb.contract(LuaGlm::tableGet(v));
 				},
-				[](const BoundingBox& bb, float v) {
+				[](BoundingBox& bb, float v) {
 					return bb.contract(glm::vec3(v));
 				}
 			),

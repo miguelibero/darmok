@@ -5,6 +5,7 @@
 #include <darmok/material.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/math.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/component_wise.hpp>
 #include "render_samplers.hpp"
@@ -139,6 +140,7 @@ namespace darmok
 
     SpotLight::SpotLight(float intensity) noexcept
         : _intensity(intensity)
+        , _color(Colors::white3())
     {
     }
 
@@ -246,20 +248,19 @@ namespace darmok
 
     size_t LightingRenderComponent::updateDirLights() noexcept
     {
-        auto& registry = _scene->getRegistry();
-        auto lights = _cam->createEntityView<DirectionalLight>(registry);
+        auto lights = _cam->createEntityView<DirectionalLight>();
 
         VertexDataWriter writer(_dirLightsLayout, uint32_t(lights.size_hint()));
 
         uint32_t index = 0;
         for (auto entity : lights)
         {
-            auto& light = registry.get<const DirectionalLight>(entity);
-            auto trans = registry.try_get<const Transform>(entity);
-            if (trans != nullptr)
+            auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
+            auto trans = _scene->getComponent<const Transform>(entity);
+            if (trans)
             {
-                auto norm = trans->getWorldRotation() * glm::vec3(0, 0, 1);
-                writer.write(bgfx::Attrib::Normal, index, norm);
+                auto dir = trans->getWorldRotation() * glm::vec3(0, 0, 1);
+                writer.write(bgfx::Attrib::Normal, index, dir);
             }
             auto intensity = light.getIntensity();
             glm::vec4 c(Colors::normalize(light.getColor()) * intensity, 0);
@@ -278,18 +279,17 @@ namespace darmok
 
     size_t LightingRenderComponent::updatePointLights() noexcept
     {
-        auto& registry = _scene->getRegistry();
-        auto lights = _cam->createEntityView<PointLight>(registry);
+        auto lights = _cam->createEntityView<PointLight>();
 
         VertexDataWriter writer(_pointLightsLayout, uint32_t(lights.size_hint()));
 
         uint32_t index = 0;
         for (auto entity : lights)
         {
-            auto& light = registry.get<const PointLight>(entity);
-            auto trans = registry.try_get<const Transform>(entity);
+            auto& light = _scene->getComponent<const PointLight>(entity).value();
+            auto trans = _scene->getComponent<const Transform>(entity);
             float scale = 1.F;
-            if (trans != nullptr)
+            if (trans)
             {
                 auto pos = trans->getWorldPosition();
                 scale = glm::compMax(trans->getWorldScale());
@@ -359,7 +359,8 @@ namespace darmok
     {
         encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
         encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
-        encoder.setBuffer(RenderSamplers::LIGHTS_POINTLIGHTS, _pointLightBuffer, bgfx::Access::Read);
+        encoder.setBuffer(RenderSamplers::LIGHTS_POINT, _pointLightBuffer, bgfx::Access::Read);
+        encoder.setBuffer(RenderSamplers::LIGHTS_DIR, _dirLightBuffer, bgfx::Access::Read);
         encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
 
         if (auto trans = _scene->getComponent<Transform>(entity))

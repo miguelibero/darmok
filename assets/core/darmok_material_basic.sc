@@ -3,6 +3,7 @@
 
 #include <darmok_sampler.sc>
 #include <darmok_util.sc>
+#include <bgfx_shader.sh>
 
 SAMPLER2D(s_texBaseColor, DARMOK_SAMPLER_MATERIAL_BASECOLOR);
 SAMPLER2D(s_texSpecular,  DARMOK_SAMPLER_MATERIAL_SPECULAR);
@@ -57,6 +58,19 @@ Material getMaterial(vec2 texcoord)
     mat.shininess = u_shininess;
 
     return mat;
+}
+
+vec3 calcDiffuse(vec3 lightDir, vec3 normal, vec3 lightIntensity)
+{
+	float diff = max(dot(normal, -lightDir), 0.0);
+	return diff * lightIntensity;
+}
+
+vec3 calcSpecular(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 lightIntensity, float shininess)
+{
+    vec3 reflectDir = reflect(lightDir, normal);  
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+	return spec * lightIntensity;
 }
 
 #endif // DARMOK_MATERIAL_BASIC_HEADER

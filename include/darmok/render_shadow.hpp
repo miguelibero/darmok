@@ -36,9 +36,12 @@ namespace darmok
         std::unique_ptr<Texture> _shadowTex;
         bgfx::FrameBufferHandle _shadowFb;
         glm::vec4 _depthScaleOffset;
-        std::vector<Entity> _pointLights;
-        std::unordered_map<bgfx::ViewId, Entity> _pointLightsByViewId;
+        std::vector<Entity> _lights;
+        std::unordered_map<bgfx::ViewId, Entity> _lightsByViewId;
+        glm::mat4 _camOrtho;
 
-        bool updatePointLights() noexcept;
+        bool updateLights() noexcept;
+        void updateCamera() noexcept;
+        void renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
     };
 }

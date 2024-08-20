@@ -274,12 +274,16 @@ namespace darmok
 
         BoundingBox() noexcept;
         BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
+        static BoundingBox forFrustum(const glm::mat4& proj) noexcept;
 
         BoundingBox& operator+=(const BoundingBox& bb) noexcept;
         BoundingBox operator+(const BoundingBox& bb) noexcept;
 
-        BoundingBox expand(const glm::vec3& size) const noexcept;
-        BoundingBox contract(const glm::vec3& size) const noexcept;
+        BoundingBox operator*(const glm::mat4& trans) const noexcept;
+        BoundingBox& operator*=(const glm::mat4& trans) noexcept;
+
+        BoundingBox& expand(const glm::vec3& size) noexcept;
+        BoundingBox& contract(const glm::vec3& size) noexcept;
 
         Cube getCube() const noexcept;
         operator Cube() const noexcept;

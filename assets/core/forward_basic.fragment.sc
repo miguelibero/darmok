@@ -14,26 +14,37 @@ void main()
 	vec3 norm = normalize(v_normal);
 	vec3 fragPos = v_position;
 	vec3 viewDir = v_viewDir;
+	float shadowFactor = 0;
 
-	uint lights = pointLightCount();
-    for(uint i = 0; i < lights; i++)
+	uint pointLights = pointLightCount();
+    for(uint i = 0; i < pointLights; i++)
     {
 		PointLight light = getPointLight(i);
-		float dist = distance(light.position, fragPos);
+		vec3 lightDir = normalize(fragPos - light.position);
 
-		vec3 lightDir = normalize(light.position - fragPos);
-		float diff = max(dot(norm, lightDir), 0.0);
-		diffuse += diff * light.intensity;
+		diffuse += calcDiffuse(lightDir, norm, light.intensity);
+		specular += calcSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
 
-		vec3 reflectDir = reflect(-lightDir, norm);  
-		float spec = pow(max(dot(viewDir, reflectDir), 0.0), mat.shininess);
-		specular += spec * light.intensity;
+		shadowFactor += 1.0; // TODO
 	}
-	
+
+	uint dirLights = dirLightCount();
+    for(uint i = 0; i < dirLights; i++)
+    {
+		DirectionalLight light = getDirLight(i);
+		vec3 lightDir = light.direction;
+
+		diffuse += calcDiffuse(lightDir, norm, light.intensity);
+		specular += calcSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
+
+		shadowFactor += 1.0; // TODO
+	}
+
 	ambient *= mat.diffuse;
 	diffuse *= mat.diffuse;
 	specular *= mat.specular;
 
-	gl_FragColor.rgb = ambient + diffuse + specular;
+	shadowFactor /= float(pointLights + dirLights);
+	gl_FragColor.rgb = ambient + shadowFactor * (diffuse + specular);
 	gl_FragColor.a = mat.diffuse.a;
 }

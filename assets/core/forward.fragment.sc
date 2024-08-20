@@ -35,8 +35,8 @@ void main()
 
     vec3 radianceOut = vec3_splat(0.0);
 
-    uint lights = pointLightCount();
-    for(uint i = 0; i < lights; i++)
+    uint pointLights = pointLightCount();
+    for(uint i = 0; i < pointLights; i++)
     {
         PointLight light = getPointLight(i);
         float dist = distance(light.position, fragPos);

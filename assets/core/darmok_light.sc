@@ -6,23 +6,35 @@
 
 uniform vec4 u_lightCountVec;
 #define u_pointLightCount uint(u_lightCountVec.x)
+#define u_dirLightCount   uint(u_lightCountVec.y)
 
 uniform vec4 u_ambientLightIrradiance;
 
-// for each light:
+// for each point light:
 //   vec4 position (w is padding)
 //   vec4 intensity + radius (xyz is intensity, w is radius)
-BUFFER_RO(b_pointLights, vec4, DARMOK_SAMPLER_LIGHTS_POINTLIGHTS);
+//   mat4 light space matrix
+BUFFER_RO(b_pointLights, vec4, DARMOK_SAMPLER_LIGHTS_POINT);
+
+// for each directional light:
+//   vec4 direction (w is padding)
+//   vec4 intensity (xyz is intensity)
+//   mat4 light space matrix
+BUFFER_RO(b_dirLights, vec4, DARMOK_SAMPLER_LIGHTS_DIR);
 
 struct PointLight
 {
     vec3 position;
-    // this padding is necessary for Vulkan when using the struct in a shared workgroup array
-    // otherwise memory reads/writes are corrupted
-    // I can't find where this is required per the spec so I'll assume this is a bug with Nvidia drivers/HW
-    float _padding;
     vec3 intensity;
     float radius;
+    mat4 mapTrans;
+};
+
+struct DirectionalLight
+{
+    vec3 direction;
+    vec3 intensity;
+    mat4 mapTrans;
 };
 
 struct AmbientLight
@@ -64,6 +76,20 @@ PointLight getPointLight(uint i)
     vec4 intensityRadiusVec = b_pointLights[2 * i + 1];
     light.intensity = intensityRadiusVec.xyz;
     light.radius = intensityRadiusVec.w;
+    return light;
+}
+
+uint dirLightCount()
+{
+    return u_dirLightCount;
+}
+
+DirectionalLight getDirLight(uint i)
+{
+    DirectionalLight light;
+    light.direction = b_dirLights[2 * i + 0].xyz;
+    vec4 intensityVec = b_dirLights[2 * i + 1];
+    light.intensity = intensityVec.xyz;
     return light;
 }
 

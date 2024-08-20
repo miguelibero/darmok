@@ -61,20 +61,21 @@ namespace darmok
     Camera& Camera::setProjectionMatrix(const glm::mat4& matrix) noexcept
     {
         _proj = matrix;
+        _winProj.reset();
         return *this;
     }
 
     Camera& Camera::setPerspective(float fovy, float aspect, float near) noexcept
     {
-        _winProj.reset();
-        _proj = Math::perspective(glm::radians(fovy), aspect, near);
+        auto proj = Math::perspective(glm::radians(fovy), aspect, near);
+        setProjectionMatrix(proj);
         return *this;
     }
 
     Camera& Camera::setPerspective(float fovy, float aspect, float near, float far) noexcept
     {
-        _winProj.reset();
-        _proj = Math::perspective(glm::radians(fovy), aspect, near, far);
+        auto proj = Math::perspective(glm::radians(fovy), aspect, near, far);
+        setProjectionMatrix(proj);
         return *this;
     }
 
@@ -92,8 +93,8 @@ namespace darmok
 
     Camera& Camera::setOrtho(const Viewport& vp, const glm::vec2& center, float near, float far) noexcept
     {
-        _winProj.reset();
-        _proj = vp.ortho(center, near, far);
+        auto proj = vp.ortho(center, near, far);
+        setProjectionMatrix(proj);
         return *this;
     }
 
