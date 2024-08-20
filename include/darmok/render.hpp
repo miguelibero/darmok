@@ -15,6 +15,8 @@ namespace darmok
     class Camera;
     class App;
     class Scene;
+    class RenderPassDefinition;
+    class IRenderGraphContext;
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderComponent
     {
@@ -23,9 +25,10 @@ namespace darmok
         virtual void init(Camera& cam, Scene& scene, App& app) {};
         virtual void update(float deltaTime) {}
         virtual void shutdown() {};
+        virtual void renderPassDefine(RenderPassDefinition& def) {};
 
-        virtual void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) {};
-        virtual void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) {};
+        virtual void beforeRenderView(IRenderGraphContext& context) {};
+        virtual void beforeRenderEntity(Entity entity, IRenderGraphContext& context) {};
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderer

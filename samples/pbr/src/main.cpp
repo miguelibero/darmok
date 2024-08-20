@@ -62,8 +62,9 @@ namespace
 				.setWindowPerspective(60, 0.3, 1000);
 			
 			cam.addRenderer<ShadowRenderer>();
-			cam.addRenderer<ForwardRenderer>()
-				.addComponent<LightingRenderComponent>();
+			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
+			forwardRender.addComponent<ShadowRenderComponent>();
+			forwardRender.addComponent<LightingRenderComponent>();
 
 			_freelook = scene.addSceneComponent<FreelookController>(cam);
 
@@ -82,7 +83,7 @@ namespace
 			auto dirLightEntity = scene.createEntity();
 			scene.addComponent<Transform>(dirLightEntity, glm::vec3{ 0, 4, -4 })
 				.lookAt(glm::vec3(0, 0, 0));
-			scene.addComponent<DirectionalLight>(dirLightEntity, 0.2);
+			scene.addComponent<DirectionalLight>(dirLightEntity, 1.2);
 
 			// auto ambientLightEntity = scene.createEntity();
 			// scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);

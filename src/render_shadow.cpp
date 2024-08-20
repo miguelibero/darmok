@@ -8,17 +8,13 @@
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
 #include "generated/shadow.program.h"
+#include "render_samplers.hpp"
 
 namespace darmok
 {
     ShadowRenderer::ShadowRenderer(const glm::uvec2& mapSize) noexcept
         : _mapSize(mapSize)
-        , _shadowMapUniform{ bgfx::kInvalidHandle }
-        , _lightPosUniform{ bgfx::kInvalidHandle }
-        , _lightMtxUniform{ bgfx::kInvalidHandle }
-        , _depthScaleOffsetUniform{ bgfx::kInvalidHandle }
         , _shadowFb{ bgfx::kInvalidHandle }
-        , _depthScaleOffset(0)
         , _camOrtho(1)
     {
     }
@@ -33,32 +29,16 @@ namespace darmok
         shadowProgDef.loadStaticMem(shadow_program);
         _shadowProg = std::make_unique<Program>(shadowProgDef);
 
-        _shadowMapUniform = bgfx::createUniform("s_shadowMap", bgfx::UniformType::Sampler);
-        _lightPosUniform = bgfx::createUniform("u_lightPos", bgfx::UniformType::Vec4);
-        _lightMtxUniform = bgfx::createUniform("u_lightMtx", bgfx::UniformType::Mat4);
-        _depthScaleOffsetUniform = bgfx::createUniform("u_depthScaleOffset", bgfx::UniformType::Vec4);
-
-        auto caps = bgfx::getCaps();
-        _depthScaleOffset = glm::vec4{ 1.0f, 0.0f, 0.0f, 0.0f };
-        if (caps->homogeneousDepth)
-        {
-            _depthScaleOffset[0] = 0.5f;
-            _depthScaleOffset[1] = 0.5f;
-        }
-
         TextureConfig texConfig;
         texConfig.size = _mapSize;
         texConfig.format = bgfx::TextureFormat::D16;
         // texConfig.type = TextureType::CubeMap;
-
-        auto supported = 0 != (caps->supported & BGFX_CAPS_TEXTURE_COMPARE_LEQUAL);
 
         _shadowTex = std::make_unique<Texture>(texConfig, BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL);
 
         _shadowFb = bgfx::createFrameBuffer(1, &_shadowTex->getHandle(), true);
 
         updateLights();
-		renderReset();
     }
 
     bool ShadowRenderer::updateLights() noexcept
@@ -86,6 +66,7 @@ namespace darmok
         if (_lights != lights)
         {
             _lights = lights;
+            _cam->renderReset();
             return true;
         }
         return false;
@@ -93,10 +74,7 @@ namespace darmok
 
     void ShadowRenderer::update(float deltaTime)
     {
-        if (updateLights())
-        {
-            renderReset();
-        }
+        updateLights();
         updateCamera();
     }
 
@@ -112,6 +90,7 @@ namespace darmok
             camProj = camTrans->getWorldInverse() * camProj;
         }
         auto bb = BoundingBox::forFrustum(camProj);
+        // TODO: hardcoded
         bb.expand(glm::vec3(2));
         _camOrtho = Math::ortho(bb.min.x, bb.max.x, bb.min.y, bb.max.y, bb.min.z, bb.max.z);
     }
@@ -136,10 +115,6 @@ namespace darmok
 			_cam->getRenderGraph().removePass(*this);
 		}
 
-        bgfx::destroy(_shadowMapUniform);
-        bgfx::destroy(_lightPosUniform);
-        bgfx::destroy(_lightMtxUniform);
-        bgfx::destroy(_depthScaleOffsetUniform);
         bgfx::destroy(_shadowFb);
 
         _shadowProg.reset();
@@ -161,7 +136,6 @@ namespace darmok
 
     void ShadowRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
     {
-        bgfx::setUniform(_depthScaleOffsetUniform, glm::value_ptr(_depthScaleOffset));
         bgfx::setViewRect(viewId, 0, 0, _mapSize.x, _mapSize.y);
         bgfx::setViewFrameBuffer(viewId, _shadowFb);
         bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH);
@@ -220,6 +194,59 @@ namespace darmok
 
             encoder.setState(renderState);
             encoder.submit(viewId, _shadowProg->getHandle());
+        }
+    }
+
+    ShadowRenderComponent::ShadowRenderComponent() noexcept
+        : _depthScaleOffset(0)
+        , _shadowMapUniform{ bgfx::kInvalidHandle }
+        , _depthScaleOffsetUniform{ bgfx::kInvalidHandle }
+    {
+    }
+
+    void ShadowRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    {
+        _shadowMapUniform = bgfx::createUniform("s_shadowMap", bgfx::UniformType::Sampler);
+        _depthScaleOffsetUniform = bgfx::createUniform("u_depthScaleOffset", bgfx::UniformType::Vec4);
+
+        auto caps = bgfx::getCaps();
+        _depthScaleOffset = glm::vec4{ 1.0f, 0.0f, 0.0f, 0.0f };
+        if (caps->homogeneousDepth)
+        {
+            _depthScaleOffset[0] = 0.5f;
+            _depthScaleOffset[1] = 0.5f;
+        }
+
+        auto supported = 0 != (caps->supported & BGFX_CAPS_TEXTURE_COMPARE_LEQUAL);
+    }
+
+    void ShadowRenderComponent::shutdown() noexcept
+    {
+        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
+            _shadowMapUniform, _depthScaleOffsetUniform
+        };
+        for (auto& uniform : uniforms)
+        {
+            if (isValid(uniform))
+            {
+                bgfx::destroy(uniform);
+                uniform.get().idx = bgfx::kInvalidHandle;
+            }
+        }
+    }
+
+    void ShadowRenderComponent::renderPassDefine(RenderPassDefinition& def) noexcept
+    {
+        def.getReadResources().add<Texture>("shadow");
+    }
+
+    void ShadowRenderComponent::beforeRenderView(IRenderGraphContext& context) noexcept
+    {
+        auto& encoder = context.getEncoder();
+        encoder.setUniform(_depthScaleOffsetUniform, glm::value_ptr(_depthScaleOffset));
+        if (auto tex = context.getResources().get<Texture>("shadow"))
+        {
+            encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, tex->getHandle());
         }
     }
 }

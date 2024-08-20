@@ -44,7 +44,7 @@ namespace darmok
         OptionalRef<MaterialRenderComponent> _materials;
         std::vector<std::unique_ptr<IRenderComponent>> _components;
 
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder);
-        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder);
+        void beforeRenderView(IRenderGraphContext& context);
+        void beforeRenderEntity(Entity entity, IRenderGraphContext& context);
     };
 }

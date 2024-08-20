@@ -50,6 +50,16 @@ void main()
         }
     }
 
+    uint dirLights = dirLightCount();
+    for(uint i = 0; i < dirLights; i++)
+    {
+        DirectionalLight light = getDirLight(i);
+        vec3 L = -light.direction;
+        vec3 radianceIn = light.intensity;
+        float NoL = saturate(dot(N, L));
+        radianceOut += BRDF(V, L, N, NoV, NoL, mat) * msFactor * radianceIn * NoL;
+    }
+
     radianceOut += getAmbientLight().irradiance * mat.diffuse * mat.occlusion;
     radianceOut += mat.emissive;
 

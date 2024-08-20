@@ -20,10 +20,10 @@ void main()
     for(uint i = 0; i < pointLights; i++)
     {
 		PointLight light = getPointLight(i);
-		vec3 lightDir = normalize(fragPos - light.position);
+		vec3 lightDir = normalize(light.position - fragPos);
 
-		diffuse += calcDiffuse(lightDir, norm, light.intensity);
-		specular += calcSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
+		diffuse += phongDiffuse(lightDir, norm, light.intensity);
+		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
 
 		shadowFactor += 1.0; // TODO
 	}
@@ -32,10 +32,10 @@ void main()
     for(uint i = 0; i < dirLights; i++)
     {
 		DirectionalLight light = getDirLight(i);
-		vec3 lightDir = light.direction;
+		vec3 lightDir = -light.direction;
 
-		diffuse += calcDiffuse(lightDir, norm, light.intensity);
-		specular += calcSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
+		diffuse += phongDiffuse(lightDir, norm, light.intensity);
+		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
 
 		shadowFactor += 1.0; // TODO
 	}

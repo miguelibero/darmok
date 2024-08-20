@@ -7,6 +7,7 @@
 #include <darmok/material.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/render.hpp>
+#include "render_samplers.hpp"
 
 namespace darmok
 {
@@ -69,29 +70,32 @@ namespace darmok
 		_components.push_back(std::move(comp));
 	}
 
-	void ForwardRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
+	void ForwardRenderer::beforeRenderView(IRenderGraphContext& context)
 	{
-		_cam->beforeRenderView(viewId, encoder);
+		_cam->beforeRenderView(context.getViewId());
 		for (auto& comp : _components)
 		{
-			comp->beforeRenderView(viewId, encoder);
+			comp->beforeRenderView(context);
 		}
 	}
 
-	void ForwardRenderer::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder)
+	void ForwardRenderer::beforeRenderEntity(Entity entity, IRenderGraphContext& context)
 	{
-		_cam->beforeRenderEntity(entity, encoder);
+		_cam->beforeRenderEntity(entity, context.getEncoder());
 		for (auto& comp : _components)
 		{
-			comp->beforeRenderEntity(entity, encoder);
+			comp->beforeRenderEntity(entity, context);
 		}
 	}
 
 	void ForwardRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
 	{
 		def.setName("Forward");
-		def.getReadResources().add<Texture>("shadow");
 		def.getWriteResources().add<Texture>();
+		for (auto& comp : _components)
+		{
+			comp->renderPassDefine(def);
+		}
 	}
 
 	void ForwardRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
@@ -102,9 +106,8 @@ namespace darmok
 
 	void ForwardRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
 	{
+		beforeRenderView(context);
 		auto& encoder = context.getEncoder();
-		beforeRenderView(_viewId, encoder);
-
 		auto renderables = _cam->createEntityView<Renderable>();
 		for (auto entity : renderables)
 		{
@@ -113,7 +116,7 @@ namespace darmok
 			{
 				continue;
 			}
-			beforeRenderEntity(entity, encoder);
+			beforeRenderEntity(entity, context);
 			if (!renderable->render(encoder))
 			{
 				continue;

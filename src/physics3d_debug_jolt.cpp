@@ -137,7 +137,7 @@ namespace darmok::physics3d
         settings.mDrawWorldTransform = true;
         // settings.mDrawSleepStats = true;
 
-        _cam->beforeRenderView(_viewId, encoder);
+        _cam->beforeRenderView(_viewId);
 
         joltSystem->DrawBodies(settings, this, nullptr);
 

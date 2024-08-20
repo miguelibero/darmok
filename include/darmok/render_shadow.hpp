@@ -28,14 +28,9 @@ namespace darmok
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
-        bgfx::UniformHandle _shadowMapUniform;
-        bgfx::UniformHandle _lightPosUniform;
-        bgfx::UniformHandle _lightMtxUniform;
-        bgfx::UniformHandle _depthScaleOffsetUniform;
         std::unique_ptr<Program> _shadowProg;
         std::unique_ptr<Texture> _shadowTex;
         bgfx::FrameBufferHandle _shadowFb;
-        glm::vec4 _depthScaleOffset;
         std::vector<Entity> _lights;
         std::unordered_map<bgfx::ViewId, Entity> _lightsByViewId;
         glm::mat4 _camOrtho;
@@ -43,5 +38,19 @@ namespace darmok
         bool updateLights() noexcept;
         void updateCamera() noexcept;
         void renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+    };
+
+    class DARMOK_EXPORT ShadowRenderComponent final : public IRenderComponent
+    {
+    public:
+        ShadowRenderComponent() noexcept;
+        void init(Camera& cam, Scene& scene, App& app) noexcept override;
+        void shutdown() noexcept override;
+        void renderPassDefine(RenderPassDefinition& def) noexcept override;
+        void beforeRenderView(IRenderGraphContext& context) noexcept override;
+    private:
+        glm::vec4 _depthScaleOffset;
+        bgfx::UniformHandle _depthScaleOffsetUniform;
+        bgfx::UniformHandle _shadowMapUniform;
     };
 }

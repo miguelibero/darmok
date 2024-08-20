@@ -359,7 +359,7 @@ namespace darmok
 		}
 
 		auto& encoder = context.getEncoder();
-		_cam->beforeRenderView(_viewId, encoder);
+		_cam->beforeRenderView(_viewId);
 
 		uint64_t state = BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A

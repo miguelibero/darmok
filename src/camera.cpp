@@ -248,7 +248,7 @@ namespace darmok
         getCurrentViewport().configureView(viewId);
     }
 
-    void Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+    void Camera::beforeRenderView(bgfx::ViewId viewId) const noexcept
     {
         auto projPtr = glm::value_ptr(_proj);
         const void* viewPtr = nullptr;

@@ -60,15 +60,15 @@ Material getMaterial(vec2 texcoord)
     return mat;
 }
 
-vec3 calcDiffuse(vec3 lightDir, vec3 normal, vec3 lightIntensity)
+vec3 phongDiffuse(vec3 lightDir, vec3 normal, vec3 lightIntensity)
 {
-	float diff = max(dot(normal, -lightDir), 0.0);
+	float diff = max(dot(normal, lightDir), 0.0);
 	return diff * lightIntensity;
 }
 
-vec3 calcSpecular(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 lightIntensity, float shininess)
+vec3 phongSpecular(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 lightIntensity, float shininess)
 {
-    vec3 reflectDir = reflect(lightDir, normal);  
+    vec3 reflectDir = reflect(-lightDir, normal);  
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
 	return spec * lightIntensity;
 }
