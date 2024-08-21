@@ -35,8 +35,7 @@ namespace darmok
         // texConfig.type = TextureType::CubeMap;
 
         _shadowTex = std::make_unique<Texture>(texConfig, BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL);
-
-        _shadowFb = bgfx::createFrameBuffer(1, &_shadowTex->getHandle(), true);
+        _shadowFb = bgfx::createFrameBuffer(1, &_shadowTex->getHandle());
 
         updateLights();
     }
@@ -63,13 +62,24 @@ namespace darmok
         {
             lights.push_back(entity);
         }
-        if (_lights != lights)
+
+        _lightTransforms.clear();
+        for (auto entity : lights)
         {
-            _lights = lights;
-            _cam->renderReset();
-            return true;
+            if (auto trans = _scene->getComponent<const Transform>(entity))
+            {
+                _lightTransforms[entity] = trans->getWorldInverse();
+            }
         }
-        return false;
+
+        if (_lights == lights)
+        {
+            return false;
+        }
+
+        _lights = lights;
+        _cam->renderReset();
+        return true;
     }
 
     void ShadowRenderer::update(float deltaTime)
@@ -85,13 +95,19 @@ namespace darmok
             return;
         }
 
-        auto viewProj = _cam->getProjectionMatrix();
-        if (auto camTrans = _cam->getTransform())
+        auto bb = _cam->getFrustum().getBoundingBox();
+        _camOrtho = bb.getOrtho();
+    }
+
+    glm::mat4 ShadowRenderer::getLightMatrix(Entity entity) const noexcept
+    {
+        glm::mat4 mat = _camOrtho;
+        auto itr = _lightTransforms.find(entity);
+        if (itr != _lightTransforms.end())
         {
-            viewProj = viewProj * camTrans->getWorldInverse();
+            mat = mat * itr->second;
         }
-        BoundingBox bb = Frustum(viewProj);
-        _camOrtho = Math::ortho(bb.min.x, bb.max.x, bb.min.y, bb.max.y, bb.min.z, bb.max.z);
+        return mat;
     }
 
     void ShadowRenderer::renderReset() noexcept
@@ -147,22 +163,15 @@ namespace darmok
     {
         auto& encoder = context.getEncoder();
         auto viewId = context.getViewId();
+        auto entity = _lightsByViewId[viewId];      
 
-        auto lightEntity = _lightsByViewId[viewId];      
-
-        if (auto dirLight = _scene->getComponent<const DirectionalLight>(lightEntity))
+        const void* viewPtr = nullptr;
+        auto itr = _lightTransforms.find(entity);
+        if (itr != _lightTransforms.end())
         {
-            const void* viewPtr = nullptr;
-            if (auto trans = _scene->getComponent<const Transform>(lightEntity))
-            {
-                viewPtr = glm::value_ptr(trans->getWorldInverse());
-            }
-            bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(_camOrtho));
+            viewPtr = glm::value_ptr(itr->second);
         }
-        else
-        {
-            return;
-        }
+        bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(_camOrtho));
 
         renderEntities(viewId, encoder);
         context.getResources().setRef<Texture>(*_shadowTex, "shadow");
@@ -196,33 +205,26 @@ namespace darmok
         }
     }
 
-    ShadowRenderComponent::ShadowRenderComponent() noexcept
-        : _depthScaleOffset(0)
+    ShadowRenderComponent::ShadowRenderComponent(ShadowRenderer& renderer) noexcept
+        : _renderer(renderer)
         , _shadowMapUniform{ bgfx::kInvalidHandle }
-        , _depthScaleOffsetUniform{ bgfx::kInvalidHandle }
+        , _lightTransUniform{ bgfx::kInvalidHandle }
+        , _lightTrans(1)
     {
     }
 
     void ShadowRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
+        _cam = cam;
+        _scene = scene;
         _shadowMapUniform = bgfx::createUniform("s_shadowMap", bgfx::UniformType::Sampler);
-        _depthScaleOffsetUniform = bgfx::createUniform("u_depthScaleOffset", bgfx::UniformType::Vec4);
-
-        auto caps = bgfx::getCaps();
-        _depthScaleOffset = glm::vec4{ 1.0f, 0.0f, 0.0f, 0.0f };
-        if (caps->homogeneousDepth)
-        {
-            _depthScaleOffset[0] = 0.5f;
-            _depthScaleOffset[1] = 0.5f;
-        }
-
-        auto supported = 0 != (caps->supported & BGFX_CAPS_TEXTURE_COMPARE_LEQUAL);
+        _lightTransUniform = bgfx::createUniform("u_dirLightTrans", bgfx::UniformType::Mat4);
     }
 
     void ShadowRenderComponent::shutdown() noexcept
     {
         std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
-            _shadowMapUniform, _depthScaleOffsetUniform
+            _shadowMapUniform, _lightTransUniform
         };
         for (auto& uniform : uniforms)
         {
@@ -231,6 +233,18 @@ namespace darmok
                 bgfx::destroy(uniform);
                 uniform.get().idx = bgfx::kInvalidHandle;
             }
+        }
+        _cam.reset();
+        _scene.reset();
+    }
+
+    void ShadowRenderComponent::update(float deltaTime) noexcept
+    {
+        auto view = _cam->createEntityView<DirectionalLight>();
+        for (auto& entity : view)
+        {
+            _lightTrans = _renderer.getLightMatrix(entity);
+            break;
         }
     }
 
@@ -241,8 +255,17 @@ namespace darmok
 
     void ShadowRenderComponent::beforeRenderView(IRenderGraphContext& context) noexcept
     {
+    }
+
+    void ShadowRenderComponent::beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept
+    {
+        configureUniforms(context);
+    }
+
+    void ShadowRenderComponent::configureUniforms(IRenderGraphContext& context) const noexcept
+    {
         auto& encoder = context.getEncoder();
-        encoder.setUniform(_depthScaleOffsetUniform, glm::value_ptr(_depthScaleOffset));
+        encoder.setUniform(_lightTransUniform, glm::value_ptr(_lightTrans));
         if (auto tex = context.getResources().get<Texture>("shadow"))
         {
             encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, tex->getHandle());

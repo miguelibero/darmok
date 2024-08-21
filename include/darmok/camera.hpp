@@ -112,6 +112,8 @@ namespace darmok
         glm::vec3 viewportToScreenPoint(const glm::vec3& point) const noexcept;
         glm::vec3 screenToViewportPoint(const glm::vec3& point) const noexcept;
 
+        Frustum getFrustum() const noexcept;
+
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;
         

@@ -253,6 +253,9 @@ namespace darmok
         VertexDataWriter writer(_dirLightsLayout, uint32_t(lights.size_hint()));
 
         uint32_t index = 0;
+
+        auto camOrtho = _cam->getFrustum().getBoundingBox().getOrtho();
+
         for (auto entity : lights)
         {
             auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
@@ -265,6 +268,7 @@ namespace darmok
             auto intensity = light.getIntensity();
             glm::vec4 c(Colors::normalize(light.getColor()) * intensity, 0);
             writer.write(bgfx::Attrib::Color0, index, c);
+
             ++index;
         }
         auto data = writer.finish();

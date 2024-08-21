@@ -1,5 +1,6 @@
 #include <darmok/shape.hpp>
 #include <darmok/string.hpp>
+#include <darmok/math.hpp>
 #include <glm/gtx/intersect.hpp>
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -550,6 +551,11 @@ namespace darmok
         return "BoundingBox(" + glm::to_string(min) + ", " + glm::to_string(max) + ")";
     }
 
+    glm::mat4 BoundingBox::getOrtho() const noexcept
+    {
+        return Math::ortho(min.x, max.x, min.y, max.y, min.z, max.z);
+    }
+
     Frustum::Frustum(const glm::mat4& proj)
     {
         static const std::vector<glm::vec4> normCorners = {
@@ -585,7 +591,7 @@ namespace darmok
         return corners[to_underlying(corner)];
     }
 
-    Frustum::operator BoundingBox() const noexcept
+    BoundingBox Frustum::getBoundingBox() const noexcept
     {
         BoundingBox bb(
             glm::vec3(bx::kFloatInfinity),
@@ -599,6 +605,11 @@ namespace darmok
         }
 
         return bb;
+    }
+
+    Frustum::operator BoundingBox() const noexcept
+    {
+        return getBoundingBox();
     }
 
     std::string Frustum::toString() const noexcept

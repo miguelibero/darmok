@@ -400,4 +400,15 @@ namespace darmok
         auto p = getCurrentViewport().screenToViewportPoint(point);
         return glm::vec3(p, z);
     }
+
+    Frustum Camera::getFrustum() const noexcept
+    {
+        auto viewProj = getProjectionMatrix();
+        if (auto camTrans = getTransform())
+        {
+            viewProj = viewProj * camTrans->getWorldInverse();
+        }
+        return Frustum(viewProj);
+    }
+
 }

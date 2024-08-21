@@ -294,6 +294,8 @@ namespace darmok
 
         std::string toString() const noexcept;
 
+        glm::mat4 getOrtho() const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -325,6 +327,7 @@ namespace darmok
 
         std::string toString() const noexcept;
 
+        BoundingBox getBoundingBox() const noexcept;
         operator BoundingBox() const noexcept;
 
         template<class Archive>

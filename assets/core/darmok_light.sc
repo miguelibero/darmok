@@ -13,13 +13,11 @@ uniform vec4 u_ambientLightIrradiance;
 // for each point light:
 //   vec4 position (w is padding)
 //   vec4 intensity + radius (xyz is intensity, w is radius)
-//   mat4 light space matrix
 BUFFER_RO(b_pointLights, vec4, DARMOK_SAMPLER_LIGHTS_POINT);
 
 // for each directional light:
 //   vec4 direction (w is padding)
 //   vec4 intensity (xyz is intensity)
-//   mat4 light space matrix
 BUFFER_RO(b_dirLights, vec4, DARMOK_SAMPLER_LIGHTS_DIR);
 
 struct PointLight
@@ -27,14 +25,13 @@ struct PointLight
     vec3 position;
     vec3 intensity;
     float radius;
-    mat4 mapTrans;
 };
 
 struct DirectionalLight
 {
     vec3 direction;
     vec3 intensity;
-    mat4 mapTrans;
+    mat4 trans;
 };
 
 struct AmbientLight
@@ -72,8 +69,9 @@ uint pointLightCount()
 PointLight getPointLight(uint i)
 {
     PointLight light;
-    light.position = b_pointLights[2 * i + 0].xyz;
-    vec4 intensityRadiusVec = b_pointLights[2 * i + 1];
+    i *= 2;
+    light.position = b_pointLights[i + 0].xyz;
+    vec4 intensityRadiusVec = b_pointLights[i + 1];
     light.intensity = intensityRadiusVec.xyz;
     light.radius = intensityRadiusVec.w;
     return light;
@@ -87,8 +85,9 @@ uint dirLightCount()
 DirectionalLight getDirLight(uint i)
 {
     DirectionalLight light;
-    light.direction = b_dirLights[2 * i + 0].xyz;
-    vec4 intensityVec = b_dirLights[2 * i + 1];
+    i *= 2;
+    light.direction = b_dirLights[i + 0].xyz;
+    vec4 intensityVec = b_dirLights[i + 1];
     light.intensity = intensityVec.xyz;
     return light;
 }

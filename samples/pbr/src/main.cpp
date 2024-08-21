@@ -63,9 +63,9 @@ namespace
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setWindowPerspective(60, 0.3, 10);
 			
-			cam.addRenderer<ShadowRenderer>();
+			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>();
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
-			forwardRender.addComponent<ShadowRenderComponent>();
+			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
 			forwardRender.addComponent<LightingRenderComponent>();
 
 			_freelook = scene.addSceneComponent<FreelookController>(cam);
@@ -73,6 +73,7 @@ namespace
 			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
 
+			/*
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
 			auto lightEntity = scene.createEntity();
@@ -81,11 +82,15 @@ namespace
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 1);
+			*/
 
 			auto dirLightEntity = scene.createEntity();
 			scene.addComponent<Transform>(dirLightEntity, glm::vec3{ 0, 4, -4 })
 				.lookAt(glm::vec3(0, 0, 0));
-			scene.addComponent<DirectionalLight>(dirLightEntity, 0.2);
+			scene.addComponent<DirectionalLight>(dirLightEntity, 0.1);
+
+			auto ambientLightEntity = scene.createEntity();
+			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
 
 			auto greenMat = std::make_shared<Material>(prog, Colors::green());
 
@@ -116,9 +121,7 @@ namespace
 			/*
 			{
 				camTrans.update();
-				auto proj = glm::perspective(glm::radians(60.F), getWindow().getAspect(), 0.3F, 2.F);
-				proj = proj * camTrans.getWorldInverse();
-				auto frust = Frustum(proj);
+				auto frust = cam.getFrustum();
 				auto frustMesh = MeshData(frust, RectangleMeshType::Outline).createMesh(unlitProg->getVertexLayout());
 				BoundingBox bb = frust;
 				bb.expand(glm::vec3(2));
@@ -135,7 +138,6 @@ namespace
 				scene.addComponent<Renderable>(bbEntity, std::move(bbMesh), bbMat);
 			}
 			*/
-
 		}
 
 		void update(float deltaTime) override

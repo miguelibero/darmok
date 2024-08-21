@@ -3,6 +3,9 @@ $input v_position, v_normal, v_texcoord0, v_viewDir
 #include <bgfx_shader.sh>
 #include <darmok_material_basic.sc>
 #include <darmok_light.sc>
+#include <darmok_shadow.sc>
+
+uniform mat4 u_dirLightTrans;
 
 void main()
 {
@@ -24,8 +27,6 @@ void main()
 
 		diffuse += phongDiffuse(lightDir, norm, light.intensity);
 		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
-
-		shadowFactor += 1.0; // TODO
 	}
 
 	uint dirLights = dirLightCount();
@@ -37,14 +38,14 @@ void main()
 		diffuse += phongDiffuse(lightDir, norm, light.intensity);
 		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
 
-		shadowFactor += 1.0; // TODO
+		shadowFactor += hardShadow(u_dirLightTrans, v_position);
 	}
 
 	ambient *= mat.diffuse;
 	diffuse *= mat.diffuse;
 	specular *= mat.specular;
 
-	shadowFactor /= float(pointLights + dirLights);
+	shadowFactor /= float(dirLights);
 	gl_FragColor.rgb = ambient + shadowFactor * (diffuse + specular);
 	gl_FragColor.a = mat.diffuse.a;
 }
