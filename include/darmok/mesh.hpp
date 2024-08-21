@@ -157,6 +157,7 @@ namespace darmok
     struct Line;
     struct Triangle;
     struct Polygon;
+    struct Frustum;
 
     enum class RectangleMeshType
     {
@@ -180,7 +181,7 @@ namespace darmok
         MeshType type = MeshType::Static;
 
         MeshData() = default;
-        MeshData(const Cube& Cube) noexcept;
+        MeshData(const Cube& Cube, RectangleMeshType type = RectangleMeshType::Full) noexcept;
         MeshData(const Sphere& sphere, unsigned int lod = 32) noexcept;
         MeshData(const Capsule& capsule, unsigned int lod = 32) noexcept;
         MeshData(const Rectangle& rect, RectangleMeshType type = RectangleMeshType::Full) noexcept;
@@ -188,6 +189,7 @@ namespace darmok
         MeshData(const Line& line, LineMeshType type = LineMeshType::Line) noexcept;
         MeshData(const Triangle& tri) noexcept;
         MeshData(const Polygon& poly) noexcept;
+        MeshData(const Frustum& frust, RectangleMeshType type = RectangleMeshType::Outline) noexcept;
 
         MeshData& operator+=(const MeshData& other) noexcept;
         MeshData operator+(const MeshData& other) const noexcept;
@@ -207,7 +209,7 @@ namespace darmok
         MeshData& calcTangents() noexcept;
 
         using Face = std::array<Index, 3>;
-        std::vector<Face> getFaces() const noexcept;
+        [[nodiscard]] std::vector<Face> getFaces() const noexcept;
 
         bool empty() const noexcept;
         void clear() noexcept;
@@ -215,5 +217,9 @@ namespace darmok
         [[nodiscard]] void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
+
+        MeshData& convertQuadIndicesToLine() noexcept;
+    private:
+        static const std::vector<Index> _cuboidTriangleIndices;
     };
 }

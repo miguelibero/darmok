@@ -16,6 +16,7 @@
 #include <darmok/render_shadow.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/freelook.hpp>
+#include <darmok/shape.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
 namespace
@@ -58,8 +59,9 @@ namespace
 			auto& camTrans = scene.addComponent<Transform>(camEntity)
 				.setPosition({ 0, 2, -2 })
 				.lookAt({ 0, 0, 0 });
+
 			auto& cam = scene.addComponent<Camera>(camEntity)
-				.setWindowPerspective(60, 0.3, 1000);
+				.setWindowPerspective(60, 0.3, 10);
 			
 			cam.addRenderer<ShadowRenderer>();
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
@@ -83,10 +85,7 @@ namespace
 			auto dirLightEntity = scene.createEntity();
 			scene.addComponent<Transform>(dirLightEntity, glm::vec3{ 0, 4, -4 })
 				.lookAt(glm::vec3(0, 0, 0));
-			scene.addComponent<DirectionalLight>(dirLightEntity, 1.2);
-
-			// auto ambientLightEntity = scene.createEntity();
-			// scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
+			scene.addComponent<DirectionalLight>(dirLightEntity, 0.2);
 
 			auto greenMat = std::make_shared<Material>(prog, Colors::green());
 
@@ -113,6 +112,30 @@ namespace
 			Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
 			auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::red());
+
+			/*
+			{
+				camTrans.update();
+				auto proj = glm::perspective(glm::radians(60.F), getWindow().getAspect(), 0.3F, 2.F);
+				proj = proj * camTrans.getWorldInverse();
+				auto frust = Frustum(proj);
+				auto frustMesh = MeshData(frust, RectangleMeshType::Outline).createMesh(unlitProg->getVertexLayout());
+				BoundingBox bb = frust;
+				bb.expand(glm::vec3(2));
+				auto bbMesh = MeshData(bb, RectangleMeshType::Outline).createMesh(unlitProg->getVertexLayout());
+
+				auto frustEntity = scene.createEntity();
+				auto frustMat = std::make_shared<Material>(unlitProg, Colors::magenta());
+				frustMat->setPrimitiveType(MaterialPrimitiveType::Line);
+				scene.addComponent<Renderable>(frustEntity, std::move(frustMesh), frustMat);
+
+				auto bbEntity = scene.createEntity();
+				auto bbMat = std::make_shared<Material>(unlitProg, Colors::magenta());
+				bbMat->setPrimitiveType(MaterialPrimitiveType::Line);
+				scene.addComponent<Renderable>(bbEntity, std::move(bbMesh), bbMat);
+			}
+			*/
+
 		}
 
 		void update(float deltaTime) override

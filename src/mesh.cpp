@@ -452,7 +452,17 @@ namespace darmok
 		return IMesh::create(type, vertexLayout, vertexData, indexData, meshConfig);
 	}
 
-	MeshData::MeshData(const Cube& Cube) noexcept
+	const std::vector<MeshData::Index> MeshData::_cuboidTriangleIndices
+	{
+		0,  1,  2,  2,  3,  0,
+		4,  5,  6,  6,  7,  4,
+		8,  9, 10, 10, 11,  8,
+		12, 13, 14, 14, 15, 12,
+		16, 17, 18, 18, 19, 16,
+		20, 21, 22, 22, 23, 20,
+	};
+
+	MeshData::MeshData(const Cube& Cube, RectangleMeshType type) noexcept
 	{
 		const static std::vector<Vertex> basicVertices = {
 			{ { 1,  1,  1 }, { 0, 0 }, {  0,  0,  1 }, {  1,  0,  0 } },
@@ -480,18 +490,14 @@ namespace darmok
 			{ { 0,  0,  0 }, { 1, 1 }, { -1,  0,  0 }, {  0, -1,  0 } },
 			{ { 0,  0,  1 }, { 0, 1 }, { -1,  0,  0 }, {  0, -1,  0 } }
 		};
-		const static std::vector<Index> basicIndices
-		{
-			0,  1,  2,  2,  3,  0,
-			4,  5,  6,  6,  7,  4,
-			8,  9, 10, 10, 11,  8,
-			12, 13, 14, 14, 15, 12,
-			16, 17, 18, 18, 19, 16,
-			20, 21, 22, 22, 23, 20,
-		};
 
 		vertices = basicVertices;
-		indices = basicIndices;
+		indices = _cuboidTriangleIndices;
+
+		if (type == RectangleMeshType::Outline)
+		{
+			convertQuadIndicesToLine();
+		}
 
 		auto trans = glm::scale(glm::mat4(1), Cube.size);
 		trans = glm::translate(trans, (Cube.origin / Cube.size) - glm::vec3(0.5f));
@@ -506,20 +512,80 @@ namespace darmok
 			{ { 0, 0, 0 }, { 0, 1 }, { 0, 0, -1 }, { 1, 0, 0} },
 			{ { 0, 1, 0 }, { 0, 0 }, { 0, 0, -1 }, { 1, 0, 0} }
 		};
+		static const std::vector<Index> basicIndices = { 0, 1, 2, 2, 3, 0 };
 		vertices = basicVertices;
+		indices = basicIndices;
+
 		if (type == RectangleMeshType::Outline)
 		{
-			indices = { 0, 1, 1, 2, 2, 3, 3, 0 };
-
-		}
-		else
-		{
-			indices = { 0, 1, 2, 2, 3, 0 };
+			convertQuadIndicesToLine();
 		}
 
 		auto trans = glm::scale(glm::mat4(1), glm::vec3(rect.size, 0));
 		trans = glm::translate(trans, glm::vec3(rect.origin / rect.size - glm::vec2(0.5F), 0));
 		*this *= trans;
+	}
+
+	MeshData::MeshData(const Frustum& frust, RectangleMeshType type) noexcept
+	{
+		vertices = {
+			{ frust.getCorner(Frustum::Corner::FarTopRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::Corner::FarTopLeft),			{ 1, 0 } },
+			{ frust.getCorner(Frustum::Corner::FarBottomLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::Corner::FarBottomRight),		{ 0, 1 } },
+			{ frust.getCorner(Frustum::Corner::NearTopRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::Corner::NearBottomRight),	{ 1, 0 } },
+			{ frust.getCorner(Frustum::Corner::NearBottomLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::Corner::NearTopLeft),		{ 0, 1 } },
+			{ frust.getCorner(Frustum::Corner::FarTopRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::Corner::NearTopRight),		{ 1, 0 } },
+			{ frust.getCorner(Frustum::Corner::NearTopLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::Corner::FarTopLeft),			{ 0, 1 } },
+			{ frust.getCorner(Frustum::Corner::FarBottomRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::Corner::FarBottomLeft),		{ 1, 0 } },
+			{ frust.getCorner(Frustum::Corner::NearBottomLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::Corner::NearBottomRight),	{ 0, 1 } },
+			{ frust.getCorner(Frustum::Corner::FarTopRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::Corner::FarBottomRight),		{ 1, 0 } },
+			{ frust.getCorner(Frustum::Corner::NearBottomRight),	{ 1, 1 } },
+			{ frust.getCorner(Frustum::Corner::NearTopRight),		{ 0, 1 } },
+			{ frust.getCorner(Frustum::Corner::FarTopLeft),			{ 0, 0 } },
+			{ frust.getCorner(Frustum::Corner::NearTopLeft),		{ 1, 0 } },
+			{ frust.getCorner(Frustum::Corner::NearBottomLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::Corner::FarBottomLeft),		{ 0, 1 } }
+		};
+
+		indices = _cuboidTriangleIndices;
+
+		if (type == RectangleMeshType::Outline)
+		{
+			convertQuadIndicesToLine();
+		}
+		else
+		{
+			calcNormals();
+			calcTangents();
+		}
+	}
+
+	MeshData& MeshData::convertQuadIndicesToLine() noexcept
+	{
+		std::vector<Index> v(indices);
+		indices.clear();
+		indices.reserve(v.size() * 8 / 6);
+		for (auto i = 0; i < v.size() - 5; i += 6)
+		{
+			indices.push_back(v[i]);
+			indices.push_back(v[i + 1]);
+			indices.push_back(v[i + 1]);
+			indices.push_back(v[i + 2]);
+			indices.push_back(v[i + 2]);
+			indices.push_back(v[i + 4]);
+			indices.push_back(v[i + 4]);
+			indices.push_back(v[i]);
+		}
+
+		return *this;
 	}
 
 	MeshData::MeshData(const Sphere& sphere, unsigned int lod) noexcept

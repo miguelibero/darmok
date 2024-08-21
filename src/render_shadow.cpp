@@ -84,14 +84,13 @@ namespace darmok
         {
             return;
         }
-        auto camProj = _cam->getProjectionMatrix();
+
+        auto viewProj = _cam->getProjectionMatrix();
         if (auto camTrans = _cam->getTransform())
         {
-            camProj = camTrans->getWorldInverse() * camProj;
+            viewProj = viewProj * camTrans->getWorldInverse();
         }
-        auto bb = BoundingBox::forFrustum(camProj);
-        // TODO: hardcoded
-        bb.expand(glm::vec3(2));
+        BoundingBox bb = Frustum(viewProj);
         _camOrtho = Math::ortho(bb.min.x, bb.max.x, bb.min.y, bb.max.y, bb.min.z, bb.max.z);
     }
 

@@ -309,6 +309,12 @@ namespace darmok
 		return *_impl;
 	}
 
+	float Window::getAspect() const noexcept
+	{
+		auto& size = getPixelSize();
+		return (float)size.x / size.y;
+	}
+
 	const glm::uvec2& Window::getSize() const noexcept
 	{
 		return _impl->getSize();

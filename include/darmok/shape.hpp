@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
+#include <darmok/utils.hpp>
 #include <array>
 #include <optional>
 #include <string>
@@ -274,7 +275,6 @@ namespace darmok
 
         BoundingBox() noexcept;
         BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
-        static BoundingBox forFrustum(const glm::mat4& proj) noexcept;
 
         BoundingBox& operator+=(const BoundingBox& bb) noexcept;
         BoundingBox operator+(const BoundingBox& bb) noexcept;
@@ -284,6 +284,8 @@ namespace darmok
 
         BoundingBox& expand(const glm::vec3& size) noexcept;
         BoundingBox& contract(const glm::vec3& size) noexcept;
+
+        std::array<glm::vec3, 8> getCorners() const noexcept;
 
         Cube getCube() const noexcept;
         operator Cube() const noexcept;
@@ -296,6 +298,39 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(min, max);
+        }
+    };
+
+    struct DARMOK_EXPORT Frustum final
+    {
+        enum class Corner : size_t
+        {
+            NearBottomLeft,
+            NearBottomRight,
+            NearTopLeft,
+            NearTopRight,
+            FarBottomLeft,
+            FarBottomRight,
+            FarTopLeft,
+            FarTopRight,
+            Count
+        };
+
+        std::array<glm::vec3, to_underlying(Corner::Count)> corners;
+
+        const glm::vec3& getCorner(Frustum::Corner corner) const noexcept;
+        glm::vec3& getCorner(Frustum::Corner corner) noexcept;
+
+        Frustum(const glm::mat4& proj);
+
+        std::string toString() const noexcept;
+
+        operator BoundingBox() const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(corners);
         }
     };
 
@@ -359,6 +394,11 @@ namespace std
     }
 
     inline std::string to_string(const darmok::BoundingBox& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Frustum& v)
     {
         return v.toString();
     }

@@ -71,6 +71,7 @@ namespace darmok
 		void requestDestruction() noexcept;
 		void requestVideoModeInfo() noexcept;
 
+		[[nodiscard]] float getAspect() const noexcept;
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
 		[[nodiscard]] const glm::uvec2& getFramebufferSize() const noexcept;
