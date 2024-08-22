@@ -19,17 +19,18 @@ namespace darmok
         static const uint8_t LIGHTS_SPOT = 9;
 
         static const uint8_t SHADOW_MAP = 10;
+        static const uint8_t SHADOW_TRANS = 11;
 
-        static const uint8_t CLUSTERS_CLUSTERS = 11;
-        static const uint8_t CLUSTERS_LIGHTINDICES = 12;
-        static const uint8_t CLUSTERS_LIGHTGRID = 13;
-        static const uint8_t CLUSTERS_ATOMICINDEX = 14;
+        static const uint8_t CLUSTERS_CLUSTERS = 12;
+        static const uint8_t CLUSTERS_LIGHTINDICES = 13;
+        static const uint8_t CLUSTERS_LIGHTGRID = 14;
+        static const uint8_t CLUSTERS_ATOMICINDEX = 15;
 
-        static const uint8_t DEFERRED_DIFFUSE_A = 11;
-        static const uint8_t DEFERRED_NORMAL = 12;
-        static const uint8_t DEFERRED_F0_METALLIC = 13;
-        static const uint8_t DEFERRED_EMISSIVE_OCCLUSION = 14;
-        static const uint8_t DEFERRED_DEPTH = 15;
+        static const uint8_t DEFERRED_DIFFUSE_A = 12;
+        static const uint8_t DEFERRED_NORMAL = 13;
+        static const uint8_t DEFERRED_F0_METALLIC = 14;
+        static const uint8_t DEFERRED_EMISSIVE_OCCLUSION = 15;
+        static const uint8_t DEFERRED_DEPTH = 16;
 
 
     };

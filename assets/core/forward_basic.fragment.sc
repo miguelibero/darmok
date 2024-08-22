@@ -3,7 +3,10 @@ $input v_position, v_normal, v_texcoord0, v_viewDir
 #include <bgfx_shader.sh>
 #include <darmok_material_basic.sc>
 #include <darmok_light.sc>
+
+#if DARMOK_VARIANT_SHADOW_ENABLED
 #include <darmok_shadow.sc>
+#endif
 
 void main()
 {
@@ -16,8 +19,11 @@ void main()
 	vec3 fragPos = v_position;
 	vec3 viewDir = v_viewDir;
 
-	vec2 shadowMapTexelSize = u_shadowMapData.xy;
+#if DARMOK_VARIANT_SHADOW_ENABLED
 	float visibility = 0;
+#else
+	float visibility = 1;
+#endif
 
 	uint pointLights = pointLightCount();
     for(uint i = 0; i < pointLights; i++)
@@ -35,21 +41,22 @@ void main()
 		DirectionalLight light = getDirLight(i);
 		vec3 lightDir = -light.direction;
 
-
 		diffuse += phongDiffuse(lightDir, norm, light.intensity);
 		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
 
+#if DARMOK_VARIANT_SHADOW_ENABLED
 		float shadowBias = max(0.05 * (1.0 - dot(norm, lightDir)), 0.005);  
-		vec4 shadowCoord = mul(u_dirLightTrans, vec4(fragPos, 1.0));
-		// visibility += hardShadow(s_shadowMap, shadowCoord, shadowBias);
-		visibility += PCF(s_shadowMap, shadowCoord, shadowBias, shadowMapTexelSize);
+		visibility += PCF(i, fragPos, shadowBias);
+#endif
 	}
 
 	ambient *= mat.diffuse;
 	diffuse *= mat.diffuse;
 	specular *= mat.specular;
 
+#if DARMOK_VARIANT_SHADOW_ENABLED
 	visibility /= float(dirLights);
+#endif
 
 	gl_FragColor.rgb = ambient + visibility * (diffuse + specular);
 	gl_FragColor.a = mat.diffuse.a;

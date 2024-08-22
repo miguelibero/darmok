@@ -9,6 +9,7 @@
 #include <darmok/math.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/material.hpp>
+#include <darmok/vertex.hpp>
 #include "generated/shadow.program.h"
 #include "render_samplers.hpp"
 
@@ -35,13 +36,14 @@ namespace darmok
         TextureConfig texConfig;
         texConfig.size = _mapSize;
         texConfig.format = bgfx::TextureFormat::D16;
+        texConfig.layers = 256; // max amount of lights
         // texConfig.type = TextureType::CubeMap;
 
         _shadowTex = std::make_unique<Texture>(texConfig,
             BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
             BGFX_SAMPLER_MAG_POINT | 
             BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
-            BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(1)
+            BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(0xFFFFFF)
         );
         _shadowFb = bgfx::createFrameBuffer(1, &_shadowTex->getHandle());
 
@@ -244,10 +246,15 @@ namespace darmok
     ShadowRenderComponent::ShadowRenderComponent(ShadowRenderer& renderer) noexcept
         : _renderer(renderer)
         , _shadowMapUniform{ bgfx::kInvalidHandle }
-        , _shadowMapDataUniform{ bgfx::kInvalidHandle }
-        , _lightMapTransUniform{ bgfx::kInvalidHandle }
-        , _lightMapTrans(1)
+        , _shadowDataUniform{ bgfx::kInvalidHandle }
+        , _shadowTransBuffer{ bgfx::kInvalidHandle }
     {
+        _shadowTransLayout.begin()
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color1, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color2, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color3, 4, bgfx::AttribType::Float)
+        .end();
     }
 
     void ShadowRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
@@ -255,14 +262,14 @@ namespace darmok
         _cam = cam;
         _scene = scene;
         _shadowMapUniform = bgfx::createUniform("s_shadowMap", bgfx::UniformType::Sampler);
-        _shadowMapDataUniform = bgfx::createUniform("u_shadowMapData", bgfx::UniformType::Vec4);
-        _lightMapTransUniform = bgfx::createUniform("u_dirLightTrans", bgfx::UniformType::Mat4);
+        _shadowDataUniform = bgfx::createUniform("u_shadowData", bgfx::UniformType::Vec4);
+        _shadowTransBuffer = bgfx::createDynamicVertexBuffer(1, _shadowTransLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
     }
 
     void ShadowRenderComponent::shutdown() noexcept
     {
         std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
-            _shadowMapUniform, _shadowMapDataUniform, _lightMapTransUniform
+            _shadowMapUniform, _shadowDataUniform
         };
         for (auto& uniform : uniforms)
         {
@@ -272,17 +279,37 @@ namespace darmok
                 uniform.get().idx = bgfx::kInvalidHandle;
             }
         }
+        if (isValid(_shadowTransBuffer))
+        {
+            bgfx::destroy(_shadowTransBuffer);
+            _shadowTransBuffer.idx = bgfx::kInvalidHandle;
+        }
+
         _cam.reset();
         _scene.reset();
     }
 
     void ShadowRenderComponent::update(float deltaTime) noexcept
     {
-        auto view = _cam->createEntityView<DirectionalLight>();
-        for (auto& entity : view)
+        auto lights = _cam->createEntityView<DirectionalLight>();
+        VertexDataWriter writer(_shadowTransLayout, uint32_t(lights.size_hint()));
+        uint32_t index = 0;
+
+        for (auto entity : lights)
         {
-            _lightMapTrans = _renderer.getLightMapMatrix(entity);
-            break;
+            auto mtx = _renderer.getLightMapMatrix(entity);
+            // not sure why but the shader reads the data by rows
+            mtx = glm::transpose(mtx);
+            writer.write(bgfx::Attrib::Color0, index, mtx[0]);
+            writer.write(bgfx::Attrib::Color1, index, mtx[1]);
+            writer.write(bgfx::Attrib::Color2, index, mtx[2]);
+            writer.write(bgfx::Attrib::Color3, index, mtx[3]);
+            ++index;
+        }
+        auto data = writer.finish();
+        if (!data.empty())
+        {
+            bgfx::update(_shadowTransBuffer, 0, data.copyMem());
         }
     }
 
@@ -303,13 +330,14 @@ namespace darmok
     void ShadowRenderComponent::configureUniforms(IRenderGraphContext& context) const noexcept
     {
         auto& encoder = context.getEncoder();
-        encoder.setUniform(_lightMapTransUniform, glm::value_ptr(_lightMapTrans));
+
+        encoder.setBuffer(RenderSamplers::SHADOW_TRANS, _shadowTransBuffer, bgfx::Access::Read);
 
         if (auto tex = context.getResources().get<Texture>("shadow"))
         {
             auto texelSize = glm::vec2(1.F) / glm::vec2(tex->getSize());
             glm::vec4 smData(texelSize, 0, 0);
-            encoder.setUniform(_shadowMapDataUniform, glm::value_ptr(smData));
+            encoder.setUniform(_shadowDataUniform, glm::value_ptr(smData));
             encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, tex->getHandle());
         }
     }

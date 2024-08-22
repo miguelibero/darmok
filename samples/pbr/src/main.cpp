@@ -116,6 +116,15 @@ namespace
 			scene.addComponent<Renderable>(dirLightEntity, dirLightMesh, debugMat);
 			scene.addSceneComponent<RotateUpdater>(dirLightTrans);
 
+			/*
+			{
+				auto dirLightEntity2 = scene.createEntity();
+				auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity2, glm::vec3{ 1, 1, -1 })
+					.lookAt(glm::vec3(0, 0, 0));
+				scene.addComponent<DirectionalLight>(dirLightEntity2, 0.6);
+			}
+			*/
+
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
 
@@ -141,7 +150,9 @@ namespace
 			auto floorEntity = scene.createEntity();
 			Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 2));
 			auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
-			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::red());
+			auto floorMat = std::make_shared<Material>(prog, Colors::red());
+			floorMat->setProgramDefine("SHADOW_ENABLED");
+			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
 		}
 
 		void drawDebugFrustum(Scene& scene, Transform& camTrans, Transform& dirLightTrans, const std::shared_ptr<Program>& prog)

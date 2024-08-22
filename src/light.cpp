@@ -249,9 +249,7 @@ namespace darmok
     size_t LightingRenderComponent::updateDirLights() noexcept
     {
         auto lights = _cam->createEntityView<DirectionalLight>();
-
         VertexDataWriter writer(_dirLightsLayout, uint32_t(lights.size_hint()));
-
         uint32_t index = 0;
 
         for (auto entity : lights)
@@ -272,7 +270,6 @@ namespace darmok
         auto data = writer.finish();
         if (!data.empty())
         {
-            auto size = writer.getLayout().getSize(index);
             bgfx::update(_dirLightBuffer, 0, data.copyMem());
         }
 
@@ -282,10 +279,9 @@ namespace darmok
     size_t LightingRenderComponent::updatePointLights() noexcept
     {
         auto lights = _cam->createEntityView<PointLight>();
-
         VertexDataWriter writer(_pointLightsLayout, uint32_t(lights.size_hint()));
-
         uint32_t index = 0;
+
         for (auto entity : lights)
         {
             auto& light = _scene->getComponent<const PointLight>(entity).value();
@@ -306,7 +302,6 @@ namespace darmok
         auto data = writer.finish();
         if (!data.empty())
         {
-            auto size = writer.getLayout().getSize(index);
             bgfx::update(_pointLightBuffer, 0, data.copyMem());
         }
 

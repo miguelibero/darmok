@@ -59,10 +59,10 @@ namespace darmok
         ShadowRenderer& _renderer;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
-        bgfx::UniformHandle _lightMapTransUniform;
         bgfx::UniformHandle _shadowMapUniform;
-        bgfx::UniformHandle _shadowMapDataUniform;
-        glm::mat4 _lightMapTrans;
+        bgfx::UniformHandle _shadowDataUniform;
+        bgfx::DynamicVertexBufferHandle _shadowTransBuffer;
+        bgfx::VertexLayout _shadowTransLayout;
 
         void configureUniforms(IRenderGraphContext& context) const noexcept;
     };
