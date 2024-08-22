@@ -5,7 +5,6 @@
 #include <darmok/export.h>
 #include <darmok/render.hpp>
 #include <darmok/render_graph.hpp>
-#include <darmok/shape.hpp>
 
 namespace darmok
 {
@@ -26,7 +25,7 @@ namespace darmok
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
         void renderPassExecute(IRenderGraphContext& context) noexcept override;
 
-        glm::mat4 getLightMatrix(Entity entity) const noexcept;
+        glm::mat4 getLightMapMatrix(Entity entity) const noexcept;
     private:
         glm::uvec2 _mapSize;
         OptionalRef<Camera> _cam;
@@ -37,11 +36,12 @@ namespace darmok
         bgfx::FrameBufferHandle _shadowFb;
         std::vector<Entity> _lights;
         std::unordered_map<bgfx::ViewId, Entity> _lightsByViewId;
-        Frustum _frustum;
+        glm::mat4 _camProjView;
 
         bool updateLights() noexcept;
         void updateCamera() noexcept;
         void renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        glm::mat4 getLightProjMatrix(OptionalRef<const Transform> trans) const noexcept;
     };
 
     class DARMOK_EXPORT ShadowRenderComponent final : public IRenderComponent
@@ -58,10 +58,10 @@ namespace darmok
         ShadowRenderer& _renderer;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
-        bgfx::UniformHandle _lightTransUniform;
+        bgfx::UniformHandle _lightMapTransUniform;
         bgfx::UniformHandle _shadowMapUniform;
         bgfx::UniformHandle _shadowMapDataUniform;
-        glm::mat4 _lightTrans;
+        glm::mat4 _lightMapTrans;
 
         void configureUniforms(IRenderGraphContext& context) const noexcept;
     };

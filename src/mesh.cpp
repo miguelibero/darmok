@@ -784,7 +784,9 @@ namespace darmok
 		{
 			vertex.position = trans * glm::vec4(vertex.position, 1.F);
 			vertex.normal = trans * glm::vec4(vertex.normal, 0.F);
+			vertex.normal = glm::normalize(vertex.normal);
 			vertex.tangent = trans * glm::vec4(vertex.tangent, 0.F);
+			vertex.tangent = glm::normalize(vertex.tangent);
 		}
 		return *this;
 	}

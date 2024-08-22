@@ -43,6 +43,27 @@ namespace
 		float _speed;
 	};
 
+	class RotateUpdater final : public ISceneComponent
+	{
+	public:
+		RotateUpdater(Transform& trans, float speed = 50.f)
+			: _trans(trans)
+			, _speed(speed)
+		{
+		}
+
+		void update(float dt) override
+		{
+			auto r = _trans.getRotation();
+			r = glm::quat(glm::radians(glm::vec3(0, dt * _speed, 0))) * r;
+			_trans.setRotation(r);
+		}
+
+	private:
+		Transform& _trans;
+		float _speed;
+	};
+
 	class PbrSampleApp : public App
 	{
 	public:
@@ -63,7 +84,7 @@ namespace
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setWindowPerspective(60, 0.3, 20);
 			
-			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>();
+			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(glm::vec2(1024));
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
 			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
 			forwardRender.addComponent<LightingRenderComponent>();
@@ -88,8 +109,9 @@ namespace
 			auto dirLightEntity = scene.createEntity();
 			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -1, 1, -1 })
 				.lookAt(glm::vec3(0, 0, 0));
-			scene.addComponent<DirectionalLight>(dirLightEntity, 0.2);
+			scene.addComponent<DirectionalLight>(dirLightEntity, 0.6);
 			scene.addComponent<Renderable>(dirLightEntity, lightMesh, debugMat);
+			scene.addSceneComponent<RotateUpdater>(dirLightTrans);
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
@@ -119,39 +141,35 @@ namespace
 			Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 2));
 			auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::red());
+		}
 
+		void drawDebugFrustum(Scene& scene, Transform& camTrans, Transform& dirLightTrans, const std::shared_ptr<Program>& prog)
+		{
+			auto addDebugShape = [&scene, prog]<typename T>(const T & shape, const Color & color)
 			{
-				auto addDebugShape = [&scene, unlitProg]<typename T>(const T& shape, const Color& color)
-				{
-					auto mesh = MeshData(shape, RectangleMeshType::Outline)
-						.createMesh(unlitProg->getVertexLayout());
-					auto entity = scene.createEntity();
-					auto mat = std::make_shared<Material>(unlitProg, color);
-					mat->setPrimitiveType(MaterialPrimitiveType::Line);
-					scene.addComponent<Renderable>(entity, std::move(mesh), mat);
-				};
+				auto mesh = MeshData(shape, RectangleMeshType::Outline)
+					.createMesh(prog->getVertexLayout());
+				auto entity = scene.createEntity();
+				auto mat = std::make_shared<Material>(prog, color);
+				mat->setPrimitiveType(MaterialPrimitiveType::Line);
+				scene.addComponent<Renderable>(entity, std::move(mesh), mat);
+			};
 
-				camTrans.update();
-				auto& camView = camTrans.getWorldInverse();
-				auto camProjView = glm::perspective(glm::radians(60.F), getWindow().getAspect(), 0.3F, 5.F);
-				// auto camProjView = cam.getProjectionMatrix();
-				camProjView = camProjView * camView;
-				dirLightTrans.update();
-				auto& lightView = dirLightTrans.getWorldInverse();
+			camTrans.update();
+			auto& camView = camTrans.getWorldInverse();
+			auto camProjView = glm::perspective(glm::radians(60.F), getWindow().getAspect(), 0.3F, 5.F);
+			// auto camProjView = cam.getProjectionMatrix();
+			camProjView = camProjView * camView;
+			dirLightTrans.update();
+			auto& lightView = dirLightTrans.getWorldInverse();
 
-				Frustum frust(camProjView);
-				Frustum frust2 = frust * lightView;
-				BoundingBox bb = frust2.getBoundingBox();
-				Frustum frust3 = bb.getOrtho();
-				Frustum frust4 = frust3 * dirLightTrans.getWorldMatrix();
-				// Frustum frust5 = bb.getOrtho() * dirLightTrans.getWorldInverse();
-				
-				addDebugShape(frust, Colors::magenta());
-				// addDebugShape(frust2, Colors::red());
-				// addDebugShape(frust3, Colors::green());
-				addDebugShape(frust4, Colors::blue());
-				// addDebugShape(frust5, Colors::cyan());
-			}
+			Frustum frust(camProjView);
+			Frustum frust2 = camProjView * dirLightTrans.getWorldMatrix();
+			BoundingBox bb = frust2.getBoundingBox();
+			Frustum frust4 = bb.getOrtho() * dirLightTrans.getWorldInverse();
+
+			addDebugShape(frust, Colors::magenta());
+			addDebugShape(frust4, Colors::blue());
 		}
 
 		void update(float deltaTime) override

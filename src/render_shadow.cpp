@@ -17,6 +17,7 @@ namespace darmok
     ShadowRenderer::ShadowRenderer(const glm::uvec2& mapSize) noexcept
         : _mapSize(mapSize)
         , _shadowFb{ bgfx::kInvalidHandle }
+        , _camProjView(1)
     {
     }
 
@@ -88,25 +89,47 @@ namespace darmok
             return;
         }
 
-        auto camProjView = _cam->getProjectionMatrix();
+        _camProjView = _cam->getProjectionMatrix();
         if (auto trans = _cam->getTransform())
         {
-            camProjView *= trans->getWorldInverse();
+            _camProjView *= trans->getWorldInverse();
         }
-        _frustum = camProjView;
     }
 
-    glm::mat4 ShadowRenderer::getLightMatrix(Entity entity) const noexcept
+    glm::mat4 ShadowRenderer::getLightProjMatrix(OptionalRef<const Transform> trans) const noexcept
     {
-        auto trans = _scene->getComponent<const Transform>(entity);
         if (!trans)
         {
-            return _frustum.getBoundingBox().getOrtho();
+            return _camProjView;
         }
-        auto& view = trans->getWorldInverse();
-        Frustum frustum = _frustum * view;
-        auto proj = frustum.getBoundingBox().getOrtho();
-        return proj * view;
+
+        Frustum frust = _camProjView * trans->getWorldMatrix();
+        BoundingBox bb = frust.getBoundingBox();
+        return bb.getOrtho();
+    }
+
+    glm::mat4 ShadowRenderer::getLightMapMatrix(Entity entity) const noexcept
+    {
+        auto trans = _scene->getComponent<const Transform>(entity);
+        auto proj = getLightProjMatrix(trans);
+        if (trans)
+        {
+            proj *= trans->getWorldInverse();
+        }
+
+        auto caps = bgfx::getCaps();
+        const float sy = caps->originBottomLeft ? 0.5f : -0.5f;
+        const float sz = caps->homogeneousDepth ? 0.5f : 1.0f;
+        const float tz = caps->homogeneousDepth ? 0.5f : 0.0f;
+        glm::mat4 crop
+        {
+            0.5f, 0.0f, 0.0f, 0.0f,
+            0.0f,   sy, 0.0f, 0.0f,
+            0.0f, 0.0f, sz,   0.0f,
+            0.5f, 0.5f, tz,   1.0f,
+        };
+
+        return crop * proj;
     }
 
     void ShadowRenderer::renderReset() noexcept
@@ -165,14 +188,12 @@ namespace darmok
         auto entity = _lightsByViewId[viewId];      
 
         const void* viewPtr = nullptr;
-        Frustum frust = _frustum;
+        glm::mat4 proj = _camProjView;
         if(auto trans = _scene->getComponent<const Transform>(entity))
         {
-            auto& view = trans->getWorldInverse();
-            viewPtr = glm::value_ptr(view);
-            frust *= view;
+            viewPtr = glm::value_ptr(trans->getWorldInverse());
+            proj = getLightProjMatrix(trans);
         }
-        auto proj = frust.getBoundingBox().getOrtho();
         bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(proj));
 
         renderEntities(viewId, encoder);
@@ -215,8 +236,8 @@ namespace darmok
         : _renderer(renderer)
         , _shadowMapUniform{ bgfx::kInvalidHandle }
         , _shadowMapDataUniform{ bgfx::kInvalidHandle }
-        , _lightTransUniform{ bgfx::kInvalidHandle }
-        , _lightTrans(1)
+        , _lightMapTransUniform{ bgfx::kInvalidHandle }
+        , _lightMapTrans(1)
     {
     }
 
@@ -226,13 +247,13 @@ namespace darmok
         _scene = scene;
         _shadowMapUniform = bgfx::createUniform("s_shadowMap", bgfx::UniformType::Sampler);
         _shadowMapDataUniform = bgfx::createUniform("u_shadowMapData", bgfx::UniformType::Vec4);
-        _lightTransUniform = bgfx::createUniform("u_dirLightTrans", bgfx::UniformType::Mat4);
+        _lightMapTransUniform = bgfx::createUniform("u_dirLightTrans", bgfx::UniformType::Mat4);
     }
 
     void ShadowRenderComponent::shutdown() noexcept
     {
         std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
-            _shadowMapUniform, _shadowMapDataUniform, _lightTransUniform
+            _shadowMapUniform, _shadowMapDataUniform, _lightMapTransUniform
         };
         for (auto& uniform : uniforms)
         {
@@ -251,7 +272,7 @@ namespace darmok
         auto view = _cam->createEntityView<DirectionalLight>();
         for (auto& entity : view)
         {
-            _lightTrans = _renderer.getLightMatrix(entity);
+            _lightMapTrans = _renderer.getLightMapMatrix(entity);
             break;
         }
     }
@@ -273,7 +294,7 @@ namespace darmok
     void ShadowRenderComponent::configureUniforms(IRenderGraphContext& context) const noexcept
     {
         auto& encoder = context.getEncoder();
-        encoder.setUniform(_lightTransUniform, glm::value_ptr(_lightTrans));
+        encoder.setUniform(_lightMapTransUniform, glm::value_ptr(_lightMapTrans));
 
         if (auto tex = context.getResources().get<Texture>("shadow"))
         {

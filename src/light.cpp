@@ -366,10 +366,11 @@ namespace darmok
         encoder.setBuffer(RenderSamplers::LIGHTS_DIR, _dirLightBuffer, bgfx::Access::Read);
         encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
 
+        glm::mat3 normalMatrix(1);
         if (auto trans = _scene->getComponent<Transform>(entity))
         {
-            auto mtx = glm::transpose(glm::adjugate(glm::mat3(trans->getWorldMatrix())));
-            encoder.setUniform(_normalMatrixUniform, glm::value_ptr(mtx));
+            normalMatrix = glm::transpose(glm::adjugate(glm::mat3(trans->getWorldMatrix())));
         }
+        encoder.setUniform(_normalMatrixUniform, glm::value_ptr(normalMatrix));
     }
 }
