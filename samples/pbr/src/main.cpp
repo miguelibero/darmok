@@ -133,7 +133,7 @@ namespace
 
 				camTrans.update();
 				auto& camView = camTrans.getWorldInverse();
-				auto camProjView = glm::perspective(glm::radians(60.F), getWindow().getAspect(), 0.3F, 2.F);
+				auto camProjView = glm::perspective(glm::radians(60.F), getWindow().getAspect(), 0.3F, 5.F);
 				// auto camProjView = cam.getProjectionMatrix();
 				camProjView = camProjView * camView;
 				dirLightTrans.update();

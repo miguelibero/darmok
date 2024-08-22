@@ -214,6 +214,7 @@ namespace darmok
     ShadowRenderComponent::ShadowRenderComponent(ShadowRenderer& renderer) noexcept
         : _renderer(renderer)
         , _shadowMapUniform{ bgfx::kInvalidHandle }
+        , _shadowMapDataUniform{ bgfx::kInvalidHandle }
         , _lightTransUniform{ bgfx::kInvalidHandle }
         , _lightTrans(1)
     {
@@ -224,13 +225,14 @@ namespace darmok
         _cam = cam;
         _scene = scene;
         _shadowMapUniform = bgfx::createUniform("s_shadowMap", bgfx::UniformType::Sampler);
+        _shadowMapDataUniform = bgfx::createUniform("u_shadowMapData", bgfx::UniformType::Vec4);
         _lightTransUniform = bgfx::createUniform("u_dirLightTrans", bgfx::UniformType::Mat4);
     }
 
     void ShadowRenderComponent::shutdown() noexcept
     {
         std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
-            _shadowMapUniform, _lightTransUniform
+            _shadowMapUniform, _shadowMapDataUniform, _lightTransUniform
         };
         for (auto& uniform : uniforms)
         {
@@ -272,8 +274,12 @@ namespace darmok
     {
         auto& encoder = context.getEncoder();
         encoder.setUniform(_lightTransUniform, glm::value_ptr(_lightTrans));
+
         if (auto tex = context.getResources().get<Texture>("shadow"))
         {
+            auto texelSize = glm::vec2(1.F) / glm::vec2(tex->getSize());
+            glm::vec4 smData(texelSize, 0, 0);
+            encoder.setUniform(_shadowMapDataUniform, glm::value_ptr(smData));
             encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, tex->getHandle());
         }
     }

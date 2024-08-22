@@ -60,6 +60,7 @@ namespace darmok
         OptionalRef<Scene> _scene;
         bgfx::UniformHandle _lightTransUniform;
         bgfx::UniformHandle _shadowMapUniform;
+        bgfx::UniformHandle _shadowMapDataUniform;
         glm::mat4 _lightTrans;
 
         void configureUniforms(IRenderGraphContext& context) const noexcept;

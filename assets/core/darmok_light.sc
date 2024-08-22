@@ -31,7 +31,6 @@ struct DirectionalLight
 {
     vec3 direction;
     vec3 intensity;
-    mat4 trans;
 };
 
 struct AmbientLight
