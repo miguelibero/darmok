@@ -7,6 +7,8 @@
 #include <darmok/light.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
+#include <darmok/shape.hpp>
+#include <darmok/material.hpp>
 #include "generated/shadow.program.h"
 #include "render_samplers.hpp"
 
@@ -15,7 +17,6 @@ namespace darmok
     ShadowRenderer::ShadowRenderer(const glm::uvec2& mapSize) noexcept
         : _mapSize(mapSize)
         , _shadowFb{ bgfx::kInvalidHandle }
-        , _camOrtho(1)
     {
     }
 
@@ -50,6 +51,7 @@ namespace darmok
             + pointView.size_hint()
             + spotView.size_hint()
         );
+
         for (auto entity : dirView)
         {
             lights.push_back(entity);
@@ -61,15 +63,6 @@ namespace darmok
         for (auto entity : spotView)
         {
             lights.push_back(entity);
-        }
-
-        _lightTransforms.clear();
-        for (auto entity : lights)
-        {
-            if (auto trans = _scene->getComponent<const Transform>(entity))
-            {
-                _lightTransforms[entity] = trans->getWorldInverse();
-            }
         }
 
         if (_lights == lights)
@@ -95,19 +88,25 @@ namespace darmok
             return;
         }
 
-        auto bb = _cam->getFrustum().getBoundingBox();
-        _camOrtho = bb.getOrtho();
+        auto camProjView = _cam->getProjectionMatrix();
+        if (auto trans = _cam->getTransform())
+        {
+            camProjView *= trans->getWorldInverse();
+        }
+        _frustum = camProjView;
     }
 
     glm::mat4 ShadowRenderer::getLightMatrix(Entity entity) const noexcept
     {
-        glm::mat4 mat = _camOrtho;
-        auto itr = _lightTransforms.find(entity);
-        if (itr != _lightTransforms.end())
+        auto trans = _scene->getComponent<const Transform>(entity);
+        if (!trans)
         {
-            mat = mat * itr->second;
+            return _frustum.getBoundingBox().getOrtho();
         }
-        return mat;
+        auto& view = trans->getWorldInverse();
+        Frustum frustum = _frustum * view;
+        auto proj = frustum.getBoundingBox().getOrtho();
+        return proj * view;
     }
 
     void ShadowRenderer::renderReset() noexcept
@@ -166,12 +165,15 @@ namespace darmok
         auto entity = _lightsByViewId[viewId];      
 
         const void* viewPtr = nullptr;
-        auto itr = _lightTransforms.find(entity);
-        if (itr != _lightTransforms.end())
+        Frustum frust = _frustum;
+        if(auto trans = _scene->getComponent<const Transform>(entity))
         {
-            viewPtr = glm::value_ptr(itr->second);
+            auto& view = trans->getWorldInverse();
+            viewPtr = glm::value_ptr(view);
+            frust *= view;
         }
-        bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(_camOrtho));
+        auto proj = frust.getBoundingBox().getOrtho();
+        bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(proj));
 
         renderEntities(viewId, encoder);
         context.getResources().setRef<Texture>(*_shadowTex, "shadow");
@@ -191,6 +193,10 @@ namespace darmok
         {
             auto renderable = _scene->getComponent<const Renderable>(entity);
             if (!renderable->valid())
+            {
+                continue;
+            }
+            if (renderable->getMaterial()->getPrimitiveType() == MaterialPrimitiveType::Line)
             {
                 continue;
             }

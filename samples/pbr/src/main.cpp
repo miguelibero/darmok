@@ -61,7 +61,7 @@ namespace
 				.lookAt({ 0, 0, 0 });
 
 			auto& cam = scene.addComponent<Camera>(camEntity)
-				.setWindowPerspective(60, 0.3, 10);
+				.setWindowPerspective(60, 0.3, 20);
 			
 			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>();
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
@@ -73,21 +73,23 @@ namespace
 			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
 
+			std::shared_ptr<IMesh> lightMesh = MeshData(Sphere(0.01)).createMesh(unlitProg->getVertexLayout());
+
 			/*
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
 			auto lightEntity = scene.createEntity();
 			auto& lightTrans = scene.addComponent<Transform>(lightEntity, lightRootTrans, glm::vec3{ 0, 1, 0 });
-			std::shared_ptr<IMesh> lightMesh = MeshData(Sphere(0.01)).createMesh(unlitProg->getVertexLayout());
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 1);
 			*/
 
 			auto dirLightEntity = scene.createEntity();
-			scene.addComponent<Transform>(dirLightEntity, glm::vec3{ 0, 4, -4 })
+			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -1, 1, -1 })
 				.lookAt(glm::vec3(0, 0, 0));
-			scene.addComponent<DirectionalLight>(dirLightEntity, 0.1);
+			scene.addComponent<DirectionalLight>(dirLightEntity, 0.2);
+			scene.addComponent<Renderable>(dirLightEntity, lightMesh, debugMat);
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
@@ -114,30 +116,42 @@ namespace
 			_trans = scene.addComponent<Transform>(sphere, glm::vec3{ -1.F, 0, 0 });
 
 			auto floorEntity = scene.createEntity();
-			Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
+			Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 2));
 			auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::red());
 
-			/*
 			{
+				auto addDebugShape = [&scene, unlitProg]<typename T>(const T& shape, const Color& color)
+				{
+					auto mesh = MeshData(shape, RectangleMeshType::Outline)
+						.createMesh(unlitProg->getVertexLayout());
+					auto entity = scene.createEntity();
+					auto mat = std::make_shared<Material>(unlitProg, color);
+					mat->setPrimitiveType(MaterialPrimitiveType::Line);
+					scene.addComponent<Renderable>(entity, std::move(mesh), mat);
+				};
+
 				camTrans.update();
-				auto frust = cam.getFrustum();
-				auto frustMesh = MeshData(frust, RectangleMeshType::Outline).createMesh(unlitProg->getVertexLayout());
-				BoundingBox bb = frust;
-				bb.expand(glm::vec3(2));
-				auto bbMesh = MeshData(bb, RectangleMeshType::Outline).createMesh(unlitProg->getVertexLayout());
+				auto& camView = camTrans.getWorldInverse();
+				auto camProjView = glm::perspective(glm::radians(60.F), getWindow().getAspect(), 0.3F, 2.F);
+				// auto camProjView = cam.getProjectionMatrix();
+				camProjView = camProjView * camView;
+				dirLightTrans.update();
+				auto& lightView = dirLightTrans.getWorldInverse();
 
-				auto frustEntity = scene.createEntity();
-				auto frustMat = std::make_shared<Material>(unlitProg, Colors::magenta());
-				frustMat->setPrimitiveType(MaterialPrimitiveType::Line);
-				scene.addComponent<Renderable>(frustEntity, std::move(frustMesh), frustMat);
-
-				auto bbEntity = scene.createEntity();
-				auto bbMat = std::make_shared<Material>(unlitProg, Colors::magenta());
-				bbMat->setPrimitiveType(MaterialPrimitiveType::Line);
-				scene.addComponent<Renderable>(bbEntity, std::move(bbMesh), bbMat);
+				Frustum frust(camProjView);
+				Frustum frust2 = frust * lightView;
+				BoundingBox bb = frust2.getBoundingBox();
+				Frustum frust3 = bb.getOrtho();
+				Frustum frust4 = frust3 * dirLightTrans.getWorldMatrix();
+				// Frustum frust5 = bb.getOrtho() * dirLightTrans.getWorldInverse();
+				
+				addDebugShape(frust, Colors::magenta());
+				// addDebugShape(frust2, Colors::red());
+				// addDebugShape(frust3, Colors::green());
+				addDebugShape(frust4, Colors::blue());
+				// addDebugShape(frust5, Colors::cyan());
 			}
-			*/
 		}
 
 		void update(float deltaTime) override

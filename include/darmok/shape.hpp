@@ -277,10 +277,16 @@ namespace darmok
         BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
 
         BoundingBox& operator+=(const BoundingBox& bb) noexcept;
-        BoundingBox operator+(const BoundingBox& bb) noexcept;
+        BoundingBox operator+(const BoundingBox& bb) const noexcept;
 
         BoundingBox operator*(const glm::mat4& trans) const noexcept;
         BoundingBox& operator*=(const glm::mat4& trans) noexcept;
+
+        BoundingBox& operator+=(const glm::vec3& v) noexcept;
+        BoundingBox operator+(const glm::vec3& v) const noexcept;
+
+        BoundingBox& operator-=(const glm::vec3& v) noexcept;
+        BoundingBox operator-(const glm::vec3& v) const noexcept;
 
         BoundingBox& expand(const glm::vec3& size) noexcept;
         BoundingBox& contract(const glm::vec3& size) noexcept;
@@ -323,12 +329,15 @@ namespace darmok
         const glm::vec3& getCorner(Frustum::Corner corner) const noexcept;
         glm::vec3& getCorner(Frustum::Corner corner) noexcept;
 
-        Frustum(const glm::mat4& proj);
+        Frustum(const glm::mat4& proj = glm::mat4(1));
 
         std::string toString() const noexcept;
 
         BoundingBox getBoundingBox() const noexcept;
         operator BoundingBox() const noexcept;
+
+        Frustum operator*(const glm::mat4& trans) const noexcept;
+        Frustum& operator*=(const glm::mat4& trans) noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)

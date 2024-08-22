@@ -38,7 +38,7 @@ void main()
 		diffuse += phongDiffuse(lightDir, norm, light.intensity);
 		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
 
-		shadowFactor += hardShadow(u_dirLightTrans, v_position);
+		shadowFactor += hardShadow(u_dirLightTrans, fragPos);
 	}
 
 	ambient *= mat.diffuse;

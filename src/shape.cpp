@@ -6,6 +6,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/norm.hpp>
 #include <bx/bx.h>
+#include <bgfx/bgfx.h>
 
 namespace darmok
 {
@@ -470,11 +471,39 @@ namespace darmok
         return *this;
     }
 
-    BoundingBox BoundingBox::operator+(const BoundingBox& bb) noexcept
+    BoundingBox BoundingBox::operator+(const BoundingBox& bb) const noexcept
     {
         BoundingBox sum = *this;
         sum += bb;
         return sum;
+    }
+
+    BoundingBox& BoundingBox::operator+=(const glm::vec3& v) noexcept
+    {
+        min += v;
+        max += v;
+        return *this;
+    }
+
+    BoundingBox BoundingBox::operator+(const glm::vec3& v) const noexcept
+    {
+        BoundingBox r = *this;
+        r += v;
+        return r;
+    }
+
+    BoundingBox& BoundingBox::operator-=(const glm::vec3& v) noexcept
+    {
+        min -= v;
+        max -= v;
+        return *this;
+    }
+
+    BoundingBox BoundingBox::operator-(const glm::vec3& v) const noexcept
+    {
+        BoundingBox r = *this;
+        r -= v;
+        return r;
     }
 
     BoundingBox BoundingBox::operator*(const glm::mat4& trans) const noexcept
@@ -500,12 +529,12 @@ namespace darmok
 
     BoundingBox& BoundingBox::operator*=(const glm::mat4& trans) noexcept
     {
-        BoundingBox bb(
-            glm::vec3(bx::kFloatInfinity),
-            glm::vec3(-bx::kFloatInfinity)
-        );
+        auto corners = getCorners();
 
-        for (auto corner : getCorners())
+        min = glm::vec3(bx::kFloatInfinity);
+        max = glm::vec3(-bx::kFloatInfinity);
+
+        for (auto& corner : corners)
         {
             corner = trans * glm::vec4(corner, 1.0f);
             min = glm::min(min, corner);
@@ -558,26 +587,26 @@ namespace darmok
 
     Frustum::Frustum(const glm::mat4& proj)
     {
-        static const std::vector<glm::vec4> normCorners = {
-            glm::vec4(-1, -1, -1, 1),
-            glm::vec4( 1, -1, -1, 1), 
-            glm::vec4(-1,  1, -1, 1),
-            glm::vec4( 1,  1, -1, 1), 
-            glm::vec4(-1, -1,  1, 1),
-            glm::vec4( 1, -1,  1, 1), 
-            glm::vec4(-1,  1,  1, 1),
-            glm::vec4( 1,  1,  1, 1)
+        auto hd = bgfx::getCaps()->homogeneousDepth;
+        auto nd = hd ? -1 : 0;
+
+        corners = {
+            glm::vec3(-1, -1, nd),
+            glm::vec3( 1, -1, nd), 
+            glm::vec3(-1,  1, nd),
+            glm::vec3( 1,  1, nd), 
+            glm::vec3(-1, -1,  1),
+            glm::vec3( 1, -1,  1), 
+            glm::vec3(-1,  1,  1),
+            glm::vec3( 1,  1,  1)
         };
 
         auto invProj = glm::inverse(proj);
 
-        size_t i = 0;
-        for (auto corner : normCorners)
+        for (auto& corner : corners)
         {
-            corner = invProj * corner;
-            corner /= corner.w;
-            corners[i] = corner;
-            ++i;
+            auto tcorner = invProj * glm::vec4(corner, 1.0);
+            corner = tcorner / tcorner.w;
         }
     }
 
@@ -619,5 +648,21 @@ namespace darmok
             return glm::to_string(corner);
         });
         return str + ")";
+    }
+
+    Frustum Frustum::operator*(const glm::mat4& trans) const noexcept
+    {
+        Frustum r(*this);
+        r *= trans;
+        return r;
+    }
+
+    Frustum& Frustum::operator*=(const glm::mat4& trans) noexcept
+    {
+        for (auto& corner : corners)
+        {
+            corner = trans * glm::vec4(corner, 1.0f);
+        }
+        return *this;
     }
 }

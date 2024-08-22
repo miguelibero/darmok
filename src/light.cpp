@@ -254,8 +254,6 @@ namespace darmok
 
         uint32_t index = 0;
 
-        auto camOrtho = _cam->getFrustum().getBoundingBox().getOrtho();
-
         for (auto entity : lights)
         {
             auto& light = _scene->getComponent<const DirectionalLight>(entity).value();

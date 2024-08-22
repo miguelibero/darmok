@@ -6,6 +6,7 @@
 #include <darmok/texture_atlas.hpp>
 #include <darmok/program.hpp>
 #include <darmok/camera.hpp>
+#include <darmok/shape.hpp>
 
 namespace darmok
 {

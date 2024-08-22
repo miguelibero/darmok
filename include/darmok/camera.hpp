@@ -10,7 +10,6 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/entity_filter.hpp>
-#include <darmok/shape.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/render_graph.hpp>
 
@@ -21,6 +20,7 @@ namespace darmok
     class Transform;
     class IRenderer;
     class Scene;
+    struct Ray;
 
     class DARMOK_EXPORT Camera final
     {
@@ -111,8 +111,6 @@ namespace darmok
         glm::vec3 viewportToWorldPoint(const glm::vec3& point) const noexcept;
         glm::vec3 viewportToScreenPoint(const glm::vec3& point) const noexcept;
         glm::vec3 screenToViewportPoint(const glm::vec3& point) const noexcept;
-
-        Frustum getFrustum() const noexcept;
 
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;

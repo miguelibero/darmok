@@ -5,11 +5,13 @@
 #include <darmok/export.h>
 #include <darmok/render.hpp>
 #include <darmok/render_graph.hpp>
+#include <darmok/shape.hpp>
 
 namespace darmok
 {
     class Program;
     class Texture;
+    class Transform;
 
     class DARMOK_EXPORT ShadowRenderer final : public IRenderer, public IRenderPass
     {
@@ -35,8 +37,7 @@ namespace darmok
         bgfx::FrameBufferHandle _shadowFb;
         std::vector<Entity> _lights;
         std::unordered_map<bgfx::ViewId, Entity> _lightsByViewId;
-        glm::mat4 _camOrtho;
-        std::unordered_map<Entity, glm::mat4> _lightTransforms;
+        Frustum _frustum;
 
         bool updateLights() noexcept;
         void updateCamera() noexcept;
