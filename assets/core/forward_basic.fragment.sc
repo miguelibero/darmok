@@ -15,6 +15,8 @@ void main()
 	vec3 norm = normalize(v_normal);
 	vec3 fragPos = v_position;
 	vec3 viewDir = v_viewDir;
+
+	vec2 shadowMapTexelSize = u_shadowMapData.xy;
 	float visibility = 0;
 
 	uint pointLights = pointLightCount();
@@ -27,20 +29,20 @@ void main()
 		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
 	}
 
-	float shadowMapBias = 0.005;
-	vec2 shadowMapTexelSize = u_shadowMapData.xy;
-
 	uint dirLights = dirLightCount();
     for(uint i = 0; i < dirLights; i++)
     {
 		DirectionalLight light = getDirLight(i);
 		vec3 lightDir = -light.direction;
 
+
 		diffuse += phongDiffuse(lightDir, norm, light.intensity);
 		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
 
+		float shadowBias = max(0.05 * (1.0 - dot(norm, lightDir)), 0.005);  
 		vec4 shadowCoord = mul(u_dirLightTrans, vec4(fragPos, 1.0));
-		visibility += PCF(s_shadowMap, shadowCoord, shadowMapBias, shadowMapTexelSize);
+		// visibility += hardShadow(s_shadowMap, shadowCoord, shadowBias);
+		visibility += PCF(s_shadowMap, shadowCoord, shadowBias, shadowMapTexelSize);
 	}
 
 	ambient *= mat.diffuse;

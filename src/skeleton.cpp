@@ -62,7 +62,8 @@ namespace darmok
             {
                 layout = MeshData::getDefaultVertexLayout();
             }
-            _boneMesh = MeshData(Line(), LineMeshType::Diamond).createMesh(layout);
+            Line line(glm::vec3(0), glm::vec3(1, 0, 0));
+            _boneMesh = MeshData(line, LineMeshType::Arrow).createMesh(layout);
         }
     }
 

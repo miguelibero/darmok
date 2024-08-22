@@ -23,7 +23,7 @@ namespace darmok
 		, _emissiveColor(Colors::black3())
 		, _multipleScattering(false)
 		, _whiteFurnance(0.F)
-		, _opacity(Opacity::Opaque)
+		, _opacity(Opacity::Transparent)
 		, _shininess(32)
 		, _twoSided(false)
 	{
@@ -350,6 +350,8 @@ namespace darmok
 		if (mat.getOpacity() == MaterialOpacity::Transparent)
 		{
 			state |= BGFX_STATE_BLEND_ALPHA;
+			state &= ~BGFX_STATE_DEPTH_TEST_MASK;
+			state |= BGFX_STATE_DEPTH_TEST_LEQUAL;
 		}
 		encoder.setState(state);
 		encoder.submit(viewId, mat.getProgramHandle());

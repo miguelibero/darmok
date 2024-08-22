@@ -696,7 +696,7 @@ namespace darmok
     }
 
 	 MeshData::MeshData(const Ray& ray) noexcept
-		 : MeshData(ray.toLine(), LineMeshType::Diamond)
+		 : MeshData(ray.toLine(), LineMeshType::Arrow)
 	 {
 	 }
 
@@ -709,11 +709,13 @@ namespace darmok
 			return;
 		}
 		static const float kInter = .2f;
+		
 		static const std::vector<glm::vec3> pos = {
-			{ 1.f, 0.f, 0.f		}, { kInter, .1f, .1f },
-			{ kInter, .1f, -.1f }, { kInter, -.1f, -.1f },
-			{ kInter, -.1f, .1f }, { 0.f, 0.f, 0.f }
+			{  0.f,  0.f, 1.f    }, {  .1f,  .1f, kInter },
+			{ -.1f,  .1f, kInter }, { -.1f, -.1f, kInter },
+			{  .1f, -.1f, kInter }, {  0.f,  0.f, 0.f }
 		};
+
 		static const std::vector<glm::vec2> tex = {
 			{ 0.f, 0.f	}, { .1f, .1f },
 			{ .1f, -.1f }, { -.1f, -.1f },
@@ -731,6 +733,14 @@ namespace darmok
 				{ pos[5], tex[1] }, { pos[4], tex[5] }, { pos[1], tex[1] }
 			}
 		};
+
+		auto trans = line.getTransform();
+
+		for (auto& vertex : vertices)
+		{
+			vertex.position = trans * glm::vec4(vertex.position, 1.0);
+		}
+
 		calcNormals();
 		calcTangents();
 	}

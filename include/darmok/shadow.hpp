@@ -15,7 +15,7 @@ namespace darmok
     class DARMOK_EXPORT ShadowRenderer final : public IRenderer, public IRenderPass
     {
     public:
-        ShadowRenderer(const glm::uvec2& mapSize = glm::uvec2(512)) noexcept;
+        ShadowRenderer(const glm::uvec2& mapSize = glm::uvec2(512), const glm::vec3& mapMargin = glm::vec3(0.01F)) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void update(float deltaTime) override;
         void renderReset() noexcept override;
@@ -28,6 +28,7 @@ namespace darmok
         glm::mat4 getLightMapMatrix(Entity entity) const noexcept;
     private:
         glm::uvec2 _mapSize;
+        glm::vec3 _mapMargin;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;

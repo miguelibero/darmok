@@ -421,6 +421,17 @@ namespace darmok
         return glm::closestPointOnLine(p, points[0], points[1]);
     }
 
+    glm::mat4 Line::getTransform(const glm::vec3& forward) const noexcept
+    {
+        auto diff = points[1] - points[0];
+        auto len = glm::length(diff);
+        auto trans = glm::translate(glm::mat4(len), points[0]);
+        auto rot = Math::dirQuat(diff / len);
+        trans *= glm::mat4_cast(rot);
+
+        return trans;
+    }
+
     Capsule::Capsule(float cylinderHeight, float radius, const glm::vec3& origin) noexcept
         : cylinderHeight(cylinderHeight)
         , radius(radius)
@@ -573,6 +584,11 @@ namespace darmok
     bool BoundingBox::empty() const noexcept
     {
         return glm::distance2(min, max) == 0.F;
+    }
+
+    glm::vec3 BoundingBox::size() const noexcept
+    {
+        return max - min;
     }
 
     std::string BoundingBox::toString() const noexcept

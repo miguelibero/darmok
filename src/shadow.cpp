@@ -1,4 +1,4 @@
-#include <darmok/render_shadow.hpp>
+#include <darmok/shadow.hpp>
 #include <darmok/render_graph.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/program.hpp>
@@ -14,8 +14,9 @@
 
 namespace darmok
 {
-    ShadowRenderer::ShadowRenderer(const glm::uvec2& mapSize) noexcept
+    ShadowRenderer::ShadowRenderer(const glm::uvec2& mapSize, const glm::vec3& mapMargin) noexcept
         : _mapSize(mapSize)
+        , _mapMargin(mapMargin)
         , _shadowFb{ bgfx::kInvalidHandle }
         , _camProjView(1)
     {
@@ -36,7 +37,12 @@ namespace darmok
         texConfig.format = bgfx::TextureFormat::D16;
         // texConfig.type = TextureType::CubeMap;
 
-        _shadowTex = std::make_unique<Texture>(texConfig, BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL);
+        _shadowTex = std::make_unique<Texture>(texConfig,
+            BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
+            BGFX_SAMPLER_MAG_POINT | 
+            BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
+            BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(1)
+        );
         _shadowFb = bgfx::createFrameBuffer(1, &_shadowTex->getHandle());
 
         updateLights();
@@ -105,8 +111,11 @@ namespace darmok
 
         Frustum frust = _camProjView * trans->getWorldMatrix();
         BoundingBox bb = frust.getBoundingBox();
+        bb.expand(_mapMargin * bb.size());
         return bb.getOrtho();
     }
+
+    // https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
 
     glm::mat4 ShadowRenderer::getLightMapMatrix(Entity entity) const noexcept
     {
@@ -204,7 +213,7 @@ namespace darmok
     {
         static const uint64_t renderState =
             BGFX_STATE_WRITE_Z
-            | BGFX_STATE_DEPTH_TEST_LESS
+            | BGFX_STATE_DEPTH_TEST_LEQUAL
             | BGFX_STATE_CULL_CCW
             | BGFX_STATE_MSAA
             ;

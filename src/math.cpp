@@ -137,4 +137,24 @@ namespace darmok
 
         return target;
     }
+
+    glm::quat Math::dirQuat(const glm::vec3& dir, const glm::vec3& forward) noexcept
+    {
+        float dot = glm::dot(forward, dir);
+
+        if (dot < -0.9999f)
+        {
+            glm::vec3 up(0.0f, 1.0f, 0.0f);
+            glm::vec3 orthoAxis = glm::cross(forward, up);
+            if (glm::length(orthoAxis) < 1e-6)
+            {
+                orthoAxis = glm::cross(forward, glm::vec3(1.0f, 0.0f, 0.0f));
+            }
+            return glm::angleAxis(glm::pi<float>(), orthoAxis);
+        }
+
+        glm::vec3 rotAxis = glm::cross(forward, dir);
+        float rotAngle = acos(dot);
+        return glm::angleAxis(rotAngle, rotAxis);
+    }
 }

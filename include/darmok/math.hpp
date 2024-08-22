@@ -59,6 +59,8 @@ namespace darmok
 		static glm::vec3 moveTowards(const glm::vec3& current, const glm::vec3& target, float maxDistanceDelta) noexcept;
 		static glm::vec3 rotateTowards(const glm::vec3& current, const glm::vec3& target, float maxRadiansDelta, float maxDistanceDelta) noexcept;
 		static glm::quat rotateTowards(const glm::quat& current, const glm::quat& target, float maxRadiansDelta) noexcept;
+
+		static glm::quat dirQuat(const glm::vec3& dir, const glm::vec3& forward = glm::vec3(0, 0, 1)) noexcept;
 	};
 }
 

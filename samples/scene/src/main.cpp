@@ -15,6 +15,7 @@
 #include <darmok/material.hpp>
 #include <darmok/render.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/shape.hpp>
 
 namespace
 {
@@ -126,8 +127,7 @@ namespace
 				.setEntityComponentFilter<Culling2D>()
 				.addRenderer<ForwardRenderer>();
 
-			auto debugTexture = getAssets().getColorTextureLoader()(Colors::red());
-			_debugMaterial = std::make_shared<Material>(_prog, debugTexture);
+			_debugMaterial = std::make_shared<Material>(_prog, Colors::red());
 			_debugMaterial->setPrimitiveType(MaterialPrimitiveType::Line);
 
 			createBouncingSprite(scene);
@@ -144,7 +144,7 @@ namespace
 			float scale = 0.5;
 
 			MeshData meshData(Rectangle(tex->getSize()));
-			meshData.config.scale *= glm::vec3(0.5F);
+			meshData *= glm::vec3(0.5F);
 
 			auto mesh = meshData.createMesh(_prog->getVertexLayout());
 			auto mat = std::make_shared<Material>(_prog, tex);
@@ -153,7 +153,7 @@ namespace
 			auto spriteBorder = registry.create();
 			auto size = scale * glm::vec2(tex->getSize());
 			meshData = MeshData(Rectangle::standard(), RectangleMeshType::Outline);
-			meshData.config.scale = glm::vec3(size, 0);
+			meshData *= glm::vec3(size, 0);
 			auto debugMesh = meshData.createMesh(_prog->getVertexLayout());
 
 			registry.emplace<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);

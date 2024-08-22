@@ -26,7 +26,7 @@ namespace darmok
 
 		lua.new_enum<LineMeshType>("LineMeshType", {
 			{ "Line", LineMeshType::Line },
-			{ "Diamond", LineMeshType::Diamond }
+			{ "Arrow", LineMeshType::Arrow }
 		});
 
 		lua.new_usertype<MeshData>("MeshData",
@@ -70,7 +70,7 @@ namespace darmok
 					return MeshData(Rectangle(), type);
 				}
 			),
-			"new_bone", []() { return MeshData(Line(), LineMeshType::Diamond); },
+			"new_arrow", []() { return MeshData(Line(), LineMeshType::Arrow); },
 			"default_vertex_layout", sol::property(&MeshData::getDefaultVertexLayout),
 			"create_mesh", sol::overload(
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout)

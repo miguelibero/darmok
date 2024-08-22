@@ -182,7 +182,7 @@ set(SOURCES
   render.cpp
   render_forward.cpp
   render_deferred.cpp
-  render_shadow.cpp
+  shadow.cpp
   freelook.cpp
   text.cpp
 )
@@ -214,7 +214,7 @@ set(HEADERS
   render.hpp
   render_forward.hpp
   render_deferred.hpp
-  render_shadow.hpp
+  shadow.hpp
   freelook.hpp
   text_fwd.hpp
   text.hpp

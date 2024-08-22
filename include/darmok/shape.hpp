@@ -250,7 +250,7 @@ namespace darmok
         using Points = std::array<glm::vec3, 2>;
         Points points;
 
-        Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 1, 0)) noexcept;
+        Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 0, 1)) noexcept;
         Line(const Points& points) noexcept;
 
         std::string toString() const noexcept;
@@ -260,6 +260,8 @@ namespace darmok
         std::optional<std::array<NormalIntersection, 2>> intersect(const Sphere& sphere) const noexcept;
         std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
         glm::vec3 closestPoint(const glm::vec3& p);
+
+        glm::mat4 getTransform(const glm::vec3& forward = glm::vec3(0, 0, 1)) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -297,6 +299,7 @@ namespace darmok
         operator Cube() const noexcept;
 
         bool empty() const noexcept;
+        glm::vec3 size() const noexcept;
 
         std::string toString() const noexcept;
 
