@@ -72,6 +72,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
         * unlit, gui
         * basic phong
         * PBR metallic-roughness (point & ambient lights)
+    * cascaded shadow mapping
+        * directional lights
 * entity component scene using entt
     * transform, camera
 * sprites and spritesheets

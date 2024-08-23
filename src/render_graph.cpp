@@ -571,16 +571,26 @@ namespace darmok
         return _root.configureView(viewId);
     }
 
-    bgfx::Encoder& RenderGraph::getEncoder() noexcept
+    bgfx::Encoder& RenderGraph::getEncoder()
     {
         std::scoped_lock lock(_encoderMutex);
         auto id = std::this_thread::get_id();
         auto itr = _encoders.find(id);
+        bgfx::Encoder* encoder = nullptr;
         if (itr == _encoders.end())
         {
-            itr = _encoders.emplace(id, bgfx::begin()).first;
+            encoder = bgfx::begin(true);
+            _encoders.emplace(id, encoder);
         }
-        return *itr->second;
+        else
+        {
+            encoder = itr->second;
+        }
+        if (!encoder)
+        {
+            throw std::runtime_error("bgfx did not return an encoder");
+        }
+        return *encoder;
     }
 
     RenderGraphResources& RenderGraph::getResources() noexcept

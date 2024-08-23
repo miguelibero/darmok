@@ -292,6 +292,7 @@ namespace darmok
 
         BoundingBox& expand(const glm::vec3& size) noexcept;
         BoundingBox& contract(const glm::vec3& size) noexcept;
+        BoundingBox& snap(const glm::uvec2& size) noexcept;
 
         std::array<glm::vec3, 8> getCorners() const noexcept;
 
@@ -341,6 +342,7 @@ namespace darmok
 
         Frustum operator*(const glm::mat4& trans) const noexcept;
         Frustum& operator*=(const glm::mat4& trans) noexcept;
+
 
         template<class Archive>
         void serialize(Archive& archive)

@@ -18,10 +18,11 @@ namespace darmok
     ShadowRenderPass::ShadowRenderPass()
         : _fb{ bgfx::kInvalidHandle }
         , _lightEntity(entt::null)
+        , _cascade(-1)
     {
     }
 
-    bool ShadowRenderPass::setLightEntity(Entity entity) noexcept
+    bool ShadowRenderPass::configure(Entity entity) noexcept
     {
         if (_lightEntity == entity)
         {
@@ -31,12 +32,14 @@ namespace darmok
         return true;
     }
 
-    void ShadowRenderPass::init(ShadowRenderer& renderer, uint16_t index) noexcept
+    void ShadowRenderPass::init(ShadowRenderer& renderer, uint16_t index, uint8_t cascade) noexcept
     {
         _renderer = renderer;
+        _cascade = cascade;
 
         bgfx::Attachment at;
-        at.init(renderer.getTextureHandle(), bgfx::Access::Write, index);
+        auto i = (renderer.getConfig().cascadeAmount * index) + cascade;
+        at.init(renderer.getTextureHandle(), bgfx::Access::Write, i);
         _fb = bgfx::createFrameBuffer(1, &at);
     }
 
@@ -52,7 +55,13 @@ namespace darmok
 
     void ShadowRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
     {
-        def.setName("Shadow");
+        std::string name = "Shadow light ";
+        name += std::to_string(_lightEntity);
+        if (_cascade >= 0)
+        {
+            name += " cascade " + std::to_string(_cascade);
+        }
+        def.setName(name);
     }
 
     void ShadowRenderPass::renderPassConfigure(bgfx::ViewId viewId) noexcept
@@ -75,7 +84,7 @@ namespace darmok
         const void* viewPtr = nullptr;
         auto scene = _renderer->getScene();
         auto trans = scene->getComponent<const Transform>(_lightEntity);
-        auto proj = _renderer->getProjMatrix(trans);
+        auto proj = _renderer->getProjMatrix(trans, _cascade);
         if (trans)
         {
             viewPtr = glm::value_ptr(trans->getWorldInverse());
@@ -122,7 +131,6 @@ namespace darmok
 
     ShadowRenderer::ShadowRenderer(const Config& config) noexcept
         : _config(config)
-        , _camProjView(1)
     {
     }
 
@@ -138,23 +146,26 @@ namespace darmok
 
         TextureConfig texConfig;
         texConfig.size = _config.mapSize;
-        texConfig.layers = _config.maxLightAmount;
+        texConfig.layers = _config.maxLightAmount * _config.cascadeAmount;
         texConfig.format = bgfx::TextureFormat::D16;
 
-        _passes.resize(_config.maxLightAmount);
 
         _tex = std::make_unique<Texture>(texConfig,
             BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
-            BGFX_SAMPLER_MAG_POINT |
+            // BGFX_SAMPLER_MAG_POINT |
+            BGFX_SAMPLER_MAG_ANISOTROPIC |
             BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
             BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(0xFFFFFF)
         );
 
-        uint16_t i = 0;
-        for (auto& pass : _passes)
+        _passes.clear();
+        _passes.reserve(_config.maxLightAmount * _config.cascadeAmount);
+        for(uint16_t index = 0; index < _config.maxLightAmount; ++index)
         {
-            pass.init(*this, i);
-            ++i;
+            for (uint8_t casc = 0; casc < _config.cascadeAmount; ++casc)
+            {
+                _passes.emplace_back().init(*this, index, casc);
+            }
         }
     }
 
@@ -190,23 +201,33 @@ namespace darmok
             return;
         }
         auto view = _cam->createEntityView<DirectionalLight>();
+
         size_t i = 0;
         auto changed = false;
+        bool finished = false;
         for (auto entity : view)
         {
-            if (_passes[i].setLightEntity(entity))
+            for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
             {
-                changed = true;
+                if (_passes[i].configure(entity))
+                {
+                    changed = true;
+                }
+                ++i;
+                if (i >= _passes.size())
+                {
+                    finished = true;
+                    break;
+                }
             }
-            ++i;
-            if (i >= _passes.size())
+            if (finished)
             {
                 break;
             }
         }
         for (; i < _passes.size(); ++i)
         {
-            if (_passes[i].setLightEntity(entt::null))
+            if (_passes[i].configure())
             {
                 changed = true;
             }
@@ -223,23 +244,31 @@ namespace darmok
         {
             return;
         }
-        _camProjView = _cam->getProjectionMatrix();
-        if (auto trans = _cam->getTransform())
+        auto trans = _cam->getTransform();
+        _camProjViews.clear();
+        for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
         {
-            _camProjView *= trans->getWorldInverse();
+            auto mat = _cam->getProjectionMatrix();
+            if (trans)
+            {
+                mat *= trans->getWorldInverse();
+            }
+            _camProjViews.push_back(mat);
         }
     }
 
-    glm::mat4 ShadowRenderer::getProjMatrix(OptionalRef<const Transform> trans) const noexcept
+    glm::mat4 ShadowRenderer::getProjMatrix(OptionalRef<const Transform> trans, uint8_t cascade) const noexcept
     {
+        auto projView = _camProjViews[cascade % _camProjViews.size()];
         if (!trans)
         {
-            return _camProjView;
+            return projView;
         }
 
-        Frustum frust = _camProjView * trans->getWorldMatrix();
+        Frustum frust = projView * trans->getWorldMatrix();
         BoundingBox bb = frust.getBoundingBox();
         bb.expand(_config.mapMargin * bb.size());
+        bb.snap(_config.mapSize);
         return bb.getOrtho();
     }
 
@@ -269,11 +298,12 @@ namespace darmok
     }
 
     // https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
+    // https://learn.microsoft.com/en-us/windows/win32/dxtecharts/cascaded-shadow-maps
 
-    glm::mat4 ShadowRenderer::getMapMatrix(Entity entity) const noexcept
+    glm::mat4 ShadowRenderer::getMapMatrix(Entity entity, uint8_t cascade) const noexcept
     {
         auto trans = _scene->getComponent<const Transform>(entity);
-        auto proj = getProjMatrix(trans);
+        auto proj = getProjMatrix(trans, cascade);
         if (trans)
         {
             proj *= trans->getWorldInverse();
@@ -297,7 +327,7 @@ namespace darmok
     void ShadowRenderer::renderReset() noexcept
     {
         _renderGraph.clear();
-        _renderGraph.setName("Shadow");
+        _renderGraph.setName("Shadows");
         _renderGraph.getWriteResources().add<Texture>("shadow");
         for (auto& pass : _passes)
         {
@@ -358,19 +388,27 @@ namespace darmok
     void ShadowRenderComponent::update(float deltaTime) noexcept
     {
         auto lights = _cam->createEntityView<DirectionalLight>();
-        VertexDataWriter writer(_shadowTransLayout, uint32_t(lights.size_hint()));
+
+        auto cascadeAmount = _renderer.getConfig().cascadeAmount;
+        uint32_t size = lights.size_hint() * cascadeAmount;
+
+        VertexDataWriter writer(_shadowTransLayout, size);
         uint32_t index = 0;
 
         for (auto entity : lights)
         {
-            auto mtx = _renderer.getMapMatrix(entity);
-            // not sure why but the shader reads the data by rows
-            mtx = glm::transpose(mtx);
-            writer.write(bgfx::Attrib::Color0, index, mtx[0]);
-            writer.write(bgfx::Attrib::Color1, index, mtx[1]);
-            writer.write(bgfx::Attrib::Color2, index, mtx[2]);
-            writer.write(bgfx::Attrib::Color3, index, mtx[3]);
-            ++index;
+            for (auto casc = 0; casc < cascadeAmount; ++casc)
+            {
+                auto mtx = _renderer.getMapMatrix(entity, casc);
+                // not sure why but the shader reads the data by rows
+                mtx = glm::transpose(mtx);
+                writer.write(bgfx::Attrib::Color0, index, mtx[0]);
+                writer.write(bgfx::Attrib::Color1, index, mtx[1]);
+                writer.write(bgfx::Attrib::Color2, index, mtx[2]);
+                writer.write(bgfx::Attrib::Color3, index, mtx[3]);
+                ++index;
+            }
+
         }
         auto data = writer.finish();
         if (!data.empty())
@@ -399,8 +437,9 @@ namespace darmok
 
         encoder.setBuffer(RenderSamplers::SHADOW_TRANS, _shadowTransBuffer, bgfx::Access::Read);
 
-        auto texelSize = glm::vec2(1.F) / glm::vec2(_renderer.getConfig().mapSize);
-        glm::vec4 smData(texelSize, 0, 0);
+        auto& config = _renderer.getConfig();
+        auto texelSize = glm::vec2(1.F) / glm::vec2(config.mapSize);
+        glm::vec4 smData(texelSize, config.cascadeAmount, 0);
         encoder.setUniform(_shadowDataUniform, glm::value_ptr(smData));
 
         auto texHandle = _renderer.getTextureHandle();

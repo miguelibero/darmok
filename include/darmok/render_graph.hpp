@@ -423,7 +423,7 @@ namespace darmok
 
         void operator()(tf::Executor& executor) const;
 
-        bgfx::Encoder& getEncoder() noexcept;
+        bgfx::Encoder& getEncoder();
         Resources& getResources() noexcept;
         RenderGraphResources& getResources(RenderGraphId id) noexcept;
 

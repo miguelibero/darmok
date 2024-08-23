@@ -201,7 +201,7 @@ namespace darmok
 #ifdef DARMOK_MINIAUDIO
 		AudioSystem _audio;
 #endif
-		mutable tf::Executor _taskExecutor;
+		mutable std::optional<tf::Executor> _taskExecutor;
 		std::shared_ptr<tf::TFProfObserver> _taskObserver;
 
 		RenderGraphDefinition _renderGraphDef;

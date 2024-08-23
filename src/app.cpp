@@ -159,6 +159,7 @@ namespace darmok
 		, _updateConfig(AppUpdateConfig::getDefaultConfig())
 		, _plat(Platform::get())
 		, _window(_plat)
+		, _pixelSize(0)
 	{
 	}
 
@@ -214,12 +215,12 @@ namespace darmok
 
 	tf::Executor& AppImpl::getTaskExecutor() noexcept
 	{
-		return _taskExecutor;
+		return _taskExecutor.value();
 	}
 
 	const tf::Executor& AppImpl::getTaskExecutor() const noexcept
 	{
-		return _taskExecutor;
+		return _taskExecutor.value();
 	}
 
 #ifdef DARMOK_MINIAUDIO
@@ -290,6 +291,9 @@ namespace darmok
 
 		bgfxInit();
 
+		auto maxEncoders = bgfx::getCaps()->limits.maxEncoders;
+		_taskExecutor.emplace(maxEncoders - 1);
+
 		_input.getKeyboard().addListener(*this);
 		_assets.init(_app);
 		_audio.init();
@@ -319,7 +323,11 @@ namespace darmok
 
 	void AppImpl::shutdown()
 	{
-		_taskExecutor.wait_for_all();
+		if (_taskExecutor)
+		{
+			_taskExecutor->wait_for_all();
+			_taskExecutor.reset();
+		}
 
 		_running = false;
 		_renderGraph.reset();
@@ -390,9 +398,9 @@ namespace darmok
 
 	void AppImpl::render() const
 	{
-		if (_renderGraph)
+		if (_renderGraph && _taskExecutor)
 		{
-			_renderGraph.value()(_taskExecutor);
+			_renderGraph.value()(_taskExecutor.value());
 		}
 	}
 
@@ -489,9 +497,13 @@ namespace darmok
 
 	void AppImpl::toggleTaskflowProfile()
 	{
+		if (!_taskExecutor)
+		{
+			return;
+		}
 		if (_taskObserver == nullptr)
 		{
-			_taskObserver = _taskExecutor.make_observer<tf::TFProfObserver>();
+			_taskObserver = _taskExecutor->make_observer<tf::TFProfObserver>();
 			return;
 		}
 		std::filesystem::path basePath = "temp";

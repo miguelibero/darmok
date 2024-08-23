@@ -87,6 +87,7 @@ namespace
 			ShadowRendererConfig shadowConfig;
 			shadowConfig.mapSize = glm::vec2(512);
 			shadowConfig.mapMargin = glm::vec3(0.1);
+			shadowConfig.cascadeAmount = 2;
 			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
 			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
@@ -97,34 +98,23 @@ namespace
 			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
 
-			std::shared_ptr<IMesh> pointLightMesh = MeshData(Sphere(0.01))
-				.createMesh(unlitProg->getVertexLayout());
-			std::shared_ptr<IMesh> dirLightMesh = MeshData(Line(glm::vec3(0)), LineMeshType::Arrow)
-				.createMesh(unlitProg->getVertexLayout());
-
-			/*
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
 			auto lightEntity = scene.createEntity();
 			auto& lightTrans = scene.addComponent<Transform>(lightEntity, lightRootTrans, glm::vec3{ 0, 1, 0 });
-			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
-			scene.addComponent<PointLight>(lightEntity, 1);
-			*/
+			scene.addComponent<PointLight>(lightEntity, 0.5);
 
 			auto dirLightEntity = scene.createEntity();
 			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -1, 1, -1 })
 				.lookAt(glm::vec3(0, 0, 0));
-			scene.addComponent<DirectionalLight>(dirLightEntity, 0.6);
-			scene.addComponent<Renderable>(dirLightEntity, dirLightMesh, debugMat);
+			scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
 			scene.addSceneComponent<RotateUpdater>(dirLightTrans);
 
-			{
-				auto dirLightEntity2 = scene.createEntity();
-				auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity2, glm::vec3{ 1, 1, -1 })
-					.lookAt(glm::vec3(0, 0, 0));
-				scene.addComponent<DirectionalLight>(dirLightEntity2, 0.6);
-			}
+			auto dirLightEntity2 = scene.createEntity();
+			scene.addComponent<Transform>(dirLightEntity2, glm::vec3{ 1, 1, -1 })
+				.lookAt(glm::vec3(0, 0, 0));
+			scene.addComponent<DirectionalLight>(dirLightEntity2, 0.5);
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);

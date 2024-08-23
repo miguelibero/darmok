@@ -21,8 +21,6 @@ void main()
 
 #if DARMOK_VARIANT_SHADOW_ENABLED
 	float visibility = 0;
-#else
-	float visibility = 1;
 #endif
 
 	uint pointLights = pointLightCount();
@@ -45,8 +43,8 @@ void main()
 		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
 
 #if DARMOK_VARIANT_SHADOW_ENABLED
-		float shadowBias = max(0.05 * (1.0 - dot(norm, lightDir)), 0.005);  
-		visibility += PCF(i, fragPos, shadowBias);
+		float shadowBias = normalShadowBias(norm, lightDir);  
+		visibility += pcfShadow(i, fragPos, shadowBias);
 #endif
 	}
 
@@ -54,10 +52,12 @@ void main()
 	diffuse *= mat.diffuse;
 	specular *= mat.specular;
 
+	gl_FragColor.rgb = diffuse + specular;
+
 #if DARMOK_VARIANT_SHADOW_ENABLED
-	visibility /= float(dirLights);
+	gl_FragColor.rgb *= visibility / float(dirLights);
 #endif
 
-	gl_FragColor.rgb = ambient + visibility * (diffuse + specular);
+	gl_FragColor.rgb += ambient;
 	gl_FragColor.a = mat.diffuse.a;
 }

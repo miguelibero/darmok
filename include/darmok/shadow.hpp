@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <unordered_map>
+#include <vector>
 #include <darmok/export.h>
 #include <darmok/render.hpp>
 #include <darmok/render_graph.hpp>
@@ -17,15 +17,16 @@ namespace darmok
     {
     public:
         ShadowRenderPass();
-        void init(ShadowRenderer& renderer, uint16_t index) noexcept;
+        void init(ShadowRenderer& renderer, uint16_t index, uint8_t cascade) noexcept;
         void shutdown() noexcept;
-        bool setLightEntity(Entity entity) noexcept;
+        bool configure(Entity entity = entt::null) noexcept;
 
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
         void renderPassExecute(IRenderGraphContext& context) noexcept override;
     private:
         Entity _lightEntity;
+        uint8_t _cascade;
         bgfx::FrameBufferHandle _fb;
         OptionalRef<ShadowRenderer> _renderer;
 
@@ -36,7 +37,8 @@ namespace darmok
     {
         glm::uvec2 mapSize = glm::uvec2(512);
         glm::vec3 mapMargin = glm::vec3(0.01F);
-        uint16_t maxLightAmount = 16;
+        uint16_t maxLightAmount = 6;
+        uint8_t cascadeAmount = 3;
     };
 
     class DARMOK_EXPORT ShadowRenderer final : public IRenderer
@@ -49,8 +51,8 @@ namespace darmok
         void renderReset() noexcept override;
         void shutdown() noexcept override;
 
-        glm::mat4 getMapMatrix(Entity entity) const noexcept;
-        glm::mat4 getProjMatrix(OptionalRef<const Transform> trans) const noexcept;
+        glm::mat4 getMapMatrix(Entity entity, uint8_t cascade = 0) const noexcept;
+        glm::mat4 getProjMatrix(OptionalRef<const Transform> trans, uint8_t cascade = 0) const noexcept;
 
         const Config& getConfig() const noexcept;
         bgfx::ProgramHandle getProgramHandle() const noexcept;
@@ -68,7 +70,7 @@ namespace darmok
         std::unique_ptr<Texture> _tex;
         RenderGraphDefinition _renderGraph;
 
-        glm::mat4 _camProjView;
+        std::vector<glm::mat4> _camProjViews;
 
         void updateCamera() noexcept;
         void updateLights() noexcept;

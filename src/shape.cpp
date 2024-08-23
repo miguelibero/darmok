@@ -569,6 +569,18 @@ namespace darmok
         return *this;
     }
 
+    BoundingBox& BoundingBox::snap(const glm::uvec2& snapSize) noexcept
+    {
+        glm::vec2 min2(min);
+        glm::vec2 max2(max);
+        auto f = (max2 - min2) / glm::vec2(snapSize);
+        min2 = glm::floor(min2 / f) * f;
+        max2 = glm::floor(max2 / f) * f;
+        min = glm::vec3(min2, min.z);
+        max = glm::vec3(max2, max.z);
+        return *this;
+    }
+
     Cube BoundingBox::getCube() const noexcept
     {
         auto size = max - min;

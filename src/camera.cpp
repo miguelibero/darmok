@@ -273,14 +273,15 @@ namespace darmok
         const void* transMtx = nullptr;
         if (_scene)
         {
-            auto& registry = _scene->getRegistry();
-            auto trans = registry.try_get<const Transform>(entity);
-            if (trans != nullptr)
+            if (auto trans = _scene->getComponent<const Transform>(entity))
             {
                 transMtx = glm::value_ptr(trans->getWorldMatrix());
             }
         }
-        encoder.setTransform(transMtx);
+        if (transMtx)
+        {
+            encoder.setTransform(transMtx);
+        }
     }
 
     Camera& Camera::addRenderer(std::unique_ptr<IRenderer>&& renderer) noexcept
@@ -328,13 +329,13 @@ namespace darmok
         {
             return nullptr;
         }
-        auto& registry = _scene->getRegistry();
-        auto entity = entt::to_entity(registry.storage<Camera>(), *this);
+        ;
+        auto entity = _scene->getEntity(*this);
         if (entity == entt::null)
         {
             return nullptr;
         }
-        return registry.try_get<Transform>(entity);
+        return _scene->getComponent<Transform>(entity);
     }
 
     glm::mat4 Camera::getModelMatrix() const noexcept

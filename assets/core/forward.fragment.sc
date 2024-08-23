@@ -11,6 +11,10 @@ $input v_position, v_normal, v_tangent, v_texcoord0, v_viewDir
 #include <darmok_material.sc>
 #include <darmok_light.sc>
 
+#if DARMOK_VARIANT_SHADOW_ENABLED
+#include <darmok_shadow.sc>
+#endif
+
 void main()
 {
     Material mat = getMaterial(v_texcoord0);
@@ -32,8 +36,11 @@ void main()
     }
 
     vec3 msFactor = multipleScatteringFactor(mat, NoV);
-
     vec3 radianceOut = vec3_splat(0.0);
+
+#if DARMOK_VARIANT_SHADOW_ENABLED
+	float visibility = 0;
+#endif
 
     uint pointLights = pointLightCount();
     for(uint i = 0; i < pointLights; i++)
@@ -58,7 +65,16 @@ void main()
         vec3 radianceIn = light.intensity;
         float NoL = saturate(dot(N, L));
         radianceOut += BRDF(V, L, N, NoV, NoL, mat) * msFactor * radianceIn * NoL;
+
+#if DARMOK_VARIANT_SHADOW_ENABLED
+		float shadowBias = normalShadowBias(N, L);  
+		visibility += pcfShadow(i, fragPos, shadowBias);
+#endif
     }
+
+#if DARMOK_VARIANT_SHADOW_ENABLED
+    radianceOut *= visibility / dirLights;
+#endif
 
     radianceOut += getAmbientLight().irradiance * mat.diffuse * mat.occlusion;
     radianceOut += mat.emissive;
