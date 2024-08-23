@@ -15,10 +15,113 @@
 
 namespace darmok
 {
-    ShadowRenderer::ShadowRenderer(const glm::uvec2& mapSize, const glm::vec3& mapMargin) noexcept
-        : _mapSize(mapSize)
-        , _mapMargin(mapMargin)
-        , _shadowFb{ bgfx::kInvalidHandle }
+    ShadowRenderPass::ShadowRenderPass()
+        : _fb{ bgfx::kInvalidHandle }
+        , _lightEntity(entt::null)
+    {
+    }
+
+    bool ShadowRenderPass::setLightEntity(Entity entity) noexcept
+    {
+        if (_lightEntity == entity)
+        {
+            return false;
+        }
+        _lightEntity = entity;
+        return true;
+    }
+
+    void ShadowRenderPass::init(ShadowRenderer& renderer, uint16_t index) noexcept
+    {
+        _renderer = renderer;
+
+        bgfx::Attachment at;
+        at.init(renderer.getTextureHandle(), bgfx::Access::Write, index);
+        _fb = bgfx::createFrameBuffer(1, &at);
+    }
+
+    void ShadowRenderPass::shutdown() noexcept
+    {
+        if (isValid(_fb))
+        {
+            bgfx::destroy(_fb);
+            _fb.idx = bgfx::kInvalidHandle;
+        }
+        _renderer.reset();
+    }
+
+    void ShadowRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
+    {
+        def.setName("Shadow");
+    }
+
+    void ShadowRenderPass::renderPassConfigure(bgfx::ViewId viewId) noexcept
+    {
+        auto& size = _renderer->getConfig().mapSize;
+        bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+        bgfx::setViewFrameBuffer(viewId, _fb);
+        bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH);
+    }
+
+    void ShadowRenderPass::renderPassExecute(IRenderGraphContext& context) noexcept
+    {
+        if (_lightEntity == entt::null)
+        {
+            return;
+        }
+        auto& encoder = context.getEncoder();
+        auto viewId = context.getViewId();
+
+        const void* viewPtr = nullptr;
+        auto scene = _renderer->getScene();
+        auto trans = scene->getComponent<const Transform>(_lightEntity);
+        auto proj = _renderer->getProjMatrix(trans);
+        if (trans)
+        {
+            viewPtr = glm::value_ptr(trans->getWorldInverse());
+        }
+        bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(proj));
+
+        renderEntities(viewId, encoder);
+    }
+
+    void ShadowRenderPass::renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        static const uint64_t renderState =
+            BGFX_STATE_WRITE_Z
+            | BGFX_STATE_DEPTH_TEST_LEQUAL
+            | BGFX_STATE_CULL_CCW
+            | BGFX_STATE_MSAA
+            ;
+
+        auto scene = _renderer->getScene();
+        auto cam = _renderer->getCamera();
+
+        auto renderables = cam->createEntityView<Renderable>();
+        for (auto entity : renderables)
+        {
+            auto renderable = scene->getComponent<const Renderable>(entity);
+            if (!renderable->valid())
+            {
+                continue;
+            }
+            if (renderable->getMaterial()->getPrimitiveType() == MaterialPrimitiveType::Line)
+            {
+                continue;
+            }
+            cam->beforeRenderEntity(entity, encoder);
+            if (!renderable->render(encoder))
+            {
+                continue;
+            }
+
+            encoder.setState(renderState);
+            encoder.submit(viewId, _renderer->getProgramHandle());
+        }
+    }
+
+    ShadowRenderer::ShadowRenderer(const Config& config) noexcept
+        : _config(config)
         , _camProjView(1)
     {
     }
@@ -31,57 +134,47 @@ namespace darmok
 
         ProgramDefinition shadowProgDef;
         shadowProgDef.loadStaticMem(shadow_program);
-        _shadowProg = std::make_unique<Program>(shadowProgDef);
+        _program = std::make_unique<Program>(shadowProgDef);
 
         TextureConfig texConfig;
-        texConfig.size = _mapSize;
+        texConfig.size = _config.mapSize;
+        texConfig.layers = _config.maxLightAmount;
         texConfig.format = bgfx::TextureFormat::D16;
-        texConfig.layers = 256; // max amount of lights
-        // texConfig.type = TextureType::CubeMap;
 
-        _shadowTex = std::make_unique<Texture>(texConfig,
+        _passes.resize(_config.maxLightAmount);
+
+        _tex = std::make_unique<Texture>(texConfig,
             BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
-            BGFX_SAMPLER_MAG_POINT | 
+            BGFX_SAMPLER_MAG_POINT |
             BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
             BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(0xFFFFFF)
         );
-        _shadowFb = bgfx::createFrameBuffer(1, &_shadowTex->getHandle());
 
-        updateLights();
+        uint16_t i = 0;
+        for (auto& pass : _passes)
+        {
+            pass.init(*this, i);
+            ++i;
+        }
     }
 
-    bool ShadowRenderer::updateLights() noexcept
+    void ShadowRenderer::shutdown() noexcept
     {
-        auto dirView = _cam->createEntityView<DirectionalLight>();
-        auto pointView = _cam->createEntityView<PointLight>();
-        auto spotView = _cam->createEntityView<SpotLight>();
-        std::vector<Entity> lights;
-        lights.reserve(dirView.size_hint()
-            + pointView.size_hint()
-            + spotView.size_hint()
-        );
+        for (auto& pass : _passes)
+        {
+            pass.shutdown();
+        }
+        if (_cam)
+        {
+            _cam->getRenderGraph().removeNode(_renderGraph.id());
+        }
+        _renderGraph.clear();
+        _passes.clear();
 
-        for (auto entity : dirView)
-        {
-            lights.push_back(entity);
-        }
-        for (auto entity : pointView)
-        {
-            lights.push_back(entity);
-        }
-        for (auto entity : spotView)
-        {
-            lights.push_back(entity);
-        }
-
-        if (_lights == lights)
-        {
-            return false;
-        }
-
-        _lights = lights;
-        _cam->renderReset();
-        return true;
+        _program.reset();
+        _cam.reset();
+        _scene.reset();
+        _app.reset();
     }
 
     void ShadowRenderer::update(float deltaTime)
@@ -90,13 +183,46 @@ namespace darmok
         updateCamera();
     }
 
+    void ShadowRenderer::updateLights() noexcept
+    {
+        if (!_cam)
+        {
+            return;
+        }
+        auto view = _cam->createEntityView<DirectionalLight>();
+        size_t i = 0;
+        auto changed = false;
+        for (auto entity : view)
+        {
+            if (_passes[i].setLightEntity(entity))
+            {
+                changed = true;
+            }
+            ++i;
+            if (i >= _passes.size())
+            {
+                break;
+            }
+        }
+        for (; i < _passes.size(); ++i)
+        {
+            if (_passes[i].setLightEntity(entt::null))
+            {
+                changed = true;
+            }
+        }
+        if (changed)
+        {
+            _cam->renderReset();
+        }
+    }
+
     void ShadowRenderer::updateCamera() noexcept
     {
         if (!_cam)
         {
             return;
         }
-
         _camProjView = _cam->getProjectionMatrix();
         if (auto trans = _cam->getTransform())
         {
@@ -104,7 +230,7 @@ namespace darmok
         }
     }
 
-    glm::mat4 ShadowRenderer::getLightProjMatrix(OptionalRef<const Transform> trans) const noexcept
+    glm::mat4 ShadowRenderer::getProjMatrix(OptionalRef<const Transform> trans) const noexcept
     {
         if (!trans)
         {
@@ -113,16 +239,41 @@ namespace darmok
 
         Frustum frust = _camProjView * trans->getWorldMatrix();
         BoundingBox bb = frust.getBoundingBox();
-        bb.expand(_mapMargin * bb.size());
+        bb.expand(_config.mapMargin * bb.size());
         return bb.getOrtho();
+    }
+
+    const ShadowRenderer::Config& ShadowRenderer::getConfig() const noexcept
+    {
+        return _config;
+    }
+
+    bgfx::ProgramHandle ShadowRenderer::getProgramHandle() const noexcept
+    {
+        return _program->getHandle();
+    }
+
+    bgfx::TextureHandle ShadowRenderer::getTextureHandle() const noexcept
+    {
+        return _tex->getHandle();
+    }
+
+    OptionalRef<Camera> ShadowRenderer::getCamera() noexcept
+    {
+        return _cam;
+    }
+
+    OptionalRef<Scene> ShadowRenderer::getScene() noexcept
+    {
+        return _scene;
     }
 
     // https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
 
-    glm::mat4 ShadowRenderer::getLightMapMatrix(Entity entity) const noexcept
+    glm::mat4 ShadowRenderer::getMapMatrix(Entity entity) const noexcept
     {
         auto trans = _scene->getComponent<const Transform>(entity);
-        auto proj = getLightProjMatrix(trans);
+        auto proj = getProjMatrix(trans);
         if (trans)
         {
             proj *= trans->getWorldInverse();
@@ -145,101 +296,16 @@ namespace darmok
 
     void ShadowRenderer::renderReset() noexcept
     {
-        if (!_cam)
-		{
-            return;
-		}
-        _lightsByViewId.clear();
-        for (size_t i = 0; i < _lights.size(); ++i)
+        _renderGraph.clear();
+        _renderGraph.setName("Shadow");
+        _renderGraph.getWriteResources().add<Texture>("shadow");
+        for (auto& pass : _passes)
         {
-            _cam->getRenderGraph().addPass(*this);
+            _renderGraph.addPass(pass);
         }
-    }
-
-    void ShadowRenderer::shutdown() noexcept
-    {
         if (_cam)
-		{
-			_cam->getRenderGraph().removePass(*this);
-		}
-
-        bgfx::destroy(_shadowFb);
-
-        _shadowProg.reset();
-        _shadowTex.reset();
-
-        _lights.clear();
-        _lightsByViewId.clear();
-
-		_cam.reset();
-		_scene.reset();
-		_app.reset();
-    }
-
-    void ShadowRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
-    {
-		def.setName("Shadow");
-		def.getWriteResources().add<Texture>("shadow");
-    }
-
-    void ShadowRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
-    {
-        bgfx::setViewRect(viewId, 0, 0, _mapSize.x, _mapSize.y);
-        bgfx::setViewFrameBuffer(viewId, _shadowFb);
-        bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH);
-
-        auto entity = _lights[_lightsByViewId.size()];
-        _lightsByViewId[viewId] = entity;
-    }
-
-    void ShadowRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
-    {
-        auto& encoder = context.getEncoder();
-        auto viewId = context.getViewId();
-        auto entity = _lightsByViewId[viewId];      
-
-        const void* viewPtr = nullptr;
-        glm::mat4 proj = _camProjView;
-        if(auto trans = _scene->getComponent<const Transform>(entity))
         {
-            viewPtr = glm::value_ptr(trans->getWorldInverse());
-            proj = getLightProjMatrix(trans);
-        }
-        bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(proj));
-
-        renderEntities(viewId, encoder);
-        context.getResources().setRef<Texture>(*_shadowTex, "shadow");
-    }
-
-    void ShadowRenderer::renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
-    {
-        static const uint64_t renderState =
-            BGFX_STATE_WRITE_Z
-            | BGFX_STATE_DEPTH_TEST_LEQUAL
-            | BGFX_STATE_CULL_CCW
-            | BGFX_STATE_MSAA
-            ;
-
-        auto renderables = _cam->createEntityView<Renderable>();
-        for (auto entity : renderables)
-        {
-            auto renderable = _scene->getComponent<const Renderable>(entity);
-            if (!renderable->valid())
-            {
-                continue;
-            }
-            if (renderable->getMaterial()->getPrimitiveType() == MaterialPrimitiveType::Line)
-            {
-                continue;
-            }
-            _cam->beforeRenderEntity(entity, encoder);
-            if (!renderable->render(encoder))
-            {
-                continue;
-            }
-
-            encoder.setState(renderState);
-            encoder.submit(viewId, _shadowProg->getHandle());
+            _cam->getRenderGraph().setChild(_renderGraph);
         }
     }
 
@@ -297,7 +363,7 @@ namespace darmok
 
         for (auto entity : lights)
         {
-            auto mtx = _renderer.getLightMapMatrix(entity);
+            auto mtx = _renderer.getMapMatrix(entity);
             // not sure why but the shader reads the data by rows
             mtx = glm::transpose(mtx);
             writer.write(bgfx::Attrib::Color0, index, mtx[0]);
@@ -333,12 +399,11 @@ namespace darmok
 
         encoder.setBuffer(RenderSamplers::SHADOW_TRANS, _shadowTransBuffer, bgfx::Access::Read);
 
-        if (auto tex = context.getResources().get<Texture>("shadow"))
-        {
-            auto texelSize = glm::vec2(1.F) / glm::vec2(tex->getSize());
-            glm::vec4 smData(texelSize, 0, 0);
-            encoder.setUniform(_shadowDataUniform, glm::value_ptr(smData));
-            encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, tex->getHandle());
-        }
+        auto texelSize = glm::vec2(1.F) / glm::vec2(_renderer.getConfig().mapSize);
+        glm::vec4 smData(texelSize, 0, 0);
+        encoder.setUniform(_shadowDataUniform, glm::value_ptr(smData));
+
+        auto texHandle = _renderer.getTextureHandle();
+        encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, texHandle);
     }
 }

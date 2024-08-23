@@ -84,7 +84,10 @@ namespace
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setWindowPerspective(60, 0.3, 20);
 			
-			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(glm::vec2(512));
+			ShadowRendererConfig shadowConfig;
+			shadowConfig.mapSize = glm::vec2(512);
+			shadowConfig.mapMargin = glm::vec3(0.1);
+			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
 			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
 			forwardRender.addComponent<LightingRenderComponent>();
@@ -116,14 +119,12 @@ namespace
 			scene.addComponent<Renderable>(dirLightEntity, dirLightMesh, debugMat);
 			scene.addSceneComponent<RotateUpdater>(dirLightTrans);
 
-			/*
 			{
 				auto dirLightEntity2 = scene.createEntity();
 				auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity2, glm::vec3{ 1, 1, -1 })
 					.lookAt(glm::vec3(0, 0, 0));
 				scene.addComponent<DirectionalLight>(dirLightEntity2, 0.6);
 			}
-			*/
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
