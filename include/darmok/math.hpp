@@ -46,10 +46,10 @@ namespace darmok
         static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near, float far) noexcept;
         static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near = 0.f) noexcept;
         static [[nodiscard]] glm::mat4 ortho(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
-		static [[nodiscard]] glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
 		
-		static [[nodiscard]] glm::mat4 frustrum(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
-		static [[nodiscard]] glm::mat4 frustrum(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 frustum(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 frustum(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
         
 		// methods used in Transform to generate the matrix
         static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;

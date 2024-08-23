@@ -51,19 +51,24 @@ namespace darmok
         return v;
     }
 
-    glm::mat4 Math::ortho(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near, float far) noexcept
+    glm::mat4 Math::ortho(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near, float far) noexcept
     {
-        return ortho(bottomLeft.x, rightTop.x, bottomLeft.y, rightTop.y, near, far);
+        return ortho(bottomLeft.x, topRight.x, bottomLeft.y, topRight.y, near, far);
     }
 
-    glm::mat4 Math::frustrum(float left, float right, float bottom, float top, float near, float far) noexcept
+    glm::mat4 Math::frustum(float left, float right, float bottom, float top, float near, float far) noexcept
     {
-        return glm::frustum(left, right, bottom, top, near, far);
+        auto proj = glm::frustum(left, right, bottom, top, near, far);
+        if (!bgfx::getCaps()->homogeneousDepth)
+        {
+            proj = glm::translate(glm::vec3(0, 0, 0.5)) * glm::scale(glm::vec3(1, 1, 0.5)) * proj;
+        }
+        return proj;
     }
 
-    glm::mat4 Math::frustrum(const glm::vec2& bottomLeft, const glm::vec2& rightTop, float near, float far) noexcept
+    glm::mat4 Math::frustum(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near, float far) noexcept
     {
-        return frustrum(bottomLeft.x, rightTop.x, bottomLeft.y, rightTop.y, near, far);
+        return frustum(bottomLeft.x, topRight.x, bottomLeft.y, topRight.y, near, far);
     }
 
     glm::mat4 Math::transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept

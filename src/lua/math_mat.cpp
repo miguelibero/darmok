@@ -48,9 +48,9 @@ namespace darmok
 				sol::resolve<glm::mat4(float, float, float, float)>(&Math::perspective),
 				sol::resolve<glm::mat4(float, float, float)>(&Math::perspective)
 			),
-			"frustrum", sol::overload(
-				sol::resolve<glm::mat4(float, float, float, float, float, float)>(&Math::frustrum),
-				sol::resolve<glm::mat4(const glm::vec2&, const glm::vec2&, float, float)>(&Math::frustrum)
+			"frustum", sol::overload(
+				sol::resolve<glm::mat4(float, float, float, float, float, float)>(&Math::frustum),
+				sol::resolve<glm::mat4(const glm::vec2&, const glm::vec2&, float, float)>(&Math::frustum)
 			),
 			"look_at", sol::resolve<glm::mat4(const glm::vec3&, const glm::vec3&, const glm::vec3&)>(&glm::lookAt),
 			"rotate", sol::overload(

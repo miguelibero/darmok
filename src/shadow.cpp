@@ -244,16 +244,21 @@ namespace darmok
         {
             return;
         }
-        auto trans = _cam->getTransform();
+
+        auto proj = _cam->getProjectionMatrix();
+        Frustum frust(proj);
+
         _camProjViews.clear();
+        auto step = 1.F / float(_config.cascadeAmount);
         for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
         {
-            auto mat = _cam->getProjectionMatrix();
-            if (trans)
+            auto cascFust = frust.getAlignedSlice(0, step * (casc + 1));
+            auto cascProj = cascFust.getAlignedProjectionMatrix();
+            if (auto trans = _cam->getTransform())
             {
-                mat *= trans->getWorldInverse();
+                cascProj *= trans->getWorldInverse();
             }
-            _camProjViews.push_back(mat);
+            _camProjViews.emplace_back(cascProj);
         }
     }
 

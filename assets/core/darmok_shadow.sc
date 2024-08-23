@@ -40,15 +40,18 @@ float doHardShadow(uint shadowMapIndex, vec4 shadowCoord, float bias)
 float hardShadow(uint lightIndex, vec3 fragPos, float bias)
 {
 	uint cascadeAmount = u_shadowData.z;
-	float v = 0.0;
 	for(uint casc = 0; casc < cascadeAmount; ++casc)
 	{
 		uint mapIndex = getShadowMapIndex(lightIndex, casc);
 		mat4 trans = getShadowTransform(mapIndex);
 		vec4 shadowCoord = mul(trans, vec4(fragPos, 1.0));
-		v += doHardShadow(mapIndex, shadowCoord, bias);
+		float v = doHardShadow(mapIndex, shadowCoord, bias);
+		if(v < 1.0)
+		{
+			return v;
+		}
 	}
-	return v / cascadeAmount;
+	return 1.0;
 }
 
 float normalShadowBias(vec3 norm, vec3 lightDir)

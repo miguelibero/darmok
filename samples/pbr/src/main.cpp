@@ -87,7 +87,7 @@ namespace
 			ShadowRendererConfig shadowConfig;
 			shadowConfig.mapSize = glm::vec2(512);
 			shadowConfig.mapMargin = glm::vec3(0.1);
-			shadowConfig.cascadeAmount = 2;
+			shadowConfig.cascadeAmount = 3;
 			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
 			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);

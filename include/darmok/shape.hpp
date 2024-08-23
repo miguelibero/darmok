@@ -26,6 +26,9 @@ namespace darmok
         Rectangle& operator*=(float scale) noexcept;
         Rectangle operator*(float scale) const noexcept;
 
+        bool operator==(const Rectangle& other) const noexcept;
+        bool operator!=(const Rectangle& other) const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -43,6 +46,9 @@ namespace darmok
 
         Cube& operator*=(float scale) noexcept;
         Cube operator*(float scale) const noexcept;
+
+        bool operator==(const Cube& other) const noexcept;
+        bool operator!=(const Cube& other) const noexcept;
 
         static const Cube& standard() noexcept;
 
@@ -73,6 +79,9 @@ namespace darmok
         Triangle& operator*=(float scale) noexcept;
         Triangle operator*(float scale) const noexcept;
 
+        bool operator==(const Triangle& other) const noexcept;
+        bool operator!=(const Triangle& other) const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -91,6 +100,9 @@ namespace darmok
 
         TextureTriangle& operator*=(float scale) noexcept;
         TextureTriangle operator*(float scale) const noexcept;
+
+        bool operator==(const TextureTriangle& other) const noexcept;
+        bool operator!=(const TextureTriangle& other) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -111,6 +123,9 @@ namespace darmok
 
         Polygon& operator*=(float scale) noexcept;
         Polygon operator*(float scale) const noexcept;
+
+        bool operator==(const Polygon& other) const noexcept;
+        bool operator!=(const Polygon& other) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -133,6 +148,9 @@ namespace darmok
         Sphere& operator*=(float scale) noexcept;
         Sphere operator*(float scale) const noexcept;
 
+        bool operator==(const Sphere& other) const noexcept;
+        bool operator!=(const Sphere& other) const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -152,6 +170,9 @@ namespace darmok
 
         Plane operator*(const glm::mat4& transform) const noexcept;
         Plane& operator*=(const glm::mat4& transform) noexcept;
+
+        bool operator==(const Plane& other) const noexcept;
+        bool operator!=(const Plane& other) const noexcept;
 
         static const Plane& standard() noexcept;
 
@@ -175,6 +196,9 @@ namespace darmok
         Capsule& operator*=(float scale) noexcept;
         Capsule operator*(float scale) const noexcept;
 
+        bool operator==(const Capsule& other) const noexcept;
+        bool operator!=(const Capsule& other) const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -189,6 +213,9 @@ namespace darmok
 
         std::string toString() const noexcept;
 
+        bool operator==(const NormalIntersection& other) const noexcept;
+        bool operator!=(const NormalIntersection& other) const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -202,6 +229,9 @@ namespace darmok
         float distance = 0.F;
 
         std::string toString() const noexcept;
+
+        bool operator==(const DistanceIntersection& other) const noexcept;
+        bool operator!=(const DistanceIntersection& other) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -223,6 +253,9 @@ namespace darmok
         Ray& operator*=(const glm::mat4& transform) noexcept;
 
         glm::vec3 operator*(float dist) const noexcept;
+
+        bool operator==(const Ray& other) const noexcept;
+        bool operator!=(const Ray& other) const noexcept;
 
         std::string toString() const noexcept;
         Line toLine() const noexcept;
@@ -257,6 +290,9 @@ namespace darmok
 
         glm::vec3 operator*(float dist) const noexcept;
 
+        bool operator==(const Line& other) const noexcept;
+        bool operator!=(const Line& other) const noexcept;
+
         std::optional<std::array<NormalIntersection, 2>> intersect(const Sphere& sphere) const noexcept;
         std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
         glm::vec3 closestPoint(const glm::vec3& p);
@@ -277,6 +313,9 @@ namespace darmok
 
         BoundingBox() noexcept;
         BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
+
+        bool operator==(const BoundingBox& other) const noexcept;
+        bool operator!=(const BoundingBox& other) const noexcept;
 
         BoundingBox& operator+=(const BoundingBox& bb) noexcept;
         BoundingBox operator+(const BoundingBox& bb) const noexcept;
@@ -336,13 +375,19 @@ namespace darmok
         Frustum(const glm::mat4& proj = glm::mat4(1));
 
         std::string toString() const noexcept;
+        glm::vec3 getCenter() const noexcept;
 
         BoundingBox getBoundingBox() const noexcept;
         operator BoundingBox() const noexcept;
 
+        Frustum getAlignedSlice(float nearFactor, float farFactor) const noexcept;
+        glm::mat4 getAlignedProjectionMatrix() const noexcept;
+
         Frustum operator*(const glm::mat4& trans) const noexcept;
         Frustum& operator*=(const glm::mat4& trans) noexcept;
 
+        bool operator==(const Frustum& other) const noexcept;
+        bool operator!=(const Frustum& other) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)

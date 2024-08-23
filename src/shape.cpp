@@ -16,29 +16,6 @@ namespace darmok
         return v;
     }
 
-    const Cube& Cube::standard() noexcept
-    {
-        const static Cube v;
-        return v;
-    }
-
-    bool Cube::empty() const noexcept
-    {
-        return glm::length2(size) == 0.F;
-    }
-
-    const Sphere& Sphere::standard() noexcept
-    {
-        const static Sphere v;
-        return v;
-    }
-
-    const Plane& Plane::standard() noexcept
-    {
-        const static Plane v;
-        return v;
-    }
-
     Rectangle::Rectangle(const glm::vec2& size, const glm::vec2& origin) noexcept
         : size(size)
         , origin(origin)
@@ -59,10 +36,31 @@ namespace darmok
         return { { v0, v1 }, {v1, v2}, { v2, v3 }, { v3, v0 } };
     }
 
+    bool Rectangle::operator==(const Rectangle& other) const noexcept
+    {
+        return size == other.size && origin == other.origin;
+    }
+
+    bool Rectangle::operator!=(const Rectangle& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
     Cube::Cube(const glm::vec3& size, const glm::vec3& origin) noexcept
         : size(size)
         , origin(origin)
     {
+    }
+
+    const Cube& Cube::standard() noexcept
+    {
+        const static Cube v;
+        return v;
+    }
+
+    bool Cube::empty() const noexcept
+    {
+        return glm::length2(size) == 0.F;
     }
 
     std::string Cube::toString() const noexcept
@@ -82,6 +80,16 @@ namespace darmok
         Cube cube(*this);
         cube *= scale;
         return cube;
+    }
+
+    bool Cube::operator==(const Cube& other) const noexcept
+    {
+        return size == other.size && origin == other.origin;
+    }
+
+    bool Cube::operator!=(const Cube& other) const noexcept
+    {
+        return !operator==(other);
     }
 
     Triangle::Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept
@@ -153,6 +161,16 @@ namespace darmok
         return tri;
     }
 
+    bool Triangle::operator==(const Triangle& other) const noexcept
+    {
+        return vertices == other.vertices;
+    }
+
+    bool Triangle::operator!=(const Triangle& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
     TextureTriangle::TextureTriangle(const glm::vec2& coord1, const glm::vec2& coord2, const glm::vec2& coord3) noexcept
         : coordinates{ coord1, coord2, coord3 }
     {
@@ -182,6 +200,16 @@ namespace darmok
         TextureTriangle tri = *this;
         tri *= scale;
         return tri;
+    }
+
+    bool TextureTriangle::operator==(const TextureTriangle& other) const noexcept
+    {
+        return coordinates == other.coordinates;
+    }
+
+    bool TextureTriangle::operator!=(const TextureTriangle& other) const noexcept
+    {
+        return !operator==(other);
     }
 
     Polygon::Polygon(const Triangles& tris, const glm::vec3& origin) noexcept
@@ -216,6 +244,22 @@ namespace darmok
         return poly;
     }
 
+    bool Polygon::operator==(const Polygon& other) const noexcept
+    {
+        return triangles == other.triangles;
+    }
+
+    bool Polygon::operator!=(const Polygon& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
+    const Sphere& Sphere::standard() noexcept
+    {
+        const static Sphere v;
+        return v;
+    }
+
     Sphere::Sphere(const glm::vec3& origin, float radius) noexcept
         : radius(radius)
         , origin(origin)
@@ -247,10 +291,26 @@ namespace darmok
         return copy;
     }
 
+    bool Sphere::operator==(const Sphere& other) const noexcept
+    {
+        return origin == other.origin && radius == other.radius;
+    }
+
+    bool Sphere::operator!=(const Sphere& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
     Plane::Plane(const glm::vec3& normal, float constant) noexcept
         : normal(normal)
         , constant(constant)
     {
+    }
+
+    const Plane& Plane::standard() noexcept
+    {
+        const static Plane v;
+        return v;
     }
 
     glm::vec3 Plane::getOrigin() const noexcept
@@ -282,6 +342,16 @@ namespace darmok
     {
         normal = transformNormal(normal, transform);
         return *this;
+    }
+
+    bool Plane::operator==(const Plane& other) const noexcept
+    {
+        return constant == other.constant && normal == other.normal;
+    }
+
+    bool Plane::operator!=(const Plane& other) const noexcept
+    {
+        return !operator==(other);
     }
 
     Ray::Ray(const glm::vec3& dir, const glm::vec3& origin) noexcept
@@ -365,6 +435,16 @@ namespace darmok
         return origin + (direction * dist);
     }
 
+    bool Ray::operator==(const Ray& other) const noexcept
+    {
+        return origin == other.origin && direction == other.direction;
+    }
+
+    bool Ray::operator!=(const Ray& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
     Line::Line(const glm::vec3& point1, const glm::vec3& point2) noexcept
     : points{ point1, point2 }
     {
@@ -401,9 +481,29 @@ namespace darmok
         return "NormalIntersection(position=" + glm::to_string(position) + ", normal=" + glm::to_string(normal) + ")";
     }
 
+    bool NormalIntersection::operator==(const NormalIntersection& other) const noexcept
+    {
+        return position == other.position && normal == other.normal;
+    }
+
+    bool NormalIntersection::operator!=(const NormalIntersection& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
     std::string DistanceIntersection::toString() const noexcept
     {
         return "DistanceIntersection(position=" + glm::to_string(position) + ", distance=" + std::to_string(distance) + ")";
+    }
+
+    bool DistanceIntersection::operator==(const DistanceIntersection& other) const noexcept
+    {
+        return position == other.position && distance == other.distance;
+    }
+
+    bool DistanceIntersection::operator!=(const DistanceIntersection& other) const noexcept
+    {
+        return !operator==(other);
     }
 
     std::optional<glm::vec3> Line::intersect(const Triangle& tri) const noexcept
@@ -430,6 +530,16 @@ namespace darmok
         trans *= glm::mat4_cast(rot);
 
         return trans;
+    }
+
+    bool Line::operator==(const Line& other) const noexcept
+    {
+        return points == other.points;
+    }
+
+    bool Line::operator!=(const Line& other) const noexcept
+    {
+        return !operator==(other);
     }
 
     Capsule::Capsule(float cylinderHeight, float radius, const glm::vec3& origin) noexcept
@@ -463,6 +573,16 @@ namespace darmok
         Capsule copy(*this);
         copy *= scale;
         return copy;
+    }
+
+    bool Capsule::operator==(const Capsule& other) const noexcept
+    {
+        return cylinderHeight == other.cylinderHeight && radius == other.radius && origin == other.origin;
+    }
+
+    bool Capsule::operator!=(const Capsule& other) const noexcept
+    {
+        return !operator==(other);
     }
 
     BoundingBox::BoundingBox() noexcept
@@ -613,20 +733,30 @@ namespace darmok
         return Math::ortho(min.x, max.x, min.y, max.y, min.z, max.z);
     }
 
+    bool BoundingBox::operator==(const BoundingBox& other) const noexcept
+    {
+        return min == other.min && max == other.max;
+    }
+
+    bool BoundingBox::operator!=(const BoundingBox& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
     Frustum::Frustum(const glm::mat4& proj)
     {
         auto hd = bgfx::getCaps()->homogeneousDepth;
-        auto nd = hd ? -1 : 0;
+        auto nd = hd ? -1.F : 0.F;
 
         corners = {
             glm::vec3(-1, -1, nd),
-            glm::vec3( 1, -1, nd), 
+            glm::vec3( 1, -1, nd),
             glm::vec3(-1,  1, nd),
-            glm::vec3( 1,  1, nd), 
-            glm::vec3(-1, -1,  1),
-            glm::vec3( 1, -1,  1), 
-            glm::vec3(-1,  1,  1),
-            glm::vec3( 1,  1,  1)
+            glm::vec3( 1,  1, nd),
+            glm::vec3(-1, -1, 1),
+            glm::vec3( 1, -1, 1), 
+            glm::vec3(-1,  1, 1),
+            glm::vec3( 1,  1, 1)
         };
 
         auto invProj = glm::inverse(proj);
@@ -636,6 +766,47 @@ namespace darmok
             auto tcorner = invProj * glm::vec4(corner, 1.0);
             corner = tcorner / tcorner.w;
         }
+    }
+
+    Frustum Frustum::getAlignedSlice(float nearFactor, float farFactor) const noexcept
+    {
+
+        auto min = bx::kFloatInfinity;
+        auto max = -bx::kFloatInfinity;
+        for (auto& corner : corners)
+        {
+            min = std::min(min, corner.z);
+            max = std::max(max, corner.z);
+        } 
+        auto diff = max - min;
+        auto near = min + (diff * nearFactor);
+        auto far = min + (diff * farFactor);
+
+        Frustum frust(*this);
+
+        size_t i = 0;
+        for (auto& corner : frust.corners)
+        {
+            corner.z = i < 4 ? near : far;
+            ++i;
+        }
+
+        return frust;
+    }
+
+    glm::mat4 Frustum::getAlignedProjectionMatrix() const noexcept
+    {
+        auto& nbl = getCorner(Corner::NearBottomLeft);
+        auto& nbr = getCorner(Corner::NearBottomRight);
+        auto& ntl = getCorner(Corner::NearTopLeft);
+        auto& fbl = getCorner(Corner::FarBottomLeft);
+        auto left = nbl.x;
+        auto right = nbr.x;
+        auto bottom = nbl.y;
+        auto top = ntl.y;
+        auto near = nbl.z;
+        auto far = fbl.z;
+        return Math::frustum(left, right, bottom, top, near, far);
     }
 
     const glm::vec3& Frustum::getCorner(Frustum::Corner corner) const noexcept
@@ -669,6 +840,16 @@ namespace darmok
         return getBoundingBox();
     }
 
+    glm::vec3 Frustum::getCenter() const noexcept
+    {
+        glm::vec3 center = glm::vec3(0.0f);
+        for (auto& corner : corners)
+        {
+            center += corner;
+        }
+        return center / float(corners.size());
+    }
+
     std::string Frustum::toString() const noexcept
     {
         std::string str = "Frustum(";
@@ -692,5 +873,15 @@ namespace darmok
             corner = trans * glm::vec4(corner, 1.0f);
         }
         return *this;
+    }
+
+    bool Frustum::operator==(const Frustum& other) const noexcept
+    {
+        return corners == other.corners;
+    }
+
+    bool Frustum::operator!=(const Frustum& other) const noexcept
+    {
+        return !operator==(other);
     }
 }
