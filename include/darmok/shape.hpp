@@ -380,7 +380,9 @@ namespace darmok
         BoundingBox getBoundingBox() const noexcept;
         operator BoundingBox() const noexcept;
 
-        Frustum getAlignedSlice(float nearFactor, float farFactor) const noexcept;
+        std::array<glm::vec3, 4> getSlopes() const noexcept;
+        Frustum getSlice(float nearFactor, float farFactor) const noexcept;
+
         glm::mat4 getAlignedProjectionMatrix() const noexcept;
 
         Frustum operator*(const glm::mat4& trans) const noexcept;

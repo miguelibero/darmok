@@ -10,6 +10,7 @@
 #include <darmok/shape.hpp>
 #include <darmok/material.hpp>
 #include <darmok/vertex.hpp>
+#include <darmok/easing.hpp>
 #include "generated/shadow.program.h"
 #include "render_samplers.hpp"
 
@@ -66,8 +67,8 @@ namespace darmok
 
     void ShadowRenderPass::renderPassConfigure(bgfx::ViewId viewId) noexcept
     {
-        auto& size = _renderer->getConfig().mapSize;
-        bgfx::setViewRect(viewId, 0, 0, size.x, size.y);
+        auto size = _renderer->getConfig().mapSize;
+        bgfx::setViewRect(viewId, 0, 0, size, size);
         bgfx::setViewFrameBuffer(viewId, _fb);
         bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH);
     }
@@ -99,7 +100,8 @@ namespace darmok
         static const uint64_t renderState =
             BGFX_STATE_WRITE_Z
             | BGFX_STATE_DEPTH_TEST_LEQUAL
-            | BGFX_STATE_CULL_CCW
+            // | BGFX_STATE_CULL_CCW
+            | BGFX_STATE_CULL_CW
             | BGFX_STATE_MSAA
             ;
 
@@ -145,17 +147,16 @@ namespace darmok
         _program = std::make_unique<Program>(shadowProgDef);
 
         TextureConfig texConfig;
-        texConfig.size = _config.mapSize;
+        texConfig.size = glm::uvec2(_config.mapSize);
         texConfig.layers = _config.maxLightAmount * _config.cascadeAmount;
         texConfig.format = bgfx::TextureFormat::D16;
-
 
         _tex = std::make_unique<Texture>(texConfig,
             BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
             // BGFX_SAMPLER_MAG_POINT |
             BGFX_SAMPLER_MAG_ANISOTROPIC |
             BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
-            BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(0xFFFFFF)
+            BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(2)
         );
 
         _passes.clear();
@@ -250,10 +251,18 @@ namespace darmok
 
         _camProjViews.clear();
         auto step = 1.F / float(_config.cascadeAmount);
+
+        auto cascSliceDistri = [](float v)
+        {
+            return Easing::quadraticIn(v, 0.F, 1.F);
+        };
+
         for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
         {
-            auto cascFust = frust.getAlignedSlice(0, step * (casc + 1));
-            auto cascProj = cascFust.getAlignedProjectionMatrix();
+            auto nearFactor = cascSliceDistri(step * casc);
+            auto farFactor = cascSliceDistri(step * (casc + 1));
+            auto cascFrust = frust.getSlice(nearFactor, farFactor);
+            auto cascProj = cascFrust.getAlignedProjectionMatrix();
             if (auto trans = _cam->getTransform())
             {
                 cascProj *= trans->getWorldInverse();
@@ -273,7 +282,7 @@ namespace darmok
         Frustum frust = projView * trans->getWorldMatrix();
         BoundingBox bb = frust.getBoundingBox();
         bb.expand(_config.mapMargin * bb.size());
-        bb.snap(_config.mapSize);
+        bb.snap(glm::uvec2(_config.mapSize));
         return bb.getOrtho();
     }
 
@@ -443,8 +452,8 @@ namespace darmok
         encoder.setBuffer(RenderSamplers::SHADOW_TRANS, _shadowTransBuffer, bgfx::Access::Read);
 
         auto& config = _renderer.getConfig();
-        auto texelSize = glm::vec2(1.F) / glm::vec2(config.mapSize);
-        glm::vec4 smData(texelSize, config.cascadeAmount, 0);
+        auto texelSize = 1.F / config.mapSize;
+        glm::vec4 smData(texelSize, config.cascadeAmount, config.bias, config.normalBias);
         encoder.setUniform(_shadowDataUniform, glm::value_ptr(smData));
 
         auto texHandle = _renderer.getTextureHandle();

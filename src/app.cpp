@@ -281,6 +281,7 @@ namespace darmok
 		bgfx::setPaletteColor(0, UINT32_C(0x00000000));
 		//bgfx::setPaletteColor(1, UINT32_C(0x303030ff));
 		bgfx::setPaletteColor(1, Colors::toNumber(_clearColor));
+		bgfx::setPaletteColor(2, UINT32_C(0xFFFFFFFF));
 	}
 
 	void AppImpl::init()

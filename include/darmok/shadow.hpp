@@ -35,10 +35,12 @@ namespace darmok
 
     struct DARMOK_EXPORT ShadowRendererConfig final
     {
-        glm::uvec2 mapSize = glm::uvec2(512);
+        unsigned int mapSize = 512;
         glm::vec3 mapMargin = glm::vec3(0.01F);
         uint16_t maxLightAmount = 6;
         uint8_t cascadeAmount = 3;
+        float bias = 0.005;
+        float normalBias = 0.02;
     };
 
     class DARMOK_EXPORT ShadowRenderer final : public IRenderer

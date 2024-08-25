@@ -768,28 +768,35 @@ namespace darmok
         }
     }
 
-    Frustum Frustum::getAlignedSlice(float nearFactor, float farFactor) const noexcept
+    std::array<glm::vec3, 4> Frustum::getSlopes() const noexcept
     {
+        return {
+            getCorner(Corner::FarBottomLeft) - getCorner(Corner::NearBottomLeft),
+            getCorner(Corner::FarBottomRight) - getCorner(Corner::NearBottomRight),
+            getCorner(Corner::FarTopLeft) - getCorner(Corner::NearTopLeft),
+            getCorner(Corner::FarTopRight) - getCorner(Corner::NearTopRight)
+        };
+    }
 
-        auto min = bx::kFloatInfinity;
-        auto max = -bx::kFloatInfinity;
-        for (auto& corner : corners)
-        {
-            min = std::min(min, corner.z);
-            max = std::max(max, corner.z);
-        } 
-        auto diff = max - min;
-        auto near = min + (diff * nearFactor);
-        auto far = min + (diff * farFactor);
+    Frustum Frustum::getSlice(float nearFactor, float farFactor) const noexcept
+    {
+        auto slopes = getSlopes();
+        Frustum frust;
 
-        Frustum frust(*this);
+        auto& botLeft = getCorner(Corner::NearBottomLeft);
+        auto& botRight = getCorner(Corner::NearBottomRight);
+        auto& topLeft = getCorner(Corner::NearTopLeft);
+        auto& topRight = getCorner(Corner::NearTopRight);
 
-        size_t i = 0;
-        for (auto& corner : frust.corners)
-        {
-            corner.z = i < 4 ? near : far;
-            ++i;
-        }
+        frust.getCorner(Corner::NearBottomLeft)     = botLeft   + (slopes[0] * nearFactor);
+        frust.getCorner(Corner::NearBottomRight)    = botRight  + (slopes[1] * nearFactor);
+        frust.getCorner(Corner::NearTopLeft)        = topLeft   + (slopes[2] * nearFactor);
+        frust.getCorner(Corner::NearTopRight)       = topRight  + (slopes[3] * nearFactor);
+
+        frust.getCorner(Corner::FarBottomLeft)      = botLeft   + (slopes[0] * farFactor);
+        frust.getCorner(Corner::FarBottomRight)     = botRight  + (slopes[1] * farFactor);
+        frust.getCorner(Corner::FarTopLeft)         = topLeft   + (slopes[2] * farFactor);
+        frust.getCorner(Corner::FarTopRight)        = topRight  + (slopes[3] * farFactor);
 
         return frust;
     }

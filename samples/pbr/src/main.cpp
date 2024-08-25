@@ -85,9 +85,8 @@ namespace
 				.setWindowPerspective(60, 0.3, 20);
 			
 			ShadowRendererConfig shadowConfig;
-			shadowConfig.mapSize = glm::vec2(512);
 			shadowConfig.mapMargin = glm::vec3(0.1);
-			shadowConfig.cascadeAmount = 3;
+			shadowConfig.cascadeAmount = 2;
 			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
 			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
@@ -144,6 +143,8 @@ namespace
 			auto floorMat = std::make_shared<Material>(prog, Colors::red());
 			floorMat->setProgramDefine("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
+
+			// drawDebugFrustum(scene, camTrans, dirLightTrans, unlitProg);
 		}
 
 		void drawDebugFrustum(Scene& scene, Transform& camTrans, Transform& dirLightTrans, const std::shared_ptr<Program>& prog)
@@ -167,12 +168,14 @@ namespace
 			auto& lightView = dirLightTrans.getWorldInverse();
 
 			Frustum frust(camProjView);
-			Frustum frust2 = camProjView * dirLightTrans.getWorldMatrix();
-			BoundingBox bb = frust2.getBoundingBox();
-			Frustum frust4 = bb.getOrtho() * dirLightTrans.getWorldInverse();
+			Frustum frustSlice = frust.getSlice(0.2, 0.8);
+			BoundingBox bb = frust * dirLightTrans.getWorldInverse();
+			Frustum frustLight = bb.getOrtho() * dirLightTrans.getWorldInverse();
+
 
 			addDebugShape(frust, Colors::magenta());
-			addDebugShape(frust4, Colors::blue());
+			addDebugShape(frustLight, Colors::blue());
+			addDebugShape(frustSlice, Colors::green());
 		}
 
 		void update(float deltaTime) override
