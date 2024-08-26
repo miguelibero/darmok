@@ -98,6 +98,9 @@ darmok_process_assets(
     forward_basic.fragment.sc
     forward_basic.vertex.sc
     forward_basic.program.json
+    tonemap.fragment.sc
+    tonemap.vertex.sc
+    tonemap.program.json
     gui.fragment.sc
     gui.vertex.sc
     gui.program.json
@@ -127,6 +130,7 @@ set(CORE_SOURCES
   asset_core.cpp
   render_graph.cpp
   easing.cpp
+  framebuffer.cpp
 )
 
 set(CORE_HEADERS
@@ -159,6 +163,7 @@ set(CORE_HEADERS
   render_graph.hpp
   easing_fwd.hpp
   easing.hpp
+  framebuffer.hpp
 )
 
 set(SOURCES

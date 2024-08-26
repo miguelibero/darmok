@@ -7,6 +7,7 @@
 #include <darmok/material.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/render.hpp>
+#include <darmok/texture.hpp>
 #include "render_samplers.hpp"
 
 namespace darmok
@@ -15,6 +16,11 @@ namespace darmok
 		: _viewId(-1)
 	{
 		_materials = addComponent<MaterialRenderComponent>();
+	}
+
+	ForwardRenderer::~ForwardRenderer() noexcept
+	{
+		// empty on purpose
 	}
 
 	void ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
@@ -39,10 +45,13 @@ namespace darmok
 
 	void ForwardRenderer::renderReset() noexcept
 	{
-		if (_cam)
+		if (!_cam)
 		{
-			_cam->getRenderGraph().addPass(*this);
+			return;
 		}
+
+		auto size = _cam->getCurrentViewport().size;
+		_cam->getRenderGraph().addPass(*this);
 	}
 
 	void ForwardRenderer::shutdown() noexcept
@@ -55,6 +64,7 @@ namespace darmok
 		{
 			(*itr)->shutdown();
 		}
+
 		_viewId = -1;
 		_cam.reset();
 		_scene.reset();
@@ -102,6 +112,7 @@ namespace darmok
 	{
 		_viewId = viewId;
 		_cam->configureView(viewId);
+		bgfx::setViewFrameBuffer(viewId, _framebuffer.getHandle());
 	}
 
 	void ForwardRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
@@ -123,5 +134,7 @@ namespace darmok
 			}
 			_materials->renderSubmit(_viewId, encoder, *renderable->getMaterial());
 		}
+
+		context.getResources().setRef<FrameBuffer>(_framebuffer);
 	}
 }

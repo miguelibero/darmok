@@ -41,6 +41,8 @@ namespace darmok
 		static Definition getStandardDefinition(StandardProgramType type) noexcept;
 
 	private:
+		static const std::unordered_map<StandardProgramType, std::string> _standardTypes;
+
 		ShaderHandles createShaders(const DefinesDataMap& defMap, const std::string& name);
 
 		Defines _allDefines;

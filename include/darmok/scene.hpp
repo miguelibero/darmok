@@ -42,6 +42,9 @@ namespace darmok
         void renderReset();
         void shutdown();
 
+        Scene& setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept;
+        std::shared_ptr<FrameBuffer> getFrameBuffer() const noexcept;
+
         void addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
         bool hasSceneComponent(entt::id_type type) const noexcept;

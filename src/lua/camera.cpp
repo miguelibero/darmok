@@ -215,7 +215,6 @@ namespace darmok
 			),
 			"enabled", sol::property(&Camera::isEnabled, &Camera::setEnabled),
 			"projection_matrix", sol::property(&Camera::getProjectionMatrix, &LuaCamera::setProjectionMatrix),
-			"target_textures", sol::property(&Camera::getTargetTextures, &Camera::setTargetTextures),
 			"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
 			"current_viewport", sol::property(&Camera::getCurrentViewport),
 			"transform", sol::property(&LuaCamera::getTransform),

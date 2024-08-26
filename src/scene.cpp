@@ -94,6 +94,24 @@ namespace darmok
         return _renderGraph;
     }
 
+    void SceneImpl::setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept
+    {
+        _frameBuffer = fb;
+    }
+
+    std::shared_ptr<FrameBuffer> SceneImpl::getFrameBuffer() const noexcept
+    {
+        if (_frameBuffer)
+        {
+            return _frameBuffer;
+        }
+        if (_app)
+        {
+            return _app->getFrameBuffer();
+        }
+        return nullptr;
+    }
+
     OptionalRef<App> SceneImpl::getApp() noexcept
     {
         return _app;
@@ -260,6 +278,17 @@ namespace darmok
         _impl->update(dt);
     }
 
+    Scene& Scene::setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept
+    {
+        _impl->setFrameBuffer(fb);
+        return *this;
+    }
+
+    std::shared_ptr<FrameBuffer> Scene::getFrameBuffer() const noexcept
+    {
+        return _impl->getFrameBuffer();
+    }
+
     void Scene::addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept
     {
         return _impl->addSceneComponent(type, std::move(component));
@@ -309,7 +338,7 @@ namespace darmok
         {
             _scenes.resize(i + 1);
         }
-        auto oldScene = _scenes[i];
+        auto& oldScene = _scenes[i];
         if (_app && oldScene)
         {
             oldScene->shutdown();
@@ -368,8 +397,7 @@ namespace darmok
         _app = nullptr;
         for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
         {
-            auto scene = *itr;
-            if (scene)
+            if (auto scene = *itr)
             {
                 scene->shutdown();
             }

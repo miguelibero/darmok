@@ -14,6 +14,7 @@ namespace darmok
     class ISceneComponent;
     class Scene;
     class App;
+    class FrameBuffer;
 
     class SceneImpl final
     {
@@ -33,6 +34,9 @@ namespace darmok
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;
 
+        void setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept;
+        std::shared_ptr<FrameBuffer> getFrameBuffer() const noexcept;
+
         OptionalRef<App> getApp() noexcept;
         OptionalRef<const App> getApp() const noexcept;
 
@@ -48,6 +52,7 @@ namespace darmok
         Scene& _scene;
         OptionalRef<App> _app;
         RenderGraphDefinition _renderGraph;
+        std::shared_ptr<FrameBuffer> _frameBuffer;
 
         Components::iterator findComponent(entt::id_type type) noexcept;
         Components::const_iterator findComponent(entt::id_type type) const noexcept;

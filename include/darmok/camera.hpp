@@ -21,6 +21,7 @@ namespace darmok
     class IRenderer;
     class Scene;
     struct Ray;
+    class FrameBuffer;
 
     class DARMOK_EXPORT Camera final
     {
@@ -43,9 +44,6 @@ namespace darmok
         Camera& setWindowOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
 
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
-
-        Camera& setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept;
-        const std::vector<std::shared_ptr<Texture>>& getTargetTextures() const noexcept;
 
         Camera& setViewport(const std::optional<Viewport>& viewport) noexcept;
         const std::optional<Viewport>& getViewport() const noexcept;
@@ -119,6 +117,9 @@ namespace darmok
         void beforeRenderView(bgfx::ViewId viewId) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept;
 
+        Camera& setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept;
+        std::shared_ptr<FrameBuffer> getFrameBuffer() const noexcept;
+
     private:
         bool _enabled;
         glm::mat4 _proj;
@@ -146,9 +147,9 @@ namespace darmok
         std::vector<std::unique_ptr<IRenderer>> _renderers;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
-        std::vector<std::shared_ptr<Texture>> _targetTextures;
-        bgfx::FrameBufferHandle _frameBuffer;
+
         RenderGraphDefinition _renderGraph;
+        std::shared_ptr<FrameBuffer> _frameBuffer;
 
         const EntityRegistry& getRegistry() const;
 

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <darmok/export.h>
+#include <darmok/framebuffer.hpp>
 #include <darmok/render.hpp>
 #include <darmok/render_graph.hpp>
 
@@ -16,6 +17,7 @@ namespace darmok
     {
     public:
         ForwardRenderer() noexcept;
+        ~ForwardRenderer() noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void update(float deltaTime) override;
         void renderReset() noexcept override;
@@ -43,7 +45,8 @@ namespace darmok
         OptionalRef<App> _app;
         OptionalRef<MaterialRenderComponent> _materials;
         std::vector<std::unique_ptr<IRenderComponent>> _components;
-
+        FrameBuffer _framebuffer;
+        
         void beforeRenderView(IRenderGraphContext& context);
         void beforeRenderEntity(Entity entity, IRenderGraphContext& context);
     };

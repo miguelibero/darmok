@@ -5,6 +5,7 @@
 #include "generated/unlit.program.h"
 #include "generated/forward.program.h"
 #include "generated/forward_basic.program.h"
+#include "generated/tonemap.program.h"
 
 namespace darmok
 {    
@@ -25,25 +26,24 @@ namespace darmok
         return handles;
     }
 
+    const std::unordered_map<StandardProgramType, std::string> Program::_standardTypes = {
+        { StandardProgramType::Gui, "gui" },
+        { StandardProgramType::Unlit, "unlit" },
+        { StandardProgramType::Forward, "forward" },
+        { StandardProgramType::ForwardBasic, "forward_basic" },
+        { StandardProgramType::Tonemap, "tonemap" },
+    };
+
     std::optional<StandardProgramType> Program::getStandardType(std::string_view val) noexcept
     {
         auto lower = StringUtils::toLower(val);
-        if (lower == "gui")
+
+        auto itr = std::find_if(_standardTypes.begin(), _standardTypes.end(), [lower](auto& elm) { return elm.second == lower; });
+        if (itr != _standardTypes.end())
         {
-            return StandardProgramType::Gui;
+            return itr->first;
         }
-        if (lower == "unlit")
-        {
-            return StandardProgramType::Unlit;
-        }
-        if (lower == "forward")
-        {
-            return StandardProgramType::Forward;
-        }
-        if (lower == "forward_basic")
-        {
-            return StandardProgramType::ForwardBasic;
-        }
+        
         return std::nullopt;
     }
 
@@ -63,6 +63,9 @@ namespace darmok
             break;
         case StandardProgramType::ForwardBasic:
             def.loadStaticMem(forward_basic_program);
+            break;
+        case StandardProgramType::Tonemap:
+            def.loadStaticMem(tonemap_program);
             break;
         }
         return def;

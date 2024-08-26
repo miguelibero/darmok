@@ -7,6 +7,7 @@ namespace darmok
 		Unlit,
 		Gui,
 		Forward,
-		ForwardBasic
+		ForwardBasic,
+		Tonemap
 	};
 }

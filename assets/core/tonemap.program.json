@@ -1,0 +1,13 @@
+{
+    "vertex": {
+        "position": { 
+            "type": "float",
+            "num": 2
+        },
+        "texCoord0": { 
+            "type": "float",
+            "num": 2
+        }
+    },
+    "fragment": ["texCoord0"]
+}

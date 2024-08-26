@@ -14,17 +14,12 @@ namespace darmok
 {
     Camera::Camera(const glm::mat4& projMatrix) noexcept
         : _proj(projMatrix)
-        , _frameBuffer{ bgfx::kInvalidHandle }
         , _enabled(true)
     {
     }
 
     Camera::~Camera()
     {
-        if (isValid(_frameBuffer))
-        {
-            bgfx::destroy(_frameBuffer);
-        }
     }
 
     const EntityRegistry& Camera::getRegistry() const
@@ -155,32 +150,6 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setTargetTextures(const std::vector<std::shared_ptr<Texture>>& textures) noexcept
-    {
-        if (_targetTextures == textures)
-        {
-            return *this;
-        }
-        if (isValid(_frameBuffer))
-        {
-            bgfx::destroy(_frameBuffer);
-        }
-        _targetTextures = textures;
-        std::vector<bgfx::TextureHandle> handles;
-        handles.reserve(textures.size());
-        for (auto& tex : textures)
-        {
-            handles.push_back(tex->getHandle());
-        }
-        _frameBuffer = bgfx::createFrameBuffer(uint8_t(handles.size()), &handles.front());
-        return *this;
-    }
-
-    const std::vector<std::shared_ptr<Texture>>& Camera::getTargetTextures() const noexcept
-    {
-        return _targetTextures;
-    }
-
     void Camera::filterEntityView(EntityRuntimeView& entities) const noexcept
     {
         if (_entityFilter != nullptr)
@@ -193,8 +162,10 @@ namespace darmok
     {
         _scene = scene;
         _app = app;
+        auto rgSuffix = std::to_string(scene.getEntity(*this));
         _renderGraph.clear();
-        _renderGraph.setName("Render Camera " + std::to_string(scene.getEntity(*this)));
+        _renderGraph.setName("Camera " + rgSuffix);
+
         if (_entityFilter != nullptr)
         {
             _entityFilter->init(scene.getRegistry());
@@ -206,6 +177,21 @@ namespace darmok
 
         _app->getRenderGraph().setChild(_renderGraph);
     }
+
+    void Camera::renderReset()
+    {
+        _renderGraph.clear();
+        for (auto& renderer : _renderers)
+        {
+            renderer->renderReset();
+        }
+        if (_app)
+        {
+            updateWindowProjection();
+            _app->getRenderGraph().setChild(_renderGraph);
+        }
+    }
+
 
     void Camera::shutdown()
     {
@@ -225,18 +211,23 @@ namespace darmok
         _app->getRenderGraph().setChild(_renderGraph);
     }
 
-    void Camera::renderReset()
+    Camera& Camera::setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept
     {
-        _renderGraph.clear();
-        for (auto& renderer : _renderers)
+        _frameBuffer = fb;
+        return *this;
+    }
+
+    std::shared_ptr<FrameBuffer> Camera::getFrameBuffer() const noexcept
+    {
+        if (_frameBuffer)
         {
-            renderer->renderReset();
+            return _frameBuffer;
         }
-        if (_app)
+        if (_scene)
         {
-            updateWindowProjection();
-            _app->getRenderGraph().setChild(_renderGraph);
+            return _scene->getFrameBuffer();
         }
+        return nullptr;
     }
 
     void Camera::configureView(bgfx::ViewId viewId) const noexcept
@@ -244,7 +235,6 @@ namespace darmok
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
         bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
 
-        bgfx::setViewFrameBuffer(viewId, _frameBuffer);
         getCurrentViewport().configureView(viewId);
     }
 
@@ -310,11 +300,6 @@ namespace darmok
         if (_viewport)
         {
             return _viewport.value();
-        }
-        if (!_targetTextures.empty())
-        {
-            auto& size = _targetTextures[0]->getSize();
-            return Viewport(0, 0, size.x, size.y);
         }
         if (_app)
         {
