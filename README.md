@@ -97,15 +97,15 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * play sounds and music (wav & mp3)
 
 #### Upcoming
-* support for nested rmlui data models in lua
-* move miniaudio to use taskflow tasks
-* check memory leak when reloading darmok-lua
-* luajit support (maybe compile using importer)
-* camera frustrum culling
 * more renderer features
     * other types of lights
     * deferred, clustered
     * SSAO
+* camera frustum culling
+* support for nested rmlui data models in lua
+* move miniaudio to use taskflow tasks
+* check memory leak when reloading darmok-lua
+* luajit support (maybe compile using importer)
 * text improvements
     * finish all the TextRenderConfig options
     * dynamic distance field rendering with border support

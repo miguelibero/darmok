@@ -655,7 +655,6 @@ namespace darmok
             _outputPath /= input.path.stem().string() + ".bin";
         }
 
-
         return true;
     }
 

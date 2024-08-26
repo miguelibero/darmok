@@ -29,6 +29,43 @@ namespace darmok
 		}
 	}
 
+	Image::Image(const std::array<DataView, 6>& faceData, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
+	{
+		auto right	= Image(faceData[0], alloc, format);
+		auto left	= Image(faceData[1], alloc, format);
+		auto top	= Image(faceData[2], alloc, format);
+		auto bottom = Image(faceData[3], alloc, format);
+		auto front	= Image(faceData[4], alloc, format);
+		auto back	= Image(faceData[5], alloc, format);
+
+		auto fformat = right.getFormat();
+
+		if (left.getFormat() != fformat || top.getFormat() != fformat || bottom.getFormat() != fformat
+			|| front.getFormat() != fformat || back.getFormat() != fformat)
+		{
+			throw new std::runtime_error("all faces should have the same format");
+		}
+
+		auto size = right.getSize();
+		if (left.getSize() != size || top.getSize() != size || bottom.getSize() != size
+			|| front.getSize() != size || back.getSize() != size)
+		{
+			throw new std::runtime_error("all faces should have the same size");
+		}
+
+		_container = bimg::imageAlloc(&alloc, fformat, size.x, size.y, 1, 1, true, false);
+
+		// Copy each face into the cubemap
+		auto ptr = (uint8_t*)_container->m_data;
+		auto memSize = right.getData().size();
+		std::memcpy(ptr + memSize * 0, right.getData().ptr(), memSize);
+		std::memcpy(ptr + memSize * 1, left.getData().ptr(), memSize);
+		std::memcpy(ptr + memSize * 2, top.getData().ptr(), memSize);
+		std::memcpy(ptr + memSize * 3, bottom.getData().ptr(), memSize);
+		std::memcpy(ptr + memSize * 4, front.getData().ptr(), memSize);
+		std::memcpy(ptr + memSize * 5, back.getData().ptr(), memSize);
+	}
+
 	Image::Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size) noexcept
 		: Image(size, alloc, bimg::TextureFormat::RGBA8)
 	{
@@ -42,6 +79,38 @@ namespace darmok
 		))
 	{
 		std::memset(_container->m_data, 0, _container->m_size);
+	}
+
+	Image::Image(const Image& other) noexcept
+		: _container(nullptr)
+	{
+		copyContainer(other);
+	}
+
+	Image& Image::operator=(const Image& other) noexcept
+	{
+		if (_container != nullptr)
+		{
+			bimg::imageFree(_container);
+		}
+
+		copyContainer(other);
+		return *this;
+	}
+
+	void Image::copyContainer(const Image& other) noexcept
+	{
+		auto size = other.getSize();
+		auto format = other.getFormat();
+
+		_container = bimg::imageAlloc(
+			other._container->m_allocator, format, size.x, size.y, 0, 1, false, false
+		);
+
+		auto info = other.getTextureInfo();
+		auto bpp = info.bitsPerPixel / 8;
+		uint32_t pitch = bpp * size.x;
+		bimg::imageCopy(_container->m_data, size.x, size.y, info.depth, info.bitsPerPixel, pitch, other._container->m_data);
 	}
 
     Image::Image(bimg::ImageContainer* container)
@@ -161,6 +230,120 @@ namespace darmok
 		return data;
 	}
 
+	const std::unordered_map<bimg::TextureFormat::Enum, std::string> Image::_formatNames = {
+		{ bimg::TextureFormat::BC1, "bc1" },
+		{ bimg::TextureFormat::BC2, "bc2" },
+		{ bimg::TextureFormat::BC3, "bc3" },
+		{ bimg::TextureFormat::BC4, "bc4" },
+		{ bimg::TextureFormat::BC5, "bc5" },
+		{ bimg::TextureFormat::BC6H, "bc6h" },
+		{ bimg::TextureFormat::BC7, "bc7" },
+		{ bimg::TextureFormat::ETC1, "etc1" },
+		{ bimg::TextureFormat::ETC2, "etc2" },
+		{ bimg::TextureFormat::ETC2A, "etc2a" },
+		{ bimg::TextureFormat::ETC2A1, "etc2a1" },
+		{ bimg::TextureFormat::PTC12, "ptc12" },
+		{ bimg::TextureFormat::PTC14, "ptc14" },
+		{ bimg::TextureFormat::PTC12A, "ptc12a" },
+		{ bimg::TextureFormat::PTC14A, "ptc14a" },
+		{ bimg::TextureFormat::PTC22, "ptc22" },
+		{ bimg::TextureFormat::PTC24, "ptc24" },
+		{ bimg::TextureFormat::ATC, "atc" },
+		{ bimg::TextureFormat::ATCE, "atce" },
+		{ bimg::TextureFormat::ATCI, "atci" },
+		{ bimg::TextureFormat::ASTC4x4, "astc4x4" },
+		{ bimg::TextureFormat::ASTC5x4, "astc5x4" },
+		{ bimg::TextureFormat::ASTC5x5, "astc5x5" },
+		{ bimg::TextureFormat::ASTC6x5, "astc6x5" },
+		{ bimg::TextureFormat::ASTC6x6, "astc6x6" },
+		{ bimg::TextureFormat::ASTC8x5, "astc8x5" },
+		{ bimg::TextureFormat::ASTC8x6, "astc8x6" },
+		{ bimg::TextureFormat::ASTC8x8, "astc8x8" },
+		{ bimg::TextureFormat::ASTC10x5, "astc10x5" },
+		{ bimg::TextureFormat::ASTC10x6, "astc10x6" },
+		{ bimg::TextureFormat::ASTC10x8, "astc10x8" },
+		{ bimg::TextureFormat::ASTC10x10, "astc10x10" },
+		{ bimg::TextureFormat::ASTC12x10, "astc12x10" },
+		{ bimg::TextureFormat::ASTC12x12, "astc12x12" },
+		{ bimg::TextureFormat::Unknown, "unknown" },
+		{ bimg::TextureFormat::R1, "r1" },
+		{ bimg::TextureFormat::A8, "a8" },
+		{ bimg::TextureFormat::R8, "r8" },
+		{ bimg::TextureFormat::R8I, "r81" },
+		{ bimg::TextureFormat::R8U, "r8u" },
+		{ bimg::TextureFormat::R8S, "r8s" },
+		{ bimg::TextureFormat::R16, "r16" },
+		{ bimg::TextureFormat::R16I, "r16i" },
+		{ bimg::TextureFormat::R16U, "r16u" },
+		{ bimg::TextureFormat::R16F, "r16f" },
+		{ bimg::TextureFormat::R16S, "r16s" },
+		{ bimg::TextureFormat::R32I, "r32i" },
+		{ bimg::TextureFormat::R32U, "r32u" },
+		{ bimg::TextureFormat::R32F, "r32f" },
+		{ bimg::TextureFormat::RG8, "rg8" },
+		{ bimg::TextureFormat::RG8I, "rg8i" },
+		{ bimg::TextureFormat::RG8U, "rg8u" },
+		{ bimg::TextureFormat::RG8S, "rg8s" },
+		{ bimg::TextureFormat::RG16, "rg16" },
+		{ bimg::TextureFormat::RG16I, "rg16i" },
+		{ bimg::TextureFormat::RG16U, "rg16u" },
+		{ bimg::TextureFormat::RG16F, "rg16f" },
+		{ bimg::TextureFormat::RG16S, "rg16s" },
+		{ bimg::TextureFormat::RG32I, "rg32i" },
+		{ bimg::TextureFormat::RG32U, "rg32u" },
+		{ bimg::TextureFormat::RG32F, "rg32f" },
+		{ bimg::TextureFormat::RGB8, "rgb8" },
+		{ bimg::TextureFormat::RGB8I, "rgb8i" },
+		{ bimg::TextureFormat::RGB8U, "rgb8u" },
+		{ bimg::TextureFormat::RGB8S, "rgb8s" },
+		{ bimg::TextureFormat::RGB9E5F, "rgb9e5f" },
+		{ bimg::TextureFormat::BGRA8, "bgra8" },
+		{ bimg::TextureFormat::RGB8U, "rgb8u" },
+		{ bimg::TextureFormat::RGBA8, "rgba8" },
+		{ bimg::TextureFormat::RGBA8I, "rgba8i" },
+		{ bimg::TextureFormat::RGBA8U, "rgba8u" },
+		{ bimg::TextureFormat::RGBA8S, "rgba8s" },
+		{ bimg::TextureFormat::RGBA16, "rgba16" },
+		{ bimg::TextureFormat::RGBA16I, "rgba16i" },
+		{ bimg::TextureFormat::RGBA16U, "rgba16u" },
+		{ bimg::TextureFormat::RGBA16F, "rgba16f" },
+		{ bimg::TextureFormat::RGBA16S, "rgba16s" },
+		{ bimg::TextureFormat::RGBA32I, "rgba32i" },
+		{ bimg::TextureFormat::RGBA32U, "rgba32u" },
+		{ bimg::TextureFormat::RGBA32F, "rgba32f" },
+		{ bimg::TextureFormat::B5G6R5, "b5g6r5" },
+		{ bimg::TextureFormat::R5G6B5, "r5g6b5" },
+		{ bimg::TextureFormat::BGRA4, "bgra4" },
+		{ bimg::TextureFormat::RGBA4, "rgba4" },
+		{ bimg::TextureFormat::BGR5A1, "bgr5a1" },
+		{ bimg::TextureFormat::RGB5A1, "rgb5a1" },
+		{ bimg::TextureFormat::RGB10A2, "rgb10a2" },
+		{ bimg::TextureFormat::RG11B10F, "rg11b10f" },
+		{ bimg::TextureFormat::UnknownDepth, "unknown_depth" },
+		{ bimg::TextureFormat::D16, "d16" },
+		{ bimg::TextureFormat::D24, "d24" },
+		{ bimg::TextureFormat::D24S8, "d24s8" },
+		{ bimg::TextureFormat::D32, "d32" },
+		{ bimg::TextureFormat::D16F, "d16f" },
+		{ bimg::TextureFormat::D24F, "d24f" },
+		{ bimg::TextureFormat::D32F, "d32f" },
+		{ bimg::TextureFormat::D0S8, "d0s8" }
+	};
+
+	bimg::TextureFormat::Enum Image::readFormat(std::string_view name) noexcept
+	{
+		if (name.empty())
+		{
+			return bimg::TextureFormat::RGBA8;
+		}
+		auto itr = std::find_if(_formatNames.begin(), _formatNames.end(), [name](auto& elm) { return elm.second == name; });
+		if (itr == _formatNames.end())
+		{
+			return bimg::TextureFormat::Unknown;
+		}
+		return itr->first;
+	}
+
 	ImageEncoding Image::getEncodingForPath(const std::filesystem::path& path) noexcept
 	{
 		auto ext = StringUtils::getFileExt(path.filename().string());
@@ -184,7 +367,11 @@ namespace darmok
 		{
 			return ImageEncoding::Ktx;
 		}
-		return ImageEncoding::Tga;
+		if (ext == ".tga")
+		{
+			return ImageEncoding::Tga;
+		}
+		return ImageEncoding::Count;
 	}
 
 	void Image::write(ImageEncoding encoding, std::ostream& stream) const noexcept
@@ -303,5 +490,116 @@ namespace darmok
 	{
 		auto data = _dataLoader(name);
 		return std::make_shared<Image>(data, _allocator);
+	}
+
+	bool ImageImporter::startImport(const Input& input, bool dry)
+	{
+		if (input.config.is_null())
+		{
+			return false;
+		}
+
+		auto basePath = input.getRelativePath().parent_path();
+		_outputPath = basePath;
+		auto name = input.path.stem().string();
+		if (input.config.contains("outputPath"))
+		{
+			_outputPath /= input.config["outputPath"].get<std::filesystem::path>();
+		}
+		else if (input.dirConfig.contains("outputPath"))
+		{
+			std::string v = input.dirConfig["outputPath"];
+			if (name.empty())
+			{
+				name = StringUtils::getFileStem(input.getRelativePath().string());
+			}
+			StringUtils::replace(v, "*", name);
+			_outputPath /= v;
+		}
+		else
+		{
+			_outputPath /= name + ".ktx";
+		}
+
+		_outputEncoding = Image::getEncodingForPath(_outputPath);
+		if (_outputEncoding == ImageEncoding::Count)
+		{
+			throw std::runtime_error("unknown output encoding");
+		}
+
+		_cubemapFaces.reset();
+
+		if (input.config.contains("cubemap"))
+		{
+			auto& faces = _cubemapFaces.emplace();
+			size_t i = 0;
+			for (auto& elm : input.config["cubemap"])
+			{
+				faces[i] = input.basePath / elm.get<std::filesystem::path>();
+				++i;
+			}
+		}
+
+		return true;
+	}
+
+	ImageImporter::Outputs ImageImporter::getOutputs(const Input& input) noexcept
+	{
+		return { _outputPath };
+	}
+
+	ImageImporter::Dependencies ImageImporter::getDependencies(const Input& input) noexcept
+	{
+		if (_cubemapFaces)
+		{
+			return Dependencies(_cubemapFaces->begin(), _cubemapFaces->end());
+		}
+		return Dependencies();
+	}
+
+	void ImageImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out) noexcept
+	{
+		std::string formatStr;
+		if (input.config.contains("outputFormat"))
+		{
+			formatStr = input.config["outputFormat"];
+		}
+		else if (input.dirConfig.contains("outputFormat"))
+		{
+			formatStr = input.config["outputFormat"];
+		}
+		auto format = Image::readFormat(formatStr);
+
+		if (_cubemapFaces)
+		{
+			std::array<Data, 6> faceData;
+			std::array<DataView, 6> faceDataView;
+			size_t i = 0;
+			for (auto& facePath : _cubemapFaces.value())
+			{
+				faceData[i] = Data::fromFile(facePath);
+				faceDataView[i] = faceData[i];
+				++i;
+			}
+			Image img(faceDataView, _alloc, format);
+			img.write(_outputEncoding, out);
+		}
+		else
+		{
+			Image img(Data::fromFile(input.path), _alloc, format);
+			img.write(_outputEncoding, out);
+		}
+	}
+
+	void ImageImporter::endImport(const Input& input) noexcept
+	{
+		_outputPath = "";
+		_cubemapFaces.reset();
+	}
+
+	const std::string& ImageImporter::getName() const noexcept
+	{
+		static const std::string name = "image";
+		return name;
 	}
 }

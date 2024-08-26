@@ -337,6 +337,7 @@ namespace darmok
 #endif
 		_importer.addTypeImporter<CopyAssetImporter>();
 		_importer.addTypeImporter<TexturePackerTextureAtlasImporter>();
+		_importer.addTypeImporter<ImageImporter>();
 	}
 
 	DarmokAssetImporter& DarmokAssetImporter::setCachePath(const std::filesystem::path& cachePath) noexcept

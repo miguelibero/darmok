@@ -9,6 +9,7 @@ namespace darmok
 		Exr,
 		Hdr,
 		Dds,
-		Ktx
+		Ktx,
+		Count
 	};
 }

@@ -185,6 +185,7 @@ set(SOURCES
   shadow.cpp
   freelook.cpp
   text.cpp
+  environment.cpp
 )
 
 set(HEADERS
@@ -218,6 +219,7 @@ set(HEADERS
   freelook.hpp
   text_fwd.hpp
   text.hpp
+  environment.hpp
 )
 
 set(LUA_SOURCES

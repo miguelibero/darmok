@@ -72,7 +72,7 @@ namespace
 			App::init();
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
-			auto prog = std::make_shared<Program>(StandardProgramType::ForwardBasic);
+			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
 			auto& layout = prog->getVertexLayout();
 
 			auto camEntity = scene.createEntity();
@@ -83,10 +83,12 @@ namespace
 
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setWindowPerspective(60, 0.3, 20);
+
+			auto skyboxImg = getAssets().getImageLoader()("cubemap.ktx");
 			
 			ShadowRendererConfig shadowConfig;
 			shadowConfig.mapMargin = glm::vec3(0.1);
-			shadowConfig.cascadeAmount = 2;
+			shadowConfig.cascadeAmount = 3;
 			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
 			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
