@@ -7,7 +7,7 @@
 #include <unordered_set>
 
 #include <darmok/export.h>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/input.hpp>
 
 namespace darmok

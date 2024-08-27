@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 #include <darmok/export.h>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/render_graph.hpp>
 
 namespace darmok
@@ -85,8 +85,6 @@ namespace darmok
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
-        void renderPassDefine(RenderPassDefinition& def) noexcept override;
-        void beforeRenderView(IRenderGraphContext& context) noexcept override;
         void beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept override;
     private:
         ShadowRenderer& _renderer;

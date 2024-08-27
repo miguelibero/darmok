@@ -2,8 +2,7 @@
 
 #include <memory>
 #include <darmok/export.h>
-#include <darmok/framebuffer.hpp>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/render_graph.hpp>
 
 namespace darmok
@@ -45,7 +44,6 @@ namespace darmok
         OptionalRef<App> _app;
         OptionalRef<MaterialRenderComponent> _materials;
         std::vector<std::unique_ptr<IRenderComponent>> _components;
-        FrameBuffer _framebuffer;
         
         void beforeRenderView(IRenderGraphContext& context);
         void beforeRenderEntity(Entity entity, IRenderGraphContext& context);

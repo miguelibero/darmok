@@ -94,22 +94,14 @@ namespace darmok
         return _renderGraph;
     }
 
-    void SceneImpl::setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept
+    RenderChain& SceneImpl::getRenderPostChain() noexcept
     {
-        _frameBuffer = fb;
+        return _renderPostChain;
     }
 
-    std::shared_ptr<FrameBuffer> SceneImpl::getFrameBuffer() const noexcept
+    const RenderChain& SceneImpl::getRenderPostChain() const noexcept
     {
-        if (_frameBuffer)
-        {
-            return _frameBuffer;
-        }
-        if (_app)
-        {
-            return _app->getFrameBuffer();
-        }
-        return nullptr;
+        return _renderPostChain;
     }
 
     OptionalRef<App> SceneImpl::getApp() noexcept
@@ -136,6 +128,10 @@ namespace darmok
 
         _app = app;
 
+        _renderGraph.clear();
+        _renderGraph.setName("Scene");
+        _renderPostChain.init(_renderGraph);
+
         for (auto& [type, comp] : _components)
         {
             comp->init(_scene, app);
@@ -149,6 +145,8 @@ namespace darmok
 
         _registry.on_construct<Camera>().connect<&SceneImpl::onCameraConstructed>(*this);
         _registry.on_destroy<Camera>().connect< &SceneImpl::onCameraDestroyed>(*this);
+
+        _app->getRenderGraph().setChild(_renderGraph);
     }
 
     void SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity)
@@ -186,11 +184,18 @@ namespace darmok
 
     void SceneImpl::renderReset()
     {
+        _renderGraph.clear();
+
         // iteration in reverse to maintain the order in wich the cameras where added
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
             itr->renderReset();
+        }
+        _renderPostChain.renderReset();
+        if (_app)
+        {
+            _app->getRenderGraph().setChild(_renderGraph);
         }
     }
 
@@ -211,6 +216,11 @@ namespace darmok
         for (auto& [type, comp] : _components)
         {
             comp->update(dt);
+        }
+
+        if (_app)
+        {
+            _app->getRenderGraph().setChild(_renderGraph);
         }
     }
 
@@ -247,7 +257,6 @@ namespace darmok
         return getRegistry().destroy(entity) > 0;
     }
 
-
     SceneImpl& Scene::getImpl() noexcept
     {
         return *_impl;
@@ -278,15 +287,24 @@ namespace darmok
         _impl->update(dt);
     }
 
-    Scene& Scene::setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept
+    RenderGraphDefinition& Scene::getRenderGraph() noexcept
     {
-        _impl->setFrameBuffer(fb);
-        return *this;
+        return _impl->getRenderGraph();
     }
 
-    std::shared_ptr<FrameBuffer> Scene::getFrameBuffer() const noexcept
+    const RenderGraphDefinition& Scene::getRenderGraph() const noexcept
     {
-        return _impl->getFrameBuffer();
+        return _impl->getRenderGraph();
+    }
+
+    RenderChain& Scene::getRenderPostChain() noexcept
+    {
+        return _impl->getRenderPostChain();
+    }
+
+    const RenderChain& Scene::getRenderPostChain() const noexcept
+    {
+        return _impl->getRenderPostChain();
     }
 
     void Scene::addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept

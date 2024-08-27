@@ -18,6 +18,9 @@ namespace darmok
         Viewport(const glm::uvec4& values = getStandardValues()) noexcept;
         Viewport(glm::uint x, glm::uint y, glm::uint w, glm::uint h) noexcept;
 
+        bool operator==(const Viewport& other) const noexcept;
+        bool operator!=(const Viewport& other) const noexcept;
+
         [[nodiscard]] glm::uvec4 getValues() const noexcept;
         void setValues(const glm::uvec4& values) noexcept;
 

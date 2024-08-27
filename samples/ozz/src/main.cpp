@@ -11,7 +11,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/input.hpp>
 #include <darmok/program.hpp>
 #include <darmok/model_assimp.hpp>

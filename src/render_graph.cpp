@@ -82,6 +82,7 @@ namespace darmok
         , _delegate(nullptr)
         , _priority(0)
         , _viewId(-1)
+        , _sync(false)
     {
     }
 
@@ -185,6 +186,17 @@ namespace darmok
     RenderPassDefinition::Resources& RenderPassDefinition::getWriteResources() noexcept
     {
         return _write;
+    }
+
+    RenderPassDefinition& RenderPassDefinition::setSync(bool sync) noexcept
+    {
+        _sync = sync;
+        return *this;
+    }
+
+    bool RenderPassDefinition::getSync() const noexcept
+    {
+        return _sync;
     }
 
     RenderGraphId RenderPassDefinition::id() const noexcept
@@ -406,7 +418,7 @@ namespace darmok
             auto& def = _def[i];
             auto prio = std::make_pair(i, def.getPriority());
             prios.insert(std::upper_bound(prios.begin(), prios.end(), prio,
-                [](auto& a, auto& b) { return a.second < b.second; }), prio);
+                [](auto& a, auto& b) { return a.second > b.second; }), prio);
         }
         _indices.reserve(prios.size());
         for (auto& prio : prios)
@@ -419,25 +431,15 @@ namespace darmok
         {
             auto& node = _def[i];
             builder.bind(node.id());
-            auto& inputs = node.getReadResources();
-            auto& outputs = node.getWriteResources();
-            auto sync = true;
-            for (auto& input : inputs)
+            for (auto& input : node.getReadResources())
             {
                 builder.ro(input.id());
-                if (!outputs.contains(input))
-                {
-                    // if all inputs of the node are also outputs
-                    // it means the node is not producing anything new
-                    // just modifying some resources
-                    sync = false;
-                }
             }
             for (auto& output : node.getWriteResources())
             {
                 builder.rw(output.id());
             }
-            if (sync)
+            if (node.getSync())
             {
                 builder.sync();
             }

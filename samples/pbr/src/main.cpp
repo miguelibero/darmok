@@ -13,7 +13,7 @@
 #include <darmok/program.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/shape.hpp>
@@ -84,8 +84,6 @@ namespace
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setWindowPerspective(60, 0.3, 20);
 
-			auto skyboxImg = getAssets().getImageLoader()("cubemap.ktx");
-			
 			ShadowRendererConfig shadowConfig;
 			shadowConfig.mapMargin = glm::vec3(0.1);
 			shadowConfig.cascadeAmount = 3;
@@ -93,6 +91,12 @@ namespace
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
 			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
 			forwardRender.addComponent<LightingRenderComponent>();
+
+			cam.getRenderPostChain().addStep<ScreenSpaceRenderPass>()
+				.setName("Tonemap")
+				.setProgram(std::make_shared<Program>(StandardProgramType::Tonemap));
+
+			auto skyboxImg = getAssets().getImageLoader()("cubemap.ktx");
 
 			_freelook = scene.addSceneComponent<FreelookController>(cam);
 

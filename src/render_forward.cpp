@@ -6,7 +6,7 @@
 #include <darmok/light.hpp>
 #include <darmok/material.hpp>
 #include <darmok/scene.hpp>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/texture.hpp>
 #include "render_samplers.hpp"
 
@@ -49,9 +49,12 @@ namespace darmok
 		{
 			return;
 		}
-
 		auto size = _cam->getCurrentViewport().size;
 		_cam->getRenderGraph().addPass(*this);
+		for (auto& comp : _components)
+		{
+			comp->renderReset();
+		}
 	}
 
 	void ForwardRenderer::shutdown() noexcept
@@ -101,7 +104,6 @@ namespace darmok
 	void ForwardRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
 	{
 		def.setName("Forward");
-		def.getWriteResources().add<Texture>();
 		for (auto& comp : _components)
 		{
 			comp->renderPassDefine(def);
@@ -112,7 +114,10 @@ namespace darmok
 	{
 		_viewId = viewId;
 		_cam->configureView(viewId);
-		bgfx::setViewFrameBuffer(viewId, _framebuffer.getHandle());
+		for (auto& comp : _components)
+		{
+			comp->renderPassConfigure(viewId);
+		}
 	}
 
 	void ForwardRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
@@ -134,7 +139,5 @@ namespace darmok
 			}
 			_materials->renderSubmit(_viewId, encoder, *renderable->getMaterial());
 		}
-
-		context.getResources().setRef<FrameBuffer>(_framebuffer);
 	}
 }

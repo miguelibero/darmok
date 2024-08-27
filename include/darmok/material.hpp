@@ -5,7 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/material_fwd.hpp>
 #include <darmok/program.hpp>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 
 #include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>

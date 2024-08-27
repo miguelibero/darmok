@@ -3,7 +3,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/light.hpp>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>

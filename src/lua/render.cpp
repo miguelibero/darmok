@@ -1,6 +1,6 @@
 #include "render.hpp"
 #include "scene.hpp"
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>

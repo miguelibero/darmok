@@ -130,7 +130,6 @@ set(CORE_SOURCES
   asset_core.cpp
   render_graph.cpp
   easing.cpp
-  framebuffer.cpp
 )
 
 set(CORE_HEADERS
@@ -163,7 +162,6 @@ set(CORE_HEADERS
   render_graph.hpp
   easing_fwd.hpp
   easing.hpp
-  framebuffer.hpp
 )
 
 set(SOURCES
@@ -184,9 +182,10 @@ set(SOURCES
   transform.cpp
   camera.cpp
   light.cpp
-  render.cpp
+  render_scene.cpp
   render_forward.cpp
   render_deferred.cpp
+  render_chain.cpp
   shadow.cpp
   freelook.cpp
   text.cpp
@@ -217,9 +216,10 @@ set(HEADERS
   transform.hpp
   camera.hpp
   light.hpp
-  render.hpp
+  render_scene.hpp
   render_forward.hpp
   render_deferred.hpp
+  render_chain.hpp
   shadow.hpp
   freelook.hpp
   text_fwd.hpp

@@ -6,7 +6,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
 #include <darmok/math.hpp>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <bx/math.h>
 
@@ -46,6 +46,16 @@ namespace darmok
     const RenderGraphDefinition& Camera::getRenderGraph() const noexcept
     {
         return _renderGraph;
+    }
+
+    RenderChain& Camera::getRenderPostChain() noexcept
+    {
+        return _renderPostChain;
+    }
+
+    const RenderChain& Camera::getRenderPostChain() const noexcept
+    {
+        return _renderPostChain;
     }
 
     const glm::mat4& Camera::getProjectionMatrix() const noexcept
@@ -165,6 +175,7 @@ namespace darmok
         auto rgSuffix = std::to_string(scene.getEntity(*this));
         _renderGraph.clear();
         _renderGraph.setName("Camera " + rgSuffix);
+        _renderPostChain.init(_renderGraph);
 
         if (_entityFilter != nullptr)
         {
@@ -175,7 +186,7 @@ namespace darmok
             renderer->init(*this, scene, app);
         }
 
-        _app->getRenderGraph().setChild(_renderGraph);
+        _scene->getRenderGraph().setChild(_renderGraph);
     }
 
     void Camera::renderReset()
@@ -185,13 +196,14 @@ namespace darmok
         {
             renderer->renderReset();
         }
-        if (_app)
+        updateWindowProjection();
+        _renderPostChain.renderReset();
+
+        if (_scene)
         {
-            updateWindowProjection();
-            _app->getRenderGraph().setChild(_renderGraph);
+            _scene->getRenderGraph().setChild(_renderGraph);
         }
     }
-
 
     void Camera::shutdown()
     {
@@ -199,6 +211,7 @@ namespace darmok
         {
             (*itr)->shutdown();
         }
+        _renderPostChain.shutdown();
         _renderGraph.clear();
     }
 
@@ -208,34 +221,19 @@ namespace darmok
         {
             renderer->update(deltaTime);
         }
-        _app->getRenderGraph().setChild(_renderGraph);
-    }
-
-    Camera& Camera::setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept
-    {
-        _frameBuffer = fb;
-        return *this;
-    }
-
-    std::shared_ptr<FrameBuffer> Camera::getFrameBuffer() const noexcept
-    {
-        if (_frameBuffer)
-        {
-            return _frameBuffer;
-        }
         if (_scene)
         {
-            return _scene->getFrameBuffer();
+            _scene->getRenderGraph().setChild(_renderGraph);
         }
-        return nullptr;
+        _renderPostChain.setViewport(getCurrentViewport());
     }
 
     void Camera::configureView(bgfx::ViewId viewId) const noexcept
     {
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
         bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
-
         getCurrentViewport().configureView(viewId);
+        _renderPostChain.configureView(viewId);
     }
 
     void Camera::beforeRenderView(bgfx::ViewId viewId) const noexcept

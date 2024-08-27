@@ -26,8 +26,10 @@ namespace darmok
         virtual ~IRenderComponent() = default;
         virtual void init(Camera& cam, Scene& scene, App& app) {};
         virtual void update(float deltaTime) {}
+        virtual void renderReset() {};
         virtual void shutdown() {};
         virtual void renderPassDefine(RenderPassDefinition& def) {};
+        virtual void renderPassConfigure(bgfx::ViewId viewId) {};
 
         virtual void beforeRenderView(IRenderGraphContext& context) {};
         virtual void beforeRenderEntity(Entity entity, IRenderGraphContext& context) {};
@@ -67,30 +69,5 @@ namespace darmok
         bool _enabled;
         std::shared_ptr<IMesh> _mesh;
         std::shared_ptr<Material> _material;
-    };
-
-    class Program;
-    class IMesh;
-
-    class DARMOK_EXPORT ScreenRenderPass final : public IRenderPass
-    {
-    public:
-        ScreenRenderPass() noexcept;
-        ~ScreenRenderPass() noexcept;
-        ScreenRenderPass& setName(const std::string& name) noexcept;
-        ScreenRenderPass& setPriority(int priority);
-        ScreenRenderPass& setProgram(const std::shared_ptr<Program>& prog) noexcept;
-        ScreenRenderPass& setViewport(std::optional<Viewport> vp) noexcept;
-
-        void renderPassDefine(RenderPassDefinition& def) noexcept override;
-        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(IRenderGraphContext& context) noexcept override;
-    private:
-        std::string _name;
-        int _priority;
-        std::shared_ptr<Program> _program;
-        std::unique_ptr<IMesh> _mesh;
-        bgfx::UniformHandle _texUniform;
-        std::optional<Viewport> _viewport;
     };
 }

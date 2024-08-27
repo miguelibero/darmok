@@ -260,6 +260,7 @@ namespace darmok
         virtual size_t hash() const = 0;
         virtual const Resources& getReadResources() const = 0;
         virtual const Resources& getWriteResources() const = 0;
+        virtual bool getSync() const { return false; }
         virtual int getPriority() const = 0;
         virtual bgfx::ViewId configureView(bgfx::ViewId viewId) = 0;
         virtual tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) = 0;
@@ -296,13 +297,16 @@ namespace darmok
         const Resources& getReadResources() const noexcept override;
         Resources& getWriteResources() noexcept;
         const Resources& getWriteResources() const noexcept override;
-        bool getSync() const noexcept;
+        
+        RenderPassDefinition& setSync(bool sync) noexcept;
+        bool getSync() const noexcept override;
 
         RenderGraphId id() const noexcept override;
         size_t hash() const noexcept override;
     private:
         std::string _name;
         int _priority;
+        bool _sync;
         RenderGraphId _id;
         bgfx::ViewId _viewId;
         Resources _read;

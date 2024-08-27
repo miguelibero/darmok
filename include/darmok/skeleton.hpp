@@ -7,7 +7,7 @@
 #include <vector>
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/render.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/asset_core.hpp>
 #include <bx/bx.h>
 #include <darmok/glm.hpp>

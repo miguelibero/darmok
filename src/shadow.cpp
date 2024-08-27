@@ -57,10 +57,17 @@ namespace darmok
     void ShadowRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
     {
         std::string name = "Shadow light ";
-        name += std::to_string(_lightEntity);
-        if (_cascade >= 0)
+        if (_lightEntity == entt::null)
         {
-            name += " cascade " + std::to_string(_cascade);
+            name += "(not used)";
+        }
+        else
+        {
+            name += std::to_string(_lightEntity);
+            if (_cascade >= 0)
+            {
+                name += " cascade " + std::to_string(_cascade);
+            }
         }
         def.setName(name);
     }
@@ -429,15 +436,6 @@ namespace darmok
         {
             bgfx::update(_shadowTransBuffer, 0, data.copyMem());
         }
-    }
-
-    void ShadowRenderComponent::renderPassDefine(RenderPassDefinition& def) noexcept
-    {
-        def.getReadResources().add<Texture>("shadow");
-    }
-
-    void ShadowRenderComponent::beforeRenderView(IRenderGraphContext& context) noexcept
-    {
     }
 
     void ShadowRenderComponent::beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept

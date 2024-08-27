@@ -26,6 +26,16 @@ namespace darmok
     {
     }
 
+    bool Viewport::operator==(const Viewport& other) const noexcept
+    {
+        return origin == other.origin && size == other.size;
+    }
+
+    bool Viewport::operator!=(const Viewport& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
     glm::uvec4 Viewport::getValues() const noexcept
     {
         return glm::ivec4(origin.x, origin.y, size.x, size.y);

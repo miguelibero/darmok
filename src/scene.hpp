@@ -5,6 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/render_graph.hpp>
+#include <darmok/render_chain.hpp>
 #include <entt/entt.hpp>
 #include <vector>
 #include <memory>
@@ -33,9 +34,8 @@ namespace darmok
 
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;
-
-        void setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept;
-        std::shared_ptr<FrameBuffer> getFrameBuffer() const noexcept;
+        RenderChain& getRenderPostChain() noexcept;
+        const RenderChain& getRenderPostChain() const noexcept;
 
         OptionalRef<App> getApp() noexcept;
         OptionalRef<const App> getApp() const noexcept;
@@ -52,7 +52,7 @@ namespace darmok
         Scene& _scene;
         OptionalRef<App> _app;
         RenderGraphDefinition _renderGraph;
-        std::shared_ptr<FrameBuffer> _frameBuffer;
+        RenderChain _renderPostChain;
 
         Components::iterator findComponent(entt::id_type type) noexcept;
         Components::const_iterator findComponent(entt::id_type type) const noexcept;

@@ -12,6 +12,7 @@
 #include <darmok/entity_filter.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/render_graph.hpp>
+#include <darmok/render_chain.hpp>
 
 namespace darmok
 {
@@ -21,7 +22,6 @@ namespace darmok
     class IRenderer;
     class Scene;
     struct Ray;
-    class FrameBuffer;
 
     class DARMOK_EXPORT Camera final
     {
@@ -101,24 +101,23 @@ namespace darmok
         }
 
         // trying to maintain Unity API https://docs.unity3d.com/ScriptReference/Camera.html
-        Ray screenPointToRay(const glm::vec3& point) const noexcept;
-        Ray viewportPointToRay(const glm::vec3& point) const noexcept;
-        glm::vec3 worldToScreenPoint(const glm::vec3& point) const noexcept;
-        glm::vec3 worldToViewportPoint(const glm::vec3& point) const noexcept;
-        glm::vec3 screenToWorldPoint(const glm::vec3& point) const noexcept;
-        glm::vec3 viewportToWorldPoint(const glm::vec3& point) const noexcept;
-        glm::vec3 viewportToScreenPoint(const glm::vec3& point) const noexcept;
-        glm::vec3 screenToViewportPoint(const glm::vec3& point) const noexcept;
+        [[nodiscard]] Ray screenPointToRay(const glm::vec3& point) const noexcept;
+        [[nodiscard]] Ray viewportPointToRay(const glm::vec3& point) const noexcept;
+        [[nodiscard]] glm::vec3 worldToScreenPoint(const glm::vec3& point) const noexcept;
+        [[nodiscard]] glm::vec3 worldToViewportPoint(const glm::vec3& point) const noexcept;
+        [[nodiscard]] glm::vec3 screenToWorldPoint(const glm::vec3& point) const noexcept;
+        [[nodiscard]] glm::vec3 viewportToWorldPoint(const glm::vec3& point) const noexcept;
+        [[nodiscard]] glm::vec3 viewportToScreenPoint(const glm::vec3& point) const noexcept;
+        [[nodiscard]] glm::vec3 screenToViewportPoint(const glm::vec3& point) const noexcept;
 
-        RenderGraphDefinition& getRenderGraph() noexcept;
-        const RenderGraphDefinition& getRenderGraph() const noexcept;
+        [[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
+        [[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
+        [[nodiscard]] RenderChain& getRenderPostChain() noexcept;
+        [[nodiscard]] const RenderChain& getRenderPostChain() const noexcept;
         
         void configureView(bgfx::ViewId viewId) const noexcept;
         void beforeRenderView(bgfx::ViewId viewId) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept;
-
-        Camera& setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept;
-        std::shared_ptr<FrameBuffer> getFrameBuffer() const noexcept;
 
     private:
         bool _enabled;
@@ -149,8 +148,8 @@ namespace darmok
         OptionalRef<App> _app;
 
         RenderGraphDefinition _renderGraph;
-        std::shared_ptr<FrameBuffer> _frameBuffer;
-
+        RenderChain _renderPostChain;
+        
         const EntityRegistry& getRegistry() const;
 
         bool updateWindowProjection() noexcept;

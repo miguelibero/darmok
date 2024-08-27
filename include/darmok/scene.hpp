@@ -10,7 +10,6 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/transform.hpp>
-#include <darmok/render_graph.hpp>
 
 namespace darmok
 {    
@@ -27,6 +26,8 @@ namespace darmok
     };
 
     class SceneImpl;
+    class RenderGraphDefinition;
+    class RenderChain;
 
     class DARMOK_EXPORT Scene final
     {
@@ -42,8 +43,10 @@ namespace darmok
         void renderReset();
         void shutdown();
 
-        Scene& setFrameBuffer(const std::shared_ptr<FrameBuffer>& fb) noexcept;
-        std::shared_ptr<FrameBuffer> getFrameBuffer() const noexcept;
+        RenderGraphDefinition& getRenderGraph() noexcept;
+        const RenderGraphDefinition& getRenderGraph() const noexcept;
+        RenderChain& getRenderPostChain() noexcept;
+        const RenderChain& getRenderPostChain() const noexcept;
 
         void addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
