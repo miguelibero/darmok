@@ -6,11 +6,6 @@
 
 namespace darmok
 {
-	void LuaPointLight::setAttenuation(PointLight& light, const VarLuaTable<glm::vec3>& attn) noexcept
-	{
-		light.setAttenuation(LuaGlm::tableGet(attn));
-	}
-
 	void LuaPointLight::setColor(PointLight& light, const VarLuaTable<Color3>& color) noexcept
 	{
 		light.setColor(LuaGlm::tableGet(color));
@@ -47,8 +42,7 @@ namespace darmok
 			"get_entity_component", &LuaPointLight::getEntityComponent,
 			"get_entity", &LuaPointLight::getEntity,
 			"intensity", sol::property(&PointLight::getIntensity, &PointLight::setIntensity),
-			"attenuation", sol::property(&PointLight::getAttenuation, &LuaPointLight::setAttenuation),
-			"radius", sol::property(&PointLight::getRadius),
+			"radius", sol::property(&PointLight::getRadius, &PointLight::setRadius),
 			"color", sol::property(&PointLight::getColor, &LuaPointLight::setColor)
 		);
 	}

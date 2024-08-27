@@ -16,20 +16,19 @@ namespace darmok
     class DARMOK_EXPORT PointLight final
     {
     public:
-        PointLight(float intensity = 1.F, const Color3& color = Colors::white3()) noexcept;
+        PointLight(float intensity = 1.F, const Color3& color = Colors::white3(), float radius = 1.F) noexcept;
 
         PointLight& setIntensity(float intensity) noexcept;
-        PointLight& setAttenuation(const glm::vec3& attn) noexcept;
+        PointLight& setRadius(float radius) noexcept;
 
         PointLight& setColor(const Color3& color) noexcept;
 
         [[nodiscard]] float getRadius() const noexcept;
         [[nodiscard]] float getIntensity() const noexcept;
-        [[nodiscard]] const glm::vec3& getAttenuation() const noexcept;
         [[nodiscard]] const Color3& getColor() const noexcept;
     private:
         float _intensity;
-        glm::vec3 _attenuation;
+        float _radius;
         Color3 _color;
     };
 

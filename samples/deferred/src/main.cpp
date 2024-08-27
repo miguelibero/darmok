@@ -51,7 +51,7 @@ namespace
 			for (auto& lightConfig : _pointLights)
 			{
 				auto entity = scene->createEntity();
-				scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color);
+				scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color, lightConfig.radius);
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
@@ -94,6 +94,7 @@ namespace
 		{
 			glm::vec3 position;
 			float intensity = 1.F;
+			float radius = 1.F;
 			Color3 color = Colors::white3();
 		};
 
@@ -101,9 +102,9 @@ namespace
 	};
 
 	const std::vector<DeferredSampleApp::PointLightConfig> DeferredSampleApp::_pointLights = {
-		{{ -5.0f, 0.3f, 0.0f }, 1.F, Colors::blue3()},
-		{{ 0.0f, 0.3f, 0.0f }, 1.F},
-		{{ 5.0f, 0.3f, 0.0f }, 1.F, Colors::red3()},
+		{{ -5.0f, 0.3f, 0.0f }, 10.F, 5.F, Colors::blue3()},
+		{{ 0.0f, 0.3f, 0.0f }, 10.F, 5.F},
+		{{ 5.0f, 0.3f, 0.0f }, 10.F, 5.F, Colors::red3()},
 	};
 }
 

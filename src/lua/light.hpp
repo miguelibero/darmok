@@ -18,7 +18,6 @@ namespace darmok
 	private:
 		OptionalRef<PointLight> _light;
 
-		static void setAttenuation(PointLight& light, const VarLuaTable<glm::vec3>& attn) noexcept;
 		static void setColor(PointLight& light, const VarLuaTable<Color3>& color) noexcept;
 
 		static PointLight& addEntityComponent1(LuaEntity& entity) noexcept;

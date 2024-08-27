@@ -70,7 +70,7 @@ namespace darmok
 
         static inline float getIntensity(const aiColor3D& c) noexcept
         {
-            return glm::compMax(convert(c));
+            return glm::compMax(glm::vec3(c.r, c.g, c.b));
         }
 
         static inline Color3 convert(aiColor3D c) noexcept
@@ -175,15 +175,27 @@ namespace darmok
     {
         auto scene = importer.GetOrphanedScene();
 
-        // scale camera clip planes, seems to be an assimp bug
         // https://github.com/assimp/assimp/issues/3240
         auto scale = importer.GetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 1.0f);
         scale *= importer.GetPropertyFloat(AI_CONFIG_APP_SCALE_KEY, 1.0f);
-        for (auto i = 0; i < scene->mNumCameras; i++)
+
+        // scale camera clip planes, seems to be an assimp bug
+        for (auto i = 0; i < scene->mNumCameras; ++i)
         {
             auto cam = scene->mCameras[i];
             cam->mClipPlaneNear *= scale;
             cam->mClipPlaneFar *= scale;
+        }
+
+        // scale light parameters
+        for (auto i = 0; i < scene->mNumLights; ++i)
+        {
+            auto light = scene->mLights[i];
+            light->mColorAmbient = light->mColorAmbient * scale;
+            light->mColorDiffuse = light->mColorDiffuse * scale;
+            light->mColorSpecular = light->mColorSpecular * scale;
+            light->mAttenuationLinear /= scale;
+            light->mAttenuationQuadratic /= scale * scale;
         }
         return std::shared_ptr<aiScene>(scene);
     }
@@ -232,7 +244,7 @@ namespace darmok
     std::vector<std::string> AssimpModelConverter::getTexturePaths(const aiScene& scene) noexcept
     {
         std::vector<std::string> paths;
-        for (size_t i = 0; i < scene.mNumMaterials; i++)
+        for (size_t i = 0; i < scene.mNumMaterials; ++i)
         {
             auto& assimpMat = *scene.mMaterials[i];
             for (auto& elm : _materialTextures)
@@ -297,7 +309,7 @@ namespace darmok
         modelNode.name = AssimpUtils::getStringView(assimpNode.mName);
         modelNode.transform = AssimpUtils::convert(assimpNode.mTransformation);
 
-        for(size_t i = 0; i < assimpNode.mNumMeshes; i++)
+        for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
         {
             auto& modelRenderable = modelNode.renderables.emplace_back();
             auto assimpMesh = _scene.mMeshes[assimpNode.mMeshes[i]];
@@ -306,7 +318,7 @@ namespace darmok
             modelRenderable.material = getMaterial(assimpMaterial);
         }
 
-        for (size_t i = 0; i < _scene.mNumCameras; i++)
+        for (size_t i = 0; i < _scene.mNumCameras; ++i)
         {
             auto assimpCam = _scene.mCameras[i];
             if (assimpCam->mName == assimpNode.mName)
@@ -315,7 +327,7 @@ namespace darmok
                 break;
             }
         }
-        for (size_t i = 0; i < _scene.mNumLights; i++)
+        for (size_t i = 0; i < _scene.mNumLights; ++i)
         {
             auto assimpLight = _scene.mLights[i];
             if (assimpLight->mName == assimpNode.mName)
@@ -325,7 +337,7 @@ namespace darmok
             }
         }
 
-        for (size_t i = 0; i < assimpNode.mNumChildren; i++)
+        for (size_t i = 0; i < assimpNode.mNumChildren; ++i)
         {
             auto& modelChild = modelNode.children.emplace_back();
             update(modelChild, *assimpNode.mChildren[i]);
@@ -353,6 +365,35 @@ namespace darmok
         cam.projection = Math::perspective(fovy, aspect, assimpCam.mClipPlaneNear, assimpCam.mClipPlaneFar);
     }
 
+    float AssimpModelConverter::getLightRadius(const glm::vec3& attenuation) noexcept
+    {
+        static const float intensityThreshold = 0.001F;
+        auto thres = intensityThreshold;
+
+        auto quat = attenuation[2];
+        auto lin = attenuation[1];
+        auto cons = attenuation[0];
+
+        if (quat == 0.F)
+        {
+            if (lin == 0)
+            {
+                return 0.0f;
+            }
+            return (thres - cons) / lin;
+        }
+
+        float disc = lin * lin - 4 * quat * (cons - thres);
+        if (disc < 0.0f)
+        {
+            return 0.0f;
+        }
+
+        float d1 = (-lin + sqrt(disc)) / (2 * quat);
+        float d2 = (-lin - sqrt(disc)) / (2 * quat);
+        return glm::max(d1, d2);
+    }
+
     void AssimpModelConverter::update(ModelNode& modelNode, const aiLight& assimpLight) noexcept
     {
         auto& lightNode = modelNode.children.emplace_back();
@@ -366,11 +407,12 @@ namespace darmok
         if (assimpLight.mType == aiLightSource_POINT)
         {
             auto& light = lightNode.pointLight.emplace();
-            light.attenuation = glm::vec3(
+            auto attn = glm::vec3(
                 assimpLight.mAttenuationConstant,
                 assimpLight.mAttenuationLinear,
                 assimpLight.mAttenuationQuadratic
             );
+            light.radius = getLightRadius(attn);
             light.intensity = intensity;
             light.color = color;
             // we're not supporting different specular color in lights
@@ -600,7 +642,7 @@ namespace darmok
             tangents = op(assimpMesh);
         }
 
-        for(size_t i = 0; i < assimpMesh.mNumVertices; i++)
+        for(size_t i = 0; i < assimpMesh.mNumVertices; ++i)
         {
             if(assimpMesh.mVertices)
             {
@@ -662,7 +704,7 @@ namespace darmok
                     data[weight.mVertexId].emplace_back(i, weight.mWeight);
                 }
             }
-            i++;
+            ++i;
         }
         for (auto& [i, vert] : data)
         {
@@ -688,13 +730,13 @@ namespace darmok
     std::vector<VertexIndex> AssimpModelConverter::createIndexData(const aiMesh& assimpMesh) const noexcept
     {
         size_t size = 0;
-        for(size_t i = 0; i < assimpMesh.mNumFaces; i++)
+        for(size_t i = 0; i < assimpMesh.mNumFaces; ++i)
         {
             size += assimpMesh.mFaces[i].mNumIndices;
         }
         std::vector<VertexIndex> indices;
         indices.reserve(size);
-        for(size_t i = 0; i < assimpMesh.mNumFaces; i++)
+        for(size_t i = 0; i < assimpMesh.mNumFaces; ++i)
         {
             auto& face = assimpMesh.mFaces[i];
             for(size_t j = 0; j < face.mNumIndices; j++)
@@ -726,7 +768,7 @@ namespace darmok
         }
 
         std::vector<aiBone*> bones;
-        for (size_t i = 0; i < assimpMesh.mNumBones; i++)
+        for (size_t i = 0; i < assimpMesh.mNumBones; ++i)
         {
             auto bone = assimpMesh.mBones[i];
             std::string boneName(bone->mName.C_Str());

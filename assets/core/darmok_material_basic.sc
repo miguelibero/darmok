@@ -60,17 +60,17 @@ Material getMaterial(vec2 texcoord)
     return mat;
 }
 
-vec3 phongDiffuse(vec3 lightDir, vec3 normal, vec3 lightIntensity)
+vec3 phongDiffuse(vec3 lightDir, vec3 normal, vec3 radianceIn)
 {
 	float diff = max(dot(normal, lightDir), 0.0);
-	return diff * lightIntensity;
+	return diff * radianceIn;
 }
 
-vec3 phongSpecular(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 lightIntensity, float shininess)
+vec3 phongSpecular(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 radianceIn, float shininess)
 {
     vec3 reflectDir = reflect(-lightDir, normal);  
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-	return spec * lightIntensity;
+	return spec * radianceIn;
 }
 
 #endif // DARMOK_MATERIAL_BASIC_HEADER

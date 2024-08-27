@@ -132,10 +132,11 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * spine animations
 * unify use of allocators everywhere
 * progressive asset loaders
-* multithreaded rendering with [taskflow](https://github.com/taskflow/taskflow)
 * lua debugging would be nice
 * particle systems (maybe effekseer)
 * more sound options (spatialization, effects)
+* animation root motion 
+* [openusd](https://github.com/PixarAnimationStudios/OpenUSD) scene format support
 
 ## Interesting Related Projects
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced

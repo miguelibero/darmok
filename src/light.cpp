@@ -12,10 +12,10 @@
 
 namespace darmok
 {
-    PointLight::PointLight(float intensity, const Color3& color) noexcept
+    PointLight::PointLight(float intensity, const Color3& color, float radius) noexcept
         : _intensity(intensity)
         , _color(color)
-        , _attenuation(0, 1, 0)
+        , _radius(radius)
     {
     }
 
@@ -25,9 +25,9 @@ namespace darmok
         return *this;
     }
 
-    PointLight& PointLight::setAttenuation(const glm::vec3& attn) noexcept
+    PointLight& PointLight::setRadius(float radius) noexcept
     {
-        _attenuation = attn;
+        _radius = radius;
         return *this;
     }
 
@@ -44,37 +44,7 @@ namespace darmok
 
     float PointLight::getRadius() const noexcept
     {
-        static const float intensityThreshold = 1.0f;
-        auto intensity = glm::compMax(Colors::normalize(_color) * _intensity);
-        auto thres = intensity / intensityThreshold;
-
-        auto quat = _attenuation[2];
-        auto lin = _attenuation[1];
-        auto cons = _attenuation[0];
-
-        if (quat == 0.F)
-        {
-            if (lin == 0)
-            {
-                return 0.0f;
-            }
-            return (thres - cons) / lin;
-        }
-
-        float disc = lin * lin - 4 * quat * (cons - thres);
-        if (disc < 0.0f)
-        {
-            return 0.0f;
-        }
-
-        float d1 = (-lin + sqrt(disc)) / (2 * quat);
-        float d2 = (-lin - sqrt(disc)) / (2 * quat);
-        return glm::max(d1, d2);
-    }
-
-    const glm::vec3& PointLight::getAttenuation() const noexcept
-    {
-        return _attenuation;
+        return _radius;
     }
 
     const Color3& PointLight::getColor() const noexcept

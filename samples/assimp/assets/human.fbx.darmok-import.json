@@ -1,7 +1,7 @@
 {
     "model": {
         "outputPath": "human.dml",
-        "program": "forward"
+        "program": "forward_basic"
     },
     "copy": {}
 }

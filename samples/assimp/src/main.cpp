@@ -44,7 +44,7 @@ namespace
 
 			auto scene = addComponent<SceneAppComponent>().getScene();
 			getAssets().getAssimpModelLoader().setConfig({
-				.standardProgram = StandardProgramType::Forward
+				.standardProgram = StandardProgramType::ForwardBasic
 			});
 			auto model = getAssets().getModelLoader()("human.dml");
 

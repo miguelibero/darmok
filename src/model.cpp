@@ -409,7 +409,7 @@ namespace darmok
     {
         _config.scene.addComponent<PointLight>(entity)
             .setIntensity(light.intensity)
-            .setAttenuation(light.attenuation)
+            .setRadius(light.radius)
             .setColor(light.color);
     }
 

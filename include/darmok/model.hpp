@@ -26,12 +26,12 @@ namespace darmok
     {
         float intensity;
         Color3 color;
-        glm::vec3 attenuation;
+        float radius;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(intensity, color, attenuation);
+            archive(intensity, color, radius);
         }
     };
 

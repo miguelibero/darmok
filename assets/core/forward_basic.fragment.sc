@@ -27,10 +27,15 @@ void main()
     for(uint i = 0; i < pointLights; i++)
     {
 		PointLight light = getPointLight(i);
-		vec3 lightDir = normalize(light.position - fragPos);
-
-		diffuse += phongDiffuse(lightDir, norm, light.intensity);
-		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
+		float dist = distance(light.position, fragPos);
+        float attenuation = smoothAttenuation(dist, light.radius);
+        if(attenuation > 0.0)
+        {
+			vec3 lightDir = normalize(light.position - fragPos);
+			vec3 radianceIn = light.intensity * attenuation;
+			diffuse += phongDiffuse(lightDir, norm, radianceIn);
+			specular += phongSpecular(lightDir, norm, viewDir, radianceIn, mat.shininess);
+		}
 	}
 
 	uint dirLights = dirLightCount();
@@ -38,9 +43,10 @@ void main()
     {
 		DirectionalLight light = getDirLight(i);
 		vec3 lightDir = -light.direction;
+		vec3 radianceIn = light.intensity;
 
-		diffuse += phongDiffuse(lightDir, norm, light.intensity);
-		specular += phongSpecular(lightDir, norm, viewDir, light.intensity, mat.shininess);
+		diffuse += phongDiffuse(lightDir, norm, radianceIn);
+		specular += phongSpecular(lightDir, norm, viewDir, radianceIn, mat.shininess);
 
 #if DARMOK_VARIANT_SHADOW_ENABLED
 		float shadowBias = normalShadowBias(norm, lightDir);  
