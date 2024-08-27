@@ -213,12 +213,12 @@ namespace darmok
 		return _renderGraphDef;
 	}
 
-	tf::Executor& AppImpl::getTaskExecutor() noexcept
+	tf::Executor& AppImpl::getTaskExecutor()
 	{
 		return _taskExecutor.value();
 	}
 
-	const tf::Executor& AppImpl::getTaskExecutor() const noexcept
+	const tf::Executor& AppImpl::getTaskExecutor() const
 	{
 		return _taskExecutor.value();
 	}
@@ -365,7 +365,8 @@ namespace darmok
 	void AppImpl::renderPassConfigure(bgfx::ViewId viewId)
 	{
 		bgfx::setViewRect(viewId, 0, 0, bgfx::BackbufferRatio::Equal);
-		bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL, 1.F, 0U, 1);
+		const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL;
+		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1, 1, 1, 1, 1, 1, 1, 1);
 	}
 
 	void AppImpl::renderPassExecute(IRenderGraphContext& context)
@@ -729,12 +730,12 @@ namespace darmok
 		return _impl->getRenderGraph();
 	}
 
-	tf::Executor& App::getTaskExecutor() noexcept
+	tf::Executor& App::getTaskExecutor()
 	{
 		return _impl->getTaskExecutor();
 	}
 
-	const tf::Executor& App::getTaskExecutor() const noexcept
+	const tf::Executor& App::getTaskExecutor() const
 	{
 		return _impl->getTaskExecutor();
 	}

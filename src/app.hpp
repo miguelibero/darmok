@@ -8,6 +8,7 @@
 #include <darmok/audio.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_graph.hpp>
+#include <darmok/render_chain.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
 #include <string>
@@ -125,22 +126,22 @@ namespace darmok
 		OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
 		OptionalRef<const IAppComponent> getComponent(entt::id_type type) const noexcept;
 
-		[[nodiscard]] Input& getInput() noexcept;
-		[[nodiscard]] const Input& getInput() const noexcept;
-		[[nodiscard]] Window& getWindow() noexcept;
-		[[nodiscard]] const Window& getWindow() const noexcept;
-		[[nodiscard]] AssetContext& getAssets() noexcept;
-		[[nodiscard]] const AssetContext& getAssets() const noexcept;
-		[[nodiscard]] Platform& getPlatform() noexcept;
-		[[nodiscard]] const Platform& getPlatform() const noexcept;
-		[[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
-		[[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
-		[[nodiscard]] tf::Executor& getTaskExecutor() noexcept;
-		[[nodiscard]] const tf::Executor& getTaskExecutor() const noexcept;
+		Input& getInput() noexcept;
+		const Input& getInput() const noexcept;
+		Window& getWindow() noexcept;
+		const Window& getWindow() const noexcept;
+		AssetContext& getAssets() noexcept;
+		const AssetContext& getAssets() const noexcept;
+		Platform& getPlatform() noexcept;
+		const Platform& getPlatform() const noexcept;
+		RenderGraphDefinition& getRenderGraph() noexcept;
+		const RenderGraphDefinition& getRenderGraph() const noexcept;
+		tf::Executor& getTaskExecutor();
+		const tf::Executor& getTaskExecutor() const;
 
 #ifdef DARMOK_MINIAUDIO
-		[[nodiscard]] AudioSystem& getAudio() noexcept;
-		[[nodiscard]] const AudioSystem& getAudio() const noexcept;
+		AudioSystem& getAudio() noexcept;
+		const AudioSystem& getAudio() const noexcept;
 #endif
 
 		template <typename F>

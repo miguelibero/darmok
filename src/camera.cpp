@@ -48,14 +48,14 @@ namespace darmok
         return _renderGraph;
     }
 
-    RenderChain& Camera::getRenderPostChain() noexcept
+    RenderChain& Camera::getRenderChain() noexcept
     {
-        return _renderPostChain;
+        return _renderChain;
     }
 
-    const RenderChain& Camera::getRenderPostChain() const noexcept
+    const RenderChain& Camera::getRenderChain() const noexcept
     {
-        return _renderPostChain;
+        return _renderChain;
     }
 
     const glm::mat4& Camera::getProjectionMatrix() const noexcept
@@ -175,7 +175,7 @@ namespace darmok
         auto rgSuffix = std::to_string(scene.getEntity(*this));
         _renderGraph.clear();
         _renderGraph.setName("Camera " + rgSuffix);
-        _renderPostChain.init(_renderGraph);
+        _renderChain.init(_renderGraph, scene.getRenderChain());
 
         if (_entityFilter != nullptr)
         {
@@ -197,7 +197,7 @@ namespace darmok
             renderer->renderReset();
         }
         updateWindowProjection();
-        _renderPostChain.renderReset();
+        _renderChain.renderReset();
 
         if (_scene)
         {
@@ -211,7 +211,7 @@ namespace darmok
         {
             (*itr)->shutdown();
         }
-        _renderPostChain.shutdown();
+        _renderChain.shutdown();
         _renderGraph.clear();
     }
 
@@ -225,18 +225,13 @@ namespace darmok
         {
             _scene->getRenderGraph().setChild(_renderGraph);
         }
-        _renderPostChain.setViewport(getCurrentViewport());
+        _renderChain.setViewport(getCurrentViewport());
     }
 
     void Camera::configureView(bgfx::ViewId viewId) const noexcept
     {
-        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
-        getCurrentViewport().configureView(viewId);
-        if (auto renderTex = _renderPostChain.getFirstTexture())
-        {
-            renderTex->configureView(viewId);
-        }
+        auto renderTex = _renderChain.getFirstTexture();
+        _renderChain.configureView(viewId, renderTex);
     }
 
     void Camera::beforeRenderView(bgfx::ViewId viewId) const noexcept

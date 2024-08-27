@@ -3,6 +3,7 @@
 #include <darmok/asset.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
+#include <darmok/window.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 
@@ -94,14 +95,14 @@ namespace darmok
         return _renderGraph;
     }
 
-    RenderChain& SceneImpl::getRenderPostChain() noexcept
+    RenderChain& SceneImpl::getRenderChain() noexcept
     {
-        return _renderPostChain;
+        return _renderChain;
     }
 
-    const RenderChain& SceneImpl::getRenderPostChain() const noexcept
+    const RenderChain& SceneImpl::getRenderChain() const noexcept
     {
-        return _renderPostChain;
+        return _renderChain;
     }
 
     OptionalRef<App> SceneImpl::getApp() noexcept
@@ -130,7 +131,9 @@ namespace darmok
 
         _renderGraph.clear();
         _renderGraph.setName("Scene");
-        _renderPostChain.init(_renderGraph);
+
+        updateRenderChain();
+        _renderChain.init(_renderGraph);
 
         for (auto& [type, comp] : _components)
         {
@@ -147,6 +150,14 @@ namespace darmok
         _registry.on_destroy<Camera>().connect< &SceneImpl::onCameraDestroyed>(*this);
 
         _app->getRenderGraph().setChild(_renderGraph);
+    }
+
+    void SceneImpl::updateRenderChain() noexcept
+    {
+        if (_app)
+        {
+            _renderChain.setViewport(_app->getWindow().getPixelSize());
+        }
     }
 
     void SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity)
@@ -192,11 +203,12 @@ namespace darmok
         {
             itr->renderReset();
         }
-        _renderPostChain.renderReset();
         if (_app)
         {
             _app->getRenderGraph().setChild(_renderGraph);
         }
+        updateRenderChain();
+        _renderChain.renderReset();
     }
 
     void SceneImpl::update(float dt)
@@ -297,14 +309,14 @@ namespace darmok
         return _impl->getRenderGraph();
     }
 
-    RenderChain& Scene::getRenderPostChain() noexcept
+    RenderChain& Scene::getRenderChain() noexcept
     {
-        return _impl->getRenderPostChain();
+        return _impl->getRenderChain();
     }
 
-    const RenderChain& Scene::getRenderPostChain() const noexcept
+    const RenderChain& Scene::getRenderChain() const noexcept
     {
-        return _impl->getRenderPostChain();
+        return _impl->getRenderChain();
     }
 
     void Scene::addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept

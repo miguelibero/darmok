@@ -48,14 +48,14 @@ namespace darmok
     class DARMOK_EXPORT RenderChain final
     {
     public:
-        void init(RenderGraphDefinition& graph);
+        void init(RenderGraphDefinition& graph, OptionalRef<RenderChain> parent = nullptr);
         void renderReset();
         void shutdown();
         
         OptionalRef<RenderTexture> getFirstTexture() noexcept;
         OptionalRef<const RenderTexture> getFirstTexture() const noexcept;
 
-        void configureView(bgfx::ViewId viewId) const noexcept;
+        void configureView(bgfx::ViewId viewId, OptionalRef<const RenderTexture> write) const noexcept;
 
         RenderGraphDefinition& getRenderGraph();
         const RenderGraphDefinition& getRenderGraph() const;
@@ -82,6 +82,7 @@ namespace darmok
         std::vector<std::unique_ptr<RenderTexture>> _textures;
         std::shared_ptr<RenderTexture> _endTexture;
         Viewport _viewport;
+        OptionalRef<RenderChain> _parent;
 
         void updateTextures();
         void updateSteps();

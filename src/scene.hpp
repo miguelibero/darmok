@@ -34,8 +34,8 @@ namespace darmok
 
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;
-        RenderChain& getRenderPostChain() noexcept;
-        const RenderChain& getRenderPostChain() const noexcept;
+        RenderChain& getRenderChain() noexcept;
+        const RenderChain& getRenderChain() const noexcept;
 
         OptionalRef<App> getApp() noexcept;
         OptionalRef<const App> getApp() const noexcept;
@@ -52,12 +52,13 @@ namespace darmok
         Scene& _scene;
         OptionalRef<App> _app;
         RenderGraphDefinition _renderGraph;
-        RenderChain _renderPostChain;
+        RenderChain _renderChain;
 
         Components::iterator findComponent(entt::id_type type) noexcept;
         Components::const_iterator findComponent(entt::id_type type) const noexcept;
 
         void onCameraConstructed(EntityRegistry& registry, Entity entity);
         void onCameraDestroyed(EntityRegistry& registry, Entity entity);
+        void updateRenderChain() noexcept;
     };
 }

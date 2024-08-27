@@ -112,8 +112,8 @@ namespace darmok
 
         [[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
         [[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
-        [[nodiscard]] RenderChain& getRenderPostChain() noexcept;
-        [[nodiscard]] const RenderChain& getRenderPostChain() const noexcept;
+        [[nodiscard]] RenderChain& getRenderChain() noexcept;
+        [[nodiscard]] const RenderChain& getRenderChain() const noexcept;
         
         void configureView(bgfx::ViewId viewId) const noexcept;
         void beforeRenderView(bgfx::ViewId viewId) const noexcept;
@@ -148,7 +148,7 @@ namespace darmok
         OptionalRef<App> _app;
 
         RenderGraphDefinition _renderGraph;
-        RenderChain _renderPostChain;
+        RenderChain _renderChain;
         
         const EntityRegistry& getRegistry() const;
 

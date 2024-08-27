@@ -13,6 +13,7 @@
 #include <darmok/freelook.hpp>
 #include <darmok/render_deferred.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/render_chain.hpp>
 
 namespace
 {
@@ -45,7 +46,7 @@ namespace
 				.lookAt(glm::vec3(-7, 2, 0));
 
 			auto lightEntity = scene->createEntity();
-			scene->addComponent<AmbientLight>(lightEntity, 0.5);
+			scene->addComponent<AmbientLight>(lightEntity, 0.05);
 
 			for (auto& lightConfig : _pointLights)
 			{
@@ -57,6 +58,10 @@ namespace
 			// cam.addRenderer<DeferredRenderer>();
 			cam.addRenderer<ForwardRenderer>()
 				.addComponent<LightingRenderComponent>();
+
+			cam.getRenderChain().addStep<ScreenSpaceRenderPass>()
+				.setName("Tonemap")
+				.setProgram(std::make_shared<Program>(StandardProgramType::Tonemap));
 
 			scene->addSceneComponent<FreelookController>(cam);
 
@@ -97,9 +102,9 @@ namespace
 	};
 
 	const std::vector<DeferredSampleApp::PointLightConfig> DeferredSampleApp::_pointLights = {
-		{{ -5.0f, 0.3f, 0.0f }, 50.F, Colors::blue3()},
-		{{ 0.0f, 0.3f, 0.0f }, 50.F},
-		{{ 5.0f, 0.3f, 0.0f }, 50.F, Colors::red3()},
+		{{ -5.0f, 0.3f, 0.0f }, 1.F, Colors::blue3()},
+		{{ 0.0f, 0.3f, 0.0f }, 1.F},
+		{{ 5.0f, 0.3f, 0.0f }, 1.F, Colors::red3()},
 	};
 }
 

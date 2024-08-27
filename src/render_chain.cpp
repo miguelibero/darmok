@@ -93,9 +93,10 @@ namespace darmok
 		return _viewport;
 	}
 
-	void RenderChain::init(RenderGraphDefinition& graph)
+	void RenderChain::init(RenderGraphDefinition& graph, OptionalRef<RenderChain> parent)
 	{
 		_graph = graph;
+		_parent = parent;
 		for (auto& step : _steps)
 		{
 			step->init(*this);
@@ -151,6 +152,10 @@ namespace darmok
 		{
 			write = *_endTexture;
 		}
+		else if (_parent)
+		{
+			write = _parent->getFirstTexture();
+		}
 		_steps[i]->updateRenderChain(read, write);
 		return true;
 	}
@@ -164,29 +169,45 @@ namespace darmok
 		}
 	}
 
-
 	OptionalRef<RenderTexture> RenderChain::getFirstTexture() noexcept
 	{
-		if (_textures.empty())
+		if (!_textures.empty())
 		{
-			return nullptr;
+			return *_textures.front();
 		}
-		return *_textures.front();
+		if (_parent)
+		{
+			return _parent->getFirstTexture();
+		}
+		return nullptr;
 	}
 
 	OptionalRef<const RenderTexture> RenderChain::getFirstTexture() const noexcept
 	{
-		if (_textures.empty())
+		if (!_textures.empty())
 		{
-			return nullptr;
+			return *_textures.front();
 		}
-		return *_textures.front();
+		if (_parent)
+		{
+			return _parent->getFirstTexture();
+		}
+		return nullptr;
 	}
 
-	void RenderChain::configureView(bgfx::ViewId viewId) const noexcept
+	void RenderChain::configureView(bgfx::ViewId viewId, OptionalRef<const RenderTexture> write) const noexcept
 	{
-		static const uint16_t clearFlags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH;
-		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
+		uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+		if (write)
+		{
+			clearFlags |= BGFX_CLEAR_COLOR;
+			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 0);
+			write->configureView(viewId);
+		}
+		else
+		{
+			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+		}
 		_viewport.configureView(viewId);
 	}
 
@@ -201,8 +222,11 @@ namespace darmok
 		addTexture();
 		auto& ref = *step;
 		_steps.push_back(std::move(step));
-		ref.init(*this);
-		updateStep(_steps.size() - 1);
+		if (_graph)
+		{
+			ref.init(*this);
+			updateStep(_steps.size() - 1);
+		}
 
 		return *this;
 	}
@@ -280,11 +304,7 @@ namespace darmok
 	{
 		if (_chain)
 		{
-			_chain->configureView(viewId);
-		}
-		if (_writeTex)
-		{
-			_writeTex->configureView(viewId);
+			_chain->configureView(viewId, _writeTex);
 		}
 		_viewId = viewId;
 	}
@@ -307,6 +327,7 @@ namespace darmok
 		uint64_t state = 0
 			| BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
+			| BGFX_STATE_BLEND_ALPHA
 			;
 		encoder.setState(state);
 		encoder.submit(viewId, _program->getHandle());

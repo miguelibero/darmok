@@ -52,6 +52,7 @@ namespace darmok
 	class AudioSystem;
 	class AssetContext;
 	class RenderGraphDefinition;
+	class RenderChain;
 
 	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<App>&& app);
 
@@ -95,8 +96,8 @@ namespace darmok
 		[[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
 		[[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
 
-		[[nodiscard]] tf::Executor& getTaskExecutor() noexcept;
-		[[nodiscard]] const tf::Executor& getTaskExecutor() const noexcept;
+		[[nodiscard]] tf::Executor& getTaskExecutor();
+		[[nodiscard]] const tf::Executor& getTaskExecutor() const;
 
 #ifdef DARMOK_MINIAUDIO
 		[[nodiscard]] AudioSystem& getAudio() noexcept;

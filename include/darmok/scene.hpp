@@ -45,8 +45,8 @@ namespace darmok
 
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;
-        RenderChain& getRenderPostChain() noexcept;
-        const RenderChain& getRenderPostChain() const noexcept;
+        RenderChain& getRenderChain() noexcept;
+        const RenderChain& getRenderChain() const noexcept;
 
         void addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;

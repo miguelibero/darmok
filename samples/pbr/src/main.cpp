@@ -69,6 +69,7 @@ namespace
 	public:
 		void init() override
 		{
+			setResetFlag(BGFX_RESET_VSYNC);
 			App::init();
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
@@ -92,7 +93,7 @@ namespace
 			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
 			forwardRender.addComponent<LightingRenderComponent>();
 
-			cam.getRenderPostChain().addStep<ScreenSpaceRenderPass>()
+			scene.getRenderChain().addStep<ScreenSpaceRenderPass>()
 				.setName("Tonemap")
 				.setProgram(std::make_shared<Program>(StandardProgramType::Tonemap));
 
