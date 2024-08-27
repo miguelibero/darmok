@@ -233,7 +233,10 @@ namespace darmok
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
         bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
         getCurrentViewport().configureView(viewId);
-        _renderPostChain.configureView(viewId);
+        if (auto renderTex = _renderPostChain.getFirstTexture())
+        {
+            renderTex->configureView(viewId);
+        }
     }
 
     void Camera::beforeRenderView(bgfx::ViewId viewId) const noexcept

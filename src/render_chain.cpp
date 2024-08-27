@@ -6,25 +6,26 @@
 
 namespace darmok
 {
-	TextureConfig RenderTexture::createColorConfig(const Viewport& vp) noexcept
+	TextureConfig RenderTexture::createColorConfig(const glm::uvec2& size) noexcept
 	{
 		TextureConfig config;
-		config.size = vp.origin + vp.size;
+		config.size = size;
 		config.format = bgfx::TextureFormat::RGBA16F;
 		return config;
 	}
 
-	TextureConfig RenderTexture::createDepthConfig(const Viewport& vp) noexcept
+	TextureConfig RenderTexture::createDepthConfig(const glm::uvec2& size) noexcept
 	{
-		auto config = createColorConfig(vp);
+		TextureConfig config;
+		config.size = size;
 		config.format = bgfx::TextureFormat::D16F;
 		return config;
 	}
 
-	RenderTexture::RenderTexture(const Viewport& vp) noexcept
-		: _colorTex(createColorConfig(vp), BGFX_TEXTURE_RT)
-		, _depthTex(createDepthConfig(vp), BGFX_TEXTURE_RT)
-		, _viewport(vp)
+	RenderTexture::RenderTexture(const glm::uvec2& size) noexcept
+		: _colorTex(createColorConfig(size), BGFX_TEXTURE_RT)
+		, _depthTex(createDepthConfig(size), BGFX_TEXTURE_RT)
+		, _handle{ bgfx::kInvalidHandle }
 	{
 		std::vector<bgfx::TextureHandle> handles =
 			{ _colorTex.getHandle(), _depthTex.getHandle() };
@@ -51,18 +52,19 @@ namespace darmok
 		return _handle;
 	}
 
-	const Viewport& RenderTexture::getViewport() const noexcept
-	{
-		return _viewport;
-	}
-
 	void RenderTexture::configureView(bgfx::ViewId viewId) const noexcept
 	{
-		static const uint16_t clearFlags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH;
-		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
 		bgfx::setViewFrameBuffer(viewId, _handle);
-		_viewport.configureView(viewId);
+	}
 
+	RenderGraphDefinition& RenderChain::getRenderGraph()
+	{
+		return _graph.value();
+	}
+
+	const RenderGraphDefinition& RenderChain::getRenderGraph() const
+	{
+		return _graph.value();
 	}
 
 	RenderChain& RenderChain::setRenderTexture(const std::shared_ptr<RenderTexture>& renderTex) noexcept
@@ -96,7 +98,7 @@ namespace darmok
 		_graph = graph;
 		for (auto& step : _steps)
 		{
-			step->init(graph);
+			step->init(*this);
 		}
 		updateSteps();
 	}
@@ -162,18 +164,36 @@ namespace darmok
 		}
 	}
 
-	void RenderChain::configureView(bgfx::ViewId viewId) const noexcept
+
+	OptionalRef<RenderTexture> RenderChain::getFirstTexture() noexcept
 	{
 		if (_textures.empty())
 		{
-			return;
+			return nullptr;
 		}
-		_textures.front()->configureView(viewId);
+		return *_textures.front();
+	}
+
+	OptionalRef<const RenderTexture> RenderChain::getFirstTexture() const noexcept
+	{
+		if (_textures.empty())
+		{
+			return nullptr;
+		}
+		return *_textures.front();
+	}
+
+	void RenderChain::configureView(bgfx::ViewId viewId) const noexcept
+	{
+		static const uint16_t clearFlags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH;
+		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
+		_viewport.configureView(viewId);
 	}
 
 	void RenderChain::addTexture() noexcept
 	{
-		_textures.emplace_back(std::make_unique<RenderTexture>(_viewport));
+		auto size = _viewport.origin + _viewport.size;
+		_textures.emplace_back(std::make_unique<RenderTexture>(size));
 	}
 
 	RenderChain& RenderChain::addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept
@@ -181,11 +201,8 @@ namespace darmok
 		addTexture();
 		auto& ref = *step;
 		_steps.push_back(std::move(step));
-		if (_graph)
-		{
-			ref.init(_graph.value());
-			updateStep(_steps.size() - 1);
-		}
+		ref.init(*this);
+		updateStep(_steps.size() - 1);
 
 		return *this;
 	}
@@ -193,12 +210,13 @@ namespace darmok
 	ScreenSpaceRenderPass::ScreenSpaceRenderPass() noexcept
 		: _priority(0)
 		, _texUniform{ bgfx::kInvalidHandle }
+		, _viewId(-1)
 	{
 	}
 
-	void ScreenSpaceRenderPass::init(RenderGraphDefinition& graph) noexcept
+	void ScreenSpaceRenderPass::init(RenderChain& chain) noexcept
 	{
-		_graph = graph;
+		_chain = chain;
 		_texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 		renderReset();
 	}
@@ -207,13 +225,17 @@ namespace darmok
 	{
 		_readTex = read;
 		_writeTex = write;
+		if (write && _viewId != -1)
+		{
+			write->configureView(_viewId);
+		}
 	}
 
 	void ScreenSpaceRenderPass::renderReset() noexcept
 	{
-		if (_graph)
+		if (_chain)
 		{
-			_graph->addPass(*this);
+			_chain->getRenderGraph().addPass(*this);
 		}
 	}
 
@@ -224,6 +246,7 @@ namespace darmok
 			bgfx::destroy(_texUniform);
 			_texUniform.idx = bgfx::kInvalidHandle;
 		}
+		_viewId = -1;
 	}
 
 	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setName(const std::string& name) noexcept
@@ -255,10 +278,15 @@ namespace darmok
 
 	void ScreenSpaceRenderPass::renderPassConfigure(bgfx::ViewId viewId) noexcept
 	{
+		if (_chain)
+		{
+			_chain->configureView(viewId);
+		}
 		if (_writeTex)
 		{
 			_writeTex->configureView(viewId);
 		}
+		_viewId = viewId;
 	}
 
 	void ScreenSpaceRenderPass::renderPassExecute(IRenderGraphContext& context) noexcept
@@ -272,13 +300,15 @@ namespace darmok
 			return;
 		}
 
-		encoder.setTexture(0, _texUniform, _readTex->getTexture().getHandle());
 		_mesh->render(encoder);
+
+		encoder.setTexture(0, _texUniform, _readTex->getTexture().getHandle());
 
 		uint64_t state = 0
 			| BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
 			;
-		encoder.submit(viewId, _program->getHandle(), state);
+		encoder.setState(state);
+		encoder.submit(viewId, _program->getHandle());
 	}
 }
