@@ -1,0 +1,11 @@
+{
+    "vertexAttributes": {
+        "position": { 
+            "type": "float",
+            "num": 3
+        }
+    },
+    "fragmentAttributes": [
+        ["texCoord0", 3]
+    ]
+}

@@ -96,11 +96,7 @@ namespace darmok
     class DARMOK_EXPORT ScreenSpaceRenderPass final : public IRenderChainStep, IRenderPass
     {
     public:
-        ScreenSpaceRenderPass() noexcept;
-
-        ScreenSpaceRenderPass& setName(const std::string& name) noexcept;
-        ScreenSpaceRenderPass& setPriority(int priority);
-        ScreenSpaceRenderPass& setProgram(const std::shared_ptr<Program>& prog) noexcept;
+        ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority = 0) noexcept;
 
         void init(RenderChain& chain) noexcept override;
         void updateRenderChain(RenderTexture& read, OptionalRef<RenderTexture> write) noexcept override;

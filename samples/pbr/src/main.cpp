@@ -17,6 +17,7 @@
 #include <darmok/render_forward.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/environment.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
 namespace
@@ -88,16 +89,18 @@ namespace
 			ShadowRendererConfig shadowConfig;
 			shadowConfig.mapMargin = glm::vec3(0.1);
 			shadowConfig.cascadeAmount = 3;
+
 			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
 			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
+
+			auto skyboxTex = getAssets().getTextureLoader()("cubemap.ktx");
+			forwardRender.addComponent<SkyboxRenderComponent>(skyboxTex);
+
 			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
 			forwardRender.addComponent<LightingRenderComponent>();
 
-			scene.getRenderChain().addStep<ScreenSpaceRenderPass>()
-				.setName("Tonemap")
-				.setProgram(std::make_shared<Program>(StandardProgramType::Tonemap));
-
-			auto skyboxImg = getAssets().getImageLoader()("cubemap.ktx");
+			scene.getRenderChain().addStep<ScreenSpaceRenderPass>(
+				std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
 
 			_freelook = scene.addSceneComponent<FreelookController>(cam);
 
@@ -195,8 +198,8 @@ namespace
 			dir.x = getInput().getAxis(_moveRight, _moveLeft);
 			dir.z = getInput().getAxis(_moveForward, _moveBackward);
 
-			auto pos = _trans->getPosition();
-			_trans->setPosition(pos + (dir * deltaTime));
+			//auto pos = _trans->getPosition();
+			//_trans->setPosition(pos + (dir * deltaTime));
 		}
 
 		OptionalRef<FreelookController> _freelook;

@@ -59,9 +59,8 @@ namespace
 			cam.addRenderer<ForwardRenderer>()
 				.addComponent<LightingRenderComponent>();
 
-			cam.getRenderChain().addStep<ScreenSpaceRenderPass>()
-				.setName("Tonemap")
-				.setProgram(std::make_shared<Program>(StandardProgramType::Tonemap));
+			cam.getRenderChain().addStep<ScreenSpaceRenderPass>(
+				std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
 
 			scene->addSceneComponent<FreelookController>(cam);
 

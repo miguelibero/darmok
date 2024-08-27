@@ -231,8 +231,10 @@ namespace darmok
 		return *this;
 	}
 
-	ScreenSpaceRenderPass::ScreenSpaceRenderPass() noexcept
-		: _priority(0)
+	ScreenSpaceRenderPass::ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority) noexcept
+		: _program(prog)
+		, _name(name)
+		, _priority(priority)
 		, _texUniform{ bgfx::kInvalidHandle }
 		, _viewId(-1)
 	{
@@ -242,6 +244,10 @@ namespace darmok
 	{
 		_chain = chain;
 		_texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+
+		Rectangle screen(glm::uvec2(2));
+		_mesh = MeshData(screen).createMesh(_program->getVertexLayout());
+
 		renderReset();
 	}
 
@@ -271,26 +277,7 @@ namespace darmok
 			_texUniform.idx = bgfx::kInvalidHandle;
 		}
 		_viewId = -1;
-	}
-
-	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setName(const std::string& name) noexcept
-	{
-		_name = name;
-		return *this;
-	}
-
-	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setPriority(int priority)
-	{
-		_priority = priority;
-		return *this;
-	}
-
-	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setProgram(const std::shared_ptr<Program>& prog) noexcept
-	{
-		_program = prog;
-		Rectangle screen(glm::uvec2(2));
-		_mesh = MeshData(screen).createMesh(prog->getVertexLayout());
-		return *this;
+		_mesh.reset();
 	}
 
 	void ScreenSpaceRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
