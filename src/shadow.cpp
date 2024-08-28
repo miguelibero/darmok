@@ -270,10 +270,7 @@ namespace darmok
             auto farFactor = cascSliceDistri(step * (casc + 1));
             auto cascFrust = frust.getSlice(nearFactor, farFactor);
             auto cascProj = cascFrust.getAlignedProjectionMatrix();
-            if (auto trans = _cam->getTransform())
-            {
-                cascProj *= trans->getWorldInverse();
-            }
+            cascProj *= _cam->getModelMatrix();
             _camProjViews.emplace_back(cascProj);
         }
     }

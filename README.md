@@ -23,7 +23,7 @@ currently using:
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [miniaudio](https://miniaud.io/) for audio
 * [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & physics
-* [cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
+* [Cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
 * [tiny-process-lib](https://gitlab.com/eidheim/tiny-process-library) to run os processes
 * [mikktspace](http://www.mikktspace.com/) - to calculate tangents
 

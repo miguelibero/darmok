@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <regex>
 #include <vector>
+#include <unordered_set>
 
 namespace bx
 {
@@ -18,11 +19,14 @@ namespace bx
 
 namespace darmok
 {
+    using ProgramDefines = std::unordered_set<std::string>;
+
     struct DARMOK_EXPORT AssimpModelLoadConfig final
     {
         std::filesystem::path programPath;
         StandardProgramType standardProgram = StandardProgramType::Unlit;
         std::string program;
+        ProgramDefines programDefines;
         std::vector<std::regex> skipMeshes;
         bgfx::VertexLayout vertexLayout;
         bool embedTextures = true;

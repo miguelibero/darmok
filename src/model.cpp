@@ -15,6 +15,7 @@
 #include <cereal/archives/xml.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/memory.hpp>
@@ -341,7 +342,9 @@ namespace darmok
             .setNormalScale(modelMat->normalScale)
             .setOcclusionStrength(modelMat->occlusionStrength)
             .setEmissiveColor(modelMat->emissiveColor)
-            .setTwoSided(modelMat->twoSided);
+            .setTwoSided(modelMat->twoSided)
+            .setOpacity(modelMat->opacity)
+            .setProgramDefines(modelMat->programDefines);
 
         _materials.emplace(modelMat, mat);
         return mat;

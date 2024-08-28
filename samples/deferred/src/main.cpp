@@ -14,10 +14,33 @@
 #include <darmok/render_deferred.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/render_chain.hpp>
+#include <darmok/shadow.hpp>
 
 namespace
 {
 	using namespace darmok;
+
+	class RotateUpdater final : public ISceneComponent
+	{
+	public:
+		RotateUpdater(Transform& trans, float speed = 20.f)
+			: _trans(trans)
+			, _speed(speed)
+		{
+		}
+
+		void update(float dt) override
+		{
+			auto r = _trans.getRotation();
+			r = glm::quat(glm::radians(glm::vec3(dt * _speed, 0, 0))) * r;
+			_trans.setRotation(r);
+		}
+
+	private:
+		Transform& _trans;
+		float _speed;
+	};
+
 
 	class DeferredSampleApp : public App
 	{
@@ -48,6 +71,16 @@ namespace
 			auto lightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(lightEntity, 0.05);
 
+			auto dirLightEntity = scene->createEntity();
+			auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{ 0, 1, 0 })
+				.lookAt(glm::vec3(0, 0, 0));
+			scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
+			// scene->addSceneComponent<RotateUpdater>(dirLightTrans);
+
+			auto prog = std::make_shared<Program>(StandardProgramType::ForwardBasic);
+			std::shared_ptr<IMesh> arrowMesh = MeshData(Line(), LineMeshType::Arrow).createMesh(prog->getVertexLayout());
+			scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
+
 			for (auto& lightConfig : _pointLights)
 			{
 				auto entity = scene->createEntity();
@@ -55,9 +88,14 @@ namespace
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
+			ShadowRendererConfig shadowConfig;
+			shadowConfig.cascadeAmount = 3;
+			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
+
 			// cam.addRenderer<DeferredRenderer>();
-			cam.addRenderer<ForwardRenderer>()
-				.addComponent<LightingRenderComponent>();
+			auto& renderer = cam.addRenderer<ForwardRenderer>();
+			renderer.addComponent<ShadowRenderComponent>(shadowRenderer);
+			renderer.addComponent<LightingRenderComponent>();
 
 			cam.getRenderChain().addStep<ScreenSpaceRenderPass>(
 				std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");

@@ -7,6 +7,7 @@
 #include <variant>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <bx/bx.h>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
@@ -110,10 +111,14 @@ namespace darmok
         }
     };
 
+    using ProgramDefines = std::unordered_set<std::string>;
+
     struct DARMOK_EXPORT ModelMaterial final
     {
         std::string program;
         StandardProgramType standardProgram = StandardProgramType::Unlit;
+        ProgramDefines programDefines;
+
         MaterialPrimitiveType primitiveType = MaterialPrimitiveType::Triangle;
         std::unordered_map<MaterialTextureType, ModelTexture> textures;
 
@@ -128,7 +133,7 @@ namespace darmok
         bool twoSided = false;
 
         using Opacity = MaterialOpacity;
-        Opacity opacity = Opacity::Opaque;
+        Opacity opacity = Opacity::Transparent;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -136,6 +141,7 @@ namespace darmok
             archive(
                 program,
                 standardProgram,
+                programDefines,
                 primitiveType,
                 textures,
                 baseColor,

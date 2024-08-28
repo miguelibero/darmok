@@ -120,15 +120,17 @@ namespace darmok
 		}
 	}
 
-	void ForwardRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
+	void ForwardRenderer::renderEntities(IRenderGraphContext& context, EntityRuntimeView& view, MaterialOpacity opacity) noexcept
 	{
-		beforeRenderView(context);
 		auto& encoder = context.getEncoder();
-		auto renderables = _cam->createEntityView<Renderable>();
-		for (auto entity : renderables)
+		for (auto entity : view)
 		{
 			auto renderable = _scene->getComponent<const Renderable>(entity);
 			if (!renderable->valid())
+			{
+				continue;
+			}
+			if (renderable->getMaterial()->getOpacity() != opacity)
 			{
 				continue;
 			}
@@ -139,5 +141,14 @@ namespace darmok
 			}
 			_materials->renderSubmit(_viewId, encoder, *renderable->getMaterial());
 		}
+	}
+
+	void ForwardRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
+	{
+		beforeRenderView(context);
+		auto view = _cam->createEntityView<Renderable>();
+		renderEntities(context, view, MaterialOpacity::Opaque);
+		renderEntities(context, view, MaterialOpacity::Cutout);
+		renderEntities(context, view, MaterialOpacity::Transparent);
 	}
 }

@@ -162,7 +162,7 @@ namespace darmok
 
     Transform& Transform::lookAt(const glm::vec3& v, const glm::vec3& up) noexcept
     {
-        return lookDir(v - _position);
+        return lookDir(v - _position, up);
     }
 
     glm::vec3 Transform::getEulerAngles() const noexcept

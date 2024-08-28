@@ -466,6 +466,7 @@ namespace darmok
     {
         modelMat.program = _config.program;
         modelMat.standardProgram = _config.standardProgram;
+        modelMat.programDefines.insert(_config.programDefines.begin(), _config.programDefines.end());
 
         for (auto& elm : _materialTextures)
         {
@@ -519,20 +520,43 @@ namespace darmok
             modelMat.emissiveColor = AssimpUtils::convert(emissiveColor);
         }
 
-        int blendMode = aiBlendMode_Default;
-        // TODO: detect cutout
-        if (assimpMat.Get(AI_MATKEY_BLEND_FUNC, blendMode) == AI_SUCCESS)
+        aiString aiAlphaMode;
+        if (assimpMat.Get(AI_MATKEY_GLTF_ALPHAMODE, aiAlphaMode) == AI_SUCCESS)
         {
-            switch (blendMode)
+            std::string alphaMode = aiAlphaMode.C_Str();
+            if (alphaMode == "OPAQUE")
             {
-            case aiBlendMode_Additive:
-                modelMat.opacity = MaterialOpacity::Transparent;
-                break;
-            case aiBlendMode_Default:
                 modelMat.opacity = MaterialOpacity::Opaque;
-                break;
+            }
+            else if (alphaMode == "MASK")
+            {
+                modelMat.opacity = MaterialOpacity::Cutout;
+            }
+            else
+            {
+                modelMat.opacity = MaterialOpacity::Transparent;
             }
         }
+        else
+        {
+            int blendMode = aiBlendMode_Default;
+            // TODO: detect cutout
+            if (assimpMat.Get(AI_MATKEY_BLEND_FUNC, blendMode) == AI_SUCCESS)
+            {
+                switch (blendMode)
+                {
+                case aiBlendMode_Additive:
+                    modelMat.opacity = MaterialOpacity::Transparent;
+                    break;
+                case aiBlendMode_Default:
+                    modelMat.opacity = MaterialOpacity::Opaque;
+                    break;
+                }
+            }
+        }
+
+
+
     }
 
     struct AssimpCalcTangentsOperation final
@@ -894,6 +918,7 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_embedTexturesJsonKey = "embedTextures";
     const std::string AssimpModelImporterImpl::_programPathJsonKey = "programPath";
     const std::string AssimpModelImporterImpl::_programJsonKey = "program";
+    const std::string AssimpModelImporterImpl::_programDefinesJsonKey = "programDefines";
     const std::string AssimpModelImporterImpl::_skipMeshesJsonKey = "skipMeshes";
 
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
@@ -922,6 +947,10 @@ namespace darmok
         else if (!config.programPath.empty())
         {
             config.program = StringUtils::getFileStem(config.programPath.string()) + ".bin";
+        }
+        if (json.contains(_programDefinesJsonKey))
+        {
+            config.programDefines = json[_programDefinesJsonKey];
         }
 
         if (json.contains(_skipMeshesJsonKey))

@@ -182,7 +182,6 @@ namespace
 			BoundingBox bb = frust * dirLightTrans.getWorldInverse();
 			Frustum frustLight = bb.getOrtho() * dirLightTrans.getWorldInverse();
 
-
 			addDebugShape(frust, Colors::magenta());
 			addDebugShape(frustLight, Colors::blue());
 			addDebugShape(frustSlice, Colors::green());

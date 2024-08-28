@@ -4,6 +4,7 @@
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
 #include <darmok/render_graph.hpp>
+#include <darmok/material_fwd.hpp>
 
 namespace darmok
 {
@@ -47,5 +48,7 @@ namespace darmok
         
         void beforeRenderView(IRenderGraphContext& context);
         void beforeRenderEntity(Entity entity, IRenderGraphContext& context);
+
+        void renderEntities(IRenderGraphContext& context, EntityRuntimeView& view, MaterialOpacity opacity) noexcept;
     };
 }

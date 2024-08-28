@@ -353,7 +353,12 @@ namespace darmok
 			state &= ~BGFX_STATE_DEPTH_TEST_MASK;
 			state |= BGFX_STATE_DEPTH_TEST_LEQUAL;
 		}
+		else if (mat.getOpacity() == MaterialOpacity::Cutout)
+		{
+			state |= BGFX_STATE_BLEND_ALPHA;
+		}
 		encoder.setState(state);
-		encoder.submit(viewId, mat.getProgramHandle());
+		auto prog = mat.getProgramHandle();
+		encoder.submit(viewId, prog);
 	}
 }

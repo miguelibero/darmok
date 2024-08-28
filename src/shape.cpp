@@ -521,12 +521,12 @@ namespace darmok
         return glm::closestPointOnLine(p, points[0], points[1]);
     }
 
-    glm::mat4 Line::getTransform(const glm::vec3& forward) const noexcept
+    glm::mat4 Line::getTransform(const glm::vec3& up) const noexcept
     {
         auto diff = points[1] - points[0];
         auto len = glm::length(diff);
         auto trans = glm::translate(glm::mat4(len), points[0]);
-        auto rot = Math::dirQuat(diff / len);
+        auto rot = glm::quatLookAt(diff / len, up);
         trans *= glm::mat4_cast(rot);
 
         return trans;

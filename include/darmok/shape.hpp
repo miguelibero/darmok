@@ -297,7 +297,7 @@ namespace darmok
         std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
         glm::vec3 closestPoint(const glm::vec3& p);
 
-        glm::mat4 getTransform(const glm::vec3& forward = glm::vec3(0, 0, 1)) const noexcept;
+        glm::mat4 getTransform(const glm::vec3& up = glm::vec3(0, 1, 0)) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
