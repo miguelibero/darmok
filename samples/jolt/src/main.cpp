@@ -23,7 +23,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #ifdef _DEBUG
-#define PHYSICS_DEBUG_RENDERER
+#define PHYSICS_DEBUG_RENDER
 #include <darmok/physics3d_debug.hpp>
 #endif
 
@@ -58,13 +58,13 @@ namespace
 				_renderer->addComponent<LightingRenderComponent>();
 
 				_freeLook = _scene->addSceneComponent<FreelookController>(*_cam);
-#ifdef PHYSICS_DEBUG_RENDERER
-				_physicsDebugRenderer = _cam->addRenderer<PhysicsDebugRenderer>();
+#ifdef PHYSICS_DEBUG_RENDER
+				_physicsDebugRender = _renderer->addComponent<PhysicsDebugRenderComponent>();
 #ifdef DARMOK_FREETYPE
 				auto font = getAssets().getFontLoader()("../../assets/noto.ttf");
-				_physicsDebugRenderer->setFont(font);
+				_physicsDebugRender->setFont(font);
 #endif
-				_physicsDebugRenderer->setEnabled(false);
+				_physicsDebugRender->setEnabled(false);
 #endif
 			}
 
@@ -74,8 +74,11 @@ namespace
 			{ // lights
 				auto light = _scene->createEntity();
 				_scene->addComponent<Transform>(light)
-					.setPosition({ 1, 2, -2 });
-				_scene->addComponent<PointLight>(light, 10);
+					.setPosition({ 1, 2, -2 })
+					.lookDir(glm::vec3(-1, -1, 0));
+				_scene->addComponent<PointLight>(light, 0.5)
+					.setRadius(5);
+				_scene->addComponent<DirectionalLight>(light, 0.5);
 				_scene->addComponent<AmbientLight>(_scene->createEntity(), 0.5);
 			}
 
@@ -192,12 +195,12 @@ namespace
 				ImGui::TableSetColumnIndex(1);
 				ImGui::TextWrapped(_inDoor ? "true": "false");
 
-#ifdef PHYSICS_DEBUG_RENDERER
+#ifdef PHYSICS_DEBUG_RENDER
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
 				ImGui::TextWrapped("render mode");
 				ImGui::TableSetColumnIndex(1);
-				auto debugEnabled = _physicsDebugRenderer->isEnabled();
+				auto debugEnabled = _physicsDebugRender->isEnabled();
 				ImGui::TextWrapped(debugEnabled ? "debug renderer" : "meshes");
 #endif
 				ImGui::EndTable();
@@ -300,8 +303,8 @@ namespace
 		std::shared_ptr<Material> _doorMat;
 		std::shared_ptr<Material> _triggerDoorMat;
 
-#ifdef PHYSICS_DEBUG_RENDERER
-		OptionalRef<PhysicsDebugRenderer> _physicsDebugRenderer;
+#ifdef PHYSICS_DEBUG_RENDER
+		OptionalRef<PhysicsDebugRenderComponent> _physicsDebugRender;
 #endif
 
 		bool setMaterial(PhysicsBody& body, const std::shared_ptr<Material>& mat)

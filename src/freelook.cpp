@@ -79,7 +79,6 @@ namespace darmok
             }
         }
 
-        _cam.setEnabled(enabled);
         if (enabled)
         {
             if (auto trans = _cam.getTransform())

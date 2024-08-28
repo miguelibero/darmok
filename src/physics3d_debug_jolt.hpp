@@ -32,18 +32,14 @@ namespace darmok::physics3d
     class PhysicsSystemImpl;
     struct PhysicsDebugConfig;
 
-    class PhysicsDebugRendererImpl final : public JPH::DebugRenderer, public IRenderer, public IRenderPass, public IInputEventListener
+    class PhysicsDebugRenderComponentImpl final : public JPH::DebugRenderer, public IInputEventListener
     {
     public:
         using Config = PhysicsDebugConfig;
-        PhysicsDebugRendererImpl(const Config& config = {}) noexcept;
+        PhysicsDebugRenderComponentImpl(const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app);
         void shutdown();
-        void renderReset();
-
-        void renderPassDefine(RenderPassDefinition& def) noexcept override;
-        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(IRenderGraphContext& context) override;
+        void beforeRenderView(IRenderGraphContext& context);
 
         void onInputEvent(const std::string& tag) noexcept override;
 

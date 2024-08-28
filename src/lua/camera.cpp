@@ -10,7 +10,7 @@
 
 #ifdef DARMOK_JOLT
 #ifdef _DEBUG
-#define PHYSICS_DEBUG_RENDERER
+#define PHYSICS_DEBUG_RENDER
 #include "physics3d_debug.hpp"
 #endif
 #endif
@@ -178,8 +178,8 @@ namespace darmok
 		LuaForwardRenderer::bind(lua);
 		LuaLightingRenderComponent::bind(lua);
 
-#ifdef PHYSICS_DEBUG_RENDERER
-		physics3d::LuaPhysicsDebugRenderer::bind(lua);
+#ifdef PHYSICS_DEBUG_RENDER
+		physics3d::LuaPhysicsDebugRenderComponent::bind(lua);
 #endif
 
 #ifdef DARMOK_OZZ

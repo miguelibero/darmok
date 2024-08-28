@@ -81,10 +81,10 @@ namespace
 			_cam = camData.camera.get();
 
 			auto freeCamData = createCamera(scene, camData.shadowRenderer.get());
-			auto& freeCam = freeCamData.camera.get();
-			freeCam.setEnabled(false);
+			_freeCam = freeCamData.camera.get();
+			_freeCam->setEnabled(false);
 
-			_freelook = scene.addSceneComponent<FreelookController>(freeCam);
+			_freelook = scene.addSceneComponent<FreelookController>(*_freeCam);
 			_freelook->addListener(*this);
 
 			scene.getRenderChain().addStep<ScreenSpaceRenderPass>(
@@ -143,6 +143,10 @@ namespace
 
 		void onFreelookEnable(bool enabled) noexcept override
 		{
+			if (_freeCam)
+			{
+				_freeCam->setEnabled(enabled);
+			}
 			if (_cam)
 			{
 				_cam->setEnabled(!enabled);
@@ -170,6 +174,7 @@ namespace
 	private:
 
 		OptionalRef<Camera> _cam;
+		OptionalRef<Camera> _freeCam;
 		OptionalRef<FreelookController> _freelook;
 		OptionalRef<Transform> _trans;
 
