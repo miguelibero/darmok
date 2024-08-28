@@ -162,11 +162,11 @@ namespace darmok
 
 	void RenderChain::shutdown()
 	{
-		_graph.reset();
 		for (auto itr = _steps.rbegin(); itr != _steps.rend(); ++itr)
 		{
 			(*itr)->shutdown();
 		}
+		_graph.reset();
 	}
 
 	OptionalRef<RenderTexture> RenderChain::getFirstTexture() noexcept
@@ -278,6 +278,11 @@ namespace darmok
 		}
 		_viewId = -1;
 		_mesh.reset();
+		if (_chain)
+		{
+			_chain->getRenderGraph().removePass(*this);
+		}
+		_chain.reset();
 	}
 
 	void ScreenSpaceRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept

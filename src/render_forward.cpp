@@ -145,6 +145,10 @@ namespace darmok
 
 	void ForwardRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
 	{
+		if (!_cam->isEnabled())
+		{
+			return;
+		}
 		beforeRenderView(context);
 		auto view = _cam->createEntityView<Renderable>();
 		renderEntities(context, view, MaterialOpacity::Opaque);

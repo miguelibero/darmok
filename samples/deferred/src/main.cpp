@@ -15,6 +15,7 @@
 #include <darmok/render_forward.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/shadow.hpp>
+#include <darmok/material.hpp>
 
 namespace
 {
@@ -23,7 +24,7 @@ namespace
 	class RotateUpdater final : public ISceneComponent
 	{
 	public:
-		RotateUpdater(Transform& trans, float speed = 20.f)
+		RotateUpdater(Transform& trans, float speed = 50.f)
 			: _trans(trans)
 			, _speed(speed)
 		{
@@ -72,8 +73,8 @@ namespace
 			scene->addComponent<AmbientLight>(lightEntity, 0.05);
 
 			auto dirLightEntity = scene->createEntity();
-			auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{ 0, 1, 0 })
-				.lookAt(glm::vec3(0, 0, 0));
+			auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{ -7.5, 3.5, 0 })
+				.lookDir(glm::vec3(0, -1, 0), glm::vec3(0, 0, 1));
 			scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
 			// scene->addSceneComponent<RotateUpdater>(dirLightTrans);
 
@@ -94,7 +95,9 @@ namespace
 
 			// cam.addRenderer<DeferredRenderer>();
 			auto& renderer = cam.addRenderer<ForwardRenderer>();
+			
 			renderer.addComponent<ShadowRenderComponent>(shadowRenderer);
+			renderer.addComponent<ShadowDebugRenderComponent>(shadowRenderer);
 			renderer.addComponent<LightingRenderComponent>();
 
 			cam.getRenderChain().addStep<ScreenSpaceRenderPass>(
@@ -104,7 +107,15 @@ namespace
 
 			ModelSceneConfigurer configurer(*scene, getAssets());
 			configurer.setTextureFlags(BGFX_TEXTURE_NONE | BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC);
-			configurer(*model);
+			auto modelEntity = configurer(*model);
+
+			for (auto renderable : scene->getComponentsInChildren<Renderable>(modelEntity))
+			{
+				if (auto mat = renderable.get().getMaterial())
+				{
+					mat->setProgramDefine("SHADOW_ENABLED");
+				}
+			}
 
 			_mouseVel = glm::vec2(0);
 		}

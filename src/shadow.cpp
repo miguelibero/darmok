@@ -11,6 +11,7 @@
 #include <darmok/material.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/easing.hpp>
+#include <darmok/mesh.hpp>
 #include "generated/shadow.program.h"
 #include "render_samplers.hpp"
 
@@ -82,6 +83,10 @@ namespace darmok
 
     void ShadowRenderPass::renderPassExecute(IRenderGraphContext& context) noexcept
     {
+        if (!_renderer || !_renderer->isEnabled())
+        {
+            return;
+        }
         if (_lightEntity == entt::null)
         {
             return;
@@ -92,7 +97,7 @@ namespace darmok
         const void* viewPtr = nullptr;
         auto scene = _renderer->getScene();
         auto trans = scene->getComponent<const Transform>(_lightEntity);
-        auto proj = _renderer->getProjMatrix(trans, _cascade);
+        auto proj = _renderer->getProjViewMatrix(trans, _cascade);
         if (trans)
         {
             viewPtr = glm::value_ptr(trans->getWorldInverse());
@@ -202,6 +207,11 @@ namespace darmok
         updateCamera();
     }
 
+    bool ShadowRenderer::isEnabled() const noexcept
+    {
+        return _cam && _cam->isEnabled();
+    }
+
     void ShadowRenderer::updateLights() noexcept
     {
         if (!_cam)
@@ -275,7 +285,7 @@ namespace darmok
         }
     }
 
-    glm::mat4 ShadowRenderer::getProjMatrix(OptionalRef<const Transform> trans, uint8_t cascade) const noexcept
+    glm::mat4 ShadowRenderer::getProjViewMatrix(OptionalRef<const Transform> trans, uint8_t cascade) const noexcept
     {
         auto projView = _camProjViews[cascade % _camProjViews.size()];
         if (!trans)
@@ -321,7 +331,7 @@ namespace darmok
     glm::mat4 ShadowRenderer::getMapMatrix(Entity entity, uint8_t cascade) const noexcept
     {
         auto trans = _scene->getComponent<const Transform>(entity);
-        auto proj = getProjMatrix(trans, cascade);
+        auto proj = getProjViewMatrix(trans, cascade);
         if (trans)
         {
             proj *= trans->getWorldInverse();
@@ -453,5 +463,83 @@ namespace darmok
 
         auto texHandle = _renderer.getTextureHandle();
         encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, texHandle);
+    }
+
+    ShadowDebugRenderComponent::ShadowDebugRenderComponent(ShadowRenderer& renderer) noexcept
+        : _renderer(renderer)
+        , _colorUniform{ bgfx::kInvalidHandle }
+    {
+    }
+
+    void ShadowDebugRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    {
+        _scene = scene;
+        _prog = std::make_shared<Program>(StandardProgramType::Unlit);
+
+        _colorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
+    }
+
+    void ShadowDebugRenderComponent::shutdown() noexcept
+    {
+        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = { _colorUniform };
+        for (auto& uniform : uniforms)
+        {
+            if (isValid(uniform.get()))
+            {
+                bgfx::destroy(uniform);
+                uniform.get().idx = bgfx::kInvalidHandle;
+            }
+        }
+
+        _scene.reset();
+        _prog.reset();
+    }
+
+    void ShadowDebugRenderComponent::beforeRenderView(IRenderGraphContext& context) noexcept
+    {
+        auto cam = _renderer.getCamera();
+        if (!cam)
+        {
+            return;
+        }
+        MeshData meshData;
+        meshData.type = MeshType::Transient;
+
+        uint8_t debugColor = 0;
+        auto cascadeAmount = _renderer.getConfig().cascadeAmount;
+
+        for (uint8_t casc = 0; casc < cascadeAmount; ++casc)
+        {
+            auto cascProjView = _renderer.getProjViewMatrix(nullptr, casc);
+            meshData += MeshData(Frustum(cascProjView), RectangleMeshType::Outline);
+        }
+        renderMesh(meshData, debugColor, context);
+        ++debugColor;
+
+        auto lights = cam->createEntityView<DirectionalLight>();
+        for (auto entity : lights)
+        {
+            meshData.clear();
+            for (auto casc = 0; casc < cascadeAmount; ++casc)
+            {
+                auto mtx = _renderer.getMapMatrix(entity, casc);
+                meshData += MeshData(Frustum(mtx), RectangleMeshType::Outline);
+            }
+            renderMesh(meshData, debugColor, context);
+            ++debugColor;
+        }
+    }
+
+    void ShadowDebugRenderComponent::renderMesh(MeshData& meshData, uint8_t debugColor, IRenderGraphContext& context) noexcept
+    {
+        auto& encoder = context.getEncoder();
+        auto viewId = context.getViewId();
+        auto color = Colors::normalize(Colors::debug(debugColor));
+        encoder.setUniform(_colorUniform, glm::value_ptr(color));
+        uint64_t state = BGFX_STATE_DEFAULT | BGFX_STATE_PT_LINES;
+        auto mesh = meshData.createMesh(_prog->getVertexLayout());
+        mesh->render(encoder);
+        encoder.setState(state);
+        encoder.submit(viewId, _prog->getHandle());
     }
 }

@@ -33,7 +33,7 @@ namespace darmok
 
     class RenderChain;
 
-    class DARMOK_EXPORT IRenderChainStep
+    class BX_NO_VTABLE DARMOK_EXPORT IRenderChainStep
     {
     public:
         virtual ~IRenderChainStep() = default;

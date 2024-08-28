@@ -117,6 +117,48 @@ namespace darmok
     }
 
 
+    const Color& Colors::debug(uint8_t position) noexcept
+    {
+        position %= 6;
+        switch (position)
+        {
+        case 0:
+            return magenta();
+        case 1:
+            return cyan();
+        case 2:
+            return red();
+        case 3:
+            return green();
+        case 4:
+            return blue();
+        case 5:
+            return yellow();
+        }
+        return black();
+    }
+
+    const Color3& Colors::debug3(uint8_t position) noexcept
+    {
+        position %= 6;
+        switch (position)
+        {
+        case 0:
+            return magenta3();
+        case 1:
+            return cyan3();
+        case 2:
+            return red3();
+        case 3:
+            return green3();
+        case 4:
+            return blue3();
+        case 5:
+            return yellow3();
+        }
+        return black3();
+    }
+
     glm::vec4 Colors::normalize(const Color& color) noexcept
     {
         return glm::vec4(

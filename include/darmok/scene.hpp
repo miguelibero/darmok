@@ -225,10 +225,18 @@ namespace darmok
             forEachChild(entity, [&container, this](auto entity, auto& trans) {
                 if (auto comp = getComponent<T>(entity))
                 {
-                    container.emplace_back(comp);
+                    container.emplace_back(comp.value());
                 }
                 return false;
             });
+        }
+
+        template<typename T>
+        std::vector<std::reference_wrapper<T>> getComponentsInChildren(Entity entity) noexcept
+        {
+            std::vector<std::reference_wrapper<T>> components;
+            getComponentsInChildren<T>(entity, components);
+            return components;
         }
 
     private:

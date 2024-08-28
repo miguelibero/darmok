@@ -183,30 +183,26 @@ namespace darmok
 
     void LightingRenderComponent::destroyHandles() noexcept
     {
+        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
+            _lightCountUniform, _lightDataUniform, _camPosUniform, _normalMatrixUniform
+        };
+        for (auto& uniform : uniforms)
         {
-            std::vector<std::reference_wrapper<bgfx::UniformHandle>> handles = {
-                _lightCountUniform, _lightDataUniform, _camPosUniform, _normalMatrixUniform
-            };
-            for (auto& handle : handles)
+            if (isValid(uniform))
             {
-                if (isValid(handle))
-                {
-                    bgfx::destroy(handle);
-                    handle.get().idx = bgfx::kInvalidHandle;
-                }
+                bgfx::destroy(uniform);
+                uniform.get().idx = bgfx::kInvalidHandle;
             }
         }
+        std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> buffers = {
+            _pointLightBuffer, _dirLightBuffer
+        };
+        for (auto& buffer : buffers)
         {
-            std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> handles = {
-                _pointLightBuffer, _dirLightBuffer
-            };
-            for (auto& handle : handles)
+            if (isValid(buffer))
             {
-                if (isValid(handle))
-                {
-                    bgfx::destroy(handle);
-                    handle.get().idx = bgfx::kInvalidHandle;
-                }
+                bgfx::destroy(buffer);
+                buffer.get().idx = bgfx::kInvalidHandle;
             }
         }
     }

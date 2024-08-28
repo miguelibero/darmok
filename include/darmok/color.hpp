@@ -9,6 +9,8 @@ namespace darmok
     {
         static [[nodiscard]] const Color::value_type& getMaxValue() noexcept;
 
+        static const Color& debug(uint8_t position) noexcept;
+
         static const Color& black() noexcept;
         static const Color& grey() noexcept;
         static const Color& white() noexcept;
@@ -18,6 +20,8 @@ namespace darmok
         static const Color& yellow() noexcept;
         static const Color& cyan() noexcept;
         static const Color& magenta() noexcept;
+
+        static const Color3& debug3(uint8_t position) noexcept;
 
         static const Color3& black3() noexcept;
         static const Color3& grey3() noexcept;

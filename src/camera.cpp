@@ -34,7 +34,14 @@ namespace darmok
 
     Camera& Camera::setEnabled(bool enabled) noexcept
     {
-        _enabled = enabled;
+        if (_enabled != enabled)
+        {
+            _enabled = enabled;
+            if (!enabled)
+            {
+                _scene->getRenderGraph().removeNode(_renderGraph.id());
+            }
+        }
         return *this;
     }
 
@@ -185,8 +192,7 @@ namespace darmok
         {
             renderer->init(*this, scene, app);
         }
-
-        _scene->getRenderGraph().setChild(_renderGraph);
+        updateRenderGraph();
     }
 
     void Camera::renderReset()
@@ -198,8 +204,11 @@ namespace darmok
         }
         updateWindowProjection();
         _renderChain.renderReset();
+    }
 
-        if (_scene)
+    void Camera::updateRenderGraph() noexcept
+    {
+        if (_scene && _enabled)
         {
             _scene->getRenderGraph().setChild(_renderGraph);
         }
@@ -221,10 +230,7 @@ namespace darmok
         {
             renderer->update(deltaTime);
         }
-        if (_scene)
-        {
-            _scene->getRenderGraph().setChild(_renderGraph);
-        }
+        updateRenderGraph();
         _renderChain.setViewport(getCurrentViewport());
     }
 
@@ -238,18 +244,9 @@ namespace darmok
     {
         auto projPtr = glm::value_ptr(_proj);
         const void* viewPtr = nullptr;
-
-        if (_model)
+        if (auto trans = getTransform())
         {
-            viewPtr = glm::value_ptr(_model.value());
-        }
-        else
-        {
-            auto trans = getTransform();
-            if (trans != nullptr)
-            {
-                viewPtr = glm::value_ptr(trans->getWorldInverse());
-            }
+            viewPtr = glm::value_ptr(trans->getWorldInverse());
         }
         bgfx::setViewTransform(viewId, viewPtr, projPtr);
     }
@@ -321,22 +318,11 @@ namespace darmok
 
     glm::mat4 Camera::getModelMatrix() const noexcept
     {
-        if (_model)
-        {
-            return _model.value();
-        }
-        auto trans = getTransform();
-        if (trans)
+        if (auto trans = getTransform())
         {
             return trans->getWorldInverse();
         }
         return glm::mat4(1);
-    }
-
-    Camera& Camera::setModelMatrix(std::optional<glm::mat4> mat) noexcept
-    {
-        _model = mat;
-        return *this;
     }
 
     Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept

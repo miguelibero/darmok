@@ -293,14 +293,21 @@ namespace darmok
 		for (auto& elm : _samplerUniforms)
 		{
 			bgfx::destroy(elm.handle);
+			elm.handle.idx = bgfx::kInvalidHandle;
 		}
-		bgfx::destroy(_albedoLutSamplerUniform);
-		bgfx::destroy(_baseColorUniform);
-		bgfx::destroy(_specularColorUniform);
-		bgfx::destroy(_metallicRoughnessNormalOcclusionUniform);
-		bgfx::destroy(_emissiveColorUniform);
-		bgfx::destroy(_hasTexturesUniform);
-		bgfx::destroy(_multipleScatteringUniform);
+		std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
+			_albedoLutSamplerUniform, _baseColorUniform, _specularColorUniform,
+			_metallicRoughnessNormalOcclusionUniform, _emissiveColorUniform,
+			_hasTexturesUniform, _multipleScatteringUniform
+		};
+		for (auto& uniform : uniforms)
+		{
+			if (isValid(uniform))
+			{
+				bgfx::destroy(uniform);
+				uniform.get().idx = bgfx::kInvalidHandle;
+			}
+		}
 
 		_defaultTexture.reset();
 	}

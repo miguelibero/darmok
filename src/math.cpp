@@ -71,6 +71,13 @@ namespace darmok
         return frustum(bottomLeft.x, topRight.x, bottomLeft.y, topRight.y, near, far);
     }
 
+    glm::mat4 Math::changeProjDepth(const glm::mat4& proj, float near, float far) noexcept
+    {
+        float fov = 2.0f * atan(1.0f / proj[1][1]);
+        float aspectRatio = proj[1][1] / proj[0][0];
+        return glm::perspective(fov, aspectRatio, near, far);
+    }
+
     glm::mat4 Math::transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept
     {
         return glm::translate(pos)
@@ -141,25 +148,5 @@ namespace darmok
         return glm::slerp(current, target, t);
 
         return target;
-    }
-
-    glm::quat Math::dirQuat(const glm::vec3& dir, const glm::vec3& forward) noexcept
-    {
-        float dot = glm::dot(forward, dir);
-
-        if (dot < -0.9999f)
-        {
-            glm::vec3 up(0.0f, 1.0f, 0.0f);
-            glm::vec3 orthoAxis = glm::cross(forward, up);
-            if (glm::length(orthoAxis) < 1e-6)
-            {
-                orthoAxis = glm::cross(forward, glm::vec3(1.0f, 0.0f, 0.0f));
-            }
-            return glm::angleAxis(glm::pi<float>(), orthoAxis);
-        }
-
-        glm::vec3 rotAxis = glm::cross(forward, dir);
-        float rotAngle = acos(dot);
-        return glm::angleAxis(rotAngle, rotAxis);
     }
 }

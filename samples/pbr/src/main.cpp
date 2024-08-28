@@ -65,7 +65,7 @@ namespace
 		float _speed;
 	};
 
-	class PbrSampleApp : public App
+	class PbrSampleApp : public App, IFreelookListener
 	{
 	public:
 		void init() override
@@ -77,32 +77,18 @@ namespace
 			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
 			auto& layout = prog->getVertexLayout();
 
-			auto camEntity = scene.createEntity();
+			auto camData = createCamera(scene);
+			_cam = camData.camera.get();
 
-			auto& camTrans = scene.addComponent<Transform>(camEntity)
-				.setPosition({ 0, 2, -2 })
-				.lookAt({ 0, 0, 0 });
+			auto freeCamData = createCamera(scene, camData.shadowRenderer.get());
+			auto& freeCam = freeCamData.camera.get();
+			freeCam.setEnabled(false);
 
-			auto& cam = scene.addComponent<Camera>(camEntity)
-				.setWindowPerspective(60, 0.3, 20);
-
-			ShadowRendererConfig shadowConfig;
-			shadowConfig.mapMargin = glm::vec3(0.1);
-			shadowConfig.cascadeAmount = 3;
-
-			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
-			auto& forwardRender = cam.addRenderer<ForwardRenderer>();
-
-			auto skyboxTex = getAssets().getTextureLoader()("cubemap.ktx");
-			forwardRender.addComponent<SkyboxRenderComponent>(skyboxTex);
-
-			forwardRender.addComponent<ShadowRenderComponent>(shadowRenderer);
-			forwardRender.addComponent<LightingRenderComponent>();
+			_freelook = scene.addSceneComponent<FreelookController>(freeCam);
+			_freelook->addListener(*this);
 
 			scene.getRenderChain().addStep<ScreenSpaceRenderPass>(
 				std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
-
-			_freelook = scene.addSceneComponent<FreelookController>(cam);
 
 			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
@@ -153,43 +139,23 @@ namespace
 			auto floorMat = std::make_shared<Material>(prog, Colors::red());
 			floorMat->setProgramDefine("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
-
-			// drawDebugFrustum(scene, camTrans, dirLightTrans, unlitProg);
 		}
 
-		void drawDebugFrustum(Scene& scene, Transform& camTrans, Transform& dirLightTrans, const std::shared_ptr<Program>& prog)
+		void onFreelookEnable(bool enabled) noexcept override
 		{
-			auto addDebugShape = [&scene, prog]<typename T>(const T & shape, const Color & color)
+			if (_cam)
 			{
-				auto mesh = MeshData(shape, RectangleMeshType::Outline)
-					.createMesh(prog->getVertexLayout());
-				auto entity = scene.createEntity();
-				auto mat = std::make_shared<Material>(prog, color);
-				mat->setPrimitiveType(MaterialPrimitiveType::Line);
-				scene.addComponent<Renderable>(entity, std::move(mesh), mat);
-			};
-
-			camTrans.update();
-			auto& camView = camTrans.getWorldInverse();
-			auto camProjView = glm::perspective(glm::radians(60.F), getWindow().getAspect(), 0.3F, 5.F);
-			// auto camProjView = cam.getProjectionMatrix();
-			camProjView = camProjView * camView;
-			dirLightTrans.update();
-			auto& lightView = dirLightTrans.getWorldInverse();
-
-			Frustum frust(camProjView);
-			Frustum frustSlice = frust.getSlice(0.2, 0.8);
-			BoundingBox bb = frust * dirLightTrans.getWorldInverse();
-			Frustum frustLight = bb.getOrtho() * dirLightTrans.getWorldInverse();
-
-			addDebugShape(frust, Colors::magenta());
-			addDebugShape(frustLight, Colors::blue());
-			addDebugShape(frustSlice, Colors::green());
+				_cam->setEnabled(!enabled);
+			}
 		}
 
-		void update(float deltaTime) override
+		void update(float deltaTime) noexcept override
 		{
 			if (_freelook && _freelook->isEnabled())
+			{
+				return;
+			}
+			if (!_trans)
 			{
 				return;
 			}
@@ -197,10 +163,13 @@ namespace
 			dir.x = getInput().getAxis(_moveRight, _moveLeft);
 			dir.z = getInput().getAxis(_moveForward, _moveBackward);
 
-			//auto pos = _trans->getPosition();
-			//_trans->setPosition(pos + (dir * deltaTime));
+			auto pos = _trans->getPosition();
+			_trans->setPosition(pos + (dir * deltaTime));
 		}
 
+	private:
+
+		OptionalRef<Camera> _cam;
 		OptionalRef<FreelookController> _freelook;
 		OptionalRef<Transform> _trans;
 
@@ -224,6 +193,45 @@ namespace
 			KeyboardInputEvent{ KeyboardKey::KeyD },
 			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
 		};
+
+		struct CameraData
+		{
+			std::reference_wrapper<Camera> camera;
+			std::reference_wrapper<ShadowRenderer> shadowRenderer;
+		};
+
+		CameraData createCamera(Scene& scene, OptionalRef<ShadowRenderer> debugShadow = nullptr)
+		{
+			auto entity = scene.createEntity();
+
+			scene.addComponent<Transform>(entity)
+				.setPosition({ 0, 2, -2 })
+				.lookAt({ 0, 0, 0 });
+
+			auto farPlane = debugShadow ? 1000 : 5;
+			auto& cam = scene.addComponent<Camera>(entity)
+				.setWindowPerspective(60, 0.3, farPlane);
+
+			ShadowRendererConfig shadowConfig;
+			// shadowConfig.mapMargin = glm::vec3(0.1);
+			shadowConfig.cascadeAmount = 2;
+
+			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
+			auto& fwdRender = cam.addRenderer<ForwardRenderer>();
+
+			auto skyboxTex = getAssets().getTextureLoader()("cubemap.ktx");
+			fwdRender.addComponent<SkyboxRenderComponent>(skyboxTex);
+
+			fwdRender.addComponent<ShadowRenderComponent>(shadowRenderer);
+			fwdRender.addComponent<LightingRenderComponent>();
+
+			if (debugShadow)
+			{
+				fwdRender.addComponent<ShadowDebugRenderComponent>(debugShadow.value());
+			}
+
+			return { cam, shadowRenderer };
+		}
 	};
 
 }

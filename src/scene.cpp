@@ -186,12 +186,12 @@ namespace darmok
         {
             itr->second->shutdown();
         }
+        _renderChain.shutdown();
 
         _registry.on_construct<Camera>().disconnect<&SceneImpl::onCameraConstructed>(*this);
         _registry.on_destroy<Camera>().disconnect< &SceneImpl::onCameraDestroyed>(*this);
 
         _app.reset();
-        _renderChain.shutdown();
     }
 
     void SceneImpl::renderReset()

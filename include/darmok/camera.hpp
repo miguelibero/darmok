@@ -55,8 +55,6 @@ namespace darmok
         OptionalRef<Transform> getTransform() const noexcept;
         glm::mat4 getModelMatrix() const noexcept;
 
-        Camera& setModelMatrix(std::optional<glm::mat4> mat) noexcept;
-
         template<typename T>
         Camera& setEntityComponentFilter() noexcept
         {
@@ -122,7 +120,6 @@ namespace darmok
     private:
         bool _enabled;
         glm::mat4 _proj;
-        std::optional<glm::mat4> _model;
 
         struct WindowPerspectiveData final
         {
@@ -153,5 +150,6 @@ namespace darmok
         const EntityRegistry& getRegistry() const;
 
         bool updateWindowProjection() noexcept;
+        void updateRenderGraph() noexcept;
     };
 }

@@ -358,7 +358,7 @@ namespace darmok
         auto itr = findNode(id);
         if (itr != _nodes.end())
         {
-            _nodes.erase(itr, _nodes.end());
+            _nodes.erase(itr);
             return true;
         }
         return false;

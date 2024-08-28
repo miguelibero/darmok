@@ -3,6 +3,7 @@
 #include <darmok/window.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/math.hpp>
+#include <darmok/shape.hpp>
 
 namespace darmok
 {
@@ -11,11 +12,34 @@ namespace darmok
         , _enabled(false)
         , _winCursorMode(WindowCursorMode::Normal)
         , _cam(cam)
+        , _pos(0)
+        , _rot(0, 0, 0, 1)
+        , _scale(1)
     {
+    }
+
+    FreelookController& FreelookController::addListener(IFreelookListener& listener) noexcept
+    {
+        _listeners.emplace_back(listener);
+        return *this;
+    }
+
+    bool FreelookController::removeListener(IFreelookListener& listener) noexcept
+    {
+        auto ptr = &listener;
+        auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [ptr](auto& ref) { return ref == ptr; });
+        if (itr == _listeners.end())
+        {
+            return false;
+        }
+        _listeners.erase(itr, _listeners.end());
+        return true;
+
     }
 
     void FreelookController::init(Scene& scene, App& app) noexcept
     {
+        _scene = scene;
         _input = app.getInput();
         _win = app.getWindow();
         if (_config.enableEvent)
@@ -54,18 +78,20 @@ namespace darmok
                 _win->requestCursorMode(_winCursorMode);
             }
         }
+
+        _cam.setEnabled(enabled);
         if (enabled)
         {
-            auto trans = _cam.getTransform();
-            if (trans)
+            if (auto trans = _cam.getTransform())
             {
-                Math::decompose(trans->getWorldMatrix(), _pos, _rot, _scale);
+                Math::decompose(trans->getLocalMatrix(), _pos, _rot, _scale);
             }
         }
-        else
+        for (auto listener : _listeners)
         {
-            _cam.setModelMatrix(std::nullopt);
+            listener->onFreelookEnable(enabled);
         }
+
         return *this;
     }
 
@@ -100,6 +126,10 @@ namespace darmok
         _pos += dir * _config.moveSensitivity * deltaTime;
 
         auto mtx = Math::transform(_pos, _rot, _scale);
-        _cam.setModelMatrix(glm::inverse(mtx));
+
+        if (auto trans = _cam.getTransform())
+        {
+            trans->setLocalMatrix(mtx);
+        }
     }
 }

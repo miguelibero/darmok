@@ -44,12 +44,12 @@ namespace darmok
         * and bgfx can run on different renderers so they have math functions with a depth parameter
         */
         static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near, float far) noexcept;
-        static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near = 0.f) noexcept;
+        static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near = 0.F) noexcept;
         static [[nodiscard]] glm::mat4 ortho(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
 		static [[nodiscard]] glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
 		
-		static [[nodiscard]] glm::mat4 frustum(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
-		static [[nodiscard]] glm::mat4 frustum(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 frustum(float left, float right, float bottom, float top, float near = 0.F, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 frustum(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = 0.F, float far = bx::kFloatLargest) noexcept;
         
 		// methods used in Transform to generate the matrix
         static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;
@@ -60,7 +60,7 @@ namespace darmok
 		static glm::vec3 rotateTowards(const glm::vec3& current, const glm::vec3& target, float maxRadiansDelta, float maxDistanceDelta) noexcept;
 		static glm::quat rotateTowards(const glm::quat& current, const glm::quat& target, float maxRadiansDelta) noexcept;
 
-		static glm::quat dirQuat(const glm::vec3& dir, const glm::vec3& forward = glm::vec3(0, 0, 1)) noexcept;
+		static glm::mat4 changeProjDepth(const glm::mat4& proj, float near = 0.F, float far = bx::kFloatLargest) noexcept;
 	};
 }
 

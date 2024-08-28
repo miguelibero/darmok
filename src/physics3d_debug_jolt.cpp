@@ -118,7 +118,7 @@ namespace darmok::physics3d
 
     void PhysicsDebugRendererImpl::renderPassExecute(IRenderGraphContext& context)
     {
-        if (!_enabled || !_system)
+        if (!_enabled || !_system || !_cam || !_cam->isEnabled())
         {
             return;
         }

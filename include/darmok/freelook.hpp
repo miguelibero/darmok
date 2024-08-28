@@ -57,7 +57,14 @@ namespace darmok
             GamepadInputDir{ GamepadStick::Right, InputDirType::Down }
         };
     };
-    
+
+    class BX_NO_VTABLE DARMOK_EXPORT IFreelookListener
+    {
+    public:
+        virtual ~IFreelookListener() = default;
+        virtual void onFreelookEnable(bool enabled) = 0;
+    };
+
     class DARMOK_EXPORT FreelookController final : public ISceneComponent, public IInputEventListener
     {
     public:
@@ -69,7 +76,10 @@ namespace darmok
         void onInputEvent(const std::string& tag) noexcept override;
         FreelookController& setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;
+        FreelookController& addListener(IFreelookListener& listener) noexcept;
+        bool removeListener(IFreelookListener& listener) noexcept;
     private:
+        OptionalRef<Scene> _scene;
         OptionalRef<Input> _input;
         OptionalRef<Window> _win;
         Camera& _cam;
@@ -79,5 +89,6 @@ namespace darmok
         glm::vec3 _scale;
         bool _enabled;
         Config _config;
+        std::vector<OptionalRef<IFreelookListener>> _listeners;
     };
 }

@@ -53,8 +53,10 @@ namespace darmok
         void renderReset() noexcept override;
         void shutdown() noexcept override;
 
+        bool isEnabled() const noexcept;
+
         glm::mat4 getMapMatrix(Entity entity, uint8_t cascade = 0) const noexcept;
-        glm::mat4 getProjMatrix(OptionalRef<const Transform> trans, uint8_t cascade = 0) const noexcept;
+        glm::mat4 getProjViewMatrix(OptionalRef<const Transform> trans, uint8_t cascade = 0) const noexcept;
 
         const Config& getConfig() const noexcept;
         bgfx::ProgramHandle getProgramHandle() const noexcept;
@@ -96,5 +98,24 @@ namespace darmok
         bgfx::VertexLayout _shadowTransLayout;
 
         void configureUniforms(IRenderGraphContext& context) const noexcept;
+        void drawDebug() noexcept;
+    };
+
+    struct MeshData;
+
+    class DARMOK_EXPORT ShadowDebugRenderComponent final : public IRenderComponent
+    {
+    public:
+        ShadowDebugRenderComponent(ShadowRenderer& renderer) noexcept;
+        void init(Camera& cam, Scene& scene, App& app) noexcept override;
+        void shutdown() noexcept override;
+        void beforeRenderView(IRenderGraphContext& context) noexcept override;
+    private:
+        ShadowRenderer& _renderer;
+        OptionalRef<Scene> _scene;
+        std::shared_ptr<Program> _prog;
+        bgfx::UniformHandle _colorUniform;
+
+        void renderMesh(MeshData& meshData, uint8_t debugColor, IRenderGraphContext& context) noexcept;
     };
 }
