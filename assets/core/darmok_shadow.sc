@@ -37,16 +37,16 @@ mat4 getShadowTransform(uint shadowMapIndex)
 	);
 }
 
-bool outsideTex(vec2 texCoord)
+bool outsideShadowMap(vec3 texCoord)
 {
-	return any(greaterThan(texCoord, vec2_splat(1.0)))
-		|| any(lessThan(texCoord, vec2_splat(0.0)))
+	return any(greaterThan(texCoord, vec3_splat(1.0)))
+		|| any(lessThan(texCoord, vec3_splat(0.0)))
 	;
 }
 
-float doHardShadow(uint shadowMapIndex, vec3 texCoord, float bias)
+float getShadowMapValue(uint shadowMapIndex, vec3 texCoord)
 {
-	return shadow2DArray(s_shadowMap, vec4(texCoord.xy, shadowMapIndex, texCoord.z - bias));
+	return shadow2DArray(s_shadowMap, vec4(texCoord.xy, shadowMapIndex, texCoord.z));
 }
 
 float normalShadowBias(vec3 norm, vec3 lightDir)
@@ -54,77 +54,58 @@ float normalShadowBias(vec3 norm, vec3 lightDir)
 	return max(u_shadowNormalBias * (1.0 - dot(norm, lightDir)), u_shadowBias); 
 }
 
+float doHardShadow(uint lightIndex, vec3 fragPos, vec3 texOffset)
+{
+	for(uint casc = 0; casc < u_shadowCascadeAmount; ++casc)
+	{
+		uint mapIndex = getShadowMapIndex(lightIndex, casc);
+		mat4 trans = getShadowTransform(mapIndex);
+		vec4 shadowCoord = mul(trans, vec4(fragPos, 1.0));
+		vec3 texCoord = shadowCoord.xyz / shadowCoord.w;
+		texCoord += texOffset;
+		if(!outsideShadowMap(texCoord))
+		{
+			return getShadowMapValue(mapIndex, texCoord);
+		}
+	}
+	return 1.0;
+}
+
+float hardShadow(uint lightIndex, vec3 fragPos, float bias)
+{
+	return doHardShadow(lightIndex, fragPos, vec3(0.0, 0.0, -bias));
+}
+
 // percentage closer filtering shadow
 // https://developer.download.nvidia.com/shaderlibrary/docs/shadow_PCSS.pdf
 
-float doSoftShadow(uint shadowMapIndex, vec3 texCoord, float bias)
+float softShadow(uint lightIndex, vec3 fragPos, float bias)
 {
 	float result = 0.0;
 	float texelSize = u_shadowTexelSize;
 	vec3 offset = vec3(texelSize, texelSize, 1.0);
 
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(-1.5, -1.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(-1.5, -0.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(-1.5,  0.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(-1.5,  1.5, 0.0) * offset, bias);
+	result += doHardShadow(lightIndex, fragPos, vec3(-1.5, -1.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(-1.5, -0.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(-1.5,  0.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(-1.5,  1.5, -bias) * offset);
 
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(-0.5, -1.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(-0.5, -0.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(-0.5,  0.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(-0.5,  1.5, 0.0) * offset, bias);
+	result += doHardShadow(lightIndex, fragPos, vec3(-0.5, -1.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(-0.5, -0.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(-0.5,  0.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(-0.5,  1.5, -bias) * offset);
 
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(0.5, -1.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(0.5, -0.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(0.5,  0.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(0.5,  1.5, 0.0) * offset, bias);
+	result += doHardShadow(lightIndex, fragPos, vec3(0.5, -1.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(0.5, -0.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(0.5,  0.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(0.5,  1.5, -bias) * offset);
 
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(1.5, -1.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(1.5, -0.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(1.5,  0.5, 0.0) * offset, bias);
-	result += doHardShadow(shadowMapIndex, texCoord + vec3(1.5,  1.5, 0.0) * offset, bias);
+	result += doHardShadow(lightIndex, fragPos, vec3(1.5, -1.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(1.5, -0.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(1.5,  0.5, -bias) * offset);
+	result += doHardShadow(lightIndex, fragPos, vec3(1.5,  1.5, -bias) * offset);
 
 	return result / 16.0;
-}
-
-float hardShadow(uint lightIndex, vec3 fragPos, float bias)
-{
-	for(uint casc = 0; casc < u_shadowCascadeAmount; ++casc)
-	{
-		uint mapIndex = getShadowMapIndex(lightIndex, casc);
-		mat4 trans = getShadowTransform(mapIndex);
-		vec4 shadowCoord = mul(trans, vec4(fragPos, 1.0));
-		vec3 texCoord = shadowCoord.xyz / shadowCoord.w;
-		if(!outsideTex(texCoord.xy))
-		{
-			float v = doHardShadow(mapIndex, texCoord, bias);
-			if(v < 1.0)
-			{
-				return v;
-			}
-		}
-
-	}
-	return 1.0;
-}
-
-float softShadow(uint lightIndex, vec3 fragPos, float bias)
-{
-	for(uint casc = 0; casc < u_shadowCascadeAmount; ++casc)
-	{
-		uint mapIndex = getShadowMapIndex(lightIndex, casc);
-		mat4 trans = getShadowTransform(mapIndex);
-		vec4 shadowCoord = mul(trans, vec4(fragPos, 1.0));
-		vec3 texCoord = shadowCoord.xyz / shadowCoord.w;
-		if(!outsideTex(texCoord.xy))
-		{
-			float v = doSoftShadow(mapIndex, texCoord, bias);
-			if(v < 1.0)
-			{
-				return v;
-			}
-		}
-	}
-	return 1.0;
 }
 
 #endif // DARMOK_SHADOW_HEADER

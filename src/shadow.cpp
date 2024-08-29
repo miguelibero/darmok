@@ -177,8 +177,8 @@ namespace darmok
 
         _tex = std::make_unique<Texture>(texConfig,
             BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
-            // BGFX_SAMPLER_MAG_POINT |
-            BGFX_SAMPLER_MAG_ANISOTROPIC |
+            BGFX_SAMPLER_MAG_POINT |
+            // BGFX_SAMPLER_MAG_ANISOTROPIC |
             BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
             BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(2)
         );
@@ -346,9 +346,7 @@ namespace darmok
         {
             proj *= lightTrans->getWorldMatrix();
         }
-
-        Frustum frust = proj;
-        BoundingBox bb = frust.getBoundingBox();
+        auto bb = Frustum(proj).getBoundingBox();
         bb.snap(_config.mapSize);
         return bb.getOrtho();
     }

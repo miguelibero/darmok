@@ -69,6 +69,7 @@ void main()
 #if DARMOK_VARIANT_SHADOW_ENABLED
 		float shadowBias = normalShadowBias(N, L);  
 		visibility += softShadow(i, fragPos, shadowBias);
+        // visibility += hardShadow(i, fragPos, shadowBias);
 #endif
     }
 
