@@ -91,18 +91,18 @@ namespace darmok
         {
             return;
         }
+        auto scene = _renderer->getScene();
+        if (!scene)
+        {
+            return;
+        }
+
         auto& encoder = context.getEncoder();
         auto viewId = context.getViewId();
-
-        const void* viewPtr = nullptr;
-        auto scene = _renderer->getScene();
-        auto trans = scene->getComponent<const Transform>(_lightEntity);
-        auto proj = _renderer->getProjViewMatrix(trans, _cascade);
-        if (trans)
-        {
-            viewPtr = glm::value_ptr(trans->getWorldInverse());
-        }
-        bgfx::setViewTransform(viewId, viewPtr, glm::value_ptr(proj));
+        auto lightTrans = scene->getComponent<const Transform>(_lightEntity);
+        auto proj = _renderer->getLightProjMatrix(lightTrans, _cascade);
+        auto view = _renderer->getLightViewMatrix(lightTrans);
+        bgfx::setViewTransform(viewId, glm::value_ptr(view), glm::value_ptr(proj));
 
         renderEntities(viewId, encoder);
     }
@@ -145,6 +145,7 @@ namespace darmok
 
     ShadowRenderer::ShadowRenderer(const Config& config) noexcept
         : _config(config)
+        , _crop(1)
     {
     }
 
@@ -153,6 +154,17 @@ namespace darmok
 		_cam = cam;
 		_scene = scene;
 		_app = app;
+
+        auto caps = bgfx::getCaps();
+        const float sy = caps->originBottomLeft ? 0.5f : -0.5f;
+        const float sz = caps->homogeneousDepth ? 0.5f : 1.0f;
+        const float tz = caps->homogeneousDepth ? 0.5f : 0.0f;
+        _crop = {
+            0.5f, 0.0f, 0.0f, 0.0f,
+            0.0f,   sy, 0.0f, 0.0f,
+            0.0f, 0.0f, sz,   0.0f,
+            0.5f, 0.5f, tz,   1.0f,
+        };
 
         ProgramDefinition shadowProgDef;
         shadowProgDef.loadStaticMem(shadow_program);
@@ -264,44 +276,30 @@ namespace darmok
         }
 
         auto proj = _cam->getProjectionMatrix();
+        auto model = _cam->getModelMatrix();
         Frustum frust(proj);
 
-        _camProjViews.clear();
         auto step = 1.F / float(_config.cascadeAmount);
-
-        auto cascSliceDistri = [](float v)
+        auto cascSliceDistri = [step](int casc)
         {
+            float v = step * casc;
             return Easing::quadraticIn(v, 0.F, 1.F);
         };
 
+        _camProjs.clear();
+        auto m = _config.cascadeMargin;
         for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
         {
-            auto nearFactor = cascSliceDistri(step * casc);
-            auto farFactor = cascSliceDistri(step * (casc + 1));
+            auto nearFactor = cascSliceDistri(casc);
+            auto farFactor = cascSliceDistri(casc + 1);
+            nearFactor = std::max(nearFactor - m, 0.F);
+            farFactor = std::min(farFactor + m, 1.F);
+
             auto cascFrust = frust.getSlice(nearFactor, farFactor);
             auto cascProj = cascFrust.getAlignedProjectionMatrix();
-            cascProj *= _cam->getModelMatrix();
-            _camProjViews.emplace_back(cascProj);
+            cascProj *= model;
+            _camProjs.emplace_back(cascProj);
         }
-    }
-
-    glm::mat4 ShadowRenderer::getProjViewMatrix(OptionalRef<const Transform> trans, uint8_t cascade) const noexcept
-    {
-        if (_camProjViews.empty())
-        {
-            return glm::mat4(1);
-        }
-        auto projView = _camProjViews[cascade % _camProjViews.size()];
-        if (!trans)
-        {
-            return projView;
-        }
-
-        Frustum frust = projView * trans->getWorldMatrix();
-        BoundingBox bb = frust.getBoundingBox();
-        bb.expand(_config.mapMargin * bb.size());
-        bb.snap(glm::uvec2(_config.mapSize));
-        return bb.getOrtho();
     }
 
     const ShadowRenderer::Config& ShadowRenderer::getConfig() const noexcept
@@ -332,29 +330,48 @@ namespace darmok
     // https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
     // https://learn.microsoft.com/en-us/windows/win32/dxtecharts/cascaded-shadow-maps
 
-    glm::mat4 ShadowRenderer::getMapMatrix(Entity entity, uint8_t cascade) const noexcept
+    glm::mat4 ShadowRenderer::getProjMatrix(uint8_t cascade) const noexcept
     {
-        auto trans = _scene->getComponent<const Transform>(entity);
-        auto proj = getProjViewMatrix(trans, cascade);
-        if (trans)
+        if (_camProjs.empty())
         {
-            proj *= trans->getWorldInverse();
+            return glm::mat4(1);
+        }
+        return _camProjs[cascade % _camProjs.size()];
+    }
+
+    glm::mat4 ShadowRenderer::getLightProjMatrix(OptionalRef<const Transform> lightTrans, uint8_t cascade) const noexcept
+    {
+        auto proj = getProjMatrix(cascade);
+        if (lightTrans)
+        {
+            proj *= lightTrans->getWorldMatrix();
         }
 
-        auto caps = bgfx::getCaps();
-        const float sy = caps->originBottomLeft ? 0.5f : -0.5f;
-        const float sz = caps->homogeneousDepth ? 0.5f : 1.0f;
-        const float tz = caps->homogeneousDepth ? 0.5f : 0.0f;
+        Frustum frust = proj;
+        BoundingBox bb = frust.getBoundingBox();
+        bb.snap(_config.mapSize);
+        return bb.getOrtho();
+    }
 
-        glm::mat4 crop
+    glm::mat4 ShadowRenderer::getLightViewMatrix(OptionalRef<const Transform> lightTrans) const noexcept
+    {
+        if (lightTrans)
         {
-            0.5f, 0.0f, 0.0f, 0.0f,
-            0.0f,   sy, 0.0f, 0.0f,
-            0.0f, 0.0f, sz,   0.0f,
-            0.5f, 0.5f, tz,   1.0f,
-        };
+            return lightTrans->getWorldInverse();
+        }
+        return glm::mat4(1);
+    }
 
-        return crop * proj;
+    glm::mat4 ShadowRenderer::getLightMatrix(OptionalRef<const Transform> lightTrans, uint8_t cascade) const noexcept
+    {
+        auto proj = getLightProjMatrix(lightTrans, cascade);
+        auto view = getLightViewMatrix(lightTrans);
+        return proj * view;
+    }
+
+    glm::mat4 ShadowRenderer::getLightMapMatrix(OptionalRef<const Transform> lightTrans, uint8_t cascade) const noexcept
+    {
+        return _crop * getLightMatrix(lightTrans, cascade);
     }
 
     void ShadowRenderer::renderReset() noexcept
@@ -428,11 +445,12 @@ namespace darmok
         VertexDataWriter writer(_shadowTransLayout, size);
         uint32_t index = 0;
 
-        for (auto entity : lights)
+        for (auto lightEntity : lights)
         {
             for (auto casc = 0; casc < cascadeAmount; ++casc)
             {
-                auto mtx = _renderer.getMapMatrix(entity, casc);
+                auto lightTrans = _scene->getComponent<const Transform>(lightEntity);
+                auto mtx = _renderer.getLightMapMatrix(lightTrans, casc);
                 // not sure why but the shader reads the data by rows
                 mtx = glm::transpose(mtx);
                 writer.write(bgfx::Attrib::Color0, index, mtx[0]);
@@ -517,37 +535,29 @@ namespace darmok
 
         for (uint8_t casc = 0; casc < cascadeAmount; ++casc)
         {
-            auto cascProjView = _renderer.getProjViewMatrix(nullptr, casc);
+            auto cascProjView = _renderer.getProjMatrix(casc);
             meshData += MeshData(Frustum(cascProjView), RectangleMeshType::Outline);
         }
         renderMesh(meshData, debugColor, context);
         ++debugColor;
 
-        /*
-        meshData.clear();
-        BoundingBox bb = Frustum(_renderer.getCamera()->getProjectionMatrix());
-        meshData += MeshData(bb, RectangleMeshType::Outline);
-
-        renderMesh(meshData, debugColor, context);
-        ++debugColor;
-        */
-
         auto lights = cam->createEntityView<DirectionalLight>();
-        for (auto entity : lights)
+        for (auto lightEntity : lights)
         {
             meshData.clear();
+            auto lightTrans = _scene->getComponent<Transform>(lightEntity);
             for (auto casc = 0; casc < cascadeAmount; ++casc)
             {
-                auto mtx = _renderer.getMapMatrix(entity, casc);
+                auto mtx = _renderer.getLightMatrix(lightTrans, casc);
                 meshData += MeshData(Frustum(mtx), RectangleMeshType::Outline);
             }
 
-            glm::vec3 pos;
-            if (auto trans = _scene->getComponent<Transform>(entity))
+            glm::vec3 lightPos;
+            if (lightTrans)
             {
-                pos = trans->getWorldPosition();
+                lightPos = lightTrans->getWorldPosition();
             }
-            meshData += MeshData(Sphere(0.01, pos), 8);
+            meshData += MeshData(Sphere(0.01, lightPos), 8);
 
             renderMesh(meshData, debugColor, context);
             ++debugColor;

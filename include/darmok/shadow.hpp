@@ -36,7 +36,7 @@ namespace darmok
     struct DARMOK_EXPORT ShadowRendererConfig final
     {
         unsigned int mapSize = 512;
-        glm::vec3 mapMargin = glm::vec3(0.01F);
+        float cascadeMargin = 0.02F;
         uint16_t maxLightAmount = 6;
         uint8_t cascadeAmount = 3;
         float bias = 0.005;
@@ -55,8 +55,11 @@ namespace darmok
 
         bool isEnabled() const noexcept;
 
-        glm::mat4 getMapMatrix(Entity entity, uint8_t cascade = 0) const noexcept;
-        glm::mat4 getProjViewMatrix(OptionalRef<const Transform> trans, uint8_t cascade = 0) const noexcept;
+        glm::mat4 getProjMatrix(uint8_t cascade = 0) const noexcept;
+        glm::mat4 getLightProjMatrix(OptionalRef<const Transform> lightTrans, uint8_t cascade = 0) const noexcept;
+        glm::mat4 getLightViewMatrix(OptionalRef<const Transform> lightTrans) const noexcept;
+        glm::mat4 getLightMatrix(OptionalRef<const Transform> lightTrans, uint8_t cascade = 0) const noexcept;
+        glm::mat4 getLightMapMatrix(OptionalRef<const Transform> lightTrans, uint8_t cascade = 0) const noexcept;
 
         const Config& getConfig() const noexcept;
         bgfx::ProgramHandle getProgramHandle() const noexcept;
@@ -74,7 +77,8 @@ namespace darmok
         std::unique_ptr<Texture> _tex;
         RenderGraphDefinition _renderGraph;
 
-        std::vector<glm::mat4> _camProjViews;
+        std::vector<glm::mat4> _camProjs;
+        glm::mat4 _crop;
 
         void updateCamera() noexcept;
         void updateLights() noexcept;

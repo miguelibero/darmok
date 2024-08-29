@@ -54,6 +54,7 @@ namespace darmok
 
         OptionalRef<Transform> getTransform() const noexcept;
         glm::mat4 getModelMatrix() const noexcept;
+        glm::mat4 getModelInverse() const noexcept;
 
         template<typename T>
         Camera& setEntityComponentFilter() noexcept

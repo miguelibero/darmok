@@ -331,7 +331,7 @@ namespace darmok
 
         BoundingBox& expand(const glm::vec3& size) noexcept;
         BoundingBox& contract(const glm::vec3& size) noexcept;
-        BoundingBox& snap(const glm::uvec2& size) noexcept;
+        BoundingBox& snap(const float size) noexcept;
 
         std::array<glm::vec3, 8> getCorners() const noexcept;
 
@@ -343,6 +343,7 @@ namespace darmok
 
         std::string toString() const noexcept;
 
+        glm::mat4 getCenterOrtho() const noexcept;
         glm::mat4 getOrtho() const noexcept;
 
         template<class Archive>

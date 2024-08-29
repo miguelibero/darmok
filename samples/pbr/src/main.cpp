@@ -92,7 +92,6 @@ namespace
 			auto shadowRenderer = _cam->getComponent<ShadowRenderer>();
 
 			_freeCam = createCamera(scene, shadowRenderer);
-			_freeCam->setEnabled(false);
 
 			_freelook = scene.addSceneComponent<FreelookController>(*_freeCam);
 			_freelook->addListener(*this);
@@ -111,10 +110,13 @@ namespace
 			scene.addComponent<PointLight>(lightEntity, 0.5);
 
 			auto dirLightEntity = scene.createEntity();
-			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -1, 1, -1 })
-				.lookAt(glm::vec3(0, 0, 0));
+			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -2, 2, -2 })
+				.lookDir(glm::vec3(0, -1, -1));
 			scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
 			_rotateUpdater = scene.addSceneComponent<RotateUpdater>(dirLightTrans);
+
+			std::shared_ptr<IMesh> arrowMesh = MeshData(Line(), LineMeshType::Arrow).createMesh(prog->getVertexLayout());
+			scene.addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 
 			/*
 			auto dirLightEntity2 = scene.createEntity();
@@ -229,16 +231,20 @@ namespace
 			auto entity = scene.createEntity();
 
 			scene.addComponent<Transform>(entity)
-				.setPosition({ 0, 2, -2 })
+				.setPosition({ 0, 4, -4 })
 				.lookAt({ 0, 0, 0 });
 
-			auto farPlane = debugShadow ? 100 : 5;
+			auto farPlane = debugShadow ? 100 : 20;
 			auto& cam = scene.addComponent<Camera>(entity)
 				.setWindowPerspective(60, 0.3, farPlane);
+			if (debugShadow)
+			{
+				cam.setEnabled(false);
+			}
 
 			ShadowRendererConfig shadowConfig;
 			// shadowConfig.mapMargin = glm::vec3(0.1);
-			shadowConfig.cascadeAmount = 2;
+			shadowConfig.cascadeAmount = 3;
 
 			auto& fwdRender = cam.addComponent<ForwardRenderer>();
 

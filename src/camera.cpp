@@ -372,6 +372,15 @@ namespace darmok
         return glm::mat4(1);
     }
 
+    glm::mat4 Camera::getModelInverse() const noexcept
+    {
+        if (auto trans = getTransform())
+        {
+            return trans->getWorldMatrix();
+        }
+        return glm::mat4(1);
+    }
+
     Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept
     {
         return Ray::unproject(point, getModelMatrix(), _proj, getCurrentViewport().getValues());

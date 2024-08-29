@@ -57,7 +57,7 @@ float normalShadowBias(vec3 norm, vec3 lightDir)
 // percentage closer filtering shadow
 // https://developer.download.nvidia.com/shaderlibrary/docs/shadow_PCSS.pdf
 
-float doPcfShadow(uint shadowMapIndex, vec3 texCoord, float bias)
+float doSoftShadow(uint shadowMapIndex, vec3 texCoord, float bias)
 {
 	float result = 0.0;
 	float texelSize = u_shadowTexelSize;
@@ -96,13 +96,18 @@ float hardShadow(uint lightIndex, vec3 fragPos, float bias)
 		vec3 texCoord = shadowCoord.xyz / shadowCoord.w;
 		if(!outsideTex(texCoord.xy))
 		{
-			return doHardShadow(mapIndex, texCoord, bias);
+			float v = doHardShadow(mapIndex, texCoord, bias);
+			if(v < 1.0)
+			{
+				return v;
+			}
 		}
+
 	}
 	return 1.0;
 }
 
-float pcfShadow(uint lightIndex, vec3 fragPos, float bias)
+float softShadow(uint lightIndex, vec3 fragPos, float bias)
 {
 	for(uint casc = 0; casc < u_shadowCascadeAmount; ++casc)
 	{
@@ -112,7 +117,11 @@ float pcfShadow(uint lightIndex, vec3 fragPos, float bias)
 		vec3 texCoord = shadowCoord.xyz / shadowCoord.w;
 		if(!outsideTex(texCoord.xy))
 		{
-			return doPcfShadow(mapIndex, texCoord, bias);
+			float v = doSoftShadow(mapIndex, texCoord, bias);
+			if(v < 1.0)
+			{
+				return v;
+			}
 		}
 	}
 	return 1.0;
