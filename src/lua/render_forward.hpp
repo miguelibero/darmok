@@ -14,6 +14,6 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
 
-        static ForwardRenderer& addRenderer(Camera& cam) noexcept;
+        static ForwardRenderer& addCameraComponent(Camera& cam) noexcept;
     };
 }

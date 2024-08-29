@@ -54,8 +54,8 @@ namespace darmok
         RenderGraphDefinition _renderGraph;
         RenderChain _renderChain;
 
-        Components::iterator findComponent(entt::id_type type) noexcept;
-        Components::const_iterator findComponent(entt::id_type type) const noexcept;
+        Components::iterator findSceneComponent(entt::id_type type) noexcept;
+        Components::const_iterator findSceneComponent(entt::id_type type) const noexcept;
 
         void onCameraConstructed(EntityRegistry& registry, Entity entity);
         void onCameraDestroyed(EntityRegistry& registry, Entity entity);

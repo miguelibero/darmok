@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
 #include <darmok/render_graph.hpp>
@@ -115,6 +116,6 @@ namespace darmok
         std::shared_ptr<Program> _program;
         std::unique_ptr<IMesh> _mesh;
         bgfx::UniformHandle _texUniform;
-        bgfx::ViewId _viewId;
+        std::optional<bgfx::ViewId> _viewId;
     };
 }

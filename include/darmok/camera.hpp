@@ -19,7 +19,7 @@ namespace darmok
     class Texture;
     class IEntityFilter;
     class Transform;
-    class IRenderer;
+    class ICameraComponent;
     class Scene;
     struct Ray;
 
@@ -87,14 +87,40 @@ namespace darmok
         void renderReset();
         void shutdown();
 
-        Camera& addRenderer(std::unique_ptr<IRenderer>&& renderer) noexcept;
+        Camera& addComponent(entt::id_type type, std::unique_ptr<ICameraComponent>&& renderer) noexcept;
+        bool removeComponent(entt::id_type type) noexcept;
+        [[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
+        [[nodiscard]] OptionalRef<ICameraComponent> getComponent(entt::id_type type) noexcept;
+        [[nodiscard]] OptionalRef<const ICameraComponent> getComponent(entt::id_type type) const noexcept;
+
+        template<typename T>
+        [[nodiscard]] OptionalRef<T> getComponent() noexcept
+        {
+            auto ref = getComponent(entt::type_hash<T>::value());
+            if (ref)
+            {
+                return (T*)ref.ptr();
+            }
+            return nullptr;
+        }
+
+        template<typename T>
+        [[nodiscard]] OptionalRef<const T> getComponent() const noexcept
+        {
+            auto ref = getComponent(entt::type_hash<T>::value());
+            if (ref)
+            {
+                return (const T*)ref.ptr();
+            }
+            return nullptr;
+        }
 
         template<typename T, typename... A>
-        T& addRenderer(A&&... args)
+        T& addComponent(A&&... args)
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addRenderer(std::move(ptr));
+            addComponent(entt::type_hash<T>::value(), std::move(ptr));
             return ref;
         }
 
@@ -140,7 +166,9 @@ namespace darmok
 
         std::optional<Viewport> _viewport;
         std::unique_ptr<IEntityFilter> _entityFilter;
-        std::vector<std::unique_ptr<IRenderer>> _renderers;
+
+        using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ICameraComponent>>>;
+        Components _components;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
 
@@ -151,5 +179,8 @@ namespace darmok
 
         bool updateWindowProjection() noexcept;
         void updateRenderGraph() noexcept;
+
+        Components::iterator findComponent(entt::id_type type) noexcept;
+        Components::const_iterator findComponent(entt::id_type type) const noexcept;
     };
 }

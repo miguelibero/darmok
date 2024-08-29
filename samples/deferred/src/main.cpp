@@ -43,7 +43,7 @@ namespace
 	};
 
 
-	class DeferredSampleApp : public App
+	class DeferredSampleApp : public App, IFreelookListener
 	{
 	public:
 		void init() override
@@ -61,13 +61,17 @@ namespace
 			});
 			auto model = getAssets().getModelLoader()("Sponza.dml");
 
-			auto camEntity = scene->createEntity();
-			auto& cam = scene->addComponent<Camera>(camEntity);
-			cam.setWindowPerspective(60, 0.3, 1000);
+			_cam = createCamera(*scene);
+			auto shadowRenderer = _cam->getComponent<ShadowRenderer>();
 
-			scene->addComponent<Transform>(camEntity)
-				.setPosition(glm::vec3(0, 1, 0))
-				.lookAt(glm::vec3(-7, 2, 0));
+			_freeCam = createCamera(*scene, shadowRenderer);
+			_freeCam->setEnabled(false);
+
+			auto& freelook = scene->addSceneComponent<FreelookController>(*_freeCam);
+			freelook.addListener(*this);
+
+			// scene->getRenderChain().addStep<ScreenSpaceRenderPass>(
+			// 	std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
 
 			auto lightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(lightEntity, 0.05);
@@ -76,7 +80,7 @@ namespace
 			auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{ -7.5, 3.5, 0 })
 				.lookDir(glm::vec3(0, -1, 0), glm::vec3(0, 0, 1));
 			scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
-			// scene->addSceneComponent<RotateUpdater>(dirLightTrans);
+			scene->addSceneComponent<RotateUpdater>(dirLightTrans);
 
 			auto prog = std::make_shared<Program>(StandardProgramType::ForwardBasic);
 			std::shared_ptr<IMesh> arrowMesh = MeshData(Line(), LineMeshType::Arrow).createMesh(prog->getVertexLayout());
@@ -88,22 +92,6 @@ namespace
 				scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color, lightConfig.radius);
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
-
-			ShadowRendererConfig shadowConfig;
-			shadowConfig.cascadeAmount = 3;
-			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
-
-			// cam.addRenderer<DeferredRenderer>();
-			auto& renderer = cam.addRenderer<ForwardRenderer>();
-			
-			renderer.addComponent<ShadowRenderComponent>(shadowRenderer);
-			renderer.addComponent<ShadowDebugRenderComponent>(shadowRenderer);
-			renderer.addComponent<LightingRenderComponent>();
-
-			cam.getRenderChain().addStep<ScreenSpaceRenderPass>(
-				std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
-
-			scene->addSceneComponent<FreelookController>(cam);
 
 			ModelSceneConfigurer configurer(*scene, getAssets());
 			configurer.setTextureFlags(BGFX_TEXTURE_NONE | BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC);
@@ -138,6 +126,8 @@ namespace
 
 	private:
 		glm::vec2 _mouseVel;
+		OptionalRef<Camera> _cam;
+		OptionalRef<Camera> _freeCam;
 
 		struct PointLightConfig final
 		{
@@ -148,6 +138,49 @@ namespace
 		};
 
 		static const std::vector<PointLightConfig> _pointLights;
+
+		void onFreelookEnable(bool enabled) noexcept override
+		{
+			if (_freeCam)
+			{
+				_freeCam->setEnabled(enabled);
+			}
+			if (_cam)
+			{
+				_cam->setEnabled(!enabled);
+			}
+		}
+
+		Camera& createCamera(Scene& scene, OptionalRef<ShadowRenderer> debugShadow = nullptr)
+		{
+			auto entity = scene.createEntity();
+
+			auto farPlane = debugShadow ? 40 : 20;
+			auto& cam = scene.addComponent<Camera>(entity);
+			cam.setWindowPerspective(60, 0.3, farPlane);
+
+			scene.addComponent<Transform>(entity)
+				.setPosition(glm::vec3(0, 1, 0))
+				.lookAt(glm::vec3(-7, 2, 0));
+
+			ShadowRendererConfig shadowConfig;
+			// shadowConfig.mapMargin = glm::vec3(0.1);
+			shadowConfig.cascadeAmount = 2;
+
+			auto& fwdRender = cam.addComponent<ForwardRenderer>();
+
+			fwdRender.addComponent<LightingRenderComponent>();
+
+			if (debugShadow)
+			{
+				fwdRender.addComponent<ShadowDebugRenderComponent>(debugShadow.value());
+			}
+
+			auto& shadowRenderer = cam.addComponent<ShadowRenderer>(shadowConfig);
+			fwdRender.addComponent<ShadowRenderComponent>(shadowRenderer);
+
+			return cam;
+		}
 	};
 
 	const std::vector<DeferredSampleApp::PointLightConfig> DeferredSampleApp::_pointLights = {

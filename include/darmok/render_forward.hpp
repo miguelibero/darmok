@@ -13,7 +13,7 @@ namespace darmok
     class App;
     class MaterialRenderComponent;
 
-    class DARMOK_EXPORT ForwardRenderer final : public IRenderer, public IRenderPass
+    class DARMOK_EXPORT ForwardRenderer final : public ICameraComponent, public IRenderPass
     {
     public:
         ForwardRenderer() noexcept;

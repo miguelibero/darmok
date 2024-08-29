@@ -151,6 +151,7 @@ namespace darmok
 		: _app(app)
 		, _runResult(AppRunResult::Continue)
 		, _running(false)
+		, _paused(false)
 		, _debugFlags(BGFX_DEBUG_NONE)
 		, _resetFlags(BGFX_RESET_NONE)
 		, _clearColor(Colors::fromNumber(0x303030ff))
@@ -258,6 +259,16 @@ namespace darmok
 		_updateConfig = config;
 	}
 
+	void AppImpl::setPaused(bool paused) noexcept
+	{
+		_paused = paused;
+	}
+
+	bool AppImpl::isPaused() const noexcept
+	{
+		return _paused;
+	}
+
 	void AppImpl::bgfxInit()
 	{
 		bgfx::Init init;
@@ -347,10 +358,14 @@ namespace darmok
 
 	void AppImpl::update(float deltaTime)
 	{
-		for (auto& [type, component] : _components)
+		if (!_paused)
 		{
-			component->update(deltaTime);
+			for (auto& [type, component] : _components)
+			{
+				component->update(deltaTime);
+			}
 		}
+
 		_assets.update();
 		_audio.update();
 
@@ -491,6 +506,11 @@ namespace darmok
 		if (key == KeyboardKey::Print && modifiers == ctrl)
 		{
 			toggleTaskflowProfile();
+			return;
+		}
+		if (key == KeyboardKey::Pause)
+		{
+			_paused = !_paused;
 			return;
 		}
 	}

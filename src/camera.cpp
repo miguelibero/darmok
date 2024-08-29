@@ -188,7 +188,7 @@ namespace darmok
         {
             _entityFilter->init(scene.getRegistry());
         }
-        for(auto& renderer : _renderers)
+        for(auto& [type, renderer] : _components)
         {
             renderer->init(*this, scene, app);
         }
@@ -198,7 +198,7 @@ namespace darmok
     void Camera::renderReset()
     {
         _renderGraph.clear();
-        for (auto& renderer : _renderers)
+        for (auto& [type, renderer] : _components)
         {
             renderer->renderReset();
         }
@@ -216,9 +216,9 @@ namespace darmok
 
     void Camera::shutdown()
     {
-        for (auto itr = _renderers.rbegin(); itr != _renderers.rend(); ++itr)
+        for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
         {
-            (*itr)->shutdown();
+            itr->second->shutdown();
         }
         _renderChain.shutdown();
         _renderGraph.clear();
@@ -226,7 +226,7 @@ namespace darmok
 
     void Camera::update(float deltaTime)
     {
-        for (auto& renderer : _renderers)
+        for (auto& [type, renderer] : _components)
         {
             renderer->update(deltaTime);
         }
@@ -267,14 +267,61 @@ namespace darmok
         }
     }
 
-    Camera& Camera::addRenderer(std::unique_ptr<IRenderer>&& renderer) noexcept
+    Camera& Camera::addComponent(entt::id_type type, std::unique_ptr<ICameraComponent>&& renderer) noexcept
     {
         if (_scene)
         {
             renderer->init(*this, _scene.value(), _app.value());
         }
-        _renderers.push_back(std::move(renderer));
+        _components.emplace_back(type, std::move(renderer));
         return *this;
+    }
+
+    Camera::Components::iterator Camera::findComponent(entt::id_type type) noexcept
+    {
+        return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+    }
+
+    Camera::Components::const_iterator Camera::findComponent(entt::id_type type) const noexcept
+    {
+        return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+    }
+
+    bool Camera::removeComponent(entt::id_type type) noexcept
+    {
+        auto itr = findComponent(type);
+        if (itr == _components.end())
+        {
+            return false;
+        }
+        _components.erase(itr);
+        return true;
+    }
+
+    bool Camera::hasComponent(entt::id_type type) const noexcept
+    {
+        auto itr = findComponent(type);
+        return itr != _components.end();
+    }
+
+    OptionalRef<ICameraComponent> Camera::getComponent(entt::id_type type) noexcept
+    {
+        auto itr = findComponent(type);
+        if (itr == _components.end())
+        {
+            return nullptr;
+        }
+        return itr->second.get();
+    }
+
+    OptionalRef<const ICameraComponent> Camera::getComponent(entt::id_type type) const noexcept
+    {
+        auto itr = findComponent(type);
+        if (itr == _components.end())
+        {
+            return nullptr;
+        }
+        return itr->second.get();
     }
 
     Camera& Camera::setViewport(const std::optional<Viewport>& viewport) noexcept

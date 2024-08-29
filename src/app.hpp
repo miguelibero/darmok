@@ -120,6 +120,9 @@ namespace darmok
 		void setClearColor(const Color& color) noexcept;
 		void setUpdateConfig(const AppUpdateConfig& config) noexcept;
 
+		void setPaused(bool paused) noexcept;
+		bool isPaused() const noexcept;
+
 		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
 		bool hasComponent(entt::id_type type) const noexcept;
@@ -187,6 +190,7 @@ namespace darmok
 
 		AppRunResult _runResult;
 		bool _running;
+		bool _paused;
 		glm::uvec2 _pixelSize;
 		VideoMode _videoMode;
 		uint32_t _debugFlags;

@@ -30,7 +30,7 @@ namespace darmok
 
     bool SceneImpl::removeSceneComponent(entt::id_type type) noexcept
     {
-        auto itr = findComponent(type);
+        auto itr = findSceneComponent(type);
         if (itr == _components.end())
         {
             return false;
@@ -41,13 +41,13 @@ namespace darmok
 
     bool SceneImpl::hasSceneComponent(entt::id_type type) const noexcept
     {
-        auto itr = findComponent(type);
+        auto itr = findSceneComponent(type);
         return itr != _components.end();
     }
 
     OptionalRef<ISceneComponent> SceneImpl::getSceneComponent(entt::id_type type) noexcept
     {
-        auto itr = findComponent(type);
+        auto itr = findSceneComponent(type);
         if (itr == _components.end())
         {
             return nullptr;
@@ -57,7 +57,7 @@ namespace darmok
 
     OptionalRef<const ISceneComponent> SceneImpl::getSceneComponent(entt::id_type type) const noexcept
     {
-        auto itr = findComponent(type);
+        auto itr = findSceneComponent(type);
         if (itr == _components.end())
         {
             return nullptr;
@@ -65,12 +65,12 @@ namespace darmok
         return itr->second.get();
     }
 
-    SceneImpl::Components::iterator SceneImpl::findComponent(entt::id_type type) noexcept
+    SceneImpl::Components::iterator SceneImpl::findSceneComponent(entt::id_type type) noexcept
     {
         return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
     }
 
-    SceneImpl::Components::const_iterator SceneImpl::findComponent(entt::id_type type) const noexcept
+    SceneImpl::Components::const_iterator SceneImpl::findSceneComponent(entt::id_type type) const noexcept
     {
         return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
     }

@@ -266,7 +266,7 @@ namespace darmok
 		return data;
 	}
 
-	TextRenderer::TextRenderer(const std::shared_ptr<Program>& prog) noexcept
+	TextRenderComponent::TextRenderComponent(const std::shared_ptr<Program>& prog) noexcept
 		: _prog(prog)
 	{
 		if (_prog == nullptr)
@@ -275,21 +275,16 @@ namespace darmok
 		}
 	}
 
-	void TextRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+	void TextRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
 		_scene = scene;
 		_cam = cam;
-		cam.getRenderGraph().addPass(*this);
 		_colorUniform = bgfx::createUniform("u_color", bgfx::UniformType::Vec4);
 		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 	}
 
-	void TextRenderer::shutdown() noexcept
+	void TextRenderComponent::shutdown() noexcept
 	{
-		if (_cam)
-		{
-			_cam->getRenderGraph().removePass(*this);
-		}
 		_scene.reset();
 		_cam.reset();
 
@@ -304,7 +299,7 @@ namespace darmok
 		}
 	}
 
-	void TextRenderer::update(float deltaTime)
+	void TextRenderComponent::update(float deltaTime)
 	{
 		if (!_scene || !_cam)
 		{
@@ -327,27 +322,7 @@ namespace darmok
 		}
 	}
 
-	void TextRenderer::renderReset() noexcept
-	{
-		if (_cam)
-		{
-			_cam->getRenderGraph().addPass(*this);
-		}
-	}
-
-	void TextRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
-	{
-		def.setName("Text Renderer");
-		def.getWriteResources().add<Texture>();
-	}
-
-	void TextRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
-	{
-		_viewId = viewId;
-		_cam->configureView(viewId);
-	}
-
-	void TextRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
+	void TextRenderComponent::beforeRenderView(IRenderGraphContext& context) noexcept
 	{
 		if (!_scene || !_cam)
 		{

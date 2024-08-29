@@ -140,8 +140,8 @@ end
 
 
 -- Camera
-function Camera:add_renderer(type, ...)
-	return type.add_renderer(self, ...)
+function Camera:add_component(type, ...)
+	return type.add_camera_component(self, ...)
 end
 
 

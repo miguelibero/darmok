@@ -365,6 +365,7 @@ namespace darmok
 		v[GLFW_KEY_HOME] = KeyboardKey::Home;
 		v[GLFW_KEY_END] = KeyboardKey::End;
 		v[GLFW_KEY_PRINT_SCREEN] = KeyboardKey::Print;
+		v[GLFW_KEY_PAUSE] = KeyboardKey::Pause;
 		v[GLFW_KEY_KP_ADD] = KeyboardKey::Plus;
 		v[GLFW_KEY_EQUAL] = KeyboardKey::Plus;
 		v[GLFW_KEY_KP_SUBTRACT] = KeyboardKey::Minus;

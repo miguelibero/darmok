@@ -287,6 +287,10 @@ namespace darmok
 
     glm::mat4 ShadowRenderer::getProjViewMatrix(OptionalRef<const Transform> trans, uint8_t cascade) const noexcept
     {
+        if (_camProjViews.empty())
+        {
+            return glm::mat4(1);
+        }
         auto projView = _camProjViews[cascade % _camProjViews.size()];
         if (!trans)
         {
@@ -341,6 +345,7 @@ namespace darmok
         const float sy = caps->originBottomLeft ? 0.5f : -0.5f;
         const float sz = caps->homogeneousDepth ? 0.5f : 1.0f;
         const float tz = caps->homogeneousDepth ? 0.5f : 0.0f;
+
         glm::mat4 crop
         {
             0.5f, 0.0f, 0.0f, 0.0f,
@@ -467,6 +472,7 @@ namespace darmok
 
     ShadowDebugRenderComponent::ShadowDebugRenderComponent(ShadowRenderer& renderer) noexcept
         : _renderer(renderer)
+        , _hasTexturesUniform{ bgfx::kInvalidHandle }
         , _colorUniform{ bgfx::kInvalidHandle }
     {
     }
@@ -476,12 +482,13 @@ namespace darmok
         _scene = scene;
         _prog = std::make_shared<Program>(StandardProgramType::Unlit);
 
+        _hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
         _colorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
     }
 
     void ShadowDebugRenderComponent::shutdown() noexcept
     {
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = { _colorUniform };
+        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = { _hasTexturesUniform, _colorUniform };
         for (auto& uniform : uniforms)
         {
             if (isValid(uniform.get()))
@@ -516,6 +523,15 @@ namespace darmok
         renderMesh(meshData, debugColor, context);
         ++debugColor;
 
+        /*
+        meshData.clear();
+        BoundingBox bb = Frustum(_renderer.getCamera()->getProjectionMatrix());
+        meshData += MeshData(bb, RectangleMeshType::Outline);
+
+        renderMesh(meshData, debugColor, context);
+        ++debugColor;
+        */
+
         auto lights = cam->createEntityView<DirectionalLight>();
         for (auto entity : lights)
         {
@@ -525,6 +541,14 @@ namespace darmok
                 auto mtx = _renderer.getMapMatrix(entity, casc);
                 meshData += MeshData(Frustum(mtx), RectangleMeshType::Outline);
             }
+
+            glm::vec3 pos;
+            if (auto trans = _scene->getComponent<Transform>(entity))
+            {
+                pos = trans->getWorldPosition();
+            }
+            meshData += MeshData(Sphere(0.01, pos), 8);
+
             renderMesh(meshData, debugColor, context);
             ++debugColor;
         }
@@ -534,6 +558,7 @@ namespace darmok
     {
         auto& encoder = context.getEncoder();
         auto viewId = context.getViewId();
+        encoder.setUniform(_hasTexturesUniform, glm::value_ptr(glm::vec4(0)));
         auto color = Colors::normalize(Colors::debug(debugColor));
         encoder.setUniform(_colorUniform, glm::value_ptr(color));
         uint64_t state = BGFX_STATE_DEFAULT | BGFX_STATE_PT_LINES;

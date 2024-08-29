@@ -43,7 +43,7 @@ namespace darmok
         float normalBias = 0.02;
     };
 
-    class DARMOK_EXPORT ShadowRenderer final : public IRenderer
+    class DARMOK_EXPORT ShadowRenderer final : public ICameraComponent
     {
     public:
         using Config = ShadowRendererConfig;
@@ -114,6 +114,7 @@ namespace darmok
         ShadowRenderer& _renderer;
         OptionalRef<Scene> _scene;
         std::shared_ptr<Program> _prog;
+        bgfx::UniformHandle _hasTexturesUniform;
         bgfx::UniformHandle _colorUniform;
 
         void renderMesh(MeshData& meshData, uint8_t debugColor, IRenderGraphContext& context) noexcept;

@@ -50,11 +50,21 @@ namespace
 		RotateUpdater(Transform& trans, float speed = 50.f)
 			: _trans(trans)
 			, _speed(speed)
+			, _paused(false)
 		{
 		}
 
-		void update(float dt) override
+		void togglePaused() noexcept
 		{
+			_paused = !_paused;
+		}
+
+		void update(float dt) noexcept override
+		{
+			if (_paused)
+			{
+				return;
+			}
 			auto r = _trans.getRotation();
 			r = glm::quat(glm::radians(glm::vec3(0, dt * _speed, 0))) * r;
 			_trans.setRotation(r);
@@ -63,9 +73,10 @@ namespace
 	private:
 		Transform& _trans;
 		float _speed;
+		bool _paused;
 	};
 
-	class PbrSampleApp : public App, IFreelookListener
+	class PbrSampleApp : public App, IFreelookListener, IInputEventListener
 	{
 	public:
 		void init() override
@@ -77,11 +88,10 @@ namespace
 			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
 			auto& layout = prog->getVertexLayout();
 
-			auto camData = createCamera(scene);
-			_cam = camData.camera.get();
+			_cam = createCamera(scene);
+			auto shadowRenderer = _cam->getComponent<ShadowRenderer>();
 
-			auto freeCamData = createCamera(scene, camData.shadowRenderer.get());
-			_freeCam = freeCamData.camera.get();
+			_freeCam = createCamera(scene, shadowRenderer);
 			_freeCam->setEnabled(false);
 
 			_freelook = scene.addSceneComponent<FreelookController>(*_freeCam);
@@ -104,12 +114,14 @@ namespace
 			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -1, 1, -1 })
 				.lookAt(glm::vec3(0, 0, 0));
 			scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
-			scene.addSceneComponent<RotateUpdater>(dirLightTrans);
+			_rotateUpdater = scene.addSceneComponent<RotateUpdater>(dirLightTrans);
 
+			/*
 			auto dirLightEntity2 = scene.createEntity();
 			scene.addComponent<Transform>(dirLightEntity2, glm::vec3{ 1, 1, -1 })
 				.lookAt(glm::vec3(0, 0, 0));
 			scene.addComponent<DirectionalLight>(dirLightEntity2, 0.5);
+			*/
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
@@ -139,18 +151,8 @@ namespace
 			auto floorMat = std::make_shared<Material>(prog, Colors::red());
 			floorMat->setProgramDefine("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
-		}
 
-		void onFreelookEnable(bool enabled) noexcept override
-		{
-			if (_freeCam)
-			{
-				_freeCam->setEnabled(enabled);
-			}
-			if (_cam)
-			{
-				_cam->setEnabled(!enabled);
-			}
+			getInput().addListener("pause", _pauseEvent, *this);
 		}
 
 		void update(float deltaTime) noexcept override
@@ -177,6 +179,9 @@ namespace
 		OptionalRef<Camera> _freeCam;
 		OptionalRef<FreelookController> _freelook;
 		OptionalRef<Transform> _trans;
+		OptionalRef<RotateUpdater> _rotateUpdater;
+
+		const InputEvent _pauseEvent = KeyboardInputEvent{ KeyboardKey::KeyP };
 
 		const InputDirs _moveForward = {
 			KeyboardInputEvent{ KeyboardKey::Up },
@@ -199,13 +204,27 @@ namespace
 			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
 		};
 
-		struct CameraData
+		void onFreelookEnable(bool enabled) noexcept override
 		{
-			std::reference_wrapper<Camera> camera;
-			std::reference_wrapper<ShadowRenderer> shadowRenderer;
-		};
+			if (_freeCam)
+			{
+				_freeCam->setEnabled(enabled);
+			}
+			if (_cam)
+			{
+				_cam->setEnabled(!enabled);
+			}
+		}
 
-		CameraData createCamera(Scene& scene, OptionalRef<ShadowRenderer> debugShadow = nullptr)
+		void onInputEvent(const std::string& tag) noexcept
+		{
+			if (tag == "pause" && _rotateUpdater)
+			{
+				_rotateUpdater->togglePaused();
+			}
+		}
+
+		Camera& createCamera(Scene& scene, OptionalRef<ShadowRenderer> debugShadow = nullptr)
 		{
 			auto entity = scene.createEntity();
 
@@ -213,7 +232,7 @@ namespace
 				.setPosition({ 0, 2, -2 })
 				.lookAt({ 0, 0, 0 });
 
-			auto farPlane = debugShadow ? 1000 : 5;
+			auto farPlane = debugShadow ? 100 : 5;
 			auto& cam = scene.addComponent<Camera>(entity)
 				.setWindowPerspective(60, 0.3, farPlane);
 
@@ -221,13 +240,11 @@ namespace
 			// shadowConfig.mapMargin = glm::vec3(0.1);
 			shadowConfig.cascadeAmount = 2;
 
-			auto& shadowRenderer = cam.addRenderer<ShadowRenderer>(shadowConfig);
-			auto& fwdRender = cam.addRenderer<ForwardRenderer>();
+			auto& fwdRender = cam.addComponent<ForwardRenderer>();
 
 			auto skyboxTex = getAssets().getTextureLoader()("cubemap.ktx");
 			fwdRender.addComponent<SkyboxRenderComponent>(skyboxTex);
 
-			fwdRender.addComponent<ShadowRenderComponent>(shadowRenderer);
 			fwdRender.addComponent<LightingRenderComponent>();
 
 			if (debugShadow)
@@ -235,7 +252,10 @@ namespace
 				fwdRender.addComponent<ShadowDebugRenderComponent>(debugShadow.value());
 			}
 
-			return { cam, shadowRenderer };
+			auto& shadowRenderer = cam.addComponent<ShadowRenderer>(shadowConfig);
+			fwdRender.addComponent<ShadowRenderComponent>(shadowRenderer);
+
+			return cam;
 		}
 	};
 

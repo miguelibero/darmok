@@ -4,15 +4,15 @@
 
 namespace darmok
 {
-    ForwardRenderer& LuaForwardRenderer::addRenderer(Camera& cam) noexcept
+    ForwardRenderer& LuaForwardRenderer::addCameraComponent(Camera& cam) noexcept
     {
-        return cam.addRenderer<ForwardRenderer>();
+        return cam.addComponent<ForwardRenderer>();
     }
 
     void LuaForwardRenderer::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<ForwardRenderer>("ForwardRenderer", sol::no_constructor,
-            "add_renderer", &LuaForwardRenderer::addRenderer
+            "add_camera_component", &LuaForwardRenderer::addCameraComponent
         );
     }
 }

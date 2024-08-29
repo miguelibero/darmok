@@ -236,7 +236,6 @@ namespace darmok
 		, _name(name)
 		, _priority(priority)
 		, _texUniform{ bgfx::kInvalidHandle }
-		, _viewId(-1)
 	{
 	}
 
@@ -255,9 +254,9 @@ namespace darmok
 	{
 		_readTex = read;
 		_writeTex = write;
-		if (write && _viewId != -1)
+		if (write && _viewId)
 		{
-			write->configureView(_viewId);
+			write->configureView(_viewId.value());
 		}
 	}
 
@@ -276,7 +275,7 @@ namespace darmok
 			bgfx::destroy(_texUniform);
 			_texUniform.idx = bgfx::kInvalidHandle;
 		}
-		_viewId = -1;
+		_viewId.reset();
 		_mesh.reset();
 		if (_chain)
 		{

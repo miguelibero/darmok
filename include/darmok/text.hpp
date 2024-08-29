@@ -112,14 +112,14 @@ namespace darmok
     };
 
     // TODO: add PIMPL class
-    class DARMOK_EXPORT TextRenderer final : public IRenderer, IRenderPass
+    class DARMOK_EXPORT TextRenderComponent final : public IRenderComponent
     {
     public:
-        TextRenderer(const std::shared_ptr<Program>& prog = nullptr) noexcept;
+        TextRenderComponent(const std::shared_ptr<Program>& prog = nullptr) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) override;
-        void renderReset() noexcept override;
+        void beforeRenderView(IRenderGraphContext& context) noexcept;
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
@@ -127,10 +127,6 @@ namespace darmok
         std::shared_ptr<Program> _prog;
         bgfx::UniformHandle _colorUniform;
         bgfx::UniformHandle _textureUniform;
-
-        void renderPassDefine(RenderPassDefinition& def) noexcept override;
-        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(IRenderGraphContext& context) noexcept override;
     };
 
     struct TextureAtlas;

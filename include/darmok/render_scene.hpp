@@ -35,10 +35,10 @@ namespace darmok
         virtual void beforeRenderEntity(Entity entity, IRenderGraphContext& context) {};
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IRenderer
+    class DARMOK_EXPORT BX_NO_VTABLE ICameraComponent
     {
     public:
-        virtual ~IRenderer() = default;
+        virtual ~ICameraComponent() = default;
         virtual void init(Camera& cam, Scene& scene, App& app) {};
         virtual void update(float deltaTime) {};
         virtual void renderReset() {};
