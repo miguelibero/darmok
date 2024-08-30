@@ -234,7 +234,7 @@ namespace
 
 			auto farPlane = debugShadow ? 100 : 20;
 			auto& cam = scene.addComponent<Camera>(entity)
-				.setWindowPerspective(60, 0.3, farPlane);
+				.setViewportPerspective(60, 0.3, farPlane);
 			if (debugShadow)
 			{
 				cam.setEnabled(false);

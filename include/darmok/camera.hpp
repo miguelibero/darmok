@@ -40,8 +40,8 @@ namespace darmok
         Camera& setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
         Camera& setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
 
-        Camera& setWindowPerspective(float fovy, float near = 0.f, float far = bx::kFloatLargest) noexcept;
-        Camera& setWindowOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+        Camera& setViewportPerspective(float fovy, float near = 0.f, float far = bx::kFloatLargest) noexcept;
+        Camera& setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
 
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
@@ -152,22 +152,22 @@ namespace darmok
         bool _enabled;
         glm::mat4 _proj;
 
-        struct WindowPerspectiveData final
+        struct PerspectiveData final
         {
             float fovy;
             float near;
             float far;
         };
 
-        struct WindowOrthoData final
+        struct OrthoData final
         {
             glm::vec2 center;
             float near;
             float far;
         };
 
-        using WindowProjectionData = std::variant<WindowPerspectiveData, WindowOrthoData>;
-        std::optional<WindowProjectionData> _winProj;
+        using ProjectionData = std::variant<PerspectiveData, OrthoData>;
+        std::optional<ProjectionData> _vpProj;
 
         std::optional<Viewport> _viewport;
         std::unique_ptr<IEntityFilter> _entityFilter;
@@ -182,7 +182,7 @@ namespace darmok
         
         const EntityRegistry& getRegistry() const;
 
-        bool updateWindowProjection() noexcept;
+        bool updateViewportProjection() noexcept;
         void updateRenderGraph() noexcept;
 
         Components::iterator findComponent(entt::id_type type) noexcept;

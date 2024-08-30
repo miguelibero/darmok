@@ -32,14 +32,14 @@ namespace darmok
 	public:
 		using MousePositionMode = RmluiCanvasMousePositionMode;
 
-		RmluiCanvas(const std::string& name, std::optional<glm::vec2> size = std::nullopt) noexcept;
+		RmluiCanvas(const std::string& name, const std::optional<Viewport>& vp = std::nullopt) noexcept;
 		~RmluiCanvas() noexcept;
 
 		std::string getName() const noexcept;
 
-		const std::optional<glm::uvec2>& getSize() const noexcept;
-		RmluiCanvas& setSize(const std::optional<glm::uvec2>& size) noexcept;
-		glm::uvec2 getCurrentSize() const noexcept;
+		const std::optional<Viewport>& getViewport() const noexcept;
+		RmluiCanvas& setViewport(const std::optional<Viewport>& vp) noexcept;
+		Viewport getCurrentViewport() const noexcept;
 
 		RmluiCanvas& setMousePositionMode(MousePositionMode mode) noexcept;
 		MousePositionMode getMousePositionMode() const noexcept;

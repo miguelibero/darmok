@@ -422,10 +422,10 @@ namespace darmok
         return std::nullopt;
     }
 
-    Ray Ray::unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const glm::ivec4& viewport) noexcept
+    Ray Ray::unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const Viewport& viewport) noexcept
     {
-        auto near = glm::unProject(glm::vec3(screenPosition, 0), model, proj, viewport);
-        auto far = glm::unProject(glm::vec3(screenPosition, 1), model, proj, viewport);
+        auto near = glm::unProject(glm::vec3(screenPosition, 0), model, proj, viewport.getValues());
+        auto far = glm::unProject(glm::vec3(screenPosition, 1), model, proj, viewport.getValues());
 
         return Ray(glm::normalize(far - near), near);
     }

@@ -262,6 +262,20 @@ namespace darmok
 		return glm::vec2(_size) / glm::vec2(_fbSize);
 	}
 
+	glm::vec2 WindowImpl::windowToScreenDelta(const glm::vec2& delta) const noexcept
+	{
+		auto screenDelta = delta / getScreenToWindowFactor();
+		screenDelta.y *= -1.F;
+		return screenDelta;
+	}
+
+	glm::vec2 WindowImpl::screenToWindowDelta(const glm::vec2& delta) const noexcept
+	{
+		auto screenDelta = delta * getScreenToWindowFactor();
+		screenDelta.y *= -1.F;
+		return screenDelta;
+	}
+
 	glm::vec2 WindowImpl::screenToWindowPoint(const glm::vec2& point) const noexcept
 	{
 		auto f = getScreenToWindowFactor();
@@ -383,6 +397,16 @@ namespace darmok
 	glm::vec2 Window::getScreenToWindowFactor() const noexcept
 	{
 		return _impl->getScreenToWindowFactor();
+	}
+
+	glm::vec2 Window::windowToScreenDelta(const glm::vec2& delta) const noexcept
+	{
+		return _impl->windowToScreenDelta(delta);
+	}
+
+	glm::vec2 Window::screenToWindowDelta(const glm::vec2& delta) const noexcept
+	{
+		return _impl->screenToWindowDelta(delta);
 	}
 
 	void Window::addListener(IWindowListener& listener) noexcept

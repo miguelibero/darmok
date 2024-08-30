@@ -87,7 +87,7 @@ namespace darmok
 		void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 		
-		void beforeRender(IRenderGraphContext& context, const glm::mat4& sceneTransform, const glm::uvec2& canvasSize) noexcept;
+		void beforeRender(IRenderGraphContext& context, const glm::mat4& sceneTransform, const Viewport& viewport) noexcept;
 
 		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
 		void afterRender() noexcept;
@@ -109,7 +109,7 @@ namespace darmok
 		bgfx::UniformHandle _textureUniform;
 		glm::mat4 _rmluiTransform;
 		glm::mat4 _sceneTransform;
-		glm::uvec2 _canvasSize;
+		Viewport _viewport;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
 		bx::AllocatorI& _alloc;
@@ -169,7 +169,7 @@ namespace darmok
 	public:
 		using MousePositionMode = RmluiCanvasMousePositionMode;
 
-		RmluiCanvasImpl(const std::string& name, std::optional<glm::uvec2> size);
+		RmluiCanvasImpl(const std::string& name, const std::optional<Viewport>& vp);
 		~RmluiCanvasImpl() noexcept;
 
 		void init(RmluiRendererImpl& comp);
@@ -186,9 +186,9 @@ namespace darmok
 		void setMousePositionMode(MousePositionMode mode) noexcept;
 		MousePositionMode getMousePositionMode() const noexcept;
 
-		const std::optional<glm::uvec2>& getSize() const noexcept;
-		void setSize(std::optional<glm::uvec2> size) noexcept;
-		glm::uvec2 getCurrentSize() const noexcept;
+		const std::optional<Viewport>& getViewport() const noexcept;
+		void setViewport(const std::optional<Viewport>& vp) noexcept;
+		Viewport getCurrentViewport() const noexcept;
 
 		Rml::Context& getContext() noexcept;
 		const Rml::Context& getContext() const noexcept;
@@ -201,8 +201,8 @@ namespace darmok
 		void addViewportMousePositionDelta(const glm::vec2& delta, OptionalRef<const Transform> canvasTrans) noexcept;
 		void setViewportMousePosition(const glm::vec2& position, OptionalRef<const Transform> canvasTrans);
 
-		void setMousePosition(const glm::vec2& position) noexcept;
 		const glm::vec2& getMousePosition() const noexcept;
+		void setMousePosition(const glm::vec2& position) noexcept;
 
 		void processKey(Rml::Input::KeyIdentifier key, int state, bool down) noexcept;
 		void processTextInput(const Rml::String& text) noexcept;
@@ -217,9 +217,12 @@ namespace darmok
 		bool _inputActive;
 		glm::vec2 _mousePosition;
 		bool _enabled;
-		std::optional<glm::uvec2> _size;
+		std::optional<Viewport> _viewport;
 		std::string _name;
 		MousePositionMode _mousePositionMode;
+
+		glm::vec2 getLocalMousePosition() const noexcept;
+		void setLocalMousePosition(const glm::vec2& position) noexcept;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
@@ -243,7 +246,6 @@ namespace darmok
 		OptionalRef<const Camera> getCamera() const noexcept;
 
 		int getKeyModifierState() const noexcept;
-		const glm::uvec2& getWindowPixelSize() const;
 
 	private:
 		RmluiSystemInterface _system;

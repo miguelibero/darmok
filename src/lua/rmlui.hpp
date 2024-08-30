@@ -4,6 +4,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/viewport.hpp>
 #include <RmlUi/Core/ScrollTypes.h>
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/EventListenerInstancer.h>
@@ -13,6 +14,7 @@
 #include <string>
 #include <optional>
 #include "glm.hpp"
+#include "viewport.hpp"
 
 namespace Rml
 {
@@ -111,8 +113,9 @@ namespace darmok
         bool removeEventListener4(const std::string& ev, const sol::protected_function& func) noexcept;
         bool removeEventListener3(const sol::protected_function& func) noexcept;
 
-        std::optional<glm::uvec2> getSize() const noexcept;
-        LuaRmluiCanvas& setSize(std::optional<VarLuaTable<glm::uvec2>> size) noexcept;
+        std::optional<Viewport> getViewport() const noexcept;
+        LuaRmluiCanvas& setViewport(std::optional<VarViewport> vp) noexcept;
+        Viewport getCurrentViewport() const noexcept;
 
         LuaRmluiCanvas& setEnabled(bool enabled) noexcept;
         bool getEnabled() const noexcept;

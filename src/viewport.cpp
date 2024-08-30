@@ -5,24 +5,33 @@
 
 namespace darmok
 {
-    const glm::uvec4& Viewport::getStandardValues()
-    {
-        static const glm::uvec4 values(0, 0, 1, 1);
-        return values;
-    }
-
-    Viewport::Viewport(const glm::uvec2& size, const glm::uvec2& origin) noexcept
-        : size(size), origin(origin)
+    Viewport::Viewport() noexcept
+        : size(1)
+        , origin(0)
     {
     }
 
-    Viewport::Viewport(const glm::uvec4& values) noexcept
-        : origin(values[0], values[1]), size(values[2], values[3])
+    Viewport::Viewport(const glm::uvec2& size) noexcept
+        : size(size)
+        , origin(0)
     {
     }
 
-    Viewport::Viewport(glm::uint x, glm::uint y, glm::uint w, glm::uint h) noexcept
-        : origin(x, y), size(w, h)
+    Viewport::Viewport(const glm::ivec2& size, const glm::ivec2& origin) noexcept
+        : size(size)
+        , origin(origin)
+    {
+    }
+
+    Viewport::Viewport(const glm::ivec4& values) noexcept
+        : size(values[2], values[3])
+        , origin(values[0], values[1])
+    {
+    }
+
+    Viewport::Viewport(int x, int y, int w, int h) noexcept
+        : size(w, h)
+        , origin(x, y)
     {
     }
 
@@ -36,17 +45,24 @@ namespace darmok
         return !operator==(other);
     }
 
-    glm::uvec4 Viewport::getValues() const noexcept
+    float Viewport::getAspectRatio() const noexcept
+    {
+        return (float)size.x / size.y;
+    }
+
+    glm::ivec4 Viewport::getValues() const noexcept
     {
         return glm::ivec4(origin.x, origin.y, size.x, size.y);
     }
 
-    void Viewport::setValues(const glm::uvec4& values) noexcept
+    Viewport& Viewport::setValues(const glm::ivec4& values) noexcept
     {
         origin.x = values[0];
         origin.y = values[1];
         size.x = values[2];
         size.y = values[3];
+
+        return *this;
     }
 
     glm::vec2 Viewport::screenToViewportPoint(const glm::vec2& point) const noexcept
@@ -57,6 +73,16 @@ namespace darmok
     glm::vec2 Viewport::viewportToScreenPoint(const glm::vec2& point) const noexcept
     {
         return glm::vec2(origin) + (point * glm::vec2(size));
+    }
+
+    glm::vec2 Viewport::viewportToScreenDelta(const glm::vec2& delta) const noexcept
+    {
+        return delta * glm::vec2(size);
+    }
+
+    glm::vec2 Viewport::screenToViewportDelta(const glm::vec2& delta) const noexcept
+    {
+        return delta / glm::vec2(size);
     }
 
     glm::vec2 Viewport::project(const glm::vec2& point) const noexcept

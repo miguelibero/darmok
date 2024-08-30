@@ -99,11 +99,15 @@ namespace darmok
         return _parent;
     }
 
-    Transform& Transform::setParent(const OptionalRef<Transform>& parent) noexcept
+    Transform& Transform::setParent(const OptionalRef<Transform>& parent)
     {
         if (_parent == parent)
         {
             return *this;
+        }
+        if (parent == this)
+        {
+            throw std::runtime_error("cannot be parent of itself");
         }
         if (_parent)
         {

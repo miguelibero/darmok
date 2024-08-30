@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/viewport.hpp>
 #include <array>
 #include <optional>
 #include <string>
@@ -269,7 +270,7 @@ namespace darmok
         std::optional<NormalIntersection> intersectNormal(const Sphere& sphere) const noexcept;
         std::optional<DistanceIntersection> intersect(const Triangle& tri) const noexcept;
 
-        static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const glm::ivec4& viewport) noexcept;
+        static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const Viewport& viewport = Viewport()) noexcept;
     
         template<class Archive>
         void serialize(Archive& archive)

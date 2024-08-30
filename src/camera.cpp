@@ -73,7 +73,7 @@ namespace darmok
     Camera& Camera::setProjectionMatrix(const glm::mat4& matrix) noexcept
     {
         _proj = matrix;
-        _winProj.reset();
+        _vpProj.reset();
         return *this;
     }
 
@@ -115,43 +115,43 @@ namespace darmok
         return setOrtho(Viewport(size), center, near, far);
     }
 
-    Camera& Camera::setWindowPerspective(float fovy, float near, float far) noexcept
+    Camera& Camera::setViewportPerspective(float fovy, float near, float far) noexcept
     {
-        _winProj = WindowPerspectiveData(fovy, near, far);
+        _vpProj = PerspectiveData(fovy, near, far);
         if (_app)
         {
-            updateWindowProjection();
+            updateViewportProjection();
         }
         return *this;
     }
 
-    Camera& Camera::setWindowOrtho(const glm::vec2& center, float near, float far) noexcept
+    Camera& Camera::setViewportOrtho(const glm::vec2& center, float near, float far) noexcept
     {
-        _winProj = WindowOrthoData(center, near, far);
+        _vpProj = OrthoData(center, near, far);
         if (_app)
         {
-            updateWindowProjection();
+            updateViewportProjection();
         }
         return *this;
     }
 
-    bool Camera::updateWindowProjection() noexcept
+    bool Camera::updateViewportProjection() noexcept
     {
-        if (!_app || !_winProj)
+        if (!_app || !_vpProj)
         {
             return false;
         }
-        auto& size = _app->getWindow().getPixelSize();
-        auto ptr = &_winProj.value();
-        if (auto winPersp = std::get_if<WindowPerspectiveData>(ptr))
+        auto vp = getCurrentViewport();
+        auto ptr = &_vpProj.value();
+        if (auto winPersp = std::get_if<PerspectiveData>(ptr))
         {
-            float aspect = (float)size.x / size.y;
+            float aspect = vp.getAspectRatio();
             _proj = Math::perspective(glm::radians(winPersp->fovy), aspect, winPersp->near, winPersp->far);
             return true;
         }
-        else if (auto winOrtho = std::get_if<WindowOrthoData>(ptr))
+        else if (auto winOrtho = std::get_if<OrthoData>(ptr))
         {
-            _proj = Viewport(size).ortho(winOrtho->center, winOrtho->near, winOrtho->far);
+            _proj = vp.ortho(winOrtho->center, winOrtho->near, winOrtho->far);
             return true;
         }
         return false;
@@ -202,7 +202,7 @@ namespace darmok
         {
             renderer->renderReset();
         }
-        updateWindowProjection();
+        updateViewportProjection();
         _renderChain.renderReset();
     }
 
@@ -231,7 +231,13 @@ namespace darmok
             renderer->update(deltaTime);
         }
         updateRenderGraph();
-        _renderChain.setViewport(getCurrentViewport());
+
+        auto currentViewport = getCurrentViewport();
+        if (_renderChain.getViewport() != currentViewport)
+        {
+            _renderChain.setViewport(currentViewport);
+            updateViewportProjection();
+        }
     }
 
     void Camera::configureView(bgfx::ViewId viewId) const noexcept
@@ -359,6 +365,13 @@ namespace darmok
         {
             return _viewport.value();
         }
+        if (_scene)
+        {
+            if (auto vp = _scene->getViewport())
+            {
+                return vp.value();
+            }
+        }
         if (_app)
         {
             return Viewport(_app->getWindow().getPixelSize());
@@ -401,12 +414,12 @@ namespace darmok
 
     Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept
     {
-        return Ray::unproject(point, getModelMatrix(), _proj, getCurrentViewport().getValues());
+        return Ray::unproject(point, getModelMatrix(), _proj, getCurrentViewport());
     }
 
     Ray Camera::viewportPointToRay(const glm::vec3& point) const noexcept
     {
-        return Ray::unproject(point, getModelMatrix(), _proj, Viewport::getStandardValues());
+        return Ray::unproject(point, getModelMatrix(), _proj);
     }
 
     glm::vec3 Camera::worldToScreenPoint(const glm::vec3& point) const noexcept
@@ -416,7 +429,7 @@ namespace darmok
 
     glm::vec3 Camera::worldToViewportPoint(const glm::vec3& point) const noexcept
     {
-        return glm::project(point, getModelMatrix(), _proj, Viewport::getStandardValues());
+        return glm::project(point, getModelMatrix(), _proj, Viewport().getValues());
     }
 
     glm::vec3 Camera::screenToWorldPoint(const glm::vec3& point) const noexcept
@@ -426,7 +439,7 @@ namespace darmok
 
     glm::vec3 Camera::viewportToWorldPoint(const glm::vec3& point) const noexcept
     {
-        return glm::unProject(point, getModelMatrix(), _proj, Viewport::getStandardValues());
+        return glm::unProject(point, getModelMatrix(), _proj, Viewport().getValues());
     }
 
     glm::vec3 Camera::viewportToScreenPoint(const glm::vec3& point) const noexcept

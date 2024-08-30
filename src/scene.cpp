@@ -105,6 +105,30 @@ namespace darmok
         return _renderChain;
     }
 
+    const std::optional<Viewport>& SceneImpl::getViewport() const noexcept
+    {
+        return _viewport;
+    }
+
+    void SceneImpl::setViewport(const std::optional<Viewport>& vp) noexcept
+    {
+        _viewport = vp;
+    }
+
+    Viewport SceneImpl::getCurrentViewport() const noexcept
+    {
+        if(_viewport)
+        {
+            return _viewport.value();
+        }
+        if (_app)
+        {
+            return Viewport(_app->getWindow().getPixelSize());
+        }
+        return Viewport();
+    }
+
+    /*
     OptionalRef<App> SceneImpl::getApp() noexcept
     {
         return _app;
@@ -114,6 +138,7 @@ namespace darmok
     {
         return _app;
     }
+    */
 
     void SceneImpl::init(App& app)
     {
@@ -318,6 +343,22 @@ namespace darmok
     const RenderChain& Scene::getRenderChain() const noexcept
     {
         return _impl->getRenderChain();
+    }
+
+    const std::optional<Viewport>& Scene::getViewport() const noexcept
+    {
+        return _impl->getViewport();
+    }
+
+    Scene& Scene::setViewport(const std::optional<Viewport>& vp) noexcept
+    {
+        _impl->setViewport(vp);
+        return *this;
+    }
+
+    Viewport Scene::getCurrentViewport() const noexcept
+    {
+        return _impl->getCurrentViewport();
     }
 
     void Scene::addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept

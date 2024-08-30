@@ -39,7 +39,7 @@ namespace darmok
 
         OptionalRef<const Transform> getParent() const noexcept;
         OptionalRef<Transform> getParent() noexcept;
-        Transform& setParent(const OptionalRef<Transform>& parent) noexcept;
+        Transform& setParent(const OptionalRef<Transform>& parent);
 
         using Children = std::unordered_set<std::reference_wrapper<Transform>>;
         const Children& getChildren() const noexcept;

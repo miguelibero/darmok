@@ -28,6 +28,7 @@ namespace darmok
     class SceneImpl;
     class RenderGraphDefinition;
     class RenderChain;
+    struct Viewport;
 
     class DARMOK_EXPORT Scene final
     {
@@ -47,6 +48,10 @@ namespace darmok
         const RenderGraphDefinition& getRenderGraph() const noexcept;
         RenderChain& getRenderChain() noexcept;
         const RenderChain& getRenderChain() const noexcept;
+
+        const std::optional<Viewport>& getViewport() const noexcept;
+        Scene& setViewport(const std::optional<Viewport>& vp) noexcept;
+        Viewport getCurrentViewport() const noexcept;
 
         void addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;

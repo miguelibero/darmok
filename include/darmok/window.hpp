@@ -83,6 +83,8 @@ namespace darmok
 		[[nodiscard]] glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
 		[[nodiscard]] glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
 		[[nodiscard]] glm::vec2 getScreenToWindowFactor() const noexcept;
+		[[nodiscard]] glm::vec2 windowToScreenDelta(const glm::vec2& delta) const noexcept;
+		[[nodiscard]] glm::vec2 screenToWindowDelta(const glm::vec2& delta) const noexcept;
 
 		[[nodiscard]] const WindowImpl& getImpl() const noexcept;
 		[[nodiscard]] WindowImpl& getImpl() noexcept;

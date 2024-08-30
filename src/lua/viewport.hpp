@@ -9,7 +9,7 @@ namespace darmok
 {
     struct Viewport;
 
-    using VarViewport = std::variant<Viewport, glm::uvec4, sol::table>;
+    using VarViewport = std::variant<Viewport, glm::ivec4, sol::table>;
 
     class LuaViewport final
     {

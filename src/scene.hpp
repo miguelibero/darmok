@@ -6,6 +6,7 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/render_graph.hpp>
 #include <darmok/render_chain.hpp>
+#include <darmok/viewport.hpp>
 #include <entt/entt.hpp>
 #include <vector>
 #include <memory>
@@ -37,8 +38,14 @@ namespace darmok
         RenderChain& getRenderChain() noexcept;
         const RenderChain& getRenderChain() const noexcept;
 
+        const std::optional<Viewport>& getViewport() const noexcept;
+        void setViewport(const std::optional<Viewport>& vp) noexcept;
+        Viewport getCurrentViewport() const noexcept;
+
+        /*
         OptionalRef<App> getApp() noexcept;
         OptionalRef<const App> getApp() const noexcept;
+        */
 
         void init(App& app);
         void update(float dt);
@@ -53,6 +60,7 @@ namespace darmok
         OptionalRef<App> _app;
         RenderGraphDefinition _renderGraph;
         RenderChain _renderChain;
+        std::optional<Viewport> _viewport;
 
         Components::iterator findSceneComponent(entt::id_type type) noexcept;
         Components::const_iterator findSceneComponent(entt::id_type type) const noexcept;

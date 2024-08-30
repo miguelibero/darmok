@@ -20,22 +20,28 @@ namespace darmok
         return _canvas.getName();
     }
 
-    std::optional<glm::uvec2> LuaRmluiCanvas::getSize() const noexcept
+    std::optional<Viewport> LuaRmluiCanvas::getViewport() const noexcept
     {
-        return _canvas.getSize();
+        return _canvas.getViewport();
+
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::setSize(std::optional<VarLuaTable<glm::uvec2>> size) noexcept
+    LuaRmluiCanvas& LuaRmluiCanvas::setViewport(std::optional<VarViewport> vp) noexcept
     {
-        if (size)
+        if (vp)
         {
-            _canvas.setSize(LuaGlm::tableGet(size.value()));
+            _canvas.setViewport(LuaViewport::tableGet(vp.value()));
         }
         else
         {
-            _canvas.setSize(std::nullopt);
+            _canvas.setViewport(std::nullopt);
         }
         return *this;
+    }
+
+    Viewport LuaRmluiCanvas::getCurrentViewport() const noexcept
+    {
+        return _canvas.getCurrentViewport();
     }
 
     LuaRmluiCanvas& LuaRmluiCanvas::setEnabled(bool enabled) noexcept
@@ -328,7 +334,8 @@ namespace darmok
 
         lua.new_usertype<LuaRmluiCanvas>("RmluiCanvas", sol::no_constructor,
             "name", sol::property(&LuaRmluiCanvas::getName),
-            "size", sol::property(&LuaRmluiCanvas::getSize, &LuaRmluiCanvas::setSize),
+            "viewport", sol::property(&LuaRmluiCanvas::getViewport, &LuaRmluiCanvas::setViewport),
+            "current_viewport", sol::property(&LuaRmluiCanvas::getCurrentViewport),
             "input_active", sol::property(&LuaRmluiCanvas::getInputActive, &LuaRmluiCanvas::setInputActive),
             "mouse_position", sol::property(&LuaRmluiCanvas::getMousePosition, &LuaRmluiCanvas::setMousePosition),
             "set_scroll_behavior", &LuaRmluiCanvas::setScrollBehavior,
