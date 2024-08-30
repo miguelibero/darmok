@@ -5,6 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/render_scene.hpp>
+#include <darmok/rmlui_fwd.hpp>
 #include <bx/bx.h>
 #include <string>
 #include <optional>
@@ -23,11 +24,14 @@ namespace darmok
 	class Transform;
 	struct Viewport;
 
+
 	class RmluiCanvasImpl;
 
 	class DARMOK_EXPORT RmluiCanvas final
 	{
 	public:
+		using MousePositionMode = RmluiCanvasMousePositionMode;
+
 		RmluiCanvas(const std::string& name, std::optional<glm::vec2> size = std::nullopt) noexcept;
 		~RmluiCanvas() noexcept;
 
@@ -36,6 +40,9 @@ namespace darmok
 		const std::optional<glm::uvec2>& getSize() const noexcept;
 		RmluiCanvas& setSize(const std::optional<glm::uvec2>& size) noexcept;
 		glm::uvec2 getCurrentSize() const noexcept;
+
+		RmluiCanvas& setMousePositionMode(MousePositionMode mode) noexcept;
+		MousePositionMode getMousePositionMode() const noexcept;
 
 		RmluiCanvas& setEnabled(bool enabled) noexcept;
 		bool getEnabled() const noexcept;

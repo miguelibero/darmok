@@ -451,6 +451,7 @@ namespace darmok
         , _size(size)
         , _enabled(true)
         , _name(name)
+        , _mousePositionMode(MousePositionMode::Delta)
     {
     }
 
@@ -515,6 +516,16 @@ namespace darmok
         _enabled = enabled;
     }
 
+    void RmluiCanvasImpl::setMousePositionMode(MousePositionMode mode) noexcept
+    {
+        _mousePositionMode = mode;
+    }
+
+    RmluiCanvasImpl::MousePositionMode RmluiCanvasImpl::getMousePositionMode() const noexcept
+    {
+        return _mousePositionMode;
+    }
+
     glm::uvec2 RmluiCanvasImpl::getCurrentSize() const noexcept
     {
         if (_size)
@@ -562,34 +573,63 @@ namespace darmok
         }
     }
 
-    void RmluiCanvasImpl::onNormalizedMousePositionChange(const glm::vec2& ndelta, OptionalRef<const Transform> canvasTrans) noexcept
+    void RmluiCanvasImpl::setViewportMousePosition(const glm::vec2& position, OptionalRef<const Transform> canvasTrans)
     {
-        if (!_inputActive)
+        if (!_comp)
+        {
+            return;
+        }
+        auto cam = _comp->getCamera();
+        if (!cam)
         {
             return;
         }
 
         auto size = getCurrentSize();
-        if (size.x == 0 || size.y == 0)
+        auto ray = cam->viewportPointToRay(glm::vec3(position, 0));
+        if (canvasTrans)
+        {
+            ray *= canvasTrans->getWorldInverse();
+        }
+        if (auto dist = ray.intersect(Plane(glm::vec3(0, 0, -1))))
+        {
+            auto pos = ray * dist.value();
+            pos.y = size.y - pos.y;
+            setMousePosition(pos);
+        }
+    }
+
+    void RmluiCanvasImpl::addViewportMousePositionDelta(const glm::vec2& delta, OptionalRef<const Transform> canvasTrans) noexcept
+    {
+        if (!_comp)
         {
             return;
         }
-        glm::vec2 fsize(size);
-        glm::vec4 pos(_mousePosition / fsize, 0, 1);
+        auto cam = _comp->getCamera();
+        if (!cam)
+        {
+            return;
+        }
+
+        auto size = getCurrentSize();
+        glm::vec4 pos(_mousePosition.x, size.y -_mousePosition.y, 0, 1);
+
+        if (canvasTrans)
+        {
+            pos = canvasTrans->getWorldMatrix() * pos;
+        }
+        pos = glm::vec4(cam->worldToViewportPoint(pos), 1);
+        
+        pos += glm::vec4(delta.x, -delta.y, 0, 0);
+        
+        pos = glm::vec4(cam->viewportToWorldPoint(pos), 1);
 
         if (canvasTrans)
         {
             pos = canvasTrans->getWorldInverse() * pos;
         }
 
-        pos += glm::vec4(ndelta, 0, 0);
-
-        if (canvasTrans)
-        {
-            pos = canvasTrans->getWorldMatrix() * pos;
-        }
-
-        setMousePosition(glm::vec2(pos) * fsize);
+        setMousePosition(glm::vec2(pos.x, size.y - pos.y));
     }
 
     void RmluiCanvasImpl::setMousePosition(const glm::vec2& position) noexcept
@@ -785,6 +825,17 @@ namespace darmok
         return *this;
     }
 
+    RmluiCanvas& RmluiCanvas::setMousePositionMode(MousePositionMode mode) noexcept
+    {
+        _impl->setMousePositionMode(mode);
+        return *this;
+    }
+
+    RmluiCanvas::MousePositionMode RmluiCanvas::getMousePositionMode() const noexcept
+    {
+        return _impl->getMousePositionMode();
+    }
+
     RmluiCanvas& RmluiCanvas::setEnabled(bool enabled) noexcept
     {
         _impl->setEnabled(enabled);
@@ -868,8 +919,6 @@ namespace darmok
         ProgramDefinition progDef;
         progDef.loadStaticMem(rmlui_program);
         _program = std::make_shared<Program>(progDef);
-
-        onMousePositionChange({}, app.getInput().getMouse().getPosition());
 
         app.getInput().getKeyboard().addListener(*this);
         app.getInput().getMouse().addListener(*this);
@@ -960,6 +1009,11 @@ namespace darmok
     std::shared_ptr<Program> RmluiComponentImpl::getProgram() const noexcept
     {
         return _program;
+    }
+
+    OptionalRef<const Camera> RmluiComponentImpl::getCamera() const noexcept
+    {
+        return _cam;
     }
 
     void RmluiComponentImpl::update(float dt) noexcept
@@ -1158,13 +1212,34 @@ namespace darmok
         }
         auto& win = _app->getWindow();
         // transform to normalized position
-        auto ndelta = delta / glm::vec2(win.getFramebufferSize());
+
+        auto screenDelta = delta / win.getScreenToWindowFactor();
+        auto vpDelta = screenDelta / glm::vec2(_cam->getCurrentViewport().size);
+
+        auto screenPos = glm::vec3(win.windowToScreenPoint(absolute), 0);
+        auto vpPos = _cam->screenToViewportPoint(screenPos);
 
         for (auto entity : _cam->createEntityView<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
+            if (!canvas->getInputActive())
+            {
+                continue;
+            }
+            auto mode = canvas->getMousePositionMode();
+            if (mode == RmluiCanvasMousePositionMode::Disabled)
+            {
+                continue;
+            }
             auto trans = _scene->getComponent<const Transform>(entity);
-            canvas->getImpl().onNormalizedMousePositionChange(ndelta, trans);
+            if (mode == RmluiCanvasMousePositionMode::Delta)
+            {
+                canvas->getImpl().addViewportMousePositionDelta(vpDelta, trans);
+            }
+            else
+            {
+                canvas->getImpl().setViewportMousePosition(vpPos, trans);
+            }
         }
     }
 

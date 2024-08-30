@@ -311,6 +311,7 @@ if(DARMOK_BUILD_RMLUI)
   )
   list(APPEND HEADERS
     rmlui.hpp
+    rmlui_fwd.hpp
     rmlui_debug.hpp
   )
   list(APPEND LUA_SOURCES

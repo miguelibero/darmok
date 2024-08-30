@@ -24,21 +24,22 @@ namespace darmok
 		void setVideoModeInfo(const VideoModeInfo& info);
 		void onError(const std::string& error);
 
-		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
-		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
-		[[nodiscard]] const glm::uvec2& getFramebufferSize() const noexcept;
-		[[nodiscard]] const VideoMode& getVideoMode() const noexcept;
-		[[nodiscard]] const VideoModeInfo& getVideoModeInfo() const noexcept;
-		[[nodiscard]] WindowCursorMode getCursorMode() const noexcept;
-		[[nodiscard]] WindowPhase getPhase() const noexcept;
+		const glm::uvec2& getSize() const noexcept;
+		const glm::uvec2& getPixelSize() const noexcept;
+		const glm::uvec2& getFramebufferSize() const noexcept;
+		const VideoMode& getVideoMode() const noexcept;
+		const VideoModeInfo& getVideoModeInfo() const noexcept;
+		WindowCursorMode getCursorMode() const noexcept;
+		WindowPhase getPhase() const noexcept;
 
 		void requestVideoModeInfo() noexcept;
 		void requestVideoMode(const VideoMode& mode) noexcept;
 		void requestCursorMode(WindowCursorMode mode) noexcept;
 		void requestDestruction() noexcept;
 
-		[[nodiscard]] glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
-		[[nodiscard]] glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
+		glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
+		glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
+		glm::vec2 getScreenToWindowFactor() const noexcept;
 
 		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(IWindowListener& listener) noexcept;
@@ -54,7 +55,6 @@ namespace darmok
 		std::unordered_set<OptionalRef<IWindowListener>> _listeners;
 		Platform& _plat;
 
-		glm::vec2 getScreenToWindowFactor() const noexcept;
 		void bgfxReset(const glm::uvec2& size) const noexcept;
 	};
 

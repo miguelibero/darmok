@@ -380,6 +380,11 @@ namespace darmok
 		return _impl->screenToWindowPoint(pos);
 	}
 
+	glm::vec2 Window::getScreenToWindowFactor() const noexcept
+	{
+		return _impl->getScreenToWindowFactor();
+	}
+
 	void Window::addListener(IWindowListener& listener) noexcept
 	{
 		_impl->addListener(listener);

@@ -24,7 +24,7 @@ namespace
 	class WobbleUpdater : public ISceneComponent
 	{
 	public:
-		WobbleUpdater(Transform& trans, float speed = 0.2F, float maxAngle = 10.F)
+		WobbleUpdater(Transform& trans, float speed = 0.1F, float maxAngle = 10.F)
 			: _trans(trans)
 			, _speed(speed)
 			, _maxAngle(maxAngle)
@@ -71,7 +71,9 @@ namespace
 
 			auto centerEntity = scene.createEntity();
 			auto& centerTrans = scene.addComponent<Transform>(centerEntity);
+			centerTrans.setPosition(glm::vec3(0.5, 0, 0));
 			scene.addSceneComponent<WobbleUpdater>(centerTrans);
+			centerTrans.setEulerAngles(glm::vec3(0, 0, -20));
 
 			auto canvasEntity = scene.createEntity();
 			auto& canvasTrans = scene.addComponent<Transform>(canvasEntity);

@@ -9,6 +9,7 @@
 #include <darmok/data.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/render_graph.hpp>
+#include <darmok/rmlui_fwd.hpp>
 #include <unordered_map>
 #include <variant>
 #include <optional>
@@ -166,6 +167,8 @@ namespace darmok
 	class RmluiCanvasImpl final
 	{
 	public:
+		using MousePositionMode = RmluiCanvasMousePositionMode;
+
 		RmluiCanvasImpl(const std::string& name, std::optional<glm::uvec2> size);
 		~RmluiCanvasImpl() noexcept;
 
@@ -180,6 +183,9 @@ namespace darmok
 		void setEnabled(bool enabled) noexcept;
 		bool getEnabled() const noexcept;
 
+		void setMousePositionMode(MousePositionMode mode) noexcept;
+		MousePositionMode getMousePositionMode() const noexcept;
+
 		const std::optional<glm::uvec2>& getSize() const noexcept;
 		void setSize(std::optional<glm::uvec2> size) noexcept;
 		glm::uvec2 getCurrentSize() const noexcept;
@@ -192,7 +198,9 @@ namespace darmok
 
 		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 
-		void onNormalizedMousePositionChange(const glm::vec2& ndelta, OptionalRef<const Transform> canvasTrans) noexcept;
+		void addViewportMousePositionDelta(const glm::vec2& delta, OptionalRef<const Transform> canvasTrans) noexcept;
+		void setViewportMousePosition(const glm::vec2& position, OptionalRef<const Transform> canvasTrans);
+
 		void setMousePosition(const glm::vec2& position) noexcept;
 		const glm::vec2& getMousePosition() const noexcept;
 
@@ -211,6 +219,7 @@ namespace darmok
 		bool _enabled;
 		std::optional<glm::uvec2> _size;
 		std::string _name;
+		MousePositionMode _mousePositionMode;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
@@ -231,6 +240,8 @@ namespace darmok
 		RmluiSystemInterface& getSystem() noexcept;
 		bx::AllocatorI& getAllocator();
 		std::shared_ptr<Program> getProgram() const noexcept;
+		OptionalRef<const Camera> getCamera() const noexcept;
+
 		int getKeyModifierState() const noexcept;
 		const glm::uvec2& getWindowPixelSize() const;
 
