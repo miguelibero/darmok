@@ -7,6 +7,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/math.hpp>
 #include <bgfx/bgfx.h>
 
 #include <RmlUi/Core.h>
@@ -20,6 +21,36 @@ namespace
 {
 	using namespace darmok;
 
+	class WobbleUpdater : public ISceneComponent
+	{
+	public:
+		WobbleUpdater(Transform& trans, float speed = 0.2F, float maxAngle = 10.F)
+			: _trans(trans)
+			, _speed(speed)
+			, _maxAngle(maxAngle)
+			, _factor(1.F)
+		{
+		}
+
+		void update(float dt) override
+		{
+			auto rot = _trans.getRotation();
+			glm::quat target(glm::radians(_factor * _maxAngle * glm::vec3(1, 1, 1)));
+			rot = Math::rotateTowards(rot, target, _speed * dt);
+			if (rot == target)
+			{
+				_factor *= -1.F;
+			}
+			_trans.setRotation(rot);
+		}
+
+	private:
+		Transform& _trans;
+		float _speed;
+		float _maxAngle;
+		float _factor;
+	};
+
 	class RmluiSampleApp : public App
 	{
 	public:
@@ -30,14 +61,27 @@ namespace
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 
 			auto camEntity = scene.createEntity();
+			scene.addComponent<Transform>(camEntity)
+				.setPosition({ 0, 0, -3 })
+				.lookAt({ 0, 0, 0 });
 			auto& cam = scene.addComponent<Camera>(camEntity)
-				.setWindowOrtho(glm::vec2(0));
+				.setWindowPerspective(60, 0.3, 10);
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<RmluiComponent>();
 
-			auto entity = scene.createEntity();
+			auto centerEntity = scene.createEntity();
+			auto& centerTrans = scene.addComponent<Transform>(centerEntity);
+			scene.addSceneComponent<WobbleUpdater>(centerTrans);
 
-			auto& canvas = scene.addComponent<RmluiCanvas>(entity, "rmlui");
+			auto canvasEntity = scene.createEntity();
+			auto& canvasTrans = scene.addComponent<Transform>(canvasEntity);
+			canvasTrans.setParent(centerTrans);
+
+			glm::uvec2 canvasSize(800, 600);
+			glm::vec3 scale = glm::vec3(2) / glm::vec3(canvasSize, 1);
+			canvasTrans.setPosition(glm::vec3(-1.0F, -1.0F, 0));
+			canvasTrans.setScale(scale);
+			auto& canvas = scene.addComponent<RmluiCanvas>(canvasEntity, "rmlui", canvasSize);
 			canvas.setInputActive(true);
 			auto& context = canvas.getContext();
 

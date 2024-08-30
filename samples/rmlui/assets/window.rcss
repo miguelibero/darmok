@@ -5,12 +5,17 @@ body {
 	background: #fefecc;
 	text-align: center;
 	padding: 2em 1em;
-	position: absolute;
 	border: 2px #ccc;
-	width: 500px;
-	height: 200px;
+	width: 100%;
+	height: 100%;
 	margin: auto;
 	cursor: default;
+}
+
+@spritesheet
+{
+    src: cursor.png;
+    cursor-default: 0px 0px 12px 21px;
 }
 		
 h1 {

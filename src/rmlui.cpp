@@ -194,6 +194,17 @@ namespace darmok
         | BGFX_STATE_BLEND_ALPHA
         ;
 
+    glm::mat4 RmluiRenderInterface::getTransform(const glm::vec2& position)
+    {
+        // reverse the y axis
+
+        auto scale = glm::scale(glm::mat4(1), glm::vec3(1, -1, 1));
+        glm::vec3 pos(position.x, position.y - _canvasSize.y, 0.0f);
+
+        return _sceneTransform * _rmluiTransform
+            * glm::translate(scale, pos);
+    }
+
     void RmluiRenderInterface::submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
     {
         if (!_program || !_encoder || !_viewId)
@@ -201,13 +212,7 @@ namespace darmok
             return;
         }
 
-        // reverse the y axis
-        auto scale = glm::scale(glm::mat4(1), glm::vec3(1, -1, 1));
-        glm::vec3 pos(translation.x, translation.y - _canvasSize.y, 0.0f);
-
-        auto trans = _sceneTransform * _rmluiTransform
-            * glm::translate(scale, pos);
-
+        auto trans = getTransform(RmluiUtils::convert(translation));
         _encoder->setTransform(glm::value_ptr(trans));
 
         ProgramDefines defines{ "TEXTURE_DISABLE" };
@@ -282,8 +287,7 @@ namespace darmok
 
         _encoder->setTexture(0, _textureUniform, tex.getHandle());
 
-        glm::vec3 p(position, 0);
-        auto trans = _sceneTransform * glm::translate(glm::mat4(1), p);
+        auto trans = getTransform(position);
         _encoder->setTransform(glm::value_ptr(trans));
 
         mesh->render(_encoder.value());
@@ -453,7 +457,7 @@ namespace darmok
     void RmluiCanvasImpl::init(RmluiComponentImpl& comp)
     {
         _comp = comp;
-        auto size = _size ? _size.value() : comp.getWindowPixelSize();
+        auto size = getCurrentSize();
         _render.emplace(comp.getProgram(), comp.getAllocator());
         _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_render.value());
         if (!_context)
@@ -556,6 +560,36 @@ namespace darmok
         {
             Rml::RemoveContext(_context->GetName());
         }
+    }
+
+    void RmluiCanvasImpl::onNormalizedMousePositionChange(const glm::vec2& ndelta, OptionalRef<const Transform> canvasTrans) noexcept
+    {
+        if (!_inputActive)
+        {
+            return;
+        }
+
+        auto size = getCurrentSize();
+        if (size.x == 0 || size.y == 0)
+        {
+            return;
+        }
+        glm::vec2 fsize(size);
+        glm::vec4 pos(_mousePosition / fsize, 0, 1);
+
+        if (canvasTrans)
+        {
+            pos = canvasTrans->getWorldInverse() * pos;
+        }
+
+        pos += glm::vec4(ndelta, 0, 0);
+
+        if (canvasTrans)
+        {
+            pos = canvasTrans->getWorldMatrix() * pos;
+        }
+
+        setMousePosition(glm::vec2(pos) * fsize);
     }
 
     void RmluiCanvasImpl::setMousePosition(const glm::vec2& position) noexcept
@@ -1129,18 +1163,8 @@ namespace darmok
         for (auto entity : _cam->createEntityView<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            if (!canvas->getInputActive())
-            {
-                continue;
-            }
-            auto size = canvas->getCurrentSize();
-            if (size.x == 0 || size.y == 0)
-            {
-                continue;
-            }
-            glm::vec2 fsize(size);
-            auto pos = canvas->getMousePosition() / fsize;
-            canvas->setMousePosition((pos + ndelta) * fsize);
+            auto trans = _scene->getComponent<const Transform>(entity);
+            canvas->getImpl().onNormalizedMousePositionChange(ndelta, trans);
         }
     }
 

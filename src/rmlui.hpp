@@ -115,6 +115,7 @@ namespace darmok
 		static const uint64_t _state;
 
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
+		glm::mat4 getTransform(const glm::vec2& position);
 	};
 
 	class RmluiSystemInterface final : public Rml::SystemInterface
@@ -160,6 +161,7 @@ namespace darmok
 	};
 
 	class RmluiComponentImpl;
+	class Transform;
 
 	class RmluiCanvasImpl final
 	{
@@ -190,6 +192,7 @@ namespace darmok
 
 		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 
+		void onNormalizedMousePositionChange(const glm::vec2& ndelta, OptionalRef<const Transform> canvasTrans) noexcept;
 		void setMousePosition(const glm::vec2& position) noexcept;
 		const glm::vec2& getMousePosition() const noexcept;
 
