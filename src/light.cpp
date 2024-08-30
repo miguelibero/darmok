@@ -136,7 +136,7 @@ namespace darmok
         return _intensity;
     }
 
-    LightingRenderComponent::LightingRenderComponent() noexcept
+    LightingCameraComponent::LightingCameraComponent() noexcept
         : _lightCountUniform{ bgfx::kInvalidHandle }
         , _lightDataUniform{ bgfx::kInvalidHandle }
         , _camPosUniform{ bgfx::kInvalidHandle }
@@ -159,18 +159,18 @@ namespace darmok
         createHandles();
     }
 
-    LightingRenderComponent::~LightingRenderComponent() noexcept
+    LightingCameraComponent::~LightingCameraComponent() noexcept
     {
         destroyHandles();
     }
 
-    void LightingRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    void LightingCameraComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _cam = cam;
     }
 
-    void LightingRenderComponent::createHandles() noexcept
+    void LightingCameraComponent::createHandles() noexcept
     {
         // TODO: does not work in OpenGL as the unform handles need to be created before the program
         _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
@@ -181,7 +181,7 @@ namespace darmok
         _normalMatrixUniform = bgfx::createUniform("u_normalMatrix", bgfx::UniformType::Mat3);
     }
 
-    void LightingRenderComponent::destroyHandles() noexcept
+    void LightingCameraComponent::destroyHandles() noexcept
     {
         std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
             _lightCountUniform, _lightDataUniform, _camPosUniform, _normalMatrixUniform
@@ -207,12 +207,12 @@ namespace darmok
         }
     }
 
-    void LightingRenderComponent::shutdown() noexcept
+    void LightingCameraComponent::shutdown() noexcept
     {
         destroyHandles();
     }
 
-    size_t LightingRenderComponent::updateDirLights() noexcept
+    size_t LightingCameraComponent::updateDirLights() noexcept
     {
         auto lights = _cam->createEntityView<DirectionalLight>();
         VertexDataWriter writer(_dirLightsLayout, uint32_t(lights.size_hint()));
@@ -242,7 +242,7 @@ namespace darmok
         return index;
     }
 
-    size_t LightingRenderComponent::updatePointLights() noexcept
+    size_t LightingCameraComponent::updatePointLights() noexcept
     {
         auto lights = _cam->createEntityView<PointLight>();
         VertexDataWriter writer(_pointLightsLayout, uint32_t(lights.size_hint()));
@@ -274,7 +274,7 @@ namespace darmok
         return index;
     }
 
-    void LightingRenderComponent::updateAmbientLights() noexcept
+    void LightingCameraComponent::updateAmbientLights() noexcept
     {
         auto& registry = _scene->getRegistry();
         auto ambientLights = _cam->createEntityView<AmbientLight>(registry);
@@ -287,7 +287,7 @@ namespace darmok
         }
     }
 
-    void LightingRenderComponent::updateCamera() noexcept
+    void LightingCameraComponent::updateCamera() noexcept
     {
         _camPos = glm::vec4(0);
         if (!_cam || !_scene)
@@ -306,7 +306,7 @@ namespace darmok
         }
     }
 
-    void LightingRenderComponent::update(float deltaTime) noexcept
+    void LightingCameraComponent::update(float deltaTime) noexcept
     {
         if (!_scene)
         {
@@ -318,7 +318,7 @@ namespace darmok
         updateCamera();
     }
 
-    void LightingRenderComponent::beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept
+    void LightingCameraComponent::beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept
     {
         auto& encoder = context.getEncoder();
         encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));

@@ -6,20 +6,19 @@
 
 namespace darmok
 {
-    class LuaApp;
-    class LuaRmluiAppComponent;
-    class RmluiDebuggerAppComponent;
-    struct RmluiDebuggerAppComponentConfig;
+    class LuaScene;
+    class RmluiDebuggerComponent;
+    struct RmluiDebuggerComponentConfig;
 
-    class LuaRmluiDebuggerAppComponent final
+    class LuaRmluiDebuggerComponent final
     {
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        using Config = RmluiDebuggerAppComponentConfig;
+        using Config = RmluiDebuggerComponentConfig;
 
-        static RmluiDebuggerAppComponent& addAppComponent1(LuaApp& app, LuaRmluiAppComponent& comp) noexcept;
-        static RmluiDebuggerAppComponent& addAppComponent2(LuaApp& app, LuaRmluiAppComponent& comp, const Config& config) noexcept;
+        static RmluiDebuggerComponent& addSceneComponent1(LuaScene& scene) noexcept;
+        static RmluiDebuggerComponent& addSceneComponent2(LuaScene& scene, const Config& config) noexcept;
     };
 }
 

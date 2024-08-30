@@ -8,24 +8,24 @@
 
 namespace darmok
 {
-    class ForwardRenderer;
+    class Camera;
     class Program;
 }
 
 namespace darmok::physics3d
 {
-    class PhysicsDebugRenderComponent;
+    class PhysicsDebugCameraComponent;
     struct PhysicsDebugConfig;
 
-    class LuaPhysicsDebugRenderComponent final
+    class LuaPhysicsDebugCameraComponent final
     {
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
         using Config = PhysicsDebugConfig;
 
-        static PhysicsDebugRenderComponent& addRenderComponent1(ForwardRenderer& renderer) noexcept;
-        static PhysicsDebugRenderComponent& addRenderComponent2(ForwardRenderer& renderer, const Config& config) noexcept;
+        static PhysicsDebugCameraComponent& addCameraComponent1(Camera& cam) noexcept;
+        static PhysicsDebugCameraComponent& addCameraComponent2(Camera& cam, const Config& config) noexcept;
     };
 }
 

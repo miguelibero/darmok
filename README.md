@@ -154,7 +154,7 @@ camTrans:look_at({ 0, 0, 0 })
 local cam = camEntity:add_component(Camera)
 cam:set_projection(60, { 0.3, 1000 })
 local renderer = cam:add_renderer(ForwardRenderer)
-renderer:add_component(LightingRenderComponent)
+renderer:add_component(LightingCameraComponent)
 
 local lightEntity = app.scene:create_entity()
 lightEntity:add_component(Transform, { 1, 1, -2 })

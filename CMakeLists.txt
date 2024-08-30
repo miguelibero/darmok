@@ -233,7 +233,7 @@ set(LUA_SOURCES
   asset.cpp
   image.cpp
   material.cpp
-  render.cpp
+  render_scene.cpp
   render_forward.cpp
   mesh.cpp
   program.cpp
@@ -315,7 +315,8 @@ if(DARMOK_BUILD_RMLUI)
   )
   list(APPEND LUA_SOURCES
     rmlui_comp.cpp
-    rmlui_view.cpp
+    rmlui_canvas.cpp
+    rmlui_event.cpp
     rmlui_debug.cpp
   )
 

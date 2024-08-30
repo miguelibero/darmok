@@ -1,35 +1,36 @@
 #ifdef _DEBUG
 
-#include "app.hpp"
+#include "scene.hpp"
 #include "rmlui.hpp"
 #include "rmlui_debug.hpp"
 #include <darmok/rmlui.hpp>
 #include <darmok/rmlui_debug.hpp>
+#include <darmok/scene.hpp>
 
 namespace darmok
 {
-    RmluiDebuggerAppComponent& LuaRmluiDebuggerAppComponent::addAppComponent1(LuaApp& app, LuaRmluiAppComponent& comp) noexcept
+    RmluiDebuggerComponent& LuaRmluiDebuggerComponent::addSceneComponent1(LuaScene& scene) noexcept
     {
-        return app.getReal().addComponent<RmluiDebuggerAppComponent>(comp.getReal());
+        return scene.getReal()->addSceneComponent<RmluiDebuggerComponent>();
     }
 
-    RmluiDebuggerAppComponent& LuaRmluiDebuggerAppComponent::addAppComponent2(LuaApp& app, LuaRmluiAppComponent& comp, const Config& config) noexcept
+    RmluiDebuggerComponent& LuaRmluiDebuggerComponent::addSceneComponent2(LuaScene& scene, const Config& config) noexcept
     {
-        return app.getReal().addComponent<RmluiDebuggerAppComponent>(comp.getReal(), config);
+        return scene.getReal()->addSceneComponent<RmluiDebuggerComponent>(config);
     }
 
-	void LuaRmluiDebuggerAppComponent::bind(sol::state_view& lua) noexcept
+	void LuaRmluiDebuggerComponent::bind(sol::state_view& lua) noexcept
 	{
-        lua.new_usertype<RmluiDebuggerAppComponentConfig>("RmluiDebuggerAppComponentConfig",
+        lua.new_usertype<Config>("RmluiDebuggerComponentConfig",
             sol::default_constructor,
-            "enableEvent", &RmluiDebuggerAppComponentConfig::enableEvent
+            "enableEvent", &Config::enableEvent
         );
-        lua.new_usertype<RmluiDebuggerAppComponent>("RmluiDebuggerAppComponent", sol::no_constructor,
-            "toggle", &RmluiDebuggerAppComponent::toggle,
-            "enabled", sol::property(&RmluiDebuggerAppComponent::isEnabled),
-            "add_app_component", sol::overload(
-                &LuaRmluiDebuggerAppComponent::addAppComponent1,
-                &LuaRmluiDebuggerAppComponent::addAppComponent2
+        lua.new_usertype<RmluiDebuggerComponent>("RmluiDebuggerComponent", sol::no_constructor,
+            "toggle", &RmluiDebuggerComponent::toggle,
+            "enabled", sol::property(&RmluiDebuggerComponent::isEnabled),
+            "add_scene_component", sol::overload(
+                &LuaRmluiDebuggerComponent::addSceneComponent1,
+                &LuaRmluiDebuggerComponent::addSceneComponent2
             )
         );
 	}

@@ -4,6 +4,9 @@
 #include <darmok/rmlui.hpp>
 #include <darmok/data.hpp>
 #include <darmok/window.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/camera.hpp>
+#include <darmok/render_forward.hpp>
 #include <bgfx/bgfx.h>
 
 #include <RmlUi/Core.h>
@@ -24,12 +27,22 @@ namespace
 		{
 			App::init();
 
-			auto& comp = addComponent<darmok::RmluiAppComponent>();
-			auto& context = comp.getView().getContext();
-			comp.getView().setInputActive(true);
+			auto& scene = *addComponent<SceneAppComponent>().getScene();
+
+			auto camEntity = scene.createEntity();
+			auto& cam = scene.addComponent<Camera>(camEntity)
+				.setWindowOrtho(glm::vec2(0));
+			cam.addComponent<ForwardRenderer>();
+			cam.addComponent<RmluiComponent>();
+
+			auto entity = scene.createEntity();
+
+			auto& canvas = scene.addComponent<RmluiCanvas>(entity, "rmlui");
+			canvas.setInputActive(true);
+			auto& context = canvas.getContext();
 
 #ifdef RMLUI_DEBUGGER
-			addComponent<darmok::RmluiDebuggerAppComponent>(comp);
+			scene.addSceneComponent<RmluiDebuggerComponent>();
 #endif
 
 			// sample taken from the RmlUI README
@@ -57,10 +70,12 @@ namespace
 			element->SetProperty("font-size", "1.5em");
 
 			// testing that rmlui works on borderless fullscreen
+			/*
 			getWindow().requestVideoMode({
 				.screenMode = WindowScreenMode::WindowedFullscreen,
 				.size = {1024, 768},
 			});
+			*/
 		}
 	private:
 		bool _show_text = true;

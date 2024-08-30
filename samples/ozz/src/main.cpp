@@ -65,8 +65,8 @@ namespace
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setWindowPerspective(60, 0.3, 1000);
 			auto& renderer = cam.addRenderer<ForwardRenderer>();
-			renderer.addComponent<LightingRenderComponent>();
-			renderer.addComponent<SkeletalAnimationRenderComponent>();
+			renderer.addComponent<LightingCameraComponent>();
+			renderer.addComponent<SkeletalAnimationCameraComponent>();
 			_freeLook = scene.addSceneComponent<FreelookController>(cam);
 
 			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);

@@ -248,17 +248,17 @@ namespace
 			auto& fwdRender = cam.addComponent<ForwardRenderer>();
 
 			auto skyboxTex = getAssets().getTextureLoader()("cubemap.ktx");
-			fwdRender.addComponent<SkyboxRenderComponent>(skyboxTex);
+			cam.addComponent<SkyboxRenderComponent>(skyboxTex);
 
-			fwdRender.addComponent<LightingRenderComponent>();
+			cam.addComponent<LightingCameraComponent>();
 
 			if (debugShadow)
 			{
-				fwdRender.addComponent<ShadowDebugRenderComponent>(debugShadow.value());
+				cam.addComponent<ShadowDebugRenderComponent>(debugShadow.value());
 			}
 
 			auto& shadowRenderer = cam.addComponent<ShadowRenderer>(shadowConfig);
-			fwdRender.addComponent<ShadowRenderComponent>(shadowRenderer);
+			cam.addComponent<ShadowRenderComponent>(shadowRenderer);
 
 			return cam;
 		}

@@ -20,7 +20,7 @@ namespace darmok
 
 namespace darmok::physics3d
 {
-    class PhysicsDebugRenderComponentImpl;
+    class PhysicsDebugCameraComponentImpl;
     class PhysicsSystem;
 
     struct DARMOK_EXPORT PhysicsDebugConfig final
@@ -31,21 +31,21 @@ namespace darmok::physics3d
         ProgramDefines programDefines;
     };
 
-    class DARMOK_EXPORT PhysicsDebugRenderComponent: public IRenderComponent
+    class DARMOK_EXPORT PhysicsDebugCameraComponent: public ICameraComponent
     {
     public:
         using Config = PhysicsDebugConfig;
-        PhysicsDebugRenderComponent(const Config& = {}) noexcept;
-        ~PhysicsDebugRenderComponent() noexcept;
+        PhysicsDebugCameraComponent(const Config& = {}) noexcept;
+        ~PhysicsDebugCameraComponent() noexcept;
         void init(Camera& cam, Scene& scene, App& app) override;
         void shutdown() override;
         void beforeRenderView(IRenderGraphContext& context) override;
 
         bool isEnabled() const noexcept;
-        PhysicsDebugRenderComponent& setEnabled(bool enabled) noexcept;
-        PhysicsDebugRenderComponent& setFont(const std::shared_ptr<IFont>& font) noexcept;
+        PhysicsDebugCameraComponent& setEnabled(bool enabled) noexcept;
+        PhysicsDebugCameraComponent& setFont(const std::shared_ptr<IFont>& font) noexcept;
     private:
-        std::unique_ptr<PhysicsDebugRenderComponentImpl> _impl;
+        std::unique_ptr<PhysicsDebugCameraComponentImpl> _impl;
     };
 }
 

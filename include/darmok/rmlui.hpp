@@ -4,7 +4,7 @@
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/glm.hpp>
-#include <darmok/render_graph.hpp>
+#include <darmok/render_scene.hpp>
 #include <bx/bx.h>
 #include <string>
 #include <optional>
@@ -23,68 +23,57 @@ namespace darmok
 	class Transform;
 	struct Viewport;
 
-	class RmluiViewImpl;
+	class RmluiCanvasImpl;
 
-	class DARMOK_EXPORT RmluiView final
+	class DARMOK_EXPORT RmluiCanvas final
 	{
 	public:
-		RmluiView(std::unique_ptr<RmluiViewImpl>&& impl) noexcept;
-		~RmluiView() noexcept;
+		RmluiCanvas(const std::string& name, std::optional<glm::vec2> size = std::nullopt) noexcept;
+		~RmluiCanvas() noexcept;
 
 		std::string getName() const noexcept;
 
-		bool getFullscreen() const noexcept;
-		RmluiView& setFullscreen(bool enabled) noexcept;
+		const std::optional<glm::uvec2>& getSize() const noexcept;
+		RmluiCanvas& setSize(const std::optional<glm::uvec2>& size) noexcept;
+		glm::uvec2 getCurrentSize() const noexcept;
 
-		RmluiView& setTargetTexture(const std::shared_ptr<Texture>& texture) noexcept;
-		std::shared_ptr<Texture> getTargetTexture() noexcept;
-
-		RmluiView& setViewport(const Viewport& vp) noexcept;
-		const Viewport& getViewport() const noexcept;
-
-		RmluiView& setEnabled(bool enabled) noexcept;
+		RmluiCanvas& setEnabled(bool enabled) noexcept;
 		bool getEnabled() const noexcept;
 
-		RmluiView& setInputActive(bool active) noexcept;
+		RmluiCanvas& setInputActive(bool active) noexcept;
 		bool getInputActive() const noexcept;
 
 		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 
-		RmluiView& setMousePosition(const glm::vec2& position) noexcept;
+		RmluiCanvas& setMousePosition(const glm::vec2& position) noexcept;
 		const glm::vec2& getMousePosition() const noexcept;
 
 		Rml::Context& getContext() noexcept;
 		const Rml::Context& getContext() const noexcept;
 
-		RmluiViewImpl& getImpl() noexcept;
-		const RmluiViewImpl& getImpl() const noexcept;
+		RmluiCanvasImpl& getImpl() noexcept;
+		const RmluiCanvasImpl& getImpl() const noexcept;
 	private:
-		std::unique_ptr<RmluiViewImpl> _impl;
+		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};
 
-	class RmluiAppComponentImpl;
+	class RmluiComponentImpl;
 
-	class DARMOK_EXPORT RmluiAppComponent final : public IAppComponent
-    {
-    public:
-		RmluiAppComponent() noexcept;
-		~RmluiAppComponent() noexcept;
+	class DARMOK_EXPORT RmluiComponent final : public ICameraComponent
+	{
+	public:
+		RmluiComponent() noexcept;
+		~RmluiComponent() noexcept;
 
-		RmluiAppComponentImpl& getImpl() noexcept;
-		const RmluiAppComponentImpl& getImpl() const noexcept;
-
-		OptionalRef<const RmluiView> getView(const std::string& name = "") const noexcept;
-		RmluiView& getView(const std::string& name = "");
-		RmluiView& addView(const std::string& name = "", int priority = 0);
-
-		bool hasView(const std::string& name) const noexcept;
-		bool removeView(const std::string& name);
-		
-		void init(App& app) override;
+		void init(Camera& cam, Scene& scene, App& app) override;
+		void update(float deltaTime) noexcept override;
 		void shutdown() noexcept override;
 		void renderReset() noexcept override;
-		void update(float dt) noexcept override;
+		void beforeRenderView(IRenderGraphContext& context) override;
+
+		RmluiComponentImpl& getImpl() noexcept;
+		const RmluiComponentImpl& getImpl() const noexcept;
 	private:
-		std::unique_ptr<RmluiAppComponentImpl> _impl;
-    };
+		std::unique_ptr<RmluiComponentImpl> _impl;
+	};
 }

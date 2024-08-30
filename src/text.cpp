@@ -335,8 +335,7 @@ namespace darmok
 		}
 
 		auto& encoder = context.getEncoder();
-		_cam->beforeRenderView(_viewId);
-
+		auto viewId = context.getViewId();
 		uint64_t state = BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
 			| BGFX_STATE_DEPTH_TEST_LEQUAL
@@ -352,8 +351,8 @@ namespace darmok
 				continue;
 			}
 
-			_cam->beforeRenderEntity(entity, encoder);
-			if (!text->render(_viewId, encoder))
+			_cam->setEntityTransform(entity, encoder);
+			if (!text->render(viewId, encoder))
 			{
 				continue;
 			}
@@ -362,7 +361,7 @@ namespace darmok
 			encoder.setTexture(0, _textureUniform, text->getFont()->getTexture()->getHandle());
 
 			encoder.setState(state);
-			encoder.submit(_viewId, _prog->getHandle());
+			encoder.submit(viewId, _prog->getHandle());
 		}
 	}
 

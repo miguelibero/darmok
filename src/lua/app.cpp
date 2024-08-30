@@ -454,9 +454,9 @@ namespace darmok
 		LuaApp::bind(lua);
 
 #ifdef DARMOK_RMLUI
-		LuaRmluiAppComponent::bind(lua);
+		LuaRmluiComponent::bind(lua);
 #ifdef RMLUI_DEBUGGER
-		LuaRmluiDebuggerAppComponent::bind(lua);
+		LuaRmluiDebuggerComponent::bind(lua);
 #endif
 #endif
 

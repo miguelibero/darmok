@@ -147,7 +147,7 @@ namespace darmok
         }
 
         _registry.on_construct<Camera>().connect<&SceneImpl::onCameraConstructed>(*this);
-        _registry.on_destroy<Camera>().connect< &SceneImpl::onCameraDestroyed>(*this);
+        _registry.on_destroy<Camera>().connect<&SceneImpl::onCameraDestroyed>(*this);
 
         _app->getRenderGraph().setChild(_renderGraph);
     }
@@ -189,7 +189,7 @@ namespace darmok
         _renderChain.shutdown();
 
         _registry.on_construct<Camera>().disconnect<&SceneImpl::onCameraConstructed>(*this);
-        _registry.on_destroy<Camera>().disconnect< &SceneImpl::onCameraDestroyed>(*this);
+        _registry.on_destroy<Camera>().disconnect<&SceneImpl::onCameraDestroyed>(*this);
 
         _app.reset();
     }

@@ -112,7 +112,7 @@ namespace darmok
     };
 
     // TODO: add PIMPL class
-    class DARMOK_EXPORT TextRenderComponent final : public IRenderComponent
+    class DARMOK_EXPORT TextRenderComponent final : public ICameraComponent
     {
     public:
         TextRenderComponent(const std::shared_ptr<Program>& prog = nullptr) noexcept;
@@ -123,7 +123,6 @@ namespace darmok
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
-        bgfx::ViewId _viewId;
         std::shared_ptr<Program> _prog;
         bgfx::UniformHandle _colorUniform;
         bgfx::UniformHandle _textureUniform;

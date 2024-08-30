@@ -169,7 +169,7 @@ namespace
 
 			auto& fwdRender = cam.addComponent<ForwardRenderer>();
 
-			fwdRender.addComponent<LightingRenderComponent>();
+			fwdRender.addComponent<LightingCameraComponent>();
 
 			if (debugShadow)
 			{

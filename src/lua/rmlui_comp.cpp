@@ -2,34 +2,38 @@
 #include <RmlUi/Core.h>
 #include <darmok/rmlui.hpp>
 #include <darmok/string.hpp>
+#include <darmok/camera.hpp>
+#include <darmok/scene.hpp>
 #include "utils.hpp"
-#include "app.hpp"
 
 namespace darmok
 {
-    LuaRmluiAppComponent::LuaRmluiAppComponent(RmluiAppComponent& comp, const sol::state_view& lua) noexcept
+    LuaRmluiComponent::LuaRmluiComponent(RmluiComponent& comp, const sol::state_view& lua) noexcept
         : _comp(comp)
         , _lua(lua)
     {
     }
 
-    void LuaRmluiAppComponent::init(App& app) noexcept
+    void LuaRmluiComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
+        _cam = cam;
+        _scene = scene;
         Rml::Factory::RegisterEventListenerInstancer(this);
     }
 
-    void LuaRmluiAppComponent::shutdown() noexcept
+    void LuaRmluiComponent::shutdown() noexcept
     {
         Rml::Factory::RegisterEventListenerInstancer(nullptr);
-        _views.clear();
+        _cam.reset();
+        _scene.reset();
     }
 
-    Rml::EventListener* LuaRmluiAppComponent::InstanceEventListener(const Rml::String& value, Rml::Element* element)
+    Rml::EventListener* LuaRmluiComponent::InstanceEventListener(const Rml::String& value, Rml::Element* element)
     {
         return _customEventListeners.emplace_back(std::make_unique<LuaCustomRmluiEventListener>(value, *this)).get();
     }
 
-    void LuaRmluiAppComponent::processCustomEvent(Rml::Event& event, const std::vector<std::string>& params)
+    void LuaRmluiComponent::processCustomEvent(Rml::Event& event, const std::vector<std::string>& params)
     {
         auto name = params[0];
         auto args = _lua.create_table();
@@ -37,87 +41,51 @@ namespace darmok
         {
             args[i] = params[i];
         }
-        for (auto& [viewName, view] : _views)
+        for(auto entity : _cam->createEntityView<LuaRmluiCanvas>())
         {
-            view.processCustomEvent(event, name, args);
+            auto canvas = _scene->getComponent<LuaRmluiCanvas>(entity);
+            canvas->processCustomEvent(event, name, args);
         }
     }
 
-    RmluiAppComponent& LuaRmluiAppComponent::getReal() noexcept
+    RmluiComponent& LuaRmluiComponent::getReal() noexcept
     {
         return _comp;
     }
 
-    const RmluiAppComponent& LuaRmluiAppComponent::getReal() const noexcept
+    const RmluiComponent& LuaRmluiComponent::getReal() const noexcept
     {
         return _comp;
     }
 
-    LuaRmluiView& LuaRmluiAppComponent::getView1() noexcept
+    LuaRmluiComponent& LuaRmluiComponent::addCameraComponent(Camera& cam, sol::this_state ts) noexcept
     {
-        return getView2("");
+        auto& real = cam.addComponent<RmluiComponent>();
+        return cam.addComponent<LuaRmluiComponent>(real, ts);
     }
 
-    LuaRmluiView& LuaRmluiAppComponent::getView2(const std::string& name) noexcept
-    {
-        auto itr = _views.find(name);
-        if (itr == _views.end())
-        {
-            itr = _views.emplace(name, _comp.getView(name)).first;
-        }
-        return itr->second;
-    }
-
-    bool LuaRmluiAppComponent::hasView(const std::string& name) const noexcept
-    {
-        return _views.contains(name);
-    }
-
-    bool LuaRmluiAppComponent::removeView(const std::string& name) noexcept
-    {
-        auto itr = _views.find(name);
-        if (itr != _views.end())
-        {
-            _views.erase(itr);
-        }
-        return _comp.removeView(name);
-    }
-
-    LuaRmluiAppComponent& LuaRmluiAppComponent::addAppComponent(LuaApp& app, sol::this_state ts) noexcept
-    {
-        auto& real = app.getReal().addComponent<RmluiAppComponent>();
-        return app.getReal().addComponent<LuaRmluiAppComponent>(real, ts);
-    }
-
-    void LuaRmluiAppComponent::loadFont(const std::string& path) noexcept
+    void LuaRmluiComponent::loadFont(const std::string& path) noexcept
     {
         Rml::LoadFontFace(path);
     }
 
-    void LuaRmluiAppComponent::loadFallbackFont(const std::string& path) noexcept
+    void LuaRmluiComponent::loadFallbackFont(const std::string& path) noexcept
     {
         Rml::LoadFontFace(path, true);
     }
 
-    void LuaRmluiAppComponent::bind(sol::state_view& lua) noexcept
+    void LuaRmluiComponent::bind(sol::state_view& lua) noexcept
     {
-        LuaRmluiView::bind(lua);
+        LuaRmluiCanvas::bind(lua);
 
-        // TODO: probably will remove this dependency
-        // Rml::Lua::Initialise(lua.lua_state());
-
-        lua.new_usertype<LuaRmluiAppComponent>("RmluiAppComponent", sol::no_constructor,
-            "view", sol::property(&LuaRmluiAppComponent::getView1),
-            "get_view", &LuaRmluiAppComponent::getView2,
-            "has_view", &LuaRmluiAppComponent::hasView,
-            "remove_view", &LuaRmluiAppComponent::removeView,
-            "add_app_component", &LuaRmluiAppComponent::addAppComponent,
-            "load_font", &LuaRmluiAppComponent::loadFont,
-            "load_fallback_font", &LuaRmluiAppComponent::loadFallbackFont
+        lua.new_usertype<LuaRmluiComponent>("RmluiComponent", sol::no_constructor,
+            "add_camera_component", &LuaRmluiComponent::addCameraComponent,
+            "load_font", &LuaRmluiComponent::loadFont,
+            "load_fallback_font", &LuaRmluiComponent::loadFallbackFont
         );
     }
 
-    LuaCustomRmluiEventListener::LuaCustomRmluiEventListener(const std::string& value, LuaRmluiAppComponent& comp) noexcept
+    LuaCustomRmluiEventListener::LuaCustomRmluiEventListener(const std::string& value, LuaRmluiComponent& comp) noexcept
         : _params(StringUtils::split(value, ":"))
         , _comp(comp)
     {

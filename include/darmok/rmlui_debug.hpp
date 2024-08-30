@@ -3,34 +3,33 @@
 #ifdef _DEBUG
 
 #include <darmok/input.hpp>
-#include <darmok/app.hpp>
+#include <darmok/scene.hpp>
 #include <memory>
 
 namespace darmok
 {
-	struct DARMOK_EXPORT RmluiDebuggerAppComponentConfig
+	struct DARMOK_EXPORT RmluiDebuggerComponentConfig
 	{
 		std::optional<InputEvent> enableEvent = KeyboardInputEvent{ KeyboardKey::F9 };
 	};
 
-    class RmluiAppComponent;
-    class RmluiDebuggerAppComponentImpl;
+    class RmluiDebuggerComponentImpl;
 
-	class DARMOK_EXPORT RmluiDebuggerAppComponent final : public IAppComponent
+	class DARMOK_EXPORT RmluiDebuggerComponent final : public ISceneComponent
     {
     public:
-		using Config = RmluiDebuggerAppComponentConfig;
-		RmluiDebuggerAppComponent(RmluiAppComponent& comp, const Config& config = {}) noexcept;
-		~RmluiDebuggerAppComponent() noexcept;
+		using Config = RmluiDebuggerComponentConfig;
+		RmluiDebuggerComponent(const Config& config = {}) noexcept;
+		~RmluiDebuggerComponent() noexcept;
 
 		void toggle() noexcept;
 
 		bool isEnabled() const noexcept;
 
-		void init(App& app) override;
+		void init(Scene& scene, App& app) override;
 		void shutdown() noexcept override;
 	private:
-		std::unique_ptr<RmluiDebuggerAppComponentImpl> _impl;
+		std::unique_ptr<RmluiDebuggerComponentImpl> _impl;
     };
 }
 

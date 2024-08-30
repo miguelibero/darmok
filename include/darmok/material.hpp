@@ -6,6 +6,7 @@
 #include <darmok/material_fwd.hpp>
 #include <darmok/program.hpp>
 #include <darmok/render_scene.hpp>
+#include <darmok/app.hpp>
 
 #include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
@@ -22,10 +23,12 @@ namespace darmok
     class Program;
     class App;
 
-    class DARMOK_EXPORT MaterialRenderComponent : public IRenderComponent
+    class DARMOK_EXPORT MaterialAppComponent : public IAppComponent
     {
     public:
-        void init(Camera& cam, Scene& scene, App& app) override;
+        MaterialAppComponent() noexcept;
+        ~MaterialAppComponent() noexcept;
+        void init(App& app) override;
         void shutdown() override;
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept;
     private:

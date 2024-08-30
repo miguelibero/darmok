@@ -141,8 +141,12 @@ namespace darmok
         [[nodiscard]] const RenderChain& getRenderChain() const noexcept;
         
         void configureView(bgfx::ViewId viewId) const noexcept;
-        void beforeRenderView(bgfx::ViewId viewId) const noexcept;
-        void beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept;
+
+        void setViewTransform(bgfx::ViewId viewId) const noexcept;
+        void setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept;
+
+        void beforeRenderView(IRenderGraphContext& context) const noexcept;
+        void beforeRenderEntity(Entity entity, IRenderGraphContext& context) const noexcept;
 
     private:
         bool _enabled;

@@ -12,7 +12,7 @@ namespace darmok
     class Program;
     class IMesh;
 
-    class DARMOK_EXPORT SkyboxRenderComponent final : public IRenderComponent
+    class DARMOK_EXPORT SkyboxRenderComponent final : public ICameraComponent
     {
     public:
         SkyboxRenderComponent(const std::shared_ptr<Texture>& texture) noexcept;

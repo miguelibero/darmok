@@ -132,7 +132,7 @@ namespace darmok
             {
                 continue;
             }
-            cam->beforeRenderEntity(entity, encoder);
+            cam->setEntityTransform(entity, encoder);
             if (!renderable->render(encoder))
             {
                 continue;

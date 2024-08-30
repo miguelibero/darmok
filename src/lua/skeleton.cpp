@@ -3,10 +3,10 @@
 #include "material.hpp"
 #include "mesh.hpp"
 #include "asset.hpp"
-#include "render.hpp"
+#include "render_scene.hpp"
 #include <darmok/skeleton.hpp>
 #include <darmok/asset.hpp>
-#include <darmok/render_forward.hpp>
+#include <darmok/camera.hpp>
 
 namespace darmok
 {
@@ -105,15 +105,15 @@ namespace darmok
         );
     }
 
-    SkeletalAnimationRenderComponent& LuaSkeletalAnimationRenderComponent::addRenderComponent(ForwardRenderer& renderer) noexcept
+    SkeletalAnimationCameraComponent& LuaSkeletalAnimationCameraComponent::addCameraComponent(Camera& cam) noexcept
     {
-        return renderer.addComponent<SkeletalAnimationRenderComponent>();
+        return cam.addComponent<SkeletalAnimationCameraComponent>();
     }
 
-    void LuaSkeletalAnimationRenderComponent::bind(sol::state_view& lua) noexcept
+    void LuaSkeletalAnimationCameraComponent::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<SkeletalAnimationRenderComponent>("SkeletalAnimationRenderComponent", sol::no_constructor,
-            "add_render_component", &LuaSkeletalAnimationRenderComponent::addRenderComponent
+        lua.new_usertype<SkeletalAnimationCameraComponent>("SkeletalAnimationCameraComponent", sol::no_constructor,
+            "add_camera_component", &LuaSkeletalAnimationCameraComponent::addCameraComponent
         );
     }
 }

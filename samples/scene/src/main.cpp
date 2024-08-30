@@ -23,10 +23,12 @@ namespace
 
 	struct Culling2D final
 	{
+		bool v; // entt does not accept empty structs
 	};
 
 	struct Culling3D final
 	{
+		bool v; // entt does not accept empty structs
 	};
 
 	class ScreenBounceUpdater final : public ISceneComponent
@@ -108,24 +110,23 @@ namespace
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<FrameAnimationUpdater>();
-			auto& registry = scene.getRegistry();
 
 			_prog = std::make_shared<Program>(StandardProgramType::Unlit);
 
-			auto cam3d = registry.create();
-			registry.emplace<Transform>(cam3d)
+			auto cam3d = scene.createEntity();
+			scene.addComponent<Transform>(cam3d)
 				.setPosition(glm::vec3(0.f, 2.f, -2.f))
 				.lookAt(glm::vec3(0, 0, 0));
-			registry.emplace<Camera>(cam3d)
+			scene.addComponent<Camera>(cam3d)
 				.setWindowPerspective(60, 0.3, 1000)
 				.setEntityComponentFilter<Culling3D>()
-				.addRenderer<ForwardRenderer>();
+				.addComponent<ForwardRenderer>();
 
-			auto cam2d = registry.create();
-			registry.emplace<Camera>(cam2d)
+			auto cam2d = scene.createEntity();
+			scene.addComponent<Camera>(cam2d)
 				.setWindowOrtho(glm::vec2(0))
 				.setEntityComponentFilter<Culling2D>()
-				.addRenderer<ForwardRenderer>();
+				.addComponent<ForwardRenderer>();
 
 			_debugMaterial = std::make_shared<Material>(_prog, Colors::red());
 			_debugMaterial->setPrimitiveType(MaterialPrimitiveType::Line);
@@ -137,10 +138,9 @@ namespace
 
 		void createBouncingSprite(Scene& scene)
 		{
-			auto& registry = scene.getRegistry();
 			auto tex = getAssets().getTextureLoader()("engine.png");
-			auto sprite = registry.create();
-			auto& trans = registry.emplace<Transform>(sprite);
+			auto sprite = scene.createEntity();
+			auto& trans = scene.addComponent<Transform>(sprite);
 			float scale = 0.5;
 
 			MeshData meshData(Rectangle(tex->getSize()));
@@ -148,29 +148,28 @@ namespace
 
 			auto mesh = meshData.createMesh(_prog->getVertexLayout());
 			auto mat = std::make_shared<Material>(_prog, tex);
-			registry.emplace<Renderable>(sprite, std::move(mesh), mat);
+			scene.addComponent<Renderable>(sprite, std::move(mesh), mat);
 
-			auto spriteBorder = registry.create();
+			auto spriteBorder = scene.createEntity();
 			auto size = scale * glm::vec2(tex->getSize());
 			meshData = MeshData(Rectangle::standard(), RectangleMeshType::Outline);
 			meshData *= glm::vec3(size, 0);
 			auto debugMesh = meshData.createMesh(_prog->getVertexLayout());
 
-			registry.emplace<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);
-			registry.emplace<Transform>(spriteBorder).setParent(trans);
-			registry.emplace<Culling2D>(spriteBorder);
+			scene.addComponent<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);
+			scene.addComponent<Transform>(spriteBorder).setParent(trans);
+			scene.addComponent<Culling2D>(spriteBorder);
 
-			registry.emplace<Culling2D>(sprite);
+			scene.addComponent<Culling2D>(sprite);
 			scene.addSceneComponent<ScreenBounceUpdater>(trans, size, 100.f);
 		}
 
 		void createSpriteAnimation(Scene& scene)
 		{
-			auto& registry = scene.getRegistry();
 			auto texAtlas = getAssets().getTextureAtlasLoader()("warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
 			static const std::string animNamePrefix = "Attack/";
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
-			auto anim = registry.create();
+			auto anim = scene.createEntity();
 
 			TextureAtlasMeshConfig config;
 			config.offset = - glm::vec3(animBounds.size.x, animBounds.size.y, 0.f) / 2.f;
@@ -178,12 +177,12 @@ namespace
 			auto frames = texAtlas->createAnimation(_prog->getVertexLayout(), animNamePrefix, 0.1F, config);
 			
 			auto material = std::make_shared<Material>(_prog, texAtlas->texture);
-			auto& renderable = registry.emplace<Renderable>(anim, material);
-			registry.emplace<FrameAnimation>(anim, frames, renderable);
+			auto& renderable = scene.addComponent<Renderable>(anim, material);
+			scene.addComponent<FrameAnimation>(anim, frames, renderable);
 			
-			registry.emplace<Culling2D>(anim);
+			scene.addComponent<Culling2D>(anim);
 			auto& winSize = getWindow().getSize();
-			registry.emplace<Transform>(anim, glm::vec3(winSize, 0) / 2.f);
+			scene.addComponent<Transform>(anim, glm::vec3(winSize, 0) / 2.f);
 		}
 
 		void createRotatingCube(Scene& scene)
@@ -194,11 +193,10 @@ namespace
 
 			auto cubeMesh = MeshData(Cube()).createMesh(_prog->getVertexLayout());
 
-			auto& registry = scene.getRegistry();
-			auto cube = registry.create();
-			registry.emplace<Culling3D>(cube);
-			registry.emplace<Renderable>(cube, std::move(cubeMesh), material);
-			auto& trans = registry.emplace<Transform>(cube);
+			auto cube = scene.createEntity();
+			scene.addComponent<Culling3D>(cube);
+			scene.addComponent<Renderable>(cube, std::move(cubeMesh), material);
+			auto& trans = scene.addComponent<Transform>(cube);
 			scene.addSceneComponent<RotateUpdater>(trans, 100.f);
 		}
 	private:

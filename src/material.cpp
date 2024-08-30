@@ -266,7 +266,26 @@ namespace darmok
 		return *this;
 	}
 
-	void MaterialRenderComponent::init(Camera& cam, Scene& scene, App& app)
+	MaterialAppComponent::MaterialAppComponent() noexcept
+		: _albedoLutSamplerUniform{ bgfx::kInvalidHandle }
+		, _baseColorUniform{ bgfx::kInvalidHandle }
+		, _specularColorUniform{ bgfx::kInvalidHandle }
+		, _metallicRoughnessNormalOcclusionUniform{ bgfx::kInvalidHandle }
+		, _emissiveColorUniform{ bgfx::kInvalidHandle }
+		, _hasTexturesUniform{ bgfx::kInvalidHandle }
+		, _multipleScatteringUniform{ bgfx::kInvalidHandle }
+	{
+	}
+
+	MaterialAppComponent::~MaterialAppComponent() noexcept
+	{
+		if (_defaultTexture)
+		{
+			shutdown();
+		}
+	}
+
+	void MaterialAppComponent::init(App& app)
 	{
 		_samplerUniforms = std::vector<Sampler>{
 			{ TextureType::BaseColor, bgfx::createUniform("s_texBaseColor", bgfx::UniformType::Sampler), RenderSamplers::MATERIAL_ALBEDO},
@@ -288,7 +307,7 @@ namespace darmok
 		_defaultTexture = std::make_shared<Texture>(img);
 	}
 
-	void MaterialRenderComponent::shutdown()
+	void MaterialAppComponent::shutdown()
 	{
 		for (auto& elm : _samplerUniforms)
 		{
@@ -312,7 +331,7 @@ namespace darmok
 		_defaultTexture.reset();
 	}
 
-	void MaterialRenderComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept
+	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept
 	{
 		glm::vec4 hasTextures(0);
 		for (uint8_t i = 0; i < _samplerUniforms.size(); i++)

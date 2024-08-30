@@ -8,20 +8,19 @@
 
 namespace darmok
 {
-	RmluiDebuggerAppComponentImpl::RmluiDebuggerAppComponentImpl(RmluiAppComponent& comp, const Config& config) noexcept
-		: _comp(comp)
-		, _config(config)
+	RmluiDebuggerComponentImpl::RmluiDebuggerComponentImpl(const Config& config) noexcept
+		: _config(config)
 	{
 	}
 
-	RmluiDebuggerAppComponentImpl::~RmluiDebuggerAppComponentImpl() noexcept
+	RmluiDebuggerComponentImpl::~RmluiDebuggerComponentImpl() noexcept
 	{
 		shutdown();
 	}
 
-    const std::string RmluiDebuggerAppComponentImpl::_tag = "debugger";
+    const std::string RmluiDebuggerComponentImpl::_tag = "debugger";
 
-	void RmluiDebuggerAppComponentImpl::init(App& app) noexcept
+	void RmluiDebuggerComponentImpl::init(Scene& scene, App& app) noexcept
 	{
         _input = app.getInput();
         _win = app.getWindow();
@@ -32,13 +31,13 @@ namespace darmok
         }
 	}
 
-    void RmluiDebuggerAppComponentImpl::shutdown() noexcept
+    void RmluiDebuggerComponentImpl::shutdown() noexcept
     {
         if (!_input)
         {
             return;
         }
-        if (_view)
+        if (_canvas)
         {
             Rml::Debugger::Shutdown();
             _win->requestCursorMode(_originalCursorMode);
@@ -48,52 +47,57 @@ namespace darmok
         _win.reset();
     }
 
-    void RmluiDebuggerAppComponentImpl::onInputEvent(const std::string& tag) noexcept
+    void RmluiDebuggerComponentImpl::onInputEvent(const std::string& tag) noexcept
     {
         toggle();
     }
 
-    bool RmluiDebuggerAppComponentImpl::isEnabled() const noexcept
+    bool RmluiDebuggerComponentImpl::isEnabled() const noexcept
     {
-        return !_view.empty();
+        return !_canvas.empty();
     }
 
-    void RmluiDebuggerAppComponentImpl::toggle() noexcept
+    void RmluiDebuggerComponentImpl::toggle() noexcept
     {
-        if (_view)
+        if (_canvas)
         {
             Rml::Debugger::Shutdown();
         }
-        auto& views = _comp.getImpl().getViews();
-        if (!_view)
+        std::vector<std::reference_wrapper<RmluiCanvas>> canvases;
+        for (auto entity : _scene->getComponentView<RmluiCanvas>())
         {
-            if (!views.empty())
+            canvases.emplace_back(_scene->getComponent<RmluiCanvas>(entity).value());
+        }
+
+        if (!_canvas)
+        {
+            if (!canvases.empty())
             {
-                _view = *views.front();
+                _canvas = canvases.front().get();
             }
         }
         else
         {
-            auto ptr = &_view.value();
-            auto itr = std::find_if(views.begin(), views.end(), [ptr](auto& view) { return view.get() == ptr; });
-            if (itr != views.end())
+            auto ptr = &_canvas.value();
+            auto itr = std::find_if(canvases.begin(), canvases.end(), [ptr](auto& canvas) { return &canvas.get() == ptr; });
+            if (itr != canvases.end())
             {
                 ++itr;
             }
-            if (itr == views.end())
+            if (itr == canvases.end())
             {
-                _view.reset();
+                _canvas.reset();
             }
             else
             {
-                _view = **itr;
+                _canvas = itr->get();
             }
         }
 
-        bool active = !_view.empty();
+        bool active = !_canvas.empty();
         if (active)
         {
-            auto ctxt = &_view->getContext();
+            auto ctxt = &_canvas->getContext();
             Rml::Debugger::Initialise(ctxt);
             Rml::Debugger::SetContext(ctxt);
             Rml::Debugger::SetVisible(true);
@@ -107,32 +111,32 @@ namespace darmok
 
     }
 
-    RmluiDebuggerAppComponent::RmluiDebuggerAppComponent(RmluiAppComponent& comp, const Config& config) noexcept
-        : _impl(std::make_unique<RmluiDebuggerAppComponentImpl>(comp, config))
+    RmluiDebuggerComponent::RmluiDebuggerComponent(const Config& config) noexcept
+        : _impl(std::make_unique<RmluiDebuggerComponentImpl>(config))
     {
     }
 
-    RmluiDebuggerAppComponent::~RmluiDebuggerAppComponent() noexcept
+    RmluiDebuggerComponent::~RmluiDebuggerComponent() noexcept
     {
         // empty on purpose
     }
 
-    void RmluiDebuggerAppComponent::toggle() noexcept
+    void RmluiDebuggerComponent::toggle() noexcept
     {
         return _impl->toggle();
     }
 
-    bool RmluiDebuggerAppComponent::isEnabled() const noexcept
+    bool RmluiDebuggerComponent::isEnabled() const noexcept
     {
         return _impl->isEnabled();
     }
 
-    void RmluiDebuggerAppComponent::init(App& app)
+    void RmluiDebuggerComponent::init(Scene& scene, App& app)
     {
-        return _impl->init(app);
+        return _impl->init(scene, app);
     }
 
-    void RmluiDebuggerAppComponent::shutdown() noexcept
+    void RmluiDebuggerComponent::shutdown() noexcept
     {
         _impl->shutdown();
     }

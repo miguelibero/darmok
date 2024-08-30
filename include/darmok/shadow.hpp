@@ -84,7 +84,7 @@ namespace darmok
         void updateLights() noexcept;
     };
 
-    class DARMOK_EXPORT ShadowRenderComponent final : public IRenderComponent
+    class DARMOK_EXPORT ShadowRenderComponent final : public ICameraComponent
     {
     public:
         ShadowRenderComponent(ShadowRenderer& renderer) noexcept;
@@ -107,7 +107,7 @@ namespace darmok
 
     struct MeshData;
 
-    class DARMOK_EXPORT ShadowDebugRenderComponent final : public IRenderComponent
+    class DARMOK_EXPORT ShadowDebugRenderComponent final : public ICameraComponent
     {
     public:
         ShadowDebugRenderComponent(ShadowRenderer& renderer) noexcept;

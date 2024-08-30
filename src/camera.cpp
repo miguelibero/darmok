@@ -240,7 +240,7 @@ namespace darmok
         _renderChain.configureView(viewId, renderTex);
     }
 
-    void Camera::beforeRenderView(bgfx::ViewId viewId) const noexcept
+    void Camera::setViewTransform(bgfx::ViewId viewId) const noexcept
     {
         auto projPtr = glm::value_ptr(_proj);
         const void* viewPtr = nullptr;
@@ -251,7 +251,7 @@ namespace darmok
         bgfx::setViewTransform(viewId, viewPtr, projPtr);
     }
 
-    void Camera::beforeRenderEntity(Entity entity, bgfx::Encoder& encoder) const noexcept
+    void Camera::setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept
     {
         const void* transMtx = nullptr;
         if (_scene)
@@ -264,6 +264,24 @@ namespace darmok
         if (transMtx)
         {
             encoder.setTransform(transMtx);
+        }
+    }
+
+    void Camera::beforeRenderView(IRenderGraphContext& context) const noexcept
+    {
+        setViewTransform(context.getViewId());
+        for (auto& [type, comp] : _components)
+        {
+            comp->beforeRenderView(context);
+        }
+    }
+
+    void Camera::beforeRenderEntity(Entity entity, IRenderGraphContext& context) const noexcept
+    {
+        setEntityTransform(entity, context.getEncoder());
+        for (auto& [type, comp] : _components)
+        {
+            comp->beforeRenderEntity(entity, context);
         }
     }
 
