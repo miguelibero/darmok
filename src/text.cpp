@@ -227,7 +227,7 @@ namespace darmok
 	MeshData Text::createMeshData(const Utf8Vector& content, const IFont& font, const RenderConfig& config)
 	{
 		glm::vec2 pos(0);
-		MeshData data;
+		MeshData meshData;
 		auto lineSize = font.getLineSize();
 		auto glyphAdv = config.getGlyphAdvanceFactor();
 		for (auto& chr : content)
@@ -240,13 +240,15 @@ namespace darmok
 
 			config.fixEndOfLine(pos, lineSize);
 
-			MeshData glyphData(Rectangle(glyph->size));
+			MeshData glyphMesh(Rectangle(glyph->size, glm::vec2(glyph->size) * 0.5F));
 			
-			glyphData *= glyph->size;
-			glyphData += glyph->texturePosition;
-			auto offset = glm::vec3(pos, 0) + glm::vec3(glyph->offset, 0);
-			glyphData *= glm::translate(glm::mat4(1), offset);
-			data += glyphData;
+			glyphMesh.scaleTexCoords(glyph->size);
+			glyphMesh.translateTexCoords(glyph->texturePosition);
+
+			auto offset = pos + glyph->offset;
+			glyphMesh.translatePositions(glm::vec3(offset, 0));
+
+			meshData += glyphMesh;
 
 			pos += glyphAdv * glm::vec2(glyph->originalSize);
 		}
@@ -260,14 +262,16 @@ namespace darmok
 			texScale /= glm::vec2(tex->getSize());
 		}
 
-		data *= texScale;
-		data *= glm::scale(glm::mat4(1), glm::vec3(texScale, 0));
+		meshData.scalePositions(glm::vec3(texScale, 1.F));
+		meshData.scaleTexCoords(texScale);
 
-		return data;
+		return meshData;
 	}
 
-	TextRenderComponent::TextRenderComponent(const std::shared_ptr<Program>& prog) noexcept
+	TextRenderer::TextRenderer(const std::shared_ptr<Program>& prog) noexcept
 		: _prog(prog)
+		, _colorUniform{ bgfx::kInvalidHandle }
+		, _textureUniform{ bgfx::kInvalidHandle }
 	{
 		if (_prog == nullptr)
 		{
@@ -275,7 +279,7 @@ namespace darmok
 		}
 	}
 
-	void TextRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+	void TextRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
 		_scene = scene;
 		_cam = cam;
@@ -283,7 +287,7 @@ namespace darmok
 		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 	}
 
-	void TextRenderComponent::shutdown() noexcept
+	void TextRenderer::shutdown() noexcept
 	{
 		_scene.reset();
 		_cam.reset();
@@ -299,7 +303,7 @@ namespace darmok
 		}
 	}
 
-	void TextRenderComponent::update(float deltaTime)
+	void TextRenderer::update(float deltaTime)
 	{
 		if (!_scene || !_cam)
 		{
@@ -322,7 +326,7 @@ namespace darmok
 		}
 	}
 
-	void TextRenderComponent::beforeRenderView(IRenderGraphContext& context) noexcept
+	void TextRenderer::beforeRenderView(IRenderGraphContext& context) noexcept
 	{
 		if (!_scene || !_cam)
 		{

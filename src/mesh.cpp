@@ -462,7 +462,7 @@ namespace darmok
 		20, 21, 22, 22, 23, 20,
 	};
 
-	MeshData::MeshData(const Cube& Cube, RectangleMeshType type) noexcept
+	MeshData::MeshData(const Cube& cube, RectangleMeshType type) noexcept
 	{
 		const static std::vector<Vertex> basicVertices = {
 			{ { 1,  1,  1 }, { 0, 0 }, {  0,  0,  1 }, {  1,  0,  0 } },
@@ -499,8 +499,17 @@ namespace darmok
 			convertQuadIndicesToLine();
 		}
 
-		auto trans = glm::scale(glm::mat4(1), Cube.size);
-		trans = glm::translate(trans, (Cube.origin / Cube.size) - glm::vec3(0.5f));
+		if (cube.size.x == 0.F || cube.size.y == 0.F || cube.size.z == 0.F)
+		{
+			for (auto& vertex : vertices)
+			{
+				vertex.position = cube.origin;
+			}
+			return;
+		}
+
+		auto trans = glm::scale(glm::mat4(1), cube.size);
+		trans = glm::translate(trans, (cube.origin / cube.size) - glm::vec3(0.5f));
 		*this *= trans;
 	}
 
@@ -521,7 +530,16 @@ namespace darmok
 			convertQuadIndicesToLine();
 		}
 
-		auto trans = glm::scale(glm::mat4(1), glm::vec3(rect.size, 0));
+		if (rect.size.x == 0.F || rect.size.y == 0.F)
+		{
+			for (auto& vertex : vertices)
+			{
+				vertex.position = glm::vec3(rect.origin, 0);
+			}
+			return;
+		}
+
+		auto trans = glm::scale(glm::mat4(1), glm::vec3(rect.size, 1.F));
 		trans = glm::translate(trans, glm::vec3(rect.origin / rect.size - glm::vec2(0.5F), 0));
 		*this *= trans;
 	}
@@ -801,25 +819,17 @@ namespace darmok
 		return *this;
 	}
 
-	MeshData& MeshData::operator*=(const glm::mat2& trans) noexcept
+	MeshData& MeshData::operator*=(const Color& color) noexcept
 	{
+		auto ncolor = Colors::normalize(color);
 		for (auto& vertex : vertices)
 		{
-			vertex.texCoord = trans * vertex.texCoord;
+			vertex.color = glm::vec4(vertex.color) * ncolor;
 		}
 		return *this;
 	}
 
-	MeshData& MeshData::operator+=(const glm::vec3& offset) noexcept
-	{
-		for (auto& vertex : vertices)
-		{
-			vertex.position += offset;
-		}
-		return *this;
-	}
-
-	MeshData& MeshData::operator*=(const glm::vec3& scale) noexcept
+	MeshData& MeshData::scalePositions(const glm::vec3& scale) noexcept
 	{
 		for (auto& vertex : vertices)
 		{
@@ -828,40 +838,28 @@ namespace darmok
 		return *this;
 	}
 
-	MeshData& MeshData::operator*=(const glm::quat& rot) noexcept
+	MeshData& MeshData::translatePositions(const glm::vec3& pos) noexcept
 	{
 		for (auto& vertex : vertices)
 		{
-			vertex.position = rot * vertex.position;
-			vertex.normal = rot * vertex.normal;
-			vertex.tangent = rot * vertex.tangent;
+			vertex.position += pos;
 		}
 		return *this;
 	}
 
-	MeshData& MeshData::operator*=(const Color& color) noexcept
+	MeshData& MeshData::scaleTexCoords(const glm::vec2& scale) noexcept
 	{
 		for (auto& vertex : vertices)
 		{
-			vertex.color *= Colors::normalize(color);
+			vertex.texCoord *= scale;
 		}
 		return *this;
 	}
-
-	MeshData& MeshData::operator*=(const glm::uvec2& textureScale) noexcept
+	MeshData& MeshData::translateTexCoords(const glm::vec2& pos) noexcept
 	{
 		for (auto& vertex : vertices)
 		{
-			vertex.texCoord *= textureScale;
-		}
-		return *this;
-	}
-
-	MeshData& MeshData::operator+=(const glm::uvec2& textureOffset) noexcept
-	{
-		for (auto& vertex : vertices)
-		{
-			vertex.texCoord += textureOffset;
+			vertex.texCoord += pos;
 		}
 		return *this;
 	}

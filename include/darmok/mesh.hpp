@@ -195,14 +195,12 @@ namespace darmok
         MeshData operator+(const MeshData& other) const noexcept;
 
         MeshData& operator*=(const glm::mat4& trans) noexcept;
-        MeshData& operator*=(const glm::mat2& trans) noexcept;
-
-        MeshData& operator+=(const glm::vec3& offset) noexcept;
-        MeshData& operator*=(const glm::vec3& scale) noexcept;
-        MeshData& operator*=(const glm::quat& rot) noexcept;
         MeshData& operator*=(const Color& color) noexcept;
-        MeshData& operator*=(const glm::uvec2& textureScale) noexcept;
-        MeshData& operator+=(const glm::uvec2& textureOffset) noexcept;
+
+        MeshData& scalePositions(const glm::vec3& scale) noexcept;
+        MeshData& translatePositions(const glm::vec3& pos) noexcept;
+        MeshData& scaleTexCoords(const glm::vec2& scale) noexcept;
+        MeshData& translateTexCoords(const glm::vec2& pos) noexcept;
 
         MeshData& shiftIndices(Index offset) noexcept;
         MeshData& calcNormals() noexcept;

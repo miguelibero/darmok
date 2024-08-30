@@ -118,12 +118,10 @@ namespace
 			std::shared_ptr<IMesh> arrowMesh = MeshData(Line(), LineMeshType::Arrow).createMesh(prog->getVertexLayout());
 			scene.addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 
-			/*
 			auto dirLightEntity2 = scene.createEntity();
 			scene.addComponent<Transform>(dirLightEntity2, glm::vec3{ 1, 1, -1 })
 				.lookAt(glm::vec3(0, 0, 0));
 			scene.addComponent<DirectionalLight>(dirLightEntity2, 0.5);
-			*/
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);

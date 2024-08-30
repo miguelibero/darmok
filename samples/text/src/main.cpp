@@ -44,8 +44,8 @@ namespace
 
 			cam.setWindowOrtho();
 
-			cam.addRenderer<ForwardRenderer>();
-			cam.addRenderer<TextRenderer>();
+			cam.addComponent<ForwardRenderer>();
+			cam.addComponent<TextRenderer>();
 
 			auto text1Entity = scene.createEntity();
 			_text1 = scene.addComponent<Text>(text1Entity, arial, _textStr);

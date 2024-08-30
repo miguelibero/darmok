@@ -167,17 +167,17 @@ namespace
 			// shadowConfig.mapMargin = glm::vec3(0.1);
 			shadowConfig.cascadeAmount = 2;
 
-			auto& fwdRender = cam.addComponent<ForwardRenderer>();
+			cam.addComponent<ForwardRenderer>();
 
-			fwdRender.addComponent<LightingCameraComponent>();
+			cam.addComponent<LightingCameraComponent>();
 
 			if (debugShadow)
 			{
-				fwdRender.addComponent<ShadowDebugRenderComponent>(debugShadow.value());
+				cam.addComponent<ShadowDebugRenderComponent>(debugShadow.value());
 			}
 
 			auto& shadowRenderer = cam.addComponent<ShadowRenderer>(shadowConfig);
-			fwdRender.addComponent<ShadowRenderComponent>(shadowRenderer);
+			cam.addComponent<ShadowRenderComponent>(shadowRenderer);
 
 			return cam;
 		}

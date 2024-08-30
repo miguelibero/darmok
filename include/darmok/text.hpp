@@ -31,6 +31,8 @@ namespace darmok
         glm::uvec2 texturePosition = {};
         glm::vec2 offset = {};
         glm::vec2 originalSize = {};
+
+        // TODO: support texture rotation
     };
 
     class Text;
@@ -112,10 +114,10 @@ namespace darmok
     };
 
     // TODO: add PIMPL class
-    class DARMOK_EXPORT TextRenderComponent final : public ICameraComponent
+    class DARMOK_EXPORT TextRenderer final : public ICameraComponent
     {
     public:
-        TextRenderComponent(const std::shared_ptr<Program>& prog = nullptr) noexcept;
+        TextRenderer(const std::shared_ptr<Program>& prog = nullptr) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) override;
