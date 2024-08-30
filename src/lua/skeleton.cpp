@@ -105,15 +105,15 @@ namespace darmok
         );
     }
 
-    SkeletalAnimationCameraComponent& LuaSkeletalAnimationCameraComponent::addCameraComponent(Camera& cam) noexcept
+    SkeletalAnimationRenderComponent& LuaSkeletalAnimationRenderComponent::addCameraComponent(Camera& cam) noexcept
     {
-        return cam.addComponent<SkeletalAnimationCameraComponent>();
+        return cam.addComponent<SkeletalAnimationRenderComponent>();
     }
 
-    void LuaSkeletalAnimationCameraComponent::bind(sol::state_view& lua) noexcept
+    void LuaSkeletalAnimationRenderComponent::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<SkeletalAnimationCameraComponent>("SkeletalAnimationCameraComponent", sol::no_constructor,
-            "add_camera_component", &LuaSkeletalAnimationCameraComponent::addCameraComponent
+        lua.new_usertype<SkeletalAnimationRenderComponent>("SkeletalAnimationRenderComponent", sol::no_constructor,
+            "add_camera_component", &LuaSkeletalAnimationRenderComponent::addCameraComponent
         );
     }
 }

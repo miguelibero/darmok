@@ -55,11 +55,11 @@ namespace
 					.setWindowPerspective(60, 0.3, 1000);
 
 				_cam->addComponent<ForwardRenderer>();
-				_cam->addComponent<LightingCameraComponent>();
+				_cam->addComponent<LightingRenderComponent>();
 
 				_freeLook = _scene->addSceneComponent<FreelookController>(*_cam);
 #ifdef PHYSICS_DEBUG_RENDER
-				_physicsDebugRender = _cam->addComponent<PhysicsDebugCameraComponent>();
+				_physicsDebugRender = _cam->addComponent<PhysicsDebugRenderer>();
 #ifdef DARMOK_FREETYPE
 				auto font = getAssets().getFontLoader()("../../assets/noto.ttf");
 				_physicsDebugRender->setFont(font);
@@ -303,7 +303,7 @@ namespace
 		std::shared_ptr<Material> _triggerDoorMat;
 
 #ifdef PHYSICS_DEBUG_RENDER
-		OptionalRef<PhysicsDebugCameraComponent> _physicsDebugRender;
+		OptionalRef<PhysicsDebugRenderer> _physicsDebugRender;
 #endif
 
 		bool setMaterial(PhysicsBody& body, const std::shared_ptr<Material>& mat)

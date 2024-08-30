@@ -147,7 +147,7 @@ namespace darmok
         }
     }
 
-    void SkeletalAnimationCameraComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    void SkeletalAnimationRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _cam = cam;
@@ -155,7 +155,7 @@ namespace darmok
         _skinningUniform = bgfx::createUniform("u_skinning", bgfx::UniformType::Mat4, DARMOK_SKELETON_MAX_BONES);
     }
 
-    void SkeletalAnimationCameraComponent::shutdown() noexcept
+    void SkeletalAnimationRenderComponent::shutdown() noexcept
     {
         _scene.reset();
         _cam.reset();
@@ -166,7 +166,7 @@ namespace darmok
         }
     }
 
-    OptionalRef<SkeletalAnimator> SkeletalAnimationCameraComponent::getAnimator(Entity entity) const noexcept
+    OptionalRef<SkeletalAnimator> SkeletalAnimationRenderComponent::getAnimator(Entity entity) const noexcept
     {
         if (!_scene)
         {
@@ -175,7 +175,7 @@ namespace darmok
         return _scene->getComponentInParent<SkeletalAnimator>(entity);
     }
 
-    void SkeletalAnimationCameraComponent::beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept
+    void SkeletalAnimationRenderComponent::beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept
     {
         auto animator = getAnimator(entity);
         if (!animator)

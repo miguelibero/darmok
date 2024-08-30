@@ -486,14 +486,14 @@ namespace darmok
         encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, texHandle);
     }
 
-    ShadowDebugRenderComponent::ShadowDebugRenderComponent(ShadowRenderer& renderer) noexcept
+    ShadowDebugRenderer::ShadowDebugRenderer(ShadowRenderer& renderer) noexcept
         : _renderer(renderer)
         , _hasTexturesUniform{ bgfx::kInvalidHandle }
         , _colorUniform{ bgfx::kInvalidHandle }
     {
     }
 
-    void ShadowDebugRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    void ShadowDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _prog = std::make_shared<Program>(StandardProgramType::Unlit);
@@ -502,7 +502,7 @@ namespace darmok
         _colorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
     }
 
-    void ShadowDebugRenderComponent::shutdown() noexcept
+    void ShadowDebugRenderer::shutdown() noexcept
     {
         std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = { _hasTexturesUniform, _colorUniform };
         for (auto& uniform : uniforms)
@@ -518,7 +518,7 @@ namespace darmok
         _prog.reset();
     }
 
-    void ShadowDebugRenderComponent::beforeRenderView(IRenderGraphContext& context) noexcept
+    void ShadowDebugRenderer::beforeRenderView(IRenderGraphContext& context) noexcept
     {
         auto cam = _renderer.getCamera();
         if (!cam)
@@ -562,7 +562,7 @@ namespace darmok
         }
     }
 
-    void ShadowDebugRenderComponent::renderMesh(MeshData& meshData, uint8_t debugColor, IRenderGraphContext& context) noexcept
+    void ShadowDebugRenderer::renderMesh(MeshData& meshData, uint8_t debugColor, IRenderGraphContext& context) noexcept
     {
         auto& encoder = context.getEncoder();
         auto viewId = context.getViewId();

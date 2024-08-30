@@ -176,14 +176,14 @@ namespace darmok
 	{
 		LuaViewport::bind(lua);
 		LuaForwardRenderer::bind(lua);
-		LuaLightingCameraComponent::bind(lua);
+		LuaLightingRenderComponent::bind(lua);
 
 #ifdef PHYSICS_DEBUG_RENDER
-		physics3d::LuaPhysicsDebugCameraComponent::bind(lua);
+		physics3d::LuaPhysicsDebugRenderer::bind(lua);
 #endif
 
 #ifdef DARMOK_OZZ
-		LuaSkeletalAnimationCameraComponent::bind(lua);
+		LuaSkeletalAnimationRenderComponent::bind(lua);
 #endif
 
 		lua.new_usertype<Camera>("Camera", sol::no_constructor,

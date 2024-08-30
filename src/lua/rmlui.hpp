@@ -24,7 +24,7 @@ namespace Rml
 namespace darmok
 {
     class Texture;
-    class RmluiComponent;
+    class RmluiRenderer;
     class RmluiCanvas;
 
     class LuaFunctionRmluiEventListener final : public Rml::EventListener
@@ -53,16 +53,16 @@ namespace darmok
         sol::table _tab;
     };
 
-    class LuaRmluiComponent;
+    class LuaRmluiRenderer;
 
     class LuaCustomRmluiEventListener final : public Rml::EventListener
     {
     public:
-        LuaCustomRmluiEventListener(const std::string& value, LuaRmluiComponent& comp) noexcept;
+        LuaCustomRmluiEventListener(const std::string& value, LuaRmluiRenderer& comp) noexcept;
         void ProcessEvent(Rml::Event& event) override;
     private:
         std::vector<std::string> _params;
-        LuaRmluiComponent& _comp;
+        LuaRmluiRenderer& _comp;
     };
 
     class LuaRmluiEvent final
@@ -128,10 +128,10 @@ namespace darmok
         Rml::ElementDocument& loadDocument(const std::string& name);
     };
 
-    class LuaRmluiComponent final : public ICameraComponent, public Rml::EventListenerInstancer
+    class LuaRmluiRenderer final : public ICameraComponent, public Rml::EventListenerInstancer
     {
     public:
-        LuaRmluiComponent(RmluiComponent& comp, const sol::state_view& lua) noexcept;
+        LuaRmluiRenderer(RmluiRenderer& comp, const sol::state_view& lua) noexcept;
 
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
@@ -139,8 +139,8 @@ namespace darmok
         Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override;
         void processCustomEvent(Rml::Event& event, const std::vector<std::string>& params);
 
-        RmluiComponent& getReal() noexcept;
-        const RmluiComponent& getReal() const noexcept;
+        RmluiRenderer& getReal() noexcept;
+        const RmluiRenderer& getReal() const noexcept;
 
         LuaRmluiCanvas& getView2(const std::string& name) noexcept;
 
@@ -148,11 +148,11 @@ namespace darmok
     private:
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
-        RmluiComponent& _comp;
+        RmluiRenderer& _comp;
         sol::state_view _lua;
         std::vector<std::unique_ptr<LuaCustomRmluiEventListener>> _customEventListeners;
 
-        static LuaRmluiComponent& addCameraComponent(Camera& cam, sol::this_state ts) noexcept;
+        static LuaRmluiRenderer& addCameraComponent(Camera& cam, sol::this_state ts) noexcept;
 
         static void loadFont(const std::string& path) noexcept;
         static void loadFallbackFont(const std::string& path) noexcept;

@@ -67,7 +67,7 @@ namespace
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setWindowPerspective(60, 0.3, 10);
 			cam.addComponent<ForwardRenderer>();
-			cam.addComponent<RmluiComponent>();
+			cam.addComponent<RmluiRenderer>();
 
 			auto centerEntity = scene.createEntity();
 			auto& centerTrans = scene.addComponent<Transform>(centerEntity);

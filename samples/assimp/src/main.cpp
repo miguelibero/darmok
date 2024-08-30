@@ -63,7 +63,7 @@ namespace
 				if (cam)
 				{
 					cam->addComponent<ForwardRenderer>();
-					cam->addComponent<LightingCameraComponent>();
+					cam->addComponent<LightingRenderComponent>();
 				}
 			});
 		}

@@ -10,13 +10,13 @@
 
 namespace darmok
 {
-    SkyboxRenderComponent::SkyboxRenderComponent(const std::shared_ptr<Texture>& texture) noexcept
+    SkyboxRenderer::SkyboxRenderer(const std::shared_ptr<Texture>& texture) noexcept
         : _texture(texture)
         , _texUniform{ bgfx::kInvalidHandle }
     {
     }
 
-    void SkyboxRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    void SkyboxRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
 
@@ -30,7 +30,7 @@ namespace darmok
         _mesh = MeshData(screen).createMesh(_program->getVertexLayout());
     }
 
-    void SkyboxRenderComponent::shutdown() noexcept
+    void SkyboxRenderer::shutdown() noexcept
     {
         if (isValid(_texUniform))
         {
@@ -42,7 +42,7 @@ namespace darmok
         _cam.reset();
     }
 
-    void SkyboxRenderComponent::beforeRenderView(IRenderGraphContext& context)
+    void SkyboxRenderer::beforeRenderView(IRenderGraphContext& context)
     {
         auto& encoder = context.getEncoder();
         auto viewId = context.getViewId();

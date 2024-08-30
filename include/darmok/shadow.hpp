@@ -107,10 +107,10 @@ namespace darmok
 
     struct MeshData;
 
-    class DARMOK_EXPORT ShadowDebugRenderComponent final : public ICameraComponent
+    class DARMOK_EXPORT ShadowDebugRenderer final : public ICameraComponent
     {
     public:
-        ShadowDebugRenderComponent(ShadowRenderer& renderer) noexcept;
+        ShadowDebugRenderer(ShadowRenderer& renderer) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void beforeRenderView(IRenderGraphContext& context) noexcept override;

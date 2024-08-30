@@ -77,11 +77,11 @@ namespace darmok
         Color3 _color;
     };
 
-    class DARMOK_EXPORT LightingCameraComponent final : public ICameraComponent
+    class DARMOK_EXPORT LightingRenderComponent final : public ICameraComponent
     {
     public:
-        LightingCameraComponent() noexcept;
-        ~LightingCameraComponent() noexcept;
+        LightingRenderComponent() noexcept;
+        ~LightingRenderComponent() noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime)  noexcept override;

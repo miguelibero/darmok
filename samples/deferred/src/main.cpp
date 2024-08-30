@@ -169,11 +169,11 @@ namespace
 
 			cam.addComponent<ForwardRenderer>();
 
-			cam.addComponent<LightingCameraComponent>();
+			cam.addComponent<LightingRenderComponent>();
 
 			if (debugShadow)
 			{
-				cam.addComponent<ShadowDebugRenderComponent>(debugShadow.value());
+				cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
 			}
 
 			auto& shadowRenderer = cam.addComponent<ShadowRenderer>(shadowConfig);

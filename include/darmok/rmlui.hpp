@@ -64,13 +64,13 @@ namespace darmok
 		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};
 
-	class RmluiComponentImpl;
+	class RmluiRendererImpl;
 
-	class DARMOK_EXPORT RmluiComponent final : public ICameraComponent
+	class DARMOK_EXPORT RmluiRenderer final : public ICameraComponent
 	{
 	public:
-		RmluiComponent() noexcept;
-		~RmluiComponent() noexcept;
+		RmluiRenderer() noexcept;
+		~RmluiRenderer() noexcept;
 
 		void init(Camera& cam, Scene& scene, App& app) override;
 		void update(float deltaTime) noexcept override;
@@ -78,9 +78,9 @@ namespace darmok
 		void renderReset() noexcept override;
 		void beforeRenderView(IRenderGraphContext& context) override;
 
-		RmluiComponentImpl& getImpl() noexcept;
-		const RmluiComponentImpl& getImpl() const noexcept;
+		RmluiRendererImpl& getImpl() noexcept;
+		const RmluiRendererImpl& getImpl() const noexcept;
 	private:
-		std::unique_ptr<RmluiComponentImpl> _impl;
+		std::unique_ptr<RmluiRendererImpl> _impl;
 	};
 }

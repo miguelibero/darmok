@@ -12,10 +12,10 @@ namespace darmok
     class Program;
     class IMesh;
 
-    class DARMOK_EXPORT SkyboxRenderComponent final : public ICameraComponent
+    class DARMOK_EXPORT SkyboxRenderer final : public ICameraComponent
     {
     public:
-        SkyboxRenderComponent(const std::shared_ptr<Texture>& texture) noexcept;
+        SkyboxRenderer(const std::shared_ptr<Texture>& texture) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void beforeRenderView(IRenderGraphContext& context) override;

@@ -9,28 +9,28 @@
 
 namespace darmok::physics3d
 {
-    PhysicsDebugCameraComponent& LuaPhysicsDebugCameraComponent::addCameraComponent1(Camera& cam) noexcept
+    PhysicsDebugRenderer& LuaPhysicsDebugRenderer::addCameraComponent1(Camera& cam) noexcept
     {
-        return cam.addComponent<PhysicsDebugCameraComponent>();
+        return cam.addComponent<PhysicsDebugRenderer>();
     }
 
-    PhysicsDebugCameraComponent& LuaPhysicsDebugCameraComponent::addCameraComponent2(Camera& cam, const Config& config) noexcept
+    PhysicsDebugRenderer& LuaPhysicsDebugRenderer::addCameraComponent2(Camera& cam, const Config& config) noexcept
     {
-        return cam.addComponent<PhysicsDebugCameraComponent>(config);
+        return cam.addComponent<PhysicsDebugRenderer>(config);
     }
 
-    void LuaPhysicsDebugCameraComponent::bind(sol::state_view& lua) noexcept
+    void LuaPhysicsDebugRenderer::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<PhysicsDebugConfig>("PhysicsDebugConfig", sol::default_constructor,
             "program", &PhysicsDebugConfig::program,
             "enable_event", &PhysicsDebugConfig::enableEvent
         );
-        lua.new_usertype<PhysicsDebugCameraComponent>("PhysicsDebugCameraComponent",
+        lua.new_usertype<PhysicsDebugRenderer>("PhysicsDebugRenderer",
             sol::no_constructor,
-            "enabled", sol::property(&PhysicsDebugCameraComponent::isEnabled, &PhysicsDebugCameraComponent::setEnabled),
+            "enabled", sol::property(&PhysicsDebugRenderer::isEnabled, &PhysicsDebugRenderer::setEnabled),
             "add_camera_component", sol::overload(
-                &LuaPhysicsDebugCameraComponent::addCameraComponent1,
-                &LuaPhysicsDebugCameraComponent::addCameraComponent1
+                &LuaPhysicsDebugRenderer::addCameraComponent1,
+                &LuaPhysicsDebugRenderer::addCameraComponent1
             )
         );
     }

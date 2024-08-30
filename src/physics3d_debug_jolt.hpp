@@ -32,11 +32,11 @@ namespace darmok::physics3d
     class PhysicsSystemImpl;
     struct PhysicsDebugConfig;
 
-    class PhysicsDebugCameraComponentImpl final : public JPH::DebugRenderer, public IInputEventListener
+    class PhysicsDebugRendererImpl final : public JPH::DebugRenderer, public IInputEventListener
     {
     public:
         using Config = PhysicsDebugConfig;
-        PhysicsDebugCameraComponentImpl(const Config& config = {}) noexcept;
+        PhysicsDebugRendererImpl(const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app);
         void shutdown();
         void beforeRenderView(IRenderGraphContext& context);

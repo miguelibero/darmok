@@ -295,7 +295,7 @@ namespace darmok
         OptionalRef<Scene> _scene;
     };
 
-    class DARMOK_EXPORT SkeletalAnimationCameraComponent final : public ICameraComponent
+    class DARMOK_EXPORT SkeletalAnimationRenderComponent final : public ICameraComponent
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;

@@ -14,18 +14,18 @@ namespace darmok
 
 namespace darmok::physics3d
 {
-    class PhysicsDebugCameraComponent;
+    class PhysicsDebugRenderer;
     struct PhysicsDebugConfig;
 
-    class LuaPhysicsDebugCameraComponent final
+    class LuaPhysicsDebugRenderer final
     {
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
         using Config = PhysicsDebugConfig;
 
-        static PhysicsDebugCameraComponent& addCameraComponent1(Camera& cam) noexcept;
-        static PhysicsDebugCameraComponent& addCameraComponent2(Camera& cam, const Config& config) noexcept;
+        static PhysicsDebugRenderer& addCameraComponent1(Camera& cam) noexcept;
+        static PhysicsDebugRenderer& addCameraComponent2(Camera& cam, const Config& config) noexcept;
     };
 }
 

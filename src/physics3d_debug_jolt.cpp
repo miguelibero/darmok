@@ -36,7 +36,7 @@ namespace darmok::physics3d
         }
     }
 
-    PhysicsDebugCameraComponentImpl::PhysicsDebugCameraComponentImpl(const Config& config) noexcept
+    PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(const Config& config) noexcept
         : _config(config)
         , _viewId(-1)
         , _enabled(false)
@@ -47,7 +47,7 @@ namespace darmok::physics3d
         _wireMeshData.type = MeshType::Transient;
     }
 
-    void PhysicsDebugCameraComponentImpl::init(Camera& cam, Scene& scene, App& app)
+    void PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
         if (auto system = scene.getSceneComponent<PhysicsSystem>())
         {
@@ -70,7 +70,7 @@ namespace darmok::physics3d
         _colorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
     }
 
-    void PhysicsDebugCameraComponentImpl::shutdown()
+    void PhysicsDebugRendererImpl::shutdown()
     {
         if (_input)
         {
@@ -87,12 +87,12 @@ namespace darmok::physics3d
         }
     }
 
-    void PhysicsDebugCameraComponentImpl::onInputEvent(const std::string& tag) noexcept
+    void PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept
     {
         setEnabled(!_enabled);
     }
 
-    void PhysicsDebugCameraComponentImpl::beforeRenderView(IRenderGraphContext& context)
+    void PhysicsDebugRendererImpl::beforeRenderView(IRenderGraphContext& context)
     {
         if (!_enabled || !_system || !_cam || !_cam->isEnabled())
         {
@@ -121,7 +121,7 @@ namespace darmok::physics3d
         renderText();
     }
 
-    bool PhysicsDebugCameraComponentImpl::tryRenderMeshBatch(MeshData& meshData, EDrawMode mode)
+    bool PhysicsDebugRendererImpl::tryRenderMeshBatch(MeshData& meshData, EDrawMode mode)
     {
         if (meshData.vertices.size() < _meshBatchSize)
         {
@@ -131,7 +131,7 @@ namespace darmok::physics3d
         return true;
     }
 
-    void PhysicsDebugCameraComponentImpl::renderMesh(MeshData& meshData, EDrawMode mode, const Color& color)
+    void PhysicsDebugRendererImpl::renderMesh(MeshData& meshData, EDrawMode mode, const Color& color)
     {
         if (meshData.empty())
         {
@@ -142,7 +142,7 @@ namespace darmok::physics3d
         renderMesh(*mesh, mode, color);
     }
 
-    void PhysicsDebugCameraComponentImpl::renderText()
+    void PhysicsDebugRendererImpl::renderText()
     {
         if (!_font)
         {
@@ -170,27 +170,27 @@ namespace darmok::physics3d
         renderMesh(meshData, EDrawMode::Solid);
     }
 
-    bool PhysicsDebugCameraComponentImpl::isEnabled() const noexcept
+    bool PhysicsDebugRendererImpl::isEnabled() const noexcept
     {
         return _enabled;
     }
 
-    void PhysicsDebugCameraComponentImpl::setEnabled(bool enabled) noexcept
+    void PhysicsDebugRendererImpl::setEnabled(bool enabled) noexcept
     {
         _enabled = enabled;
     }
 
-    void PhysicsDebugCameraComponentImpl::setFont(const std::shared_ptr<IFont>& font) noexcept
+    void PhysicsDebugRendererImpl::setFont(const std::shared_ptr<IFont>& font) noexcept
     {
         _font = font;
     }
 
-    void PhysicsDebugCameraComponentImpl::setMeshBatchSize(size_t size) noexcept
+    void PhysicsDebugRendererImpl::setMeshBatchSize(size_t size) noexcept
     {
         _meshBatchSize = size;
     }
 
-    void PhysicsDebugCameraComponentImpl::renderMesh(const IMesh& mesh, EDrawMode mode, const Color& color)
+    void PhysicsDebugRendererImpl::renderMesh(const IMesh& mesh, EDrawMode mode, const Color& color)
     {
         if (!_encoder)
         {
@@ -203,7 +203,7 @@ namespace darmok::physics3d
         }
     }
 
-    void PhysicsDebugCameraComponentImpl::renderSubmit(EDrawMode mode, const Color& color)
+    void PhysicsDebugRendererImpl::renderSubmit(EDrawMode mode, const Color& color)
     {
         auto v = Colors::normalize(color);
         _encoder->setUniform(_colorUniform, glm::value_ptr(v));
@@ -219,7 +219,7 @@ namespace darmok::physics3d
         _encoder->submit(_viewId, prog);
     }
 
-    void PhysicsDebugCameraComponentImpl::DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color)
+    void PhysicsDebugRendererImpl::DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color)
     {
         MeshData data(Line(JoltUtils::convert(from), JoltUtils::convert(to)));
         data *= JoltUtils::convert(color);
@@ -227,7 +227,7 @@ namespace darmok::physics3d
         tryRenderMeshBatch(_wireMeshData, EDrawMode::Wireframe);
     }
 
-    void PhysicsDebugCameraComponentImpl::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow)
+    void PhysicsDebugRendererImpl::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow)
     {
         MeshData data(darmok::Triangle(JoltUtils::convert(v1), JoltUtils::convert(v2), JoltUtils::convert(v3)));
         data *= JoltUtils::convert(color);
@@ -243,7 +243,7 @@ namespace darmok::physics3d
         }
     }
 
-    void PhysicsDebugCameraComponentImpl::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
+    void PhysicsDebugRendererImpl::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
     {
         Utf8Vector content;
         Utf8Char::read(str, content);
@@ -260,7 +260,7 @@ namespace darmok::physics3d
         });
     }
 
-    JPH::DebugRenderer::Batch PhysicsDebugCameraComponentImpl::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* triangles, int triangleCount)
+    JPH::DebugRenderer::Batch PhysicsDebugRendererImpl::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* triangles, int triangleCount)
     {
         MeshData data;
         for (int i = 0; i < triangleCount; i++)
@@ -279,7 +279,7 @@ namespace darmok::physics3d
         return new JoltMeshBatch(data.createMesh(_vertexLayout));
     }
 
-    JPH::DebugRenderer::Batch PhysicsDebugCameraComponentImpl::CreateTriangleBatch(const JPH::DebugRenderer::Vertex* vertices, int vertexCount, const JPH::uint32* indices, int indexCount)
+    JPH::DebugRenderer::Batch PhysicsDebugRendererImpl::CreateTriangleBatch(const JPH::DebugRenderer::Vertex* vertices, int vertexCount, const JPH::uint32* indices, int indexCount)
     {
         MeshData data;
         for (int i = 0; i < vertexCount; i++)
@@ -299,7 +299,7 @@ namespace darmok::physics3d
         return new JoltMeshBatch(data.createMesh(_vertexLayout));
     }
 
-    void PhysicsDebugCameraComponentImpl::DrawGeometry(JPH::RMat44Arg modelMatrix, const JPH::AABox& worldSpaceBounds, float inLODScaleSq, JPH::ColorArg modelColor, const GeometryRef& geometry, ECullMode cullMode, ECastShadow castShadow, EDrawMode drawMode)
+    void PhysicsDebugRendererImpl::DrawGeometry(JPH::RMat44Arg modelMatrix, const JPH::AABox& worldSpaceBounds, float inLODScaleSq, JPH::ColorArg modelColor, const GeometryRef& geometry, ECullMode cullMode, ECastShadow castShadow, EDrawMode drawMode)
     {
         if (geometry->mLODs.empty())
         {
@@ -316,43 +316,43 @@ namespace darmok::physics3d
         renderMesh(*batch.mesh, drawMode, JoltUtils::convert(modelColor));
     }
 
-    PhysicsDebugCameraComponent::PhysicsDebugCameraComponent(const Config& config) noexcept
-        : _impl(std::make_unique<PhysicsDebugCameraComponentImpl>(config))
+    PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept
+        : _impl(std::make_unique<PhysicsDebugRendererImpl>(config))
     {
     }
 
-    PhysicsDebugCameraComponent::~PhysicsDebugCameraComponent() noexcept
+    PhysicsDebugRenderer::~PhysicsDebugRenderer() noexcept
     {
         // empty on purpose
     }
 
-    void PhysicsDebugCameraComponent::init(Camera& cam, Scene& scene, App& app)
+    void PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app)
     {
         _impl->init(cam, scene, app);
     }
 
-    void PhysicsDebugCameraComponent::shutdown()
+    void PhysicsDebugRenderer::shutdown()
     {
         _impl->shutdown();
     }
 
-    void PhysicsDebugCameraComponent::beforeRenderView(IRenderGraphContext& context)
+    void PhysicsDebugRenderer::beforeRenderView(IRenderGraphContext& context)
     {
         _impl->beforeRenderView(context);
     }
 
-    bool PhysicsDebugCameraComponent::isEnabled() const noexcept
+    bool PhysicsDebugRenderer::isEnabled() const noexcept
     {
         return _impl->isEnabled();
     }
 
-    PhysicsDebugCameraComponent& PhysicsDebugCameraComponent::setEnabled(bool enabled) noexcept
+    PhysicsDebugRenderer& PhysicsDebugRenderer::setEnabled(bool enabled) noexcept
     {
         _impl->setEnabled(enabled);
         return *this;
     }
 
-    PhysicsDebugCameraComponent& PhysicsDebugCameraComponent::setFont(const std::shared_ptr<IFont>& font) noexcept
+    PhysicsDebugRenderer& PhysicsDebugRenderer::setFont(const std::shared_ptr<IFont>& font) noexcept
     {
         _impl->setFont(font);
         return *this;

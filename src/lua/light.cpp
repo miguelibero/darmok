@@ -88,16 +88,16 @@ namespace darmok
 		);
 	}
 
-	LightingCameraComponent& LuaLightingCameraComponent::addCameraComponent(Camera& cam) noexcept
+	LightingRenderComponent& LuaLightingRenderComponent::addCameraComponent(Camera& cam) noexcept
 	{
-		return cam.addComponent<LightingCameraComponent>();
+		return cam.addComponent<LightingRenderComponent>();
 	}
 
-	void LuaLightingCameraComponent::bind(sol::state_view& lua) noexcept
+	void LuaLightingRenderComponent::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LightingCameraComponent>("LightingCameraComponent",
+		lua.new_usertype<LightingRenderComponent>("LightingRenderComponent",
 			sol::no_constructor,
-			"add_camera_component", &LuaLightingCameraComponent::addCameraComponent
+			"add_camera_component", &LuaLightingRenderComponent::addCameraComponent
 		);
 	}
 }
