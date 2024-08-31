@@ -11,6 +11,7 @@
 
 #include "transform.hpp"
 #include "utils.hpp"
+#include "viewport.hpp"
 
 namespace darmok
 {
@@ -123,6 +124,11 @@ namespace darmok
 		LuaEntity createEntity6(const VarLuaTable<glm::vec3>& position) noexcept;
 
 		bool destroyEntity(const LuaEntity& entity) noexcept;
+
+		std::optional<Viewport> getViewport() const noexcept;
+		void setViewport(std::optional<VarViewport> vp) noexcept;
+		Viewport getCurrentViewport() noexcept;
+		RenderChain& getRenderChain() noexcept;
 	};
 
 	class SceneAppComponent;

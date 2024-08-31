@@ -18,6 +18,7 @@
 #include "skeleton.hpp"
 #include "utils.hpp"
 #include "component.hpp"
+#include "render_chain.hpp"
 
 
 #include "generated/lua/string.h"
@@ -268,6 +269,7 @@ namespace darmok
 		LuaInput::bind(lua);
 		LuaAudioSystem::bind(lua);
 		LuaCoroutineRunner::bind(lua);
+		LuaRenderChain::bind(lua);
 
 		lua.create_named_table("DebugFlag",
 			"NONE", BGFX_DEBUG_NONE,

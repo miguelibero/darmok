@@ -116,6 +116,21 @@ namespace darmok
         return entity.addWrapperComponent<LuaRmluiCanvas, RmluiCanvas>(name, LuaGlm::tableGet(size));
     }
 
+    LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent3(LuaEntity& entity, const std::string& name, const VarViewport& vp) noexcept
+    {
+        return entity.addWrapperComponent<LuaRmluiCanvas, RmluiCanvas>(name, LuaViewport::tableGet(vp));
+    }
+
+    OptionalRef<LuaRmluiCanvas>::std_t LuaRmluiCanvas::getEntityComponent(LuaEntity& entity) noexcept
+    {
+        return entity.getComponent<LuaRmluiCanvas>();
+    }
+
+    std::optional<LuaEntity> LuaRmluiCanvas::getEntity(LuaScene& scene) noexcept
+    {
+        return scene.getEntity(_canvas);
+    }
+
     void LuaRmluiCanvas::createDataModel(const std::string& name, sol::table table) noexcept
     {
         auto constr = _canvas.getContext().CreateDataModel(name);
@@ -333,6 +348,15 @@ namespace darmok
         );
 
         lua.new_usertype<LuaRmluiCanvas>("RmluiCanvas", sol::no_constructor,
+            "type_id", &entt::type_hash<RmluiCanvas>::value,
+            "add_entity_component", sol::overload(
+                &LuaRmluiCanvas::addEntityComponent1,
+                &LuaRmluiCanvas::addEntityComponent2,
+                &LuaRmluiCanvas::addEntityComponent3
+            ),
+            "get_entity_component", &LuaRmluiCanvas::getEntityComponent,
+            "get_entity", &LuaRmluiCanvas::getEntity,
+
             "name", sol::property(&LuaRmluiCanvas::getName),
             "viewport", sol::property(&LuaRmluiCanvas::getViewport, &LuaRmluiCanvas::setViewport),
             "current_viewport", sol::property(&LuaRmluiCanvas::getCurrentViewport),
@@ -349,10 +373,6 @@ namespace darmok
                 &LuaRmluiCanvas::removeEventListener2,
                 &LuaRmluiCanvas::removeEventListener3,
                 &LuaRmluiCanvas::removeEventListener4
-            ),
-            "add_entity_component", sol::overload(
-                &LuaRmluiCanvas::addEntityComponent1,
-                &LuaRmluiCanvas::addEntityComponent2
             )
         );
     }

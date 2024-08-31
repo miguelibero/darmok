@@ -34,6 +34,8 @@ namespace darmok
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
 
+		const std::string& getName() const noexcept;
+
 		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
 		[[nodiscard]] const VertexLayout& getVertexLayout() const noexcept;
 
@@ -50,6 +52,7 @@ namespace darmok
 		ShaderHandles _fragmentHandles;
 		Handles _handles;
 		VertexLayout _vertexLayout;
+		std::string _name;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader

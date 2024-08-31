@@ -19,13 +19,13 @@ namespace darmok
     public:
         RenderTexture(const glm::uvec2& size) noexcept;
         ~RenderTexture() noexcept;
-        const Texture& getTexture() const noexcept;
-        const Texture& getDepthTexture() const noexcept;
+        const std::shared_ptr<Texture>& getTexture() const noexcept;
+        const std::shared_ptr<Texture>& getDepthTexture() const noexcept;
         const bgfx::FrameBufferHandle& getHandle() const noexcept;
         void configureView(bgfx::ViewId viewId) const noexcept;
     private:
-        Texture _colorTex;
-        Texture _depthTex;
+        std::shared_ptr<Texture> _colorTex;
+        std::shared_ptr<Texture> _depthTex;
         bgfx::FrameBufferHandle _handle;
 
         static TextureConfig createColorConfig(const glm::uvec2& size) noexcept;
@@ -97,7 +97,8 @@ namespace darmok
     class DARMOK_EXPORT ScreenSpaceRenderPass final : public IRenderChainStep, IRenderPass
     {
     public:
-        ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority = 0) noexcept;
+        ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name = "", int priority = 0);
+        ~ScreenSpaceRenderPass() noexcept;
 
         void init(RenderChain& chain) noexcept override;
         void updateRenderChain(RenderTexture& read, OptionalRef<RenderTexture> write) noexcept override;

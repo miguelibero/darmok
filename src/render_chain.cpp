@@ -23,12 +23,12 @@ namespace darmok
 	}
 
 	RenderTexture::RenderTexture(const glm::uvec2& size) noexcept
-		: _colorTex(createColorConfig(size), BGFX_TEXTURE_RT)
-		, _depthTex(createDepthConfig(size), BGFX_TEXTURE_RT)
+		: _colorTex(std::make_shared<Texture>(createColorConfig(size), BGFX_TEXTURE_RT))
+		, _depthTex(std::make_shared<Texture>(createDepthConfig(size), BGFX_TEXTURE_RT))
 		, _handle{ bgfx::kInvalidHandle }
 	{
 		std::vector<bgfx::TextureHandle> handles =
-			{ _colorTex.getHandle(), _depthTex.getHandle() };
+			{ _colorTex->getHandle(), _depthTex->getHandle() };
 		_handle = bgfx::createFrameBuffer(handles.size(), &handles.front());
 	}
 
@@ -37,12 +37,12 @@ namespace darmok
 		bgfx::destroy(_handle);
 	}
 
-	const Texture& RenderTexture::getTexture() const noexcept
+	const std::shared_ptr<Texture>& RenderTexture::getTexture() const noexcept
 	{
 		return _colorTex;
 	}
 
-	const Texture& RenderTexture::getDepthTexture() const noexcept
+	const std::shared_ptr<Texture>& RenderTexture::getDepthTexture() const noexcept
 	{
 		return _depthTex;
 	}
@@ -231,12 +231,25 @@ namespace darmok
 		return *this;
 	}
 
-	ScreenSpaceRenderPass::ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority) noexcept
+	ScreenSpaceRenderPass::ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority)
 		: _program(prog)
 		, _name(name)
 		, _priority(priority)
 		, _texUniform{ bgfx::kInvalidHandle }
 	{
+		if (!prog)
+		{
+			throw std::runtime_error("empty program");
+		}
+		if (_name.empty())
+		{
+			_name = "ScreenSpaceRenderPass " + prog->getName();
+		}
+	}
+
+	ScreenSpaceRenderPass::~ScreenSpaceRenderPass() noexcept
+	{
+		// empty on purpose
 	}
 
 	void ScreenSpaceRenderPass::init(RenderChain& chain) noexcept
@@ -313,7 +326,7 @@ namespace darmok
 
 		_mesh->render(encoder);
 
-		encoder.setTexture(0, _texUniform, _readTex->getTexture().getHandle());
+		encoder.setTexture(0, _texUniform, _readTex->getTexture()->getHandle());
 
 		uint64_t state = 0
 			| BGFX_STATE_WRITE_RGB

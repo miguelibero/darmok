@@ -235,6 +235,7 @@ set(LUA_SOURCES
   material.cpp
   render_scene.cpp
   render_forward.cpp
+  render_chain.cpp
   mesh.cpp
   program.cpp
   texture.cpp

@@ -145,7 +145,8 @@ function Camera:add_component(type, ...)
 end
 
 
--- ForwardRenderer
-function ForwardRenderer:add_component(type, ...)
-	return type.add_render_component(self, ...)
+-- RenderChain
+function RenderChain:add_step(type, ...)
+	return type.add_chain_step(self, ...)
 end
+

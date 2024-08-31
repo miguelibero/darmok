@@ -78,6 +78,7 @@ namespace darmok
 
 	Program::Program(const Definition& def)
         : _vertexLayout(def.vertexLayout)
+        , _name(def.name)
 	{
         auto& profile = def.getCurrentProfile();
         _vertexHandles = createShaders(profile.vertexShaders, def.name + " vertex ");
@@ -124,6 +125,11 @@ namespace darmok
                 bgfx::destroy(handle);
             }
         }
+    }
+
+    const std::string& Program::getName() const noexcept
+    {
+        return _name;
     }
 
 	bgfx::ProgramHandle Program::getHandle(const Defines& defines) const noexcept

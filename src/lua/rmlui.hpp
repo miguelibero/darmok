@@ -77,6 +77,7 @@ namespace darmok
     };
 
     class LuaEntity;
+    class LuaScene;
 
     class LuaRmluiCanvas final
     {
@@ -98,6 +99,9 @@ namespace darmok
 
         static LuaRmluiCanvas& addEntityComponent1(LuaEntity& entity, const std::string& name) noexcept;
         static LuaRmluiCanvas& addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size) noexcept;
+        static LuaRmluiCanvas& addEntityComponent3(LuaEntity& entity, const std::string& name, const VarViewport& vp) noexcept;
+        static OptionalRef<LuaRmluiCanvas>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+        std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 
         void createDataModel(const std::string& name, sol::table table) noexcept;
         Rml::DataModelHandle getDataModel(const std::string& name) const noexcept;

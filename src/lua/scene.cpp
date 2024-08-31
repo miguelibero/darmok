@@ -7,6 +7,7 @@
 #include "freelook.hpp"
 #include "component.hpp"
 #include <darmok/scene.hpp>
+#include <darmok/render_chain.hpp>
 
 #ifdef DARMOK_OZZ
 #include "skeleton.hpp"
@@ -331,6 +332,11 @@ namespace darmok
 		return getRegistry().destroy(entity.getReal()) != 0;
 	}
 
+	RenderChain& LuaScene::getRenderChain() noexcept
+	{
+		return _scene->getRenderChain();
+	}
+
 	const std::shared_ptr<Scene>& LuaScene::getReal() const noexcept
 	{
 		return _scene;
@@ -339,6 +345,28 @@ namespace darmok
 	std::shared_ptr<Scene>& LuaScene::getReal() noexcept
 	{
 		return _scene;
+	}
+
+	std::optional<Viewport> LuaScene::getViewport() const noexcept
+	{
+		return _scene->getViewport();
+	}
+
+	void LuaScene::setViewport(std::optional<VarViewport> vp) noexcept
+	{
+		if (vp)
+		{
+			_scene->setViewport(LuaViewport::tableGet(vp));
+		}
+		else
+		{
+			_scene->setViewport(sol::nullopt);
+		}
+	}
+
+	Viewport LuaScene::getCurrentViewport() noexcept
+	{
+		return _scene->getCurrentViewport();
 	}
 
 	void LuaScene::bind(sol::state_view& lua) noexcept
@@ -375,7 +403,10 @@ namespace darmok
 			"has_component", &LuaScene::hasSceneComponent,
 			"remove_component", &LuaScene::removeSceneComponent,
 			"add_lua_component", &LuaScene::addLuaSceneComponent,
-			"get_lua_component", &LuaScene::getLuaSceneComponent
+			"get_lua_component", &LuaScene::getLuaSceneComponent,
+			"viewport", sol::property(&LuaScene::getViewport, &LuaScene::setViewport),
+			"current_viewport", sol::property(&LuaScene::getCurrentViewport),
+			"render_chain", sol::property(&LuaScene::getRenderChain)
 		);
 	}
 
