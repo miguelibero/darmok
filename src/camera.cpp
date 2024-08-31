@@ -240,7 +240,7 @@ namespace darmok
         }
     }
 
-    void Camera::configureView(bgfx::ViewId viewId) const noexcept
+    void Camera::configureView(bgfx::ViewId viewId) const
     {
         auto renderTex = _renderChain.getFirstTexture();
         _renderChain.configureView(viewId, renderTex);
@@ -351,6 +351,7 @@ namespace darmok
     Camera& Camera::setViewport(const std::optional<Viewport>& viewport) noexcept
     {
         _viewport = viewport;
+        updateViewportProjection();
         return *this;
     }
 

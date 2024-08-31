@@ -43,13 +43,16 @@ namespace darmok
         * we cannot use the glm camera functions because they use opengl depth format 
         * and bgfx can run on different renderers so they have math functions with a depth parameter
         */
+		static const float defaultNear;
+		static const float defaultFar;
+
         static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near, float far) noexcept;
-        static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near = 0.F) noexcept;
-        static [[nodiscard]] glm::mat4 ortho(float left, float right, float bottom, float top, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
-		static [[nodiscard]] glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+        static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near = defaultNear) noexcept;
+        static [[nodiscard]] glm::mat4 ortho(float left, float right, float bottom, float top, float near = defaultNear, float far = defaultFar) noexcept;
+		static [[nodiscard]] glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = defaultNear, float far = defaultFar) noexcept;
 		
-		static [[nodiscard]] glm::mat4 frustum(float left, float right, float bottom, float top, float near = 0.F, float far = bx::kFloatLargest) noexcept;
-		static [[nodiscard]] glm::mat4 frustum(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = 0.F, float far = bx::kFloatLargest) noexcept;
+		static [[nodiscard]] glm::mat4 frustum(float left, float right, float bottom, float top, float near = defaultNear, float far = defaultFar) noexcept;
+		static [[nodiscard]] glm::mat4 frustum(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = defaultNear, float far = defaultFar) noexcept;
         
 		// methods used in Transform to generate the matrix
         static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;

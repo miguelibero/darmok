@@ -56,7 +56,7 @@ namespace darmok
         OptionalRef<RenderTexture> getFirstTexture() noexcept;
         OptionalRef<const RenderTexture> getFirstTexture() const noexcept;
 
-        void configureView(bgfx::ViewId viewId, OptionalRef<const RenderTexture> write) const noexcept;
+        void configureView(bgfx::ViewId viewId, OptionalRef<const RenderTexture> write) const;
 
         RenderGraphDefinition& getRenderGraph();
         const RenderGraphDefinition& getRenderGraph() const;

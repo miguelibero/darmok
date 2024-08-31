@@ -61,7 +61,7 @@ namespace darmok
 		def.setName("Forward");
 	}
 
-	void ForwardRenderer::renderPassConfigure(bgfx::ViewId viewId) noexcept
+	void ForwardRenderer::renderPassConfigure(bgfx::ViewId viewId)
 	{
 		if (_cam)
 		{

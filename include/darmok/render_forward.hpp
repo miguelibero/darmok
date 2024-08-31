@@ -23,7 +23,7 @@ namespace darmok
         void shutdown() noexcept override;
 
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
-        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
+        void renderPassConfigure(bgfx::ViewId viewId) override;
         void renderPassExecute(IRenderGraphContext& context) noexcept override;
 
     private:

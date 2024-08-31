@@ -13,6 +13,7 @@
 #include <darmok/viewport.hpp>
 #include <darmok/render_graph.hpp>
 #include <darmok/render_chain.hpp>
+#include <darmok/math.hpp>
 
 namespace darmok
 {
@@ -32,16 +33,16 @@ namespace darmok
         const glm::mat4& getProjectionMatrix() const noexcept;
 
         Camera& setProjectionMatrix(const glm::mat4& matrix) noexcept;
-        Camera& setPerspective(float fovy, float aspect, float near = 0.f) noexcept;
+        Camera& setPerspective(float fovy, float aspect, float near = Math::defaultNear) noexcept;
         Camera& setPerspective(float fovy, float aspect, float near, float far) noexcept;
-        Camera& setPerspective(float fovy, const glm::uvec2& size, float near = 0.f) noexcept;
+        Camera& setPerspective(float fovy, const glm::uvec2& size, float near = Math::defaultNear) noexcept;
         Camera& setPerspective(float fovy, const glm::uvec2& size, float near, float far) noexcept;
         
-        Camera& setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
-        Camera& setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+        Camera& setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
+        Camera& setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
 
-        Camera& setViewportPerspective(float fovy, float near = 0.f, float far = bx::kFloatLargest) noexcept;
-        Camera& setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) noexcept;
+        Camera& setViewportPerspective(float fovy, float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
+        Camera& setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
 
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
 
@@ -140,7 +141,7 @@ namespace darmok
         [[nodiscard]] RenderChain& getRenderChain() noexcept;
         [[nodiscard]] const RenderChain& getRenderChain() const noexcept;
         
-        void configureView(bgfx::ViewId viewId) const noexcept;
+        void configureView(bgfx::ViewId viewId) const;
 
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept;

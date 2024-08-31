@@ -195,7 +195,7 @@ namespace darmok
 		return nullptr;
 	}
 
-	void RenderChain::configureView(bgfx::ViewId viewId, OptionalRef<const RenderTexture> write) const noexcept
+	void RenderChain::configureView(bgfx::ViewId viewId, OptionalRef<const RenderTexture> write) const
 	{
 		uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
 		if (write)

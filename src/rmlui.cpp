@@ -457,7 +457,7 @@ namespace darmok
     void RmluiCanvasImpl::init(RmluiRendererImpl& comp)
     {
         _comp = comp;
-        auto size = getCurrentViewport().size;
+        auto size = glm::abs(getCurrentViewport().size);
         _render.emplace(comp.getProgram(), comp.getAllocator());
         _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_render.value());
         if (!_context)
@@ -487,7 +487,7 @@ namespace darmok
         {
             if (auto cam = _comp->getCamera())
             {
-                auto size = cam->getCurrentViewport().size;
+                auto size = glm::abs(cam->getCurrentViewport().size);
                 _context->SetDimensions(RmluiUtils::convert<int>(size));
             }
         }
@@ -541,7 +541,7 @@ namespace darmok
                 return cam->getCurrentViewport();
             }
         }
-        return glm::uvec2(0);
+        return Viewport();
     }
 
     const std::optional<Viewport>& RmluiCanvasImpl::getViewport() const noexcept
@@ -634,6 +634,14 @@ namespace darmok
         {
             return;
         }
+        if (position.x < 0.F || position.x > 1.F)
+        {
+            return;
+        }
+        if (position.y < 0.F || position.y > 1.F)
+        {
+            return;
+        }
 
         glm::vec3 pos(position, 0.F);
         auto ray = cam->viewportPointToRay(pos);
@@ -650,6 +658,10 @@ namespace darmok
 
     void RmluiCanvasImpl::addViewportMousePositionDelta(const glm::vec2& delta, OptionalRef<const Transform> canvasTrans) noexcept
     {
+        if (delta.x == 0.F && delta.y == 0.F)
+        {
+            return;
+        }
         if (!_comp)
         {
             return;
@@ -1234,13 +1246,9 @@ namespace darmok
         auto screenDelta = win.windowToScreenDelta(delta);
         auto vpDelta = vp.screenToViewportDelta(screenDelta);
         
-        // we need to invert the y axis because screen coordinates
-        // origin is bottom left and viewports start in the top left
         auto screenPos = win.windowToScreenPoint(absolute);
-        screenPos.y = win.getPixelSize().y - screenPos.y;
         auto vpPos = vp.screenToViewportPoint(screenPos);
-        vpPos.y = 1.F - vpPos.y;
-            
+
         for (auto entity : _cam->createEntityView<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);

@@ -2,6 +2,7 @@
 #include <darmok/math.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <bx/math.h>
+#include <stdexcept>
 
 namespace darmok
 {
@@ -97,9 +98,19 @@ namespace darmok
         return (p * 2.F) - 1.F;
     }
 
-    void Viewport::configureView(bgfx::ViewId viewId) const noexcept
+    void Viewport::configureView(bgfx::ViewId viewId) const
     {
-        bgfx::setViewRect(viewId, origin.x, origin.y, size.x, size.y);
+        // https://bkaradzic.github.io/bgfx/bgfx.html#_CPPv4N4bgfx11setViewRectE6ViewId8uint16_t8uint16_t8uint16_t8uint16_t
+        // setViewRect expects the origin from the top-left corner of the window
+        
+        auto stats = bgfx::getStats();
+        glm::ivec2 bbsize(stats->width, stats->height);
+        auto y = bbsize.y - origin.y - size.y;
+        if (origin.x < 0 || origin.x + size.x > bbsize.x || y < 0 || y + size.y > bbsize.y)
+        {
+            throw std::runtime_error("invalid view rect");
+        }
+        bgfx::setViewRect(viewId, origin.x, y, size.x, size.y);
     }
 
     glm::mat4 Viewport::ortho(const glm::vec2& center, float near, float far) const noexcept

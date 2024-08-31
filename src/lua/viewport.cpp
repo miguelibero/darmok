@@ -59,8 +59,8 @@ namespace darmok
 			"size", &Viewport::size,
 			"origin", &Viewport::origin,
             "values", sol::property(&Viewport::getValues, &Viewport::setValues),
-			"screen_to_viewport_point", &Viewport::viewportToScreenPoint,
-			"viewport_to_screen_point", &Viewport::screenToViewportPoint,
+			"viewport_to_screen_point", &Viewport::viewportToScreenPoint,
+			"screen_to_viewport_point", &Viewport::screenToViewportPoint,
             "project", &Viewport::project,
             "unproject", &Viewport::unproject,
             "ortho", sol::overload(
