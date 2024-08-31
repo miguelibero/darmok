@@ -381,7 +381,10 @@ namespace darmok
 	{
 		bgfx::setViewRect(viewId, 0, 0, bgfx::BackbufferRatio::Equal);
 		const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL;
-		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1, 1, 1, 1, 1, 1, 1, 1);
+		uint8_t clearColor = 1;
+		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U,
+			clearColor, clearColor, clearColor, clearColor,
+			clearColor, clearColor, clearColor, clearColor);
 	}
 
 	void AppImpl::renderPassExecute(IRenderGraphContext& context)

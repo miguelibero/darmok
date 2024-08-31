@@ -60,7 +60,7 @@ namespace
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 
-			// scene.setViewport(glm::uvec2(400));
+			scene.setViewport(Viewport(glm::uvec2(400, -400), glm::uvec2(200)));
 
 			auto camEntity = scene.createEntity();
 			scene.addComponent<Transform>(camEntity)
