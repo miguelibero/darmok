@@ -4,7 +4,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/glm.hpp>
-#include <darmok/viewport.hpp>
+#include <darmok/rmlui_fwd.hpp>
 #include <RmlUi/Core/ScrollTypes.h>
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/EventListenerInstancer.h>
@@ -131,6 +131,15 @@ namespace darmok
 
         LuaRmluiCanvas& setMousePosition(const glm::vec2& position) noexcept;
         const glm::vec2& getMousePosition() const noexcept;
+
+        using MousePositionMode = RmluiCanvasMousePositionMode;
+
+        LuaRmluiCanvas& setMousePositionMode(MousePositionMode mode) noexcept;
+        MousePositionMode getMousePositionMode() const noexcept;
+
+        LuaRmluiCanvas& setViewportMousePosition(const glm::vec2& position) noexcept;
+        glm::vec2 getViewportMousePosition() const noexcept;
+        LuaRmluiCanvas& applyViewportMousePositionDelta(const glm::vec2& delta) noexcept;
 
         LuaRmluiCanvas& setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 

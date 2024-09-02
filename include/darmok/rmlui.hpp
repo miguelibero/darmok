@@ -56,6 +56,10 @@ namespace darmok
 		RmluiCanvas& setMousePosition(const glm::vec2& position) noexcept;
 		const glm::vec2& getMousePosition() const noexcept;
 
+		RmluiCanvas& applyViewportMousePositionDelta(const glm::vec2& delta) noexcept;
+		RmluiCanvas& setViewportMousePosition(const glm::vec2& position) noexcept;
+		glm::vec2 getViewportMousePosition() const noexcept;
+
 		Rml::Context& getContext() noexcept;
 		const Rml::Context& getContext() const noexcept;
 

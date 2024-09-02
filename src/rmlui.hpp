@@ -206,8 +206,9 @@ namespace darmok
 
 		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 
-		void addViewportMousePositionDelta(const glm::vec2& delta) noexcept;
-		void setViewportMousePosition(const glm::vec2& position);
+		void applyViewportMousePositionDelta(const glm::vec2& delta) noexcept;
+		void setViewportMousePosition(const glm::vec2& position) noexcept;
+		glm::vec2 getViewportMousePosition() const noexcept;
 
 		const glm::vec2& getMousePosition() const noexcept;
 		void setMousePosition(const glm::vec2& position) noexcept;

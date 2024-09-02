@@ -87,6 +87,35 @@ namespace darmok
         return _canvas.getMousePosition();
     }
 
+    LuaRmluiCanvas& LuaRmluiCanvas::setMousePositionMode(MousePositionMode mode) noexcept
+    {
+        _canvas.setMousePositionMode(mode);
+        return *this;
+    }
+
+    LuaRmluiCanvas::MousePositionMode LuaRmluiCanvas::getMousePositionMode() const noexcept
+    {
+        return _canvas.getMousePositionMode();
+    }
+
+    LuaRmluiCanvas& LuaRmluiCanvas::setViewportMousePosition(const glm::vec2& position) noexcept
+    {
+        _canvas.setViewportMousePosition(position);
+        return *this;
+    }
+
+    glm::vec2 LuaRmluiCanvas::getViewportMousePosition() const noexcept
+    {
+        return _canvas.getViewportMousePosition();
+    }
+
+    LuaRmluiCanvas& LuaRmluiCanvas::applyViewportMousePositionDelta(const glm::vec2& delta) noexcept
+    {
+        _canvas.applyViewportMousePositionDelta(delta);
+        return *this;
+    }
+
+
     LuaRmluiCanvas& LuaRmluiCanvas::setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept
     {
         _canvas.setScrollBehavior(behaviour, speedFactor);
@@ -291,6 +320,12 @@ namespace darmok
             { "Instant", Rml::ScrollBehavior::Instant }
         });
 
+        lua.new_enum<RmluiCanvasMousePositionMode>("RmluiCanvasMousePositionMode", {
+            { "Absolute", RmluiCanvasMousePositionMode::Absolute },
+            { "Relative", RmluiCanvasMousePositionMode::Relative },
+            { "Disabled", RmluiCanvasMousePositionMode::Disabled }
+        });
+
         lua.new_usertype<Rml::ElementDocument>("RmluiDocument", sol::no_constructor,
             "show", sol::overload(
                 [](Rml::ElementDocument& doc) { doc.Show(); },
@@ -367,6 +402,9 @@ namespace darmok
             "offset", sol::property(&LuaRmluiCanvas::getOffset, &LuaRmluiCanvas::setOffset),
             "input_active", sol::property(&LuaRmluiCanvas::getInputActive, &LuaRmluiCanvas::setInputActive),
             "mouse_position", sol::property(&LuaRmluiCanvas::getMousePosition, &LuaRmluiCanvas::setMousePosition),
+            "mouse_position_mode", sol::property(&LuaRmluiCanvas::getMousePositionMode, &LuaRmluiCanvas::setMousePositionMode),
+            "viewport_mouse_position", sol::property(&LuaRmluiCanvas::getViewportMousePosition, &LuaRmluiCanvas::setViewportMousePosition),
+            "apply_viewport_mouse_position_delta", &LuaRmluiCanvas::applyViewportMousePositionDelta,
             "set_scroll_behavior", &LuaRmluiCanvas::setScrollBehavior,
             "load_document", &LuaRmluiCanvas::loadDocument,
             "create_data_model", &LuaRmluiCanvas::createDataModel,

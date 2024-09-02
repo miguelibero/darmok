@@ -527,7 +527,7 @@ namespace darmok
         , _size(size)
         , _enabled(true)
         , _name(name)
-        , _mousePositionMode(MousePositionMode::Delta)
+        , _mousePositionMode(MousePositionMode::Relative)
         , _offset(0)
     {
     }
@@ -749,17 +749,8 @@ namespace darmok
         _context->ProcessMouseMove(pos.x, pos.y, modState);
     }
 
-    void RmluiCanvasImpl::setViewportMousePosition(const glm::vec2& position)
+    void RmluiCanvasImpl::setViewportMousePosition(const glm::vec2& position) noexcept
     {
-        if (!_comp)
-        {
-            return;
-        }
-        auto cam = _comp->getCamera();
-        if (!cam)
-        {
-            return;
-        }
         if (position.x < 0.F || position.x > 1.F)
         {
             return;
@@ -782,18 +773,20 @@ namespace darmok
         }
     }
 
-    void RmluiCanvasImpl::addViewportMousePositionDelta(const glm::vec2& delta) noexcept
+    glm::vec2 RmluiCanvasImpl::getViewportMousePosition() const noexcept
+    {
+        glm::vec3 pos(getMousePosition(), 0);
+
+        auto model = getModelMatrix();
+        auto proj = getProjectionMatrix();
+        auto vp = Viewport().getValues();
+
+        return glm::project(pos, model, proj, vp);
+    }
+
+    void RmluiCanvasImpl::applyViewportMousePositionDelta(const glm::vec2& delta) noexcept
     {
         if (delta.x == 0.F && delta.y == 0.F)
-        {
-            return;
-        }
-        if (!_comp)
-        {
-            return;
-        }
-        auto cam = _comp->getCamera();
-        if (!cam)
         {
             return;
         }
@@ -1033,6 +1026,23 @@ namespace darmok
     const glm::vec2& RmluiCanvas::getMousePosition() const noexcept
     {
         return _impl->getMousePosition();
+    }
+
+    RmluiCanvas& RmluiCanvas::applyViewportMousePositionDelta(const glm::vec2& delta) noexcept
+    {
+        _impl->applyViewportMousePositionDelta(delta);
+        return *this;
+    }
+
+    RmluiCanvas& RmluiCanvas::setViewportMousePosition(const glm::vec2& position) noexcept
+    {
+        _impl->setViewportMousePosition(position);
+        return *this;
+    }
+
+    glm::vec2 RmluiCanvas::getViewportMousePosition() const noexcept
+    {
+        return _impl->getViewportMousePosition();
     }
 
     Rml::Context& RmluiCanvas::getContext() noexcept
@@ -1472,9 +1482,9 @@ namespace darmok
             {
                 continue;
             }
-            if (mode == RmluiCanvasMousePositionMode::Delta)
+            if (mode == RmluiCanvasMousePositionMode::Relative)
             {
-                canvas->getImpl().addViewportMousePositionDelta(vpDelta);
+                canvas->getImpl().applyViewportMousePositionDelta(vpDelta);
             }
             else
             {

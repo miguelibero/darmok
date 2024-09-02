@@ -5,7 +5,7 @@ namespace darmok
     enum class RmluiCanvasMousePositionMode
 	{
 		Absolute,
-		Delta,
+		Relative,
 		Disabled,
 	};
 
