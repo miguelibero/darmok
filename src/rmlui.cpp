@@ -214,12 +214,10 @@ namespace darmok
         | BGFX_STATE_BLEND_ALPHA
         ;
 
-    glm::mat4 RmluiRenderInterface::getTransform(const glm::vec2& position)
+    glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position)
     {
-        // reverse the y axis
-        auto scale = glm::scale(glm::mat4(1), glm::vec3(1, -1, 1));
         glm::vec3 pos(position.x, position.y, 0.F);
-        return _transform * glm::translate(scale, pos);
+        return glm::translate(glm::mat4(1), pos);
     }
 
     void RmluiRenderInterface::submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
@@ -239,7 +237,7 @@ namespace darmok
             return;
         }
 
-        auto trans = getTransform(RmluiUtils::convert(translation));
+        auto trans = getTransformMatrix(RmluiUtils::convert(translation));
         auto& encoder = _context->getEncoder();
         encoder.setTransform(glm::value_ptr(trans));
 
@@ -319,7 +317,7 @@ namespace darmok
         auto viewId = _context->getViewId();
         encoder.setTexture(0, comp->getTextureUniform(), tex.getHandle());
 
-        auto trans = getTransform(position);
+        auto trans = getTransformMatrix(position);
         encoder.setTransform(glm::value_ptr(trans));
 
         mesh->render(encoder);
@@ -353,15 +351,11 @@ namespace darmok
         {
             return;
         }
-        glm::mat4 proj(1);
-        if (auto cam = comp->getCamera())
-        {
-            proj = cam->getProjectionMatrix();
-        }
 
         _context = context;
         auto viewId = context.getViewId();
         auto model = _canvas.getModelMatrix();
+        auto proj = _canvas.getProjectionMatrix();
 
         bgfx::setViewTransform(viewId, glm::value_ptr(model), glm::value_ptr(proj));
 
@@ -664,34 +658,47 @@ namespace darmok
         return _context->GetName();
     }
 
+    glm::mat4 RmluiCanvasImpl::getProjectionMatrix() const noexcept
+    {
+        if (!_comp)
+        {
+            return glm::mat4(1);
+        }
+        if (auto trans = _comp->getTransform(_canvas))
+        {
+            if (auto cam = _comp->getCamera())
+            {
+                return cam->getProjectionMatrix();
+            }
+        }
+        return _comp->getDefaultProjectionMatrix();
+    }
+
     glm::mat4 RmluiCanvasImpl::getModelMatrix() const noexcept
     {
         if (!_comp)
         {
             return glm::mat4(1);
         }
+
         glm::mat4 model(1);
 
-        if (auto cam = _comp->getCamera())
+        if (auto trans = _comp->getTransform(_canvas))
         {
-            model *= cam->getModelMatrix();
-        }
-
-        if (auto scene = _comp->getScene())
-        {
-            auto entity = scene->getEntity(_canvas);
-            if (auto trans = scene->getComponent<const Transform>(entity))
+            if (auto cam = _comp->getCamera())
             {
-                model *= trans->getWorldMatrix();
+                model *= cam->getModelMatrix();
             }
+            model *= trans->getWorldMatrix();
         }
-
 
         auto size = getCurrentSize();
         auto offset = _offset;
-        // the renderer inverts the y axis because rmlui renders upside down
-        offset.y += getCurrentSize().y;
+        offset.y += size.y;
         model = glm::translate(model, offset);
+
+        // invert the y axis because rmlui renders upside down
+        model = glm::scale(model, glm::vec3(1, -1, 1));
 
         return model;
     }
@@ -739,25 +746,7 @@ namespace darmok
         _context->ProcessMouseMove(pos.x, pos.y, modState);
     }
 
-    glm::vec3 RmluiCanvasImpl::getLocalMousePosition() const noexcept
-    {
-        auto size = getCurrentSize();
-        glm::vec3 pos(_mousePosition, 0);
-        pos.y = size.y - pos.y;
-        pos += _offset;
-        return pos;
-    }
-
-    void RmluiCanvasImpl::setLocalMousePosition(const glm::vec3& position) noexcept
-    {
-        auto size = getCurrentSize();
-        auto pos = position;
-        pos -= _offset;
-        pos.y = size.y - pos.y;
-        setMousePosition(pos);
-    }
-
-    void RmluiCanvasImpl::setViewportMousePosition(const glm::vec2& position, OptionalRef<const Transform> canvasTrans)
+    void RmluiCanvasImpl::setViewportMousePosition(const glm::vec2& position)
     {
         if (!_comp)
         {
@@ -778,19 +767,19 @@ namespace darmok
         }
 
         glm::vec3 pos(position, 0.F);
-        auto ray = cam->viewportPointToRay(pos);
-        if (canvasTrans)
-        {
-            ray *= canvasTrans->getWorldInverse();
-        }
+
+        auto model = getModelMatrix();
+        auto proj = getProjectionMatrix();
+        auto ray = Ray::unproject(pos, model, proj);
+
         if (auto dist = ray.intersect(Plane(glm::vec3(0, 0, -1))))
         {
             pos = ray * dist.value();
-            setLocalMousePosition(pos);
+            setMousePosition(pos);
         }
     }
 
-    void RmluiCanvasImpl::addViewportMousePositionDelta(const glm::vec2& delta, OptionalRef<const Transform> canvasTrans) noexcept
+    void RmluiCanvasImpl::addViewportMousePositionDelta(const glm::vec2& delta) noexcept
     {
         if (delta.x == 0.F && delta.y == 0.F)
         {
@@ -806,21 +795,17 @@ namespace darmok
             return;
         }
 
-        glm::vec4 pos(getLocalMousePosition(), 1);
+        glm::vec3 pos(getMousePosition(), 0);
 
-        if (canvasTrans)
-        {
-            pos = canvasTrans->getWorldMatrix() * pos;
-        }
-        pos = glm::vec4(cam->worldToViewportPoint(pos), 1);
-        pos += glm::vec4(delta, 0, 0);
-        pos = glm::vec4(cam->viewportToWorldPoint(pos), 1);
-        if (canvasTrans)
-        {
-            pos = canvasTrans->getWorldInverse() * pos;
-        }
+        auto model = getModelMatrix();
+        auto proj = getProjectionMatrix();
+        auto vp = Viewport().getValues();
+
+        pos = glm::project(pos, model, proj, vp);
+        pos += glm::vec3(delta, 0);
+        pos = glm::unProject(pos, model, proj, vp);
         
-        setLocalMousePosition(pos);
+        setMousePosition(pos);
     }
 
     void RmluiCanvasImpl::processKey(Rml::Input::KeyIdentifier key, int state, bool down) noexcept
@@ -1196,19 +1181,48 @@ namespace darmok
         return _cam;
     }
 
-    OptionalRef<const Scene> RmluiCameraComponentImpl::getScene() const noexcept
+    glm::uvec2 RmluiCameraComponentImpl::getViewportSize() const noexcept
     {
-        return _scene;
+        if (_cam)
+        {
+            return _cam->getCurrentViewport().size;
+        }
+        if (_scene)
+        {
+            return _scene->getCurrentViewport().size;
+        }
+        if (_app)
+        {
+            return _app->getWindow().getPixelSize();
+        }
+        return glm::uvec2(1);
     }
 
-    OptionalRef<Scene> RmluiCameraComponentImpl::getScene() noexcept
+    OptionalRef<Transform> RmluiCameraComponentImpl::getTransform(const RmluiCanvas& canvas) noexcept
     {
-        return _scene;
+        if (!_scene)
+        {
+            return nullptr;
+        }
+        auto entity = _scene->getEntity(canvas);
+        if (entity == entt::null)
+        {
+            return nullptr;
+        }
+        return _scene->getComponent<Transform>(entity);
     }
 
     const bgfx::UniformHandle& RmluiCameraComponentImpl::getTextureUniform() const noexcept
     {
         return _textureUniform;
+    }
+
+    glm::mat4 RmluiCameraComponentImpl::getDefaultProjectionMatrix() const noexcept
+    {
+        glm::vec2 size(getViewportSize());
+        auto botLeft = -0.5F * size;
+        auto topRight = 0.5F * size;
+        return Math::ortho(botLeft, topRight);
     }
 
     RenderGraphDefinition& RmluiCameraComponentImpl::getRenderGraph() noexcept
@@ -1427,14 +1441,13 @@ namespace darmok
             {
                 continue;
             }
-            auto trans = _scene->getComponent<const Transform>(entity);
             if (mode == RmluiCanvasMousePositionMode::Delta)
             {
-                canvas->getImpl().addViewportMousePositionDelta(vpDelta, trans);
+                canvas->getImpl().addViewportMousePositionDelta(vpDelta);
             }
             else
             {
-                canvas->getImpl().setViewportMousePosition(vpPos, trans);
+                canvas->getImpl().setViewportMousePosition(vpPos);
             }
         }
     }

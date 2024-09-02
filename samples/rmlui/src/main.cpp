@@ -9,7 +9,7 @@
 #include <darmok/render_forward.hpp>
 #include <darmok/math.hpp>
 #include <bgfx/bgfx.h>
-
+#include <glm/gtx/component_wise.hpp>
 #include <RmlUi/Core.h>
 
 #ifdef _DEBUG
@@ -70,17 +70,16 @@ namespace
 				.lookAt({ 0, 0, 0 });
 			cam.setViewportPerspective(60, 0.3, 10);
 			
-			// cam.setViewportOrtho();
-
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<RmluiCameraComponent>();
 
 			glm::uvec2 canvasSize(800, 600);
 
 			auto canvasEntity = scene.createEntity();
+
 			auto& canvasTrans = scene.addComponent<Transform>(canvasEntity);
-			canvasTrans.setScale(glm::vec3(2) / glm::vec3(canvasSize, 1.F));
-			// canvasTrans.setEulerAngles(glm::vec3(0, 0, 30));
+			canvasTrans.setScale(glm::vec3(2) / (float)glm::compMax(canvasSize));
+			canvasTrans.setEulerAngles(glm::vec3(0, 0, 30));
 			scene.addSceneComponent<WobbleUpdater>(canvasTrans);
 
 			auto& canvas = scene.addComponent<RmluiCanvas>(canvasEntity, "rmlui", canvasSize);

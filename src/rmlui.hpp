@@ -113,7 +113,7 @@ namespace darmok
 		static const uint64_t _state;
 
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
-		glm::mat4 getTransform(const glm::vec2& position);
+		glm::mat4 getTransformMatrix(const glm::vec2& position);
 		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
 
 	};
@@ -180,6 +180,7 @@ namespace darmok
 
 		std::string getName() const noexcept;
 		glm::mat4 getModelMatrix() const noexcept;
+		glm::mat4 getProjectionMatrix() const noexcept;
 
 		void setEnabled(bool enabled) noexcept;
 		bool getEnabled() const noexcept;
@@ -205,8 +206,8 @@ namespace darmok
 
 		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 
-		void addViewportMousePositionDelta(const glm::vec2& delta, OptionalRef<const Transform> canvasTrans) noexcept;
-		void setViewportMousePosition(const glm::vec2& position, OptionalRef<const Transform> canvasTrans);
+		void addViewportMousePositionDelta(const glm::vec2& delta) noexcept;
+		void setViewportMousePosition(const glm::vec2& position);
 
 		const glm::vec2& getMousePosition() const noexcept;
 		void setMousePosition(const glm::vec2& position) noexcept;
@@ -232,12 +233,11 @@ namespace darmok
 		std::string _name;
 		MousePositionMode _mousePositionMode;
 
-		glm::vec3 getLocalMousePosition() const noexcept;
-		void setLocalMousePosition(const glm::vec3& position) noexcept;
-
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		void updateContextSize() noexcept;
 	};
+
+	class Transform;
 
     class RmluiCameraComponentImpl final : IKeyboardListener, IMouseListener
     {
@@ -253,8 +253,9 @@ namespace darmok
 		bx::AllocatorI& getAllocator();
 		std::shared_ptr<Program> getProgram() const noexcept;
 		OptionalRef<const Camera> getCamera() const noexcept;
-		OptionalRef<const Scene> getScene() const noexcept;
-		OptionalRef<Scene> getScene() noexcept;
+		glm::uvec2 getViewportSize() const noexcept;
+		OptionalRef<Transform> getTransform(const RmluiCanvas& canvas) noexcept;
+		glm::mat4 getDefaultProjectionMatrix() const noexcept;
 		const bgfx::UniformHandle& getTextureUniform() const noexcept;
 		RenderGraphDefinition& getRenderGraph() noexcept;
 		const RenderGraphDefinition& getRenderGraph() const noexcept;
