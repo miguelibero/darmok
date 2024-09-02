@@ -242,8 +242,8 @@ namespace darmok
 
     void Camera::configureView(bgfx::ViewId viewId) const
     {
-        auto renderTex = _renderChain.getFirstTexture();
-        _renderChain.configureView(viewId, renderTex);
+        auto frameBuffer = _renderChain.getInput();
+        _renderChain.configureView(viewId, frameBuffer);
     }
 
     void Camera::setViewTransform(bgfx::ViewId viewId) const noexcept

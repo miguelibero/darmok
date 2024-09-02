@@ -118,13 +118,13 @@ namespace
 				.setPosition(glm::vec3(0.f, 2.f, -2.f))
 				.lookAt(glm::vec3(0, 0, 0));
 			scene.addComponent<Camera>(cam3d)
-				.setWindowPerspective(60, 0.3, 1000)
+				.setViewportPerspective(60, 0.3, 1000)
 				.setEntityComponentFilter<Culling3D>()
 				.addComponent<ForwardRenderer>();
 
 			auto cam2d = scene.createEntity();
 			scene.addComponent<Camera>(cam2d)
-				.setWindowOrtho(glm::vec2(0))
+				.setViewportOrtho(glm::vec2(0))
 				.setEntityComponentFilter<Culling2D>()
 				.addComponent<ForwardRenderer>();
 
@@ -144,7 +144,7 @@ namespace
 			float scale = 0.5;
 
 			MeshData meshData(Rectangle(tex->getSize()));
-			meshData *= glm::vec3(0.5F);
+			meshData.scalePositions(glm::vec3(0.5F));
 
 			auto mesh = meshData.createMesh(_prog->getVertexLayout());
 			auto mat = std::make_shared<Material>(_prog, tex);
@@ -153,7 +153,7 @@ namespace
 			auto spriteBorder = scene.createEntity();
 			auto size = scale * glm::vec2(tex->getSize());
 			meshData = MeshData(Rectangle::standard(), RectangleMeshType::Outline);
-			meshData *= glm::vec3(size, 0);
+			meshData.scalePositions(glm::vec3(size, 0));
 			auto debugMesh = meshData.createMesh(_prog->getVertexLayout());
 
 			scene.addComponent<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);

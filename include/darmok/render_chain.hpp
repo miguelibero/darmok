@@ -14,15 +14,16 @@ namespace darmok
 {
     class Texture;
 
-    class DARMOK_EXPORT RenderTexture
+    class DARMOK_EXPORT FrameBuffer
     {
     public:
-        RenderTexture(const glm::uvec2& size) noexcept;
-        ~RenderTexture() noexcept;
+        FrameBuffer(const glm::uvec2& size) noexcept;
+        ~FrameBuffer() noexcept;
         const std::shared_ptr<Texture>& getTexture() const noexcept;
         const std::shared_ptr<Texture>& getDepthTexture() const noexcept;
         const bgfx::FrameBufferHandle& getHandle() const noexcept;
         void configureView(bgfx::ViewId viewId) const noexcept;
+        const glm::uvec2& getSize() const noexcept;
     private:
         std::shared_ptr<Texture> _colorTex;
         std::shared_ptr<Texture> _depthTex;
@@ -39,7 +40,7 @@ namespace darmok
     public:
         virtual ~IRenderChainStep() = default;
         virtual void init(RenderChain& chain) = 0;
-        virtual void updateRenderChain(RenderTexture& read, OptionalRef<RenderTexture> write) = 0;
+        virtual void updateRenderChain(FrameBuffer& readBuffer, OptionalRef<FrameBuffer> writeBuffer) = 0;
         virtual void renderReset(){ };
         virtual void shutdown() = 0;
     };
@@ -53,10 +54,10 @@ namespace darmok
         void renderReset();
         void shutdown();
         
-        OptionalRef<RenderTexture> getFirstTexture() noexcept;
-        OptionalRef<const RenderTexture> getFirstTexture() const noexcept;
+        OptionalRef<FrameBuffer> getInput() noexcept;
+        OptionalRef<const FrameBuffer> getInput() const noexcept;
 
-        void configureView(bgfx::ViewId viewId, OptionalRef<const RenderTexture> write) const;
+        void configureView(bgfx::ViewId viewId, OptionalRef<const FrameBuffer> writeBuffer) const;
 
         RenderGraphDefinition& getRenderGraph();
         const RenderGraphDefinition& getRenderGraph() const;
@@ -64,8 +65,8 @@ namespace darmok
         RenderChain& setViewport(const Viewport& vp) noexcept;
         const Viewport& getViewport() const noexcept;
 
-        RenderChain& setRenderTexture(const std::shared_ptr<RenderTexture>& renderTex) noexcept;
-        std::shared_ptr<RenderTexture> getRenderTexture() const noexcept;
+        RenderChain& setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept;
+        std::shared_ptr<FrameBuffer> getOutput() const noexcept;
 
         RenderChain& addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept;
 
@@ -80,15 +81,15 @@ namespace darmok
     private:
         OptionalRef<RenderGraphDefinition> _graph;
         std::vector<std::unique_ptr<IRenderChainStep>> _steps;
-        std::vector<std::unique_ptr<RenderTexture>> _textures;
-        std::shared_ptr<RenderTexture> _endTexture;
+        std::vector<std::unique_ptr<FrameBuffer>> _buffers;
+        std::shared_ptr<FrameBuffer> _output;
         Viewport _viewport;
         OptionalRef<RenderChain> _parent;
 
-        void updateTextures();
+        void updateBuffers();
         void updateSteps();
         bool updateStep(size_t i);
-        void addTexture() noexcept;
+        FrameBuffer& addBuffer() noexcept;
     };
 
     class Program;
@@ -101,7 +102,7 @@ namespace darmok
         ~ScreenSpaceRenderPass() noexcept;
 
         void init(RenderChain& chain) noexcept override;
-        void updateRenderChain(RenderTexture& read, OptionalRef<RenderTexture> write) noexcept override;
+        void updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept override;
         void renderReset() noexcept override;
         void shutdown() noexcept override;
 
@@ -111,8 +112,8 @@ namespace darmok
     private:
         std::string _name;
         int _priority;
-        OptionalRef<RenderTexture> _readTex;
-        OptionalRef<RenderTexture> _writeTex;
+        OptionalRef<FrameBuffer> _readTex;
+        OptionalRef<FrameBuffer> _writeTex;
         OptionalRef<RenderChain> _chain;
         std::shared_ptr<Program> _program;
         std::unique_ptr<IMesh> _mesh;

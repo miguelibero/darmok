@@ -208,6 +208,11 @@ namespace darmok::physics3d
         return scene.addSceneComponent<LuaPhysicsSystem, PhysicsSystem>(config, alloc);
     }
 
+    OptionalRef<LuaPhysicsSystem>::std_t LuaPhysicsSystem::getSceneComponent(LuaScene& scene) noexcept
+    {
+        return scene.getReal()->getSceneComponent<LuaPhysicsSystem>();
+    }
+
     void LuaPhysicsSystem::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<Config>("Physics3dSystemConfig",
@@ -237,6 +242,7 @@ namespace darmok::physics3d
                 &LuaPhysicsSystem::raycastAll2,
                 &LuaPhysicsSystem::raycastAll3
             ),
+            "get_scene_component", &LuaPhysicsSystem::getSceneComponent,
             "add_scene_component", sol::overload(
                 &LuaPhysicsSystem::addSceneComponent1,
                 &LuaPhysicsSystem::addSceneComponent2 /*,

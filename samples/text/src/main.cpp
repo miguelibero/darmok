@@ -38,11 +38,11 @@ namespace
 			auto& cam = registry.emplace<Camera>(camEntity);
 			/*
 				camTrans.setPosition(glm::vec3(0.f, -1.f, -1.f))
-				.lookAt(glm::vec3(0, 0, 0));
-				cam.setPerspective(60, getWindow().getSize(), 0.3, 1000);
+				    .lookAt(glm::vec3(0, 0, 0));
+				cam.setViewportPerspective(60, 0.3, 1000);
 			*/
 
-			cam.setWindowOrtho();
+			cam.setViewportOrtho();
 
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<TextRenderer>();

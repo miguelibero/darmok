@@ -6,7 +6,7 @@
 
 namespace darmok
 {
-	TextureConfig RenderTexture::createColorConfig(const glm::uvec2& size) noexcept
+	TextureConfig FrameBuffer::createColorConfig(const glm::uvec2& size) noexcept
 	{
 		TextureConfig config;
 		config.size = size;
@@ -14,7 +14,7 @@ namespace darmok
 		return config;
 	}
 
-	TextureConfig RenderTexture::createDepthConfig(const glm::uvec2& size) noexcept
+	TextureConfig FrameBuffer::createDepthConfig(const glm::uvec2& size) noexcept
 	{
 		TextureConfig config;
 		config.size = size;
@@ -22,7 +22,7 @@ namespace darmok
 		return config;
 	}
 
-	RenderTexture::RenderTexture(const glm::uvec2& size) noexcept
+	FrameBuffer::FrameBuffer(const glm::uvec2& size) noexcept
 		: _colorTex(std::make_shared<Texture>(createColorConfig(size), BGFX_TEXTURE_RT))
 		, _depthTex(std::make_shared<Texture>(createDepthConfig(size), BGFX_TEXTURE_RT))
 		, _handle{ bgfx::kInvalidHandle }
@@ -32,27 +32,32 @@ namespace darmok
 		_handle = bgfx::createFrameBuffer(handles.size(), &handles.front());
 	}
 
-	RenderTexture::~RenderTexture() noexcept
+	FrameBuffer::~FrameBuffer() noexcept
 	{
 		bgfx::destroy(_handle);
 	}
 
-	const std::shared_ptr<Texture>& RenderTexture::getTexture() const noexcept
+	const std::shared_ptr<Texture>& FrameBuffer::getTexture() const noexcept
 	{
 		return _colorTex;
 	}
 
-	const std::shared_ptr<Texture>& RenderTexture::getDepthTexture() const noexcept
+	const std::shared_ptr<Texture>& FrameBuffer::getDepthTexture() const noexcept
 	{
 		return _depthTex;
 	}
 
-	const bgfx::FrameBufferHandle& RenderTexture::getHandle() const noexcept
+	const bgfx::FrameBufferHandle& FrameBuffer::getHandle() const noexcept
 	{
 		return _handle;
 	}
 
-	void RenderTexture::configureView(bgfx::ViewId viewId) const noexcept
+	const glm::uvec2& FrameBuffer::getSize() const noexcept
+	{
+		return _colorTex->getSize();
+	}
+
+	void FrameBuffer::configureView(bgfx::ViewId viewId) const noexcept
 	{
 		bgfx::setViewFrameBuffer(viewId, _handle);
 	}
@@ -67,15 +72,15 @@ namespace darmok
 		return _graph.value();
 	}
 
-	RenderChain& RenderChain::setRenderTexture(const std::shared_ptr<RenderTexture>& renderTex) noexcept
+	RenderChain& RenderChain::setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept
 	{
-		_endTexture = renderTex;
+		_output = fb;
 		return *this;
 	}
 
-	std::shared_ptr<RenderTexture> RenderChain::getRenderTexture() const noexcept
+	std::shared_ptr<FrameBuffer> RenderChain::getOutput() const noexcept
 	{
-		return _endTexture;
+		return _output;
 	}
 
 	RenderChain& RenderChain::setViewport(const Viewport& vp) noexcept
@@ -83,7 +88,7 @@ namespace darmok
 		if (_viewport != vp)
 		{
 			_viewport = vp;
-			updateTextures();
+			updateBuffers();
 		}
 		return *this;
 	}
@@ -112,13 +117,13 @@ namespace darmok
 		}
 	}
 
-	void RenderChain::updateTextures()
+	void RenderChain::updateBuffers()
 	{
-		auto amount = _textures.size();
-		_textures.clear();
+		auto amount = _buffers.size();
+		_buffers.clear();
 		for (size_t i = 0; i < amount; ++i)
 		{
-			addTexture();
+			addBuffer();
 		}
 		updateSteps();
 	}
@@ -137,24 +142,24 @@ namespace darmok
 
 	bool RenderChain::updateStep(size_t i)
 	{
-		if (i >= _textures.size() || i >= _steps.size())
+		if (i >= _buffers.size() || i >= _steps.size())
 		{
 			return false;
 		}
-		auto& read = *_textures[i];
-		OptionalRef<RenderTexture> write;
+		auto& read = *_buffers[i];
+		OptionalRef<FrameBuffer> write;
 		auto j = i + 1;
-		if (j < _textures.size())
+		if (j < _buffers.size())
 		{
-			write = *_textures[j];
+			write = *_buffers[j];
 		}
-		else if (_endTexture)
+		else if (_output)
 		{
-			write = *_endTexture;
+			write = *_output;
 		}
 		else if (_parent)
 		{
-			write = _parent->getFirstTexture();
+			write = _parent->getInput();
 		}
 		_steps[i]->updateRenderChain(read, write);
 		return true;
@@ -169,40 +174,40 @@ namespace darmok
 		_graph.reset();
 	}
 
-	OptionalRef<RenderTexture> RenderChain::getFirstTexture() noexcept
+	OptionalRef<FrameBuffer> RenderChain::getInput() noexcept
 	{
-		if (!_textures.empty())
+		if (!_buffers.empty())
 		{
-			return *_textures.front();
+			return *_buffers.front();
 		}
 		if (_parent)
 		{
-			return _parent->getFirstTexture();
+			return _parent->getInput();
 		}
 		return nullptr;
 	}
 
-	OptionalRef<const RenderTexture> RenderChain::getFirstTexture() const noexcept
+	OptionalRef<const FrameBuffer> RenderChain::getInput() const noexcept
 	{
-		if (!_textures.empty())
+		if (!_buffers.empty())
 		{
-			return *_textures.front();
+			return *_buffers.front();
 		}
 		if (_parent)
 		{
-			return _parent->getFirstTexture();
+			return _parent->getInput();
 		}
 		return nullptr;
 	}
 
-	void RenderChain::configureView(bgfx::ViewId viewId, OptionalRef<const RenderTexture> write) const
+	void RenderChain::configureView(bgfx::ViewId viewId, OptionalRef<const FrameBuffer> writeBuffer) const
 	{
 		uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-		if (write)
+		if (writeBuffer)
 		{
 			clearFlags |= BGFX_CLEAR_COLOR;
 			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 0);
-			write->configureView(viewId);
+			writeBuffer->configureView(viewId);
 		}
 		else
 		{
@@ -211,15 +216,15 @@ namespace darmok
 		_viewport.configureView(viewId);
 	}
 
-	void RenderChain::addTexture() noexcept
+	FrameBuffer& RenderChain::addBuffer() noexcept
 	{
 		auto size = _viewport.origin + _viewport.size;
-		_textures.emplace_back(std::make_unique<RenderTexture>(size));
+		return *_buffers.emplace_back(std::make_unique<FrameBuffer>(size));
 	}
 
 	RenderChain& RenderChain::addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept
 	{
-		addTexture();
+		addBuffer();
 		auto& ref = *step;
 		_steps.push_back(std::move(step));
 		if (_graph)
@@ -263,7 +268,7 @@ namespace darmok
 		renderReset();
 	}
 
-	void ScreenSpaceRenderPass::updateRenderChain(RenderTexture& read, OptionalRef<RenderTexture> write) noexcept
+	void ScreenSpaceRenderPass::updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept
 	{
 		_readTex = read;
 		_writeTex = write;

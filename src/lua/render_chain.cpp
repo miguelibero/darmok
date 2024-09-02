@@ -5,23 +5,24 @@
 
 namespace darmok
 {
-    void LuaRenderTexture::bind(sol::state_view& lua) noexcept
+    void LuaFrameBuffer::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<RenderTexture>("RenderTexture",
+        lua.new_usertype<FrameBuffer>("FrameBuffer",
             sol::factories(
                 [](const VarLuaVecTable<glm::uvec2>& size)
                 {
-                    return RenderTexture(LuaGlm::tableGet(size));
+                    return std::make_shared<FrameBuffer>(LuaGlm::tableGet(size));
                 }
             ),
-            "texture", sol::property(&RenderTexture::getTexture),
-            "depth_texture", sol::property(&RenderTexture::getDepthTexture)
+            "texture", sol::property(&FrameBuffer::getTexture),
+            "size", sol::property(&FrameBuffer::getSize),
+            "depth_texture", sol::property(&FrameBuffer::getDepthTexture)
         );
     }
 
-    OptionalRef<RenderTexture>::std_t LuaRenderChain::getFirstTexture(RenderChain& chain) noexcept
+    OptionalRef<FrameBuffer>::std_t LuaRenderChain::getInput(RenderChain& chain) noexcept
     {
-        return chain.getFirstTexture();
+        return chain.getInput();
     }
 
     void LuaRenderChain::setViewport(RenderChain& chain, VarViewport vp) noexcept
@@ -29,14 +30,15 @@ namespace darmok
         chain.setViewport(LuaViewport::tableGet(vp));
     }
 
+
     void LuaRenderChain::bind(sol::state_view& lua) noexcept
     {
-        LuaRenderTexture::bind(lua);
+        LuaFrameBuffer::bind(lua);
         LuaScreenSpaceRenderPass::bind(lua);
         lua.new_usertype<RenderChain>("RenderChain", sol::no_constructor,
             "render_graph", sol::property(sol::resolve<RenderGraphDefinition&()>(&RenderChain::getRenderGraph)),
-            "render_texture", sol::property(&RenderChain::getRenderTexture, &RenderChain::setRenderTexture),
-            "first_texture", sol::property(&LuaRenderChain::getFirstTexture),
+            "output", sol::property(&RenderChain::getOutput, &RenderChain::setOutput),
+            "input", sol::property(&LuaRenderChain::getInput),
             "viewport", sol::property(&RenderChain::getViewport, LuaRenderChain::setViewport)
         );
     }

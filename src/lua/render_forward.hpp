@@ -15,5 +15,6 @@ namespace darmok
     private:
 
         static ForwardRenderer& addCameraComponent(Camera& cam) noexcept;
+        static OptionalRef<ForwardRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
     };
 }

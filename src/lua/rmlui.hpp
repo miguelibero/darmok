@@ -151,8 +151,6 @@ namespace darmok
         RmluiRenderer& getReal() noexcept;
         const RmluiRenderer& getReal() const noexcept;
 
-        LuaRmluiCanvas& getView2(const std::string& name) noexcept;
-
         static void bind(sol::state_view& lua) noexcept;
     private:
         OptionalRef<Camera> _cam;
@@ -162,6 +160,7 @@ namespace darmok
         std::vector<std::unique_ptr<LuaCustomRmluiEventListener>> _customEventListeners;
 
         static LuaRmluiRenderer& addCameraComponent(Camera& cam, sol::this_state ts) noexcept;
+        static OptionalRef<LuaRmluiRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
 
         static void loadFont(const std::string& path) noexcept;
         static void loadFallbackFont(const std::string& path) noexcept;

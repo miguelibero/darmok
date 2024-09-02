@@ -63,6 +63,7 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
         static SkeletalAnimationSceneComponent& addSceneComponent(LuaScene& scene) noexcept;
+        static OptionalRef<SkeletalAnimationSceneComponent>::std_t getSceneComponent(LuaScene& scene) noexcept;
     };
 
     class SkeletalAnimationRenderComponent;
@@ -74,5 +75,6 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
         static SkeletalAnimationRenderComponent& addCameraComponent(Camera& cam) noexcept;
+        static OptionalRef<SkeletalAnimationRenderComponent>::std_t getCameraComponent(Camera& cam) noexcept;
     };
 }

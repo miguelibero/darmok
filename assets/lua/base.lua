@@ -144,6 +144,17 @@ function Camera:add_component(type, ...)
 	return type.add_camera_component(self, ...)
 end
 
+function Camera:get_component(type)
+	return type.get_camera_component(self)
+end
+
+function Camera:get_or_add_component(type, ...)
+	local comp = self:get_component(type)
+	if comp then
+		return comp
+	end
+	return self:add_component(type, ...)
+end
 
 -- RenderChain
 function RenderChain:add_step(type, ...)

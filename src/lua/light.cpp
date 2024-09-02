@@ -93,11 +93,17 @@ namespace darmok
 		return cam.addComponent<LightingRenderComponent>();
 	}
 
+	OptionalRef<LightingRenderComponent>::std_t LuaLightingRenderComponent::getCameraComponent(Camera& cam) noexcept
+	{
+		return cam.getComponent<LightingRenderComponent>();
+	}
+
 	void LuaLightingRenderComponent::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LightingRenderComponent>("LightingRenderComponent",
 			sol::no_constructor,
-			"add_camera_component", &LuaLightingRenderComponent::addCameraComponent
+			"add_camera_component", &LuaLightingRenderComponent::addCameraComponent,
+			"get_camera_component", &LuaLightingRenderComponent::getCameraComponent
 		);
 	}
 }

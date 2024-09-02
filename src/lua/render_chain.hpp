@@ -5,13 +5,14 @@
 #include <string>
 #include <darmok/optional_ref.hpp>
 #include "viewport.hpp"
+#include "glm.hpp"
 
 namespace darmok
 {
-    class RenderTexture;
+    class FrameBuffer;
     class Texture;
 
-    class LuaRenderTexture final
+    class LuaFrameBuffer final
     {
     public:
         static void bind(sol::state_view& lua) noexcept;
@@ -24,7 +25,7 @@ namespace darmok
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        static OptionalRef<RenderTexture>::std_t getFirstTexture(RenderChain& chain) noexcept;
+        static OptionalRef<FrameBuffer>::std_t getInput(RenderChain& chain) noexcept;
         static void setViewport(RenderChain& chain, VarViewport vp) noexcept;
     };
 

@@ -3,6 +3,7 @@
 #ifdef _DEBUG
 
 #include <sol/sol.hpp>
+#include <darmok/optional_ref.hpp>
 
 namespace darmok
 {
@@ -19,6 +20,7 @@ namespace darmok
 
         static RmluiDebuggerComponent& addSceneComponent1(LuaScene& scene) noexcept;
         static RmluiDebuggerComponent& addSceneComponent2(LuaScene& scene, const Config& config) noexcept;
+        static OptionalRef<RmluiDebuggerComponent>::std_t getSceneComponent(LuaScene& scene) noexcept;
     };
 }
 

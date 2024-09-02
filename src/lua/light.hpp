@@ -50,5 +50,6 @@ namespace darmok
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		static LightingRenderComponent& addCameraComponent(Camera& cam) noexcept;
+		static OptionalRef<LightingRenderComponent>::std_t getCameraComponent(Camera& cam) noexcept;
 	};
 }

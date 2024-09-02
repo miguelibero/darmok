@@ -65,6 +65,7 @@ namespace darmok::physics3d
         static LuaPhysicsSystem& addSceneComponent1(LuaScene& scene) noexcept;
         static LuaPhysicsSystem& addSceneComponent2(LuaScene& scene, const Config& config) noexcept;
         static LuaPhysicsSystem& addSceneComponent3(LuaScene& scene, const Config& config, bx::AllocatorI& alloc) noexcept;
+        static OptionalRef<LuaPhysicsSystem>::std_t getSceneComponent(LuaScene& scene) noexcept;
 
         void fixedUpdate(float fixedDeltaTime) override;
 

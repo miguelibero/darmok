@@ -98,10 +98,16 @@ namespace darmok
         return scene.getReal()->addSceneComponent<SkeletalAnimationSceneComponent>();
     }
 
+    OptionalRef<SkeletalAnimationSceneComponent>::std_t LuaSkeletalAnimationSceneComponent::getSceneComponent(LuaScene& scene) noexcept
+    {
+        return scene.getReal()->getSceneComponent<SkeletalAnimationSceneComponent>();
+    }
+
     void LuaSkeletalAnimationSceneComponent::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<LuaSkeletalAnimationSceneComponent>("SkeletalAnimationSceneComponent", sol::no_constructor,
-            "add_scene_component", &LuaSkeletalAnimationSceneComponent::addSceneComponent
+            "add_scene_component", &LuaSkeletalAnimationSceneComponent::addSceneComponent,
+            "get_scene_component", &LuaSkeletalAnimationSceneComponent::getSceneComponent
         );
     }
 
@@ -110,10 +116,16 @@ namespace darmok
         return cam.addComponent<SkeletalAnimationRenderComponent>();
     }
 
+    OptionalRef<SkeletalAnimationRenderComponent>::std_t LuaSkeletalAnimationRenderComponent::getCameraComponent(Camera& cam) noexcept
+    {
+        return cam.getComponent<SkeletalAnimationRenderComponent>();
+    }
+
     void LuaSkeletalAnimationRenderComponent::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<SkeletalAnimationRenderComponent>("SkeletalAnimationRenderComponent", sol::no_constructor,
-            "add_camera_component", &LuaSkeletalAnimationRenderComponent::addCameraComponent
+            "add_camera_component", &LuaSkeletalAnimationRenderComponent::addCameraComponent,
+            "get_camera_component", &LuaSkeletalAnimationRenderComponent::getCameraComponent
         );
     }
 }

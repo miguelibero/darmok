@@ -16,10 +16,25 @@ namespace darmok
         {
             return *v2;
         }
-        auto v3 = std::get<sol::table>(vp);
-        glm::uvec4 vec;
-        LuaGlm::tableInit(vec, v3);
-        return vec;
+        auto v3 = std::get_if<glm::uvec2>(&vp);
+        if (v3 != nullptr)
+        {
+            return *v3;
+        }
+        auto v4 = std::get<sol::table>(vp);
+        if (v4.size() == 4)
+        {
+            glm::uvec4 vec;
+            LuaGlm::tableInit(vec, v4);
+            return vec;
+        }
+        if (v4.size() == 2)
+        {
+            glm::uvec2 vec;
+            LuaGlm::tableInit(vec, v4);
+            return vec;
+        }
+        return Viewport();
     }
 
     std::optional<Viewport> LuaViewport::tableGet(const std::optional<VarViewport>& vp) noexcept
