@@ -12,25 +12,19 @@ namespace darmok
     {
     }
 
-    Viewport::Viewport(const glm::uvec2& size) noexcept
-        : size(size)
-        , origin(0)
-    {
-    }
-
-    Viewport::Viewport(const glm::ivec2& size, const glm::ivec2& origin) noexcept
+    Viewport::Viewport(const glm::uvec2& size, const glm::uvec2& origin) noexcept
         : size(size)
         , origin(origin)
     {
     }
 
-    Viewport::Viewport(const glm::ivec4& values) noexcept
+    Viewport::Viewport(const glm::uvec4& values) noexcept
         : size(values[2], values[3])
         , origin(values[0], values[1])
     {
     }
 
-    Viewport::Viewport(int x, int y, int w, int h) noexcept
+    Viewport::Viewport(glm::uint x, glm::uint y, glm::uint w, glm::uint h) noexcept
         : size(w, h)
         , origin(x, y)
     {

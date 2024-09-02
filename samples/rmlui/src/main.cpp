@@ -60,7 +60,7 @@ namespace
 
 			auto& scene = *addComponent<SceneAppComponent>().getScene();
 
-			scene.setViewport(Viewport(glm::ivec2(500), glm::ivec2(200)));
+			// scene.setViewport(Viewport(glm::ivec2(500), glm::ivec2(200)));
 
 			auto camEntity = scene.createEntity();
 			auto& cam = scene.addComponent<Camera>(camEntity);
@@ -69,22 +69,22 @@ namespace
 				.setPosition({ 0, 0, -3 })
 				.lookAt({ 0, 0, 0 });
 			cam.setViewportPerspective(60, 0.3, 10);
-
-			// cam.setViewportOrtho(glm::vec2(0.5));
+			
+			// cam.setViewportOrtho();
 
 			cam.addComponent<ForwardRenderer>();
-			cam.addComponent<RmluiRenderer>();
+			cam.addComponent<RmluiCameraComponent>();
 
-			Viewport canvasViewport(glm::ivec2(800, 600));
-			canvasViewport.origin -= 0.5F * glm::vec2(canvasViewport.size);
+			glm::uvec2 canvasSize(800, 600);
 
 			auto canvasEntity = scene.createEntity();
 			auto& canvasTrans = scene.addComponent<Transform>(canvasEntity);
-			canvasTrans.setScale(glm::vec3(2) / glm::vec3(canvasViewport.size, 1.F));
-			canvasTrans.setEulerAngles(glm::vec3(0, 0, 30));
+			canvasTrans.setScale(glm::vec3(2) / glm::vec3(canvasSize, 1.F));
+			// canvasTrans.setEulerAngles(glm::vec3(0, 0, 30));
 			scene.addSceneComponent<WobbleUpdater>(canvasTrans);
 
-			auto& canvas = scene.addComponent<RmluiCanvas>(canvasEntity, "rmlui", canvasViewport);
+			auto& canvas = scene.addComponent<RmluiCanvas>(canvasEntity, "rmlui", canvasSize);
+			canvas.setOffset(glm::vec3(canvasSize, 0) * -0.5F);
 			canvas.setInputActive(true);
 			canvas.setMousePositionMode(RmluiCanvasMousePositionMode::Absolute);
 			auto& context = canvas.getContext();

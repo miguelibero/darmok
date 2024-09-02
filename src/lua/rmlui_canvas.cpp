@@ -20,28 +20,38 @@ namespace darmok
         return _canvas.getName();
     }
 
-    std::optional<Viewport> LuaRmluiCanvas::getViewport() const noexcept
+    std::optional<glm::uvec2> LuaRmluiCanvas::getSize() const noexcept
     {
-        return _canvas.getViewport();
-
+        return _canvas.getSize();
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::setViewport(std::optional<VarViewport> vp) noexcept
+    LuaRmluiCanvas& LuaRmluiCanvas::setSize(std::optional<VarLuaTable<glm::uvec2>> size) noexcept
     {
-        if (vp)
+        if (size)
         {
-            _canvas.setViewport(LuaViewport::tableGet(vp.value()));
+            _canvas.setSize(LuaGlm::tableGet(size.value()));
         }
         else
         {
-            _canvas.setViewport(std::nullopt);
+            _canvas.setSize(std::nullopt);
         }
         return *this;
     }
 
-    Viewport LuaRmluiCanvas::getCurrentViewport() const noexcept
+    glm::uvec2 LuaRmluiCanvas::getCurrentSize() const noexcept
     {
-        return _canvas.getCurrentViewport();
+        return _canvas.getCurrentSize();
+    }
+
+    const glm::vec3& LuaRmluiCanvas::getOffset() const noexcept
+    {
+        return _canvas.getOffset();
+    }
+
+    LuaRmluiCanvas& LuaRmluiCanvas::setOffset(const VarLuaTable<glm::vec3>& offset) noexcept
+    {
+        _canvas.setOffset(LuaGlm::tableGet(offset));
+        return *this;
     }
 
     LuaRmluiCanvas& LuaRmluiCanvas::setEnabled(bool enabled) noexcept
@@ -114,11 +124,6 @@ namespace darmok
     LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size) noexcept
     {
         return entity.addWrapperComponent<LuaRmluiCanvas, RmluiCanvas>(name, LuaGlm::tableGet(size));
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent3(LuaEntity& entity, const std::string& name, const VarViewport& vp) noexcept
-    {
-        return entity.addWrapperComponent<LuaRmluiCanvas, RmluiCanvas>(name, LuaViewport::tableGet(vp));
     }
 
     OptionalRef<LuaRmluiCanvas>::std_t LuaRmluiCanvas::getEntityComponent(LuaEntity& entity) noexcept
@@ -351,15 +356,15 @@ namespace darmok
             "type_id", &entt::type_hash<RmluiCanvas>::value,
             "add_entity_component", sol::overload(
                 &LuaRmluiCanvas::addEntityComponent1,
-                &LuaRmluiCanvas::addEntityComponent2,
-                &LuaRmluiCanvas::addEntityComponent3
+                &LuaRmluiCanvas::addEntityComponent2
             ),
             "get_entity_component", &LuaRmluiCanvas::getEntityComponent,
             "get_entity", &LuaRmluiCanvas::getEntity,
 
             "name", sol::property(&LuaRmluiCanvas::getName),
-            "viewport", sol::property(&LuaRmluiCanvas::getViewport, &LuaRmluiCanvas::setViewport),
-            "current_viewport", sol::property(&LuaRmluiCanvas::getCurrentViewport),
+            "size", sol::property(&LuaRmluiCanvas::getSize, &LuaRmluiCanvas::setSize),
+            "current_size", sol::property(&LuaRmluiCanvas::getCurrentSize),
+            "offset", sol::property(&LuaRmluiCanvas::getOffset, &LuaRmluiCanvas::setOffset),
             "input_active", sol::property(&LuaRmluiCanvas::getInputActive, &LuaRmluiCanvas::setInputActive),
             "mouse_position", sol::property(&LuaRmluiCanvas::getMousePosition, &LuaRmluiCanvas::setMousePosition),
             "set_scroll_behavior", &LuaRmluiCanvas::setScrollBehavior,

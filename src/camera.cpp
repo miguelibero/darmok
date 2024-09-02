@@ -248,13 +248,8 @@ namespace darmok
 
     void Camera::setViewTransform(bgfx::ViewId viewId) const noexcept
     {
-        auto projPtr = glm::value_ptr(_proj);
-        const void* viewPtr = nullptr;
-        if (auto trans = getTransform())
-        {
-            viewPtr = glm::value_ptr(trans->getWorldInverse());
-        }
-        bgfx::setViewTransform(viewId, viewPtr, projPtr);
+        auto model = getModelMatrix();
+        bgfx::setViewTransform(viewId, glm::value_ptr(model), glm::value_ptr(_proj));
     }
 
     void Camera::setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept

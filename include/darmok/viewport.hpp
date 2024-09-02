@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
+#include <darmok/math.hpp>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 
@@ -9,14 +10,13 @@ namespace darmok
 {
     struct DARMOK_EXPORT Viewport final
     {
-        glm::ivec2 origin;
-        glm::ivec2 size;
+        glm::uvec2 origin;
+        glm::uvec2 size;
 
         Viewport() noexcept;
-        Viewport(const glm::ivec2& size, const glm::ivec2& origin = {}) noexcept;
-        Viewport(const glm::uvec2& size) noexcept;
-        Viewport(const glm::ivec4& values) noexcept;
-        Viewport(int x, int y, int w, int h) noexcept;
+        Viewport(const glm::uvec2& size, const glm::uvec2& origin = {}) noexcept;
+        Viewport(const glm::uvec4& values) noexcept;
+        Viewport(glm::uint x, glm::uint y, glm::uint w, glm::uint h) noexcept;
 
         bool operator==(const Viewport& other) const noexcept;
         bool operator!=(const Viewport& other) const noexcept;
@@ -37,6 +37,6 @@ namespace darmok
 
         void configureView(bgfx::ViewId viewId) const;
 
-        glm::mat4 ortho(const glm::vec2& center = glm::vec2(0.5f), float near = -bx::kFloatLargest, float far = bx::kFloatLargest) const noexcept;
+        glm::mat4 ortho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) const noexcept;
     };
 }

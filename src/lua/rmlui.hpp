@@ -26,7 +26,7 @@ namespace Rml
 namespace darmok
 {
     class Texture;
-    class RmluiRenderer;
+    class RmluiCameraComponent;
     class RmluiCanvas;
 
     class LuaFunctionRmluiEventListener final : public Rml::EventListener
@@ -55,16 +55,16 @@ namespace darmok
         sol::table _tab;
     };
 
-    class LuaRmluiRenderer;
+    class LuaRmluiCameraComponent;
 
     class LuaCustomRmluiEventListener final : public Rml::EventListener
     {
     public:
-        LuaCustomRmluiEventListener(const std::string& value, LuaRmluiRenderer& comp) noexcept;
+        LuaCustomRmluiEventListener(const std::string& value, LuaRmluiCameraComponent& comp) noexcept;
         void ProcessEvent(Rml::Event& event) override;
     private:
         std::vector<std::string> _params;
-        LuaRmluiRenderer& _comp;
+        LuaRmluiCameraComponent& _comp;
     };
 
     class LuaRmluiEvent final
@@ -99,7 +99,6 @@ namespace darmok
 
         static LuaRmluiCanvas& addEntityComponent1(LuaEntity& entity, const std::string& name) noexcept;
         static LuaRmluiCanvas& addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size) noexcept;
-        static LuaRmluiCanvas& addEntityComponent3(LuaEntity& entity, const std::string& name, const VarViewport& vp) noexcept;
         static OptionalRef<LuaRmluiCanvas>::std_t getEntityComponent(LuaEntity& entity) noexcept;
         std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 
@@ -117,9 +116,12 @@ namespace darmok
         bool removeEventListener4(const std::string& ev, const sol::protected_function& func) noexcept;
         bool removeEventListener3(const sol::protected_function& func) noexcept;
 
-        std::optional<Viewport> getViewport() const noexcept;
-        LuaRmluiCanvas& setViewport(std::optional<VarViewport> vp) noexcept;
-        Viewport getCurrentViewport() const noexcept;
+        std::optional<glm::uvec2> getSize() const noexcept;
+        LuaRmluiCanvas& setSize(std::optional<VarLuaTable<glm::uvec2>> size) noexcept;
+        glm::uvec2 getCurrentSize() const noexcept;
+
+        const glm::vec3& getOffset() const noexcept;
+        LuaRmluiCanvas& setOffset(const VarLuaTable<glm::vec3>& offset) noexcept;
 
         LuaRmluiCanvas& setEnabled(bool enabled) noexcept;
         bool getEnabled() const noexcept;
@@ -135,10 +137,10 @@ namespace darmok
         Rml::ElementDocument& loadDocument(const std::string& name);
     };
 
-    class LuaRmluiRenderer final : public ICameraComponent, public Rml::EventListenerInstancer
+    class LuaRmluiCameraComponent final : public ICameraComponent, public Rml::EventListenerInstancer
     {
     public:
-        LuaRmluiRenderer(RmluiRenderer& comp, const sol::state_view& lua) noexcept;
+        LuaRmluiCameraComponent(RmluiCameraComponent& comp, const sol::state_view& lua) noexcept;
 
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
@@ -146,8 +148,8 @@ namespace darmok
         Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override;
         void processCustomEvent(Rml::Event& event, const std::vector<std::string>& params);
 
-        RmluiRenderer& getReal() noexcept;
-        const RmluiRenderer& getReal() const noexcept;
+        RmluiCameraComponent& getReal() noexcept;
+        const RmluiCameraComponent& getReal() const noexcept;
 
         LuaRmluiCanvas& getView2(const std::string& name) noexcept;
 
@@ -155,11 +157,11 @@ namespace darmok
     private:
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
-        RmluiRenderer& _comp;
+        RmluiCameraComponent& _comp;
         sol::state_view _lua;
         std::vector<std::unique_ptr<LuaCustomRmluiEventListener>> _customEventListeners;
 
-        static LuaRmluiRenderer& addCameraComponent(Camera& cam, sol::this_state ts) noexcept;
+        static LuaRmluiCameraComponent& addCameraComponent(Camera& cam, sol::this_state ts) noexcept;
 
         static void loadFont(const std::string& path) noexcept;
         static void loadFallbackFont(const std::string& path) noexcept;

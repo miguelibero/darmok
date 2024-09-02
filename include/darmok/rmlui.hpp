@@ -22,8 +22,6 @@ namespace darmok
 	class Texture;
 	class Camera;
 	class Transform;
-	struct Viewport;
-
 
 	class RmluiCanvasImpl;
 
@@ -32,14 +30,17 @@ namespace darmok
 	public:
 		using MousePositionMode = RmluiCanvasMousePositionMode;
 
-		RmluiCanvas(const std::string& name, const std::optional<Viewport>& vp = std::nullopt) noexcept;
+		RmluiCanvas(const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt) noexcept;
 		~RmluiCanvas() noexcept;
 
 		std::string getName() const noexcept;
 
-		const std::optional<Viewport>& getViewport() const noexcept;
-		RmluiCanvas& setViewport(const std::optional<Viewport>& vp) noexcept;
-		Viewport getCurrentViewport() const noexcept;
+		const std::optional<glm::uvec2>& getSize() const noexcept;
+		RmluiCanvas& setSize(const std::optional<glm::uvec2>& vp) noexcept;
+		glm::uvec2 getCurrentSize() const noexcept;
+
+		const glm::vec3& getOffset() const noexcept;
+		RmluiCanvas& setOffset(const glm::vec3& offset) noexcept;
 
 		RmluiCanvas& setMousePositionMode(MousePositionMode mode) noexcept;
 		MousePositionMode getMousePositionMode() const noexcept;
@@ -64,23 +65,22 @@ namespace darmok
 		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};
 
-	class RmluiRendererImpl;
+	class RmluiCameraComponentImpl;
 
-	class DARMOK_EXPORT RmluiRenderer final : public ICameraComponent
+	class DARMOK_EXPORT RmluiCameraComponent final : public ICameraComponent
 	{
 	public:
-		RmluiRenderer() noexcept;
-		~RmluiRenderer() noexcept;
+		RmluiCameraComponent() noexcept;
+		~RmluiCameraComponent() noexcept;
 
 		void init(Camera& cam, Scene& scene, App& app) override;
 		void update(float deltaTime) noexcept override;
 		void shutdown() noexcept override;
 		void renderReset() noexcept override;
-		void beforeRenderView(IRenderGraphContext& context) override;
 
-		RmluiRendererImpl& getImpl() noexcept;
-		const RmluiRendererImpl& getImpl() const noexcept;
+		RmluiCameraComponentImpl& getImpl() noexcept;
+		const RmluiCameraComponentImpl& getImpl() const noexcept;
 	private:
-		std::unique_ptr<RmluiRendererImpl> _impl;
+		std::unique_ptr<RmluiCameraComponentImpl> _impl;
 	};
 }

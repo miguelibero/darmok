@@ -11,13 +11,13 @@ namespace darmok
         {
             return *v1;
         }
-        auto v2 = std::get_if<glm::ivec4>(&vp);
+        auto v2 = std::get_if<glm::uvec4>(&vp);
         if (v2 != nullptr)
         {
             return *v2;
         }
         auto v3 = std::get<sol::table>(vp);
-        glm::ivec4 vec;
+        glm::uvec4 vec;
         LuaGlm::tableInit(vec, v3);
         return vec;
     }
@@ -39,19 +39,19 @@ namespace darmok
                 {
                     return Viewport();
                 },
-                [](const VarLuaTable<glm::ivec2>& size, const VarLuaTable<glm::ivec2>& origin)
+                [](const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::uvec2>& origin)
                 {
                     return Viewport(LuaGlm::tableGet(size), LuaGlm::tableGet(origin));
                 },
-                [](const VarLuaTable<glm::ivec2>& size)
+                [](const VarLuaTable<glm::uvec2>& size)
                 {
                     return Viewport(LuaGlm::tableGet(size));
                 },
-                [](const VarLuaTable<glm::ivec4>& values)
+                [](const VarLuaTable<glm::uvec4>& values)
                 {
                     return Viewport(LuaGlm::tableGet(values));
                 },
-                [](int x, int y, int w, int h)
+                [](glm::uint x, glm::uint y, glm::uint w, glm::uint h)
                 {
                     return Viewport(x, y, w, h);
                 }

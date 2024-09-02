@@ -8,32 +8,32 @@
 
 namespace darmok
 {
-    LuaRmluiRenderer::LuaRmluiRenderer(RmluiRenderer& comp, const sol::state_view& lua) noexcept
+    LuaRmluiCameraComponent::LuaRmluiCameraComponent(RmluiCameraComponent& comp, const sol::state_view& lua) noexcept
         : _comp(comp)
         , _lua(lua)
     {
     }
 
-    void LuaRmluiRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    void LuaRmluiCameraComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
         Rml::Factory::RegisterEventListenerInstancer(this);
     }
 
-    void LuaRmluiRenderer::shutdown() noexcept
+    void LuaRmluiCameraComponent::shutdown() noexcept
     {
         Rml::Factory::RegisterEventListenerInstancer(nullptr);
         _cam.reset();
         _scene.reset();
     }
 
-    Rml::EventListener* LuaRmluiRenderer::InstanceEventListener(const Rml::String& value, Rml::Element* element)
+    Rml::EventListener* LuaRmluiCameraComponent::InstanceEventListener(const Rml::String& value, Rml::Element* element)
     {
         return _customEventListeners.emplace_back(std::make_unique<LuaCustomRmluiEventListener>(value, *this)).get();
     }
 
-    void LuaRmluiRenderer::processCustomEvent(Rml::Event& event, const std::vector<std::string>& params)
+    void LuaRmluiCameraComponent::processCustomEvent(Rml::Event& event, const std::vector<std::string>& params)
     {
         auto name = params[0];
         auto args = _lua.create_table();
@@ -48,44 +48,44 @@ namespace darmok
         }
     }
 
-    RmluiRenderer& LuaRmluiRenderer::getReal() noexcept
+    RmluiCameraComponent& LuaRmluiCameraComponent::getReal() noexcept
     {
         return _comp;
     }
 
-    const RmluiRenderer& LuaRmluiRenderer::getReal() const noexcept
+    const RmluiCameraComponent& LuaRmluiCameraComponent::getReal() const noexcept
     {
         return _comp;
     }
 
-    LuaRmluiRenderer& LuaRmluiRenderer::addCameraComponent(Camera& cam, sol::this_state ts) noexcept
+    LuaRmluiCameraComponent& LuaRmluiCameraComponent::addCameraComponent(Camera& cam, sol::this_state ts) noexcept
     {
-        auto& real = cam.addComponent<RmluiRenderer>();
-        return cam.addComponent<LuaRmluiRenderer>(real, ts);
+        auto& real = cam.addComponent<RmluiCameraComponent>();
+        return cam.addComponent<LuaRmluiCameraComponent>(real, ts);
     }
 
-    void LuaRmluiRenderer::loadFont(const std::string& path) noexcept
+    void LuaRmluiCameraComponent::loadFont(const std::string& path) noexcept
     {
         Rml::LoadFontFace(path);
     }
 
-    void LuaRmluiRenderer::loadFallbackFont(const std::string& path) noexcept
+    void LuaRmluiCameraComponent::loadFallbackFont(const std::string& path) noexcept
     {
         Rml::LoadFontFace(path, true);
     }
 
-    void LuaRmluiRenderer::bind(sol::state_view& lua) noexcept
+    void LuaRmluiCameraComponent::bind(sol::state_view& lua) noexcept
     {
         LuaRmluiCanvas::bind(lua);
 
-        lua.new_usertype<LuaRmluiRenderer>("RmluiRenderer", sol::no_constructor,
-            "add_camera_component", &LuaRmluiRenderer::addCameraComponent,
-            "load_font", &LuaRmluiRenderer::loadFont,
-            "load_fallback_font", &LuaRmluiRenderer::loadFallbackFont
+        lua.new_usertype<LuaRmluiCameraComponent>("RmluiCameraComponent", sol::no_constructor,
+            "add_camera_component", &LuaRmluiCameraComponent::addCameraComponent,
+            "load_font", &LuaRmluiCameraComponent::loadFont,
+            "load_fallback_font", &LuaRmluiCameraComponent::loadFallbackFont
         );
     }
 
-    LuaCustomRmluiEventListener::LuaCustomRmluiEventListener(const std::string& value, LuaRmluiRenderer& comp) noexcept
+    LuaCustomRmluiEventListener::LuaCustomRmluiEventListener(const std::string& value, LuaRmluiCameraComponent& comp) noexcept
         : _params(StringUtils::split(value, ":"))
         , _comp(comp)
     {

@@ -7,7 +7,6 @@
 #include <darmok/window.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/data.hpp>
-#include <darmok/viewport.hpp>
 #include <darmok/render_graph.hpp>
 #include <darmok/rmlui_fwd.hpp>
 #include <unordered_map>
@@ -69,11 +68,13 @@ namespace darmok
 		static TextureAtlasBounds convert(const Rml::Rectangle& v) noexcept;
 	};
 
-	class RmluiRenderInterface final : public Rml::RenderInterface
+	class RmluiCanvasImpl;
+
+	class RmluiRenderInterface final : public Rml::RenderInterface, IRenderPass
 	{
 	public:
-		RmluiRenderInterface(const std::shared_ptr<Program>& prog, bx::AllocatorI& alloc) noexcept;
-		~RmluiRenderInterface() noexcept;
+		RmluiRenderInterface(RmluiCanvasImpl& canvas) noexcept;
+
 		void RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept override;
 		void EnableScissorRegion(bool enable) noexcept override;
 		void SetScissorRegion(int x, int y, int width, int height) noexcept override;
@@ -87,10 +88,11 @@ namespace darmok
 		void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 		
-		void beforeRender(IRenderGraphContext& context, const glm::mat4& sceneTransform, const Viewport& viewport) noexcept;
+		void renderReset() noexcept;
 
-		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
-		void afterRender() noexcept;
+		void renderPassDefine(RenderPassDefinition& def) noexcept override;
+		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
+		void renderPassExecute(IRenderGraphContext& context) noexcept override;
 
 	private:
 
@@ -100,23 +102,20 @@ namespace darmok
 			Rml::TextureHandle texture;
 		};
 
+		RmluiCanvasImpl& _canvas;
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
 		std::unordered_map<Rml::CompiledGeometryHandle, CompiledGeometry> _compiledGeometries;
-		std::optional<bgfx::ViewId> _viewId;
-
-		OptionalRef<bgfx::Encoder> _encoder;
-		std::shared_ptr<Program> _program;
-		bgfx::UniformHandle _textureUniform;
-		glm::mat4 _rmluiTransform;
-		glm::mat4 _sceneTransform;
-		Viewport _viewport;
+		glm::mat4 _transform;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
-		bx::AllocatorI& _alloc;
+		OptionalRef<IRenderGraphContext> _context;
+
 		static const uint64_t _state;
 
 		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
 		glm::mat4 getTransform(const glm::vec2& position);
+		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
+
 	};
 
 	class RmluiSystemInterface final : public Rml::SystemInterface
@@ -161,7 +160,8 @@ namespace darmok
 		OptionalRef<Element> find(Rml::FileHandle file) noexcept;
 	};
 
-	class RmluiRendererImpl;
+	class RmluiCameraComponentImpl;
+	class RmluiCanvas;
 	class Transform;
 
 	class RmluiCanvasImpl final
@@ -169,16 +169,17 @@ namespace darmok
 	public:
 		using MousePositionMode = RmluiCanvasMousePositionMode;
 
-		RmluiCanvasImpl(const std::string& name, const std::optional<Viewport>& vp);
+		RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt);
 		~RmluiCanvasImpl() noexcept;
 
-		void init(RmluiRendererImpl& comp);
+		void init(RmluiCameraComponentImpl& comp);
 		void shutdown() noexcept;
 		bool update() noexcept;
 		void renderReset() noexcept;
 		void render(IRenderGraphContext& context, const glm::mat4& trans) noexcept;
 
 		std::string getName() const noexcept;
+		glm::mat4 getModelMatrix() const noexcept;
 
 		void setEnabled(bool enabled) noexcept;
 		bool getEnabled() const noexcept;
@@ -186,12 +187,18 @@ namespace darmok
 		void setMousePositionMode(MousePositionMode mode) noexcept;
 		MousePositionMode getMousePositionMode() const noexcept;
 
-		const std::optional<Viewport>& getViewport() const noexcept;
-		void setViewport(const std::optional<Viewport>& vp) noexcept;
-		Viewport getCurrentViewport() const noexcept;
+		const std::optional<glm::uvec2>& getSize() const noexcept;
+		void setSize(const std::optional<glm::uvec2>& vp) noexcept;
+		glm::uvec2 getCurrentSize() const noexcept;
 
-		Rml::Context& getContext() noexcept;
-		const Rml::Context& getContext() const noexcept;
+		const glm::vec3& getOffset() const noexcept;
+		void setOffset(const glm::vec3& offset) noexcept;
+
+		Rml::Context& getContext();
+		const Rml::Context& getContext() const;
+
+		OptionalRef<RmluiCameraComponentImpl> getComponent() noexcept;
+		OptionalRef<const RmluiCameraComponentImpl> getComponent() const noexcept;
 
 		bool getInputActive() const noexcept;
 		void setInputActive(bool active) noexcept;
@@ -210,40 +217,47 @@ namespace darmok
 		void processMouseWheel(const Rml::Vector2f& val, int keyState) noexcept;
 		void processMouseButton(int num, int keyState, bool down) noexcept;
 
+		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
+
 	private:
+		RmluiCanvas& _canvas;
 		OptionalRef<Rml::Context> _context;
 		std::optional<RmluiRenderInterface> _render;
-		OptionalRef<RmluiRendererImpl> _comp;
+		OptionalRef<RmluiCameraComponentImpl> _comp;
 		bool _inputActive;
 		glm::vec2 _mousePosition;
 		bool _enabled;
-		std::optional<Viewport> _viewport;
+		std::optional<glm::uvec2> _size;
+		glm::vec3 _offset;
 		std::string _name;
 		MousePositionMode _mousePositionMode;
 
-		glm::vec2 getLocalMousePosition() const noexcept;
-		void setLocalMousePosition(const glm::vec2& position) noexcept;
+		glm::vec3 getLocalMousePosition() const noexcept;
+		void setLocalMousePosition(const glm::vec3& position) noexcept;
 
-		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
-
+		void updateContextSize() noexcept;
 	};
 
-    class RmluiRendererImpl final : IKeyboardListener, IMouseListener
+    class RmluiCameraComponentImpl final : IKeyboardListener, IMouseListener
     {
     public:
-		~RmluiRendererImpl() noexcept;
+		~RmluiCameraComponentImpl() noexcept;
 
 		void init(Camera& cam, Scene& scene, App& app);
 		void shutdown();
 		void update(float dt) noexcept;
 		void renderReset() noexcept;
-		void beforeRenderView(IRenderGraphContext& context);
 
 		RmluiSystemInterface& getSystem() noexcept;
 		bx::AllocatorI& getAllocator();
 		std::shared_ptr<Program> getProgram() const noexcept;
 		OptionalRef<const Camera> getCamera() const noexcept;
+		OptionalRef<const Scene> getScene() const noexcept;
+		OptionalRef<Scene> getScene() noexcept;
+		const bgfx::UniformHandle& getTextureUniform() const noexcept;
+		RenderGraphDefinition& getRenderGraph() noexcept;
+		const RenderGraphDefinition& getRenderGraph() const noexcept;
 
 		int getKeyModifierState() const noexcept;
 
@@ -254,6 +268,8 @@ namespace darmok
 		OptionalRef<Scene> _scene;
 		OptionalRef<App> _app;
 		std::shared_ptr<Program> _program;
+		RenderGraphDefinition _renderGraph;
+		bgfx::UniformHandle _textureUniform;
 
 		void onCanvasConstructed(EntityRegistry& registry, Entity entity);
 		void onCanvasDestroyed(EntityRegistry& registry, Entity entity);
