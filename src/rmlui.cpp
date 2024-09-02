@@ -45,6 +45,7 @@ namespace darmok
         : _canvas(canvas)
         , _scissorEnabled(false)
         , _scissor(0)
+        , _transform(1)
     {
     }
 
@@ -327,7 +328,12 @@ namespace darmok
 
     void RmluiRenderInterface::renderPassDefine(RenderPassDefinition& def) noexcept
     {
-        def.setName("Rmlui " + _canvas.getName());
+        auto name = _canvas.getName();
+        if (name.empty())
+        {
+            name = "default";
+        }
+        def.setName("Rmlui Canvas: " + name);
     }
 
     void RmluiRenderInterface::renderPassConfigure(bgfx::ViewId viewId) noexcept
@@ -531,7 +537,7 @@ namespace darmok
         shutdown();
     }
 
-    void RmluiCanvasImpl::init(RmluiCameraComponentImpl& comp)
+    void RmluiCanvasImpl::init(RmluiRendererImpl& comp)
     {
         _comp = comp;
         auto size = getCurrentSize();
@@ -713,12 +719,12 @@ namespace darmok
         return _context.value();
     }
 
-    OptionalRef<RmluiCameraComponentImpl> RmluiCanvasImpl::getComponent() noexcept
+    OptionalRef<RmluiRendererImpl> RmluiCanvasImpl::getComponent() noexcept
     {
         return _comp;
     }
 
-    OptionalRef<const RmluiCameraComponentImpl> RmluiCanvasImpl::getComponent() const noexcept
+    OptionalRef<const RmluiRendererImpl> RmluiCanvasImpl::getComponent() const noexcept
     {
         return _comp;
     }
@@ -1052,7 +1058,7 @@ namespace darmok
         return *_impl;
     }
 
-    RmluiCameraComponentImpl::~RmluiCameraComponentImpl() noexcept
+    RmluiRendererImpl::~RmluiRendererImpl() noexcept
     {
         if (_app)
         {
@@ -1060,7 +1066,7 @@ namespace darmok
         }
     }
 
-    void RmluiCameraComponentImpl::init(Camera& cam, Scene& scene, App& app)
+    void RmluiRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
         _system.init(app);
         _file.init(app);
@@ -1092,13 +1098,13 @@ namespace darmok
             canvas->getImpl().init(*this);
         }
 
-        scene.getRegistry().on_construct<RmluiCanvas>().connect<&RmluiCameraComponentImpl::onCanvasConstructed>(*this);
-        scene.getRegistry().on_destroy<RmluiCanvas>().connect<&RmluiCameraComponentImpl::onCanvasDestroyed>(*this);
+        scene.getRegistry().on_construct<RmluiCanvas>().connect<&RmluiRendererImpl::onCanvasConstructed>(*this);
+        scene.getRegistry().on_destroy<RmluiCanvas>().connect<&RmluiRendererImpl::onCanvasDestroyed>(*this);
 
-        _scene->getRenderGraph().setChild(_renderGraph);
+        _cam->getRenderGraph().setChild(_renderGraph);
     }
 
-    void RmluiCameraComponentImpl::onCanvasConstructed(EntityRegistry& registry, Entity entity)
+    void RmluiRendererImpl::onCanvasConstructed(EntityRegistry& registry, Entity entity)
     {
         if (!_scene)
         {
@@ -1110,7 +1116,7 @@ namespace darmok
         }
     }
 
-    void RmluiCameraComponentImpl::onCanvasDestroyed(EntityRegistry& registry, Entity entity)
+    void RmluiRendererImpl::onCanvasDestroyed(EntityRegistry& registry, Entity entity)
     {
         if (!_scene)
         {
@@ -1122,7 +1128,7 @@ namespace darmok
         }
     }
 
-    void RmluiCameraComponentImpl::shutdown()
+    void RmluiRendererImpl::shutdown()
     {
         if (_app)
         {
@@ -1132,8 +1138,8 @@ namespace darmok
 
         if (_scene)
         {
-            _scene->getRegistry().on_construct<Camera>().disconnect<&RmluiCameraComponentImpl::onCanvasConstructed>(*this);
-            _scene->getRegistry().on_destroy<Camera>().disconnect<&RmluiCameraComponentImpl::onCanvasDestroyed>(*this);
+            _scene->getRegistry().on_construct<Camera>().disconnect<&RmluiRendererImpl::onCanvasConstructed>(*this);
+            _scene->getRegistry().on_destroy<Camera>().disconnect<&RmluiRendererImpl::onCanvasDestroyed>(*this);
         }
 
         if (isValid(_textureUniform))
@@ -1161,27 +1167,27 @@ namespace darmok
         Rml::Shutdown();
     }
     
-    RmluiSystemInterface& RmluiCameraComponentImpl::getSystem() noexcept
+    RmluiSystemInterface& RmluiRendererImpl::getSystem() noexcept
     {
         return _system;
     }
 
-    bx::AllocatorI& RmluiCameraComponentImpl::getAllocator()
+    bx::AllocatorI& RmluiRendererImpl::getAllocator()
     {
         return _app->getAssets().getAllocator();
     }
 
-    std::shared_ptr<Program> RmluiCameraComponentImpl::getProgram() const noexcept
+    std::shared_ptr<Program> RmluiRendererImpl::getProgram() const noexcept
     {
         return _program;
     }
 
-    OptionalRef<const Camera> RmluiCameraComponentImpl::getCamera() const noexcept
+    OptionalRef<const Camera> RmluiRendererImpl::getCamera() const noexcept
     {
         return _cam;
     }
 
-    glm::uvec2 RmluiCameraComponentImpl::getViewportSize() const noexcept
+    glm::uvec2 RmluiRendererImpl::getViewportSize() const noexcept
     {
         if (_cam)
         {
@@ -1198,7 +1204,7 @@ namespace darmok
         return glm::uvec2(1);
     }
 
-    OptionalRef<Transform> RmluiCameraComponentImpl::getTransform(const RmluiCanvas& canvas) noexcept
+    OptionalRef<Transform> RmluiRendererImpl::getTransform(const RmluiCanvas& canvas) noexcept
     {
         if (!_scene)
         {
@@ -1212,30 +1218,29 @@ namespace darmok
         return _scene->getComponent<Transform>(entity);
     }
 
-    const bgfx::UniformHandle& RmluiCameraComponentImpl::getTextureUniform() const noexcept
+    const bgfx::UniformHandle& RmluiRendererImpl::getTextureUniform() const noexcept
     {
         return _textureUniform;
     }
 
-    glm::mat4 RmluiCameraComponentImpl::getDefaultProjectionMatrix() const noexcept
+    glm::mat4 RmluiRendererImpl::getDefaultProjectionMatrix() const noexcept
     {
-        glm::vec2 size(getViewportSize());
-        auto botLeft = -0.5F * size;
-        auto topRight = 0.5F * size;
+        auto botLeft = glm::vec2(0);
+        auto topRight = glm::vec2(getViewportSize());
         return Math::ortho(botLeft, topRight);
     }
 
-    RenderGraphDefinition& RmluiCameraComponentImpl::getRenderGraph() noexcept
+    RenderGraphDefinition& RmluiRendererImpl::getRenderGraph() noexcept
     {
         return _renderGraph;
     }
 
-    const RenderGraphDefinition& RmluiCameraComponentImpl::getRenderGraph() const noexcept
+    const RenderGraphDefinition& RmluiRendererImpl::getRenderGraph() const noexcept
     {
         return _renderGraph;
     }
 
-    void RmluiCameraComponentImpl::update(float dt) noexcept
+    void RmluiRendererImpl::update(float dt) noexcept
     {
         _system.update(dt);
         if (_cam && _scene)
@@ -1246,13 +1251,13 @@ namespace darmok
                 canvas->getImpl().update();
             }
         }
-        if (_scene)
+        if (_cam)
         {
-            _scene->getRenderGraph().setChild(_renderGraph);
+            _cam->getRenderGraph().setChild(_renderGraph);
         }
     }
 
-    void RmluiCameraComponentImpl::renderReset() noexcept
+    void RmluiRendererImpl::renderReset() noexcept
     {
         _renderGraph.clear();
         if (_cam && _scene)
@@ -1264,13 +1269,9 @@ namespace darmok
             }
 
         }
-        if (_scene)
-        {
-            _scene->getRenderGraph().setChild(_renderGraph);
-        }
     }
 
-    const RmluiCameraComponentImpl::KeyboardMap& RmluiCameraComponentImpl::getKeyboardMap() noexcept
+    const RmluiRendererImpl::KeyboardMap& RmluiRendererImpl::getKeyboardMap() noexcept
     {
         static KeyboardMap map
         {
@@ -1324,7 +1325,7 @@ namespace darmok
         return map;
     }
 
-    const RmluiCameraComponentImpl::KeyboardModifierMap& RmluiCameraComponentImpl::getKeyboardModifierMap() noexcept
+    const RmluiRendererImpl::KeyboardModifierMap& RmluiRendererImpl::getKeyboardModifierMap() noexcept
     {
         static KeyboardModifierMap map
         {
@@ -1339,7 +1340,7 @@ namespace darmok
         return map;
     }
 
-    int RmluiCameraComponentImpl::getKeyModifierState() const noexcept
+    int RmluiRendererImpl::getKeyModifierState() const noexcept
     {
         int state = 0;
         if (!_app)
@@ -1366,7 +1367,7 @@ namespace darmok
         return 0;
     }
 
-    void RmluiCameraComponentImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& mods, bool down) noexcept
+    void RmluiRendererImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& mods, bool down) noexcept
     {
         if (!_cam)
         {
@@ -1387,7 +1388,7 @@ namespace darmok
         }
     }
 
-    void RmluiCameraComponentImpl::onKeyboardChar(const Utf8Char& chr) noexcept
+    void RmluiRendererImpl::onKeyboardChar(const Utf8Char& chr) noexcept
     {
         if (!_cam)
         {
@@ -1401,7 +1402,7 @@ namespace darmok
         }
     }
 
-    void RmluiCameraComponentImpl::onMouseActive(bool active) noexcept
+    void RmluiRendererImpl::onMouseActive(bool active) noexcept
     {
         if (active || !_cam)
         {
@@ -1414,7 +1415,7 @@ namespace darmok
         }
     }
 
-    void RmluiCameraComponentImpl::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
+    void RmluiRendererImpl::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
         if (!_app || !_cam)
         {
@@ -1452,7 +1453,7 @@ namespace darmok
         }
     }
 
-    void RmluiCameraComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
+    void RmluiRendererImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
         if (!_cam)
         {
@@ -1467,7 +1468,7 @@ namespace darmok
         }
     }
 
-    void RmluiCameraComponentImpl::onMouseButton(MouseButton button, bool down) noexcept
+    void RmluiRendererImpl::onMouseButton(MouseButton button, bool down) noexcept
     {
         if (!_cam)
         {
@@ -1494,42 +1495,42 @@ namespace darmok
         }
     }
 
-    RmluiCameraComponent::RmluiCameraComponent() noexcept
-        : _impl(std::make_unique<RmluiCameraComponentImpl>())
+    RmluiRenderer::RmluiRenderer() noexcept
+        : _impl(std::make_unique<RmluiRendererImpl>())
     {
     }
 
-    RmluiCameraComponent::~RmluiCameraComponent() noexcept
+    RmluiRenderer::~RmluiRenderer() noexcept
     {
         // left empty to get the forward declaration of the impl working
     }
 
-    void RmluiCameraComponent::init(Camera& cam, Scene& scene, App& app)
+    void RmluiRenderer::init(Camera& cam, Scene& scene, App& app)
     {
         _impl->init(cam, scene, app);
     }
 
-    void RmluiCameraComponent::shutdown() noexcept
+    void RmluiRenderer::shutdown() noexcept
     {
         _impl->shutdown();
     }
 
-    void RmluiCameraComponent::renderReset() noexcept
+    void RmluiRenderer::renderReset() noexcept
     {
         _impl->renderReset();
     }
 
-    void RmluiCameraComponent::update(float dt) noexcept
+    void RmluiRenderer::update(float dt) noexcept
     {
         _impl->update(dt);
     }
 
-    RmluiCameraComponentImpl& RmluiCameraComponent::getImpl() noexcept
+    RmluiRendererImpl& RmluiRenderer::getImpl() noexcept
     {
         return *_impl;
     }
 
-    const RmluiCameraComponentImpl& RmluiCameraComponent::getImpl() const noexcept
+    const RmluiRendererImpl& RmluiRenderer::getImpl() const noexcept
     {
         return *_impl;
     }

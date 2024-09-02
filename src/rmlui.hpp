@@ -160,7 +160,7 @@ namespace darmok
 		OptionalRef<Element> find(Rml::FileHandle file) noexcept;
 	};
 
-	class RmluiCameraComponentImpl;
+	class RmluiRendererImpl;
 	class RmluiCanvas;
 	class Transform;
 
@@ -172,7 +172,7 @@ namespace darmok
 		RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt);
 		~RmluiCanvasImpl() noexcept;
 
-		void init(RmluiCameraComponentImpl& comp);
+		void init(RmluiRendererImpl& comp);
 		void shutdown() noexcept;
 		bool update() noexcept;
 		void renderReset() noexcept;
@@ -198,8 +198,8 @@ namespace darmok
 		Rml::Context& getContext();
 		const Rml::Context& getContext() const;
 
-		OptionalRef<RmluiCameraComponentImpl> getComponent() noexcept;
-		OptionalRef<const RmluiCameraComponentImpl> getComponent() const noexcept;
+		OptionalRef<RmluiRendererImpl> getComponent() noexcept;
+		OptionalRef<const RmluiRendererImpl> getComponent() const noexcept;
 
 		bool getInputActive() const noexcept;
 		void setInputActive(bool active) noexcept;
@@ -224,7 +224,7 @@ namespace darmok
 		RmluiCanvas& _canvas;
 		OptionalRef<Rml::Context> _context;
 		std::optional<RmluiRenderInterface> _render;
-		OptionalRef<RmluiCameraComponentImpl> _comp;
+		OptionalRef<RmluiRendererImpl> _comp;
 		bool _inputActive;
 		glm::vec2 _mousePosition;
 		bool _enabled;
@@ -239,10 +239,10 @@ namespace darmok
 
 	class Transform;
 
-    class RmluiCameraComponentImpl final : IKeyboardListener, IMouseListener
+    class RmluiRendererImpl final : IKeyboardListener, IMouseListener
     {
     public:
-		~RmluiCameraComponentImpl() noexcept;
+		~RmluiRendererImpl() noexcept;
 
 		void init(Camera& cam, Scene& scene, App& app);
 		void shutdown();

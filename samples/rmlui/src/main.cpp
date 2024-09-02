@@ -71,7 +71,7 @@ namespace
 			cam.setViewportPerspective(60, 0.3, 10);
 			
 			cam.addComponent<ForwardRenderer>();
-			cam.addComponent<RmluiCameraComponent>();
+			cam.addComponent<RmluiRenderer>();
 
 			glm::uvec2 canvasSize(800, 600);
 

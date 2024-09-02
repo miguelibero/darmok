@@ -35,7 +35,7 @@ namespace darmok
         [[nodiscard]] glm::vec2 project(const glm::vec2& point) const noexcept;
         [[nodiscard]] glm::vec2 unproject(const glm::vec2& point) const noexcept;
 
-        void configureView(bgfx::ViewId viewId) const;
+        void configureView(bgfx::ViewId viewId) const noexcept;
 
         glm::mat4 ortho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) const noexcept;
     };
