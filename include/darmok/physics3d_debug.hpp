@@ -29,6 +29,7 @@ namespace darmok::physics3d
         float alpha = 0.3F;
         std::shared_ptr<Program> program;
         ProgramDefines programDefines;
+        std::shared_ptr<IFont> font;
     };
 
     class DARMOK_EXPORT PhysicsDebugRenderer: public ICameraComponent
@@ -43,7 +44,6 @@ namespace darmok::physics3d
 
         bool isEnabled() const noexcept;
         PhysicsDebugRenderer& setEnabled(bool enabled) noexcept;
-        PhysicsDebugRenderer& setFont(const std::shared_ptr<IFont>& font) noexcept;
     private:
         std::unique_ptr<PhysicsDebugRendererImpl> _impl;
     };

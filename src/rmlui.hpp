@@ -239,6 +239,19 @@ namespace darmok
 
 	class Transform;
 
+	class RmluiSharedContext final
+	{
+	public:
+		~RmluiSharedContext() noexcept;
+		static std::shared_ptr<RmluiSharedContext> getInstance(App& app) noexcept;
+		RmluiSystemInterface& getSystem() noexcept;
+	private:
+		RmluiSharedContext(App& app) noexcept;
+		static std::weak_ptr<RmluiSharedContext> _instance;
+		RmluiSystemInterface _system;
+		RmluiFileInterface _file;
+	};
+
     class RmluiRendererImpl final : IKeyboardListener, IMouseListener
     {
     public:
@@ -248,6 +261,8 @@ namespace darmok
 		void shutdown();
 		void update(float dt) noexcept;
 		void renderReset() noexcept;
+
+		void loadFont(const std::string& path, bool fallback = false) noexcept;
 
 		RmluiSystemInterface& getSystem() noexcept;
 		bx::AllocatorI& getAllocator();
@@ -263,14 +278,13 @@ namespace darmok
 		int getKeyModifierState() const noexcept;
 
 	private:
-		RmluiSystemInterface _system;
-		RmluiFileInterface _file;
 		OptionalRef<Camera> _cam;
 		OptionalRef<Scene> _scene;
 		OptionalRef<App> _app;
 		std::shared_ptr<Program> _program;
 		RenderGraphDefinition _renderGraph;
 		bgfx::UniformHandle _textureUniform;
+		std::shared_ptr<RmluiSharedContext> _shared;
 
 		void onCanvasConstructed(EntityRegistry& registry, Entity entity);
 		void onCanvasDestroyed(EntityRegistry& registry, Entity entity);

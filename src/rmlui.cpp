@@ -627,10 +627,7 @@ namespace darmok
         }
         if (_comp)
         {
-            if (auto cam = _comp->getCamera())
-            {
-                return cam->getCurrentViewport().size;
-            }
+            return _comp->getViewportSize();
         }
         return glm::uvec2(0);
     }
@@ -1058,6 +1055,41 @@ namespace darmok
         return *_impl;
     }
 
+    RmluiSharedContext::RmluiSharedContext(App& app) noexcept
+    {
+        _system.init(app);
+        _file.init(app);
+
+        Rml::SetSystemInterface(&_system);
+        Rml::SetFileInterface(&_file);
+
+        Rml::Initialise();
+    }
+
+    RmluiSharedContext::~RmluiSharedContext() noexcept
+    {
+        Rml::Shutdown();
+    }
+
+    RmluiSystemInterface& RmluiSharedContext::getSystem() noexcept
+    {
+        return _system;
+    }
+
+    std::weak_ptr<RmluiSharedContext> RmluiSharedContext::_instance;
+
+    std::shared_ptr<RmluiSharedContext> RmluiSharedContext::getInstance(App& app) noexcept
+    {
+        auto ptr = _instance.lock();
+        if (ptr)
+        {
+            return ptr;
+        }
+        ptr = std::shared_ptr<RmluiSharedContext>(new RmluiSharedContext(app));
+        _instance = ptr;
+        return ptr;
+    }
+
     RmluiRendererImpl::~RmluiRendererImpl() noexcept
     {
         if (_app)
@@ -1068,8 +1100,7 @@ namespace darmok
 
     void RmluiRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
-        _system.init(app);
-        _file.init(app);
+        _shared = RmluiSharedContext::getInstance(app);
 
         _cam = cam;
         _scene = scene;
@@ -1077,11 +1108,6 @@ namespace darmok
 
         _renderGraph.clear();
         _renderGraph.setName("Rmlui");
-
-        Rml::SetSystemInterface(&_system);
-        Rml::SetFileInterface(&_file);
-
-        Rml::Initialise();
 
         ProgramDefinition progDef;
         progDef.loadStaticMem(rmlui_program);
@@ -1164,12 +1190,11 @@ namespace darmok
         _scene.reset();
         _program.reset();
 
-        Rml::Shutdown();
     }
     
     RmluiSystemInterface& RmluiRendererImpl::getSystem() noexcept
     {
-        return _system;
+        return _shared->getSystem();
     }
 
     bx::AllocatorI& RmluiRendererImpl::getAllocator()
@@ -1242,7 +1267,7 @@ namespace darmok
 
     void RmluiRendererImpl::update(float dt) noexcept
     {
-        _system.update(dt);
+        getSystem().update(dt);
         if (_cam && _scene)
         {
             for (auto entity : _cam->createEntityView<RmluiCanvas>())
@@ -1269,6 +1294,11 @@ namespace darmok
             }
 
         }
+    }
+
+    void RmluiRendererImpl::loadFont(const std::string& path, bool fallback) noexcept
+    {
+        Rml::LoadFontFace(path, fallback);
     }
 
     const RmluiRendererImpl::KeyboardMap& RmluiRendererImpl::getKeyboardMap() noexcept
@@ -1513,6 +1543,11 @@ namespace darmok
     void RmluiRenderer::shutdown() noexcept
     {
         _impl->shutdown();
+    }
+
+    void RmluiRenderer::loadFont(const std::string& path, bool fallback) noexcept
+    {
+        _impl->loadFont(path, fallback);
     }
 
     void RmluiRenderer::renderReset() noexcept

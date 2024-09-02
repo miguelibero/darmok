@@ -63,10 +63,10 @@ namespace
 				.lookAt(glm::vec3(0, 1, 0));
 
 			auto& cam = scene.addComponent<Camera>(camEntity)
-				.setWindowPerspective(60, 0.3, 1000);
-			auto& renderer = cam.addRenderer<ForwardRenderer>();
-			renderer.addComponent<LightingRenderComponent>();
-			renderer.addComponent<SkeletalAnimationRenderComponent>();
+				.setViewportPerspective(60, 0.3, 1000);
+			cam.addComponent<ForwardRenderer>();
+			cam.addComponent<LightingRenderComponent>();
+			cam.addComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = scene.addSceneComponent<FreelookController>(cam);
 
 			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
@@ -101,7 +101,7 @@ namespace
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 #ifdef DARMOK_FREETYPE
 			renderSkel.setFont(getAssets().getFontLoader()("../../assets/noto.ttf"));
-			cam.addRenderer<TextRenderer>();
+			cam.addComponent<TextRenderer>();
 #endif
 			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
 			auto model = getAssets().getModelLoader()("model.dml");

@@ -18,6 +18,11 @@ namespace darmok
     class IFont;
 }
 
+namespace JPH
+{
+    class PhysicsSystem;
+}
+
 namespace darmok::physics3d
 {
     struct JoltMeshBatch final : public JPH::RefTarget<JoltMeshBatch>, public JPH::RefTargetVirtual
@@ -32,21 +37,21 @@ namespace darmok::physics3d
     class PhysicsSystemImpl;
     struct PhysicsDebugConfig;
 
-    class PhysicsDebugRendererImpl final : public JPH::DebugRenderer, public IInputEventListener
+    class JoltPhysicsDebugRenderer final : public JPH::DebugRenderer
     {
     public:
-        using Config = PhysicsDebugConfig;
-        PhysicsDebugRendererImpl(const Config& config = {}) noexcept;
-        void init(Camera& cam, Scene& scene, App& app);
-        void shutdown();
-        void beforeRenderView(IRenderGraphContext& context);
+        struct Config final
+        {
+            size_t meshBatchSize = 32 * 1024;
+            std::shared_ptr<IFont> font;
+            float alpha = 0.3F;
+            std::shared_ptr<Program> program;
+            ProgramDefines programDefines;
+        };
 
-        void onInputEvent(const std::string& tag) noexcept override;
-
-        bool isEnabled() const noexcept;
-        void setEnabled(bool enabled) noexcept;
-        void setFont(const std::shared_ptr<IFont>& font) noexcept;
-        void setMeshBatchSize(size_t size) noexcept;
+        ~JoltPhysicsDebugRenderer() noexcept;
+        static std::shared_ptr<JoltPhysicsDebugRenderer> getInstance() noexcept;
+        void render(JPH::PhysicsSystem& joltSystem, const Config& config, IRenderGraphContext& context);
 
         void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
         void DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow = ECastShadow::Off) override;
@@ -62,26 +67,46 @@ namespace darmok::physics3d
             Color color;
             float height;
         };
-        size_t _meshBatchSize;
-        bool _enabled;
-        OptionalRef<PhysicsSystemImpl> _system;
-        OptionalRef<Camera> _cam;
-        OptionalRef<Input> _input;
+
+        static std::weak_ptr<JoltPhysicsDebugRenderer> _instance;
         Config _config;
         OptionalRef<bgfx::Encoder> _encoder;
-        bgfx::ViewId _viewId;
-        bgfx::VertexLayout _vertexLayout;
-        std::shared_ptr<IFont> _font;
+        std::optional<bgfx::ViewId> _viewId;
         MeshData _solidMeshData;
         MeshData _wireMeshData;
         std::vector<TextData> _textData;
         bgfx::UniformHandle _colorUniform;
 
+        JoltPhysicsDebugRenderer() noexcept;
+        std::unique_ptr<IMesh> createMesh(const MeshData& meshData);
         void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
         void renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
         void renderSubmit(EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
         void renderText();
 
         bool tryRenderMeshBatch(MeshData& meshData, EDrawMode mode = EDrawMode::Solid);
+    };
+
+    class PhysicsDebugRendererImpl final : public IInputEventListener
+    {
+    public:
+        using Config = PhysicsDebugConfig;
+        PhysicsDebugRendererImpl(const Config& config = {}) noexcept;
+        void init(Camera& cam, Scene& scene, App& app);
+        void shutdown();
+        void beforeRenderView(IRenderGraphContext& context);
+
+        void onInputEvent(const std::string& tag) noexcept override;
+
+        bool isEnabled() const noexcept;
+        void setEnabled(bool enabled) noexcept;
+
+       private:
+        std::shared_ptr<JoltPhysicsDebugRenderer> _joltRenderer;
+        bool _enabled;
+        OptionalRef<Camera> _cam;
+        OptionalRef<Scene> _scene;
+        OptionalRef<Input> _input;
+        Config _config;
     };
 }

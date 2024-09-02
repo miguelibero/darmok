@@ -63,6 +63,14 @@ namespace darmok
 		int maxInstant = getDefaultConfig().maxInstant;
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE IAppListener
+	{
+	public:
+		virtual ~IAppListener() = default;
+		virtual void onAppComponentAdded(entt::id_type type, IAppComponent& component) {};
+		virtual void onAppComponentRemoved(entt::id_type type, IAppComponent& component) {};
+	};
+
 	class DARMOK_EXPORT App
 	{
 	public:

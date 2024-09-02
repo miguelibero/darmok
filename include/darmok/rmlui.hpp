@@ -73,6 +73,8 @@ namespace darmok
 		RmluiRenderer() noexcept;
 		~RmluiRenderer() noexcept;
 
+		void loadFont(const std::string& path, bool fallback = false) noexcept;
+
 		void init(Camera& cam, Scene& scene, App& app) override;
 		void update(float deltaTime) noexcept override;
 		void shutdown() noexcept override;

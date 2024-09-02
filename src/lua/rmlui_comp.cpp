@@ -69,14 +69,14 @@ namespace darmok
         return cam.getComponent<LuaRmluiRenderer>();
     }
 
-    void LuaRmluiRenderer::loadFont(const std::string& path) noexcept
+    void LuaRmluiRenderer::loadFont1(const std::string& path) noexcept
     {
-        Rml::LoadFontFace(path);
+        _comp.loadFont(path);
     }
 
-    void LuaRmluiRenderer::loadFallbackFont(const std::string& path) noexcept
+    void LuaRmluiRenderer::loadFont2(const std::string& path, bool fallback) noexcept
     {
-        Rml::LoadFontFace(path, true);
+        _comp.loadFont(path, fallback);
     }
 
     void LuaRmluiRenderer::bind(sol::state_view& lua) noexcept
@@ -86,8 +86,10 @@ namespace darmok
         lua.new_usertype<LuaRmluiRenderer>("RmluiRenderer", sol::no_constructor,
             "add_camera_component", &LuaRmluiRenderer::addCameraComponent,
             "get_camera_component", &LuaRmluiRenderer::getCameraComponent,
-            "load_font", &LuaRmluiRenderer::loadFont,
-            "load_fallback_font", &LuaRmluiRenderer::loadFallbackFont
+            "load_font", sol::overload(
+                &LuaRmluiRenderer::loadFont1,
+                &LuaRmluiRenderer::loadFont2
+            )
         );
     }
 

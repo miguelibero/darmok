@@ -59,11 +59,11 @@ namespace
 
 				_freeLook = _scene->addSceneComponent<FreelookController>(*_cam);
 #ifdef PHYSICS_DEBUG_RENDER
-				_physicsDebugRender = _cam->addComponent<PhysicsDebugRenderer>();
+				PhysicsDebugConfig physicsDebugconfig;
 #ifdef DARMOK_FREETYPE
-				auto font = getAssets().getFontLoader()("../../assets/noto.ttf");
-				_physicsDebugRender->setFont(font);
+				physicsDebugconfig.font = getAssets().getFontLoader()("../../assets/noto.ttf");
 #endif
+				_physicsDebugRender = _cam->addComponent<PhysicsDebugRenderer>(physicsDebugconfig);
 				_physicsDebugRender->setEnabled(false);
 #endif
 			}

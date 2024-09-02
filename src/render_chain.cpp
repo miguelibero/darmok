@@ -180,6 +180,10 @@ namespace darmok
 		{
 			return *_buffers.front();
 		}
+		if (_output)
+		{
+			return *_output;
+		}
 		if (_parent)
 		{
 			return _parent->getInput();
@@ -192,6 +196,10 @@ namespace darmok
 		if (!_buffers.empty())
 		{
 			return *_buffers.front();
+		}
+		if (_output)
+		{
+			return *_output;
 		}
 		if (_parent)
 		{

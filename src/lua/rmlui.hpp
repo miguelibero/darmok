@@ -162,7 +162,7 @@ namespace darmok
         static LuaRmluiRenderer& addCameraComponent(Camera& cam, sol::this_state ts) noexcept;
         static OptionalRef<LuaRmluiRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
 
-        static void loadFont(const std::string& path) noexcept;
-        static void loadFallbackFont(const std::string& path) noexcept;
+        void loadFont1(const std::string& path) noexcept;
+        void loadFont2(const std::string& path, bool fallback) noexcept;
     };
 }

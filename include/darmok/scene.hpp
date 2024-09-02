@@ -25,6 +25,14 @@ namespace darmok
         virtual void update(float deltaTime) { }
     };
 
+    class DARMOK_EXPORT BX_NO_VTABLE ISceneListener
+    {
+    public:
+        virtual ~ISceneListener() = default;
+        virtual void onSceneComponentAdded(entt::id_type type, ISceneComponent& component) {};
+        virtual void onSceneComponentRemoved(entt::id_type type, ISceneComponent& component) {};
+    };
+
     class SceneImpl;
     class RenderGraphDefinition;
     class RenderChain;
