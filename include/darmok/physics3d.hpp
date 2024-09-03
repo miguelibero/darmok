@@ -148,11 +148,13 @@ namespace darmok::physics3d
         GroundState getGroundState() const noexcept;
 
         PhysicsBody& setPosition(const glm::vec3& pos);
-        glm::vec3 getPosition();
+        glm::vec3 getPosition() const;
         PhysicsBody& setRotation(const glm::quat& rot);
-        glm::quat getRotation();
+        glm::quat getRotation() const;
         PhysicsBody& setLinearVelocity(const glm::vec3& velocity);
-        glm::vec3 getLinearVelocity();
+        glm::vec3 getLinearVelocity() const;
+        bool isActive() const;
+        PhysicsBody& setActive(bool active);
 
         PhysicsBody& addTorque(const glm::vec3& torque);
         PhysicsBody& addForce(const glm::vec3& force);

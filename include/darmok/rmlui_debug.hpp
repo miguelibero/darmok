@@ -3,7 +3,7 @@
 #ifdef _DEBUG
 
 #include <darmok/input.hpp>
-#include <darmok/scene.hpp>
+#include <darmok/app.hpp>
 #include <memory>
 
 namespace darmok
@@ -15,7 +15,7 @@ namespace darmok
 
     class RmluiDebuggerComponentImpl;
 
-	class DARMOK_EXPORT RmluiDebuggerComponent final : public ISceneComponent
+	class DARMOK_EXPORT RmluiDebuggerComponent final : public IAppComponent
     {
     public:
 		using Config = RmluiDebuggerComponentConfig;
@@ -26,7 +26,7 @@ namespace darmok
 
 		bool isEnabled() const noexcept;
 
-		void init(Scene& scene, App& app) override;
+		void init(App& app) override;
 		void shutdown() noexcept override;
 	private:
 		std::unique_ptr<RmluiDebuggerComponentImpl> _impl;

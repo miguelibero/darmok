@@ -82,6 +82,7 @@ namespace darmok
     void LuaRmluiRenderer::bind(sol::state_view& lua) noexcept
     {
         LuaRmluiCanvas::bind(lua);
+        LuaRmluiEvent::bind(lua);
 
         lua.new_usertype<LuaRmluiRenderer>("RmluiRenderer", sol::no_constructor,
             "add_camera_component", &LuaRmluiRenderer::addCameraComponent,

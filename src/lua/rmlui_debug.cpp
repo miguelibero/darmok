@@ -1,27 +1,27 @@
 #ifdef _DEBUG
 
-#include "scene.hpp"
+#include "app.hpp"
 #include "rmlui.hpp"
 #include "rmlui_debug.hpp"
 #include <darmok/rmlui.hpp>
 #include <darmok/rmlui_debug.hpp>
-#include <darmok/scene.hpp>
+#include <darmok/app.hpp>
 
 namespace darmok
 {
-    RmluiDebuggerComponent& LuaRmluiDebuggerComponent::addSceneComponent1(LuaScene& scene) noexcept
+    RmluiDebuggerComponent& LuaRmluiDebuggerComponent::addAppComponent1(LuaApp& app) noexcept
     {
-        return scene.getReal()->addSceneComponent<RmluiDebuggerComponent>();
+        return app.getReal().addComponent<RmluiDebuggerComponent>();
     }
 
-    RmluiDebuggerComponent& LuaRmluiDebuggerComponent::addSceneComponent2(LuaScene& scene, const Config& config) noexcept
+    RmluiDebuggerComponent& LuaRmluiDebuggerComponent::addAppComponent2(LuaApp& app, const Config& config) noexcept
     {
-        return scene.getReal()->addSceneComponent<RmluiDebuggerComponent>(config);
+        return app.getReal().addComponent<RmluiDebuggerComponent>(config);
     }
 
-    OptionalRef<RmluiDebuggerComponent>::std_t LuaRmluiDebuggerComponent::getSceneComponent(LuaScene& scene) noexcept
+    OptionalRef<RmluiDebuggerComponent>::std_t LuaRmluiDebuggerComponent::getAppComponent(LuaApp& app) noexcept
     {
-        return scene.getReal()->getSceneComponent<RmluiDebuggerComponent>();
+        return app.getReal().getComponent<RmluiDebuggerComponent>();
     }
 
 	void LuaRmluiDebuggerComponent::bind(sol::state_view& lua) noexcept
@@ -33,10 +33,10 @@ namespace darmok
         lua.new_usertype<RmluiDebuggerComponent>("RmluiDebuggerComponent", sol::no_constructor,
             "toggle", &RmluiDebuggerComponent::toggle,
             "enabled", sol::property(&RmluiDebuggerComponent::isEnabled),
-            "get_scene_component", &LuaRmluiDebuggerComponent::getSceneComponent,
-            "add_scene_component", sol::overload(
-                &LuaRmluiDebuggerComponent::addSceneComponent1,
-                &LuaRmluiDebuggerComponent::addSceneComponent2
+            "get_app_component", &LuaRmluiDebuggerComponent::getAppComponent,
+            "add_app_component", sol::overload(
+                &LuaRmluiDebuggerComponent::addAppComponent1,
+                &LuaRmluiDebuggerComponent::addAppComponent2
             )
         );
 	}

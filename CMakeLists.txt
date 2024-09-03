@@ -375,7 +375,8 @@ if(DARMOK_BUILD_JOLT)
   )
 
   list(APPEND LUA_SOURCES
-    physics3d.cpp
+    physics3d_system.cpp
+    physics3d_body.cpp
     character.cpp
     physics3d_debug.cpp
   )

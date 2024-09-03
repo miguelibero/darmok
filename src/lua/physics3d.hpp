@@ -100,12 +100,15 @@ namespace darmok::physics3d
         bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;
 
-        void setPosition(const VarLuaTable<glm::vec3>& pos) noexcept;
-        glm::vec3 getPosition() const noexcept;
-        void setRotation(const VarLuaTable<glm::quat>& rot) noexcept;
-        glm::quat getRotation() const noexcept;
-        void setLinearVelocity(const VarLuaTable<glm::vec3>& velocity) noexcept;
-        glm::vec3 getLinearVelocity() const noexcept;
+        void setPosition(const VarLuaTable<glm::vec3>& pos);
+        glm::vec3 getPosition() const;
+        void setRotation(const VarLuaTable<glm::quat>& rot);
+        glm::quat getRotation() const;
+        void setLinearVelocity(const VarLuaTable<glm::vec3>& velocity);
+        glm::vec3 getLinearVelocity() const;
+        void setActive(bool active);
+        bool getActive() const;
+
         std::string toString() const noexcept;
 
         LuaPhysicsBody& addTorque(const VarLuaTable<glm::vec3>& torque) noexcept;

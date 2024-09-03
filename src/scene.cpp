@@ -440,6 +440,11 @@ namespace darmok
         return *this;
     }
 
+    const SceneAppComponent::Scenes& SceneAppComponent::getScenes() const noexcept
+    {
+        return _scenes;
+    }
+
     void SceneAppComponent::init(App& app)
     {
         if (_app)

@@ -1212,6 +1212,28 @@ namespace darmok::physics3d
         return JoltUtils::convert(getBodyInterface()->GetAngularVelocity(_bodyId));
     }
 
+    bool PhysicsBodyImpl::isActive() const
+    {
+        return getBodyInterface()->IsActive(_bodyId);
+    }
+
+    void PhysicsBodyImpl::setActive(bool active)
+    {
+        if (isActive() == active)
+        {
+            return;
+        }
+        auto iface = getBodyInterface();
+        if (active)
+        {
+            iface->ActivateBody(_bodyId);
+        }
+        else
+        {
+            iface->DeactivateBody(_bodyId);
+        }
+    }
+
     void PhysicsBodyImpl::addTorque(const glm::vec3& torque)
     {
         getBodyInterface()->AddTorque(_bodyId, JoltUtils::convert(torque));
@@ -1335,7 +1357,7 @@ namespace darmok::physics3d
         return *this;
     }
 
-    glm::vec3 PhysicsBody::getPosition()
+    glm::vec3 PhysicsBody::getPosition() const
     {
         return _impl->getPosition();
     }
@@ -1346,7 +1368,7 @@ namespace darmok::physics3d
         return *this;
     }
 
-    glm::quat PhysicsBody::getRotation()
+    glm::quat PhysicsBody::getRotation() const
     {
         return _impl->getRotation();
     }
@@ -1357,9 +1379,20 @@ namespace darmok::physics3d
         return *this;
     }
 
-    glm::vec3 PhysicsBody::getLinearVelocity()
+    glm::vec3 PhysicsBody::getLinearVelocity() const
     {
         return _impl->getLinearVelocity();
+    }
+
+    bool PhysicsBody::isActive() const
+    {
+        return _impl->isActive();
+    }
+
+    PhysicsBody& PhysicsBody::setActive(bool active)
+    {
+        _impl->setActive(active);
+        return *this;
     }
 
     PhysicsBody& PhysicsBody::addTorque(const glm::vec3& torque)

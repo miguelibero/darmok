@@ -314,6 +314,8 @@ namespace darmok::physics3d
         glm::vec3 getLinearVelocity() const;
         void setAngularVelocity(const glm::vec3& velocity);
         glm::vec3 getAngularVelocity() const;
+        bool isActive() const;
+        void setActive(bool active);
 
         void addTorque(const glm::vec3& torque);
         void addForce(const glm::vec3& force);
