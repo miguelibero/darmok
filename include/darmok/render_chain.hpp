@@ -17,7 +17,7 @@ namespace darmok
     class DARMOK_EXPORT FrameBuffer
     {
     public:
-        FrameBuffer(const glm::uvec2& size) noexcept;
+        FrameBuffer(const glm::uvec2& size, bool depth = false) noexcept;
         ~FrameBuffer() noexcept;
         const std::shared_ptr<Texture>& getTexture() const noexcept;
         const std::shared_ptr<Texture>& getDepthTexture() const noexcept;
@@ -47,10 +47,21 @@ namespace darmok
 
     class RenderGraphDefinition;
 
+    class DARMOK_EXPORT BX_NO_VTABLE IRenderChainDelegate
+    {
+    public:
+        virtual ~IRenderChainDelegate() = default;
+        virtual RenderGraphDefinition& getRenderChainGraph() = 0;
+        virtual const RenderGraphDefinition& getRenderChainGraph() const = 0;
+        virtual Viewport getRenderChainViewport() const = 0;
+        virtual OptionalRef<RenderChain> getRenderChainParent() const { return nullptr; }
+    };
+
     class DARMOK_EXPORT RenderChain final
     {
     public:
-        void init(RenderGraphDefinition& graph, OptionalRef<RenderChain> parent = nullptr);
+        RenderChain(IRenderChainDelegate& dlg) noexcept;
+        void init();
         void renderReset();
         void shutdown();
         
@@ -61,9 +72,6 @@ namespace darmok
 
         RenderGraphDefinition& getRenderGraph();
         const RenderGraphDefinition& getRenderGraph() const;
-
-        RenderChain& setViewport(const Viewport& vp) noexcept;
-        const Viewport& getViewport() const noexcept;
 
         RenderChain& setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept;
         std::shared_ptr<FrameBuffer> getOutput() const noexcept;
@@ -79,12 +87,11 @@ namespace darmok
             return ref;
         }
     private:
-        OptionalRef<RenderGraphDefinition> _graph;
+        IRenderChainDelegate& _delegate;
+        bool _running;
         std::vector<std::unique_ptr<IRenderChainStep>> _steps;
         std::vector<std::unique_ptr<FrameBuffer>> _buffers;
         std::shared_ptr<FrameBuffer> _output;
-        Viewport _viewport;
-        OptionalRef<RenderChain> _parent;
 
         void updateBuffers();
         void updateSteps();

@@ -15,6 +15,7 @@ namespace darmok
     Camera::Camera(const glm::mat4& projMatrix) noexcept
         : _proj(projMatrix)
         , _enabled(true)
+        , _renderChain(*this)
     {
     }
 
@@ -182,7 +183,7 @@ namespace darmok
         auto rgSuffix = std::to_string(scene.getEntity(*this));
         _renderGraph.clear();
         _renderGraph.setName("Camera " + rgSuffix);
-        _renderChain.init(_renderGraph, scene.getRenderChain());
+        _renderChain.init();
 
         if (_entityFilter != nullptr)
         {
@@ -231,13 +232,7 @@ namespace darmok
             renderer->update(deltaTime);
         }
         updateRenderGraph();
-
-        auto currentViewport = getCurrentViewport();
-        if (_renderChain.getViewport() != currentViewport)
-        {
-            _renderChain.setViewport(currentViewport);
-            updateViewportProjection();
-        }
+        updateViewportProjection();
     }
 
     void Camera::configureView(bgfx::ViewId viewId) const
@@ -450,5 +445,29 @@ namespace darmok
         auto z = point.z;
         auto p = getCurrentViewport().screenToViewportPoint(point);
         return glm::vec3(p, z);
+    }
+
+    RenderGraphDefinition& Camera::getRenderChainGraph() noexcept
+    {
+        return _renderGraph;
+    }
+
+    const RenderGraphDefinition& Camera::getRenderChainGraph() const  noexcept
+    {
+        return _renderGraph;
+    }
+
+    Viewport Camera::getRenderChainViewport() const noexcept
+    {
+        return getCurrentViewport();
+    }
+
+    OptionalRef<RenderChain> Camera::getRenderChainParent() const noexcept
+    {
+        if (_scene)
+        {
+            return _scene->getRenderChain();
+        }
+        return nullptr;
     }
 }

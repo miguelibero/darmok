@@ -183,7 +183,7 @@ namespace darmok
 		glm::mat4 getProjectionMatrix() const noexcept;
 
 		void setEnabled(bool enabled) noexcept;
-		bool getEnabled() const noexcept;
+		bool isEnabled() const noexcept;
 
 		void setMousePositionMode(MousePositionMode mode) noexcept;
 		MousePositionMode getMousePositionMode() const noexcept;
@@ -201,7 +201,7 @@ namespace darmok
 		OptionalRef<RmluiRendererImpl> getComponent() noexcept;
 		OptionalRef<const RmluiRendererImpl> getComponent() const noexcept;
 
-		bool getInputActive() const noexcept;
+		bool isInputActive() const noexcept;
 		void setInputActive(bool active) noexcept;
 
 		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;

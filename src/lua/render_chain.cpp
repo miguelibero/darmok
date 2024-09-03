@@ -25,12 +25,6 @@ namespace darmok
         return chain.getInput();
     }
 
-    void LuaRenderChain::setViewport(RenderChain& chain, VarViewport vp) noexcept
-    {
-        chain.setViewport(LuaViewport::tableGet(vp));
-    }
-
-
     void LuaRenderChain::bind(sol::state_view& lua) noexcept
     {
         LuaFrameBuffer::bind(lua);
@@ -38,8 +32,7 @@ namespace darmok
         lua.new_usertype<RenderChain>("RenderChain", sol::no_constructor,
             "render_graph", sol::property(sol::resolve<RenderGraphDefinition&()>(&RenderChain::getRenderGraph)),
             "output", sol::property(&RenderChain::getOutput, &RenderChain::setOutput),
-            "input", sol::property(&LuaRenderChain::getInput),
-            "viewport", sol::property(&RenderChain::getViewport, LuaRenderChain::setViewport)
+            "input", sol::property(&LuaRenderChain::getInput)
         );
     }
 

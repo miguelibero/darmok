@@ -24,7 +24,7 @@ namespace darmok
     class Scene;
     struct Ray;
 
-    class DARMOK_EXPORT Camera final
+    class DARMOK_EXPORT Camera final : IRenderChainDelegate
     {
     public:
         Camera(const glm::mat4& projMatrix = {}) noexcept;
@@ -188,5 +188,10 @@ namespace darmok
 
         Components::iterator findComponent(entt::id_type type) noexcept;
         Components::const_iterator findComponent(entt::id_type type) const noexcept;
+
+        RenderGraphDefinition& getRenderChainGraph() noexcept override;
+        const RenderGraphDefinition& getRenderChainGraph() const  noexcept override;
+        Viewport getRenderChainViewport() const noexcept override;
+        OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
     };
 }

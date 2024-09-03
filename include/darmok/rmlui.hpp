@@ -46,10 +46,10 @@ namespace darmok
 		MousePositionMode getMousePositionMode() const noexcept;
 
 		RmluiCanvas& setEnabled(bool enabled) noexcept;
-		bool getEnabled() const noexcept;
+		bool isEnabled() const noexcept;
 
 		RmluiCanvas& setInputActive(bool active) noexcept;
-		bool getInputActive() const noexcept;
+		bool isInputActive() const noexcept;
 
 		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 

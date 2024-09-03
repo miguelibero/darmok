@@ -18,7 +18,7 @@ namespace darmok
     class App;
     class FrameBuffer;
 
-    class SceneImpl final
+    class SceneImpl final : IRenderChainDelegate
     {
     public:
         SceneImpl(Scene& sceme) noexcept;
@@ -67,6 +67,9 @@ namespace darmok
 
         void onCameraConstructed(EntityRegistry& registry, Entity entity);
         void onCameraDestroyed(EntityRegistry& registry, Entity entity);
-        void updateRenderChain() noexcept;
+
+        RenderGraphDefinition& getRenderChainGraph() noexcept override;
+        const RenderGraphDefinition& getRenderChainGraph() const noexcept override;
+        Viewport getRenderChainViewport() const noexcept override;
     };
 }

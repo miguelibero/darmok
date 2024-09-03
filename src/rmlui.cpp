@@ -584,7 +584,7 @@ namespace darmok
         }
     }
 
-    bool RmluiCanvasImpl::getInputActive() const noexcept
+    bool RmluiCanvasImpl::isInputActive() const noexcept
     {
         return _inputActive;
     }
@@ -599,7 +599,7 @@ namespace darmok
         _context->SetDefaultScrollBehavior(behaviour, speedFactor);
     }
 
-    bool RmluiCanvasImpl::getEnabled() const noexcept
+    bool RmluiCanvasImpl::isEnabled() const noexcept
     {
         return _enabled;
     }
@@ -996,9 +996,9 @@ namespace darmok
         return *this;
     }
 
-    bool RmluiCanvas::getEnabled() const noexcept
+    bool RmluiCanvas::isEnabled() const noexcept
     {
-        return _impl->getEnabled();
+        return _impl->isEnabled();
     }
 
     RmluiCanvas& RmluiCanvas::setInputActive(bool active) noexcept
@@ -1007,9 +1007,9 @@ namespace darmok
         return *this;
     }
 
-    bool RmluiCanvas::getInputActive() const noexcept
+    bool RmluiCanvas::isInputActive() const noexcept
     {
-        return _impl->getInputActive();
+        return _impl->isInputActive();
     }
 
     void RmluiCanvas::setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept
@@ -1473,7 +1473,7 @@ namespace darmok
         for (auto entity : _cam->createEntityView<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            if (!canvas->getInputActive())
+            if (!canvas->isInputActive())
             {
                 continue;
             }

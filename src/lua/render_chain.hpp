@@ -26,7 +26,6 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
         static OptionalRef<FrameBuffer>::std_t getInput(RenderChain& chain) noexcept;
-        static void setViewport(RenderChain& chain, VarViewport vp) noexcept;
     };
 
     class ScreenSpaceRenderPass;

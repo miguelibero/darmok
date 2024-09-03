@@ -11,6 +11,7 @@ namespace darmok
 {
     SceneImpl::SceneImpl(Scene& scene) noexcept
         : _scene(scene)
+        , _renderChain(*this)
     {
     }
 
@@ -128,18 +129,6 @@ namespace darmok
         return Viewport();
     }
 
-    /*
-    OptionalRef<App> SceneImpl::getApp() noexcept
-    {
-        return _app;
-    }
-
-    OptionalRef<const App> SceneImpl::getApp() const noexcept
-    {
-        return _app;
-    }
-    */
-
     void SceneImpl::init(App& app)
     {
         if (_app == app)
@@ -157,8 +146,7 @@ namespace darmok
         _renderGraph.clear();
         _renderGraph.setName("Scene");
 
-        updateRenderChain();
-        _renderChain.init(_renderGraph);
+        _renderChain.init();
 
         for (auto& [type, comp] : _components)
         {
@@ -177,12 +165,19 @@ namespace darmok
         _app->getRenderGraph().setChild(_renderGraph);
     }
 
-    void SceneImpl::updateRenderChain() noexcept
+    RenderGraphDefinition& SceneImpl::getRenderChainGraph() noexcept
     {
-        if (_app)
-        {
-            _renderChain.setViewport(_app->getWindow().getPixelSize());
-        }
+        return _renderGraph;
+    }
+
+    const RenderGraphDefinition& SceneImpl::getRenderChainGraph() const noexcept
+    {
+        return _renderGraph;
+    }
+
+    Viewport SceneImpl::getRenderChainViewport() const noexcept
+    {
+        return getCurrentViewport();
     }
 
     void SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity)
@@ -233,7 +228,6 @@ namespace darmok
         {
             _app->getRenderGraph().setChild(_renderGraph);
         }
-        updateRenderChain();
         _renderChain.renderReset();
     }
 

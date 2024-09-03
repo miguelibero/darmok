@@ -22,13 +22,16 @@ namespace darmok
 		return config;
 	}
 
-	FrameBuffer::FrameBuffer(const glm::uvec2& size) noexcept
+	FrameBuffer::FrameBuffer(const glm::uvec2& size, bool depth) noexcept
 		: _colorTex(std::make_shared<Texture>(createColorConfig(size), BGFX_TEXTURE_RT))
-		, _depthTex(std::make_shared<Texture>(createDepthConfig(size), BGFX_TEXTURE_RT))
+		, _depthTex(depth ? std::make_shared<Texture>(createDepthConfig(size), BGFX_TEXTURE_RT) : nullptr)
 		, _handle{ bgfx::kInvalidHandle }
 	{
-		std::vector<bgfx::TextureHandle> handles =
-			{ _colorTex->getHandle(), _depthTex->getHandle() };
+		std::vector<bgfx::TextureHandle> handles = { _colorTex->getHandle() };
+		if (_depthTex)
+		{
+			handles.push_back(_depthTex->getHandle());
+		}
 		_handle = bgfx::createFrameBuffer(handles.size(), &handles.front());
 	}
 
@@ -62,14 +65,20 @@ namespace darmok
 		bgfx::setViewFrameBuffer(viewId, _handle);
 	}
 
-	RenderGraphDefinition& RenderChain::getRenderGraph()
+	RenderChain::RenderChain(IRenderChainDelegate& dlg) noexcept
+		: _delegate(dlg)
+		, _running(false)
 	{
-		return _graph.value();
 	}
 
-	const RenderGraphDefinition& RenderChain::getRenderGraph() const
+	void RenderChain::init()
 	{
-		return _graph.value();
+		_running = true;
+		for (auto& step : _steps)
+		{
+			step->init(*this);
+		}
+		updateSteps();
 	}
 
 	RenderChain& RenderChain::setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept
@@ -81,32 +90,6 @@ namespace darmok
 	std::shared_ptr<FrameBuffer> RenderChain::getOutput() const noexcept
 	{
 		return _output;
-	}
-
-	RenderChain& RenderChain::setViewport(const Viewport& vp) noexcept
-	{
-		if (_viewport != vp)
-		{
-			_viewport = vp;
-			updateBuffers();
-		}
-		return *this;
-	}
-
-	const Viewport& RenderChain::getViewport() const noexcept
-	{
-		return _viewport;
-	}
-
-	void RenderChain::init(RenderGraphDefinition& graph, OptionalRef<RenderChain> parent)
-	{
-		_graph = graph;
-		_parent = parent;
-		for (auto& step : _steps)
-		{
-			step->init(*this);
-		}
-		updateSteps();
 	}
 
 	void RenderChain::renderReset()
@@ -130,10 +113,6 @@ namespace darmok
 
 	void RenderChain::updateSteps()
 	{
-		if (!_graph)
-		{
-			return;
-		}
 		for (size_t i = 0; i < _steps.size(); ++i)
 		{
 			updateStep(i);
@@ -157,9 +136,9 @@ namespace darmok
 		{
 			write = *_output;
 		}
-		else if (_parent)
+		else if (auto parent = _delegate.getRenderChainParent())
 		{
-			write = _parent->getInput();
+			write = parent->getInput();
 		}
 		_steps[i]->updateRenderChain(read, write);
 		return true;
@@ -171,7 +150,7 @@ namespace darmok
 		{
 			(*itr)->shutdown();
 		}
-		_graph.reset();
+		_running = false;
 	}
 
 	OptionalRef<FrameBuffer> RenderChain::getInput() noexcept
@@ -184,9 +163,9 @@ namespace darmok
 		{
 			return *_output;
 		}
-		if (_parent)
+		if (auto parent = _delegate.getRenderChainParent())
 		{
-			return _parent->getInput();
+			return parent->getInput();
 		}
 		return nullptr;
 	}
@@ -201,9 +180,9 @@ namespace darmok
 		{
 			return *_output;
 		}
-		if (_parent)
+		if (auto parent = _delegate.getRenderChainParent())
 		{
-			return _parent->getInput();
+			return parent->getInput();
 		}
 		return nullptr;
 	}
@@ -221,12 +200,24 @@ namespace darmok
 		{
 			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
 		}
-		_viewport.configureView(viewId);
+		auto vp = _delegate.getRenderChainViewport();
+		vp.configureView(viewId);
+	}
+
+	RenderGraphDefinition& RenderChain::getRenderGraph()
+	{
+		return _delegate.getRenderChainGraph();
+	}
+
+	const RenderGraphDefinition& RenderChain::getRenderGraph() const
+	{
+		return _delegate.getRenderChainGraph();
 	}
 
 	FrameBuffer& RenderChain::addBuffer() noexcept
 	{
-		auto size = _viewport.origin + _viewport.size;
+		auto vp = _delegate.getRenderChainViewport();
+		auto size = vp.origin + vp.size;
 		return *_buffers.emplace_back(std::make_unique<FrameBuffer>(size));
 	}
 
@@ -235,7 +226,7 @@ namespace darmok
 		addBuffer();
 		auto& ref = *step;
 		_steps.push_back(std::move(step));
-		if (_graph)
+		if (_running)
 		{
 			ref.init(*this);
 			updateStep(_steps.size() - 1);

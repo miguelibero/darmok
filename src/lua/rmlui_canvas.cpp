@@ -62,7 +62,7 @@ namespace darmok
 
     bool LuaRmluiCanvas::getEnabled() const noexcept
     {
-        return _canvas.getEnabled();
+        return _canvas.isEnabled();
     }
 
     LuaRmluiCanvas& LuaRmluiCanvas::setInputActive(bool active) noexcept
@@ -73,7 +73,7 @@ namespace darmok
 
     bool LuaRmluiCanvas::getInputActive() const noexcept
     {
-        return _canvas.getInputActive();
+        return _canvas.isInputActive();
     }
 
     LuaRmluiCanvas& LuaRmluiCanvas::setMousePosition(const glm::vec2& position) noexcept
@@ -398,6 +398,7 @@ namespace darmok
 
             "name", sol::property(&LuaRmluiCanvas::getName),
             "size", sol::property(&LuaRmluiCanvas::getSize, &LuaRmluiCanvas::setSize),
+            "enabled", sol::property(&LuaRmluiCanvas::getEnabled, &LuaRmluiCanvas::setEnabled),
             "current_size", sol::property(&LuaRmluiCanvas::getCurrentSize),
             "offset", sol::property(&LuaRmluiCanvas::getOffset, &LuaRmluiCanvas::setOffset),
             "input_active", sol::property(&LuaRmluiCanvas::getInputActive, &LuaRmluiCanvas::setInputActive),
