@@ -57,6 +57,7 @@ namespace darmok
         virtual Viewport getRenderChainViewport() const = 0;
         virtual OptionalRef<RenderChain> getRenderChainParent() const { return nullptr; }
         virtual void onRenderChainInputChanged() { }
+        virtual RenderGraphDefinition& getRenderChainParentGraph() = 0;
     };
 
     class DARMOK_EXPORT RenderChain final : IRenderPass

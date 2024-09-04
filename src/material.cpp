@@ -274,6 +274,8 @@ namespace darmok
 		, _emissiveColorUniform{ bgfx::kInvalidHandle }
 		, _hasTexturesUniform{ bgfx::kInvalidHandle }
 		, _multipleScatteringUniform{ bgfx::kInvalidHandle }
+		, _timeUniform{ bgfx::kInvalidHandle }
+		, _time(0.F)
 	{
 	}
 
@@ -302,9 +304,22 @@ namespace darmok
 		_emissiveColorUniform = bgfx::createUniform("u_emissiveFactorVec", bgfx::UniformType::Vec4);
 		_hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
 		_multipleScatteringUniform = bgfx::createUniform("u_multipleScatteringVec", bgfx::UniformType::Vec4);
+		_timeUniform = bgfx::createUniform("u_timeVec", bgfx::UniformType::Vec4);
 
 		Image img(Colors::white(), app.getAssets().getAllocator());
 		_defaultTexture = std::make_shared<Texture>(img);
+
+		_time = 0.F;
+	}
+
+	void MaterialAppComponent::update(float deltaTime)
+	{
+		if (_defaultTexture)
+		{
+			_time += deltaTime;
+			++_frameCount;
+		}
+
 	}
 
 	void MaterialAppComponent::shutdown()
@@ -317,7 +332,7 @@ namespace darmok
 		std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
 			_albedoLutSamplerUniform, _baseColorUniform, _specularColorUniform,
 			_metallicRoughnessNormalOcclusionUniform, _emissiveColorUniform,
-			_hasTexturesUniform, _multipleScatteringUniform
+			_hasTexturesUniform, _multipleScatteringUniform, _timeUniform
 		};
 		for (auto& uniform : uniforms)
 		{
@@ -363,6 +378,8 @@ namespace darmok
 		encoder.setUniform(_emissiveColorUniform, glm::value_ptr(v));
 		v = glm::vec4(mat.getMultipleScattering() ? 1.F : 0.F, mat.getWhiteFurnanceFactor(), 0, 0);
 		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(v));
+		v = glm::vec4(_time, _frameCount, 0.F, 0.F);
+		encoder.setUniform(_timeUniform, glm::value_ptr(v));
 
 		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
 		if (!mat.getTwoSided())

@@ -68,6 +68,7 @@ namespace darmok
         void onCameraDestroyed(EntityRegistry& registry, Entity entity);
 
         Viewport getRenderChainViewport() const noexcept override;
+        RenderGraphDefinition& getRenderChainParentGraph() noexcept override;
         void onRenderChainInputChanged() noexcept override;
         void updateRenderGraph() noexcept;
     };

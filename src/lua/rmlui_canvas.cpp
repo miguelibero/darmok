@@ -15,6 +15,27 @@
 
 namespace darmok
 {
+    LuaRmluiCanvas::LuaRmluiCanvas(RmluiCanvas& view, const sol::state_view& lua) noexcept
+        : _canvas(view)
+        , _lua(lua)
+    {
+        _canvas.addCustomEventListener(*this);
+    }
+
+    LuaRmluiCanvas::~LuaRmluiCanvas() noexcept
+    {
+        _canvas.removeCustomEventListener(*this);
+        auto& ctxt = _canvas.getContext();
+        for (auto& listener : _tabEventListeners)
+        {
+            ctxt.RemoveEventListener(listener->getEvent(), listener.get());
+        }
+        for (auto& listener : _funcEventListeners)
+        {
+            ctxt.RemoveEventListener(listener->getEvent(), listener.get());
+        }
+    }
+
     std::string LuaRmluiCanvas::getName() const noexcept
     {
         return _canvas.getName();
@@ -125,34 +146,28 @@ namespace darmok
     Rml::ElementDocument& LuaRmluiCanvas::loadDocument(const std::string& name)
     {
         return *_canvas.getContext().LoadDocument(name);
+    }    
+
+    RmluiCanvas& LuaRmluiCanvas::getReal() noexcept
+    {
+        return _canvas;
     }
 
-    LuaRmluiCanvas::LuaRmluiCanvas(RmluiCanvas& view) noexcept
-        : _canvas(view)
+    const RmluiCanvas& LuaRmluiCanvas::getReal() const noexcept
     {
+        return _canvas;
     }
 
-    LuaRmluiCanvas::~LuaRmluiCanvas() noexcept
+    LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent1(LuaEntity& entity, const std::string& name, sol::this_state ts) noexcept
     {
-        auto& ctxt = _canvas.getContext();
-        for (auto& listener : _tabEventListeners)
-        {
-            ctxt.RemoveEventListener(listener->getEvent(), listener.get());
-        }
-        for (auto& listener : _funcEventListeners)
-        {
-            ctxt.RemoveEventListener(listener->getEvent(), listener.get());
-        }
+        auto& real = entity.addComponent<RmluiCanvas>(name);
+        return entity.addComponent<LuaRmluiCanvas>(real, ts);
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent1(LuaEntity& entity, const std::string& name) noexcept
+    LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size, sol::this_state ts) noexcept
     {
-        return entity.addWrapperComponent<LuaRmluiCanvas, RmluiCanvas>(name);
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size) noexcept
-    {
-        return entity.addWrapperComponent<LuaRmluiCanvas, RmluiCanvas>(name, LuaGlm::tableGet(size));
+        auto& real = entity.addComponent<RmluiCanvas>(name, LuaGlm::tableGet(size));
+        return entity.addComponent<LuaRmluiCanvas>(real, ts);
     }
 
     OptionalRef<LuaRmluiCanvas>::std_t LuaRmluiCanvas::getEntityComponent(LuaEntity& entity) noexcept
@@ -199,26 +214,30 @@ namespace darmok
         );
     }
 
-    size_t LuaRmluiCanvas::processCustomEvent(Rml::Event& event, const std::string& name, const sol::table& args)
+    void LuaRmluiCanvas::onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
     {
-        size_t count = 0;
+        auto params = StringUtils::split(value, ":");
+        auto name = params[0];
+        auto args = _lua.create_table();
+        for (size_t i = 1; i < params.size(); ++i)
+        {
+            args[i] = params[i];
+        }
+
         for (auto& listener : _funcEventListeners)
         {
             if (listener->getEvent() == name)
             {
-                listener->processCustomEvent(event, name, args);
-                ++count;
+                listener->processCustomEvent(event, args, element);
             }
         }
         for (auto& listener : _tabEventListeners)
         {
             if (listener->getEvent() == name)
             {
-                listener->processCustomEvent(event, name, args);
-                ++count;
+                listener->processCustomEvent(event, args, element);
             }
         }
-        return count;
     }
 
     Rml::DataModelHandle LuaRmluiCanvas::getDataModel(const std::string& name) const noexcept

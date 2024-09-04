@@ -179,7 +179,6 @@ namespace darmok
 
     void SceneImpl::updateRenderGraph() noexcept
     {
-        _renderGraph.setChild(_renderChain.getRenderGraph());
         if (_app)
         {
             _app->getRenderGraph().setChild(_renderGraph);
@@ -189,6 +188,11 @@ namespace darmok
     Viewport SceneImpl::getRenderChainViewport() const noexcept
     {
         return getCurrentViewport();
+    }
+
+    RenderGraphDefinition& SceneImpl::getRenderChainParentGraph() noexcept
+    {
+        return _renderGraph;
     }
 
     void SceneImpl::onRenderChainInputChanged() noexcept

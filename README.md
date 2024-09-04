@@ -97,11 +97,13 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * play sounds and music (wav & mp3)
 
 #### Upcoming
+* fix viewport positioning in different video modes
 * more renderer features
     * other types of lights
     * deferred, clustered
     * SSAO
 * camera frustum culling
+* frame limiting
 * support for nested rmlui data models in lua
 * move miniaudio to use taskflow tasks
 * check memory leak when reloading darmok-lua

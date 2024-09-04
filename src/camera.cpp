@@ -210,7 +210,6 @@ namespace darmok
 
     void Camera::updateRenderGraph() noexcept
     {
-        _renderGraph.setChild(_renderChain.getRenderGraph());
         if (_scene && _enabled)
         {
             _scene->getRenderGraph().setChild(_renderGraph);
@@ -461,6 +460,11 @@ namespace darmok
             return _scene->getRenderChain();
         }
         return nullptr;
+    }
+
+    RenderGraphDefinition& Camera::getRenderChainParentGraph() noexcept
+    {
+        return _renderGraph;
     }
 
     void Camera::onRenderChainInputChanged() noexcept

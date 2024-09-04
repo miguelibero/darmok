@@ -82,7 +82,9 @@ namespace darmok
 			step->init(*this);
 			step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
 		}
-		getRenderGraph().addPass(*this);
+		auto& parentGraph = _delegate.getRenderChainParentGraph();
+		parentGraph.addPass(*this);
+		parentGraph.setChild(_renderGraph);
 	}
 
 	void RenderChain::shutdown()
@@ -108,8 +110,9 @@ namespace darmok
 
 	void RenderChain::renderReset()
 	{
+		auto& parentGraph = _delegate.getRenderChainParentGraph();
+		parentGraph.addPass(*this);
 		_renderGraph.clear();
-		_renderGraph.addPass(*this);
 
 		auto amount = _buffers.size();
 		_buffers.clear();
@@ -123,6 +126,8 @@ namespace darmok
 			step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
 			step->renderReset();
 		}
+
+		parentGraph.setChild(_renderGraph);
 	}
 
 	OptionalRef<FrameBuffer> RenderChain::getReadBuffer(size_t i) const noexcept
@@ -242,7 +247,7 @@ namespace darmok
 			name += " ";
 		}
 		def.setName(name + "clear");
-		def.setPriority(-RenderPassDefinition::kMaxPriority);
+		def.setPriority(RenderPassDefinition::kMaxPriority);
 	}
 
 	void RenderChain::renderPassConfigure(bgfx::ViewId viewId) noexcept

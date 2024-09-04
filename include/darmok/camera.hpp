@@ -191,6 +191,7 @@ namespace darmok
 
         Viewport getRenderChainViewport() const noexcept override;
         OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
+        RenderGraphDefinition& getRenderChainParentGraph() noexcept override;
         void onRenderChainInputChanged() noexcept override;
     };
 }

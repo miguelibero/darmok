@@ -196,9 +196,9 @@ namespace darmok
         LuaUtils::checkResult("rmlui function event: " + event.GetType(), result);
     }
 
-    void LuaFunctionRmluiEventListener::processCustomEvent(Rml::Event& event, const std::string& name, const sol::table& args)
+    void LuaFunctionRmluiEventListener::processCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element)
     {
-        auto result = _func(event, args);
+        auto result = _func(event, args, element);
         LuaUtils::checkResult("rmlui custom function event: " + event.GetType(), result);
     }
 
@@ -236,11 +236,11 @@ namespace darmok
         });
     }
 
-    void LuaTableRmluiEventListener::processCustomEvent(Rml::Event& event, const std::string& name, const sol::table& args)
+    void LuaTableRmluiEventListener::processCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element)
     {
         LuaUtils::callTableDelegate(_tab, "on_rmlui_event", "rmlui table event: " + event.GetType(),
-            [&event, &args](auto& func, auto& self) {
-                return func(self, event, args);
+            [&event, &args, &element](auto& func, auto& self) {
+                return func(self, event, args, element);
         });
     }
 }

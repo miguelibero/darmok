@@ -14,6 +14,8 @@
 namespace Rml
 {
 	class Context;
+	class Element;
+	class Event;
 }
 
 namespace darmok
@@ -22,6 +24,13 @@ namespace darmok
 	class Texture;
 	class Camera;
 	class Transform;
+
+	class DARMOK_EXPORT BX_NO_VTABLE IRmluiCustomEventListener
+	{
+	public:
+		virtual ~IRmluiCustomEventListener() = default;
+		virtual void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) = 0;
+	};
 
 	class RmluiCanvasImpl;
 
@@ -65,6 +74,9 @@ namespace darmok
 
 		RmluiCanvasImpl& getImpl() noexcept;
 		const RmluiCanvasImpl& getImpl() const noexcept;
+
+		RmluiCanvas& addCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
+		bool removeCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
 	private:
 		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};

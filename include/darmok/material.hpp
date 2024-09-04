@@ -29,6 +29,7 @@ namespace darmok
         MaterialAppComponent() noexcept;
         ~MaterialAppComponent() noexcept;
         void init(App& app) override;
+        void update(float deltaTime) override;
         void shutdown() override;
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept;
     private:
@@ -42,6 +43,8 @@ namespace darmok
         };
 
         std::vector<Sampler> _samplerUniforms;
+        float _time;
+        unsigned int _frameCount;
         bgfx::UniformHandle _albedoLutSamplerUniform;
         bgfx::UniformHandle _baseColorUniform;
         bgfx::UniformHandle _specularColorUniform;
@@ -49,6 +52,7 @@ namespace darmok
         bgfx::UniformHandle _emissiveColorUniform;
         bgfx::UniformHandle _hasTexturesUniform;
         bgfx::UniformHandle _multipleScatteringUniform;
+        bgfx::UniformHandle _timeUniform;
 
         std::shared_ptr<Texture> _defaultTexture;
     };
