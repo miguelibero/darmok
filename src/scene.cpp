@@ -129,6 +129,16 @@ namespace darmok
         return Viewport();
     }
 
+    void SceneImpl::setName(const std::string& name) noexcept
+    {
+        _name = name;
+    }
+
+    const std::string& SceneImpl::getName() const noexcept
+    {
+        return _name;
+    }
+
     void SceneImpl::init(App& app)
     {
         if (_app == app)
@@ -144,9 +154,13 @@ namespace darmok
         _app = app;
 
         _renderGraph.clear();
-        _renderGraph.setName("Scene");
-
-        _renderChain.init();
+        std::string name = _name;
+        if (name.empty())
+        {
+            name = "Scene";
+        }
+        _renderGraph.setName(name);
+        _renderChain.init(name + " render chain", -RenderPassDefinition::kMaxPriority);
 
         for (auto& [type, comp] : _components)
         {
@@ -161,23 +175,25 @@ namespace darmok
 
         _registry.on_construct<Camera>().connect<&SceneImpl::onCameraConstructed>(*this);
         _registry.on_destroy<Camera>().connect<&SceneImpl::onCameraDestroyed>(*this);
-
-        _app->getRenderGraph().setChild(_renderGraph);
     }
 
-    RenderGraphDefinition& SceneImpl::getRenderChainGraph() noexcept
+    void SceneImpl::updateRenderGraph() noexcept
     {
-        return _renderGraph;
-    }
-
-    const RenderGraphDefinition& SceneImpl::getRenderChainGraph() const noexcept
-    {
-        return _renderGraph;
+        _renderGraph.setChild(_renderChain.getRenderGraph());
+        if (_app)
+        {
+            _app->getRenderGraph().setChild(_renderGraph);
+        }
     }
 
     Viewport SceneImpl::getRenderChainViewport() const noexcept
     {
         return getCurrentViewport();
+    }
+
+    void SceneImpl::onRenderChainInputChanged() noexcept
+    {
+        renderReset();
     }
 
     void SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity)
@@ -224,10 +240,6 @@ namespace darmok
         {
             itr->renderReset();
         }
-        if (_app)
-        {
-            _app->getRenderGraph().setChild(_renderGraph);
-        }
         _renderChain.renderReset();
     }
 
@@ -250,10 +262,7 @@ namespace darmok
             comp->update(dt);
         }
 
-        if (_app)
-        {
-            _app->getRenderGraph().setChild(_renderGraph);
-        }
+        updateRenderGraph();
     }
 
     Scene::Scene() noexcept
@@ -317,6 +326,17 @@ namespace darmok
     void Scene::update(float dt)
     {
         _impl->update(dt);
+    }
+
+    Scene& Scene::setName(const std::string& name) noexcept
+    {
+        _impl->setName(name);
+        return *this;
+    }
+
+    const std::string& Scene::getName() const noexcept
+    {
+        return _impl->getName();
     }
 
     RenderGraphDefinition& Scene::getRenderGraph() noexcept

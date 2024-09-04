@@ -182,8 +182,9 @@ namespace darmok
         _app = app;
         auto rgSuffix = std::to_string(scene.getEntity(*this));
         _renderGraph.clear();
-        _renderGraph.setName("Camera " + rgSuffix);
-        _renderChain.init();
+        auto name = "Camera " + rgSuffix;
+        _renderGraph.setName(name);
+        _renderChain.init(name + " render chain", -RenderPassDefinition::kMaxPriority);
 
         if (_entityFilter != nullptr)
         {
@@ -209,6 +210,7 @@ namespace darmok
 
     void Camera::updateRenderGraph() noexcept
     {
+        _renderGraph.setChild(_renderChain.getRenderGraph());
         if (_scene && _enabled)
         {
             _scene->getRenderGraph().setChild(_renderGraph);
@@ -447,16 +449,6 @@ namespace darmok
         return glm::vec3(p, z);
     }
 
-    RenderGraphDefinition& Camera::getRenderChainGraph() noexcept
-    {
-        return _renderGraph;
-    }
-
-    const RenderGraphDefinition& Camera::getRenderChainGraph() const  noexcept
-    {
-        return _renderGraph;
-    }
-
     Viewport Camera::getRenderChainViewport() const noexcept
     {
         return getCurrentViewport();
@@ -469,5 +461,10 @@ namespace darmok
             return _scene->getRenderChain();
         }
         return nullptr;
+    }
+
+    void Camera::onRenderChainInputChanged() noexcept
+    {
+        renderReset();
     }
 }

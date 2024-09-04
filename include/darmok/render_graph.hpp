@@ -330,7 +330,7 @@ namespace darmok
         using Pass = RenderPassDefinition;
         using Resources = RenderResourcesDefinition;
 
-        RenderGraphDefinition(const std::string& name = "") noexcept;
+        RenderGraphDefinition(const std::string& name = "", int priority = 0) noexcept;
         RenderGraphDefinition(const RenderGraphDefinition& other) noexcept;
 
         bool operator==(const RenderGraphDefinition& other) const noexcept;
@@ -339,11 +339,14 @@ namespace darmok
         RenderGraphDefinition& setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
 
+        RenderGraphDefinition& setPriority(int priority) noexcept;
+        int getPriority() const noexcept;
+
         Pass& addPass() noexcept;
         const Pass& addPass(IRenderPass& pass);
         bool removePass(IRenderPassDelegate& pass) noexcept;
 
-        bool setChild(const RenderGraphDefinition& def) noexcept;
+        bool setChild(const RenderGraphDefinition& def);
 
         bool hasNode(RenderGraphId id) const noexcept;
         bool removeNode(RenderGraphId id) noexcept;
@@ -365,6 +368,7 @@ namespace darmok
         RenderGraphId id() const noexcept;
     private:
         std::string _name;
+        int _priority;
         using Nodes = std::vector<std::unique_ptr<INode>>;
         Nodes _nodes;
         Resources _read;

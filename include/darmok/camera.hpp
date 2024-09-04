@@ -189,9 +189,8 @@ namespace darmok
         Components::iterator findComponent(entt::id_type type) noexcept;
         Components::const_iterator findComponent(entt::id_type type) const noexcept;
 
-        RenderGraphDefinition& getRenderChainGraph() noexcept override;
-        const RenderGraphDefinition& getRenderChainGraph() const  noexcept override;
         Viewport getRenderChainViewport() const noexcept override;
         OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
+        void onRenderChainInputChanged() noexcept override;
     };
 }

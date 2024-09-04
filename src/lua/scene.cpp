@@ -337,6 +337,16 @@ namespace darmok
 		return _scene->getRenderChain();
 	}
 
+	void LuaScene::setName(const std::string& name) noexcept
+	{
+		_scene->setName(name);
+	}
+
+	const std::string& LuaScene::getName() const noexcept
+	{
+		return _scene->getName();
+	}
+
 	const std::shared_ptr<Scene>& LuaScene::getReal() const noexcept
 	{
 		return _scene;
@@ -406,7 +416,8 @@ namespace darmok
 			"get_lua_component", &LuaScene::getLuaSceneComponent,
 			"viewport", sol::property(&LuaScene::getViewport, &LuaScene::setViewport),
 			"current_viewport", sol::property(&LuaScene::getCurrentViewport),
-			"render_chain", sol::property(&LuaScene::getRenderChain)
+			"render_chain", sol::property(&LuaScene::getRenderChain),
+			"name", sol::property(&LuaScene::getName, &LuaScene::setName)
 		);
 	}
 

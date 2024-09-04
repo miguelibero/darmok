@@ -71,14 +71,28 @@ namespace darmok
 	{
 	}
 
-	void RenderChain::init()
+	void RenderChain::init(const std::string& name, int priority)
 	{
+		_renderGraph.setName(name);
+		_renderGraph.setPriority(priority);
 		_running = true;
-		for (auto& step : _steps)
+		for (size_t i = 0; i < _steps.size(); ++i)
 		{
+			auto& step = _steps[i];
 			step->init(*this);
+			step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
 		}
-		updateSteps();
+		getRenderGraph().addPass(*this);
+	}
+
+	void RenderChain::shutdown()
+	{
+		for (auto itr = _steps.rbegin(); itr != _steps.rend(); ++itr)
+		{
+			(*itr)->shutdown();
+		}
+		getRenderGraph().removePass(*this);
+		_running = false;
 	}
 
 	RenderChain& RenderChain::setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept
@@ -94,63 +108,43 @@ namespace darmok
 
 	void RenderChain::renderReset()
 	{
-		for (auto& step : _steps)
-		{
-			step->renderReset();
-		}
-	}
+		_renderGraph.clear();
+		_renderGraph.addPass(*this);
 
-	void RenderChain::updateBuffers()
-	{
 		auto amount = _buffers.size();
 		_buffers.clear();
 		for (size_t i = 0; i < amount; ++i)
 		{
 			addBuffer();
 		}
-		updateSteps();
-	}
-
-	void RenderChain::updateSteps()
-	{
 		for (size_t i = 0; i < _steps.size(); ++i)
 		{
-			updateStep(i);
+			auto& step = _steps[i];
+			step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+			step->renderReset();
 		}
 	}
 
-	bool RenderChain::updateStep(size_t i)
+	OptionalRef<FrameBuffer> RenderChain::getReadBuffer(size_t i) const noexcept
 	{
-		if (i >= _buffers.size() || i >= _steps.size())
+		if (i < 0 || i >= _buffers.size())
 		{
-			return false;
+			return std::nullopt;
 		}
-		auto& read = *_buffers[i];
-		OptionalRef<FrameBuffer> write;
-		auto j = i + 1;
-		if (j < _buffers.size())
-		{
-			write = *_buffers[j];
-		}
-		else if (_output)
-		{
-			write = *_output;
-		}
-		else if (auto parent = _delegate.getRenderChainParent())
-		{
-			write = parent->getInput();
-		}
-		_steps[i]->updateRenderChain(read, write);
-		return true;
+		return *_buffers[i];
 	}
 
-	void RenderChain::shutdown()
+	OptionalRef<FrameBuffer> RenderChain::getWriteBuffer(size_t i) const noexcept
 	{
-		for (auto itr = _steps.rbegin(); itr != _steps.rend(); ++itr)
+		if (i < 0 || i >= _buffers.size())
 		{
-			(*itr)->shutdown();
+			return std::nullopt;
 		}
-		_running = false;
+		if (i == _buffers.size() - 1)
+		{
+			return getOutput().get();
+		}
+		return *_buffers[i + 1];
 	}
 
 	OptionalRef<FrameBuffer> RenderChain::getInput() noexcept
@@ -190,15 +184,10 @@ namespace darmok
 	void RenderChain::configureView(bgfx::ViewId viewId, OptionalRef<const FrameBuffer> writeBuffer) const
 	{
 		uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
 		if (writeBuffer)
 		{
-			clearFlags |= BGFX_CLEAR_COLOR;
-			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 0);
 			writeBuffer->configureView(viewId);
-		}
-		else
-		{
-			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
 		}
 		auto vp = _delegate.getRenderChainViewport();
 		vp.configureView(viewId);
@@ -206,12 +195,12 @@ namespace darmok
 
 	RenderGraphDefinition& RenderChain::getRenderGraph()
 	{
-		return _delegate.getRenderChainGraph();
+		return _renderGraph;
 	}
 
 	const RenderGraphDefinition& RenderChain::getRenderGraph() const
 	{
-		return _delegate.getRenderChainGraph();
+		return _renderGraph;
 	}
 
 	FrameBuffer& RenderChain::addBuffer() noexcept
@@ -223,16 +212,61 @@ namespace darmok
 
 	RenderChain& RenderChain::addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept
 	{
-		addBuffer();
+		auto& readBuffer = addBuffer();
 		auto& ref = *step;
+		auto i = _steps.size();
 		_steps.push_back(std::move(step));
 		if (_running)
 		{
 			ref.init(*this);
-			updateStep(_steps.size() - 1);
+			ref.updateRenderChain(readBuffer, getWriteBuffer(i));
+			if (i > 0)
+			{
+				auto j = i - 1;
+				auto& prevStep = _steps[j];
+				prevStep->updateRenderChain(getReadBuffer(j).value(), getWriteBuffer(j));
+			}
+			else
+			{
+				_delegate.onRenderChainInputChanged();
+			}
 		}
-
 		return *this;
+	}
+
+	void RenderChain::renderPassDefine(RenderPassDefinition& def) noexcept
+	{
+		auto name = getRenderGraph().getName();
+		if (!name.empty())
+		{
+			name += " ";
+		}
+		def.setName(name + "clear");
+		def.setPriority(-RenderPassDefinition::kMaxPriority);
+	}
+
+	void RenderChain::renderPassConfigure(bgfx::ViewId viewId) noexcept
+	{
+		uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
+		uint8_t clearColor = 1;
+		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U,
+			clearColor, clearColor, clearColor, clearColor,
+			clearColor, clearColor, clearColor, clearColor);
+		
+		if (auto input = getInput())
+		{
+			input->configureView(viewId);
+		}
+		auto vp = _delegate.getRenderChainViewport();
+		vp.configureView(viewId);
+	}
+
+	void RenderChain::renderPassExecute(IRenderGraphContext& context) noexcept
+	{
+		if (!_buffers.empty() || _output)
+		{
+			context.getEncoder().touch(context.getViewId());
+		}
 	}
 
 	ScreenSpaceRenderPass::ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority)

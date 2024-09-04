@@ -17,8 +17,11 @@ namespace darmok
     class DARMOK_EXPORT FrameBuffer
     {
     public:
-        FrameBuffer(const glm::uvec2& size, bool depth = false) noexcept;
+        FrameBuffer(const glm::uvec2& size, bool depth = true) noexcept;
         ~FrameBuffer() noexcept;
+        FrameBuffer(const FrameBuffer& other) = delete;
+        FrameBuffer& operator=(const FrameBuffer& other) = delete;
+
         const std::shared_ptr<Texture>& getTexture() const noexcept;
         const std::shared_ptr<Texture>& getDepthTexture() const noexcept;
         const bgfx::FrameBufferHandle& getHandle() const noexcept;
@@ -41,7 +44,7 @@ namespace darmok
         virtual ~IRenderChainStep() = default;
         virtual void init(RenderChain& chain) = 0;
         virtual void updateRenderChain(FrameBuffer& readBuffer, OptionalRef<FrameBuffer> writeBuffer) = 0;
-        virtual void renderReset(){ };
+        virtual void renderReset() { };
         virtual void shutdown() = 0;
     };
 
@@ -51,17 +54,16 @@ namespace darmok
     {
     public:
         virtual ~IRenderChainDelegate() = default;
-        virtual RenderGraphDefinition& getRenderChainGraph() = 0;
-        virtual const RenderGraphDefinition& getRenderChainGraph() const = 0;
         virtual Viewport getRenderChainViewport() const = 0;
         virtual OptionalRef<RenderChain> getRenderChainParent() const { return nullptr; }
+        virtual void onRenderChainInputChanged() { }
     };
 
-    class DARMOK_EXPORT RenderChain final
+    class DARMOK_EXPORT RenderChain final : IRenderPass
     {
     public:
         RenderChain(IRenderChainDelegate& dlg) noexcept;
-        void init();
+        void init(const std::string& name = "", int priority = 0);
         void renderReset();
         void shutdown();
         
@@ -87,16 +89,20 @@ namespace darmok
             return ref;
         }
     private:
+        RenderGraphDefinition _renderGraph;
         IRenderChainDelegate& _delegate;
         bool _running;
         std::vector<std::unique_ptr<IRenderChainStep>> _steps;
         std::vector<std::unique_ptr<FrameBuffer>> _buffers;
         std::shared_ptr<FrameBuffer> _output;
 
-        void updateBuffers();
-        void updateSteps();
-        bool updateStep(size_t i);
+        OptionalRef<FrameBuffer> getReadBuffer(size_t i) const noexcept;
+        OptionalRef<FrameBuffer> getWriteBuffer(size_t i) const noexcept;
         FrameBuffer& addBuffer() noexcept;
+
+        void renderPassDefine(RenderPassDefinition& def) noexcept override;
+        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
+        void renderPassExecute(IRenderGraphContext& context) noexcept override;
     };
 
     class Program;

@@ -211,9 +211,10 @@ namespace darmok
         return hash;
     }
 
-    RenderGraphDefinition::RenderGraphDefinition(const std::string& name) noexcept
+    RenderGraphDefinition::RenderGraphDefinition(const std::string& name, int priority) noexcept
         : _id(randomIdType())
         , _name(name)
+        , _priority(priority)
     {
     }
 
@@ -239,6 +240,17 @@ namespace darmok
     const std::string& RenderGraphDefinition::getName() const noexcept
     {
         return _name;
+    }
+
+    RenderGraphDefinition& RenderGraphDefinition::setPriority(int priority) noexcept
+    {
+        _priority = priority;
+        return *this;
+    }
+
+    int RenderGraphDefinition::getPriority() const noexcept
+    {
+        return _priority;
     }
 
     bool RenderGraphDefinition::operator==(const RenderGraphDefinition& other) const noexcept
@@ -294,8 +306,12 @@ namespace darmok
         return true;
     }
 
-    bool RenderGraphDefinition::setChild(const RenderGraphDefinition& def) noexcept
+    bool RenderGraphDefinition::setChild(const RenderGraphDefinition& def)
     {
+        if (this == &def)
+        {
+            throw std::invalid_argument("cannot add itself as a child");
+        }
         auto itr = findNode(def.id());
         auto found = itr != _nodes.end();
         if (found && (*itr)->hash() == def.hash())
@@ -406,8 +422,8 @@ namespace darmok
 
     RenderGraphNode::RenderGraphNode(const Definition& def) noexcept
         : _def(def)
-        , _taskflow(_def.getName())
-        , _priority(0)
+        , _taskflow(def.getName())
+        , _priority(def.getPriority())
     {
 
         // sort nodes based on priority

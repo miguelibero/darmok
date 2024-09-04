@@ -52,6 +52,9 @@ namespace darmok
         void renderReset();
         void shutdown();
 
+        Scene& setName(const std::string& name) noexcept;
+        const std::string& getName() const noexcept;
+
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;
         RenderChain& getRenderChain() noexcept;

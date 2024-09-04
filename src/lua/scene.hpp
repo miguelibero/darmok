@@ -129,6 +129,9 @@ namespace darmok
 		void setViewport(std::optional<VarViewport> vp) noexcept;
 		Viewport getCurrentViewport() noexcept;
 		RenderChain& getRenderChain() noexcept;
+
+		void setName(const std::string& name) noexcept;
+		const std::string& getName() const noexcept;
 	};
 
 	class SceneAppComponent;
