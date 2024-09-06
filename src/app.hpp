@@ -191,6 +191,7 @@ namespace darmok
 		void bgfxInit();
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void setNextRenderer();
+		void requestNextVideoMode();
 
 		static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
 

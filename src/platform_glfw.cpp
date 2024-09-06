@@ -94,7 +94,7 @@ namespace darmok
 				if (workArea.size.x < winSize.x || workArea.size.y < winSize.y)
 				{
 					events.post<WindowErrorEvent>("window would not fit in workarea");
-					return;
+					_mode.size = workArea.size - frame.topLeft - frame.botRight;
 				}
 				glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 				glfwSetWindowAttrib(win, GLFW_FLOATING, GLFW_FALSE);
@@ -143,7 +143,7 @@ namespace darmok
 				return;
 		}
 
-		glfwSetWindowAspectRatio(win, _mode.size.x, _mode.size.y);
+		// glfwSetWindowAspectRatio(win, _mode.size.x, _mode.size.y);
 		glfwWindowHint(GLFW_RED_BITS, _mode.depth.r);
 		glfwWindowHint(GLFW_GREEN_BITS, _mode.depth.g);
 		glfwWindowHint(GLFW_BLUE_BITS, _mode.depth.b);
@@ -286,7 +286,7 @@ namespace darmok
 
 	GLFWwindow* PlatformImpl::createWindow(const glm::uvec2& size, const char* title) noexcept
 	{
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		// glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 		glm::uvec2 fsize(size);
 		GLFWmonitor* monitor = nullptr;
 		if (fsize.x == 0 || fsize.y == 0)

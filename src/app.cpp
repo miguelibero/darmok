@@ -566,6 +566,13 @@ namespace darmok
 		setRendererType(renderers.at(i));
 	}
 
+	void AppImpl::requestNextVideoMode()
+	{
+		VideoMode mode = _window.getVideoMode();
+		mode.screenMode = (WindowScreenMode)((to_underlying(mode.screenMode) + 1) % to_underlying(WindowScreenMode::Count));
+		_window.requestVideoMode(mode);
+	}
+
 	void AppImpl::handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers)
 	{
 		static const KeyboardModifiers ctrl{ KeyboardModifier::Ctrl };
@@ -581,9 +588,7 @@ namespace darmok
 		if ((key == KeyboardKey::Return && modifiers == alt)
 			|| (key == KeyboardKey::KeyF && modifiers == ctrl))
 		{
-			VideoMode mode = _window.getVideoMode();
-			mode.screenMode = (WindowScreenMode)((to_underlying(mode.screenMode) + 1) % to_underlying(WindowScreenMode::Count));
-			_window.requestVideoMode(mode);
+			requestNextVideoMode();
 			return;
 		}
 		if (key == KeyboardKey::F1)
