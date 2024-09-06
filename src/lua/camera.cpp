@@ -42,9 +42,9 @@ namespace darmok
 		return cam.setPerspective(fovy, LuaGlm::tableGet(size), near);
 	}
 
-	Camera& LuaCamera::setViewportPerspective1(Camera& cam, float fovy, float near) noexcept
+	Camera& LuaCamera::setViewportPerspective1(Camera& cam, float fovy) noexcept
 	{
-		return cam.setViewportPerspective(fovy, near);
+		return cam.setViewportPerspective(fovy);
 	}
 
 	Camera& LuaCamera::setViewportPerspective2(Camera& cam, float fovy, float near, float far) noexcept

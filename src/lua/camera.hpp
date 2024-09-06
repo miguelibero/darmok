@@ -38,7 +38,7 @@ namespace darmok
 		static Camera& setOrtho5(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept;
 		static Camera& setOrtho6(Camera& cam, const VarLuaTable<glm::uvec2>& size) noexcept;
 
-		static Camera& setViewportPerspective1(Camera& cam, float fovy, float near) noexcept;
+		static Camera& setViewportPerspective1(Camera& cam, float fovy) noexcept;
 		static Camera& setViewportPerspective2(Camera& cam, float fovy, float near, float far) noexcept;
 		static Camera& setViewportOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept;
 		static Camera& setViewportOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;

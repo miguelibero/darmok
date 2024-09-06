@@ -149,20 +149,27 @@ I'm still learning CMake, so if you see something that should be fixed please le
 ## Example code
 
 ```lua
-local program = Program.new(StandardProgramType.Forward)
+function init()
+    local program = Program.new(StandardProgramType.Forward)
 
-local camEntity = app.scene:create_entity()
-local camTrans = camEntity:add_component(Transform, { 0, 2, -2 })
-camTrans:look_at({ 0, 0, 0 })
-local cam = camEntity:add_component(Camera)
-cam:set_projection(60, { 0.3, 1000 })
-cam:add_component(ForwardRenderer)
-cam:add_component(LightingRenderComponent)
+    local scenes = app:add_component(SceneAppComponent)
+    local scene = scenes.scene
 
-local lightEntity = app.scene:create_entity()
-lightEntity:add_component(Transform, { 1, 1, -2 })
-lightEntity:add_component(PointLight)
+    local camEntity = scene:create_entity()
+    local camTrans = camEntity:add_component(Transform, { 0, 1, -1 })
+    camTrans:look_at({ 0, 0, 0 })
+    local cam = camEntity:add_component(Camera)
+    cam:set_viewport_perspective(60, 0.3, 1000)
+    cam:add_component(ForwardRenderer)
+    cam:add_component(LightingRenderComponent)
 
-local cubeMesh = MeshData.new_cube().createMesh(program.vertex_layout)
-app.scene:create_entity():add_component(Renderable, cubeMesh, program, Color.green)
+    local lightEntity = scene:create_entity()
+    lightEntity:add_component(AmbientLight, 0.2)
+    lightEntity:add_component(Transform, { 1, 1, -1 })
+    local light = lightEntity:add_component(PointLight, 2)
+    light.radius = 5
+
+    local mesh = MeshData.new_sphere():create_mesh(program.vertex_layout)
+    scene:create_entity():add_component(Renderable, mesh, program, Color.green)
+end
 ```
