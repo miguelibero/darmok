@@ -604,8 +604,8 @@ endif()
 # rmlgui
 if(DARMOK_BUILD_RMLUI)
   find_package(RmlUi CONFIG REQUIRED)
-  target_link_libraries(${LIB_NAME} PUBLIC RmlCore)
-  target_link_libraries(${LIB_NAME} PRIVATE debug RmlDebugger)
+  target_link_libraries(${LIB_NAME} PUBLIC RmlUi::RmlUi)
+  target_link_libraries(${LIB_NAME} PRIVATE debug RmlUi::Debugger)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_RMLUI)
 endif()
 
@@ -622,8 +622,8 @@ endif()
 
 # jolt physics
 if(DARMOK_BUILD_JOLT)
-  find_package(unofficial-joltphysics CONFIG REQUIRED)
-  target_link_libraries(${LIB_NAME} PRIVATE unofficial::joltphysics::Jolt)
+  find_package(Jolt CONFIG REQUIRED)
+  target_link_libraries(${LIB_NAME} PRIVATE Jolt::Jolt)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_JOLT)
 endif()
 

@@ -135,11 +135,6 @@ namespace darmok
             { "Change", Rml::EventId::Change },
             { "Submit", Rml::EventId::Submit },
             { "Tabchange", Rml::EventId::Tabchange },
-            { "Columnadd", Rml::EventId::Columnadd },
-            { "Rowadd", Rml::EventId::Rowadd },
-            { "Rowchange", Rml::EventId::Rowchange },
-            { "Rowremove", Rml::EventId::Rowremove },
-            { "Rowupdate", Rml::EventId::Rowupdate },
             { "NumDefinedIds", Rml::EventId::NumDefinedIds },
             { "FirstCustomId", Rml::EventId::FirstCustomId },
             { "MaxNumIds", Rml::EventId::MaxNumIds }

@@ -36,9 +36,9 @@ namespace darmok
         return Rml::Colourb(v.r, v.g, v.b, v.a);
     }
 
-    TextureAtlasBounds RmluiUtils::convert(const Rml::Rectangle& v) noexcept
+    Rectangle RmluiUtils::convert(const Rml::Rectanglef& v) noexcept
     {
-        return TextureAtlasBounds{ glm::vec2(v.width, v.height), glm::vec2(v.x, v.y) };
+        return Rectangle(RmluiUtils::convert(v.Size()), RmluiUtils::convert(v.Position()));
     }
 
     RmluiRenderInterface::RmluiRenderInterface(RmluiCanvasImpl& canvas) noexcept
@@ -57,7 +57,7 @@ namespace darmok
         }
     }
 
-    Rml::CompiledGeometryHandle RmluiRenderInterface::CompileGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture) noexcept
+    Rml::CompiledGeometryHandle RmluiRenderInterface::CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) noexcept
     {
         auto comp = _canvas.getComponent();
         if (!comp)
@@ -69,34 +69,33 @@ namespace darmok
         {
             return 0;
         }
-        auto itr = _textures.find(texture);
-        DataView vertData(vertices, sizeof(Rml::Vertex) * numVertices);
-        DataView idxData(indices, sizeof(int) * numIndices);
+        DataView vertData(vertices.data(), sizeof(Rml::Vertex) * vertices.size());
+        DataView idxData(indices.data(), sizeof(int) * indices.size());
         MeshConfig meshConfig;
         meshConfig.index32 = true;
         auto mesh = std::make_unique<Mesh>(prog->getVertexLayout(), vertData, idxData, meshConfig);
         Rml::CompiledGeometryHandle handle = mesh->getVertexHandle().idx;
-        _compiledGeometries.emplace(handle, CompiledGeometry{ std::move(mesh), texture });
+        _compiledGeometries.emplace(handle, std::move(mesh));
         return handle;
     }
 
-    void RmluiRenderInterface::RenderCompiledGeometry(Rml::CompiledGeometryHandle handle, const Rml::Vector2f& translation) noexcept
+    void RmluiRenderInterface::RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept
     {
         if (!_context)
         {
             return;
         }
-        auto itr = _compiledGeometries.find(handle);
-        if (itr == _compiledGeometries.end())
+        auto geoItr = _compiledGeometries.find(geometry);
+        if (geoItr == _compiledGeometries.end())
         {
             return;
         }
         auto& encoder = _context->getEncoder();
-        itr->second.mesh->render(encoder);
-        submitGeometry(itr->second.texture, translation);
+        geoItr->second->render(encoder);
+        submitGeometry(texture, translation);
     }
 
-    void RmluiRenderInterface::ReleaseCompiledGeometry(Rml::CompiledGeometryHandle handle) noexcept
+    void RmluiRenderInterface::ReleaseGeometry(Rml::CompiledGeometryHandle handle) noexcept
     {
         auto itr = _compiledGeometries.find(handle);
         if (itr != _compiledGeometries.end())
@@ -105,7 +104,7 @@ namespace darmok
         }
     }
 
-    bool RmluiRenderInterface::LoadTexture(Rml::TextureHandle& handle, Rml::Vector2i& dimensions, const Rml::String& source) noexcept
+    Rml::TextureHandle RmluiRenderInterface::LoadTexture(Rml::Vector2i& dimensions, const Rml::String& source) noexcept
     {
         const auto file = Rml::GetFileInterface();
         const auto fileHandle = file->Open(source);
@@ -133,34 +132,34 @@ namespace darmok
             dimensions.x = size.x;
             dimensions.y = size.y;
             auto texture = std::make_unique<Texture>(img);
-            handle = texture->getHandle().idx;
+            Rml::TextureHandle handle = _textures.size() + 1;
             _textures.emplace(handle, std::move(texture));
-            return true;
+            return handle;
         }
         catch (...)
         {
-            return false;
+            return 0;
         }
     }
 
-    bool RmluiRenderInterface::GenerateTexture(Rml::TextureHandle& handle, const Rml::byte* source, const Rml::Vector2i& dimensions) noexcept
+    Rml::TextureHandle RmluiRenderInterface::GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i dimensions) noexcept
     {
         auto size = 4 * sizeof(Rml::byte) * dimensions.x * dimensions.y;
         TextureConfig config;
         config.format = bgfx::TextureFormat::RGBA8;
         config.size = glm::uvec2(dimensions.x, dimensions.y);
-        DataView data(source, size);
+        DataView data(source.data(), size);
 
         try
         {
             auto texture = std::make_unique<Texture>(data, config);
-            handle = texture->getHandle().idx;
+            Rml::TextureHandle handle = _textures.size() + 1;
             _textures.emplace(handle, std::move(texture));
-            return true;
+            return handle;
         }
         catch (...)
         {
-            return false;
+            return 0;
         }
     }
 
@@ -183,28 +182,6 @@ namespace darmok
         {
             _transform = (glm::mat4)*transform->data();
         }
-    }
-
-    void RmluiRenderInterface::RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept
-    {
-        auto comp = _canvas.getComponent();
-        if (!comp)
-        {
-            return;
-        }
-        auto prog = comp->getProgram();
-        if (!prog)
-        {
-            return;
-        }
-
-        DataView vertData(vertices, numVertices * sizeof(Rml::Vertex));
-        DataView idxData(indices, numIndices * sizeof(int));
-        TransientMesh mesh(prog->getVertexLayout(), vertData, idxData, true);
-        auto& encoder = _context->getEncoder();
-        mesh.render(encoder);
-
-        submitGeometry(texture, translation);
     }
 
     const uint64_t RmluiRenderInterface::_state = 0
@@ -275,9 +252,9 @@ namespace darmok
         }
     }
 
-    void RmluiRenderInterface::SetScissorRegion(int x, int y, int width, int height) noexcept
+    void RmluiRenderInterface::SetScissorRegion(Rml::Rectanglei region) noexcept
     {
-        _scissor = glm::ivec4(x, y, width, height);
+        _scissor = glm::ivec4(RmluiUtils::convert(region.Position()), RmluiUtils::convert(region.Size()));
         if (_scissorEnabled)
         {
             EnableScissorRegion(true);
@@ -300,23 +277,20 @@ namespace darmok
         {
             return;
         }
+        auto& renderManager = _canvas.getContext().GetRenderManager();
+        auto rmlTex = sprite.sprite_sheet->texture_source.GetTexture(renderManager);
 
-        auto rmlHandle = sprite.sprite_sheet->texture.GetHandle(this);
-        auto itr = _textures.find(rmlHandle);
-        if (itr == _textures.end())
-        {
-            return;
-        }
-        auto& tex = *itr->second;
-
-        auto textureElm = TextureAtlasElement::create(RmluiUtils::convert(sprite.rectangle));
+        auto rect = RmluiUtils::convert(sprite.rectangle);
+        auto textureElm = TextureAtlasElement::create(TextureAtlasBounds{ rect.size, rect.origin });
         TextureAtlasMeshConfig config;
         config.type = MeshType::Transient;
-        auto mesh = textureElm.createSprite(prog->getVertexLayout(), tex.getSize(), config);
+        glm::uvec2 size(RmluiUtils::convert(rmlTex.GetDimensions()));
+        auto mesh = textureElm.createSprite(prog->getVertexLayout(), size, config);
 
         auto& encoder = _context->getEncoder();
         auto viewId = _context->getViewId();
-        encoder.setTexture(0, comp->getTextureUniform(), tex.getHandle());
+
+        // encoder.setTexture(0, comp->getTextureUniform(), tex.getHandle());
 
         auto trans = getTransformMatrix(position);
         encoder.setTransform(glm::value_ptr(trans));

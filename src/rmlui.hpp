@@ -23,6 +23,7 @@ namespace darmok
 	class Texture;
 	struct Viewport;
 	struct TextureAtlasBounds;
+	struct Rectangle;
 
 	struct RmluiUtils final
 	{
@@ -62,10 +63,11 @@ namespace darmok
 			return { v.x, v.y, v.z, v.w };
 		}
 
+		static Rectangle convert(const Rml::Rectanglef& v) noexcept;
+
 		static Color convert(const Rml::Colourf& v) noexcept;
 		static Color convert(const Rml::Colourb& v) noexcept;
 		static Rml::Colourb convert(const Color& v) noexcept;
-		static TextureAtlasBounds convert(const Rml::Rectangle& v) noexcept;
 	};
 
 	class RmluiCanvasImpl;
@@ -75,16 +77,15 @@ namespace darmok
 	public:
 		RmluiRenderInterface(RmluiCanvasImpl& canvas) noexcept;
 
-		void RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept override;
+		Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) noexcept override;
+		void RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept override;
+		void ReleaseGeometry(Rml::CompiledGeometryHandle geometry) noexcept override;
+
 		void EnableScissorRegion(bool enable) noexcept override;
-		void SetScissorRegion(int x, int y, int width, int height) noexcept override;
+		void SetScissorRegion(Rml::Rectanglei region) noexcept override;
 
-		Rml::CompiledGeometryHandle CompileGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices, Rml::TextureHandle texture) noexcept override;
-		void RenderCompiledGeometry(Rml::CompiledGeometryHandle geometry, const Rml::Vector2f& translation) noexcept override;
-		void ReleaseCompiledGeometry(Rml::CompiledGeometryHandle geometry) noexcept override;
-
-		bool LoadTexture(Rml::TextureHandle& handle, Rml::Vector2i& dimensions, const Rml::String& source) noexcept override;
-		bool GenerateTexture(Rml::TextureHandle& handle, const Rml::byte* source, const Rml::Vector2i& dimensions) noexcept override;
+		Rml::TextureHandle LoadTexture(Rml::Vector2i& dimensions, const Rml::String& source) noexcept override;
+		Rml::TextureHandle GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i dimensions) noexcept override;
 		void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 		
@@ -96,15 +97,9 @@ namespace darmok
 
 	private:
 
-		struct CompiledGeometry final
-		{
-			std::unique_ptr<Mesh> mesh;
-			Rml::TextureHandle texture;
-		};
-
 		RmluiCanvasImpl& _canvas;
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
-		std::unordered_map<Rml::CompiledGeometryHandle, CompiledGeometry> _compiledGeometries;
+		std::unordered_map<Rml::CompiledGeometryHandle, std::unique_ptr<Mesh>> _compiledGeometries;
 		glm::mat4 _transform;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
