@@ -61,6 +61,9 @@ namespace darmok
         RenderChain _renderChain;
         std::optional<Viewport> _viewport;
 
+        using ComponentRefs = std::vector<std::reference_wrapper<ISceneComponent>>;
+        ComponentRefs copyComponentContainer() const noexcept;
+
         Components::iterator findSceneComponent(entt::id_type type) noexcept;
         Components::const_iterator findSceneComponent(entt::id_type type) const noexcept;
 

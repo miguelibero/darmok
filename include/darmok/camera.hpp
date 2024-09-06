@@ -193,5 +193,8 @@ namespace darmok
         OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
         RenderGraphDefinition& getRenderChainParentGraph() noexcept override;
         void onRenderChainInputChanged() noexcept override;
+
+        using ComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
+        ComponentRefs copyComponentContainer() const noexcept;
     };
 }

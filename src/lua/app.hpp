@@ -41,6 +41,8 @@ namespace darmok
 		void setResetFlag1(uint32_t flag) noexcept;
 		void setResetFlag2(uint32_t flag, bool enabled) noexcept;
 
+		void setRendererType(bgfx::RendererType::Enum renderer);
+
 		void update(float deltaTime, sol::state_view& lua) noexcept;
 
 		template<typename T, typename R, typename... A>

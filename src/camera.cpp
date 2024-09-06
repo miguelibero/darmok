@@ -176,6 +176,17 @@ namespace darmok
         }
     }
 
+
+    Camera::ComponentRefs Camera::copyComponentContainer() const noexcept
+    {
+        ComponentRefs refs;
+        for (auto& [type, component] : _components)
+        {
+            refs.emplace_back(*component);
+        }
+        return refs;
+    }
+
     void Camera::init(Scene& scene, App& app)
     {
         _scene = scene;
@@ -190,9 +201,9 @@ namespace darmok
         {
             _entityFilter->init(scene.getRegistry());
         }
-        for(auto& [type, renderer] : _components)
+        for(auto& comp : copyComponentContainer())
         {
-            renderer->init(*this, scene, app);
+            comp.get().init(*this, scene, app);
         }
         updateRenderGraph();
     }
@@ -200,9 +211,9 @@ namespace darmok
     void Camera::renderReset()
     {
         _renderGraph.clear();
-        for (auto& [type, renderer] : _components)
+        for (auto& comp : copyComponentContainer())
         {
-            renderer->renderReset();
+            comp.get().renderReset();
         }
         updateViewportProjection();
         _renderChain.renderReset();
@@ -218,9 +229,10 @@ namespace darmok
 
     void Camera::shutdown()
     {
-        for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
+        auto components = copyComponentContainer();
+        for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
         {
-            itr->second->shutdown();
+            itr->get().shutdown();
         }
         _renderChain.shutdown();
         _renderGraph.clear();
@@ -228,9 +240,9 @@ namespace darmok
 
     void Camera::update(float deltaTime)
     {
-        for (auto& [type, renderer] : _components)
+        for (auto& comp : copyComponentContainer())
         {
-            renderer->update(deltaTime);
+            comp.get().update(deltaTime);
         }
         updateRenderGraph();
         updateViewportProjection();
@@ -267,18 +279,18 @@ namespace darmok
     void Camera::beforeRenderView(IRenderGraphContext& context) const noexcept
     {
         setViewTransform(context.getViewId());
-        for (auto& [type, comp] : _components)
+        for (auto& comp : copyComponentContainer())
         {
-            comp->beforeRenderView(context);
+            comp.get().beforeRenderView(context);
         }
     }
 
     void Camera::beforeRenderEntity(Entity entity, IRenderGraphContext& context) const noexcept
     {
         setEntityTransform(entity, context.getEncoder());
-        for (auto& [type, comp] : _components)
+        for (auto& comp : copyComponentContainer())
         {
-            comp->beforeRenderEntity(entity, context);
+            comp.get().beforeRenderEntity(entity, context);
         }
     }
 

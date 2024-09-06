@@ -95,6 +95,11 @@ namespace darmok
 		return _app.get().setResetFlag(flag, enabled);
 	}
 
+	void LuaApp::setRendererType(bgfx::RendererType::Enum renderer)
+	{
+		return _app.get().setRendererType(renderer);
+	}
+
 	AssetContext& LuaApp::getAssets() noexcept
 	{
 		return _app.get().getAssets();
@@ -296,6 +301,15 @@ namespace darmok
 			"TRANSPARENT_BACKBUFFER", BGFX_RESET_TRANSPARENT_BACKBUFFER
 		);
 
+		lua.new_enum<bgfx::RendererType::Enum>("RendererType", {
+			{ "Direct3D11", bgfx::RendererType::Direct3D11 },
+			{ "Direct3D12", bgfx::RendererType::Direct3D12 },
+			{ "OpenGL", bgfx::RendererType::OpenGL },
+			{ "OpenGLES", bgfx::RendererType::OpenGLES },
+			{ "Vulkan", bgfx::RendererType::Vulkan },
+			{ "Metal", bgfx::RendererType::Metal },
+		});
+
 		lua.new_usertype<LuaApp>("App", sol::no_constructor,
 			"assets", sol::property(&LuaApp::getAssets),
 			"window", sol::property(&LuaApp::getWindow),
@@ -315,7 +329,8 @@ namespace darmok
 			"set_debug_flag", sol::overload(&LuaApp::setDebugFlag1, &LuaApp::setDebugFlag2),
 			"get_reset_flag", &LuaApp::getResetFlag,
 			"toggle_reset_flag", &LuaApp::toggleResetFlag,
-			"set_debug_flag", sol::overload(&LuaApp::setResetFlag1, &LuaApp::setResetFlag2)
+			"set_debug_flag", sol::overload(&LuaApp::setResetFlag1, &LuaApp::setResetFlag2),
+			"renderer_type", sol::property(&LuaApp::setRendererType)
 		);
 	}
 

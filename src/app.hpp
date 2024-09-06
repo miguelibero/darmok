@@ -177,6 +177,9 @@ namespace darmok
 
 		[[nodiscard]] float updateTimePassed() noexcept;
 
+		using ComponentRefs = std::vector<std::reference_wrapper<IAppComponent>>;
+		ComponentRefs copyComponentContainer() const noexcept;
+
 		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
 		void toggleTaskflowProfile();
 

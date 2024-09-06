@@ -82,6 +82,7 @@ namespace
 		PbrSampleAppDelegate(App& app)
 			: _app(app)
 		{
+			// app.setRendererType(bgfx::RendererType::Direct3D12);
 		}
 
 		void init() override

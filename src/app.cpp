@@ -309,6 +309,16 @@ namespace darmok
 		bgfx::setPaletteColor(2, UINT32_C(0xFFFFFFFF));
 	}
 
+	AppImpl::ComponentRefs AppImpl::copyComponentContainer() const noexcept
+	{
+		ComponentRefs refs;
+		for (auto& [type, component] : _components)
+		{
+			refs.emplace_back(*component);
+		}
+		return refs;
+	}
+
 	void AppImpl::init()
 	{
 		_lastUpdate = bx::getHPCounter();
@@ -326,17 +336,20 @@ namespace darmok
 
 		_renderGraphDef.addPass(*this);
 
+		auto components = copyComponentContainer();
+
+		_running = true;
+
+		for (auto& comp : components)
+		{
+			comp.get().init(_app);
+		}
+
 		if (_delegate)
 		{
 			_delegate->init();
 		}
 
-		_running = true;
-
-		for (auto& [type, component] : _components)
-		{
-			component->init(_app);
-		}
 	}
 
 	void AppImpl::renderReset()
@@ -351,9 +364,9 @@ namespace darmok
 			_delegate->renderReset();
 		}
 
-		for (auto& [type, component] : _components)
+		for (auto& comp : copyComponentContainer())
 		{
-			component->renderReset();
+			comp.get().renderReset();
 		}
 	}
 
@@ -369,9 +382,10 @@ namespace darmok
 		_renderGraph.reset();
 		_renderGraphDef.clear();
 
-		for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
+		auto components = copyComponentContainer();
+		for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
 		{
-			itr->second->shutdown();
+			itr->get().shutdown();
 		}
 		_components.clear();
 
@@ -399,9 +413,9 @@ namespace darmok
 				_delegate->update(deltaTime);
 			}
 
-			for (auto& [type, component] : _components)
+			for (auto& comp : copyComponentContainer())
 			{
-				component->update(deltaTime);
+				comp.get().update(deltaTime);
 			}
 		}
 
