@@ -89,7 +89,7 @@ namespace
 			auto& context = canvas.getContext();
 
 #ifdef RMLUI_DEBUGGER
-			scene.addSceneComponent<RmluiDebuggerComponent>();
+			addComponent<RmluiDebuggerComponent>();
 #endif
 
 			// sample taken from the RmlUI README
@@ -117,12 +117,9 @@ namespace
 			element->SetProperty("font-size", "1.5em");
 
 			// testing that rmlui works on borderless fullscreen
-			/*
 			getWindow().requestVideoMode({
 				.screenMode = WindowScreenMode::WindowedFullscreen,
-				.size = {1024, 768},
 			});
-			*/
 		}
 	private:
 		bool _show_text = true;

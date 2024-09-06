@@ -357,14 +357,11 @@ namespace darmok
         {
             return _viewport.value();
         }
-        if (_scene)
+        else if (_scene)
         {
-            if (auto vp = _scene->getViewport())
-            {
-                return vp.value();
-            }
+            return _scene->getCurrentViewport();
         }
-        if (_app)
+        else if (_app)
         {
             return Viewport(_app->getWindow().getPixelSize());
         }

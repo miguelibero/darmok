@@ -36,7 +36,7 @@ namespace darmok
 		IImguiRenderer& _renderer;
 		OptionalRef<App> _app;
 		ImGuiContext* _imgui;
-		bgfx::TextureHandle _fonts;
+		bgfx::TextureHandle _fontsTexture;
 		std::unique_ptr<Program> _program;
 		bgfx::UniformHandle _lodEnabledUniform;
 		bgfx::UniformHandle _textureUniform;

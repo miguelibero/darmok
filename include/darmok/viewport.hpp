@@ -21,6 +21,9 @@ namespace darmok
         bool operator==(const Viewport& other) const noexcept;
         bool operator!=(const Viewport& other) const noexcept;
 
+        Viewport operator*(const Viewport& other) const noexcept;
+        Viewport& operator*=(const Viewport& other) noexcept;
+
         float getAspectRatio() const noexcept;
 
         [[nodiscard]] glm::ivec4 getValues() const noexcept;

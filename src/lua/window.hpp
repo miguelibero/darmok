@@ -41,6 +41,7 @@ namespace darmok
 
 		const glm::uvec2& getSize() const noexcept;
 		const glm::uvec2& getPixelSize() const noexcept;
+		glm::vec2 getFramebufferScale() const noexcept;
 		const VideoMode& getVideoMode() const noexcept;
 		void setVideoMode(const VideoMode& mode) noexcept;
 		const VideoModeInfo& getVideoModeInfo() noexcept;

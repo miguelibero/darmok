@@ -79,7 +79,6 @@ namespace darmok
 		, _cursorMode(WindowCursorMode::Normal)
 		, _size(0)
 		, _pixelSize(0)
-		, _fbSize(0)
 	{
 	}
 
@@ -104,35 +103,11 @@ namespace darmok
 			return false;
 		}
 		_pixelSize = size;
-		glm::uvec2 fsize = size;
-		if (fsize.x == 0 && fsize.y == 0)
-		{
-			fsize = _fbSize;
-		}
-		bgfxReset(fsize);
-		return true;
-	}
-
-	bool WindowImpl::setFramebufferSize(const glm::uvec2& size)
-	{
-		if (_fbSize == size)
-		{
-			return false;
-		}
-		_fbSize = size;
-		if (_pixelSize.x == 0 && _pixelSize.y == 0)
-		{
-			bgfxReset(_fbSize);
-		}
-		return true;
-	}
-
-	void WindowImpl::bgfxReset(const glm::uvec2& size) const noexcept
-	{
 		for (auto& listener : _listeners)
 		{
 			listener->onWindowPixelSize(size);
 		}
+		return true;
 	}
 
 	bool WindowImpl::setPhase(WindowPhase phase)
@@ -201,16 +176,7 @@ namespace darmok
 
 	const glm::uvec2& WindowImpl::getPixelSize() const noexcept
 	{
-		if (_pixelSize.x == 0 && _pixelSize.y == 0)
-		{
-			return _fbSize;
-		}
 		return _pixelSize;
-	}
-
-	const glm::uvec2& WindowImpl::getFramebufferSize() const noexcept
-	{
-		return _fbSize;
 	}
 
 	WindowPhase WindowImpl::getPhase() const noexcept
@@ -253,33 +219,33 @@ namespace darmok
 		return _cursorMode;
 	}
 
-	glm::vec2 WindowImpl::getScreenToWindowFactor() const noexcept
+	glm::vec2 WindowImpl::getFramebufferScale() const noexcept
 	{
-		if (_fbSize.x == 0 || _fbSize.y == 0)
+		if (_size.x == 0 || _size.y == 0)
 		{
-			return glm::vec2(0);
+			return glm::vec2(1);
 		}
-		return glm::vec2(_size) / glm::vec2(_fbSize);
+		return glm::vec2(_pixelSize) / glm::vec2(_size);
 	}
 
 	glm::vec2 WindowImpl::windowToScreenDelta(const glm::vec2& delta) const noexcept
 	{
-		auto screenDelta = delta / getScreenToWindowFactor();
+		auto screenDelta = delta * getFramebufferScale();
 		screenDelta.y *= -1.F;
 		return screenDelta;
 	}
 
 	glm::vec2 WindowImpl::screenToWindowDelta(const glm::vec2& delta) const noexcept
 	{
-		auto screenDelta = delta * getScreenToWindowFactor();
+		auto screenDelta = delta / getFramebufferScale();
 		screenDelta.y *= -1.F;
 		return screenDelta;
 	}
 
 	glm::vec2 WindowImpl::screenToWindowPoint(const glm::vec2& point) const noexcept
 	{
-		auto f = getScreenToWindowFactor();
-		auto p = (point - glm::vec2(0.5F)) * f;
+		auto f = getFramebufferScale();
+		auto p = (point - glm::vec2(0.5F)) / f;
 		p.y = _size.y - p.y;
 		return p;
 	}
@@ -288,8 +254,8 @@ namespace darmok
 	{
 		glm::vec2 p(point);
 		p.y = _size.y - p.y;
-		auto f = getScreenToWindowFactor();
-		p = p / f + glm::vec2(0.5F);
+		auto f = getFramebufferScale();
+		p = (p * f) + glm::vec2(0.5F);
 		return p;
 	}
 
@@ -337,11 +303,6 @@ namespace darmok
 	const glm::uvec2& Window::getPixelSize() const noexcept
 	{
 		return _impl->getPixelSize();
-	}
-
-	const glm::uvec2& Window::getFramebufferSize() const noexcept
-	{
-		return _impl->getFramebufferSize();
 	}
 
 	void Window::requestVideoModeInfo() noexcept
@@ -394,9 +355,9 @@ namespace darmok
 		return _impl->screenToWindowPoint(pos);
 	}
 
-	glm::vec2 Window::getScreenToWindowFactor() const noexcept
+	glm::vec2 Window::getFramebufferScale() const noexcept
 	{
-		return _impl->getScreenToWindowFactor();
+		return _impl->getFramebufferScale();
 	}
 
 	glm::vec2 Window::windowToScreenDelta(const glm::vec2& delta) const noexcept

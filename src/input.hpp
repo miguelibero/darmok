@@ -85,7 +85,6 @@ namespace darmok
 		bool setPosition(const glm::vec2& pos) noexcept;
 		bool setScroll(const glm::vec2& scroll) noexcept;
 		bool setButton(MouseButton button, bool down) noexcept;
-		bool setWindowSize(const glm::uvec2& size) noexcept;
 
 		void afterUpdate(float deltaTime) noexcept;
 

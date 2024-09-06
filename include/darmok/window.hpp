@@ -74,7 +74,6 @@ namespace darmok
 		[[nodiscard]] float getAspect() const noexcept;
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;
-		[[nodiscard]] const glm::uvec2& getFramebufferSize() const noexcept;
 		[[nodiscard]] WindowPhase getPhase() const noexcept;
 		[[nodiscard]] WindowCursorMode getCursorMode() const noexcept;
 		[[nodiscard]] const VideoMode& getVideoMode() const noexcept;
@@ -82,9 +81,9 @@ namespace darmok
 
 		[[nodiscard]] glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
 		[[nodiscard]] glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
-		[[nodiscard]] glm::vec2 getScreenToWindowFactor() const noexcept;
 		[[nodiscard]] glm::vec2 windowToScreenDelta(const glm::vec2& delta) const noexcept;
 		[[nodiscard]] glm::vec2 screenToWindowDelta(const glm::vec2& delta) const noexcept;
+		[[nodiscard]] glm::vec2 getFramebufferScale() const noexcept;
 
 		[[nodiscard]] const WindowImpl& getImpl() const noexcept;
 		[[nodiscard]] WindowImpl& getImpl() noexcept;

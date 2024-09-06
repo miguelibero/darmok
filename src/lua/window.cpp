@@ -70,6 +70,11 @@ namespace darmok
 		return _win.get().getPixelSize();
 	}
 
+	glm::vec2 LuaWindow::getFramebufferScale() const noexcept
+	{
+		return _win.get().getFramebufferScale();
+	}
+
 	const VideoMode& LuaWindow::getVideoMode() const noexcept
 	{
 		return _win.get().getVideoMode();
@@ -176,6 +181,7 @@ namespace darmok
 		lua.new_usertype<LuaWindow>("Window", sol::no_constructor,
 			"size", sol::property(&LuaWindow::getSize),
 			"pixel_size", sol::property(&LuaWindow::getPixelSize),
+			"framebuffer_scale", sol::property(&LuaWindow::getFramebufferScale),
 			"video_mode", sol::property(&LuaWindow::getVideoMode, &LuaWindow::setVideoMode),
 			"video_mode_info", sol::property(&LuaWindow::getVideoModeInfo),
 			"cursor_mode", sol::property(&LuaWindow::getCursorMode, &LuaWindow::setCursorMode),

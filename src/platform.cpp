@@ -131,31 +131,29 @@ namespace darmok
 		}
 	}
 
-	WindowSizeEvent::WindowSizeEvent(const glm::uvec2& size, WindowSizeType type) noexcept
+	WindowSizeEvent::WindowSizeEvent(const glm::uvec2& size) noexcept
 		: PlatformEvent(Type::WindowSize)
 		, _size(size)
-		, _type(type)
 	{
 	}
 
-	void WindowSizeEvent::process(Window& win, Mouse& mouse) noexcept
+	void WindowSizeEvent::process(Window& win) noexcept
 	{
-		auto& impl = win.getImpl();
-		switch (_type)
-		{
-		case WindowSizeType::Size:
-			impl.setSize(_size);
-			mouse.getImpl().setWindowSize(_size);
-			break;
-		case WindowSizeType::Framebuffer:
-			impl.setFramebufferSize(_size);
-			break;
-		case WindowSizeType::Pixel:
-			impl.setPixelSize(_size);
-			break;
-		}
+		win.getImpl().setSize(_size);
 	}
 
+	WindowPixelSizeEvent::WindowPixelSizeEvent(const glm::uvec2& size) noexcept
+		: PlatformEvent(Type::WindowPixelSize)
+		, _size(size)
+	{
+
+	}
+
+	void WindowPixelSizeEvent::process(Window& win) noexcept
+	{
+		win.getImpl().setPixelSize(_size);
+	}
+	
 	WindowPhaseEvent::WindowPhaseEvent(WindowPhase phase) noexcept
 		: PlatformEvent(Type::WindowPhase)
 		, _phase(phase)
@@ -243,7 +241,10 @@ namespace darmok
 			static_cast<MouseButtonEvent&>(ev).process(input);
 			break;
 		case PlatformEvent::Type::WindowSize:
-			static_cast<WindowSizeEvent&>(ev).process(window, input.getMouse());
+			static_cast<WindowSizeEvent&>(ev).process(window);
+			break;
+		case PlatformEvent::Type::WindowPixelSize:
+			static_cast<WindowPixelSizeEvent&>(ev).process(window);
 			break;
 		case PlatformEvent::Type::WindowPhase:
 			static_cast<WindowPhaseEvent&>(ev).process(window);

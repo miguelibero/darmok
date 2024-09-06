@@ -17,7 +17,6 @@ namespace darmok
 
 		bool setSize(const glm::uvec2& size);
 		bool setPixelSize(const glm::uvec2& size);
-		bool setFramebufferSize(const glm::uvec2& size);
 		bool setPhase(WindowPhase phase);
 		bool setVideoMode(const VideoMode& mode);
 		bool setCursorMode(WindowCursorMode mode);
@@ -26,7 +25,6 @@ namespace darmok
 
 		const glm::uvec2& getSize() const noexcept;
 		const glm::uvec2& getPixelSize() const noexcept;
-		const glm::uvec2& getFramebufferSize() const noexcept;
 		const VideoMode& getVideoMode() const noexcept;
 		const VideoModeInfo& getVideoModeInfo() const noexcept;
 		WindowCursorMode getCursorMode() const noexcept;
@@ -39,9 +37,9 @@ namespace darmok
 
 		glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
 		glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;
-		glm::vec2 getScreenToWindowFactor() const noexcept;
 		glm::vec2 windowToScreenDelta(const glm::vec2& delta) const noexcept;
 		glm::vec2 screenToWindowDelta(const glm::vec2& delta) const noexcept;
+		glm::vec2 getFramebufferScale() const noexcept;
 
 		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(IWindowListener& listener) noexcept;
@@ -49,15 +47,12 @@ namespace darmok
 	private:
 		glm::uvec2 _size;
 		glm::uvec2 _pixelSize;
-		glm::uvec2 _fbSize;
 		WindowPhase _phase;
 		VideoMode _videoMode;
 		VideoModeInfo _videoModeInfo;
 		WindowCursorMode _cursorMode;
 		std::unordered_set<OptionalRef<IWindowListener>> _listeners;
 		Platform& _plat;
-
-		void bgfxReset(const glm::uvec2& size) const noexcept;
 	};
 
 } // namespace darmok

@@ -13,6 +13,36 @@
 
 namespace darmok
 {
+	struct ImguiUtils
+	{
+		static glm::vec2 convert(const ImVec2& v) noexcept
+		{
+			return glm::vec2(v.x, v.y);
+		}
+
+		static ImVec2 convert(const glm::vec2& v) noexcept
+		{
+			return ImVec2(v.x, v.y);
+		}
+
+		static glm::vec4 convert(const ImVec4& v) noexcept
+		{
+			return glm::vec4(v.x, v.y, v.z, v.w);
+		}
+
+		static ImVec4 convert(const glm::vec4& v) noexcept
+		{
+			return ImVec4(v.x, v.y, v.z, v.w);
+		}
+
+		static uint16_t convertUint16(float v) noexcept
+		{
+			v = bx::max(v, 0.0f);
+			v = bx::min(v, 65535.0f);
+			return uint16_t(v);
+		}
+	};
+
 	const uint8_t ImguiAppComponentImpl::_imguiAlphaBlendFlags = 0x01;
 
 	const ImguiAppComponentImpl::KeyboardMap& ImguiAppComponentImpl::getKeyboardMap() noexcept
@@ -142,26 +172,25 @@ namespace darmok
 
 	bool ImguiAppComponentImpl::render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept
 	{
+		auto clipPos = ImguiUtils::convert(drawData->DisplayPos); // (0,0) unless using multi-viewports
+		auto size = ImguiUtils::convert(drawData->DisplaySize);
+		auto clipScale = ImguiUtils::convert(drawData->FramebufferScale);  // (1,1) unless using retina display which are often (2,2)
+		auto clipSize = size * clipScale;
+
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
-		int fbWidth = (int)(drawData->DisplaySize.x * drawData->FramebufferScale.x);
-		int fbHeight = (int)(drawData->DisplaySize.y * drawData->FramebufferScale.y);
-		if (fbWidth <= 0 || fbHeight <= 0)
+		if (clipSize.x <= 0 || clipSize.y <= 0)
 		{
 			return false;
 		}
 
 		{
-			float x = drawData->DisplayPos.x;
-			float y = drawData->DisplayPos.y;
-			float width = drawData->DisplaySize.x;
-			float height = drawData->DisplaySize.y;
-			auto ortho = Math::ortho(x, x + width, y + height, y);
-			bgfx::setViewTransform(_viewId, NULL, glm::value_ptr(ortho));
-			bgfx::setViewRect(_viewId, 0, 0, uint16_t(width), uint16_t(height));
+			auto ortho = Math::ortho(clipPos.x, clipPos.x + clipSize.x, clipPos.y + clipSize.y, clipPos.y);
+			bgfx::setViewTransform(_viewId, nullptr, glm::value_ptr(ortho));
+			bgfx::setViewRect(_viewId, 0, 0,
+				ImguiUtils::convertUint16(clipSize.x),
+				ImguiUtils::convertUint16(clipSize.y)
+			);
 		}
-
-		const ImVec2 clipPos = drawData->DisplayPos;       // (0,0) unless using multi-viewports
-		const ImVec2 clipScale = drawData->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
 		auto& layout = _program->getVertexLayout();
 
@@ -200,7 +229,7 @@ namespace darmok
 						| BGFX_STATE_MSAA
 						;
 
-					auto th = _fonts;
+					auto th = _fontsTexture;
 					auto program = _program->getHandle();
 
 					if (NULL != cmd->TextureId)
@@ -225,22 +254,19 @@ namespace darmok
 					}
 
 					// Project scissor/clipping rectangles into framebuffer space
-					ImVec4 clipRect;
-					clipRect.x = (cmd->ClipRect.x - clipPos.x) * clipScale.x;
-					clipRect.y = (cmd->ClipRect.y - clipPos.y) * clipScale.y;
-					clipRect.z = (cmd->ClipRect.z - clipPos.x) * clipScale.x;
-					clipRect.w = (cmd->ClipRect.w - clipPos.y) * clipScale.y;
+					auto clipRect = ImguiUtils::convert(cmd->ClipRect);
+					clipRect = (clipRect - glm::vec4(clipPos, clipPos)) * glm::vec4(clipScale, clipScale);
 
-					if (clipRect.x < fbWidth
-						&& clipRect.y < fbHeight
+					if (clipRect.x < clipSize.x
+						&& clipRect.y < clipSize.y
 						&& clipRect.z >= 0.0f
 						&& clipRect.w >= 0.0f)
 					{
-						const uint16_t xx = uint16_t(bx::max(clipRect.x, 0.0f));
-						const uint16_t yy = uint16_t(bx::max(clipRect.y, 0.0f));
-						encoder.setScissor(xx, yy
-							, uint16_t(bx::min(clipRect.z, 65535.0f) - xx)
-							, uint16_t(bx::min(clipRect.w, 65535.0f) - yy)
+						encoder.setScissor(
+							ImguiUtils::convertUint16(clipRect.x),
+							ImguiUtils::convertUint16(clipRect.y),
+							ImguiUtils::convertUint16(clipRect.z - clipRect.x),
+							ImguiUtils::convertUint16(clipRect.w - clipRect.y)
 						);
 
 						encoder.setState(state);
@@ -262,6 +288,7 @@ namespace darmok
 		, _inputEnabled(true)
 		, _imgui(nullptr)
 		, _viewId(0)
+		, _fontsTexture{ bgfx::kInvalidHandle }
 	{
 		IMGUI_CHECKVERSION();
 	}
@@ -312,7 +339,7 @@ namespace darmok
 
 		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height);
 
-		_fonts = bgfx::createTexture2D(
+		_fontsTexture = bgfx::createTexture2D(
 			(uint16_t)width
 			, (uint16_t)height
 			, false
@@ -395,14 +422,16 @@ namespace darmok
 			io.AddInputCharacter(inputChar.code);
 		}
 
-		auto& mouse = input.getMouse();
-		auto& fbSize = _app->getWindow().getFramebufferSize();
-		auto& pixelSize = _app->getWindow().getPixelSize();
-		io.DisplaySize = ImVec2((float)pixelSize.x, (float)pixelSize.y);
+		auto& win = _app->getWindow();
 
+		auto& pixelSize = win.getPixelSize();
+		io.DisplaySize = ImguiUtils::convert(pixelSize);
+		io.DisplayFramebufferScale = ImguiUtils::convert(win.getFramebufferScale());
+
+		auto& mouse = input.getMouse();
 		auto& buttons = mouse.getButtons();
-		auto pos = mouse.getPosition() * glm::vec2(pixelSize) / glm::vec2(fbSize);
-		io.AddMousePosEvent(pos.x, pos.y);
+		auto pos = win.windowToScreenPoint(mouse.getPosition());
+		io.AddMousePosEvent(pos.x, pixelSize.y - pos.y);
 
 		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
 		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);

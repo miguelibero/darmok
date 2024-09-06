@@ -1,6 +1,7 @@
 #include <darmok/viewport.hpp>
 #include <darmok/math.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/component_wise.hpp>
 #include <bx/math.h>
 #include <stdexcept>
 
@@ -38,6 +39,21 @@ namespace darmok
     bool Viewport::operator!=(const Viewport& other) const noexcept
     {
         return !operator==(other);
+    }
+
+
+    Viewport Viewport::operator*(const Viewport& other) const noexcept
+    {
+        Viewport vp(*this);
+        vp *= other;
+        return vp;
+    }
+
+    Viewport& Viewport::operator*=(const Viewport& other) noexcept
+    {
+        size = glm::min(size, other.size);
+        origin += other.origin;
+        return *this;
     }
 
     float Viewport::getAspectRatio() const noexcept

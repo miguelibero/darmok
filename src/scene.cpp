@@ -122,7 +122,7 @@ namespace darmok
         {
             return _viewport.value();
         }
-        if (_app)
+        else if (_app)
         {
             return Viewport(_app->getWindow().getPixelSize());
         }

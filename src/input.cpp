@@ -427,7 +427,6 @@ namespace darmok
 		, _lastPositionTimePassed(0)
 		, _velocity(0)
 		, _scroll(0)
-		, _windowSize(0)
 		, _active(false)
 		, _hasBeenInactive(true)
 	{
@@ -497,16 +496,6 @@ namespace darmok
 		{
 			listener->onMouseButton(button, down);
 		}
-		return true;
-	}
-
-	bool MouseImpl::setWindowSize(const glm::uvec2& size) noexcept
-	{
-		if (_windowSize == size)
-		{
-			return false;
-		}
-		_windowSize = size;
 		return true;
 	}
 

@@ -144,6 +144,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
+* [meshoptimizer](https://github.com/zeux/meshoptimizer)
 
 ## Example code
 
@@ -155,7 +156,7 @@ local camTrans = camEntity:add_component(Transform, { 0, 2, -2 })
 camTrans:look_at({ 0, 0, 0 })
 local cam = camEntity:add_component(Camera)
 cam:set_projection(60, { 0.3, 1000 })
-cam:add_renderer(ForwardRenderer)
+cam:add_component(ForwardRenderer)
 cam:add_component(LightingRenderComponent)
 
 local lightEntity = app.scene:create_entity()
@@ -163,6 +164,5 @@ lightEntity:add_component(Transform, { 1, 1, -2 })
 lightEntity:add_component(PointLight)
 
 local cubeMesh = MeshData.new_cube().createMesh(program.vertex_layout)
-local greenTex = app.assets:load_color_texture(Color.green)
-app.scene:create_entity():add_component(Renderable, cubeMesh, program, greenTex)
+app.scene:create_entity():add_component(Renderable, cubeMesh, program, Color.green)
 ```

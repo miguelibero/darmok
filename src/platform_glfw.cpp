@@ -73,47 +73,44 @@ namespace darmok
 		}
 		auto monitor = expMonitor.value();
 		auto refreshRate = _mode.refreshRate == 0 ? GLFW_DONT_CARE : _mode.refreshRate;
-		glm::uvec2 pixelSize(0);
 
 		// is there a better way of doing this?
-		// need to reset to normal window to get the desktop workarea
+		// need to reset to normal window to get the default video mode
 		PlatformImpl::resetWindowMonitor(win, frame.topLeft);
+		auto defMode = glfwGetVideoMode(monitor);
 
 		if (_mode.size.x == 0 || _mode.size.y == 0)
 		{
-			auto defMode = glfwGetVideoMode(monitor);
 			_mode.size.x = defMode->width;
 			_mode.size.y = defMode->height;
 		}
+
 		switch (_mode.screenMode)
 		{
 			case WindowScreenMode::Normal:
 			{
 				auto workArea = PlatformImpl::getMonitorWorkarea(monitor);
 				auto winSize = frame.topLeft + _mode.size + frame.botRight;
-
 				if (workArea.size.x < winSize.x || workArea.size.y < winSize.y)
 				{
 					events.post<WindowErrorEvent>("window would not fit in workarea");
 					return;
 				}
-				glfwSetWindowMonitor(win
-					, nullptr
+				glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+				glfwSetWindowAttrib(win, GLFW_FLOATING, GLFW_FALSE);
+				glfwSetWindowMonitor(win, nullptr
 					, workArea.origin.x + frame.topLeft.x
 					, workArea.origin.y + frame.topLeft.y
 					, _mode.size.x
 					, _mode.size.y
 					, refreshRate
 				);
-				glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 				break;
 			}
 			case WindowScreenMode::Fullscreen:
 			{
-				glfwSetWindowMonitor(win
-					, monitor
-					, 0
-					, 0
+				glfwSetWindowAttrib(win, GLFW_FLOATING, GLFW_FALSE);
+				glfwSetWindowMonitor(win, monitor, 0, 0
 					, _mode.size.x
 					, _mode.size.y
 					, refreshRate
@@ -122,17 +119,23 @@ namespace darmok
 			}
 			case WindowScreenMode::WindowedFullscreen:
 			{
-				auto workArea = PlatformImpl::getMonitorWorkarea(monitor);
-				glfwSetWindowMonitor(win
-					, nullptr
-					, workArea.origin.x
-					, workArea.origin.y
-					, workArea.size.x
-					, workArea.size.y
-					, refreshRate
-				);
-				pixelSize = _mode.size;
+				// https://www.glfw.org/docs/latest/window_guide.html#window_windowed_full_screen
+				if (_mode.size.x != defMode->width || _mode.size.y != defMode->height)
+				{
+					events.post<WindowErrorEvent>("windowed fullscreen needs to have the default video mode size");
+				}
+				if (refreshRate != defMode->refreshRate)
+				{
+					events.post<WindowErrorEvent>("windowed fullscreen needs to have the default video mode refresh rate");
+				}
+
 				glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+				glfwSetWindowAttrib(win, GLFW_FLOATING, GLFW_TRUE);
+				glfwSetWindowMonitor(win, monitor, 0, 0
+					, defMode->width
+					, defMode->height
+					, defMode->refreshRate
+				);
 				break;
 			}
 			default:
@@ -140,7 +143,7 @@ namespace darmok
 				return;
 		}
 
-		// glfwSetWindowAspectRatio(win, _mode.size.x, _mode.size.y);
+		glfwSetWindowAspectRatio(win, _mode.size.x, _mode.size.y);
 		glfwWindowHint(GLFW_RED_BITS, _mode.depth.r);
 		glfwWindowHint(GLFW_GREEN_BITS, _mode.depth.g);
 		glfwWindowHint(GLFW_BLUE_BITS, _mode.depth.b);
@@ -153,7 +156,6 @@ namespace darmok
 			_mode.depth = fmode.depth;
 		}
 
-		events.post<WindowSizeEvent>(pixelSize, WindowSizeType::Pixel);
 		events.post<WindowVideoModeEvent>(_mode);
 	}
 
@@ -591,13 +593,13 @@ namespace darmok
 
 		int w, h;
 		glfwGetFramebufferSize(_window, &w, &h);
-		glm::uvec2 fbSize(w, h);
+		glm::uvec2 pixelSize(w, h);
 
 		{
 			// send events for initial window state
 			_events.post<VideoModeInfoEvent>(getVideoModeInfo(_winFrameSize));
-			_events.post<WindowSizeEvent>(winSize, WindowSizeType::Size);
-			_events.post<WindowSizeEvent>(fbSize, WindowSizeType::Framebuffer);
+			_events.post<WindowSizeEvent>(winSize);
+			_events.post<WindowPixelSizeEvent>(pixelSize);
 			_events.post<WindowVideoModeEvent>(getVideoMode(_window));
 			_events.post<WindowPhaseEvent>(WindowPhase::Running);
 		}
@@ -694,7 +696,7 @@ namespace darmok
 			return;
 		}
 		glm::uvec2 size(width, height);
-		_events.post<WindowSizeEvent>(size, WindowSizeType::Size);
+		_events.post<WindowSizeEvent>(size);
 	}
 
 	void PlatformImpl::framebufferSizeCallback(GLFWwindow* window, int32_t width, int32_t height) noexcept
@@ -704,7 +706,7 @@ namespace darmok
 			return;
 		}
 		glm::uvec2 size(width, height);
-		_events.post<WindowSizeEvent>(size, WindowSizeType::Framebuffer);
+		_events.post<WindowPixelSizeEvent>(size);
 	}
 
 	void PlatformImpl::joystickCallback(int jid, int action) noexcept
@@ -850,9 +852,6 @@ namespace darmok
 		VideoModeInfo info;
 		auto monitors = glfwGetMonitors(&monitorCount);
 
-		auto defMode = getVideoMode();
-		std::vector<glm::uvec2> resolutions;
-
 		for (int i = 0; i < monitorCount; i++)
 		{
 			auto glfwMon = monitors[i];
@@ -861,6 +860,9 @@ namespace darmok
 			mon.workarea = getMonitorWorkarea(glfwMon);
 			int modeCount;
 			auto glfwModes = glfwGetVideoModes(glfwMon, &modeCount);
+			auto monSize = mon.workarea.size - mon.workarea.origin;
+			auto defMode = getVideoMode(nullptr, glfwMon);
+
 			for (int j = 0; j < modeCount; j++)
 			{
 				auto glfwMode = glfwModes[j];
@@ -873,35 +875,23 @@ namespace darmok
 				mode.refreshRate = glfwMode.refreshRate;
 				mode.monitor = i;
 
-				auto itr = std::find(resolutions.begin(), resolutions.end(), mode.size);
-				if (itr == resolutions.end())
+				auto winSize = frame.topLeft + mode.size + frame.botRight;
+				if (winSize.x <= monSize.x && winSize.y <= monSize.y)
 				{
-					resolutions.push_back(mode.size);
+					auto winMode = defMode;
+					winMode.size = mode.size;
+					winMode.screenMode = WindowScreenMode::Normal;
+					auto itr = std::find(info.modes.begin(), info.modes.end(), winMode);
+					if (itr == info.modes.end())
+					{
+						info.modes.push_back(winMode);
+					}
 				}
 			}
-		}
-		auto& mon = info.monitors[0];
-		auto monSize = mon.workarea.size - mon.workarea.origin;
-		auto mode = getVideoMode(nullptr, monitors[0]);
-		mode.monitor = -1;
-		for (auto& size : resolutions)
-		{
-			for (int i = 0; i < monitorCount; i++)
-			{
-				// TODO: is there a way of checking if GLFW_DECORATED=false is supported in the platform?
-				auto& wfMode = info.modes.emplace_back(mode);
-				wfMode.screenMode = WindowScreenMode::WindowedFullscreen;
-				wfMode.size = size;
-				wfMode.monitor = i;
-			}
 
-			auto winSize = frame.topLeft + size + frame.botRight;
-			if (winSize.x <= monSize.x && winSize.y <= monSize.y)
-			{
-				auto& winMode = info.modes.emplace_back(mode);
-				winMode.screenMode = WindowScreenMode::Normal;
-				winMode.size = size;
-			}
+			auto& wfMode = info.modes.emplace_back(defMode);
+			wfMode.monitor = i;
+			wfMode.screenMode = WindowScreenMode::WindowedFullscreen;
 		}
 
 		return info;

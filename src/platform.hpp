@@ -59,6 +59,7 @@ namespace darmok
 			MouseButton,
 
 			WindowSize,
+			WindowPixelSize,
 			WindowPhase,
 			WindowVideoMode,
 			WindowCursorMode,
@@ -169,30 +170,22 @@ namespace darmok
 		bool _connected;
 	};
 
-	enum class WindowSizeType
-	{
-		// represents the real size of the window
-		Size, 
-
-		// represents the size of the window framebuffer
-		// usually the same as window size, but can be different for example
-		// in apple displays
-		Framebuffer, 
-
-		// represents the size of the bgfx backbuffer
-		// if this is set to zero, bgfx uses the framebuffer size
-		// but they can be different for example in borderless mode
-		Pixel
-	};
-
 	class WindowSizeEvent final : public PlatformEvent
 	{
 	public:
-		WindowSizeEvent(const glm::uvec2& size, WindowSizeType type) noexcept;
-		void process(Window& win, Mouse& mouse) noexcept;
+		WindowSizeEvent(const glm::uvec2& size) noexcept;
+		void process(Window& win) noexcept;
 	private:
 		glm::uvec2 _size;
-		WindowSizeType _type;
+	};
+
+	class WindowPixelSizeEvent final : public PlatformEvent
+	{
+	public:
+		WindowPixelSizeEvent(const glm::uvec2& size) noexcept;
+		void process(Window& win) noexcept;
+	private:
+		glm::uvec2 _size;
 	};
 
 	class WindowPhaseEvent final : public PlatformEvent
