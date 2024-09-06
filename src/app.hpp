@@ -101,7 +101,8 @@ namespace darmok
 	class AppImpl final : IKeyboardListener, IRenderPass
 	{
 	public:
-		AppImpl(App& app) noexcept;
+		AppImpl(App& app, std::unique_ptr<IAppDelegateFactory>&& factory) noexcept;
+		std::optional<int32_t> setup(const std::vector<std::string>& args);
 		void init();
 		void update(float deltaTime);
 		void afterUpdate(float deltaTime);
@@ -119,6 +120,8 @@ namespace darmok
 
 		void setClearColor(const Color& color) noexcept;
 		void setUpdateConfig(const AppUpdateConfig& config) noexcept;
+
+		void setRendererType(bgfx::RendererType::Enum renderer);
 
 		void setPaused(bool paused) noexcept;
 		bool isPaused() const noexcept;
@@ -184,6 +187,10 @@ namespace darmok
 		void renderReset();
 		void bgfxInit();
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
+		void setNextRenderer();
+
+		static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
+
 
 		// first since it contains the allocator
 		AssetContext _assets;
@@ -195,12 +202,15 @@ namespace darmok
 		VideoMode _videoMode;
 		uint32_t _debugFlags;
 		uint32_t _resetFlags;
+		bgfx::RendererType::Enum _rendererType;
 		uint32_t _activeResetFlags;
 		Color _clearColor;
 		uint64_t _lastUpdate;
 		AppUpdateConfig _updateConfig;
 		Platform& _plat;
 		App& _app;
+		std::unique_ptr<IAppDelegate> _delegate;
+		std::unique_ptr<IAppDelegateFactory> _delegateFactory;
 		Input _input;
 		Window _window;
 #ifdef DARMOK_MINIAUDIO
@@ -218,10 +228,12 @@ namespace darmok
 	class AppRunner final : public IPlatformRunnable
 	{
 	public:
-		AppRunner(std::unique_ptr<App>&& app) noexcept;
+		AppRunner(std::unique_ptr<App>&& app, const std::vector<std::string>& args) noexcept;
 		int32_t operator()() noexcept override;
 	private:
 		std::unique_ptr<App> _app;
+		std::vector<std::string> _args;
+		std::optional<int32_t> setup() noexcept;
 		bool init() noexcept;
 		AppRunResult run() noexcept;
 		bool shutdown() noexcept;

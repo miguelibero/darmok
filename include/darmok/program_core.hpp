@@ -74,8 +74,9 @@ namespace darmok
 		{
 			archive(name, profiles, vertexLayout);
 		}
-	private:
-		static const std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>> _rendererProfiles;
+
+		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>>;
+		static const RendererProfileMap& getRendererProfiles() noexcept;
 	};
 
 	class ProgramImporterImpl;

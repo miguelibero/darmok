@@ -51,14 +51,17 @@ namespace
 		float _factor;
 	};
 
-	class RmluiSampleApp : public App
+	class RmluiSampleAppDelegate final : public IAppDelegate
 	{
 	public:
+		RmluiSampleAppDelegate(App& app)
+			: _app(app)
+		{
+		}
+
 		void init() override
 		{
-			App::init();
-
-			auto& scene = *addComponent<SceneAppComponent>().getScene();
+			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 
 			// scene.setViewport(Viewport(glm::ivec2(500), glm::ivec2(200)));
 
@@ -89,7 +92,7 @@ namespace
 			auto& context = canvas.getContext();
 
 #ifdef RMLUI_DEBUGGER
-			addComponent<RmluiDebuggerComponent>();
+			_app.addComponent<RmluiDebuggerComponent>();
 #endif
 
 			// sample taken from the RmlUI README
@@ -117,14 +120,15 @@ namespace
 			element->SetProperty("font-size", "1.5em");
 
 			// testing that rmlui works on borderless fullscreen
-			getWindow().requestVideoMode({
+			_app.getWindow().requestVideoMode({
 				.screenMode = WindowScreenMode::WindowedFullscreen,
 			});
 		}
 	private:
+		App& _app;
 		bool _show_text = true;
 		Rml::String _animal = "dog";
 	};
 }
 
-DARMOK_RUN_APP(RmluiSampleApp);
+DARMOK_RUN_APP(RmluiSampleAppDelegate);

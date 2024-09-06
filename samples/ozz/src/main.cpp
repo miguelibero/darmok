@@ -44,15 +44,19 @@ namespace
 		float _speed;
 	};
 
-	class OzzSampleApp : public App, public IInputEventListener
+	class OzzSampleAppDelegate final : public IAppDelegate, public IInputEventListener
 	{
 	public:
+		OzzSampleAppDelegate(App& app)
+			: _app(app)
+		{
+		}
+
 		void init()
 		{
-			App::init();
-			setDebugFlag(BGFX_DEBUG_TEXT);
+			_app.setDebugFlag(BGFX_DEBUG_TEXT);
 
-			auto& scene = *addComponent<SceneAppComponent>().getScene();
+			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<SkeletalAnimationSceneComponent>();
 
 			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
@@ -83,14 +87,14 @@ namespace
 			scene.addComponent<PointLight>(lightEntity, 5);
 			scene.addComponent<AmbientLight>(lightEntity, 0.5);
 
-			auto skel = getAssets().getSkeletonLoader()("skeleton.ozz");
+			auto skel = _app.getAssets().getSkeletonLoader()("skeleton.ozz");
 
 			auto animEntity = scene.createEntity();
 			auto& animTrans = scene.addComponent<Transform>(animEntity);
 
-			auto animConfig = getAssets().getSkeletalAnimatorConfigLoader()("animator.json");
+			auto animConfig = _app.getAssets().getSkeletalAnimatorConfigLoader()("animator.json");
 
-			auto anims = animConfig.loadAnimations(getAssets().getSkeletalAnimationLoader());
+			auto anims = animConfig.loadAnimations(_app.getAssets().getSkeletalAnimationLoader());
 			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, animConfig);
 			_animator->play("locomotion");
 
@@ -100,16 +104,16 @@ namespace
 			auto boneMat = std::make_shared<Material>(prog, Colors::grey());
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 #ifdef DARMOK_FREETYPE
-			renderSkel.setFont(getAssets().getFontLoader()("../../assets/noto.ttf"));
+			renderSkel.setFont(_app.getAssets().getFontLoader()("../../assets/noto.ttf"));
 			cam.addComponent<TextRenderer>();
 #endif
-			auto modelTex = getAssets().getTextureLoader()("BasicMotionsTexture.png");
-			auto model = getAssets().getModelLoader()("model.dml");
+			auto modelTex = _app.getAssets().getTextureLoader()("BasicMotionsTexture.png");
+			auto model = _app.getAssets().getModelLoader()("model.dml");
 
 			auto skinEntity = scene.createEntity();
 			scene.addComponent<Transform>(skinEntity, animTrans, glm::vec3(1, 0, 0));
 
-			ModelSceneConfigurer configurer(scene, getAssets());
+			ModelSceneConfigurer configurer(scene, _app.getAssets());
 			configurer.setParent(skinEntity);
 			configurer(*model, [&scene, modelTex](const auto& node, Entity entity)
 			{
@@ -122,7 +126,7 @@ namespace
 				}
 			});
 
-			getInput().addListener("talk", _talkInputs, *this);
+			_app.getInput().addListener("talk", _talkInputs, *this);
 		}
 
 		void onInputEvent(const std::string& tag) override
@@ -132,15 +136,36 @@ namespace
 
 		void render() const override
 		{
-			App::render();
-
 			const bgfx::Stats* stats = bgfx::getStats();
 
 			bgfx::dbgTextPrintf(0, 1, 0x0f, "Blend position: %s", glm::to_string(_animator->getBlendPosition()).c_str());
 
 		}
 
-	protected:
+		void update(float deltaTime) noexcept override
+		{
+			if (_freeLook->isEnabled())
+			{
+				return;
+			}
+
+			glm::vec2 dir(
+				_app.getInput().getAxis(_moveRight, _moveLeft),
+				_app.getInput().getAxis(_moveForward, _moveBackward)
+			);
+
+			_animator->setBlendPosition(dir);
+			if (glm::length(dir) > 0.1F)
+			{
+				_animator->play("locomotion");
+			}
+		}
+
+	private:
+		App& _app;
+		float _animTime;
+		OptionalRef<SkeletalAnimator> _animator;
+		OptionalRef<FreelookController> _freeLook;
 
 		const InputEvents _talkInputs = {
 			KeyboardInputEvent{ KeyboardKey::Return },
@@ -166,32 +191,7 @@ namespace
 			KeyboardInputEvent{ KeyboardKey::KeyD },
 			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
 		};
-
-		void update(float deltaTime) noexcept override
-		{
-			App::update(deltaTime);
-
-			if (_freeLook->isEnabled())
-			{
-				return;
-			}
-
-			glm::vec2 dir(
-				getInput().getAxis(_moveRight, _moveLeft),
-				getInput().getAxis(_moveForward, _moveBackward)
-			);
-
-			_animator->setBlendPosition(dir);
-			if (glm::length(dir) > 0.1F)
-			{
-				_animator->play("locomotion");
-			}
-		}
-	private:
-		float _animTime;
-		OptionalRef<SkeletalAnimator> _animator;
-		OptionalRef<FreelookController> _freeLook;
 	};
 }
 
-DARMOK_RUN_APP(OzzSampleApp);
+DARMOK_RUN_APP(OzzSampleAppDelegate);

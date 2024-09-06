@@ -18,6 +18,7 @@ namespace darmok
     {
     public:
 		ImguiAppComponentImpl(IImguiRenderer& renderer, float fontSize = 18.0f);
+		~ImguiAppComponentImpl() noexcept;
 
 		void init(App& app);
 		void shutdown() noexcept;

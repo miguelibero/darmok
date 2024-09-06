@@ -76,15 +76,19 @@ namespace
 		bool _paused;
 	};
 
-	class PbrSampleApp : public App, IFreelookListener, IInputEventListener
+	class PbrSampleAppDelegate : public IAppDelegate, IFreelookListener, IInputEventListener
 	{
 	public:
+		PbrSampleAppDelegate(App& app)
+			: _app(app)
+		{
+		}
+
 		void init() override
 		{
-			setResetFlag(BGFX_RESET_VSYNC);
-			App::init();
+			_app.setResetFlag(BGFX_RESET_VSYNC);
 
-			auto& scene = *addComponent<SceneAppComponent>().getScene();
+			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
 			auto& layout = prog->getVertexLayout();
 
@@ -152,7 +156,7 @@ namespace
 			floorMat->setProgramDefine("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
 
-			getInput().addListener("pause", _pauseEvent, *this);
+			_app.getInput().addListener("pause", _pauseEvent, *this);
 		}
 
 		void update(float deltaTime) noexcept override
@@ -166,15 +170,15 @@ namespace
 				return;
 			}
 			glm::vec3 dir(0);
-			dir.x = getInput().getAxis(_moveRight, _moveLeft);
-			dir.z = getInput().getAxis(_moveForward, _moveBackward);
+			dir.x = _app.getInput().getAxis(_moveRight, _moveLeft);
+			dir.z = _app.getInput().getAxis(_moveForward, _moveBackward);
 
 			auto pos = _trans->getPosition();
 			_trans->setPosition(pos + (dir * deltaTime));
 		}
 
 	private:
-
+		App& _app;
 		OptionalRef<Camera> _cam;
 		OptionalRef<Camera> _freeCam;
 		OptionalRef<FreelookController> _freelook;
@@ -245,7 +249,7 @@ namespace
 
 			auto& fwdRender = cam.addComponent<ForwardRenderer>();
 
-			auto skyboxTex = getAssets().getTextureLoader()("cubemap.ktx");
+			auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx");
 			cam.addComponent<SkyboxRenderer>(skyboxTex);
 
 			cam.addComponent<LightingRenderComponent>();
@@ -264,4 +268,4 @@ namespace
 
 }
 
-DARMOK_RUN_APP(PbrSampleApp);
+DARMOK_RUN_APP(PbrSampleAppDelegate);

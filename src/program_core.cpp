@@ -75,21 +75,27 @@ namespace darmok
         writeMap(json["fragment"], fragmentShaders);
     }
 
-    const std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>> ProgramDefinition::_rendererProfiles
+    const ProgramDefinition::RendererProfileMap& ProgramDefinition::getRendererProfiles() noexcept
     {
-        { bgfx::RendererType::Direct3D11, { "s_5_0" }},
-        { bgfx::RendererType::Direct3D12, { "s_5_0" }},
-        { bgfx::RendererType::Metal, { "metal" }},
-        { bgfx::RendererType::OpenGLES, { "320_es", "310_es", "300_es", "100_es" }},
-        { bgfx::RendererType::OpenGL, { "440", "430", "420", "410", "400", "330", "150", "140", "130", "120" }},
-        { bgfx::RendererType::Vulkan, { "spirv" }},
-    };
+        static const RendererProfileMap profiles
+        {
+            { bgfx::RendererType::Direct3D11,   { "s_5_0" }},
+            { bgfx::RendererType::Direct3D12,   { "s_5_0" }},
+            { bgfx::RendererType::Metal,        { "metal" }},
+            { bgfx::RendererType::OpenGLES,     { "300_es" }},
+            { bgfx::RendererType::OpenGL,       { "150", "130" }},
+            { bgfx::RendererType::Vulkan,       { "spirv16-13", "spirv14-11", "spirv" }},
+        };
+
+        return profiles;
+    }
 
     const ProgramDefinition::Profile& ProgramDefinition::getCurrentProfile() const
     {
         auto render = bgfx::getRendererType();
-        auto itr = _rendererProfiles.find(render);
-        if (itr == _rendererProfiles.end())
+        auto& rendererProfiles = getRendererProfiles();
+        auto itr = rendererProfiles.find(render);
+        if (itr == rendererProfiles.end())
         {
             throw std::invalid_argument("could not find renderer profiles");
         }
@@ -320,24 +326,14 @@ namespace darmok
         return *this;
     }
 
-    const std::vector<std::string> ShaderCompiler::_profiles{
-        "120", "300_es", "spirv",
-#if BX_PLATFORM_WINDOWS
-        "s_5_0",
-#endif
-#if BX_PLATFORM_OSX
-        "metal",
-#endif
-    };
+    const std::unordered_map<bgfx::RendererType::Enum, std::string> ShaderCompiler::_rendererExtensions{
 
-    const std::unordered_map<std::string, std::string> ShaderCompiler::_profileExtensions{
-        { "300_es", ".essl" },
-        { "120",    ".glsl" },
-        { "spirv",  ".spv" },
-        { "metal",  ".mtl" },
-        { "s_3_0",  ".dx9" },
-        { "s_4_0",  ".dx10" },
-        { "s_5_0",  ".dx11" }
+        { bgfx::RendererType::Direct3D11,   ".dx11" },
+        { bgfx::RendererType::Direct3D12,   ".dx12" },
+        { bgfx::RendererType::Metal,        ".mtl" },
+        { bgfx::RendererType::OpenGLES,     ".essl" },
+        { bgfx::RendererType::OpenGL,       ".glsl" },
+        { bgfx::RendererType::Vulkan,       ".spv" },
     };
 
     void ShaderCompiler::operator()(const fs::path& input, const Output& output) const
@@ -494,25 +490,47 @@ namespace darmok
         return path.parent_path() / (stem + suffix + type + profileExt + _binExt);
     }
 
+    const std::vector<bgfx::RendererType::Enum>& ShaderCompiler::getSupportedRenderers() noexcept
+    {
+        static const std::vector<bgfx::RendererType::Enum> renderers
+        {
+#if BX_PLATFORM_WINDOWS
+            bgfx::RendererType::Direct3D11, bgfx::RendererType::Direct3D12,
+#endif
+#if BX_PLATFORM_OSX
+            bgfx::RendererType::Metal,
+#endif
+            bgfx::RendererType::Vulkan, bgfx::RendererType::OpenGL, bgfx::RendererType::OpenGLES,
+        };
+        return renderers;
+    }
+
     std::vector<ShaderCompiler::Output> ShaderCompiler::getOutputs(const fs::path& basePath) const noexcept
     {
         auto defineCombs = CollectionUtils::combinations(_defines);
         std::vector<Output> outputs;
-        for (auto& profile : _profiles)
+
+        auto& rendererProfiles = ProgramDefinition::getRendererProfiles();
+        auto& renderers = getSupportedRenderers();
+
+        for (auto& renderer : renderers)
         {
-            std::string profileExt = profile;
-            auto itr = _profileExtensions.find(profile);
-            if (itr != _profileExtensions.end())
+            for (auto& profile : rendererProfiles.at(renderer))
             {
-                profileExt = itr->second;
-            }
-            for (auto& defines : defineCombs)
-            {
-                outputs.push_back(Output{
-                    .path = getOutputPath(basePath, profileExt, defines),
-                    .profile = profile,
-                    .defines = defines,
-                });
+                std::string profileExt = profile;
+                auto itr = _rendererExtensions.find(renderer);
+                if (itr != _rendererExtensions.end())
+                {
+                    profileExt = itr->second;
+                }
+                for (auto& defines : defineCombs)
+                {
+                    outputs.push_back(Output{
+                        .path = getOutputPath(basePath, profileExt, defines),
+                        .profile = profile,
+                        .defines = defines,
+                    });
+                }
             }
         }
         return outputs;

@@ -38,7 +38,7 @@ namespace darmok
         if (_enabled != enabled)
         {
             _enabled = enabled;
-            if (!enabled)
+            if (!enabled && _scene)
             {
                 _scene->getRenderGraph().removeNode(_renderGraph.id());
             }

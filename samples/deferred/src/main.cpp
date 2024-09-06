@@ -43,23 +43,26 @@ namespace
 	};
 
 
-	class DeferredSampleApp : public App, IFreelookListener
+	class DeferredSampleAppDelegate final : public IAppDelegate, IFreelookListener
 	{
 	public:
+		DeferredSampleAppDelegate(App& app)
+			: _app(app)
+		{
+		}
+
 		void init() override
 		{
-			setResetFlag(BGFX_RESET_SRGB_BACKBUFFER);
-			setResetFlag(BGFX_RESET_MSAA_X4);
-			setResetFlag(BGFX_RESET_MAXANISOTROPY);
-			setDebugFlag(BGFX_DEBUG_TEXT);
+			_app.setResetFlag(BGFX_RESET_SRGB_BACKBUFFER);
+			_app.setResetFlag(BGFX_RESET_MSAA_X4);
+			_app.setResetFlag(BGFX_RESET_MAXANISOTROPY);
+			_app.setDebugFlag(BGFX_DEBUG_TEXT);
 
-			App::init();
-
-			auto scene = addComponent<SceneAppComponent>().getScene();
-			getAssets().getAssimpModelLoader().setConfig({
+			auto scene = _app.addComponent<SceneAppComponent>().getScene();
+			_app.getAssets().getAssimpModelLoader().setConfig({
 				.standardProgram = StandardProgramType::Forward
 			});
-			auto model = getAssets().getModelLoader()("Sponza.dml");
+			auto model = _app.getAssets().getModelLoader()("Sponza.dml");
 
 			_cam = createCamera(*scene);
 			auto shadowRenderer = _cam->getComponent<ShadowRenderer>();
@@ -93,7 +96,7 @@ namespace
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
-			ModelSceneConfigurer configurer(*scene, getAssets());
+			ModelSceneConfigurer configurer(*scene, _app.getAssets());
 			configurer.setTextureFlags(BGFX_TEXTURE_NONE | BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC);
 			auto modelEntity = configurer(*model);
 
@@ -112,19 +115,18 @@ namespace
 
 		void render() const override
 		{
-			App::render();
 			bgfx::dbgTextPrintf(1, 1, 0x01f, "mouse velocity %f %f", _mouseVel.x, _mouseVel.y);
 		}
 
 		void update(float deltaTime) override
 		{
-			App::update(deltaTime);
-			auto& mouse = getInput().getMouse();
+			auto& mouse = _app.getInput().getMouse();
 			auto vel = mouse.getVelocity() * 0.0004F;
 			_mouseVel = glm::max(_mouseVel, glm::abs(vel));
 		}
 
 	private:
+		App& _app;
 		glm::vec2 _mouseVel;
 		OptionalRef<Camera> _cam;
 		OptionalRef<Camera> _freeCam;
@@ -183,11 +185,11 @@ namespace
 		}
 	};
 
-	const std::vector<DeferredSampleApp::PointLightConfig> DeferredSampleApp::_pointLights = {
+	const std::vector<DeferredSampleAppDelegate::PointLightConfig> DeferredSampleAppDelegate::_pointLights = {
 		{{ -5.0f, 0.3f, 0.0f }, 10.F, 5.F, Colors::blue3()},
 		{{ 0.0f, 0.3f, 0.0f }, 10.F, 5.F},
 		{{ 5.0f, 0.3f, 0.0f }, 10.F, 5.F, Colors::red3()},
 	};
 }
 
-DARMOK_RUN_APP(DeferredSampleApp);
+DARMOK_RUN_APP(DeferredSampleAppDelegate);

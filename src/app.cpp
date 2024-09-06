@@ -21,31 +21,20 @@
 
 namespace darmok
 {
-	int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<App>&& app)
+	int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<IAppDelegateFactory>&& factory)
 	{
-		try
+		auto app = std::make_unique<App>(std::move(factory));
+		std::vector<std::string> args(argc);
+		for (int i = 0; i < argc; ++i)
 		{
-			std::vector<std::string> args(argc);
-			for (int i = 0; i < argc; ++i)
-			{
-				args[i] = argv[i];
-			}
-			auto r = app->setup(args);
-			if (r)
-			{
-				return r.value();
-			}
+			args[i] = argv[i];
 		}
-		catch (const std::exception& ex)
-		{
-			app->onException(App::Phase::Setup, ex);
-			return -1;
-		}
-		return Platform::get().run(std::make_unique<AppRunner>(std::move(app)));
+		return Platform::get().run(std::make_unique<AppRunner>(std::move(app), args));
 	}
 
-	AppRunner::AppRunner(std::unique_ptr<App>&& app) noexcept
+	AppRunner::AppRunner(std::unique_ptr<App>&& app, const std::vector<std::string>& args) noexcept
 		: _app(std::move(app))
+		, _args(args)
 	{
 	}
 
@@ -54,6 +43,10 @@ namespace darmok
 		bool success = true;
 		while (success)
 		{
+			if (auto r = setup())
+			{
+				return r.value();
+			}
 			auto result = AppRunResult::Continue;
 			if (init())
 			{
@@ -76,13 +69,20 @@ namespace darmok
 			}
 		}
 
-		// destroy app before the bgfx shutdown to guarantee no dangling resources
-		_app.reset();
-
-		// Shutdown bgfx.
-		bgfx::shutdown();
-
 		return success ? 0 : -1;
+	}
+
+	std::optional<int32_t> AppRunner::setup() noexcept
+	{
+		try
+		{
+			return _app->setup(_args);
+		}
+		catch (const std::exception& ex)
+		{
+			_app->onException(App::Phase::Setup, ex);
+			return -1;
+		}
 	}
 
 	bool AppRunner::init() noexcept
@@ -147,8 +147,9 @@ namespace darmok
 		}
 	}
 
-	AppImpl::AppImpl(App& app) noexcept
+	AppImpl::AppImpl(App& app, std::unique_ptr<IAppDelegateFactory>&& factory) noexcept
 		: _app(app)
+		, _delegateFactory(std::move(factory))
 		, _runResult(AppRunResult::Continue)
 		, _running(false)
 		, _paused(false)
@@ -161,6 +162,7 @@ namespace darmok
 		, _plat(Platform::get())
 		, _window(_plat)
 		, _pixelSize(0)
+		, _rendererType(bgfx::RendererType::Count)
 	{
 	}
 
@@ -269,6 +271,19 @@ namespace darmok
 		return _paused;
 	}
 
+	std::optional<int32_t> AppImpl::setup(const std::vector<std::string>& args)
+	{
+		if (_delegateFactory)
+		{
+			_delegate = (*_delegateFactory)(_app);
+		}
+		if (_delegate)
+		{
+			return _delegate->setup(args);
+		}
+		return std::nullopt;
+	}
+
 	void AppImpl::bgfxInit()
 	{
 		bgfx::Init init;
@@ -282,8 +297,7 @@ namespace darmok
 		init.resolution.height = _pixelSize.y;
 		init.resolution.reset = _resetFlags;
 		init.callback = &BgfxCallbacks::get();
-		// init.type = bgfx::RendererType::Vulkan;
-		// init.type = bgfx::RendererType::OpenGL;
+		init.type = _rendererType;
 		bgfx::init(init);
 
 		bgfx::setDebug(_debugFlags);
@@ -312,12 +326,17 @@ namespace darmok
 
 		_renderGraphDef.addPass(*this);
 
+		if (_delegate)
+		{
+			_delegate->init();
+		}
+
+		_running = true;
+
 		for (auto& [type, component] : _components)
 		{
 			component->init(_app);
 		}
-
-		_running = true;
 	}
 
 	void AppImpl::renderReset()
@@ -326,6 +345,11 @@ namespace darmok
 		_renderGraph.reset();
 		_renderGraphDef.clear();
 		_renderGraphDef.addPass(*this);
+
+		if (_delegate)
+		{
+			_delegate->renderReset();
+		}
 
 		for (auto& [type, component] : _components)
 		{
@@ -354,12 +378,27 @@ namespace darmok
 		_input.getKeyboard().removeListener(*this);
 		_audio.shutdown();
 		_assets.shutdown();
+
+		if (_delegate)
+		{
+			_delegate->shutdown();
+			// delete delegate before bgfx shutdown to ensure no dangling resources
+			_delegate.reset();
+		}
+
+		// Shutdown bgfx.
+		bgfx::shutdown();
 	}
 
 	void AppImpl::update(float deltaTime)
 	{
 		if (!_paused)
 		{
+			if (_delegate)
+			{
+				_delegate->update(deltaTime);
+			}
+
 			for (auto& [type, component] : _components)
 			{
 				component->update(deltaTime);
@@ -420,6 +459,10 @@ namespace darmok
 		{
 			_renderGraph.value()(_taskExecutor.value());
 		}
+		if (_delegate)
+		{
+			_delegate->render();
+		}
 	}
 
 	static uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled) noexcept
@@ -439,6 +482,62 @@ namespace darmok
 		}
 		// TODO: only enable these in debug builds
 		handleDebugShortcuts(key, modifiers);
+	}
+
+	const std::vector<bgfx::RendererType::Enum>& AppImpl::getSupportedRenderers() noexcept
+	{
+		static const std::vector<bgfx::RendererType::Enum> renderers {
+#if BX_PLATFORM_WINDOWS
+			bgfx::RendererType::Direct3D11, bgfx::RendererType::Direct3D12,
+#endif
+#if BX_PLATFORM_OSX
+			bgfx::RendererType::Metal,
+#endif
+#if BX_PLATFORM_IOS || BX_PLATFORM_ANDROID
+			bgfx::RendererType::OpenGLES,
+#endif
+			bgfx::RendererType::Vulkan,
+			bgfx::RendererType::OpenGL,
+		};
+
+		return renderers;
+	}
+
+	void AppImpl::setRendererType(bgfx::RendererType::Enum renderer)
+	{
+		// Count means default renderer chosen by bgfx based on the platform
+		if (renderer != bgfx::RendererType::Count)
+		{
+			auto& renderers = getSupportedRenderers();
+			auto itr = std::find(renderers.begin(), renderers.end(), renderer);
+			if (itr == renderers.end())
+			{
+				throw std::invalid_argument("renderer not supported");
+			}
+		}
+		if (renderer == bgfx::getCaps()->rendererType)
+		{
+			return;
+		}
+		_rendererType = renderer;
+		if (_running)
+		{
+			_runResult = AppRunResult::Restart;
+		}
+	}
+
+	void AppImpl::setNextRenderer()
+	{
+		auto renderer = bgfx::getCaps()->rendererType;
+		auto& renderers = getSupportedRenderers();
+		auto itr = std::find(renderers.begin(), renderers.end(), renderer);
+		size_t i = 0;
+		if (itr != renderers.end())
+		{
+			i = std::distance(renderers.begin(), itr);
+			i = (i + 1) % renderers.size();
+		}
+		setRendererType(renderers.at(i));
 	}
 
 	void AppImpl::handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers)
@@ -497,6 +596,11 @@ namespace darmok
 			|| (key == KeyboardKey::KeyR && modifiers == ctrl))
 		{
 			_runResult = AppRunResult::Restart;
+			return;
+		}
+		if ((key == KeyboardKey::F5 && modifiers == ctrl))
+		{
+			setNextRenderer();
 			return;
 		}
 		if ((key == KeyboardKey::Print && modifiers.empty())
@@ -668,8 +772,8 @@ namespace darmok
 		return itr->second.get();
 	}
 
-	App::App() noexcept
-		: _impl(std::make_unique<AppImpl>(*this))
+	App::App(std::unique_ptr<IAppDelegateFactory>&& factory) noexcept
+		: _impl(std::make_unique<AppImpl>(*this, std::move(factory)))
 	{
 	}
 
@@ -680,7 +784,7 @@ namespace darmok
 
 	std::optional<int32_t> App::setup(const std::vector<std::string>& args)
 	{
-		return std::nullopt;
+		return _impl->setup(args);
 	}
 
 	void App::init()
@@ -846,6 +950,11 @@ namespace darmok
 	bool App::getResetFlag(uint32_t flag) const noexcept
 	{
 		return _impl->getResetFlag(flag);
+	}
+
+	void App::setRendererType(bgfx::RendererType::Enum renderer)
+	{
+		_impl->setRendererType(renderer);
 	}
 
 	void App::addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept

@@ -32,15 +32,18 @@ namespace
 	using namespace darmok;
 	using namespace darmok::physics3d;
 
-	class JoltSampleApp : public App, public ICollisionListener, public ICharacterControllerDelegate, public IImguiRenderer
+	class JoltSampleAppDelegate final : public IAppDelegate, public ICollisionListener, public ICharacterControllerDelegate, public IImguiRenderer
 	{
 	public:
+		JoltSampleAppDelegate(App& app)
+			: _app(app)
+		{
+		}
+
 		void init() override
 		{
-			App::init();
-
-			_scene = addComponent<SceneAppComponent>().getScene();
-			_scene->addSceneComponent<PhysicsSystem>(getAssets().getAllocator());
+			_scene = _app.addComponent<SceneAppComponent>().getScene();
+			_scene->addSceneComponent<PhysicsSystem>(_app.getAssets().getAllocator());
 
 			auto prog = std::make_shared<Program>(StandardProgramType::ForwardBasic);
 
@@ -61,14 +64,14 @@ namespace
 #ifdef PHYSICS_DEBUG_RENDER
 				PhysicsDebugConfig physicsDebugconfig;
 #ifdef DARMOK_FREETYPE
-				physicsDebugconfig.font = getAssets().getFontLoader()("../../assets/noto.ttf");
+				physicsDebugconfig.font = _app.getAssets().getFontLoader()("../../assets/noto.ttf");
 #endif
 				_physicsDebugRender = _cam->addComponent<PhysicsDebugRenderer>(physicsDebugconfig);
 				_physicsDebugRender->setEnabled(false);
 #endif
 			}
 
-			_imgui = addComponent<ImguiAppComponent>(*this);
+			_imgui = _app.addComponent<ImguiAppComponent>(*this);
 			ImGui::SetCurrentContext(_imgui->getContext());
 
 			{ // lights
@@ -243,11 +246,11 @@ namespace
 			{
 				return;
 			}
-			auto& mouse = getInput().getMouse();
+			auto& mouse = _app.getInput().getMouse();
 			if (mouse.getButton(MouseButton::Left))
 			{
 				glm::vec2 pos = mouse.getPosition();
-				pos = getWindow().windowToScreenPoint(pos);
+				pos = _app.getWindow().windowToScreenPoint(pos);
 				auto ray = _cam->screenPointToRay(glm::vec3(pos, 0.F));
 				auto dist = ray.intersect(_playerMovePlane);
 				if (dist)
@@ -258,12 +261,12 @@ namespace
 				return;
 			}
 
-			auto& kb = getInput().getKeyboard();
+			auto& kb = _app.getInput().getKeyboard();
 			glm::vec3 dir(0);
 			if (_characterCtrl->isGrounded())
 			{
-				dir.x = getInput().getAxis(_moveRight, _moveLeft);
-				dir.z = getInput().getAxis(_moveForward, _moveBackward);
+				dir.x = _app.getInput().getAxis(_moveRight, _moveLeft);
+				dir.z = _app.getInput().getAxis(_moveForward, _moveBackward);
 
 				if (_camTrans)
 				{
@@ -280,6 +283,7 @@ namespace
 		}
 
 	private:
+		App& _app;
 		Plane _playerMovePlane = Plane(glm::vec3(0, 1, 0), 0.0);
 		OptionalRef<ImguiAppComponent> _imgui;
 		OptionalRef<Camera> _cam;
@@ -328,4 +332,4 @@ namespace
 	};
 }
 
-DARMOK_RUN_APP(JoltSampleApp);
+DARMOK_RUN_APP(JoltSampleAppDelegate);

@@ -101,14 +101,17 @@ namespace
 		float _speed;
 	};
 
-	class SceneSampleApp : public App
+	class SceneSampleAppDelegate final : public IAppDelegate
 	{
 	public:
+		SceneSampleAppDelegate(App& app)
+			: _app(app)
+		{
+		}
+
 		void init() override
 		{
-			App::init();
-
-			auto& scene = *addComponent<SceneAppComponent>().getScene();
+			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<FrameAnimationUpdater>();
 
 			_prog = std::make_shared<Program>(StandardProgramType::Unlit);
@@ -138,7 +141,7 @@ namespace
 
 		void createBouncingSprite(Scene& scene)
 		{
-			auto tex = getAssets().getTextureLoader()("engine.png");
+			auto tex = _app.getAssets().getTextureLoader()("engine.png");
 			auto sprite = scene.createEntity();
 			auto& trans = scene.addComponent<Transform>(sprite);
 			float scale = 0.5;
@@ -166,7 +169,7 @@ namespace
 
 		void createSpriteAnimation(Scene& scene)
 		{
-			auto texAtlas = getAssets().getTextureAtlasLoader()("warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
+			auto texAtlas = _app.getAssets().getTextureAtlasLoader()("warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
 			static const std::string animNamePrefix = "Attack/";
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = scene.createEntity();
@@ -181,13 +184,13 @@ namespace
 			scene.addComponent<FrameAnimation>(anim, frames, renderable);
 			
 			scene.addComponent<Culling2D>(anim);
-			auto& winSize = getWindow().getSize();
+			auto& winSize = _app.getWindow().getSize();
 			scene.addComponent<Transform>(anim, glm::vec3(winSize, 0) / 2.f);
 		}
 
 		void createRotatingCube(Scene& scene)
 		{
-			auto texture = getAssets().getTextureLoader()("brick.png");
+			auto texture = _app.getAssets().getTextureLoader()("brick.png");
 			auto material = std::make_shared<Material>(_prog, texture);
 			material->setBaseColor(Colors::red());
 
@@ -200,9 +203,10 @@ namespace
 			scene.addSceneComponent<RotateUpdater>(trans, 100.f);
 		}
 	private:
+		App& _app;
 		std::shared_ptr<Material> _debugMaterial;
 		std::shared_ptr<Program> _prog;
 	};
 }
 
-DARMOK_RUN_APP(SceneSampleApp);
+DARMOK_RUN_APP(SceneSampleAppDelegate);

@@ -6,20 +6,20 @@
 
 namespace darmok
 {
-    class LuaRunnerAppImpl;
+    class LuaAppDelegateImpl;
 
-    class DARMOK_EXPORT LuaRunnerApp final : public App
+    class DARMOK_EXPORT LuaAppDelegate final : public IAppDelegate
     {
     public:
-        LuaRunnerApp() noexcept;
-        ~LuaRunnerApp() noexcept;
+        LuaAppDelegate(App& app) noexcept;
+        ~LuaAppDelegate() noexcept;
         std::optional<int32_t> setup(const std::vector<std::string>& args);
         void init() override;
         void shutdown() override;
         void render() const override;
-    protected:
         void update(float deltaTime) override;
+    protected:
     private:
-        std::unique_ptr<LuaRunnerAppImpl> _impl;
+        std::unique_ptr<LuaAppDelegateImpl> _impl;
     };
 }

@@ -17,23 +17,28 @@
 #	define DARMOK_IMPLEMENT_MAIN 0
 #endif // DARMOK_IMPLEMENT_MAIN
 
-#define DARMOK_CREATE_APP_DECL(app, ...)						\
-	std::unique_ptr<darmok::App> darmokCreateApp()				\
-	{															\
-		return darmok::createApp<app>(##__VA_ARGS__);			\
-	}															\
+#define DARMOK_CREATE_APP_DELEGATE_FACTORY(appDlgClass, ...)				\
+    class appDlgClass##Factory final : public darmok::IAppDelegateFactory   \
+	{                                                                       \
+	public:                                                                 \
+        std::unique_ptr<IAppDelegate> operator()(darmok::App& app) override \
+        {                                                                   \
+            return std::make_unique<appDlgClass>(app, ##__VA_ARGS__);       \
+        }                                                                   \
+	};                                                                      \
 
 #if DARMOK_IMPLEMENT_MAIN
-#define DARMOK_RUN_APP(app, ...)                                \
-    DARMOK_CREATE_APP_DECL(app, ##__VA_ARGS__)                  \
-                                                                \
-	int main(int argc, const char* const* argv)                 \
-	{                                                           \
-		return darmok::main(argc, argv, darmokCreateApp());		\
-	}															\
+#define DARMOK_RUN_APP(appDlgClass, ...)								    \
+    DARMOK_CREATE_APP_DELEGATE_FACTORY(appDlgClass, ##__VA_ARGS__)	        \
+																		    \
+	int main(int argc, const char* const* argv)							    \
+	{																	    \
+		return darmok::main(argc, argv,									    \
+			std::make_unique<appDlgClass##Factory>());				        \
+	}																	    \
 
 #else
-#define DARMOK_RUN_APP(app, ...)                                \
+#define DARMOK_RUN_APP(app, ...)                                            \
 	DARMOK_RUN_APP_DECL(app, ...)
 #endif // DARMOK_IMPLEMENT_MAIN
 
@@ -45,6 +50,7 @@ namespace tf
 namespace darmok
 {
 	class IAppComponent;
+	class IAppDelegateFactory;
 	class App;
 	class AppImpl;
 	class Input;
@@ -54,7 +60,7 @@ namespace darmok
 	class RenderGraphDefinition;
 	class RenderChain;
 
-	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<App>&& app);
+	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<IAppDelegateFactory>&& factory);
 
 	struct DARMOK_EXPORT AppUpdateConfig
 	{
@@ -71,15 +77,35 @@ namespace darmok
 		virtual void onAppComponentRemoved(entt::id_type type, IAppComponent& component) {};
 	};
 
-	class DARMOK_EXPORT App
+	class DARMOK_EXPORT BX_NO_VTABLE IAppDelegate
 	{
 	public:
-		App() noexcept;
-		virtual ~App() noexcept;
+		virtual ~IAppDelegate() = default;
+
 		// return unix exit code for early exit
-		virtual std::optional<int32_t> setup(const std::vector<std::string>& args);
-		virtual void init();
-		virtual void shutdown();
+		virtual std::optional<int32_t> setup(const std::vector<std::string>& args) { return std::nullopt; }
+		virtual void init() {}
+		virtual void shutdown() {}
+		virtual void render() const {}
+		virtual void renderReset() {}
+		virtual void update(float deltaTime) {}
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE IAppDelegateFactory
+	{
+	public:
+		virtual ~IAppDelegateFactory() = default;
+		virtual std::unique_ptr<IAppDelegate> operator()(App& app);
+	};
+
+	class DARMOK_EXPORT App final
+	{
+	public:
+		App(std::unique_ptr<IAppDelegateFactory>&& delegateFactory) noexcept;
+		~App() noexcept;
+		std::optional<int32_t> setup(const std::vector<std::string>& args);
+		void init();
+		void shutdown();
 		AppRunResult run();
 
 		enum class Phase
@@ -119,6 +145,8 @@ namespace darmok
 		bool toggleResetFlag(uint32_t flag) noexcept;
 		void setResetFlag(uint32_t flag, bool enabled = true) noexcept;
 		[[nodiscard]] bool getResetFlag(uint32_t flag) const noexcept;
+
+		void setRendererType(bgfx::RendererType::Enum renderer);
 
 		void setClearColor(const Color& color) noexcept;
 		void setUpdateConfig(const AppUpdateConfig& config) noexcept;
@@ -179,9 +207,4 @@ namespace darmok
 		virtual void update(float deltaTime) {};
 	};
 
-	template<typename T, typename... A>
-	std::unique_ptr<App> createApp(A&&... constructArgs)
-	{
-		return std::unique_ptr<App>(new T(std::forward<A>(constructArgs)...));
-	};
 } // namespace darmok

@@ -293,6 +293,11 @@ namespace darmok
 		IMGUI_CHECKVERSION();
 	}
 
+	ImguiAppComponentImpl::~ImguiAppComponentImpl() noexcept
+	{
+		shutdown();
+	}
+
 	void ImguiAppComponentImpl::init(App& app)
 	{
 		app.getRenderGraph().addPass(*this);
@@ -382,6 +387,11 @@ namespace darmok
 		{
 			bgfx::destroy(_lodEnabledUniform);
 			_lodEnabledUniform.idx = bgfx::kInvalidHandle;
+		}
+		if (isValid(_fontsTexture))
+		{
+			bgfx::destroy(_fontsTexture);
+			_fontsTexture.idx = bgfx::kInvalidHandle;
 		}
 	}
 

@@ -17,21 +17,24 @@ namespace
 {
 	using namespace darmok;
 
-	class SceneTextApp : public App, public IImguiRenderer
+	class SceneTextAppDelegate : public IAppDelegate, public IImguiRenderer
 	{
 	public:
+		SceneTextAppDelegate(App& app)
+			: _app(app)
+		{
+		}
+
 		void init() override
 		{
-			App::init();
+			auto& imgui = _app.addComponent<darmok::ImguiAppComponent>(*this);
 
-			auto& imgui = addComponent<darmok::ImguiAppComponent>(*this);
-
-			auto& scene = *addComponent<SceneAppComponent>().getScene();
+			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			auto& registry = scene.getRegistry();
 
-			auto arial = getAssets().getFontLoader()("ARIALUNI.TTF");
-			auto noto = getAssets().getFontLoader()("../../assets/noto.ttf");
-			auto comic = getAssets().getFontLoader()("COMIC.xml");
+			auto arial = _app.getAssets().getFontLoader()("ARIALUNI.TTF");
+			auto noto = _app.getAssets().getFontLoader()("../../assets/noto.ttf");
+			auto comic = _app.getAssets().getFontLoader()("COMIC.xml");
 
 			auto camEntity = registry.create();
 			auto& camTrans = registry.emplace<Transform>(camEntity);
@@ -83,6 +86,7 @@ namespace
 			}
 		}
 	private:
+		App& _app;
 		OptionalRef<Text> _text1;
 		OptionalRef<Text> _text2;
 		OptionalRef<Text> _text3;
@@ -91,4 +95,4 @@ namespace
 	};
 }
 
-DARMOK_RUN_APP(SceneTextApp);
+DARMOK_RUN_APP(SceneTextAppDelegate);

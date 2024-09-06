@@ -330,46 +330,42 @@ namespace darmok
 		return _msg.c_str();
 	}
 
-	LuaRunnerApp::LuaRunnerApp() noexcept
-		: _impl(std::make_unique<LuaRunnerAppImpl>(*this))
+	LuaAppDelegate::LuaAppDelegate(App& app) noexcept
+		: _impl(std::make_unique<LuaAppDelegateImpl>(app))
 	{
 	}
 
-	LuaRunnerApp::~LuaRunnerApp() noexcept
+	LuaAppDelegate::~LuaAppDelegate() noexcept
 	{
-		// intentionally left blank for the unique_ptr<LuaRunnerAppImpl> forward declaration
+		// intentionally left blank for the unique_ptr<LuaAppDelegateImpl> forward declaration
 	}
 
-	std::optional<int32_t> LuaRunnerApp::setup(const std::vector<std::string>& args)
+	std::optional<int32_t> LuaAppDelegate::setup(const std::vector<std::string>& args)
 	{
 		return _impl->setup(args);
 	}
 
-	void LuaRunnerApp::init()
+	void LuaAppDelegate::init()
 	{
-		App::init();
-		return _impl->init();
+		_impl->init();
 	}
 
-	void LuaRunnerApp::shutdown()
+	void LuaAppDelegate::shutdown()
 	{
-		App::shutdown();
 		_impl->shutdown();
 	}
 
-	void LuaRunnerApp::update(float deltaTime)
+	void LuaAppDelegate::update(float deltaTime)
 	{
-		App::update(deltaTime);
 		_impl->update(deltaTime);
 	}
 
-	void LuaRunnerApp::render() const
+	void LuaAppDelegate::render() const
 	{
-		App::render();
 		_impl->render();
 	}
 
-	LuaRunnerAppImpl::LuaRunnerAppImpl(App& app) noexcept
+	LuaAppDelegateImpl::LuaAppDelegateImpl(App& app) noexcept
 		: _app(app)
 	{
 	}
@@ -384,12 +380,12 @@ namespace darmok
 		StreamUtils::logDebug(oss.str());
 	}
 
-	void LuaRunnerAppImpl::luaDebugScreenText(const glm::uvec2& pos, const std::string& msg) noexcept
+	void LuaAppDelegateImpl::luaDebugScreenText(const glm::uvec2& pos, const std::string& msg) noexcept
 	{
 		_dbgTexts.emplace_back(pos, msg);
 	}
 
-	std::optional<int> LuaRunnerAppImpl::setup(const std::vector<std::string>& args)
+	std::optional<int> LuaAppDelegateImpl::setup(const std::vector<std::string>& args)
 	{
 		std::vector<const char*> argv;
 		argv.reserve(args.size());
@@ -430,7 +426,7 @@ namespace darmok
 		return result;
 	}
 
-	std::optional<int32_t> LuaRunnerAppImpl::loadLua(const std::filesystem::path& mainPath)
+	std::optional<int32_t> LuaAppDelegateImpl::loadLua(const std::filesystem::path& mainPath)
 	{
 		auto mainDir = mainPath.parent_path().string();
 
@@ -503,13 +499,13 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	void LuaRunnerAppImpl::unloadLua() noexcept
+	void LuaAppDelegateImpl::unloadLua() noexcept
 	{
 		_luaApp.reset();
 		_lua.reset();
 	}
 
-	std::optional<std::filesystem::path> LuaRunnerAppImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
+	std::optional<std::filesystem::path> LuaAppDelegateImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
 	{
 		static const std::vector<std::filesystem::path> possiblePaths = {
 			"main.lua",
@@ -551,7 +547,7 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	void LuaRunnerAppImpl::addPackagePath(const std::string& path, bool binary) noexcept
+	void LuaAppDelegateImpl::addPackagePath(const std::string& path, bool binary) noexcept
 	{
 		static const char sep = ';';
 		std::string fpath(path);
@@ -583,7 +579,7 @@ namespace darmok
 		lua["package"][key] = current;
 	}
 
-	void LuaRunnerAppImpl::init()
+	void LuaAppDelegateImpl::init()
 	{
 		if (_lua == nullptr)
 		{
@@ -603,11 +599,11 @@ namespace darmok
 		_luaApp->addUpdater1(lua["update"]);
 	}
 
-	std::string LuaRunnerAppImpl::_defaultAssetInputPath = "assets";
-	std::string LuaRunnerAppImpl::_defaultAssetOutputPath = "runtime_assets";
-	std::string LuaRunnerAppImpl::_defaultAssetCachePath = "asset_cache";
+	std::string LuaAppDelegateImpl::_defaultAssetInputPath = "assets";
+	std::string LuaAppDelegateImpl::_defaultAssetOutputPath = "runtime_assets";
+	std::string LuaAppDelegateImpl::_defaultAssetCachePath = "asset_cache";
 
-	bool LuaRunnerAppImpl::importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine)
+	bool LuaAppDelegateImpl::importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine)
 	{
 		const char* inputPath = nullptr;
 		cmdLine.hasArg(inputPath, 'i', "asset-input");
@@ -657,12 +653,12 @@ namespace darmok
 		return true;
 	}
 
-	void LuaRunnerAppImpl::version(const std::string& name) noexcept
+	void LuaAppDelegateImpl::version(const std::string& name) noexcept
 	{
 		std::cout << name << ": darmok lua runner." << std::endl;
 	}
 
-	void LuaRunnerAppImpl::help(const std::string& name, const char* error) noexcept
+	void LuaAppDelegateImpl::help(const std::string& name, const char* error) noexcept
 	{
 		if (error)
 		{
@@ -683,7 +679,7 @@ namespace darmok
 		std::cout << "  --bgfx-shader-include       Path of the bgfx shader include dir (used to process bgfx shaders)." << std::endl;
 	}
 
-	void LuaRunnerAppImpl::update(float deltaTime)
+	void LuaAppDelegateImpl::update(float deltaTime)
 	{
 		if (_luaApp)
 		{
@@ -691,7 +687,7 @@ namespace darmok
 		}
 	}
 
-	void LuaRunnerAppImpl::render() noexcept
+	void LuaAppDelegateImpl::render() noexcept
 	{
 		for (auto& text : _dbgTexts)
 		{
@@ -700,7 +696,7 @@ namespace darmok
 		_dbgTexts.clear();
 	}
 
-	void LuaRunnerAppImpl::shutdown() noexcept
+	void LuaAppDelegateImpl::shutdown() noexcept
 	{
 		unloadLua();
 	}

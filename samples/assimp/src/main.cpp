@@ -35,23 +35,26 @@ namespace
 		float _speed;
 	};
 
-	class AssimpSampleApp : public App
+	class AssimpSampleAppDelegate final : public IAppDelegate
 	{
 	public:
+		AssimpSampleAppDelegate(App& app)
+			: _app(app)
+		{
+		}
+
 		void init() override
 		{
-			App::init();
-
-			auto scene = addComponent<SceneAppComponent>().getScene();
-			getAssets().getAssimpModelLoader().setConfig({
+			auto scene = _app.addComponent<SceneAppComponent>().getScene();
+			_app.getAssets().getAssimpModelLoader().setConfig({
 				.standardProgram = StandardProgramType::ForwardBasic
 			});
-			auto model = getAssets().getModelLoader()("human.dml");
+			auto model = _app.getAssets().getModelLoader()("human.dml");
 
 			auto ambientLightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(ambientLightEntity, 0.5);
 
-			ModelSceneConfigurer configurer(*scene, getAssets());
+			ModelSceneConfigurer configurer(*scene, _app.getAssets());
 			configurer(*model, [scene](const auto& node, Entity entity) {
 				auto& registry = scene->getRegistry();
 				if (node.name == "human")
@@ -67,7 +70,9 @@ namespace
 				}
 			});
 		}
+	private:
+		App& _app;
 	};
 }
 
-DARMOK_RUN_APP(AssimpSampleApp);
+DARMOK_RUN_APP(AssimpSampleAppDelegate);

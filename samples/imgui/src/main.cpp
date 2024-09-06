@@ -165,29 +165,31 @@ namespace
 		};
 	};
 
-	class ImguiSampleApp : public App, public IImguiRenderer, IWindowListener
+	class ImguiSampleAppDelegate final : public IAppDelegate, public IImguiRenderer, IWindowListener
 	{
 	public:
+		ImguiSampleAppDelegate(App& app)
+			: _app(app)
+		{
+		}
+
 		void init() override
 		{
-			App::init();
-
 			// Enable debug text.
-			setDebugFlag(BGFX_DEBUG_TEXT);
-			auto& imgui = addComponent<darmok::ImguiAppComponent>(*this);
+			_app.setDebugFlag(BGFX_DEBUG_TEXT);
+			auto& imgui = _app.addComponent<darmok::ImguiAppComponent>(*this);
 			// the current imgui context is static, we have to do this if darmok is dynamically linked
 			// to set the static in this part
 			ImGui::SetCurrentContext(imgui.getContext());
 
-			_videoModeState.update(getWindow().getVideoModeInfo());
-			_videoModeState.onWindowVideoMode(getWindow().getVideoMode());
-			getWindow().addListener(*this);
+			_videoModeState.update(_app.getWindow().getVideoModeInfo());
+			_videoModeState.onWindowVideoMode(_app.getWindow().getVideoMode());
+			_app.getWindow().addListener(*this);
 		}
 
 		void shutdown() override
 		{
-			getWindow().removeListener(*this);
-			App::shutdown();
+			_app.getWindow().removeListener(*this);
 		}
 
 		void imguiRender()
@@ -197,7 +199,7 @@ namespace
 
 			ImGui::Spacing();
 
-			_videoModeState.imguiRender(getWindow());
+			_videoModeState.imguiRender(_app.getWindow());
 
 			ImGui::Spacing();
 
@@ -215,8 +217,6 @@ namespace
 
 		void render() const override
 		{
-			App::render();
-
 			const bgfx::Stats* stats = bgfx::getStats();
 
 			bgfx::dbgTextPrintf(0, 1, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");
@@ -232,11 +232,11 @@ namespace
 			);
 
 			bgfx::dbgTextPrintf(0, 3, 0x0f, "Window: mode %s size %s"
-				, getWindow().getVideoMode().toString().c_str()
-				, glm::to_string(getWindow().getSize()).c_str()
+				, _app.getWindow().getVideoMode().toString().c_str()
+				, glm::to_string(_app.getWindow().getSize()).c_str()
 			);
 			bgfx::dbgTextPrintf(0, 4, 0x0f, "Mouse: position %s velocity %s velocity max %s"
-				, glm::to_string(getInput().getMouse().getPosition()).c_str()
+				, glm::to_string(_app.getInput().getMouse().getPosition()).c_str()
 				, glm::to_string(_mouseVelocity).c_str()
 				, glm::to_string(_mouseVelocityMax).c_str()
 			);
@@ -245,26 +245,27 @@ namespace
 				, glm::to_string(_mouseScrollMax).c_str()
 			);
 			bgfx::dbgTextPrintf(0, 6, 0x0f, "Gamepad Sticks: %s %s"
-				, glm::to_string(getInput().getGamepad()->getStick(GamepadStick::Left)).c_str()
-				, glm::to_string(getInput().getGamepad()->getStick(GamepadStick::Right)).c_str()
+				, glm::to_string(_app.getInput().getGamepad()->getStick(GamepadStick::Left)).c_str()
+				, glm::to_string(_app.getInput().getGamepad()->getStick(GamepadStick::Right)).c_str()
 			);
 		}
 
-	protected:
+		void update(float deltaTime) override
+		{
+			_mouseVelocity = _app.getInput().getMouse().getVelocity();
+			updateMaxVec(_mouseVelocity, _mouseVelocityMax);
+			_mouseScroll = _app.getInput().getMouse().getScroll();
+			updateMaxVec(_mouseScroll, _mouseScrollMax);
+		}
+
+	private:
+		App& _app;
 		std::string _text = "hello darmok!";
 		VideoModeState _videoModeState;
 		glm::vec2 _mouseVelocity = glm::vec2(0);
 		glm::vec2 _mouseVelocityMax = glm::vec2(0);
 		glm::vec2 _mouseScroll = glm::vec2(0);
 		glm::vec2 _mouseScrollMax = glm::vec2(0);
-
-		void update(float deltaTime) override
-		{
-			_mouseVelocity = getInput().getMouse().getVelocity();
-			updateMaxVec(_mouseVelocity, _mouseVelocityMax);
-			_mouseScroll = getInput().getMouse().getScroll();
-			updateMaxVec(_mouseScroll, _mouseScrollMax);
-		}
 
 		static void updateMaxVec(const glm::vec2& v, glm::vec2& max)
 		{
@@ -279,10 +280,8 @@ namespace
 				max.y = y;
 			}
 		}
-
-
 	};
 
 }
 
-DARMOK_RUN_APP(ImguiSampleApp);
+DARMOK_RUN_APP(ImguiSampleAppDelegate);

@@ -96,10 +96,10 @@ namespace darmok
 		std::string _msg;
 	};
 
-	class LuaRunnerAppImpl final
+	class LuaAppDelegateImpl final
     {
     public:
-		LuaRunnerAppImpl(App& app) noexcept;
+		LuaAppDelegateImpl(App& app) noexcept;
         std::optional<int32_t> setup(const std::vector<std::string>& args);
 		void init();
         void update(float deltaTime);
