@@ -24,6 +24,7 @@ namespace darmok
 	struct Viewport;
 	struct TextureAtlasBounds;
 	struct Rectangle;
+	struct TextureAtlasElement;
 
 	struct RmluiUtils final
 	{
@@ -72,11 +73,11 @@ namespace darmok
 
 	class RmluiCanvasImpl;
 
-	class RmluiRenderInterface final : public Rml::RenderInterface, IRenderPass
+	class RmluiRenderInterface final : public Rml::RenderInterface
 	{
 	public:
-		RmluiRenderInterface(RmluiCanvasImpl& canvas) noexcept;
-
+		RmluiRenderInterface(App& app) noexcept;
+		~RmluiRenderInterface() noexcept;
 		Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) noexcept override;
 		void RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept override;
 		void ReleaseGeometry(Rml::CompiledGeometryHandle geometry) noexcept override;
@@ -88,18 +89,17 @@ namespace darmok
 		Rml::TextureHandle GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i dimensions) noexcept override;
 		void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
-		
-		void renderReset() noexcept;
 
-		void renderPassDefine(RenderPassDefinition& def) noexcept override;
-		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-		void renderPassExecute(IRenderGraphContext& context) noexcept override;
+		void renderCanvas(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept;
+		bool renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
 
 	private:
-
-		RmluiCanvasImpl& _canvas;
+		App& _app;
+		std::shared_ptr<Program> _program;
+		bgfx::UniformHandle _textureUniform;
+		std::unordered_map<Rml::String, std::reference_wrapper<Texture>> _textureSources;
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
-		std::unordered_map<Rml::CompiledGeometryHandle, std::unique_ptr<Mesh>> _compiledGeometries;
+		std::unordered_map<Rml::CompiledGeometryHandle, std::unique_ptr<Mesh>> _meshes;
 		glm::mat4 _transform;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
@@ -107,17 +107,13 @@ namespace darmok
 
 		static const uint64_t _state;
 
-		void submitGeometry(Rml::TextureHandle texture, const Rml::Vector2f& translation) noexcept;
 		glm::mat4 getTransformMatrix(const glm::vec2& position);
-		void renderMouseCursor(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
-
 	};
 
 	class RmluiSystemInterface final : public Rml::SystemInterface
 	{
 	public:
-		RmluiSystemInterface() noexcept;
-		void init(App& app);
+		RmluiSystemInterface(App& app) noexcept;
 		void update(float dt) noexcept;
 		double GetElapsedTime() override;
 
@@ -133,7 +129,7 @@ namespace darmok
 	class RmluiFileInterface final : public Rml::FileInterface
 	{
 	public:
-		void init(App& app);
+		RmluiFileInterface(App& app);
 		Rml::FileHandle Open(const Rml::String& path) noexcept override;
 		void Close(Rml::FileHandle file) noexcept override;
 		size_t Read(void* buffer, size_t size, Rml::FileHandle file) noexcept override;
@@ -159,7 +155,7 @@ namespace darmok
 	class RmluiCanvas;
 	class Transform;
 
-	class RmluiCanvasImpl final
+	class RmluiCanvasImpl final : IRenderPass
 	{
 	public:
 		using MousePositionMode = RmluiCanvasMousePositionMode;
@@ -171,7 +167,6 @@ namespace darmok
 		void shutdown() noexcept;
 		bool update() noexcept;
 		void renderReset() noexcept;
-		void render(IRenderGraphContext& context, const glm::mat4& trans) noexcept;
 
 		std::string getName() const noexcept;
 		glm::mat4 getModelMatrix() const noexcept;
@@ -224,7 +219,6 @@ namespace darmok
 	private:
 		RmluiCanvas& _canvas;
 		OptionalRef<Rml::Context> _context;
-		std::optional<RmluiRenderInterface> _render;
 		OptionalRef<RmluiRendererImpl> _comp;
 		bool _inputActive;
 		glm::vec2 _mousePosition;
@@ -237,6 +231,10 @@ namespace darmok
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		void updateContextSize() noexcept;
+
+		void renderPassDefine(RenderPassDefinition& def) noexcept override;
+		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
+		void renderPassExecute(IRenderGraphContext& context) noexcept override;
 	};
 
 	class Transform;
@@ -263,6 +261,7 @@ namespace darmok
 		static std::shared_ptr<RmluiSharedContext> getInstance(App& app) noexcept;
 		static std::weak_ptr<RmluiSharedContext> getWeakInstance() noexcept;
 		RmluiSystemInterface& getSystem() noexcept;
+		RmluiRenderInterface& getRender() noexcept;
 
 		void addCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
 		bool removeCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
@@ -275,6 +274,7 @@ namespace darmok
 		static std::weak_ptr<RmluiSharedContext> _instance;
 		RmluiSystemInterface _system;
 		RmluiFileInterface _file;
+		RmluiRenderInterface _render;
 		std::vector<std::unique_ptr<RmluiEventForwarder>> _eventForwarders;
 		std::vector<std::reference_wrapper<IRmluiCustomEventListener>> _customEventListeners;
 
@@ -293,14 +293,13 @@ namespace darmok
 
 		void loadFont(const std::string& path, bool fallback = false) noexcept;
 
-		RmluiSystemInterface& getSystem() noexcept;
+		RmluiSystemInterface& getRmluiSystem() noexcept;
+		RmluiRenderInterface& getRmluiRender() noexcept;
 		bx::AllocatorI& getAllocator();
-		std::shared_ptr<Program> getProgram() const noexcept;
 		OptionalRef<const Camera> getCamera() const noexcept;
 		glm::uvec2 getViewportSize() const noexcept;
 		OptionalRef<Transform> getTransform(const RmluiCanvas& canvas) noexcept;
 		glm::mat4 getDefaultProjectionMatrix() const noexcept;
-		const bgfx::UniformHandle& getTextureUniform() const noexcept;
 		RenderGraphDefinition& getRenderGraph() noexcept;
 		const RenderGraphDefinition& getRenderGraph() const noexcept;
 
@@ -310,9 +309,7 @@ namespace darmok
 		OptionalRef<Camera> _cam;
 		OptionalRef<Scene> _scene;
 		OptionalRef<App> _app;
-		std::shared_ptr<Program> _program;
 		RenderGraphDefinition _renderGraph;
-		bgfx::UniformHandle _textureUniform;
 		std::shared_ptr<RmluiSharedContext> _shared;
 
 		void onCanvasConstructed(EntityRegistry& registry, Entity entity);
