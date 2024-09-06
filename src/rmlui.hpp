@@ -92,8 +92,10 @@ namespace darmok
 
 		void renderCanvas(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept;
 		bool renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
+		OptionalRef<Texture> getSpriteTexture(const Rml::Sprite& sprite) noexcept;
 
 	private:
+		std::mutex _canvasMutex;
 		App& _app;
 		std::shared_ptr<Program> _program;
 		bgfx::UniformHandle _textureUniform;

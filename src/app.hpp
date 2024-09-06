@@ -232,11 +232,12 @@ namespace darmok
 	{
 	public:
 		AppRunner(std::unique_ptr<App>&& app, const std::vector<std::string>& args) noexcept;
+		std::optional<int32_t> setup() noexcept;
 		int32_t operator()() noexcept override;
 	private:
+		bool _setupDone;
 		std::unique_ptr<App> _app;
 		std::vector<std::string> _args;
-		std::optional<int32_t> setup() noexcept;
 		bool init() noexcept;
 		AppRunResult run() noexcept;
 		bool shutdown() noexcept;

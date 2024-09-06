@@ -59,6 +59,15 @@ namespace darmok
         return std::find(_resources.begin(), _resources.end(), res) != _resources.end();
     }
 
+    RenderResourcesDefinition& RenderResourcesDefinition::add(const Resource& res) noexcept
+    {
+        if (!contains(res))
+        {
+            _resources.push_back(res);
+        }
+        return *this;
+    }
+
     size_t RenderResourcesDefinition::hash() const noexcept
     {
         size_t hash = 0;
@@ -221,8 +230,7 @@ namespace darmok
     RenderGraphDefinition::RenderGraphDefinition(const RenderGraphDefinition& other) noexcept
         : _id(other._id)
         , _name(other._name)
-        , _read(other._read)
-        , _write(other._write)
+        , _priority(0)
     {
         _nodes.reserve(other._nodes.size());
         for (auto& node : other._nodes)
@@ -271,7 +279,7 @@ namespace darmok
     size_t RenderGraphDefinition::hash() const noexcept
     {
         size_t hash = 0;
-        hashCombine(hash, _read.hash(), _write.hash(), _name);
+        hashCombine(hash, _name);
         for (auto& node : _nodes)
         {
             hashCombine(hash, node->hash());
@@ -390,26 +398,6 @@ namespace darmok
         return _nodes.size();
     }
 
-    RenderGraphDefinition::Resources& RenderGraphDefinition::getReadResources() noexcept
-    {
-        return _read;
-    }
-
-    const RenderGraphDefinition::Resources& RenderGraphDefinition::getReadResources() const noexcept
-    {
-        return _read;
-    }
-
-    RenderGraphDefinition::Resources& RenderGraphDefinition::getWriteResources() noexcept
-    {
-        return _write;
-    }
-
-    const RenderGraphDefinition::Resources& RenderGraphDefinition::getWriteResources() const noexcept
-    {
-        return _write;
-    }
-
     const RenderGraphDefinition::INode& RenderGraphDefinition::operator[](size_t vertex) const
     {
         return *_nodes.at(vertex);
@@ -435,6 +423,15 @@ namespace darmok
             auto prio = std::make_pair(i, def.getPriority());
             prios.insert(std::upper_bound(prios.begin(), prios.end(), prio,
                 [](auto& a, auto& b) { return a.second > b.second; }), prio);
+
+            for (auto& res : def.getReadResources())
+            {
+                _read.add(res);
+            }
+            for (auto& res : def.getWriteResources())
+            {
+                _write.add(res);
+            }
         }
         _indices.reserve(prios.size());
         for (auto& prio : prios)
@@ -474,12 +471,12 @@ namespace darmok
 
     const RenderGraphNode::ResourcesDefinition& RenderGraphNode::getReadResources() const noexcept
     {
-        return _def.getReadResources();
+        return _write;
     }
 
     const RenderGraphNode::ResourcesDefinition& RenderGraphNode::getWriteResources() const noexcept
     {
-        return _def.getWriteResources();
+        return _write;
     }
 
     int RenderGraphNode::getPriority() const noexcept

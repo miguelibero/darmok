@@ -53,6 +53,7 @@ namespace darmok
         ConstIterator begin() const;
         ConstIterator end() const;
         bool contains(const Resource& res) const noexcept;
+        RenderResourcesDefinition& add(const Resource& res) noexcept;
 
         template<typename T>
         bool contains(entt::hashed_string name = "") const noexcept
@@ -353,11 +354,6 @@ namespace darmok
         OptionalRef<INode> getNode(RenderGraphId id) noexcept;
         OptionalRef<const INode> getNode(RenderGraphId id) const noexcept;
 
-        Resources& getReadResources() noexcept;
-        const Resources& getReadResources() const noexcept;
-        Resources& getWriteResources() noexcept;
-        const Resources& getWriteResources() const noexcept;
-
         void clear();
         size_t size() const noexcept;
 
@@ -371,8 +367,6 @@ namespace darmok
         int _priority;
         using Nodes = std::vector<std::unique_ptr<INode>>;
         Nodes _nodes;
-        Resources _read;
-        Resources _write;
         RenderGraphId _id;
 
         Pass& doAddPass(bool front) noexcept;
@@ -414,6 +408,8 @@ namespace darmok
         std::vector<size_t> _indices;
         int _priority;
         tf::Taskflow _taskflow;
+        ResourcesDefinition _read;
+        ResourcesDefinition _write;
 
         IRenderGraphNode& getVertexNode(int vertex);
     };

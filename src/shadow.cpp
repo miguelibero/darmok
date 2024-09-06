@@ -376,7 +376,6 @@ namespace darmok
     {
         _renderGraph.clear();
         _renderGraph.setName("Shadows");
-        _renderGraph.getWriteResources().add<Texture>("shadow");
         for (auto& pass : _passes)
         {
             _renderGraph.addPass(pass);

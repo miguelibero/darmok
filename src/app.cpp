@@ -29,12 +29,18 @@ namespace darmok
 		{
 			args[i] = argv[i];
 		}
-		return Platform::get().run(std::make_unique<AppRunner>(std::move(app), args));
+		auto runner = std::make_unique<AppRunner>(std::move(app), args);
+		if (auto r = runner->setup())
+		{
+			return r.value();
+		}
+		return Platform::get().run(std::move(runner));
 	}
 
 	AppRunner::AppRunner(std::unique_ptr<App>&& app, const std::vector<std::string>& args) noexcept
 		: _app(std::move(app))
 		, _args(args)
+		, _setupDone(false)
 	{
 	}
 
@@ -74,8 +80,13 @@ namespace darmok
 
 	std::optional<int32_t> AppRunner::setup() noexcept
 	{
+		if (_setupDone)
+		{
+			return std::nullopt;
+		}
 		try
 		{
+			_setupDone = true;
 			return _app->setup(_args);
 		}
 		catch (const std::exception& ex)
@@ -138,6 +149,7 @@ namespace darmok
 		try
 		{
 			_app->shutdown();
+			_setupDone = false;
 			return true;
 		}
 		catch (const std::exception& ex)

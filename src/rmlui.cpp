@@ -14,6 +14,7 @@
 #include "rmlui.hpp"
 #include <darmok/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <filesystem>
 
 #include "generated/rmlui/rmlui.program.h"
 
@@ -240,6 +241,7 @@ namespace darmok
 
     void RmluiRenderInterface::renderCanvas(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept
     {
+        std::scoped_lock lock(_canvasMutex);
         _context = context;
 
         auto viewId = context.getViewId();
@@ -261,27 +263,47 @@ namespace darmok
         _context.reset();
     }
 
+    OptionalRef<Texture> RmluiRenderInterface::getSpriteTexture(const Rml::Sprite& sprite) noexcept
+    {
+        auto& texSrc = sprite.sprite_sheet->texture_source;
+        std::filesystem::path src = texSrc.GetSource();
+        if (!src.is_absolute())
+        {
+            std::filesystem::path defSrc(texSrc.GetDefinitionSource());
+            src = defSrc.parent_path() / src;
+        }
+        auto itr = _textureSources.find(src.string());
+        if (itr == _textureSources.end())
+        {
+            Rml::Vector2i dim;
+            LoadTexture(dim, src.string());
+            itr = _textureSources.find(src.string());
+        }
+        if (itr == _textureSources.end())
+        {
+            return nullptr;
+        }
+        return itr->second.get();
+    }
+
     bool RmluiRenderInterface::renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept
     {
-        auto src = sprite.sprite_sheet->texture_source.GetSource();
-        auto itr = _textureSources.find(src);
-        if (itr == _textureSources.end())
+        auto texture = getSpriteTexture(sprite);
+        if (!texture)
         {
             return false;
         }
-
-        auto& texture = itr->second.get();
         auto rect = RmluiUtils::convert(sprite.rectangle);
         auto atlasElm = TextureAtlasElement::create(TextureAtlasBounds{ rect.size, rect.origin });
 
         TextureAtlasMeshConfig config;
         config.type = MeshType::Transient;
-        auto mesh = atlasElm.createSprite(_program->getVertexLayout(), texture.getSize(), config);
+        auto mesh = atlasElm.createSprite(_program->getVertexLayout(), texture->getSize(), config);
 
         auto& encoder = _context->getEncoder();
         auto viewId = _context->getViewId();
 
-        encoder.setTexture(0, _textureUniform, texture.getHandle());
+        encoder.setTexture(0, _textureUniform, texture->getHandle());
 
         auto trans = getTransformMatrix(position);
         encoder.setTransform(glm::value_ptr(trans));
@@ -866,8 +888,6 @@ namespace darmok
         def.setName(name);
 
         // we need to guarantee that the views are rendered one after the other
-        // as it seems that there are accesses to shared data
-        // that don't allow them to be rendered in parallel
         def.getWriteResources().add<Rml::Context>();
     }
 
