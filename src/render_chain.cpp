@@ -99,7 +99,18 @@ namespace darmok
 
 	RenderChain& RenderChain::setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept
 	{
+		if (_output == fb)
+		{
+			return *this;
+		}
 		_output = fb;
+		auto size = _steps.size();
+		if (size > 0)
+		{
+			auto i = size - 1;
+			auto& lastStep = _steps.at(i);
+			lastStep->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+		}
 		return *this;
 	}
 
@@ -221,20 +232,26 @@ namespace darmok
 		auto& ref = *step;
 		auto i = _steps.size();
 		_steps.push_back(std::move(step));
-		if (_running)
+		if (!_running)
 		{
-			ref.init(*this);
-			ref.updateRenderChain(readBuffer, getWriteBuffer(i));
-			if (i > 0)
-			{
-				auto j = i - 1;
-				auto& prevStep = _steps[j];
-				prevStep->updateRenderChain(getReadBuffer(j).value(), getWriteBuffer(j));
-			}
-			else
-			{
-				_delegate.onRenderChainInputChanged();
-			}
+			return *this;
+		}
+
+		ref.init(*this);
+		ref.updateRenderChain(readBuffer, getWriteBuffer(i));
+
+		auto& parentGraph = _delegate.getRenderChainParentGraph();
+		parentGraph.setChild(_renderGraph);
+
+		if (i > 0)
+		{
+			auto j = i - 1;
+			auto& prevStep = _steps[j];
+			prevStep->updateRenderChain(getReadBuffer(j).value(), getWriteBuffer(j));
+		}
+		else
+		{
+			_delegate.onRenderChainInputChanged();
 		}
 		return *this;
 	}

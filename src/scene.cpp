@@ -113,7 +113,11 @@ namespace darmok
 
     void SceneImpl::setViewport(const std::optional<Viewport>& vp) noexcept
     {
-        _viewport = vp;
+        if (_viewport != vp)
+        {
+            _viewport = vp;
+            renderReset();
+        }
     }
 
     Viewport SceneImpl::getCurrentViewport() const noexcept
