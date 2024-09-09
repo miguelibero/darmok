@@ -27,6 +27,6 @@ namespace darmok
         void shutdown() noexcept override;
     private:
         OptionalRef<Camera> _cam;
-        std::shared_ptr<DeferredGeometryRenderPass> _geoPass;
+        DeferredGeometryRenderPass _geoPass;
     };
 }

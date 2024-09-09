@@ -126,19 +126,15 @@ namespace darmok
         return !operator==(other);
     }
 
-    RenderPassDefinition& RenderPassDefinition::setDelegate(const std::weak_ptr<IRenderPassDelegate>& dlg) noexcept
+    RenderPassDefinition& RenderPassDefinition::setDelegate(IRenderPassDelegate& dlg) noexcept
     {
         _delegate = dlg;
         return *this;
     }
 
-    bool RenderPassDefinition::hasPassDelegate(IRenderPassDelegate& dlg) const noexcept
+    bool RenderPassDefinition::hasPassDelegate(const IRenderPassDelegate& dlg) const noexcept
     {
-        if (auto ptr = _delegate.lock())
-        {
-            return ptr.get() == &dlg;
-        }
-        return false;
+        return _delegate.ptr() == &dlg;
     }
 
     bgfx::ViewId RenderPassDefinition::configureView(bgfx::ViewId viewId) noexcept
@@ -147,9 +143,9 @@ namespace darmok
         bgfx::resetView(viewId);
         bgfx::setViewName(viewId, _name.c_str());
 
-        if (auto dlg = _delegate.lock())
+        if (_delegate)
         {
-            dlg->renderPassConfigure(viewId);
+            _delegate->renderPassConfigure(viewId);
         }
 
         return viewId + 1;
@@ -158,10 +154,10 @@ namespace darmok
     tf::Task RenderPassDefinition::createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept
     {
         auto task = flowBuilder.emplace([this, context]() mutable {
-            if (auto dlg = _delegate.lock())
+            if (_delegate)
             {
                 context.setViewId(_viewId);
-                dlg->renderPassExecute(context);
+                _delegate->renderPassExecute(context);
                 context.setViewId();
             }
         });
@@ -292,54 +288,12 @@ namespace darmok
         return ref;
     }
 
-    const RenderGraphDefinition::Pass& RenderGraphDefinition::addPass(const std::shared_ptr<IRenderPass>& pass)
+    const RenderGraphDefinition::Pass& RenderGraphDefinition::addPass(IRenderPass& pass)
     {
         auto& def = addPass();
         def.setDelegate(pass);
-        pass->renderPassDefine(def);
+        pass.renderPassDefine(def);
         return def;
-    }
-
-    class RenderPassHandle final : public IRenderPass
-    {
-    public:
-        RenderPassHandle(IRenderPass& real) noexcept
-            : _real(real)
-        {
-        }
-
-        ~RenderPassHandle() noexcept
-        {
-            std::scoped_lock lock(_mutex);
-        }
-
-        void renderPassDefine(RenderPassDefinition& def) noexcept override
-        {
-            std::scoped_lock lock(_mutex);
-            _real.renderPassDefine(def);
-        }
-
-        void renderPassConfigure(bgfx::ViewId viewId) noexcept override
-        {
-            std::scoped_lock lock(_mutex);
-            _real.renderPassConfigure(viewId);
-        }
-
-        void renderPassExecute(IRenderGraphContext& context) noexcept override
-        {
-            std::scoped_lock lock(_mutex);
-            _real.renderPassExecute(context);
-        }
-    private:
-        IRenderPass& _real;
-        std::mutex _mutex;
-    };
-
-    std::shared_ptr<RenderPassHandle> RenderGraphDefinition::addPass(IRenderPass& pass)
-    {
-        auto handle = std::make_shared<RenderPassHandle>(pass);
-        addPass(handle);
-        return handle;
     }
 
     bool RenderGraphDefinition::removePass(size_t hash) noexcept
@@ -353,15 +307,10 @@ namespace darmok
         return true;
     }
 
-    bool RenderGraphDefinition::removePass(const std::shared_ptr<RenderPassHandle>& handle) noexcept
-    {
-        return removePass(std::static_pointer_cast<IRenderPassDelegate>(handle));
-    }
-
-    bool RenderGraphDefinition::removePass(const std::shared_ptr<IRenderPassDelegate>& dlg) noexcept
+    bool RenderGraphDefinition::removePass(const IRenderPassDelegate& dlg) noexcept
     {
         auto itr = std::remove_if(_nodes.begin(), _nodes.end(),
-            [&dlg](auto& node) { return node->hasPassDelegate(*dlg); });
+            [&dlg](auto& node) { return node->hasPassDelegate(dlg); });
         if (itr == _nodes.end())
         {
             return false;

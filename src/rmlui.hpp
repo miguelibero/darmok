@@ -230,7 +230,6 @@ namespace darmok
 		std::string _name;
 		MousePositionMode _mousePositionMode;
 		std::vector<std::reference_wrapper<IRmluiCustomEventListener>> _customEventListeners;
-		std::shared_ptr<RenderPassHandle> _renderPassHandle;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		void updateContextSize() noexcept;

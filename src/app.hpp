@@ -231,7 +231,7 @@ namespace darmok
 		std::optional<RenderGraph> _renderGraph;
 
 		Components _components;
-		std::shared_ptr<AppClearRenderPass> _clearRenderPass;
+		AppClearRenderPass _clearRenderPass;
 	};
 
 	class AppRunner final : public IPlatformRunnable

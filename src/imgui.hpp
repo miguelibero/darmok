@@ -57,7 +57,7 @@ namespace darmok
 		ImGuiContext* _imgui;
 
 		bool _inputEnabled;
-		std::shared_ptr<ImguiRenderPass> _renderPass;
+		std::optional<ImguiRenderPass> _renderPass;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, ImGuiKey>;
 		using GamepadMap = std::unordered_map<GamepadButton, ImGuiKey>;

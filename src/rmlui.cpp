@@ -481,7 +481,7 @@ namespace darmok
         }
         _context->EnableMouseCursor(true);
 
-        _renderPassHandle = _comp->getRenderGraph().addPass(*this);
+        _comp->getRenderGraph().addPass(*this);
     }
 
     void RmluiCanvasImpl::shutdown() noexcept
@@ -493,9 +493,8 @@ namespace darmok
         }
         if (_comp)
         {
-            _comp->getRenderGraph().removePass(_renderPassHandle);
+            _comp->getRenderGraph().removePass(*this);
         }
-        _renderPassHandle.reset();
 
         Rml::ReleaseTextures();
         _comp.reset();
@@ -514,7 +513,10 @@ namespace darmok
     void RmluiCanvasImpl::renderReset() noexcept
     {
         updateContextSize();
-        _renderPassHandle = _comp->getRenderGraph().addPass(*this);
+        if (_comp)
+        {
+            _comp->getRenderGraph().addPass(*this);
+        }
     }
 
     bool RmluiCanvasImpl::isInputActive() const noexcept
@@ -1074,6 +1076,8 @@ namespace darmok
     {
         Rml::Factory::RegisterEventListenerInstancer(nullptr);
 
+        _eventForwarders.clear();
+
         Rml::Shutdown();
     }
 
@@ -1117,7 +1121,7 @@ namespace darmok
         auto context = &canvas.getContext();
         auto itr = std::remove_if(_eventForwarders.begin(), _eventForwarders.end(), [context](auto& fwd) {
             auto doc = fwd->getElement().GetOwnerDocument();
-            return doc && doc->GetContext() != context;
+            return doc && doc->GetContext() == context;
         });
         _eventForwarders.erase(itr, _eventForwarders.end());
     }
@@ -1277,6 +1281,8 @@ namespace darmok
 
     void RmluiRendererImpl::shutdown()
     {
+        _shared.reset();
+
         if (_app)
         {
             _app->getInput().getKeyboard().removeListener(*this);
@@ -1308,8 +1314,6 @@ namespace darmok
         _app.reset();
         _cam.reset();
         _scene.reset();
-        _shared.reset();
-
     }
     
     RmluiSystemInterface& RmluiRendererImpl::getRmluiSystem() noexcept

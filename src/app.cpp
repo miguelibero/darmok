@@ -346,7 +346,6 @@ namespace darmok
 		_assets.init(_app);
 		_audio.init();
 
-		_clearRenderPass = std::make_shared<AppClearRenderPass>();
 		_renderGraphDef.addPass(_clearRenderPass);
 
 		auto components = copyComponentContainer();
@@ -392,7 +391,6 @@ namespace darmok
 		}
 
 		_renderGraphDef.removePass(_clearRenderPass);
-		_clearRenderPass.reset();
 
 		_running = false;
 		_renderGraph.reset();

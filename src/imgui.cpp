@@ -386,27 +386,27 @@ namespace darmok
 			| ImGuiConfigFlags_NavEnableKeyboard
 			;
 
-		_renderPass = std::make_shared<ImguiRenderPass>(_renderer, _imgui);
-		app.getRenderGraph().addPass(_renderPass);
+		_renderPass.emplace(_renderer, _imgui);
+		app.getRenderGraph().addPass(_renderPass.value());
 
 		ImGui::SetCurrentContext(nullptr);
 	}
 
 	void ImguiAppComponentImpl::renderReset() noexcept
 	{
-		if (_app)
+		if (_app && _renderPass)
 		{
-			_app->getRenderGraph().addPass(_renderPass);
+			_app->getRenderGraph().addPass(_renderPass.value());
 		}
 	}
 
 	void ImguiAppComponentImpl::shutdown() noexcept
 	{
-		if (_app)
+		if (_app && _renderPass)
 		{
-			_app->getRenderGraph().removePass(_renderPass);
-			_app.reset();
+			_app->getRenderGraph().removePass(_renderPass.value());
 		}
+		_app.reset();
 		_renderPass.reset();
 
 		if (_imgui != nullptr)

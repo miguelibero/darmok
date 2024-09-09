@@ -6,7 +6,6 @@ namespace darmok
     void DeferredRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
-        _geoPass = std::make_shared<DeferredGeometryRenderPass>();
         renderReset();
     }
 
@@ -25,7 +24,6 @@ namespace darmok
             _cam->getRenderGraph().removePass(_geoPass);
         }
         _cam.reset();
-        _geoPass.reset();
     }
 
     void DeferredGeometryRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept

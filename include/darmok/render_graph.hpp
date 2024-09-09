@@ -267,7 +267,7 @@ namespace darmok
         [[nodiscard]] virtual tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) = 0;
         [[nodiscard]] virtual std::unique_ptr<IRenderGraphNode> copyNode() const = 0;
         
-        [[nodiscard]] virtual bool hasPassDelegate(IRenderPassDelegate& dlg) const { return false; }
+        [[nodiscard]] virtual bool hasPassDelegate(const IRenderPassDelegate& dlg) const { return false; }
     };
 
     class DARMOK_EXPORT RenderPassDefinition final : public IRenderGraphNode
@@ -286,8 +286,8 @@ namespace darmok
         RenderPassDefinition& setPriority(int prio) noexcept;
         [[nodiscard]] int getPriority() const noexcept override;
 
-        RenderPassDefinition& setDelegate(const std::weak_ptr<IRenderPassDelegate>& dlg) noexcept;
-        [[nodiscard]] bool hasPassDelegate(IRenderPassDelegate& dlg) const noexcept override;
+        RenderPassDefinition& setDelegate(IRenderPassDelegate& dlg) noexcept;
+        [[nodiscard]] bool hasPassDelegate(const IRenderPassDelegate& dlg) const noexcept override;
 
         bgfx::ViewId configureView(bgfx::ViewId viewId) noexcept override;
         [[nodiscard]] tf::Task createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept override;
@@ -311,7 +311,7 @@ namespace darmok
         bgfx::ViewId _viewId;
         Resources _read;
         Resources _write;
-        std::weak_ptr<IRenderPassDelegate> _delegate;
+        OptionalRef<IRenderPassDelegate> _delegate;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderPass : public IRenderPassDelegate
@@ -320,8 +320,6 @@ namespace darmok
         virtual ~IRenderPass() = default;
         virtual void renderPassDefine(RenderPassDefinition& def) {};
     };
-
-    class RenderPassHandle;
 
     class RenderGraph;
 
@@ -344,11 +342,9 @@ namespace darmok
         RenderGraphDefinition& setPriority(int priority) noexcept;
         [[nodiscard]] int getPriority() const noexcept;
 
-        const Pass& addPass(const std::shared_ptr<IRenderPass>& pass);
-        [[nodiscard]] std::shared_ptr<RenderPassHandle> addPass(IRenderPass& pass);
+        const Pass& addPass(IRenderPass& pass);
         [[nodiscard]] Pass& addPass() noexcept;
-        bool removePass(const std::shared_ptr<IRenderPassDelegate>& dlg) noexcept;
-        bool removePass(const std::shared_ptr<RenderPassHandle>& handle) noexcept;
+        bool removePass(const IRenderPassDelegate& dlg) noexcept;
         bool removePass(size_t hash) noexcept;
 
         bool setChild(const RenderGraphDefinition& def);

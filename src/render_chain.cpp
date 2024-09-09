@@ -83,7 +83,7 @@ namespace darmok
 			step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
 		}
 		auto& parentGraph = _delegate.getRenderChainParentGraph();
-		_renderPassHandle = parentGraph.addPass(*this);
+		parentGraph.addPass(*this);
 		parentGraph.setChild(_renderGraph);
 	}
 
@@ -93,8 +93,8 @@ namespace darmok
 		{
 			(*itr)->shutdown();
 		}
-		getRenderGraph().removePass(_renderPassHandle);
-		_renderPassHandle.reset();
+		auto& parentGraph = _delegate.getRenderChainParentGraph();
+		parentGraph.removePass(*this);
 		_running = false;
 	}
 
@@ -124,7 +124,7 @@ namespace darmok
 	void RenderChain::renderReset()
 	{
 		auto& parentGraph = _delegate.getRenderChainParentGraph();
-		_renderPassHandle = parentGraph.addPass(*this);
+		parentGraph.addPass(*this);
 		_renderGraph.clear();
 
 		auto amount = _buffers.size();
@@ -395,7 +395,7 @@ namespace darmok
 	{
 		if (_chain)
 		{
-			_renderPassHandle = _chain->getRenderGraph().addPass(*this);
+			_chain->getRenderGraph().addPass(*this);
 		}
 	}
 
@@ -410,9 +410,8 @@ namespace darmok
 		_mesh.reset();
 		if (_chain)
 		{
-			_chain->getRenderGraph().removePass(_renderPassHandle);
+			_chain->getRenderGraph().removePass(*this);
 		}
-		_renderPassHandle.reset();
 		_chain.reset();
 	}
 
