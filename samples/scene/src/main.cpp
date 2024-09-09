@@ -194,7 +194,9 @@ namespace
 			auto material = std::make_shared<Material>(_prog, texture);
 			material->setBaseColor(Colors::red());
 
-			auto cubeMesh = MeshData(Cube()).createMesh(_prog->getVertexLayout());
+			auto meshData = MeshData(Cube());
+			meshData.subdivideDensity(0.25F);
+			auto cubeMesh = meshData.createMesh(_prog->getVertexLayout());
 
 			auto cube = scene.createEntity();
 			scene.addComponent<Culling3D>(cube);

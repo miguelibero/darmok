@@ -2,6 +2,8 @@
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/data.hpp>
+#include <glm/gtx/component_wise.hpp>
+
 #include <array>
 #include <mikktspace.h>
 
@@ -604,6 +606,104 @@ namespace darmok
 		}
 
 		return *this;
+	}
+
+	MeshData& MeshData::subdivide(size_t amount) noexcept
+	{
+		vertices.reserve(vertices.size() * (3 + amount) / 3);
+		indices.reserve(indices.size() * (1 + amount));
+		for (size_t i = 0; i < amount; ++i)
+		{
+			auto size = indices.size() / 3;
+			for (auto j = 0; j < size; ++j)
+			{
+				doSubdivide(j);
+			}
+		}
+		return *this;
+	}
+
+	size_t MeshData::subdivideDensity(float maxDistance) noexcept
+	{
+		float maxv = -bx::kFloatInfinity;
+		bool found = true;
+		size_t count = 0;
+		while(found)
+		{
+			found = false;
+			for (auto i = 0; i < indices.size() / 3; ++i)
+			{
+				if (doSubdivide(i, maxDistance))
+				{
+					found = true;
+					++count;
+					break;
+				}
+			}
+		}
+		return count;
+	}
+
+	bool MeshData::doSubdivide(size_t i, float maxDistance) noexcept
+	{
+		i *= 3;
+		const auto i1 = indices[i];
+		const auto i2 = indices[i + 1];
+		const auto i3 = indices[i + 2];
+		const auto i4 = vertices.size();
+		const auto v1 = vertices[i1];
+		const auto v2 = vertices[i2];
+		const auto v3 = vertices[i3];
+
+		auto d = glm::vec3(
+			glm::distance(v2.position, v1.position),
+			glm::distance(v3.position, v2.position),
+			glm::distance(v1.position, v3.position)
+		);
+		auto maxd = glm::compMax(d);
+		if (maxd < maxDistance)
+		{
+			return false;
+		}
+
+		auto& v4 = vertices.emplace_back();
+		if (maxd == d.x)
+		{
+			v4 = mix(v1, v2, 0.5F);
+			indices[i + 1] = i4;
+			indices.push_back(i4);
+			indices.push_back(i2);
+			indices.push_back(i3);
+		}
+		else if (maxd == d.y)
+		{
+			v4 = mix(v2, v3, 0.5F);
+			indices[i + 2] = i4;
+			indices.push_back(i1);
+			indices.push_back(i4);
+			indices.push_back(i3);
+		}
+		else if (maxd == d.z)
+		{
+			v4 = mix(v3, v1, 0.5F);
+			indices[i + 2] = i4;
+			indices.push_back(i4);
+			indices.push_back(i2);
+			indices.push_back(i3);
+		}
+
+		return true;
+	}
+
+	MeshData::Vertex MeshData::mix(const Vertex& v1, const Vertex& v2, float f) noexcept
+	{
+		return {
+			.position = glm::mix(v1.position, v2.position, f),
+			.texCoord = glm::mix(v1.texCoord, v2.texCoord, f),
+			.normal = glm::normalize(glm::mix(v1.normal, v2.normal, f)),
+			.tangent = glm::normalize(glm::mix(v1.tangent, v2.tangent, f)),
+			.color = glm::mix(v1.color, v2.color, f),
+		};
 	}
 
 	MeshData::MeshData(const Sphere& sphere, unsigned int lod) noexcept

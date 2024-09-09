@@ -662,7 +662,7 @@ namespace darmok
 
 		if (std::filesystem::is_directory(outputPath))
 		{
-			_app.getAssets().setBasePath(outputPath);
+			_app.getAssets().addBasePath(outputPath);
 		}
 
 		return true;

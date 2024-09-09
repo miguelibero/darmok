@@ -28,6 +28,7 @@
 #endif
 
 #include <string>
+#include <vector>
 #include <bx/file.h>
 
 namespace darmok
@@ -35,21 +36,12 @@ namespace darmok
 	class FileReader final : public bx::FileReader
 	{
 	public:
-		void setBasePath(const std::filesystem::path& basePath) noexcept;
+		void addBasePath(const std::filesystem::path& basePath) noexcept;
+		bool removeBasePath(const std::filesystem::path& path) noexcept;
 		bool open(const bx::FilePath& filePath, bx::Error* err) override;
 	private:
-		std::filesystem::path _basePath;
+		std::vector<std::filesystem::path> _basePaths;
 	};
-
-	class FileWriter final : public bx::FileWriter
-	{
-	public:
-		void setBasePath(const std::filesystem::path& basePath) noexcept;
-		virtual bool open(const bx::FilePath& filePath, bool append, bx::Error* err) override;
-	private:
-		std::filesystem::path _basePath;
-	};
-
 
 	using ModelExtLoader = ExtensionLoader<IModelLoader>;
 	using SkeletonExtLoader = ExtensionLoader<ISkeletonLoader>;
@@ -87,13 +79,13 @@ namespace darmok
 		[[nodiscard]] IMusicLoader& getMusicLoader() noexcept;
 #endif
 
-		void setBasePath(const std::filesystem::path& path) noexcept;
+		void addBasePath(const std::filesystem::path& path) noexcept;
+		bool removeBasePath(const std::filesystem::path& path) noexcept;
 		void init(App& app);
 		void update();
 		void shutdown();
 	private:
 		FileReader _fileReader;
-		FileWriter _fileWriter;
 		bx::DefaultAllocator _allocator;
 		FileDataLoader _dataLoader;
 		DataImageLoader _imageLoader;

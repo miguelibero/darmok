@@ -371,6 +371,12 @@ namespace darmok
                 }
                 return std::nullopt;
             },
+            "has_attribute", [](Rml::Element& elm, const std::string& name)
+            {
+                auto& attrs = elm.GetAttributes();
+                auto itr = attrs.find(name);
+                return itr != attrs.end();
+            },
             "get_attribute", [](Rml::Element& elm, const std::string& name, sol::this_state ts) -> sol::object
             {
                 auto& attrs = elm.GetAttributes();

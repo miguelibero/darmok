@@ -217,7 +217,13 @@ namespace darmok
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 
         MeshData& convertQuadIndicesToLine() noexcept;
+        MeshData& subdivide(size_t amount = 1) noexcept;
+        size_t subdivideDensity(float maxDistance) noexcept;
+
+        static Vertex mix(const Vertex& v1, const Vertex& v2, float f) noexcept;
     private:
         static const std::vector<Index> _cuboidTriangleIndices;
+
+        bool doSubdivide(size_t i, float maxDistance = bx::kFloatInfinity) noexcept;
     };
 }

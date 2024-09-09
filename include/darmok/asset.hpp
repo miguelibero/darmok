@@ -73,7 +73,8 @@ namespace darmok
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;
 
-		AssetContext& setBasePath(const std::filesystem::path& path) noexcept;
+		AssetContext& addBasePath(const std::filesystem::path& path) noexcept;
+		bool removeBasePath(const std::filesystem::path& path) noexcept;
 		void init(App& app);
 		void update();
 		void shutdown();

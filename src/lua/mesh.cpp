@@ -81,6 +81,17 @@ namespace darmok
 				{
 					return std::shared_ptr<IMesh>(data.createMesh(vertexLayout, config));
 				}
+			),
+			"subdivide_density", &MeshData::subdivideDensity,
+			"subdivide", sol::overload(
+				[](MeshData& data, size_t amount)
+				{
+					data.subdivide(amount);
+				},
+				[](MeshData& data)
+				{
+					data.subdivide();
+				}
 			)
 		);
 	}

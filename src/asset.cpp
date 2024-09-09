@@ -16,26 +16,33 @@ namespace darmok
 		return basePath / std::filesystem::path(filePath.getCPtr());
 	}
 
-	void FileReader::setBasePath(const std::filesystem::path& basePath) noexcept
+	void FileReader::addBasePath(const std::filesystem::path& basePath) noexcept
 	{
-		_basePath = basePath;
+		_basePaths.insert(_basePaths.begin(), basePath);
+	}
+
+	bool FileReader::removeBasePath(const std::filesystem::path& path) noexcept
+	{
+		auto itr = std::remove(_basePaths.begin(), _basePaths.end(), path);
+		if (itr == _basePaths.end())
+		{
+			return false;
+		}
+		_basePaths.erase(itr, _basePaths.end());
+		return true;
 	}
 
 	bool FileReader::open(const bx::FilePath& filePath, bx::Error* err)
 	{
-		auto path = fixAssetFilePath(filePath, _basePath).string();
-		return bx::FileReader::open(path.c_str(), err);
-	}
-
-	void FileWriter::setBasePath(const std::filesystem::path& basePath) noexcept
-	{
-		_basePath = basePath;
-	}
-
-	bool FileWriter::open(const bx::FilePath& filePath, bool append, bx::Error* err)
-	{
-		auto path = fixAssetFilePath(filePath, _basePath).string();
-		return bx::FileWriter::open(path.c_str(), append, err);
+		for (auto& basePath : _basePaths)
+		{
+			auto path = fixAssetFilePath(filePath, basePath);
+			if (std::filesystem::exists(path))
+			{
+				return bx::FileReader::open(path.string().c_str(), err);
+			}
+		}
+		return false;
 	}
 
 	AssetContextImpl::AssetContextImpl()
@@ -62,7 +69,7 @@ namespace darmok
 		, _miniaudioMusicLoader(_dataLoader)
 #endif
 	{
-		setBasePath("assets");
+		addBasePath("assets");
 
 #ifdef DARMOK_OZZ
 		_skeletonLoader.setDefaultLoader(_ozzSkeletonLoader);
@@ -161,10 +168,14 @@ namespace darmok
 	}
 #endif
 
-	void AssetContextImpl::setBasePath(const std::filesystem::path& path) noexcept
+	void AssetContextImpl::addBasePath(const std::filesystem::path& path) noexcept
 	{
-		_fileReader.setBasePath(path);
-		_fileWriter.setBasePath(path);
+		_fileReader.addBasePath(path);
+	}
+
+	bool AssetContextImpl::removeBasePath(const std::filesystem::path& path) noexcept
+	{
+		return _fileReader.removeBasePath(path);
 	}
 
 	void AssetContextImpl::init(App& app)
@@ -278,10 +289,15 @@ namespace darmok
 		return *_impl;
 	}
 
-	AssetContext& AssetContext::setBasePath(const std::filesystem::path& path) noexcept
+	AssetContext& AssetContext::addBasePath(const std::filesystem::path& path) noexcept
 	{
-		_impl->setBasePath(path);
+		_impl->addBasePath(path);
 		return *this;
+	}
+
+	bool AssetContext::removeBasePath(const std::filesystem::path& path) noexcept
+	{
+		return _impl->removeBasePath(path);
 	}
 
 	void AssetContext::init(App& app)
