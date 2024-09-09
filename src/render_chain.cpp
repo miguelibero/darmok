@@ -296,6 +296,7 @@ namespace darmok
 		, _name(name)
 		, _priority(priority)
 		, _texUniform{ bgfx::kInvalidHandle }
+		
 	{
 		if (!prog)
 		{
@@ -357,6 +358,18 @@ namespace darmok
 		_chain.reset();
 	}
 
+	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept
+	{
+		_textureUniforms.set(name, stage, texture);
+		return *this;
+	}
+
+	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setUniform(const std::string& name, std::optional<UniformValue> value) noexcept
+	{
+		_uniforms.set(name, value);
+		return *this;
+	}
+
 	void ScreenSpaceRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
 	{
 		def.setName(_name);
@@ -387,6 +400,8 @@ namespace darmok
 		_mesh->render(encoder);
 
 		encoder.setTexture(0, _texUniform, _readTex->getTexture()->getHandle());
+		_uniforms.configure(encoder);
+		_textureUniforms.configure(encoder);
 
 		uint64_t state = 0
 			| BGFX_STATE_WRITE_RGB

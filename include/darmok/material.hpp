@@ -7,6 +7,8 @@
 #include <darmok/program.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/app.hpp>
+#include <darmok/uniform.hpp>
+#include <darmok/texture.hpp>
 
 #include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
@@ -16,6 +18,7 @@
 #include <string_view>
 #include <memory>
 #include <unordered_map>
+#include <random>
 
 namespace darmok
 {
@@ -44,7 +47,10 @@ namespace darmok
 
         std::vector<Sampler> _samplerUniforms;
         float _time;
-        unsigned int _frameCount;
+        std::mt19937 _randomEngine;
+        std::uniform_real_distribution<float> _randomDist;
+        glm::vec4 _randomValues;
+        uint64_t _frameCount;
         bgfx::UniformHandle _albedoLutSamplerUniform;
         bgfx::UniformHandle _baseColorUniform;
         bgfx::UniformHandle _specularColorUniform;
@@ -53,9 +59,11 @@ namespace darmok
         bgfx::UniformHandle _hasTexturesUniform;
         bgfx::UniformHandle _multipleScatteringUniform;
         bgfx::UniformHandle _timeUniform;
+        bgfx::UniformHandle _randomUniform;
 
         std::shared_ptr<Texture> _defaultTexture;
-    };
+
+    };    
 
     class DARMOK_EXPORT Material final
     {
@@ -85,6 +93,14 @@ namespace darmok
         std::shared_ptr<Texture> getTexture(TextureType type) const noexcept;
         Material& setTexture(const std::shared_ptr<Texture>& texture) noexcept;
         Material& setTexture(TextureType type, const std::shared_ptr<Texture>& texture) noexcept;
+
+        Material& setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept;
+        Material& setUniform(const std::string& name, std::optional<UniformValue> value) noexcept;
+
+        const UniformContainer& getUniformContainer() const noexcept;
+        UniformContainer& getUniformContainer() noexcept;
+        const TextureUniformContainer& getTextureUniformContainer() const noexcept;
+        TextureUniformContainer& getTextureUniformContainer() noexcept;
         
         const Color& getBaseColor() const noexcept;
         Material& setBaseColor(const Color& v) noexcept;
@@ -145,6 +161,9 @@ namespace darmok
         float _whiteFurnance;
 
         PrimitiveType _primitive;
+
+        UniformContainer _uniforms;
+        TextureUniformContainer _textureUniforms;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader

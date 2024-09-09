@@ -26,6 +26,8 @@ namespace darmok
 		, _opacity(Opacity::Transparent)
 		, _shininess(32)
 		, _twoSided(false)
+		, _uniforms(false)
+		, _textureUniforms(false)
 	{
 		if (_program == nullptr)
 		{
@@ -121,6 +123,38 @@ namespace darmok
 	{
 		_textures[type] = texture;
 		return *this;
+	}
+
+	Material& Material::setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept
+	{
+		_textureUniforms.set(name, stage, texture);
+		return *this;
+	}
+
+	Material& Material::setUniform(const std::string& name, std::optional<UniformValue> value) noexcept
+	{
+		_uniforms.set(name, value);
+		return *this;
+	}
+
+	const UniformContainer& Material::getUniformContainer() const noexcept
+	{
+		return _uniforms;
+	}
+
+	UniformContainer& Material::getUniformContainer() noexcept
+	{
+		return _uniforms;
+	}
+
+	const TextureUniformContainer& Material::getTextureUniformContainer() const noexcept
+	{
+		return _textureUniforms;
+	}
+
+	TextureUniformContainer& Material::getTextureUniformContainer() noexcept
+	{
+		return _textureUniforms;
 	}
 
 	Material::PrimitiveType Material::getPrimitiveType() const noexcept
@@ -275,7 +309,10 @@ namespace darmok
 		, _hasTexturesUniform{ bgfx::kInvalidHandle }
 		, _multipleScatteringUniform{ bgfx::kInvalidHandle }
 		, _timeUniform{ bgfx::kInvalidHandle }
+		, _randomUniform{ bgfx::kInvalidHandle }
 		, _time(0.F)
+		, _frameCount(0)
+		, _randomEngine(std::random_device()())
 	{
 	}
 
@@ -305,21 +342,31 @@ namespace darmok
 		_hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
 		_multipleScatteringUniform = bgfx::createUniform("u_multipleScatteringVec", bgfx::UniformType::Vec4);
 		_timeUniform = bgfx::createUniform("u_timeVec", bgfx::UniformType::Vec4);
+		_randomUniform = bgfx::createUniform("u_randomVec", bgfx::UniformType::Vec4);
 
 		Image img(Colors::white(), app.getAssets().getAllocator());
 		_defaultTexture = std::make_shared<Texture>(img);
 
 		_time = 0.F;
+		_frameCount = 0;
 	}
 
 	void MaterialAppComponent::update(float deltaTime)
 	{
-		if (_defaultTexture)
+		if (!_defaultTexture)
 		{
-			_time += deltaTime;
-			++_frameCount;
+			return;
 		}
 
+		_time += deltaTime;
+		++_frameCount;
+
+		_randomValues = glm::vec4(
+			_randomDist(_randomEngine),
+			_randomDist(_randomEngine),
+			_randomDist(_randomEngine),
+			_randomDist(_randomEngine)
+		);
 	}
 
 	void MaterialAppComponent::shutdown()
@@ -332,7 +379,8 @@ namespace darmok
 		std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
 			_albedoLutSamplerUniform, _baseColorUniform, _specularColorUniform,
 			_metallicRoughnessNormalOcclusionUniform, _emissiveColorUniform,
-			_hasTexturesUniform, _multipleScatteringUniform, _timeUniform
+			_hasTexturesUniform, _multipleScatteringUniform, _timeUniform,
+			_randomUniform
 		};
 		for (auto& uniform : uniforms)
 		{
@@ -380,6 +428,10 @@ namespace darmok
 		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(v));
 		v = glm::vec4(_time, _frameCount, 0.F, 0.F);
 		encoder.setUniform(_timeUniform, glm::value_ptr(v));
+		encoder.setUniform(_randomUniform, glm::value_ptr(_randomValues));
+
+		mat.getUniformContainer().configure(encoder);
+		mat.getTextureUniformContainer().configure(encoder);
 
 		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
 		if (!mat.getTwoSided())

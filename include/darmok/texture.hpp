@@ -99,4 +99,77 @@ namespace darmok
 	private:
 		IImageLoader& _imgLoader;
 	};
+
+	struct TextureUniformKey final
+	{
+		std::string name;
+		uint8_t stage;
+
+		bool operator==(const TextureUniformKey& other) const noexcept;
+		bool operator!=(const TextureUniformKey& other) const noexcept;
+
+		size_t hash() const noexcept;
+
+		struct Hash final
+		{
+			size_t operator()(const TextureUniformKey& key) const noexcept
+			{
+				return key.hash();
+			}
+		};
+	};
+
+	class TextureUniform final
+	{
+	public:
+		using Key = TextureUniformKey;
+
+		TextureUniform(const Key& key, bool autoInit = true) noexcept;
+		TextureUniform(const Key& key, const std::shared_ptr<Texture>& tex, bool autoInit = true) noexcept;
+		~TextureUniform() noexcept;
+		TextureUniform(const TextureUniform& other) noexcept;
+		TextureUniform& operator=(const TextureUniform& other) noexcept;
+		TextureUniform(TextureUniform&& other) noexcept;
+		TextureUniform& operator=(TextureUniform&& other) noexcept;
+
+		void init() noexcept;
+		void shutdown() noexcept;
+
+		bool operator==(const TextureUniform& other) const noexcept;
+		bool operator!=(const TextureUniform& other) const noexcept;
+
+		TextureUniform& operator=(const std::shared_ptr<Texture>& tex) noexcept;
+		operator const std::shared_ptr<Texture>& () const noexcept;
+
+		TextureUniform& set(const std::shared_ptr<Texture>& texture) noexcept;
+		const std::shared_ptr<Texture>& get() const noexcept;
+
+		const TextureUniform& configure(bgfx::Encoder& encoder) const;
+		TextureUniform& configure(bgfx::Encoder& encoder) noexcept;
+	private:
+		Key _key;
+		std::shared_ptr<Texture> _texture;
+		bgfx::UniformHandle _handle;
+
+		void doConfigure(bgfx::Encoder& encoder) const noexcept;
+	};
+
+	class TextureUniformContainer final
+	{
+	public:
+		using Key = TextureUniformKey;
+		TextureUniformContainer(bool autoInit = true) noexcept;
+
+		void init() noexcept;
+		void shutdown() noexcept;
+
+		TextureUniformContainer& set(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept;
+		const TextureUniformContainer& configure(bgfx::Encoder& encoder) const;
+		TextureUniformContainer& configure(bgfx::Encoder& encoder) noexcept;
+	private:
+		std::unordered_map<Key, TextureUniform, Key::Hash> _uniforms;
+		bool _autoInit;
+		bool _initialized;
+	};
 }
+

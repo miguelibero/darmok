@@ -8,6 +8,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/viewport.hpp>
+#include <darmok/uniform.hpp>
 #include <bgfx/bgfx.h>
 
 namespace darmok
@@ -120,6 +121,9 @@ namespace darmok
         void renderReset() noexcept override;
         void shutdown() noexcept override;
 
+        ScreenSpaceRenderPass& setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept;
+        ScreenSpaceRenderPass& setUniform(const std::string& name, std::optional<UniformValue> value) noexcept;
+
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
         void renderPassExecute(IRenderGraphContext& context) noexcept override;
@@ -133,5 +137,7 @@ namespace darmok
         std::unique_ptr<IMesh> _mesh;
         bgfx::UniformHandle _texUniform;
         std::optional<bgfx::ViewId> _viewId;
+        UniformContainer _uniforms;
+        TextureUniformContainer _textureUniforms;
     };
 }

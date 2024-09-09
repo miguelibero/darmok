@@ -117,6 +117,7 @@ set(CORE_SOURCES
   data.cpp
   data_stream.cpp
   utils.cpp
+  uniform.cpp
   math.cpp
   color.cpp
   image.cpp
@@ -142,6 +143,7 @@ set(CORE_HEADERS
   collection.hpp
   data.hpp
   data_stream.hpp
+  uniform.hpp
   math.hpp
   shape.hpp
   mesh_fwd.hpp

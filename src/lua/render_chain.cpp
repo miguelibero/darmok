@@ -64,7 +64,9 @@ namespace darmok
                 LuaScreenSpaceRenderPass::addChainStep2,
                 LuaScreenSpaceRenderPass::addChainStep3,
                 LuaScreenSpaceRenderPass::addChainStep4
-            )
+            ),
+            "set_texture", &ScreenSpaceRenderPass::setTexture,
+            "set_uniform", &ScreenSpaceRenderPass::setUniform
         );
     }
 }

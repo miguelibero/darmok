@@ -36,9 +36,11 @@ namespace darmok
 			"primitive_type", sol::property(&Material::getPrimitiveType, &Material::setPrimitiveType),
 			"set_texture", sol::overload(
 				sol::resolve<Material&(const std::shared_ptr<Texture>&)>(&Material::setTexture),
-				sol::resolve<Material&(MaterialTextureType, const std::shared_ptr<Texture>&)>(&Material::setTexture)
-			), 
+				sol::resolve<Material&(MaterialTextureType, const std::shared_ptr<Texture>&)>(&Material::setTexture),
+				sol::resolve<Material&(const std::string&, uint8_t, const std::shared_ptr<Texture>&)>(&Material::setTexture)
+			),
 			"get_texture", &Material::getTexture,
+			"set_uniform", &Material::setUniform,
 			"set_define", sol::overload(
 				&Material::setProgramDefine,
 				[](Material& mat, const std::string& define) { return mat.setProgramDefine(define); }
