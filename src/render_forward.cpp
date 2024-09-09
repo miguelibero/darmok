@@ -42,15 +42,16 @@ namespace darmok
 			return;
 		}
 		auto size = _cam->getCurrentViewport().size;
-		_cam->getRenderGraph().addPass(*this);
+		_passHandle = _cam->getRenderGraph().addPass(*this);
 	}
 
 	void ForwardRenderer::shutdown() noexcept
 	{
 		if (_cam)
 		{
-			_cam->getRenderGraph().removePass(*this);
+			_cam->getRenderGraph().removePass(_passHandle);
 		}
+		_passHandle.reset();
 		_cam.reset();
 		_scene.reset();
 		_app.reset();

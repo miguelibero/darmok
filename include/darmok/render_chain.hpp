@@ -100,10 +100,12 @@ namespace darmok
         std::vector<std::unique_ptr<IRenderChainStep>> _steps;
         std::vector<std::unique_ptr<FrameBuffer>> _buffers;
         std::shared_ptr<FrameBuffer> _output;
+        std::shared_ptr<RenderPassHandle> _renderPassHandle;
 
         OptionalRef<FrameBuffer> getReadBuffer(size_t i) const noexcept;
         OptionalRef<FrameBuffer> getWriteBuffer(size_t i) const noexcept;
         FrameBuffer& addBuffer() noexcept;
+        void updateStep(size_t i);
 
         void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
@@ -142,5 +144,6 @@ namespace darmok
         std::optional<bgfx::ViewId> _viewId;
         UniformContainer _uniforms;
         TextureUniformContainer _textureUniforms;
+        std::shared_ptr<RenderPassHandle> _renderPassHandle;
     };
 }

@@ -43,125 +43,73 @@ namespace darmok
 		}
 	};
 
-	const uint8_t ImguiAppComponentImpl::_imguiAlphaBlendFlags = 0x01;
-
-	const ImguiAppComponentImpl::KeyboardMap& ImguiAppComponentImpl::getKeyboardMap() noexcept
+	ImguiRenderPass::ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui) noexcept
+		: _renderer(renderer)
+		, _imgui(imgui)
+		, _textureUniform{ bgfx::kInvalidHandle }
+		, _lodEnabledUniform{ bgfx::kInvalidHandle }
+		, _viewId(0)
+		, _fontsTexture{ bgfx::kInvalidHandle }
 	{
-		static KeyboardMap map
-		{
-			{ KeyboardKey::Esc, ImGuiKey_Escape},
-			{ KeyboardKey::Return, ImGuiKey_Enter},
-			{ KeyboardKey::Tab, ImGuiKey_Tab},
-			{ KeyboardKey::Space, ImGuiKey_Space},
-			{ KeyboardKey::Backspace, ImGuiKey_Backspace},
-			{ KeyboardKey::Up, ImGuiKey_UpArrow},
-			{ KeyboardKey::Down, ImGuiKey_DownArrow},
-			{ KeyboardKey::Left, ImGuiKey_LeftArrow},
-			{ KeyboardKey::Right, ImGuiKey_RightArrow},
-			{ KeyboardKey::Insert, ImGuiKey_Insert},
-			{ KeyboardKey::Delete, ImGuiKey_Delete},
-			{ KeyboardKey::Home, ImGuiKey_Home},
-			{ KeyboardKey::End, ImGuiKey_End},
-			{ KeyboardKey::PageUp, ImGuiKey_PageUp},
-			{ KeyboardKey::PageDown, ImGuiKey_PageDown},
-			{ KeyboardKey::Print, ImGuiKey_PrintScreen},
-			{ KeyboardKey::Plus, ImGuiKey_Equal},
-			{ KeyboardKey::Minus, ImGuiKey_Minus},
-			{ KeyboardKey::LeftBracket, ImGuiKey_LeftBracket},
-			{ KeyboardKey::RightBracket, ImGuiKey_RightBracket},
-			{ KeyboardKey::Semicolon, ImGuiKey_Semicolon},
-			{ KeyboardKey::Quote, ImGuiKey_Apostrophe},
-			{ KeyboardKey::Comma, ImGuiKey_Comma},
-			{ KeyboardKey::Period, ImGuiKey_Period},
-			{ KeyboardKey::Slash, ImGuiKey_Slash},
-			{ KeyboardKey::Backslash, ImGuiKey_Backslash},
-			{ KeyboardKey::GraveAccent, ImGuiKey_GraveAccent},
-		};
-		static bool first = true;
+		ProgramDefinition progDef;
+		progDef.loadStaticMem(imgui_program);
+		_program = std::make_unique<Program>(progDef);
+		
+		_lodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
+		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
-		auto addRange = [](KeyboardKey start, KeyboardKey end, ImGuiKey imguiStart) {
-			auto j = to_underlying(imguiStart);
-			for (auto i = to_underlying(start); i < to_underlying(end); i++)
-			{
-				map[(KeyboardKey)i] = (ImGuiKey)j++;
-			}
-		};
-
-		if (first)
+		uint8_t* data;
+		int32_t width;
+		int32_t height;
 		{
-			addRange(KeyboardKey::F1, KeyboardKey::F12, ImGuiKey_F1);
-			addRange(KeyboardKey::NumPad0, KeyboardKey::NumPad9, ImGuiKey_Keypad9);
-			addRange(KeyboardKey::Key0, KeyboardKey::Key9, ImGuiKey_0);
-			addRange(KeyboardKey::KeyA, KeyboardKey::KeyZ, ImGuiKey_A);
-			first = false;
+			ImFontConfig config;
+			config.FontDataOwnedByAtlas = false;
+			config.MergeMode = false;
+			// config.MergeGlyphCenterV = true;
 		}
-		return map;
+
+		ImGuiIO& io = ImGui::GetIO();
+		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height);
+
+		_fontsTexture = bgfx::createTexture2D(
+			(uint16_t)width
+			, (uint16_t)height
+			, false
+			, 1
+			, bgfx::TextureFormat::BGRA8
+			, 0
+			, bgfx::copy(data, width * height * 4)
+		);
 	}
 
-
-	const ImguiAppComponentImpl::GamepadMap& ImguiAppComponentImpl::getGamepadMap() noexcept
+	ImguiRenderPass::~ImguiRenderPass() noexcept
 	{
-		static GamepadMap map
+		if (isValid(_textureUniform))
 		{
-			{ GamepadButton::Start, ImGuiKey_GamepadStart },
-			{ GamepadButton::Back, ImGuiKey_GamepadBack },
-			{ GamepadButton::Y, ImGuiKey_GamepadFaceUp },
-			{ GamepadButton::A, ImGuiKey_GamepadFaceDown },
-			{ GamepadButton::X, ImGuiKey_GamepadFaceLeft },
-			{ GamepadButton::B, ImGuiKey_GamepadFaceRight },
-			{ GamepadButton::Up, ImGuiKey_GamepadDpadUp },
-			{ GamepadButton::Down, ImGuiKey_GamepadDpadDown },
-			{ GamepadButton::Left, ImGuiKey_GamepadDpadLeft },
-			{ GamepadButton::Right, ImGuiKey_GamepadDpadRight },
-			{ GamepadButton::ShoulderL, ImGuiKey_GamepadL1 },
-			{ GamepadButton::ShoulderR, ImGuiKey_GamepadR1 },
-			{ GamepadButton::ThumbL, ImGuiKey_GamepadL3 },
-			{ GamepadButton::ThumbR, ImGuiKey_GamepadR3 },
-			{ GamepadButton::Guide, ImGuiKey_None },
-		};
-
-		return map;
-	}
-
-	void* ImguiAppComponentImpl::memAlloc(size_t size, void* userData) noexcept
-	{
-		if (userData == nullptr)
-		{
-			return std::malloc(size);
+			bgfx::destroy(_textureUniform);
 		}
-		auto alloc = static_cast<bx::AllocatorI*>(userData);
-		return bx::alloc(alloc, size);
-	}
-
-	void ImguiAppComponentImpl::memFree(void* ptr, void* userData) noexcept
-	{
-		if (userData == nullptr)
+		if (isValid(_lodEnabledUniform))
 		{
-			return std::free(ptr);
+			bgfx::destroy(_lodEnabledUniform);
 		}
-		auto alloc = static_cast<bx::AllocatorI*>(userData);
-		bx::free(alloc, ptr);
+		if (isValid(_fontsTexture))
+		{
+			bgfx::destroy(_fontsTexture);
+		}
 	}
 
-	inline bool ImguiAppComponentImpl::checkAvailTransientBuffers(uint32_t numVertices, const bgfx::VertexLayout& layout, uint32_t numIndices) noexcept
-	{
-		return numVertices == bgfx::getAvailTransientVertexBuffer(numVertices, layout)
-			&& (0 == numIndices || numIndices == bgfx::getAvailTransientIndexBuffer(numIndices))
-			;
-	}
-
-	void ImguiAppComponentImpl::renderPassDefine(RenderPassDefinition& def) noexcept
+	void ImguiRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
 	{
 		def.setName("Imgui");
 	}
 
-	void ImguiAppComponentImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept
+	void ImguiRenderPass::renderPassConfigure(bgfx::ViewId viewId) noexcept
 	{
-		_viewId = viewId;
 		bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+		_viewId = viewId;
 	}
 
-	void ImguiAppComponentImpl::renderPassExecute(IRenderGraphContext& context) noexcept
+	void ImguiRenderPass::renderPassExecute(IRenderGraphContext& context) noexcept
 	{
 		ImGui::SetCurrentContext(_imgui);
 		beginFrame();
@@ -170,7 +118,20 @@ namespace darmok
 		ImGui::SetCurrentContext(nullptr);
 	}
 
-	bool ImguiAppComponentImpl::render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept
+	void ImguiRenderPass::beginFrame() const noexcept
+	{
+		ImGui::NewFrame();
+	}
+
+	bool ImguiRenderPass::endFrame(bgfx::Encoder& encoder) const noexcept
+	{
+		ImGui::Render();
+		return render(encoder, ImGui::GetDrawData());
+	}
+
+	const uint8_t ImguiRenderPass::_imguiAlphaBlendFlags = 0x01;
+
+	bool ImguiRenderPass::render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept
 	{
 		auto clipPos = ImguiUtils::convert(drawData->DisplayPos); // (0,0) unless using multi-viewports
 		auto size = ImguiUtils::convert(drawData->DisplaySize);
@@ -281,14 +242,115 @@ namespace darmok
 		return true;
 	}
 
+	const ImguiAppComponentImpl::KeyboardMap& ImguiAppComponentImpl::getKeyboardMap() noexcept
+	{
+		static KeyboardMap map
+		{
+			{ KeyboardKey::Esc, ImGuiKey_Escape},
+			{ KeyboardKey::Return, ImGuiKey_Enter},
+			{ KeyboardKey::Tab, ImGuiKey_Tab},
+			{ KeyboardKey::Space, ImGuiKey_Space},
+			{ KeyboardKey::Backspace, ImGuiKey_Backspace},
+			{ KeyboardKey::Up, ImGuiKey_UpArrow},
+			{ KeyboardKey::Down, ImGuiKey_DownArrow},
+			{ KeyboardKey::Left, ImGuiKey_LeftArrow},
+			{ KeyboardKey::Right, ImGuiKey_RightArrow},
+			{ KeyboardKey::Insert, ImGuiKey_Insert},
+			{ KeyboardKey::Delete, ImGuiKey_Delete},
+			{ KeyboardKey::Home, ImGuiKey_Home},
+			{ KeyboardKey::End, ImGuiKey_End},
+			{ KeyboardKey::PageUp, ImGuiKey_PageUp},
+			{ KeyboardKey::PageDown, ImGuiKey_PageDown},
+			{ KeyboardKey::Print, ImGuiKey_PrintScreen},
+			{ KeyboardKey::Plus, ImGuiKey_Equal},
+			{ KeyboardKey::Minus, ImGuiKey_Minus},
+			{ KeyboardKey::LeftBracket, ImGuiKey_LeftBracket},
+			{ KeyboardKey::RightBracket, ImGuiKey_RightBracket},
+			{ KeyboardKey::Semicolon, ImGuiKey_Semicolon},
+			{ KeyboardKey::Quote, ImGuiKey_Apostrophe},
+			{ KeyboardKey::Comma, ImGuiKey_Comma},
+			{ KeyboardKey::Period, ImGuiKey_Period},
+			{ KeyboardKey::Slash, ImGuiKey_Slash},
+			{ KeyboardKey::Backslash, ImGuiKey_Backslash},
+			{ KeyboardKey::GraveAccent, ImGuiKey_GraveAccent},
+		};
+		static bool first = true;
+
+		auto addRange = [](KeyboardKey start, KeyboardKey end, ImGuiKey imguiStart) {
+			auto j = to_underlying(imguiStart);
+			for (auto i = to_underlying(start); i < to_underlying(end); i++)
+			{
+				map[(KeyboardKey)i] = (ImGuiKey)j++;
+			}
+		};
+
+		if (first)
+		{
+			addRange(KeyboardKey::F1, KeyboardKey::F12, ImGuiKey_F1);
+			addRange(KeyboardKey::NumPad0, KeyboardKey::NumPad9, ImGuiKey_Keypad9);
+			addRange(KeyboardKey::Key0, KeyboardKey::Key9, ImGuiKey_0);
+			addRange(KeyboardKey::KeyA, KeyboardKey::KeyZ, ImGuiKey_A);
+			first = false;
+		}
+		return map;
+	}
+
+
+	const ImguiAppComponentImpl::GamepadMap& ImguiAppComponentImpl::getGamepadMap() noexcept
+	{
+		static GamepadMap map
+		{
+			{ GamepadButton::Start, ImGuiKey_GamepadStart },
+			{ GamepadButton::Back, ImGuiKey_GamepadBack },
+			{ GamepadButton::Y, ImGuiKey_GamepadFaceUp },
+			{ GamepadButton::A, ImGuiKey_GamepadFaceDown },
+			{ GamepadButton::X, ImGuiKey_GamepadFaceLeft },
+			{ GamepadButton::B, ImGuiKey_GamepadFaceRight },
+			{ GamepadButton::Up, ImGuiKey_GamepadDpadUp },
+			{ GamepadButton::Down, ImGuiKey_GamepadDpadDown },
+			{ GamepadButton::Left, ImGuiKey_GamepadDpadLeft },
+			{ GamepadButton::Right, ImGuiKey_GamepadDpadRight },
+			{ GamepadButton::ShoulderL, ImGuiKey_GamepadL1 },
+			{ GamepadButton::ShoulderR, ImGuiKey_GamepadR1 },
+			{ GamepadButton::ThumbL, ImGuiKey_GamepadL3 },
+			{ GamepadButton::ThumbR, ImGuiKey_GamepadR3 },
+			{ GamepadButton::Guide, ImGuiKey_None },
+		};
+
+		return map;
+	}
+
+	void* ImguiAppComponentImpl::memAlloc(size_t size, void* userData) noexcept
+	{
+		if (userData == nullptr)
+		{
+			return std::malloc(size);
+		}
+		auto alloc = static_cast<bx::AllocatorI*>(userData);
+		return bx::alloc(alloc, size);
+	}
+
+	void ImguiAppComponentImpl::memFree(void* ptr, void* userData) noexcept
+	{
+		if (userData == nullptr)
+		{
+			return std::free(ptr);
+		}
+		auto alloc = static_cast<bx::AllocatorI*>(userData);
+		bx::free(alloc, ptr);
+	}
+
+	inline bool ImguiAppComponentImpl::checkAvailTransientBuffers(uint32_t numVertices, const bgfx::VertexLayout& layout, uint32_t numIndices) noexcept
+	{
+		return numVertices == bgfx::getAvailTransientVertexBuffer(numVertices, layout)
+			&& (0 == numIndices || numIndices == bgfx::getAvailTransientIndexBuffer(numIndices))
+			;
+	}	
+
 	ImguiAppComponentImpl::ImguiAppComponentImpl(IImguiRenderer& renderer, float fontSize)
 		: _renderer(renderer)
-		, _textureUniform{ bgfx::kInvalidHandle }
-		, _lodEnabledUniform{ bgfx::kInvalidHandle }
 		, _inputEnabled(true)
 		, _imgui(nullptr)
-		, _viewId(0)
-		, _fontsTexture{ bgfx::kInvalidHandle }
 	{
 		IMGUI_CHECKVERSION();
 	}
@@ -300,16 +362,8 @@ namespace darmok
 
 	void ImguiAppComponentImpl::init(App& app)
 	{
-		app.getRenderGraph().addPass(*this);
-
 		_app = app;
 		ImGui::SetAllocatorFunctions(memAlloc, memFree, &app.getAssets().getAllocator());
-
-		ProgramDefinition progDef;
-		progDef.loadStaticMem(imgui_program);
-		_program = std::make_unique<Program>(progDef);
-		_lodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
-		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
 		_imgui = ImGui::CreateContext();
 		ImGui::SetCurrentContext(_imgui);
@@ -332,27 +386,8 @@ namespace darmok
 			| ImGuiConfigFlags_NavEnableKeyboard
 			;
 
-		uint8_t* data;
-		int32_t width;
-		int32_t height;
-		{
-			ImFontConfig config;
-			config.FontDataOwnedByAtlas = false;
-			config.MergeMode = false;
-			// config.MergeGlyphCenterV = true;
-		}
-
-		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height);
-
-		_fontsTexture = bgfx::createTexture2D(
-			(uint16_t)width
-			, (uint16_t)height
-			, false
-			, 1
-			, bgfx::TextureFormat::BGRA8
-			, 0
-			, bgfx::copy(data, width * height * 4)
-		);
+		_renderPass = std::make_shared<ImguiRenderPass>(_renderer, _imgui);
+		app.getRenderGraph().addPass(_renderPass);
 
 		ImGui::SetCurrentContext(nullptr);
 	}
@@ -361,7 +396,7 @@ namespace darmok
 	{
 		if (_app)
 		{
-			_app->getRenderGraph().addPass(*this);
+			_app->getRenderGraph().addPass(_renderPass);
 		}
 	}
 
@@ -369,29 +404,15 @@ namespace darmok
 	{
 		if (_app)
 		{
-			_app->getRenderGraph().removePass(*this);
+			_app->getRenderGraph().removePass(_renderPass);
 			_app.reset();
 		}
+		_renderPass.reset();
 
 		if (_imgui != nullptr)
 		{
 			ImGui::DestroyContext(_imgui);
 			_imgui = nullptr;
-		}
-		if (isValid(_textureUniform))
-		{
-			bgfx::destroy(_textureUniform);
-			_textureUniform.idx = bgfx::kInvalidHandle;
-		}
-		if (isValid(_lodEnabledUniform))
-		{
-			bgfx::destroy(_lodEnabledUniform);
-			_lodEnabledUniform.idx = bgfx::kInvalidHandle;
-		}
-		if (isValid(_fontsTexture))
-		{
-			bgfx::destroy(_fontsTexture);
-			_fontsTexture.idx = bgfx::kInvalidHandle;
 		}
 	}
 
@@ -467,17 +488,6 @@ namespace darmok
 				io.AddKeyEvent(elm.second, gamepad.getButton(elm.first));
 			}
 		}
-	}
-
-	void ImguiAppComponentImpl::beginFrame() const noexcept
-	{
-		ImGui::NewFrame();
-	}
-
-	bool ImguiAppComponentImpl::endFrame(bgfx::Encoder& encoder) const noexcept
-	{
-		ImGui::Render();
-		return render(encoder, ImGui::GetDrawData());
 	}
 
 	ImguiAppComponent::ImguiAppComponent(IImguiRenderer& renderer, float fontSize) noexcept

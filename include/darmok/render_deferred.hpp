@@ -12,9 +12,9 @@ namespace darmok
     class DeferredGeometryRenderPass final : public IRenderPass
     {
     public:
+        void renderPassDefine(RenderPassDefinition& def) noexcept override;
         void renderPassConfigure(bgfx::ViewId viewId) override;
         void renderPassExecute(IRenderGraphContext& context) override;
-        void renderPassDefine(RenderPassDefinition& def) override;
     private:
         bgfx::ViewId _viewId;
     };
@@ -27,6 +27,6 @@ namespace darmok
         void shutdown() noexcept override;
     private:
         OptionalRef<Camera> _cam;
-        DeferredGeometryRenderPass _geoPass;
+        std::shared_ptr<DeferredGeometryRenderPass> _geoPass;
     };
 }

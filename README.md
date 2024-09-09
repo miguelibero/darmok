@@ -105,8 +105,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * camera frustum culling
 * frame limiting
 * support for nested rmlui data models in lua
-* move miniaudio to use taskflow tasks
-* check memory leak when reloading darmok-lua
 * luajit support (maybe compile using importer)
 * text improvements
     * finish all the TextRenderConfig options
@@ -114,10 +112,11 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * clipboard text support (UTF8)
 * asset loading progress
 * possible refactors
+    * move stuff to private headers (Camera and others)
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
     * loaders should return unique_ptr
     * move lua bindings to separate library?
-    * coroutines could be useful in some places
+    * C++ coroutines could be useful in some places
 * more stuff serialization
     * binary texture atlas
     * material

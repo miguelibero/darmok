@@ -189,7 +189,9 @@ namespace darmok
         {
             for (uint8_t casc = 0; casc < _config.cascadeAmount; ++casc)
             {
-                _passes.emplace_back().init(*this, index, casc);
+                auto pass = std::make_shared<ShadowRenderPass>();
+                pass->init(*this, index, casc);
+                _passes.push_back(pass);
             }
         }
     }
@@ -198,7 +200,7 @@ namespace darmok
     {
         for (auto& pass : _passes)
         {
-            pass.shutdown();
+            pass->shutdown();
         }
         if (_cam)
         {
@@ -239,7 +241,7 @@ namespace darmok
         {
             for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
             {
-                if (_passes[i].configure(entity))
+                if (_passes[i]->configure(entity))
                 {
                     changed = true;
                 }
@@ -257,7 +259,7 @@ namespace darmok
         }
         for (; i < _passes.size(); ++i)
         {
-            if (_passes[i].configure())
+            if (_passes[i]->configure())
             {
                 changed = true;
             }

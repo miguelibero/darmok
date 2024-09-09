@@ -346,7 +346,8 @@ namespace darmok
 		_assets.init(_app);
 		_audio.init();
 
-		_renderGraphDef.addPass(*this);
+		_clearRenderPass = std::make_shared<AppClearRenderPass>();
+		_renderGraphDef.addPass(_clearRenderPass);
 
 		auto components = copyComponentContainer();
 
@@ -369,7 +370,7 @@ namespace darmok
 		bgfx::reset(_pixelSize.x, _pixelSize.y, _activeResetFlags);
 		_renderGraph.reset();
 		_renderGraphDef.clear();
-		_renderGraphDef.addPass(*this);
+		_renderGraphDef.addPass(_clearRenderPass);
 
 		if (_delegate)
 		{
@@ -389,6 +390,9 @@ namespace darmok
 			_taskExecutor->wait_for_all();
 			_taskExecutor.reset();
 		}
+
+		_renderGraphDef.removePass(_clearRenderPass);
+		_clearRenderPass.reset();
 
 		_running = false;
 		_renderGraph.reset();
@@ -443,7 +447,7 @@ namespace darmok
 		}
 	}
 
-	void AppImpl::renderPassConfigure(bgfx::ViewId viewId)
+	void AppClearRenderPass::renderPassConfigure(bgfx::ViewId viewId)
 	{
 		bgfx::setViewRect(viewId, 0, 0, bgfx::BackbufferRatio::Equal);
 		const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL;
@@ -453,13 +457,13 @@ namespace darmok
 			clearColor, clearColor, clearColor, clearColor);
 	}
 
-	void AppImpl::renderPassExecute(IRenderGraphContext& context)
+	void AppClearRenderPass::renderPassExecute(IRenderGraphContext& context)
 	{
 		// just clear the screen
 		context.getEncoder().touch(context.getViewId());
 	}
 
-	void AppImpl::renderPassDefine(RenderPassDefinition& def)
+	void AppClearRenderPass::renderPassDefine(RenderPassDefinition& def)
 	{
 		def.setName("App clear");
 		def.setPriority(IRenderGraphNode::kMaxPriority);

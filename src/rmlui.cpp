@@ -481,7 +481,7 @@ namespace darmok
         }
         _context->EnableMouseCursor(true);
 
-        _comp->getRenderGraph().addPass(*this);
+        _renderPassHandle = _comp->getRenderGraph().addPass(*this);
     }
 
     void RmluiCanvasImpl::shutdown() noexcept
@@ -491,9 +491,13 @@ namespace darmok
             Rml::RemoveContext(_context->GetName());
             _context.reset();
         }
+        if (_comp)
+        {
+            _comp->getRenderGraph().removePass(_renderPassHandle);
+        }
+        _renderPassHandle.reset();
 
         Rml::ReleaseTextures();
-
         _comp.reset();
     }
 
@@ -510,7 +514,7 @@ namespace darmok
     void RmluiCanvasImpl::renderReset() noexcept
     {
         updateContextSize();
-        _comp->getRenderGraph().addPass(*this);
+        _renderPassHandle = _comp->getRenderGraph().addPass(*this);
     }
 
     bool RmluiCanvasImpl::isInputActive() const noexcept

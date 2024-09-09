@@ -31,6 +31,7 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
         OptionalRef<MaterialAppComponent> _materials;
+        std::shared_ptr<RenderPassHandle> _passHandle;
         
         void renderEntities(IRenderGraphContext& context, EntityRuntimeView& view, MaterialOpacity opacity) noexcept;
     };

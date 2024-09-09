@@ -98,7 +98,15 @@ namespace darmok
 		BgfxCallbacks() = default;
 	};
 
-	class AppImpl final : IKeyboardListener, IRenderPass
+	class AppClearRenderPass final : public IRenderPass
+	{
+	public:
+		void renderPassConfigure(bgfx::ViewId viewId) override;
+		void renderPassExecute(IRenderGraphContext& context) override;
+		void renderPassDefine(RenderPassDefinition& def) override;
+	};
+
+	class AppImpl final : IKeyboardListener
 	{
 	public:
 		AppImpl(App& app, std::unique_ptr<IAppDelegateFactory>&& factory) noexcept;
@@ -183,10 +191,6 @@ namespace darmok
 		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
 		void toggleTaskflowProfile();
 
-		void renderPassConfigure(bgfx::ViewId viewId) override;
-		void renderPassExecute(IRenderGraphContext& context) override;
-		void renderPassDefine(RenderPassDefinition& def) override;
-
 		void renderReset();
 		void bgfxInit();
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
@@ -227,6 +231,7 @@ namespace darmok
 		std::optional<RenderGraph> _renderGraph;
 
 		Components _components;
+		std::shared_ptr<AppClearRenderPass> _clearRenderPass;
 	};
 
 	class AppRunner final : public IPlatformRunnable

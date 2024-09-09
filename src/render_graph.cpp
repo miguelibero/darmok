@@ -88,7 +88,6 @@ namespace darmok
     RenderPassDefinition::RenderPassDefinition(const std::string& name) noexcept
         : _id(randomIdType())
         , _name(name)
-        , _delegate(nullptr)
         , _priority(0)
         , _viewId(-1)
         , _sync(false)
@@ -127,20 +126,19 @@ namespace darmok
         return !operator==(other);
     }
 
-    RenderPassDefinition& RenderPassDefinition::setDelegate(IRenderPassDelegate& dlg) noexcept
+    RenderPassDefinition& RenderPassDefinition::setDelegate(const std::weak_ptr<IRenderPassDelegate>& dlg) noexcept
     {
         _delegate = dlg;
         return *this;
     }
 
-    OptionalRef<IRenderPassDelegate> RenderPassDefinition::getDelegate() const noexcept
-    {
-        return _delegate;
-    }
-
     bool RenderPassDefinition::hasPassDelegate(IRenderPassDelegate& dlg) const noexcept
     {
-        return _delegate == dlg;
+        if (auto ptr = _delegate.lock())
+        {
+            return ptr.get() == &dlg;
+        }
+        return false;
     }
 
     bgfx::ViewId RenderPassDefinition::configureView(bgfx::ViewId viewId) noexcept
@@ -149,9 +147,9 @@ namespace darmok
         bgfx::resetView(viewId);
         bgfx::setViewName(viewId, _name.c_str());
 
-        if (_delegate)
+        if (auto dlg = _delegate.lock())
         {
-            _delegate->renderPassConfigure(viewId);
+            dlg->renderPassConfigure(viewId);
         }
 
         return viewId + 1;
@@ -160,13 +158,12 @@ namespace darmok
     tf::Task RenderPassDefinition::createTask(tf::FlowBuilder& flowBuilder, RenderGraphContext& context) noexcept
     {
         auto task = flowBuilder.emplace([this, context]() mutable {
-            if (!_delegate)
+            if (auto dlg = _delegate.lock())
             {
-                return;
+                context.setViewId(_viewId);
+                dlg->renderPassExecute(context);
+                context.setViewId();
             }
-            context.setViewId(_viewId);
-            _delegate->renderPassExecute(context);
-            context.setViewId();
         });
         task.name(_name);
         return task;
@@ -295,17 +292,76 @@ namespace darmok
         return ref;
     }
 
-    const RenderGraphDefinition::Pass& RenderGraphDefinition::addPass(IRenderPass& pass)
+    const RenderGraphDefinition::Pass& RenderGraphDefinition::addPass(const std::shared_ptr<IRenderPass>& pass)
     {
         auto& def = addPass();
         def.setDelegate(pass);
-        pass.renderPassDefine(def);
+        pass->renderPassDefine(def);
         return def;
     }
 
-    bool RenderGraphDefinition::removePass(IRenderPassDelegate& dlg) noexcept
+    class RenderPassHandle final : public IRenderPass
     {
-        auto itr = std::remove_if(_nodes.begin(), _nodes.end(), [&dlg](auto& node) { return node->hasPassDelegate(dlg); });
+    public:
+        RenderPassHandle(IRenderPass& real) noexcept
+            : _real(real)
+        {
+        }
+
+        ~RenderPassHandle() noexcept
+        {
+            std::scoped_lock lock(_mutex);
+        }
+
+        void renderPassDefine(RenderPassDefinition& def) noexcept override
+        {
+            std::scoped_lock lock(_mutex);
+            _real.renderPassDefine(def);
+        }
+
+        void renderPassConfigure(bgfx::ViewId viewId) noexcept override
+        {
+            std::scoped_lock lock(_mutex);
+            _real.renderPassConfigure(viewId);
+        }
+
+        void renderPassExecute(IRenderGraphContext& context) noexcept override
+        {
+            std::scoped_lock lock(_mutex);
+            _real.renderPassExecute(context);
+        }
+    private:
+        IRenderPass& _real;
+        std::mutex _mutex;
+    };
+
+    std::shared_ptr<RenderPassHandle> RenderGraphDefinition::addPass(IRenderPass& pass)
+    {
+        auto handle = std::make_shared<RenderPassHandle>(pass);
+        addPass(handle);
+        return handle;
+    }
+
+    bool RenderGraphDefinition::removePass(size_t hash) noexcept
+    {
+        auto itr = std::remove_if(_nodes.begin(), _nodes.end(), [&hash](auto& node) { return node->hash() == hash; });
+        if (itr == _nodes.end())
+        {
+            return false;
+        }
+        _nodes.erase(itr, _nodes.end());
+        return true;
+    }
+
+    bool RenderGraphDefinition::removePass(const std::shared_ptr<RenderPassHandle>& handle) noexcept
+    {
+        return removePass(std::static_pointer_cast<IRenderPassDelegate>(handle));
+    }
+
+    bool RenderGraphDefinition::removePass(const std::shared_ptr<IRenderPassDelegate>& dlg) noexcept
+    {
+        auto itr = std::remove_if(_nodes.begin(), _nodes.end(),
+            [&dlg](auto& node) { return node->hasPassDelegate(*dlg); });
         if (itr == _nodes.end())
         {
             return false;

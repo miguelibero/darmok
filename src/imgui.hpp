@@ -14,7 +14,30 @@ namespace darmok
 	class IImguiRenderer;
 	class Program;
 
-    class ImguiAppComponentImpl final : public IRenderPass
+	class ImguiRenderPass final : public IRenderPass
+	{
+	public:
+		ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui) noexcept;
+		~ImguiRenderPass() noexcept;
+		void renderPassDefine(RenderPassDefinition& def) noexcept override;
+		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
+		void renderPassExecute(IRenderGraphContext& context) noexcept override;
+	private:
+		static const uint8_t _imguiAlphaBlendFlags;
+		IImguiRenderer& _renderer;
+		ImGuiContext* _imgui;
+		bgfx::ViewId _viewId;
+		bgfx::TextureHandle _fontsTexture;
+		std::unique_ptr<Program> _program;
+		bgfx::UniformHandle _lodEnabledUniform;
+		bgfx::UniformHandle _textureUniform;
+
+		void beginFrame() const noexcept;
+		bool render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept;
+		bool endFrame(bgfx::Encoder& encoder) const noexcept;
+	};
+
+    class ImguiAppComponentImpl final
     {
     public:
 		ImguiAppComponentImpl(IImguiRenderer& renderer, float fontSize = 18.0f);
@@ -28,23 +51,14 @@ namespace darmok
 
 		bool getInputEnabled() const noexcept;
 		void setInputEnabled(bool enabled) noexcept;
-
-		void renderPassDefine(RenderPassDefinition& def) noexcept override;
-		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-		void renderPassExecute(IRenderGraphContext& context) noexcept override;
-
     private:
 		IImguiRenderer& _renderer;
 		OptionalRef<App> _app;
 		ImGuiContext* _imgui;
-		bgfx::TextureHandle _fontsTexture;
-		std::unique_ptr<Program> _program;
-		bgfx::UniformHandle _lodEnabledUniform;
-		bgfx::UniformHandle _textureUniform;
-		bool _inputEnabled;
-		bgfx::ViewId _viewId;
 
-		static const uint8_t _imguiAlphaBlendFlags;
+		bool _inputEnabled;
+		std::shared_ptr<ImguiRenderPass> _renderPass;
+
 		using KeyboardMap = std::unordered_map<KeyboardKey, ImGuiKey>;
 		using GamepadMap = std::unordered_map<GamepadButton, ImGuiKey>;
 
@@ -56,10 +70,8 @@ namespace darmok
 
 		static inline bool checkAvailTransientBuffers(uint32_t numVertices, const bgfx::VertexLayout& layout, uint32_t numIndices) noexcept;
 
-		bool render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept;
 		void updateInput(float dt) noexcept;
-		void beginFrame() const noexcept;
-		bool endFrame(bgfx::Encoder& encoder) const noexcept;
+
     };
 
 }

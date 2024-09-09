@@ -73,7 +73,7 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
         std::unique_ptr<Program> _program;
-        std::vector<ShadowRenderPass> _passes;
+        std::vector<std::shared_ptr<ShadowRenderPass>> _passes;
         std::unique_ptr<Texture> _tex;
         RenderGraphDefinition _renderGraph;
 
