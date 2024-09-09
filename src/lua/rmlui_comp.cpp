@@ -58,6 +58,7 @@ namespace darmok
     {
         LuaRmluiCanvas::bind(lua);
         LuaRmluiEvent::bind(lua);
+        LuaRmluiElement::bind(lua);
 
         lua.new_usertype<LuaRmluiRenderer>("RmluiRenderer", sol::no_constructor,
             "add_camera_component", &LuaRmluiRenderer::addCameraComponent,

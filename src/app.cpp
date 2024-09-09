@@ -437,6 +437,7 @@ namespace darmok
 		auto rgHash = _renderGraphDef.hash();
 		if (!_renderGraph || _renderGraph->hash() != rgHash)
 		{
+			_taskExecutor->wait_for_all();
 			auto& rg = _renderGraph.emplace(_renderGraphDef);
 			rg.configureView(0);
 		}

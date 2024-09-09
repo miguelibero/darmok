@@ -313,6 +313,9 @@ namespace darmok
 		, _time(0.F)
 		, _frameCount(0)
 		, _randomEngine(std::random_device()())
+		, _randomDistFloat(0, 1)
+		, _randomDistInt(std::numeric_limits<int>::min(), std::numeric_limits<int>::max())
+		, _randomValues(0)
 	{
 	}
 
@@ -362,10 +365,10 @@ namespace darmok
 		++_frameCount;
 
 		_randomValues = glm::vec4(
-			_randomDist(_randomEngine),
-			_randomDist(_randomEngine),
-			_randomDist(_randomEngine),
-			_randomDist(_randomEngine)
+			_randomDistFloat(_randomEngine),
+			_randomDistFloat(_randomEngine),
+			_randomDistFloat(_randomEngine),
+			_randomDistFloat(_randomEngine)
 		);
 	}
 

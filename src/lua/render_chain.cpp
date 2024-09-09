@@ -32,7 +32,8 @@ namespace darmok
         lua.new_usertype<RenderChain>("RenderChain", sol::no_constructor,
             "render_graph", sol::property(sol::resolve<RenderGraphDefinition&()>(&RenderChain::getRenderGraph)),
             "output", sol::property(&RenderChain::getOutput, &RenderChain::setOutput),
-            "input", sol::property(&LuaRenderChain::getInput)
+            "input", sol::property(&LuaRenderChain::getInput),
+            "remove_step", &RenderChain::removeStep
         );
     }
 
@@ -66,7 +67,8 @@ namespace darmok
                 LuaScreenSpaceRenderPass::addChainStep4
             ),
             "set_texture", &ScreenSpaceRenderPass::setTexture,
-            "set_uniform", &ScreenSpaceRenderPass::setUniform
+            "set_uniform", &ScreenSpaceRenderPass::setUniform,
+            sol::base_classes, sol::bases<IRenderChainStep>()
         );
     }
 }

@@ -48,7 +48,8 @@ namespace darmok
         std::vector<Sampler> _samplerUniforms;
         float _time;
         std::mt19937 _randomEngine;
-        std::uniform_real_distribution<float> _randomDist;
+        std::uniform_real_distribution<float> _randomDistFloat;
+        std::uniform_int_distribution<int> _randomDistInt;
         glm::vec4 _randomValues;
         uint64_t _frameCount;
         bgfx::UniformHandle _albedoLutSamplerUniform;

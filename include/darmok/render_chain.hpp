@@ -90,6 +90,9 @@ namespace darmok
             addStep(std::move(ptr));
             return ref;
         }
+
+        bool removeStep(const IRenderChainStep& step) noexcept;
+
     private:
         RenderGraphDefinition _renderGraph;
         IRenderChainDelegate& _delegate;

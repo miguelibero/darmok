@@ -271,14 +271,17 @@ namespace darmok
 			auto status = thread.status();
 			if (status == sol::thread_status::yielded)
 			{
+				static const std::string logDesc = "resuming coroutine";
 				auto result = resume(thread, deltaTime);
-				LuaUtils::checkResult("resuming coroutine", result);
+				LuaUtils::checkResult(logDesc, result);
 				std::tuple<bool, sol::object> r = result;
+				auto robj = std::get<sol::object>(r);
 				if (!std::get<bool>(r))
 				{
+					LuaUtils::logError(logDesc, robj.as<sol::error>());
 					status = sol::thread_status::dead;
 				}
-				else if (auto instr = readYieldInstruction(std::get<sol::object>(r)))
+				else if (auto instr = readYieldInstruction(robj))
 				{
 					_awaits.emplace(thread.pointer(), std::move(instr));
 				}
@@ -312,6 +315,10 @@ namespace darmok
 				}
 			}
 			return std::make_shared<LuaCombinedYieldInstruction>(instructions);
+		}
+		if (obj.get_type() == sol::type::number)
+		{
+			return std::make_shared<LuaWaitForSeconds>(obj.as<float>());
 		}
 		if (obj.is<std::shared_ptr<ILuaYieldInstruction>>())
 		{

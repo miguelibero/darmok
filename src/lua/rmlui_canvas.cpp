@@ -1,6 +1,5 @@
 #include "rmlui.hpp"
 #include <RmlUi/Core.h>
-#include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/DataModelHandle.h>
 #include <darmok/rmlui.hpp>
 #include <darmok/viewport.hpp>
@@ -143,10 +142,41 @@ namespace darmok
         return *this;
     }
 
-    Rml::ElementDocument& LuaRmluiCanvas::loadDocument(const std::string& name)
+    OptionalRef<Rml::ElementDocument>::std_t LuaRmluiCanvas::loadDocument(const std::string& name)
     {
-        return *_canvas.getContext().LoadDocument(name);
-    }    
+        if (auto doc = _canvas.getContext().LoadDocument(name))
+        {
+            return *doc;
+        }
+        return std::nullopt;
+    }
+
+    OptionalRef<Rml::ElementDocument>::std_t LuaRmluiCanvas::getDocument(const std::string& name)
+    {
+        if (auto doc = _canvas.getContext().GetDocument(name))
+        {
+            return *doc;
+        }
+        return std::nullopt;
+    }
+
+    void LuaRmluiCanvas::unloadAllDocuments()
+    {
+        _canvas.getContext().UnloadAllDocuments();
+    }
+
+    size_t LuaRmluiCanvas::getNumDocuments() const
+    {
+        return _canvas.getContext().GetNumDocuments();
+    }
+
+    void LuaRmluiCanvas::unloadDocument(OptionalRef<Rml::ElementDocument>::std_t doc) const
+    {
+        if (doc)
+        {
+            _canvas.getContext().UnloadDocument(&doc.value().get());
+        }
+    }
 
     RmluiCanvas& LuaRmluiCanvas::getReal() noexcept
     {
@@ -320,19 +350,6 @@ namespace darmok
 
     void LuaRmluiCanvas::bind(sol::state_view& lua) noexcept
     {
-        lua.new_enum<Rml::ModalFlag>("RmluiDocumentMode", {
-            { "Normal", Rml::ModalFlag::None },
-            { "Modal", Rml::ModalFlag::Modal },
-            { "Keep", Rml::ModalFlag::Keep },
-        });
-
-        lua.new_enum<Rml::FocusFlag>("RmluiDocumentFocus", {
-            { "Normal", Rml::FocusFlag::None },
-            { "Document", Rml::FocusFlag::Document },
-            { "Keep", Rml::FocusFlag::Keep },
-            { "Auto", Rml::FocusFlag::Auto },
-        });
-
         lua.new_enum<Rml::ScrollBehavior>("RmluiScrollBehavior", {
             { "Auto", Rml::ScrollBehavior::Auto },
             { "Smooth", Rml::ScrollBehavior::Smooth },
@@ -345,64 +362,6 @@ namespace darmok
             { "Disabled", RmluiCanvasMousePositionMode::Disabled }
         });
 
-        lua.new_usertype<Rml::ElementDocument>("RmluiDocument", sol::no_constructor,
-            "show", sol::overload(
-                [](Rml::ElementDocument& doc) { doc.Show(); },
-                [](Rml::ElementDocument& doc, Rml::ModalFlag modal) { doc.Show(modal); },
-                [](Rml::ElementDocument& doc, Rml::ModalFlag modal, Rml::FocusFlag focus) { doc.Show(modal, focus); }
-            )
-        );
-
-        lua.new_usertype<Rml::Element>("RmluiElement", sol::no_constructor,
-            "set_class", &Rml::Element::SetClass,
-            "has_class", &Rml::Element::IsClassSet,
-            "class_names", sol::property(&Rml::Element::GetClassNames, &Rml::Element::SetClassNames),
-            "id", sol::property(&Rml::Element::GetId, &Rml::Element::SetId),
-            "tag_name", sol::property(&Rml::Element::GetTagName),
-            "stylesheet", sol::property(&Rml::Element::GetStyleSheet),
-            "address", sol::property(&Rml::Element::GetAddress),
-            "visible", sol::property(&Rml::Element::IsVisible),
-            "z_index", sol::property(&Rml::Element::GetZIndex),
-            "set_property", sol::resolve<bool(const Rml::String&, const Rml::String&)>(&Rml::Element::SetProperty),
-            "get_property", [](Rml::Element& elm, const std::string& name) -> std::optional<std::string> {
-                if (auto prop = elm.GetProperty(name))
-                {
-                    return prop->ToString();
-                }
-                return std::nullopt;
-            },
-            "has_attribute", [](Rml::Element& elm, const std::string& name)
-            {
-                auto& attrs = elm.GetAttributes();
-                auto itr = attrs.find(name);
-                return itr != attrs.end();
-            },
-            "get_attribute", [](Rml::Element& elm, const std::string& name, sol::this_state ts) -> sol::object
-            {
-                auto& attrs = elm.GetAttributes();
-                auto itr = attrs.find(name);
-                if (itr == attrs.end())
-                {
-                    return sol::nil;
-                }
-                return LuaRmluiEvent::getRmlVariant(ts.lua_state(), itr->second);
-            },
-            "set_attribute", [](Rml::Element& elm, const std::string& name, const sol::object& val)
-            {
-                switch (val.get_type())
-                {
-                case sol::type::string:
-                    elm.SetAttribute(name, val.as<std::string>());
-                    break;
-                case sol::type::number:
-                    elm.SetAttribute(name, val.as<float>());
-                    break;
-                case sol::type::boolean:
-                    elm.SetAttribute(name, val.as<bool>());
-                    break;
-                }
-            }
-        );
 
         lua.new_usertype<Rml::DataModelHandle>("RmluiModelHandle", sol::no_constructor,
             "is_dirty", &Rml::DataModelHandle::IsVariableDirty,
@@ -433,6 +392,10 @@ namespace darmok
             "apply_viewport_mouse_position_delta", &LuaRmluiCanvas::applyViewportMousePositionDelta,
             "set_scroll_behavior", &LuaRmluiCanvas::setScrollBehavior,
             "load_document", &LuaRmluiCanvas::loadDocument,
+            "get_document", &LuaRmluiCanvas::getDocument,
+            "unload_all_documents", & LuaRmluiCanvas::unloadAllDocuments,
+            "unload_document", & LuaRmluiCanvas::unloadDocument,
+            "num_documents", sol::property(&LuaRmluiCanvas::getNumDocuments),
             "create_data_model", &LuaRmluiCanvas::createDataModel,
             "get_data_model", &LuaRmluiCanvas::getDataModel,
             "remove_data_model", &LuaRmluiCanvas::removeDataModel,

@@ -66,6 +66,12 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     };
 
+    class LuaRmluiElement final
+    {
+    public:
+        static void bind(sol::state_view& lua) noexcept;
+    };
+
     class LuaEntity;
     class LuaScene;
 
@@ -135,7 +141,11 @@ namespace darmok
 
         LuaRmluiCanvas& setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 
-        Rml::ElementDocument& loadDocument(const std::string& name);
+        OptionalRef<Rml::ElementDocument>::std_t loadDocument(const std::string& name);
+        OptionalRef<Rml::ElementDocument>::std_t getDocument(const std::string& name);
+        void unloadAllDocuments();
+        size_t getNumDocuments() const;
+        void unloadDocument(OptionalRef<Rml::ElementDocument>::std_t doc) const;
 
         void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) override;
     };

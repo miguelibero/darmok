@@ -104,12 +104,15 @@ namespace darmok
 			return *this;
 		}
 		_output = fb;
-		auto size = _steps.size();
-		if (size > 0)
+		if (_running)
 		{
-			auto i = size - 1;
-			auto& lastStep = _steps.at(i);
-			lastStep->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+			auto size = _steps.size();
+			if (size > 0)
+			{
+				auto i = size - 1;
+				auto& lastStep = _steps.at(i);
+				lastStep->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+			}
 		}
 		return *this;
 	}
@@ -131,11 +134,14 @@ namespace darmok
 		{
 			addBuffer();
 		}
-		for (size_t i = 0; i < _steps.size(); ++i)
+		if (_running)
 		{
-			auto& step = _steps[i];
-			step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
-			step->renderReset();
+			for (size_t i = 0; i < _steps.size(); ++i)
+			{
+				auto& step = _steps[i];
+				step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+				step->renderReset();
+			}
 		}
 
 		parentGraph.setChild(_renderGraph);
@@ -254,6 +260,46 @@ namespace darmok
 			_delegate.onRenderChainInputChanged();
 		}
 		return *this;
+	}
+
+	bool RenderChain::removeStep(const IRenderChainStep& step) noexcept
+	{
+		auto ptr = &step;
+		auto itr = std::find_if(_steps.begin(), _steps.end(),
+			[ptr](auto& elm) { return elm.get() == ptr; });
+		if (itr == _steps.end())
+		{
+			return false;
+		}
+
+		if(_running)
+		{
+			(*itr)->shutdown();
+		}
+
+		auto i = std::distance(_steps.begin(), itr);
+		_steps.erase(itr);
+		_buffers.erase(_buffers.begin() + i);
+
+		if (_running)
+		{
+			return true;
+		}
+
+		if (getInput().empty())
+		{
+			_delegate.onRenderChainInputChanged();
+		}
+		else
+		{
+			for (; i < _steps.size(); ++i)
+			{
+				auto& step = _steps[i];
+				step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+			}
+		}
+
+		return true;
 	}
 
 	void RenderChain::renderPassDefine(RenderPassDefinition& def) noexcept

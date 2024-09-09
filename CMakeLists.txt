@@ -321,6 +321,7 @@ if(DARMOK_BUILD_RMLUI)
     rmlui_comp.cpp
     rmlui_canvas.cpp
     rmlui_event.cpp
+    rmlui_element.cpp
     rmlui_debug.cpp
   )
 
