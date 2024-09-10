@@ -368,17 +368,39 @@ namespace darmok
 	ScreenSpaceRenderPass::~ScreenSpaceRenderPass() noexcept
 	{
 		// empty on purpose
+		shutdown();
 	}
 
 	void ScreenSpaceRenderPass::init(RenderChain& chain) noexcept
 	{
 		_chain = chain;
+
+		if (isValid(_texUniform))
+		{
+			bgfx::destroy(_texUniform);
+		}
 		_texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
 		Rectangle screen(glm::uvec2(2));
 		_mesh = MeshData(screen).createMesh(_program->getVertexLayout());
 
 		renderReset();
+	}
+
+	void ScreenSpaceRenderPass::shutdown() noexcept
+	{
+		if (isValid(_texUniform))
+		{
+			bgfx::destroy(_texUniform);
+			_texUniform.idx = bgfx::kInvalidHandle;
+		}
+		_viewId.reset();
+		_mesh.reset();
+		if (_chain)
+		{
+			_chain->getRenderGraph().removePass(*this);
+		}
+		_chain.reset();
 	}
 
 	void ScreenSpaceRenderPass::updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept
@@ -397,22 +419,6 @@ namespace darmok
 		{
 			_chain->getRenderGraph().addPass(*this);
 		}
-	}
-
-	void ScreenSpaceRenderPass::shutdown() noexcept
-	{
-		if (isValid(_texUniform))
-		{
-			bgfx::destroy(_texUniform);
-			_texUniform.idx = bgfx::kInvalidHandle;
-		}
-		_viewId.reset();
-		_mesh.reset();
-		if (_chain)
-		{
-			_chain->getRenderGraph().removePass(*this);
-		}
-		_chain.reset();
 	}
 
 	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept

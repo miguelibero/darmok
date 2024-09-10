@@ -52,7 +52,7 @@ namespace darmok
 
         ProgramDefinition progDef;
         progDef.loadStaticMem(rmlui_program);
-        _program = std::make_shared<Program>(progDef);
+        _program = std::make_unique<Program>(progDef);
     }
 
     RmluiRenderInterface::~RmluiRenderInterface() noexcept

@@ -246,6 +246,11 @@ namespace darmok
 	{
 	}
 
+	UniformContainer::~UniformContainer() noexcept
+	{
+		shutdown();
+	}
+
 	void UniformContainer::init() noexcept
 	{
 		_initialized = true;

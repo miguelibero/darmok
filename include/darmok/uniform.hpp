@@ -58,6 +58,7 @@ namespace darmok
     {
     public:
         UniformContainer(bool autoInit = true) noexcept;
+        ~UniformContainer() noexcept;
 
         void init() noexcept;
         void shutdown() noexcept;

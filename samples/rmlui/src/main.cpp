@@ -120,9 +120,9 @@ namespace
 			element->SetProperty("font-size", "1.5em");
 
 			// testing that rmlui works on borderless fullscreen
-			_app.getWindow().requestVideoMode({
-				.screenMode = WindowScreenMode::WindowedFullscreen,
-			});
+			// _app.getWindow().requestVideoMode({
+			// 	.screenMode = WindowScreenMode::WindowedFullscreen,
+			// });
 		}
 	private:
 		App& _app;

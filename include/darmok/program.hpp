@@ -45,7 +45,9 @@ namespace darmok
 	private:
 		static const std::unordered_map<StandardProgramType, std::string> _standardTypes;
 
-		ShaderHandles createShaders(const DefinesDataMap& defMap, const std::string& name);
+		static ShaderHandles createShaders(const DefinesDataMap& defMap, const std::string& name);
+		static bgfx::ShaderHandle findBestShader(const Defines& defines, const ShaderHandles& handles) noexcept;
+		void createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle);
 
 		Defines _allDefines;
 		ShaderHandles _vertexHandles;

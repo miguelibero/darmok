@@ -124,6 +124,8 @@ namespace darmok
 	public:
 		using Key = TextureUniformKey;
 
+		TextureUniform(const std::string& name, uint8_t stage, bool autoInit = true) noexcept;
+		TextureUniform(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& tex, bool autoInit = true) noexcept;
 		TextureUniform(const Key& key, bool autoInit = true) noexcept;
 		TextureUniform(const Key& key, const std::shared_ptr<Texture>& tex, bool autoInit = true) noexcept;
 		~TextureUniform() noexcept;
@@ -159,6 +161,7 @@ namespace darmok
 	public:
 		using Key = TextureUniformKey;
 		TextureUniformContainer(bool autoInit = true) noexcept;
+		~TextureUniformContainer() noexcept;
 
 		void init() noexcept;
 		void shutdown() noexcept;

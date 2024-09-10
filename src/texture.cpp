@@ -285,14 +285,21 @@ namespace darmok
 		return hash;
 	}
 
-	TextureUniform::TextureUniform(const Key& key, bool autoInit) noexcept
-		: _key(key)
-		, _handle{ bgfx::kInvalidHandle }
+	TextureUniform::TextureUniform(const std::string& name, uint8_t stage, bool autoInit) noexcept
+		: TextureUniform({ name, stage }, nullptr, autoInit)
 	{
-		if (autoInit)
-		{
-			init();
-		}
+
+	}
+
+	TextureUniform::TextureUniform(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& tex, bool autoInit) noexcept
+		: TextureUniform({ name, stage }, tex, autoInit)
+	{
+
+	}
+
+	TextureUniform::TextureUniform(const Key& key, bool autoInit) noexcept
+		: TextureUniform(key, nullptr, autoInit)
+	{
 	}
 
 	TextureUniform::TextureUniform(const Key& key, const std::shared_ptr<Texture>& tex, bool autoInit) noexcept
@@ -448,6 +455,11 @@ namespace darmok
 		: _autoInit(autoInit)
 		, _initialized(autoInit)
 	{
+	}
+
+	TextureUniformContainer::~TextureUniformContainer() noexcept
+	{
+		shutdown();
 	}
 
 	void TextureUniformContainer::init() noexcept

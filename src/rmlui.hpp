@@ -97,7 +97,7 @@ namespace darmok
 	private:
 		std::mutex _canvasMutex;
 		App& _app;
-		std::shared_ptr<Program> _program;
+		std::unique_ptr<Program> _program;
 		bgfx::UniformHandle _textureUniform;
 		std::unordered_map<Rml::String, std::reference_wrapper<Texture>> _textureSources;
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;

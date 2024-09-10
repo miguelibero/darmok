@@ -1,6 +1,7 @@
 #include <darmok/program.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/string.hpp>
+#include <darmok/collection.hpp>
 #include "generated/gui.program.h"
 #include "generated/unlit.program.h"
 #include "generated/forward.program.h"
@@ -18,12 +19,28 @@ namespace darmok
             auto defName = name + StringUtils::join(" ", defines.begin(), defines.end());
             if (!isValid(handle))
             {
-                throw std::runtime_error("failed to compile shader: " + defName);
+                throw std::runtime_error("failed to create shader: " + defName);
             }
             bgfx::setName(handle, defName.c_str());
             handles[defines] = handle;
         }
         return handles;
+    }
+
+    bgfx::ShaderHandle Program::findBestShader(const Defines& defines, const ShaderHandles& handles) noexcept
+    {
+        size_t count = 0;
+        bgfx::ShaderHandle handle = { bgfx::kInvalidHandle };
+        for (auto combDefines : CollectionUtils::combinations(defines))
+        {
+            auto itr = handles.find(combDefines);
+            if (itr != handles.end() && count <= combDefines.size())
+            {
+                handle = itr->second;
+                count = combDefines.size();
+            }
+        }
+        return handle;
     }
 
     const std::unordered_map<StandardProgramType, std::string> Program::_standardTypes = {
@@ -84,22 +101,33 @@ namespace darmok
         _vertexHandles = createShaders(profile.vertexShaders, def.name + " vertex ");
         _fragmentHandles = createShaders(profile.fragmentShaders, def.name + " fragment ");
 
-        for (auto& [vertDefines, vertHandle] : _vertexHandles)
+        for (auto& [defines, vertHandle] : _vertexHandles)
         {
-            for (auto& [fragDefines, fragHandle] : _fragmentHandles)
-            {
-                Defines defines = vertDefines;
-                defines.insert(fragDefines.begin(), fragDefines.end());
-                auto handle = bgfx::createProgram(vertHandle, fragHandle);
-                if (!isValid(handle))
-                {
-                    auto definesStr = StringUtils::join(", ", defines.begin(), defines.end());
-                    throw std::runtime_error("failed to create program: " + definesStr);
-                }
-                _handles[defines] = handle;
-                _allDefines.insert(defines.begin(), defines.end());
-            }
+            _allDefines.insert(defines.begin(), defines.end());
+            auto fragHandle = findBestShader(defines, _fragmentHandles);
+            createHandle(defines, vertHandle, fragHandle);
         }
+        for (auto& [defines, fragHandle] : _fragmentHandles)
+        {
+            _allDefines.insert(defines.begin(), defines.end());
+            auto vertHandle = findBestShader(defines, _vertexHandles);
+            createHandle(defines, vertHandle, fragHandle);
+        }
+    }
+
+    void Program::createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle)
+    {
+        if (_handles.contains(defines))
+        {
+            return;
+        }
+        auto handle = bgfx::createProgram(vertHandle, fragHandle);
+        if (!isValid(handle))
+        {
+            auto definesStr = StringUtils::join(", ", defines.begin(), defines.end());
+            throw std::runtime_error("failed to create program: " + definesStr);
+        }
+        _handles[defines] = handle;
     }
 
     Program::~Program() noexcept

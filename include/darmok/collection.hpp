@@ -29,7 +29,7 @@ namespace darmok
                 auto& comb = combs.emplace_back();
                 for (size_t j = 0; j < n; ++j)
                 {
-                    if (i & (1 << j))
+                    if (i & ((uint32_t)1 << j))
                     {
                         comb.insert(elms[j]);
                     }
