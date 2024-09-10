@@ -15,6 +15,7 @@ namespace Rml
 {
 	class Context;
 	class Element;
+	class ElementDocument;
 	class Event;
 }
 
@@ -30,6 +31,13 @@ namespace darmok
 	public:
 		virtual ~IRmluiCustomEventListener() = default;
 		virtual void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) = 0;
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE IRmluiScriptRunner
+	{
+	public:
+		virtual ~IRmluiScriptRunner() = default;
+		virtual bool runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) = 0;
 	};
 
 	class RmluiCanvasImpl;
@@ -76,7 +84,10 @@ namespace darmok
 		const RmluiCanvasImpl& getImpl() const noexcept;
 
 		RmluiCanvas& addCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
-		bool removeCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
+		bool removeCustomEventListener(const IRmluiCustomEventListener& listener) noexcept;
+
+		RmluiCanvas& addScriptRunner(IRmluiScriptRunner& runner) noexcept;
+		bool removeScriptRunner(const IRmluiScriptRunner& runner) noexcept;
 	private:
 		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};

@@ -23,11 +23,13 @@ namespace darmok
         _env["entity"] = entity;
 
         _canvas.addCustomEventListener(*this);
+        _canvas.addScriptRunner(*this);
     }
 
     LuaRmluiCanvas::~LuaRmluiCanvas() noexcept
     {
         _canvas.removeCustomEventListener(*this);
+        _canvas.removeScriptRunner(*this);
     }
 
     sol::environment& LuaRmluiCanvas::getEnvironment() noexcept
@@ -250,46 +252,32 @@ namespace darmok
         );
     }
 
-    void LuaRmluiCanvas::onRmluiCustomEvent(Rml::Event& ev, const std::string& value, Rml::Element& element)
+    void LuaRmluiCanvas::onRmluiCustomEvent(Rml::Event& ev, const std::string& value, Rml::Element& element) noexcept
     {
-        static const std::string prefix = ":";
+        sol::environment env(_lua, sol::create, _env);
+        env["event"] = std::ref(_lua);
+        env["element"] = std::ref(element);
+        env["document"] = element.GetOwnerDocument();
 
-        if (value.starts_with(prefix))
+        auto r = _lua.safe_script(value, env);
+        auto logDesc = "running rmlui event " + ev.GetType() + " on element " + element.GetAddress();
+        LuaUtils::checkResult(logDesc, r);
+    }
+
+    bool LuaRmluiCanvas::runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept
+    {
+        sol::environment env(_lua, sol::create, _env);
+        env["document"] = std::ref(doc);
+
+        auto r = _lua.safe_script(content, env);
+        auto logDesc = "running rmlui script " + std::string(sourcePath);
+        if (sourceLine >= 0)
         {
-            auto params = StringUtils::split(value.substr(prefix.size()), ":");
-            auto name = params[0];
-            auto args = _lua.create_table();
-            for (size_t i = 1; i < params.size(); ++i)
-            {
-                args[i] = params[i];
-            }
-
-            for (auto& listener : _funcCustomEventListeners)
-            {
-                if (listener->getEvent() == name)
-                {
-                    listener->onRmluiCustomEvent(ev, args, element);
-                }
-            }
-            for (auto& listener : _tabCustomEventListeners)
-            {
-                if (listener->getEvent() == name)
-                {
-                    listener->onRmluiCustomEvent(ev, args, element);
-                }
-            }
+            logDesc += ":" + std::to_string(sourceLine);
         }
-        else
-        {
-            sol::environment env(_lua, sol::create, _env);
-            env["event"] = std::ref(_lua);
-            env["element"] = std::ref(element);
-            env["document"] = element.GetOwnerDocument();
+        LuaUtils::checkResult(logDesc, r);
 
-            auto r = _lua.safe_script(value, env);
-            auto evDesc = "running rmlui event " + ev.GetType() + " on element " + element.GetAddress();
-            LuaUtils::checkResult(evDesc, r);
-        }
+        return true;
     }
 
     Rml::DataModelHandle LuaRmluiCanvas::getDataModel(const std::string& name) const noexcept
@@ -334,72 +322,6 @@ namespace darmok
         return false;
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::addCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept
-    {
-        auto ptr = std::make_unique<LuaTableRmluiCustomEventListener>(ev, tab);
-        _tabCustomEventListeners.push_back(std::move(ptr));
-        return *this;
-    }
-
-    bool LuaRmluiCanvas::removeCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept
-    {
-        auto itr = std::remove_if(_tabCustomEventListeners.begin(), _tabCustomEventListeners.end(), [&ev, &tab](auto& listener) {
-            return listener->getEvent() == ev && listener->getTable() == tab;
-        });
-        if (itr == _tabCustomEventListeners.end())
-        {
-            return false;
-        }
-        _tabCustomEventListeners.erase(itr, _tabCustomEventListeners.end());
-        return true;
-    }
-
-    bool LuaRmluiCanvas::removeCustomEventListener2(const sol::table& tab) noexcept
-    {
-        auto itr = std::remove_if(_tabCustomEventListeners.begin(), _tabCustomEventListeners.end(), [&tab](auto& listener) {
-            return listener->getTable() == tab;
-        });
-        if (itr == _tabCustomEventListeners.end())
-        {
-            return false;
-        }
-        _tabCustomEventListeners.erase(itr, _tabCustomEventListeners.end());
-        return true;
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::addCustomEventListener2(const std::string& ev, const sol::protected_function& func) noexcept
-    {
-        auto ptr = std::make_unique<LuaFunctionRmluiCustomEventListener>(ev, func);
-        _funcCustomEventListeners.push_back(std::move(ptr));
-        return *this;
-    }
-
-    bool LuaRmluiCanvas::removeCustomEventListener4(const std::string& ev, const sol::protected_function& func) noexcept
-    {
-        auto itr = std::remove_if(_funcCustomEventListeners.begin(), _funcCustomEventListeners.end(), [&ev, &func](auto& listener) {
-            return listener->getEvent() == ev && listener->getFunction() == func;
-        });
-        if (itr == _funcCustomEventListeners.end())
-        {
-            return false;
-        }
-        _funcCustomEventListeners.erase(itr, _funcCustomEventListeners.end());
-        return true;
-    }
-
-    bool LuaRmluiCanvas::removeCustomEventListener3(const sol::protected_function& func) noexcept
-    {
-        auto itr = std::remove_if(_funcCustomEventListeners.begin(), _funcCustomEventListeners.end(), [&func](auto& listener) {
-            return listener->getFunction() == func;
-            });
-        if (itr == _funcCustomEventListeners.end())
-        {
-            return false;
-        }
-        _funcCustomEventListeners.erase(itr, _funcCustomEventListeners.end());
-        return true;
-    }
-
     void LuaRmluiCanvas::bind(sol::state_view& lua) noexcept
     {
         lua.new_enum<Rml::ScrollBehavior>("RmluiScrollBehavior", {
@@ -413,7 +335,6 @@ namespace darmok
             { "Relative", RmluiCanvasMousePositionMode::Relative },
             { "Disabled", RmluiCanvasMousePositionMode::Disabled }
         });
-
 
         lua.new_usertype<Rml::DataModelHandle>("RmluiModelHandle", sol::no_constructor,
             "is_dirty", &Rml::DataModelHandle::IsVariableDirty,
@@ -461,16 +382,6 @@ namespace darmok
                 &LuaRmluiCanvas::removeEventListener2,
                 &LuaRmluiCanvas::removeEventListener3,
                 &LuaRmluiCanvas::removeEventListener4
-            ),
-            "add_custom_event_listener", sol::overload(
-                &LuaRmluiCanvas::addCustomEventListener1,
-                &LuaRmluiCanvas::addCustomEventListener2
-            ),
-            "remove_custom_event_listener", sol::overload(
-                &LuaRmluiCanvas::removeCustomEventListener1,
-                &LuaRmluiCanvas::removeCustomEventListener2,
-                &LuaRmluiCanvas::removeCustomEventListener3,
-                &LuaRmluiCanvas::removeCustomEventListener4
             )
         );
     }

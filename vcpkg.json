@@ -24,8 +24,7 @@
     {
       "name": "rmlui",
       "features": [
-        "freetype",
-        "lua"
+        "freetype"
       ]
     },
     "glfw3",

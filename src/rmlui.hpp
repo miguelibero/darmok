@@ -214,10 +214,13 @@ namespace darmok
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
 
 		void addCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
-		bool removeCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
+		bool removeCustomEventListener(const IRmluiCustomEventListener& listener) noexcept;
+
+		void addScriptRunner(IRmluiScriptRunner& runner) noexcept;
+		bool removeScriptRunner(const IRmluiScriptRunner& runner) noexcept;
 
 		void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
-
+		bool runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
 	private:
 		RmluiCanvas& _canvas;
 		OptionalRef<Rml::Context> _context;
@@ -230,6 +233,7 @@ namespace darmok
 		std::string _name;
 		MousePositionMode _mousePositionMode;
 		std::vector<std::reference_wrapper<IRmluiCustomEventListener>> _customEventListeners;
+		std::vector<std::reference_wrapper<IRmluiScriptRunner>> _scriptRunners;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		void updateContextSize() noexcept;
@@ -256,35 +260,56 @@ namespace darmok
 		static const std::string _eventAttrPrefix;
 	};
 
-	class RmluiSharedContext final : Rml::EventListenerInstancer, Rml::Plugin
+	class RmluiPlugin final : Rml::Plugin, Rml::EventListenerInstancer, Rml::ElementInstancer
 	{
 	public:
-		~RmluiSharedContext() noexcept;
-		static std::shared_ptr<RmluiSharedContext> getInstance(App& app) noexcept;
-		static std::weak_ptr<RmluiSharedContext> getWeakInstance() noexcept;
+		~RmluiPlugin() noexcept;
+		static std::shared_ptr<RmluiPlugin> getInstance(App& app) noexcept;
+		static std::weak_ptr<RmluiPlugin> getWeakInstance() noexcept;
 		RmluiSystemInterface& getSystem() noexcept;
 		RmluiRenderInterface& getRender() noexcept;
 
 		void addCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
-		bool removeCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
+		bool removeCustomEventListener(const IRmluiCustomEventListener& listener) noexcept;
 
 		void onCanvasDestroyed(RmluiCanvas& canvas) noexcept;
 		void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 
+		void addScriptRunner(IRmluiScriptRunner& runner) noexcept;
+		bool removeScriptRunner(const IRmluiScriptRunner& runner) noexcept;
+
+		bool runScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine = -1);
+		bool runExternalScript(Rml::ElementDocument& doc, const std::string& sourcePath);
+
 	private:
-		RmluiSharedContext(App& app) noexcept;
-		static std::weak_ptr<RmluiSharedContext> _instance;
+		RmluiPlugin(App& app) noexcept;
+		static std::weak_ptr<RmluiPlugin> _instance;
+		App& _app;
 		RmluiSystemInterface _system;
 		RmluiFileInterface _file;
 		RmluiRenderInterface _render;
 		std::vector<std::unique_ptr<RmluiEventForwarder>> _eventForwarders;
 		std::vector<std::reference_wrapper<IRmluiCustomEventListener>> _customEventListeners;
+		std::vector<std::reference_wrapper<IRmluiScriptRunner>> _scriptRunners;
 
 		Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override;
 		void OnDocumentUnload(Rml::ElementDocument* doc) noexcept override;
+
+		Rml::ElementPtr InstanceElement(Rml::Element* parent, const Rml::String& tag, const Rml::XMLAttributes& attributes) noexcept override;
+		void ReleaseElement(Rml::Element* element) noexcept override;
 	};
 
-    class RmluiRendererImpl final : IKeyboardListener, IMouseListener, IRmluiCustomEventListener
+	class RmluiDocument final : public Rml::ElementDocument
+	{
+	public:
+		RmluiDocument(RmluiPlugin& plugin, const Rml::String& tag);
+		void LoadInlineScript(const Rml::String& content, const Rml::String& sourcePath, int sourceLine) override;
+		void LoadExternalScript(const Rml::String& sourcePath) override;
+	private:
+		RmluiPlugin& _plugin;
+	};
+
+    class RmluiRendererImpl final : IKeyboardListener, IMouseListener, IRmluiCustomEventListener, IRmluiScriptRunner
     {
     public:
 		~RmluiRendererImpl() noexcept;
@@ -313,7 +338,7 @@ namespace darmok
 		OptionalRef<Scene> _scene;
 		OptionalRef<App> _app;
 		RenderGraphDefinition _renderGraph;
-		std::shared_ptr<RmluiSharedContext> _shared;
+		std::shared_ptr<RmluiPlugin> _plugin;
 
 		void onCanvasConstructed(EntityRegistry& registry, Entity entity);
 		void onCanvasDestroyed(EntityRegistry& registry, Entity entity);
@@ -326,6 +351,7 @@ namespace darmok
 		void onMouseButton(MouseButton button, bool down) noexcept override;
 
 		void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) override;
+		bool runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) override;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;
 		static const KeyboardMap& getKeyboardMap() noexcept;

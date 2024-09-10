@@ -51,30 +51,6 @@ namespace darmok
         sol::table _tab;
     };
 
-    class LuaFunctionRmluiCustomEventListener final
-    {
-    public:
-        LuaFunctionRmluiCustomEventListener(const std::string& ev, const sol::protected_function& func) noexcept;
-        void onRmluiCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element);
-        const sol::protected_function& getFunction() const;
-        const std::string& getEvent() const;
-    private:
-        std::string _event;
-        sol::protected_function _func;
-    };
-
-    class LuaTableRmluiCustomEventListener final
-    {
-    public:
-        LuaTableRmluiCustomEventListener(const std::string& ev, const sol::table& tab) noexcept;
-        void onRmluiCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element);
-        const sol::table& getTable() const;
-        const std::string& getEvent() const;
-    private:
-        std::string _event;
-        sol::table _tab;
-    };
-
     class LuaRmluiRenderer;    
 
     class LuaRmluiEvent final
@@ -127,7 +103,7 @@ namespace darmok
     class LuaEntity;
     class LuaScene;
 
-    class LuaRmluiCanvas final : IRmluiCustomEventListener
+    class LuaRmluiCanvas final : IRmluiCustomEventListener, IRmluiScriptRunner
     {
     public:
         LuaRmluiCanvas(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept;
@@ -145,8 +121,6 @@ namespace darmok
         sol::state_view _lua;
         sol::environment _env;
         RmluiCanvas& _canvas;
-        std::vector<std::unique_ptr<LuaTableRmluiCustomEventListener>> _tabCustomEventListeners;
-        std::vector<std::unique_ptr<LuaFunctionRmluiCustomEventListener>> _funcCustomEventListeners;
 
         static LuaRmluiCanvas& addEntityComponent1(LuaEntity& entity, const std::string& name, sol::this_state ts) noexcept;
         static LuaRmluiCanvas& addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size, sol::this_state ts) noexcept;
@@ -167,14 +141,6 @@ namespace darmok
         LuaRmluiCanvas& addEventListener2(const std::string& ev, const sol::protected_function& func) noexcept;
         bool removeEventListener4(const std::string& ev, const sol::protected_function& func) noexcept;
         bool removeEventListener3(const sol::protected_function& func) noexcept;
-
-        LuaRmluiCanvas& addCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept;
-        bool removeCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept;
-        bool removeCustomEventListener2(const sol::table& tab) noexcept;
-
-        LuaRmluiCanvas& addCustomEventListener2(const std::string& ev, const sol::protected_function& func) noexcept;
-        bool removeCustomEventListener4(const std::string& ev, const sol::protected_function& func) noexcept;
-        bool removeCustomEventListener3(const sol::protected_function& func) noexcept;
 
         std::optional<glm::uvec2> getSize() const noexcept;
         LuaRmluiCanvas& setSize(std::optional<VarLuaTable<glm::uvec2>> size) noexcept;
@@ -211,7 +177,8 @@ namespace darmok
 
         sol::environment& getEnvironment() noexcept;
 
-        void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) override;
+        void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) noexcept override;
+        bool runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept override;
     };
 
     class LuaRmluiRenderer final : public ICameraComponent
