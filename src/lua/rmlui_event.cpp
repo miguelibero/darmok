@@ -91,6 +91,39 @@ namespace darmok
             FONTEFFECTSPTR = 'F',
         */
     }
+
+    glm::vec2 LuaRmluiEvent::getUnprojectedMouseScreenPosition(const Rml::Event& ev) noexcept
+    {
+        return RmluiUtils::convert(ev.GetUnprojectedMouseScreenPos());
+    }
+
+    sol::table LuaRmluiEvent::getParameters(const Rml::Event& ev, sol::this_state ts) noexcept
+    {
+        auto& params = ev.GetParameters();
+        auto tab = sol::state_view(ts).create_table();
+        for (auto& elm : params)
+        {
+            std::string key = elm.first;
+            tab[key] = getRmlVariant(ts.lua_state(), elm.second);
+        }
+        return tab;
+    }
+
+    sol::object LuaRmluiEvent::getParameter(const Rml::Event& ev, const std::string& key, sol::this_state ts) noexcept
+    {
+        auto& params = ev.GetParameters();
+        auto itr = params.find(key);
+        if (itr == params.end())
+        {
+            return sol::nil;
+        }
+        return getRmlVariant(ts.lua_state(), itr->second);
+    }
+
+    std::string LuaRmluiEvent::toString(const Rml::Event& ev) noexcept
+    {
+        return "RmluiEvent(" + ev.GetType() + ")";
+    }
     
     void LuaRmluiEvent::bind(sol::state_view& lua) noexcept
     {
@@ -151,38 +184,21 @@ namespace darmok
             "interruptible", sol::property(&Rml::Event::IsInterruptible),
             "propagating", sol::property(&Rml::Event::IsPropagating),
             "immediate_propagating", sol::property(&Rml::Event::IsImmediatePropagating),
-            "unprojected_mouse_screen_position", sol::property([](const Rml::Event& ev) {
-                return RmluiUtils::convert(ev.GetUnprojectedMouseScreenPos());
-            }),
-            "parameters", sol::property([](const Rml::Event& ev, sol::this_state ts) {
-                auto& params = ev.GetParameters();
-                auto tab = sol::state_view(ts).create_table();
-                for (auto& elm : params)
-                {
-                    std::string key = elm.first;
-                    tab[key] = getRmlVariant(ts.lua_state(), elm.second);
-                }
-                return tab;
-            }),
-            "get_parameter", [](const Rml::Event& ev, const std::string& key, sol::this_state ts) -> sol::object {
-                auto& params = ev.GetParameters();
-                auto itr = params.find(key);
-                if (itr == params.end())
-                {
-                    return sol::nil;
-                }
-                return getRmlVariant(ts.lua_state(), itr->second);
-            },
-            sol::meta_function::to_string, [](const Rml::Event& ev) {
-                return "RmluiEvent(" + ev.GetType() + ")";
-            }
+            "unprojected_mouse_screen_position", sol::property(&LuaRmluiEvent::getUnprojectedMouseScreenPosition),
+            "parameters", sol::property(&LuaRmluiEvent::getParameters),
+            "get_parameter", &LuaRmluiEvent::getParameter,
+            sol::meta_function::to_string, &LuaRmluiEvent::toString
         );
     }
 
-    LuaFunctionRmluiEventListener::LuaFunctionRmluiEventListener(const std::string& event, const sol::protected_function& func) noexcept
-        : _event(event)
-        , _func(func)
+    LuaFunctionRmluiEventListener::LuaFunctionRmluiEventListener(const sol::protected_function& func) noexcept
+        : _func(func)
     {
+    }
+
+    void LuaFunctionRmluiEventListener::OnDetach(Rml::Element*) noexcept
+    {
+        delete this;
     }
 
     void LuaFunctionRmluiEventListener::ProcessEvent(Rml::Event& event)
@@ -191,36 +207,14 @@ namespace darmok
         LuaUtils::checkResult("rmlui function event: " + event.GetType(), result);
     }
 
-    void LuaFunctionRmluiEventListener::processCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element)
-    {
-        auto result = _func(event, args, element);
-        LuaUtils::checkResult("rmlui custom function event: " + event.GetType(), result);
-    }
-
-    const sol::protected_function& LuaFunctionRmluiEventListener::getFunction() const
-    {
-        return _func;
-    }
-
-    const std::string& LuaFunctionRmluiEventListener::getEvent() const
-    {
-        return _event;
-    }
-
-    LuaTableRmluiEventListener::LuaTableRmluiEventListener(const std::string& event, const sol::table& tab) noexcept
-        : _event(event)
-        , _tab(tab)
+    LuaTableRmluiEventListener::LuaTableRmluiEventListener(const sol::table& tab) noexcept
+        : _tab(tab)
     {
     }
 
-    const sol::table& LuaTableRmluiEventListener::getTable() const
+    void LuaTableRmluiEventListener::OnDetach(Rml::Element*) noexcept
     {
-        return _tab;
-    }
-
-    const std::string& LuaTableRmluiEventListener::getEvent() const
-    {
-        return _event;
+        delete this;
     }
 
     void LuaTableRmluiEventListener::ProcessEvent(Rml::Event& event)
@@ -228,10 +222,48 @@ namespace darmok
         LuaUtils::callTableDelegate(_tab, "on_rmlui_event", "rmlui table event: " + event.GetType(),
             [&event](auto& func, auto& self) {
                 return func(self, event);
-        });
+            });
     }
 
-    void LuaTableRmluiEventListener::processCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element)
+    LuaFunctionRmluiCustomEventListener::LuaFunctionRmluiCustomEventListener(const std::string& event, const sol::protected_function& func) noexcept
+        : _event(event)
+        , _func(func)
+    {
+    }
+
+    void LuaFunctionRmluiCustomEventListener::onRmluiCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element)
+    {
+        auto result = _func(event, args, element);
+        LuaUtils::checkResult("rmlui custom function event: " + event.GetType(), result);
+    }
+
+    const sol::protected_function& LuaFunctionRmluiCustomEventListener::getFunction() const
+    {
+        return _func;
+    }
+
+    const std::string& LuaFunctionRmluiCustomEventListener::getEvent() const
+    {
+        return _event;
+    }
+
+    LuaTableRmluiCustomEventListener::LuaTableRmluiCustomEventListener(const std::string& event, const sol::table& tab) noexcept
+        : _event(event)
+        , _tab(tab)
+    {
+    }
+
+    const sol::table& LuaTableRmluiCustomEventListener::getTable() const
+    {
+        return _tab;
+    }
+
+    const std::string& LuaTableRmluiCustomEventListener::getEvent() const
+    {
+        return _event;
+    }
+
+    void LuaTableRmluiCustomEventListener::onRmluiCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element)
     {
         LuaUtils::callTableDelegate(_tab, "on_rmlui_event", "rmlui table event: " + event.GetType(),
             [&event, &args, &element](auto& func, auto& self) {

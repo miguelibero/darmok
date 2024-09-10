@@ -1,5 +1,6 @@
 #include "rmlui.hpp"
 #include <RmlUi/Core.h>
+#include <RmlUi/Lua.h>
 #include <darmok/rmlui.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/scene.hpp>
@@ -56,9 +57,11 @@ namespace darmok
 
     void LuaRmluiRenderer::bind(sol::state_view& lua) noexcept
     {
+        Rml::Lua::Initialise(lua.lua_state());
         LuaRmluiCanvas::bind(lua);
         LuaRmluiEvent::bind(lua);
         LuaRmluiElement::bind(lua);
+        LuaRmluiElementDocument::bind(lua);
 
         lua.new_usertype<LuaRmluiRenderer>("RmluiRenderer", sol::no_constructor,
             "add_camera_component", &LuaRmluiRenderer::addCameraComponent,

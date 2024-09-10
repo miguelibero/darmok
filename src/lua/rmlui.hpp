@@ -34,9 +34,28 @@ namespace darmok
     class LuaFunctionRmluiEventListener final : public Rml::EventListener
     {
     public:
-        LuaFunctionRmluiEventListener(const std::string& ev, const sol::protected_function& func) noexcept;
+        LuaFunctionRmluiEventListener(const sol::protected_function& func) noexcept;
         void ProcessEvent(Rml::Event& event) override;
-        void processCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element);
+        void OnDetach(Rml::Element*) noexcept override;
+    private:
+        sol::protected_function _func;
+    };
+
+    class LuaTableRmluiEventListener final : public Rml::EventListener
+    {
+    public:
+        LuaTableRmluiEventListener(const sol::table& tab) noexcept;
+        void ProcessEvent(Rml::Event& event) override;
+        void OnDetach(Rml::Element*) noexcept override;
+    private:
+        sol::table _tab;
+    };
+
+    class LuaFunctionRmluiCustomEventListener final
+    {
+    public:
+        LuaFunctionRmluiCustomEventListener(const std::string& ev, const sol::protected_function& func) noexcept;
+        void onRmluiCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element);
         const sol::protected_function& getFunction() const;
         const std::string& getEvent() const;
     private:
@@ -44,12 +63,11 @@ namespace darmok
         sol::protected_function _func;
     };
 
-    class LuaTableRmluiEventListener final : public Rml::EventListener
+    class LuaTableRmluiCustomEventListener final
     {
     public:
-        LuaTableRmluiEventListener(const std::string& ev, const sol::table& tab) noexcept;
-        void ProcessEvent(Rml::Event& event) override;
-        void processCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element);
+        LuaTableRmluiCustomEventListener(const std::string& ev, const sol::table& tab) noexcept;
+        void onRmluiCustomEvent(Rml::Event& event, const sol::table& args, Rml::Element& element);
         const sol::table& getTable() const;
         const std::string& getEvent() const;
     private:
@@ -66,6 +84,11 @@ namespace darmok
         static sol::object getRmlVariant(lua_State* lua, const Rml::Variant& variant) noexcept;
 
         static void bind(sol::state_view& lua) noexcept;
+    private:
+        static glm::vec2 getUnprojectedMouseScreenPosition(const Rml::Event& ev) noexcept;
+        static sol::table getParameters(const Rml::Event& ev, sol::this_state ts) noexcept;
+        static sol::object getParameter(const Rml::Event& ev, const std::string& key, sol::this_state ts) noexcept;
+        static std::string toString(const Rml::Event& ev) noexcept;
     };
 
     class LuaRmluiElement
@@ -80,12 +103,15 @@ namespace darmok
         static std::vector<Rml::Element*> getElementsByClassName(Rml::Element& elm, const std::string& cls) noexcept;
         static std::vector<Rml::Element*> getElementsByTagName(Rml::Element& elm, const std::string& tag) noexcept;
         static std::vector<Rml::Element*> querySelectorAll(Rml::Element& elm, const std::string& selector) noexcept;
-        static void addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept;
-        static void addEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept;
+        static Rml::Element& addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept;
+        static Rml::Element& addEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept;
         static bool removeEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept;
         static bool removeEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept;
         static bool removeEventListener3(Rml::Element& elm, const sol::table& tab) noexcept;
         static bool removeEventListener4(Rml::Element& elm, const sol::protected_function& func) noexcept;
+        static bool dispatchEvent1(Rml::Element& elm, const std::string& type, const sol::table& params);
+        static bool dispatchEvent2(Rml::Element& elm, const std::string& type, const sol::table& params, bool interruptible);
+        static bool dispatchEvent3(Rml::Element& elm, const std::string& type, const sol::table& params, bool interruptible, bool bubbles);
     };
 
     class LuaRmluiElementDocument
@@ -104,7 +130,7 @@ namespace darmok
     class LuaRmluiCanvas final : IRmluiCustomEventListener
     {
     public:
-        LuaRmluiCanvas(RmluiCanvas& canvas, const sol::state_view& lua) noexcept;
+        LuaRmluiCanvas(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept;
         ~LuaRmluiCanvas() noexcept;
 
         LuaRmluiCanvas(const LuaRmluiCanvas& other) = delete;
@@ -117,9 +143,10 @@ namespace darmok
 
     private:
         sol::state_view _lua;
+        sol::environment _env;
         RmluiCanvas& _canvas;
-        std::vector<std::unique_ptr<LuaTableRmluiEventListener>> _tabEventListeners;
-        std::vector<std::unique_ptr<LuaFunctionRmluiEventListener>> _funcEventListeners;
+        std::vector<std::unique_ptr<LuaTableRmluiCustomEventListener>> _tabCustomEventListeners;
+        std::vector<std::unique_ptr<LuaFunctionRmluiCustomEventListener>> _funcCustomEventListeners;
 
         static LuaRmluiCanvas& addEntityComponent1(LuaEntity& entity, const std::string& name, sol::this_state ts) noexcept;
         static LuaRmluiCanvas& addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size, sol::this_state ts) noexcept;
@@ -140,6 +167,14 @@ namespace darmok
         LuaRmluiCanvas& addEventListener2(const std::string& ev, const sol::protected_function& func) noexcept;
         bool removeEventListener4(const std::string& ev, const sol::protected_function& func) noexcept;
         bool removeEventListener3(const sol::protected_function& func) noexcept;
+
+        LuaRmluiCanvas& addCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept;
+        bool removeCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept;
+        bool removeCustomEventListener2(const sol::table& tab) noexcept;
+
+        LuaRmluiCanvas& addCustomEventListener2(const std::string& ev, const sol::protected_function& func) noexcept;
+        bool removeCustomEventListener4(const std::string& ev, const sol::protected_function& func) noexcept;
+        bool removeCustomEventListener3(const sol::protected_function& func) noexcept;
 
         std::optional<glm::uvec2> getSize() const noexcept;
         LuaRmluiCanvas& setSize(std::optional<VarLuaTable<glm::uvec2>> size) noexcept;
@@ -173,6 +208,8 @@ namespace darmok
         void unloadAllDocuments();
         size_t getNumDocuments() const;
         void unloadDocument(OptionalRef<Rml::ElementDocument>::std_t doc) const;
+
+        sol::environment& getEnvironment() noexcept;
 
         void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) override;
     };

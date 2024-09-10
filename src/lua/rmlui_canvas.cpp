@@ -14,25 +14,25 @@
 
 namespace darmok
 {
-    LuaRmluiCanvas::LuaRmluiCanvas(RmluiCanvas& view, const sol::state_view& lua) noexcept
+    LuaRmluiCanvas::LuaRmluiCanvas(RmluiCanvas& view, LuaEntity& entity, const sol::state_view& lua) noexcept
         : _canvas(view)
         , _lua(lua)
+        , _env(lua, sol::create, _lua.globals())
     {
+        _env["canvas"] = this;
+        _env["entity"] = entity;
+
         _canvas.addCustomEventListener(*this);
     }
 
     LuaRmluiCanvas::~LuaRmluiCanvas() noexcept
     {
         _canvas.removeCustomEventListener(*this);
-        auto& ctxt = _canvas.getContext();
-        for (auto& listener : _tabEventListeners)
-        {
-            ctxt.RemoveEventListener(listener->getEvent(), listener.get());
-        }
-        for (auto& listener : _funcEventListeners)
-        {
-            ctxt.RemoveEventListener(listener->getEvent(), listener.get());
-        }
+    }
+
+    sol::environment& LuaRmluiCanvas::getEnvironment() noexcept
+    {
+        return _env;
     }
 
     std::string LuaRmluiCanvas::getName() const noexcept
@@ -190,13 +190,13 @@ namespace darmok
     LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent1(LuaEntity& entity, const std::string& name, sol::this_state ts) noexcept
     {
         auto& real = entity.addComponent<RmluiCanvas>(name);
-        return entity.addComponent<LuaRmluiCanvas>(real, ts);
+        return entity.addComponent<LuaRmluiCanvas>(real, entity, ts);
     }
 
     LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size, sol::this_state ts) noexcept
     {
         auto& real = entity.addComponent<RmluiCanvas>(name, LuaGlm::tableGet(size));
-        return entity.addComponent<LuaRmluiCanvas>(real, ts);
+        return entity.addComponent<LuaRmluiCanvas>(real, entity, ts);
     }
 
     OptionalRef<LuaRmluiCanvas>::std_t LuaRmluiCanvas::getEntityComponent(LuaEntity& entity) noexcept
@@ -250,29 +250,45 @@ namespace darmok
         );
     }
 
-    void LuaRmluiCanvas::onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
+    void LuaRmluiCanvas::onRmluiCustomEvent(Rml::Event& ev, const std::string& value, Rml::Element& element)
     {
-        auto params = StringUtils::split(value, ":");
-        auto name = params[0];
-        auto args = _lua.create_table();
-        for (size_t i = 1; i < params.size(); ++i)
-        {
-            args[i] = params[i];
-        }
+        static const std::string prefix = ":";
 
-        for (auto& listener : _funcEventListeners)
+        if (value.starts_with(prefix))
         {
-            if (listener->getEvent() == name)
+            auto params = StringUtils::split(value.substr(prefix.size()), ":");
+            auto name = params[0];
+            auto args = _lua.create_table();
+            for (size_t i = 1; i < params.size(); ++i)
             {
-                listener->processCustomEvent(event, args, element);
+                args[i] = params[i];
+            }
+
+            for (auto& listener : _funcCustomEventListeners)
+            {
+                if (listener->getEvent() == name)
+                {
+                    listener->onRmluiCustomEvent(ev, args, element);
+                }
+            }
+            for (auto& listener : _tabCustomEventListeners)
+            {
+                if (listener->getEvent() == name)
+                {
+                    listener->onRmluiCustomEvent(ev, args, element);
+                }
             }
         }
-        for (auto& listener : _tabEventListeners)
+        else
         {
-            if (listener->getEvent() == name)
-            {
-                listener->processCustomEvent(event, args, element);
-            }
+            sol::environment env(_lua, sol::create, _env);
+            env["event"] = std::ref(_lua);
+            env["element"] = std::ref(element);
+            env["document"] = element.GetOwnerDocument();
+
+            auto r = _lua.safe_script(value, env);
+            auto evDesc = "running rmlui event " + ev.GetType() + " on element " + element.GetAddress();
+            LuaUtils::checkResult(evDesc, r);
         }
     }
 
@@ -288,69 +304,99 @@ namespace darmok
 
     LuaRmluiCanvas& LuaRmluiCanvas::addEventListener1(const std::string& ev, const sol::table& tab) noexcept
     {
-        auto ptr = std::make_unique<LuaTableRmluiEventListener>(ev, tab);
-        _canvas.getContext().AddEventListener(ev, ptr.get());
-        _tabEventListeners.push_back(std::move(ptr));
+        _canvas.getContext().AddEventListener(ev, new LuaTableRmluiEventListener(tab));
         return *this;
     }
 
     bool LuaRmluiCanvas::removeEventListener1(const std::string& ev, const sol::table& tab) noexcept
     {
-        auto itr = std::remove_if(_tabEventListeners.begin(), _tabEventListeners.end(), [&ev, &tab](auto& listener) {
-            return listener->getEvent() == ev && listener->getTable() == tab;
-        });
-        if (itr == _tabEventListeners.end())
-        {
-            return false;
-        }
-        _tabEventListeners.erase(itr, _tabEventListeners.end());
-        return true;
+        return false;
     }
 
     bool LuaRmluiCanvas::removeEventListener2(const sol::table& tab) noexcept
     {
-        auto itr = std::remove_if(_tabEventListeners.begin(), _tabEventListeners.end(), [&tab](auto& listener) {
-            return listener->getTable() == tab;
-        });
-        if (itr == _tabEventListeners.end())
-        {
-            return false;
-        }
-        _tabEventListeners.erase(itr, _tabEventListeners.end());
-        return true;
+        return false;
     }
 
     LuaRmluiCanvas& LuaRmluiCanvas::addEventListener2(const std::string& ev, const sol::protected_function& func) noexcept
     {
-        auto ptr = std::make_unique<LuaFunctionRmluiEventListener>(ev, func);
-        _canvas.getContext().AddEventListener(ev, ptr.get());
-        _funcEventListeners.push_back(std::move(ptr));
+        _canvas.getContext().AddEventListener(ev, new LuaFunctionRmluiEventListener(func));
         return *this;
     }
 
     bool LuaRmluiCanvas::removeEventListener4(const std::string& ev, const sol::protected_function& func) noexcept
     {
-        auto itr = std::remove_if(_funcEventListeners.begin(), _funcEventListeners.end(), [&ev, &func](auto& listener) {
-            return listener->getEvent() == ev && listener->getFunction() == func;
-        });
-        if (itr == _funcEventListeners.end())
-        {
-            return false;
-        }
-        _funcEventListeners.erase(itr, _funcEventListeners.end());
-        return true;
+        return false;
     }
 
     bool LuaRmluiCanvas::removeEventListener3(const sol::protected_function& func) noexcept
     {
-        auto itr = std::remove_if(_funcEventListeners.begin(), _funcEventListeners.end(), [&func](auto& listener) {
-            return listener->getFunction() == func;
-            });
-        if (itr == _funcEventListeners.end())
+        return false;
+    }
+
+    LuaRmluiCanvas& LuaRmluiCanvas::addCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept
+    {
+        auto ptr = std::make_unique<LuaTableRmluiCustomEventListener>(ev, tab);
+        _tabCustomEventListeners.push_back(std::move(ptr));
+        return *this;
+    }
+
+    bool LuaRmluiCanvas::removeCustomEventListener1(const std::string& ev, const sol::table& tab) noexcept
+    {
+        auto itr = std::remove_if(_tabCustomEventListeners.begin(), _tabCustomEventListeners.end(), [&ev, &tab](auto& listener) {
+            return listener->getEvent() == ev && listener->getTable() == tab;
+        });
+        if (itr == _tabCustomEventListeners.end())
         {
             return false;
         }
-        _funcEventListeners.erase(itr, _funcEventListeners.end());
+        _tabCustomEventListeners.erase(itr, _tabCustomEventListeners.end());
+        return true;
+    }
+
+    bool LuaRmluiCanvas::removeCustomEventListener2(const sol::table& tab) noexcept
+    {
+        auto itr = std::remove_if(_tabCustomEventListeners.begin(), _tabCustomEventListeners.end(), [&tab](auto& listener) {
+            return listener->getTable() == tab;
+        });
+        if (itr == _tabCustomEventListeners.end())
+        {
+            return false;
+        }
+        _tabCustomEventListeners.erase(itr, _tabCustomEventListeners.end());
+        return true;
+    }
+
+    LuaRmluiCanvas& LuaRmluiCanvas::addCustomEventListener2(const std::string& ev, const sol::protected_function& func) noexcept
+    {
+        auto ptr = std::make_unique<LuaFunctionRmluiCustomEventListener>(ev, func);
+        _funcCustomEventListeners.push_back(std::move(ptr));
+        return *this;
+    }
+
+    bool LuaRmluiCanvas::removeCustomEventListener4(const std::string& ev, const sol::protected_function& func) noexcept
+    {
+        auto itr = std::remove_if(_funcCustomEventListeners.begin(), _funcCustomEventListeners.end(), [&ev, &func](auto& listener) {
+            return listener->getEvent() == ev && listener->getFunction() == func;
+        });
+        if (itr == _funcCustomEventListeners.end())
+        {
+            return false;
+        }
+        _funcCustomEventListeners.erase(itr, _funcCustomEventListeners.end());
+        return true;
+    }
+
+    bool LuaRmluiCanvas::removeCustomEventListener3(const sol::protected_function& func) noexcept
+    {
+        auto itr = std::remove_if(_funcCustomEventListeners.begin(), _funcCustomEventListeners.end(), [&func](auto& listener) {
+            return listener->getFunction() == func;
+            });
+        if (itr == _funcCustomEventListeners.end())
+        {
+            return false;
+        }
+        _funcCustomEventListeners.erase(itr, _funcCustomEventListeners.end());
         return true;
     }
 
@@ -385,8 +431,8 @@ namespace darmok
             ),
             "get_entity_component", &LuaRmluiCanvas::getEntityComponent,
             "get_entity", &LuaRmluiCanvas::getEntity,
-
             "name", sol::property(&LuaRmluiCanvas::getName),
+            "environment", sol::property(&LuaRmluiCanvas::getEnvironment),
             "size", sol::property(&LuaRmluiCanvas::getSize, &LuaRmluiCanvas::setSize),
             "enabled", sol::property(&LuaRmluiCanvas::getEnabled, &LuaRmluiCanvas::setEnabled),
             "current_size", sol::property(&LuaRmluiCanvas::getCurrentSize),
@@ -406,12 +452,25 @@ namespace darmok
             "recreate_data_model", & LuaRmluiCanvas::recreateDataModel,
             "get_data_model", &LuaRmluiCanvas::getDataModel,
             "remove_data_model", &LuaRmluiCanvas::removeDataModel,
-            "add_event_listener", sol::overload(&LuaRmluiCanvas::addEventListener1, &LuaRmluiCanvas::addEventListener2),
+            "add_event_listener", sol::overload(
+                &LuaRmluiCanvas::addEventListener1,
+                &LuaRmluiCanvas::addEventListener2
+            ),
             "remove_event_listener", sol::overload(
                 &LuaRmluiCanvas::removeEventListener1,
                 &LuaRmluiCanvas::removeEventListener2,
                 &LuaRmluiCanvas::removeEventListener3,
                 &LuaRmluiCanvas::removeEventListener4
+            ),
+            "add_custom_event_listener", sol::overload(
+                &LuaRmluiCanvas::addCustomEventListener1,
+                &LuaRmluiCanvas::addCustomEventListener2
+            ),
+            "remove_custom_event_listener", sol::overload(
+                &LuaRmluiCanvas::removeCustomEventListener1,
+                &LuaRmluiCanvas::removeCustomEventListener2,
+                &LuaRmluiCanvas::removeCustomEventListener3,
+                &LuaRmluiCanvas::removeCustomEventListener4
             )
         );
     }

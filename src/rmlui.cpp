@@ -1069,12 +1069,14 @@ namespace darmok
 
         Rml::Initialise();
 
+        Rml::RegisterPlugin(this);
         Rml::Factory::RegisterEventListenerInstancer(this);
     }
 
     RmluiSharedContext::~RmluiSharedContext() noexcept
     {
         Rml::Factory::RegisterEventListenerInstancer(nullptr);
+        Rml::UnregisterPlugin(this);
 
         _eventForwarders.clear();
 
@@ -1114,6 +1116,14 @@ namespace darmok
     {
         auto ptr = std::make_unique<RmluiEventForwarder>(value, *element);
         return _eventForwarders.emplace_back(std::move(ptr)).get();
+    }
+
+    void RmluiSharedContext::OnDocumentUnload(Rml::ElementDocument* doc) noexcept
+    {
+        auto itr = std::remove_if(_eventForwarders.begin(), _eventForwarders.end(), [doc](auto& fwd) {
+            return fwd->getElement().GetOwnerDocument() == doc;
+        });
+        _eventForwarders.erase(itr, _eventForwarders.end());
     }
 
     void RmluiSharedContext::onCanvasDestroyed(RmluiCanvas& canvas) noexcept

@@ -256,7 +256,7 @@ namespace darmok
 		static const std::string _eventAttrPrefix;
 	};
 
-	class RmluiSharedContext final : Rml::EventListenerInstancer
+	class RmluiSharedContext final : Rml::EventListenerInstancer, Rml::Plugin
 	{
 	public:
 		~RmluiSharedContext() noexcept;
@@ -281,6 +281,7 @@ namespace darmok
 		std::vector<std::reference_wrapper<IRmluiCustomEventListener>> _customEventListeners;
 
 		Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override;
+		void OnDocumentUnload(Rml::ElementDocument* doc) noexcept override;
 	};
 
     class RmluiRendererImpl final : IKeyboardListener, IMouseListener, IRmluiCustomEventListener

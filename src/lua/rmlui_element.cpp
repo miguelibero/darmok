@@ -70,14 +70,16 @@ namespace darmok
         return elements;
     }
 
-    void LuaRmluiElement::addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept
+    Rml::Element& LuaRmluiElement::addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept
     {
-
+        elm.AddEventListener(ev, new LuaTableRmluiEventListener(tab));
+        return elm;
     }
 
-    void LuaRmluiElement::addEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept
+    Rml::Element& LuaRmluiElement::addEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept
     {
-
+        elm.AddEventListener(ev, new LuaFunctionRmluiEventListener(func));
+        return elm;
     }
 
     bool LuaRmluiElement::removeEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept
@@ -98,6 +100,28 @@ namespace darmok
     bool LuaRmluiElement::removeEventListener4(Rml::Element& elm, const sol::protected_function& func) noexcept
     {
         return false;
+    }
+
+    bool LuaRmluiElement::dispatchEvent1(Rml::Element& elm, const std::string& type, const sol::table& params)
+    {
+        return dispatchEvent3(elm, type, params, false, true);
+    }
+
+    bool LuaRmluiElement::dispatchEvent2(Rml::Element& elm, const std::string& type, const sol::table& params, bool interruptible)
+    {
+        return dispatchEvent3(elm, type, params, interruptible, true);
+    }
+
+    bool LuaRmluiElement::dispatchEvent3(Rml::Element& elm, const std::string& type, const sol::table& params, bool interruptible, bool bubbles)
+    {
+        Rml::Dictionary dict;
+        for (auto& [key, val] : params)
+        {
+            Rml::Variant var;
+            LuaRmluiEvent::setRmlVariant(var, val);
+            dict.emplace(key.as<std::string>(), var);
+        }
+        return elm.DispatchEvent(type, dict, interruptible, bubbles);
     }
 
     void LuaRmluiElement::bind(sol::state_view& lua) noexcept
@@ -131,6 +155,11 @@ namespace darmok
                 &LuaRmluiElement::removeEventListener2,
                 &LuaRmluiElement::removeEventListener3,
                 &LuaRmluiElement::removeEventListener4
+            ),
+            "dispatch_event", sol::overload(
+                &LuaRmluiElement::dispatchEvent1,
+                &LuaRmluiElement::dispatchEvent2,
+                &LuaRmluiElement::dispatchEvent3
             )
         );
 
