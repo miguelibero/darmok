@@ -62,8 +62,8 @@ namespace darmok
 		RmluiCanvas& setMousePositionMode(MousePositionMode mode) noexcept;
 		MousePositionMode getMousePositionMode() const noexcept;
 
-		RmluiCanvas& setEnabled(bool enabled) noexcept;
-		bool isEnabled() const noexcept;
+		RmluiCanvas& setVisible(bool visible) noexcept;
+		bool isVisible() const noexcept;
 
 		RmluiCanvas& setInputActive(bool active) noexcept;
 		bool isInputActive() const noexcept;

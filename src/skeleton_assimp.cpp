@@ -563,11 +563,27 @@ namespace darmok
 
     std::filesystem::path AssimpSkeletalAnimationImporterImpl::getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept
     {
-        std::string animOutputPath = animName + ".ozz";
+        static const std::string matchIndexKey = "useFileMatchAsName";
+        auto fanimName = animName;
+
+        std::optional<size_t> matchIndex;
+        if(input.config.contains(matchIndexKey))
+        {
+            matchIndex = input.config[matchIndexKey].get<size_t>();
+        }
+        else if (input.dirConfig.contains(matchIndexKey))
+        {
+            matchIndex = input.dirConfig[matchIndexKey].get<size_t>();
+        }
+        if (matchIndex && input.pathMatches.size() > matchIndex.value())
+        {
+            fanimName = input.pathMatches[matchIndex.value()];
+        }
+        std::string animOutputPath = fanimName + ".ozz";
         if (!outputPath.empty())
         {
             animOutputPath = outputPath;
-            StringUtils::replace(animOutputPath, "*", animName);
+            StringUtils::replace(animOutputPath, "*", fanimName);
         }
         return input.getRelativePath().parent_path() / animOutputPath;
     }
@@ -625,6 +641,10 @@ namespace darmok
             if (input.config.contains("skeleton"))
             {
                 skelPath = input.path.parent_path() / input.config["skeleton"];
+            }
+            else if (input.dirConfig.contains("skeleton"))
+            {
+                skelPath = input.path.parent_path() / input.dirConfig["skeleton"];
             }
             loadSkeleton(skelPath, input.config);
         }

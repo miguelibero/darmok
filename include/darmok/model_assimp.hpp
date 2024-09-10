@@ -30,6 +30,7 @@ namespace darmok
         std::vector<std::regex> skipMeshes;
         bgfx::VertexLayout vertexLayout;
         bool embedTextures = true;
+        std::string defaultTexture;
     };
 
     class IDataLoader;

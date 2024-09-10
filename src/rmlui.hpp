@@ -174,8 +174,8 @@ namespace darmok
 		glm::mat4 getModelMatrix() const noexcept;
 		glm::mat4 getProjectionMatrix() const noexcept;
 
-		void setEnabled(bool enabled) noexcept;
-		bool isEnabled() const noexcept;
+		void setVisible(bool visible) noexcept;
+		bool isVisible() const noexcept;
 
 		void setMousePositionMode(MousePositionMode mode) noexcept;
 		MousePositionMode getMousePositionMode() const noexcept;
@@ -227,7 +227,7 @@ namespace darmok
 		OptionalRef<RmluiRendererImpl> _comp;
 		bool _inputActive;
 		glm::vec2 _mousePosition;
-		bool _enabled;
+		bool _visible;
 		std::optional<glm::uvec2> _size;
 		glm::vec3 _offset;
 		std::string _name;

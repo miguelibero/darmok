@@ -22,6 +22,8 @@ namespace darmok
         nlohmann::json config;
         nlohmann::json dirConfig;
 
+        std::vector<std::string> pathMatches;
+
         std::filesystem::path getRelativePath() const
         {
             return std::filesystem::relative(path, basePath);

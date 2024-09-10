@@ -177,6 +177,7 @@ namespace darmok
         static const std::string _programDefinesJsonKey;
         static const std::string _skipMeshesJsonKey;
         static const std::string _embedTexturesJsonKey;
+        static const std::string _defaultTextureJsonKey;
 
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config) const;
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const;

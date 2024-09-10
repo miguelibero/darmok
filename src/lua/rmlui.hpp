@@ -149,8 +149,8 @@ namespace darmok
         const glm::vec3& getOffset() const noexcept;
         LuaRmluiCanvas& setOffset(const VarLuaTable<glm::vec3>& offset) noexcept;
 
-        LuaRmluiCanvas& setEnabled(bool enabled) noexcept;
-        bool getEnabled() const noexcept;
+        LuaRmluiCanvas& setVisible(bool visible) noexcept;
+        bool getVisible() const noexcept;
 
         LuaRmluiCanvas& setInputActive(bool active) noexcept;
         bool getInputActive() const noexcept;

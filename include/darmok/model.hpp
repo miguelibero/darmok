@@ -216,6 +216,7 @@ namespace darmok
         std::optional<ModelAmbientLight> ambientLight;
         std::vector<ModelRenderable> renderables;
         std::vector<ModelNode> children;
+        std::unordered_set<std::string> tags;
 
         BoundingBox getBoundingBox() const noexcept;
 
@@ -229,7 +230,8 @@ namespace darmok
                 pointLight,
                 ambientLight,
                 renderables,
-                children);
+                children,
+                tags);
         }
 
         std::string toString() const noexcept;

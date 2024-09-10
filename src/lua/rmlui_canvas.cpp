@@ -76,15 +76,15 @@ namespace darmok
         return *this;
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::setEnabled(bool enabled) noexcept
+    LuaRmluiCanvas& LuaRmluiCanvas::setVisible(bool visible) noexcept
     {
-        _canvas.setEnabled(enabled);
+        _canvas.setVisible(visible);
         return *this;
     }
 
-    bool LuaRmluiCanvas::getEnabled() const noexcept
+    bool LuaRmluiCanvas::getVisible() const noexcept
     {
-        return _canvas.isEnabled();
+        return _canvas.isVisible();
     }
 
     LuaRmluiCanvas& LuaRmluiCanvas::setInputActive(bool active) noexcept
@@ -355,7 +355,7 @@ namespace darmok
             "name", sol::property(&LuaRmluiCanvas::getName),
             "environment", sol::property(&LuaRmluiCanvas::getEnvironment),
             "size", sol::property(&LuaRmluiCanvas::getSize, &LuaRmluiCanvas::setSize),
-            "enabled", sol::property(&LuaRmluiCanvas::getEnabled, &LuaRmluiCanvas::setEnabled),
+            "visible", sol::property(&LuaRmluiCanvas::getVisible, &LuaRmluiCanvas::setVisible),
             "current_size", sol::property(&LuaRmluiCanvas::getCurrentSize),
             "offset", sol::property(&LuaRmluiCanvas::getOffset, &LuaRmluiCanvas::setOffset),
             "input_active", sol::property(&LuaRmluiCanvas::getInputActive, &LuaRmluiCanvas::setInputActive),

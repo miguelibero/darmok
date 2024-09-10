@@ -71,6 +71,7 @@ namespace darmok
             std::filesystem::path path;
             nlohmann::json importers;
             std::unordered_map<std::filesystem::path, nlohmann::json> files;
+            std::unordered_map<std::filesystem::path, std::vector<std::string>> fileMatches;
             std::optional<HeaderConfig> header;
             std::optional<std::filesystem::path> outputPath;
 

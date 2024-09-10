@@ -458,7 +458,7 @@ namespace darmok
         , _inputActive(false)
         , _mousePosition(0)
         , _size(size)
-        , _enabled(true)
+        , _visible(true)
         , _name(name)
         , _mousePositionMode(MousePositionMode::Relative)
         , _offset(0)
@@ -534,14 +534,14 @@ namespace darmok
         _context->SetDefaultScrollBehavior(behaviour, speedFactor);
     }
 
-    bool RmluiCanvasImpl::isEnabled() const noexcept
+    bool RmluiCanvasImpl::isVisible() const noexcept
     {
-        return _enabled;
+        return _visible;
     }
 
-    void RmluiCanvasImpl::setEnabled(bool enabled) noexcept
+    void RmluiCanvasImpl::setVisible(bool visible) noexcept
     {
-        _enabled = enabled;
+        _visible = visible;
     }
 
     void RmluiCanvasImpl::setMousePositionMode(MousePositionMode mode) noexcept
@@ -800,10 +800,6 @@ namespace darmok
 
     bool RmluiCanvasImpl::update() noexcept
     {
-        if (!_enabled)
-        {
-            return false;
-        }
         return _context->Update();
     }
 
@@ -943,7 +939,7 @@ namespace darmok
 
     void RmluiCanvasImpl::renderPassExecute(IRenderGraphContext& context) noexcept
     {
-        if (!_enabled || !_comp || !_context)
+        if (!_visible || !_comp || !_context)
         {
             return;
         }
@@ -1005,15 +1001,15 @@ namespace darmok
         return _impl->getMousePositionMode();
     }
 
-    RmluiCanvas& RmluiCanvas::setEnabled(bool enabled) noexcept
+    RmluiCanvas& RmluiCanvas::setVisible(bool visible) noexcept
     {
-        _impl->setEnabled(enabled);
+        _impl->setVisible(visible);
         return *this;
     }
 
-    bool RmluiCanvas::isEnabled() const noexcept
+    bool RmluiCanvas::isVisible() const noexcept
     {
-        return _impl->isEnabled();
+        return _impl->isVisible();
     }
 
     RmluiCanvas& RmluiCanvas::setInputActive(bool active) noexcept

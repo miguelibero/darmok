@@ -474,6 +474,12 @@ namespace darmok
             update(modelTexture, assimpMat, elm.assimpType, elm.assimpIndex);
         }
 
+        auto& baseColorTexture = modelMat.textures[MaterialTextureType::BaseColor];
+        if (baseColorTexture.image == nullptr && !_config.defaultTexture.empty())
+        {
+            baseColorTexture.image = getImage(_config.defaultTexture);
+        }
+
         // TODO: convert aiTextureType_METALNESS + aiTextureType_DIFFUSE_ROUGHNESS
         // TODO: also other conversions from FBX
 
@@ -920,6 +926,7 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_programJsonKey = "program";
     const std::string AssimpModelImporterImpl::_programDefinesJsonKey = "programDefines";
     const std::string AssimpModelImporterImpl::_skipMeshesJsonKey = "skipMeshes";
+    const std::string AssimpModelImporterImpl::_defaultTextureJsonKey = "defaultTexture";
 
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
     {
@@ -951,6 +958,10 @@ namespace darmok
         if (json.contains(_programDefinesJsonKey))
         {
             config.programDefines = json[_programDefinesJsonKey];
+        }
+        if (json.contains(_defaultTextureJsonKey))
+        {
+            config.defaultTexture = json[_defaultTextureJsonKey];
         }
 
         if (json.contains(_skipMeshesJsonKey))

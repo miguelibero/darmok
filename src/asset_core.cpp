@@ -131,6 +131,13 @@ namespace darmok
         {
             op.outputPath = outputPath.value();
         }
+        {
+            auto itr = fileMatches.find(op.input.path);
+            if (itr != fileMatches.end())
+            {
+                op.input.pathMatches = itr->second;
+            }
+        }
     }
 
     void AssetImporterImpl::DirConfig::loadFile(const std::string& key, const nlohmann::json& config, const fs::path& basePath, const std::vector<fs::path>& filePaths) noexcept
@@ -146,8 +153,15 @@ namespace darmok
                     continue;
                 }
                 auto relPath = fs::relative(filePath, basePath).string();
-                if (std::regex_match(relPath, regex))
+                std::smatch match;
+                if (std::regex_match(relPath, match, regex))
                 {
+                    std::vector<std::string> matchGroups;
+                    for (auto& group : match)
+                    {
+                        matchGroups.push_back(group.str());
+                    }
+                    fileMatches[filePath] = matchGroups;
                     files[filePath] = fixedConfig;
                 }
             }
