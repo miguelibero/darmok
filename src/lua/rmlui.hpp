@@ -5,9 +5,11 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/rmlui.hpp>
+#include <darmok/camera.hpp>
 #include <RmlUi/Core/ScrollTypes.h>
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/EventListenerInstancer.h>
+#include <RmlUi/Core/ElementDocument.h>
 #include <unordered_map>
 #include <vector>
 #include <memory>
@@ -66,10 +68,34 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     };
 
-    class LuaRmluiElement final
+    class LuaRmluiElement
     {
     public:
         static void bind(sol::state_view& lua) noexcept;
+    private:
+        static std::optional<std::string> getProperty(Rml::Element& elm, const std::string& name) noexcept;
+        static bool hasAttribute(const Rml::Element& elm, const std::string& name) noexcept;
+        static sol::object getAttribute(const Rml::Element& elm, const std::string& name, sol::this_state ts) noexcept;
+        static void setAttribute(Rml::Element& elm, const std::string& name, const sol::object& val);
+        static std::vector<Rml::Element*> getElementsByClassName(Rml::Element& elm, const std::string& cls) noexcept;
+        static std::vector<Rml::Element*> getElementsByTagName(Rml::Element& elm, const std::string& tag) noexcept;
+        static std::vector<Rml::Element*> querySelectorAll(Rml::Element& elm, const std::string& selector) noexcept;
+        static void addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept;
+        static void addEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept;
+        static bool removeEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept;
+        static bool removeEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept;
+        static bool removeEventListener3(Rml::Element& elm, const sol::table& tab) noexcept;
+        static bool removeEventListener4(Rml::Element& elm, const sol::protected_function& func) noexcept;
+    };
+
+    class LuaRmluiElementDocument
+    {
+    public:
+        static void bind(sol::state_view& lua) noexcept;
+    private:
+        static void show1(Rml::ElementDocument& doc) noexcept;
+        static void show2(Rml::ElementDocument& doc, Rml::ModalFlag modal) noexcept;
+        static void show3(Rml::ElementDocument& doc, Rml::ModalFlag modal, Rml::FocusFlag focus) noexcept;
     };
 
     class LuaEntity;
@@ -100,6 +126,7 @@ namespace darmok
         static OptionalRef<LuaRmluiCanvas>::std_t getEntityComponent(LuaEntity& entity) noexcept;
         std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
 
+        bool recreateDataModel(const std::string& name, sol::table table) noexcept;
         void createDataModel(const std::string& name, sol::table table) noexcept;
         Rml::DataModelHandle getDataModel(const std::string& name) const noexcept;
         bool removeDataModel(const std::string& name) noexcept;

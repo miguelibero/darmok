@@ -135,7 +135,6 @@ namespace darmok
         return *this;
     }
 
-
     LuaRmluiCanvas& LuaRmluiCanvas::setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept
     {
         _canvas.setScrollBehavior(behaviour, speedFactor);
@@ -208,6 +207,13 @@ namespace darmok
     std::optional<LuaEntity> LuaRmluiCanvas::getEntity(LuaScene& scene) noexcept
     {
         return scene.getEntity(_canvas);
+    }
+
+    bool LuaRmluiCanvas::recreateDataModel(const std::string& name, sol::table table) noexcept
+    {
+        auto removed = removeDataModel(name);
+        createDataModel(name, table);
+        return removed;
     }
 
     void LuaRmluiCanvas::createDataModel(const std::string& name, sol::table table) noexcept
@@ -397,6 +403,7 @@ namespace darmok
             "unload_document", & LuaRmluiCanvas::unloadDocument,
             "num_documents", sol::property(&LuaRmluiCanvas::getNumDocuments),
             "create_data_model", &LuaRmluiCanvas::createDataModel,
+            "recreate_data_model", & LuaRmluiCanvas::recreateDataModel,
             "get_data_model", &LuaRmluiCanvas::getDataModel,
             "remove_data_model", &LuaRmluiCanvas::removeDataModel,
             "add_event_listener", sol::overload(&LuaRmluiCanvas::addEventListener1, &LuaRmluiCanvas::addEventListener2),
