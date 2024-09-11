@@ -16,24 +16,12 @@ mat4 getSkinningMatrix(vec4 indices, vec4 weights)
            weights.w * getSkinningMatrixPart(indices.w);
 }
 
-mat4 getSkinnedModelMatrix(vec4 indices, vec4 weights)
-{
-    mat4 model = u_model[0];
-    // TODO: optimize avoiding if
-    // adding an identity matrix in the beginning
-    // or different shaders
-    if(indices.x >= 0.0f)
-    {
-        model *= getSkinningMatrix(indices, weights);
-    }
-    return model;
-}
-
 vec4 applySkinning(vec4 v, vec4 indices, vec4 weights)
 {
     if(indices.x >= 0.0f)
     {
-        v = mul(getSkinningMatrix(indices, weights), v);
+        mat4 skin = getSkinningMatrix(indices, weights);
+        v = mul(skin, v);
     }
     return v;
 }

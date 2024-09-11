@@ -114,8 +114,13 @@ namespace darmok
             boneTrans.setName(name);
             _boneTransforms.emplace(name, boneTrans);
 
+            auto textEntity = scene.createEntity();
+            auto& textTrans = scene.addComponent<Transform>(textEntity);
+            textTrans.setParent(boneTrans);
+            textTrans.setScale(glm::vec3(5.F));
+
             // TODO: add border
-            scene.addComponent<Text>(boneEntity, _font, name)
+            scene.addComponent<Text>(textEntity, _font, name)
                 .setColor(Colors::black())
                 .setOrientation(TextOrientation::Center);
         }
@@ -182,8 +187,7 @@ namespace darmok
         {
             return;
         }
-        auto& registry = _scene->getRegistry();
-        auto skinnable = registry.try_get<Skinnable>(entity);
+        auto skinnable = _scene->getComponent<Skinnable>(entity);
         if (!skinnable)
         {
             return;

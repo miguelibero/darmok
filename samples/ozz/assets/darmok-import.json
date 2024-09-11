@@ -1,16 +1,24 @@
 {
     "files": {
         "animator.json": "copy",
-        "BasicMotionsTexture.png": "copy",
-        "BasicMotions@*.fbx": {
+        "*.png": "copy",
+        "Human@(*).fbx": {
             "skeletal_animation": {
-                "skeleton": "BasicMotionsDummyModel.fbx"
+                "skeleton": "BasicMotions_DummyModel.fbx",
+                "useFileMatchAsName": 1,
+                "outputPath": "*.ozz"
             }
         },
-        "BasicMotionsDummyModel.fbx": {
+        "BasicMotions_DummyModel.fbx": {
             "model": {
                 "outputPath": "model.dml",
-                "program": "forward"
+                "program": "forward",
+                "skipNodes": [
+                    "Rig",
+                    "DummyType02",
+                    "DummyType01_BodyOutline",
+                    "DummyType01_HeadOutline"
+                ]
             },
             "skeleton": {
                 "outputPath": "skeleton.ozz"

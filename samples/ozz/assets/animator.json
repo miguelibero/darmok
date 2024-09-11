@@ -1,5 +1,5 @@
 {
-    "animationNamePattern": "BasicMotions@*.ozz",
+    "animationNamePattern": "*.ozz",
     "states": {
         "locomotion": {
             "tween": {
@@ -11,35 +11,35 @@
                     "value": [ 0, 0 ]
                 },
                 {
-                    "animation": "Run01 - Backwards",
+                    "animation": "Run01_Backward",
                     "value": [ 0, -1 ]
                 },
                 {
-                    "animation": "Run01 - BackwardsLeft",
+                    "animation": "Run01_BackwardLeft",
                     "value": [ 1, -1 ]
                 },
                 {
-                    "animation": "Run01 - BackwardsRight",
+                    "animation": "Run01_BackwardRight",
                     "value": [ -1, -1 ]
                 },
                 {
-                    "animation": "Run01 - Forwards",
+                    "animation": "Run01_Forward",
                     "value": [ 0, 1 ]
                 },
                 {
-                    "animation": "Run01 - ForwardsLeft",
+                    "animation": "Run01_ForwardLeft",
                     "value": [ -1, 1 ]
                 },
                 {
-                    "animation": "Run01 - ForwardsRight",
+                    "animation": "Run01_ForwardRight",
                     "value": [ 1, 1 ]
                 },
                 {
-                    "animation": "Run01 - Left",
+                    "animation": "Run01_Left",
                     "value": [ -1, 0 ]
                 },
                 {
-                    "animation": "Run01 - Right",
+                    "animation": "Run01_Right",
                     "value": [ 1, 0 ]
                 }
             ],

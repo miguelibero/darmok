@@ -49,6 +49,7 @@ namespace
 	public:
 		OzzSampleAppDelegate(App& app)
 			: _app(app)
+			, _animTime(0.F)
 		{
 		}
 
@@ -75,7 +76,6 @@ namespace
 
 			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
-			debugMat->setProgramDefine("TEXTURE_DISABLED");
 
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
@@ -96,7 +96,8 @@ namespace
 
 			auto anims = animConfig.loadAnimations(_app.getAssets().getSkeletalAnimationLoader());
 			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, animConfig);
-			_animator->play("locomotion");
+			_animator->play("run");
+			_animator->setPlaybackSpeed(0.05);
 
 			auto skelEntity = scene.createEntity();
 			scene.addComponent<Transform>(skelEntity, animTrans, glm::vec3(-1, 0, 0));
@@ -107,7 +108,21 @@ namespace
 			renderSkel.setFont(_app.getAssets().getFontLoader()("../../assets/noto.ttf"));
 			cam.addComponent<TextRenderer>();
 #endif
-			auto modelTex = _app.getAssets().getTextureLoader()("BasicMotionsTexture.png");
+			auto baseTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-BaseColor.png");
+			auto metalTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-Metallic.png");
+			auto normalTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-Normal.png");
+			auto ambientTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-AmbientOcclusion.png");
+
+			auto mat = std::make_shared<Material>(prog);
+			mat->setProgramDefine("SKINNING_ENABLED");
+			mat->setBaseColor(Colors::fromNumber(0xFAB137FF));
+			mat->setTexture(MaterialTextureType::BaseColor, baseTex);
+			mat->setTexture(MaterialTextureType::MetallicRoughness, metalTex);
+			mat->setTexture(MaterialTextureType::Normal, normalTex);
+			mat->setTexture(MaterialTextureType::Occlusion, ambientTex);
+			mat->setOcclusionStrength(0.75F);
+			mat->setMetallicFactor(1.F);
+
 			auto model = _app.getAssets().getModelLoader()("model.dml");
 
 			auto skinEntity = scene.createEntity();
@@ -115,14 +130,11 @@ namespace
 
 			ModelSceneConfigurer configurer(scene, _app.getAssets());
 			configurer.setParent(skinEntity);
-			configurer(*model, [&scene, modelTex](const auto& node, Entity entity)
+			configurer(*model, [&scene, mat](const auto& node, Entity entity)
 			{
-				auto renderable = scene.getComponent<Renderable>(entity);
-				if (renderable)
+				if (auto renderable = scene.getComponent<Renderable>(entity))
 				{
-					auto mat = renderable->getMaterial();
-					mat->setProgramDefine("SKINNING_ENABLED");
-					mat->setTexture(modelTex);
+					renderable->setMaterial(mat);
 				}
 			});
 

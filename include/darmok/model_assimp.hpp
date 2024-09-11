@@ -28,6 +28,7 @@ namespace darmok
         std::string program;
         ProgramDefines programDefines;
         std::vector<std::regex> skipMeshes;
+        std::vector<std::regex> skipNodes;
         bgfx::VertexLayout vertexLayout;
         bool embedTextures = true;
         std::string defaultTexture;

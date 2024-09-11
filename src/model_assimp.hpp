@@ -82,7 +82,6 @@ namespace darmok
         const aiScene& _scene;
         std::string _basePath;
         Config _config;
-        glm::mat4 _inverseRoot;
         std::unordered_map<std::string, std::string> _boneNames;
 
         struct AssimpMaterialTexture final
@@ -104,7 +103,7 @@ namespace darmok
         std::shared_ptr<ModelMaterial> getMaterial(const aiMaterial* assimpMaterial) noexcept;
         std::shared_ptr<ModelImage> getImage(const std::string& path) noexcept;
 
-        void update(ModelNode& modelNode, const aiNode& assimpNode) noexcept;
+        bool update(ModelNode& modelNode, const aiNode& assimpNode) noexcept;
         void update(ModelTexture& modelTex, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
         void update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept;
         void update(ModelMesh& modelMesh, const aiMesh& assimpMesh) noexcept;
@@ -176,6 +175,7 @@ namespace darmok
         static const std::string _programJsonKey;
         static const std::string _programDefinesJsonKey;
         static const std::string _skipMeshesJsonKey;
+        static const std::string _skipNodesJsonKey;
         static const std::string _embedTexturesJsonKey;
         static const std::string _defaultTextureJsonKey;
 

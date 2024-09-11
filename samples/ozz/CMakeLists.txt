@@ -7,9 +7,5 @@ darmok_sample_setup(
   ASSETS
     darmok-import.json
     animator.json
-    BasicMotions@Idle01.fbx
-    BasicMotions@Run01.fbx
-    BasicMotions@Talk01.fbx
-    BasicMotionsDummyModel.fbx
-    BasicMotionsTexture.png
+    BasicMotions_DummyModel.fbx
 )

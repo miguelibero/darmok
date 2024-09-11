@@ -215,7 +215,6 @@ namespace darmok
         }
     }
 
-
     AssimpOzzSkeletonConverter::Skeleton AssimpOzzSkeletonConverter::createSkeleton()
     {
         RawSkeleton rawSkel;
@@ -331,18 +330,20 @@ namespace darmok
             }
             if (!found)
             {
-                /*
                 std::string err = "could not find skeleton bone \"" + boneName
                     + "\" in animation \"" + assimpAnim.mName.C_Str() + "\"";
                 logInfo(assimpAnim, err);
-                throw std::runtime_error(err);
-                */
+                // throw std::runtime_error(err);
                 continue;
             }
 
-            aiMatrix4x4 baseTrans;
+
+            aiVector3D basePos;
+            aiVector3D baseScale(1);
+            aiQuaternion baseRot;
 
             auto node = _scene.mRootNode->FindNode(boneName.c_str());
+            aiMatrix4x4 baseTrans;
             if (node)
             {
                 auto parent = node->mParent;
@@ -351,11 +352,11 @@ namespace darmok
                     baseTrans = parent->mTransformation * baseTrans;
                     parent = parent->mParent;
                 }
+                if (parent == nullptr)
+                {
+                    baseTrans = aiMatrix4x4();
+                }
             }
-
-            aiVector3D basePos;
-            aiVector3D baseScale(1);
-            aiQuaternion baseRot;
             baseTrans.Decompose(baseScale, baseRot, basePos);
 
             auto& track = anim.tracks[i];
@@ -366,7 +367,7 @@ namespace darmok
             {
                 auto& key = chan.mPositionKeys[j];
                 auto& elm = track.translations[j];
-                auto val =  baseTrans * key.mValue;
+                auto val = baseTrans * key.mValue;
                 elm.value = AssimpOzzUtils::convert(val);
                 elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
             }
@@ -375,9 +376,18 @@ namespace darmok
             {
                 auto& key = chan.mRotationKeys[j];
                 auto& elm = track.rotations[j];
-                auto val = baseRot * key.mValue;
-                elm.value = AssimpOzzUtils::convert(val);
+                auto val = AssimpOzzUtils::convert(baseRot * key.mValue);
+
+                // temp fix for https://github.com/assimp/assimp/issues/4714
+                // https://github.com/assimp/assimp/discussions/4966
+                // if (boneName == "B-thigh.L")
+                // {
+                //     std::cout << "rot " << val.x << " " << val.y << " " << val.z << " " << val.w << std::endl;
+                // }
+
+                elm.value = val;
                 elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
+
             }
             track.scales.resize(chan.mNumScalingKeys);
             for (size_t j = 0; j < chan.mNumScalingKeys; j++)
@@ -385,6 +395,7 @@ namespace darmok
                 auto& key = chan.mScalingKeys[j];
                 auto& elm = track.scales[j];
                 auto val = baseScale.SymMul(key.mValue);
+
                 elm.value = AssimpOzzUtils::convert(val);
                 elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
             }
@@ -529,6 +540,7 @@ namespace darmok
 
     AssimpSkeletonImporter::~AssimpSkeletonImporter() noexcept
     {
+        // empty on purpose
     }
 
     std::vector<std::filesystem::path> AssimpSkeletonImporter::getOutputs(const Input& input)

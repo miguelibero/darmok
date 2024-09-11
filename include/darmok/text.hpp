@@ -89,7 +89,7 @@ namespace darmok
         Text& setContent(const Utf8Vector& content);
         const Color& getColor() const noexcept;
         Text& setColor(const Color& color) noexcept;
-        
+
         const RenderConfig& getRenderConfig() const noexcept;
         RenderConfig& getRenderConfig() noexcept;
         Text& setRenderConfig(const RenderConfig& config) noexcept;

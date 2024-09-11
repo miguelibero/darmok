@@ -237,8 +237,6 @@ namespace darmok
         , _allocator(alloc)
         , _imgLoader(imgLoader)
     {
-        // TODO: check that we need this for the inverse bind poses
-        _inverseRoot = glm::inverse(AssimpUtils::convert(scene.mRootNode->mTransformation));
     }
 
     std::vector<std::string> AssimpModelConverter::getTexturePaths(const aiScene& scene) noexcept
@@ -304,9 +302,18 @@ namespace darmok
         update(model.rootNode, *_scene.mRootNode);
     }
 
-    void AssimpModelConverter::update(ModelNode& modelNode, const aiNode& assimpNode) noexcept
+    bool AssimpModelConverter::update(ModelNode& modelNode, const aiNode& assimpNode) noexcept
     {
         modelNode.name = AssimpUtils::getStringView(assimpNode.mName);
+        for (auto& regex : _config.skipNodes)
+        {
+            if (std::regex_match(modelNode.name, regex))
+            {
+                return false;
+            }
+        }
+        // std::cout << modelNode.name << std::endl;
+
         modelNode.transform = AssimpUtils::convert(assimpNode.mTransformation);
 
         for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
@@ -339,9 +346,15 @@ namespace darmok
 
         for (size_t i = 0; i < assimpNode.mNumChildren; ++i)
         {
-            auto& modelChild = modelNode.children.emplace_back();
-            update(modelChild, *assimpNode.mChildren[i]);
+            ModelNode modelChild;
+            if (!update(modelChild, *assimpNode.mChildren[i]))
+            {
+                continue;
+            }
+            modelNode.children.push_back(std::move(modelChild));
         }
+
+        return true;
     }
 
     void AssimpModelConverter::update(ModelNode& modelNode, const aiCamera& assimpCam) noexcept
@@ -814,7 +827,7 @@ namespace darmok
             bones.push_back(bone);
             modelMesh.joints.push_back(ModelArmatureJoint{
                 boneName,
-                AssimpUtils::convert(bone->mOffsetMatrix) * _inverseRoot
+                AssimpUtils::convert(bone->mOffsetMatrix)
             });
         }
 
@@ -926,6 +939,7 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_programJsonKey = "program";
     const std::string AssimpModelImporterImpl::_programDefinesJsonKey = "programDefines";
     const std::string AssimpModelImporterImpl::_skipMeshesJsonKey = "skipMeshes";
+    const std::string AssimpModelImporterImpl::_skipNodesJsonKey = "skipNodes";
     const std::string AssimpModelImporterImpl::_defaultTextureJsonKey = "defaultTexture";
 
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
@@ -964,21 +978,28 @@ namespace darmok
             config.defaultTexture = json[_defaultTextureJsonKey];
         }
 
-        if (json.contains(_skipMeshesJsonKey))
+        auto loadRegexList = [&json](const std::string& key, std::vector<std::regex>& value)
         {
-            auto& jsonVal = json[_skipMeshesJsonKey];
+            if (!json.contains(key))
+            {
+                return;
+            }
+            auto& jsonVal = json[key];
             if (jsonVal.is_array())
             {
                 for (auto& elm : jsonVal)
                 {
-                    config.skipMeshes.emplace_back(StringUtils::globToRegex(elm));
+                    value.emplace_back(StringUtils::globToRegex(elm));
                 }
             }
             else
             {
-                config.skipMeshes.emplace_back(StringUtils::globToRegex(jsonVal));
+                value.emplace_back(StringUtils::globToRegex(jsonVal));
             }
-        }
+        };
+        loadRegexList(_skipMeshesJsonKey, config.skipMeshes);
+        loadRegexList(_skipNodesJsonKey, config.skipNodes);
+
         if (json.contains(_embedTexturesJsonKey))
         {
             config.embedTextures = json[_embedTexturesJsonKey];
