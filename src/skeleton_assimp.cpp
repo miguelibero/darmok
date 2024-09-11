@@ -125,6 +125,7 @@ namespace darmok
 
     bool AssimpOzzSkeletonConverter::update(RawSkeleton& skel) noexcept
     {
+        bool found = false;
         for (size_t i = 0; i < _scene.mNumMeshes ; i++)
         {
             auto mesh = _scene.mMeshes[i];
@@ -132,10 +133,12 @@ namespace darmok
             {
                 continue;
             }
-            update(*mesh, skel);
-            return true;
+            if (update(*mesh, skel))
+            {
+                found = true;
+            }
         }
-        return false;
+        return found;
     }
 
     aiBone* AssimpOzzSkeletonConverter::findRootBone(const aiMesh& mesh, BoneNodes& boneNodes) noexcept
@@ -185,14 +188,29 @@ namespace darmok
             return false;
         }
         auto& rootNode = *rootBone->mNode;
-        auto rootTrans = AssimpOzzUtils::getWorldTransform(rootNode);
-        auto& rootJoint = skel.roots.emplace_back();
         auto itr = boneNodes.find(&rootNode);
-        rootJoint.name = itr == boneNodes.end() || itr->second.empty() ? rootNode.mName.C_Str() : itr->second;
-        rootJoint.transform = AssimpOzzUtils::convert(rootTrans);
+        ozz::string name = itr == boneNodes.end() || itr->second.empty() ? rootNode.mName.C_Str() : itr->second.c_str();
+
+        RawSkeleton::Joint* rootJoint = nullptr;
+        for (auto& root : skel.roots)
+        {
+            if (root.name == name)
+            {
+                rootJoint = &root;
+                break;
+            }
+        }
+        if (rootJoint == nullptr)
+        {
+            rootJoint = &skel.roots.emplace_back();
+            rootJoint->name = name;
+            auto rootTrans = AssimpOzzUtils::getWorldTransform(rootNode);
+            rootJoint->transform = AssimpOzzUtils::convert(rootTrans);
+        }
+
         for (size_t i = 0; i < rootNode.mNumChildren; i++)
         {
-            update(*rootNode.mChildren[i], rootJoint, aiMatrix4x4(), boneNodes);
+            update(*rootNode.mChildren[i], *rootJoint, aiMatrix4x4(), boneNodes);
         }
         return true;
     }
@@ -204,9 +222,22 @@ namespace darmok
         auto itr = boneNodes.find(&node);
         if (itr != boneNodes.end())
         {
-            joint = &parentJoint.children.emplace_back();
-            joint->name = itr->second.empty() ? node.mName.C_Str() : itr->second;
-            joint->transform = AssimpOzzUtils::convert(trans);
+            ozz::string name = itr->second.empty() ? node.mName.C_Str() : itr->second.c_str();
+            joint = nullptr;
+            for (auto& child : parentJoint.children)
+            {
+                if (child.name == name)
+                {
+                    joint = &child;
+                    break;
+                }
+            }
+            if (joint == nullptr)
+            {
+                joint = &parentJoint.children.emplace_back();
+                joint->name = name;
+                joint->transform = AssimpOzzUtils::convert(trans);
+            }
             trans = aiMatrix4x4();
         }
         for (size_t i = 0; i < node.mNumChildren; i++)
