@@ -455,10 +455,16 @@ namespace darmok
     {
     }
 
+    static AssimpSceneLoadConfig createAssimpSkeletonSceneLoadConfig() noexcept
+    {
+        return {
+            .leftHanded = false
+        };
+    }
+
     std::shared_ptr<Skeleton> AssimpSkeletonLoaderImpl::operator()(std::string_view name)
     {
-        AssimpSceneLoadConfig loadConfig;
-        loadConfig.leftHanded = false;
+        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         loadConfig.populateArmature = true;
         auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), std::string(name), loadConfig);
         if (!scene)
@@ -476,9 +482,7 @@ namespace darmok
 
     std::shared_ptr<SkeletalAnimation> AssimpSkeletalAnimationLoaderImpl::operator()(std::string_view name)
     {
-        AssimpSceneLoadConfig loadConfig;
-        loadConfig.leftHanded = false;
-        loadConfig.populateArmature = false;
+        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), std::string(name), loadConfig);
         if (!scene)
         {
@@ -511,8 +515,7 @@ namespace darmok
 
     AssimpSkeletonImporterImpl::OzzSkeleton AssimpSkeletonImporterImpl::read(const std::filesystem::path& path, const nlohmann::json& config)
     {
-        AssimpSceneLoadConfig loadConfig;
-        loadConfig.leftHanded = false;
+        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         loadConfig.populateArmature = true;
         auto scene = _sceneLoader.loadFromFile(path, loadConfig);
         if (!scene)
@@ -646,8 +649,7 @@ namespace darmok
 
     void AssimpSkeletalAnimationImporterImpl::loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config)
     {
-        AssimpSceneLoadConfig loadConfig;
-        loadConfig.leftHanded = false;
+        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         loadConfig.populateArmature = true;
         auto skelScene = _sceneLoader.loadFromFile(path, loadConfig);
         AssimpOzzSkeletonConverter converter(*skelScene);
@@ -672,9 +674,7 @@ namespace darmok
             return false;
         }
         _currentInput = input;
-        AssimpSceneLoadConfig loadConfig;
-        loadConfig.leftHanded = false;
-        loadConfig.populateArmature = false;
+        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         _currentScene = _sceneLoader.loadFromFile(input.path, loadConfig);
         if (_currentScene == nullptr)
         {
@@ -825,8 +825,7 @@ namespace darmok
     bool AssimpOzzImporter::Load(const char* filename)
     {
         _path = filename;
-        AssimpSceneLoadConfig loadConfig;
-        loadConfig.leftHanded = false;
+        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         loadConfig.populateArmature = true;
         _assimpScene = _sceneLoader.loadFromFile(_path, loadConfig);
         return _assimpScene != nullptr;
