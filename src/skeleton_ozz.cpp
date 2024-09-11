@@ -695,6 +695,7 @@ namespace darmok
         auto parents = skel.joint_parents();
         std::unordered_map<std::string, glm::mat4> bones;
         bones.reserve(numJoints);
+        auto jointNames = skel.joint_names();
         for (int i = 0; i < numJoints; ++i)
         {
             auto parentId = parents[i];
@@ -702,7 +703,7 @@ namespace darmok
             {
                 continue;
             }
-            auto name = skel.joint_names()[parentId];
+            std::string_view name = jointNames[parentId];
             glm::vec3 parentPos = OzzUtils::convert(_models[parentId])[3];
             glm::vec3 childPos = OzzUtils::convert(_models[i])[3];
             auto diff = childPos - parentPos;

@@ -179,6 +179,25 @@ namespace darmok
         return nullptr;
     }
 
+    OptionalRef<AssimpOzzSkeletonConverter::RawSkeleton::Joint> AssimpOzzSkeletonConverter::findJoint(RawSkeleton::Joint::Children& joints, const ozz::string& name, bool recursive) noexcept
+    {
+        for (auto& joint : joints)
+        {
+            if (joint.name == name)
+            {
+                return joint;
+            }
+            if (recursive)
+            {
+                if (auto child = findJoint(joint.children, name, recursive))
+                {
+                    return child;
+                }
+            }
+        }
+        return nullptr;
+    }
+
     bool AssimpOzzSkeletonConverter::update(const aiMesh& mesh, RawSkeleton& skel)
     {
         BoneNodes boneNodes;
@@ -191,18 +210,10 @@ namespace darmok
         auto itr = boneNodes.find(&rootNode);
         ozz::string name = itr == boneNodes.end() || itr->second.empty() ? rootNode.mName.C_Str() : itr->second.c_str();
 
-        RawSkeleton::Joint* rootJoint = nullptr;
-        for (auto& root : skel.roots)
+        auto rootJoint = findJoint(skel.roots, name, true);
+        if (!rootJoint)
         {
-            if (root.name == name)
-            {
-                rootJoint = &root;
-                break;
-            }
-        }
-        if (rootJoint == nullptr)
-        {
-            rootJoint = &skel.roots.emplace_back();
+            rootJoint = skel.roots.emplace_back();
             rootJoint->name = name;
             auto rootTrans = AssimpOzzUtils::getWorldTransform(rootNode);
             rootJoint->transform = AssimpOzzUtils::convert(rootTrans);
@@ -210,31 +221,23 @@ namespace darmok
 
         for (size_t i = 0; i < rootNode.mNumChildren; i++)
         {
-            update(*rootNode.mChildren[i], *rootJoint, aiMatrix4x4(), boneNodes);
+            update(*rootNode.mChildren[i], rootJoint.value(), aiMatrix4x4(), boneNodes);
         }
         return true;
     }
 
     void AssimpOzzSkeletonConverter::update(const aiNode& node, RawSkeleton::Joint& parentJoint, const aiMatrix4x4& parentTrans, const BoneNodes& boneNodes)
     {
-        RawSkeleton::Joint* joint = &parentJoint;
+        OptionalRef<RawSkeleton::Joint> joint = &parentJoint;
         auto trans = parentTrans * node.mTransformation;
         auto itr = boneNodes.find(&node);
         if (itr != boneNodes.end())
         {
             ozz::string name = itr->second.empty() ? node.mName.C_Str() : itr->second.c_str();
-            joint = nullptr;
-            for (auto& child : parentJoint.children)
+            joint = findJoint(parentJoint.children, name, false);
+            if (!joint)
             {
-                if (child.name == name)
-                {
-                    joint = &child;
-                    break;
-                }
-            }
-            if (joint == nullptr)
-            {
-                joint = &parentJoint.children.emplace_back();
+                joint = parentJoint.children.emplace_back();
                 joint->name = name;
                 joint->transform = AssimpOzzUtils::convert(trans);
             }
@@ -242,7 +245,7 @@ namespace darmok
         }
         for (size_t i = 0; i < node.mNumChildren; i++)
         {
-            update(*node.mChildren[i], *joint, trans, boneNodes);
+            update(*node.mChildren[i], joint.value(), trans, boneNodes);
         }
     }
 
@@ -368,12 +371,12 @@ namespace darmok
                 continue;
             }
 
-
             aiVector3D basePos;
             aiVector3D baseScale(1);
             aiQuaternion baseRot;
 
             auto node = _scene.mRootNode->FindNode(boneName.c_str());
+
             aiMatrix4x4 baseTrans;
             if (node)
             {

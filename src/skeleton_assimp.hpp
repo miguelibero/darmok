@@ -63,6 +63,7 @@ namespace darmok
         aiBone* findRootBone(const aiMesh& mesh, BoneNodes& boneNodes) noexcept;
         bool update(const aiMesh& mesh, RawSkeleton& skel);
         void update(const aiNode& node, RawSkeleton::Joint& parentJoint, const aiMatrix4x4& parentTrans, const BoneNodes& boneNodes);
+        OptionalRef<RawSkeleton::Joint> findJoint(RawSkeleton::Joint::Children& joints, const ozz::string& name, bool recursive) noexcept;
     };
 
     class AssimpOzzAnimationConverter final
