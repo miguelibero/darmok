@@ -313,8 +313,11 @@ namespace darmok
 		std::unordered_map<std::shared_ptr<IFont>, std::unordered_set<Utf8Char>> fontChars;
 		for (auto [entity, text] : texts.each())
 		{
-			auto& content = text.getContent();
-			fontChars[text.getFont()].insert(content.begin(), content.end());
+			if (auto font = text.getFont())
+			{
+				auto& content = text.getContent();
+				fontChars[font].insert(content.begin(), content.end());
+			}
 		}
 		for (auto& [font, chars] : fontChars)
 		{
