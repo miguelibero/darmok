@@ -72,6 +72,7 @@ namespace darmok
         std::string animation;
         glm::vec2 blendPosition = {};
         float speed = 1.F;
+        bool loop = true;
 
         void readJson(const nlohmann::json& json);
 
@@ -111,6 +112,7 @@ namespace darmok
         SkeletalAnimatorBlendType blendType = SkeletalAnimatorBlendType::Directional;
         float threshold = bx::kFloatSmallest;
         SkeletalAnimatorTweenConfig tween;
+        std::string nextState;
 
         float calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos);
         std::vector<float> calcBlendWeights(const glm::vec2& pos);
@@ -145,6 +147,8 @@ namespace darmok
     public:
         using Config = SkeletalAnimatorStateConfig;
         virtual ~ISkeletalAnimatorState() = default;
+        virtual float getNormalizedTime() const = 0;
+        virtual float getDuration() const = 0;
         virtual std::string_view getName() const = 0;
     };
 
@@ -230,6 +234,8 @@ namespace darmok
     {
     public:
         virtual ~ISkeletalAnimatorListener() = default;
+        virtual void onAnimatorDestroyed(SkeletalAnimator& animator) {};
+        virtual void onAnimatorStateLooped(SkeletalAnimator& animator, std::string_view state) {};
         virtual void onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) {};
         virtual void onAnimatorStateStarted(SkeletalAnimator& animator, std::string_view state) {};
         virtual void onAnimatorTransitionFinished(SkeletalAnimator& animator) {};

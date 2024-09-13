@@ -85,6 +85,7 @@ namespace darmok
 		// return unix exit code for early exit
 		virtual std::optional<int32_t> setup(const std::vector<std::string>& args) { return std::nullopt; }
 		virtual void init() {}
+		virtual void earlyShutdown() {}
 		virtual void shutdown() {}
 		virtual void render() const {}
 		virtual void renderReset() {}

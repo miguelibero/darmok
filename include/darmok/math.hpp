@@ -3,7 +3,6 @@
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
 #include <bx/bx.h>
-
 namespace darmok
 {
     struct DARMOK_EXPORT Math final

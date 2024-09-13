@@ -15,6 +15,7 @@ namespace darmok
         ~LuaAppDelegate() noexcept;
         std::optional<int32_t> setup(const std::vector<std::string>& args);
         void init() override;
+        void earlyShutdown() override;
         void shutdown() override;
         void render() const override;
         void update(float deltaTime) override;

@@ -68,7 +68,7 @@ namespace darmok
 		lua.new_usertype<LuaWaitForSeconds>("WaitForSeconds",
 			sol::factories(
 				[](float secs) { return std::make_shared<LuaWaitForSeconds>(secs); }
-			)
+			), sol::base_classes, sol::bases<ILuaYieldInstruction>()
 		);
 	}
 
@@ -99,7 +99,7 @@ namespace darmok
 				[](Transform& trans, const VarLuaTable<glm::vec3>& pos, float speed) -> std::shared_ptr<ILuaYieldInstruction> {
 					return std::make_shared<LuaMoveTowards>(trans, LuaGlm::tableGet(pos), speed);
 				}
-			)
+			), sol::base_classes, sol::bases<ILuaYieldInstruction>()
 		);
 	}
 
@@ -129,7 +129,7 @@ namespace darmok
 				[](Transform& trans, const VarLuaTable<glm::quat>& rot, float speed) -> std::shared_ptr<ILuaYieldInstruction> {
 					return std::make_shared<LuaRotateTowards>(trans, LuaGlm::tableGet(rot), speed);
 				}
-			)
+			), sol::base_classes, sol::bases<ILuaYieldInstruction>()
 		);
 	}
 
@@ -172,7 +172,7 @@ namespace darmok
 				[](Transform& trans, const VarLuaTable<glm::vec3>& pos, float duration) -> std::shared_ptr<ILuaYieldInstruction> {
 					return std::make_shared<LuaEasePosition>(trans, LuaGlm::tableGet(pos), duration);
 				}
-			)
+			), sol::base_classes, sol::bases<ILuaYieldInstruction>()
 		);
 	}
 
@@ -215,30 +215,71 @@ namespace darmok
 				[](Transform& trans, const VarLuaTable<glm::quat>& rot, float duration) -> std::shared_ptr<ILuaYieldInstruction> {
 					return std::make_shared<LuaEaseRotation>(trans, LuaGlm::tableGet(rot), duration);
 				}
-			)
+			), sol::base_classes, sol::bases<ILuaYieldInstruction>()
 		);
 	}
 
 	LuaPlayAnimation::LuaPlayAnimation(SkeletalAnimator& animator, const std::string& name) noexcept
 		: _animator(animator)
 		, _name(name)
+		, _finished(false)
 	{
+		_animator->addListener(*this);
+	}
+
+	LuaPlayAnimation::~LuaPlayAnimation() noexcept
+	{
+		if (_animator)
+		{
+			_animator->removeListener(*this);
+		}
 	}
 
 	bool LuaPlayAnimation::finished() const noexcept
 	{
-
+		return _finished;
 	}
 
 	void LuaPlayAnimation::update(float deltaTime) noexcept
 	{
-		_animator.get().play(_name);
+		if (!_animator)
+		{
+			return;
+		}
+		auto state = _animator->getCurrentState();
+		if (!state || state->getName() != _name)
+		{
+			_animator->play(_name);
+		}
+	}
+
+	void LuaPlayAnimation::onAnimatorDestroyed(SkeletalAnimator& animator) noexcept
+	{
+		_animator.reset();
+	}
+
+	void LuaPlayAnimation::onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) noexcept
+	{
+		if (state != _name)
+		{
+			return;
+		}
+		_finished = true;
+		if (_animator)
+		{
+			_animator->removeListener(*this);
+		}
+		_animator.reset();
 	}
 
 	void LuaPlayAnimation::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaPlayAnimation>("PlayAnimation",
-			sol::default_constructor
+			sol::factories(
+				[](SkeletalAnimator& anim, const std::string& name) -> std::shared_ptr<ILuaYieldInstruction> {
+					return std::make_shared<LuaPlayAnimation>(anim, name);
+				}
+			), sol::base_classes, sol::bases<ILuaYieldInstruction>()
 		);
 	}
 
@@ -370,6 +411,7 @@ namespace darmok
 		LuaRotateTowards::bind(lua);
 		LuaEasePosition::bind(lua);
 		LuaEaseRotation::bind(lua);
+		LuaPlayAnimation::bind(lua);
 
 		LuaUtils::newEnumFunc<EasingType>(lua, "EasingType", EasingType::Count, &Easing::getTypeName);
 	}

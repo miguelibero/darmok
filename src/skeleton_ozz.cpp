@@ -236,6 +236,19 @@ namespace darmok
         job.Run();
     }
 
+    SkeletalAnimatorImpl::Listeners SkeletalAnimatorImpl::copyListeners() const noexcept
+    {
+        return _listeners;
+    }
+
+    SkeletalAnimatorImpl::~SkeletalAnimatorImpl()
+    {
+        for (auto& listener : copyListeners())
+        {
+            listener.get().onAnimatorDestroyed(_animator);
+        }
+    }
+
     ozz::animation::Skeleton& SkeletalAnimatorImpl::getOzz() noexcept
     {
         return _skeleton->getImpl().getOzz();
@@ -248,13 +261,13 @@ namespace darmok
 
     void SkeletalAnimatorImpl::addListener(ISkeletalAnimatorListener& listener) noexcept
     {
-        _listeners.emplace(listener);
+        _listeners.emplace_back(listener);
     }
 
     bool SkeletalAnimatorImpl::removeListener(ISkeletalAnimatorListener& listener) noexcept
     {
         auto ptr = &listener;
-        auto itr = std::find_if(_listeners.begin(), _listeners.end(), [ptr](auto& ref) { return ref.ptr() == ptr; });
+        auto itr = std::find_if(_listeners.begin(), _listeners.end(), [ptr](auto& ref) { return &ref.get() == ptr; });
         if (itr == _listeners.end())
         {
             return false;
@@ -313,7 +326,7 @@ namespace darmok
     OzzSkeletalAnimatorAnimationState::OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationLoader& loader)
         : _config(config)
         , _normalizedTime(0.F)
-        , _lastUpdateLooped(false)
+        , _looped(false)
     {
         _animation = loader(config.animation);
         _sampling.Resize(skel.num_joints());
@@ -324,7 +337,7 @@ namespace darmok
         : _config(std::move(other._config))
         , _normalizedTime(other._normalizedTime)
         , _locals(std::move(other._locals))
-        , _lastUpdateLooped(other._lastUpdateLooped)
+        , _looped(other._looped)
         , _animation(other._animation)
     {
         _sampling.Resize(other._sampling.max_soa_tracks() * 4 - 3);
@@ -356,11 +369,26 @@ namespace darmok
         return anim.duration() / _config.speed;
     }
 
+    bool OzzSkeletalAnimatorAnimationState::hasFinished() const noexcept
+    {
+        if (_looped && !_config.loop)
+        {
+            return true;
+        }
+        return false;
+    }
+
     void OzzSkeletalAnimatorAnimationState::update(float deltaTime)
     {
+        if (hasFinished())
+        {
+            return;
+        }
+
         auto normDeltaTime = deltaTime / getDuration();
         auto normTime = _normalizedTime + normDeltaTime;
-        _lastUpdateLooped = normTime > 1.F;
+        _looped = normTime > 1.F;
+
         setNormalizedTime(normTime);
 
         ozz::animation::SamplingJob sampling;
@@ -374,9 +402,9 @@ namespace darmok
         }
     }
 
-    bool OzzSkeletalAnimatorAnimationState::hasLoopedDuringLastUpdate() const noexcept
+    bool OzzSkeletalAnimatorAnimationState::hasLooped() const noexcept
     {
-        return _lastUpdateLooped;
+        return _looped;
     }
 
     const ozz::vector<ozz::math::SoaTransform>& OzzSkeletalAnimatorAnimationState::getLocals() const noexcept
@@ -394,14 +422,49 @@ namespace darmok
         , _blendPos(0.F)
         , _oldBlendPos(0.F)
         , _normalizedTime(0.F)
+        , _normalizedTweenTime(0.F)
+        , _duration(0)
+        , _looped(false)
     {
         _locals.resize(skel.num_soa_joints());
         _animations.reserve(_config.animations.size());
         for (auto& animConfig : _config.animations)
         {
             _animations.emplace_back(skel, animConfig, loader);
+
         }
         _layers.resize(_animations.size());
+
+        _duration = calcDuration();
+    }
+
+    float OzzSkeletalAnimatorState::calcDuration() const noexcept
+    {
+        if (_animations.empty())
+        {
+            return 0.F;
+        }
+        int f = 1;
+        for (const auto& anim : _animations)
+        {
+            auto d = anim.getDuration();
+            int decimalPlaces = std::ceil(-std::log10(d - std::floor(d)));
+            f = std::max(f, (int)std::pow(10, decimalPlaces));
+        }
+
+        std::vector<int> scaled;
+        for (const auto& anim : _animations)
+        {
+            scaled.push_back(static_cast<int>(std::round(anim.getDuration() * f)));
+        }
+
+        int d = scaled[0];
+        for (size_t i = 1; i < scaled.size(); ++i)
+        {
+            d = std::lcm(d, scaled[i]);
+        }
+
+        return static_cast<float>(d) / f;
     }
 
     glm::vec2 OzzSkeletalAnimatorState::getBlendedPosition(float f) const noexcept
@@ -415,6 +478,12 @@ namespace darmok
         {
             anim.update(deltaTime);
         }
+
+        auto normDeltaTime = deltaTime / _duration;
+        _normalizedTime += normDeltaTime;
+        _looped = _normalizedTime > 1.F;
+        _normalizedTime = std::fmodf(_normalizedTime, 1.F);
+
         if (_animations.size() <= 1)
         {
             return;
@@ -426,17 +495,17 @@ namespace darmok
 
         if (_blendPos != blendPosition)
         {
-            auto blendFactor = _config.tween(_normalizedTime);
+            auto blendFactor = _config.tween(_normalizedTweenTime);
             _oldBlendPos = getBlendedPosition(blendFactor);
-            _normalizedTime = 0.F;
+            _normalizedTweenTime = 0.F;
             _blendPos = blendPosition;
         }
-        _normalizedTime += deltaTime / _config.tween.duration;
-        if (_normalizedTime >= 1.F)
+        _normalizedTweenTime += deltaTime / _config.tween.duration;
+        if (_normalizedTweenTime >= 1.F)
         {
-            _normalizedTime = 1.F;
+            _normalizedTweenTime = 1.F;
         }
-        auto blendFactor = _config.tween(_normalizedTime);
+        auto blendFactor = _config.tween(_normalizedTweenTime);
         auto pos = getBlendedPosition(blendFactor);
 
         size_t i = 0;
@@ -470,7 +539,6 @@ namespace darmok
         {
             throw std::runtime_error("error in the blending job");
         }
-
     }
 
     std::string_view OzzSkeletalAnimatorState::getName() const noexcept
@@ -485,6 +553,38 @@ namespace darmok
             return _animations.front().getLocals();
         }
         return _locals;
+    }
+
+    bool OzzSkeletalAnimatorState::hasLooped() const noexcept
+    {
+        return _looped;
+    }
+
+    float OzzSkeletalAnimatorState::getDuration() const noexcept
+    {
+        return _duration;
+    }
+
+    float OzzSkeletalAnimatorState::getNormalizedTime() const noexcept
+    {
+        return _normalizedTime;
+    }
+
+    bool OzzSkeletalAnimatorState::hasFinished() const noexcept
+    {
+        for (auto& anim : _animations)
+        {
+            if (!anim.hasFinished())
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    const std::string& OzzSkeletalAnimatorState::getNextState() const noexcept
+    {
+        return _config.nextState;
     }
 
     OzzSkeletalAnimatorTransition::OzzSkeletalAnimatorTransition(const Config& config, State&& currentState, State&& previousState) noexcept
@@ -508,7 +608,7 @@ namespace darmok
 
     void OzzSkeletalAnimatorTransition::setNormalizedTime(float normalizedTime) noexcept
     {
-        _normalizedTime = normalizedTime;
+        _normalizedTime = std::fmodf(normalizedTime, 1.F);
     }
 
     void OzzSkeletalAnimatorTransition::update(float deltaTime, const glm::vec2& blendPosition)
@@ -606,6 +706,8 @@ namespace darmok
             _transition.reset();
         }
 
+        auto listeners = copyListeners();
+
         if (prevState)
         {
             auto transConfig = _config.getTransition(prevState->getName(), name);
@@ -614,29 +716,29 @@ namespace darmok
                 _transition.emplace(transConfig.value(),
                     State(getOzz(), stateConfig.value(), *this),
                     std::move(prevState.value()));
-                for (auto& listener : _listeners)
+                for (auto& listener : listeners)
                 {
-                    listener->onAnimatorStateStarted(_animator, _transition->getCurrentState().getName());
+                    listener.get().onAnimatorStateStarted(_animator, _transition->getCurrentState().getName());
                 }
-                for (auto& listener : _listeners)
+                for (auto& listener : listeners)
                 {
-                    listener->onAnimatorTransitionStarted(_animator);
+                    listener.get().onAnimatorTransitionStarted(_animator);
                 }
                 return true;
             }
         }
-        if (_state)
+        if (_state && !_state->hasFinished())
         {
-            for (auto& listener : _listeners)
+            for (auto& listener : listeners)
             {
-                listener->onAnimatorStateFinished(_animator, _state->getName());
+                listener.get().onAnimatorStateFinished(_animator, _state->getName());
             }
         }
 
         _state.emplace(getOzz(), stateConfig.value(), *this);
-        for (auto& listener : _listeners)
+        for (auto& listener : listeners)
         {
-            listener->onAnimatorStateStarted(_animator, _state->getName());
+            listener.get().onAnimatorStateStarted(_animator, _state->getName());
         }
 
         return true;
@@ -770,18 +872,41 @@ namespace darmok
 
     void SkeletalAnimatorImpl::afterUpdate() noexcept
     {
+        auto listeners = copyListeners();
         if (_transition && _transition->hasFinished())
         {
-            for (auto& listener : _listeners)
+            for (auto& listener : listeners)
             {
-                listener->onAnimatorTransitionFinished(_animator);
+                listener.get().onAnimatorTransitionFinished(_animator);
             }
-            for (auto& listener : _listeners)
+            for (auto& listener : listeners)
             {
-                listener->onAnimatorStateFinished(_animator, _transition->getPreviousState().getName());
+                listener.get().onAnimatorStateFinished(_animator, _transition->getPreviousState().getName());
             }
             _state.emplace(_transition->finish());
             _transition.reset();
+        }
+        if (_state)
+        {
+            if (_state->hasLooped())
+            {
+                for (auto& listener : listeners)
+                {
+                    listener.get().onAnimatorStateLooped(_animator, _state->getName());
+                }
+            }
+            if (_state->hasFinished())
+            {
+                for (auto& listener : listeners)
+                {
+                    listener.get().onAnimatorStateFinished(_animator, _state->getName());
+                }
+                auto& nextState = _state->getNextState();
+                if (!nextState.empty())
+                {
+                    play(nextState);
+                }
+            }
         }
     }
 
@@ -855,6 +980,6 @@ namespace darmok
 
     SkeletalAnimator::PlaybackState SkeletalAnimator::getPlaybackState() noexcept
     {
-        _impl->getPlaybackState();
+        return _impl->getPlaybackState();
     }
 }

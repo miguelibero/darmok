@@ -365,6 +365,11 @@ namespace darmok
 		_impl->init();
 	}
 
+	void LuaAppDelegate::earlyShutdown()
+	{
+		_impl->earlyShutdown();
+	}
+
 	void LuaAppDelegate::shutdown()
 	{
 		_impl->shutdown();
@@ -709,6 +714,24 @@ namespace darmok
 			bgfx::dbgTextPrintf(text.pos.x, text.pos.y, 0x0f, text.message.c_str());
 		}
 		_dbgTexts.clear();
+	}
+
+	void LuaAppDelegateImpl::earlyShutdown()
+	{
+		if (!_lua)
+		{
+			return;
+		}
+		sol::safe_function shutdown = (*_lua)["shutdown"];
+		if (shutdown)
+		{
+			auto result = shutdown();
+			if (!result.valid())
+			{
+				LuaUtils::logError("running shutown", result);
+				throw LuaError("running shutown", result);
+			}
+		}
 	}
 
 	void LuaAppDelegateImpl::shutdown() noexcept

@@ -384,6 +384,11 @@ namespace darmok
 
 	void AppImpl::shutdown()
 	{
+		if (_delegate)
+		{
+			_delegate->earlyShutdown();
+		}
+
 		if (_taskExecutor)
 		{
 			_taskExecutor->wait_for_all();

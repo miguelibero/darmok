@@ -105,6 +105,7 @@ namespace darmok
         std::optional<int32_t> setup(const std::vector<std::string>& args);
 		void init();
         void update(float deltaTime);
+		void earlyShutdown();
 		void shutdown() noexcept;
 		void render() noexcept;
 

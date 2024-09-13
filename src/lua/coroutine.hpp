@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <darmok/easing_fwd.hpp>
+#include <darmok/skeleton.hpp>
 
 namespace darmok
 {
@@ -107,17 +108,21 @@ namespace darmok
 
 	class SkeletalAnimator;
 
-	class LuaPlayAnimation final : public ILuaYieldInstruction
+	class LuaPlayAnimation final : public ILuaYieldInstruction, ISkeletalAnimatorListener
 	{
 	public:
 		LuaPlayAnimation(SkeletalAnimator& animator, const std::string& name) noexcept;
+		~LuaPlayAnimation() noexcept;
 		void update(float deltaTime) noexcept override;
 		bool finished() const noexcept override;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		std::reference_wrapper<SkeletalAnimator> _animator;
+		OptionalRef<SkeletalAnimator> _animator;
 		std::string _name;
+		bool _finished;
+		void onAnimatorDestroyed(SkeletalAnimator& animator) noexcept override;
+		void onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) noexcept override;
 	};
 
 	class LuaCoroutineThread final : public ILuaYieldInstruction

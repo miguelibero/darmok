@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <unordered_set>
+#include <vector>
 #include <darmok/skeleton.hpp>
 #include <darmok/data.hpp>
 #include <ozz/base/io/stream.h>
@@ -59,7 +59,8 @@ namespace darmok
 		OzzSkeletalAnimatorAnimationState(OzzSkeletalAnimatorAnimationState&& other) noexcept;
 
 		void update(float deltaTime);
-		bool hasLoopedDuringLastUpdate() const noexcept;
+		bool hasLooped() const noexcept;
+		bool hasFinished() const noexcept;
 		float getDuration() const noexcept;
 		float getNormalizedTime() const noexcept;
 		void setNormalizedTime(float normalizedTime) noexcept;
@@ -69,7 +70,7 @@ namespace darmok
 		Config _config;
 		std::shared_ptr<SkeletalAnimation> _animation;
 		float _normalizedTime;
-		bool _lastUpdateLooped;
+		bool _looped;
 		ozz::animation::SamplingJob::Context _sampling;
 		ozz::vector<ozz::math::SoaTransform> _locals;
 
@@ -84,8 +85,14 @@ namespace darmok
 		void update(float deltaTime, const glm::vec2& blendPosition);
 		std::string_view getName() const noexcept override;
 		const ozz::vector<ozz::math::SoaTransform>& getLocals() const;
+		float getNormalizedTime() const noexcept override;
+		float getDuration() const noexcept override;
+		bool hasLooped() const noexcept;
+		bool hasFinished() const noexcept;
+		const std::string& getNextState() const noexcept;
 	private:
 		glm::vec2 getBlendedPosition(float f) const noexcept;
+		float calcDuration() const noexcept;
 
 		using AnimationState = OzzSkeletalAnimatorAnimationState;
 		Config _config;
@@ -94,7 +101,10 @@ namespace darmok
 		ozz::vector<ozz::animation::BlendingJob::Layer> _layers;
 		glm::vec2 _blendPos;
 		glm::vec2 _oldBlendPos;
+		float _normalizedTweenTime;
 		float _normalizedTime;
+		bool _looped;
+		float _duration;
 	};
 
 	class OzzSkeletalAnimatorTransition final : public ISkeletalAnimatorTransition
@@ -135,6 +145,7 @@ namespace darmok
 		using PlaybackState = SkeletalAnimatorPlaybackState;
 
 		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Config& config) noexcept;
+		~SkeletalAnimatorImpl();
 
 		void addListener(ISkeletalAnimatorListener& listener) noexcept;
 		bool removeListener(ISkeletalAnimatorListener& listener) noexcept;
@@ -174,10 +185,13 @@ namespace darmok
 		std::optional<State> _state;
 		ozz::vector<ozz::math::Float4x4> _models;
 
-		std::unordered_set<OptionalRef<ISkeletalAnimatorListener>> _listeners;
+		using Listeners = std::vector<std::reference_wrapper<ISkeletalAnimatorListener>>;
+		Listeners _listeners;
 
 		ozz::animation::Skeleton& getOzz() noexcept;
 		const ozz::animation::Skeleton& getOzz() const noexcept;
 		void afterUpdate() noexcept;
+
+		Listeners copyListeners() const noexcept;
 	};
 }

@@ -245,6 +245,10 @@ namespace darmok
         {
             animation = json["animation"];
         }
+        if (json.contains("loop"))
+        {
+            loop = json["loop"];
+        }
     }
 
     float SkeletalAnimatorStateConfig::calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos)
@@ -351,6 +355,10 @@ namespace darmok
         if(json.contains("tween"))
         {
             tween.readJson(json["tween"]);
+        }
+        if (json.contains("nextState"))
+        {
+            nextState = json["nextState"];
         }
     }
 
