@@ -1091,7 +1091,7 @@ namespace darmok
 
 	uint32_t BgfxCallbacks::cacheReadSize(uint64_t id)
 	{
-		std::scoped_lock lock(_cacheMutex);
+		std::lock_guard lock(_cacheMutex);
 		auto itr = _cache.find(id);
 		if (itr == _cache.end())
 		{
@@ -1102,7 +1102,7 @@ namespace darmok
 
 	bool BgfxCallbacks::cacheRead(uint64_t id, void* dataPtr, uint32_t size)
 	{
-		std::scoped_lock lock(_cacheMutex);
+		std::lock_guard lock(_cacheMutex);
 		auto itr = _cache.find(id);
 		if (itr == _cache.end())
 		{

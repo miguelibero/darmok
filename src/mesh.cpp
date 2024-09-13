@@ -400,6 +400,11 @@ namespace darmok
 		return _layout;
 	}
 
+	MeshData::MeshData(MeshType type) noexcept
+		: type(type)
+	{
+	}
+
 	const bgfx::VertexLayout& MeshData::getDefaultVertexLayout() noexcept
 	{
 		static bgfx::VertexLayout layout;

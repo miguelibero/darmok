@@ -64,7 +64,7 @@ namespace
 #ifdef PHYSICS_DEBUG_RENDER
 				PhysicsDebugConfig physicsDebugconfig;
 #ifdef DARMOK_FREETYPE
-				physicsDebugconfig.font = _app.getAssets().getFontLoader()("../../assets/noto.ttf");
+				physicsDebugconfig.render.font = _app.getAssets().getFontLoader()("../../assets/noto.ttf");
 #endif
 				_physicsDebugRender = _cam->addComponent<PhysicsDebugRenderer>(physicsDebugconfig);
 				_physicsDebugRender->setEnabled(false);

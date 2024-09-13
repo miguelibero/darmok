@@ -593,7 +593,7 @@ namespace darmok
 
     bgfx::Encoder& RenderGraph::getEncoder()
     {
-        std::scoped_lock lock(_encoderMutex);
+        std::lock_guard lock(_encoderMutex);
         auto id = std::this_thread::get_id();
         auto itr = _encoders.find(id);
         bgfx::Encoder* encoder = nullptr;

@@ -40,18 +40,11 @@ namespace darmok::physics3d
     class JoltPhysicsDebugRenderer final : public JPH::DebugRenderer
     {
     public:
-        struct Config final
-        {
-            size_t meshBatchSize = 32 * 1024;
-            std::shared_ptr<IFont> font;
-            float alpha = 0.3F;
-            std::shared_ptr<Program> program;
-            ProgramDefines programDefines;
-        };
+        using Config = PhysicsDebugRenderConfig;
 
         ~JoltPhysicsDebugRenderer() noexcept;
-        static std::shared_ptr<JoltPhysicsDebugRenderer> getInstance() noexcept;
-        void render(JPH::PhysicsSystem& joltSystem, const Config& config, IRenderGraphContext& context);
+        static void render(JPH::PhysicsSystem& joltSystem, const Config& config, IRenderGraphContext& context);
+        static void shutdown();
 
         void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
         void DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow = ECastShadow::Off) override;
@@ -68,7 +61,9 @@ namespace darmok::physics3d
             float height;
         };
 
-        static std::weak_ptr<JoltPhysicsDebugRenderer> _instance;
+        static std::unique_ptr<JoltPhysicsDebugRenderer> _instance;
+        static std::mutex _instanceLock;
+
         Config _config;
         OptionalRef<bgfx::Encoder> _encoder;
         std::optional<bgfx::ViewId> _viewId;
@@ -76,8 +71,10 @@ namespace darmok::physics3d
         MeshData _wireMeshData;
         std::vector<TextData> _textData;
         bgfx::UniformHandle _colorUniform;
+        std::unique_ptr<Program> _program;
 
         JoltPhysicsDebugRenderer() noexcept;
+        void doRender(JPH::PhysicsSystem& joltSystem, const Config& config, IRenderGraphContext& context);
         std::unique_ptr<IMesh> createMesh(const MeshData& meshData);
         void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
         void renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
@@ -102,7 +99,6 @@ namespace darmok::physics3d
         void setEnabled(bool enabled) noexcept;
 
        private:
-        std::shared_ptr<JoltPhysicsDebugRenderer> _joltRenderer;
         bool _enabled;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;

@@ -23,13 +23,17 @@ namespace darmok::physics3d
     class PhysicsDebugRendererImpl;
     class PhysicsSystem;
 
+    struct DARMOK_EXPORT PhysicsDebugRenderConfig final
+    {
+        size_t meshBatchSize = 32 * 1024;
+        std::shared_ptr<IFont> font;
+        float alpha = 0.3F;
+    };
+
     struct DARMOK_EXPORT PhysicsDebugConfig final
     {
         std::optional<InputEvent> enableEvent = KeyboardInputEvent{ KeyboardKey::F8 };
-        float alpha = 0.3F;
-        std::shared_ptr<Program> program;
-        ProgramDefines programDefines;
-        std::shared_ptr<IFont> font;
+        PhysicsDebugRenderConfig render;
     };
 
     class DARMOK_EXPORT PhysicsDebugRenderer: public ICameraComponent

@@ -241,7 +241,7 @@ namespace darmok
 
     void RmluiRenderInterface::renderCanvas(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept
     {
-        std::scoped_lock lock(_canvasMutex);
+        std::lock_guard lock(_canvasMutex);
         _context = context;
 
         auto viewId = context.getViewId();

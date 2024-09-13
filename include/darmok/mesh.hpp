@@ -180,7 +180,7 @@ namespace darmok
         std::vector<Index> indices;
         MeshType type = MeshType::Static;
 
-        MeshData() = default;
+        MeshData(MeshType type = MeshType::Static) noexcept;
         MeshData(const Cube& Cube, RectangleMeshType type = RectangleMeshType::Full) noexcept;
         MeshData(const Sphere& sphere, unsigned int lod = 32) noexcept;
         MeshData(const Capsule& capsule, unsigned int lod = 32) noexcept;
