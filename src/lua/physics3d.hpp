@@ -106,8 +106,12 @@ namespace darmok::physics3d
         glm::quat getRotation() const;
         void setLinearVelocity(const VarLuaTable<glm::vec3>& velocity);
         glm::vec3 getLinearVelocity() const;
-        void setActive(bool active);
+
         bool getActive() const;
+        LuaPhysicsBody& activate();
+        LuaPhysicsBody& deactivate();
+        bool getEnabled() const;
+        LuaPhysicsBody& setEnabled(bool enabled);
 
         std::string toString() const noexcept;
 

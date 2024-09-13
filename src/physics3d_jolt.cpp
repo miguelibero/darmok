@@ -1217,20 +1217,31 @@ namespace darmok::physics3d
         return getBodyInterface()->IsActive(_bodyId);
     }
 
-    void PhysicsBodyImpl::setActive(bool active)
+    void PhysicsBodyImpl::activate()
     {
-        if (isActive() == active)
-        {
-            return;
-        }
+        getBodyInterface()->ActivateBody(_bodyId);
+    }
+
+    void PhysicsBodyImpl::deactivate()
+    {
+        getBodyInterface()->DeactivateBody(_bodyId);
+    }
+
+    bool PhysicsBodyImpl::isEnabled() const
+    {
+        return getBodyInterface()->IsAdded(_bodyId);
+    }
+
+    void PhysicsBodyImpl::setEnabled(bool enabled)
+    {
         auto iface = getBodyInterface();
-        if (active)
+        if (enabled)
         {
-            iface->ActivateBody(_bodyId);
+            iface->AddBody(_bodyId, JPH::EActivation::Activate);
         }
         else
         {
-            iface->DeactivateBody(_bodyId);
+            iface->RemoveBody(_bodyId);
         }
     }
 
@@ -1389,9 +1400,26 @@ namespace darmok::physics3d
         return _impl->isActive();
     }
 
-    PhysicsBody& PhysicsBody::setActive(bool active)
+    PhysicsBody& PhysicsBody::activate()
     {
-        _impl->setActive(active);
+        _impl->activate();
+        return *this;
+    }
+
+    PhysicsBody& PhysicsBody::deactivate()
+    {
+        _impl->deactivate();
+        return *this;
+    }
+
+    bool PhysicsBody::isEnabled() const
+    {
+        return _impl->isEnabled();
+    }
+
+    PhysicsBody& PhysicsBody::setEnabled(bool enabled)
+    {
+        _impl->setEnabled(enabled);
         return *this;
     }
 

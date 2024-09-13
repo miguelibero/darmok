@@ -153,8 +153,12 @@ namespace darmok::physics3d
         glm::quat getRotation() const;
         PhysicsBody& setLinearVelocity(const glm::vec3& velocity);
         glm::vec3 getLinearVelocity() const;
+
         bool isActive() const;
-        PhysicsBody& setActive(bool active);
+        PhysicsBody& activate();
+        PhysicsBody& deactivate();
+        bool isEnabled() const;
+        PhysicsBody& setEnabled(bool enabled);
 
         PhysicsBody& addTorque(const glm::vec3& torque);
         PhysicsBody& addForce(const glm::vec3& force);

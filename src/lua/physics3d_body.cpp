@@ -66,14 +66,32 @@ namespace darmok::physics3d
         return _body.getLinearVelocity();
     }
 
-    void LuaPhysicsBody::setActive(bool active)
-    {
-        _body.setActive(active);
-    }
-
     bool LuaPhysicsBody::getActive() const
     {
         return _body.isActive();
+    }
+
+    LuaPhysicsBody& LuaPhysicsBody::activate()
+    {
+        _body.activate();
+        return *this;
+    }
+
+    LuaPhysicsBody& LuaPhysicsBody::deactivate()
+    {
+        _body.deactivate();
+        return *this;
+    }
+
+    bool LuaPhysicsBody::getEnabled() const
+    {
+        return _body.isEnabled();
+    }
+
+    LuaPhysicsBody& LuaPhysicsBody::setEnabled(bool enabled)
+    {
+        _body.setEnabled(enabled);
+        return *this;
     }
 
     std::string LuaPhysicsBody::toString() const noexcept
@@ -294,7 +312,10 @@ namespace darmok::physics3d
             "position", sol::property(&LuaPhysicsBody::getPosition, &LuaPhysicsBody::setPosition),
             "rotation", sol::property(&LuaPhysicsBody::getRotation, &LuaPhysicsBody::setRotation),
             "linear_velocity", sol::property(&LuaPhysicsBody::getLinearVelocity, &LuaPhysicsBody::setLinearVelocity),
-            "active", sol::property(&LuaPhysicsBody::getActive, &LuaPhysicsBody::setActive)
+            "active", sol::property(&LuaPhysicsBody::getActive),
+            "activate", &LuaPhysicsBody::activate,
+            "deactivate", &LuaPhysicsBody::deactivate,
+            "enabled", sol::property(&LuaPhysicsBody::getEnabled, &LuaPhysicsBody::setEnabled)
         );
     }
 }
