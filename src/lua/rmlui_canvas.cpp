@@ -266,10 +266,9 @@ namespace darmok
 
     bool LuaRmluiCanvas::runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept
     {
-        sol::environment env(_lua, sol::create, _env);
-        env["document"] = std::ref(doc);
+        _env["document"] = std::ref(doc);
+        auto r = _lua.safe_script(content, _env);
 
-        auto r = _lua.safe_script(content, env);
         auto logDesc = "running rmlui script " + std::string(sourcePath);
         if (sourceLine >= 0)
         {

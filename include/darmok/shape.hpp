@@ -334,6 +334,8 @@ namespace darmok
         BoundingBox& contract(const glm::vec3& size) noexcept;
         BoundingBox& snap(const float size) noexcept;
 
+        BoundingBox& expandToPosition(const glm::vec3& pos) noexcept;
+
         std::array<glm::vec3, 8> getCorners() const noexcept;
 
         Cube getCube() const noexcept;

@@ -697,6 +697,19 @@ namespace darmok
         return *this;
     }
 
+    BoundingBox& BoundingBox::expandToPosition(const glm::vec3& pos) noexcept
+    {
+        min.x = std::min(min.x, pos.x);
+        min.y = std::min(min.y, pos.z);
+        min.z = std::min(min.z, pos.z);
+
+        max.x = std::max(max.x, pos.x);
+        max.y = std::max(max.y, pos.z);
+        max.z = std::max(max.z, pos.z);
+
+        return *this;
+    }
+
     Cube BoundingBox::getCube() const noexcept
     {
         auto size = max - min;

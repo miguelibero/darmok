@@ -158,6 +158,7 @@ namespace darmok
     struct Triangle;
     struct Polygon;
     struct Frustum;
+    struct BoundingBox;
 
     enum class RectangleMeshType
     {
@@ -208,6 +209,8 @@ namespace darmok
 
         using Face = std::array<Index, 3>;
         [[nodiscard]] std::vector<Face> getFaces() const noexcept;
+
+        BoundingBox getBoundingBox() const noexcept;
 
         bool empty() const noexcept;
         void clear() noexcept;

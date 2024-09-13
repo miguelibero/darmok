@@ -80,7 +80,7 @@ namespace darmok::physics3d
 
     JPH::Quat JoltUtils::convert(const glm::quat& v) noexcept
     {
-        auto fv = Math::flipHandedness(v);
+        auto fv = Math::flipHandedness(glm::normalize(v));
         return JPH::Quat(fv.x, fv.y, fv.z, fv.w);
     }
 
@@ -951,7 +951,7 @@ namespace darmok::physics3d
             return;
         }
         auto& iface = getSystemImpl().getBodyInterface();
-        if (!_bodyId.IsInvalid())
+        if (!_bodyId.IsInvalid() && iface.IsAdded(_bodyId))
         {
             iface.RemoveBody(_bodyId);
         }
@@ -1081,7 +1081,7 @@ namespace darmok::physics3d
         {
             _character->PostSimulation(_characterConfig->maxSeparationDistance, false);
         }
-        if (trans)
+        if (trans && isEnabled())
         {
             getSystemImpl().updateTransform(trans.value(), getBodyInterface()->GetWorldTransform(_bodyId));
         }
@@ -1214,6 +1214,10 @@ namespace darmok::physics3d
 
     bool PhysicsBodyImpl::isActive() const
     {
+        if (_bodyId.IsInvalid())
+        {
+            return false;
+        }
         return getBodyInterface()->IsActive(_bodyId);
     }
 
@@ -1229,6 +1233,10 @@ namespace darmok::physics3d
 
     bool PhysicsBodyImpl::isEnabled() const
     {
+        if (_bodyId.IsInvalid())
+        {
+            return false;
+        }
         return getBodyInterface()->IsAdded(_bodyId);
     }
 

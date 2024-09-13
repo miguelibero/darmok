@@ -1127,4 +1127,27 @@ namespace darmok
 
 		return faces;
 	}
+
+	BoundingBox MeshData::getBoundingBox() const noexcept
+	{
+		BoundingBox bb;
+
+		if (indices.empty())
+		{
+			for (auto& vert : vertices)
+			{
+				bb.expandToPosition(vert.position);
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < indices.size() - 2; i += 3)
+			{
+				auto& vert = vertices[i];
+				bb.expandToPosition(vert.position);
+			}
+		}
+
+		return bb;
+	}
 }

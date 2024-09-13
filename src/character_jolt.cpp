@@ -77,7 +77,7 @@ namespace darmok::physics3d
     void CharacterControllerImpl::setPosition(const glm::vec3& pos) noexcept
     {
         auto rb = getPhysicsBody();
-        if (rb)
+        if (rb && rb->isEnabled())
         {
             rb->setPosition(pos);
         }
@@ -90,7 +90,7 @@ namespace darmok::physics3d
     void CharacterControllerImpl::setLinearVelocity(const glm::vec3& velocity)
     {
         auto rb = getPhysicsBody();
-        if (rb)
+        if (rb && rb->isEnabled())
         {
             rb->setLinearVelocity(velocity);
         }
@@ -121,7 +121,7 @@ namespace darmok::physics3d
     void CharacterControllerImpl::setRotation(const glm::quat& rot) noexcept
     {
         auto rb = getPhysicsBody();
-        if (rb)
+        if (rb && rb->isEnabled())
         {
             rb->setRotation(rot);
         }

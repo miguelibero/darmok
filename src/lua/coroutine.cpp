@@ -225,6 +225,11 @@ namespace darmok
 		, _finished(false)
 	{
 		_animator->addListener(*this);
+		auto state = _animator->getCurrentState();
+		if (!state || state->getName() != _name)
+		{
+			_animator->play(_name);
+		}
 	}
 
 	LuaPlayAnimation::~LuaPlayAnimation() noexcept
@@ -238,19 +243,6 @@ namespace darmok
 	bool LuaPlayAnimation::finished() const noexcept
 	{
 		return _finished;
-	}
-
-	void LuaPlayAnimation::update(float deltaTime) noexcept
-	{
-		if (!_animator)
-		{
-			return;
-		}
-		auto state = _animator->getCurrentState();
-		if (!state || state->getName() != _name)
-		{
-			_animator->play(_name);
-		}
 	}
 
 	void LuaPlayAnimation::onAnimatorDestroyed(SkeletalAnimator& animator) noexcept

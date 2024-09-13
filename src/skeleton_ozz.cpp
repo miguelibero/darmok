@@ -389,6 +389,11 @@ namespace darmok
         auto normTime = _normalizedTime + normDeltaTime;
         _looped = normTime > 1.F;
 
+        if (hasFinished())
+        {
+            return;
+        }
+
         setNormalizedTime(normTime);
 
         ozz::animation::SamplingJob sampling;

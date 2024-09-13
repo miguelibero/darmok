@@ -113,7 +113,6 @@ namespace darmok
 	public:
 		LuaPlayAnimation(SkeletalAnimator& animator, const std::string& name) noexcept;
 		~LuaPlayAnimation() noexcept;
-		void update(float deltaTime) noexcept override;
 		bool finished() const noexcept override;
 
 		static void bind(sol::state_view& lua) noexcept;
