@@ -113,7 +113,7 @@ namespace darmok
     std::vector<std::string> AssimpOzzSkeletonConverter::getSkeletonNames()
     {
         std::vector<std::string> names;
-        for (size_t i = 0; i < _scene.mNumMeshes; i++)
+        for (size_t i = 0; i < _scene.mNumMeshes; ++i)
         {
             auto mesh = _scene.mMeshes[i];
             if (!mesh->HasBones())
@@ -127,7 +127,7 @@ namespace darmok
     bool AssimpOzzSkeletonConverter::update(RawSkeleton& skel) noexcept
     {
         bool found = false;
-        for (size_t i = 0; i < _scene.mNumMeshes ; i++)
+        for (size_t i = 0; i < _scene.mNumMeshes ; ++i)
         {
             auto mesh = _scene.mMeshes[i];
             if (mesh == nullptr || !mesh->HasBones())
@@ -144,7 +144,7 @@ namespace darmok
 
     aiBone* AssimpOzzSkeletonConverter::findRootBone(const aiMesh& mesh, BoneNodes& boneNodes) noexcept
     {
-        for (size_t i = 0; i < mesh.mNumBones; i++)
+        for (size_t i = 0; i < mesh.mNumBones; ++i)
         {
             auto bone = mesh.mBones[i];
             if (!_boneNames.empty())
@@ -160,7 +160,7 @@ namespace darmok
                 boneNodes.emplace(bone->mNode, "");
             }
         }
-        for (size_t i = 0; i < mesh.mNumBones; i++)
+        for (size_t i = 0; i < mesh.mNumBones; ++i)
         {
             auto bone = mesh.mBones[i];
             if (bone == nullptr)
@@ -220,7 +220,7 @@ namespace darmok
             rootJoint->transform = AssimpOzzUtils::convert(rootTrans);
         }
 
-        for (size_t i = 0; i < rootNode.mNumChildren; i++)
+        for (size_t i = 0; i < rootNode.mNumChildren; ++i)
         {
             update(*rootNode.mChildren[i], rootJoint.value(), aiMatrix4x4(), boneNodes);
         }
@@ -244,7 +244,7 @@ namespace darmok
             }
             trans = aiMatrix4x4();
         }
-        for (size_t i = 0; i < node.mNumChildren; i++)
+        for (size_t i = 0; i < node.mNumChildren; ++i)
         {
             update(*node.mChildren[i], joint.value(), trans, boneNodes);
         }
@@ -268,6 +268,7 @@ namespace darmok
     AssimpOzzAnimationConverter::AssimpOzzAnimationConverter(const aiScene& scene, OptionalRef<std::ostream> log) noexcept
         : _scene(scene)
         , _log(log)
+        , _minKeyDuration(0.F)
     {
     }
 
@@ -290,6 +291,12 @@ namespace darmok
             }
         }
 
+        return *this;
+    }
+
+    AssimpOzzAnimationConverter& AssimpOzzAnimationConverter::setMinKeyframeDuration(float v) noexcept
+    {
+        _minKeyDuration = v;
         return *this;
     }
 
@@ -369,7 +376,7 @@ namespace darmok
 
     bool AssimpOzzAnimationConverter::update(const std::string& name, RawAnimation& anim)
     {
-        for (size_t i = 0; i < _scene.mNumAnimations; i++)
+        for (size_t i = 0; i < _scene.mNumAnimations; ++i)
         {
             auto assimpAnim = _scene.mAnimations[i];
             if (assimpAnim == nullptr || name != assimpAnim->mName.C_Str())
@@ -389,7 +396,7 @@ namespace darmok
             return false;
         }
         std::vector<std::string> animChannels;
-        for (size_t i = 0; i < assimpAnim.mNumChannels; i++)
+        for (size_t i = 0; i < assimpAnim.mNumChannels; ++i)
         {
             animChannels.emplace_back(assimpAnim.mChannels[i]->mNodeName.C_Str());
         }
@@ -409,13 +416,101 @@ namespace darmok
         return std::find(_boneNames.begin(), _boneNames.end(), name) != _boneNames.end();
     }
 
+    void AssimpOzzAnimationConverter::update(const std::string& boneName, float tickPerSecond, const aiNodeAnim& assimpTrack, RawAnimation::JointTrack& track) noexcept
+    {
+        auto node = _scene.mRootNode->FindNode(boneName.c_str());
+
+        aiMatrix4x4 baseTrans;
+        if (node)
+        {
+            auto parent = node->mParent;
+            while (parent != nullptr && !isBone(*parent))
+            {
+                baseTrans = parent->mTransformation * baseTrans;
+                parent = parent->mParent;
+            }
+            if (parent == nullptr)
+            {
+                baseTrans = aiMatrix4x4();
+            }
+        }
+
+        aiVector3D basePos;
+        aiVector3D baseScale(1);
+        aiQuaternion baseRot;
+        baseTrans.Decompose(baseScale, baseRot, basePos);
+
+        track.translations.reserve(assimpTrack.mNumPositionKeys);
+        float lastTime = 0.F;
+        // temp fix for https://github.com/assimp/assimp/issues/4714
+        // seems like assimp is adding additional keyframes in the rotation
+        auto checkMinDuration = [this, &lastTime](float time)
+        {
+            if (_minKeyDuration > 0.F && time - lastTime < _minKeyDuration)
+            {
+                return false;
+            }
+            lastTime = time;
+            return true;
+        };
+
+        for (size_t i = 0; i < assimpTrack.mNumPositionKeys; ++i)
+        {
+            auto& key = assimpTrack.mPositionKeys[i];
+            auto time = float(key.mTime / tickPerSecond);
+            if (i > 0 && !checkMinDuration(time))
+            {
+                continue;
+            }
+
+            auto& elm = track.translations.emplace_back();
+            auto val = baseTrans * key.mValue;
+            elm.value = AssimpOzzUtils::convert(val);
+            elm.time = time;
+        }
+        track.rotations.reserve(assimpTrack.mNumRotationKeys);
+        lastTime = 0.F;
+        for (size_t i = 0; i < assimpTrack.mNumRotationKeys; ++i)
+        {
+            auto& key = assimpTrack.mRotationKeys[i];
+            auto time = float(key.mTime / tickPerSecond);
+            if (i > 0 && !checkMinDuration(time))
+            {
+                continue;
+            }
+
+            auto& elm = track.rotations.emplace_back();
+            auto val = AssimpOzzUtils::convert(baseRot * key.mValue);
+
+            elm.value = val;
+            elm.time = time;
+        }
+
+        track.scales.reserve(assimpTrack.mNumScalingKeys);
+        for (size_t i = 0; i < assimpTrack.mNumScalingKeys; ++i)
+        {
+            auto& key = assimpTrack.mScalingKeys[i];
+            auto time = float(key.mTime / tickPerSecond);
+            if (i > 0 && !checkMinDuration(time))
+            {
+                continue;
+            }
+
+            auto& elm = track.scales.emplace_back();
+            auto val = baseScale.SymMul(key.mValue);
+
+            elm.value = AssimpOzzUtils::convert(val);
+            elm.time = time;
+        }
+    }
+
     void AssimpOzzAnimationConverter::update(const aiAnimation& assimpAnim, RawAnimation& anim)
     {
         anim.name = assimpAnim.mName.C_Str();
         anim.duration = float(assimpAnim.mDuration / assimpAnim.mTicksPerSecond);
         anim.tracks.resize(_boneNames.size());
 
-        for (size_t i = 0; i < _boneNames.size(); i++)
+        for (size_t i = 0; i < _boneNames.size(); ++i)
         {
             auto& boneName = _boneNames[i];
             size_t j = 0;
@@ -437,75 +532,21 @@ namespace darmok
                 continue;
             }
 
-            aiVector3D basePos;
-            aiVector3D baseScale(1);
-            aiQuaternion baseRot;
-
-            auto node = _scene.mRootNode->FindNode(boneName.c_str());
-
-            aiMatrix4x4 baseTrans;
-            if (node)
-            {
-                auto parent = node->mParent;
-                while (parent != nullptr && !isBone(*parent))
-                {
-                    baseTrans = parent->mTransformation * baseTrans;
-                    parent = parent->mParent;
-                }
-                if (parent == nullptr)
-                {
-                    baseTrans = aiMatrix4x4();
-                }
-            }
-            baseTrans.Decompose(baseScale, baseRot, basePos);
-
             auto& track = anim.tracks[i];
             auto& chan = *assimpAnim.mChannels[j];
-
-            track.translations.resize(chan.mNumPositionKeys);
-            for (size_t j = 0; j < chan.mNumPositionKeys; j++)
+            auto tps = assimpAnim.mTicksPerSecond;
+            if (tps == 0.F)
             {
-                auto& key = chan.mPositionKeys[j];
-                auto& elm = track.translations[j];
-                auto val = baseTrans * key.mValue;
-                elm.value = AssimpOzzUtils::convert(val);
-                elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
+                tps = 1.F;
             }
-            track.rotations.resize(chan.mNumRotationKeys);
-            for (size_t j = 0; j < chan.mNumRotationKeys; j++)
-            {
-                auto& key = chan.mRotationKeys[j];
-                auto& elm = track.rotations[j];
-                auto val = AssimpOzzUtils::convert(baseRot * key.mValue);
-
-                // temp fix for https://github.com/assimp/assimp/issues/4714
-                // https://github.com/assimp/assimp/discussions/4966
-                // if (boneName == "B-toe.L")
-                // {
-                //     std::cout << "rot " << val.x << " " << val.y << " " << val.z << " " << val.w << std::endl;
-                // }
-
-                elm.value = val;
-                elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
-            }
-
-            track.scales.resize(chan.mNumScalingKeys);
-            for (size_t j = 0; j < chan.mNumScalingKeys; j++)
-            {
-                auto& key = chan.mScalingKeys[j];
-                auto& elm = track.scales[j];
-                auto val = baseScale.SymMul(key.mValue);
-
-                elm.value = AssimpOzzUtils::convert(val);
-                elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
-            }
+            update(boneName, tps, chan, track);
         }
     }
 
     std::vector<std::string> AssimpOzzAnimationConverter::getAnimationNames()
     {
         std::vector<std::string> names;
-        for (size_t i = 0; i < _scene.mNumAnimations; i++)
+        for (size_t i = 0; i < _scene.mNumAnimations; ++i)
         {
             auto anim = _scene.mAnimations[i];
             if (anim != nullptr)
@@ -730,6 +771,7 @@ namespace darmok
     const std::string AssimpSkeletalAnimationImporterImpl::_optimizationToleranceJsonKey = "tolerance";
     const std::string AssimpSkeletalAnimationImporterImpl::_optimizationDistanceJsonKey = "distance";
     const std::string AssimpSkeletalAnimationImporterImpl::_optimizationJointsJsonKey = "joints";
+    const std::string AssimpSkeletalAnimationImporterImpl::_minKeyframeDurationJsonKey = "minKeyframeDuration";
 
     bool AssimpSkeletalAnimationImporterImpl::startImport(const Input& input, bool dry)
     {
@@ -749,33 +791,43 @@ namespace darmok
             throw std::runtime_error("could not load assimp scene");
         }
 
-        if (!dry)
+        if (dry)
         {
-            std::filesystem::path skelPath = input.path;
-            if (input.config.contains(_skeletonJsonKey))
-            {
-                skelPath = input.path.parent_path() / input.config[_skeletonJsonKey];
-            }
-            else if (input.dirConfig.contains(_skeletonJsonKey))
-            {
-                skelPath = input.path.parent_path() / input.dirConfig[_skeletonJsonKey];
-            }
-            _currentSkeleton = loadSkeleton(skelPath, input.config);
-
-            nlohmann::json optJson;
-            if (input.dirConfig.contains(_optimizationJsonKey))
-            {
-                optJson = input.dirConfig[_optimizationJsonKey];
-            }
-            if (input.config.contains(_optimizationJsonKey))
-            {
-                optJson.update(input.config[_optimizationJsonKey]);
-            }
-            if (!optJson.empty())
-            {
-                _currentOptimization = loadOptimizationSettings(optJson);
-            }
+            return true;
         }
+        std::filesystem::path skelPath = input.path;
+        if (input.config.contains(_skeletonJsonKey))
+        {
+            skelPath = input.path.parent_path() / input.config[_skeletonJsonKey];
+        }
+        else if (input.dirConfig.contains(_skeletonJsonKey))
+        {
+            skelPath = input.path.parent_path() / input.dirConfig[_skeletonJsonKey];
+        }
+        _currentSkeleton = loadSkeleton(skelPath, input.config);
+
+        nlohmann::json optJson;
+        if (input.dirConfig.contains(_optimizationJsonKey))
+        {
+            optJson = input.dirConfig[_optimizationJsonKey];
+        }
+        if (input.config.contains(_optimizationJsonKey))
+        {
+            optJson.update(input.config[_optimizationJsonKey]);
+        }
+        if (!optJson.empty())
+        {
+            _currentOptimization = loadOptimizationSettings(optJson);
+        }
+        if (input.config.contains(_minKeyframeDurationJsonKey))
+        {
+            _currentMinKeyframeDuration = input.config[_minKeyframeDurationJsonKey];
+        }
+        else if (input.dirConfig.contains(_minKeyframeDurationJsonKey))
+        {
+            _currentMinKeyframeDuration = input.dirConfig[_minKeyframeDurationJsonKey];
+        }
+
         return true;
     }
 
@@ -860,6 +912,7 @@ namespace darmok
         _currentScene.reset();
         _currentOptimization.reset();
         _currentSkeleton.reset();
+        _currentMinKeyframeDuration.reset();
         _currentAnimationNames.clear();
     }
 
@@ -875,9 +928,13 @@ namespace darmok
         {
             converter.setSkeleton(_currentSkeleton.value());
         }
-        if (_currentOptimization && _currentSkeleton)
+        if (_currentOptimization)
         {
             converter.setOptimization(_currentOptimization.value());
+        }
+        if (_currentMinKeyframeDuration)
+        {
+            converter.setMinKeyframeDuration(_currentMinKeyframeDuration.value());
         }
         return converter.createAnimation(animationName);
     }

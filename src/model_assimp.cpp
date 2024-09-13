@@ -131,6 +131,7 @@ namespace darmok
             aiProcess_SortByPType |
             aiProcess_GenSmoothNormals |
             aiProcess_GenBoundingBoxes |
+            aiProcess_LimitBoneWeights |
             // apply UnitScaleFactor to everything
             aiProcess_GlobalScale;
 

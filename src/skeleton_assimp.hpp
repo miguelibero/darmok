@@ -34,6 +34,7 @@ struct aiNode;
 struct aiBone;
 struct aiMesh;
 struct aiAnimation;
+struct aiNodeAnim;
 template<typename TReal> class aiMatrix4x4t;
 typedef float ai_real;
 typedef aiMatrix4x4t<ai_real> aiMatrix4x4;
@@ -89,6 +90,7 @@ namespace darmok
         AssimpOzzAnimationConverter& setBoneNames(const std::vector<std::string>& boneNames) noexcept;
         AssimpOzzAnimationConverter& setSkeleton(const Skeleton& skel) noexcept;
         AssimpOzzAnimationConverter& setOptimization(const OptimizationSettings& settings) noexcept;
+        AssimpOzzAnimationConverter& setMinKeyframeDuration(float v) noexcept;
 
         Animation createAnimation(const std::string& name);
         Animation createAnimation();
@@ -100,10 +102,12 @@ namespace darmok
         std::vector<std::string> _boneNames;
         std::optional<OptimizationSettings> _optimization;
         OptionalRef<const Skeleton> _skeleton;
+        float _minKeyDuration;
 
         std::optional<RawAnimation> optimize(const RawAnimation& animation) noexcept;
 
         void update(const aiAnimation& assimpAnim, RawAnimation& anim);
+        void update(const std::string& boneName, float tickPerSecond, const aiNodeAnim& assimpTrack, RawAnimation::JointTrack& track) noexcept;
         bool isBone(const aiNode& node) const noexcept;
         bool logInfo(const aiAnimation& assimpAnim, const std::string& prefix = "") noexcept;
     };
@@ -215,6 +219,7 @@ namespace darmok
         std::optional<OzzSkeleton> _currentSkeleton;
         std::shared_ptr<aiScene> _currentScene;
         std::vector<std::string> _currentAnimationNames;
+        std::optional<float> _currentMinKeyframeDuration;
         OptionalRef<std::ostream> _log;
 
         AssimpSceneLoader _sceneLoader;
@@ -228,5 +233,6 @@ namespace darmok
         static const std::string _optimizationToleranceJsonKey;
         static const std::string _optimizationDistanceJsonKey;
         static const std::string _optimizationJointsJsonKey;
+        static const std::string _minKeyframeDurationJsonKey;
     };
 }

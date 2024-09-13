@@ -97,7 +97,7 @@ namespace
 			auto anims = animConfig.loadAnimations(_app.getAssets().getSkeletalAnimationLoader());
 			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, animConfig);
 			_animator->play("run");
-			_animator->setPlaybackSpeed(0.05);
+			// _animator->setPlaybackSpeed(0.05);
 
 			auto skelEntity = scene.createEntity();
 			scene.addComponent<Transform>(skelEntity, animTrans, glm::vec3(-1, 0, 0));

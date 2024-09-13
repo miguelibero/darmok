@@ -7,10 +7,7 @@
                 "skeleton": "BasicMotions_DummyModel.fbx",
                 "useFileMatchAsName": 1,
                 "outputPath": "*.ozz",
-                "optimization": {
-                    "tolerance" : 0.1,
-                    "distance" : 0.1
-                }
+                "minKeyframeDuration": 0.03
             }
         },
         "BasicMotions_DummyModel.fbx": {
