@@ -6,7 +6,8 @@
 #include <ozz/animation/offline/raw_animation.h>
 #include <ozz/animation/offline/skeleton_builder.h>
 #include <ozz/animation/offline/animation_builder.h>
-#include <ozz/animation/runtime/skeleton.h>
+#include <ozz/animation/offline/animation_optimizer.h>
+#include <ozz/animation/offline/track_optimizer.h>
 #include <ozz/base/io/archive.h>
 #include <assimp/vector3.h>
 #include <assimp/mesh.h>
@@ -276,6 +277,64 @@ namespace darmok
         return *this;
     }
 
+    AssimpOzzAnimationConverter& AssimpOzzAnimationConverter::setSkeleton(const Skeleton& skel) noexcept
+    {
+        _skeleton = skel;
+
+        if (_skeleton)
+        {
+            _boneNames.resize(_skeleton->num_joints());
+            for (int i = 0; i < _boneNames.size(); ++i)
+            {
+                _boneNames[i] = _skeleton->joint_names()[i];
+            }
+        }
+
+        return *this;
+    }
+
+    AssimpOzzAnimationConverter& AssimpOzzAnimationConverter::setOptimization(const OptimizationSettings& settings) noexcept
+    {
+        _optimization = settings;
+        return *this;
+    }
+
+    std::optional<AssimpOzzAnimationConverter::RawAnimation> AssimpOzzAnimationConverter::optimize(const RawAnimation& animation) noexcept
+    {
+        if (!_optimization || !_skeleton)
+        {
+            return std::nullopt;
+        }
+        RawAnimation optimizedAnim;
+
+        ozz::animation::offline::AnimationOptimizer jointOptimizer;
+
+        auto& opt = _optimization.value();
+        jointOptimizer.setting.distance = opt.defaultElement.distance;
+        jointOptimizer.setting.tolerance = opt.defaultElement.tolerance;
+
+        auto jointNames = _skeleton->joint_names();
+        for (auto& [name, elm] : opt.elements)
+        {
+            for (int i = 0; i < jointNames.size(); ++i)
+            {
+                if (jointNames[i] == name)
+                {
+                    jointOptimizer.joints_setting_override[i] =
+                        ozz::animation::offline::AnimationOptimizer::Setting(elm.tolerance, elm.distance);
+                    break;
+                }
+            }
+        }
+
+        if (jointOptimizer(animation, _skeleton.value(), &optimizedAnim))
+        {
+            return optimizedAnim;
+        }
+
+        return std::nullopt;
+    }
+
     AssimpOzzAnimationConverter::Animation AssimpOzzAnimationConverter::createAnimation(const std::string& name)
     {
         RawAnimation rawAnim;
@@ -287,6 +346,12 @@ namespace darmok
         {
             throw std::runtime_error("created an invalid raw skeleton");
         }
+
+        if (auto optimizedAnim = optimize(rawAnim))
+        {
+            rawAnim = optimizedAnim.value();
+        }
+
         ozz::animation::offline::AnimationBuilder builder;
         return std::move(*builder(rawAnim));
     }
@@ -298,6 +363,7 @@ namespace darmok
         {
             throw std::runtime_error("no animations found");
         }
+
         return createAnimation(names.front());
     }
 
@@ -414,15 +480,15 @@ namespace darmok
 
                 // temp fix for https://github.com/assimp/assimp/issues/4714
                 // https://github.com/assimp/assimp/discussions/4966
-                // if (boneName == "B-thigh.L")
+                // if (boneName == "B-toe.L")
                 // {
                 //     std::cout << "rot " << val.x << " " << val.y << " " << val.z << " " << val.w << std::endl;
                 // }
 
                 elm.value = val;
                 elm.time = float(key.mTime / assimpAnim.mTicksPerSecond);
-
             }
+
             track.scales.resize(chan.mNumScalingKeys);
             for (size_t j = 0; j < chan.mNumScalingKeys; j++)
             {
@@ -612,17 +678,16 @@ namespace darmok
 
     std::filesystem::path AssimpSkeletalAnimationImporterImpl::getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept
     {
-        static const std::string matchIndexKey = "useFileMatchAsName";
         auto fanimName = animName;
 
         std::optional<size_t> matchIndex;
-        if(input.config.contains(matchIndexKey))
+        if(input.config.contains(_useFileMatchAsNameJsonKey))
         {
-            matchIndex = input.config[matchIndexKey].get<size_t>();
+            matchIndex = input.config[_useFileMatchAsNameJsonKey].get<size_t>();
         }
-        else if (input.dirConfig.contains(matchIndexKey))
+        else if (input.dirConfig.contains(_useFileMatchAsNameJsonKey))
         {
-            matchIndex = input.dirConfig[matchIndexKey].get<size_t>();
+            matchIndex = input.dirConfig[_useFileMatchAsNameJsonKey].get<size_t>();
         }
         if (matchIndex && input.pathMatches.size() > matchIndex.value())
         {
@@ -647,21 +712,24 @@ namespace darmok
         return getOutputPath(input, animName, fixedOutputPath);
     }
 
-    void AssimpSkeletalAnimationImporterImpl::loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config)
+    AssimpSkeletalAnimationImporterImpl::OzzSkeleton AssimpSkeletalAnimationImporterImpl::loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config)
     {
         AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         loadConfig.populateArmature = true;
         auto skelScene = _sceneLoader.loadFromFile(path, loadConfig);
         AssimpOzzSkeletonConverter converter(*skelScene);
         converter.setConfig(config);
-        auto skel = converter.createSkeleton();
-
-        _currentSkeletonJoints.resize(skel.num_joints());
-        for (int i = 0; i < skel.num_joints(); ++i)
-        {
-            _currentSkeletonJoints[i] = skel.joint_names()[i];
-        }
+        return converter.createSkeleton();
     }
+
+    const std::string AssimpSkeletalAnimationImporterImpl::_skeletonJsonKey = "skeleton";
+    const std::string AssimpSkeletalAnimationImporterImpl::_outputPathJsonKey = "outputPath";
+    const std::string AssimpSkeletalAnimationImporterImpl::_animationsJsonKey = "animations";
+    const std::string AssimpSkeletalAnimationImporterImpl::_useFileMatchAsNameJsonKey = "useFileMatchAsName";
+    const std::string AssimpSkeletalAnimationImporterImpl::_optimizationJsonKey = "optimization";
+    const std::string AssimpSkeletalAnimationImporterImpl::_optimizationToleranceJsonKey = "tolerance";
+    const std::string AssimpSkeletalAnimationImporterImpl::_optimizationDistanceJsonKey = "distance";
+    const std::string AssimpSkeletalAnimationImporterImpl::_optimizationJointsJsonKey = "joints";
 
     bool AssimpSkeletalAnimationImporterImpl::startImport(const Input& input, bool dry)
     {
@@ -684,17 +752,59 @@ namespace darmok
         if (!dry)
         {
             std::filesystem::path skelPath = input.path;
-            if (input.config.contains("skeleton"))
+            if (input.config.contains(_skeletonJsonKey))
             {
-                skelPath = input.path.parent_path() / input.config["skeleton"];
+                skelPath = input.path.parent_path() / input.config[_skeletonJsonKey];
             }
-            else if (input.dirConfig.contains("skeleton"))
+            else if (input.dirConfig.contains(_skeletonJsonKey))
             {
-                skelPath = input.path.parent_path() / input.dirConfig["skeleton"];
+                skelPath = input.path.parent_path() / input.dirConfig[_skeletonJsonKey];
             }
-            loadSkeleton(skelPath, input.config);
+            _currentSkeleton = loadSkeleton(skelPath, input.config);
+
+            nlohmann::json optJson;
+            if (input.dirConfig.contains(_optimizationJsonKey))
+            {
+                optJson = input.dirConfig[_optimizationJsonKey];
+            }
+            if (input.config.contains(_optimizationJsonKey))
+            {
+                optJson.update(input.config[_optimizationJsonKey]);
+            }
+            if (!optJson.empty())
+            {
+                _currentOptimization = loadOptimizationSettings(optJson);
+            }
         }
         return true;
+    }
+
+    AssimpSkeletalAnimationImporterImpl::OptimizationSettings AssimpSkeletalAnimationImporterImpl::loadOptimizationSettings(const nlohmann::json& config) noexcept
+    {
+        auto readElement = [](const nlohmann::json& config)
+        {
+            OptimizationSettings::Element elm;
+            if (config.contains(_optimizationToleranceJsonKey))
+            {
+                elm.tolerance = config[_optimizationToleranceJsonKey];
+            }
+            if (config.contains(_optimizationDistanceJsonKey))
+            {
+                elm.distance = config[_optimizationDistanceJsonKey];
+            }
+            return elm;
+        };
+
+        OptimizationSettings settings;
+        settings.defaultElement = readElement(config);
+        if (config.contains(_optimizationJointsJsonKey))
+        {
+            for (auto& [elmName, elmConfig] : config[_optimizationJointsJsonKey].items())
+            {
+                settings.elements[elmName] = readElement(elmConfig);
+            }
+        }
+        return settings;
     }
 
     std::vector<std::filesystem::path> AssimpSkeletalAnimationImporterImpl::getOutputs(const Input& input)
@@ -702,16 +812,16 @@ namespace darmok
         std::vector<std::filesystem::path> outputs;
 
         std::string outputPath;
-        if (input.config.contains("outputPath"))
+        if (input.config.contains(_outputPathJsonKey))
         {
-            outputPath = input.config["outputPath"];
+            outputPath = input.config[_outputPathJsonKey];
         }
 
         AssimpOzzAnimationConverter converter(*_currentScene);
         auto allAnimationNames = converter.getAnimationNames();
-        if (input.config.contains("animations"))
+        if (input.config.contains(_animationsJsonKey))
         {
-            for (auto& [animName, animConfig] : input.config["animations"].items())
+            for (auto& [animName, animConfig] : input.config[_animationsJsonKey].items())
             {
                 if (StringUtils::containsGlobPattern(animName))
                 {
@@ -748,7 +858,8 @@ namespace darmok
     {
         _currentInput = Input{};
         _currentScene.reset();
-        _currentSkeletonJoints.clear();
+        _currentOptimization.reset();
+        _currentSkeleton.reset();
         _currentAnimationNames.clear();
     }
 
@@ -760,12 +871,29 @@ namespace darmok
     AssimpSkeletalAnimationImporterImpl::OzzAnimation AssimpSkeletalAnimationImporterImpl::read(const std::filesystem::path& path, const std::string& animationName)
     {
         AssimpOzzAnimationConverter converter(*_currentScene, _log);
-        converter.setBoneNames(_currentSkeletonJoints);
+        if (_currentSkeleton)
+        {
+            converter.setSkeleton(_currentSkeleton.value());
+        }
+        if (_currentOptimization && _currentSkeleton)
+        {
+            converter.setOptimization(_currentOptimization.value());
+        }
         return converter.createAnimation(animationName);
     }
 
     void AssimpSkeletalAnimationImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
+        nlohmann::json optimize;
+        if (input.dirConfig.contains(_optimizationJsonKey))
+        {
+            optimize = input.dirConfig[_optimizationJsonKey];
+        }
+        if (input.config.contains(_optimizationJsonKey))
+        {
+            optimize.update(input.config[_optimizationJsonKey]);
+        }
+
         auto& animName = _currentAnimationNames[outputIndex];
         auto anim = read(input.path, animName);
         AssimpOzzUtils::writeToStream(anim, out, _bufferSize);

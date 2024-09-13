@@ -6,7 +6,11 @@
             "skeletal_animation": {
                 "skeleton": "BasicMotions_DummyModel.fbx",
                 "useFileMatchAsName": 1,
-                "outputPath": "*.ozz"
+                "outputPath": "*.ozz",
+                "optimization": {
+                    "tolerance" : 0.1,
+                    "distance" : 0.1
+                }
             }
         },
         "BasicMotions_DummyModel.fbx": {

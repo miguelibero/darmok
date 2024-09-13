@@ -11,6 +11,7 @@
 #include "model_assimp.hpp"
 #include <ozz/animation/offline/raw_skeleton.h>
 #include <ozz/animation/offline/tools/import2ozz.h>
+#include <ozz/animation/runtime/skeleton.h>
 #include <assimp/matrix4x4.h>
 
 namespace ozz::animation::offline
@@ -69,10 +70,26 @@ namespace darmok
     class AssimpOzzAnimationConverter final
     {
     public:
+
+        struct OptimizationSettings final
+        {
+            struct Element final
+            {
+                float tolerance = 0.001;
+                float distance = 0.1;
+            };
+            Element defaultElement;
+            std::unordered_map<std::string, Element> elements;
+        };
+
         using Animation = ozz::animation::Animation;
+        using Skeleton = ozz::animation::Skeleton;
         using RawAnimation = ozz::animation::offline::RawAnimation;
         AssimpOzzAnimationConverter(const aiScene& scene, OptionalRef<std::ostream> log = nullptr) noexcept;
         AssimpOzzAnimationConverter& setBoneNames(const std::vector<std::string>& boneNames) noexcept;
+        AssimpOzzAnimationConverter& setSkeleton(const Skeleton& skel) noexcept;
+        AssimpOzzAnimationConverter& setOptimization(const OptimizationSettings& settings) noexcept;
+
         Animation createAnimation(const std::string& name);
         Animation createAnimation();
         bool update(const std::string& name, RawAnimation& anim);
@@ -81,6 +98,11 @@ namespace darmok
         OptionalRef<std::ostream> _log;
         const aiScene& _scene;
         std::vector<std::string> _boneNames;
+        std::optional<OptimizationSettings> _optimization;
+        OptionalRef<const Skeleton> _skeleton;
+
+        std::optional<RawAnimation> optimize(const RawAnimation& animation) noexcept;
+
         void update(const aiAnimation& assimpAnim, RawAnimation& anim);
         bool isBone(const aiNode& node) const noexcept;
         bool logInfo(const aiAnimation& assimpAnim, const std::string& prefix = "") noexcept;
@@ -163,7 +185,6 @@ namespace darmok
     private:
         size_t _bufferSize;
         AssimpSceneLoader _sceneLoader;
-
     };
 
     class AssimpSkeletalAnimationImporterImpl final
@@ -171,6 +192,8 @@ namespace darmok
     public:
         using Input = AssetTypeImporterInput;
         using OzzAnimation = ozz::animation::Animation;
+        using OzzSkeleton = ozz::animation::Skeleton;
+        using OptimizationSettings = AssimpOzzAnimationConverter::OptimizationSettings;
 
         AssimpSkeletalAnimationImporterImpl(size_t bufferSize = 4096) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
@@ -182,16 +205,28 @@ namespace darmok
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
     private:
-        void loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config);
+        OzzSkeleton loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config);
+        OptimizationSettings loadOptimizationSettings(const nlohmann::json& config) noexcept;
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept;
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept;
+        
         Input _currentInput;
-        std::vector<std::string> _currentSkeletonJoints;
+        std::optional<OptimizationSettings> _currentOptimization;
+        std::optional<OzzSkeleton> _currentSkeleton;
         std::shared_ptr<aiScene> _currentScene;
         std::vector<std::string> _currentAnimationNames;
         OptionalRef<std::ostream> _log;
 
         AssimpSceneLoader _sceneLoader;
         size_t _bufferSize;
+
+        static const std::string _skeletonJsonKey;
+        static const std::string _outputPathJsonKey;
+        static const std::string _animationsJsonKey;
+        static const std::string _useFileMatchAsNameJsonKey;
+        static const std::string _optimizationJsonKey;
+        static const std::string _optimizationToleranceJsonKey;
+        static const std::string _optimizationDistanceJsonKey;
+        static const std::string _optimizationJointsJsonKey;
     };
 }
