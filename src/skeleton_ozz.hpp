@@ -132,6 +132,7 @@ namespace darmok
 		using Transition = OzzSkeletalAnimatorTransition;
 		using State = OzzSkeletalAnimatorState;
 		using AnimationMap = SkeletalAnimationMap;
+		using PlaybackState = SkeletalAnimatorPlaybackState;
 
 		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Config& config) noexcept;
 
@@ -149,6 +150,10 @@ namespace darmok
 		OptionalRef<const ISkeletalAnimatorTransition> getCurrentTransition() const noexcept;
 
 		bool play(std::string_view name) noexcept;
+		void stop() noexcept;
+		void pause() noexcept;
+		PlaybackState getPlaybackState() noexcept;
+
 		void update(float deltaTime);
 
 		glm::mat4 getJointModelMatrix(const std::string& joint) const noexcept;
@@ -162,6 +167,7 @@ namespace darmok
 		std::shared_ptr<Skeleton> _skeleton;
 		Config _config;
 		float _speed;
+		bool _paused;
 		glm::vec2 _blendPosition;
 
 		std::optional<Transition> _transition;

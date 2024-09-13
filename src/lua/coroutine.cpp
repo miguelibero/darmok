@@ -4,6 +4,7 @@
 #include <darmok/transform.hpp>
 #include <darmok/math.hpp>
 #include <darmok/easing.hpp>
+#include <darmok/skeleton.hpp>
 
 namespace darmok
 {
@@ -215,6 +216,29 @@ namespace darmok
 					return std::make_shared<LuaEaseRotation>(trans, LuaGlm::tableGet(rot), duration);
 				}
 			)
+		);
+	}
+
+	LuaPlayAnimation::LuaPlayAnimation(SkeletalAnimator& animator, const std::string& name) noexcept
+		: _animator(animator)
+		, _name(name)
+	{
+	}
+
+	bool LuaPlayAnimation::finished() const noexcept
+	{
+
+	}
+
+	void LuaPlayAnimation::update(float deltaTime) noexcept
+	{
+		_animator.get().play(_name);
+	}
+
+	void LuaPlayAnimation::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaPlayAnimation>("PlayAnimation",
+			sol::default_constructor
 		);
 	}
 

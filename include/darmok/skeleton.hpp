@@ -238,11 +238,19 @@ namespace darmok
 
     class SkeletalAnimatorImpl;
 
+    enum class SkeletalAnimatorPlaybackState
+    {
+        Stopped,
+        Playing,
+        Paused
+    };
+
     class DARMOK_EXPORT SkeletalAnimator final
     {
     public:
         using Config = SkeletalAnimatorConfig;
         using AnimationMap = SkeletalAnimationMap;
+        using PlaybackState = SkeletalAnimatorPlaybackState;
         SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
         ~SkeletalAnimator();
 
@@ -260,6 +268,9 @@ namespace darmok
         OptionalRef<const ISkeletalAnimatorTransition> getCurrentTransition() const noexcept;
 
         bool play(std::string_view name) noexcept;
+        void stop() noexcept;
+        void pause() noexcept;
+        PlaybackState getPlaybackState() noexcept;
         
         glm::mat4 getJointModelMatrix(const std::string& node) const noexcept;
         std::unordered_map<std::string, glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;

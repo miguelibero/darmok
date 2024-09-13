@@ -49,6 +49,9 @@ namespace darmok
             "get_entity_component", &LuaSkeletalAnimator::getEntityComponent,
             "get_entity", &LuaSkeletalAnimator::getEntity,
             "play", sol::overload(&SkeletalAnimator::play),
+            "stop", sol::overload(&SkeletalAnimator::stop),
+            "pause", sol::overload(&SkeletalAnimator::pause),
+            "playback_state", sol::property(&SkeletalAnimator::getPlaybackState),
             "playback_speed", sol::property(&SkeletalAnimator::getPlaybackSpeed, &SkeletalAnimator::setPlaybackSpeed),
             "blend_position", sol::property(&LuaSkeletalAnimator::setBlendPosition)
         );

@@ -105,6 +105,21 @@ namespace darmok
 		EasingType _easing;
 	};
 
+	class SkeletalAnimator;
+
+	class LuaPlayAnimation final : public ILuaYieldInstruction
+	{
+	public:
+		LuaPlayAnimation(SkeletalAnimator& animator, const std::string& name) noexcept;
+		void update(float deltaTime) noexcept override;
+		bool finished() const noexcept override;
+
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		std::reference_wrapper<SkeletalAnimator> _animator;
+		std::string _name;
+	};
+
 	class LuaCoroutineThread final : public ILuaYieldInstruction
 	{
 	public:

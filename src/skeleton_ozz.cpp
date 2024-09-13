@@ -221,6 +221,7 @@ namespace darmok
         : _animator(animator)
         , _skeleton(skeleton)
         , _speed(1.F)
+        , _paused(false)
         , _config(config)
         , _animations(animations)
         , _blendPosition(0)
@@ -641,6 +642,29 @@ namespace darmok
         return true;
     }
 
+    void SkeletalAnimatorImpl::stop() noexcept
+    {
+        _state.reset();
+    }
+
+    void SkeletalAnimatorImpl::pause() noexcept
+    {
+        _paused = !_paused;
+    }
+
+    SkeletalAnimatorImpl::PlaybackState SkeletalAnimatorImpl::getPlaybackState() noexcept
+    {
+        if (!_state)
+        {
+            return PlaybackState::Stopped;
+        }
+        if (_paused)
+        {
+            return PlaybackState::Paused;
+        }
+        return PlaybackState::Playing;
+    }
+
     std::shared_ptr<SkeletalAnimation> SkeletalAnimatorImpl::operator()(std::string_view name)
     {
         auto itr = _animations.find(std::string(name));
@@ -817,5 +841,20 @@ namespace darmok
     bool SkeletalAnimator::play(std::string_view name) noexcept
     {
         return _impl->play(name);
+    }
+
+    void SkeletalAnimator::stop() noexcept
+    {
+        _impl->stop();
+    }
+
+    void SkeletalAnimator::pause() noexcept
+    {
+        _impl->pause();
+    }
+
+    SkeletalAnimator::PlaybackState SkeletalAnimator::getPlaybackState() noexcept
+    {
+        _impl->getPlaybackState();
     }
 }
