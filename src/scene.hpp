@@ -10,6 +10,8 @@
 #include <entt/entt.hpp>
 #include <vector>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace darmok
 {
@@ -33,8 +35,11 @@ namespace darmok
         void setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
 
+        void destroyEntity(Entity entity) noexcept;
+
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
+        bool removeComponent(Entity entity, entt::id_type typeId) noexcept;
 
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;
@@ -49,9 +54,14 @@ namespace darmok
         void update(float deltaTime);
         void renderReset();
         void shutdown();
+
+        static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
+
     private:
         using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ISceneComponent>>>;
+        using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
 
+        std::vector<Entity> _pendingDestroy;
         std::string _name;
         Components _components;
         EntityRegistry _registry;
@@ -60,6 +70,7 @@ namespace darmok
         RenderGraphDefinition _renderGraph;
         RenderChain _renderChain;
         std::optional<Viewport> _viewport;
+        static ComponentDependencies _compDeps;
 
         using ComponentRefs = std::vector<std::reference_wrapper<ISceneComponent>>;
         ComponentRefs copyComponentContainer() const noexcept;
@@ -74,5 +85,6 @@ namespace darmok
         RenderGraphDefinition& getRenderChainParentGraph() noexcept override;
         void onRenderChainInputChanged() noexcept override;
         void updateRenderGraph() noexcept;
+        void destroyPendingEntities() noexcept;
     };
 }

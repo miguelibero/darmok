@@ -90,6 +90,18 @@ namespace darmok
         static bool dispatchEvent3(Rml::Element& elm, const std::string& type, const sol::table& params, bool interruptible, bool bubbles);
         static bool focus1(Rml::Element& elm) noexcept;
         static bool focus2(Rml::Element& elm, bool visible);
+        static glm::vec2 getOffset(Rml::Element& elm);
+        static void setOffset1(Rml::Element& elm, const VarLuaTable<glm::vec2>& offset);
+        static void setOffset2(Rml::Element& elm, const VarLuaTable<glm::vec2>& offset, Rml::Element& parent);
+        static void setOffset3(Rml::Element& elm, const VarLuaTable<glm::vec2>& offset, Rml::Element& parent, bool fixed);
+        static glm::vec2 getSize(Rml::Element& elm);
+        static void setSize(Rml::Element& elm, const glm::vec2& size);
+    };
+
+    class LuaRmluiStyleSheet
+    {
+    public:
+        static void bind(sol::state_view& lua) noexcept;
     };
 
     class LuaRmluiElementDocument
@@ -116,6 +128,8 @@ namespace darmok
 
         RmluiCanvas& getReal() noexcept;
         const RmluiCanvas& getReal() const noexcept;
+
+        void update(float deltaTime);
 
         static void bind(sol::state_view& lua) noexcept;
 
@@ -190,6 +204,7 @@ namespace darmok
 
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
+        void update(float deltaTime) override;
 
         RmluiRenderer& getReal() noexcept;
         const RmluiRenderer& getReal() const noexcept;

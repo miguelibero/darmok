@@ -20,7 +20,6 @@
 
 namespace darmok
 {
-
     Color RmluiUtils::convert(const Rml::Colourf& v) noexcept
     {
         auto f = Colors::getMaxValue();
@@ -490,14 +489,13 @@ namespace darmok
         {
             Rml::RemoveContext(_context->GetName());
             _context.reset();
+            Rml::ReleaseTextures();
         }
         if (_comp)
         {
             _comp->getRenderGraph().removePass(*this);
+            _comp.reset();
         }
-
-        Rml::ReleaseTextures();
-        _comp.reset();
     }
 
     void RmluiCanvasImpl::updateContextSize() noexcept

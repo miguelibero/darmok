@@ -24,6 +24,19 @@ namespace darmok
         _scene.reset();
     }
 
+    void LuaRmluiRenderer::update(float deltaTime)
+    {
+        if (!_cam || !_scene)
+        {
+            return;
+        }
+        for (auto entity : _cam->createEntityView<LuaRmluiCanvas>())
+        {
+            auto canvas = _scene->getComponent<LuaRmluiCanvas>(entity);
+            canvas->update(deltaTime);
+        }
+    }
+
     RmluiRenderer& LuaRmluiRenderer::getReal() noexcept
     {
         return _comp;

@@ -262,8 +262,21 @@ namespace darmok
         _renderChain.renderReset();
     }
 
+    void SceneImpl::destroyPendingEntities() noexcept
+    {
+        std::vector<Entity> entities(_pendingDestroy);
+        _pendingDestroy.clear();
+
+        for (auto entity : entities)
+        {
+            _registry.destroy(entity);
+        }
+    }
+
     void SceneImpl::update(float deltaTime)
     {
+        destroyPendingEntities();
+
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
@@ -286,6 +299,41 @@ namespace darmok
         updateRenderGraph();
     }
 
+    void SceneImpl::destroyEntity(Entity entity) noexcept
+    {
+        auto itr = std::find(_pendingDestroy.begin(), _pendingDestroy.end(), entity);
+        if (itr != _pendingDestroy.end())
+        {
+            return;
+        }
+        _pendingDestroy.push_back(entity);
+    }
+
+    SceneImpl::ComponentDependencies SceneImpl::_compDeps;
+
+    void SceneImpl::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
+    {
+        _compDeps[typeId1].insert(typeId2);
+    }
+
+    bool SceneImpl::removeComponent(Entity entity, entt::id_type typeId) noexcept
+    {
+        auto& reg = getRegistry();
+        auto success = reg.storage(typeId)->remove(entity);
+        auto itr = _compDeps.find(typeId);
+        if (itr != _compDeps.end())
+        {
+            for (auto& depTypeId : itr->second)
+            {
+                if (reg.storage(depTypeId)->remove(entity))
+                {
+                    success = true;
+                }
+            }
+        }
+        return success;
+    }
+
     Scene::Scene() noexcept
     : _impl(std::make_unique<SceneImpl>(*this))
     {
@@ -293,6 +341,16 @@ namespace darmok
 
     Scene::~Scene() noexcept
     {
+    }
+
+    SceneImpl& Scene::getImpl() noexcept
+    {
+        return *_impl;
+    }
+
+    const SceneImpl& Scene::getImpl() const noexcept
+    {
+        return *_impl;
     }
 
     EntityRegistry& Scene::getRegistry()
@@ -310,23 +368,25 @@ namespace darmok
         return getRegistry().create();
     }
 
-    bool Scene::destroyEntity(Entity entity) noexcept
+    void Scene::destroyEntity(Entity entity) noexcept
     {
-        if (entity == entt::null)
-        {
-            return false;
-        }
-        return getRegistry().destroy(entity) > 0;
+        return _impl->destroyEntity(entity);
     }
 
-    SceneImpl& Scene::getImpl() noexcept
+    void Scene::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2) noexcept
     {
-        return *_impl;
+        SceneImpl::registerComponentDependency(typeId1, typeId2);
     }
 
-    const SceneImpl& Scene::getImpl() const noexcept
+    bool Scene::removeComponent(Entity entity, entt::id_type typeId) noexcept
     {
-        return *_impl;
+        return _impl->removeComponent(entity, typeId);
+    }
+
+    bool Scene::hasComponent(Entity entity, entt::id_type typeId) const noexcept
+    {
+        auto storage = getRegistry().storage(typeId);
+        return storage->find(entity) != storage->end();
     }
 
     void Scene::init(App& app)

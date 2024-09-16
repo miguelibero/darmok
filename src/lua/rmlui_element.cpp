@@ -1,4 +1,5 @@
 #include "rmlui.hpp"
+#include "../rmlui.hpp"
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/StyleSheet.h>
 
@@ -134,6 +135,45 @@ namespace darmok
         return elm.Focus(visible);
     }
 
+    glm::vec2 LuaRmluiElement::getOffset(Rml::Element& elm)
+    {
+        if (elm.GetPosition() == Rml::Style::Position::Absolute)
+        {
+            RmluiUtils::convert(elm.GetAbsoluteOffset());
+        }
+        return RmluiUtils::convert(elm.GetRelativeOffset());
+    }
+
+    void LuaRmluiElement::setOffset1(Rml::Element& elm, const VarLuaTable<glm::vec2>& offset)
+    {
+        auto rmlOffset = RmluiUtils::convert(LuaGlm::tableGet(offset));
+        elm.SetOffset(rmlOffset, nullptr);
+    }
+
+    void LuaRmluiElement::setOffset2(Rml::Element& elm, const VarLuaTable<glm::vec2>& offset, Rml::Element& parent)
+    {
+        auto rmlOffset = RmluiUtils::convert(LuaGlm::tableGet(offset));
+        elm.SetOffset(rmlOffset, &parent);
+    }
+
+    void LuaRmluiElement::setOffset3(Rml::Element& elm, const VarLuaTable<glm::vec2>& offset, Rml::Element& parent, bool fixed)
+    {
+        auto rmlOffset = RmluiUtils::convert(LuaGlm::tableGet(offset));
+        elm.SetOffset(rmlOffset, &parent, fixed);
+    }
+
+    glm::vec2 LuaRmluiElement::getSize(Rml::Element& elm)
+    {
+        return RmluiUtils::convert(elm.GetBox().GetSize());
+    }
+
+    void LuaRmluiElement::setSize(Rml::Element& elm, const glm::vec2& size)
+    {
+        auto box = elm.GetBox();
+        box.SetContent(RmluiUtils::convert(size));
+        elm.SetBox(box);
+    }
+
     void LuaRmluiElement::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<Rml::Element>("RmluiElement", sol::no_constructor,
@@ -178,8 +218,50 @@ namespace darmok
             ),
             "focus", sol::overload(&LuaRmluiElement::focus1, &LuaRmluiElement::focus2),
             "blur" , &Rml::Element::Blur,
-            "click" , &Rml::Element::Click
+            "click" , &Rml::Element::Click,
+            "position", sol::property(&Rml::Element::GetPosition),
+            "float", sol::property(&Rml::Element::GetFloat),
+            "display", sol::property(&Rml::Element::GetDisplay),
+            "box", sol::property(
+                sol::resolve<const Rml::Box & ()>(&Rml::Element::GetBox), &Rml::Element::SetBox),
+            "size", sol::property(&LuaRmluiElement::getSize, &LuaRmluiElement::setSize),
+            "offset", sol::property(&LuaRmluiElement::getOffset, &LuaRmluiElement::setOffset1),
+            "set_offset", sol::overload(
+                &LuaRmluiElement::setOffset1,
+                &LuaRmluiElement::setOffset2,
+                &LuaRmluiElement::setOffset3
+            )
         );
+
+        lua.new_enum<Rml::Style::Position>("RmluiStylePosition", {
+            { "Static", Rml::Style::Position::Static },
+            { "Relative", Rml::Style::Position::Relative },
+            { "Absolute", Rml::Style::Position::Absolute },
+            { "Fixed", Rml::Style::Position::Fixed },
+        });
+
+        lua.new_enum<Rml::Style::Float>("RmluiStyleFloat", {
+            { "None", Rml::Style::Float::None },
+            { "Left", Rml::Style::Float::Left },
+            { "Right", Rml::Style::Float::Right },
+        });
+
+        lua.new_enum<Rml::Style::Display>("RmluiStyleDisplay", {
+            { "None", Rml::Style::Display::None },
+            { "Block", Rml::Style::Display::Block },
+            { "Inline", Rml::Style::Display::Inline },
+            { "InlineBlock", Rml::Style::Display::InlineBlock },
+            { "FlowRoot", Rml::Style::Display::FlowRoot },
+            { "Flex", Rml::Style::Display::Flex },
+            { "InlineFlex", Rml::Style::Display::InlineFlex },
+            { "Table", Rml::Style::Display::Table },
+            { "InlineTable", Rml::Style::Display::InlineTable },
+            { "TableRow", Rml::Style::Display::TableRow },
+            { "TableRowGroup", Rml::Style::Display::TableRowGroup },
+            { "TableColumn", Rml::Style::Display::TableColumn },
+            { "TableColumnGroup", Rml::Style::Display::TableColumnGroup },
+            { "TableCell", Rml::Style::Display::TableCell },
+        });
 
         lua.new_enum<Rml::ModalFlag>("RmluiDocumentMode", {
             { "Normal", Rml::ModalFlag::None },
@@ -200,13 +282,18 @@ namespace darmok
             { "Instant", Rml::ScrollBehavior::Instant },
         });
 
-
         lua.new_enum<Rml::ScrollAlignment>("RmluiScrollAlignment", {
             { "Start", Rml::ScrollAlignment::Start },
             { "Center", Rml::ScrollAlignment::Center },
             { "End", Rml::ScrollAlignment::End },
             { "Nearest", Rml::ScrollAlignment::Nearest },
         });
+    }
+
+    void LuaRmluiStyleSheet::bind(sol::state_view& lua) noexcept
+    {
+        lua.new_usertype<Rml::StyleSheet>("RmluiStyleSheet", sol::no_constructor
+        );
     }
 
     void LuaRmluiElementDocument::show1(Rml::ElementDocument& doc) noexcept

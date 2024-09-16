@@ -27,14 +27,16 @@ namespace darmok
 		const Entity& getReal() const noexcept;
 		LuaScene getScene() const;
 
+		void registerComponentDependency(entt::id_type type1, entt::id_type type2) noexcept;
+
 		template<typename T, typename... Args>
-		T& addComponent(Args&&... args) noexcept
+		T& addComponent(Args&&... args)
 		{
-			return getRegistry().emplace<T>(_entity, std::forward<Args>(args)...);
+			return getRealScene().addComponent<T>(_entity, std::forward<Args>(args)...);
 		}
 
 		template<typename T, typename R, typename... Args>
-		T& addWrapperComponent(Args&&... args) noexcept
+		T& addWrapperComponent(Args&&... args)
 		{
 			auto& real = addComponent<R>(std::forward<Args>(args)...);
 			return addComponent<T>(real);
@@ -43,7 +45,7 @@ namespace darmok
 		template<typename T>
 		OptionalRef<T> getComponent()
 		{
-			return getRegistry().try_get<T>(_entity);
+			return getRealScene().getComponent<T>(_entity);
 		}
 
 		static void bind(sol::state_view& lua) noexcept;
@@ -54,8 +56,8 @@ namespace darmok
 		std::weak_ptr<Scene> _scene;
 		mutable OptionalRef<LuaComponentContainer> _luaComponents;
 
-		EntityRegistry& getRegistry();
-		const EntityRegistry& getRegistry() const;
+		Scene& getRealScene();
+		const Scene& getRealScene() const;
 
 		std::string toString() const noexcept;
 		bool isValid() const noexcept;
@@ -115,7 +117,6 @@ namespace darmok
 		bool tryGetLuaComponentContainer() const noexcept;
 
 		std::string toString() const noexcept;
-		EntityRegistry& getRegistry() noexcept;
 		LuaEntity createEntity1() noexcept;
 		LuaEntity createEntity2(LuaEntity& parent) noexcept;
 		LuaEntity createEntity3(Transform& parent) noexcept;
@@ -123,7 +124,7 @@ namespace darmok
 		LuaEntity createEntity5(Transform& parent, const VarLuaTable<glm::vec3>& position) noexcept;
 		LuaEntity createEntity6(const VarLuaTable<glm::vec3>& position) noexcept;
 
-		bool destroyEntity(const LuaEntity& entity) noexcept;
+		void destroyEntity(const LuaEntity& entity) noexcept;
 
 		std::optional<Viewport> getViewport() const noexcept;
 		void setViewport(std::optional<VarViewport> vp) noexcept;

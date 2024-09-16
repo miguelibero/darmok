@@ -67,7 +67,7 @@ namespace darmok
 			LuaUtils::callTableDelegate(comp, "init", "app component init",
 				[](auto& func, auto& self) {
 					return func(self);
-				});
+			});
 		}
 	}
 

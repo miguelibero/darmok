@@ -164,6 +164,8 @@ namespace darmok::physics3d
 
 	void LuaCharacterController::bind(sol::state_view& lua) noexcept
 	{
+		Scene::registerComponentDependency<CharacterController, LuaCharacterController>();
+
 		lua.new_usertype<Config>("CharacterControllerConfig", sol::default_constructor,
 			"shape", &CharacterControllerConfig::shape,
 			"up", &CharacterControllerConfig::up,

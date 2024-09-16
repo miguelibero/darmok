@@ -285,7 +285,7 @@ namespace darmok::physics3d
             return;
         }
         auto& scene = *_system->getScene();
-        auto trans = scene.getOrAddComponent<Transform>(entity);
+        auto& trans = scene.getOrAddComponent<Transform>(entity);
 
         tryCreateCharacter(trans);
         if (!_jolt)

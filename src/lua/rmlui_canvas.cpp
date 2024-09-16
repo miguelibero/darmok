@@ -14,8 +14,8 @@
 
 namespace darmok
 {
-    LuaRmluiCanvas::LuaRmluiCanvas(RmluiCanvas& view, LuaEntity& entity, const sol::state_view& lua) noexcept
-        : _canvas(view)
+    LuaRmluiCanvas::LuaRmluiCanvas(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept
+        : _canvas(canvas)
         , _lua(lua)
         , _env(lua, sol::create, _lua.globals())
     {
@@ -28,8 +28,31 @@ namespace darmok
 
     LuaRmluiCanvas::~LuaRmluiCanvas() noexcept
     {
+        sol::safe_function shutdown = _env["shutdown"];
+        if (shutdown)
+        {
+            auto result = shutdown();
+            if (!result.valid())
+            {
+                LuaUtils::logError("running shutdown", result);
+            }
+        }
         _canvas.removeCustomEventListener(*this);
         _canvas.removeScriptRunner(*this);
+    }
+
+    void LuaRmluiCanvas::update(float deltaTime)
+    {
+        static const std::string updateFunc = "update";
+        if (sol::safe_function update = _env[updateFunc])
+        {
+            auto result = update(deltaTime);
+            auto finished = LuaUtils::checkResult("running rmlui canvas update", result);
+            if (finished)
+            {
+                _lua[updateFunc] = nullptr;
+            }
+        }
     }
 
     sol::environment& LuaRmluiCanvas::getEnvironment() noexcept
@@ -329,6 +352,8 @@ namespace darmok
 
     void LuaRmluiCanvas::bind(sol::state_view& lua) noexcept
     {
+        Scene::registerComponentDependency<RmluiCanvas, LuaRmluiCanvas>();
+
         lua.new_enum<Rml::ScrollBehavior>("RmluiScrollBehavior", {
             { "Auto", Rml::ScrollBehavior::Auto },
             { "Smooth", Rml::ScrollBehavior::Smooth },

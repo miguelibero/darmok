@@ -260,6 +260,8 @@ namespace darmok::physics3d
     
     void LuaPhysicsBody::bind(sol::state_view& lua) noexcept
     {
+        Scene::registerComponentDependency<PhysicsBody, LuaPhysicsBody>();
+
         lua.new_enum<MotionType>("Physics3dMotionType", {
             { "Static", MotionType::Static },
             { "Dynamic", MotionType::Dynamic },

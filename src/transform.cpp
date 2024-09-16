@@ -43,6 +43,18 @@ namespace darmok
     {
     }
 
+    Transform::~Transform() noexcept
+    {
+        if (_parent)
+        {
+            _parent->_children.erase(*this);
+        }
+        for (auto& child : _children)
+        {
+            child.get().setParent(nullptr);
+        }
+    }
+
     void Transform::reset() noexcept
     {
         _position = glm::vec3();

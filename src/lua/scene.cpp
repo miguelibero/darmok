@@ -54,20 +54,20 @@ namespace darmok
 		throw std::runtime_error("scene expired");
 	}
 
-	EntityRegistry& LuaEntity::getRegistry()
+	Scene& LuaEntity::getRealScene()
 	{
 		if (auto scene = _scene.lock())
 		{
-			return scene->getRegistry();
+			return *scene;
 		}
 		throw std::runtime_error("scene expired");
 	}
 
-	const EntityRegistry& LuaEntity::getRegistry() const
+	const Scene& LuaEntity::getRealScene() const
 	{
 		if (auto scene = _scene.lock())
 		{
-			return scene->getRegistry();
+			return *scene;
 		}
 		throw std::runtime_error("scene expired");
 	}
@@ -81,7 +81,7 @@ namespace darmok
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return getRegistry().storage(typeId.value())->remove(_entity);
+			return getRealScene().removeComponent(_entity, typeId.value());
 		}
 		return removeLuaComponent(type);
 	}
@@ -90,8 +90,7 @@ namespace darmok
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			auto storage = getRegistry().storage(typeId.value());
-			return storage->find(_entity) != storage->end();
+			return getRealScene().hasComponent(_entity, typeId.value());
 		}
 		return hasLuaComponent(type);
 	}
@@ -215,11 +214,6 @@ namespace darmok
 		return "Scene()";
 	}
 
-	EntityRegistry& LuaScene::getRegistry() noexcept
-	{
-		return _scene->getRegistry();
-	}
-
 	bool LuaScene::removeSceneComponent(const sol::object& type)
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
@@ -281,55 +275,49 @@ namespace darmok
 
 	LuaEntity LuaScene::createEntity1() noexcept
 	{
-		return LuaEntity(getRegistry().create(), _scene);
+		return LuaEntity(_scene->createEntity(), _scene);
 	}
 
 	LuaEntity LuaScene::createEntity2(LuaEntity& parent) noexcept
 	{
-		auto& registry = getRegistry();
-		auto entity = registry.create();
-		registry.emplace<Transform>(entity)
-			.setParent(registry.get_or_emplace<Transform>(parent.getReal()));
+		auto entity = _scene->createEntity();
+		auto& parentTrans = _scene->getOrAddComponent<Transform>(parent.getReal());
+		_scene->addComponent<Transform>(entity).setParent(parentTrans);
 		return LuaEntity(entity, _scene);
 	}
 
 	LuaEntity LuaScene::createEntity3(Transform& parent) noexcept
 	{
-		auto& registry = getRegistry();
-		auto entity = registry.create();
-		registry.emplace<Transform>(entity)
-			.setParent(parent);
+		auto entity = _scene->createEntity();
+		_scene->addComponent<Transform>(entity).setParent(parent);
 		return LuaEntity(entity, _scene);
 	}
 
 	LuaEntity LuaScene::createEntity4(LuaEntity& parent, const VarLuaTable<glm::vec3>& position) noexcept
 	{
-		auto& registry = getRegistry();
-		auto entity = registry.create();
-		auto& parentTrans = registry.get_or_emplace<Transform>(parent.getReal());
-		registry.emplace<Transform>(entity, parentTrans, LuaGlm::tableGet(position));
+		auto entity = _scene->createEntity();
+		auto& parentTrans = _scene->getOrAddComponent<Transform>(parent.getReal());
+		_scene->addComponent<Transform>(entity, parentTrans, LuaGlm::tableGet(position));
 		return LuaEntity(entity, _scene);
 	}
 
 	LuaEntity LuaScene::createEntity5(Transform& parent, const VarLuaTable<glm::vec3>& position) noexcept
 	{
-		auto& registry = getRegistry();
-		auto entity = registry.create();
-		registry.emplace<Transform>(entity, parent, LuaGlm::tableGet(position));
+		auto entity = _scene->createEntity();
+		_scene->addComponent<Transform>(entity, parent, LuaGlm::tableGet(position));
 		return LuaEntity(entity, _scene);
 	}
 
 	LuaEntity LuaScene::createEntity6(const VarLuaTable<glm::vec3>& position) noexcept
 	{
-		auto& registry = getRegistry();
-		auto entity = registry.create();
-		registry.emplace<Transform>(entity, LuaGlm::tableGet(position));
+		auto entity = _scene->createEntity();
+		_scene->addComponent<Transform>(entity, LuaGlm::tableGet(position));
 		return LuaEntity(entity, _scene);
 	}
 
-	bool LuaScene::destroyEntity(const LuaEntity& entity) noexcept
+	void LuaScene::destroyEntity(const LuaEntity& entity) noexcept
 	{
-		return getRegistry().destroy(entity.getReal()) != 0;
+		_scene->destroyEntity(entity.getReal());
 	}
 
 	RenderChain& LuaScene::getRenderChain() noexcept

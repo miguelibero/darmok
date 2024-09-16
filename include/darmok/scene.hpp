@@ -105,7 +105,7 @@ namespace darmok
         const EntityRegistry& getRegistry() const;
 
         Entity createEntity() noexcept;
-        bool destroyEntity(Entity entity) noexcept;
+        void destroyEntity(Entity entity) noexcept;
 
         template<typename T>
         auto getComponentView() const noexcept
@@ -120,7 +120,13 @@ namespace darmok
         }
 
         template<typename T>
-        bool hasComponent(const T& component) const noexcept
+        bool hasComponent(Entity entity) const noexcept
+        {
+            return hasComponent(entity, entt::type_hash<T>::value());
+        }
+
+        template<typename T>
+        bool hasSpecificComponent(const T& component) const noexcept
         {
             auto view = getComponentView<T>();
             auto end = std::cend(view);
@@ -158,13 +164,16 @@ namespace darmok
         template<typename T>
         bool removeComponent(Entity entity) noexcept
         {
-            return getRegistry().remove<T>(entity) > 0;
+            return removeComponent(entity, entt::type_hash<T>::value()) > 0;
         }
+
+        bool removeComponent(Entity entity, entt::id_type typeId) noexcept;
+        bool hasComponent(Entity entity, entt::id_type typeId) const noexcept;
 
         template<typename C>
         bool forEachEntity(const C& callback)
         {
-            for (auto& entity : getRegistry().view<entt::entity>())
+            for (auto& entity : getComponentView<entt::entity>())
             {
                 if (callback(entity))
                 {
@@ -181,7 +190,7 @@ namespace darmok
             {
                 return false;
             }
-            auto trans = getRegistry().try_get<Transform>(entity);
+            auto trans = getComponent<Transform>(entity);
             if (trans == nullptr)
             {
                 return false;
@@ -206,7 +215,7 @@ namespace darmok
             {
                 return false;
             }
-            auto trans = getRegistry().try_get<Transform>(entity);
+            auto trans = getComponent<Transform>(entity);
             if (trans == nullptr)
             {
                 return false;
@@ -276,6 +285,14 @@ namespace darmok
             std::vector<std::reference_wrapper<T>> components;
             getComponentsInChildren<T>(entity, components);
             return components;
+        }
+
+        static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2) noexcept;
+
+        template<typename T1, typename T2>
+        static void registerComponentDependency() noexcept
+        {
+            registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
         }
 
     private:

@@ -37,7 +37,7 @@ namespace
 		ScreenBounceUpdater(Transform& trans, const glm::vec2& size = {1, 1}, float speed = 100.f)
 			: _trans(trans)
 			, _size(size)
-			, _dir(speed, speed)
+			, _dir(speed)
 		{
 		}
 
