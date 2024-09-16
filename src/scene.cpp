@@ -262,12 +262,12 @@ namespace darmok
         _renderChain.renderReset();
     }
 
-    void SceneImpl::update(float dt)
+    void SceneImpl::update(float deltaTime)
     {
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            itr->update(dt);
+            itr->update(deltaTime);
         }
 
         auto& trans = _registry.storage<Transform>();
@@ -278,9 +278,11 @@ namespace darmok
 
         for (auto& comp : copyComponentContainer())
         {
-            comp.get().update(dt);
+            comp.get().update(deltaTime);
         }
 
+        _renderChain.update(deltaTime);
+        
         updateRenderGraph();
     }
 

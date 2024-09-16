@@ -44,6 +44,7 @@ namespace darmok
     public:
         virtual ~IRenderChainStep() = default;
         virtual void init(RenderChain& chain) = 0;
+        virtual void update(float deltaTime) {};
         virtual void updateRenderChain(FrameBuffer& readBuffer, OptionalRef<FrameBuffer> writeBuffer) = 0;
         virtual void renderReset() { };
         virtual void shutdown() = 0;
@@ -68,6 +69,7 @@ namespace darmok
         void init(const std::string& name = "", int priority = 0);
         void renderReset();
         void shutdown();
+        void update(float deltaTime);
         
         OptionalRef<FrameBuffer> getInput() noexcept;
         OptionalRef<const FrameBuffer> getInput() const noexcept;
@@ -124,6 +126,7 @@ namespace darmok
         void updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept override;
         void renderReset() noexcept override;
         void shutdown() noexcept override;
+        void update(float deltaTime) noexcept override;
 
         ScreenSpaceRenderPass& setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept;
         ScreenSpaceRenderPass& setUniform(const std::string& name, std::optional<UniformValue> value) noexcept;
@@ -140,6 +143,7 @@ namespace darmok
         std::shared_ptr<Program> _program;
         std::unique_ptr<IMesh> _mesh;
         bgfx::UniformHandle _texUniform;
+        BasicUniforms _basicUniforms;
         std::optional<bgfx::ViewId> _viewId;
         UniformContainer _uniforms;
         TextureUniformContainer _textureUniforms;

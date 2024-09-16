@@ -46,7 +46,7 @@ namespace darmok
         Viewport getCurrentViewport() const noexcept;
 
         void init(App& app);
-        void update(float dt);
+        void update(float deltaTime);
         void renderReset();
         void shutdown();
     private:

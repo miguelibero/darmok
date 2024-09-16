@@ -379,6 +379,14 @@ namespace darmok
 		return _scene->getCurrentViewport();
 	}
 
+	bool LuaScene::forEachEntity(const sol::protected_function& callback)
+	{
+		return _scene->forEachEntity([callback, this](auto entity) -> bool {
+			auto result = callback(LuaEntity(entity, _scene));
+			return LuaEntity::checkForEachResult("for each entity", result);
+		});
+	}
+
 	void LuaScene::bind(sol::state_view& lua) noexcept
 	{
 		LuaSceneAppComponent::bind(lua);
@@ -414,6 +422,7 @@ namespace darmok
 			"remove_component", &LuaScene::removeSceneComponent,
 			"add_lua_component", &LuaScene::addLuaSceneComponent,
 			"get_lua_component", &LuaScene::getLuaSceneComponent,
+			"for_each_entity", &LuaScene::forEachEntity,
 			"viewport", sol::property(&LuaScene::getViewport, &LuaScene::setViewport),
 			"current_viewport", sol::property(&LuaScene::getCurrentViewport),
 			"render_chain", sol::property(&LuaScene::getRenderChain),

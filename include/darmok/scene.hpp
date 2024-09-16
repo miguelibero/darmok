@@ -162,6 +162,19 @@ namespace darmok
         }
 
         template<typename C>
+        bool forEachEntity(const C& callback)
+        {
+            for (auto& entity : getRegistry().view<entt::entity>())
+            {
+                if (callback(entity))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        template<typename C>
         bool forEachParent(Entity entity, const C& callback)
         {
             if (entity == entt::null)

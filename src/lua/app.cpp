@@ -55,6 +55,11 @@ namespace darmok
 		return _app.get();
 	}
 
+	void LuaApp::quit() noexcept
+	{
+		_app.get().quit();
+	}
+
 	bool LuaApp::toggleDebugFlag(uint32_t flag) noexcept
 	{
 		return _app.get().toggleDebugFlag(flag);
@@ -330,7 +335,8 @@ namespace darmok
 			"get_reset_flag", &LuaApp::getResetFlag,
 			"toggle_reset_flag", &LuaApp::toggleResetFlag,
 			"set_debug_flag", sol::overload(&LuaApp::setResetFlag1, &LuaApp::setResetFlag2),
-			"renderer_type", sol::property(&LuaApp::setRendererType)
+			"renderer_type", sol::property(&LuaApp::setRendererType),
+			"quit", &LuaApp::quit
 		);
 	}
 

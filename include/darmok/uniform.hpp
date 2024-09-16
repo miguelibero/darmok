@@ -8,6 +8,7 @@
 #include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
+#include <random>
 
 namespace darmok
 {
@@ -70,5 +71,24 @@ namespace darmok
         std::unordered_map<std::string, Uniform> _uniforms;
         bool _autoInit;
         bool _initialized;
+    };
+
+    class BasicUniforms final
+    {
+    public:
+        BasicUniforms() noexcept;
+        ~BasicUniforms() noexcept;
+        void init() noexcept;
+        void shutdown() noexcept;
+        void update(float deltaTime) noexcept;
+        void configure(bgfx::Encoder& encoder) const noexcept;
+    private:
+        std::mt19937 _randomEngine;
+        std::uniform_real_distribution<float> _randomDistFloat;
+        std::uniform_int_distribution<int> _randomDistInt;
+        bgfx::UniformHandle _timeUniform;
+        bgfx::UniformHandle _randomUniform;
+        glm::vec4 _timeValues;
+        glm::vec4 _randomValues;
     };
 }

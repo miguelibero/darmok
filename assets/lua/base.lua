@@ -55,6 +55,34 @@ function Scene:get_or_add_component(type, ...)
 	return self:add_component(type, ...)
 end
 
+function Scene:find_entity_component(type)
+	local comp = nil
+	self:for_each_entity(function(entity)
+		comp = entity:get_component(type)
+		return comp
+	end)
+	return comp
+end
+
+function Scene:find_or_add_entity_component(type, ...)
+	local comp = self:find_entity_component(type)
+	if comp then
+		return comp
+	end
+	local entity = self:create_entity()
+	return entity:add_component(type, ...)
+end
+
+function Scene:find_entity_components(type)
+	local comps = {}
+	self:for_each_entity(function(entity)
+		local comp = entity:get_component(type)
+		if comp then
+			table.insert(comps, comp)
+		end
+	end)
+	return comps
+end
 
 -- SceneComponent
 SceneComponent = Class:new("SceneComponent")

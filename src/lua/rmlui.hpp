@@ -88,6 +88,8 @@ namespace darmok
         static bool dispatchEvent1(Rml::Element& elm, const std::string& type, const sol::table& params);
         static bool dispatchEvent2(Rml::Element& elm, const std::string& type, const sol::table& params, bool interruptible);
         static bool dispatchEvent3(Rml::Element& elm, const std::string& type, const sol::table& params, bool interruptible, bool bubbles);
+        static bool focus1(Rml::Element& elm) noexcept;
+        static bool focus2(Rml::Element& elm, bool visible);
     };
 
     class LuaRmluiElementDocument

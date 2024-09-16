@@ -308,14 +308,6 @@ namespace darmok
 		, _emissiveColorUniform{ bgfx::kInvalidHandle }
 		, _hasTexturesUniform{ bgfx::kInvalidHandle }
 		, _multipleScatteringUniform{ bgfx::kInvalidHandle }
-		, _timeUniform{ bgfx::kInvalidHandle }
-		, _randomUniform{ bgfx::kInvalidHandle }
-		, _time(0.F)
-		, _frameCount(0)
-		, _randomEngine(std::random_device()())
-		, _randomDistFloat(0, 1)
-		, _randomDistInt(std::numeric_limits<int>::min(), std::numeric_limits<int>::max())
-		, _randomValues(0)
 	{
 	}
 
@@ -344,14 +336,10 @@ namespace darmok
 		_emissiveColorUniform = bgfx::createUniform("u_emissiveFactorVec", bgfx::UniformType::Vec4);
 		_hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
 		_multipleScatteringUniform = bgfx::createUniform("u_multipleScatteringVec", bgfx::UniformType::Vec4);
-		_timeUniform = bgfx::createUniform("u_timeVec", bgfx::UniformType::Vec4);
-		_randomUniform = bgfx::createUniform("u_randomVec", bgfx::UniformType::Vec4);
+		_basicUniforms.init();
 
 		Image img(Colors::white(), app.getAssets().getAllocator());
 		_defaultTexture = std::make_shared<Texture>(img);
-
-		_time = 0.F;
-		_frameCount = 0;
 	}
 
 	void MaterialAppComponent::update(float deltaTime)
@@ -360,16 +348,7 @@ namespace darmok
 		{
 			return;
 		}
-
-		_time += deltaTime;
-		++_frameCount;
-
-		_randomValues = glm::vec4(
-			_randomDistFloat(_randomEngine),
-			_randomDistFloat(_randomEngine),
-			_randomDistFloat(_randomEngine),
-			_randomDistFloat(_randomEngine)
-		);
+		_basicUniforms.update(deltaTime);
 	}
 
 	void MaterialAppComponent::shutdown()
@@ -382,8 +361,7 @@ namespace darmok
 		std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
 			_albedoLutSamplerUniform, _baseColorUniform, _specularColorUniform,
 			_metallicRoughnessNormalOcclusionUniform, _emissiveColorUniform,
-			_hasTexturesUniform, _multipleScatteringUniform, _timeUniform,
-			_randomUniform
+			_hasTexturesUniform, _multipleScatteringUniform
 		};
 		for (auto& uniform : uniforms)
 		{
@@ -393,7 +371,7 @@ namespace darmok
 				uniform.get().idx = bgfx::kInvalidHandle;
 			}
 		}
-
+		_basicUniforms.shutdown();
 		_defaultTexture.reset();
 	}
 
@@ -415,7 +393,6 @@ namespace darmok
 			encoder.setTexture(def.stage, def.handle, tex->getHandle());
 		}
 		encoder.setUniform(_hasTexturesUniform, glm::value_ptr(hasTextures));
-
 		encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO_LUT, _albedoLutSamplerUniform, _defaultTexture->getHandle());
 
 		auto v = Colors::normalize(mat.getBaseColor());
@@ -429,9 +406,7 @@ namespace darmok
 		encoder.setUniform(_emissiveColorUniform, glm::value_ptr(v));
 		v = glm::vec4(mat.getMultipleScattering() ? 1.F : 0.F, mat.getWhiteFurnanceFactor(), 0, 0);
 		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(v));
-		v = glm::vec4(_time, _frameCount, 0.F, 0.F);
-		encoder.setUniform(_timeUniform, glm::value_ptr(v));
-		encoder.setUniform(_randomUniform, glm::value_ptr(_randomValues));
+		_basicUniforms.configure(encoder);
 
 		mat.getUniformContainer().configure(encoder);
 		mat.getTextureUniformContainer().configure(encoder);

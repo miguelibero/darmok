@@ -109,15 +109,8 @@ namespace darmok
 		void shutdown();
 		AppRunResult run();
 
-		enum class Phase
-		{
-			Setup,
-			Init,
-			Update,
-			Shutdown
-		};
-
-		virtual void onException(Phase phase, const std::exception& ex) noexcept;
+		void onException(AppPhase phase, const std::exception& ex) noexcept;
+		void quit() noexcept;
 
 		[[nodiscard]] Input& getInput() noexcept;
 		[[nodiscard]] const Input& getInput() const noexcept;
@@ -190,8 +183,7 @@ namespace darmok
 		}
 
 	protected:
-		virtual void update(float deltaTime);
-		virtual void render() const;
+		void render() const;
 
 	private:
 		std::unique_ptr<AppImpl> _impl;

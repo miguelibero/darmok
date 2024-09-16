@@ -34,9 +34,7 @@ planned to use:
     and the vcpkg bgfx build not having a profiler feature)
 * [recast navigation](http://recastnav.com/) for pathfinding
 * [BehaviorTree.CPP](https://www.behaviortree.dev/) for behavior trees
-* need to decide 2D physics
-    * [Box2D](https://box2d.org/)
-    * [Chipmunk2D](https://github.com/slembcke/Chipmunk2D)
+* [Box2D](https://box2d.org/) 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
 
@@ -68,19 +66,21 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * bgfx window setup (GLFW on windows & linux)
 * update logic methods with delta time
 * renderer: threaded render graph that compiles passes inputs and outputs
+    * point, directional & ambient lights
     * forward render
         * unlit, gui
         * basic phong
-        * PBR metallic-roughness (point & ambient lights)
+        * PBR metallic-roughness ()
     * cascaded shadow mapping
         * directional lights
 * entity component scene using entt
     * transform, camera
 * sprites and spritesheets
-* loading models using assimp (FBX, etc...)
+* loading models using assimp (FBX, gltf, etc...)
 * serializing models from assimp into binary using cereal
 * lua scripting
     * lua debugging
+    * coroutines similar to unity
 * multiple UI options
     * imgui for tooling
     * RmlUI for ingame (support for multiple canvases)
@@ -97,13 +97,13 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * play sounds and music (wav & mp3)
 
 #### Upcoming
-* fix viewport positioning in different video modes
-* more renderer features
-    * other types of lights
-    * deferred, clustered
-    * SSAO
 * camera frustum culling
 * frame limiting
+* more renderer features
+    * bloom
+    * other types of lights (with shadow mapping)
+    * deferred, clustered
+    * SSAO
 * support for nested rmlui data models in lua
 * luajit support (maybe compile using importer)
 * text improvements

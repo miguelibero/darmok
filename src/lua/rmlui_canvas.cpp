@@ -255,7 +255,7 @@ namespace darmok
     void LuaRmluiCanvas::onRmluiCustomEvent(Rml::Event& ev, const std::string& value, Rml::Element& element) noexcept
     {
         sol::environment env(_lua, sol::create, _env);
-        env["event"] = std::ref(_lua);
+        env["event"] = std::ref(ev);
         env["element"] = std::ref(element);
         env["document"] = element.GetOwnerDocument();
 
@@ -267,13 +267,19 @@ namespace darmok
     bool LuaRmluiCanvas::runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept
     {
         _env["document"] = std::ref(doc);
-        auto r = _lua.safe_script(content, _env);
 
+        std::string buffer = "--";
+        buffer += sourcePath;
         auto logDesc = "running rmlui script " + std::string(sourcePath);
         if (sourceLine >= 0)
         {
-            logDesc += ":" + std::to_string(sourceLine);
+            auto sourceLineStr = std::to_string(sourceLine);
+            buffer += ":" + sourceLineStr;
+            logDesc += ":" + sourceLineStr;
         }
+        
+        buffer += "\n" + std::string(content);
+        auto r = _lua.safe_script(buffer, _env);
         LuaUtils::checkResult(logDesc, r);
 
         return true;

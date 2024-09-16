@@ -31,6 +31,8 @@ namespace darmok
 		App& getReal() noexcept;
 		const App& getReal() const noexcept;
 
+		void quit() noexcept;
+
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		bool getDebugFlag(uint32_t flag) const noexcept;
 		void setDebugFlag1(uint32_t flag) noexcept;

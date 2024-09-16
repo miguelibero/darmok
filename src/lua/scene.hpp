@@ -48,6 +48,7 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 
+		static bool checkForEachResult(const std::string& desc, const sol::protected_function_result& result);
 	private:
 		Entity _entity;
 		std::weak_ptr<Scene> _scene;
@@ -69,7 +70,6 @@ namespace darmok
 
 		bool forEachChild(const sol::protected_function& callback);
 		bool forEachParent(const sol::protected_function& callback);
-		static bool checkForEachResult(const std::string& desc, const sol::protected_function_result& result);
 	};
 
 	class LuaApp;
@@ -132,6 +132,8 @@ namespace darmok
 
 		void setName(const std::string& name) noexcept;
 		const std::string& getName() const noexcept;
+
+		bool forEachEntity(const sol::protected_function& callback);
 	};
 
 	class SceneAppComponent;

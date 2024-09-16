@@ -18,7 +18,6 @@
 #include <string_view>
 #include <memory>
 #include <unordered_map>
-#include <random>
 
 namespace darmok
 {
@@ -46,12 +45,6 @@ namespace darmok
         };
 
         std::vector<Sampler> _samplerUniforms;
-        float _time;
-        std::mt19937 _randomEngine;
-        std::uniform_real_distribution<float> _randomDistFloat;
-        std::uniform_int_distribution<int> _randomDistInt;
-        glm::vec4 _randomValues;
-        uint64_t _frameCount;
         bgfx::UniformHandle _albedoLutSamplerUniform;
         bgfx::UniformHandle _baseColorUniform;
         bgfx::UniformHandle _specularColorUniform;
@@ -59,11 +52,8 @@ namespace darmok
         bgfx::UniformHandle _emissiveColorUniform;
         bgfx::UniformHandle _hasTexturesUniform;
         bgfx::UniformHandle _multipleScatteringUniform;
-        bgfx::UniformHandle _timeUniform;
-        bgfx::UniformHandle _randomUniform;
-
+        BasicUniforms _basicUniforms;
         std::shared_ptr<Texture> _defaultTexture;
-
     };    
 
     class DARMOK_EXPORT Material final

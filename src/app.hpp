@@ -113,10 +113,12 @@ namespace darmok
 		std::optional<int32_t> setup(const std::vector<std::string>& args);
 		void init();
 		void update(float deltaTime);
-		void afterUpdate(float deltaTime);
 		void render() const;
 		AppRunResult processEvents();
 		void shutdown();
+		void quit() noexcept;
+
+		void onException(AppPhase phase, const std::exception& ex) noexcept;
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;

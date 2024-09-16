@@ -91,7 +91,7 @@ namespace darmok
 		}
 		catch (const std::exception& ex)
 		{
-			_app->onException(App::Phase::Setup, ex);
+			_app->onException(AppPhase::Setup, ex);
 			return -1;
 		}
 	}
@@ -105,7 +105,7 @@ namespace darmok
 		}
 		catch (const std::exception& ex)
 		{
-			_app->onException(App::Phase::Init, ex);
+			_app->onException(AppPhase::Init, ex);
 			return false;
 		}
 	}
@@ -139,7 +139,7 @@ namespace darmok
 		}
 		catch (const std::exception& ex)
 		{
-			_app->onException(App::Phase::Update, ex);
+			_app->onException(AppPhase::Update, ex);
 			return AppRunResult::Exit;
 		}
 	}
@@ -154,7 +154,7 @@ namespace darmok
 		}
 		catch (const std::exception& ex)
 		{
-			_app->onException(App::Phase::Shutdown, ex);
+			_app->onException(AppPhase::Shutdown, ex);
 			return false;
 		}
 	}
@@ -423,6 +423,30 @@ namespace darmok
 		bgfx::shutdown();
 	}
 
+	void AppImpl::quit() noexcept
+	{
+		_runResult = AppRunResult::Exit;
+	}
+
+	void AppImpl::onException(AppPhase phase, const std::exception& ex) noexcept
+	{
+		std::stringstream ss("[DARMOK] exception running app ");
+		switch (phase)
+		{
+		case AppPhase::Init:
+			ss << "init";
+			break;
+		case AppPhase::Update:
+			ss << "update";
+			break;
+		case AppPhase::Shutdown:
+			ss << "shutdown";
+			break;
+		}
+		ss << ": " << ex.what();
+		StreamUtils::logDebug(ss.str());
+	}
+
 	void AppImpl::update(float deltaTime)
 	{
 		if (!_paused)
@@ -448,6 +472,18 @@ namespace darmok
 			auto& rg = _renderGraph.emplace(_renderGraphDef);
 			rg.configureView(0);
 		}
+
+		_input.getImpl().afterUpdate(deltaTime);
+
+		auto& pixelSize = _app.getWindow().getPixelSize();
+		auto& videoMode = _app.getWindow().getVideoMode();
+		if (_pixelSize != pixelSize || _videoMode != videoMode || _activeResetFlags != _resetFlags)
+		{
+			_pixelSize = pixelSize;
+			_videoMode = videoMode;
+			_activeResetFlags = _resetFlags;
+			renderReset();
+		}
 	}
 
 	void AppClearRenderPass::renderPassConfigure(bgfx::ViewId viewId)
@@ -470,21 +506,6 @@ namespace darmok
 	{
 		def.setName("App clear");
 		def.setPriority(IRenderGraphNode::kMaxPriority);
-	}
-
-	void AppImpl::afterUpdate(float deltaTime)
-	{
-		_input.getImpl().afterUpdate(deltaTime);
-
-		auto& pixelSize = _app.getWindow().getPixelSize();
-		auto& videoMode = _app.getWindow().getVideoMode();
-		if (_pixelSize != pixelSize || _videoMode != videoMode || _activeResetFlags != _resetFlags)
-		{
-			_pixelSize = pixelSize;
-			_videoMode = videoMode;
-			_activeResetFlags = _resetFlags;
-			renderReset();
-		}
 	}
 
 	void AppImpl::render() const
@@ -590,7 +611,7 @@ namespace darmok
 		if ((key == KeyboardKey::Esc && modifiers.empty())
 			|| (key == KeyboardKey::KeyQ && modifiers == ctrl))
 		{
-			_runResult = AppRunResult::Exit;
+			quit();
 			return;
 		}
 		if ((key == KeyboardKey::Return && modifiers == alt)
@@ -832,23 +853,9 @@ namespace darmok
 		_impl->init();
 	}
 
-	void App::onException(Phase phase, const std::exception& ex) noexcept
+	void App::onException(AppPhase phase, const std::exception& ex) noexcept
 	{
-		std::stringstream ss("[DARMOK] exception running app ");
-		switch (phase)
-		{
-		case Phase::Init:
-			ss << "init";
-			break;
-		case Phase::Update:
-			ss << "update";
-			break;
-		case Phase::Shutdown:
-			ss << "shutdown";
-			break;
-		}
-		ss << ": " << ex.what();
-		StreamUtils::logDebug(ss.str());
+		_impl->onException(phase, ex);
 	}
 
 	void App::shutdown()
@@ -930,8 +937,6 @@ namespace darmok
 
 		_impl->deltaTimeCall([this](float deltaTime) {
 			_impl->update(deltaTime);
-			update(deltaTime);
-			_impl->afterUpdate(deltaTime);
 		});
 
 		render();
@@ -943,8 +948,9 @@ namespace darmok
 		return AppRunResult::Continue;
 	}
 
-	void App::update(float deltaTime)
+	void App::quit() noexcept
 	{
+		_impl->quit();
 	}
 
 	void App::setUpdateConfig(const AppUpdateConfig& config) noexcept

@@ -98,6 +98,14 @@ namespace darmok
 		_running = false;
 	}
 
+	void RenderChain::update(float deltaTime)
+	{
+		for (auto& step : _steps)
+		{
+			step->update(deltaTime);
+		}
+	}
+
 	RenderChain& RenderChain::setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept
 	{
 		if (_output == fb)
@@ -353,7 +361,6 @@ namespace darmok
 		, _name(name)
 		, _priority(priority)
 		, _texUniform{ bgfx::kInvalidHandle }
-		
 	{
 		if (!prog)
 		{
@@ -380,6 +387,7 @@ namespace darmok
 			bgfx::destroy(_texUniform);
 		}
 		_texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+		_basicUniforms.init();
 
 		Rectangle screen(glm::uvec2(2));
 		_mesh = MeshData(screen).createMesh(_program->getVertexLayout());
@@ -394,6 +402,7 @@ namespace darmok
 			bgfx::destroy(_texUniform);
 			_texUniform.idx = bgfx::kInvalidHandle;
 		}
+		_basicUniforms.shutdown();
 		_viewId.reset();
 		_mesh.reset();
 		if (_chain)
@@ -419,6 +428,11 @@ namespace darmok
 		{
 			_chain->getRenderGraph().addPass(*this);
 		}
+	}
+
+	void ScreenSpaceRenderPass::update(float deltaTime) noexcept
+	{
+		_basicUniforms.update(deltaTime);
 	}
 
 	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept
@@ -463,6 +477,7 @@ namespace darmok
 		_mesh->render(encoder);
 
 		encoder.setTexture(0, _texUniform, _readTex->getTexture()->getHandle());
+		_basicUniforms.configure(encoder);
 		_uniforms.configure(encoder);
 		_textureUniforms.configure(encoder);
 

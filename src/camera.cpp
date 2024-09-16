@@ -244,6 +244,7 @@ namespace darmok
         {
             comp.get().update(deltaTime);
         }
+        _renderChain.update(deltaTime);
         updateRenderGraph();
         updateViewportProjection();
     }

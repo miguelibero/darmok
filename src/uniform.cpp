@@ -309,4 +309,69 @@ namespace darmok
 		return *this;
 	}
 
+	BasicUniforms::BasicUniforms() noexcept
+		: _timeValues(0)
+		, _randomValues(0)
+		, _randomEngine(std::random_device()())
+		, _randomDistFloat(0, 1)
+		, _randomDistInt(std::numeric_limits<int>::min(), std::numeric_limits<int>::max())
+		, _timeUniform{ bgfx::kInvalidHandle }
+		, _randomUniform{ bgfx::kInvalidHandle }
+	{
+	}
+
+	BasicUniforms::~BasicUniforms() noexcept
+	{
+		shutdown();
+	}
+
+	void BasicUniforms::init() noexcept
+	{
+		_timeValues = glm::vec4(0);
+		if (isValid(_timeUniform))
+		{
+			bgfx::destroy(_timeUniform);
+		}
+		_timeUniform = bgfx::createUniform("u_timeVec", bgfx::UniformType::Vec4);
+		if (isValid(_randomUniform))
+		{
+			bgfx::destroy(_randomUniform);
+		}
+		_randomUniform = bgfx::createUniform("u_randomVec", bgfx::UniformType::Vec4);
+	}
+
+	void BasicUniforms::shutdown() noexcept
+	{
+		std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
+			_timeUniform, _randomUniform
+		};
+		for (auto& uniform : uniforms)
+		{
+			if (isValid(uniform))
+			{
+				bgfx::destroy(uniform);
+				uniform.get().idx = bgfx::kInvalidHandle;
+			}
+		}
+	}
+
+	void BasicUniforms::update(float deltaTime) noexcept
+	{
+		_timeValues.x += deltaTime;
+		++_timeValues.y;
+		// TODO: probably very slow
+		_randomValues = glm::vec4(
+			_randomDistFloat(_randomEngine),
+			_randomDistFloat(_randomEngine),
+			_randomDistFloat(_randomEngine),
+			_randomDistFloat(_randomEngine)
+		);
+	}
+
+	void BasicUniforms::configure(bgfx::Encoder& encoder) const noexcept
+	{
+		encoder.setUniform(_timeUniform, glm::value_ptr(_timeValues));
+		encoder.setUniform(_randomUniform, glm::value_ptr(_randomValues));
+	}
+
 }

@@ -8,4 +8,12 @@ namespace darmok
 		Exit,
 		Restart,
 	};
+
+	enum class AppPhase
+	{
+		Setup,
+		Init,
+		Update,
+		Shutdown
+	};
 }

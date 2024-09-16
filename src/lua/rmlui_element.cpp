@@ -124,6 +124,16 @@ namespace darmok
         return elm.DispatchEvent(type, dict, interruptible, bubbles);
     }
 
+    bool LuaRmluiElement::focus1(Rml::Element& elm) noexcept
+    {
+        return elm.Focus();
+    }
+
+    bool LuaRmluiElement::focus2(Rml::Element& elm, bool visible)
+    {
+        return elm.Focus(visible);
+    }
+
     void LuaRmluiElement::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<Rml::Element>("RmluiElement", sol::no_constructor,
@@ -136,6 +146,9 @@ namespace darmok
             "address", sol::property(&Rml::Element::GetAddress),
             "visible", sol::property(&Rml::Element::IsVisible),
             "z_index", sol::property(&Rml::Element::GetZIndex),
+            "inner_rml", sol::property(
+                sol::resolve<Rml::String() const>(&Rml::Element::GetInnerRML),
+                &Rml::Element::SetInnerRML),
             "set_property", sol::resolve<bool(const Rml::String&, const Rml::String&)>(&Rml::Element::SetProperty),
             "get_property", &LuaRmluiElement::getProperty,
             "has_attribute", &LuaRmluiElement::hasAttribute,
@@ -146,6 +159,8 @@ namespace darmok
             "get_elements_by_tag_name", &LuaRmluiElement::getElementsByTagName,
             "query_selector", &Rml::Element::QuerySelector,
             "query_selector_all", &LuaRmluiElement::querySelectorAll,
+            "get_child", &Rml::Element::GetChild,
+            "num_children", sol::property(&Rml::Element::GetNumChildren),
             "add_event_listener", sol::overload(
                 &LuaRmluiElement::addEventListener1,
                 &LuaRmluiElement::addEventListener2
@@ -160,7 +175,10 @@ namespace darmok
                 &LuaRmluiElement::dispatchEvent1,
                 &LuaRmluiElement::dispatchEvent2,
                 &LuaRmluiElement::dispatchEvent3
-            )
+            ),
+            "focus", sol::overload(&LuaRmluiElement::focus1, &LuaRmluiElement::focus2),
+            "blur" , &Rml::Element::Blur,
+            "click" , &Rml::Element::Click
         );
 
         lua.new_enum<Rml::ModalFlag>("RmluiDocumentMode", {
@@ -176,6 +194,19 @@ namespace darmok
             { "Auto", Rml::FocusFlag::Auto },
         });
 
+        lua.new_enum<Rml::ScrollBehavior>("RmluiScrollBehavior", {
+            { "Auto", Rml::ScrollBehavior::Auto },
+            { "Smooth", Rml::ScrollBehavior::Smooth },
+            { "Instant", Rml::ScrollBehavior::Instant },
+        });
+
+
+        lua.new_enum<Rml::ScrollAlignment>("RmluiScrollAlignment", {
+            { "Start", Rml::ScrollAlignment::Start },
+            { "Center", Rml::ScrollAlignment::Center },
+            { "End", Rml::ScrollAlignment::End },
+            { "Nearest", Rml::ScrollAlignment::Nearest },
+        });
     }
 
     void LuaRmluiElementDocument::show1(Rml::ElementDocument& doc) noexcept
