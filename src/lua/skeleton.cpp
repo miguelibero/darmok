@@ -52,6 +52,15 @@ namespace darmok
         return animator.getCurrentState();
     }
 
+    std::string LuaSkeletalAnimator::getCurrentStateName(const SkeletalAnimator& animator) noexcept
+    {
+        if (auto state = animator.getCurrentState())
+        {
+            return std::string(state->getName());
+        }
+        return {};
+    }
+
     OptionalRef<const ISkeletalAnimatorTransition>::std_t LuaSkeletalAnimator::getCurrentTransition(const SkeletalAnimator& animator) noexcept
     {
         return animator.getCurrentTransition();
@@ -81,6 +90,7 @@ namespace darmok
             "playback_speed", sol::property(&SkeletalAnimator::getPlaybackSpeed, &SkeletalAnimator::setPlaybackSpeed),
             "blend_position", sol::property(&LuaSkeletalAnimator::setBlendPosition),
             "current_state", sol::property(&LuaSkeletalAnimator::getCurrentState),
+            "current_state_name", sol::property(&LuaSkeletalAnimator::getCurrentStateName),
             "current_transition", sol::property(&LuaSkeletalAnimator::getCurrentTransition),
             "get_state_duration", &SkeletalAnimator::getStateDuration
         );

@@ -243,6 +243,7 @@ namespace darmok::physics3d
     LuaPhysicsBody& LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Shape& shape, MotionType motion, bool trigger) noexcept
     {
         Config config;
+        config.shape = shape;
         config.motion = motion;
         config.trigger = trigger;
         return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(config);

@@ -42,6 +42,7 @@ namespace darmok
         static bool play2(SkeletalAnimator& animator, const std::string& name, float stateSpeed) noexcept;
 
         static OptionalRef<const ISkeletalAnimatorState>::std_t getCurrentState(const SkeletalAnimator& animator) noexcept;
+        static std::string getCurrentStateName(const SkeletalAnimator& animator) noexcept;
         static OptionalRef<const ISkeletalAnimatorTransition>::std_t getCurrentTransition(const SkeletalAnimator& animator) noexcept;
     };
 

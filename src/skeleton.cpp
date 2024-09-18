@@ -487,7 +487,17 @@ namespace darmok
         auto itr = _transitions.find(key);
         if (itr == _transitions.end())
         {
+            TransitionKey key(src, "");
+            itr = _transitions.find(key);
+        }
+        if (itr == _transitions.end())
+        {
             TransitionKey key("", dst);
+            itr = _transitions.find(key);
+        }
+        if (itr == _transitions.end())
+        {
+            TransitionKey key("", "");
             itr = _transitions.find(key);
         }
         if (itr == _transitions.end())

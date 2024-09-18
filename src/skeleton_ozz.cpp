@@ -955,7 +955,10 @@ namespace darmok
             {
                 listener.get().onAnimatorStateFinished(_animator, _transition->getPreviousState().getName());
             }
-            _state->afterFinished();
+            if (_state)
+            {
+                _state->afterFinished();
+            }
             _state.emplace(_transition->finish());
             _transition.reset();
         }
