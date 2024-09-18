@@ -298,9 +298,34 @@ namespace darmok
         return *this;
     }
 
-    void AssimpModelConverter::update(Model& model) noexcept
+    bool AssimpModelConverter::updateMeshes(ModelNode& modelNode, const std::regex& regex) noexcept
     {
-        update(model.rootNode, *_scene.mRootNode);
+        auto found = false;
+        for (int i = 0; i < _scene.mNumMeshes; ++i)
+        {
+            auto assimpMesh = _scene.mMeshes[i];
+            auto name = assimpMesh->mName.C_Str();
+            if (!std::regex_match(name, regex))
+            {
+                continue;
+            }
+            modelNode.name = name;
+            auto& modelRenderable = modelNode.renderables.emplace_back();
+            modelRenderable.mesh = getMesh(assimpMesh);
+            auto assimpMaterial = _scene.mMaterials[assimpMesh->mMaterialIndex];
+            modelRenderable.material = getMaterial(assimpMaterial);
+            found = true;
+        }
+        return found;
+    }
+
+    bool AssimpModelConverter::update(Model& model) noexcept
+    {
+        if (_config.rootMesh)
+        {
+            return updateMeshes(model.rootNode, _config.rootMesh.value());
+        }
+        return update(model.rootNode, *_scene.mRootNode);
     }
 
     bool AssimpModelConverter::update(ModelNode& modelNode, const aiNode& assimpNode) noexcept
@@ -574,9 +599,6 @@ namespace darmok
                 }
             }
         }
-
-
-
     }
 
     struct AssimpCalcTangentsOperation final
@@ -942,6 +964,7 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_skipMeshesJsonKey = "skipMeshes";
     const std::string AssimpModelImporterImpl::_skipNodesJsonKey = "skipNodes";
     const std::string AssimpModelImporterImpl::_defaultTextureJsonKey = "defaultTexture";
+    const std::string AssimpModelImporterImpl::_rootMeshJsonKey = "rootMesh";
 
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
     {
@@ -977,6 +1000,10 @@ namespace darmok
         if (json.contains(_defaultTextureJsonKey))
         {
             config.defaultTexture = json[_defaultTextureJsonKey];
+        }
+        if (json.contains(_rootMeshJsonKey))
+        {
+            config.rootMesh = StringUtils::globToRegex(json[_rootMeshJsonKey]);
         }
 
         auto loadRegexList = [&json](const std::string& key, std::vector<std::regex>& value)

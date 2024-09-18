@@ -32,6 +32,7 @@ namespace darmok
         bgfx::VertexLayout vertexLayout;
         bool embedTextures = true;
         std::string defaultTexture;
+        std::optional<std::regex> rootMesh;
     };
 
     class IDataLoader;

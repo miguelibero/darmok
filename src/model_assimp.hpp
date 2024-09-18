@@ -75,7 +75,7 @@ namespace darmok
         AssimpModelConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
         AssimpModelConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
         AssimpModelConverter& setConfig(const nlohmann::json& config) noexcept;
-        void update(Model& model) noexcept;
+        bool update(Model& model) noexcept;
     private:
         bx::AllocatorI& _allocator;
         OptionalRef<IImageLoader> _imgLoader;
@@ -109,6 +109,7 @@ namespace darmok
         void update(ModelMesh& modelMesh, const aiMesh& assimpMesh) noexcept;
         void update(ModelNode& modelNode, const aiCamera& assimpCam) noexcept;
         void update(ModelNode& modelNode, const aiLight& assimpLight) noexcept;
+        bool updateMeshes(ModelNode& modelNode, const std::regex& regex) noexcept;
 
         Data createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept;
         std::vector<VertexIndex> createIndexData(const aiMesh& assimpMesh) const noexcept;
@@ -178,6 +179,7 @@ namespace darmok
         static const std::string _skipNodesJsonKey;
         static const std::string _embedTexturesJsonKey;
         static const std::string _defaultTextureJsonKey;
+        static const std::string _rootMeshJsonKey;
 
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config) const;
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const;
