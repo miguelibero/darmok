@@ -34,7 +34,7 @@ namespace darmok
 	void LuaPointLight::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<PointLight>("PointLight", sol::no_constructor,
-			"type_id", &entt::type_hash<PointLight>::value,
+			"type_id", sol::property(&entt::type_hash<PointLight>::value),
 			"add_entity_component", sol::overload(
 				&LuaPointLight::addEntityComponent1,
 				&LuaPointLight::addEntityComponent2
@@ -75,7 +75,7 @@ namespace darmok
 	void LuaAmbientLight::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<AmbientLight>("AmbientLight", sol::no_constructor,
-			"type_id", &entt::type_hash<AmbientLight>::value,
+			"type_id", sol::property(&entt::type_hash<AmbientLight>::value),
 			"add_entity_component", sol::overload(
 				&LuaAmbientLight::addEntityComponent1,
 				&LuaAmbientLight::addEntityComponent2
@@ -100,8 +100,8 @@ namespace darmok
 
 	void LuaLightingRenderComponent::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LightingRenderComponent>("LightingRenderComponent",
-			sol::no_constructor,
+		lua.new_usertype<LightingRenderComponent>("LightingRenderComponent", sol::no_constructor,
+			"type_id", sol::property(&entt::type_hash<LightingRenderComponent>::value),
 			"add_camera_component", &LuaLightingRenderComponent::addCameraComponent,
 			"get_camera_component", &LuaLightingRenderComponent::getCameraComponent
 		);

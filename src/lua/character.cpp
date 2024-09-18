@@ -179,7 +179,7 @@ namespace darmok::physics3d
 			"predictiveContactDistance", &CharacterControllerConfig::predictiveContactDistance
 		);
 		lua.new_usertype<LuaCharacterController>("CharacterController", sol::no_constructor,
-			"type_id", &entt::type_hash<CharacterController>::value,
+			"type_id", sol::property(&entt::type_hash<LuaCharacterController>::value),
 			"add_entity_component", sol::overload(
 				&LuaCharacterController::addEntityComponent1,
 				&LuaCharacterController::addEntityComponent2

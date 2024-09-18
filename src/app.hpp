@@ -141,6 +141,7 @@ namespace darmok
 		bool hasComponent(entt::id_type type) const noexcept;
 		OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
 		OptionalRef<const IAppComponent> getComponent(entt::id_type type) const noexcept;
+		static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
 
 		Input& getInput() noexcept;
 		const Input& getInput() const noexcept;
@@ -181,6 +182,7 @@ namespace darmok
 
 	private:
 		using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<IAppComponent>>>;
+		using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
 
 		Components::iterator findComponent(entt::id_type type) noexcept;
 		Components::const_iterator findComponent(entt::id_type type) const noexcept;
@@ -234,6 +236,7 @@ namespace darmok
 
 		Components _components;
 		AppClearRenderPass _clearRenderPass;
+		static ComponentDependencies _compDeps;
 	};
 
 	class AppRunner final : public IPlatformRunnable

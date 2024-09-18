@@ -315,15 +315,39 @@ namespace darmok
         return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
     }
 
+
+    Camera::ComponentDependencies Camera::_compDeps;
+
+    void Camera::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
+    {
+        if (typeId1 == typeId2)
+        {
+            throw std::invalid_argument("dependency loop");
+        }
+        _compDeps[typeId1].insert(typeId2);
+        _compDeps[typeId2].insert(typeId1);
+    }
+
     bool Camera::removeComponent(entt::id_type type) noexcept
     {
         auto itr = findComponent(type);
-        if (itr == _components.end())
+        auto found = itr != _components.end();
+        if (found)
         {
-            return false;
+            _components.erase(itr);
         }
-        _components.erase(itr);
-        return true;
+        auto itr2 = _compDeps.find(type);
+        if (itr2 != _compDeps.end())
+        {
+            for (auto& depTypeId : itr2->second)
+            {
+                if (removeComponent(depTypeId))
+                {
+                    found = true;
+                }
+            }
+        }
+        return found;
     }
 
     bool Camera::hasComponent(entt::id_type type) const noexcept

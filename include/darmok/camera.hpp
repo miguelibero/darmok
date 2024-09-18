@@ -149,6 +149,14 @@ namespace darmok
         void beforeRenderView(IRenderGraphContext& context) const noexcept;
         void beforeRenderEntity(Entity entity, IRenderGraphContext& context) const noexcept;
 
+        static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
+
+        template<typename T1, typename T2>
+        static void registerComponentDependency()
+        {
+            registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
+        }
+
     private:
         bool _enabled;
         glm::mat4 _proj;
@@ -175,6 +183,9 @@ namespace darmok
 
         using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ICameraComponent>>>;
         Components _components;
+        using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
+        static ComponentDependencies _compDeps;
+
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
 

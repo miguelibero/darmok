@@ -428,6 +428,11 @@ namespace darmok
 		return app.getReal().addComponent<SceneAppComponent>(scene.getReal());
 	}
 
+	OptionalRef<SceneAppComponent>::std_t LuaSceneAppComponent::getAppComponent(LuaApp& app) noexcept
+	{
+		return app.getReal().getComponent<SceneAppComponent>();
+	}
+
 	std::optional<LuaScene> LuaSceneAppComponent::getScene1(const SceneAppComponent& comp) noexcept
 	{
 		return getScene2(comp, 0);
@@ -468,10 +473,12 @@ namespace darmok
 	{
 		lua.new_usertype<SceneAppComponent>("SceneAppComponent",
 			sol::no_constructor,
+			"type_id", sol::property(&entt::type_hash<SceneAppComponent>::value),
 			"add_app_component", sol::overload(
 				&LuaSceneAppComponent::addAppComponent1,
 				&LuaSceneAppComponent::addAppComponent2
 			),
+			"get_app_component", &LuaSceneAppComponent::getAppComponent,
 			"scene", sol::property(&LuaSceneAppComponent::getScene1, &LuaSceneAppComponent::setScene1),
 			"get_scene", sol::overload(&LuaSceneAppComponent::getScene1, &LuaSceneAppComponent::getScene2),
 			"set_scene", sol::overload(&LuaSceneAppComponent::setScene1, &LuaSceneAppComponent::setScene2),

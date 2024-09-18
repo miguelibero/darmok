@@ -120,7 +120,7 @@ namespace darmok
 	void LuaTransform::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<Transform>("Transform", sol::no_constructor,
-			"type_id", &entt::type_hash<Transform>::value,
+			"type_id", sol::property(&entt::type_hash<Transform>::value),
 			"add_entity_component", sol::overload(
 				&LuaTransform::addEntityComponent1,
 				&LuaTransform::addEntityComponent2,

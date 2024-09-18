@@ -313,25 +313,30 @@ namespace darmok
 
     void SceneImpl::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
     {
+        if (typeId1 == typeId2)
+        {
+            throw std::invalid_argument("dependency loop");
+        }
         _compDeps[typeId1].insert(typeId2);
+        _compDeps[typeId2].insert(typeId1);
     }
 
     bool SceneImpl::removeComponent(Entity entity, entt::id_type typeId) noexcept
     {
         auto& reg = getRegistry();
-        auto success = reg.storage(typeId)->remove(entity);
+        auto found = reg.storage(typeId)->remove(entity);
         auto itr = _compDeps.find(typeId);
         if (itr != _compDeps.end())
         {
             for (auto& depTypeId : itr->second)
             {
-                if (reg.storage(depTypeId)->remove(entity))
+                if (removeComponent(entity, depTypeId))
                 {
-                    success = true;
+                    found = true;
                 }
             }
         }
-        return success;
+        return found;
     }
 
     Scene::Scene() noexcept
@@ -373,7 +378,7 @@ namespace darmok
         return _impl->destroyEntity(entity);
     }
 
-    void Scene::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2) noexcept
+    void Scene::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
     {
         SceneImpl::registerComponentDependency(typeId1, typeId2);
     }

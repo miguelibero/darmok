@@ -42,7 +42,7 @@ namespace darmok
     void LuaSkeletalAnimator::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<SkeletalAnimator>("SkeletalAnimator", sol::no_constructor,
-            "type_id", &entt::type_hash<SkeletalAnimator>::value,
+            "type_id", sol::property(&entt::type_hash<SkeletalAnimator>::value),
             "add_entity_component", sol::overload(
                 &LuaSkeletalAnimator::addEntityComponent
             ),
@@ -85,7 +85,7 @@ namespace darmok
     void LuaRenderableSkeleton::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<RenderableSkeleton>("RenderableSkeleton", sol::no_constructor,
-            "type_id", &entt::type_hash<RenderableSkeleton>::value,
+            "type_id", sol::property(&entt::type_hash<RenderableSkeleton>::value),
             "add_entity_component", sol::overload(
                 &LuaRenderableSkeleton::addEntityComponent1,
                 &LuaRenderableSkeleton::addEntityComponent2,
@@ -108,7 +108,8 @@ namespace darmok
 
     void LuaSkeletalAnimationSceneComponent::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<LuaSkeletalAnimationSceneComponent>("SkeletalAnimationSceneComponent", sol::no_constructor,
+        lua.new_usertype<SkeletalAnimationSceneComponent>("SkeletalAnimationSceneComponent", sol::no_constructor,
+            "type_id", sol::property(&entt::type_hash<SkeletalAnimationRenderComponent>::value),
             "add_scene_component", &LuaSkeletalAnimationSceneComponent::addSceneComponent,
             "get_scene_component", &LuaSkeletalAnimationSceneComponent::getSceneComponent
         );
@@ -127,6 +128,7 @@ namespace darmok
     void LuaSkeletalAnimationRenderComponent::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<SkeletalAnimationRenderComponent>("SkeletalAnimationRenderComponent", sol::no_constructor,
+            "type_id", sol::property(&entt::type_hash<SkeletalAnimationRenderComponent>::value),
             "add_camera_component", &LuaSkeletalAnimationRenderComponent::addCameraComponent,
             "get_camera_component", &LuaSkeletalAnimationRenderComponent::getCameraComponent
         );

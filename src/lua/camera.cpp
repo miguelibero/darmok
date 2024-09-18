@@ -187,7 +187,7 @@ namespace darmok
 #endif
 
 		lua.new_usertype<Camera>("Camera", sol::no_constructor,
-			"type_id", &entt::type_hash<Camera>::value,
+			"type_id", sol::property(&entt::type_hash<Camera>::value),
 			"add_entity_component", &LuaCamera::addEntityComponent,
 			"get_entity_component", &LuaCamera::getEntityComponent,
 			"get_entity", &LuaCamera::getEntity,

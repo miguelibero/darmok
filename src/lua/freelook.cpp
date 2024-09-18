@@ -18,6 +18,7 @@ namespace darmok
     void LuaFreelookController::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<FreelookController>("FreelookController", sol::no_constructor,
+            "type_id", sol::property(&entt::type_hash<FreelookController>::value),
             "add_scene_component", sol::overload(
                 &LuaFreelookController::addSceneComponent1,
                 &LuaFreelookController::addSceneComponent2

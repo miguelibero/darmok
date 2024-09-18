@@ -287,10 +287,10 @@ namespace darmok
             return components;
         }
 
-        static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2) noexcept;
+        static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
 
         template<typename T1, typename T2>
-        static void registerComponentDependency() noexcept
+        static void registerComponentDependency()
         {
             registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
         }

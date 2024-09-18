@@ -226,6 +226,7 @@ namespace darmok::physics3d
         );
 
         lua.new_usertype<LuaPhysicsSystem>("Physics3dSystem", sol::no_constructor,
+            "type_id", sol::property(&entt::type_hash<LuaPhysicsSystem>::value),
             "add_updater", sol::overload(&LuaPhysicsSystem::addUpdater1, &LuaPhysicsSystem::addUpdater2),
             "remove_updater", sol::overload(&LuaPhysicsSystem::removeUpdater1, &LuaPhysicsSystem::removeUpdater2),
             "add_listener", &LuaPhysicsSystem::addListener,

@@ -46,7 +46,7 @@ namespace darmok
 	void LuaRenderable::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<Renderable>("Renderable", sol::no_constructor,
-			"type_id", &entt::type_hash<Renderable>::value,
+			"type_id", sol::property(&entt::type_hash<Renderable>::value),
 			"add_entity_component", sol::overload(
 				&LuaRenderable::addEntityComponent1,
 				&LuaRenderable::addEntityComponent2,

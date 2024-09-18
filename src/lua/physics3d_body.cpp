@@ -294,7 +294,7 @@ namespace darmok::physics3d
             "gravityFactor", &CharacterConfig::gravityFactor
         );
         lua.new_usertype<LuaPhysicsBody>("Physics3dBody", sol::no_constructor,
-            "type_id", &entt::type_hash<PhysicsBody>::value,
+            "type_id", sol::property(&entt::type_hash<LuaPhysicsBody>::value),
             sol::meta_function::to_string, &LuaPhysicsBody::toString,
             "add_entity_component", sol::overload(
                 &LuaPhysicsBody::addEntityComponent1,

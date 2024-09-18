@@ -31,6 +31,7 @@ namespace darmok::physics3d
         );
         lua.new_usertype<PhysicsDebugRenderer>("PhysicsDebugRenderer",
             sol::no_constructor,
+            "type_id", sol::property(&entt::type_hash<PhysicsDebugRenderer>::value),
             "enabled", sol::property(&PhysicsDebugRenderer::isEnabled, &PhysicsDebugRenderer::setEnabled),
             "get_camera_component", &LuaPhysicsDebugRenderer::getCameraComponent,
             "add_camera_component", sol::overload(

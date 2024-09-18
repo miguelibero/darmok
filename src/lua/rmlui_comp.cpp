@@ -74,7 +74,10 @@ namespace darmok
         LuaRmluiElement::bind(lua);
         LuaRmluiElementDocument::bind(lua);
 
+        Camera::registerComponentDependency<RmluiRenderer, LuaRmluiRenderer>();
+
         lua.new_usertype<LuaRmluiRenderer>("RmluiRenderer", sol::no_constructor,
+            "type_id", sol::property(&entt::type_hash<LuaRmluiRenderer>::value),
             "add_camera_component", &LuaRmluiRenderer::addCameraComponent,
             "get_camera_component", &LuaRmluiRenderer::getCameraComponent,
             "load_font", sol::overload(

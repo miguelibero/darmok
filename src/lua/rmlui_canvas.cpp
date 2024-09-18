@@ -375,7 +375,7 @@ namespace darmok
         );
 
         lua.new_usertype<LuaRmluiCanvas>("RmluiCanvas", sol::no_constructor,
-            "type_id", &entt::type_hash<RmluiCanvas>::value,
+            "type_id", sol::property(&entt::type_hash<RmluiCanvas>::value),
             "add_entity_component", sol::overload(
                 &LuaRmluiCanvas::addEntityComponent1,
                 &LuaRmluiCanvas::addEntityComponent2

@@ -146,6 +146,7 @@ namespace darmok
 	private:
 		static SceneAppComponent& addAppComponent1(LuaApp& app) noexcept;
 		static SceneAppComponent& addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept;
+		static OptionalRef<SceneAppComponent>::std_t getAppComponent(LuaApp& app) noexcept;
 		static std::optional<LuaScene> getScene1(const SceneAppComponent& comp) noexcept;
 		static std::optional<LuaScene> getScene2(const SceneAppComponent& comp, size_t i) noexcept;
 		static LuaScene addScene1(SceneAppComponent& comp) noexcept;
