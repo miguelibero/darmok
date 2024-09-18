@@ -598,6 +598,11 @@ namespace darmok::physics3d
         return _joltSystem->GetBodyInterface();
     }
 
+    const JPH::BodyLockInterface& PhysicsSystemImpl::getBodyLockInterface() const noexcept
+    {
+        return _joltSystem->GetBodyLockInterface();
+    }
+
     JoltTempAllocator& PhysicsSystemImpl::getTempAllocator() noexcept
     {
         return _alloc;
@@ -873,6 +878,11 @@ namespace darmok::physics3d
     {
         return _impl->getRootTransform();
     }
+
+    glm::vec3 PhysicsSystem::getGravity() const
+    {
+        return _impl->getGravity();
+    }
     
     void PhysicsSystem::init(Scene& scene, App& app) noexcept
     {
@@ -975,6 +985,15 @@ namespace darmok::physics3d
             return nullptr;
         }
         return _system->getImpl().getBodyInterface();
+    }
+
+    OptionalRef<const JPH::BodyLockInterface> PhysicsBodyImpl::getBodyLockInterface() const noexcept
+    {
+        if (!_system)
+        {
+            return nullptr;
+        }
+        return _system->getImpl().getBodyLockInterface();
     }
 
     JPH::BodyID PhysicsBodyImpl::createCharacter(const JoltTransform& trans)
@@ -1212,6 +1231,37 @@ namespace darmok::physics3d
         return JoltUtils::convert(getBodyInterface()->GetAngularVelocity(_bodyId));
     }
 
+    float PhysicsBodyImpl::getInverseMass() const
+    {
+        auto lockFace = getBodyLockInterface();
+        if (!lockFace)
+        {
+            return 0.F;
+        }
+        JPH::BodyLockRead lock(lockFace.value(), _bodyId);
+        if (lock.Succeeded())
+        {
+            auto& body = lock.GetBody();
+            return body.GetMotionProperties()->GetInverseMass();
+        }
+        return 0.F;
+    }
+
+    void PhysicsBodyImpl::setInverseMass(float v)
+    {
+        auto lockFace = getBodyLockInterface();
+        if (!lockFace)
+        {
+            return;
+        }
+        JPH::BodyLockWrite lock(lockFace.value(), _bodyId);
+        if (lock.Succeeded())
+        {
+            auto& body = lock.GetBody();
+            body.GetMotionProperties()->SetInverseMass(v);
+        }
+    }
+
     bool PhysicsBodyImpl::isActive() const
     {
         if (_bodyId.IsInvalid())
@@ -1401,6 +1451,17 @@ namespace darmok::physics3d
     glm::vec3 PhysicsBody::getLinearVelocity() const
     {
         return _impl->getLinearVelocity();
+    }
+
+    float PhysicsBody::getInverseMass() const
+    {
+        return _impl->getInverseMass();
+    }
+
+    PhysicsBody& PhysicsBody::setInverseMass(float v)
+    {
+        _impl->setInverseMass(v);
+        return *this;
     }
 
     bool PhysicsBody::isActive() const

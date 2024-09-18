@@ -99,6 +99,11 @@ namespace darmok::physics3d
         _system.setRootTransform(root);
     }
 
+    glm::vec3 LuaPhysicsSystem::getGravity() const
+    {
+        return _system.getGravity();
+    }
+
     void LuaPhysicsSystem::fixedUpdate(float fixedDeltaTime)
     {
         for (auto& func : _updaterFunctions)
@@ -232,6 +237,7 @@ namespace darmok::physics3d
             "add_listener", &LuaPhysicsSystem::addListener,
             "remove_listener", &LuaPhysicsSystem::removeListener,
             "root_transform", sol::property(&LuaPhysicsSystem::getRootTransform, &LuaPhysicsSystem::setRootTransform),
+            "gravity", sol::property(&LuaPhysicsSystem::getGravity),
             "raycast", sol::overload(
                 &LuaPhysicsSystem::raycast1,
                 &LuaPhysicsSystem::raycast2,

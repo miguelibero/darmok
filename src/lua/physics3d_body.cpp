@@ -66,6 +66,16 @@ namespace darmok::physics3d
         return _body.getLinearVelocity();
     }
 
+    void LuaPhysicsBody::setInverseMass(float v)
+    {
+        _body.setInverseMass(v);
+    }
+
+    float LuaPhysicsBody::getInverseMass() const
+    {
+        return _body.getInverseMass();
+    }
+
     bool LuaPhysicsBody::getActive() const
     {
         return _body.isActive();
@@ -314,10 +324,16 @@ namespace darmok::physics3d
             "position", sol::property(&LuaPhysicsBody::getPosition, &LuaPhysicsBody::setPosition),
             "rotation", sol::property(&LuaPhysicsBody::getRotation, &LuaPhysicsBody::setRotation),
             "linear_velocity", sol::property(&LuaPhysicsBody::getLinearVelocity, &LuaPhysicsBody::setLinearVelocity),
+            "inverse_mass", sol::property(&LuaPhysicsBody::getInverseMass, &LuaPhysicsBody::setInverseMass),
             "active", sol::property(&LuaPhysicsBody::getActive),
             "activate", &LuaPhysicsBody::activate,
             "deactivate", &LuaPhysicsBody::deactivate,
-            "enabled", sol::property(&LuaPhysicsBody::getEnabled, &LuaPhysicsBody::setEnabled)
+            "enabled", sol::property(&LuaPhysicsBody::getEnabled, &LuaPhysicsBody::setEnabled),
+            "add_torque", &LuaPhysicsBody::addTorque,
+            "add_force", &LuaPhysicsBody::addForce,
+            "add_impulse", &LuaPhysicsBody::addImpulse,
+            "move", sol::overload(&LuaPhysicsBody::move1, &LuaPhysicsBody::move2),
+            "move_position", sol::overload(&LuaPhysicsBody::movePosition1, &LuaPhysicsBody::movePosition2)
         );
     }
 }

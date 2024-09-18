@@ -40,6 +40,7 @@ namespace JPH
     class PhysicsSystem;
     class BroadPhaseLayer;
     class BodyInterface;
+    class BodyLockInterface;
     class Character;
     class Float2;
 }
@@ -216,6 +217,7 @@ namespace darmok::physics3d
         OptionalRef<JPH::PhysicsSystem> getJolt() noexcept;
         OptionalRef<const JPH::PhysicsSystem> getJolt() const noexcept;
         JPH::BodyInterface& getBodyInterface() const noexcept;
+        const JPH::BodyLockInterface& getBodyLockInterface() const noexcept;
         JoltTempAllocator& getTempAllocator() noexcept;
         glm::vec3 getGravity() noexcept;
 
@@ -314,6 +316,8 @@ namespace darmok::physics3d
         glm::vec3 getLinearVelocity() const;
         void setAngularVelocity(const glm::vec3& velocity);
         glm::vec3 getAngularVelocity() const;
+        float getInverseMass() const;
+        void setInverseMass(float v);
 
         bool isActive() const;
         void activate();
@@ -339,6 +343,7 @@ namespace darmok::physics3d
     private:
         static const std::unordered_map<MotionType, std::string> _motionTypeNames;
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
+        OptionalRef<const JPH::BodyLockInterface> getBodyLockInterface() const noexcept;
         JPH::BodyID createBody(const JoltTransform& trans);
         JPH::BodyID createCharacter(const JoltTransform& trans);
         bool tryCreateBody(OptionalRef<Transform> transform);

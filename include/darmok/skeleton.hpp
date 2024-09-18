@@ -27,7 +27,7 @@ namespace darmok
     public:
         Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept;
         ~Skeleton();
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
         SkeletonImpl& getImpl();
         const SkeletonImpl& getImpl() const;
     private:
@@ -43,7 +43,7 @@ namespace darmok
         ~SkeletalAnimation();
         SkeletalAnimationImpl& getImpl();
         const SkeletalAnimationImpl& getImpl() const;
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
         std::string_view getName() const noexcept;
         float getDuration() const noexcept;
     private:
@@ -113,6 +113,7 @@ namespace darmok
         float threshold = bx::kFloatSmallest;
         SkeletalAnimatorTweenConfig tween;
         std::string nextState;
+        float speed = 1.F;
 
         float calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos);
         std::vector<float> calcBlendWeights(const glm::vec2& pos);
@@ -272,8 +273,9 @@ namespace darmok
         const Config& getConfig() const noexcept;
         OptionalRef<const ISkeletalAnimatorState> getCurrentState() const noexcept;
         OptionalRef<const ISkeletalAnimatorTransition> getCurrentTransition() const noexcept;
+        float getStateDuration(const std::string& name) const noexcept;
 
-        bool play(std::string_view name) noexcept;
+        bool play(std::string_view name, float speedFactor = 1.F) noexcept;
         void stop() noexcept;
         void pause() noexcept;
         PlaybackState getPlaybackState() noexcept;

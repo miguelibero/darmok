@@ -90,6 +90,8 @@ namespace darmok
 		bool hasLooped() const noexcept;
 		bool hasFinished() const noexcept;
 		const std::string& getNextState() const noexcept;
+		void setSpeed(float speed) noexcept;
+		void afterFinished() noexcept;
 	private:
 		glm::vec2 getBlendedPosition(float f) const noexcept;
 		float calcDuration() const noexcept;
@@ -105,6 +107,7 @@ namespace darmok
 		float _normalizedTime;
 		bool _looped;
 		float _duration;
+		float _speed;
 	};
 
 	class OzzSkeletalAnimatorTransition final : public ISkeletalAnimatorTransition
@@ -122,11 +125,15 @@ namespace darmok
 
 		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
 
+		const State& getCurrentOzzState() const noexcept;
+		const State& getPreviousOzzState() const noexcept;
 		State& getCurrentOzzState() noexcept;
 		State& getPreviousOzzState() noexcept;
 
 		const ISkeletalAnimatorState& getCurrentState() const noexcept override;
 		const ISkeletalAnimatorState& getPreviousState() const noexcept override;
+		ISkeletalAnimatorState& getCurrentState() noexcept;
+		ISkeletalAnimatorState& getPreviousState() noexcept;
 	private:
 		Config _config;
 		State _currentState;
@@ -159,8 +166,9 @@ namespace darmok
 		const Config& getConfig() const noexcept;
 		OptionalRef<const ISkeletalAnimatorState> getCurrentState() const noexcept;
 		OptionalRef<const ISkeletalAnimatorTransition> getCurrentTransition() const noexcept;
+		float getStateDuration(const std::string& name) const noexcept;
 
-		bool play(std::string_view name) noexcept;
+		bool play(std::string_view name, float stateSpeed = 1.F) noexcept;
 		void stop() noexcept;
 		void pause() noexcept;
 		PlaybackState getPlaybackState() noexcept;
@@ -193,5 +201,8 @@ namespace darmok
 		void afterUpdate() noexcept;
 
 		Listeners copyListeners() const noexcept;
+
+		OptionalRef<State> getCurrentOzzState() noexcept;
+		OptionalRef<Transition> getCurrentOzzTransition() noexcept;
 	};
 }

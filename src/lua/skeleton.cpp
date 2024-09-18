@@ -12,10 +12,13 @@ namespace darmok
 {
     void LuaSkeleton::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<Skeleton>("Skeleton", sol::no_constructor);
+        lua.new_usertype<Skeleton>("Skeleton", sol::no_constructor,
+            sol::meta_function::to_string, &Skeleton::toString
+        );
         lua.new_usertype<SkeletalAnimation>("SkeletalAnimation", sol::no_constructor,
             "name", sol::property(&SkeletalAnimation::getName),
-            "duration", sol::property(&SkeletalAnimation::getDuration)
+            "duration", sol::property(&SkeletalAnimation::getDuration),
+            sol::meta_function::to_string, &SkeletalAnimation::toString
         );
     }
 
@@ -34,6 +37,26 @@ namespace darmok
         return scene.getEntity(animator);
     }
 
+    bool LuaSkeletalAnimator::play1(SkeletalAnimator& animator, const std::string& name) noexcept
+    {
+        return animator.play(name);
+    }
+
+    bool LuaSkeletalAnimator::play2(SkeletalAnimator& animator, const std::string& name, float stateSpeed) noexcept
+    {
+        return animator.play(name, stateSpeed);
+    }
+
+    OptionalRef<const ISkeletalAnimatorState>::std_t LuaSkeletalAnimator::getCurrentState(const SkeletalAnimator& animator) noexcept
+    {
+        return animator.getCurrentState();
+    }
+
+    OptionalRef<const ISkeletalAnimatorTransition>::std_t LuaSkeletalAnimator::getCurrentTransition(const SkeletalAnimator& animator) noexcept
+    {
+        return animator.getCurrentTransition();
+    }
+
     void LuaSkeletalAnimator::setBlendPosition(SkeletalAnimator& animator, const VarLuaVecTable<glm::vec2>& pos) noexcept
     {
         animator.setBlendPosition(LuaGlm::tableGet(pos));
@@ -48,12 +71,18 @@ namespace darmok
             ),
             "get_entity_component", &LuaSkeletalAnimator::getEntityComponent,
             "get_entity", &LuaSkeletalAnimator::getEntity,
-            "play", sol::overload(&SkeletalAnimator::play),
-            "stop", sol::overload(&SkeletalAnimator::stop),
-            "pause", sol::overload(&SkeletalAnimator::pause),
+            "play", sol::overload(
+                &LuaSkeletalAnimator::play1,
+                &LuaSkeletalAnimator::play2
+            ),
+            "stop", &SkeletalAnimator::stop,
+            "pause", &SkeletalAnimator::pause,
             "playback_state", sol::property(&SkeletalAnimator::getPlaybackState),
             "playback_speed", sol::property(&SkeletalAnimator::getPlaybackSpeed, &SkeletalAnimator::setPlaybackSpeed),
-            "blend_position", sol::property(&LuaSkeletalAnimator::setBlendPosition)
+            "blend_position", sol::property(&LuaSkeletalAnimator::setBlendPosition),
+            "current_state", sol::property(&LuaSkeletalAnimator::getCurrentState),
+            "current_transition", sol::property(&LuaSkeletalAnimator::getCurrentTransition),
+            "get_state_duration", &SkeletalAnimator::getStateDuration
         );
     }
 

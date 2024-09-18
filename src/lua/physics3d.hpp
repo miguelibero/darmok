@@ -55,6 +55,8 @@ namespace darmok::physics3d
         OptionalRef<Transform>::std_t getRootTransform() const noexcept;
         void setRootTransform(OptionalRef<Transform>::std_t root) noexcept;
 
+        glm::vec3 getGravity() const;
+
         std::optional<RaycastHit> raycast1(const Ray& ray) noexcept;
         std::optional<RaycastHit> raycast2(const Ray& ray, float maxDistance) noexcept;
         std::optional<RaycastHit> raycast3(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
@@ -106,6 +108,8 @@ namespace darmok::physics3d
         glm::quat getRotation() const;
         void setLinearVelocity(const VarLuaTable<glm::vec3>& velocity);
         glm::vec3 getLinearVelocity() const;
+        void setInverseMass(float v);
+        float getInverseMass() const;
 
         bool getActive() const;
         LuaPhysicsBody& activate();

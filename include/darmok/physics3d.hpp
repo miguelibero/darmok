@@ -91,6 +91,8 @@ namespace darmok::physics3d
         PhysicsSystem& setRootTransform(OptionalRef<Transform> root) noexcept;
         OptionalRef<Transform> getRootTransform() noexcept;
 
+        glm::vec3 getGravity() const;
+
         void init(Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
@@ -153,6 +155,8 @@ namespace darmok::physics3d
         glm::quat getRotation() const;
         PhysicsBody& setLinearVelocity(const glm::vec3& velocity);
         glm::vec3 getLinearVelocity() const;
+        float getInverseMass() const;
+        PhysicsBody& setInverseMass(float v);
 
         bool isActive() const;
         PhysicsBody& activate();

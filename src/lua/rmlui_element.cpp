@@ -71,6 +71,11 @@ namespace darmok
         return elements;
     }
 
+    int LuaRmluiElement::getNumChildren(Rml::Element& elm) noexcept
+    {
+        return elm.GetNumChildren();
+    }
+
     Rml::Element& LuaRmluiElement::addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept
     {
         elm.AddEventListener(ev, new LuaTableRmluiEventListener(tab));
@@ -200,7 +205,7 @@ namespace darmok
             "query_selector", &Rml::Element::QuerySelector,
             "query_selector_all", &LuaRmluiElement::querySelectorAll,
             "get_child", &Rml::Element::GetChild,
-            "num_children", sol::property(&Rml::Element::GetNumChildren),
+            "num_children", sol::property(&LuaRmluiElement::getNumChildren),
             "add_event_listener", sol::overload(
                 &LuaRmluiElement::addEventListener1,
                 &LuaRmluiElement::addEventListener2

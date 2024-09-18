@@ -360,6 +360,10 @@ namespace darmok
         {
             nextState = json["nextState"];
         }
+        if (json.contains("speed"))
+        {
+            speed = json["speed"];
+        }
     }
 
     std::pair<std::string, std::string> SkeletalAnimatorTransitionConfig::readJsonKey(std::string_view key)

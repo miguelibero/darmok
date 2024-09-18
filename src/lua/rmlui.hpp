@@ -79,6 +79,7 @@ namespace darmok
         static std::vector<Rml::Element*> getElementsByClassName(Rml::Element& elm, const std::string& cls) noexcept;
         static std::vector<Rml::Element*> getElementsByTagName(Rml::Element& elm, const std::string& tag) noexcept;
         static std::vector<Rml::Element*> querySelectorAll(Rml::Element& elm, const std::string& selector) noexcept;
+        static int getNumChildren(Rml::Element& elm) noexcept;
         static Rml::Element& addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept;
         static Rml::Element& addEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept;
         static bool removeEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept;

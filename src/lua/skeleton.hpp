@@ -13,6 +13,8 @@ namespace darmok
     class SkeletalAnimation;
     struct SkeletalAnimatorConfig;
     class SkeletalAnimator;
+    class ISkeletalAnimatorState;
+    class ISkeletalAnimatorTransition;
 
     class LuaEntity;
     class LuaScene;
@@ -36,6 +38,11 @@ namespace darmok
         static SkeletalAnimator& addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
         static OptionalRef<SkeletalAnimator>::std_t getEntityComponent(LuaEntity& entity) noexcept;
         static std::optional<LuaEntity> getEntity(const SkeletalAnimator& animator, LuaScene& scene) noexcept;
+        static bool play1(SkeletalAnimator& animator, const std::string& name) noexcept;
+        static bool play2(SkeletalAnimator& animator, const std::string& name, float stateSpeed) noexcept;
+
+        static OptionalRef<const ISkeletalAnimatorState>::std_t getCurrentState(const SkeletalAnimator& animator) noexcept;
+        static OptionalRef<const ISkeletalAnimatorTransition>::std_t getCurrentTransition(const SkeletalAnimator& animator) noexcept;
     };
 
     class RenderableSkeleton;
