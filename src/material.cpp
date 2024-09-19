@@ -23,7 +23,7 @@ namespace darmok
 		, _emissiveColor(Colors::black3())
 		, _multipleScattering(false)
 		, _whiteFurnance(0.F)
-		, _opacity(Opacity::Transparent)
+		, _opacityType(OpacityType::Transparent)
 		, _shininess(32)
 		, _twoSided(false)
 		, _uniforms(false)
@@ -289,14 +289,14 @@ namespace darmok
 		return *this;
 	}
 
-	Material::Opacity Material::getOpacity() const noexcept
+	OpacityType Material::getOpacityType() const noexcept
 	{
-		return _opacity;
+		return _opacityType;
 	}
 
-	Material& Material::setOpacity(Opacity v) noexcept
+	Material& Material::setOpacityType(OpacityType v) noexcept
 	{
-		_opacity = v;
+		_opacityType = v;
 		return *this;
 	}
 
@@ -420,13 +420,13 @@ namespace darmok
 		{
 			state |= BGFX_STATE_PT_LINES;
 		}
-		if (mat.getOpacity() == MaterialOpacity::Transparent)
+		if (mat.getOpacityType() == OpacityType::Transparent)
 		{
 			state |= BGFX_STATE_BLEND_ALPHA;
 			state &= ~BGFX_STATE_DEPTH_TEST_MASK;
 			state |= BGFX_STATE_DEPTH_TEST_LEQUAL;
 		}
-		else if (mat.getOpacity() == MaterialOpacity::Cutout)
+		else if (mat.getOpacityType() == OpacityType::Mask)
 		{
 			state |= BGFX_STATE_BLEND_ALPHA;
 		}

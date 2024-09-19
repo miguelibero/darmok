@@ -23,6 +23,18 @@ namespace darmok
     {
     }
 
+    const std::string& Camera::getName() const noexcept
+    {
+        return _name;
+    }
+
+    Camera& Camera::setName(const std::string& name) noexcept
+    {
+        _name = name;
+        return *this;
+    }
+
+
     const EntityRegistry& Camera::getRegistry() const
     {
         return _scene->getRegistry();
@@ -191,7 +203,11 @@ namespace darmok
     {
         _scene = scene;
         _app = app;
-        auto rgSuffix = std::to_string(scene.getEntity(*this));
+        auto rgSuffix = _name;
+        if(rgSuffix.empty())
+        {
+            rgSuffix = std::to_string(scene.getEntity(*this));
+        }
         _renderGraph.clear();
         auto name = "Camera " + rgSuffix;
         _renderGraph.setName(name);

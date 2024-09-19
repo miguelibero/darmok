@@ -276,12 +276,11 @@ namespace darmok
 
     void LightingRenderComponent::updateAmbientLights() noexcept
     {
-        auto& registry = _scene->getRegistry();
-        auto ambientLights = _cam->createEntityView<AmbientLight>(registry);
+        auto ambientLights = _cam->createEntityView<AmbientLight>();
         _lightData = glm::vec4(0.F);
         for (auto entity : ambientLights)
         {
-            auto& ambientLight = registry.get<const AmbientLight>(entity);
+            auto& ambientLight = _scene->getComponent<const AmbientLight>(entity).value();
             auto c = Colors::normalize(ambientLight.getColor()) * ambientLight.getIntensity();
             _lightData += glm::vec4(c, 0.F);
         }

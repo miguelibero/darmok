@@ -36,6 +36,16 @@ namespace darmok
         return Rml::Colourb(v.r, v.g, v.b, v.a);
     }
 
+    glm::mat4 RmluiUtils::convert(const Rml::Matrix4f& v) noexcept
+    {
+        return {
+            convert(v.GetColumn(0)),
+            convert(v.GetColumn(1)),
+            convert(v.GetColumn(2)),
+            convert(v.GetColumn(3))
+        };
+    }
+
     Rectangle RmluiUtils::convert(const Rml::Rectanglef& v) noexcept
     {
         return Rectangle(RmluiUtils::convert(v.Size()), RmluiUtils::convert(v.Position()));
@@ -45,7 +55,8 @@ namespace darmok
         : _app(app)
         , _scissorEnabled(false)
         , _scissor(0)
-        , _transform(1)
+        , _trans(1)
+        , _baseTrans(1)
     {
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
@@ -189,11 +200,11 @@ namespace darmok
     {
         if (transform == nullptr)
         {
-            _transform = glm::mat4(1);
+            _trans = glm::mat4(1);
         }
         else
         {
-            _transform = (glm::mat4)*transform->data();
+            _trans = RmluiUtils::convert(*transform);
         }
     }
 
@@ -208,7 +219,8 @@ namespace darmok
     glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position)
     {
         glm::vec3 pos(position.x, position.y, 0.F);
-        return glm::translate(glm::mat4(1), pos);
+        auto mtx = glm::translate(glm::mat4(1), pos);
+        return _baseTrans * _trans * mtx;
     }
 
     void RmluiRenderInterface::EnableScissorRegion(bool enable) noexcept
@@ -242,13 +254,8 @@ namespace darmok
     {
         std::lock_guard lock(_canvasMutex);
         _context = context;
-
-        auto viewId = context.getViewId();
-        auto model = canvas.getModelMatrix();
-        auto proj = canvas.getProjectionMatrix();
-
-        bgfx::setViewTransform(viewId, glm::value_ptr(model), glm::value_ptr(proj));
-
+        _baseTrans = canvas.getRenderMatrix();
+        
         if (!canvas.getContext().Render())
         {
             return;
@@ -260,6 +267,7 @@ namespace darmok
         }
 
         _context.reset();
+        _baseTrans = glm::mat4();
     }
 
     OptionalRef<Texture> RmluiRenderInterface::getSpriteTexture(const Rml::Sprite& sprite) noexcept
@@ -479,8 +487,6 @@ namespace darmok
             throw std::runtime_error("Failed to create rmlui context");
         }
         _context->EnableMouseCursor(true);
-
-        _comp->getRenderGraph().addPass(*this);
     }
 
     void RmluiCanvasImpl::shutdown() noexcept
@@ -491,11 +497,7 @@ namespace darmok
             _context.reset();
             Rml::ReleaseTextures();
         }
-        if (_comp)
-        {
-            _comp->getRenderGraph().removePass(*this);
-            _comp.reset();
-        }
+        _comp.reset();
     }
 
     void RmluiCanvasImpl::updateContextSize() noexcept
@@ -511,10 +513,6 @@ namespace darmok
     void RmluiCanvasImpl::renderReset() noexcept
     {
         updateContextSize();
-        if (_comp)
-        {
-            _comp->getRenderGraph().addPass(*this);
-        }
     }
 
     bool RmluiCanvasImpl::isInputActive() const noexcept
@@ -594,6 +592,30 @@ namespace darmok
         return _context->GetName();
     }
 
+    glm::mat4 RmluiCanvasImpl::getRenderMatrix() const noexcept
+    {
+        if (!_comp)
+        {
+            return glm::mat4(1);
+        }
+        auto trans = _comp->getTransform(_canvas);
+        auto baseModel = getBaseModelMatrix();
+        if (trans)
+        {
+            // if the canvas has a transform we use that
+            return trans->getWorldMatrix() * baseModel;
+        }
+
+        auto mtx = _comp->getDefaultProjectionMatrix() * baseModel;
+        if (auto cam = _comp->getCamera())
+        {
+            // if the canvas does not have a transform, it means we want to use the full screen
+            // so we have to invert the camera view proj since it will be in the bgfx view transform
+            mtx = cam->getModelInverse() * glm::inverse(cam->getProjectionMatrix()) * mtx;
+        }
+        return mtx;
+    }
+
     glm::mat4 RmluiCanvasImpl::getProjectionMatrix() const noexcept
     {
         if (!_comp)
@@ -628,14 +650,19 @@ namespace darmok
             model *= trans->getWorldMatrix();
         }
 
+        model *= getBaseModelMatrix();
+
+        return model;
+    }
+
+    glm::mat4 RmluiCanvasImpl::getBaseModelMatrix() const noexcept
+    {
         auto size = getCurrentSize();
         auto offset = _offset;
         offset.y += size.y;
-        model = glm::translate(model, offset);
-
+        auto model = glm::translate(glm::mat4(1), offset);
         // invert the y axis because rmlui renders upside down
         model = glm::scale(model, glm::vec3(1, -1, 1));
-
         return model;
     }
 
@@ -909,33 +936,7 @@ namespace darmok
         return false;
     }
 
-    void RmluiCanvasImpl::renderPassDefine(RenderPassDefinition& def) noexcept
-    {
-        std::string name = "Rmlui";
-        auto canvasName = getName();
-        if (!canvasName.empty())
-        {
-            name += " " + canvasName;
-        }
-        def.setName(name);
-
-        // we need to guarantee that the views are rendered one after the other
-        def.getWriteResources().add<Rml::Context>();
-    }
-
-    void RmluiCanvasImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept
-    {
-        bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
-        if (_comp)
-        {
-            if (auto cam = _comp->getCamera())
-            {
-                cam->configureView(viewId);
-            }
-        }
-    }
-
-    void RmluiCanvasImpl::renderPassExecute(IRenderGraphContext& context) noexcept
+    void RmluiCanvasImpl::render(IRenderGraphContext& context) noexcept
     {
         if (!_visible || !_comp || !_context)
         {
@@ -1544,14 +1545,33 @@ namespace darmok
     void RmluiRendererImpl::renderReset() noexcept
     {
         _renderGraph.clear();
-        if (_cam && _scene)
+        if (!_cam || !_scene)
         {
-            for (auto entity : _cam->createEntityView<RmluiCanvas>())
+            return;
+        }
+
+        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        {
+            auto canvas = _scene->getComponent<RmluiCanvas>(entity);
+            canvas->getImpl().renderReset();
+        }
+    }
+
+    void RmluiRendererImpl::beforeRenderView(IRenderGraphContext& context) noexcept
+    {
+        if (!_scene)
+        {
+            return;
+        }
+        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        {
+            if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
             {
-                auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-                canvas->getImpl().renderReset();
+                _cam->beforeRenderEntity(entity, context);
+                canvas->getImpl().render(context);
             }
         }
+
     }
 
     void RmluiRendererImpl::loadFont(const std::string& path, bool fallback) noexcept
@@ -1811,6 +1831,11 @@ namespace darmok
     void RmluiRenderer::renderReset() noexcept
     {
         _impl->renderReset();
+    }
+
+    void RmluiRenderer::beforeRenderView(IRenderGraphContext& context) noexcept
+    {
+        _impl->beforeRenderView(context);
     }
 
     void RmluiRenderer::update(float dt) noexcept

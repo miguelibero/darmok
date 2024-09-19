@@ -126,7 +126,10 @@ namespace darmok
             _parent->_children.erase(*this);
         }
         _parent = parent;
-        _parent->_children.emplace(*this);
+        if (_parent)
+        {
+            _parent->_children.emplace(*this);
+        }
         setParentChanged();
         return *this;
     }

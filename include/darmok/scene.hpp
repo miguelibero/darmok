@@ -173,7 +173,7 @@ namespace darmok
         template<typename C>
         bool forEachEntity(const C& callback)
         {
-            for (auto& entity : getComponentView<entt::entity>())
+            for (auto& entity : getComponentView<Entity>())
             {
                 if (callback(entity))
                 {

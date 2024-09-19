@@ -64,6 +64,7 @@ namespace darmok
 			return { v.x, v.y, v.z, v.w };
 		}
 
+		static glm::mat4 convert(const Rml::Matrix4f& v) noexcept;
 		static Rectangle convert(const Rml::Rectanglef& v) noexcept;
 
 		static Color convert(const Rml::Colourf& v) noexcept;
@@ -102,7 +103,8 @@ namespace darmok
 		std::unordered_map<Rml::String, std::reference_wrapper<Texture>> _textureSources;
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
 		std::unordered_map<Rml::CompiledGeometryHandle, std::unique_ptr<Mesh>> _meshes;
-		glm::mat4 _transform;
+		glm::mat4 _trans;
+		glm::mat4 _baseTrans;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
 		OptionalRef<IRenderGraphContext> _context;
@@ -157,7 +159,7 @@ namespace darmok
 	class RmluiCanvas;
 	class Transform;
 
-	class RmluiCanvasImpl final : IRenderPass
+	class RmluiCanvasImpl final
 	{
 	public:
 		using MousePositionMode = RmluiCanvasMousePositionMode;
@@ -173,6 +175,7 @@ namespace darmok
 		std::string getName() const noexcept;
 		glm::mat4 getModelMatrix() const noexcept;
 		glm::mat4 getProjectionMatrix() const noexcept;
+		glm::mat4 getRenderMatrix() const noexcept;
 
 		void setVisible(bool visible) noexcept;
 		bool isVisible() const noexcept;
@@ -221,6 +224,7 @@ namespace darmok
 
 		void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 		bool runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
+		void render(IRenderGraphContext& context) noexcept;
 	private:
 		RmluiCanvas& _canvas;
 		OptionalRef<Rml::Context> _context;
@@ -237,10 +241,7 @@ namespace darmok
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		void updateContextSize() noexcept;
-
-		void renderPassDefine(RenderPassDefinition& def) noexcept override;
-		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-		void renderPassExecute(IRenderGraphContext& context) noexcept override;
+		glm::mat4 getBaseModelMatrix() const noexcept;
 	};
 
 	class Transform;
@@ -318,6 +319,7 @@ namespace darmok
 		void shutdown();
 		void update(float dt) noexcept;
 		void renderReset() noexcept;
+		void beforeRenderView(IRenderGraphContext& context) noexcept;
 
 		void loadFont(const std::string& path, bool fallback = false) noexcept;
 
@@ -330,9 +332,7 @@ namespace darmok
 		glm::mat4 getDefaultProjectionMatrix() const noexcept;
 		RenderGraphDefinition& getRenderGraph() noexcept;
 		const RenderGraphDefinition& getRenderGraph() const noexcept;
-
 		int getKeyModifierState() const noexcept;
-
 	private:
 		OptionalRef<Camera> _cam;
 		OptionalRef<Scene> _scene;

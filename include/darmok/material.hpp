@@ -4,6 +4,7 @@
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/material_fwd.hpp>
+#include <darmok/scene_fwd.hpp>
 #include <darmok/program.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/app.hpp>
@@ -61,7 +62,6 @@ namespace darmok
     public:
         using TextureType = MaterialTextureType;
         using PrimitiveType = MaterialPrimitiveType;
-        using Opacity = MaterialOpacity;
 
         Material(const std::shared_ptr<Texture>& texture = nullptr) noexcept;
         Material(const std::shared_ptr<Program>& program) noexcept;
@@ -111,8 +111,8 @@ namespace darmok
         const Color3& getEmissiveColor() const noexcept;
         Material& setEmissiveColor(const Color3& v) noexcept;
 
-        Opacity getOpacity() const noexcept;
-        Material& setOpacity(Opacity v) noexcept;
+        OpacityType getOpacityType() const noexcept;
+        Material& setOpacityType(OpacityType v) noexcept;
 
         Material& setTwoSided(bool enabled) noexcept;
         bool getTwoSided() const noexcept;
@@ -144,7 +144,7 @@ namespace darmok
         float _normalScale;
         float _occlusionStrength;
         Color3 _emissiveColor;
-        Opacity _opacity;
+        OpacityType _opacityType;
         uint16_t _shininess;
         bool _twoSided;
 

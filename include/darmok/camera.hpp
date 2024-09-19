@@ -9,6 +9,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/material_fwd.hpp>
 #include <darmok/entity_filter.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/render_graph.hpp>
@@ -29,6 +30,9 @@ namespace darmok
     public:
         Camera(const glm::mat4& projMatrix = {}) noexcept;
         ~Camera();
+
+        const std::string& getName() const noexcept;
+        Camera& setName(const std::string& name) noexcept;
 
         const glm::mat4& getProjectionMatrix() const noexcept;
 
@@ -66,16 +70,10 @@ namespace darmok
         void filterEntityView(EntityRuntimeView& view) const noexcept;
 
         template<typename T>
-        EntityRuntimeView createEntityView() const
-        {
-            return createEntityView<T>(getRegistry());
-        }
-
-        template<typename T>
-        EntityRuntimeView createEntityView(const EntityRegistry& registry) const noexcept
+        EntityRuntimeView createEntityView() const noexcept
         {
             EntityRuntimeView view;
-            auto s = registry.storage(entt::type_hash<T>::value());
+            auto s = getRegistry().storage(entt::type_hash<T>::value());
             if (s != nullptr)
             {
                 view.iterate(*s);
@@ -158,6 +156,7 @@ namespace darmok
         }
 
     private:
+        std::string _name;
         bool _enabled;
         glm::mat4 _proj;
 

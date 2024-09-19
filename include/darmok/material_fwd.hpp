@@ -20,10 +20,10 @@ namespace darmok
         Line
     };
 
-    enum class MaterialOpacity
+    enum class OpacityType
     {
         Opaque,
-        Cutout,
+        Mask,
         Transparent
     };
 }

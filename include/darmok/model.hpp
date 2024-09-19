@@ -132,8 +132,7 @@ namespace darmok
         Color3 emissiveColor = Colors::black();
         bool twoSided = false;
 
-        using Opacity = MaterialOpacity;
-        Opacity opacity = Opacity::Transparent;
+        OpacityType opacityType = OpacityType::Transparent;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -153,7 +152,7 @@ namespace darmok
                 occlusionStrength,
                 emissiveColor,
                 twoSided,
-                opacity
+                opacityType
             );
         }
 

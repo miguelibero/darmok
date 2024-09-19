@@ -27,8 +27,6 @@ namespace darmok
 		const Entity& getReal() const noexcept;
 		LuaScene getScene() const;
 
-		void registerComponentDependency(entt::id_type type1, entt::id_type type2) noexcept;
-
 		template<typename T, typename... Args>
 		T& addComponent(Args&&... args)
 		{

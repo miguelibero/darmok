@@ -571,15 +571,15 @@ namespace darmok
             std::string alphaMode = aiAlphaMode.C_Str();
             if (alphaMode == "OPAQUE")
             {
-                modelMat.opacity = MaterialOpacity::Opaque;
+                modelMat.opacityType = OpacityType::Opaque;
             }
             else if (alphaMode == "MASK")
             {
-                modelMat.opacity = MaterialOpacity::Cutout;
+                modelMat.opacityType = OpacityType::Mask;
             }
             else
             {
-                modelMat.opacity = MaterialOpacity::Transparent;
+                modelMat.opacityType = OpacityType::Transparent;
             }
         }
         else
@@ -591,10 +591,10 @@ namespace darmok
                 switch (blendMode)
                 {
                 case aiBlendMode_Additive:
-                    modelMat.opacity = MaterialOpacity::Transparent;
+                    modelMat.opacityType = OpacityType::Transparent;
                     break;
                 case aiBlendMode_Default:
-                    modelMat.opacity = MaterialOpacity::Opaque;
+                    modelMat.opacityType = OpacityType::Opaque;
                     break;
                 }
             }

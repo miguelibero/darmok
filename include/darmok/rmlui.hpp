@@ -106,6 +106,7 @@ namespace darmok
 		void update(float deltaTime) noexcept override;
 		void shutdown() noexcept override;
 		void renderReset() noexcept override;
+		void beforeRenderView(IRenderGraphContext& context) noexcept override;
 
 		RmluiRendererImpl& getImpl() noexcept;
 		const RmluiRendererImpl& getImpl() const noexcept;

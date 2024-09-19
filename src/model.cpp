@@ -343,7 +343,7 @@ namespace darmok
             .setOcclusionStrength(modelMat->occlusionStrength)
             .setEmissiveColor(modelMat->emissiveColor)
             .setTwoSided(modelMat->twoSided)
-            .setOpacity(modelMat->opacity)
+            .setOpacityType(modelMat->opacityType)
             .setProgramDefines(modelMat->programDefines);
 
         _materials.emplace(modelMat, mat);
