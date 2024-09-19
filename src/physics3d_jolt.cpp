@@ -1102,7 +1102,19 @@ namespace darmok::physics3d
         }
         if (trans && isEnabled())
         {
-            getSystemImpl().updateTransform(trans.value(), getBodyInterface()->GetWorldTransform(_bodyId));
+            if (getMotionType() == MotionType::Kinematic)
+            {
+                glm::vec3 pos;
+                glm::quat rot;
+                glm::vec3 scale;
+                Math::decompose(trans->getWorldMatrix(), pos, rot, scale);
+                setPosition(pos);
+                setRotation(rot);
+            }
+            else
+            {
+                getSystemImpl().updateTransform(trans.value(), getBodyInterface()->GetWorldTransform(_bodyId));
+            }
         }
     }
 
