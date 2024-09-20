@@ -7,6 +7,8 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/input.hpp>
+#include "utils.hpp"
+
 
 namespace darmok
 {
@@ -133,27 +135,16 @@ namespace darmok
 		bool isConnected() const noexcept;
 	};
 
-	class LuaFunctionInputEventListener final : public IInputEventListener
+	class LuaInputEventListener final : public IInputEventListener
 	{
 	public:
-		LuaFunctionInputEventListener(const std::string& tag, const sol::protected_function& func) noexcept;
+		LuaInputEventListener(const std::string& tag, const sol::protected_function& func) noexcept;
+		LuaInputEventListener(const std::string& tag, const sol::table& table) noexcept;
 		void onInputEvent(const std::string& tag) override;
 		const std::string& getTag() const noexcept;
-		const sol::protected_function& getFunction() const noexcept;
+		const LuaDelegate& getDelegate() const noexcept;
 	private:
-		sol::protected_function _func;
-		std::string _tag;
-	};
-
-	class LuaTableInputEventListener final : public IInputEventListener
-	{
-	public:
-		LuaTableInputEventListener(const std::string& tag, const sol::table& table) noexcept;
-		void onInputEvent(const std::string& tag) override;
-		const std::string& getTag() const noexcept;
-		const sol::table& getTable() const noexcept;
-	private:
-		sol::table _table;
+		LuaDelegate _delegate;
 		std::string _tag;
 	};
 
@@ -174,8 +165,7 @@ namespace darmok
 		LuaKeyboard _keyboard;
 		LuaMouse _mouse;
 		std::vector<LuaGamepad> _gamepads;
-		std::vector<std::unique_ptr<LuaFunctionInputEventListener>> _funcListeners;
-		std::vector<std::unique_ptr<LuaTableInputEventListener>> _tabListeners;
+		std::vector<std::unique_ptr<LuaInputEventListener>> _listeners;
 
 		void addListener1(const std::string& tag, const sol::object& ev, const sol::protected_function& func);
 		void addListener2(const std::string& tag, const sol::object& ev, const sol::table& tab);

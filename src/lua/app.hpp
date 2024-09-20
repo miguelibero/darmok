@@ -13,6 +13,7 @@
 #include "input.hpp"
 #include "audio.hpp"
 #include "coroutine.hpp"
+#include "utils.hpp"
 
 namespace bx
 {
@@ -61,8 +62,7 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		std::vector<sol::protected_function> _updaterFunctions;
-		std::vector<sol::table> _updaterTables;
+		std::vector<LuaDelegate> _updaters;
 		LuaCoroutineRunner _coroutineRunner;
 		std::reference_wrapper<App> _app;
 		LuaInput _input;
@@ -86,6 +86,7 @@ namespace darmok
 		bool stopCoroutine(const LuaCoroutineThread& thread) noexcept;
 
 		void updateUpdaters(float deltaTime) noexcept;
+		bool removeUpdater3(const LuaDelegate& dlg) noexcept;
 
 		static bool getDebug() noexcept;
 	};

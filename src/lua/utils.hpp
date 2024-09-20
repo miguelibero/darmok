@@ -79,4 +79,43 @@ namespace darmok
             table[sol::metatable_key] = metatable;
         }
     };
+
+    class LuaDelegate final
+    {
+    public:
+        LuaDelegate(const sol::protected_function& func) noexcept;
+        LuaDelegate(const sol::table& table, const std::string& key) noexcept;
+
+        bool operator==(const sol::protected_function& func) const noexcept;
+        bool operator!=(const sol::protected_function& func) const noexcept;
+        bool operator==(const sol::table& table) const noexcept;
+        bool operator!=(const sol::table& table) const noexcept;
+        bool operator==(const LuaDelegate& dlg) const noexcept;
+        bool operator!=(const LuaDelegate& dlg) const noexcept;
+
+        template<typename... Args>
+        sol::protected_function_result operator()(Args&&... args)
+        {
+            sol::protected_function func;
+            if (_table)
+            {
+                auto elm = _table[_tableKey];
+                if (elm.get_type() == sol::type::function)
+                {
+                    sol::protected_function func = elm;
+                    return func(_table, std::forward<Args>(args)...);
+                }
+            }
+            else if (_func)
+            {
+                return _func(std::forward<Args>(args)...);
+            }
+            throw std::runtime_error("empty lua delegate");
+        }
+    private:
+        sol::protected_function _func;
+        sol::table _table;
+        std::string _tableKey;
+    };
+
 }

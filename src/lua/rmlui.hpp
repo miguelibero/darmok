@@ -17,6 +17,7 @@
 #include <optional>
 #include "glm.hpp"
 #include "viewport.hpp"
+#include "utils.hpp"
 
 namespace Rml
 {
@@ -31,24 +32,15 @@ namespace darmok
     class RmluiRenderer;
     class RmluiCanvas;
 
-    class LuaFunctionRmluiEventListener final : public Rml::EventListener
+    class LuaRmluiEventListener final : public Rml::EventListener
     {
     public:
-        LuaFunctionRmluiEventListener(const sol::protected_function& func) noexcept;
+        LuaRmluiEventListener(const sol::protected_function& func) noexcept;
+        LuaRmluiEventListener(const sol::table& tab) noexcept;
         void ProcessEvent(Rml::Event& event) override;
         void OnDetach(Rml::Element*) noexcept override;
     private:
-        sol::protected_function _func;
-    };
-
-    class LuaTableRmluiEventListener final : public Rml::EventListener
-    {
-    public:
-        LuaTableRmluiEventListener(const sol::table& tab) noexcept;
-        void ProcessEvent(Rml::Event& event) override;
-        void OnDetach(Rml::Element*) noexcept override;
-    private:
-        sol::table _tab;
+        LuaDelegate _delegate;
     };
 
     class LuaRmluiRenderer;    

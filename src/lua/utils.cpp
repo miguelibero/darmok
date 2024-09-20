@@ -24,7 +24,6 @@ namespace darmok
 			logError(desc, result);
 			return false;
 		}
-
 		sol::object obj = result;
 		if (obj.get_type() == sol::type::boolean)
 		{
@@ -54,5 +53,46 @@ namespace darmok
 	int LuaUtils::deny(lua_State* L)
 	{
 		return luaL_error(L, "operation not allowed");
+	}
+
+	LuaDelegate::LuaDelegate(const sol::protected_function& func) noexcept
+		: _func(func)
+	{
+	}
+
+	LuaDelegate::LuaDelegate(const sol::table& table, const std::string& key) noexcept
+		: _table(table)
+		, _tableKey(key)
+	{
+	}
+
+	bool LuaDelegate::operator==(const sol::protected_function& func) const noexcept
+	{
+		return _func == func;
+	}
+
+	bool LuaDelegate::operator!=(const sol::protected_function& func) const noexcept
+	{
+		return !operator==(func);
+	}
+
+	bool LuaDelegate::operator==(const sol::table& table) const noexcept
+	{
+		return _table == table;
+	}
+
+	bool LuaDelegate::operator!=(const sol::table& table) const noexcept
+	{
+		return !operator==(table);
+	}
+
+	bool LuaDelegate::operator==(const LuaDelegate& dlg) const noexcept
+	{
+		return _func == dlg._func && _table == dlg._table && _tableKey == dlg._tableKey;
+	}
+
+	bool LuaDelegate::operator!=(const LuaDelegate& dlg) const noexcept
+	{
+		return !operator==(dlg);
 	}
 }

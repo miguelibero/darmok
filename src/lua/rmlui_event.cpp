@@ -1,6 +1,5 @@
 #include "rmlui.hpp"
 #include "../rmlui.hpp"
-#include "utils.hpp"
 
 namespace darmok
 {
@@ -397,37 +396,24 @@ namespace darmok
         );
     }
 
-    LuaFunctionRmluiEventListener::LuaFunctionRmluiEventListener(const sol::protected_function& func) noexcept
-        : _func(func)
+    LuaRmluiEventListener::LuaRmluiEventListener(const sol::protected_function& func) noexcept
+        : _delegate(func)
     {
     }
 
-    void LuaFunctionRmluiEventListener::OnDetach(Rml::Element*) noexcept
+    LuaRmluiEventListener::LuaRmluiEventListener(const sol::table& tab) noexcept
+        : _delegate(tab, "on_rmlui_event")
+    {
+    }
+
+    void LuaRmluiEventListener::OnDetach(Rml::Element*) noexcept
     {
         delete this;
     }
 
-    void LuaFunctionRmluiEventListener::ProcessEvent(Rml::Event& event)
+    void LuaRmluiEventListener::ProcessEvent(Rml::Event& event)
     {
-        auto result = _func(event);
-        LuaUtils::checkResult("rmlui function event: " + event.GetType(), result);
-    }
-
-    LuaTableRmluiEventListener::LuaTableRmluiEventListener(const sol::table& tab) noexcept
-        : _tab(tab)
-    {
-    }
-
-    void LuaTableRmluiEventListener::OnDetach(Rml::Element*) noexcept
-    {
-        delete this;
-    }
-
-    void LuaTableRmluiEventListener::ProcessEvent(Rml::Event& event)
-    {
-        LuaUtils::callTableDelegate(_tab, "on_rmlui_event", "rmlui table event: " + event.GetType(),
-            [&event](auto& func, auto& self) {
-                return func(self, event);
-            });
+        auto result = _delegate(event);
+        LuaUtils::checkResult("rmlui event: " + event.GetType(), result);
     }
 }

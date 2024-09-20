@@ -320,7 +320,7 @@ namespace darmok
 
     LuaRmluiCanvas& LuaRmluiCanvas::addEventListener1(const std::string& ev, const sol::table& tab) noexcept
     {
-        _canvas.getContext().AddEventListener(ev, new LuaTableRmluiEventListener(tab));
+        _canvas.getContext().AddEventListener(ev, new LuaRmluiEventListener(tab));
         return *this;
     }
 
@@ -336,7 +336,7 @@ namespace darmok
 
     LuaRmluiCanvas& LuaRmluiCanvas::addEventListener2(const std::string& ev, const sol::protected_function& func) noexcept
     {
-        _canvas.getContext().AddEventListener(ev, new LuaFunctionRmluiEventListener(func));
+        _canvas.getContext().AddEventListener(ev, new LuaRmluiEventListener(func));
         return *this;
     }
 

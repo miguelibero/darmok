@@ -1,52 +1,33 @@
 #include "input.hpp"
-#include "utils.hpp"
 
 namespace darmok
 {
-	LuaFunctionInputEventListener::LuaFunctionInputEventListener(const std::string& tag, const sol::protected_function& func) noexcept
-		: _func(func)
+	LuaInputEventListener::LuaInputEventListener(const std::string& tag, const sol::protected_function& func) noexcept
+		: _delegate(func)
 		, _tag(tag)
 	{
 	}
 
-	void LuaFunctionInputEventListener::onInputEvent(const std::string& tag)
+	LuaInputEventListener::LuaInputEventListener(const std::string& tag, const sol::table& table) noexcept
+		: _delegate(table, "on_input_event")
+		, _tag(tag)
 	{
-		auto desc = "input event function listener: " + tag;
-		LuaUtils::checkResult(desc, _func.call(tag));
 	}
 
-	const std::string& LuaFunctionInputEventListener::getTag() const noexcept
+	void LuaInputEventListener::onInputEvent(const std::string& tag)
+	{
+		auto desc = "input event listener: " + tag;
+		LuaUtils::checkResult(desc, _delegate(tag));
+	}
+
+	const std::string& LuaInputEventListener::getTag() const noexcept
 	{
 		return _tag;
 	}
 
-	const sol::protected_function& LuaFunctionInputEventListener::getFunction() const noexcept
+	const LuaDelegate& LuaInputEventListener::getDelegate() const noexcept
 	{
-		return _func;
-	}
-
-	LuaTableInputEventListener::LuaTableInputEventListener(const std::string& tag, const sol::table& table) noexcept
-		: _tag(tag)
-		, _table(table)
-	{
-	}
-
-	void LuaTableInputEventListener::onInputEvent(const std::string& tag)
-	{
-		auto desc = "input event table listener: " + tag;
-		LuaUtils::callTableDelegate(_table, "on_input_event", desc, [&tag](auto& func, auto& self) {
-			return func(self, tag);
-		});
-	}
-
-	const std::string& LuaTableInputEventListener::getTag() const noexcept
-	{
-		return _tag;
-	}
-
-	const sol::table& LuaTableInputEventListener::getTable() const noexcept
-	{
-		return _table;
+		return _delegate;
 	}
 
     LuaInput::LuaInput(Input& input) noexcept
@@ -64,11 +45,7 @@ namespace darmok
 
 	LuaInput::~LuaInput() noexcept
 	{
-		for (auto& listener : _funcListeners)
-		{
-			_input->removeListener(*listener);
-		}
-		for (auto& listener : _tabListeners)
+		for (auto& listener : _listeners)
 		{
 			_input->removeListener(*listener);
 		}
@@ -105,7 +82,7 @@ namespace darmok
 		{
 			throw std::invalid_argument("could not parse events");
 		}
-		auto& listener = *_funcListeners.emplace_back(std::make_unique<LuaFunctionInputEventListener>(tag, func));
+		auto& listener = *_listeners.emplace_back(std::make_unique<LuaInputEventListener>(tag, func));
 		_input->addListener(tag, evs, listener);
 	}
 
@@ -116,59 +93,59 @@ namespace darmok
 		{
 			throw std::invalid_argument("could not parse events");
 		}
-		auto& listener = *_tabListeners.emplace_back(std::make_unique<LuaTableInputEventListener>(tag, tab));
+		auto& listener = *_listeners.emplace_back(std::make_unique<LuaInputEventListener>(tag, tab));
 		_input->addListener(tag, evs, listener);
 	}
 
 	bool LuaInput::removeListener1(const std::string& tag, const sol::protected_function& func) noexcept
 	{
-		auto itr = std::remove_if(_funcListeners.begin(), _funcListeners.end(), [&tag, &func](auto& listener) {
-			return listener->getTag() == tag && listener->getFunction() == func;
+		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&tag, &func](auto& listener) {
+			return listener->getTag() == tag && listener->getDelegate() == func;
 		});
-		if (itr == _funcListeners.end())
+		if (itr == _listeners.end())
 		{
 			return false;
 		}
-		_funcListeners.erase(itr, _funcListeners.end());
+		_listeners.erase(itr, _listeners.end());
 		return true;
 	}
 
 	bool LuaInput::removeListener2(const sol::protected_function& func) noexcept
 	{
-		auto itr = std::remove_if(_funcListeners.begin(), _funcListeners.end(), [&func](auto& listener) {
-			return listener->getFunction() == func;
+		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&func](auto& listener) {
+			return listener->getDelegate() == func;
 		});
-		if (itr == _funcListeners.end())
+		if (itr == _listeners.end())
 		{
 			return false;
 		}
-		_funcListeners.erase(itr, _funcListeners.end());
+		_listeners.erase(itr, _listeners.end());
 		return true;
 	}
 
 	bool LuaInput::removeListener3(const std::string& tag, const sol::table& table) noexcept
 	{
-		auto itr = std::remove_if(_tabListeners.begin(), _tabListeners.end(), [&tag, &table](auto& listener) {
-			return listener->getTag() == tag && listener->getTable() == table;
+		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&tag, &table](auto& listener) {
+			return listener->getTag() == tag && listener->getDelegate() == table;
 			});
-		if (itr == _tabListeners.end())
+		if (itr == _listeners.end())
 		{
 			return false;
 		}
-		_tabListeners.erase(itr, _tabListeners.end());
+		_listeners.erase(itr, _listeners.end());
 		return true;
 	}
 
 	bool LuaInput::removeListener4(const sol::table& table) noexcept
 	{
-		auto itr = std::remove_if(_tabListeners.begin(), _tabListeners.end(), [&table](auto& listener) {
-			return listener->getTable() == table;
+		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&table](auto& listener) {
+			return listener->getDelegate() == table;
 			});
-		if (itr == _tabListeners.end())
+		if (itr == _listeners.end())
 		{
 			return false;
 		}
-		_tabListeners.erase(itr, _tabListeners.end());
+		_listeners.erase(itr, _listeners.end());
 		return true;
 	}
 

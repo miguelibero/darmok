@@ -78,13 +78,13 @@ namespace darmok
 
     Rml::Element& LuaRmluiElement::addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept
     {
-        elm.AddEventListener(ev, new LuaTableRmluiEventListener(tab));
+        elm.AddEventListener(ev, new LuaRmluiEventListener(tab));
         return elm;
     }
 
     Rml::Element& LuaRmluiElement::addEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept
     {
-        elm.AddEventListener(ev, new LuaFunctionRmluiEventListener(func));
+        elm.AddEventListener(ev, new LuaRmluiEventListener(func));
         return elm;
     }
 

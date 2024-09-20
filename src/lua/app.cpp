@@ -129,36 +129,47 @@ namespace darmok
 	{
 		if (func)
 		{
-			_updaterFunctions.push_back(func);
+			_updaters.emplace_back(func);
 		}
 		return *this;
 	}
 
 	LuaApp& LuaApp::addUpdater2(const sol::table& table) noexcept
 	{
-		_updaterTables.push_back(table);
+		_updaters.emplace_back(table, "update");
 		return *this;
 	}
 
 	bool LuaApp::removeUpdater1(const sol::protected_function& func) noexcept
 	{
-		auto itr = std::remove(_updaterFunctions.begin(), _updaterFunctions.end(), func);
-		if (itr == _updaterFunctions.end())
+		auto itr = std::remove(_updaters.begin(), _updaters.end(), func);
+		if (itr == _updaters.end())
 		{
 			return false;
 		}
-		_updaterFunctions.erase(itr, _updaterFunctions.end());
+		_updaters.erase(itr, _updaters.end());
 		return true;
 	}
 
 	bool LuaApp::removeUpdater2(const sol::table& table) noexcept
 	{
-		auto itr = std::remove(_updaterTables.begin(), _updaterTables.end(), table);
-		if (itr == _updaterTables.end())
+		auto itr = std::remove(_updaters.begin(), _updaters.end(), table);
+		if (itr == _updaters.end())
 		{
 			return false;
 		}
-		_updaterTables.erase(itr, _updaterTables.end());
+		_updaters.erase(itr, _updaters.end());
+		return true;
+	}
+
+	bool LuaApp::removeUpdater3(const LuaDelegate& dlg) noexcept
+	{
+		auto itr = std::remove(_updaters.begin(), _updaters.end(), dlg);
+		if (itr == _updaters.end())
+		{
+			return false;
+		}
+		_updaters.erase(itr, _updaters.end());
 		return true;
 	}
 
@@ -230,36 +241,14 @@ namespace darmok
 
 	void LuaApp::updateUpdaters(float deltaTime) noexcept
 	{
-		std::vector<sol::protected_function> finishedFunctions;
-		for (auto& func : _updaterFunctions)
+		auto updaters = _updaters;
+		for (auto& updater : updaters)
 		{
-			auto result = func(deltaTime);
-			auto finished = LuaUtils::checkResult("running function updater", result);
-			if (finished)
+			auto result = updater(deltaTime);
+			if (auto finished = LuaUtils::checkResult("running updater", result))
 			{
-				finishedFunctions.push_back(func);
+				removeUpdater3(updater);
 			}
-		}
-		for (auto& func : finishedFunctions)
-		{
-			removeUpdater1(func);
-		}
-
-		std::vector<sol::table> finishedTables;
-		for (auto& tab : _updaterTables)
-		{
-			auto finished = LuaUtils::callTableDelegate(tab, "update", "running table updater",
-				[deltaTime](auto& func, auto& self) {
-					return func(self, deltaTime);
-				});
-			if (finished)
-			{
-				finishedTables.push_back(tab);
-			}
-		}
-		for (auto& tab : finishedTables)
-		{
-			removeUpdater2(tab);
 		}
 	}	
 
