@@ -1335,7 +1335,7 @@ namespace darmok
         app.getInput().getKeyboard().addListener(*this);
         app.getInput().getMouse().addListener(*this);
 
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
             canvas->getImpl().init(*this);
@@ -1359,7 +1359,7 @@ namespace darmok
         {
             return;
         }
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity)->getImpl();
             if (&canvas.getContext() == context)
@@ -1377,7 +1377,7 @@ namespace darmok
         {
             return false;
         }
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity)->getImpl();
             if (&canvas.getContext() == context)
@@ -1437,7 +1437,7 @@ namespace darmok
 
         if (_cam)
         {
-            for (auto entity : _cam->createEntityView<RmluiCanvas>())
+            for (auto entity : _cam->getEntities<RmluiCanvas>())
             {
                 auto canvas = _scene->getComponent<RmluiCanvas>(entity);
                 canvas->getImpl().shutdown();
@@ -1530,7 +1530,7 @@ namespace darmok
         getRmluiSystem().update(dt);
         if (_cam && _scene)
         {
-            for (auto entity : _cam->createEntityView<RmluiCanvas>())
+            for (auto entity : _cam->getEntities<RmluiCanvas>())
             {
                 auto canvas = _scene->getComponent<RmluiCanvas>(entity);
                 canvas->getImpl().update();
@@ -1550,7 +1550,7 @@ namespace darmok
             return;
         }
 
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
             canvas->getImpl().renderReset();
@@ -1563,7 +1563,7 @@ namespace darmok
         {
             return;
         }
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
             {
@@ -1689,7 +1689,7 @@ namespace darmok
         }
         auto& rmlKey = itr->second;
         auto state = getKeyModifierState();
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
             canvas->getImpl().processKey(rmlKey, state, down);
@@ -1703,7 +1703,7 @@ namespace darmok
             return;
         }
         Rml::String str = chr.toString();
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
             canvas->getImpl().processTextInput(str);
@@ -1716,7 +1716,7 @@ namespace darmok
         {
             return;
         }
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
             canvas->getImpl().processMouseLeave();
@@ -1738,7 +1738,7 @@ namespace darmok
         auto screenPos = win.windowToScreenPoint(absolute);
         auto vpPos = vp.screenToViewportPoint(screenPos);
 
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
             if (!canvas->isInputActive())
@@ -1769,7 +1769,7 @@ namespace darmok
         }
         auto rmlDelta = RmluiUtils::convert<float>(delta) * -1;
         auto state = getKeyModifierState();
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
             canvas->getImpl().processMouseWheel(rmlDelta, state);
@@ -1796,7 +1796,7 @@ namespace darmok
             break;
         }
         auto state = getKeyModifierState();
-        for (auto entity : _cam->createEntityView<RmluiCanvas>())
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
             canvas->getImpl().processMouseButton(i, state, down);

@@ -94,7 +94,7 @@ namespace darmok
         bool operator!=(const LuaDelegate& dlg) const noexcept;
 
         template<typename... Args>
-        sol::protected_function_result operator()(Args&&... args)
+        sol::protected_function_result operator()(Args&&... args) const
         {
             sol::protected_function func;
             if (_table)

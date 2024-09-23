@@ -335,8 +335,8 @@ namespace darmok
 		{
 			return;
 		}
-		auto texts = _cam->createEntityView<Text>();
-		if (texts.size_hint() == 0)
+		auto entities = _cam->getEntities<Text>();
+		if (entities.empty())
 		{
 			return;
 		}
@@ -350,7 +350,7 @@ namespace darmok
 			| BGFX_STATE_BLEND_ALPHA
 			;
 
-		for (auto entity : texts)
+		for (auto entity : entities)
 		{
 			auto text = _scene->getComponent<Text>(entity);
 			if (!text->getFont() || !text->getFont()->getTexture())

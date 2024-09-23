@@ -120,8 +120,8 @@ namespace darmok
         auto scene = _renderer->getScene();
         auto cam = _renderer->getCamera();
 
-        auto renderables = cam->createEntityView<Renderable>();
-        for (auto entity : renderables)
+        auto entities = cam->getEntities<Renderable>();
+        for (auto entity : entities)
         {
             auto renderable = scene->getComponent<const Renderable>(entity);
             if (!renderable->valid())
@@ -231,12 +231,12 @@ namespace darmok
         {
             return;
         }
-        auto view = _cam->createEntityView<DirectionalLight>();
+        auto entities = _cam->getEntities<DirectionalLight>();
 
         size_t i = 0;
         auto changed = false;
         bool finished = false;
-        for (auto entity : view)
+        for (auto entity : entities)
         {
             for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
             {
@@ -435,19 +435,19 @@ namespace darmok
 
     void ShadowRenderComponent::update(float deltaTime) noexcept
     {
-        auto lights = _cam->createEntityView<DirectionalLight>();
+        auto entities = _cam->getEntities<DirectionalLight>();
 
         auto cascadeAmount = _renderer.getConfig().cascadeAmount;
-        uint32_t size = lights.size_hint() * cascadeAmount;
+        uint32_t size = entities.size() * cascadeAmount;
 
         VertexDataWriter writer(_shadowTransLayout, size);
         uint32_t index = 0;
 
-        for (auto lightEntity : lights)
+        for (auto entity : entities)
         {
             for (auto casc = 0; casc < cascadeAmount; ++casc)
             {
-                auto lightTrans = _scene->getComponent<const Transform>(lightEntity);
+                auto lightTrans = _scene->getComponent<const Transform>(entity);
                 auto mtx = _renderer.getLightMapMatrix(lightTrans, casc);
                 // not sure why but the shader reads the data by rows
                 mtx = glm::transpose(mtx);
@@ -539,11 +539,11 @@ namespace darmok
         renderMesh(meshData, debugColor, context);
         ++debugColor;
 
-        auto lights = cam->createEntityView<DirectionalLight>();
-        for (auto lightEntity : lights)
+        auto entities = cam->getEntities<DirectionalLight>();
+        for (auto entity : entities)
         {
             meshData.clear();
-            auto lightTrans = _scene->getComponent<Transform>(lightEntity);
+            auto lightTrans = _scene->getComponent<Transform>(entity);
             for (auto casc = 0; casc < cascadeAmount; ++casc)
             {
                 auto mtx = _renderer.getLightMatrix(lightTrans, casc);

@@ -5,7 +5,6 @@
 
 namespace darmok
 {
-
     std::optional<std::string> LuaRmluiElement::getProperty(Rml::Element& elm, const std::string& name) noexcept
     {
         if (auto prop = elm.GetProperty(name))

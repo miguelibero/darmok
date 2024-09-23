@@ -8,9 +8,8 @@
 #include <bgfx/bgfx.h>
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/scene_fwd.hpp>
+#include <darmok/scene.hpp>
 #include <darmok/material_fwd.hpp>
-#include <darmok/entity_filter.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/render_graph.hpp>
 #include <darmok/render_chain.hpp>
@@ -19,9 +18,9 @@
 namespace darmok
 {
     class Texture;
-    class IEntityFilter;
     class Transform;
     class ICameraComponent;
+    class IEntityFilter;
     class Scene;
     struct Ray;
 
@@ -49,6 +48,7 @@ namespace darmok
         Camera& setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
 
         Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
+        OptionalRef<IEntityFilter> getEntityFilter() const noexcept;
 
         Camera& setViewport(const std::optional<Viewport>& viewport) noexcept;
         const std::optional<Viewport>& getViewport() const noexcept;
@@ -67,19 +67,16 @@ namespace darmok
             return setEntityFilter(std::make_unique<EntityComponentFilter<T>>());
         }
 
-        void filterEntityView(EntityRuntimeView& view) const noexcept;
+        std::vector<Entity> getEntities() const noexcept;
 
         template<typename T>
-        EntityRuntimeView createEntityView() const noexcept
+        std::vector<Entity> getEntities() const noexcept
         {
-            EntityRuntimeView view;
-            auto s = getRegistry().storage(entt::type_hash<T>::value());
-            if (s != nullptr)
+            if (!_scene)
             {
-                view.iterate(*s);
+                return std::vector<Entity>();
             }
-            filterEntityView(view);
-            return view;
+            return _scene->getEntities<T>(getEntityFilter());
         }
 
         void init(Scene& scene, App& app);

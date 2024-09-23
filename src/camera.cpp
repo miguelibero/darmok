@@ -173,21 +173,22 @@ namespace darmok
     Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept
     {
         _entityFilter = std::move(filter);
-        if (_scene)
-        {
-            _entityFilter->init(_scene->getRegistry());
-        }
         return *this;
     }
 
-    void Camera::filterEntityView(EntityRuntimeView& entities) const noexcept
+    OptionalRef<IEntityFilter> Camera::getEntityFilter() const noexcept
     {
-        if (_entityFilter != nullptr)
-        {
-            (*_entityFilter)(entities);
-        }
+        return _entityFilter.get();
     }
 
+    std::vector<Entity> Camera::getEntities() const noexcept
+    {
+        if (!_scene)
+        {
+            return std::vector<Entity>();
+        }
+        return _scene->getEntities(getEntityFilter());
+    }
 
     Camera::ComponentRefs Camera::copyComponentContainer() const noexcept
     {
@@ -213,10 +214,6 @@ namespace darmok
         _renderGraph.setName(name);
         _renderChain.init(name + " render chain", -RenderPassDefinition::kMaxPriority);
 
-        if (_entityFilter != nullptr)
-        {
-            _entityFilter->init(scene.getRegistry());
-        }
         for(auto& comp : copyComponentContainer())
         {
             comp.get().init(*this, scene, app);

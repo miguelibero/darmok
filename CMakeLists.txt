@@ -214,7 +214,6 @@ set(HEADERS
   model_fwd.hpp
   model.hpp
 
-  entity_filter.hpp
   transform.hpp
   camera.hpp
   light.hpp

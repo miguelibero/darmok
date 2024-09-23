@@ -19,6 +19,7 @@ namespace darmok
     class Scene;
     class App;
     class FrameBuffer;
+    class IEntityFilter;
 
     class SceneImpl final : IRenderChainDelegate
     {
@@ -56,7 +57,6 @@ namespace darmok
         void shutdown();
 
         static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
-
     private:
         using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ISceneComponent>>>;
         using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;

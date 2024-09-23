@@ -30,7 +30,7 @@ namespace darmok
         {
             return;
         }
-        for (auto entity : _cam->createEntityView<LuaRmluiCanvas>())
+        for (auto entity : _cam->getEntities<LuaRmluiCanvas>())
         {
             auto canvas = _scene->getComponent<LuaRmluiCanvas>(entity);
             canvas->update(deltaTime);

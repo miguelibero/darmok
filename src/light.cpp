@@ -214,8 +214,8 @@ namespace darmok
 
     size_t LightingRenderComponent::updateDirLights() noexcept
     {
-        auto lights = _cam->createEntityView<DirectionalLight>();
-        VertexDataWriter writer(_dirLightsLayout, uint32_t(lights.size_hint()));
+        auto lights = _cam->getEntities<DirectionalLight>();
+        VertexDataWriter writer(_dirLightsLayout, uint32_t(lights.size()));
         uint32_t index = 0;
 
         for (auto entity : lights)
@@ -244,11 +244,11 @@ namespace darmok
 
     size_t LightingRenderComponent::updatePointLights() noexcept
     {
-        auto lights = _cam->createEntityView<PointLight>();
-        VertexDataWriter writer(_pointLightsLayout, uint32_t(lights.size_hint()));
+        auto entities = _cam->getEntities<PointLight>();
+        VertexDataWriter writer(_pointLightsLayout, uint32_t(entities.size()));
         uint32_t index = 0;
 
-        for (auto entity : lights)
+        for (auto entity : entities)
         {
             auto& light = _scene->getComponent<const PointLight>(entity).value();
             auto trans = _scene->getComponent<const Transform>(entity);
@@ -276,9 +276,9 @@ namespace darmok
 
     void LightingRenderComponent::updateAmbientLights() noexcept
     {
-        auto ambientLights = _cam->createEntityView<AmbientLight>();
+        auto entities = _cam->getEntities<AmbientLight>();
         _lightData = glm::vec4(0.F);
-        for (auto entity : ambientLights)
+        for (auto entity : entities)
         {
             auto& ambientLight = _scene->getComponent<const AmbientLight>(entity).value();
             auto c = Colors::normalize(ambientLight.getColor()) * ambientLight.getIntensity();

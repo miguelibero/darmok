@@ -69,11 +69,11 @@ namespace darmok
 		}
 	}
 
-	void ForwardRenderer::renderEntities(IRenderGraphContext& context, EntityRuntimeView& view, OpacityType opacity) noexcept
+	void ForwardRenderer::renderEntities(IRenderGraphContext& context, const std::vector<Entity>& entities, OpacityType opacity) noexcept
 	{
 		auto& encoder = context.getEncoder();
 		auto viewId = context.getViewId();
-		for (auto entity : view)
+		for (auto entity : entities)
 		{
 			auto renderable = _scene->getComponent<const Renderable>(entity);
 			if (!renderable->valid())
@@ -100,9 +100,9 @@ namespace darmok
 			return;
 		}
 		_cam->beforeRenderView(context);
-		auto view = _cam->createEntityView<Renderable>();
-		renderEntities(context, view, OpacityType::Opaque);
-		renderEntities(context, view, OpacityType::Mask);
-		renderEntities(context, view, OpacityType::Transparent);
+		auto entities = _cam->getEntities<Renderable>();
+		renderEntities(context, entities, OpacityType::Opaque);
+		renderEntities(context, entities, OpacityType::Mask);
+		renderEntities(context, entities, OpacityType::Transparent);
 	}
 }

@@ -32,6 +32,6 @@ namespace darmok
         OptionalRef<App> _app;
         OptionalRef<MaterialAppComponent> _materials;
         
-        void renderEntities(IRenderGraphContext& context, EntityRuntimeView& view, OpacityType opacity) noexcept;
+        void renderEntities(IRenderGraphContext& context, const std::vector<Entity>& entities, OpacityType opacity) noexcept;
     };
 }

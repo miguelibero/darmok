@@ -33,6 +33,13 @@ namespace darmok
         virtual void onSceneComponentRemoved(entt::id_type type, ISceneComponent& component) {};
     };
 
+    class DARMOK_EXPORT BX_NO_VTABLE IEntityFilter
+    {
+    public:
+        virtual ~IEntityFilter() = default;
+        virtual bool operator()(Entity entity, const Scene& scene) const noexcept = 0;
+    };
+
     class SceneImpl;
     class RenderGraphDefinition;
     class RenderChain;
@@ -295,6 +302,22 @@ namespace darmok
             registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
         }
 
+        std::vector<Entity> getEntities(OptionalRef<IEntityFilter> filter = nullptr) const noexcept;
+
+        template<typename T>
+        std::vector<Entity> getEntities(OptionalRef<IEntityFilter> filter = nullptr) const noexcept
+        {
+            std::vector<Entity> entities;
+            for (auto entity : getComponentView<T>())
+            {
+                if (!filter || (*filter)(entity, *this))
+                {
+                    entities.push_back(entity);
+                }
+            }
+            return entities;
+        }
+
     private:
         std::unique_ptr<SceneImpl> _impl;
     };
@@ -319,6 +342,16 @@ namespace darmok
     private:
         Scenes _scenes;
         OptionalRef<App> _app;
+    };
+
+    template<typename T>
+    class DARMOK_EXPORT EntityComponentFilter final : public IEntityFilter
+    {
+    public:
+        bool operator()(Entity entity, const Scene& scene) const noexcept override
+        {
+            return scene.hasComponent<T>(entity);
+        }
     };
 }
 
