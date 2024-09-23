@@ -42,10 +42,7 @@ namespace darmok
         _scene = scene;
         _input = app.getInput();
         _win = app.getWindow();
-        if (_config.enableEvent)
-        {
-            _input->addListener("freelook", * _config.enableEvent, *this);
-        }
+        _input->addListener("freelook", _config.enableEvents, *this);
     };
 
     void FreelookController::shutdown() noexcept

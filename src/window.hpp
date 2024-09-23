@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <darmok/window.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/collection.hpp>
 
 namespace darmok
 {
@@ -41,6 +42,7 @@ namespace darmok
 		glm::vec2 screenToWindowDelta(const glm::vec2& delta) const noexcept;
 		glm::vec2 getFramebufferScale() const noexcept;
 
+		void addListener(std::unique_ptr<IWindowListener>&& listener) noexcept;
 		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(IWindowListener& listener) noexcept;
 
@@ -51,7 +53,7 @@ namespace darmok
 		VideoMode _videoMode;
 		VideoModeInfo _videoModeInfo;
 		WindowCursorMode _cursorMode;
-		std::unordered_set<OptionalRef<IWindowListener>> _listeners;
+		OwnRefCollection<IWindowListener> _listeners;
 		Platform& _plat;
 	};
 

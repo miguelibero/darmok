@@ -261,6 +261,7 @@ namespace darmok
         SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
         ~SkeletalAnimator();
 
+        SkeletalAnimator& addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
         SkeletalAnimator& addListener(ISkeletalAnimatorListener& listener) noexcept;
         bool removeListener(ISkeletalAnimatorListener& listener) noexcept;
 

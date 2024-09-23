@@ -10,7 +10,7 @@ namespace darmok
 {
 	struct DARMOK_EXPORT RmluiDebuggerComponentConfig
 	{
-		std::optional<InputEvent> enableEvent = KeyboardInputEvent{ KeyboardKey::F9 };
+		InputEvents enableEvents = { KeyboardInputEvent{ KeyboardKey::F9 } };
 	};
 
     class RmluiDebuggerComponentImpl;

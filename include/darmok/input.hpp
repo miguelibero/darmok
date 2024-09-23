@@ -44,6 +44,7 @@ namespace darmok
 		[[nodiscard]] const KeyboardModifiers& getModifiers() const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
+		void addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept;
 		void addListener(IKeyboardListener& listener) noexcept;
 		bool removeListener(IKeyboardListener& listener) noexcept;
 
@@ -89,6 +90,7 @@ namespace darmok
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 
+		void addListener(std::unique_ptr<IMouseListener>&& listener) noexcept;
 		void addListener(IMouseListener& listener) noexcept;
 		bool removeListener(IMouseListener& listener) noexcept;
 
@@ -136,6 +138,7 @@ namespace darmok
 		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
 		[[nodiscard]] bool isConnected() const noexcept;
 
+		void addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept;
 		void addListener(IGamepadListener& listener) noexcept;
 		bool removeListener(IGamepadListener& listener) noexcept;
 
@@ -248,7 +251,7 @@ namespace darmok
 		using Sensitivity = InputSensitivity;
 		float getAxis(const InputDirs& positive, const InputDirs& negative, const Sensitivity& sensitivity = {}) const noexcept;
 		
-		void addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept;
 		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
 		bool removeListener(const std::string& tag, IInputEventListener& listener) noexcept;
 		bool removeListener(IInputEventListener& listener) noexcept;

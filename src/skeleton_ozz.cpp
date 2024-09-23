@@ -236,16 +236,11 @@ namespace darmok
         job.Run();
     }
 
-    SkeletalAnimatorImpl::Listeners SkeletalAnimatorImpl::copyListeners() const noexcept
-    {
-        return _listeners;
-    }
-
     SkeletalAnimatorImpl::~SkeletalAnimatorImpl()
     {
-        for (auto& listener : copyListeners())
+        for (auto& listener : _listeners.copy())
         {
-            listener.get().onAnimatorDestroyed(_animator);
+            listener.onAnimatorDestroyed(_animator);
         }
     }
 
@@ -259,21 +254,19 @@ namespace darmok
         return _skeleton->getImpl().getOzz();
     }
 
+    void SkeletalAnimatorImpl::addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept
+    {
+        _listeners.insert(std::move(listener));
+    }
+
     void SkeletalAnimatorImpl::addListener(ISkeletalAnimatorListener& listener) noexcept
     {
-        _listeners.emplace_back(listener);
+        _listeners.insert(listener);
     }
 
     bool SkeletalAnimatorImpl::removeListener(ISkeletalAnimatorListener& listener) noexcept
     {
-        auto ptr = &listener;
-        auto itr = std::find_if(_listeners.begin(), _listeners.end(), [ptr](auto& ref) { return &ref.get() == ptr; });
-        if (itr == _listeners.end())
-        {
-            return false;
-        }
-        _listeners.erase(itr);
-        return true;
+        return _listeners.erase(listener);
     }
 
     void SkeletalAnimatorImpl::setPlaybackSpeed(float speed) noexcept
@@ -777,7 +770,7 @@ namespace darmok
             _transition.reset();
         }
 
-        auto listeners = copyListeners();
+        auto listeners = _listeners.copy();
 
         if (prevState)
         {
@@ -789,11 +782,11 @@ namespace darmok
                     std::move(prevState.value()));
                 for (auto& listener : listeners)
                 {
-                    listener.get().onAnimatorStateStarted(_animator, _transition->getCurrentState().getName());
+                    listener.onAnimatorStateStarted(_animator, _transition->getCurrentState().getName());
                 }
                 for (auto& listener : listeners)
                 {
-                    listener.get().onAnimatorTransitionStarted(_animator);
+                    listener.onAnimatorTransitionStarted(_animator);
                 }
                 return true;
             }
@@ -802,7 +795,7 @@ namespace darmok
         {
             for (auto& listener : listeners)
             {
-                listener.get().onAnimatorStateFinished(_animator, _state->getName());
+                listener.onAnimatorStateFinished(_animator, _state->getName());
             }
             _state->afterFinished();
         }
@@ -810,7 +803,7 @@ namespace darmok
         _state.emplace(getOzz(), stateConfig.value(), *this);
         for (auto& listener : listeners)
         {
-            listener.get().onAnimatorStateStarted(_animator, _state->getName());
+            listener.onAnimatorStateStarted(_animator, _state->getName());
         }
 
         return true;
@@ -944,16 +937,16 @@ namespace darmok
 
     void SkeletalAnimatorImpl::afterUpdate() noexcept
     {
-        auto listeners = copyListeners();
+        auto listeners = _listeners.copy();
         if (_transition && _transition->hasFinished())
         {
             for (auto& listener : listeners)
             {
-                listener.get().onAnimatorTransitionFinished(_animator);
+                listener.onAnimatorTransitionFinished(_animator);
             }
             for (auto& listener : listeners)
             {
-                listener.get().onAnimatorStateFinished(_animator, _transition->getPreviousState().getName());
+                listener.onAnimatorStateFinished(_animator, _transition->getPreviousState().getName());
             }
             if (_state)
             {
@@ -968,14 +961,14 @@ namespace darmok
             {
                 for (auto& listener : listeners)
                 {
-                    listener.get().onAnimatorStateLooped(_animator, _state->getName());
+                    listener.onAnimatorStateLooped(_animator, _state->getName());
                 }
             }
             if (_state->hasFinished())
             {
                 for (auto& listener : listeners)
                 {
-                    listener.get().onAnimatorStateFinished(_animator, _state->getName());
+                    listener.onAnimatorStateFinished(_animator, _state->getName());
                 }
                 _state->afterFinished();
                 auto& nextState = _state->getNextState();
@@ -990,6 +983,12 @@ namespace darmok
     SkeletalAnimator::SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept
         : _impl(std::make_unique<SkeletalAnimatorImpl>(*this, skel, anims, config))
     {
+    }
+
+    SkeletalAnimator& SkeletalAnimator::addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept
+    {
+        _impl->addListener(std::move(listener));
+        return *this;
     }
 
     SkeletalAnimator& SkeletalAnimator::addListener(ISkeletalAnimatorListener& listener) noexcept

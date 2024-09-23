@@ -97,9 +97,12 @@ namespace darmok::physics3d
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
         
-        void addUpdater(IPhysicsUpdater& updater) noexcept;
+        PhysicsSystem& addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
+        PhysicsSystem& addUpdater(IPhysicsUpdater& updater) noexcept;
         bool removeUpdater(IPhysicsUpdater& updater) noexcept;
-        void addListener(ICollisionListener& listener) noexcept;
+        
+        PhysicsSystem& addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
+        PhysicsSystem& addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
 
         std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) noexcept;
@@ -170,6 +173,7 @@ namespace darmok::physics3d
         PhysicsBody& move(const glm::vec3& pos, const glm::quat& rot, float deltaTime = 0.F);
         PhysicsBody& movePosition(const glm::vec3& pos, float deltaTime = 0.F);
 
+        PhysicsBody& addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         PhysicsBody& addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
 

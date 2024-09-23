@@ -27,7 +27,7 @@ namespace darmok::physics3d
     void LuaPhysicsDebugRenderer::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<PhysicsDebugConfig>("PhysicsDebugConfig", sol::default_constructor,
-            "enable_event", &PhysicsDebugConfig::enableEvent
+            "enable_events", &PhysicsDebugConfig::enableEvents
         );
         lua.new_usertype<PhysicsDebugRenderer>("PhysicsDebugRenderer",
             sol::no_constructor,

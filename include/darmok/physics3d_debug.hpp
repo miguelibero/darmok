@@ -32,7 +32,7 @@ namespace darmok::physics3d
 
     struct DARMOK_EXPORT PhysicsDebugConfig final
     {
-        std::optional<InputEvent> enableEvent = KeyboardInputEvent{ KeyboardKey::F8 };
+        InputEvents enableEvents = { KeyboardInputEvent{ KeyboardKey::F8 } };
         PhysicsDebugRenderConfig render;
     };
 

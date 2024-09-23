@@ -300,10 +300,7 @@ namespace darmok::physics3d
         _cam = cam;
         _scene = scene;
         _input = app.getInput();
-        if (_config.enableEvent)
-        {
-            _input->addListener("enable", *_config.enableEvent, *this);
-        }
+        _input->addListener("enable", _config.enableEvents, *this);
     }
 
     void PhysicsDebugRendererImpl::shutdown()

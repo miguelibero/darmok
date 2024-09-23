@@ -91,7 +91,7 @@ namespace darmok
 		_size = size;
 		for (auto& listener : _listeners)
 		{
-			listener->onWindowSize(size);
+			listener.onWindowSize(size);
 		}
 		return true;
 	}
@@ -105,7 +105,7 @@ namespace darmok
 		_pixelSize = size;
 		for (auto& listener : _listeners)
 		{
-			listener->onWindowPixelSize(size);
+			listener.onWindowPixelSize(size);
 		}
 		return true;
 	}
@@ -118,7 +118,7 @@ namespace darmok
 		}
 		for (auto& listener : _listeners)
 		{
-			listener->onWindowPhase(phase);
+			listener.onWindowPhase(phase);
 		}
 		_phase = phase;
 		return true;
@@ -133,7 +133,7 @@ namespace darmok
 		_videoMode = mode;
 		for (auto& listener : _listeners)
 		{
-			listener->onWindowVideoMode(mode);
+			listener.onWindowVideoMode(mode);
 		}
 		return true;
 	}
@@ -143,7 +143,7 @@ namespace darmok
 		_videoModeInfo = info;
 		for (auto& listener : _listeners)
 		{
-			listener->onWindowVideoModeInfo(info);
+			listener.onWindowVideoModeInfo(info);
 		}
 	}
 
@@ -151,7 +151,7 @@ namespace darmok
 	{
 		for (auto& listener : _listeners)
 		{
-			listener->onWindowError(error);
+			listener.onWindowError(error);
 		}
 	}
 
@@ -163,7 +163,7 @@ namespace darmok
 		}
 		for (auto& listener : _listeners)
 		{
-			listener->onWindowCursorMode(mode);
+			listener.onWindowCursorMode(mode);
 		}
 		_cursorMode = mode;
 		return true;
@@ -259,6 +259,11 @@ namespace darmok
 		return p;
 	}
 
+	void WindowImpl::addListener(std::unique_ptr<IWindowListener>&& listener) noexcept
+	{
+		_listeners.insert(std::move(listener));
+	}
+
 	void WindowImpl::addListener(IWindowListener& listener) noexcept
 	{
 		_listeners.insert(listener);
@@ -266,7 +271,7 @@ namespace darmok
 
 	bool WindowImpl::removeListener(IWindowListener& listener) noexcept
 	{
-		return _listeners.erase(listener) > 0;
+		return _listeners.erase(listener);
 	}
 
 	Window::Window(Platform& plat) noexcept

@@ -516,7 +516,7 @@ namespace darmok::physics3d
         {
             for (auto& updater : _updaters)
             {
-                updater->fixedUpdate(fdt);
+                updater.fixedUpdate(fdt);
             }
 
             // TODO: skeletal animations here? or maybe with an updater
@@ -548,24 +548,34 @@ namespace darmok::physics3d
         }
     }
 
+    void PhysicsSystemImpl::addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept
+    {
+        _updaters.insert(std::move(updater));
+    }
+
     void PhysicsSystemImpl::addUpdater(IPhysicsUpdater& updater) noexcept
     {
-        JoltUtils::addRefVector(_updaters, updater);
+        _updaters.insert(updater);
     }
     
     bool PhysicsSystemImpl::removeUpdater(IPhysicsUpdater& updater) noexcept
     {
-        return JoltUtils::removeRefVector(_updaters, updater);
+        return _updaters.erase(updater);
+    }
+
+    void PhysicsSystemImpl::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
+    {
+        _listeners.insert(std::move(listener));
     }
 
     void PhysicsSystemImpl::addListener(ICollisionListener& listener) noexcept
     {
-        JoltUtils::addRefVector(_listeners, listener);
+        _listeners.insert(listener);
     }
 
     bool PhysicsSystemImpl::removeListener(ICollisionListener& listener) noexcept
     {
-        return JoltUtils::removeRefVector(_listeners, listener);
+        return _listeners.erase(listener);
     }
 
     const tf::Taskflow& PhysicsSystemImpl::getTaskflow() const
@@ -802,7 +812,7 @@ namespace darmok::physics3d
         body2.getImpl().onCollisionEnter(body1, collision);
         for (auto& listener : _listeners)
         {
-            listener->onCollisionEnter(body1, body2, collision);
+            listener.onCollisionEnter(body1, body2, collision);
         }
         Collision collision2(collision);
     }
@@ -813,7 +823,7 @@ namespace darmok::physics3d
         body2.getImpl().onCollisionStay(body1, collision);
         for (auto& listener : _listeners)
         {
-            listener->onCollisionStay(body1, body2, collision);
+            listener.onCollisionStay(body1, body2, collision);
         }
     }
 
@@ -823,7 +833,7 @@ namespace darmok::physics3d
         body2.getImpl().onCollisionExit(body1);
         for (auto& listener : _listeners)
         {
-            listener->onCollisionExit(body1, body2);
+            listener.onCollisionExit(body1, body2);
         }
     }
     
@@ -898,10 +908,17 @@ namespace darmok::physics3d
     {
         _impl->update(deltaTime);
     }
+
+    PhysicsSystem& PhysicsSystem::addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept
+    {
+        _impl->addUpdater(std::move(updater));
+        return *this;
+    }
     
-    void PhysicsSystem::addUpdater(IPhysicsUpdater& updater) noexcept
+    PhysicsSystem& PhysicsSystem::addUpdater(IPhysicsUpdater& updater) noexcept
     {
         _impl->addUpdater(updater);
+        return *this;
     }
     
     bool PhysicsSystem::removeUpdater(IPhysicsUpdater& updater) noexcept
@@ -909,9 +926,16 @@ namespace darmok::physics3d
         return _impl->removeUpdater(updater);
     }
 
-    void PhysicsSystem::addListener(ICollisionListener& listener) noexcept
+    PhysicsSystem& PhysicsSystem::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
+    {
+        _impl->addListener(std::move(listener));
+        return *this;
+    }
+
+    PhysicsSystem& PhysicsSystem::addListener(ICollisionListener& listener) noexcept
     {
         _impl->addListener(listener);
+        return *this;
     }
 
     bool PhysicsSystem::removeListener(ICollisionListener& listener) noexcept
@@ -1358,21 +1382,26 @@ namespace darmok::physics3d
             rot, deltaTime);
     }
 
+    void PhysicsBodyImpl::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
+    {
+        _listeners.insert(std::move(listener));
+    }
+
     void PhysicsBodyImpl::addListener(ICollisionListener& listener) noexcept
     {
-        JoltUtils::addRefVector(_listeners, listener);
+        _listeners.insert(listener);
     }
 
     bool PhysicsBodyImpl::removeListener(ICollisionListener& listener) noexcept
     {
-        return JoltUtils::removeRefVector(_listeners, listener);
+        return _listeners.erase(listener);
     }
 
     void PhysicsBodyImpl::onCollisionEnter(PhysicsBody& other, const Collision& collision)
     {
         for (auto& listener : _listeners)
         {
-            listener->onCollisionEnter(_body.value(), other, collision);
+            listener.onCollisionEnter(_body.value(), other, collision);
         }
     }
 
@@ -1380,7 +1409,7 @@ namespace darmok::physics3d
     {
         for (auto& listener : _listeners)
         {
-            listener->onCollisionStay(_body.value(), other, collision);
+            listener.onCollisionStay(_body.value(), other, collision);
         }
     }
 
@@ -1388,7 +1417,7 @@ namespace darmok::physics3d
     {
         for (auto& listener : _listeners)
         {
-            listener->onCollisionExit(_body.value(), other);
+            listener.onCollisionExit(_body.value(), other);
         }
     }
 
@@ -1552,6 +1581,12 @@ namespace darmok::physics3d
     OptionalRef<const PhysicsSystem> PhysicsBody::getSystem() const noexcept
     {
         return _impl->getSystem();
+    }
+
+    PhysicsBody& PhysicsBody::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
+    {
+        _impl->addListener(std::move(listener));
+        return *this;
     }
 
     PhysicsBody& PhysicsBody::addListener(ICollisionListener& listener) noexcept

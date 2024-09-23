@@ -88,6 +88,7 @@ namespace darmok
 		[[nodiscard]] const WindowImpl& getImpl() const noexcept;
 		[[nodiscard]] WindowImpl& getImpl() noexcept;
 
+		void addListener(std::unique_ptr<IWindowListener>&& listener) noexcept;
 		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(IWindowListener& listener) noexcept;
 

@@ -11,6 +11,7 @@
 #include <darmok/physics3d.hpp>
 #include <darmok/character.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/collection.hpp>
 
 #include "jolt.hpp"
 #include <Jolt/Core/TempAllocator.h>
@@ -86,17 +87,6 @@ namespace darmok::physics3d
         static RaycastHit convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);
         static glm::vec3 getOrigin(const Shape& shape) noexcept;
-
-        template<typename T>
-        static void addRefVector(std::vector<OptionalRef<T>>& vector, T& elm)
-        {
-            auto ptr = &elm;
-            auto itr = std::find_if(vector.begin(), vector.end(), [ptr](auto& ref) { return ref.ptr() == ptr; });
-            if (itr == vector.end())
-            {
-                vector.emplace_back(elm);
-            }
-        }
 
         template<typename T>
         static bool removeRefVector(std::vector<OptionalRef<T>>& vector, T& elm) noexcept
@@ -206,8 +196,12 @@ namespace darmok::physics3d
         void init(Scene& scene, App& app) noexcept;
         void shutdown() noexcept;
         void update(float deltaTime);
+
+        void addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
         void addUpdater(IPhysicsUpdater& updater) noexcept;
         bool removeUpdater(IPhysicsUpdater& updater) noexcept;
+
+        void addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
 
@@ -248,8 +242,8 @@ namespace darmok::physics3d
         JoltTempAllocator _alloc;
         std::unique_ptr<JPH::PhysicsSystem> _joltSystem;
         JoltJobSystemTaskflow _jobSystem;
-        std::vector<OptionalRef<IPhysicsUpdater>> _updaters;
-        std::vector<OptionalRef<ICollisionListener>> _listeners;
+        OwnRefCollection<IPhysicsUpdater> _updaters;
+        OwnRefCollection<ICollisionListener> _listeners;
 
         enum class CollisionEventType
         {
@@ -331,6 +325,7 @@ namespace darmok::physics3d
         void move(const glm::vec3& pos, const glm::quat& rot, float deltaTime );
         void movePosition(const glm::vec3& pos, float deltaTime);
 
+        void addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(ICollisionListener& listener) noexcept;
 
@@ -353,7 +348,7 @@ namespace darmok::physics3d
         OptionalRef<PhysicsSystem> _system;
         Config _config;
         JPH::BodyID _bodyId;        
-        std::vector<OptionalRef<ICollisionListener>> _listeners;
+        OwnRefCollection<ICollisionListener> _listeners;
 
         std::optional<CharacterConfig> _characterConfig;
         JPH::Ref<JPH::Character> _character;

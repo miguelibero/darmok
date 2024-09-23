@@ -25,10 +25,7 @@ namespace darmok
 	{
         _app = app;
         _originalCursorMode = app.getWindow().getCursorMode();
-        if (_config.enableEvent)
-        {
-            app.getInput().addListener(_tag, _config.enableEvent.value(), *this);
-        }
+        app.getInput().addListener(_tag, _config.enableEvents, *this);
 	}
 
     void RmluiDebuggerComponentImpl::shutdown() noexcept

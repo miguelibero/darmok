@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <memory>
 #include <bx/bx.h>
 #include <bx/allocator.h>
 #include <darmok/optional_ref.hpp>
@@ -235,6 +236,64 @@ namespace darmok
 
         [[nodiscard]] virtual size_t size() const = 0;
         [[nodiscard]] virtual V operator[](size_t pos) const = 0;
+    };
+
+    template<typename T>
+    class OwnRefCollection final : public RefCollection<T>
+    {
+    public:
+        OwnRefCollection& insert(std::unique_ptr<T>&& listener) noexcept
+        {
+            _refs.emplace_back(*listener);
+            _ptrs.emplace_back(std::move(listener));
+            return *this;
+        }
+
+        OwnRefCollection& insert(T& listener) noexcept
+        {
+            _refs.emplace_back(listener);
+            return *this;
+        }
+
+        bool erase(T& listener) noexcept
+        {
+            auto ptr = &listener;
+            auto itr = std::remove_if(_refs.begin(), _refs.end(), [ptr](auto& elm) { return &elm.get() == ptr; });
+            if (itr == _refs.end())
+            {
+                return false;
+            }
+            _refs.erase(itr, _refs.end());
+            {
+                auto itr = std::remove_if(_ptrs.begin(), _ptrs.end(), [ptr](auto& elm) { return elm.get() == ptr; });
+                _ptrs.erase(itr, _ptrs.end());
+            }
+            return true;
+        }
+
+        OwnRefCollection<T> copy() const noexcept
+        {
+            return OwnRefCollection<T>(*this);
+        }
+
+        size_t size() const noexcept override
+        {
+            return _refs.size();
+        }
+
+        const T& operator[](size_t pos) const noexcept override
+        {
+            return _refs[pos].get();
+        }
+
+        T& operator[](size_t pos)  noexcept override
+        {
+            return _refs[pos].get();
+        }
+
+    private:
+        std::vector<std::reference_wrapper<T>> _refs;
+        std::vector<std::shared_ptr<T>> _ptrs;
     };
 }
 

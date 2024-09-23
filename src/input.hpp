@@ -1,11 +1,10 @@
 #pragma once
 
 #include <darmok/input.hpp>
+#include <darmok/collection.hpp>
 
 #include <string>
 #include <array>
-#include <unordered_map>
-#include <unordered_set>
 
 namespace darmok
 {
@@ -25,6 +24,7 @@ namespace darmok
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
 		void addListener(IKeyboardListener& listener) noexcept;
+		void addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept;
 		bool removeListener(IKeyboardListener& listener) noexcept;
 
 		void flush() noexcept;
@@ -52,7 +52,7 @@ namespace darmok
 		std::array<Utf8Char, 256> _chars;
 		size_t _charsRead;
 		size_t _charsWrite;
-		std::unordered_set<OptionalRef<IKeyboardListener>> _listeners;
+		OwnRefCollection<IKeyboardListener> _listeners;
 
 		static const std::string _keyPrefix;
 		static const std::array<std::string, to_underlying(KeyboardKey::Count)> _keyNames;
@@ -79,6 +79,7 @@ namespace darmok
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 
 		void addListener(IMouseListener& listener) noexcept;
+		void addListener(std::unique_ptr<IMouseListener>&& listener) noexcept;
 		bool removeListener(IMouseListener& listener) noexcept;
 
 		bool setActive(bool active) noexcept;
@@ -101,12 +102,11 @@ namespace darmok
 		float _lastPositionTimePassed;
 		glm::vec2 _velocity;
 		glm::vec2 _scroll;
-		glm::uvec2 _windowSize;
 
 		MouseButtons _buttons;
 		bool _active;
 		bool _hasBeenInactive;
-		std::unordered_set<OptionalRef<IMouseListener>> _listeners;
+		OwnRefCollection<IMouseListener> _listeners;
 
 		static const std::string _buttonPrefix;
 		static const std::array<std::string, to_underlying(MouseButton::Count)> _buttonNames;
@@ -117,8 +117,6 @@ namespace darmok
 #pragma endregion Mouse
 
 #pragma region Gamepad
-
-	class GamepadImpl;
 
 	class GamepadImpl final
 	{
@@ -134,6 +132,7 @@ namespace darmok
 		[[nodiscard]] bool isConnected() const noexcept;
 
 		void addListener(IGamepadListener& listener) noexcept;
+		void addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept;
 		bool removeListener(IGamepadListener& listener) noexcept;
 
 		bool setNumber(uint8_t num) noexcept;
@@ -155,7 +154,7 @@ namespace darmok
 		bool _connected;
 		GamepadButtons _buttons;
 		GamepadSticks _sticks;
-		std::unordered_set<OptionalRef<IGamepadListener>> _listeners;
+		OwnRefCollection<IGamepadListener> _listeners;
 
 		static const std::string _buttonPrefix;
 		static const std::array<std::string, to_underlying(GamepadButton::Count)> _buttonNames;
@@ -185,8 +184,8 @@ namespace darmok
 		OptionalRef<const Gamepad> getGamepad(uint8_t num) const noexcept;
 		const Gamepads& getGamepads() const noexcept;
 
-		void addListener(const std::string& tag, const InputEvent& ev, IInputEventListener& listener) noexcept;
 		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept;
 		bool removeListener(const std::string& tag, IInputEventListener& listener) noexcept;
 		bool removeListener(IInputEventListener& listener) noexcept;
 
@@ -223,8 +222,9 @@ namespace darmok
 		struct ListenerData final
 		{
 			std::string tag;
-			InputEvent event;
-			OptionalRef<IInputEventListener> listener;
+			InputEvents events;
+			std::reference_wrapper<IInputEventListener> listener;
+			std::unique_ptr<IInputEventListener> listenerPointer;
 		};
 
 		std::vector<ListenerData> _listeners;

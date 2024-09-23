@@ -28,7 +28,7 @@ namespace darmok
 	{
         lua.new_usertype<Config>("RmluiDebuggerComponentConfig",
             sol::default_constructor,
-            "enableEvent", &Config::enableEvent
+            "enable_events", &Config::enableEvents
         );
         lua.new_usertype<RmluiDebuggerComponent>("RmluiDebuggerComponent", sol::no_constructor,
             "toggle", &RmluiDebuggerComponent::toggle,

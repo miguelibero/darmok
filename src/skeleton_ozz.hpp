@@ -4,6 +4,7 @@
 #include <vector>
 #include <darmok/skeleton.hpp>
 #include <darmok/data.hpp>
+#include <darmok/collection.hpp>
 #include <ozz/base/io/stream.h>
 #include <ozz/base/maths/soa_transform.h>
 #include <ozz/base/maths/vec_float.h>
@@ -154,6 +155,7 @@ namespace darmok
 		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Config& config) noexcept;
 		~SkeletalAnimatorImpl();
 
+		void addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
 		void addListener(ISkeletalAnimatorListener& listener) noexcept;
 		bool removeListener(ISkeletalAnimatorListener& listener) noexcept;
 
@@ -193,14 +195,11 @@ namespace darmok
 		std::optional<State> _state;
 		ozz::vector<ozz::math::Float4x4> _models;
 
-		using Listeners = std::vector<std::reference_wrapper<ISkeletalAnimatorListener>>;
-		Listeners _listeners;
+		OwnRefCollection<ISkeletalAnimatorListener> _listeners;
 
 		ozz::animation::Skeleton& getOzz() noexcept;
 		const ozz::animation::Skeleton& getOzz() const noexcept;
 		void afterUpdate() noexcept;
-
-		Listeners copyListeners() const noexcept;
 
 		OptionalRef<State> getCurrentOzzState() noexcept;
 		OptionalRef<Transition> getCurrentOzzTransition() noexcept;

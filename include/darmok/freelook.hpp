@@ -18,7 +18,7 @@ namespace darmok
         float lookSensitivity = 50.F;
         float moveSensitivity = 10.F;
         glm::vec2 maxLookAngle = glm::vec2(30, 30);
-        std::optional<InputEvent> enableEvent = KeyboardInputEvent{ KeyboardKey::F7 };
+        InputEvents enableEvents = { KeyboardInputEvent{ KeyboardKey::F7 } };
 
         InputDirs moveLeft = {
             KeyboardInputEvent{ KeyboardKey::Left },
