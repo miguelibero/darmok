@@ -9,6 +9,7 @@
 #include <darmok/data.hpp>
 #include <darmok/render_graph.hpp>
 #include <darmok/rmlui_fwd.hpp>
+#include <darmok/collection.hpp>
 #include <unordered_map>
 #include <variant>
 #include <optional>
@@ -216,14 +217,12 @@ namespace darmok
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
 
-		void addCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
-		bool removeCustomEventListener(const IRmluiCustomEventListener& listener) noexcept;
+		void addListener(IRmluiCanvasListener& listener) noexcept;
+		void addListener(std::unique_ptr<IRmluiCanvasListener>&& listener) noexcept;
+		bool removeListener(const IRmluiCanvasListener& listener) noexcept;
 
-		void addScriptRunner(IRmluiScriptRunner& runner) noexcept;
-		bool removeScriptRunner(const IRmluiScriptRunner& runner) noexcept;
-
-		void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
-		bool runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
+		void onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
+		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
 		void render(IRenderGraphContext& context) noexcept;
 	private:
 		RmluiCanvas& _canvas;
@@ -236,8 +235,7 @@ namespace darmok
 		glm::vec3 _offset;
 		std::string _name;
 		MousePositionMode _mousePositionMode;
-		std::vector<std::reference_wrapper<IRmluiCustomEventListener>> _customEventListeners;
-		std::vector<std::reference_wrapper<IRmluiScriptRunner>> _scriptRunners;
+		OwnRefCollection<IRmluiCanvasListener> _listeners;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		void updateContextSize() noexcept;
@@ -270,17 +268,14 @@ namespace darmok
 		RmluiSystemInterface& getSystem() noexcept;
 		RmluiRenderInterface& getRender() noexcept;
 
-		void addCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
-		bool removeCustomEventListener(const IRmluiCustomEventListener& listener) noexcept;
+		void addRenderer(RmluiRendererImpl& renderer) noexcept;
+		bool removeRenderer(const RmluiRendererImpl& renderer) noexcept;
 
 		void onCanvasDestroyed(RmluiCanvas& canvas) noexcept;
-		void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
+		void onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 
-		void addScriptRunner(IRmluiScriptRunner& runner) noexcept;
-		bool removeScriptRunner(const IRmluiScriptRunner& runner) noexcept;
-
-		bool runScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine = -1);
-		bool runExternalScript(Rml::ElementDocument& doc, const std::string& sourcePath);
+		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine = -1);
+		bool loadExternalScript(Rml::ElementDocument& doc, const std::string& sourcePath);
 
 	private:
 		RmluiPlugin(App& app) noexcept;
@@ -290,8 +285,7 @@ namespace darmok
 		RmluiFileInterface _file;
 		RmluiRenderInterface _render;
 		std::vector<std::unique_ptr<RmluiEventForwarder>> _eventForwarders;
-		std::vector<std::reference_wrapper<IRmluiCustomEventListener>> _customEventListeners;
-		std::vector<std::reference_wrapper<IRmluiScriptRunner>> _scriptRunners;
+		std::vector<std::reference_wrapper<RmluiRendererImpl>> _renderers;
 
 		Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override;
 		void OnDocumentUnload(Rml::ElementDocument* doc) noexcept override;
@@ -310,7 +304,7 @@ namespace darmok
 		RmluiPlugin& _plugin;
 	};
 
-    class RmluiRendererImpl final : IKeyboardListener, IMouseListener, IRmluiCustomEventListener, IRmluiScriptRunner
+    class RmluiRendererImpl final : IKeyboardListener, IMouseListener
     {
     public:
 		~RmluiRendererImpl() noexcept;
@@ -320,6 +314,9 @@ namespace darmok
 		void update(float dt) noexcept;
 		void renderReset() noexcept;
 		void beforeRenderView(IRenderGraphContext& context) noexcept;
+
+		void onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
+		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
 
 		void loadFont(const std::string& path, bool fallback = false) noexcept;
 
@@ -349,9 +346,6 @@ namespace darmok
 		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseButton(MouseButton button, bool down) noexcept override;
-
-		void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) override;
-		bool runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) override;
 
 		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;
 		static const KeyboardMap& getKeyboardMap() noexcept;

@@ -103,7 +103,7 @@ namespace darmok::physics3d
         
         PhysicsSystem& addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         PhysicsSystem& addListener(ICollisionListener& listener) noexcept;
-        bool removeListener(ICollisionListener& listener) noexcept;
+        bool removeListener(const ICollisionListener& listener) noexcept;
 
         std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) noexcept;
         std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) noexcept;
@@ -175,7 +175,7 @@ namespace darmok::physics3d
 
         PhysicsBody& addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         PhysicsBody& addListener(ICollisionListener& listener) noexcept;
-        bool removeListener(ICollisionListener& listener) noexcept;
+        bool removeListener(const ICollisionListener& listener) noexcept;
 
         std::string toString() const noexcept;
 

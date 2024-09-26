@@ -161,7 +161,7 @@ namespace darmok
 		_listeners.insert(listener);
 	}
 
-	bool KeyboardImpl::removeListener(IKeyboardListener& listener) noexcept
+	bool KeyboardImpl::removeListener(const IKeyboardListener& listener) noexcept
 	{
 		return _listeners.erase(listener);
 	}
@@ -396,7 +396,7 @@ namespace darmok
 		_impl->addListener(listener);
 	}
 
-	bool Keyboard::removeListener(IKeyboardListener& listener) noexcept
+	bool Keyboard::removeListener(const IKeyboardListener& listener) noexcept
 	{
 		return _impl->removeListener(listener);
 	}
@@ -575,7 +575,7 @@ namespace darmok
 		_listeners.insert(listener);
 	}
 
-	bool MouseImpl::removeListener(IMouseListener& listener) noexcept
+	bool MouseImpl::removeListener(const IMouseListener& listener) noexcept
 	{
 		return _listeners.erase(listener);
 	}
@@ -725,7 +725,7 @@ namespace darmok
 		_impl->addListener(listener);
 	}
 
-	bool Mouse::removeListener(IMouseListener& listener) noexcept
+	bool Mouse::removeListener(const IMouseListener& listener) noexcept
 	{
 		return _impl->removeListener(listener);
 	}
@@ -854,7 +854,7 @@ namespace darmok
 		_listeners.insert(listener);
 	}
 
-	bool GamepadImpl::removeListener(IGamepadListener& listener) noexcept
+	bool GamepadImpl::removeListener(const IGamepadListener& listener) noexcept
 	{
 		return _listeners.erase(listener);
 	}
@@ -1030,7 +1030,7 @@ namespace darmok
 		_impl->addListener(listener);
 	}
 
-	bool Gamepad::removeListener(IGamepadListener& listener) noexcept
+	bool Gamepad::removeListener(const IGamepadListener& listener) noexcept
 	{
 		return _impl->removeListener(listener);
 	}
@@ -1149,7 +1149,7 @@ namespace darmok
 		_listeners.push_back(ListenerData{ tag, evs, listener });
 	}
 
-	bool InputImpl::removeListener(const std::string& tag, IInputEventListener& listener) noexcept
+	bool InputImpl::removeListener(const std::string& tag, const IInputEventListener& listener) noexcept
 	{
 		auto ptr = &listener;
 		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&tag, ptr](auto& data)
@@ -1165,7 +1165,7 @@ namespace darmok
 		return true;
 	}
 
-	bool InputImpl::removeListener(IInputEventListener& listener) noexcept
+	bool InputImpl::removeListener(const IInputEventListener& listener) noexcept
 	{
 		auto ptr = &listener;
 		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [ptr](auto& data)
@@ -1562,12 +1562,12 @@ namespace darmok
 		_impl->addListener(tag, evs, listener);
 	}
 
-	bool Input::removeListener(IInputEventListener& listener) noexcept
+	bool Input::removeListener(const IInputEventListener& listener) noexcept
 	{
 		return _impl->removeListener(listener);
 	}
 
-	bool Input::removeListener(const std::string& tag, IInputEventListener& listener) noexcept
+	bool Input::removeListener(const std::string& tag, const IInputEventListener& listener) noexcept
 	{
 		return _impl->removeListener(tag, listener);
 	}

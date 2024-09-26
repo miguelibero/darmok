@@ -264,7 +264,7 @@ namespace darmok
         _listeners.insert(listener);
     }
 
-    bool SkeletalAnimatorImpl::removeListener(ISkeletalAnimatorListener& listener) noexcept
+    bool SkeletalAnimatorImpl::removeListener(const ISkeletalAnimatorListener& listener) noexcept
     {
         return _listeners.erase(listener);
     }
@@ -997,7 +997,7 @@ namespace darmok
         return *this;
     }
 
-    bool SkeletalAnimator::removeListener(ISkeletalAnimatorListener& listener) noexcept
+    bool SkeletalAnimator::removeListener(const ISkeletalAnimatorListener& listener) noexcept
     {
         return _impl->removeListener(listener);
     }

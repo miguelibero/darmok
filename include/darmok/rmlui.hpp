@@ -26,18 +26,12 @@ namespace darmok
 	class Camera;
 	class Transform;
 
-	class DARMOK_EXPORT BX_NO_VTABLE IRmluiCustomEventListener
+	class DARMOK_EXPORT BX_NO_VTABLE IRmluiCanvasListener
 	{
 	public:
-		virtual ~IRmluiCustomEventListener() = default;
+		virtual ~IRmluiCanvasListener() = default;
 		virtual void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) = 0;
-	};
-
-	class DARMOK_EXPORT BX_NO_VTABLE IRmluiScriptRunner
-	{
-	public:
-		virtual ~IRmluiScriptRunner() = default;
-		virtual bool runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) = 0;
+		virtual bool loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) = 0;
 	};
 
 	class RmluiCanvasImpl;
@@ -83,11 +77,9 @@ namespace darmok
 		RmluiCanvasImpl& getImpl() noexcept;
 		const RmluiCanvasImpl& getImpl() const noexcept;
 
-		RmluiCanvas& addCustomEventListener(IRmluiCustomEventListener& listener) noexcept;
-		bool removeCustomEventListener(const IRmluiCustomEventListener& listener) noexcept;
-
-		RmluiCanvas& addScriptRunner(IRmluiScriptRunner& runner) noexcept;
-		bool removeScriptRunner(const IRmluiScriptRunner& runner) noexcept;
+		RmluiCanvas& addListener(IRmluiCanvasListener& listener) noexcept;
+		RmluiCanvas& addListener(std::unique_ptr<IRmluiCanvasListener>&& listener) noexcept;
+		bool removeListener(const IRmluiCanvasListener& listener) noexcept;
 	private:
 		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};

@@ -255,7 +255,7 @@ namespace darmok
             return *this;
         }
 
-        bool erase(T& listener) noexcept
+        bool erase(const T& listener) noexcept
         {
             auto ptr = &listener;
             auto itr = std::remove_if(_refs.begin(), _refs.end(), [ptr](auto& elm) { return &elm.get() == ptr; });

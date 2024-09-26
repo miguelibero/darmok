@@ -110,7 +110,7 @@ namespace darmok
     class LuaEntity;
     class LuaScene;
 
-    class LuaRmluiCanvas final : IRmluiCustomEventListener, IRmluiScriptRunner
+    class LuaRmluiCanvas final : IRmluiCanvasListener
     {
     public:
         LuaRmluiCanvas(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept;
@@ -187,7 +187,7 @@ namespace darmok
         sol::environment& getEnvironment() noexcept;
 
         void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) noexcept override;
-        bool runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept override;
+        bool loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept override;
     };
 
     class LuaRmluiRenderer final : public ICameraComponent

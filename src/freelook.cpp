@@ -20,21 +20,19 @@ namespace darmok
 
     FreelookController& FreelookController::addListener(IFreelookListener& listener) noexcept
     {
-        _listeners.emplace_back(listener);
+        _listeners.insert(listener);
         return *this;
     }
 
-    bool FreelookController::removeListener(IFreelookListener& listener) noexcept
+    FreelookController& FreelookController::addListener(std::unique_ptr<IFreelookListener>&& listener) noexcept
     {
-        auto ptr = &listener;
-        auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [ptr](auto& ref) { return ref == ptr; });
-        if (itr == _listeners.end())
-        {
-            return false;
-        }
-        _listeners.erase(itr, _listeners.end());
-        return true;
+        _listeners.insert(std::move(listener));
+        return *this;
+    }
 
+    bool FreelookController::removeListener(const IFreelookListener& listener) noexcept
+    {
+        return _listeners.erase(listener);
     }
 
     void FreelookController::init(Scene& scene, App& app) noexcept
@@ -83,9 +81,9 @@ namespace darmok
                 Math::decompose(trans->getLocalMatrix(), _pos, _rot, _scale);
             }
         }
-        for (auto listener : _listeners)
+        for (auto& listener : _listeners)
         {
-            listener->onFreelookEnable(enabled);
+            listener.onFreelookEnable(enabled);
         }
 
         return *this;

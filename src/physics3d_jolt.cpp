@@ -573,7 +573,7 @@ namespace darmok::physics3d
         _listeners.insert(listener);
     }
 
-    bool PhysicsSystemImpl::removeListener(ICollisionListener& listener) noexcept
+    bool PhysicsSystemImpl::removeListener(const ICollisionListener& listener) noexcept
     {
         return _listeners.erase(listener);
     }
@@ -938,7 +938,7 @@ namespace darmok::physics3d
         return *this;
     }
 
-    bool PhysicsSystem::removeListener(ICollisionListener& listener) noexcept
+    bool PhysicsSystem::removeListener(const ICollisionListener& listener) noexcept
     {
         return _impl->removeListener(listener);
     }
@@ -1392,7 +1392,7 @@ namespace darmok::physics3d
         _listeners.insert(listener);
     }
 
-    bool PhysicsBodyImpl::removeListener(ICollisionListener& listener) noexcept
+    bool PhysicsBodyImpl::removeListener(const ICollisionListener& listener) noexcept
     {
         return _listeners.erase(listener);
     }
@@ -1595,7 +1595,7 @@ namespace darmok::physics3d
         return *this;
     }
 
-    bool PhysicsBody::removeListener(ICollisionListener& listener) noexcept
+    bool PhysicsBody::removeListener(const ICollisionListener& listener) noexcept
     {
         return _impl->removeListener(listener);
     }

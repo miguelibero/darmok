@@ -7,6 +7,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/input.hpp>
 #include <darmok/window_fwd.hpp>
+#include <darmok/collection.hpp>
 
 namespace darmok
 {
@@ -77,7 +78,8 @@ namespace darmok
         FreelookController& setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;
         FreelookController& addListener(IFreelookListener& listener) noexcept;
-        bool removeListener(IFreelookListener& listener) noexcept;
+        FreelookController& addListener(std::unique_ptr<IFreelookListener>&& listener) noexcept;
+        bool removeListener(const IFreelookListener& listener) noexcept;
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Input> _input;
@@ -89,6 +91,6 @@ namespace darmok
         glm::vec3 _scale;
         bool _enabled;
         Config _config;
-        std::vector<OptionalRef<IFreelookListener>> _listeners;
+        OwnRefCollection<IFreelookListener> _listeners;
     };
 }

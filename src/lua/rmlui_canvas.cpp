@@ -22,8 +22,7 @@ namespace darmok
         _env["canvas"] = this;
         _env["entity"] = entity;
 
-        _canvas.addCustomEventListener(*this);
-        _canvas.addScriptRunner(*this);
+        _canvas.addListener(*this);
     }
 
     LuaRmluiCanvas::~LuaRmluiCanvas() noexcept
@@ -37,8 +36,7 @@ namespace darmok
                 LuaUtils::logError("running shutdown", result);
             }
         }
-        _canvas.removeCustomEventListener(*this);
-        _canvas.removeScriptRunner(*this);
+        _canvas.removeListener(*this);
     }
 
     void LuaRmluiCanvas::update(float deltaTime)
@@ -287,7 +285,7 @@ namespace darmok
         LuaUtils::checkResult(logDesc, r);
     }
 
-    bool LuaRmluiCanvas::runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept
+    bool LuaRmluiCanvas::loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept
     {
         _env["document"] = std::ref(doc);
 

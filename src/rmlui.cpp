@@ -880,55 +880,34 @@ namespace darmok
         return nullptr;
     }
 
-    void RmluiCanvasImpl::addCustomEventListener(IRmluiCustomEventListener& listener) noexcept
+    void RmluiCanvasImpl::addListener(IRmluiCanvasListener& listener) noexcept
     {
-        _customEventListeners.emplace_back(listener);
+        _listeners.insert(listener);
     }
 
-    bool RmluiCanvasImpl::removeCustomEventListener(const IRmluiCustomEventListener& listener) noexcept
+    void RmluiCanvasImpl::addListener(std::unique_ptr<IRmluiCanvasListener>&& listener) noexcept
     {
-        auto ptr = &listener;
-        auto itr = std::remove_if(_customEventListeners.begin(), _customEventListeners.end(),
-            [ptr](auto& ref) { return &ref.get() == ptr; });
-        if (itr == _customEventListeners.end())
-        {
-            return false;
-        }
-        _customEventListeners.erase(itr, _customEventListeners.end());
-        return true;
+        _listeners.insert(std::move(listener));
     }
 
-    void RmluiCanvasImpl::onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
+    bool RmluiCanvasImpl::removeListener(const IRmluiCanvasListener& listener) noexcept
     {
-        for (auto& listener : _customEventListeners)
+        return _listeners.erase(listener);
+    }
+
+    void RmluiCanvasImpl::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
+    {
+        for(auto& listener : _listeners)
         {
-            listener.get().onRmluiCustomEvent(event, value, element);
+            listener.onRmluiCustomEvent(event, value, element);
         }
     }
 
-    void RmluiCanvasImpl::addScriptRunner(IRmluiScriptRunner& runner) noexcept
+    bool RmluiCanvasImpl::loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
     {
-        _scriptRunners.emplace_back(runner);
-    }
-
-    bool RmluiCanvasImpl::removeScriptRunner(const IRmluiScriptRunner& runner) noexcept
-    {
-        auto ptr = &runner;
-        auto itr = std::remove_if(_scriptRunners.begin(), _scriptRunners.end(),
-            [ptr](auto& ref) { return &ref.get() == ptr; });
-        if (itr == _scriptRunners.end())
+        for (auto& listener : _listeners)
         {
-            return false;
-        }
-        _scriptRunners.erase(itr, _scriptRunners.end());
-        return true;
-    }
-
-    bool RmluiCanvasImpl::runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
-    {
-        for (auto& runner : _scriptRunners)
-        {
-            if (runner.get().runRmluiScript(doc, content, sourcePath, sourceLine))
+            if (listener.loadRmluiScript(doc, content, sourcePath, sourceLine))
             {
                 return true;
             }
@@ -1075,26 +1054,21 @@ namespace darmok
         return *_impl;
     }
 
-    RmluiCanvas& RmluiCanvas::addCustomEventListener(IRmluiCustomEventListener& listener) noexcept
+    RmluiCanvas& RmluiCanvas::addListener(IRmluiCanvasListener& listener) noexcept
     {
-        _impl->addCustomEventListener(listener);
+        _impl->addListener(listener);
         return *this;
     }
 
-    bool RmluiCanvas::removeCustomEventListener(const IRmluiCustomEventListener& listener) noexcept
+    RmluiCanvas& RmluiCanvas::addListener(std::unique_ptr<IRmluiCanvasListener>&& listener) noexcept
     {
-        return _impl->removeCustomEventListener(listener);
-    }
-
-    RmluiCanvas& RmluiCanvas::addScriptRunner(IRmluiScriptRunner& runner) noexcept
-    {
-        _impl->addScriptRunner(runner);
+        _impl->addListener(std::move(listener));
         return *this;
     }
 
-    bool RmluiCanvas::removeScriptRunner(const IRmluiScriptRunner& runner) noexcept
+    bool RmluiCanvas::removeListener(const IRmluiCanvasListener& listener) noexcept
     {
-        return _impl->removeScriptRunner(runner);
+        return _impl->removeListener(listener);
     }
 
     RmluiPlugin::RmluiPlugin(App& app) noexcept
@@ -1176,55 +1150,37 @@ namespace darmok
         _eventForwarders.erase(itr, _eventForwarders.end());
     }
 
-    void RmluiPlugin::onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
+    void RmluiPlugin::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
     {
-        for (auto& listener : _customEventListeners)
+        for (auto& renderer : _renderers)
         {
-            listener.get().onRmluiCustomEvent(event, value, element);
+            renderer.get().onCustomEvent(event, value, element);
         }
     }
 
-    void RmluiPlugin::addCustomEventListener(IRmluiCustomEventListener& listener) noexcept
+    void RmluiPlugin::addRenderer(RmluiRendererImpl& renderer) noexcept
     {
-        _customEventListeners.emplace_back(listener);
+        _renderers.emplace_back(renderer);
     }
 
-    bool RmluiPlugin::removeCustomEventListener(const IRmluiCustomEventListener& listener) noexcept
+    bool RmluiPlugin::removeRenderer(const RmluiRendererImpl& renderer) noexcept
     {
-        auto ptr = &listener;
-        auto itr = std::remove_if(_customEventListeners.begin(), _customEventListeners.end(),
+        auto ptr = &renderer;
+        auto itr = std::remove_if(_renderers.begin(), _renderers.end(),
             [ptr](auto& ref) { return &ref.get() == ptr; });
-        if (itr == _customEventListeners.end())
+        if (itr == _renderers.end())
         {
             return false;
         }
-        _customEventListeners.erase(itr, _customEventListeners.end());
+        _renderers.erase(itr, _renderers.end());
         return true;
     }
 
-    void RmluiPlugin::addScriptRunner(IRmluiScriptRunner& runner) noexcept
+    bool RmluiPlugin::loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
     {
-        _scriptRunners.emplace_back(runner);
-    }
-
-    bool RmluiPlugin::removeScriptRunner(const IRmluiScriptRunner& runner) noexcept
-    {
-        auto ptr = &runner;
-        auto itr = std::remove_if(_scriptRunners.begin(), _scriptRunners.end(),
-            [ptr](auto& ref) { return &ref.get() == ptr; });
-        if (itr == _scriptRunners.end())
+        for (auto& renderer : _renderers)
         {
-            return false;
-        }
-        _scriptRunners.erase(itr, _scriptRunners.end());
-        return true;
-    }
-
-    bool RmluiPlugin::runScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
-    {
-        for (auto& runner : _scriptRunners)
-        {
-            if (runner.get().runRmluiScript(doc, content, sourcePath, sourceLine))
+            if (renderer.get().loadScript(doc, content, sourcePath, sourceLine))
             {
                 return true;
             }
@@ -1232,14 +1188,14 @@ namespace darmok
         return false;
     }
 
-    bool RmluiPlugin::runExternalScript(Rml::ElementDocument& doc, const std::string& sourcePath)
+    bool RmluiPlugin::loadExternalScript(Rml::ElementDocument& doc, const std::string& sourcePath)
     {
         auto data = _app.getAssets().getDataLoader()(sourcePath);
         if (data.empty())
         {
             return false;
         }
-        return runScript(doc, data.stringView(), sourcePath);
+        return loadScript(doc, data.stringView(), sourcePath);
     }
 
     Rml::ElementPtr RmluiPlugin::InstanceElement(Rml::Element* parent, const Rml::String& tag, const Rml::XMLAttributes& attributes) noexcept
@@ -1260,12 +1216,12 @@ namespace darmok
 
     void RmluiDocument::LoadInlineScript(const Rml::String& content, const Rml::String& sourcePath, int sourceLine)
     {
-        _plugin.runScript(*this, content, sourcePath, sourceLine);
+        _plugin.loadScript(*this, content, sourcePath, sourceLine);
     }
 
     void RmluiDocument::LoadExternalScript(const Rml::String& sourcePath)
     {
-        _plugin.runExternalScript(*this, sourcePath);
+        _plugin.loadExternalScript(*this, sourcePath);
     }
 
     RmluiEventForwarder::RmluiEventForwarder(const std::string& value, Rml::Element& element) noexcept
@@ -1307,7 +1263,7 @@ namespace darmok
     {
         if (auto shared = RmluiPlugin::getWeakInstance().lock())
         {
-            shared->onRmluiCustomEvent(event, _value, _element);
+            shared->onCustomEvent(event, _value, _element);
         }
     }
 
@@ -1322,8 +1278,7 @@ namespace darmok
     void RmluiRendererImpl::init(Camera& cam, Scene& scene, App& app)
     {
         _plugin = RmluiPlugin::getInstance(app);
-        _plugin->addCustomEventListener(*this);
-        _plugin->addScriptRunner(*this);
+        _plugin->addRenderer(*this);
 
         _cam = cam;
         _scene = scene;
@@ -1347,7 +1302,7 @@ namespace darmok
         _cam->getRenderGraph().setChild(_renderGraph);
     }
 
-    void RmluiRendererImpl::onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
+    void RmluiRendererImpl::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
     {
         auto doc = element.GetOwnerDocument();
         if (!doc)
@@ -1364,13 +1319,13 @@ namespace darmok
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity)->getImpl();
             if (&canvas.getContext() == context)
             {
-                canvas.onRmluiCustomEvent(event, value, element);
+                canvas.onCustomEvent(event, value, element);
                 break;
             }
         }
     }
 
-    bool RmluiRendererImpl::runRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
+    bool RmluiRendererImpl::loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
     {
         auto context = doc.GetContext();
         if (!context)
@@ -1382,7 +1337,7 @@ namespace darmok
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity)->getImpl();
             if (&canvas.getContext() == context)
             {
-                if (canvas.runRmluiScript(doc, content, sourcePath, sourceLine))
+                if (canvas.loadScript(doc, content, sourcePath, sourceLine))
                 {
                     return true;
                 }
@@ -1446,8 +1401,7 @@ namespace darmok
 
         if (_plugin)
         {
-            _plugin->removeCustomEventListener(*this);
-            _plugin->removeScriptRunner(*this);
+            _plugin->removeRenderer(*this);
         }
 
         Rml::ReleaseTextures();

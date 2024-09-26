@@ -157,7 +157,7 @@ namespace darmok
 
 		void addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
 		void addListener(ISkeletalAnimatorListener& listener) noexcept;
-		bool removeListener(ISkeletalAnimatorListener& listener) noexcept;
+		bool removeListener(const ISkeletalAnimatorListener& listener) noexcept;
 
 		void setPlaybackSpeed(float speed) noexcept;
 		float getPlaybackSpeed() const noexcept;

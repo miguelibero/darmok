@@ -46,7 +46,7 @@ namespace darmok
 
 		void addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept;
 		void addListener(IKeyboardListener& listener) noexcept;
-		bool removeListener(IKeyboardListener& listener) noexcept;
+		bool removeListener(const IKeyboardListener& listener) noexcept;
 
 		[[nodiscard]] const KeyboardImpl& getImpl() const noexcept;
 		[[nodiscard]] KeyboardImpl& getImpl() noexcept;
@@ -92,7 +92,7 @@ namespace darmok
 
 		void addListener(std::unique_ptr<IMouseListener>&& listener) noexcept;
 		void addListener(IMouseListener& listener) noexcept;
-		bool removeListener(IMouseListener& listener) noexcept;
+		bool removeListener(const IMouseListener& listener) noexcept;
 
 		[[nodiscard]] const MouseImpl& getImpl() const noexcept;
 		[[nodiscard]] MouseImpl& getImpl() noexcept;
@@ -140,7 +140,7 @@ namespace darmok
 
 		void addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept;
 		void addListener(IGamepadListener& listener) noexcept;
-		bool removeListener(IGamepadListener& listener) noexcept;
+		bool removeListener(const IGamepadListener& listener) noexcept;
 
 		[[nodiscard]] const GamepadImpl& getImpl() const noexcept;
 		[[nodiscard]] GamepadImpl& getImpl() noexcept;
@@ -253,8 +253,8 @@ namespace darmok
 		
 		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept;
 		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
-		bool removeListener(const std::string& tag, IInputEventListener& listener) noexcept;
-		bool removeListener(IInputEventListener& listener) noexcept;
+		bool removeListener(const std::string& tag, const IInputEventListener& listener) noexcept;
+		bool removeListener(const IInputEventListener& listener) noexcept;
 
 		[[nodiscard]] static bool matchesEvent(const InputEvent& condition, const InputEvent& real) noexcept;
 		[[nodiscard]] static std::optional<InputEvent> readEvent(std::string_view name) noexcept;

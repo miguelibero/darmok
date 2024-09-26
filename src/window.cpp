@@ -269,7 +269,7 @@ namespace darmok
 		_listeners.insert(listener);
 	}
 
-	bool WindowImpl::removeListener(IWindowListener& listener) noexcept
+	bool WindowImpl::removeListener(const IWindowListener& listener) noexcept
 	{
 		return _listeners.erase(listener);
 	}
@@ -380,7 +380,7 @@ namespace darmok
 		_impl->addListener(listener);
 	}
 
-	bool Window::removeListener(IWindowListener& listener) noexcept
+	bool Window::removeListener(const IWindowListener& listener) noexcept
 	{
 		return _impl->removeListener(listener);
 	}
