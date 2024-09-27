@@ -66,6 +66,7 @@ namespace darmok
     {
     public:
         RenderChain(IRenderChainDelegate& dlg) noexcept;
+        RenderChain(std::unique_ptr<IRenderChainDelegate>&& dlg) noexcept;
         void init(const std::string& name = "", int priority = 0);
         void renderReset();
         void shutdown();
@@ -98,6 +99,7 @@ namespace darmok
     private:
         RenderGraphDefinition _renderGraph;
         IRenderChainDelegate& _delegate;
+        std::unique_ptr<IRenderChainDelegate> _delegatePointer;
         bool _running;
         std::vector<std::unique_ptr<IRenderChainStep>> _steps;
         std::vector<std::unique_ptr<FrameBuffer>> _buffers;

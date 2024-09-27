@@ -132,6 +132,13 @@ namespace darmok
         return *this;
     }
 
+    RenderPassDefinition& RenderPassDefinition::setDelegate(const std::shared_ptr<IRenderPassDelegate>& dlg) noexcept
+    {
+        _delegate = *dlg;
+        _delegatePointer = dlg;
+        return *this;
+    }
+
     bool RenderPassDefinition::hasPassDelegate(const IRenderPassDelegate& dlg) const noexcept
     {
         return _delegate.ptr() == &dlg;

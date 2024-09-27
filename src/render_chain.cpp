@@ -71,6 +71,13 @@ namespace darmok
 	{
 	}
 
+	RenderChain::RenderChain(std::unique_ptr<IRenderChainDelegate>&& dlg) noexcept
+		: _delegate(*dlg)
+		, _delegatePointer(std::move(dlg))
+		, _running(false)
+	{
+	}
+
 	void RenderChain::init(const std::string& name, int priority)
 	{
 		_renderGraph.setName(name);

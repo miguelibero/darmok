@@ -99,7 +99,8 @@ namespace darmok::physics3d
         glm::vec3 getGroundPosition() const noexcept;
         glm::vec3 getGroundVelocity() const noexcept;
 
-        CharacterController& setDelegate(const OptionalRef<Delegate>& delegate) noexcept;
+        CharacterController& setDelegate(Delegate& dlg) noexcept;
+        CharacterController& setDelegate(std::unique_ptr<Delegate>&& dlg) noexcept;
 
         static std::string getGroundStateName(GroundState state) noexcept;
 

@@ -9,7 +9,7 @@ namespace darmok::physics3d
 	LuaCharacterController::LuaCharacterController(CharacterController& ctrl) noexcept
 		: _ctrl(ctrl)
 	{
-		ctrl.setDelegate(this);
+		ctrl.setDelegate(*this);
 	}
 
 	LuaCharacterController::~LuaCharacterController() noexcept

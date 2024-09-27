@@ -42,7 +42,8 @@ namespace darmok::physics3d
         glm::vec3 getGroundPosition() const noexcept;
         glm::vec3 getGroundVelocity() const noexcept;
 
-        void setDelegate(const OptionalRef<Delegate>& delegate) noexcept;
+        void setDelegate(Delegate& dlg) noexcept;
+        void setDelegate(std::unique_ptr<Delegate>&& dlg) noexcept;
 
         void OnAdjustBodyVelocity(const JPH::CharacterVirtual* character, const JPH::Body& inBody2, JPH::Vec3& linearVelocity, JPH::Vec3& angularVelocity) override;
         bool OnContactValidate(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2) override;
@@ -55,6 +56,7 @@ namespace darmok::physics3d
         OptionalRef<CharacterController> _ctrl;
         JPH::Ref<JPH::CharacterVirtual> _jolt;
         OptionalRef<Delegate> _delegate;
+        std::unique_ptr<Delegate> _delegatePointer;
 
         PhysicsSystemImpl& getSystemImpl();
 

@@ -158,9 +158,16 @@ namespace darmok::physics3d
         return JoltUtils::convert(_jolt->GetGroundPosition());
     }
 
-    void CharacterControllerImpl::setDelegate(const OptionalRef<Delegate>& delegate) noexcept
+    void CharacterControllerImpl::setDelegate(Delegate& dlg) noexcept
     {
-        _delegate = delegate;
+        _delegate = dlg;
+        _delegatePointer.reset();
+    }
+
+    void CharacterControllerImpl::setDelegate(std::unique_ptr<Delegate>&& dlg) noexcept
+    {
+        _delegate = *dlg;
+        _delegatePointer = std::move(dlg);
     }
 
     OptionalRef<PhysicsBody> CharacterControllerImpl::getPhysicsBody() const noexcept
@@ -419,9 +426,15 @@ namespace darmok::physics3d
         return _impl->getGroundVelocity();
     }
 
-    CharacterController& CharacterController::setDelegate(const OptionalRef<Delegate>& delegate) noexcept
+    CharacterController& CharacterController::setDelegate(Delegate& dlg) noexcept
     {
-        _impl->setDelegate(delegate);
+        _impl->setDelegate(dlg);
+        return *this;
+    }
+
+    CharacterController& CharacterController::setDelegate(std::unique_ptr<Delegate>&& dlg) noexcept
+    {
+        _impl->setDelegate(std::move(dlg));
         return *this;
     }
 }

@@ -287,6 +287,7 @@ namespace darmok
         [[nodiscard]] int getPriority() const noexcept override;
 
         RenderPassDefinition& setDelegate(IRenderPassDelegate& dlg) noexcept;
+        RenderPassDefinition& setDelegate(const std::shared_ptr<IRenderPassDelegate>& dlg) noexcept;
         [[nodiscard]] bool hasPassDelegate(const IRenderPassDelegate& dlg) const noexcept override;
 
         bgfx::ViewId configureView(bgfx::ViewId viewId) noexcept override;
@@ -312,6 +313,7 @@ namespace darmok
         Resources _read;
         Resources _write;
         OptionalRef<IRenderPassDelegate> _delegate;
+        std::shared_ptr<IRenderPassDelegate> _delegatePointer;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderPass : public IRenderPassDelegate
@@ -344,6 +346,7 @@ namespace darmok
 
         const Pass& addPass(IRenderPass& pass);
         [[nodiscard]] Pass& addPass() noexcept;
+
         bool removePass(const IRenderPassDelegate& dlg) noexcept;
         bool removePass(size_t hash) noexcept;
 
