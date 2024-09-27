@@ -125,35 +125,19 @@ namespace darmok
 		return _audio;
 	}
 
-	LuaApp& LuaApp::addUpdater1(const sol::protected_function& func) noexcept
+	LuaApp& LuaApp::addUpdater(const sol::object& updater) noexcept
 	{
-		if (func)
+		LuaDelegate dlg(updater, "update");
+		if (dlg)
 		{
-			_updaters.emplace_back(func);
+			_updaters.push_back(std::move(dlg));
 		}
 		return *this;
 	}
 
-	LuaApp& LuaApp::addUpdater2(const sol::table& table) noexcept
+	bool LuaApp::removeUpdater(const sol::object& updater) noexcept
 	{
-		_updaters.emplace_back(table, "update");
-		return *this;
-	}
-
-	bool LuaApp::removeUpdater1(const sol::protected_function& func) noexcept
-	{
-		auto itr = std::remove(_updaters.begin(), _updaters.end(), func);
-		if (itr == _updaters.end())
-		{
-			return false;
-		}
-		_updaters.erase(itr, _updaters.end());
-		return true;
-	}
-
-	bool LuaApp::removeUpdater2(const sol::table& table) noexcept
-	{
-		auto itr = std::remove(_updaters.begin(), _updaters.end(), table);
+		auto itr = std::remove(_updaters.begin(), _updaters.end(), updater);
 		if (itr == _updaters.end())
 		{
 			return false;
@@ -310,8 +294,8 @@ namespace darmok
 			"input", sol::property(&LuaApp::getInput),
 			"audio", sol::property(&LuaApp::getAudio),
 			"debug", sol::property(&LuaApp::getDebug),
-			"add_updater", sol::overload(&LuaApp::addUpdater1, &LuaApp::addUpdater2),
-			"remove_updater", sol::overload(&LuaApp::removeUpdater1, &LuaApp::removeUpdater2),
+			"add_updater", &LuaApp::addUpdater,
+			"remove_updater", &LuaApp::removeUpdater,
 			"start_coroutine", &LuaApp::startCoroutine,
 			"stop_coroutine", &LuaApp::stopCoroutine,
 			"has_component", &LuaApp::hasComponent,
@@ -611,7 +595,7 @@ namespace darmok
 				throw LuaError("running init", result);
 			}
 		}
-		_luaApp->addUpdater1(lua["update"]);
+		_luaApp->addUpdater(lua["update"]);
 	}
 
 	std::string LuaAppDelegateImpl::_defaultAssetInputPath = "assets";

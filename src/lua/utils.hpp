@@ -92,27 +92,27 @@ namespace darmok
     class LuaDelegate final
     {
     public:
-        LuaDelegate(const sol::protected_function& func) noexcept;
-        LuaDelegate(const sol::table& table, const std::string& key) noexcept;
+        LuaDelegate(const sol::object& obj, const std::string& tableKey) noexcept;
+        operator bool() const noexcept;
 
-        bool operator==(const sol::protected_function& func) const noexcept;
-        bool operator!=(const sol::protected_function& func) const noexcept;
-        bool operator==(const sol::table& table) const noexcept;
-        bool operator!=(const sol::table& table) const noexcept;
+        bool operator==(const sol::object& obj) const noexcept;
+        bool operator!=(const sol::object& obj) const noexcept;
         bool operator==(const LuaDelegate& dlg) const noexcept;
         bool operator!=(const LuaDelegate& dlg) const noexcept;
 
         template<typename... Args>
         sol::protected_function_result operator()(Args&&... args) const
         {
-            sol::protected_function func;
+            auto elmType = sol::type::nil;
             if (_table)
             {
-                auto elm = _table[_tableKey];
+                auto& table = _table.value();
+                auto elm = table[_tableKey];
+                elmType = elm.get_type();
                 if (elm.get_type() == sol::type::function)
                 {
                     sol::protected_function func = elm;
-                    return func(_table, std::forward<Args>(args)...);
+                    return func(table, std::forward<Args>(args)...);
                 }
             }
             else if (_func)
@@ -123,7 +123,7 @@ namespace darmok
         }
     private:
         sol::protected_function _func;
-        sol::table _table;
+        std::optional<sol::table> _table;
         std::string _tableKey;
     };
 

@@ -4,6 +4,7 @@
 #include "mesh.hpp"
 #include "asset.hpp"
 #include "render_scene.hpp"
+#include "camera.hpp"
 #include <darmok/skeleton.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/camera.hpp>
@@ -154,14 +155,14 @@ namespace darmok
         );
     }
 
-    SkeletalAnimationRenderComponent& LuaSkeletalAnimationRenderComponent::addCameraComponent(Camera& cam) noexcept
+    SkeletalAnimationRenderComponent& LuaSkeletalAnimationRenderComponent::addCameraComponent(LuaCamera& cam) noexcept
     {
-        return cam.addComponent<SkeletalAnimationRenderComponent>();
+        return cam.getReal().addComponent<SkeletalAnimationRenderComponent>();
     }
 
-    OptionalRef<SkeletalAnimationRenderComponent>::std_t LuaSkeletalAnimationRenderComponent::getCameraComponent(Camera& cam) noexcept
+    OptionalRef<SkeletalAnimationRenderComponent>::std_t LuaSkeletalAnimationRenderComponent::getCameraComponent(LuaCamera& cam) noexcept
     {
-        return cam.getComponent<SkeletalAnimationRenderComponent>();
+        return cam.getReal().getComponent<SkeletalAnimationRenderComponent>();
     }
 
     void LuaSkeletalAnimationRenderComponent::bind(sol::state_view& lua) noexcept

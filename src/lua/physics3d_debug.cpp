@@ -3,25 +3,26 @@
 
 #include "physics3d_debug.hpp"
 #include "physics3d.hpp"
+#include "camera.hpp"
 #include <darmok/physics3d_debug.hpp>
 #include <darmok/program.hpp>
 #include <darmok/camera.hpp>
 
 namespace darmok::physics3d
 {
-    PhysicsDebugRenderer& LuaPhysicsDebugRenderer::addCameraComponent1(Camera& cam) noexcept
+    PhysicsDebugRenderer& LuaPhysicsDebugRenderer::addCameraComponent1(LuaCamera& cam) noexcept
     {
-        return cam.addComponent<PhysicsDebugRenderer>();
+        return cam.getReal().addComponent<PhysicsDebugRenderer>();
     }
 
-    PhysicsDebugRenderer& LuaPhysicsDebugRenderer::addCameraComponent2(Camera& cam, const Config& config) noexcept
+    PhysicsDebugRenderer& LuaPhysicsDebugRenderer::addCameraComponent2(LuaCamera& cam, const Config& config) noexcept
     {
-        return cam.addComponent<PhysicsDebugRenderer>(config);
+        return cam.getReal().addComponent<PhysicsDebugRenderer>(config);
     }
 
-    OptionalRef<PhysicsDebugRenderer>::std_t LuaPhysicsDebugRenderer::getCameraComponent(Camera& cam) noexcept
+    OptionalRef<PhysicsDebugRenderer>::std_t LuaPhysicsDebugRenderer::getCameraComponent(LuaCamera& cam) noexcept
     {
-        return cam.getComponent<PhysicsDebugRenderer>();
+        return cam.getReal().getComponent<PhysicsDebugRenderer>();
     }
 
     void LuaPhysicsDebugRenderer::bind(sol::state_view& lua) noexcept

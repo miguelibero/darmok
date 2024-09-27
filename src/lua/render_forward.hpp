@@ -6,7 +6,7 @@
 namespace darmok
 {
     class ForwardRenderer;
-    class Camera;
+    class LuaCamera;
 
     class LuaForwardRenderer final
     {
@@ -14,7 +14,7 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
 
-        static ForwardRenderer& addCameraComponent(Camera& cam) noexcept;
-        static OptionalRef<ForwardRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
+        static ForwardRenderer& addCameraComponent(LuaCamera& cam) noexcept;
+        static OptionalRef<ForwardRenderer>::std_t getCameraComponent(LuaCamera& cam) noexcept;
     };
 }

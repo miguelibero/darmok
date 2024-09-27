@@ -17,35 +17,19 @@ namespace darmok::physics3d
         _system.removeUpdater(*this);
     }
 
-    LuaPhysicsSystem& LuaPhysicsSystem::addUpdater1(const sol::protected_function& func) noexcept
+    LuaPhysicsSystem& LuaPhysicsSystem::addUpdater(const sol::object& updater) noexcept
     {
-        if (func)
+        LuaDelegate dlg(updater, "updater");
+        if (dlg)
         {
-            _updaters.emplace_back(func);
+            _updaters.push_back(std::move(dlg));
         }
         return *this;
     }
 
-    LuaPhysicsSystem& LuaPhysicsSystem::addUpdater2(const sol::table& table) noexcept
+    bool LuaPhysicsSystem::removeUpdater(const sol::object& updater) noexcept
     {
-        _updaters.emplace_back(table);
-        return *this;
-    }
-
-    bool LuaPhysicsSystem::removeUpdater1(const sol::protected_function& func) noexcept
-    {
-        auto itr = std::find(_updaters.begin(), _updaters.end(), func);
-        if (itr == _updaters.end())
-        {
-            return false;
-        }
-        _updaters.erase(itr);
-        return true;
-    }
-
-    bool LuaPhysicsSystem::removeUpdater2(const sol::table& table) noexcept
-    {
-        auto itr = std::find(_updaters.begin(), _updaters.end(), table);
+        auto itr = std::find(_updaters.begin(), _updaters.end(), updater);
         if (itr == _updaters.end())
         {
             return false;
@@ -219,8 +203,8 @@ namespace darmok::physics3d
 
         lua.new_usertype<LuaPhysicsSystem>("Physics3dSystem", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<LuaPhysicsSystem>::value),
-            "add_updater", sol::overload(&LuaPhysicsSystem::addUpdater1, &LuaPhysicsSystem::addUpdater2),
-            "remove_updater", sol::overload(&LuaPhysicsSystem::removeUpdater1, &LuaPhysicsSystem::removeUpdater2),
+            "add_updater", &LuaPhysicsSystem::addUpdater,
+            "remove_updater", &LuaPhysicsSystem::removeUpdater,
             "add_listener", &LuaPhysicsSystem::addListener,
             "remove_listener", &LuaPhysicsSystem::removeListener,
             "root_transform", sol::property(&LuaPhysicsSystem::getRootTransform, &LuaPhysicsSystem::setRootTransform),

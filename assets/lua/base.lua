@@ -166,6 +166,36 @@ function Entity:get_component_in_parent(type)
 	return comp
 end
 
+function Entity:is_child(entity)
+	if not entity then
+		return false
+	end
+	return self:for_each_parent(function(parent)
+		return parent == entity
+	end)
+end
+
+function Entity:is_parent(entity)
+	if not entity then
+		return false
+	end
+	return entity:is_child(self)
+end
+
+function Entity:is_child_or_self(entity)
+	if self == entity then
+		return true
+	end
+	return self:is_child(entity)
+end
+
+
+function Entity:is_parent_or_self(entity)
+	if not entity then
+		return false
+	end
+	return entity:is_child_or_self(self)
+end
 
 -- Camera
 function Camera:add_component(type, ...)

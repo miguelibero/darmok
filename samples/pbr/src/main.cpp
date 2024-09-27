@@ -157,7 +157,7 @@ namespace
 			floorMat->setProgramDefine("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
 
-			_app.getInput().addListener("pause", _pauseEvent, *this);
+			_app.getInput().addListener("pause", { _pauseEvent }, *this);
 		}
 
 		void update(float deltaTime) noexcept override

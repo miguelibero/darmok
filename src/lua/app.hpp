@@ -55,10 +55,8 @@ namespace darmok
 			return getReal().addComponent<T>(real);
 		}
 
-		LuaApp& addUpdater1(const sol::protected_function& func) noexcept;
-		LuaApp& addUpdater2(const sol::table& table) noexcept;
-		bool removeUpdater1(const sol::protected_function& func) noexcept;
-		bool removeUpdater2(const sol::table& table) noexcept;
+		LuaApp& addUpdater(const sol::object& updater) noexcept;
+		bool removeUpdater(const sol::object& updater) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:

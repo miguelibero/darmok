@@ -4,6 +4,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/scene.hpp>
 #include "utils.hpp"
+#include "camera.hpp"
 
 namespace darmok
 {
@@ -47,14 +48,15 @@ namespace darmok
         return _comp;
     }
 
-    LuaRmluiRenderer& LuaRmluiRenderer::addCameraComponent(Camera& cam) noexcept
+    LuaRmluiRenderer& LuaRmluiRenderer::addCameraComponent(LuaCamera& cam) noexcept
     {
-        return cam.addComponent<LuaRmluiRenderer>(cam.addComponent<RmluiRenderer>());
+        auto& real = cam.getReal();
+        return real.addComponent<LuaRmluiRenderer>(real.addComponent<RmluiRenderer>());
     }
 
-    OptionalRef<LuaRmluiRenderer>::std_t LuaRmluiRenderer::getCameraComponent(Camera& cam) noexcept
+    OptionalRef<LuaRmluiRenderer>::std_t LuaRmluiRenderer::getCameraComponent(LuaCamera& cam) noexcept
     {
-        return cam.getComponent<LuaRmluiRenderer>();
+        return cam.getReal().getComponent<LuaRmluiRenderer>();
     }
 
     void LuaRmluiRenderer::loadFont1(const std::string& path) noexcept

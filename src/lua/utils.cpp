@@ -61,35 +61,33 @@ namespace darmok
 	{
 	}
 
-	LuaDelegate::LuaDelegate(const sol::protected_function& func) noexcept
-		: _func(func)
+	LuaDelegate::LuaDelegate(const sol::object& obj, const std::string& tableKey) noexcept
+		: _tableKey(tableKey.empty() ? "run" : tableKey)
 	{
+		auto type = obj.get_type();
+		if (type == sol::type::function)
+		{
+			_func = obj;
+		}
+		else if (type == sol::type::table)
+		{
+			_table = obj;
+		}
 	}
 
-	LuaDelegate::LuaDelegate(const sol::table& table, const std::string& key) noexcept
-		: _table(table)
-		, _tableKey(key)
+	LuaDelegate::operator bool() const noexcept
 	{
+		return _func || _table;
 	}
 
-	bool LuaDelegate::operator==(const sol::protected_function& func) const noexcept
+	bool LuaDelegate::operator==(const sol::object& obj) const noexcept
 	{
-		return _func == func;
+		return _func == obj || _table == obj;
 	}
 
-	bool LuaDelegate::operator!=(const sol::protected_function& func) const noexcept
+	bool LuaDelegate::operator!=(const sol::object& obj) const noexcept
 	{
-		return !operator==(func);
-	}
-
-	bool LuaDelegate::operator==(const sol::table& table) const noexcept
-	{
-		return _table == table;
-	}
-
-	bool LuaDelegate::operator!=(const sol::table& table) const noexcept
-	{
-		return !operator==(table);
+		return !operator==(obj);
 	}
 
 	bool LuaDelegate::operator==(const LuaDelegate& dlg) const noexcept

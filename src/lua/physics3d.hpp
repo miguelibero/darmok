@@ -47,10 +47,8 @@ namespace darmok::physics3d
         static const LuaTableDelegateDefinition _collisionStayDef;
         static const LuaTableDelegateDefinition _collisionExitDef;
 
-        LuaPhysicsSystem& addUpdater1(const sol::protected_function& func) noexcept;
-        LuaPhysicsSystem& addUpdater2(const sol::table& table) noexcept;
-        bool removeUpdater1(const sol::protected_function& func) noexcept;
-        bool removeUpdater2(const sol::table& table) noexcept;
+        LuaPhysicsSystem& addUpdater(const sol::object& updater) noexcept;
+        bool removeUpdater(const sol::object& updater) noexcept;
 
         LuaPhysicsSystem& addListener(const sol::table& listener) noexcept;
         bool removeListener(const sol::table& listener) noexcept;

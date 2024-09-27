@@ -396,13 +396,8 @@ namespace darmok
         );
     }
 
-    LuaRmluiEventListener::LuaRmluiEventListener(const sol::protected_function& func) noexcept
-        : _delegate(func)
-    {
-    }
-
-    LuaRmluiEventListener::LuaRmluiEventListener(const sol::table& tab) noexcept
-        : _delegate(tab, "on_rmlui_event")
+    LuaRmluiEventListener::LuaRmluiEventListener(const sol::object& obj) noexcept
+        : _delegate(obj, "on_rmlui_event")
     {
     }
 

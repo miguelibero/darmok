@@ -388,6 +388,11 @@ namespace darmok
         return _impl->destroyEntity(entity);
     }
 
+    bool Scene::isValidEntity(Entity entity) const noexcept
+    {
+        return getRegistry().valid(entity);
+    }
+
     void Scene::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
     {
         SceneImpl::registerComponentDependency(typeId1, typeId2);

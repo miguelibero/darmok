@@ -480,13 +480,16 @@ namespace darmok
     void RmluiCanvasImpl::init(RmluiRendererImpl& comp)
     {
         _comp = comp;
-        auto size = getCurrentSize();
-        _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_comp->getRmluiRender());
         if (!_context)
         {
-            throw std::runtime_error("Failed to create rmlui context");
+            auto size = getCurrentSize();
+            _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_comp->getRmluiRender());
+            if (!_context)
+            {
+                throw std::runtime_error("Failed to create rmlui context");
+            }
+            _context->EnableMouseCursor(true);
         }
-        _context->EnableMouseCursor(true);
     }
 
     void RmluiCanvasImpl::shutdown() noexcept
@@ -1140,16 +1143,6 @@ namespace darmok
         _eventForwarders.erase(itr, _eventForwarders.end());
     }
 
-    void RmluiPlugin::onCanvasDestroyed(RmluiCanvas& canvas) noexcept
-    {
-        auto context = &canvas.getContext();
-        auto itr = std::remove_if(_eventForwarders.begin(), _eventForwarders.end(), [context](auto& fwd) {
-            auto doc = fwd->getElement().GetOwnerDocument();
-            return doc && doc->GetContext() == context;
-        });
-        _eventForwarders.erase(itr, _eventForwarders.end());
-    }
-
     void RmluiPlugin::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
     {
         for (auto& renderer : _renderers)
@@ -1366,10 +1359,6 @@ namespace darmok
         }
         if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
         {
-            if (_plugin)
-            {
-                _plugin->onCanvasDestroyed(canvas.value());
-            }
             canvas->getImpl().shutdown();
         }
     }

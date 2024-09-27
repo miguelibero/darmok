@@ -15,6 +15,7 @@ namespace darmok
 	class Program;
 	class Texture;
 	class LuaEntity;
+	class Scene;
 	class LuaScene;
 	class Transform;
 	class RenderChain;
@@ -23,12 +24,15 @@ namespace darmok
 	class LuaCamera final
 	{
 	public:
-		LuaCamera(Camera& cam, LuaScene& scene) noexcept;
+		LuaCamera(Camera& cam, const std::weak_ptr<Scene>& scene) noexcept;
+		Camera& getReal() noexcept;
+		const Camera& getReal() const noexcept;
+
 		static void bind(sol::state_view& lua) noexcept;
 
 	private:
 		Camera& _cam;
-		LuaScene& _scene;
+		std::weak_ptr<Scene> _scene;
 
 		static LuaCamera& addEntityComponent(LuaEntity& entity) noexcept;
 		static OptionalRef<LuaCamera>::std_t getEntityComponent(LuaEntity& entity) noexcept;
@@ -77,7 +81,6 @@ namespace darmok
 		glm::vec3 viewportToScreenPoint(const VarLuaTable<glm::vec3>& point) noexcept;
 		glm::vec3 screenToViewportPoint(const VarLuaTable<glm::vec3>& point) noexcept;
 
-		void setEntityFilter1(const sol::protected_function& func) noexcept;
-		void setEntityFilter2(const sol::table& table) noexcept;
+		void setEntityFilter(const sol::object& filter) noexcept;
 	};
 }

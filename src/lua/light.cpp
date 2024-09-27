@@ -1,5 +1,6 @@
 #include "light.hpp"
 #include "scene.hpp"
+#include "camera.hpp"
 #include "render_scene.hpp"
 #include <darmok/light.hpp>
 #include <darmok/camera.hpp>
@@ -88,14 +89,14 @@ namespace darmok
 		);
 	}
 
-	LightingRenderComponent& LuaLightingRenderComponent::addCameraComponent(Camera& cam) noexcept
+	LightingRenderComponent& LuaLightingRenderComponent::addCameraComponent(LuaCamera& cam) noexcept
 	{
-		return cam.addComponent<LightingRenderComponent>();
+		return cam.getReal().addComponent<LightingRenderComponent>();
 	}
 
-	OptionalRef<LightingRenderComponent>::std_t LuaLightingRenderComponent::getCameraComponent(Camera& cam) noexcept
+	OptionalRef<LightingRenderComponent>::std_t LuaLightingRenderComponent::getCameraComponent(LuaCamera& cam) noexcept
 	{
-		return cam.getComponent<LightingRenderComponent>();
+		return cam.getReal().getComponent<LightingRenderComponent>();
 	}
 
 	void LuaLightingRenderComponent::bind(sol::state_view& lua) noexcept

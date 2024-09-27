@@ -28,6 +28,7 @@ namespace Rml
 
 namespace darmok
 {
+    class LuaCamera;
     class Texture;
     class RmluiRenderer;
     class RmluiCanvas;
@@ -35,8 +36,7 @@ namespace darmok
     class LuaRmluiEventListener final : public Rml::EventListener
     {
     public:
-        LuaRmluiEventListener(const sol::protected_function& func) noexcept;
-        LuaRmluiEventListener(const sol::table& tab) noexcept;
+        LuaRmluiEventListener(const sol::object& obj) noexcept;
         void ProcessEvent(Rml::Event& event) override;
         void OnDetach(Rml::Element*) noexcept override;
     private:
@@ -208,8 +208,8 @@ namespace darmok
         OptionalRef<Scene> _scene;
         RmluiRenderer& _comp;
 
-        static LuaRmluiRenderer& addCameraComponent(Camera& cam) noexcept;
-        static OptionalRef<LuaRmluiRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
+        static LuaRmluiRenderer& addCameraComponent(LuaCamera& cam) noexcept;
+        static OptionalRef<LuaRmluiRenderer>::std_t getCameraComponent(LuaCamera& cam) noexcept;
 
         void loadFont1(const std::string& path) noexcept;
         void loadFont2(const std::string& path, bool fallback) noexcept;

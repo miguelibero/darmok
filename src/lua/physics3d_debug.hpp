@@ -8,7 +8,7 @@
 
 namespace darmok
 {
-    class Camera;
+    class LuaCamera;
     class Program;
 }
 
@@ -24,9 +24,9 @@ namespace darmok::physics3d
     private:
         using Config = PhysicsDebugConfig;
 
-        static PhysicsDebugRenderer& addCameraComponent1(Camera& cam) noexcept;
-        static PhysicsDebugRenderer& addCameraComponent2(Camera& cam, const Config& config) noexcept;
-        static OptionalRef<PhysicsDebugRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
+        static PhysicsDebugRenderer& addCameraComponent1(LuaCamera& cam) noexcept;
+        static PhysicsDebugRenderer& addCameraComponent2(LuaCamera& cam, const Config& config) noexcept;
+        static OptionalRef<PhysicsDebugRenderer>::std_t getCameraComponent(LuaCamera& cam) noexcept;
     };
 }
 

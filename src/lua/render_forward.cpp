@@ -1,17 +1,18 @@
 #include "render_forward.hpp"
+#include "camera.hpp"
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
 
 namespace darmok
 {
-    ForwardRenderer& LuaForwardRenderer::addCameraComponent(Camera& cam) noexcept
+    ForwardRenderer& LuaForwardRenderer::addCameraComponent(LuaCamera& cam) noexcept
     {
-        return cam.addComponent<ForwardRenderer>();
+        return cam.getReal().addComponent<ForwardRenderer>();
     }
 
-    OptionalRef<ForwardRenderer>::std_t LuaForwardRenderer::getCameraComponent(Camera& cam) noexcept
+    OptionalRef<ForwardRenderer>::std_t LuaForwardRenderer::getCameraComponent(LuaCamera& cam) noexcept
     {
-        return cam.getComponent<ForwardRenderer>();
+        return cam.getReal().getComponent<ForwardRenderer>();
     }
 
     void LuaForwardRenderer::bind(sol::state_view& lua) noexcept

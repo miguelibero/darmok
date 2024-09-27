@@ -1,18 +1,19 @@
 #include "freelook.hpp"
 #include "scene.hpp"
+#include "camera.hpp"
 #include <darmok/camera.hpp>
 #include <darmok/freelook.hpp>
 
 namespace darmok
 {
-    FreelookController& LuaFreelookController::LuaFreelookController::addSceneComponent1(LuaScene& scene, Camera& cam) noexcept
+    FreelookController& LuaFreelookController::LuaFreelookController::addSceneComponent1(LuaScene& scene, LuaCamera& cam) noexcept
     {
-        return scene.getReal()->addSceneComponent<FreelookController>(cam);
+        return scene.getReal()->addSceneComponent<FreelookController>(cam.getReal());
     }
 
-    FreelookController& LuaFreelookController::addSceneComponent2(LuaScene& scene, Camera& cam, const Config& config) noexcept
+    FreelookController& LuaFreelookController::addSceneComponent2(LuaScene& scene, LuaCamera& cam, const Config& config) noexcept
     {
-        return scene.getReal()->addSceneComponent<FreelookController>(cam, config);
+        return scene.getReal()->addSceneComponent<FreelookController>(cam.getReal(), config);
     }
 
     void LuaFreelookController::bind(sol::state_view& lua) noexcept

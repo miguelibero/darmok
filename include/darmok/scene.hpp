@@ -107,7 +107,7 @@ namespace darmok
         {
             if (auto comp = getSceneComponent<T>())
             {
-                return comp;
+                return comp.value();
             }
             return addSceneComponent<T>(std::forward<A>(args)...);
         }
@@ -117,6 +117,8 @@ namespace darmok
 
         Entity createEntity() noexcept;
         void destroyEntity(Entity entity) noexcept;
+        bool isValidEntity(Entity entity) const noexcept;
+
 
         template<typename T>
         auto getComponentView() const noexcept

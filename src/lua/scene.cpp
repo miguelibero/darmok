@@ -21,22 +21,16 @@
 namespace darmok
 {
 
-	LuaEntityFilter::LuaEntityFilter(const sol::protected_function& func, const LuaScene& scene) noexcept
-		: _delegate(func)
-		, _scene(scene)
-	{
-	}
-
-	LuaEntityFilter::LuaEntityFilter(const sol::table& table, const LuaScene& scene) noexcept
-		: _delegate(table, "filter_entity")
+	LuaEntityFilter::LuaEntityFilter(const sol::object& obj, const std::weak_ptr<Scene>& scene) noexcept
+		: _delegate(obj, "entity_filter")
 		, _scene(scene)
 	{
 	}
 
 	bool LuaEntityFilter::operator()(Entity entity, const Scene& scene) const noexcept
 	{
-		LuaEntity luaEntity(entity, _scene.getReal());
-		auto r = _delegate(luaEntity, _scene);
+		LuaEntity luaEntity(entity, _scene);
+		auto r = _delegate(luaEntity);
 		return LuaUtils::checkResult("running entity filter", r);
 	}
 
@@ -60,7 +54,7 @@ namespace darmok
 	{
 		if (auto scene = _scene.lock())
 		{
-			return scene->getRegistry().valid(_entity);
+			return scene->isValidEntity(_entity);
 		}
 		return false;
 	}
@@ -69,9 +63,35 @@ namespace darmok
 	{
 		if (auto scene = _scene.lock())
 		{
-			return LuaScene(scene);
+			return scene;
 		}
 		throw std::runtime_error("scene expired");
+	}
+
+	std::weak_ptr<Scene> LuaEntity::getWeakScene() const noexcept
+	{
+		return _scene;
+	}
+
+	bool LuaEntity::operator==(const LuaEntity& other) const noexcept
+	{
+		if (_entity != other._entity)
+		{
+			return false;
+		}
+		if (auto scene = _scene.lock())
+		{
+			if (auto otherScene = other._scene.lock())
+			{
+				return scene == otherScene;
+			}
+		}
+		return false;
+	}
+
+	bool LuaEntity::operator!=(const LuaEntity& other) const noexcept
+	{
+		return !operator==(other);
 	}
 
 	Scene& LuaEntity::getRealScene()
@@ -258,7 +278,7 @@ namespace darmok
 		{
 			return true;
 		}
-		_luaComponents = _scene->getOrAddSceneComponent<LuaSceneComponentContainer>();
+		_luaComponents = _scene->getSceneComponent<LuaSceneComponentContainer>();
 		return !_luaComponents.empty();
 	}
 
@@ -272,7 +292,7 @@ namespace darmok
 	{
 		if (!_luaComponents)
 		{
-			_luaComponents = _scene->addSceneComponent<LuaSceneComponentContainer>(*this);
+			_luaComponents = _scene->getOrAddSceneComponent<LuaSceneComponentContainer>(*this);
 		}
 		_luaComponents->add(comp);
 	}
@@ -408,7 +428,7 @@ namespace darmok
 	std::vector<LuaEntity> LuaScene::getEntities2(const sol::protected_function& filter) const noexcept
 	{
 		std::vector<LuaEntity> entities;
-		LuaEntityFilter luaFilter(filter, *this);
+		LuaEntityFilter luaFilter(filter, _scene);
 		for (auto entity : _scene->getComponentView<Entity>())
 		{
 			if (luaFilter(entity, *_scene))
@@ -422,7 +442,7 @@ namespace darmok
 	std::vector<LuaEntity> LuaScene::getEntities3(const sol::table& filter) const noexcept
 	{
 		std::vector<LuaEntity> entities;
-		LuaEntityFilter luaFilter(filter, *this);
+		LuaEntityFilter luaFilter(filter, _scene);
 		for (auto entity : _scene->getComponentView<Entity>())
 		{
 			if (luaFilter(entity, *_scene))

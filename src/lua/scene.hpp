@@ -22,13 +22,12 @@ namespace darmok
 	class LuaEntityFilter final : public IEntityFilter
 	{
 	public:
-		LuaEntityFilter(const sol::protected_function& func, const LuaScene& scene) noexcept;
-		LuaEntityFilter(const sol::table& table, const LuaScene& scene) noexcept;
+		LuaEntityFilter(const sol::object& obj, const std::weak_ptr<Scene>& scene) noexcept;
 
 		bool operator()(Entity entity, const Scene& scene) const noexcept override;
 	private:
 		LuaDelegate _delegate;
-		const LuaScene& _scene;
+		std::weak_ptr<Scene> _scene;
 	};
 
 	class LuaEntity final
@@ -38,6 +37,10 @@ namespace darmok
 		
 		const Entity& getReal() const noexcept;
 		LuaScene getScene() const;
+		std::weak_ptr<Scene> getWeakScene() const noexcept;
+
+		bool operator==(const LuaEntity& other) const noexcept;
+		bool operator!=(const LuaEntity& other) const noexcept;
 
 		template<typename T, typename... Args>
 		T& addComponent(Args&&... args)
@@ -158,7 +161,6 @@ namespace darmok
 	public:
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		std::vector<std::shared_ptr<LuaScene>> _scenes;
 
 		static SceneAppComponent& addAppComponent1(LuaApp& app) noexcept;
 		static SceneAppComponent& addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept;

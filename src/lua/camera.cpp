@@ -22,10 +22,20 @@
 
 namespace darmok
 {
-	LuaCamera::LuaCamera(Camera& cam, LuaScene& scene) noexcept
+	LuaCamera::LuaCamera(Camera& cam, const std::weak_ptr<Scene>& scene) noexcept
 		: _cam(cam)
 		, _scene(scene)
 	{
+	}
+
+	Camera& LuaCamera::getReal() noexcept
+	{
+		return _cam;
+	}
+
+	const Camera& LuaCamera::getReal() const noexcept
+	{
+		return _cam;
 	}
 
 	LuaCamera& LuaCamera::setPerspective1(float fovy, float aspect, float near, float far) noexcept
@@ -230,7 +240,7 @@ namespace darmok
 	LuaCamera& LuaCamera::addEntityComponent(LuaEntity& entity) noexcept
 	{
 		auto& cam = entity.addComponent<Camera>();
-		return entity.addComponent<LuaCamera>(cam, entity.getScene());
+		return entity.addComponent<LuaCamera>(cam, entity.getWeakScene());
 	}
 
 	OptionalRef<LuaCamera>::std_t LuaCamera::getEntityComponent(LuaEntity& entity) noexcept
@@ -243,14 +253,9 @@ namespace darmok
 		return scene.getEntity(cam);
 	}
 
-	void LuaCamera::setEntityFilter1(const sol::protected_function& func) noexcept
+	void LuaCamera::setEntityFilter(const sol::object& filter) noexcept
 	{
-		_cam.setEntityFilter(std::make_unique<LuaEntityFilter>(func, _scene));
-	}
-
-	void LuaCamera::setEntityFilter2(const sol::table& table) noexcept
-	{
-		_cam.setEntityFilter(std::make_unique<LuaEntityFilter>(table, _scene));
+		_cam.setEntityFilter(std::make_unique<LuaEntityFilter>(filter, _scene));
 	}
 
 	void LuaCamera::bind(sol::state_view& lua) noexcept
@@ -269,7 +274,7 @@ namespace darmok
 
 		Scene::registerComponentDependency<Camera, LuaCamera>();
 
-		lua.new_usertype<LuaCamera>("LuaCamera", sol::no_constructor,
+		lua.new_usertype<LuaCamera>("Camera", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<LuaCamera>::value),
 			"add_entity_component", &LuaCamera::addEntityComponent,
 			"get_entity_component", &LuaCamera::getEntityComponent,
@@ -314,9 +319,7 @@ namespace darmok
 			"screen_to_viewport_point", &LuaCamera::screenToViewportPoint,
 			"render_graph", sol::property(&LuaCamera::getRenderGraph),
 			"render_chain", sol::property(&LuaCamera::getRenderChain),
-			"entity_filter", sol::property(sol::overload(
-				&LuaCamera::setEntityFilter1, &LuaCamera::setEntityFilter2
-			))
+			"entity_filter", sol::property(&LuaCamera::setEntityFilter)
 		);
 	}
 }

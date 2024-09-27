@@ -271,7 +271,6 @@ namespace darmok
 		void addRenderer(RmluiRendererImpl& renderer) noexcept;
 		bool removeRenderer(const RmluiRendererImpl& renderer) noexcept;
 
-		void onCanvasDestroyed(RmluiCanvas& canvas) noexcept;
 		void onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 
 		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine = -1);
