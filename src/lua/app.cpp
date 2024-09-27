@@ -210,7 +210,7 @@ namespace darmok
 	{
 		if (!_luaComponents)
 		{
-			_luaComponents = getReal().addComponent<LuaAppComponentContainer>();
+			_luaComponents = getReal().getOrAddComponent<LuaAppComponentContainer>();
 		}
 		_luaComponents->add(comp);
 	}

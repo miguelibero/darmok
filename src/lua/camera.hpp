@@ -7,6 +7,7 @@
 #include <sol/sol.hpp>
 #include "glm.hpp"
 #include "viewport.hpp"
+#include "utils.hpp"
 
 namespace darmok
 {
@@ -16,46 +17,67 @@ namespace darmok
 	class LuaEntity;
 	class LuaScene;
 	class Transform;
+	class RenderChain;
+	class RenderGraphDefinition;
 
 	class LuaCamera final
 	{
 	public:
+		LuaCamera(Camera& cam, LuaScene& scene) noexcept;
 		static void bind(sol::state_view& lua) noexcept;
 
 	private:
-		static Camera& addEntityComponent(LuaEntity& entity) noexcept;
-		static OptionalRef<Camera>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const Camera& cam, LuaScene& scene) noexcept;
+		Camera& _cam;
+		LuaScene& _scene;
 
-		static Camera& setPerspective1(Camera& cam, float fovy, float aspect, float near, float far) noexcept;
-		static Camera& setPerspective2(Camera& cam, float fovy, float aspect, float near) noexcept;
-		static Camera& setPerspective3(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept;
-		static Camera& setPerspective4(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept;
-		static Camera& setOrtho1(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
-		static Camera& setOrtho2(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center) noexcept;
-		static Camera& setOrtho3(Camera& cam, const VarViewport& vp) noexcept;
-		static Camera& setOrtho4(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
-		static Camera& setOrtho5(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept;
-		static Camera& setOrtho6(Camera& cam, const VarLuaTable<glm::uvec2>& size) noexcept;
+		static LuaCamera& addEntityComponent(LuaEntity& entity) noexcept;
+		static OptionalRef<LuaCamera>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+		static std::optional<LuaEntity> getEntity(const LuaCamera& cam, LuaScene& scene) noexcept;
 
-		static Camera& setViewportPerspective1(Camera& cam, float fovy) noexcept;
-		static Camera& setViewportPerspective2(Camera& cam, float fovy, float near, float far) noexcept;
-		static Camera& setViewportOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept;
-		static Camera& setViewportOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
+		LuaCamera& setPerspective1(float fovy, float aspect, float near, float far) noexcept;
+		LuaCamera& setPerspective2(float fovy, float aspect, float near) noexcept;
+		LuaCamera& setPerspective3(float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept;
+		LuaCamera& setPerspective4(float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept;
+		LuaCamera& setOrtho1(const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
+		LuaCamera& setOrtho2(const VarViewport& vp, const VarLuaTable<glm::vec2>& center) noexcept;
+		LuaCamera& setOrtho3(const VarViewport& vp) noexcept;
+		LuaCamera& setOrtho4(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
+		LuaCamera& setOrtho5(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept;
+		LuaCamera& setOrtho6(const VarLuaTable<glm::uvec2>& size) noexcept;
 
-		static void setProjectionMatrix(Camera& cam, const VarLuaTable<glm::mat4>& matrix) noexcept;
-		static void setViewport(Camera& cam, std::optional<VarViewport> viewport) noexcept;
-		static std::optional<Viewport> getViewport(const Camera& cam) noexcept;
-		static OptionalRef<Transform>::std_t getTransform(const Camera& cam) noexcept;
+		LuaCamera& setViewportPerspective1(float fovy) noexcept;
+		LuaCamera& setViewportPerspective2(float fovy, float near, float far) noexcept;
+		LuaCamera& setViewportOrtho1(const VarLuaTable<glm::vec2>& center) noexcept;
+		LuaCamera& setViewportOrtho2(const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
 
-		static Ray screenPointToRay1(const Camera& cam, const glm::vec2& point) noexcept;
-		static Ray screenPointToRay2(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
-		static Ray viewportPointToRay(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
-		static glm::vec3 worldToScreenPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
-		static glm::vec3 worldToViewportPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
-		static glm::vec3 screenToWorldPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
-		static glm::vec3 viewportToWorldPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
-		static glm::vec3 viewportToScreenPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
-		static glm::vec3 screenToViewportPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
+		const std::string& getName() const noexcept;
+		void setName(const std::string& name) noexcept;
+		bool getEnabled() const noexcept;
+		void setEnabled(bool enabled) noexcept;
+		const glm::mat4& getProjectionMatrix() const noexcept;
+		void setProjectionMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept;
+		
+		void setViewport(std::optional<VarViewport> viewport) noexcept;
+		std::optional<Viewport> getViewport() noexcept;
+		Viewport getCurrentViewport() noexcept;
+
+		OptionalRef<Transform>::std_t getTransform() noexcept;
+		glm::mat4 getModelMatrix() const noexcept;
+		glm::mat4 getModelInverse() const noexcept;
+		RenderGraphDefinition& getRenderGraph() const noexcept;
+		RenderChain& getRenderChain() const noexcept;
+
+		Ray screenPointToRay1(const glm::vec2& point) noexcept;
+		Ray screenPointToRay2(const VarLuaTable<glm::vec3>& point) noexcept;
+		Ray viewportPointToRay(const VarLuaTable<glm::vec3>& point) noexcept;
+		glm::vec3 worldToScreenPoint(const VarLuaTable<glm::vec3>& point) noexcept;
+		glm::vec3 worldToViewportPoint(const VarLuaTable<glm::vec3>& point) noexcept;
+		glm::vec3 screenToWorldPoint(const VarLuaTable<glm::vec3>& point) noexcept;
+		glm::vec3 viewportToWorldPoint(const VarLuaTable<glm::vec3>& point) noexcept;
+		glm::vec3 viewportToScreenPoint(const VarLuaTable<glm::vec3>& point) noexcept;
+		glm::vec3 screenToViewportPoint(const VarLuaTable<glm::vec3>& point) noexcept;
+
+		void setEntityFilter1(const sol::protected_function& func) noexcept;
+		void setEntityFilter2(const sol::table& table) noexcept;
 	};
 }

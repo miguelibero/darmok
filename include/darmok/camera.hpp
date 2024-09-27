@@ -67,10 +67,10 @@ namespace darmok
             return setEntityFilter(std::make_unique<EntityComponentFilter<T>>());
         }
 
-        std::vector<Entity> getEntities() const noexcept;
+        std::vector<Entity> getEntities() const;
 
         template<typename T>
-        std::vector<Entity> getEntities() const noexcept
+        std::vector<Entity> getEntities() const
         {
             if (!_scene)
             {

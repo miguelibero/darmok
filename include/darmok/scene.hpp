@@ -29,7 +29,7 @@ namespace darmok
     {
     public:
         virtual ~IEntityFilter() = default;
-        virtual bool operator()(Entity entity, const Scene& scene) const noexcept = 0;
+        virtual bool operator()(Entity entity, const Scene& scene) const = 0;
     };
 
     class SceneImpl;
@@ -42,6 +42,8 @@ namespace darmok
     public:
         Scene() noexcept;
         ~Scene() noexcept;
+
+        std::string toString() const noexcept;
 
         SceneImpl& getImpl() noexcept;
         const SceneImpl& getImpl() const noexcept;
@@ -98,6 +100,16 @@ namespace darmok
             auto& ref = *ptr;
             addSceneComponent(entt::type_hash<T>::value(), std::move(ptr));
             return ref;
+        }
+
+        template<typename T, typename... A>
+        T& getOrAddSceneComponent(A&&... args) noexcept
+        {
+            if (auto comp = getSceneComponent<T>())
+            {
+                return comp;
+            }
+            return addSceneComponent<T>(std::forward<A>(args)...);
         }
 
         EntityRegistry& getRegistry();
@@ -294,10 +306,10 @@ namespace darmok
             registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
         }
 
-        std::vector<Entity> getEntities(OptionalRef<IEntityFilter> filter = nullptr) const noexcept;
+        std::vector<Entity> getEntities(OptionalRef<IEntityFilter> filter = nullptr) const;
 
         template<typename T>
-        std::vector<Entity> getEntities(OptionalRef<IEntityFilter> filter = nullptr) const noexcept
+        std::vector<Entity> getEntities(OptionalRef<IEntityFilter> filter = nullptr) const
         {
             std::vector<Entity> entities;
             for (auto entity : getComponentView<T>())

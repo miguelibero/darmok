@@ -22,154 +22,235 @@
 
 namespace darmok
 {
-	Camera& LuaCamera::setPerspective1(Camera& cam, float fovy, float aspect, float near, float far) noexcept
+	LuaCamera::LuaCamera(Camera& cam, LuaScene& scene) noexcept
+		: _cam(cam)
+		, _scene(scene)
 	{
-		return cam.setPerspective(fovy, aspect, near, far);
 	}
 
-	Camera& LuaCamera::setPerspective2(Camera& cam, float fovy, float aspect, float near) noexcept
+	LuaCamera& LuaCamera::setPerspective1(float fovy, float aspect, float near, float far) noexcept
 	{
-		return cam.setPerspective(fovy, aspect, near);
+		_cam.setPerspective(fovy, aspect, near, far);
+		return *this;
 	}
 
-	Camera& LuaCamera::setPerspective3(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept
+	LuaCamera& LuaCamera::setPerspective2(float fovy, float aspect, float near) noexcept
 	{
-		return cam.setPerspective(fovy, LuaGlm::tableGet(size), near, far);
+		_cam.setPerspective(fovy, aspect, near);
+		return *this;
 	}
 
-	Camera& LuaCamera::setPerspective4(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept
+	LuaCamera& LuaCamera::setPerspective3(float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept
 	{
-		return cam.setPerspective(fovy, LuaGlm::tableGet(size), near);
+		_cam.setPerspective(fovy, LuaGlm::tableGet(size), near, far);
+		return *this;
 	}
 
-	Camera& LuaCamera::setViewportPerspective1(Camera& cam, float fovy) noexcept
+	LuaCamera& LuaCamera::setPerspective4(float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept
 	{
-		return cam.setViewportPerspective(fovy);
+		_cam.setPerspective(fovy, LuaGlm::tableGet(size), near);
+		return *this;
 	}
 
-	Camera& LuaCamera::setViewportPerspective2(Camera& cam, float fovy, float near, float far) noexcept
+	LuaCamera& LuaCamera::setViewportPerspective1(float fovy) noexcept
 	{
-		return cam.setViewportPerspective(fovy, near, far);
+		_cam.setViewportPerspective(fovy);
+		return *this;
 	}
 
-	Camera& LuaCamera::setOrtho1(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
+	LuaCamera& LuaCamera::setViewportPerspective2(float fovy, float near, float far) noexcept
 	{
-		return cam.setOrtho(LuaViewport::tableGet(vp), LuaGlm::tableGet(center), near, far);
+		_cam.setViewportPerspective(fovy, near, far);
+		return *this;
 	}
 
-	Camera& LuaCamera::setOrtho2(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center) noexcept
+	LuaCamera& LuaCamera::setOrtho1(const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
 	{
-		return cam.setOrtho(LuaViewport::tableGet(vp), LuaGlm::tableGet(center));
+		_cam.setOrtho(LuaViewport::tableGet(vp), LuaGlm::tableGet(center), near, far);
+		return *this;
 	}
 
-	Camera& LuaCamera::setOrtho3(Camera& cam, const VarViewport& vp) noexcept
+	LuaCamera& LuaCamera::setOrtho2(const VarViewport& vp, const VarLuaTable<glm::vec2>& center) noexcept
 	{
-		return cam.setOrtho(LuaViewport::tableGet(vp));
+		_cam.setOrtho(LuaViewport::tableGet(vp), LuaGlm::tableGet(center));
+		return *this;
 	}
 
-	Camera& LuaCamera::setOrtho4(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
+	LuaCamera& LuaCamera::setOrtho3(const VarViewport& vp) noexcept
 	{
-		return cam.setOrtho(LuaGlm::tableGet(size), LuaGlm::tableGet(center), near, far);
+		_cam.setOrtho(LuaViewport::tableGet(vp));
+		return *this;
 	}
 
-	Camera& LuaCamera::setOrtho5(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept
+	LuaCamera& LuaCamera::setOrtho4(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
 	{
-		return cam.setOrtho(LuaGlm::tableGet(size), LuaGlm::tableGet(center));
+		_cam.setOrtho(LuaGlm::tableGet(size), LuaGlm::tableGet(center), near, far);
+		return *this;
 	}
 
-	Camera& LuaCamera::setOrtho6(Camera& cam, const VarLuaTable<glm::uvec2>& size) noexcept
+	LuaCamera& LuaCamera::setOrtho5(const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept
 	{
-		return cam.setOrtho(LuaGlm::tableGet(size));
+		_cam.setOrtho(LuaGlm::tableGet(size), LuaGlm::tableGet(center));
+		return *this;
 	}
 
-	Camera& LuaCamera::setViewportOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept
+	LuaCamera& LuaCamera::setOrtho6(const VarLuaTable<glm::uvec2>& size) noexcept
 	{
-		return cam.setViewportOrtho(LuaGlm::tableGet(center));
+		_cam.setOrtho(LuaGlm::tableGet(size));
+		return *this;
 	}
 
-	Camera& LuaCamera::setViewportOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
+	LuaCamera& LuaCamera::setViewportOrtho1(const VarLuaTable<glm::vec2>& center) noexcept
 	{
-		return cam.setViewportOrtho(LuaGlm::tableGet(center), near, far);
+		_cam.setViewportOrtho(LuaGlm::tableGet(center));
+		return *this;
 	}
 
-	void LuaCamera::setViewport(Camera& cam, std::optional<VarViewport> viewport) noexcept
+	LuaCamera& LuaCamera::setViewportOrtho2(const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
 	{
-		cam.setViewport(LuaViewport::tableGet(viewport));
+		_cam.setViewportOrtho(LuaGlm::tableGet(center), near, far);
+		return *this;
 	}
 
-	std::optional<Viewport> LuaCamera::getViewport(const Camera& cam) noexcept
+	void LuaCamera::setViewport(std::optional<VarViewport> viewport) noexcept
 	{
-		return cam.getViewport();
+		_cam.setViewport(LuaViewport::tableGet(viewport));
 	}
 
-	OptionalRef<Transform>::std_t LuaCamera::getTransform(const Camera& cam) noexcept
+	std::optional<Viewport> LuaCamera::getViewport() noexcept
 	{
-		return cam.getTransform();
+		return _cam.getViewport();
 	}
 
-	void LuaCamera::setProjectionMatrix(Camera& cam, const VarLuaTable<glm::mat4>& matrix) noexcept
+	Viewport LuaCamera::getCurrentViewport() noexcept
 	{
-		cam.setProjectionMatrix(LuaGlm::tableGet(matrix));
+		return _cam.getCurrentViewport();
 	}
 
-	Ray LuaCamera::screenPointToRay1(const Camera& cam, const glm::vec2& point) noexcept
+	OptionalRef<Transform>::std_t LuaCamera::getTransform() noexcept
 	{
-		return cam.screenPointToRay(glm::vec3(point, 0));
+		return _cam.getTransform();
 	}
 
-	Ray LuaCamera::screenPointToRay2(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept
+	glm::mat4 LuaCamera::getModelMatrix() const noexcept
 	{
-		return cam.screenPointToRay(LuaGlm::tableGet(point));
+		return _cam.getModelMatrix();
 	}
 
-	Ray LuaCamera::viewportPointToRay(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept
+	glm::mat4 LuaCamera::getModelInverse() const noexcept
 	{
-		return cam.viewportPointToRay(LuaGlm::tableGet(point));
+		return _cam.getModelInverse();
 	}
 
-	glm::vec3 LuaCamera::worldToScreenPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept
+	RenderGraphDefinition& LuaCamera::getRenderGraph() const noexcept
 	{
-		return cam.worldToScreenPoint(LuaGlm::tableGet(point));
+		return _cam.getRenderGraph();
 	}
 
-	glm::vec3 LuaCamera::worldToViewportPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept
+	RenderChain& LuaCamera::getRenderChain() const noexcept
 	{
-		return cam.worldToViewportPoint(LuaGlm::tableGet(point));
+		return _cam.getRenderChain();
 	}
 
-	glm::vec3 LuaCamera::screenToWorldPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept
+	const std::string& LuaCamera::getName() const noexcept
 	{
-		return cam.screenToWorldPoint(LuaGlm::tableGet(point));
+		return _cam.getName();
 	}
 
-	glm::vec3 LuaCamera::viewportToWorldPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept
+	void LuaCamera::setName(const std::string& name) noexcept
 	{
-		return cam.viewportToWorldPoint(LuaGlm::tableGet(point));
+		_cam.setName(name);
 	}
 
-	glm::vec3 LuaCamera::viewportToScreenPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept
+	bool LuaCamera::getEnabled() const noexcept
 	{
-		return cam.viewportToScreenPoint(LuaGlm::tableGet(point));
+		return _cam.isEnabled();
 	}
 
-	glm::vec3 LuaCamera::screenToViewportPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept
+	void LuaCamera::setEnabled(bool enabled) noexcept
 	{
-		return cam.screenToViewportPoint(LuaGlm::tableGet(point));
+		_cam.setEnabled(enabled);
 	}
 
-	Camera& LuaCamera::addEntityComponent(LuaEntity& entity) noexcept
+	const glm::mat4& LuaCamera::getProjectionMatrix() const noexcept
 	{
-		return entity.addComponent<Camera>();
+		return _cam.getProjectionMatrix();
 	}
 
-	OptionalRef<Camera>::std_t LuaCamera::getEntityComponent(LuaEntity& entity) noexcept
+	void LuaCamera::setProjectionMatrix(const VarLuaTable<glm::mat4>& matrix) noexcept
 	{
-		return entity.getComponent<Camera>();
+		_cam.setProjectionMatrix(LuaGlm::tableGet(matrix));
 	}
 
-	std::optional<LuaEntity> LuaCamera::getEntity(const Camera& cam, LuaScene& scene) noexcept
+	Ray LuaCamera::screenPointToRay1(const glm::vec2& point) noexcept
+	{
+		return _cam.screenPointToRay(glm::vec3(point, 0));
+	}
+
+	Ray LuaCamera::screenPointToRay2(const VarLuaTable<glm::vec3>& point) noexcept
+	{
+		return _cam.screenPointToRay(LuaGlm::tableGet(point));
+	}
+
+	Ray LuaCamera::viewportPointToRay(const VarLuaTable<glm::vec3>& point) noexcept
+	{
+		return _cam.viewportPointToRay(LuaGlm::tableGet(point));
+	}
+
+	glm::vec3 LuaCamera::worldToScreenPoint(const VarLuaTable<glm::vec3>& point) noexcept
+	{
+		return _cam.worldToScreenPoint(LuaGlm::tableGet(point));
+	}
+
+	glm::vec3 LuaCamera::worldToViewportPoint(const VarLuaTable<glm::vec3>& point) noexcept
+	{
+		return _cam.worldToViewportPoint(LuaGlm::tableGet(point));
+	}
+
+	glm::vec3 LuaCamera::screenToWorldPoint(const VarLuaTable<glm::vec3>& point) noexcept
+	{
+		return _cam.screenToWorldPoint(LuaGlm::tableGet(point));
+	}
+
+	glm::vec3 LuaCamera::viewportToWorldPoint(const VarLuaTable<glm::vec3>& point) noexcept
+	{
+		return _cam.viewportToWorldPoint(LuaGlm::tableGet(point));
+	}
+
+	glm::vec3 LuaCamera::viewportToScreenPoint(const VarLuaTable<glm::vec3>& point) noexcept
+	{
+		return _cam.viewportToScreenPoint(LuaGlm::tableGet(point));
+	}
+
+	glm::vec3 LuaCamera::screenToViewportPoint(const VarLuaTable<glm::vec3>& point) noexcept
+	{
+		return _cam.screenToViewportPoint(LuaGlm::tableGet(point));
+	}
+
+	LuaCamera& LuaCamera::addEntityComponent(LuaEntity& entity) noexcept
+	{
+		auto& cam = entity.addComponent<Camera>();
+		return entity.addComponent<LuaCamera>(cam, entity.getScene());
+	}
+
+	OptionalRef<LuaCamera>::std_t LuaCamera::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<LuaCamera>();
+	}
+
+	std::optional<LuaEntity> LuaCamera::getEntity(const LuaCamera& cam, LuaScene& scene) noexcept
 	{
 		return scene.getEntity(cam);
+	}
+
+	void LuaCamera::setEntityFilter1(const sol::protected_function& func) noexcept
+	{
+		_cam.setEntityFilter(std::make_unique<LuaEntityFilter>(func, _scene));
+	}
+
+	void LuaCamera::setEntityFilter2(const sol::table& table) noexcept
+	{
+		_cam.setEntityFilter(std::make_unique<LuaEntityFilter>(table, _scene));
 	}
 
 	void LuaCamera::bind(sol::state_view& lua) noexcept
@@ -186,8 +267,10 @@ namespace darmok
 		LuaSkeletalAnimationRenderComponent::bind(lua);
 #endif
 
-		lua.new_usertype<Camera>("Camera", sol::no_constructor,
-			"type_id", sol::property(&entt::type_hash<Camera>::value),
+		Scene::registerComponentDependency<Camera, LuaCamera>();
+
+		lua.new_usertype<LuaCamera>("LuaCamera", sol::no_constructor,
+			"type_id", sol::property(&entt::type_hash<LuaCamera>::value),
 			"add_entity_component", &LuaCamera::addEntityComponent,
 			"get_entity_component", &LuaCamera::getEntityComponent,
 			"get_entity", &LuaCamera::getEntity,
@@ -213,13 +296,14 @@ namespace darmok
 				&LuaCamera::setViewportOrtho1,
 				&LuaCamera::setViewportOrtho2
 			),
-			"name", sol::property(&Camera::getName, &Camera::setName),
-			"enabled", sol::property(&Camera::isEnabled, &Camera::setEnabled),
-			"projection_matrix", sol::property(&Camera::getProjectionMatrix, &LuaCamera::setProjectionMatrix),
+			"name", sol::property(&LuaCamera::getName, &LuaCamera::setName),
+			"enabled", sol::property(&LuaCamera::getEnabled, &LuaCamera::setEnabled),
+			"projection_matrix", sol::property(&LuaCamera::getProjectionMatrix, &LuaCamera::setProjectionMatrix),
 			"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
-			"current_viewport", sol::property(&Camera::getCurrentViewport),
+			"current_viewport", sol::property(&LuaCamera::getCurrentViewport),
 			"transform", sol::property(&LuaCamera::getTransform),
-			"model_matrix", sol::property(&Camera::getModelMatrix),
+			"model_matrix", sol::property(&LuaCamera::getModelMatrix),
+			"model_inverse", sol::property(&LuaCamera::getModelInverse),
 			"screen_point_to_ray", sol::overload(&LuaCamera::screenPointToRay1, &LuaCamera::screenPointToRay2),
 			"viewport_point_to_ray", &LuaCamera::viewportPointToRay,
 			"world_to_screen_point", &LuaCamera::worldToScreenPoint,
@@ -228,8 +312,11 @@ namespace darmok
 			"viewport_to_world_point", &LuaCamera::viewportToWorldPoint,
 			"viewport_to_screen_point", &LuaCamera::viewportToScreenPoint,
 			"screen_to_viewport_point", &LuaCamera::screenToViewportPoint,
-			"render_graph", sol::resolve<RenderGraphDefinition&()>(&Camera::getRenderGraph),
-			"render_chain", sol::resolve<RenderChain&()>(&Camera::getRenderChain)
+			"render_graph", sol::property(&LuaCamera::getRenderGraph),
+			"render_chain", sol::property(&LuaCamera::getRenderChain),
+			"entity_filter", sol::property(sol::overload(
+				&LuaCamera::setEntityFilter1, &LuaCamera::setEntityFilter2
+			))
 		);
 	}
 }

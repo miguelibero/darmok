@@ -20,6 +20,11 @@ namespace darmok
         // empty on purpose
     }
 
+    std::string SceneImpl::toString() const noexcept
+    {
+        return "Scene(" + _name + ")";
+    }
+
     void SceneImpl::addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept
     {
         if (_app)
@@ -348,6 +353,11 @@ namespace darmok
     {
     }
 
+    std::string Scene::toString() const noexcept
+    {
+        return _impl->toString();
+    }
+
     SceneImpl& Scene::getImpl() noexcept
     {
         return *_impl;
@@ -383,7 +393,7 @@ namespace darmok
         SceneImpl::registerComponentDependency(typeId1, typeId2);
     }
 
-    std::vector<Entity> Scene::getEntities(OptionalRef<IEntityFilter> filter) const noexcept
+    std::vector<Entity> Scene::getEntities(OptionalRef<IEntityFilter> filter) const
     {
         std::vector<Entity> entities;
         for (auto entity : getComponentView<Entity>())

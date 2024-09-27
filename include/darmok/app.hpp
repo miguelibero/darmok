@@ -174,6 +174,16 @@ namespace darmok
 			return ref;
 		}
 
+		template<typename T, typename... A>
+		T& getOrAddComponent(A&&... args) noexcept
+		{
+			if (auto comp = getComponent<T>())
+			{
+				return comp.value();
+			}
+			return addComponent<T>(std::forward<A>(args)...);
+		}
+
 		static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
 
 		template<typename T1, typename T2>

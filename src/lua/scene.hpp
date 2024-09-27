@@ -158,6 +158,8 @@ namespace darmok
 	public:
 		static void bind(sol::state_view& lua) noexcept;
 	private:
+		std::vector<std::shared_ptr<LuaScene>> _scenes;
+
 		static SceneAppComponent& addAppComponent1(LuaApp& app) noexcept;
 		static SceneAppComponent& addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept;
 		static OptionalRef<SceneAppComponent>::std_t getAppComponent(LuaApp& app) noexcept;

@@ -231,7 +231,7 @@ namespace darmok
 
 	std::string LuaScene::toString() const noexcept
 	{
-		return "Scene()";
+		return _scene->toString();
 	}
 
 	bool LuaScene::removeSceneComponent(const sol::object& type)
@@ -258,7 +258,7 @@ namespace darmok
 		{
 			return true;
 		}
-		_luaComponents = _scene->getSceneComponent<LuaSceneComponentContainer>();
+		_luaComponents = _scene->getOrAddSceneComponent<LuaSceneComponentContainer>();
 		return !_luaComponents.empty();
 	}
 

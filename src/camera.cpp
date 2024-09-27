@@ -181,7 +181,7 @@ namespace darmok
         return _entityFilter.get();
     }
 
-    std::vector<Entity> Camera::getEntities() const noexcept
+    std::vector<Entity> Camera::getEntities() const
     {
         if (!_scene)
         {
