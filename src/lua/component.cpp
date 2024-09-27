@@ -60,14 +60,16 @@ namespace darmok
 		return type.pointer();
 	}
 
+	const LuaTableDelegateDefinition LuaAppComponentContainer::_initDef("init", "app component init");
+	const LuaTableDelegateDefinition LuaAppComponentContainer::_shutdownDef("shutdown", "app component shutdown");
+	const LuaTableDelegateDefinition LuaAppComponentContainer::_renderResetDef("render_reset", "app component render reset");
+	const LuaTableDelegateDefinition LuaAppComponentContainer::_updateDef("update", "app component update");
+
 	void LuaAppComponentContainer::init(App& app)
 	{
 		for (auto& [type, comp] : _components)
 		{
-			LuaUtils::callTableDelegate(comp, "init", "app component init",
-				[](auto& func, auto& self) {
-					return func(self);
-			});
+			_initDef(comp);
 		}
 	}
 
@@ -75,11 +77,7 @@ namespace darmok
 	{
 		for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
 		{
-			auto& comp = itr->second;
-			LuaUtils::callTableDelegate(comp, "shutdown", "app component shutdown",
-				[](auto& func, auto& self) {
-					return func(self);
-				});
+			_shutdownDef(itr->second);
 		}
 	}
 
@@ -87,10 +85,7 @@ namespace darmok
 	{
 		for (auto& [type, comp] : _components)
 		{
-			LuaUtils::callTableDelegate(comp, "render_reset", "app component render reset",
-				[](auto& func, auto& self) {
-					return func(self);
-				});
+			_renderResetDef(comp);
 		}
 	}
 
@@ -98,10 +93,7 @@ namespace darmok
 	{
 		for (auto& [type, comp] : _components)
 		{
-			LuaUtils::callTableDelegate(comp, "update", "app component update",
-				[deltaTime](auto& func, auto& self) {
-					return func(self, deltaTime);
-				});
+			_updateDef(comp, deltaTime);
 		}
 	}
 
@@ -110,14 +102,18 @@ namespace darmok
 	{
 	}
 
+
+	const LuaTableDelegateDefinition LuaSceneComponentContainer::_initDef("init", "scene component init");
+	const LuaTableDelegateDefinition LuaSceneComponentContainer::_shutdownDef("shutdown", "scene component shutdown");
+	const LuaTableDelegateDefinition LuaSceneComponentContainer::_renderResetDef("render_reset", "scene component render reset");
+	const LuaTableDelegateDefinition LuaSceneComponentContainer::_updateDef("update", "scene component update");
+
+
 	void LuaSceneComponentContainer::init(Scene& scene, App& app)
 	{
 		for (auto& [type, comp] : _components)
 		{
-			LuaUtils::callTableDelegate(comp, "init", "scene component init",
-				[this](auto& func, auto& self) {
-					return func(self, _scene);
-				});
+			_initDef(comp);
 		}
 	}
 
@@ -125,11 +121,7 @@ namespace darmok
 	{
 		for (auto itr = _components.rbegin(); itr != _components.rend(); ++itr)
 		{
-			auto& comp = itr->second;
-			LuaUtils::callTableDelegate(comp, "shutdown", "scene component shutdown",
-				[](auto& func, auto& self) {
-					return func(self);
-				});
+			_shutdownDef(itr->second);
 		}
 	}
 
@@ -137,10 +129,7 @@ namespace darmok
 	{
 		for (auto& [type, comp] : _components)
 		{
-			LuaUtils::callTableDelegate(comp, "render_reset", "scene component render reset",
-				[](auto& func, auto& self) {
-					return func(self);
-				});
+			_renderResetDef(comp);
 		}
 	}
 
@@ -148,11 +137,7 @@ namespace darmok
 	{
 		for (auto& [type, comp] : _components)
 		{
-			LuaUtils::callTableDelegate(comp, "update", "scene component update",
-				[deltaTime](auto& func, auto& self) {
-					return func(self, deltaTime);
-				});
+			_updateDef(comp, deltaTime);
 		}
 	}
-
 }

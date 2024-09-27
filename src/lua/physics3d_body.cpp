@@ -197,37 +197,29 @@ namespace darmok::physics3d
         return scene.getComponent<LuaPhysicsBody>(entity);
     }
 
+    const LuaTableDelegateDefinition LuaPhysicsBody::_collisionEnterDef("on_collision_enter", "running physics body collision enter");
+    const LuaTableDelegateDefinition LuaPhysicsBody::_collisionStayDef("on_collision_stay", "running physics body collision stay");
+    const LuaTableDelegateDefinition LuaPhysicsBody::_collisionExitDef("on_collision_exit", "running physics body collision exit");
+
     void LuaPhysicsBody::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
         auto& luaBody1 = getLuaBody(body1).value();
         auto& luaBody2 = getLuaBody(body2).value();
-        LuaUtils::callTableDelegates(_listeners, "on_collision_enter", "running physics collision enter",
-            [&collision, &luaBody1, &luaBody2](auto& func, auto& self)
-            {
-                return func(self, luaBody1, luaBody2, collision);
-            });
+        _collisionEnterDef(_listeners, luaBody1, luaBody2, collision);
     }
 
     void LuaPhysicsBody::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
     {
         auto& luaBody1 = getLuaBody(body1).value();
         auto& luaBody2 = getLuaBody(body2).value();
-        LuaUtils::callTableDelegates(_listeners, "on_collision_stay", "running physics collision stay",
-            [&collision, &luaBody1, &luaBody2](auto& func, auto& self)
-            {
-                return func(self, luaBody1, luaBody2, collision);
-            });
+        _collisionStayDef(_listeners, luaBody1, luaBody2, collision);
     }
 
     void LuaPhysicsBody::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
     {
         auto& luaBody1 = getLuaBody(body1).value();
         auto& luaBody2 = getLuaBody(body2).value();
-        LuaUtils::callTableDelegates(_listeners, "on_collision_exit", "running physics collision exit",
-            [&luaBody1, &luaBody2](auto& func, auto& self)
-            {
-                return func(self, luaBody1, luaBody2);
-            });
+        _collisionExitDef(_listeners, luaBody1, luaBody2);
     }
 
     LuaPhysicsBody& LuaPhysicsBody::addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept

@@ -17,28 +17,6 @@ namespace darmok
 
         static std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;
 
-        template<typename Callback>
-        static bool callTableDelegate(const sol::table& delegate, const std::string& key, const std::string& desc, Callback callback)
-        {
-            auto elm = delegate[key];
-            if (elm.get_type() != sol::type::function)
-            {
-                return true;
-            }
-            sol::protected_function func = elm;
-            auto result = callback(func, delegate);
-            return checkResult(desc, result);
-        }
-
-        template<typename Callback>
-        static void callTableDelegates(const std::vector<sol::table>& delegates, const std::string& key, const std::string& desc, Callback callback)
-        {
-            for (auto& delegate : delegates)
-            {
-                callTableDelegate(delegate, key, desc, callback);
-            }
-        }
-
         template<typename T>
         static void newEnumFunc(sol::state_view& lua, std::string_view name, T count, const std::string& (*func)(T), bool string = false)
         {
@@ -78,6 +56,37 @@ namespace darmok
             metatable[sol::meta_function::index] = metatable;
             table[sol::metatable_key] = metatable;
         }
+    };
+
+    class LuaTableDelegateDefinition
+    {
+    public:
+        LuaTableDelegateDefinition(const std::string& key, const std::string& desc) noexcept;
+
+        template<typename... Args>
+        bool operator()(const sol::table& table, Args&&... args) const
+        {
+            auto elm = table[_key];
+            if (elm.get_type() != sol::type::function)
+            {
+                return true;
+            }
+            sol::protected_function func = elm;
+            auto result = func(table, std::forward<Args>(args)...);
+            return LuaUtils::checkResult(_desc, result);
+        }
+
+        template<typename... Args>
+        void operator()(const std::vector<sol::table>& tables, Args&&... args) const
+        {
+            for (auto& table : tables)
+            {
+                operator()(table, std::forward<Args>(args)...);
+            }
+        }
+    private:
+        std::string _key;
+        std::string _desc;
     };
 
     class LuaDelegate final

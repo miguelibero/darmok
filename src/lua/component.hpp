@@ -5,6 +5,7 @@
 #include <string>
 #include <darmok/app.hpp>
 #include <darmok/scene.hpp>
+#include "utils.hpp"
 
 namespace darmok
 {
@@ -33,6 +34,11 @@ namespace darmok
 		void shutdown() override;
 		void renderReset() override;
 		void update(float deltaTime) override;
+	private:
+		static const LuaTableDelegateDefinition _initDef;
+		static const LuaTableDelegateDefinition _shutdownDef;
+		static const LuaTableDelegateDefinition _renderResetDef;
+		static const LuaTableDelegateDefinition _updateDef;
 	};
 
 	class LuaScene;
@@ -47,6 +53,10 @@ namespace darmok
 		void update(float deltaTime) override;
 	private:
 		LuaScene& _scene;
+		static const LuaTableDelegateDefinition _initDef;
+		static const LuaTableDelegateDefinition _shutdownDef;
+		static const LuaTableDelegateDefinition _renderResetDef;
+		static const LuaTableDelegateDefinition _updateDef;
 	};
 
 }

@@ -7,6 +7,7 @@
 #include <darmok/character.hpp>
 #include <darmok/optional_ref.hpp>
 #include "glm.hpp"
+#include "utils.hpp"
 
 namespace darmok
 {
@@ -32,6 +33,10 @@ namespace darmok::physics3d
 	private:
 		CharacterController& _ctrl;
 		sol::table _delegate;
+		static const LuaTableDelegateDefinition _adjustBodyDef;
+		static const LuaTableDelegateDefinition _contactValidateDef;
+		static const LuaTableDelegateDefinition _contactAddedDef;
+		static const LuaTableDelegateDefinition _contactSolveDef;
 
 		void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) override;
 		bool onContactValidate(CharacterController& character, PhysicsBody& body) override;

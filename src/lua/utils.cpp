@@ -55,6 +55,12 @@ namespace darmok
 		return luaL_error(L, "operation not allowed");
 	}
 
+	LuaTableDelegateDefinition::LuaTableDelegateDefinition(const std::string& key, const std::string& desc) noexcept
+		: _key(key)
+		, _desc(desc)
+	{
+	}
+
 	LuaDelegate::LuaDelegate(const sol::protected_function& func) noexcept
 		: _func(func)
 	{

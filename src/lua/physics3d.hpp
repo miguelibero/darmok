@@ -6,6 +6,7 @@
 #include <optional>
 #include <vector>
 #include "glm.hpp"
+#include "utils.hpp"
 
 namespace darmok
 {
@@ -40,9 +41,11 @@ namespace darmok::physics3d
         static void bind(sol::state_view& lua) noexcept;
     private:
         PhysicsSystem& _system;
-        std::vector<sol::protected_function> _updaterFunctions;
-        std::vector<sol::table> _updaterTables;
+        std::vector<LuaDelegate> _updaters;
         std::vector<sol::table> _listeners;
+        static const LuaTableDelegateDefinition _collisionEnterDef;
+        static const LuaTableDelegateDefinition _collisionStayDef;
+        static const LuaTableDelegateDefinition _collisionExitDef;
 
         LuaPhysicsSystem& addUpdater1(const sol::protected_function& func) noexcept;
         LuaPhysicsSystem& addUpdater2(const sol::table& table) noexcept;
@@ -95,6 +98,9 @@ namespace darmok::physics3d
     private:
         PhysicsBody& _body;
         std::vector<sol::table> _listeners;
+        static const LuaTableDelegateDefinition _collisionEnterDef;
+        static const LuaTableDelegateDefinition _collisionStayDef;
+        static const LuaTableDelegateDefinition _collisionExitDef;
 
         const Shape& getShape() const noexcept;
         MotionType getMotionType() const noexcept;
