@@ -67,16 +67,19 @@ namespace darmok
             return setEntityFilter(std::make_unique<EntityComponentFilter<T>>());
         }
 
-        std::vector<Entity> getEntities() const;
+        const std::vector<Entity>& getEntities() const;
 
         template<typename T>
         std::vector<Entity> getEntities() const
         {
-            if (!_scene)
+            std::vector<Entity> entities;
+            if (_scene)
             {
-                return std::vector<Entity>();
+                entities.reserve(_entities.size());
+                std::copy_if(_entities.begin(), _entities.end(), std::back_inserter(entities),
+                    [this](auto& entity) { return _scene->hasComponent<T>(entity); });
             }
-            return _scene->getEntities<T>(getEntityFilter());
+            return entities;
         }
 
         void init(Scene& scene, App& app);
@@ -176,6 +179,7 @@ namespace darmok
 
         std::optional<Viewport> _viewport;
         std::unique_ptr<IEntityFilter> _entityFilter;
+        std::vector<Entity> _entities;
 
         using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ICameraComponent>>>;
         Components _components;

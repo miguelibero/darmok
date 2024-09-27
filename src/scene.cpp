@@ -398,17 +398,18 @@ namespace darmok
         SceneImpl::registerComponentDependency(typeId1, typeId2);
     }
 
-    std::vector<Entity> Scene::getEntities(OptionalRef<IEntityFilter> filter) const
+    size_t Scene::getEntities(std::vector<Entity>& entities, OptionalRef<IEntityFilter> filter) const
     {
-        std::vector<Entity> entities;
+        size_t count = 0;
         for (auto entity : getComponentView<Entity>())
         {
             if (!filter || (*filter)(entity, *this))
             {
                 entities.push_back(entity);
+                ++count;
             }
         }
-        return entities;
+        return count;
     }
 
     bool Scene::removeComponent(Entity entity, entt::id_type typeId) noexcept
@@ -419,7 +420,7 @@ namespace darmok
     bool Scene::hasComponent(Entity entity, entt::id_type typeId) const noexcept
     {
         auto storage = getRegistry().storage(typeId);
-        return storage->find(entity) != storage->end();
+        return storage && storage->find(entity) != storage->end();
     }
 
     void Scene::init(App& app)

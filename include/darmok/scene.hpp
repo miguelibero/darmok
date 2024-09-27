@@ -308,21 +308,7 @@ namespace darmok
             registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
         }
 
-        std::vector<Entity> getEntities(OptionalRef<IEntityFilter> filter = nullptr) const;
-
-        template<typename T>
-        std::vector<Entity> getEntities(OptionalRef<IEntityFilter> filter = nullptr) const
-        {
-            std::vector<Entity> entities;
-            for (auto entity : getComponentView<T>())
-            {
-                if (!filter || (*filter)(entity, *this))
-                {
-                    entities.push_back(entity);
-                }
-            }
-            return entities;
-        }
+        size_t getEntities(std::vector<Entity>& entities, OptionalRef<IEntityFilter> filter = nullptr) const;
 
     private:
         std::unique_ptr<SceneImpl> _impl;

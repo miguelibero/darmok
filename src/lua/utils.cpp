@@ -62,7 +62,7 @@ namespace darmok
 	}
 
 	LuaDelegate::LuaDelegate(const sol::object& obj, const std::string& tableKey) noexcept
-		: _tableKey(tableKey.empty() ? "run" : tableKey)
+		: _tableKey(tableKey.empty() ? "__call" : tableKey)
 	{
 		auto type = obj.get_type();
 		if (type == sol::type::function)

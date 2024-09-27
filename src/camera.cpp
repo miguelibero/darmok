@@ -181,13 +181,9 @@ namespace darmok
         return _entityFilter.get();
     }
 
-    std::vector<Entity> Camera::getEntities() const
+    const std::vector<Entity>& Camera::getEntities() const
     {
-        if (!_scene)
-        {
-            return std::vector<Entity>();
-        }
-        return _scene->getEntities(getEntityFilter());
+        return _entities;
     }
 
     Camera::ComponentRefs Camera::copyComponentContainer() const noexcept
@@ -249,6 +245,7 @@ namespace darmok
         }
         _renderChain.shutdown();
         _renderGraph.clear();
+        _entities.clear();
     }
 
     void Camera::update(float deltaTime)
@@ -260,6 +257,12 @@ namespace darmok
         _renderChain.update(deltaTime);
         updateRenderGraph();
         updateViewportProjection();
+
+        _entities.clear();
+        if (_scene)
+        {
+            _scene->getEntities(_entities, _entityFilter.get());
+        }
     }
 
     void Camera::configureView(bgfx::ViewId viewId) const

@@ -103,21 +103,17 @@ namespace darmok
         template<typename... Args>
         sol::protected_function_result operator()(Args&&... args) const
         {
-            auto elmType = sol::type::nil;
-            if (_table)
-            {
-                auto& table = _table.value();
-                auto elm = table[_tableKey];
-                elmType = elm.get_type();
-                if (elm.get_type() == sol::type::function)
-                {
-                    sol::protected_function func = elm;
-                    return func(table, std::forward<Args>(args)...);
-                }
-            }
-            else if (_func)
+            if (_func)
             {
                 return _func(std::forward<Args>(args)...);
+            }
+            if (_table)
+            {
+                auto table = _table.value();
+                if (sol::protected_function func = table[_tableKey])
+                {
+                    return func(table, std::forward<Args>(args)...);
+                }
             }
             throw std::runtime_error("empty lua delegate");
         }

@@ -20,7 +20,6 @@
 
 namespace darmok
 {
-
 	LuaEntityFilter::LuaEntityFilter(const sol::object& obj, const std::weak_ptr<Scene>& scene) noexcept
 		: _delegate(obj, "entity_filter")
 		, _scene(scene)
