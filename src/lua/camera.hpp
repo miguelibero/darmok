@@ -36,7 +36,7 @@ namespace darmok
 
 		static LuaCamera& addEntityComponent(LuaEntity& entity) noexcept;
 		static OptionalRef<LuaCamera>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const LuaCamera& cam, LuaScene& scene) noexcept;
+		std::optional<LuaEntity> getEntity(LuaScene& scene) const noexcept;
 
 		LuaCamera& setPerspective1(float fovy, float aspect, float near, float far) noexcept;
 		LuaCamera& setPerspective2(float fovy, float aspect, float near) noexcept;
@@ -81,6 +81,19 @@ namespace darmok
 		glm::vec3 viewportToScreenPoint(const VarLuaTable<glm::vec3>& point) noexcept;
 		glm::vec3 screenToViewportPoint(const VarLuaTable<glm::vec3>& point) noexcept;
 
-		void setEntityFilter(const sol::object& filter) noexcept;
+		void setCullingMask(uint32_t mask) noexcept;
+		uint32_t getCullingMask() const noexcept;
+	};
+
+	struct CullingMask;
+
+	class LuaCullingMask final
+	{
+	public:
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		static CullingMask& addEntityComponent(LuaEntity& entity, uint32_t value) noexcept;
+		static OptionalRef<CullingMask>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+		static std::optional<LuaEntity> getEntity(const CullingMask& cam, LuaScene& scene) noexcept;
 	};
 }

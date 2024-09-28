@@ -21,14 +21,10 @@ namespace
 {
 	using namespace darmok;
 
-	struct Culling2D final
+	enum class CameraType : uint32_t
 	{
-		bool v; // entt does not accept empty structs
-	};
-
-	struct Culling3D final
-	{
-		bool v; // entt does not accept empty structs
+		TwoDim		= (1u << 0),
+		ThreeDim	= (1u << 1)
 	};
 
 	class ScreenBounceUpdater final : public ISceneComponent
@@ -122,13 +118,13 @@ namespace
 				.lookAt(glm::vec3(0, 0, 0));
 			scene.addComponent<Camera>(cam3d)
 				.setViewportPerspective(60, 0.3, 1000)
-				.setEntityComponentFilter<Culling3D>()
+				.setCullingMask(to_underlying(CameraType::ThreeDim))
 				.addComponent<ForwardRenderer>();
 
 			auto cam2d = scene.createEntity();
 			scene.addComponent<Camera>(cam2d)
 				.setViewportOrtho(glm::vec2(0))
-				.setEntityComponentFilter<Culling2D>()
+				.setCullingMask(to_underlying(CameraType::TwoDim))
 				.addComponent<ForwardRenderer>();
 
 			_debugMaterial = std::make_shared<Material>(_prog, Colors::red());
@@ -161,9 +157,9 @@ namespace
 
 			scene.addComponent<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);
 			scene.addComponent<Transform>(spriteBorder).setParent(trans);
-			scene.addComponent<Culling2D>(spriteBorder);
+			scene.addComponent<CullingMask>(spriteBorder, to_underlying(CameraType::TwoDim));
 
-			scene.addComponent<Culling2D>(sprite);
+			scene.addComponent<CullingMask>(sprite, to_underlying(CameraType::TwoDim));
 			scene.addSceneComponent<ScreenBounceUpdater>(trans, size, 100.f);
 		}
 
@@ -183,7 +179,7 @@ namespace
 			auto& renderable = scene.addComponent<Renderable>(anim, material);
 			scene.addComponent<FrameAnimation>(anim, frames, renderable);
 			
-			scene.addComponent<Culling2D>(anim);
+			scene.addComponent<CullingMask>(anim, to_underlying(CameraType::TwoDim));
 			auto& winSize = _app.getWindow().getSize();
 			scene.addComponent<Transform>(anim, glm::vec3(winSize, 0) / 2.f);
 		}
@@ -199,7 +195,7 @@ namespace
 			auto cubeMesh = meshData.createMesh(_prog->getVertexLayout());
 
 			auto cube = scene.createEntity();
-			scene.addComponent<Culling3D>(cube);
+			scene.addComponent<CullingMask>(cube, to_underlying(CameraType::ThreeDim));
 			scene.addComponent<Renderable>(cube, std::move(cubeMesh), material);
 			auto& trans = scene.addComponent<Transform>(cube);
 			scene.addSceneComponent<RotateUpdater>(trans, 100.f);

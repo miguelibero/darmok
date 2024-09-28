@@ -16,6 +16,7 @@ namespace darmok
         : _proj(projMatrix)
         , _enabled(true)
         , _renderChain(*this)
+        , _cullingMask(0)
     {
     }
 
@@ -170,20 +171,40 @@ namespace darmok
         return false;
     }
 
-    Camera& Camera::setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept
+    Camera& Camera::setCullingMask(uint32_t mask) noexcept
     {
-        _entityFilter = std::move(filter);
+        _cullingMask = mask;
         return *this;
     }
 
-    OptionalRef<IEntityFilter> Camera::getEntityFilter() const noexcept
+    uint32_t Camera::getCullingMask() const noexcept
     {
-        return _entityFilter.get();
+        return _cullingMask;
     }
 
-    const std::vector<Entity>& Camera::getEntities() const
+    std::vector<Entity> Camera::getEntities() const noexcept
     {
-        return _entities;
+        std::vector<Entity> entities;
+        if (!_scene)
+        {
+            return entities;
+        }
+        
+        auto view = _scene->getComponentView<Entity>();
+        entities.insert(entities.end(), view.begin(), view.end());
+
+        if (_cullingMask == 0)
+        {
+            return entities;
+        }
+
+        auto itr = std::remove_if(entities.begin(), entities.end(), [this](auto entity) {
+            auto mask = _scene->getComponent<CullingMask>(entity);
+            return mask && (mask->value & _cullingMask) == 0;
+        });
+        entities.erase(itr, entities.end());
+
+        return entities;
     }
 
     Camera::ComponentRefs Camera::copyComponentContainer() const noexcept
@@ -245,7 +266,6 @@ namespace darmok
         }
         _renderChain.shutdown();
         _renderGraph.clear();
-        _entities.clear();
     }
 
     void Camera::update(float deltaTime)
@@ -257,12 +277,6 @@ namespace darmok
         _renderChain.update(deltaTime);
         updateRenderGraph();
         updateViewportProjection();
-
-        _entities.clear();
-        if (_scene)
-        {
-            _scene->getEntities(_entities, _entityFilter.get());
-        }
     }
 
     void Camera::configureView(bgfx::ViewId viewId) const

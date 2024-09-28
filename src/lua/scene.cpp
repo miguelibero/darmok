@@ -20,19 +20,6 @@
 
 namespace darmok
 {
-	LuaEntityFilter::LuaEntityFilter(const sol::object& obj, const std::weak_ptr<Scene>& scene) noexcept
-		: _delegate(obj, "entity_filter")
-		, _scene(scene)
-	{
-	}
-
-	bool LuaEntityFilter::operator()(Entity entity, const Scene& scene) const noexcept
-	{
-		LuaEntity luaEntity(entity, _scene);
-		auto r = _delegate(luaEntity);
-		return LuaUtils::checkResult("running entity filter", r);
-	}
-
 	LuaEntity::LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept
 		: _entity(entity)
 		, _scene(scene)
@@ -414,44 +401,6 @@ namespace darmok
 		});
 	}
 
-	std::vector<LuaEntity> LuaScene::getEntities1() const noexcept
-	{
-		std::vector<LuaEntity> entities;
-		for (auto entity : _scene->getComponentView<Entity>())
-		{
-			entities.emplace_back(entity, _scene);
-		}
-		return entities;
-	}
-
-	std::vector<LuaEntity> LuaScene::getEntities2(const sol::protected_function& filter) const noexcept
-	{
-		std::vector<LuaEntity> entities;
-		LuaEntityFilter luaFilter(filter, _scene);
-		for (auto entity : _scene->getComponentView<Entity>())
-		{
-			if (luaFilter(entity, *_scene))
-			{
-				entities.emplace_back(entity, _scene);
-			}
-		}
-		return entities;
-	}
-
-	std::vector<LuaEntity> LuaScene::getEntities3(const sol::table& filter) const noexcept
-	{
-		std::vector<LuaEntity> entities;
-		LuaEntityFilter luaFilter(filter, _scene);
-		for (auto entity : _scene->getComponentView<Entity>())
-		{
-			if (luaFilter(entity, *_scene))
-			{
-				entities.emplace_back(entity, _scene);
-			}
-		}
-		return entities;
-	}
-
 	void LuaScene::bind(sol::state_view& lua) noexcept
 	{
 		LuaSceneAppComponent::bind(lua);
@@ -491,11 +440,7 @@ namespace darmok
 			"viewport", sol::property(&LuaScene::getViewport, &LuaScene::setViewport),
 			"current_viewport", sol::property(&LuaScene::getCurrentViewport),
 			"render_chain", sol::property(&LuaScene::getRenderChain),
-			"name", sol::property(&LuaScene::getName, &LuaScene::setName),
-			"get_entities", sol::overload(
-				&LuaScene::getEntities1, &LuaScene::getEntities2,
-				&LuaScene::getEntities3
-			)
+			"name", sol::property(&LuaScene::getName, &LuaScene::setName)
 		);
 	}
 

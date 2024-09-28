@@ -248,18 +248,24 @@ namespace darmok
 		return entity.getComponent<LuaCamera>();
 	}
 
-	std::optional<LuaEntity> LuaCamera::getEntity(const LuaCamera& cam, LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaCamera::getEntity(LuaScene& scene) const noexcept
 	{
-		return scene.getEntity(cam);
+		return scene.getEntity(*this);
 	}
 
-	void LuaCamera::setEntityFilter(const sol::object& filter) noexcept
+	void LuaCamera::setCullingMask(uint32_t mask) noexcept
 	{
-		_cam.setEntityFilter(std::make_unique<LuaEntityFilter>(filter, _scene));
+		_cam.setCullingMask(mask);
+	}
+
+	uint32_t LuaCamera::getCullingMask() const noexcept
+	{
+		return _cam.getCullingMask();
 	}
 
 	void LuaCamera::bind(sol::state_view& lua) noexcept
 	{
+		LuaCullingMask::bind(lua);
 		LuaViewport::bind(lua);
 		LuaForwardRenderer::bind(lua);
 		LuaLightingRenderComponent::bind(lua);
@@ -319,7 +325,33 @@ namespace darmok
 			"screen_to_viewport_point", &LuaCamera::screenToViewportPoint,
 			"render_graph", sol::property(&LuaCamera::getRenderGraph),
 			"render_chain", sol::property(&LuaCamera::getRenderChain),
-			"entity_filter", sol::property(&LuaCamera::setEntityFilter)
+			"culling_mask", sol::property(&LuaCamera::getCullingMask, &LuaCamera::setCullingMask)
 		);
+	}
+
+	void LuaCullingMask::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<CullingMask>("CullingMask", sol::no_constructor,
+			"type_id", sol::property(&entt::type_hash<CullingMask>::value),
+			"add_entity_component", &LuaCullingMask::addEntityComponent,
+			"get_entity_component", &LuaCullingMask::getEntityComponent,
+			"get_entity", &LuaCullingMask::getEntity,
+			"value", &CullingMask::value
+		);
+	}
+
+	CullingMask& LuaCullingMask::addEntityComponent(LuaEntity& entity, uint32_t value) noexcept
+	{
+		return entity.addComponent<CullingMask>(value);
+	}
+
+	OptionalRef<CullingMask>::std_t LuaCullingMask::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<CullingMask>();
+	}
+
+	std::optional<LuaEntity> LuaCullingMask::getEntity(const CullingMask& mask, LuaScene& scene) noexcept
+	{
+		return scene.getEntity(mask);
 	}
 }

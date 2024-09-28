@@ -25,13 +25,6 @@ namespace darmok
         virtual void update(float deltaTime) { }
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IEntityFilter
-    {
-    public:
-        virtual ~IEntityFilter() = default;
-        virtual bool operator()(Entity entity, const Scene& scene) const = 0;
-    };
-
     class SceneImpl;
     class RenderGraphDefinition;
     class RenderChain;
@@ -118,7 +111,6 @@ namespace darmok
         Entity createEntity() noexcept;
         void destroyEntity(Entity entity) noexcept;
         bool isValidEntity(Entity entity) const noexcept;
-
 
         template<typename T>
         auto getComponentView() const noexcept
@@ -308,8 +300,6 @@ namespace darmok
             registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
         }
 
-        size_t getEntities(std::vector<Entity>& entities, OptionalRef<IEntityFilter> filter = nullptr) const;
-
     private:
         std::unique_ptr<SceneImpl> _impl;
     };
@@ -334,16 +324,6 @@ namespace darmok
     private:
         Scenes _scenes;
         OptionalRef<App> _app;
-    };
-
-    template<typename T>
-    class DARMOK_EXPORT EntityComponentFilter final : public IEntityFilter
-    {
-    public:
-        bool operator()(Entity entity, const Scene& scene) const noexcept override
-        {
-            return scene.hasComponent<T>(entity);
-        }
     };
 }
 

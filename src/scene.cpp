@@ -398,20 +398,6 @@ namespace darmok
         SceneImpl::registerComponentDependency(typeId1, typeId2);
     }
 
-    size_t Scene::getEntities(std::vector<Entity>& entities, OptionalRef<IEntityFilter> filter) const
-    {
-        size_t count = 0;
-        for (auto entity : getComponentView<Entity>())
-        {
-            if (!filter || (*filter)(entity, *this))
-            {
-                entities.push_back(entity);
-                ++count;
-            }
-        }
-        return count;
-    }
-
     bool Scene::removeComponent(Entity entity, entt::id_type typeId) noexcept
     {
         return _impl->removeComponent(entity, typeId);

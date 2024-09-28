@@ -20,7 +20,6 @@ namespace darmok
     class Texture;
     class Transform;
     class ICameraComponent;
-    class IEntityFilter;
     class Scene;
     struct Ray;
 
@@ -47,8 +46,8 @@ namespace darmok
         Camera& setViewportPerspective(float fovy, float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
         Camera& setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
 
-        Camera& setEntityFilter(std::unique_ptr<IEntityFilter>&& filter) noexcept;
-        OptionalRef<IEntityFilter> getEntityFilter() const noexcept;
+        Camera& setCullingMask(uint32_t mask) noexcept;
+        uint32_t getCullingMask() const noexcept;
 
         Camera& setViewport(const std::optional<Viewport>& viewport) noexcept;
         const std::optional<Viewport>& getViewport() const noexcept;
@@ -61,25 +60,31 @@ namespace darmok
         glm::mat4 getModelMatrix() const noexcept;
         glm::mat4 getModelInverse() const noexcept;
 
-        template<typename T>
-        Camera& setEntityComponentFilter() noexcept
-        {
-            return setEntityFilter(std::make_unique<EntityComponentFilter<T>>());
-        }
+        std::vector<Entity> getEntities() const noexcept;
 
-        const std::vector<Entity>& getEntities() const;
-
+        /*
         template<typename T>
         std::vector<Entity> getEntities() const
         {
-            std::vector<Entity> entities;
+            auto entities = getEntities();
             if (_scene)
             {
-                entities.reserve(_entities.size());
-                std::copy_if(_entities.begin(), _entities.end(), std::back_inserter(entities),
-                    [this](auto& entity) { return _scene->hasComponent<T>(entity); });
+                auto itr = std::remove_if(entities.begin(), entities.end(),
+                    [this](auto& entity) { return !_scene->hasComponent<T>(entity); });
+                entities.erase(itr, entities.end());
             }
             return entities;
+        }*/
+
+        template<typename T>
+        EntityRuntimeView getEntities() const
+        {
+            EntityRuntimeView view;
+            if (_scene)
+            {
+                view.iterate(_scene->getRegistry().storage<T>());
+            }
+            return view;
         }
 
         void init(Scene& scene, App& app);
@@ -178,8 +183,7 @@ namespace darmok
         std::optional<ProjectionData> _vpProj;
 
         std::optional<Viewport> _viewport;
-        std::unique_ptr<IEntityFilter> _entityFilter;
-        std::vector<Entity> _entities;
+        uint32_t _cullingMask;
 
         using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ICameraComponent>>>;
         Components _components;
@@ -207,5 +211,10 @@ namespace darmok
 
         using ComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
         ComponentRefs copyComponentContainer() const noexcept;
+    };
+
+    struct CullingMask final
+    {
+        uint32_t value;
     };
 }
