@@ -101,6 +101,7 @@ namespace darmok::physics3d
 
         CharacterController& setDelegate(Delegate& dlg) noexcept;
         CharacterController& setDelegate(std::unique_ptr<Delegate>&& dlg) noexcept;
+        OptionalRef<Delegate> getDelegate() const noexcept;
 
         static std::string getGroundStateName(GroundState state) noexcept;
 

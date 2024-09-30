@@ -214,8 +214,6 @@ namespace darmok
 		LuaSkeletalAnimationRenderComponent::bind(lua);
 #endif
 
-		Scene::registerComponentDependency<Camera, LuaCamera>();
-
 		lua.new_usertype<Camera>("Camera", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<Camera>::value),
 			"add_entity_component", &LuaCamera::addEntityComponent,

@@ -6,151 +6,82 @@
 
 namespace darmok::physics3d
 {
-	LuaCharacterController::LuaCharacterController(CharacterController& ctrl) noexcept
-		: _ctrl(ctrl)
+	LuaCharacterControllerDelegate::LuaCharacterControllerDelegate(const sol::table& table) noexcept
+		: _table(table)
 	{
-		ctrl.setDelegate(*this);
 	}
 
-	LuaCharacterController::~LuaCharacterController() noexcept
-	{
-		_ctrl.setDelegate(nullptr);
-	}
+	const LuaTableDelegateDefinition LuaCharacterControllerDelegate::_adjustBodyDef("on_adjust_body_velocity", "running character adjust body velocity");
+	const LuaTableDelegateDefinition LuaCharacterControllerDelegate::_contactValidateDef("on_contact_validate", "running character contact validate");
+	const LuaTableDelegateDefinition LuaCharacterControllerDelegate::_contactAddedDef("on_contact_added", "running character contact added");
+	const LuaTableDelegateDefinition LuaCharacterControllerDelegate::_contactSolveDef("on_contact_solve", "running character contact solve");
 
-	bool LuaCharacterController::isGrounded() const noexcept
+	void LuaCharacterControllerDelegate::onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity)
 	{
-		return _ctrl.isGrounded();
-	}
-
-	GroundState LuaCharacterController::getGroundState() const noexcept
-	{
-		return _ctrl.getGroundState();
-	}
-
-	void LuaCharacterController::setLinearVelocity(const VarLuaTable<glm::vec3>& velocity)
-	{
-		_ctrl.setLinearVelocity(LuaGlm::tableGet(velocity));
-	}
-
-	glm::vec3 LuaCharacterController::getLinearVelocity() const noexcept
-	{
-		return _ctrl.getLinearVelocity();
-	}
-
-	void LuaCharacterController::setPosition(const VarLuaTable<glm::vec3>& pos) noexcept
-	{
-		_ctrl.setPosition(LuaGlm::tableGet(pos));
-	}
-
-	glm::vec3 LuaCharacterController::getPosition() const noexcept
-	{
-		return _ctrl.getPosition();
-	}
-
-	void LuaCharacterController::setRotation(const VarLuaTable<glm::quat>& rot) noexcept
-	{
-		_ctrl.setRotation(LuaGlm::tableGet(rot));
-	}
-
-	glm::quat LuaCharacterController::getRotation() const noexcept
-	{
-		return _ctrl.getRotation();
-	}
-
-	glm::vec3 LuaCharacterController::getGroundNormal() const noexcept
-	{
-		return _ctrl.getGroundNormal();
-	}
-
-	glm::vec3 LuaCharacterController::getGroundPosition() const noexcept
-	{
-		return _ctrl.getGroundPosition();
-	}
-
-	glm::vec3 LuaCharacterController::getGroundVelocity() const noexcept
-	{
-		return _ctrl.getGroundVelocity();
-	}
-
-	LuaCharacterController& LuaCharacterController::addEntityComponent1(LuaEntity& entity, const Config& config) noexcept
-	{
-		return entity.addWrapperComponent<LuaCharacterController, CharacterController>(config);
-	}
-
-	LuaCharacterController& LuaCharacterController::addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept
-	{
-		return entity.addWrapperComponent<LuaCharacterController, CharacterController>(shape);
-	}
-
-	OptionalRef<LuaCharacterController>::std_t LuaCharacterController::getEntityComponent(LuaEntity& entity) noexcept
-	{
-		return entity.getComponent<LuaCharacterController>();
-	}
-
-	std::optional<LuaEntity> LuaCharacterController::getEntity(LuaScene& scene) noexcept
-	{
-		return scene.getEntity(_ctrl);
-	}
-
-	LuaCharacterController& LuaCharacterController::setDelegate(const sol::table& delegate) noexcept
-	{
-		_delegate = delegate;
-		return *this;
-	}
-
-	const LuaTableDelegateDefinition LuaCharacterController::_adjustBodyDef("on_adjust_body_velocity", "running character adjust body velocity");
-	const LuaTableDelegateDefinition LuaCharacterController::_contactValidateDef("on_contact_validate", "running character contact validate");
-	const LuaTableDelegateDefinition LuaCharacterController::_contactAddedDef("on_contact_added", "running character contact added");
-	const LuaTableDelegateDefinition LuaCharacterController::_contactSolveDef("on_contact_solve", "running character contact solve");
-
-	void LuaCharacterController::onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity)
-	{
-		if (!_delegate)
-		{
-			return;
-		}
-		LuaCharacterController luaChar(character);
 		LuaPhysicsBody luaBody(body);
-		_adjustBodyDef(_delegate, luaChar, luaBody, linearVelocity, angularVelocity);
+		_adjustBodyDef(_table, character, luaBody, linearVelocity, angularVelocity);
 	}
 
-	bool LuaCharacterController::onContactValidate(CharacterController& character, PhysicsBody& body)
+	bool LuaCharacterControllerDelegate::onContactValidate(CharacterController& character, PhysicsBody& body)
 	{
-		if (!_delegate)
-		{
-			return true;
-		}
-		LuaCharacterController luaChar(character);
 		LuaPhysicsBody luaBody(body);
-		return _contactValidateDef(_delegate, luaChar, luaBody);
+		return _contactValidateDef(_table, character, luaBody);
 	}
 
-	void LuaCharacterController::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings)
+	void LuaCharacterControllerDelegate::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings)
 	{
-		if (!_delegate)
-		{
-			return;
-		}
-		LuaCharacterController luaChar(character);
 		LuaPhysicsBody luaBody(body);
-		_contactAddedDef(_delegate, luaChar, luaBody, contact, settings);
+		_contactAddedDef(_table, character, luaBody, contact, settings);
 	}
 
-	void LuaCharacterController::onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity)
+	void LuaCharacterControllerDelegate::onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity)
 	{
-		if (!_delegate)
-		{
-			return;
-		}
-		LuaCharacterController luaChar(character);
 		LuaPhysicsBody luaBody(body);
-		_contactSolveDef(_delegate, luaChar, luaBody, contact, characterVelocity);
+		_contactSolveDef(_table, character, luaBody, contact, characterVelocity);
+	}
+
+	void LuaCharacterController::setLinearVelocity(CharacterController& ctrl, const VarLuaTable<glm::vec3>& velocity)
+	{
+		ctrl.setLinearVelocity(LuaGlm::tableGet(velocity));
+	}
+
+	void LuaCharacterController::setPosition(CharacterController& ctrl, const VarLuaTable<glm::vec3>& pos) noexcept
+	{
+		ctrl.setPosition(LuaGlm::tableGet(pos));
+	}
+
+	void LuaCharacterController::setRotation(CharacterController& ctrl, const VarLuaTable<glm::quat>& rot) noexcept
+	{
+		ctrl.setRotation(LuaGlm::tableGet(rot));
+	}
+
+	CharacterController& LuaCharacterController::addEntityComponent1(LuaEntity& entity, const Config& config) noexcept
+	{
+		return entity.addComponent<CharacterController>(config);
+	}
+
+	CharacterController& LuaCharacterController::addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept
+	{
+		return entity.addComponent<CharacterController>(shape);
+	}
+
+	OptionalRef<CharacterController>::std_t LuaCharacterController::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<CharacterController>();
+	}
+
+	std::optional<LuaEntity> LuaCharacterController::getEntity(const CharacterController& ctrl, LuaScene& scene) noexcept
+	{
+		return scene.getEntity(ctrl);
+	}
+
+	void LuaCharacterController::setDelegate(CharacterController& ctrl, const sol::table& table) noexcept
+	{
+		ctrl.setDelegate(std::make_unique<LuaCharacterControllerDelegate>(table));
 	}
 
 	void LuaCharacterController::bind(sol::state_view& lua) noexcept
 	{
-		Scene::registerComponentDependency<CharacterController, LuaCharacterController>();
-
 		lua.new_usertype<Config>("CharacterControllerConfig", sol::default_constructor,
 			"shape", &CharacterControllerConfig::shape,
 			"up", &CharacterControllerConfig::up,
@@ -163,8 +94,8 @@ namespace darmok::physics3d
 			"penetrationRecoverySpeed", &CharacterControllerConfig::penetrationRecoverySpeed,
 			"predictiveContactDistance", &CharacterControllerConfig::predictiveContactDistance
 		);
-		lua.new_usertype<LuaCharacterController>("CharacterController", sol::no_constructor,
-			"type_id", sol::property(&entt::type_hash<LuaCharacterController>::value),
+		lua.new_usertype<CharacterController>("CharacterController", sol::no_constructor,
+			"type_id", sol::property(&entt::type_hash<CharacterController>::value),
 			"add_entity_component", sol::overload(
 				&LuaCharacterController::addEntityComponent1,
 				&LuaCharacterController::addEntityComponent2
@@ -172,14 +103,14 @@ namespace darmok::physics3d
 			"get_entity_component", &LuaCharacterController::getEntityComponent,
 			"get_entity", &LuaCharacterController::getEntity,
 			"delegate", sol::property(&LuaCharacterController::setDelegate),
-			"grounded", sol::property(&LuaCharacterController::isGrounded),
-			"ground_state", sol::property(&LuaCharacterController::getGroundState),
-			"position", sol::property(&LuaCharacterController::getPosition, &LuaCharacterController::setPosition),
-			"rotation", sol::property(&LuaCharacterController::getRotation, &LuaCharacterController::setRotation),
-			"linear_velocity", sol::property(&LuaCharacterController::getLinearVelocity, &LuaCharacterController::setLinearVelocity),
-			"ground_position", sol::property(&LuaCharacterController::getGroundPosition),
-			"ground_normal", sol::property(&LuaCharacterController::getGroundNormal),
-			"ground_velocity", sol::property(&LuaCharacterController::getGroundVelocity)
+			"grounded", sol::property(&CharacterController::isGrounded),
+			"ground_state", sol::property(&CharacterController::getGroundState),
+			"position", sol::property(&CharacterController::getPosition, &LuaCharacterController::setPosition),
+			"rotation", sol::property(&CharacterController::getRotation, &LuaCharacterController::setRotation),
+			"linear_velocity", sol::property(&CharacterController::getLinearVelocity, &LuaCharacterController::setLinearVelocity),
+			"ground_position", sol::property(&CharacterController::getGroundPosition),
+			"ground_normal", sol::property(&CharacterController::getGroundNormal),
+			"ground_velocity", sol::property(&CharacterController::getGroundVelocity)
 		);
 	}
 }

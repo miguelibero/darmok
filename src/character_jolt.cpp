@@ -170,6 +170,11 @@ namespace darmok::physics3d
         _delegatePointer = std::move(dlg);
     }
 
+    OptionalRef<CharacterControllerImpl::Delegate> CharacterControllerImpl::getDelegate() const noexcept
+    {
+        return _delegate;
+    }
+
     OptionalRef<PhysicsBody> CharacterControllerImpl::getPhysicsBody() const noexcept
     {
         if (!_ctrl || !_system)
@@ -436,5 +441,10 @@ namespace darmok::physics3d
     {
         _impl->setDelegate(std::move(dlg));
         return *this;
+    }
+
+    OptionalRef<CharacterControllerImpl::Delegate> CharacterController::getDelegate() const noexcept
+    {
+        return _impl->getDelegate();
     }
 }

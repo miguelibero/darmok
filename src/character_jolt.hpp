@@ -44,6 +44,7 @@ namespace darmok::physics3d
 
         void setDelegate(Delegate& dlg) noexcept;
         void setDelegate(std::unique_ptr<Delegate>&& dlg) noexcept;
+        OptionalRef<Delegate> getDelegate() const noexcept;
 
         void OnAdjustBodyVelocity(const JPH::CharacterVirtual* character, const JPH::Body& inBody2, JPH::Vec3& linearVelocity, JPH::Vec3& angularVelocity) override;
         bool OnContactValidate(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2) override;
