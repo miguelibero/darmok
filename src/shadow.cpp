@@ -438,7 +438,7 @@ namespace darmok
         auto entities = _cam->getEntities<DirectionalLight>();
 
         auto cascadeAmount = _renderer.getConfig().cascadeAmount;
-        uint32_t size = entities.size() * cascadeAmount;
+        uint32_t size = entities.size_hint() * cascadeAmount;
 
         VertexDataWriter writer(_shadowTransLayout, size);
         uint32_t index = 0;

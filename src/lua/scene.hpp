@@ -15,8 +15,17 @@
 
 namespace darmok
 {
+	class LuaEntityComponent final
+	{
+	public:
+		LuaEntityComponent(const sol::table& table) noexcept;
+		entt::id_type getType() const noexcept;
+		const sol::table& getReal() const noexcept;
+	private:
+		sol::table _table;
+	};
+
 	class LuaScene;
-	class LuaComponentContainer;
 	class LuaSceneComponentContainer;
 
 	class LuaEntity final
@@ -56,7 +65,6 @@ namespace darmok
 	private:
 		Entity _entity;
 		std::weak_ptr<Scene> _scene;
-		mutable OptionalRef<LuaComponentContainer> _luaComponents;
 
 		Scene& getRealScene();
 		const Scene& getRealScene() const;
@@ -65,12 +73,8 @@ namespace darmok
 		bool isValid() const noexcept;
 		bool removeComponent(const sol::object& type);
 		bool hasComponent(const sol::object& type) const;
-
-		bool hasLuaComponent(const sol::object& type) const noexcept;
 		void addLuaComponent(const sol::table& comp);
-		bool removeLuaComponent(const sol::object& type) noexcept;
 		sol::object getLuaComponent(const sol::object& type) noexcept;
-		bool tryGetLuaComponentContainer() const noexcept;
 
 		bool forEachChild(const sol::protected_function& callback);
 		bool forEachParent(const sol::protected_function& callback);

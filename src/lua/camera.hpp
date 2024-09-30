@@ -20,6 +20,7 @@ namespace darmok
 	class Transform;
 	class RenderChain;
 	class RenderGraphDefinition;
+	struct EntityFilter;
 
 	class LuaCamera final
 	{
@@ -81,19 +82,16 @@ namespace darmok
 		glm::vec3 viewportToScreenPoint(const VarLuaTable<glm::vec3>& point) noexcept;
 		glm::vec3 screenToViewportPoint(const VarLuaTable<glm::vec3>& point) noexcept;
 
-		void setCullingMask(uint32_t mask) noexcept;
-		uint32_t getCullingMask() const noexcept;
+		void setCullingFilter(const sol::object& filter) noexcept;
+		const EntityFilter& getCullingFilter() const noexcept;
 	};
 
-	struct CullingMask;
-
-	class LuaCullingMask final
+	class LuaEntityFilter final
 	{
 	public:
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		static CullingMask& addEntityComponent(LuaEntity& entity, uint32_t value) noexcept;
-		static OptionalRef<CullingMask>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const CullingMask& cam, LuaScene& scene) noexcept;
+		static EntityFilter& include(EntityFilter& filter, const sol::object& type) noexcept;
+		static EntityFilter& exclude(EntityFilter& filter, const sol::object& type) noexcept;
 	};
 }

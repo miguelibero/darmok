@@ -6,6 +6,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
 #include <darmok/math.hpp>
+#include <darmok/string.hpp>
 #include <darmok/render_scene.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <bx/math.h>
@@ -16,7 +17,6 @@ namespace darmok
         : _proj(projMatrix)
         , _enabled(true)
         , _renderChain(*this)
-        , _cullingMask(0)
     {
     }
 
@@ -171,40 +171,24 @@ namespace darmok
         return false;
     }
 
-    Camera& Camera::setCullingMask(uint32_t mask) noexcept
+    Camera& Camera::setCullingFilter(const EntityFilter& filter) noexcept
     {
-        _cullingMask = mask;
+        _cullingFilter = filter;
         return *this;
     }
 
-    uint32_t Camera::getCullingMask() const noexcept
+    const EntityFilter& Camera::getCullingFilter() const noexcept
     {
-        return _cullingMask;
+        return _cullingFilter;
     }
 
-    std::vector<Entity> Camera::getEntities() const noexcept
+    EntityRuntimeView Camera::getEntities() const noexcept
     {
-        std::vector<Entity> entities;
         if (!_scene)
         {
-            return entities;
+            return EntityRuntimeView();
         }
-        
-        auto view = _scene->getComponentView<Entity>();
-        entities.insert(entities.end(), view.begin(), view.end());
-
-        if (_cullingMask == 0)
-        {
-            return entities;
-        }
-
-        auto itr = std::remove_if(entities.begin(), entities.end(), [this](auto entity) {
-            auto mask = _scene->getComponent<CullingMask>(entity);
-            return mask && (mask->value & _cullingMask) == 0;
-        });
-        entities.erase(itr, entities.end());
-
-        return entities;
+        return _cullingFilter.createView(_scene.value());
     }
 
     Camera::ComponentRefs Camera::copyComponentContainer() const noexcept
@@ -534,5 +518,84 @@ namespace darmok
     void Camera::onRenderChainInputChanged() noexcept
     {
         renderReset();
+    }
+
+    EntityFilter& EntityFilter::include(entt::id_type idType) noexcept
+    {
+        if (idType != 0)
+        {
+            _includes.insert(idType);
+        }
+        return *this;
+    }
+
+    EntityFilter& EntityFilter::exclude(entt::id_type idType) noexcept
+    {
+        if (idType != 0)
+        {
+            _excludes.insert(idType);
+        }
+        return *this;
+    }
+
+    EntityRuntimeView EntityFilter::createView(Scene& scene) const noexcept
+    {
+        EntityRuntimeView view;
+        auto& reg = scene.getRegistry();
+        for (auto include : _includes)
+        {
+            if (auto store = reg.storage(include))
+            {
+                view.iterate(*store);
+            }
+        }
+        for (auto exclude : _excludes)
+        {
+            if (auto store = reg.storage(exclude))
+            {
+                view.exclude(*store);
+            }
+        }
+        return view;
+    }
+
+    std::string EntityFilter::toString() const noexcept
+    {
+        std::stringstream ss;
+        ss << "EntityFilter(" << std::endl;
+        if (!_includes.empty())
+        {
+            ss << "  includes=" << StringUtils::join(",", _includes.begin(), _includes.end()) << std::endl;
+        }
+        if (!_excludes.empty())
+        {
+            ss << "  excludes=" << StringUtils::join(",", _excludes.begin(), _excludes.end()) << std::endl;
+        }
+        ss << ")" << std::endl;
+        return ss.str();
+    }
+
+    bool EntityFilter::operator==(const EntityFilter& other) const noexcept
+    {
+        return _includes == other._includes && _excludes == other._excludes;
+    }
+
+    bool EntityFilter::operator!=(const EntityFilter& other) const noexcept
+    {
+        return !operator==(other);
+    }
+
+    EntityFilter EntityFilter::operator+(const EntityFilter& other) const noexcept
+    {
+        EntityFilter r(*this);
+        r += other;
+        return r;
+    }
+
+    EntityFilter& EntityFilter::operator+=(const EntityFilter& other) noexcept
+    {
+        _includes.insert(other._includes.begin(), other._includes.end());
+        _excludes.insert(other._excludes.begin(), other._excludes.end());
+        return *this;
     }
 }

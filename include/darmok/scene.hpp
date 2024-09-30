@@ -167,6 +167,23 @@ namespace darmok
         }
 
         template<typename T>
+        OptionalRef<T> getCustomComponent(Entity entity, entt::id_type type) noexcept
+        {
+            auto& storage = getRegistry().storage<T>(type);
+            if (!storage.contains(entity))
+            {
+                return nullptr;
+            }
+            return storage.get(entity);
+        }
+
+        template<typename T, typename... A>
+        T& addCustomComponent(Entity entity, entt::id_type type, A&&... args) noexcept
+        {
+            return getRegistry().storage<T>(type).emplace(entity, std::forward<A>(args)...);
+        }
+
+        template<typename T>
         bool removeComponent(Entity entity) noexcept
         {
             return removeComponent(entity, entt::type_hash<T>::value()) > 0;

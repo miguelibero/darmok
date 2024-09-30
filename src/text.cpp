@@ -336,14 +336,10 @@ namespace darmok
 			return;
 		}
 		auto entities = _cam->getEntities<Text>();
-		if (entities.empty())
-		{
-			return;
-		}
 
 		auto& encoder = context.getEncoder();
 		auto viewId = context.getViewId();
-		uint64_t state = BGFX_STATE_WRITE_RGB
+		static const uint64_t state = BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
 			| BGFX_STATE_DEPTH_TEST_LEQUAL
 			| BGFX_STATE_MSAA

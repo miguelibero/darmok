@@ -479,17 +479,19 @@ namespace darmok
 
     void RmluiCanvasImpl::init(RmluiRendererImpl& comp)
     {
+        if (_context)
+        {
+            shutdown();
+        }
+
         _comp = comp;
+        auto size = getCurrentSize();
+        _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_comp->getRmluiRender());
         if (!_context)
         {
-            auto size = getCurrentSize();
-            _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_comp->getRmluiRender());
-            if (!_context)
-            {
-                throw std::runtime_error("Failed to create rmlui context");
-            }
-            _context->EnableMouseCursor(true);
+            throw std::runtime_error("Failed to create rmlui context");
         }
+        _context->EnableMouseCursor(true);
     }
 
     void RmluiCanvasImpl::shutdown() noexcept
@@ -1286,7 +1288,10 @@ namespace darmok
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            canvas->getImpl().init(*this);
+            if (!canvas->getImpl().getComponent())
+            {
+                canvas->getImpl().init(*this);
+            }
         }
 
         scene.getRegistry().on_construct<RmluiCanvas>().connect<&RmluiRendererImpl::onCanvasConstructed>(*this);
@@ -1359,7 +1364,10 @@ namespace darmok
         }
         if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
         {
-            canvas->getImpl().shutdown();
+            if (canvas->getImpl().getComponent() == this)
+            {
+                canvas->getImpl().shutdown();
+            }
         }
     }
 
@@ -1506,15 +1514,15 @@ namespace darmok
         {
             return;
         }
+        auto& encoder = context.getEncoder();
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
             {
-                _cam->beforeRenderEntity(entity, context);
+                _cam->setEntityTransform(entity, encoder);
                 canvas->getImpl().render(context);
             }
         }
-
     }
 
     void RmluiRendererImpl::loadFont(const std::string& path, bool fallback) noexcept

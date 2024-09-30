@@ -20,6 +20,21 @@
 
 namespace darmok
 {
+	LuaEntityComponent::LuaEntityComponent(const sol::table& table) noexcept
+		: _table(table)
+	{
+	}
+
+	entt::id_type LuaEntityComponent::getType() const noexcept
+	{
+		return LuaUtils::getTypeId(_table).value();
+	}
+
+	const sol::table& LuaEntityComponent::getReal() const noexcept
+	{
+		return _table;
+	}
+
 	LuaEntity::LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept
 		: _entity(entity)
 		, _scene(scene)
@@ -109,7 +124,7 @@ namespace darmok
 		{
 			return getRealScene().removeComponent(_entity, typeId.value());
 		}
-		return removeLuaComponent(type);
+		return false;
 	}
 
 	bool LuaEntity::hasComponent(const sol::object& type) const
@@ -118,58 +133,26 @@ namespace darmok
 		{
 			return getRealScene().hasComponent(_entity, typeId.value());
 		}
-		return hasLuaComponent(type);
-	}
-
-	bool LuaEntity::tryGetLuaComponentContainer() const noexcept
-	{
-		if (_luaComponents)
-		{
-			return true;
-		}
-		if (auto scene = _scene.lock())
-		{
-			_luaComponents = scene->getComponent<LuaComponentContainer>(_entity);
-		}
-		return !_luaComponents.empty();
-	}
-
-	bool LuaEntity::hasLuaComponent(const sol::object& type) const noexcept
-	{
-		tryGetLuaComponentContainer();
-		return _luaComponents && _luaComponents->contains(type);
+		return false;
 	}
 
 	void LuaEntity::addLuaComponent(const sol::table& comp)
 	{
-		if (!_luaComponents)
-		{
-			if (auto scene = _scene.lock())
-			{
-				_luaComponents = scene->getOrAddComponent<LuaComponentContainer>(_entity);
-			}
-			else
-			{
-				throw std::runtime_error("scene expired");
-			}
-		}
-		_luaComponents->add(comp);
-	}
-
-	bool LuaEntity::removeLuaComponent(const sol::object& type) noexcept
-	{
-		tryGetLuaComponentContainer();
-		return _luaComponents && _luaComponents->remove(type);
+		auto typeId = LuaUtils::getTypeId(comp).value();
+		getRealScene().addCustomComponent<LuaEntityComponent>(_entity, typeId, comp);
 	}
 
 	sol::object LuaEntity::getLuaComponent(const sol::object& type) noexcept
 	{
-		tryGetLuaComponentContainer();
-		if (!_luaComponents)
+		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return sol::nil;
+			auto comp = getRealScene().getCustomComponent<LuaEntityComponent>(_entity, typeId.value());
+			if (comp)
+			{
+				return comp->getReal();
+			}
 		}
-		return _luaComponents->get(type);
+		return sol::nil;
 	}
 
 	bool LuaEntity::checkForEachResult(const std::string& desc, const sol::protected_function_result& result)

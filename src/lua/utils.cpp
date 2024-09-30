@@ -1,6 +1,7 @@
 #include "utils.hpp"
 #include <sstream>
 #include <iostream>
+#include <functional>
 #include <bx/debug.h>
 #include <bx/string.h>
 #include <darmok/stream.hpp>
@@ -32,6 +33,13 @@ namespace darmok
 		return obj != sol::nil;
 	}
 
+	entt::id_type ptrTypeId(const void* ptr) noexcept
+	{
+		auto addr = reinterpret_cast<std::uintptr_t>(ptr);
+		auto hash = std::hash<std::uintptr_t>{}(addr);
+		return static_cast<entt::id_type>(hash);
+	}
+
 	std::optional<entt::id_type> LuaUtils::getTypeId(const sol::object& type) noexcept
 	{
 		auto luaType = type.get_type();
@@ -41,11 +49,18 @@ namespace darmok
 		}
 		if (luaType == sol::type::table)
 		{
-			auto entry = type.as<sol::table>()["type_id"];
-			if (entry)
+			auto table = type.as<sol::table>();
+			auto cls = table["class"];
+			if (cls.get_type() == sol::type::table)
+			{
+				table = cls;
+			}
+			auto entry = table["type_id"];
+			if (entry.get_type() == sol::type::number)
 			{
 				return entry.get<entt::id_type>();
 			}
+			return ptrTypeId(table.pointer());
 		}
 		return std::nullopt;
 	}

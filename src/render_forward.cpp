@@ -69,7 +69,7 @@ namespace darmok
 		}
 	}
 
-	void ForwardRenderer::renderEntities(IRenderGraphContext& context, const std::vector<Entity>& entities, OpacityType opacity) noexcept
+	void ForwardRenderer::renderEntities(IRenderGraphContext& context, const EntityRuntimeView& entities, OpacityType opacity) noexcept
 	{
 		auto& encoder = context.getEncoder();
 		auto viewId = context.getViewId();

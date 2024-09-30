@@ -253,19 +253,27 @@ namespace darmok
 		return scene.getEntity(*this);
 	}
 
-	void LuaCamera::setCullingMask(uint32_t mask) noexcept
+	void LuaCamera::setCullingFilter(const sol::object& filter) noexcept
 	{
-		_cam.setCullingMask(mask);
+		if (filter.is<EntityFilter>())
+		{
+			_cam.setCullingFilter(filter.as<EntityFilter>());
+		}
+		else
+		{
+			auto typeId = LuaUtils::getTypeId(filter).value();
+			_cam.setCullingFilter(EntityFilter().include(typeId));
+		}
 	}
 
-	uint32_t LuaCamera::getCullingMask() const noexcept
+	const EntityFilter& LuaCamera::getCullingFilter() const noexcept
 	{
-		return _cam.getCullingMask();
+		return _cam.getCullingFilter();
 	}
 
 	void LuaCamera::bind(sol::state_view& lua) noexcept
 	{
-		LuaCullingMask::bind(lua);
+		LuaEntityFilter::bind(lua);
 		LuaViewport::bind(lua);
 		LuaForwardRenderer::bind(lua);
 		LuaLightingRenderComponent::bind(lua);
@@ -325,33 +333,26 @@ namespace darmok
 			"screen_to_viewport_point", &LuaCamera::screenToViewportPoint,
 			"render_graph", sol::property(&LuaCamera::getRenderGraph),
 			"render_chain", sol::property(&LuaCamera::getRenderChain),
-			"culling_mask", sol::property(&LuaCamera::getCullingMask, &LuaCamera::setCullingMask)
+			"culling_filter", sol::property(&LuaCamera::getCullingFilter, &LuaCamera::setCullingFilter)
 		);
 	}
 
-	void LuaCullingMask::bind(sol::state_view& lua) noexcept
+	EntityFilter& LuaEntityFilter::include(EntityFilter& filter, const sol::object& type) noexcept
 	{
-		lua.new_usertype<CullingMask>("CullingMask", sol::no_constructor,
-			"type_id", sol::property(&entt::type_hash<CullingMask>::value),
-			"add_entity_component", &LuaCullingMask::addEntityComponent,
-			"get_entity_component", &LuaCullingMask::getEntityComponent,
-			"get_entity", &LuaCullingMask::getEntity,
-			"value", &CullingMask::value
+		return filter.include(LuaUtils::getTypeId(type).value());
+	}
+
+	EntityFilter& LuaEntityFilter::exclude(EntityFilter& filter, const sol::object& type) noexcept
+	{
+		return filter.exclude(LuaUtils::getTypeId(type).value());
+	}
+
+	void LuaEntityFilter::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<EntityFilter>("EntityFilter", sol::default_constructor,
+			"include", &LuaEntityFilter::include,
+			"exclude", &LuaEntityFilter::exclude,
+			sol::meta_function::to_string, &EntityFilter::toString
 		);
-	}
-
-	CullingMask& LuaCullingMask::addEntityComponent(LuaEntity& entity, uint32_t value) noexcept
-	{
-		return entity.addComponent<CullingMask>(value);
-	}
-
-	OptionalRef<CullingMask>::std_t LuaCullingMask::getEntityComponent(LuaEntity& entity) noexcept
-	{
-		return entity.getComponent<CullingMask>();
-	}
-
-	std::optional<LuaEntity> LuaCullingMask::getEntity(const CullingMask& mask, LuaScene& scene) noexcept
-	{
-		return scene.getEntity(mask);
 	}
 }

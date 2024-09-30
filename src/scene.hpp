@@ -19,7 +19,6 @@ namespace darmok
     class Scene;
     class App;
     class FrameBuffer;
-    class IEntityFilter;
 
     class SceneImpl final : IRenderChainDelegate
     {

@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <unordered_set>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <darmok/glm.hpp>
@@ -22,6 +23,38 @@ namespace darmok
     class ICameraComponent;
     class Scene;
     struct Ray;
+
+    struct EntityFilter final
+    {
+        template<typename T>
+        EntityFilter& include() noexcept
+        {
+            return include(entt::type_hash<T>::value());
+        }
+
+        EntityFilter& include(entt::id_type idType) noexcept;
+
+        template<typename T>
+        EntityFilter& exclude() noexcept
+        {
+            return exclude(entt::type_hash<T>::value());
+        }
+
+        EntityFilter& exclude(entt::id_type idType) noexcept;
+
+        EntityRuntimeView createView(Scene& scene) const noexcept;
+        std::string toString() const noexcept;
+
+        bool operator==(const EntityFilter& other) const noexcept;
+        bool operator!=(const EntityFilter& other) const noexcept;
+
+        EntityFilter operator+(const EntityFilter& other) const noexcept;
+        EntityFilter& operator+=(const EntityFilter& other) noexcept;
+
+    private:
+        std::unordered_set<entt::id_type> _includes;
+        std::unordered_set<entt::id_type> _excludes;
+    };
 
     class DARMOK_EXPORT Camera final : IRenderChainDelegate
     {
@@ -46,9 +79,6 @@ namespace darmok
         Camera& setViewportPerspective(float fovy, float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
         Camera& setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
 
-        Camera& setCullingMask(uint32_t mask) noexcept;
-        uint32_t getCullingMask() const noexcept;
-
         Camera& setViewport(const std::optional<Viewport>& viewport) noexcept;
         const std::optional<Viewport>& getViewport() const noexcept;
         Viewport getCurrentViewport() const noexcept;
@@ -60,26 +90,21 @@ namespace darmok
         glm::mat4 getModelMatrix() const noexcept;
         glm::mat4 getModelInverse() const noexcept;
 
-        std::vector<Entity> getEntities() const noexcept;
-
-        /*
-        template<typename T>
-        std::vector<Entity> getEntities() const
-        {
-            auto entities = getEntities();
-            if (_scene)
-            {
-                auto itr = std::remove_if(entities.begin(), entities.end(),
-                    [this](auto& entity) { return !_scene->hasComponent<T>(entity); });
-                entities.erase(itr, entities.end());
-            }
-            return entities;
-        }*/
+        Camera& setCullingFilter(const EntityFilter& filter) noexcept;
+        const EntityFilter& getCullingFilter() const noexcept;
 
         template<typename T>
-        EntityRuntimeView getEntities() const
+        Camera& setCullingFilter() noexcept
         {
-            EntityRuntimeView view;
+            return setCullingFilter(EntityFilter().include<T>());
+        }
+
+        EntityRuntimeView getEntities() const noexcept;
+
+        template<typename T>
+        EntityRuntimeView getEntities() const noexcept
+        {
+            auto view = getEntities();
             if (_scene)
             {
                 view.iterate(_scene->getRegistry().storage<T>());
@@ -183,7 +208,7 @@ namespace darmok
         std::optional<ProjectionData> _vpProj;
 
         std::optional<Viewport> _viewport;
-        uint32_t _cullingMask;
+        EntityFilter _cullingFilter;
 
         using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ICameraComponent>>>;
         Components _components;
@@ -211,10 +236,5 @@ namespace darmok
 
         using ComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
         ComponentRefs copyComponentContainer() const noexcept;
-    };
-
-    struct CullingMask final
-    {
-        uint32_t value;
     };
 }
