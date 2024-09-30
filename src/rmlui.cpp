@@ -1294,8 +1294,8 @@ namespace darmok
             }
         }
 
-        scene.getRegistry().on_construct<RmluiCanvas>().connect<&RmluiRendererImpl::onCanvasConstructed>(*this);
-        scene.getRegistry().on_destroy<RmluiCanvas>().connect<&RmluiRendererImpl::onCanvasDestroyed>(*this);
+        scene.onConstructComponent<RmluiCanvas>().connect<&RmluiRendererImpl::onCanvasConstructed>(*this);
+        scene.onDestroyComponent<RmluiCanvas>().connect<&RmluiRendererImpl::onCanvasDestroyed>(*this);
 
         _cam->getRenderGraph().setChild(_renderGraph);
     }
@@ -1383,8 +1383,8 @@ namespace darmok
 
         if (_scene)
         {
-            _scene->getRegistry().on_construct<Camera>().disconnect<&RmluiRendererImpl::onCanvasConstructed>(*this);
-            _scene->getRegistry().on_destroy<Camera>().disconnect<&RmluiRendererImpl::onCanvasDestroyed>(*this);
+            _scene->onConstructComponent<Camera>().disconnect<&RmluiRendererImpl::onCanvasConstructed>(*this);
+            _scene->onDestroyComponent<Camera>().disconnect<&RmluiRendererImpl::onCanvasDestroyed>(*this);
         }
 
         if (_cam)

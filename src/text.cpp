@@ -309,10 +309,11 @@ namespace darmok
 		{
 			return;
 		}
-		auto texts = _scene->getComponentView<Text>();
+		auto entities = _cam->getEntities<Text>();
 		std::unordered_map<std::shared_ptr<IFont>, std::unordered_set<Utf8Char>> fontChars;
-		for (auto [entity, text] : texts.each())
+		for (auto entity : entities)
 		{
+			auto& text = _scene->getComponent<Text>(entity).value();
 			if (auto font = text.getFont())
 			{
 				auto& content = text.getContent();
@@ -323,8 +324,9 @@ namespace darmok
 		{
 			font->update(chars);
 		}
-		for (auto [entity, text] : texts.each())
+		for (auto entity : entities)
 		{
+			auto& text = _scene->getComponent<Text>(entity).value();
 			text.update(_prog->getVertexLayout());
 		}
 	}

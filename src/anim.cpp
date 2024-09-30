@@ -73,7 +73,7 @@ namespace darmok
         {
             return;
         }
-        auto anims = _scene->getRegistry().view<FrameAnimation>();
+        auto anims = _scene->getComponents<FrameAnimation>();
         for (auto [entity, anim] : anims.each())
         {
             anim.update(deltaTime);

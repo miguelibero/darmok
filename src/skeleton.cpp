@@ -137,7 +137,7 @@ namespace darmok
         {
             return;
         }
-        auto animators = _scene->getRegistry().view<SkeletalAnimator>();
+        auto animators = _scene->getComponents<SkeletalAnimator>();
         std::vector<OptionalRef<RenderableSkeleton>> skeletons;
         for (auto [entity, anim] : animators.each())
         {

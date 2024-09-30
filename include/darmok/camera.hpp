@@ -22,39 +22,7 @@ namespace darmok
     class Transform;
     class ICameraComponent;
     class Scene;
-    struct Ray;
-
-    struct EntityFilter final
-    {
-        template<typename T>
-        EntityFilter& include() noexcept
-        {
-            return include(entt::type_hash<T>::value());
-        }
-
-        EntityFilter& include(entt::id_type idType) noexcept;
-
-        template<typename T>
-        EntityFilter& exclude() noexcept
-        {
-            return exclude(entt::type_hash<T>::value());
-        }
-
-        EntityFilter& exclude(entt::id_type idType) noexcept;
-
-        EntityRuntimeView createView(Scene& scene) const noexcept;
-        std::string toString() const noexcept;
-
-        bool operator==(const EntityFilter& other) const noexcept;
-        bool operator!=(const EntityFilter& other) const noexcept;
-
-        EntityFilter operator+(const EntityFilter& other) const noexcept;
-        EntityFilter& operator+=(const EntityFilter& other) noexcept;
-
-    private:
-        std::unordered_set<entt::id_type> _includes;
-        std::unordered_set<entt::id_type> _excludes;
-    };
+    struct Ray;   
 
     class DARMOK_EXPORT Camera final : IRenderChainDelegate
     {
@@ -104,12 +72,7 @@ namespace darmok
         template<typename T>
         EntityRuntimeView getEntities() const noexcept
         {
-            auto view = getEntities();
-            if (_scene)
-            {
-                view.iterate(_scene->getRegistry().storage<T>());
-            }
-            return view;
+            return _scene->getEntities<T>(_cullingFilter);
         }
 
         void init(Scene& scene, App& app);
@@ -221,8 +184,6 @@ namespace darmok
         RenderGraphDefinition _renderGraph;
         RenderChain _renderChain;
         
-        const EntityRegistry& getRegistry() const;
-
         bool updateViewportProjection() noexcept;
         void updateRenderGraph() noexcept;
 

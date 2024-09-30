@@ -393,6 +393,27 @@ namespace darmok
         return getRegistry().valid(entity);
     }
 
+    EntityRuntimeView Scene::getEntities(const EntityFilter& filter) const noexcept
+    {
+        EntityRuntimeView view;
+        auto& reg = getRegistry();
+        for (auto include : filter.getIncludes())
+        {
+            if (auto store = reg.storage(include))
+            {
+                view.iterate(*store);
+            }
+        }
+        for (auto exclude : filter.getExcludes())
+        {
+            if (auto store = reg.storage(exclude))
+            {
+                view.exclude(*store);
+            }
+        }
+        return view;
+    }
+
     void Scene::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
     {
         SceneImpl::registerComponentDependency(typeId1, typeId2);

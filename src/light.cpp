@@ -293,12 +293,10 @@ namespace darmok
         {
             return;
         }
-        auto& registry = _scene->getRegistry();
-        auto camEntity = entt::to_entity(registry.storage<Camera>(), _cam.value());
+        auto camEntity = _scene->getEntity(_cam.value());
         if (camEntity != entt::null)
         {
-            auto camTrans = registry.try_get<const Transform>(camEntity);
-            if (camTrans != nullptr)
+            if (auto camTrans = _scene->getComponent<const Transform>(camEntity))
             {
                 _camPos = glm::vec4(camTrans->getWorldPosition(), 0);
             }

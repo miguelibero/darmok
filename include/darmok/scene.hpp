@@ -29,6 +29,7 @@ namespace darmok
     class RenderGraphDefinition;
     class RenderChain;
     struct Viewport;
+    struct EntityFilter;
 
     class DARMOK_EXPORT Scene final
     {
@@ -105,23 +106,38 @@ namespace darmok
             return addSceneComponent<T>(std::forward<A>(args)...);
         }
 
-        EntityRegistry& getRegistry();
-        const EntityRegistry& getRegistry() const;
-
         Entity createEntity() noexcept;
         void destroyEntity(Entity entity) noexcept;
         bool isValidEntity(Entity entity) const noexcept;
 
         template<typename T>
-        auto getComponentView() const noexcept
+        auto getComponents() const noexcept
         {
             return getRegistry().view<T>();
         }
 
         template<typename T>
-        auto getComponentView() noexcept
+        auto getComponents() noexcept
         {
             return getRegistry().view<T>();
+        }
+
+        EntityRuntimeView getEntities(const EntityFilter& filter) const noexcept;
+
+        template<typename T>
+        EntityRuntimeView getEntities(const EntityFilter& filter) const noexcept
+        {
+            auto view = getEntities(filter);
+            view.iterate(getRegistry().storage<T>());
+            return view;
+        }
+
+        template<typename T>
+        EntityRuntimeView getEntities(const EntityFilter& filter) noexcept
+        {
+            auto view = getEntities(filter);
+            view.iterate(getRegistry().storage<T>());
+            return view;
         }
 
         template<typename T>
@@ -133,7 +149,7 @@ namespace darmok
         template<typename T>
         bool hasSpecificComponent(const T& component) const noexcept
         {
-            auto view = getComponentView<T>();
+            auto view = getComponents<T>();
             auto end = std::cend(view);
             auto it = std::find_if(std::cbegin(view), end, [&component, &view](const auto& entity) {
                 return &view.get<T>(entity) == &component;
@@ -189,13 +205,19 @@ namespace darmok
             return removeComponent(entity, entt::type_hash<T>::value()) > 0;
         }
 
+        template<typename T, typename It>
+        size_t removeComponents(It first, It last) noexcept
+        {
+            return getRegistry().remove<T>(first, last);
+        }
+
         bool removeComponent(Entity entity, entt::id_type typeId) noexcept;
         bool hasComponent(Entity entity, entt::id_type typeId) const noexcept;
 
         template<typename C>
         bool forEachEntity(const C& callback)
         {
-            for (auto& entity : getComponentView<Entity>())
+            for (auto& entity : getComponents<Entity>())
             {
                 if (callback(entity))
                 {
@@ -294,7 +316,7 @@ namespace darmok
         template<typename T>
         OptionalRef<T> getFirstComponent() noexcept
         {
-            for (auto [entity, comp] : getComponentView<T>().each())
+            for (auto [entity, comp] : getComponents<T>().each())
             {
                 return comp;
             }
@@ -317,8 +339,59 @@ namespace darmok
             registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
         }
 
+
+        template<typename T>
+        auto onConstructComponent()
+        {
+            return getRegistry().on_construct<T>();
+        }
+
+        template<typename T>
+        auto onDestroyComponent()
+        {
+            return getRegistry().on_construct<T>();
+        }
+
     private:
         std::unique_ptr<SceneImpl> _impl;
+
+        EntityRegistry& getRegistry();
+        const EntityRegistry& getRegistry() const;
+    };
+
+    struct DARMOK_EXPORT EntityFilter final
+    {
+        using Container = std::unordered_set<entt::id_type>;
+
+        template<typename T>
+        EntityFilter& include() noexcept
+        {
+            return include(entt::type_hash<T>::value());
+        }
+
+        EntityFilter& include(entt::id_type idType) noexcept;
+
+        template<typename T>
+        EntityFilter& exclude() noexcept
+        {
+            return exclude(entt::type_hash<T>::value());
+        }
+
+        EntityFilter& exclude(entt::id_type idType) noexcept;
+
+        const Container& getIncludes() const noexcept;
+        const Container& getExcludes() const noexcept;
+        std::string toString() const noexcept;
+
+        bool operator==(const EntityFilter& other) const noexcept;
+        bool operator!=(const EntityFilter& other) const noexcept;
+
+        EntityFilter operator+(const EntityFilter& other) const noexcept;
+        EntityFilter& operator+=(const EntityFilter& other) noexcept;
+
+    private:
+        Container _includes;
+        Container _excludes;
     };
 
     class DARMOK_EXPORT SceneAppComponent final : public IAppComponent

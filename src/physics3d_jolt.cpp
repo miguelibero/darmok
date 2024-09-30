@@ -412,19 +412,17 @@ namespace darmok::physics3d
         _joltSystem->SetGravity(JoltUtils::convert(_config.gravity));
         _joltSystem->SetContactListener(this);
 
-        auto& registry = scene.getRegistry();
+        scene.onConstructComponent<PhysicsBody>().connect<&PhysicsSystemImpl::onRigidbodyConstructed>(*this);
+        scene.onDestroyComponent<PhysicsBody>().connect< &PhysicsSystemImpl::onRigidbodyDestroyed>(*this);
+        scene.onConstructComponent<CharacterController>().connect<&PhysicsSystemImpl::onCharacterConstructed>(*this);
+        scene.onDestroyComponent<CharacterController>().connect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
 
-        registry.on_construct<PhysicsBody>().connect<&PhysicsSystemImpl::onRigidbodyConstructed>(*this);
-        registry.on_destroy<PhysicsBody>().connect< &PhysicsSystemImpl::onRigidbodyDestroyed>(*this);
-        registry.on_construct<CharacterController>().connect<&PhysicsSystemImpl::onCharacterConstructed>(*this);
-        registry.on_destroy<CharacterController>().connect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
-
-        auto rigidBodies = registry.view<PhysicsBody>();
+        auto rigidBodies = scene.getComponents<PhysicsBody>();
         for (auto [entity, body] : rigidBodies.each())
         {
             body.getImpl().init(body, _system);
         }
-        auto charCtrls = registry.view<CharacterController>();
+        auto charCtrls = scene.getComponents<CharacterController>();
         for (auto [entity, charCtrl] : charCtrls.each())
         {
             charCtrl.getImpl().init(charCtrl, _system);
@@ -435,21 +433,15 @@ namespace darmok::physics3d
     {
         if (_scene)
         {
-            auto& registry = _scene->getRegistry();
-            registry.on_construct<PhysicsBody>().disconnect<&PhysicsSystemImpl::onRigidbodyConstructed>(*this);
-            registry.on_destroy<PhysicsBody>().disconnect< &PhysicsSystemImpl::onRigidbodyDestroyed>(*this);
-            registry.on_construct<CharacterController>().disconnect<&PhysicsSystemImpl::onCharacterConstructed>(*this);
-            registry.on_destroy<CharacterController>().disconnect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
+            auto bodies = _scene->getComponents<PhysicsBody>();
+            _scene->removeComponents<PhysicsBody>(bodies.begin(), bodies.end());
+            auto charCtrls = _scene->getComponents<CharacterController>();
+            _scene->removeComponents<PhysicsBody>(charCtrls.begin(), charCtrls.end());
 
-            auto bodies = registry.view<PhysicsBody>();
-            for (auto [entity, body] : bodies.each())
-            {
-                body.getImpl().shutdown(true);
-            }
-
-            registry.erase<PhysicsBody>(bodies.begin(), bodies.end());
-            auto charCtrls = registry.view<CharacterController>();
-            registry.erase<CharacterController>(charCtrls.begin(), charCtrls.end());
+            _scene->onConstructComponent<PhysicsBody>().disconnect<&PhysicsSystemImpl::onRigidbodyConstructed>(*this);
+            _scene->onDestroyComponent<PhysicsBody>().disconnect< &PhysicsSystemImpl::onRigidbodyDestroyed>(*this);
+            _scene->onConstructComponent<CharacterController>().disconnect<&PhysicsSystemImpl::onCharacterConstructed>(*this);
+            _scene->onDestroyComponent<CharacterController>().disconnect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
         }
 
         _joltSystem.reset();
@@ -534,13 +526,12 @@ namespace darmok::physics3d
 
         if (_scene)
         {
-            auto& registry = _scene->getRegistry();
-            auto rigidBodies = registry.view<PhysicsBody>();
+            auto rigidBodies = _scene->getComponents<PhysicsBody>();
             for (auto [entity, body] : rigidBodies.each())
             {
                 body.getImpl().update(entity, deltaTime);
             }
-            auto charCtrls = registry.view<CharacterController>();
+            auto charCtrls = _scene->getComponents<CharacterController>();
             for (auto [entity, charCtrl] : charCtrls.each())
             {
                 charCtrl.getImpl().update(entity, deltaTime);

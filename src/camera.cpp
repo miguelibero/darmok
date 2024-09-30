@@ -35,12 +35,6 @@ namespace darmok
         return *this;
     }
 
-
-    const EntityRegistry& Camera::getRegistry() const
-    {
-        return _scene->getRegistry();
-    }
-
     bool Camera::isEnabled() const noexcept
     {
         return _enabled;
@@ -188,7 +182,7 @@ namespace darmok
         {
             return EntityRuntimeView();
         }
-        return _cullingFilter.createView(_scene.value());
+        return _scene->getEntities(_cullingFilter);
     }
 
     Camera::ComponentRefs Camera::copyComponentContainer() const noexcept
@@ -538,25 +532,14 @@ namespace darmok
         return *this;
     }
 
-    EntityRuntimeView EntityFilter::createView(Scene& scene) const noexcept
+    const EntityFilter::Container& EntityFilter::getIncludes() const noexcept
     {
-        EntityRuntimeView view;
-        auto& reg = scene.getRegistry();
-        for (auto include : _includes)
-        {
-            if (auto store = reg.storage(include))
-            {
-                view.iterate(*store);
-            }
-        }
-        for (auto exclude : _excludes)
-        {
-            if (auto store = reg.storage(exclude))
-            {
-                view.exclude(*store);
-            }
-        }
-        return view;
+        return _includes;
+    }
+
+    const EntityFilter::Container& EntityFilter::getExcludes() const noexcept
+    {
+        return _excludes;
     }
 
     std::string EntityFilter::toString() const noexcept

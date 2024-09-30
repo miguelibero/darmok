@@ -64,7 +64,7 @@ namespace darmok
 
         for (auto scene : comp->getScenes())
         {
-            auto view = scene->getComponentView<RmluiCanvas>();
+            auto view = scene->getComponents<RmluiCanvas>();
             for (auto [entity, canvas] : view.each())
             {
                 _canvases.emplace_back(canvas);
