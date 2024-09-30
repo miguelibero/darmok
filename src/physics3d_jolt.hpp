@@ -200,10 +200,12 @@ namespace darmok::physics3d
         void addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
         void addUpdater(IPhysicsUpdater& updater) noexcept;
         bool removeUpdater(IPhysicsUpdater& updater) noexcept;
+        OwnRefCollection<IPhysicsUpdater>& getUpdaters() noexcept;
 
         void addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
+        OwnRefCollection<ICollisionListener>& getListeners() noexcept;
 
         const tf::Taskflow& getTaskflow() const;
         const Config& getConfig() const noexcept;
@@ -225,8 +227,8 @@ namespace darmok::physics3d
         OptionalRef<PhysicsBody> getPhysicsBody(const JPH::BodyID& bodyId) const noexcept;
         static OptionalRef<PhysicsBody> getPhysicsBody(const JPH::Body& body) noexcept;
 
-        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
-        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
+        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance, uint16_t layerMask) const noexcept;
+        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) const noexcept;
 
         JoltTransform loadTransform(Transform& trans);
         void updateTransform(Transform& trans, const JPH::Mat44& mtx) noexcept;
@@ -328,6 +330,7 @@ namespace darmok::physics3d
         void addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
+        OwnRefCollection<ICollisionListener>& getListeners() noexcept;
 
         void onCollisionEnter(PhysicsBody& other, const Collision& collision);
         void onCollisionStay(PhysicsBody& other, const Collision& collision);

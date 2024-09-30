@@ -6,265 +6,108 @@
 
 namespace darmok::physics3d
 {
-    LuaPhysicsBody::LuaPhysicsBody(PhysicsBody& body) noexcept
-        : _body(body)
+    void LuaPhysicsBody::setPosition(PhysicsBody& body, const VarLuaTable<glm::vec3>& pos)
     {
+        body.setPosition(LuaGlm::tableGet(pos));
     }
 
-    LuaPhysicsBody::~LuaPhysicsBody() noexcept
+    void LuaPhysicsBody::setRotation(PhysicsBody& body, const VarLuaTable<glm::quat>& rot)
     {
-        _body.removeListener(*this);
+        body.setRotation(LuaGlm::tableGet(rot));
     }
 
-    bool LuaPhysicsBody::isGrounded() const noexcept
+    void LuaPhysicsBody::setLinearVelocity(PhysicsBody& body, const VarLuaTable<glm::vec3>& velocity)
     {
-        return _body.isGrounded();
+        body.setLinearVelocity(LuaGlm::tableGet(velocity));
     }
 
-    GroundState LuaPhysicsBody::getGroundState() const noexcept
+    PhysicsBody& LuaPhysicsBody::addTorque(PhysicsBody& body, const VarLuaTable<glm::vec3>& torque) noexcept
     {
-        return _body.getGroundState();
+        return body.addTorque(LuaGlm::tableGet(torque));
     }
 
-    const LuaPhysicsBody::Shape& LuaPhysicsBody::getShape() const noexcept
+    PhysicsBody& LuaPhysicsBody::addForce(PhysicsBody& body, const VarLuaTable<glm::vec3>& force) noexcept
     {
-        return _body.getShape();
+        return body.addForce(LuaGlm::tableGet(force));
     }
 
-    LuaPhysicsBody::MotionType LuaPhysicsBody::getMotionType() const noexcept
+    PhysicsBody& LuaPhysicsBody::addImpulse(PhysicsBody& body, const VarLuaTable<glm::vec3>& impulse) noexcept
     {
-        return _body.getMotionType();
+        return body.addImpulse(LuaGlm::tableGet(impulse));
     }
 
-    void LuaPhysicsBody::setPosition(const VarLuaTable<glm::vec3>& pos)
+    PhysicsBody& LuaPhysicsBody::move1(PhysicsBody& body, const VarLuaTable<glm::vec3>& pos, const VarLuaTable<glm::quat>& rot) noexcept
     {
-        _body.setPosition(LuaGlm::tableGet(pos));
+        return body.move(LuaGlm::tableGet(pos), LuaGlm::tableGet(rot));
     }
 
-    glm::vec3 LuaPhysicsBody::getPosition() const
+    PhysicsBody& LuaPhysicsBody::move2(PhysicsBody& body, const VarLuaTable<glm::vec3>& pos, const VarLuaTable<glm::quat>& rot, float deltaTime) noexcept
     {
-        return _body.getPosition();
-    }
-
-    void LuaPhysicsBody::setRotation(const VarLuaTable<glm::quat>& rot)
-    {
-        _body.setRotation(LuaGlm::tableGet(rot));
-    }
-
-    glm::quat LuaPhysicsBody::getRotation() const
-    {
-        return _body.getRotation();
-    }
-
-    void LuaPhysicsBody::setLinearVelocity(const VarLuaTable<glm::vec3>& velocity)
-    {
-        _body.setLinearVelocity(LuaGlm::tableGet(velocity));
-    }
-
-    glm::vec3 LuaPhysicsBody::getLinearVelocity() const
-    {
-        return _body.getLinearVelocity();
-    }
-
-    void LuaPhysicsBody::setInverseMass(float v)
-    {
-        _body.setInverseMass(v);
-    }
-
-    float LuaPhysicsBody::getInverseMass() const
-    {
-        return _body.getInverseMass();
-    }
-
-    bool LuaPhysicsBody::getActive() const
-    {
-        return _body.isActive();
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::activate()
-    {
-        _body.activate();
-        return *this;
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::deactivate()
-    {
-        _body.deactivate();
-        return *this;
-    }
-
-    bool LuaPhysicsBody::getEnabled() const
-    {
-        return _body.isEnabled();
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::setEnabled(bool enabled)
-    {
-        _body.setEnabled(enabled);
-        return *this;
-    }
-
-    std::string LuaPhysicsBody::toString() const noexcept
-    {
-        return _body.toString();
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::addTorque(const VarLuaTable<glm::vec3>& torque) noexcept
-    {
-        _body.addTorque(LuaGlm::tableGet(torque));
-        return *this;
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::addForce(const VarLuaTable<glm::vec3>& force) noexcept
-    {
-        _body.addForce(LuaGlm::tableGet(force));
-        return *this;
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::addImpulse(const VarLuaTable<glm::vec3>& impulse) noexcept
-    {
-        _body.addImpulse(LuaGlm::tableGet(impulse));
-        return *this;
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::move1(const VarLuaTable<glm::vec3>& pos, const VarLuaTable<glm::quat>& rot) noexcept
-    {
-        _body.move(LuaGlm::tableGet(pos), LuaGlm::tableGet(rot));
-        return *this;
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::move2(const VarLuaTable<glm::vec3>& pos, const VarLuaTable<glm::quat>& rot, float deltaTime) noexcept
-    {
-        _body.move(LuaGlm::tableGet(pos), LuaGlm::tableGet(rot), deltaTime);
-        return *this;
+        return body.move(LuaGlm::tableGet(pos), LuaGlm::tableGet(rot), deltaTime);
     }
 
 
-    LuaPhysicsBody& LuaPhysicsBody::movePosition1(const VarLuaTable<glm::vec3>& pos) noexcept
+    PhysicsBody& LuaPhysicsBody::movePosition1(PhysicsBody& body, const VarLuaTable<glm::vec3>& pos) noexcept
     {
-        _body.movePosition(LuaGlm::tableGet(pos));
-        return *this;
+        return body.movePosition(LuaGlm::tableGet(pos));
     }
 
-    LuaPhysicsBody& LuaPhysicsBody::movePosition2(const VarLuaTable<glm::vec3>& pos, float deltaTime) noexcept
+    PhysicsBody& LuaPhysicsBody::movePosition2(PhysicsBody& body, const VarLuaTable<glm::vec3>& pos, float deltaTime) noexcept
     {
-        _body.movePosition(LuaGlm::tableGet(pos), deltaTime);
-        return *this;
+        return body.movePosition(LuaGlm::tableGet(pos), deltaTime);
     }
 
-    LuaPhysicsBody& LuaPhysicsBody::addListener(const sol::table& listener) noexcept
+    PhysicsBody& LuaPhysicsBody::addListener(PhysicsBody& body, const sol::table& table) noexcept
     {
-        if (_listeners.empty())
-        {
-            _body.addListener(*this);
-        }
-        _listeners.emplace_back(listener);
-        return *this;
+        return body.addListener(std::make_unique<LuaCollisionListener>(table));
     }
 
-    bool LuaPhysicsBody::removeListener(const sol::table& listener) noexcept
+    bool LuaPhysicsBody::removeListener(PhysicsBody& body, const sol::table& table) noexcept
     {
-        auto itr = std::find(_listeners.begin(), _listeners.end(), listener);
-        if (itr == _listeners.end())
-        {
-            return false;
-        }
-        _listeners.erase(itr);
-        if (_listeners.empty())
-        {
-            _body.removeListener(*this);
-        }
-        return true;
+        return body.removeListener(LuaCollisionListener(table));
     }
 
-    OptionalRef<LuaPhysicsBody> LuaPhysicsBody::getLuaBody(PhysicsBody& body) const noexcept
+    PhysicsBody& LuaPhysicsBody::addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept
     {
-        if (!_body.getSystem())
-        {
-            return nullptr;
-        }
-        auto optScene = _body.getSystem()->getScene();
-        if (!optScene)
-        {
-            return nullptr;
-        }
-        auto& scene = optScene.value();
-        auto entity = scene.getEntity(body);
-        if (entity == entt::null)
-        {
-            return nullptr;
-        }
-        return scene.getComponent<LuaPhysicsBody>(entity);
+        return entity.addComponent<PhysicsBody>(shape);
     }
 
-    const LuaTableDelegateDefinition LuaPhysicsBody::_collisionEnterDef("on_collision_enter", "running physics body collision enter");
-    const LuaTableDelegateDefinition LuaPhysicsBody::_collisionStayDef("on_collision_stay", "running physics body collision stay");
-    const LuaTableDelegateDefinition LuaPhysicsBody::_collisionExitDef("on_collision_exit", "running physics body collision exit");
-
-    void LuaPhysicsBody::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
+    PhysicsBody& LuaPhysicsBody::addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept
     {
-        auto& luaBody1 = getLuaBody(body1).value();
-        auto& luaBody2 = getLuaBody(body2).value();
-        _collisionEnterDef(_listeners, luaBody1, luaBody2, collision);
+        return entity.addComponent<PhysicsBody>(shape, motion);
     }
 
-    void LuaPhysicsBody::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
-    {
-        auto& luaBody1 = getLuaBody(body1).value();
-        auto& luaBody2 = getLuaBody(body2).value();
-        _collisionStayDef(_listeners, luaBody1, luaBody2, collision);
-    }
-
-    void LuaPhysicsBody::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
-    {
-        auto& luaBody1 = getLuaBody(body1).value();
-        auto& luaBody2 = getLuaBody(body2).value();
-        _collisionExitDef(_listeners, luaBody1, luaBody2);
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept
-    {
-        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(shape);
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept
-    {
-        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(shape, motion);
-    }
-
-    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Shape& shape, MotionType motion, bool trigger) noexcept
+    PhysicsBody& LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Shape& shape, MotionType motion, bool trigger) noexcept
     {
         Config config;
         config.shape = shape;
         config.motion = motion;
         config.trigger = trigger;
-        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(config);
+        return entity.addComponent<PhysicsBody>(config);
     }
 
-    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent4(LuaEntity& entity, const Config& config) noexcept
+    PhysicsBody& LuaPhysicsBody::addEntityComponent4(LuaEntity& entity, const Config& config) noexcept
     {
-        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(config);
+        return entity.addComponent<PhysicsBody>(config);
     }
 
-    LuaPhysicsBody& LuaPhysicsBody::addEntityComponent5(LuaEntity& entity, const CharacterConfig& config) noexcept
+    PhysicsBody& LuaPhysicsBody::addEntityComponent5(LuaEntity& entity, const CharacterConfig& config) noexcept
     {
-        return entity.addWrapperComponent<LuaPhysicsBody, PhysicsBody>(config);
+        return entity.addComponent<PhysicsBody>(config);
     }
 
-    OptionalRef<LuaPhysicsBody>::std_t LuaPhysicsBody::getEntityComponent(LuaEntity& entity) noexcept
+    OptionalRef<PhysicsBody>::std_t LuaPhysicsBody::getEntityComponent(LuaEntity& entity) noexcept
     {
-        return entity.getComponent<LuaPhysicsBody>();
+        return entity.getComponent<PhysicsBody>();
     }
 
-    std::optional<LuaEntity> LuaPhysicsBody::getEntity(LuaScene& scene) noexcept
+    std::optional<LuaEntity> LuaPhysicsBody::getEntity(const PhysicsBody& body, LuaScene& scene) noexcept
     {
-        return scene.getEntity(_body);
+        return scene.getEntity(body);
     }
     
     void LuaPhysicsBody::bind(sol::state_view& lua) noexcept
     {
-        Scene::registerComponentDependency<PhysicsBody, LuaPhysicsBody>();
-
         lua.new_enum<MotionType>("Physics3dMotionType", {
             { "Static", MotionType::Static },
             { "Dynamic", MotionType::Dynamic },
@@ -296,9 +139,9 @@ namespace darmok::physics3d
             "friction", &CharacterConfig::friction,
             "gravityFactor", &CharacterConfig::gravityFactor
         );
-        lua.new_usertype<LuaPhysicsBody>("Physics3dBody", sol::no_constructor,
-            "type_id", sol::property(&entt::type_hash<LuaPhysicsBody>::value),
-            sol::meta_function::to_string, &LuaPhysicsBody::toString,
+        lua.new_usertype<PhysicsBody>("Physics3dBody", sol::no_constructor,
+            "type_id", sol::property(&entt::type_hash<PhysicsBody>::value),
+            sol::meta_function::to_string, &PhysicsBody::toString,
             "add_entity_component", sol::overload(
                 &LuaPhysicsBody::addEntityComponent1,
                 &LuaPhysicsBody::addEntityComponent2,
@@ -310,18 +153,18 @@ namespace darmok::physics3d
             "get_entity", &LuaPhysicsBody::getEntity,
             "add_listener", &LuaPhysicsBody::addListener,
             "remove_listener", &LuaPhysicsBody::removeListener,
-            "grounded", sol::property(&LuaPhysicsBody::isGrounded),
-            "ground_state", sol::property(&LuaPhysicsBody::getGroundState),
-            "shape", sol::property(&LuaPhysicsBody::getShape),
-            "motion_type", sol::property(&LuaPhysicsBody::getMotionType),
-            "position", sol::property(&LuaPhysicsBody::getPosition, &LuaPhysicsBody::setPosition),
-            "rotation", sol::property(&LuaPhysicsBody::getRotation, &LuaPhysicsBody::setRotation),
-            "linear_velocity", sol::property(&LuaPhysicsBody::getLinearVelocity, &LuaPhysicsBody::setLinearVelocity),
-            "inverse_mass", sol::property(&LuaPhysicsBody::getInverseMass, &LuaPhysicsBody::setInverseMass),
-            "active", sol::property(&LuaPhysicsBody::getActive),
-            "activate", &LuaPhysicsBody::activate,
-            "deactivate", &LuaPhysicsBody::deactivate,
-            "enabled", sol::property(&LuaPhysicsBody::getEnabled, &LuaPhysicsBody::setEnabled),
+            "grounded", sol::property(&PhysicsBody::isGrounded),
+            "ground_state", sol::property(&PhysicsBody::getGroundState),
+            "shape", sol::property(&PhysicsBody::getShape),
+            "motion_type", sol::property(&PhysicsBody::getMotionType),
+            "position", sol::property(&PhysicsBody::getPosition, &LuaPhysicsBody::setPosition),
+            "rotation", sol::property(&PhysicsBody::getRotation, &LuaPhysicsBody::setRotation),
+            "linear_velocity", sol::property(&PhysicsBody::getLinearVelocity, &LuaPhysicsBody::setLinearVelocity),
+            "inverse_mass", sol::property(&PhysicsBody::getInverseMass, &PhysicsBody::setInverseMass),
+            "active", sol::property(&PhysicsBody::isActive),
+            "activate", &PhysicsBody::activate,
+            "deactivate", &PhysicsBody::deactivate,
+            "enabled", sol::property(&PhysicsBody::isEnabled, &PhysicsBody::setEnabled),
             "add_torque", &LuaPhysicsBody::addTorque,
             "add_force", &LuaPhysicsBody::addForce,
             "add_impulse", &LuaPhysicsBody::addImpulse,

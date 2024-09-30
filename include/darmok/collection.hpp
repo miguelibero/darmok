@@ -241,34 +241,66 @@ namespace darmok
     template<typename T>
     class OwnRefCollection final : public RefCollection<T>
     {
-    public:
-        OwnRefCollection& insert(std::unique_ptr<T>&& listener) noexcept
+    private:
+        struct Element final
         {
-            _refs.emplace_back(*listener);
-            _ptrs.emplace_back(std::move(listener));
+            std::reference_wrapper<T> ref;
+            entt::id_type type;
+            std::shared_ptr<T> ptr;
+        };
+    public:
+
+        template<typename K>
+        OwnRefCollection& insert(std::unique_ptr<K>&& listener) noexcept
+        {
+            return insert(std::move(listener), entt::type_hash<K>::value());
+        }
+
+        template<typename K>
+        OwnRefCollection& insert(K& listener) noexcept
+        {
+            return insert(listener, entt::type_hash<K>::value());
+        }
+
+        OwnRefCollection& insert(std::unique_ptr<T>&& listener, entt::id_type type = 0) noexcept
+        {
+            _elms.emplace_back(*listener, type, std::move(listener));
             return *this;
         }
 
-        OwnRefCollection& insert(T& listener) noexcept
+        OwnRefCollection& insert(T& listener, entt::id_type type = 0) noexcept
         {
-            _refs.emplace_back(listener);
+            _elms.emplace_back(listener, type);
             return *this;
+        }
+
+        template<typename Callback>
+        bool erase_if(Callback callback) noexcept
+        {
+            auto itr = std::remove_if(_elms.begin(), _elms.end(),
+                [&callback](auto& elm) { return callback(elm.ref.get(), elm.type); });
+            if (itr == _elms.end())
+            {
+                return false;
+            }
+            _elms.erase(itr, _elms.end());
+            return true;
         }
 
         bool erase(const T& listener) noexcept
         {
-            auto ptr = &listener;
-            auto itr = std::remove_if(_refs.begin(), _refs.end(), [ptr](auto& elm) { return &elm.get() == ptr; });
-            if (itr == _refs.end())
-            {
-                return false;
-            }
-            _refs.erase(itr, _refs.end());
-            {
-                auto itr = std::remove_if(_ptrs.begin(), _ptrs.end(), [ptr](auto& elm) { return elm.get() == ptr; });
-                _ptrs.erase(itr, _ptrs.end());
-            }
-            return true;
+            return erase_if([&listener](auto& elm, auto type) {
+                return &elm == &listener;
+            });
+        }
+
+        template<typename K>
+        bool erase_equals(const K& listener) noexcept
+        {
+            auto listenerType = entt::type_hash<K>::value();
+            return erase_if([&listener, listenerType](auto& elm, auto type) {
+                return type == listenerType && static_cast<K&>(elm) == listener;
+            });
         }
 
         OwnRefCollection<T> copy() const noexcept
@@ -278,22 +310,21 @@ namespace darmok
 
         size_t size() const noexcept override
         {
-            return _refs.size();
+            return _elms.size();
         }
 
         const T& operator[](size_t pos) const noexcept override
         {
-            return _refs[pos].get();
+            return _elms[pos].ref.get();
         }
 
         T& operator[](size_t pos)  noexcept override
         {
-            return _refs[pos].get();
+            return _elms[pos].ref.get();
         }
 
     private:
-        std::vector<std::reference_wrapper<T>> _refs;
-        std::vector<std::shared_ptr<T>> _ptrs;
+        std::vector<Element> _elms;
     };
 }
 

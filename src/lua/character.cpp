@@ -18,26 +18,22 @@ namespace darmok::physics3d
 
 	void LuaCharacterControllerDelegate::onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity)
 	{
-		LuaPhysicsBody luaBody(body);
-		_adjustBodyDef(_table, character, luaBody, linearVelocity, angularVelocity);
+		_adjustBodyDef(_table, character, body, linearVelocity, angularVelocity);
 	}
 
 	bool LuaCharacterControllerDelegate::onContactValidate(CharacterController& character, PhysicsBody& body)
 	{
-		LuaPhysicsBody luaBody(body);
-		return _contactValidateDef(_table, character, luaBody);
+		return _contactValidateDef(_table, character, body);
 	}
 
 	void LuaCharacterControllerDelegate::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings)
 	{
-		LuaPhysicsBody luaBody(body);
-		_contactAddedDef(_table, character, luaBody, contact, settings);
+		_contactAddedDef(_table, character, body, contact, settings);
 	}
 
 	void LuaCharacterControllerDelegate::onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity)
 	{
-		LuaPhysicsBody luaBody(body);
-		_contactSolveDef(_table, character, luaBody, contact, characterVelocity);
+		_contactSolveDef(_table, character, body, contact, characterVelocity);
 	}
 
 	void LuaCharacterController::setLinearVelocity(CharacterController& ctrl, const VarLuaTable<glm::vec3>& velocity)
