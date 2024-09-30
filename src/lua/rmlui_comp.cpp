@@ -48,15 +48,14 @@ namespace darmok
         return _comp;
     }
 
-    LuaRmluiRenderer& LuaRmluiRenderer::addCameraComponent(LuaCamera& cam) noexcept
+    LuaRmluiRenderer& LuaRmluiRenderer::addCameraComponent(Camera& cam) noexcept
     {
-        auto& real = cam.getReal();
-        return real.addComponent<LuaRmluiRenderer>(real.addComponent<RmluiRenderer>());
+        return cam.addComponent<LuaRmluiRenderer>(cam.addComponent<RmluiRenderer>());
     }
 
-    OptionalRef<LuaRmluiRenderer>::std_t LuaRmluiRenderer::getCameraComponent(LuaCamera& cam) noexcept
+    OptionalRef<LuaRmluiRenderer>::std_t LuaRmluiRenderer::getCameraComponent(Camera& cam) noexcept
     {
-        return cam.getReal().getComponent<LuaRmluiRenderer>();
+        return cam.getComponent<LuaRmluiRenderer>();
     }
 
     void LuaRmluiRenderer::loadFont1(const std::string& path) noexcept

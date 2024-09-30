@@ -28,7 +28,6 @@ namespace Rml
 
 namespace darmok
 {
-    class LuaCamera;
     class Texture;
     class RmluiRenderer;
     class RmluiCanvas;
@@ -208,8 +207,8 @@ namespace darmok
         OptionalRef<Scene> _scene;
         RmluiRenderer& _comp;
 
-        static LuaRmluiRenderer& addCameraComponent(LuaCamera& cam) noexcept;
-        static OptionalRef<LuaRmluiRenderer>::std_t getCameraComponent(LuaCamera& cam) noexcept;
+        static LuaRmluiRenderer& addCameraComponent(Camera& cam) noexcept;
+        static OptionalRef<LuaRmluiRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
 
         void loadFont1(const std::string& path) noexcept;
         void loadFont2(const std::string& path, bool fallback) noexcept;

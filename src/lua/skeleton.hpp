@@ -75,14 +75,14 @@ namespace darmok
     };
 
     class SkeletalAnimationRenderComponent;
-    class LuaCamera;
+    class Camera;
 
     class LuaSkeletalAnimationRenderComponent final
     {
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        static SkeletalAnimationRenderComponent& addCameraComponent(LuaCamera& cam) noexcept;
-        static OptionalRef<SkeletalAnimationRenderComponent>::std_t getCameraComponent(LuaCamera& cam) noexcept;
+        static SkeletalAnimationRenderComponent& addCameraComponent(Camera& cam) noexcept;
+        static OptionalRef<SkeletalAnimationRenderComponent>::std_t getCameraComponent(Camera& cam) noexcept;
     };
 }

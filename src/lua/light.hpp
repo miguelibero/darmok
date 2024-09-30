@@ -42,14 +42,14 @@ namespace darmok
 	};
 
 	class LightingRenderComponent;
-	class LuaCamera;
+	class Camera;
 
 	class LuaLightingRenderComponent final
 	{
 	public:
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		static LightingRenderComponent& addCameraComponent(LuaCamera& cam) noexcept;
-		static OptionalRef<LightingRenderComponent>::std_t getCameraComponent(LuaCamera& cam) noexcept;
+		static LightingRenderComponent& addCameraComponent(Camera& cam) noexcept;
+		static OptionalRef<LightingRenderComponent>::std_t getCameraComponent(Camera& cam) noexcept;
 	};
 }
