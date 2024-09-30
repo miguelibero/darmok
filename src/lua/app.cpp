@@ -17,7 +17,6 @@
 #include "texture.hpp"
 #include "skeleton.hpp"
 #include "utils.hpp"
-#include "component.hpp"
 #include "render_chain.hpp"
 
 
@@ -173,7 +172,7 @@ namespace darmok
 		{
 			return getReal().removeComponent(typeId.value());
 		}
-		return removeLuaComponent(type);
+		return false;
 	}
 
 	bool LuaApp::hasComponent(const sol::object& type) const
@@ -182,39 +181,27 @@ namespace darmok
 		{
 			return getReal().hasComponent(typeId.value());
 		}
-		return hasLuaComponent(type);
+		return false;
 	}
 
-	bool LuaApp::hasLuaComponent(const sol::object& type) const noexcept
+	void LuaApp::addLuaComponent(const sol::table& table)
 	{
-		return _luaComponents && _luaComponents->contains(type);
-	}
-
-	void LuaApp::addLuaComponent(const sol::table& comp)
-	{
-		if (!_luaComponents)
-		{
-			_luaComponents = getReal().getOrAddComponent<LuaAppComponentContainer>();
-		}
-		_luaComponents->add(comp);
-	}
-
-	bool LuaApp::removeLuaComponent(const sol::object& type) noexcept
-	{
-		if (!_luaComponents)
-		{
-			return false;
-		}
-		return _luaComponents->remove(type);
+		auto comp = std::make_unique<LuaAppComponent>(table, *this);
+		auto typeId = comp->getType();
+		_app.get().addComponent(typeId, std::move(comp));
 	}
 
 	sol::object LuaApp::getLuaComponent(const sol::object& type) noexcept
 	{
-		if (!_luaComponents)
+		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return sol::nil;
+			if (auto comp = _app.get().getComponent(typeId.value()))
+			{
+				auto& luaComp = static_cast<LuaAppComponent&>(*comp);
+				return luaComp.getReal();
+			}
 		}
-		return _luaComponents->get(type);
+		return sol::nil;
 	}
 
 	void LuaApp::update(float deltaTime, sol::state_view& lua) noexcept
@@ -716,5 +703,46 @@ namespace darmok
 	void LuaAppDelegateImpl::shutdown() noexcept
 	{
 		unloadLua();
+	}
+
+	LuaAppComponent::LuaAppComponent(const sol::table& table, LuaApp& app) noexcept
+		: _table(table)
+		, _app(app)
+	{
+	}
+
+	entt::id_type LuaAppComponent::getType() const noexcept
+	{
+		return LuaUtils::getTypeId(_table).value();
+	}
+
+	const sol::table& LuaAppComponent::getReal() const noexcept
+	{
+		return _table;
+	}
+
+	const LuaTableDelegateDefinition LuaAppComponent::_initDef("init", "app component init");
+	const LuaTableDelegateDefinition LuaAppComponent::_shutdownDef("shutdown", "app component shutdown");
+	const LuaTableDelegateDefinition LuaAppComponent::_renderResetDef("render_reset", "app component render reset");
+	const LuaTableDelegateDefinition LuaAppComponent::_updateDef("update", "app component update");
+
+	void LuaAppComponent::init(App& app)
+	{
+		_initDef(_table, _app);
+	}
+
+	void LuaAppComponent::shutdown()
+	{
+		_shutdownDef(_table);
+	}
+
+	void LuaAppComponent::renderReset()
+	{
+		_renderResetDef(_table);
+	}
+
+	void LuaAppComponent::update(float deltaTime)
+	{
+		_updateDef(_table, deltaTime);
 	}
 }

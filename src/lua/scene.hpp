@@ -112,15 +112,11 @@ namespace darmok
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		std::shared_ptr<Scene> _scene;
-		mutable OptionalRef<LuaSceneComponentContainer> _luaComponents;
 
 		bool removeSceneComponent(const sol::object& type);
 		bool hasSceneComponent(const sol::object& type) const;
-		bool hasLuaSceneComponent(const sol::object& type) const noexcept;
-		void addLuaSceneComponent(const sol::table& comp);
-		bool removeLuaSceneComponent(const sol::object& type) noexcept;
+		void addLuaSceneComponent(const sol::table& table);
 		sol::object getLuaSceneComponent(const sol::object& type) noexcept;
-		bool tryGetLuaComponentContainer() const noexcept;
 
 		std::string toString() const noexcept;
 		LuaEntity createEntity1() noexcept;
@@ -141,6 +137,28 @@ namespace darmok
 		const std::string& getName() const noexcept;
 
 		bool forEachEntity(const sol::protected_function& callback);
+	};
+
+	class LuaSceneComponent final : public ISceneComponent
+	{
+	public:
+		LuaSceneComponent(const sol::table& table, const std::weak_ptr<Scene>& scene) noexcept;
+		entt::id_type getType() const noexcept;
+		const sol::table& getReal() const noexcept;
+
+		void init(Scene& scene, App& app) override;
+		void shutdown() override;
+		void renderReset() override;
+		void update(float deltaTime) override;
+
+	private:
+		sol::table _table;
+		std::weak_ptr<Scene> _scene;
+
+		static const LuaTableDelegateDefinition _initDef;
+		static const LuaTableDelegateDefinition _shutdownDef;
+		static const LuaTableDelegateDefinition _renderResetDef;
+		static const LuaTableDelegateDefinition _updateDef;
 	};
 
 	class SceneAppComponent;

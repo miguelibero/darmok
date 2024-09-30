@@ -5,7 +5,6 @@
 #include "light.hpp"
 #include "render_scene.hpp"
 #include "freelook.hpp"
-#include "component.hpp"
 #include <darmok/scene.hpp>
 #include <darmok/render_chain.hpp>
 
@@ -229,7 +228,7 @@ namespace darmok
 		{
 			return _scene->removeSceneComponent(typeId.value());
 		}
-		return removeLuaSceneComponent(type);
+		return false;
 	}
 
 	bool LuaScene::hasSceneComponent(const sol::object& type) const
@@ -238,48 +237,27 @@ namespace darmok
 		{
 			return _scene->hasSceneComponent(typeId.value());
 		}
-		return hasLuaSceneComponent(type);
+		return false;
 	}
 
-	bool LuaScene::tryGetLuaComponentContainer() const noexcept
+	void LuaScene::addLuaSceneComponent(const sol::table& table)
 	{
-		if (_luaComponents)
-		{
-			return true;
-		}
-		_luaComponents = _scene->getSceneComponent<LuaSceneComponentContainer>();
-		return !_luaComponents.empty();
-	}
-
-	bool LuaScene::hasLuaSceneComponent(const sol::object& type) const noexcept
-	{
-		tryGetLuaComponentContainer();
-		return _luaComponents && _luaComponents->contains(type);
-	}
-
-	void LuaScene::addLuaSceneComponent(const sol::table& comp)
-	{
-		if (!_luaComponents)
-		{
-			_luaComponents = _scene->getOrAddSceneComponent<LuaSceneComponentContainer>(*this);
-		}
-		_luaComponents->add(comp);
-	}
-
-	bool LuaScene::removeLuaSceneComponent(const sol::object& type) noexcept
-	{
-		tryGetLuaComponentContainer();
-		return _luaComponents && _luaComponents->remove(type);
+		auto comp = std::make_unique<LuaSceneComponent>(table, _scene);
+		auto typeId = comp->getType();
+		_scene->addSceneComponent(typeId, std::move(comp));
 	}
 
 	sol::object LuaScene::getLuaSceneComponent(const sol::object& type) noexcept
 	{
-		tryGetLuaComponentContainer();
-		if (!_luaComponents)
+		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return sol::nil;
+			if (auto comp = _scene->getSceneComponent(typeId.value()))
+			{
+				auto& luaComp = static_cast<LuaSceneComponent&>(*comp);
+				return luaComp.getReal();
+			}
 		}
-		return _luaComponents->get(type);
+		return sol::nil;
 	}
 
 	LuaEntity LuaScene::createEntity1() noexcept
@@ -425,6 +403,51 @@ namespace darmok
 			"render_chain", sol::property(&LuaScene::getRenderChain),
 			"name", sol::property(&LuaScene::getName, &LuaScene::setName)
 		);
+	}
+
+	LuaSceneComponent::LuaSceneComponent(const sol::table& table, const std::weak_ptr<Scene>& scene) noexcept
+		: _table(table)
+		, _scene(scene)
+	{
+	}
+
+	entt::id_type LuaSceneComponent::getType() const noexcept
+	{
+		return LuaUtils::getTypeId(_table).value();
+	}
+
+	const sol::table& LuaSceneComponent::getReal() const noexcept
+	{
+		return _table;
+	}
+
+	const LuaTableDelegateDefinition LuaSceneComponent::_initDef("init", "scene component init");
+	const LuaTableDelegateDefinition LuaSceneComponent::_shutdownDef("shutdown", "scene component shutdown");
+	const LuaTableDelegateDefinition LuaSceneComponent::_renderResetDef("render_reset", "scene component render reset");
+	const LuaTableDelegateDefinition LuaSceneComponent::_updateDef("update", "scene component update");
+
+	void LuaSceneComponent::init(Scene& scene, App& app)
+	{
+		if (auto scene = _scene.lock())
+		{
+			LuaScene luaScene(scene);
+			_initDef(_table, luaScene);
+		}
+	}
+
+	void LuaSceneComponent::shutdown()
+	{
+		_shutdownDef(_table);
+	}
+
+	void LuaSceneComponent::renderReset()
+	{
+		_renderResetDef(_table);
+	}
+
+	void LuaSceneComponent::update(float deltaTime)
+	{
+		_updateDef(_table, deltaTime);
 	}
 
 	SceneAppComponent& LuaSceneAppComponent::addAppComponent1(LuaApp& app) noexcept

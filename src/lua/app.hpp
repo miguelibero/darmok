@@ -23,7 +23,6 @@ namespace bx
 namespace darmok
 {
 	class AssetContext;
-	class LuaAppComponentContainer;	
 
 	class LuaApp final
 	{
@@ -66,7 +65,6 @@ namespace darmok
 		LuaInput _input;
 		LuaWindow _win;
 		LuaAudioSystem _audio;
-		OptionalRef<LuaAppComponentContainer> _luaComponents;
 
 		AssetContext& getAssets() noexcept;
 		LuaWindow& getWindow() noexcept;
@@ -75,9 +73,7 @@ namespace darmok
 
 		bool removeComponent(const sol::object& type);
 		bool hasComponent(const sol::object& type) const;
-		bool hasLuaComponent(const sol::object& type) const noexcept;
-		void addLuaComponent(const sol::table& comp);
-		bool removeLuaComponent(const sol::object& type) noexcept;
+		void addLuaComponent(const sol::table& table);
 		sol::object getLuaComponent(const sol::object& type) noexcept;
 
 		LuaCoroutineThread startCoroutine(const sol::function& func, sol::this_state ts) noexcept;
@@ -138,4 +134,26 @@ namespace darmok
 		void version(const std::string& name) noexcept;
 		void help(const std::string& name, const char* error = nullptr) noexcept;
     };
+
+	class LuaAppComponent final : public IAppComponent
+	{
+	public:
+		LuaAppComponent(const sol::table& table, LuaApp& app) noexcept;
+		entt::id_type getType() const noexcept;
+		const sol::table& getReal() const noexcept;
+
+		void init(App& app) override;
+		void shutdown() override;
+		void renderReset() override;
+		void update(float deltaTime) override;
+
+	private:
+		sol::table _table;
+		LuaApp& _app;
+
+		static const LuaTableDelegateDefinition _initDef;
+		static const LuaTableDelegateDefinition _shutdownDef;
+		static const LuaTableDelegateDefinition _renderResetDef;
+		static const LuaTableDelegateDefinition _updateDef;
+	};
 }
