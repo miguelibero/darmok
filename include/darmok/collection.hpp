@@ -160,6 +160,34 @@ namespace darmok
         [[nodiscard]] virtual V& operator[](size_t pos) = 0;
     };
 
+    template<typename V>
+    class BX_NO_VTABLE RefVectorCollection final : public RefCollection<V>
+    {
+    public:
+        using Elements = std::vector<std::reference_wrapper<V>>;
+        RefVectorCollection(const Elements& elements) noexcept
+            : _elements(elements)
+        {
+        }
+
+        [[nodiscard]] size_t size() const noexcept override
+        {
+            return _elements.size();
+        }
+
+        [[nodiscard]] const V& operator[](size_t pos) const override
+        {
+            return _elements[pos].get();
+        }
+
+        [[nodiscard]] V& operator[](size_t pos) noexcept override
+        {
+            return _elements[pos].get();
+        }
+    private:
+        Elements _elements;
+    };
+
     template<typename C, typename T>
     struct ValIterator final
     {
@@ -275,7 +303,7 @@ namespace darmok
         }
 
         template<typename Callback>
-        bool erase_if(Callback callback) noexcept
+        bool eraseIf(Callback callback) noexcept
         {
             auto itr = std::remove_if(_elms.begin(), _elms.end(),
                 [&callback](auto& elm) { return callback(elm.ref.get(), elm.type); });
@@ -289,16 +317,16 @@ namespace darmok
 
         bool erase(const T& listener) noexcept
         {
-            return erase_if([&listener](auto& elm, auto type) {
+            return eraseIf([&listener](auto& elm, auto type) {
                 return &elm == &listener;
             });
         }
 
         template<typename K>
-        bool erase_equals(const K& listener) noexcept
+        bool eraseEquals(const K& listener) noexcept
         {
             auto listenerType = entt::type_hash<K>::value();
-            return erase_if([&listener, listenerType](auto& elm, auto type) {
+            return eraseIf([&listener, listenerType](auto& elm, auto type) {
                 return type == listenerType && static_cast<K&>(elm) == listener;
             });
         }

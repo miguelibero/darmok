@@ -47,13 +47,6 @@ namespace darmok
 
 		void update(float deltaTime, sol::state_view& lua) noexcept;
 
-		template<typename T, typename R, typename... A>
-		T& addComponent(A&&... args)
-		{
-			auto& real = getReal().addComponent<R>(std::forward<A>(args)...);
-			return getReal().addComponent<T>(real);
-		}
-
 		LuaApp& addUpdater(const sol::object& updater) noexcept;
 		bool removeUpdater(const sol::object& updater) noexcept;
 

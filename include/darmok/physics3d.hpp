@@ -108,7 +108,7 @@ namespace darmok::physics3d
         template<typename T>
         bool removeUpdater(const T& updater) noexcept
         {
-            return getUpdaters().erase_equals(updater);
+            return getUpdaters().eraseEquals(updater);
         }
         
         PhysicsSystem& addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
@@ -118,7 +118,7 @@ namespace darmok::physics3d
         template<typename T>
         bool removeListener(const T& listener) noexcept
         {
-            return getListeners().erase_equals(listener);
+            return getListeners().eraseEquals(listener);
         }
 
         std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) const noexcept;
@@ -195,17 +195,12 @@ namespace darmok::physics3d
         PhysicsBody& addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         PhysicsBody& addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
+        OwnRefCollection<ICollisionListener>& getListeners() noexcept;
 
-        template<typename T>
-        bool removeListener(const T& listener) noexcept
-        {
-            return getListeners().erase_equals(listener);
-        }
 
         std::string toString() const noexcept;
 
     private:
         std::unique_ptr<PhysicsBodyImpl> _impl;
-        OwnRefCollection<ICollisionListener>& getListeners() noexcept;
     };
 }

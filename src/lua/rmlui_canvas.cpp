@@ -14,18 +14,16 @@
 
 namespace darmok
 {
-    LuaRmluiCanvas::LuaRmluiCanvas(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept
+    LuaRmluiCanvasDelegate::LuaRmluiCanvasDelegate(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept
         : _canvas(canvas)
         , _lua(lua)
         , _env(lua, sol::create, _lua.globals())
     {
         _env["canvas"] = this;
         _env["entity"] = entity;
-
-        _canvas.addListener(*this);
     }
 
-    LuaRmluiCanvas::~LuaRmluiCanvas() noexcept
+    LuaRmluiCanvasDelegate::~LuaRmluiCanvasDelegate()
     {
         sol::safe_function shutdown = _env["shutdown"];
         if (shutdown)
@@ -36,10 +34,19 @@ namespace darmok
                 LuaUtils::logError("running shutdown", result);
             }
         }
-        _canvas.removeListener(*this);
     }
 
-    void LuaRmluiCanvas::update(float deltaTime)
+    sol::environment& LuaRmluiCanvasDelegate::getEnvironment() noexcept
+    {
+        return _env;
+    }
+
+    entt::id_type LuaRmluiCanvasDelegate::getType() const noexcept
+    {
+        return entt::type_hash<LuaRmluiCanvasDelegate>::value();
+    }
+
+    void LuaRmluiCanvasDelegate::update(float deltaTime)
     {
         static const std::string updateFunc = "update";
         if (sol::safe_function update = _env[updateFunc])
@@ -53,195 +60,165 @@ namespace darmok
         }
     }
 
-    sol::environment& LuaRmluiCanvas::getEnvironment() noexcept
+    void LuaRmluiCanvasDelegate::onRmluiCustomEvent(Rml::Event& ev, const std::string& value, Rml::Element& element) noexcept
     {
-        return _env;
+        sol::environment env(_lua, sol::create, _env);
+        env["event"] = std::ref(ev);
+        env["element"] = std::ref(element);
+        env["document"] = element.GetOwnerDocument();
+
+        auto r = _lua.safe_script(value, env);
+        auto logDesc = "running rmlui event " + ev.GetType() + " on element " + element.GetAddress();
+        LuaUtils::checkResult(logDesc, r);
     }
 
-    std::string LuaRmluiCanvas::getName() const noexcept
+    bool LuaRmluiCanvasDelegate::loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept
     {
-        return _canvas.getName();
+        _env["document"] = std::ref(doc);
+
+        std::string buffer = "--";
+        buffer += sourcePath;
+        auto logDesc = "running rmlui script " + std::string(sourcePath);
+        if (sourceLine >= 0)
+        {
+            auto sourceLineStr = std::to_string(sourceLine);
+            buffer += ":" + sourceLineStr;
+            logDesc += ":" + sourceLineStr;
+        }
+
+        buffer += "\n" + std::string(content);
+        auto r = _lua.safe_script(buffer, _env);
+        LuaUtils::checkResult(logDesc, r);
+
+        return true;
     }
 
-    std::optional<glm::uvec2> LuaRmluiCanvas::getSize() const noexcept
+    sol::environment LuaRmluiCanvas::getEnvironment(const RmluiCanvas& canvas) noexcept
     {
-        return _canvas.getSize();
+        if (auto dlg = canvas.getDelegate())
+        {
+            if (dlg->getType() == entt::type_hash<LuaRmluiCanvasDelegate>::value())
+            {
+                return static_cast<LuaRmluiCanvasDelegate&>(dlg.value()).getEnvironment();
+            }
+        }
+        return {};
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::setSize(std::optional<VarLuaTable<glm::uvec2>> size) noexcept
+    std::optional<glm::uvec2> LuaRmluiCanvas::getSize(const RmluiCanvas& canvas) noexcept
+    {
+        return canvas.getSize();
+    }
+
+    void LuaRmluiCanvas::setSize(RmluiCanvas& canvas, std::optional<VarLuaTable<glm::uvec2>> size) noexcept
     {
         if (size)
         {
-            _canvas.setSize(LuaGlm::tableGet(size.value()));
+            canvas.setSize(LuaGlm::tableGet(size.value()));
         }
         else
         {
-            _canvas.setSize(std::nullopt);
+            canvas.setSize(std::nullopt);
         }
-        return *this;
     }
 
-    glm::uvec2 LuaRmluiCanvas::getCurrentSize() const noexcept
+    void LuaRmluiCanvas::setOffset(RmluiCanvas& canvas, const VarLuaTable<glm::vec3>& offset) noexcept
     {
-        return _canvas.getCurrentSize();
+        canvas.setOffset(LuaGlm::tableGet(offset));
     }
 
-    const glm::vec3& LuaRmluiCanvas::getOffset() const noexcept
+    void LuaRmluiCanvas::setMousePosition(RmluiCanvas& canvas, const VarLuaTable<glm::vec2>& position) noexcept
     {
-        return _canvas.getOffset();
+        canvas.setMousePosition(LuaGlm::tableGet(position));
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::setOffset(const VarLuaTable<glm::vec3>& offset) noexcept
+    void LuaRmluiCanvas::setViewportMousePosition(RmluiCanvas& canvas, const VarLuaTable<glm::vec2>& position) noexcept
     {
-        _canvas.setOffset(LuaGlm::tableGet(offset));
-        return *this;
+        canvas.setViewportMousePosition(LuaGlm::tableGet(position));
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::setVisible(bool visible) noexcept
+    RmluiCanvas& LuaRmluiCanvas::applyViewportMousePositionDelta(RmluiCanvas& canvas, const VarLuaTable<glm::vec2>& delta) noexcept
     {
-        _canvas.setVisible(visible);
-        return *this;
+        return canvas.applyViewportMousePositionDelta(LuaGlm::tableGet(delta));
     }
 
-    bool LuaRmluiCanvas::getVisible() const noexcept
+    OptionalRef<Rml::ElementDocument>::std_t LuaRmluiCanvas::loadDocument(RmluiCanvas& canvas, const std::string& name)
     {
-        return _canvas.isVisible();
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::setInputActive(bool active) noexcept
-    {
-        _canvas.setInputActive(active);
-        return *this;
-    }
-
-    bool LuaRmluiCanvas::getInputActive() const noexcept
-    {
-        return _canvas.isInputActive();
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::setMousePosition(const glm::vec2& position) noexcept
-    {
-        _canvas.setMousePosition(position);
-        return *this;
-    }
-
-    const glm::vec2& LuaRmluiCanvas::getMousePosition() const noexcept
-    {
-        return _canvas.getMousePosition();
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::setMousePositionMode(MousePositionMode mode) noexcept
-    {
-        _canvas.setMousePositionMode(mode);
-        return *this;
-    }
-
-    LuaRmluiCanvas::MousePositionMode LuaRmluiCanvas::getMousePositionMode() const noexcept
-    {
-        return _canvas.getMousePositionMode();
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::setViewportMousePosition(const glm::vec2& position) noexcept
-    {
-        _canvas.setViewportMousePosition(position);
-        return *this;
-    }
-
-    glm::vec2 LuaRmluiCanvas::getViewportMousePosition() const noexcept
-    {
-        return _canvas.getViewportMousePosition();
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::applyViewportMousePositionDelta(const glm::vec2& delta) noexcept
-    {
-        _canvas.applyViewportMousePositionDelta(delta);
-        return *this;
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept
-    {
-        _canvas.setScrollBehavior(behaviour, speedFactor);
-        return *this;
-    }
-
-    OptionalRef<Rml::ElementDocument>::std_t LuaRmluiCanvas::loadDocument(const std::string& name)
-    {
-        if (auto doc = _canvas.getContext().LoadDocument(name))
+        if (auto doc = canvas.getContext().LoadDocument(name))
         {
             return *doc;
         }
         return std::nullopt;
     }
 
-    OptionalRef<Rml::ElementDocument>::std_t LuaRmluiCanvas::getDocument(const std::string& name)
+    OptionalRef<Rml::ElementDocument>::std_t LuaRmluiCanvas::getDocument(RmluiCanvas& canvas, const std::string& name)
     {
-        if (auto doc = _canvas.getContext().GetDocument(name))
+        if (auto doc = canvas.getContext().GetDocument(name))
         {
             return *doc;
         }
         return std::nullopt;
     }
 
-    void LuaRmluiCanvas::unloadAllDocuments()
+    RmluiCanvas& LuaRmluiCanvas::unloadAllDocuments(RmluiCanvas& canvas)
     {
-        _canvas.getContext().UnloadAllDocuments();
+        canvas.getContext().UnloadAllDocuments();
+        return canvas;
     }
 
-    size_t LuaRmluiCanvas::getNumDocuments() const
+    size_t LuaRmluiCanvas::getNumDocuments(const RmluiCanvas& canvas)
     {
-        return _canvas.getContext().GetNumDocuments();
+        return canvas.getContext().GetNumDocuments();
     }
 
-    void LuaRmluiCanvas::unloadDocument(OptionalRef<Rml::ElementDocument>::std_t doc) const
+    RmluiCanvas& LuaRmluiCanvas::unloadDocument(RmluiCanvas& canvas, OptionalRef<Rml::ElementDocument>::std_t doc)
     {
         if (doc)
         {
-            _canvas.getContext().UnloadDocument(&doc.value().get());
+            canvas.getContext().UnloadDocument(&doc.value().get());
         }
+        return canvas;
     }
 
-    RmluiCanvas& LuaRmluiCanvas::getReal() noexcept
+    void LuaRmluiCanvas::configureCanvas(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept
     {
-        return _canvas;
+        canvas.setDelegate(std::make_unique<LuaRmluiCanvasDelegate>(canvas, entity, lua));
     }
 
-    const RmluiCanvas& LuaRmluiCanvas::getReal() const noexcept
+    RmluiCanvas& LuaRmluiCanvas::addEntityComponent1(LuaEntity& entity, const std::string& name, sol::this_state ts) noexcept
     {
-        return _canvas;
+        auto& canvas = entity.addComponent<RmluiCanvas>(name);
+        configureCanvas(canvas, entity, ts);
+        return canvas;
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent1(LuaEntity& entity, const std::string& name, sol::this_state ts) noexcept
+    RmluiCanvas& LuaRmluiCanvas::addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size, sol::this_state ts) noexcept
     {
-        auto& real = entity.addComponent<RmluiCanvas>(name);
-        return entity.addComponent<LuaRmluiCanvas>(real, entity, ts);
+        auto& canvas = entity.addComponent<RmluiCanvas>(name, LuaGlm::tableGet(size));
+        configureCanvas(canvas, entity, ts);
+        return canvas;
     }
 
-    LuaRmluiCanvas& LuaRmluiCanvas::addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size, sol::this_state ts) noexcept
+    OptionalRef<RmluiCanvas>::std_t LuaRmluiCanvas::getEntityComponent(LuaEntity& entity) noexcept
     {
-        auto& real = entity.addComponent<RmluiCanvas>(name, LuaGlm::tableGet(size));
-        return entity.addComponent<LuaRmluiCanvas>(real, entity, ts);
+        return entity.getComponent<RmluiCanvas>();
     }
 
-    OptionalRef<LuaRmluiCanvas>::std_t LuaRmluiCanvas::getEntityComponent(LuaEntity& entity) noexcept
+    std::optional<LuaEntity> LuaRmluiCanvas::getEntity(const RmluiCanvas& canvas, LuaScene& scene) noexcept
     {
-        return entity.getComponent<LuaRmluiCanvas>();
+        return scene.getEntity(canvas);
     }
 
-    std::optional<LuaEntity> LuaRmluiCanvas::getEntity(LuaScene& scene) noexcept
+    bool LuaRmluiCanvas::recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept
     {
-        return scene.getEntity(_canvas);
-    }
-
-    bool LuaRmluiCanvas::recreateDataModel(const std::string& name, sol::table table) noexcept
-    {
-        auto removed = removeDataModel(name);
-        createDataModel(name, table);
+        auto removed = removeDataModel(canvas, name);
+        createDataModel(canvas, name, table);
         return removed;
     }
 
-    void LuaRmluiCanvas::createDataModel(const std::string& name, sol::table table) noexcept
+    void LuaRmluiCanvas::createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept
     {
-        auto constr = _canvas.getContext().CreateDataModel(name);
+        auto constr = canvas.getContext().CreateDataModel(name);
         if (!constr)
         {
             return;
@@ -273,78 +250,25 @@ namespace darmok
         );
     }
 
-    void LuaRmluiCanvas::onRmluiCustomEvent(Rml::Event& ev, const std::string& value, Rml::Element& element) noexcept
+    Rml::DataModelHandle LuaRmluiCanvas::getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept
     {
-        sol::environment env(_lua, sol::create, _env);
-        env["event"] = std::ref(ev);
-        env["element"] = std::ref(element);
-        env["document"] = element.GetOwnerDocument();
-
-        auto r = _lua.safe_script(value, env);
-        auto logDesc = "running rmlui event " + ev.GetType() + " on element " + element.GetAddress();
-        LuaUtils::checkResult(logDesc, r);
+        return canvas.getContext().GetDataModel(name).GetModelHandle();
     }
 
-    bool LuaRmluiCanvas::loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept
+    bool LuaRmluiCanvas::removeDataModel(RmluiCanvas& canvas, const std::string& name) noexcept
     {
-        _env["document"] = std::ref(doc);
-
-        std::string buffer = "--";
-        buffer += sourcePath;
-        auto logDesc = "running rmlui script " + std::string(sourcePath);
-        if (sourceLine >= 0)
-        {
-            auto sourceLineStr = std::to_string(sourceLine);
-            buffer += ":" + sourceLineStr;
-            logDesc += ":" + sourceLineStr;
-        }
-        
-        buffer += "\n" + std::string(content);
-        auto r = _lua.safe_script(buffer, _env);
-        LuaUtils::checkResult(logDesc, r);
-
-        return true;
+        return canvas.getContext().RemoveDataModel(name);
     }
 
-    Rml::DataModelHandle LuaRmluiCanvas::getDataModel(const std::string& name) const noexcept
+    RmluiCanvas& LuaRmluiCanvas::addEventListener(RmluiCanvas& canvas, const std::string& ev, const sol::object& obj) noexcept
     {
-        return _canvas.getContext().GetDataModel(name).GetModelHandle();
+        canvas.getContext().AddEventListener(ev, new LuaRmluiEventListener(obj));
+        return canvas;
     }
 
-    bool LuaRmluiCanvas::removeDataModel(const std::string& name) noexcept
+    bool LuaRmluiCanvas::removeEventListener(RmluiCanvas& canvas, const std::string& ev, const sol::object& obj) noexcept
     {
-        return _canvas.getContext().RemoveDataModel(name);
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::addEventListener1(const std::string& ev, const sol::table& tab) noexcept
-    {
-        _canvas.getContext().AddEventListener(ev, new LuaRmluiEventListener(tab));
-        return *this;
-    }
-
-    bool LuaRmluiCanvas::removeEventListener1(const std::string& ev, const sol::table& tab) noexcept
-    {
-        return false;
-    }
-
-    bool LuaRmluiCanvas::removeEventListener2(const sol::table& tab) noexcept
-    {
-        return false;
-    }
-
-    LuaRmluiCanvas& LuaRmluiCanvas::addEventListener2(const std::string& ev, const sol::protected_function& func) noexcept
-    {
-        _canvas.getContext().AddEventListener(ev, new LuaRmluiEventListener(func));
-        return *this;
-    }
-
-    bool LuaRmluiCanvas::removeEventListener4(const std::string& ev, const sol::protected_function& func) noexcept
-    {
-        return false;
-    }
-
-    bool LuaRmluiCanvas::removeEventListener3(const sol::protected_function& func) noexcept
-    {
+        // TODO: find a way of doing this
         return false;
     }
 
@@ -372,7 +296,7 @@ namespace darmok
             )
         );
 
-        lua.new_usertype<LuaRmluiCanvas>("RmluiCanvas", sol::no_constructor,
+        lua.new_usertype<RmluiCanvas>("RmluiCanvas", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<RmluiCanvas>::value),
             "add_entity_component", sol::overload(
                 &LuaRmluiCanvas::addEntityComponent1,
@@ -380,18 +304,18 @@ namespace darmok
             ),
             "get_entity_component", &LuaRmluiCanvas::getEntityComponent,
             "get_entity", &LuaRmluiCanvas::getEntity,
-            "name", sol::property(&LuaRmluiCanvas::getName),
+            "name", sol::property(&RmluiCanvas::getName),
             "environment", sol::property(&LuaRmluiCanvas::getEnvironment),
             "size", sol::property(&LuaRmluiCanvas::getSize, &LuaRmluiCanvas::setSize),
-            "visible", sol::property(&LuaRmluiCanvas::getVisible, &LuaRmluiCanvas::setVisible),
-            "current_size", sol::property(&LuaRmluiCanvas::getCurrentSize),
-            "offset", sol::property(&LuaRmluiCanvas::getOffset, &LuaRmluiCanvas::setOffset),
-            "input_active", sol::property(&LuaRmluiCanvas::getInputActive, &LuaRmluiCanvas::setInputActive),
-            "mouse_position", sol::property(&LuaRmluiCanvas::getMousePosition, &LuaRmluiCanvas::setMousePosition),
-            "mouse_position_mode", sol::property(&LuaRmluiCanvas::getMousePositionMode, &LuaRmluiCanvas::setMousePositionMode),
-            "viewport_mouse_position", sol::property(&LuaRmluiCanvas::getViewportMousePosition, &LuaRmluiCanvas::setViewportMousePosition),
+            "visible", sol::property(&RmluiCanvas::isVisible, &RmluiCanvas::setVisible),
+            "current_size", sol::property(&RmluiCanvas::getCurrentSize),
+            "offset", sol::property(&RmluiCanvas::getOffset, &RmluiCanvas::setOffset),
+            "input_active", sol::property(&RmluiCanvas::isInputActive, &RmluiCanvas::setInputActive),
+            "mouse_position", sol::property(&RmluiCanvas::getMousePosition, &LuaRmluiCanvas::setMousePosition),
+            "mouse_position_mode", sol::property(&RmluiCanvas::getMousePositionMode, &RmluiCanvas::setMousePositionMode),
+            "viewport_mouse_position", sol::property(&RmluiCanvas::getViewportMousePosition, &LuaRmluiCanvas::setViewportMousePosition),
             "apply_viewport_mouse_position_delta", &LuaRmluiCanvas::applyViewportMousePositionDelta,
-            "set_scroll_behavior", &LuaRmluiCanvas::setScrollBehavior,
+            "set_scroll_behavior", &RmluiCanvas::setScrollBehavior,
             "load_document", &LuaRmluiCanvas::loadDocument,
             "get_document", &LuaRmluiCanvas::getDocument,
             "unload_all_documents", & LuaRmluiCanvas::unloadAllDocuments,
@@ -401,16 +325,8 @@ namespace darmok
             "recreate_data_model", & LuaRmluiCanvas::recreateDataModel,
             "get_data_model", &LuaRmluiCanvas::getDataModel,
             "remove_data_model", &LuaRmluiCanvas::removeDataModel,
-            "add_event_listener", sol::overload(
-                &LuaRmluiCanvas::addEventListener1,
-                &LuaRmluiCanvas::addEventListener2
-            ),
-            "remove_event_listener", sol::overload(
-                &LuaRmluiCanvas::removeEventListener1,
-                &LuaRmluiCanvas::removeEventListener2,
-                &LuaRmluiCanvas::removeEventListener3,
-                &LuaRmluiCanvas::removeEventListener4
-            )
+            "add_event_listener", &LuaRmluiCanvas::addEventListener,
+            "remove_event_listener", &LuaRmluiCanvas::removeEventListener
         );
     }
 }

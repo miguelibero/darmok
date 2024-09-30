@@ -75,35 +75,15 @@ namespace darmok
         return elm.GetNumChildren();
     }
 
-    Rml::Element& LuaRmluiElement::addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept
+    Rml::Element& LuaRmluiElement::addEventListener(Rml::Element& elm, const std::string& ev, const sol::object& tab) noexcept
     {
         elm.AddEventListener(ev, new LuaRmluiEventListener(tab));
         return elm;
     }
 
-    Rml::Element& LuaRmluiElement::addEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept
+    bool LuaRmluiElement::removeEventListener(Rml::Element& elm, const std::string& ev, const sol::object& tab) noexcept
     {
-        elm.AddEventListener(ev, new LuaRmluiEventListener(func));
-        return elm;
-    }
-
-    bool LuaRmluiElement::removeEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept
-    {
-        return false;
-    }
-
-    bool LuaRmluiElement::removeEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept
-    {
-        return false;
-    }
-
-    bool LuaRmluiElement::removeEventListener3(Rml::Element& elm, const sol::table& tab) noexcept
-    {
-        return false;
-    }
-
-    bool LuaRmluiElement::removeEventListener4(Rml::Element& elm, const sol::protected_function& func) noexcept
-    {
+        // TODO: find a way of doing this
         return false;
     }
 
@@ -205,16 +185,8 @@ namespace darmok
             "query_selector_all", &LuaRmluiElement::querySelectorAll,
             "get_child", &Rml::Element::GetChild,
             "num_children", sol::property(&LuaRmluiElement::getNumChildren),
-            "add_event_listener", sol::overload(
-                &LuaRmluiElement::addEventListener1,
-                &LuaRmluiElement::addEventListener2
-            ),
-            "remove_event_listener", sol::overload(
-                &LuaRmluiElement::removeEventListener1,
-                &LuaRmluiElement::removeEventListener2,
-                &LuaRmluiElement::removeEventListener3,
-                &LuaRmluiElement::removeEventListener4
-            ),
+            "add_event_listener", &LuaRmluiElement::addEventListener,
+            "remove_event_listener", &LuaRmluiElement::removeEventListener,
             "dispatch_event", sol::overload(
                 &LuaRmluiElement::dispatchEvent1,
                 &LuaRmluiElement::dispatchEvent2,

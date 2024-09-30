@@ -327,9 +327,9 @@ namespace darmok
     {
     }
 
-    void RmluiSystemInterface::update(float dt) noexcept
+    void RmluiSystemInterface::update(float deltaTime) noexcept
     {
-        _elapsedTime += dt;
+        _elapsedTime += deltaTime;
     }
 
     double RmluiSystemInterface::GetElapsedTime()
@@ -828,8 +828,12 @@ namespace darmok
         }
     }
 
-    bool RmluiCanvasImpl::update() noexcept
+    bool RmluiCanvasImpl::update(float deltaTime) noexcept
     {
+        if (_delegate)
+        {
+            _delegate->update(deltaTime);
+        }
         return _context->Update();
     }
 
@@ -885,37 +889,36 @@ namespace darmok
         return nullptr;
     }
 
-    void RmluiCanvasImpl::addListener(IRmluiCanvasListener& listener) noexcept
+    void RmluiCanvasImpl::setDelegate(IRmluiCanvasDelegate& dlg) noexcept
     {
-        _listeners.insert(listener);
+        _delegate = dlg;
+        _delegatePtr.reset();
     }
 
-    void RmluiCanvasImpl::addListener(std::unique_ptr<IRmluiCanvasListener>&& listener) noexcept
+    void RmluiCanvasImpl::setDelegate(std::unique_ptr<IRmluiCanvasDelegate>&& dlg) noexcept
     {
-        _listeners.insert(std::move(listener));
+        _delegate = *dlg;
+        _delegatePtr = std::move(dlg);
     }
 
-    bool RmluiCanvasImpl::removeListener(const IRmluiCanvasListener& listener) noexcept
+    OptionalRef<IRmluiCanvasDelegate> RmluiCanvasImpl::getDelegate() const noexcept
     {
-        return _listeners.erase(listener);
+        return _delegate;
     }
 
     void RmluiCanvasImpl::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
     {
-        for(auto& listener : _listeners)
+        if(_delegate)
         {
-            listener.onRmluiCustomEvent(event, value, element);
+            _delegate->onRmluiCustomEvent(event, value, element);
         }
     }
 
     bool RmluiCanvasImpl::loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
     {
-        for (auto& listener : _listeners)
+        if (_delegate)
         {
-            if (listener.loadRmluiScript(doc, content, sourcePath, sourceLine))
-            {
-                return true;
-            }
+            return _delegate->loadRmluiScript(doc, content, sourcePath, sourceLine);
         }
         return false;
     }
@@ -1059,21 +1062,21 @@ namespace darmok
         return *_impl;
     }
 
-    RmluiCanvas& RmluiCanvas::addListener(IRmluiCanvasListener& listener) noexcept
+    RmluiCanvas& RmluiCanvas::setDelegate(IRmluiCanvasDelegate& dlg) noexcept
     {
-        _impl->addListener(listener);
+        _impl->setDelegate(dlg);
         return *this;
     }
 
-    RmluiCanvas& RmluiCanvas::addListener(std::unique_ptr<IRmluiCanvasListener>&& listener) noexcept
+    RmluiCanvas& RmluiCanvas::setDelegate(std::unique_ptr<IRmluiCanvasDelegate>&& dlg) noexcept
     {
-        _impl->addListener(std::move(listener));
+        _impl->setDelegate(std::move(dlg));
         return *this;
     }
 
-    bool RmluiCanvas::removeListener(const IRmluiCanvasListener& listener) noexcept
+    OptionalRef<IRmluiCanvasDelegate> RmluiCanvas::getDelegate() const noexcept
     {
-        return _impl->removeListener(listener);
+        return _impl->getDelegate();
     }
 
     RmluiPlugin::RmluiPlugin(App& app) noexcept
@@ -1476,15 +1479,15 @@ namespace darmok
         return _renderGraph;
     }
 
-    void RmluiRendererImpl::update(float dt) noexcept
+    void RmluiRendererImpl::update(float deltaTime) noexcept
     {
-        getRmluiSystem().update(dt);
+        getRmluiSystem().update(deltaTime);
         if (_cam && _scene)
         {
             for (auto entity : _cam->getEntities<RmluiCanvas>())
             {
                 auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-                canvas->getImpl().update();
+                canvas->getImpl().update(deltaTime);
             }
         }
         if (_cam)
@@ -1789,9 +1792,9 @@ namespace darmok
         _impl->beforeRenderView(context);
     }
 
-    void RmluiRenderer::update(float dt) noexcept
+    void RmluiRenderer::update(float deltaTime) noexcept
     {
-        _impl->update(dt);
+        _impl->update(deltaTime);
     }
 
     RmluiRendererImpl& RmluiRenderer::getImpl() noexcept

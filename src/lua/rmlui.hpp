@@ -36,8 +36,8 @@ namespace darmok
     {
     public:
         LuaRmluiEventListener(const sol::object& obj) noexcept;
-        void ProcessEvent(Rml::Event& event) override;
-        void OnDetach(Rml::Element*) noexcept override;
+        void ProcessEvent(Rml::Event& event) noexcept override;
+        void OnDetach(Rml::Element* element) noexcept override;
     private:
         LuaDelegate _delegate;
     };
@@ -71,12 +71,8 @@ namespace darmok
         static std::vector<Rml::Element*> getElementsByTagName(Rml::Element& elm, const std::string& tag) noexcept;
         static std::vector<Rml::Element*> querySelectorAll(Rml::Element& elm, const std::string& selector) noexcept;
         static int getNumChildren(Rml::Element& elm) noexcept;
-        static Rml::Element& addEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept;
-        static Rml::Element& addEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept;
-        static bool removeEventListener1(Rml::Element& elm, const std::string& ev, const sol::table& tab) noexcept;
-        static bool removeEventListener2(Rml::Element& elm, const std::string& ev, const sol::protected_function& func) noexcept;
-        static bool removeEventListener3(Rml::Element& elm, const sol::table& tab) noexcept;
-        static bool removeEventListener4(Rml::Element& elm, const sol::protected_function& func) noexcept;
+        static Rml::Element& addEventListener(Rml::Element& elm, const std::string& ev, const sol::object& obj) noexcept;
+        static bool removeEventListener(Rml::Element& elm, const std::string& ev, const sol::object& obj) noexcept;
         static bool dispatchEvent1(Rml::Element& elm, const std::string& type, const sol::table& params);
         static bool dispatchEvent2(Rml::Element& elm, const std::string& type, const sol::table& params, bool interruptible);
         static bool dispatchEvent3(Rml::Element& elm, const std::string& type, const sol::table& params, bool interruptible, bool bubbles);
@@ -109,84 +105,59 @@ namespace darmok
     class LuaEntity;
     class LuaScene;
 
-    class LuaRmluiCanvas final : IRmluiCanvasListener
+    class LuaRmluiCanvasDelegate final : public IRmluiCanvasDelegate
     {
     public:
-        LuaRmluiCanvas(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept;
-        ~LuaRmluiCanvas() noexcept;
+        LuaRmluiCanvasDelegate(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept;
+        ~LuaRmluiCanvasDelegate();
 
-        LuaRmluiCanvas(const LuaRmluiCanvas& other) = delete;
-        LuaRmluiCanvas& operator=(const LuaRmluiCanvas& other) = delete;
+        sol::environment& getEnvironment() noexcept;
 
-        RmluiCanvas& getReal() noexcept;
-        const RmluiCanvas& getReal() const noexcept;
-
-        void update(float deltaTime);
-
-        static void bind(sol::state_view& lua) noexcept;
-
+        entt::id_type getType() const noexcept override;
+        void update(float deltaTime) override;
+        void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) noexcept override;
+        bool loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept override;
     private:
         sol::state_view _lua;
         sol::environment _env;
         RmluiCanvas& _canvas;
+    };
 
-        static LuaRmluiCanvas& addEntityComponent1(LuaEntity& entity, const std::string& name, sol::this_state ts) noexcept;
-        static LuaRmluiCanvas& addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size, sol::this_state ts) noexcept;
-        static OptionalRef<LuaRmluiCanvas>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-        std::optional<LuaEntity> getEntity(LuaScene& scene) noexcept;
+    class LuaRmluiCanvas final
+    {
+    public:
+        static void bind(sol::state_view& lua) noexcept;
+    private:
+        static void configureCanvas(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept;
+        static RmluiCanvas& addEntityComponent1(LuaEntity& entity, const std::string& name, sol::this_state ts) noexcept;
+        static RmluiCanvas& addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size, sol::this_state ts) noexcept;
+        static OptionalRef<RmluiCanvas>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+        static std::optional<LuaEntity> getEntity(const RmluiCanvas& canvas, LuaScene& scene) noexcept;
 
-        bool recreateDataModel(const std::string& name, sol::table table) noexcept;
-        void createDataModel(const std::string& name, sol::table table) noexcept;
-        Rml::DataModelHandle getDataModel(const std::string& name) const noexcept;
-        bool removeDataModel(const std::string& name) noexcept;
+        static sol::environment getEnvironment(const RmluiCanvas& canvas) noexcept;
+        static std::optional<glm::uvec2> getSize(const RmluiCanvas& canvas) noexcept;
 
-        std::string getName() const noexcept;
+        static bool recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept;
+        static void createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept;
+        static Rml::DataModelHandle getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept;
+        static bool removeDataModel(RmluiCanvas& canvas, const std::string& name) noexcept;
 
-        LuaRmluiCanvas& addEventListener1(const std::string& ev, const sol::table& tab) noexcept;
-        bool removeEventListener1(const std::string& ev, const sol::table& tab) noexcept;
-        bool removeEventListener2(const sol::table& tab) noexcept;
+        static RmluiCanvas& addEventListener(RmluiCanvas& canvas, const std::string& ev, const sol::object& obj) noexcept;
+        static bool removeEventListener(RmluiCanvas& canvas, const std::string& ev, const sol::object& obj) noexcept;
 
-        LuaRmluiCanvas& addEventListener2(const std::string& ev, const sol::protected_function& func) noexcept;
-        bool removeEventListener4(const std::string& ev, const sol::protected_function& func) noexcept;
-        bool removeEventListener3(const sol::protected_function& func) noexcept;
+        static void setSize(RmluiCanvas& canvas, std::optional<VarLuaTable<glm::uvec2>> size) noexcept;
+        static void setOffset(RmluiCanvas& canvas, const VarLuaTable<glm::vec3>& offset) noexcept;
 
-        std::optional<glm::uvec2> getSize() const noexcept;
-        LuaRmluiCanvas& setSize(std::optional<VarLuaTable<glm::uvec2>> size) noexcept;
-        glm::uvec2 getCurrentSize() const noexcept;
+        static void setMousePosition(RmluiCanvas& canvas, const VarLuaTable<glm::vec2>& position) noexcept;
 
-        const glm::vec3& getOffset() const noexcept;
-        LuaRmluiCanvas& setOffset(const VarLuaTable<glm::vec3>& offset) noexcept;
+        static void setViewportMousePosition(RmluiCanvas& canvas, const VarLuaTable<glm::vec2>& position) noexcept;
+        static RmluiCanvas& applyViewportMousePositionDelta(RmluiCanvas& canvas, const VarLuaTable<glm::vec2>& delta) noexcept;
 
-        LuaRmluiCanvas& setVisible(bool visible) noexcept;
-        bool getVisible() const noexcept;
-
-        LuaRmluiCanvas& setInputActive(bool active) noexcept;
-        bool getInputActive() const noexcept;
-
-        LuaRmluiCanvas& setMousePosition(const glm::vec2& position) noexcept;
-        const glm::vec2& getMousePosition() const noexcept;
-
-        using MousePositionMode = RmluiCanvasMousePositionMode;
-
-        LuaRmluiCanvas& setMousePositionMode(MousePositionMode mode) noexcept;
-        MousePositionMode getMousePositionMode() const noexcept;
-
-        LuaRmluiCanvas& setViewportMousePosition(const glm::vec2& position) noexcept;
-        glm::vec2 getViewportMousePosition() const noexcept;
-        LuaRmluiCanvas& applyViewportMousePositionDelta(const glm::vec2& delta) noexcept;
-
-        LuaRmluiCanvas& setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
-
-        OptionalRef<Rml::ElementDocument>::std_t loadDocument(const std::string& name);
-        OptionalRef<Rml::ElementDocument>::std_t getDocument(const std::string& name);
-        void unloadAllDocuments();
-        size_t getNumDocuments() const;
-        void unloadDocument(OptionalRef<Rml::ElementDocument>::std_t doc) const;
-
-        sol::environment& getEnvironment() noexcept;
-
-        void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) noexcept override;
-        bool loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept override;
+        static OptionalRef<Rml::ElementDocument>::std_t loadDocument(RmluiCanvas& canvas, const std::string& name);
+        static OptionalRef<Rml::ElementDocument>::std_t getDocument(RmluiCanvas& canvas, const std::string& name);
+        static RmluiCanvas& unloadDocument(RmluiCanvas& canvas, OptionalRef<Rml::ElementDocument>::std_t doc);
+        static RmluiCanvas& unloadAllDocuments(RmluiCanvas& canvas);
+        static size_t getNumDocuments(const RmluiCanvas& canvas);
     };
 
     class LuaRmluiRenderer final : public ICameraComponent
@@ -196,7 +167,6 @@ namespace darmok
 
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
-        void update(float deltaTime) override;
 
         RmluiRenderer& getReal() noexcept;
         const RmluiRenderer& getReal() const noexcept;

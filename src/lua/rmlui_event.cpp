@@ -401,14 +401,13 @@ namespace darmok
     {
     }
 
-    void LuaRmluiEventListener::OnDetach(Rml::Element*) noexcept
-    {
-        delete this;
-    }
-
-    void LuaRmluiEventListener::ProcessEvent(Rml::Event& event)
+    void LuaRmluiEventListener::ProcessEvent(Rml::Event& event) noexcept
     {
         auto result = _delegate(event);
         LuaUtils::checkResult("rmlui event: " + event.GetType(), result);
+    }
+    void LuaRmluiEventListener::OnDetach(Rml::Element* element) noexcept
+    {
+        delete this;
     }
 }

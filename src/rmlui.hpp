@@ -12,6 +12,7 @@
 #include <darmok/collection.hpp>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 #include <optional>
 #include <memory>
 #include <mutex>
@@ -119,7 +120,7 @@ namespace darmok
 	{
 	public:
 		RmluiSystemInterface(App& app) noexcept;
-		void update(float dt) noexcept;
+		void update(float deltaTime) noexcept;
 		double GetElapsedTime() override;
 
 		const std::string& getMouseCursor() const noexcept;
@@ -170,7 +171,7 @@ namespace darmok
 
 		void init(RmluiRendererImpl& comp);
 		void shutdown() noexcept;
-		bool update() noexcept;
+		bool update(float deltaTime) noexcept;
 		void renderReset() noexcept;
 
 		std::string getName() const noexcept;
@@ -217,9 +218,9 @@ namespace darmok
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite() const noexcept;
 
-		void addListener(IRmluiCanvasListener& listener) noexcept;
-		void addListener(std::unique_ptr<IRmluiCanvasListener>&& listener) noexcept;
-		bool removeListener(const IRmluiCanvasListener& listener) noexcept;
+		void setDelegate(IRmluiCanvasDelegate& dlg) noexcept;
+		void setDelegate(std::unique_ptr<IRmluiCanvasDelegate>&& dlg) noexcept;
+		OptionalRef<IRmluiCanvasDelegate> getDelegate() const noexcept;
 
 		void onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
@@ -235,7 +236,9 @@ namespace darmok
 		glm::vec3 _offset;
 		std::string _name;
 		MousePositionMode _mousePositionMode;
-		OwnRefCollection<IRmluiCanvasListener> _listeners;
+
+		OptionalRef<IRmluiCanvasDelegate> _delegate;
+		std::unique_ptr<IRmluiCanvasDelegate> _delegatePtr;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		void updateContextSize() noexcept;
@@ -310,7 +313,7 @@ namespace darmok
 
 		void init(Camera& cam, Scene& scene, App& app);
 		void shutdown();
-		void update(float dt) noexcept;
+		void update(float deltaTime) noexcept;
 		void renderReset() noexcept;
 		void beforeRenderView(IRenderGraphContext& context) noexcept;
 

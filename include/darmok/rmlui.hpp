@@ -6,10 +6,12 @@
 #include <darmok/glm.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/rmlui_fwd.hpp>
+#include <darmok/collection.hpp>
 #include <bx/bx.h>
 #include <string>
 #include <optional>
 #include <RmlUi/Core/ScrollTypes.h>
+#include <RmlUi/Core/EventListener.h>
 
 namespace Rml
 {
@@ -26,10 +28,12 @@ namespace darmok
 	class Camera;
 	class Transform;
 
-	class DARMOK_EXPORT BX_NO_VTABLE IRmluiCanvasListener
+	class DARMOK_EXPORT BX_NO_VTABLE IRmluiCanvasDelegate
 	{
 	public:
-		virtual ~IRmluiCanvasListener() = default;
+		virtual ~IRmluiCanvasDelegate() = default;
+		virtual entt::id_type getType() const noexcept { return 0; };
+		virtual void update(float deltaTime) { };
 		virtual void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) = 0;
 		virtual bool loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) = 0;
 	};
@@ -77,9 +81,10 @@ namespace darmok
 		RmluiCanvasImpl& getImpl() noexcept;
 		const RmluiCanvasImpl& getImpl() const noexcept;
 
-		RmluiCanvas& addListener(IRmluiCanvasListener& listener) noexcept;
-		RmluiCanvas& addListener(std::unique_ptr<IRmluiCanvasListener>&& listener) noexcept;
-		bool removeListener(const IRmluiCanvasListener& listener) noexcept;
+		RmluiCanvas& setDelegate(IRmluiCanvasDelegate& dlg) noexcept;
+		RmluiCanvas& setDelegate(std::unique_ptr<IRmluiCanvasDelegate>&& dlg) noexcept;
+		OptionalRef<IRmluiCanvasDelegate> getDelegate() const noexcept;
+
 	private:
 		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};

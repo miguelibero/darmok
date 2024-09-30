@@ -46,13 +46,6 @@ namespace darmok
 			return getRealScene().addComponent<T>(_entity, std::forward<Args>(args)...);
 		}
 
-		template<typename T, typename R, typename... Args>
-		T& addWrapperComponent(Args&&... args)
-		{
-			auto& real = addComponent<R>(std::forward<Args>(args)...);
-			return addComponent<T>(real);
-		}
-
 		template<typename T>
 		OptionalRef<T> getComponent()
 		{
@@ -87,13 +80,6 @@ namespace darmok
 	public:
 		LuaScene(const std::shared_ptr<Scene>& scene) noexcept;
 		LuaScene(LuaApp& app) noexcept;
-
-		template<typename T, typename R, typename... A>
-		T& addSceneComponent(A&&... args)
-		{
-			auto& real = getReal()->addSceneComponent<R>(std::forward<A>(args)...);
-			return getReal()->addSceneComponent<T>(real);
-		}
 
 		template<typename T>
 		std::optional<LuaEntity> getEntity(const T& component) noexcept
