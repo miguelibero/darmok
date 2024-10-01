@@ -56,7 +56,7 @@ namespace darmok
         for (auto i = 0; i < bgfx::Attrib::Count; i++)
         {
             const auto attr = static_cast<bgfx::Attrib::Enum>(i);
-            if (!_layout.has(attr) || wasWritten(attr))
+            if (!_layout.has(attr))
             {
                 continue;
             }
@@ -83,11 +83,14 @@ namespace darmok
             }
             else if (attr >= bgfx::Attrib::Color0 && attr <= bgfx::Attrib::Color3)
             {
-                input.fill(Colors::getMaxValue());
+                input.fill(normalized ? Colors::getMaxValue() : 1.F);
             }
             for (uint32_t j = 0; j < _size; j++)
             {
-                write(attr, j, input);
+                if (!wasWritten(attr, j))
+                {
+                    write(attr, j, input);
+                }
             }
         }
         return std::move(_data);

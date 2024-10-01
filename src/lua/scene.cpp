@@ -368,8 +368,6 @@ namespace darmok
 		LuaTransform::bind(lua);
 		LuaCamera::bind(lua);
 		LuaEntity::bind(lua);
-		LuaAmbientLight::bind(lua);
-		LuaPointLight::bind(lua);
 		LuaRenderable::bind(lua);
 		LuaFreelookController::bind(lua);
 

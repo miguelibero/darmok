@@ -214,6 +214,7 @@ namespace darmok
         | BGFX_STATE_WRITE_Z
         | BGFX_STATE_MSAA
         | BGFX_STATE_BLEND_ALPHA
+        | BGFX_STATE_DEPTH_TEST_LEQUAL
         ;
 
     glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position)
@@ -1692,7 +1693,7 @@ namespace darmok
     {
         auto botLeft = glm::vec2(0);
         auto topRight = glm::vec2(getViewport().size);
-        return Math::ortho(botLeft, topRight);
+        return Math::ortho(botLeft, topRight, -1.F, 1.F);
     }
 
     glm::mat4 RmluiRendererImpl::getProjectionMatrix(const RmluiCanvas& canvas) const noexcept

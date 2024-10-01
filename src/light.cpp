@@ -228,7 +228,7 @@ namespace darmok
                 writer.write(bgfx::Attrib::Normal, index, dir);
             }
             auto intensity = light.getIntensity();
-            glm::vec4 c(Colors::normalize(light.getColor()) * intensity, 0);
+            glm::vec3 c(Colors::normalize(light.getColor()) * intensity);
             writer.write(bgfx::Attrib::Color0, index, c);
 
             ++index;

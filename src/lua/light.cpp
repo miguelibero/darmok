@@ -47,6 +47,47 @@ namespace darmok
 		);
 	}
 
+	void LuaDirectionalLight::setColor(DirectionalLight& light, const VarLuaTable<Color3>& color) noexcept
+	{
+		light.setColor(LuaGlm::tableGet(color));
+	}
+
+	DirectionalLight& LuaDirectionalLight::addEntityComponent1(LuaEntity& entity) noexcept
+	{
+		return entity.addComponent<DirectionalLight>();
+	}
+
+	DirectionalLight& LuaDirectionalLight::addEntityComponent2(LuaEntity& entity, float intensity) noexcept
+	{
+		return entity.addComponent<DirectionalLight>(intensity);
+	}
+
+	OptionalRef<DirectionalLight>::std_t LuaDirectionalLight::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<DirectionalLight>();
+	}
+
+	std::optional<LuaEntity> LuaDirectionalLight::getEntity(const DirectionalLight& light, LuaScene& scene) noexcept
+	{
+		return scene.getEntity(light);
+	}
+
+	void LuaDirectionalLight::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<DirectionalLight>("DirectionalLight", sol::no_constructor,
+			"type_id", sol::property(&entt::type_hash<DirectionalLight>::value),
+			"add_entity_component", sol::overload(
+				&LuaDirectionalLight::addEntityComponent1,
+				&LuaDirectionalLight::addEntityComponent2
+			),
+			"get_entity_component", &LuaDirectionalLight::getEntityComponent,
+			"get_entity", &LuaDirectionalLight::getEntity,
+
+			"intensity", sol::property(&DirectionalLight::getIntensity, &DirectionalLight::setIntensity),
+			"color", sol::property(&DirectionalLight::getColor, &LuaDirectionalLight::setColor)
+		);
+	}
+
 	void LuaAmbientLight::setColor(AmbientLight& light, const VarLuaTable<Color3>& color) noexcept
 	{
 		light.setColor(LuaGlm::tableGet(color));
@@ -100,6 +141,10 @@ namespace darmok
 
 	void LuaLightingRenderComponent::bind(sol::state_view& lua) noexcept
 	{
+		LuaAmbientLight::bind(lua);
+		LuaDirectionalLight::bind(lua);
+		LuaPointLight::bind(lua);
+
 		lua.new_usertype<LightingRenderComponent>("LightingRenderComponent", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<LightingRenderComponent>::value),
 			"add_camera_component", &LuaLightingRenderComponent::addCameraComponent,
