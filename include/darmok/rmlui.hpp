@@ -5,6 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/render_scene.hpp>
+#include <darmok/scene.hpp>
 #include <darmok/rmlui_fwd.hpp>
 #include <darmok/collection.hpp>
 #include <bx/bx.h>
@@ -89,6 +90,22 @@ namespace darmok
 		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};
 
+	class RmluiSceneComponentImpl;
+
+	class DARMOK_EXPORT RmluiSceneComponent : public ISceneComponent
+	{
+	public:
+		RmluiSceneComponent() noexcept;
+		~RmluiSceneComponent() noexcept;
+
+		void init(Scene& scene, App& app) override;
+		void shutdown() override;
+		void renderReset() override;
+		void update(float deltaTime) override;
+	private:
+		std::unique_ptr<RmluiSceneComponentImpl> _impl;
+	};
+
 	class RmluiRendererImpl;
 
 	class DARMOK_EXPORT RmluiRenderer final : public ICameraComponent
@@ -97,16 +114,9 @@ namespace darmok
 		RmluiRenderer() noexcept;
 		~RmluiRenderer() noexcept;
 
-		void loadFont(const std::string& path, bool fallback = false) noexcept;
-
 		void init(Camera& cam, Scene& scene, App& app) override;
-		void update(float deltaTime) noexcept override;
 		void shutdown() noexcept override;
-		void renderReset() noexcept override;
 		void beforeRenderView(IRenderGraphContext& context) noexcept override;
-
-		RmluiRendererImpl& getImpl() noexcept;
-		const RmluiRendererImpl& getImpl() const noexcept;
 	private:
 		std::unique_ptr<RmluiRendererImpl> _impl;
 	};

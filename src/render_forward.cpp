@@ -58,7 +58,16 @@ namespace darmok
 
 	void ForwardRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
 	{
-		def.setName("Forward");
+		std::string name("Forward");
+		if (_cam)
+		{
+			auto& camName = _cam->getName();
+			if (!camName.empty())
+			{
+				name += " " + camName;
+			}
+		}
+		def.setName(name);
 	}
 
 	void ForwardRenderer::renderPassConfigure(bgfx::ViewId viewId)

@@ -8,5 +8,4 @@ namespace darmok
 		Relative,
 		Disabled,
 	};
-
 }

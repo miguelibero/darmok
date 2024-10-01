@@ -477,7 +477,7 @@ namespace darmok
         shutdown();
     }
 
-    void RmluiCanvasImpl::init(RmluiRendererImpl& comp)
+    void RmluiCanvasImpl::init(RmluiSceneComponentImpl& comp)
     {
         if (_context)
         {
@@ -486,7 +486,7 @@ namespace darmok
 
         _comp = comp;
         auto size = getCurrentSize();
-        _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_comp->getRmluiRender());
+        _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &comp.getRmluiRender());
         if (!_context)
         {
             throw std::runtime_error("Failed to create rmlui context");
@@ -517,7 +517,10 @@ namespace darmok
 
     void RmluiCanvasImpl::renderReset() noexcept
     {
-        updateContextSize();
+        if (!_size)
+        {
+            updateContextSize();
+        }
     }
 
     bool RmluiCanvasImpl::isInputActive() const noexcept
@@ -555,17 +558,60 @@ namespace darmok
         return _mousePositionMode;
     }
 
+    glm::mat4 RmluiCanvasImpl::getBaseModelMatrix() const noexcept
+    {
+        auto size = getCurrentSize();
+        auto offset = _offset;
+        offset.y += size.y;
+        auto model = glm::translate(glm::mat4(1), offset);
+        // invert the y axis because rmlui renders upside down
+        model = glm::scale(model, glm::vec3(1, -1, 1));
+        return model;
+    }
+
+    glm::mat4 RmluiCanvasImpl::getRenderMatrix() const noexcept
+    {
+        if (_render)
+        {
+            return _render->getRenderMatrix(_canvas);
+        }
+        return glm::mat4(1);
+    }
+
+    glm::mat4 RmluiCanvasImpl::getProjectionMatrix() const noexcept
+    {
+        if (_render)
+        {
+            return _render->getProjectionMatrix(_canvas);
+        }
+        return glm::mat4(1);
+    }
+
+    glm::mat4 RmluiCanvasImpl::getModelMatrix() const noexcept
+    {
+        if (_render)
+        {
+            return _render->getModelMatrix(_canvas);
+        }
+        return glm::mat4(1);
+    }
+
+    Viewport RmluiCanvasImpl::getCurrentViewport() const noexcept
+    {
+        if (_render)
+        {
+            return _render->getViewport();
+        }
+        return {};
+    }
+
     glm::uvec2 RmluiCanvasImpl::getCurrentSize() const noexcept
     {
         if (_size)
         {
             return _size.value();
         }
-        if (_comp)
-        {
-            return _comp->getViewportSize();
-        }
-        return glm::uvec2(0);
+        return getCurrentViewport().size;
     }
 
     const std::optional<glm::uvec2>& RmluiCanvasImpl::getSize() const noexcept
@@ -595,81 +641,7 @@ namespace darmok
     std::string RmluiCanvasImpl::getName() const noexcept
     {
         return _context->GetName();
-    }
-
-    glm::mat4 RmluiCanvasImpl::getRenderMatrix() const noexcept
-    {
-        if (!_comp)
-        {
-            return glm::mat4(1);
-        }
-        auto trans = _comp->getTransform(_canvas);
-        auto baseModel = getBaseModelMatrix();
-        if (trans)
-        {
-            // if the canvas has a transform we use that
-            return trans->getWorldMatrix() * baseModel;
-        }
-
-        auto mtx = _comp->getDefaultProjectionMatrix() * baseModel;
-        if (auto cam = _comp->getCamera())
-        {
-            // if the canvas does not have a transform, it means we want to use the full screen
-            // so we have to invert the camera view proj since it will be in the bgfx view transform
-            mtx = cam->getModelInverse() * glm::inverse(cam->getProjectionMatrix()) * mtx;
-        }
-        return mtx;
-    }
-
-    glm::mat4 RmluiCanvasImpl::getProjectionMatrix() const noexcept
-    {
-        if (!_comp)
-        {
-            return glm::mat4(1);
-        }
-        if (auto trans = _comp->getTransform(_canvas))
-        {
-            if (auto cam = _comp->getCamera())
-            {
-                return cam->getProjectionMatrix();
-            }
-        }
-        return _comp->getDefaultProjectionMatrix();
-    }
-
-    glm::mat4 RmluiCanvasImpl::getModelMatrix() const noexcept
-    {
-        if (!_comp)
-        {
-            return glm::mat4(1);
-        }
-
-        glm::mat4 model(1);
-
-        if (auto trans = _comp->getTransform(_canvas))
-        {
-            if (auto cam = _comp->getCamera())
-            {
-                model *= cam->getModelMatrix();
-            }
-            model *= trans->getWorldMatrix();
-        }
-
-        model *= getBaseModelMatrix();
-
-        return model;
-    }
-
-    glm::mat4 RmluiCanvasImpl::getBaseModelMatrix() const noexcept
-    {
-        auto size = getCurrentSize();
-        auto offset = _offset;
-        offset.y += size.y;
-        auto model = glm::translate(glm::mat4(1), offset);
-        // invert the y axis because rmlui renders upside down
-        model = glm::scale(model, glm::vec3(1, -1, 1));
-        return model;
-    }
+    }    
 
     Rml::Context& RmluiCanvasImpl::getContext()
     {
@@ -679,16 +651,6 @@ namespace darmok
     const Rml::Context& RmluiCanvasImpl::getContext() const
     {
         return _context.value();
-    }
-
-    OptionalRef<RmluiRendererImpl> RmluiCanvasImpl::getComponent() noexcept
-    {
-        return _comp;
-    }
-
-    OptionalRef<const RmluiRendererImpl> RmluiCanvasImpl::getComponent() const noexcept
-    {
-        return _comp;
     }
 
     const glm::vec2& RmluiCanvasImpl::getMousePosition() const noexcept
@@ -755,11 +717,15 @@ namespace darmok
         {
             return;
         }
+        if (!_render)
+        {
+            return;
+        }
 
         glm::vec3 pos(getMousePosition(), 0);
 
-        auto model = getModelMatrix();
-        auto proj = getProjectionMatrix();
+        auto model = _render->getModelMatrix(_canvas);
+        auto proj = _render->getProjectionMatrix(_canvas);
         auto vp = Viewport().getValues();
 
         pos = glm::project(pos, model, proj, vp);
@@ -906,12 +872,22 @@ namespace darmok
         return _delegate;
     }
 
-    void RmluiCanvasImpl::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
+    bool RmluiCanvasImpl::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
     {
+        auto doc = element.GetOwnerDocument();
+        if (!doc)
+        {
+            return false;
+        }
+        if (doc->GetContext() != _context.ptr())
+        {
+            return false;
+        }
         if(_delegate)
         {
             _delegate->onRmluiCustomEvent(event, value, element);
         }
+        return true;
     }
 
     bool RmluiCanvasImpl::loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
@@ -923,15 +899,18 @@ namespace darmok
         return false;
     }
 
-    void RmluiCanvasImpl::render(IRenderGraphContext& context) noexcept
+    void RmluiCanvasImpl::render(RmluiRendererImpl& renderer, IRenderGraphContext& context) noexcept
     {
         if (!_visible || !_comp || !_context)
         {
             return;
         }
-
-        auto& render = _comp->getRmluiRender();
-        render.renderCanvas(*this, context);        
+        _render = renderer;
+        if (!_size)
+        {
+            updateContextSize();
+        }
+        _comp->getRmluiRender().renderCanvas(*this, context);
     }
 
     RmluiCanvas::RmluiCanvas(const std::string& name, const std::optional<glm::uvec2>& size) noexcept
@@ -1150,35 +1129,35 @@ namespace darmok
 
     void RmluiPlugin::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
     {
-        for (auto& renderer : _renderers)
+        for (auto& comp : _components)
         {
-            renderer.get().onCustomEvent(event, value, element);
+            comp.get().onCustomEvent(event, value, element);
         }
     }
 
-    void RmluiPlugin::addRenderer(RmluiRendererImpl& renderer) noexcept
+    void RmluiPlugin::addComponent(RmluiSceneComponentImpl& comp) noexcept
     {
-        _renderers.emplace_back(renderer);
+        _components.emplace_back(comp);
     }
 
-    bool RmluiPlugin::removeRenderer(const RmluiRendererImpl& renderer) noexcept
+    bool RmluiPlugin::removeComponent(const RmluiSceneComponentImpl& comp) noexcept
     {
-        auto ptr = &renderer;
-        auto itr = std::remove_if(_renderers.begin(), _renderers.end(),
+        auto ptr = &comp;
+        auto itr = std::remove_if(_components.begin(), _components.end(),
             [ptr](auto& ref) { return &ref.get() == ptr; });
-        if (itr == _renderers.end())
+        if (itr == _components.end())
         {
             return false;
         }
-        _renderers.erase(itr, _renderers.end());
+        _components.erase(itr, _components.end());
         return true;
     }
 
     bool RmluiPlugin::loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
     {
-        for (auto& renderer : _renderers)
+        for (auto& comp : _components)
         {
-            if (renderer.get().loadScript(doc, content, sourcePath, sourceLine))
+            if (comp.get().loadScript(doc, content, sourcePath, sourceLine))
             {
                 return true;
             }
@@ -1265,7 +1244,7 @@ namespace darmok
         }
     }
 
-    RmluiRendererImpl::~RmluiRendererImpl() noexcept
+    RmluiSceneComponentImpl::~RmluiSceneComponentImpl() noexcept
     {
         if (_app)
         {
@@ -1273,81 +1252,118 @@ namespace darmok
         }
     }
 
-    void RmluiRendererImpl::init(Camera& cam, Scene& scene, App& app)
+    void RmluiSceneComponentImpl::init(Scene& scene, App& app)
     {
         _plugin = RmluiPlugin::getInstance(app);
-        _plugin->addRenderer(*this);
+        _plugin->addComponent(*this);
 
-        _cam = cam;
         _scene = scene;
         _app = app;
-
-        _renderGraph.clear();
-        _renderGraph.setName("Rmlui");
 
         app.getInput().getKeyboard().addListener(*this);
         app.getInput().getMouse().addListener(*this);
 
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
+        for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            if (!canvas->getImpl().getComponent())
-            {
-                canvas->getImpl().init(*this);
-            }
+            canvas.getImpl().init(*this);
         }
 
-        scene.onConstructComponent<RmluiCanvas>().connect<&RmluiRendererImpl::onCanvasConstructed>(*this);
-        scene.onDestroyComponent<RmluiCanvas>().connect<&RmluiRendererImpl::onCanvasDestroyed>(*this);
-
-        _cam->getRenderGraph().setChild(_renderGraph);
+        scene.onConstructComponent<RmluiCanvas>().connect<&RmluiSceneComponentImpl::onCanvasConstructed>(*this);
+        scene.onDestroyComponent<RmluiCanvas>().connect<&RmluiSceneComponentImpl::onCanvasDestroyed>(*this);
     }
 
-    void RmluiRendererImpl::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
+    void RmluiSceneComponentImpl::update(float deltaTime) noexcept
     {
-        auto doc = element.GetOwnerDocument();
-        if (!doc)
+        getRmluiSystem().update(deltaTime);
+        if (_scene)
         {
-            return;
-        }
-        auto context = doc->GetContext();
-        if (!context)
-        {
-            return;
-        }
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
-        {
-            auto& canvas = _scene->getComponent<RmluiCanvas>(entity)->getImpl();
-            if (&canvas.getContext() == context)
+            for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
             {
-                canvas.onCustomEvent(event, value, element);
-                break;
+                canvas.getImpl().update(deltaTime);
             }
         }
     }
 
-    bool RmluiRendererImpl::loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
+    void RmluiSceneComponentImpl::renderReset() noexcept
     {
-        auto context = doc.GetContext();
-        if (!context)
+        if (_scene)
+        {
+            for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
+            {
+                canvas.getImpl().renderReset();
+            }
+        }
+    }
+
+    void RmluiSceneComponentImpl::shutdown()
+    {
+        if (_app)
+        {
+            _app->getInput().getKeyboard().removeListener(*this);
+            _app->getInput().getMouse().removeListener(*this);
+        }
+
+        if (_scene)
+        {
+            _scene->onConstructComponent<Camera>().disconnect<&RmluiSceneComponentImpl::onCanvasConstructed>(*this);
+            _scene->onDestroyComponent<Camera>().disconnect<&RmluiSceneComponentImpl::onCanvasDestroyed>(*this);
+            for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
+            {
+                canvas.getImpl().shutdown();
+            }
+        }
+
+        if (_plugin)
+        {
+            _plugin->removeComponent(*this);
+            _plugin.reset();
+        }
+
+        _app.reset();
+        _scene.reset();
+
+        Rml::ReleaseTextures();
+    }
+
+    RmluiRenderInterface& RmluiSceneComponentImpl::getRmluiRender() noexcept
+    {
+        return _plugin->getRender();
+    }
+
+    RmluiSystemInterface& RmluiSceneComponentImpl::getRmluiSystem() noexcept
+    {
+        return _plugin->getSystem();
+    }
+
+    void RmluiSceneComponentImpl::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
+    {
+        if (!_scene)
+        {
+            return;
+        }
+        for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
+        {
+            canvas.getImpl().onCustomEvent(event, value, element);
+        }
+    }
+
+    bool RmluiSceneComponentImpl::loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)
+    {
+        if (!_scene)
         {
             return false;
         }
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
+        for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            auto& canvas = _scene->getComponent<RmluiCanvas>(entity)->getImpl();
-            if (&canvas.getContext() == context)
+            if (canvas.getImpl().loadScript(doc, content, sourcePath, sourceLine))
             {
-                if (canvas.loadScript(doc, content, sourcePath, sourceLine))
-                {
-                    return true;
-                }
+                return true;
             }
         }
         return false;
     }
 
-    void RmluiRendererImpl::onCanvasConstructed(EntityRegistry& registry, Entity entity)
+    void RmluiSceneComponentImpl::onCanvasConstructed(EntityRegistry& registry, Entity entity)
     {
         if (!_scene)
         {
@@ -1359,7 +1375,7 @@ namespace darmok
         }
     }
 
-    void RmluiRendererImpl::onCanvasDestroyed(EntityRegistry& registry, Entity entity)
+    void RmluiSceneComponentImpl::onCanvasDestroyed(EntityRegistry& registry, Entity entity)
     {
         if (!_scene)
         {
@@ -1367,173 +1383,11 @@ namespace darmok
         }
         if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
         {
-            if (canvas->getImpl().getComponent() == this)
-            {
-                canvas->getImpl().shutdown();
-            }
+            canvas->getImpl().shutdown();
         }
     }
 
-    void RmluiRendererImpl::shutdown()
-    {
-        _plugin.reset();
-
-        if (_app)
-        {
-            _app->getInput().getKeyboard().removeListener(*this);
-            _app->getInput().getMouse().removeListener(*this);
-        }
-
-        if (_scene)
-        {
-            _scene->onConstructComponent<Camera>().disconnect<&RmluiRendererImpl::onCanvasConstructed>(*this);
-            _scene->onDestroyComponent<Camera>().disconnect<&RmluiRendererImpl::onCanvasDestroyed>(*this);
-        }
-
-        if (_cam)
-        {
-            for (auto entity : _cam->getEntities<RmluiCanvas>())
-            {
-                auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-                canvas->getImpl().shutdown();
-            }
-        }
-
-        if (_plugin)
-        {
-            _plugin->removeRenderer(*this);
-        }
-
-        Rml::ReleaseTextures();
-
-        _app.reset();
-        _cam.reset();
-        _scene.reset();
-    }
-    
-    RmluiSystemInterface& RmluiRendererImpl::getRmluiSystem() noexcept
-    {
-        return _plugin->getSystem();
-    }
-
-    RmluiRenderInterface& RmluiRendererImpl::getRmluiRender() noexcept
-    {
-        return _plugin->getRender();
-    }
-
-    bx::AllocatorI& RmluiRendererImpl::getAllocator()
-    {
-        return _app->getAssets().getAllocator();
-    }
-
-    OptionalRef<const Camera> RmluiRendererImpl::getCamera() const noexcept
-    {
-        return _cam;
-    }
-
-    glm::uvec2 RmluiRendererImpl::getViewportSize() const noexcept
-    {
-        if (_cam)
-        {
-            return _cam->getCurrentViewport().size;
-        }
-        if (_scene)
-        {
-            return _scene->getCurrentViewport().size;
-        }
-        if (_app)
-        {
-            return _app->getWindow().getPixelSize();
-        }
-        return glm::uvec2(1);
-    }
-
-    OptionalRef<Transform> RmluiRendererImpl::getTransform(const RmluiCanvas& canvas) noexcept
-    {
-        if (!_scene)
-        {
-            return nullptr;
-        }
-        auto entity = _scene->getEntity(canvas);
-        if (entity == entt::null)
-        {
-            return nullptr;
-        }
-        return _scene->getComponent<Transform>(entity);
-    }
-
-    glm::mat4 RmluiRendererImpl::getDefaultProjectionMatrix() const noexcept
-    {
-        auto botLeft = glm::vec2(0);
-        auto topRight = glm::vec2(getViewportSize());
-        return Math::ortho(botLeft, topRight);
-    }
-
-    RenderGraphDefinition& RmluiRendererImpl::getRenderGraph() noexcept
-    {
-        return _renderGraph;
-    }
-
-    const RenderGraphDefinition& RmluiRendererImpl::getRenderGraph() const noexcept
-    {
-        return _renderGraph;
-    }
-
-    void RmluiRendererImpl::update(float deltaTime) noexcept
-    {
-        getRmluiSystem().update(deltaTime);
-        if (_cam && _scene)
-        {
-            for (auto entity : _cam->getEntities<RmluiCanvas>())
-            {
-                auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-                canvas->getImpl().update(deltaTime);
-            }
-        }
-        if (_cam)
-        {
-            _cam->getRenderGraph().setChild(_renderGraph);
-        }
-    }
-
-    void RmluiRendererImpl::renderReset() noexcept
-    {
-        _renderGraph.clear();
-        if (!_cam || !_scene)
-        {
-            return;
-        }
-
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
-        {
-            auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            canvas->getImpl().renderReset();
-        }
-    }
-
-    void RmluiRendererImpl::beforeRenderView(IRenderGraphContext& context) noexcept
-    {
-        if (!_scene)
-        {
-            return;
-        }
-        auto& encoder = context.getEncoder();
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
-        {
-            if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
-            {
-                _cam->setEntityTransform(entity, encoder);
-                canvas->getImpl().render(context);
-            }
-        }
-    }
-
-    void RmluiRendererImpl::loadFont(const std::string& path, bool fallback) noexcept
-    {
-        Rml::LoadFontFace(path, fallback);
-    }
-
-    const RmluiRendererImpl::KeyboardMap& RmluiRendererImpl::getKeyboardMap() noexcept
+    const RmluiSceneComponentImpl::KeyboardMap& RmluiSceneComponentImpl::getKeyboardMap() noexcept
     {
         static KeyboardMap map
         {
@@ -1574,7 +1428,7 @@ namespace darmok
             {
                 map[(KeyboardKey)i] = (Rml::Input::KeyIdentifier)j++;
             }
-        };
+            };
 
         if (first)
         {
@@ -1587,7 +1441,7 @@ namespace darmok
         return map;
     }
 
-    const RmluiRendererImpl::KeyboardModifierMap& RmluiRendererImpl::getKeyboardModifierMap() noexcept
+    const RmluiSceneComponentImpl::KeyboardModifierMap& RmluiSceneComponentImpl::getKeyboardModifierMap() noexcept
     {
         static KeyboardModifierMap map
         {
@@ -1602,7 +1456,7 @@ namespace darmok
         return map;
     }
 
-    int RmluiRendererImpl::getKeyModifierState() const noexcept
+    int RmluiSceneComponentImpl::getKeyModifierState() const noexcept
     {
         int state = 0;
         if (!_app)
@@ -1629,9 +1483,9 @@ namespace darmok
         return 0;
     }
 
-    void RmluiRendererImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& mods, bool down) noexcept
+    void RmluiSceneComponentImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& mods, bool down) noexcept
     {
-        if (!_cam)
+        if (!_scene)
         {
             return;
         }
@@ -1643,96 +1497,91 @@ namespace darmok
         }
         auto& rmlKey = itr->second;
         auto state = getKeyModifierState();
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
+        for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            canvas->getImpl().processKey(rmlKey, state, down);
+            canvas.getImpl().processKey(rmlKey, state, down);
         }
     }
 
-    void RmluiRendererImpl::onKeyboardChar(const Utf8Char& chr) noexcept
+    void RmluiSceneComponentImpl::onKeyboardChar(const Utf8Char& chr) noexcept
     {
-        if (!_cam)
+        if (!_scene)
         {
             return;
         }
         Rml::String str = chr.toString();
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
+        for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            canvas->getImpl().processTextInput(str);
+            canvas.getImpl().processTextInput(str);
         }
     }
 
-    void RmluiRendererImpl::onMouseActive(bool active) noexcept
+    void RmluiSceneComponentImpl::onMouseActive(bool active) noexcept
     {
-        if (active || !_cam)
+        if (active || !_scene)
         {
             return;
         }
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
+        for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            canvas->getImpl().processMouseLeave();
+            canvas.getImpl().processMouseLeave();
         }
     }
 
-    void RmluiRendererImpl::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
+    void RmluiSceneComponentImpl::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
-        if (!_app || !_cam)
+        if (!_app || !_scene)
         {
             return;
         }
         auto& win = _app->getWindow();
 
-        auto vp = _cam->getCurrentViewport();
-        auto screenDelta = win.windowToScreenDelta(delta);
-        auto vpDelta = vp.screenToViewportDelta(screenDelta);
-        
-        auto screenPos = win.windowToScreenPoint(absolute);
-        auto vpPos = vp.screenToViewportPoint(screenPos);
-
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
+        for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            if (!canvas->isInputActive())
+            if (!canvas.isInputActive())
             {
                 continue;
             }
-            auto mode = canvas->getMousePositionMode();
+            auto mode = canvas.getMousePositionMode();
             if (mode == RmluiCanvasMousePositionMode::Disabled)
             {
                 continue;
             }
+            auto vp = canvas.getImpl().getCurrentViewport();
+            auto screenDelta = win.windowToScreenDelta(delta);
+            auto vpDelta = vp.screenToViewportDelta(screenDelta);
+
+            auto screenPos = win.windowToScreenPoint(absolute);
+            auto vpPos = vp.screenToViewportPoint(screenPos);
+
             if (mode == RmluiCanvasMousePositionMode::Relative)
             {
-                canvas->getImpl().applyViewportMousePositionDelta(vpDelta);
+                canvas.getImpl().applyViewportMousePositionDelta(vpDelta);
             }
             else
             {
-                canvas->getImpl().setViewportMousePosition(vpPos);
+                canvas.getImpl().setViewportMousePosition(vpPos);
             }
         }
     }
 
-    void RmluiRendererImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
+    void RmluiSceneComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
-        if (!_cam)
+        if (!_scene)
         {
             return;
         }
         auto rmlDelta = RmluiUtils::convert<float>(delta) * -1;
         auto state = getKeyModifierState();
-        for (auto entity : _cam->getEntities<RmluiCanvas>())
+        for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            canvas->getImpl().processMouseWheel(rmlDelta, state);
+            canvas.getImpl().processMouseWheel(rmlDelta, state);
         }
     }
 
-    void RmluiRendererImpl::onMouseButton(MouseButton button, bool down) noexcept
+    void RmluiSceneComponentImpl::onMouseButton(MouseButton button, bool down) noexcept
     {
-        if (!_cam)
+        if (!_scene)
         {
             return;
         }
@@ -1750,12 +1599,169 @@ namespace darmok
             break;
         }
         auto state = getKeyModifierState();
+        for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
+        {
+            canvas.getImpl().processMouseButton(i, state, down);
+        }
+    }
+
+    RmluiSceneComponent::RmluiSceneComponent() noexcept
+        : _impl(std::make_unique<RmluiSceneComponentImpl>())
+    {
+    }
+
+    RmluiSceneComponent::~RmluiSceneComponent() noexcept
+    {
+        // left empty to get the forward declaration of the impl working
+    }
+
+    void RmluiSceneComponent::init(Scene& scene, App& app)
+    {
+        _impl->init(scene, app);
+    }
+
+    void RmluiSceneComponent::shutdown()
+    {
+        _impl->shutdown();
+    }
+
+    void RmluiSceneComponent::renderReset()
+    {
+        _impl->renderReset();
+    }
+
+    void RmluiSceneComponent::update(float deltaTime)
+    {
+        _impl->update(deltaTime);
+    }
+
+    RmluiRendererImpl::~RmluiRendererImpl() noexcept
+    {
+        if (_app)
+        {
+            shutdown();
+        }
+    }
+
+    void RmluiRendererImpl::init(Camera& cam, Scene& scene, App& app)
+    {
+        _cam = cam;
+        _scene = scene;
+        _app = app;
+    }
+
+    void RmluiRendererImpl::shutdown()
+    {
+        _app.reset();
+        _cam.reset();
+        _scene.reset();
+    }
+
+    Viewport RmluiRendererImpl::getViewport() const noexcept
+    {
+        if (_cam)
+        {
+            return _cam->getCurrentViewport();
+        }
+        if (_scene)
+        {
+            return _scene->getCurrentViewport();
+        }
+        if (_app)
+        {
+            return _app->getWindow().getPixelSize();
+        }
+        return glm::uvec2(1);
+    }
+
+    OptionalRef<Transform> RmluiRendererImpl::getTransform(const RmluiCanvas& canvas) const noexcept
+    {
+        if (!_scene)
+        {
+            return nullptr;
+        }
+        auto entity = _scene->getEntity(canvas);
+        if (entity == entt::null)
+        {
+            return nullptr;
+        }
+        return _scene->getComponent<Transform>(entity);
+    }
+
+    glm::mat4 RmluiRendererImpl::getDefaultProjectionMatrix() const noexcept
+    {
+        auto botLeft = glm::vec2(0);
+        auto topRight = glm::vec2(getViewport().size);
+        return Math::ortho(botLeft, topRight);
+    }
+
+    glm::mat4 RmluiRendererImpl::getProjectionMatrix(const RmluiCanvas& canvas) const noexcept
+    {
+        if (auto trans = getTransform(canvas))
+        {
+            if (_cam)
+            {
+                return _cam->getProjectionMatrix();
+            }
+        }
+        return getDefaultProjectionMatrix();
+    }
+
+
+    glm::mat4 RmluiRendererImpl::getModelMatrix(const RmluiCanvas& canvas) const noexcept
+    {
+        glm::mat4 model(1);
+
+        if (auto trans = getTransform(canvas))
+        {
+            if (_cam)
+            {
+                model *= _cam->getModelMatrix();
+            }
+            model *= trans->getWorldMatrix();
+        }
+
+        model *= canvas.getImpl().getBaseModelMatrix();
+
+        return model;
+    }
+
+    glm::mat4 RmluiRendererImpl::getRenderMatrix(const RmluiCanvas& canvas) const noexcept
+    {
+        auto trans = getTransform(canvas);
+        auto baseModel = canvas.getImpl().getBaseModelMatrix();
+        if (trans)
+        {
+            // if the canvas has a transform we use that
+            return trans->getWorldMatrix() * baseModel;
+        }
+
+        auto mtx = getDefaultProjectionMatrix() * baseModel;
+        if (_cam)
+        {
+            // if the canvas does not have a transform, it means we want to use the full screen
+            // so we have to invert the camera view proj since it will be in the bgfx view transform
+            mtx = _cam->getModelInverse() * _cam->getProjectionInverse() * mtx;
+        }
+        return mtx;
+    }
+
+    void RmluiRendererImpl::beforeRenderView(IRenderGraphContext& context) noexcept
+    {
+        if (!_scene)
+        {
+            return;
+        }
+        auto& encoder = context.getEncoder();
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
-            auto canvas = _scene->getComponent<RmluiCanvas>(entity);
-            canvas->getImpl().processMouseButton(i, state, down);
+            if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
+            {
+                _cam->setEntityTransform(entity, encoder);
+                canvas->getImpl().render(*this, context);
+            }
         }
-    }    
+    }   
 
     RmluiRenderer::RmluiRenderer() noexcept
         : _impl(std::make_unique<RmluiRendererImpl>())
@@ -1777,34 +1783,9 @@ namespace darmok
         _impl->shutdown();
     }
 
-    void RmluiRenderer::loadFont(const std::string& path, bool fallback) noexcept
-    {
-        _impl->loadFont(path, fallback);
-    }
-
-    void RmluiRenderer::renderReset() noexcept
-    {
-        _impl->renderReset();
-    }
-
     void RmluiRenderer::beforeRenderView(IRenderGraphContext& context) noexcept
     {
         _impl->beforeRenderView(context);
-    }
-
-    void RmluiRenderer::update(float deltaTime) noexcept
-    {
-        _impl->update(deltaTime);
-    }
-
-    RmluiRendererImpl& RmluiRenderer::getImpl() noexcept
-    {
-        return *_impl;
-    }
-
-    const RmluiRendererImpl& RmluiRenderer::getImpl() const noexcept
-    {
-        return *_impl;
     }
 
 }

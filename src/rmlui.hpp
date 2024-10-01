@@ -158,6 +158,7 @@ namespace darmok
 	};
 
 	class RmluiRendererImpl;
+	class RmluiSceneComponentImpl;
 	class RmluiCanvas;
 	class Transform;
 
@@ -169,15 +170,12 @@ namespace darmok
 		RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt);
 		~RmluiCanvasImpl() noexcept;
 
-		void init(RmluiRendererImpl& comp);
+		void init(RmluiSceneComponentImpl& comp);
 		void shutdown() noexcept;
 		bool update(float deltaTime) noexcept;
 		void renderReset() noexcept;
 
 		std::string getName() const noexcept;
-		glm::mat4 getModelMatrix() const noexcept;
-		glm::mat4 getProjectionMatrix() const noexcept;
-		glm::mat4 getRenderMatrix() const noexcept;
 
 		void setVisible(bool visible) noexcept;
 		bool isVisible() const noexcept;
@@ -194,9 +192,6 @@ namespace darmok
 
 		Rml::Context& getContext();
 		const Rml::Context& getContext() const;
-
-		OptionalRef<RmluiRendererImpl> getComponent() noexcept;
-		OptionalRef<const RmluiRendererImpl> getComponent() const noexcept;
 
 		bool isInputActive() const noexcept;
 		void setInputActive(bool active) noexcept;
@@ -222,13 +217,19 @@ namespace darmok
 		void setDelegate(std::unique_ptr<IRmluiCanvasDelegate>&& dlg) noexcept;
 		OptionalRef<IRmluiCanvasDelegate> getDelegate() const noexcept;
 
-		void onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
+		bool onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
-		void render(IRenderGraphContext& context) noexcept;
+		void render(RmluiRendererImpl& renderer, IRenderGraphContext& context) noexcept;
+
+		glm::mat4 getBaseModelMatrix() const noexcept;
+		Viewport getCurrentViewport() const noexcept;
+		glm::mat4 getRenderMatrix() const noexcept;
+
 	private:
 		RmluiCanvas& _canvas;
 		OptionalRef<Rml::Context> _context;
-		OptionalRef<RmluiRendererImpl> _comp;
+		OptionalRef<RmluiSceneComponentImpl> _comp;
+		OptionalRef<RmluiRendererImpl> _render;
 		bool _inputActive;
 		glm::vec2 _mousePosition;
 		bool _visible;
@@ -242,7 +243,9 @@ namespace darmok
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		void updateContextSize() noexcept;
-		glm::mat4 getBaseModelMatrix() const noexcept;
+
+		glm::mat4 getProjectionMatrix() const noexcept;
+		glm::mat4 getModelMatrix() const noexcept;
 	};
 
 	class Transform;
@@ -271,8 +274,8 @@ namespace darmok
 		RmluiSystemInterface& getSystem() noexcept;
 		RmluiRenderInterface& getRender() noexcept;
 
-		void addRenderer(RmluiRendererImpl& renderer) noexcept;
-		bool removeRenderer(const RmluiRendererImpl& renderer) noexcept;
+		void addComponent(RmluiSceneComponentImpl& comp) noexcept;
+		bool removeComponent(const RmluiSceneComponentImpl& comp) noexcept;
 
 		void onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 
@@ -287,7 +290,7 @@ namespace darmok
 		RmluiFileInterface _file;
 		RmluiRenderInterface _render;
 		std::vector<std::unique_ptr<RmluiEventForwarder>> _eventForwarders;
-		std::vector<std::reference_wrapper<RmluiRendererImpl>> _renderers;
+		std::vector<std::reference_wrapper<RmluiSceneComponentImpl>> _components;
 
 		Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override;
 		void OnDocumentUnload(Rml::ElementDocument* doc) noexcept override;
@@ -306,41 +309,37 @@ namespace darmok
 		RmluiPlugin& _plugin;
 	};
 
-    class RmluiRendererImpl final : IKeyboardListener, IMouseListener
-    {
-    public:
-		~RmluiRendererImpl() noexcept;
+	class RmluiSceneComponentImpl final : IKeyboardListener, IMouseListener
+	{
+	public:
+		~RmluiSceneComponentImpl();
 
-		void init(Camera& cam, Scene& scene, App& app);
+		void init(Scene& scene, App& app);
 		void shutdown();
 		void update(float deltaTime) noexcept;
 		void renderReset() noexcept;
-		void beforeRenderView(IRenderGraphContext& context) noexcept;
+
+		RmluiSystemInterface& getRmluiSystem() noexcept;
+		RmluiRenderInterface& getRmluiRender() noexcept;
+
+		int getKeyModifierState() const noexcept;
 
 		void onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
 
-		void loadFont(const std::string& path, bool fallback = false) noexcept;
-
-		RmluiSystemInterface& getRmluiSystem() noexcept;
-		RmluiRenderInterface& getRmluiRender() noexcept;
-		bx::AllocatorI& getAllocator();
-		OptionalRef<const Camera> getCamera() const noexcept;
-		glm::uvec2 getViewportSize() const noexcept;
-		OptionalRef<Transform> getTransform(const RmluiCanvas& canvas) noexcept;
-		glm::mat4 getDefaultProjectionMatrix() const noexcept;
-		RenderGraphDefinition& getRenderGraph() noexcept;
-		const RenderGraphDefinition& getRenderGraph() const noexcept;
-		int getKeyModifierState() const noexcept;
 	private:
-		OptionalRef<Camera> _cam;
 		OptionalRef<Scene> _scene;
 		OptionalRef<App> _app;
-		RenderGraphDefinition _renderGraph;
 		std::shared_ptr<RmluiPlugin> _plugin;
 
 		void onCanvasConstructed(EntityRegistry& registry, Entity entity);
 		void onCanvasDestroyed(EntityRegistry& registry, Entity entity);
+
+		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;
+		static const KeyboardMap& getKeyboardMap() noexcept;
+
+		using KeyboardModifierMap = std::unordered_map<std::variant<KeyboardModifier, KeyboardKey>, Rml::Input::KeyModifier>;
+		static const KeyboardModifierMap& getKeyboardModifierMap() noexcept;
 
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
 		void onKeyboardChar(const Utf8Char& chr) noexcept override;
@@ -348,11 +347,32 @@ namespace darmok
 		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseButton(MouseButton button, bool down) noexcept override;
+	};
 
-		using KeyboardMap = std::unordered_map<KeyboardKey, Rml::Input::KeyIdentifier>;
-		static const KeyboardMap& getKeyboardMap() noexcept;
+    class RmluiRendererImpl final
+    {
+    public:
+		~RmluiRendererImpl() noexcept;
 
-		using KeyboardModifierMap = std::unordered_map<std::variant<KeyboardModifier, KeyboardKey>, Rml::Input::KeyModifier>;
-		static const KeyboardModifierMap& getKeyboardModifierMap() noexcept;
+		void init(Camera& cam, Scene& scene, App& app);
+		void shutdown();
+		void beforeRenderView(IRenderGraphContext& context) noexcept;
+
+		Viewport getViewport() const noexcept;
+
+		glm::mat4 getRenderMatrix(const RmluiCanvas& canvas) const noexcept;
+		glm::mat4 getProjectionMatrix(const RmluiCanvas& canvas) const noexcept;
+		glm::mat4 getModelMatrix(const RmluiCanvas& canvas) const noexcept;
+
+	private:
+		OptionalRef<Camera> _cam;
+		OptionalRef<Scene> _scene;
+		OptionalRef<App> _app;
+
+		OptionalRef<Transform> getTransform(const RmluiCanvas& canvas) const noexcept;
+
+
+		glm::mat4 getDefaultProjectionMatrix() const noexcept;
+
     };
 }

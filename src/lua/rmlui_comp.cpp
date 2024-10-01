@@ -5,54 +5,47 @@
 #include <darmok/scene.hpp>
 #include "utils.hpp"
 #include "camera.hpp"
+#include "scene.hpp"
 
 namespace darmok
 {
-    LuaRmluiRenderer::LuaRmluiRenderer(RmluiRenderer& comp) noexcept
-        : _comp(comp)
+    RmluiSceneComponent& LuaRmluiSceneComponent::addSceneComponent(LuaScene& scene) noexcept
     {
+        return scene.getReal()->addSceneComponent<RmluiSceneComponent>();
     }
 
-    void LuaRmluiRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    OptionalRef<RmluiSceneComponent>::std_t LuaRmluiSceneComponent::getSceneComponent(LuaScene& scene) noexcept
     {
-        _cam = cam;
-        _scene = scene;
+        return scene.getReal()->getSceneComponent<RmluiSceneComponent>();
     }
 
-    void LuaRmluiRenderer::shutdown() noexcept
+    void LuaRmluiSceneComponent::bind(sol::state_view& lua) noexcept
     {
-        _cam.reset();
-        _scene.reset();
+        lua.new_usertype<RmluiSceneComponent>("RmluiSceneComponent", sol::no_constructor,
+            "type_id", sol::property(&entt::type_hash<RmluiSceneComponent>::value),
+            "add_scene_component", &LuaRmluiSceneComponent::addSceneComponent,
+            "get_scene_component", &LuaRmluiSceneComponent::getSceneComponent
+        );
     }
 
-    RmluiRenderer& LuaRmluiRenderer::getReal() noexcept
+    RmluiRenderer& LuaRmluiRenderer::addCameraComponent(Camera& cam) noexcept
     {
-        return _comp;
+        return cam.addComponent<RmluiRenderer>();
     }
 
-    const RmluiRenderer& LuaRmluiRenderer::getReal() const noexcept
+    OptionalRef<RmluiRenderer>::std_t LuaRmluiRenderer::getCameraComponent(Camera& cam) noexcept
     {
-        return _comp;
-    }
-
-    LuaRmluiRenderer& LuaRmluiRenderer::addCameraComponent(Camera& cam) noexcept
-    {
-        return cam.addComponent<LuaRmluiRenderer>(cam.addComponent<RmluiRenderer>());
-    }
-
-    OptionalRef<LuaRmluiRenderer>::std_t LuaRmluiRenderer::getCameraComponent(Camera& cam) noexcept
-    {
-        return cam.getComponent<LuaRmluiRenderer>();
+        return cam.getComponent<RmluiRenderer>();
     }
 
     void LuaRmluiRenderer::loadFont1(const std::string& path) noexcept
     {
-        _comp.loadFont(path);
+        Rml::LoadFontFace(path);
     }
 
     void LuaRmluiRenderer::loadFont2(const std::string& path, bool fallback) noexcept
     {
-        _comp.loadFont(path, fallback);
+        Rml::LoadFontFace(path, fallback);
     }
 
     void LuaRmluiRenderer::bind(sol::state_view& lua) noexcept
@@ -61,8 +54,7 @@ namespace darmok
         LuaRmluiEvent::bind(lua);
         LuaRmluiElement::bind(lua);
         LuaRmluiElementDocument::bind(lua);
-
-        Camera::registerComponentDependency<RmluiRenderer, LuaRmluiRenderer>();
+        LuaRmluiSceneComponent::bind(lua);
 
         lua.new_usertype<LuaRmluiRenderer>("RmluiRenderer", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<LuaRmluiRenderer>::value),

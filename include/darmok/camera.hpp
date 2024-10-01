@@ -34,6 +34,7 @@ namespace darmok
         Camera& setName(const std::string& name) noexcept;
 
         const glm::mat4& getProjectionMatrix() const noexcept;
+        const glm::mat4& getProjectionInverse() const noexcept;
 
         Camera& setProjectionMatrix(const glm::mat4& matrix) noexcept;
         Camera& setPerspective(float fovy, float aspect, float near = Math::defaultNear) noexcept;
@@ -152,6 +153,7 @@ namespace darmok
         std::string _name;
         bool _enabled;
         glm::mat4 _proj;
+        glm::mat4 _projInv;
 
         struct PerspectiveData final
         {
@@ -197,5 +199,7 @@ namespace darmok
 
         using ComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
         ComponentRefs copyComponentContainer() const noexcept;
+
+        void doSetProjectionMatrix(const glm::mat4& matrix) noexcept;
     };
 }

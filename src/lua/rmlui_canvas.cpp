@@ -274,8 +274,6 @@ namespace darmok
 
     void LuaRmluiCanvas::bind(sol::state_view& lua) noexcept
     {
-        Scene::registerComponentDependency<RmluiCanvas, LuaRmluiCanvas>();
-
         lua.new_enum<Rml::ScrollBehavior>("RmluiScrollBehavior", {
             { "Auto", Rml::ScrollBehavior::Auto },
             { "Smooth", Rml::ScrollBehavior::Smooth },
@@ -309,7 +307,7 @@ namespace darmok
             "size", sol::property(&LuaRmluiCanvas::getSize, &LuaRmluiCanvas::setSize),
             "visible", sol::property(&RmluiCanvas::isVisible, &RmluiCanvas::setVisible),
             "current_size", sol::property(&RmluiCanvas::getCurrentSize),
-            "offset", sol::property(&RmluiCanvas::getOffset, &RmluiCanvas::setOffset),
+            "offset", sol::property(&RmluiCanvas::getOffset, &LuaRmluiCanvas::setOffset),
             "input_active", sol::property(&RmluiCanvas::isInputActive, &RmluiCanvas::setInputActive),
             "mouse_position", sol::property(&RmluiCanvas::getMousePosition, &LuaRmluiCanvas::setMousePosition),
             "mouse_position_mode", sol::property(&RmluiCanvas::getMousePositionMode, &RmluiCanvas::setMousePositionMode),

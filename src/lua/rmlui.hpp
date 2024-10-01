@@ -160,27 +160,24 @@ namespace darmok
         static size_t getNumDocuments(const RmluiCanvas& canvas);
     };
 
-    class LuaRmluiRenderer final : public ICameraComponent
+    class LuaRmluiSceneComponent final
     {
     public:
-        LuaRmluiRenderer(RmluiRenderer& comp) noexcept;
-
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-
-        RmluiRenderer& getReal() noexcept;
-        const RmluiRenderer& getReal() const noexcept;
-
         static void bind(sol::state_view& lua) noexcept;
     private:
-        OptionalRef<Camera> _cam;
-        OptionalRef<Scene> _scene;
-        RmluiRenderer& _comp;
+        static RmluiSceneComponent& addSceneComponent(LuaScene& scene) noexcept;
+        static OptionalRef<RmluiSceneComponent>::std_t getSceneComponent(LuaScene& scene) noexcept;
+    };
 
-        static LuaRmluiRenderer& addCameraComponent(Camera& cam) noexcept;
-        static OptionalRef<LuaRmluiRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
+    class LuaRmluiRenderer final
+    {
+    public:
+        static void bind(sol::state_view& lua) noexcept;
+    private:
+        static RmluiRenderer& addCameraComponent(Camera& cam) noexcept;
+        static OptionalRef<RmluiRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
 
-        void loadFont1(const std::string& path) noexcept;
-        void loadFont2(const std::string& path, bool fallback) noexcept;
+        static void loadFont1(const std::string& path) noexcept;
+        static void loadFont2(const std::string& path, bool fallback) noexcept;
     };
 }

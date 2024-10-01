@@ -62,6 +62,7 @@ namespace
 		void init() override
 		{
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
+			scene.addSceneComponent<RmluiSceneComponent>();
 
 			// scene.setViewport(Viewport(glm::ivec2(500), glm::ivec2(200)));
 

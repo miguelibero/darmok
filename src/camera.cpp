@@ -78,9 +78,14 @@ namespace darmok
         return _proj;
     }
 
+    const glm::mat4& Camera::getProjectionInverse() const noexcept
+    {
+        return _projInv;
+    }
+
     Camera& Camera::setProjectionMatrix(const glm::mat4& matrix) noexcept
     {
-        _proj = matrix;
+        doSetProjectionMatrix(matrix);
         _vpProj.reset();
         return *this;
     }
@@ -154,15 +159,23 @@ namespace darmok
         if (auto winPersp = std::get_if<PerspectiveData>(ptr))
         {
             float aspect = vp.getAspectRatio();
-            _proj = Math::perspective(glm::radians(winPersp->fovy), aspect, winPersp->near, winPersp->far);
+            auto proj = Math::perspective(glm::radians(winPersp->fovy), aspect, winPersp->near, winPersp->far);
+            doSetProjectionMatrix(proj);
             return true;
         }
         else if (auto winOrtho = std::get_if<OrthoData>(ptr))
         {
-            _proj = vp.ortho(winOrtho->center, winOrtho->near, winOrtho->far);
+            auto proj = vp.ortho(winOrtho->center, winOrtho->near, winOrtho->far);
+            doSetProjectionMatrix(proj);
             return true;
         }
         return false;
+    }
+
+    void Camera::doSetProjectionMatrix(const glm::mat4& matrix) noexcept
+    {
+        _proj = matrix;
+        _projInv = glm::inverse(matrix);
     }
 
     Camera& Camera::setCullingFilter(const EntityFilter& filter) noexcept
