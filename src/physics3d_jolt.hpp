@@ -346,6 +346,7 @@ namespace darmok::physics3d
         JPH::BodyID createCharacter(const JoltTransform& trans);
         bool tryCreateBody(OptionalRef<Transform> transform);
         PhysicsSystemImpl& getSystemImpl();
+        void updateJolt(const glm::mat4& worldMatrix);
 
         OptionalRef<PhysicsBody> _body;
         OptionalRef<PhysicsSystem> _system;

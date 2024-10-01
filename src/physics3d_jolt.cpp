@@ -1145,18 +1145,27 @@ namespace darmok::physics3d
         {
             if (getMotionType() == MotionType::Kinematic)
             {
-                glm::vec3 pos;
-                glm::quat rot;
-                glm::vec3 scale;
-                Math::decompose(trans->getWorldMatrix(), pos, rot, scale);
-                setPosition(pos);
-                setRotation(rot);
+                updateJolt(trans->getWorldMatrix());
             }
             else
             {
                 getSystemImpl().updateTransform(trans.value(), getBodyInterface()->GetWorldTransform(_bodyId));
             }
         }
+    }
+
+    void PhysicsBodyImpl::updateJolt(const glm::mat4& mtx)
+    {
+        auto iface = getBodyInterface();
+        if (!iface)
+        {
+            return;
+        }
+
+        auto jmtx = JoltUtils::convert(mtx);
+        JPH::Vec3 scale;
+        jmtx = jmtx.Decompose(scale);
+        iface->SetPositionAndRotation(_bodyId, jmtx.GetTranslation(), jmtx.GetQuaternion(), JPH::EActivation::Activate);
     }
 
     const std::unordered_map<PhysicsBodyImpl::MotionType, std::string> PhysicsBodyImpl::_motionTypeNames = {
