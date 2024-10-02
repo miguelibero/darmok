@@ -1,10 +1,13 @@
 #pragma once
 
+#include <Jolt/Jolt.h>
+
+#ifdef JPH_DEBUG_RENDERER
+
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/physics3d_debug.hpp>
 #include <darmok/render_graph.hpp>
-#include "jolt.hpp"
 #include <Jolt/Renderer/DebugRenderer.h>
 
 namespace darmok
@@ -106,3 +109,14 @@ namespace darmok::physics3d
         Config _config;
     };
 }
+
+#else
+
+namespace darmok::physics3d
+{
+    class PhysicsDebugRendererImpl final
+    {
+    };
+}
+
+#endif

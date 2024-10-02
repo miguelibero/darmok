@@ -57,6 +57,7 @@ namespace darmok
         , _scissor(0)
         , _trans(1)
         , _baseTrans(1)
+        , _textureUniform{ bgfx::kInvalidHandle }
     {
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
@@ -67,10 +68,15 @@ namespace darmok
 
     RmluiRenderInterface::~RmluiRenderInterface() noexcept
     {
-        if (isValid(_textureUniform))
+        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{ _textureUniform };
+        for (auto ref : uniforms)
         {
-            bgfx::destroy(_textureUniform);
-            _textureUniform.idx = bgfx::kInvalidHandle;
+            auto& uniform = ref.get();
+            if (isValid(uniform))
+            {
+                bgfx::destroy(uniform);
+                uniform.idx = bgfx::kInvalidHandle;
+            }
         }
     }
 
@@ -98,23 +104,20 @@ namespace darmok
             return;
         }
 
-        auto viewId = _context->getViewId();
         auto& encoder = _context->getEncoder();
 
         meshItr->second->render(encoder);
 
-        auto trans = getTransformMatrix(RmluiUtils::convert(translation));
-        encoder.setTransform(glm::value_ptr(trans));
+        auto position = RmluiUtils::convert(translation);
 
-        ProgramDefines defines{ "TEXTURE_DISABLE" };
+        OptionalRef<Texture> tex;
         auto texItr = _textures.find(texture);
         if (texItr != _textures.end())
         {
-            encoder.setTexture(0, _textureUniform, texItr->second->getHandle());
-            defines.clear();
+            tex = texItr->second.get();
         }
-        encoder.setState(_state);
-        encoder.submit(viewId, _program->getHandle(defines));
+
+        submit(position, tex);
     }
 
     void RmluiRenderInterface::ReleaseGeometry(Rml::CompiledGeometryHandle handle) noexcept
@@ -124,6 +127,51 @@ namespace darmok
         {
             _meshes.erase(itr);
         }
+    }
+
+    bool RmluiRenderInterface::renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept
+    {
+        auto texture = getSpriteTexture(sprite);
+        if (!texture)
+        {
+            return false;
+        }
+        auto rect = RmluiUtils::convert(sprite.rectangle);
+        auto atlasElm = TextureAtlasElement::create(TextureAtlasBounds{ rect.size, rect.origin });
+
+        TextureAtlasMeshConfig config;
+        config.type = MeshType::Transient;
+        auto mesh = atlasElm.createSprite(_program->getVertexLayout(), texture->getSize(), config);
+
+        auto& encoder = _context->getEncoder();
+        mesh->render(encoder);
+        submit(position, texture);
+
+        return true;
+    }
+
+    void RmluiRenderInterface::submit(const glm::vec2& position, const OptionalRef<Texture>& texture) noexcept
+    {
+        if (!_context)
+        {
+            return;
+        }
+
+        auto viewId = _context->getViewId();
+        auto& encoder = _context->getEncoder();
+
+        auto trans = getTransformMatrix(position);
+        encoder.setTransform(glm::value_ptr(trans));
+
+        ProgramDefines defines{ "TEXTURE_DISABLE" };
+        if (texture)
+        {
+            encoder.setTexture(0, _textureUniform, texture->getHandle());
+            defines.clear();
+        }
+
+        encoder.setState(_state);
+        encoder.submit(viewId, _program->getHandle(defines));
     }
 
     Rml::TextureHandle RmluiRenderInterface::LoadTexture(Rml::Vector2i& dimensions, const Rml::String& source) noexcept
@@ -198,13 +246,10 @@ namespace darmok
 
     void RmluiRenderInterface::SetTransform(const Rml::Matrix4f* transform) noexcept
     {
-        if (transform == nullptr)
+        _trans = _baseTrans;
+        if (transform != nullptr)
         {
-            _trans = glm::mat4(1);
-        }
-        else
-        {
-            _trans = RmluiUtils::convert(*transform);
+            _trans *= RmluiUtils::convert(*transform);
         }
     }
 
@@ -220,8 +265,7 @@ namespace darmok
     glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position)
     {
         glm::vec3 pos(position.x, position.y, 0.F);
-        auto mtx = glm::translate(glm::mat4(1), pos);
-        return _baseTrans * _trans * mtx;
+        return glm::translate(_trans, pos);
     }
 
     void RmluiRenderInterface::EnableScissorRegion(bool enable) noexcept
@@ -256,7 +300,8 @@ namespace darmok
         std::lock_guard lock(_canvasMutex);
         _context = context;
         _baseTrans = canvas.getRenderMatrix();
-        
+        _trans = _baseTrans;
+
         if (!canvas.getContext().Render())
         {
             return;
@@ -268,7 +313,6 @@ namespace darmok
         }
 
         _context.reset();
-        _baseTrans = glm::mat4();
     }
 
     OptionalRef<Texture> RmluiRenderInterface::getSpriteTexture(const Rml::Sprite& sprite) noexcept
@@ -292,35 +336,6 @@ namespace darmok
             return nullptr;
         }
         return itr->second.get();
-    }
-
-    bool RmluiRenderInterface::renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept
-    {
-        auto texture = getSpriteTexture(sprite);
-        if (!texture)
-        {
-            return false;
-        }
-        auto rect = RmluiUtils::convert(sprite.rectangle);
-        auto atlasElm = TextureAtlasElement::create(TextureAtlasBounds{ rect.size, rect.origin });
-
-        TextureAtlasMeshConfig config;
-        config.type = MeshType::Transient;
-        auto mesh = atlasElm.createSprite(_program->getVertexLayout(), texture->getSize(), config);
-
-        auto& encoder = _context->getEncoder();
-        auto viewId = _context->getViewId();
-
-        encoder.setTexture(0, _textureUniform, texture->getHandle());
-
-        auto trans = getTransformMatrix(position);
-        encoder.setTransform(glm::value_ptr(trans));
-
-        mesh->render(encoder);
-        encoder.setState(_state);
-        encoder.submit(viewId, _program->getHandle());
-
-        return true;
     }
 
     RmluiSystemInterface::RmluiSystemInterface(App& app) noexcept
@@ -564,10 +579,16 @@ namespace darmok
         auto size = getCurrentSize();
         auto offset = _offset;
         offset.y += size.y;
-        auto model = glm::translate(glm::mat4(1), offset);
+        auto model = glm::translate(glm::mat4(1.F), offset);
         // invert the y axis because rmlui renders upside down
-        model = glm::scale(model, glm::vec3(1, -1, 1));
+        model = glm::scale(model, glm::vec3(1.F, -1.F, 1.F));
         return model;
+    }
+
+    glm::vec3 RmluiCanvasImpl::getOrigin() const noexcept
+    {
+        glm::vec4 v(0.F, 0.F, 0.F, 1.F);
+        return getProjectionMatrix() * getModelMatrix() * v;
     }
 
     glm::mat4 RmluiCanvasImpl::getRenderMatrix() const noexcept
@@ -576,7 +597,7 @@ namespace darmok
         {
             return _render->getRenderMatrix(_canvas);
         }
-        return glm::mat4(1);
+        return glm::mat4(1.F);
     }
 
     glm::mat4 RmluiCanvasImpl::getProjectionMatrix() const noexcept
@@ -585,7 +606,7 @@ namespace darmok
         {
             return _render->getProjectionMatrix(_canvas);
         }
-        return glm::mat4(1);
+        return glm::mat4(1.F);
     }
 
     glm::mat4 RmluiCanvasImpl::getModelMatrix() const noexcept
@@ -694,7 +715,7 @@ namespace darmok
         auto proj = getProjectionMatrix();
         auto ray = Ray::unproject(pos, model, proj);
 
-        if (auto dist = ray.intersect(Plane(glm::vec3(0, 0, -1))))
+        if (auto dist = ray.intersect(Plane(glm::vec3(0.F, 0.F, -1.F))))
         {
             pos = ray * dist.value();
             setMousePosition(pos);
@@ -703,7 +724,7 @@ namespace darmok
 
     glm::vec2 RmluiCanvasImpl::getViewportMousePosition() const noexcept
     {
-        glm::vec3 pos(getMousePosition(), 0);
+        glm::vec3 pos(getMousePosition(), 0.F);
 
         auto model = getModelMatrix();
         auto proj = getProjectionMatrix();
@@ -723,14 +744,14 @@ namespace darmok
             return;
         }
 
-        glm::vec3 pos(getMousePosition(), 0);
+        glm::vec3 pos(getMousePosition(), 0.F);
 
         auto model = _render->getModelMatrix(_canvas);
         auto proj = _render->getProjectionMatrix(_canvas);
         auto vp = Viewport().getValues();
 
         pos = glm::project(pos, model, proj, vp);
-        pos += glm::vec3(delta, 0);
+        pos += glm::vec3(delta, 0.F);
         pos = glm::unProject(pos, model, proj, vp);
         
         setMousePosition(pos);
@@ -1245,7 +1266,7 @@ namespace darmok
         }
     }
 
-    RmluiSceneComponentImpl::~RmluiSceneComponentImpl() noexcept
+    RmluiSceneComponentImpl::~RmluiSceneComponentImpl()
     {
         if (_app)
         {
@@ -1553,7 +1574,9 @@ namespace darmok
             auto vpDelta = vp.screenToViewportDelta(screenDelta);
 
             auto screenPos = win.windowToScreenPoint(absolute);
+            screenPos.y = win.getPixelSize().y - screenPos.y;
             auto vpPos = vp.screenToViewportPoint(screenPos);
+            vpPos.y = 1.F - vpPos.y;
 
             if (mode == RmluiCanvasMousePositionMode::Relative)
             {
@@ -1672,7 +1695,7 @@ namespace darmok
         {
             return _app->getWindow().getPixelSize();
         }
-        return glm::uvec2(1);
+        return glm::uvec2(1.F);
     }
 
     OptionalRef<Transform> RmluiRendererImpl::getTransform(const RmluiCanvas& canvas) const noexcept
@@ -1691,7 +1714,7 @@ namespace darmok
 
     glm::mat4 RmluiRendererImpl::getDefaultProjectionMatrix() const noexcept
     {
-        auto botLeft = glm::vec2(0);
+        auto botLeft = glm::vec2(0.F);
         auto topRight = glm::vec2(getViewport().size);
         return Math::ortho(botLeft, topRight, -1.F, 1.F);
     }
@@ -1711,7 +1734,7 @@ namespace darmok
 
     glm::mat4 RmluiRendererImpl::getModelMatrix(const RmluiCanvas& canvas) const noexcept
     {
-        glm::mat4 model(1);
+        glm::mat4 model(1.F);
 
         if (auto trans = getTransform(canvas))
         {

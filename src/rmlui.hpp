@@ -94,8 +94,6 @@ namespace darmok
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 
 		void renderCanvas(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept;
-		bool renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
-		OptionalRef<Texture> getSpriteTexture(const Rml::Sprite& sprite) noexcept;
 
 	private:
 		std::mutex _canvasMutex;
@@ -113,7 +111,11 @@ namespace darmok
 
 		static const uint64_t _state;
 
+		OptionalRef<Texture> getSpriteTexture(const Rml::Sprite& sprite) noexcept;
 		glm::mat4 getTransformMatrix(const glm::vec2& position);
+		bool renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
+
+		void submit(const glm::vec2& position, const OptionalRef<Texture>& texture) noexcept;
 	};
 
 	class RmluiSystemInterface final : public Rml::SystemInterface
@@ -189,6 +191,8 @@ namespace darmok
 
 		const glm::vec3& getOffset() const noexcept;
 		void setOffset(const glm::vec3& offset) noexcept;
+
+		glm::vec3 getOrigin() const noexcept;
 
 		Rml::Context& getContext();
 		const Rml::Context& getContext() const;

@@ -16,8 +16,7 @@
                 "DARMOK_BUILD_ASSIMP": true,
                 "DARMOK_BUILD_OZZ": true,
                 "DARMOK_BUILD_JOLT": true,
-                "DARMOK_BUILD_MINIAUDIO": true,
-                "DARMOK_BUILD_TRACY": true
+                "DARMOK_BUILD_MINIAUDIO": true
             }
         },
         {

@@ -13,7 +13,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/collection.hpp>
 
-#include "jolt.hpp"
+#include <Jolt/Jolt.h>
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Physics/Body/BodyID.h>

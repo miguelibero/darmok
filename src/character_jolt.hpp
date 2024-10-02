@@ -1,6 +1,6 @@
 #pragma once
 
-#include "jolt.hpp"
+#include <Jolt/Jolt.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <darmok/character.hpp>
 #include <darmok/optional_ref.hpp>

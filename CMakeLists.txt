@@ -560,7 +560,7 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC cereal::cereal)
 
 # glm
 find_package(glm CONFIG REQUIRED)
-set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED)
+set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED GLM_FORCE_DEPTH_ZERO_TO_ONE)
 target_compile_definitions(glm::glm-header-only INTERFACE ${GLM_DEFINES})
 target_link_libraries(${CORE_LIB_NAME} PUBLIC glm::glm-header-only)
 

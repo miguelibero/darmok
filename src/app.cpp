@@ -309,6 +309,7 @@ namespace darmok
 		init.resolution.height = _pixelSize.y;
 		init.resolution.reset = _resetFlags;
 		init.callback = &BgfxCallbacks::get();
+		// _rendererType = bgfx::RendererType::Vulkan;
 		init.type = _rendererType;
 		bgfx::init(init);
 

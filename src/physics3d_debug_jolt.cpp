@@ -1,7 +1,9 @@
-#ifdef _DEBUG
 
-#include "physics3d_debug_jolt.hpp"
 #include <darmok/physics3d_debug.hpp>
+#include "physics3d_debug_jolt.hpp"
+
+#ifdef JPH_DEBUG_RENDERER
+
 #include <darmok/camera.hpp>
 #include <darmok/program.hpp>
 #include <darmok/app.hpp>
@@ -374,6 +376,43 @@ namespace darmok::physics3d
     void PhysicsDebugRenderer::beforeRenderView(IRenderGraphContext& context)
     {
         _impl->beforeRenderView(context);
+    }
+}
+
+#else
+
+namespace darmok::physics3d
+{
+    PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept
+        : _impl(std::make_unique<PhysicsDebugRendererImpl>())
+    {
+    }
+
+    PhysicsDebugRenderer::~PhysicsDebugRenderer() noexcept
+    {
+        // empty on purpose
+    }
+
+    void PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app)
+    {
+    }
+
+    void PhysicsDebugRenderer::shutdown()
+    {
+    }
+
+    bool PhysicsDebugRenderer::isEnabled() const noexcept
+    {
+        return false;
+    }
+
+    PhysicsDebugRenderer& PhysicsDebugRenderer::setEnabled(bool enabled) noexcept
+    {
+        return *this;
+    }
+
+    void PhysicsDebugRenderer::beforeRenderView(IRenderGraphContext& context)
+    {
     }
 }
 

@@ -418,12 +418,14 @@ namespace darmok
 		}
 		if (mat.getPrimitiveType() == MaterialPrimitiveType::Line)
 		{
+			state &= ~BGFX_STATE_MSAA;
 			state |= BGFX_STATE_PT_LINES;
+			state |= BGFX_STATE_LINEAA;
 		}
 		if (mat.getOpacityType() == OpacityType::Transparent)
 		{
-			state |= BGFX_STATE_BLEND_ALPHA;
 			state &= ~BGFX_STATE_DEPTH_TEST_MASK;
+			state |= BGFX_STATE_BLEND_ALPHA;
 			state |= BGFX_STATE_DEPTH_TEST_LEQUAL;
 		}
 		else if (mat.getOpacityType() == OpacityType::Mask)
