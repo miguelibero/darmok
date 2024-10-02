@@ -22,6 +22,8 @@ namespace darmok
         ~FrameBuffer() noexcept;
         FrameBuffer(const FrameBuffer& other) = delete;
         FrameBuffer& operator=(const FrameBuffer& other) = delete;
+        FrameBuffer(FrameBuffer&& other);
+        FrameBuffer& operator=(FrameBuffer&& other);
 
         const std::shared_ptr<Texture>& getTexture() const noexcept;
         const std::shared_ptr<Texture>& getDepthTexture() const noexcept;

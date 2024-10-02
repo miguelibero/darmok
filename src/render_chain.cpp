@@ -37,7 +37,27 @@ namespace darmok
 
 	FrameBuffer::~FrameBuffer() noexcept
 	{
-		bgfx::destroy(_handle);
+		if (isValid(_handle))
+		{
+			bgfx::destroy(_handle);
+		}
+	}
+
+	FrameBuffer::FrameBuffer(FrameBuffer&& other)
+		: _handle(other._handle)
+		, _colorTex(std::move(other._colorTex))
+		, _depthTex(std::move(other._depthTex))
+	{
+		other._handle.idx = bgfx::kInvalidHandle;
+	}
+
+	FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other)
+	{
+		_handle = other._handle;
+		other._handle.idx = bgfx::kInvalidHandle;
+		_colorTex = std::move(other._colorTex);
+		_depthTex = std::move(other._depthTex);
+		return *this;
 	}
 
 	const std::shared_ptr<Texture>& FrameBuffer::getTexture() const noexcept
@@ -341,11 +361,8 @@ namespace darmok
 
 	void RenderChain::renderPassConfigure(bgfx::ViewId viewId) noexcept
 	{
-		uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
-		uint8_t clearColor = 1;
-		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U,
-			clearColor, clearColor, clearColor, clearColor,
-			clearColor, clearColor, clearColor, clearColor);
+		static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
+		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
 		
 		if (auto input = getInput())
 		{

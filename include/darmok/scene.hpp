@@ -127,17 +127,13 @@ namespace darmok
         template<typename T>
         EntityRuntimeView getEntities(const EntityFilter& filter) const noexcept
         {
-            auto view = getEntities(filter);
-            view.iterate(getRegistry().storage<T>());
-            return view;
-        }
-
-        template<typename T>
-        EntityRuntimeView getEntities(const EntityFilter& filter) noexcept
-        {
-            auto view = getEntities(filter);
-            view.iterate(getRegistry().storage<T>());
-            return view;
+            if (auto storage = getRegistry().storage<T>())
+            {
+                auto view = createEntityRuntimeView(filter);
+                view.iterate(*storage);
+                return view;
+            }
+            return EntityRuntimeView();
         }
 
         template<typename T>
@@ -355,6 +351,7 @@ namespace darmok
     private:
         std::unique_ptr<SceneImpl> _impl;
 
+        EntityRuntimeView createEntityRuntimeView(const EntityFilter& filter) const noexcept;
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
     };

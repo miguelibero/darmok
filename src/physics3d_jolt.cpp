@@ -1355,11 +1355,15 @@ namespace darmok::physics3d
     void PhysicsBodyImpl::setEnabled(bool enabled)
     {
         auto iface = getBodyInterface();
+        auto added = iface->IsAdded(_bodyId);
         if (enabled)
         {
-            iface->AddBody(_bodyId, JPH::EActivation::Activate);
+            if (!added)
+            {
+                iface->AddBody(_bodyId, JPH::EActivation::Activate);
+            }
         }
-        else
+        else if(added)
         {
             iface->RemoveBody(_bodyId);
         }

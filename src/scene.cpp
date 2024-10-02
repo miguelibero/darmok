@@ -395,6 +395,11 @@ namespace darmok
 
     EntityRuntimeView Scene::getEntities(const EntityFilter& filter) const noexcept
     {
+        return getEntities<Entity>(filter);
+    }
+
+    EntityRuntimeView Scene::createEntityRuntimeView(const EntityFilter& filter) const noexcept
+    {
         EntityRuntimeView view;
         auto& reg = getRegistry();
         for (auto include : filter.getIncludes())

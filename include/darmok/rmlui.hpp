@@ -49,7 +49,10 @@ namespace darmok
 		RmluiCanvas(const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt) noexcept;
 		~RmluiCanvas() noexcept;
 
-		std::string getName() const noexcept;
+		const std::string& getName() const noexcept;
+
+		RmluiCanvas& setMainCamera(Camera& camera) noexcept;
+		OptionalRef<Camera> getMainCamera() const noexcept;
 
 		const std::optional<glm::uvec2>& getSize() const noexcept;
 		RmluiCanvas& setSize(const std::optional<glm::uvec2>& vp) noexcept;
@@ -98,10 +101,10 @@ namespace darmok
 		RmluiSceneComponent() noexcept;
 		~RmluiSceneComponent() noexcept;
 
-		void init(Scene& scene, App& app) override;
-		void shutdown() override;
-		void renderReset() override;
-		void update(float deltaTime) override;
+		void init(Scene& scene, App& app) noexcept override;
+		void shutdown() noexcept override;
+		void renderReset() noexcept override;
+		void update(float deltaTime) noexcept override;
 	private:
 		std::unique_ptr<RmluiSceneComponentImpl> _impl;
 	};
@@ -114,8 +117,9 @@ namespace darmok
 		RmluiRenderer() noexcept;
 		~RmluiRenderer() noexcept;
 
-		void init(Camera& cam, Scene& scene, App& app) override;
+		void init(Camera& cam, Scene& scene, App& app) noexcept override;
 		void shutdown() noexcept override;
+		void renderReset() noexcept override;
 		void beforeRenderView(IRenderGraphContext& context) noexcept override;
 	private:
 		std::unique_ptr<RmluiRendererImpl> _impl;

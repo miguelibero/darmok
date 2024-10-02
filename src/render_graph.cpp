@@ -129,6 +129,7 @@ namespace darmok
     RenderPassDefinition& RenderPassDefinition::setDelegate(IRenderPassDelegate& dlg) noexcept
     {
         _delegate = dlg;
+        _delegatePointer.reset();
         return *this;
     }
 
