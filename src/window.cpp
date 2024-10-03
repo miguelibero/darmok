@@ -231,14 +231,12 @@ namespace darmok
 	glm::vec2 WindowImpl::windowToScreenDelta(const glm::vec2& delta) const noexcept
 	{
 		auto screenDelta = delta * getFramebufferScale();
-		screenDelta.y *= -1.F;
 		return screenDelta;
 	}
 
 	glm::vec2 WindowImpl::screenToWindowDelta(const glm::vec2& delta) const noexcept
 	{
 		auto screenDelta = delta / getFramebufferScale();
-		screenDelta.y *= -1.F;
 		return screenDelta;
 	}
 
@@ -246,14 +244,12 @@ namespace darmok
 	{
 		auto f = getFramebufferScale();
 		auto p = (point - glm::vec2(0.5F)) / f;
-		p.y = _size.y - p.y;
 		return p;
 	}
 
 	glm::vec2 WindowImpl::windowToScreenPoint(const glm::vec2& point) const noexcept
 	{
 		glm::vec2 p(point);
-		p.y = _size.y - p.y;
 		auto f = getFramebufferScale();
 		p = (p * f) + glm::vec2(0.5F);
 		return p;

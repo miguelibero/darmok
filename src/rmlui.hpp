@@ -249,13 +249,13 @@ namespace darmok
 		std::unique_ptr<IRmluiCanvasDelegate> _delegatePtr;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
-		void updateCurrentSize() noexcept;
+		bool updateCurrentSize() noexcept;
 
 		glm::mat4 getModelMatrix() const noexcept;
 		glm::mat4 getProjectionMatrix() const noexcept;
 		glm::mat4 getDefaultProjectionMatrix() const noexcept;
-		glm::mat4 getBaseModelMatrix() const noexcept;
 		OptionalRef<Transform> getTransform() const noexcept;
+		void configureViewSize(bgfx::ViewId viewId) const noexcept;
 	};
 
 	class Transform;

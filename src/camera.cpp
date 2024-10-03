@@ -459,34 +459,41 @@ namespace darmok
         return glm::mat4(1);
     }
 
+    glm::mat4 Camera::getScreenModelMatrix() const noexcept
+    {
+        // y = -y since screen origin is the top-left corner
+        static const glm::vec3 invy(1.F, -1.F, 1.F);
+        return glm::scale(glm::mat4(1.F), invy) * getModelMatrix();
+    }
+
     Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept
     {
-        return Ray::unproject(point, getModelMatrix(), _proj, getCurrentViewport());
+        return Ray::unproject(point, getScreenModelMatrix(), _proj, getCurrentViewport());
     }
 
     Ray Camera::viewportPointToRay(const glm::vec3& point) const noexcept
     {
-        return Ray::unproject(point, getModelMatrix(), _proj);
+        return Ray::unproject(point, getScreenModelMatrix(), _proj);
     }
 
     glm::vec3 Camera::worldToScreenPoint(const glm::vec3& point) const noexcept
     {
-        return glm::project(point, getModelMatrix(), _proj, getCurrentViewport().getValues());
+        return glm::project(point, getScreenModelMatrix(), _proj, getCurrentViewport().getValues());
     }
 
     glm::vec3 Camera::worldToViewportPoint(const glm::vec3& point) const noexcept
     {
-        return glm::project(point, getModelMatrix(), _proj, Viewport().getValues());
+        return glm::project(point, getScreenModelMatrix(), _proj, Viewport().getValues());
     }
 
     glm::vec3 Camera::screenToWorldPoint(const glm::vec3& point) const noexcept
     {
-        return glm::unProject(point, getModelMatrix(), _proj, getCurrentViewport().getValues());
+        return glm::unProject(point, getScreenModelMatrix(), _proj, getCurrentViewport().getValues());
     }
 
     glm::vec3 Camera::viewportToWorldPoint(const glm::vec3& point) const noexcept
     {
-        return glm::unProject(point, getModelMatrix(), _proj, Viewport().getValues());
+        return glm::unProject(point, getScreenModelMatrix(), _proj, Viewport().getValues());
     }
 
     glm::vec3 Camera::viewportToScreenPoint(const glm::vec3& point) const noexcept

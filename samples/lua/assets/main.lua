@@ -4,8 +4,7 @@ function init()
     local program = Program.new(StandardProgramType.Forward)
 
     local cubeMesh = MeshData.new_cube():create_mesh(program.vertex_layout)
-    local greenTex = app.assets:load_color_texture(Color.green)
-    local greenMat = Material.new(program, greenTex)
+    local greenMat = Material.new(program, Color.green)
 
     local scene = app:add_component(SceneAppComponent).scene
 
@@ -14,14 +13,18 @@ function init()
     camTrans:look_at({ 0, 0, 0 })
     local cam = camEntity:add_component(Camera)
     cam:set_perspective(60, app.window.size, 0.3, 1000)
-    local renderer = cam:add_renderer(ForwardRenderer)
-    renderer:add_component(LightingRenderComponent)
+    cam:add_component(ForwardRenderer)
+    cam:add_component(LightingRenderComponent)
 
     local freelook = scene:add_component(FreelookController, cam)
 
     local lightEntity = scene:create_entity()
-    lightEntity:add_component(Transform, { 1, 1, -2 })
-    lightEntity:add_component(PointLight)
+    local lightTrans = lightEntity:add_component(Transform)
+    lightTrans.position = { -1, 1, -1 }
+    lightTrans:look_at({ 0, 0, 0 })
+    lightEntity:add_component(PointLight, 2)
+        .radius = 40
+    lightEntity:add_component(AmbientLight, 0.4)
 
     local meshEntity = scene:create_entity()
     local meshTrans = meshEntity:add_component(Transform)
@@ -29,27 +32,21 @@ function init()
 
     local speed = 0.1
 
-    function move_mesh(dir)
+    function move_mesh(tag)
         if freelook.enabled then
             return
         end
+        local dir = Vec3.zero
+        if tag == "left" then
+            dir = Vec3.left
+        elseif tag == "right" then
+            dir = Vec3.right
+        elseif tag == "forward" then
+            dir = Vec3.forward
+        elseif tag == "back" then
+            dir = Vec3.backward
+        end
         meshTrans.position = meshTrans.position + (dir * speed)
-    end
-
-    function move_left()
-        move_mesh(Vec3.left)
-    end
-
-    function move_right()
-        move_mesh(Vec3.right)
-    end
-
-    function move_forward()
-        move_mesh(Vec3.forward)
-    end
-
-    function move_backward()
-        move_mesh(Vec3.backward)
     end
 
     local groundPlane = Plane.new(Vec3.up);
@@ -67,15 +64,21 @@ function init()
         end
     end
 
-    app.input:add_bindings("test", {
-        KeyLeft = move_left,
-        KeyA = move_left,
-        KeyRight = move_right,
-        KeyD = move_right,
-        KeyUp = move_forward,
-        KeyW = move_forward,
-        KeyDown = move_backward,
-        KeyS = move_backward,
-        MouseLeft = move_mouse,
-    })
+    app.input:add_listener("left", {
+        KeyboardKey.Left, KeyboardKey.KeyA,
+        { GamepadStick.Left, InputDirType.Left }
+    }, move_mesh)
+    app.input:add_listener("right", {
+        KeyboardKey.Right, KeyboardKey.KeyD,
+        { GamepadStick.Left, InputDirType.Right }
+    }, move_mesh)
+    app.input:add_listener("forward", {
+        KeyboardKey.Up, KeyboardKey.KeyW,
+        { GamepadStick.Left, InputDirType.Up }
+    }, move_mesh)
+    app.input:add_listener("back", {
+        KeyboardKey.Down, KeyboardKey.KeyS,
+        { GamepadStick.Left, InputDirType.Down }
+    }, move_mesh)
+    app.input:add_listener("mouse", MouseButton.Left, move_mouse)
 end

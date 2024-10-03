@@ -201,5 +201,6 @@ namespace darmok
         ComponentRefs copyComponentContainer() const noexcept;
 
         void doSetProjectionMatrix(const glm::mat4& matrix) noexcept;
+        glm::mat4 getScreenModelMatrix() const noexcept;
     };
 }

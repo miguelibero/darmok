@@ -626,6 +626,12 @@ if(DARMOK_BUILD_JOLT)
   find_package(Jolt CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PRIVATE Jolt::Jolt)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_JOLT)
+
+  # TODO: check why jolt debug is not workings
+  # target_compile_definitions(${LIB_NAME} PRIVATE
+  #   $<$<CONFIG:Debug>:JPH_DEBUG_RENDERER>
+  #   $<$<CONFIG:Debug>:JPH_PROFILE_ENABLED>
+  # )
 endif()
 
 if(DARMOK_BUILD_MINIAUDIO)

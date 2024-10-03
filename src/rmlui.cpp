@@ -263,8 +263,7 @@ namespace darmok
 
     glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position)
     {
-        glm::vec3 pos(position.x, position.y, 0.F);
-        return glm::translate(_trans, pos);
+        return glm::translate(_trans, glm::vec3(position, 0.F));
     }
 
     void RmluiRenderInterface::EnableScissorRegion(bool enable) noexcept
@@ -534,7 +533,7 @@ namespace darmok
         _comp = comp;
         auto size = getCurrentSize();
         _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &comp.getRmluiRender());
-        _frameBuffer.emplace(size);
+        _frameBuffer.emplace(size, false);
         if (!_context)
         {
             throw std::runtime_error("Failed to create rmlui context");
@@ -562,7 +561,7 @@ namespace darmok
         return *_frameBuffer->getTexture();
     }
 
-    void RmluiCanvasImpl::updateCurrentSize() noexcept
+    bool RmluiCanvasImpl::updateCurrentSize() noexcept
     {
         auto size = getCurrentSize();
         if (_context)
@@ -572,11 +571,14 @@ namespace darmok
         if (size.x == 0 && size.y == 0)
         {
             _frameBuffer.reset();
+            return true;
         }
         else if (!_frameBuffer || _frameBuffer->getSize() != size)
         {
-            _frameBuffer.emplace(size);
+            _frameBuffer.emplace(size, false);
+            return true;
         }
+        return false;
     }
 
     void RmluiCanvasImpl::renderReset() noexcept
@@ -639,17 +641,6 @@ namespace darmok
     RmluiCanvasImpl::MousePositionMode RmluiCanvasImpl::getMousePositionMode() const noexcept
     {
         return _mousePositionMode;
-    }
-
-    glm::mat4 RmluiCanvasImpl::getBaseModelMatrix() const noexcept
-    {
-        auto size = getCurrentSize();
-        auto offset = _offset;
-        offset.y += size.y;
-        auto model = glm::translate(glm::mat4(1.F), offset);
-        // invert the y axis because rmlui renders upside down
-        model = glm::scale(model, glm::vec3(1.F, -1.F, 1.F));
-        return model;
     }
 
     glm::uvec2 RmluiCanvasImpl::getCurrentSize() const noexcept
@@ -995,7 +986,9 @@ namespace darmok
 
     glm::mat4 RmluiCanvasImpl::getModelMatrix() const noexcept
     {
-        glm::mat4 model(1.F);
+        static const glm::vec3 invy(1.F, -1.F, 1.F);
+
+        auto model = glm::scale(glm::mat4(1.F), invy);
 
         if (auto trans = getTransform())
         {
@@ -1006,7 +999,10 @@ namespace darmok
             model *= trans->getWorldMatrix();
         }
 
-        model *= getBaseModelMatrix();
+        auto size = getCurrentSize();
+        auto offset = _offset + glm::vec3(0.F, size.y, 0.F);
+        model = glm::translate(model, offset);
+        model = glm::scale(model, invy);
 
         return model;
     }
@@ -1035,7 +1031,7 @@ namespace darmok
 
     void RmluiCanvasImpl::renderPassDefine(RenderPassDefinition& def) noexcept
     {
-        std::string name("Rmlui ");
+        std::string name;
         if (_cam)
         {
             auto camName = _cam->getName();
@@ -1044,7 +1040,7 @@ namespace darmok
                 name += camName + " ";
             }
         }
-        name += getName();
+        name += "Rmlui: " + _name;
         def.setName(name);
     }
 
@@ -1053,6 +1049,7 @@ namespace darmok
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
         bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 0);
         bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+        configureViewSize(viewId);
     }
 
     void RmluiCanvasImpl::renderPassExecute(IRenderGraphContext& context)
@@ -1066,21 +1063,28 @@ namespace darmok
             return;
         }
 
-        if (!_size)
+        if (!_size && updateCurrentSize())
         {
-            updateCurrentSize();
+            configureViewSize(viewId);
         }
 
-        Viewport(getCurrentSize()).configureView(viewId);
-        auto proj = getDefaultProjectionMatrix();
+        _comp->getRmluiRender().renderCanvas(*this, context);
+    }
 
-        auto size = getCurrentSize();
-        auto view = glm::translate(glm::mat4(1.F), glm::vec3(0.F, size.y, 0.F));
-        view = glm::scale(view, glm::vec3(1.F, -1.F, 1.F));
+    void RmluiCanvasImpl::configureViewSize(bgfx::ViewId viewId) const noexcept
+    {
         _frameBuffer->configureView(viewId);
 
+        auto size = getCurrentSize();
+
+        Viewport(size).configureView(viewId);
+        auto proj = getDefaultProjectionMatrix();
+
+        static const glm::vec3 invy(1.F, -1.F, 1.F);
+        auto view = glm::translate(glm::mat4(1.F), glm::vec3(0.F, size.y, 0.F));
+        view = glm::scale(view, invy);
+
         bgfx::setViewTransform(viewId, glm::value_ptr(view), glm::value_ptr(proj));
-        _comp->getRmluiRender().renderCanvas(*this, context);
     }
 
     RmluiCanvas::RmluiCanvas(const std::string& name, const std::optional<glm::uvec2>& size) noexcept
@@ -1739,20 +1743,17 @@ namespace darmok
                 continue;
             }
             auto vp = cam->getCurrentViewport();
-            auto screenDelta = win.windowToScreenDelta(delta);
-            auto vpDelta = vp.screenToViewportDelta(screenDelta);
-
-            auto screenPos = win.windowToScreenPoint(absolute);
-            screenPos.y = win.getPixelSize().y - screenPos.y;
-            auto vpPos = vp.screenToViewportPoint(screenPos);
-            vpPos.y = 1.F - vpPos.y;
 
             if (mode == RmluiCanvasMousePositionMode::Relative)
             {
+                auto screenDelta = win.windowToScreenDelta(delta);
+                auto vpDelta = vp.screenToViewportDelta(screenDelta);
                 canvas.getImpl().applyViewportMousePositionDelta(vpDelta);
             }
             else
             {
+                auto screenPos = win.windowToScreenPoint(absolute);
+                auto vpPos = vp.screenToViewportPoint(screenPos);
                 canvas.getImpl().setViewportMousePosition(vpPos);
             }
         }
