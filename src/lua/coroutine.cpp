@@ -219,6 +219,49 @@ namespace darmok
 		);
 	}
 
+	LuaEaseScale::LuaEaseScale(Transform& trans, const glm::vec3& scale, float duration, EasingType easing) noexcept
+		: _trans(trans)
+		, _startScale(trans.getScale())
+		, _endScale(scale)
+		, _duration(duration)
+		, _normalizedTime(0.F)
+		, _easing(easing)
+	{
+	}
+
+	void LuaEaseScale::update(float deltaTime) noexcept
+	{
+		_normalizedTime += deltaTime / _duration;
+		if (_normalizedTime > 1.F)
+		{
+			_trans.get().setScale(_endScale);
+			_normalizedTime = 1.F;
+			return;
+		}
+		auto f = Easing::apply(_easing, _normalizedTime, 0.F, 1.F);
+		auto scale = Math::lerp(_startScale, _endScale, f);
+		_trans.get().setScale(scale);
+	}
+
+	bool LuaEaseScale::finished() const noexcept
+	{
+		return _trans.get().getScale() == _endScale;
+	}
+
+	void LuaEaseScale::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<LuaEaseScale>("EaseScale",
+			sol::factories(
+				[](Transform& trans, const VarLuaVecTable<glm::vec3>& scale, float duration, EasingType easing) -> std::shared_ptr<ILuaYieldInstruction> {
+					return std::make_shared<LuaEaseScale>(trans, LuaGlm::tableGet(scale), duration, easing);
+				},
+				[](Transform& trans, const VarLuaVecTable<glm::vec3>& scale, float duration) -> std::shared_ptr<ILuaYieldInstruction> {
+					return std::make_shared<LuaEaseScale>(trans, LuaGlm::tableGet(scale), duration);
+				}
+			), sol::base_classes, sol::bases<ILuaYieldInstruction>()
+		);
+	}
+
 	LuaPlayAnimation::LuaPlayAnimation(SkeletalAnimator& animator, const std::string& name) noexcept
 		: _animator(animator)
 		, _name(name)
@@ -403,6 +446,7 @@ namespace darmok
 		LuaRotateTowards::bind(lua);
 		LuaEasePosition::bind(lua);
 		LuaEaseRotation::bind(lua);
+		LuaEaseScale::bind(lua);
 		LuaPlayAnimation::bind(lua);
 
 		LuaUtils::newEnumFunc<EasingType>(lua, "EasingType", EasingType::Count, &Easing::getTypeName);

@@ -1165,7 +1165,12 @@ namespace darmok::physics3d
         auto jmtx = JoltUtils::convert(mtx);
         JPH::Vec3 scale;
         jmtx = jmtx.Decompose(scale);
-        iface->SetPositionAndRotation(_bodyId, jmtx.GetTranslation(), jmtx.GetQuaternion(), JPH::EActivation::Activate);
+        auto rot = jmtx.GetQuaternion();
+        if(!rot.IsNormalized())
+        {
+            rot = JPH::Quat::sIdentity();
+        }
+        iface->SetPositionAndRotation(_bodyId, jmtx.GetTranslation(), rot, JPH::EActivation::Activate);
     }
 
     const std::unordered_map<PhysicsBodyImpl::MotionType, std::string> PhysicsBodyImpl::_motionTypeNames = {

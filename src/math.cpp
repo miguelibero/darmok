@@ -72,6 +72,10 @@ namespace darmok
 
     glm::vec2 Math::orthoDepthRange(float z, float depth) noexcept
     {
+        if (z == 0.F || depth == 0.F)
+        {
+            return glm::vec2(0.F, 1.F);
+        }
         if (!bgfx::getCaps()->homogeneousDepth)
         {
             return glm::vec2(0.F, z / depth);

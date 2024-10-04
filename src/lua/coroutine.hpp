@@ -106,6 +106,23 @@ namespace darmok
 		EasingType _easing;
 	};
 
+	class LuaEaseScale final : public ILuaYieldInstruction
+	{
+	public:
+		LuaEaseScale(Transform& trans, const glm::vec3& scale, float duration = 1.F, EasingType easing = EasingType::Linear) noexcept;
+		void update(float deltaTime) noexcept override;
+		bool finished() const noexcept override;
+
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		std::reference_wrapper<Transform> _trans;
+		glm::vec3 _startScale;
+		glm::vec3 _endScale;
+		float _duration;
+		float _normalizedTime;
+		EasingType _easing;
+	};
+
 	class SkeletalAnimator;
 
 	class LuaPlayAnimation final : public ILuaYieldInstruction, ISkeletalAnimatorListener
