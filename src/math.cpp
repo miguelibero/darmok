@@ -59,6 +59,26 @@ namespace darmok
         return ortho(bottomLeft.x, topRight.x, bottomLeft.y, topRight.y, near, far);
     }
 
+    glm::vec2 Math::projDepthRange(const glm::mat4& proj) noexcept
+    {
+        auto c = proj[2][2];
+        auto d = proj[3][2];
+        if (!bgfx::getCaps()->homogeneousDepth)
+        {
+            return glm::vec2( -d / c, -d / (c - 1.F));
+        }
+        return glm::vec2( -d / (c - 1.F), -d / (c + 1.F));
+    }
+
+    glm::vec2 Math::orthoDepthRange(float z, float depth) noexcept
+    {
+        if (!bgfx::getCaps()->homogeneousDepth)
+        {
+            return glm::vec2(0.F, z / depth);
+        }
+        return glm::vec2(0.F, 2.F * z / (depth + 1.F));
+    }
+
     glm::mat4 Math::frustum(float left, float right, float bottom, float top, float near, float far) noexcept
     {
         auto proj = glm::frustum(left, right, bottom, top, near, far);

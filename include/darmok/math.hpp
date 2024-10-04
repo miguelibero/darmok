@@ -49,10 +49,14 @@ namespace darmok
         static [[nodiscard]] glm::mat4 perspective(float fovy, float aspect, float near = defaultNear) noexcept;
         static [[nodiscard]] glm::mat4 ortho(float left, float right, float bottom, float top, float near = defaultNear, float far = defaultFar) noexcept;
 		static [[nodiscard]] glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = defaultNear, float far = defaultFar) noexcept;
-		
+		static [[nodiscard]] glm::vec2 projDepthRange(const glm::mat4& proj) noexcept;
+
+		// calc orthographic depth planes so that a given world z is set on a given depth
+		static [[nodiscard]] glm::vec2 orthoDepthRange(float z, float depth) noexcept;
+
 		static [[nodiscard]] glm::mat4 frustum(float left, float right, float bottom, float top, float near = defaultNear, float far = defaultFar) noexcept;
 		static [[nodiscard]] glm::mat4 frustum(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = defaultNear, float far = defaultFar) noexcept;
-        
+
 		// methods used in Transform to generate the matrix
         static [[nodiscard]] glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept;
         static bool decompose(const glm::mat4& trans, glm::vec3& pos, glm::quat& rot, glm::vec3& scale) noexcept;

@@ -965,11 +965,17 @@ namespace darmok
         return scene->getComponent<Transform>(entity);
     }
 
-    glm::mat4 RmluiCanvasImpl::getDefaultProjectionMatrix() const noexcept
+    glm::mat4 RmluiCanvasImpl::getDefaultProjectionMatrix(bool offsetDepth) const noexcept
     {
         auto botLeft = glm::vec2(0.F);
         auto topRight = glm::vec2(getCurrentSize());
-        return Math::ortho(botLeft, topRight, -1.F, 1.F);
+        glm::vec2 depth(0.F, 1.F);
+        if (offsetDepth && _cam)
+        {
+            auto v = _cam->getProjectionMatrix() * glm::vec4(_offset, 1.F);
+            depth = Math::orthoDepthRange(_offset.z, v.z / v.w);
+        }
+        return Math::ortho(botLeft, topRight, depth[0], depth[1]);
     }
 
     glm::mat4 RmluiCanvasImpl::getProjectionMatrix() const noexcept
@@ -981,7 +987,7 @@ namespace darmok
                 return _cam->getProjectionMatrix();
             }
         }
-        return getDefaultProjectionMatrix();
+        return getDefaultProjectionMatrix(true);
     }
 
     glm::mat4 RmluiCanvasImpl::getModelMatrix() const noexcept
@@ -1019,7 +1025,7 @@ namespace darmok
             return trans->getWorldMatrix() * baseModel;
         }
 
-        auto mtx = getDefaultProjectionMatrix() * baseModel;
+        auto mtx = getDefaultProjectionMatrix(true) * baseModel;
         if (_cam)
         {
             // if the canvas does not have a transform, it means we want to use the full screen
@@ -1078,7 +1084,7 @@ namespace darmok
         auto size = getCurrentSize();
 
         Viewport(size).configureView(viewId);
-        auto proj = getDefaultProjectionMatrix();
+        auto proj = getDefaultProjectionMatrix(false);
 
         static const glm::vec3 invy(1.F, -1.F, 1.F);
         auto view = glm::translate(glm::mat4(1.F), glm::vec3(0.F, size.y, 0.F));
