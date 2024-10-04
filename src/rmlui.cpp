@@ -58,8 +58,10 @@ namespace darmok
         , _scissor(0)
         , _trans(1.F)
         , _textureUniform{ bgfx::kInvalidHandle }
+        , _dataUniform{ bgfx::kInvalidHandle }
     {
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+        _dataUniform = bgfx::createUniform("u_rmluiData", bgfx::UniformType::Vec4);
 
         ProgramDefinition progDef;
         progDef.loadStaticMem(rmlui_program);
@@ -68,7 +70,7 @@ namespace darmok
 
     RmluiRenderInterface::~RmluiRenderInterface() noexcept
     {
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{ _textureUniform };
+        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{ _textureUniform, _dataUniform };
         for (auto ref : uniforms)
         {
             auto& uniform = ref.get();
@@ -326,6 +328,14 @@ namespace darmok
         encoder.setTransform(glm::value_ptr(model));
 
         encoder.setTexture(0, _textureUniform, tex->getHandle());
+
+        glm::vec3 data(0);
+        if (auto depth = canvas.getForcedDepth())
+        {
+            data.x = 1.F;
+            data.y = depth.value();
+        }
+        encoder.setUniform(_dataUniform, glm::value_ptr(data));
 
         auto meshData = MeshData(Rectangle(canvas.getCurrentSize()));
         meshData.type = MeshType::Transient;
@@ -965,17 +975,21 @@ namespace darmok
         return scene->getComponent<Transform>(entity);
     }
 
-    glm::mat4 RmluiCanvasImpl::getDefaultProjectionMatrix(bool offsetDepth) const noexcept
+    std::optional<float> RmluiCanvasImpl::getForcedDepth() const noexcept
+    {
+        if (getTransform())
+        {
+            return std::nullopt;
+        }
+        auto v = _cam->getProjectionMatrix() * glm::vec4(_offset, 1.F);
+        return Math::clamp(v.z / v.w, 0.F, 1.F);
+    }
+
+    glm::mat4 RmluiCanvasImpl::getDefaultProjectionMatrix() const noexcept
     {
         auto botLeft = glm::vec2(0.F);
         auto topRight = glm::vec2(getCurrentSize());
-        glm::vec2 depth(0.F, 1.F);
-        if (offsetDepth && _cam)
-        {
-            auto v = _cam->getProjectionMatrix() * glm::vec4(_offset, 1.F);
-            depth = Math::orthoDepthRange(_offset.z, v.z / v.w);
-        }
-        return Math::ortho(botLeft, topRight, depth[0], depth[1]);
+        return Math::ortho(botLeft, topRight, 0.F, 1.F);
     }
 
     glm::mat4 RmluiCanvasImpl::getProjectionMatrix() const noexcept
@@ -987,7 +1001,7 @@ namespace darmok
                 return _cam->getProjectionMatrix();
             }
         }
-        return getDefaultProjectionMatrix(true);
+        return getDefaultProjectionMatrix();
     }
 
     glm::mat4 RmluiCanvasImpl::getModelMatrix() const noexcept
@@ -1025,7 +1039,7 @@ namespace darmok
             return trans->getWorldMatrix() * baseModel;
         }
 
-        auto mtx = getDefaultProjectionMatrix(true) * baseModel;
+        auto mtx = getDefaultProjectionMatrix() * baseModel;
         if (_cam)
         {
             // if the canvas does not have a transform, it means we want to use the full screen
@@ -1084,7 +1098,7 @@ namespace darmok
         auto size = getCurrentSize();
 
         Viewport(size).configureView(viewId);
-        auto proj = getDefaultProjectionMatrix(false);
+        auto proj = getDefaultProjectionMatrix();
 
         static const glm::vec3 invy(1.F, -1.F, 1.F);
         auto view = glm::translate(glm::mat4(1.F), glm::vec3(0.F, size.y, 0.F));

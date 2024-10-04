@@ -526,6 +526,11 @@ namespace darmok
 		_scroll = glm::vec2(0);
 		if (_active)
 		{
+			if (_hasBeenInactive)
+			{
+				_lastPosition = _position;
+				_lastPositionTimePassed = 0.F;
+			}
 			_hasBeenInactive = false;
 		}
 	}
@@ -1239,6 +1244,7 @@ namespace darmok
 		return v;
 	}
 
+	// TODO: maybe should be configurable? these values work for me
 	const float InputImpl::_mouseVelocityDirFactor = 0.0004F;
 	const float InputImpl::_mouseScrollDirFactor = 5.F;
 

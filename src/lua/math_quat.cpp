@@ -10,7 +10,7 @@ namespace darmok
 			sol::factories(
 				[]() { return glm::quat(1, 0, 0, 0); },
 				[](float w, float x, float y, float z) { return glm::quat(w, x, y, z); },
-				[](const glm::vec3& vec) { return glm::quat(vec); }
+				[](const VarLuaTable<glm::vec3>& vec) { return glm::quat(LuaGlm::tableGet(vec)); }
 			),
 			sol::meta_function::equal_to, sol::resolve<bool(const glm::quat&, const glm::quat&)>(glm::operator==),
 			sol::meta_function::addition, sol::resolve<glm::quat(const glm::quat&, const glm::quat&)>(glm::operator+),
@@ -38,7 +38,10 @@ namespace darmok
 			"norm", sol::resolve<glm::quat(const glm::quat&)>(glm::normalize),
 			"slerp", sol::resolve<glm::quat(const glm::quat&, const glm::quat&, float)>(&glm::slerp),
 			"euler_angles", sol::resolve<glm::vec3(const glm::quat&)>(&glm::eulerAngles),
-			"angle_axis", sol::resolve<glm::quat(const float&, const glm::vec3&)>(&glm::angleAxis),
+			"angle_axis", [](float angle, const VarLuaTable<glm::vec3>& axis)
+			{
+				return glm::angleAxis(angle, LuaGlm::tableGet(axis));
+			},
 			"rotate", sol::resolve<glm::quat(const glm::quat&, const float&, const glm::vec3&)>(&glm::rotateNormalizedAxis),
 			"rotate_x", [](const glm::quat& quat, float f) { return glm::rotateNormalizedAxis(quat, f, glm::vec3(1, 0, 0)); },
 			"rotate_y", [](const glm::quat& quat, float f) { return glm::rotateNormalizedAxis(quat, f, glm::vec3(0, 1, 0)); },

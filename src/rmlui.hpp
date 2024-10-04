@@ -102,6 +102,7 @@ namespace darmok
 		App& _app;
 		std::unique_ptr<Program> _program;
 		bgfx::UniformHandle _textureUniform;
+		bgfx::UniformHandle _dataUniform;
 		std::unordered_map<Rml::String, std::reference_wrapper<Texture>> _textureSources;
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
 		std::unordered_map<Rml::CompiledGeometryHandle, std::unique_ptr<Mesh>> _meshes;
@@ -231,6 +232,7 @@ namespace darmok
 		void renderPassExecute(IRenderGraphContext& context) override;
 
 		glm::mat4 getRenderMatrix() const noexcept;
+		std::optional<float> getForcedDepth() const noexcept;
 
 	private:
 		RmluiCanvas& _canvas;
@@ -253,7 +255,7 @@ namespace darmok
 
 		glm::mat4 getModelMatrix() const noexcept;
 		glm::mat4 getProjectionMatrix() const noexcept;
-		glm::mat4 getDefaultProjectionMatrix(bool offsetDepth) const noexcept;
+		glm::mat4 getDefaultProjectionMatrix() const noexcept;
 		OptionalRef<Transform> getTransform() const noexcept;
 		void configureViewSize(bgfx::ViewId viewId) const noexcept;
 	};

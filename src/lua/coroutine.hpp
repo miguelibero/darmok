@@ -93,6 +93,8 @@ namespace darmok
 	{
 	public:
 		LuaEaseRotation(Transform& trans, const glm::quat& rotation, float duration = 1.F, EasingType easing = EasingType::Linear) noexcept;
+		LuaEaseRotation(Transform& trans, float angle, const glm::vec3& axis, float duration = 1.F, EasingType easing = EasingType::Linear) noexcept;
+		
 		void update(float deltaTime) noexcept override;
 		bool finished() const noexcept override;
 
@@ -100,7 +102,11 @@ namespace darmok
 	private:
 		std::reference_wrapper<Transform> _trans;
 		glm::quat _startRotation;
+
 		glm::quat _endRotation;
+		float _angle;
+		glm::vec3 _axis;
+
 		float _duration;
 		float _normalizedTime;
 		EasingType _easing;

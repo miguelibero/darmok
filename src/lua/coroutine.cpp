@@ -180,6 +180,20 @@ namespace darmok
 		: _trans(trans)
 		, _startRotation(trans.getRotation())
 		, _endRotation(rotation)
+		, _angle(0.F)
+		, _axis(0)
+		, _duration(duration)
+		, _normalizedTime(0.F)
+		, _easing(easing)
+	{
+	}
+
+	LuaEaseRotation::LuaEaseRotation(Transform& trans, float angle, const glm::vec3& axis, float duration, EasingType easing) noexcept
+		: _trans(trans)
+		, _startRotation(trans.getRotation())
+		, _endRotation(_startRotation * glm::angleAxis(angle, axis))
+		, _angle(angle)
+		, _axis(axis)
 		, _duration(duration)
 		, _normalizedTime(0.F)
 		, _easing(easing)
@@ -196,7 +210,17 @@ namespace darmok
 			return;
 		}
 		auto f = Easing::apply(_easing, _normalizedTime, 0.F, 1.F);
-		auto rot = glm::slerp(_startRotation, _endRotation, f);
+
+		glm::quat rot(1.F, 0.F, 0.F, 0.F);
+		if (_angle != 0.F)
+		{
+			rot = _startRotation * glm::angleAxis(_angle * _normalizedTime, _axis);
+		}
+		else
+		{
+			rot = glm::slerp(_startRotation, _endRotation, f);
+		}
+
 		_trans.get().setRotation(rot);
 	}
 
@@ -214,6 +238,12 @@ namespace darmok
 				},
 				[](Transform& trans, const VarLuaTable<glm::quat>& rot, float duration) -> std::shared_ptr<ILuaYieldInstruction> {
 					return std::make_shared<LuaEaseRotation>(trans, LuaGlm::tableGet(rot), duration);
+				},
+				[](Transform& trans, float angle, const VarLuaTable<glm::vec3>& axis, float duration, EasingType easing) -> std::shared_ptr<ILuaYieldInstruction> {
+					return std::make_shared<LuaEaseRotation>(trans, angle, LuaGlm::tableGet(axis), duration, easing);
+				},
+				[](Transform& trans, float angle, const VarLuaTable<glm::vec3>& axis, float duration) -> std::shared_ptr<ILuaYieldInstruction> {
+					return std::make_shared<LuaEaseRotation>(trans, angle, LuaGlm::tableGet(axis), duration);
 				}
 			), sol::base_classes, sol::bases<ILuaYieldInstruction>()
 		);
