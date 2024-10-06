@@ -12,9 +12,10 @@ namespace darmok
 			"vertex_layout", sol::property([](const Program& prog) { return prog.getVertexLayout().getBgfx(); })
 		);
 		lua.new_enum<StandardProgramType>("StandardProgramType", {
-			{ "Unlit",		StandardProgramType::Unlit },
-			{ "Gui",		StandardProgramType::Gui },
-			{ "Forward",	StandardProgramType::Forward }
+			{ "Unlit",			StandardProgramType::Unlit },
+			{ "Gui",			StandardProgramType::Gui },
+			{ "Forward",		StandardProgramType::Forward },
+			{ "ForwardBasic",	StandardProgramType::ForwardBasic }
 		});
 	}
 

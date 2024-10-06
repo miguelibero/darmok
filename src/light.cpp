@@ -224,7 +224,7 @@ namespace darmok
             auto trans = _scene->getComponent<const Transform>(entity);
             if (trans)
             {
-                auto dir = trans->getWorldRotation() * glm::vec3(0, 0, 1);
+                auto dir = -glm::normalize(trans->getWorldPosition());
                 writer.write(bgfx::Attrib::Normal, index, dir);
             }
             auto intensity = light.getIntensity();
