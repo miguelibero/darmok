@@ -11,6 +11,8 @@ namespace darmok
 {
     struct LuaUtils final
     {
+        static bool isArray(const sol::table& table)  noexcept;
+
         static void logError(const std::string& desc, const sol::error& err) noexcept;
 
         static bool checkResult(const std::string& desc, const sol::protected_function_result& result) noexcept;

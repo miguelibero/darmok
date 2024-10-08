@@ -104,7 +104,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * other types of lights (with shadow mapping)
     * deferred, clustered
     * SSAO
-* support for nested rmlui data models in lua
 * luajit support (maybe compile using importer)
 * text improvements
     * finish all the TextRenderConfig options

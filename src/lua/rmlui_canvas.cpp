@@ -209,45 +209,29 @@ namespace darmok
         return scene.getEntity(canvas);
     }
 
-    bool LuaRmluiCanvas::recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept
+    Rml::DataModelHandle LuaRmluiCanvas::recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept
     {
-        auto removed = removeDataModel(canvas, name);
-        createDataModel(canvas, name, table);
-        return removed;
+        removeDataModel(canvas, name);
+        return createDataModel(canvas, name, table);
     }
 
-    void LuaRmluiCanvas::createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept
+    Rml::DataModelHandle LuaRmluiCanvas::createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table)
     {
-        auto constr = canvas.getContext().CreateDataModel(name);
-        if (!constr)
-        {
-            return;
-        }
+        auto model = canvas.getContext().CreateDataModel(name);
+        auto defPtr = Rml::MakeUnique<LuaRmluiVariableDefinition>(table.lua_state());
+        auto def = defPtr.get();
+        model.RegisterCustomDataVariableDefinition<sol::object>(std::move(defPtr));
+
         for (auto& [key, val] : table)
         {
-            auto str = key.as<std::string>();
-            constr.BindFunc(str,
-                [table, key](Rml::Variant& var)
-                    { LuaRmluiEvent::setRmlVariant(var, table[key]); },
-                [table, key](const Rml::Variant& var) mutable
-                    { table[key] = LuaRmluiEvent::getRmlVariant(table.lua_state(), var); }
-            );
+            auto strkey = key.as<std::string>();
+            auto ptr = def->getKeyPointer({ strkey });
+            model.BindCustomDataVariable(strkey, Rml::DataVariable(def, ptr));
         }
-        auto handle = constr.GetModelHandle();
-        table["is_dirty"] = [handle](const std::string& name) mutable
-        {
-            return handle.IsVariableDirty(name);
-        };
-        table["set_dirty"] = sol::overload(
-            [handle]() mutable
-            {
-                return handle.DirtyAllVariables();
-            },
-            [handle](const std::string& name) mutable
-            {
-                return handle.DirtyVariable(name);
-            }
-        );
+
+        auto handle = model.GetModelHandle();
+        table["handle"] = handle;
+        return handle;
     }
 
     Rml::DataModelHandle LuaRmluiCanvas::getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept

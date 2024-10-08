@@ -3,82 +3,119 @@
 
 namespace darmok
 {
-    void LuaRmluiEvent::setRmlVariant(Rml::Variant& variant, sol::object obj) noexcept
+    Rml::DataVariableType LuaRmluiUtils::getDataVariableType(const sol::object& obj) noexcept
     {
-        switch (obj.get_type())
+        if (obj.get_type() != sol::type::table)
+        {
+            return Rml::DataVariableType::Scalar;
+        }
+        sol::table table = obj;
+        if (LuaUtils::isArray(table))
+        {
+            return Rml::DataVariableType::Array;
+        }
+        return Rml::DataVariableType::Struct;
+    }
+
+    bool LuaRmluiUtils::setVariant(Rml::Variant& variant, const sol::object& obj) noexcept
+    {
+        auto type = obj.get_type();
+        switch (type)
         {
             case sol::type::none:
             case sol::type::nil:
                 variant.Clear();
-                break;
+                return true;
             case sol::type::boolean:
                 variant = obj.as<bool>();
-                break;
+                return true;
             case sol::type::number:
                 variant = obj.as<double>();
-                break;
+                return true;
             case sol::type::string:
                 variant = obj.as<std::string>();
-                break;
+                return true;
             case sol::type::userdata:
             {
                 if (obj.is<glm::vec2>())
                 {
                     variant = RmluiUtils::convert(obj.as<glm::vec2>());
+                    return true;
                 }
                 if (obj.is<glm::vec3>())
                 {
                     variant = RmluiUtils::convert(obj.as<glm::vec3>());
+                    return true;
                 }
                 if (obj.is<glm::vec4>())
                 {
                     variant = RmluiUtils::convert(obj.as<glm::vec4>());
+                    return true;
                 }
                 if (obj.is<Color>())
                 {
                     variant = RmluiUtils::convert(obj.as<Color>());
+                    return true;
                 }
                 break;
             }
         }
+        return false;
     }
 
-    sol::object LuaRmluiEvent::getRmlVariant(lua_State* lua, const Rml::Variant& variant) noexcept
+    bool LuaRmluiUtils::getVariant(sol::object& obj, const Rml::Variant& variant) noexcept
     {
+        auto lua = obj.lua_state();
         switch (variant.GetType())
         {
         case Rml::Variant::BOOL:
-            return sol::make_object(lua, variant.Get<bool>());
+            obj = sol::object(lua, variant.Get<bool>());
+            return true;
         case Rml::Variant::BYTE:
-            return sol::make_object(lua, variant.Get<uint8_t>());
+            obj = sol::object(lua, variant.Get<uint8_t>());
+            return true;
         case Rml::Variant::CHAR:
-            return sol::make_object(lua, variant.Get<char>());
+            obj = sol::object(lua, variant.Get<char>());
+            return true;
         case Rml::Variant::FLOAT:
-            return sol::make_object(lua, variant.Get<float>());
+            obj = sol::object(lua, variant.Get<float>());
+            return true;
         case Rml::Variant::DOUBLE:
-            return sol::make_object(lua, variant.Get<double>());
+            obj = sol::object(lua, variant.Get<double>());
+            return true;
         case Rml::Variant::INT:
-            return sol::make_object(lua, variant.Get<int>());
+            obj = sol::object(lua, variant.Get<int>());
+            return true;
         case Rml::Variant::INT64:
-            return sol::make_object(lua, variant.Get<int64_t>());
+            obj = sol::object(lua, variant.Get<int64_t>());
+            return true;
         case Rml::Variant::UINT:
-            return sol::make_object(lua, variant.Get<unsigned int>());
+            obj = sol::object(lua, variant.Get<unsigned int>());
+            return true;
         case Rml::Variant::UINT64:
-            return sol::make_object(lua, variant.Get<uint64_t>());
+            obj = sol::object(lua, variant.Get<uint64_t>());
+            return true;
         case Rml::Variant::STRING:
-            return sol::make_object(lua, variant.Get<Rml::String>());
+            obj = sol::make_object(lua, variant.Get<Rml::String>());
+            return true;
         case Rml::Variant::VECTOR2:
-            return sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Vector2f>()));
+            obj = sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Vector2f>()));
+            return true;
         case Rml::Variant::VECTOR3:
-            return sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Vector3f>()));
+            obj = sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Vector3f>()));
+            return true;
         case Rml::Variant::VECTOR4:
-            return sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Vector4f>()));
+            obj = sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Vector4f>()));
+            return true;
         case Rml::Variant::COLOURF:
-            return sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Colourf>()));
+            obj = sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Colourf>()));
+            return true;
         case Rml::Variant::COLOURB:
-            return sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Colourb>()));
+            obj = sol::make_object(lua, RmluiUtils::convert(variant.Get<Rml::Colourb>()));
+            return true;
         default:
-            return sol::nil;
+            obj.reset();
+            return true;
         }
         /*
         * TODO: check what to do with these
@@ -89,6 +126,113 @@ namespace darmok
             DECORATORSPTR = 'D',
             FONTEFFECTSPTR = 'F',
         */
+    }
+
+
+    LuaRmluiVariableDefinition::LuaRmluiVariableDefinition(const sol::table& table) noexcept
+        : Rml::VariableDefinition(Rml::DataVariableType::Scalar)
+        , _table(table)
+    {
+    }
+
+    sol::object LuaRmluiVariableDefinition::getTableValue(const AbsTableKey& key) const noexcept
+    {
+        sol::table tab(_table);
+        for(size_t i = 0; i < key.size(); ++i)
+        {
+            auto elm = tab[key[i]];
+            if (elm.get_type() == sol::type::table)
+            {
+                tab = elm;
+            }
+            else if (i == key.size() - 1)
+            {
+                return elm;
+            }
+            else
+            {
+                return sol::nil;
+            }
+        }
+        return tab;
+    }
+
+    OptionalRef<const LuaRmluiVariableDefinition::AbsTableKey> LuaRmluiVariableDefinition::getPointerKey(void* ptr) const noexcept
+    {
+        auto index = static_cast<int>(reinterpret_cast<intptr_t>(ptr));
+        if (index < 0 || index >= _keys.size())
+        {
+            return nullptr;
+        }
+        return _keys.at(index);
+    }
+
+    void* LuaRmluiVariableDefinition::getKeyPointer(const AbsTableKey& key) noexcept
+    {
+        auto itr = std::find(_keys.begin(), _keys.end(), key);
+        auto index = 0;
+        if (itr != _keys.end())
+        {
+            index = std::distance(_keys.begin(), itr);
+        }
+        else
+        {
+            index = _keys.size();
+            _keys.emplace_back(key);
+        }
+        return reinterpret_cast<void*>(static_cast<intptr_t>(index));
+    }
+
+    sol::object LuaRmluiVariableDefinition::getPointerObject(void* ptr) const noexcept
+    {
+        if (auto key = getPointerKey(ptr))
+        {
+            return getTableValue(key.value());
+        }
+        return sol::nil;
+    }
+
+    bool LuaRmluiVariableDefinition::Get(void* ptr, Rml::Variant& variant) noexcept
+    {
+        auto obj = getPointerObject(ptr);
+        return LuaRmluiUtils::setVariant(variant, obj);
+    }
+
+    bool LuaRmluiVariableDefinition::Set(void* ptr, const Rml::Variant& variant) noexcept
+    {
+        auto obj = getPointerObject(ptr);
+        return LuaRmluiUtils::getVariant(obj, variant);
+    }
+
+    int LuaRmluiVariableDefinition::Size(void* ptr) noexcept
+    {
+        auto obj = getPointerObject(ptr);
+        if (obj.get_type() != sol::type::table)
+        {
+            return 0;
+        }
+        sol::table table = obj;
+        return table.size();
+    }
+
+    Rml::DataVariable LuaRmluiVariableDefinition::Child(void* ptr, const Rml::DataAddressEntry& address) noexcept
+    {
+        auto key = getPointerKey(ptr);
+        if (!key)
+        {
+            return {};
+        }
+        AbsTableKey childKey = key.value();
+        if (address.index < 0)
+        {
+            childKey.push_back(address.name);
+        }
+        else
+        {
+            childKey.push_back(address.index + 1);
+        }
+        auto childPtr = getKeyPointer(childKey);
+        return Rml::DataVariable(this, childPtr);
     }
 
     glm::vec2 LuaRmluiEvent::getUnprojectedMouseScreenPosition(const Rml::Event& ev) noexcept
@@ -103,7 +247,8 @@ namespace darmok
         for (auto& elm : params)
         {
             std::string key = elm.first;
-            tab[key] = getRmlVariant(ts.lua_state(), elm.second);
+            sol::object val = tab[key];
+            LuaRmluiUtils::getVariant(val, elm.second);
         }
         return tab;
     }
@@ -116,7 +261,10 @@ namespace darmok
         {
             return sol::nil;
         }
-        return getRmlVariant(ts.lua_state(), itr->second);
+
+        sol::object obj(ts.lua_state());
+        LuaRmluiUtils::getVariant(obj, itr->second);
+        return obj;
     }
 
     std::string LuaRmluiEvent::toString(const Rml::Event& ev) noexcept

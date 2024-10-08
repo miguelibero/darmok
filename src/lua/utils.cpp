@@ -9,6 +9,16 @@
 
 namespace darmok
 {
+	bool LuaUtils::isArray(const sol::table& table)  noexcept
+	{
+		if (table.empty())
+		{
+			return true;
+		}
+		auto key = (*table.cbegin()).first;
+		return key.as<int>() == 1;
+	}
+
     void LuaUtils::logError(const std::string& desc, const sol::error& err) noexcept
 	{
 		std::stringstream ss;

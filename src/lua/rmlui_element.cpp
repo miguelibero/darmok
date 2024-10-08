@@ -29,7 +29,10 @@ namespace darmok
         {
             return sol::nil;
         }
-        return LuaRmluiEvent::getRmlVariant(ts.lua_state(), itr->second);
+
+        sol::object obj(ts.lua_state());
+        LuaRmluiUtils::getVariant(obj, itr->second);
+        return obj;
     }
     
     void LuaRmluiElement::setAttribute(Rml::Element& elm, const std::string& name, const sol::object& val)
@@ -103,7 +106,7 @@ namespace darmok
         for (auto& [key, val] : params)
         {
             Rml::Variant var;
-            LuaRmluiEvent::setRmlVariant(var, val);
+            LuaRmluiUtils::setVariant(var, val);
             dict.emplace(key.as<std::string>(), var);
         }
         return elm.DispatchEvent(type, dict, interruptible, bubbles);

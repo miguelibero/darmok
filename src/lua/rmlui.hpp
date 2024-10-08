@@ -10,11 +10,13 @@
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/EventListenerInstancer.h>
 #include <RmlUi/Core/ElementDocument.h>
+#include <RmlUi/Core/DataVariable.h>
 #include <unordered_map>
 #include <vector>
 #include <memory>
 #include <string>
 #include <optional>
+#include <variant>
 #include "glm.hpp"
 #include "viewport.hpp"
 #include "utils.hpp"
@@ -28,6 +30,13 @@ namespace Rml
 
 namespace darmok
 {
+    struct LuaRmluiUtils final
+    {
+        static bool setVariant(Rml::Variant& variant, const sol::object& obj) noexcept;
+        static bool getVariant(sol::object& obj, const Rml::Variant& variant) noexcept;
+        static Rml::DataVariableType getDataVariableType(const sol::object& obj) noexcept;
+    };
+
     class Texture;
     class RmluiRenderer;
     class RmluiCanvas;
@@ -42,14 +51,34 @@ namespace darmok
         LuaDelegate _delegate;
     };
 
-    class LuaRmluiRenderer;    
+    class LuaRmluiRenderer;
+
+    class LuaRmluiVariableDefinition final : public Rml::VariableDefinition
+    {
+    public:
+        LuaRmluiVariableDefinition(const sol::table& table) noexcept;
+        bool Get(void* ptr, Rml::Variant& variant) noexcept override;
+        bool Set(void* ptr, const Rml::Variant& variant) noexcept override;
+        int Size(void* ptr) noexcept override;
+        Rml::DataVariable Child(void* ptr, const Rml::DataAddressEntry& address) noexcept override;
+
+        using TableKey = std::variant<int, std::string>;
+        using AbsTableKey = std::vector<TableKey>;
+
+        void* getKeyPointer(const AbsTableKey& key) noexcept;
+    private:
+        sol::table _table;
+
+        std::vector<AbsTableKey> _keys;
+
+        sol::object getPointerObject(void* ptr) const noexcept;
+        OptionalRef<const AbsTableKey> getPointerKey(void* ptr) const noexcept;
+        sol::object getTableValue(const AbsTableKey& key) const noexcept;
+    };
 
     class LuaRmluiEvent final
     {
     public:
-        static void setRmlVariant(Rml::Variant& variant, sol::object obj) noexcept;
-        static sol::object getRmlVariant(lua_State* lua, const Rml::Variant& variant) noexcept;
-
         static void bind(sol::state_view& lua) noexcept;
     private:
         static glm::vec2 getUnprojectedMouseScreenPosition(const Rml::Event& ev) noexcept;
@@ -137,8 +166,8 @@ namespace darmok
         static sol::environment getEnvironment(const RmluiCanvas& canvas) noexcept;
         static std::optional<glm::uvec2> getSize(const RmluiCanvas& canvas) noexcept;
 
-        static bool recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept;
-        static void createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept;
+        static Rml::DataModelHandle recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept;
+        static Rml::DataModelHandle createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table);
         static Rml::DataModelHandle getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept;
         static bool removeDataModel(RmluiCanvas& canvas, const std::string& name) noexcept;
 
