@@ -209,34 +209,53 @@ namespace darmok
         return scene.getEntity(canvas);
     }
 
-    Rml::DataModelHandle LuaRmluiCanvas::recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept
+    Rml::DataModelConstructor LuaRmluiCanvas::recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept
     {
         removeDataModel(canvas, name);
         return createDataModel(canvas, name, table);
     }
 
-    Rml::DataModelHandle LuaRmluiCanvas::createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table)
+    Rml::DataModelConstructor LuaRmluiCanvas::createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table)
     {
+        auto lua = table.lua_state();
+
         auto model = canvas.getContext().CreateDataModel(name);
-        auto defPtr = Rml::MakeUnique<LuaRmluiVariableDefinition>(table.lua_state());
+        auto defPtr = Rml::MakeUnique<LuaRmluiVariableDefinition>(lua);
         auto def = defPtr.get();
         model.RegisterCustomDataVariableDefinition<sol::object>(std::move(defPtr));
 
         for (auto& [key, val] : table)
         {
             auto strkey = key.as<std::string>();
-            auto ptr = def->getKeyPointer({ strkey });
-            model.BindCustomDataVariable(strkey, Rml::DataVariable(def, ptr));
+            auto type = val.get_type();
+            if (type == sol::type::function)
+            {
+                auto func = val.as<sol::protected_function>();
+
+                model.BindEventCallback(strkey, [func, lua](Rml::DataModelHandle handle, Rml::Event& ev, const Rml::VariantList& variants)
+                {
+                    std::vector<sol::object> args{
+                        sol::make_object(lua, handle),
+                        sol::make_object(lua, std::ref(ev))
+                    };
+                    LuaRmluiUtils::getVariantList(lua, args, variants);
+                    func(sol::as_args(args));
+                });
+            }
+            else
+            {
+                auto ptr = def->getKeyPointer({ strkey });
+                model.BindCustomDataVariable(strkey, Rml::DataVariable(def, ptr));
+            }
         }
 
-        auto handle = model.GetModelHandle();
-        table["handle"] = handle;
-        return handle;
+        table["handle"] = model.GetModelHandle();
+        return model;
     }
 
-    Rml::DataModelHandle LuaRmluiCanvas::getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept
+    Rml::DataModelConstructor LuaRmluiCanvas::getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept
     {
-        return canvas.getContext().GetDataModel(name).GetModelHandle();
+        return canvas.getContext().GetDataModel(name);
     }
 
     bool LuaRmluiCanvas::removeDataModel(RmluiCanvas& canvas, const std::string& name) noexcept
@@ -270,13 +289,30 @@ namespace darmok
             { "Disabled", RmluiCanvasMousePositionMode::Disabled }
         });
 
-        lua.new_usertype<Rml::DataModelHandle>("RmluiModelHandle", sol::no_constructor,
+        lua.new_usertype<Rml::DataModelHandle>("RmluiDataModelHandle", sol::no_constructor,
             "is_dirty", &Rml::DataModelHandle::IsVariableDirty,
             "set_dirty", sol::overload(
                 &Rml::DataModelHandle::DirtyVariable,
                 &Rml::DataModelHandle::DirtyAllVariables
             )
         );
+
+        lua.new_usertype<Rml::DataModelConstructor>("RmluiDataModelConstructor", sol::no_constructor,
+            "register_transform", [](Rml::DataModelConstructor& model, const std::string& name, const sol::protected_function& func)
+            {
+                model.RegisterTransformFunc(name, [func](const Rml::VariantList& variants)
+                {
+                    std::vector<sol::object> args;
+                    LuaRmluiUtils::getVariantList(func.lua_state(), args, variants);
+                    sol::object obj = func(sol::as_args(args));
+                    Rml::Variant r;
+                    LuaRmluiUtils::setVariant(r, obj);
+                    return r;
+                });
+                return model;
+            }
+        );
+
 
         lua.new_usertype<RmluiCanvas>("RmluiCanvas", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<RmluiCanvas>::value),

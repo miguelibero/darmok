@@ -26,6 +26,7 @@ namespace Rml
     class Variant;
     class ElementDocument;
     class DataModelHandle;
+    class DataModelConstructor;
 }
 
 namespace darmok
@@ -34,6 +35,7 @@ namespace darmok
     {
         static bool setVariant(Rml::Variant& variant, const sol::object& obj) noexcept;
         static bool getVariant(sol::object& obj, const Rml::Variant& variant) noexcept;
+        static void getVariantList(lua_State* lua, std::vector<sol::object>& objs, const Rml::VariantList& variants) noexcept;
         static Rml::DataVariableType getDataVariableType(const sol::object& obj) noexcept;
     };
 
@@ -166,9 +168,9 @@ namespace darmok
         static sol::environment getEnvironment(const RmluiCanvas& canvas) noexcept;
         static std::optional<glm::uvec2> getSize(const RmluiCanvas& canvas) noexcept;
 
-        static Rml::DataModelHandle recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept;
-        static Rml::DataModelHandle createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table);
-        static Rml::DataModelHandle getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept;
+        static Rml::DataModelConstructor recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept;
+        static Rml::DataModelConstructor createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table);
+        static Rml::DataModelConstructor getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept;
         static bool removeDataModel(RmluiCanvas& canvas, const std::string& name) noexcept;
 
         static RmluiCanvas& addEventListener(RmluiCanvas& canvas, const std::string& ev, const sol::object& obj) noexcept;

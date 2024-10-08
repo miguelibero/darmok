@@ -128,6 +128,13 @@ namespace darmok
         */
     }
 
+    void LuaRmluiUtils::getVariantList(lua_State* lua, std::vector<sol::object>& objs, const Rml::VariantList& variants) noexcept
+    {
+        for (auto& variant : variants)
+        {
+            getVariant(objs.emplace_back(lua), variant);
+        }
+    }
 
     LuaRmluiVariableDefinition::LuaRmluiVariableDefinition(const sol::table& table) noexcept
         : Rml::VariableDefinition(Rml::DataVariableType::Scalar)
