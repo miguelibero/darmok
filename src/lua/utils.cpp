@@ -66,9 +66,14 @@ namespace darmok
 				table = cls;
 			}
 			auto entry = table["type_id"];
-			if (entry.get_type() == sol::type::number)
+			auto entryType = entry.get_type();
+			if (entryType == sol::type::number)
 			{
 				return entry.get<entt::id_type>();
+			}
+			if (entryType == sol::type::table)
+			{
+				return ptrTypeId(entry.get<sol::table>().pointer());
 			}
 			return ptrTypeId(table.pointer());
 		}

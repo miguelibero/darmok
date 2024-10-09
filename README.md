@@ -26,6 +26,7 @@ currently using:
 * [Cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
 * [tiny-process-lib](https://gitlab.com/eidheim/tiny-process-library) to run os processes
 * [mikktspace](http://www.mikktspace.com/) - to calculate tangents
+* [middleclass](https://github.com/kikito/middleclass) - small object orientation lua lib
 
 planned to use:
 
@@ -97,6 +98,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * play sounds and music (wav & mp3)
 
 #### Upcoming
+* switch to using [middleclass](https://github.com/kikito/middleclass)
 * camera frustum culling
 * frame limiting
 * more renderer features

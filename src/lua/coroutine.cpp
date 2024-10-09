@@ -301,7 +301,10 @@ namespace darmok
 		auto state = _animator->getCurrentState();
 		if (!state || state->getName() != _name)
 		{
-			_animator->play(_name);
+			if (!_animator->play(_name))
+			{
+				_finished = true;
+			}
 		}
 	}
 

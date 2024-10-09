@@ -19,10 +19,9 @@
 #include "utils.hpp"
 #include "render_chain.hpp"
 
-
 #include "generated/lua/string.h"
 #include "generated/lua/table.h"
-#include "generated/lua/class.h"
+#include "generated/lua/middleclass.h"
 #include "generated/lua/base.h"
 
 #ifdef DARMOK_RMLUI
@@ -427,9 +426,17 @@ namespace darmok
 		lua.open_libraries(sol::lib::debug);
 #endif
 
-		auto addStaticLib = [&lua](auto& lib, const std::string& name)
+		auto addStaticLib = [&lua](auto& lib, const std::string& name, bool require = false)
 		{
-			lua.script(DataView::fromStatic(lib).stringView(), name);
+			auto content = DataView::fromStatic(lib).stringView();
+			if (require)
+			{
+				lua.require_script(name, content, true, name);
+			}
+			else
+			{
+				lua.script(content, name);
+			}
 		};
 
 		LuaMath::bind(lua);
@@ -444,10 +451,11 @@ namespace darmok
 #endif
 #endif
 
-		addStaticLib(lua_darmok_lib_table, "darmok/table.lua");
-		addStaticLib(lua_darmok_lib_string, "darmok/string.lua");
-		addStaticLib(lua_darmok_lib_class, "darmok/class.lua");
-		addStaticLib(lua_darmok_lib_base, "darmok/base.lua");
+		addStaticLib(lua_darmok_lib_middleclass, "darmok/middleclass", true);
+
+		addStaticLib(lua_darmok_lib_table, "darmok/table");
+		addStaticLib(lua_darmok_lib_string, "darmok/string");
+		addStaticLib(lua_darmok_lib_base, "darmok/base");
 
 		_luaApp.emplace(_app);
 		lua["app"] = std::ref(_luaApp.value());
