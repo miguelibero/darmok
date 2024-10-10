@@ -366,13 +366,16 @@ namespace darmok
 
 	bool LuaCoroutineRunner::doStopCoroutine(const sol::thread& thread) noexcept
 	{
-		auto itr = std::remove(_threads.begin(), _threads.end(), thread);
+		auto ptr = thread.pointer();
+		auto itr = std::remove_if(_threads.begin(), _threads.end(), [ptr](auto& elm) {
+			return elm.pointer() == ptr;
+		});
 		auto found = itr != _threads.end();
 		if (found)
 		{
 			_threads.erase(itr, _threads.end());
 		}
-		auto itr2 = _awaits.find(thread.pointer());
+		auto itr2 = _awaits.find(ptr);
 		if (itr2 != _awaits.end())
 		{
 			_awaits.erase(itr2);

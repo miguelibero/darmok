@@ -451,6 +451,9 @@ endforeach()
 add_library(darmok::darmok ALIAS ${LIB_NAME})
 target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 
+# target_link_libraries(${CORE_LIB_NAME} PRIVATE -fsanitize=address)
+# target_link_libraries(${LIB_NAME} PRIVATE -fsanitize=address)
+
 set(EXPORT_TARGETS "")
 macro(_darmok_lib_setup TARGET)
   list(APPEND EXPORT_TARGETS ${TARGET})
