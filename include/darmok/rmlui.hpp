@@ -20,6 +20,7 @@ namespace Rml
 	class Element;
 	class ElementDocument;
 	class Event;
+	class DataModelConstructor;
 }
 
 namespace darmok
@@ -88,6 +89,10 @@ namespace darmok
 		RmluiCanvas& setDelegate(IRmluiCanvasDelegate& dlg) noexcept;
 		RmluiCanvas& setDelegate(std::unique_ptr<IRmluiCanvasDelegate>&& dlg) noexcept;
 		OptionalRef<IRmluiCanvasDelegate> getDelegate() const noexcept;
+
+		Rml::DataModelConstructor createDataModel(const std::string& name);
+		Rml::DataModelConstructor getDataModel(const std::string& name) noexcept;
+		bool removeDataModel(const std::string& name) noexcept;
 
 	private:
 		std::unique_ptr<RmluiCanvasImpl> _impl;

@@ -234,6 +234,11 @@ namespace darmok
 		glm::mat4 getRenderMatrix() const noexcept;
 		std::optional<float> getForcedDepth() const noexcept;
 
+		Rml::DataModelConstructor createDataModel(const std::string& name);
+		Rml::DataModelConstructor getDataModel(const std::string& name) noexcept;
+		bool removeDataModel(const std::string& name) noexcept;
+		Rml::DataTypeRegister& getDefaultDataTypeRegister();
+
 	private:
 		RmluiCanvas& _canvas;
 		OptionalRef<Rml::Context> _context;
@@ -249,6 +254,8 @@ namespace darmok
 		std::optional<FrameBuffer> _frameBuffer;
 		OptionalRef<IRmluiCanvasDelegate> _delegate;
 		std::unique_ptr<IRmluiCanvasDelegate> _delegatePtr;
+		std::unordered_map<std::string, std::unique_ptr<Rml::DataTypeRegister>> _dataTypeRegisters;
+		OptionalRef<Rml::DataTypeRegister> _defaultDataTypeRegister;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		bool updateCurrentSize() noexcept;

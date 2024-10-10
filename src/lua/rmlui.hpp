@@ -70,7 +70,6 @@ namespace darmok
         void* getKeyPointer(const AbsTableKey& key) noexcept;
     private:
         sol::table _table;
-
         std::vector<AbsTableKey> _keys;
 
         sol::object getPointerObject(void* ptr) const noexcept;
@@ -115,6 +114,7 @@ namespace darmok
         static void setOffset3(Rml::Element& elm, const VarLuaTable<glm::vec2>& offset, Rml::Element& parent, bool fixed);
         static glm::vec2 getSize(Rml::Element& elm);
         static void setSize(Rml::Element& elm, const glm::vec2& size);
+        static bool getVisible(Rml::Element& elm);
     };
 
     class LuaRmluiStyleSheet

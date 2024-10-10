@@ -553,6 +553,8 @@ namespace darmok
 
     void RmluiCanvasImpl::shutdown() noexcept
     {
+        _dataTypeRegisters.clear();
+        _defaultDataTypeRegister.reset();
         if (_context)
         {
             Rml::RemoveContext(_context->GetName());
@@ -1107,6 +1109,52 @@ namespace darmok
         bgfx::setViewTransform(viewId, glm::value_ptr(view), glm::value_ptr(proj));
     }
 
+    Rml::DataTypeRegister& RmluiCanvasImpl::getDefaultDataTypeRegister()
+    {
+        if (!_defaultDataTypeRegister)
+        {
+            static const std::string tempModelName;
+            _defaultDataTypeRegister = _context->CreateDataModel(tempModelName).GetDataTypeRegister();
+            _context->RemoveDataModel(tempModelName);
+        }
+        return _defaultDataTypeRegister.value();
+    }
+
+    Rml::DataModelConstructor RmluiCanvasImpl::createDataModel(const std::string& name)
+    {
+        if (!_context)
+        {
+            return {};
+        }
+        if (_dataTypeRegisters.contains(name))
+        {
+            return {};
+        }
+        auto reg = std::make_unique<Rml::DataTypeRegister>();
+        auto constructor = _context->CreateDataModel(name, reg.get());
+        _dataTypeRegisters[name] = std::move(reg);
+        return constructor;
+    }
+
+    Rml::DataModelConstructor RmluiCanvasImpl::getDataModel(const std::string& name) noexcept
+    {
+        if (!_context)
+        {
+            return {};
+        }
+        return _context->GetDataModel(name);
+    }
+
+    bool RmluiCanvasImpl::removeDataModel(const std::string& name) noexcept
+    {
+        _dataTypeRegisters.erase(name);
+        if (!_context)
+        {
+            return false;
+        }
+        return _context->RemoveDataModel(name);
+    }
+
     RmluiCanvas::RmluiCanvas(const std::string& name, const std::optional<glm::uvec2>& size) noexcept
         : _impl(std::make_unique<RmluiCanvasImpl>(*this, name, size))
     {
@@ -1261,6 +1309,21 @@ namespace darmok
     OptionalRef<IRmluiCanvasDelegate> RmluiCanvas::getDelegate() const noexcept
     {
         return _impl->getDelegate();
+    }
+
+    Rml::DataModelConstructor RmluiCanvas::createDataModel(const std::string& name)
+    {
+        return _impl->createDataModel(name);
+    }
+
+    Rml::DataModelConstructor RmluiCanvas::getDataModel(const std::string& name) noexcept
+    {
+        return _impl->getDataModel(name);
+    }
+
+    bool RmluiCanvas::removeDataModel(const std::string& name) noexcept
+    {
+        return _impl->removeDataModel(name);
     }
 
     RmluiPlugin::RmluiPlugin(App& app) noexcept

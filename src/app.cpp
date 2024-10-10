@@ -609,8 +609,7 @@ namespace darmok
 		static const KeyboardModifiers alt{ KeyboardModifier::Alt };
 		static const KeyboardModifiers shift{ KeyboardModifier::Shift };
 
-		if ((key == KeyboardKey::Esc && modifiers.empty())
-			|| (key == KeyboardKey::KeyQ && modifiers == ctrl))
+		if (key == KeyboardKey::KeyQ && modifiers == ctrl)
 		{
 			quit();
 			return;

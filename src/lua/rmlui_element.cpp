@@ -161,6 +161,11 @@ namespace darmok
         elm.SetBox(box);
     }
 
+    bool LuaRmluiElement::getVisible(Rml::Element& elm)
+    {
+        return elm.IsVisible();
+    }
+
     void LuaRmluiElement::bind(sol::state_view& lua) noexcept
     {
         lua.new_usertype<Rml::Element>("RmluiElement", sol::no_constructor,
@@ -171,7 +176,7 @@ namespace darmok
             "tag_name", sol::property(&Rml::Element::GetTagName),
             "stylesheet", sol::property(&Rml::Element::GetStyleSheet),
             "address", sol::property(&Rml::Element::GetAddress),
-            "visible", sol::property(&Rml::Element::IsVisible),
+            "visible", sol::property(&LuaRmluiElement::getVisible),
             "z_index", sol::property(&Rml::Element::GetZIndex),
             "inner_rml", sol::property(
                 sol::resolve<Rml::String() const>(&Rml::Element::GetInnerRML),
@@ -298,7 +303,17 @@ namespace darmok
                 &LuaRmluiElementDocument::show2,
                 &LuaRmluiElementDocument::show3
             ),
+            "hide", &Rml::ElementDocument::Hide,
             "close", &Rml::ElementDocument::Close,
+            "update", &Rml::ElementDocument::UpdateDocument,
+            "title", sol::property(&Rml::ElementDocument::GetTitle, &Rml::ElementDocument::SetTitle),
+            "stylesheet_container", sol::property(
+                &Rml::ElementDocument::GetStyleSheetContainer,
+                &Rml::ElementDocument::SetStyleSheetContainer),
+            "source_url", sol::property(&Rml::ElementDocument::GetSourceURL),
+            "pull_to_front", &Rml::ElementDocument::PullToFront,
+            "push_to_back", &Rml::ElementDocument::PushToBack,
+            "modal", sol::property(&Rml::ElementDocument::IsModal),
             sol::base_classes, sol::bases<Rml::Element>()
         );
     }
