@@ -69,8 +69,8 @@ namespace darmok
 		void addLuaComponent(const sol::table& table);
 		sol::object getLuaComponent(const sol::object& type) noexcept;
 
-		LuaCoroutineThread startCoroutine(const sol::function& func, sol::this_state ts) noexcept;
-		bool stopCoroutine(const LuaCoroutineThread& thread) noexcept;
+		LuaCoroutine startCoroutine(const sol::function& func) noexcept;
+		bool stopCoroutine(const LuaCoroutine& coroutine) noexcept;
 
 		void updateUpdaters(float deltaTime) noexcept;
 		bool removeUpdater3(const LuaDelegate& dlg) noexcept;

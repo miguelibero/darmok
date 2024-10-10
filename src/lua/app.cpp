@@ -155,14 +155,14 @@ namespace darmok
 		return true;
 	}
 
-	LuaCoroutineThread LuaApp::startCoroutine(const sol::function& func, sol::this_state ts) noexcept
+	LuaCoroutine LuaApp::startCoroutine(const sol::function& func) noexcept
 	{
-		return _coroutineRunner.startCoroutine(func, ts);
+		return _coroutineRunner.startCoroutine(func);
 	}
 
-	bool LuaApp::stopCoroutine(const LuaCoroutineThread& thread) noexcept
+	bool LuaApp::stopCoroutine(const LuaCoroutine& coroutine) noexcept
 	{
-		return _coroutineRunner.stopCoroutine(thread);
+		return _coroutineRunner.stopCoroutine(coroutine);
 	}
 
 	bool LuaApp::removeComponent(const sol::object& type)

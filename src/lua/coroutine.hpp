@@ -147,29 +147,46 @@ namespace darmok
 		void onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) noexcept override;
 	};
 
-	class LuaCoroutineThread final : public ILuaYieldInstruction
+	class LuaCoroutineRunner;
+
+	class LuaCoroutine final : public ILuaYieldInstruction
 	{
 	public:
-		LuaCoroutineThread(const sol::thread& thread) noexcept;
+		LuaCoroutine(const LuaCoroutineRunner& runner, const void* coroutinePtr) noexcept;
 		bool finished() const noexcept override;
-		const sol::thread& getReal() const noexcept;
+		const void* getPointer() const noexcept;
 	private:
-		sol::thread _thread;
+		std::reference_wrapper<const LuaCoroutineRunner> _runner;
+		const void* _coroutinePtr;
+	};
+
+	// https://github.com/ThePhD/sol2/issues/1061
+	struct LuaBundledCoroutine final
+	{
+		sol::thread thread;
+		sol::coroutine coroutine;
+
+		LuaBundledCoroutine(const sol::function& func) noexcept;
 	};
 
     class LuaCoroutineRunner final
     {
     public:
-        LuaCoroutineThread startCoroutine(const sol::function& func, sol::this_state ts) noexcept;
-		bool stopCoroutine(const LuaCoroutineThread& thread) noexcept;
+		LuaCoroutine startCoroutine(const sol::function& func) noexcept;
+		bool stopCoroutine(const LuaCoroutine& coroutine) noexcept;
         void update(float deltaTime, sol::state_view& lua) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
+		bool hasFinished(const void* coroutinePtr) const noexcept;
     private:
-		std::vector<sol::thread> _threads;
+
+		using Coroutines = std::vector<std::shared_ptr<LuaBundledCoroutine>>;
+		Coroutines _coroutines;
 		std::unordered_map<const void*, std::shared_ptr<ILuaYieldInstruction>> _awaits;
 
-		bool doStopCoroutine(const sol::thread& thread) noexcept;
+		bool resumeCoroutine(sol::coroutine& coroutine) noexcept;
+		bool doStopCoroutine(const void* coroutinePtr) noexcept;
+		Coroutines::const_iterator findCoroutine(const void* coroutinePtr) const noexcept;
 		static std::shared_ptr<ILuaYieldInstruction> readYieldInstruction(const sol::object& obj) noexcept;
     };
 }

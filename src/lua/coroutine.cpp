@@ -8,19 +8,20 @@
 
 namespace darmok
 {
-    LuaCoroutineThread::LuaCoroutineThread(const sol::thread& thread) noexcept
-		: _thread(thread)
+	LuaCoroutine::LuaCoroutine(const LuaCoroutineRunner& runner, const void* coroutinePtr) noexcept
+		: _runner(runner)
+		, _coroutinePtr(coroutinePtr)
 	{
 	}
 
-	bool LuaCoroutineThread::finished() const noexcept
+	bool LuaCoroutine::finished() const noexcept
 	{
-		return _thread.status() == sol::thread_status::dead;
+		return _runner.get().hasFinished(_coroutinePtr);
 	}
 
-	const sol::thread& LuaCoroutineThread::getReal() const noexcept
+	const void* LuaCoroutine::getPointer() const noexcept
 	{
-		return _thread;
+		return _coroutinePtr;
 	}
 
 	LuaCombinedYieldInstruction::LuaCombinedYieldInstruction(const std::vector<std::shared_ptr<ILuaYieldInstruction>>& instructions) noexcept
@@ -351,31 +352,47 @@ namespace darmok
 		);
 	}
 
-    LuaCoroutineThread LuaCoroutineRunner::startCoroutine(const sol::function& func, sol::this_state ts) noexcept
+	LuaCoroutineRunner::Coroutines::const_iterator LuaCoroutineRunner::findCoroutine(const void* coroutinePtr) const noexcept
 	{
-		sol::state_view lua(ts);
-		sol::thread thread = lua["coroutine"]["create"](func);
-		_threads.push_back(thread);
-		return LuaCoroutineThread(thread);
-	}
-
-	bool LuaCoroutineRunner::stopCoroutine(const LuaCoroutineThread& thread) noexcept
-	{
-		return doStopCoroutine(thread.getReal());
-	}
-
-	bool LuaCoroutineRunner::doStopCoroutine(const sol::thread& thread) noexcept
-	{
-		auto ptr = thread.pointer();
-		auto itr = std::remove_if(_threads.begin(), _threads.end(), [ptr](auto& elm) {
-			return elm.pointer() == ptr;
+		return std::find_if(_coroutines.begin(), _coroutines.end(), [coroutinePtr](auto& bundle) {
+			return bundle->coroutine.pointer() == coroutinePtr;
 		});
-		auto found = itr != _threads.end();
+	}
+
+	bool LuaCoroutineRunner::hasFinished(const void* coroutinePtr) const noexcept
+	{
+		return findCoroutine(coroutinePtr) == _coroutines.end();
+	}
+
+	// https://github.com/ThePhD/sol2/issues/296
+	LuaBundledCoroutine::LuaBundledCoroutine(const sol::function& func) noexcept
+		: thread(sol::thread::create(func.lua_state()))
+		, coroutine(thread.state(), func)
+	{
+	}
+
+    LuaCoroutine LuaCoroutineRunner::startCoroutine(const sol::function& func) noexcept
+	{
+		auto bundle = std::make_shared<LuaBundledCoroutine>(func);
+		auto coroutinePtr = bundle->coroutine.pointer();
+		_coroutines.push_back(std::move(bundle));
+		return LuaCoroutine(*this, coroutinePtr);
+	}
+
+	bool LuaCoroutineRunner::stopCoroutine(const LuaCoroutine& coroutine) noexcept
+	{
+		return doStopCoroutine(coroutine.getPointer());
+	}
+
+	bool LuaCoroutineRunner::doStopCoroutine(const void* coroutinePtr) noexcept
+	{
+		auto itr = findCoroutine(coroutinePtr);
+		auto found = itr != _coroutines.end();
 		if (found)
 		{
-			_threads.erase(itr, _threads.end());
+			_coroutines.erase(itr);
 		}
-		auto itr2 = _awaits.find(ptr);
+		auto itr2 = _awaits.find(coroutinePtr);
 		if (itr2 != _awaits.end())
 		{
 			_awaits.erase(itr2);
@@ -385,12 +402,13 @@ namespace darmok
 
     void LuaCoroutineRunner::update(float deltaTime, sol::state_view& lua) noexcept
 	{
-		std::vector<sol::thread> finished;
-		std::vector<sol::thread> threads(_threads);
-		sol::protected_function resume = lua["coroutine"]["resume"];
-		for (auto& thread : threads)
+		std::vector<const void*> finishedCoroutines;
+		Coroutines coroutines(_coroutines);
+		for (auto& bundle : coroutines)
 		{
-			auto itr = _awaits.find(thread.pointer());
+			auto& coroutine = bundle->coroutine;
+			auto coroutinePtr = coroutine.pointer();
+			auto itr = _awaits.find(coroutinePtr);
 			if (itr != _awaits.end())
 			{
 				auto& instr = *itr->second;
@@ -404,34 +422,33 @@ namespace darmok
 					continue;
 				}
 			}
-			auto status = thread.status();
-			if (status == sol::thread_status::yielded)
+			if (!resumeCoroutine(coroutine))
 			{
-				static const std::string logDesc = "resuming coroutine";
-				auto result = resume(thread, deltaTime);
-				LuaUtils::checkResult(logDesc, result);
-				std::tuple<bool, sol::object> r = result;
-				auto robj = std::get<sol::object>(r);
-				if (!std::get<bool>(r))
-				{
-					LuaUtils::logError(logDesc, robj.as<sol::error>());
-					status = sol::thread_status::dead;
-				}
-				else if (auto instr = readYieldInstruction(robj))
-				{
-					_awaits.emplace(thread.pointer(), std::move(instr));
-				}
-			}
-			if (status == sol::thread_status::dead)
-			{
-				finished.emplace_back(thread);
-				continue;
+				finishedCoroutines.push_back(coroutinePtr);
 			}
 		}
-		for (auto& coroutine : finished)
+		for (auto coroutinePtr : finishedCoroutines)
 		{
-			doStopCoroutine(coroutine);
+			doStopCoroutine(coroutinePtr);
 		}
+	}
+
+	bool LuaCoroutineRunner::resumeCoroutine(sol::coroutine& coroutine) noexcept
+	{
+		static const std::string logDesc = "running coroutine";
+		if (!coroutine.runnable())
+		{
+			return false;
+		}
+		auto result = coroutine();
+		LuaUtils::checkResult(logDesc, result);
+		sol::object robj = result;
+		if (auto instr = readYieldInstruction(robj))
+		{
+			_awaits.emplace(coroutine.pointer(), std::move(instr));
+			return true;
+		}
+		return coroutine.runnable();
 	}
 
 	std::shared_ptr<ILuaYieldInstruction> LuaCoroutineRunner::readYieldInstruction(const sol::object& obj) noexcept
@@ -468,9 +485,9 @@ namespace darmok
 		{
 			return std::make_shared<LuaWaitForSeconds>(obj.as<LuaWaitForSeconds>());
 		}
-		if (obj.is<LuaCoroutineThread>())
+		if (obj.is<LuaCoroutine>())
 		{
-			return std::make_shared<LuaCoroutineThread>(obj.as<LuaCoroutineThread>());
+			return std::make_shared<LuaCoroutine>(obj.as<LuaCoroutine>());
 		}
 		return nullptr;
 	}
