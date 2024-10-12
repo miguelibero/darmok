@@ -73,10 +73,10 @@ namespace darmok
         {
             return;
         }
-        auto anims = _scene->getComponents<FrameAnimation>();
-        for (auto [entity, anim] : anims.each())
+        auto entities = _scene->getUpdateEntities<FrameAnimation>();
+        for (auto entity : entities)
         {
-            anim.update(deltaTime);
+            _scene->getComponent<FrameAnimation>(entity)->update(deltaTime);
         }
     }
 }

@@ -61,7 +61,7 @@ namespace darmok
 		std::unique_ptr<KeyboardImpl> _impl;
 	};
 
-	using MouseButtons = std::array<bool, to_underlying(MouseButton::Count)>;
+	using MouseButtons = std::array<bool, toUnderlying(MouseButton::Count)>;
 
 	class MouseImpl;
 
@@ -106,8 +106,8 @@ namespace darmok
 		std::unique_ptr<MouseImpl> _impl;
 	};
 
-	using GamepadButtons = std::array<bool, to_underlying(GamepadButton::Count)>;
-	using GamepadSticks = std::array<glm::vec3, to_underlying(GamepadButton::Count)>;
+	using GamepadButtons = std::array<bool, toUnderlying(GamepadButton::Count)>;
+	using GamepadSticks = std::array<glm::vec3, toUnderlying(GamepadButton::Count)>;
 
 	class DARMOK_EXPORT BX_NO_VTABLE IGamepadListener
 	{

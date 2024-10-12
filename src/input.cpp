@@ -9,7 +9,7 @@ namespace darmok
 	template<typename T, size_t S>
 	static const std::string& getInputEnumName(T v, const std::array<std::string, S>& names) noexcept
 	{
-		auto idx = to_underlying(v);
+		auto idx = toUnderlying(v);
 		if (idx >= names.size())
 		{
 			static const std::string empty;
@@ -178,13 +178,13 @@ namespace darmok
 		const bool isNumber = (KeyboardKey::Key0 <= key && key <= KeyboardKey::Key9);
 		if (isNumber)
 		{
-			return '0' + char(to_underlying(key) - to_underlying(KeyboardKey::Key0));
+			return '0' + char(toUnderlying(key) - toUnderlying(KeyboardKey::Key0));
 		}
 
 		const bool isChar = (KeyboardKey::KeyA <= key && key <= KeyboardKey::KeyZ);
 		if (isChar)
 		{
-			return (upper ? 'A' : 'a') + char(to_underlying(key) - to_underlying(KeyboardKey::KeyA));
+			return (upper ? 'A' : 'a') + char(toUnderlying(key) - toUnderlying(KeyboardKey::KeyA));
 		}
 
 		switch (key)
@@ -203,7 +203,7 @@ namespace darmok
 	}
 
 	const std::string KeyboardImpl::_keyPrefix = "KeyboardKey.";
-	const std::array<std::string, to_underlying(KeyboardKey::Count)> KeyboardImpl::_keyNames =
+	const std::array<std::string, toUnderlying(KeyboardKey::Count)> KeyboardImpl::_keyNames =
 	{
 		"None",
 		"Esc",
@@ -308,7 +308,7 @@ namespace darmok
 	}
 
 	const std::string KeyboardImpl::_modPrefix = "KeyboardModifier.";
-	const std::array<std::string, to_underlying(KeyboardModifier::Count)> KeyboardImpl::_modNames
+	const std::array<std::string, toUnderlying(KeyboardModifier::Count)> KeyboardImpl::_modNames
 	{
 		"Alt",
 		"Ctrl",
@@ -496,7 +496,7 @@ namespace darmok
 
 	bool MouseImpl::setButton(MouseButton button, bool down) noexcept
 	{
-		auto idx = to_underlying(button);
+		auto idx = toUnderlying(button);
 		if (idx >= _buttons.size() || _buttons[idx] == down)
 		{
 			return false;
@@ -537,7 +537,7 @@ namespace darmok
 
 	bool MouseImpl::getButton(MouseButton button) const noexcept
 	{
-		auto idx = to_underlying(button);
+		auto idx = toUnderlying(button);
 		if (idx >= _buttons.size())
 		{
 			return false;
@@ -586,7 +586,7 @@ namespace darmok
 	}
 
 	const std::string MouseImpl::_buttonPrefix = "MouseButton.";
-	const std::array<std::string, to_underlying(MouseButton::Count)> MouseImpl::_buttonNames =
+	const std::array<std::string, toUnderlying(MouseButton::Count)> MouseImpl::_buttonNames =
 	{
 		"Left",
 		"Middle",
@@ -604,7 +604,7 @@ namespace darmok
 	}
 
 	const std::string MouseImpl::_analogPrefix = "MouseAnalog.";
-	const std::array<std::string, to_underlying(MouseAnalog::Count)> MouseImpl::_analogNames =
+	const std::array<std::string, toUnderlying(MouseAnalog::Count)> MouseImpl::_analogNames =
 	{
 		"Position",
 		"Scroll"
@@ -779,7 +779,7 @@ namespace darmok
 
 	bool GamepadImpl::setStick(GamepadStick stick, const glm::vec3& value) noexcept
 	{
-		auto idx = to_underlying(stick);
+		auto idx = toUnderlying(stick);
 		if (idx >= _sticks.size())
 		{
 			return false;
@@ -800,7 +800,7 @@ namespace darmok
 
 	bool GamepadImpl::setButton(GamepadButton button, bool down) noexcept
 	{
-		auto idx = to_underlying(button);
+		auto idx = toUnderlying(button);
 		if (idx >= _buttons.size() || _buttons[idx] == down)
 		{
 			return false;
@@ -815,7 +815,7 @@ namespace darmok
 
 	const glm::vec3& GamepadImpl::getStick(GamepadStick stick) const noexcept
 	{
-		auto idx = to_underlying(stick);
+		auto idx = toUnderlying(stick);
 		if (idx >= _sticks.size())
 		{
 			const static glm::vec3 zero(0);
@@ -826,7 +826,7 @@ namespace darmok
 
 	bool GamepadImpl::getButton(GamepadButton button) const noexcept
 	{
-		auto idx = to_underlying(button);
+		auto idx = toUnderlying(button);
 		if (idx >= _buttons.size())
 		{
 			return false;
@@ -865,7 +865,7 @@ namespace darmok
 	}
 
 	const std::string GamepadImpl::_buttonPrefix = "GamepadButton.";
-	const std::array<std::string, to_underlying(GamepadButton::Count)> GamepadImpl::_buttonNames =
+	const std::array<std::string, toUnderlying(GamepadButton::Count)> GamepadImpl::_buttonNames =
 	{
 		"A",
 		"B",
@@ -895,7 +895,7 @@ namespace darmok
 	}
 
 	const std::string GamepadImpl::_stickPrefix = "GamepadStick.";
-	const std::array<std::string, to_underlying(GamepadStick::Count)> GamepadImpl::_stickNames =
+	const std::array<std::string, toUnderlying(GamepadStick::Count)> GamepadImpl::_stickNames =
 	{
 		"Left",
 		"Right"
@@ -1364,7 +1364,7 @@ namespace darmok
 	}
 
 	const std::string InputImpl::_dirTypePrefix = "InputDirType.";
-	const std::array<std::string, to_underlying(InputDirType::Count)> InputImpl::_dirTypeNames =
+	const std::array<std::string, toUnderlying(InputDirType::Count)> InputImpl::_dirTypeNames =
 	{
 		"Up",
 		"Down",

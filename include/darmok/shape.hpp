@@ -371,7 +371,7 @@ namespace darmok
             Count
         };
 
-        std::array<glm::vec3, to_underlying(Corner::Count)> corners;
+        std::array<glm::vec3, toUnderlying(Corner::Count)> corners;
 
         const glm::vec3& getCorner(Frustum::Corner corner) const noexcept;
         glm::vec3& getCorner(Frustum::Corner corner) noexcept;

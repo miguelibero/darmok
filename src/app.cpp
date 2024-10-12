@@ -325,6 +325,7 @@ namespace darmok
 	AppImpl::ComponentRefs AppImpl::copyComponentContainer() const noexcept
 	{
 		ComponentRefs refs;
+		refs.reserve(_components.size());
 		for (auto& [type, component] : _components)
 		{
 			refs.emplace_back(*component);
@@ -599,7 +600,7 @@ namespace darmok
 	void AppImpl::requestNextVideoMode()
 	{
 		VideoMode mode = _window.getVideoMode();
-		mode.screenMode = (WindowScreenMode)((to_underlying(mode.screenMode) + 1) % to_underlying(WindowScreenMode::Count));
+		mode.screenMode = (WindowScreenMode)((toUnderlying(mode.screenMode) + 1) % toUnderlying(WindowScreenMode::Count));
 		_window.requestVideoMode(mode);
 	}
 
@@ -977,6 +978,16 @@ namespace darmok
 	void App::setUpdateConfig(const AppUpdateConfig& config) noexcept
 	{
 		_impl->setUpdateConfig(config);
+	}
+
+	void App::setPaused(bool paused) noexcept
+	{
+		_impl->setPaused(paused);
+	}
+
+	bool App::isPaused() const noexcept
+	{
+		return _impl->isPaused();
 	}
 
 	void App::render() const

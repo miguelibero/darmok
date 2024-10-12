@@ -129,4 +129,37 @@ namespace darmok
 	{
 		return !operator==(dlg);
 	}
+
+	TypeFilter& LuaTypeFilter::include(TypeFilter& filter, const sol::object& type) noexcept
+	{
+		return filter.include(LuaUtils::getTypeId(type).value());
+	}
+
+	TypeFilter& LuaTypeFilter::exclude(TypeFilter& filter, const sol::object& type) noexcept
+	{
+		return filter.exclude(LuaUtils::getTypeId(type).value());
+	}
+
+	TypeFilter LuaTypeFilter::create(const sol::object& value) noexcept
+	{
+		if (value.is<TypeFilter>())
+		{
+			return value.as<TypeFilter>();
+		}
+		else if (value.get_type() == sol::type::nil)
+		{
+			return TypeFilter();
+		}
+		auto typeId = LuaUtils::getTypeId(value).value();
+		return TypeFilter().include(typeId);
+	}
+
+	void LuaTypeFilter::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<TypeFilter>("TypeFilter", sol::default_constructor,
+			"include", &LuaTypeFilter::include,
+			"exclude", &LuaTypeFilter::exclude,
+			sol::meta_function::to_string, &TypeFilter::toString
+		);
+	}
 }

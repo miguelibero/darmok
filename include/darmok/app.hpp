@@ -59,6 +59,7 @@ namespace darmok
 	class AssetContext;
 	class RenderGraphDefinition;
 	class RenderChain;
+	struct TypeFilter;
 
 	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<IAppDelegateFactory>&& factory);
 
@@ -137,6 +138,9 @@ namespace darmok
 		void setClearColor(const Color& color) noexcept;
 		void setUpdateConfig(const AppUpdateConfig& config) noexcept;
 
+		void setPaused(bool paused) noexcept;
+		bool isPaused() const noexcept;
+
 		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
 		[[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
@@ -204,10 +208,10 @@ namespace darmok
 	public:
 		virtual ~IAppComponent() = default;
 
-		virtual void init(App& app) {};
-		virtual void shutdown() {};
-		virtual void renderReset() {};
-		virtual void update(float deltaTime) {};
+		virtual void init(App& app) {}
+		virtual void shutdown() {}
+		virtual void renderReset() {}
+		virtual void update(float deltaTime) {}
 	};
 
 } // namespace darmok

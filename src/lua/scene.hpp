@@ -75,6 +75,7 @@ namespace darmok
 
 	class LuaApp;
 
+	// TODO: make this class static, bind directly to darmok::scene
 	class LuaScene final
 	{
 	public:
@@ -121,6 +122,12 @@ namespace darmok
 
 		void setName(const std::string& name) noexcept;
 		const std::string& getName() const noexcept;
+
+		void setPaused(bool paused) noexcept;
+		bool getPaused() const noexcept;
+
+		const TypeFilter& getUpdateFilter() const noexcept;
+		void setUpdateFilter(const sol::object& filter) noexcept;
 
 		bool forEachEntity(const sol::protected_function& callback);
 	};

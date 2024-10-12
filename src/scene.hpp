@@ -7,6 +7,7 @@
 #include <darmok/render_graph.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/viewport.hpp>
+#include <darmok/utils.hpp>
 #include <entt/entt.hpp>
 #include <vector>
 #include <memory>
@@ -36,6 +37,8 @@ namespace darmok
 
         void setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
+        void setPaused(bool paused) noexcept;
+        bool isPaused() const noexcept;
 
         void destroyEntity(Entity entity) noexcept;
 
@@ -58,12 +61,16 @@ namespace darmok
         void shutdown();
 
         static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
+
+        void setUpdateFilter(const TypeFilter& filter) noexcept;
+        const TypeFilter& getUpdateFilter() const noexcept;
     private:
         using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ISceneComponent>>>;
         using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
 
         std::vector<Entity> _pendingDestroy;
         std::string _name;
+        bool _paused;
         Components _components;
         EntityRegistry _registry;
         Scene& _scene;
@@ -71,6 +78,7 @@ namespace darmok
         RenderGraphDefinition _renderGraph;
         RenderChain _renderChain;
         std::optional<Viewport> _viewport;
+        TypeFilter _updateFilter;
         static ComponentDependencies _compDeps;
 
         using ComponentRefs = std::vector<std::reference_wrapper<ISceneComponent>>;

@@ -67,13 +67,4 @@ namespace darmok
 
 		static void setCullingFilter(Camera& cam, const sol::object& filter) noexcept;
 	};
-
-	class LuaEntityFilter final
-	{
-	public:
-		static void bind(sol::state_view& lua) noexcept;
-	private:
-		static EntityFilter& include(EntityFilter& filter, const sol::object& type) noexcept;
-		static EntityFilter& exclude(EntityFilter& filter, const sol::object& type) noexcept;
-	};
 }

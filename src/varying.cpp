@@ -149,12 +149,12 @@ namespace darmok
 		}
 		if (val >= bgfx::Attrib::Color0 && val <= bgfx::Attrib::Color3)
 		{
-			auto i = to_underlying(val) - to_underlying(bgfx::Attrib::Color0);
+			auto i = toUnderlying(val) - toUnderlying(bgfx::Attrib::Color0);
 			return std::string("color") + std::to_string(i);
 		}
 		if (val >= bgfx::Attrib::TexCoord0 && val <= bgfx::Attrib::TexCoord7)
 		{
-			auto i = to_underlying(val) - to_underlying(bgfx::Attrib::TexCoord0);
+			auto i = toUnderlying(val) - toUnderlying(bgfx::Attrib::TexCoord0);
 			return std::string("texcoord") + std::to_string(i);
 		}
 		return "";

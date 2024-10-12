@@ -55,9 +55,9 @@ namespace darmok
 		OwnRefCollection<IKeyboardListener> _listeners;
 
 		static const std::string _keyPrefix;
-		static const std::array<std::string, to_underlying(KeyboardKey::Count)> _keyNames;
+		static const std::array<std::string, toUnderlying(KeyboardKey::Count)> _keyNames;
 		static const std::string _modPrefix;
-		static const std::array<std::string, to_underlying(KeyboardModifier::Count)> _modNames;
+		static const std::array<std::string, toUnderlying(KeyboardModifier::Count)> _modNames;
 	};
 
 #pragma endregion Keyboard
@@ -109,9 +109,9 @@ namespace darmok
 		OwnRefCollection<IMouseListener> _listeners;
 
 		static const std::string _buttonPrefix;
-		static const std::array<std::string, to_underlying(MouseButton::Count)> _buttonNames;
+		static const std::array<std::string, toUnderlying(MouseButton::Count)> _buttonNames;
 		static const std::string _analogPrefix;
-		static const std::array<std::string, to_underlying(MouseAnalog::Count)> _analogNames;
+		static const std::array<std::string, toUnderlying(MouseAnalog::Count)> _analogNames;
 	};
 
 #pragma endregion Mouse
@@ -157,9 +157,9 @@ namespace darmok
 		OwnRefCollection<IGamepadListener> _listeners;
 
 		static const std::string _buttonPrefix;
-		static const std::array<std::string, to_underlying(GamepadButton::Count)> _buttonNames;
+		static const std::array<std::string, toUnderlying(GamepadButton::Count)> _buttonNames;
 		static const std::string _stickPrefix;
-		static const std::array<std::string, to_underlying(GamepadStick::Count)> _stickNames;
+		static const std::array<std::string, toUnderlying(GamepadStick::Count)> _stickNames;
 
 		void clear() noexcept;
 	};
@@ -230,7 +230,7 @@ namespace darmok
 		std::vector<ListenerData> _listeners;
 
 		static const std::string _dirTypePrefix;
-		static const std::array<std::string, to_underlying(InputDirType::Count)> _dirTypeNames;
+		static const std::array<std::string, toUnderlying(InputDirType::Count)> _dirTypeNames;
 
 		float getDir(const Dir& dir, const Sensitivity& sensi) const noexcept;
 		static float getDir(const glm::vec2& vec, InputDirType dir) noexcept;

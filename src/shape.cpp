@@ -827,12 +827,12 @@ namespace darmok
 
     const glm::vec3& Frustum::getCorner(Frustum::Corner corner) const noexcept
     {
-        return corners[to_underlying(corner)];
+        return corners[toUnderlying(corner)];
     }
 
     glm::vec3& Frustum::getCorner(Frustum::Corner corner) noexcept
     {
-        return corners[to_underlying(corner)];
+        return corners[toUnderlying(corner)];
     }
 
     BoundingBox Frustum::getBoundingBox() const noexcept

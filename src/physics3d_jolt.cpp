@@ -526,14 +526,16 @@ namespace darmok::physics3d
 
         if (_scene)
         {
-            auto rigidBodies = _scene->getComponents<PhysicsBody>();
-            for (auto [entity, body] : rigidBodies.each())
+            auto entities = _scene->getUpdateEntities<PhysicsBody>();
+            for (auto entity : entities)
             {
+                auto& body = _scene->getComponent<PhysicsBody>(entity).value();
                 body.getImpl().update(entity, deltaTime);
             }
-            auto charCtrls = _scene->getComponents<CharacterController>();
-            for (auto [entity, charCtrl] : charCtrls.each())
+            entities = _scene->getUpdateEntities<CharacterController>();
+            for (auto entity : entities)
             {
+                auto& charCtrl = _scene->getComponent<CharacterController>(entity).value();
                 charCtrl.getImpl().update(entity, deltaTime);
             }
         }

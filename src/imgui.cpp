@@ -277,8 +277,8 @@ namespace darmok
 		static bool first = true;
 
 		auto addRange = [](KeyboardKey start, KeyboardKey end, ImGuiKey imguiStart) {
-			auto j = to_underlying(imguiStart);
-			for (auto i = to_underlying(start); i < to_underlying(end); i++)
+			auto j = toUnderlying(imguiStart);
+			for (auto i = toUnderlying(start); i < toUnderlying(end); i++)
 			{
 				map[(KeyboardKey)i] = (ImGuiKey)j++;
 			}
@@ -464,9 +464,9 @@ namespace darmok
 		auto pos = win.windowToScreenPoint(mouse.getPosition());
 		io.AddMousePosEvent(pos.x, pos.y);
 
-		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[to_underlying(MouseButton::Left)]);
-		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[to_underlying(MouseButton::Right)]);
-		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[to_underlying(MouseButton::Middle)]);
+		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[toUnderlying(MouseButton::Left)]);
+		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[toUnderlying(MouseButton::Right)]);
+		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[toUnderlying(MouseButton::Middle)]);
 		
 		auto& scroll = mouse.getScroll();
 		io.AddMouseWheelEvent(scroll.x, scroll.y);

@@ -322,6 +322,26 @@ namespace darmok
 		return _scene->getName();
 	}
 
+	void LuaScene::setPaused(bool paused) noexcept
+	{
+		_scene->setPaused(paused);
+	}
+
+	bool LuaScene::getPaused() const noexcept
+	{
+		return _scene->isPaused();
+	}
+
+	const TypeFilter& LuaScene::getUpdateFilter() const noexcept
+	{
+		return _scene->getUpdateFilter();
+	}
+
+	void LuaScene::setUpdateFilter(const sol::object& filter) noexcept
+	{
+		_scene->setUpdateFilter(LuaTypeFilter::create(filter));
+	}
+
 	const std::shared_ptr<Scene>& LuaScene::getReal() const noexcept
 	{
 		return _scene;
@@ -399,7 +419,9 @@ namespace darmok
 			"viewport", sol::property(&LuaScene::getViewport, &LuaScene::setViewport),
 			"current_viewport", sol::property(&LuaScene::getCurrentViewport),
 			"render_chain", sol::property(&LuaScene::getRenderChain),
-			"name", sol::property(&LuaScene::getName, &LuaScene::setName)
+			"name", sol::property(&LuaScene::getName, &LuaScene::setName),
+			"paused", sol::property(&LuaScene::getPaused, &LuaScene::setPaused),
+			"update_filter", sol::property(&LuaScene::getUpdateFilter, &LuaScene::setUpdateFilter)
 		);
 	}
 

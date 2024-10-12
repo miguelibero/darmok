@@ -137,10 +137,11 @@ namespace darmok
         {
             return;
         }
-        auto animators = _scene->getComponents<SkeletalAnimator>();
+        auto entities = _scene->getUpdateEntities<SkeletalAnimator>();
         std::vector<OptionalRef<RenderableSkeleton>> skeletons;
-        for (auto [entity, anim] : animators.each())
+        for (auto entity : entities)
         {
+            auto& anim = _scene->getComponent<SkeletalAnimator>(entity).value();
             anim.update(deltaTime);
             skeletons.clear();
             auto matrixes = anim.getBoneModelMatrixes();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <bx/error.h>
 #include <type_traits>
 #include <vector>
@@ -12,14 +13,14 @@
 namespace darmok
 {
     template <typename E>
-    [[nodiscard]] constexpr auto to_underlying(E e) noexcept
+    [[nodiscard]] constexpr auto toUnderlying(E e) noexcept
     {
         return static_cast<std::underlying_type_t<E>>(e);
     }
 
     void checkError(bx::Error& err);
 
-    struct Exec final
+    struct DARMOK_EXPORT Exec final
     {
         struct Result final
         {
@@ -51,4 +52,43 @@ namespace darmok
     }
 
     entt::id_type randomIdType() noexcept;
+
+    struct DARMOK_EXPORT TypeFilter final
+    {
+        using Container = std::unordered_set<entt::id_type>;
+
+        template<typename T>
+        TypeFilter& include() noexcept
+        {
+            return include(entt::type_hash<T>::value());
+        }
+
+        TypeFilter& include(entt::id_type idType) noexcept;
+
+        template<typename T>
+        TypeFilter& exclude() noexcept
+        {
+            return exclude(entt::type_hash<T>::value());
+        }
+
+        TypeFilter& exclude(entt::id_type idType) noexcept;
+
+        const Container& getIncludes() const noexcept;
+        const Container& getExcludes() const noexcept;
+        std::string toString() const noexcept;
+
+        bool empty() const noexcept;
+        bool matches(entt::id_type) const noexcept;
+        bool operator()(entt::id_type) const noexcept;
+
+        bool operator==(const TypeFilter& other) const noexcept;
+        bool operator!=(const TypeFilter& other) const noexcept;
+
+        TypeFilter operator+(const TypeFilter& other) const noexcept;
+        TypeFilter& operator+=(const TypeFilter& other) noexcept;
+
+    private:
+        Container _includes;
+        Container _excludes;
+    };
 }

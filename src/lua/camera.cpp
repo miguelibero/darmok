@@ -188,20 +188,11 @@ namespace darmok
 
 	void LuaCamera::setCullingFilter(Camera& cam, const sol::object& filter) noexcept
 	{
-		if (filter.is<EntityFilter>())
-		{
-			cam.setCullingFilter(filter.as<EntityFilter>());
-		}
-		else
-		{
-			auto typeId = LuaUtils::getTypeId(filter).value();
-			cam.setCullingFilter(EntityFilter().include(typeId));
-		}
+		cam.setCullingFilter(LuaTypeFilter::create(filter));
 	}
 
 	void LuaCamera::bind(sol::state_view& lua) noexcept
 	{
-		LuaEntityFilter::bind(lua);
 		LuaViewport::bind(lua);
 		LuaForwardRenderer::bind(lua);
 		LuaLightingRenderComponent::bind(lua);
@@ -264,25 +255,6 @@ namespace darmok
 				sol::resolve<RenderChain&()>(&Camera::getRenderChain)
 			),
 			"culling_filter", sol::property(&Camera::getCullingFilter, &LuaCamera::setCullingFilter)
-		);
-	}
-
-	EntityFilter& LuaEntityFilter::include(EntityFilter& filter, const sol::object& type) noexcept
-	{
-		return filter.include(LuaUtils::getTypeId(type).value());
-	}
-
-	EntityFilter& LuaEntityFilter::exclude(EntityFilter& filter, const sol::object& type) noexcept
-	{
-		return filter.exclude(LuaUtils::getTypeId(type).value());
-	}
-
-	void LuaEntityFilter::bind(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<EntityFilter>("EntityFilter", sol::default_constructor,
-			"include", &LuaEntityFilter::include,
-			"exclude", &LuaEntityFilter::exclude,
-			sol::meta_function::to_string, &EntityFilter::toString
 		);
 	}
 }

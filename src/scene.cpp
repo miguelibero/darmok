@@ -12,6 +12,7 @@ namespace darmok
     SceneImpl::SceneImpl(Scene& scene) noexcept
         : _scene(scene)
         , _renderChain(*this)
+        , _paused(false)
     {
     }
 
@@ -148,9 +149,20 @@ namespace darmok
         return _name;
     }
 
+    void SceneImpl::setPaused(bool paused) noexcept
+    {
+        _paused = paused;
+    }
+
+    bool SceneImpl::isPaused() const noexcept
+    {
+        return _paused;
+    }
+
     SceneImpl::ComponentRefs SceneImpl::copyComponentContainer() const noexcept
     {
         ComponentRefs refs;
+        refs.reserve(_components.size());
         for (auto& [type, component] : _components)
         {
             refs.emplace_back(*component);
@@ -282,24 +294,27 @@ namespace darmok
     {
         destroyPendingEntities();
 
-        auto& cams = _registry.storage<Camera>();
-        for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
+        if (!_paused)
         {
-            itr->update(deltaTime);
-        }
+            auto entities = _scene.getUpdateEntities<Camera>();
+            for (auto entity : entities)
+            {
+                _scene.getComponent<Camera>(entity)->update(deltaTime);
+            }
 
-        auto& trans = _registry.storage<Transform>();
-        for (auto itr = trans.rbegin(), last = trans.rend(); itr != last; ++itr)
-        {
-            itr->update();
-        }
+            entities = _scene.getUpdateEntities<Transform>();
+            for (auto entity : entities)
+            {
+                _scene.getComponent<Transform>(entity)->update();
+            }
+            
+            for (auto& comp : copyComponentContainer())
+            {
+                comp.get().update(deltaTime);
+            }
 
-        for (auto& comp : copyComponentContainer())
-        {
-            comp.get().update(deltaTime);
+            _renderChain.update(deltaTime);
         }
-
-        _renderChain.update(deltaTime);
         
         updateRenderGraph();
     }
@@ -342,6 +357,16 @@ namespace darmok
             }
         }
         return found;
+    }
+
+    void SceneImpl::setUpdateFilter(const TypeFilter& filter) noexcept
+    {
+        _updateFilter = filter;
+    }
+
+    const TypeFilter& SceneImpl::getUpdateFilter() const noexcept
+    {
+        return _updateFilter;
     }
 
     Scene::Scene() noexcept
@@ -393,12 +418,7 @@ namespace darmok
         return getRegistry().valid(entity);
     }
 
-    EntityRuntimeView Scene::getEntities(const EntityFilter& filter) const noexcept
-    {
-        return getEntities<Entity>(filter);
-    }
-
-    EntityRuntimeView Scene::createEntityRuntimeView(const EntityFilter& filter) const noexcept
+    EntityRuntimeView Scene::createEntityRuntimeView(const TypeFilter& filter) const noexcept
     {
         EntityRuntimeView view;
         auto& reg = getRegistry();
@@ -466,6 +486,17 @@ namespace darmok
         return _impl->getName();
     }
 
+    Scene& Scene::setPaused(bool paused) noexcept
+    {
+        _impl->setPaused(paused);
+        return *this;
+    }
+
+    bool Scene::isPaused() const noexcept
+    {
+        return _impl->isPaused();
+    }
+
     RenderGraphDefinition& Scene::getRenderGraph() noexcept
     {
         return _impl->getRenderGraph();
@@ -525,6 +556,17 @@ namespace darmok
     OptionalRef<const ISceneComponent> Scene::getSceneComponent(entt::id_type type) const noexcept
     {
         return _impl->getSceneComponent(type);
+    }
+
+    Scene& Scene::setUpdateFilter(const TypeFilter& filter) noexcept
+    {
+        _impl->setUpdateFilter(filter);
+        return *this;
+    }
+
+    const TypeFilter& Scene::getUpdateFilter() const noexcept
+    {
+        return _impl->getUpdateFilter();
     }
 
     SceneAppComponent::SceneAppComponent(const std::shared_ptr<Scene>& scene) noexcept

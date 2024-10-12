@@ -23,7 +23,7 @@ namespace darmok
         static void newEnumFunc(sol::state_view& lua, std::string_view name, T count, const std::string& (*func)(T), bool string = false)
         {
             std::vector<std::pair<std::string_view, T>> values;
-            auto size = to_underlying(count);
+            auto size = toUnderlying(count);
             for (int i = 0; i < size; i++)
             {
                 auto elm = (T)i;
@@ -125,4 +125,13 @@ namespace darmok
         std::string _tableKey;
     };
 
+    class LuaTypeFilter final
+    {
+    public:
+        static void bind(sol::state_view& lua) noexcept;
+        static TypeFilter create(const sol::object& value) noexcept;
+    private:
+        static TypeFilter& include(TypeFilter& filter, const sol::object& type) noexcept;
+        static TypeFilter& exclude(TypeFilter& filter, const sol::object& type) noexcept;
+    };
 }

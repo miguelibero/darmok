@@ -231,6 +231,16 @@ namespace darmok
 #endif
 	}
 
+	bool LuaApp::getPaused() const noexcept
+	{
+		return _app.get().isPaused();
+	}
+
+	void LuaApp::setPaused(bool paused) noexcept
+	{
+		_app.get().setPaused(paused);
+	}
+
 	void LuaApp::bind(sol::state_view& lua) noexcept
 	{
 		LuaAssets::bind(lua);
@@ -239,6 +249,7 @@ namespace darmok
 		LuaAudioSystem::bind(lua);
 		LuaCoroutineRunner::bind(lua);
 		LuaRenderChain::bind(lua);
+		LuaTypeFilter::bind(lua);
 
 		lua.create_named_table("DebugFlag",
 			"NONE", BGFX_DEBUG_NONE,
@@ -280,6 +291,7 @@ namespace darmok
 			"input", sol::property(&LuaApp::getInput),
 			"audio", sol::property(&LuaApp::getAudio),
 			"debug", sol::property(&LuaApp::getDebug),
+			"paused", sol::property(&LuaApp::getPaused, &LuaApp::setPaused),
 			"add_updater", &LuaApp::addUpdater,
 			"remove_updater", &LuaApp::removeUpdater,
 			"start_coroutine", &LuaApp::startCoroutine,

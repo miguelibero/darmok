@@ -178,24 +178,15 @@ namespace darmok
         _projInv = glm::inverse(matrix);
     }
 
-    Camera& Camera::setCullingFilter(const EntityFilter& filter) noexcept
+    Camera& Camera::setCullingFilter(const TypeFilter& filter) noexcept
     {
         _cullingFilter = filter;
         return *this;
     }
 
-    const EntityFilter& Camera::getCullingFilter() const noexcept
+    const TypeFilter& Camera::getCullingFilter() const noexcept
     {
         return _cullingFilter;
-    }
-
-    EntityRuntimeView Camera::getEntities() const noexcept
-    {
-        if (!_scene)
-        {
-            return EntityRuntimeView();
-        }
-        return _scene->getEntities(_cullingFilter);
     }
 
     Camera::ComponentRefs Camera::copyComponentContainer() const noexcept
@@ -532,73 +523,5 @@ namespace darmok
     void Camera::onRenderChainInputChanged() noexcept
     {
         renderReset();
-    }
-
-    EntityFilter& EntityFilter::include(entt::id_type idType) noexcept
-    {
-        if (idType != 0)
-        {
-            _includes.insert(idType);
-        }
-        return *this;
-    }
-
-    EntityFilter& EntityFilter::exclude(entt::id_type idType) noexcept
-    {
-        if (idType != 0)
-        {
-            _excludes.insert(idType);
-        }
-        return *this;
-    }
-
-    const EntityFilter::Container& EntityFilter::getIncludes() const noexcept
-    {
-        return _includes;
-    }
-
-    const EntityFilter::Container& EntityFilter::getExcludes() const noexcept
-    {
-        return _excludes;
-    }
-
-    std::string EntityFilter::toString() const noexcept
-    {
-        std::stringstream ss;
-        ss << "EntityFilter(" << std::endl;
-        if (!_includes.empty())
-        {
-            ss << "  includes=" << StringUtils::join(",", _includes.begin(), _includes.end()) << std::endl;
-        }
-        if (!_excludes.empty())
-        {
-            ss << "  excludes=" << StringUtils::join(",", _excludes.begin(), _excludes.end()) << std::endl;
-        }
-        ss << ")" << std::endl;
-        return ss.str();
-    }
-
-    bool EntityFilter::operator==(const EntityFilter& other) const noexcept
-    {
-        return _includes == other._includes && _excludes == other._excludes;
-    }
-
-    bool EntityFilter::operator!=(const EntityFilter& other) const noexcept
-    {
-        return !operator==(other);
-    }
-
-    EntityFilter EntityFilter::operator+(const EntityFilter& other) const noexcept
-    {
-        EntityFilter r(*this);
-        r += other;
-        return r;
-    }
-
-    EntityFilter& EntityFilter::operator+=(const EntityFilter& other) noexcept
-    {
-        _includes.insert(other._includes.begin(), other._includes.end());
-        _excludes.insert(other._excludes.begin(), other._excludes.end());
-        return *this;
-    }
+    }    
 }

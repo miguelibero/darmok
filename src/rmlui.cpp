@@ -1543,12 +1543,15 @@ namespace darmok
     void RmluiSceneComponentImpl::update(float deltaTime) noexcept
     {
         getRmluiSystem().update(deltaTime);
-        if (_scene)
+        if (!_scene)
         {
-            for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
-            {
-                canvas.getImpl().update(deltaTime);
-            }
+            return;
+        }
+        auto entities = _scene->getUpdateEntities<RmluiCanvas>();
+        for (auto entity : entities)
+        {
+            auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
+            canvas.getImpl().update(deltaTime);
         }
     }
 
@@ -1696,8 +1699,8 @@ namespace darmok
         static bool first = true;
 
         auto addRange = [](KeyboardKey start, KeyboardKey end, Rml::Input::KeyIdentifier rmluiStart) {
-            auto j = to_underlying(rmluiStart);
-            for (auto i = to_underlying(start); i < to_underlying(end); i++)
+            auto j = toUnderlying(rmluiStart);
+            for (auto i = toUnderlying(start); i < toUnderlying(end); i++)
             {
                 map[(KeyboardKey)i] = (Rml::Input::KeyIdentifier)j++;
             }
@@ -1968,7 +1971,7 @@ namespace darmok
         {
             return;
         }
-        if (!_cam->getEntities().contains(entity))
+        if (!_cam->getEntities<RmluiCanvas>().contains(entity))
         {
             return;
         }

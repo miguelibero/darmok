@@ -24,6 +24,7 @@ namespace darmok
 {
 	class AssetContext;
 
+	// TODO: make this class static, bind darmok::App directly
 	class LuaApp final
 	{
 	public:
@@ -76,6 +77,9 @@ namespace darmok
 		bool removeUpdater3(const LuaDelegate& dlg) noexcept;
 
 		static bool getDebug() noexcept;
+
+		bool getPaused() const noexcept;
+		void setPaused(bool paused) noexcept;
 	};
 
 	class LuaError final : std::exception

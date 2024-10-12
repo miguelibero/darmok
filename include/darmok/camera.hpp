@@ -15,6 +15,7 @@
 #include <darmok/render_graph.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/math.hpp>
+#include <darmok/utils.hpp>
 
 namespace darmok
 {
@@ -59,16 +60,14 @@ namespace darmok
         glm::mat4 getModelMatrix() const noexcept;
         glm::mat4 getModelInverse() const noexcept;
 
-        Camera& setCullingFilter(const EntityFilter& filter) noexcept;
-        const EntityFilter& getCullingFilter() const noexcept;
+        Camera& setCullingFilter(const TypeFilter& filter) noexcept;
+        const TypeFilter& getCullingFilter() const noexcept;
 
         template<typename T>
         Camera& setCullingFilter() noexcept
         {
-            return setCullingFilter(EntityFilter().include<T>());
+            return setCullingFilter(TypeFilter().include<T>());
         }
-
-        EntityRuntimeView getEntities() const noexcept;
 
         template<typename T>
         EntityRuntimeView getEntities() const noexcept
@@ -173,7 +172,7 @@ namespace darmok
         std::optional<ProjectionData> _vpProj;
 
         std::optional<Viewport> _viewport;
-        EntityFilter _cullingFilter;
+        TypeFilter _cullingFilter;
 
         using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ICameraComponent>>>;
         Components _components;

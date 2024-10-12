@@ -1,5 +1,3 @@
-
-
 function init()
     local program = Program.new(StandardProgramType.Forward)
 
@@ -81,4 +79,17 @@ function init()
         { GamepadStick.Left, InputDirType.Down }
     }, move_mesh)
     app.input:add_listener("mouse", MouseButton.Left, move_mouse)
+end
+
+function coroutineTest()
+    app:start_coroutine(function()
+        print("lalala1")
+        coroutine.yield(app:start_coroutine(function()
+            print("lalala2")
+            coroutine.yield(nil)
+            print("lalala3")
+            return 1
+        end))
+        print("lalala4")
+    end)
 end

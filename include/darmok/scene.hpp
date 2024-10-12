@@ -19,17 +19,17 @@ namespace darmok
     {
     public:
         virtual ~ISceneComponent() = default;
-        virtual void init(Scene& scene, App& app) { }
-        virtual void shutdown() { }
-        virtual void renderReset() { }
-        virtual void update(float deltaTime) { }
+        virtual void init(Scene& scene, App& app) {}
+        virtual void shutdown() {}
+        virtual void renderReset() {}
+        virtual void update(float deltaTime) {}
     };
 
     class SceneImpl;
     class RenderGraphDefinition;
     class RenderChain;
     struct Viewport;
-    struct EntityFilter;
+    struct TypeFilter;
 
     class DARMOK_EXPORT Scene final
     {
@@ -49,6 +49,8 @@ namespace darmok
 
         Scene& setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
+        Scene& setPaused(bool paused) noexcept;
+        bool isPaused() const noexcept;
 
         RenderGraphDefinition& getRenderGraph() noexcept;
         const RenderGraphDefinition& getRenderGraph() const noexcept;
@@ -122,10 +124,8 @@ namespace darmok
             return getRegistry().view<T>();
         }
 
-        EntityRuntimeView getEntities(const EntityFilter& filter) const noexcept;
-
         template<typename T>
-        EntityRuntimeView getEntities(const EntityFilter& filter) const noexcept
+        EntityRuntimeView getEntities(const TypeFilter& filter) const noexcept
         {
             if (auto storage = getRegistry().storage<T>())
             {
@@ -134,6 +134,12 @@ namespace darmok
                 return view;
             }
             return EntityRuntimeView();
+        }
+
+        template<typename T>
+        EntityRuntimeView getUpdateEntities() const noexcept
+        {
+            return getEntities<T>(getUpdateFilter());
         }
 
         template<typename T>
@@ -335,7 +341,6 @@ namespace darmok
             registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
         }
 
-
         template<typename T>
         auto onConstructComponent()
         {
@@ -348,47 +353,15 @@ namespace darmok
             return getRegistry().on_construct<T>();
         }
 
+        Scene& setUpdateFilter(const TypeFilter& filter) noexcept;
+        const TypeFilter& getUpdateFilter() const noexcept;
+
     private:
         std::unique_ptr<SceneImpl> _impl;
 
-        EntityRuntimeView createEntityRuntimeView(const EntityFilter& filter) const noexcept;
+        EntityRuntimeView createEntityRuntimeView(const TypeFilter& filter) const noexcept;
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
-    };
-
-    struct DARMOK_EXPORT EntityFilter final
-    {
-        using Container = std::unordered_set<entt::id_type>;
-
-        template<typename T>
-        EntityFilter& include() noexcept
-        {
-            return include(entt::type_hash<T>::value());
-        }
-
-        EntityFilter& include(entt::id_type idType) noexcept;
-
-        template<typename T>
-        EntityFilter& exclude() noexcept
-        {
-            return exclude(entt::type_hash<T>::value());
-        }
-
-        EntityFilter& exclude(entt::id_type idType) noexcept;
-
-        const Container& getIncludes() const noexcept;
-        const Container& getExcludes() const noexcept;
-        std::string toString() const noexcept;
-
-        bool operator==(const EntityFilter& other) const noexcept;
-        bool operator!=(const EntityFilter& other) const noexcept;
-
-        EntityFilter operator+(const EntityFilter& other) const noexcept;
-        EntityFilter& operator+=(const EntityFilter& other) noexcept;
-
-    private:
-        Container _includes;
-        Container _excludes;
     };
 
     class DARMOK_EXPORT SceneAppComponent final : public IAppComponent
