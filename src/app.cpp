@@ -1,6 +1,8 @@
 #include "app.hpp"
 #include "input.hpp"
 #include "window.hpp"
+#include "audio_mini.hpp"
+#include "asset.hpp"
 
 #include <darmok/app.hpp>
 #include <darmok/color.hpp>
@@ -345,8 +347,8 @@ namespace darmok
 		_taskExecutor.emplace(maxEncoders - 1);
 
 		_input.getKeyboard().addListener(*this);
-		_assets.init(_app);
-		_audio.init();
+		_assets.getImpl().init(_app);
+		_audio.getImpl().init();
 
 		_renderGraphDef.addPass(_clearRenderPass);
 
@@ -410,9 +412,10 @@ namespace darmok
 		}
 		_components.clear();
 
-		_input.getKeyboard().removeListener(*this);
-		_audio.shutdown();
-		_assets.shutdown();
+		_input.getImpl().shutdown();
+		_audio.getImpl().shutdown();
+		_assets.getImpl().shutdown();
+		_window.getImpl().shutdown();
 
 		if (_delegate)
 		{
@@ -464,8 +467,8 @@ namespace darmok
 			}
 		}
 
-		_assets.update();
-		_audio.update();
+		_assets.getImpl().update();
+		_audio.getImpl().update();
 
 		auto rgHash = _renderGraphDef.hash();
 		if (!_renderGraph || _renderGraph->hash() != rgHash)

@@ -433,7 +433,7 @@ namespace darmok
 		}
 	}
 
-	bool LuaCoroutineRunner::resumeCoroutine(sol::coroutine& coroutine) noexcept
+	bool LuaCoroutineRunner::resumeCoroutine(sol::main_coroutine& coroutine) noexcept
 	{
 		static const std::string logDesc = "running coroutine";
 		if (!coroutine.runnable())

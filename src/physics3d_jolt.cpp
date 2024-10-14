@@ -443,14 +443,15 @@ namespace darmok::physics3d
             _scene->onDestroyComponent<PhysicsBody>().disconnect< &PhysicsSystemImpl::onRigidbodyDestroyed>(*this);
             _scene->onConstructComponent<CharacterController>().disconnect<&PhysicsSystemImpl::onCharacterConstructed>(*this);
             _scene->onDestroyComponent<CharacterController>().disconnect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
+            _scene.reset();
         }
 
+        _listeners.clear();
         _joltSystem.reset();
         _jobSystem.shutdown();
         JPH::UnregisterTypes();
         delete JPH::Factory::sInstance;
         JPH::Factory::sInstance = nullptr;
-        _scene.reset();
     }
 
     void PhysicsSystemImpl::onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept

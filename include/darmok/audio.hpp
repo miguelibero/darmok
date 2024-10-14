@@ -47,10 +47,9 @@ namespace darmok
         AudioSystem() noexcept;
         ~AudioSystem() noexcept;
 
-        void init();
-        void update();
-        void shutdown();
-        
+        const AudioSystemImpl& getImpl() const noexcept;
+        AudioSystemImpl& getImpl() noexcept;
+
         void play(const std::shared_ptr<Sound>& sound) noexcept;
         void play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept;
         void play(const std::shared_ptr<Music>& music) noexcept;

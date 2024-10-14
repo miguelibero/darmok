@@ -4,19 +4,21 @@
 #include <darmok/scene.hpp>
 #include <darmok/string.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/audio.hpp>
+#include <darmok/window.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/data.hpp>
 #include <filesystem>
 #include <bx/commandline.h>
 #include "asset.hpp"
 #include "input.hpp"
-#include "math.hpp"
-#include "shape.hpp"
+#include "audio.hpp"
 #include "scene.hpp"
 #include "window.hpp"
+#include "math.hpp"
+#include "shape.hpp"
 #include "texture.hpp"
 #include "skeleton.hpp"
-#include "utils.hpp"
 #include "render_chain.hpp"
 
 #include "generated/lua/string.h"
@@ -37,7 +39,6 @@ namespace darmok
 {	
     LuaApp::LuaApp(App& app) noexcept
 		: _app(app)
-		, _audio(app.getAudio())
 	{
 	}
 
@@ -116,9 +117,9 @@ namespace darmok
 		return _app.get().getInput();
 	}
 
-	LuaAudioSystem& LuaApp::getAudio() noexcept
+	AudioSystem& LuaApp::getAudio() noexcept
 	{
-		return _audio;
+		return _app.get().getAudio();
 	}
 
 	LuaApp& LuaApp::addUpdater(const sol::object& updater) noexcept
@@ -427,6 +428,7 @@ namespace darmok
 
 		_lua = std::make_unique<sol::state>();
 		auto& lua = *_lua;
+
 		lua.open_libraries(
 			sol::lib::base, sol::lib::package, sol::lib::io,
 			sol::lib::table, sol::lib::string, sol::lib::coroutine,

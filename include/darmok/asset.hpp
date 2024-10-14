@@ -75,9 +75,7 @@ namespace darmok
 
 		AssetContext& addBasePath(const std::filesystem::path& path) noexcept;
 		bool removeBasePath(const std::filesystem::path& path) noexcept;
-		void init(App& app);
-		void update();
-		void shutdown();
+
 	private:
 		std::unique_ptr<AssetContextImpl> _impl;
 	};

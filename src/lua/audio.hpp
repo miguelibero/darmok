@@ -14,31 +14,20 @@ namespace darmok
     class LuaAudioSystem final
     {
     public:
-        LuaAudioSystem(AudioSystem& audio) noexcept;
-
-        const AudioSystem& getReal() const noexcept;
-        AudioSystem& getReal() noexcept;
-
         static void bind(sol::state_view& lua) noexcept;
     private:
-        std::reference_wrapper<AudioSystem> _audio;
+        static void play1(AudioSystem& audio, const std::shared_ptr<Sound>& sound) noexcept;
+        static void play2(AudioSystem& audio, const std::shared_ptr<Sound>& sound, const VarLuaTable<glm::vec3>& pos) noexcept;
+        static void play3(AudioSystem& audio, const std::shared_ptr<Music>& music) noexcept;
 
-        void play1(const std::shared_ptr<Sound>& sound) noexcept;
-        void play2(const std::shared_ptr<Sound>& sound, const VarLuaTable<glm::vec3>& pos) noexcept;
-        void play3(const std::shared_ptr<Music>& music) noexcept;
+        static float getSoundVolume(const AudioSystem& audio);
+        static void setSoundVolume(AudioSystem& audio, float v);
 
-        float getSoundVolume() const;
-        void setSoundVolume(float v);
+        static float getMusicVolume(const AudioSystem& audio);
+        static void setMusicVolume(AudioSystem& audio, float v);
 
-        float getMusicVolume() const;
-        void setMusicVolume(float v);
-
-        void stopMusic();
-        void pauseMusic();
-
-        MusicState getMusicState() const noexcept;
-        bool getMusicPlaying() const noexcept;
-        bool getMusicStopped() const noexcept;
-        bool getMusicPaused() const noexcept;
+        static bool getMusicPlaying(const AudioSystem& audio) noexcept;
+        static bool getMusicStopped(const AudioSystem& audio) noexcept;
+        static bool getMusicPaused(const AudioSystem& audio) noexcept;
     };
 }

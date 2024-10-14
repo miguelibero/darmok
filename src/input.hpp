@@ -17,6 +17,9 @@ namespace darmok
 		KeyboardImpl(const KeyboardImpl& other) = delete;
 		KeyboardImpl(KeyboardImpl&& other) = delete;
 
+		void shutdown() noexcept;
+		void afterUpdate() noexcept;
+
 		[[nodiscard]] bool getKey(KeyboardKey key) const noexcept;
 		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
 		[[nodiscard]] const KeyboardModifiers& getModifiers() const noexcept;
@@ -32,8 +35,6 @@ namespace darmok
 		void reset() noexcept;
 		void setKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept;
 		void pushChar(const Utf8Char& data) noexcept;
-
-		void afterUpdate() noexcept;
 
 		[[nodiscard]] static char keyToAscii(KeyboardKey key, bool upper = false) noexcept;
 		
@@ -72,6 +73,9 @@ namespace darmok
 		MouseImpl(const MouseImpl& other) = delete;
 		MouseImpl(MouseImpl&& other) = delete;
 
+		void shutdown() noexcept;
+		void afterUpdate(float deltaTime) noexcept;
+
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 		[[nodiscard]] bool getActive() const noexcept;
 		[[nodiscard]] const glm::vec2& getPosition() const noexcept;
@@ -88,8 +92,6 @@ namespace darmok
 		bool setPosition(const glm::vec2& pos) noexcept;
 		bool setScroll(const glm::vec2& scroll) noexcept;
 		bool setButton(MouseButton button, bool down) noexcept;
-
-		void afterUpdate(float deltaTime) noexcept;
 
 		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
 		[[nodiscard]] static std::optional<MouseButton> readButton(std::string_view name) noexcept;
@@ -126,6 +128,8 @@ namespace darmok
 		GamepadImpl() noexcept;
 		GamepadImpl(const GamepadImpl& other) = delete;
 		GamepadImpl(GamepadImpl&& other) = delete;
+
+		void shutdown() noexcept;
 
 		[[nodiscard]] const glm::vec3& getStick(GamepadStick stick) const noexcept;
 		[[nodiscard]] const GamepadSticks& getSticks() const noexcept;
@@ -177,6 +181,8 @@ namespace darmok
 		InputImpl(Input& input) noexcept;
 		InputImpl(const InputImpl& other) = delete;
 		InputImpl(InputImpl&& other) = delete;
+
+		void shutdown() noexcept;
 
 		Keyboard& getKeyboard() noexcept;
 		Mouse& getMouse() noexcept;

@@ -338,6 +338,11 @@ namespace darmok
             return _elms.size();
         }
 
+        void clear() noexcept
+        {
+            _elms.clear();
+        }
+
         const T& operator[](size_t pos) const noexcept override
         {
             return _elms[pos].ref.get();

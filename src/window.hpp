@@ -16,6 +16,8 @@ namespace darmok
 		WindowImpl(const WindowImpl& other) = delete;
 		WindowImpl(WindowImpl&& other) = delete;
 
+		void shutdown() noexcept;
+
 		bool setSize(const glm::uvec2& size);
 		bool setPixelSize(const glm::uvec2& size);
 		bool setPhase(WindowPhase phase);

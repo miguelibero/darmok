@@ -47,6 +47,11 @@ namespace darmok
 	{
 	}
 
+	void KeyboardImpl::shutdown() noexcept
+	{
+		_listeners.clear();
+	}
+
 	void KeyboardImpl::reset() noexcept
 	{
 		flush();
@@ -452,6 +457,11 @@ namespace darmok
 	{
 	}
 
+	void MouseImpl::shutdown() noexcept
+	{
+		_listeners.clear();
+	}
+
 	bool MouseImpl::setActive(bool active) noexcept
 	{
 		if (_active == active)
@@ -765,6 +775,11 @@ namespace darmok
 		, _sticks{}
 		, _buttons{}
 	{
+	}
+
+	void GamepadImpl::shutdown() noexcept
+	{
+		_listeners.clear();
 	}
 
 	bool GamepadImpl::setNumber(uint8_t num) noexcept
@@ -1172,6 +1187,17 @@ namespace darmok
 		}
 		_keyboard.addListener(*this);
 		_mouse.addListener(*this);
+	}
+
+	void InputImpl::shutdown() noexcept
+	{
+		_keyboard.getImpl().shutdown();
+		_mouse.getImpl().shutdown();
+		for (auto& gamepad : _gamepads)
+		{
+			gamepad.getImpl().shutdown();
+		}
+		_listeners.clear();
 	}
 
 	void InputImpl::addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener, entt::id_type type) noexcept

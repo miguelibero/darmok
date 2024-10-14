@@ -82,6 +82,11 @@ namespace darmok
 	{
 	}
 
+	void WindowImpl::shutdown() noexcept
+	{
+		_listeners.clear();
+	}
+
 	bool WindowImpl::setSize(const glm::uvec2& size)
 	{
 		if (_size == size)

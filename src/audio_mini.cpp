@@ -371,21 +371,16 @@ namespace darmok
         // empty on purpose
     }
 
-    void AudioSystem::init()
+    const AudioSystemImpl& AudioSystem::getImpl() const noexcept
     {
-        _impl->init();
+        return *_impl;
     }
 
-    void AudioSystem::update()
+    AudioSystemImpl& AudioSystem::getImpl() noexcept
     {
-        _impl->update();
+        return *_impl;
     }
-
-    void AudioSystem::shutdown()
-    {
-        _impl->shutdown();
-    }
-
+    
     void AudioSystem::play(const std::shared_ptr<Sound>& sound) noexcept
     {
         return _impl->play(sound);

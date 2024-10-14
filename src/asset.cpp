@@ -300,21 +300,6 @@ namespace darmok
 		return _impl->removeBasePath(path);
 	}
 
-	void AssetContext::init(App& app)
-	{
-		_impl->init(app);
-	}
-
-	void AssetContext::update()
-	{
-		_impl->update();
-	}
-
-	void AssetContext::shutdown()
-	{
-		_impl->shutdown();
-	}
-
 	DarmokAssetImporter::DarmokAssetImporter(const CommandLineAssetImporterConfig& config)
 		: DarmokAssetImporter(config.inputPath)
 	{

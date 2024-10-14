@@ -2,14 +2,10 @@
 
 #include "lua.hpp"
 #include "glm.hpp"
-#include "asset.hpp"
-#include "window.hpp"
-#include "audio.hpp"
 #include "coroutine.hpp"
 #include "utils.hpp"
 
 #include <darmok/optional_ref.hpp>
-#include <darmok/app.hpp>
 
 #include <vector>
 #include <optional>
@@ -24,6 +20,9 @@ namespace bx
 
 namespace darmok
 {
+	class App;
+	class Window;
+	class AudioSystem;
 	class AssetContext;
 
 	// TODO: make this class static, bind darmok::App directly
@@ -58,12 +57,11 @@ namespace darmok
 		std::vector<LuaDelegate> _updaters;
 		LuaCoroutineRunner _coroutineRunner;
 		std::reference_wrapper<App> _app;
-		LuaAudioSystem _audio;
 
 		AssetContext& getAssets() noexcept;
 		Window& getWindow() noexcept;
 		Input& getInput() noexcept;
-		LuaAudioSystem& getAudio() noexcept;
+		AudioSystem& getAudio() noexcept;
 
 		bool removeComponent(const sol::object& type);
 		bool hasComponent(const sol::object& type) const;
