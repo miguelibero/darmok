@@ -51,7 +51,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IWindowListener() = default;
-		virtual entt::id_type getType() const { return 0; }
+		virtual entt::id_type getWindowListenerType() const = 0;
 		virtual void onWindowSize(const glm::uvec2& size) {};
 		virtual void onWindowPixelSize(const glm::uvec2& size) {};
 		virtual void onWindowPhase(WindowPhase phase) {};
@@ -59,6 +59,16 @@ namespace darmok
 		virtual void onWindowCursorMode(WindowCursorMode mode) {};
 		virtual void onWindowVideoModeInfo(const VideoModeInfo& info) {};
 		virtual void onWindowError(const std::string& error) {};
+	};
+
+	template<typename T>
+	class DARMOK_EXPORT BX_NO_VTABLE ITypeWindowListener : public IWindowListener
+	{
+	public:
+		entt::id_type getWindowListenerType() const noexcept override
+		{
+			return entt::type_hash<T>::value();
+		}
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IWindowListenerFilter

@@ -29,9 +29,19 @@ namespace darmok::physics3d
 	{
 	public:
 		virtual ~IPhysicsUpdater() = default;
-        virtual entt::id_type getType() const { return 0; }
+        virtual entt::id_type getPhysicsUpdaterType() const = 0;
 		virtual void fixedUpdate(float fixedDeltaTime) = 0;
 	};
+
+    template<typename T>
+    class DARMOK_EXPORT BX_NO_VTABLE ITypePhysicsUpdater : public IPhysicsUpdater
+    {
+    public:
+        entt::id_type getPhysicsUpdaterType() const noexcept override
+        {
+            return entt::type_hash<T>::value();
+        }
+    };
 
     class DARMOK_EXPORT BX_NO_VTABLE IPhysicsUpdaterFilter
     {
@@ -54,10 +64,20 @@ namespace darmok::physics3d
     {
     public:
         virtual ~ICollisionListener() = default;
-        virtual entt::id_type getType() const { return 0; }
+        virtual entt::id_type getCollisionListenerType() const = 0;
         virtual void onCollisionEnter(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
         virtual void onCollisionStay(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
         virtual void onCollisionExit(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2) {};
+    };
+
+    template<typename T>
+    class DARMOK_EXPORT BX_NO_VTABLE ITypeCollisionListener : public ICollisionListener
+    {
+    public:
+        entt::id_type getCollisionListenerType() const noexcept override
+        {
+            return entt::type_hash<T>::value();
+        }
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE ICollisionListenerFilter

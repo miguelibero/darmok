@@ -56,17 +56,27 @@ namespace darmok::physics3d
         glm::vec3 velocity;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ICharacterControllerDelegate
+    class DARMOK_EXPORT BX_NO_VTABLE ICharacterDelegate
     {
     public:
-        virtual ~ICharacterControllerDelegate() = default;
+        virtual ~ICharacterDelegate() = default;
         using Contact = CharacterContact;
         using ContactSettings = CharacterContactSettings;
-        virtual entt::id_type getType() const noexcept { return 0; };
+        virtual entt::id_type getCharacterDelegateType() const = 0;
         virtual void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) { }
         virtual bool onContactValidate(CharacterController& character, PhysicsBody& body) { return true; }
         virtual void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) { }
         virtual void onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) { }
+    };
+
+    template<typename T>
+    class DARMOK_EXPORT BX_NO_VTABLE ITypeCharacterDelegate : public ICharacterDelegate
+    {
+    public:
+        entt::id_type getCharacterDelegateType() const noexcept override
+        {
+            return entt::type_hash<T>::value();
+        }
     };
 
     class CharacterControllerImpl;
@@ -76,7 +86,7 @@ namespace darmok::physics3d
     public:
         using Shape = PhysicsShape;
         using Config = CharacterControllerConfig;
-        using Delegate = ICharacterControllerDelegate;
+        using Delegate = ICharacterDelegate;
         CharacterController(const Config& config = {});
         CharacterController(const Shape& shape);
         ~CharacterController();

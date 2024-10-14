@@ -235,13 +235,23 @@ namespace darmok
     {
     public:
         virtual ~ISkeletalAnimatorListener() = default;
-        virtual entt::id_type getType() const { return 0; };
+        virtual entt::id_type getSkeletalAnimatorListenerType() const = 0;
         virtual void onAnimatorDestroyed(SkeletalAnimator& animator) {};
         virtual void onAnimatorStateLooped(SkeletalAnimator& animator, std::string_view state) {};
         virtual void onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) {};
         virtual void onAnimatorStateStarted(SkeletalAnimator& animator, std::string_view state) {};
         virtual void onAnimatorTransitionFinished(SkeletalAnimator& animator) {};
         virtual void onAnimatorTransitionStarted(SkeletalAnimator& animator) {};
+    };
+
+    template<typename T>
+    class DARMOK_EXPORT BX_NO_VTABLE ITypeSkeletalAnimatorListener : public ISkeletalAnimatorListener
+    {
+    public:
+        entt::id_type getSkeletalAnimatorListenerType() const noexcept override
+        {
+            return entt::type_hash<T>::value();
+        }
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorListenerFilter

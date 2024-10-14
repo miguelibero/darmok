@@ -11,7 +11,7 @@ namespace darmok
 	class RmluiCanvas;
 	class Window;
 
-	class RmluiDebuggerComponentImpl final : IInputEventListener
+	class RmluiDebuggerComponentImpl final : ITypeInputEventListener<RmluiDebuggerComponentImpl>
 	{
 	public:
 		using Config = RmluiDebuggerComponentConfig;

@@ -25,13 +25,12 @@ namespace darmok::physics3d
     class PhysicsBody;
     struct RaycastHit;
 
-    class LuaCollisionListener final : public ICollisionListener
+    class LuaCollisionListener final : public ITypeCollisionListener<LuaCollisionListener>
     {
     public:
         LuaCollisionListener(const sol::table& table) noexcept;
         sol::object getReal() const noexcept;
 
-        entt::id_type getType() const noexcept override;
         void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) override;
@@ -53,13 +52,12 @@ namespace darmok::physics3d
         entt::id_type _type;
     };
 
-    class LuaPhysicsUpdater final : public IPhysicsUpdater
+    class LuaPhysicsUpdater final : public ITypePhysicsUpdater<LuaPhysicsUpdater>
     {
     public:
         LuaPhysicsUpdater(const sol::object& obj) noexcept;
         const LuaDelegate& getDelegate() const noexcept;
 
-        entt::id_type getType() const noexcept override;
         void fixedUpdate(float fixedDeltaTime) override;
     private:
         LuaDelegate _delegate;

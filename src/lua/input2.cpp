@@ -7,11 +7,6 @@ namespace darmok
 	{
 	}
 
-	entt::id_type LuaInputEventListener::getType() const noexcept
-	{
-		return entt::type_hash<LuaInputEventListener>::value();
-	}
-
 	void LuaInputEventListener::onInputEvent(const std::string& tag)
 	{
 		auto desc = "input event listener: " + tag;
@@ -32,7 +27,7 @@ namespace darmok
 
 	bool LuaInputEventListenerFilter::operator()(const std::string& tag, const IInputEventListener& listener) const noexcept
 	{
-		if (listener.getType() != _type)
+		if (listener.getInputEventListenerType() != _type)
 		{
 			return false;
 		}

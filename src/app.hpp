@@ -110,7 +110,7 @@ namespace darmok
 		void renderPassDefine(RenderPassDefinition& def) override;
 	};
 
-	class AppImpl final : IKeyboardListener
+	class AppImpl final : ITypeKeyboardListener<AppImpl>
 	{
 	public:
 		AppImpl(App& app, std::unique_ptr<IAppDelegateFactory>&& factory) noexcept;
@@ -145,7 +145,7 @@ namespace darmok
 		bool removeUpdater(const IAppUpdater& updater) noexcept;
 		size_t removeUpdaters(const IAppUpdaterFilter& filter) noexcept;
 
-		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
+		void addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
 		bool hasComponent(entt::id_type type) const noexcept;
 		OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
@@ -190,7 +190,7 @@ namespace darmok
 		}
 
 	private:
-		using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<IAppComponent>>>;
+		using Components = std::vector<std::unique_ptr<IAppComponent>>;
 		using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
 
 		Components::iterator findComponent(entt::id_type type) noexcept;

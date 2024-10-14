@@ -42,11 +42,6 @@ namespace darmok
 	{
 	}
 
-	entt::id_type LuaAppUpdater::getType() const noexcept
-	{
-		return entt::type_hash<LuaAppUpdater>::value();
-	}
-
 	void LuaAppUpdater::update(float deltaTime)
 	{
 		_delegate(deltaTime);
@@ -65,7 +60,7 @@ namespace darmok
 
 	bool LuaAppUpdaterFilter::operator()(const IAppUpdater& updater) const noexcept
 	{
-		return updater.getType() == _type && static_cast<const LuaAppUpdater&>(updater).getDelegate() == _object;
+		return updater.getAppUpdaterType() == _type && static_cast<const LuaAppUpdater&>(updater).getDelegate() == _object;
 	}
 
 
@@ -119,9 +114,7 @@ namespace darmok
 
 	void LuaApp::addLuaComponent(App& app, const sol::table& table)
 	{
-		auto comp = std::make_unique<LuaAppComponent>(table);
-		auto typeId = comp->getType();
-		app.addComponent(typeId, std::move(comp));
+		app.addComponent(std::make_unique<LuaAppComponent>(table));
 	}
 
 	sol::object LuaApp::getLuaComponent(App& app, const sol::object& type) noexcept
@@ -629,11 +622,6 @@ namespace darmok
 	LuaAppComponent::LuaAppComponent(const sol::table& table) noexcept
 		: _table(table)
 	{
-	}
-
-	entt::id_type LuaAppComponent::getType() const noexcept
-	{
-		return LuaUtils::getTypeId(_table).value();
 	}
 
 	sol::object LuaAppComponent::getReal() const noexcept

@@ -328,7 +328,7 @@ namespace darmok
 		RmluiPlugin& _plugin;
 	};
 
-	class RmluiSceneComponentImpl final : IKeyboardListener, IMouseListener
+	class RmluiSceneComponentImpl final : ITypeKeyboardListener<RmluiSceneComponentImpl>, ITypeMouseListener<RmluiSceneComponentImpl>
 	{
 	public:
 		~RmluiSceneComponentImpl();

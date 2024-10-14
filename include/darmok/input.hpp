@@ -27,9 +27,19 @@ namespace darmok
 	{
 	public:
 		virtual ~IKeyboardListener() = default;
-		virtual entt::id_type getType() const { return 0; }
+		virtual entt::id_type getKeyboardListenerType() const = 0;
 		virtual void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) {};
 		virtual void onKeyboardChar(const Utf8Char& chr) {};
+	};
+
+	template<typename T>
+	class DARMOK_EXPORT BX_NO_VTABLE ITypeKeyboardListener : public IKeyboardListener
+	{
+	public:
+		entt::id_type getKeyboardListenerType() const noexcept override
+		{
+			return entt::type_hash<T>::value();
+		}
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IKeyboardListenerFilter
@@ -78,11 +88,21 @@ namespace darmok
 	{
 	public:
 		virtual ~IMouseListener() = default;
-		virtual entt::id_type getType() const { return 0; }
+		virtual entt::id_type getMouseListenerType() const = 0;
 		virtual void onMouseActive(bool active) {};
 		virtual void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) {};
 		virtual void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) {};
 		virtual void onMouseButton(MouseButton button, bool down) {};
+	};
+
+	template<typename T>
+	class DARMOK_EXPORT BX_NO_VTABLE ITypeMouseListener : public IMouseListener
+	{
+	public:
+		entt::id_type getMouseListenerType() const noexcept override
+		{
+			return entt::type_hash<T>::value();
+		}
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IMouseListenerFilter
@@ -131,10 +151,20 @@ namespace darmok
 	{
 	public:
 		virtual ~IGamepadListener() = default;
-		virtual entt::id_type getType() const { return 0; }
+		virtual entt::id_type getGamepadListenerType() const = 0;
 		virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) {};
 		virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
 		virtual void onGamepadConnect(uint8_t num, bool connected) {};
+	};
+
+	template<typename T>
+	class DARMOK_EXPORT BX_NO_VTABLE ITypeGamepadListener : public IGamepadListener
+	{
+	public:
+		entt::id_type getGamepadListenerType() const noexcept override
+		{
+			return entt::type_hash<T>::value();
+		}
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IGamepadListenerFilter
@@ -241,8 +271,18 @@ namespace darmok
 	{
 	public:
 		virtual ~IInputEventListener() = default;
-		virtual entt::id_type getType() const { return 0; }
+		virtual entt::id_type getInputEventListenerType() const = 0;
 		virtual void onInputEvent(const std::string& tag) = 0;
+	};
+
+	template<typename T>
+	class DARMOK_EXPORT BX_NO_VTABLE ITypeInputEventListener : public IInputEventListener
+	{
+	public:
+		entt::id_type getInputEventListenerType() const noexcept override
+		{
+			return entt::type_hash<T>::value();
+		}
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IInputEventListenerFilter

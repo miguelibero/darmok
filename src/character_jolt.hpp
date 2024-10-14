@@ -22,7 +22,7 @@ namespace darmok::physics3d
     {
     public:
         using Config = CharacterControllerConfig;
-        using Delegate = ICharacterControllerDelegate;
+        using Delegate = ICharacterDelegate;
         using Contact = CharacterContact;
         CharacterControllerImpl(const Config& config) noexcept;
         ~CharacterControllerImpl() noexcept;

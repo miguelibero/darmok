@@ -10,11 +10,6 @@ namespace darmok::physics3d
     {
     }
 
-    entt::id_type LuaCollisionListener::getType() const noexcept
-    {
-        return entt::type_hash<LuaCollisionListener>::value();
-    }
-
     sol::object LuaCollisionListener::getReal() const noexcept
     {
         return _table;
@@ -47,17 +42,12 @@ namespace darmok::physics3d
 
     bool LuaCollisionListenerFilter::operator()(const ICollisionListener& listener) const noexcept
     {
-        return listener.getType() == _type && static_cast<const LuaCollisionListener&>(listener).getReal() == _table;
+        return listener.getCollisionListenerType() == _type && static_cast<const LuaCollisionListener&>(listener).getReal() == _table;
     }
 
     LuaPhysicsUpdater::LuaPhysicsUpdater(const sol::object& obj) noexcept
         : _delegate(obj, "fixed_update")
     {
-    }
-
-    entt::id_type LuaPhysicsUpdater::getType() const noexcept
-    {
-        return entt::type_hash<LuaPhysicsUpdater>::value();
     }
 
     const LuaDelegate& LuaPhysicsUpdater::getDelegate() const noexcept
@@ -78,7 +68,7 @@ namespace darmok::physics3d
 
     bool LuaPhysicsUpdaterFilter::operator()(const IPhysicsUpdater& updater) const noexcept
     {
-        return updater.getType() == _type && static_cast<const LuaPhysicsUpdater&>(updater).getDelegate() == _object;
+        return updater.getPhysicsUpdaterType() == _type && static_cast<const LuaPhysicsUpdater&>(updater).getDelegate() == _object;
     }
 
     PhysicsSystem& LuaPhysicsSystem::addUpdater(PhysicsSystem& system, const sol::object& obj) noexcept

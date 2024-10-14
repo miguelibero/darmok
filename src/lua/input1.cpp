@@ -13,11 +13,6 @@ namespace darmok
 	{
 	}
 
-	entt::id_type LuaKeyboardListener::getType() const noexcept
-	{
-		return entt::type_hash<LuaMouseListener>::value();
-	}
-
 	sol::object LuaKeyboardListener::getReal() const noexcept
 	{
 		return _table;
@@ -44,7 +39,7 @@ namespace darmok
 
 	bool LuaKeyboardListenerFilter::operator()(const IKeyboardListener& listener) const noexcept
 	{
-		return listener.getType() == _type && static_cast<const LuaKeyboardListener&>(listener).getReal() == _table;
+		return listener.getKeyboardListenerType() == _type && static_cast<const LuaKeyboardListener&>(listener).getReal() == _table;
 	}
 	
 	std::optional<KeyboardKey> LuaKeyboard::readKey(const sol::object& val) noexcept
@@ -144,11 +139,6 @@ namespace darmok
 	{
 	}
 
-	entt::id_type LuaMouseListener::getType() const noexcept
-	{
-		return entt::type_hash<LuaMouseListener>::value();
-	}
-
 	sol::object LuaMouseListener::getReal() const noexcept
 	{
 		return _table;
@@ -181,7 +171,7 @@ namespace darmok
 
 	bool LuaMouseListenerFilter::operator()(const IMouseListener& listener) const noexcept
 	{
-		return listener.getType() == _type && static_cast<const LuaMouseListener&>(listener).getReal() == _table;
+		return listener.getMouseListenerType() == _type && static_cast<const LuaMouseListener&>(listener).getReal() == _table;
 	}
 
 	bool LuaMouse::getLeftButton(const Mouse& mouse) noexcept
@@ -303,11 +293,6 @@ namespace darmok
 	{
 	}
 
-	entt::id_type LuaGamepadListener::getType() const noexcept
-	{
-		return entt::type_hash<LuaGamepadListener>::value();
-	}
-
 	sol::object LuaGamepadListener::getReal() const noexcept
 	{
 		return _table;
@@ -340,7 +325,7 @@ namespace darmok
 
 	bool LuaGamepadListenerFilter::operator()(const IGamepadListener& listener) const noexcept
 	{
-		return listener.getType() == _type && static_cast<const LuaGamepadListener&>(listener).getReal() == _table;
+		return listener.getGamepadListenerType() == _type && static_cast<const LuaGamepadListener&>(listener).getReal() == _table;
 	}
 
 	void LuaGamepad::addListener(Gamepad& gamepad, const sol::table& table) noexcept

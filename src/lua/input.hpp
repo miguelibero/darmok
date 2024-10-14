@@ -13,13 +13,12 @@
 
 namespace darmok
 {
-	class LuaKeyboardListener final : public IKeyboardListener
+	class LuaKeyboardListener final : public ITypeKeyboardListener<LuaKeyboardListener>
 	{
 	public:
 		LuaKeyboardListener(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
-		entt::id_type getType() const noexcept override;
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void onKeyboardChar(const Utf8Char& chr) override;
 
@@ -55,13 +54,12 @@ namespace darmok
 		static std::string getUpdateChars(const Keyboard& kb) noexcept;
 	};
 
-	class LuaMouseListener final : public IMouseListener
+	class LuaMouseListener final : public ITypeMouseListener<LuaMouseListener>
 	{
 	public:
 		LuaMouseListener(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
-		entt::id_type getType() const noexcept override;
 		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) override;
 		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) override;
 		void onMouseButton(MouseButton button, bool down) override;
@@ -102,13 +100,12 @@ namespace darmok
 		static bool removeListener(Mouse& mouse, const sol::table& table) noexcept;
 	};
 
-	class LuaGamepadListener final : public IGamepadListener
+	class LuaGamepadListener final : public ITypeGamepadListener<LuaGamepadListener>
 	{
 	public:
 		LuaGamepadListener(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
-		entt::id_type getType() const noexcept override;
 		void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) override;
 		void onGamepadButton(uint8_t num, GamepadButton button, bool down) override;
 		void onGamepadConnect(uint8_t num, bool connected) override;
@@ -148,13 +145,12 @@ namespace darmok
 		static const glm::vec3& getRightStick(const Gamepad& gamepad) noexcept;
 	};
 
-	class LuaInputEventListener final : public IInputEventListener
+	class LuaInputEventListener final : public ITypeInputEventListener<LuaInputEventListener>
 	{
 	public:
 		LuaInputEventListener(const sol::object& dlg) noexcept;
 		const LuaDelegate& getDelegate() const noexcept;
 
-		entt::id_type getType() const noexcept override;
 		void onInputEvent(const std::string& tag) override;
 	private:
 		LuaDelegate _delegate;

@@ -41,11 +41,6 @@ namespace darmok
         return _env;
     }
 
-    entt::id_type LuaRmluiCanvasDelegate::getType() const noexcept
-    {
-        return entt::type_hash<LuaRmluiCanvasDelegate>::value();
-    }
-
     void LuaRmluiCanvasDelegate::update(float deltaTime)
     {
         static const std::string updateFunc = "update";
@@ -95,9 +90,10 @@ namespace darmok
 
     sol::environment LuaRmluiCanvas::getEnvironment(const RmluiCanvas& canvas) noexcept
     {
+        static const entt::id_type type = entt::type_hash<LuaRmluiCanvasDelegate>::value();
         if (auto dlg = canvas.getDelegate())
         {
-            if (dlg->getType() == entt::type_hash<LuaRmluiCanvasDelegate>::value())
+            if (dlg->getRmluiCanvasDelegateType() == type)
             {
                 return static_cast<LuaRmluiCanvasDelegate&>(dlg.value()).getEnvironment();
             }

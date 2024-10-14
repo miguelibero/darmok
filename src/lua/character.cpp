@@ -6,32 +6,32 @@
 
 namespace darmok::physics3d
 {
-	LuaCharacterControllerDelegate::LuaCharacterControllerDelegate(const sol::table& table) noexcept
+	LuaCharacterDelegate::LuaCharacterDelegate(const sol::table& table) noexcept
 		: _table(table)
 	{
 	}
 
-	const LuaTableDelegateDefinition LuaCharacterControllerDelegate::_adjustBodyDef("on_adjust_body_velocity", "running character adjust body velocity");
-	const LuaTableDelegateDefinition LuaCharacterControllerDelegate::_contactValidateDef("on_contact_validate", "running character contact validate");
-	const LuaTableDelegateDefinition LuaCharacterControllerDelegate::_contactAddedDef("on_contact_added", "running character contact added");
-	const LuaTableDelegateDefinition LuaCharacterControllerDelegate::_contactSolveDef("on_contact_solve", "running character contact solve");
+	const LuaTableDelegateDefinition LuaCharacterDelegate::_adjustBodyDef("on_adjust_body_velocity", "running character adjust body velocity");
+	const LuaTableDelegateDefinition LuaCharacterDelegate::_contactValidateDef("on_contact_validate", "running character contact validate");
+	const LuaTableDelegateDefinition LuaCharacterDelegate::_contactAddedDef("on_contact_added", "running character contact added");
+	const LuaTableDelegateDefinition LuaCharacterDelegate::_contactSolveDef("on_contact_solve", "running character contact solve");
 
-	void LuaCharacterControllerDelegate::onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity)
+	void LuaCharacterDelegate::onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity)
 	{
 		_adjustBodyDef(_table, character, body, linearVelocity, angularVelocity);
 	}
 
-	bool LuaCharacterControllerDelegate::onContactValidate(CharacterController& character, PhysicsBody& body)
+	bool LuaCharacterDelegate::onContactValidate(CharacterController& character, PhysicsBody& body)
 	{
 		return _contactValidateDef(_table, character, body);
 	}
 
-	void LuaCharacterControllerDelegate::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings)
+	void LuaCharacterDelegate::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings)
 	{
 		_contactAddedDef(_table, character, body, contact, settings);
 	}
 
-	void LuaCharacterControllerDelegate::onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity)
+	void LuaCharacterDelegate::onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity)
 	{
 		_contactSolveDef(_table, character, body, contact, characterVelocity);
 	}
@@ -73,7 +73,7 @@ namespace darmok::physics3d
 
 	void LuaCharacterController::setDelegate(CharacterController& ctrl, const sol::table& table) noexcept
 	{
-		ctrl.setDelegate(std::make_unique<LuaCharacterControllerDelegate>(table));
+		ctrl.setDelegate(std::make_unique<LuaCharacterDelegate>(table));
 	}
 
 	void LuaCharacterController::bind(sol::state_view& lua) noexcept

@@ -19,7 +19,7 @@ namespace darmok
 
 	class ImguiAppComponentImpl;
 
-	class DARMOK_EXPORT ImguiAppComponent final : public IAppComponent
+	class DARMOK_EXPORT ImguiAppComponent final : public ITypeAppComponent<ImguiAppComponent>
     {
     public:
 		ImguiAppComponent(IImguiRenderer& renderer, float fontSize = 18.0f) noexcept;

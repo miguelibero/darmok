@@ -22,10 +22,10 @@ namespace darmok::physics3d
 {
 	class CharacterController;
 
-	class LuaCharacterControllerDelegate final : public ICharacterControllerDelegate
+	class LuaCharacterDelegate final : public ITypeCharacterDelegate<LuaCharacterDelegate>
 	{
 	public:
-		LuaCharacterControllerDelegate(const sol::table& table) noexcept;
+		LuaCharacterDelegate(const sol::table& table) noexcept;
 		void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) override;
 		bool onContactValidate(CharacterController& character, PhysicsBody& body) override;
 		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override;

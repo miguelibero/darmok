@@ -26,7 +26,7 @@ namespace darmok
     class Program;
     class App;
 
-    class DARMOK_EXPORT MaterialAppComponent : public IAppComponent
+    class DARMOK_EXPORT MaterialAppComponent : public ITypeAppComponent<MaterialAppComponent>
     {
     public:
         MaterialAppComponent() noexcept;

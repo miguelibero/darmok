@@ -15,7 +15,7 @@ namespace darmok
 
     class RmluiDebuggerComponentImpl;
 
-	class DARMOK_EXPORT RmluiDebuggerComponent final : public IAppComponent
+	class DARMOK_EXPORT RmluiDebuggerComponent final : public ITypeAppComponent<RmluiDebuggerComponent>
     {
     public:
 		using Config = RmluiDebuggerComponentConfig;

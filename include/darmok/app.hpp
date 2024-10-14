@@ -49,7 +49,6 @@ namespace tf
 
 namespace darmok
 {
-	class IAppComponent;
 	class IAppDelegateFactory;
 	class App;
 	class AppImpl;
@@ -96,8 +95,18 @@ namespace darmok
 	{
 	public:
 		virtual ~IAppUpdater() = default;
-		virtual entt::id_type getType() const { return 0; }
+		virtual entt::id_type getAppUpdaterType() const = 0;
 		virtual void update(float deltaTime) = 0;
+	};
+
+	template<typename T>
+	class DARMOK_EXPORT BX_NO_VTABLE ITypeAppUpdater : public IAppUpdater
+	{
+	public:
+		entt::id_type getAppUpdaterType() const noexcept override
+		{
+			return entt::type_hash<T>::value();
+		}
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IAppUpdaterFilter
@@ -105,6 +114,27 @@ namespace darmok
 	public:
 		virtual ~IAppUpdaterFilter() = default;
 		virtual bool operator()(const IAppUpdater& updater) const = 0;
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE IAppComponent
+	{
+	public:
+		virtual ~IAppComponent() = default;
+		virtual entt::id_type getAppComponentType() const = 0;
+		virtual void init(App& app) {}
+		virtual void shutdown() {}
+		virtual void renderReset() {}
+		virtual void update(float deltaTime) {}
+	};
+
+	template<typename T>
+	class DARMOK_EXPORT BX_NO_VTABLE ITypeAppComponent : public IAppComponent
+	{
+	public:
+		entt::id_type getAppComponentType() const noexcept override
+		{
+			return entt::type_hash<T>::value();
+		}
 	};
 
 	class DARMOK_EXPORT App final
@@ -161,7 +191,7 @@ namespace darmok
 		bool removeUpdater(const IAppUpdater& updater) noexcept;
 		size_t removeUpdaters(const IAppUpdaterFilter& filter) noexcept;
 
-		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
+		void addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
 		[[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
 		[[nodiscard]] OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
@@ -194,7 +224,7 @@ namespace darmok
 		{
 			auto ptr = std::make_unique<T>(std::forward<A>(args)...);
 			auto& ref = *ptr;
-			addComponent(entt::type_hash<T>::value(), std::move(ptr));
+			addComponent(std::move(ptr));
 			return ref;
 		}
 
@@ -221,17 +251,6 @@ namespace darmok
 
 	private:
 		std::unique_ptr<AppImpl> _impl;
-	};
-
-	class DARMOK_EXPORT BX_NO_VTABLE IAppComponent
-	{
-	public:
-		virtual ~IAppComponent() = default;
-
-		virtual void init(App& app) {}
-		virtual void shutdown() {}
-		virtual void renderReset() {}
-		virtual void update(float deltaTime) {}
 	};
 
 } // namespace darmok

@@ -21,13 +21,12 @@ namespace bx
 
 namespace darmok
 {
-	class LuaAppUpdater final : public IAppUpdater
+	class LuaAppUpdater final : public ITypeAppUpdater<LuaAppUpdater>
 	{
 	public:
 		LuaAppUpdater(const sol::object& obj) noexcept;		
 		const LuaDelegate& getDelegate() const noexcept;
 
-		entt::id_type getType() const noexcept override;
 		void update(float deltaTime) override;
 	private:
 		LuaDelegate _delegate;
@@ -115,11 +114,10 @@ namespace darmok
 		void help(const std::string& name, const char* error = nullptr) noexcept;
     };
 
-	class LuaAppComponent final : public IAppComponent
+	class LuaAppComponent final : public ITypeAppComponent<LuaAppComponent>
 	{
 	public:
 		LuaAppComponent(const sol::table& table) noexcept;
-		entt::id_type getType() const noexcept;
 		sol::object getReal() const noexcept;
 
 		void init(App& app) override;

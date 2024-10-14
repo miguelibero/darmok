@@ -10,11 +10,10 @@
 
 namespace darmok
 {
-	class LuaWindowListener : public IWindowListener
+	class LuaWindowListener : public ITypeWindowListener<LuaWindowListener>
 	{
 	public:
 		LuaWindowListener(const sol::table& table) noexcept;
-		entt::id_type getType() const noexcept override;
 		void onWindowSize(const glm::uvec2& size) override;
 		void onWindowPixelSize(const glm::uvec2& size) override;
 		void onWindowPhase(WindowPhase phase) override;

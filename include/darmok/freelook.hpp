@@ -63,8 +63,18 @@ namespace darmok
     {
     public:
         virtual ~IFreelookListener() = default;
-        virtual entt::id_type getType() const { return 0; }
+        virtual entt::id_type getFreelookListenerType() const = 0;
         virtual void onFreelookEnable(bool enabled) = 0;
+    };
+
+    template<typename T>
+    class DARMOK_EXPORT BX_NO_VTABLE ITypeFreelookListener : public IFreelookListener
+    {
+    public:
+        entt::id_type getFreelookListenerType() const noexcept override
+        {
+            return entt::type_hash<T>::value();
+        }
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IFreelookListenerFilter
@@ -74,7 +84,7 @@ namespace darmok
         virtual bool operator()(const IFreelookListener& listener) const = 0;
     };
 
-    class DARMOK_EXPORT FreelookController final : public ISceneComponent, public IInputEventListener
+    class DARMOK_EXPORT FreelookController final : public ISceneComponent, public ITypeInputEventListener<FreelookController>
     {
     public:
         using Config = FreelookConfig;

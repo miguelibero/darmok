@@ -364,7 +364,7 @@ namespace darmok
         const EntityRegistry& getRegistry() const;
     };
 
-    class DARMOK_EXPORT SceneAppComponent final : public IAppComponent
+    class DARMOK_EXPORT SceneAppComponent final : public ITypeAppComponent<SceneAppComponent>
     {
     public:
         using Scenes = std::vector<std::shared_ptr<Scene>>;

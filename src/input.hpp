@@ -175,7 +175,7 @@ namespace darmok
 
 #pragma region Input
 
-	class InputImpl final : public IKeyboardListener, public IMouseListener, public IGamepadListener
+	class InputImpl final : public ITypeKeyboardListener<InputImpl>, public ITypeMouseListener<InputImpl>, public ITypeGamepadListener<InputImpl>
 	{
 	public:
 		InputImpl(Input& input) noexcept;

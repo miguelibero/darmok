@@ -140,7 +140,7 @@ namespace darmok
     class LuaEntity;
     class LuaScene;
 
-    class LuaRmluiCanvasDelegate final : public IRmluiCanvasDelegate
+    class LuaRmluiCanvasDelegate final : public ITypeRmluiCanvasDelegate<LuaRmluiCanvasDelegate>
     {
     public:
         LuaRmluiCanvasDelegate(RmluiCanvas& canvas, LuaEntity& entity, const sol::state_view& lua) noexcept;
@@ -148,7 +148,6 @@ namespace darmok
 
         sol::environment& getEnvironment() noexcept;
 
-        entt::id_type getType() const noexcept override;
         void update(float deltaTime) override;
         void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) noexcept override;
         bool loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept override;

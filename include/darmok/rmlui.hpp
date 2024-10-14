@@ -34,10 +34,20 @@ namespace darmok
 	{
 	public:
 		virtual ~IRmluiCanvasDelegate() = default;
-		virtual entt::id_type getType() const noexcept { return 0; };
+		virtual entt::id_type getRmluiCanvasDelegateType() const = 0;
 		virtual void update(float deltaTime) { };
 		virtual void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) = 0;
 		virtual bool loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) = 0;
+	};
+
+	template<typename T>
+	class DARMOK_EXPORT BX_NO_VTABLE ITypeRmluiCanvasDelegate : public IRmluiCanvasDelegate
+	{
+	public:
+		entt::id_type getRmluiCanvasDelegateType() const noexcept override
+		{
+			return entt::type_hash<T>::value();
+		}
 	};
 
 	class RmluiCanvasImpl;

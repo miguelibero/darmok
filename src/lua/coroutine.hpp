@@ -135,7 +135,7 @@ namespace darmok
 
 	class SkeletalAnimator;
 
-	class LuaPlayAnimation final : public ILuaYieldInstruction, ISkeletalAnimatorListener
+	class LuaPlayAnimation final : public ILuaYieldInstruction, ITypeSkeletalAnimatorListener<LuaPlayAnimation>
 	{
 	public:
 		LuaPlayAnimation(SkeletalAnimator& animator, const std::string& name) noexcept;
@@ -173,7 +173,7 @@ namespace darmok
 		LuaBundledCoroutine(const sol::main_function& func) noexcept;
 	};
 
-    class LuaCoroutineRunner final : public IAppComponent
+    class LuaCoroutineRunner final : public ITypeAppComponent<LuaCoroutineRunner>
     {
     public:
 		LuaCoroutine startCoroutine(const sol::function& func) noexcept;

@@ -348,7 +348,7 @@ namespace darmok
 	{
 		ComponentRefs refs;
 		refs.reserve(_components.size());
-		for (auto& [type, component] : _components)
+		for (auto& component : _components)
 		{
 			refs.emplace_back(*component);
 		}
@@ -806,23 +806,25 @@ namespace darmok
 		return _runResult;
 	}
 
-	void AppImpl::addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept
+	void AppImpl::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
 	{
 		if (_running)
 		{
 			component->init(_app);
 		}
-		_components.emplace_back(type, std::move(component));
+		_components.emplace_back(std::move(component));
 	}
 
 	AppImpl::Components::iterator AppImpl::findComponent(entt::id_type type) noexcept
 	{
-		return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+		return std::find_if(_components.begin(), _components.end(),
+			[type](auto& elm) { return elm->getAppComponentType() == type; });
 	}
 
 	AppImpl::Components::const_iterator AppImpl::findComponent(entt::id_type type) const noexcept
 	{
-		return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+		return std::find_if(_components.begin(), _components.end(),
+			[type](auto& elm) { return elm->getAppComponentType() == type; });
 	}
 
 	AppImpl::ComponentDependencies AppImpl::_compDeps;
@@ -872,7 +874,7 @@ namespace darmok
 		{
 			return nullptr;
 		}
-		return itr->second.get();
+		return **itr;
 	}
 
 	OptionalRef<const IAppComponent> AppImpl::getComponent(entt::id_type type) const noexcept
@@ -882,7 +884,7 @@ namespace darmok
 		{
 			return nullptr;
 		}
-		return itr->second.get();
+		return **itr;
 	}
 
 	App::App(std::unique_ptr<IAppDelegateFactory>&& factory) noexcept
@@ -1083,9 +1085,9 @@ namespace darmok
 		_impl->setRendererType(renderer);
 	}
 
-	void App::addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept
+	void App::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
 	{
-		_impl->addComponent(type, std::move(component));
+		_impl->addComponent(std::move(component));
 	}
 
 	bool App::removeComponent(entt::id_type type) noexcept
