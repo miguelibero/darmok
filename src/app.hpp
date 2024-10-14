@@ -140,8 +140,8 @@ namespace darmok
 		void setPaused(bool paused) noexcept;
 		bool isPaused() const noexcept;
 
-		void addUpdater(std::unique_ptr<IAppUpdater>&& updater, entt::id_type type = 0) noexcept;
-		void addUpdater(IAppUpdater& updater, entt::id_type type = 0) noexcept;
+		void addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept;
+		void addUpdater(IAppUpdater& updater) noexcept;
 		bool removeUpdater(const IAppUpdater& updater) noexcept;
 		size_t removeUpdaters(const IAppUpdaterFilter& filter) noexcept;
 

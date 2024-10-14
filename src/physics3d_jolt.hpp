@@ -197,13 +197,13 @@ namespace darmok::physics3d
         void shutdown() noexcept;
         void update(float deltaTime);
 
-        void addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater, entt::id_type type = 0) noexcept;
-        void addUpdater(IPhysicsUpdater& updater, entt::id_type type = 0) noexcept;
+        void addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
+        void addUpdater(IPhysicsUpdater& updater) noexcept;
         bool removeUpdater(const IPhysicsUpdater& updater) noexcept;
         size_t removeUpdaters(const IPhysicsUpdaterFilter& filter) noexcept;
 
-        void addListener(std::unique_ptr<ICollisionListener>&& listener, entt::id_type type = 0) noexcept;
-        void addListener(ICollisionListener& listener, entt::id_type type = 0) noexcept;
+        void addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
+        void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
         size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
@@ -327,8 +327,8 @@ namespace darmok::physics3d
         void move(const glm::vec3& pos, const glm::quat& rot, float deltaTime );
         void movePosition(const glm::vec3& pos, float deltaTime);
 
-        void addListener(std::unique_ptr<ICollisionListener>&& listener, entt::id_type type = 0) noexcept;
-        void addListener(ICollisionListener& listener, entt::id_type type = 0) noexcept;
+        void addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
+        void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
         size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 

@@ -235,6 +235,7 @@ namespace darmok
     {
     public:
         virtual ~ISkeletalAnimatorListener() = default;
+        virtual entt::id_type getType() const { return 0; };
         virtual void onAnimatorDestroyed(SkeletalAnimator& animator) {};
         virtual void onAnimatorStateLooped(SkeletalAnimator& animator, std::string_view state) {};
         virtual void onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) {};
@@ -247,7 +248,7 @@ namespace darmok
     {
     public:
         virtual ~ISkeletalAnimatorListenerFilter() = default;
-        virtual bool operator()(const ISkeletalAnimatorListener& listener, entt::id_type type) const = 0;
+        virtual bool operator()(const ISkeletalAnimatorListener& listener) const = 0;
     };
 
     class SkeletalAnimatorImpl;

@@ -58,7 +58,7 @@ namespace darmok::physics3d
 
     PhysicsBody& LuaPhysicsBody::addListener(PhysicsBody& body, const sol::table& table) noexcept
     {
-        return body.addListener(std::make_unique<LuaCollisionListener>(table), entt::type_hash<LuaCollisionListener>::value());
+        return body.addListener(std::make_unique<LuaCollisionListener>(table));
     }
 
     bool LuaPhysicsBody::removeListener(PhysicsBody& body, const sol::table& table) noexcept

@@ -27,6 +27,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IKeyboardListener() = default;
+		virtual entt::id_type getType() const { return 0; }
 		virtual void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) {};
 		virtual void onKeyboardChar(const Utf8Char& chr) {};
 	};
@@ -35,7 +36,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IKeyboardListenerFilter() = default;
-		virtual bool operator()(const IKeyboardListener& listener, entt::id_type type) const = 0;
+		virtual bool operator()(const IKeyboardListener& listener) const = 0;
 	};
 
 	class DARMOK_EXPORT Keyboard final
@@ -51,8 +52,8 @@ namespace darmok
 		[[nodiscard]] const KeyboardModifiers& getModifiers() const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
-		void addListener(std::unique_ptr<IKeyboardListener>&& listener, entt::id_type type = 0) noexcept;
-		void addListener(IKeyboardListener& listener, entt::id_type type = 0) noexcept;
+		void addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept;
+		void addListener(IKeyboardListener& listener) noexcept;
 		bool removeListener(const IKeyboardListener& listener) noexcept;
 		size_t removeListeners(const IKeyboardListenerFilter& filter) noexcept;
 
@@ -77,6 +78,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IMouseListener() = default;
+		virtual entt::id_type getType() const { return 0; }
 		virtual void onMouseActive(bool active) {};
 		virtual void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) {};
 		virtual void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) {};
@@ -87,7 +89,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IMouseListenerFilter() = default;
-		virtual bool operator()(const IMouseListener& listener, entt::id_type type) const = 0;
+		virtual bool operator()(const IMouseListener& listener) const = 0;
 	};
 
 	class DARMOK_EXPORT Mouse final
@@ -105,8 +107,8 @@ namespace darmok
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 
-		void addListener(std::unique_ptr<IMouseListener>&& listener, entt::id_type type = 0) noexcept;
-		void addListener(IMouseListener& listener, entt::id_type type = 0) noexcept;
+		void addListener(std::unique_ptr<IMouseListener>&& listener) noexcept;
+		void addListener(IMouseListener& listener) noexcept;
 		bool removeListener(const IMouseListener& listener) noexcept;
 		size_t removeListeners(const IMouseListenerFilter& filter) noexcept;
 
@@ -129,6 +131,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IGamepadListener() = default;
+		virtual entt::id_type getType() const { return 0; }
 		virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) {};
 		virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
 		virtual void onGamepadConnect(uint8_t num, bool connected) {};
@@ -138,7 +141,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IGamepadListenerFilter() = default;
-		virtual bool operator()(const IGamepadListener& listener, entt::id_type type) const = 0;
+		virtual bool operator()(const IGamepadListener& listener) const = 0;
 	};
 
 	class GamepadImpl;
@@ -161,8 +164,8 @@ namespace darmok
 		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
 		[[nodiscard]] bool isConnected() const noexcept;
 
-		void addListener(std::unique_ptr<IGamepadListener>&& listener, entt::id_type type = 0) noexcept;
-		void addListener(IGamepadListener& listener, entt::id_type type = 0) noexcept;
+		void addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept;
+		void addListener(IGamepadListener& listener) noexcept;
 		bool removeListener(const IGamepadListener& listener) noexcept;
 		size_t removeListeners(const IGamepadListenerFilter& filter) noexcept;
 
@@ -238,6 +241,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IInputEventListener() = default;
+		virtual entt::id_type getType() const { return 0; }
 		virtual void onInputEvent(const std::string& tag) = 0;
 	};
 
@@ -245,7 +249,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IInputEventListenerFilter() = default;
-		virtual bool operator()(const std::string& tag, const IInputEventListener& listener, entt::id_type type) const = 0;
+		virtual bool operator()(const std::string& tag, const IInputEventListener& listener) const = 0;
 	};
 
 	struct DARMOK_EXPORT InputSensitivity
@@ -282,8 +286,8 @@ namespace darmok
 		using Sensitivity = InputSensitivity;
 		float getAxis(const InputDirs& positive, const InputDirs& negative, const Sensitivity& sensitivity = {}) const noexcept;
 		
-		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener, entt::id_type type = 0) noexcept;
-		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener, entt::id_type type = 0) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
 		bool removeListener(const std::string& tag, const IInputEventListener& listener) noexcept;
 		bool removeListener(const IInputEventListener& listener) noexcept;
 		size_t removeListeners(const IInputEventListenerFilter& filter) noexcept;

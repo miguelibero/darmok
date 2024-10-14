@@ -26,8 +26,8 @@ namespace darmok
 		[[nodiscard]] bool hasModifier(KeyboardModifier mod) const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
-		void addListener(IKeyboardListener& listener, entt::id_type type = 0) noexcept;
-		void addListener(std::unique_ptr<IKeyboardListener>&& listener, entt::id_type type = 0) noexcept;
+		void addListener(IKeyboardListener& listener) noexcept;
+		void addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept;
 		bool removeListener(const IKeyboardListener& listener) noexcept;
 		size_t removeListeners(const IKeyboardListenerFilter& filter) noexcept;
 
@@ -83,8 +83,8 @@ namespace darmok
 		[[nodiscard]] const glm::vec2& getScroll() const noexcept;
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 
-		void addListener(IMouseListener& listener, entt::id_type type = 0) noexcept;
-		void addListener(std::unique_ptr<IMouseListener>&& listener, entt::id_type type = 0) noexcept;
+		void addListener(IMouseListener& listener) noexcept;
+		void addListener(std::unique_ptr<IMouseListener>&& listener) noexcept;
 		bool removeListener(const IMouseListener& listener) noexcept;
 		size_t removeListeners(const IMouseListenerFilter& filter) noexcept;
 
@@ -137,8 +137,8 @@ namespace darmok
 		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
 		[[nodiscard]] bool isConnected() const noexcept;
 
-		void addListener(IGamepadListener& listener, entt::id_type type = 0) noexcept;
-		void addListener(std::unique_ptr<IGamepadListener>&& listener, entt::id_type type = 0) noexcept;
+		void addListener(IGamepadListener& listener) noexcept;
+		void addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept;
 		bool removeListener(const IGamepadListener& listener) noexcept;
 		size_t removeListeners(const IGamepadListenerFilter& filter) noexcept;
 
@@ -193,8 +193,8 @@ namespace darmok
 		OptionalRef<const Gamepad> getGamepad(uint8_t num) const noexcept;
 		const Gamepads& getGamepads() const noexcept;
 
-		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener, entt::id_type type = 0) noexcept;
-		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener, entt::id_type type = 0) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept;
 		bool removeListener(const std::string& tag, const IInputEventListener& listener) noexcept;
 		bool removeListener(const IInputEventListener& listener) noexcept;
 		size_t removeListeners(const IInputEventListenerFilter& filter) noexcept;
@@ -233,7 +233,6 @@ namespace darmok
 		{
 			std::string tag;
 			InputEvents events;
-			entt::id_type type;
 			std::reference_wrapper<IInputEventListener> listener;
 			std::unique_ptr<IInputEventListener> listenerPointer;
 		};

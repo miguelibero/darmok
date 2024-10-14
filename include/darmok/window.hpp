@@ -51,6 +51,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IWindowListener() = default;
+		virtual entt::id_type getType() const { return 0; }
 		virtual void onWindowSize(const glm::uvec2& size) {};
 		virtual void onWindowPixelSize(const glm::uvec2& size) {};
 		virtual void onWindowPhase(WindowPhase phase) {};
@@ -64,7 +65,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IWindowListenerFilter() = default;
-		virtual bool operator()(const IWindowListener& listener, entt::id_type type) const = 0;
+		virtual bool operator()(const IWindowListener& listener) const = 0;
 	};
 
 	class WindowImpl;
@@ -99,8 +100,8 @@ namespace darmok
 		[[nodiscard]] const WindowImpl& getImpl() const noexcept;
 		[[nodiscard]] WindowImpl& getImpl() noexcept;
 
-		void addListener(std::unique_ptr<IWindowListener>&& listener, entt::id_type type = 0) noexcept;
-		void addListener(IWindowListener& listener, entt::id_type type = 0) noexcept;
+		void addListener(std::unique_ptr<IWindowListener>&& listener) noexcept;
+		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(const IWindowListener& listener) noexcept;
 		size_t removeListeners(const IWindowListenerFilter& filter) noexcept;
 

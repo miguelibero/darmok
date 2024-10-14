@@ -285,14 +285,14 @@ namespace darmok
 		return _paused;
 	}
 
-	void AppImpl::addUpdater(std::unique_ptr<IAppUpdater>&& updater, entt::id_type type) noexcept
+	void AppImpl::addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept
 	{
-		_updaters.insert(std::move(updater), type);
+		_updaters.insert(std::move(updater));
 	}
 
-	void AppImpl::addUpdater(IAppUpdater& updater, entt::id_type type) noexcept
+	void AppImpl::addUpdater(IAppUpdater& updater) noexcept
 	{
-		_updaters.insert(updater, type);
+		_updaters.insert(updater);
 	}
 
 	bool AppImpl::removeUpdater(const IAppUpdater& updater) noexcept
@@ -1019,14 +1019,14 @@ namespace darmok
 		return _impl->isPaused();
 	}
 
-	void App::addUpdater(std::unique_ptr<IAppUpdater>&& updater, entt::id_type type) noexcept
+	void App::addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept
 	{
-		_impl->addUpdater(std::move(updater), type);
+		_impl->addUpdater(std::move(updater));
 	}
 
-	void App::addUpdater(IAppUpdater& updater, entt::id_type type) noexcept
+	void App::addUpdater(IAppUpdater& updater) noexcept
 	{
-		_impl->addUpdater(updater, type);
+		_impl->addUpdater(updater);
 	}
 
 	bool App::removeUpdater(const IAppUpdater& updater) noexcept

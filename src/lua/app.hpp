@@ -24,9 +24,11 @@ namespace darmok
 	class LuaAppUpdater final : public IAppUpdater
 	{
 	public:
-		LuaAppUpdater(const sol::object& obj) noexcept;
-		void update(float deltaTime) override;
+		LuaAppUpdater(const sol::object& obj) noexcept;		
 		const LuaDelegate& getDelegate() const noexcept;
+
+		entt::id_type getType() const noexcept override;
+		void update(float deltaTime) override;
 	private:
 		LuaDelegate _delegate;
 	};
@@ -35,13 +37,12 @@ namespace darmok
 	{
 	public:
 		LuaAppUpdaterFilter(const sol::object& obj) noexcept;
-		bool operator()(const IAppUpdater& updater, entt::id_type type) const noexcept override;
+		bool operator()(const IAppUpdater& updater) const noexcept override;
 	private:
 		sol::object _object;
 		entt::id_type _type;
 	};
 
-	// TODO: make this class static, bind darmok::App directly
 	class LuaApp final
 	{
 	public:

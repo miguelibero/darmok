@@ -96,6 +96,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IAppUpdater() = default;
+		virtual entt::id_type getType() const { return 0; }
 		virtual void update(float deltaTime) = 0;
 	};
 
@@ -103,7 +104,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IAppUpdaterFilter() = default;
-		virtual bool operator()(const IAppUpdater& updater, entt::id_type type) const = 0;
+		virtual bool operator()(const IAppUpdater& updater) const = 0;
 	};
 
 	class DARMOK_EXPORT App final
@@ -155,8 +156,8 @@ namespace darmok
 		void setPaused(bool paused) noexcept;
 		bool isPaused() const noexcept;
 
-		void addUpdater(std::unique_ptr<IAppUpdater>&& updater, entt::id_type type = 0) noexcept;
-		void addUpdater(IAppUpdater& updater, entt::id_type type = 0) noexcept;
+		void addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept;
+		void addUpdater(IAppUpdater& updater) noexcept;
 		bool removeUpdater(const IAppUpdater& updater) noexcept;
 		size_t removeUpdaters(const IAppUpdaterFilter& filter) noexcept;
 

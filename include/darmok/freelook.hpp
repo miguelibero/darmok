@@ -63,6 +63,7 @@ namespace darmok
     {
     public:
         virtual ~IFreelookListener() = default;
+        virtual entt::id_type getType() const { return 0; }
         virtual void onFreelookEnable(bool enabled) = 0;
     };
 
@@ -70,7 +71,7 @@ namespace darmok
     {
     public:
         virtual ~IFreelookListenerFilter() = default;
-        virtual bool operator()(const IFreelookListener& listener, entt::id_type type) const = 0;
+        virtual bool operator()(const IFreelookListener& listener) const = 0;
     };
 
     class DARMOK_EXPORT FreelookController final : public ISceneComponent, public IInputEventListener

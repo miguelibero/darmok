@@ -273,7 +273,6 @@ namespace darmok
         struct Element final
         {
             std::reference_wrapper<T> ref;
-            entt::id_type type;
             std::shared_ptr<T> ptr;
         };
     public:
@@ -290,15 +289,15 @@ namespace darmok
             return insert(listener, entt::type_hash<K>::value());
         }
 
-        OwnRefCollection& insert(std::unique_ptr<T>&& listener, entt::id_type type = 0) noexcept
+        OwnRefCollection& insert(std::unique_ptr<T>&& listener) noexcept
         {
-            _elms.emplace_back(*listener, type, std::move(listener));
+            _elms.emplace_back(*listener, std::move(listener));
             return *this;
         }
 
-        OwnRefCollection& insert(T& listener, entt::id_type type = 0) noexcept
+        OwnRefCollection& insert(T& listener) noexcept
         {
-            _elms.emplace_back(listener, type);
+            _elms.emplace_back(listener);
             return *this;
         }
 
@@ -306,7 +305,7 @@ namespace darmok
         size_t eraseIf(const Callback& callback) noexcept
         {
             auto itr = std::remove_if(_elms.begin(), _elms.end(),
-                [&callback](auto& elm) { return callback(elm.ref.get(), elm.type); });
+                [&callback](auto& elm) { return callback(elm.ref.get()); });
             auto count = std::distance(itr, _elms.end());
             _elms.erase(itr, _elms.end());
             return count;
@@ -314,18 +313,9 @@ namespace darmok
 
         bool erase(const T& listener) noexcept
         {
-            return eraseIf([&listener](auto& elm, auto type) {
+            return eraseIf([&listener](auto& elm) {
                 return &elm == &listener;
             }) > 0;
-        }
-
-        template<typename K>
-        size_t eraseEquals(const K& listener) noexcept
-        {
-            auto listenerType = entt::type_hash<K>::value();
-            return eraseIf([&listener, listenerType](auto& elm, auto type) {
-                return type == listenerType && static_cast<K&>(elm) == listener;
-            });
         }
 
         OwnRefCollection<T> copy() const noexcept

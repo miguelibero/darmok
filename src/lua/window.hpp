@@ -14,6 +14,7 @@ namespace darmok
 	{
 	public:
 		LuaWindowListener(const sol::table& table) noexcept;
+		entt::id_type getType() const noexcept override;
 		void onWindowSize(const glm::uvec2& size) override;
 		void onWindowPixelSize(const glm::uvec2& size) override;
 		void onWindowPhase(WindowPhase phase) override;
@@ -33,7 +34,7 @@ namespace darmok
 	{
 	public:
 		LuaWindowListenerFilter(const sol::table& table) noexcept;
-		bool operator()(const IWindowListener& listener, entt::id_type type) const noexcept override;
+		bool operator()(const IWindowListener& listener) const noexcept override;
 	private:
 		sol::main_table _table;
 		entt::id_type _type;

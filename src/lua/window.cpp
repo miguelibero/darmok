@@ -9,6 +9,11 @@ namespace darmok
 	{
 	}
 
+	entt::id_type LuaWindowListener::getType() const noexcept
+	{
+		return entt::type_hash<LuaWindowListener>::value();
+	}
+
 	sol::object LuaWindowListener::getReal() const noexcept
 	{
 		return _table;
@@ -51,9 +56,9 @@ namespace darmok
 	{
 	}
 
-	bool LuaWindowListenerFilter::operator()(const IWindowListener& listener, entt::id_type type) const noexcept
+	bool LuaWindowListenerFilter::operator()(const IWindowListener& listener) const noexcept
 	{
-		return type == _type && static_cast<const LuaWindowListener&>(listener).getReal() == _table;
+		return listener.getType() == _type && static_cast<const LuaWindowListener&>(listener).getReal() == _table;
 	}
 
 	glm::vec2 LuaWindow::screenToWindowPoint(const Window& win, const VarLuaTable<glm::vec2>& point) noexcept
@@ -68,7 +73,7 @@ namespace darmok
 
 	void LuaWindow::addListener(Window& win, const sol::table& table) noexcept
 	{
-		win.addListener(std::make_unique<LuaWindowListener>(table), entt::type_hash<LuaWindowListener>::value());
+		win.addListener(std::make_unique<LuaWindowListener>(table));
 	}
 
 	bool LuaWindow::removeListener(Window& win, const sol::table& table) noexcept

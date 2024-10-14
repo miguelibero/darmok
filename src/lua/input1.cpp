@@ -13,6 +13,11 @@ namespace darmok
 	{
 	}
 
+	entt::id_type LuaKeyboardListener::getType() const noexcept
+	{
+		return entt::type_hash<LuaMouseListener>::value();
+	}
+
 	sol::object LuaKeyboardListener::getReal() const noexcept
 	{
 		return _table;
@@ -37,9 +42,9 @@ namespace darmok
 	{
 	}
 
-	bool LuaKeyboardListenerFilter::operator()(const IKeyboardListener& listener, entt::id_type type) const noexcept
+	bool LuaKeyboardListenerFilter::operator()(const IKeyboardListener& listener) const noexcept
 	{
-		return type == _type && static_cast<const LuaKeyboardListener&>(listener).getReal() == _table;
+		return listener.getType() == _type && static_cast<const LuaKeyboardListener&>(listener).getReal() == _table;
 	}
 	
 	std::optional<KeyboardKey> LuaKeyboard::readKey(const sol::object& val) noexcept
@@ -108,7 +113,7 @@ namespace darmok
 
 	void LuaKeyboard::addListener(Keyboard& kb, const sol::table& table) noexcept
 	{
-		kb.addListener(std::make_unique<LuaKeyboardListener>(table), entt::type_hash<LuaKeyboardListener>::value());
+		kb.addListener(std::make_unique<LuaKeyboardListener>(table));
 	}
 
 	bool LuaKeyboard::removeListener(Keyboard& kb, const sol::table& table) noexcept
@@ -137,6 +142,11 @@ namespace darmok
 	LuaMouseListener::LuaMouseListener(const sol::table& table) noexcept
 		: _table(table)
 	{
+	}
+
+	entt::id_type LuaMouseListener::getType() const noexcept
+	{
+		return entt::type_hash<LuaMouseListener>::value();
 	}
 
 	sol::object LuaMouseListener::getReal() const noexcept
@@ -169,9 +179,9 @@ namespace darmok
 	{
 	}
 
-	bool LuaMouseListenerFilter::operator()(const IMouseListener& listener, entt::id_type type) const noexcept
+	bool LuaMouseListenerFilter::operator()(const IMouseListener& listener) const noexcept
 	{
-		return type == _type && static_cast<const LuaMouseListener&>(listener).getReal() == _table;
+		return listener.getType() == _type && static_cast<const LuaMouseListener&>(listener).getReal() == _table;
 	}
 
 	bool LuaMouse::getLeftButton(const Mouse& mouse) noexcept
@@ -196,7 +206,7 @@ namespace darmok
 
 	void LuaMouse::addListener(Mouse& mouse, const sol::table& table) noexcept
 	{
-		mouse.addListener(std::make_unique<LuaMouseListener>(table), entt::type_hash<LuaMouseListener>::value());
+		mouse.addListener(std::make_unique<LuaMouseListener>(table));
 	}
 
 	std::optional<MouseButton> LuaMouse::readButton(const sol::object& val) noexcept
@@ -293,6 +303,11 @@ namespace darmok
 	{
 	}
 
+	entt::id_type LuaGamepadListener::getType() const noexcept
+	{
+		return entt::type_hash<LuaGamepadListener>::value();
+	}
+
 	sol::object LuaGamepadListener::getReal() const noexcept
 	{
 		return _table;
@@ -323,14 +338,14 @@ namespace darmok
 	{
 	}
 
-	bool LuaGamepadListenerFilter::operator()(const IGamepadListener& listener, entt::id_type type) const noexcept
+	bool LuaGamepadListenerFilter::operator()(const IGamepadListener& listener) const noexcept
 	{
-		return type == _type && static_cast<const LuaGamepadListener&>(listener).getReal() == _table;
+		return listener.getType() == _type && static_cast<const LuaGamepadListener&>(listener).getReal() == _table;
 	}
 
 	void LuaGamepad::addListener(Gamepad& gamepad, const sol::table& table) noexcept
 	{
-		gamepad.addListener(std::make_unique<LuaGamepadListener>(table), entt::type_hash<LuaGamepadListener>::value());
+		gamepad.addListener(std::make_unique<LuaGamepadListener>(table));
 	}
 
 	bool LuaGamepad::removeListener(Gamepad& gamepad, const sol::table& table) noexcept

@@ -19,6 +19,7 @@ namespace darmok
 		LuaKeyboardListener(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
+		entt::id_type getType() const noexcept override;
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void onKeyboardChar(const Utf8Char& chr) override;
 
@@ -32,7 +33,7 @@ namespace darmok
 	{
 	public:
 		LuaKeyboardListenerFilter(const sol::table& table) noexcept;
-		bool operator()(const IKeyboardListener& listener, entt::id_type type) const noexcept override;
+		bool operator()(const IKeyboardListener& listener) const noexcept override;
 	private:
 		sol::main_table _table;
 		entt::id_type _type;
@@ -60,6 +61,7 @@ namespace darmok
 		LuaMouseListener(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
+		entt::id_type getType() const noexcept override;
 		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) override;
 		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) override;
 		void onMouseButton(MouseButton button, bool down) override;
@@ -75,7 +77,7 @@ namespace darmok
 	{
 	public:
 		LuaMouseListenerFilter(const sol::table& table) noexcept;
-		bool operator()(const IMouseListener& listener, entt::id_type type) const noexcept override;
+		bool operator()(const IMouseListener& listener) const noexcept override;
 	private:
 		sol::main_table _table;
 		entt::id_type _type;
@@ -106,6 +108,7 @@ namespace darmok
 		LuaGamepadListener(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
+		entt::id_type getType() const noexcept override;
 		void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) override;
 		void onGamepadButton(uint8_t num, GamepadButton button, bool down) override;
 		void onGamepadConnect(uint8_t num, bool connected) override;
@@ -121,7 +124,7 @@ namespace darmok
 	{
 	public:
 		LuaGamepadListenerFilter(const sol::table& table) noexcept;
-		bool operator()(const IGamepadListener& listener, entt::id_type type) const noexcept override;
+		bool operator()(const IGamepadListener& listener) const noexcept override;
 	private:
 		sol::main_table _table;
 		entt::id_type _type;
@@ -149,8 +152,10 @@ namespace darmok
 	{
 	public:
 		LuaInputEventListener(const sol::object& dlg) noexcept;
-		void onInputEvent(const std::string& tag) override;
 		const LuaDelegate& getDelegate() const noexcept;
+
+		entt::id_type getType() const noexcept override;
+		void onInputEvent(const std::string& tag) override;
 	private:
 		LuaDelegate _delegate;
 	};
@@ -159,7 +164,7 @@ namespace darmok
 	{
 	public:
 		LuaInputEventListenerFilter(const sol::object& obj, std::optional<std::string> tag = std::nullopt) noexcept;
-		bool operator()(const std::string& tag, const IInputEventListener& listener, entt::id_type type) const noexcept override;
+		bool operator()(const std::string& tag, const IInputEventListener& listener) const noexcept override;
 	private:
 		sol::main_object _obj;
 		entt::id_type _type;

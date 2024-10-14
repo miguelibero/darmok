@@ -10,6 +10,11 @@ namespace darmok::physics3d
     {
     }
 
+    entt::id_type LuaCollisionListener::getType() const noexcept
+    {
+        return entt::type_hash<LuaCollisionListener>::value();
+    }
+
     sol::object LuaCollisionListener::getReal() const noexcept
     {
         return _table;
@@ -38,17 +43,21 @@ namespace darmok::physics3d
         : _table(table)
         , _type(entt::type_hash<LuaCollisionListener>::value())
     {
-
     }
 
-    bool LuaCollisionListenerFilter::operator()(const ICollisionListener& listener, entt::id_type type) const noexcept
+    bool LuaCollisionListenerFilter::operator()(const ICollisionListener& listener) const noexcept
     {
-        return _type == type && static_cast<const LuaCollisionListener&>(listener).getReal() == _table;
+        return listener.getType() == _type && static_cast<const LuaCollisionListener&>(listener).getReal() == _table;
     }
 
     LuaPhysicsUpdater::LuaPhysicsUpdater(const sol::object& obj) noexcept
         : _delegate(obj, "fixed_update")
     {
+    }
+
+    entt::id_type LuaPhysicsUpdater::getType() const noexcept
+    {
+        return entt::type_hash<LuaPhysicsUpdater>::value();
     }
 
     const LuaDelegate& LuaPhysicsUpdater::getDelegate() const noexcept
@@ -67,9 +76,9 @@ namespace darmok::physics3d
     {
     }
 
-    bool LuaPhysicsUpdaterFilter::operator()(const IPhysicsUpdater& updater, entt::id_type type) const noexcept
+    bool LuaPhysicsUpdaterFilter::operator()(const IPhysicsUpdater& updater) const noexcept
     {
-        return _type == type && static_cast<const LuaPhysicsUpdater&>(updater).getDelegate() == _object;
+        return updater.getType() == _type && static_cast<const LuaPhysicsUpdater&>(updater).getDelegate() == _object;
     }
 
     PhysicsSystem& LuaPhysicsSystem::addUpdater(PhysicsSystem& system, const sol::object& obj) noexcept
@@ -77,7 +86,7 @@ namespace darmok::physics3d
         auto updater = std::make_unique<LuaPhysicsUpdater>(obj);
         if (updater->getDelegate())
         {
-            return system.addUpdater(std::move(updater), entt::type_hash<LuaPhysicsUpdater>::value());
+            return system.addUpdater(std::move(updater));
         }
         return system;
     }
@@ -89,7 +98,7 @@ namespace darmok::physics3d
 
     PhysicsSystem& LuaPhysicsSystem::addListener(PhysicsSystem& system, const sol::table& table) noexcept
     {
-        return system.addListener(std::make_unique<LuaCollisionListener>(table), entt::type_hash<LuaCollisionListener>::value());
+        return system.addListener(std::make_unique<LuaCollisionListener>(table));
     }
 
     bool LuaPhysicsSystem::removeListener(PhysicsSystem& system, const sol::table& table) noexcept
