@@ -243,6 +243,13 @@ namespace darmok
         virtual void onAnimatorTransitionStarted(SkeletalAnimator& animator) {};
     };
 
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorListenerFilter
+    {
+    public:
+        virtual ~ISkeletalAnimatorListenerFilter() = default;
+        virtual bool operator()(const ISkeletalAnimatorListener& listener, entt::id_type type) const = 0;
+    };
+
     class SkeletalAnimatorImpl;
 
     enum class SkeletalAnimatorPlaybackState
@@ -264,6 +271,7 @@ namespace darmok
         SkeletalAnimator& addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
         SkeletalAnimator& addListener(ISkeletalAnimatorListener& listener) noexcept;
         bool removeListener(const ISkeletalAnimatorListener& listener) noexcept;
+        size_t removeListeners(const ISkeletalAnimatorListenerFilter& filter) noexcept;
 
         SkeletalAnimator& setPlaybackSpeed(float speed) noexcept;
         float getPlaybackSpeed() const noexcept;

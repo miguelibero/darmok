@@ -31,7 +31,7 @@ namespace darmok
 		static const LuaTableDelegateDefinition _charDelegate;
 
 		std::reference_wrapper<Keyboard> _kb;
-		std::vector<sol::table> _listeners;
+		std::vector<sol::main_table> _listeners;
 
 		void addListener(const sol::table& table) noexcept;
 		bool removeListener(const sol::table& table) noexcept;
@@ -67,7 +67,7 @@ namespace darmok
 		static const LuaTableDelegateDefinition _buttonDelegate;
 
 		std::reference_wrapper<Mouse> _mouse;
-		std::vector<sol::table> _listeners;
+		std::vector<sol::main_table> _listeners;
 
 		const glm::vec2& getPosition() const noexcept;
 		const glm::vec2& getVelocity() const noexcept;
@@ -113,7 +113,7 @@ namespace darmok
 		static const LuaTableDelegateDefinition _connectDelegate;
 
 		std::reference_wrapper<Gamepad> _gamepad;
-		std::vector<sol::table> _listeners;
+		std::vector<sol::main_table> _listeners;
 
 		void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) override;
 		void onGamepadButton(uint8_t num, GamepadButton button, bool down) override;

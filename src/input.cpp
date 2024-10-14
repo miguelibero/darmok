@@ -151,19 +151,24 @@ namespace darmok
 		_charsWrite = 0;
 	}
 
-	void KeyboardImpl::addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept
+	void KeyboardImpl::addListener(std::unique_ptr<IKeyboardListener>&& listener, entt::id_type type) noexcept
 	{
-		_listeners.insert(std::move(listener));
+		_listeners.insert(std::move(listener), type);
 	}
 
-	void KeyboardImpl::addListener(IKeyboardListener& listener) noexcept
+	void KeyboardImpl::addListener(IKeyboardListener& listener, entt::id_type type) noexcept
 	{
-		_listeners.insert(listener);
+		_listeners.insert(listener, type);
 	}
 
 	bool KeyboardImpl::removeListener(const IKeyboardListener& listener) noexcept
 	{
 		return _listeners.erase(listener);
+	}
+
+	size_t KeyboardImpl::removeListeners(const IKeyboardListenerFilter& filter) noexcept
+	{
+		return _listeners.eraseIf(filter);
 	}
 
 	char KeyboardImpl::keyToAscii(KeyboardKey key, bool upper) noexcept
@@ -386,19 +391,24 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Keyboard::addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept
+	void Keyboard::addListener(std::unique_ptr<IKeyboardListener>&& listener, entt::id_type type) noexcept
 	{
-		_impl->addListener(std::move(listener));
+		_impl->addListener(std::move(listener), type);
 	}
 
-	void Keyboard::addListener(IKeyboardListener& listener) noexcept
+	void Keyboard::addListener(IKeyboardListener& listener, entt::id_type type) noexcept
 	{
-		_impl->addListener(listener);
+		_impl->addListener(listener, type);
 	}
 
 	bool Keyboard::removeListener(const IKeyboardListener& listener) noexcept
 	{
 		return _impl->removeListener(listener);
+	}
+
+	size_t Keyboard::removeListeners(const IKeyboardListenerFilter& filter) noexcept
+	{
+		return _impl->removeListeners(filter);
 	}
 
 	char Keyboard::keyToAscii(KeyboardKey key, bool upper) noexcept
@@ -570,19 +580,24 @@ namespace darmok
 		return _buttons;
 	}
 
-	void MouseImpl::addListener(std::unique_ptr<IMouseListener>&& listener) noexcept
+	void MouseImpl::addListener(std::unique_ptr<IMouseListener>&& listener, entt::id_type type) noexcept
 	{
-		_listeners.insert(std::move(listener));
+		_listeners.insert(std::move(listener), type);
 	}
 
-	void MouseImpl::addListener(IMouseListener& listener) noexcept
+	void MouseImpl::addListener(IMouseListener& listener, entt::id_type type) noexcept
 	{
-		_listeners.insert(listener);
+		_listeners.insert(listener, type);
 	}
 
 	bool MouseImpl::removeListener(const IMouseListener& listener) noexcept
 	{
 		return _listeners.erase(listener);
+	}
+
+	size_t MouseImpl::removeListeners(const IMouseListenerFilter& filter) noexcept
+	{
+		return _listeners.eraseIf(filter);
 	}
 
 	const std::string MouseImpl::_buttonPrefix = "MouseButton.";
@@ -720,19 +735,24 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Mouse::addListener(std::unique_ptr<IMouseListener>&& listener) noexcept
+	void Mouse::addListener(std::unique_ptr<IMouseListener>&& listener, entt::id_type type) noexcept
 	{
-		_impl->addListener(std::move(listener));
+		_impl->addListener(std::move(listener), type);
 	}
 
-	void Mouse::addListener(IMouseListener& listener) noexcept
+	void Mouse::addListener(IMouseListener& listener, entt::id_type type) noexcept
 	{
-		_impl->addListener(listener);
+		_impl->addListener(listener, type);
 	}
 
 	bool Mouse::removeListener(const IMouseListener& listener) noexcept
 	{
 		return _impl->removeListener(listener);
+	}
+
+	size_t Mouse::removeListeners(const IMouseListenerFilter& filter) noexcept
+	{
+		return _impl->removeListeners(filter);
 	}
 
 #pragma endregion Mouse
@@ -849,19 +869,24 @@ namespace darmok
 		return _num < Gamepad::MaxAmount;
 	}
 
-	void GamepadImpl::addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept
+	void GamepadImpl::addListener(std::unique_ptr<IGamepadListener>&& listener, entt::id_type type) noexcept
 	{
-		_listeners.insert(std::move(listener));
+		_listeners.insert(std::move(listener), type);
 	}
 
-	void GamepadImpl::addListener(IGamepadListener& listener) noexcept
+	void GamepadImpl::addListener(IGamepadListener& listener, entt::id_type type) noexcept
 	{
-		_listeners.insert(listener);
+		_listeners.insert(listener, type);
 	}
 
 	bool GamepadImpl::removeListener(const IGamepadListener& listener) noexcept
 	{
 		return _listeners.erase(listener);
+	}
+
+	size_t GamepadImpl::removeListeners(const IGamepadListenerFilter& filter) noexcept
+	{
+		return _listeners.eraseIf(filter);
 	}
 
 	const std::string GamepadImpl::_buttonPrefix = "GamepadButton.";
@@ -1025,19 +1050,24 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Gamepad::addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept
+	void Gamepad::addListener(std::unique_ptr<IGamepadListener>&& listener, entt::id_type type) noexcept
 	{
-		_impl->addListener(std::move(listener));
+		_impl->addListener(std::move(listener), type);
 	}
 
-	void Gamepad::addListener(IGamepadListener& listener) noexcept
+	void Gamepad::addListener(IGamepadListener& listener, entt::id_type type) noexcept
 	{
-		_impl->addListener(listener);
+		_impl->addListener(listener, type);
 	}
 
 	bool Gamepad::removeListener(const IGamepadListener& listener) noexcept
 	{
 		return _impl->removeListener(listener);
+	}
+
+	size_t Gamepad::removeListeners(const IGamepadListenerFilter& filter) noexcept
+	{
+		return _impl->removeListeners(filter);
 	}
 
 #pragma endregion Gamepad
@@ -1144,14 +1174,14 @@ namespace darmok
 		_mouse.addListener(*this);
 	}
 
-	void InputImpl::addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept
+	void InputImpl::addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener, entt::id_type type) noexcept
 	{
-		_listeners.push_back(ListenerData{ tag, evs, *listener, std::move(listener) });
+		_listeners.push_back(ListenerData{ tag, evs, type, *listener, std::move(listener) });
 	}
 
-	void InputImpl::addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept
+	void InputImpl::addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener, entt::id_type type) noexcept
 	{
-		_listeners.push_back(ListenerData{ tag, evs, listener });
+		_listeners.push_back(ListenerData{ tag, evs, type, listener });
 	}
 
 	bool InputImpl::removeListener(const std::string& tag, const IInputEventListener& listener) noexcept
@@ -1183,6 +1213,17 @@ namespace darmok
 		}
 		_listeners.erase(itr, _listeners.end());
 		return true;
+	}
+
+	size_t InputImpl::removeListeners(const IInputEventListenerFilter& filter) noexcept
+	{
+		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&filter](auto& data)
+			{
+				return filter(data.tag, data.listener.get(), data.type);
+			});
+		auto count = std::distance(itr, _listeners.end());
+		_listeners.erase(itr, _listeners.end());
+		return count;
 	}
 
 	bool InputImpl::checkEvents(const InputEvents& evs) const noexcept
@@ -1558,14 +1599,14 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Input::addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept
+	void Input::addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener, entt::id_type type) noexcept
 	{
-		_impl->addListener(tag, evs, std::move(listener));
+		_impl->addListener(tag, evs, std::move(listener), type);
 	}
 
-	void Input::addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept
+	void Input::addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener, entt::id_type type) noexcept
 	{
-		_impl->addListener(tag, evs, listener);
+		_impl->addListener(tag, evs, listener, type);
 	}
 
 	bool Input::removeListener(const IInputEventListener& listener) noexcept
@@ -1576,6 +1617,11 @@ namespace darmok
 	bool Input::removeListener(const std::string& tag, const IInputEventListener& listener) noexcept
 	{
 		return _impl->removeListener(tag, listener);
+	}
+
+	size_t Input::removeListeners(const IInputEventListenerFilter& filter) noexcept
+	{
+		return _impl->removeListeners(filter);
 	}
 
 	std::optional<InputEvent> Input::readEvent(std::string_view name) noexcept

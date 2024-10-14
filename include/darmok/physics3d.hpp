@@ -4,7 +4,6 @@
 #include <darmok/glm.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/shape.hpp>
-#include <darmok/collection.hpp>
 #include <darmok/physics3d_fwd.hpp>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
@@ -34,6 +33,13 @@ namespace darmok::physics3d
 		virtual void fixedUpdate(float fixedDeltaTime) = 0;
 	};
 
+    class DARMOK_EXPORT BX_NO_VTABLE IPhysicsUpdaterFilter
+    {
+    public:
+        virtual ~IPhysicsUpdaterFilter() = default;
+        virtual bool operator()(const IPhysicsUpdater& updater, entt::id_type type) const = 0;
+    };
+
     class PhysicsBody;
 
     struct DARMOK_EXPORT Collision final
@@ -52,6 +58,13 @@ namespace darmok::physics3d
         virtual void onCollisionEnter(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
         virtual void onCollisionStay(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
         virtual void onCollisionExit(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2) {};
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE ICollisionListenerFilter
+    {
+    public:
+        virtual ~ICollisionListenerFilter() = default;
+        virtual bool operator()(const ICollisionListener& listener, entt::id_type type) const = 0;
     };
 
     struct PhysicsSystemConfig final
@@ -103,31 +116,18 @@ namespace darmok::physics3d
         
         PhysicsSystem& addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
         PhysicsSystem& addUpdater(IPhysicsUpdater& updater) noexcept;
-        bool removeUpdater(IPhysicsUpdater& updater) noexcept;
-
-        template<typename T>
-        bool removeUpdater(const T& updater) noexcept
-        {
-            return getUpdaters().eraseEquals(updater);
-        }
+        bool removeUpdater(const IPhysicsUpdater& updater) noexcept;
+        size_t removeUpdaters(const IPhysicsUpdaterFilter& filter) noexcept;
         
         PhysicsSystem& addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         PhysicsSystem& addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
-
-        template<typename T>
-        bool removeListener(const T& listener) noexcept
-        {
-            return getListeners().eraseEquals(listener);
-        }
+        size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
         std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) const noexcept;
         std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) const noexcept;
     private:
         std::unique_ptr<PhysicsSystemImpl> _impl;
-
-        OwnRefCollection<ICollisionListener>& getListeners() noexcept;
-        OwnRefCollection<IPhysicsUpdater>& getUpdaters() noexcept;
     };
 
     struct PhysicsBodyConfig final
@@ -195,8 +195,7 @@ namespace darmok::physics3d
         PhysicsBody& addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         PhysicsBody& addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
-        OwnRefCollection<ICollisionListener>& getListeners() noexcept;
-
+        size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
         std::string toString() const noexcept;
 

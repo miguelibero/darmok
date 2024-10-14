@@ -59,11 +59,18 @@ namespace darmok
         };
     };
 
-    class BX_NO_VTABLE DARMOK_EXPORT IFreelookListener
+    class DARMOK_EXPORT BX_NO_VTABLE IFreelookListener
     {
     public:
         virtual ~IFreelookListener() = default;
         virtual void onFreelookEnable(bool enabled) = 0;
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE IFreelookListenerFilter
+    {
+    public:
+        virtual ~IFreelookListenerFilter() = default;
+        virtual bool operator()(const IFreelookListener& listener, entt::id_type type) const = 0;
     };
 
     class DARMOK_EXPORT FreelookController final : public ISceneComponent, public IInputEventListener
@@ -80,6 +87,7 @@ namespace darmok
         FreelookController& addListener(IFreelookListener& listener) noexcept;
         FreelookController& addListener(std::unique_ptr<IFreelookListener>&& listener) noexcept;
         bool removeListener(const IFreelookListener& listener) noexcept;
+        size_t removeListeners(const IFreelookListenerFilter& filter) noexcept;
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Input> _input;

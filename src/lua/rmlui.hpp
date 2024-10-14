@@ -69,7 +69,7 @@ namespace darmok
 
         void* getKeyPointer(const AbsTableKey& key) noexcept;
     private:
-        sol::table _table;
+        sol::main_table _table;
         std::vector<AbsTableKey> _keys;
 
         sol::object getPointerObject(void* ptr) const noexcept;

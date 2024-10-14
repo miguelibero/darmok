@@ -4,6 +4,7 @@
 #include <darmok/transform.hpp>
 #include <darmok/math.hpp>
 #include <darmok/string.hpp>
+#include <darmok/collection.hpp>
 #include <bx/allocator.h>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -551,14 +552,14 @@ namespace darmok::physics3d
         _updaters.insert(updater);
     }
     
-    bool PhysicsSystemImpl::removeUpdater(IPhysicsUpdater& updater) noexcept
+    bool PhysicsSystemImpl::removeUpdater(const IPhysicsUpdater& updater) noexcept
     {
         return _updaters.erase(updater);
     }
 
-    OwnRefCollection<IPhysicsUpdater>& PhysicsSystemImpl::getUpdaters() noexcept
+    size_t PhysicsSystemImpl::removeUpdaters(const IPhysicsUpdaterFilter& filter) noexcept
     {
-        return _updaters;
+        return _updaters.eraseIf(filter);
     }
 
     void PhysicsSystemImpl::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
@@ -576,9 +577,9 @@ namespace darmok::physics3d
         return _listeners.erase(listener);
     }
 
-    OwnRefCollection<ICollisionListener>& PhysicsSystemImpl::getListeners() noexcept
+    size_t PhysicsSystemImpl::removeListeners(const ICollisionListenerFilter& filter) noexcept
     {
-        return _listeners;
+        return _listeners.eraseIf(filter);
     }
 
     const tf::Taskflow& PhysicsSystemImpl::getTaskflow() const
@@ -928,16 +929,15 @@ namespace darmok::physics3d
         _impl->addUpdater(updater);
         return *this;
     }
-    
-    bool PhysicsSystem::removeUpdater(IPhysicsUpdater& updater) noexcept
+
+    bool PhysicsSystem::removeUpdater(const IPhysicsUpdater& updater) noexcept
     {
         return _impl->removeUpdater(updater);
     }
-
-
-    OwnRefCollection<IPhysicsUpdater>& PhysicsSystem::getUpdaters() noexcept
+    
+    size_t PhysicsSystem::removeUpdaters(const IPhysicsUpdaterFilter& filter) noexcept
     {
-        return _impl->getUpdaters();
+        return _impl->removeUpdaters(filter);
     }
 
     PhysicsSystem& PhysicsSystem::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
@@ -957,9 +957,9 @@ namespace darmok::physics3d
         return _impl->removeListener(listener);
     }
 
-    OwnRefCollection<ICollisionListener>& PhysicsSystem::getListeners() noexcept
+    size_t PhysicsSystem::removeListeners(const ICollisionListenerFilter& filter) noexcept
     {
-        return _impl->getListeners();
+        return _impl->removeListeners(filter);
     }
 
     std::optional<RaycastHit> PhysicsSystem::raycast(const Ray& ray, float maxDistance, uint16_t layerMask) const noexcept
@@ -1436,9 +1436,9 @@ namespace darmok::physics3d
         return _listeners.erase(listener);
     }
 
-    OwnRefCollection<ICollisionListener>& PhysicsBodyImpl::getListeners() noexcept
+    size_t PhysicsBodyImpl::removeListeners(const ICollisionListenerFilter& filter) noexcept
     {
-        return _listeners;
+        return _listeners.eraseIf(filter);
     }
 
     void PhysicsBodyImpl::onCollisionEnter(PhysicsBody& other, const Collision& collision)
@@ -1644,9 +1644,9 @@ namespace darmok::physics3d
         return _impl->removeListener(listener);
     }
 
-    OwnRefCollection<ICollisionListener>& PhysicsBody::getListeners() noexcept
+    size_t PhysicsBody::removeListeners(const ICollisionListenerFilter& filter) noexcept
     {
-        return _impl->getListeners();
+        return _impl->removeListeners(filter);
     }
 
     std::string PhysicsBody::toString() const noexcept

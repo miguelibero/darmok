@@ -31,6 +31,13 @@ namespace darmok
 		virtual void onKeyboardChar(const Utf8Char& chr) {};
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE IKeyboardListenerFilter
+	{
+	public:
+		virtual ~IKeyboardListenerFilter() = default;
+		virtual bool operator()(const IKeyboardListener& listener, entt::id_type type) const = 0;
+	};
+
 	class DARMOK_EXPORT Keyboard final
 	{
 	public:
@@ -44,9 +51,10 @@ namespace darmok
 		[[nodiscard]] const KeyboardModifiers& getModifiers() const noexcept;
 		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
 
-		void addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept;
-		void addListener(IKeyboardListener& listener) noexcept;
+		void addListener(std::unique_ptr<IKeyboardListener>&& listener, entt::id_type type = 0) noexcept;
+		void addListener(IKeyboardListener& listener, entt::id_type type = 0) noexcept;
 		bool removeListener(const IKeyboardListener& listener) noexcept;
+		size_t removeListeners(const IKeyboardListenerFilter& filter) noexcept;
 
 		[[nodiscard]] const KeyboardImpl& getImpl() const noexcept;
 		[[nodiscard]] KeyboardImpl& getImpl() noexcept;
@@ -75,6 +83,13 @@ namespace darmok
 		virtual void onMouseButton(MouseButton button, bool down) {};
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE IMouseListenerFilter
+	{
+	public:
+		virtual ~IMouseListenerFilter() = default;
+		virtual bool operator()(const IMouseListener& listener, entt::id_type type) const = 0;
+	};
+
 	class DARMOK_EXPORT Mouse final
 	{
 	public:
@@ -90,9 +105,10 @@ namespace darmok
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 
-		void addListener(std::unique_ptr<IMouseListener>&& listener) noexcept;
-		void addListener(IMouseListener& listener) noexcept;
+		void addListener(std::unique_ptr<IMouseListener>&& listener, entt::id_type type = 0) noexcept;
+		void addListener(IMouseListener& listener, entt::id_type type = 0) noexcept;
 		bool removeListener(const IMouseListener& listener) noexcept;
+		size_t removeListeners(const IMouseListenerFilter& filter) noexcept;
 
 		[[nodiscard]] const MouseImpl& getImpl() const noexcept;
 		[[nodiscard]] MouseImpl& getImpl() noexcept;
@@ -118,6 +134,13 @@ namespace darmok
 		virtual void onGamepadConnect(uint8_t num, bool connected) {};
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE IGamepadListenerFilter
+	{
+	public:
+		virtual ~IGamepadListenerFilter() = default;
+		virtual bool operator()(const IGamepadListener& listener, entt::id_type type) const = 0;
+	};
+
 	class GamepadImpl;
 
 	class DARMOK_EXPORT Gamepad final
@@ -138,9 +161,10 @@ namespace darmok
 		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
 		[[nodiscard]] bool isConnected() const noexcept;
 
-		void addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept;
-		void addListener(IGamepadListener& listener) noexcept;
+		void addListener(std::unique_ptr<IGamepadListener>&& listener, entt::id_type type = 0) noexcept;
+		void addListener(IGamepadListener& listener, entt::id_type type = 0) noexcept;
 		bool removeListener(const IGamepadListener& listener) noexcept;
+		size_t removeListeners(const IGamepadListenerFilter& filter) noexcept;
 
 		[[nodiscard]] const GamepadImpl& getImpl() const noexcept;
 		[[nodiscard]] GamepadImpl& getImpl() noexcept;
@@ -217,6 +241,13 @@ namespace darmok
 		virtual void onInputEvent(const std::string& tag) = 0;
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE IInputEventListenerFilter
+	{
+	public:
+		virtual ~IInputEventListenerFilter() = default;
+		virtual bool operator()(const std::string& tag, const IInputEventListener& listener, entt::id_type type) const = 0;
+	};
+
 	struct DARMOK_EXPORT InputSensitivity
 	{
 		float mouse = 1.F;
@@ -251,10 +282,11 @@ namespace darmok
 		using Sensitivity = InputSensitivity;
 		float getAxis(const InputDirs& positive, const InputDirs& negative, const Sensitivity& sensitivity = {}) const noexcept;
 		
-		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept;
-		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener, entt::id_type type = 0) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener, entt::id_type type = 0) noexcept;
 		bool removeListener(const std::string& tag, const IInputEventListener& listener) noexcept;
 		bool removeListener(const IInputEventListener& listener) noexcept;
+		size_t removeListeners(const IInputEventListenerFilter& filter) noexcept;
 
 		[[nodiscard]] static bool matchesEvent(const InputEvent& condition, const InputEvent& real) noexcept;
 		[[nodiscard]] static std::optional<InputEvent> readEvent(std::string_view name) noexcept;

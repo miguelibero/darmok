@@ -270,6 +270,11 @@ namespace darmok
 		return _listeners.erase(listener);
 	}
 
+	size_t WindowImpl::removeListeners(const IWindowListenerFilter& filter) noexcept
+	{
+		return _listeners.eraseIf(filter);
+	}
+
 	Window::Window(Platform& plat) noexcept
 		: _impl(std::make_unique<WindowImpl>(plat))
 	{
@@ -379,5 +384,10 @@ namespace darmok
 	bool Window::removeListener(const IWindowListener& listener) noexcept
 	{
 		return _impl->removeListener(listener);
+	}
+
+	size_t Window::removeListeners(const IWindowListenerFilter& filter) noexcept
+	{
+		return _impl->removeListeners(filter);
 	}
 }

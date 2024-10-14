@@ -37,7 +37,7 @@ namespace darmok::physics3d
         void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) override;
 
     private:
-        sol::table _table;
+        sol::main_table _table;
         static const LuaTableDelegateDefinition _enterDef;
         static const LuaTableDelegateDefinition _stayDef;
         static const LuaTableDelegateDefinition _exitDef;

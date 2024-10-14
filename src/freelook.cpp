@@ -35,6 +35,11 @@ namespace darmok
         return _listeners.erase(listener);
     }
 
+    size_t FreelookController::removeListeners(const IFreelookListenerFilter& filter) noexcept
+    {
+        return _listeners.eraseIf(filter);
+    }
+
     void FreelookController::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;

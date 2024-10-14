@@ -137,7 +137,7 @@ namespace darmok
 	public:
 		LuaAppComponent(const sol::table& table, LuaApp& app) noexcept;
 		entt::id_type getType() const noexcept;
-		const sol::table& getReal() const noexcept;
+		sol::object getReal() const noexcept;
 
 		void init(App& app) override;
 		void shutdown() override;
@@ -145,7 +145,7 @@ namespace darmok
 		void update(float deltaTime) override;
 
 	private:
-		sol::table _table;
+		sol::main_table _table;
 		LuaApp& _app;
 
 		static const LuaTableDelegateDefinition _initDef;

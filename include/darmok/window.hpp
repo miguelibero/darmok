@@ -1,14 +1,18 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <memory>
-#include <string>
 #include <darmok/glm.hpp>
 #include <darmok/color.hpp>
 #include <darmok/viewport.hpp>
+#include <darmok/window_fwd.hpp>
+
+#include <entt/entt.hpp>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
-#include <darmok/window_fwd.hpp>
+
+#include <memory>
+#include <string>
+
 
 namespace darmok
 {
@@ -56,6 +60,13 @@ namespace darmok
 		virtual void onWindowError(const std::string& error) {};
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE IWindowListenerFilter
+	{
+	public:
+		virtual ~IWindowListenerFilter() = default;
+		virtual bool operator()(const IWindowListener& listener, entt::id_type type) const = 0;
+	};
+
 	class WindowImpl;
 
 	class DARMOK_EXPORT Window final
@@ -91,6 +102,7 @@ namespace darmok
 		void addListener(std::unique_ptr<IWindowListener>&& listener) noexcept;
 		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(const IWindowListener& listener) noexcept;
+		size_t removeListeners(const IWindowListenerFilter& filter) noexcept;
 
 	private:
 		std::unique_ptr<WindowImpl> _impl;

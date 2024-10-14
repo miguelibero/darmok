@@ -29,7 +29,7 @@ namespace darmok
 		return LuaUtils::getTypeId(_table).value();
 	}
 
-	const sol::table& LuaEntityComponent::getReal() const noexcept
+	sol::object LuaEntityComponent::getReal() const noexcept
 	{
 		return _table;
 	}
@@ -436,7 +436,7 @@ namespace darmok
 		return LuaUtils::getTypeId(_table).value();
 	}
 
-	const sol::table& LuaSceneComponent::getReal() const noexcept
+	sol::object LuaSceneComponent::getReal() const noexcept
 	{
 		return _table;
 	}

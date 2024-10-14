@@ -78,8 +78,8 @@ namespace darmok
             return LuaUtils::checkResult(_desc, result);
         }
 
-        template<typename... Args>
-        void operator()(const std::vector<sol::table>& tables, Args&&... args) const
+        template<typename T, typename... Args>
+        void operator()(const std::vector<T>& tables, Args&&... args) const
         {
             for (auto& table : tables)
             {
@@ -120,8 +120,8 @@ namespace darmok
             throw std::runtime_error("empty lua delegate");
         }
     private:
-        sol::protected_function _func;
-        std::optional<sol::table> _table;
+        sol::main_protected_function _func;
+        std::optional<sol::main_table> _table;
         std::string _tableKey;
     };
 

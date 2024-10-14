@@ -20,9 +20,9 @@ namespace darmok
 	public:
 		LuaEntityComponent(const sol::table& table) noexcept;
 		entt::id_type getType() const noexcept;
-		const sol::table& getReal() const noexcept;
+		sol::object getReal() const noexcept;
 	private:
-		sol::table _table;
+		sol::main_table _table;
 	};
 
 	class LuaScene;
@@ -137,7 +137,7 @@ namespace darmok
 	public:
 		LuaSceneComponent(const sol::table& table, const std::weak_ptr<Scene>& scene) noexcept;
 		entt::id_type getType() const noexcept;
-		const sol::table& getReal() const noexcept;
+		sol::object getReal() const noexcept;
 
 		void init(Scene& scene, App& app) override;
 		void shutdown() override;
@@ -145,7 +145,7 @@ namespace darmok
 		void update(float deltaTime) override;
 
 	private:
-		sol::table _table;
+		sol::main_table _table;
 		std::weak_ptr<Scene> _scene;
 
 		static const LuaTableDelegateDefinition _initDef;

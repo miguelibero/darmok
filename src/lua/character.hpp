@@ -29,7 +29,7 @@ namespace darmok::physics3d
 		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override;
 		void onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) override;
 	private:
-		sol::table _table;
+		sol::main_table _table;
 
 		static const LuaTableDelegateDefinition _adjustBodyDef;
 		static const LuaTableDelegateDefinition _contactValidateDef;

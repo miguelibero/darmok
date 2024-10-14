@@ -269,6 +269,11 @@ namespace darmok
         return _listeners.erase(listener);
     }
 
+    size_t SkeletalAnimatorImpl::removeListeners(const ISkeletalAnimatorListenerFilter& filter) noexcept
+    {
+        return _listeners.eraseIf(filter);
+    }
+
     void SkeletalAnimatorImpl::setPlaybackSpeed(float speed) noexcept
     {
         _speed = speed;
@@ -1000,6 +1005,11 @@ namespace darmok
     bool SkeletalAnimator::removeListener(const ISkeletalAnimatorListener& listener) noexcept
     {
         return _impl->removeListener(listener);
+    }
+
+    size_t SkeletalAnimator::removeListeners(const ISkeletalAnimatorListenerFilter& filter) noexcept
+    {
+        return _impl->removeListeners(filter);
     }
 
     SkeletalAnimator& SkeletalAnimator::setPlaybackSpeed(float speed) noexcept

@@ -174,7 +174,7 @@ namespace darmok
     public:
 		LuaCoroutine startCoroutine(const sol::function& func) noexcept;
 		bool stopCoroutine(const LuaCoroutine& coroutine) noexcept;
-        void update(float deltaTime, sol::state_view& lua) noexcept;
+        void update(float deltaTime) noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 		bool hasFinished(const void* coroutinePtr) const noexcept;

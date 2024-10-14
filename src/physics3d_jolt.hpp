@@ -199,13 +199,13 @@ namespace darmok::physics3d
 
         void addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
         void addUpdater(IPhysicsUpdater& updater) noexcept;
-        bool removeUpdater(IPhysicsUpdater& updater) noexcept;
-        OwnRefCollection<IPhysicsUpdater>& getUpdaters() noexcept;
+        bool removeUpdater(const IPhysicsUpdater& updater) noexcept;
+        size_t removeUpdaters(const IPhysicsUpdaterFilter& filter) noexcept;
 
         void addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
-        OwnRefCollection<ICollisionListener>& getListeners() noexcept;
+        size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
         const tf::Taskflow& getTaskflow() const;
         const Config& getConfig() const noexcept;
@@ -330,7 +330,7 @@ namespace darmok::physics3d
         void addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
-        OwnRefCollection<ICollisionListener>& getListeners() noexcept;
+        size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
         void onCollisionEnter(PhysicsBody& other, const Collision& collision);
         void onCollisionStay(PhysicsBody& other, const Collision& collision);

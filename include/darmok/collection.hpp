@@ -303,27 +303,24 @@ namespace darmok
         }
 
         template<typename Callback>
-        bool eraseIf(Callback callback) noexcept
+        size_t eraseIf(const Callback& callback) noexcept
         {
             auto itr = std::remove_if(_elms.begin(), _elms.end(),
                 [&callback](auto& elm) { return callback(elm.ref.get(), elm.type); });
-            if (itr == _elms.end())
-            {
-                return false;
-            }
+            auto count = std::distance(itr, _elms.end());
             _elms.erase(itr, _elms.end());
-            return true;
+            return count;
         }
 
         bool erase(const T& listener) noexcept
         {
             return eraseIf([&listener](auto& elm, auto type) {
                 return &elm == &listener;
-            });
+            }) > 0;
         }
 
         template<typename K>
-        bool eraseEquals(const K& listener) noexcept
+        size_t eraseEquals(const K& listener) noexcept
         {
             auto listenerType = entt::type_hash<K>::value();
             return eraseIf([&listener, listenerType](auto& elm, auto type) {

@@ -400,7 +400,7 @@ namespace darmok
 		return found;
 	}
 
-    void LuaCoroutineRunner::update(float deltaTime, sol::state_view& lua) noexcept
+    void LuaCoroutineRunner::update(float deltaTime) noexcept
 	{
 		std::vector<const void*> finishedCoroutines;
 		Coroutines coroutines(_coroutines);

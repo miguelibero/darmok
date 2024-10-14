@@ -45,6 +45,7 @@ namespace darmok
 		void addListener(std::unique_ptr<IWindowListener>&& listener) noexcept;
 		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(const IWindowListener& listener) noexcept;
+		size_t removeListeners(const IWindowListenerFilter& filter) noexcept;
 
 	private:
 		glm::uvec2 _size;

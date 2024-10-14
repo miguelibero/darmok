@@ -206,7 +206,7 @@ namespace darmok
 	void LuaApp::update(float deltaTime, sol::state_view& lua) noexcept
 	{
 		updateUpdaters(deltaTime);
-		_coroutineRunner.update(deltaTime, lua);
+		_coroutineRunner.update(deltaTime);
 	}
 
 	void LuaApp::updateUpdaters(float deltaTime) noexcept
@@ -736,7 +736,7 @@ namespace darmok
 		return LuaUtils::getTypeId(_table).value();
 	}
 
-	const sol::table& LuaAppComponent::getReal() const noexcept
+	sol::object LuaAppComponent::getReal() const noexcept
 	{
 		return _table;
 	}
