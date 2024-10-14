@@ -133,11 +133,10 @@ namespace darmok
 		bool forEachEntity(const sol::protected_function& callback);
 	};
 
-	class LuaSceneComponent final : public ISceneComponent
+	class LuaSceneComponent final : public ITypeSceneComponent<LuaSceneComponent>
 	{
 	public:
 		LuaSceneComponent(const sol::table& table, const std::weak_ptr<Scene>& scene) noexcept;
-		entt::id_type getType() const noexcept;
 		sol::object getReal() const noexcept;
 
 		void init(Scene& scene, App& app) override;

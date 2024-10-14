@@ -26,13 +26,13 @@ namespace darmok
         return "Scene(" + _name + ")";
     }
 
-    void SceneImpl::addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept
+    void SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
     {
         if (_app)
         {
             component->init(_scene, _app.value());
         }
-        _components.emplace_back(type, std::move(component));
+        _components.emplace_back(std::move(component));
     }
 
     bool SceneImpl::removeSceneComponent(entt::id_type type) noexcept
@@ -59,7 +59,7 @@ namespace darmok
         {
             return nullptr;
         }
-        return itr->second.get();
+        return **itr;
     }
 
     OptionalRef<const ISceneComponent> SceneImpl::getSceneComponent(entt::id_type type) const noexcept
@@ -69,17 +69,19 @@ namespace darmok
         {
             return nullptr;
         }
-        return itr->second.get();
+        return **itr;
     }
 
     SceneImpl::Components::iterator SceneImpl::findSceneComponent(entt::id_type type) noexcept
     {
-        return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+        return std::find_if(_components.begin(), _components.end(),
+            [type](auto& comp) { return comp->getSceneComponentType() == type; });
     }
 
     SceneImpl::Components::const_iterator SceneImpl::findSceneComponent(entt::id_type type) const noexcept
     {
-        return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+        return std::find_if(_components.begin(), _components.end(),
+            [type](auto& comp) { return comp->getSceneComponentType() == type; });
     }
 
     EntityRegistry& SceneImpl::getRegistry()
@@ -163,7 +165,7 @@ namespace darmok
     {
         ComponentRefs refs;
         refs.reserve(_components.size());
-        for (auto& [type, component] : _components)
+        for (auto& component : _components)
         {
             refs.emplace_back(*component);
         }
@@ -533,9 +535,9 @@ namespace darmok
         return _impl->getCurrentViewport();
     }
 
-    void Scene::addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept
+    void Scene::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
     {
-        return _impl->addSceneComponent(type, std::move(component));
+        return _impl->addSceneComponent(std::move(component));
     }
 
     bool Scene::removeSceneComponent(entt::id_type type) noexcept

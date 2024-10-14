@@ -114,7 +114,7 @@ namespace darmok
     };
 
     // TODO: add PIMPL class
-    class DARMOK_EXPORT TextRenderer final : public ICameraComponent
+    class DARMOK_EXPORT TextRenderer final : public ITypeCameraComponent<TextRenderer>
     {
     public:
         TextRenderer(const std::shared_ptr<Program>& prog = nullptr) noexcept;

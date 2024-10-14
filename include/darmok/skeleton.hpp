@@ -235,7 +235,7 @@ namespace darmok
     {
     public:
         virtual ~ISkeletalAnimatorListener() = default;
-        virtual entt::id_type getSkeletalAnimatorListenerType() const = 0;
+        virtual entt::id_type getSkeletalAnimatorListenerType() const noexcept { return 0; };
         virtual void onAnimatorDestroyed(SkeletalAnimator& animator) {};
         virtual void onAnimatorStateLooped(SkeletalAnimator& animator, std::string_view state) {};
         virtual void onAnimatorStateFinished(SkeletalAnimator& animator, std::string_view state) {};
@@ -325,7 +325,7 @@ namespace darmok
         std::unordered_map<std::string, OptionalRef<Transform>> _boneTransforms;
     };
 
-    class DARMOK_EXPORT SkeletalAnimationSceneComponent final : public ISceneComponent
+    class DARMOK_EXPORT SkeletalAnimationSceneComponent final : public ITypeSceneComponent<SkeletalAnimationSceneComponent>
     {
     public:
         void init(Scene& scene, App& app) noexcept override;
@@ -334,7 +334,7 @@ namespace darmok
         OptionalRef<Scene> _scene;
     };
 
-    class DARMOK_EXPORT SkeletalAnimationRenderComponent final : public ICameraComponent
+    class DARMOK_EXPORT SkeletalAnimationRenderComponent final : public ITypeCameraComponent<SkeletalAnimationRenderComponent>
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;

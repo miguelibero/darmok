@@ -36,7 +36,7 @@ namespace darmok::physics3d
         PhysicsDebugRenderConfig render;
     };
 
-    class DARMOK_EXPORT PhysicsDebugRenderer: public ICameraComponent
+    class DARMOK_EXPORT PhysicsDebugRenderer : public ITypeCameraComponent<PhysicsDebugRenderer>
     {
     public:
         using Config = PhysicsDebugConfig;

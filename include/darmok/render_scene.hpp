@@ -24,6 +24,7 @@ namespace darmok
     {
     public:
         virtual ~ICameraComponent() = default;
+        virtual entt::id_type getCameraComponentType() const noexcept { return 0; };
         virtual void init(Camera& cam, Scene& scene, App& app) {};
         virtual void update(float deltaTime) {};
         virtual void renderReset() {};
@@ -31,6 +32,16 @@ namespace darmok
 
         virtual void beforeRenderView(IRenderGraphContext& context) {};
         virtual void beforeRenderEntity(Entity entity, IRenderGraphContext& context) {};
+    };
+
+    template<typename T>
+    class DARMOK_EXPORT BX_NO_VTABLE ITypeCameraComponent : public ICameraComponent
+    {
+    public:
+        entt::id_type getCameraComponentType() const noexcept override
+        {
+            return entt::type_hash<T>::value();
+        }
     };
 
     class Material;

@@ -19,10 +19,22 @@ namespace darmok
     {
     public:
         virtual ~ISceneComponent() = default;
+        virtual entt::id_type getSceneComponentType() const { return 0; };
         virtual void init(Scene& scene, App& app) {}
         virtual void shutdown() {}
         virtual void renderReset() {}
         virtual void update(float deltaTime) {}
+    };
+
+
+    template<typename T>
+    class DARMOK_EXPORT BX_NO_VTABLE ITypeSceneComponent : public ISceneComponent
+    {
+    public:
+        entt::id_type getSceneComponentType() const noexcept override
+        {
+            return entt::type_hash<T>::value();
+        }
     };
 
     class SceneImpl;
@@ -61,7 +73,7 @@ namespace darmok
         Scene& setViewport(const std::optional<Viewport>& vp) noexcept;
         Viewport getCurrentViewport() const noexcept;
 
-        void addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept;
+        void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
         bool hasSceneComponent(entt::id_type type) const noexcept;
         OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
@@ -94,7 +106,7 @@ namespace darmok
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addSceneComponent(entt::type_hash<T>::value(), std::move(ptr));
+            addSceneComponent(std::move(ptr));
             return ref;
         }
 

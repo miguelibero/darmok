@@ -77,7 +77,7 @@ namespace darmok
         Color3 _color;
     };
 
-    class DARMOK_EXPORT LightingRenderComponent final : public ICameraComponent
+    class DARMOK_EXPORT LightingRenderComponent final : public ITypeCameraComponent<LightingRenderComponent>
     {
     public:
         LightingRenderComponent() noexcept;

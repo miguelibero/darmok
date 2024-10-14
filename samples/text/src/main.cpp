@@ -30,15 +30,14 @@ namespace
 			auto& imgui = _app.addComponent<darmok::ImguiAppComponent>(*this);
 
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
-			auto& registry = scene.getRegistry();
 
 			auto arial = _app.getAssets().getFontLoader()("ARIALUNI.TTF");
 			auto noto = _app.getAssets().getFontLoader()("../../assets/noto.ttf");
 			auto comic = _app.getAssets().getFontLoader()("COMIC.xml");
 
-			auto camEntity = registry.create();
-			auto& camTrans = registry.emplace<Transform>(camEntity);
-			auto& cam = registry.emplace<Camera>(camEntity);
+			auto camEntity = scene.createEntity();
+			auto& camTrans = scene.addComponent<Transform>(camEntity);
+			auto& cam = scene.addComponent<Camera>(camEntity);
 			/*
 				camTrans.setPosition(glm::vec3(0.f, -1.f, -1.f))
 				    .lookAt(glm::vec3(0, 0, 0));

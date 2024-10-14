@@ -818,13 +818,13 @@ namespace darmok
 	AppImpl::Components::iterator AppImpl::findComponent(entt::id_type type) noexcept
 	{
 		return std::find_if(_components.begin(), _components.end(),
-			[type](auto& elm) { return elm->getAppComponentType() == type; });
+			[type](auto& comp) { return comp->getAppComponentType() == type; });
 	}
 
 	AppImpl::Components::const_iterator AppImpl::findComponent(entt::id_type type) const noexcept
 	{
 		return std::find_if(_components.begin(), _components.end(),
-			[type](auto& elm) { return elm->getAppComponentType() == type; });
+			[type](auto& comp) { return comp->getAppComponentType() == type; });
 	}
 
 	AppImpl::ComponentDependencies AppImpl::_compDeps;

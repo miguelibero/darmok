@@ -243,8 +243,7 @@ namespace darmok
 	void LuaScene::addLuaSceneComponent(const sol::table& table)
 	{
 		auto comp = std::make_unique<LuaSceneComponent>(table, _scene);
-		auto typeId = comp->getType();
-		_scene->addSceneComponent(typeId, std::move(comp));
+		_scene->addSceneComponent(std::move(comp));
 	}
 
 	sol::object LuaScene::getLuaSceneComponent(const sol::object& type) noexcept
@@ -429,11 +428,6 @@ namespace darmok
 		: _table(table)
 		, _scene(scene)
 	{
-	}
-
-	entt::id_type LuaSceneComponent::getType() const noexcept
-	{
-		return LuaUtils::getTypeId(_table).value();
 	}
 
 	sol::object LuaSceneComponent::getReal() const noexcept

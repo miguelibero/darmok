@@ -80,7 +80,7 @@ namespace darmok
         void renderReset();
         void shutdown();
 
-        Camera& addComponent(entt::id_type type, std::unique_ptr<ICameraComponent>&& renderer) noexcept;
+        Camera& addComponent(std::unique_ptr<ICameraComponent>&& renderer) noexcept;
         bool removeComponent(entt::id_type type) noexcept;
         [[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
         [[nodiscard]] OptionalRef<ICameraComponent> getComponent(entt::id_type type) noexcept;
@@ -113,7 +113,7 @@ namespace darmok
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addComponent(entt::type_hash<T>::value(), std::move(ptr));
+            addComponent(std::move(ptr));
             return ref;
         }
 
@@ -174,7 +174,7 @@ namespace darmok
         std::optional<Viewport> _viewport;
         TypeFilter _cullingFilter;
 
-        using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ICameraComponent>>>;
+        using Components = std::vector<std::unique_ptr<ICameraComponent>>;
         Components _components;
         using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
         static ComponentDependencies _compDeps;

@@ -43,7 +43,7 @@ namespace darmok
         float normalBias = 0.02;
     };
 
-    class DARMOK_EXPORT ShadowRenderer final : public ICameraComponent
+    class DARMOK_EXPORT ShadowRenderer final : public ITypeCameraComponent<ShadowRenderer>
     {
     public:
         using Config = ShadowRendererConfig;
@@ -84,7 +84,7 @@ namespace darmok
         void updateLights() noexcept;
     };
 
-    class DARMOK_EXPORT ShadowRenderComponent final : public ICameraComponent
+    class DARMOK_EXPORT ShadowRenderComponent final : public ITypeCameraComponent<ShadowRenderComponent>
     {
     public:
         ShadowRenderComponent(ShadowRenderer& renderer) noexcept;
@@ -107,7 +107,7 @@ namespace darmok
 
     struct MeshData;
 
-    class DARMOK_EXPORT ShadowDebugRenderer final : public ICameraComponent
+    class DARMOK_EXPORT ShadowDebugRenderer final : public ITypeCameraComponent<ShadowDebugRenderer>
     {
     public:
         ShadowDebugRenderer(ShadowRenderer& renderer) noexcept;

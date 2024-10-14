@@ -34,7 +34,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IRmluiCanvasDelegate() = default;
-		virtual entt::id_type getRmluiCanvasDelegateType() const = 0;
+		virtual entt::id_type getRmluiCanvasDelegateType() const noexcept { return 0; };
 		virtual void update(float deltaTime) { };
 		virtual void onRmluiCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element) = 0;
 		virtual bool loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) = 0;
@@ -110,7 +110,7 @@ namespace darmok
 
 	class RmluiSceneComponentImpl;
 
-	class DARMOK_EXPORT RmluiSceneComponent : public ISceneComponent
+	class DARMOK_EXPORT RmluiSceneComponent : public ITypeSceneComponent<RmluiSceneComponent>
 	{
 	public:
 		RmluiSceneComponent() noexcept;
@@ -126,7 +126,7 @@ namespace darmok
 
 	class RmluiRendererImpl;
 
-	class DARMOK_EXPORT RmluiRenderer final : public ICameraComponent
+	class DARMOK_EXPORT RmluiRenderer final : public ITypeCameraComponent<RmluiRenderer>
 	{
 	public:
 		RmluiRenderer() noexcept;

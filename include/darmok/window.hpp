@@ -51,7 +51,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IWindowListener() = default;
-		virtual entt::id_type getWindowListenerType() const = 0;
+		virtual entt::id_type getWindowListenerType() const noexcept { return 0; };
 		virtual void onWindowSize(const glm::uvec2& size) {};
 		virtual void onWindowPixelSize(const glm::uvec2& size) {};
 		virtual void onWindowPhase(WindowPhase phase) {};

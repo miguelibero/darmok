@@ -56,10 +56,9 @@ namespace
 
 			ModelSceneConfigurer configurer(*scene, _app.getAssets());
 			configurer(*model, [scene](const auto& node, Entity entity) {
-				auto& registry = scene->getRegistry();
 				if (node.name == "human")
 				{
-					auto& trans = registry.get_or_emplace<Transform>(entity);
+					auto& trans = scene->getOrAddComponent<Transform>(entity);
 					scene->addSceneComponent<RotateUpdater>(trans, 100.f);
 				}
 				auto cam = scene->getComponentInChildren<Camera>(entity);

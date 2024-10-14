@@ -62,7 +62,7 @@ namespace darmok::physics3d
         virtual ~ICharacterDelegate() = default;
         using Contact = CharacterContact;
         using ContactSettings = CharacterContactSettings;
-        virtual entt::id_type getCharacterDelegateType() const = 0;
+        virtual entt::id_type getCharacterDelegateType() const noexcept { return 0; };
         virtual void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) { }
         virtual bool onContactValidate(CharacterController& character, PhysicsBody& body) { return true; }
         virtual void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) { }

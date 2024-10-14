@@ -29,7 +29,7 @@ namespace darmok
 
         std::string toString() const noexcept;
 
-        void addSceneComponent(entt::id_type type, std::unique_ptr<ISceneComponent>&& component) noexcept;
+        void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
         bool hasSceneComponent(entt::id_type type) const noexcept;
         OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
@@ -65,7 +65,7 @@ namespace darmok
         void setUpdateFilter(const TypeFilter& filter) noexcept;
         const TypeFilter& getUpdateFilter() const noexcept;
     private:
-        using Components = std::vector<std::pair<entt::id_type, std::unique_ptr<ISceneComponent>>>;
+        using Components = std::vector<std::unique_ptr<ISceneComponent>>;
         using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
 
         std::vector<Entity> _pendingDestroy;

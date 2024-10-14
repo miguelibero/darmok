@@ -29,7 +29,7 @@ namespace darmok::physics3d
 	{
 	public:
 		virtual ~IPhysicsUpdater() = default;
-        virtual entt::id_type getPhysicsUpdaterType() const = 0;
+        virtual entt::id_type getPhysicsUpdaterType() const noexcept { return 0; };
 		virtual void fixedUpdate(float fixedDeltaTime) = 0;
 	};
 
@@ -64,7 +64,7 @@ namespace darmok::physics3d
     {
     public:
         virtual ~ICollisionListener() = default;
-        virtual entt::id_type getCollisionListenerType() const = 0;
+        virtual entt::id_type getCollisionListenerType() const noexcept { return 0; };
         virtual void onCollisionEnter(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
         virtual void onCollisionStay(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
         virtual void onCollisionExit(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2) {};
@@ -109,7 +109,7 @@ namespace darmok::physics3d
 
     class PhysicsSystemImpl;
 
-    class DARMOK_EXPORT PhysicsSystem final : public ISceneComponent
+    class DARMOK_EXPORT PhysicsSystem final : public ITypeSceneComponent<PhysicsSystem>
     {
     public:
         using Config = PhysicsSystemConfig;

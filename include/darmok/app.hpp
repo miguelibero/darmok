@@ -95,7 +95,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IAppUpdater() = default;
-		virtual entt::id_type getAppUpdaterType() const = 0;
+		virtual entt::id_type getAppUpdaterType() const noexcept { return 0; };
 		virtual void update(float deltaTime) = 0;
 	};
 
@@ -120,7 +120,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IAppComponent() = default;
-		virtual entt::id_type getAppComponentType() const = 0;
+		virtual entt::id_type getAppComponentType() const noexcept { return 0; };
 		virtual void init(App& app) {}
 		virtual void shutdown() {}
 		virtual void renderReset() {}

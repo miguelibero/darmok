@@ -192,7 +192,7 @@ namespace darmok
     Camera::ComponentRefs Camera::copyComponentContainer() const noexcept
     {
         ComponentRefs refs;
-        for (auto& [type, component] : _components)
+        for (auto& component : _components)
         {
             refs.emplace_back(*component);
         }
@@ -307,24 +307,26 @@ namespace darmok
         }
     }
 
-    Camera& Camera::addComponent(entt::id_type type, std::unique_ptr<ICameraComponent>&& renderer) noexcept
+    Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& renderer) noexcept
     {
         if (_scene)
         {
             renderer->init(*this, _scene.value(), _app.value());
         }
-        _components.emplace_back(type, std::move(renderer));
+        _components.emplace_back(std::move(renderer));
         return *this;
     }
 
     Camera::Components::iterator Camera::findComponent(entt::id_type type) noexcept
     {
-        return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+        return std::find_if(_components.begin(), _components.end(),
+            [type](auto& comp) { return comp->getCameraComponentType() == type; });
     }
 
     Camera::Components::const_iterator Camera::findComponent(entt::id_type type) const noexcept
     {
-        return std::find_if(_components.begin(), _components.end(), [type](auto& elm) { return elm.first == type; });
+        return std::find_if(_components.begin(), _components.end(),
+            [type](auto& comp) { return comp->getCameraComponentType() == type; });
     }
 
 
@@ -375,7 +377,7 @@ namespace darmok
         {
             return nullptr;
         }
-        return itr->second.get();
+        return **itr;
     }
 
     OptionalRef<const ICameraComponent> Camera::getComponent(entt::id_type type) const noexcept
@@ -385,7 +387,7 @@ namespace darmok
         {
             return nullptr;
         }
-        return itr->second.get();
+        return **itr;
     }
 
     Camera& Camera::setViewport(const std::optional<Viewport>& viewport) noexcept

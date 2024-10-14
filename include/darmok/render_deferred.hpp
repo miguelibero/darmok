@@ -19,7 +19,7 @@ namespace darmok
         bgfx::ViewId _viewId;
     };
 
-    class DARMOK_EXPORT DeferredRenderer final : public ICameraComponent
+    class DARMOK_EXPORT DeferredRenderer final : public ITypeCameraComponent<DeferredRenderer>
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
