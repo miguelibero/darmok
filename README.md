@@ -116,6 +116,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
     * loaders should return unique_ptr
     * move lua bindings to separate library?
+    * maybe change components and listeners to shared_ptr
     * C++ coroutines could be useful in some places
 * more stuff serialization
     * binary texture atlas

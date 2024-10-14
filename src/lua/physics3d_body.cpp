@@ -46,7 +46,6 @@ namespace darmok::physics3d
         return body.move(LuaGlm::tableGet(pos), LuaGlm::tableGet(rot), deltaTime);
     }
 
-
     PhysicsBody& LuaPhysicsBody::movePosition1(PhysicsBody& body, const VarLuaTable<glm::vec3>& pos) noexcept
     {
         return body.movePosition(LuaGlm::tableGet(pos));
@@ -59,12 +58,12 @@ namespace darmok::physics3d
 
     PhysicsBody& LuaPhysicsBody::addListener(PhysicsBody& body, const sol::table& table) noexcept
     {
-        return body.addListener(std::make_unique<LuaCollisionListener>(table));
+        return body.addListener(std::make_unique<LuaCollisionListener>(table), entt::type_hash<LuaCollisionListener>::value());
     }
 
     bool LuaPhysicsBody::removeListener(PhysicsBody& body, const sol::table& table) noexcept
     {
-        return body.removeListener(LuaCollisionListener(table));
+        return body.removeListeners(LuaCollisionListenerFilter(table)) > 0;
     }
 
     PhysicsBody& LuaPhysicsBody::addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept

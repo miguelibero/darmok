@@ -167,18 +167,18 @@ namespace darmok
 	// https://github.com/ThePhD/sol2/issues/1061
 	struct LuaBundledCoroutine final
 	{
+		sol::coroutine coroutine;
 		sol::thread thread;
-		sol::main_coroutine coroutine;
 
-		LuaBundledCoroutine(const sol::function& func) noexcept;
+		LuaBundledCoroutine(const sol::main_function& func) noexcept;
 	};
 
-    class LuaCoroutineRunner final
+    class LuaCoroutineRunner final : public IAppComponent
     {
     public:
 		LuaCoroutine startCoroutine(const sol::function& func) noexcept;
 		bool stopCoroutine(const LuaCoroutine& coroutine) noexcept;
-        void update(float deltaTime) noexcept;
+        void update(float deltaTime) noexcept override;
 
 		static void bind(sol::state_view& lua) noexcept;
 		bool hasFinished(const void* coroutinePtr) const noexcept;
@@ -188,7 +188,7 @@ namespace darmok
 		Coroutines _coroutines;
 		std::unordered_map<const void*, std::shared_ptr<ILuaYieldInstruction>> _awaits;
 
-		bool resumeCoroutine(sol::main_coroutine& coroutine) noexcept;
+		bool resumeCoroutine(sol::coroutine& coroutine) noexcept;
 		bool doStopCoroutine(const void* coroutinePtr) noexcept;
 		Coroutines::const_iterator findCoroutine(const void* coroutinePtr) const noexcept;
 		static std::shared_ptr<ILuaYieldInstruction> readYieldInstruction(const sol::object& obj) noexcept;

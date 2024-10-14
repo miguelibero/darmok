@@ -365,10 +365,12 @@ namespace darmok
 	}
 
 	// https://github.com/ThePhD/sol2/issues/296
-	LuaBundledCoroutine::LuaBundledCoroutine(const sol::function& func) noexcept
+	LuaBundledCoroutine::LuaBundledCoroutine(const sol::main_function& func) noexcept
 		: thread(sol::thread::create(func.lua_state()))
-		, coroutine(thread.state(), func)
 	{
+		// thread needs to be defined after coroutine
+		// to guarantee that it's destroyed afterwards
+		coroutine = sol::coroutine(thread.state(), func);
 	}
 
     LuaCoroutine LuaCoroutineRunner::startCoroutine(const sol::function& func) noexcept
@@ -433,7 +435,7 @@ namespace darmok
 		}
 	}
 
-	bool LuaCoroutineRunner::resumeCoroutine(sol::main_coroutine& coroutine) noexcept
+	bool LuaCoroutineRunner::resumeCoroutine(sol::coroutine& coroutine) noexcept
 	{
 		static const std::string logDesc = "running coroutine";
 		if (!coroutine.runnable())

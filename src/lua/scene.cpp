@@ -1,11 +1,11 @@
 #include "scene.hpp"
-#include "app.hpp"
 #include "transform.hpp"
 #include "camera.hpp"
 #include "light.hpp"
 #include "render_scene.hpp"
 #include "freelook.hpp"
 #include <darmok/scene.hpp>
+#include <darmok/app.hpp>
 #include <darmok/render_chain.hpp>
 
 #ifdef DARMOK_OZZ
@@ -211,10 +211,10 @@ namespace darmok
 	{
 	}
 
-	LuaScene::LuaScene(LuaApp& app) noexcept
+	LuaScene::LuaScene(App& app) noexcept
 		: _scene(std::make_shared<Scene>())
 	{
-		_scene->init(app.getReal());
+		_scene->init(app);
 	}
 
 	std::string LuaScene::toString() const noexcept
@@ -404,7 +404,7 @@ namespace darmok
 #endif
 
 		lua.new_usertype<LuaScene>("Scene",
-			sol::constructors<LuaScene(LuaApp&)>(),
+			sol::constructors<LuaScene(App&)>(),
 			"create_entity", sol::overload(
 				&LuaScene::createEntity1, &LuaScene::createEntity2,
 				&LuaScene::createEntity3, &LuaScene::createEntity4,
@@ -470,19 +470,19 @@ namespace darmok
 		_updateDef(_table, deltaTime);
 	}
 
-	SceneAppComponent& LuaSceneAppComponent::addAppComponent1(LuaApp& app) noexcept
+	SceneAppComponent& LuaSceneAppComponent::addAppComponent1(App& app) noexcept
 	{
-		return app.getReal().addComponent<SceneAppComponent>();
+		return app.addComponent<SceneAppComponent>();
 	}
 
-	SceneAppComponent& LuaSceneAppComponent::addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept
+	SceneAppComponent& LuaSceneAppComponent::addAppComponent2(App& app, const LuaScene& scene) noexcept
 	{
-		return app.getReal().addComponent<SceneAppComponent>(scene.getReal());
+		return app.addComponent<SceneAppComponent>(scene.getReal());
 	}
 
-	OptionalRef<SceneAppComponent>::std_t LuaSceneAppComponent::getAppComponent(LuaApp& app) noexcept
+	OptionalRef<SceneAppComponent>::std_t LuaSceneAppComponent::getAppComponent(App& app) noexcept
 	{
-		return app.getReal().getComponent<SceneAppComponent>();
+		return app.getComponent<SceneAppComponent>();
 	}
 
 	std::optional<LuaScene> LuaSceneAppComponent::getScene1(const SceneAppComponent& comp) noexcept

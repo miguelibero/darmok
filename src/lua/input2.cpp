@@ -51,7 +51,10 @@ namespace darmok
 			throw std::invalid_argument("could not parse events");
 		}
 		auto listener = std::make_unique<LuaInputEventListener>(listenerObj);
-		input.addListener(tag, evs, std::move(listener), entt::type_hash<LuaInputEventListener>::value());
+		if (listener->getDelegate())
+		{
+			input.addListener(tag, evs, std::move(listener), entt::type_hash<LuaInputEventListener>::value());
+		}
 	}
 
 	bool LuaInput::removeListener1(Input& input, const std::string& tag, const sol::object& listener) noexcept

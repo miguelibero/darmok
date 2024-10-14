@@ -285,6 +285,26 @@ namespace darmok
 		return _paused;
 	}
 
+	void AppImpl::addUpdater(std::unique_ptr<IAppUpdater>&& updater, entt::id_type type) noexcept
+	{
+		_updaters.insert(std::move(updater), type);
+	}
+
+	void AppImpl::addUpdater(IAppUpdater& updater, entt::id_type type) noexcept
+	{
+		_updaters.insert(updater, type);
+	}
+
+	bool AppImpl::removeUpdater(const IAppUpdater& updater) noexcept
+	{
+		return _updaters.erase(updater);
+	}
+
+	size_t AppImpl::removeUpdaters(const IAppUpdaterFilter& filter) noexcept
+	{
+		return _updaters.eraseIf(filter);
+	}
+
 	std::optional<int32_t> AppImpl::setup(const std::vector<std::string>& args)
 	{
 		if (_delegateFactory)
@@ -411,6 +431,7 @@ namespace darmok
 			itr->get().shutdown();
 		}
 		_components.clear();
+		_updaters.clear();
 
 		_input.getImpl().shutdown();
 		_audio.getImpl().shutdown();
@@ -464,6 +485,11 @@ namespace darmok
 			for (auto& comp : copyComponentContainer())
 			{
 				comp.get().update(deltaTime);
+			}
+
+			for (auto& updater : _updaters.copy())
+			{
+				updater.update(deltaTime);
 			}
 		}
 
@@ -991,6 +1017,26 @@ namespace darmok
 	bool App::isPaused() const noexcept
 	{
 		return _impl->isPaused();
+	}
+
+	void App::addUpdater(std::unique_ptr<IAppUpdater>&& updater, entt::id_type type) noexcept
+	{
+		_impl->addUpdater(std::move(updater), type);
+	}
+
+	void App::addUpdater(IAppUpdater& updater, entt::id_type type) noexcept
+	{
+		_impl->addUpdater(updater, type);
+	}
+
+	bool App::removeUpdater(const IAppUpdater& updater) noexcept
+	{
+		return _impl->removeUpdater(updater);
+	}
+
+	size_t App::removeUpdaters(const IAppUpdaterFilter& filter) noexcept
+	{
+		return _impl->removeUpdaters(filter);
 	}
 
 	void App::render() const

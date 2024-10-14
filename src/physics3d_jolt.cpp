@@ -543,14 +543,14 @@ namespace darmok::physics3d
         }
     }
 
-    void PhysicsSystemImpl::addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept
+    void PhysicsSystemImpl::addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater, entt::id_type type) noexcept
     {
-        _updaters.insert(std::move(updater));
+        _updaters.insert(std::move(updater), type);
     }
 
-    void PhysicsSystemImpl::addUpdater(IPhysicsUpdater& updater) noexcept
+    void PhysicsSystemImpl::addUpdater(IPhysicsUpdater& updater, entt::id_type type) noexcept
     {
-        _updaters.insert(updater);
+        _updaters.insert(updater, type);
     }
     
     bool PhysicsSystemImpl::removeUpdater(const IPhysicsUpdater& updater) noexcept
@@ -563,14 +563,14 @@ namespace darmok::physics3d
         return _updaters.eraseIf(filter);
     }
 
-    void PhysicsSystemImpl::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
+    void PhysicsSystemImpl::addListener(std::unique_ptr<ICollisionListener>&& listener, entt::id_type type) noexcept
     {
-        _listeners.insert(std::move(listener));
+        _listeners.insert(std::move(listener), type);
     }
 
-    void PhysicsSystemImpl::addListener(ICollisionListener& listener) noexcept
+    void PhysicsSystemImpl::addListener(ICollisionListener& listener, entt::id_type type) noexcept
     {
-        _listeners.insert(listener);
+        _listeners.insert(listener, type);
     }
 
     bool PhysicsSystemImpl::removeListener(const ICollisionListener& listener) noexcept
@@ -919,15 +919,15 @@ namespace darmok::physics3d
         _impl->update(deltaTime);
     }
 
-    PhysicsSystem& PhysicsSystem::addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept
+    PhysicsSystem& PhysicsSystem::addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater, entt::id_type type) noexcept
     {
-        _impl->addUpdater(std::move(updater));
+        _impl->addUpdater(std::move(updater), type);
         return *this;
     }
     
-    PhysicsSystem& PhysicsSystem::addUpdater(IPhysicsUpdater& updater) noexcept
+    PhysicsSystem& PhysicsSystem::addUpdater(IPhysicsUpdater& updater, entt::id_type type) noexcept
     {
-        _impl->addUpdater(updater);
+        _impl->addUpdater(updater, type);
         return *this;
     }
 
@@ -941,15 +941,15 @@ namespace darmok::physics3d
         return _impl->removeUpdaters(filter);
     }
 
-    PhysicsSystem& PhysicsSystem::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
+    PhysicsSystem& PhysicsSystem::addListener(std::unique_ptr<ICollisionListener>&& listener, entt::id_type type) noexcept
     {
-        _impl->addListener(std::move(listener));
+        _impl->addListener(std::move(listener), type);
         return *this;
     }
 
-    PhysicsSystem& PhysicsSystem::addListener(ICollisionListener& listener) noexcept
+    PhysicsSystem& PhysicsSystem::addListener(ICollisionListener& listener, entt::id_type type) noexcept
     {
-        _impl->addListener(listener);
+        _impl->addListener(listener, type);
         return *this;
     }
 
@@ -1420,15 +1420,13 @@ namespace darmok::physics3d
             rot, deltaTime);
     }
 
-    void PhysicsBodyImpl::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
+    void PhysicsBodyImpl::addListener(std::unique_ptr<ICollisionListener>&& listener, entt::id_type type) noexcept
     {
-        auto type = listener->getType();
         _listeners.insert(std::move(listener), type);
     }
 
-    void PhysicsBodyImpl::addListener(ICollisionListener& listener) noexcept
+    void PhysicsBodyImpl::addListener(ICollisionListener& listener, entt::id_type type) noexcept
     {
-        auto type = listener.getType();
         _listeners.insert(listener, type);
     }
 
@@ -1628,15 +1626,15 @@ namespace darmok::physics3d
         return _impl->getSystem();
     }
 
-    PhysicsBody& PhysicsBody::addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept
+    PhysicsBody& PhysicsBody::addListener(std::unique_ptr<ICollisionListener>&& listener, entt::id_type type) noexcept
     {
-        _impl->addListener(std::move(listener));
+        _impl->addListener(std::move(listener), type);
         return *this;
     }
 
-    PhysicsBody& PhysicsBody::addListener(ICollisionListener& listener) noexcept
+    PhysicsBody& PhysicsBody::addListener(ICollisionListener& listener, entt::id_type type) noexcept
     {
-        _impl->addListener(listener);
+        _impl->addListener(listener, type);
         return *this;
     }
 

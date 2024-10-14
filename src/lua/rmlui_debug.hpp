@@ -7,7 +7,7 @@
 
 namespace darmok
 {
-    class LuaApp;
+    class App;
     class RmluiDebuggerComponent;
     struct RmluiDebuggerComponentConfig;
 
@@ -18,9 +18,9 @@ namespace darmok
     private:
         using Config = RmluiDebuggerComponentConfig;
 
-        static RmluiDebuggerComponent& addAppComponent1(LuaApp& app) noexcept;
-        static RmluiDebuggerComponent& addAppComponent2(LuaApp& app, const Config& config) noexcept;
-        static OptionalRef<RmluiDebuggerComponent>::std_t getAppComponent(LuaApp& app) noexcept;
+        static RmluiDebuggerComponent& addAppComponent1(App& app) noexcept;
+        static RmluiDebuggerComponent& addAppComponent2(App& app, const Config& config) noexcept;
+        static OptionalRef<RmluiDebuggerComponent>::std_t getAppComponent(App& app) noexcept;
     };
 }
 

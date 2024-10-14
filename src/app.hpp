@@ -1,6 +1,7 @@
 #pragma once
 
 #include "platform.hpp"
+
 #include <darmok/app.hpp>
 #include <darmok/input.hpp>
 #include <darmok/window.hpp>
@@ -11,12 +12,15 @@
 #include <darmok/render_chain.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
+#include <darmok/utils.hpp>
+
+#include <taskflow/taskflow.hpp>
+
 #include <string>
 #include <cstdint>
 #include <vector>
 #include <unordered_map>
 #include <memory>
-#include <taskflow/taskflow.hpp>
 
 namespace darmok
 {
@@ -136,6 +140,11 @@ namespace darmok
 		void setPaused(bool paused) noexcept;
 		bool isPaused() const noexcept;
 
+		void addUpdater(std::unique_ptr<IAppUpdater>&& updater, entt::id_type type = 0) noexcept;
+		void addUpdater(IAppUpdater& updater, entt::id_type type = 0) noexcept;
+		bool removeUpdater(const IAppUpdater& updater) noexcept;
+		size_t removeUpdaters(const IAppUpdaterFilter& filter) noexcept;
+
 		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
 		bool hasComponent(entt::id_type type) const noexcept;
@@ -233,6 +242,8 @@ namespace darmok
 
 		RenderGraphDefinition _renderGraphDef;
 		std::optional<RenderGraph> _renderGraph;
+
+		OwnRefCollection<IAppUpdater> _updaters;
 
 		Components _components;
 		AppClearRenderPass _clearRenderPass;

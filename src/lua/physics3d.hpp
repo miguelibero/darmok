@@ -29,10 +29,7 @@ namespace darmok::physics3d
     {
     public:
         LuaCollisionListener(const sol::table& table) noexcept;
-
-        bool operator==(const LuaCollisionListener& other) const noexcept;
-        bool operator!=(const LuaCollisionListener& other) const noexcept;
-        entt::id_type getType() const noexcept override;
+        sol::object getReal() const noexcept;
 
         void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
         void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
@@ -45,18 +42,34 @@ namespace darmok::physics3d
         static const LuaTableDelegateDefinition _exitDef;
     };
 
+    class LuaCollisionListenerFilter final : public ICollisionListenerFilter
+    {
+    public:
+        LuaCollisionListenerFilter(const sol::table& table) noexcept;
+        bool operator()(const ICollisionListener& listener, entt::id_type type) const noexcept override;
+    private:
+        sol::table _table;
+        entt::id_type _type;
+    };
+
     class LuaPhysicsUpdater final : public IPhysicsUpdater
     {
     public:
         LuaPhysicsUpdater(const sol::object& obj) noexcept;
-
-        bool operator==(const LuaPhysicsUpdater& other) const noexcept;
-        bool operator!=(const LuaPhysicsUpdater& other) const noexcept;
-        entt::id_type getType() const noexcept override;
-
+        const LuaDelegate& getDelegate() const noexcept;
         void fixedUpdate(float fixedDeltaTime) override;
     private:
         LuaDelegate _delegate;
+    };
+
+    class LuaPhysicsUpdaterFilter final : public IPhysicsUpdaterFilter
+    {
+    public:
+        LuaPhysicsUpdaterFilter(const sol::object& obj) noexcept;
+        bool operator()(const IPhysicsUpdater& updater, entt::id_type type) const noexcept override;
+    private:
+        sol::object _object;
+        entt::id_type _type;
     };
 
     class LuaPhysicsSystem final

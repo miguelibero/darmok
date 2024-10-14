@@ -6,6 +6,7 @@
 #include "utils.hpp"
 
 #include <darmok/optional_ref.hpp>
+#include <darmok/app.hpp>
 
 #include <vector>
 #include <optional>
@@ -20,64 +21,49 @@ namespace bx
 
 namespace darmok
 {
-	class App;
-	class Window;
-	class AudioSystem;
-	class AssetContext;
+	class LuaAppUpdater final : public IAppUpdater
+	{
+	public:
+		LuaAppUpdater(const sol::object& obj) noexcept;
+		void update(float deltaTime) override;
+		const LuaDelegate& getDelegate() const noexcept;
+	private:
+		LuaDelegate _delegate;
+	};
+
+	class LuaAppUpdaterFilter final : public IAppUpdaterFilter
+	{
+	public:
+		LuaAppUpdaterFilter(const sol::object& obj) noexcept;
+		bool operator()(const IAppUpdater& updater, entt::id_type type) const noexcept override;
+	private:
+		sol::object _object;
+		entt::id_type _type;
+	};
 
 	// TODO: make this class static, bind darmok::App directly
 	class LuaApp final
 	{
 	public:
-		LuaApp(App& app) noexcept;
-		App& getReal() noexcept;
-		const App& getReal() const noexcept;
-
-		void quit() noexcept;
-
-		bool toggleDebugFlag(uint32_t flag) noexcept;
-		bool getDebugFlag(uint32_t flag) const noexcept;
-		void setDebugFlag1(uint32_t flag) noexcept;
-		void setDebugFlag2(uint32_t flag, bool enabled) noexcept;
-
-		bool toggleResetFlag(uint32_t flag) noexcept;
-		bool getResetFlag(uint32_t flag) const noexcept;
-		void setResetFlag1(uint32_t flag) noexcept;
-		void setResetFlag2(uint32_t flag, bool enabled) noexcept;
-
-		void setRendererType(bgfx::RendererType::Enum renderer);
-
-		void update(float deltaTime, sol::state_view& lua) noexcept;
-
-		LuaApp& addUpdater(const sol::object& updater) noexcept;
-		bool removeUpdater(const sol::object& updater) noexcept;
-
 		static void bind(sol::state_view& lua) noexcept;
+		static App& addUpdater(App& app, const sol::object& updater) noexcept;
+
 	private:
-		std::vector<LuaDelegate> _updaters;
-		LuaCoroutineRunner _coroutineRunner;
-		std::reference_wrapper<App> _app;
 
-		AssetContext& getAssets() noexcept;
-		Window& getWindow() noexcept;
-		Input& getInput() noexcept;
-		AudioSystem& getAudio() noexcept;
+		static bool removeUpdater(App& app, const sol::object& updater) noexcept;
 
-		bool removeComponent(const sol::object& type);
-		bool hasComponent(const sol::object& type) const;
-		void addLuaComponent(const sol::table& table);
-		sol::object getLuaComponent(const sol::object& type) noexcept;
+		static bool removeComponent(App& app, const sol::object& type);
+		static bool hasComponent(const App& app, const sol::object& type);
+		static void addLuaComponent(App& app, const sol::table& table);
+		static sol::object getLuaComponent(App& app, const sol::object& type) noexcept;
 
-		LuaCoroutine startCoroutine(const sol::function& func) noexcept;
-		bool stopCoroutine(const LuaCoroutine& coroutine) noexcept;
-
-		void updateUpdaters(float deltaTime) noexcept;
-		bool removeUpdater3(const LuaDelegate& dlg) noexcept;
+		static LuaCoroutine startCoroutine(App& app, const sol::function& func) noexcept;
+		static bool stopCoroutine(App& app, const LuaCoroutine& coroutine) noexcept;
 
 		static bool getDebug() noexcept;
 
-		bool getPaused() const noexcept;
-		void setPaused(bool paused) noexcept;
+		static void setDebugFlag(App& app, uint32_t flag) noexcept;
+		static void setResetFlag(App& app, uint32_t flag) noexcept;
 	};
 
 	class LuaError final : std::exception
@@ -96,7 +82,6 @@ namespace darmok
 		LuaAppDelegateImpl(App& app) noexcept;
         std::optional<int32_t> setup(const std::vector<std::string>& args);
 		void init();
-        void update(float deltaTime);
 		void earlyShutdown();
 		void shutdown() noexcept;
 		void render() noexcept;
@@ -106,7 +91,6 @@ namespace darmok
 		static std::string _defaultAssetOutputPath;
 		static std::string _defaultAssetCachePath;
 		App& _app;
-		std::optional<LuaApp> _luaApp;
         std::unique_ptr<sol::state> _lua;
 		std::filesystem::path _mainLuaPath;
 
@@ -133,7 +117,7 @@ namespace darmok
 	class LuaAppComponent final : public IAppComponent
 	{
 	public:
-		LuaAppComponent(const sol::table& table, LuaApp& app) noexcept;
+		LuaAppComponent(const sol::table& table) noexcept;
 		entt::id_type getType() const noexcept;
 		sol::object getReal() const noexcept;
 
@@ -144,7 +128,6 @@ namespace darmok
 
 	private:
 		sol::main_table _table;
-		LuaApp& _app;
 
 		static const LuaTableDelegateDefinition _initDef;
 		static const LuaTableDelegateDefinition _shutdownDef;

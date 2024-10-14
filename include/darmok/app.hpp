@@ -92,6 +92,20 @@ namespace darmok
 		virtual std::unique_ptr<IAppDelegate> operator()(App& app);
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE IAppUpdater
+	{
+	public:
+		virtual ~IAppUpdater() = default;
+		virtual void update(float deltaTime) = 0;
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE IAppUpdaterFilter
+	{
+	public:
+		virtual ~IAppUpdaterFilter() = default;
+		virtual bool operator()(const IAppUpdater& updater, entt::id_type type) const = 0;
+	};
+
 	class DARMOK_EXPORT App final
 	{
 	public:
@@ -140,6 +154,11 @@ namespace darmok
 
 		void setPaused(bool paused) noexcept;
 		bool isPaused() const noexcept;
+
+		void addUpdater(std::unique_ptr<IAppUpdater>&& updater, entt::id_type type = 0) noexcept;
+		void addUpdater(IAppUpdater& updater, entt::id_type type = 0) noexcept;
+		bool removeUpdater(const IAppUpdater& updater) noexcept;
+		size_t removeUpdaters(const IAppUpdaterFilter& filter) noexcept;
 
 		void addComponent(entt::id_type type, std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;

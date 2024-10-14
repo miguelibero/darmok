@@ -10,19 +10,9 @@ namespace darmok::physics3d
     {
     }
 
-    entt::id_type LuaCollisionListener::getType() const noexcept
+    sol::object LuaCollisionListener::getReal() const noexcept
     {
-        return entt::type_hash<LuaCollisionListener>::value();
-    }
-
-    bool LuaCollisionListener::operator==(const LuaCollisionListener& other) const noexcept
-    {
-        return _table == other._table;
-    }
-
-    bool LuaCollisionListener::operator!=(const LuaCollisionListener& other) const noexcept
-    {
-        return !operator==(other);
+        return _table;
     }
 
     const LuaTableDelegateDefinition LuaCollisionListener::_enterDef("on_collision_enter", "running physics collision enter");
@@ -44,23 +34,26 @@ namespace darmok::physics3d
         _exitDef(_table, body1, body2);
     }
 
+    LuaCollisionListenerFilter::LuaCollisionListenerFilter(const sol::table& table) noexcept
+        : _table(table)
+        , _type(entt::type_hash<LuaCollisionListener>::value())
+    {
+
+    }
+
+    bool LuaCollisionListenerFilter::operator()(const ICollisionListener& listener, entt::id_type type) const noexcept
+    {
+        return _type == type && static_cast<const LuaCollisionListener&>(listener).getReal() == _table;
+    }
+
     LuaPhysicsUpdater::LuaPhysicsUpdater(const sol::object& obj) noexcept
         : _delegate(obj, "fixed_update")
     {
     }
 
-    bool LuaPhysicsUpdater::operator==(const LuaPhysicsUpdater& other) const noexcept
+    const LuaDelegate& LuaPhysicsUpdater::getDelegate() const noexcept
     {
-        return _delegate == other._delegate;
-    }
-    bool LuaPhysicsUpdater::operator!=(const LuaPhysicsUpdater& other) const noexcept
-    {
-        return !operator==(other);
-    }
-
-    entt::id_type LuaPhysicsUpdater::getType() const noexcept
-    {
-        return entt::type_hash<LuaPhysicsUpdater>::value();
+        return _delegate;
     }
 
     void LuaPhysicsUpdater::fixedUpdate(float fixedDeltaTime)
@@ -68,24 +61,40 @@ namespace darmok::physics3d
         _delegate(fixedDeltaTime);
     }
 
+    LuaPhysicsUpdaterFilter::LuaPhysicsUpdaterFilter(const sol::object& obj) noexcept
+        : _object(obj)
+        , _type(entt::type_hash<LuaPhysicsUpdater>::value())
+    {
+    }
+
+    bool LuaPhysicsUpdaterFilter::operator()(const IPhysicsUpdater& updater, entt::id_type type) const noexcept
+    {
+        return _type == type && static_cast<const LuaPhysicsUpdater&>(updater).getDelegate() == _object;
+    }
+
     PhysicsSystem& LuaPhysicsSystem::addUpdater(PhysicsSystem& system, const sol::object& obj) noexcept
     {
-        return system.addUpdater(std::make_unique<LuaPhysicsUpdater>(obj));
+        auto updater = std::make_unique<LuaPhysicsUpdater>(obj);
+        if (updater->getDelegate())
+        {
+            return system.addUpdater(std::move(updater), entt::type_hash<LuaPhysicsUpdater>::value());
+        }
+        return system;
     }
 
     bool LuaPhysicsSystem::removeUpdater(PhysicsSystem& system, const sol::object& obj) noexcept
     {
-        return system.removeUpdater(LuaPhysicsUpdater(obj));
+        return system.removeUpdaters(LuaPhysicsUpdaterFilter(obj)) > 0;
     }
 
     PhysicsSystem& LuaPhysicsSystem::addListener(PhysicsSystem& system, const sol::table& table) noexcept
     {
-        return system.addListener(std::make_unique<LuaCollisionListener>(table));
+        return system.addListener(std::make_unique<LuaCollisionListener>(table), entt::type_hash<LuaCollisionListener>::value());
     }
 
     bool LuaPhysicsSystem::removeListener(PhysicsSystem& system, const sol::table& table) noexcept
     {
-        return system.removeListener(LuaCollisionListener(table));
+        return system.removeListeners(LuaCollisionListenerFilter(table)) > 0;
     }
 
     OptionalRef<Transform>::std_t LuaPhysicsSystem::getRootTransform(PhysicsSystem& system) noexcept

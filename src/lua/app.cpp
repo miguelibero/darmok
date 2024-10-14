@@ -37,163 +37,93 @@
 
 namespace darmok
 {	
-    LuaApp::LuaApp(App& app) noexcept
-		: _app(app)
+	LuaAppUpdater::LuaAppUpdater(const sol::object& obj) noexcept
+		: _delegate(obj, "update")
 	{
 	}
 
-	App& LuaApp::getReal() noexcept
+	void LuaAppUpdater::update(float deltaTime)
 	{
-		return _app.get();
+		_delegate(deltaTime);
 	}
 
-	const App& LuaApp::getReal() const noexcept
+	const LuaDelegate& LuaAppUpdater::getDelegate() const noexcept
 	{
-		return _app.get();
+		return _delegate;
 	}
 
-	void LuaApp::quit() noexcept
+	LuaAppUpdaterFilter::LuaAppUpdaterFilter(const sol::object& obj) noexcept
+		: _object(obj)
+		, _type(entt::type_hash<LuaAppUpdater>::value())
 	{
-		_app.get().quit();
 	}
 
-	bool LuaApp::toggleDebugFlag(uint32_t flag) noexcept
+	bool LuaAppUpdaterFilter::operator()(const IAppUpdater& updater, entt::id_type type) const noexcept
 	{
-		return _app.get().toggleDebugFlag(flag);
+		return type == _type && static_cast<const LuaAppUpdater&>(updater).getDelegate() == _object;
 	}
 
-	void LuaApp::setDebugFlag1(uint32_t flag) noexcept
-	{
-		return _app.get().setDebugFlag(flag);
-	}
 
-	void LuaApp::setDebugFlag2(uint32_t flag, bool enabled) noexcept
+	App& LuaApp::addUpdater(App& app, const sol::object& updater) noexcept
 	{
-		return _app.get().setDebugFlag(flag, enabled);
-	}
-
-	bool LuaApp::getDebugFlag(uint32_t flag) const noexcept
-	{
-		return _app.get().getDebugFlag(flag);
-	}
-
-	bool LuaApp::toggleResetFlag(uint32_t flag) noexcept
-	{
-		return _app.get().toggleResetFlag(flag);
-	}
-
-	bool LuaApp::getResetFlag(uint32_t flag) const noexcept
-	{
-		return _app.get().getResetFlag(flag);
-	}
-
-	void LuaApp::setResetFlag1(uint32_t flag) noexcept
-	{
-		return _app.get().setResetFlag(flag);
-	}
-
-	void LuaApp::setResetFlag2(uint32_t flag, bool enabled) noexcept
-	{
-		return _app.get().setResetFlag(flag, enabled);
-	}
-
-	void LuaApp::setRendererType(bgfx::RendererType::Enum renderer)
-	{
-		return _app.get().setRendererType(renderer);
-	}
-
-	AssetContext& LuaApp::getAssets() noexcept
-	{
-		return _app.get().getAssets();
-	}
-
-	Window& LuaApp::getWindow() noexcept
-	{
-		return _app.get().getWindow();
-	}
-
-	Input& LuaApp::getInput() noexcept
-	{
-		return _app.get().getInput();
-	}
-
-	AudioSystem& LuaApp::getAudio() noexcept
-	{
-		return _app.get().getAudio();
-	}
-
-	LuaApp& LuaApp::addUpdater(const sol::object& updater) noexcept
-	{
-		LuaDelegate dlg(updater, "update");
-		if (dlg)
+		auto ptr = std::make_unique<LuaAppUpdater>(updater);
+		if (ptr->getDelegate())
 		{
-			_updaters.push_back(std::move(dlg));
+			app.addUpdater(std::move(ptr), entt::type_hash<LuaAppUpdater>::value());
 		}
-		return *this;
+		return app;
 	}
 
-	bool LuaApp::removeUpdater(const sol::object& updater) noexcept
+	bool LuaApp::removeUpdater(App& app, const sol::object& updater) noexcept
 	{
-		auto itr = std::remove(_updaters.begin(), _updaters.end(), updater);
-		if (itr == _updaters.end())
+		return app.removeUpdaters(LuaAppUpdaterFilter(updater)) > 0;
+	}
+
+	LuaCoroutine LuaApp::startCoroutine(App& app, const sol::function& func) noexcept
+	{
+		auto& runner = app.getOrAddComponent<LuaCoroutineRunner>();
+		return runner.startCoroutine(func);
+	}
+
+	bool LuaApp::stopCoroutine(App& app, const LuaCoroutine& coroutine) noexcept
+	{
+		if (auto runner = app.getComponent<LuaCoroutineRunner>())
 		{
-			return false;
-		}
-		_updaters.erase(itr, _updaters.end());
-		return true;
-	}
-
-	bool LuaApp::removeUpdater3(const LuaDelegate& dlg) noexcept
-	{
-		auto itr = std::remove(_updaters.begin(), _updaters.end(), dlg);
-		if (itr == _updaters.end())
-		{
-			return false;
-		}
-		_updaters.erase(itr, _updaters.end());
-		return true;
-	}
-
-	LuaCoroutine LuaApp::startCoroutine(const sol::function& func) noexcept
-	{
-		return _coroutineRunner.startCoroutine(func);
-	}
-
-	bool LuaApp::stopCoroutine(const LuaCoroutine& coroutine) noexcept
-	{
-		return _coroutineRunner.stopCoroutine(coroutine);
-	}
-
-	bool LuaApp::removeComponent(const sol::object& type)
-	{
-		if (auto typeId = LuaUtils::getTypeId(type))
-		{
-			return getReal().removeComponent(typeId.value());
+			return runner->stopCoroutine(coroutine);
 		}
 		return false;
 	}
 
-	bool LuaApp::hasComponent(const sol::object& type) const
+	bool LuaApp::removeComponent(App& app, const sol::object& type)
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return getReal().hasComponent(typeId.value());
+			return app.removeComponent(typeId.value());
 		}
 		return false;
 	}
 
-	void LuaApp::addLuaComponent(const sol::table& table)
+	bool LuaApp::hasComponent(const App& app, const sol::object& type)
 	{
-		auto comp = std::make_unique<LuaAppComponent>(table, *this);
+		if (auto typeId = LuaUtils::getTypeId(type))
+		{
+			return app.hasComponent(typeId.value());
+		}
+		return false;
+	}
+
+	void LuaApp::addLuaComponent(App& app, const sol::table& table)
+	{
+		auto comp = std::make_unique<LuaAppComponent>(table);
 		auto typeId = comp->getType();
-		_app.get().addComponent(typeId, std::move(comp));
+		app.addComponent(typeId, std::move(comp));
 	}
 
-	sol::object LuaApp::getLuaComponent(const sol::object& type) noexcept
+	sol::object LuaApp::getLuaComponent(App& app, const sol::object& type) noexcept
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			if (auto comp = _app.get().getComponent(typeId.value()))
+			if (auto comp = app.getComponent(typeId.value()))
 			{
 				auto& luaComp = static_cast<LuaAppComponent&>(*comp);
 				return luaComp.getReal();
@@ -201,25 +131,6 @@ namespace darmok
 		}
 		return sol::nil;
 	}
-
-	void LuaApp::update(float deltaTime, sol::state_view& lua) noexcept
-	{
-		updateUpdaters(deltaTime);
-		_coroutineRunner.update(deltaTime);
-	}
-
-	void LuaApp::updateUpdaters(float deltaTime) noexcept
-	{
-		auto updaters = _updaters;
-		for (auto& updater : updaters)
-		{
-			auto result = updater(deltaTime);
-			if (auto finished = LuaUtils::checkResult("running updater", result))
-			{
-				removeUpdater3(updater);
-			}
-		}
-	}	
 
 	bool LuaApp::getDebug() noexcept
 	{
@@ -230,14 +141,14 @@ namespace darmok
 #endif
 	}
 
-	bool LuaApp::getPaused() const noexcept
+	void LuaApp::setDebugFlag(App& app, uint32_t flag) noexcept
 	{
-		return _app.get().isPaused();
+		app.setDebugFlag(flag);
 	}
 
-	void LuaApp::setPaused(bool paused) noexcept
+	void LuaApp::setResetFlag(App& app, uint32_t flag) noexcept
 	{
-		_app.get().setPaused(paused);
+		app.setResetFlag(flag);
 	}
 
 	void LuaApp::bind(sol::state_view& lua) noexcept
@@ -284,13 +195,13 @@ namespace darmok
 			{ "Metal", bgfx::RendererType::Metal },
 		});
 
-		lua.new_usertype<LuaApp>("App", sol::no_constructor,
-			"assets", sol::property(&LuaApp::getAssets),
-			"window", sol::property(&LuaApp::getWindow),
-			"input", sol::property(&LuaApp::getInput),
-			"audio", sol::property(&LuaApp::getAudio),
+		lua.new_usertype<App>("App", sol::no_constructor,
+			"assets", sol::property(sol::resolve<AssetContext&()>(&App::getAssets)),
+			"window", sol::property(sol::resolve<Window&()>(&App::getWindow)),
+			"input", sol::property(sol::resolve<Input&()>(&App::getInput)),
+			"audio", sol::property(sol::resolve<AudioSystem&()>(&App::getAudio)),
 			"debug", sol::property(&LuaApp::getDebug),
-			"paused", sol::property(&LuaApp::getPaused, &LuaApp::setPaused),
+			"paused", sol::property(&App::isPaused, &App::setPaused),
 			"add_updater", &LuaApp::addUpdater,
 			"remove_updater", &LuaApp::removeUpdater,
 			"start_coroutine", &LuaApp::startCoroutine,
@@ -299,14 +210,14 @@ namespace darmok
 			"remove_component", &LuaApp::removeComponent,
 			"add_lua_component", &LuaApp::addLuaComponent,
 			"get_lua_component", &LuaApp::getLuaComponent,
-			"get_debug_flag", &LuaApp::getDebugFlag,
-			"toggle_debug_flag", &LuaApp::toggleDebugFlag,
-			"set_debug_flag", sol::overload(&LuaApp::setDebugFlag1, &LuaApp::setDebugFlag2),
-			"get_reset_flag", &LuaApp::getResetFlag,
-			"toggle_reset_flag", &LuaApp::toggleResetFlag,
-			"set_debug_flag", sol::overload(&LuaApp::setResetFlag1, &LuaApp::setResetFlag2),
-			"renderer_type", sol::property(&LuaApp::setRendererType),
-			"quit", &LuaApp::quit
+			"get_debug_flag", &App::getDebugFlag,
+			"toggle_debug_flag", &App::toggleDebugFlag,
+			"set_debug_flag", sol::overload(&App::setDebugFlag, &LuaApp::setDebugFlag),
+			"get_reset_flag", &App::getResetFlag,
+			"toggle_reset_flag", &App::toggleResetFlag,
+			"set_debug_flag", sol::overload(&App::setResetFlag, &LuaApp::setResetFlag),
+			"renderer_type", sol::property(&App::setRendererType),
+			"quit", &App::quit
 		);
 	}
 
@@ -349,11 +260,6 @@ namespace darmok
 	void LuaAppDelegate::shutdown()
 	{
 		_impl->shutdown();
-	}
-
-	void LuaAppDelegate::update(float deltaTime)
-	{
-		_impl->update(deltaTime);
 	}
 
 	void LuaAppDelegate::render() const
@@ -469,8 +375,7 @@ namespace darmok
 		addStaticLib(lua_darmok_lib_string, "darmok/string");
 		addStaticLib(lua_darmok_lib_base, "darmok/base");
 
-		_luaApp.emplace(_app);
-		lua["app"] = std::ref(_luaApp.value());
+		lua["app"] = std::ref(_app);
 		lua.set_function("print", luaPrint);
 		lua.set_function("debug_screen_text", [this](const VarLuaTable<glm::uvec2>& pos, const std::string& msg) {
 			luaDebugScreenText(LuaGlm::tableGet(pos), msg);
@@ -507,7 +412,6 @@ namespace darmok
 
 	void LuaAppDelegateImpl::unloadLua() noexcept
 	{
-		_luaApp.reset();
 		_lua.reset();
 	}
 
@@ -602,7 +506,7 @@ namespace darmok
 				throw LuaError("running init", result);
 			}
 		}
-		_luaApp->addUpdater(lua["update"]);
+		LuaApp::addUpdater(_app, lua["update"]);
 	}
 
 	std::string LuaAppDelegateImpl::_defaultAssetInputPath = "assets";
@@ -685,14 +589,6 @@ namespace darmok
 		std::cout << "  --bgfx-shader-include       Path of the bgfx shader include dir (used to process bgfx shaders)." << std::endl;
 	}
 
-	void LuaAppDelegateImpl::update(float deltaTime)
-	{
-		if (_luaApp)
-		{
-			_luaApp->update(deltaTime, *_lua);
-		}
-	}
-
 	void LuaAppDelegateImpl::render() noexcept
 	{
 		for (auto& text : _dbgTexts)
@@ -725,9 +621,8 @@ namespace darmok
 		unloadLua();
 	}
 
-	LuaAppComponent::LuaAppComponent(const sol::table& table, LuaApp& app) noexcept
+	LuaAppComponent::LuaAppComponent(const sol::table& table) noexcept
 		: _table(table)
-		, _app(app)
 	{
 	}
 
@@ -748,7 +643,7 @@ namespace darmok
 
 	void LuaAppComponent::init(App& app)
 	{
-		_initDef(_table, _app);
+		_initDef(_table, app);
 	}
 
 	void LuaAppComponent::shutdown()

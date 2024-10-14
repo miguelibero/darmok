@@ -74,14 +74,14 @@ namespace darmok
 		bool forEachParent(const sol::protected_function& callback);
 	};
 
-	class LuaApp;
+	class App;
 
 	// TODO: make this class static, bind directly to darmok::scene
 	class LuaScene final
 	{
 	public:
 		LuaScene(const std::shared_ptr<Scene>& scene) noexcept;
-		LuaScene(LuaApp& app) noexcept;
+		LuaScene(App& app) noexcept;
 
 		template<typename T>
 		std::optional<LuaEntity> getEntity(const T& component) noexcept
@@ -163,9 +163,9 @@ namespace darmok
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 
-		static SceneAppComponent& addAppComponent1(LuaApp& app) noexcept;
-		static SceneAppComponent& addAppComponent2(LuaApp& app, const LuaScene& scene) noexcept;
-		static OptionalRef<SceneAppComponent>::std_t getAppComponent(LuaApp& app) noexcept;
+		static SceneAppComponent& addAppComponent1(App& app) noexcept;
+		static SceneAppComponent& addAppComponent2(App& app, const LuaScene& scene) noexcept;
+		static OptionalRef<SceneAppComponent>::std_t getAppComponent(App& app) noexcept;
 		static std::optional<LuaScene> getScene1(const SceneAppComponent& comp) noexcept;
 		static std::optional<LuaScene> getScene2(const SceneAppComponent& comp, size_t i) noexcept;
 		static LuaScene addScene1(SceneAppComponent& comp) noexcept;

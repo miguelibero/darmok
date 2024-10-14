@@ -18,7 +18,6 @@ namespace darmok
         void earlyShutdown() override;
         void shutdown() override;
         void render() const override;
-        void update(float deltaTime) override;
     protected:
     private:
         std::unique_ptr<LuaAppDelegateImpl> _impl;
