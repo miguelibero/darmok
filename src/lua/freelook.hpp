@@ -1,12 +1,10 @@
 #pragma once
 
-#include <darmok/optional_ref.hpp>
-#include <sol/sol.hpp>
+#include "lua.hpp"
 
 namespace darmok
 {
     class FreelookController;
-    class LuaEntity;
     class Camera;
     class LuaScene;
     struct FreelookConfig;

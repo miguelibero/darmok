@@ -1,13 +1,17 @@
 #pragma once
 
-#include <bx/bx.h>
-#include <vector>
-#include <memory>
-#include <sol/sol.hpp>
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include "lua.hpp"
+
 #include <darmok/easing_fwd.hpp>
 #include <darmok/skeleton.hpp>
+
+#include <vector>
+#include <memory>
+
+#include <bx/bx.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+
 
 namespace darmok
 {

@@ -1,13 +1,15 @@
 #pragma once
 
-#include <optional>
-#include <vector>
-#include <darmok/optional_ref.hpp>
-#include <darmok/shape.hpp>
-#include <sol/sol.hpp>
+#include "lua.hpp"
 #include "glm.hpp"
 #include "viewport.hpp"
 #include "utils.hpp"
+
+#include <darmok/optional_ref.hpp>
+#include <darmok/shape.hpp>
+
+#include <optional>
+#include <vector>
 
 namespace darmok
 {

@@ -1,10 +1,12 @@
 #pragma once
 
+#include "lua.hpp"
 #include "glm.hpp"
-#include <optional>
-#include <sol/sol.hpp>
+
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
+
+#include <optional>
 
 namespace darmok
 {

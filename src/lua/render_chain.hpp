@@ -1,11 +1,13 @@
 #pragma once 
 
-#include <sol/sol.hpp>
-#include <memory>
-#include <string>
-#include <darmok/optional_ref.hpp>
+#include "lua.hpp"
 #include "viewport.hpp"
 #include "glm.hpp"
+
+#include <darmok/optional_ref.hpp>
+
+#include <memory>
+#include <string>
 
 namespace darmok
 {

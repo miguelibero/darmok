@@ -1,14 +1,15 @@
 #pragma once
 
-#include <optional>
-#include <vector>
-#include <array>
-#include <sol/sol.hpp>
+#include "lua.hpp"
+#include "utils.hpp"
+
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/input.hpp>
-#include "utils.hpp"
 
+#include <optional>
+#include <vector>
+#include <array>
 
 namespace darmok
 {

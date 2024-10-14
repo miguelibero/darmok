@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sol/sol.hpp>
+#include "lua.hpp"
 #include <vector>
 #include <string>
 #include <optional>

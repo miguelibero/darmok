@@ -1,8 +1,6 @@
 #pragma once
 
-#include <memory>
-#include <bgfx/bgfx.h>
-#include <sol/sol.hpp>
+#include "lua.hpp"
 
 namespace darmok
 {

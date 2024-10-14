@@ -1,25 +1,29 @@
 #pragma once
 
-#include <sol/sol.hpp>
+#include "lua.hpp"
+#include "glm.hpp"
+#include "viewport.hpp"
+#include "utils.hpp"
+
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/rmlui.hpp>
 #include <darmok/camera.hpp>
+
 #include <RmlUi/Core/ScrollTypes.h>
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/EventListenerInstancer.h>
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/DataVariable.h>
+
 #include <unordered_map>
 #include <vector>
 #include <memory>
 #include <string>
 #include <optional>
 #include <variant>
-#include "glm.hpp"
-#include "viewport.hpp"
-#include "utils.hpp"
+
 
 namespace Rml
 {

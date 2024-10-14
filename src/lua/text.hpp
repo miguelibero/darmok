@@ -1,7 +1,6 @@
 #pragma once
 
-#include <darmok/export.h>
-#include <sol/sol.hpp>
+#include "lua.hpp"
 
 namespace darmok
 {

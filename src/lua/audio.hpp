@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sol/sol.hpp>
+#include "lua.hpp"
 #include "glm.hpp"
 #include <memory>
 #include <darmok/audio_fwd.hpp>

@@ -1,17 +1,18 @@
 #pragma once
 
+#include "lua.hpp"
+#include "transform.hpp"
+#include "utils.hpp"
+#include "viewport.hpp"
+
+#include <darmok/color.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/optional_ref.hpp>
+
 #include <memory>
 #include <optional>
 #include <variant>
 #include <unordered_map>
-#include <darmok/color.hpp>
-#include <darmok/scene.hpp>
-#include <darmok/optional_ref.hpp>
-#include <sol/sol.hpp>
-
-#include "transform.hpp"
-#include "utils.hpp"
-#include "viewport.hpp"
 
 namespace darmok
 {

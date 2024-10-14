@@ -1,11 +1,13 @@
 #pragma once
 
-#include <darmok/optional_ref.hpp>
+#include "lua.hpp"
+#include "glm.hpp"
+
 #include <memory>
 #include <unordered_map>
 #include <string>
-#include <sol/sol.hpp>
-#include "glm.hpp"
+
+#include <darmok/optional_ref.hpp>
 
 namespace darmok
 {

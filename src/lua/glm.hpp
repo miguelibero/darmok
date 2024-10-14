@@ -1,13 +1,16 @@
 #pragma once
 
-#include <sol/sol.hpp>
-#include <darmok/glm.hpp>
-#include <glm/gtx/string_cast.hpp>
-#include <variant>
-#include <optional>
+#include "lua.hpp"
+
 #include <darmok/color_fwd.hpp>
 #include <darmok/math.hpp>
+#include <darmok/glm.hpp>
+
+#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/component_wise.hpp>
+
+#include <variant>
+#include <optional>
 
 namespace darmok
 {

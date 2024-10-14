@@ -1,12 +1,14 @@
 #pragma once
 
-#include <sol/sol.hpp>
-#include <darmok/optional_ref.hpp>
-#include <darmok/physics3d.hpp>
-#include <optional>
-#include <vector>
+#include "lua.hpp"
 #include "glm.hpp"
 #include "utils.hpp"
+
+#include <darmok/optional_ref.hpp>
+#include <darmok/physics3d.hpp>
+
+#include <optional>
+#include <vector>
 
 namespace darmok
 {

@@ -2,9 +2,9 @@
 
 #ifdef _DEBUG
 
-#include <sol/sol.hpp>
-#include <memory>
+#include "lua.hpp"
 #include <darmok/optional_ref.hpp>
+#include <memory>
 
 namespace darmok
 {

@@ -1,9 +1,9 @@
 #pragma once
 
+#include "lua.hpp"
 #include <optional>
 #include <variant>
 #include <darmok/glm.hpp>
-#include <sol/sol.hpp>
 
 namespace darmok
 {

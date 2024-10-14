@@ -1,18 +1,21 @@
 #pragma once
 
-#include <darmok/optional_ref.hpp>
-#include <darmok/app.hpp>
-#include <vector>
-#include <optional>
-#include <unordered_map>
-#include <filesystem>
-#include <sol/sol.hpp>
+#include "lua.hpp"
 #include "glm.hpp"
 #include "asset.hpp"
 #include "window.hpp"
 #include "audio.hpp"
 #include "coroutine.hpp"
 #include "utils.hpp"
+
+#include <darmok/optional_ref.hpp>
+#include <darmok/app.hpp>
+
+#include <vector>
+#include <optional>
+#include <unordered_map>
+#include <filesystem>
+#include <stdexcept>
 
 namespace bx
 {
