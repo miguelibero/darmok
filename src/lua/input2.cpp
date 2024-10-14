@@ -2,9 +2,8 @@
 
 namespace darmok
 {
-	LuaInputEventListener::LuaInputEventListener(const std::string& tag, const sol::object& dlg) noexcept
+	LuaInputEventListener::LuaInputEventListener(const sol::object& dlg) noexcept
 		: _delegate(dlg, "on_input_event")
-		, _tag(tag)
 	{
 	}
 
@@ -14,118 +13,73 @@ namespace darmok
 		LuaUtils::checkResult(desc, _delegate(tag));
 	}
 
-	const std::string& LuaInputEventListener::getTag() const noexcept
-	{
-		return _tag;
-	}
-
 	const LuaDelegate& LuaInputEventListener::getDelegate() const noexcept
 	{
 		return _delegate;
 	}
 
-    LuaInput::LuaInput(Input& input) noexcept
-		: _input(input)
-		, _keyboard(input.getKeyboard())
-		, _mouse(input.getMouse())
+	LuaInputEventListenerFilter::LuaInputEventListenerFilter(const sol::object& obj, std::optional<std::string> tag) noexcept
+		: _obj(obj)
+		, _type(entt::type_hash<LuaInputEventListener>::value())
+		, _tag(tag)
 	{
-		auto& gamepads = input.getGamepads();
-		_gamepads.reserve(gamepads.size());
-		for (auto& gamepad : gamepads)
+	}
+
+	bool LuaInputEventListenerFilter::operator()(const std::string& tag, const IInputEventListener& listener, entt::id_type type) const noexcept
+	{
+		if (_type != type)
 		{
-			_gamepads.emplace_back(gamepad);
+			return false;
 		}
-	}
-
-	LuaInput::~LuaInput() noexcept
-	{
-		for (auto& listener : _listeners)
+		if (_tag && _tag != tag)
 		{
-			_input->removeListener(*listener);
+			return false;
 		}
+		return static_cast<const LuaInputEventListener&>(listener).getDelegate() == _obj;
 	}
 
-	LuaKeyboard& LuaInput::getKeyboard() noexcept
+	OptionalRef<Gamepad>::std_t LuaInput::getGamepad(Input& input, uint8_t num) noexcept
 	{
-		return _keyboard;
+		return input.getGamepad(num);
 	}
 
-	LuaMouse& LuaInput::getMouse() noexcept
-	{
-		return _mouse;
-	}
-
-	OptionalRef<LuaGamepad>::std_t LuaInput::getGamepad(uint8_t num) noexcept
-	{
-		if (num >= 0 && num < _gamepads.size())
-		{
-			return _gamepads[num];
-		}
-		return std::nullopt;
-	}
-
-	const std::vector<LuaGamepad>& LuaInput::getGamepads() noexcept
-	{
-		return _gamepads;
-	}
-
-	void LuaInput::addListener(const std::string& tag, const sol::object& evObj, const sol::object& listenerObj)
+	void LuaInput::addListener(Input& input, const std::string& tag, const sol::object& evObj, const sol::object& listenerObj)
 	{
 		auto evs = readEvents(evObj);
 		if (evs.empty())
 		{
 			throw std::invalid_argument("could not parse events");
 		}
-		auto listener = std::make_unique<LuaInputEventListener>(tag, listenerObj);
-		if (listener->getDelegate())
-		{
-			_input->addListener(tag, evs, *listener);
-			_listeners.push_back(std::move(listener));
-		}
+		auto listener = std::make_unique<LuaInputEventListener>(listenerObj);
+		input.addListener(tag, evs, std::move(listener), entt::type_hash<LuaInputEventListener>::value());
 	}
 
-	bool LuaInput::removeListener1(const std::string& tag, const sol::object& listener) noexcept
+	bool LuaInput::removeListener1(Input& input, const std::string& tag, const sol::object& listener) noexcept
 	{
-		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&tag, &listener](auto& elm) {
-			return elm->getTag() == tag && elm->getDelegate() == listener;
-		});
-		if (itr == _listeners.end())
-		{
-			return false;
-		}
-		_listeners.erase(itr, _listeners.end());
-		return true;
+		return input.removeListeners(LuaInputEventListenerFilter(listener, tag)) > 0;
 	}
 
-	bool LuaInput::removeListener2(const sol::object& listener) noexcept
+	bool LuaInput::removeListener2(Input& input, const sol::object& listener) noexcept
 	{
-		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&listener](auto& elm) {
-			return elm->getDelegate() == listener;
-		});
-		if (itr == _listeners.end())
-		{
-			return false;
-		}
-		_listeners.erase(itr, _listeners.end());
-		return true;
+		return input.removeListeners(LuaInputEventListenerFilter(listener)) > 0;
 	}
 
-	bool LuaInput::checkEvent(const sol::object& val) const noexcept
+	bool LuaInput::checkEvent(const Input& input, const sol::object& val) noexcept
 	{
 		auto ev = readEvent(val);
 		if (!ev)
 		{
 			return false;
 		}
-		return _input->checkEvent(ev.value());
+		return input.checkEvent(ev.value());
 	}
 
-	bool LuaInput::checkEvents(const sol::table& evs) const noexcept
+	bool LuaInput::checkEvents(const Input& input, const sol::table& evs) noexcept
 	{
 		auto size = evs.size();
 		for(auto i = 1; i <= size; ++i)
 		{
-			if(checkEvent(evs[i]))
+			if(checkEvent(input, evs[i]))
 			{
 				return true;
 			}
@@ -133,11 +87,11 @@ namespace darmok
 		return false;
 	}
 
-	float LuaInput::getAxis(const sol::object& posObj, const sol::object& negObj) const noexcept
+	float LuaInput::getAxis(const Input& input, const sol::object& posObj, const sol::object& negObj) noexcept
 	{
 		auto pos = readDirs(posObj);
 		auto neg = readDirs(negObj);
-		return _input->getAxis(pos, neg);
+		return input.getAxis(pos, neg);
 	}
 
 	InputEvents LuaInput::readEvents(const sol::object& val) noexcept
@@ -259,10 +213,10 @@ namespace darmok
 
 		LuaUtils::newEnumFunc(lua, "InputDirType", InputDirType::Count, &Input::getDirTypeName, true);
 
-		lua.new_usertype<LuaInput>("Input", sol::no_constructor,
-			"keyboard", sol::property(&LuaInput::getKeyboard),
-			"mouse", sol::property(&LuaInput::getMouse),
-			"gamepads",	sol::property(&LuaInput::getGamepads),
+		lua.new_usertype<Input>("Input", sol::no_constructor,
+			"keyboard", sol::property(sol::resolve<Keyboard&()>(&Input::getKeyboard)),
+			"mouse", sol::property(sol::resolve<Mouse&()>(&Input::getMouse)),
+			"gamepads",	sol::property(sol::resolve<Gamepads&()>(&Input::getGamepads)),
 			"get_gamepad", &LuaInput::getGamepad,
 			"get_axis", &LuaInput::getAxis,
 			"check_event", &LuaInput::checkEvent,

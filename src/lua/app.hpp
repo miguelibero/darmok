@@ -10,7 +10,6 @@
 #include "glm.hpp"
 #include "asset.hpp"
 #include "window.hpp"
-#include "input.hpp"
 #include "audio.hpp"
 #include "coroutine.hpp"
 #include "utils.hpp"
@@ -56,13 +55,12 @@ namespace darmok
 		std::vector<LuaDelegate> _updaters;
 		LuaCoroutineRunner _coroutineRunner;
 		std::reference_wrapper<App> _app;
-		LuaInput _input;
 		LuaWindow _win;
 		LuaAudioSystem _audio;
 
 		AssetContext& getAssets() noexcept;
 		LuaWindow& getWindow() noexcept;
-		LuaInput& getInput() noexcept;
+		Input& getInput() noexcept;
 		LuaAudioSystem& getAudio() noexcept;
 
 		bool removeComponent(const sol::object& type);

@@ -25,7 +25,6 @@ namespace darmok
 
 		void addListener(IKeyboardListener& listener, entt::id_type type = 0) noexcept;
 		void addListener(std::unique_ptr<IKeyboardListener>&& listener, entt::id_type type = 0) noexcept;
-		void getListeners(std::vector<std::reference_wrapper<IKeyboardListener>>& listeners, entt::id_type type) noexcept;
 		bool removeListener(const IKeyboardListener& listener) noexcept;
 		size_t removeListeners(const IKeyboardListenerFilter& filter) noexcept;
 

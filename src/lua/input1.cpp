@@ -8,74 +8,40 @@
 
 namespace darmok
 {
-	LuaKeyboard::LuaKeyboard(Keyboard& kb) noexcept
-		: _kb(kb)
+	LuaKeyboardListener::LuaKeyboardListener(const sol::table& table) noexcept
+		: _table(table)
 	{
-		_kb.get().addListener(*this);
 	}
 
-	LuaKeyboard::~LuaKeyboard() noexcept
+	sol::object LuaKeyboardListener::getReal() const noexcept
 	{
-		_kb.get().removeListener(*this);
+		return _table;
 	}
 
-	const LuaTableDelegateDefinition LuaKeyboard::_keyDelegate("on_keyboard_key", "running keyboard key listener");
-	const LuaTableDelegateDefinition LuaKeyboard::_charDelegate("on_keyboard_char", "running keyboard on_keyboard_char listener");
+	const LuaTableDelegateDefinition LuaKeyboardListener::_keyDelegate("on_keyboard_key", "running keyboard key listener");
+	const LuaTableDelegateDefinition LuaKeyboardListener::_charDelegate("on_keyboard_char", "running keyboard on_keyboard_char listener");
 
-	void LuaKeyboard::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
+	void LuaKeyboardListener::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
 	{
-		_keyDelegate(_listeners, modifiers, down);
+		_keyDelegate(_table, modifiers, down);
 	}
 
-	void LuaKeyboard::onKeyboardChar(const Utf8Char& chr)
+	void LuaKeyboardListener::onKeyboardChar(const Utf8Char& chr)
 	{
-		auto str = chr.toString();
-		_charDelegate(_listeners, str);
+		_charDelegate(_table, chr.toString());
 	}
 
-	std::string LuaKeyboard::getUpdateChars() const noexcept
+	LuaKeyboardListenerFilter::LuaKeyboardListenerFilter(const sol::table& table) noexcept
+		: _table(table)
+		, _type(entt::type_hash<LuaKeyboardListener>::value())
 	{
-		std::stringstream ss;
-		for (auto& chr : _kb.get().getUpdateChars())
-		{
-			ss << chr;
-		}
-		return ss.str();
 	}
 
-	void LuaKeyboard::addListener(const sol::table& table) noexcept
+	bool LuaKeyboardListenerFilter::operator()(const IKeyboardListener& listener, entt::id_type type) const noexcept
 	{
-		_listeners.push_back(table);
+		return type == _type && static_cast<const LuaKeyboardListener&>(listener).getReal() == _table;
 	}
-
-
-	bool LuaKeyboard::removeListener(const sol::table& table) noexcept
-	{
-		auto itr = std::remove(_listeners.begin(), _listeners.end(), table);
-		if (itr == _listeners.end())
-		{
-			return false;
-		}
-		_listeners.erase(itr, _listeners.end());
-		return true;
-	}
-
-	bool LuaKeyboard::getKey(KeyboardKey key) const noexcept
-	{
-		return _kb.get().getKey(key);
-	}
-
-	const KeyboardKeys& LuaKeyboard::getKeys() const noexcept
-	{
-		return _kb.get().getKeys();
-	}
-
-	const KeyboardModifiers& LuaKeyboard::getModifiers() const noexcept
-	{
-		return _kb.get().getModifiers();
-	}
-
-
+	
 	std::optional<KeyboardKey> LuaKeyboard::readKey(const sol::object& val) noexcept
 	{
 		if (val.is<std::string>())
@@ -130,6 +96,26 @@ namespace darmok
 		return KeyboardInputEvent{ key.value(), mods };
 	}
 
+	std::string LuaKeyboard::getUpdateChars(const Keyboard& kb) noexcept
+	{
+		std::stringstream ss;
+		for (auto& chr : kb.getUpdateChars())
+		{
+			ss << chr;
+		}
+		return ss.str();
+	}
+
+	void LuaKeyboard::addListener(Keyboard& kb, const sol::table& table) noexcept
+	{
+		kb.addListener(std::make_unique<LuaKeyboardListener>(table), entt::type_hash<LuaKeyboardListener>::value());
+	}
+
+	bool LuaKeyboard::removeListener(Keyboard& kb, const sol::table& table) noexcept
+	{
+		return kb.removeListeners(LuaKeyboardListenerFilter(table)) > 0;
+	}
+
 	void LuaKeyboard::bind(sol::state_view& lua) noexcept
 	{
 		LuaUtils::newEnumFunc(lua, "KeyboardKey", KeyboardKey::Count, &Keyboard::getKeyName, true);
@@ -140,98 +126,77 @@ namespace darmok
 			"modifiers", &KeyboardInputEvent::modifiers
 		);
 
-		lua.new_usertype<LuaKeyboard>("Keyboard", sol::no_constructor,
-			"get_key", &LuaKeyboard::getKey,
+		lua.new_usertype<Keyboard>("Keyboard", sol::no_constructor,
+			"get_key", &Keyboard::getKey,
 			"chars", sol::property(&LuaKeyboard::getUpdateChars),
 			"add_listener", &LuaKeyboard::addListener,
 			"remove_listener", &LuaKeyboard::removeListener
 		);
 	}
 
-	LuaMouse::LuaMouse(Mouse& mouse) noexcept
-		: _mouse(mouse)
+	LuaMouseListener::LuaMouseListener(const sol::table& table) noexcept
+		: _table(table)
 	{
-		_mouse.get().addListener(*this);
 	}
 
-	LuaMouse::~LuaMouse() noexcept
+	sol::object LuaMouseListener::getReal() const noexcept
 	{
-		_mouse.get().removeListener(*this);
+		return _table;
 	}
 
-	bool LuaMouse::getActive() const noexcept
+	const LuaTableDelegateDefinition LuaMouseListener::_posDelegate("on_mouse_position_change", "running mouse position change listener");
+	const LuaTableDelegateDefinition LuaMouseListener::_scrollDelegate("on_mouse_scroll_change", "running mouse scroll change listener");
+	const LuaTableDelegateDefinition LuaMouseListener::_buttonDelegate("on_mouse_button", "running mouse button listener");
+
+	void LuaMouseListener::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute)
 	{
-		return _mouse.get().getActive();
+		_posDelegate(_table, delta, absolute);
 	}
 
-	const glm::vec2& LuaMouse::getPosition() const noexcept
+	void LuaMouseListener::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute)
 	{
-		return _mouse.get().getPosition();
+		_scrollDelegate(_table, delta, absolute);
 	}
 
-	const glm::vec2& LuaMouse::getVelocity() const noexcept
+	void LuaMouseListener::onMouseButton(MouseButton button, bool down)
 	{
-		return _mouse.get().getVelocity();
+		_buttonDelegate(_table, button, down);
 	}
 
-	const glm::vec2& LuaMouse::getScroll() const noexcept
+	LuaMouseListenerFilter::LuaMouseListenerFilter(const sol::table& table) noexcept
+		: _table(table)
+		, _type(entt::type_hash<LuaMouseListener>::value())
 	{
-		return _mouse.get().getScroll();
 	}
 
-	bool LuaMouse::getButton(MouseButton button) const noexcept
+	bool LuaMouseListenerFilter::operator()(const IMouseListener& listener, entt::id_type type) const noexcept
 	{
-		return _mouse.get().getButton(button);
+		return type == _type && static_cast<const LuaMouseListener&>(listener).getReal() == _table;
 	}
 
-	bool LuaMouse::getLeftButton() const noexcept
+	bool LuaMouse::getLeftButton(const Mouse& mouse) noexcept
 	{
-		return _mouse.get().getButton(MouseButton::Left);
+		return mouse.getButton(MouseButton::Left);
 	}
 
-	bool LuaMouse::getMiddleButton() const noexcept
+	bool LuaMouse::getMiddleButton(const Mouse& mouse) noexcept
 	{
-		return _mouse.get().getButton(MouseButton::Middle);
+		return mouse.getButton(MouseButton::Middle);
 	}
 
-	bool LuaMouse::getRightButton() const noexcept
+	bool LuaMouse::getRightButton(const Mouse& mouse) noexcept
 	{
-		return _mouse.get().getButton(MouseButton::Right);
+		return mouse.getButton(MouseButton::Right);
 	}
 
-	const LuaTableDelegateDefinition LuaMouse::_posDelegate("on_mouse_position_change", "running mouse position change listener");
-	const LuaTableDelegateDefinition LuaMouse::_scrollDelegate("on_mouse_scroll_change", "running mouse scroll change listener");
-	const LuaTableDelegateDefinition LuaMouse::_buttonDelegate("on_mouse_button", "running mouse button listener");
-
-	void LuaMouse::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute)
+	bool LuaMouse::removeListener(Mouse& mouse, const sol::table& table) noexcept
 	{
-		_posDelegate(_listeners, delta, absolute);
+		return mouse.removeListeners(LuaMouseListenerFilter(table)) > 0;
 	}
 
-	void LuaMouse::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute)
+	void LuaMouse::addListener(Mouse& mouse, const sol::table& table) noexcept
 	{
-		_scrollDelegate(_listeners, delta, absolute);
-	}
-
-	void LuaMouse::onMouseButton(MouseButton button, bool down)
-	{
-		_buttonDelegate(_listeners, button, down);
-	}
-
-	bool LuaMouse::removeListener(const sol::table& table) noexcept
-	{
-		auto itr = std::remove(_listeners.begin(), _listeners.end(), table);
-		if (itr == _listeners.end())
-		{
-			return false;
-		}
-		_listeners.erase(itr, _listeners.end());
-		return true;
-	}
-
-	void LuaMouse::addListener(const sol::table& table) noexcept
-	{
-		_listeners.push_back(table);
+		mouse.addListener(std::make_unique<LuaMouseListener>(table), entt::type_hash<LuaMouseListener>::value());
 	}
 
 	std::optional<MouseButton> LuaMouse::readButton(const sol::object& val) noexcept
@@ -309,84 +274,78 @@ namespace darmok
 			"type", &MouseInputDir::type
 		);
 		
-		lua.new_usertype<LuaMouse>("Mouse", sol::no_constructor,
-			"active", sol::property(&LuaMouse::getActive),
-			"position", sol::property(&LuaMouse::getPosition),
-			"velocity", sol::property(&LuaMouse::getVelocity),
-			"scroll", sol::property(&LuaMouse::getScroll),
+		lua.new_usertype<Mouse>("Mouse", sol::no_constructor,
+			"active", sol::property(&Mouse::getActive),
+			"position", sol::property(&Mouse::getPosition),
+			"velocity", sol::property(&Mouse::getVelocity),
+			"scroll", sol::property(&Mouse::getScroll),
 			"left_button", sol::property(&LuaMouse::getLeftButton),
 			"middle_button", sol::property(&LuaMouse::getMiddleButton),
 			"right_button", sol::property(&LuaMouse::getRightButton),
-			"get_button", &LuaMouse::getButton,
+			"get_button", &Mouse::getButton,
 			"add_listener", &LuaMouse::addListener,
 			"remove_listener", &LuaMouse::removeListener
 		);
 	}
 
-	LuaGamepad::LuaGamepad(Gamepad& gamepad) noexcept
-		: _gamepad(gamepad)
+	LuaGamepadListener::LuaGamepadListener(const sol::table& table) noexcept
+		: _table(table)
 	{
-		_gamepad.get().addListener(*this);
 	}
 
-	LuaGamepad::~LuaGamepad() noexcept
+	sol::object LuaGamepadListener::getReal() const noexcept
 	{
-		_gamepad.get().removeListener(*this);
+		return _table;
 	}
 
-	const LuaTableDelegateDefinition LuaGamepad::_stickDelegate("on_gamepad_stick_change", "running gamepad stick change listener");
-	const LuaTableDelegateDefinition LuaGamepad::_buttonDelegate("on_gamepad_button", "running gamepad button listener");
-	const LuaTableDelegateDefinition LuaGamepad::_connectDelegate("on_gamepad_connect", "running gamepad connect listener");
+	const LuaTableDelegateDefinition LuaGamepadListener::_stickDelegate("on_gamepad_stick_change", "running gamepad stick change listener");
+	const LuaTableDelegateDefinition LuaGamepadListener::_buttonDelegate("on_gamepad_button", "running gamepad button listener");
+	const LuaTableDelegateDefinition LuaGamepadListener::_connectDelegate("on_gamepad_connect", "running gamepad connect listener");
 
-	void LuaGamepad::onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute)
+	void LuaGamepadListener::onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute)
 	{
-		_stickDelegate(_listeners, num, stick, delta, absolute);
+		_stickDelegate(_table, num, stick, delta, absolute);
 	}
 
-	void LuaGamepad::onGamepadButton(uint8_t num, GamepadButton button, bool down)
+	void LuaGamepadListener::onGamepadButton(uint8_t num, GamepadButton button, bool down)
 	{
-		_buttonDelegate(_listeners, num, button, down);
+		_buttonDelegate(_table, num, button, down);
 	}
 
-	void LuaGamepad::onGamepadConnect(uint8_t num, bool connected)
+	void LuaGamepadListener::onGamepadConnect(uint8_t num, bool connected)
 	{
-		_connectDelegate(_listeners, num, connected);
+		_connectDelegate(_table, num, connected);
 	}
 
-	void LuaGamepad::addListener(const sol::table& table) noexcept
+	LuaGamepadListenerFilter::LuaGamepadListenerFilter(const sol::table& table) noexcept
+		: _table(table)
+		, _type(entt::type_hash<LuaGamepadListener>::value())
 	{
-		_listeners.push_back(table);
 	}
 
-	bool LuaGamepad::removeListener(const sol::table& table) noexcept
+	bool LuaGamepadListenerFilter::operator()(const IGamepadListener& listener, entt::id_type type) const noexcept
 	{
-		auto itr = std::remove(_listeners.begin(), _listeners.end(), table);
-		if (itr == _listeners.end())
-		{
-			return false;
-		}
-		_listeners.erase(itr, _listeners.end());
-		return true;
+		return type == _type && static_cast<const LuaGamepadListener&>(listener).getReal() == _table;
 	}
 
-	bool LuaGamepad::getButton(GamepadButton button) const noexcept
+	void LuaGamepad::addListener(Gamepad& gamepad, const sol::table& table) noexcept
 	{
-		return _gamepad.get().getButton(button);
+		gamepad.addListener(std::make_unique<LuaGamepadListener>(table), entt::type_hash<LuaGamepadListener>::value());
 	}
 
-	const glm::vec3& LuaGamepad::getLeftStick() const noexcept
+	bool LuaGamepad::removeListener(Gamepad& gamepad, const sol::table& table) noexcept
 	{
-		return _gamepad.get().getStick(GamepadStick::Left);
+		return gamepad.removeListeners(LuaGamepadListenerFilter(table)) > 0;
 	}
 
-	const glm::vec3& LuaGamepad::getRightStick() const noexcept
+	const glm::vec3& LuaGamepad::getLeftStick(const Gamepad& gamepad) noexcept
 	{
-		return _gamepad.get().getStick(GamepadStick::Right);
+		return gamepad.getStick(GamepadStick::Left);
 	}
 
-	bool LuaGamepad::isConnected() const noexcept
+	const glm::vec3& LuaGamepad::getRightStick(const Gamepad& gamepad) noexcept
 	{
-		return _gamepad.get().isConnected();
+		return gamepad.getStick(GamepadStick::Right);
 	}
 
 	std::optional<GamepadButton> LuaGamepad::readButton(const sol::object& val) noexcept
@@ -490,9 +449,9 @@ namespace darmok
 			"gamepad", &GamepadInputDir::gamepad
 		);
 
-		lua.new_usertype<LuaGamepad>("Gamepad", sol::no_constructor,
-			"get_button", &LuaGamepad::getButton,
-			"connected", sol::property(&LuaGamepad::isConnected),
+		lua.new_usertype<Gamepad>("Gamepad", sol::no_constructor,
+			"get_button", &Gamepad::getButton,
+			"connected", sol::property(&Gamepad::isConnected),
 			"left_stick", sol::property(&LuaGamepad::getLeftStick),
 			"right_stick", sol::property(&LuaGamepad::getRightStick),
 			"add_listener", &LuaGamepad::addListener,
