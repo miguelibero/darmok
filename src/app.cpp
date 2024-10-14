@@ -541,13 +541,13 @@ namespace darmok
 
 	void AppImpl::render() const
 	{
-		if (_renderGraph && _taskExecutor)
-		{
-			_renderGraph.value()(_taskExecutor.value());
-		}
 		if (_delegate)
 		{
 			_delegate->render();
+		}
+		if (_renderGraph && _taskExecutor)
+		{
+			_renderGraph.value()(_taskExecutor.value());
 		}
 	}
 
@@ -808,6 +808,7 @@ namespace darmok
 
 	void AppImpl::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
 	{
+		removeComponent(component->getAppComponentType());
 		if (_running)
 		{
 			component->init(_app);
@@ -1044,10 +1045,8 @@ namespace darmok
 	void App::render() const
 	{
 		bgfx::touch(0);
-
+		bgfx::dbgTextClear();
 		_impl->render();
-
-		bgfx::dbgTextClear(); // use debug font to print information
 	}
 
 	bool App::toggleDebugFlag(uint32_t flag) noexcept

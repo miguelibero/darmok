@@ -307,13 +307,14 @@ namespace darmok
         }
     }
 
-    Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& renderer) noexcept
+    Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept
     {
+        removeComponent(component->getCameraComponentType());
         if (_scene)
         {
-            renderer->init(*this, _scene.value(), _app.value());
+            component->init(*this, _scene.value(), _app.value());
         }
-        _components.emplace_back(std::move(renderer));
+        _components.emplace_back(std::move(component));
         return *this;
     }
 

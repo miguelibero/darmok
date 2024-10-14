@@ -28,6 +28,7 @@ namespace darmok
 
     void SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
     {
+        removeSceneComponent(component->getSceneComponentType());
         if (_app)
         {
             component->init(_scene, _app.value());
