@@ -58,11 +58,10 @@ namespace darmok
 		std::vector<LuaDelegate> _updaters;
 		LuaCoroutineRunner _coroutineRunner;
 		std::reference_wrapper<App> _app;
-		LuaWindow _win;
 		LuaAudioSystem _audio;
 
 		AssetContext& getAssets() noexcept;
-		LuaWindow& getWindow() noexcept;
+		Window& getWindow() noexcept;
 		Input& getInput() noexcept;
 		LuaAudioSystem& getAudio() noexcept;
 

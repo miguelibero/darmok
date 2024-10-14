@@ -37,7 +37,6 @@ namespace darmok
 {	
     LuaApp::LuaApp(App& app) noexcept
 		: _app(app)
-		, _win(app.getWindow())
 		, _audio(app.getAudio())
 	{
 	}
@@ -107,9 +106,9 @@ namespace darmok
 		return _app.get().getAssets();
 	}
 
-	LuaWindow& LuaApp::getWindow() noexcept
+	Window& LuaApp::getWindow() noexcept
 	{
-		return _win;
+		return _app.get().getWindow();
 	}
 
 	Input& LuaApp::getInput() noexcept

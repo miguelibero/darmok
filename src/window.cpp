@@ -255,14 +255,14 @@ namespace darmok
 		return p;
 	}
 
-	void WindowImpl::addListener(std::unique_ptr<IWindowListener>&& listener) noexcept
+	void WindowImpl::addListener(std::unique_ptr<IWindowListener>&& listener, entt::id_type type) noexcept
 	{
-		_listeners.insert(std::move(listener));
+		_listeners.insert(std::move(listener), type);
 	}
 
-	void WindowImpl::addListener(IWindowListener& listener) noexcept
+	void WindowImpl::addListener(IWindowListener& listener, entt::id_type type) noexcept
 	{
-		_listeners.insert(listener);
+		_listeners.insert(listener, type);
 	}
 
 	bool WindowImpl::removeListener(const IWindowListener& listener) noexcept
@@ -376,9 +376,14 @@ namespace darmok
 		return _impl->screenToWindowDelta(delta);
 	}
 
-	void Window::addListener(IWindowListener& listener) noexcept
+	void Window::addListener(IWindowListener& listener, entt::id_type type) noexcept
 	{
-		_impl->addListener(listener);
+		_impl->addListener(listener, type);
+	}
+
+	void Window::addListener(std::unique_ptr<IWindowListener>&& listener, entt::id_type type) noexcept
+	{
+		_impl->addListener(std::move(listener), type);
 	}
 
 	bool Window::removeListener(const IWindowListener& listener) noexcept

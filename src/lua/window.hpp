@@ -2,6 +2,7 @@
 
 #include "lua.hpp"
 #include "glm.hpp"
+#include "utils.hpp"
 
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
@@ -9,47 +10,44 @@
 
 namespace darmok
 {
-	enum class LuaWindowListenerType
-	{
-		Size,
-		PixelSize,
-		Phase,
-		VideoMode,
-		CursorMode,
-	};
-
-	class LuaWindow final : public IWindowListener
+	class LuaWindowListener : public IWindowListener
 	{
 	public:
-		LuaWindow(Window& win) noexcept;
-		~LuaWindow() noexcept;
-
+		LuaWindowListener(const sol::table& table) noexcept;
 		void onWindowSize(const glm::uvec2& size) override;
 		void onWindowPixelSize(const glm::uvec2& size) override;
 		void onWindowPhase(WindowPhase phase) override;
 		void onWindowVideoMode(const VideoMode& mode) override;
 		void onWindowCursorMode(WindowCursorMode mode) override;
+		sol::object getReal() const noexcept;
+	private:
+		sol::main_table _table;
+		static const LuaTableDelegateDefinition _sizeDelegate;
+		static const LuaTableDelegateDefinition _pixelSizeDelegate;
+		static const LuaTableDelegateDefinition _phaseDelegate;
+		static const LuaTableDelegateDefinition _videoModeDelegate;
+		static const LuaTableDelegateDefinition _cursorModeDelegate;
+	};
 
+	class LuaWindowListenerFilter final : public IWindowListenerFilter
+	{
+	public:
+		LuaWindowListenerFilter(const sol::table& table) noexcept;
+		bool operator()(const IWindowListener& listener, entt::id_type type) const noexcept override;
+	private:
+		sol::main_table _table;
+		entt::id_type _type;
+	};
+
+	class LuaWindow final
+	{
+	public:
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		using ListenerType = LuaWindowListenerType;
+		static void addListener(Window& win, const sol::table& table) noexcept;
+		static bool removeListener(Window& win, const sol::table& table) noexcept;
 
-		std::reference_wrapper<Window> _win;
-		std::unordered_map<ListenerType, std::vector<sol::protected_function>> _listeners;
-
-		void addListener(ListenerType type, const sol::protected_function& func) noexcept;
-		bool removeListener(ListenerType type, const sol::protected_function& func) noexcept;
-
-		const glm::uvec2& getSize() const noexcept;
-		const glm::uvec2& getPixelSize() const noexcept;
-		glm::vec2 getFramebufferScale() const noexcept;
-		const VideoMode& getVideoMode() const noexcept;
-		void setVideoMode(const VideoMode& mode) noexcept;
-		const VideoModeInfo& getVideoModeInfo() noexcept;
-		WindowCursorMode getCursorMode() const noexcept;
-		void setCursorMode(WindowCursorMode mode) const noexcept;
-
-		glm::vec2 screenToWindowPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
-		glm::vec2 windowToScreenPoint(const VarLuaTable<glm::vec2>& point) const noexcept;
+		static glm::vec2 screenToWindowPoint(const Window& win, const VarLuaTable<glm::vec2>& point) noexcept;
+		static glm::vec2 windowToScreenPoint(const Window& win, const VarLuaTable<glm::vec2>& point) noexcept;
 	};
 }

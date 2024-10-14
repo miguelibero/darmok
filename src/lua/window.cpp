@@ -4,132 +4,76 @@
 
 namespace darmok
 {
-	LuaWindow::LuaWindow(Window& win) noexcept
-		: _win(win)
+	LuaWindowListener::LuaWindowListener(const sol::table& table) noexcept
+		: _table(table)
 	{
-		win.addListener(*this);
 	}
 
-	LuaWindow::~LuaWindow()
+	sol::object LuaWindowListener::getReal() const noexcept
 	{
-		_win.get().removeListener(*this);
+		return _table;
 	}
 
-	void LuaWindow::onWindowSize(const glm::uvec2& size)
+	void LuaWindowListener::onWindowSize(const glm::uvec2& size)
 	{
-		static const std::string desc("on window size");
-		for (auto& listener : _listeners[ListenerType::Size])
-		{
-			LuaUtils::checkResult(desc, listener.call(size));
-		}
+		_sizeDelegate(_table, size);
 	}
 
-	void LuaWindow::onWindowPixelSize(const glm::uvec2& size)
+	void LuaWindowListener::onWindowPixelSize(const glm::uvec2& size)
 	{
-		static const std::string desc("on window pixel size");
-		for (auto& listener : _listeners[ListenerType::PixelSize])
-		{
-			LuaUtils::checkResult(desc, listener.call(size));
-		}
+		_pixelSizeDelegate(_table, size);
 	}
 
-	void LuaWindow::onWindowPhase(WindowPhase phase)
+	void LuaWindowListener::onWindowPhase(WindowPhase phase)
 	{
-		static const std::string desc("on window phase");
-		for (auto& listener : _listeners[ListenerType::Phase])
-		{
-			LuaUtils::checkResult(desc, listener.call(phase));
-		}
+		_phaseDelegate(_table, phase);
 	}
 
-	void LuaWindow::onWindowVideoMode(const VideoMode& mode)
+	void LuaWindowListener::onWindowVideoMode(const VideoMode& mode)
 	{
-		static const std::string desc("on window video mode");
-		for (auto& listener : _listeners[ListenerType::VideoMode])
-		{
-			LuaUtils::checkResult(desc, listener.call(mode));
-		}
+		_videoModeDelegate(_table, mode);
 	}
 
-	void LuaWindow::onWindowCursorMode(WindowCursorMode phase)
+	void LuaWindowListener::onWindowCursorMode(WindowCursorMode mode)
 	{
-		static const std::string desc("on window cursor mode");
-		for (auto& listener : _listeners[ListenerType::CursorMode])
-		{
-			LuaUtils::checkResult(desc, listener.call(phase));
-		}
+		_cursorModeDelegate(_table, mode);
 	}
 
-	const glm::uvec2& LuaWindow::getSize() const noexcept
+	const LuaTableDelegateDefinition LuaWindowListener::_sizeDelegate("on_window_size", "running window size listener");
+	const LuaTableDelegateDefinition LuaWindowListener::_pixelSizeDelegate("on_window_pixel_size", "running window pixel size listener");
+	const LuaTableDelegateDefinition LuaWindowListener::_phaseDelegate("on_window_phase", "running window phase listener");
+	const LuaTableDelegateDefinition LuaWindowListener::_videoModeDelegate("on_window_video_mode", "running window video mode listener");
+	const LuaTableDelegateDefinition LuaWindowListener::_cursorModeDelegate("on_window_cursor_mode", "running window cursor mode listener");
+
+	LuaWindowListenerFilter::LuaWindowListenerFilter(const sol::table& table) noexcept
+		: _table(table)
+		, _type(entt::type_hash<LuaWindowListener>::value())
 	{
-		return _win.get().getSize();
 	}
 
-	const glm::uvec2& LuaWindow::getPixelSize() const noexcept
+	bool LuaWindowListenerFilter::operator()(const IWindowListener& listener, entt::id_type type) const noexcept
 	{
-		return _win.get().getPixelSize();
+		return type == _type && static_cast<const LuaWindowListener&>(listener).getReal() == _table;
 	}
 
-	glm::vec2 LuaWindow::getFramebufferScale() const noexcept
+	glm::vec2 LuaWindow::screenToWindowPoint(const Window& win, const VarLuaTable<glm::vec2>& point) noexcept
 	{
-		return _win.get().getFramebufferScale();
+		return win.screenToWindowPoint(LuaGlm::tableGet(point));
 	}
 
-	const VideoMode& LuaWindow::getVideoMode() const noexcept
+	glm::vec2 LuaWindow::windowToScreenPoint(const Window& win, const VarLuaTable<glm::vec2>& point) noexcept
 	{
-		return _win.get().getVideoMode();
+		return win.windowToScreenPoint(LuaGlm::tableGet(point));
 	}
 
-	void LuaWindow::setVideoMode(const VideoMode& mode) noexcept
+	void LuaWindow::addListener(Window& win, const sol::table& table) noexcept
 	{
-		return _win.get().requestVideoMode(mode);
+		win.addListener(std::make_unique<LuaWindowListener>(table), entt::type_hash<LuaWindowListener>::value());
 	}
 
-	const VideoModeInfo& LuaWindow::getVideoModeInfo() noexcept
+	bool LuaWindow::removeListener(Window& win, const sol::table& table) noexcept
 	{
-		return _win.get().getVideoModeInfo();
-	}
-
-	WindowCursorMode LuaWindow::getCursorMode() const noexcept
-	{
-		return _win.get().getCursorMode();
-	}
-
-	void LuaWindow::setCursorMode(WindowCursorMode mode) const noexcept
-	{
-		_win.get().requestCursorMode(mode);
-	}
-
-	glm::vec2 LuaWindow::screenToWindowPoint(const VarLuaTable<glm::vec2>& point) const noexcept
-	{
-		return _win.get().screenToWindowPoint(LuaGlm::tableGet(point));
-	}
-
-	glm::vec2 LuaWindow::windowToScreenPoint(const VarLuaTable<glm::vec2>& point) const noexcept
-	{
-		return _win.get().windowToScreenPoint(LuaGlm::tableGet(point));
-	}
-
-	void LuaWindow::addListener(ListenerType type, const sol::protected_function& func) noexcept
-	{
-		_listeners[type].push_back(func);
-	}
-
-	bool LuaWindow::removeListener(ListenerType type, const sol::protected_function& func) noexcept
-	{
-		auto itr = _listeners.find(type);
-		if (itr == _listeners.end())
-		{
-			return false;
-		}
-		auto& listeners = itr->second;
-		auto itr2 = std::remove(listeners.begin(), listeners.end(), func);
-		if (itr2 == listeners.end())
-		{
-			return false;
-		}
-		listeners.erase(itr2, listeners.end());
-		return true;
+		return win.removeListeners(LuaWindowListenerFilter(table)) > 0;
 	}
 
 	void LuaWindow::bind(sol::state_view& lua) noexcept
@@ -170,21 +114,13 @@ namespace darmok
 			"monitors", &VideoModeInfo::monitors
 		);
 
-		lua.new_enum<LuaWindowListenerType>("WindowListenerType", {
-			{ "Position", LuaWindowListenerType::Size },
-			{ "PixelSize", LuaWindowListenerType::PixelSize },
-			{ "Phase", LuaWindowListenerType::Phase },
-			{ "VideoMode", LuaWindowListenerType::VideoMode },
-			{ "CursorMode", LuaWindowListenerType::CursorMode },
-		});
-
-		lua.new_usertype<LuaWindow>("Window", sol::no_constructor,
-			"size", sol::property(&LuaWindow::getSize),
-			"pixel_size", sol::property(&LuaWindow::getPixelSize),
-			"framebuffer_scale", sol::property(&LuaWindow::getFramebufferScale),
-			"video_mode", sol::property(&LuaWindow::getVideoMode, &LuaWindow::setVideoMode),
-			"video_mode_info", sol::property(&LuaWindow::getVideoModeInfo),
-			"cursor_mode", sol::property(&LuaWindow::getCursorMode, &LuaWindow::setCursorMode),
+		lua.new_usertype<Window>("Window", sol::no_constructor,
+			"size", sol::property(&Window::getSize),
+			"pixel_size", sol::property(&Window::getPixelSize),
+			"framebuffer_scale", sol::property(&Window::getFramebufferScale),
+			"video_mode", sol::property(&Window::getVideoMode, &Window::requestVideoMode),
+			"video_mode_info", sol::property(&Window::getVideoModeInfo),
+			"cursor_mode", sol::property(&Window::getCursorMode, &Window::requestCursorMode),
 			"screen_to_window_point", &LuaWindow::screenToWindowPoint,
 			"window_to_screen_point", &LuaWindow::windowToScreenPoint,
 			"add_listener", &LuaWindow::addListener,
