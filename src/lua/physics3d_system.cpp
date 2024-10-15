@@ -136,24 +136,24 @@ namespace darmok::physics3d
         return system.raycastAll(ray, maxDistance, layerMask);
     }
 
-    PhysicsSystem& LuaPhysicsSystem::addSceneComponent1(LuaScene& scene) noexcept
+    PhysicsSystem& LuaPhysicsSystem::addSceneComponent1(Scene& scene) noexcept
     {
-        return scene.getReal()->addSceneComponent<PhysicsSystem>();
+        return scene.addSceneComponent<PhysicsSystem>();
     }
 
-    PhysicsSystem& LuaPhysicsSystem::addSceneComponent2(LuaScene& scene, const Config& config) noexcept
+    PhysicsSystem& LuaPhysicsSystem::addSceneComponent2(Scene& scene, const Config& config) noexcept
     {
-        return scene.getReal()->addSceneComponent<PhysicsSystem>(config);
+        return scene.addSceneComponent<PhysicsSystem>(config);
     }
 
-    PhysicsSystem& LuaPhysicsSystem::addSceneComponent3(LuaScene& scene, const Config& config, bx::AllocatorI& alloc) noexcept
+    PhysicsSystem& LuaPhysicsSystem::addSceneComponent3(Scene& scene, const Config& config, bx::AllocatorI& alloc) noexcept
     {
-        return scene.getReal()->addSceneComponent<PhysicsSystem>(config, alloc);
+        return scene.addSceneComponent<PhysicsSystem>(config, alloc);
     }
 
-    OptionalRef<PhysicsSystem>::std_t LuaPhysicsSystem::getSceneComponent(LuaScene& scene) noexcept
+    OptionalRef<PhysicsSystem>::std_t LuaPhysicsSystem::getSceneComponent(Scene& scene) noexcept
     {
-        return scene.getReal()->getSceneComponent<PhysicsSystem>();
+        return scene.getSceneComponent<PhysicsSystem>();
     }
 
     void LuaPhysicsSystem::bind(sol::state_view& lua) noexcept

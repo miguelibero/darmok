@@ -6,7 +6,7 @@ namespace darmok
 {
     class FreelookController;
     class Camera;
-    class LuaScene;
+    class Scene;
     struct FreelookConfig;
 
     class LuaFreelookController final
@@ -15,7 +15,7 @@ namespace darmok
     	static void bind(sol::state_view& lua) noexcept;
     private:
         using Config = FreelookConfig;
-        static FreelookController& addSceneComponent1(LuaScene& scene, Camera& cam) noexcept;
-		static FreelookController& addSceneComponent2(LuaScene& scene, Camera& cam, const Config& config) noexcept;
+        static FreelookController& addSceneComponent1(Scene& scene, Camera& cam) noexcept;
+		static FreelookController& addSceneComponent2(Scene& scene, Camera& cam, const Config& config) noexcept;
     };
 }

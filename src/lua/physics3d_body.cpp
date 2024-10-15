@@ -6,6 +6,11 @@
 
 namespace darmok::physics3d
 {
+    OptionalRef<PhysicsSystem>::std_t LuaPhysicsBody::getSystem(PhysicsBody& body) noexcept
+    {
+        return body.getSystem();
+    }
+
     void LuaPhysicsBody::setPosition(PhysicsBody& body, const VarLuaTable<glm::vec3>& pos)
     {
         body.setPosition(LuaGlm::tableGet(pos));
@@ -100,9 +105,9 @@ namespace darmok::physics3d
         return entity.getComponent<PhysicsBody>();
     }
 
-    std::optional<LuaEntity> LuaPhysicsBody::getEntity(const PhysicsBody& body, LuaScene& scene) noexcept
+    std::optional<LuaEntity> LuaPhysicsBody::getEntity(const PhysicsBody& body, const std::shared_ptr<Scene>& scene) noexcept
     {
-        return scene.getEntity(body);
+        return LuaScene::getEntity(scene, body);
     }
     
     void LuaPhysicsBody::bind(sol::state_view& lua) noexcept
@@ -161,6 +166,7 @@ namespace darmok::physics3d
             "linear_velocity", sol::property(&PhysicsBody::getLinearVelocity, &LuaPhysicsBody::setLinearVelocity),
             "inverse_mass", sol::property(&PhysicsBody::getInverseMass, &PhysicsBody::setInverseMass),
             "active", sol::property(&PhysicsBody::isActive),
+            "system", sol::property(&LuaPhysicsBody::getSystem),
             "activate", &PhysicsBody::activate,
             "deactivate", &PhysicsBody::deactivate,
             "enabled", sol::property(&PhysicsBody::isEnabled, &PhysicsBody::setEnabled),

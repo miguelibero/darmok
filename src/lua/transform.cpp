@@ -112,9 +112,9 @@ namespace darmok
 		return entity.getComponent<Transform>();
 	}
 
-	std::optional<LuaEntity> LuaTransform::getEntity(const Transform& trans, LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaTransform::getEntity(const Transform& trans, std::shared_ptr<Scene>& scene) noexcept
 	{
-		return scene.getEntity(trans);
+		return LuaScene::getEntity(scene, trans);
 	}
 
 	void LuaTransform::bind(sol::state_view& lua) noexcept

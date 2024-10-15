@@ -9,14 +9,14 @@
 
 namespace darmok
 {
-    RmluiSceneComponent& LuaRmluiSceneComponent::addSceneComponent(LuaScene& scene) noexcept
+    RmluiSceneComponent& LuaRmluiSceneComponent::addSceneComponent(Scene& scene) noexcept
     {
-        return scene.getReal()->addSceneComponent<RmluiSceneComponent>();
+        return scene.addSceneComponent<RmluiSceneComponent>();
     }
 
-    OptionalRef<RmluiSceneComponent>::std_t LuaRmluiSceneComponent::getSceneComponent(LuaScene& scene) noexcept
+    OptionalRef<RmluiSceneComponent>::std_t LuaRmluiSceneComponent::getSceneComponent(Scene& scene) noexcept
     {
-        return scene.getReal()->getSceneComponent<RmluiSceneComponent>();
+        return scene.getSceneComponent<RmluiSceneComponent>();
     }
 
     void LuaRmluiSceneComponent::bind(sol::state_view& lua) noexcept

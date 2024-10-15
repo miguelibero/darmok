@@ -11,7 +11,6 @@
 namespace darmok
 {
 	class LuaEntity;
-	class LuaScene;
 	class AssetContext;
 	class LuaModelNode;
 	class Scene;
@@ -26,7 +25,7 @@ namespace darmok
 	class LuaModelSceneConfigurer final
 	{
 	public:
-		LuaModelSceneConfigurer(const LuaScene& scene, AssetContext& assets) noexcept;
+		LuaModelSceneConfigurer(const std::shared_ptr<Scene>& scene, AssetContext& assets) noexcept;
 		LuaModelSceneConfigurer& setParent(const LuaEntity& parent) noexcept;
 		LuaModelSceneConfigurer& setTextureFlags(uint64_t flags) noexcept;
 

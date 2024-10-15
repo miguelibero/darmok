@@ -19,7 +19,7 @@ namespace darmok
     class ISkeletalAnimatorTransition;
 
     class LuaEntity;
-    class LuaScene;
+    class Scene;
 
     struct LuaSkeleton final
     {
@@ -39,7 +39,7 @@ namespace darmok
 
         static SkeletalAnimator& addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
         static OptionalRef<SkeletalAnimator>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-        static std::optional<LuaEntity> getEntity(const SkeletalAnimator& animator, LuaScene& scene) noexcept;
+        static std::optional<LuaEntity> getEntity(const SkeletalAnimator& animator, std::shared_ptr<Scene>& scene) noexcept;
         static bool play1(SkeletalAnimator& animator, const std::string& name) noexcept;
         static bool play2(SkeletalAnimator& animator, const std::string& name, float stateSpeed) noexcept;
 
@@ -59,7 +59,7 @@ namespace darmok
         static RenderableSkeleton& addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& mat) noexcept;
 		static RenderableSkeleton& addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept;
 		static OptionalRef<RenderableSkeleton>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const RenderableSkeleton& skel, LuaScene& scene) noexcept;
+		static std::optional<LuaEntity> getEntity(const RenderableSkeleton& skel, std::shared_ptr<Scene>& scene) noexcept;
     
         static void bind(sol::state_view& lua) noexcept;
     private:
@@ -72,8 +72,8 @@ namespace darmok
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        static SkeletalAnimationSceneComponent& addSceneComponent(LuaScene& scene) noexcept;
-        static OptionalRef<SkeletalAnimationSceneComponent>::std_t getSceneComponent(LuaScene& scene) noexcept;
+        static SkeletalAnimationSceneComponent& addSceneComponent(Scene& scene) noexcept;
+        static OptionalRef<SkeletalAnimationSceneComponent>::std_t getSceneComponent(Scene& scene) noexcept;
     };
 
     class SkeletalAnimationRenderComponent;

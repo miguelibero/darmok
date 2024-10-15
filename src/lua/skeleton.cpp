@@ -33,9 +33,9 @@ namespace darmok
         return entity.getComponent<SkeletalAnimator>();
     }
 
-    std::optional<LuaEntity> LuaSkeletalAnimator::getEntity(const SkeletalAnimator& animator, LuaScene& scene) noexcept
+    std::optional<LuaEntity> LuaSkeletalAnimator::getEntity(const SkeletalAnimator& animator, std::shared_ptr<Scene>& scene) noexcept
     {
-        return scene.getEntity(animator);
+        return LuaScene::getEntity(scene, animator);
     }
 
     bool LuaSkeletalAnimator::play1(SkeletalAnimator& animator, const std::string& name) noexcept
@@ -117,9 +117,9 @@ namespace darmok
         return entity.getComponent<RenderableSkeleton>();
     }
 
-    std::optional<LuaEntity> LuaRenderableSkeleton::getEntity(const RenderableSkeleton& skel, LuaScene& scene) noexcept
+    std::optional<LuaEntity> LuaRenderableSkeleton::getEntity(const RenderableSkeleton& skel, std::shared_ptr<Scene>& scene) noexcept
     {
-        return scene.getEntity(skel);
+        return LuaScene::getEntity(scene, skel);
     }
 
     void LuaRenderableSkeleton::bind(sol::state_view& lua) noexcept
@@ -136,14 +136,14 @@ namespace darmok
         );
     }
 
-    SkeletalAnimationSceneComponent& LuaSkeletalAnimationSceneComponent::addSceneComponent(LuaScene& scene) noexcept
+    SkeletalAnimationSceneComponent& LuaSkeletalAnimationSceneComponent::addSceneComponent(Scene& scene) noexcept
     {
-        return scene.getReal()->addSceneComponent<SkeletalAnimationSceneComponent>();
+        return scene.addSceneComponent<SkeletalAnimationSceneComponent>();
     }
 
-    OptionalRef<SkeletalAnimationSceneComponent>::std_t LuaSkeletalAnimationSceneComponent::getSceneComponent(LuaScene& scene) noexcept
+    OptionalRef<SkeletalAnimationSceneComponent>::std_t LuaSkeletalAnimationSceneComponent::getSceneComponent(Scene& scene) noexcept
     {
-        return scene.getReal()->getSceneComponent<SkeletalAnimationSceneComponent>();
+        return scene.getSceneComponent<SkeletalAnimationSceneComponent>();
     }
 
     void LuaSkeletalAnimationSceneComponent::bind(sol::state_view& lua) noexcept

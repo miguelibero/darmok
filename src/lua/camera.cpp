@@ -181,9 +181,9 @@ namespace darmok
 		return entity.getComponent<Camera>();
 	}
 
-	std::optional<LuaEntity> LuaCamera::getEntity(const Camera& cam, LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaCamera::getEntity(const Camera& cam, const std::shared_ptr<Scene>& scene) noexcept
 	{
-		return scene.getEntity(cam);
+		return LuaScene::getEntity(scene, cam);
 	}
 
 	void LuaCamera::setCullingFilter(Camera& cam, const sol::object& filter) noexcept

@@ -18,7 +18,6 @@ namespace darmok
 	class Texture;
 	class LuaEntity;
 	class Scene;
-	class LuaScene;
 	class Transform;
 	class RenderChain;
 	class RenderGraphDefinition;
@@ -32,7 +31,7 @@ namespace darmok
 	private:
 		static Camera& addEntityComponent(LuaEntity& entity) noexcept;
 		static OptionalRef<Camera>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const Camera& cam, LuaScene& scene) noexcept;
+		static std::optional<LuaEntity> getEntity(const Camera& cam, const std::shared_ptr<Scene>& scene) noexcept;
 
 		static Camera& setPerspective1(Camera& cam, float fovy, float aspect, float near, float far) noexcept;
 		static Camera& setPerspective2(Camera& cam, float fovy, float aspect, float near) noexcept;

@@ -59,18 +59,13 @@ namespace darmok
 		return false;
 	}
 
-	LuaScene LuaEntity::getScene() const
+	std::shared_ptr<Scene> LuaEntity::getScene() const
 	{
 		if (auto scene = _scene.lock())
 		{
 			return scene;
 		}
 		throw std::runtime_error("scene expired");
-	}
-
-	std::weak_ptr<Scene> LuaEntity::getWeakScene() const noexcept
-	{
-		return _scene;
 	}
 
 	bool LuaEntity::operator==(const LuaEntity& other) const noexcept
@@ -94,43 +89,31 @@ namespace darmok
 		return !operator==(other);
 	}
 
-	Scene& LuaEntity::getRealScene()
-	{
-		if (auto scene = _scene.lock())
-		{
-			return *scene;
-		}
-		throw std::runtime_error("scene expired");
-	}
-
-	const Scene& LuaEntity::getRealScene() const
-	{
-		if (auto scene = _scene.lock())
-		{
-			return *scene;
-		}
-		throw std::runtime_error("scene expired");
-	}
-
 	const Entity& LuaEntity::getReal() const noexcept
 	{
 		return _entity;
 	}
 
-	bool LuaEntity::removeComponent(const sol::object& type)
+	bool LuaEntity::removeComponent(const sol::object& type) noexcept
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return getRealScene().removeComponent(_entity, typeId.value());
+			if (auto scene = _scene.lock())
+			{
+				return scene->removeComponent(_entity, typeId.value());
+			}
 		}
 		return false;
 	}
 
-	bool LuaEntity::hasComponent(const sol::object& type) const
+	bool LuaEntity::hasComponent(const sol::object& type) const noexcept
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return getRealScene().hasComponent(_entity, typeId.value());
+			if (auto scene = _scene.lock())
+			{
+				return scene->hasComponent(_entity, typeId.value());
+			}
 		}
 		return false;
 	}
@@ -138,17 +121,20 @@ namespace darmok
 	void LuaEntity::addLuaComponent(const sol::table& comp)
 	{
 		auto typeId = LuaUtils::getTypeId(comp).value();
-		getRealScene().addCustomComponent<LuaEntityComponent>(_entity, typeId, comp);
+		getScene()->addCustomComponent<LuaEntityComponent>(_entity, typeId, comp);
 	}
 
 	sol::object LuaEntity::getLuaComponent(const sol::object& type) noexcept
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			auto comp = getRealScene().getCustomComponent<LuaEntityComponent>(_entity, typeId.value());
-			if (comp)
+			if (auto scene = _scene.lock())
 			{
-				return comp->getReal();
+				auto comp = scene->getCustomComponent<LuaEntityComponent>(_entity, typeId.value());
+				if (comp)
+				{
+					return comp->getReal();
+				}
 			}
 		}
 		return sol::nil;
@@ -206,51 +192,35 @@ namespace darmok
 		);
 	}
 
-	LuaScene::LuaScene(const std::shared_ptr<Scene>& scene) noexcept
-		: _scene(scene == nullptr ? std::make_shared<Scene>() : scene)
-	{
-	}
-
-	LuaScene::LuaScene(App& app) noexcept
-		: _scene(std::make_shared<Scene>())
-	{
-		_scene->init(app);
-	}
-
-	std::string LuaScene::toString() const noexcept
-	{
-		return _scene->toString();
-	}
-
-	bool LuaScene::removeSceneComponent(const sol::object& type)
+	bool LuaScene::removeSceneComponent(Scene& scene, const sol::object& type)
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return _scene->removeSceneComponent(typeId.value());
+			return scene.removeSceneComponent(typeId.value());
 		}
 		return false;
 	}
 
-	bool LuaScene::hasSceneComponent(const sol::object& type) const
+	bool LuaScene::hasSceneComponent(const Scene& scene, const sol::object& type)
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return _scene->hasSceneComponent(typeId.value());
+			return scene.hasSceneComponent(typeId.value());
 		}
 		return false;
 	}
 
-	void LuaScene::addLuaSceneComponent(const sol::table& table)
+	void LuaScene::addLuaSceneComponent(const std::shared_ptr<Scene>& scene, const sol::table& table)
 	{
-		auto comp = std::make_unique<LuaSceneComponent>(table, _scene);
-		_scene->addSceneComponent(std::move(comp));
+		auto comp = std::make_unique<LuaSceneComponent>(table, scene);
+		scene->addSceneComponent(std::move(comp));
 	}
 
-	sol::object LuaScene::getLuaSceneComponent(const sol::object& type) noexcept
+	sol::object LuaScene::getLuaSceneComponent(Scene& scene, const sol::object& type) noexcept
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			if (auto comp = _scene->getSceneComponent(typeId.value()))
+			if (auto comp = scene.getSceneComponent(typeId.value()))
 			{
 				auto& luaComp = static_cast<LuaSceneComponent&>(*comp);
 				return luaComp.getReal();
@@ -259,124 +229,98 @@ namespace darmok
 		return sol::nil;
 	}
 
-	LuaEntity LuaScene::createEntity1() noexcept
+	LuaEntity LuaScene::createEntity1(const std::shared_ptr<Scene>& scene) noexcept
 	{
-		return LuaEntity(_scene->createEntity(), _scene);
+		return LuaEntity(scene->createEntity(), scene);
 	}
 
-	LuaEntity LuaScene::createEntity2(LuaEntity& parent) noexcept
+	LuaEntity LuaScene::createEntity2(const std::shared_ptr<Scene>& scene, LuaEntity& parent) noexcept
 	{
-		auto entity = _scene->createEntity();
-		auto& parentTrans = _scene->getOrAddComponent<Transform>(parent.getReal());
-		_scene->addComponent<Transform>(entity).setParent(parentTrans);
-		return LuaEntity(entity, _scene);
+		auto entity = scene->createEntity();
+		auto& parentTrans = scene->getOrAddComponent<Transform>(parent.getReal());
+		scene->addComponent<Transform>(entity).setParent(parentTrans);
+		return LuaEntity(entity, scene);
 	}
 
-	LuaEntity LuaScene::createEntity3(Transform& parent) noexcept
+	LuaEntity LuaScene::createEntity3(const std::shared_ptr<Scene>& scene, Transform& parent) noexcept
 	{
-		auto entity = _scene->createEntity();
-		_scene->addComponent<Transform>(entity).setParent(parent);
-		return LuaEntity(entity, _scene);
+		auto entity = scene->createEntity();
+		scene->addComponent<Transform>(entity).setParent(parent);
+		return LuaEntity(entity, scene);
 	}
 
-	LuaEntity LuaScene::createEntity4(LuaEntity& parent, const VarLuaTable<glm::vec3>& position) noexcept
+	LuaEntity LuaScene::createEntity4(const std::shared_ptr<Scene>& scene, LuaEntity& parent, const VarLuaTable<glm::vec3>& position) noexcept
 	{
-		auto entity = _scene->createEntity();
-		auto& parentTrans = _scene->getOrAddComponent<Transform>(parent.getReal());
-		_scene->addComponent<Transform>(entity, parentTrans, LuaGlm::tableGet(position));
-		return LuaEntity(entity, _scene);
+		auto entity = scene->createEntity();
+		auto& parentTrans = scene->getOrAddComponent<Transform>(parent.getReal());
+		scene->addComponent<Transform>(entity, parentTrans, LuaGlm::tableGet(position));
+		return LuaEntity(entity, scene);
 	}
 
-	LuaEntity LuaScene::createEntity5(Transform& parent, const VarLuaTable<glm::vec3>& position) noexcept
+	LuaEntity LuaScene::createEntity5(const std::shared_ptr<Scene>& scene, Transform& parent, const VarLuaTable<glm::vec3>& position) noexcept
 	{
-		auto entity = _scene->createEntity();
-		_scene->addComponent<Transform>(entity, parent, LuaGlm::tableGet(position));
-		return LuaEntity(entity, _scene);
+		auto entity = scene->createEntity();
+		scene->addComponent<Transform>(entity, parent, LuaGlm::tableGet(position));
+		return LuaEntity(entity, scene);
 	}
 
-	LuaEntity LuaScene::createEntity6(const VarLuaTable<glm::vec3>& position) noexcept
+	LuaEntity LuaScene::createEntity6(const std::shared_ptr<Scene>& scene, const VarLuaTable<glm::vec3>& position) noexcept
 	{
-		auto entity = _scene->createEntity();
-		_scene->addComponent<Transform>(entity, LuaGlm::tableGet(position));
-		return LuaEntity(entity, _scene);
+		auto entity = scene->createEntity();
+		scene->addComponent<Transform>(entity, LuaGlm::tableGet(position));
+		return LuaEntity(entity, scene);
 	}
 
-	void LuaScene::destroyEntity(const LuaEntity& entity) noexcept
+	void LuaScene::destroyEntity(Scene& scene, const LuaEntity& entity) noexcept
 	{
-		_scene->destroyEntity(entity.getReal());
+		scene.destroyEntity(entity.getReal());
 	}
 
-	RenderChain& LuaScene::getRenderChain() noexcept
+	std::optional<LuaEntity> LuaScene::getEntity(const std::shared_ptr<Scene>& scene, const sol::object& comp) noexcept
 	{
-		return _scene->getRenderChain();
+		if (comp.get_type() != sol::type::userdata)
+		{
+			return std::nullopt;
+		}
+		auto typeId = LuaUtils::getTypeId(comp);
+		if (!typeId)
+		{
+			return std::nullopt;
+		}
+		auto entity = scene->getEntity(typeId.value(), comp.pointer());
+		if (entity == entt::null)
+		{
+			return std::nullopt;
+		}
+		return LuaEntity(entity, scene);
 	}
 
-	void LuaScene::setName(const std::string& name) noexcept
+	void LuaScene::setUpdateFilter(Scene& scene, const sol::object& filter) noexcept
 	{
-		_scene->setName(name);
+		scene.setUpdateFilter(LuaTypeFilter::create(filter));
 	}
 
-	const std::string& LuaScene::getName() const noexcept
+	std::optional<Viewport> LuaScene::getViewport(const Scene& scene) noexcept
 	{
-		return _scene->getName();
+		return scene.getViewport();
 	}
 
-	void LuaScene::setPaused(bool paused) noexcept
-	{
-		_scene->setPaused(paused);
-	}
-
-	bool LuaScene::getPaused() const noexcept
-	{
-		return _scene->isPaused();
-	}
-
-	const TypeFilter& LuaScene::getUpdateFilter() const noexcept
-	{
-		return _scene->getUpdateFilter();
-	}
-
-	void LuaScene::setUpdateFilter(const sol::object& filter) noexcept
-	{
-		_scene->setUpdateFilter(LuaTypeFilter::create(filter));
-	}
-
-	const std::shared_ptr<Scene>& LuaScene::getReal() const noexcept
-	{
-		return _scene;
-	}
-
-	std::shared_ptr<Scene>& LuaScene::getReal() noexcept
-	{
-		return _scene;
-	}
-
-	std::optional<Viewport> LuaScene::getViewport() const noexcept
-	{
-		return _scene->getViewport();
-	}
-
-	void LuaScene::setViewport(std::optional<VarViewport> vp) noexcept
+	void LuaScene::setViewport(Scene& scene, std::optional<VarViewport> vp) noexcept
 	{
 		if (vp)
 		{
-			_scene->setViewport(LuaViewport::tableGet(vp));
+			scene.setViewport(LuaViewport::tableGet(vp));
 		}
 		else
 		{
-			_scene->setViewport(sol::nullopt);
+			scene.setViewport(sol::nullopt);
 		}
 	}
 
-	Viewport LuaScene::getCurrentViewport() noexcept
+	bool LuaScene::forEachEntity(const std::shared_ptr<Scene>& scene, const sol::protected_function& callback)
 	{
-		return _scene->getCurrentViewport();
-	}
-
-	bool LuaScene::forEachEntity(const sol::protected_function& callback)
-	{
-		return _scene->forEachEntity([callback, this](auto entity) -> bool {
-			auto result = callback(LuaEntity(entity, _scene));
+		return scene->forEachEntity([callback, scene](auto entity) -> bool {
+			auto result = callback(LuaEntity(entity, scene));
 			return LuaEntity::checkForEachResult("for each entity", result);
 		});
 	}
@@ -402,25 +346,24 @@ namespace darmok
 		physics3d::LuaCharacterController::bind(lua);
 #endif
 
-		lua.new_usertype<LuaScene>("Scene",
-			sol::constructors<LuaScene(App&)>(),
+		lua.new_usertype<Scene>("Scene", sol::constructors<Scene(App&)>(),
 			"create_entity", sol::overload(
 				&LuaScene::createEntity1, &LuaScene::createEntity2,
 				&LuaScene::createEntity3, &LuaScene::createEntity4,
 				&LuaScene::createEntity5, &LuaScene::createEntity6),
 			"destroy_entity", &LuaScene::destroyEntity,
-			sol::meta_function::to_string, &LuaScene::toString,
+			sol::meta_function::to_string, &Scene::toString,
 			"has_component", &LuaScene::hasSceneComponent,
 			"remove_component", &LuaScene::removeSceneComponent,
 			"add_lua_component", &LuaScene::addLuaSceneComponent,
 			"get_lua_component", &LuaScene::getLuaSceneComponent,
 			"for_each_entity", &LuaScene::forEachEntity,
 			"viewport", sol::property(&LuaScene::getViewport, &LuaScene::setViewport),
-			"current_viewport", sol::property(&LuaScene::getCurrentViewport),
-			"render_chain", sol::property(&LuaScene::getRenderChain),
-			"name", sol::property(&LuaScene::getName, &LuaScene::setName),
-			"paused", sol::property(&LuaScene::getPaused, &LuaScene::setPaused),
-			"update_filter", sol::property(&LuaScene::getUpdateFilter, &LuaScene::setUpdateFilter)
+			"current_viewport", sol::property(&Scene::getCurrentViewport),
+			"render_chain", sol::property(sol::resolve<RenderChain&()>(&Scene::getRenderChain)),
+			"name", sol::property(&Scene::getName, &Scene::setName),
+			"paused", sol::property(&Scene::isPaused, &Scene::setPaused),
+			"update_filter", sol::property(&Scene::getUpdateFilter, &LuaScene::setUpdateFilter)
 		);
 	}
 
@@ -444,8 +387,7 @@ namespace darmok
 	{
 		if (auto scene = _scene.lock())
 		{
-			LuaScene luaScene(scene);
-			_initDef(_table, luaScene);
+			_initDef(_table, scene);
 		}
 	}
 
@@ -469,9 +411,9 @@ namespace darmok
 		return app.addComponent<SceneAppComponent>();
 	}
 
-	SceneAppComponent& LuaSceneAppComponent::addAppComponent2(App& app, const LuaScene& scene) noexcept
+	SceneAppComponent& LuaSceneAppComponent::addAppComponent2(App& app, const std::shared_ptr<Scene>& scene) noexcept
 	{
-		return app.addComponent<SceneAppComponent>(scene.getReal());
+		return app.addComponent<SceneAppComponent>(scene);
 	}
 
 	OptionalRef<SceneAppComponent>::std_t LuaSceneAppComponent::getAppComponent(App& app) noexcept
@@ -479,39 +421,35 @@ namespace darmok
 		return app.getComponent<SceneAppComponent>();
 	}
 
-	std::optional<LuaScene> LuaSceneAppComponent::getScene1(const SceneAppComponent& comp) noexcept
+	std::shared_ptr<Scene> LuaSceneAppComponent::getScene1(const SceneAppComponent& comp) noexcept
 	{
 		return getScene2(comp, 0);
 	}
 
-	std::optional<LuaScene> LuaSceneAppComponent::getScene2(const SceneAppComponent& comp, size_t i) noexcept
+	std::shared_ptr<Scene>LuaSceneAppComponent::getScene2(const SceneAppComponent& comp, size_t i) noexcept
 	{
-		if (auto scene = comp.getScene(i))
-		{
-			return LuaScene(scene);
-		}
-		return std::nullopt;
+		return comp.getScene(i);
 	}
 
-	SceneAppComponent& LuaSceneAppComponent::setScene1(SceneAppComponent& comp, const LuaScene& scene) noexcept
+	SceneAppComponent& LuaSceneAppComponent::setScene1(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept
 	{
 		return setScene2(comp, scene, 0);
 	}
 
-	SceneAppComponent& LuaSceneAppComponent::setScene2(SceneAppComponent& comp, const LuaScene& scene, size_t i) noexcept
+	SceneAppComponent& LuaSceneAppComponent::setScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene, size_t i) noexcept
 	{
-		comp.setScene(scene.getReal(), i);
+		comp.setScene(scene, i);
 		return comp;
 	}
 
-	LuaScene LuaSceneAppComponent::addScene1(SceneAppComponent& comp) noexcept
+	std::shared_ptr<Scene> LuaSceneAppComponent::addScene1(SceneAppComponent& comp) noexcept
 	{
-		return LuaScene(comp.addScene());
+		return comp.addScene();
 	}
 
-	SceneAppComponent& LuaSceneAppComponent::addScene2(SceneAppComponent& comp, LuaScene& scene) noexcept
+	SceneAppComponent& LuaSceneAppComponent::addScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept
 	{
-		comp.addScene(scene.getReal());
+		comp.addScene(scene);
 		return comp;
 	}
 

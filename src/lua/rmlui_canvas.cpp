@@ -200,9 +200,9 @@ namespace darmok
         return entity.getComponent<RmluiCanvas>();
     }
 
-    std::optional<LuaEntity> LuaRmluiCanvas::getEntity(const RmluiCanvas& canvas, LuaScene& scene) noexcept
+    std::optional<LuaEntity> LuaRmluiCanvas::getEntity(const RmluiCanvas& canvas, std::shared_ptr<Scene>& scene) noexcept
     {
-        return scene.getEntity(canvas);
+        return LuaScene::getEntity(scene, canvas);
     }
 
     Rml::DataModelConstructor LuaRmluiCanvas::recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept

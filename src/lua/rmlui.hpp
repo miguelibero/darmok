@@ -138,7 +138,7 @@ namespace darmok
     };
 
     class LuaEntity;
-    class LuaScene;
+    class Scene;
 
     class LuaRmluiCanvasDelegate final : public ITypeRmluiCanvasDelegate<LuaRmluiCanvasDelegate>
     {
@@ -166,7 +166,7 @@ namespace darmok
         static RmluiCanvas& addEntityComponent1(LuaEntity& entity, const std::string& name, sol::this_state ts) noexcept;
         static RmluiCanvas& addEntityComponent2(LuaEntity& entity, const std::string& name, const VarLuaTable<glm::uvec2>& size, sol::this_state ts) noexcept;
         static OptionalRef<RmluiCanvas>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-        static std::optional<LuaEntity> getEntity(const RmluiCanvas& canvas, LuaScene& scene) noexcept;
+        static std::optional<LuaEntity> getEntity(const RmluiCanvas& canvas, std::shared_ptr<Scene>& scene) noexcept;
 
         static sol::environment getEnvironment(const RmluiCanvas& canvas) noexcept;
         static std::optional<glm::uvec2> getSize(const RmluiCanvas& canvas) noexcept;
@@ -199,8 +199,8 @@ namespace darmok
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        static RmluiSceneComponent& addSceneComponent(LuaScene& scene) noexcept;
-        static OptionalRef<RmluiSceneComponent>::std_t getSceneComponent(LuaScene& scene) noexcept;
+        static RmluiSceneComponent& addSceneComponent(Scene& scene) noexcept;
+        static OptionalRef<RmluiSceneComponent>::std_t getSceneComponent(Scene& scene) noexcept;
     };
 
     class LuaRmluiRenderer final

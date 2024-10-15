@@ -13,9 +13,8 @@
 namespace darmok
 {
     class LuaEntity;
-    class LuaScene;
-    class Transform;
     class Scene;
+    class Transform;
     struct Ray;
 }
 
@@ -97,10 +96,10 @@ namespace darmok::physics3d
         static std::vector<RaycastHit> raycastAll2(const PhysicsSystem& system, const Ray& ray, float maxDistance) noexcept;
         static std::vector<RaycastHit> raycastAll3(const PhysicsSystem& system, const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
 
-        static PhysicsSystem& addSceneComponent1(LuaScene& scene) noexcept;
-        static PhysicsSystem& addSceneComponent2(LuaScene& scene, const Config& config) noexcept;
-        static PhysicsSystem& addSceneComponent3(LuaScene& scene, const Config& config, bx::AllocatorI& alloc) noexcept;
-        static OptionalRef<PhysicsSystem>::std_t getSceneComponent(LuaScene& scene) noexcept;
+        static PhysicsSystem& addSceneComponent1(Scene& scene) noexcept;
+        static PhysicsSystem& addSceneComponent2(Scene& scene, const Config& config) noexcept;
+        static PhysicsSystem& addSceneComponent3(Scene& scene, const Config& config, bx::AllocatorI& alloc) noexcept;
+        static OptionalRef<PhysicsSystem>::std_t getSceneComponent(Scene& scene) noexcept;
     };
 
     class PhysicsBody;
@@ -117,6 +116,7 @@ namespace darmok::physics3d
         static void bind(sol::state_view& lua) noexcept;
     private:
 
+        static OptionalRef<PhysicsSystem>::std_t getSystem(PhysicsBody& body) noexcept;
         static void setPosition(PhysicsBody& body, const VarLuaTable<glm::vec3>& pos);
         static void setRotation(PhysicsBody& body, const VarLuaTable<glm::quat>& rot);
         static void setLinearVelocity(PhysicsBody& body, const VarLuaTable<glm::vec3>& velocity);
@@ -138,6 +138,6 @@ namespace darmok::physics3d
         static PhysicsBody& addEntityComponent4(LuaEntity& entity, const Config& config) noexcept;
         static PhysicsBody& addEntityComponent5(LuaEntity& entity, const CharacterConfig& config) noexcept;
         static OptionalRef<PhysicsBody>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-        static std::optional<LuaEntity> getEntity(const PhysicsBody& body, LuaScene& scene) noexcept;
+        static std::optional<LuaEntity> getEntity(const PhysicsBody& body, const std::shared_ptr<Scene>& scene) noexcept;
     };
 }

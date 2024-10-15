@@ -5,14 +5,14 @@
 
 namespace darmok
 {
-    FreelookController& LuaFreelookController::LuaFreelookController::addSceneComponent1(LuaScene& scene, Camera& cam) noexcept
+    FreelookController& LuaFreelookController::LuaFreelookController::addSceneComponent1(Scene& scene, Camera& cam) noexcept
     {
-        return scene.getReal()->addSceneComponent<FreelookController>(cam);
+        return scene.addSceneComponent<FreelookController>(cam);
     }
 
-    FreelookController& LuaFreelookController::addSceneComponent2(LuaScene& scene, Camera& cam, const Config& config) noexcept
+    FreelookController& LuaFreelookController::addSceneComponent2(Scene& scene, Camera& cam, const Config& config) noexcept
     {
-        return scene.getReal()->addSceneComponent<FreelookController>(cam, config);
+        return scene.addSceneComponent<FreelookController>(cam, config);
     }
 
     void LuaFreelookController::bind(sol::state_view& lua) noexcept

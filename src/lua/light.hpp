@@ -10,7 +10,7 @@ namespace darmok
 {
     class PointLight;
 	class LuaEntity;
-	class LuaScene;
+	class Scene;
 
 	class LuaPointLight final
 	{
@@ -24,7 +24,7 @@ namespace darmok
 		static PointLight& addEntityComponent1(LuaEntity& entity) noexcept;
 		static PointLight& addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
 		static OptionalRef<PointLight>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const PointLight& light, LuaScene& scene) noexcept;
+		static std::optional<LuaEntity> getEntity(const PointLight& light, const std::shared_ptr<Scene>& scene) noexcept;
 	};
 
 	class DirectionalLight;
@@ -39,7 +39,7 @@ namespace darmok
 		static DirectionalLight& addEntityComponent1(LuaEntity& entity) noexcept;
 		static DirectionalLight& addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
 		static OptionalRef<DirectionalLight>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const DirectionalLight& light, LuaScene& scene) noexcept;
+		static std::optional<LuaEntity> getEntity(const DirectionalLight& light, const std::shared_ptr<Scene>& scene) noexcept;
 	};
 
 	class AmbientLight;
@@ -54,7 +54,7 @@ namespace darmok
 		static AmbientLight& addEntityComponent1(LuaEntity& entity) noexcept;
 		static AmbientLight& addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
 		static OptionalRef<AmbientLight>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const AmbientLight& light, LuaScene& scene) noexcept;
+		static std::optional<LuaEntity> getEntity(const AmbientLight& light, const std::shared_ptr<Scene>& scene) noexcept;
 	};
 
 	class LightingRenderComponent;

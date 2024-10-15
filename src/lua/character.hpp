@@ -55,6 +55,6 @@ namespace darmok::physics3d
 		static CharacterController& addEntityComponent1(LuaEntity& entity, const Config& config) noexcept;
 		static CharacterController& addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept;
 		static OptionalRef<CharacterController>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const CharacterController& ctrl, LuaScene& scene) noexcept;
+		static std::optional<LuaEntity> getEntity(const CharacterController& ctrl, const std::shared_ptr<Scene>& scene) noexcept;
 	};
 }

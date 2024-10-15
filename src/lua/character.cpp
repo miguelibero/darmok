@@ -66,9 +66,9 @@ namespace darmok::physics3d
 		return entity.getComponent<CharacterController>();
 	}
 
-	std::optional<LuaEntity> LuaCharacterController::getEntity(const CharacterController& ctrl, LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaCharacterController::getEntity(const CharacterController& ctrl, const std::shared_ptr<Scene>& scene) noexcept
 	{
-		return scene.getEntity(ctrl);
+		return LuaScene::getEntity(scene, ctrl);
 	}
 
 	void LuaCharacterController::setDelegate(CharacterController& ctrl, const sol::table& table) noexcept

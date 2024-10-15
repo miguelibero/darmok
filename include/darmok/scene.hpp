@@ -37,6 +37,7 @@ namespace darmok
         }
     };
 
+    class App;
     class SceneImpl;
     class RenderGraphDefinition;
     class RenderChain;
@@ -47,6 +48,7 @@ namespace darmok
     {
     public:
         Scene() noexcept;
+        Scene(App& app) noexcept;
         ~Scene() noexcept;
 
         std::string toString() const noexcept;
@@ -123,6 +125,7 @@ namespace darmok
         Entity createEntity() noexcept;
         void destroyEntity(Entity entity) noexcept;
         bool isValidEntity(Entity entity) const noexcept;
+        Entity getEntity(entt::id_type type, const void* ptr) noexcept;
 
         template<typename T>
         auto getComponents() const noexcept
@@ -170,6 +173,7 @@ namespace darmok
             });
             return it != end;
         }
+
 
         template<typename T>
 		Entity getEntity(const T& component) noexcept

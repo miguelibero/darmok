@@ -58,9 +58,9 @@ namespace darmok
 		LuaModelSceneConfigurer::bind(lua);
 	}
 
-	LuaModelSceneConfigurer::LuaModelSceneConfigurer(const LuaScene& scene, AssetContext& assets) noexcept
-		: _configurer(*scene.getReal(), assets)
-		, _scene(scene.getReal())
+	LuaModelSceneConfigurer::LuaModelSceneConfigurer(const std::shared_ptr<Scene>& scene, AssetContext& assets) noexcept
+		: _configurer(*scene, assets)
+		, _scene(scene)
 	{
 	}
 
@@ -79,7 +79,7 @@ namespace darmok
 	void LuaModelSceneConfigurer::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<LuaModelSceneConfigurer>("ModelSceneConfigurer",
-			sol::constructors<LuaModelSceneConfigurer(const LuaScene&, AssetContext&)>(),
+			sol::constructors<LuaModelSceneConfigurer(const std::shared_ptr<Scene>&, AssetContext&)>(),
 			"parent", sol::property(&LuaModelSceneConfigurer::setParent),
 			"texture_flags", sol::property(&LuaModelSceneConfigurer::setTextureFlags),
 			sol::meta_function::call, sol::overload(

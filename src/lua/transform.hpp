@@ -12,7 +12,7 @@ namespace darmok
 {
     class Transform;
 	class LuaEntity;
-	class LuaScene;
+	class Scene;
 
     class LuaTransform final
 	{
@@ -25,7 +25,7 @@ namespace darmok
 		static Transform& addEntityComponent3(LuaEntity& entity, Transform& parent, const VarLuaTable<glm::vec3>& pos) noexcept;
 		static Transform& addEntityComponent4(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept;
 		static OptionalRef<Transform>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const Transform& trans, LuaScene& scene) noexcept;
+		static std::optional<LuaEntity> getEntity(const Transform& trans, std::shared_ptr<Scene>& scene) noexcept;
 
 		static OptionalRef<Transform>::std_t getParent(Transform& trans) noexcept;
 		static void setParent(Transform& trans, OptionalRef<Transform>::std_t parent) noexcept;

@@ -377,6 +377,12 @@ namespace darmok
     {
     }
 
+    Scene::Scene(App& app) noexcept
+        : Scene()
+    {
+        init(app);
+    }
+
     Scene::~Scene() noexcept
     {
     }
@@ -419,6 +425,23 @@ namespace darmok
     bool Scene::isValidEntity(Entity entity) const noexcept
     {
         return getRegistry().valid(entity);
+    }
+
+    Entity Scene::getEntity(entt::id_type type, const void* ptr) noexcept
+    {
+        auto storage = getRegistry().storage(type);
+        if (!storage)
+        {
+            return entt::null;
+        }
+        for (auto itr = storage->rbegin(), last = storage->rend(); itr < last; ++itr)
+        {
+            if (storage->value(*itr) == ptr)
+            {
+                return *itr;
+            }
+        }
+        return entt::null;
     }
 
     EntityRuntimeView Scene::createEntityRuntimeView(const TypeFilter& filter) const noexcept

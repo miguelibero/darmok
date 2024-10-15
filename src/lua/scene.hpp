@@ -35,8 +35,7 @@ namespace darmok
 		LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept;
 		
 		const Entity& getReal() const noexcept;
-		LuaScene getScene() const;
-		std::weak_ptr<Scene> getWeakScene() const noexcept;
+		std::shared_ptr<Scene> getScene() const;
 
 		bool operator==(const LuaEntity& other) const noexcept;
 		bool operator!=(const LuaEntity& other) const noexcept;
@@ -44,13 +43,17 @@ namespace darmok
 		template<typename T, typename... Args>
 		T& addComponent(Args&&... args)
 		{
-			return getRealScene().addComponent<T>(_entity, std::forward<Args>(args)...);
+			return getScene()->addComponent<T>(_entity, std::forward<Args>(args)...);
 		}
 
 		template<typename T>
-		OptionalRef<T> getComponent()
+		OptionalRef<T> getComponent() noexcept
 		{
-			return getRealScene().getComponent<T>(_entity);
+			if (auto scene = _scene.lock())
+			{
+				return scene->getComponent<T>(_entity);
+			}
+			return nullptr;
 		}
 
 		static void bind(sol::state_view& lua) noexcept;
@@ -60,13 +63,10 @@ namespace darmok
 		Entity _entity;
 		std::weak_ptr<Scene> _scene;
 
-		Scene& getRealScene();
-		const Scene& getRealScene() const;
-
 		std::string toString() const noexcept;
 		bool isValid() const noexcept;
-		bool removeComponent(const sol::object& type);
-		bool hasComponent(const sol::object& type) const;
+		bool removeComponent(const sol::object& type) noexcept;
+		bool hasComponent(const sol::object& type) const noexcept;
 		void addLuaComponent(const sol::table& comp);
 		sol::object getLuaComponent(const sol::object& type) noexcept;
 
@@ -80,57 +80,38 @@ namespace darmok
 	class LuaScene final
 	{
 	public:
-		LuaScene(const std::shared_ptr<Scene>& scene) noexcept;
-		LuaScene(App& app) noexcept;
-
 		template<typename T>
-		std::optional<LuaEntity> getEntity(const T& component) noexcept
+		static std::optional<LuaEntity> getEntity(const std::shared_ptr<Scene>& scene, const T& component) noexcept
 		{
-			auto entity = _scene->getEntity(component);
+			auto entity = scene->getEntity(component);
 			if (entity == entt::null)
 			{
 				return std::nullopt;
 			}
-			return LuaEntity(entity, _scene);
+			return LuaEntity(entity, scene);
 		}
-
-		const std::shared_ptr<Scene>& getReal() const noexcept;
-		std::shared_ptr<Scene>& getReal() noexcept;
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		std::shared_ptr<Scene> _scene;
+		static bool removeSceneComponent(Scene& scene, const sol::object& type);
+		static bool hasSceneComponent(const Scene& scene, const sol::object& type);
+		static void addLuaSceneComponent(const std::shared_ptr<Scene>& scene, const sol::table& table);
+		static sol::object getLuaSceneComponent(Scene& scene, const sol::object& type) noexcept;
 
-		bool removeSceneComponent(const sol::object& type);
-		bool hasSceneComponent(const sol::object& type) const;
-		void addLuaSceneComponent(const sol::table& table);
-		sol::object getLuaSceneComponent(const sol::object& type) noexcept;
+		static LuaEntity createEntity1(const std::shared_ptr<Scene>& scene) noexcept;
+		static LuaEntity createEntity2(const std::shared_ptr<Scene>& scene, LuaEntity& parent) noexcept;
+		static LuaEntity createEntity3(const std::shared_ptr<Scene>& scene, Transform& parent) noexcept;
+		static LuaEntity createEntity4(const std::shared_ptr<Scene>& scene, LuaEntity& parent, const VarLuaTable<glm::vec3>& position) noexcept;
+		static LuaEntity createEntity5(const std::shared_ptr<Scene>& scene, Transform& parent, const VarLuaTable<glm::vec3>& position) noexcept;
+		static LuaEntity createEntity6(const std::shared_ptr<Scene>& scene, const VarLuaTable<glm::vec3>& position) noexcept;
+		static void destroyEntity(Scene& scene, const LuaEntity& entity) noexcept;
+		static std::optional<LuaEntity> getEntity(const std::shared_ptr<Scene>& scene, const sol::object& comp) noexcept;
 
-		std::string toString() const noexcept;
-		LuaEntity createEntity1() noexcept;
-		LuaEntity createEntity2(LuaEntity& parent) noexcept;
-		LuaEntity createEntity3(Transform& parent) noexcept;
-		LuaEntity createEntity4(LuaEntity& parent, const VarLuaTable<glm::vec3>& position) noexcept;
-		LuaEntity createEntity5(Transform& parent, const VarLuaTable<glm::vec3>& position) noexcept;
-		LuaEntity createEntity6(const VarLuaTable<glm::vec3>& position) noexcept;
+		static std::optional<Viewport> getViewport(const Scene& scene) noexcept;
+		static void setViewport(Scene& scene, std::optional<VarViewport> vp) noexcept;
+		static void setUpdateFilter(Scene& scene, const sol::object& filter) noexcept;
 
-		void destroyEntity(const LuaEntity& entity) noexcept;
-
-		std::optional<Viewport> getViewport() const noexcept;
-		void setViewport(std::optional<VarViewport> vp) noexcept;
-		Viewport getCurrentViewport() noexcept;
-		RenderChain& getRenderChain() noexcept;
-
-		void setName(const std::string& name) noexcept;
-		const std::string& getName() const noexcept;
-
-		void setPaused(bool paused) noexcept;
-		bool getPaused() const noexcept;
-
-		const TypeFilter& getUpdateFilter() const noexcept;
-		void setUpdateFilter(const sol::object& filter) noexcept;
-
-		bool forEachEntity(const sol::protected_function& callback);
+		static bool forEachEntity(const std::shared_ptr<Scene>& scene, const sol::protected_function& callback);
 	};
 
 	class LuaSceneComponent final : public ITypeSceneComponent<LuaSceneComponent>
@@ -163,13 +144,13 @@ namespace darmok
 	private:
 
 		static SceneAppComponent& addAppComponent1(App& app) noexcept;
-		static SceneAppComponent& addAppComponent2(App& app, const LuaScene& scene) noexcept;
+		static SceneAppComponent& addAppComponent2(App& app, const std::shared_ptr<Scene>& scene) noexcept;
 		static OptionalRef<SceneAppComponent>::std_t getAppComponent(App& app) noexcept;
-		static std::optional<LuaScene> getScene1(const SceneAppComponent& comp) noexcept;
-		static std::optional<LuaScene> getScene2(const SceneAppComponent& comp, size_t i) noexcept;
-		static LuaScene addScene1(SceneAppComponent& comp) noexcept;
-		static SceneAppComponent& addScene2(SceneAppComponent& comp, LuaScene& scene) noexcept;
-		static SceneAppComponent& setScene1(SceneAppComponent& comp, const LuaScene& scene) noexcept;
-		static SceneAppComponent& setScene2(SceneAppComponent& comp, const LuaScene& scene, size_t i) noexcept;
+		static std::shared_ptr<Scene> getScene1(const SceneAppComponent& comp) noexcept;
+		static std::shared_ptr<Scene> getScene2(const SceneAppComponent& comp, size_t i) noexcept;
+		static std::shared_ptr<Scene> addScene1(SceneAppComponent& comp) noexcept;
+		static SceneAppComponent& addScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept;
+		static SceneAppComponent& setScene1(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept;
+		static SceneAppComponent& setScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene, size_t i) noexcept;
 	};
 }

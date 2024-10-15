@@ -26,9 +26,9 @@ namespace darmok
 		return entity.getComponent<PointLight>();
 	}
 
-	std::optional<LuaEntity> LuaPointLight::getEntity(const PointLight& light, LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaPointLight::getEntity(const PointLight& light, const std::shared_ptr<Scene>& scene) noexcept
 	{
-		return scene.getEntity(light);
+		return LuaScene::getEntity(scene, light);
 	}
 
 	void LuaPointLight::bind(sol::state_view& lua) noexcept
@@ -67,9 +67,9 @@ namespace darmok
 		return entity.getComponent<DirectionalLight>();
 	}
 
-	std::optional<LuaEntity> LuaDirectionalLight::getEntity(const DirectionalLight& light, LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaDirectionalLight::getEntity(const DirectionalLight& light, const std::shared_ptr<Scene>& scene) noexcept
 	{
-		return scene.getEntity(light);
+		return LuaScene::getEntity(scene, light);
 	}
 
 	void LuaDirectionalLight::bind(sol::state_view& lua) noexcept
@@ -108,9 +108,9 @@ namespace darmok
 		return entity.getComponent<AmbientLight>();
 	}
 
-	std::optional<LuaEntity> LuaAmbientLight::getEntity(const AmbientLight& light, LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaAmbientLight::getEntity(const AmbientLight& light, const std::shared_ptr<Scene>& scene) noexcept
 	{
-		return scene.getEntity(light);
+		return LuaScene::getEntity(scene, light);
 	}
 
 	void LuaAmbientLight::bind(sol::state_view& lua) noexcept

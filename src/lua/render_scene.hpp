@@ -10,7 +10,7 @@ namespace darmok
 {
     class Renderable;
 	class LuaEntity;
-	class LuaScene;
+	class Scene;
     class IMesh;
     class Texture;
     class Material;
@@ -29,6 +29,6 @@ namespace darmok
 		static Renderable& addEntityComponent4(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& texture) noexcept;
 		static Renderable& addEntityComponent5(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& prog, const Color& color) noexcept;
 		static OptionalRef<Renderable>::std_t getEntityComponent(LuaEntity& entity) noexcept;
-		static std::optional<LuaEntity> getEntity(const Renderable& renderable, LuaScene& scene) noexcept;
+		static std::optional<LuaEntity> getEntity(const Renderable& renderable, const std::shared_ptr<Scene>& scene) noexcept;
 	};
 }

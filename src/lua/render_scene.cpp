@@ -38,9 +38,9 @@ namespace darmok
 		return entity.getComponent<Renderable>();
 	}
 
-	std::optional<LuaEntity> LuaRenderable::getEntity(const Renderable& renderable, LuaScene& scene) noexcept
+	std::optional<LuaEntity> LuaRenderable::getEntity(const Renderable& renderable, const std::shared_ptr<Scene>& scene) noexcept
 	{
-		return scene.getEntity(renderable);
+		return LuaScene::getEntity(scene, renderable);
 	}
 
 	void LuaRenderable::bind(sol::state_view& lua) noexcept
