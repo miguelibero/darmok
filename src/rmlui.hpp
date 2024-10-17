@@ -11,6 +11,7 @@
 #include <darmok/rmlui_fwd.hpp>
 #include <darmok/collection.hpp>
 #include <darmok/render_chain.hpp>
+#include <darmok/material.hpp>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -94,6 +95,20 @@ namespace darmok
 		void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 
+		/* https://mikke89.github.io/RmlUiDoc/pages/cpp_manual/interfaces/render.html
+		void RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f trans) noexcept override;
+		Rml::LayerHandle PushLayer() noexcept override;
+		void CompositeLayers(Rml::LayerHandle source, Rml::LayerHandle destination, Rml::BlendMode blendMode, Rml::Span<const Rml::CompiledFilterHandle> filters) noexcept override;
+		void PopLayer() noexcept override;
+		Rml::TextureHandle SaveLayerAsTexture() noexcept override;
+		Rml::CompiledFilterHandle SaveLayerAsMaskImage() noexcept override;
+		Rml::CompiledFilterHandle CompileFilter(const Rml::String& name, const Rml::Dictionary& params) noexcept override;
+		void ReleaseFilter(Rml::CompiledFilterHandle filter) noexcept override;
+		Rml::CompiledShaderHandle CompileShader(const Rml::String& name, const Rml::Dictionary& params) noexcept override;
+		void RenderShader(Rml::CompiledShaderHandle shader, Rml::CompiledGeometryHandle geometry, Rml::Vector2f trans, Rml::TextureHandle texture) noexcept override;
+		void ReleaseShader(Rml::CompiledShaderHandle shader) noexcept override;
+		*/
+
 		void renderCanvas(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept;
 		void renderFrame(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept;
 
@@ -110,6 +125,8 @@ namespace darmok
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
 		OptionalRef<IRenderGraphContext> _context;
+		std::unordered_map<Rml::CompiledFilterHandle, Material> _filterMaterials;
+		std::unordered_map<Rml::CompiledShaderHandle, Material> _shaderMaterials;
 
 		OptionalRef<Texture> getSpriteTexture(const Rml::Sprite& sprite) noexcept;
 		glm::mat4 getTransformMatrix(const glm::vec2& position);

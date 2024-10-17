@@ -197,6 +197,9 @@ namespace darmok::physics3d
         void shutdown() noexcept;
         void update(float deltaTime);
 
+        bool isPaused() const noexcept;
+        void setPaused(bool paused) noexcept;
+
         void addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
         void addUpdater(IPhysicsUpdater& updater) noexcept;
         bool removeUpdater(const IPhysicsUpdater& updater) noexcept;
@@ -246,6 +249,7 @@ namespace darmok::physics3d
         JoltJobSystemTaskflow _jobSystem;
         OwnRefCollection<IPhysicsUpdater> _updaters;
         OwnRefCollection<ICollisionListener> _listeners;
+        bool _paused;
 
         enum class CollisionEventType
         {

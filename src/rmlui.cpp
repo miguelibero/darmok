@@ -262,6 +262,126 @@ namespace darmok
             _trans *= RmluiUtils::convert(*transform);
         }
     }
+    
+    /*
+
+    // https://github.com/mikke89/RmlUi/blob/master/Backends/RmlUi_Renderer_GL2.cpp#L163
+    void RmluiRenderInterface::RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f trans) noexcept
+    {
+        if (!_context)
+        {
+            return;
+        }
+        auto& encoder = _context->getEncoder();
+
+        uint32_t failKeep = BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP;
+
+        switch (operation)
+        {
+        case Rml::ClipMaskOperation::Set:
+            encoder.setStencil(failKeep | BGFX_STENCIL_FUNC_REF(1) | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+        break;
+        case Rml::ClipMaskOperation::SetInverse:
+            encoder.setStencil(failKeep | BGFX_STENCIL_FUNC_REF(0) | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+        break;
+        case Rml::ClipMaskOperation::Intersect:
+            encoder.setStencil(failKeep | BGFX_STENCIL_OP_PASS_Z_INCR);
+        break;
+        }
+
+        RenderGeometry(geometry, trans, {});
+    }
+
+    Rml::LayerHandle RmluiRenderInterface::PushLayer() noexcept
+    {
+
+    }
+
+    void RmluiRenderInterface::CompositeLayers(Rml::LayerHandle source, Rml::LayerHandle destination, Rml::BlendMode blendMode, Rml::Span<const Rml::CompiledFilterHandle> filters) noexcept
+    {
+
+    }
+
+    void RmluiRenderInterface::PopLayer() noexcept
+    {
+
+    }
+
+    Rml::TextureHandle RmluiRenderInterface::SaveLayerAsTexture() noexcept
+    {
+
+    }
+
+    Rml::CompiledFilterHandle RmluiRenderInterface::SaveLayerAsMaskImage() noexcept
+    {
+
+    }
+
+    Rml::CompiledFilterHandle RmluiRenderInterface::CompileFilter(const Rml::String& name, const Rml::Dictionary& params) noexcept
+    {
+        auto prog = _app.getAssets().getProgramLoader()(name);
+        Rml::CompiledFilterHandle handle = randomIdType();
+        auto& mat = _filterMaterials.emplace(handle, prog).first->second;
+        return handle;
+    }
+
+    void RmluiRenderInterface::ReleaseFilter(Rml::CompiledFilterHandle filter) noexcept
+    {
+        _filterMaterials.erase(filter);
+    }
+
+    Rml::CompiledShaderHandle RmluiRenderInterface::CompileShader(const Rml::String& name, const Rml::Dictionary& params) noexcept
+    {
+        auto prog = _app.getAssets().getProgramLoader()(name);
+        Rml::CompiledShaderHandle handle = randomIdType();
+        auto& mat = _shaderMaterials.emplace(handle, prog).first->second;
+        return handle;
+    }
+    
+    void RmluiRenderInterface::RenderShader(Rml::CompiledShaderHandle shader, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept
+    {
+        if (!_context)
+        {
+            return;
+        }
+        auto meshItr = _meshes.find(geometry);
+        if (meshItr == _meshes.end())
+        {
+            return;
+        }
+
+        auto matItr = _shaderMaterials.find(shader);
+        if (matItr == _shaderMaterials.end())
+        {
+            return;
+        }
+
+        auto& encoder = _context->getEncoder();
+
+        meshItr->second->render(encoder);
+        auto viewId = _context->getViewId();
+
+        OptionalRef<Texture> tex;
+        auto texItr = _textures.find(texture);
+        if (texItr != _textures.end())
+        {
+            tex = texItr->second.get();
+        }
+
+        auto position = RmluiUtils::convert(translation);
+        auto trans = getTransformMatrix(position);
+        encoder.setTransform(glm::value_ptr(trans));
+
+        auto& matComp = _app.getOrAddComponent<MaterialAppComponent>();
+        matComp.renderSubmit(viewId, encoder, matItr->second);
+    }
+
+    void RmluiRenderInterface::ReleaseShader(Rml::CompiledShaderHandle shader) noexcept
+    {
+        _shaderMaterials.erase(shader);
+    }
+
+    */
 
     glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position)
     {

@@ -130,6 +130,9 @@ namespace darmok::physics3d
 
         glm::vec3 getGravity() const;
 
+        bool isPaused() const noexcept;
+        PhysicsSystem& setPaused(bool paused) noexcept;
+
         void init(Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;

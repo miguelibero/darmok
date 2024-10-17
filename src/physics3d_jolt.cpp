@@ -389,6 +389,7 @@ namespace darmok::physics3d
         , _config(config)
         , _deltaTimeRest(0.F)
         , _broadPhaseLayer(config.layers)
+        , _paused(false)
     {
         JPH::RegisterDefaultAllocator();
         JPH::Trace = joltTraceImpl;
@@ -498,6 +499,10 @@ namespace darmok::physics3d
     
     void PhysicsSystemImpl::update(float deltaTime)
     {
+        if (_paused)
+        {
+            return;
+        }
         if (!_joltSystem)
         {
             return;
@@ -626,6 +631,16 @@ namespace darmok::physics3d
     glm::vec3 PhysicsSystemImpl::getGravity() noexcept
     {
         return JoltUtils::convert(_joltSystem->GetGravity());
+    }
+
+    bool PhysicsSystemImpl::isPaused() const noexcept
+    {
+        return _paused;
+    }
+
+    void PhysicsSystemImpl::setPaused(bool paused) noexcept
+    {
+        _paused = paused;
     }
 
     void PhysicsSystemImpl::setRootTransform(OptionalRef<Transform> root) noexcept
@@ -902,6 +917,17 @@ namespace darmok::physics3d
     glm::vec3 PhysicsSystem::getGravity() const
     {
         return _impl->getGravity();
+    }
+
+    bool PhysicsSystem::isPaused() const noexcept
+    {
+        return _impl->isPaused();
+    }
+
+    PhysicsSystem& PhysicsSystem::setPaused(bool paused) noexcept
+    {
+        _impl->setPaused(paused);
+        return *this;
     }
     
     void PhysicsSystem::init(Scene& scene, App& app) noexcept

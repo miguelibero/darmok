@@ -57,7 +57,7 @@ namespace darmok
 		{
 			return type.template as<entt::id_type>();
 		}
-		if (luaType == sol::type::table)
+		if (type.is<sol::table>())
 		{
 			auto table = type.as<sol::table>();
 			auto cls = table["class"];
@@ -71,9 +71,9 @@ namespace darmok
 			{
 				return entry.get<entt::id_type>();
 			}
-			if (entryType == sol::type::table)
+			if (entry.is<sol::reference>())
 			{
-				return ptrTypeId(entry.get<sol::table>().pointer());
+				return ptrTypeId(entry.get<sol::reference>().pointer());
 			}
 			return ptrTypeId(table.pointer());
 		}

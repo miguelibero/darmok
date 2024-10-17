@@ -434,9 +434,12 @@ namespace darmok
         {
             return entt::null;
         }
+
+        // TODO: check why this does not work
         for (auto itr = storage->rbegin(), last = storage->rend(); itr < last; ++itr)
         {
-            if (storage->value(*itr) == ptr)
+            auto comp = storage->value(*itr);
+            if (comp == ptr)
             {
                 return *itr;
             }

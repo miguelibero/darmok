@@ -278,6 +278,7 @@ namespace darmok
 
 	std::optional<LuaEntity> LuaScene::getEntity(const std::shared_ptr<Scene>& scene, const sol::object& comp) noexcept
 	{
+		// TODO: check why this does not work
 		if (comp.get_type() != sol::type::userdata)
 		{
 			return std::nullopt;
@@ -287,7 +288,7 @@ namespace darmok
 		{
 			return std::nullopt;
 		}
-		auto entity = scene->getEntity(typeId.value(), comp.pointer());
+		auto entity = scene->getEntity(typeId.value(), comp.as<void*>());
 		if (entity == entt::null)
 		{
 			return std::nullopt;
@@ -352,6 +353,7 @@ namespace darmok
 				&LuaScene::createEntity3, &LuaScene::createEntity4,
 				&LuaScene::createEntity5, &LuaScene::createEntity6),
 			"destroy_entity", &LuaScene::destroyEntity,
+			// "get_entity", sol::resolve<std::optional<LuaEntity>(const std::shared_ptr<Scene>&, const sol::object&)>(&LuaScene::getEntity),
 			sol::meta_function::to_string, &Scene::toString,
 			"has_component", &LuaScene::hasSceneComponent,
 			"remove_component", &LuaScene::removeSceneComponent,
