@@ -282,11 +282,7 @@ namespace darmok
 		{
 			updateStep(i - 1);
 		}
-		else
-		{
-			_delegate.onRenderChainInputChanged();
-		}
-
+		_delegate.onRenderChainChanged();
 		return *this;
 	}
 
@@ -332,11 +328,7 @@ namespace darmok
 		{
 			updateStep(i - 1);
 		}
-		else
-		{
-			_delegate.onRenderChainInputChanged();
-		}
-
+		_delegate.onRenderChainChanged();
 		return true;
 	}
 

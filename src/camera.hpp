@@ -136,7 +136,7 @@ namespace darmok
 
         Viewport getRenderChainViewport() const noexcept override;
         OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
-        void onRenderChainInputChanged() noexcept override;
+        void onRenderChainChanged() noexcept override;
 
         void doSetProjectionMatrix(const glm::mat4& matrix) noexcept;
         glm::mat4 getScreenModelMatrix() const noexcept;

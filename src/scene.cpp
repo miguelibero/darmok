@@ -122,7 +122,7 @@ namespace darmok
         _viewport = vp;
         if (_app)
         {
-            _app->renderReset();
+            _app->requestRenderReset();
         }
     }
 
@@ -194,11 +194,11 @@ namespace darmok
         return getCurrentViewport();
     }
 
-    void SceneImpl::onRenderChainInputChanged() noexcept
+    void SceneImpl::onRenderChainChanged() noexcept
     {
         if (_app)
         {
-            _app->renderReset();
+            _app->requestRenderReset();
         }
     }
 
@@ -234,10 +234,12 @@ namespace darmok
     {
         _registry.clear();
 
-        auto components = Components(_components);
-        for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
         {
-            (*itr)->shutdown();
+            auto components = Components(_components);
+            for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
+            {
+                (*itr)->shutdown();
+            }
         }
         _renderChain.shutdown();
 
@@ -250,12 +252,22 @@ namespace darmok
     bgfx::ViewId SceneImpl::renderReset(bgfx::ViewId viewId)
     {
         _renderChain.beforeRenderReset();
+
+        {
+            auto components = Components(_components);
+            for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
+            {
+                viewId = (*itr)->renderReset(viewId);
+            }
+        }
+
         // iteration in reverse to maintain the order in wich the cameras where added
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
             viewId = itr->getImpl().renderReset(viewId);
         }
+
         viewId = _renderChain.renderReset(viewId);
         return viewId;
     }

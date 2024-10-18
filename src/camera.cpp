@@ -207,10 +207,12 @@ namespace darmok
 
     void CameraImpl::shutdown()
     {
-        auto components = Components(_components);
-        for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
         {
-            (*itr)->shutdown();
+            auto components = Components(_components);
+            for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
+            {
+                (*itr)->shutdown();
+            }
         }
         _renderChain.shutdown();
     }
@@ -487,11 +489,11 @@ namespace darmok
         return nullptr;
     }
 
-    void CameraImpl::onRenderChainInputChanged() noexcept
+    void CameraImpl::onRenderChainChanged() noexcept
     {
         if (_app)
         {
-            _app->renderReset();
+            _app->requestRenderReset();
         }
     }
 

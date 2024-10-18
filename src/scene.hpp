@@ -84,7 +84,7 @@ namespace darmok
         void onCameraDestroyed(EntityRegistry& registry, Entity entity);
 
         Viewport getRenderChainViewport() const noexcept override;
-        void onRenderChainInputChanged() noexcept override;
+        void onRenderChainChanged() noexcept override;
         void destroyPendingEntities() noexcept;
     };
 }

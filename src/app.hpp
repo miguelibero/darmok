@@ -109,7 +109,7 @@ namespace darmok
 		void init();
 		void update(float deltaTime);
 		void render() const;
-		void renderReset();
+		void requestRenderReset();
 		AppRunResult processEvents();
 		void shutdown();
 		void quit() noexcept;
@@ -195,6 +195,7 @@ namespace darmok
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void setNextRenderer();
 		void requestNextVideoMode();
+		void renderReset();
 
 		static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
 
@@ -205,6 +206,7 @@ namespace darmok
 		AppRunResult _runResult;
 		bool _running;
 		bool _paused;
+		bool _renderReset;
 		glm::uvec2 _pixelSize;
 		VideoMode _videoMode;
 		uint32_t _debugFlags;

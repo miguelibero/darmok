@@ -144,7 +144,7 @@ namespace darmok
 		~App() noexcept;
 		std::optional<int32_t> setup(const std::vector<std::string>& args);
 		void init();
-		void renderReset();
+		void requestRenderReset();
 		void shutdown();
 		AppRunResult run();
 

@@ -167,6 +167,7 @@ namespace darmok
 		, _runResult(AppRunResult::Continue)
 		, _running(false)
 		, _paused(false)
+		, _renderReset(false)
 		, _debugFlags(BGFX_DEBUG_NONE)
 		, _resetFlags(BGFX_RESET_NONE)
 		, _clearColor(Colors::fromNumber(0x303030ff))
@@ -349,6 +350,7 @@ namespace darmok
 		_audio.getImpl().init();
 
 		_running = true;
+		_renderReset = true;
 
 		for (auto comp : Components(_components))
 		{
@@ -359,8 +361,6 @@ namespace darmok
 		{
 			_delegate->init();
 		}
-
-		renderReset();
 	}
 
 	void AppImpl::shutdown()
@@ -378,10 +378,12 @@ namespace darmok
 
 		_running = false;
 
-		auto components = Components(_components);
-		for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
 		{
-			(*itr)->shutdown();
+			auto components = Components(_components);
+			for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
+			{
+				(*itr)->shutdown();
+			}
 		}
 		_components.clear();
 		_updaters.clear();
@@ -456,13 +458,29 @@ namespace darmok
 			_pixelSize = pixelSize;
 			_videoMode = videoMode;
 			_activeResetFlags = _resetFlags;
+			_renderReset = true;
+		}
+		if (_renderReset)
+		{
+			_renderReset = false;
 			renderReset();
 		}
+	}
+
+	void AppImpl::requestRenderReset()
+	{
+		_renderReset = true;
 	}
 
 	void AppImpl::renderReset()
 	{
 		bgfx::reset(_pixelSize.x, _pixelSize.y, _activeResetFlags);
+
+		auto numViews = bgfx::getCaps()->limits.maxViews;
+		for (bgfx::ViewId i = 0; i < numViews; ++i)
+		{
+			bgfx::resetView(i);
+		}
 
 		bgfx::ViewId viewId = 0;
 
@@ -945,9 +963,9 @@ namespace darmok
 		_impl->quit();
 	}
 
-	void App::renderReset()
+	void App::requestRenderReset()
 	{
-		_impl->renderReset();
+		_impl->requestRenderReset();
 	}
 
 	void App::setUpdateConfig(const AppUpdateConfig& config) noexcept
