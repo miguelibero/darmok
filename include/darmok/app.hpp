@@ -189,6 +189,15 @@ namespace darmok
 		bool removeUpdater(const IAppUpdater& updater) noexcept;
 		size_t removeUpdaters(const IAppUpdaterFilter& filter) noexcept;
 
+		template<typename T, typename... A>
+		T& addUpdater(A&&... args)
+		{
+			auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+			auto& ref = *ptr;
+			addUpdater(std::move(ptr));
+			return ref;
+		}
+
 		void addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
 		[[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;

@@ -245,11 +245,6 @@ namespace
 				cam.setEnabled(false);
 			}
 
-			ShadowRendererConfig shadowConfig;
-			shadowConfig.cascadeAmount = 3;
-
-			auto& fwdRender = cam.addComponent<ForwardRenderer>();
-
 			auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx");
 			cam.addComponent<SkyboxRenderer>(skyboxTex);
 
@@ -260,8 +255,13 @@ namespace
 				cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
 			}
 
+			ShadowRendererConfig shadowConfig;
+			shadowConfig.cascadeAmount = 3;
+
 			auto& shadowRenderer = cam.addComponent<ShadowRenderer>(shadowConfig);
 			cam.addComponent<ShadowRenderComponent>(shadowRenderer);
+
+			cam.addComponent<ForwardRenderer>();
 
 			return cam;
 		}

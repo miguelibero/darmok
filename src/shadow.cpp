@@ -372,6 +372,16 @@ namespace darmok
         return viewId;
     }
 
+    void ShadowRenderer::render() noexcept
+    {
+        auto encoder = bgfx::begin();
+        for (auto& pass : _passes)
+        {
+            pass.render(*encoder);
+        }
+        bgfx::end(encoder);
+    }
+
     ShadowRenderComponent::ShadowRenderComponent(ShadowRenderer& renderer) noexcept
         : _renderer(renderer)
         , _shadowMapUniform{ bgfx::kInvalidHandle }

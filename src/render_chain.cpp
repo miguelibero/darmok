@@ -149,29 +149,18 @@ namespace darmok
 		return _output;
 	}
 
-	bgfx::ViewId RenderChain::renderReset(bgfx::ViewId viewId) noexcept
+	void RenderChain::beforeRenderReset() noexcept
 	{
-		{
-			bgfx::setViewName(viewId, "RenderChain clear");
-			static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
-			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
-
-			if (auto input = getInput())
-			{
-				input->configureView(viewId);
-			}
-			auto vp = _delegate.getRenderChainViewport();
-			vp.configureView(viewId);
-			_viewId = viewId;
-			++viewId;
-		}
-
 		auto amount = _buffers.size();
 		_buffers.clear();
 		for (size_t i = 0; i < amount; ++i)
 		{
 			addBuffer();
-		}
+		}		
+	}
+
+	bgfx::ViewId RenderChain::renderReset(bgfx::ViewId viewId) noexcept
+	{
 		if (_running)
 		{
 			for (size_t i = 0; i < _steps.size(); ++i)
@@ -181,7 +170,20 @@ namespace darmok
 				viewId = step->renderReset(viewId);
 			}
 		}
-		return viewId;
+
+		bgfx::setViewName(viewId, "RenderChain clear");
+
+		static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
+		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
+
+		if (auto input = getInput())
+		{
+			input->configureView(viewId);
+		}
+		auto vp = _delegate.getRenderChainViewport();
+		vp.configureView(viewId);
+		_viewId = viewId;
+		return ++viewId;
 	}
 
 	OptionalRef<FrameBuffer> RenderChain::getReadBuffer(size_t i) const noexcept
@@ -348,11 +350,11 @@ namespace darmok
 		}
 
 		auto encoder = bgfx::begin();
-		encoder->touch(_viewId.value());
 		for (auto& step : _steps)
 		{
 			step->render(*encoder);
 		}
+		encoder->touch(_viewId.value());
 		bgfx::end(encoder);
 	}
 
@@ -419,6 +421,10 @@ namespace darmok
 	bgfx::ViewId ScreenSpaceRenderPass::renderReset(bgfx::ViewId viewId) noexcept
 	{
 		bgfx::setViewName(viewId, _name.c_str());
+		if (_chain)
+		{
+			_chain->configureView(viewId, _writeTex);
+		}
 		_viewId = viewId;
 		return ++viewId;
 	}

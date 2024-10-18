@@ -1075,17 +1075,15 @@ namespace darmok
         return false;
     }
 
-    void RmluiCanvasImpl::render() noexcept
+    void RmluiCanvasImpl::render(bgfx::Encoder& encoder) noexcept
     {
         if (!_viewId)
         {
             return;
         }
 
-        auto encoder = bgfx::begin();
         auto viewId = _viewId.value();
-
-        encoder->touch(viewId);
+        encoder.touch(viewId);
 
         if (!_frameBuffer || !_visible || !_comp || !_context)
         {
@@ -1097,14 +1095,12 @@ namespace darmok
             configureViewSize(viewId);
         }
 
-        _comp->getRmluiRender().renderCanvas(*this, _viewId.value(), *encoder);
-
-        bgfx::end(encoder);
+        _comp->getRmluiRender().renderCanvas(*this, _viewId.value(), encoder);
     }
 
     void RmluiCanvasImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        _comp->getRmluiRender().renderFrame(*this, _viewId.value(), encoder);
+        _comp->getRmluiRender().renderFrame(*this, viewId, encoder);
     }
 
     OptionalRef<Transform> RmluiCanvasImpl::getTransform() const noexcept
@@ -2056,6 +2052,17 @@ namespace darmok
         _scene.reset();
     }
 
+    void RmluiRendererImpl::render() noexcept
+    {
+        auto encoder = bgfx::begin();
+        for (auto entity : _cam->getEntities<RmluiCanvas>())
+        {
+            auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
+            canvas.getImpl().render(*encoder);
+        }
+        bgfx::end(encoder);
+    }
+
     bgfx::ViewId RmluiRendererImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
         for (auto entity : _cam->getEntities<RmluiCanvas>())
@@ -2107,6 +2114,11 @@ namespace darmok
     void RmluiRenderer::shutdown() noexcept
     {
         _impl->shutdown();
+    }
+
+    void RmluiRenderer::render() noexcept
+    {
+        _impl->render();
     }
 
     bgfx::ViewId RmluiRenderer::renderReset(bgfx::ViewId viewId) noexcept

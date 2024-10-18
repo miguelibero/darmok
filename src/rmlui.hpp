@@ -193,7 +193,7 @@ namespace darmok
 		void shutdown() noexcept;
 		bool update(float deltaTime) noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
-		void render() noexcept;
+		void render(bgfx::Encoder& encoder) noexcept;
 		void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
 		void setMainCamera(Camera& camera) noexcept;
@@ -391,6 +391,7 @@ namespace darmok
 		void shutdown() noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 		void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		void render() noexcept;
 
 	private:
 		OptionalRef<Camera> _cam;

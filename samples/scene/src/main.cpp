@@ -31,25 +31,21 @@ namespace
 		bool v; // entt does not accept empty structs
 	};
 
-	class ScreenBounceUpdater final : public ISceneComponent
+	class ScreenBounceUpdater final : public IAppUpdater
 	{
 	public:
-		ScreenBounceUpdater(Transform& trans, const glm::vec2& size = {1, 1}, float speed = 100.f)
-			: _trans(trans)
+		ScreenBounceUpdater(Window& win, Transform& trans, const glm::vec2& size = {1, 1}, float speed = 100.f)
+			: _win(win)
+			, _trans(trans)
 			, _size(size)
 			, _dir(speed)
 		{
 		}
 
-		void init(Scene& scene, App& app) override
-		{
-			_app = app;
-		}
-
 		void update(float dt) override
 		{
 			auto margin = _size * 0.5F * glm::vec2(_trans.getScale());
-			auto max = glm::vec2(_app->getWindow().getSize()) - margin;
+			auto max = glm::vec2(_win.getSize()) - margin;
 			auto min = margin;
 			auto pos = _trans.getPosition() + (glm::vec3(_dir, 0) * dt);
 			if (pos.x > max.x)
@@ -75,13 +71,13 @@ namespace
 			_trans.setPosition(pos);
 		}
 	private:
-		OptionalRef<App> _app;
+		Window& _win;
 		Transform& _trans;
 		glm::vec2 _size;
 		glm::vec2 _dir;
 	};
 
-	class RotateUpdater final : public ISceneComponent
+	class RotateUpdater final : public IAppUpdater
 	{
 	public:
 		RotateUpdater(Transform& trans, float speed = 100.f)
@@ -164,7 +160,7 @@ namespace
 			scene.addComponent<Culling2D>(spriteBorder);
 
 			scene.addComponent<Culling2D>(sprite);
-			scene.addSceneComponent<ScreenBounceUpdater>(trans, size, 100.f);
+			_app.addUpdater<ScreenBounceUpdater>(_app.getWindow(), trans, size, 100.f);
 		}
 
 		void createSpriteAnimation(Scene& scene)
@@ -202,7 +198,7 @@ namespace
 			scene.addComponent<Culling3D>(cube);
 			scene.addComponent<Renderable>(cube, std::move(cubeMesh), material);
 			auto& trans = scene.addComponent<Transform>(cube);
-			scene.addSceneComponent<RotateUpdater>(trans, 100.f);
+			_app.addUpdater<RotateUpdater>(trans, 100.f);
 		}
 	private:
 		App& _app;

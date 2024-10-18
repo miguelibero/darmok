@@ -196,6 +196,7 @@ namespace darmok
     bgfx::ViewId Camera::renderReset(bgfx::ViewId viewId)
     {
         updateViewportProjection();
+        _renderChain.beforeRenderReset();
         for (auto& comp : copyComponentContainer())
         {
             viewId = comp.get().renderReset(viewId);
@@ -280,7 +281,10 @@ namespace darmok
 
     Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept
     {
-        removeComponent(component->getCameraComponentType());
+        if (auto type = component->getCameraComponentType())
+        {
+            removeComponent(type);
+        }
         if (_scene)
         {
             component->init(*this, _scene.value(), _app.value());
@@ -379,6 +383,10 @@ namespace darmok
         if (_viewport)
         {
             return _viewport.value();
+        }
+        else if (_scene)
+        {
+            return _scene->getCurrentViewport();
         }
         else if (_app)
         {

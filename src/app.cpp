@@ -765,7 +765,10 @@ namespace darmok
 
 	void AppImpl::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
 	{
-		removeComponent(component->getAppComponentType());
+		if (auto type = component->getAppComponentType())
+		{
+			removeComponent(type);
+		}
 		if (_running)
 		{
 			component->init(_app);

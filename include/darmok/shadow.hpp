@@ -50,6 +50,7 @@ namespace darmok
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void update(float deltaTime) override;
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
+        void render() noexcept override;
         void shutdown() noexcept override;
 
         bool isEnabled() const noexcept;

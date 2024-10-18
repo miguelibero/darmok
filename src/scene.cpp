@@ -28,7 +28,10 @@ namespace darmok
 
     void SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
     {
-        removeSceneComponent(component->getSceneComponentType());
+        if (auto type = component->getSceneComponentType())
+        {
+            removeSceneComponent(type);
+        }
         if (_app)
         {
             component->init(_scene, _app.value());
@@ -105,6 +108,37 @@ namespace darmok
         return _renderChain;
     }
 
+    const std::optional<Viewport>& SceneImpl::getViewport() const noexcept
+    {
+        return _viewport;
+    }
+
+    void SceneImpl::setViewport(const std::optional<Viewport>& vp) noexcept
+    {
+        if (_viewport == vp)
+        {
+            return;
+        }
+        _viewport = vp;
+        if (_app)
+        {
+            _app->renderReset();
+        }
+    }
+
+    Viewport SceneImpl::getCurrentViewport() const noexcept
+    {
+        if (_viewport)
+        {
+            return _viewport.value();
+        }
+        else if (_app)
+        {
+            return Viewport(_app->getWindow().getPixelSize());
+        }
+        return Viewport();
+    }
+
     void SceneImpl::setName(const std::string& name) noexcept
     {
         _name = name;
@@ -168,11 +202,7 @@ namespace darmok
 
     Viewport SceneImpl::getRenderChainViewport() const noexcept
     {
-        if (_app)
-        {
-            return Viewport(_app->getWindow().getPixelSize());
-        }
-        return Viewport();
+        return getCurrentViewport();
     }
 
     void SceneImpl::onRenderChainInputChanged() noexcept
@@ -230,6 +260,7 @@ namespace darmok
 
     bgfx::ViewId SceneImpl::renderReset(bgfx::ViewId viewId)
     {
+        _renderChain.beforeRenderReset();
         // iteration in reverse to maintain the order in wich the cameras where added
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
@@ -470,6 +501,22 @@ namespace darmok
     const RenderChain& Scene::getRenderChain() const noexcept
     {
         return _impl->getRenderChain();
+    }
+
+    const std::optional<Viewport>& Scene::getViewport() const noexcept
+    {
+        return _impl->getViewport();
+    }
+
+    Scene& Scene::setViewport(const std::optional<Viewport>& vp) noexcept
+    {
+        _impl->setViewport(vp);
+        return *this;
+    }
+
+    Viewport Scene::getCurrentViewport() const noexcept
+    {
+        return _impl->getCurrentViewport();
     }
 
     void Scene::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept

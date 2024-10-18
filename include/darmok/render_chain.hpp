@@ -67,6 +67,7 @@ namespace darmok
         RenderChain(IRenderChainDelegate& dlg) noexcept;
         RenderChain(std::unique_ptr<IRenderChainDelegate>&& dlg) noexcept;
         void init();
+        void beforeRenderReset() noexcept;
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
         void update(float deltaTime);
         void render() noexcept;

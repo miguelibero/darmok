@@ -47,6 +47,10 @@ namespace darmok
         RenderChain& getRenderChain() noexcept;
         const RenderChain& getRenderChain() const noexcept;
 
+        const std::optional<Viewport>& getViewport() const noexcept;
+        void setViewport(const std::optional<Viewport>& vp) noexcept;
+        Viewport getCurrentViewport() const noexcept;
+
         void init(App& app);
         void update(float deltaTime);
         bgfx::ViewId renderReset(bgfx::ViewId viewId);
