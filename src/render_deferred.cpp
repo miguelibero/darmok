@@ -6,38 +6,15 @@ namespace darmok
     void DeferredRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
-        renderReset();
     }
 
-    void DeferredRenderer::renderReset() noexcept
+    bgfx::ViewId DeferredRenderer::renderReset(bgfx::ViewId viewId) noexcept
     {
-        if (_cam)
-        {
-            _cam->getRenderGraph().addPass(_geoPass);
-        }
+        return viewId;
     }
 
     void DeferredRenderer::shutdown() noexcept
     {
-        if (_cam)
-        {
-            _cam->getRenderGraph().removePass(_geoPass);
-        }
         _cam.reset();
-    }
-
-    void DeferredGeometryRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
-    {
-        def.setName("Deferred Geometry");
-        def.getWriteResources().add<Texture>("geometry");
-    }
-
-    void DeferredGeometryRenderPass::renderPassConfigure(bgfx::ViewId viewId)
-    {
-        _viewId = viewId;
-    }
-
-    void DeferredGeometryRenderPass::renderPassExecute(IRenderGraphContext& context)
-    {
     }
 }

@@ -7,7 +7,6 @@
 #include <darmok/window.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/data.hpp>
-#include <darmok/render_graph.hpp>
 #include <darmok/rmlui_fwd.hpp>
 #include <darmok/collection.hpp>
 #include <darmok/render_chain.hpp>
@@ -109,8 +108,8 @@ namespace darmok
 		void ReleaseShader(Rml::CompiledShaderHandle shader) noexcept override;
 		*/
 
-		void renderCanvas(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept;
-		void renderFrame(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept;
+		void renderCanvas(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		void renderFrame(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
 	private:
 		std::mutex _canvasMutex;
@@ -124,7 +123,8 @@ namespace darmok
 		glm::mat4 _trans;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
-		OptionalRef<IRenderGraphContext> _context;
+		bgfx::ViewId _viewId;
+		OptionalRef<bgfx::Encoder> _encoder;
 		std::unordered_map<Rml::CompiledFilterHandle, Material> _filterMaterials;
 		std::unordered_map<Rml::CompiledShaderHandle, Material> _shaderMaterials;
 
@@ -181,7 +181,7 @@ namespace darmok
 	class RmluiCanvas;
 	class Transform;
 
-	class RmluiCanvasImpl final : public IRenderPass
+	class RmluiCanvasImpl final
 	{
 	public:
 		using MousePositionMode = RmluiCanvasMousePositionMode;
@@ -192,7 +192,9 @@ namespace darmok
 		void init(RmluiSceneComponentImpl& comp);
 		void shutdown() noexcept;
 		bool update(float deltaTime) noexcept;
-		void renderReset() noexcept;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
+		void render() noexcept;
+		void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
 		void setMainCamera(Camera& camera) noexcept;
 		OptionalRef<Camera> getMainCamera() const noexcept;
@@ -242,11 +244,6 @@ namespace darmok
 
 		bool onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
-		void render(IRenderGraphContext& context) noexcept;
-
-		void renderPassDefine(RenderPassDefinition& def) noexcept override;
-		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-		void renderPassExecute(IRenderGraphContext& context) override;
 
 		glm::mat4 getRenderMatrix() const noexcept;
 		std::optional<float> getForcedDepth() const noexcept;
@@ -273,6 +270,7 @@ namespace darmok
 		std::unique_ptr<IRmluiCanvasDelegate> _delegatePtr;
 		std::unordered_map<std::string, std::unique_ptr<Rml::DataTypeRegister>> _dataTypeRegisters;
 		OptionalRef<Rml::DataTypeRegister> _defaultDataTypeRegister;
+		std::optional<bgfx::ViewId> _viewId;
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		bool updateCurrentSize() noexcept;
@@ -353,7 +351,7 @@ namespace darmok
 		void init(Scene& scene, App& app) noexcept;
 		void shutdown() noexcept;
 		void update(float deltaTime) noexcept;
-		void renderReset() noexcept;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 
 		RmluiSystemInterface& getRmluiSystem() noexcept;
 		RmluiRenderInterface& getRmluiRender() noexcept;
@@ -391,8 +389,8 @@ namespace darmok
     public:
 		void init(Camera& cam, Scene& scene, App& app) noexcept;
 		void shutdown() noexcept;
-		void renderReset() noexcept;
-		void beforeRenderView(IRenderGraphContext& context) noexcept;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
+		void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
 	private:
 		OptionalRef<Camera> _cam;

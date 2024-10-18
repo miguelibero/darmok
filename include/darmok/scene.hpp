@@ -19,13 +19,12 @@ namespace darmok
     {
     public:
         virtual ~ISceneComponent() = default;
-        virtual entt::id_type getSceneComponentType() const { return 0; };
+        virtual entt::id_type getSceneComponentType() const { return 0; }
         virtual void init(Scene& scene, App& app) {}
         virtual void shutdown() {}
-        virtual void renderReset() {}
+        virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
         virtual void update(float deltaTime) {}
     };
-
 
     template<typename T>
     class DARMOK_EXPORT BX_NO_VTABLE ITypeSceneComponent : public ISceneComponent
@@ -39,9 +38,7 @@ namespace darmok
 
     class App;
     class SceneImpl;
-    class RenderGraphDefinition;
     class RenderChain;
-    struct Viewport;
     struct TypeFilter;
 
     class DARMOK_EXPORT Scene final
@@ -56,24 +53,13 @@ namespace darmok
         SceneImpl& getImpl() noexcept;
         const SceneImpl& getImpl() const noexcept;
 
-        void init(App& app);
-        void update(float dt);
-        void renderReset();
-        void shutdown();
-
         Scene& setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
         Scene& setPaused(bool paused) noexcept;
         bool isPaused() const noexcept;
 
-        RenderGraphDefinition& getRenderGraph() noexcept;
-        const RenderGraphDefinition& getRenderGraph() const noexcept;
         RenderChain& getRenderChain() noexcept;
         const RenderChain& getRenderChain() const noexcept;
-
-        const std::optional<Viewport>& getViewport() const noexcept;
-        Scene& setViewport(const std::optional<Viewport>& vp) noexcept;
-        Viewport getCurrentViewport() const noexcept;
 
         void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
@@ -394,7 +380,8 @@ namespace darmok
 
         void init(App& app) override;
         void shutdown() override;
-        void renderReset() override;
+        bgfx::ViewId renderReset(bgfx::ViewId viewId) override;
+        void render() override;
         void update(float dt) override;
 
     private:

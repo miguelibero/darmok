@@ -220,16 +220,6 @@ namespace darmok
 		return _plat;
 	}
 
-	RenderGraphDefinition& AppImpl::getRenderGraph() noexcept
-	{
-		return _renderGraphDef;
-	}
-
-	const RenderGraphDefinition& AppImpl::getRenderGraph() const noexcept
-	{
-		return _renderGraphDef;
-	}
-
 	tf::Executor& AppImpl::getTaskExecutor()
 	{
 		return _taskExecutor.value();
@@ -359,7 +349,6 @@ namespace darmok
 	{
 		_lastUpdate = bx::getHPCounter();
 		_runResult = AppRunResult::Continue;
-		_renderGraphDef.clear();
 
 		bgfxInit();
 
@@ -370,13 +359,9 @@ namespace darmok
 		_assets.getImpl().init(_app);
 		_audio.getImpl().init();
 
-		_renderGraphDef.addPass(_clearRenderPass);
-
-		auto components = copyComponentContainer();
-
 		_running = true;
 
-		for (auto& comp : components)
+		for (auto& comp : copyComponentContainer())
 		{
 			comp.get().init(_app);
 		}
@@ -386,24 +371,7 @@ namespace darmok
 			_delegate->init();
 		}
 
-	}
-
-	void AppImpl::renderReset()
-	{
-		bgfx::reset(_pixelSize.x, _pixelSize.y, _activeResetFlags);
-		_renderGraph.reset();
-		_renderGraphDef.clear();
-		_renderGraphDef.addPass(_clearRenderPass);
-
-		if (_delegate)
-		{
-			_delegate->renderReset();
-		}
-
-		for (auto& comp : copyComponentContainer())
-		{
-			comp.get().renderReset();
-		}
+		renderReset();
 	}
 
 	void AppImpl::shutdown()
@@ -419,11 +387,7 @@ namespace darmok
 			_taskExecutor.reset();
 		}
 
-		_renderGraphDef.removePass(_clearRenderPass);
-
 		_running = false;
-		_renderGraph.reset();
-		_renderGraphDef.clear();
 
 		auto components = copyComponentContainer();
 		for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
@@ -495,15 +459,6 @@ namespace darmok
 
 		_assets.getImpl().update();
 		_audio.getImpl().update();
-
-		auto rgHash = _renderGraphDef.hash();
-		if (!_renderGraph || _renderGraph->hash() != rgHash)
-		{
-			_taskExecutor->wait_for_all();
-			auto& rg = _renderGraph.emplace(_renderGraphDef);
-			rg.configureView(0);
-		}
-
 		_input.getImpl().afterUpdate(deltaTime);
 
 		auto& pixelSize = _app.getWindow().getPixelSize();
@@ -517,37 +472,45 @@ namespace darmok
 		}
 	}
 
-	void AppClearRenderPass::renderPassConfigure(bgfx::ViewId viewId)
+	void AppImpl::renderReset()
 	{
-		bgfx::setViewRect(viewId, 0, 0, bgfx::BackbufferRatio::Equal);
-		const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL;
-		uint8_t clearColor = 1;
-		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U,
-			clearColor, clearColor, clearColor, clearColor,
-			clearColor, clearColor, clearColor, clearColor);
-	}
+		bgfx::reset(_pixelSize.x, _pixelSize.y, _activeResetFlags);
 
-	void AppClearRenderPass::renderPassExecute(IRenderGraphContext& context)
-	{
-		// just clear the screen
-		context.getEncoder().touch(context.getViewId());
-	}
+		bgfx::ViewId viewId = 0;
 
-	void AppClearRenderPass::renderPassDefine(RenderPassDefinition& def)
-	{
-		def.setName("App clear");
-		def.setPriority(IRenderGraphNode::kMaxPriority);
+		{
+			bgfx::setViewName(viewId, "App clear");
+			bgfx::setViewRect(viewId, 0, 0, bgfx::BackbufferRatio::Equal);
+			const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL;
+			uint8_t clearColor = 1;
+			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U,
+				clearColor, clearColor, clearColor, clearColor,
+				clearColor, clearColor, clearColor, clearColor);
+			++viewId;
+		}
+
+		if (_delegate)
+		{
+			viewId = _delegate->renderReset(viewId);
+		}
+
+		for (auto& comp : copyComponentContainer())
+		{
+			viewId = comp.get().renderReset(viewId);
+		}
 	}
 
 	void AppImpl::render() const
 	{
+		bgfx::touch(0);
+		bgfx::dbgTextClear();
 		if (_delegate)
 		{
 			_delegate->render();
 		}
-		if (_renderGraph && _taskExecutor)
+		for (auto& comp : copyComponentContainer())
 		{
-			_renderGraph.value()(_taskExecutor.value());
+			comp.get().render();
 		}
 	}
 
@@ -732,12 +695,6 @@ namespace darmok
 			_taskObserver->dump(out);
 			_taskObserver.reset();
 			out << "]";
-		}
-
-		{
-			auto filePath = basePath / ("rendergraph-" + suffix + ".graphviz");
-			std::ofstream out(filePath);
-			_renderGraph->dump(out);
 		}
 	}
 
@@ -949,16 +906,6 @@ namespace darmok
 		return _impl->getAssets();
 	}
 
-	RenderGraphDefinition& App::getRenderGraph() noexcept
-	{
-		return _impl->getRenderGraph();
-	}
-
-	const RenderGraphDefinition& App::getRenderGraph() const noexcept
-	{
-		return _impl->getRenderGraph();
-	}
-
 	tf::Executor& App::getTaskExecutor()
 	{
 		return _impl->getTaskExecutor();
@@ -1007,6 +954,11 @@ namespace darmok
 		_impl->quit();
 	}
 
+	void App::renderReset()
+	{
+		_impl->renderReset();
+	}
+
 	void App::setUpdateConfig(const AppUpdateConfig& config) noexcept
 	{
 		_impl->setUpdateConfig(config);
@@ -1044,8 +996,6 @@ namespace darmok
 
 	void App::render() const
 	{
-		bgfx::touch(0);
-		bgfx::dbgTextClear();
 		_impl->render();
 	}
 

@@ -27,7 +27,8 @@ namespace darmok
 
 		void init(App& app) override;
 		void shutdown() noexcept override;
-		void renderReset() noexcept override;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
+		void render() noexcept override;
 		void update(float dt) noexcept override;
 		ImGuiContext* getContext() noexcept;
 		bool getInputEnabled() const noexcept;

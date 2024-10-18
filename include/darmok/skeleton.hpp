@@ -338,7 +338,7 @@ namespace darmok
     {
     public:
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept override;
+        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
         void shutdown() noexcept override;
     private:
         bgfx::UniformHandle _skinningUniform;

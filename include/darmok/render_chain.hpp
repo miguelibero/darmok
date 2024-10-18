@@ -4,7 +4,6 @@
 #include <optional>
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
-#include <darmok/render_graph.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/viewport.hpp>
@@ -48,11 +47,10 @@ namespace darmok
         virtual void init(RenderChain& chain) = 0;
         virtual void update(float deltaTime) {};
         virtual void updateRenderChain(FrameBuffer& readBuffer, OptionalRef<FrameBuffer> writeBuffer) = 0;
-        virtual void renderReset() { };
+        virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; };
+        virtual void render(bgfx::Encoder& encoder) noexcept = 0;
         virtual void shutdown() = 0;
     };
-
-    class RenderGraphDefinition;
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderChainDelegate
     {
@@ -61,26 +59,23 @@ namespace darmok
         virtual Viewport getRenderChainViewport() const = 0;
         virtual OptionalRef<RenderChain> getRenderChainParent() const { return nullptr; }
         virtual void onRenderChainInputChanged() { }
-        virtual RenderGraphDefinition& getRenderChainParentGraph() = 0;
     };
 
-    class DARMOK_EXPORT RenderChain final : IRenderPass
+    class DARMOK_EXPORT RenderChain final
     {
     public:
         RenderChain(IRenderChainDelegate& dlg) noexcept;
         RenderChain(std::unique_ptr<IRenderChainDelegate>&& dlg) noexcept;
-        void init(const std::string& name = "", int priority = 0);
-        void renderReset();
-        void shutdown();
+        void init();
+        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
         void update(float deltaTime);
-        
+        void render() noexcept;
+        void shutdown();
+
         OptionalRef<FrameBuffer> getInput() noexcept;
         OptionalRef<const FrameBuffer> getInput() const noexcept;
 
         void configureView(bgfx::ViewId viewId, OptionalRef<const FrameBuffer> writeBuffer) const;
-
-        RenderGraphDefinition& getRenderGraph();
-        const RenderGraphDefinition& getRenderGraph() const;
 
         RenderChain& setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept;
         std::shared_ptr<FrameBuffer> getOutput() const noexcept;
@@ -97,30 +92,27 @@ namespace darmok
         }
 
         bool removeStep(const IRenderChainStep& step) noexcept;
+        bool empty() const noexcept;
 
     private:
-        RenderGraphDefinition _renderGraph;
         IRenderChainDelegate& _delegate;
         std::unique_ptr<IRenderChainDelegate> _delegatePointer;
         bool _running;
         std::vector<std::unique_ptr<IRenderChainStep>> _steps;
         std::vector<std::unique_ptr<FrameBuffer>> _buffers;
         std::shared_ptr<FrameBuffer> _output;
+        std::optional<bgfx::ViewId> _viewId;
 
         OptionalRef<FrameBuffer> getReadBuffer(size_t i) const noexcept;
         OptionalRef<FrameBuffer> getWriteBuffer(size_t i) const noexcept;
         FrameBuffer& addBuffer() noexcept;
         void updateStep(size_t i);
-
-        void renderPassDefine(RenderPassDefinition& def) noexcept override;
-        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(IRenderGraphContext& context) noexcept override;
     };
 
     class Program;
     class IMesh;
 
-    class DARMOK_EXPORT ScreenSpaceRenderPass final : public IRenderChainStep, IRenderPass
+    class DARMOK_EXPORT ScreenSpaceRenderPass final : public IRenderChainStep
     {
     public:
         ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name = "", int priority = 0);
@@ -128,16 +120,14 @@ namespace darmok
 
         void init(RenderChain& chain) noexcept override;
         void updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept override;
-        void renderReset() noexcept override;
-        void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
+        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
+        void render(bgfx::Encoder& encoder) noexcept override;
+        void shutdown() noexcept override;
 
         ScreenSpaceRenderPass& setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept;
         ScreenSpaceRenderPass& setUniform(const std::string& name, std::optional<UniformValue> value) noexcept;
 
-        void renderPassDefine(RenderPassDefinition& def) noexcept override;
-        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(IRenderGraphContext& context) noexcept override;
     private:
         std::string _name;
         int _priority;

@@ -96,7 +96,7 @@ namespace darmok
 
     void RmluiRenderInterface::RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept
     {
-        if (!_context)
+        if (!_encoder)
         {
             return;
         }
@@ -106,8 +106,7 @@ namespace darmok
             return;
         }
 
-        auto& encoder = _context->getEncoder();
-
+        auto& encoder = _encoder.value();
         meshItr->second->render(encoder);
 
         auto position = RmluiUtils::convert(translation);
@@ -145,7 +144,7 @@ namespace darmok
         config.type = MeshType::Transient;
         auto mesh = atlasElm.createSprite(_program->getVertexLayout(), texture->getSize(), config);
 
-        auto& encoder = _context->getEncoder();
+        auto& encoder = _encoder.value();
         mesh->render(encoder);
         submit(position, texture);
 
@@ -154,13 +153,12 @@ namespace darmok
 
     void RmluiRenderInterface::submit(const glm::vec2& position, const OptionalRef<Texture>& texture) noexcept
     {
-        if (!_context)
+        if (!_encoder)
         {
             return;
         }
 
-        auto viewId = _context->getViewId();
-        auto& encoder = _context->getEncoder();
+        auto& encoder = _encoder.value();
 
         auto trans = getTransformMatrix(position);
         encoder.setTransform(glm::value_ptr(trans));
@@ -181,7 +179,7 @@ namespace darmok
             ;
 
         encoder.setState(state);
-        encoder.submit(viewId, _program->getHandle(defines));
+        encoder.submit(_viewId, _program->getHandle(defines));
     }
 
     Rml::TextureHandle RmluiRenderInterface::LoadTexture(Rml::Vector2i& dimensions, const Rml::String& source) noexcept
@@ -390,19 +388,18 @@ namespace darmok
 
     void RmluiRenderInterface::EnableScissorRegion(bool enable) noexcept
     {
-        if (!_context)
+        if (!_encoder)
         {
             return;
         }
         _scissorEnabled = enable;
-        auto viewId = _context->getViewId();
         if (enable)
         {
-            bgfx::setViewScissor(viewId, _scissor.x, _scissor.y, _scissor.z, _scissor.w);
+            bgfx::setViewScissor(_viewId, _scissor.x, _scissor.y, _scissor.z, _scissor.w);
         }
         else
         {
-            bgfx::setViewScissor(viewId);
+            bgfx::setViewScissor(_viewId);
         }
     }
 
@@ -415,10 +412,11 @@ namespace darmok
         }
     }
 
-    void RmluiRenderInterface::renderCanvas(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept
+    void RmluiRenderInterface::renderCanvas(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         std::lock_guard lock(_canvasMutex);
-        _context = context;
+        _viewId = viewId;
+        _encoder = encoder;
         _trans = glm::mat4(1.F);
 
         if (!canvas.getContext().Render())
@@ -431,19 +429,16 @@ namespace darmok
             renderSprite(cursorSprite.value(), canvas.getMousePosition());
         }
 
-        _context.reset();
+        _encoder.reset();
     }
 
-    void RmluiRenderInterface::renderFrame(RmluiCanvasImpl& canvas, IRenderGraphContext& context) noexcept
+    void RmluiRenderInterface::renderFrame(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         auto tex = canvas.getFrameTexture();
         if (!tex)
         {
             return;
         }
-        auto viewId = context.getViewId();
-        auto& encoder = context.getEncoder();
-
         auto model = canvas.getRenderMatrix();
         encoder.setTransform(glm::value_ptr(model));
 
@@ -713,26 +708,37 @@ namespace darmok
         return false;
     }
 
-    void RmluiCanvasImpl::renderReset() noexcept
+    bgfx::ViewId RmluiCanvasImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
         if (!_size)
         {
             updateCurrentSize();
         }
+
+        std::string name;
         if (_cam)
         {
-            _cam->getRenderGraph().addPass(*this);
+            auto camName = _cam->getName();
+            if (!camName.empty())
+            {
+                name += camName + " ";
+            }
         }
+        name += "Rmlui: " + _name;
+        bgfx::setViewName(viewId, name.c_str());
+        _viewId = viewId;
+
+        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 0);
+        bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+        configureViewSize(viewId);
+
+        return ++viewId;
     }
 
     void RmluiCanvasImpl::setMainCamera(Camera& camera) noexcept
     {
-        if (_cam)
-        {
-            _cam->getRenderGraph().removePass(*this);
-        }
         _cam = camera;
-        camera.getRenderGraph().addPass(*this);
     }
 
     OptionalRef<Camera> RmluiCanvasImpl::getMainCamera() const noexcept
@@ -1069,13 +1075,36 @@ namespace darmok
         return false;
     }
 
-    void RmluiCanvasImpl::render(IRenderGraphContext& context) noexcept
+    void RmluiCanvasImpl::render() noexcept
     {
-        if (!_visible || !_comp)
+        if (!_viewId)
         {
             return;
         }
-        _comp->getRmluiRender().renderFrame(*this, context);
+
+        auto encoder = bgfx::begin();
+        auto viewId = _viewId.value();
+
+        encoder->touch(viewId);
+
+        if (!_frameBuffer || !_visible || !_comp || !_context)
+        {
+            return;
+        }
+
+        if (!_size && updateCurrentSize())
+        {
+            configureViewSize(viewId);
+        }
+
+        _comp->getRmluiRender().renderCanvas(*this, _viewId.value(), *encoder);
+
+        bgfx::end(encoder);
+    }
+
+    void RmluiCanvasImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        _comp->getRmluiRender().renderFrame(*this, _viewId.value(), encoder);
     }
 
     OptionalRef<Transform> RmluiCanvasImpl::getTransform() const noexcept
@@ -1169,48 +1198,6 @@ namespace darmok
             mtx = _cam->getModelInverse() * _cam->getProjectionInverse() * mtx;
         }
         return mtx;
-    }
-
-    void RmluiCanvasImpl::renderPassDefine(RenderPassDefinition& def) noexcept
-    {
-        std::string name;
-        if (_cam)
-        {
-            auto camName = _cam->getName();
-            if (!camName.empty())
-            {
-                name += camName + " ";
-            }
-        }
-        name += "Rmlui: " + _name;
-        def.setName(name);
-    }
-
-    void RmluiCanvasImpl::renderPassConfigure(bgfx::ViewId viewId) noexcept
-    {
-        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
-        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 0);
-        bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
-        configureViewSize(viewId);
-    }
-
-    void RmluiCanvasImpl::renderPassExecute(IRenderGraphContext& context)
-    {
-        auto viewId = context.getViewId();
-        auto& encoder = context.getEncoder();
-        encoder.touch(viewId);
-
-        if (!_frameBuffer || !_visible || !_comp || !_context)
-        {
-            return;
-        }
-
-        if (!_size && updateCurrentSize())
-        {
-            configureViewSize(viewId);
-        }
-
-        _comp->getRmluiRender().renderCanvas(*this, context);
     }
 
     void RmluiCanvasImpl::configureViewSize(bgfx::ViewId viewId) const noexcept
@@ -1675,15 +1662,17 @@ namespace darmok
         }
     }
 
-    void RmluiSceneComponentImpl::renderReset() noexcept
+    bgfx::ViewId RmluiSceneComponentImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
         if (_scene)
         {
             for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
             {
-                canvas.getImpl().renderReset();
+                viewId = canvas.getImpl().renderReset(viewId);
             }
         }
+
+        return viewId;
     }
 
     void RmluiSceneComponentImpl::shutdown() noexcept
@@ -2025,9 +2014,9 @@ namespace darmok
         _impl->shutdown();
     }
 
-    void RmluiSceneComponent::renderReset() noexcept
+    bgfx::ViewId RmluiSceneComponent::renderReset(bgfx::ViewId viewId) noexcept
     {
-        _impl->renderReset();
+        return _impl->renderReset(viewId);
     }
 
     void RmluiSceneComponent::update(float deltaTime) noexcept
@@ -2067,21 +2056,22 @@ namespace darmok
         _scene.reset();
     }
 
-    void RmluiRendererImpl::renderReset() noexcept
+    bgfx::ViewId RmluiRendererImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
-            canvas.getImpl().renderReset();
+            viewId = canvas.getImpl().renderReset(viewId);
         }
+        return viewId;
     }
 
-    void RmluiRendererImpl::beforeRenderView(IRenderGraphContext& context) noexcept
+    void RmluiRendererImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
-            canvas.getImpl().render(context);
+            canvas.getImpl().beforeRenderView(viewId, encoder);
         }
     }
 
@@ -2119,14 +2109,14 @@ namespace darmok
         _impl->shutdown();
     }
 
-    void RmluiRenderer::renderReset() noexcept
+    bgfx::ViewId RmluiRenderer::renderReset(bgfx::ViewId viewId) noexcept
     {
-        _impl->renderReset();
+        return _impl->renderReset(viewId);
     }
 
-    void RmluiRenderer::beforeRenderView(IRenderGraphContext& context) noexcept
+    void RmluiRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        _impl->beforeRenderView(context);
+        _impl->beforeRenderView(viewId, encoder);
     }
 
 }

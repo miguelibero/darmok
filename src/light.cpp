@@ -315,9 +315,8 @@ namespace darmok
         updateCamera();
     }
 
-    void LightingRenderComponent::beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept
+    void LightingRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        auto& encoder = context.getEncoder();
         encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
         encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
         encoder.setBuffer(RenderSamplers::LIGHTS_POINT, _pointLightBuffer, bgfx::Access::Read);

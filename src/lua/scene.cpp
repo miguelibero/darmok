@@ -301,23 +301,6 @@ namespace darmok
 		scene.setUpdateFilter(LuaTypeFilter::create(filter));
 	}
 
-	std::optional<Viewport> LuaScene::getViewport(const Scene& scene) noexcept
-	{
-		return scene.getViewport();
-	}
-
-	void LuaScene::setViewport(Scene& scene, std::optional<VarViewport> vp) noexcept
-	{
-		if (vp)
-		{
-			scene.setViewport(LuaViewport::tableGet(vp));
-		}
-		else
-		{
-			scene.setViewport(sol::nullopt);
-		}
-	}
-
 	bool LuaScene::forEachEntity(const std::shared_ptr<Scene>& scene, const sol::protected_function& callback)
 	{
 		return scene->forEachEntity([callback, scene](auto entity) -> bool {
@@ -360,8 +343,6 @@ namespace darmok
 			"add_lua_component", &LuaScene::addLuaSceneComponent,
 			"get_lua_component", &LuaScene::getLuaSceneComponent,
 			"for_each_entity", &LuaScene::forEachEntity,
-			"viewport", sol::property(&LuaScene::getViewport, &LuaScene::setViewport),
-			"current_viewport", sol::property(&Scene::getCurrentViewport),
 			"render_chain", sol::property(sol::resolve<RenderChain&()>(&Scene::getRenderChain)),
 			"name", sol::property(&Scene::getName, &Scene::setName),
 			"paused", sol::property(&Scene::isPaused, &Scene::setPaused),
@@ -398,9 +379,9 @@ namespace darmok
 		_shutdownDef(_table);
 	}
 
-	void LuaSceneComponent::renderReset()
+	bgfx::ViewId LuaSceneComponent::renderReset(bgfx::ViewId viewId)
 	{
-		_renderResetDef(_table);
+		return _renderResetDef(_table).as<bgfx::ViewId>();
 	}
 
 	void LuaSceneComponent::update(float deltaTime)

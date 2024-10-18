@@ -65,23 +65,22 @@ namespace darmok::physics3d
     std::unique_ptr<JoltPhysicsDebugRenderer> JoltPhysicsDebugRenderer::_instance;
     std::mutex JoltPhysicsDebugRenderer::_instanceLock;
 
-    void JoltPhysicsDebugRenderer::render(JPH::PhysicsSystem& joltSystem, const Config& config, IRenderGraphContext& context)
+    void JoltPhysicsDebugRenderer::render(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder)
     {
         std::lock_guard lock(_instanceLock);
         if (!_instance)
         {
             _instance = std::unique_ptr<JoltPhysicsDebugRenderer>(new JoltPhysicsDebugRenderer());
         }
-        _instance->doRender(joltSystem, config, context);
+        _instance->doRender(joltSystem, config, viewId, encoder);
     }
 
-    void JoltPhysicsDebugRenderer::doRender(JPH::PhysicsSystem& joltSystem, const Config& config, IRenderGraphContext& context)
+    void JoltPhysicsDebugRenderer::doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder)
     {
         _config = config;
 
-        auto& encoder = context.getEncoder();
         _encoder = encoder;
-        _viewId = context.getViewId();
+        _viewId = viewId;
 
         JPH::BodyManager::DrawSettings settings;
         settings.mDrawShape = true;
@@ -317,7 +316,7 @@ namespace darmok::physics3d
         JoltPhysicsDebugRenderer::shutdown();
     }
 
-    void PhysicsDebugRendererImpl::beforeRenderView(IRenderGraphContext& context)
+    void PhysicsDebugRendererImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
     {
         if (!_enabled)
         {
@@ -334,7 +333,7 @@ namespace darmok::physics3d
             return;
         }
 
-        JoltPhysicsDebugRenderer::render(joltSystem.value(), _config.render, context);
+        JoltPhysicsDebugRenderer::render(joltSystem.value(), _config.render, viewId, encoder);
     }
 
     void PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept
@@ -373,9 +372,9 @@ namespace darmok::physics3d
         return *this;
     }
 
-    void PhysicsDebugRenderer::beforeRenderView(IRenderGraphContext& context)
+    void PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
     {
-        _impl->beforeRenderView(context);
+        _impl->beforeRenderView(viewId, encoder);
     }
 }
 
@@ -411,7 +410,7 @@ namespace darmok::physics3d
         return *this;
     }
 
-    void PhysicsDebugRenderer::beforeRenderView(IRenderGraphContext& context)
+    void PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
     {
     }
 }

@@ -1,5 +1,4 @@
 #include <darmok/render_chain.hpp>
-#include <darmok/render_graph.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/program.hpp>
@@ -98,10 +97,8 @@ namespace darmok
 	{
 	}
 
-	void RenderChain::init(const std::string& name, int priority)
+	void RenderChain::init()
 	{
-		_renderGraph.setName(name);
-		_renderGraph.setPriority(priority);
 		_running = true;
 		for (size_t i = 0; i < _steps.size(); ++i)
 		{
@@ -109,9 +106,6 @@ namespace darmok
 			step->init(*this);
 			step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
 		}
-		auto& parentGraph = _delegate.getRenderChainParentGraph();
-		parentGraph.addPass(*this);
-		parentGraph.setChild(_renderGraph);
 	}
 
 	void RenderChain::shutdown()
@@ -120,9 +114,8 @@ namespace darmok
 		{
 			(*itr)->shutdown();
 		}
-		auto& parentGraph = _delegate.getRenderChainParentGraph();
-		parentGraph.removePass(*this);
 		_running = false;
+		_viewId.reset();
 	}
 
 	void RenderChain::update(float deltaTime)
@@ -156,11 +149,22 @@ namespace darmok
 		return _output;
 	}
 
-	void RenderChain::renderReset()
+	bgfx::ViewId RenderChain::renderReset(bgfx::ViewId viewId) noexcept
 	{
-		auto& parentGraph = _delegate.getRenderChainParentGraph();
-		parentGraph.addPass(*this);
-		_renderGraph.clear();
+		{
+			bgfx::setViewName(viewId, "RenderChain clear");
+			static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
+			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
+
+			if (auto input = getInput())
+			{
+				input->configureView(viewId);
+			}
+			auto vp = _delegate.getRenderChainViewport();
+			vp.configureView(viewId);
+			_viewId = viewId;
+			++viewId;
+		}
 
 		auto amount = _buffers.size();
 		_buffers.clear();
@@ -174,11 +178,10 @@ namespace darmok
 			{
 				auto& step = _steps[i];
 				step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
-				step->renderReset();
+				viewId = step->renderReset(viewId);
 			}
 		}
-
-		parentGraph.setChild(_renderGraph);
+		return viewId;
 	}
 
 	OptionalRef<FrameBuffer> RenderChain::getReadBuffer(size_t i) const noexcept
@@ -249,16 +252,6 @@ namespace darmok
 		vp.configureView(viewId);
 	}
 
-	RenderGraphDefinition& RenderChain::getRenderGraph()
-	{
-		return _renderGraph;
-	}
-
-	const RenderGraphDefinition& RenderChain::getRenderGraph() const
-	{
-		return _renderGraph;
-	}
-
 	FrameBuffer& RenderChain::addBuffer() noexcept
 	{
 		auto vp = _delegate.getRenderChainViewport();
@@ -288,9 +281,6 @@ namespace darmok
 		{
 			_delegate.onRenderChainInputChanged();
 		}
-
-		auto& parentGraph = _delegate.getRenderChainParentGraph();
-		parentGraph.setChild(_renderGraph);
 
 		return *this;
 	}
@@ -342,42 +332,28 @@ namespace darmok
 			_delegate.onRenderChainInputChanged();
 		}
 
-		auto& parentGraph = _delegate.getRenderChainParentGraph();
-		parentGraph.setChild(_renderGraph);
-
 		return true;
 	}
 
-	void RenderChain::renderPassDefine(RenderPassDefinition& def) noexcept
+	bool RenderChain::empty() const noexcept
 	{
-		auto name = getRenderGraph().getName();
-		if (!name.empty())
-		{
-			name += " ";
-		}
-		def.setName(name + "clear");
-		def.setPriority(RenderPassDefinition::kMaxPriority);
+		return _buffers.empty() && !_output;
 	}
 
-	void RenderChain::renderPassConfigure(bgfx::ViewId viewId) noexcept
+	void RenderChain::render() noexcept
 	{
-		static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
-		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
-		
-		if (auto input = getInput())
+		if (empty() || !_viewId)
 		{
-			input->configureView(viewId);
+			return;
 		}
-		auto vp = _delegate.getRenderChainViewport();
-		vp.configureView(viewId);
-	}
 
-	void RenderChain::renderPassExecute(IRenderGraphContext& context) noexcept
-	{
-		if (!_buffers.empty() || _output)
+		auto encoder = bgfx::begin();
+		encoder->touch(_viewId.value());
+		for (auto& step : _steps)
 		{
-			context.getEncoder().touch(context.getViewId());
+			step->render(*encoder);
 		}
+		bgfx::end(encoder);
 	}
 
 	ScreenSpaceRenderPass::ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority)
@@ -415,8 +391,6 @@ namespace darmok
 
 		Rectangle screen(glm::uvec2(2));
 		_mesh = MeshData(screen).createMesh(_program->getVertexLayout());
-
-		renderReset();
 	}
 
 	void ScreenSpaceRenderPass::shutdown() noexcept
@@ -429,10 +403,6 @@ namespace darmok
 		_basicUniforms.shutdown();
 		_viewId.reset();
 		_mesh.reset();
-		if (_chain)
-		{
-			_chain->getRenderGraph().removePass(*this);
-		}
 		_chain.reset();
 	}
 
@@ -446,12 +416,11 @@ namespace darmok
 		}
 	}
 
-	void ScreenSpaceRenderPass::renderReset() noexcept
+	bgfx::ViewId ScreenSpaceRenderPass::renderReset(bgfx::ViewId viewId) noexcept
 	{
-		if (_chain)
-		{
-			_chain->getRenderGraph().addPass(*this);
-		}
+		bgfx::setViewName(viewId, _name.c_str());
+		_viewId = viewId;
+		return ++viewId;
 	}
 
 	void ScreenSpaceRenderPass::update(float deltaTime) noexcept
@@ -471,27 +440,13 @@ namespace darmok
 		return *this;
 	}
 
-	void ScreenSpaceRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
+	void ScreenSpaceRenderPass::render(bgfx::Encoder& encoder) noexcept
 	{
-		def.setName(_name);
-		def.setPriority(_priority);
-		def.setSync(true);
-	}
-
-	void ScreenSpaceRenderPass::renderPassConfigure(bgfx::ViewId viewId) noexcept
-	{
-		if (_chain)
+		if (!_viewId)
 		{
-			_chain->configureView(viewId, _writeTex);
+			return;
 		}
-		_viewId = viewId;
-	}
-
-	void ScreenSpaceRenderPass::renderPassExecute(IRenderGraphContext& context) noexcept
-	{
-		auto& encoder = context.getEncoder();
-		auto viewId = context.getViewId();
-
+		auto viewId = _viewId.value();
 		if (!_mesh || !_program || !_readTex)
 		{
 			encoder.touch(viewId);

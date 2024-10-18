@@ -129,7 +129,6 @@ set(CORE_SOURCES
   viewport.cpp
   program_core.cpp
   asset_core.cpp
-  render_graph.cpp
   easing.cpp
 )
 
@@ -161,7 +160,6 @@ set(CORE_HEADERS
   program_core.hpp
   asset_core.hpp
   loader.hpp
-  render_graph.hpp
   easing_fwd.hpp
   easing.hpp
 )

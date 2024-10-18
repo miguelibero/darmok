@@ -4,7 +4,6 @@
 #include <vector>
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
-#include <darmok/render_graph.hpp>
 
 namespace darmok
 {
@@ -13,7 +12,7 @@ namespace darmok
     class Transform;
     class ShadowRenderer;
 
-    class DARMOK_EXPORT ShadowRenderPass final : public IRenderPass
+    class DARMOK_EXPORT ShadowRenderPass final
     {
     public:
         ShadowRenderPass();
@@ -21,10 +20,10 @@ namespace darmok
         void shutdown() noexcept;
         bool configure(Entity entity = entt::null) noexcept;
 
-        void renderPassDefine(RenderPassDefinition& def) noexcept override;
-        void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-        void renderPassExecute(IRenderGraphContext& context) noexcept override;
+        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
+        void render(bgfx::Encoder& encoder) noexcept;
     private:
+        std::optional<bgfx::ViewId> _viewId;
         Entity _lightEntity;
         uint8_t _cascade;
         bgfx::FrameBufferHandle _fb;
@@ -50,7 +49,7 @@ namespace darmok
         ShadowRenderer(const Config& config) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void update(float deltaTime) override;
-        void renderReset() noexcept override;
+        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
         void shutdown() noexcept override;
 
         bool isEnabled() const noexcept;
@@ -75,7 +74,6 @@ namespace darmok
         std::unique_ptr<Program> _program;
         std::vector<ShadowRenderPass> _passes;
         std::unique_ptr<Texture> _tex;
-        RenderGraphDefinition _renderGraph;
 
         std::vector<glm::mat4> _camProjs;
         glm::mat4 _crop;
@@ -91,7 +89,7 @@ namespace darmok
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
-        void beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept override;
+        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         ShadowRenderer& _renderer;
         OptionalRef<Camera> _cam;
@@ -101,7 +99,7 @@ namespace darmok
         bgfx::DynamicVertexBufferHandle _shadowTransBuffer;
         bgfx::VertexLayout _shadowTransLayout;
 
-        void configureUniforms(IRenderGraphContext& context) const noexcept;
+        void configureUniforms(bgfx::Encoder& encoder) const noexcept;
         void drawDebug() noexcept;
     };
 
@@ -113,7 +111,7 @@ namespace darmok
         ShadowDebugRenderer(ShadowRenderer& renderer) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
-        void beforeRenderView(IRenderGraphContext& context) noexcept override;
+        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         ShadowRenderer& _renderer;
         OptionalRef<Scene> _scene;
@@ -121,6 +119,6 @@ namespace darmok
         bgfx::UniformHandle _hasTexturesUniform;
         bgfx::UniformHandle _colorUniform;
 
-        void renderMesh(MeshData& meshData, uint8_t debugColor, IRenderGraphContext& context) noexcept;
+        void renderMesh(MeshData& meshData, uint8_t debugColor, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
     };
 }

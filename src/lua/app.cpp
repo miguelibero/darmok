@@ -644,9 +644,9 @@ namespace darmok
 		_shutdownDef(_table);
 	}
 
-	void LuaAppComponent::renderReset()
+	bgfx::ViewId LuaAppComponent::renderReset(bgfx::ViewId viewId)
 	{
-		_renderResetDef(_table);
+		return _renderResetDef(_table, viewId).as<bgfx::ViewId>();
 	}
 
 	void LuaAppComponent::update(float deltaTime)

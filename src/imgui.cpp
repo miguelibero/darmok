@@ -48,7 +48,6 @@ namespace darmok
 		, _imgui(imgui)
 		, _textureUniform{ bgfx::kInvalidHandle }
 		, _lodEnabledUniform{ bgfx::kInvalidHandle }
-		, _viewId(0)
 		, _fontsTexture{ bgfx::kInvalidHandle }
 	{
 		ProgramDefinition progDef;
@@ -98,23 +97,22 @@ namespace darmok
 		}
 	}
 
-	void ImguiRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
+	bgfx::ViewId ImguiRenderPass::renderReset(bgfx::ViewId viewId) noexcept
 	{
-		def.setName("Imgui");
-	}
-
-	void ImguiRenderPass::renderPassConfigure(bgfx::ViewId viewId) noexcept
-	{
+		bgfx::setViewName(viewId, "Imgui");
 		bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 		_viewId = viewId;
+		return ++viewId;
 	}
 
-	void ImguiRenderPass::renderPassExecute(IRenderGraphContext& context) noexcept
+	void ImguiRenderPass::render() noexcept
 	{
 		ImGui::SetCurrentContext(_imgui);
 		beginFrame();
 		_renderer.imguiRender();
-		endFrame(context.getEncoder());
+		auto encoder = bgfx::begin();
+		endFrame(*encoder);
+		bgfx::end(encoder);
 		ImGui::SetCurrentContext(nullptr);
 	}
 
@@ -133,6 +131,10 @@ namespace darmok
 
 	bool ImguiRenderPass::render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept
 	{
+		if (!_viewId)
+		{
+			return false;
+		}
 		auto clipPos = ImguiUtils::convert(drawData->DisplayPos); // (0,0) unless using multi-viewports
 		auto size = ImguiUtils::convert(drawData->DisplaySize);
 		auto clipScale = ImguiUtils::convert(drawData->FramebufferScale);  // (1,1) unless using retina display which are often (2,2)
@@ -144,10 +146,11 @@ namespace darmok
 			return false;
 		}
 
+		auto viewId = _viewId.value();
 		{
 			auto ortho = Math::ortho(clipPos.x, clipPos.x + clipSize.x, clipPos.y + clipSize.y, clipPos.y);
-			bgfx::setViewTransform(_viewId, nullptr, glm::value_ptr(ortho));
-			bgfx::setViewRect(_viewId, 0, 0,
+			bgfx::setViewTransform(viewId, nullptr, glm::value_ptr(ortho));
+			bgfx::setViewRect(viewId, 0, 0,
 				ImguiUtils::convertUint16(clipSize.x),
 				ImguiUtils::convertUint16(clipSize.y)
 			);
@@ -233,7 +236,7 @@ namespace darmok
 						encoder.setState(state);
 						encoder.setTexture(0, _textureUniform, th);
 						mesh->render(encoder);
-						encoder.submit(_viewId, program);
+						encoder.submit(viewId, program);
 					}
 				}
 			}
@@ -387,25 +390,29 @@ namespace darmok
 			;
 
 		_renderPass.emplace(_renderer, _imgui);
-		app.getRenderGraph().addPass(_renderPass.value());
 
 		ImGui::SetCurrentContext(nullptr);
 	}
 
-	void ImguiAppComponentImpl::renderReset() noexcept
+	bgfx::ViewId ImguiAppComponentImpl::renderReset(bgfx::ViewId viewId) noexcept
 	{
-		if (_app && _renderPass)
+		if (_renderPass)
 		{
-			_app->getRenderGraph().addPass(_renderPass.value());
+			return _renderPass->renderReset(viewId);
+		}
+		return viewId;
+	}
+
+	void ImguiAppComponentImpl::render() noexcept
+	{
+		if (_renderPass)
+		{
+			_renderPass->render();
 		}
 	}
 
 	void ImguiAppComponentImpl::shutdown() noexcept
 	{
-		if (_app && _renderPass)
-		{
-			_app->getRenderGraph().removePass(_renderPass.value());
-		}
 		_app.reset();
 		_renderPass.reset();
 
@@ -510,9 +517,14 @@ namespace darmok
 		_impl->shutdown();
 	}
 
-	void ImguiAppComponent::renderReset() noexcept
+	bgfx::ViewId ImguiAppComponent::renderReset(bgfx::ViewId viewId) noexcept
 	{
-		_impl->renderReset();
+		return _impl->renderReset(viewId);
+	}
+
+	void ImguiAppComponent::render() noexcept
+	{
+		_impl->render();
 	}
 
 	void ImguiAppComponent::update(float dt) noexcept

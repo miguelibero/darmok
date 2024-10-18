@@ -42,25 +42,8 @@ namespace darmok
 
     Camera& Camera::setEnabled(bool enabled) noexcept
     {
-        if (_enabled != enabled)
-        {
-            _enabled = enabled;
-            if (!enabled && _scene)
-            {
-                _scene->getRenderGraph().removeNode(_renderGraph.id());
-            }
-        }
+        _enabled = enabled;
         return *this;
-    }
-
-    RenderGraphDefinition& Camera::getRenderGraph() noexcept
-    {
-        return _renderGraph;
-    }
-
-    const RenderGraphDefinition& Camera::getRenderGraph() const noexcept
-    {
-        return _renderGraph;
     }
 
     RenderChain& Camera::getRenderChain() noexcept
@@ -203,39 +186,29 @@ namespace darmok
     {
         _scene = scene;
         _app = app;
-        auto rgSuffix = _name;
-        if(rgSuffix.empty())
-        {
-            rgSuffix = std::to_string(scene.getEntity(*this));
-        }
-        _renderGraph.clear();
-        auto name = "Camera " + rgSuffix;
-        _renderGraph.setName(name);
-        _renderChain.init(name + " render chain", -RenderPassDefinition::kMaxPriority);
 
         for(auto& comp : copyComponentContainer())
         {
             comp.get().init(*this, scene, app);
         }
-        updateRenderGraph();
     }
 
-    void Camera::renderReset()
+    bgfx::ViewId Camera::renderReset(bgfx::ViewId viewId)
     {
-        _renderGraph.clear();
+        updateViewportProjection();
         for (auto& comp : copyComponentContainer())
         {
-            comp.get().renderReset();
+            viewId = comp.get().renderReset(viewId);
         }
-        updateViewportProjection();
-        _renderChain.renderReset();
+        viewId = _renderChain.renderReset(viewId);
+        return viewId;
     }
 
-    void Camera::updateRenderGraph() noexcept
+    void Camera::render()
     {
-        if (_scene && _enabled)
+        for (auto& comp : copyComponentContainer())
         {
-            _scene->getRenderGraph().setChild(_renderGraph);
+            comp.get().render();
         }
     }
 
@@ -247,7 +220,6 @@ namespace darmok
             itr->get().shutdown();
         }
         _renderChain.shutdown();
-        _renderGraph.clear();
     }
 
     void Camera::update(float deltaTime)
@@ -257,7 +229,6 @@ namespace darmok
             comp.get().update(deltaTime);
         }
         _renderChain.update(deltaTime);
-        updateRenderGraph();
         updateViewportProjection();
     }
 
@@ -289,21 +260,21 @@ namespace darmok
         }
     }
 
-    void Camera::beforeRenderView(IRenderGraphContext& context) const noexcept
+    void Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
-        setViewTransform(context.getViewId());
+        setViewTransform(viewId);
         for (auto& comp : copyComponentContainer())
         {
-            comp.get().beforeRenderView(context);
+            comp.get().beforeRenderView(viewId, encoder);
         }
     }
 
-    void Camera::beforeRenderEntity(Entity entity, IRenderGraphContext& context) const noexcept
+    void Camera::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
-        setEntityTransform(entity, context.getEncoder());
+        setEntityTransform(entity, encoder);
         for (auto& comp : copyComponentContainer())
         {
-            comp.get().beforeRenderEntity(entity, context);
+            comp.get().beforeRenderEntity(entity, viewId, encoder);
         }
     }
 
@@ -408,10 +379,6 @@ namespace darmok
         if (_viewport)
         {
             return _viewport.value();
-        }
-        else if (_scene)
-        {
-            return _scene->getCurrentViewport();
         }
         else if (_app)
         {
@@ -518,13 +485,11 @@ namespace darmok
         return nullptr;
     }
 
-    RenderGraphDefinition& Camera::getRenderChainParentGraph() noexcept
-    {
-        return _renderGraph;
-    }
-
     void Camera::onRenderChainInputChanged() noexcept
     {
-        renderReset();
+        if (_app)
+        {
+            _app->renderReset();
+        }
     }    
 }

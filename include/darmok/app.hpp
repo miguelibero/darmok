@@ -56,7 +56,6 @@ namespace darmok
 	class Window;
 	class AudioSystem;
 	class AssetContext;
-	class RenderGraphDefinition;
 	class RenderChain;
 	struct TypeFilter;
 
@@ -80,7 +79,7 @@ namespace darmok
 		virtual void earlyShutdown() {}
 		virtual void shutdown() {}
 		virtual void render() const {}
-		virtual void renderReset() {}
+		virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
 		virtual void update(float deltaTime) {}
 	};
 
@@ -123,7 +122,8 @@ namespace darmok
 		virtual entt::id_type getAppComponentType() const noexcept { return 0; };
 		virtual void init(App& app) {}
 		virtual void shutdown() {}
-		virtual void renderReset() {}
+		virtual void render() {}
+		virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
 		virtual void update(float deltaTime) {}
 	};
 
@@ -144,6 +144,7 @@ namespace darmok
 		~App() noexcept;
 		std::optional<int32_t> setup(const std::vector<std::string>& args);
 		void init();
+		void renderReset();
 		void shutdown();
 		AppRunResult run();
 
@@ -158,9 +159,6 @@ namespace darmok
 
 		[[nodiscard]] AssetContext& getAssets() noexcept;
 		[[nodiscard]] const AssetContext& getAssets() const noexcept;
-
-		[[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
-		[[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
 
 		[[nodiscard]] tf::Executor& getTaskExecutor();
 		[[nodiscard]] const tf::Executor& getTaskExecutor() const;

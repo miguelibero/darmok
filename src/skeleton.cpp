@@ -181,7 +181,7 @@ namespace darmok
         return _scene->getComponentInParent<SkeletalAnimator>(entity);
     }
 
-    void SkeletalAnimationRenderComponent::beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept
+    void SkeletalAnimationRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         auto animator = getAnimator(entity);
         if (!animator)
@@ -207,7 +207,6 @@ namespace darmok
                 _skinning.push_back(model * joint.inverseBindPose);
             }
         }
-        auto& encoder = context.getEncoder();
         encoder.setUniform(_skinningUniform, &_skinning.front(), uint16_t(_skinning.size()));
     }
 

@@ -4,9 +4,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
-#include <darmok/render_graph.hpp>
 #include <darmok/render_chain.hpp>
-#include <darmok/viewport.hpp>
 #include <darmok/utils.hpp>
 #include <entt/entt.hpp>
 #include <vector>
@@ -46,18 +44,13 @@ namespace darmok
         const EntityRegistry& getRegistry() const;
         bool removeComponent(Entity entity, entt::id_type typeId) noexcept;
 
-        RenderGraphDefinition& getRenderGraph() noexcept;
-        const RenderGraphDefinition& getRenderGraph() const noexcept;
         RenderChain& getRenderChain() noexcept;
         const RenderChain& getRenderChain() const noexcept;
 
-        const std::optional<Viewport>& getViewport() const noexcept;
-        void setViewport(const std::optional<Viewport>& vp) noexcept;
-        Viewport getCurrentViewport() const noexcept;
-
         void init(App& app);
         void update(float deltaTime);
-        void renderReset();
+        bgfx::ViewId renderReset(bgfx::ViewId viewId);
+        void render();
         void shutdown();
 
         static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
@@ -75,7 +68,6 @@ namespace darmok
         EntityRegistry _registry;
         Scene& _scene;
         OptionalRef<App> _app;
-        RenderGraphDefinition _renderGraph;
         RenderChain _renderChain;
         std::optional<Viewport> _viewport;
         TypeFilter _updateFilter;
@@ -91,9 +83,7 @@ namespace darmok
         void onCameraDestroyed(EntityRegistry& registry, Entity entity);
 
         Viewport getRenderChainViewport() const noexcept override;
-        RenderGraphDefinition& getRenderChainParentGraph() noexcept override;
         void onRenderChainInputChanged() noexcept override;
-        void updateRenderGraph() noexcept;
         void destroyPendingEntities() noexcept;
     };
 }

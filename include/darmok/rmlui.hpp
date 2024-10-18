@@ -118,7 +118,7 @@ namespace darmok
 
 		void init(Scene& scene, App& app) noexcept override;
 		void shutdown() noexcept override;
-		void renderReset() noexcept override;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
 		void update(float deltaTime) noexcept override;
 	private:
 		std::unique_ptr<RmluiSceneComponentImpl> _impl;
@@ -134,8 +134,8 @@ namespace darmok
 
 		void init(Camera& cam, Scene& scene, App& app) noexcept override;
 		void shutdown() noexcept override;
-		void renderReset() noexcept override;
-		void beforeRenderView(IRenderGraphContext& context) noexcept override;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
+		void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
 	private:
 		std::unique_ptr<RmluiRendererImpl> _impl;
 	};

@@ -1,14 +1,13 @@
 #pragma once
 
-#include <Jolt/Jolt.h>
-
 #ifdef JPH_DEBUG_RENDERER
 
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/physics3d_debug.hpp>
-#include <darmok/render_graph.hpp>
+#include <Jolt/Jolt.h>
 #include <Jolt/Renderer/DebugRenderer.h>
+#include <mutex>
 
 namespace darmok
 {
@@ -46,7 +45,7 @@ namespace darmok::physics3d
         using Config = PhysicsDebugRenderConfig;
 
         ~JoltPhysicsDebugRenderer() noexcept;
-        static void render(JPH::PhysicsSystem& joltSystem, const Config& config, IRenderGraphContext& context);
+        static void render(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder);
         static void shutdown();
 
         void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
@@ -77,7 +76,7 @@ namespace darmok::physics3d
         std::unique_ptr<Program> _program;
 
         JoltPhysicsDebugRenderer() noexcept;
-        void doRender(JPH::PhysicsSystem& joltSystem, const Config& config, IRenderGraphContext& context);
+        void doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder);
         std::unique_ptr<IMesh> createMesh(const MeshData& meshData);
         void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
         void renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
@@ -94,7 +93,7 @@ namespace darmok::physics3d
         PhysicsDebugRendererImpl(const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app);
         void shutdown();
-        void beforeRenderView(IRenderGraphContext& context);
+        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder);
 
         void onInputEvent(const std::string& tag) noexcept override;
 

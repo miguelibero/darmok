@@ -8,7 +8,6 @@
 #include <darmok/asset.hpp>
 #include <darmok/audio.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/render_graph.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
@@ -102,14 +101,6 @@ namespace darmok
 		BgfxCallbacks() = default;
 	};
 
-	class AppClearRenderPass final : public IRenderPass
-	{
-	public:
-		void renderPassConfigure(bgfx::ViewId viewId) override;
-		void renderPassExecute(IRenderGraphContext& context) override;
-		void renderPassDefine(RenderPassDefinition& def) override;
-	};
-
 	class AppImpl final : ITypeKeyboardListener<AppImpl>
 	{
 	public:
@@ -118,6 +109,7 @@ namespace darmok
 		void init();
 		void update(float deltaTime);
 		void render() const;
+		void renderReset();
 		AppRunResult processEvents();
 		void shutdown();
 		void quit() noexcept;
@@ -160,8 +152,6 @@ namespace darmok
 		const AssetContext& getAssets() const noexcept;
 		Platform& getPlatform() noexcept;
 		const Platform& getPlatform() const noexcept;
-		RenderGraphDefinition& getRenderGraph() noexcept;
-		const RenderGraphDefinition& getRenderGraph() const noexcept;
 		tf::Executor& getTaskExecutor();
 		const tf::Executor& getTaskExecutor() const;
 
@@ -204,7 +194,6 @@ namespace darmok
 		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
 		void toggleTaskflowProfile();
 
-		void renderReset();
 		void bgfxInit();
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void setNextRenderer();
@@ -240,13 +229,9 @@ namespace darmok
 		mutable std::optional<tf::Executor> _taskExecutor;
 		std::shared_ptr<tf::TFProfObserver> _taskObserver;
 
-		RenderGraphDefinition _renderGraphDef;
-		std::optional<RenderGraph> _renderGraph;
-
 		OwnRefCollection<IAppUpdater> _updaters;
 
 		Components _components;
-		AppClearRenderPass _clearRenderPass;
 		static ComponentDependencies _compDeps;
 	};
 

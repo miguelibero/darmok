@@ -1,5 +1,4 @@
 #include <darmok/shadow.hpp>
-#include <darmok/render_graph.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/program.hpp>
 #include <darmok/program_core.hpp>
@@ -53,9 +52,10 @@ namespace darmok
             _fb.idx = bgfx::kInvalidHandle;
         }
         _renderer.reset();
+        _viewId.reset();
     }
 
-    void ShadowRenderPass::renderPassDefine(RenderPassDefinition& def) noexcept
+    bgfx::ViewId ShadowRenderPass::renderReset(bgfx::ViewId viewId) noexcept
     {
         std::string name = "Shadow light ";
         if (_lightEntity == entt::null)
@@ -70,20 +70,20 @@ namespace darmok
                 name += " cascade " + std::to_string(_cascade);
             }
         }
-        def.setName(name);
-    }
+        bgfx::setViewName(viewId, name.c_str());
 
-    void ShadowRenderPass::renderPassConfigure(bgfx::ViewId viewId) noexcept
-    {
         auto size = _renderer->getConfig().mapSize;
         bgfx::setViewRect(viewId, 0, 0, size, size);
         bgfx::setViewFrameBuffer(viewId, _fb);
         bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH);
+
+        _viewId = viewId;
+        return ++viewId;
     }
 
-    void ShadowRenderPass::renderPassExecute(IRenderGraphContext& context) noexcept
+    void ShadowRenderPass::render(bgfx::Encoder& encoder) noexcept
     {
-        if (!_renderer || !_renderer->isEnabled())
+        if (!_viewId || !_renderer || !_renderer->isEnabled())
         {
             return;
         }
@@ -97,8 +97,7 @@ namespace darmok
             return;
         }
 
-        auto& encoder = context.getEncoder();
-        auto viewId = context.getViewId();
+        auto viewId = _viewId.value();
         auto lightTrans = scene->getComponent<const Transform>(_lightEntity);
         auto proj = _renderer->getLightProjMatrix(lightTrans, _cascade);
         auto view = _renderer->getLightViewMatrix(lightTrans);
@@ -201,11 +200,6 @@ namespace darmok
         {
             pass.shutdown();
         }
-        if (_cam)
-        {
-            _cam->getRenderGraph().removeNode(_renderGraph.id());
-        }
-        _renderGraph.clear();
         _passes.clear();
 
         _program.reset();
@@ -262,10 +256,6 @@ namespace darmok
             {
                 changed = true;
             }
-        }
-        if (changed)
-        {
-            _cam->renderReset();
         }
     }
 
@@ -373,18 +363,13 @@ namespace darmok
         return _crop * getLightMatrix(lightTrans, cascade);
     }
 
-    void ShadowRenderer::renderReset() noexcept
+    bgfx::ViewId ShadowRenderer::renderReset(bgfx::ViewId viewId) noexcept
     {
-        _renderGraph.clear();
-        _renderGraph.setName("Shadows");
         for (auto& pass : _passes)
         {
-            _renderGraph.addPass(pass);
+            viewId = pass.renderReset(viewId);
         }
-        if (_cam)
-        {
-            _cam->getRenderGraph().setChild(_renderGraph);
-        }
+        return viewId;
     }
 
     ShadowRenderComponent::ShadowRenderComponent(ShadowRenderer& renderer) noexcept
@@ -466,15 +451,13 @@ namespace darmok
         }
     }
 
-    void ShadowRenderComponent::beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept
+    void ShadowRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        configureUniforms(context);
+        configureUniforms(encoder);
     }
 
-    void ShadowRenderComponent::configureUniforms(IRenderGraphContext& context) const noexcept
+    void ShadowRenderComponent::configureUniforms(bgfx::Encoder& encoder) const noexcept
     {
-        auto& encoder = context.getEncoder();
-
         encoder.setBuffer(RenderSamplers::SHADOW_TRANS, _shadowTransBuffer, bgfx::Access::Read);
 
         auto& config = _renderer.getConfig();
@@ -518,7 +501,7 @@ namespace darmok
         _prog.reset();
     }
 
-    void ShadowDebugRenderer::beforeRenderView(IRenderGraphContext& context) noexcept
+    void ShadowDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         auto cam = _renderer.getCamera();
         if (!cam)
@@ -536,7 +519,7 @@ namespace darmok
             auto cascProjView = _renderer.getProjMatrix(casc);
             meshData += MeshData(Frustum(cascProjView), RectangleMeshType::Outline);
         }
-        renderMesh(meshData, debugColor, context);
+        renderMesh(meshData, debugColor, viewId, encoder);
         ++debugColor;
 
         auto entities = cam->getEntities<DirectionalLight>();
@@ -557,15 +540,13 @@ namespace darmok
             }
             meshData += MeshData(Sphere(0.01, lightPos), 8);
 
-            renderMesh(meshData, debugColor, context);
+            renderMesh(meshData, debugColor, viewId, encoder);
             ++debugColor;
         }
     }
 
-    void ShadowDebugRenderer::renderMesh(MeshData& meshData, uint8_t debugColor, IRenderGraphContext& context) noexcept
+    void ShadowDebugRenderer::renderMesh(MeshData& meshData, uint8_t debugColor, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        auto& encoder = context.getEncoder();
-        auto viewId = context.getViewId();
         encoder.setUniform(_hasTexturesUniform, glm::value_ptr(glm::vec4(0)));
         auto color = Colors::normalize(Colors::debug(debugColor));
         encoder.setUniform(_colorUniform, glm::value_ptr(color));

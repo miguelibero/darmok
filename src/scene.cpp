@@ -95,16 +95,6 @@ namespace darmok
         return _registry;
     }
 
-    RenderGraphDefinition& SceneImpl::getRenderGraph() noexcept
-    {
-        return _renderGraph;
-    }
-
-    const RenderGraphDefinition& SceneImpl::getRenderGraph() const noexcept
-    {
-        return _renderGraph;
-    }
-
     RenderChain& SceneImpl::getRenderChain() noexcept
     {
         return _renderChain;
@@ -113,33 +103,6 @@ namespace darmok
     const RenderChain& SceneImpl::getRenderChain() const noexcept
     {
         return _renderChain;
-    }
-
-    const std::optional<Viewport>& SceneImpl::getViewport() const noexcept
-    {
-        return _viewport;
-    }
-
-    void SceneImpl::setViewport(const std::optional<Viewport>& vp) noexcept
-    {
-        if (_viewport != vp)
-        {
-            _viewport = vp;
-            renderReset();
-        }
-    }
-
-    Viewport SceneImpl::getCurrentViewport() const noexcept
-    {
-        if(_viewport)
-        {
-            return _viewport.value();
-        }
-        else if (_app)
-        {
-            return Viewport(_app->getWindow().getPixelSize());
-        }
-        return Viewport();
     }
 
     void SceneImpl::setName(const std::string& name) noexcept
@@ -186,15 +149,7 @@ namespace darmok
         }
 
         _app = app;
-
-        _renderGraph.clear();
-        std::string name = _name;
-        if (name.empty())
-        {
-            name = "Scene";
-        }
-        _renderGraph.setName(name);
-        _renderChain.init(name + " render chain", -RenderPassDefinition::kMaxPriority);
+        _renderChain.init();
 
         for (auto& comp : copyComponentContainer())
         {
@@ -211,27 +166,21 @@ namespace darmok
         _registry.on_destroy<Camera>().connect<&SceneImpl::onCameraDestroyed>(*this);
     }
 
-    void SceneImpl::updateRenderGraph() noexcept
+    Viewport SceneImpl::getRenderChainViewport() const noexcept
     {
         if (_app)
         {
-            _app->getRenderGraph().setChild(_renderGraph);
+            return Viewport(_app->getWindow().getPixelSize());
         }
-    }
-
-    Viewport SceneImpl::getRenderChainViewport() const noexcept
-    {
-        return getCurrentViewport();
-    }
-
-    RenderGraphDefinition& SceneImpl::getRenderChainParentGraph() noexcept
-    {
-        return _renderGraph;
+        return Viewport();
     }
 
     void SceneImpl::onRenderChainInputChanged() noexcept
     {
-        renderReset();
+        if (_app)
+        {
+            _app->renderReset();
+        }
     }
 
     void SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity)
@@ -252,6 +201,16 @@ namespace darmok
         }
     }
 
+    void SceneImpl::render()
+    {
+        auto& cams = _registry.storage<Camera>();
+        for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
+        {
+            itr->render();
+        }
+        _renderChain.render();
+    }
+
     void SceneImpl::shutdown()
     {
         _registry.clear();
@@ -269,17 +228,16 @@ namespace darmok
         _app.reset();
     }
 
-    void SceneImpl::renderReset()
+    bgfx::ViewId SceneImpl::renderReset(bgfx::ViewId viewId)
     {
-        _renderGraph.clear();
-
         // iteration in reverse to maintain the order in wich the cameras where added
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            itr->renderReset();
+            viewId = itr->renderReset(viewId);
         }
-        _renderChain.renderReset();
+        viewId = _renderChain.renderReset(viewId);
+        return viewId;
     }
 
     void SceneImpl::destroyPendingEntities() noexcept
@@ -318,8 +276,6 @@ namespace darmok
 
             _renderChain.update(deltaTime);
         }
-        
-        updateRenderGraph();
     }
 
     void SceneImpl::destroyEntity(Entity entity) noexcept
@@ -380,7 +336,7 @@ namespace darmok
     Scene::Scene(App& app) noexcept
         : Scene()
     {
-        init(app);
+        _impl->init(app);
     }
 
     Scene::~Scene() noexcept
@@ -484,26 +440,6 @@ namespace darmok
         return storage && storage->find(entity) != storage->end();
     }
 
-    void Scene::init(App& app)
-    {
-        _impl->init(app);
-    }
-
-    void Scene::renderReset()
-    {
-        _impl->renderReset();
-    }
-
-    void Scene::shutdown()
-    {
-        _impl->shutdown();
-    }
-
-    void Scene::update(float dt)
-    {
-        _impl->update(dt);
-    }
-
     Scene& Scene::setName(const std::string& name) noexcept
     {
         _impl->setName(name);
@@ -526,16 +462,6 @@ namespace darmok
         return _impl->isPaused();
     }
 
-    RenderGraphDefinition& Scene::getRenderGraph() noexcept
-    {
-        return _impl->getRenderGraph();
-    }
-
-    const RenderGraphDefinition& Scene::getRenderGraph() const noexcept
-    {
-        return _impl->getRenderGraph();
-    }
-
     RenderChain& Scene::getRenderChain() noexcept
     {
         return _impl->getRenderChain();
@@ -544,22 +470,6 @@ namespace darmok
     const RenderChain& Scene::getRenderChain() const noexcept
     {
         return _impl->getRenderChain();
-    }
-
-    const std::optional<Viewport>& Scene::getViewport() const noexcept
-    {
-        return _impl->getViewport();
-    }
-
-    Scene& Scene::setViewport(const std::optional<Viewport>& vp) noexcept
-    {
-        _impl->setViewport(vp);
-        return *this;
-    }
-
-    Viewport Scene::getCurrentViewport() const noexcept
-    {
-        return _impl->getCurrentViewport();
     }
 
     void Scene::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
@@ -600,7 +510,7 @@ namespace darmok
 
     SceneAppComponent::SceneAppComponent(const std::shared_ptr<Scene>& scene) noexcept
     {
-        _scenes.push_back(scene == nullptr ? std::make_shared<Scene>() : scene);
+        _scenes.push_back(scene ? scene : std::make_shared<Scene>());
     }
 
     std::shared_ptr<Scene> SceneAppComponent::getScene(size_t i) const noexcept
@@ -614,7 +524,7 @@ namespace darmok
 
     SceneAppComponent& SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene, size_t i) noexcept
     {
-        if (i < 0)
+        if (i < 0 || !scene)
         {
             return *this;
         }
@@ -625,12 +535,12 @@ namespace darmok
         auto& oldScene = _scenes[i];
         if (_app && oldScene)
         {
-            oldScene->shutdown();
+            oldScene->getImpl().shutdown();
         }
         _scenes[i] = scene;
-        if (_app && scene)
+        if (_app)
         {
-            scene->init(*_app);
+            scene->getImpl().init(*_app);
         }
         return *this;
     }
@@ -644,11 +554,15 @@ namespace darmok
 
     SceneAppComponent& SceneAppComponent::addScene(const std::shared_ptr<Scene>& scene) noexcept
     {
-        _scenes.push_back(scene);
-        if (_app && scene)
+        if (scene)
         {
-            scene->init(*_app);
+            _scenes.push_back(scene);
+            if (_app)
+            {
+                scene->getImpl().init(*_app);
+            }
         }
+
         return *this;
     }
 
@@ -666,18 +580,24 @@ namespace darmok
         _app = app;
         for(auto& scene : _scenes)
         {
-            scene->init(app);
+            scene->getImpl().init(app);
         }
     }
 
-    void SceneAppComponent::renderReset()
+    bgfx::ViewId SceneAppComponent::renderReset(bgfx::ViewId viewId)
     {
         for (auto& scene : _scenes)
         {
-            if (scene)
-            {
-                scene->renderReset();
-            }
+            viewId = scene->getImpl().renderReset(viewId);
+        }
+        return viewId;
+    }
+
+    void SceneAppComponent::render()
+    {
+        for (auto& scene : _scenes)
+        {
+            scene->getImpl().render();
         }
     }
 
@@ -686,10 +606,7 @@ namespace darmok
         _app = nullptr;
         for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
         {
-            if (auto scene = *itr)
-            {
-                scene->shutdown();
-            }
+            (*itr)->getImpl().shutdown();
         }
     }
 
@@ -697,10 +614,7 @@ namespace darmok
     {
         for (auto& scene : _scenes)
         {
-            if (scene)
-            {
-                scene->update(deltaTime);
-            }
+            scene->getImpl().update(deltaTime);
         }
     }
 }

@@ -2,7 +2,6 @@
 
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
-#include <darmok/render_graph.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/utf8.hpp>
 #include <darmok/mesh.hpp>
@@ -121,7 +120,7 @@ namespace darmok
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) override;
-        void beforeRenderView(IRenderGraphContext& context) noexcept;
+        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;

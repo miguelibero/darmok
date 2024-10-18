@@ -331,7 +331,7 @@ namespace darmok
 		}
 	}
 
-	void TextRenderer::beforeRenderView(IRenderGraphContext& context) noexcept
+	void TextRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
 	{
 		if (!_scene || !_cam)
 		{
@@ -339,8 +339,6 @@ namespace darmok
 		}
 		auto entities = _cam->getEntities<Text>();
 
-		auto& encoder = context.getEncoder();
-		auto viewId = context.getViewId();
 		static const uint64_t state = BGFX_STATE_WRITE_RGB
 			| BGFX_STATE_WRITE_A
 			| BGFX_STATE_DEPTH_TEST_LEQUAL

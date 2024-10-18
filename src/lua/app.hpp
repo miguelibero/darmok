@@ -122,7 +122,7 @@ namespace darmok
 
 		void init(App& app) override;
 		void shutdown() override;
-		void renderReset() override;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) override;
 		void update(float deltaTime) override;
 
 	private:

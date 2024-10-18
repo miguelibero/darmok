@@ -1,6 +1,5 @@
 #include "render_chain.hpp"
 #include <darmok/render_chain.hpp>
-#include <darmok/render_graph.hpp>
 #include "glm.hpp"
 
 namespace darmok
@@ -30,7 +29,6 @@ namespace darmok
         LuaFrameBuffer::bind(lua);
         LuaScreenSpaceRenderPass::bind(lua);
         lua.new_usertype<RenderChain>("RenderChain", sol::no_constructor,
-            "render_graph", sol::property(sol::resolve<RenderGraphDefinition&()>(&RenderChain::getRenderGraph)),
             "output", sol::property(&RenderChain::getOutput, &RenderChain::setOutput),
             "input", sol::property(&LuaRenderChain::getInput),
             "remove_step", &RenderChain::removeStep

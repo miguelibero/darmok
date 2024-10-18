@@ -32,7 +32,7 @@ namespace
 	using namespace darmok;
 	using namespace darmok::physics3d;
 
-	class JoltSampleAppDelegate final : public IAppDelegate, public ICollisionListener, public ICharacterControllerDelegate, public IImguiRenderer
+	class JoltSampleAppDelegate final : public IAppDelegate, public ICollisionListener, public ICharacterDelegate, public IImguiRenderer
 	{
 	public:
 		JoltSampleAppDelegate(App& app)

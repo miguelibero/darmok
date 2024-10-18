@@ -2,7 +2,6 @@
 
 #include <darmok/input_fwd.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/render_graph.hpp>
 #include <imgui.h>
 #include <unordered_map>
 #include <memory>
@@ -14,19 +13,18 @@ namespace darmok
 	class IImguiRenderer;
 	class Program;
 
-	class ImguiRenderPass final : public IRenderPass
+	class ImguiRenderPass final
 	{
 	public:
 		ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui) noexcept;
 		~ImguiRenderPass() noexcept;
-		void renderPassDefine(RenderPassDefinition& def) noexcept override;
-		void renderPassConfigure(bgfx::ViewId viewId) noexcept override;
-		void renderPassExecute(IRenderGraphContext& context) noexcept override;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
+		void render() noexcept;
 	private:
 		static const uint8_t _imguiAlphaBlendFlags;
 		IImguiRenderer& _renderer;
 		ImGuiContext* _imgui;
-		bgfx::ViewId _viewId;
+		std::optional<bgfx::ViewId> _viewId;
 		bgfx::TextureHandle _fontsTexture;
 		std::unique_ptr<Program> _program;
 		bgfx::UniformHandle _lodEnabledUniform;
@@ -45,7 +43,8 @@ namespace darmok
 
 		void init(App& app);
 		void shutdown() noexcept;
-		void renderReset() noexcept;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
+		void render() noexcept;
 		void update(float dt) noexcept;
 		ImGuiContext* getContext() noexcept;
 

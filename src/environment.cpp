@@ -42,11 +42,8 @@ namespace darmok
         _cam.reset();
     }
 
-    void SkyboxRenderer::beforeRenderView(IRenderGraphContext& context)
+    void SkyboxRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
     {
-        auto& encoder = context.getEncoder();
-        auto viewId = context.getViewId();
-
         if (!_mesh || !_program || !_texture)
         {
             return;

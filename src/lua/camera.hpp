@@ -20,7 +20,6 @@ namespace darmok
 	class Scene;
 	class Transform;
 	class RenderChain;
-	class RenderGraphDefinition;
 	struct EntityFilter;
 
 	class LuaCamera final

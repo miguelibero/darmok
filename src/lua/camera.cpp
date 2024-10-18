@@ -248,9 +248,6 @@ namespace darmok
 			"viewport_to_world_point", &LuaCamera::viewportToWorldPoint,
 			"viewport_to_screen_point", &LuaCamera::viewportToScreenPoint,
 			"screen_to_viewport_point", &LuaCamera::screenToViewportPoint,
-			"render_graph", sol::property(
-				sol::resolve<const RenderGraphDefinition&() const>(&Camera::getRenderGraph)
-			),
 			"render_chain", sol::property(
 				sol::resolve<RenderChain&()>(&Camera::getRenderChain)
 			),

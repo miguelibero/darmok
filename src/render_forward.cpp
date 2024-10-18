@@ -31,33 +31,16 @@ namespace darmok
 		{
 			_materials = app.addComponent<MaterialAppComponent>();
 		}
-
-		renderReset();
 	}
 
-	void ForwardRenderer::renderReset() noexcept
+	bgfx::ViewId ForwardRenderer::renderReset(bgfx::ViewId viewId) noexcept
 	{
+		_viewId.reset();
 		if (!_cam)
 		{
-			return;
+			return viewId;
 		}
-		auto size = _cam->getCurrentViewport().size;
-		_cam->getRenderGraph().addPass(*this);
-	}
 
-	void ForwardRenderer::shutdown() noexcept
-	{
-		if (_cam)
-		{
-			_cam->getRenderGraph().removePass(*this);
-		}
-		_cam.reset();
-		_scene.reset();
-		_app.reset();
-	}
-
-	void ForwardRenderer::renderPassDefine(RenderPassDefinition& def) noexcept
-	{
 		std::string name("Forward");
 		if (_cam)
 		{
@@ -67,21 +50,21 @@ namespace darmok
 				name += " " + camName;
 			}
 		}
-		def.setName(name);
+		bgfx::setViewName(viewId, name.c_str());
+		_cam->configureView(viewId);
+		_viewId = viewId;
+		return ++viewId;
 	}
 
-	void ForwardRenderer::renderPassConfigure(bgfx::ViewId viewId)
+	void ForwardRenderer::shutdown() noexcept
 	{
-		if (_cam)
-		{
-			_cam->configureView(viewId);
-		}
+		_cam.reset();
+		_scene.reset();
+		_app.reset();
 	}
 
-	void ForwardRenderer::renderEntities(IRenderGraphContext& context, const EntityRuntimeView& entities, OpacityType opacity) noexcept
+	void ForwardRenderer::renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder, const EntityRuntimeView& entities, OpacityType opacity) noexcept
 	{
-		auto& encoder = context.getEncoder();
-		auto viewId = context.getViewId();
 		for (auto entity : entities)
 		{
 			auto renderable = _scene->getComponent<const Renderable>(entity);
@@ -93,7 +76,7 @@ namespace darmok
 			{
 				continue;
 			}
-			_cam->beforeRenderEntity(entity, context);
+			_cam->beforeRenderEntity(entity, viewId, encoder);
 			if (!renderable->render(encoder))
 			{
 				continue;
@@ -102,16 +85,18 @@ namespace darmok
 		}
 	}
 
-	void ForwardRenderer::renderPassExecute(IRenderGraphContext& context) noexcept
+	void ForwardRenderer::render() noexcept
 	{
-		if (!_cam || !_cam->isEnabled())
+		if (!_viewId || !_cam || !_cam->isEnabled())
 		{
 			return;
 		}
-		_cam->beforeRenderView(context);
+		auto viewId = _viewId.value();
+		auto& encoder = *bgfx::begin();
+		_cam->beforeRenderView(viewId, encoder);
 		auto entities = _cam->getEntities<Renderable>();
-		renderEntities(context, entities, OpacityType::Opaque);
-		renderEntities(context, entities, OpacityType::Mask);
-		renderEntities(context, entities, OpacityType::Transparent);
+		renderEntities(viewId, encoder, entities, OpacityType::Opaque);
+		renderEntities(viewId, encoder, entities, OpacityType::Mask);
+		renderEntities(viewId, encoder, entities, OpacityType::Transparent);
 	}
 }

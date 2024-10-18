@@ -22,7 +22,7 @@ currently using:
 * [cereal](https://uscilab.github.io/cereal/) for serialization
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [miniaudio](https://miniaud.io/) for audio
-* [taskflow](https://github.com/taskflow/taskflow) for multithreaded render & physics
+* [taskflow](https://github.com/taskflow/taskflow) for multithreading
 * [Cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
 * [tiny-process-lib](https://gitlab.com/eidheim/tiny-process-library) to run os processes
 * [mikktspace](http://www.mikktspace.com/) - to calculate tangents
@@ -66,7 +66,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 * bgfx window setup (GLFW on windows & linux)
 * update logic methods with delta time
-* renderer: threaded render graph that compiles passes inputs and outputs
+* renderer
     * point, directional & ambient lights
     * forward render
         * unlit, gui

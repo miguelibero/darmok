@@ -107,8 +107,6 @@ namespace darmok
 		static void destroyEntity(Scene& scene, const LuaEntity& entity) noexcept;
 		static std::optional<LuaEntity> getEntity(const std::shared_ptr<Scene>& scene, const sol::object& comp) noexcept;
 
-		static std::optional<Viewport> getViewport(const Scene& scene) noexcept;
-		static void setViewport(Scene& scene, std::optional<VarViewport> vp) noexcept;
 		static void setUpdateFilter(Scene& scene, const sol::object& filter) noexcept;
 
 		static bool forEachEntity(const std::shared_ptr<Scene>& scene, const sol::protected_function& callback);
@@ -122,7 +120,7 @@ namespace darmok
 
 		void init(Scene& scene, App& app) override;
 		void shutdown() override;
-		void renderReset() override;
+		bgfx::ViewId renderReset(bgfx::ViewId viewId) override;
 		void update(float deltaTime) override;
 
 	private:

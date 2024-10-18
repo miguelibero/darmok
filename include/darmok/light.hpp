@@ -85,7 +85,7 @@ namespace darmok
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime)  noexcept override;
-        void beforeRenderEntity(Entity entity, IRenderGraphContext& context) noexcept override;
+        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
 
     private:
         OptionalRef<Scene> _scene;

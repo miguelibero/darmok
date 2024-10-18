@@ -12,7 +12,6 @@
 #include <darmok/scene.hpp>
 #include <darmok/material_fwd.hpp>
 #include <darmok/viewport.hpp>
-#include <darmok/render_graph.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/math.hpp>
 #include <darmok/utils.hpp>
@@ -77,7 +76,8 @@ namespace darmok
 
         void init(Scene& scene, App& app);
         void update(float deltaTime);
-        void renderReset();
+        bgfx::ViewId renderReset(bgfx::ViewId viewId);
+        void render();
         void shutdown();
 
         Camera& addComponent(std::unique_ptr<ICameraComponent>&& renderer) noexcept;
@@ -127,18 +127,14 @@ namespace darmok
         [[nodiscard]] glm::vec3 viewportToScreenPoint(const glm::vec3& point) const noexcept;
         [[nodiscard]] glm::vec3 screenToViewportPoint(const glm::vec3& point) const noexcept;
 
-        [[nodiscard]] RenderGraphDefinition& getRenderGraph() noexcept;
-        [[nodiscard]] const RenderGraphDefinition& getRenderGraph() const noexcept;
         [[nodiscard]] RenderChain& getRenderChain() noexcept;
         [[nodiscard]] const RenderChain& getRenderChain() const noexcept;
         
         void configureView(bgfx::ViewId viewId) const;
-
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept;
-
-        void beforeRenderView(IRenderGraphContext& context) const noexcept;
-        void beforeRenderEntity(Entity entity, IRenderGraphContext& context) const noexcept;
+        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
         static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
 
@@ -182,18 +178,15 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
 
-        RenderGraphDefinition _renderGraph;
         RenderChain _renderChain;
         
         bool updateViewportProjection() noexcept;
-        void updateRenderGraph() noexcept;
 
         Components::iterator findComponent(entt::id_type type) noexcept;
         Components::const_iterator findComponent(entt::id_type type) const noexcept;
 
         Viewport getRenderChainViewport() const noexcept override;
         OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
-        RenderGraphDefinition& getRenderChainParentGraph() noexcept override;
         void onRenderChainInputChanged() noexcept override;
 
         using ComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;

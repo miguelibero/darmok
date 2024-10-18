@@ -5,7 +5,6 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/color_fwd.hpp>
 #include <darmok/viewport.hpp>
-#include <darmok/render_graph.hpp>
 #include <memory>
 #include <vector>
 #include <stdexcept>
@@ -17,8 +16,6 @@ namespace darmok
     class Camera;
     class App;
     class Scene;
-    class RenderPassDefinition;
-    class IRenderGraphContext;
 
     class DARMOK_EXPORT BX_NO_VTABLE ICameraComponent
     {
@@ -26,12 +23,13 @@ namespace darmok
         virtual ~ICameraComponent() = default;
         virtual entt::id_type getCameraComponentType() const noexcept { return 0; };
         virtual void init(Camera& cam, Scene& scene, App& app) {};
+        virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; };
+        virtual void render() {};
         virtual void update(float deltaTime) {};
-        virtual void renderReset() {};
         virtual void shutdown() {};
 
-        virtual void beforeRenderView(IRenderGraphContext& context) {};
-        virtual void beforeRenderEntity(Entity entity, IRenderGraphContext& context) {};
+        virtual void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) {};
+        virtual void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) {};
     };
 
     template<typename T>

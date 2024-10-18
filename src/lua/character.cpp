@@ -23,7 +23,7 @@ namespace darmok::physics3d
 
 	bool LuaCharacterDelegate::onContactValidate(CharacterController& character, PhysicsBody& body)
 	{
-		return _contactValidateDef(_table, character, body);
+		return _contactValidateDef(_table, character, body).as<bool>();
 	}
 
 	void LuaCharacterDelegate::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings)

@@ -66,16 +66,17 @@ namespace darmok
         LuaTableDelegateDefinition(const std::string& key, const std::string& desc) noexcept;
 
         template<typename... Args>
-        bool operator()(const sol::table& table, Args&&... args) const
+        sol::object operator()(const sol::table& table, Args&&... args) const
         {
             auto elm = table[_key];
             if (elm.get_type() != sol::type::function)
             {
-                return true;
+                return sol::object(table.lua_state(), true);
             }
             sol::protected_function func = elm;
             auto result = func(table, std::forward<Args>(args)...);
-            return LuaUtils::checkResult(_desc, result);
+            LuaUtils::checkResult(_desc, result);
+            return result;
         }
 
         template<typename T, typename... Args>

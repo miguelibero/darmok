@@ -3,7 +3,6 @@
 #include <darmok/export.h>
 #include <memory>
 #include <darmok/render_scene.hpp>
-#include <darmok/render_graph.hpp>
 
 
 namespace darmok
@@ -18,7 +17,7 @@ namespace darmok
         SkyboxRenderer(const std::shared_ptr<Texture>& texture) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
-        void beforeRenderView(IRenderGraphContext& context) override;
+        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) override;
     private:
         OptionalRef<Camera> _cam;
         std::unique_ptr<IMesh> _mesh;
