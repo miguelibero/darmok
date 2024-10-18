@@ -6,6 +6,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/render_chain.hpp>
 #include <darmok/light.hpp>
 
 #ifdef DARMOK_JOLT

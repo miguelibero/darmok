@@ -15,6 +15,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/render_chain.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/environment.hpp>

@@ -1,34 +1,39 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <memory>
-#include <vector>
-#include <optional>
-#include <unordered_set>
-#include <bx/bx.h>
-#include <bgfx/bgfx.h>
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/scene.hpp>
-#include <darmok/material_fwd.hpp>
-#include <darmok/viewport.hpp>
-#include <darmok/render_chain.hpp>
+#include <darmok/scene_fwd.hpp>
 #include <darmok/math.hpp>
 #include <darmok/utils.hpp>
 
+#include <bgfx/bgfx.h>
+
+#include <memory>
+#include <optional>
+#include <string>
+
 namespace darmok
 {
-    class Texture;
+    class Scene;
+    class CameraImpl;
     class Transform;
     class ICameraComponent;
-    class Scene;
-    struct Ray;   
+    class RenderChain;
+    struct Ray;
+    struct Viewport;
 
-    class DARMOK_EXPORT Camera final : IRenderChainDelegate
+    class DARMOK_EXPORT Camera final
     {
     public:
         Camera(const glm::mat4& projMatrix = {}) noexcept;
-        ~Camera();
+        ~Camera() noexcept;
+
+        CameraImpl& getImpl() noexcept;
+        const CameraImpl& getImpl() const noexcept;
+
+        Scene& getScene();
+        const Scene& getScene() const;
 
         const std::string& getName() const noexcept;
         Camera& setName(const std::string& name) noexcept;
@@ -69,18 +74,12 @@ namespace darmok
         }
 
         template<typename T>
-        EntityRuntimeView getEntities() const noexcept
+        EntityRuntimeView getEntities() const
         {
-            return _scene->getEntities<T>(_cullingFilter);
+            return getScene().getEntities<T>(getCullingFilter());
         }
 
-        void init(Scene& scene, App& app);
-        void update(float deltaTime);
-        bgfx::ViewId renderReset(bgfx::ViewId viewId);
-        void render();
-        void shutdown();
-
-        Camera& addComponent(std::unique_ptr<ICameraComponent>&& renderer) noexcept;
+        Camera& addComponent(std::unique_ptr<ICameraComponent>&& comp) noexcept;
         bool removeComponent(entt::id_type type) noexcept;
         [[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
         [[nodiscard]] OptionalRef<ICameraComponent> getComponent(entt::id_type type) noexcept;
@@ -145,51 +144,6 @@ namespace darmok
         }
 
     private:
-        std::string _name;
-        bool _enabled;
-        glm::mat4 _proj;
-        glm::mat4 _projInv;
-
-        struct PerspectiveData final
-        {
-            float fovy;
-            float near;
-            float far;
-        };
-
-        struct OrthoData final
-        {
-            glm::vec2 center;
-            float near;
-            float far;
-        };
-
-        using ProjectionData = std::variant<PerspectiveData, OrthoData>;
-        std::optional<ProjectionData> _vpProj;
-
-        std::optional<Viewport> _viewport;
-        TypeFilter _cullingFilter;
-
-        using Components = std::vector<std::shared_ptr<ICameraComponent>>;
-        Components _components;
-        using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
-        static ComponentDependencies _compDeps;
-
-        OptionalRef<Scene> _scene;
-        OptionalRef<App> _app;
-
-        RenderChain _renderChain;
-        
-        bool updateViewportProjection() noexcept;
-
-        Components::iterator findComponent(entt::id_type type) noexcept;
-        Components::const_iterator findComponent(entt::id_type type) const noexcept;
-
-        Viewport getRenderChainViewport() const noexcept override;
-        OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
-        void onRenderChainInputChanged() noexcept override;
-
-        void doSetProjectionMatrix(const glm::mat4& matrix) noexcept;
-        glm::mat4 getScreenModelMatrix() const noexcept;
+        std::unique_ptr<CameraImpl> _impl;
     };
 }

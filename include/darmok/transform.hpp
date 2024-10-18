@@ -65,6 +65,7 @@ namespace darmok
         Transform& setForward(const glm::vec3& v) noexcept;
 
     private:
+        // should not use PIMPL here since we want consecutive memory
         glm::vec3 _position;
         glm::quat _rotation;
         glm::vec3 _scale;

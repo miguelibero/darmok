@@ -5,7 +5,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/window.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
+#include "camera.hpp"
 
 namespace darmok
 {
@@ -182,7 +182,7 @@ namespace darmok
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            itr->init(_scene, app);
+            itr->getImpl().init(_scene, app);
         }
 
         _registry.on_construct<Camera>().connect<&SceneImpl::onCameraConstructed>(*this);
@@ -207,7 +207,7 @@ namespace darmok
         if (_app)
         {
             auto& cam = registry.get<Camera>(entity);
-            cam.init(_scene, _app.value());
+            cam.getImpl().init(_scene, _app.value());
         }
     }
 
@@ -216,7 +216,7 @@ namespace darmok
         if (_app)
         {
             auto& cam = registry.get<Camera>(entity);
-            cam.shutdown();
+            cam.getImpl().shutdown();
         }
     }
 
@@ -225,7 +225,7 @@ namespace darmok
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            itr->render();
+            itr->getImpl().render();
         }
         _renderChain.render();
     }
@@ -254,7 +254,7 @@ namespace darmok
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            viewId = itr->renderReset(viewId);
+            viewId = itr->getImpl().renderReset(viewId);
         }
         viewId = _renderChain.renderReset(viewId);
         return viewId;
@@ -280,7 +280,7 @@ namespace darmok
             auto entities = _scene.getUpdateEntities<Camera>();
             for (auto entity : entities)
             {
-                _scene.getComponent<Camera>(entity)->update(deltaTime);
+                _scene.getComponent<Camera>(entity)->getImpl().update(deltaTime);
             }
 
             entities = _scene.getUpdateEntities<Transform>();

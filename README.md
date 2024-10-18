@@ -112,7 +112,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * clipboard text support (UTF8)
 * asset loading progress
 * possible refactors
-    * move stuff to private headers (Camera and others)
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
     * loaders should return unique_ptr
     * move lua bindings to separate library?
