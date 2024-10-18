@@ -334,17 +334,6 @@ namespace darmok
 		bgfx::setPaletteColor(2, UINT32_C(0xFFFFFFFF));
 	}
 
-	AppImpl::ComponentRefs AppImpl::copyComponentContainer() const noexcept
-	{
-		ComponentRefs refs;
-		refs.reserve(_components.size());
-		for (auto& component : _components)
-		{
-			refs.emplace_back(*component);
-		}
-		return refs;
-	}
-
 	void AppImpl::init()
 	{
 		_lastUpdate = bx::getHPCounter();
@@ -361,9 +350,9 @@ namespace darmok
 
 		_running = true;
 
-		for (auto& comp : copyComponentContainer())
+		for (auto comp : Components(_components))
 		{
-			comp.get().init(_app);
+			comp->init(_app);
 		}
 
 		if (_delegate)
@@ -389,10 +378,10 @@ namespace darmok
 
 		_running = false;
 
-		auto components = copyComponentContainer();
+		auto components = Components(_components);
 		for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
 		{
-			itr->get().shutdown();
+			(*itr)->shutdown();
 		}
 		_components.clear();
 		_updaters.clear();
@@ -446,11 +435,10 @@ namespace darmok
 				_delegate->update(deltaTime);
 			}
 
-			for (auto& comp : copyComponentContainer())
+			for (auto comp : Components(_components))
 			{
-				comp.get().update(deltaTime);
+				comp->update(deltaTime);
 			}
-
 			for (auto& updater : _updaters.copy())
 			{
 				updater.update(deltaTime);
@@ -494,9 +482,9 @@ namespace darmok
 			viewId = _delegate->renderReset(viewId);
 		}
 
-		for (auto& comp : copyComponentContainer())
+		for (auto comp : Components(_components))
 		{
-			viewId = comp.get().renderReset(viewId);
+			viewId = comp->renderReset(viewId);
 		}
 	}
 
@@ -508,9 +496,9 @@ namespace darmok
 		{
 			_delegate->render();
 		}
-		for (auto& comp : copyComponentContainer())
+		for (auto comp : Components(_components))
 		{
-			comp.get().render();
+			comp->render();
 		}
 	}
 

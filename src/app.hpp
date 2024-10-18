@@ -180,16 +180,13 @@ namespace darmok
 		}
 
 	private:
-		using Components = std::vector<std::unique_ptr<IAppComponent>>;
+		using Components = std::vector<std::shared_ptr<IAppComponent>>;
 		using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
 
 		Components::iterator findComponent(entt::id_type type) noexcept;
 		Components::const_iterator findComponent(entt::id_type type) const noexcept;
 
 		[[nodiscard]] float updateTimePassed() noexcept;
-
-		using ComponentRefs = std::vector<std::reference_wrapper<IAppComponent>>;
-		ComponentRefs copyComponentContainer() const noexcept;
 
 		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
 		void toggleTaskflowProfile();

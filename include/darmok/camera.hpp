@@ -170,7 +170,7 @@ namespace darmok
         std::optional<Viewport> _viewport;
         TypeFilter _cullingFilter;
 
-        using Components = std::vector<std::unique_ptr<ICameraComponent>>;
+        using Components = std::vector<std::shared_ptr<ICameraComponent>>;
         Components _components;
         using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
         static ComponentDependencies _compDeps;
@@ -188,9 +188,6 @@ namespace darmok
         Viewport getRenderChainViewport() const noexcept override;
         OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
         void onRenderChainInputChanged() noexcept override;
-
-        using ComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
-        ComponentRefs copyComponentContainer() const noexcept;
 
         void doSetProjectionMatrix(const glm::mat4& matrix) noexcept;
         glm::mat4 getScreenModelMatrix() const noexcept;

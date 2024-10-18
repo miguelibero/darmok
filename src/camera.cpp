@@ -172,24 +172,14 @@ namespace darmok
         return _cullingFilter;
     }
 
-    Camera::ComponentRefs Camera::copyComponentContainer() const noexcept
-    {
-        ComponentRefs refs;
-        for (auto& component : _components)
-        {
-            refs.emplace_back(*component);
-        }
-        return refs;
-    }
-
     void Camera::init(Scene& scene, App& app)
     {
         _scene = scene;
         _app = app;
 
-        for(auto& comp : copyComponentContainer())
+        for(auto comp : Components(_components))
         {
-            comp.get().init(*this, scene, app);
+            comp->init(*this, scene, app);
         }
     }
 
@@ -197,9 +187,9 @@ namespace darmok
     {
         updateViewportProjection();
         _renderChain.beforeRenderReset();
-        for (auto& comp : copyComponentContainer())
+        for (auto comp : Components(_components))
         {
-            viewId = comp.get().renderReset(viewId);
+            viewId = comp->renderReset(viewId);
         }
         viewId = _renderChain.renderReset(viewId);
         return viewId;
@@ -207,27 +197,27 @@ namespace darmok
 
     void Camera::render()
     {
-        for (auto& comp : copyComponentContainer())
+        for (auto comp : Components(_components))
         {
-            comp.get().render();
+            comp->render();
         }
     }
 
     void Camera::shutdown()
     {
-        auto components = copyComponentContainer();
+        auto components = Components(_components);
         for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
         {
-            itr->get().shutdown();
+            (*itr)->shutdown();
         }
         _renderChain.shutdown();
     }
 
     void Camera::update(float deltaTime)
     {
-        for (auto& comp : copyComponentContainer())
+        for (auto comp : Components(_components))
         {
-            comp.get().update(deltaTime);
+            comp->update(deltaTime);
         }
         _renderChain.update(deltaTime);
         updateViewportProjection();
@@ -264,18 +254,18 @@ namespace darmok
     void Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
         setViewTransform(viewId);
-        for (auto& comp : copyComponentContainer())
+        for (auto comp : Components(_components))
         {
-            comp.get().beforeRenderView(viewId, encoder);
+            comp->beforeRenderView(viewId, encoder);
         }
     }
 
     void Camera::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
         setEntityTransform(entity, encoder);
-        for (auto& comp : copyComponentContainer())
+        for (auto comp : Components(_components))
         {
-            comp.get().beforeRenderEntity(entity, viewId, encoder);
+            comp->beforeRenderEntity(entity, viewId, encoder);
         }
     }
 

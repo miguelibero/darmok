@@ -116,6 +116,9 @@ namespace darmok
 		}
 		_running = false;
 		_viewId.reset();
+		_steps.clear();
+		_buffers.clear();
+		_output.reset();
 	}
 
 	void RenderChain::update(float deltaTime)

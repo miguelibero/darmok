@@ -159,17 +159,6 @@ namespace darmok
         return _paused;
     }
 
-    SceneImpl::ComponentRefs SceneImpl::copyComponentContainer() const noexcept
-    {
-        ComponentRefs refs;
-        refs.reserve(_components.size());
-        for (auto& component : _components)
-        {
-            refs.emplace_back(*component);
-        }
-        return refs;
-    }
-
     void SceneImpl::init(App& app)
     {
         if (_app == app)
@@ -185,9 +174,9 @@ namespace darmok
         _app = app;
         _renderChain.init();
 
-        for (auto& comp : copyComponentContainer())
+        for (auto comp : Components(_components))
         {
-            comp.get().init(_scene, app);
+            comp->init(_scene, app);
         }
 
         auto& cams = _registry.storage<Camera>();
@@ -245,10 +234,10 @@ namespace darmok
     {
         _registry.clear();
 
-        auto components = copyComponentContainer();
+        auto components = Components(_components);
         for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
         {
-            itr->get().shutdown();
+            (*itr)->shutdown();
         }
         _renderChain.shutdown();
 
@@ -300,9 +289,9 @@ namespace darmok
                 _scene.getComponent<Transform>(entity)->update();
             }
             
-            for (auto& comp : copyComponentContainer())
+            for (auto comp : Components(_components))
             {
-                comp.get().update(deltaTime);
+                comp->update(deltaTime);
             }
 
             _renderChain.update(deltaTime);

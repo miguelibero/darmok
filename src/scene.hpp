@@ -62,7 +62,7 @@ namespace darmok
         void setUpdateFilter(const TypeFilter& filter) noexcept;
         const TypeFilter& getUpdateFilter() const noexcept;
     private:
-        using Components = std::vector<std::unique_ptr<ISceneComponent>>;
+        using Components = std::vector<std::shared_ptr<ISceneComponent>>;
         using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
 
         std::vector<Entity> _pendingDestroy;
@@ -76,9 +76,6 @@ namespace darmok
         std::optional<Viewport> _viewport;
         TypeFilter _updateFilter;
         static ComponentDependencies _compDeps;
-
-        using ComponentRefs = std::vector<std::reference_wrapper<ISceneComponent>>;
-        ComponentRefs copyComponentContainer() const noexcept;
 
         Components::iterator findSceneComponent(entt::id_type type) noexcept;
         Components::const_iterator findSceneComponent(entt::id_type type) const noexcept;
