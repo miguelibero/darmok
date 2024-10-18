@@ -52,6 +52,7 @@ namespace darmok
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
         void render() noexcept override;
         void shutdown() noexcept override;
+        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
 
         bool isEnabled() const noexcept;
 
@@ -79,26 +80,14 @@ namespace darmok
         std::vector<glm::mat4> _camProjs;
         glm::mat4 _crop;
 
-        void updateCamera() noexcept;
-        void updateLights() noexcept;
-    };
-
-    class DARMOK_EXPORT ShadowRenderComponent final : public ITypeCameraComponent<ShadowRenderComponent>
-    {
-    public:
-        ShadowRenderComponent(ShadowRenderer& renderer) noexcept;
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        void update(float deltaTime) noexcept override;
-        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
-    private:
-        ShadowRenderer& _renderer;
-        OptionalRef<Camera> _cam;
-        OptionalRef<Scene> _scene;
         bgfx::UniformHandle _shadowMapUniform;
         bgfx::UniformHandle _shadowDataUniform;
         bgfx::DynamicVertexBufferHandle _shadowTransBuffer;
         bgfx::VertexLayout _shadowTransLayout;
+
+        void updateCamera() noexcept;
+        void updateLights() noexcept;
+        void updateBuffer() noexcept;
 
         void configureUniforms(bgfx::Encoder& encoder) const noexcept;
         void drawDebug() noexcept;

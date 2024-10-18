@@ -240,28 +240,23 @@ namespace
 			auto farPlane = debugShadow ? 100 : 20;
 			auto& cam = scene.addComponent<Camera>(entity)
 				.setViewportPerspective(60, 0.3, farPlane);
-			if (debugShadow)
-			{
-				cam.setEnabled(false);
-			}
 
 			auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx");
 			cam.addComponent<SkyboxRenderer>(skyboxTex);
-
 			cam.addComponent<LightingRenderComponent>();
-
-			if (debugShadow)
-			{
-				cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
-			}
 
 			ShadowRendererConfig shadowConfig;
 			shadowConfig.cascadeAmount = 3;
-
-			auto& shadowRenderer = cam.addComponent<ShadowRenderer>(shadowConfig);
-			cam.addComponent<ShadowRenderComponent>(shadowRenderer);
-
+			cam.addComponent<ShadowRenderer>(shadowConfig);
 			cam.addComponent<ForwardRenderer>();
+
+			if (debugShadow)
+			{
+				cam.setEnabled(false);
+				cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
+			}
+
+
 
 			return cam;
 		}

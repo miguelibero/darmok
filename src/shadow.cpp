@@ -145,7 +145,16 @@ namespace darmok
     ShadowRenderer::ShadowRenderer(const Config& config) noexcept
         : _config(config)
         , _crop(1)
+        , _shadowMapUniform{ bgfx::kInvalidHandle }
+        , _shadowDataUniform{ bgfx::kInvalidHandle }
+        , _shadowTransBuffer{ bgfx::kInvalidHandle }
     {
+        _shadowTransLayout.begin()
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color1, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color2, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color3, 4, bgfx::AttribType::Float)
+        .end();
     }
 
     void ShadowRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
@@ -192,6 +201,10 @@ namespace darmok
                 pass.init(*this, index, casc);
             }
         }
+
+        _shadowMapUniform = bgfx::createUniform("s_shadowMap", bgfx::UniformType::Sampler);
+        _shadowDataUniform = bgfx::createUniform("u_shadowData", bgfx::UniformType::Vec4);
+        _shadowTransBuffer = bgfx::createDynamicVertexBuffer(1, _shadowTransLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
     }
 
     void ShadowRenderer::shutdown() noexcept
@@ -201,6 +214,23 @@ namespace darmok
             pass.shutdown();
         }
         _passes.clear();
+
+        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
+            _shadowMapUniform, _shadowDataUniform
+        };
+        for (auto& uniform : uniforms)
+        {
+            if (isValid(uniform))
+            {
+                bgfx::destroy(uniform);
+                uniform.get().idx = bgfx::kInvalidHandle;
+            }
+        }
+        if (isValid(_shadowTransBuffer))
+        {
+            bgfx::destroy(_shadowTransBuffer);
+            _shadowTransBuffer.idx = bgfx::kInvalidHandle;
+        }
 
         _program.reset();
         _cam.reset();
@@ -212,6 +242,7 @@ namespace darmok
     {
         updateLights();
         updateCamera();
+        updateBuffer();
     }
 
     bool ShadowRenderer::isEnabled() const noexcept
@@ -290,6 +321,39 @@ namespace darmok
             auto cascProj = cascFrust.getAlignedProjectionMatrix();
             cascProj *= model;
             _camProjs.emplace_back(cascProj);
+        }
+    }
+
+    void ShadowRenderer::updateBuffer() noexcept
+    {
+        auto entities = _cam->getEntities<DirectionalLight>();
+
+        auto cascadeAmount = _config.cascadeAmount;
+        uint32_t size = entities.size_hint() * cascadeAmount;
+
+        VertexDataWriter writer(_shadowTransLayout, size);
+        uint32_t index = 0;
+
+        for (auto entity : entities)
+        {
+            for (auto casc = 0; casc < cascadeAmount; ++casc)
+            {
+                auto lightTrans = _scene->getComponent<const Transform>(entity);
+                auto mtx = getLightMapMatrix(lightTrans, casc);
+                // not sure why but the shader reads the data by rows
+                mtx = glm::transpose(mtx);
+                writer.write(bgfx::Attrib::Color0, index, mtx[0]);
+                writer.write(bgfx::Attrib::Color1, index, mtx[1]);
+                writer.write(bgfx::Attrib::Color2, index, mtx[2]);
+                writer.write(bgfx::Attrib::Color3, index, mtx[3]);
+                ++index;
+            }
+
+        }
+        auto data = writer.finish();
+        if (!data.empty())
+        {
+            bgfx::update(_shadowTransBuffer, 0, data.copyMem());
         }
     }
 
@@ -382,100 +446,20 @@ namespace darmok
         bgfx::end(encoder);
     }
 
-    ShadowRenderComponent::ShadowRenderComponent(ShadowRenderer& renderer) noexcept
-        : _renderer(renderer)
-        , _shadowMapUniform{ bgfx::kInvalidHandle }
-        , _shadowDataUniform{ bgfx::kInvalidHandle }
-        , _shadowTransBuffer{ bgfx::kInvalidHandle }
-    {
-        _shadowTransLayout.begin()
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color1, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color2, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color3, 4, bgfx::AttribType::Float)
-        .end();
-    }
-
-    void ShadowRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
-    {
-        _cam = cam;
-        _scene = scene;
-        _shadowMapUniform = bgfx::createUniform("s_shadowMap", bgfx::UniformType::Sampler);
-        _shadowDataUniform = bgfx::createUniform("u_shadowData", bgfx::UniformType::Vec4);
-        _shadowTransBuffer = bgfx::createDynamicVertexBuffer(1, _shadowTransLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-    }
-
-    void ShadowRenderComponent::shutdown() noexcept
-    {
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
-            _shadowMapUniform, _shadowDataUniform
-        };
-        for (auto& uniform : uniforms)
-        {
-            if (isValid(uniform))
-            {
-                bgfx::destroy(uniform);
-                uniform.get().idx = bgfx::kInvalidHandle;
-            }
-        }
-        if (isValid(_shadowTransBuffer))
-        {
-            bgfx::destroy(_shadowTransBuffer);
-            _shadowTransBuffer.idx = bgfx::kInvalidHandle;
-        }
-
-        _cam.reset();
-        _scene.reset();
-    }
-
-    void ShadowRenderComponent::update(float deltaTime) noexcept
-    {
-        auto entities = _cam->getEntities<DirectionalLight>();
-
-        auto cascadeAmount = _renderer.getConfig().cascadeAmount;
-        uint32_t size = entities.size_hint() * cascadeAmount;
-
-        VertexDataWriter writer(_shadowTransLayout, size);
-        uint32_t index = 0;
-
-        for (auto entity : entities)
-        {
-            for (auto casc = 0; casc < cascadeAmount; ++casc)
-            {
-                auto lightTrans = _scene->getComponent<const Transform>(entity);
-                auto mtx = _renderer.getLightMapMatrix(lightTrans, casc);
-                // not sure why but the shader reads the data by rows
-                mtx = glm::transpose(mtx);
-                writer.write(bgfx::Attrib::Color0, index, mtx[0]);
-                writer.write(bgfx::Attrib::Color1, index, mtx[1]);
-                writer.write(bgfx::Attrib::Color2, index, mtx[2]);
-                writer.write(bgfx::Attrib::Color3, index, mtx[3]);
-                ++index;
-            }
-
-        }
-        auto data = writer.finish();
-        if (!data.empty())
-        {
-            bgfx::update(_shadowTransBuffer, 0, data.copyMem());
-        }
-    }
-
-    void ShadowRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    void ShadowRenderer::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         configureUniforms(encoder);
     }
 
-    void ShadowRenderComponent::configureUniforms(bgfx::Encoder& encoder) const noexcept
+    void ShadowRenderer::configureUniforms(bgfx::Encoder& encoder) const noexcept
     {
         encoder.setBuffer(RenderSamplers::SHADOW_TRANS, _shadowTransBuffer, bgfx::Access::Read);
 
-        auto& config = _renderer.getConfig();
-        auto texelSize = 1.F / config.mapSize;
-        glm::vec4 smData(texelSize, config.cascadeAmount, config.bias, config.normalBias);
+        auto texelSize = 1.F / _config.mapSize;
+        glm::vec4 smData(texelSize, _config.cascadeAmount, _config.bias, _config.normalBias);
         encoder.setUniform(_shadowDataUniform, glm::value_ptr(smData));
 
-        auto texHandle = _renderer.getTextureHandle();
+        auto texHandle = getTextureHandle();
         encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, texHandle);
     }
 
