@@ -259,6 +259,7 @@ namespace darmok
 		OptionalRef<Rml::Context> _context;
 		OptionalRef<RmluiSceneComponentImpl> _comp;
 		OptionalRef<Camera> _cam;
+		OptionalRef<Camera> _defaultCam;
 		bool _inputActive;
 		glm::vec2 _mousePosition;
 		bool _visible;
@@ -275,6 +276,7 @@ namespace darmok
 
 		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		bool updateCurrentSize() noexcept;
+		void updateDefaultCamera() noexcept;
 
 		glm::mat4 getModelMatrix() const noexcept;
 		glm::mat4 getProjectionMatrix() const noexcept;
@@ -357,7 +359,6 @@ namespace darmok
 		RmluiSystemInterface& getRmluiSystem() noexcept;
 		RmluiRenderInterface& getRmluiRender() noexcept;
 		const OptionalRef<Scene>& getScene() const noexcept;
-		const OptionalRef<Camera> getDefaultCamera() const noexcept;
 
 		int getKeyModifierState() const noexcept;
 
@@ -367,7 +368,6 @@ namespace darmok
 	private:
 		OptionalRef<Scene> _scene;
 		OptionalRef<App> _app;
-		OptionalRef<Camera> _defaultCam;
 		std::shared_ptr<RmluiPlugin> _plugin;
 
 		void onCanvasConstructed(EntityRegistry& registry, Entity entity);
@@ -399,7 +399,5 @@ namespace darmok
 	private:
 		OptionalRef<Camera> _cam;
 		OptionalRef<Scene> _scene;
-		void configureCanvas(RmluiCanvas& canvas) noexcept;
-		void onCanvasConstructed(EntityRegistry& registry, Entity entity);
     };
 }
