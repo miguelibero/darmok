@@ -91,10 +91,13 @@ namespace darmok::physics3d
 
         static std::optional<RaycastHit> raycast1(const PhysicsSystem& system, const Ray& ray) noexcept;
         static std::optional<RaycastHit> raycast2(const PhysicsSystem& system, const Ray& ray, float maxDistance) noexcept;
-        static std::optional<RaycastHit> raycast3(const PhysicsSystem& system, const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
+        static std::optional<RaycastHit> raycast3(const PhysicsSystem& system, const Ray& ray, float maxDistance, LayerMask layers) noexcept;
         static std::vector<RaycastHit> raycastAll1(const PhysicsSystem& system, const Ray& ray) noexcept;
         static std::vector<RaycastHit> raycastAll2(const PhysicsSystem& system, const Ray& ray, float maxDistance) noexcept;
-        static std::vector<RaycastHit> raycastAll3(const PhysicsSystem& system, const Ray& ray, float maxDistance, uint16_t layerMask) noexcept;
+        static std::vector<RaycastHit> raycastAll3(const PhysicsSystem& system, const Ray& ray, float maxDistance, LayerMask layers) noexcept;
+        
+        static void activateBodies1(PhysicsSystem& system, const BoundingBox& bbox) noexcept;
+        static void activateBodies2(PhysicsSystem& system, const BoundingBox& bbox, LayerMask layers) noexcept;
 
         static PhysicsSystem& addSceneComponent1(Scene& scene) noexcept;
         static PhysicsSystem& addSceneComponent2(Scene& scene, const Config& config) noexcept;

@@ -289,18 +289,16 @@ namespace darmok
 
         if (!_paused)
         {
-            auto entities = _scene.getUpdateEntities<Camera>();
-            for (auto entity : entities)
+            for (auto entity : _scene.getUpdateEntities<Transform>())
+            {
+                _scene.getComponent<Transform>(entity)->update();
+            }
+
+            for (auto entity : _scene.getUpdateEntities<Camera>())
             {
                 _scene.getComponent<Camera>(entity)->getImpl().update(deltaTime);
             }
 
-            entities = _scene.getUpdateEntities<Transform>();
-            for (auto entity : entities)
-            {
-                _scene.getComponent<Transform>(entity)->update();
-            }
-            
             for (auto comp : Components(_components))
             {
                 comp->update(deltaTime);

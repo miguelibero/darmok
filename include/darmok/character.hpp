@@ -26,7 +26,7 @@ namespace darmok::physics3d
     {
         float mass = 80.F;
         float friction = 1.F;
-        float gravityFactor = 1.0F;
+        float gravityFactor = 1.F;
         float maxSeparationDistance = 0.1F;
 
         void load(const PhysicsBodyConfig& bodyConfig) noexcept;

@@ -83,7 +83,9 @@ namespace darmok::physics3d
         static glm::vec4 convert(const JPH::Float4& v) noexcept;
         static JPH::Triangle convert(const Triangle& v) noexcept;
         static JPH::TriangleList convert(const Polygon& v) noexcept;
-
+        static JPH::Plane convert(const Plane& v) noexcept;
+        static JPH::AABox convert(const BoundingBox& v) noexcept;
+        static BoundingBox convert(const JPH::AABox& v) noexcept;
         static RaycastHit convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);
         static glm::vec3 getOrigin(const Shape& shape) noexcept;
@@ -150,13 +152,13 @@ namespace darmok::physics3d
         bool ShouldCollide(JPH::ObjectLayer object1, JPH::ObjectLayer object2) const noexcept override;
     };
 
-    class JoltObjectLayerMaskFilter : public JPH::ObjectLayerFilter
+    class JoltObjectLayerMaskFilter final : public JPH::ObjectLayerFilter
     {
     public:
-        JoltObjectLayerMaskFilter(uint16_t layerMask) noexcept;
-        bool ShouldCollide(JPH::ObjectLayer layer) const;
+        JoltObjectLayerMaskFilter(LayerMask layers) noexcept;
+        bool ShouldCollide(JPH::ObjectLayer layer) const noexcept override;
     private:
-        uint16_t _layerMask;
+        LayerMask _layers;
     };
 
     class JoltTempAllocator final : public JPH::TempAllocator
@@ -230,8 +232,9 @@ namespace darmok::physics3d
         OptionalRef<PhysicsBody> getPhysicsBody(const JPH::BodyID& bodyId) const noexcept;
         static OptionalRef<PhysicsBody> getPhysicsBody(const JPH::Body& body) noexcept;
 
-        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance, uint16_t layerMask) const noexcept;
-        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance, uint16_t layerMask) const noexcept;
+        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance, LayerMask layers = kAllLayers) const noexcept;
+        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance, LayerMask layers = kAllLayers) const noexcept;
+        void activateBodies(const BoundingBox& bbox, LayerMask layers = kAllLayers) noexcept;
 
         JoltTransform loadTransform(Transform& trans);
         void updateTransform(Transform& trans, const JPH::Mat44& mtx) noexcept;
@@ -280,7 +283,6 @@ namespace darmok::physics3d
         void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);
         void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);
         void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2);
-
     };
 
     class PhysicsBodyImpl final
@@ -298,10 +300,12 @@ namespace darmok::physics3d
         void update(Entity entity, float deltaTime);
         std::string toString() const noexcept;
 
-        OptionalRef<PhysicsSystem> getSystem() noexcept;
-        OptionalRef<const PhysicsSystem> getSystem() const noexcept;
+        OptionalRef<PhysicsSystem> getSystem() const noexcept;
 
-        const Shape& getShape() const noexcept;
+        Shape getShape() const noexcept;
+        BoundingBox getLocalBounds() const;
+        BoundingBox getWorldBounds() const;
+
         MotionType getMotionType() const noexcept;
         const JPH::BodyID& getBodyId() const noexcept;
 
@@ -322,6 +326,7 @@ namespace darmok::physics3d
         bool isActive() const;
         void activate();
         void deactivate();
+
         bool isEnabled() const;
         void setEnabled(bool enabled);
 
@@ -346,19 +351,19 @@ namespace darmok::physics3d
         static const std::unordered_map<MotionType, std::string> _motionTypeNames;
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
         OptionalRef<const JPH::BodyLockInterface> getBodyLockInterface() const noexcept;
-        JPH::BodyID createBody(const JoltTransform& trans);
-        JPH::BodyID createCharacter(const JoltTransform& trans);
+        JPH::BodyID createBody(const Config& config, const JoltTransform& trans);
+        JPH::BodyID createCharacter(const CharacterConfig& config, const JoltTransform& trans);
         bool tryCreateBody(OptionalRef<Transform> transform);
         PhysicsSystemImpl& getSystemImpl();
         void updateJolt(const glm::mat4& worldMatrix);
 
         OptionalRef<PhysicsBody> _body;
         OptionalRef<PhysicsSystem> _system;
-        Config _config;
         JPH::BodyID _bodyId;        
         OwnRefCollection<ICollisionListener> _listeners;
-
-        std::optional<CharacterConfig> _characterConfig;
+        std::optional<std::variant<Config, CharacterConfig>> _initConfig;
         JPH::Ref<JPH::Character> _character;
+        float _maxSepDistance;
+        std::optional<PhysicsShape> _shape;
     };
 }

@@ -127,7 +127,7 @@ namespace darmok::physics3d
             "shape", &PhysicsBodyConfig::shape,
             "motion", &PhysicsBodyConfig::motion,
             "mass", &PhysicsBodyConfig::mass,
-            "inertiaFactor", &PhysicsBodyConfig::inertiaFactor,
+            "inertia_factor", &PhysicsBodyConfig::inertiaFactor,
             "friction", &PhysicsBodyConfig::friction,
             "gravity_factor", &PhysicsBodyConfig::gravityFactor,
             "layer", &PhysicsBodyConfig::layer,
@@ -136,12 +136,12 @@ namespace darmok::physics3d
         lua.new_usertype<CharacterConfig>("Physics3dCharacterConfig", sol::default_constructor,
             "shape", &CharacterConfig::shape,
             "up", &CharacterConfig::up,
-            "supportingPlane", &CharacterConfig::supportingPlane,
-            "maxSlopeAngle", &CharacterConfig::maxSlopeAngle,
+            "supporting_plane", &CharacterConfig::supportingPlane,
+            "max_slope_angle", &CharacterConfig::maxSlopeAngle,
             "layer", &CharacterConfig::layer,
             "mass", &CharacterConfig::mass,
             "friction", &CharacterConfig::friction,
-            "gravityFactor", &CharacterConfig::gravityFactor
+            "gravity_factor", &CharacterConfig::gravityFactor
         );
         lua.new_usertype<PhysicsBody>("Physics3dBody", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<PhysicsBody>::value),

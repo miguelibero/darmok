@@ -96,6 +96,7 @@ namespace darmok
         Camera& _cam;
         std::string _name;
         bool _enabled;
+        std::optional<bool> _updateEnabled;
         glm::mat4 _proj;
         glm::mat4 _projInv;
 

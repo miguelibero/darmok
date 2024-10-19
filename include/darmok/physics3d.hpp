@@ -96,8 +96,11 @@ namespace darmok::physics3d
         float fixedDeltaTime = 1.F / 60.F;
         uint16_t collisionSteps = 1;
         glm::vec3 gravity = { 0, -9.81F, 0 };
-        std::vector<std::string> layers = { "default" };
+        std::vector<std::string> broadLayers = { "default" };
     };
+
+    using LayerMask = uint16_t;
+    static const LayerMask kAllLayers = 65535;
 
     struct RaycastHit final
     {
@@ -147,8 +150,10 @@ namespace darmok::physics3d
         bool removeListener(const ICollisionListener& listener) noexcept;
         size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
-        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) const noexcept;
-        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance = bx::kFloatInfinity, uint16_t layerMask = 255) const noexcept;
+        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance = bx::kFloatInfinity, LayerMask layers = kAllLayers) const noexcept;
+        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance = bx::kFloatInfinity, LayerMask layers = kAllLayers) const noexcept;
+
+        void activateBodies(const BoundingBox& bbox, LayerMask layers = kAllLayers) noexcept;
     private:
         std::unique_ptr<PhysicsSystemImpl> _impl;
     };
@@ -163,7 +168,7 @@ namespace darmok::physics3d
         float inertiaFactor = 1.0F;
         float friction = 0.2;
         float gravityFactor = 1.0F;
-        uint8_t layer = 0;
+        LayerMask layer = 0;
         bool trigger = false;
     };
 
@@ -185,11 +190,12 @@ namespace darmok::physics3d
         PhysicsBodyImpl& getImpl() noexcept;
         const PhysicsBodyImpl& getImpl() const noexcept;
 
-        OptionalRef<PhysicsSystem> getSystem() noexcept;
-        OptionalRef<const PhysicsSystem> getSystem() const noexcept;
+        OptionalRef<PhysicsSystem> getSystem() const noexcept;
 
-        const Shape& getShape() const noexcept;
+        Shape getShape() const noexcept;
         MotionType getMotionType() const noexcept;
+        BoundingBox getLocalBounds() const;
+        BoundingBox getWorldBounds() const;
 
         bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;

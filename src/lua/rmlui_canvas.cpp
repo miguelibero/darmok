@@ -138,6 +138,11 @@ namespace darmok
         return canvas.applyViewportMousePositionDelta(LuaGlm::tableGet(delta));
     }
 
+    bool LuaRmluiCanvas::update(RmluiCanvas& canvas)
+    {
+        return canvas.getContext().Update();
+    }
+
     OptionalRef<Rml::ElementDocument>::std_t LuaRmluiCanvas::loadDocument(RmluiCanvas& canvas, const std::string& name)
     {
         if (auto doc = canvas.getContext().LoadDocument(name))
@@ -330,6 +335,7 @@ namespace darmok
             "viewport_mouse_position", sol::property(&RmluiCanvas::getViewportMousePosition, &LuaRmluiCanvas::setViewportMousePosition),
             "apply_viewport_mouse_position_delta", &LuaRmluiCanvas::applyViewportMousePositionDelta,
             "set_scroll_behavior", &RmluiCanvas::setScrollBehavior,
+            "update", &LuaRmluiCanvas::update,
             "load_document", &LuaRmluiCanvas::loadDocument,
             "get_document", &LuaRmluiCanvas::getDocument,
             "unload_all_documents", & LuaRmluiCanvas::unloadAllDocuments,

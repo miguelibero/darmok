@@ -168,9 +168,6 @@ namespace darmok
         static OptionalRef<RmluiCanvas>::std_t getEntityComponent(LuaEntity& entity) noexcept;
         static std::optional<LuaEntity> getEntity(const RmluiCanvas& canvas, std::shared_ptr<Scene>& scene) noexcept;
 
-        static sol::environment getEnvironment(const RmluiCanvas& canvas) noexcept;
-        static std::optional<glm::uvec2> getSize(const RmluiCanvas& canvas) noexcept;
-
         static Rml::DataModelConstructor recreateDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table) noexcept;
         static Rml::DataModelConstructor createDataModel(RmluiCanvas& canvas, const std::string& name, sol::table table);
         static Rml::DataModelConstructor getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept;
@@ -179,6 +176,8 @@ namespace darmok
         static RmluiCanvas& addEventListener(RmluiCanvas& canvas, const std::string& ev, const sol::object& obj) noexcept;
         static bool removeEventListener(RmluiCanvas& canvas, const std::string& ev, const sol::object& obj) noexcept;
 
+        static sol::environment getEnvironment(const RmluiCanvas& canvas) noexcept;
+        static std::optional<glm::uvec2> getSize(const RmluiCanvas& canvas) noexcept;
         static void setSize(RmluiCanvas& canvas, std::optional<VarLuaTable<glm::uvec2>> size) noexcept;
         static void setOffset(RmluiCanvas& canvas, const VarLuaTable<glm::vec3>& offset) noexcept;
 
@@ -187,6 +186,7 @@ namespace darmok
         static void setViewportMousePosition(RmluiCanvas& canvas, const VarLuaTable<glm::vec2>& position) noexcept;
         static RmluiCanvas& applyViewportMousePositionDelta(RmluiCanvas& canvas, const VarLuaTable<glm::vec2>& delta) noexcept;
 
+        static bool update(RmluiCanvas& canvas);
         static OptionalRef<Rml::ElementDocument>::std_t loadDocument(RmluiCanvas& canvas, const std::string& name);
         static OptionalRef<Rml::ElementDocument>::std_t getDocument(RmluiCanvas& canvas, const std::string& name);
         static RmluiCanvas& unloadDocument(RmluiCanvas& canvas, OptionalRef<Rml::ElementDocument>::std_t doc);

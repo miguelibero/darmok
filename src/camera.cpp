@@ -47,12 +47,16 @@ namespace darmok
 
     bool CameraImpl::isEnabled() const noexcept
     {
+        if (_updateEnabled)
+        {
+            return _updateEnabled.value();
+        }
         return _enabled;
     }
 
     void CameraImpl::setEnabled(bool enabled) noexcept
     {
-        _enabled = enabled;
+        _updateEnabled = enabled;
     }
 
     RenderChain& CameraImpl::getRenderChain() noexcept
@@ -199,6 +203,10 @@ namespace darmok
 
     void CameraImpl::render()
     {
+        if (!_enabled)
+        {
+            return;
+        }
         for (auto comp : Components(_components))
         {
             comp->render();
@@ -219,6 +227,11 @@ namespace darmok
 
     void CameraImpl::update(float deltaTime)
     {
+        if (_updateEnabled)
+        {
+            _enabled = _updateEnabled.value();
+            _updateEnabled.reset();
+        }
         for (auto comp : Components(_components))
         {
             comp->update(deltaTime);

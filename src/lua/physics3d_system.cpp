@@ -116,9 +116,9 @@ namespace darmok::physics3d
         return system.raycast(ray, maxDistance);
     }
 
-    std::optional<RaycastHit> LuaPhysicsSystem::raycast3(const PhysicsSystem& system, const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
+    std::optional<RaycastHit> LuaPhysicsSystem::raycast3(const PhysicsSystem& system, const Ray& ray, float maxDistance, LayerMask layers) noexcept
     {
-        return system.raycast(ray, maxDistance, layerMask);
+        return system.raycast(ray, maxDistance, layers);
     }
 
     std::vector<RaycastHit> LuaPhysicsSystem::raycastAll1(const PhysicsSystem& system, const Ray& ray) noexcept
@@ -131,9 +131,19 @@ namespace darmok::physics3d
         return system.raycastAll(ray, maxDistance);
     }
 
-    std::vector<RaycastHit> LuaPhysicsSystem::raycastAll3(const PhysicsSystem& system, const Ray& ray, float maxDistance, uint16_t layerMask) noexcept
+    std::vector<RaycastHit> LuaPhysicsSystem::raycastAll3(const PhysicsSystem& system, const Ray& ray, float maxDistance, LayerMask layers) noexcept
     {
-        return system.raycastAll(ray, maxDistance, layerMask);
+        return system.raycastAll(ray, maxDistance, layers);
+    }
+
+    void LuaPhysicsSystem::activateBodies1(PhysicsSystem& system, const BoundingBox& bbox) noexcept
+    {
+        system.activateBodies(bbox);
+    }
+
+    void LuaPhysicsSystem::activateBodies2(PhysicsSystem& system, const BoundingBox& bbox, LayerMask layers) noexcept
+    {
+        system.activateBodies(bbox, layers);
     }
 
     PhysicsSystem& LuaPhysicsSystem::addSceneComponent1(Scene& scene) noexcept
@@ -160,12 +170,12 @@ namespace darmok::physics3d
     {
         lua.new_usertype<Config>("Physics3dSystemConfig",
             sol::constructors<Config()>(),
-            "maxBodies", &Config::maxBodies,
-            "numBodyMutexes", &Config::numBodyMutexes,
-            "maxBodyPairs", &Config::maxBodyPairs,
-            "maxContactConstraints", &Config::maxContactConstraints,
-            "fixedDeltaTime", &Config::fixedDeltaTime,
-            "collisionSteps", &Config::collisionSteps,
+            "max_bodies", &Config::maxBodies,
+            "num_body_mutexes", &Config::numBodyMutexes,
+            "max_body_pairs", &Config::maxBodyPairs,
+            "max_contact_constraints", &Config::maxContactConstraints,
+            "fixed_delta_time", &Config::fixedDeltaTime,
+            "collision_steps", &Config::collisionSteps,
             "gravity", &Config::gravity
         );
 
@@ -187,6 +197,10 @@ namespace darmok::physics3d
                 &LuaPhysicsSystem::raycastAll1,
                 &LuaPhysicsSystem::raycastAll2,
                 &LuaPhysicsSystem::raycastAll3
+            ),
+            "activate_bodies", sol::overload(
+                &LuaPhysicsSystem::activateBodies1,
+                &LuaPhysicsSystem::activateBodies2
             ),
             "get_scene_component", &LuaPhysicsSystem::getSceneComponent,
             "add_scene_component", sol::overload(
