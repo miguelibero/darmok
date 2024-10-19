@@ -196,8 +196,9 @@ namespace darmok
 		void render(bgfx::Encoder& encoder) noexcept;
 		void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
-		void setMainCamera(Camera& camera) noexcept;
-		OptionalRef<Camera> getMainCamera() const noexcept;
+		void setCamera(const OptionalRef<Camera>& camera) noexcept;
+		const OptionalRef<Camera>& getCamera() const noexcept;
+		OptionalRef<Camera> getCurrentCamera() const noexcept;
 		OptionalRef<Texture> getFrameTexture() const noexcept;
 
 		const std::string& getName() const noexcept;
@@ -356,6 +357,7 @@ namespace darmok
 		RmluiSystemInterface& getRmluiSystem() noexcept;
 		RmluiRenderInterface& getRmluiRender() noexcept;
 		const OptionalRef<Scene>& getScene() const noexcept;
+		const OptionalRef<Camera> getDefaultCamera() const noexcept;
 
 		int getKeyModifierState() const noexcept;
 
@@ -365,6 +367,7 @@ namespace darmok
 	private:
 		OptionalRef<Scene> _scene;
 		OptionalRef<App> _app;
+		OptionalRef<Camera> _defaultCam;
 		std::shared_ptr<RmluiPlugin> _plugin;
 
 		void onCanvasConstructed(EntityRegistry& registry, Entity entity);

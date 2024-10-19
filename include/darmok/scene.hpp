@@ -325,11 +325,23 @@ namespace darmok
         template<typename T>
         OptionalRef<T> getFirstComponent() noexcept
         {
-            for (auto [entity, comp] : getComponents<T>().each())
+            auto view = getComponents<T>();
+            if (view.size_hint() == 0)
             {
-                return comp;
+                return nullptr;
             }
-            return nullptr;
+            return view.get<T>(view.back());
+        }
+
+        template<typename T>
+        OptionalRef<T> getLastComponent() noexcept
+        {
+            auto view = getComponents<T>();
+            if (view.size_hint() == 0)
+            {
+                return nullptr;
+            }
+            return view.get<T>(view.front());
         }
 
         template<typename T>

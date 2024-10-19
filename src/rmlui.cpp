@@ -658,7 +658,10 @@ namespace darmok
         _comp = comp;
         auto size = getCurrentSize();
         _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &comp.getRmluiRender());
-        _frameBuffer.emplace(size, false);
+        if (size.x > 0 && size.y > 0)
+        {
+            _frameBuffer.emplace(size, false);
+        }
         if (!_context)
         {
             throw std::runtime_error("Failed to create rmlui context");
@@ -677,6 +680,7 @@ namespace darmok
             Rml::ReleaseTextures();
         }
         _comp.reset();
+        _cam.reset();
     }
 
     OptionalRef<Texture> RmluiCanvasImpl::getFrameTexture() const noexcept
@@ -695,7 +699,7 @@ namespace darmok
         {
             _context->SetDimensions(RmluiUtils::convert<int>(size));
         }
-        if (size.x == 0 && size.y == 0)
+        if (size.x == 0 || size.y == 0)
         {
             _frameBuffer.reset();
             return true;
@@ -736,15 +740,29 @@ namespace darmok
         return ++viewId;
     }
 
-    void RmluiCanvasImpl::setMainCamera(Camera& camera) noexcept
+    void RmluiCanvasImpl::setCamera(const OptionalRef<Camera>& camera) noexcept
     {
         _cam = camera;
     }
 
-    OptionalRef<Camera> RmluiCanvasImpl::getMainCamera() const noexcept
+    const OptionalRef<Camera>& RmluiCanvasImpl::getCamera() const noexcept
     {
         return _cam;
     }
+
+    OptionalRef<Camera> RmluiCanvasImpl::getCurrentCamera() const noexcept
+    {
+        if (_cam)
+        {
+            return _cam;
+        }
+        if (_comp)
+        {
+            return _comp->getDefaultCamera();
+        }
+        return nullptr;
+    }
+
 
     bool RmluiCanvasImpl::isInputActive() const noexcept
     {
@@ -787,9 +805,9 @@ namespace darmok
         {
             return _size.value();
         }
-        if (_cam)
+        if (auto cam = getCurrentCamera())
         {
-            return _cam->getCurrentViewport().size;
+            return cam->getCurrentViewport().size;
         }
         return glm::uvec2(0);
     }
@@ -1085,7 +1103,7 @@ namespace darmok
         auto viewId = _viewId.value();
         encoder.touch(viewId);
 
-        if (!_frameBuffer || !_visible || !_comp || !_context)
+        if (!_visible || !_comp || !_context)
         {
             return;
         }
@@ -1093,6 +1111,11 @@ namespace darmok
         if (!_size && updateCurrentSize())
         {
             configureViewSize(viewId);
+        }
+
+        if (!_frameBuffer)
+        {
+            return;
         }
 
         _comp->getRmluiRender().renderCanvas(*this, _viewId.value(), encoder);
@@ -1128,7 +1151,11 @@ namespace darmok
         {
             return std::nullopt;
         }
-        auto v = _cam->getProjectionMatrix() * glm::vec4(_offset, 1.F);
+        auto v = glm::vec4(_offset, 1.F);
+        if (auto cam = getCurrentCamera())
+        {
+            v = cam->getProjectionMatrix() * v;
+        }
         return Math::clamp(v.z / v.w, 0.F, 1.F);
     }
 
@@ -1198,7 +1225,10 @@ namespace darmok
 
     void RmluiCanvasImpl::configureViewSize(bgfx::ViewId viewId) const noexcept
     {
-        _frameBuffer->configureView(viewId);
+        if (_frameBuffer)
+        {
+            _frameBuffer->configureView(viewId);
+        }
 
         auto size = getCurrentSize();
 
@@ -1273,15 +1303,20 @@ namespace darmok
         return _impl->getName();
     }
 
-    RmluiCanvas& RmluiCanvas::setMainCamera(Camera& camera) noexcept
+    RmluiCanvas& RmluiCanvas::setCamera(const OptionalRef<Camera>& camera) noexcept
     {
-        _impl->setMainCamera(camera);
+        _impl->setCamera(camera);
         return *this;
     }
 
-    OptionalRef<Camera> RmluiCanvas::getMainCamera() const noexcept
+    const OptionalRef<Camera>& RmluiCanvas::getCamera() const noexcept
     {
-        return _impl->getMainCamera();
+        return _impl->getCamera();
+    }
+
+    OptionalRef<Camera> RmluiCanvas::getCurrentCamera() const noexcept
+    {
+        return _impl->getCurrentCamera();
     }
 
     const std::optional<glm::uvec2>& RmluiCanvas::getSize() const noexcept
@@ -1630,6 +1665,7 @@ namespace darmok
 
         _scene = scene;
         _app = app;
+        _defaultCam = scene.getLastComponent<Camera>();
 
         app.getInput().getKeyboard().addListener(*this);
         app.getInput().getMouse().addListener(*this);
@@ -1656,6 +1692,7 @@ namespace darmok
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
             canvas.getImpl().update(deltaTime);
         }
+        _defaultCam = _scene->getLastComponent<Camera>();
     }
 
     bgfx::ViewId RmluiSceneComponentImpl::renderReset(bgfx::ViewId viewId) noexcept
@@ -1697,6 +1734,7 @@ namespace darmok
 
         _app.reset();
         _scene.reset();
+        _defaultCam.reset();
 
         Rml::ReleaseTextures();
     }
@@ -1714,6 +1752,11 @@ namespace darmok
     const OptionalRef<Scene>& RmluiSceneComponentImpl::getScene() const noexcept
     {
         return _scene;
+    }
+
+    const OptionalRef<Camera> RmluiSceneComponentImpl::getDefaultCamera() const noexcept
+    {
+        return _defaultCam;
     }
 
     void RmluiSceneComponentImpl::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
@@ -1928,7 +1971,7 @@ namespace darmok
             {
                 continue;
             }
-            auto cam = canvas.getImpl().getMainCamera();
+            auto cam = canvas.getCurrentCamera();
             if (!cam)
             {
                 continue;
@@ -2036,9 +2079,9 @@ namespace darmok
 
     void RmluiRendererImpl::configureCanvas(RmluiCanvas& canvas) noexcept
     {
-        if (_cam && !canvas.getMainCamera())
+        if (_cam && !canvas.getCamera())
         {
-            canvas.setMainCamera(_cam.value());
+            canvas.setCamera(_cam.value());
         }
     }
 

@@ -88,6 +88,21 @@ namespace darmok
         return true;
     }
 
+    OptionalRef<Camera>::std_t LuaRmluiCanvas::getCamera(const RmluiCanvas& canvas) noexcept
+    {
+        return canvas.getCamera();
+    }
+
+    void LuaRmluiCanvas::setCamera(RmluiCanvas& canvas, OptionalRef<Camera>::std_t cam) noexcept
+    {
+        canvas.setCamera(cam ? &cam->get() : nullptr);
+    }
+
+    OptionalRef<Camera>::std_t LuaRmluiCanvas::getCurrentCamera(const RmluiCanvas& canvas) noexcept
+    {
+        return canvas.getCurrentCamera();
+    }
+
     sol::environment LuaRmluiCanvas::getEnvironment(const RmluiCanvas& canvas) noexcept
     {
         static const entt::id_type type = entt::type_hash<LuaRmluiCanvasDelegate>::value();
@@ -325,7 +340,9 @@ namespace darmok
             "get_entity", &LuaRmluiCanvas::getEntity,
             "name", sol::property(&RmluiCanvas::getName),
             "environment", sol::property(&LuaRmluiCanvas::getEnvironment),
-            "size", sol::property(&LuaRmluiCanvas::getSize, &LuaRmluiCanvas::setSize),
+            "camera", sol::property(&LuaRmluiCanvas::getCamera, &LuaRmluiCanvas::setCamera),
+            "current_camera", sol::property(&LuaRmluiCanvas::getCurrentCamera),
+            "size", sol::property(&LuaRmluiCanvas::getSize, &RmluiCanvas::setSize),
             "visible", sol::property(&RmluiCanvas::isVisible, &RmluiCanvas::setVisible),
             "current_size", sol::property(&RmluiCanvas::getCurrentSize),
             "offset", sol::property(&RmluiCanvas::getOffset, &LuaRmluiCanvas::setOffset),

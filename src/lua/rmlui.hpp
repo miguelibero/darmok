@@ -157,6 +157,8 @@ namespace darmok
         RmluiCanvas& _canvas;
     };
 
+    class Camera;
+
     class LuaRmluiCanvas final
     {
     public:
@@ -176,6 +178,9 @@ namespace darmok
         static RmluiCanvas& addEventListener(RmluiCanvas& canvas, const std::string& ev, const sol::object& obj) noexcept;
         static bool removeEventListener(RmluiCanvas& canvas, const std::string& ev, const sol::object& obj) noexcept;
 
+        static OptionalRef<Camera>::std_t getCamera(const RmluiCanvas& canvas) noexcept;
+        static void setCamera(RmluiCanvas& canvas, OptionalRef<Camera>::std_t cam) noexcept;
+        static OptionalRef<Camera>::std_t getCurrentCamera(const RmluiCanvas& canvas) noexcept;
         static sol::environment getEnvironment(const RmluiCanvas& canvas) noexcept;
         static std::optional<glm::uvec2> getSize(const RmluiCanvas& canvas) noexcept;
         static void setSize(RmluiCanvas& canvas, std::optional<VarLuaTable<glm::uvec2>> size) noexcept;

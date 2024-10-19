@@ -62,8 +62,9 @@ namespace darmok
 
 		const std::string& getName() const noexcept;
 
-		RmluiCanvas& setMainCamera(Camera& camera) noexcept;
-		OptionalRef<Camera> getMainCamera() const noexcept;
+		RmluiCanvas& setCamera(const OptionalRef<Camera>& camera) noexcept;
+		const OptionalRef<Camera>& getCamera() const noexcept;
+		OptionalRef<Camera> getCurrentCamera() const noexcept;
 
 		const std::optional<glm::uvec2>& getSize() const noexcept;
 		RmluiCanvas& setSize(const std::optional<glm::uvec2>& vp) noexcept;
