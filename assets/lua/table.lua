@@ -1,19 +1,49 @@
-function table.contains(table, element)
-    for _, value in pairs(table) do
-        if value == element then
+function table.contains(tab, element)
+    for _, v in pairs(tab) do
+        if v == element then
             return true
         end
     end
     return false
 end
 
-function table.copy_shallow(table)
-    local u = {}
-    for k, v in pairs(table) do
-        u[k] = v
+function table.shallowcopy(tab)
+    local copy = {}
+    for k, v in pairs(tab) do
+        copy[k] = v
     end
-    return setmetatable(u, getmetatable(t))
+    return setmetatable(copy, getmetatable(tab))
 end
+
+function table.deepcopy(val)
+    local copy
+    if type(val) == 'table' then
+        copy = {}
+        for k, v in pairs(tab) do
+            copy[table.deepcopy(k)] = table.deepcopy(v)
+        end
+        setmetatable(copy, getmetatable(val))
+    else
+        copy = val
+    end
+    return copy
+end
+
+function table.merge(tab1, tab2)
+    for k, v in pairs(tab2) do
+        if type(v) == "table" then
+            if type(tab1[k] or false) == "table" then
+                table.merge(tab1[k] or {}, tab2[k] or {})
+            else
+                tab1[k] = v
+            end
+        else
+            tab1[k] = v
+        end
+    end
+    return tab1
+end
+
 
 function table.tostring(val, name, skipnewlines, depth)
     skipnewlines = skipnewlines or false

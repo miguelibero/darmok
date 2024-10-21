@@ -477,21 +477,29 @@ namespace darmok
 		}
 	}
 
-	void TextureAtlasData::writeRmlui(std::ostream& out, const std::string& name, float res) const noexcept
+	void TextureAtlasData::writeRmlui(std::ostream& out, const RmluiConfig& config) const noexcept
 	{
-		auto fname = name;
-		if (fname.empty())
+		auto name = imagePath.stem().string();
+		if (!config.nameFormat.empty())
 		{
-			fname = imagePath.stem().string();
+			auto origName = name;
+			name = config.nameFormat;
+			StringUtils::replace(name, "*", origName);
 		}
-		out << "@spritesheet " << fname << std::endl;
+		out << "@spritesheet " << name << std::endl;
 		out << "{" << std::endl;
 		out << "    src: " << imagePath.string() << ";" << std::endl;
-		out << "    resolution: " << res << "x;" << std::endl;
+		out << "    resolution: " << config.resolution << "x;" << std::endl;
 		for (auto& elm : elements)
 		{
 			glm::uvec4 v(elm.texturePosition, elm.size);
 			auto name = StringUtils::getFileStem(elm.name);
+			if (!config.spriteNameFormat.empty())
+			{
+				auto origName = name;
+				name = config.spriteNameFormat;
+				StringUtils::replace(name, "*", origName);
+			}
 			out << "    " << name << ": " << v.x << "px " << v.y << "px " << v.z << "px " << v.w << "px;" << std::endl;
 		}
 		out << "}" << std::endl;
@@ -587,6 +595,8 @@ namespace darmok
 	const std::string TexturePackerTextureAtlasImporter::_outputFormatOption = "outputFormat";
 	const std::string TexturePackerTextureAtlasImporter::_textureFormatOption = "textureFormat";
 	const std::string TexturePackerTextureAtlasImporter::_rmluiResolutionOption = "rmluiResolution";
+	const std::string TexturePackerTextureAtlasImporter::_rmluiNameFormatOption = "rmluiNameFormat";
+	const std::string TexturePackerTextureAtlasImporter::_rmluiSpriteNameFormatOption = "rmluiSpriteNameFormat";
 
 	bool TexturePackerTextureAtlasImporter::startImport(const Input& input, bool dry)
 	{
@@ -723,17 +733,31 @@ namespace darmok
 			atlasData.imagePath = std::filesystem::relative(_texturePath, basePath);
 			_sheetData.clear();
 			DataOutputStream out(_sheetData);
-			auto res = 1.F;
-			if (input.config.contains(_rmluiResolutionOption))
-			{
-				res = input.config[_rmluiResolutionOption];
-			}
-			atlasData.writeRmlui(out, "", res);
+			auto rmluiConfig = readRmluiConfig(input.config);
+			atlasData.writeRmlui(out, rmluiConfig);
 			_sheetData.resize(out.tellp());
 		}
 
 
 		return true;
+	}
+
+	TextureAtlasRmluiConfig TexturePackerTextureAtlasImporter::readRmluiConfig(const nlohmann::json& json) noexcept
+	{
+		TextureAtlasData::RmluiConfig config;
+		if (json.contains(_rmluiNameFormatOption))
+		{
+			config.nameFormat = json[_rmluiNameFormatOption];
+		}
+		if (json.contains(_rmluiResolutionOption))
+		{
+			config.resolution = json[_rmluiResolutionOption];
+		}
+		if (json.contains(_rmluiSpriteNameFormatOption))
+		{
+			config.spriteNameFormat = json[_rmluiSpriteNameFormatOption];
+		}
+		return config;
 	}
 
 	void TexturePackerTextureAtlasImporter::endImport(const Input& input)

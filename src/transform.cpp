@@ -49,7 +49,7 @@ namespace darmok
         {
             _parent->_children.erase(*this);
         }
-        for (auto& child : _children)
+        for (auto& child : Children(_children))
         {
             child.get().setParent(nullptr);
         }
@@ -153,7 +153,7 @@ namespace darmok
 
     void Transform::setChildrenParentChanged() noexcept
     {
-        for (auto& child : _children)
+        for (auto& child : Children(_children))
         {
             child.get().setParentChanged();
         }

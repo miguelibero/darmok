@@ -136,10 +136,15 @@ namespace darmok
         }
     }
 
-    LuaRmluiVariableDefinition::LuaRmluiVariableDefinition(const sol::table& table) noexcept
-        : Rml::VariableDefinition(Rml::DataVariableType::Scalar)
+    LuaRmluiVariableDefinition::LuaRmluiVariableDefinition(const sol::table& table, Rml::DataVariableType type) noexcept
+        : Rml::VariableDefinition(type)
         , _table(table)
     {
+    }
+
+    sol::object LuaRmluiVariableDefinition::nilObject() const noexcept
+    {
+        return sol::object(_table.lua_state(), sol::nil);
     }
 
     sol::object LuaRmluiVariableDefinition::getTableValue(const AbsTableKey& key) const noexcept
@@ -158,7 +163,7 @@ namespace darmok
             }
             else
             {
-                return sol::nil;
+                return nilObject();
             }
         }
         return tab;
@@ -196,7 +201,7 @@ namespace darmok
         {
             return getTableValue(key.value());
         }
-        return sol::nil;
+        return nilObject();
     }
 
     bool LuaRmluiVariableDefinition::Get(void* ptr, Rml::Variant& variant) noexcept

@@ -414,7 +414,6 @@ namespace darmok
 
     void RmluiRenderInterface::renderCanvas(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        std::lock_guard lock(_canvasMutex);
         _viewId = viewId;
         _encoder = encoder;
         _trans = glm::mat4(1.F);
@@ -1027,7 +1026,7 @@ namespace darmok
 
     OptionalRef<const Rml::Sprite> RmluiCanvasImpl::getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept
     {
-        if (!_comp)
+        if (!_comp || !doc.IsVisible())
         {
             return nullptr;
         }

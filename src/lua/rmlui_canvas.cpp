@@ -235,10 +235,17 @@ namespace darmok
     {
         auto lua = table.lua_state();
 
-        auto constuctor = canvas.createDataModel(name);
-        auto defPtr = Rml::MakeUnique<LuaRmluiVariableDefinition>(table);
-        auto def = defPtr.get();
-        constuctor.RegisterCustomDataVariableDefinition<sol::table>(std::move(defPtr));
+        auto construct = canvas.createDataModel(name);
+        auto scalarDefPtr = Rml::MakeUnique<LuaRmluiVariableDefinition>(table, Rml::DataVariableType::Scalar);
+        auto structDefPtr = Rml::MakeUnique<LuaRmluiVariableDefinition>(table, Rml::DataVariableType::Struct);
+        auto arrayDefPtr = Rml::MakeUnique<LuaRmluiVariableDefinition>(table, Rml::DataVariableType::Array);
+        auto scalarDef = scalarDefPtr.get();
+        auto structDef = structDefPtr.get();
+        auto arrayDef = arrayDefPtr.get();
+        auto typeReg = construct.GetDataTypeRegister();
+        typeReg->RegisterDefinition(Rml::FamilyId(1), std::move(scalarDefPtr));
+        typeReg->RegisterDefinition(Rml::FamilyId(2), std::move(structDefPtr));
+        typeReg->RegisterDefinition(Rml::FamilyId(3), std::move(arrayDefPtr));
 
         for (auto& [key, val] : table)
         {
@@ -248,7 +255,7 @@ namespace darmok
             {
                 auto func = val.as<sol::protected_function>();
 
-                constuctor.BindEventCallback(strkey, [func, lua](Rml::DataModelHandle handle, Rml::Event& ev, const Rml::VariantList& variants)
+                construct.BindEventCallback(strkey, [func, lua](Rml::DataModelHandle handle, Rml::Event& ev, const Rml::VariantList& variants)
                 {
                     std::vector<sol::object> args{
                         sol::make_object(lua, handle),
@@ -260,13 +267,18 @@ namespace darmok
             }
             else
             {
+                OptionalRef<LuaRmluiVariableDefinition> def = scalarDef;
+                if (type == sol::type::table)
+                {
+                    def = LuaUtils::isArray(val) ? arrayDef : structDef;
+                }
                 auto ptr = def->getKeyPointer({ strkey });
-                constuctor.BindCustomDataVariable(strkey, Rml::DataVariable(def, ptr));
+                construct.BindCustomDataVariable(strkey, Rml::DataVariable(def.ptr(), ptr));
             }
         }
 
-        table["handle"] = constuctor.GetModelHandle();
-        return constuctor;
+        table["handle"] = construct.GetModelHandle();
+        return construct;
     }
 
     Rml::DataModelConstructor LuaRmluiCanvas::getDataModel(RmluiCanvas& canvas, const std::string& name) noexcept

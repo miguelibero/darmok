@@ -70,7 +70,12 @@ namespace darmok
 		static std::string writeIndexList(const std::vector<TextureAtlasIndex>& list) noexcept;
 	};
 
-	class ImageAtlas;
+	struct DARMOK_EXPORT TextureAtlasRmluiConfig final
+	{
+		std::string nameFormat;
+		float resolution = 1.F;
+		std::string spriteNameFormat;
+	};
 
 	struct DARMOK_EXPORT TextureAtlasData final
 	{
@@ -82,7 +87,9 @@ namespace darmok
 		bool read(const pugi::xml_node& node, const std::filesystem::path& basePath = "");
 		void write(pugi::xml_document& doc) const noexcept;
 		void write(pugi::xml_node& node) const noexcept;
-		void writeRmlui(std::ostream& out, const std::string& name = "", float res = 1.F) const noexcept;
+
+		using RmluiConfig = TextureAtlasRmluiConfig;
+		void writeRmlui(std::ostream& out, const RmluiConfig& config) const noexcept;
 	};
 
 	class Texture;
@@ -124,6 +131,7 @@ namespace darmok
 		ITextureLoader& _textureLoader;
 	};
 
+	struct TextureAtlasRmluiConfig;
 
 	class DARMOK_EXPORT TexturePackerTextureAtlasImporter final : public IAssetTypeImporter
 	{
@@ -143,6 +151,8 @@ namespace darmok
 		static const std::string _outputFormatOption;
 		static const std::string _textureFormatOption;
 		static const std::string _rmluiResolutionOption;
+		static const std::string _rmluiNameFormatOption;
+		static const std::string _rmluiSpriteNameFormatOption;
 		std::filesystem::path _exePath;
 		pugi::xml_document _xmlDoc;
 		std::filesystem::path _texturePath;
@@ -153,5 +163,6 @@ namespace darmok
 
 		static std::string getTextureFormatExt(const std::string& format) noexcept;
 		static std::string getSheetFormatExt(const std::string& format) noexcept;
+		static TextureAtlasRmluiConfig readRmluiConfig(const nlohmann::json& json) noexcept;
 	};
 }

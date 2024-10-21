@@ -62,7 +62,7 @@ namespace darmok
     class LuaRmluiVariableDefinition final : public Rml::VariableDefinition
     {
     public:
-        LuaRmluiVariableDefinition(const sol::table& table) noexcept;
+        LuaRmluiVariableDefinition(const sol::table& table, Rml::DataVariableType type) noexcept;
         bool Get(void* ptr, Rml::Variant& variant) noexcept override;
         bool Set(void* ptr, const Rml::Variant& variant) noexcept override;
         int Size(void* ptr) noexcept override;
@@ -79,6 +79,7 @@ namespace darmok
         sol::object getPointerObject(void* ptr) const noexcept;
         OptionalRef<const AbsTableKey> getPointerKey(void* ptr) const noexcept;
         sol::object getTableValue(const AbsTableKey& key) const noexcept;
+        sol::object nilObject() const noexcept;
     };
 
     class LuaRmluiEvent final

@@ -16,7 +16,6 @@
 #include <vector>
 #include <optional>
 #include <memory>
-#include <mutex>
 
 namespace darmok
 {
@@ -112,7 +111,6 @@ namespace darmok
 		void renderFrame(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
 	private:
-		std::mutex _canvasMutex;
 		App& _app;
 		std::unique_ptr<Program> _program;
 		bgfx::UniformHandle _textureUniform;
