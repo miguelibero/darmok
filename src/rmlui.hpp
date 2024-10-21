@@ -79,7 +79,7 @@ namespace darmok
 	class RmluiRenderInterface final : public Rml::RenderInterface
 	{
 	public:
-		RmluiRenderInterface(App& app) noexcept;
+		RmluiRenderInterface(App& app, RmluiCanvasImpl& canvas) noexcept;
 		~RmluiRenderInterface() noexcept;
 		Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) noexcept override;
 		void RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept override;
@@ -107,11 +107,12 @@ namespace darmok
 		void ReleaseShader(Rml::CompiledShaderHandle shader) noexcept override;
 		*/
 
-		void renderCanvas(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
-		void renderFrame(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		void renderCanvas(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		void renderFrame(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
 	private:
 		App& _app;
+		RmluiCanvasImpl& _canvas;
 		std::unique_ptr<Program> _program;
 		bgfx::UniformHandle _textureUniform;
 		bgfx::UniformHandle _dataUniform;
@@ -187,7 +188,7 @@ namespace darmok
 		RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt);
 		~RmluiCanvasImpl() noexcept;
 
-		void init(RmluiSceneComponentImpl& comp);
+		void init(App& app, RmluiSceneComponentImpl& comp);
 		void shutdown() noexcept;
 		bool update(float deltaTime) noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
@@ -251,9 +252,15 @@ namespace darmok
 		Rml::DataModelConstructor getDataModel(const std::string& name) noexcept;
 		bool removeDataModel(const std::string& name) noexcept;
 		Rml::DataTypeRegister& getDefaultDataTypeRegister();
+		
+		uint64_t getDefaultTextureFlags() const noexcept;
+		void setDefaultTextureFlags(uint64_t flags) noexcept;
+		uint64_t getTextureFlags(const std::string& source) const noexcept;
+		void setTextureFlags(const std::string& source, uint64_t flags) noexcept;
 
 	private:
 		RmluiCanvas& _canvas;
+		std::optional<RmluiRenderInterface> _render;
 		OptionalRef<Rml::Context> _context;
 		OptionalRef<RmluiSceneComponentImpl> _comp;
 		OptionalRef<Camera> _cam;
@@ -271,8 +278,9 @@ namespace darmok
 		std::unordered_map<std::string, std::unique_ptr<Rml::DataTypeRegister>> _dataTypeRegisters;
 		OptionalRef<Rml::DataTypeRegister> _defaultDataTypeRegister;
 		std::optional<bgfx::ViewId> _viewId;
+		uint64_t _defaultTextureFlags;
+		std::unordered_map<std::string, uint64_t> _textureFlags;
 
-		OptionalRef<const Rml::Sprite> getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept;
 		bool updateCurrentSize() noexcept;
 		void updateDefaultCamera() noexcept;
 
@@ -307,7 +315,6 @@ namespace darmok
 		static std::shared_ptr<RmluiPlugin> getInstance(App& app) noexcept;
 		static std::weak_ptr<RmluiPlugin> getWeakInstance() noexcept;
 		RmluiSystemInterface& getSystem() noexcept;
-		RmluiRenderInterface& getRender() noexcept;
 
 		void addComponent(RmluiSceneComponentImpl& comp) noexcept;
 		bool removeComponent(const RmluiSceneComponentImpl& comp) noexcept;
@@ -323,7 +330,6 @@ namespace darmok
 		App& _app;
 		RmluiSystemInterface _system;
 		RmluiFileInterface _file;
-		RmluiRenderInterface _render;
 		std::vector<std::unique_ptr<RmluiEventForwarder>> _eventForwarders;
 		std::vector<std::reference_wrapper<RmluiSceneComponentImpl>> _components;
 
@@ -355,7 +361,6 @@ namespace darmok
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 
 		RmluiSystemInterface& getRmluiSystem() noexcept;
-		RmluiRenderInterface& getRmluiRender() noexcept;
 		const OptionalRef<Scene>& getScene() const noexcept;
 
 		int getKeyModifierState() const noexcept;

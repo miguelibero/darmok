@@ -32,14 +32,20 @@ namespace darmok
 
 	void LuaMath::bindGlmVec(sol::state_view& lua) noexcept
 	{
-		auto vec4 = lua.new_usertype<glm::vec4>("Vec4", sol::constructors<
-			glm::vec4(),
-			glm::vec4(glm::f32),
-			glm::vec4(glm::f32, glm::f32, glm::f32, glm::f32),
-			glm::vec4(const glm::ivec4&),
-			glm::vec4(const glm::uvec4&),
-			glm::vec3(const glm::vec3&, glm::f32)
-		>(),
+		auto vec4 = lua.new_usertype<glm::vec4>("Vec4", 
+			sol::factories(
+				[](float v) { return glm::vec4(v); },
+				[](float x, float y, float z, float w) { return glm::vec4(x, y, z, w); },
+				[](const glm::ivec2& v, float z, float w) { return glm::vec4(v, z, w); },
+				[](const glm::ivec3& v, float w) { return glm::vec4(v, w); },
+				[](const glm::ivec4& v) { return glm::vec4(v); },
+				[](const glm::uvec2& v, float z, float w) { return glm::vec4(v, z, w); },
+				[](const glm::uvec3& v, float w) { return glm::vec4(v, w); },
+				[](const glm::uvec4& v) { return glm::ivec4(v); },
+				[](const glm::vec2& v, float z, float w) { return glm::vec4(v, z, w); },
+				[](const glm::vec3& v, float w) { return glm::vec4(v, w); },
+				[](const sol::table& tab) { return LuaGlm::tableGet<glm::vec4>(tab); }
+			),
 			"x", &glm::vec4::x,
 			"y", &glm::vec4::y,
 			"z", &glm::vec4::z,
@@ -56,16 +62,20 @@ namespace darmok
 			sol::resolve<glm::vec4(const glm::vec4&, const glm::quat&)>(glm::operator*)
 		);
 
-		auto vec3 = lua.new_usertype<glm::vec3>("Vec3", sol::constructors<
-			glm::vec3(),
-			glm::vec3(glm::f32),
-			glm::vec3(glm::f32, glm::f32, glm::f32),
-			glm::vec3(const glm::ivec3&),
-			glm::vec3(const glm::uvec3&),
-			glm::vec3(const glm::vec2&, glm::f32),
-			glm::vec3(const glm::vec4&)
-
-		>(),
+		auto vec3 = lua.new_usertype<glm::vec3>("Vec3",
+			sol::factories(
+				[](float v) { return glm::vec3(v); },
+				[](float x, float y, float z) { return glm::vec3(x, y, z); },
+				[](const glm::ivec2& v, float z) { return glm::vec3(v, z); },
+				[](const glm::ivec3& v) { return glm::vec3(v); },
+				[](const glm::ivec4& v) { return glm::vec3(v); },
+				[](const glm::uvec2& v, float z) { return glm::vec3(v, z); },
+				[](const glm::uvec3& v) { return glm::vec3(v); },
+				[](const glm::uvec4& v) { return glm::vec3(v); },
+				[](const glm::vec2& v, float z) { return glm::vec3(v, z); },
+				[](const glm::vec4& v) { return glm::vec3(v); },
+				[](const sol::table& tab) { return LuaGlm::tableGet<glm::vec3>(tab); }
+			),
 			"x", &glm::vec3::x,
 			"y", &glm::vec3::y,
 			"z", &glm::vec3::z,
@@ -92,14 +102,20 @@ namespace darmok
 			[](const glm::vec3& vec, const glm::quat& quat) -> glm::vec3 { return vec * quat; }
 		);
 
-		auto vec2 = lua.new_usertype<glm::vec2>("Vec2", sol::constructors<
-			glm::vec2(),
-			glm::vec2(glm::f32),
-			glm::vec2(glm::f32, glm::f32),
-			glm::vec2(const glm::ivec2&),
-			glm::vec2(const glm::uvec2&),
-			glm::vec2(const glm::vec3&)
-		>(),
+		auto vec2 = lua.new_usertype<glm::vec2>("Vec2",
+			sol::factories(
+				[](float v) { return glm::vec2(v); },
+				[](float x, float y) { return glm::vec2(x, y); },
+				[](const glm::ivec2& v) { return glm::vec2(v); },
+				[](const glm::ivec3& v) { return glm::vec2(v); },
+				[](const glm::ivec4& v) { return glm::vec2(v); },
+				[](const glm::uvec2& v) { return glm::vec2(v); },
+				[](const glm::uvec3& v) { return glm::vec2(v); },
+				[](const glm::uvec4& v) { return glm::vec2(v); },
+				[](const glm::vec3& v) { return glm::vec2(v); },
+				[](const glm::vec4& v) { return glm::vec2(v); },
+				[](const sol::table& tab) { return LuaGlm::tableGet<glm::vec2>(tab); }
+			),
 			"x", &glm::vec2::x,
 			"y", &glm::vec2::y,
 			"rotate", [](const glm::vec2& v, float angle) { return glm::rotate(v, angle); },

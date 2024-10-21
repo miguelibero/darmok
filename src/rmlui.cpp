@@ -12,8 +12,9 @@
 #include <darmok/program_core.hpp>
 #include <darmok/math.hpp>
 #include <darmok/mesh.hpp>
-#include "rmlui.hpp"
 #include <darmok/glm.hpp>
+
+#include "rmlui.hpp"
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
 
@@ -52,11 +53,13 @@ namespace darmok
         return Rectangle(RmluiUtils::convert(v.Size()), RmluiUtils::convert(v.Position()));
     }
 
-    RmluiRenderInterface::RmluiRenderInterface(App& app) noexcept
+    RmluiRenderInterface::RmluiRenderInterface(App& app, RmluiCanvasImpl& canvas) noexcept
         : _app(app)
+        , _canvas(canvas)
         , _scissorEnabled(false)
         , _scissor(0)
         , _trans(1.F)
+        , _viewId(0)
         , _textureUniform{ bgfx::kInvalidHandle }
         , _dataUniform{ bgfx::kInvalidHandle }
     {
@@ -203,7 +206,8 @@ namespace darmok
             auto size = img.getSize();
             dimensions.x = size.x;
             dimensions.y = size.y;
-            auto texture = std::make_unique<Texture>(img);
+            auto flags = _canvas.getTextureFlags(source);
+            auto texture = std::make_unique<Texture>(img, flags);
             Rml::TextureHandle handle = texture->getHandle().idx + 1;
             _textureSources.emplace(source, *texture);
             _textures.emplace(handle, std::move(texture));
@@ -221,11 +225,13 @@ namespace darmok
         TextureConfig config;
         config.format = bgfx::TextureFormat::RGBA8;
         config.size = glm::uvec2(dimensions.x, dimensions.y);
+
         DataView data(source.data(), size);
 
         try
         {
-            auto texture = std::make_unique<Texture>(data, config);
+            uint64_t flags = _canvas.getDefaultTextureFlags();
+            auto texture = std::make_unique<Texture>(data, config, flags);
             Rml::TextureHandle handle = texture->getHandle().idx + 1;
             _textures.emplace(handle, std::move(texture));
             return handle;
@@ -412,46 +418,46 @@ namespace darmok
         }
     }
 
-    void RmluiRenderInterface::renderCanvas(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    void RmluiRenderInterface::renderCanvas(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         _viewId = viewId;
         _encoder = encoder;
         _trans = glm::mat4(1.F);
 
-        if (!canvas.getContext().Render())
+        if (!_canvas.getContext().Render())
         {
             return;
         }
 
-        if (auto cursorSprite = canvas.getMouseCursorSprite())
+        if (auto cursorSprite = _canvas.getMouseCursorSprite())
         {
-            renderSprite(cursorSprite.value(), canvas.getMousePosition());
+            renderSprite(cursorSprite.value(), _canvas.getMousePosition());
         }
 
         _encoder.reset();
     }
 
-    void RmluiRenderInterface::renderFrame(RmluiCanvasImpl& canvas, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    void RmluiRenderInterface::renderFrame(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        auto tex = canvas.getFrameTexture();
+        auto tex = _canvas.getFrameTexture();
         if (!tex)
         {
             return;
         }
-        auto model = canvas.getRenderMatrix();
+        auto model = _canvas.getRenderMatrix();
         encoder.setTransform(glm::value_ptr(model));
 
         encoder.setTexture(0, _textureUniform, tex->getHandle());
 
         glm::vec3 data(0);
-        if (auto depth = canvas.getForcedDepth())
+        if (auto depth = _canvas.getForcedDepth())
         {
             data.x = 1.F;
             data.y = depth.value();
         }
         encoder.setUniform(_dataUniform, glm::value_ptr(data));
 
-        auto meshData = MeshData(Rectangle(canvas.getCurrentSize()));
+        auto meshData = MeshData(Rectangle(_canvas.getCurrentSize()));
         meshData.type = MeshType::Transient;
         auto mesh = meshData.createMesh(_program->getVertexLayout());
 
@@ -639,6 +645,7 @@ namespace darmok
         , _name(name)
         , _mousePositionMode(MousePositionMode::Relative)
         , _offset(0)
+        , _defaultTextureFlags(defaultTextureLoadFlags)
     {
     }
 
@@ -647,7 +654,7 @@ namespace darmok
         shutdown();
     }
 
-    void RmluiCanvasImpl::init(RmluiSceneComponentImpl& comp)
+    void RmluiCanvasImpl::init(App& app, RmluiSceneComponentImpl& comp)
     {
         if (_context)
         {
@@ -656,7 +663,8 @@ namespace darmok
 
         _comp = comp;
         auto size = getCurrentSize();
-        _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &comp.getRmluiRender());
+        _render.emplace(app, *this);
+        _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_render.value());
         if (size.x > 0 && size.y > 0)
         {
             _frameBuffer.emplace(size, false);
@@ -672,12 +680,19 @@ namespace darmok
     {
         _dataTypeRegisters.clear();
         _defaultDataTypeRegister.reset();
+
         if (_context)
         {
             Rml::RemoveContext(_context->GetName());
             _context.reset();
-            Rml::ReleaseTextures();
         }
+
+        Rml::ReleaseTextures(_render ? &_render.value() : nullptr);
+        _render.reset();
+        // this is added here https://github.com/mikke89/RmlUi/issues/703
+        // but pending to be released
+        // Rml::ReleaseRenderManagers();
+
         _comp.reset();
         _cam.reset();
         _defaultCam.reset();
@@ -1013,54 +1028,26 @@ namespace darmok
 
     OptionalRef<const Rml::Sprite> RmluiCanvasImpl::getMouseCursorSprite() const noexcept
     {
-        for (int i = 0; i < _context->GetNumDocuments(); i++)
-        {
-            auto sprite = getMouseCursorSprite(*_context->GetDocument(i));
-            if (sprite)
-            {
-                return sprite;
-            }
-        }
-        return nullptr;
-    }
-
-    OptionalRef<const Rml::Sprite> RmluiCanvasImpl::getMouseCursorSprite(Rml::ElementDocument& doc) const noexcept
-    {
-        if (!_comp || !doc.IsVisible())
+        if (!_context || !_comp)
         {
             return nullptr;
         }
-        auto style = doc.GetStyleSheet();
-        if (style == nullptr)
-        {
-            return nullptr;
-        }
-
         std::string cursorName = _comp->getRmluiSystem().getMouseCursor();
-        auto getSprite = [&]() -> const Rml::Sprite*
-            {
-                if (cursorName.empty())
-                {
-                    return nullptr;
-                }
-                return style->GetSprite(std::string("cursor-") + cursorName);
-            };
-
-        if (auto sprite = getSprite())
-        {
-            return sprite;
-        }
-        auto prop = doc.GetProperty("cursor");
-        if (prop == nullptr)
+        if (cursorName.empty())
         {
             return nullptr;
         }
-        cursorName = prop->Get<std::string>();
-        if (auto sprite = getSprite())
+        auto elm = _context->GetHoverElement();
+        if (!elm || !elm->IsVisible())
         {
-            return sprite;
+            return nullptr;
         }
-        return nullptr;
+        auto style = elm->GetStyleSheet();
+        if (!style)
+        {
+            return nullptr;
+        }
+        return style->GetSprite(std::string("cursor-") + cursorName);
     }
 
     void RmluiCanvasImpl::setDelegate(IRmluiCanvasDelegate& dlg) noexcept
@@ -1117,7 +1104,7 @@ namespace darmok
         auto viewId = _viewId.value();
         encoder.touch(viewId);
 
-        if (!_visible || !_comp || !_context)
+        if (!_visible || !_render || !_context)
         {
             return;
         }
@@ -1132,12 +1119,15 @@ namespace darmok
             return;
         }
 
-        _comp->getRmluiRender().renderCanvas(*this, _viewId.value(), encoder);
+        _render->renderCanvas(_viewId.value(), encoder);
     }
 
     void RmluiCanvasImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        _comp->getRmluiRender().renderFrame(*this, viewId, encoder);
+        if (_render)
+        {
+            _render->renderFrame(viewId, encoder);
+        }
     }
 
     OptionalRef<Transform> RmluiCanvasImpl::getTransform() const noexcept
@@ -1254,6 +1244,31 @@ namespace darmok
         view = glm::scale(view, invy);
 
         bgfx::setViewTransform(viewId, glm::value_ptr(view), glm::value_ptr(proj));
+    }
+
+    uint64_t RmluiCanvasImpl::getDefaultTextureFlags() const noexcept
+    {
+        return _defaultTextureFlags;
+    }
+
+    void RmluiCanvasImpl::setDefaultTextureFlags(uint64_t flags) noexcept
+    {
+        _defaultTextureFlags = flags;
+    }
+
+    uint64_t RmluiCanvasImpl::getTextureFlags(const std::string& source) const noexcept
+    {
+        auto itr = _textureFlags.find(source);
+        if (itr == _textureFlags.end())
+        {
+            return _defaultTextureFlags;
+        }
+        return itr->second;
+    }
+
+    void RmluiCanvasImpl::setTextureFlags(const std::string& source, uint64_t flags) noexcept
+    {
+        _textureFlags[source] = flags;
     }
 
     Rml::DataTypeRegister& RmluiCanvasImpl::getDefaultDataTypeRegister()
@@ -1478,9 +1493,30 @@ namespace darmok
         return _impl->removeDataModel(name);
     }
 
+    uint64_t RmluiCanvas::getDefaultTextureFlags() const noexcept
+    {
+        return _impl->getDefaultTextureFlags();
+    }
+
+    RmluiCanvas& RmluiCanvas::setDefaultTextureFlags(uint64_t flags) noexcept
+    {
+        _impl->setDefaultTextureFlags(flags);
+        return *this;
+    }
+
+    uint64_t RmluiCanvas::getTextureFlags(const std::string& source) const noexcept
+    {
+        return _impl->getTextureFlags(source);
+    }
+
+    RmluiCanvas& RmluiCanvas::setTextureFlags(const std::string& source, uint64_t flags) noexcept
+    {
+        _impl->setTextureFlags(source, flags);
+        return *this;
+    }
+
     RmluiPlugin::RmluiPlugin(App& app) noexcept
         : _app(app)
-        , _render(app)
         , _system(app)
         , _file(app)
     {
@@ -1507,11 +1543,6 @@ namespace darmok
     RmluiSystemInterface& RmluiPlugin::getSystem() noexcept
     {
         return _system;
-    }
-
-    RmluiRenderInterface& RmluiPlugin::getRender() noexcept
-    {
-        return _render;
     }
 
     std::weak_ptr<RmluiPlugin> RmluiPlugin::_instance;
@@ -1685,7 +1716,7 @@ namespace darmok
 
         for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            canvas.getImpl().init(*this);
+            canvas.getImpl().init(app, *this);
         }
 
         scene.onConstructComponent<RmluiCanvas>().connect<&RmluiSceneComponentImpl::onCanvasConstructed>(*this);
@@ -1750,11 +1781,6 @@ namespace darmok
         Rml::ReleaseTextures();
     }
 
-    RmluiRenderInterface& RmluiSceneComponentImpl::getRmluiRender() noexcept
-    {
-        return _plugin->getRender();
-    }
-
     RmluiSystemInterface& RmluiSceneComponentImpl::getRmluiSystem() noexcept
     {
         return _plugin->getSystem();
@@ -1795,13 +1821,13 @@ namespace darmok
 
     void RmluiSceneComponentImpl::onCanvasConstructed(EntityRegistry& registry, Entity entity)
     {
-        if (!_scene)
+        if (!_scene || !_app)
         {
             return;
         }
         if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
         {
-            canvas->getImpl().init(*this);
+            canvas->getImpl().init(_app.value(), *this);
         }
     }
 

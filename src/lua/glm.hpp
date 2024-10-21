@@ -100,6 +100,14 @@ namespace darmok
 		}
 
 		template<typename T>
+		static T tableGet(const sol::table& table) noexcept
+		{
+			T val;
+			tableInit(val, table);
+			return val;
+		}
+
+		template<typename T>
 		static T tableGet(const VarLuaTable<T>& v) noexcept
 		{
 			auto ptr = std::get_if<T>(&v);

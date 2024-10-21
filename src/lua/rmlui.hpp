@@ -98,6 +98,8 @@ namespace darmok
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
+        static void addClass(Rml::Element& elm, const std::string& name) noexcept;
+        static void removeClass(Rml::Element& elm, const std::string& name) noexcept;
         static std::optional<std::string> getProperty(Rml::Element& elm, const std::string& name) noexcept;
         static bool hasAttribute(const Rml::Element& elm, const std::string& name) noexcept;
         static sol::object getAttribute(const Rml::Element& elm, const std::string& name, sol::this_state ts) noexcept;

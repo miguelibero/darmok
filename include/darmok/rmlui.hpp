@@ -105,6 +105,11 @@ namespace darmok
 		Rml::DataModelConstructor getDataModel(const std::string& name) noexcept;
 		bool removeDataModel(const std::string& name) noexcept;
 
+		uint64_t getDefaultTextureFlags() const noexcept;
+		RmluiCanvas& setDefaultTextureFlags(uint64_t flags) noexcept;
+		uint64_t getTextureFlags(const std::string& source) const noexcept;
+		RmluiCanvas& setTextureFlags(const std::string& source, uint64_t flags) noexcept;
+
 	private:
 		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};

@@ -5,6 +5,16 @@
 
 namespace darmok
 {
+    void LuaRmluiElement::addClass(Rml::Element& elm, const std::string& name) noexcept
+    {
+        elm.SetClass(name, true);
+    }
+
+    void LuaRmluiElement::removeClass(Rml::Element& elm, const std::string& name) noexcept
+    {
+        elm.SetClass(name, false);
+    }
+
     std::optional<std::string> LuaRmluiElement::getProperty(Rml::Element& elm, const std::string& name) noexcept
     {
         if (auto prop = elm.GetProperty(name))
@@ -170,6 +180,8 @@ namespace darmok
     {
         lua.new_usertype<Rml::Element>("RmluiElement", sol::no_constructor,
             "set_class", &Rml::Element::SetClass,
+            "add_class", &LuaRmluiElement::addClass,
+            "remove_class", &LuaRmluiElement::removeClass,
             "has_class", &Rml::Element::IsClassSet,
             "class_names", sol::property(&Rml::Element::GetClassNames, &Rml::Element::SetClassNames),
             "id", sol::property(&Rml::Element::GetId, &Rml::Element::SetId),
