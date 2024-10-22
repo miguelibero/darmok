@@ -812,6 +812,8 @@ namespace darmok
 		_buttons.fill(false);
 	}
 
+	const float GamepadImpl::_stickThreshold = 0.5F;
+
 	bool GamepadImpl::setStick(GamepadStick stick, const glm::vec3& value) noexcept
 	{
 		auto idx = toUnderlying(stick);
@@ -830,6 +832,21 @@ namespace darmok
 		{
 			listener.onGamepadStickChange(_num, stick, delta, value);
 		}
+
+		for (int i = 0; i < toUnderlying(InputDirType::Count); ++i)
+		{
+			auto dir = InputDirType(i);
+			auto active = InputImpl::getDir(value, dir) >= _stickThreshold;
+			if (_stickDirs[stick][dir] != active)
+			{
+				_stickDirs[stick][dir] = active;
+				for (auto& listener : _listeners)
+				{
+					listener.onGamepadStickDir(_num, stick, dir, active);
+				}
+			}
+		}
+
 		return true;
 	}
 
@@ -857,6 +874,17 @@ namespace darmok
 			return zero;
 		}
 		return _sticks[idx];
+	}
+
+	bool GamepadImpl::getStickDir(GamepadStick stick, InputDirType dir) const noexcept
+	{
+		auto itr = _stickDirs.find(stick);
+		if(itr == _stickDirs.end())
+		{
+			return false;
+		}
+		auto itr2 = itr->second.find(dir);
+		return itr2 != itr->second.end() && itr2->second;
 	}
 
 	bool GamepadImpl::getButton(GamepadButton button) const noexcept
@@ -911,16 +939,16 @@ namespace darmok
 		"B",
 		"X",
 		"Y",
-		"ThumbL",
-		"ThumbR",
-		"ShoulderL",
-		"ShoulderR",
+		"LeftBumper",
+		"RightBumper",
+		"Select",
+		"Start",
+		"LeftThumb",
+		"LeftThumb",
 		"Up",
+		"Right",
 		"Down",
 		"Left",
-		"Right",
-		"Back",
-		"Start",
 		"Guide"
 	};
 
@@ -1035,6 +1063,11 @@ namespace darmok
 		return _impl->getStick(stick);
 	}
 
+	bool Gamepad::getStickDir(GamepadStick stick, InputDirType dir) const noexcept
+	{
+		return _impl->getStickDir(stick, dir);
+	}
+
 	bool Gamepad::getButton(GamepadButton button) const noexcept
 	{
 		return _impl->getButton(button);
@@ -1102,6 +1135,11 @@ namespace darmok
 	bool GamepadInputEvent::operator==(const GamepadInputEvent& other) const noexcept
 	{
 		return button == other.button && gamepad == other.gamepad;
+	}
+
+	bool GamepadStickInputEvent::operator==(const GamepadStickInputEvent& other) const noexcept
+	{
+		return stick == other.stick && dir == other.dir && gamepad == other.gamepad;
 	}
 
 	bool MouseInputDir::operator==(const MouseInputDir& other) const noexcept
@@ -1287,6 +1325,15 @@ namespace darmok
 			}
 			return gamepad->getButton(v->button);
 		}
+		if (auto v = std::get_if<GamepadStickInputEvent>(&ev))
+		{
+			auto gamepad = getGamepad(v->gamepad);
+			if (!gamepad)
+			{
+				return false;
+			}
+			return gamepad->getStickDir(v->stick, v->dir);
+		}
 		return false;
 	}
 
@@ -1376,10 +1423,11 @@ namespace darmok
 				{
 					continue;
 				}
-				if (keyEvent->key == key && keyEvent->modifiers == modifiers)
+				if (keyEvent->key != key || keyEvent->modifiers != modifiers)
 				{
-					data.listener.get().onInputEvent(data.tag);
+					continue;
 				}
+				data.listener.get().onInputEvent(data.tag);
 			}
 		}
 	}
@@ -1395,14 +1443,11 @@ namespace darmok
 			for (auto& ev : data.events)
 			{
 				auto mouseEvent = std::get_if<MouseInputEvent>(&ev);
-				if (!mouseEvent)
+				if (!mouseEvent || mouseEvent->button != button)
 				{
 					continue;
 				}
-				if (mouseEvent->button == button)
-				{
-					data.listener.get().onInputEvent(data.tag);
-				}
+				data.listener.get().onInputEvent(data.tag);
 			}
 		}
 	}
@@ -1422,10 +1467,43 @@ namespace darmok
 				{
 					continue;
 				}
-				if ((gamepadEvent->gamepad == num || gamepadEvent->gamepad == Gamepad::Any) && gamepadEvent->button == button)
+				if (gamepadEvent->gamepad != num && gamepadEvent->gamepad != Gamepad::Any)
 				{
-					data.listener.get().onInputEvent(data.tag);
+					continue;
 				}
+				if (gamepadEvent->button != button)
+				{
+					continue;
+				}
+				data.listener.get().onInputEvent(data.tag);
+			}
+		}
+	}
+
+	void InputImpl::onGamepadStickDir(uint8_t num, GamepadStick stick, InputDirType dir, bool active)
+	{
+		if (!active)
+		{
+			return;
+		}
+		for (auto & data : _listeners)
+		{
+			for (auto& ev : data.events)
+			{
+				auto gamepadEvent = std::get_if<GamepadStickInputEvent>(&ev);
+				if (!gamepadEvent)
+				{
+					continue;
+				}
+				if (gamepadEvent->gamepad != num && gamepadEvent->gamepad != Gamepad::Any)
+				{
+					continue;
+				}
+				if (gamepadEvent->stick != stick || gamepadEvent->dir != dir)
+				{
+					continue;
+				}
+				data.listener.get().onInputEvent(data.tag);
 			}
 		}
 	}

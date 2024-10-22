@@ -10,7 +10,6 @@ namespace darmok
 		Ctrl,
 		Shift,
 		Meta,
-
 		Count
 	};
 
@@ -106,7 +105,6 @@ namespace darmok
 		KeyX,
 		KeyY,
 		KeyZ,
-
 		Count
 	};
 
@@ -116,7 +114,6 @@ namespace darmok
 		Down,
 		Left,
 		Right,
-
 		Count
 	};
 
@@ -124,7 +121,6 @@ namespace darmok
 	{
 		Position,
 		Scroll,
-		
 		Count
 	};
 
@@ -133,7 +129,6 @@ namespace darmok
 		Left,
 		Middle,
 		Right,
-
 		Count
 	};
 
@@ -150,18 +145,17 @@ namespace darmok
 		B,
 		X,
 		Y,
-		ThumbL,
-		ThumbR,
-		ShoulderL,
-		ShoulderR,
+		LeftBumper,
+		RightBumper,
+		Select,
+		Start,
+		LeftThumb,
+		RightThumb,
 		Up,
+		Right,
 		Down,
 		Left,
-		Right,
-		Back,
-		Start,
 		Guide,
-
 		Count
 	};
 }

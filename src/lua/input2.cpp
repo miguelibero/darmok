@@ -141,7 +141,11 @@ namespace darmok
 		{
 			return ev;
 		}
-		if (auto ev = LuaGamepad::readEvent(val))
+		if (auto ev = LuaGamepad::readButtonEvent(val))
+		{
+			return ev;
+		}
+		if (auto ev = LuaGamepad::readStickEvent(val))
 		{
 			return ev;
 		}

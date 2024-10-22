@@ -132,7 +132,8 @@ namespace darmok
 	public:
 		static void bind(sol::state_view& lua) noexcept;
 
-		static std::optional<GamepadInputEvent> readEvent(const sol::object& val) noexcept;
+		static std::optional<GamepadInputEvent> readButtonEvent(const sol::object& val) noexcept;
+		static std::optional<GamepadStickInputEvent> readStickEvent(const sol::object& val) noexcept;
 		static std::optional<GamepadButton> readButton(const sol::object& val) noexcept;
 		static std::optional<GamepadStick> readStick(const sol::object& val) noexcept;
 		static std::optional<GamepadInputDir> readDir(const sol::object& val) noexcept;

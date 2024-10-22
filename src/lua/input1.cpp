@@ -357,7 +357,7 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	std::optional<GamepadInputEvent> LuaGamepad::readEvent(const sol::object& val) noexcept
+	std::optional<GamepadInputEvent> LuaGamepad::readButtonEvent(const sol::object& val) noexcept
 	{
 		if (val.is<GamepadInputEvent>())
 		{
@@ -388,6 +388,40 @@ namespace darmok
 			gamepad = tab[2];
 		}
 		return GamepadInputEvent{ button.value(), gamepad };
+	}
+
+	std::optional<GamepadStickInputEvent> LuaGamepad::readStickEvent(const sol::object& val) noexcept
+	{
+		if (val.is<GamepadStickInputEvent>())
+		{
+			return val.as<GamepadStickInputEvent>();
+		}
+		if (!val.is<sol::table>())
+		{
+			return std::nullopt;
+		}
+		auto tab = val.as<sol::table>();
+		auto size = tab.size();
+		if (size == 0)
+		{
+			return std::nullopt;
+		}
+		auto stick = readStick(tab[1]);
+		if (!stick)
+		{
+			return std::nullopt;
+		}
+		auto dirType = LuaInput::readDirType(tab[2]);
+		if (!dirType)
+		{
+			return std::nullopt;
+		}
+		auto gamepad = Gamepad::Any;
+		if (size > 1 && tab[3].is<int>())
+		{
+			gamepad = tab[3];
+		}
+		return GamepadStickInputEvent{ stick.value(), dirType.value(), gamepad };
 	}
 
 	std::optional<GamepadStick> LuaGamepad::readStick(const sol::object& val) noexcept

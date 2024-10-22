@@ -304,7 +304,7 @@ namespace darmok
 		static GamepadMap map
 		{
 			{ GamepadButton::Start, ImGuiKey_GamepadStart },
-			{ GamepadButton::Back, ImGuiKey_GamepadBack },
+			{ GamepadButton::Select, ImGuiKey_GamepadBack },
 			{ GamepadButton::Y, ImGuiKey_GamepadFaceUp },
 			{ GamepadButton::A, ImGuiKey_GamepadFaceDown },
 			{ GamepadButton::X, ImGuiKey_GamepadFaceLeft },
@@ -313,10 +313,10 @@ namespace darmok
 			{ GamepadButton::Down, ImGuiKey_GamepadDpadDown },
 			{ GamepadButton::Left, ImGuiKey_GamepadDpadLeft },
 			{ GamepadButton::Right, ImGuiKey_GamepadDpadRight },
-			{ GamepadButton::ShoulderL, ImGuiKey_GamepadL1 },
-			{ GamepadButton::ShoulderR, ImGuiKey_GamepadR1 },
-			{ GamepadButton::ThumbL, ImGuiKey_GamepadL3 },
-			{ GamepadButton::ThumbR, ImGuiKey_GamepadR3 },
+			{ GamepadButton::LeftBumper, ImGuiKey_GamepadL1 },
+			{ GamepadButton::RightBumper, ImGuiKey_GamepadR1 },
+			{ GamepadButton::LeftThumb, ImGuiKey_GamepadL3 },
+			{ GamepadButton::RightThumb, ImGuiKey_GamepadR3 },
 			{ GamepadButton::Guide, ImGuiKey_None },
 		};
 

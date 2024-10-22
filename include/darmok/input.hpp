@@ -153,6 +153,7 @@ namespace darmok
 		virtual ~IGamepadListener() = default;
 		virtual entt::id_type getGamepadListenerType() const noexcept { return 0; };
 		virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) {};
+		virtual void onGamepadStickDir(uint8_t num, GamepadStick stick, InputDirType dir, bool active) {};
 		virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
 		virtual void onGamepadConnect(uint8_t num, bool connected) {};
 	};
@@ -190,6 +191,7 @@ namespace darmok
 		
 		[[nodiscard]] const glm::vec3& getStick(GamepadStick stick) const noexcept;
 		[[nodiscard]] const GamepadSticks& getSticks() const noexcept;
+		[[nodiscard]] bool getStickDir(GamepadStick stick, InputDirType dir) const noexcept;
 		[[nodiscard]] bool getButton(GamepadButton button) const noexcept;
 		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
 		[[nodiscard]] bool isConnected() const noexcept;
@@ -236,7 +238,16 @@ namespace darmok
 		bool operator==(const GamepadInputEvent& other) const noexcept;
 	};
 
-	using InputEvent = std::variant<KeyboardInputEvent, MouseInputEvent, GamepadInputEvent>;
+	struct DARMOK_EXPORT GamepadStickInputEvent final
+	{
+		GamepadStick stick = GamepadStick::Left;
+		InputDirType dir = InputDirType::Left;
+		uint8_t gamepad = Gamepad::Any;
+
+		bool operator==(const GamepadStickInputEvent& other) const noexcept;
+	};
+
+	using InputEvent = std::variant<KeyboardInputEvent, MouseInputEvent, GamepadInputEvent, GamepadStickInputEvent>;
 	using InputEvents = std::vector<InputEvent>;
 
 	static bool operator==(const InputEvent& a, const InputEvent& b) noexcept;

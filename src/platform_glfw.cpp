@@ -465,48 +465,62 @@ namespace darmok
 		return MouseButton::Middle;
 	}
 
-	std::optional<PlatformImpl::GamepadAxisConfig> PlatformImpl::translateGamepadAxis(int axis) noexcept
-	{
-		// Map XInput 360 controller until GLFW gamepad API
-		const static std::array<GamepadAxisConfig, 6> axes =
-		{
-			GamepadAxisConfig{ GamepadStick::Left, 0 },
-			GamepadAxisConfig{ GamepadStick::Left, 1, true },
-			GamepadAxisConfig{ GamepadStick::Right, 0 },
-			GamepadAxisConfig{ GamepadStick::Right, 1, true },
-			GamepadAxisConfig{ GamepadStick::Left, 2 },
-			GamepadAxisConfig{ GamepadStick::Right, 2 },
-		};
-		if (axis < 0 || axis >= axes.size())
-		{
-			return std::nullopt;
-		}
-		return axes[axis];
-	}
-
 	GamepadButton PlatformImpl::translateGamepadButton(int button) noexcept
 	{
-		// HACK: Map XInput 360 controller until GLFW gamepad API
-
-		static std::array<GamepadButton, 15> buttons =
+		switch (button)
 		{
-			GamepadButton::A,
-			GamepadButton::B,
-			GamepadButton::X,
-			GamepadButton::Y,
-			GamepadButton::ShoulderL,
-			GamepadButton::ShoulderR,
-			GamepadButton::Back,
-			GamepadButton::Start,
-			GamepadButton::ThumbL,
-			GamepadButton::ThumbR,
-			GamepadButton::Up,
-			GamepadButton::Right,
-			GamepadButton::Down,
-			GamepadButton::Left,
-			GamepadButton::Guide,
+		case GLFW_GAMEPAD_BUTTON_A:
+			return GamepadButton::A;
+		case GLFW_GAMEPAD_BUTTON_B:
+			return GamepadButton::B;
+		case GLFW_GAMEPAD_BUTTON_X:
+			return GamepadButton::X;
+		case GLFW_GAMEPAD_BUTTON_Y:
+			return GamepadButton::Y;
+		case GLFW_GAMEPAD_BUTTON_LEFT_BUMPER:
+			return GamepadButton::LeftBumper;
+		case GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER:
+			return GamepadButton::RightBumper;
+		case GLFW_GAMEPAD_BUTTON_BACK:
+			return GamepadButton::Select;
+		case GLFW_GAMEPAD_BUTTON_START:
+			return GamepadButton::Start;
+		case GLFW_GAMEPAD_BUTTON_GUIDE:
+			return GamepadButton::Guide;
+		case GLFW_GAMEPAD_BUTTON_LEFT_THUMB:
+			return GamepadButton::LeftThumb;
+		case GLFW_GAMEPAD_BUTTON_RIGHT_THUMB:
+			return GamepadButton::RightThumb;
+		case GLFW_GAMEPAD_BUTTON_DPAD_UP:
+			return GamepadButton::Up;
+		case GLFW_GAMEPAD_BUTTON_DPAD_RIGHT:
+			return GamepadButton::Right;
+		case GLFW_GAMEPAD_BUTTON_DPAD_DOWN:
+			return GamepadButton::Down;
+		case GLFW_GAMEPAD_BUTTON_DPAD_LEFT:
+			return GamepadButton::Left;
 		};
-		return buttons[button];
+		return GamepadButton::Count;
+	}
+
+	std::optional<PlatformImpl::GamepadAxisConfig> PlatformImpl::translateGamepadAxis(int axis) noexcept
+	{
+		switch (axis)
+		{
+		case GLFW_GAMEPAD_AXIS_LEFT_X:
+			return GamepadAxisConfig{ GamepadStick::Left, 0 };
+		case GLFW_GAMEPAD_AXIS_LEFT_Y:
+			return GamepadAxisConfig{ GamepadStick::Left, 1, true };
+		case GLFW_GAMEPAD_AXIS_LEFT_TRIGGER:
+			return GamepadAxisConfig{ GamepadStick::Left, 2 };
+		case GLFW_GAMEPAD_AXIS_RIGHT_X:
+			return GamepadAxisConfig{ GamepadStick::Right, 0 };
+		case GLFW_GAMEPAD_AXIS_RIGHT_Y:
+			return GamepadAxisConfig{ GamepadStick::Right, 1, true };
+		case GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER:
+			return GamepadAxisConfig{ GamepadStick::Right, 2 };
+		}
+		return std::nullopt;
 	}
 
 	void PlatformImpl::errorCallback(int error, const char* description)
@@ -516,21 +530,38 @@ namespace darmok
 
 	void PlatformImpl::updateGamepad(uint8_t num) noexcept
 	{
-		int numButtons, numAxes;
-		const unsigned char* buttons = glfwGetJoystickButtons(num, &numButtons);
-		const float* axes = glfwGetJoystickAxes(num, &numAxes);
+		int id = GLFW_JOYSTICK_1 + num;
 
-		if (axes != nullptr)
+		const float* axes = nullptr;
+		const unsigned char* buttons = nullptr;
+		if (glfwJoystickIsGamepad(id))
+		{
+			GLFWgamepadstate state;
+			if (glfwGetGamepadState(id, &state))
+			{
+				axes = state.axes;
+				buttons = state.buttons;
+			}
+		}
+		else
+		{
+			// TODO: check if this works with non-xbox controllers
+			int numAxes;
+			axes = glfwGetJoystickAxes(id, &numAxes);
+			int numButtons;
+			buttons = glfwGetJoystickButtons(id, &numButtons);
+		}
+		if (axes)
 		{
 			std::unordered_map<GamepadStick, glm::vec3> stickValues;
-			for (int i = 0; i < numAxes; ++i)
+			for (int i = 0; i <= GLFW_GAMEPAD_AXIS_LAST; ++i)
 			{
-				auto value = axes[i];
 				auto config = translateGamepadAxis(i);
 				if (!config)
 				{
 					continue;
 				}
+				auto value = axes[i];
 				if (config->reverse)
 				{
 					value = -value;
@@ -543,14 +574,17 @@ namespace darmok
 				_events.post<GamepadStickEvent>(num, elm.first, elm.second);
 			}
 		}
-
-		if (buttons != nullptr)
+		if (buttons)
 		{
-			for (int i = 0; i < numButtons; ++i)
+			for (int i = 0; i <= GLFW_GAMEPAD_BUTTON_LAST; ++i)
 			{
 				auto button = translateGamepadButton(i);
-				bool down = buttons[i];
-				_events.post<GamepadButtonEvent>(num, button, down);
+				auto down = buttons[i] == GLFW_PRESS;
+				if (_gamepadButtons[num][button] != down)
+				{
+					_gamepadButtons[num][button] = down;
+					_events.post<GamepadButtonEvent>(num, button, down);
+				}
 			}
 		}
 	}
