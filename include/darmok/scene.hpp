@@ -50,6 +50,7 @@ namespace darmok
         ~Scene() noexcept;
 
         std::string toString() const noexcept;
+        entt::id_type getId() const noexcept;
 
         SceneImpl& getImpl() noexcept;
         const SceneImpl& getImpl() const noexcept;

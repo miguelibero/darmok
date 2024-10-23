@@ -75,6 +75,7 @@ namespace darmok
 		std::string nameFormat;
 		float resolution = 1.F;
 		std::string spriteNameFormat;
+		std::string boxNameFormat = "box-*";
 	};
 
 	struct DARMOK_EXPORT TextureAtlasData final
@@ -153,6 +154,7 @@ namespace darmok
 		static const std::string _rmluiResolutionOption;
 		static const std::string _rmluiNameFormatOption;
 		static const std::string _rmluiSpriteNameFormatOption;
+		static const std::string _rmluiBoxNameFormatOption;
 		std::filesystem::path _exePath;
 		pugi::xml_document _xmlDoc;
 		std::filesystem::path _texturePath;

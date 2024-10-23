@@ -104,25 +104,26 @@ namespace darmok
         bool operator!=(const LuaDelegate& dlg) const noexcept;
 
         template<typename... Args>
-        sol::protected_function_result operator()(Args&&... args) const
+        sol::protected_function_result operator()(Args&&... args) const noexcept
         {
-            if (_func)
+            auto type = _obj.get_type();
+            if (type == sol::type::function)
             {
-                return _func(std::forward<Args>(args)...);
+                sol::protected_function func = _obj;
+                return func(std::forward<Args>(args)...);
             }
-            if (_table)
+            else if (type == sol::type::table)
             {
-                auto table = _table.value();
+                auto table = _obj.as<sol::table>();
                 if (sol::protected_function func = table[_tableKey])
                 {
                     return func(table, std::forward<Args>(args)...);
                 }
             }
-            throw std::runtime_error("empty lua delegate");
+            return sol::protected_function_result(_obj.lua_state(), -1, 0, 0, sol::call_status::runtime);
         }
     private:
-        sol::main_protected_function _func;
-        std::optional<sol::main_table> _table;
+        sol::main_object _obj;
         std::string _tableKey;
     };
 

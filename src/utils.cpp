@@ -4,7 +4,6 @@
 #include <stdexcept>
 #include <cstdio>
 #include <array>
-#include <random>
 #include <process.hpp>
 
 namespace darmok
@@ -19,12 +18,20 @@ namespace darmok
 			ss << "( " << err.get().code << ")";
             throw std::runtime_error(ss.str());
         }
-    }    
+    }
 
-#ifdef _MSC_VER
-    #define popen _popen
-    #define pclose _pclose
-#endif
+    Random::Random(uint32_t seed) noexcept
+        : _seed(seed)
+    {
+    }
+
+    uint32_t Random::hash(uint32_t input) noexcept
+    {
+        // PGC hash
+        uint32_t state = input * 747796405u + 2891336453u;
+        uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+        return (word >> 22u) ^ word;
+    }
 
     Exec::Result Exec::run(const std::vector<Arg>& args, const std::filesystem::path& path)
     {
@@ -70,17 +77,9 @@ namespace darmok
 
     std::filesystem::path getTempPath(std::string_view suffix) noexcept
     {
-        std::string name = std::tmpnam(nullptr);
+        std::string name(std::tmpnam(nullptr));
         name += suffix;
         return std::filesystem::temp_directory_path() / name;
-    }
-
-    entt::id_type randomIdType() noexcept
-    {
-        std::random_device dev;
-        std::mt19937 rng(dev());
-        std::uniform_int_distribution<entt::id_type> uni;
-        return uni(rng);
     }
 
     TypeFilter& TypeFilter::include(entt::id_type idType) noexcept

@@ -664,7 +664,12 @@ namespace darmok
         _comp = comp;
         auto size = getCurrentSize();
         _render.emplace(app, *this);
-        _context = Rml::CreateContext(_name, RmluiUtils::convert<int>(size), &_render.value());
+        std::string name = _name;
+        if (auto scene = comp.getScene())
+        {
+            name += " - scene " + std::to_string(scene->getId());
+        }
+        _context = Rml::CreateContext(name, RmluiUtils::convert<int>(size), &_render.value());
         if (size.x > 0 && size.y > 0)
         {
             _frameBuffer.emplace(size, false);

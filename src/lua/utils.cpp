@@ -93,26 +93,19 @@ namespace darmok
 
 	LuaDelegate::LuaDelegate(const sol::object& obj, const std::string& tableKey) noexcept
 		: _tableKey(tableKey.empty() ? "__call" : tableKey)
+		, _obj(obj)
 	{
-		auto type = obj.get_type();
-		if (type == sol::type::function)
-		{
-			_func = obj;
-		}
-		else if (type == sol::type::table)
-		{
-			_table = obj;
-		}
 	}
 
 	LuaDelegate::operator bool() const noexcept
 	{
-		return _func || _table;
+		auto type = _obj.get_type();
+		return type == sol::type::function || type == sol::type::table;
 	}
 
 	bool LuaDelegate::operator==(const sol::object& obj) const noexcept
 	{
-		return _func == obj || _table == obj;
+		return _obj == obj;
 	}
 
 	bool LuaDelegate::operator!=(const sol::object& obj) const noexcept
@@ -122,7 +115,7 @@ namespace darmok
 
 	bool LuaDelegate::operator==(const LuaDelegate& dlg) const noexcept
 	{
-		return _func == dlg._func && _table == dlg._table && _tableKey == dlg._tableKey;
+		return _obj == dlg._obj && _tableKey == dlg._tableKey;
 	}
 
 	bool LuaDelegate::operator!=(const LuaDelegate& dlg) const noexcept
@@ -132,12 +125,20 @@ namespace darmok
 
 	TypeFilter& LuaTypeFilter::include(TypeFilter& filter, const sol::object& type) noexcept
 	{
-		return filter.include(LuaUtils::getTypeId(type).value());
+		if (auto typeId = LuaUtils::getTypeId(type))
+		{
+			return filter.include(typeId.value());
+		}
+		return filter;
 	}
 
 	TypeFilter& LuaTypeFilter::exclude(TypeFilter& filter, const sol::object& type) noexcept
 	{
-		return filter.exclude(LuaUtils::getTypeId(type).value());
+		if (auto typeId = LuaUtils::getTypeId(type))
+		{
+			return filter.exclude(typeId.value());
+		}
+		return filter;
 	}
 
 	TypeFilter LuaTypeFilter::create(const sol::object& value) noexcept
@@ -148,10 +149,16 @@ namespace darmok
 		}
 		else if (value.get_type() == sol::type::nil)
 		{
-			return TypeFilter();
+			return {};
 		}
-		auto typeId = LuaUtils::getTypeId(value).value();
-		return TypeFilter().include(typeId);
+		if (auto typeId = LuaUtils::getTypeId(value))
+		{
+			return TypeFilter().include(typeId.value());
+		}
+		else
+		{
+			return {};
+		}
 	}
 
 	void LuaTypeFilter::bind(sol::state_view& lua) noexcept

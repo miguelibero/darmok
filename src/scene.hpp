@@ -33,6 +33,7 @@ namespace darmok
         OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
         OptionalRef<const ISceneComponent> getSceneComponent(entt::id_type type) const noexcept;
 
+        entt::id_type getId() const noexcept;
         void setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
         void setPaused(bool paused) noexcept;
@@ -67,6 +68,7 @@ namespace darmok
 
         std::vector<Entity> _pendingDestroy;
         std::string _name;
+        entt::id_type _id;
         bool _paused;
         Components _components;
         EntityRegistry _registry;

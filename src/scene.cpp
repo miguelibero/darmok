@@ -4,6 +4,7 @@
 #include <darmok/transform.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/window.hpp>
+#include <darmok/utils.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "camera.hpp"
 
@@ -14,6 +15,11 @@ namespace darmok
         , _renderChain(*this)
         , _paused(false)
     {
+    }
+
+    entt::id_type SceneImpl::getId() const noexcept
+    {
+        return reinterpret_cast<uintptr_t>(static_cast<const void*>(this));
     }
 
     SceneImpl::~SceneImpl() noexcept
@@ -468,6 +474,11 @@ namespace darmok
     {
         auto storage = getRegistry().storage(typeId);
         return storage && storage->find(entity) != storage->end();
+    }
+
+    entt::id_type Scene::getId() const noexcept
+    {
+        return _impl->getId();
     }
 
     Scene& Scene::setName(const std::string& name) noexcept

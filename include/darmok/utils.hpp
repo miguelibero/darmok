@@ -20,6 +20,24 @@ namespace darmok
 
     void checkError(bx::Error& err);
 
+    class DARMOK_EXPORT Random final
+    {
+    public:
+        Random(uint32_t seed) noexcept;
+
+        template<typename T>
+        T generate() noexcept
+        {
+            _seed = hash(_seed);
+            return (T)_seed / (T)UINT32_MAX;
+        }
+
+    private:
+        uint32_t _seed;
+
+        static uint32_t hash(uint32_t input) noexcept;
+    };
+
     struct DARMOK_EXPORT Exec final
     {
         struct Result final
@@ -50,8 +68,6 @@ namespace darmok
         seed ^= other + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         return seed;
     }
-
-    entt::id_type randomIdType() noexcept;
 
     struct DARMOK_EXPORT TypeFilter final
     {

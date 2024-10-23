@@ -532,29 +532,30 @@ namespace darmok
 	{
 		int id = GLFW_JOYSTICK_1 + num;
 
+		int numAxes, numButtons;
 		const float* axes = nullptr;
 		const unsigned char* buttons = nullptr;
+		GLFWgamepadstate state;
 		if (glfwJoystickIsGamepad(id))
 		{
-			GLFWgamepadstate state;
 			if (glfwGetGamepadState(id, &state))
 			{
 				axes = state.axes;
+				numAxes = GLFW_GAMEPAD_AXIS_LAST;
 				buttons = state.buttons;
+				numButtons = GLFW_GAMEPAD_BUTTON_LAST;
 			}
 		}
 		else
 		{
 			// TODO: check if this works with non-xbox controllers
-			int numAxes;
 			axes = glfwGetJoystickAxes(id, &numAxes);
-			int numButtons;
 			buttons = glfwGetJoystickButtons(id, &numButtons);
 		}
 		if (axes)
 		{
 			std::unordered_map<GamepadStick, glm::vec3> stickValues;
-			for (int i = 0; i <= GLFW_GAMEPAD_AXIS_LAST; ++i)
+			for (int i = 0; i <= numAxes; ++i)
 			{
 				auto config = translateGamepadAxis(i);
 				if (!config)
@@ -576,7 +577,7 @@ namespace darmok
 		}
 		if (buttons)
 		{
-			for (int i = 0; i <= GLFW_GAMEPAD_BUTTON_LAST; ++i)
+			for (int i = 0; i <= numButtons; ++i)
 			{
 				auto button = translateGamepadButton(i);
 				auto down = buttons[i] == GLFW_PRESS;

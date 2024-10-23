@@ -490,6 +490,7 @@ namespace darmok
 		out << "{" << std::endl;
 		out << "    src: " << imagePath.string() << ";" << std::endl;
 		out << "    resolution: " << config.resolution << "x;" << std::endl;
+
 		for (auto& elm : elements)
 		{
 			glm::uvec4 v(elm.texturePosition, elm.size);
@@ -503,6 +504,24 @@ namespace darmok
 			out << "    " << name << ": " << v.x << "px " << v.y << "px " << v.z << "px " << v.w << "px;" << std::endl;
 		}
 		out << "}" << std::endl;
+
+		if (!config.boxNameFormat.empty())
+		{
+			for (auto& elm : elements)
+			{
+				out << std::endl;
+				auto name = config.boxNameFormat;
+				auto origName = StringUtils::getFileStem(elm.name);
+				StringUtils::replace(name, "*", origName);
+
+				out << "." << name << " {" << std::endl;
+				out << "  width: " << elm.originalSize.x << "px;" << std::endl;
+				out << "  height: " << elm.originalSize.y << "px;" << std::endl;
+				out << "  padding-left: " << elm.offset.x << "px;" << std::endl;
+				out << "  padding-bottom: " << elm.offset.y << "px;" << std::endl;
+				out << "}" << std::endl;
+			}
+		}
 	}
 
     TexturePackerTextureAtlasLoader::TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept
@@ -597,6 +616,7 @@ namespace darmok
 	const std::string TexturePackerTextureAtlasImporter::_rmluiResolutionOption = "rmluiResolution";
 	const std::string TexturePackerTextureAtlasImporter::_rmluiNameFormatOption = "rmluiNameFormat";
 	const std::string TexturePackerTextureAtlasImporter::_rmluiSpriteNameFormatOption = "rmluiSpriteNameFormat";
+	const std::string TexturePackerTextureAtlasImporter::_rmluiBoxNameFormatOption = "rmluiBoxNameFormat";
 
 	bool TexturePackerTextureAtlasImporter::startImport(const Input& input, bool dry)
 	{
@@ -756,6 +776,10 @@ namespace darmok
 		if (json.contains(_rmluiSpriteNameFormatOption))
 		{
 			config.spriteNameFormat = json[_rmluiSpriteNameFormatOption];
+		}
+		if (json.contains(_rmluiBoxNameFormatOption))
+		{
+			config.boxNameFormat = json[_rmluiBoxNameFormatOption];
 		}
 		return config;
 	}
