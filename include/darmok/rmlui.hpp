@@ -79,8 +79,8 @@ namespace darmok
 		RmluiCanvas& setVisible(bool visible) noexcept;
 		bool isVisible() const noexcept;
 
-		RmluiCanvas& setInputActive(bool active) noexcept;
-		bool isInputActive() const noexcept;
+		RmluiCanvas& setInputEnabled(bool enabled) noexcept;
+		bool isInputEnabled() const noexcept;
 
 		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 

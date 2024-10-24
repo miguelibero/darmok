@@ -3,10 +3,12 @@
 #include "camera.hpp"
 #include "light.hpp"
 #include "render_scene.hpp"
+#include "scene_filter.hpp"
 #include "freelook.hpp"
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
 #include <darmok/render_chain.hpp>
+#include <darmok/scene_filter.hpp>
 
 #ifdef DARMOK_OZZ
 #include "skeleton.hpp"
@@ -315,7 +317,7 @@ namespace darmok
 
 	void LuaScene::setUpdateFilter(Scene& scene, const sol::object& filter) noexcept
 	{
-		scene.setUpdateFilter(LuaTypeFilter::create(filter));
+		scene.setUpdateFilter(LuaEntityFilter::create(filter));
 	}
 
 	bool LuaScene::forEachEntity(const std::shared_ptr<Scene>& scene, const sol::protected_function& callback)
@@ -328,6 +330,7 @@ namespace darmok
 
 	void LuaScene::bind(sol::state_view& lua) noexcept
 	{
+		LuaEntityFilter::bind(lua);
 		LuaSceneAppComponent::bind(lua);
 		LuaTransform::bind(lua);
 		LuaCamera::bind(lua);

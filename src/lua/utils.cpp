@@ -16,6 +16,10 @@ namespace darmok
 			return true;
 		}
 		auto key = (*table.cbegin()).first;
+		if (key.get_type() != sol::type::number)
+		{
+			return false;
+		}
 		return key.as<int>() == 1;
 	}
 
@@ -121,52 +125,5 @@ namespace darmok
 	bool LuaDelegate::operator!=(const LuaDelegate& dlg) const noexcept
 	{
 		return !operator==(dlg);
-	}
-
-	TypeFilter& LuaTypeFilter::include(TypeFilter& filter, const sol::object& type) noexcept
-	{
-		if (auto typeId = LuaUtils::getTypeId(type))
-		{
-			return filter.include(typeId.value());
-		}
-		return filter;
-	}
-
-	TypeFilter& LuaTypeFilter::exclude(TypeFilter& filter, const sol::object& type) noexcept
-	{
-		if (auto typeId = LuaUtils::getTypeId(type))
-		{
-			return filter.exclude(typeId.value());
-		}
-		return filter;
-	}
-
-	TypeFilter LuaTypeFilter::create(const sol::object& value) noexcept
-	{
-		if (value.is<TypeFilter>())
-		{
-			return value.as<TypeFilter>();
-		}
-		else if (value.get_type() == sol::type::nil)
-		{
-			return {};
-		}
-		if (auto typeId = LuaUtils::getTypeId(value))
-		{
-			return TypeFilter().include(typeId.value());
-		}
-		else
-		{
-			return {};
-		}
-	}
-
-	void LuaTypeFilter::bind(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<TypeFilter>("TypeFilter", sol::default_constructor,
-			"include", &LuaTypeFilter::include,
-			"exclude", &LuaTypeFilter::exclude,
-			sol::meta_function::to_string, &TypeFilter::toString
-		);
 	}
 }

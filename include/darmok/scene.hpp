@@ -39,9 +39,10 @@ namespace darmok
     class App;
     class SceneImpl;
     class RenderChain;
-    struct TypeFilter;
     struct Viewport;
-
+    struct EntityFilter;
+    class EntityView;
+    
     class DARMOK_EXPORT Scene final
     {
     public:
@@ -131,20 +132,16 @@ namespace darmok
             return getRegistry().view<T>();
         }
 
+        EntityView getEntities(const EntityFilter& filter) const noexcept;
+
         template<typename T>
-        EntityRuntimeView getEntities(const TypeFilter& filter) const noexcept
+        EntityView getEntities(const EntityFilter& filter) const noexcept
         {
-            if (auto storage = getRegistry().storage<T>())
-            {
-                auto view = createEntityRuntimeView(filter);
-                view.iterate(*storage);
-                return view;
-            }
-            return EntityRuntimeView();
+            return getEntities(EntityFilter(filter) & entt::type_hash<T>::value());
         }
 
         template<typename T>
-        EntityRuntimeView getUpdateEntities() const noexcept
+        EntityView getUpdateEntities() const noexcept
         {
             return getEntities<T>(getUpdateFilter());
         }
@@ -165,7 +162,6 @@ namespace darmok
             });
             return it != end;
         }
-
 
         template<typename T>
 		Entity getEntity(const T& component) noexcept
@@ -373,13 +369,12 @@ namespace darmok
             return getRegistry().on_construct<T>();
         }
 
-        Scene& setUpdateFilter(const TypeFilter& filter) noexcept;
-        const TypeFilter& getUpdateFilter() const noexcept;
+        Scene& setUpdateFilter(const EntityFilter& filter) noexcept;
+        const EntityFilter& getUpdateFilter() const noexcept;
 
     private:
         std::unique_ptr<SceneImpl> _impl;
 
-        EntityRuntimeView createEntityRuntimeView(const TypeFilter& filter) const noexcept;
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
     };

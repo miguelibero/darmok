@@ -4,6 +4,7 @@
 #include <darmok/viewport.hpp>
 #include <darmok/material_fwd.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/scene_filter.hpp>
 
 namespace darmok
 {
@@ -51,8 +52,14 @@ namespace darmok
         glm::mat4 getModelMatrix() const noexcept;
         glm::mat4 getModelInverse() const noexcept;
 
-        void setCullingFilter(const TypeFilter& filter) noexcept;
-        const TypeFilter& getCullingFilter() const noexcept;
+        void setCullingFilter(const EntityFilter& filter) noexcept;
+        const EntityFilter& getCullingFilter() const noexcept;
+
+        template<typename T>
+        EntityView getEntities() const noexcept
+        {
+            return getScene().getEntities(getCullingFilter() & entt::type_hash<T>::value());
+        }
 
         void init(Scene& scene, App& app);
         void update(float deltaTime);
@@ -118,7 +125,7 @@ namespace darmok
         std::optional<ProjectionData> _vpProj;
 
         std::optional<Viewport> _viewport;
-        TypeFilter _cullingFilter;
+        EntityFilter _cullingFilter;
 
         using Components = std::vector<std::shared_ptr<ICameraComponent>>;
         Components _components;

@@ -8,6 +8,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/scene_filter.hpp>
 #include "render_samplers.hpp"
 
 namespace darmok
@@ -63,7 +64,7 @@ namespace darmok
 		_app.reset();
 	}
 
-	void ForwardRenderer::renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder, const EntityRuntimeView& entities, OpacityType opacity) noexcept
+	void ForwardRenderer::renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder, const EntityView& entities, OpacityType opacity) noexcept
 	{
 		for (auto entity : entities)
 		{

@@ -11,6 +11,7 @@
 #include <darmok/vertex.hpp>
 #include <darmok/easing.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/scene_filter.hpp>
 #include "generated/shadow.program.h"
 #include "render_samplers.hpp"
 
@@ -328,27 +329,29 @@ namespace darmok
     {
         auto entities = _cam->getEntities<DirectionalLight>();
 
-        auto cascadeAmount = _config.cascadeAmount;
-        uint32_t size = entities.size_hint() * cascadeAmount;
-
-        VertexDataWriter writer(_shadowTransLayout, size);
-        uint32_t index = 0;
-
+        std::vector<glm::mat4> elms;
         for (auto entity : entities)
         {
-            for (auto casc = 0; casc < cascadeAmount; ++casc)
+            for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
             {
                 auto lightTrans = _scene->getComponent<const Transform>(entity);
                 auto mtx = getLightMapMatrix(lightTrans, casc);
                 // not sure why but the shader reads the data by rows
                 mtx = glm::transpose(mtx);
-                writer.write(bgfx::Attrib::Color0, index, mtx[0]);
-                writer.write(bgfx::Attrib::Color1, index, mtx[1]);
-                writer.write(bgfx::Attrib::Color2, index, mtx[2]);
-                writer.write(bgfx::Attrib::Color3, index, mtx[3]);
-                ++index;
+                elms.push_back(mtx);
             }
+        }
 
+        VertexDataWriter writer(_shadowTransLayout, elms.size());
+        uint32_t index = 0;
+
+        for (auto& mtx : elms)
+        {
+            writer.write(bgfx::Attrib::Color0, index, mtx[0]);
+            writer.write(bgfx::Attrib::Color1, index, mtx[1]);
+            writer.write(bgfx::Attrib::Color2, index, mtx[2]);
+            writer.write(bgfx::Attrib::Color3, index, mtx[3]);
+            ++index;
         }
         auto data = writer.finish();
         if (!data.empty())

@@ -5,6 +5,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/window.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/scene_filter.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "camera.hpp"
 
@@ -354,12 +355,12 @@ namespace darmok
         return found;
     }
 
-    void SceneImpl::setUpdateFilter(const TypeFilter& filter) noexcept
+    void SceneImpl::setUpdateFilter(const EntityFilter& filter) noexcept
     {
         _updateFilter = filter;
     }
 
-    const TypeFilter& SceneImpl::getUpdateFilter() const noexcept
+    const EntityFilter& SceneImpl::getUpdateFilter() const noexcept
     {
         return _updateFilter;
     }
@@ -439,25 +440,9 @@ namespace darmok
         return entt::null;
     }
 
-    EntityRuntimeView Scene::createEntityRuntimeView(const TypeFilter& filter) const noexcept
+    EntityView Scene::getEntities(const EntityFilter& filter) const noexcept
     {
-        EntityRuntimeView view;
-        auto& reg = getRegistry();
-        for (auto include : filter.getIncludes())
-        {
-            if (auto store = reg.storage(include))
-            {
-                view.iterate(*store);
-            }
-        }
-        for (auto exclude : filter.getExcludes())
-        {
-            if (auto store = reg.storage(exclude))
-            {
-                view.exclude(*store);
-            }
-        }
-        return view;
+        return EntityView(getRegistry(), filter);
     }
 
     void Scene::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
@@ -554,13 +539,13 @@ namespace darmok
         return _impl->getSceneComponent(type);
     }
 
-    Scene& Scene::setUpdateFilter(const TypeFilter& filter) noexcept
+    Scene& Scene::setUpdateFilter(const EntityFilter& filter) noexcept
     {
         _impl->setUpdateFilter(filter);
         return *this;
     }
 
-    const TypeFilter& Scene::getUpdateFilter() const noexcept
+    const EntityFilter& Scene::getUpdateFilter() const noexcept
     {
         return _impl->getUpdateFilter();
     }

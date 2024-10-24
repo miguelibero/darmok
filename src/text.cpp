@@ -7,6 +7,7 @@
 #include <darmok/program.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/scene_filter.hpp>
 
 namespace darmok
 {

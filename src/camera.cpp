@@ -168,12 +168,12 @@ namespace darmok
         _projInv = glm::inverse(matrix);
     }
 
-    void CameraImpl::setCullingFilter(const TypeFilter& filter) noexcept
+    void CameraImpl::setCullingFilter(const EntityFilter& filter) noexcept
     {
         _cullingFilter = filter;
     }
 
-    const TypeFilter& CameraImpl::getCullingFilter() const noexcept
+    const EntityFilter& CameraImpl::getCullingFilter() const noexcept
     {
         return _cullingFilter;
     }
@@ -657,13 +657,13 @@ namespace darmok
         return _impl->getModelInverse();
     }
 
-    Camera& Camera::setCullingFilter(const TypeFilter& filter) noexcept
+    Camera& Camera::setCullingFilter(const EntityFilter& filter) noexcept
     {
         _impl->setCullingFilter(filter);
         return *this;
     }
 
-    const TypeFilter& Camera::getCullingFilter() const noexcept
+    const EntityFilter& Camera::getCullingFilter() const noexcept
     {
         return _impl->getCullingFilter();
     }

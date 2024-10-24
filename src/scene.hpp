@@ -4,6 +4,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/scene_filter.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/utils.hpp>
 #include <entt/entt.hpp>
@@ -17,7 +18,7 @@ namespace darmok
     class ISceneComponent;
     class Scene;
     class App;
-    class FrameBuffer;
+    class FrameBuffer;    
 
     class SceneImpl final : IRenderChainDelegate
     {
@@ -60,8 +61,8 @@ namespace darmok
 
         static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
 
-        void setUpdateFilter(const TypeFilter& filter) noexcept;
-        const TypeFilter& getUpdateFilter() const noexcept;
+        void setUpdateFilter(const EntityFilter& filter) noexcept;
+        const EntityFilter& getUpdateFilter() const noexcept;
     private:
         using Components = std::vector<std::shared_ptr<ISceneComponent>>;
         using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
@@ -76,7 +77,7 @@ namespace darmok
         OptionalRef<App> _app;
         RenderChain _renderChain;
         std::optional<Viewport> _viewport;
-        TypeFilter _updateFilter;
+        EntityFilter _updateFilter;
         static ComponentDependencies _compDeps;
 
         Components::iterator findSceneComponent(entt::id_type type) noexcept;

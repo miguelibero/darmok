@@ -5,6 +5,7 @@
 #include <darmok/math.hpp>
 #include <darmok/string.hpp>
 #include <darmok/collection.hpp>
+#include <darmok/scene_filter.hpp>
 #include <bx/allocator.h>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>

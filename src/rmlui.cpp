@@ -8,6 +8,7 @@
 #include <darmok/transform.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/scene_filter.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/math.hpp>
@@ -638,7 +639,7 @@ namespace darmok
 
     RmluiCanvasImpl::RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size)
         : _canvas(canvas)
-        , _inputActive(false)
+        , _inputEnabled(false)
         , _mousePosition(0)
         , _size(size)
         , _visible(true)
@@ -663,13 +664,13 @@ namespace darmok
 
         _comp = comp;
         auto size = getCurrentSize();
-        _render.emplace(app, *this);
+        _render = std::make_unique<RmluiRenderInterface>(app, *this);
         std::string name = _name;
         if (auto scene = comp.getScene())
         {
             name += " - scene " + std::to_string(scene->getId());
         }
-        _context = Rml::CreateContext(name, RmluiUtils::convert<int>(size), &_render.value());
+        _context = Rml::CreateContext(name, RmluiUtils::convert<int>(size), _render.get());
         if (size.x > 0 && size.y > 0)
         {
             _frameBuffer.emplace(size, false);
@@ -690,13 +691,22 @@ namespace darmok
         {
             Rml::RemoveContext(_context->GetName());
             _context.reset();
+            Rml::ReleaseTextures(_render ? _render.get() : nullptr);
         }
 
-        Rml::ReleaseTextures(_render ? &_render.value() : nullptr);
-        _render.reset();
-        // this is added here https://github.com/mikke89/RmlUi/issues/703
-        // but pending to be released
+        // the render interface should be destroyed here
+        // but with Rmlui 6.0 that throws an assert
+        // the fix is added here https://github.com/mikke89/RmlUi/issues/703
+        
+        // TODO: remove recycleRender once 6.1 is out on vcpkg
+        // do this:
+        // _render.reset();
         // Rml::ReleaseRenderManagers();
+        // instead of this:
+        if (_render)
+        {
+            _comp->recycleRender(std::move(_render));
+        }
 
         _comp.reset();
         _cam.reset();
@@ -775,14 +785,14 @@ namespace darmok
         return _cam ? _cam : _defaultCam;
     }
 
-    bool RmluiCanvasImpl::isInputActive() const noexcept
+    bool RmluiCanvasImpl::isInputEnabled() const noexcept
     {
-        return _inputActive;
+        return _inputEnabled;
     }
 
-    void RmluiCanvasImpl::setInputActive(bool active) noexcept
+    void RmluiCanvasImpl::setInputEnabled(bool enabled) noexcept
     {
-        _inputActive = active;
+        _inputEnabled = enabled;
     }
 
     void RmluiCanvasImpl::setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept
@@ -942,7 +952,7 @@ namespace darmok
 
     void RmluiCanvasImpl::processKey(Rml::Input::KeyIdentifier key, int state, bool down) noexcept
     {
-        if (!_inputActive)
+        if (!_inputEnabled)
         {
             return;
         }
@@ -958,7 +968,7 @@ namespace darmok
 
     void RmluiCanvasImpl::processTextInput(const Rml::String& str) noexcept
     {
-        if (!_inputActive)
+        if (!_inputEnabled)
         {
             return;
         }
@@ -967,7 +977,7 @@ namespace darmok
 
     void RmluiCanvasImpl::processMouseLeave() noexcept
     {
-        if (!_inputActive)
+        if (!_inputEnabled)
         {
             return;
         }
@@ -976,7 +986,7 @@ namespace darmok
 
     void RmluiCanvasImpl::processMouseWheel(const Rml::Vector2f& val, int keyState) noexcept
     {
-        if (!_inputActive)
+        if (!_inputEnabled)
         {
             return;
         }
@@ -985,7 +995,7 @@ namespace darmok
 
     void RmluiCanvasImpl::processMouseButton(int num, int keyState, bool down) noexcept
     {
-        if (!_inputActive)
+        if (!_inputEnabled)
         {
             return;
         }
@@ -1013,7 +1023,7 @@ namespace darmok
         auto entity = scene->getEntity(_canvas);
         for (auto [camEntity, cam] : scene->getComponents<Camera>().each())
         {
-            if (cam.getCullingFilter().matches(entity))
+            if (cam.getEntities<Entity>().contains(entity))
             {
                 _defaultCam = cam;
                 break;
@@ -1402,15 +1412,15 @@ namespace darmok
         return _impl->isVisible();
     }
 
-    RmluiCanvas& RmluiCanvas::setInputActive(bool active) noexcept
+    RmluiCanvas& RmluiCanvas::setInputEnabled(bool enabled) noexcept
     {
-        _impl->setInputActive(active);
+        _impl->setInputEnabled(enabled);
         return *this;
     }
 
-    bool RmluiCanvas::isInputActive() const noexcept
+    bool RmluiCanvas::isInputEnabled() const noexcept
     {
-        return _impl->isInputActive();
+        return _impl->isInputEnabled();
     }
 
     void RmluiCanvas::setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept
@@ -1631,6 +1641,11 @@ namespace darmok
         return loadScript(doc, data.stringView(), sourcePath);
     }
 
+    void RmluiPlugin::recycleRender(std::unique_ptr<RmluiRenderInterface>&& render) noexcept
+    {
+        _renders.push_back(std::move(render));
+    }
+
     Rml::ElementPtr RmluiPlugin::InstanceElement(Rml::Element* parent, const Rml::String& tag, const Rml::XMLAttributes& attributes) noexcept
     {
         return Rml::ElementPtr(new RmluiDocument(*this, tag));
@@ -1824,6 +1839,11 @@ namespace darmok
         return false;
     }
 
+    void RmluiSceneComponentImpl::recycleRender(std::unique_ptr<RmluiRenderInterface>&& render) noexcept
+    {
+        _plugin->recycleRender(std::move(render));
+    }
+
     void RmluiSceneComponentImpl::onCanvasConstructed(EntityRegistry& registry, Entity entity)
     {
         if (!_scene || !_app)
@@ -1999,7 +2019,7 @@ namespace darmok
 
         for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            if (!canvas.isInputActive())
+            if (!canvas.isInputEnabled())
             {
                 continue;
             }

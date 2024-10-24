@@ -2,6 +2,7 @@
 #include <darmok/anim.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/render_scene.hpp>
+#include <darmok/scene_filter.hpp>
 
 namespace darmok
 {

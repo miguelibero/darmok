@@ -22,6 +22,8 @@ namespace darmok
     class RenderChain;
     struct Ray;
     struct Viewport;
+    struct EntityFilter;
+    class EntityView;
 
     class DARMOK_EXPORT Camera final
     {
@@ -64,17 +66,17 @@ namespace darmok
         glm::mat4 getModelMatrix() const noexcept;
         glm::mat4 getModelInverse() const noexcept;
 
-        Camera& setCullingFilter(const TypeFilter& filter) noexcept;
-        const TypeFilter& getCullingFilter() const noexcept;
+        Camera& setCullingFilter(const EntityFilter& filter) noexcept;
+        const EntityFilter& getCullingFilter() const noexcept;
 
         template<typename T>
         Camera& setCullingFilter() noexcept
         {
-            return setCullingFilter(TypeFilter().include<T>());
+            return setCullingFilter(entt::type_hash<T>::value());
         }
 
         template<typename T>
-        EntityRuntimeView getEntities() const
+        EntityView getEntities() const
         {
             return getScene().getEntities<T>(getCullingFilter());
         }

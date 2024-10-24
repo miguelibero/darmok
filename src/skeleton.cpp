@@ -9,6 +9,7 @@
 #include <darmok/string.hpp>
 #include <darmok/text.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/scene_filter.hpp>
 #include <stdexcept>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>

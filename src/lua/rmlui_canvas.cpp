@@ -358,7 +358,7 @@ namespace darmok
             "visible", sol::property(&RmluiCanvas::isVisible, &RmluiCanvas::setVisible),
             "current_size", sol::property(&RmluiCanvas::getCurrentSize),
             "offset", sol::property(&RmluiCanvas::getOffset, &LuaRmluiCanvas::setOffset),
-            "input_active", sol::property(&RmluiCanvas::isInputActive, &RmluiCanvas::setInputActive),
+            "input_enabled", sol::property(&RmluiCanvas::isInputEnabled, &RmluiCanvas::setInputEnabled),
             "default_texture_flags", sol::property(&RmluiCanvas::getDefaultTextureFlags, &RmluiCanvas::setDefaultTextureFlags),
             "get_texture_flags", &RmluiCanvas::getTextureFlags,
             "set_texture_flags", &RmluiCanvas::setTextureFlags,

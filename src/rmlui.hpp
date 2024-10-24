@@ -218,8 +218,8 @@ namespace darmok
 		Rml::Context& getContext();
 		const Rml::Context& getContext() const;
 
-		bool isInputActive() const noexcept;
-		void setInputActive(bool active) noexcept;
+		bool isInputEnabled() const noexcept;
+		void setInputEnabled(bool enabled) noexcept;
 
 		void setScrollBehavior(Rml::ScrollBehavior behaviour, float speedFactor) noexcept;
 
@@ -260,12 +260,14 @@ namespace darmok
 
 	private:
 		RmluiCanvas& _canvas;
-		std::optional<RmluiRenderInterface> _render;
+		std::unique_ptr<RmluiRenderInterface> _render;
+		// std::optional<RmluiRenderInterface> _render;
+
 		OptionalRef<Rml::Context> _context;
 		OptionalRef<RmluiSceneComponentImpl> _comp;
 		OptionalRef<Camera> _cam;
 		OptionalRef<Camera> _defaultCam;
-		bool _inputActive;
+		bool _inputEnabled;
 		glm::vec2 _mousePosition;
 		bool _visible;
 		std::optional<glm::uvec2> _size;
@@ -324,6 +326,8 @@ namespace darmok
 		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine = -1);
 		bool loadExternalScript(Rml::ElementDocument& doc, const std::string& sourcePath);
 
+		void recycleRender(std::unique_ptr<RmluiRenderInterface>&& render) noexcept;
+
 	private:
 		RmluiPlugin(App& app) noexcept;
 		static std::weak_ptr<RmluiPlugin> _instance;
@@ -332,6 +336,7 @@ namespace darmok
 		RmluiFileInterface _file;
 		std::vector<std::unique_ptr<RmluiEventForwarder>> _eventForwarders;
 		std::vector<std::reference_wrapper<RmluiSceneComponentImpl>> _components;
+		std::vector<std::unique_ptr<RmluiRenderInterface>> _renders;
 
 		Rml::EventListener* InstanceEventListener(const Rml::String& value, Rml::Element* element) override;
 		void OnDocumentUnload(Rml::ElementDocument* doc) noexcept override;
@@ -367,6 +372,8 @@ namespace darmok
 
 		void onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element);
 		bool loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine);
+
+		void recycleRender(std::unique_ptr<RmluiRenderInterface>&& render) noexcept;
 
 	private:
 		OptionalRef<Scene> _scene;

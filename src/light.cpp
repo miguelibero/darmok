@@ -6,6 +6,7 @@
 #include <darmok/vertex.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
+#include <darmok/scene_filter.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/component_wise.hpp>
 #include "render_samplers.hpp"
@@ -212,25 +213,38 @@ namespace darmok
         destroyHandles();
     }
 
+    struct DirectionalLightBufferElement final
+    {
+        glm::vec3 dir;
+        glm::vec3 color;
+    };
+
     size_t LightingRenderComponent::updateDirLights() noexcept
     {
         auto lights = _cam->getEntities<DirectionalLight>();
-        VertexDataWriter writer(_dirLightsLayout, uint32_t(lights.size_hint()));
-        uint32_t index = 0;
+
+        std::vector<DirectionalLightBufferElement> elms;
 
         for (auto entity : lights)
         {
-            auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
+            auto& elm = elms.emplace_back();
             auto trans = _scene->getComponent<const Transform>(entity);
             if (trans)
             {
-                auto dir = -glm::normalize(trans->getWorldPosition());
-                writer.write(bgfx::Attrib::Normal, index, dir);
+                elm.dir = -glm::normalize(trans->getWorldPosition());
             }
+            auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
             auto intensity = light.getIntensity();
-            glm::vec3 c(Colors::normalize(light.getColor()) * intensity);
-            writer.write(bgfx::Attrib::Color0, index, c);
+            elm.color = Colors::normalize(light.getColor()) * intensity;
+        }
 
+        VertexDataWriter writer(_dirLightsLayout, uint32_t(elms.size()));
+        uint32_t index = 0;
+
+        for (auto& elm : elms)
+        {
+            writer.write(bgfx::Attrib::Normal, index, elm.dir);
+            writer.write(bgfx::Attrib::Color0, index, elm.color);
             ++index;
         }
         auto data = writer.finish();
@@ -242,27 +256,40 @@ namespace darmok
         return index;
     }
 
+    struct PointLightBufferElement final
+    {
+        glm::vec3 pos;
+        glm::vec4 color;
+    };
+
     size_t LightingRenderComponent::updatePointLights() noexcept
     {
         auto entities = _cam->getEntities<PointLight>();
-        VertexDataWriter writer(_pointLightsLayout, uint32_t(entities.size_hint()));
-        uint32_t index = 0;
+
+        std::vector<PointLightBufferElement> elms;
 
         for (auto entity : entities)
         {
+            auto& elm = elms.emplace_back();
             auto& light = _scene->getComponent<const PointLight>(entity).value();
             auto trans = _scene->getComponent<const Transform>(entity);
             float scale = 1.F;
             if (trans)
             {
-                auto pos = trans->getWorldPosition();
+                elm.pos = trans->getWorldPosition();
                 scale = glm::compMax(trans->getWorldScale());
-                writer.write(bgfx::Attrib::Position, index, pos);
             }
             auto radius = light.getRadius() * scale;
             auto intensity = light.getIntensity();
-            glm::vec4 c(Colors::normalize(light.getColor()) * intensity, radius);
-            writer.write(bgfx::Attrib::Color0, index, c);
+            elm.color = glm::vec4(Colors::normalize(light.getColor()) * intensity, radius);
+        }
+
+        VertexDataWriter writer(_pointLightsLayout, uint32_t(elms.size()));
+        uint32_t index = 0;
+        for (auto& elm : elms)
+        {
+            writer.write(bgfx::Attrib::Position, index, elm.pos);
+            writer.write(bgfx::Attrib::Color0, index, elm.color);
             ++index;
         }
         auto data = writer.finish();

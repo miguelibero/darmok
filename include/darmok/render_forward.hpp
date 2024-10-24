@@ -11,6 +11,7 @@ namespace darmok
     class Scene;
     class App;
     class MaterialAppComponent;
+    class EntityView;
 
     class DARMOK_EXPORT ForwardRenderer final : public ITypeCameraComponent<ForwardRenderer>
     {
@@ -28,6 +29,6 @@ namespace darmok
         OptionalRef<MaterialAppComponent> _materials;
         std::optional<bgfx::ViewId> _viewId;
         
-        void renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder, const EntityRuntimeView& entities, OpacityType opacity) noexcept;
+        void renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder, const EntityView& entities, OpacityType opacity) noexcept;
     };
 }

@@ -68,43 +68,4 @@ namespace darmok
         seed ^= other + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         return seed;
     }
-
-    struct DARMOK_EXPORT TypeFilter final
-    {
-        using Container = std::unordered_set<entt::id_type>;
-
-        template<typename T>
-        TypeFilter& include() noexcept
-        {
-            return include(entt::type_hash<T>::value());
-        }
-
-        TypeFilter& include(entt::id_type idType) noexcept;
-
-        template<typename T>
-        TypeFilter& exclude() noexcept
-        {
-            return exclude(entt::type_hash<T>::value());
-        }
-
-        TypeFilter& exclude(entt::id_type idType) noexcept;
-
-        const Container& getIncludes() const noexcept;
-        const Container& getExcludes() const noexcept;
-        std::string toString() const noexcept;
-
-        bool empty() const noexcept;
-        bool matches(entt::id_type) const noexcept;
-        bool operator()(entt::id_type) const noexcept;
-
-        bool operator==(const TypeFilter& other) const noexcept;
-        bool operator!=(const TypeFilter& other) const noexcept;
-
-        TypeFilter operator+(const TypeFilter& other) const noexcept;
-        TypeFilter& operator+=(const TypeFilter& other) noexcept;
-
-    private:
-        Container _includes;
-        Container _excludes;
-    };
 }

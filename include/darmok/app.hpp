@@ -57,7 +57,6 @@ namespace darmok
 	class AudioSystem;
 	class AssetContext;
 	class RenderChain;
-	struct TypeFilter;
 
 	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<IAppDelegateFactory>&& factory);
 

@@ -172,6 +172,7 @@ set(SOURCES
   window.cpp
   input.cpp
   scene.cpp
+  scene_filter.cpp
 
   texture_atlas.cpp
   material.cpp
@@ -202,6 +203,7 @@ set(HEADERS
   window.hpp
   scene_fwd.hpp
   scene.hpp
+  scene_filter.hpp
 
   texture_atlas.hpp
   anim.hpp
@@ -248,6 +250,7 @@ set(LUA_SOURCES
   shape1.cpp
   shape2.cpp
   scene.cpp
+  scene_filter.cpp
   transform.cpp
   light.cpp
   viewport.cpp

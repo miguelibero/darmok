@@ -127,13 +127,5 @@ namespace darmok
         std::string _tableKey;
     };
 
-    class LuaTypeFilter final
-    {
-    public:
-        static void bind(sol::state_view& lua) noexcept;
-        static TypeFilter create(const sol::object& value) noexcept;
-    private:
-        static TypeFilter& include(TypeFilter& filter, const sol::object& type) noexcept;
-        static TypeFilter& exclude(TypeFilter& filter, const sol::object& type) noexcept;
-    };
+
 }

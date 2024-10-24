@@ -13,7 +13,7 @@ add_executable(${TESTS_NAME}
   src/test.cpp
   src/optional_ref_test.cpp
   src/utf8char_test.cpp
-  src/render_graph_test.cpp
+  src/entity_filter_test.cpp
 )
 target_link_libraries(${TESTS_NAME}
   PRIVATE Catch2::Catch2WithMain

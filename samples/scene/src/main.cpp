@@ -15,6 +15,7 @@
 #include <darmok/material.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/scene_filter.hpp>
 #include <darmok/shape.hpp>
 
 namespace

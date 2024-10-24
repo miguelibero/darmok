@@ -1,5 +1,6 @@
 #include "camera.hpp"
 #include "scene.hpp"
+#include "scene_filter.hpp"
 #include "render_forward.hpp"
 #include "light.hpp"
 #include <darmok/program.hpp>
@@ -7,6 +8,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/render_chain.hpp>
+#include <darmok/scene_filter.hpp>
 #include <darmok/light.hpp>
 
 #ifdef DARMOK_JOLT
@@ -189,7 +191,7 @@ namespace darmok
 
 	void LuaCamera::setCullingFilter(Camera& cam, const sol::object& filter) noexcept
 	{
-		cam.setCullingFilter(LuaTypeFilter::create(filter));
+		cam.setCullingFilter(LuaEntityFilter::create(filter));
 	}
 
 	void LuaCamera::bind(sol::state_view& lua) noexcept

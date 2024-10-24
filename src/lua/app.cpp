@@ -157,7 +157,6 @@ namespace darmok
 		LuaAudioSystem::bind(lua);
 		LuaCoroutineRunner::bind(lua);
 		LuaRenderChain::bind(lua);
-		LuaTypeFilter::bind(lua);
 
 		lua.create_named_table("DebugFlag",
 			"NONE", BGFX_DEBUG_NONE,
