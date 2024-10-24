@@ -230,11 +230,6 @@ namespace darmok
     EntityView::EntityView(const EntityRegistry& registry, const EntityFilter& filter) noexcept
         : _filter(registry, filter)
     {
-        // TODO: only add storages in the filter
-        auto store = registry.storage<Entity>();
-        _elements.emplace_back(*store);
-
-        /*
         EntityFilter ffilter(filter);
         if (ffilter.op == EntityFilterOperation::Not)
         {
@@ -242,20 +237,28 @@ namespace darmok
             ffilter.negateElements();
         }
 
-        if (ffilter.op == EntityFilterOperation::Or)
+        auto isAnd = ffilter.op == EntityFilterOperation::And;
+        auto baseFound = false;
+        for (auto& elm : ffilter.elements)
         {
-            for (auto& elm : ffilter.elements)
+            if (auto typeId = std::get_if<EntityFilter::TypeId>(&elm))
             {
-                if (auto typeId = std::get_if<EntityFilter::TypeId>(&elm))
+                baseFound = true;
+                if (auto set = registry.storage(*typeId))
                 {
-                    if (auto set = registry.storage(*typeId))
-                    {
-                        _elements.emplace_back(set);
-                    }
+                    _elements.emplace_back(*set);
+                }
+                if (isAnd)
+                {
+                    break;
                 }
             }
         }
-        */
+        if (_elements.empty() && (!baseFound || !isAnd))
+        {
+            auto store = registry.storage<Entity>();
+            _elements.emplace_back(*store);
+        }
     }
 
     bool EntityView::contains(Entity entity) const noexcept
@@ -263,264 +266,103 @@ namespace darmok
         return _filter.valid(entity);
     }
 
-    EntitySparseSet::const_iterator EntityView::getElementBegin() const
+    bool EntityView::empty() const noexcept
     {
-        return _elements.front().get().begin();
-    }
-
-    EntitySparseSet::const_iterator EntityView::getElementEnd() const
-    {
-        return _elements.back().get().end();
+        if (_elements.empty())
+        {
+            return true;
+        }
+        for (auto& elm : _elements)
+        {
+            if (!elm.get().empty())
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     EntityView::Iterator EntityView::begin() const
     {
-        auto cbegin = _elements.begin();
+        auto adapter = EntityViewIteratorAdapter(*this);
         if (_elements.empty())
         {
-            return Iterator(*this, cbegin);
+            return Iterator(adapter, adapter.beginContItr);
         }
-        return Iterator(*this, cbegin, getElementBegin());
+        return Iterator(adapter, adapter.beginContItr, adapter.beginElmItr);
     }
 
     EntityView::Iterator EntityView::end() const
     {
-        auto cend = _elements.end();
+        auto adapter = EntityViewIteratorAdapter(*this);
         if (_elements.empty())
         {
-            return Iterator(*this, cend);
+            return Iterator(adapter, adapter.endContItr);
         }
-        return Iterator(*this, cend, getElementEnd());
-    }
-
-    EntitySparseSet::const_reverse_iterator EntityView::getElementReverseBegin() const
-    {
-        return _elements.back().get().rbegin();
-    }
-
-    EntitySparseSet::const_reverse_iterator EntityView::getElementReverseEnd() const
-    {
-        return _elements.front().get().rend();
+        return Iterator(adapter, adapter.endContItr, adapter.endElmItr);
     }
 
     EntityView::ReverseIterator EntityView::rbegin() const
     {
-        auto cbegin = _elements.rbegin();
+        auto adapter = EntityViewReverseIteratorAdapter(*this);
         if (_elements.empty())
         {
-            return ReverseIterator(*this, cbegin);
+            return ReverseIterator(adapter, adapter.beginContItr);
         }
-        return ReverseIterator(*this, cbegin, getElementReverseBegin());
+        return ReverseIterator(adapter, adapter.beginContItr, adapter.beginElmItr);
     }
 
     EntityView::ReverseIterator EntityView::rend() const
     {
-        auto cend = _elements.rend();
+        auto adapter = EntityViewReverseIteratorAdapter(*this);
         if (_elements.empty())
         {
-            return ReverseIterator(*this, cend);
+            return ReverseIterator(adapter, adapter.endContItr);
         }
-        return ReverseIterator(*this, cend, getElementReverseEnd());
+        return ReverseIterator(adapter, adapter.endContItr, adapter.endElmItr);
     }
 
-    EntityViewIterator::EntityViewIterator(const EntityView& view, ContainerIterator contItr, ElementIterator elmItr) noexcept
-        : _contItr(contItr)
-        , _elmItr(elmItr)
-        , _beginElmItr(view.getElementBegin())
-        , _endElmItr(view.getElementEnd())
-        , _view(view)
+    EntityViewIteratorAdapter::EntityViewIteratorAdapter(const EntityView& view) noexcept
+        : beginContItr(view._elements.begin())
+        , endContItr(view._elements.end())
+        , view(view)
     {
-        if (_elmItr != _endElmItr && !view.contains(*_elmItr))
+        if (!view._elements.empty())
         {
-            operator++();
-        }
-    }
-
-    EntityViewIterator::value_type EntityViewIterator::operator*() const
-    {
-        return _elmItr.operator*();
-    }
-
-    EntityViewIterator::pointer EntityViewIterator::operator->() const
-    {
-        return _elmItr.operator->();
-    }
-
-    EntityViewIterator& EntityViewIterator::operator++() noexcept
-    {
-        do
-        {
-            if (!tryNextContainer())
-            {
-                ++_elmItr;
-                tryNextContainer();
-            }
-        }
-        while (_elmItr != _endElmItr && !_view.get().contains(*_elmItr));
-
-        return *this;
-    }
-
-    EntityViewIterator EntityViewIterator::operator++(int) noexcept
-    {
-        EntityViewIterator orig = *this;
-        return ++(*this), orig;
-    }
-
-    EntityViewIterator& EntityViewIterator::operator--() noexcept
-    {
-        do
-        {
-            if (!tryPrevContainer())
-            {
-                --_elmItr;
-                tryPrevContainer();
-            }
-        } while (_elmItr != _beginElmItr && !_view.get().contains(*_elmItr));
-        return *this;
-    }
-
-    EntityViewIterator EntityViewIterator::operator--(int) noexcept
-    {
-        EntityViewIterator orig = *this;
-        return operator--(), orig;
-    }
-
-    bool EntityViewIterator::tryNextContainer() noexcept
-    {
-        if (_elmItr == _contItr->get().end())
-        {
-            _contItr++;
-            if (_elmItr != _endElmItr)
-            {
-                _elmItr = _contItr->get().begin();
-            }
-            return true;
-        }
-        return false;
-    }
-
-    bool EntityViewIterator::tryPrevContainer() noexcept
-    {
-        if (_elmItr == _contItr->get().begin())
-        {
-            _contItr--;
-            if (_elmItr != _beginElmItr)
-            {
-                _elmItr = --_contItr->get().end();
-            }
-            return true;
-        }
-        return false;
-    }
-
-    bool EntityViewIterator::operator==(const EntityViewIterator& other) const noexcept
-    {
-        return _contItr == other._contItr && _elmItr == other._elmItr;
-    }
-
-    bool EntityViewIterator::operator!=(const EntityViewIterator& other) const noexcept
-    {
-        return !operator==(other);
-    }
-
-    EntityViewReverseIterator::EntityViewReverseIterator(const EntityView& view, ContainerIterator contItr, ElementIterator elmItr) noexcept
-        : _contItr(contItr)
-        , _elmItr(elmItr)
-        , _beginElmItr(view.getElementReverseBegin())
-        , _endElmItr(view.getElementReverseEnd())
-        , _view(view)
-    {
-        if (_elmItr != _endElmItr && !view.contains(*_elmItr))
-        {
-            operator++();
+            beginElmItr = view._elements.front().get().begin();
+            endElmItr = view._elements.back().get().end();
         }
     }
 
-    EntityViewReverseIterator::value_type EntityViewReverseIterator::operator*() const
+    EntityViewIteratorAdapter::ElementIterator EntityViewIteratorAdapter::containerBegin(const ContainerIterator& itr) const
     {
-        return _elmItr.operator*();
+        return itr->get().begin();
     }
 
-    EntityViewReverseIterator::pointer EntityViewReverseIterator::operator->() const
+    EntityViewIteratorAdapter::ElementIterator EntityViewIteratorAdapter::containerEnd(const ContainerIterator& itr) const
     {
-        return _elmItr.operator->();
+        return itr->get().end();
     }
 
-    EntityViewReverseIterator& EntityViewReverseIterator::operator++() noexcept
+    EntityViewReverseIteratorAdapter::EntityViewReverseIteratorAdapter(const EntityView& view) noexcept
+        : beginContItr(view._elements.rbegin())
+        , endContItr(view._elements.rend())
+        , view(view)
     {
-        do
+        if (!view._elements.empty())
         {
-            if (!tryNextContainer())
-            {
-                ++_elmItr;
-                tryNextContainer();
-            }
-        } while (_elmItr != _endElmItr && !_view.get().contains(*_elmItr));
-
-        return *this;
-    }
-
-    EntityViewReverseIterator EntityViewReverseIterator::operator++(int) noexcept
-    {
-        EntityViewReverseIterator orig = *this;
-        return ++(*this), orig;
-    }
-
-    EntityViewReverseIterator& EntityViewReverseIterator::operator--() noexcept
-    {
-        do
-        {
-            if (!tryPrevContainer())
-            {
-                --_elmItr;
-                tryPrevContainer();
-            }
-        } while (_elmItr != _beginElmItr && !_view.get().contains(*_elmItr));
-        return *this;
-    }
-
-    EntityViewReverseIterator EntityViewReverseIterator::operator--(int) noexcept
-    {
-        EntityViewReverseIterator orig = *this;
-        return operator--(), orig;
-    }
-
-    bool EntityViewReverseIterator::tryNextContainer() noexcept
-    {
-        if (_elmItr == _contItr->get().rend())
-        {
-            _contItr++;
-            if (_elmItr != _endElmItr)
-            {
-                _elmItr = _contItr->get().rbegin();
-            }
-            return true;
+            beginElmItr = view._elements.back().get().rbegin();
+            endElmItr = view._elements.front().get().rend();
         }
-        return false;
     }
 
-    bool EntityViewReverseIterator::tryPrevContainer() noexcept
+    EntityViewReverseIteratorAdapter::ElementIterator EntityViewReverseIteratorAdapter::containerBegin(const ContainerIterator& itr) const
     {
-        if (_elmItr == _contItr->get().rbegin())
-        {
-            _contItr--;
-            if (_elmItr != _beginElmItr)
-            {
-                _elmItr = --_contItr->get().rend();
-            }
-            return true;
-        }
-        return false;
+        return itr->get().rbegin();
     }
 
-    bool EntityViewReverseIterator::operator==(const EntityViewReverseIterator& other) const noexcept
+    EntityViewReverseIteratorAdapter::ElementIterator EntityViewReverseIteratorAdapter::containerEnd(const ContainerIterator& itr) const
     {
-        return _contItr == other._contItr && _elmItr == other._elmItr;
-    }
-
-    bool EntityViewReverseIterator::operator!=(const EntityViewReverseIterator& other) const noexcept
-    {
-        return !operator==(other);
+        return itr->get().rend();
     }
 }

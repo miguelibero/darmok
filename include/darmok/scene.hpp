@@ -132,12 +132,12 @@ namespace darmok
             return getRegistry().view<T>();
         }
 
-        EntityView getEntities(const EntityFilter& filter) const noexcept;
+        EntityView getEntities(const EntityFilter& filter, entt::id_type typeId = 0) const noexcept;
 
         template<typename T>
         EntityView getEntities(const EntityFilter& filter) const noexcept
         {
-            return getEntities(EntityFilter(filter) & entt::type_hash<T>::value());
+            return getEntities(filter, entt::type_hash<T>::value());
         }
 
         template<typename T>

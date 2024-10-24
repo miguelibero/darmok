@@ -36,7 +36,7 @@ TEST_CASE("EntityView simple", "[scene-filter]")
 	registry.emplace<Comp1>(entity1);
 	registry.emplace<Comp2>(entity2);
 
-	auto filter = EntityFilter(entt::type_hash<Comp2>::value());
+	auto filter = EntityFilter::create<Comp2>();
 	EntityView view(registry, filter);
 
 	REQUIRE(!view.contains(entity1));
@@ -113,7 +113,6 @@ TEST_CASE("EntityView not", "[scene-filter]")
 
 TEST_CASE("EntityView complex", "[scene-filter]")
 {
-
 	EntityRegistry registry;
 	auto entity1 = registry.create();
 	auto entity2 = registry.create();
@@ -135,4 +134,99 @@ TEST_CASE("EntityView complex", "[scene-filter]")
 	REQUIRE(v.size() == 2);
 	REQUIRE(v[0] == entity4);
 	REQUIRE(v[1] == entity2);
+}
+
+TEST_CASE("EntityView empty", "[scene-filter]")
+{
+	EntityRegistry registry;
+
+	auto filter = EntityFilter();
+	EntityView view(registry, filter);
+
+	int i = 0;
+	for (auto elm : view)
+	{
+		++i;
+	}
+	REQUIRE(i == 0);
+
+	std::vector<Entity> v(view.begin(), view.end());
+	REQUIRE(v.empty());
+
+	v.clear();
+	v.insert(v.end(), view.rbegin(), view.rend());
+	REQUIRE(v.empty());
+}
+
+TEST_CASE("EntityView invalid", "[scene-filter]")
+{
+	EntityRegistry registry;
+	auto entity1 = registry.create();
+
+	auto filter = EntityFilter::create<Comp1>();
+	auto view = EntityView(registry, filter);
+
+	int i = 0;
+	for (auto elm : view)
+	{
+		++i;
+	}
+	REQUIRE(i == 0);
+
+	std::vector<Entity> v;
+	v.clear();
+	v.insert(v.end(), view.begin(), view.end());
+	REQUIRE(v.empty());
+
+	v.clear();
+	v.insert(v.end(), view.rbegin(), view.rend());
+	REQUIRE(v.empty());
+}
+
+TEST_CASE("EntityView decrement iterator", "[scene-filter]")
+{
+	EntityRegistry registry;
+	auto entity1 = registry.create();
+	auto entity2 = registry.create();
+	registry.emplace<Comp1>(entity1);
+	registry.emplace<Comp2>(entity2);
+
+	auto filter = EntityFilter::create<Comp2>();
+	EntityView view(registry, filter);
+
+	auto i = 0;
+	for (auto itr = view.end(); itr != view.begin(); )
+	{
+		--itr;
+		REQUIRE(*itr == entity2);
+		++i;
+	}
+	REQUIRE(i == 1);
+
+	filter |= EntityFilter::create<Comp3>();
+	view = EntityView(registry, filter);
+
+	i = 0;
+	for (auto itr = view.end(); itr != view.begin(); )
+	{
+		--itr;
+		REQUIRE(*itr == entity2);
+		++i;
+	}
+	REQUIRE(i == 1);
+
+	registry.clear();
+	entity1 = registry.create();
+	entity2 = registry.create();
+
+
+	view = EntityView(registry, filter);
+
+	i = 0;
+	for (auto itr = view.end(); itr != view.begin(); )
+	{
+		--itr;
+		++i;
+	}
+	REQUIRE(i == 0);
 }

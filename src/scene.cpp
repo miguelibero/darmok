@@ -440,9 +440,13 @@ namespace darmok
         return entt::null;
     }
 
-    EntityView Scene::getEntities(const EntityFilter& filter) const noexcept
+    EntityView Scene::getEntities(const EntityFilter& filter, entt::id_type typeId) const noexcept
     {
-        return EntityView(getRegistry(), filter);
+        if (typeId == 0)
+        {
+            return EntityView(getRegistry(), filter);
+        }
+        return EntityView(getRegistry(), EntityFilter(typeId) & filter);
     }
 
     void Scene::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)

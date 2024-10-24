@@ -71,6 +71,7 @@ namespace darmok
 	{
 		lua.new_usertype<EntityFilter>("EntityFilter",
 			sol::factories(&LuaEntityFilter::create),
+			sol::call_constructor, &LuaEntityFilter::create,
 			sol::meta_function::bitwise_and, &LuaEntityFilter::operatorAnd,
 			sol::meta_function::bitwise_or, &LuaEntityFilter::operatorOr,
 			sol::meta_function::bitwise_not, &LuaEntityFilter::operatorNot,

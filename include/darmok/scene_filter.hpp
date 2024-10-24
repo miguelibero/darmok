@@ -64,20 +64,24 @@ namespace darmok
         static bool valid(Entity entity, const Element& elm) noexcept;
     };
 
-    struct EntityViewIterator;
-    struct EntityViewReverseIterator;
+    template<typename Adapter>
+    struct BaseEntityViewIterator;
+
+    struct EntityViewIteratorAdapter;
+    struct EntityViewReverseIteratorAdapter;
 
     class EntityView final
     {
     public:
         using SetRef = std::reference_wrapper<const EntitySparseSet>;
         using Container = std::vector<SetRef>;
-        using Iterator = EntityViewIterator;
-        using ReverseIterator = EntityViewReverseIterator;
+        using Iterator = BaseEntityViewIterator<EntityViewIteratorAdapter>;
+        using ReverseIterator = BaseEntityViewIterator<EntityViewReverseIteratorAdapter>;
 
         EntityView(const EntityRegistry& registry, const EntityFilter& filter) noexcept;
 
         bool contains(Entity entity) const noexcept;
+        bool empty() const noexcept;
 
         Iterator begin() const;
         Iterator end() const;
@@ -87,79 +91,178 @@ namespace darmok
         Container _elements;
         EntityViewFilter _filter;
 
-        EntitySparseSet::const_iterator getElementBegin() const;
-        EntitySparseSet::const_iterator getElementEnd() const;
-        EntitySparseSet::const_reverse_iterator getElementReverseBegin() const;
-        EntitySparseSet::const_reverse_iterator getElementReverseEnd() const;
-
-        friend struct EntityViewIterator;
-        friend struct EntityViewReverseIterator;
+        friend struct EntityViewIteratorAdapter;
+        friend struct EntityViewReverseIteratorAdapter;
     };
 
-    struct EntityViewIterator final
+    struct EntityViewIteratorAdapter final
     {
-        using ContainerIterator = EntityView::Container::const_iterator;
         using ElementIterator = EntitySparseSet::const_iterator;
+        using ContainerIterator = EntityView::Container::const_iterator;
 
-        using iterator_category = std::bidirectional_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = ElementIterator::value_type;
-        using pointer = ElementIterator::pointer;
+        EntityViewIteratorAdapter(const EntityView& view) noexcept;
 
-        EntityViewIterator(const EntityView& view, ContainerIterator contItr, ElementIterator elmItr = {}) noexcept;
+        ElementIterator beginElmItr;
+        ElementIterator endElmItr;
+        ContainerIterator beginContItr;
+        ContainerIterator endContItr;
+        std::reference_wrapper<const EntityView> view;
 
-        value_type operator*() const;
-        pointer operator->() const;
-        EntityViewIterator& operator++() noexcept;
-        EntityViewIterator operator++(int) noexcept; 
-        EntityViewIterator& operator--() noexcept;
-        EntityViewIterator operator--(int) noexcept;
+        ElementIterator containerBegin(const ContainerIterator& itr) const;
+        ElementIterator containerEnd(const ContainerIterator& itr) const;
 
-        bool operator==(const EntityViewIterator& other) const noexcept;
-        bool operator!=(const EntityViewIterator& other) const noexcept;
-
-    private:
-        ContainerIterator _contItr;
-        ElementIterator _elmItr;
-        ElementIterator _beginElmItr;
-        ElementIterator _endElmItr;
-        std::reference_wrapper<const EntityView> _view;
-
-        bool tryNextContainer() noexcept;
-        bool tryPrevContainer() noexcept;
     };
 
-    struct EntityViewReverseIterator final
+    struct EntityViewReverseIteratorAdapter final
     {
-        using ContainerIterator = EntityView::Container::const_reverse_iterator;
         using ElementIterator = EntitySparseSet::const_reverse_iterator;
+        using ContainerIterator = EntityView::Container::const_reverse_iterator;
 
+        EntityViewReverseIteratorAdapter(const EntityView& view) noexcept;
+
+        ElementIterator beginElmItr;
+        ElementIterator endElmItr;
+        ContainerIterator beginContItr;
+        ContainerIterator endContItr;
+        std::reference_wrapper<const EntityView> view;
+
+        ElementIterator containerBegin(const ContainerIterator& itr) const;
+        ElementIterator containerEnd(const ContainerIterator& itr) const;
+    };
+
+    template<typename Adapter>
+    struct BaseEntityViewIterator final
+    {
         using iterator_category = std::bidirectional_iterator_tag;
         using difference_type = std::ptrdiff_t;
-        using value_type = ElementIterator::value_type;
-        using pointer = ElementIterator::pointer;
+        using value_type = Adapter::ElementIterator::value_type;
+        using pointer = Adapter::ElementIterator::pointer;
+        using ElementIterator = Adapter::ElementIterator;
+        using ContainerIterator = Adapter::ContainerIterator;
 
-        EntityViewReverseIterator(const EntityView& view, ContainerIterator contItr, ElementIterator elmItr = {}) noexcept;
+        BaseEntityViewIterator(const Adapter& adapter, ContainerIterator contItr, ElementIterator elmItr = {}) noexcept
+            : _contItr(contItr)
+            , _elmItr(elmItr)
+            , _adapter(adapter)
+        {
+            tryNextContainer();
+            if (_elmItr != adapter.endElmItr && !contains(*_elmItr))
+            {
+                operator++();
+            }
+        }
 
-        value_type operator*() const;
-        pointer operator->() const;
-        EntityViewReverseIterator& operator++() noexcept;
-        EntityViewReverseIterator operator++(int) noexcept;
-        EntityViewReverseIterator& operator--() noexcept;
-        EntityViewReverseIterator operator--(int) noexcept;
+        value_type operator*() const
+        {
+            return _elmItr.operator*();
+        }
 
-        bool operator==(const EntityViewReverseIterator& other) const noexcept;
-        bool operator!=(const EntityViewReverseIterator& other) const noexcept;
+        pointer operator->() const
+        {
+            return _elmItr.operator->();
+        }
+
+        BaseEntityViewIterator& operator++() noexcept
+        {
+            do
+            {
+                tryNextContainer();
+                ++_elmItr;
+                tryNextContainer();
+            } while (_elmItr != _adapter.endElmItr && !contains(*_elmItr));
+            return *this;
+        }
+
+        BaseEntityViewIterator operator++(int) noexcept
+        {
+            auto orig = *this;
+            return ++(*this), orig;
+        }
+
+        BaseEntityViewIterator& operator--() noexcept
+        {
+            do
+            {
+                tryPrevContainer();
+                --_elmItr;
+                tryPrevContainer();
+            } while (_elmItr != _adapter.beginElmItr && !contains(*_elmItr));
+            return *this;
+        }
+
+        BaseEntityViewIterator operator--(int) noexcept
+        {
+            auto orig = *this;
+            return operator--(), orig;
+        }
+
+        bool operator==(const BaseEntityViewIterator& other) const noexcept
+        {
+            return _contItr == other._contItr && _elmItr == other._elmItr;
+        }
+
+        bool operator!=(const BaseEntityViewIterator& other) const noexcept
+        {
+            return !operator==(other);
+        }
 
     private:
         ContainerIterator _contItr;
         ElementIterator _elmItr;
-        ElementIterator _beginElmItr;
-        ElementIterator _endElmItr;
-        std::reference_wrapper<const EntityView> _view;
+        Adapter _adapter;
 
-        bool tryNextContainer() noexcept;
-        bool tryPrevContainer() noexcept;
+        bool contains(Entity entity) const noexcept
+        {
+            return _adapter.view.get().contains(entity);
+        }
+
+
+        bool tryNextContainer() noexcept
+        {
+            if (_contItr == _adapter.endContItr)
+            {
+                return false;
+            }
+            if (_elmItr != _adapter.containerEnd(_contItr))
+            {
+                return false;
+            }
+            do
+            {
+                ++_contItr;
+            } while (_contItr != _adapter.endContItr && _contItr->get().empty());
+            if (_contItr != _adapter.endContItr)
+            {
+                _elmItr = _adapter.containerBegin(_contItr);
+                return true;
+            }
+            return false;
+        }
+
+        bool tryPrevContainer() noexcept
+        {
+            if (_contItr == _adapter.endContItr)
+            {
+                --_contItr;
+            }
+            if (_contItr == _adapter.beginContItr)
+            {
+                return false;
+            }
+            if (_elmItr != _adapter.containerBegin(_contItr))
+            {
+                return false;
+            }
+            do
+            {
+                --_contItr;
+            } while (_contItr != _adapter.beginContItr && _contItr->get().empty());
+            _elmItr = _adapter.containerEnd(_contItr);
+            if (!_contItr->get().empty())
+            {
+                --_elmItr;
+            }
+            return true;
+        }
     };
-
 }

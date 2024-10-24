@@ -1023,7 +1023,7 @@ namespace darmok
         auto entity = scene->getEntity(_canvas);
         for (auto [camEntity, cam] : scene->getComponents<Camera>().each())
         {
-            if (cam.getEntities<Entity>().contains(entity))
+            if (cam.getEntities<RmluiCanvas>().contains(entity))
             {
                 _defaultCam = cam;
                 break;
