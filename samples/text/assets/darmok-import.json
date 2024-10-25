@@ -5,6 +5,6 @@
         }
     },
     "files": {
-        "COMIC.TTF": "font_atlas"
+        "comic.ttf": "font_atlas"
     }
 }

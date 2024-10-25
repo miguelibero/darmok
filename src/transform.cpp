@@ -219,6 +219,15 @@ namespace darmok
         return *this;
     }
 
+    Transform& Transform::rotateAround(const glm::vec3& point, const glm::vec3& axis, float angle) noexcept
+    {
+        auto pos = _position - point;
+        auto quat = glm::angleAxis(glm::radians(angle), glm::normalize(axis));
+        setPosition((quat * pos) + point);
+        setRotation(quat * _rotation);
+        return *this;
+    }
+
     Transform& Transform::setScale(const glm::vec3& v) noexcept
     {
         if (v != _scale)

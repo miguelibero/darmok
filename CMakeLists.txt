@@ -654,9 +654,19 @@ if(DARMOK_BUILD_LUA)
   target_link_libraries(${LIB_NAME} PRIVATE ${LUA_LIBRARIES})
 
   # luasocket
-  find_library(LUASOCKET_MIME_LIB mime.core)
-  find_library(LUASOCKET_SOCKET_LIB socket.core)
-  target_link_libraries(${LIB_NAME} PRIVATE ${LUASOCKET_MIME_LIB} ${LUASOCKET_SOCKET_LIB})
+  if(UNIX)
+    find_library(LUASOCKET_MIME_LIB mime.core.a)
+    find_library(LUASOCKET_SOCKET_LIB socket.core.a)  
+    find_library(LUASOCKET_SOCKET_UNIX_LIB socket.unix.a)  
+    target_link_libraries(${LIB_NAME} PRIVATE ${LUASOCKET_MIME_LIB} ${LUASOCKET_SOCKET_LIB} ${LUASOCKET_SOCKET_UNIX_LIB})
+  endif()
+
+  
+  if(WIN32)
+    find_library(LUASOCKET_MIME_LIB mime.core)
+    find_library(LUASOCKET_SOCKET_LIB socket.core)  
+    target_link_libraries(${LIB_NAME} PRIVATE ${LUASOCKET_MIME_LIB} ${LUASOCKET_SOCKET_LIB})
+  endif()
 
   set(VCPKG_LUA_PATH
     "${VCPKG_BINARY_TARGET_DIR}/share/lua/?.lua"

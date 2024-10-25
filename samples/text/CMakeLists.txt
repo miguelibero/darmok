@@ -6,5 +6,5 @@ darmok_sample_setup(
   TARGET darmok-samples-text
   ASSETS
     darmok-import.json
-    COMIC.ttf
+    comic.ttf
 )

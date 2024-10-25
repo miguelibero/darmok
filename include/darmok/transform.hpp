@@ -60,6 +60,7 @@ namespace darmok
 
         Transform& setEulerAngles(const glm::vec3& v) noexcept;
         Transform& rotate(const glm::vec3& v) noexcept;
+        Transform& rotateAround(const glm::vec3& point, const glm::vec3& axis, float angle) noexcept;
         Transform& lookDir(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
         Transform& lookAt(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
         Transform& setForward(const glm::vec3& v) noexcept;

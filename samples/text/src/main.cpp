@@ -31,9 +31,9 @@ namespace
 
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 
-			auto arial = _app.getAssets().getFontLoader()("ARIALUNI.TTF");
+			auto arial = _app.getAssets().getFontLoader()("arialuni.ttf");
 			auto noto = _app.getAssets().getFontLoader()("../../assets/noto.ttf");
-			auto comic = _app.getAssets().getFontLoader()("COMIC.xml");
+			auto comic = _app.getAssets().getFontLoader()("comic.xml");
 
 			auto camEntity = scene.createEntity();
 			auto& camTrans = scene.addComponent<Transform>(camEntity);

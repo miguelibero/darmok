@@ -38,11 +38,12 @@ namespace darmok
 		static void setForward(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
 		static void setScale(Transform& trans, const VarLuaVecTable<glm::vec3>& v) noexcept;
 		static void setLocalMatrix(Transform& trans, const VarLuaTable<glm::mat4>& v) noexcept;
-		static void rotate1(Transform& trans, float x, float y, float z) noexcept;
-		static void rotate2(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
-		static void lookDir1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
-		static void lookDir2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept;
-		static void lookAt1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
-		static void lookAt2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept;
+		static Transform& rotate1(Transform& trans, float x, float y, float z) noexcept;
+		static Transform& rotate2(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
+		static Transform& rotateAround(Transform& trans, const VarLuaTable<glm::vec3>& point, const VarLuaTable<glm::vec3>& axis, float angle) noexcept;
+		static Transform& lookDir1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
+		static Transform& lookDir2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept;
+		static Transform& lookAt1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept;
+		static Transform& lookAt2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept;
 	};
 }

@@ -1,9 +1,15 @@
 {
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 26,
+        "patch": 0
+    },
     "configurePresets": [
         {
             "name": "default",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build",
+            "binaryDir": "${sourceDir}/build_${hostSystemName}",
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                 "CMAKE_BUILD_TYPE": "Debug",
@@ -23,7 +29,7 @@
         {
             "name": "release",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build_release",
+            "binaryDir": "${sourceDir}/build_${hostSystemName}_release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
@@ -40,6 +46,5 @@
                 "DARMOK_BUILD_MINIAUDIO": true
             }
         }
-    ],
-    "version": 2
+    ]
 }

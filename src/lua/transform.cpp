@@ -50,22 +50,22 @@ namespace darmok
 		trans.setScale(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::lookDir1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
+	Transform& LuaTransform::lookDir1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
 		trans.lookDir(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::lookDir2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
+	Transform& LuaTransform::lookDir2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
 	{
 		trans.lookDir(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
 	}
 
-	void LuaTransform::lookAt1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
+	Transform& LuaTransform::lookAt1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
 		trans.lookAt(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::lookAt2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
+	Transform& LuaTransform::lookAt2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
 	{
 		trans.lookAt(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
 	}
@@ -75,14 +75,19 @@ namespace darmok
 		trans.setLocalMatrix(LuaGlm::tableGet(v));
 	}
 
-	void LuaTransform::rotate1(Transform& trans, float x, float y, float z) noexcept
+	Transform& LuaTransform::rotate1(Transform& trans, float x, float y, float z) noexcept
 	{
 		trans.rotate(glm::vec3(x, y, z));
 	}
 
-	void LuaTransform::rotate2(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
+	Transform& LuaTransform::rotate2(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
 		trans.rotate(LuaGlm::tableGet(v));
+	}
+
+	Transform& LuaTransform::rotateAround(Transform& trans, const VarLuaTable<glm::vec3>& point, const VarLuaTable<glm::vec3>& axis, float angle) noexcept
+	{
+		return trans.rotateAround(LuaGlm::tableGet(point), LuaGlm::tableGet(axis), angle);
 	}
 
 	Transform& LuaTransform::addEntityComponent1(LuaEntity& entity) noexcept
@@ -148,6 +153,7 @@ namespace darmok
 			"world_to_local_matrix", sol::property(&Transform::getWorldInverse),
 			"parent", sol::property(&LuaTransform::getParent, &LuaTransform::setParent),
 			"rotate", sol::overload(&LuaTransform::rotate1, &LuaTransform::rotate2),
+			"rotate_around", &LuaTransform::rotateAround,
 			"look_dir", sol::overload(&LuaTransform::lookDir1, &LuaTransform::lookDir2),
 			"look_at", sol::overload(&LuaTransform::lookAt1, &LuaTransform::lookAt2),
 			"world_to_local_point", &LuaTransform::worldToLocalPoint,
