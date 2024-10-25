@@ -409,8 +409,11 @@ if(DARMOK_BUILD_LUA)
     INPUT ${PROJECT_SOURCE_DIR}/assets/lua
     OUTPUT include/private/generated/lua
     ASSETS
+      middleclass.lua
+      class.lua
       string.lua
       table.lua
+      base.lua
   )
   list(APPEND ASSET_TARGETS ${LUA_ASSETS_TARGET})
 

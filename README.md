@@ -23,7 +23,6 @@ currently using:
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [miniaudio](https://miniaud.io/) for audio
 * [taskflow](https://github.com/taskflow/taskflow) for multithreading
-* [Cluster](https://github.com/pezcode/Cluster) - PBR implementation for bgfx
 * [tiny-process-lib](https://gitlab.com/eidheim/tiny-process-library) to run os processes
 * [mikktspace](http://www.mikktspace.com/) - to calculate tangents
 * [middleclass](https://github.com/kikito/middleclass) - small object orientation lua lib
@@ -45,7 +44,6 @@ Trying to target the following platforms:
 
 Some philosofical decisions (could be controversial)
 * use modern C++ (20) patterns where possible
-* no game editor, will use external tools (blender, ldtk, etc...)
 * use as much stl as possible (need to look into memory management at some point)
 * no naked pointers
 * throw exceptions for error handling
@@ -137,9 +135,12 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * more sound options (spatialization, effects)
 * animation root motion 
 * [openusd](https://github.com/PixarAnimationStudios/OpenUSD) scene format support
+* a game editor would be a huge undergoing, but maybe using [wxWidgets](https://wxwidgets.org/)
+
 
 ## Interesting Related Projects
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced
+* [Cluster](https://github.com/pezcode/Cluster) - PBR shaders for bgfx
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
 * [meshoptimizer](https://github.com/zeux/meshoptimizer)

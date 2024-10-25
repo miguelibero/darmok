@@ -24,6 +24,7 @@
 #include "generated/lua/string.h"
 #include "generated/lua/table.h"
 #include "generated/lua/middleclass.h"
+#include "generated/lua/class.h"
 #include "generated/lua/base.h"
 
 #ifdef DARMOK_RMLUI
@@ -366,10 +367,10 @@ namespace darmok
 #endif
 #endif
 
-		addStaticLib(lua_darmok_lib_middleclass, "darmok/middleclass", true);
-
 		addStaticLib(lua_darmok_lib_table, "darmok/table");
 		addStaticLib(lua_darmok_lib_string, "darmok/string");
+		addStaticLib(lua_darmok_lib_middleclass, "darmok/middleclass", true);
+		addStaticLib(lua_darmok_lib_class, "darmok/class");
 		addStaticLib(lua_darmok_lib_base, "darmok/base");
 
 		lua["app"] = std::ref(_app);
