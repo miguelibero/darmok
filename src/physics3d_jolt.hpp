@@ -5,6 +5,7 @@
 #include <mutex>
 #include <deque>
 #include <unordered_map>
+#include <expected>
 #include <darmok/utils.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
@@ -87,8 +88,10 @@ namespace darmok::physics3d
         static JPH::AABox convert(const BoundingBox& v) noexcept;
         static BoundingBox convert(const JPH::AABox& v) noexcept;
         static RaycastHit convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept;
+        static std::expected<JoltTransform, std::string> convertTransform(const glm::mat4& mat) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);
         static glm::vec3 getOrigin(const Shape& shape) noexcept;
+        static float getConvexRadius(const glm::vec3& size) noexcept;
 
         template<typename T>
         static bool removeRefVector(std::vector<OptionalRef<T>>& vector, T& elm) noexcept
@@ -194,6 +197,8 @@ namespace darmok::physics3d
     {
     public:
         using Config = PhysicsSystemConfig;
+        using Shape = PhysicsShape;
+
         PhysicsSystemImpl(PhysicsSystem& system, const Config& config, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
         void init(Scene& scene, App& app) noexcept;
         void shutdown() noexcept;
@@ -201,6 +206,8 @@ namespace darmok::physics3d
 
         bool isPaused() const noexcept;
         void setPaused(bool paused) noexcept;
+
+        bool isValidEntity(Entity entity) noexcept;
 
         void addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
         void addUpdater(IPhysicsUpdater& updater) noexcept;
@@ -269,6 +276,8 @@ namespace darmok::physics3d
 
         mutable std::mutex _collisionMutex;
         std::deque<CollisionEvent> _pendingCollisionEvents;
+
+        std::expected<JoltTransform, std::string> tryLoadTransform(Transform& trans) noexcept;
 
         void processPendingCollisionEvents();
         static Collision createCollision(const JPH::ContactManifold& manifold) noexcept;

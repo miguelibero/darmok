@@ -4,14 +4,14 @@
 
 namespace darmok
 {
-    void LuaShape::bindRay(sol::state_view& lua) noexcept
+	void LuaShape::bindRay(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<Ray>("Ray",
 			sol::factories(
 				[]() { return Ray(); },
 				[](const VarLuaTable<glm::vec3>& dir) {
 					return Ray(LuaGlm::tableGet(dir)); },
-				[](const VarLuaTable<glm::vec3>& dir, const VarLuaTable<glm::vec3>& origin) {
+					[](const VarLuaTable<glm::vec3>& dir, const VarLuaTable<glm::vec3>& origin) {
 					return Ray(LuaGlm::tableGet(dir), LuaGlm::tableGet(origin)); }
 			),
 			"direction", &Ray::direction,
@@ -38,7 +38,7 @@ namespace darmok
 				[]() { return Line(); },
 				[](const Line::Points& points) {
 					return Line(points); },
-				[](const VarLuaTable<glm::vec3>& p1, const VarLuaTable<glm::vec3>& p2) {
+					[](const VarLuaTable<glm::vec3>& p1, const VarLuaTable<glm::vec3>& p2) {
 					return Line(LuaGlm::tableGet(p1), LuaGlm::tableGet(p2));
 				}
 			),
@@ -73,10 +73,38 @@ namespace darmok
 					return bb.contract(glm::vec3(v));
 				}
 			),
+			"snap", &BoundingBox::snap,
+			"expand_to_position", sol::overload(
+				[](BoundingBox& bb, const VarLuaTable<glm::vec3>& v) {
+					return bb.expandToPosition(LuaGlm::tableGet(v));
+				}
+			),
 			"min", &BoundingBox::min,
 			"max", &BoundingBox::max,
+			"size", sol::property(&BoundingBox::size),
+			"corners", sol::property(&BoundingBox::getCorners),
 			"cube", sol::property(&BoundingBox::getCube),
+			"ortho", sol::property(&BoundingBox::getOrtho),
 			sol::meta_function::to_string, &BoundingBox::toString
 		);
-    }
+	}
+
+	void LuaShape::bindFrustum(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<Frustum>("Frustum",
+			sol::factories(
+				[]() { return Frustum(); },
+				[](const VarLuaTable<glm::mat4>& proj) {
+					return Frustum(LuaGlm::tableGet(proj));
+				}
+			),
+			sol::meta_function::to_string, &Frustum::toString,
+			sol::meta_function::multiplication, &Frustum::operator*,
+			"center", sol::property(&Frustum::getCenter),
+			"bounding_box", sol::property(&Frustum::getBoundingBox),
+			"slopes", sol::property(&Frustum::getSlopes),
+			"aligned_proj_matrix", sol::property(&Frustum::getAlignedProjectionMatrix),
+			"get_slice", &Frustum::getSlice
+		);
+	}
 }

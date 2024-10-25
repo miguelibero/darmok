@@ -16,6 +16,7 @@ namespace darmok
 		bindRay(lua);
 		bindLine(lua);
 		bindBoundingBox(lua);
+		bindFrustum(lua);
 	}
 
 	void LuaShape::bindRectangle(sol::state_view& lua) noexcept

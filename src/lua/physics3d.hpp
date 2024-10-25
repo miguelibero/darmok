@@ -89,6 +89,8 @@ namespace darmok::physics3d
         static OptionalRef<Transform>::std_t getRootTransform(PhysicsSystem& system) noexcept;
         static void setRootTransform(PhysicsSystem& system, OptionalRef<Transform>::std_t root) noexcept;
 
+        static bool isValidEntity(PhysicsSystem& system, LuaEntity& entity) noexcept;
+
         static std::optional<RaycastHit> raycast1(const PhysicsSystem& system, const Ray& ray) noexcept;
         static std::optional<RaycastHit> raycast2(const PhysicsSystem& system, const Ray& ray, float maxDistance) noexcept;
         static std::optional<RaycastHit> raycast3(const PhysicsSystem& system, const Ray& ray, float maxDistance, LayerMask layers) noexcept;

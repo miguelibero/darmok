@@ -346,7 +346,6 @@ namespace darmok
 
         std::string toString() const noexcept;
 
-        glm::mat4 getCenterOrtho() const noexcept;
         glm::mat4 getOrtho() const noexcept;
 
         template<class Archive>

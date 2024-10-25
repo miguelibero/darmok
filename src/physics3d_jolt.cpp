@@ -150,6 +150,20 @@ namespace darmok::physics3d
         return RaycastHit{ rb, result.mFraction };
     }
 
+    std::expected<JoltTransform, std::string> JoltUtils::convertTransform(const glm::mat4& mat) noexcept
+    {
+        glm::vec3 pos(0);
+        glm::quat rot(1, 0, 0, 0);
+        glm::vec3 scale(1);
+        Math::decompose(mat, pos, rot, scale);
+        static const int epsilonFactor = 100;
+        if (!Math::almostEqual(scale.x, scale.y, epsilonFactor) || !Math::almostEqual(scale.x, scale.z, epsilonFactor))
+        {
+            return std::unexpected("non-uniform scale not supported");
+        }
+        return JoltTransform{ JoltUtils::convert(pos), JoltUtils::convert(rot), scale.x };
+    }
+
     glm::vec3 JoltUtils::getOrigin(const Shape& shape) noexcept
     {
         if (auto cube = std::get_if<Cube>(&shape))
@@ -165,6 +179,17 @@ namespace darmok::physics3d
             return caps->origin;
         }
         return glm::vec3(0);
+    }
+
+    float JoltUtils::getConvexRadius(const glm::vec3& size) noexcept
+    {
+        // https://github.com/jrouwe/JoltPhysics/blob/master/Jolt/Physics/Collision/Shape/BoxShape.cpp#L64
+        auto radius = glm::compMin(size) * 0.5f;
+        if (radius <= JPH::cDefaultConvexRadius)
+        {
+            return radius * 0.999F;
+        }
+        return JPH::cDefaultConvexRadius;
     }
 
     static JPH::Ref<JPH::Shape> getShape(JPH::ShapeSettings& settings)
@@ -202,7 +227,8 @@ namespace darmok::physics3d
         if (optCube)
         {
             auto cube = optCube.value() * scale;
-            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cube.size * 0.5F));
+            auto radius = JoltUtils::getConvexRadius(cube.size);
+            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cube.size * 0.5F), radius);
             return joltGetOffsetShape(settings, cube.origin);
         }
 
@@ -663,6 +689,20 @@ namespace darmok::physics3d
         _paused = paused;
     }
 
+    bool PhysicsSystemImpl::isValidEntity(Entity entity) noexcept
+    {
+        if (!_scene)
+        {
+            return false;
+        }
+        auto trans = _scene->getComponent<Transform>(entity);
+        if (!trans)
+        {
+            return true;
+        }
+        return tryLoadTransform(trans.value()).has_value();
+    }
+
     void PhysicsSystemImpl::setRootTransform(OptionalRef<Transform> root) noexcept
     {
         _root = root;
@@ -673,7 +713,7 @@ namespace darmok::physics3d
         return _root;
     }
 
-    JoltTransform PhysicsSystemImpl::loadTransform(Transform& trans)
+    std::expected<JoltTransform, std::string> PhysicsSystemImpl::tryLoadTransform(Transform& trans) noexcept
     {
         trans.update();
         glm::mat4 mat = trans.getWorldMatrix();
@@ -681,16 +721,17 @@ namespace darmok::physics3d
         {
             mat = _root->getWorldInverse() * mat;
         }
-        glm::vec3 pos(0);
-        glm::quat rot(1, 0, 0, 0);
-        glm::vec3 scale(1);
-        Math::decompose(mat, pos, rot, scale);
-        static const int epsilonFactor = 100;
-        if (!Math::almostEqual(scale.x, scale.y, epsilonFactor) || !Math::almostEqual(scale.x, scale.z, epsilonFactor))
+        return JoltUtils::convertTransform(mat);
+    }
+
+    JoltTransform PhysicsSystemImpl::loadTransform(Transform& trans)
+    {
+        auto joltTrans = tryLoadTransform(trans);
+        if (joltTrans)
         {
-            throw std::runtime_error("non-uniform scale not supported");
+            return joltTrans.value();
         }
-        return JoltTransform{ JoltUtils::convert(pos), JoltUtils::convert(rot), scale.x };
+        throw std::runtime_error(joltTrans.error());
     }
 
     void PhysicsSystemImpl::updateTransform(Transform& trans, const JPH::Mat44& jmtx) noexcept
@@ -944,6 +985,11 @@ namespace darmok::physics3d
     glm::vec3 PhysicsSystem::getGravity() const
     {
         return _impl->getGravity();
+    }
+
+    bool PhysicsSystem::isValidEntity(Entity entity) noexcept
+    {
+        return _impl->isValidEntity(entity);
     }
 
     bool PhysicsSystem::isPaused() const noexcept

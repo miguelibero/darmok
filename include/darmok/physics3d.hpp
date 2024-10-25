@@ -116,6 +116,7 @@ namespace darmok::physics3d
     {
     public:
         using Config = PhysicsSystemConfig;
+        using Shape = PhysicsShape;
         PhysicsSystem(const Config& config = {}) noexcept;
         PhysicsSystem(const Config& config, bx::AllocatorI& alloc) noexcept;
         PhysicsSystem(bx::AllocatorI& alloc) noexcept;
@@ -132,6 +133,7 @@ namespace darmok::physics3d
         OptionalRef<const Transform> getRootTransform() const noexcept;
 
         glm::vec3 getGravity() const;
+        bool isValidEntity(Entity entity) noexcept;
 
         bool isPaused() const noexcept;
         PhysicsSystem& setPaused(bool paused) noexcept;
@@ -139,7 +141,7 @@ namespace darmok::physics3d
         void init(Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
-        
+
         PhysicsSystem& addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
         PhysicsSystem& addUpdater(IPhysicsUpdater& updater) noexcept;
         bool removeUpdater(const IPhysicsUpdater& updater) noexcept;

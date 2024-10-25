@@ -106,6 +106,11 @@ namespace darmok::physics3d
         system.setRootTransform(root);
     }
 
+    bool LuaPhysicsSystem::isValidEntity(PhysicsSystem& system, LuaEntity& entity) noexcept
+    {
+        return system.isValidEntity(entity.getReal());
+    }
+
     std::optional<RaycastHit> LuaPhysicsSystem::raycast1(const PhysicsSystem& system, const Ray& ray) noexcept
     {
         return system.raycast(ray);
@@ -182,6 +187,7 @@ namespace darmok::physics3d
         lua.new_usertype<PhysicsSystem>("Physics3dSystem", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<PhysicsSystem>::value),
             "paused", sol::property(&PhysicsSystem::isPaused, &PhysicsSystem::setPaused),
+            "is_valid_entity", &LuaPhysicsSystem::isValidEntity,
             "add_updater", &LuaPhysicsSystem::addUpdater,
             "remove_updater", &LuaPhysicsSystem::removeUpdater,
             "add_listener", &LuaPhysicsSystem::addListener,
