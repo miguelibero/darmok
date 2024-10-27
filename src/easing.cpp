@@ -1,4 +1,5 @@
 #include <darmok/easing.hpp>
+#include <algorithm>
 
 namespace darmok
 {

@@ -87,6 +87,20 @@ namespace darmok::physics3d
         virtual bool operator()(const ICollisionListener& listener) const = 0;
     };
 
+    using BroadLayer = uint8_t;
+    using LayerMask = uint16_t;
+    static const LayerMask kAllLayers = 65535;
+
+    struct PhysicsLayerConfig final
+    {
+        // map of broad layer to object layer mask
+        // 0 object layer mask means default broad layer
+        std::map<std::string, LayerMask> broad;
+
+        BroadLayer getBroad(LayerMask layer) const noexcept;
+        const std::string& getBroadName(BroadLayer layer) const;
+    };
+
     struct PhysicsSystemConfig final
     {
         uint16_t maxBodies = 1024;
@@ -96,15 +110,15 @@ namespace darmok::physics3d
         float fixedDeltaTime = 1.F / 60.F;
         uint16_t collisionSteps = 1;
         glm::vec3 gravity = { 0, -9.81F, 0 };
-        std::vector<std::string> broadLayers = { "default" };
-    };
 
-    using LayerMask = uint16_t;
-    static const LayerMask kAllLayers = 65535;
+        PhysicsLayerConfig layers = {
+            { { "default", kAllLayers } }
+        };
+    };
 
     struct RaycastHit final
     {
-        std::reference_wrapper<PhysicsBody> physicsBody;
+        std::reference_wrapper<PhysicsBody> body;
         float distance;
 
         std::string toString() const noexcept;

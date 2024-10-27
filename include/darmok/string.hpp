@@ -5,24 +5,25 @@
 #include <optional>
 #include <vector>
 #include <cstdarg>
+#include <cstdint>
 
 namespace darmok
 {
     struct DARMOK_EXPORT StringUtils final
     {
-        static [[nodiscard]] std::string toLower(std::string_view sv) noexcept;
-        static [[nodiscard]] std::string toUpper(std::string_view sv) noexcept;
-        static [[nodiscard]] bool startsWith(std::string_view sv, std::string_view start) noexcept;
-        static [[nodiscard]] bool endsWith(std::string_view sv, std::string_view end) noexcept;
-        static [[nodiscard]] std::optional<int> getIntSuffix(std::string_view name, std::string_view prefix) noexcept;
-        static [[nodiscard]] std::string binToHex(uint8_t v) noexcept;
-        static [[nodiscard]] std::string binToHex(void* v) noexcept;
-        static [[nodiscard]] std::vector<std::string> splitWords(std::string_view sv) noexcept;
-        static [[nodiscard]] std::vector<std::string> split(std::string_view sv, char sep) noexcept;
-        static [[nodiscard]] std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
+        [[nodiscard]] static std::string toLower(std::string_view sv) noexcept;
+        [[nodiscard]] static std::string toUpper(std::string_view sv) noexcept;
+        [[nodiscard]] static bool startsWith(std::string_view sv, std::string_view start) noexcept;
+        [[nodiscard]] static bool endsWith(std::string_view sv, std::string_view end) noexcept;
+        [[nodiscard]] static std::optional<int> getIntSuffix(std::string_view name, std::string_view prefix) noexcept;
+        [[nodiscard]] static std::string binToHex(uint8_t v) noexcept;
+        [[nodiscard]] static std::string binToHex(void* v) noexcept;
+        [[nodiscard]] static std::vector<std::string> splitWords(std::string_view sv) noexcept;
+        [[nodiscard]] static std::vector<std::string> split(std::string_view sv, char sep) noexcept;
+        [[nodiscard]] static std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
 
         template<typename Iter, typename C>
-        static [[nodiscard]] std::string join(std::string_view sep, Iter begin, Iter end, C callback) noexcept
+        [[nodiscard]] static std::string join(std::string_view sep, Iter begin, Iter end, C callback) noexcept
         {
             std::vector<std::string> strs;
             for (auto itr = begin; itr != end; ++ itr)
@@ -33,33 +34,33 @@ namespace darmok
         }
 
         template<typename T, typename C>
-        static [[nodiscard]] std::string join(std::string_view sep, const std::vector<T>& elements, C callback) noexcept
+        [[nodiscard]] static std::string join(std::string_view sep, const std::vector<T>& elements, C callback) noexcept
         {
             return join(sep, elements.begin(), elements.end(), callback);
         }
 
         template<typename T>
-        static [[nodiscard]] std::string join(std::string_view sep, const std::vector<T>& elements) noexcept
+        [[nodiscard]] static std::string join(std::string_view sep, const std::vector<T>& elements) noexcept
         {
             return join(sep, elements.begin(), elements.end());
         }
 
         template<typename Iter>
-        static [[nodiscard]] std::string join(std::string_view sep, Iter begin, Iter end) noexcept
+        [[nodiscard]] static std::string join(std::string_view sep, Iter begin, Iter end) noexcept
         {
             return joinImpl<Iter, typename std::iterator_traits<Iter>::value_type>::run(sep, begin, end);
         }
 
-        static [[nodiscard]] uint8_t hexToBin(char chr);
-        static [[nodiscard]] uint8_t hexToBin(std::string_view sv);
-        static [[nodiscard]] std::string getFileStem(std::string_view filename, bool lower = true) noexcept;
-        static [[nodiscard]] std::string getFileExt(std::string_view filename, bool lower = true) noexcept;
-        static [[nodiscard]] std::string escapeArgument(std::string_view arg) noexcept;
-        static [[nodiscard]] bool containsGlobPattern(std::string_view glob) noexcept;
-        static [[nodiscard]] std::string globToRegex(std::string_view glob) noexcept;
-        static [[nodiscard]] size_t replace(std::string& str, std::string_view src, std::string_view dst) noexcept;
-        static [[nodiscard]] std::optional<std::string> getEnv(const std::string& name) noexcept;
-        static [[nodiscard]] std::u8string utf8Cast(const std::string& str) noexcept;
+        [[nodiscard]] static uint8_t hexToBin(char chr);
+        [[nodiscard]] static uint8_t hexToBin(std::string_view sv);
+        [[nodiscard]] static std::string getFileStem(std::string_view filename, bool lower = true) noexcept;
+        [[nodiscard]] static std::string getFileExt(std::string_view filename, bool lower = true) noexcept;
+        [[nodiscard]] static std::string escapeArgument(std::string_view arg) noexcept;
+        [[nodiscard]] static bool containsGlobPattern(std::string_view glob) noexcept;
+        [[nodiscard]] static std::string globToRegex(std::string_view glob) noexcept;
+        static size_t replace(std::string& str, std::string_view src, std::string_view dst) noexcept;
+        [[nodiscard]] static std::optional<std::string> getEnv(const std::string& name) noexcept;
+        [[nodiscard]] static std::u8string utf8Cast(const std::string& str) noexcept;
 
         static void ltrim(std::string& str) noexcept;
         static void rtrim(std::string& str) noexcept;
@@ -72,7 +73,7 @@ namespace darmok
         static std::string getTimeSuffix() noexcept;
 
     private:
-        static [[nodiscard]] std::string doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept;
+        [[nodiscard]] static std::string doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept;
 
         template<typename Iter, typename V>
         struct joinImpl final

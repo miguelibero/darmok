@@ -14,6 +14,11 @@ namespace darmok
 					[](const VarLuaTable<glm::vec3>& dir, const VarLuaTable<glm::vec3>& origin) {
 					return Ray(LuaGlm::tableGet(dir), LuaGlm::tableGet(origin)); }
 			),
+			"from_positions", [](const VarLuaTable<glm::vec3>& vsrc, const VarLuaTable<glm::vec3>& vdst) {
+				auto src = LuaGlm::tableGet(vsrc);
+				auto dst = LuaGlm::tableGet(vdst);
+				return Ray(dst - src, src);
+			},
 			"direction", &Ray::direction,
 			"origin", &Ray::origin,
 			sol::meta_function::multiplication, sol::overload(
@@ -43,6 +48,7 @@ namespace darmok
 				}
 			),
 			"points", &Line::points,
+			"to_ray", &Line::toRay,
 			sol::meta_function::multiplication, &Line::operator*,
 			sol::meta_function::to_string, &Line::toString
 		);

@@ -162,6 +162,6 @@ namespace darmok
     public:
         using result_type = std::shared_ptr<Material>;
         virtual ~IMaterialLoader() = default;
-        virtual [[nodiscard]] result_type operator()(std::string_view name) = 0;
+        [[nodiscard]] virtual result_type operator()(std::string_view name) = 0;
     };
 }

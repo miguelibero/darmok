@@ -49,12 +49,12 @@ namespace darmok
         using RenderConfig = MeshRenderConfig;
 
         virtual ~IMesh() = default;
-         virtual [[nodiscard]] std::string toString() const noexcept = 0;
+         [[nodiscard]] virtual std::string toString() const noexcept = 0;
          virtual bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const = 0;
-         virtual [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
+         [[nodiscard]] virtual const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
 
-         static [[nodiscard]] std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
-         static [[nodiscard]] std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
+         [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
+         [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
     };
 
     class DARMOK_EXPORT Mesh final : public IMesh
@@ -215,7 +215,7 @@ namespace darmok
         bool empty() const noexcept;
         void clear() noexcept;
 
-        [[nodiscard]] void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
+        void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 

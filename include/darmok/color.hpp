@@ -7,7 +7,7 @@ namespace darmok
 {
     struct DARMOK_EXPORT Colors final
     {
-        static [[nodiscard]] const Color::value_type& getMaxValue() noexcept;
+        [[nodiscard]] static const Color::value_type& getMaxValue() noexcept;
 
         static const Color& debug(uint8_t position) noexcept;
 

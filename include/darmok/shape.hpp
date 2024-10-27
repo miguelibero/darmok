@@ -288,6 +288,7 @@ namespace darmok
         Line(const Points& points) noexcept;
 
         std::string toString() const noexcept;
+        Ray toRay() const noexcept;
 
         glm::vec3 operator*(float dist) const noexcept;
 

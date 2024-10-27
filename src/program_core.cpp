@@ -370,6 +370,14 @@ namespace darmok
             }
             args.emplace_back(StringUtils::join(",", realDefines));
         }
+
+        auto inputDir = input.parent_path();
+        if (!inputDir.empty())
+        {
+            args.push_back("-i");
+            args.push_back(inputDir);
+        }
+
         for (auto& include : _includes)
         {
             args.push_back("-i");

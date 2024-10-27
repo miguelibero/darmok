@@ -50,7 +50,7 @@ namespace darmok
 		[[nodiscard]] DataView getData() const noexcept;		
 		[[nodiscard]] TextureType getTextureType(uint64_t flags = defaultTextureLoadFlags) const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
-		[[nodiscard]] void encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept;
+		void encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept;
 		[[nodiscard]] Data encode(ImageEncoding encoding) const noexcept;
 		void write(ImageEncoding encoding, std::ostream& stream) const noexcept;
 

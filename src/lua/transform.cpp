@@ -50,39 +50,39 @@ namespace darmok
 		trans.setScale(LuaGlm::tableGet(v));
 	}
 
-	Transform& LuaTransform::lookDir1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		trans.lookDir(LuaGlm::tableGet(v));
-	}
-
-	Transform& LuaTransform::lookDir2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
-	{
-		trans.lookDir(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
-	}
-
-	Transform& LuaTransform::lookAt1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
-	{
-		trans.lookAt(LuaGlm::tableGet(v));
-	}
-
-	Transform& LuaTransform::lookAt2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
-	{
-		trans.lookAt(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
-	}
-
 	void LuaTransform::setLocalMatrix(Transform& trans, const VarLuaTable<glm::mat4>& v) noexcept
 	{
 		trans.setLocalMatrix(LuaGlm::tableGet(v));
 	}
 
+	Transform& LuaTransform::lookDir1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
+	{
+		return trans.lookDir(LuaGlm::tableGet(v));
+	}
+
+	Transform& LuaTransform::lookDir2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
+	{
+		return trans.lookDir(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
+	}
+
+	Transform& LuaTransform::lookAt1(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
+	{
+		return trans.lookAt(LuaGlm::tableGet(v));
+	}
+
+	Transform& LuaTransform::lookAt2(Transform& trans, const VarLuaTable<glm::vec3>& v, const VarLuaTable<glm::vec3>& up) noexcept
+	{
+		return trans.lookAt(LuaGlm::tableGet(v), LuaGlm::tableGet(up));
+	}
+
 	Transform& LuaTransform::rotate1(Transform& trans, float x, float y, float z) noexcept
 	{
-		trans.rotate(glm::vec3(x, y, z));
+		return trans.rotate(glm::vec3(x, y, z));
 	}
 
 	Transform& LuaTransform::rotate2(Transform& trans, const VarLuaTable<glm::vec3>& v) noexcept
 	{
-		trans.rotate(LuaGlm::tableGet(v));
+		return trans.rotate(LuaGlm::tableGet(v));
 	}
 
 	Transform& LuaTransform::rotateAround(Transform& trans, const VarLuaTable<glm::vec3>& point, const VarLuaTable<glm::vec3>& axis, float angle) noexcept

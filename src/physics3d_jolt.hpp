@@ -45,6 +45,7 @@ namespace JPH
     class BodyLockInterface;
     class Character;
     class Float2;
+    struct RRayCast;
 }
 
 namespace darmok
@@ -87,7 +88,7 @@ namespace darmok::physics3d
         static JPH::Plane convert(const Plane& v) noexcept;
         static JPH::AABox convert(const BoundingBox& v) noexcept;
         static BoundingBox convert(const JPH::AABox& v) noexcept;
-        static RaycastHit convert(const JPH::RayCastResult& result, PhysicsBody& rb) noexcept;
+        static RaycastHit convert(const JPH::RayCastResult& result, const JPH::RRayCast& rayCast, PhysicsBody& rb) noexcept;
         static std::expected<JoltTransform, std::string> convertTransform(const glm::mat4& mat) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);
         static glm::vec3 getOrigin(const Shape& shape) noexcept;
@@ -133,32 +134,52 @@ namespace darmok::physics3d
     class JoltBroadPhaseLayerInterface final : public JPH::BroadPhaseLayerInterface
     {
     public:
-        JoltBroadPhaseLayerInterface(const std::vector<std::string>& layers) noexcept;
+        using Config = PhysicsLayerConfig;
+        JoltBroadPhaseLayerInterface(const Config& config) noexcept;
         JPH::uint GetNumBroadPhaseLayers() const noexcept override;
         JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer layer) const noexcept override;
+        virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer layer) const
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
-        virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer layer) const noexcept override;
+            override
 #endif
+        ;
     private:
-        std::vector<std::string> _layers;
+        Config _config;
     };
 
     class JoltObjectVsBroadPhaseLayerFilter final : public JPH::ObjectVsBroadPhaseLayerFilter
     {
     public:
+        using Config = PhysicsLayerConfig;
+        JoltObjectVsBroadPhaseLayerFilter(const Config& config);
         bool ShouldCollide(JPH::ObjectLayer layer1, JPH::BroadPhaseLayer layer2) const noexcept override;
+    private:
+        Config _config;
     };
 
     class JoltObjectLayerPairFilter final : public JPH::ObjectLayerPairFilter
     {
     public:
+        using Config = PhysicsLayerConfig;
+        JoltObjectLayerPairFilter(const Config& config);
         bool ShouldCollide(JPH::ObjectLayer object1, JPH::ObjectLayer object2) const noexcept override;
+    private:
+        Config _config;
+    };
+
+    class JoltBroadPhaseLayerMaskFilter final : public JPH::BroadPhaseLayerFilter
+    {
+    public:
+        JoltBroadPhaseLayerMaskFilter(BroadLayer layer = 0) noexcept;
+        bool ShouldCollide(JPH::BroadPhaseLayer layer) const noexcept override;
+    private:
+        BroadLayer _layer;
     };
 
     class JoltObjectLayerMaskFilter final : public JPH::ObjectLayerFilter
     {
     public:
-        JoltObjectLayerMaskFilter(LayerMask layers) noexcept;
+        JoltObjectLayerMaskFilter(LayerMask layers = kAllLayers) noexcept;
         bool ShouldCollide(JPH::ObjectLayer layer) const noexcept override;
     private:
         LayerMask _layers;

@@ -37,15 +37,15 @@ namespace darmok
 
     struct DARMOK_EXPORT AttribUtils final
     {
-        static [[nodiscard]] size_t getDisabledGroups(const AttribDefines& defines, AttribGroups& disabledGroups) noexcept;
-        static [[nodiscard]] AttribGroup getGroup(bgfx::Attrib::Enum attrib) noexcept;
-        static [[nodiscard]] bgfx::Attrib::Enum getBgfx(std::string_view name) noexcept;
-        static [[nodiscard]] bgfx::AttribType::Enum getBgfxType(std::string_view name) noexcept;
+        static size_t getDisabledGroups(const AttribDefines& defines, AttribGroups& disabledGroups) noexcept;
+        [[nodiscard]] static AttribGroup getGroup(bgfx::Attrib::Enum attrib) noexcept;
+        [[nodiscard]] static bgfx::Attrib::Enum getBgfx(std::string_view name) noexcept;
+        [[nodiscard]] static bgfx::AttribType::Enum getBgfxType(std::string_view name) noexcept;
 
-        static [[nodiscard]] std::string getBgfxName(bgfx::Attrib::Enum val) noexcept;
-        static [[nodiscard]] std::string getBgfxTypeName(bgfx::AttribType::Enum val) noexcept;
+        [[nodiscard]] static std::string getBgfxName(bgfx::Attrib::Enum val) noexcept;
+        [[nodiscard]] static std::string getBgfxTypeName(bgfx::AttribType::Enum val) noexcept;
 
-        static [[nodiscard]] VaryingDefinitionFormat getPathFormat(const std::filesystem::path& path) noexcept;
+        [[nodiscard]] static VaryingDefinitionFormat getPathFormat(const std::filesystem::path& path) noexcept;
     };
 
     struct DARMOK_EXPORT VertexAttribute final
@@ -185,8 +185,8 @@ namespace darmok
         static const std::string _vertexJsonKey;
         static const std::string _fragmentJsonKey;
 
-        static [[nodiscard]] std::string getBgfxTypeName(bgfx::Attrib::Enum val) noexcept;
-        static [[nodiscard]] std::string getBgfxVarTypeName(uint8_t num) noexcept;
+        [[nodiscard]] static std::string getBgfxTypeName(bgfx::Attrib::Enum val) noexcept;
+        [[nodiscard]] static std::string getBgfxVarTypeName(uint8_t num) noexcept;
     };
 }
 

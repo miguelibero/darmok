@@ -372,7 +372,16 @@ namespace darmok
     Data Data::fromFile(const std::filesystem::path& path)
     {
         FILE* fh;
+#ifdef _MSC_VER        
         auto err = fopen_s(&fh, path.string().c_str(), "rb");
+#else
+        fh = fopen(path.string().c_str(), "rb");
+        int err = 0;
+        if (fh == nullptr)
+        {
+            err = errno;
+        }
+#endif
         if (err)
         {
             std::string error = strerror(err);

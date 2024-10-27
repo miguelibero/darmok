@@ -184,6 +184,18 @@ namespace darmok::physics3d
             "gravity", &Config::gravity
         );
 
+        lua.new_usertype<Collision>("Physics3DCollision", sol::no_constructor,
+            "normal", &Collision::normal,
+            "contacts", &Collision::contacts,
+            sol::meta_function::to_string, &Collision::toString
+        );
+
+        lua.new_usertype<RaycastHit>("Physics3DRaycastHit", sol::no_constructor,
+            "body", &RaycastHit::body,
+            "distance", &RaycastHit::distance,
+            sol::meta_function::to_string, &RaycastHit::toString
+        );
+
         lua.new_usertype<PhysicsSystem>("Physics3dSystem", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<PhysicsSystem>::value),
             "paused", sol::property(&PhysicsSystem::isPaused, &PhysicsSystem::setPaused),

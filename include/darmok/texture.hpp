@@ -30,7 +30,7 @@ namespace darmok
 			archive(size, format, type, depth, mips, layers);
 		}
 
-		static [[nodiscard]] const TextureConfig& getEmpty() noexcept;
+		[[nodiscard]] static const TextureConfig& getEmpty() noexcept;
 
 		[[nodiscard]] std::string to_string() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getInfo() const noexcept;
@@ -86,7 +86,7 @@ namespace darmok
 	public:
 		using result_type = std::shared_ptr<Texture>;
 		virtual ~ITextureLoader() = default;
-		virtual [[nodiscard]] result_type operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) = 0;
+		[[nodiscard]] virtual result_type operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) = 0;
 	};
 
 	class IImageLoader;

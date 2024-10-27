@@ -106,10 +106,14 @@ namespace darmok
 		return ss.str();
 	}
 
+#ifdef _MSC_VER
+#define snprintf sprintf_s
+#endif
+
 	std::string StringUtils::binToHex(uint8_t v) noexcept
 	{
 		std::string dest = "  ";
-		sprintf_s(&dest.front(), dest.size() + 1, "%02X", v);
+		snprintf(&dest.front(), dest.size() + 1, "%02X", v);
 		return dest;
 	}
 
@@ -193,10 +197,16 @@ namespace darmok
 
 	std::string StringUtils::vsprintf(const std::string& fmt, va_list args)
 	{
-		auto len = _vscprintf(fmt.c_str(), args);
 		std::string result;
+#ifdef _MSC_VER
+		auto len = _vscprintf(fmt.c_str(), args);
 		result.resize(len);
 		vsprintf_s(result.data(), len + 1, fmt.c_str(), args);
+#else
+		auto len = vsnprintf(nullptr, 0, fmt.c_str(), args);
+		result.resize(len);
+		vsnprintf(result.data(), len + 1, fmt.c_str(), args);
+#endif
 		return result;
 	}
 

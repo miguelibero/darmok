@@ -449,7 +449,7 @@ namespace darmok
 		}
 
 		vertexData = writer.finish();
-		indexData = indices;
+		indexData = DataView(indices);
 	}
 
 	std::unique_ptr<IMesh> MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const

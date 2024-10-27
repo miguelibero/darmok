@@ -7,6 +7,7 @@
 #include <glm/gtx/norm.hpp>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
+#include <cmath>
 
 namespace darmok
 {
@@ -138,7 +139,7 @@ namespace darmok
     {
         auto tangent = getTangent(texTri);
         auto d = glm::dot(normal, tangent);
-        if (!isnan(d))
+        if (!std::isnan(d))
         {
             tangent = glm::normalize(tangent - normal * d);
         }
@@ -458,6 +459,11 @@ namespace darmok
     std::string Line::toString() const noexcept
     {
         return "Line(" + glm::to_string(points[0]) + ", " + glm::to_string(points[1]) + ")";
+    }
+
+    Ray Line::toRay() const noexcept
+    {
+        return Ray(points[0], points[1] - points[0]);
     }
 
     glm::vec3 Line::operator*(float dist) const noexcept
