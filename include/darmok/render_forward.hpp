@@ -28,7 +28,5 @@ namespace darmok
         OptionalRef<App> _app;
         OptionalRef<MaterialAppComponent> _materials;
         std::optional<bgfx::ViewId> _viewId;
-        
-        void renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder, const EntityView& entities, OpacityType opacity) noexcept;
     };
 }

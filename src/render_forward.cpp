@@ -64,28 +64,6 @@ namespace darmok
 		_app.reset();
 	}
 
-	void ForwardRenderer::renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder, const EntityView& entities, OpacityType opacity) noexcept
-	{
-		for (auto entity : entities)
-		{
-			auto renderable = _scene->getComponent<const Renderable>(entity);
-			if (!renderable->valid())
-			{
-				continue;
-			}
-			if (renderable->getMaterial()->getOpacityType() != opacity)
-			{
-				continue;
-			}
-			_cam->beforeRenderEntity(entity, viewId, encoder);
-			if (!renderable->render(encoder))
-			{
-				continue;
-			}
-			_materials->renderSubmit(viewId, encoder, *renderable->getMaterial());
-		}
-	}
-
 	void ForwardRenderer::render() noexcept
 	{
 		if (!_viewId || !_cam || !_cam->isEnabled())
@@ -96,8 +74,19 @@ namespace darmok
 		auto& encoder = *bgfx::begin();
 		_cam->beforeRenderView(viewId, encoder);
 		auto entities = _cam->getEntities<Renderable>();
-		renderEntities(viewId, encoder, entities, OpacityType::Opaque);
-		renderEntities(viewId, encoder, entities, OpacityType::Mask);
-		renderEntities(viewId, encoder, entities, OpacityType::Transparent);
+		for (auto entity : entities)
+		{
+			auto renderable = _scene->getComponent<const Renderable>(entity);
+			if (!renderable->valid())
+			{
+				continue;
+			}
+			_cam->beforeRenderEntity(entity, viewId, encoder);
+			if (!renderable->render(encoder))
+			{
+				continue;
+			}
+			_materials->renderSubmit(viewId, encoder, *renderable->getMaterial());
+		}
 	}
 }

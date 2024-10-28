@@ -11,6 +11,7 @@
 #include <darmok/program_core.hpp>
 #include <darmok/string.hpp>
 #include <darmok/math.hpp>
+#include <darmok/material.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/mesh.h>
@@ -565,37 +566,43 @@ namespace darmok
             modelMat.emissiveColor = AssimpUtils::convert(emissiveColor);
         }
 
-        aiString aiAlphaMode;
-        if (assimpMat.Get(AI_MATKEY_GLTF_ALPHAMODE, aiAlphaMode) == AI_SUCCESS)
+        if (_config.opacity)
         {
-            std::string alphaMode = aiAlphaMode.C_Str();
-            if (alphaMode == "OPAQUE")
-            {
-                modelMat.opacityType = OpacityType::Opaque;
-            }
-            else if (alphaMode == "MASK")
-            {
-                modelMat.opacityType = OpacityType::Mask;
-            }
-            else
-            {
-                modelMat.opacityType = OpacityType::Transparent;
-            }
+            modelMat.opacityType = _config.opacity.value();
         }
         else
         {
-            int blendMode = aiBlendMode_Default;
-            // TODO: detect cutout
-            if (assimpMat.Get(AI_MATKEY_BLEND_FUNC, blendMode) == AI_SUCCESS)
+            aiString aiAlphaMode;
+            if (assimpMat.Get(AI_MATKEY_GLTF_ALPHAMODE, aiAlphaMode) == AI_SUCCESS)
             {
-                switch (blendMode)
+                std::string alphaMode = aiAlphaMode.C_Str();
+                if (alphaMode == "OPAQUE")
                 {
-                case aiBlendMode_Additive:
-                    modelMat.opacityType = OpacityType::Transparent;
-                    break;
-                case aiBlendMode_Default:
                     modelMat.opacityType = OpacityType::Opaque;
-                    break;
+                }
+                else if (alphaMode == "MASK")
+                {
+                    modelMat.opacityType = OpacityType::Mask;
+                }
+                else
+                {
+                    modelMat.opacityType = OpacityType::Transparent;
+                }
+            }
+            else
+            {
+                int blendMode = aiBlendMode_Default;
+                if (assimpMat.Get(AI_MATKEY_BLEND_FUNC, blendMode) == AI_SUCCESS)
+                {
+                    switch (blendMode)
+                    {
+                    case aiBlendMode_Additive:
+                        modelMat.opacityType = OpacityType::Transparent;
+                        break;
+                    case aiBlendMode_Default:
+                        modelMat.opacityType = OpacityType::Opaque;
+                        break;
+                    }
                 }
             }
         }
@@ -965,6 +972,7 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_skipNodesJsonKey = "skipNodes";
     const std::string AssimpModelImporterImpl::_defaultTextureJsonKey = "defaultTexture";
     const std::string AssimpModelImporterImpl::_rootMeshJsonKey = "rootMesh";
+    const std::string AssimpModelImporterImpl::_opacityJsonKey = "opacity";
 
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
     {
@@ -1004,6 +1012,10 @@ namespace darmok
         if (json.contains(_rootMeshJsonKey))
         {
             config.rootMesh = StringUtils::globToRegex(json[_rootMeshJsonKey]);
+        }
+        if (json.contains(_opacityJsonKey))
+        {
+            config.opacity = Material::readOpacity(json[_opacityJsonKey]);
         }
 
         auto loadRegexList = [&json](const std::string& key, std::vector<std::regex>& value)

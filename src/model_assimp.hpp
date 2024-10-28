@@ -180,6 +180,7 @@ namespace darmok
         static const std::string _embedTexturesJsonKey;
         static const std::string _defaultTextureJsonKey;
         static const std::string _rootMeshJsonKey;
+        static const std::string _opacityJsonKey;
 
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config) const;
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const;

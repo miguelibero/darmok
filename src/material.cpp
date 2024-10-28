@@ -6,6 +6,7 @@
 #include <darmok/image.hpp>
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/string.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "render_samplers.hpp"
 
@@ -300,6 +301,38 @@ namespace darmok
 		return *this;
 	}
 
+	const std::array<std::string, toUnderlying(OpacityType::Count)> Material::_opacityNames
+	{
+		"Opaque",
+		"Mask",
+		"Transparent",
+	};
+
+	std::optional<OpacityType> Material::readOpacity(std::string_view name) noexcept
+	{
+		auto lowerName = StringUtils::toLower(name);
+		for (auto i = 0; i < _opacityNames.size(); i++)
+		{
+			auto keyName = StringUtils::toLower(_opacityNames[i]);
+			if (keyName == lowerName)
+			{
+				return (OpacityType)i;
+			}
+		}
+		return std::nullopt;
+	}
+
+	const std::string& Material::getOpacityName(OpacityType opacity) noexcept
+	{
+		auto idx = toUnderlying(opacity);
+		if (idx >= _opacityNames.size())
+		{
+			static const std::string empty;
+			return empty;
+		}
+		return _opacityNames[idx];
+	}
+
 	MaterialAppComponent::MaterialAppComponent() noexcept
 		: _albedoLutSamplerUniform{ bgfx::kInvalidHandle }
 		, _baseColorUniform{ bgfx::kInvalidHandle }
@@ -432,6 +465,11 @@ namespace darmok
 		{
 			state |= BGFX_STATE_BLEND_ALPHA;
 		}
+		else
+		{
+			state &= ~BGFX_STATE_WRITE_A;
+		}
+
 		encoder.setState(state);
 		auto prog = mat.getProgramHandle();
 		encoder.submit(viewId, prog);

@@ -11,19 +11,25 @@ namespace darmok
         MetallicRoughness,
         Normal,
         Occlusion,
-        Emissive
+        Emissive,
+
+        Count
     };
 
     enum class MaterialPrimitiveType
     {
         Triangle,
-        Line
+        Line,
+
+        Count
     };
 
     enum class OpacityType
     {
         Opaque,
         Mask,
-        Transparent
+        Transparent,
+
+        Count
     };
 }

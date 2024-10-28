@@ -33,6 +33,7 @@ namespace darmok
         bool embedTextures = true;
         std::string defaultTexture;
         std::optional<std::regex> rootMesh;
+        std::optional<OpacityType> opacity;
     };
 
     class IDataLoader;

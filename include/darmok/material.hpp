@@ -16,9 +16,10 @@
 #include <bx/bx.h>
 
 #include <vector>
-#include <string_view>
+#include <string>
 #include <memory>
 #include <unordered_map>
+#include <array>
 
 namespace darmok
 {
@@ -67,6 +68,9 @@ namespace darmok
         Material(const std::shared_ptr<Program>& program) noexcept;
         Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept;
         Material(const std::shared_ptr<Program>& program, const Color& color) noexcept;
+
+        static std::optional<OpacityType> readOpacity(std::string_view name) noexcept;
+        static const std::string& getOpacityName(OpacityType opacity) noexcept;
 
         bool valid() const noexcept;
 
@@ -155,6 +159,8 @@ namespace darmok
 
         UniformContainer _uniforms;
         TextureUniformContainer _textureUniforms;
+
+        static const std::array<std::string, toUnderlying(OpacityType::Count)> _opacityNames;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader
