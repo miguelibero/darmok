@@ -45,7 +45,8 @@ namespace darmok
 
 	void LuaAppUpdater::update(float deltaTime)
 	{
-		_delegate(deltaTime);
+		static const std::string desc = "running updater";
+		LuaUtils::checkResult(desc, _delegate(deltaTime));
 	}
 
 	const LuaDelegate& LuaAppUpdater::getDelegate() const noexcept
@@ -63,7 +64,6 @@ namespace darmok
 	{
 		return updater.getAppUpdaterType() == _type && static_cast<const LuaAppUpdater&>(updater).getDelegate() == _object;
 	}
-
 
 	App& LuaApp::addUpdater(App& app, const sol::object& updater) noexcept
 	{

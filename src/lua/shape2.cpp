@@ -31,6 +31,7 @@ namespace darmok
 				sol::resolve<std::optional<float>(const Sphere&) const>(&Ray::intersect)
 			),
 			"intersect_normal", &Ray::intersectNormal,
+			"reverse", &Ray::reverse,
 			"to_line", &Ray::toLine,
 			sol::meta_function::to_string, &Ray::toString
 		);

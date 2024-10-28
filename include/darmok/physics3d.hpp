@@ -119,7 +119,9 @@ namespace darmok::physics3d
     struct RaycastHit final
     {
         std::reference_wrapper<PhysicsBody> body;
+        float factor;
         float distance;
+        glm::vec3 point;
 
         std::string toString() const noexcept;
     };
@@ -166,8 +168,8 @@ namespace darmok::physics3d
         bool removeListener(const ICollisionListener& listener) noexcept;
         size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
-        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance = bx::kFloatInfinity, LayerMask layers = kAllLayers) const noexcept;
-        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance = bx::kFloatInfinity, LayerMask layers = kAllLayers) const noexcept;
+        std::optional<RaycastHit> raycast(const Ray& ray, LayerMask layers = kAllLayers) const noexcept;
+        std::vector<RaycastHit> raycastAll(const Ray& ray, LayerMask layers = kAllLayers) const noexcept;
 
         void activateBodies(const BoundingBox& bbox, LayerMask layers = kAllLayers) noexcept;
     private:

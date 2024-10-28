@@ -57,7 +57,8 @@ namespace darmok::physics3d
 
     void LuaPhysicsUpdater::fixedUpdate(float fixedDeltaTime)
     {
-        _delegate(fixedDeltaTime);
+        static const std::string desc = "running fixed updater";
+        LuaUtils::checkResult(desc, _delegate(fixedDeltaTime));
     }
 
     LuaPhysicsUpdaterFilter::LuaPhysicsUpdaterFilter(const sol::object& obj) noexcept
@@ -116,14 +117,9 @@ namespace darmok::physics3d
         return system.raycast(ray);
     }
 
-    std::optional<RaycastHit> LuaPhysicsSystem::raycast2(const PhysicsSystem& system, const Ray& ray, float maxDistance) noexcept
+    std::optional<RaycastHit> LuaPhysicsSystem::raycast2(const PhysicsSystem& system, const Ray& ray, LayerMask layers) noexcept
     {
-        return system.raycast(ray, maxDistance);
-    }
-
-    std::optional<RaycastHit> LuaPhysicsSystem::raycast3(const PhysicsSystem& system, const Ray& ray, float maxDistance, LayerMask layers) noexcept
-    {
-        return system.raycast(ray, maxDistance, layers);
+        return system.raycast(ray, layers);
     }
 
     std::vector<RaycastHit> LuaPhysicsSystem::raycastAll1(const PhysicsSystem& system, const Ray& ray) noexcept
@@ -131,14 +127,9 @@ namespace darmok::physics3d
         return system.raycastAll(ray);
     }
 
-    std::vector<RaycastHit> LuaPhysicsSystem::raycastAll2(const PhysicsSystem& system, const Ray& ray, float maxDistance) noexcept
+    std::vector<RaycastHit> LuaPhysicsSystem::raycastAll2(const PhysicsSystem& system, const Ray& ray, LayerMask layers) noexcept
     {
-        return system.raycastAll(ray, maxDistance);
-    }
-
-    std::vector<RaycastHit> LuaPhysicsSystem::raycastAll3(const PhysicsSystem& system, const Ray& ray, float maxDistance, LayerMask layers) noexcept
-    {
-        return system.raycastAll(ray, maxDistance, layers);
+        return system.raycastAll(ray, layers);
     }
 
     void LuaPhysicsSystem::activateBodies1(PhysicsSystem& system, const BoundingBox& bbox) noexcept
@@ -193,6 +184,8 @@ namespace darmok::physics3d
         lua.new_usertype<RaycastHit>("Physics3DRaycastHit", sol::no_constructor,
             "body", &RaycastHit::body,
             "distance", &RaycastHit::distance,
+            "factor", &RaycastHit::factor,
+            "point", &RaycastHit::point,
             sol::meta_function::to_string, &RaycastHit::toString
         );
 
@@ -208,13 +201,11 @@ namespace darmok::physics3d
             "gravity", sol::property(&PhysicsSystem::getGravity),
             "raycast", sol::overload(
                 &LuaPhysicsSystem::raycast1,
-                &LuaPhysicsSystem::raycast2,
-                &LuaPhysicsSystem::raycast3
+                &LuaPhysicsSystem::raycast2
             ),
             "raycast_all", sol::overload(
                 &LuaPhysicsSystem::raycastAll1,
-                &LuaPhysicsSystem::raycastAll2,
-                &LuaPhysicsSystem::raycastAll3
+                &LuaPhysicsSystem::raycastAll2
             ),
             "activate_bodies", sol::overload(
                 &LuaPhysicsSystem::activateBodies1,

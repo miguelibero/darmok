@@ -88,7 +88,8 @@ namespace darmok::physics3d
         static JPH::Plane convert(const Plane& v) noexcept;
         static JPH::AABox convert(const BoundingBox& v) noexcept;
         static BoundingBox convert(const JPH::AABox& v) noexcept;
-        static RaycastHit convert(const JPH::RayCastResult& result, const JPH::RRayCast& rayCast, PhysicsBody& rb) noexcept;
+        static JPH::RRayCast convert(const Ray& v) noexcept;
+        static RaycastHit convert(const JPH::RayCastResult& result, const Ray& ray, PhysicsBody& rb) noexcept;
         static std::expected<JoltTransform, std::string> convertTransform(const glm::mat4& mat) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);
         static glm::vec3 getOrigin(const Shape& shape) noexcept;
@@ -260,8 +261,8 @@ namespace darmok::physics3d
         OptionalRef<PhysicsBody> getPhysicsBody(const JPH::BodyID& bodyId) const noexcept;
         static OptionalRef<PhysicsBody> getPhysicsBody(const JPH::Body& body) noexcept;
 
-        std::optional<RaycastHit> raycast(const Ray& ray, float maxDistance, LayerMask layers = kAllLayers) const noexcept;
-        std::vector<RaycastHit> raycastAll(const Ray& ray, float maxDistance, LayerMask layers = kAllLayers) const noexcept;
+        std::optional<RaycastHit> raycast(const Ray& ray, LayerMask layers = kAllLayers) const noexcept;
+        std::vector<RaycastHit> raycastAll(const Ray& ray, LayerMask layers = kAllLayers) const noexcept;
         void activateBodies(const BoundingBox& bbox, LayerMask layers = kAllLayers) noexcept;
 
         JoltTransform loadTransform(Transform& trans);

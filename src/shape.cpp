@@ -383,6 +383,13 @@ namespace darmok
         return Line(origin, origin + direction);
     }
 
+    Ray& Ray::reverse() noexcept
+    {
+        origin = origin + direction;
+        direction *= -1.F;
+        return *this;
+    }
+
     std::optional<float> Ray::intersect(const Plane& plane) const noexcept
     {
         float dist;

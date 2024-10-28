@@ -144,12 +144,21 @@ namespace darmok::physics3d
         return BoundingBox(convert(v.mMin), convert(v.mMax));
     }
 
-    RaycastHit JoltUtils::convert(const JPH::RayCastResult& result, const JPH::RRayCast& rayCast, PhysicsBody& rb) noexcept
+    JPH::RRayCast JoltUtils::convert(const Ray& v) noexcept
+    {
+        return JPH::RRayCast(convert(v.origin), convert(v.direction));
+    }
+
+    RaycastHit JoltUtils::convert(const JPH::RayCastResult& result, const Ray& ray, PhysicsBody& rb) noexcept
     {
         // TODO: check how to get other RaycastHit properties
         // https://docs.unity3d.com/ScriptReference/RaycastHit.html
-        float dist = result.mFraction * rayCast.mDirection.Length();
-        return RaycastHit{ rb, dist };
+        return RaycastHit{
+            .body = rb,
+            .factor = result.mFraction,
+            .distance = result.mFraction * glm::length(ray.direction),
+            .point = ray.origin + result.mFraction * ray.direction
+        };
     }
 
     std::expected<JoltTransform, std::string> JoltUtils::convertTransform(const glm::mat4& mat) noexcept
@@ -817,18 +826,18 @@ namespace darmok::physics3d
         return reinterpret_cast<PhysicsBody*>(userData);
     }
 
-    std::optional<RaycastHit> PhysicsSystemImpl::raycast(const Ray& ray, float maxDistance, LayerMask layers) const noexcept
+    std::optional<RaycastHit> PhysicsSystemImpl::raycast(const Ray& ray, LayerMask layers) const noexcept
     {
         if (!_joltSystem)
         {
             return std::nullopt;
         }
-        JPH::RRayCast rc(JoltUtils::convert(ray.origin), JoltUtils::convert(ray.direction) * maxDistance);
+        auto joltRay = JoltUtils::convert(ray);
         JoltBroadPhaseLayerMaskFilter bphFilter(_config.layers.getBroad(layers));
         JoltObjectLayerMaskFilter objFilter(layers);
         JPH::RayCastResult result;
 
-        if (!_joltSystem->GetNarrowPhaseQuery().CastRay(rc, result, bphFilter, objFilter))
+        if (!_joltSystem->GetNarrowPhaseQuery().CastRay(joltRay, result, bphFilter, objFilter))
         {
             return std::nullopt;
         }
@@ -837,10 +846,10 @@ namespace darmok::physics3d
         {
             return std::nullopt;
         }
-        return JoltUtils::convert(result, rc, rb.value());
+        return JoltUtils::convert(result, ray, rb.value());
     }
 
-    std::vector<RaycastHit> PhysicsSystemImpl::raycastAll(const Ray& ray, float maxDistance, LayerMask layers) const noexcept
+    std::vector<RaycastHit> PhysicsSystemImpl::raycastAll(const Ray& ray, LayerMask layers) const noexcept
     {
         std::vector<RaycastHit> hits;
         if (!_joltSystem)
@@ -848,19 +857,19 @@ namespace darmok::physics3d
             return hits;
         }
 
-        JPH::RRayCast rc(JoltUtils::convert(ray.origin), JoltUtils::convert(ray.direction) * maxDistance);
+        auto joltRay = JoltUtils::convert(ray);
         JoltBroadPhaseLayerMaskFilter bphFilter(_config.layers.getBroad(layers));
         JoltObjectLayerMaskFilter objFilter(layers);
         JPH::RayCastSettings settings;
         JoltVectorCastRayCollector collector;
 
-        _joltSystem->GetNarrowPhaseQuery().CastRay(rc, settings, collector, bphFilter, objFilter);
+        _joltSystem->GetNarrowPhaseQuery().CastRay(joltRay, settings, collector, bphFilter, objFilter);
         for (auto& result : collector.getHits())
         {
             auto rb = getPhysicsBody(result.mBodyID);
             if (rb)
             {
-                hits.push_back(JoltUtils::convert(result, rc, rb.value()));
+                hits.push_back(JoltUtils::convert(result, ray, rb.value()));
             }
         }
 
@@ -1108,14 +1117,14 @@ namespace darmok::physics3d
         return _impl->removeListeners(filter);
     }
 
-    std::optional<RaycastHit> PhysicsSystem::raycast(const Ray& ray, float maxDistance, LayerMask layers) const noexcept
+    std::optional<RaycastHit> PhysicsSystem::raycast(const Ray& ray, LayerMask layers) const noexcept
     {
-        return _impl->raycast(ray, maxDistance, layers);
+        return _impl->raycast(ray, layers);
     }
 
-    std::vector<RaycastHit> PhysicsSystem::raycastAll(const Ray& ray, float maxDistance, LayerMask layers) const noexcept
+    std::vector<RaycastHit> PhysicsSystem::raycastAll(const Ray& ray, LayerMask layers) const noexcept
     {
-        return _impl->raycastAll(ray, maxDistance, layers);
+        return _impl->raycastAll(ray, layers);
     }
 
     void PhysicsSystem::activateBodies(const BoundingBox& bbox, LayerMask layers) noexcept

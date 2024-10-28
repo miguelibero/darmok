@@ -92,11 +92,9 @@ namespace darmok::physics3d
         static bool isValidEntity(PhysicsSystem& system, LuaEntity& entity) noexcept;
 
         static std::optional<RaycastHit> raycast1(const PhysicsSystem& system, const Ray& ray) noexcept;
-        static std::optional<RaycastHit> raycast2(const PhysicsSystem& system, const Ray& ray, float maxDistance) noexcept;
-        static std::optional<RaycastHit> raycast3(const PhysicsSystem& system, const Ray& ray, float maxDistance, LayerMask layers) noexcept;
+        static std::optional<RaycastHit> raycast2(const PhysicsSystem& system, const Ray& ray, LayerMask layers) noexcept;
         static std::vector<RaycastHit> raycastAll1(const PhysicsSystem& system, const Ray& ray) noexcept;
-        static std::vector<RaycastHit> raycastAll2(const PhysicsSystem& system, const Ray& ray, float maxDistance) noexcept;
-        static std::vector<RaycastHit> raycastAll3(const PhysicsSystem& system, const Ray& ray, float maxDistance, LayerMask layers) noexcept;
+        static std::vector<RaycastHit> raycastAll2(const PhysicsSystem& system, const Ray& ray, LayerMask layers) noexcept;
         
         static void activateBodies1(PhysicsSystem& system, const BoundingBox& bbox) noexcept;
         static void activateBodies2(PhysicsSystem& system, const BoundingBox& bbox, LayerMask layers) noexcept;
