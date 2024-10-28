@@ -37,8 +37,10 @@ namespace darmok
         Scene& getScene();
         const Scene& getScene() const;
 
+        entt::id_type getId() const noexcept;
         const std::string& getName() const noexcept;
         Camera& setName(const std::string& name) noexcept;
+        std::string toString() const noexcept;
 
         const glm::mat4& getProjectionMatrix() const noexcept;
         const glm::mat4& getProjectionInverse() const noexcept;
@@ -131,7 +133,7 @@ namespace darmok
         [[nodiscard]] RenderChain& getRenderChain() noexcept;
         [[nodiscard]] const RenderChain& getRenderChain() const noexcept;
         
-        void configureView(bgfx::ViewId viewId) const;
+        void configureView(bgfx::ViewId viewId, const std::string& name) const;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept;
         void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;

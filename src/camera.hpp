@@ -20,8 +20,10 @@ namespace darmok
     public:
         CameraImpl(Camera& cam, const glm::mat4& projMatrix = {}) noexcept;
 
+        entt::id_type getId() const noexcept;
         const std::string& getName() const noexcept;
-        void setName(const std::string& name) noexcept;
+        void setName(const std::string& baseName) noexcept;
+        std::string toString() const noexcept;
 
         Scene& getScene();
         const Scene& getScene() const;
@@ -85,7 +87,7 @@ namespace darmok
         RenderChain& getRenderChain() noexcept;
         const RenderChain& getRenderChain() const noexcept;
         
-        void configureView(bgfx::ViewId viewId) const;
+        void configureView(bgfx::ViewId viewId, const std::string& name) const;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept;
         bool shouldEntityBeCulled(Entity entity) const noexcept;
@@ -138,6 +140,7 @@ namespace darmok
 
         RenderChain _renderChain;
         
+        std::string getDescName() const noexcept;
         bool updateViewportProjection() noexcept;
 
         Components::iterator findComponent(entt::id_type type) noexcept;

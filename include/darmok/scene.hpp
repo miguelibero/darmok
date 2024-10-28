@@ -50,14 +50,14 @@ namespace darmok
         Scene(App& app) noexcept;
         ~Scene() noexcept;
 
-        std::string toString() const noexcept;
-        entt::id_type getId() const noexcept;
-
         SceneImpl& getImpl() noexcept;
         const SceneImpl& getImpl() const noexcept;
 
+        entt::id_type getId() const noexcept;
         Scene& setName(const std::string& name) noexcept;
         const std::string& getName() const noexcept;
+        std::string toString() const noexcept;
+
         Scene& setPaused(bool paused) noexcept;
         bool isPaused() const noexcept;
 

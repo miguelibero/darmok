@@ -30,7 +30,16 @@ namespace darmok
 
     std::string SceneImpl::toString() const noexcept
     {
-        return "Scene(" + _name + ")";
+        return "Scene(" + getDescName() + ")";
+    }
+
+    std::string SceneImpl::getDescName() const noexcept
+    {
+        if (!_name.empty())
+        {
+            return _name;
+        }
+        return std::to_string(getId());
     }
 
     void SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
@@ -380,11 +389,6 @@ namespace darmok
     {
     }
 
-    std::string Scene::toString() const noexcept
-    {
-        return _impl->toString();
-    }
-
     SceneImpl& Scene::getImpl() noexcept
     {
         return *_impl;
@@ -479,6 +483,11 @@ namespace darmok
     const std::string& Scene::getName() const noexcept
     {
         return _impl->getName();
+    }
+
+    std::string Scene::toString() const noexcept
+    {
+        return _impl->toString();
     }
 
     Scene& Scene::setPaused(bool paused) noexcept

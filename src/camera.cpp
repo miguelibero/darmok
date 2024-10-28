@@ -10,8 +10,10 @@
 #include <darmok/render_scene.hpp>
 
 #include "camera.hpp"
+#include "scene.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <bx/math.h>
 
 namespace darmok
@@ -33,6 +35,25 @@ namespace darmok
     void CameraImpl::setName(const std::string& name) noexcept
     {
         _name = name;
+    }
+
+    entt::id_type CameraImpl::getId() const noexcept
+    {
+        return reinterpret_cast<uintptr_t>(static_cast<const void*>(this));
+    }
+
+    std::string CameraImpl::getDescName() const noexcept
+    {
+        if (!_name.empty())
+        {
+            return _name;
+        }
+        return std::to_string(getId());
+    }
+
+    std::string CameraImpl::toString() const noexcept
+    {
+        return "Camera(" + getDescName() + ", " + glm::to_string(getProjectionMatrix()) + ")";
     }
 
     Scene& CameraImpl::getScene()
@@ -240,8 +261,14 @@ namespace darmok
         updateViewportProjection();
     }
 
-    void CameraImpl::configureView(bgfx::ViewId viewId) const
+    void CameraImpl::configureView(bgfx::ViewId viewId, const std::string& name) const
     {
+        auto fullName = "Camera " + getDescName() + ": " + name;
+        if (_scene)
+        {
+            fullName = "Scene " + _scene->getImpl().getDescName() + ": " + fullName;
+        }
+        bgfx::setViewName(viewId, fullName.c_str());
         auto frameBuffer = _renderChain.getInput();
         _renderChain.configureView(viewId, frameBuffer);
     }
@@ -563,6 +590,16 @@ namespace darmok
         return *this;
     }
 
+    entt::id_type Camera::getId() const noexcept
+    {
+        return _impl->getId();
+    }
+
+    std::string Camera::toString() const noexcept
+    {
+        return _impl->toString();
+    }
+
     const glm::mat4& Camera::getProjectionMatrix() const noexcept
     {
         return _impl->getProjectionMatrix();
@@ -756,9 +793,9 @@ namespace darmok
         return _impl->getRenderChain();
     }
     
-    void Camera::configureView(bgfx::ViewId viewId) const
+    void Camera::configureView(bgfx::ViewId viewId, const std::string& name) const
     {
-        _impl->configureView(viewId);
+        _impl->configureView(viewId, name);
     }
 
     void Camera::setViewTransform(bgfx::ViewId viewId) const noexcept

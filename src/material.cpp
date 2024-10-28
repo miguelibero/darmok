@@ -408,7 +408,7 @@ namespace darmok
 		_defaultTexture.reset();
 	}
 
-	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept
+	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat, const bgfx::OcclusionQueryHandle& occlusion) const noexcept
 	{
 		glm::vec4 hasTextures(0);
 		for (uint8_t i = 0; i < _samplerUniforms.size(); i++)
@@ -472,6 +472,6 @@ namespace darmok
 
 		encoder.setState(state);
 		auto prog = mat.getProgramHandle();
-		encoder.submit(viewId, prog);
+		encoder.submit(viewId, prog, occlusion);
 	}
 }

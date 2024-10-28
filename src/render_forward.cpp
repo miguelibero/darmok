@@ -27,11 +27,7 @@ namespace darmok
 		_cam = cam;
 		_scene = scene;
 		_app = app;
-		_materials = app.getComponent<MaterialAppComponent>();
-		if (!_materials)
-		{
-			_materials = app.addComponent<MaterialAppComponent>();
-		}
+		_materials = app.getOrAddComponent<MaterialAppComponent>();
 	}
 
 	bgfx::ViewId ForwardRenderer::renderReset(bgfx::ViewId viewId) noexcept
@@ -41,18 +37,7 @@ namespace darmok
 		{
 			return viewId;
 		}
-
-		std::string name("Forward");
-		if (_cam)
-		{
-			auto& camName = _cam->getName();
-			if (!camName.empty())
-			{
-				name += " " + camName;
-			}
-		}
-		bgfx::setViewName(viewId, name.c_str());
-		_cam->configureView(viewId);
+		_cam->configureView(viewId, "Forward");
 		_viewId = viewId;
 		return ++viewId;
 	}
@@ -66,7 +51,7 @@ namespace darmok
 
 	void ForwardRenderer::render() noexcept
 	{
-		if (!_viewId || !_cam || !_cam->isEnabled())
+		if (!_scene || !_viewId || !_cam || !_cam->isEnabled())
 		{
 			return;
 		}
@@ -92,5 +77,6 @@ namespace darmok
 			}
 			_materials->renderSubmit(viewId, encoder, *renderable->getMaterial());
 		}
+		bgfx::end(&encoder);
 	}
 }
