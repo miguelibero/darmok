@@ -277,6 +277,18 @@ namespace darmok
         }
     }
 
+    bool CameraImpl::shouldEntityBeCulled(Entity entity) const noexcept
+    {
+        for (auto comp : Components(_components))
+        {
+            if (comp->shouldEntityBeCulled(entity))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void CameraImpl::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
         setEntityTransform(entity, encoder);
@@ -757,6 +769,11 @@ namespace darmok
     void Camera::setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept
     {
         _impl->setEntityTransform(entity, encoder);
+    }
+
+    bool Camera::shouldEntityBeCulled(Entity entity) const noexcept
+    {
+        return _impl->shouldEntityBeCulled(entity);
     }
 
     void Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept

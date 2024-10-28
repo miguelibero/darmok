@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <optional>
+#include <filesystem>
 #include <bgfx/bgfx.h>
 #include <assimp/material.h>
 #include <darmok/material_fwd.hpp>
@@ -50,6 +51,10 @@ namespace darmok
     {
         bool leftHanded = true;
         bool populateArmature = false;
+        std::string basePath; 
+        std::string format;
+
+        void setPath(const std::filesystem::path& path) noexcept;
     };
 
     class AssimpSceneLoader
@@ -59,7 +64,7 @@ namespace darmok
         using result_type = std::shared_ptr<aiScene>;
         bool supports(std::string_view name) const noexcept;
         result_type loadFromFile(const std::filesystem::path& path, const Config& config = {}) const ;
-        result_type loadFromMemory(const DataView& data, const std::string& name, const Config& config = {}) const;
+        result_type loadFromMemory(const DataView& data, const Config& config = {}) const;
     private:
         static unsigned int getImporterFlags(const Config& config = {}) noexcept;
         static result_type fixScene(Assimp::Importer& importer) noexcept;
@@ -181,6 +186,8 @@ namespace darmok
         static const std::string _defaultTextureJsonKey;
         static const std::string _rootMeshJsonKey;
         static const std::string _opacityJsonKey;
+        static const std::string _formatJsonKey;
+        static const std::string _loadPathJsonKey;
 
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config) const;
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const;

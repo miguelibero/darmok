@@ -182,6 +182,7 @@ set(SOURCES
 
   transform.cpp
   camera.cpp
+  culling.cpp
   light.cpp
   render_scene.cpp
   render_forward.cpp
@@ -216,6 +217,7 @@ set(HEADERS
 
   transform.hpp
   camera.hpp
+  culling.hpp
   light.hpp
   render_scene.hpp
   render_forward.hpp

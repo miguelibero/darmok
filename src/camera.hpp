@@ -88,6 +88,7 @@ namespace darmok
         void configureView(bgfx::ViewId viewId) const;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept;
+        bool shouldEntityBeCulled(Entity entity) const noexcept;
         void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 

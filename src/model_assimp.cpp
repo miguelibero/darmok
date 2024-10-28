@@ -19,6 +19,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 #include <assimp/GltfMaterial.h>
+#include <assimp/BaseImporter.h>
 #include <mikktspace.h>
 
 #include <glm/gtx/component_wise.hpp>
@@ -118,6 +119,12 @@ namespace darmok
         }
     };
 
+    void AssimpSceneLoadConfig::setPath(const std::filesystem::path& path) noexcept
+    {
+        basePath = path.parent_path().string();
+        format = path.extension().string();
+    }
+
     bool AssimpSceneLoader::supports(std::string_view name) const noexcept
     {
         Assimp::Importer importer;
@@ -139,7 +146,7 @@ namespace darmok
         if (config.leftHanded)
         {
             // assimp (and opengl) is right handed (+Z points towards the camera)
-// while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
+            // while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
             flags |= aiProcess_ConvertToLeftHanded;
         }
         if (config.populateArmature)
@@ -152,7 +159,20 @@ namespace darmok
     std::shared_ptr<aiScene> AssimpSceneLoader::loadFromFile(const std::filesystem::path& path, const Config& config) const
     {
         Assimp::Importer importer;
-        auto ptr = importer.ReadFile(path.string(), getImporterFlags(config));
+
+        const aiScene* ptr = nullptr;
+        if (!config.format.empty())
+        {
+            auto hintImporter = importer.GetImporter(config.format.c_str());
+            if (hintImporter != nullptr)
+            {
+                ptr = hintImporter->ReadFile(&importer, path.string().c_str(), importer.GetIOHandler());
+            }
+        }
+        if(ptr == nullptr)
+        {
+            ptr = importer.ReadFile(path.string(), getImporterFlags(config));
+        }
         if (ptr == nullptr)
         {
             auto err = importer.GetErrorString();
@@ -161,10 +181,20 @@ namespace darmok
         return fixScene(importer);
     }
 
-    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromMemory(const DataView& data, const std::string& name, const Config& config) const
+    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromMemory(const DataView& data, const Config& config) const
     {
         Assimp::Importer importer;
-        auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(config), name.c_str());
+        if (!config.basePath.empty())
+        {
+            auto path = std::filesystem::path(config.basePath) / "file";
+            if (!config.format.empty())
+            {
+                path += "." + config.format;
+            }
+            importer.SetPropertyString("sourceFilePath", path.string());
+        }
+
+        auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(config), config.format.c_str());
         if (ptr == nullptr)
         {
             auto err = importer.GetErrorString();
@@ -222,7 +252,9 @@ namespace darmok
 
     std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(std::string_view name)
     {
-        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), std::string(name));
+        AssimpSceneLoadConfig config;
+        config.setPath(name);
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), config);
         auto model = std::make_shared<Model>();
         auto basePath = std::filesystem::path(name).parent_path().string();
 
@@ -973,6 +1005,8 @@ namespace darmok
     const std::string AssimpModelImporterImpl::_defaultTextureJsonKey = "defaultTexture";
     const std::string AssimpModelImporterImpl::_rootMeshJsonKey = "rootMesh";
     const std::string AssimpModelImporterImpl::_opacityJsonKey = "opacity";
+    const std::string AssimpModelImporterImpl::_formatJsonKey = "format";
+    const std::string AssimpModelImporterImpl::_loadPathJsonKey = "loadPath";
 
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
     {
@@ -1083,10 +1117,12 @@ namespace darmok
         {
             return false;
         }
+        /*
         if (!_assimpLoader.supports(input.path.string()))
         {
             return false;
         }
+        */
         auto& config = _currentConfig.emplace();
         nlohmann::json configJson = input.config;
         if (!input.dirConfig.empty())
@@ -1095,7 +1131,17 @@ namespace darmok
         }
         loadConfig(configJson, input.basePath, config);
         AssimpUtils::fixModelLoadConfig(_dataLoader, _currentConfig->loadConfig);
-        _currentScene = _assimpLoader.loadFromFile(input.path);
+
+        AssimpSceneLoadConfig sceneConfig;
+        if (input.config.contains(_formatJsonKey))
+        {
+            sceneConfig.format = input.config[_formatJsonKey];
+        }
+        if (input.config.contains(_loadPathJsonKey))
+        {
+            sceneConfig.basePath = input.config[_loadPathJsonKey];
+        }
+        _currentScene = _assimpLoader.loadFromFile(input.path, sceneConfig);
         return _currentScene != nullptr;
     }
 

@@ -81,6 +81,10 @@ namespace darmok
 			{
 				continue;
 			}
+			if (_cam->shouldEntityBeCulled(entity))
+			{
+				continue;
+			}
 			_cam->beforeRenderEntity(entity, viewId, encoder);
 			if (!renderable->render(encoder))
 			{

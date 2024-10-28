@@ -571,9 +571,10 @@ namespace darmok
 
     std::shared_ptr<Skeleton> AssimpSkeletonLoaderImpl::operator()(std::string_view name)
     {
-        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
-        loadConfig.populateArmature = true;
-        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), std::string(name), loadConfig);
+        auto sceneConfig = createAssimpSkeletonSceneLoadConfig();
+        sceneConfig.populateArmature = true;
+        sceneConfig.setPath(name);
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), sceneConfig);
         if (!scene)
         {
             throw new std::runtime_error("could not load assimp scene");
@@ -589,8 +590,9 @@ namespace darmok
 
     std::shared_ptr<SkeletalAnimation> AssimpSkeletalAnimationLoaderImpl::operator()(std::string_view name)
     {
-        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
-        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), std::string(name), loadConfig);
+        auto sceneConfig = createAssimpSkeletonSceneLoadConfig();
+        sceneConfig.setPath(name);
+        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), sceneConfig);
         if (!scene)
         {
             throw new std::runtime_error("could not load assimp scene");

@@ -1,0 +1,11 @@
+{
+    "files": {
+        "sponza/Sponza.gltf": {
+            "model": {
+                "outputPath": "../Sponza.dml",
+                "program": "forward",
+                "embedTextures": true
+            }
+        }
+    }
+}

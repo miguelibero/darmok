@@ -16,6 +16,7 @@
 #include <darmok/render_chain.hpp>
 #include <darmok/shadow.hpp>
 #include <darmok/material.hpp>
+#include <darmok/culling.hpp>
 
 namespace
 {
@@ -170,16 +171,14 @@ namespace
 			shadowConfig.cascadeAmount = 2;
 
 			cam.addComponent<ForwardRenderer>();
-
+			cam.addComponent<OcclusionCuller>();
 			cam.addComponent<LightingRenderComponent>();
-
+			cam.addComponent<ShadowRenderer>(shadowConfig);
 			if (debugShadow)
 			{
 				cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
 			}
 
-			auto& shadowRenderer = cam.addComponent<ShadowRenderer>(shadowConfig);
-			cam.addComponent<ShadowRenderComponent>(shadowRenderer);
 
 			return cam;
 		}
