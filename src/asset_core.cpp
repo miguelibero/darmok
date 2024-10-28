@@ -225,7 +225,8 @@ namespace darmok
     const std::string AssetImporterImpl::FileConfig::_configFileSuffix = ".darmok-import.json";
     const std::string AssetImporterImpl::FileConfig::_importersKey = "importers";
     const std::string AssetImporterImpl::FileConfig::_includesKey = "includes";
-    const std::string AssetImporterImpl::FileConfig::_includePrefix = "include:";
+    const std::regex AssetImporterImpl::FileConfig::_includePattern("\\$\\{(.+)\\}");
+    const std::string AssetImporterImpl::FileConfig::_includePatternToken = "${";
 
     fs::path AssetImporterImpl::FileConfig::getPath(const fs::path& path) noexcept
     {
@@ -305,23 +306,43 @@ namespace darmok
     {
         auto replace = [&includes](nlohmann::json& elm)
         {
+            auto changed = false;
             if (!elm.is_string())
             {
-                return false;
+                return changed;
             }
             std::string str = elm;
-            if (!str.starts_with(_includePrefix))
+            if (!str.contains(_includePatternToken)) // fast check
             {
-                return false;
+                return changed;
             }
-            auto name = str.substr(_includePrefix.size());
-            auto itr = includes.find(name);
-            if (itr == includes.end())
+            std::smatch match;
+            if (std::regex_match(str, match, _includePattern))
             {
-                return false;
+                auto itr = includes.find(match[1]);
+                if (itr != includes.end())
+                {
+                    changed = true;
+                    elm = itr.value();
+                }
             }
-            elm = itr.value();
-            return true;
+            else
+            {
+                changed = StringUtils::regexReplace(str, _includePattern, [&includes](auto& match, auto& repl) {
+                    auto itr = includes.find(match[1]);
+                    if (itr != includes.end())
+                    {
+                        repl = itr.value();
+                        return true;
+                    }
+                    return false;
+                });
+                if (changed)
+                {
+                    elm = str;
+                }
+            }
+            return changed;
         };
 
         auto changed = false;
@@ -345,9 +366,12 @@ namespace darmok
                 }
             }
         }
-        else if(replace(json))
+        else
         {
-            changed = true;
+            while (replace(json))
+            {
+                changed = true;
+            }
         }
         return changed;
     }

@@ -108,7 +108,8 @@ namespace darmok
             static const std::string _configFileSuffix;
             static const std::string _importersKey;
             static const std::string _includesKey;
-            static const std::string _includePrefix;
+            static const std::regex _includePattern;
+            static const std::string _includePatternToken;
         };
 
         std::unordered_map<std::filesystem::path, FileConfig> _files;

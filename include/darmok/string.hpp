@@ -6,6 +6,7 @@
 #include <vector>
 #include <cstdarg>
 #include <cstdint>
+#include <regex>
 
 namespace darmok
 {
@@ -69,8 +70,27 @@ namespace darmok
         static std::string vsprintf(const std::string& fmt, va_list args);
         static std::string sprintf(const std::string& fmt, ...);
 
-
         static std::string getTimeSuffix() noexcept;
+
+        template<typename Callback>
+        static bool regexReplace(std::string& str, const std::regex& pattern, Callback&& callback)
+        {
+            auto strItr = str.cbegin();
+            auto changed = false;
+            std::smatch match;
+            while (std::regex_search(strItr, str.cend(), match, pattern))
+            {
+                std::string repl;
+                if (callback(match, repl))
+                {
+                    auto pos = match.position(0);
+                    str.replace(pos, match.length(0), repl);
+                    strItr = str.cbegin() + pos + repl.length();
+                    changed = true;
+                }
+            }
+            return changed;
+        }
 
     private:
         [[nodiscard]] static std::string doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept;
