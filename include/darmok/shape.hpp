@@ -177,6 +177,8 @@ namespace darmok
 
         [[nodiscard]] static const Plane& standard() noexcept;
 
+        float distance(const glm::vec3& point) const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -316,6 +318,9 @@ namespace darmok
 
         BoundingBox() noexcept;
         BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
+        BoundingBox(const Cube& cube) noexcept;
+        BoundingBox(const Sphere& sphere) noexcept;
+        BoundingBox(const Capsule& capsule) noexcept;
 
         [[nodiscard]] bool operator==(const BoundingBox& other) const noexcept;
         [[nodiscard]] bool operator!=(const BoundingBox& other) const noexcept;
@@ -359,7 +364,7 @@ namespace darmok
 
     struct DARMOK_EXPORT Frustum final
     {
-        enum class Corner : size_t
+        enum class CornerType : size_t
         {
             NearBottomLeft,
             NearBottomRight,
@@ -372,12 +377,29 @@ namespace darmok
             Count
         };
 
-        std::array<glm::vec3, toUnderlying(Corner::Count)> corners;
+        enum class PlaneType : size_t
+        {
+            Near,
+            Far,
+            Bottom,
+            Top,
+            Left,
+            Right,
+            Count
+        };
 
-        [[nodiscard]] const glm::vec3& getCorner(Frustum::Corner corner) const noexcept;
-        [[nodiscard]] glm::vec3& getCorner(Frustum::Corner corner) noexcept;
+        static float getNearDepth() noexcept;
 
-        Frustum(const glm::mat4& proj = glm::mat4(1));
+        std::array<glm::vec3, toUnderlying(CornerType::Count)> corners;
+        std::array<Plane, toUnderlying(PlaneType::Count)> planes;
+
+        [[nodiscard]] const glm::vec3& getCorner(Frustum::CornerType type) const noexcept;
+        [[nodiscard]] glm::vec3& getCorner(Frustum::CornerType type) noexcept;
+
+        [[nodiscard]] const Plane& getPlane(Frustum::PlaneType type) const noexcept;
+        [[nodiscard]] Plane& getPlane(Frustum::PlaneType type) noexcept;
+
+        Frustum(const glm::mat4& proj = glm::mat4(1)) noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] glm::vec3 getCenter() const noexcept;
@@ -389,6 +411,8 @@ namespace darmok
         [[nodiscard]] Frustum getSlice(float nearFactor, float farFactor) const noexcept;
 
         [[nodiscard]] glm::mat4 getAlignedProjectionMatrix() const noexcept;
+
+        [[nodiscard]] bool intersect(const BoundingBox& bbox) const noexcept;
 
         [[nodiscard]] Frustum operator*(const glm::mat4& trans) const noexcept;
         Frustum& operator*=(const glm::mat4& trans) noexcept;

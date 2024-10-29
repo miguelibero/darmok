@@ -19,6 +19,7 @@
 #include <darmok/freelook.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/environment.hpp>
+#include <darmok/culling.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
 namespace
@@ -121,8 +122,10 @@ namespace
 			scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
 			_rotateUpdater = scene.addSceneComponent<RotateUpdater>(dirLightTrans);
 
-			std::shared_ptr<IMesh> arrowMesh = MeshData(Line(), LineMeshType::Arrow).createMesh(prog->getVertexLayout());
+			MeshData arrowMeshData(Line(), LineMeshType::Arrow);
+			std::shared_ptr<IMesh> arrowMesh = arrowMeshData.createMesh(prog->getVertexLayout());
 			scene.addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
+			scene.addComponent<BoundingBox>(dirLightEntity, arrowMeshData.getBounds());
 
 			auto dirLightEntity2 = scene.createEntity();
 			scene.addComponent<Transform>(dirLightEntity2, glm::vec3{ 1, 1, -1 })
@@ -142,6 +145,7 @@ namespace
 			auto cubeMesh = MeshData(cubeShape).createMesh(layout);
 			auto cube = scene.createEntity();
 			scene.addComponent<Renderable>(cube, std::move(cubeMesh), greenMat);
+			scene.addComponent<BoundingBox>(cube, cubeShape);
 			scene.addComponent<Transform>(cube, glm::vec3{ 1.F, 1.F, 0 });
 
 			Sphere shereShape;
@@ -149,6 +153,7 @@ namespace
 			auto sphereMesh = shereMeshData.createMesh(layout);
 			auto sphere = scene.createEntity();
 			scene.addComponent<Renderable>(sphere, std::move(sphereMesh), goldMat);
+			scene.addComponent<BoundingBox>(sphere, shereShape);
 			_trans = scene.addComponent<Transform>(sphere, glm::vec3{ -1.F, 1.F, 0 });
 
 			auto floorEntity = scene.createEntity();
@@ -157,6 +162,7 @@ namespace
 			auto floorMat = std::make_shared<Material>(prog, Colors::red());
 			floorMat->setProgramDefine("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
+			scene.addComponent<BoundingBox>(floorEntity, floorShape);
 
 			_app.getInput().addListener("pause", { _pauseEvent }, *this);
 		}
@@ -250,6 +256,7 @@ namespace
 			shadowConfig.cascadeAmount = 3;
 			cam.addComponent<ShadowRenderer>(shadowConfig);
 			cam.addComponent<ForwardRenderer>();
+			cam.addComponent<FrustumCuller>();
 
 			if (debugShadow)
 			{

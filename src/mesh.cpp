@@ -554,30 +554,30 @@ namespace darmok
 	MeshData::MeshData(const Frustum& frust, RectangleMeshType type) noexcept
 	{
 		vertices = {
-			{ frust.getCorner(Frustum::Corner::FarTopRight),		{ 0, 0 } },
-			{ frust.getCorner(Frustum::Corner::FarTopLeft),			{ 1, 0 } },
-			{ frust.getCorner(Frustum::Corner::FarBottomLeft),		{ 1, 1 } },
-			{ frust.getCorner(Frustum::Corner::FarBottomRight),		{ 0, 1 } },
-			{ frust.getCorner(Frustum::Corner::NearTopRight),		{ 0, 0 } },
-			{ frust.getCorner(Frustum::Corner::NearBottomRight),	{ 1, 0 } },
-			{ frust.getCorner(Frustum::Corner::NearBottomLeft),		{ 1, 1 } },
-			{ frust.getCorner(Frustum::Corner::NearTopLeft),		{ 0, 1 } },
-			{ frust.getCorner(Frustum::Corner::FarTopRight),		{ 0, 0 } },
-			{ frust.getCorner(Frustum::Corner::NearTopRight),		{ 1, 0 } },
-			{ frust.getCorner(Frustum::Corner::NearTopLeft),		{ 1, 1 } },
-			{ frust.getCorner(Frustum::Corner::FarTopLeft),			{ 0, 1 } },
-			{ frust.getCorner(Frustum::Corner::FarBottomRight),		{ 0, 0 } },
-			{ frust.getCorner(Frustum::Corner::FarBottomLeft),		{ 1, 0 } },
-			{ frust.getCorner(Frustum::Corner::NearBottomLeft),		{ 1, 1 } },
-			{ frust.getCorner(Frustum::Corner::NearBottomRight),	{ 0, 1 } },
-			{ frust.getCorner(Frustum::Corner::FarTopRight),		{ 0, 0 } },
-			{ frust.getCorner(Frustum::Corner::FarBottomRight),		{ 1, 0 } },
-			{ frust.getCorner(Frustum::Corner::NearBottomRight),	{ 1, 1 } },
-			{ frust.getCorner(Frustum::Corner::NearTopRight),		{ 0, 1 } },
-			{ frust.getCorner(Frustum::Corner::FarTopLeft),			{ 0, 0 } },
-			{ frust.getCorner(Frustum::Corner::NearTopLeft),		{ 1, 0 } },
-			{ frust.getCorner(Frustum::Corner::NearBottomLeft),		{ 1, 1 } },
-			{ frust.getCorner(Frustum::Corner::FarBottomLeft),		{ 0, 1 } }
+			{ frust.getCorner(Frustum::CornerType::FarTopRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::CornerType::FarTopLeft),			{ 1, 0 } },
+			{ frust.getCorner(Frustum::CornerType::FarBottomLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::CornerType::FarBottomRight),		{ 0, 1 } },
+			{ frust.getCorner(Frustum::CornerType::NearTopRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::CornerType::NearBottomRight),	{ 1, 0 } },
+			{ frust.getCorner(Frustum::CornerType::NearBottomLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::CornerType::NearTopLeft),		{ 0, 1 } },
+			{ frust.getCorner(Frustum::CornerType::FarTopRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::CornerType::NearTopRight),		{ 1, 0 } },
+			{ frust.getCorner(Frustum::CornerType::NearTopLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::CornerType::FarTopLeft),			{ 0, 1 } },
+			{ frust.getCorner(Frustum::CornerType::FarBottomRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::CornerType::FarBottomLeft),		{ 1, 0 } },
+			{ frust.getCorner(Frustum::CornerType::NearBottomLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::CornerType::NearBottomRight),	{ 0, 1 } },
+			{ frust.getCorner(Frustum::CornerType::FarTopRight),		{ 0, 0 } },
+			{ frust.getCorner(Frustum::CornerType::FarBottomRight),		{ 1, 0 } },
+			{ frust.getCorner(Frustum::CornerType::NearBottomRight),	{ 1, 1 } },
+			{ frust.getCorner(Frustum::CornerType::NearTopRight),		{ 0, 1 } },
+			{ frust.getCorner(Frustum::CornerType::FarTopLeft),			{ 0, 0 } },
+			{ frust.getCorner(Frustum::CornerType::NearTopLeft),		{ 1, 0 } },
+			{ frust.getCorner(Frustum::CornerType::NearBottomLeft),		{ 1, 1 } },
+			{ frust.getCorner(Frustum::CornerType::FarBottomLeft),		{ 0, 1 } }
 		};
 
 		indices = _cuboidTriangleIndices;
@@ -1128,7 +1128,7 @@ namespace darmok
 		return faces;
 	}
 
-	BoundingBox MeshData::getBoundingBox() const noexcept
+	BoundingBox MeshData::getBounds() const noexcept
 	{
 		BoundingBox bb;
 

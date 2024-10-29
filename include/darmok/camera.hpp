@@ -84,6 +84,8 @@ namespace darmok
             return getScene().getEntities<T>(getCullingFilter());
         }
 
+        EntityView getEntities(const EntityFilter& filter) const;
+
         Camera& addComponent(std::unique_ptr<ICameraComponent>&& comp) noexcept;
         bool removeComponent(entt::id_type type) noexcept;
         [[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;

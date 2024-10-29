@@ -408,7 +408,7 @@ namespace darmok
 		_defaultTexture.reset();
 	}
 
-	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat, const bgfx::OcclusionQueryHandle& occlusion) const noexcept
+	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept
 	{
 		glm::vec4 hasTextures(0);
 		for (uint8_t i = 0; i < _samplerUniforms.size(); i++)
@@ -444,42 +444,34 @@ namespace darmok
 		mat.getUniformContainer().configure(encoder);
 		mat.getTextureUniformContainer().configure(encoder);
 
-		uint64_t state = 0;
-		if (isValid(occlusion))
+		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
+		if (!mat.getTwoSided())
 		{
-			state = BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_CULL_CCW;
+			state |= BGFX_STATE_CULL_CCW;
+		}
+		if (mat.getPrimitiveType() == MaterialPrimitiveType::Line)
+		{
+			state &= ~BGFX_STATE_MSAA;
+			state |= BGFX_STATE_PT_LINES;
+			state |= BGFX_STATE_LINEAA;
+		}
+		if (mat.getOpacityType() == OpacityType::Transparent)
+		{
+			state &= ~BGFX_STATE_DEPTH_TEST_MASK;
+			state |= BGFX_STATE_BLEND_ALPHA;
+			state |= BGFX_STATE_DEPTH_TEST_LEQUAL;
+		}
+		else if (mat.getOpacityType() == OpacityType::Mask)
+		{
+			state |= BGFX_STATE_BLEND_ALPHA;
 		}
 		else
 		{
-			state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
-			if (!mat.getTwoSided())
-			{
-				state |= BGFX_STATE_CULL_CCW;
-			}
-			if (mat.getPrimitiveType() == MaterialPrimitiveType::Line)
-			{
-				state &= ~BGFX_STATE_MSAA;
-				state |= BGFX_STATE_PT_LINES;
-				state |= BGFX_STATE_LINEAA;
-			}
-			if (mat.getOpacityType() == OpacityType::Transparent)
-			{
-				state &= ~BGFX_STATE_DEPTH_TEST_MASK;
-				state |= BGFX_STATE_BLEND_ALPHA;
-				state |= BGFX_STATE_DEPTH_TEST_LEQUAL;
-			}
-			else if (mat.getOpacityType() == OpacityType::Mask)
-			{
-				state |= BGFX_STATE_BLEND_ALPHA;
-			}
-			else
-			{
-				state &= ~BGFX_STATE_WRITE_A;
-			}
+			state &= ~BGFX_STATE_WRITE_A;
 		}
 		
 		encoder.setState(state);
 		auto prog = mat.getProgramHandle();
-		encoder.submit(viewId, prog, occlusion);
+		encoder.submit(viewId, prog);
 	}
 }

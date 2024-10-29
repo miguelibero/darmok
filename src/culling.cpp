@@ -1,13 +1,39 @@
 #include <darmok/culling.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/scene.hpp>
-#include <darmok/material.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/shape.hpp>
+#include <darmok/physics3d.hpp>
+#include <darmok/program.hpp>
+#include <darmok/mesh.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 
 namespace darmok
 {
+    struct CullingUtils final
+    {
+        static std::optional<BoundingBox> getEntityBounds(Scene& scene, Entity& entity) noexcept
+        {
+            if (auto bbox = scene.getComponent<BoundingBox>(entity))
+            {
+                return bbox.value();
+            }
+            if (auto body = scene.getComponent<physics3d::PhysicsBody>(entity))
+            {
+                return body->getLocalBounds();
+            }
+            return std::nullopt;
+        }
+
+        static const EntityFilter& getEntityFilter() noexcept
+        {
+            static const EntityFilter filter = EntityFilter::create<Renderable>() & (EntityFilter::create<BoundingBox>() | EntityFilter::create<physics3d::PhysicsBody>());
+            return filter;
+        }
+    };
+
+
     OcclusionCuller::OcclusionCuller() noexcept
     {
     }
@@ -21,7 +47,7 @@ namespace darmok
     {
         _cam = cam;
         _scene = scene;
-        _materials = app.getOrAddComponent<MaterialAppComponent>();
+        _prog = std::make_unique<Program>(StandardProgramType::Unlit);
         scene.onDestroyComponent<Renderable>().connect<&OcclusionCuller::onRenderableDestroyed>(*this);
     }
 
@@ -56,7 +82,7 @@ namespace darmok
         }
         _cam.reset();
         _viewId.reset();
-        _materials.reset();
+        _prog.reset();
         for (auto& [entity, query] : _queries)
         {
             bgfx::destroy(query);
@@ -71,31 +97,40 @@ namespace darmok
         _freeQueries.clear();
     }
 
-    void OcclusionCuller::render() noexcept
+    void OcclusionCuller::update(float deltaTime) noexcept
+    {
+        updateQueries();
+    }
+
+    void OcclusionCuller::updateQueries() noexcept
     {
         if (!_scene || !_viewId || !_cam || !_cam->isEnabled())
         {
             return;
         }
 
+        static const uint64_t state = BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_CULL_CCW;
+
         auto viewId = _viewId.value();
         auto& encoder = *bgfx::begin();
-        _cam->beforeRenderView(viewId, encoder);
-        auto entities = _cam->getEntities<Renderable>();
+        auto prog = _prog->getHandle();
+        auto& layout = _prog->getVertexLayout();
+        auto& scene = _scene.value();
+        auto entities = _cam->getEntities(CullingUtils::getEntityFilter());
+        _cam->setViewTransform(viewId);
         for (auto entity : entities)
         {
-            auto renderable = _scene->getComponent<const Renderable>(entity);
-            if (!renderable->valid())
+            if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
             {
-                continue;
+                _cam->setEntityTransform(entity, encoder);
+                MeshData meshData(bbox.value());
+                meshData.type = MeshType::Transient;
+                auto mesh = meshData.createMesh(layout);
+                mesh->render(encoder);
+                auto occlusion = getQuery(entity);
+                bgfx::setCondition(occlusion, true);
+                encoder.submit(viewId, prog, occlusion);
             }
-            _cam->beforeRenderEntity(entity, viewId, encoder);
-            if (!renderable->render(encoder))
-            {
-                continue;
-            }
-            auto occlusion = getQuery(entity);
-            _materials->renderSubmit(viewId, encoder, *renderable->getMaterial(), occlusion);
         }
 
         bgfx::end(&encoder);
@@ -120,28 +155,68 @@ namespace darmok
         return query;
     }
 
-    bool OcclusionCuller::shouldEntityBeCulled(Entity entity) noexcept
+    std::optional<bgfx::OcclusionQueryResult::Enum> OcclusionCuller::getQueryResult(Entity entity) const noexcept
     {
         auto itr = _queries.find(entity);
-        if (itr == _queries.end())
+        if (itr != _queries.end())
         {
-            return false;
+            auto result = bgfx::getResult(itr->second);
+            return result;
         }
-        auto result = bgfx::getResult(itr->second);
-        return result == bgfx::OcclusionQueryResult::Invisible;
+        return std::nullopt;
     }
 
-    void FrustrumCuller::init(Camera& cam, Scene& scene, App& app) noexcept
+    void OcclusionCuller::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
+        auto itr = _queries.find(entity);
+        if (itr != _queries.end())
+        {
+            encoder.setCondition(itr->second, true);
+        }
     }
 
-    void FrustrumCuller::shutdown() noexcept
+    void FrustumCuller::init(Camera& cam, Scene& scene, App& app) noexcept
     {
-
+        _cam = cam;
+        _scene = scene;
     }
 
-    bool FrustrumCuller::shouldEntityBeCulled(Entity entity) noexcept
+    void FrustumCuller::shutdown() noexcept
     {
-        return false;
+        _cam.reset();
+        _scene.reset();
+    }
+
+    void FrustumCuller::update(float deltaTime) noexcept
+    {
+        updateCulled();
+    }
+
+    void FrustumCuller::updateCulled() noexcept
+    {
+        auto& scene = _scene.value();
+        auto entities = _cam->getEntities(CullingUtils::getEntityFilter());
+        Frustum camFrustum = _cam->getProjectionMatrix();
+        _culled.clear();
+        for (auto entity : entities)
+        {
+            if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
+            {
+                Frustum frustum = camFrustum;
+                if (auto trans = scene.getComponent<const Transform>(entity))
+                {
+                    frustum *= trans->getWorldInverse();
+                }
+                if (!frustum.intersect(bbox.value()))
+                {
+                    _culled.insert(entity);
+                }
+            }
+        }
+    }
+
+    bool FrustumCuller::shouldEntityBeCulled(Entity entity) noexcept
+    {
+        return _culled.contains(entity);
     }
 }

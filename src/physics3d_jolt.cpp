@@ -1670,6 +1670,16 @@ namespace darmok::physics3d
         return _impl->getMotionType();
     }
 
+    BoundingBox PhysicsBody::getLocalBounds() const
+    {
+        return _impl->getLocalBounds();
+    }
+
+    BoundingBox PhysicsBody::getWorldBounds() const
+    {
+        return _impl->getWorldBounds();
+    }
+
     bool PhysicsBody::isGrounded() const noexcept
     {
         return _impl->isGrounded();

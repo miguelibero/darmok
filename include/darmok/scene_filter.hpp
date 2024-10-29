@@ -30,10 +30,12 @@ namespace darmok
         EntityFilter& operator&=(const Element& elm) noexcept;
         EntityFilter operator&(const Element& elm) const noexcept;
 
+        bool empty() const noexcept;
         std::string toString() const noexcept;
         EntityFilter& negate() noexcept;
         EntityFilter& negateElements() noexcept;
         static EntityFilter negate(const Element& elm) noexcept;
+        static std::optional<TypeId> getTypeId(const Element& elm) noexcept;
 
         template<typename T>
         static EntityFilter create() noexcept

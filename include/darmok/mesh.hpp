@@ -210,7 +210,7 @@ namespace darmok
         using Face = std::array<Index, 3>;
         [[nodiscard]] std::vector<Face> getFaces() const noexcept;
 
-        BoundingBox getBoundingBox() const noexcept;
+        BoundingBox getBounds() const noexcept;
 
         bool empty() const noexcept;
         void clear() noexcept;

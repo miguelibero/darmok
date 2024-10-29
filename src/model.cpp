@@ -249,13 +249,14 @@ namespace darmok
 			parentTrans = _config.scene.getOrAddComponent<Transform>(parent);
 		}
 		auto& trans = _config.scene.addComponent<Transform>(entity, node.transform, parentTrans);
-        trans.setName(node.name);
         configureEntity(node, entity, trans);
         return entity;
     }
 
     void ModelSceneConfigurer::configureEntity(const ModelNode& node, Entity entity, Transform& trans) noexcept
     {
+        trans.setName(node.name);
+
         if (node.camera)
         {
             configureEntity(*node.camera, entity);
@@ -395,6 +396,9 @@ namespace darmok
     {
         auto mat = loadMaterial(modelRenderable.material);
         auto mesh = loadMesh(modelRenderable.mesh);
+
+        _config.scene.addComponent<BoundingBox>(entity, modelRenderable.mesh->boundingBox);
+
         _config.scene.addComponent<Renderable>(entity, mesh, mat);
         auto armature = loadArmature(modelRenderable.mesh);
         if (armature)

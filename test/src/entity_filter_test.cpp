@@ -67,14 +67,14 @@ TEST_CASE("EntityView or", "[scene-filter]")
 
 	std::vector<Entity> v(view.begin(), view.end());
 	REQUIRE(v.size() == 2);
-	REQUIRE(v[0] == entity2);
-	REQUIRE(v[1] == entity1);
+	REQUIRE(v[0] == entity1);
+	REQUIRE(v[1] == entity2);
 
 	v.clear();
 	v.insert(v.end(), view.rbegin(), view.rend());
 	REQUIRE(v.size() == 2);
-	REQUIRE(v[0] == entity1);
-	REQUIRE(v[1] == entity2);
+	REQUIRE(v[0] == entity2);
+	REQUIRE(v[1] == entity1);
 }
 
 TEST_CASE("EntityView and", "[scene-filter]")
@@ -229,4 +229,12 @@ TEST_CASE("EntityView decrement iterator", "[scene-filter]")
 		++i;
 	}
 	REQUIRE(i == 0);
+}
+
+TEST_CASE("EntityView simplifies logic", "[scene-filter]")
+{
+	auto filter = EntityFilter::create<Comp1>() | EntityFilter::create<Comp2>();
+	REQUIRE(filter.elements.size() == 2);
+	REQUIRE(EntityFilter::getTypeId(filter.elements[0]) == entt::type_hash<Comp1>::value());
+	REQUIRE(EntityFilter::getTypeId(filter.elements[1]) == entt::type_hash<Comp2>::value());
 }

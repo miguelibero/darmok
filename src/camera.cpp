@@ -296,7 +296,7 @@ namespace darmok
         const void* transMtx = nullptr;
         if (_scene)
         {
-            if (auto trans = _scene->getComponent<const Transform>(entity))
+            if (auto trans = _scene->getComponentInParent<const Transform>(entity))
             {
                 transMtx = glm::value_ptr(trans->getWorldMatrix());
             }
@@ -727,6 +727,11 @@ namespace darmok
     {
         _impl->setCullingFilter(filter);
         return *this;
+    }
+
+    EntityView Camera::getEntities(const EntityFilter& filter) const
+    {
+        return getScene().getEntities(filter & getCullingFilter());
     }
 
     const EntityFilter& Camera::getCullingFilter() const noexcept

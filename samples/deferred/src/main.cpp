@@ -171,7 +171,7 @@ namespace
 			shadowConfig.cascadeAmount = 2;
 
 			cam.addComponent<ForwardRenderer>();
-			cam.addComponent<OcclusionCuller>();
+			// cam.addComponent<OcclusionCuller>();
 			cam.addComponent<LightingRenderComponent>();
 			cam.addComponent<ShadowRenderer>(shadowConfig);
 			if (debugShadow)

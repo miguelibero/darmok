@@ -35,7 +35,7 @@ namespace darmok
         void init(App& app) override;
         void update(float deltaTime) override;
         void shutdown() override;
-        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat, const bgfx::OcclusionQueryHandle& occlusion = { bgfx::kInvalidHandle }) const noexcept;
+        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept;
     private:
         using TextureType = MaterialTextureType;
 

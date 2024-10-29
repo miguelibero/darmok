@@ -18,12 +18,29 @@ namespace darmok
 
     EntityFilter& EntityFilter::operator|=(const Element& elm) noexcept
     {
+        if (auto filter = std::get_if<EntityFilter>(&elm))
+        {
+            if (filter->empty())
+            {
+                return *this;
+            }
+        }
         if (op != Operation::Or)
         {
-            elements = { EntityFilter(*this) };
+            if (op != Operation::Not && elements.size() > 1)
+            {
+                elements = { EntityFilter(*this) };
+            }
             op = Operation::Or;
         }
-        elements.push_back(elm);
+        if (auto typeId = getTypeId(elm))
+        {
+            elements.push_back(typeId.value());
+        }
+        else
+        {
+            elements.push_back(elm);
+        }
         return *this;
     }
 
@@ -36,12 +53,29 @@ namespace darmok
 
     EntityFilter& EntityFilter::operator&=(const Element& elm) noexcept
     {
+        if (auto filter = std::get_if<EntityFilter>(&elm))
+        {
+            if (filter->empty())
+            {
+                return *this;
+            }
+        }
         if (op != Operation::And)
         {
-            elements = { EntityFilter(*this) };
+            if (op != Operation::Not && elements.size() > 1)
+            {
+                elements = { EntityFilter(*this) };
+            }
             op = Operation::And;
         }
-        elements.push_back(elm);
+        if (auto typeId = getTypeId(elm))
+        {
+            elements.push_back(typeId.value());
+        }
+        else
+        {
+            elements.push_back(elm);
+        }
         return *this;
     }
 
@@ -50,6 +84,43 @@ namespace darmok
         EntityFilter r(*this);
         r &= elm;
         return r;
+    }
+
+    bool EntityFilter::empty() const noexcept
+    {
+        for (auto& elm : elements)
+        {
+            if (auto filter = std::get_if<EntityFilter>(&elm))
+            {
+                if (!filter->empty())
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    std::optional<EntityFilter::TypeId> EntityFilter::getTypeId(const Element& elm) noexcept
+    {
+        if (auto type = std::get_if<entt::id_type>(&elm))
+        {
+            return *type;
+        }
+        auto filter = std::get<EntityFilter>(elm);
+        if (filter.op == Operation::Not)
+        {
+            return std::nullopt;
+        }
+        if (filter.elements.size() != 1)
+        {
+            return std::nullopt;
+        }
+        return getTypeId(filter.elements[0]);
     }
 
     EntityFilter EntityFilter::negate(const Element& elm) noexcept
@@ -241,7 +312,7 @@ namespace darmok
         auto baseFound = false;
         for (auto& elm : ffilter.elements)
         {
-            if (auto typeId = std::get_if<EntityFilter::TypeId>(&elm))
+            if (auto typeId = EntityFilter::getTypeId(elm))
             {
                 baseFound = true;
                 if (auto set = registry.storage(*typeId))
