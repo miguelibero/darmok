@@ -131,7 +131,7 @@ namespace darmok::physics3d
 
     JPH::Plane JoltUtils::convert(const Plane& v) noexcept
     {
-        return JPH::Plane(JoltUtils::convert(v.normal), -v.constant);
+        return JPH::Plane(JoltUtils::convert(v.normal), v.distance);
     }
 
     JPH::AABox JoltUtils::convert(const BoundingBox& v) noexcept

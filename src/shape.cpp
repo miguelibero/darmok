@@ -3,6 +3,7 @@
 #include <darmok/math.hpp>
 #include <glm/gtx/intersect.hpp>
 #include <glm/ext/matrix_projection.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/norm.hpp>
 #include <bx/bx.h>
@@ -302,15 +303,15 @@ namespace darmok
         return !operator==(other);
     }
 
-    Plane::Plane(const glm::vec3& normal, float constant) noexcept
+    Plane::Plane(const glm::vec3& normal, float distance) noexcept
         : normal(normal)
-        , constant(constant)
+        , distance(distance)
     {
     }
 
-    float Plane::distance(const glm::vec3& point) const noexcept
+    float Plane::distanceTo(const glm::vec3& point) const noexcept
     {
-        return glm::dot(normal, point) + constant;
+        return glm::dot(normal, point) + distance;
     }
 
     const Plane& Plane::standard() noexcept
@@ -321,12 +322,12 @@ namespace darmok
 
     glm::vec3 Plane::getOrigin() const noexcept
     {
-        return normal * constant;
+        return normal * this->distance;
     }
 
     std::string Plane::toString() const noexcept
     {
-        return "Plane(" + glm::to_string(normal) + ", " + std::to_string(constant) + ")";
+        return "Plane(" + glm::to_string(normal) + ", " + std::to_string(distance) + ")";
     }
 
     Plane Plane::operator*(const glm::mat4& transform) const noexcept
@@ -338,13 +339,16 @@ namespace darmok
 
     Plane& Plane::operator*=(const glm::mat4& transform) noexcept
     {
-        normal = glm::normalize(transform * glm::vec4(normal, 0));
+        auto v = normal * distance;
+        v = transform * glm::vec4(v, 1.0f);
+        normal = glm::mat3(glm::transpose(transform)) * normal;
+        distance = glm::dot(normal, v);
         return *this;
     }
 
     bool Plane::operator==(const Plane& other) const noexcept
     {
-        return constant == other.constant && normal == other.normal;
+        return distance == other.distance && normal == other.normal;
     }
 
     bool Plane::operator!=(const Plane& other) const noexcept
@@ -786,15 +790,9 @@ namespace darmok
         return !operator==(other);
     }
 
-    float Frustum::getNearDepth() noexcept
-    {
-        auto hd = bgfx::getCaps()->homogeneousDepth;
-        return hd ? -1.F : 0.F;
-    }
-
     Frustum::Frustum(const glm::mat4& proj) noexcept
     {
-        auto nd = getNearDepth();
+        auto nd = Math::getNormalizedNearDepth();
 
         corners = {
             glm::vec3(-1, -1, nd),
@@ -816,17 +814,18 @@ namespace darmok
         }
 
         planes = {
-            Plane(glm::vec3(0, 0, nd), 1),
-            Plane(glm::vec3(0, 0, 1), 1),
-            Plane(glm::vec3(0, -1, 0), 1),
-            Plane(glm::vec3(0, 1, 0), 1),
-            Plane(glm::vec3(-1, 0, 0), 1),
-            Plane(glm::vec3(1, 0, 0), 1),
+            Plane(glm::vec3(0,  0, -1), std::abs(nd)),
+            Plane(glm::vec3(0,  0,  1), 1),
+            Plane(glm::vec3(0, -1,  0), 1),
+            Plane(glm::vec3(0,  1,  0), 1),
+            Plane(glm::vec3(-1, 0,  0), 1),
+            Plane(glm::vec3(1,  0,  0), 1),
         };
 
         for (auto& plane : planes)
         {
-            plane = plane * invProj;
+            plane *= invProj;
+            // plane.normal = glm::normalize(plane.normal);
         }
     }
 
@@ -887,7 +886,7 @@ namespace darmok
                 (plane.normal.y >= 0) ? bbox.max.y : bbox.min.y,
                 (plane.normal.z >= 0) ? bbox.max.z : bbox.min.z
             );
-            if(plane.distance(v) < 0)
+            if(plane.distanceTo(v) < 0)
             {
                 return false;
             }

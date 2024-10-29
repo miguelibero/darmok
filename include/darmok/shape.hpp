@@ -162,9 +162,9 @@ namespace darmok
     struct DARMOK_EXPORT Plane final
     {
         glm::vec3 normal;
-        float constant;
+        float distance;
 
-        Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float constant = 0.F) noexcept;
+        Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float distance = 0.F) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] glm::vec3 getOrigin() const noexcept;
@@ -177,12 +177,12 @@ namespace darmok
 
         [[nodiscard]] static const Plane& standard() noexcept;
 
-        float distance(const glm::vec3& point) const noexcept;
+        float distanceTo(const glm::vec3& point) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(normal, constant);
+            archive(normal, distance);
         }
     };
 
@@ -387,8 +387,6 @@ namespace darmok
             Right,
             Count
         };
-
-        static float getNearDepth() noexcept;
 
         std::array<glm::vec3, toUnderlying(CornerType::Count)> corners;
         std::array<Plane, toUnderlying(PlaneType::Count)> planes;

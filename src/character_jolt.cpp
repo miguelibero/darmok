@@ -282,7 +282,7 @@ namespace darmok::physics3d
         settings->mCharacterPadding = _config.padding;
         settings->mPenetrationRecoverySpeed = _config.penetrationRecoverySpeed;
         settings->mPredictiveContactDistance = _config.predictiveContactDistance;
-        settings->mSupportingVolume = JPH::Plane(JoltUtils::convert(_config.supportingPlane.normal), _config.supportingPlane.constant);
+        settings->mSupportingVolume = JoltUtils::convert(_config.supportingPlane);
 
         auto userData = (uint64_t)_ctrl.ptr();
         _jolt = new JPH::CharacterVirtual(settings, joltTrans.position, joltTrans.rotation, userData, joltSystem.ptr());

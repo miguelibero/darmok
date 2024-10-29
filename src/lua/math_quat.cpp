@@ -8,7 +8,7 @@ namespace darmok
 	{
 		lua.new_usertype<glm::quat>("Quat",
 			sol::factories(
-				[]() { return glm::quat(1, 0, 0, 0); },
+				[]() { return glm::identity<glm::quat>(); },
 				[](float w, float x, float y, float z) { return glm::quat(w, x, y, z); },
 				[](const VarLuaTable<glm::vec3>& vec) { return glm::quat(LuaGlm::tableGet(vec)); }
 			),

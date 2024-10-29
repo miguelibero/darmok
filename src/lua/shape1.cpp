@@ -123,11 +123,12 @@ namespace darmok
 				[]() { return Plane(); },
 				[](const VarLuaTable<glm::vec3>& normal) {
 					return Plane(LuaGlm::tableGet(normal)); },
-				[](const VarLuaTable<glm::vec3>& normal, float constant) {
-					return Plane(LuaGlm::tableGet(normal), constant); }
+				[](const VarLuaTable<glm::vec3>& normal, float distance) {
+					return Plane(LuaGlm::tableGet(normal), distance); }
 			),
 			"normal", &Plane::normal,
-			"constant", &Plane::constant,
+			"distance", &Plane::distance,
+			"distance_to", &Plane::distanceTo,
 			"origin", sol::property(&Plane::getOrigin),
 			sol::meta_function::multiplication, &Plane::operator*,
 			sol::meta_function::to_string, &Plane::toString

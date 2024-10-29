@@ -196,7 +196,7 @@ namespace darmok
     {
         auto& scene = _scene.value();
         auto entities = _cam->getEntities(CullingUtils::getEntityFilter());
-        Frustum camFrustum = _cam->getProjectionMatrix();
+        Frustum camFrustum = _cam->getProjectionMatrix() * _cam->getModelMatrix();
         _culled.clear();
         for (auto entity : entities)
         {

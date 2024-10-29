@@ -30,6 +30,12 @@ namespace darmok
         return glm::conjugate(quat);
     }
 
+    float Math::getNormalizedNearDepth() noexcept
+    {
+        auto hd = bgfx::getCaps()->homogeneousDepth;
+        return hd ? -1.F : 0.F;
+    }
+
     const float Math::defaultNear = -1000.F;
     const float Math::defaultFar = 1000.F;
 
