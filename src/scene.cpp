@@ -6,6 +6,7 @@
 #include <darmok/window.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/string.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "camera.hpp"
 
@@ -39,7 +40,7 @@ namespace darmok
         {
             return _name;
         }
-        return std::to_string(getId());
+        return StringUtils::binToHex(getId());
     }
 
     void SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept

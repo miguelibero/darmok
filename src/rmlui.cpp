@@ -744,22 +744,18 @@ namespace darmok
 
     bgfx::ViewId RmluiCanvasImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
+        _viewId.reset();
+        if (!_cam)
+        {
+            return viewId;
+        }
         if (!_size)
         {
             updateCurrentSize();
         }
 
-        std::string name;
-        if (auto cam = getCurrentCamera())
-        {
-            auto camName = cam->getName();
-            if (!camName.empty())
-            {
-                name += camName + " ";
-            }
-        }
-        name += "Rmlui: " + _name;
-        bgfx::setViewName(viewId, name.c_str());
+        auto name = _cam->getViewName("Rmlui: " + _name);
+        bgfx::setViewName(viewId,  name.c_str());
         _viewId = viewId;
 
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;

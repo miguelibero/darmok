@@ -22,6 +22,17 @@ namespace darmok
         _cam = cam;
         _scene = scene;
         _materials = app.getOrAddComponent<MaterialAppComponent>();
+        scene.onDestroyComponent<Renderable>().connect<&OcclusionCuller::onRenderableDestroyed>(*this);
+    }
+
+    void OcclusionCuller::onRenderableDestroyed(EntityRegistry& registry, Entity entity) noexcept
+    {
+        auto itr = _queries.find(entity);
+        if (itr != _queries.end())
+        {
+            _freeQueries.push_back(itr->second);
+            _queries.erase(itr);
+        }
     }
 
     bgfx::ViewId OcclusionCuller::renderReset(bgfx::ViewId viewId) noexcept
@@ -38,16 +49,20 @@ namespace darmok
 
     void OcclusionCuller::shutdown() noexcept
     {
+        if (_scene)
+        {
+            _scene->onDestroyComponent<Renderable>().disconnect<&OcclusionCuller::onRenderableDestroyed>(*this);
+            _scene.reset();
+        }
         _cam.reset();
-        _scene.reset();
         _viewId.reset();
         _materials.reset();
-        for (auto& query : _usedQueries)
+        for (auto& [entity, query] : _queries)
         {
             bgfx::destroy(query);
 
         }
-        _usedQueries.clear();
+        _queries.clear();
         for (auto& query : _freeQueries)
         {
             bgfx::destroy(query);
@@ -58,10 +73,6 @@ namespace darmok
 
     void OcclusionCuller::render() noexcept
     {
-        _freeQueries.insert(_freeQueries.end(), _usedQueries.begin(), _usedQueries.end());
-        _usedQueries.clear();
-        _culled.clear();
-
         if (!_scene || !_viewId || !_cam || !_cam->isEnabled())
         {
             return;
@@ -83,33 +94,41 @@ namespace darmok
             {
                 continue;
             }
-            auto occlusion = getQuery();
+            auto occlusion = getQuery(entity);
             _materials->renderSubmit(viewId, encoder, *renderable->getMaterial(), occlusion);
-            auto result = bgfx::getResult(occlusion);
-            if (result == bgfx::OcclusionQueryResult::Invisible)
-            {
-                _culled.insert(entity);
-            }
         }
 
         bgfx::end(&encoder);
     }
 
-    bgfx::OcclusionQueryHandle OcclusionCuller::getQuery() noexcept
+    bgfx::OcclusionQueryHandle OcclusionCuller::getQuery(Entity entity) noexcept
     {
-        if (_freeQueries.empty())
+        auto itr = _queries.find(entity);
+        if (itr != _queries.end())
         {
-            return _usedQueries.emplace_back(bgfx::createOcclusionQuery());
+            return itr->second;
         }
-        auto query = _freeQueries.back();
-        _freeQueries.pop_back();
-        _usedQueries.push_back(query);
+        if (!_freeQueries.empty())
+        {
+            auto query = _freeQueries.back();
+            _freeQueries.pop_back();
+            _queries.insert(itr, std::make_pair(entity, query));
+            return query;
+        }
+        auto query = bgfx::createOcclusionQuery();
+        _queries[entity] = query;
         return query;
     }
 
     bool OcclusionCuller::shouldEntityBeCulled(Entity entity) noexcept
     {
-        return _culled.contains(entity);
+        auto itr = _queries.find(entity);
+        if (itr == _queries.end())
+        {
+            return false;
+        }
+        auto result = bgfx::getResult(itr->second);
+        return result == bgfx::OcclusionQueryResult::Invisible;
     }
 
     void FrustrumCuller::init(Camera& cam, Scene& scene, App& app) noexcept

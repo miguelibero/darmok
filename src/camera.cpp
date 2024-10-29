@@ -48,7 +48,7 @@ namespace darmok
         {
             return _name;
         }
-        return std::to_string(getId());
+        return StringUtils::binToHex(getId());
     }
 
     std::string CameraImpl::toString() const noexcept
@@ -261,16 +261,28 @@ namespace darmok
         updateViewportProjection();
     }
 
-    void CameraImpl::configureView(bgfx::ViewId viewId, const std::string& name) const
+    std::string CameraImpl::getViewName(const std::string& baseName) const noexcept
     {
-        auto fullName = "Camera " + getDescName() + ": " + name;
+        auto name = "Camera " + getDescName() + ": " + baseName;
         if (_scene)
         {
-            fullName = "Scene " + _scene->getImpl().getDescName() + ": " + fullName;
+            name = "Scene " + _scene->getImpl().getDescName() + ": " + name;
         }
-        bgfx::setViewName(viewId, fullName.c_str());
-        auto frameBuffer = _renderChain.getInput();
-        _renderChain.configureView(viewId, frameBuffer);
+        return name;
+    }
+
+    void CameraImpl::configureView(bgfx::ViewId viewId, const std::string& name) const
+    {
+        bgfx::setViewName(viewId, getViewName(name).c_str());
+        uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+        auto writeBuffer = _renderChain.getInput();
+        if (writeBuffer)
+        {
+            writeBuffer->configureView(viewId);
+        }
+        auto vp = getCurrentViewport();
+        vp.configureView(viewId);
     }
 
     void CameraImpl::setViewTransform(bgfx::ViewId viewId) const noexcept
@@ -588,6 +600,11 @@ namespace darmok
     {
         _impl->setName(name);
         return *this;
+    }
+
+    std::string Camera::getViewName(const std::string& baseName) const noexcept
+    {
+        return _impl->getViewName(baseName);
     }
 
     entt::id_type Camera::getId() const noexcept

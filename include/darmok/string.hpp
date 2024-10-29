@@ -17,8 +17,19 @@ namespace darmok
         [[nodiscard]] static bool startsWith(std::string_view sv, std::string_view start) noexcept;
         [[nodiscard]] static bool endsWith(std::string_view sv, std::string_view end) noexcept;
         [[nodiscard]] static std::optional<int> getIntSuffix(std::string_view name, std::string_view prefix) noexcept;
-        [[nodiscard]] static std::string binToHex(uint8_t v) noexcept;
-        [[nodiscard]] static std::string binToHex(void* v) noexcept;
+
+        template<typename T>
+        static std::string binToHex(T&& v) noexcept
+        {
+            return StringUtils::sprintf("%02X", v);
+        }
+
+        template<const void*>
+        static std::string binToHex(const void* v) noexcept
+        {
+            return StringUtils::sprintf("%p", v);
+        }
+
         [[nodiscard]] static std::vector<std::string> splitWords(std::string_view sv) noexcept;
         [[nodiscard]] static std::vector<std::string> split(std::string_view sv, char sep) noexcept;
         [[nodiscard]] static std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;

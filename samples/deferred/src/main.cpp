@@ -74,8 +74,8 @@ namespace
 			auto& freelook = scene->addSceneComponent<FreelookController>(*_freeCam);
 			freelook.addListener(*this);
 
-			// scene->getRenderChain().addStep<ScreenSpaceRenderPass>(
-			// 	std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
+			scene->getRenderChain().addStep<ScreenSpaceRenderPass>(
+				std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
 
 			auto lightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(lightEntity, 0.05);

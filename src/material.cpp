@@ -444,32 +444,40 @@ namespace darmok
 		mat.getUniformContainer().configure(encoder);
 		mat.getTextureUniformContainer().configure(encoder);
 
-		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
-		if (!mat.getTwoSided())
+		uint64_t state = 0;
+		if (isValid(occlusion))
 		{
-			state |= BGFX_STATE_CULL_CCW;
-		}
-		if (mat.getPrimitiveType() == MaterialPrimitiveType::Line)
-		{
-			state &= ~BGFX_STATE_MSAA;
-			state |= BGFX_STATE_PT_LINES;
-			state |= BGFX_STATE_LINEAA;
-		}
-		if (mat.getOpacityType() == OpacityType::Transparent)
-		{
-			state &= ~BGFX_STATE_DEPTH_TEST_MASK;
-			state |= BGFX_STATE_BLEND_ALPHA;
-			state |= BGFX_STATE_DEPTH_TEST_LEQUAL;
-		}
-		else if (mat.getOpacityType() == OpacityType::Mask)
-		{
-			state |= BGFX_STATE_BLEND_ALPHA;
+			state = BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_CULL_CCW;
 		}
 		else
 		{
-			state &= ~BGFX_STATE_WRITE_A;
+			state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
+			if (!mat.getTwoSided())
+			{
+				state |= BGFX_STATE_CULL_CCW;
+			}
+			if (mat.getPrimitiveType() == MaterialPrimitiveType::Line)
+			{
+				state &= ~BGFX_STATE_MSAA;
+				state |= BGFX_STATE_PT_LINES;
+				state |= BGFX_STATE_LINEAA;
+			}
+			if (mat.getOpacityType() == OpacityType::Transparent)
+			{
+				state &= ~BGFX_STATE_DEPTH_TEST_MASK;
+				state |= BGFX_STATE_BLEND_ALPHA;
+				state |= BGFX_STATE_DEPTH_TEST_LEQUAL;
+			}
+			else if (mat.getOpacityType() == OpacityType::Mask)
+			{
+				state |= BGFX_STATE_BLEND_ALPHA;
+			}
+			else
+			{
+				state &= ~BGFX_STATE_WRITE_A;
+			}
 		}
-
+		
 		encoder.setState(state);
 		auto prog = mat.getProgramHandle();
 		encoder.submit(viewId, prog, occlusion);

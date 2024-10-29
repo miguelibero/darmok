@@ -58,6 +58,7 @@ namespace darmok
         virtual ~IRenderChainDelegate() = default;
         virtual Viewport getRenderChainViewport() const = 0;
         virtual OptionalRef<RenderChain> getRenderChainParent() const { return nullptr; }
+        virtual std::string getRenderChainViewName(const std::string& baseName) const { return baseName; }
         virtual void onRenderChainChanged() { }
     };
 
@@ -73,10 +74,11 @@ namespace darmok
         void render() noexcept;
         void shutdown();
 
+        std::string getViewName(const std::string& baseName) const noexcept;
         OptionalRef<FrameBuffer> getInput() noexcept;
         OptionalRef<const FrameBuffer> getInput() const noexcept;
 
-        void configureView(bgfx::ViewId viewId, OptionalRef<const FrameBuffer> writeBuffer) const;
+        void configureView(bgfx::ViewId viewId, const std::string& name, OptionalRef<const FrameBuffer> writeBuffer = nullptr) const;
 
         RenderChain& setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept;
         std::shared_ptr<FrameBuffer> getOutput() const noexcept;

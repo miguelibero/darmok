@@ -106,22 +106,6 @@ namespace darmok
 		return ss.str();
 	}
 
-#ifdef _MSC_VER
-#define snprintf sprintf_s
-#endif
-
-	std::string StringUtils::binToHex(uint8_t v) noexcept
-	{
-		std::string dest = "  ";
-		snprintf(&dest.front(), dest.size() + 1, "%02X", v);
-		return dest;
-	}
-
-	std::string StringUtils::binToHex(void* v) noexcept
-	{
-		return StringUtils::sprintf("%p", v);
-	}
-
 	uint8_t StringUtils::hexToBin(char chr)
 	{
 		if (chr >= '0' && chr <= '9')

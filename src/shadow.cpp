@@ -58,6 +58,10 @@ namespace darmok
 
     bgfx::ViewId ShadowRenderPass::renderReset(bgfx::ViewId viewId) noexcept
     {
+        if (!_renderer)
+        {
+            return viewId;
+        }
         std::string name = "Shadow light ";
         if (_lightEntity == entt::null)
         {
@@ -70,6 +74,10 @@ namespace darmok
             {
                 name += " cascade " + std::to_string(_cascade);
             }
+        }
+        if (auto cam = _renderer->getCamera())
+        {
+            name = cam->getViewName(name);
         }
         bgfx::setViewName(viewId, name.c_str());
 

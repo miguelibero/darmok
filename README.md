@@ -72,6 +72,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
         * PBR metallic-roughness ()
     * cascaded shadow mapping
         * directional lights
+    * camera culling (frustum & occlusion)
 * entity component scene using entt
     * transform, camera
 * sprites and spritesheets

@@ -162,6 +162,11 @@ namespace darmok
 		}		
 	}
 
+	std::string RenderChain::getViewName(const std::string& baseName) const noexcept
+	{
+		return _delegate.getRenderChainViewName("Render Chain: " + baseName);
+	}
+
 	bgfx::ViewId RenderChain::renderReset(bgfx::ViewId viewId) noexcept
 	{
 		if (_running)
@@ -173,8 +178,7 @@ namespace darmok
 				viewId = step->renderReset(viewId);
 			}
 		}
-
-		bgfx::setViewName(viewId, "RenderChain clear");
+		bgfx::setViewName(viewId, getViewName("clear").c_str());
 
 		static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
 		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
@@ -245,8 +249,9 @@ namespace darmok
 		return nullptr;
 	}
 
-	void RenderChain::configureView(bgfx::ViewId viewId, OptionalRef<const FrameBuffer> writeBuffer) const
+	void RenderChain::configureView(bgfx::ViewId viewId, const std::string& name, OptionalRef<const FrameBuffer> writeBuffer) const
 	{
+		bgfx::setViewName(viewId, getViewName(name).c_str());
 		uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
 		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
 		if (writeBuffer)
@@ -415,10 +420,9 @@ namespace darmok
 
 	bgfx::ViewId ScreenSpaceRenderPass::renderReset(bgfx::ViewId viewId) noexcept
 	{
-		bgfx::setViewName(viewId, _name.c_str());
 		if (_chain)
 		{
-			_chain->configureView(viewId, _writeTex);
+			_chain->configureView(viewId, _name, _writeTex);
 		}
 		_viewId = viewId;
 		return ++viewId;

@@ -3,6 +3,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/optional_ref.hpp>
 #include <unordered_set>
+#include <unordered_map>
 #include <optional>
 #include <vector>
 #include <bgfx/bgfx.h>
@@ -26,11 +27,11 @@ namespace darmok
         OptionalRef<Scene> _scene;
         std::optional<bgfx::ViewId> _viewId;
         OptionalRef<MaterialAppComponent> _materials;
-        std::vector<bgfx::OcclusionQueryHandle> _usedQueries;
+        std::unordered_map<Entity, bgfx::OcclusionQueryHandle> _queries;
         std::vector<bgfx::OcclusionQueryHandle> _freeQueries;
-        std::unordered_set<Entity> _culled;
 
-        bgfx::OcclusionQueryHandle getQuery() noexcept;
+        bgfx::OcclusionQueryHandle getQuery(Entity entity) noexcept;
+        void onRenderableDestroyed(EntityRegistry& registry, Entity entity) noexcept;
     };
 
     class DARMOK_EXPORT FrustrumCuller final : public  ITypeCameraComponent<FrustrumCuller>

@@ -22,7 +22,8 @@ namespace darmok
 
         entt::id_type getId() const noexcept;
         const std::string& getName() const noexcept;
-        void setName(const std::string& baseName) noexcept;
+        void setName(const std::string& name) noexcept;
+        std::string getViewName(const std::string& baseName) const noexcept;
         std::string toString() const noexcept;
 
         Scene& getScene();

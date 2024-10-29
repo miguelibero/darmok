@@ -40,6 +40,7 @@ namespace darmok
         entt::id_type getId() const noexcept;
         const std::string& getName() const noexcept;
         Camera& setName(const std::string& name) noexcept;
+        std::string getViewName(const std::string& baseName) const noexcept;
         std::string toString() const noexcept;
 
         const glm::mat4& getProjectionMatrix() const noexcept;
