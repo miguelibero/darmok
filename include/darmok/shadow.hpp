@@ -4,6 +4,7 @@
 #include <vector>
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
+#include <darmok/render_debug.hpp>
 
 namespace darmok
 {
@@ -105,10 +106,6 @@ namespace darmok
     private:
         ShadowRenderer& _renderer;
         OptionalRef<Scene> _scene;
-        std::shared_ptr<Program> _prog;
-        bgfx::UniformHandle _hasTexturesUniform;
-        bgfx::UniformHandle _colorUniform;
-
-        void renderMesh(MeshData& meshData, uint8_t debugColor, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        DebugRenderer _debugRender;
     };
 }

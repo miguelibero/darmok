@@ -1,4 +1,6 @@
 #pragma once
+
+#include <darmok/export.h>
 #include <darmok/scene_fwd.hpp>
 #include <unordered_set>
 #include <vector>

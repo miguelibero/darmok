@@ -159,6 +159,8 @@ namespace darmok
         }
     };
 
+    struct BoundingBox;
+
     struct DARMOK_EXPORT Plane final
     {
         glm::vec3 normal;
@@ -181,7 +183,10 @@ namespace darmok
 
         [[nodiscard]] static const Plane& standard() noexcept;
 
-        float distanceTo(const glm::vec3& point) const noexcept;
+        float signedDistanceTo(const glm::vec3& point) const noexcept;
+        bool isInFront(const glm::vec3& point) const noexcept;
+        bool isInFront(const BoundingBox& bbox) const noexcept;
+        bool isInFront(const Sphere& sphere) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -349,6 +354,8 @@ namespace darmok
 
         BoundingBox& expandToPosition(const glm::vec3& pos) noexcept;
 
+        bool isOutsideOf(const Plane& plane) const noexcept;
+
         [[nodiscard]] std::array<glm::vec3, 8> getCorners() const noexcept;
 
         [[nodiscard]] Cube getCube() const noexcept;
@@ -395,15 +402,14 @@ namespace darmok
         };
 
         std::array<glm::vec3, toUnderlying(CornerType::Count)> corners;
-        std::array<Plane, toUnderlying(PlaneType::Count)> planes;
 
         Frustum(const glm::mat4& proj = glm::mat4(1)) noexcept;
 
         [[nodiscard]] const glm::vec3& getCorner(Frustum::CornerType type) const noexcept;
         [[nodiscard]] glm::vec3& getCorner(Frustum::CornerType type) noexcept;
 
-        [[nodiscard]] const Plane& getPlane(Frustum::PlaneType type) const noexcept;
-        [[nodiscard]] Plane& getPlane(Frustum::PlaneType type) noexcept;
+        [[nodiscard]] Plane getPlane(Frustum::PlaneType type) const noexcept;
+        [[nodiscard]] std::array<Plane, toUnderlying(PlaneType::Count)> getPlanes() const noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] glm::vec3 getCenter() const noexcept;
@@ -416,7 +422,7 @@ namespace darmok
 
         [[nodiscard]] glm::mat4 getAlignedProjectionMatrix() const noexcept;
 
-        [[nodiscard]] bool intersect(const BoundingBox& bbox) const noexcept;
+        [[nodiscard]] bool canSee(const BoundingBox& bbox) const noexcept;
 
         [[nodiscard]] Frustum operator*(const glm::mat4& trans) const noexcept;
         Frustum& operator*=(const glm::mat4& trans) noexcept;

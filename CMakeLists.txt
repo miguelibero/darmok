@@ -188,6 +188,7 @@ set(SOURCES
   render_forward.cpp
   render_deferred.cpp
   render_chain.cpp
+  render_debug.cpp
   shadow.cpp
   freelook.cpp
   text.cpp
@@ -223,6 +224,7 @@ set(HEADERS
   render_forward.hpp
   render_deferred.hpp
   render_chain.hpp
+  render_debug.hpp
   shadow.hpp
   freelook.hpp
   text_fwd.hpp
@@ -238,6 +240,7 @@ set(LUA_SOURCES
   render_scene.cpp
   render_forward.cpp
   render_chain.cpp
+  culling.cpp
   mesh.cpp
   program.cpp
   texture.cpp

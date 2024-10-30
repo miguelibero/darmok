@@ -307,7 +307,7 @@ namespace darmok
         }
 
         auto proj = _cam->getProjectionMatrix();
-        auto model = _cam->getModelMatrix();
+        auto view = _cam->getViewMatrix();
         Frustum frust(proj);
 
         auto step = 1.F / float(_config.cascadeAmount);
@@ -328,7 +328,7 @@ namespace darmok
 
             auto cascFrust = frust.getSlice(nearFactor, farFactor);
             auto cascProj = cascFrust.getAlignedProjectionMatrix();
-            cascProj *= model;
+            cascProj *= view;
             _camProjs.emplace_back(cascProj);
         }
     }
@@ -476,34 +476,19 @@ namespace darmok
 
     ShadowDebugRenderer::ShadowDebugRenderer(ShadowRenderer& renderer) noexcept
         : _renderer(renderer)
-        , _hasTexturesUniform{ bgfx::kInvalidHandle }
-        , _colorUniform{ bgfx::kInvalidHandle }
     {
     }
 
     void ShadowDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
-        _prog = std::make_shared<Program>(StandardProgramType::Unlit);
-
-        _hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
-        _colorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
+        _debugRender.init();
     }
 
     void ShadowDebugRenderer::shutdown() noexcept
     {
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = { _hasTexturesUniform, _colorUniform };
-        for (auto& uniform : uniforms)
-        {
-            if (isValid(uniform.get()))
-            {
-                bgfx::destroy(uniform);
-                uniform.get().idx = bgfx::kInvalidHandle;
-            }
-        }
-
+        _debugRender.shutdown();
         _scene.reset();
-        _prog.reset();
     }
 
     void ShadowDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
@@ -517,17 +502,6 @@ namespace darmok
         meshData.type = MeshType::Transient;
         uint8_t debugColor = 0;
 
-        Frustum frust = cam->getProjectionMatrix() * cam->getModelMatrix();
-
-        for (auto& plane : frust.planes)
-        {
-            meshData += MeshData(plane, RectangleMeshType::Full);
-            renderMesh(meshData, debugColor, viewId, encoder);
-            ++debugColor;
-        }
-
-        /*
-        uint8_t debugColor = 0;
         auto cascadeAmount = _renderer.getConfig().cascadeAmount;
 
         for (uint8_t casc = 0; casc < cascadeAmount; ++casc)
@@ -535,7 +509,7 @@ namespace darmok
             auto cascProjView = _renderer.getProjMatrix(casc);
             meshData += MeshData(Frustum(cascProjView), RectangleMeshType::Outline);
         }
-        renderMesh(meshData, debugColor, viewId, encoder);
+        _debugRender.renderMesh(meshData, debugColor, viewId, encoder, true);
         ++debugColor;
 
         auto entities = cam->getEntities<DirectionalLight>();
@@ -556,21 +530,8 @@ namespace darmok
             }
             meshData += MeshData(Sphere(0.01, lightPos), 8);
 
-            renderMesh(meshData, debugColor, viewId, encoder);
+            _debugRender.renderMesh(meshData, debugColor, viewId, encoder, true);
             ++debugColor;
-        }*/
-    }
-
-    void ShadowDebugRenderer::renderMesh(MeshData& meshData, uint8_t debugColor, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
-    {
-        encoder.setUniform(_hasTexturesUniform, glm::value_ptr(glm::vec4(0)));
-        auto color = Colors::normalize(Colors::debug(debugColor));
-        encoder.setUniform(_colorUniform, glm::value_ptr(color));
-        //static const uint64_t state = BGFX_STATE_DEFAULT | BGFX_STATE_PT_LINES;
-        uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
-        auto mesh = meshData.createMesh(_prog->getVertexLayout());
-        mesh->render(encoder);
-        encoder.setState(state);
-        encoder.submit(viewId, _prog->getHandle());
+        }
     }
 }

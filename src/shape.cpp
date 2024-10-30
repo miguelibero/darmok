@@ -1,10 +1,11 @@
 #include <darmok/shape.hpp>
 #include <darmok/string.hpp>
 #include <darmok/math.hpp>
-#include <glm/gtx/intersect.hpp>
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtx/intersect.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/norm.hpp>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
@@ -310,14 +311,36 @@ namespace darmok
     }
 
     Plane::Plane(const Triangle& tri) noexcept
-        : normal(tri.getNormal())
-        , distance(glm::abs(glm::dot(normal, tri.vertices[0])))
+        : normal(glm::normalize(tri.getNormal()))
+        , distance(glm::dot(normal, tri.vertices[0]))
     {
     }
 
-    float Plane::distanceTo(const glm::vec3& point) const noexcept
+    float Plane::signedDistanceTo(const glm::vec3& point) const noexcept
     {
-        return glm::dot(normal, point) + distance;
+        return glm::dot(glm::normalize(normal), point) - distance;
+    }
+
+    bool Plane::isInFront(const glm::vec3& point) const noexcept
+    {
+        return signedDistanceTo(point) > 0;
+    }
+
+    bool Plane::isInFront(const BoundingBox& bbox) const noexcept
+    {
+        for (auto& corner : bbox.getCorners())
+        {
+            if (signedDistanceTo(corner) <= 0.F)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool Plane::isInFront(const Sphere& sphere) const noexcept
+    {
+        return signedDistanceTo(sphere.origin) > sphere.radius;
     }
 
     const Plane& Plane::standard() noexcept
@@ -328,12 +351,16 @@ namespace darmok
 
     glm::vec3 Plane::getOrigin() const noexcept
     {
-        return normal * distance;
+        auto len = glm::length(normal);
+        return normal * distance / (len * len);
     }
 
     glm::mat4 Plane::getTransform(const glm::vec3& up) const noexcept
     {
-        return getNormalLine().getTransform(up);
+        auto mtx = glm::mat4(1);
+        mtx = glm::translate(mtx, getOrigin());
+        mtx *= glm::mat4_cast(Math::quatLookAt(normal, up));
+        return mtx;
     }
 
     std::string Plane::toString() const noexcept
@@ -356,10 +383,13 @@ namespace darmok
 
     Plane& Plane::operator*=(const glm::mat4& transform) noexcept
     {
-        auto v = normal * distance;
-        v = transform * glm::vec4(v, 1.0f);
-        normal = transform * glm::vec4(normal, 0.0f);
-        distance = glm::dot(normal, v);
+        auto origin = getOrigin();
+        auto torigin = transform * glm::vec4(origin, 1.F);
+        origin = torigin / torigin.w;
+
+        normal = transform * glm::vec4(normal, 0.F);
+        distance = glm::dot(normal, origin);
+
         return *this;
     }
 
@@ -765,11 +795,11 @@ namespace darmok
     BoundingBox& BoundingBox::expandToPosition(const glm::vec3& pos) noexcept
     {
         min.x = std::min(min.x, pos.x);
-        min.y = std::min(min.y, pos.z);
+        min.y = std::min(min.y, pos.y);
         min.z = std::min(min.z, pos.z);
 
         max.x = std::max(max.x, pos.x);
-        max.y = std::max(max.y, pos.z);
+        max.y = std::max(max.y, pos.y);
         max.z = std::max(max.z, pos.z);
 
         return *this;
@@ -839,20 +869,6 @@ namespace darmok
             auto tcorner = invProj * glm::vec4(corner, 1.0);
             corner = tcorner / tcorner.w;
         }
-
-        planes = {
-            Plane(glm::vec3( 0,  0, -1), std::abs(nd)),
-            Plane(glm::vec3( 0,  0,  1), 1),
-            Plane(glm::vec3( 0, -1,  0), 1),
-            Plane(glm::vec3( 0,  1,  0), 1),
-            Plane(glm::vec3(-1,  0,  0), 1),
-            Plane(glm::vec3( 1,  0,  0), 1),
-        };
-
-        for (auto& plane : planes)
-        {
-            plane *= proj;
-        }
     }
 
     std::array<glm::vec3, 4> Frustum::getSlopes() const noexcept
@@ -903,16 +919,11 @@ namespace darmok
         return Math::frustum(left, right, bottom, top, near, far);
     }
 
-    bool Frustum::intersect(const BoundingBox& bbox) const noexcept
+    bool Frustum::canSee(const BoundingBox& bbox) const noexcept
     {
-        for (auto& plane : planes)
+        for (auto& plane : getPlanes())
         {
-            auto v = glm::vec3(
-                (plane.normal.x >= 0.F) ? bbox.max.x : bbox.min.x,
-                (plane.normal.y >= 0.F) ? bbox.max.y : bbox.min.y,
-                (plane.normal.z >= 0.F) ? bbox.max.z : bbox.min.z
-            );
-            if(plane.distanceTo(v) < 0.F)
+            if (plane.isInFront(bbox))
             {
                 return false;
             }
@@ -930,14 +941,41 @@ namespace darmok
         return corners[toUnderlying(type)];
     }
 
-    const Plane& Frustum::getPlane(Frustum::PlaneType type) const noexcept
+    Plane Frustum::getPlane(Frustum::PlaneType type) const noexcept
     {
-        return planes[toUnderlying(type)];
+        auto createPlane = [this](CornerType a, CornerType b, CornerType c)
+        {
+            return Plane(Triangle(getCorner(a), getCorner(b), getCorner(c)));
+        };
+
+        switch (type)
+        {
+        case PlaneType::Near:
+            return createPlane(CornerType::NearTopRight, CornerType::NearBottomRight, CornerType::NearBottomLeft);
+        case PlaneType::Far:
+            return createPlane(CornerType::FarTopLeft, CornerType::FarBottomLeft, CornerType::FarBottomRight);
+        case PlaneType::Bottom:
+            return createPlane(CornerType::FarBottomLeft, CornerType::NearBottomLeft, CornerType::NearBottomRight);
+        case PlaneType::Top:
+            return createPlane(CornerType::FarTopRight, CornerType::NearTopRight, CornerType::NearTopLeft);
+        case PlaneType::Left:
+            return createPlane(CornerType::NearTopLeft, CornerType::NearBottomLeft, CornerType::FarBottomLeft);
+        case PlaneType::Right:
+            return createPlane(CornerType::FarTopRight, CornerType::FarBottomRight, CornerType::NearBottomRight);
+        }
+        return {};
     }
 
-    Plane& Frustum::getPlane(Frustum::PlaneType type) noexcept
+    std::array<Plane, toUnderlying(Frustum::PlaneType::Count)> Frustum::getPlanes() const noexcept
     {
-        return planes[toUnderlying(type)];
+        return {
+            getPlane(PlaneType::Near),
+            getPlane(PlaneType::Far),
+            getPlane(PlaneType::Bottom),
+            getPlane(PlaneType::Top),
+            getPlane(PlaneType::Left),
+            getPlane(PlaneType::Right),
+        };
     }
 
     BoundingBox Frustum::getBoundingBox() const noexcept
@@ -974,6 +1012,7 @@ namespace darmok
     std::string Frustum::toString() const noexcept
     {
         std::string str = "Frustum(";
+        auto planes = getPlanes();
         str += StringUtils::join(", ", planes.begin(), planes.end(), [](auto& plane) {
             return plane.toString();
         });
@@ -992,10 +1031,6 @@ namespace darmok
         for (auto& corner : corners)
         {
             corner = trans * glm::vec4(corner, 1.0f);
-        }
-        for (auto& plane : planes)
-        {
-            plane *= trans;
         }
         return *this;
     }

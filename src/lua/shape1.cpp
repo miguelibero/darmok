@@ -128,7 +128,7 @@ namespace darmok
 			),
 			"normal", &Plane::normal,
 			"distance", &Plane::distance,
-			"distance_to", &Plane::distanceTo,
+			"signed_distance_to", &Plane::signedDistanceTo,
 			"origin", sol::property(&Plane::getOrigin),
 			sol::meta_function::multiplication, &Plane::operator*,
 			sol::meta_function::to_string, &Plane::toString

@@ -6,6 +6,7 @@
 #include <darmok/physics3d.hpp>
 #include <darmok/program.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/render_chain.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 
@@ -66,10 +67,20 @@ namespace darmok
         _viewId.reset();
         if (!_cam)
         {
+            _frameBuffer.reset();
             return viewId;
         }
         _viewId = viewId;
         _cam->configureView(viewId, "Occlusion Culling");
+
+        auto vp = _cam->getCurrentViewport();
+        auto size = vp.origin + vp.size;
+        if (!_frameBuffer || _frameBuffer->getSize() != size)
+        {
+            _frameBuffer = std::make_unique<FrameBuffer>(size);
+        }
+        _frameBuffer->configureView(viewId);
+
         return ++viewId;
     }
 
@@ -97,7 +108,7 @@ namespace darmok
         _freeQueries.clear();
     }
 
-    void OcclusionCuller::update(float deltaTime) noexcept
+    void OcclusionCuller::render() noexcept
     {
         updateQueries();
     }
@@ -120,10 +131,10 @@ namespace darmok
         _cam->setViewTransform(viewId);
         for (auto entity : entities)
         {
-            if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
+            if (auto bounds = CullingUtils::getEntityBounds(scene, entity))
             {
                 _cam->setEntityTransform(entity, encoder);
-                MeshData meshData(bbox.value());
+                MeshData meshData(bounds.value());
                 meshData.type = MeshType::Transient;
                 auto mesh = meshData.createMesh(layout);
                 mesh->render(encoder);
@@ -196,18 +207,18 @@ namespace darmok
     {
         auto& scene = _scene.value();
         auto entities = _cam->getEntities(CullingUtils::getEntityFilter());
-        Frustum camFrustum = _cam->getProjectionMatrix() * _cam->getModelMatrix();
+        Frustum camFrust = _cam->getViewProjectionMatrix();
         _culled.clear();
         for (auto entity : entities)
         {
-            if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
+            if (auto bounds = CullingUtils::getEntityBounds(scene, entity))
             {
-                Frustum frustum = camFrustum;
+                Frustum frust = camFrust;
                 if (auto trans = scene.getComponent<const Transform>(entity))
                 {
-                    frustum *= trans->getWorldInverse();
+                    frust *= trans->getWorldInverse();
                 }
-                if (!frustum.intersect(bbox.value()))
+                if (!frust.canSee(bounds.value()))
                 {
                     _culled.insert(entity);
                 }
@@ -218,5 +229,59 @@ namespace darmok
     bool FrustumCuller::shouldEntityBeCulled(Entity entity) noexcept
     {
         return _culled.contains(entity);
+    }
+
+    CullingDebugRenderer::CullingDebugRenderer(const OptionalRef<const Camera>& mainCam) noexcept
+        : _mainCam(mainCam)
+    {
+    }
+
+    void CullingDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    {
+        _cam = cam;
+        _scene = scene;
+        _debugRender.init();
+    }
+
+    void CullingDebugRenderer::shutdown() noexcept
+    {
+        _cam.reset();
+        _scene.reset();
+        _debugRender.shutdown();
+    }
+
+    void CullingDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        uint8_t debugColor = 0;
+        MeshData meshData;
+
+        auto mainCam = _mainCam ? _mainCam : _cam;
+        if (mainCam)
+        {
+            Frustum frust = mainCam->getViewProjectionMatrix();
+            for (auto& plane : frust.getPlanes())
+            {
+                meshData += MeshData(plane, RectangleMeshType::Full);
+                _debugRender.renderMesh(meshData, debugColor, viewId, encoder, false);
+                ++debugColor;
+            }
+        }
+
+
+        if (_cam && _scene)
+        {
+            auto& scene = _scene.value();
+            auto entities = _cam->getEntities(CullingUtils::getEntityFilter());
+            for (auto entity : entities)
+            {
+                if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
+                {
+                    meshData += MeshData(bbox.value(), RectangleMeshType::Outline);
+                    _cam->setEntityTransform(entity, encoder);
+                    _debugRender.renderMesh(meshData, debugColor, viewId, encoder, true);
+                    ++debugColor;
+                }
+            }
+        }
     }
 }

@@ -12,7 +12,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-
 namespace darmok
 {
     class BX_NO_VTABLE ILuaYieldInstruction

@@ -15,7 +15,7 @@ void main()
     vec3 diffuse = vec3_splat(0);
 	vec3 specular = vec3_splat(0);
 	vec3 ambient = getAmbientLight().irradiance;
-	vec3 norm = normalize(v_normal);
+	vec3 norm = v_normal;
 	vec3 fragPos = v_position;
 	vec3 viewDir = v_viewDir;
 

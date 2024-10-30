@@ -66,10 +66,7 @@ namespace
 			auto model = _app.getAssets().getModelLoader()("Sponza.dml");
 
 			_cam = createCamera(*scene);
-			auto shadowRenderer = _cam->getComponent<ShadowRenderer>();
-
-			_freeCam = createCamera(*scene, shadowRenderer);
-			_freeCam->setEnabled(false);
+			_freeCam = createCamera(*scene, _cam);
 
 			auto& freelook = scene->addSceneComponent<FreelookController>(*_freeCam);
 			freelook.addListener(*this);
@@ -154,11 +151,11 @@ namespace
 			}
 		}
 
-		Camera& createCamera(Scene& scene, OptionalRef<ShadowRenderer> debugShadow = nullptr)
+		Camera& createCamera(Scene& scene, OptionalRef<Camera> mainCamera = nullptr)
 		{
 			auto entity = scene.createEntity();
 
-			auto farPlane = debugShadow ? 40 : 20;
+			auto farPlane = mainCamera ? 40 : 20;
 			auto& cam = scene.addComponent<Camera>(entity);
 			cam.setViewportPerspective(60, 0.3, farPlane);
 
@@ -172,13 +169,19 @@ namespace
 
 			cam.addComponent<ForwardRenderer>();
 			// cam.addComponent<OcclusionCuller>();
+			cam.addComponent<FrustumCuller>();
 			cam.addComponent<LightingRenderComponent>();
 			cam.addComponent<ShadowRenderer>(shadowConfig);
-			if (debugShadow)
-			{
-				cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
-			}
 
+			if (mainCamera)
+			{
+				cam.addComponent<CullingDebugRenderer>(mainCamera);
+				cam.setEnabled(false);
+				if (auto debugShadow = mainCamera->getComponent<ShadowDebugRenderer>())
+				{
+					cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
+				}
+			}
 
 			return cam;
 		}

@@ -32,6 +32,9 @@ namespace darmok
         const glm::mat4& getProjectionMatrix() const noexcept;
         const glm::mat4& getProjectionInverse() const noexcept;
 
+        glm::mat4 getViewProjectionMatrix() const noexcept;
+        glm::mat4 getViewProjectionInverse() const noexcept;
+
         void setProjectionMatrix(const glm::mat4& matrix) noexcept;
         void setPerspective(float fovy, float aspect, float near = Math::defaultNear) noexcept;
         void setPerspective(float fovy, float aspect, float near, float far) noexcept;
@@ -52,8 +55,8 @@ namespace darmok
         void setEnabled(bool enabled) noexcept;
 
         OptionalRef<Transform> getTransform() const noexcept;
-        glm::mat4 getModelMatrix() const noexcept;
-        glm::mat4 getModelInverse() const noexcept;
+        glm::mat4 getViewMatrix() const noexcept;
+        glm::mat4 getViewInverse() const noexcept;
 
         void setCullingFilter(const EntityFilter& filter) noexcept;
         const EntityFilter& getCullingFilter() const noexcept;
@@ -152,6 +155,6 @@ namespace darmok
         void onRenderChainChanged() noexcept override;
 
         void doSetProjectionMatrix(const glm::mat4& matrix) noexcept;
-        glm::mat4 getScreenModelMatrix() const noexcept;
+        glm::mat4 getScreenViewMatrix() const noexcept;
     };
 }

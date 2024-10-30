@@ -100,6 +100,16 @@ namespace darmok
         return _projInv;
     }
 
+    glm::mat4 CameraImpl::getViewProjectionMatrix() const noexcept
+    {
+       return getProjectionMatrix() * getViewMatrix();
+    }
+
+    glm::mat4 CameraImpl::getViewProjectionInverse() const noexcept
+    {
+        return getViewInverse() * getProjectionInverse();
+    }
+
     void CameraImpl::setProjectionMatrix(const glm::mat4& matrix) noexcept
     {
         doSetProjectionMatrix(matrix);
@@ -287,8 +297,8 @@ namespace darmok
 
     void CameraImpl::setViewTransform(bgfx::ViewId viewId) const noexcept
     {
-        auto model = getModelMatrix();
-        bgfx::setViewTransform(viewId, glm::value_ptr(model), glm::value_ptr(_proj));
+        auto view = getViewMatrix();
+        bgfx::setViewTransform(viewId, glm::value_ptr(view), glm::value_ptr(_proj));
     }
 
     void CameraImpl::setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept
@@ -470,7 +480,7 @@ namespace darmok
         return _scene->getComponent<Transform>(entity);
     }
 
-    glm::mat4 CameraImpl::getModelMatrix() const noexcept
+    glm::mat4 CameraImpl::getViewMatrix() const noexcept
     {
         if (auto trans = getTransform())
         {
@@ -479,7 +489,7 @@ namespace darmok
         return glm::mat4(1);
     }
 
-    glm::mat4 CameraImpl::getModelInverse() const noexcept
+    glm::mat4 CameraImpl::getViewInverse() const noexcept
     {
         if (auto trans = getTransform())
         {
@@ -488,41 +498,41 @@ namespace darmok
         return glm::mat4(1);
     }
 
-    glm::mat4 CameraImpl::getScreenModelMatrix() const noexcept
+    glm::mat4 CameraImpl::getScreenViewMatrix() const noexcept
     {
         // y = -y since screen origin is the top-left corner
         static const glm::vec3 invy(1.F, -1.F, 1.F);
-        return glm::scale(glm::mat4(1.F), invy) * getModelMatrix();
+        return glm::scale(glm::mat4(1.F), invy) * getViewMatrix();
     }
 
     Ray CameraImpl::screenPointToRay(const glm::vec3& point) const noexcept
     {
-        return Ray::unproject(point, getScreenModelMatrix(), _proj, getCurrentViewport());
+        return Ray::unproject(point, getScreenViewMatrix(), _proj, getCurrentViewport());
     }
 
     Ray CameraImpl::viewportPointToRay(const glm::vec3& point) const noexcept
     {
-        return Ray::unproject(point, getScreenModelMatrix(), _proj);
+        return Ray::unproject(point, getScreenViewMatrix(), _proj);
     }
 
     glm::vec3 CameraImpl::worldToScreenPoint(const glm::vec3& point) const noexcept
     {
-        return glm::project(point, getScreenModelMatrix(), _proj, getCurrentViewport().getValues());
+        return glm::project(point, getScreenViewMatrix(), _proj, getCurrentViewport().getValues());
     }
 
     glm::vec3 CameraImpl::worldToViewportPoint(const glm::vec3& point) const noexcept
     {
-        return glm::project(point, getScreenModelMatrix(), _proj, Viewport().getValues());
+        return glm::project(point, getScreenViewMatrix(), _proj, Viewport().getValues());
     }
 
     glm::vec3 CameraImpl::screenToWorldPoint(const glm::vec3& point) const noexcept
     {
-        return glm::unProject(point, getScreenModelMatrix(), _proj, getCurrentViewport().getValues());
+        return glm::unProject(point, getScreenViewMatrix(), _proj, getCurrentViewport().getValues());
     }
 
     glm::vec3 CameraImpl::viewportToWorldPoint(const glm::vec3& point) const noexcept
     {
-        return glm::unProject(point, getScreenModelMatrix(), _proj, Viewport().getValues());
+        return glm::unProject(point, getScreenViewMatrix(), _proj, Viewport().getValues());
     }
 
     glm::vec3 CameraImpl::viewportToScreenPoint(const glm::vec3& point) const noexcept
@@ -627,6 +637,16 @@ namespace darmok
         return _impl->getProjectionInverse();
     }
 
+    glm::mat4 Camera::getViewProjectionMatrix() const noexcept
+    {
+        return _impl->getViewProjectionMatrix();
+    }
+
+    glm::mat4 Camera::getViewProjectionInverse() const noexcept
+    {
+        return _impl->getViewProjectionInverse();
+    }
+
     Camera& Camera::setProjectionMatrix(const glm::mat4& matrix) noexcept
     {
         _impl->setProjectionMatrix(matrix);
@@ -713,14 +733,14 @@ namespace darmok
         return _impl->getTransform();
     }
 
-    glm::mat4 Camera::getModelMatrix() const noexcept
+    glm::mat4 Camera::getViewMatrix() const noexcept
     {
-        return _impl->getModelMatrix();
+        return _impl->getViewMatrix();
     }
 
-    glm::mat4 Camera::getModelInverse() const noexcept
+    glm::mat4 Camera::getViewInverse() const noexcept
     {
-        return _impl->getModelInverse();
+        return _impl->getViewInverse();
     }
 
     Camera& Camera::setCullingFilter(const EntityFilter& filter) noexcept

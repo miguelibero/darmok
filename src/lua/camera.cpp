@@ -3,6 +3,7 @@
 #include "scene_filter.hpp"
 #include "render_forward.hpp"
 #include "light.hpp"
+#include "culling.hpp"
 #include <darmok/program.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/camera.hpp>
@@ -199,6 +200,9 @@ namespace darmok
 		LuaViewport::bind(lua);
 		LuaForwardRenderer::bind(lua);
 		LuaLightingRenderComponent::bind(lua);
+		LuaOcclusionCuller::bind(lua);
+		LuaFrustumCuller::bind(lua);
+		LuaCullingDebugRenderer::bind(lua);
 
 #ifdef PHYSICS_DEBUG_RENDER
 		physics3d::LuaPhysicsDebugRenderer::bind(lua);
@@ -238,11 +242,14 @@ namespace darmok
 			"name", sol::property(&Camera::getName, &Camera::setName),
 			"enabled", sol::property(&Camera::isEnabled, &Camera::setEnabled),
 			"projection_matrix", sol::property(&Camera::getProjectionMatrix, &LuaCamera::setProjectionMatrix),
+			"projection_inverse", sol::property(&Camera::getProjectionInverse),
 			"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
 			"current_viewport", sol::property(&Camera::getCurrentViewport),
 			"transform", sol::property(&LuaCamera::getTransform),
-			"model_matrix", sol::property(&Camera::getModelMatrix),
-			"model_inverse", sol::property(&Camera::getModelInverse),
+			"view_matrix", sol::property(&Camera::getViewMatrix),
+			"view_inverse", sol::property(&Camera::getViewInverse),
+			"view_projection_matrix", sol::property(&Camera::getViewProjectionMatrix),
+			"view_projection_inverse", sol::property(&Camera::getViewProjectionInverse),
 			"screen_point_to_ray", sol::overload(&LuaCamera::screenPointToRay1, &LuaCamera::screenPointToRay2),
 			"viewport_point_to_ray", &LuaCamera::viewportPointToRay,
 			"world_to_screen_point", &LuaCamera::worldToScreenPoint,

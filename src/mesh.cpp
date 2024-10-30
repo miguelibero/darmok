@@ -1183,6 +1183,11 @@ namespace darmok
 
 		if (indices.empty())
 		{
+			if (!vertices.empty())
+			{
+				bb.min = vertices[0].position;
+				bb.max = bb.min;
+			}
 			for (auto& vert : vertices)
 			{
 				bb.expandToPosition(vert.position);
@@ -1190,7 +1195,10 @@ namespace darmok
 		}
 		else
 		{
-			for (size_t i = 0; i < indices.size() - 2; i += 3)
+			bb.min = vertices[indices[0]].position;
+			bb.max = bb.min;
+
+			for (size_t i = 1; i < indices.size(); ++i)
 			{
 				auto& vert = vertices[i];
 				bb.expandToPosition(vert.position);

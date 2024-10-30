@@ -46,6 +46,9 @@ namespace darmok
         const glm::mat4& getProjectionMatrix() const noexcept;
         const glm::mat4& getProjectionInverse() const noexcept;
 
+        glm::mat4 getViewProjectionMatrix() const noexcept;
+        glm::mat4 getViewProjectionInverse() const noexcept;
+
         Camera& setProjectionMatrix(const glm::mat4& matrix) noexcept;
         Camera& setPerspective(float fovy, float aspect, float near = Math::defaultNear) noexcept;
         Camera& setPerspective(float fovy, float aspect, float near, float far) noexcept;
@@ -66,8 +69,8 @@ namespace darmok
         Camera& setEnabled(bool enabled) noexcept;
 
         OptionalRef<Transform> getTransform() const noexcept;
-        glm::mat4 getModelMatrix() const noexcept;
-        glm::mat4 getModelInverse() const noexcept;
+        glm::mat4 getViewMatrix() const noexcept;
+        glm::mat4 getViewInverse() const noexcept;
 
         Camera& setCullingFilter(const EntityFilter& filter) noexcept;
         const EntityFilter& getCullingFilter() const noexcept;

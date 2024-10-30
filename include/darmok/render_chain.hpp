@@ -14,7 +14,7 @@ namespace darmok
 {
     class Texture;
 
-    class DARMOK_EXPORT FrameBuffer
+    class DARMOK_EXPORT FrameBuffer final
     {
     public:
         FrameBuffer(const glm::uvec2& size, bool depth = true) noexcept;

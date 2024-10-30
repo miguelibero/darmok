@@ -21,7 +21,7 @@ void main()
 
 	pos = mul(u_model[0], pos);
 	v_position = pos.xyz;
-	v_normal = mul(u_normalMatrix, norm.xyz).xyz;
+	v_normal = normalize(mul(u_normalMatrix, norm.xyz));
 	v_viewDir = normalize(u_camPos.xyz - v_position);
 	v_texcoord0 = a_texcoord0;
 	gl_Position = mul(u_viewProj, pos);

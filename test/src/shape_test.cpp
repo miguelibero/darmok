@@ -22,8 +22,8 @@ TEST_CASE("Plane transform", "[shape]")
 	auto scale = glm::scale(glm::mat4(1), glm::vec3(2, 3, 4));
 	plane *= scale;
 
-	REQUIRE(plane.normal == glm::vec3(0, 0, 4));
-	REQUIRE(plane.distance == 64);
+	REQUIRE(plane.normal == glm::vec3(0, 0, 1));
+	REQUIRE(plane.distance == 16);
 
 	auto roty = glm::mat4_cast(glm::quat(glm::radians(glm::vec3(0, -90, 0))));
 
@@ -35,8 +35,8 @@ TEST_CASE("Plane transform", "[shape]")
 
 	plane *= scale;
 
-	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(-2, 0, 0)));
-	REQUIRE(Math::almostEqual(plane.distance, 4));
+	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(-1, 0, 0)));
+	REQUIRE(Math::almostEqual(plane.distance, 2));
 
 	plane = Plane(glm::vec3(0, 0, 1), 0) * roty;
 
@@ -47,6 +47,15 @@ TEST_CASE("Plane transform", "[shape]")
 
 	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(1, 0, 0)));
 	REQUIRE(Math::almostEqual(plane.distance, 1));
+}
+
+TEST_CASE("Plane distance", "[shape]")
+{
+	Plane plane(glm::vec3(-1, 0, 0), 2);
+
+	REQUIRE(Math::almostEqual(plane.signedDistanceTo(glm::vec3(1, 0, 0)), -3.F));
+	REQUIRE(Math::almostEqual(plane.signedDistanceTo(glm::vec3(-1, 0, 0)), -1.F));
+	REQUIRE(Math::almostEqual(plane.signedDistanceTo(glm::vec3(-3, 0, 0)), 1.F));
 }
 
 TEST_CASE("Frustum planes are correct", "[shape]")

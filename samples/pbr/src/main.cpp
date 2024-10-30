@@ -96,9 +96,7 @@ namespace
 			auto& layout = prog->getVertexLayout();
 
 			_cam = createCamera(scene);
-			auto shadowRenderer = _cam->getComponent<ShadowRenderer>();
-
-			_freeCam = createCamera(scene, shadowRenderer);
+			_freeCam = createCamera(scene, _cam);
 
 			_freelook = scene.addSceneComponent<FreelookController>(*_freeCam);
 			_freelook->addListener(*this);
@@ -141,7 +139,6 @@ namespace
 			goldMat->setMetallicFactor(0.5F);
 			goldMat->setBaseColor(Colors::denormalize({ 0.944F, 0.776F, 0.373F, 1.F }));
 
-			/*
 			Cube cubeShape;
 			auto cubeMesh = MeshData(cubeShape).createMesh(layout);
 			auto cube = scene.createEntity();
@@ -164,7 +161,6 @@ namespace
 			floorMat->setProgramDefine("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
 			scene.addComponent<BoundingBox>(floorEntity, floorShape);
-			*/
 
 			_app.getInput().addListener("pause", { _pauseEvent }, *this);
 		}
@@ -238,7 +234,7 @@ namespace
 			}
 		}
 
-		Camera& createCamera(Scene& scene, OptionalRef<ShadowRenderer> debugShadow = nullptr)
+		Camera& createCamera(Scene& scene, OptionalRef<Camera> mainCamera = nullptr)
 		{
 			auto entity = scene.createEntity();
 
@@ -246,7 +242,7 @@ namespace
 				.setPosition({ 0, 4, -4 })
 				.lookAt({ 0, 0, 0 });
 
-			auto farPlane = debugShadow ? 100 : 20;
+			auto farPlane = mainCamera ? 100 : 20;
 			auto& cam = scene.addComponent<Camera>(entity)
 				.setViewportPerspective(60, 0.3, farPlane);
 
@@ -258,12 +254,17 @@ namespace
 			shadowConfig.cascadeAmount = 3;
 			cam.addComponent<ShadowRenderer>(shadowConfig);
 			cam.addComponent<ForwardRenderer>();
-			// cam.addComponent<FrustumCuller>();
+			cam.addComponent<FrustumCuller>();
+			// cam.addComponent<OcclusionCuller>();
 
-			if (debugShadow)
+			if (mainCamera)
 			{
+				cam.addComponent<CullingDebugRenderer>(mainCamera.value());
 				cam.setEnabled(false);
-				cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
+				if (auto debugShadow = mainCamera->getComponent<ShadowDebugRenderer>())
+				{
+					cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
+				}
 			}
 
 			return cam;

@@ -1203,7 +1203,7 @@ namespace darmok
         {
             if (auto cam = getCurrentCamera())
             {
-                model *= cam->getModelMatrix();
+                model *= cam->getViewMatrix();
             }
             model *= trans->getWorldMatrix();
         }
@@ -1233,7 +1233,7 @@ namespace darmok
         {
             // if the canvas does not have a transform, it means we want to use the full screen
             // so we have to invert the camera view proj since it will be in the bgfx view transform
-            mtx = cam->getModelInverse() * cam->getProjectionInverse() * mtx;
+            mtx = cam->getViewInverse() * cam->getProjectionInverse() * mtx;
         }
         return mtx;
     }
