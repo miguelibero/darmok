@@ -515,7 +515,18 @@ namespace darmok
         }
         MeshData meshData;
         meshData.type = MeshType::Transient;
+        uint8_t debugColor = 0;
 
+        Frustum frust = cam->getProjectionMatrix() * cam->getModelMatrix();
+
+        for (auto& plane : frust.planes)
+        {
+            meshData += MeshData(plane, RectangleMeshType::Full);
+            renderMesh(meshData, debugColor, viewId, encoder);
+            ++debugColor;
+        }
+
+        /*
         uint8_t debugColor = 0;
         auto cascadeAmount = _renderer.getConfig().cascadeAmount;
 
@@ -547,7 +558,7 @@ namespace darmok
 
             renderMesh(meshData, debugColor, viewId, encoder);
             ++debugColor;
-        }
+        }*/
     }
 
     void ShadowDebugRenderer::renderMesh(MeshData& meshData, uint8_t debugColor, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
@@ -555,7 +566,8 @@ namespace darmok
         encoder.setUniform(_hasTexturesUniform, glm::value_ptr(glm::vec4(0)));
         auto color = Colors::normalize(Colors::debug(debugColor));
         encoder.setUniform(_colorUniform, glm::value_ptr(color));
-        uint64_t state = BGFX_STATE_DEFAULT | BGFX_STATE_PT_LINES;
+        //static const uint64_t state = BGFX_STATE_DEFAULT | BGFX_STATE_PT_LINES;
+        uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
         auto mesh = meshData.createMesh(_prog->getVertexLayout());
         mesh->render(encoder);
         encoder.setState(state);

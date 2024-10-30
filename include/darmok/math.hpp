@@ -23,11 +23,11 @@ namespace darmok
 		}
 
 		template<glm::length_t L, glm::qualifier Q = glm::defaultp>
-		static bool almostZero(const glm::vec<L, glm::f32, Q>& v, int factor = 1) noexcept
+		static bool almostZero(const glm::vec<L, glm::f32, Q>& v, float threshold = 0.01F) noexcept
 		{
 			for (glm::length_t i = 0; i < L; ++i)
 			{
-				if (!almostZero(v[i], factor))
+				if (!almostZero(v[i], threshold))
 				{
 					return false;
 				}
@@ -36,11 +36,11 @@ namespace darmok
 		}
 
 		template<glm::length_t L1, glm::length_t L2, glm::qualifier Q = glm::defaultp>
-		static bool almostZero(const glm::mat<L1, L2, glm::f32, Q>& v, int factor = 1) noexcept
+		static bool almostZero(const glm::mat<L1, L2, glm::f32, Q>& v, float threshold = 0.01F) noexcept
 		{
 			for (glm::length_t i = 0; i < L1; ++i)
 			{
-				if (!almostZero(v[i], factor))
+				if (!almostZero(v[i], threshold))
 				{
 					return false;
 				}
@@ -49,11 +49,11 @@ namespace darmok
 		}
 
 		template<glm::qualifier Q = glm::defaultp>
-		static bool almostZero(const glm::qua<glm::f32, Q>& v, int factor = 1) noexcept
+		static bool almostZero(const glm::qua<glm::f32, Q>& v, float threshold = 0.01F) noexcept
 		{
 			for (glm::length_t i = 0; i < v.length(); ++i)
 			{
-				if (!almostZero(v[i], factor))
+				if (!almostZero(v[i], threshold))
 				{
 					return false;
 				}
@@ -61,14 +61,14 @@ namespace darmok
 			return true;
 		}
 
-		static bool almostZero(float a, int factor = 1) noexcept;
+		static bool almostZero(float a, float threshold = 0.01F) noexcept;
 
 		template<glm::length_t L, glm::qualifier Q = glm::defaultp>
-		static bool almostEqual(const glm::vec<L, glm::f32, Q>& a, const glm::vec<L, glm::f32, Q>& b, int factor = 1) noexcept
+		static bool almostEqual(const glm::vec<L, glm::f32, Q>& a, const glm::vec<L, glm::f32, Q>& b, float threshold = 0.01F) noexcept
 		{
 			for (glm::length_t i = 0; i < L; ++i)
 			{
-				if (!almostEqual(a[i], b[i], factor))
+				if (!almostEqual(a[i], b[i], threshold))
 				{
 					return false;
 				}
@@ -77,11 +77,11 @@ namespace darmok
 		}
 
 		template<glm::length_t L1, glm::length_t L2, glm::qualifier Q = glm::defaultp>
-		static bool almostEqual(const glm::mat<L1, L2, glm::f32, Q>& a, const glm::mat<L1, L2, glm::f32, Q>& b, int factor = 1) noexcept
+		static bool almostEqual(const glm::mat<L1, L2, glm::f32, Q>& a, const glm::mat<L1, L2, glm::f32, Q>& b, float threshold = 0.01F) noexcept
 		{
 			for (glm::length_t i = 0; i < L1; ++i)
 			{
-				if (!almostEqual(a[i], b[i], factor))
+				if (!almostEqual(a[i], b[i], threshold))
 				{
 					return false;
 				}
@@ -90,11 +90,11 @@ namespace darmok
 		}
 
 		template<glm::qualifier Q = glm::defaultp>
-		static bool almostEqual(const glm::qua<glm::f32, Q>& a, const glm::qua<glm::f32, Q>& b, int factor = 1) noexcept
+		static bool almostEqual(const glm::qua<glm::f32, Q>& a, const glm::qua<glm::f32, Q>& b, float threshold = 0.01F) noexcept
 		{
 			for (glm::length_t i = 0; i < a.length(); ++i)
 			{
-				if (!almostEqual(a[i], b[i], factor))
+				if (!almostEqual(a[i], b[i], threshold))
 				{
 					return false;
 				}
@@ -102,7 +102,7 @@ namespace darmok
 			return true;
 		}
 
-		static bool almostEqual(float a, float b, int factor = 1) noexcept;
+		static bool almostEqual(float a, float b, float threshold = 0.01F) noexcept;
 
 		[[nodiscard]] static glm::mat4 flipHandedness(const glm::mat4& mat) noexcept;
 		[[nodiscard]] static glm::quat flipHandedness(const glm::quat& quat) noexcept;
@@ -138,6 +138,9 @@ namespace darmok
 		static glm::quat rotateTowards(const glm::quat& current, const glm::quat& target, float maxRadiansDelta) noexcept;
 
 		static glm::mat4 changeProjDepth(const glm::mat4& proj, float near = defaultNear, float far = defaultFar) noexcept;
+
+		static bool almostEqualAngle(float a, float b, float threshold = 0.01F) noexcept;
+		static glm::quat quatLookAt(const glm::vec3& direction, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f), float threshold = 0.01F) noexcept;
 	};
 }
 

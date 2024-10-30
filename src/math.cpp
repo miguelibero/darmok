@@ -3,20 +3,19 @@
 #include <bgfx/bgfx.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/vector_angle.hpp>
 #include <algorithm>
 
 namespace darmok
 {
-    bool Math::almostEqual(float a, float b, int factor) noexcept
+    bool Math::almostEqual(float a, float b, float threshold) noexcept
     {
-        double min_a = a - (a - std::nextafter(a, std::numeric_limits<float>::lowest())) * factor;
-        double max_a = a + (std::nextafter(a, std::numeric_limits<float>::max()) - a) * factor;
-        return min_a <= b && max_a >= b;
+        return std::abs(a - b) < threshold;
     }
 
-    bool Math::almostZero(float a, int factor) noexcept
+    bool Math::almostZero(float a, float threshold) noexcept
     {
-        return almostEqual(a, 0, factor);
+        return almostEqual(a, 0, threshold);
     }
 
     glm::mat4 Math::flipHandedness(const glm::mat4& mat) noexcept
@@ -109,6 +108,31 @@ namespace darmok
         float fov = 2.0f * atan(1.0f / proj[1][1]);
         float aspectRatio = proj[1][1] / proj[0][0];
         return glm::perspective(fov, aspectRatio, near, far);
+    }
+
+    bool Math::almostEqualAngle(float a, float b, float threshold) noexcept
+    {
+        auto p = glm::two_pi<float>();
+        return almostEqual(fmod(a, p), fmod(b, p), threshold);
+    }
+
+    glm::quat Math::quatLookAt(const glm::vec3& direction, const glm::vec3& up, float threshold) noexcept
+    {
+        auto normDir = glm::normalize(direction);
+        auto normUp = glm::normalize(up);
+        glm::vec3 fixedUp = normUp;
+        float angle = glm::angle(normDir, fixedUp);
+        auto p = glm::pi<float>();
+        if (angle < threshold || angle > p - threshold)
+        {
+            fixedUp = glm::vec3(0.0f, 0.0f, 1.0f);
+            angle = glm::angle(normDir, fixedUp);
+            if (angle < threshold || angle > p - threshold)
+            {
+                fixedUp = glm::vec3(1.0f, 0.0f, 0.0f);
+            }
+        }
+        return glm::quatLookAt(normDir, fixedUp);
     }
 
     glm::mat4 Math::transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept

@@ -30,18 +30,23 @@ TEST_CASE("Plane transform", "[shape]")
 	plane = Plane(glm::vec3(0, 0, 1), 1);
 	plane *= roty;
 
-	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(1, 0, 0), 100000000));
-	REQUIRE(Math::almostEqual(plane.distance, -1, 100));
+	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(-1, 0, 0)));
+	REQUIRE(Math::almostEqual(plane.distance, 1));
 
 	plane *= scale;
 
-	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(2, 0, 0), 100000000));
-	REQUIRE(Math::almostEqual(plane.distance, -4, 100));
+	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(-2, 0, 0)));
+	REQUIRE(Math::almostEqual(plane.distance, 4));
 
 	plane = Plane(glm::vec3(0, 0, 1), 0) * roty;
 
-	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(1, 0, 0), 100000000));
-	REQUIRE(Math::almostEqual(plane.distance, 0, 100));
+	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(-1, 0, 0)));
+	REQUIRE(Math::almostEqual(plane.distance, 0));
+
+	plane = Plane(glm::vec3(0, 0, -1), 1) * roty;
+
+	REQUIRE(Math::almostEqual(plane.normal, glm::vec3(1, 0, 0)));
+	REQUIRE(Math::almostEqual(plane.distance, 1));
 }
 
 TEST_CASE("Frustum planes are correct", "[shape]")

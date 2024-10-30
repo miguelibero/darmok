@@ -165,9 +165,13 @@ namespace darmok
         float distance;
 
         Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float distance = 0.F) noexcept;
+        Plane(const Triangle& tri) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
+        [[nodiscard]] Line getNormalLine() const noexcept;
+
         [[nodiscard]] glm::vec3 getOrigin() const noexcept;
+        [[nodiscard]] glm::mat4 getTransform(const glm::vec3& up = glm::vec3(0, 1, 0)) const noexcept;
 
         [[nodiscard]] Plane operator*(const glm::mat4& transform) const noexcept;
         Plane& operator*=(const glm::mat4& transform) noexcept;
@@ -247,10 +251,11 @@ namespace darmok
 
     struct DARMOK_EXPORT Ray final
     {
-        glm::vec3 direction;
         glm::vec3 origin;
+        glm::vec3 direction;
 
-        Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 1, 0)) noexcept;
+        Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 0, 1)) noexcept;
+        Ray(const Line& line) noexcept;
 
         [[nodiscard]] Ray operator*(const glm::mat4& transform) const noexcept;
         Ray& operator*=(const glm::mat4& transform) noexcept;
@@ -289,6 +294,7 @@ namespace darmok
 
         Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 0, 1)) noexcept;
         Line(const Points& points) noexcept;
+        Line(const Ray& ray) noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] Ray toRay() const noexcept;
@@ -391,13 +397,13 @@ namespace darmok
         std::array<glm::vec3, toUnderlying(CornerType::Count)> corners;
         std::array<Plane, toUnderlying(PlaneType::Count)> planes;
 
+        Frustum(const glm::mat4& proj = glm::mat4(1)) noexcept;
+
         [[nodiscard]] const glm::vec3& getCorner(Frustum::CornerType type) const noexcept;
         [[nodiscard]] glm::vec3& getCorner(Frustum::CornerType type) noexcept;
 
         [[nodiscard]] const Plane& getPlane(Frustum::PlaneType type) const noexcept;
         [[nodiscard]] Plane& getPlane(Frustum::PlaneType type) noexcept;
-
-        Frustum(const glm::mat4& proj = glm::mat4(1)) noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] glm::vec3 getCenter() const noexcept;

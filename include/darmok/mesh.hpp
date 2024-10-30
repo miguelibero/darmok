@@ -155,6 +155,7 @@ namespace darmok
     struct Capsule;
     struct Ray;
     struct Line;
+    struct Plane;
     struct Triangle;
     struct Polygon;
     struct Frustum;
@@ -186,6 +187,7 @@ namespace darmok
         MeshData(const Sphere& sphere, unsigned int lod = 32) noexcept;
         MeshData(const Capsule& capsule, unsigned int lod = 32) noexcept;
         MeshData(const Rectangle& rect, RectangleMeshType type = RectangleMeshType::Full) noexcept;
+        MeshData(const Plane& plane, RectangleMeshType type = RectangleMeshType::Full) noexcept;
         MeshData(const Ray& ray) noexcept;
         MeshData(const Line& line, LineMeshType type = LineMeshType::Line) noexcept;
         MeshData(const Triangle& tri) noexcept;
@@ -203,6 +205,7 @@ namespace darmok
         MeshData& scaleTexCoords(const glm::vec2& scale) noexcept;
         MeshData& translateTexCoords(const glm::vec2& pos) noexcept;
 
+        MeshData& createIndices() noexcept;
         MeshData& shiftIndices(Index offset) noexcept;
         MeshData& calcNormals() noexcept;
         MeshData& calcTangents() noexcept;
@@ -228,5 +231,7 @@ namespace darmok
         static const std::vector<Index> _cuboidTriangleIndices;
 
         bool doSubdivide(size_t i, float maxDistance = bx::kFloatInfinity) noexcept;
+        static void doCreateIndices(std::vector<Index>& indices, size_t size) noexcept;
+        void setupBasicRectangle() noexcept;
     };
 }

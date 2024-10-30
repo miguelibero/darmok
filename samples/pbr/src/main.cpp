@@ -141,6 +141,7 @@ namespace
 			goldMat->setMetallicFactor(0.5F);
 			goldMat->setBaseColor(Colors::denormalize({ 0.944F, 0.776F, 0.373F, 1.F }));
 
+			/*
 			Cube cubeShape;
 			auto cubeMesh = MeshData(cubeShape).createMesh(layout);
 			auto cube = scene.createEntity();
@@ -163,6 +164,7 @@ namespace
 			floorMat->setProgramDefine("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
 			scene.addComponent<BoundingBox>(floorEntity, floorShape);
+			*/
 
 			_app.getInput().addListener("pause", { _pauseEvent }, *this);
 		}
@@ -256,15 +258,13 @@ namespace
 			shadowConfig.cascadeAmount = 3;
 			cam.addComponent<ShadowRenderer>(shadowConfig);
 			cam.addComponent<ForwardRenderer>();
-			cam.addComponent<FrustumCuller>();
+			// cam.addComponent<FrustumCuller>();
 
 			if (debugShadow)
 			{
 				cam.setEnabled(false);
 				cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
 			}
-
-
 
 			return cam;
 		}

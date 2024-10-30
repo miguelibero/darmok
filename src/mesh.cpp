@@ -520,17 +520,22 @@ namespace darmok
 		*this *= trans;
 	}
 
-	MeshData::MeshData(const Rectangle& rect, RectangleMeshType type) noexcept
+	void MeshData::setupBasicRectangle() noexcept
 	{
 		static const std::vector<MeshData::Vertex> basicVertices = {
-			{ { 1, 1, 0 }, { 1, 0 }, { 0, 0, -1 }, { 1, 0, 0} },
-			{ { 1, 0, 0 }, { 1, 1 }, { 0, 0, -1 }, { 1, 0, 0} },
-			{ { 0, 0, 0 }, { 0, 1 }, { 0, 0, -1 }, { 1, 0, 0} },
-			{ { 0, 1, 0 }, { 0, 0 }, { 0, 0, -1 }, { 1, 0, 0} }
+			{ {  0.5F,  0.5F, 0 }, { 1, 0 }, { 0, 0, 1 }, { 1, 0, 0} },
+			{ {  0.5F, -0.5F, 0 }, { 1, 1 }, { 0, 0, 1 }, { 1, 0, 0} },
+			{ { -0.5F, -0.5F, 0 }, { 0, 1 }, { 0, 0, 1 }, { 1, 0, 0} },
+			{ { -0.5F,  0.5F, 0 }, { 0, 0 }, { 0, 0, 1 }, { 1, 0, 0} }
 		};
 		static const std::vector<Index> basicIndices = { 0, 1, 2, 2, 3, 0 };
 		vertices = basicVertices;
 		indices = basicIndices;
+	}
+
+	MeshData::MeshData(const Rectangle& rect, RectangleMeshType type) noexcept
+	{
+		setupBasicRectangle();
 
 		if (type == RectangleMeshType::Outline)
 		{
@@ -547,8 +552,29 @@ namespace darmok
 		}
 
 		auto trans = glm::scale(glm::mat4(1), glm::vec3(rect.size, 1.F));
-		trans = glm::translate(trans, glm::vec3(rect.origin / rect.size - glm::vec2(0.5F), 0));
+		trans = glm::translate(trans, glm::vec3(rect.origin / rect.size, 0));
 		*this *= trans;
+	}
+
+	MeshData::MeshData(const Plane& plane, RectangleMeshType type) noexcept
+	{
+		setupBasicRectangle();
+
+		if (type == RectangleMeshType::Outline)
+		{
+			convertQuadIndicesToLine();
+
+			indices.push_back(vertices.size());
+			vertices.push_back({ { 0, 0, 0 }, { 0, 0 }, { 0, 0, 1 }, { 1, 0, 0} });
+			indices.push_back(vertices.size());
+			vertices.push_back({ { 0, 0, 1 }, { 0, 0 }, { 0, 0, 1 }, { 1, 0, 0} });
+		}
+		else if (type == RectangleMeshType::Full)
+		{
+			*this += MeshData(Ray());
+		}
+
+		*this *= plane.getTransform();
 	}
 
 	MeshData::MeshData(const Frustum& frust, RectangleMeshType type) noexcept
@@ -897,17 +923,40 @@ namespace darmok
 		return r;
 	}
 
+	void MeshData::doCreateIndices(std::vector<Index>& indices, size_t size) noexcept
+	{
+		indices.reserve(size);
+		for (size_t i = 0; i < size; ++i)
+		{
+			indices.push_back(i);
+		}
+	}
+
+	MeshData& MeshData::createIndices() noexcept
+	{
+		doCreateIndices(indices, vertices.size());
+		return *this;
+	}
+
 	MeshData& MeshData::operator+=(const MeshData& other) noexcept
 	{
 		auto offset = vertices.size();
-		MeshData fother = other;
-		indices.reserve(indices.size() + other.indices.size());
-		for (auto& idx : fother.indices)
+		auto otherIndices = other.indices;
+		if (indices.empty() && !otherIndices.empty())
+		{
+			createIndices();
+		}
+		if (!indices.empty() && otherIndices.empty())
+		{
+			doCreateIndices(otherIndices, other.vertices.size());
+		}
+		indices.reserve(indices.size() + otherIndices.size());
+		for (auto& idx : otherIndices)
 		{
 			indices.push_back(offset + idx);
 		}
 		vertices.reserve(vertices.size() + other.vertices.size());
-		vertices.insert(vertices.end(), fother.vertices.begin(), fother.vertices.end());
+		vertices.insert(vertices.end(), other.vertices.begin(), other.vertices.end());
 		return *this;
 	}
 

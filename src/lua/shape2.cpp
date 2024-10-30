@@ -9,15 +9,14 @@ namespace darmok
 		lua.new_usertype<Ray>("Ray",
 			sol::factories(
 				[]() { return Ray(); },
-				[](const VarLuaTable<glm::vec3>& dir) {
-					return Ray(LuaGlm::tableGet(dir)); },
-					[](const VarLuaTable<glm::vec3>& dir, const VarLuaTable<glm::vec3>& origin) {
-					return Ray(LuaGlm::tableGet(dir), LuaGlm::tableGet(origin)); }
+				[](const VarLuaTable<glm::vec3>& origin, const VarLuaTable<glm::vec3>& dir) {
+					return Ray(LuaGlm::tableGet(origin), LuaGlm::tableGet(dir));
+				}
 			),
 			"from_positions", [](const VarLuaTable<glm::vec3>& vsrc, const VarLuaTable<glm::vec3>& vdst) {
 				auto src = LuaGlm::tableGet(vsrc);
 				auto dst = LuaGlm::tableGet(vdst);
-				return Ray(dst - src, src);
+				return Ray(src, dst - src);
 			},
 			"direction", &Ray::direction,
 			"origin", &Ray::origin,

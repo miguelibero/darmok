@@ -114,7 +114,7 @@ namespace darmok
         auto edge1 = vertices[1] - vertices[0];
         auto edge2 = vertices[2] - vertices[0];
         auto normal = glm::cross(edge1, edge2);
-        return glm::normalize(normal);
+        return normal;
     }
 
     glm::vec3 Triangle::getTangent(const TextureTriangle& texTri) const noexcept
@@ -309,6 +309,12 @@ namespace darmok
     {
     }
 
+    Plane::Plane(const Triangle& tri) noexcept
+        : normal(tri.getNormal())
+        , distance(glm::abs(glm::dot(normal, tri.vertices[0])))
+    {
+    }
+
     float Plane::distanceTo(const glm::vec3& point) const noexcept
     {
         return glm::dot(normal, point) + distance;
@@ -322,12 +328,23 @@ namespace darmok
 
     glm::vec3 Plane::getOrigin() const noexcept
     {
-        return normal * this->distance;
+        return normal * distance;
+    }
+
+    glm::mat4 Plane::getTransform(const glm::vec3& up) const noexcept
+    {
+        return getNormalLine().getTransform(up);
     }
 
     std::string Plane::toString() const noexcept
     {
         return "Plane(" + glm::to_string(normal) + ", " + std::to_string(distance) + ")";
+    }
+
+    Line Plane::getNormalLine() const noexcept
+    {
+        auto origin = getOrigin();
+        return Line(origin, origin + normal);
     }
 
     Plane Plane::operator*(const glm::mat4& transform) const noexcept
@@ -341,7 +358,7 @@ namespace darmok
     {
         auto v = normal * distance;
         v = transform * glm::vec4(v, 1.0f);
-        normal = glm::mat3(glm::transpose(transform)) * normal;
+        normal = transform * glm::vec4(normal, 0.0f);
         distance = glm::dot(normal, v);
         return *this;
     }
@@ -356,9 +373,15 @@ namespace darmok
         return !operator==(other);
     }
 
-    Ray::Ray(const glm::vec3& dir, const glm::vec3& origin) noexcept
-        : direction(dir)
-        , origin(origin)
+    Ray::Ray(const glm::vec3& origin, const glm::vec3& dir) noexcept
+        : origin(origin)
+        , direction(dir)
+    {
+    }
+
+    Ray::Ray(const Line& line) noexcept
+        : origin(line.points[1] - line.points[0])
+        , direction(line.points[0])
     {
     }
 
@@ -378,7 +401,7 @@ namespace darmok
 
     std::string Ray::toString() const noexcept
     {
-        return "Ray(direction=" + glm::to_string(direction) + ", origin=" + glm::to_string(origin) + ")";
+        return "Ray(origin=" + glm::to_string(origin) + ", direction=" + glm::to_string(direction) + ")";
     }
 
     Line Ray::toLine() const noexcept
@@ -438,7 +461,7 @@ namespace darmok
         auto near = glm::unProject(glm::vec3(screenPosition, 0), model, proj, viewport.getValues());
         auto far = glm::unProject(glm::vec3(screenPosition, 1), model, proj, viewport.getValues());
 
-        return Ray(glm::normalize(far - near), near);
+        return Ray(near, glm::normalize(far - near));
     }
 
     glm::vec3 Ray::operator*(float dist) const noexcept
@@ -466,6 +489,11 @@ namespace darmok
     {
     }
 
+    Line::Line(const Ray& ray) noexcept
+        : points{ ray.origin, ray.origin + ray.direction }
+    {
+    }
+
     std::string Line::toString() const noexcept
     {
         return "Line(" + glm::to_string(points[0]) + ", " + glm::to_string(points[1]) + ")";
@@ -473,7 +501,7 @@ namespace darmok
 
     Ray Line::toRay() const noexcept
     {
-        return Ray(points[0], points[1] - points[0]);
+        return Ray(*this);
     }
 
     glm::vec3 Line::operator*(float dist) const noexcept
@@ -541,11 +569,10 @@ namespace darmok
     {
         auto diff = points[1] - points[0];
         auto len = glm::length(diff);
-        auto trans = glm::translate(glm::mat4(len), points[0]);
-        auto rot = glm::quatLookAt(diff / len, up);
-        trans *= glm::mat4_cast(rot);
-
-        return trans;
+        auto mtx = glm::mat4(len);
+        mtx = glm::translate(mtx, points[0]);
+        mtx *= glm::mat4_cast(Math::quatLookAt(diff / len, up));
+        return mtx;
     }
 
     bool Line::operator==(const Line& other) const noexcept
@@ -814,18 +841,17 @@ namespace darmok
         }
 
         planes = {
-            Plane(glm::vec3(0,  0, -1), std::abs(nd)),
-            Plane(glm::vec3(0,  0,  1), 1),
-            Plane(glm::vec3(0, -1,  0), 1),
-            Plane(glm::vec3(0,  1,  0), 1),
-            Plane(glm::vec3(-1, 0,  0), 1),
-            Plane(glm::vec3(1,  0,  0), 1),
+            Plane(glm::vec3( 0,  0, -1), std::abs(nd)),
+            Plane(glm::vec3( 0,  0,  1), 1),
+            Plane(glm::vec3( 0, -1,  0), 1),
+            Plane(glm::vec3( 0,  1,  0), 1),
+            Plane(glm::vec3(-1,  0,  0), 1),
+            Plane(glm::vec3( 1,  0,  0), 1),
         };
 
         for (auto& plane : planes)
         {
-            plane *= invProj;
-            // plane.normal = glm::normalize(plane.normal);
+            plane *= proj;
         }
     }
 
@@ -882,11 +908,11 @@ namespace darmok
         for (auto& plane : planes)
         {
             auto v = glm::vec3(
-                (plane.normal.x >= 0) ? bbox.max.x : bbox.min.x,
-                (plane.normal.y >= 0) ? bbox.max.y : bbox.min.y,
-                (plane.normal.z >= 0) ? bbox.max.z : bbox.min.z
+                (plane.normal.x >= 0.F) ? bbox.max.x : bbox.min.x,
+                (plane.normal.y >= 0.F) ? bbox.max.y : bbox.min.y,
+                (plane.normal.z >= 0.F) ? bbox.max.z : bbox.min.z
             );
-            if(plane.distanceTo(v) < 0)
+            if(plane.distanceTo(v) < 0.F)
             {
                 return false;
             }
