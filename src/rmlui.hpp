@@ -291,6 +291,7 @@ namespace darmok
 		glm::mat4 getDefaultProjectionMatrix() const noexcept;
 		OptionalRef<Transform> getTransform() const noexcept;
 		void configureViewSize(bgfx::ViewId viewId) const noexcept;
+		void updateViewName() noexcept;
 	};
 
 	class Transform;

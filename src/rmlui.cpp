@@ -744,19 +744,13 @@ namespace darmok
 
     bgfx::ViewId RmluiCanvasImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
-        _viewId.reset();
-        if (!_cam)
-        {
-            return viewId;
-        }
         if (!_size)
         {
             updateCurrentSize();
         }
 
-        auto name = _cam->getViewName("Rmlui: " + _name);
-        bgfx::setViewName(viewId,  name.c_str());
         _viewId = viewId;
+        updateViewName();
 
         static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
         bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 0);
@@ -768,7 +762,25 @@ namespace darmok
 
     void RmluiCanvasImpl::setCamera(const OptionalRef<Camera>& camera) noexcept
     {
-        _cam = camera;
+        if (_cam != camera)
+        {
+            _cam = camera;
+            updateViewName();
+        }
+    }
+
+    void RmluiCanvasImpl::updateViewName() noexcept
+    {
+        if (!_viewId)
+        {
+            return;
+        }
+        auto name = "Rmlui Canvas: " + _name;
+        if (_cam)
+        {
+            name = _cam->getViewName(name);
+        }
+        bgfx::setViewName(_viewId.value(), name.c_str());
     }
 
     const OptionalRef<Camera>& RmluiCanvasImpl::getCamera() const noexcept
