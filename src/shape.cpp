@@ -55,6 +55,12 @@ namespace darmok
     {
     }
 
+    Cube::Cube(const BoundingBox& bbox) noexcept
+        : size(bbox.max - bbox.min)
+        , origin(bbox.min + (size * 0.5F))
+    {
+    }
+
     const Cube& Cube::standard() noexcept
     {
         const static Cube v;
@@ -851,18 +857,6 @@ namespace darmok
         min = glm::min(min, pos);
         max = glm::max(max, pos);
         return *this;
-    }
-
-    Cube BoundingBox::getCube() const noexcept
-    {
-        auto size = max - min;
-        auto origin = min + (size * 0.5F);
-        return Cube(size, origin);
-    }
-
-    BoundingBox::operator Cube() const noexcept
-    {
-        return getCube();
     }
 
     bool BoundingBox::empty() const noexcept

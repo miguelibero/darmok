@@ -27,12 +27,12 @@ namespace darmok
     {
         float intensity;
         Color3 color;
-        float radius;
+        float range;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(intensity, color, radius);
+            archive(intensity, color, range);
         }
     };
 
@@ -40,13 +40,14 @@ namespace darmok
     {
         float intensity;
         Color3 color;
-        float innerAngle = 0.F;
-        float outerAngle = 0.F;
+        float range;
+        float innerConeAngle = 0.F;
+        float coneAngle = 0.F;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(intensity, color, innerAngle, outerAngle);
+            archive(intensity, color, range, coneAngle, innerConeAngle);
         }
     };
 
@@ -327,6 +328,7 @@ namespace darmok
         void configureEntity(const ModelRenderable& renderable, Entity entity) noexcept;
         void configureEntity(const ModelCamera& cam, Entity entity) noexcept;
         void configureEntity(const ModelPointLight& light, Entity entity) noexcept;
+        void configureEntity(const ModelSpotLight& light, Entity entity) noexcept;
         void configureEntity(const ModelAmbientLight& light, Entity entity) noexcept;
     };
 

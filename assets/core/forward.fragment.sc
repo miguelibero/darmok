@@ -47,10 +47,36 @@ void main()
     {
         PointLight light = getPointLight(i);
         float dist = distance(light.position, fragPos);
-        float attenuation = smoothAttenuation(dist, light.radius);
+        float attenuation = smoothAttenuation(dist, light.range);
         if(attenuation > 0.0)
         {
             vec3 L = normalize(light.position - fragPos);
+            vec3 radianceIn = light.intensity * attenuation;
+            float NoL = saturate(dot(N, L));
+            radianceOut += BRDF(V, L, N, NoV, NoL, mat) * msFactor * radianceIn * NoL;
+        }
+    }
+
+    uint spotLights = spotLightCount();
+    for(uint i = 0; i < spotLights; i++)
+    {
+        SpotLight light = getSpotLight(i);
+        vec3 L = normalize(light.position - fragPos);
+        float cosTheta = dot(L, normalize(-light.direction));
+        float innerCutoff = cos(light.innerConeAngle * 0.5);
+        float outerCutoff = cos(light.coneAngle * 0.5);
+
+        float attenuation = 0.0;
+        if (cosTheta > outerCutoff)
+        {
+            // Calculate the spotlight intensity with smooth edge falloff
+            float factor = (cosTheta - outerCutoff) / (innerCutoff - outerCutoff);
+            float dist = length(L);
+            attenuation = factor * smoothAttenuation(dist, light.range);
+        }
+
+        if(attenuation > 0.0)
+        {
             vec3 radianceIn = light.intensity * attenuation;
             float NoL = saturate(dot(N, L));
             radianceOut += BRDF(V, L, N, NoV, NoL, mat) * msFactor * radianceIn * NoL;
@@ -61,6 +87,7 @@ void main()
     for(uint i = 0; i < dirLights; i++)
     {
         DirectionalLight light = getDirLight(i);
+        
         vec3 L = -light.direction;
         vec3 radianceIn = light.intensity;
         float NoL = saturate(dot(N, L));

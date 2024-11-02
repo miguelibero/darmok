@@ -7,13 +7,21 @@
 uniform vec4 u_lightCountVec;
 #define u_pointLightCount uint(u_lightCountVec.x)
 #define u_dirLightCount   uint(u_lightCountVec.y)
+#define u_spotLightCount   uint(u_lightCountVec.z)
 
 uniform vec4 u_ambientLightIrradiance;
 
 // for each point light:
 //   vec4 position (w is padding)
-//   vec4 intensity + radius (xyz is intensity, w is radius)
+//   vec4 intensity + range (xyz is intensity, w is range)
 BUFFER_RO(b_pointLights, vec4, DARMOK_SAMPLER_LIGHTS_POINT);
+
+// for each spot light:
+//   vec4 position (w is padding)
+//   vec4 direction (w is padding)
+//   vec4 intensity + range (xyz is intensity, w is range)
+//   vec4 cone angle, inner cone angle
+BUFFER_RO(b_spotLights, vec4, DARMOK_SAMPLER_LIGHTS_SPOT);
 
 // for each directional light:
 //   vec4 direction (w is padding)
@@ -24,7 +32,17 @@ struct PointLight
 {
     vec3 position;
     vec3 intensity;
-    float radius;
+    float range;
+};
+
+struct SpotLight
+{
+    vec3 position;
+    vec3 direction;
+    vec3 intensity;
+    float range;
+    float coneAngle;
+    float innerConeAngle;
 };
 
 struct DirectionalLight
@@ -52,11 +70,11 @@ float distanceAttenuation(float distance)
     return 1.0 / max(distance * distance, 0.01 * 0.01);
 }
 
-float smoothAttenuation(float distance, float radius)
+float smoothAttenuation(float distance, float range)
 {
     // window function with smooth transition to 0
-    // radius is arbitrary (and usually artist controlled)
-    float nom = saturate(1.0 - pow(distance / radius, 4.0));
+    // range is arbitrary (and usually artist controlled)
+    float nom = saturate(1.0 - pow(distance / range, 4.0));
     return nom * nom * distanceAttenuation(distance);
 }
 
@@ -70,11 +88,32 @@ PointLight getPointLight(uint i)
     PointLight light;
     i *= 2;
     light.position = b_pointLights[i + 0].xyz;
-    vec4 intensityRadiusVec = b_pointLights[i + 1];
-    light.intensity = intensityRadiusVec.xyz;
-    light.radius = intensityRadiusVec.w;
+    vec4 intensityRangeVec = b_pointLights[i + 1];
+    light.intensity = intensityRangeVec.xyz;
+    light.range = intensityRangeVec.w;
     return light;
 }
+
+uint spotLightCount()
+{
+    return u_spotLightCount;
+}
+
+SpotLight getSpotLight(uint i)
+{
+    SpotLight light;
+    i *= 4;
+    light.position = b_spotLights[i + 0].xyz;
+    light.direction = b_spotLights[i + 1].xyz;
+    vec4 intensityRangeVec = b_spotLights[i + 2];
+    light.intensity = intensityRangeVec.xyz;
+    light.range = intensityRangeVec.w;
+    vec4 dataVec = b_spotLights[i + 3];
+    light.coneAngle = dataVec.x;
+    light.innerConeAngle = dataVec.y;
+    return light;
+}
+
 
 uint dirLightCount()
 {

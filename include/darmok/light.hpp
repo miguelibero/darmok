@@ -16,19 +16,18 @@ namespace darmok
     class DARMOK_EXPORT PointLight final
     {
     public:
-        PointLight(float intensity = 1.F, const Color3& color = Colors::white3(), float radius = 1.F) noexcept;
+        PointLight(float intensity = 1.F, const Color3& color = Colors::white3(), float range = 1.F) noexcept;
 
         PointLight& setIntensity(float intensity) noexcept;
-        PointLight& setRadius(float radius) noexcept;
-
+        PointLight& setRange(float range) noexcept;
         PointLight& setColor(const Color3& color) noexcept;
 
-        [[nodiscard]] float getRadius() const noexcept;
+        [[nodiscard]] float getRange() const noexcept;
         [[nodiscard]] float getIntensity() const noexcept;
         [[nodiscard]] const Color3& getColor() const noexcept;
     private:
         float _intensity;
-        float _radius;
+        float _range;
         Color3 _color;
     };
 
@@ -65,16 +64,25 @@ namespace darmok
     class DARMOK_EXPORT SpotLight final
     {
     public:
-        SpotLight(float intensity = 1.F) noexcept;
+        SpotLight(float intensity = 1.F, const Color3& color = Colors::white3(), float range = 1.F) noexcept;
 
         SpotLight& setIntensity(float intensity) noexcept;
+        SpotLight& setRange(float range) noexcept;
         SpotLight& setColor(const Color3& color) noexcept;
+        SpotLight& setConeAngle(float angle) noexcept;
+        SpotLight& setInnerConeAngle(float angle) noexcept;
 
         [[nodiscard]] const Color3& getColor() const noexcept;
         [[nodiscard]] float getIntensity() const noexcept;
+        [[nodiscard]] float getRange() const noexcept;
+        [[nodiscard]] float getConeAngle() const noexcept;
+        [[nodiscard]] float getInnerConeAngle() const noexcept;
     private:
         float _intensity;
+        float _range;
         Color3 _color;
+        float _coneAngle;
+        float _innerConeAngle;
     };
 
     class DARMOK_EXPORT LightingRenderComponent final : public ITypeCameraComponent<LightingRenderComponent>
@@ -97,15 +105,18 @@ namespace darmok
         bgfx::UniformHandle _normalMatrixUniform;
         bgfx::DynamicVertexBufferHandle _pointLightBuffer;
         bgfx::DynamicVertexBufferHandle _dirLightBuffer;
+        bgfx::DynamicVertexBufferHandle _spotLightBuffer;
 
         bgfx::VertexLayout _pointLightsLayout;
         bgfx::VertexLayout _dirLightsLayout;
+        bgfx::VertexLayout _spotLightsLayout;
 
         glm::vec4 _lightCount;
         glm::vec4 _lightData;
         glm::vec4 _camPos;
 
         size_t updatePointLights() noexcept;
+        size_t updateSpotLights() noexcept;
         size_t updateDirLights() noexcept;
         void updateAmbientLights() noexcept;
         void updateCamera() noexcept;

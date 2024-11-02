@@ -437,7 +437,7 @@ namespace darmok
         cam.projection = Math::perspective(fovy, aspect, assimpCam.mClipPlaneNear, assimpCam.mClipPlaneFar);
     }
 
-    float AssimpModelConverter::getLightRadius(const glm::vec3& attenuation) noexcept
+    float AssimpModelConverter::getLightRange(const glm::vec3& attenuation) noexcept
     {
         static const float intensityThreshold = 0.001F;
         auto thres = intensityThreshold;
@@ -484,7 +484,7 @@ namespace darmok
                 assimpLight.mAttenuationLinear,
                 assimpLight.mAttenuationQuadratic
             );
-            light.radius = getLightRadius(attn);
+            light.range = getLightRange(attn);
             light.intensity = intensity;
             light.color = color;
             // we're not supporting different specular color in lights
@@ -501,8 +501,8 @@ namespace darmok
             auto& light = lightNode.spotLight.emplace();
             light.intensity = intensity;
             light.color = color;
-            light.innerAngle = assimpLight.mAngleInnerCone;
-            light.outerAngle = assimpLight.mAngleOuterCone;
+            light.innerConeAngle = assimpLight.mAngleInnerCone;
+            light.coneAngle = assimpLight.mAngleOuterCone;
         }
         else if (assimpLight.mType == aiLightSource_AMBIENT)
         {

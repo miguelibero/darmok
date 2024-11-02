@@ -265,6 +265,10 @@ namespace darmok
         {
             configureEntity(*node.pointLight, entity);
         }
+        if (node.spotLight)
+        {
+            configureEntity(*node.spotLight, entity);
+        }
         if (node.ambientLight)
         {
             configureEntity(*node.ambientLight, entity);
@@ -416,8 +420,18 @@ namespace darmok
     {
         _config.scene.addComponent<PointLight>(entity)
             .setIntensity(light.intensity)
-            .setRadius(light.radius)
+            .setRange(light.range)
             .setColor(light.color);
+    }
+
+    void ModelSceneConfigurer::configureEntity(const ModelSpotLight& light, Entity entity) noexcept
+    {
+        _config.scene.addComponent<SpotLight>(entity)
+            .setIntensity(light.intensity)
+            .setRange(light.range)
+            .setColor(light.color)
+            .setConeAngle(light.coneAngle)
+            .setInnerConeAngle(light.innerConeAngle);
     }
 
     void ModelSceneConfigurer::configureEntity(const ModelAmbientLight& light, Entity entity) noexcept

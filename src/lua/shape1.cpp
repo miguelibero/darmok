@@ -41,6 +41,7 @@ namespace darmok
 		lua.new_usertype<Cube>("Cube",
 			sol::factories(
 				[]() { return Cube(); },
+				[](const BoundingBox& bbox) { return Cube(bbox); },
 				[](const VarLuaVecTable<glm::vec3>& size) {
 					return Cube(LuaGlm::tableGet(size)); },
 				[](const VarLuaVecTable<glm::vec3>& size, const VarLuaTable<glm::vec3>& origin) {

@@ -28,7 +28,7 @@ void main()
     {
 		PointLight light = getPointLight(i);
 		float dist = distance(light.position, fragPos);
-        float attenuation = smoothAttenuation(dist, light.radius);
+        float attenuation = smoothAttenuation(dist, light.range);
         if(attenuation > 0.0)
         {
 			vec3 lightDir = normalize(light.position - fragPos);

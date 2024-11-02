@@ -42,9 +42,52 @@ namespace darmok
 			"get_entity_component", &LuaPointLight::getEntityComponent,
 			"get_entity", &LuaPointLight::getEntity,
 			"intensity", sol::property(&PointLight::getIntensity, &PointLight::setIntensity),
-			"radius", sol::property(&PointLight::getRadius, &PointLight::setRadius),
+			"range", sol::property(&PointLight::getRange, &PointLight::setRange),
 			"color", sol::property(&PointLight::getColor, &LuaPointLight::setColor)
 		);
+	}
+
+	void LuaSpotLight::bind(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<SpotLight>("SpotLight", sol::no_constructor,
+			"type_id", sol::property(&entt::type_hash<SpotLight>::value),
+			"add_entity_component", sol::overload(
+				&LuaSpotLight::addEntityComponent1,
+				&LuaSpotLight::addEntityComponent2
+			),
+			"get_entity_component", &LuaSpotLight::getEntityComponent,
+			"get_entity", &LuaSpotLight::getEntity,
+			"intensity", sol::property(&SpotLight::getIntensity, &SpotLight::setIntensity),
+			"range", sol::property(&SpotLight::getRange, &SpotLight::setRange),
+			"color", sol::property(&SpotLight::getColor, &SpotLight::setColor),
+			"cone_angle", sol::property(&SpotLight::getConeAngle, &SpotLight::setConeAngle),
+			"inner_cone_angle", sol::property(&SpotLight::getInnerConeAngle, &SpotLight::setInnerConeAngle)
+		);
+	}
+
+	void LuaSpotLight::setColor(SpotLight& light, const VarLuaTable<Color3>& color) noexcept
+	{
+		light.setColor(LuaGlm::tableGet(color));
+	}
+
+	SpotLight& LuaSpotLight::addEntityComponent1(LuaEntity& entity) noexcept
+	{
+		return entity.addComponent<SpotLight>();
+	}
+
+	SpotLight& LuaSpotLight::addEntityComponent2(LuaEntity& entity, float intensity) noexcept
+	{
+		return entity.addComponent<SpotLight>(intensity);
+	}
+
+	OptionalRef<SpotLight>::std_t LuaSpotLight::getEntityComponent(LuaEntity& entity) noexcept
+	{
+		return entity.getComponent<SpotLight>();
+	}
+
+	std::optional<LuaEntity> LuaSpotLight::getEntity(const SpotLight& light, const std::shared_ptr<Scene>& scene) noexcept
+	{
+		return LuaScene::getEntity(scene, light);
 	}
 
 	void LuaDirectionalLight::setColor(DirectionalLight& light, const VarLuaTable<Color3>& color) noexcept
@@ -144,6 +187,7 @@ namespace darmok
 		LuaAmbientLight::bind(lua);
 		LuaDirectionalLight::bind(lua);
 		LuaPointLight::bind(lua);
+		LuaSpotLight::bind(lua);
 
 		lua.new_usertype<LightingRenderComponent>("LightingRenderComponent", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<LightingRenderComponent>::value),

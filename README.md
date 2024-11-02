@@ -65,11 +65,11 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * bgfx window setup (GLFW on windows & linux)
 * update logic methods with delta time
 * renderer
-    * point, directional & ambient lights
+    * point, spot, directional & ambient lights
     * forward render
         * unlit, gui
         * basic phong
-        * PBR metallic-roughness ()
+        * PBR metallic-roughness
     * cascaded shadow mapping
         * directional lights
     * camera culling (frustum & occlusion)
@@ -100,7 +100,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * frame limiting
 * more renderer features
     * bloom
-    * other types of lights (with shadow mapping)
+    * shadows for point & spot lights
     * deferred, clustered
     * SSAO
 * luajit support (maybe compile using importer)

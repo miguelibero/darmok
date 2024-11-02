@@ -8,23 +8,37 @@
 
 namespace darmok
 {
-    class PointLight;
 	class LuaEntity;
 	class Scene;
+
+	class PointLight;
 
 	class LuaPointLight final
 	{
 	public:
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		OptionalRef<PointLight> _light;
-
 		static void setColor(PointLight& light, const VarLuaTable<Color3>& color) noexcept;
 
 		static PointLight& addEntityComponent1(LuaEntity& entity) noexcept;
 		static PointLight& addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
 		static OptionalRef<PointLight>::std_t getEntityComponent(LuaEntity& entity) noexcept;
 		static std::optional<LuaEntity> getEntity(const PointLight& light, const std::shared_ptr<Scene>& scene) noexcept;
+	};
+
+	class SpotLight;
+
+	class LuaSpotLight final
+	{
+	public:
+		static void bind(sol::state_view& lua) noexcept;
+	private:
+		static void setColor(SpotLight& light, const VarLuaTable<Color3>& color) noexcept;
+
+		static SpotLight& addEntityComponent1(LuaEntity& entity) noexcept;
+		static SpotLight& addEntityComponent2(LuaEntity& entity, float intensity) noexcept;
+		static OptionalRef<SpotLight>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+		static std::optional<LuaEntity> getEntity(const SpotLight& light, const std::shared_ptr<Scene>& scene) noexcept;
 	};
 
 	class DirectionalLight;

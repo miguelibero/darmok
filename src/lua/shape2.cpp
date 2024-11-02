@@ -59,6 +59,12 @@ namespace darmok
 		lua.new_usertype<BoundingBox>("BoundingBox",
 			sol::factories(
 				[]() { return BoundingBox(); },
+				[](const Cube& cube) { return BoundingBox(cube); },
+				[](const Sphere& sphere) { return BoundingBox(sphere); },
+				[](const Capsule& capsule) { return BoundingBox(capsule); },
+				[](const Polygon& poly) { return BoundingBox(poly); },
+				[](const Triangle& tri) { return BoundingBox(tri); },
+				[](const Frustum& frust) { return BoundingBox(frust); },
 				[](const VarLuaTable<glm::vec3>& min, const VarLuaTable<glm::vec3>& max) {
 					return BoundingBox(LuaGlm::tableGet(min), LuaGlm::tableGet(max));
 				}
@@ -89,7 +95,6 @@ namespace darmok
 			"max", &BoundingBox::max,
 			"size", sol::property(&BoundingBox::size),
 			"corners", sol::property(&BoundingBox::getCorners),
-			"cube", sol::property(&BoundingBox::getCube),
 			"ortho", sol::property(&BoundingBox::getOrtho),
 			sol::meta_function::to_string, &BoundingBox::toString
 		);

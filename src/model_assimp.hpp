@@ -102,7 +102,7 @@ namespace darmok
         std::unordered_map<const aiMaterial*, std::shared_ptr<ModelMaterial>> _materials;
         std::unordered_map<std::string, std::shared_ptr<ModelImage>> _images;
 
-        static float getLightRadius(const glm::vec3& attenuation) noexcept;
+        static float getLightRange(const glm::vec3& attenuation) noexcept;
 
         std::shared_ptr<ModelMesh> getMesh(const aiMesh* assimpMesh) noexcept;
         std::shared_ptr<ModelMaterial> getMaterial(const aiMaterial* assimpMaterial) noexcept;

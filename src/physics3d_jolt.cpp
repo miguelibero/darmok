@@ -233,7 +233,7 @@ namespace darmok::physics3d
         }
         else if (auto bbPtr = std::get_if<BoundingBox>(&shape))
         {
-            optCube = bbPtr->getCube();
+            optCube = Cube(*bbPtr);
         }
         if (optCube)
         {

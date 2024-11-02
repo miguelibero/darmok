@@ -37,12 +37,16 @@ namespace darmok
         }
     };
 
+    struct BoundingBox;
+
     struct DARMOK_EXPORT Cube final
     {
         glm::vec3 size;
         glm::vec3 origin;
 
         Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Cube(const BoundingBox& bbox) noexcept;
+
         [[nodiscard]] std::string toString() const noexcept;
 
         Cube& operator*=(float scale) noexcept;
@@ -426,14 +430,10 @@ namespace darmok
 
         [[nodiscard]] std::array<glm::vec3, 8> getCorners() const noexcept;
 
-        [[nodiscard]] Cube getCube() const noexcept;
-        [[nodiscard]] operator Cube() const noexcept;
-
         [[nodiscard]] bool empty() const noexcept;
         [[nodiscard]] glm::vec3 size() const noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
-
         [[nodiscard]] glm::mat4 getOrtho() const noexcept;
 
         template<class Archive>
