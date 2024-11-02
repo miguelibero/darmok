@@ -322,58 +322,6 @@ namespace darmok
         }
     };
 
-    struct DARMOK_EXPORT BoundingBox final
-    {
-        glm::vec3 min;
-        glm::vec3 max;
-
-        BoundingBox() noexcept;
-        BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
-        BoundingBox(const Cube& cube) noexcept;
-        BoundingBox(const Sphere& sphere) noexcept;
-        BoundingBox(const Capsule& capsule) noexcept;
-
-        [[nodiscard]] bool operator==(const BoundingBox& other) const noexcept;
-        [[nodiscard]] bool operator!=(const BoundingBox& other) const noexcept;
-
-        BoundingBox& operator+=(const BoundingBox& bb) noexcept;
-        [[nodiscard]] BoundingBox operator+(const BoundingBox& bb) const noexcept;
-
-        [[nodiscard]] BoundingBox operator*(const glm::mat4& trans) const noexcept;
-        BoundingBox& operator*=(const glm::mat4& trans) noexcept;
-
-        BoundingBox& operator+=(const glm::vec3& v) noexcept;
-        [[nodiscard]] BoundingBox operator+(const glm::vec3& v) const noexcept;
-
-        BoundingBox& operator-=(const glm::vec3& v) noexcept;
-        [[nodiscard]] BoundingBox operator-(const glm::vec3& v) const noexcept;
-
-        BoundingBox& expand(const glm::vec3& size) noexcept;
-        BoundingBox& contract(const glm::vec3& size) noexcept;
-        BoundingBox& snap(const float size) noexcept;
-
-        BoundingBox& expandToPosition(const glm::vec3& pos) noexcept;
-
-        bool isOutsideOf(const Plane& plane) const noexcept;
-
-        [[nodiscard]] std::array<glm::vec3, 8> getCorners() const noexcept;
-
-        [[nodiscard]] Cube getCube() const noexcept;
-        [[nodiscard]] operator Cube() const noexcept;
-
-        [[nodiscard]] bool empty() const noexcept;
-        [[nodiscard]] glm::vec3 size() const noexcept;
-
-        [[nodiscard]] std::string toString() const noexcept;
-
-        [[nodiscard]] glm::mat4 getOrtho() const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(min, max);
-        }
-    };
 
     struct DARMOK_EXPORT Frustum final
     {
@@ -403,7 +351,7 @@ namespace darmok
 
         std::array<glm::vec3, toUnderlying(CornerType::Count)> corners;
 
-        Frustum(const glm::mat4& proj = glm::mat4(1)) noexcept;
+        Frustum(const glm::mat4& mtx = glm::mat4(1), bool inverse = false) noexcept;
 
         [[nodiscard]] const glm::vec3& getCorner(Frustum::CornerType type) const noexcept;
         [[nodiscard]] glm::vec3& getCorner(Frustum::CornerType type) noexcept;
@@ -415,7 +363,6 @@ namespace darmok
         [[nodiscard]] glm::vec3 getCenter() const noexcept;
 
         [[nodiscard]] BoundingBox getBoundingBox() const noexcept;
-        [[nodiscard]] operator BoundingBox() const noexcept;
 
         [[nodiscard]] std::array<glm::vec3, 4> getSlopes() const noexcept;
         [[nodiscard]] Frustum getSlice(float nearFactor, float farFactor) const noexcept;
@@ -437,6 +384,64 @@ namespace darmok
         }
     };
 
+    struct DARMOK_EXPORT BoundingBox final
+    {
+        glm::vec3 min;
+        glm::vec3 max;
+
+        BoundingBox() noexcept;
+        BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
+        BoundingBox(const Cube& cube) noexcept;
+        BoundingBox(const Sphere& sphere) noexcept;
+        BoundingBox(const Capsule& capsule) noexcept;
+        BoundingBox(const Polygon& poly) noexcept;
+        BoundingBox(const Triangle& tri) noexcept;
+        BoundingBox(const Frustum& frust) noexcept;
+
+        [[nodiscard]] bool operator==(const BoundingBox& other) const noexcept;
+        [[nodiscard]] bool operator!=(const BoundingBox& other) const noexcept;
+
+        BoundingBox& operator+=(const BoundingBox& bb) noexcept;
+        [[nodiscard]] BoundingBox operator+(const BoundingBox& bb) const noexcept;
+
+        [[nodiscard]] BoundingBox operator*(const glm::mat4& trans) const noexcept;
+        BoundingBox& operator*=(const glm::mat4& trans) noexcept;
+
+        BoundingBox& operator+=(const glm::vec3& v) noexcept;
+        [[nodiscard]] BoundingBox operator+(const glm::vec3& v) const noexcept;
+
+        BoundingBox& operator-=(const glm::vec3& v) noexcept;
+        [[nodiscard]] BoundingBox operator-(const glm::vec3& v) const noexcept;
+
+        BoundingBox& operator+=(const Triangle& v) noexcept;
+        [[nodiscard]] BoundingBox operator+(const Triangle& v) const noexcept;
+
+        BoundingBox& expand(const glm::vec3& size) noexcept;
+        BoundingBox& contract(const glm::vec3& size) noexcept;
+        BoundingBox& snap(const float size) noexcept;
+
+        BoundingBox& expandToPosition(const glm::vec3& pos) noexcept;
+
+        bool isOutsideOf(const Plane& plane) const noexcept;
+
+        [[nodiscard]] std::array<glm::vec3, 8> getCorners() const noexcept;
+
+        [[nodiscard]] Cube getCube() const noexcept;
+        [[nodiscard]] operator Cube() const noexcept;
+
+        [[nodiscard]] bool empty() const noexcept;
+        [[nodiscard]] glm::vec3 size() const noexcept;
+
+        [[nodiscard]] std::string toString() const noexcept;
+
+        [[nodiscard]] glm::mat4 getOrtho() const noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(min, max);
+        }
+    };
 }
 
 namespace std

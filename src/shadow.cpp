@@ -306,9 +306,8 @@ namespace darmok
             return;
         }
 
-        auto proj = _cam->getProjectionMatrix();
         auto view = _cam->getViewMatrix();
-        Frustum frust(proj);
+        Frustum frust(_cam->getProjectionInverse(), true);
 
         auto step = 1.F / float(_config.cascadeAmount);
         auto cascSliceDistri = [step](int casc)

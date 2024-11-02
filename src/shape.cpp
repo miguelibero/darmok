@@ -690,6 +690,43 @@ namespace darmok
         max = capsule.origin + half;
     }
 
+    BoundingBox::BoundingBox(const Polygon& poly) noexcept
+        : min(bx::kFloatInfinity)
+        , max(-bx::kFloatInfinity)
+    {
+        if (poly.triangles.empty())
+        {
+            max = min = glm::vec3(0.F);
+        }
+        else
+        {
+            for (auto& tri : poly.triangles)
+            {
+                operator+=(tri);
+            }
+        }
+    }
+
+    BoundingBox::BoundingBox(const Triangle& tri) noexcept
+        : min(bx::kFloatInfinity)
+        , max(-bx::kFloatInfinity)
+    {
+        for (auto& v : tri.vertices)
+        {
+            expandToPosition(v);
+        }
+    }
+
+    BoundingBox::BoundingBox(const Frustum& frust) noexcept
+        : min(bx::kFloatInfinity)
+        , max(-bx::kFloatInfinity)
+    {
+        for (auto& corner : frust.corners)
+        {
+            expandToPosition(corner);
+        }
+    }
+
     BoundingBox& BoundingBox::operator+=(const BoundingBox& bb) noexcept
     {
         min = glm::min(min, bb.min);
@@ -739,6 +776,24 @@ namespace darmok
         return r;
     }
 
+    BoundingBox& BoundingBox::operator+=(const Triangle& tri) noexcept
+    {
+        for (auto& v : tri.vertices)
+        {
+            expandToPosition(v);
+        }
+        return *this;
+    }
+
+
+    BoundingBox BoundingBox::operator+(const Triangle& tri) const noexcept
+    {
+        BoundingBox r(*this);
+        r += tri;
+        return r;
+    }
+
+
     std::array<glm::vec3, 8> BoundingBox::getCorners() const noexcept
     {
         return {
@@ -763,8 +818,7 @@ namespace darmok
         for (auto& corner : corners)
         {
             corner = trans * glm::vec4(corner, 1.0f);
-            min = glm::min(min, corner);
-            max = glm::max(max, corner);
+            expandToPosition(corner);
         }
 
         return *this;
@@ -794,14 +848,8 @@ namespace darmok
 
     BoundingBox& BoundingBox::expandToPosition(const glm::vec3& pos) noexcept
     {
-        min.x = std::min(min.x, pos.x);
-        min.y = std::min(min.y, pos.y);
-        min.z = std::min(min.z, pos.z);
-
-        max.x = std::max(max.x, pos.x);
-        max.y = std::max(max.y, pos.y);
-        max.z = std::max(max.z, pos.z);
-
+        min = glm::min(min, pos);
+        max = glm::max(max, pos);
         return *this;
     }
 
@@ -847,7 +895,7 @@ namespace darmok
         return !operator==(other);
     }
 
-    Frustum::Frustum(const glm::mat4& proj) noexcept
+    Frustum::Frustum(const glm::mat4& mtx, bool inverse) noexcept
     {
         auto nd = Math::getNormalizedNearDepth();
 
@@ -862,7 +910,7 @@ namespace darmok
             glm::vec3( 1,  1, 1)
         };
 
-        auto invProj = glm::inverse(proj);
+        auto invProj = inverse ? mtx : glm::inverse(mtx);
 
         for (auto& corner : corners)
         {
@@ -992,11 +1040,6 @@ namespace darmok
         }
 
         return bb;
-    }
-
-    Frustum::operator BoundingBox() const noexcept
-    {
-        return getBoundingBox();
     }
 
     glm::vec3 Frustum::getCenter() const noexcept

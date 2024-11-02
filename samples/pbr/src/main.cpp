@@ -261,9 +261,9 @@ namespace
 			{
 				cam.addComponent<CullingDebugRenderer>(mainCamera.value());
 				cam.setEnabled(false);
-				if (auto debugShadow = mainCamera->getComponent<ShadowDebugRenderer>())
+				if (auto shadow = mainCamera->getComponent<ShadowRenderer>())
 				{
-					cam.addComponent<ShadowDebugRenderer>(debugShadow.value());
+					cam.addComponent<ShadowDebugRenderer>(shadow.value());
 				}
 			}
 
