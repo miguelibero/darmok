@@ -62,7 +62,10 @@ void main()
 	gl_FragColor.rgb = diffuse + specular;
 
 #if DARMOK_VARIANT_SHADOW_ENABLED
-	gl_FragColor.rgb *= visibility / float(dirLights);
+    if(dirLights > 0)
+    {
+		gl_FragColor.rgb *= visibility / dirLights;
+	}
 #endif
 
 	gl_FragColor.rgb += ambient;

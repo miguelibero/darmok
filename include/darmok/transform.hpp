@@ -34,6 +34,7 @@ namespace darmok
         glm::vec3 getWorldPosition() const noexcept;
         glm::vec3 getWorldScale() const noexcept;
         glm::quat getWorldRotation() const noexcept;
+        glm::vec3 getWorldDirection() const noexcept;
         glm::vec3 worldToLocalPoint(const glm::vec3& point) const noexcept;
         glm::vec3 localToWorldPoint(const glm::vec3& point) const noexcept;
 

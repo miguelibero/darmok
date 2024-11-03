@@ -309,6 +309,12 @@ namespace darmok
         return glm::quat_cast(_worldMatrix);
     }
 
+    glm::vec3 Transform::getWorldDirection() const noexcept
+    {
+        static const glm::vec3& forward = glm::vec3(0.F, 0.F, 1.F);
+        return getWorldRotation() * forward;
+    }
+
     glm::vec3 Transform::worldToLocalPoint(const glm::vec3& point) const noexcept
     {
         return _worldMatrix * glm::vec4(point, 1);

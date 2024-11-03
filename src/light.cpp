@@ -113,7 +113,7 @@ namespace darmok
         : _intensity(intensity)
         , _color(Colors::white3())
         , _range(range)
-        , _coneAngle(45.F)
+        , _coneAngle(glm::radians(30.F))
         , _innerConeAngle(0.F)
     {
     }
@@ -357,10 +357,9 @@ namespace darmok
             float scale = 1.F;
             if (trans)
             {
-                static const glm::vec3& forward = glm::vec3(0.F, 0.F, 1.F);
                 elm.pos = trans->getWorldPosition();
                 scale = glm::compMax(trans->getWorldScale());
-                elm.direction = forward * trans->getWorldRotation();
+                elm.direction = trans->getWorldDirection();
             }
             auto range = light.getRange() * scale;
             auto intensity = light.getIntensity();

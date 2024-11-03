@@ -92,11 +92,14 @@ namespace darmok
 
     void ShadowRenderPass::render(bgfx::Encoder& encoder) noexcept
     {
-        if (!_viewId || !_renderer || !_renderer->isEnabled())
+        if (!_viewId)
         {
             return;
         }
-        if (_lightEntity == entt::null)
+        auto viewId = _viewId.value();
+        encoder.touch(viewId);
+
+        if (_lightEntity == entt::null || !_renderer || !_renderer->isEnabled())
         {
             return;
         }
@@ -106,7 +109,6 @@ namespace darmok
             return;
         }
 
-        auto viewId = _viewId.value();
         auto lightTrans = scene->getComponent<const Transform>(_lightEntity);
         auto proj = _renderer->getLightProjMatrix(lightTrans, _cascade);
         auto view = _renderer->getLightViewMatrix(lightTrans);

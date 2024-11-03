@@ -64,7 +64,6 @@ struct AmbientLight
 float distanceAttenuation(float distance)
 {
     // only for point lights
-
     // physics: inverse square falloff
     // to keep irradiance from reaching infinity at really close distances, stop at 1cm
     return 1.0 / max(distance * distance, 0.01 * 0.01);

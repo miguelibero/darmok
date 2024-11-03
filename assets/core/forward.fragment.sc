@@ -61,17 +61,17 @@ void main()
     for(uint i = 0; i < spotLights; i++)
     {
         SpotLight light = getSpotLight(i);
-        vec3 L = normalize(light.position - fragPos);
-        float cosTheta = dot(L, normalize(-light.direction));
-        float innerCutoff = cos(light.innerConeAngle * 0.5);
-        float outerCutoff = cos(light.coneAngle * 0.5);
+        vec3 L = light.position - fragPos;
+        float dist = length(L);
+        L = L / dist;
+        float cosTheta = dot(L, -light.direction);
+        float innerCutoff = cos(light.innerConeAngle);
+        float outerCutoff = cos(light.coneAngle);
 
         float attenuation = 0.0;
         if (cosTheta > outerCutoff)
         {
-            // Calculate the spotlight intensity with smooth edge falloff
             float factor = (cosTheta - outerCutoff) / (innerCutoff - outerCutoff);
-            float dist = length(L);
             attenuation = factor * smoothAttenuation(dist, light.range);
         }
 
@@ -101,7 +101,10 @@ void main()
     }
 
 #if DARMOK_VARIANT_SHADOW_ENABLED
-    radianceOut *= visibility / dirLights;
+    if(dirLights > 0)
+    {
+        radianceOut *= visibility / dirLights;
+    }
 #endif
 
     radianceOut += getAmbientLight().irradiance * mat.diffuse * mat.occlusion;

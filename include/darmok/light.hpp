@@ -16,7 +16,7 @@ namespace darmok
     class DARMOK_EXPORT PointLight final
     {
     public:
-        PointLight(float intensity = 1.F, const Color3& color = Colors::white3(), float range = 1.F) noexcept;
+        PointLight(float intensity = 1.F, const Color3& color = Colors::white3(), float range = 10.F) noexcept;
 
         PointLight& setIntensity(float intensity) noexcept;
         PointLight& setRange(float range) noexcept;
@@ -64,7 +64,7 @@ namespace darmok
     class DARMOK_EXPORT SpotLight final
     {
     public:
-        SpotLight(float intensity = 1.F, const Color3& color = Colors::white3(), float range = 1.F) noexcept;
+        SpotLight(float intensity = 1.F, const Color3& color = Colors::white3(), float range = 10.F) noexcept;
 
         SpotLight& setIntensity(float intensity) noexcept;
         SpotLight& setRange(float range) noexcept;

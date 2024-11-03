@@ -93,6 +93,7 @@ namespace
 
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
+			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
 			auto& layout = prog->getVertexLayout();
 
 			_cam = createCamera(scene);
@@ -104,31 +105,31 @@ namespace
 			scene.getRenderChain().addStep<ScreenSpaceRenderPass>(
 				std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
 
-			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
-			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
-
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
 			auto lightEntity = scene.createEntity();
 			auto& lightTrans = scene.addComponent<Transform>(lightEntity, lightRootTrans, glm::vec3{ 0, 1, 0 });
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
-			scene.addComponent<PointLight>(lightEntity, 0.5);
+			// scene.addComponent<PointLight>(lightEntity, 0.5);
 
 			auto dirLightEntity = scene.createEntity();
 			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -2, 2, -2 })
 				.lookDir(glm::vec3(0, -1, -1));
-			scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
+			// scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
 			_rotateUpdater = scene.addSceneComponent<RotateUpdater>(dirLightTrans);
 
 			MeshData arrowMeshData(Line(), LineMeshType::Arrow);
-			std::shared_ptr<IMesh> arrowMesh = arrowMeshData.createMesh(prog->getVertexLayout());
-			scene.addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
+			std::shared_ptr<IMesh> arrowMesh = arrowMeshData.createMesh(unlitProg->getVertexLayout());
+			scene.addComponent<Renderable>(dirLightEntity, arrowMesh, unlitProg, Colors::magenta());
 			scene.addComponent<BoundingBox>(dirLightEntity, arrowMeshData.getBounds());
 
-			auto dirLightEntity2 = scene.createEntity();
-			scene.addComponent<Transform>(dirLightEntity2, glm::vec3{ 1, 1, -1 })
+			auto spotLightEntity = scene.createEntity();
+			auto& spotLightTrans = scene.addComponent<Transform>(spotLightEntity, glm::vec3{ 2, 2, -2 })
 				.lookAt(glm::vec3(0, 0, 0));
-			scene.addComponent<DirectionalLight>(dirLightEntity2, 0.5);
+			scene.addComponent<SpotLight>(spotLightEntity, 100).setConeAngle(glm::radians(15.F));
+			scene.addComponent<Renderable>(spotLightEntity, arrowMesh, unlitProg, Colors::cyan());
+			scene.addComponent<BoundingBox>(spotLightEntity, arrowMeshData.getBounds());
+			scene.addSceneComponent<RotateUpdater>(spotLightTrans, -25.F);
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
