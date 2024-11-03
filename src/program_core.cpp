@@ -400,31 +400,39 @@ namespace darmok
 
     const std::regex ShaderCompiler::_includeRegex = std::regex("#include <([^>]+)>");
 
+    std::optional<std::filesystem::path> ShaderCompiler::readDependency(const std::string& line) const noexcept
+    {
+        std::smatch match;
+        if (!std::regex_search(line, match, _includeRegex))
+        {
+            return std::nullopt;
+        }
+        auto name = match[1].str();
+        for (auto& include : _includes)
+        {
+            auto path = include / name;
+            if (fs::exists(path))
+            {
+                return path;
+            }
+        }
+        return std::nullopt;
+    }
+
     size_t ShaderCompiler::getDependencies(std::istream& in, Dependencies& deps) const noexcept
     {
         std::string line;
         size_t count = 0;
         while (std::getline(in, line))
         {
-            std::smatch match;
-            if (!std::regex_search(line, match, _includeRegex))
+            if (auto path = readDependency(line))
             {
-                continue;
-            }
-            auto name = match[1].str();
-            for (auto& include : _includes)
-            {
-                auto path = include / name;
-                if (!fs::exists(path))
-                {
-                    continue;
-                }
-                if (deps.insert(path).second)
+                if (deps.insert(path.value()).second)
                 {
                     count++;
                 }
-                break;
             }
+            break;
         }
         return count;
     }
@@ -432,27 +440,56 @@ namespace darmok
     const std::regex ShaderCompiler::_ifdefRegex = std::regex("#(if|ifdef|ifndef) !?([^\\s]+)");
     const std::string ShaderCompiler::_definePrefix = "DARMOK_VARIANT_";
 
-    size_t ShaderCompiler::getDefines(std::istream& in, Defines& defines) noexcept
+    std::optional<std::string> ShaderCompiler::readDefine(const std::string& line) const noexcept
+    {
+        std::smatch match;
+        if (!std::regex_search(line, match, _ifdefRegex))
+        {
+            return std::nullopt;
+        }
+        auto define = match[2].str();
+        if (!define.starts_with(_definePrefix))
+        {
+            return std::nullopt;
+        }
+        return define.substr(_definePrefix.size());
+    }
+
+    size_t ShaderCompiler::getDefines(std::istream& in, Defines& defines) const noexcept
+    {
+        std::unordered_set<std::filesystem::path> checkedPaths;
+        return getDefines(in, defines, checkedPaths);
+    }
+
+    size_t ShaderCompiler::getDefines(std::istream& in, Defines& defines, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept
     {
         std::string line;
         size_t count = 0;
+
+        Dependencies deps;
         while (std::getline(in, line))
         {
-            std::smatch match;
-            if (!std::regex_search(line, match, _ifdefRegex))
+            if (auto define = readDefine(line))
+            {
+                if (defines.insert(define.value()).second)
+                {
+                    count++;
+                }
+            }
+            else if (auto path = readDependency(line))
+            {
+                deps.insert(path.value());
+            }
+        }
+        for (auto& path : deps)
+        {
+            if (checkedPaths.contains(path))
             {
                 continue;
             }
-            auto define = match[2].str();
-            if (!define.starts_with(_definePrefix))
-            {
-                continue;
-            }
-            define = define.substr(_definePrefix.size());
-            if (defines.insert(define).second)
-            {
-                count++;
-            }
+            checkedPaths.insert(path);
+            std::ifstream in(path);
+            count += getDefines(in, defines, checkedPaths);
         }
         return count;
     }
@@ -697,11 +734,12 @@ namespace darmok
             return deps;
         }
 
-        auto addShaderDeps = [this, &deps](const fs::path& path) {
+        auto addShaderDeps = [this, &deps](const fs::path& path)
+        {
             deps.insert(path);
             std::ifstream is(path);
             _compiler.getDependencies(is, deps);
-            };
+        };
 
         auto& config = _config.value();
         addShaderDeps(config.vertexShader);

@@ -2,6 +2,7 @@
 #define DARMOK_SHADOW_HEADER
 
 #include <bgfx_shader.sh>
+#include <bgfx_compute.sh>
 
 // uint texelSize
 // uint cascadeAmount

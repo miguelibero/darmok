@@ -3,6 +3,7 @@
 
 #include <darmok_sampler.sc>
 #include <darmok_util.sc>
+#include <darmok_light.sc>
 #include <bgfx_shader.sh>
 
 SAMPLER2D(s_texBaseColor, DARMOK_SAMPLER_MATERIAL_BASECOLOR);

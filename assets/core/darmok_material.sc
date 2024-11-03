@@ -1,7 +1,9 @@
-#ifndef DARMOK_MATERIAL_PBR_HEADER
-#define DARMOK_MATERIAL_PBR_HEADER
+#ifndef DARMOK_MATERIAL_HEADER
+#define DARMOK_MATERIAL_HEADER
 
+#include <bgfx_shader.sh>
 #include <darmok_sampler.sc>
+#include <darmok_util.sc>
 
 #ifdef WRITE_LUT
 IMAGE2D_WR(i_texAlbedoLUT, rgba32f, DARMOK_SAMPLER_MATERIAL_ALBEDO_LUT);
@@ -331,4 +333,4 @@ vec3 BRDF(vec3 v, vec3 l, vec3 n, float NoV, float NoL, Material mat)
     return Fr + (1.0 - F) * Fd;
 }
 
-#endif // DARMOK_MATERIAL_PBR_HEADER
+#endif // DARMOK_MATERIAL_HEADER

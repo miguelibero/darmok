@@ -113,7 +113,6 @@ SpotLight getSpotLight(uint i)
     return light;
 }
 
-
 uint dirLightCount()
 {
     return u_dirLightCount;

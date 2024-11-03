@@ -44,7 +44,7 @@ namespace darmok
 
         void operator()(const std::filesystem::path& input, const Output& output) const;
         size_t getDependencies(std::istream& in, Dependencies& deps) const noexcept;
-        static size_t getDefines(std::istream& in, Defines& defines) noexcept;
+        size_t getDefines(std::istream& in, Defines& defines) const noexcept;
         std::vector<Output> getOutputs(const std::filesystem::path& basePath = "") const noexcept;
     private:
         std::filesystem::path _shadercPath;
@@ -66,6 +66,10 @@ namespace darmok
         ShaderType getShaderType(const std::filesystem::path& path) const noexcept;
         static std::string getShaderTypeName(ShaderType type);
         static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
+
+        size_t getDefines(std::istream& in, Defines& defines, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept;
+        std::optional<std::string> readDefine(const std::string& line) const noexcept;
+        std::optional<std::filesystem::path> readDependency(const std::string& line) const noexcept;
     };
 
     struct ProgramImportConfig final
