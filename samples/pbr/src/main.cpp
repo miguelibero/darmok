@@ -110,12 +110,12 @@ namespace
 			auto lightEntity = scene.createEntity();
 			auto& lightTrans = scene.addComponent<Transform>(lightEntity, lightRootTrans, glm::vec3{ 0, 1, 0 });
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
-			// scene.addComponent<PointLight>(lightEntity, 0.5);
+			scene.addComponent<PointLight>(lightEntity, 0.5);
 
 			auto dirLightEntity = scene.createEntity();
 			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -2, 2, -2 })
 				.lookDir(glm::vec3(0, -1, -1));
-			// scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
+			scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
 			_rotateUpdater = scene.addSceneComponent<RotateUpdater>(dirLightTrans);
 
 			MeshData arrowMeshData(Line(), LineMeshType::Arrow);

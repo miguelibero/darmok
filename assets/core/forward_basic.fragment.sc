@@ -8,11 +8,10 @@ $input v_position, v_normal, v_texcoord0, v_viewDir
 #include <darmok_shadow.sc>
 #endif
 
-vec3 calcRadiance(vec3 radianceIn, vec3 V, vec3 L, vec3 N, Material mat)
+vec3 calcRadiance(LightData data, vec3 V, vec3 N, Material mat)
 {
-	vec3 diffuse = phongDiffuse(L, N, radianceIn);
-	vec3 specular = phongSpecular(V, L, N, radianceIn, mat.shininess);
-
+	vec3 diffuse = phongDiffuse(data.direction, N, data.radiance);
+	vec3 specular = phongSpecular(V, data.direction, N, data.radiance, mat.shininess);
 	return (diffuse * mat.diffuse) + (specular * mat.specular);
 }
 
@@ -33,53 +32,28 @@ void main()
     for(uint i = 0; i < pointLights; i++)
     {
 		PointLight light = getPointLight(i);
-		float dist = distance(light.position, fragPos);
-        float attenuation = smoothAttenuation(dist, light.range);
-        if(attenuation > 0.0)
-        {
-			vec3 L = normalize(light.position - fragPos);
-			vec3 radianceIn = light.intensity * attenuation;
-			radianceOut += calcRadiance(radianceIn, V, L, N, mat);
-		}
+		LightData data = calcPointLight(light, fragPos);
+		radianceOut += calcRadiance(data, V, N, mat);
 	}
 
 	uint spotLights = spotLightCount();
     for(uint i = 0; i < spotLights; i++)
     {
         SpotLight light = getSpotLight(i);
-        vec3 L = light.position - fragPos;
-        float dist = length(L);
-        L = L / dist;
-        float cosTheta = dot(L, -light.direction);
-        float innerCutoff = cos(light.innerConeAngle);
-        float outerCutoff = cos(light.coneAngle);
-
-        float attenuation = 0.0;
-        if (cosTheta > outerCutoff)
-        {
-            float factor = (cosTheta - outerCutoff) / (innerCutoff - outerCutoff);
-            attenuation = factor * smoothAttenuation(dist, light.range);
-        }
-
-        if(attenuation > 0.0)
-        {
-            vec3 radianceIn = light.intensity * attenuation;
-            radianceOut += calcRadiance(radianceIn, V, L, N, mat);
-        }
+        LightData data = calcSpotLight(light, fragPos);
+		radianceOut += calcRadiance(data, V, N, mat);
     }
 
 
 	uint dirLights = dirLightCount();
     for(uint i = 0; i < dirLights; i++)
     {
-		DirectionalLight light = getDirLight(i);
-		vec3 L = -light.direction;
-		vec3 radianceIn = light.intensity;
-
-		radianceOut += calcRadiance(radianceIn, V, L, N, mat);
+		DirLight light = getDirLight(i);
+        LightData data = calcDirLight(light);
+		radianceOut += calcRadiance(data, V, N, mat);
 
 #if DARMOK_VARIANT_SHADOW_ENABLED
-		float shadowBias = normalShadowBias(N, L);  
+		float shadowBias = normalShadowBias(N, data.direction);  
 		visibility += softShadow(i, fragPos, shadowBias);
 		// visibility += hardShadow(i, fragPos, shadowBias);
 #endif

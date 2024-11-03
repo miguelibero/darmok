@@ -45,7 +45,7 @@ struct SpotLight
     float innerConeAngle;
 };
 
-struct DirectionalLight
+struct DirLight
 {
     vec3 direction;
     vec3 intensity;
@@ -119,9 +119,9 @@ uint dirLightCount()
     return u_dirLightCount;
 }
 
-DirectionalLight getDirLight(uint i)
+DirLight getDirLight(uint i)
 {
-    DirectionalLight light;
+    DirLight light;
     i *= 2;
     light.direction = b_dirLights[i + 0].xyz;
     vec4 intensityVec = b_dirLights[i + 1];
@@ -134,6 +134,55 @@ AmbientLight getAmbientLight()
     AmbientLight light;
     light.irradiance = u_ambientLightIrradiance.xyz;
     return light;
+}
+
+struct LightData
+{
+    vec3 radiance;
+    vec3 direction;
+};
+
+LightData calcPointLight(PointLight light, vec3 pos)
+{
+    LightData data;
+    data.direction = light.position - pos;
+    float dist = length(data.direction);
+    data.direction = data.direction / dist;
+    float attenuation = smoothAttenuation(dist, light.range);
+    data.radiance = light.intensity * attenuation;
+    return data;
+}
+
+LightData calcSpotLight(SpotLight light, vec3 pos)
+{
+    LightData data;
+    data.radiance = 0.0;
+    data.direction = light.position - pos;
+    float dist = length(data.direction);
+    data.direction = data.direction / dist;
+    float cosTheta = dot(data.direction, -light.direction);
+    float innerCutoff = cos(light.innerConeAngle);
+    float outerCutoff = cos(light.coneAngle);
+
+    if (cosTheta > outerCutoff)
+    {
+        float factor = (cosTheta - outerCutoff) / (innerCutoff - outerCutoff);
+        float attenuation = factor * smoothAttenuation(dist, light.range);
+        if(attenuation > 0.0)
+        {
+            data.radiance = light.intensity * attenuation;
+        }
+    }
+
+    return data;
+}
+
+LightData calcDirLight(DirLight light)
+{
+    LightData data;
+    data.direction = normalize(-light.direction);
+    data.radiance = light.intensity;
+    return data;
 }
 
 #endif // DARMOK_LIGHTS_HEADER

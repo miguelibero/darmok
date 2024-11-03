@@ -307,7 +307,7 @@ vec3 whiteFurnace(float NoV, Material mat)
 
 #endif
 
-// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#appendix-b-brdf-implementation
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#appendix-b-brdf-implementation
 vec3 BRDF(vec3 v, vec3 l, vec3 n, float NoV, float NoL, Material mat)
 {
     // V is the normalized vector from the shading location to the eye
