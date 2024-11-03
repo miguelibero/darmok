@@ -84,7 +84,7 @@ namespace
 			std::shared_ptr<IMesh> lightMesh = MeshData(Sphere(0.01)).createMesh(unlitProg->getVertexLayout());
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
-			scene.addComponent<PointLight>(lightEntity, 5).setRadius(5);
+			scene.addComponent<PointLight>(lightEntity, 5).setRange(5);
 			scene.addComponent<AmbientLight>(lightEntity, 0.5);
 
 			auto skel = _app.getAssets().getSkeletonLoader()("skeleton.ozz");

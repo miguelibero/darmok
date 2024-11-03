@@ -8,16 +8,22 @@ $input v_position, v_normal, v_texcoord0, v_viewDir
 #include <darmok_shadow.sc>
 #endif
 
+vec3 calcRadiance(vec3 radianceIn, vec3 V, vec3 L, vec3 N, Material mat)
+{
+	vec3 diffuse = phongDiffuse(L, N, radianceIn);
+	vec3 specular = phongSpecular(V, L, N, radianceIn, mat.shininess);
+
+	return (diffuse * mat.diffuse) + (specular * mat.specular);
+}
+
 void main()
 {
     Material mat = getMaterial(v_texcoord0);
 
-    vec3 diffuse = vec3_splat(0);
-	vec3 specular = vec3_splat(0);
-	vec3 ambient = getAmbientLight().irradiance;
-	vec3 norm = v_normal;
+    vec3 V = v_viewDir;
+	vec3 N = v_normal;
+    vec3 radianceOut = vec3_splat(0);
 	vec3 fragPos = v_position;
-	vec3 viewDir = v_viewDir;
 
 #if DARMOK_VARIANT_SHADOW_ENABLED
 	float visibility = 0;
@@ -31,35 +37,53 @@ void main()
         float attenuation = smoothAttenuation(dist, light.range);
         if(attenuation > 0.0)
         {
-			vec3 lightDir = normalize(light.position - fragPos);
+			vec3 L = normalize(light.position - fragPos);
 			vec3 radianceIn = light.intensity * attenuation;
-			diffuse += phongDiffuse(lightDir, norm, radianceIn);
-			specular += phongSpecular(lightDir, norm, viewDir, radianceIn, mat.shininess);
+			radianceOut += calcRadiance(radianceIn, V, L, N, mat);
 		}
 	}
+
+	uint spotLights = spotLightCount();
+    for(uint i = 0; i < spotLights; i++)
+    {
+        SpotLight light = getSpotLight(i);
+        vec3 L = light.position - fragPos;
+        float dist = length(L);
+        L = L / dist;
+        float cosTheta = dot(L, -light.direction);
+        float innerCutoff = cos(light.innerConeAngle);
+        float outerCutoff = cos(light.coneAngle);
+
+        float attenuation = 0.0;
+        if (cosTheta > outerCutoff)
+        {
+            float factor = (cosTheta - outerCutoff) / (innerCutoff - outerCutoff);
+            attenuation = factor * smoothAttenuation(dist, light.range);
+        }
+
+        if(attenuation > 0.0)
+        {
+            vec3 radianceIn = light.intensity * attenuation;
+            radianceOut += calcRadiance(radianceIn, V, L, N, mat);
+        }
+    }
+
 
 	uint dirLights = dirLightCount();
     for(uint i = 0; i < dirLights; i++)
     {
 		DirectionalLight light = getDirLight(i);
-		vec3 lightDir = -light.direction;
+		vec3 L = -light.direction;
 		vec3 radianceIn = light.intensity;
 
-		diffuse += phongDiffuse(lightDir, norm, radianceIn);
-		specular += phongSpecular(lightDir, norm, viewDir, radianceIn, mat.shininess);
+		radianceOut += calcRadiance(radianceIn, V, L, N, mat);
 
 #if DARMOK_VARIANT_SHADOW_ENABLED
-		float shadowBias = normalShadowBias(norm, lightDir);  
+		float shadowBias = normalShadowBias(N, L);  
 		visibility += softShadow(i, fragPos, shadowBias);
 		// visibility += hardShadow(i, fragPos, shadowBias);
 #endif
 	}
-
-	ambient *= mat.diffuse;
-	diffuse *= mat.diffuse;
-	specular *= mat.specular;
-
-	gl_FragColor.rgb = diffuse + specular;
 
 #if DARMOK_VARIANT_SHADOW_ENABLED
     if(dirLights > 0)
@@ -68,6 +92,7 @@ void main()
 	}
 #endif
 
-	gl_FragColor.rgb += ambient;
-	gl_FragColor.a = mat.diffuse.a;
+    radianceOut += getAmbientLight().irradiance * mat.diffuse;
+    gl_FragColor.rgb = radianceOut;
+    gl_FragColor.a = mat.diffuse.a;
 }

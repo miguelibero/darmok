@@ -80,7 +80,7 @@ namespace
 					.setPosition({ 1, 2, -2 })
 					.lookDir(glm::vec3(-1, -1, 0));
 				_scene->addComponent<PointLight>(light, 0.5)
-					.setRadius(5);
+					.setRange(5);
 				_scene->addComponent<DirectionalLight>(light, 0.5);
 				_scene->addComponent<AmbientLight>(_scene->createEntity(), 0.5);
 			}

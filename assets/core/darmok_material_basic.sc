@@ -66,7 +66,7 @@ vec3 phongDiffuse(vec3 lightDir, vec3 normal, vec3 radianceIn)
 	return diff * radianceIn;
 }
 
-vec3 phongSpecular(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 radianceIn, float shininess)
+vec3 phongSpecular(vec3 viewDir, vec3 lightDir, vec3 normal, vec3 radianceIn, float shininess)
 {
     vec3 reflectDir = reflect(-lightDir, normal);  
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
