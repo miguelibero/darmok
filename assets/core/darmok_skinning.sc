@@ -18,11 +18,13 @@ mat4 getSkinningMatrix(vec4 indices, vec4 weights)
 
 vec4 applySkinning(vec4 v, vec4 indices, vec4 weights)
 {
+#if DARMOK_VARIANT_SKINNING_ENABLED
     if(indices.x >= 0.0f)
     {
         mat4 skin = getSkinningMatrix(indices, weights);
         v = mul(skin, v);
     }
+#endif
     return v;
 }
 

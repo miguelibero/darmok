@@ -18,6 +18,7 @@ vec3 calcRadiance(LightData data, vec3 V, vec3 N, float NoV, vec3 msFactor, Mate
 
 vec4 forwardFragment(vec3 V, vec3 normal, vec3 tangent, vec3 fragPos, vec2 texCoord)
 {
+    V = normalize(V);
     Material mat = getMaterial(texCoord);
 
     // convert normal map from tangent space -> world space (= space of tangent, etc.)

@@ -17,6 +17,8 @@ vec3 calcRadiance(LightData data, vec3 V, vec3 N, Material mat)
 
 vec4 forwardFragment(vec3 V, vec3 N, vec3 fragPos, vec2 texCoord)
 {
+	V = normalize(V);
+	N = normalize(N);
     Material mat = getMaterial(texCoord);
     vec3 radianceOut = vec3_splat(0);
 
