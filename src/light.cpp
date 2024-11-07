@@ -17,6 +17,7 @@ namespace darmok
         : _intensity(intensity)
         , _color(color)
         , _range(range)
+        , _shadow(ShadowType::None)
     {
     }
 
@@ -38,6 +39,12 @@ namespace darmok
         return *this;
     }
 
+    PointLight& PointLight::setShadowType(ShadowType type) noexcept
+    {
+        _shadow = type;
+        return *this;
+    }
+
     float PointLight::getIntensity() const noexcept
     {
         return _intensity;
@@ -53,9 +60,15 @@ namespace darmok
         return _color;
     }
 
+    ShadowType PointLight::getShadowType() const noexcept
+    {
+        return _shadow;
+    }
+
     DirectionalLight::DirectionalLight(float intensity) noexcept
         : _intensity(intensity)
         , _color(Colors::white3())
+        , _shadow(ShadowType::None)
     {
     }
 
@@ -71,6 +84,12 @@ namespace darmok
         return *this;
     }
 
+    DirectionalLight& DirectionalLight::setShadowType(ShadowType type) noexcept
+    {
+        _shadow = type;
+        return *this;
+    }
+
     const Color3& DirectionalLight::getColor() const noexcept
     {
         return _color;
@@ -80,6 +99,12 @@ namespace darmok
     {
         return _intensity;
     }
+
+    ShadowType DirectionalLight::getShadowType() const noexcept
+    {
+        return _shadow;
+    }
+
 
     AmbientLight::AmbientLight(float intensity) noexcept
         : _intensity(intensity)
@@ -115,6 +140,7 @@ namespace darmok
         , _range(range)
         , _coneAngle(glm::radians(30.F))
         , _innerConeAngle(0.F)
+        , _shadow(ShadowType::None)
     {
     }
 
@@ -148,6 +174,12 @@ namespace darmok
         return *this;
     }
 
+    SpotLight& SpotLight::setShadowType(ShadowType type) noexcept
+    {
+        _shadow = type;
+        return *this;
+    }
+
     const Color3& SpotLight::getColor() const noexcept
     {
         return _color;
@@ -171,6 +203,11 @@ namespace darmok
     float SpotLight::getInnerConeAngle() const noexcept
     {
         return _innerConeAngle;
+    }
+
+    ShadowType SpotLight::getShadowType() const noexcept
+    {
+        return _shadow;
     }
 
     LightingRenderComponent::LightingRenderComponent() noexcept
@@ -271,7 +308,8 @@ namespace darmok
             auto trans = _scene->getComponent<const Transform>(entity);
             if (trans)
             {
-                elm.dir = -glm::normalize(trans->getWorldPosition());
+                // elm.dir = -glm::normalize(trans->getWorldPosition());
+                elm.dir = trans->getWorldDirection();
             }
             auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
             auto intensity = light.getIntensity();

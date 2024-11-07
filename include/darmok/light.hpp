@@ -5,8 +5,9 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
-#include <unordered_map>
 #include <darmok/glm.hpp>
+#include <darmok/shadow_fwd.hpp>
+#include <unordered_map>
 
 namespace darmok
 {
@@ -21,14 +22,17 @@ namespace darmok
         PointLight& setIntensity(float intensity) noexcept;
         PointLight& setRange(float range) noexcept;
         PointLight& setColor(const Color3& color) noexcept;
+        PointLight& setShadowType(ShadowType type) noexcept;
 
         [[nodiscard]] float getRange() const noexcept;
         [[nodiscard]] float getIntensity() const noexcept;
         [[nodiscard]] const Color3& getColor() const noexcept;
+        [[nodiscard]] ShadowType getShadowType() const noexcept;
     private:
         float _intensity;
         float _range;
         Color3 _color;
+        ShadowType _shadow;
     };
 
     class DARMOK_EXPORT DirectionalLight final
@@ -38,12 +42,42 @@ namespace darmok
 
         DirectionalLight& setIntensity(float intensity) noexcept;
         DirectionalLight& setColor(const Color3& color) noexcept;
+        DirectionalLight& setShadowType(ShadowType type) noexcept;
 
         [[nodiscard]] const Color3& getColor() const noexcept;
         [[nodiscard]] float getIntensity() const noexcept;
+        [[nodiscard]] ShadowType getShadowType() const noexcept;
     private:
         float _intensity;
         Color3 _color;
+        ShadowType _shadow;
+    };
+
+    class DARMOK_EXPORT SpotLight final
+    {
+    public:
+        SpotLight(float intensity = 1.F, const Color3& color = Colors::white3(), float range = 10.F) noexcept;
+
+        SpotLight& setIntensity(float intensity) noexcept;
+        SpotLight& setRange(float range) noexcept;
+        SpotLight& setColor(const Color3& color) noexcept;
+        SpotLight& setConeAngle(float angle) noexcept;
+        SpotLight& setInnerConeAngle(float angle) noexcept;
+        SpotLight& setShadowType(ShadowType type) noexcept;
+
+        [[nodiscard]] const Color3& getColor() const noexcept;
+        [[nodiscard]] float getIntensity() const noexcept;
+        [[nodiscard]] float getRange() const noexcept;
+        [[nodiscard]] float getConeAngle() const noexcept;
+        [[nodiscard]] float getInnerConeAngle() const noexcept;
+        [[nodiscard]] ShadowType getShadowType() const noexcept;
+    private:
+        float _intensity;
+        float _range;
+        Color3 _color;
+        float _coneAngle;
+        float _innerConeAngle;
+        ShadowType _shadow;
     };
 
     class DARMOK_EXPORT AmbientLight final
@@ -59,30 +93,6 @@ namespace darmok
     private:
         float _intensity;
         Color3 _color;
-    };
-
-    class DARMOK_EXPORT SpotLight final
-    {
-    public:
-        SpotLight(float intensity = 1.F, const Color3& color = Colors::white3(), float range = 10.F) noexcept;
-
-        SpotLight& setIntensity(float intensity) noexcept;
-        SpotLight& setRange(float range) noexcept;
-        SpotLight& setColor(const Color3& color) noexcept;
-        SpotLight& setConeAngle(float angle) noexcept;
-        SpotLight& setInnerConeAngle(float angle) noexcept;
-
-        [[nodiscard]] const Color3& getColor() const noexcept;
-        [[nodiscard]] float getIntensity() const noexcept;
-        [[nodiscard]] float getRange() const noexcept;
-        [[nodiscard]] float getConeAngle() const noexcept;
-        [[nodiscard]] float getInnerConeAngle() const noexcept;
-    private:
-        float _intensity;
-        float _range;
-        Color3 _color;
-        float _coneAngle;
-        float _innerConeAngle;
     };
 
     class DARMOK_EXPORT LightingRenderComponent final : public ITypeCameraComponent<LightingRenderComponent>

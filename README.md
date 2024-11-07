@@ -72,7 +72,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
         * PBR metallic-roughness
     * cascaded shadow mapping
         * directional lights
-    * camera culling (frustum & occlusion)
+    * camera culling (frustum, occlusion pending)
 * entity component scene using entt
     * transform, camera
 * sprites and spritesheets
@@ -120,6 +120,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * custom UI module (rmlui is nice but slow)
 
 #### In the future
+* fix occlusion culling
 * more unit tests
 * performance profiling
 * 2d physics

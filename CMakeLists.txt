@@ -225,6 +225,7 @@ set(HEADERS
   render_deferred.hpp
   render_chain.hpp
   render_debug.hpp
+  shadow_fwd.hpp
   shadow.hpp
   freelook.hpp
   text_fwd.hpp

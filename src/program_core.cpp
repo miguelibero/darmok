@@ -421,6 +421,12 @@ namespace darmok
 
     size_t ShaderCompiler::getDependencies(std::istream& in, Dependencies& deps) const noexcept
     {
+        std::unordered_set<std::filesystem::path> checkedPaths;
+        return getDependencies(in, deps, checkedPaths);
+    }
+
+    size_t ShaderCompiler::getDependencies(std::istream& in, Dependencies& deps, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept
+    {
         std::string line;
         size_t count = 0;
         while (std::getline(in, line))
@@ -432,7 +438,16 @@ namespace darmok
                     count++;
                 }
             }
-            break;
+        }
+        for (auto& path : deps)
+        {
+            if (checkedPaths.contains(path))
+            {
+                continue;
+            }
+            checkedPaths.insert(path);
+            std::ifstream in(path);
+            count += getDependencies(in, deps, checkedPaths);
         }
         return count;
     }

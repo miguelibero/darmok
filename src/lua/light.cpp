@@ -43,7 +43,8 @@ namespace darmok
 			"get_entity", &LuaPointLight::getEntity,
 			"intensity", sol::property(&PointLight::getIntensity, &PointLight::setIntensity),
 			"range", sol::property(&PointLight::getRange, &PointLight::setRange),
-			"color", sol::property(&PointLight::getColor, &LuaPointLight::setColor)
+			"color", sol::property(&PointLight::getColor, &LuaPointLight::setColor),
+			"shadow_type", sol::property(&PointLight::getShadowType, &PointLight::setShadowType)
 		);
 	}
 
@@ -61,7 +62,8 @@ namespace darmok
 			"range", sol::property(&SpotLight::getRange, &SpotLight::setRange),
 			"color", sol::property(&SpotLight::getColor, &SpotLight::setColor),
 			"cone_angle", sol::property(&SpotLight::getConeAngle, &SpotLight::setConeAngle),
-			"inner_cone_angle", sol::property(&SpotLight::getInnerConeAngle, &SpotLight::setInnerConeAngle)
+			"inner_cone_angle", sol::property(&SpotLight::getInnerConeAngle, &SpotLight::setInnerConeAngle),
+			"shadow_type", sol::property(&SpotLight::getShadowType, &SpotLight::setShadowType)
 		);
 	}
 
@@ -127,7 +129,8 @@ namespace darmok
 			"get_entity", &LuaDirectionalLight::getEntity,
 
 			"intensity", sol::property(&DirectionalLight::getIntensity, &DirectionalLight::setIntensity),
-			"color", sol::property(&DirectionalLight::getColor, &LuaDirectionalLight::setColor)
+			"color", sol::property(&DirectionalLight::getColor, &LuaDirectionalLight::setColor),
+			"shadow_type", sol::property(&DirectionalLight::getShadowType, &DirectionalLight::setShadowType)
 		);
 	}
 
@@ -188,6 +191,12 @@ namespace darmok
 		LuaDirectionalLight::bind(lua);
 		LuaPointLight::bind(lua);
 		LuaSpotLight::bind(lua);
+
+		lua.new_enum<ShadowType>("ShadowType", {
+			{ "None",	ShadowType::None },
+			{ "Soft",	ShadowType::Soft },
+			{ "Hard",	ShadowType::Hard }
+		});
 
 		lua.new_usertype<LightingRenderComponent>("LightingRenderComponent", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<LightingRenderComponent>::value),

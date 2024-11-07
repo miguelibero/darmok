@@ -5,6 +5,8 @@
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
 #include <darmok/render_debug.hpp>
+#include <darmok/scene_filter.hpp>
+#include <darmok/easing_fwd.hpp>
 
 namespace darmok
 {
@@ -12,14 +14,15 @@ namespace darmok
     class Texture;
     class Transform;
     class ShadowRenderer;
+    class SpotLight;
 
     class DARMOK_EXPORT ShadowRenderPass final
     {
     public:
         ShadowRenderPass();
-        void init(ShadowRenderer& renderer, uint16_t index, uint8_t cascade) noexcept;
+        void init(ShadowRenderer& renderer, uint16_t index) noexcept;
         void shutdown() noexcept;
-        bool configure(Entity entity = entt::null) noexcept;
+        void configure(Entity entity = entt::null, uint8_t cascade = 0) noexcept;
 
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
         void render(bgfx::Encoder& encoder) noexcept;
@@ -31,13 +34,15 @@ namespace darmok
         OptionalRef<ShadowRenderer> _renderer;
 
         void renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        void configureView() noexcept;
     };
 
     struct DARMOK_EXPORT ShadowRendererConfig final
     {
         unsigned int mapSize = 512;
         float cascadeMargin = 0.02F;
-        uint16_t maxLightAmount = 6;
+        EasingType easing = EasingType::QuadraticIn;
+        uint16_t maxPassAmount = 20;
         uint8_t cascadeAmount = 3;
         float bias = 0.005;
         float normalBias = 0.02;
@@ -57,11 +62,17 @@ namespace darmok
 
         bool isEnabled() const noexcept;
 
-        glm::mat4 getProjMatrix(uint8_t cascade = 0) const noexcept;
-        glm::mat4 getLightProjMatrix(OptionalRef<const Transform> lightTrans, uint8_t cascade = 0) const noexcept;
-        glm::mat4 getLightViewMatrix(OptionalRef<const Transform> lightTrans) const noexcept;
-        glm::mat4 getLightMatrix(OptionalRef<const Transform> lightTrans, uint8_t cascade = 0) const noexcept;
-        glm::mat4 getLightMapMatrix(OptionalRef<const Transform> lightTrans, uint8_t cascade = 0) const noexcept;
+        glm::mat4 getCameraProjMatrix(uint8_t cascade = 0) const noexcept;
+        
+        glm::mat4 getDirLightMatrix(const OptionalRef<const Transform>& lightTrans, uint8_t cascade = 0) const noexcept;
+        glm::mat4 getDirLightProjMatrix(const OptionalRef<const Transform>& lightTrans, uint8_t cascade = 0) const noexcept;
+        glm::mat4 getDirLightMapMatrix(const OptionalRef<const Transform>& lightTrans, uint8_t cascade = 0) const noexcept;
+
+        glm::mat4 getSpotLightMatrix(const SpotLight& light, const OptionalRef<const Transform>& lightTrans) const noexcept;
+        glm::mat4 getSpotLightProjMatrix(const SpotLight& light) const noexcept;
+        glm::mat4 getSpotLightMapMatrix(const SpotLight& light, const OptionalRef<const Transform>& lightTrans) const noexcept;
+
+        glm::mat4 getLightViewMatrix(const OptionalRef<const Transform>& lightTrans) const noexcept;
 
         const Config& getConfig() const noexcept;
         bgfx::ProgramHandle getProgramHandle() const noexcept;
@@ -77,18 +88,26 @@ namespace darmok
         std::unique_ptr<Program> _program;
         std::vector<ShadowRenderPass> _passes;
         std::unique_ptr<Texture> _tex;
-
         std::vector<glm::mat4> _camProjs;
         glm::mat4 _crop;
+        uint32_t _softMask;
+        size_t _dirAmount;
+        size_t _spotAmount;
+        size_t _pointAmount;
 
         bgfx::UniformHandle _shadowMapUniform;
-        bgfx::UniformHandle _shadowDataUniform;
+        bgfx::UniformHandle _shadowData1Uniform;
+        bgfx::UniformHandle _shadowData2Uniform;
         bgfx::DynamicVertexBufferHandle _shadowTransBuffer;
         bgfx::VertexLayout _shadowTransLayout;
+        bgfx::DynamicVertexBufferHandle _shadowDirBuffer;
+        bgfx::VertexLayout _shadowDirLayout;
+
 
         void updateCamera() noexcept;
         void updateLights() noexcept;
-        void updateBuffer() noexcept;
+        void updateTransBuffer() noexcept;
+        void updateDirBuffer() noexcept;
 
         void configureUniforms(bgfx::Encoder& encoder) const noexcept;
         void drawDebug() noexcept;

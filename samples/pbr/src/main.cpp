@@ -115,8 +115,9 @@ namespace
 			auto dirLightEntity = scene.createEntity();
 			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -2, 2, -2 })
 				.lookDir(glm::vec3(0, -1, -1));
-			scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
-			_rotateUpdater = scene.addSceneComponent<RotateUpdater>(dirLightTrans);
+			auto& dirLight = scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
+			// dirLight.setShadowType(ShadowType::Soft);
+			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(dirLightTrans));
 
 			MeshData arrowMeshData(Line(), LineMeshType::Arrow);
 			std::shared_ptr<IMesh> arrowMesh = arrowMeshData.createMesh(unlitProg->getVertexLayout());
@@ -124,12 +125,13 @@ namespace
 			scene.addComponent<BoundingBox>(dirLightEntity, arrowMeshData.getBounds());
 
 			auto spotLightEntity = scene.createEntity();
-			auto& spotLightTrans = scene.addComponent<Transform>(spotLightEntity, glm::vec3{ 2, 2, -2 })
+			auto& spotLightTrans = scene.addComponent<Transform>(spotLightEntity, glm::vec3{1, 1, -1} * 4.F)
 				.lookAt(glm::vec3(0, 0, 0));
-			scene.addComponent<SpotLight>(spotLightEntity, 100).setConeAngle(glm::radians(15.F));
+			auto& spotLight = scene.addComponent<SpotLight>(spotLightEntity, 100).setConeAngle(glm::radians(15.F));
+			spotLight.setShadowType(ShadowType::Hard);
 			scene.addComponent<Renderable>(spotLightEntity, arrowMesh, unlitProg, Colors::cyan());
 			scene.addComponent<BoundingBox>(spotLightEntity, arrowMeshData.getBounds());
-			scene.addSceneComponent<RotateUpdater>(spotLightTrans, -25.F);
+			// _rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(spotLightTrans, -25.F));
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
@@ -190,7 +192,7 @@ namespace
 		OptionalRef<Camera> _freeCam;
 		OptionalRef<FreelookController> _freelook;
 		OptionalRef<Transform> _trans;
-		OptionalRef<RotateUpdater> _rotateUpdater;
+		std::vector<std::reference_wrapper<RotateUpdater>> _rotateUpdaters;
 
 		const InputEvent _pauseEvent = KeyboardInputEvent{ KeyboardKey::KeyP };
 
@@ -229,9 +231,12 @@ namespace
 
 		void onInputEvent(const std::string& tag) noexcept
 		{
-			if (tag == "pause" && _rotateUpdater)
+			if (tag == "pause")
 			{
-				_rotateUpdater->togglePaused();
+				for(auto& updater : _rotateUpdaters)
+				{
+					updater.get().togglePaused();
+				}
 			}
 		}
 

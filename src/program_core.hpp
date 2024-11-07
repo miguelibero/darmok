@@ -69,6 +69,7 @@ namespace darmok
 
         size_t getDefines(std::istream& in, Defines& defines, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept;
         std::optional<std::string> readDefine(const std::string& line) const noexcept;
+        size_t getDependencies(std::istream& in, Dependencies& deps, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept;
         std::optional<std::filesystem::path> readDependency(const std::string& line) const noexcept;
     };
 
