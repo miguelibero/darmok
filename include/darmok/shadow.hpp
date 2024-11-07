@@ -15,6 +15,7 @@ namespace darmok
     class Transform;
     class ShadowRenderer;
     class SpotLight;
+    class PointLight;
 
     class DARMOK_EXPORT ShadowRenderPass final
     {
@@ -22,14 +23,14 @@ namespace darmok
         ShadowRenderPass();
         void init(ShadowRenderer& renderer, uint16_t index) noexcept;
         void shutdown() noexcept;
-        void configure(Entity entity = entt::null, uint8_t cascade = 0) noexcept;
+        void configure(Entity entity = entt::null, uint8_t part = 0) noexcept;
 
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
         void render(bgfx::Encoder& encoder) noexcept;
     private:
         std::optional<bgfx::ViewId> _viewId;
         Entity _lightEntity;
-        uint8_t _cascade;
+        uint8_t _part;
         bgfx::FrameBufferHandle _fb;
         OptionalRef<ShadowRenderer> _renderer;
 
@@ -41,7 +42,7 @@ namespace darmok
     {
         unsigned int mapSize = 512;
         float cascadeMargin = 0.02F;
-        EasingType easing = EasingType::QuadraticIn;
+        EasingType cascadeEasing = EasingType::QuadraticIn;
         uint16_t maxPassAmount = 20;
         uint8_t cascadeAmount = 3;
         float bias = 0.005;
@@ -71,6 +72,10 @@ namespace darmok
         glm::mat4 getSpotLightMatrix(const SpotLight& light, const OptionalRef<const Transform>& lightTrans) const noexcept;
         glm::mat4 getSpotLightProjMatrix(const SpotLight& light) const noexcept;
         glm::mat4 getSpotLightMapMatrix(const SpotLight& light, const OptionalRef<const Transform>& lightTrans) const noexcept;
+
+        glm::mat4 getPointLightMatrix(const PointLight& light, const OptionalRef<const Transform>& lightTrans, uint8_t face = 0) const noexcept;
+        glm::mat4 getPointLightProjMatrix(const PointLight& light, uint8_t face = 0) const noexcept;
+        glm::mat4 getPointLightMapMatrix(const PointLight& light, const OptionalRef<const Transform>& lightTrans, uint8_t face = 0) const noexcept;
 
         glm::mat4 getLightViewMatrix(const OptionalRef<const Transform>& lightTrans) const noexcept;
 
@@ -103,6 +108,7 @@ namespace darmok
         bgfx::DynamicVertexBufferHandle _shadowDirBuffer;
         bgfx::VertexLayout _shadowDirLayout;
 
+        static const size_t _pointLightFaceAmount;
 
         void updateCamera() noexcept;
         void updateLights() noexcept;

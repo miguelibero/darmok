@@ -20,18 +20,18 @@ namespace darmok
     ShadowRenderPass::ShadowRenderPass()
         : _fb{ bgfx::kInvalidHandle }
         , _lightEntity(entt::null)
-        , _cascade(-1)
+        , _part(-1)
     {
     }
 
-    void ShadowRenderPass::configure(Entity entity, uint8_t cascade) noexcept
+    void ShadowRenderPass::configure(Entity entity, uint8_t part) noexcept
     {
-        if (_lightEntity == entity && _cascade == cascade)
+        if (_lightEntity == entity && _part == part)
         {
             return;
         }
         _lightEntity = entity;
-        _cascade = cascade;
+        _part = part;
         configureView();
     }
 
@@ -81,9 +81,9 @@ namespace darmok
         else
         {
             name += std::to_string(_lightEntity);
-            if (_cascade >= 0)
+            if (_part >= 0)
             {
-                name += " cascade " + std::to_string(_cascade);
+                name += " part " + std::to_string(_part);
             }
         }
         if (auto cam = _renderer->getCamera())
@@ -123,11 +123,15 @@ namespace darmok
 
         if (scene->hasComponent<DirectionalLight>(_lightEntity))
         {
-            proj = _renderer->getDirLightProjMatrix(lightTrans, _cascade);
+            proj = _renderer->getDirLightProjMatrix(lightTrans, _part);
         }
         else if (auto spotLight = scene->getComponent<SpotLight>(_lightEntity))
         {
             proj = _renderer->getSpotLightProjMatrix(spotLight.value());
+        }
+        else if (auto pointLight = scene->getComponent<PointLight>(_lightEntity))
+        {
+            proj = _renderer->getPointLightProjMatrix(pointLight.value(), _part);
         }
         bgfx::setViewTransform(viewId, glm::value_ptr(view), glm::value_ptr(proj));
 
@@ -292,6 +296,8 @@ namespace darmok
         return _cam && _cam->isEnabled();
     }
 
+    const size_t ShadowRenderer::_pointLightFaceAmount = 6;
+
     void ShadowRenderer::updateLights() noexcept
     {
         if (!_cam || !_scene)
@@ -299,57 +305,80 @@ namespace darmok
             return;
         }
 
-        size_t i = 0;
+        size_t passIdx = 0;
         _softMask = 0;
         _dirAmount = 0;
         _spotAmount = 0;
         _pointAmount = 0;
+
+        auto checkShadowType = [this](size_t lightIdx, ShadowType shadowType) -> bool
+        {
+            if (shadowType == ShadowType::None)
+            {
+                return false;
+            }
+            if (shadowType == ShadowType::Soft)
+            {
+                _softMask |= (1 << lightIdx);
+            }
+            return true;
+        };
+        auto configurePasses = [this, &passIdx](Entity entity, size_t passAmount) -> bool
+        {
+            if (passIdx > _passes.size() - passAmount)
+            {
+                return false;
+            }
+            for (auto i = 0; i < passAmount; ++i)
+            {
+                _passes[passIdx].configure(entity, i);
+                ++passIdx;
+            }
+            return true;
+        };
+
         for (auto entity : _cam->getEntities<DirectionalLight>())
         {
             auto light = _scene->getComponent<const DirectionalLight>(entity);
-            auto shadow = light->getShadowType();
-            if (shadow == ShadowType::None)
+            if (!checkShadowType(_dirAmount, light->getShadowType()))
             {
                 continue;
             }
-            if (shadow == ShadowType::Soft)
-            {
-                _softMask |= (1 << _dirAmount);
-            }
-            if (i > _passes.size() - _config.cascadeAmount)
+            if (!configurePasses(entity, _config.cascadeAmount))
             {
                 break;
-            }
-            for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
-            {
-                _passes[i].configure(entity, casc);
-                ++i;
             }
             ++_dirAmount;
         }
         for (auto entity : _cam->getEntities<SpotLight>())
         {
             auto light = _scene->getComponent<const SpotLight>(entity);
-            auto shadow = light->getShadowType();
-            if (shadow == ShadowType::None)
+            if (!checkShadowType(_dirAmount + _spotAmount, light->getShadowType()))
             {
                 continue;
             }
-            if (shadow == ShadowType::Soft)
-            {
-                _softMask |= (1 << (_dirAmount + _spotAmount));
-            }
-            if (i >= _passes.size())
+            if (!configurePasses(entity, 1))
             {
                 break;
             }
-            _passes[i].configure(entity);
-            ++i;
             ++_spotAmount;
         }
-        for (; i < _passes.size(); ++i)
+        for (auto entity : _cam->getEntities<PointLight>())
         {
-            _passes[i].configure();
+            auto light = _scene->getComponent<const PointLight>(entity);
+            if (!checkShadowType(_dirAmount + _spotAmount + _pointAmount, light->getShadowType()))
+            {
+                continue;
+            }
+            if (!configurePasses(entity, _pointLightFaceAmount))
+            {
+                break;
+            }
+            ++_pointAmount;
+        }
+        for (; passIdx < _passes.size(); ++passIdx)
+        {
+            _passes[passIdx].configure();
         }
     }
 
@@ -364,7 +393,7 @@ namespace darmok
         Frustum frust(_cam->getProjectionInverse(), true);
 
         auto step = 1.F / float(_config.cascadeAmount);
-        auto easing = _config.easing;
+        auto easing = _config.cascadeEasing;
         auto cascSliceDistri = [step, easing](int casc)
         {
             float v = step * casc;
@@ -389,7 +418,7 @@ namespace darmok
 
     void ShadowRenderer::updateTransBuffer() noexcept
     {
-        auto count = (_dirAmount * _config.cascadeAmount) + _spotAmount + (_pointAmount * 6);
+        auto count = (_dirAmount * _config.cascadeAmount) + _spotAmount + (_pointAmount * _pointLightFaceAmount);
         VertexDataWriter writer(_shadowTransLayout, count);
         uint32_t index = 0;
 
@@ -428,6 +457,20 @@ namespace darmok
             }
             auto lightTrans = _scene->getComponent<const Transform>(entity);
             addElement(getSpotLightMapMatrix(light.value(), lightTrans));
+        }
+
+        for (auto entity : _cam->getEntities<PointLight>())
+        {
+            auto light = _scene->getComponent<const PointLight>(entity);
+            if (light->getShadowType() == ShadowType::None)
+            {
+                continue;
+            }
+            auto lightTrans = _scene->getComponent<const Transform>(entity);
+            for (auto face = 0; face < _pointLightFaceAmount; ++face)
+            {
+                addElement(getPointLightMapMatrix(light.value(), lightTrans, face));
+            }
         }
 
         auto data = writer.finish();
@@ -550,6 +593,30 @@ namespace darmok
     glm::mat4 ShadowRenderer::getSpotLightMapMatrix(const SpotLight& light, const OptionalRef<const Transform>& lightTrans) const noexcept
     {
         return _crop * getSpotLightMatrix(light, lightTrans);
+    }
+
+    glm::mat4 ShadowRenderer::getPointLightMatrix(const PointLight& light, const OptionalRef<const Transform>& lightTrans, uint8_t face) const noexcept
+    {
+        auto proj = getPointLightProjMatrix(light, face);
+        auto view = getLightViewMatrix(lightTrans);
+        return proj * view;
+    }
+
+    glm::mat4 ShadowRenderer::getPointLightProjMatrix(const PointLight& light, uint8_t face) const noexcept
+    {
+        static const std::array<glm::vec3, _pointLightFaceAmount> dirs
+        {
+            glm::vec3{ 0.F, 0.F, 1.F }, glm::vec3{  0.F,  0.F, -1.F },
+            glm::vec3{ 0.F, 1.F, 0.F }, glm::vec3{  0.F, -1.F,  0.F },
+            glm::vec3{ 1.F, 0.F, 0.F }, glm::vec3{ -1.F,  0.F,  0.F }
+        };
+        auto proj = Math::perspective(glm::half_pi<float>(), 1.F, Math::defaultNear, light.getRange());
+        return proj * glm::mat4_cast(Math::quatLookAt(dirs[face]));
+    }
+
+    glm::mat4 ShadowRenderer::getPointLightMapMatrix(const PointLight& light, const OptionalRef<const Transform>& lightTrans, uint8_t face) const noexcept
+    {
+        return _crop * getPointLightMatrix(light, lightTrans, face);
     }
 
     bgfx::ViewId ShadowRenderer::renderReset(bgfx::ViewId viewId) noexcept

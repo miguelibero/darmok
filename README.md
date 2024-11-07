@@ -71,8 +71,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
         * basic phong
         * PBR metallic-roughness
     * cascaded shadow mapping
-        * directional lights
-    * camera culling (frustum, occlusion pending)
+    * spot & point light shadows
+    * camera culling (frustum, occlusion seems to be broken)
 * entity component scene using entt
     * transform, camera
 * sprites and spritesheets
@@ -100,7 +100,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * frame limiting
 * more renderer features
     * bloom
-    * shadows for point & spot lights
     * deferred, clustered
     * SSAO
 * luajit support (maybe compile using importer)

@@ -1198,9 +1198,9 @@ namespace darmok
 			bb.min = vertices[indices[0]].position;
 			bb.max = bb.min;
 
-			for (size_t i = 1; i < indices.size(); ++i)
+			for (auto& idx : indices)
 			{
-				auto& vert = vertices[i];
+				auto& vert = vertices[idx];
 				bb.expandToPosition(vert.position);
 			}
 		}
