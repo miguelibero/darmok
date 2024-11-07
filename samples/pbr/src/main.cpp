@@ -112,15 +112,16 @@ namespace
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 0.5);
 
+			MeshData arrowMeshData(Line(), LineMeshType::Arrow);
+			std::shared_ptr<IMesh> arrowMesh = arrowMeshData.createMesh(unlitProg->getVertexLayout());
+
 			auto dirLightEntity = scene.createEntity();
 			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -2, 2, -2 })
 				.lookDir(glm::vec3(0, -1, -1));
 			auto& dirLight = scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
-			// dirLight.setShadowType(ShadowType::Soft);
+			dirLight.setShadowType(ShadowType::Soft);
 			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(dirLightTrans));
 
-			MeshData arrowMeshData(Line(), LineMeshType::Arrow);
-			std::shared_ptr<IMesh> arrowMesh = arrowMeshData.createMesh(unlitProg->getVertexLayout());
 			scene.addComponent<Renderable>(dirLightEntity, arrowMesh, unlitProg, Colors::magenta());
 			scene.addComponent<BoundingBox>(dirLightEntity, arrowMeshData.getBounds());
 

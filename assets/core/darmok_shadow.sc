@@ -129,38 +129,32 @@ float lightShadow(uint lightIdx, uint startMapIdx, uint countMapIdx, vec3 fragPo
 	return hardShadow(startMapIdx, countMapIdx, fragPos, bias);
 }
 
-// using multiplicative shadow blending like Unity
-float shadowVisibility(vec3 fragPos, vec3 normal)
+float dirLightShadowVisibility(uint dirLightIdx, vec3 fragPos, vec3 normal)
 {
-	float visibility = 1.0;
-	uint offsetMapIdx = 0;
+	vec3 dir = b_shadowDirection[dirLightIdx];
+	float bias = normalShadowBias(normal, -dir);
+
 	uint countMapIdx = u_shadowCascadeAmount;
+	uint startMapIdx = dirLightIdx * countMapIdx;
+	uint lightIdx = dirLightIdx;
+	return lightShadow(lightIdx, startMapIdx, countMapIdx, fragPos, bias);
+}
+
+float spotLightShadowVisibility(uint spotLightIdx, vec3 fragPos)
+{
+	uint countMapIdx = 1;
+	uint startMapIdx = u_shadowDirAmout * u_shadowCascadeAmount + spotLightIdx;
+	uint lightIdx = u_shadowDirAmout + spotLightIdx;
 	float bias = 0.0;
-	for(uint i = 0; i < u_shadowDirAmout; ++i)
-	{
-		vec3 dir = b_shadowDirection[i];
-		uint startMapIdx = i * countMapIdx;
-		bias = normalShadowBias(normal, -dir);
-		visibility *= lightShadow(i, startMapIdx, countMapIdx, fragPos, bias);
-	}
-	offsetMapIdx = u_shadowDirAmout * countMapIdx;
-	countMapIdx = 1;
-	bias = 0.0;
-	for(uint i = 0; i < u_shadowSpotAmount; ++i)
-	{
-		uint startMapIdx = offsetMapIdx + i;
-		uint lightIdx = u_shadowDirAmout + i;
-		visibility *= lightShadow(lightIdx, startMapIdx, countMapIdx, fragPos, bias);
-	}
-	countMapIdx = 6;
-	offsetMapIdx += u_shadowSpotAmount;
-	for(uint i = 0; i < u_shadowPointAmount; ++i)
-	{
-		uint startMapIdx = offsetMapIdx + (i * countMapIdx);
-		uint lightIdx = u_shadowDirAmout + u_shadowSpotAmount + i;
-		visibility *= lightShadow(lightIdx, startMapIdx, countMapIdx, fragPos, bias);
-	}
-	return visibility;
+	return lightShadow(lightIdx, startMapIdx, countMapIdx, fragPos, bias);
+}
+float pointLightShadowVisibility(uint pointLightIdx, vec3 fragPos)
+{
+	uint countMapIdx = 6;
+	uint startMapIdx = u_shadowDirAmout * u_shadowCascadeAmount + u_shadowSpotAmount + pointLightIdx;
+	uint lightIdx = u_shadowDirAmout + u_shadowSpotAmount + pointLightIdx;
+	float bias = 0.0;
+	return lightShadow(lightIdx, startMapIdx, countMapIdx, fragPos, bias);
 }
 
 #endif // DARMOK_SHADOW_HEADER

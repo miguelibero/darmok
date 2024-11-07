@@ -5,10 +5,7 @@
 
 #include <darmok_material.sc>
 #include <darmok_light.sc>
-
-#if DARMOK_VARIANT_SHADOW_ENABLED
 #include <darmok_shadow.sc>
-#endif
 
 vec3 calcLightRadiance(LightData data, vec3 V, vec3 N, float NoV, vec3 msFactor, Material mat)
 {
@@ -40,30 +37,41 @@ vec4 forwardFragment(vec3 V, vec3 normal, vec3 tangent, vec3 fragPos, vec2 texCo
     uint pointLights = pointLightCount();
     for(uint i = 0; i < pointLights; i++)
     {
+        float visibility = pointLightShadowVisibility(i, fragPos);
+        if(visibility <= 0.0)
+        {
+            continue;
+        }
         PointLight light = getPointLight(i);
         LightData data = calcPointLight(light, fragPos);
-        radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat);
+        radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat) * visibility;
     }
 
     uint spotLights = spotLightCount();
     for(uint i = 0; i < spotLights; i++)
     {
+        float visibility = spotLightShadowVisibility(i, fragPos);
+        if(visibility <= 0.0)
+        {
+            continue;
+        }
         SpotLight light = getSpotLight(i);
         LightData data = calcSpotLight(light, fragPos);
-        radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat);
+        radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat) * visibility;
     }
 
     uint dirLights = dirLightCount();
     for(uint i = 0; i < dirLights; i++)
     {
+        float visibility = dirLightShadowVisibility(i, fragPos, N);
+        if(visibility <= 0.0)
+        {
+            continue;
+        }
         DirLight light = getDirLight(i);
         LightData data = calcDirLight(light);
-        radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat);
+        radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat) * visibility;
     }
-
-#if DARMOK_VARIANT_SHADOW_ENABLED
-    radianceOut.rgb *= shadowVisibility(fragPos, N);
-#endif
 
     radianceOut += getAmbientLight().irradiance * mat.diffuse * mat.occlusion;
     radianceOut += mat.emissive;
