@@ -22,39 +22,39 @@ vec4 forwardFragment(vec3 V, vec3 N, vec3 fragPos, vec2 texCoord)
 	uint pointLights = pointLightCount();
     for(uint i = 0; i < pointLights; i++)
     {
-		float visibility = pointLightShadowVisibility(i, fragPos);
+		PointLight light = getPointLight(i);
+		LightData data = calcPointLight(light, fragPos);
+		float visibility = pointLightShadow(light.entity, fragPos, N, data.direction);
         if(visibility <= 0.0)
         {
             continue;
         }
-		PointLight light = getPointLight(i);
-		LightData data = calcPointLight(light, fragPos);
 		radianceOut += calcLightRadiance(data, V, N, mat) * visibility;
 	}
 
 	uint spotLights = spotLightCount();
     for(uint i = 0; i < spotLights; i++)
     {
-		float visibility = spotLightShadowVisibility(i, fragPos);
+        SpotLight light = getSpotLight(i);
+        LightData data = calcSpotLight(light, fragPos);
+		float visibility = spotLightShadow(light.entity, fragPos, N, data.direction);
         if(visibility <= 0.0)
         {
             continue;
         }
-        SpotLight light = getSpotLight(i);
-        LightData data = calcSpotLight(light, fragPos);
 		radianceOut += calcLightRadiance(data, V, N, mat) * visibility;
     }
 
 	uint dirLights = dirLightCount();
     for(uint i = 0; i < dirLights; i++)
     {
-		float visibility = dirLightShadowVisibility(i, fragPos, N);
+		DirLight light = getDirLight(i);
+        LightData data = calcDirLight(light);
+		float visibility = dirLightShadow(light.entity, fragPos, N, data.direction);
         if(visibility <= 0.0)
         {
             continue;
         }
-		DirLight light = getDirLight(i);
-        LightData data = calcDirLight(light);
 		radianceOut += calcLightRadiance(data, V, N, mat) * visibility;
 	}
 

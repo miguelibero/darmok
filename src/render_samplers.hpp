@@ -20,7 +20,7 @@ namespace darmok
 
         static const uint8_t SHADOW_MAP = 10;
         static const uint8_t SHADOW_TRANS = 11;
-        static const uint8_t SHADOW_DIR = 12;
+        static const uint8_t SHADOW_LIGHT_DATA = 12;
 
         static const uint8_t CLUSTERS_CLUSTERS = 13;
         static const uint8_t CLUSTERS_LIGHTINDICES = 14;

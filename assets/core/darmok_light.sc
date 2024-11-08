@@ -12,24 +12,25 @@ uniform vec4 u_lightCountVec;
 uniform vec4 u_ambientLightIrradiance;
 
 // for each point light:
-//   vec4 position (w is padding)
+//   vec4 position + uint entity
 //   vec4 intensity + range (xyz is intensity, w is range)
 BUFFER_RO(b_pointLights, vec4, DARMOK_SAMPLER_LIGHTS_POINT);
 
 // for each spot light:
-//   vec4 position (w is padding)
+//   vec3 position + uint entity
 //   vec4 direction (w is padding)
 //   vec4 intensity + range (xyz is intensity, w is range)
 //   vec4 cone angle, inner cone angle
 BUFFER_RO(b_spotLights, vec4, DARMOK_SAMPLER_LIGHTS_SPOT);
 
 // for each directional light:
-//   vec4 direction (w is padding)
+//   vec3 direction + uint entity
 //   vec4 intensity (xyz is intensity)
 BUFFER_RO(b_dirLights, vec4, DARMOK_SAMPLER_LIGHTS_DIR);
 
 struct PointLight
 {
+    uint entity;
     vec3 position;
     vec3 intensity;
     float range;
@@ -37,6 +38,7 @@ struct PointLight
 
 struct SpotLight
 {
+    uint entity;
     vec3 position;
     vec3 direction;
     vec3 intensity;
@@ -47,6 +49,7 @@ struct SpotLight
 
 struct DirLight
 {
+    uint entity;
     vec3 direction;
     vec3 intensity;
 };
@@ -86,7 +89,9 @@ PointLight getPointLight(uint i)
 {
     PointLight light;
     i *= 2;
-    light.position = b_pointLights[i + 0].xyz;
+    vec4 posVec = b_pointLights[i + 0];
+    light.entity = posVec.w;
+    light.position = posVec.xyz;
     vec4 intensityRangeVec = b_pointLights[i + 1];
     light.intensity = intensityRangeVec.xyz;
     light.range = intensityRangeVec.w;
@@ -102,7 +107,9 @@ SpotLight getSpotLight(uint i)
 {
     SpotLight light;
     i *= 4;
-    light.position = b_spotLights[i + 0].xyz;
+    vec4 posVec = b_spotLights[i + 0];
+    light.entity = posVec.w;
+    light.position = posVec.xyz;
     light.direction = b_spotLights[i + 1].xyz;
     vec4 intensityRangeVec = b_spotLights[i + 2];
     light.intensity = intensityRangeVec.xyz;
@@ -122,7 +129,9 @@ DirLight getDirLight(uint i)
 {
     DirLight light;
     i *= 2;
-    light.direction = b_dirLights[i + 0].xyz;
+    vec4 posVec = b_dirLights[i + 0];
+    light.entity = posVec.w;
+    light.direction = posVec.xyz;
     vec4 intensityVec = b_dirLights[i + 1];
     light.intensity = intensityVec.xyz;
     return light;

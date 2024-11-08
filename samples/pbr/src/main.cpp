@@ -112,11 +112,12 @@ namespace
 			std::shared_ptr<IMesh> debugSphereMesh = debugSphereMeshData.createMesh(unlitProg->getVertexLayout());
 
 			auto lightRootEntity = scene.createEntity();
-			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
+			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity);
+			lightRootTrans.setPosition(glm::vec3{ 0, 1.5, 2 });
 			auto pointLightEntity = scene.createEntity();
 			auto& pointLightTrans = scene.addComponent<Transform>(pointLightEntity, lightRootTrans, glm::vec3{ 0, 1, 0 });
 			scene.addSceneComponent<CircleUpdater>(pointLightTrans);
-			auto& pointLight = scene.addComponent<PointLight>(pointLightEntity, 0.5);
+			auto& pointLight = scene.addComponent<PointLight>(pointLightEntity, 100);
 			pointLight.setShadowType(ShadowType::Hard);
 			scene.addComponent<Renderable>(pointLightEntity, debugSphereMesh, unlitProg, Colors::green());
 			scene.addComponent<BoundingBox>(pointLightEntity, debugSphereMeshData.getBounds());
@@ -124,7 +125,7 @@ namespace
 			auto dirLightEntity = scene.createEntity();
 			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -2, 2, -2 })
 				.lookDir(glm::vec3(0, -1, -1));
-			auto& dirLight = scene.addComponent<DirectionalLight>(dirLightEntity, 0.5);
+			auto& dirLight = scene.addComponent<DirectionalLight>(dirLightEntity, 1);
 			dirLight.setShadowType(ShadowType::Soft);
 			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(dirLightTrans));
 			scene.addComponent<Renderable>(dirLightEntity, debugArrowMesh, unlitProg, Colors::magenta());
@@ -137,7 +138,7 @@ namespace
 			spotLight.setShadowType(ShadowType::Hard);
 			scene.addComponent<Renderable>(spotLightEntity, debugArrowMesh, unlitProg, Colors::cyan());
 			scene.addComponent<BoundingBox>(spotLightEntity, debugArrowMeshData.getBounds());
-			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(spotLightTrans, -25.F));
+			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(spotLightTrans, -50.F));
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);

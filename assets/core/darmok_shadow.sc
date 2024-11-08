@@ -15,7 +15,7 @@ uniform vec4 u_shadowData2;
 #define u_shadowDirAmout		uint(u_shadowData2.x)
 #define u_shadowSpotAmount		uint(u_shadowData2.y)
 #define u_shadowPointAmount		uint(u_shadowData2.z)
-#define u_shadowSoftMask		uint(u_shadowData2.w)
+#define u_shadowMapAmount		uint(u_shadowData2.w)
 
 // light shadow maps ordered by type: directional (cascaded), spot, point
 SAMPLER2DARRAYSHADOW(s_shadowMap, DARMOK_SAMPLER_SHADOW_MAP);
@@ -25,9 +25,19 @@ SAMPLER2DARRAYSHADOW(s_shadowMap, DARMOK_SAMPLER_SHADOW_MAP);
 //   mat4 transform
 BUFFER_RO(b_shadowTrans, vec4, DARMOK_SAMPLER_SHADOW_TRANS);
 
-// for each directional light:
-//   vec4 direction
-BUFFER_RO(b_shadowDirection, vec4, DARMOK_SAMPLER_SHADOW_DIR);
+#define SHADOW_LIGHT_TYPE_DIR 0
+#define SHADOW_LIGHT_TYPE_SPOT 1
+#define SHADOW_LIGHT_TYPE_POINT 2
+
+#define SHADOW_TYPE_NONE 0
+#define SHADOW_TYPE_HARD 1
+#define SHADOW_TYPE_SOFT 2
+
+// for each shadow map:
+//   uint entity
+//   uint light type (0 = Dir, 1 = Spot, 2 = Point)
+//   uint shadow type (0 = None, 1 = Hard, 2 = Soft)
+BUFFER_RO(b_shadowLightData, vec4, DARMOK_SAMPLER_SHADOW_LIGHT_DATA);
 
 mat4 getShadowTransform(uint shadowMapIndex)
 {
@@ -49,7 +59,7 @@ bool outsideShadowMap(vec3 texCoord)
 
 float getShadowMapValue(uint shadowMapIndex, vec3 texCoord)
 {
-	return shadow2DArray(s_shadowMap, vec4(texCoord.xy, shadowMapIndex, texCoord.z));
+	return shadow2DArray(s_shadowMap, vec4(texCoord.xy, shadowMapIndex, texCoord.z)).x;
 }
 
 float normalShadowBias(vec3 norm, vec3 lightDir)
@@ -115,46 +125,72 @@ float softShadow(uint startIdx, uint countIdx, vec3 fragPos, float bias)
 	return v / 16.0;
 }
 
-bool hasSoftShadow(uint i)
+struct EntityShadowData
 {
-	return u_shadowSoftMask & (1 << i) != 0;
-}
+	uint shadowType;
+	uint startMapIndex;
+};
 
-float lightShadow(uint lightIdx, uint startMapIdx, uint countMapIdx, vec3 fragPos, float bias)
+EntityShadowData getEntityShadowData(uint entity, uint lightType)
 {
-	if(hasSoftShadow(lightIdx))
+	EntityShadowData data;
+	data.shadowType = SHADOW_TYPE_NONE;
+	for(uint i = 0; i < u_shadowMapAmount; ++i)
 	{
-		return softShadow(startMapIdx, countMapIdx, fragPos, bias);
+		vec4 elm = b_shadowLightData[i];
+		if(uint(elm.x) == entity && uint(elm.y) == lightType)
+		{
+			data.shadowType = uint(elm.z);
+			data.startMapIndex = i;
+			return data;
+		}
 	}
-	return hardShadow(startMapIdx, countMapIdx, fragPos, bias);
+	return data;
 }
 
-float dirLightShadowVisibility(uint dirLightIdx, vec3 fragPos, vec3 normal)
+float lightShadow(EntityShadowData data, uint countMapIdx, vec3 fragPos, float bias)
 {
-	vec3 dir = b_shadowDirection[dirLightIdx];
-	float bias = normalShadowBias(normal, -dir);
-
-	uint countMapIdx = u_shadowCascadeAmount;
-	uint startMapIdx = dirLightIdx * countMapIdx;
-	uint lightIdx = dirLightIdx;
-	return lightShadow(lightIdx, startMapIdx, countMapIdx, fragPos, bias);
+	switch(data.shadowType)
+	{
+		case SHADOW_TYPE_HARD:
+			return hardShadow(data.startMapIndex, countMapIdx, fragPos, bias);
+		case SHADOW_TYPE_SOFT:
+			return softShadow(data.startMapIndex, countMapIdx, fragPos, bias);
+	}
+	return 1.0;
 }
 
-float spotLightShadowVisibility(uint spotLightIdx, vec3 fragPos)
+float dirLightShadow(uint entity, vec3 fragPos, vec3 normal, vec3 dir)
 {
-	uint countMapIdx = 1;
-	uint startMapIdx = u_shadowDirAmout * u_shadowCascadeAmount + spotLightIdx;
-	uint lightIdx = u_shadowDirAmout + spotLightIdx;
-	float bias = 0.0;
-	return lightShadow(lightIdx, startMapIdx, countMapIdx, fragPos, bias);
+	EntityShadowData data = getEntityShadowData(entity, SHADOW_LIGHT_TYPE_DIR);
+	if(data.shadowType == SHADOW_TYPE_NONE)
+	{
+		return 1.0;
+	}
+	float bias = normalShadowBias(normal, dir);
+	return lightShadow(data, u_shadowCascadeAmount, fragPos, bias);
 }
-float pointLightShadowVisibility(uint pointLightIdx, vec3 fragPos)
+
+float spotLightShadow(uint entity, vec3 fragPos, vec3 normal, vec3 dir)
 {
-	uint countMapIdx = 6;
-	uint startMapIdx = u_shadowDirAmout * u_shadowCascadeAmount + u_shadowSpotAmount + pointLightIdx;
-	uint lightIdx = u_shadowDirAmout + u_shadowSpotAmount + pointLightIdx;
-	float bias = 0.0;
-	return lightShadow(lightIdx, startMapIdx, countMapIdx, fragPos, bias);
+	EntityShadowData data = getEntityShadowData(entity, SHADOW_LIGHT_TYPE_SPOT);
+	if(data.shadowType == SHADOW_TYPE_NONE)
+	{
+		return 1.0;
+	}
+	float bias = normalShadowBias(normal, dir);
+	return lightShadow(data, 1, fragPos, bias);
+}
+
+float pointLightShadow(uint entity, vec3 fragPos, vec3 normal, vec3 dir)
+{
+	EntityShadowData data = getEntityShadowData(entity, SHADOW_LIGHT_TYPE_POINT);
+	if(data.shadowType == SHADOW_TYPE_NONE)
+	{
+		return 1.0;
+	}
+	float bias = normalShadowBias(normal, dir);
+	return lightShadow(data, 6, fragPos, bias);
 }
 
 #endif // DARMOK_SHADOW_HEADER

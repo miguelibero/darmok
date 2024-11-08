@@ -75,7 +75,7 @@ namespace darmok
 
         glm::mat4 getPointLightMatrix(const PointLight& light, const OptionalRef<const Transform>& lightTrans, uint8_t face = 0) const noexcept;
         glm::mat4 getPointLightProjMatrix(const PointLight& light, uint8_t face = 0) const noexcept;
-        glm::mat4 getPointLightMapMatrix(const PointLight& light, const OptionalRef<const Transform>& lightTrans, uint8_t face = 0) const noexcept;
+        glm::mat4 getPointLightMapMatrix(const PointLight& light, const OptionalRef<const Transform>& lightTran, uint8_t face = 0) const noexcept;
 
         glm::mat4 getLightViewMatrix(const OptionalRef<const Transform>& lightTrans) const noexcept;
 
@@ -95,7 +95,6 @@ namespace darmok
         std::unique_ptr<Texture> _tex;
         std::vector<glm::mat4> _camProjs;
         glm::mat4 _crop;
-        uint32_t _softMask;
         size_t _dirAmount;
         size_t _spotAmount;
         size_t _pointAmount;
@@ -105,15 +104,15 @@ namespace darmok
         bgfx::UniformHandle _shadowData2Uniform;
         bgfx::DynamicVertexBufferHandle _shadowTransBuffer;
         bgfx::VertexLayout _shadowTransLayout;
-        bgfx::DynamicVertexBufferHandle _shadowDirBuffer;
-        bgfx::VertexLayout _shadowDirLayout;
+        bgfx::DynamicVertexBufferHandle _shadowLightDataBuffer;
+        bgfx::VertexLayout _shadowLightDataLayout;
 
         static const size_t _pointLightFaceAmount;
 
         void updateCamera() noexcept;
         void updateLights() noexcept;
-        void updateTransBuffer() noexcept;
-        void updateDirBuffer() noexcept;
+        void updateBuffers() noexcept;
+        size_t getShadowMapAmount() const noexcept;
 
         void configureUniforms(bgfx::Encoder& encoder) const noexcept;
         void drawDebug() noexcept;

@@ -107,7 +107,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * finish all the TextRenderConfig options
     * dynamic distance field rendering with border support
 * clipboard text support (UTF8)
-* asset loading progress
+* asset loading progress (maybe implement progressive loading)
 * possible refactors
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
     * loaders should return unique_ptr

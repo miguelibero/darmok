@@ -295,7 +295,7 @@ namespace darmok
 
     struct DirectionalLightBufferElement final
     {
-        glm::vec3 dir = glm::vec4(0.F);
+        glm::vec4 dir = glm::vec4(0.F);
         glm::vec3 color = glm::vec4(1.F);
     };
 
@@ -309,8 +309,9 @@ namespace darmok
             if (trans)
             {
                 // elm.dir = -glm::normalize(trans->getWorldPosition());
-                elm.dir = trans->getWorldDirection();
+                elm.dir = glm::vec4(trans->getWorldDirection(), 0.F);
             }
+            elm.dir.w = entity;
             auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
             auto intensity = light.getIntensity();
             elm.color = Colors::normalize(light.getColor()) * intensity;
@@ -336,7 +337,7 @@ namespace darmok
 
     struct PointLightBufferElement final
     {
-        glm::vec3 pos = glm::vec3(0.F);
+        glm::vec4 pos = glm::vec4(0.F);
         glm::vec4 color = glm::vec4(1.F);
     };
 
@@ -351,9 +352,10 @@ namespace darmok
             float scale = 1.F;
             if (trans)
             {
-                elm.pos = trans->getWorldPosition();
+                elm.pos = glm::vec4(trans->getWorldPosition(), 0.F);
                 scale = glm::compMax(trans->getWorldScale());
             }
+            elm.pos.w = entity;
             auto range = light.getRange() * scale;
             auto intensity = light.getIntensity();
             elm.color = glm::vec4(Colors::normalize(light.getColor()) * intensity, range);
@@ -378,7 +380,7 @@ namespace darmok
 
     struct SpotLightBufferElement final
     {
-        glm::vec3 pos = glm::vec3(0.F);
+        glm::vec4 pos = glm::vec4(0.F);
         glm::vec3 direction = glm::vec3(0.F, 0.F, 1.F);
         glm::vec4 color = glm::vec4(1.F);
         glm::vec4 data = glm::vec4(0.F);
@@ -395,10 +397,11 @@ namespace darmok
             float scale = 1.F;
             if (trans)
             {
-                elm.pos = trans->getWorldPosition();
+                elm.pos = glm::vec4(trans->getWorldPosition(), 0.F);
                 scale = glm::compMax(trans->getWorldScale());
                 elm.direction = trans->getWorldDirection();
             }
+            elm.pos.w = entity;
             auto range = light.getRange() * scale;
             auto intensity = light.getIntensity();
             elm.color = glm::vec4(Colors::normalize(light.getColor()) * intensity, range);
