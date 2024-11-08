@@ -196,7 +196,8 @@ namespace darmok
 			"mips", &TextureConfig::mips,
 			"layers", &TextureConfig::layers,
 			"type", &TextureConfig::type,
-			"format", &TextureConfig::format
+			"format", &TextureConfig::format,
+			sol::meta_function::to_string, &TextureConfig::toString
 		);
 
 		lua.new_usertype<Texture>("Texture",
@@ -229,7 +230,8 @@ namespace darmok
 			"layers", sol::property(&Texture::getLayerCount),
 			"depth", sol::property(&Texture::getDepth),
 			"mips", sol::property(&Texture::hasMips),
-			"name", sol::property(&Texture::setName)
+			"name", sol::property(&Texture::setName),
+			sol::meta_function::to_string, &Texture::toString
 		);
 	}
 

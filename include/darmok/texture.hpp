@@ -32,7 +32,7 @@ namespace darmok
 
 		[[nodiscard]] static const TextureConfig& getEmpty() noexcept;
 
-		[[nodiscard]] std::string to_string() const noexcept;
+		[[nodiscard]] std::string toString() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getInfo() const noexcept;
 	};
 
@@ -62,7 +62,7 @@ namespace darmok
 		void update(const DataView& data, const glm::uvec3& size, const glm::uvec3& origin = glm::uvec3(0), uint8_t mip = 0);
 		uint32_t read(Data& data) noexcept;
 
-		[[nodiscard]] std::string to_string() const noexcept;
+		[[nodiscard]] std::string toString() const noexcept;
 		[[nodiscard]] const bgfx::TextureHandle& getHandle() const noexcept;
 		[[nodiscard]] TextureType getType() const noexcept;
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;

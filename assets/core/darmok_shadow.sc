@@ -17,9 +17,11 @@ uniform vec4 u_shadowData2;
 #define u_shadowPointAmount		uint(u_shadowData2.z)
 #define u_shadowMapAmount		uint(u_shadowData2.w)
 
+#if DARMOK_VARIANT_SHADOW_ENABLED
 // light shadow maps ordered by type: directional (cascaded), spot, point
 SAMPLER2DARRAYSHADOW(s_shadowMap, DARMOK_SAMPLER_SHADOW_MAP);
 #define Sampler sampler2DShadowArray
+#endif
 
 // for each shadow map:
 //   mat4 transform
@@ -57,10 +59,17 @@ bool outsideShadowMap(vec3 texCoord)
 	;
 }
 
+#if DARMOK_VARIANT_SHADOW_ENABLED
 float getShadowMapValue(uint shadowMapIndex, vec3 texCoord)
 {
 	return shadow2DArray(s_shadowMap, vec4(texCoord.xy, shadowMapIndex, texCoord.z)).x;
 }
+#else
+float getShadowMapValue(uint shadowMapIndex, vec3 texCoord)
+{
+	return 1.0;
+}
+#endif
 
 float normalShadowBias(vec3 norm, vec3 lightDir)
 {

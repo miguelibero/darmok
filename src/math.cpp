@@ -35,8 +35,11 @@ namespace darmok
         return hd ? -1.F : 0.F;
     }
 
-    const float Math::defaultNear = 0.1F;
-    const float Math::defaultFar = 1000.F;
+    const float Math::defaultPerspNear = 0.1F;
+    const float Math::defaultPerspFar = 1000.F;
+
+    const float Math::defaultOrthoNear = -0.1F;
+    const float Math::defaultOrthoFar = 1000.F;
 
     glm::mat4 Math::perspective(float fovy, float aspect, float near, float far) noexcept
     {

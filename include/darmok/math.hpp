@@ -111,22 +111,25 @@ namespace darmok
         * we cannot use the glm camera functions because they use opengl depth format 
         * and bgfx can run on different renderers so they have math functions with a depth parameter
         */
-		static const float defaultNear;
-		static const float defaultFar;
+		static const float defaultPerspNear;
+		static const float defaultPerspFar;
+
+		static const float defaultOrthoNear;
+		static const float defaultOrthoFar;
 
 
 		[[nodiscard]] static float getNormalizedNearDepth() noexcept;
         [[nodiscard]] static glm::mat4 perspective(float fovy, float aspect, float near, float far) noexcept;
-        [[nodiscard]] static glm::mat4 perspective(float fovy, float aspect, float near = defaultNear) noexcept;
-        [[nodiscard]] static glm::mat4 ortho(float left, float right, float bottom, float top, float near = defaultNear, float far = defaultFar) noexcept;
-		[[nodiscard]] static glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = defaultNear, float far = defaultFar) noexcept;
+        [[nodiscard]] static glm::mat4 perspective(float fovy, float aspect, float near = defaultPerspNear) noexcept;
+        [[nodiscard]] static glm::mat4 ortho(float left, float right, float bottom, float top, float near = defaultOrthoNear, float far = defaultOrthoFar) noexcept;
+		[[nodiscard]] static glm::mat4 ortho(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = defaultOrthoNear, float far = defaultOrthoFar) noexcept;
 		[[nodiscard]] static glm::vec2 projDepthRange(const glm::mat4& proj) noexcept;
 
 		// calc orthographic depth planes so that a given world z is set on a given depth
 		[[nodiscard]] static glm::vec2 orthoDepthRange(float z, float depth) noexcept;
 
-		[[nodiscard]] static glm::mat4 frustum(float left, float right, float bottom, float top, float near = defaultNear, float far = defaultFar) noexcept;
-		[[nodiscard]] static glm::mat4 frustum(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = defaultNear, float far = defaultFar) noexcept;
+		[[nodiscard]] static glm::mat4 frustum(float left, float right, float bottom, float top, float near = defaultPerspNear, float far = defaultPerspFar) noexcept;
+		[[nodiscard]] static glm::mat4 frustum(const glm::vec2& bottomLeft, const glm::vec2& topRight, float near = defaultPerspNear, float far = defaultPerspFar) noexcept;
 
 		// methods used in Transform to generate the matrix
         [[nodiscard]] static glm::mat4 transform(const glm::vec3& pos, const glm::quat& rot = glm::identity<glm::quat>(), const glm::vec3& scale = glm::vec3(1)) noexcept;
@@ -137,7 +140,7 @@ namespace darmok
 		static glm::vec3 rotateTowards(const glm::vec3& current, const glm::vec3& target, float maxRadiansDelta, float maxDistanceDelta) noexcept;
 		static glm::quat rotateTowards(const glm::quat& current, const glm::quat& target, float maxRadiansDelta) noexcept;
 
-		static glm::mat4 changeProjDepth(const glm::mat4& proj, float near = defaultNear, float far = defaultFar) noexcept;
+		static glm::mat4 changeProjDepth(const glm::mat4& proj, float near = defaultPerspNear, float far = defaultPerspFar) noexcept;
 
 		static bool almostEqualAngle(float a, float b, float threshold = 0.01F) noexcept;
 		static glm::quat quatLookAt(const glm::vec3& direction, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f), float threshold = 0.01F) noexcept;

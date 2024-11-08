@@ -50,16 +50,14 @@ namespace darmok
         glm::mat4 getViewProjectionInverse() const noexcept;
 
         Camera& setProjectionMatrix(const glm::mat4& matrix) noexcept;
-        Camera& setPerspective(float fovy, float aspect, float near = Math::defaultNear) noexcept;
-        Camera& setPerspective(float fovy, float aspect, float near, float far) noexcept;
-        Camera& setPerspective(float fovy, const glm::uvec2& size, float near = Math::defaultNear) noexcept;
-        Camera& setPerspective(float fovy, const glm::uvec2& size, float near, float far) noexcept;
+        Camera& setPerspective(float fovy, float aspect, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
+        Camera& setPerspective(float fovy, const glm::uvec2& size, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
         
-        Camera& setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
-        Camera& setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
+        Camera& setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
+        Camera& setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
 
-        Camera& setViewportPerspective(float fovy, float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
-        Camera& setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
+        Camera& setViewportPerspective(float fovy, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
+        Camera& setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
 
         Camera& setViewport(const std::optional<Viewport>& viewport) noexcept;
         const std::optional<Viewport>& getViewport() const noexcept;

@@ -45,8 +45,9 @@ namespace darmok
         EasingType cascadeEasing = EasingType::QuadraticIn;
         uint16_t maxPassAmount = 20;
         uint8_t cascadeAmount = 3;
-        float bias = 0.005;
-        float normalBias = 0.02;
+        float bias = 0.005F;
+        float normalBias = 0.02F;
+        float nearPlane = 0.1F;
     };
 
     class DARMOK_EXPORT ShadowRenderer final : public ITypeCameraComponent<ShadowRenderer>

@@ -577,7 +577,7 @@ namespace darmok
 
     glm::mat4 ShadowRenderer::getSpotLightProjMatrix(const SpotLight& light) const noexcept
     {
-        return Math::perspective(light.getConeAngle() * 2.F, 1.F, Math::defaultNear, light.getRange());
+        return Math::perspective(light.getConeAngle() * 2.F, 1.F, _config.nearPlane, light.getRange());
     }
 
     glm::mat4 ShadowRenderer::getSpotLightMapMatrix(const SpotLight& light, const OptionalRef<const Transform>& lightTrans) const noexcept
@@ -603,7 +603,7 @@ namespace darmok
             glm::vec3(glm::half_pi<float>(), 0.F, 0.F),
             glm::vec3(-glm::half_pi<float>(), 0.F, 0.F),
         };
-        auto proj = Math::perspective(glm::half_pi<float>(), 1.F, Math::defaultNear, light.getRange());
+        auto proj = Math::perspective(glm::half_pi<float>(), 1.F, _config.nearPlane, light.getRange());
         proj *= glm::mat4_cast(rots[face]);
         return proj;
     }

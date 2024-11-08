@@ -103,9 +103,9 @@ namespace darmok
 		return empty;
 	}
 
-	std::string TextureConfig::to_string() const noexcept
+	std::string TextureConfig::toString() const noexcept
 	{
-		return "size:" + glm::to_string(size);
+		return "TextureConfig(" + glm::to_string(size) + ")";
 	}
 
 	bgfx::TextureInfo TextureConfig::getInfo() const noexcept
@@ -203,10 +203,10 @@ namespace darmok
 		return bgfx::readTexture(_handle, data.ptr());
 	}
 
-	std::string Texture::to_string() const noexcept
+	std::string Texture::toString() const noexcept
 	{
 		return "Texture(" + std::to_string(_handle.idx)
-			+ " " + _config.to_string() + ")";
+			+ " " + _config.toString() + ")";
 	}
 
 	const bgfx::TextureHandle& Texture::getHandle() const noexcept

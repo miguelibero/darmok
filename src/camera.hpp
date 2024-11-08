@@ -36,16 +36,14 @@ namespace darmok
         glm::mat4 getViewProjectionInverse() const noexcept;
 
         void setProjectionMatrix(const glm::mat4& matrix) noexcept;
-        void setPerspective(float fovy, float aspect, float near = Math::defaultNear) noexcept;
-        void setPerspective(float fovy, float aspect, float near, float far) noexcept;
-        void setPerspective(float fovy, const glm::uvec2& size, float near = Math::defaultNear) noexcept;
-        void setPerspective(float fovy, const glm::uvec2& size, float near, float far) noexcept;
+        void setPerspective(float fovy, float aspect, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
+        void setPerspective(float fovy, const glm::uvec2& size, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
         
-        void setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
-        void setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
+        void setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
+        void setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
 
-        void setViewportPerspective(float fovy, float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
-        void setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultNear, float far = Math::defaultFar) noexcept;
+        void setViewportPerspective(float fovy, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
+        void setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultPerspFar) noexcept;
 
         void setViewport(const std::optional<Viewport>& viewport) noexcept;
         const std::optional<Viewport>& getViewport() const noexcept;

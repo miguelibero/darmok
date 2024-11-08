@@ -411,7 +411,7 @@ namespace darmok
 	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept
 	{
 		glm::vec4 hasTextures(0);
-		for (uint8_t i = 0; i < _samplerUniforms.size(); i++)
+		for (uint8_t i = 0; i < _samplerUniforms.size(); ++i)
 		{
 			auto& def = _samplerUniforms[i];
 			auto tex = mat.getTexture(def.type);

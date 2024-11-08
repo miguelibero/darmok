@@ -88,7 +88,7 @@ namespace
 
 			auto& canvas = scene.addComponent<RmluiCanvas>(canvasEntity, "rmlui", canvasSize);
 			canvas.setOffset(glm::vec3(canvasSize, 0) * -0.5F);
-			canvas.setInputActive(true);
+			canvas.setInputEnabled(true);
 			canvas.setMousePositionMode(RmluiCanvasMousePositionMode::Absolute);
 			auto& context = canvas.getContext();
 

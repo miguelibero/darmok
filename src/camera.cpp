@@ -116,22 +116,10 @@ namespace darmok
         _vpProj.reset();
     }
 
-    void CameraImpl::setPerspective(float fovy, float aspect, float near) noexcept
-    {
-        auto proj = Math::perspective(glm::radians(fovy), aspect, near);
-        setProjectionMatrix(proj);
-    }
-
     void CameraImpl::setPerspective(float fovy, float aspect, float near, float far) noexcept
     {
         auto proj = Math::perspective(glm::radians(fovy), aspect, near, far);
         setProjectionMatrix(proj);
-    }
-
-    void CameraImpl::setPerspective(float fovy, const glm::uvec2& size, float near) noexcept
-    {
-        float aspect = (float)size.x / size.y;
-        return setPerspective(fovy, aspect, near);
     }
 
     void CameraImpl::setPerspective(float fovy, const glm::uvec2& size, float near, float far) noexcept
@@ -653,21 +641,9 @@ namespace darmok
         return *this;
     }
 
-    Camera& Camera::setPerspective(float fovy, float aspect, float near) noexcept
-    {
-        _impl->setPerspective(fovy, aspect, near);
-        return *this;
-    }
-    
     Camera& Camera::setPerspective(float fovy, float aspect, float near, float far) noexcept
     {
         _impl->setPerspective(fovy, aspect, near, far);
-        return *this;
-    }
-
-    Camera& Camera::setPerspective(float fovy, const glm::uvec2& size, float near) noexcept
-    {
-        _impl->setPerspective(fovy, size, near);
         return *this;
     }
 
