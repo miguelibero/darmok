@@ -95,19 +95,7 @@ namespace darmok
 		return entity.addComponent<Transform>();
 	}
 
-	Transform& LuaTransform::addEntityComponent2(LuaEntity& entity, Transform& parent) noexcept
-	{
-		auto& trans = entity.addComponent<Transform>();
-		trans.setParent(parent);
-		return trans;
-	}
-
-	Transform& LuaTransform::addEntityComponent3(LuaEntity& entity, Transform& parent, const VarLuaTable<glm::vec3>& pos) noexcept
-	{
-		return entity.addComponent<Transform>(parent, LuaGlm::tableGet(pos));
-	}
-
-	Transform& LuaTransform::addEntityComponent4(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept
+	Transform& LuaTransform::addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept
 	{
 		return entity.addComponent<Transform>(LuaGlm::tableGet(pos));
 	}
@@ -128,9 +116,7 @@ namespace darmok
 			"type_id", sol::property(&entt::type_hash<Transform>::value),
 			"add_entity_component", sol::overload(
 				&LuaTransform::addEntityComponent1,
-				&LuaTransform::addEntityComponent2,
-				&LuaTransform::addEntityComponent3,
-				&LuaTransform::addEntityComponent4
+				&LuaTransform::addEntityComponent2
 			),
 			"get_entity_component", &LuaTransform::getEntityComponent,
 			"get_entity", &LuaTransform::getEntity,

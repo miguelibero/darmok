@@ -178,6 +178,19 @@ namespace darmok
         return _paused;
     }
 
+    std::vector<Entity> SceneImpl::getRootEntities() const noexcept
+    {
+        std::vector<Entity> roots;
+        for (auto entity : _scene.getEntities<Transform>())
+        {
+            if (!_scene.getComponent<const Transform>(entity)->getParent())
+            {
+                roots.push_back(entity);
+            }
+        }
+        return roots;
+    }
+
     void SceneImpl::init(App& app)
     {
         if (_app == app)
@@ -547,6 +560,11 @@ namespace darmok
     {
         auto storage = getRegistry().storage(typeId);
         return storage && storage->find(entity) != storage->end();
+    }
+
+    std::vector<Entity> Scene::getRootEntities() const noexcept
+    {
+        return _impl->getRootEntities();
     }
 
     entt::id_type Scene::getId() const noexcept

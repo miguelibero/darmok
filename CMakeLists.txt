@@ -207,6 +207,7 @@ set(HEADERS
   scene.hpp
   scene_filter.hpp
   scene_serialize.hpp
+  glm_serialize.hpp
 
   texture_atlas.hpp
   anim.hpp

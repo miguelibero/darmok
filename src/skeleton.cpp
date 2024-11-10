@@ -15,7 +15,7 @@
 #include <glm/gtx/vector_angle.hpp>
 
 // to allow serialization
-#include <darmok/math.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>

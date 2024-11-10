@@ -9,6 +9,11 @@
 
 namespace darmok
 {
+    Transform::Transform() noexcept
+        : Transform(glm::vec3(0.F))
+    {
+    }
+
     Transform::Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent) noexcept
         : _position()
         , _rotation()
@@ -36,11 +41,6 @@ namespace darmok
         , _parentChanged(false)
     {
         setParent(parent);
-    }
-
-    Transform::Transform(const OptionalRef<Transform>& parent, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale) noexcept
-        : Transform(position, rotation, scale, parent)
-    {
     }
 
     Transform::~Transform() noexcept

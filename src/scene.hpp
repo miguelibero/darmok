@@ -41,6 +41,8 @@ namespace darmok
         void setPaused(bool paused) noexcept;
         bool isPaused() const noexcept;
 
+        std::vector<Entity> getRootEntities() const noexcept;
+
         void destroyEntities() noexcept;
         void destroyEntities(const EntityFilter& filter);
         void destroyEntity(Entity entity) noexcept;

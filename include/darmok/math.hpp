@@ -146,36 +146,3 @@ namespace darmok
 		static glm::quat quatLookAt(const glm::vec3& direction, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f), float threshold = 0.01F) noexcept;
 	};
 }
-
-namespace glm
-{
-	template<class Archive, typename T, glm::qualifier Q = glm::defaultp>
-	void serialize(Archive& archive, glm::vec<2, T, Q>& vec)
-	{
-		archive(vec.x, vec.y);
-	}
-
-	template<class Archive, typename T, glm::qualifier Q = glm::defaultp>
-	void serialize(Archive& archive, glm::vec<3, T, Q>& vec)
-	{
-		archive(vec.x, vec.y, vec.z);
-	}
-
-	template<class Archive, typename T, glm::qualifier Q = glm::defaultp>
-	void serialize(Archive& archive, glm::vec<4, T, Q>& vec)
-	{
-		archive(vec.x, vec.y, vec.z, vec.w);
-	}
-
-	template<class Archive, typename T, glm::qualifier Q = glm::defaultp>
-	void serialize(Archive& archive, glm::mat<3, 3, T, Q>& mat)
-	{
-		archive(mat[0], mat[1], mat[2]);
-	}
-
-	template<class Archive, typename T, glm::qualifier Q = glm::defaultp>
-	void serialize(Archive& archive, glm::mat<4, 4, T, Q>& mat)
-	{
-		archive(mat[0], mat[1], mat[2], mat[3]);
-	}
-}

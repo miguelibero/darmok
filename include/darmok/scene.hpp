@@ -150,6 +150,12 @@ namespace darmok
         }
 
         template<typename T>
+        EntityView getEntities() const noexcept
+        {
+            return getEntities(entt::type_hash<T>::value());
+        }
+
+        template<typename T>
         EntityView getUpdateEntities() const noexcept
         {
             return getEntities<T>(getUpdateFilter());
@@ -242,6 +248,8 @@ namespace darmok
             return false;
         }
 
+        std::vector<Entity> getRootEntities() const noexcept;
+
         template<typename C>
         bool forEachParent(Entity entity, const C& callback)
         {
@@ -265,6 +273,19 @@ namespace darmok
             }
             entity = getEntity(parent.value());
             return forEachParent(entity, callback);
+        }
+
+        template<typename C>
+        bool forEachChild(const C& callback)
+        {
+            for (auto root : getRootEntities())
+            {
+                if (forEachChild(root, callback))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         template<typename C>

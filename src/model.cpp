@@ -20,7 +20,7 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/types/memory.hpp>
 #include <darmok/data_stream.hpp>
-#include <darmok/math.hpp>
+#include <darmok/glm_serialize.hpp>
 
 namespace darmok
 {

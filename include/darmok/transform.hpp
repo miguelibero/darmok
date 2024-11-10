@@ -5,6 +5,7 @@
 #include <glm/detail/type_quat.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/scene_serialize.hpp>
 #include <unordered_set>
 
 namespace darmok
@@ -14,9 +15,9 @@ namespace darmok
     public:
         static constexpr auto in_place_delete = true;
 
+        Transform() noexcept;
         Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent = std::nullopt) noexcept;
-        Transform(const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
-        Transform(const OptionalRef<Transform>& parent, const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1)) noexcept;
+        Transform(const glm::vec3& position, const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
         ~Transform() noexcept;
         std::string toString() const noexcept;
 
@@ -67,9 +68,18 @@ namespace darmok
         Transform& setForward(const glm::vec3& v) noexcept;
 
         template<class Archive>
-        void save(Archive& archive) const
+        void serialize(Archive& archive)
         {
-            archive(_position, _rotation, _scale, _name);
+            auto sparent = SceneSerializeUtils::createComponentRef(_parent);
+            auto schildren = SceneSerializeUtils::createComponentRefCollection(_children);
+            archive(
+                  cereal::make_nvp("name", _name)
+                , cereal::make_nvp("pos", _position)
+                , cereal::make_nvp("rot", _rotation)
+                , cereal::make_nvp("scale", _scale)
+                , cereal::make_nvp("parent", sparent)
+                , cereal::make_nvp("children", schildren)
+            );
         }
 
     private:

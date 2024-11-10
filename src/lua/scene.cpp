@@ -256,14 +256,16 @@ namespace darmok
 	{
 		auto entity = scene->createEntity();
 		auto& parentTrans = scene->getOrAddComponent<Transform>(parent.getReal());
-		scene->addComponent<Transform>(entity, parentTrans, LuaGlm::tableGet(position));
+		auto& trans = scene->addComponent<Transform>(entity, LuaGlm::tableGet(position));
+		trans.setParent(parentTrans);
 		return LuaEntity(entity, scene);
 	}
 
 	LuaEntity LuaScene::createEntity5(const std::shared_ptr<Scene>& scene, Transform& parent, const VarLuaTable<glm::vec3>& position) noexcept
 	{
 		auto entity = scene->createEntity();
-		scene->addComponent<Transform>(entity, parent, LuaGlm::tableGet(position));
+		auto& trans = scene->addComponent<Transform>(entity, LuaGlm::tableGet(position));
+		trans.setParent(parent);
 		return LuaEntity(entity, scene);
 	}
 

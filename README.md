@@ -75,6 +75,10 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * camera culling (frustum, occlusion seems to be broken)
 * entity component scene using entt
     * transform, camera
+    * type filtering
+    * serialization
+    * lights
+    * free look
 * sprites and spritesheets
 * loading models using assimp (FBX, gltf, etc...)
 * serializing models from assimp into binary using cereal

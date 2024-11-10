@@ -21,9 +21,7 @@ namespace darmok
 
 	private:
 		static Transform& addEntityComponent1(LuaEntity& entity) noexcept;
-		static Transform& addEntityComponent2(LuaEntity& entity, Transform& parent) noexcept;
-		static Transform& addEntityComponent3(LuaEntity& entity, Transform& parent, const VarLuaTable<glm::vec3>& pos) noexcept;
-		static Transform& addEntityComponent4(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept;
+		static Transform& addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept;
 		static OptionalRef<Transform>::std_t getEntityComponent(LuaEntity& entity) noexcept;
 		static std::optional<LuaEntity> getEntity(const Transform& trans, std::shared_ptr<Scene>& scene) noexcept;
 
