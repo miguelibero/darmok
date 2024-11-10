@@ -1,13 +1,14 @@
 #include <catch2/catch_test_macros.hpp>
+#include <darmok/app.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/scene_serialize.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
+#include <darmok/transform.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/binary.hpp>
-#include <cereal/archives/adapters.hpp>
 #include <nlohmann/json.hpp>
 
 using namespace darmok;
@@ -16,12 +17,12 @@ namespace
 {
     struct TestComponent
     {
-        int i;
+        int value;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(i);
+            archive(CEREAL_NVP(value));
         }
     };
 
@@ -30,37 +31,22 @@ namespace
         OptionalRef<TestComponent> comp;
 
         template<class Archive>
-        void save(Archive& archive) const
+        void serialize(Archive& archive)
         {
-            Entity entity = entt::null;
-            if (comp)
-            {
-                auto& scene = cereal::get_user_data<Scene>(archive);
-                entity = scene.getEntity(comp.value());
-            }
-            archive(entity);
-        }
-
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            Entity entity;
-            archive(entity);
-            if (entity != entt::null)
-            {
-                auto& scene = cereal::get_user_data<Scene>(archive);
-                comp = scene.getComponent<TestComponent>(entity);
-            }
+            auto scomp = createSerializedEntityComponentRef(comp);
+            archive(cereal::make_nvp("comp", scomp));
         }
     };
 
     void saveAndLoadSnapshot(Scene& scene)
     {
         Data data;
+        App app(nullptr);
+        SceneArchiveData userData{ app, scene };
 
         {
             DataOutputStream stream(data);
-            cereal::UserDataAdapter<Scene, cereal::BinaryOutputArchive> archive(scene, stream);
+            SceneArchive<cereal::BinaryOutputArchive> archive(userData, stream);
             scene.createSnapshot()
                 .get<TestComponent>(archive)
                 .get<TestRefComponent>(archive)
@@ -71,7 +57,7 @@ namespace
 
         {
             DataInputStream stream(data);
-            cereal::UserDataAdapter<Scene, cereal::BinaryInputArchive> archive(scene, stream);
+            SceneArchive<cereal::BinaryInputArchive> archive(userData, stream);
             scene.createSnapshotLoader()
                 .get<TestComponent>(archive)
                 .get<TestRefComponent>(archive)
@@ -97,7 +83,6 @@ TEST_CASE( "scene can be serialized", "[scene-serialize]" )
     }
 
     ss.flush();
-    auto str = ss.str();
     ss.seekg(0, std::ios::beg);
 
     auto json = nlohmann::json::parse(ss);
@@ -119,7 +104,7 @@ TEST_CASE("scene can be loaded", "[scene-serialize]")
     std::vector<Entity> entities(view.begin(), view.end());
 
     REQUIRE(entities.size() == 2);
-    REQUIRE(scene.getComponent<TestComponent>(entity)->i == 666);
+    REQUIRE(scene.getComponent<TestComponent>(entity)->value == 666);
 }
 
 TEST_CASE("component references are serialized", "[scene-serialize]")
@@ -131,5 +116,10 @@ TEST_CASE("component references are serialized", "[scene-serialize]")
 
     saveAndLoadSnapshot(scene);
 
-    REQUIRE(scene.getComponent<TestRefComponent>(entity)->comp->i == 42);
+    REQUIRE(scene.getComponent<TestRefComponent>(entity)->comp->value == 42);
+}
+
+TEST_CASE("transform hierarchy is serialized", "[scene-serialize]")
+{
+
 }

@@ -173,7 +173,6 @@ set(SOURCES
   input.cpp
   scene.cpp
   scene_filter.cpp
-  scene_serialize.cpp
 
   texture_atlas.cpp
   material.cpp
