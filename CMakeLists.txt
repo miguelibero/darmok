@@ -173,6 +173,7 @@ set(SOURCES
   input.cpp
   scene.cpp
   scene_filter.cpp
+  scene_serialize.cpp
 
   texture_atlas.cpp
   material.cpp
@@ -206,6 +207,7 @@ set(HEADERS
   scene_fwd.hpp
   scene.hpp
   scene_filter.hpp
+  scene_serialize.hpp
 
   texture_atlas.hpp
   anim.hpp
@@ -570,6 +572,8 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC nlohmann_json::nlohmann_json)
 # cereal
 find_package(cereal CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PUBLIC cereal::cereal)
+set(CEREAL_DEFINES CEREAL_FUTURE_EXPERIMENTAL)
+target_compile_definitions(cereal::cereal INTERFACE ${CEREAL_DEFINES})
 
 # glm
 find_package(glm CONFIG REQUIRED)

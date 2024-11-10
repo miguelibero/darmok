@@ -12,6 +12,7 @@
 #include <darmok/easing.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/string.hpp>
 #include "generated/shadow.program.h"
 #include "render_samplers.hpp"
 
@@ -80,7 +81,7 @@ namespace darmok
         }
         else
         {
-            name += std::to_string(_lightEntity);
+            name += StringUtils::toString(_lightEntity);
             if (_part >= 0)
             {
                 name += " part " + std::to_string(_part);

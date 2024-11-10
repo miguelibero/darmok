@@ -311,7 +311,7 @@ namespace darmok
                 // elm.dir = -glm::normalize(trans->getWorldPosition());
                 elm.dir = glm::vec4(trans->getWorldDirection(), 0.F);
             }
-            elm.dir.w = entity;
+            elm.dir.w = float(entity);
             auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
             auto intensity = light.getIntensity();
             elm.color = Colors::normalize(light.getColor()) * intensity;
@@ -355,7 +355,7 @@ namespace darmok
                 elm.pos = glm::vec4(trans->getWorldPosition(), 0.F);
                 scale = glm::compMax(trans->getWorldScale());
             }
-            elm.pos.w = entity;
+            elm.pos.w = float(entity);
             auto range = light.getRange() * scale;
             auto intensity = light.getIntensity();
             elm.color = glm::vec4(Colors::normalize(light.getColor()) * intensity, range);
@@ -401,7 +401,7 @@ namespace darmok
                 scale = glm::compMax(trans->getWorldScale());
                 elm.direction = trans->getWorldDirection();
             }
-            elm.pos.w = entity;
+            elm.pos.w = float(entity);
             auto range = light.getRange() * scale;
             auto intensity = light.getIntensity();
             elm.color = glm::vec4(Colors::normalize(light.getColor()) * intensity, range);

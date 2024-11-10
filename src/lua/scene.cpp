@@ -9,6 +9,7 @@
 #include <darmok/app.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/string.hpp>
 
 #ifdef DARMOK_OZZ
 #include "skeleton.hpp"
@@ -44,7 +45,7 @@ namespace darmok
 
 	std::string LuaEntity::toString() const noexcept
 	{
-		std::string str = "Entity(" + std::to_string(_entity);
+		std::string str = "Entity(" + StringUtils::toString(_entity);
 		if (!isValid())
 		{
 			str += " invalid";

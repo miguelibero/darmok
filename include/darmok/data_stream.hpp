@@ -59,8 +59,6 @@ namespace darmok
     public:
         DataOutputStream(Data& data) noexcept;
 
-        std::streamsize getWriteSize() const noexcept;
-
         template<typename T>
         static void write(Data& data, const T& val)
         {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/scene_fwd.hpp>
 #include <string>
 #include <optional>
 #include <vector>
@@ -102,6 +103,8 @@ namespace darmok
             }
             return changed;
         }
+
+        static std::string toString(Entity entity) noexcept;
 
     private:
         [[nodiscard]] static std::string doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept;

@@ -66,6 +66,12 @@ namespace darmok
         Transform& lookAt(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
         Transform& setForward(const glm::vec3& v) noexcept;
 
+        template<class Archive>
+        void save(Archive& archive) const
+        {
+            archive(_position, _rotation, _scale, _name);
+        }
+
     private:
         // should not use PIMPL here since we want consecutive memory
         glm::vec3 _position;

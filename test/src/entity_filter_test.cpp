@@ -7,6 +7,13 @@
 
 using namespace darmok;
 
+namespace
+{
+	struct Comp1 {};
+	struct Comp2 {};
+	struct Comp3 {};
+}
+
 TEST_CASE("EntityFilter stores operators", "[scene-filter]")
 {
 	auto filter = EntityFilter(1) & 2;
@@ -23,10 +30,6 @@ TEST_CASE("EntityFilter stores operators", "[scene-filter]")
 	filter = EntityFilter({ 1, 2, 3 }, EntityFilterOperation::Not);
 	REQUIRE(filter.toString() == "!1 || !2 || !3");
 }
-
-struct Comp1 {};
-struct Comp2 {};
-struct Comp3 {};
 
 TEST_CASE("EntityView simple", "[scene-filter]")
 {

@@ -14,6 +14,12 @@ namespace darmok
     {
         std::shared_ptr<IMesh> mesh;
         float duration;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(mesh, duration);
+        }
     };
 
     class Renderable;
@@ -29,6 +35,12 @@ namespace darmok
         [[nodiscard]] OptionalRef<const AnimationFrame> getCurrentFrame() const noexcept;
 
         void update(float deltaTime) noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(_frames, _currentFrame, _timeSinceLastFrame);
+        }
 
     private:
         std::vector<AnimationFrame> _frames;

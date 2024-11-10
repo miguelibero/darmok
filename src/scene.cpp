@@ -16,6 +16,8 @@ namespace darmok
         : _scene(scene)
         , _renderChain(*this)
         , _paused(false)
+        , _pendingDestroyAll(false)
+        , _pendingDestroyFilter({}, EntityFilterOperation::Or)
     {
     }
 
@@ -289,14 +291,46 @@ namespace darmok
         return viewId;
     }
 
-    void SceneImpl::destroyPendingEntities() noexcept
+    void SceneImpl::destroyEntityImmediate(Entity entity) noexcept
     {
-        std::vector<Entity> entities(_pendingDestroy);
-        _pendingDestroy.clear();
+        _registry.destroy(entity);
+    }
 
-        for (auto entity : entities)
+    void SceneImpl::destroyEntitiesImmediate() noexcept
+    {
+        _registry.clear();
+    }
+
+    void SceneImpl::destroyEntitiesImmediate(const EntityFilter& filter) noexcept
+    {
+        for (auto entity : _scene.getEntities(filter))
         {
             _registry.destroy(entity);
+        }
+    }
+
+    void SceneImpl::destroyPendingEntities() noexcept
+    {
+        if (_pendingDestroyAll)
+        {
+            _pendingDestroyAll = false;
+            destroyEntitiesImmediate();
+            return;
+        }
+        if (!_pendingDestroyFilter.empty())
+        {
+            auto filter = _pendingDestroyFilter;
+            _pendingDestroyFilter.elements.clear();
+            destroyEntitiesImmediate(filter);
+        }
+        if(!_pendingDestroy.empty())
+        {
+            std::vector<Entity> entities(_pendingDestroy);
+            _pendingDestroy.clear();
+            for (auto entity : entities)
+            {
+                destroyEntityImmediate(entity);
+            }
         }
     }
 
@@ -323,6 +357,16 @@ namespace darmok
 
             _renderChain.update(deltaTime);
         }
+    }
+
+    void SceneImpl::destroyEntities() noexcept
+    {
+        _pendingDestroyAll = true;
+    }
+
+    void SceneImpl::destroyEntities(const EntityFilter& filter)
+    {
+        _pendingDestroyFilter |= filter;
     }
 
     void SceneImpl::destroyEntity(Entity entity) noexcept
@@ -415,9 +459,34 @@ namespace darmok
         return getRegistry().create();
     }
 
+    void Scene::destroyEntities() noexcept
+    {
+        _impl->destroyEntities();
+    }
+
+    void Scene::destroyEntities(const EntityFilter& filter) noexcept
+    {
+        return _impl->destroyEntities(filter);
+    }
+
     void Scene::destroyEntity(Entity entity) noexcept
     {
         return _impl->destroyEntity(entity);
+    }
+
+    void Scene::destroyEntityImmediate(Entity entity) noexcept
+    {
+        return _impl->destroyEntity(entity);
+    }
+
+    void Scene::destroyEntitiesImmediate() noexcept
+    {
+        return _impl->destroyEntitiesImmediate();
+    }
+
+    void Scene::destroyEntitiesImmediate(const EntityFilter& filter) noexcept
+    {
+        return _impl->destroyEntitiesImmediate(filter);
     }
 
     bool Scene::isValidEntity(Entity entity) const noexcept
@@ -443,6 +512,16 @@ namespace darmok
             }
         }
         return entt::null;
+    }
+
+    EntityView Scene::getEntities() const noexcept
+    {
+        return getEntities({});
+    }
+
+    EntityView Scene::getEntities(entt::id_type typeId) const noexcept
+    {
+        return getEntities({}, typeId);
     }
 
     EntityView Scene::getEntities(const EntityFilter& filter, entt::id_type typeId) const noexcept

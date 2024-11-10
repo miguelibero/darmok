@@ -23,6 +23,11 @@ namespace darmok
 		return s;
 	}
 
+	std::string StringUtils::toString(Entity entity) noexcept
+	{
+		return std::to_string(uint32_t(entity));
+	}
+
 	bool StringUtils::startsWith(std::string_view sv, std::string_view start) noexcept
 	{
 		return sv.find(start) == 0;

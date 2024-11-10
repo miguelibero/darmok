@@ -115,10 +115,17 @@ namespace darmok
             return addSceneComponent<T>(std::forward<A>(args)...);
         }
 
-        Entity createEntity() noexcept;
-        void destroyEntity(Entity entity) noexcept;
+        Entity createEntity() noexcept;            
         bool isValidEntity(Entity entity) const noexcept;
         Entity getEntity(entt::id_type type, const void* ptr) noexcept;
+
+        void destroyEntity(Entity entity) noexcept;
+        void destroyEntities() noexcept;
+        void destroyEntities(const EntityFilter& filter) noexcept;
+
+        void destroyEntityImmediate(Entity entity) noexcept;
+        void destroyEntitiesImmediate() noexcept;
+        void destroyEntitiesImmediate(const EntityFilter& filter) noexcept;
 
         template<typename T>
         auto getComponents() const noexcept
@@ -132,6 +139,8 @@ namespace darmok
             return getRegistry().view<T>();
         }
 
+        EntityView getEntities() const noexcept;
+        EntityView getEntities(entt::id_type typeId) const noexcept;
         EntityView getEntities(const EntityFilter& filter, entt::id_type typeId = 0) const noexcept;
 
         template<typename T>
@@ -372,6 +381,21 @@ namespace darmok
         Scene& setUpdateFilter(const EntityFilter& filter) noexcept;
         const EntityFilter& getUpdateFilter() const noexcept;
 
+        SceneSnapshot createSnapshot() const noexcept
+        {
+            return SceneSnapshot{ getRegistry() };
+        }
+
+        SceneSnapshotLoader createSnapshotLoader() noexcept
+        {
+            return SceneSnapshotLoader{ getRegistry() };
+        }
+
+        SceneContinuousLoader createContinuousLoader() noexcept
+        {
+            return SceneContinuousLoader{ getRegistry() };
+        }
+
     private:
         std::unique_ptr<SceneImpl> _impl;
 
@@ -402,4 +426,3 @@ namespace darmok
         OptionalRef<App> _app;
     };
 }
-

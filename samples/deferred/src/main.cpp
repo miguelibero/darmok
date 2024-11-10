@@ -80,7 +80,8 @@ namespace
 			auto dirLightEntity = scene->createEntity();
 			auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{ -7.5, 3.5, 0 })
 				.lookDir(glm::vec3(0, -1, 0), glm::vec3(0, 0, 1));
-			scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
+			auto& dirLight = scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
+			dirLight.setShadowType(ShadowType::Soft);
 			scene->addSceneComponent<RotateUpdater>(dirLightTrans);
 
 			auto prog = std::make_shared<Program>(StandardProgramType::ForwardBasic);
@@ -90,7 +91,8 @@ namespace
 			for (auto& lightConfig : _pointLights)
 			{
 				auto entity = scene->createEntity();
-				scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color, lightConfig.radius);
+				auto& light = scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color, lightConfig.radius);
+				light.setShadowType(ShadowType::Hard);
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
@@ -188,9 +190,9 @@ namespace
 	};
 
 	const std::vector<DeferredSampleAppDelegate::PointLightConfig> DeferredSampleAppDelegate::_pointLights = {
-		{{ -5.0f, 0.3f, 0.0f }, 10.F, 5.F, Colors::blue3()},
-		{{ 0.0f, 0.3f, 0.0f }, 10.F, 5.F},
-		{{ 5.0f, 0.3f, 0.0f }, 10.F, 5.F, Colors::red3()},
+		{{ -5.0f, 0.3f, 0.0f }, 10.F, 50.F, Colors::blue3()},
+		{{ 0.0f, 0.3f, 0.0f }, 10.F, 50.F},
+		{{ 5.0f, 0.3f, 0.0f }, 10.F, 50.F, Colors::red3()},
 	};
 }
 

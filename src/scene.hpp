@@ -41,7 +41,13 @@ namespace darmok
         void setPaused(bool paused) noexcept;
         bool isPaused() const noexcept;
 
+        void destroyEntities() noexcept;
+        void destroyEntities(const EntityFilter& filter);
         void destroyEntity(Entity entity) noexcept;
+
+        void destroyEntityImmediate(Entity entity) noexcept;
+        void destroyEntitiesImmediate() noexcept;
+        void destroyEntitiesImmediate(const EntityFilter& filter) noexcept;
 
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
@@ -69,8 +75,9 @@ namespace darmok
         using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
 
         std::vector<Entity> _pendingDestroy;
+        bool _pendingDestroyAll;
+        EntityFilter _pendingDestroyFilter;
         std::string _name;
-        entt::id_type _id;
         bool _paused;
         Components _components;
         EntityRegistry _registry;
