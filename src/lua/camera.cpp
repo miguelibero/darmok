@@ -11,6 +11,7 @@
 #include <darmok/render_chain.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/light.hpp>
+#include <darmok/transform.hpp>
 
 #ifdef DARMOK_JOLT
 #ifdef _DEBUG

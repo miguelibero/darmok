@@ -13,6 +13,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/string.hpp>
+#include <darmok/transform.hpp>
 #include "generated/shadow.program.h"
 #include "render_samplers.hpp"
 

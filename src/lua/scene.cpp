@@ -10,6 +10,7 @@
 #include <darmok/render_chain.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/string.hpp>
+#include <darmok/transform.hpp>
 
 #ifdef DARMOK_OZZ
 #include "skeleton.hpp"

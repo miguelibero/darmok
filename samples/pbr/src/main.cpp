@@ -115,7 +115,8 @@ namespace
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity);
 			lightRootTrans.setPosition(glm::vec3{ 0, 1.5, 2 });
 			auto pointLightEntity = scene.createEntity();
-			auto& pointLightTrans = scene.addComponent<Transform>(pointLightEntity, lightRootTrans, glm::vec3{ 0, 1, 0 });
+			auto& pointLightTrans = scene.addComponent<Transform>(pointLightEntity, glm::vec3{ 0, 1, 0 });
+			pointLightTrans.setParent(lightRootTrans);
 			scene.addSceneComponent<CircleUpdater>(pointLightTrans);
 			auto& pointLight = scene.addComponent<PointLight>(pointLightEntity, 100);
 			pointLight.setShadowType(ShadowType::Hard);

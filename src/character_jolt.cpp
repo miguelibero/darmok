@@ -1,6 +1,7 @@
 #include "character_jolt.hpp"
 #include "physics3d_jolt.hpp"
 #include <darmok/character.hpp>
+#include <darmok/transform.hpp>
 #include <Jolt/Physics/PhysicsSystem.h>
 
 namespace darmok::physics3d

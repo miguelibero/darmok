@@ -162,6 +162,7 @@ set(CORE_HEADERS
   loader.hpp
   easing_fwd.hpp
   easing.hpp
+  serialize.hpp
 )
 
 set(SOURCES

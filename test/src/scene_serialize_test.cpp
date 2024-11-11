@@ -35,6 +35,11 @@ namespace
         template<class Archive>
         void serialize(Archive& archive)
         {
+        }
+
+        template<class Archive>
+        void lateSerialize(Archive& archive)
+        {
             auto scomp = SceneSerializeUtils::createComponentRef(comp);
             archive(cereal::make_nvp("comp", scomp));
         }
@@ -44,36 +49,29 @@ namespace
     {
         Data data;
         App app(nullptr);
-        SceneArchiveData userData{ app, scene };
 
         {
             DataOutputStream stream(data);
-            SceneArchive<cereal::BinaryOutputArchive> archive(userData, stream);
-
-            std::vector<Entity> sortedEntities;
-            scene.forEachChild([&sortedEntities](Entity entity, const Transform& trans)
-            {
-                sortedEntities.emplace_back(entity);
-                return false;
-            });
-
-            scene.createSnapshot()
-                .get<TestComponent>(archive)
-                .get<TestRefComponent>(archive)
-                .get<Transform>(archive, sortedEntities.begin(), sortedEntities.end())
-                ;
+            SceneOutputArchive<cereal::BinaryOutputArchive> archive(app, scene, stream);
+            archive
+                .saveComponents<TestComponent>()
+                .saveComponents<TestRefComponent>()
+                .saveComponents<Transform>()
+                .lateSaveComponents<TestRefComponent>()
+                .lateSaveComponents<Transform>();
         }
 
         scene.destroyEntitiesImmediate();
 
         {
             DataInputStream stream(data);
-            SceneArchive<cereal::BinaryInputArchive> archive(userData, stream);
-            scene.createSnapshotLoader()
-                .get<TestComponent>(archive)
-                .get<TestRefComponent>(archive)
-                .get<Transform>(archive)
-                ;
+            SceneInputArchive<cereal::BinaryInputArchive> archive(app, scene, stream);
+            archive
+                .loadComponents<TestComponent>()
+                .loadComponents<TestRefComponent>()
+                .loadComponents<Transform>()
+                .lateLoadComponents<TestRefComponent>()
+                .lateLoadComponents<Transform>();
         }
     }
 }
@@ -128,7 +126,8 @@ TEST_CASE("component references are serialized", "[scene-serialize]")
 
     saveAndLoadSnapshot(scene);
 
-    REQUIRE(scene.getComponent<TestRefComponent>(entity)->comp->value == 42);
+    auto refComp = scene.getComponent<TestRefComponent>(entity);
+    REQUIRE(refComp->comp->value == 42);
 }
 
 TEST_CASE("transform hierarchy is serialized", "[scene-serialize]")

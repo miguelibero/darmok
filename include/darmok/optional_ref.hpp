@@ -59,14 +59,6 @@ namespace darmok
 
         OptionalRef<T>& operator=(const OptionalRef<T>& other) noexcept = default;
 
-
-        OptionalRef<T>& operator=(OptionalRef<T>&& other) noexcept
-        {
-            _value = other._value;
-            other.reset();
-            return *this;
-        }
-
         void reset() noexcept
         {
             _value = nullptr;

@@ -9,7 +9,7 @@
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
-#include <darmok/transform.hpp>
+#include <darmok/transform_fwd.hpp>
 
 namespace darmok
 {    
@@ -257,16 +257,17 @@ namespace darmok
             {
                 return false;
             }
-            auto trans = getComponent<Transform>(entity);
-            if (trans == nullptr)
+            auto optTrans = getComponent<Transform>(entity);
+            if (!optTrans)
             {
                 return false;
             }
-            if (callback(entity, *trans))
+            auto& trans = optTrans.value();
+            if (callback(entity, trans))
             {
                 return true;
             }
-            auto parent = trans->getParent();
+            auto parent = getTransformParent(trans);
             if (!parent)
             {
                 return false;
@@ -295,16 +296,17 @@ namespace darmok
             {
                 return false;
             }
-            auto trans = getComponent<Transform>(entity);
-            if (trans == nullptr)
+            auto optTrans = getComponent<Transform>(entity);
+            if (!optTrans)
             {
                 return false;
             }
-            if (callback(entity, *trans))
+            auto& trans = optTrans.value();
+            if (callback(entity, trans))
             {
                 return true;
             }
-            for (auto& child : trans->getChildren())
+            for (auto& child : getTransformChildren(trans))
             {
                 entity = getEntity(child.get());
                 if (forEachChild(entity, callback))
@@ -422,6 +424,9 @@ namespace darmok
 
         EntityRegistry& getRegistry();
         const EntityRegistry& getRegistry() const;
+
+        static OptionalRef<Transform> getTransformParent(const Transform& trans) noexcept;
+        static TransformChildren getTransformChildren(const Transform& trans) noexcept;
     };
 
     class DARMOK_EXPORT SceneAppComponent final : public ITypeAppComponent<SceneAppComponent>

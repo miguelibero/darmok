@@ -8,6 +8,7 @@
 #include <darmok/input.hpp>
 #include <darmok/window_fwd.hpp>
 #include <darmok/collection.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace darmok
 {

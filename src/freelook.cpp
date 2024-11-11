@@ -4,6 +4,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/math.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/transform.hpp>
 
 namespace darmok
 {

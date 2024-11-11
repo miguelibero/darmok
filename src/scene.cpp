@@ -467,6 +467,16 @@ namespace darmok
         return _impl->getRegistry();
     }
 
+    OptionalRef<Transform> Scene::getTransformParent(const Transform& trans) noexcept
+    {
+        return trans.getParent();
+    }
+
+    TransformChildren Scene::getTransformChildren(const Transform& trans) noexcept
+    {
+        return trans.getChildren();
+    }
+
     Entity Scene::createEntity() noexcept
     {
         return getRegistry().create();

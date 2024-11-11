@@ -7,6 +7,7 @@
 #include <darmok/program.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/render_chain.hpp>
+#include <darmok/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 

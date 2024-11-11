@@ -17,6 +17,7 @@
 #include <darmok/model_assimp.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/text.hpp>
+#include <darmok/transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
@@ -80,7 +81,8 @@ namespace
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
 			auto lightEntity = scene.createEntity();
-			auto& lightTrans = scene.addComponent<Transform>(lightEntity, lightRootTrans, glm::vec3{ 0, 1, 0 });
+			auto& lightTrans = scene.addComponent<Transform>(lightEntity, glm::vec3{ 0, 1, 0 });
+			lightTrans.setParent(lightRootTrans);
 			std::shared_ptr<IMesh> lightMesh = MeshData(Sphere(0.01)).createMesh(unlitProg->getVertexLayout());
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
@@ -100,7 +102,8 @@ namespace
 			// _animator->setPlaybackSpeed(0.05);
 
 			auto skelEntity = scene.createEntity();
-			scene.addComponent<Transform>(skelEntity, animTrans, glm::vec3(-1, 0, 0));
+			auto& skelTrans = scene.addComponent<Transform>(skelEntity, glm::vec3(-1, 0, 0));
+			skelTrans.setParent(animTrans);
 			
 			auto boneMat = std::make_shared<Material>(prog, Colors::grey());
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
@@ -126,7 +129,8 @@ namespace
 			auto model = _app.getAssets().getModelLoader()("model.dml");
 
 			auto skinEntity = scene.createEntity();
-			scene.addComponent<Transform>(skinEntity, animTrans, glm::vec3(1, 0, 0));
+			auto& skinTrans = scene.addComponent<Transform>(skinEntity, glm::vec3(1, 0, 0));
+			skinTrans.setParent(animTrans);
 
 			ModelSceneConfigurer configurer(scene, _app.getAssets());
 			configurer.setParent(skinEntity);

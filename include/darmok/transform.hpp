@@ -2,11 +2,11 @@
 
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
-#include <glm/detail/type_quat.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/scene_serialize.hpp>
 #include <unordered_set>
+#include <glm/detail/type_quat.hpp>
 
 namespace darmok
 {
@@ -15,9 +15,8 @@ namespace darmok
     public:
         static constexpr auto in_place_delete = true;
 
-        Transform() noexcept;
         Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent = std::nullopt) noexcept;
-        Transform(const glm::vec3& position, const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
+        Transform(const glm::vec3& position = glm::vec3(), const glm::quat& rotation = glm::vec3(), const glm::vec3& scale = glm::vec3(1), const OptionalRef<Transform>& parent = std::nullopt) noexcept;
         ~Transform() noexcept;
         std::string toString() const noexcept;
 
@@ -39,8 +38,7 @@ namespace darmok
         glm::vec3 worldToLocalPoint(const glm::vec3& point) const noexcept;
         glm::vec3 localToWorldPoint(const glm::vec3& point) const noexcept;
 
-        OptionalRef<const Transform> getParent() const noexcept;
-        OptionalRef<Transform> getParent() noexcept;
+        OptionalRef<Transform> getParent() const noexcept;
         Transform& setParent(const OptionalRef<Transform>& parent);
 
         using Children = std::unordered_set<std::reference_wrapper<Transform>>;
@@ -70,14 +68,21 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            auto sparent = SceneSerializeUtils::createComponentRef(_parent);
-            auto schildren = SceneSerializeUtils::createComponentRefCollection(_children);
             archive(
                   cereal::make_nvp("name", _name)
                 , cereal::make_nvp("pos", _position)
                 , cereal::make_nvp("rot", _rotation)
                 , cereal::make_nvp("scale", _scale)
-                , cereal::make_nvp("parent", sparent)
+            );
+        }
+
+        template<class Archive>
+        void lateSerialize(Archive& archive)
+        {
+            auto sparent = SceneSerializeUtils::createComponentRef(_parent);
+            auto schildren = SceneSerializeUtils::createComponentRefCollection(_children);
+            archive(
+                  cereal::make_nvp("parent", sparent)
                 , cereal::make_nvp("children", schildren)
             );
         }

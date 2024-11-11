@@ -3,6 +3,8 @@
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/serialize.hpp>
 #include <cereal/archives/adapters.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/unordered_set.hpp>
@@ -14,7 +16,7 @@ namespace darmok
 	class Scene;
 	class App;
 
-	struct SceneArchiveData final
+	struct DARMOK_EXPORT SceneArchiveData final
 	{
 		std::reference_wrapper<App> app;
 		std::reference_wrapper<Scene> scene;
@@ -33,7 +35,74 @@ namespace darmok
 	}
 
 	template<typename Archive>
-	using SceneArchive = cereal::UserDataAdapter<SceneArchiveData, Archive>;
+	class SceneOutputArchive final : public cereal::UserDataAdapter<SceneArchiveData, Archive>
+	{
+	public:
+		template<typename... Args>
+		SceneOutputArchive(App& app, Scene& scene, Args&&... args)
+			: _userData{ app, scene }
+			, cereal::UserDataAdapter<SceneArchiveData, Archive>(_userData, std::forward<Args>(args)...)
+			, _snapshot(scene.createSnapshot())
+		{
+		}
+
+		template<typename T>
+		SceneOutputArchive& saveComponents()
+		{
+			_snapshot.get<T>(*this);
+			return *this;
+		}
+
+		template<typename T>
+		SceneOutputArchive& lateSaveComponents()
+		{
+			auto& scene = _userData.scene.get();
+			for (auto entity : scene.getEntities<T>())
+			{
+				SerializeUtils::lateSave(*this, scene.getComponent<T>(entity).value());
+			}
+			return *this;
+		}
+
+	private:
+		SceneArchiveData _userData;
+		SceneSnapshot _snapshot;
+	};
+
+	template<typename Archive>
+	class SceneInputArchive final : public cereal::UserDataAdapter<SceneArchiveData, Archive>
+	{
+	public:
+		template<typename... Args>
+		SceneInputArchive(App& app, Scene& scene, Args&&... args)
+			: _userData{ app, scene }
+			, cereal::UserDataAdapter<SceneArchiveData, Archive>(_userData, std::forward<Args>(args)...)
+			, _snapshotLoader(scene.createSnapshotLoader())
+		{
+		}
+
+		template<typename T>
+		SceneInputArchive& loadComponents()
+		{
+			_snapshotLoader.get<T>(*this);
+			return *this;
+		}
+
+		template<typename T>
+		SceneInputArchive& lateLoadComponents()
+		{
+			auto& scene = _userData.scene.get();
+			for (auto entity : scene.getEntities<T>())
+			{
+				SerializeUtils::lateSave(*this, scene.getComponent<T>(entity).value());
+			}
+			return *this;
+		}
+
+	private:
+		SceneArchiveData _userData;
+		SceneSnapshotLoader _snapshotLoader;
+	};	
 
 	template<typename T>
 	class SerializedEntityComponentRef final
@@ -55,7 +124,6 @@ namespace darmok
 			}
 			archive(entity);
 		}
-
 
 		template<typename Archive>
 		void load(Archive& archive) const
