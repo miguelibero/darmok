@@ -430,16 +430,25 @@ namespace darmok
                 }
                 storages.emplace_back(std::move(type), std::ref(storage));
             }
-
             archive(storages.size());
+
             for (auto& [type, storageRef] : storages)
             {
                 auto& storage = storageRef.get();
                 archive(type, storage.size());
                 for (auto entity : storage)
                 {
+                    archive(static_cast<ENTT_ID_TYPE>(entity));
+                }
+            }
+
+            for (auto& [type, storageRef] : storages)
+            {
+                auto& storage = storageRef.get();
+                for (auto entity : storage)
+                {
                     auto any = type.from_void(storage.value(entity));
-                    archive(static_cast<ENTT_ID_TYPE>(entity), any);
+                    archive(any);
                 }
             }
         }
@@ -466,6 +475,8 @@ namespace darmok
 
             size_t storageAmount = 0;
             archive(storageAmount);
+
+            std::vector<entt::meta_any> components;
             for (size_t i = 0; i < storageAmount; ++i)
             {
                 size_t componentAmount;
@@ -476,8 +487,12 @@ namespace darmok
                     Entity entity;
                     archive(entity);
                     auto any = ReflectionUtils::addEntityComponent(registry, entity, type);
-                    archive(any);
+                    components.push_back(std::move(any));
                 }
+            }
+            for (auto& any : components)
+            {
+                archive(any);
             }
         }
 
