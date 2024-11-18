@@ -413,6 +413,14 @@ namespace darmok
             std::vector<StorageInfo> storages;
             auto& registry = getRegistry();
 
+            auto& entities = *registry.storage<Entity>();
+            archive(entities.size());
+            archive(entities.free_list());
+            for (auto itr = entities.rbegin(), last = entities.rend(); itr != last; ++itr)
+            {
+                archive(static_cast<ENTT_ID_TYPE>(*itr));
+            }
+
             for (auto&& [typeHash, storage] : registry.storage())
             {
                 auto type = entt::resolve(storage.type());
@@ -440,6 +448,21 @@ namespace darmok
         void load(Archive& archive)
         {
             auto& registry = getRegistry();
+
+            size_t entityAmount = 0;
+            archive(entityAmount);
+            size_t entityFreeList = 0;
+            archive(entityFreeList);
+
+            auto& entities = registry.storage<Entity>();
+            entities.reserve(entityAmount);
+            for (size_t i = 0; i < entityAmount; ++i)
+            {
+                Entity entity;
+                archive(entity);
+                entities.emplace(entity);
+            }
+            entities.free_list(entityFreeList);
 
             size_t storageAmount = 0;
             archive(storageAmount);

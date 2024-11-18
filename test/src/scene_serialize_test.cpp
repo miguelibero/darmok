@@ -86,7 +86,7 @@ TEST_CASE( "scene can be serialized", "[scene-serialize]" )
 
     auto json = nlohmann::json::parse(ss).front();
     REQUIRE(json.is_object());
-    REQUIRE(json.size() == 7);
+    REQUIRE(json.size() == 11);
 }
 
 TEST_CASE("scene can be loaded", "[scene-serialize]")
