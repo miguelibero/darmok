@@ -312,6 +312,7 @@ namespace darmok
     void SceneImpl::destroyEntitiesImmediate() noexcept
     {
         _registry.clear();
+        _registry.storage<Entity>().clear();
     }
 
     void SceneImpl::destroyEntitiesImmediate(const EntityFilter& filter) noexcept

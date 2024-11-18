@@ -10,6 +10,8 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/transform_fwd.hpp>
+#include <darmok/reflect.hpp>
+#include <darmok/serialize.hpp>
 
 namespace darmok
 {    
@@ -404,19 +406,56 @@ namespace darmok
         Scene& setUpdateFilter(const EntityFilter& filter) noexcept;
         const EntityFilter& getUpdateFilter() const noexcept;
 
-        SceneSnapshot createSnapshot() const noexcept
+        template<typename Archive>
+        void save(Archive& archive) const
         {
-            return SceneSnapshot{ getRegistry() };
+            using StorageInfo = std::pair<entt::meta_type, std::reference_wrapper<const entt::sparse_set>>;
+            std::vector<StorageInfo> storages;
+            auto& registry = getRegistry();
+
+            for (auto&& [typeHash, storage] : registry.storage())
+            {
+                auto type = entt::resolve(storage.type());
+                if (!type)
+                {
+                    continue;
+                }
+                storages.emplace_back(std::move(type), std::ref(storage));
+            }
+
+            archive(storages.size());
+            for (auto& [type, storageRef] : storages)
+            {
+                auto& storage = storageRef.get();
+                archive(type, storage.size());
+                for (auto entity : storage)
+                {
+                    auto any = type.from_void(storage.value(entity));
+                    archive(static_cast<ENTT_ID_TYPE>(entity), any);
+                }
+            }
         }
 
-        SceneSnapshotLoader createSnapshotLoader() noexcept
+        template<typename Archive>
+        void load(Archive& archive)
         {
-            return SceneSnapshotLoader{ getRegistry() };
-        }
+            auto& registry = getRegistry();
 
-        SceneContinuousLoader createContinuousLoader() noexcept
-        {
-            return SceneContinuousLoader{ getRegistry() };
+            size_t storageAmount = 0;
+            archive(storageAmount);
+            for (size_t i = 0; i < storageAmount; ++i)
+            {
+                size_t componentAmount;
+                entt::meta_type type;
+                archive(type, componentAmount);
+                for (size_t j = 0; j < componentAmount; ++j)
+                {
+                    Entity entity;
+                    archive(entity);
+                    auto any = ReflectionUtils::addEntityComponent(registry, entity, type);
+                    archive(any);
+                }
+            }
         }
 
     private:

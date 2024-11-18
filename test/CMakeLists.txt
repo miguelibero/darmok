@@ -15,6 +15,7 @@ add_executable(${TESTS_NAME}
   src/utf8char_test.cpp
   src/entity_filter_test.cpp
   src/shape_test.cpp
+  src/serialize_test.cpp
   src/scene_serialize_test.cpp
 )
 target_link_libraries(${TESTS_NAME}

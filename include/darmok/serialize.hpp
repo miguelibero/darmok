@@ -1,75 +1,281 @@
 #pragma once
+
 #include <darmok/export.h>
-#include <type_traits>
+#include <entt/entt.hpp>
+#include <cereal/cereal.hpp>
+#include <cereal/types/string.hpp>
 
-namespace darmok
+namespace entt
 {
-    struct dummy {};
-
-    template<typename T>
-    struct hasLateSave final
+    struct MetaSerializeUtils final
     {
-        template<typename T, typename Archive>
-        static auto test(Archive* ar) -> decltype(std::declval<const T>().lateSave(*ar), std::true_type());
-        template <typename, typename>
-        static std::false_type test(...);
-        static const bool value = std::is_same<std::true_type, decltype(test<T, dummy>(nullptr))>::value;
+        template<class Archive>
+        static bool invokeFunc(Archive& archive, const entt::meta_any& v, const char* name)
+        {
+            auto type = v.type();
+            auto func = type.func(entt::hashed_string(name));
+            if (!func)
+            {
+                return false;
+            }
+            
+            if (func.is_static())
+            {
+                func.invoke({}, entt::forward_as_meta(archive), v);
+            }
+            else
+            {
+                func.invoke(v, entt::forward_as_meta(archive));
+            }
+            return true;
+        }
+
+        template<class Archive, class T, class... Types>
+        static bool saveType(Archive& archive, const entt::meta_any& v)
+        {
+            if (doSaveType<Archive, T>(archive, v))
+            {
+                return true;
+            }
+            return saveType<Archive, Types...>(archive, v);
+        }
+
+        template<class Archive, class T, class... Types>
+        static bool loadType(Archive& archive, entt::meta_any& v)
+        {
+            if (doLoadType<Archive, T>(archive, v))
+            {
+                return true;
+            }
+            return loadType<Archive, Types...>(archive, v);
+        }
+
+        template<class T>
+        static bool isType(const entt::meta_any& v) noexcept
+        {
+            return isType<T>(v.type());
+        }
+
+        template<class T>
+        static bool isType(const entt::meta_type& type) noexcept
+        {
+            return type.info().hash() == entt::type_hash<T>::value();
+        }
+
+    private:
+
+        template<class Archive>
+        static bool saveType(Archive& archive, const entt::meta_any& v)
+        {
+            return false;
+        }
+
+        template<class Archive>
+        static bool loadType(Archive& archive, const entt::meta_any& v)
+        {
+            return false;
+        }
+
+        template<class Archive, class T>
+        static bool doSaveType(Archive& archive, const entt::meta_any& v)
+        {
+            if (isType<T>(v))
+            {
+                archive(v.cast<const T&>());
+                return true;
+            }
+            return false;
+        }
+
+        template<class Archive, typename T>
+        static bool doLoadType(Archive& archive, entt::meta_any& v)
+        {
+            if (isType<T>(v))
+            {
+                archive(v.cast<T&>());
+                return true;
+            }
+            return false;
+        }
     };
 
-    template<typename T>
-    struct hasLateLoad final
+    template<class Archive>
+    void save(Archive& archive, const entt::meta_type& v)
     {
-        template<typename T, typename Archive>
-        static auto test(Archive* ar) -> decltype(std::declval<T>().lateLoad(*ar), std::true_type());
-        template <typename, typename>
-        static std::false_type test(...);
-        static const bool value = std::is_same<std::true_type, decltype(test<T, dummy>(nullptr))>::value;
-    };
+        archive(v.id());
+    }
 
-    template<typename T>
-    struct hasLateSerialize final
+    template<class Archive>
+    void load(Archive& archive, entt::meta_type& v)
     {
-        template<typename T, typename Archive>
-        static auto test(Archive* ar) -> decltype(std::declval<T>().lateSerialize(*ar), std::true_type());
-        template <typename, typename>
-        static std::false_type test(...);
-        static const bool value = std::is_same<std::true_type, decltype(test<T, dummy>(nullptr))>::value;
-    };
+        entt::id_type id = 0;
+        archive(id);
+        v = entt::resolve(id);
+    }
 
-    struct DARMOK_EXPORT SerializeUtils final
+    template<class Archive>
+    void save(Archive& archive, const entt::meta_any& v)
     {
-        template<typename T, typename Archive>
-        static void lateSave(Archive& archive, const T& obj)
+        auto type = v.type();
+        if (type.is_arithmetic())
         {
+            if (MetaSerializeUtils::saveType<Archive, bool, char, char8_t>(archive, v))
+            {
+                return;
+            }
+            if (MetaSerializeUtils::saveType<Archive, char16_t, char32_t, wchar_t>(archive, v))
+            {
+                return;
+            }
+            if (MetaSerializeUtils::saveType<Archive, short, int, long, long long>(archive, v))
+            {
+                return;
+            }
+            if (MetaSerializeUtils::saveType<Archive, float, double, long double>(archive, v))
+            {
+                return;
+            }
+            throw std::invalid_argument("unknown aritmetic type");
         }
+        if (MetaSerializeUtils::saveType<Archive, std::string>(archive, v))
+        {
+            return;
+        }
+        if (type.is_sequence_container())
+        {
+            if (auto view = v.as_sequence_container(); view)
+            {
+                archive(view.size());
+                for (auto element : view)
+                {
+                    archive(element);
+                }
+            }
+            return;
+        }
+        if (type.is_associative_container())
+        {
+            if (auto view = v.as_associative_container(); view)
+            {
+                archive(view.size());
+                bool strKeys = MetaSerializeUtils::isType<std::string>(view.key_type());
+                for (auto [key, value] : view)
+                {
+                    if (strKeys)
+                    {
+                        auto keyStr = key.cast<const std::string&>();
+                        // TODO: check why this does not compile
+                        // archive(cereal::make_nvp(keyStr, value));
+                    }
+                    else
+                    {
+                        archive(key, value);
+                    }
+                }
+            }
+            return;
+        }
+        if (MetaSerializeUtils::invokeFunc(archive, v, "save"))
+        {
+            return;
+        }
+        if (MetaSerializeUtils::invokeFunc(archive, v, "serialize"))
+        {
+            return;
+        }
+        auto typeData = type.data();
+        size_t size = std::distance(typeData.begin(), typeData.end());
+        archive(size);
+        for (auto [id, data] : typeData)
+        {
+            archive(id, v.get(id));
+        }
+    }
 
-        template<typename T, typename Archive>
-        static typename std::enable_if<hasLateSave<T>::value>::type lateSave(Archive& archive, const T& obj)
+    template<class Archive>
+    void load(Archive& archive, entt::meta_any& v)
+    {
+        auto type = v.type();
+        if (type.is_arithmetic())
         {
-            obj.lateSave(archive);
+            if (MetaSerializeUtils::loadType<Archive, bool, char, char8_t>(archive, v))
+            {
+                return;
+            }
+            if (MetaSerializeUtils::loadType<Archive, char16_t, char32_t, wchar_t>(archive, v))
+            {
+                return;
+            }
+            if (MetaSerializeUtils::loadType<Archive, short, int, long, long long>(archive, v))
+            {
+                return;
+            }
+            if (MetaSerializeUtils::loadType<Archive, float, double, long double>(archive, v))
+            {
+                return;
+            }
         }
-
-        template<typename T, typename Archive>
-        static typename std::enable_if<hasLateSerialize<T>::value>::type lateSave(Archive& archive, T& comp)
+        if (MetaSerializeUtils::loadType<Archive, std::string>(archive, v))
         {
-            comp.lateSerialize(archive);
+            return;
         }
-
-        template<typename T, typename Archive>
-        static void lateLoad(Archive& archive, const T& obj)
+        if (type.is_sequence_container())
         {
+            if (auto view = v.as_sequence_container(); view)
+            {
+                size_t size;
+                archive(size);
+                for (size_t i = 0; i < size; ++i)
+                {
+                    auto elm = view.value_type().construct();
+                    archive(elm);
+                    view.insert(view.end(), elm);
+                }
+            }
+            return;
         }
-
-        template<typename T, typename Archive>
-        static typename std::enable_if<hasLateLoad<T>::value>::type lateLoad(Archive& archive, T& comp)
+        if (type.is_associative_container())
         {
-            comp.lateLoad(archive);
+            if (auto view = v.as_associative_container(); view)
+            {
+                size_t size;
+                archive(size);
+                bool strKeys = MetaSerializeUtils::isType<std::string>(view.key_type());
+                for (size_t i = 0; i < size; ++i)
+                {
+                    auto key = view.key_type().construct();
+                    auto val = view.value_type().construct();
+                    if (strKeys)
+                    {
+                        auto nvp = cereal::make_nvp("", val);
+                        archive(nvp);
+                        key.assign(nvp.name);
+                        val.assign(nvp.value);
+                    }
+                    else
+                    {
+                        archive(key, val);
+                    }
+                    view.insert(key, val);
+                }
+            }
+            return;
         }
-
-        template<typename T, typename Archive>
-        static typename std::enable_if<hasLateSerialize<T>::value>::type lateLoad(Archive& archive, T& comp)
+        if (MetaSerializeUtils::invokeFunc(archive, v, "load"))
         {
-            comp.lateSerialize(archive);
+            return;
         }
-    };
+        if (MetaSerializeUtils::invokeFunc(archive, v, "serialize"))
+        {
+            return;
+        }
+        size_t size;
+        archive(size);
+        for (size_t i = 0; i < size; ++i)
+        {
+            entt::id_type id;
+            archive(id);
+            archive(v.get(id));
+        }
+    }
 }

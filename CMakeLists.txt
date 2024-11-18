@@ -69,6 +69,7 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 set(INCLUDE_BASE_DIR ${PROJECT_SOURCE_DIR}/include)
+set(LIB_BASE_DIR ${PROJECT_SOURCE_DIR}/lib)
 set(INCLUDE_DIR ${INCLUDE_BASE_DIR}/darmok)
 set(LOCAL_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMake)
 
@@ -130,11 +131,13 @@ set(CORE_SOURCES
   program_core.cpp
   asset_core.cpp
   easing.cpp
+  reflect.cpp
 )
 
 set(CORE_HEADERS
   glm.hpp
   utils.hpp
+  reflect.hpp
   string.hpp
   utf8.hpp
   stream.hpp
@@ -162,7 +165,6 @@ set(CORE_HEADERS
   loader.hpp
   easing_fwd.hpp
   easing.hpp
-  serialize.hpp
 )
 
 set(SOURCES
@@ -207,7 +209,7 @@ set(HEADERS
   scene_fwd.hpp
   scene.hpp
   scene_filter.hpp
-  scene_serialize.hpp
+  serialize.hpp
   glm_serialize.hpp
 
   texture_atlas.hpp

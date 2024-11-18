@@ -4,7 +4,6 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
-#include <darmok/scene_serialize.hpp>
 #include <unordered_set>
 #include <glm/detail/type_quat.hpp>
 
@@ -65,27 +64,7 @@ namespace darmok
         Transform& lookAt(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
         Transform& setForward(const glm::vec3& v) noexcept;
 
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                  cereal::make_nvp("name", _name)
-                , cereal::make_nvp("pos", _position)
-                , cereal::make_nvp("rot", _rotation)
-                , cereal::make_nvp("scale", _scale)
-            );
-        }
-
-        template<class Archive>
-        void lateSerialize(Archive& archive)
-        {
-            auto sparent = SceneSerializeUtils::createComponentRef(_parent);
-            auto schildren = SceneSerializeUtils::createComponentRefCollection(_children);
-            archive(
-                  cereal::make_nvp("parent", sparent)
-                , cereal::make_nvp("children", schildren)
-            );
-        }
+        static void bindMeta() noexcept;
 
     private:
         // should not use PIMPL here since we want consecutive memory
@@ -109,3 +88,4 @@ namespace darmok
         void setChildrenParentChanged() noexcept;
     };
 }
+
