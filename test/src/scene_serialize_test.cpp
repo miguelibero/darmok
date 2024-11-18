@@ -2,6 +2,7 @@
 #include <darmok/app.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/scene_serialize.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>

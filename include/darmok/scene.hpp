@@ -11,7 +11,7 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/transform_fwd.hpp>
 #include <darmok/reflect.hpp>
-#include <darmok/serialize.hpp>
+
 
 namespace darmok
 {    
@@ -404,97 +404,7 @@ namespace darmok
         }
 
         Scene& setUpdateFilter(const EntityFilter& filter) noexcept;
-        const EntityFilter& getUpdateFilter() const noexcept;
-
-        template<typename Archive>
-        void save(Archive& archive) const
-        {
-            using StorageInfo = std::pair<entt::meta_type, std::reference_wrapper<const entt::sparse_set>>;
-            std::vector<StorageInfo> storages;
-            auto& registry = getRegistry();
-
-            auto& entities = *registry.storage<Entity>();
-            archive(entities.size());
-            archive(entities.free_list());
-            for (auto itr = entities.rbegin(), last = entities.rend(); itr != last; ++itr)
-            {
-                archive(static_cast<ENTT_ID_TYPE>(*itr));
-            }
-
-            for (auto&& [typeHash, storage] : registry.storage())
-            {
-                auto type = entt::resolve(storage.type());
-                if (!type)
-                {
-                    continue;
-                }
-                storages.emplace_back(std::move(type), std::ref(storage));
-            }
-            archive(storages.size());
-
-            for (auto& [type, storageRef] : storages)
-            {
-                auto& storage = storageRef.get();
-                archive(type, storage.size());
-                for (auto entity : storage)
-                {
-                    archive(static_cast<ENTT_ID_TYPE>(entity));
-                }
-            }
-
-            for (auto& [type, storageRef] : storages)
-            {
-                auto& storage = storageRef.get();
-                for (auto entity : storage)
-                {
-                    auto any = type.from_void(storage.value(entity));
-                    archive(any);
-                }
-            }
-        }
-
-        template<typename Archive>
-        void load(Archive& archive)
-        {
-            auto& registry = getRegistry();
-
-            size_t entityAmount = 0;
-            archive(entityAmount);
-            size_t entityFreeList = 0;
-            archive(entityFreeList);
-
-            auto& entities = registry.storage<Entity>();
-            entities.reserve(entityAmount);
-            for (size_t i = 0; i < entityAmount; ++i)
-            {
-                Entity entity;
-                archive(entity);
-                entities.emplace(entity);
-            }
-            entities.free_list(entityFreeList);
-
-            size_t storageAmount = 0;
-            archive(storageAmount);
-
-            std::vector<entt::meta_any> components;
-            for (size_t i = 0; i < storageAmount; ++i)
-            {
-                size_t componentAmount;
-                entt::meta_type type;
-                archive(type, componentAmount);
-                for (size_t j = 0; j < componentAmount; ++j)
-                {
-                    Entity entity;
-                    archive(entity);
-                    auto any = ReflectionUtils::addEntityComponent(registry, entity, type);
-                    components.push_back(std::move(any));
-                }
-            }
-            for (auto& any : components)
-            {
-                archive(any);
-            }
-        }
+        const EntityFilter& getUpdateFilter() const noexcept;       
 
     private:
         std::unique_ptr<SceneImpl> _impl;
@@ -504,6 +414,12 @@ namespace darmok
 
         static OptionalRef<Transform> getTransformParent(const Transform& trans) noexcept;
         static TransformChildren getTransformChildren(const Transform& trans) noexcept;
+
+        template<typename Archive>
+        friend void save(Archive& ar, const Scene& scene);
+
+        template<typename Archive>
+        friend void load(Archive& ar, Scene& scene);
     };
 
     class DARMOK_EXPORT SceneAppComponent final : public ITypeAppComponent<SceneAppComponent>

@@ -206,11 +206,12 @@ set(HEADERS
   input_fwd.hpp
   input.hpp
   window.hpp
+  serialize.hpp
+  glm_serialize.hpp
   scene_fwd.hpp
   scene.hpp
   scene_filter.hpp
-  serialize.hpp
-  glm_serialize.hpp
+  scene_serialize.hpp
 
   texture_atlas.hpp
   anim.hpp
