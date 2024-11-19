@@ -106,6 +106,12 @@ namespace darmok
             return _value;
         }
 
+        OptionalRef<T>& set(T& val) noexcept
+        {
+            _value = &val;
+            return *this;
+        }
+
         operator std_t() const noexcept
         { 
             if (_value == nullptr)

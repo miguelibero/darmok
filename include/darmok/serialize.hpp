@@ -1,9 +1,13 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/optional_ref.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/reflect.hpp>
 #include <entt/entt.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/archives/adapters.hpp>
 
 namespace entt
 {
@@ -141,6 +145,14 @@ namespace entt
         {
             return;
         }
+        if (MetaSerializeUtils::invokeFunc(archive, v, "save"))
+        {
+            return;
+        }
+        if (MetaSerializeUtils::invokeFunc(archive, v, "serialize"))
+        {
+            return;
+        }
         if (type.is_sequence_container())
         {
             if (auto view = v.as_sequence_container(); view)
@@ -175,14 +187,21 @@ namespace entt
             }
             return;
         }
-        if (MetaSerializeUtils::invokeFunc(archive, v, "save"))
+
+        if (auto argType = darmok::ReflectionUtils::getEntityComponentOptionalRefType(type))
         {
+            darmok::Entity entity = entt::null;
+            auto ptr = darmok::ReflectionUtils::getOptionalRefPtr(v);
+            if (ptr != nullptr)
+            {
+                auto& scene = cereal::get_user_data<darmok::Scene>(archive);
+                auto typeHash = argType->info().hash();
+                entity = scene.getEntity(typeHash, ptr);
+            }
+            archive(static_cast<ENTT_ID_TYPE>(entity));
             return;
         }
-        if (MetaSerializeUtils::invokeFunc(archive, v, "serialize"))
-        {
-            return;
-        }
+
         auto typeData = type.data();
         size_t size = std::distance(typeData.begin(), typeData.end());
         archive(size);
@@ -216,6 +235,14 @@ namespace entt
             }
         }
         if (MetaSerializeUtils::loadType<Archive, std::string>(archive, v))
+        {
+            return;
+        }
+        if (MetaSerializeUtils::invokeFunc(archive, v, "load"))
+        {
+            return;
+        }
+        if (MetaSerializeUtils::invokeFunc(archive, v, "serialize"))
         {
             return;
         }
@@ -261,14 +288,22 @@ namespace entt
             }
             return;
         }
-        if (MetaSerializeUtils::invokeFunc(archive, v, "load"))
+
+        if (auto argType = darmok::ReflectionUtils::getEntityComponentOptionalRefType(type))
         {
+            darmok::Entity entity;
+            archive(entity);
+            if (entity != entt::null)
+            {
+                auto& scene = cereal::get_user_data<darmok::Scene>(archive);
+                if (auto ptr = scene.getComponent(entity, argType->info().hash()))
+                {
+                    darmok::ReflectionUtils::setOptionalRef(v, ptr);
+                }
+            }
             return;
         }
-        if (MetaSerializeUtils::invokeFunc(archive, v, "serialize"))
-        {
-            return;
-        }
+
         size_t size;
         archive(size);
         for (size_t i = 0; i < size; ++i)

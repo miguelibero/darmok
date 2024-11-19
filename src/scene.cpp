@@ -518,7 +518,7 @@ namespace darmok
         return getRegistry().valid(entity);
     }
 
-    Entity Scene::getEntity(entt::id_type type, const void* ptr) noexcept
+    Entity Scene::getEntity(entt::id_type type, const void* ptr) const noexcept
     {
         auto storage = getRegistry().storage(type);
         if (!storage)
@@ -526,7 +526,7 @@ namespace darmok
             return entt::null;
         }
 
-        // TODO: check why this does not work
+        // TODO: is there a faster way that does not require to iterate over the entities?
         for (auto itr = storage->rbegin(), last = storage->rend(); itr < last; ++itr)
         {
             auto comp = storage->value(*itr);
@@ -536,6 +536,16 @@ namespace darmok
             }
         }
         return entt::null;
+    }
+
+    const void* Scene::getComponent(Entity entity, entt::id_type type) const noexcept
+    {
+        auto storage = getRegistry().storage(type);
+        if (!storage)
+        {
+            return nullptr;
+        }
+        return storage->value(entity);
     }
 
     EntityView Scene::getEntities() const noexcept

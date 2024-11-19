@@ -119,7 +119,9 @@ namespace darmok
 
         Entity createEntity() noexcept;            
         bool isValidEntity(Entity entity) const noexcept;
-        Entity getEntity(entt::id_type type, const void* ptr) noexcept;
+
+        Entity getEntity(entt::id_type type, const void* ptr) const noexcept;
+        const void* getComponent(Entity entity, entt::id_type type) const noexcept;
 
         void destroyEntity(Entity entity) noexcept;
         void destroyEntities() noexcept;

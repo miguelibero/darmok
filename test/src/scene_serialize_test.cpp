@@ -39,6 +39,28 @@ namespace
                 .data<&TestRefComponent::comp, entt::as_ref_t>("comp"_hs);
         }
     };
+
+    struct TestStruct
+    {
+        int value;
+        std::string str;
+    };
+
+    struct TestStructComponent
+    {
+        TestStruct value;
+
+        static void bindMeta() noexcept
+        {
+            entt::meta<TestStruct>()
+                .ctor()
+                .data<&TestStruct::value, entt::as_ref_t>("value"_hs)
+                .data<&TestStruct::str, entt::as_ref_t>("str"_hs);
+            ReflectionUtils::metaEntityComponent<TestStructComponent>("TestStructComponent")
+                .ctor()
+                .data<&TestStructComponent::value, entt::as_ref_t>("value"_hs);
+        }
+    };
     
     void saveAndLoadScene(Scene& scene)
     {
@@ -46,12 +68,13 @@ namespace
 
         TestComponent::bindMeta();
         TestRefComponent::bindMeta();
+        TestStructComponent::bindMeta();
         ReflectionUtils::bind();
 
         std::streamoff pos = 0;
         {
             DataOutputStream stream(data);
-            cereal::BinaryOutputArchive archive(stream);
+            cereal::UserDataAdapter<Scene, cereal::BinaryOutputArchive> archive(scene, stream);
             archive(scene);
             pos = stream.tellp();
         }
@@ -60,7 +83,7 @@ namespace
 
         {
             DataInputStream stream(data.view(0, pos));
-            cereal::BinaryInputArchive archive(stream);
+            cereal::UserDataAdapter<Scene, cereal::BinaryInputArchive> archive(scene, stream);
             archive(scene);
         }
     }
@@ -107,12 +130,31 @@ TEST_CASE("scene can be loaded", "[scene-serialize]")
     REQUIRE(scene.getComponent<TestComponent>(entity)->value == 666);
 }
 
+TEST_CASE("component structs are serialized", "[scene-serialize]")
+{
+    Scene scene;
+    auto entity = scene.createEntity();
+    scene.addComponent<TestStructComponent>(entity, 42, "lala");
+    entity = scene.createEntity();
+    scene.addComponent<TestStructComponent>(entity, 666, "lolo");
+
+    saveAndLoadScene(scene);
+
+    auto view = scene.getEntities();
+    std::vector<Entity> entities(view.begin(), view.end());
+
+    REQUIRE(entities.size() == 2);
+    auto comp = scene.getComponent<TestStructComponent>(entity);
+    REQUIRE(comp->value.value == 666);
+    REQUIRE(comp->value.str == "lolo");
+}
+
 TEST_CASE("component references are serialized", "[scene-serialize]")
 {
     Scene scene;
     auto entity = scene.createEntity();
     auto& comp = scene.addComponent<TestComponent>(entity, 42);
-    scene.addComponent<TestRefComponent>(entity, comp);
+    auto& refComp1 = scene.addComponent<TestRefComponent>(entity, comp);
 
     saveAndLoadScene(scene);
 
