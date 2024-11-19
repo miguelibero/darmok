@@ -1,9 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
-#include <darmok/serialize.hpp>
 #include <cereal/archives/binary.hpp>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
-#include <darmok/reflect.hpp>
+#include <darmok/reflect_serialize.hpp>
 
 using namespace darmok;
 using namespace entt::literals;
@@ -47,15 +46,23 @@ namespace
     {
         float value;
 
-        void serialize(const entt::meta_any& archive) const
+        template<typename Archive>
+        void save(Archive& archive) const
         {
-            archive.invoke("process"_hs, CEREAL_NVP(value));
+            archive(CEREAL_NVP(value));
+        }
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(value));
         }
 
         static void bindMeta()
         {
-            entt::meta<TestSerializeStruct>().type("TestSerializeStruct"_hs)
-                .func<&TestSerializeStruct::serialize>("serialize"_hs);
+            auto factory = entt::meta<TestSerializeStruct>().type("TestSerializeStruct"_hs);
+            ReflectionSerializeUtils::metaSerialize(factory);
+            ReflectionSerializeUtils::metaSave(factory);
         }
     };
 }
@@ -89,7 +96,6 @@ TEST_CASE("struct any can be serialized", "[serialize]")
 
 TEST_CASE("custom serialize function is called", "[serialize]")
 {
-    /*
     ReflectionUtils::bind();
     TestSerializeStruct::bindMeta();
     TestSerializeStruct v{ 3.14F };
@@ -101,5 +107,4 @@ TEST_CASE("custom serialize function is called", "[serialize]")
     loadFromData(data, any);
 
     REQUIRE(v.value == 3.14F);
-    */
 }

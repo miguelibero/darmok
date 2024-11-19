@@ -2,7 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/scene.hpp>
-#include <darmok/serialize.hpp>
+#include <darmok/reflect_serialize.hpp>
 #include <darmok/optional_ref.hpp>
 #include <cereal/archives/adapters.hpp>
 

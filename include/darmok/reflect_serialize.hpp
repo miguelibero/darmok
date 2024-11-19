@@ -8,30 +8,77 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/archives/adapters.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/xml.hpp>
 
-namespace entt
+namespace darmok
 {
-    struct MetaSerializeUtils final
+    struct ReflectionSerializeUtils final
     {
-        template<class Archive>
-        static bool invokeFunc(Archive& archive, const entt::meta_any& v, const char* name)
+        static void bind();
+
+        template<typename T>
+        static entt::meta_factory<T> metaSerialize(entt::meta_factory<T> factory)
         {
-            auto type = v.type();
-            auto func = type.func(entt::hashed_string(name));
-            if (!func)
+            factory = factory.func<&T::serialize<cereal::BinaryInputArchive>>(_serializeKey);
+            factory = factory.func<&T::serialize<cereal::BinaryOutputArchive>>(_serializeKey);
+            factory = factory.func<&T::serialize<cereal::JSONInputArchive>>(_serializeKey);
+            factory = factory.func<&T::serialize<cereal::JSONOutputArchive>>(_serializeKey);
+            factory = factory.func<&T::serialize<cereal::XMLInputArchive>>(_serializeKey);
+            factory = factory.func<&T::serialize<cereal::XMLOutputArchive>>(_serializeKey);
+            factory = factory.func<&T::serialize<cereal::PortableBinaryOutputArchive>>(_serializeKey);
+            factory = factory.func<&T::serialize<cereal::PortableBinaryInputArchive>>(_serializeKey);
+            return factory;
+        }
+
+        template<typename T>
+        static entt::meta_factory<T> metaSave(entt::meta_factory<T> factory)
+        {
+            factory = factory.func<&T::save<cereal::BinaryOutputArchive>>(_serializeKey);
+            factory = factory.func<&T::save<cereal::JSONOutputArchive>>(_serializeKey);
+            factory = factory.func<&T::save<cereal::XMLOutputArchive>>(_serializeKey);
+            factory = factory.func<&T::save<cereal::PortableBinaryOutputArchive>>(_serializeKey);
+            return factory;
+        }
+
+        template<typename T>
+        static entt::meta_factory<T> metaLoad(entt::meta_factory<T> factory)
+        {
+            factory = factory.func<&T::load<cereal::BinaryInputArchive>>(_serializeKey);
+            factory = factory.func<&T::load<cereal::JSONInputArchive>>(_serializeKey);
+            factory = factory.func<&T::load<cereal::XMLInputArchive>>(_serializeKey);
+            factory = factory.func<&T::load<cereal::PortableBinaryInputArchive>>(_serializeKey);
+            return factory;
+        }
+
+        template<typename Archive>
+        static bool invokeSave(Archive& archive, const entt::meta_any& v)
+        {
+            if (invokeArchiveFunc(archive, v, _saveKey))
             {
-                return false;
+                return true;
             }
-            
-            if (func.is_static())
+            if (invokeArchiveFunc(archive, v, _serializeKey))
             {
-                func.invoke({}, entt::forward_as_meta(archive), v);
+                return true;
             }
-            else
+            return false;
+        }
+
+        template<typename Archive>
+        static bool invokeLoad(Archive& archive, entt::meta_any& v)
+        {
+            if (invokeArchiveFunc(archive, v, _loadKey))
             {
-                func.invoke(v, entt::forward_as_meta(archive));
+                return true;
             }
-            return true;
+            if (invokeArchiveFunc(archive, v, _serializeKey))
+            {
+                return true;
+            }
+            return false;
         }
 
         template<class Archive, class T, class... Types>
@@ -68,6 +115,10 @@ namespace entt
 
     private:
 
+        static const entt::hashed_string _serializeKey;
+        static const entt::hashed_string _saveKey;
+        static const entt::hashed_string _loadKey;
+
         template<class Archive>
         static bool saveType(Archive& archive, const entt::meta_any& v)
         {
@@ -101,7 +152,33 @@ namespace entt
             }
             return false;
         }
+
+        template<class Archive>
+        static bool invokeArchiveFunc(Archive& archive, entt::meta_any v, const entt::hashed_string& name)
+        {
+            auto type = v.type();
+            auto func = type.func(name);
+            if (!func)
+            {
+                return false;
+            }
+
+            if (func.is_static())
+            {
+                func.invoke({}, entt::forward_as_meta(archive), v);
+            }
+            else
+            {
+                func.invoke(v, entt::forward_as_meta(archive));
+            }
+            return true;
+        }
     };
+}
+
+namespace entt
+{
+    
 
     template<class Archive>
     void save(Archive& archive, const entt::meta_type& v)
@@ -123,33 +200,29 @@ namespace entt
         auto type = v.type();
         if (type.is_arithmetic())
         {
-            if (MetaSerializeUtils::saveType<Archive, bool, char, char8_t>(archive, v))
+            if (darmok::ReflectionSerializeUtils::saveType<Archive, bool, char, char8_t>(archive, v))
             {
                 return;
             }
-            if (MetaSerializeUtils::saveType<Archive, char16_t, char32_t, wchar_t>(archive, v))
+            if (darmok::ReflectionSerializeUtils::saveType<Archive, char16_t, char32_t, wchar_t>(archive, v))
             {
                 return;
             }
-            if (MetaSerializeUtils::saveType<Archive, short, int, long, long long>(archive, v))
+            if (darmok::ReflectionSerializeUtils::saveType<Archive, short, int, long, long long>(archive, v))
             {
                 return;
             }
-            if (MetaSerializeUtils::saveType<Archive, float, double, long double>(archive, v))
+            if (darmok::ReflectionSerializeUtils::saveType<Archive, float, double, long double>(archive, v))
             {
                 return;
             }
             throw std::invalid_argument("unknown aritmetic type");
         }
-        if (MetaSerializeUtils::saveType<Archive, std::string>(archive, v))
+        if (darmok::ReflectionSerializeUtils::saveType<Archive, std::string>(archive, v))
         {
             return;
         }
-        if (MetaSerializeUtils::invokeFunc(archive, v, "save"))
-        {
-            return;
-        }
-        if (MetaSerializeUtils::invokeFunc(archive, v, "serialize"))
+        if (darmok::ReflectionSerializeUtils::invokeSave(archive, v))
         {
             return;
         }
@@ -170,7 +243,7 @@ namespace entt
             if (auto view = v.as_associative_container(); view)
             {
                 archive(view.size());
-                bool strKeys = MetaSerializeUtils::isType<std::string>(view.key_type());
+                bool strKeys = darmok::ReflectionSerializeUtils::isType<std::string>(view.key_type());
                 for (auto [key, value] : view)
                 {
                     if (strKeys)
@@ -217,32 +290,28 @@ namespace entt
         auto type = v.type();
         if (type.is_arithmetic())
         {
-            if (MetaSerializeUtils::loadType<Archive, bool, char, char8_t>(archive, v))
+            if (darmok::ReflectionSerializeUtils::loadType<Archive, bool, char, char8_t>(archive, v))
             {
                 return;
             }
-            if (MetaSerializeUtils::loadType<Archive, char16_t, char32_t, wchar_t>(archive, v))
+            if (darmok::ReflectionSerializeUtils::loadType<Archive, char16_t, char32_t, wchar_t>(archive, v))
             {
                 return;
             }
-            if (MetaSerializeUtils::loadType<Archive, short, int, long, long long>(archive, v))
+            if (darmok::ReflectionSerializeUtils::loadType<Archive, short, int, long, long long>(archive, v))
             {
                 return;
             }
-            if (MetaSerializeUtils::loadType<Archive, float, double, long double>(archive, v))
+            if (darmok::ReflectionSerializeUtils::loadType<Archive, float, double, long double>(archive, v))
             {
                 return;
             }
         }
-        if (MetaSerializeUtils::loadType<Archive, std::string>(archive, v))
+        if (darmok::ReflectionSerializeUtils::loadType<Archive, std::string>(archive, v))
         {
             return;
         }
-        if (MetaSerializeUtils::invokeFunc(archive, v, "load"))
-        {
-            return;
-        }
-        if (MetaSerializeUtils::invokeFunc(archive, v, "serialize"))
+        if (darmok::ReflectionSerializeUtils::invokeLoad(archive, v))
         {
             return;
         }
@@ -267,7 +336,7 @@ namespace entt
             {
                 size_t size;
                 archive(size);
-                bool strKeys = MetaSerializeUtils::isType<std::string>(view.key_type());
+                bool strKeys = darmok::ReflectionSerializeUtils::isType<std::string>(view.key_type());
                 for (size_t i = 0; i < size; ++i)
                 {
                     auto key = view.key_type().construct();

@@ -1,6 +1,7 @@
 #include <darmok/reflect.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/reflect_serialize.hpp>
 
 namespace darmok
 {
@@ -15,6 +16,7 @@ namespace darmok
 
     void ReflectionUtils::bind() noexcept
     {
+		ReflectionSerializeUtils::bind();
         Transform::bindMeta();
     }
 

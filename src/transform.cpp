@@ -345,6 +345,8 @@ namespace darmok
             .data<&Transform::_position, entt::as_ref_t>("position"_hs)
             .data<&Transform::_rotation, entt::as_ref_t>("rotation"_hs)
             .data<&Transform::_scale, entt::as_ref_t>("scale"_hs)
+            .data<&Transform::_parent, entt::as_ref_t>("parent"_hs)
+            .data<&Transform::_children, entt::as_ref_t>("children"_hs)
             ;
     }
 }

@@ -25,11 +25,11 @@ namespace darmok
 			auto optRefName = std::string("OptionalRef<") + name + ">";
 			return entt::meta<OptionalRef<T>>().type(entt::hashed_string{ optRefName.c_str() })
 				.traits(ReflectionTraits::OptionalRef)
-				.func<&OptionalRef<T>::ptr>(entt::hashed_string{ _optionalRefPtrKey })
-				.func<&OptionalRef<T>::set, entt::as_void_t>(entt::hashed_string{ _optionalRefSetKey })
-				.func<&OptionalRef<T>::value, entt::as_ref_t>(entt::hashed_string{ _optionalRefValueKey })
-				.func<&OptionalRef<T>::reset>(entt::hashed_string{ _optionalRefResetKey })
-				.func<&OptionalRef<T>::empty>(entt::hashed_string{ _optionalRefEmptyKey });
+				.func<&OptionalRef<T>::ptr>(_optionalRefPtrKey)
+				.func<&OptionalRef<T>::set, entt::as_void_t>(_optionalRefSetKey)
+				.func<&OptionalRef<T>::value, entt::as_ref_t>(_optionalRefValueKey)
+				.func<&OptionalRef<T>::reset>(_optionalRefResetKey)
+				.func<&OptionalRef<T>::empty>(_optionalRefEmptyKey);
 		}
 
 		template<typename T>

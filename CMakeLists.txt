@@ -182,6 +182,7 @@ set(SOURCES
   model.cpp
   anim.cpp
   program.cpp
+  reflect_serialize.cpp
 
   transform.cpp
   camera.cpp
@@ -206,7 +207,7 @@ set(HEADERS
   input_fwd.hpp
   input.hpp
   window.hpp
-  serialize.hpp
+  reflect_serialize.hpp
   glm_serialize.hpp
   scene_fwd.hpp
   scene.hpp
