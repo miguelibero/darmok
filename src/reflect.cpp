@@ -23,7 +23,11 @@ namespace darmok
 	const void* ReflectionUtils::getOptionalRefPtr(const entt::meta_any& any)
 	{
 		auto r = any.invoke(_optionalRefPtrKey);
-		return *(void**)r.data(); // TODO: find less hacky way
+		if (auto ptr = r.data())
+		{
+			return *(void**)ptr; // TODO: find less hacky way
+		}
+		return nullptr;
 	}
 
 	void ReflectionUtils::setOptionalRef(entt::meta_any& any, const void* val)

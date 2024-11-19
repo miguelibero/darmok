@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/glm.hpp>
+#include <glm/detail/type_quat.hpp>
 #include <cereal/cereal.hpp>
 
 namespace glm

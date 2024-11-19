@@ -46,10 +46,11 @@ namespace
     {
         float value;
 
-        template<typename Archive>
-        void save(Archive& archive) const
+        TestSerializeStruct() = default;
+
+        TestSerializeStruct(const TestSerializeStruct& other)
+            : value(other.value)
         {
-            archive(CEREAL_NVP(value));
         }
 
         template<typename Archive>
@@ -61,8 +62,7 @@ namespace
         static void bindMeta()
         {
             auto factory = entt::meta<TestSerializeStruct>().type("TestSerializeStruct"_hs);
-            ReflectionSerializeUtils::metaSerialize(factory);
-            ReflectionSerializeUtils::metaSave(factory);
+            ReflectionSerializeUtils::metaSerialize<TestSerializeStruct>();
         }
     };
 }
@@ -98,7 +98,8 @@ TEST_CASE("custom serialize function is called", "[serialize]")
 {
     ReflectionUtils::bind();
     TestSerializeStruct::bindMeta();
-    TestSerializeStruct v{ 3.14F };
+    TestSerializeStruct v;
+    v.value = 3.14F;
 
     auto any = entt::forward_as_meta(v);
 

@@ -69,7 +69,7 @@ namespace
         TestComponent::bindMeta();
         TestRefComponent::bindMeta();
         TestStructComponent::bindMeta();
-        ReflectionUtils::bind();
+        ReflectionSerializeUtils::bind();
 
         std::streamoff pos = 0;
         {
