@@ -7,6 +7,7 @@
 #include <entt/entt.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/utility.hpp>
 
 #include <cereal/archives/adapters.hpp>
 #include <cereal/archives/binary.hpp>
@@ -84,6 +85,15 @@ namespace darmok
             return false;
         }
 
+        template<class Archive>
+        static bool saveArithmeticType(Archive& archive, const entt::meta_any& v)
+        {
+            return saveType<Archive,
+                bool, char, char8_t, char16_t, char32_t, wchar_t,
+                short, int, long, long long,
+                float, double, long double>(archive, v);
+        }
+
         template<class Archive, class T, class... Types>
         static bool saveType(Archive& archive, const entt::meta_any& v)
         {
@@ -92,6 +102,15 @@ namespace darmok
                 return true;
             }
             return saveType<Archive, Types...>(archive, v);
+        }
+
+        template<class Archive>
+        static bool loadArithmeticType(Archive& archive, entt::meta_any& v)
+        {
+            return loadType<Archive,
+                bool, char, char8_t, char16_t, char32_t, wchar_t,
+                short, int, long, long long,
+                float, double, long double>(archive, v);
         }
 
         template<class Archive, class T, class... Types>
@@ -184,8 +203,9 @@ namespace entt
         v = entt::resolve(id);
     }
 
-    template<class Archive>
-    void save(Archive& archive, const entt::meta_any& v)
+    // done this way to avoid duplicated error because of entt::meta_any(Type&&) constructor
+    template<class Archive, class Any, std::enable_if_t<std::is_same_v<Any, entt::meta_any>, bool> = true>
+    void save(Archive& archive, const Any& v)
     {
         auto type = v.type();
         if (!type)
@@ -194,23 +214,11 @@ namespace entt
         }
         if (type.is_arithmetic())
         {
-            if (darmok::ReflectionSerializeUtils::saveType<Archive, bool, char, char8_t>(archive, v))
+            if (darmok::ReflectionSerializeUtils::saveArithmeticType<Archive>(archive, v))
             {
                 return;
             }
-            if (darmok::ReflectionSerializeUtils::saveType<Archive, char16_t, char32_t, wchar_t>(archive, v))
-            {
-                return;
-            }
-            if (darmok::ReflectionSerializeUtils::saveType<Archive, short, int, long, long long>(archive, v))
-            {
-                return;
-            }
-            if (darmok::ReflectionSerializeUtils::saveType<Archive, float, double, long double>(archive, v))
-            {
-                return;
-            }
-            throw std::invalid_argument("unknown aritmetic type");
+            throw std::invalid_argument("unknown arithmetic type");
         }
         if (darmok::ReflectionSerializeUtils::saveType<Archive, std::string>(archive, v))
         {
@@ -224,11 +232,7 @@ namespace entt
         {
             if (auto view = v.as_sequence_container())
             {
-                archive(view.size());
-                for (auto element : view)
-                {
-                    archive(element);
-                }
+                save(archive, view);
             }
             return;
         }
@@ -236,31 +240,7 @@ namespace entt
         {
             if (auto view = v.as_associative_container())
             {
-                archive(view.size());
-                bool strKeys = darmok::ReflectionSerializeUtils::isType<std::string>(view.key_type());
-                auto valType = view.value_type();
-                for (auto [key, val] : view)
-                {
-                    // hack fix for unordered_set where the value_type == key_type but the returned values are empty
-                    if (val.type() != valType)
-                    {
-                        val = valType.construct();
-                    }
-                    bool saved = false;
-                    if constexpr (!std::is_same<cereal::BinaryOutputArchive, Archive>::value)
-                    {
-                        if (strKeys)
-                        {
-                            auto& keyStr = key.cast<const std::string&>();
-                            archive(cereal::make_nvp(keyStr.c_str(), val.as_ref()));
-                            saved = true;
-                        }
-                    }
-                    if(!saved)
-                    {
-                        archive(key, val);
-                    }
-                }
+                save(archive, view);
             }
             return;
         }
@@ -280,11 +260,13 @@ namespace entt
         }
 
         auto typeData = type.data();
+        // TODO: maybe convert to CEREAL_NVP with hex keys
         size_t size = std::distance(typeData.begin(), typeData.end());
         archive(size);
         for (auto [id, data] : typeData)
         {
-            archive(id, v.get(id));
+            archive(id);
+            save(archive, v.get(id));
         }
     }
 
@@ -298,22 +280,11 @@ namespace entt
         }
         if (type.is_arithmetic())
         {
-            if (darmok::ReflectionSerializeUtils::loadType<Archive, bool, char, char8_t>(archive, v))
+            if (darmok::ReflectionSerializeUtils::loadArithmeticType<Archive>(archive, v))
             {
                 return;
             }
-            if (darmok::ReflectionSerializeUtils::loadType<Archive, char16_t, char32_t, wchar_t>(archive, v))
-            {
-                return;
-            }
-            if (darmok::ReflectionSerializeUtils::loadType<Archive, short, int, long, long long>(archive, v))
-            {
-                return;
-            }
-            if (darmok::ReflectionSerializeUtils::loadType<Archive, float, double, long double>(archive, v))
-            {
-                return;
-            }
+            throw std::invalid_argument("unknown arithmetic type");
         }
         if (darmok::ReflectionSerializeUtils::loadType<Archive, std::string>(archive, v))
         {
@@ -327,20 +298,7 @@ namespace entt
         {
             if (auto view = v.as_sequence_container())
             {
-                size_t size;
-                archive(size);
-                if (size == 0)
-                {
-                    return;
-                }
-                view.reserve(size);
-                auto valType = view.value_type();
-                for (size_t i = 0; i < size; ++i)
-                {
-                    auto elm = valType.construct();
-                    archive(elm);
-                    view.insert(view.end(), elm);
-                }
+                load(archive, view);
             }
             return;
         }
@@ -348,37 +306,7 @@ namespace entt
         {
             if (auto view = v.as_associative_container())
             {
-                size_t size;
-                archive(size);
-                if (size == 0)
-                {
-                    return;
-                }
-                view.reserve(size);
-                auto keyType = view.key_type();
-                auto valType = view.value_type();
-                bool strKeys = darmok::ReflectionSerializeUtils::isType<std::string>(view.key_type());
-                for (size_t i = 0; i < size; ++i)
-                {
-                    auto key = keyType.construct();
-                    auto val = valType.construct();
-                    bool loaded = false;
-                    if constexpr (!std::is_same<cereal::BinaryInputArchive, Archive>::value)
-                    {
-                        if (strKeys)
-                        {
-                            auto nvp = cereal::make_nvp("", val.as_ref());
-                            archive(nvp);
-                            loaded = true;
-                            key.assign(nvp.name);
-                        }
-                    }
-                    if(!loaded)
-                    {
-                        archive(key, val);
-                    }
-                    view.insert(key, val);
-                }
+                load(archive, view);
             }
             return;
         }
@@ -404,7 +332,75 @@ namespace entt
         {
             entt::id_type id;
             archive(id);
-            archive(v.get(id));
+            auto any = v.get(id);
+            load(archive, any);
+        }
+    }
+
+    template<class Archive>
+    void save(Archive& archive, entt::meta_sequence_container v)
+    {
+        archive(cereal::make_size_tag(v.size()));
+        for (auto element : v)
+        {
+            save(archive, element);
+        }
+    }
+
+    template<class Archive>
+    void load(Archive& archive, entt::meta_sequence_container& v)
+    {
+        size_t size;
+        archive(cereal::make_size_tag(size));
+        if (size == 0)
+        {
+            return;
+        }
+        v.reserve(size);
+        auto valType = v.value_type();
+        for (size_t i = 0; i < size; ++i)
+        {
+            auto elm = valType.construct();
+            load(archive, elm);
+            v.insert(v.end(), elm);
+        }
+    }
+
+    template<class Archive>
+    void save(Archive& archive, entt::meta_associative_container v)
+    {
+        archive(cereal::make_size_tag(v.size()));
+        auto valType = v.value_type();
+        for (auto [key, val] : v)
+        {
+            // hack fix for unordered_set where the value_type == key_type but the returned values are empty
+            if (!val.type())
+            {
+                val = valType.construct();
+            }
+            archive(cereal::make_map_item(key, val));
+        }
+    }
+
+    template<class Archive>
+    void load(Archive& archive, entt::meta_associative_container& v)
+    {
+        size_t size;
+        archive(cereal::make_size_tag(size));
+        if (size == 0)
+        {
+            return;
+        }
+        v.reserve(size);
+        auto keyType = v.key_type();
+        auto valType = v.value_type();
+        bool strKeys = darmok::ReflectionSerializeUtils::isType<std::string>(v.key_type());
+        for (size_t i = 0; i < size; ++i)
+        {
+            auto key = keyType.construct();
+            auto val = valType.construct();
+            archive(cereal::make_map_item(key, val));
+            v.insert(key, val);
         }
     }
 }

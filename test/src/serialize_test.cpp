@@ -68,21 +68,29 @@ namespace
             ReflectionSerializeUtils::metaSerialize<TestSerializeStruct>();
         }
     };
+
+    template<typename Archive, typename T>
+    void checkSerialization()
+    {
+        auto i1 = cereal::traits::detail::count_specializations<T, Archive>::value;
+        auto i2 = cereal::traits::has_member_save<T, Archive>::value; // this
+        auto i3 = cereal::traits::has_non_member_save<T, Archive>::value;
+        auto i4 = cereal::traits::has_member_serialize<T, Archive>::value;
+        auto i5 = cereal::traits::has_non_member_serialize<T, Archive>::value; // this
+        auto i6 = cereal::traits::has_member_save_minimal<T, Archive>::value;
+        auto i7 = cereal::traits::has_non_member_save_minimal<T, Archive>::value;
+        auto i = i1 + i2 + i3 + i4 + i5 + i6 + i7;
+        REQUIRE(i == 1);
+    }
 }
 
-TEST_CASE("problem with nvp meta_any", "[serialize]")
+
+
+TEST_CASE("checking serialization methods for types", "[serialize]")
 {
-    using T = cereal::NameValuePair<entt::any>;
-    using OutputArchive = cereal::BinaryOutputArchive;
-    auto i1 = cereal::traits::detail::count_specializations<T, OutputArchive>::value;
-    auto i2 = cereal::traits::has_member_save<T, OutputArchive>::value; // this
-    auto i3 = cereal::traits::has_non_member_save<T, OutputArchive>::value;
-    auto i4 = cereal::traits::has_member_serialize<T, OutputArchive>::value;
-    auto i5 = cereal::traits::has_non_member_serialize<T, OutputArchive>::value; // this
-    auto i6 = cereal::traits::has_member_save_minimal<T, OutputArchive>::value;
-    auto i7 = cereal::traits::has_non_member_save_minimal<T, OutputArchive>::value;
-    auto i = i1 + i2 + i3 + i4 + i5 + i6 + i7;
-    // REQUIRE(i == 1);
+    using Archive = cereal::BinaryOutputArchive;
+    checkSerialization<Archive, cereal::NameValuePair<entt::any>>();
+    checkSerialization<Archive, cereal::MapItem<entt::any,entt::any>>();
 }
 
 TEST_CASE( "any can be serialized", "[serialize]" )
@@ -145,8 +153,8 @@ TEST_CASE("serialize string map", "[serialize]")
 {
     std::map<std::string, std::string> map
     {
-        {"key1", "value1" },
-        {"key2", "value2" },
+        {"key1", "test1" },
+        {"key2", "test2" },
     };
     auto any = entt::forward_as_meta(map);
 
