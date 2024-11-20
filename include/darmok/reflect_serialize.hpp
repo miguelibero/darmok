@@ -188,6 +188,10 @@ namespace entt
     void save(Archive& archive, const entt::meta_any& v)
     {
         auto type = v.type();
+        if (!type)
+        {
+            return;
+        }
         if (type.is_arithmetic())
         {
             if (darmok::ReflectionSerializeUtils::saveType<Archive, bool, char, char8_t>(archive, v))
@@ -218,7 +222,7 @@ namespace entt
         }
         if (type.is_sequence_container())
         {
-            if (auto view = v.as_sequence_container(); view)
+            if (auto view = v.as_sequence_container())
             {
                 archive(view.size());
                 for (auto element : view)
@@ -230,35 +234,41 @@ namespace entt
         }
         if (type.is_associative_container())
         {
-            if (auto view = v.as_associative_container(); view)
+            if (auto view = v.as_associative_container())
             {
                 archive(view.size());
                 bool strKeys = darmok::ReflectionSerializeUtils::isType<std::string>(view.key_type());
-                for (auto [key, value] : view)
+                auto valType = view.value_type();
+                for (auto [key, val] : view)
                 {
+                    // hack fix for unordered_set where the value_type == key_type but the returned values are empty
+                    if (val.type() != valType)
+                    {
+                        val = valType.construct();
+                    }
                     if (strKeys)
                     {
                         auto keyStr = key.cast<const std::string&>();
-                        // TODO: check why this does not compile
-                        // archive(cereal::make_nvp(keyStr, value));
+                        // TODO: fix this does not compile
+                        // archive(cereal::make_nvp(keyStr, val));
                     }
                     else
                     {
-                        archive(key, value);
+                        archive(key, val);
                     }
                 }
             }
             return;
         }
 
-        if (auto argType = darmok::ReflectionUtils::getEntityComponentOptionalRefType(type))
+        if (auto refType = darmok::ReflectionUtils::getEntityComponentRefType(type))
         {
             darmok::Entity entity = entt::null;
-            auto ptr = darmok::ReflectionUtils::getOptionalRefPtr(v);
+            auto ptr = darmok::ReflectionUtils::getRefPtr(v);
             if (ptr != nullptr)
             {
                 auto& scene = cereal::get_user_data<darmok::Scene>(archive);
-                auto typeHash = argType->info().hash();
+                auto typeHash = refType.info().hash();
                 entity = scene.getEntity(typeHash, ptr);
             }
             archive(static_cast<ENTT_ID_TYPE>(entity));
@@ -311,13 +321,19 @@ namespace entt
         }
         if (type.is_sequence_container())
         {
-            if (auto view = v.as_sequence_container(); view)
+            if (auto view = v.as_sequence_container())
             {
                 size_t size;
                 archive(size);
+                if (size == 0)
+                {
+                    return;
+                }
+                view.reserve(size);
+                auto valType = view.value_type();
                 for (size_t i = 0; i < size; ++i)
                 {
-                    auto elm = view.value_type().construct();
+                    auto elm = valType.construct();
                     archive(elm);
                     view.insert(view.end(), elm);
                 }
@@ -326,15 +342,22 @@ namespace entt
         }
         if (type.is_associative_container())
         {
-            if (auto view = v.as_associative_container(); view)
+            if (auto view = v.as_associative_container())
             {
                 size_t size;
                 archive(size);
+                if (size == 0)
+                {
+                    return;
+                }
+                view.reserve(size);
+                auto keyType = view.key_type();
+                auto valType = view.value_type();
                 bool strKeys = darmok::ReflectionSerializeUtils::isType<std::string>(view.key_type());
                 for (size_t i = 0; i < size; ++i)
                 {
-                    auto key = view.key_type().construct();
-                    auto val = view.value_type().construct();
+                    auto key = keyType.construct();
+                    auto val = valType.construct();
                     if (strKeys)
                     {
                         auto nvp = cereal::make_nvp("", val);
@@ -352,16 +375,16 @@ namespace entt
             return;
         }
 
-        if (auto argType = darmok::ReflectionUtils::getEntityComponentOptionalRefType(type))
+        if (auto refType = darmok::ReflectionUtils::getEntityComponentRefType(type))
         {
             darmok::Entity entity;
             archive(entity);
             if (entity != entt::null)
             {
                 auto& scene = cereal::get_user_data<darmok::Scene>(archive);
-                if (auto ptr = scene.getComponent(entity, argType->info().hash()))
+                if (auto ptr = scene.getComponent(entity, refType.info().hash()))
                 {
-                    darmok::ReflectionUtils::setOptionalRef(v, ptr);
+                    darmok::ReflectionUtils::setRef(v, ptr);
                 }
             }
             return;

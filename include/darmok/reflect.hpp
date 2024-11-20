@@ -3,13 +3,14 @@
 #include <darmok/export.h>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/optional_ref.hpp>
-#include <optional>
+#include <functional>
 
 namespace darmok
 {
 	enum class ReflectionTraits
 	{
 		OptionalRef,
+		ReferenceWrapper,
 		EntityComponent
 	};
 
@@ -22,20 +23,36 @@ namespace darmok
 		template<typename T>
 		static entt::meta_factory<OptionalRef<T>> metaOptionalRef(const char* name)
 		{
-			auto optRefName = std::string("OptionalRef<") + name + ">";
-			return entt::meta<OptionalRef<T>>().type(entt::hashed_string{ optRefName.c_str() })
+			using R = OptionalRef<T>;
+			auto refName = std::string("OptionalRef<") + name + ">";
+			return entt::meta<R>().type(entt::hashed_string{ refName.c_str() })
 				.traits(ReflectionTraits::OptionalRef)
-				.func<&OptionalRef<T>::ptr>(_optionalRefPtrKey)
-				.func<&OptionalRef<T>::set, entt::as_void_t>(_optionalRefSetKey)
-				.func<&OptionalRef<T>::value, entt::as_ref_t>(_optionalRefValueKey)
-				.func<&OptionalRef<T>::reset>(_optionalRefResetKey)
-				.func<&OptionalRef<T>::empty>(_optionalRefEmptyKey);
+				.func<&R::ptr>(_optionalRefPtrKey)
+				.func<&setOptionalRef<T>>(_optionalRefSetKey)
+				.func<&R::value, entt::as_ref_t>(_optionalRefValueKey)
+				.func<&R::reset>(_optionalRefResetKey)
+				.func<&R::empty>(_optionalRefEmptyKey)
+				;
+		}
+
+		template<typename T>
+		static entt::meta_factory<std::reference_wrapper<T>> metaReferenceWrapper(const char* name)
+		{
+			using R = std::reference_wrapper<T>;
+			auto refName = std::string("std::reference_wrapper<") + name + ">";
+			return entt::meta<R>().type(entt::hashed_string{ refName.c_str() })
+				.ctor<&createReferenceWrapper<T>>()
+				.traits(ReflectionTraits::ReferenceWrapper)
+				.func<&R::get, entt::as_ref_t>(_referenceWrapperGetKey)
+				.func<&setReferenceWrapper<T>>(_referenceWrapperSetKey)
+			;
 		}
 
 		template<typename T>
 		static entt::meta_factory<T> metaEntityComponent(const char* name)
 		{
 			metaOptionalRef<T>(name);
+			metaReferenceWrapper<T>(name);
 
 			return entt::meta<T>().type(entt::hashed_string{ name })
 				.traits(ReflectionTraits::EntityComponent)
@@ -46,11 +63,12 @@ namespace darmok
 		static entt::meta_any addEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type);
 		static EntityRegistry::common_type& getEntityComponentStorage(EntityRegistry& registry, const entt::meta_type& type);
 		
-		static const void* getOptionalRefPtr(const entt::meta_any& any);
-		static entt::meta_any getOptionalRef(const entt::meta_any& any);
-		static Entity getEntityComponentOptionalRef(const Scene& scene, const entt::meta_any& any);
-		static std::optional<entt::meta_type> getEntityComponentOptionalRefType(const entt::meta_type& type);
-		static void setOptionalRef(entt::meta_any& any, const void* val);
+		static const void* getRefPtr(const entt::meta_any& any);
+		static entt::meta_any getRef(const entt::meta_any& any);
+		static Entity getEntityComponentRef(const Scene& scene, const entt::meta_any& any);
+		static entt::meta_type getRefType(const entt::meta_type& type);
+		static entt::meta_type getEntityComponentRefType(const entt::meta_type& type);
+		static void setRef(entt::meta_any& any, const void* val);
 	private:
 
 		static const entt::hashed_string _optionalRefEmptyKey;
@@ -58,6 +76,8 @@ namespace darmok
 		static const entt::hashed_string _optionalRefPtrKey;
 		static const entt::hashed_string _optionalRefSetKey;
 		static const entt::hashed_string _optionalRefResetKey;
+		static const entt::hashed_string _referenceWrapperGetKey;
+		static const entt::hashed_string _referenceWrapperSetKey;
 
 		static const entt::hashed_string _addEntityComponentKey;
 		static const entt::hashed_string _getEntityComponentStorageKey;
@@ -77,6 +97,28 @@ namespace darmok
 				entities.emplace(entity);
 			}
 			return registry.storage<T>().emplace(entity);
+		}
+
+		template<typename T>
+		static std::reference_wrapper<T> createReferenceWrapper() noexcept
+		{
+			// hacky but we need a ref wrapper default constructor
+			return std::reference_wrapper<T>(*static_cast<T*>(nullptr));
+		}
+
+		template<typename T>
+		static void setReferenceWrapper(std::reference_wrapper<T>& ref, const void* ptr) noexcept
+		{
+			if (ptr != nullptr)
+			{
+				ref = std::reference_wrapper<T>(*static_cast<T*>(const_cast<void*>(ptr)));
+			}
+		}
+
+		template<typename T>
+		static void setOptionalRef(OptionalRef<T>& ref, const void* ptr) noexcept
+		{
+			ref = OptionalRef<T>(static_cast<T*>(const_cast<void*>(ptr)));
 		}
 	};
 }

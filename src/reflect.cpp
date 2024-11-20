@@ -14,76 +14,101 @@ namespace darmok
 	const entt::hashed_string ReflectionUtils::_optionalRefSetKey = "set";
 	const entt::hashed_string ReflectionUtils::_optionalRefResetKey = "reset";
 
+	const entt::hashed_string ReflectionUtils::_referenceWrapperGetKey = "get";
+	const entt::hashed_string ReflectionUtils::_referenceWrapperSetKey = "set";
+
     void ReflectionUtils::bind() noexcept
     {
 		ReflectionSerializeUtils::bind();
         Transform::bindMeta();
     }
 
-	const void* ReflectionUtils::getOptionalRefPtr(const entt::meta_any& any)
+	const void* ReflectionUtils::getRefPtr(const entt::meta_any& any)
 	{
-		auto r = any.invoke(_optionalRefPtrKey);
-		if (auto ptr = r.data())
+		auto type = any.type();
+		auto traits = type.traits<ReflectionTraits>();
+		if (traits == ReflectionTraits::OptionalRef)
 		{
-			return *(void**)ptr; // TODO: find less hacky way
+			auto r = any.invoke(_optionalRefPtrKey);
+			if (auto ptr = r.data())
+			{
+				return *(void**)ptr; // TODO: find less hacky way
+			}
+			return nullptr;
+		}
+		if (traits == ReflectionTraits::ReferenceWrapper)
+		{
+			return any.invoke(_referenceWrapperGetKey).data();
+		}
+		if (type.is_pointer_like())
+		{
+			return (*any).data();
 		}
 		return nullptr;
 	}
 
-	void ReflectionUtils::setOptionalRef(entt::meta_any& any, const void* val)
-	{
-		if (!val)
-		{
-			any.invoke(_optionalRefResetKey);
-			return;
-		}
-		auto valAny = any.type().template_arg(0u).from_void(val);
-		any.invoke(_optionalRefSetKey, valAny);
-	}
-
-	entt::meta_any ReflectionUtils::getOptionalRef(const entt::meta_any& any)
+	void ReflectionUtils::setRef(entt::meta_any& any, const void* val)
 	{
 		auto type = any.type();
-		if (!type.is_template_specialization() || type.traits<ReflectionTraits>() != ReflectionTraits::OptionalRef)
+		auto traits = type.traits<ReflectionTraits>();
+		if (traits == ReflectionTraits::OptionalRef)
 		{
-			return entt::meta_any{ std::in_place_type<void> };
+			any.invoke(_optionalRefSetKey, val);
 		}
-		auto ptr = getOptionalRefPtr(any);
-		return type.template_arg(0u).from_void(ptr);
+		else if (traits == ReflectionTraits::ReferenceWrapper)
+		{
+			any.invoke(_referenceWrapperSetKey, val);
+		}
+		else if (type.is_pointer_like())
+		{
+			any.assign(type.from_void(val));
+		}
 	}
 
-	Entity ReflectionUtils::getEntityComponentOptionalRef(const Scene& scene, const entt::meta_any& any)
+	entt::meta_any ReflectionUtils::getRef(const entt::meta_any& any)
 	{
-		auto argType = getEntityComponentOptionalRefType(any.type());
-		if (!argType)
+		auto ptr = getRefPtr(any);
+		return any.type().template_arg(0u).from_void(ptr);
+	}
+
+	Entity ReflectionUtils::getEntityComponentRef(const Scene& scene, const entt::meta_any& any)
+	{
+		auto refType = getEntityComponentRefType(any.type());
+		if (!refType)
 		{
 			return entt::null;
 		}
-		auto ptr = getOptionalRefPtr(any);
+		auto ptr = getRefPtr(any);
 		if (ptr == nullptr)
 		{
 			return entt::null;
 		}
-		auto typeHash = argType->info().hash();
+		auto typeHash = refType.info().hash();
 		return scene.getEntity(typeHash, ptr);
 	}
 
-	std::optional<entt::meta_type> ReflectionUtils::getEntityComponentOptionalRefType(const entt::meta_type& type)
+	entt::meta_type ReflectionUtils::getRefType(const entt::meta_type& type)
 	{
-		if (type.traits<ReflectionTraits>() != ReflectionTraits::OptionalRef)
+		if (type.is_pointer_like())
 		{
-			return std::nullopt;
+			return type.remove_pointer();
 		}
-		if (!type.is_template_specialization())
+		auto traits = type.traits<ReflectionTraits>();
+		if (traits == ReflectionTraits::OptionalRef || traits == ReflectionTraits::ReferenceWrapper)
 		{
-			return std::nullopt;
+			return type.template_arg(0u);
 		}
-		auto argType = type.template_arg(0u);
-		if (argType.traits<ReflectionTraits>() != ReflectionTraits::EntityComponent)
+		return {};
+	}
+
+	entt::meta_type ReflectionUtils::getEntityComponentRefType(const entt::meta_type& type)
+	{
+		auto refType = getRefType(type);
+		if (refType && refType.traits<ReflectionTraits>() != ReflectionTraits::EntityComponent)
 		{
-			return std::nullopt;
+			return {};
 		}
-		return argType;
+		return refType;
 	}
 
 	entt::meta_any ReflectionUtils::addEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type)

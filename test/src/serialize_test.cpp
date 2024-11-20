@@ -3,6 +3,7 @@
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/reflect_serialize.hpp>
+#include <unordered_set>
 
 using namespace darmok;
 using namespace entt::literals;
@@ -108,4 +109,17 @@ TEST_CASE("custom serialize function is called", "[serialize]")
     loadFromData(data, any);
 
     REQUIRE(v.value == 3.14F);
+}
+
+TEST_CASE("serialize unordered_set", "[serialize]")
+{
+    std::unordered_set<int> set{ 42, 666 };
+    auto any = entt::forward_as_meta(set);
+
+    auto data = saveToData(any);
+    set.clear();
+    loadFromData(data, any);
+
+    REQUIRE(set.size() == 2);
+    REQUIRE(*set.begin() == 42);
 }
