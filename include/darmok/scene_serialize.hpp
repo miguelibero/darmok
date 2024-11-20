@@ -101,8 +101,11 @@ namespace darmok
     template<class Archive, class T>
     void save(Archive& archive, const OptionalRef<T>& v)
     {
+        if (!ReflectionUtils::isEntityComponentType<T>())
+        {
+            return;
+        }
         auto& scene = cereal::get_user_data<Scene>(archive);
-        archive(entt::type_hash<T>::value());
         Entity entity = v ? scene.getEntity<T>(v.value()) : entt::null;
         archive(static_cast<ENTT_ID_TYPE>(entity));
     }
@@ -110,14 +113,47 @@ namespace darmok
     template<class Archive, class T>
     void load(Archive& archive, OptionalRef<T>& v)
     {
+        if (!ReflectionUtils::isEntityComponentType<T>())
+        {
+            return;
+        }
         auto& scene = cereal::get_user_data<Scene>(archive);
-        entt::id_type typeHash;
-        archive(typeHash);
         Entity entity;
         archive(entity);
         if (entity != entt::null)
         {
             v = scene.getComponent<T>(entity);
+        }
+    }
+
+    template<class Archive, class T>
+    void save(Archive& archive, const std::reference_wrapper<T>& v)
+    {
+        if (!ReflectionUtils::isEntityComponentType<T>())
+        {
+            return;
+        }
+        auto& scene = cereal::get_user_data<Scene>(archive);
+        Entity entity = scene.getEntity<T>(v.get());
+        archive(static_cast<ENTT_ID_TYPE>(entity));
+    }
+
+    template<class Archive, class T>
+    void load(Archive& archive, std::reference_wrapper<T>& v)
+    {
+        if (!ReflectionUtils::isEntityComponentType<T>())
+        {
+            return;
+        }
+        auto& scene = cereal::get_user_data<Scene>(archive);
+        Entity entity;
+        archive(entity);
+        if (entity != entt::null)
+        {
+            if (auto optRef = scene.getComponent<T>(entity))
+            {
+                v = optRef;
+            }
         }
     }
 }

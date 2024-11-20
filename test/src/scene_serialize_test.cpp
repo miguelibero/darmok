@@ -104,11 +104,10 @@ TEST_CASE( "scene can be serialized", "[scene-serialize]" )
         archive(scene);
     }
 
-    auto str = ss.str();
     ss.flush();
     ss.seekg(0, std::ios::beg);
-
     auto json = nlohmann::json::parse(ss).front();
+
     REQUIRE(json.is_object());
     REQUIRE(json.size() == 11);
 }

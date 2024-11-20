@@ -246,13 +246,17 @@ namespace entt
                     {
                         val = valType.construct();
                     }
-                    if (strKeys)
+                    bool saved = false;
+                    if constexpr (!std::is_same<cereal::BinaryOutputArchive, Archive>::value)
                     {
-                        auto keyStr = key.cast<const std::string&>();
-                        // TODO: fix this does not compile
-                        // archive(cereal::make_nvp(keyStr, val));
+                        if (strKeys)
+                        {
+                            auto& keyStr = key.cast<const std::string&>();
+                            archive(cereal::make_nvp(keyStr.c_str(), val.as_ref()));
+                            saved = true;
+                        }
                     }
-                    else
+                    if(!saved)
                     {
                         archive(key, val);
                     }
@@ -358,14 +362,18 @@ namespace entt
                 {
                     auto key = keyType.construct();
                     auto val = valType.construct();
-                    if (strKeys)
+                    bool loaded = false;
+                    if constexpr (!std::is_same<cereal::BinaryInputArchive, Archive>::value)
                     {
-                        auto nvp = cereal::make_nvp("", val);
-                        archive(nvp);
-                        key.assign(nvp.name);
-                        val.assign(nvp.value);
+                        if (strKeys)
+                        {
+                            auto nvp = cereal::make_nvp("", val.as_ref());
+                            archive(nvp);
+                            loaded = true;
+                            key.assign(nvp.name);
+                        }
                     }
-                    else
+                    if(!loaded)
                     {
                         archive(key, val);
                     }

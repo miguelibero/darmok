@@ -1,6 +1,6 @@
 #include <darmok/transform.hpp>
 #include <darmok/math.hpp>
-#include <darmok/reflect.hpp>
+#include <darmok/reflect_serialize.hpp>
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -340,6 +340,7 @@ namespace darmok
 
     void Transform::bindMeta() noexcept
     {
+        ReflectionSerializeUtils::metaSerialize<Transform>();
         ReflectionUtils::metaEntityComponent<Transform>("Transform")
             .ctor()
             .data<&Transform::_position, entt::as_ref_t>("position"_hs)

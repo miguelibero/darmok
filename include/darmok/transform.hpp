@@ -4,8 +4,12 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/scene_serialize.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <unordered_set>
 #include <glm/detail/type_quat.hpp>
+#include <cereal/cereal.hpp>
+#include <cereal/types/unordered_set.hpp>
 
 namespace darmok
 {
@@ -65,6 +69,16 @@ namespace darmok
         Transform& setForward(const glm::vec3& v) noexcept;
 
         static void bindMeta() noexcept;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(cereal::make_nvp("position", _position));
+            archive(cereal::make_nvp("rotation", _rotation));
+            archive(cereal::make_nvp("scale", _scale));
+            archive(cereal::make_nvp("parent", _parent));
+            // archive(cereal::make_nvp("children", _children));
+        }
 
     private:
         // should not use PIMPL here since we want consecutive memory

@@ -69,6 +69,13 @@ namespace darmok
 		static entt::meta_type getRefType(const entt::meta_type& type);
 		static entt::meta_type getEntityComponentRefType(const entt::meta_type& type);
 		static void setRef(entt::meta_any& any, const void* val);
+
+		template<typename T>
+		static bool isEntityComponentType() noexcept
+		{
+			return entt::resolve<T>().traits<ReflectionTraits>() == ReflectionTraits::EntityComponent;
+		}
+
 	private:
 
 		static const entt::hashed_string _optionalRefEmptyKey;
