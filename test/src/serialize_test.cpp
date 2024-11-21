@@ -16,11 +16,12 @@ namespace
     Data saveToData(const T& obj)
     {
         Data data;
-        std::streamoff pos = 0;
         DataOutputStream stream(data);
-        cereal::BinaryOutputArchive archive(stream);
-        archive(obj);
-        pos = stream.tellp();
+        {
+            cereal::BinaryOutputArchive archive(stream);
+            save(archive, obj);
+        }
+        auto pos = stream.tellp();
         return data.view(0, pos);
     }
 
@@ -29,7 +30,26 @@ namespace
     {
         DataInputStream stream(data);
         cereal::BinaryInputArchive archive(stream);
-        archive(obj);
+        load(archive, obj);
+    }
+
+    template<typename Archive, typename T>
+    std::string saveToString(const T& obj)
+    {
+        std::stringstream ss;
+        {
+            Archive archive(ss);
+            save(archive, obj);
+        }
+        return ss.str();
+    }
+
+    template<typename Archive, typename T>
+    void loadFromString(const std::string& str, T& obj)
+    {
+        std::stringstream ss(str);
+        Archive archive(ss);
+        load(archive, obj);
     }
 
     struct TestStruct final
@@ -84,7 +104,6 @@ namespace
     }
 }
 
-/*
 TEST_CASE("checking serialization methods for types", "[serialize]")
 {
     using Archive = cereal::BinaryOutputArchive;
@@ -147,7 +166,27 @@ TEST_CASE("serialize unordered_set", "[serialize]")
     REQUIRE(set.size() == 2);
     REQUIRE(*set.begin() == 42);
 }
-*/
+
+TEST_CASE("serialize vector json", "[serialize]")
+{
+    std::vector<int> vec{ 666, 42 };
+    auto any = entt::forward_as_meta(vec);
+    auto str = saveToString<cereal::JSONOutputArchive>(any);
+    vec.clear();
+    loadFromString<cereal::JSONInputArchive>(str, any);
+
+    REQUIRE(vec.size() == 2);
+    REQUIRE(vec[0] == 666);
+    REQUIRE(vec[1] == 42);
+
+    str = saveToString<cereal::XMLOutputArchive>(any);
+    vec.clear();
+    loadFromString<cereal::XMLInputArchive>(str, any);
+
+    REQUIRE(vec.size() == 2);
+    REQUIRE(vec[0] == 666);
+    REQUIRE(vec[1] == 42);
+}
 
 TEST_CASE("serialize map", "[serialize]")
 {
@@ -158,18 +197,9 @@ TEST_CASE("serialize map", "[serialize]")
     };
     auto any = entt::forward_as_meta(map);
 
-    std::stringstream ss;
-    {
-        cereal::JSONOutputArchive archive(ss);
-        save(archive, any);
-    }
+    auto str = saveToString<cereal::JSONOutputArchive>(any);
 
-    map.clear();
-
-    auto str = ss.str();
-    ss.flush();
-    ss.seekg(0, std::ios::beg);
-    auto json = nlohmann::json::parse(ss);
+    auto json = nlohmann::json::parse(str);
     REQUIRE(json.is_array());
     REQUIRE(json.size() == 2);
     REQUIRE(json[0]["key"] == "key1");
@@ -177,11 +207,20 @@ TEST_CASE("serialize map", "[serialize]")
     REQUIRE(json[1]["key"] == "key2");
     REQUIRE(json[1]["value"] == "test2");
 
-    {
-        ss.seekg(0, std::ios::beg);
-        cereal::JSONInputArchive archive(ss);
-        load(archive, any);
-    }
+    map.clear();
+
+    loadFromString<cereal::JSONInputArchive>(str, any);
+
+    REQUIRE(map.size() == 2);
+    REQUIRE(map["key1"] == "test1");
+    REQUIRE(map["key2"] == "test2");
+
+    
+    str = saveToString<cereal::XMLOutputArchive>(any);
+
+    map.clear();
+
+    loadFromString<cereal::XMLInputArchive>(str, any);
 
     REQUIRE(map.size() == 2);
     REQUIRE(map["key1"] == "test1");

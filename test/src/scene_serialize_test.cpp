@@ -129,6 +129,7 @@ TEST_CASE("scene can be loaded", "[scene-serialize]")
     REQUIRE(scene.getComponent<TestComponent>(entity)->value == 666);
 }
 
+
 TEST_CASE("component structs are serialized", "[scene-serialize]")
 {
     Scene scene;

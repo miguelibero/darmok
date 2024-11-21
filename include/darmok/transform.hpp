@@ -78,7 +78,7 @@ namespace darmok
             archive(CEREAL_NVP_("scale", _scale));
             archive(CEREAL_NVP_("parent", _parent));
             // using reflection because std::reference_wrapper does not have default constructor
-            // rchive(CEREAL_NVP_("children", entt::forward_as_meta(_children)));
+            archive(CEREAL_NVP_("children", entt::forward_as_meta(_children)));
         }
 
     private:
