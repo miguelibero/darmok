@@ -34,6 +34,12 @@ namespace darmok
             cereal::PortableBinaryInputArchive
         >;
 
+        using ArithmeticVariant = std::variant<
+            bool, char, char8_t, char16_t, char32_t, wchar_t,
+            short, int, long, long long,
+            float, double, long double
+        >;
+
         static void bind();
 
         template<typename T, std::size_t I = 0>
@@ -85,42 +91,120 @@ namespace darmok
             return false;
         }
 
-        template<class Archive>
-        static bool saveArithmeticType(Archive& archive, const entt::meta_any& v)
-        {
-            return saveType<Archive,
-                bool, char, char8_t, char16_t, char32_t, wchar_t,
-                short, int, long, long long,
-                float, double, long double>(archive, v);
-        }
-
-        template<class Archive, class T, class... Types>
+        template<class Archive, class T>
         static bool saveType(Archive& archive, const entt::meta_any& v)
         {
-            if (doSaveType<Archive, T>(archive, v))
+            if (isType<T>(v))
             {
+                // archive(v.cast<const T&>());
+                save(archive, v.cast<const T&>());
                 return true;
             }
-            return saveType<Archive, Types...>(archive, v);
+            return false;
         }
 
-        template<class Archive>
-        static bool loadArithmeticType(Archive& archive, entt::meta_any& v)
-        {
-            return loadType<Archive,
-                bool, char, char8_t, char16_t, char32_t, wchar_t,
-                short, int, long, long long,
-                float, double, long double>(archive, v);
-        }
-
-        template<class Archive, class T, class... Types>
+        template<class Archive, typename T>
         static bool loadType(Archive& archive, entt::meta_any& v)
         {
-            if (doLoadType<Archive, T>(archive, v))
+            if (isType<T>(v))
             {
+                // archive(v.cast<T&>());
+                load(archive, v.cast<T&>());
                 return true;
             }
-            return loadType<Archive, Types...>(archive, v);
+            return false;
+        }
+
+        template<class Archive, std::size_t Index = 0>
+        static bool saveArithmeticType(Archive& archive, const entt::meta_any& v)
+        {
+            if constexpr (Index < std::variant_size_v<ArithmeticVariant>)
+            {
+                using T = std::variant_alternative_t<Index, ArithmeticVariant>;
+                if (saveType<Archive, T>(archive, v))
+                {
+                    return true;
+                }
+                return saveArithmeticType<Archive, Index + 1>(archive, v);
+            }
+            return false;
+        }
+
+        template<class Archive, std::size_t Index = 0>
+        static bool loadArithmeticType(Archive& archive, entt::meta_any& v)
+        {
+            if constexpr (Index < std::variant_size_v<ArithmeticVariant>)
+            {
+                using T = std::variant_alternative_t<Index, ArithmeticVariant>;
+                if (loadType<Archive, T>(archive, v))
+                {
+                    return true;
+                }
+                return loadArithmeticType<Archive, Index + 1>(archive, v);
+            }
+            return false;
+        }
+
+        template<class Archive, std::size_t Index = 0>
+        static void saveNameValuePair(Archive& archive, const std::string& key, entt::meta_any& val)
+        {
+            if constexpr (Index < std::variant_size_v<ArithmeticVariant>)
+            {
+                using T = std::variant_alternative_t<Index, ArithmeticVariant>;
+                if (doSaveNameValuePair<Archive, T>(archive, key, val))
+                {
+                    return;
+                }
+                return saveNameValuePair<Archive, Index + 1>(archive, key, val);
+            }
+            if (doSaveNameValuePair<Archive, std::string>(archive, key, val))
+            {
+                return;
+            }
+            save(archive, cereal::make_nvp(key, val));
+        }
+
+        template<class Archive, std::size_t KeyIndex = 0>
+        static void saveMapItem(Archive& archive, entt::meta_any& key, entt::meta_any& val)
+        {
+            if constexpr (KeyIndex < std::variant_size_v<ArithmeticVariant>)
+            {
+                using Key = std::variant_alternative_t<KeyIndex, ArithmeticVariant>;
+                if (isType<Key>(key))
+                {
+                    auto keyType = key.cast<const Key&>();
+                    saveMapItem<Archive, Key>(archive, keyType, val);
+                    return;
+                }
+                return saveMapItem<Archive, KeyIndex + 1>(archive, key, val);
+            }
+            if (isType<std::string>(key))
+            {
+                auto keyStr = key.cast<const std::string&>();
+                saveMapItem<Archive, std::string>(archive, keyStr, val);
+                return;
+            }
+            archive(cereal::make_map_item(key, val));
+        }
+
+        template<class Archive, class Key, std::size_t ValIndex = 0>
+        static void saveMapItem(Archive& archive, const Key& key, const entt::meta_any& val)
+        {
+            if constexpr (ValIndex < std::variant_size_v<ArithmeticVariant>)
+            {
+                using Val = std::variant_alternative_t<ValIndex, ArithmeticVariant>;
+                if (doSaveMapItem<Archive, Key, Val>(archive, key, val))
+                {
+                    return;
+                }
+                saveMapItem<Archive, Key, ValIndex + 1>(archive, key, val);
+                return;
+            }
+            if (doSaveMapItem<Archive, Key, std::string>(archive, key, val))
+            {
+                return;
+            }
+            archive(cereal::make_map_item(key, val));
         }
 
         template<class T>
@@ -139,35 +223,23 @@ namespace darmok
 
         static const entt::hashed_string _processKey;
 
-        template<class Archive>
-        static bool saveType(Archive& archive, const entt::meta_any& v)
-        {
-            return false;
-        }
-
-        template<class Archive>
-        static bool loadType(Archive& archive, const entt::meta_any& v)
-        {
-            return false;
-        }
-
         template<class Archive, class T>
-        static bool doSaveType(Archive& archive, const entt::meta_any& v)
+        static bool doSaveNameValuePair(Archive& archive, const std::string& key, const entt::meta_any& val)
         {
-            if (isType<T>(v))
+            if (isType<T>(val.type()))
             {
-                archive(v.cast<const T&>());
+                save(archive, cereal::make_nvp(key, val.cast<const T&>()));
                 return true;
             }
             return false;
         }
 
-        template<class Archive, typename T>
-        static bool doLoadType(Archive& archive, entt::meta_any& v)
+        template<class Archive, class Key, class Val>
+        static bool doSaveMapItem(Archive& archive, const Key& key, const entt::meta_any& val)
         {
-            if (isType<T>(v))
+            if (isType<Val>(val.type()))
             {
-                archive(v.cast<T&>());
+                archive(cereal::make_map_item(key, val.cast<const Val&>()));
                 return true;
             }
             return false;
@@ -190,16 +262,14 @@ namespace darmok
 namespace entt
 {
     template<class Archive>
-    void save(Archive& archive, const entt::meta_type& v)
+    entt::id_type save_minimal(Archive& archive, const entt::meta_type& v)
     {
-        archive(v.id());
+        return v.id();
     }
 
     template<class Archive>
-    void load(Archive& archive, entt::meta_type& v)
+    void load_minimal(Archive& archive, entt::meta_type& v, const entt::id_type& id)
     {
-        entt::id_type id = 0;
-        archive(id);
         v = entt::resolve(id);
     }
 
@@ -260,13 +330,11 @@ namespace entt
         }
 
         auto typeData = type.data();
-        // TODO: maybe convert to CEREAL_NVP with hex keys
         size_t size = std::distance(typeData.begin(), typeData.end());
-        archive(size);
+        archive(cereal::make_size_tag(size));
         for (auto [id, data] : typeData)
         {
-            archive(id);
-            save(archive, v.get(id));
+            darmok::ReflectionSerializeUtils::saveMapItem(archive, id, v.get(id));
         }
     }
 
@@ -327,7 +395,7 @@ namespace entt
         }
 
         size_t size;
-        archive(size);
+        archive(cereal::make_size_tag(size));
         for (size_t i = 0; i < size; ++i)
         {
             entt::id_type id;
@@ -378,7 +446,7 @@ namespace entt
             {
                 val = valType.construct();
             }
-            archive(cereal::make_map_item(key, val));
+            darmok::ReflectionSerializeUtils::saveMapItem(archive, key, val);
         }
     }
 
@@ -394,7 +462,6 @@ namespace entt
         v.reserve(size);
         auto keyType = v.key_type();
         auto valType = v.value_type();
-        bool strKeys = darmok::ReflectionSerializeUtils::isType<std::string>(v.key_type());
         for (size_t i = 0; i < size; ++i)
         {
             auto key = keyType.construct();
