@@ -65,6 +65,7 @@ option(DARMOK_BUILD_ASSIMP "build darmok with assimp support" OFF)
 option(DARMOK_BUILD_OZZ "build darmok with ozz animation support" OFF)
 option(DARMOK_BUILD_JOLT "build darmok with jolt physics support" OFF)
 option(DARMOK_BUILD_MINIAUDIO "build darmok with miniaudio support" OFF)
+option(DARMOK_BUILD_EDITOR "build the darmok editor" OFF)
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -529,6 +530,12 @@ darmok_copy_dynamic_libs(${ASSETC_NAME})
 if(DARMOK_BUILD_SAMPLES)
   list(APPEND VCPKG_MANIFEST_FEATURES "samples")
   add_subdirectory(samples)
+endif()
+
+# editor
+if(DARMOK_BUILD_EDITOR)
+  list(APPEND VCPKG_MANIFEST_FEATURES "editor")
+  add_subdirectory(editor)
 endif()
 
 # testing

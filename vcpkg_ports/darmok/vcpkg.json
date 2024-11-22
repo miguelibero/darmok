@@ -45,6 +45,10 @@
     "samples": {
       "description": "Build samples"
     },
+    "editor": {
+      "description": "Build editor",
+      "dependencies": [ "wxwidgets" ]
+    },
     "tests": {
       "description": "Build Tests",
       "dependencies": [ "catch2" ]

@@ -76,7 +76,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * entity component scene using entt
     * transform, camera
     * type filtering
-    * serialization
+    * serialization using entt::meta and cereal
     * lights
     * free look
 * sprites and spritesheets

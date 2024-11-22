@@ -49,6 +49,7 @@
     "miniaudio",
     "taskflow",
     "tiny-process-library",
-    "mikktspace"
+    "mikktspace",
+    "wxwidgets"
   ]
 }

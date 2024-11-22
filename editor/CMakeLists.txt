@@ -1,0 +1,43 @@
+
+
+set(APP darmok-editor)
+set(EDITOR_BASE_DIR ${PROJECT_SOURCE_DIR}/editor)
+set(EDITOR_SRC_DIR ${EDITOR_BASE_DIR}/src)
+set(EDITOR_RESOURCES_DIR ${EDITOR_BASE_DIR}/resources)
+set(EDITOR_INCLUDE_BASE_DIR ${EDITOR_BASE_DIR}/include)
+set(EDITOR_LIB_BASE_DIR ${EDITOR_BASE_DIR}/lib)
+set(EDITOR_INCLUDE_DIR ${INCLUDE_BASE_DIR}/darmok)
+
+set(EDITOR_SOURCES
+  main.cpp
+  app.cpp
+)
+
+set(EDITOR_HEADERS
+  app.hpp
+)
+
+set(EDITOR_RESOURCES
+)
+
+list(TRANSFORM EDITOR_SOURCES PREPEND "${EDITOR_SRC_DIR}/")
+list(TRANSFORM EDITOR_HEADERS PREPEND "${EDITOR_INCLUDE_DIR}/")
+list(TRANSFORM EDITOR_RESOURCES PREPEND "${EDITOR_RESOURCES_DIR}/")
+
+find_package(wxWidgets REQUIRED COMPONENTS net core base)
+if(wxWidgets_USE_FILE)
+    include(${wxWidgets_USE_FILE})
+endif()
+
+add_executable(${APP} ${EDITOR_SOURCES})
+target_link_libraries(${APP} darmok ${wxWidgets_LIBRARIES})
+
+set(EDITOR_RESOURCES_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/wxwidgets_resources.cpp)
+add_custom_command(
+  OUTPUT ${EDITOR_RESOURCES_OUTPUT}
+  COMMAND ${wxrc} -c -o ${EDITOR_RESOURCES_OUTPUT} ${EDITOR_RESOURCES}
+  DEPENDS ${EDITOR_RESOURCES}
+  COMMENT "Compiling editor XRC resources"
+)
+
+target_sources(${APP} PRIVATE ${EDITOR_RESOURCES_OUTPUT})
