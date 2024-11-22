@@ -183,10 +183,9 @@ namespace darmok
         }
 
         template<typename T>
-		Entity getEntity(const T& component) noexcept
+		Entity getEntity(const T& component) const noexcept
 		{
-			auto& storage = getRegistry().storage<T>();
-			return entt::to_entity(storage, component);
+            return getEntity(entt::type_hash<T>::value(), &component);
 		}
 
         template<typename T>

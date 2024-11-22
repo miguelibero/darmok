@@ -61,31 +61,51 @@ namespace
                 .data<&TestStructComponent::value, entt::as_ref_t>("value"_hs);
         }
     };
-    
-    void saveAndLoadScene(Scene& scene)
-    {
-        Data data;
 
+    void bindMeta()
+    {
         TestComponent::bindMeta();
         TestRefComponent::bindMeta();
         TestStructComponent::bindMeta();
         ReflectionUtils::bind();
+    }
 
-        std::streamoff pos = 0;
+    Data saveToData(const Scene& scene)
+    {
+        Data data;
+        DataOutputStream stream(data);
         {
-            DataOutputStream stream(data);
-            cereal::UserDataAdapter<Scene, cereal::BinaryOutputArchive> archive(scene, stream);
-            archive(scene);
-            pos = stream.tellp();
+            cereal::BinaryOutputArchive archive(stream);
+            save(archive, scene);
         }
+        auto pos = stream.tellp();
+        return data.view(0, pos);
+    }
 
-        scene.destroyEntitiesImmediate();
+    void loadFromData(const Data& data, Scene& scene)
+    {
+        DataInputStream stream(data);
+        cereal::BinaryInputArchive archive(stream);
+        load(archive, scene);
+    }
 
+    template<typename Archive>
+    std::string saveToString(const Scene& scene)
+    {
+        std::stringstream ss;
         {
-            DataInputStream stream(data.view(0, pos));
-            cereal::UserDataAdapter<Scene, cereal::BinaryInputArchive> archive(scene, stream);
-            archive(scene);
+            Archive archive(ss);
+            save(archive, scene);
         }
+        return ss.str();
+    }
+
+    template<typename Archive>
+    void loadFromString(const std::string& str, Scene& scene)
+    {
+        std::stringstream ss(str);
+        Archive archive(ss);
+        load(archive, scene);
     }
 }
 
@@ -98,18 +118,18 @@ TEST_CASE( "scene can be serialized", "[scene-serialize]" )
     scene.addComponent<TestComponent>(entity, 666);
 
     TestComponent::bindMeta();
-    std::stringstream ss;
-    {
-        cereal::JSONOutputArchive archive(ss);
-        archive(scene);
-    }
 
-    ss.flush();
-    ss.seekg(0, std::ios::beg);
-    auto json = nlohmann::json::parse(ss).front();
+    auto str = saveToString<cereal::JSONOutputArchive>(scene);
+    auto json = nlohmann::json::parse(str);
 
     REQUIRE(json.is_object());
-    REQUIRE(json.size() == 11);
+    REQUIRE(json.size() == 4);
+    REQUIRE(json["entities"].size() == 2);
+    REQUIRE(json["freeList"] == 2);
+    REQUIRE(json["components"].size() == 1);
+    REQUIRE(json["components"][0]["value"].size() == 2);
+    REQUIRE(json["components"][0]["value"][0][0]["value"] == 42);
+    REQUIRE(json["components"][0]["value"][1][0]["value"] == 666);
 }
 
 TEST_CASE("scene can be loaded", "[scene-serialize]")
@@ -120,7 +140,9 @@ TEST_CASE("scene can be loaded", "[scene-serialize]")
     entity = scene.createEntity();
     scene.addComponent<TestComponent>(entity, 666);
 
-    saveAndLoadScene(scene);
+    auto data = saveToData(scene);
+    scene.destroyEntitiesImmediate();
+    loadFromData(data, scene);
 
     auto view = scene.getEntities();
     std::vector<Entity> entities(view.begin(), view.end());
@@ -138,7 +160,11 @@ TEST_CASE("component structs are serialized", "[scene-serialize]")
     entity = scene.createEntity();
     scene.addComponent<TestStructComponent>(entity, 666, "lolo");
 
-    saveAndLoadScene(scene);
+    TestStructComponent::bindMeta();
+
+    auto data = saveToData(scene);
+    scene.destroyEntitiesImmediate();
+    loadFromData(data, scene);
 
     auto view = scene.getEntities();
     std::vector<Entity> entities(view.begin(), view.end());
@@ -156,7 +182,12 @@ TEST_CASE("component references are serialized", "[scene-serialize]")
     auto& comp = scene.addComponent<TestComponent>(entity, 42);
     auto& refComp1 = scene.addComponent<TestRefComponent>(entity, comp);
 
-    saveAndLoadScene(scene);
+    TestComponent::bindMeta();
+    TestRefComponent::bindMeta();
+
+    auto data = saveToData(scene);
+    scene.destroyEntitiesImmediate();
+    loadFromData(data, scene);
 
     auto refComp = scene.getComponent<TestRefComponent>(entity);
     REQUIRE(refComp->comp->value == 42);
@@ -176,7 +207,11 @@ TEST_CASE("transform hierarchy is serialized", "[scene-serialize]")
     child2.setParent(parent);
     child2.setPosition(glm::vec3(42, 0, 666));
 
-    saveAndLoadScene(scene);
+    Transform::bindMeta();
+
+    auto data = saveToData(scene);
+    scene.destroyEntitiesImmediate();
+    loadFromData(data, scene);
 
     auto newChild2 = scene.getComponent<Transform>(entity);
     REQUIRE(newChild2->getPosition() == glm::vec3(42, 0, 666));

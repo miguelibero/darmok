@@ -56,11 +56,11 @@ namespace darmok
 
 			return entt::meta<T>().type(entt::hashed_string{ name })
 				.traits(ReflectionTraits::EntityComponent)
-				.func<&doAddEntityComponent<T>, entt::as_ref_t>(_addEntityComponentKey)
+				.func<&doGetEntityComponent<T>, entt::as_ref_t>(_getEntityComponentKey)
 				.func<&doGetEntityComponentStorage<T>, entt::as_ref_t>(_getEntityComponentStorageKey);
 		}
 
-		static entt::meta_any addEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type);
+		static entt::meta_any getEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type);
 		static EntityRegistry::common_type& getEntityComponentStorage(EntityRegistry& registry, const entt::meta_type& type);
 		
 		static const void* getRefPtr(const entt::meta_any& any);
@@ -86,7 +86,7 @@ namespace darmok
 		static const entt::hashed_string _referenceWrapperGetKey;
 		static const entt::hashed_string _referenceWrapperSetKey;
 
-		static const entt::hashed_string _addEntityComponentKey;
+		static const entt::hashed_string _getEntityComponentKey;
 		static const entt::hashed_string _getEntityComponentStorageKey;
 
 		template<typename T>
@@ -96,14 +96,9 @@ namespace darmok
 		}
 
 		template<typename T>
-		static T& doAddEntityComponent(EntityRegistry& registry, Entity entity)
+		static T& doGetEntityComponent(EntityRegistry& registry, Entity entity)
 		{
-			auto& entities = registry.storage<Entity>();
-			if (!entities.contains(entity))
-			{
-				entities.emplace(entity);
-			}
-			return registry.storage<T>().emplace(entity);
+			return registry.get_or_emplace<T>(entity);
 		}
 
 		template<typename T>

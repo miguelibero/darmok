@@ -8,16 +8,51 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/utility.hpp>
-
-#include <cereal/archives/adapters.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/xml.hpp>
 #include <variant>
+#include <stack>
+#include <functional>
 
 namespace darmok
 {
+    // using this instead of cereal::UserDataAdapter
+    // because it allows us to maintain the same archive during the serialization
+    template<typename T>
+    struct SerializeContextStack final
+    {
+        static void push(T& ctx)
+        {
+            _stack.emplace(ctx);
+        }
+
+        static T& get()
+        {
+            return _stack.top().get();
+        }
+
+        static OptionalRef<T> tryGet()
+        {
+            if (_stack.empty())
+            {
+                return nullptr;
+            }
+            return get();
+        }
+
+        static void pop()
+        {
+            _stack.pop();
+        }
+    private:
+        static thread_local std::stack<std::reference_wrapper<T>> _stack;
+    };
+
+    template<typename T>
+    thread_local std::stack<std::reference_wrapper<T>> SerializeContextStack<T>::_stack;
+
     struct ReflectionSerializeUtils final
     {
         using OutputArchiveVariant = std::variant<
@@ -96,8 +131,8 @@ namespace darmok
         {
             if (isType<T>(v))
             {
-                // archive(v.cast<const T&>());
-                save(archive, v.cast<const T&>());
+                archive(v.cast<const T&>());
+                // save(archive, v.cast<const T&>());
                 return true;
             }
             return false;
@@ -108,8 +143,8 @@ namespace darmok
         {
             if (isType<T>(v))
             {
-                // archive(v.cast<T&>());
-                load(archive, v.cast<T&>());
+                archive(v.cast<T&>());
+                // load(archive, v.cast<T&>());
                 return true;
             }
             return false;
@@ -251,15 +286,18 @@ namespace entt
             return;
         }
 
+
         if (auto refType = darmok::ReflectionUtils::getEntityComponentRefType(type))
         {
             darmok::Entity entity = entt::null;
-            auto ptr = darmok::ReflectionUtils::getRefPtr(v);
-            if (ptr != nullptr)
+            if (auto scene = darmok::SerializeContextStack<const darmok::Scene>::tryGet())
             {
-                auto& scene = cereal::get_user_data<darmok::Scene>(archive);
-                auto typeHash = refType.info().hash();
-                entity = scene.getEntity(typeHash, ptr);
+                auto ptr = darmok::ReflectionUtils::getRefPtr(v);
+                if (ptr != nullptr)
+                {
+                    auto typeHash = refType.info().hash();
+                    entity = scene->getEntity(typeHash, ptr);
+                }
             }
             archive(static_cast<ENTT_ID_TYPE>(entity));
             return;
@@ -267,12 +305,23 @@ namespace entt
 
         auto typeData = type.data();
         size_t size = std::distance(typeData.begin(), typeData.end());
-        archive(size);
+        archive(cereal::make_size_tag(size));
         for (auto [id, data] : typeData)
         {
-            auto any = v.get(id);
-            archive(id, any);
+            archive(cereal::make_map_item(id, v.get(id)));
         }
+    }
+
+    struct CerealLoadMetaMapItem final
+    {
+        entt::meta_any& any;
+        entt::id_type id = 0;
+    };
+
+    template<class Archive>
+    void load(Archive& archive, CerealLoadMetaMapItem& v)
+    {
+        archive(v.any.get(v.id));
     }
 
     template<class Archive>
@@ -322,23 +371,23 @@ namespace entt
             archive(entity);
             if (entity != entt::null)
             {
-                auto& scene = cereal::get_user_data<darmok::Scene>(archive);
-                if (auto ptr = scene.getComponent(entity, refType.info().hash()))
+                if (auto scene = darmok::SerializeContextStack<darmok::Scene>::tryGet())
                 {
-                    darmok::ReflectionUtils::setRef(v, ptr);
+                    if (auto ptr = scene->getComponent(entity, refType.info().hash()))
+                    {
+                        darmok::ReflectionUtils::setRef(v, ptr);
+                    }
                 }
             }
             return;
         }
 
         size_t size;
-        archive(size);
+        archive(cereal::make_size_tag(size));
         for (size_t i = 0; i < size; ++i)
         {
-            entt::id_type id = 0;
-            archive(id);
-            auto any = v.get(id);
-            archive(any);
+            CerealLoadMetaMapItem item{ v };
+            archive(cereal::make_map_item(item.id, item));
         }
     }
 
@@ -412,7 +461,6 @@ namespace entt
     {
         if (darmok::ReflectionSerializeUtils::isMinimalType(any))
         {
-            ar.writeName();
             return;
         }
         ar.startNode();

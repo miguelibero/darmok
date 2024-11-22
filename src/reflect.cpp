@@ -5,7 +5,7 @@
 
 namespace darmok
 {
-	const entt::hashed_string ReflectionUtils::_addEntityComponentKey = "addEntityComponent";
+	const entt::hashed_string ReflectionUtils::_getEntityComponentKey = "getEntityComponent";
 	const entt::hashed_string ReflectionUtils::_getEntityComponentStorageKey = "getEntityComponentStorage";
 
 	const entt::hashed_string ReflectionUtils::_optionalRefEmptyKey = "empty";
@@ -111,9 +111,9 @@ namespace darmok
 		return refType;
 	}
 
-	entt::meta_any ReflectionUtils::addEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type)
+	entt::meta_any ReflectionUtils::getEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type)
 	{
-		return type.invoke(_addEntityComponentKey, {}, entt::forward_as_meta(registry), entity);
+		return type.invoke(_getEntityComponentKey, {}, entt::forward_as_meta(registry), entity);
 	}
 
 	EntityRegistry::common_type& ReflectionUtils::getEntityComponentStorage(EntityRegistry& registry, const entt::meta_type& type)
