@@ -1,18 +1,21 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <vector>
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/asset_core.hpp>
-#include <bx/bx.h>
 #include <darmok/glm.hpp>
-#include <nlohmann/json.hpp>
 #include <darmok/easing.hpp>
+
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include <bx/bx.h>
+#include <nlohmann/json.hpp>
+#include <cereal/cereal.hpp>
 
 #ifndef DARMOK_SKELETON_MAX_BONES
 #define DARMOK_SKELETON_MAX_BONES 64
@@ -79,7 +82,11 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(animation, blendPosition, speed);
+            archive(
+                CEREAL_NVP(animation),
+                CEREAL_NVP(blendPosition),
+                CEREAL_NVP(speed)
+            );
         }
     };
 
@@ -100,7 +107,10 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(easing, duration);
+            archive(
+                CEREAL_NVP(easing),
+                CEREAL_NVP(duration)
+            );
         }
     };
 
@@ -124,7 +134,13 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(name, animations, blendType, threshold, tween);
+            archive(
+                CEREAL_NVP(name),
+                CEREAL_NVP(animations),
+                CEREAL_NVP(blendType),
+                CEREAL_NVP(threshold),
+                CEREAL_NVP(tween)
+            );
         }
     };
 
@@ -139,7 +155,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(tween, offset);
+            archive(CEREAL_NVP(tween), CEREAL_NVP(offset));
         }
     };
 
@@ -199,7 +215,11 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(_states, _transitions, _animationPattern);
+            archive(
+                CEREAL_NVP_("states", _states),
+                CEREAL_NVP_("transitions", _transitions),
+                CEREAL_NVP_("animationPattern", _animationPattern)
+            );
         }
 
     private:
@@ -391,6 +411,6 @@ namespace std
     template<class Archive>
     static void serialize(Archive& archive, darmok::SkeletalAnimatorConfig::TransitionKey& key)
     {
-        archive(key.first, key.second);
+        archive(cereal::make_map_item(key.first, key.second));
     }
 }

@@ -5,10 +5,11 @@
 #include <darmok/texture_fwd.hpp>
 #include <darmok/image.hpp>
 #include <darmok/color.hpp>
+#include <darmok/glm.hpp>
 
 #include <bgfx/bgfx.h>
-#include <darmok/glm.hpp>
 #include <bx/bx.h>
+#include <cereal/cereal.hpp>
 
 #include <string>
 #include <memory>
@@ -27,7 +28,14 @@ namespace darmok
 		template<class Archive>
 		void serialize(Archive& archive)
 		{
-			archive(size, format, type, depth, mips, layers);
+			archive(
+				CEREAL_NVP(size),
+				CEREAL_NVP(format),
+				CEREAL_NVP(type),
+				CEREAL_NVP(depth),
+				CEREAL_NVP(mips),
+				CEREAL_NVP(layers)
+			);
 		}
 
 		[[nodiscard]] static const TextureConfig& getEmpty() noexcept;

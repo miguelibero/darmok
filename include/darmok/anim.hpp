@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
+#include <cereal/cereal.hpp>
 #include <vector>
 #include <memory>
 
@@ -18,7 +19,10 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(mesh, duration);
+            archive(
+                CEREAL_NVP(mesh),
+                CEREAL_NVP(duration)
+            );
         }
     };
 
@@ -39,7 +43,11 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(_frames, _currentFrame, _timeSinceLastFrame);
+            archive(
+                CEREAL_NVP_("frames", _frames),
+                CEREAL_NVP_("currentFrame", _currentFrame),
+                CEREAL_NVP_("timeSinceLastFrame", _timeSinceLastFrame)
+            );
         }
 
     private:

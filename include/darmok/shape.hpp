@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <cereal/cereal.hpp>
 
 namespace darmok
 {
@@ -33,7 +34,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(size, origin);
+            archive(CEREAL_NVP(size), CEREAL_NVP(origin));
         }
     };
 
@@ -62,7 +63,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(size, origin);
+            archive(CEREAL_NVP(size), CEREAL_NVP(origin));
         }
     };
 
@@ -90,7 +91,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(vertices);
+            archive(CEREAL_NVP(vertices));
         }
     };
 
@@ -112,7 +113,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(coordinates);
+            archive(CEREAL_NVP(coordinates));
         }
     };
 
@@ -135,7 +136,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(triangles, origin);
+            archive(CEREAL_NVP(triangles), CEREAL_NVP(origin));
         }
     };
 
@@ -159,7 +160,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(radius, origin);
+            archive(CEREAL_NVP(radius), CEREAL_NVP(origin));
         }
     };
 
@@ -195,7 +196,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(normal, distance);
+            archive(CEREAL_NVP(normal), CEREAL_NVP(distance));
         }
     };
 
@@ -218,7 +219,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(cylinderHeight, radius, origin);
+            archive(CEREAL_NVP(cylinderHeight), CEREAL_NVP(radius), CEREAL_NVP(origin));
         }
     };
 
@@ -235,7 +236,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(position, normal);
+            archive(CEREAL_NVP(position), CEREAL_NVP(normal));
         }
     };
 
@@ -252,7 +253,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(position, distance);
+            archive(CEREAL_NVP(position), CEREAL_NVP(distance));
         }
     };
 
@@ -292,7 +293,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(direction, origin);
+            archive(CEREAL_NVP(direction), CEREAL_NVP(origin));
         }
     };
 
@@ -322,7 +323,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(points);
+            archive(CEREAL_NVP(points));
         }
     };
 
@@ -439,7 +440,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(min, max);
+            archive(CEREAL_NVP(min), CEREAL_NVP(max));
         }
     };
 }

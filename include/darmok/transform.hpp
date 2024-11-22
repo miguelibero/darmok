@@ -73,12 +73,14 @@ namespace darmok
         template<typename Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP_("position", _position));
-            archive(CEREAL_NVP_("rotation", _rotation));
-            archive(CEREAL_NVP_("scale", _scale));
-            archive(CEREAL_NVP_("parent", _parent));
-            // using reflection because std::reference_wrapper does not have default constructor
-            archive(CEREAL_NVP_("children", entt::forward_as_meta(_children)));
+            archive(
+                CEREAL_NVP_("position", _position),
+                CEREAL_NVP_("rotation", _rotation),
+                CEREAL_NVP_("scale", _scale),
+                CEREAL_NVP_("parent", _parent),
+                // using reflection because std::reference_wrapper does not have default constructor
+                CEREAL_NVP_("children", entt::forward_as_meta(_children))
+            );
         }
 
     private:

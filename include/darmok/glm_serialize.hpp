@@ -10,8 +10,8 @@ namespace glm
 	static void serialize(Archive& archive, glm::vec<2, T, Q>& vec)
 	{
 		archive(
-			cereal::make_nvp("x", vec.x)
-			, cereal::make_nvp("y", vec.y)
+			CEREAL_NVP_("x", vec.x)
+			, CEREAL_NVP_("y", vec.y)
 		);
 	}
 
@@ -19,9 +19,9 @@ namespace glm
 	static void serialize(Archive& archive, glm::vec<3, T, Q>& vec)
 	{
 		archive(
-			cereal::make_nvp("x", vec.x)
-			, cereal::make_nvp("y", vec.y)
-			, cereal::make_nvp("z", vec.z)
+			CEREAL_NVP_("x", vec.x)
+			, CEREAL_NVP_("y", vec.y)
+			, CEREAL_NVP_("z", vec.z)
 		);
 	}
 
@@ -29,10 +29,10 @@ namespace glm
 	static void serialize(Archive& archive, glm::vec<4, T, Q>& vec)
 	{
 		archive(
-			cereal::make_nvp("x", vec.x)
-			, cereal::make_nvp("y", vec.y)
-			, cereal::make_nvp("z", vec.z)
-			, cereal::make_nvp("w", vec.w)
+			CEREAL_NVP_("x", vec.x)
+			, CEREAL_NVP_("y", vec.y)
+			, CEREAL_NVP_("z", vec.z)
+			, CEREAL_NVP_("w", vec.w)
 		);
 	}
 
@@ -40,10 +40,10 @@ namespace glm
 	static void serialize(Archive& archive, glm::qua<T, Q>& quat)
 	{
 		archive(
-			cereal::make_nvp("x", quat.x)
-			, cereal::make_nvp("y", quat.y)
-			, cereal::make_nvp("z", quat.z)
-			, cereal::make_nvp("w", quat.w)
+			CEREAL_NVP_("x", quat.x)
+			, CEREAL_NVP_("y", quat.y)
+			, CEREAL_NVP_("z", quat.z)
+			, CEREAL_NVP_("w", quat.w)
 		);
 	}
 

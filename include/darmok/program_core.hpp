@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <string>
 #include <nlohmann/json.hpp>
+#include <cereal/cereal.hpp>
 
 namespace darmok
 {
@@ -35,7 +36,10 @@ namespace darmok
 		template<class Archive>
 		void serialize(Archive& archive)
 		{
-			archive(vertexShaders, fragmentShaders);
+			archive(
+				CEREAL_NVP(vertexShaders),
+				CEREAL_NVP(fragmentShaders)
+			);
 		}
 	};
 	
@@ -72,7 +76,11 @@ namespace darmok
 		template<class Archive>
 		void serialize(Archive& archive)
 		{
-			archive(name, profiles, vertexLayout);
+			archive(
+				CEREAL_NVP(name),
+				CEREAL_NVP(profiles),
+				CEREAL_NVP(vertexLayout)
+			);
 		}
 
 		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>>;

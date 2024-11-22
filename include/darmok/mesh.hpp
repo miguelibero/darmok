@@ -11,9 +11,10 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/vertex_fwd.hpp>
 #include <darmok/mesh_fwd.hpp>
+#include <darmok/glm.hpp>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
-#include <darmok/glm.hpp>
+#include <cereal/cereal.hpp>
 
 namespace darmok
 {
@@ -24,7 +25,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(index32);
+            archive(CEREAL_NVP_("index32", index32));
         }
 
         uint16_t getFlags() const noexcept;

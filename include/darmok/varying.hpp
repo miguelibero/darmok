@@ -2,14 +2,17 @@
 
 #include <darmok/export.h>
 #include <darmok/asset_core.hpp>
-#include <bgfx/bgfx.h>
-#include <nlohmann/json.hpp>
+
 #include <string>
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
 #include <vector>
+
+#include <bgfx/bgfx.h>
+#include <nlohmann/json.hpp>
+#include <cereal/cereal.hpp>
 
 namespace darmok
 {
@@ -66,7 +69,13 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(attrib, type, num, normalize, asInt);
+            archive(
+                CEREAL_NVP(attrib),
+                CEREAL_NVP(type),
+                CEREAL_NVP(num),
+                CEREAL_NVP(normalize),
+                CEREAL_NVP(asInt)
+            );
         }
     };
 
@@ -86,7 +95,11 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(attrib, num, defaultValue);
+            archive(
+                CEREAL_NVP(attrib),
+                CEREAL_NVP(num),
+                CEREAL_NVP(defaultValue)
+            );
         }
     };
 
@@ -121,7 +134,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(_attributes);
+            archive(CEREAL_NVP_("attributes", _attributes));
         }
     private:
         std::vector<Attribute> _attributes;
@@ -151,7 +164,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(_attributes);
+            archive(CEREAL_NVP_("attributes", _attributes));
         }
     private:
         std::vector<Attribute> _attributes;
@@ -171,7 +184,10 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(vertex, fragment);
+            archive(
+                CEREAL_NVP(vertex),
+                CEREAL_NVP(fragment)
+            );
         }
 
         void read(const std::filesystem::path& path);
@@ -200,10 +216,10 @@ namespace bgfx
     void serialize(Archive& archive, VertexLayout& layout)
     {
         archive(
-            layout.m_hash,
-            layout.m_stride,
-            layout.m_offset,
-            layout.m_attributes
+            CEREAL_NVP_("hash", layout.m_hash),
+            CEREAL_NVP_("stride", layout.m_stride),
+            CEREAL_NVP_("offset", layout.m_offset),
+            CEREAL_NVP_("attributes", layout.m_attributes)
         );
     }
 }

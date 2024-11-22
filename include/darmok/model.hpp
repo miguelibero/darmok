@@ -1,14 +1,6 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <memory>
-#include <string_view>
-#include <vector>
-#include <variant>
-#include <optional>
-#include <unordered_map>
-#include <unordered_set>
-#include <bx/bx.h>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
@@ -21,6 +13,17 @@
 #include <darmok/program_fwd.hpp>
 #include <darmok/shape.hpp>
 
+#include <memory>
+#include <string_view>
+#include <vector>
+#include <variant>
+#include <optional>
+#include <unordered_map>
+#include <unordered_set>
+
+#include <bx/bx.h>
+#include <cereal/cereal.hpp>
+
 namespace darmok
 {
     struct DARMOK_EXPORT ModelPointLight final
@@ -32,7 +35,11 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(intensity, color, range);
+            archive(
+                CEREAL_NVP(intensity),
+                CEREAL_NVP(color),
+                CEREAL_NVP(range)
+            );
         }
     };
 
@@ -47,7 +54,13 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(intensity, color, range, coneAngle, innerConeAngle);
+            archive(
+                CEREAL_NVP(intensity),
+                CEREAL_NVP(color),
+                CEREAL_NVP(range),
+                CEREAL_NVP(coneAngle),
+                CEREAL_NVP(innerConeAngle)
+            );
         }
     };
 
@@ -60,7 +73,11 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(intensity, color, direction);
+            archive(
+                CEREAL_NVP(intensity),
+                CEREAL_NVP(color),
+                CEREAL_NVP(direction)
+            );
         }
     };
 
@@ -72,7 +89,10 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(intensity, color);
+            archive(
+                CEREAL_NVP(intensity),
+                CEREAL_NVP(color)
+            );
         }
     };
 
@@ -83,7 +103,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(projection);
+            archive(CEREAL_NVP(projection));
         }
     };
 
@@ -96,7 +116,11 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(data, name, config);
+            archive(
+                CEREAL_NVP(data),
+                CEREAL_NVP(name),
+                CEREAL_NVP(config)
+            );
         }
     };
 
@@ -108,7 +132,10 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(image, samplingMode);
+            archive(
+                CEREAL_NVP(image),
+                CEREAL_NVP(samplingMode)
+            );
         }
     };
 
@@ -139,21 +166,21 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(
-                program,
-                standardProgram,
-                programDefines,
-                primitiveType,
-                textures,
-                baseColor,
-                specularColor,
-                shininess,
-                metallicFactor,
-                roughnessFactor,
-                normalScale,
-                occlusionStrength,
-                emissiveColor,
-                twoSided,
-                opacityType
+                CEREAL_NVP(program),
+                CEREAL_NVP(standardProgram),
+                CEREAL_NVP(programDefines),
+                CEREAL_NVP(primitiveType),
+                CEREAL_NVP(textures),
+                CEREAL_NVP(baseColor),
+                CEREAL_NVP(specularColor),
+                CEREAL_NVP(shininess),
+                CEREAL_NVP(metallicFactor),
+                CEREAL_NVP(roughnessFactor),
+                CEREAL_NVP(normalScale),
+                CEREAL_NVP(occlusionStrength),
+                CEREAL_NVP(emissiveColor),
+                CEREAL_NVP(twoSided),
+                CEREAL_NVP(opacityType)
             );
         }
 
@@ -168,7 +195,10 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(name, inverseBindPose);
+            archive(
+                CEREAL_NVP(name),
+                CEREAL_NVP(inverseBindPose)
+            );
         }
     };
 
@@ -184,7 +214,14 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(vertexData, indexData, vertexLayout, config, boundingBox, joints);
+            archive(
+                CEREAL_NVP(vertexData),
+                CEREAL_NVP(indexData),
+                CEREAL_NVP(vertexLayout),
+                CEREAL_NVP(config),
+                CEREAL_NVP(boundingBox),
+                CEREAL_NVP(joints)
+            );
         }
 
         std::string toString() const noexcept;
@@ -199,7 +236,10 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(mesh, material);
+            archive(
+                CEREAL_NVP(mesh),
+                CEREAL_NVP(material)
+            );
         }
 
         std::string toString() const noexcept;
@@ -224,14 +264,15 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(
-                name,
-                transform,
-                camera,
-                pointLight,
-                ambientLight,
-                renderables,
-                children,
-                tags);
+                CEREAL_NVP(name),
+                CEREAL_NVP(transform),
+                CEREAL_NVP(camera),
+                CEREAL_NVP(pointLight),
+                CEREAL_NVP(ambientLight),
+                CEREAL_NVP(renderables),
+                CEREAL_NVP(children),
+                CEREAL_NVP(tags)
+            );
         }
 
         std::string toString() const noexcept;
@@ -244,7 +285,7 @@ namespace darmok
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(rootNode);
+            archive(CEREAL_NVP(rootNode));
         }
 
         std::string toString() const noexcept;
