@@ -3,7 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/scene_fwd.hpp>
+#include <darmok/scene.hpp>
 #include <darmok/math.hpp>
 #include <darmok/utils.hpp>
 

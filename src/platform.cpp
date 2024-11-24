@@ -209,6 +209,17 @@ namespace darmok
 		win.getImpl().setCursorMode(_mode);
 	}
 
+	WindowTitleEvent::WindowTitleEvent(const std::string& title) noexcept
+		: PlatformEvent(Type::WindowCursorMode)
+		, _title(title)
+	{
+	}
+
+	void WindowTitleEvent::process(Window& win) noexcept
+	{
+		win.getImpl().setTitle(_title);
+	}
+
 	void PlatformEvent::process(PlatformEvent& ev, Input& input, Window& window) noexcept
 	{
 		switch (ev._type)
@@ -254,6 +265,9 @@ namespace darmok
 			break;
 		case PlatformEvent::Type::WindowCursorMode:
 			static_cast<WindowCursorModeEvent&>(ev).process(window);
+			break;
+		case PlatformEvent::Type::WindowTitle:
+			static_cast<WindowTitleEvent&>(ev).process(window);
 			break;
 		case PlatformEvent::Type::WindowError:
 			static_cast<WindowErrorEvent&>(ev).process(window);

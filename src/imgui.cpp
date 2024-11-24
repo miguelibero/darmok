@@ -7,6 +7,7 @@
 #include <darmok/window.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/math.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/program_core.hpp>
 #include <bx/allocator.h>
 #include "generated/imgui/imgui.program.h"
@@ -48,7 +49,6 @@ namespace darmok
 		, _imgui(imgui)
 		, _textureUniform{ bgfx::kInvalidHandle }
 		, _lodEnabledUniform{ bgfx::kInvalidHandle }
-		, _fontsTexture{ bgfx::kInvalidHandle }
 	{
 		ProgramDefinition progDef;
 		progDef.loadStaticMem(imgui_program);
@@ -57,43 +57,36 @@ namespace darmok
 		_lodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
 		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
+		updateFonts();
+	}
+
+	void ImguiRenderPass::updateFonts() noexcept
+	{
 		uint8_t* data;
-		int32_t width;
-		int32_t height;
-		{
-			ImFontConfig config;
-			config.FontDataOwnedByAtlas = false;
-			config.MergeMode = false;
-			// config.MergeGlyphCenterV = true;
-		}
-
+		int width, height, bytesPerPixel;
 		ImGuiIO& io = ImGui::GetIO();
-		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height);
+		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height, &bytesPerPixel);
 
-		_fontsTexture = bgfx::createTexture2D(
-			(uint16_t)width
-			, (uint16_t)height
-			, false
-			, 1
-			, bgfx::TextureFormat::BGRA8
-			, 0
-			, bgfx::copy(data, width * height * 4)
-		);
+		TextureConfig config;
+		config.format = bgfx::TextureFormat::BGRA8;
+		config.size = glm::uvec2(width, height);
+		DataView dataView(data, width * height * bytesPerPixel);
+		_fontsTexture = std::make_unique<Texture>(dataView, config);
 	}
 
 	ImguiRenderPass::~ImguiRenderPass() noexcept
 	{
-		if (isValid(_textureUniform))
+		std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms
 		{
-			bgfx::destroy(_textureUniform);
-		}
-		if (isValid(_lodEnabledUniform))
+			_textureUniform, _lodEnabledUniform
+		};
+		for (auto uniform : uniforms)
 		{
-			bgfx::destroy(_lodEnabledUniform);
-		}
-		if (isValid(_fontsTexture))
-		{
-			bgfx::destroy(_fontsTexture);
+			if (isValid(uniform.get()))
+			{
+				bgfx::destroy(uniform.get());
+				uniform.get().idx = bgfx::kInvalidHandle;
+			}
 		}
 	}
 
@@ -193,7 +186,7 @@ namespace darmok
 						| BGFX_STATE_MSAA
 						;
 
-					auto th = _fontsTexture;
+					auto tex = _fontsTexture->getHandle();
 					auto program = _program->getHandle();
 
 					if (NULL != cmd->TextureId)
@@ -203,7 +196,7 @@ namespace darmok
 							? BGFX_STATE_BLEND_ALPHA
 							: BGFX_STATE_NONE
 							;
-						th = texture.s.handle;
+						tex = texture.s.handle;
 						auto mipEnabled = 0 != texture.s.mip;
 						if (mipEnabled)
 						{
@@ -234,7 +227,7 @@ namespace darmok
 						);
 
 						encoder.setState(state);
-						encoder.setTexture(0, _textureUniform, th);
+						encoder.setTexture(0, _textureUniform, tex);
 						mesh->render(encoder);
 						encoder.submit(viewId, program);
 					}
@@ -389,8 +382,8 @@ namespace darmok
 			| ImGuiConfigFlags_NavEnableKeyboard
 			;
 
+		_renderer.imguiSetup();
 		_renderPass.emplace(_renderer, _imgui);
-
 		ImGui::SetCurrentContext(nullptr);
 	}
 
@@ -443,6 +436,14 @@ namespace darmok
 	void ImguiAppComponentImpl::setInputEnabled(bool enabled) noexcept
 	{
 		_inputEnabled = enabled;
+	}
+
+	void ImguiAppComponentImpl::updateFonts() noexcept
+	{
+		if (_renderPass)
+		{
+			_renderPass->updateFonts();
+		}
 	}
 
 	void ImguiAppComponentImpl::updateInput(float dt) noexcept
@@ -545,6 +546,12 @@ namespace darmok
 	ImguiAppComponent& ImguiAppComponent::setInputEnabled(bool enabled) noexcept
 	{
 		_impl->setInputEnabled(enabled);
+		return *this;
+	}
+
+	ImguiAppComponent& ImguiAppComponent::updateFonts() noexcept
+	{
+		_impl->updateFonts();
 		return *this;
 	}
 }

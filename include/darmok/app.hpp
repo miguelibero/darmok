@@ -17,15 +17,16 @@
 #	define DARMOK_IMPLEMENT_MAIN 0
 #endif // DARMOK_IMPLEMENT_MAIN
 
-#define DARMOK_CREATE_APP_DELEGATE_FACTORY(appDlgClass, ...)				\
-    class appDlgClass##Factory final : public darmok::IAppDelegateFactory   \
-	{                                                                       \
-	public:                                                                 \
-        std::unique_ptr<IAppDelegate> operator()(darmok::App& app) override \
-        {                                                                   \
-            return std::make_unique<appDlgClass>(app, ##__VA_ARGS__);       \
-        }                                                                   \
-	};                                                                      \
+#define DARMOK_CREATE_APP_DELEGATE_FACTORY(appDlgClass, ...)						\
+    class appDlgClass##Factory final : public darmok::IAppDelegateFactory			\
+	{																				\
+	public:																			\
+        std::unique_ptr<darmok::IAppDelegate> operator()(darmok::App& app) override \
+        {																			\
+            return std::make_unique<appDlgClass>(app, ##__VA_ARGS__);				\
+        }																			\
+	};																				\
+
 
 #if DARMOK_IMPLEMENT_MAIN
 #define DARMOK_RUN_APP(appDlgClass, ...)								    \

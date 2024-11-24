@@ -24,6 +24,7 @@ namespace darmok
 		bool setVideoMode(const VideoMode& mode);
 		bool setCursorMode(WindowCursorMode mode);
 		void setVideoModeInfo(const VideoModeInfo& info);
+		void setTitle(const std::string& title);
 		void onError(const std::string& error);
 
 		const glm::uvec2& getSize() const noexcept;
@@ -32,7 +33,9 @@ namespace darmok
 		const VideoModeInfo& getVideoModeInfo() const noexcept;
 		WindowCursorMode getCursorMode() const noexcept;
 		WindowPhase getPhase() const noexcept;
+		const std::string& getTitle() const noexcept;
 
+		void requestTitle(const std::string& title);
 		void requestVideoModeInfo() noexcept;
 		void requestVideoMode(const VideoMode& mode) noexcept;
 		void requestCursorMode(WindowCursorMode mode) noexcept;
@@ -56,6 +59,7 @@ namespace darmok
 		VideoMode _videoMode;
 		VideoModeInfo _videoModeInfo;
 		WindowCursorMode _cursorMode;
+		std::string _title;
 		OwnRefCollection<IWindowListener> _listeners;
 		Platform& _plat;
 	};

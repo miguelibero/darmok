@@ -63,6 +63,7 @@ namespace darmok
 			WindowPhase,
 			WindowVideoMode,
 			WindowCursorMode,
+			WindowTitle,
 			WindowError,
 
 			VideoModeInfo,
@@ -233,6 +234,15 @@ namespace darmok
 		WindowCursorMode _mode;
 	};
 
+	class WindowTitleEvent final : public PlatformEvent
+	{
+	public:
+		WindowTitleEvent(const std::string& title) noexcept;
+		void process(Window& win) noexcept;
+	private:
+		std::string _title;
+	};
+
 	class PlatformEventQueue final
 	{
 	public:
@@ -278,6 +288,7 @@ namespace darmok
 		void requestWindowDestruction() noexcept;
 		void requestWindowVideoModeChange(const VideoMode& mode) noexcept;
 		void requestWindowCursorModeChange(WindowCursorMode mode) noexcept;
+		void requestWindowTitle(const std::string& title) noexcept;
 
 		[[nodiscard]] void* getWindowHandle() const noexcept;
 		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getWindowHandleType() const noexcept;

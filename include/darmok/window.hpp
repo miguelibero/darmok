@@ -92,7 +92,9 @@ namespace darmok
 		void requestCursorMode(WindowCursorMode mode) noexcept;
 		void requestDestruction() noexcept;
 		void requestVideoModeInfo() noexcept;
+		void requestTitle(const std::string& title);
 
+		[[nodiscard]] const std::string& getTitle() const noexcept;
 		[[nodiscard]] float getAspect() const noexcept;
 		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
 		[[nodiscard]] const glm::uvec2& getPixelSize() const noexcept;

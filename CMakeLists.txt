@@ -10,7 +10,7 @@ set(VCPKG_BINARY_TARGET_DIR vcpkg_installed/${VCPKG_TARGET_TRIPLET})
 
 project(
   darmok
-  VERSION 0.1.1
+  VERSION 0.1.2
   LANGUAGES CXX
   DESCRIPTION "hobby C++ game engine"
 )

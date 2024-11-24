@@ -150,6 +150,7 @@ namespace darmok
 			RequestVideoModeInfo,
 			ChangeWindowVideoMode,
 			ChangeWindowCursorMode,
+			ChangeWindowTitle
 		};
 
 		PlatformCmd(Type type) noexcept;
@@ -191,6 +192,15 @@ namespace darmok
 		void process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept;
 	private:
 		WindowCursorMode _value;
+	};
+
+	class ChangeWindowTitleCmd final : public PlatformCmd
+	{
+	public:
+		ChangeWindowTitleCmd(const std::string& title) noexcept;
+		void process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept;
+	private:
+		std::string _title;
 	};
 
 #pragma endregion PlatformCmds

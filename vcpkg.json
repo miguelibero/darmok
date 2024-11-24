@@ -50,6 +50,6 @@
     "taskflow",
     "tiny-process-library",
     "mikktspace",
-    "wxwidgets"
+    "imguizmo"
   ]
 }

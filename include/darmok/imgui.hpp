@@ -14,6 +14,7 @@ namespace darmok
 	public:
 		virtual ~IImguiRenderer() = default;
 
+		virtual void imguiSetup() {};
 		virtual void imguiRender() = 0;
 	};
 
@@ -33,6 +34,8 @@ namespace darmok
 		ImGuiContext* getContext() noexcept;
 		bool getInputEnabled() const noexcept;
 		ImguiAppComponent& setInputEnabled(bool enabled) noexcept;
+		ImguiAppComponent& updateFonts() noexcept;
+
 	private:
 		std::unique_ptr<ImguiAppComponentImpl> _impl;
     };

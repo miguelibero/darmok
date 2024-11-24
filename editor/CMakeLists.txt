@@ -1,12 +1,14 @@
+if(NOT ${DARMOK_BUILD_IMGUI})
+  return()
+endif()
 
-
-set(APP darmok-editor)
+set(EDITOR_NAME darmok-editor)
 set(EDITOR_BASE_DIR ${PROJECT_SOURCE_DIR}/editor)
 set(EDITOR_SRC_DIR ${EDITOR_BASE_DIR}/src)
-set(EDITOR_RESOURCES_DIR ${EDITOR_BASE_DIR}/resources)
+set(EDITOR_ASSETS_DIR ${EDITOR_BASE_DIR}/assets)
 set(EDITOR_INCLUDE_BASE_DIR ${EDITOR_BASE_DIR}/include)
 set(EDITOR_LIB_BASE_DIR ${EDITOR_BASE_DIR}/lib)
-set(EDITOR_INCLUDE_DIR ${INCLUDE_BASE_DIR}/darmok)
+set(EDITOR_INCLUDE_DIR ${EDITOR_INCLUDE_BASE_DIR}/darmok-editor)
 
 set(EDITOR_SOURCES
   main.cpp
@@ -17,27 +19,35 @@ set(EDITOR_HEADERS
   app.hpp
 )
 
-set(EDITOR_RESOURCES
+set(EDITOR_ASSETS
+  noto.ttf
 )
 
 list(TRANSFORM EDITOR_SOURCES PREPEND "${EDITOR_SRC_DIR}/")
 list(TRANSFORM EDITOR_HEADERS PREPEND "${EDITOR_INCLUDE_DIR}/")
-list(TRANSFORM EDITOR_RESOURCES PREPEND "${EDITOR_RESOURCES_DIR}/")
 
-find_package(wxWidgets REQUIRED COMPONENTS net core base)
-if(wxWidgets_USE_FILE)
-    include(${wxWidgets_USE_FILE})
-endif()
+add_executable(${EDITOR_NAME} WIN32 ${EDITOR_SOURCES})
+set_target_properties(${EDITOR_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
+target_link_libraries(${EDITOR_NAME} darmok)
+target_compile_definitions(${EDITOR_NAME} PRIVATE "DARMOK_IMPLEMENT_MAIN=1")
 
-add_executable(${APP} ${EDITOR_SOURCES})
-target_link_libraries(${APP} darmok ${wxWidgets_LIBRARIES})
+target_sources(${EDITOR_NAME} PUBLIC FILE_SET HEADERS
+  BASE_DIRS ${EDITOR_INCLUDE_BASE_DIR} FILES ${EDITOR_HEADERS})
+source_group(TREE ${EDITOR_SRC_DIR} PREFIX "Source Files" FILES ${EDITOR_SOURCES})
+source_group(TREE ${EDITOR_INCLUDE_BASE_DIR} PREFIX "Header Files" FILES ${EDITOR_HEADERS})
 
-set(EDITOR_RESOURCES_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/wxwidgets_resources.cpp)
-add_custom_command(
-  OUTPUT ${EDITOR_RESOURCES_OUTPUT}
-  COMMAND ${wxrc} -c -o ${EDITOR_RESOURCES_OUTPUT} ${EDITOR_RESOURCES}
-  DEPENDS ${EDITOR_RESOURCES}
-  COMMENT "Compiling editor XRC resources"
+target_include_directories(
+  ${EDITOR_NAME}
+  PRIVATE
+  $<BUILD_INTERFACE:${EDITOR_INCLUDE_BASE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 )
 
-target_sources(${APP} PRIVATE ${EDITOR_RESOURCES_OUTPUT})
+set(EDITOR_ASSETS_TARGET ${EDITOR_NAME}-assets)
+darmok_process_assets(
+  TARGET ${EDITOR_ASSETS_TARGET}
+  INPUT ${EDITOR_ASSETS_DIR}
+  ASSETS ${EDITOR_ASSETS}
+)
+add_dependencies(${EDITOR_NAME} ${EDITOR_ASSETS_TARGET})
+set_target_properties(${EDITOR_ASSETS_TARGET} PROPERTIES FOLDER "darmok/assets")

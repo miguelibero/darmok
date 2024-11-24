@@ -17,6 +17,7 @@ currently using:
 * [nlohmann-json](https://github.com/nlohmann/json) for parsing json
 * [pugixml](https://pugixml.org/) for parsing xml
 * [imgui](https://github.com/ocornut/imgui) for editor UI
+    * [imGuizmo](https://github.com/CedricGuillemet/ImGuizmo) for editor controls
 * [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [cereal](https://uscilab.github.io/cereal/) for serialization
@@ -99,6 +100,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * ozz skeleton & animations
 * dynamic font texture generation
 * play sounds and music (wav & mp3)
+* editor using Imgui
+    *
 
 #### Upcoming
 * frame limiting
@@ -139,8 +142,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * more sound options (spatialization, effects)
 * animation root motion 
 * [openusd](https://github.com/PixarAnimationStudios/OpenUSD) scene format support
-* a game editor would be a huge undergoing, but maybe using [wxWidgets](https://wxwidgets.org/)
-
+* [slang](https://github.com/shader-slang/slang) shading language support
 
 ## Interesting Related Projects
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced

@@ -79,6 +79,7 @@ namespace darmok
 		, _cursorMode(WindowCursorMode::Normal)
 		, _size(0)
 		, _pixelSize(0)
+		, _title("darmok")
 	{
 	}
 
@@ -152,6 +153,11 @@ namespace darmok
 		}
 	}
 
+	void WindowImpl::setTitle(const std::string& title)
+	{
+		_title = title;
+	}
+
 	void WindowImpl::onError(const std::string& error)
 	{
 		for (auto& listener : _listeners)
@@ -187,6 +193,16 @@ namespace darmok
 	WindowPhase WindowImpl::getPhase() const noexcept
 	{
 		return _phase;
+	}
+
+	const std::string& WindowImpl::getTitle() const noexcept
+	{
+		return _title;
+	}
+
+	void WindowImpl::requestTitle(const std::string& title)
+	{
+		_plat.requestWindowTitle(title);
 	}
 
 	void WindowImpl::requestVideoModeInfo() noexcept
@@ -315,6 +331,17 @@ namespace darmok
 	{
 		return _impl->getPixelSize();
 	}
+
+	const std::string& Window::getTitle() const noexcept
+	{
+		return _impl->getTitle();
+	}
+
+	void Window::requestTitle(const std::string& title)
+	{
+		_impl->requestTitle(title);
+	}
+
 
 	void Window::requestVideoModeInfo() noexcept
 	{

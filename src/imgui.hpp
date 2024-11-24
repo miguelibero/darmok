@@ -2,6 +2,7 @@
 
 #include <darmok/input_fwd.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/texture.hpp>
 #include <imgui.h>
 #include <unordered_map>
 #include <memory>
@@ -20,12 +21,13 @@ namespace darmok
 		~ImguiRenderPass() noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 		void render() noexcept;
+		void updateFonts() noexcept;
 	private:
 		static const uint8_t _imguiAlphaBlendFlags;
 		IImguiRenderer& _renderer;
 		ImGuiContext* _imgui;
 		std::optional<bgfx::ViewId> _viewId;
-		bgfx::TextureHandle _fontsTexture;
+		std::unique_ptr<Texture> _fontsTexture;
 		std::unique_ptr<Program> _program;
 		bgfx::UniformHandle _lodEnabledUniform;
 		bgfx::UniformHandle _textureUniform;
@@ -50,6 +52,8 @@ namespace darmok
 
 		bool getInputEnabled() const noexcept;
 		void setInputEnabled(bool enabled) noexcept;
+
+		void updateFonts() noexcept;
     private:
 		IImguiRenderer& _renderer;
 		OptionalRef<App> _app;

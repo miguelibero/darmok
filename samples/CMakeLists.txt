@@ -33,7 +33,6 @@ function(darmok_sample_setup)
     add_dependencies(${ARGS_TARGET} ${ASSETS_TARGET})
     set_target_properties(${ASSETS_TARGET} PROPERTIES FOLDER "darmok/samples")
   endif()
-
 endfunction()
 
 function(darmok_lua_sample_setup)

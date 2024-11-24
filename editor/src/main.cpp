@@ -1,3 +1,5 @@
 #include <darmok-editor/app.hpp>
 
-wxIMPLEMENT_APP(darmok::editor::App);
+using namespace darmok::editor;
+
+DARMOK_RUN_APP(EditorAppDelegate);

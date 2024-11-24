@@ -191,6 +191,18 @@ namespace darmok
 		events.post<WindowCursorModeEvent>(_value);
 	}
 
+	ChangeWindowTitleCmd::ChangeWindowTitleCmd(const std::string& title) noexcept
+		: PlatformCmd(ChangeWindowTitle)
+		, _title(title)
+	{
+	}
+
+	void ChangeWindowTitleCmd::process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept
+	{
+		glfwSetWindowTitle(glfw, _title.c_str());
+		events.post<WindowTitleEvent>(_title);
+	}
+
 	void PlatformCmd::process(PlatformCmd& cmd, PlatformImpl& plat) noexcept
 	{
 		// explicit cast to avoid virtual method for performance
@@ -207,6 +219,9 @@ namespace darmok
 			break;
 		case PlatformCmd::ChangeWindowVideoMode:
 			static_cast<ChangeWindowVideoModeCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow(), plat.getWindowFrameSize());
+			break;
+		case PlatformCmd::ChangeWindowTitle:
+			static_cast<ChangeWindowTitleCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
 			break;
 		}
 	}
@@ -600,6 +615,8 @@ namespace darmok
 
 	int PlatformImpl::run(std::unique_ptr<IPlatformRunnable>&& runnable)
 	{
+		static const std::string winTitle("darmok");
+		
 		_mte.runnable = std::move(runnable);
 
 		glfwSetErrorCallback(staticErrorCallback);
@@ -613,7 +630,7 @@ namespace darmok
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		auto winSize = glm::uvec2{ DARMOK_DEFAULT_WIDTH, DARMOK_DEFAULT_HEIGHT };
-		_window = createWindow(winSize, "darmok");
+		_window = createWindow(winSize, winTitle.c_str());
 
 		if (!_window)
 		{
@@ -633,6 +650,7 @@ namespace darmok
 		{
 			// send events for initial window state
 			_events.post<VideoModeInfoEvent>(getVideoModeInfo(_winFrameSize));
+			_events.post<WindowTitleEvent>(winTitle);
 			_events.post<WindowSizeEvent>(winSize);
 			_events.post<WindowPixelSizeEvent>(pixelSize);
 			_events.post<WindowVideoModeEvent>(getVideoMode(_window));
@@ -983,6 +1001,11 @@ namespace darmok
 	void Platform::requestWindowCursorModeChange(WindowCursorMode mode) noexcept
 	{
 		_impl->pushCmd<ChangeWindowCursorModeCmd>(mode);
+	}
+
+	void Platform::requestWindowTitle(const std::string& title) noexcept
+	{
+
 	}
 
 	void* Platform::getWindowHandle() const noexcept
