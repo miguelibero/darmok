@@ -24,6 +24,7 @@ namespace darmok
         , _projInv(glm::inverse(projMatrix))
         , _enabled(true)
         , _renderChain(*this)
+        , _transformChanged(false)
     {
     }
 
@@ -185,6 +186,15 @@ namespace darmok
     {
         _proj = matrix;
         _projInv = glm::inverse(matrix);
+        _transformChanged = true;
+    }
+
+    void CameraImpl::onTransformChanged()
+    {
+        for (auto& comp : _components)
+        {
+            comp.get()->onCameraTransformChanged();
+        }
     }
 
     void CameraImpl::setCullingFilter(const EntityFilter& filter) noexcept
@@ -257,6 +267,19 @@ namespace darmok
         }
         _renderChain.update(deltaTime);
         updateViewportProjection();
+
+        auto view = getViewMatrix();
+        if (_view != view)
+        {
+            _view = view;
+            _transformChanged = true;
+        }
+
+        if (_transformChanged)
+        {
+            _transformChanged = false;
+            onTransformChanged();
+        }
     }
 
     std::string CameraImpl::getViewName(const std::string& baseName) const noexcept

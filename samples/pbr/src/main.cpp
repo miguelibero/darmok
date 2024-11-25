@@ -262,6 +262,7 @@ namespace
 
 			auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx");
 			cam.addComponent<SkyboxRenderer>(skyboxTex);
+			cam.addComponent<GridRenderer>();
 			cam.addComponent<LightingRenderComponent>();
 
 			ShadowRendererConfig shadowConfig;

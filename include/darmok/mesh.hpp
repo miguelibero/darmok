@@ -161,6 +161,7 @@ namespace darmok
     struct Polygon;
     struct Frustum;
     struct BoundingBox;
+    struct Grid;
 
     enum class RectangleMeshType
     {
@@ -194,6 +195,7 @@ namespace darmok
         MeshData(const Triangle& tri) noexcept;
         MeshData(const Polygon& poly) noexcept;
         MeshData(const Frustum& frust, RectangleMeshType type = RectangleMeshType::Outline) noexcept;
+        MeshData(const Grid& grid) noexcept;
 
         MeshData& operator+=(const MeshData& other) noexcept;
         MeshData operator+(const MeshData& other) const noexcept;
@@ -205,6 +207,7 @@ namespace darmok
         MeshData& translatePositions(const glm::vec3& pos) noexcept;
         MeshData& scaleTexCoords(const glm::vec2& scale) noexcept;
         MeshData& translateTexCoords(const glm::vec2& pos) noexcept;
+        MeshData& setColor(const Color& color) noexcept;
 
         MeshData& createIndices() noexcept;
         MeshData& shiftIndices(Index offset) noexcept;

@@ -361,6 +361,13 @@ namespace darmok
         return normal * distance / (len * len);
     }
 
+    glm::vec3 Plane::getAlong() const noexcept
+    {
+        auto n = glm::normalize(normal);
+        auto candidate = (n != glm::vec3(1, 0, 0)) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+        return glm::cross(n, candidate);
+    }
+
     glm::mat4 Plane::getTransform(const glm::vec3& up) const noexcept
     {
         auto mtx = glm::mat4(1);
@@ -619,6 +626,13 @@ namespace darmok
     bool Line::operator!=(const Line& other) const noexcept
     {
         return !operator==(other);
+    }
+
+    Grid::Grid(const Plane& plane, const glm::vec2& separation, const glm::uvec2& amount) noexcept
+        : plane(plane)
+        , separation(separation),
+        amount(amount)
+    {
     }
 
     Capsule::Capsule(float cylinderHeight, float radius, const glm::vec3& origin) noexcept

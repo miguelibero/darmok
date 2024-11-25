@@ -111,6 +111,8 @@ namespace darmok
         std::optional<bool> _updateEnabled;
         glm::mat4 _proj;
         glm::mat4 _projInv;
+        glm::mat4 _view;
+        bool _transformChanged;
 
         struct PerspectiveData final
         {
@@ -154,5 +156,6 @@ namespace darmok
 
         void doSetProjectionMatrix(const glm::mat4& matrix) noexcept;
         glm::mat4 getScreenViewMatrix() const noexcept;
+        void onTransformChanged();
     };
 }

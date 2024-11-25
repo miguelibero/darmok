@@ -241,7 +241,7 @@ namespace darmok
     {
         _cam = cam;
         _scene = scene;
-        _debugRender.init();
+        _debugRender.init(app);
     }
 
     void CullingDebugRenderer::shutdown() noexcept
@@ -263,7 +263,7 @@ namespace darmok
             for (auto& plane : frust.getPlanes())
             {
                 meshData += MeshData(plane, RectangleMeshType::Full);
-                _debugRender.renderMesh(meshData, debugColor, viewId, encoder, false);
+                _debugRender.renderMesh(meshData, viewId, encoder, debugColor, false);
                 ++debugColor;
             }
         }
@@ -279,7 +279,7 @@ namespace darmok
                 {
                     meshData += MeshData(bbox.value(), RectangleMeshType::Outline);
                     _cam->setEntityTransform(entity, encoder);
-                    _debugRender.renderMesh(meshData, debugColor, viewId, encoder, true);
+                    _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
                     ++debugColor;
                 }
             }

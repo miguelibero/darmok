@@ -916,6 +916,39 @@ namespace darmok
 		*this *= glm::translate(glm::mat4(1), poly.origin);
 	}
 
+	MeshData::MeshData(const Grid& grid) noexcept
+	{
+		auto s = grid.separation * glm::vec2(grid.amount);
+		auto dx = grid.plane.getAlong() * s.x;
+		auto dy = glm::cross(dx, grid.plane.normal) * s.y;
+		auto origin = grid.plane.getOrigin();
+		auto amount = glm::vec2(grid.amount) * 0.5F;
+		vertices.reserve(2 * (grid.amount.x + grid.amount.y));
+
+		auto addVertex = [&](float x, float y)
+		{
+			auto p = origin + (dx * x) + (dy * y);
+			vertices.emplace_back(p, glm::vec2(x, y), grid.plane.normal);
+		};
+
+		for (float x = -amount.x; x < amount.x; ++x)
+		{
+			auto i = vertices.size();
+			addVertex(x, -amount.y);
+			addVertex(x, +amount.y);
+			indices.push_back(i);
+			indices.push_back(i+1);
+		}
+		for (float y = -amount.y; y < amount.y; ++y)
+		{
+			auto i = vertices.size();
+			addVertex(-amount.x, y);
+			addVertex(amount.x, y);
+			indices.push_back(i);
+			indices.push_back(i + 1);
+		}
+	}
+
 	MeshData MeshData::operator+(const MeshData& other) const noexcept
 	{
 		MeshData r(*this);
@@ -1014,6 +1047,15 @@ namespace darmok
 		for (auto& vertex : vertices)
 		{
 			vertex.texCoord += pos;
+		}
+		return *this;
+	}
+
+	MeshData& MeshData::setColor(const Color& color) noexcept
+	{
+		for (auto& vertex : vertices)
+		{
+			vertex.color = color;
 		}
 		return *this;
 	}

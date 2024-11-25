@@ -5,6 +5,7 @@
 #include <darmok/shape.hpp>
 #include <darmok/program.hpp>
 #include <darmok/program_core.hpp>
+#include <darmok/color.hpp>
 
 #include "generated/skybox.program.h"
 
@@ -60,5 +61,64 @@ namespace darmok
             ;
         encoder.setState(state);
         encoder.submit(viewId, _program->getHandle());
+    }
+
+    const GridRenderer::Config GridRenderer::defaultConfig = {
+        GridConfig{ glm::vec2(0.1F), Colors::fromNumber(0x808080FF) },
+        GridConfig{ glm::vec2(1.F), Colors::fromNumber(0xBEBEBEFF) },
+    };
+
+    GridRenderer::GridRenderer(const Config& config) noexcept
+        : _config(config)
+    {
+    }
+
+    void GridRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    {
+        _cam = cam;
+        _debugRender.init(app);
+        updateMesh();
+    }
+
+    void GridRenderer::updateMesh() noexcept
+    {
+        auto prog = _debugRender.getProgram();
+        if (!prog)
+        {
+            return;
+        }
+        MeshData meshData;
+        for (auto& config : _config)
+        {
+            Grid grid;
+            grid.separation = config.separation;
+            // TODO: calculate amount & origin based on camera
+            MeshData gridData(grid);
+            gridData.setColor(config.color);
+            meshData += gridData;
+        }
+        auto& layout = prog->getVertexLayout();
+        _mesh = meshData.createMesh(layout);
+    }
+
+    void GridRenderer::shutdown() noexcept
+    {
+        _cam.reset();
+        _mesh.reset();
+        _debugRender.shutdown();
+    }
+
+    void GridRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
+    {
+        if (!_mesh)
+        {
+            return;
+        }
+        _debugRender.renderMesh(*_mesh, viewId, encoder);
+    }
+
+    void GridRenderer::onCameraTransformChanged()
+    {
+        updateMesh();
     }
 }

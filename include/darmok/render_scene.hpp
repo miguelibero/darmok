@@ -31,6 +31,7 @@ namespace darmok
         virtual bool shouldEntityBeCulled(Entity entity) { return false; };
         virtual void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) {};
         virtual void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) { };
+        virtual void onCameraTransformChanged() {};
     };
 
     template<typename T>

@@ -660,7 +660,7 @@ namespace darmok
     void ShadowDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
-        _debugRender.init();
+        _debugRender.init(app);
     }
 
     void ShadowDebugRenderer::shutdown() noexcept
@@ -691,7 +691,7 @@ namespace darmok
             auto cascProjView = _renderer.getCameraProjMatrix(casc);
             meshData += MeshData(Frustum(cascProjView), RectangleMeshType::Outline);
         }
-        _debugRender.renderMesh(meshData, debugColor, viewId, encoder, true);
+        _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
         ++debugColor;
 
         auto entities = cam->getEntities<DirectionalLight>();
@@ -712,7 +712,7 @@ namespace darmok
             }
             meshData += MeshData(Sphere(0.01, lightPos), 8);
 
-            _debugRender.renderMesh(meshData, debugColor, viewId, encoder, true);
+            _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
             ++debugColor;
         }
     }

@@ -179,6 +179,7 @@ namespace darmok
 
         [[nodiscard]] glm::vec3 getOrigin() const noexcept;
         [[nodiscard]] glm::mat4 getTransform(const glm::vec3& up = glm::vec3(0, 1, 0)) const noexcept;
+        [[nodiscard]] glm::vec3 getAlong() const noexcept;
 
         [[nodiscard]] Plane operator*(const glm::mat4& transform) const noexcept;
         Plane& operator*=(const glm::mat4& transform) noexcept;
@@ -199,6 +200,22 @@ namespace darmok
             archive(CEREAL_NVP(normal), CEREAL_NVP(distance));
         }
     };
+
+    struct DARMOK_EXPORT Grid final
+    {
+        Plane plane;
+        glm::vec2 separation;
+        glm::uvec2 amount;
+
+        Grid(const Plane& plane = {}, const glm::vec2& separation = glm::vec2(1.F), const glm::uvec2& amount = glm::uvec2(10)) noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP(plane), CEREAL_NVP(separation), CEREAL_NVP(amount));
+        }
+    };
+
 
     struct DARMOK_EXPORT Capsule final
     {

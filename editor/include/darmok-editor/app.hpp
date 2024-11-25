@@ -2,6 +2,14 @@
 
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
+#include <darmok/optional_ref.hpp>
+#include <memory>
+
+namespace darmok
+{
+    class Scene;
+    class ImguiAppComponent;
+}
 
 namespace darmok::editor
 {
@@ -16,5 +24,7 @@ namespace darmok::editor
 		void update(float deltaTime) override;
     private:
         App& _app;
+        std::shared_ptr<Scene> _scene;
+        OptionalRef<ImguiAppComponent> _imgui;
     };
 }
