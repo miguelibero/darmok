@@ -17,6 +17,7 @@ namespace darmok
 		bindLine(lua);
 		bindBoundingBox(lua);
 		bindFrustum(lua);
+		bindGrid(lua);
 	}
 
 	void LuaShape::bindRectangle(sol::state_view& lua) noexcept
@@ -131,6 +132,7 @@ namespace darmok
 			"distance", &Plane::distance,
 			"signed_distance_to", &Plane::signedDistanceTo,
 			"origin", sol::property(&Plane::getOrigin),
+			"along", sol::property(&Plane::getAlong),
 			sol::meta_function::multiplication, &Plane::operator*,
 			sol::meta_function::to_string, &Plane::toString
 		);

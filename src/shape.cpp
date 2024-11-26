@@ -363,9 +363,7 @@ namespace darmok
 
     glm::vec3 Plane::getAlong() const noexcept
     {
-        auto n = glm::normalize(normal);
-        auto candidate = (n != glm::vec3(1, 0, 0)) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-        return glm::cross(n, candidate);
+        return Math::getAlongNormal(normal);
     }
 
     glm::mat4 Plane::getTransform(const glm::vec3& up) const noexcept
@@ -385,6 +383,14 @@ namespace darmok
     {
         auto origin = getOrigin();
         return Line(origin, origin + normal);
+    }
+
+    glm::vec2 Plane::getLocalCoordinates(const glm::vec3& pos) const noexcept
+    {
+        auto relPos = pos - getOrigin();
+        auto u = getAlong();
+        auto v = glm::cross(u, normal);
+        return { glm::dot(u, relPos), glm::dot(v, relPos) };
     }
 
     Plane Plane::operator*(const glm::mat4& transform) const noexcept
@@ -628,11 +634,30 @@ namespace darmok
         return !operator==(other);
     }
 
-    Grid::Grid(const Plane& plane, const glm::vec2& separation, const glm::uvec2& amount) noexcept
-        : plane(plane)
-        , separation(separation),
-        amount(amount)
+    Grid::Grid(const glm::vec2& separation
+        , const glm::uvec2& amount
+        , const glm::vec3& normal
+        , const glm::vec3& origin
+    ) noexcept
+        : separation(separation)
+        , amount(amount)
+        , normal(normal)
+        , origin(origin)
     {
+    }
+
+    std::string Grid::toString() const noexcept
+    {
+        return "Grid(separation=" + glm::to_string(separation)
+            + ", amount=" + glm::to_string(amount)
+            + ", normal=" + glm::to_string(normal)
+            + ", origin=" + glm::to_string(origin)
+            + ")";
+    }
+
+    glm::vec3 Grid::getAlong() const noexcept
+    {
+        return Math::getAlongNormal(normal);
     }
 
     Capsule::Capsule(float cylinderHeight, float radius, const glm::vec3& origin) noexcept
@@ -826,6 +851,11 @@ namespace darmok
             glm::vec3(max.x, min.y, max.z),
             glm::vec3(max.x, max.y, max.z)
         };
+    }
+
+    glm::vec3 BoundingBox::getCenter() const noexcept
+    {
+        return min + size();
     }
 
     BoundingBox& BoundingBox::operator*=(const glm::mat4& trans) noexcept

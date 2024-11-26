@@ -918,28 +918,28 @@ namespace darmok
 
 	MeshData::MeshData(const Grid& grid) noexcept
 	{
-		auto s = grid.separation * glm::vec2(grid.amount);
-		auto dx = grid.plane.getAlong() * s.x;
-		auto dy = glm::cross(dx, grid.plane.normal) * s.y;
-		auto origin = grid.plane.getOrigin();
+		auto dx = grid.getAlong();		
+		auto dy = glm::cross(dx, grid.normal);
+		dx *= grid.separation.x;
+		dy *= grid.separation.y;
 		auto amount = glm::vec2(grid.amount) * 0.5F;
 		vertices.reserve(2 * (grid.amount.x + grid.amount.y));
 
 		auto addVertex = [&](float x, float y)
 		{
-			auto p = origin + (dx * x) + (dy * y);
-			vertices.emplace_back(p, glm::vec2(x, y), grid.plane.normal);
+			auto p = grid.origin + (dx * x) + (dy * y);
+			vertices.emplace_back(p, glm::vec2(x, y), grid.normal);
 		};
 
-		for (float x = -amount.x; x < amount.x; ++x)
+		for (float x = -amount.x; x <= amount.x; ++x)
 		{
 			auto i = vertices.size();
 			addVertex(x, -amount.y);
 			addVertex(x, +amount.y);
 			indices.push_back(i);
-			indices.push_back(i+1);
+			indices.push_back(i + 1);
 		}
-		for (float y = -amount.y; y < amount.y; ++y)
+		for (float y = -amount.y; y <= amount.y; ++y)
 		{
 			auto i = vertices.size();
 			addVertex(-amount.x, y);

@@ -2,8 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
-#include <darmok/render_debug.hpp>
-#include <darmok/color_fwd.hpp>
+#include <darmok/color.hpp>
 
 #include <memory>
 #include <vector>
@@ -33,28 +32,36 @@ namespace darmok
     {
     public:
 
-        struct GridConfig
+        struct GridConfig final
         {
-            glm::vec2 separation;
-            Color color;
+            float separation = 1.0F;
+            Color color = Colors::white();
+            float width = 0.01;
         };
 
-        using Config = std::vector<GridConfig>;
+        struct Config final
+        {
+            Color xAxisColor = Colors::red();
+            Color yAxisColor = Colors::green();
+            Color zAxisColor = Colors::blue();
+            std::array<GridConfig, 2> grids = {
+                GridConfig{ 1.F, Colors::fromNumber(0x505050FF) },
+                GridConfig{ 10.F, Colors::fromNumber(0x707070FF) }
+            };
+        };
 
-        static const Config defaultConfig;
-
-        GridRenderer(const Config& config = defaultConfig) noexcept;
+        GridRenderer(const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) override;
-        void onCameraTransformChanged() override;
     private:
         Config _config;
         OptionalRef<Camera> _cam;
+        std::unique_ptr<Program> _program;
         std::unique_ptr<IMesh> _mesh;
-        DebugRenderer _debugRender;
-
-        void updateMesh() noexcept;
+        bgfx::UniformHandle _color1Uniform;
+        bgfx::UniformHandle _color2Uniform;
+        bgfx::UniformHandle _dataUniform;
     };
 
     class DARMOK_EXPORT EnvironmentMap final

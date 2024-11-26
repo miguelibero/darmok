@@ -445,6 +445,7 @@ namespace darmok
 		mat.getTextureUniformContainer().configure(encoder);
 
 		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
+		state = (state & ~BGFX_STATE_DEPTH_TEST_MASK) | BGFX_STATE_DEPTH_TEST_LEQUAL;
 		if (!mat.getTwoSided())
 		{
 			state |= BGFX_STATE_CULL_CCW;
@@ -457,9 +458,7 @@ namespace darmok
 		}
 		if (mat.getOpacityType() == OpacityType::Transparent)
 		{
-			state &= ~BGFX_STATE_DEPTH_TEST_MASK;
 			state |= BGFX_STATE_BLEND_ALPHA;
-			state |= BGFX_STATE_DEPTH_TEST_LEQUAL;
 		}
 		else if (mat.getOpacityType() == OpacityType::Mask)
 		{

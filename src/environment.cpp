@@ -8,6 +8,7 @@
 #include <darmok/color.hpp>
 
 #include "generated/skybox.program.h"
+#include "generated/grid.program.h"
 
 namespace darmok
 {
@@ -54,7 +55,7 @@ namespace darmok
 
         encoder.setTexture(0, _texUniform, _texture->getHandle());
 
-        uint64_t state = 0
+        static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB
             | BGFX_STATE_WRITE_Z
             | BGFX_STATE_DEPTH_TEST_LEQUAL
@@ -63,62 +64,73 @@ namespace darmok
         encoder.submit(viewId, _program->getHandle());
     }
 
-    const GridRenderer::Config GridRenderer::defaultConfig = {
-        GridConfig{ glm::vec2(0.1F), Colors::fromNumber(0x808080FF) },
-        GridConfig{ glm::vec2(1.F), Colors::fromNumber(0xBEBEBEFF) },
-    };
-
     GridRenderer::GridRenderer(const Config& config) noexcept
         : _config(config)
+        , _color1Uniform{ bgfx::kInvalidHandle }
+        , _color2Uniform{ bgfx::kInvalidHandle }
+        , _dataUniform{ bgfx::kInvalidHandle }
     {
     }
 
     void GridRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
-        _cam = cam;
-        _debugRender.init(app);
-        updateMesh();
-    }
+        ProgramDefinition progDef;
+        progDef.loadStaticMem(grid_program);
+        _program = std::make_unique<Program>(progDef);
 
-    void GridRenderer::updateMesh() noexcept
-    {
-        auto prog = _debugRender.getProgram();
-        if (!prog)
-        {
-            return;
-        }
-        MeshData meshData;
-        for (auto& config : _config)
-        {
-            Grid grid;
-            grid.separation = config.separation;
-            // TODO: calculate amount & origin based on camera
-            MeshData gridData(grid);
-            gridData.setColor(config.color);
-            meshData += gridData;
-        }
-        auto& layout = prog->getVertexLayout();
-        _mesh = meshData.createMesh(layout);
+        _color1Uniform = bgfx::createUniform("u_gridColor1", bgfx::UniformType::Vec4);
+        _color2Uniform = bgfx::createUniform("u_gridColor2", bgfx::UniformType::Vec4);
+        _dataUniform = bgfx::createUniform("u_data", bgfx::UniformType::Vec4);
+
+        Rectangle rect(glm::vec2(2.0));
+        _mesh = MeshData(rect, RectangleMeshType::Full).createMesh(_program->getVertexLayout());
+        _cam = cam;
     }
 
     void GridRenderer::shutdown() noexcept
     {
-        _cam.reset();
+        _program.reset();
         _mesh.reset();
-        _debugRender.shutdown();
+        _cam.reset();
+
+        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms
+        {
+            _color1Uniform, _color2Uniform, _dataUniform
+        };
+        for (auto uniform : uniforms)
+        {
+            if (isValid(uniform.get()))
+            {
+                bgfx::destroy(uniform.get());
+                uniform.get().idx = bgfx::kInvalidHandle;
+            }
+        }
     }
 
     void GridRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
     {
-        if (!_mesh)
+        if (!_mesh || !_program)
         {
             return;
         }
-        _debugRender.renderMesh(*_mesh, viewId, encoder);
-    }
 
-    void GridRenderer::onCameraTransformChanged()
-    {
-        updateMesh();
+        _mesh->render(encoder);
+        auto& proj = _cam->getProjectionMatrix();
+        auto depthRange = Math::projDepthRange(proj);
+        glm::vec4 data(depthRange, _config.grids[0].separation, _config.grids[1].separation);
+
+        encoder.setUniform(_color1Uniform, glm::value_ptr(Colors::normalize(_config.grids[0].color)));
+        encoder.setUniform(_color2Uniform, glm::value_ptr(Colors::normalize(_config.grids[1].color)));
+        encoder.setUniform(_dataUniform, glm::value_ptr(data));
+
+        static const uint64_t state = 0
+            | BGFX_STATE_WRITE_RGB
+            | BGFX_STATE_WRITE_A
+            | BGFX_STATE_WRITE_Z
+            | BGFX_STATE_BLEND_ALPHA
+            | BGFX_STATE_DEPTH_TEST_LESS
+            ;
+        encoder.setState(state);
+        encoder.submit(viewId, _program->getHandle());
     }
 }

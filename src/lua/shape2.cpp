@@ -118,4 +118,31 @@ namespace darmok
 			"get_slice", &Frustum::getSlice
 		);
 	}
+
+	void LuaShape::bindGrid(sol::state_view& lua) noexcept
+	{
+		lua.new_usertype<Grid>("Grid",
+			sol::factories(
+				[]() { return Grid(); },
+				[](const VarLuaTable<glm::vec2>& sep) {
+					return Grid(LuaGlm::tableGet(sep));
+				},
+				[](const VarLuaTable<glm::vec2>& sep, const VarLuaTable<glm::uvec2>& amount) {
+					return Grid(LuaGlm::tableGet(sep), LuaGlm::tableGet(amount));
+				},
+				[](const VarLuaTable<glm::vec2>& sep, const VarLuaTable<glm::uvec2>& amount, const VarLuaTable<glm::vec3>& normal) {
+					return Grid(LuaGlm::tableGet(sep), LuaGlm::tableGet(amount), LuaGlm::tableGet(normal));
+				},
+				[](const VarLuaTable<glm::vec2>& sep, const VarLuaTable<glm::uvec2>& amount, const VarLuaTable<glm::vec3>& normal, const VarLuaTable<glm::vec3>& origin) {
+					return Grid(LuaGlm::tableGet(sep), LuaGlm::tableGet(amount), LuaGlm::tableGet(normal), LuaGlm::tableGet(origin));
+				}
+			),
+			sol::meta_function::to_string, &Grid::toString,
+			"along", sol::property(&Grid::getAlong),
+			"origin", &Grid::origin,
+			"normal", &Grid::normal,
+			"separation", &Grid::separation,
+			"amount", &Grid::amount
+		);
+	}
 }

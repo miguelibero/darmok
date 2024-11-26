@@ -111,6 +111,19 @@ namespace darmok
         return getViewInverse() * getProjectionInverse();
     }
 
+    BoundingBox CameraImpl::getPlaneBounds(const Plane& plane) const noexcept
+    {
+        auto botLeftRay = viewportPointToRay(glm::vec3(0));
+        auto dbl = botLeftRay.intersect(plane);
+        auto botLeft = dbl ? botLeftRay * dbl.value() : glm::vec3(-bx::kFloatInfinity);
+        auto topRightRay = viewportPointToRay(glm::vec3(1));
+        auto dtr = topRightRay.intersect(plane);
+        auto topRight = dtr ? topRightRay * dtr.value() : glm::vec3(bx::kFloatInfinity);
+
+        auto centerRay = viewportPointToRay(glm::vec3(0.5));
+        return { botLeft, topRight };
+    }
+
     void CameraImpl::setProjectionMatrix(const glm::mat4& matrix) noexcept
     {
         doSetProjectionMatrix(matrix);
@@ -184,6 +197,10 @@ namespace darmok
 
     void CameraImpl::doSetProjectionMatrix(const glm::mat4& matrix) noexcept
     {
+        if (_proj == matrix)
+        {
+            return;
+        }
         _proj = matrix;
         _projInv = glm::inverse(matrix);
         _transformChanged = true;
@@ -656,6 +673,11 @@ namespace darmok
     glm::mat4 Camera::getViewProjectionInverse() const noexcept
     {
         return _impl->getViewProjectionInverse();
+    }
+
+    BoundingBox Camera::getPlaneBounds(const Plane& plane) const noexcept
+    {
+        return _impl->getPlaneBounds(plane);
     }
 
     Camera& Camera::setProjectionMatrix(const glm::mat4& matrix) noexcept

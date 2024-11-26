@@ -1,0 +1,13 @@
+{
+    "vertex": {
+        "position": { 
+            "type": "float",
+            "num": 2
+        }
+    },
+    "fragment": [
+        ["nearPoint", 3],
+        ["farPoint", 3],
+        "texCoord0"
+    ]
+}

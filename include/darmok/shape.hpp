@@ -176,6 +176,7 @@ namespace darmok
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] Line getNormalLine() const noexcept;
+        [[nodiscard]] glm::vec2 getLocalCoordinates(const glm::vec3& pos) const noexcept;
 
         [[nodiscard]] glm::vec3 getOrigin() const noexcept;
         [[nodiscard]] glm::mat4 getTransform(const glm::vec3& up = glm::vec3(0, 1, 0)) const noexcept;
@@ -203,16 +204,29 @@ namespace darmok
 
     struct DARMOK_EXPORT Grid final
     {
-        Plane plane;
+        glm::vec3 origin;
+        glm::vec3 normal;
         glm::vec2 separation;
         glm::uvec2 amount;
 
-        Grid(const Plane& plane = {}, const glm::vec2& separation = glm::vec2(1.F), const glm::uvec2& amount = glm::uvec2(10)) noexcept;
+        Grid(const glm::vec2& separation = glm::vec2(1.F)
+            , const glm::uvec2& amount = glm::uvec2(10)
+            , const glm::vec3& normal = glm::vec3(0, 1, 0)
+            , const glm::vec3& origin = glm::vec3(0)
+        ) noexcept;
+
+        [[nodiscard]] glm::vec3 getAlong() const noexcept;
+        [[nodiscard]] std::string toString() const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(plane), CEREAL_NVP(separation), CEREAL_NVP(amount));
+            archive(
+                CEREAL_NVP(normal),
+                CEREAL_NVP(origin),
+                CEREAL_NVP(separation),
+                CEREAL_NVP(amount)
+            );
         }
     };
 
@@ -447,6 +461,7 @@ namespace darmok
         bool isOutsideOf(const Plane& plane) const noexcept;
 
         [[nodiscard]] std::array<glm::vec3, 8> getCorners() const noexcept;
+        [[nodiscard]] glm::vec3 getCenter() const noexcept;
 
         [[nodiscard]] bool empty() const noexcept;
         [[nodiscard]] glm::vec3 size() const noexcept;
@@ -490,6 +505,11 @@ namespace std
     }
 
     inline std::string to_string(const darmok::Plane& v)
+    {
+        return v.toString();
+    }
+
+    inline std::string to_string(const darmok::Grid& v)
     {
         return v.toString();
     }

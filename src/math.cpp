@@ -138,6 +138,15 @@ namespace darmok
         return glm::quatLookAt(normDir, fixedUp);
     }
 
+    glm::vec3 Math::getAlongNormal(const glm::vec3& normal) noexcept
+    {
+        static const glm::vec3 yaxis(0, 1, 0);
+        static const glm::vec3 zaxis(0, 0, 1);
+        auto n = glm::normalize(normal);
+        auto candidate = (n != yaxis) ? yaxis : zaxis;
+        return glm::cross(n, candidate);
+    }
+
     glm::mat4 Math::transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) noexcept
     {
         return glm::translate(pos)

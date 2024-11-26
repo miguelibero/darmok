@@ -117,7 +117,6 @@ namespace darmok
 		static const float defaultOrthoNear;
 		static const float defaultOrthoFar;
 
-
 		[[nodiscard]] static float getNormalizedNearDepth() noexcept;
         [[nodiscard]] static glm::mat4 perspective(float fovy, float aspect, float near, float far) noexcept;
         [[nodiscard]] static glm::mat4 perspective(float fovy, float aspect, float near = defaultPerspNear) noexcept;
@@ -144,5 +143,7 @@ namespace darmok
 
 		static bool almostEqualAngle(float a, float b, float threshold = 0.01F) noexcept;
 		static glm::quat quatLookAt(const glm::vec3& direction, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f), float threshold = 0.01F) noexcept;
+	
+		static glm::vec3 getAlongNormal(const glm::vec3& normal) noexcept;
 	};
 }

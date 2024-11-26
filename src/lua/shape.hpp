@@ -18,5 +18,6 @@ namespace darmok
 		static void bindLine(sol::state_view& lua) noexcept;
 		static void bindBoundingBox(sol::state_view& lua) noexcept;
 		static void bindFrustum(sol::state_view& lua) noexcept;
+		static void bindGrid(sol::state_view& lua) noexcept;
     };
 }

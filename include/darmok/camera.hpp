@@ -24,6 +24,8 @@ namespace darmok
     struct Viewport;
     struct EntityFilter;
     class EntityView;
+    struct Plane;
+    struct BoundingBox;
 
     class DARMOK_EXPORT Camera final
     {
@@ -48,6 +50,8 @@ namespace darmok
 
         glm::mat4 getViewProjectionMatrix() const noexcept;
         glm::mat4 getViewProjectionInverse() const noexcept;
+
+        BoundingBox getPlaneBounds(const Plane& plane) const noexcept;
 
         Camera& setProjectionMatrix(const glm::mat4& matrix) noexcept;
         Camera& setPerspective(float fovy, float aspect, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;

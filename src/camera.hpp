@@ -35,6 +35,8 @@ namespace darmok
         glm::mat4 getViewProjectionMatrix() const noexcept;
         glm::mat4 getViewProjectionInverse() const noexcept;
 
+        BoundingBox getPlaneBounds(const Plane& plane) const noexcept;
+
         void setProjectionMatrix(const glm::mat4& matrix) noexcept;
         void setPerspective(float fovy, float aspect, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
         void setPerspective(float fovy, const glm::uvec2& size, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
