@@ -4,6 +4,7 @@
 #include <darmok/imgui.hpp>
 #include <darmok/optional_ref.hpp>
 #include <memory>
+#include <imgui.h>
 
 namespace darmok
 {
@@ -26,5 +27,17 @@ namespace darmok::editor
         App& _app;
         std::shared_ptr<Scene> _scene;
         OptionalRef<ImguiAppComponent> _imgui;
+
+        ImGuiID _dockDownId;
+        ImGuiID _dockRightId;
+        ImGuiID _dockLeftId;
+        ImGuiID _dockCenterId;
+
+        void renderDockspace();
+        void renderMainMenu();
+        void renderSceneTree();
+        void renderInspector();
+        void renderSceneView();
+        void renderProject();
     };
 }

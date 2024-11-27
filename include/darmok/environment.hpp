@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
 #include <darmok/color.hpp>
+#include <darmok/mesh.hpp>
 
 #include <memory>
 #include <vector>
@@ -11,7 +12,6 @@ namespace darmok
 {
     class Texture;
     class Program;
-    class IMesh;
 
     class DARMOK_EXPORT SkyboxRenderer final : public ITypeCameraComponent<SkyboxRenderer>
     {

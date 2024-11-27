@@ -7,10 +7,10 @@
 #include <darmok/render_debug.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/easing_fwd.hpp>
+#include <darmok/program.hpp>
 
 namespace darmok
 {
-    class Program;
     class Texture;
     class Transform;
     class ShadowRenderer;

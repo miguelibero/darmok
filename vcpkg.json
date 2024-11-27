@@ -18,7 +18,8 @@
     {
       "name": "imgui",
       "features": [
-        "freetype"
+        "freetype",
+        "docking-experimental"
       ]
     },
     {
