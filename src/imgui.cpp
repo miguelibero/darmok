@@ -120,8 +120,25 @@ namespace darmok
 		return render(encoder, ImGui::GetDrawData());
 	}
 
-	const uint8_t ImguiRenderPass::_imguiAlphaBlendFlags = 0x01;
+	ImguiTextureData::ImguiTextureData(const bgfx::TextureHandle& handle) noexcept
+		: handle(handle)
+		, alphaBlend(false)
+		, mip(0)
+	{
+	}
 
+	ImguiTextureData::ImguiTextureData(const ImTextureID& id) noexcept
+	{
+		union { ImTextureID id; ImguiTextureData data; } v = { id };
+		*this = v.data;
+	}
+
+	ImguiTextureData::operator ImTextureID() const noexcept
+	{
+		union { ImguiTextureData data; ImTextureID id; } v = { *this };
+		return v.id;
+	}
+	
 	bool ImguiRenderPass::render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept
 	{
 		if (!_viewId)
@@ -191,17 +208,17 @@ namespace darmok
 
 					if (NULL != cmd->TextureId)
 					{
-						union { ImTextureID ptr; struct { bgfx::TextureHandle handle; uint8_t flags; uint8_t mip; } s; } texture = { cmd->TextureId };
-						state |= 0 != (_imguiAlphaBlendFlags & texture.s.flags)
+						ImguiTextureData texData(cmd->TextureId);
+						state |= 0 != (texData.alphaBlend)
 							? BGFX_STATE_BLEND_ALPHA
 							: BGFX_STATE_NONE
 							;
-						tex = texture.s.handle;
-						auto mipEnabled = 0 != texture.s.mip;
+						tex = texData.handle;
+						auto mipEnabled = 0 != texData.mip;
 						if (mipEnabled)
 						{
 							program = _program->getHandle({ "LOD_ENABLED" });
-							const float lodEnabled[4] = { float(texture.s.mip), mipEnabled ? 1.0F : 0.0F, 0.0F, 0.0F };
+							const float lodEnabled[4] = { float(texData.mip), mipEnabled ? 1.0F : 0.0F, 0.0F, 0.0F };
 							bgfx::setUniform(_lodEnabledUniform, lodEnabled);
 						}
 					}

@@ -205,6 +205,12 @@ namespace darmok
 		[[nodiscard]] OptionalRef<const IAppComponent> getComponent(entt::id_type type) const noexcept;
 
 		template<typename T>
+		bool removeComponent()
+		{
+			return removeComponent(entt::type_hash<T>::value());
+		}
+
+		template<typename T>
 		[[nodiscard]] OptionalRef<T> getComponent() noexcept
 		{
 			auto ref = getComponent(entt::type_hash<T>::value());

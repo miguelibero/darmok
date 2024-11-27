@@ -3,13 +3,20 @@
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/scene_fwd.hpp>
+
 #include <memory>
+#include <optional>
+
 #include <imgui.h>
 
 namespace darmok
 {
     class Scene;
     class ImguiAppComponent;
+    class FrameBuffer;
+    class Camera;
+    class Transform;
 }
 
 namespace darmok::editor
@@ -32,12 +39,25 @@ namespace darmok::editor
         ImGuiID _dockRightId;
         ImGuiID _dockLeftId;
         ImGuiID _dockCenterId;
+        std::shared_ptr<FrameBuffer> _sceneBuffer;
+        OptionalRef<Camera> _editorCam;
+        std::optional<Entity> _selectedEntity;
 
-        void renderDockspace();
+        static const float _mainToolbarHeight;
+        static const ImGuiWindowFlags _fixedFlags;
+
+        void configureEditorScene(Scene& scene);
+        void configureDefaultScene(Scene& scene);
+
         void renderMainMenu();
+        void renderMainToolbar();
+        void renderDockspace();
         void renderSceneTree();
         void renderInspector();
         void renderSceneView();
         void renderProject();
+
+        void updateSceneSize(const glm::uvec2& size) noexcept;
+        void onSceneTreeTransformClicked(Transform& trans);
     };
 }

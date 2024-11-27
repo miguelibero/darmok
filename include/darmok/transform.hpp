@@ -74,6 +74,7 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(
+                CEREAL_NVP_("name", _name),
                 CEREAL_NVP_("position", _position),
                 CEREAL_NVP_("rotation", _rotation),
                 CEREAL_NVP_("scale", _scale),

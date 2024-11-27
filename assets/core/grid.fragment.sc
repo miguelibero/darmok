@@ -65,7 +65,7 @@ void main()
     float alpha2 = ft * grid(pos.xz, u_gridScale2);
     vec4 color1 = vec4(u_gridColor1.xyz, u_gridColor1.w * alpha1);
     vec4 color2 = vec4(u_gridColor2.xyz, u_gridColor2.w * alpha2);
-    gl_FragColor = mix(color1, color2, 0.5);
+    gl_FragColor = color1 + color2;
 
     float depth = computeDepth(pos);
     float eyeDepth = screen2EyeDepth(depth, u_nearPlane, u_farPlane);

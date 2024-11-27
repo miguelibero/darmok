@@ -2,10 +2,12 @@
 
 #include <darmok/export.h>
 #include <darmok/app.hpp>
+#include <darmok/texture.hpp>
 #include <memory>
 #include <bx/bx.h>
 
 struct ImGuiContext;
+typedef void* ImTextureID;
 
 namespace darmok
 {
@@ -19,6 +21,20 @@ namespace darmok
 	};
 
 	class ImguiAppComponentImpl;
+
+	struct ImguiTextureData final
+	{
+		bgfx::TextureHandle handle;
+		bool alphaBlend;
+		uint8_t mip;
+
+		ImguiTextureData(const bgfx::TextureHandle& handle) noexcept;
+		ImguiTextureData(const ImguiTextureData& other) = default;
+		ImguiTextureData(const ImTextureID& id) noexcept;
+		operator ImTextureID() const noexcept;
+	};
+
+	union ImguiTextureId { ImTextureID ptr; ImguiTextureData s; };
 
 	class DARMOK_EXPORT ImguiAppComponent final : public ITypeAppComponent<ImguiAppComponent>
     {

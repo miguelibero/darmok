@@ -1005,7 +1005,7 @@ namespace darmok
 
 	void Platform::requestWindowTitle(const std::string& title) noexcept
 	{
-
+		_impl->pushCmd<ChangeWindowTitleCmd>(title);
 	}
 
 	void* Platform::getWindowHandle() const noexcept

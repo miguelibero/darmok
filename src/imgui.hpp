@@ -23,7 +23,6 @@ namespace darmok
 		void render() noexcept;
 		void updateFonts() noexcept;
 	private:
-		static const uint8_t _imguiAlphaBlendFlags;
 		IImguiRenderer& _renderer;
 		ImGuiContext* _imgui;
 		std::optional<bgfx::ViewId> _viewId;
