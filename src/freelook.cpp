@@ -107,8 +107,8 @@ namespace darmok
             return;
         }
         glm::vec2 lookRot(
-            _input->getAxis(_config.lookRight, _config.lookLeft),
-            _input->getAxis(_config.lookUp, _config.lookDown)
+            _input->getAxis(_config.lookLeft, _config.lookRight),
+            _input->getAxis(_config.lookDown, _config.lookUp)
         );
         lookRot *= _config.lookSensitivity * deltaTime;
         lookRot = glm::clamp(lookRot, -_config.maxLookAngle, _config.maxLookAngle);
@@ -117,9 +117,9 @@ namespace darmok
         _rot = glm::quat(glm::vec3(0, lookRot.x, 0)) * _rot * glm::quat(glm::vec3(-lookRot.y, 0, 0));
 
         glm::vec3 dir(
-            _input->getAxis(_config.moveRight, _config.moveLeft),
+            _input->getAxis(_config.moveLeft, _config.moveRight),
             0,
-            _input->getAxis(_config.moveForward, _config.moveBackward)
+            _input->getAxis(_config.moveBackward, _config.moveForward)
         );
 
         dir = _rot * dir;

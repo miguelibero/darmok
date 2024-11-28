@@ -30,6 +30,14 @@ namespace darmok
 
     const std::string& CameraImpl::getName() const noexcept
     {
+        if (!_name.empty())
+        {
+            return _name;
+        }
+        if (auto trans = getTransform())
+        {
+            return trans->getName();
+        }
         return _name;
     }
 

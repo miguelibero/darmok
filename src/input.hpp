@@ -207,7 +207,7 @@ namespace darmok
 		using Sensitivity = InputSensitivity;
 		using Dirs = InputDirs;
 		using Dir = InputDir;
-		float getAxis(const Dirs& pos, const Dirs& neg, const Sensitivity& sensi) const noexcept;
+		float getAxis(const Dirs& neg, const Dirs& pos, const Sensitivity& sensi) const noexcept;
 
 		void afterUpdate(float deltaTime) noexcept;
 

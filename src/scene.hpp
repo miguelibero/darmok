@@ -15,16 +15,20 @@
 
 namespace darmok
 {
+    class ISceneDelegate;
     class ISceneComponent;
     class Scene;
     class App;
-    class FrameBuffer;    
+    class Camera;
+    class FrameBuffer;
 
     class SceneImpl final : IRenderChainDelegate
     {
     public:
         SceneImpl(Scene& sceme) noexcept;
         ~SceneImpl() noexcept;
+
+        void setDelegate(const OptionalRef<ISceneDelegate>& dlg) noexcept;
 
         void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
@@ -89,6 +93,7 @@ namespace darmok
         std::optional<Viewport> _viewport;
         EntityFilter _updateFilter;
         static ComponentDependencies _compDeps;
+        OptionalRef<ISceneDelegate> _delegate;
 
         Components::iterator findSceneComponent(entt::id_type type) noexcept;
         Components::const_iterator findSceneComponent(entt::id_type type) const noexcept;
@@ -99,5 +104,8 @@ namespace darmok
         Viewport getRenderChainViewport() const noexcept override;
         void onRenderChainChanged() noexcept override;
         void destroyPendingEntities() noexcept;
+
+        bool shouldCameraRender(const Camera& cam) const;
+        bool shouldEntityBeSerialized(Entity entity) const;
     };
 }

@@ -16,6 +16,7 @@
 namespace darmok
 {    
     class Scene;
+    class Camera;
 
     class DARMOK_EXPORT BX_NO_VTABLE ISceneComponent
     {
@@ -26,6 +27,7 @@ namespace darmok
         virtual void shutdown() {}
         virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
         virtual void update(float deltaTime) {}
+
     };
 
     template<typename T>
@@ -36,6 +38,13 @@ namespace darmok
         {
             return entt::type_hash<T>::value();
         }
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE ISceneDelegate
+    {
+    public:
+        virtual bool shouldCameraRender(const Camera& cam) const { return true; }
+        virtual bool shouldEntityBeSerialized(Entity entity) const { return true; }
     };
 
     class App;
@@ -69,6 +78,8 @@ namespace darmok
         const std::optional<Viewport>& getViewport() const noexcept;
         Scene& setViewport(const std::optional<Viewport>& vp) noexcept;
         Viewport getCurrentViewport() const noexcept;
+
+        Scene& setDelegate(const OptionalRef<ISceneDelegate>& dlg) noexcept;
 
         void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;

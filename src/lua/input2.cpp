@@ -90,11 +90,11 @@ namespace darmok
 		return false;
 	}
 
-	float LuaInput::getAxis(const Input& input, const sol::object& posObj, const sol::object& negObj) noexcept
+	float LuaInput::getAxis(const Input& input, const sol::object& negObj, const sol::object& posObj) noexcept
 	{
-		auto pos = readDirs(posObj);
 		auto neg = readDirs(negObj);
-		return input.getAxis(pos, neg);
+		auto pos = readDirs(posObj);
+		return input.getAxis(neg, pos);
 	}
 
 	InputEvents LuaInput::readEvents(const sol::object& val) noexcept

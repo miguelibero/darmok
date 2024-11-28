@@ -12,9 +12,15 @@
 #include <darmok/render_forward.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/culling.hpp>
+#include <darmok/input.hpp>
+#include <darmok/mesh.hpp>
+#include <darmok/shape.hpp>
+#include <darmok/program.hpp>
+#include <darmok/material.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_stdlib.h>
+#include <ImGuizmo.h>
 
 namespace darmok::editor
 {
@@ -24,18 +30,24 @@ namespace darmok::editor
         , _dockRightId(0)
         , _dockCenterId(0)
         , _dockDownId(0)
+        , _mouseSceneViewMode(MouseSceneViewMode::None)
+        , _sceneViewFocused(false)
     {
     }
 
     void EditorAppDelegate::configureEditorScene(Scene& scene)
     {
+        scene.setDelegate(*this);
+
+        static const std::string name = "Editor Camera";
         auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx");
-        auto camEntity = _scene->createEntity();
-        auto& cam = _scene->addComponent<Camera>(camEntity);
-        _scene->addComponent<Transform>(camEntity)
+        auto camEntity = scene.createEntity();
+        auto& cam = scene.addComponent<Camera>(camEntity);
+
+        scene.addComponent<Transform>(camEntity)
             .setPosition(glm::vec3(10, 5, -10))
             .lookAt(glm::vec3(0))
-            .setName("Editor Camera");
+            .setName(name);
         cam.setViewportPerspective(60.F, 0.3F, 10000.F);
         cam.addComponent<SkyboxRenderer>(skyboxTex);
         cam.addComponent<GridRenderer>();
@@ -56,21 +68,33 @@ namespace darmok::editor
         ShadowRendererConfig shadowConfig;
         shadowConfig.cascadeAmount = 3;
 
-        auto camEntity = _scene->createEntity();
-        auto& cam = _scene->addComponent<Camera>(camEntity)
+        auto camEntity = scene.createEntity();
+        auto& cam = scene.addComponent<Camera>(camEntity)
             .setViewportPerspective(60.F, 0.3F, 1000.F);
         cam.addComponent<ShadowRenderer>(shadowConfig);
         cam.addComponent<LightingRenderComponent>();
         cam.addComponent<ForwardRenderer>();
         cam.addComponent<FrustumCuller>();
-        cam.setEnabled(false);
-        _scene->addComponent<Transform>(camEntity, glm::vec3(0.F, 1.F, -10.F))
+
+        scene.addComponent<Transform>(camEntity, glm::vec3(0.F, 1.F, -10.F))
             .setName("Main Camera");
-        auto lightEntity = _scene->createEntity();
-        auto& light = _scene->addComponent<DirectionalLight>(lightEntity);
-        _scene->addComponent<Transform>(lightEntity, glm::vec3(0.F, 3.F, 0.F))
+        auto lightEntity = scene.createEntity();
+        auto& light = scene.addComponent<DirectionalLight>(lightEntity);
+        scene.addComponent<Transform>(lightEntity, glm::vec3(0.F, 3.F, 0.F))
             .setEulerAngles(glm::vec3(50.F, -30.F, 0.F))
             .setName("Directional Light");
+
+        auto cubeEntity = scene.createEntity();
+
+        // TODO: need to find a way to serialize the mesh and the material in the scene
+        auto prog = std::make_shared<Program>(StandardProgramType::Forward);
+        auto mesh = MeshData(Cube()).createMesh(prog->getVertexLayout());
+        auto mat = std::make_shared<Material>(prog);
+        mat->setBaseColor(Colors::white());
+
+        scene.addComponent<Renderable>(cubeEntity, std::move(mesh), mat);
+        scene.addComponent<Transform>(cubeEntity)
+            .setName("Cube");
     }
 
     void EditorAppDelegate::init()
@@ -80,9 +104,8 @@ namespace darmok::editor
         _app.setDebugFlag(BGFX_DEBUG_TEXT);
 
         _imgui = _app.addComponent<ImguiAppComponent>(*this);
-        _scene = _app.addComponent<SceneAppComponent>().getScene();
-
-        _sceneBuffer = std::make_shared<FrameBuffer>(win.getPixelSize());
+        auto& scenes = _app.addComponent<SceneAppComponent>();
+        _scene = scenes.addScene();
         
         configureEditorScene(*_scene);
         configureDefaultScene(*_scene);
@@ -101,6 +124,9 @@ namespace darmok::editor
         _dockRightId = 0;
         _dockLeftId = 0;
         _dockCenterId = 0;
+        _sceneViewFocused = false;
+        _mouseSceneViewMode = MouseSceneViewMode::None;
+        _scenePath.reset();
     }
 
     void EditorAppDelegate::imguiSetup()
@@ -142,7 +168,36 @@ namespace darmok::editor
             _dockDownId = ImGui::DockBuilderSplitNode(dockId, ImGuiDir_Down, 0.25f, nullptr, &dockId);
             _dockLeftId = ImGui::DockBuilderSplitNode(dockId, ImGuiDir_Left, 0.25F, nullptr, &dockId);
             _dockCenterId = dockId;
+
+            ImGui::DockBuilderDockWindow(_sceneTreeWindowName, _dockLeftId);
+            ImGui::DockBuilderDockWindow(_inspectorWindowName, _dockRightId);
+            ImGui::DockBuilderDockWindow(_sceneViewWindowName, _dockCenterId);
+            ImGui::DockBuilderDockWindow(_projectWindowName, _dockDownId);
         }
+    }
+
+    bool EditorAppDelegate::shouldCameraRender(const Camera& cam) const noexcept
+    {
+        return _editorCam.ptr() == &cam;
+    }
+
+    bool EditorAppDelegate::shouldEntityBeSerialized(Entity entity) const noexcept
+    {
+        return !isEditorEntity(entity);
+    }
+
+    bool EditorAppDelegate::isEditorEntity(Entity entity) const noexcept
+    {
+        if (_scene && _editorCam && _scene->getEntity(_editorCam.value()) == entity)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    void EditorAppDelegate::saveScene()
+    {
+
     }
 
     void EditorAppDelegate::renderMainMenu()
@@ -155,6 +210,10 @@ namespace darmok::editor
                 {
                 }
                 if (ImGui::MenuItem("Save", "Ctrl+S"))
+                {
+                    saveScene();
+                }
+                if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
                 {
                 }
                 if (ImGui::MenuItem("Close", "Ctrl+W"))
@@ -216,18 +275,30 @@ namespace darmok::editor
         {
             return;
         }
-        _selectedEntity = _scene->getEntity(trans);
+        onEntitySelected(_scene->getEntity(trans));
+    }
+
+    const char* EditorAppDelegate::_sceneTreeWindowName = "Scene Tree";
+    const char* EditorAppDelegate::_sceneViewWindowName = "Scene View";
+    const char* EditorAppDelegate::_projectWindowName = "Project";
+    const char* EditorAppDelegate::_inspectorWindowName = "Inspector";
+
+    void EditorAppDelegate::onEntitySelected(Entity entity) noexcept
+    {
+        _selectedEntity = entity;
     }
 
     void EditorAppDelegate::renderSceneTree()
     {
-        static const char* winName = "Scene Tree";
-        ImGui::DockBuilderDockWindow(winName, _dockLeftId);
-        if (ImGui::Begin(winName))
+        if (ImGui::Begin(_sceneTreeWindowName))
         {
             if (ImGui::TreeNode("Scene"))
             {
                 _scene->forEachChild([this](auto entity, auto& trans) {
+                    if (isEditorEntity(entity))
+                    {
+                        return false;
+                    }
                     std::string name = trans.getName();
                     if (name.empty())
                     {
@@ -238,6 +309,10 @@ namespace darmok::editor
                     {
                         flags |= ImGuiTreeNodeFlags_Leaf;
                     }
+                    if (_selectedEntity == entity)
+                    {
+                        flags |= ImGuiTreeNodeFlags_Selected;
+                    }
                     if (ImGui::TreeNodeEx(name.c_str(), flags))
                     {
                         if (ImGui::IsItemClicked())
@@ -247,18 +322,16 @@ namespace darmok::editor
                         ImGui::TreePop();
                     }
                     return false;
-                    });
+                });
                 ImGui::TreePop();
             }
-            ImGui::End();
         }
+        ImGui::End();
     }
 
     void EditorAppDelegate::renderInspector()
     {
-        static const char* winName = "Inspector";
-        ImGui::DockBuilderDockWindow(winName, _dockRightId);
-        if (ImGui::Begin(winName))
+        if (ImGui::Begin(_inspectorWindowName))
         {
             if (_scene && _selectedEntity)
             {
@@ -301,8 +374,8 @@ namespace darmok::editor
                     }
                 }
             }
-            ImGui::End();
         }
+        ImGui::End();
     }
 
     void EditorAppDelegate::updateSceneSize(const glm::uvec2& size) noexcept
@@ -311,7 +384,7 @@ namespace darmok::editor
         {
             return;
         }
-        if (size == _sceneBuffer->getSize())
+        if (_sceneBuffer && size == _sceneBuffer->getSize())
         {
             return;
         }
@@ -324,35 +397,93 @@ namespace darmok::editor
     }
 
     void EditorAppDelegate::renderSceneView()
-    {
-        static const char* winName = "Scene View";
-        ImGui::DockBuilderDockWindow(winName, _dockCenterId);
-        if (ImGui::Begin(winName))
+    {        
+        if (ImGui::Begin(_sceneViewWindowName))
         {
-            ImVec2 min = ImGui::GetWindowContentRegionMin();
-            ImVec2 max = ImGui::GetWindowContentRegionMax();
-            ImVec2 size(max.x - min.x, max.y - min.y);
+            // ImVec2 min = ImGui::GetWindowContentRegionMin();
+            // ImVec2 max = ImGui::GetWindowContentRegionMax();
+            // ImVec2 size(max.x - min.x, max.y - min.y);
+            auto size = ImGui::GetContentRegionAvail();
             updateSceneSize(glm::uvec2(size.x, size.y));
 
-            ImguiTextureData texData(_sceneBuffer->getTexture()->getHandle());
-            ImGui::Image(texData, size);
+            if (_sceneBuffer)
+            {
+                ImguiTextureData texData(_sceneBuffer->getTexture()->getHandle());
+                ImGui::Image(texData, size);
+                renderGizmos();
+            }
 
-            ImGui::End();
+            _sceneViewFocused = ImGui::IsWindowFocused();
+            if (ImGui::IsWindowHovered())
+            {
+                if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
+                {
+                    _mouseSceneViewMode = MouseSceneViewMode::Look;
+                }
+                else if (ImGui::IsMouseDown(ImGuiMouseButton_Middle))
+                {
+                    _mouseSceneViewMode = MouseSceneViewMode::Drag;
+                }
+                else
+                {
+                    _mouseSceneViewMode = MouseSceneViewMode::None;
+                }
+            }
+            else
+            {
+                _mouseSceneViewMode = MouseSceneViewMode::None;
+            }
         }
+        ImGui::End();
     }
 
     void EditorAppDelegate::renderProject()
     {
-        static const char* winName = "Project";
-        ImGui::DockBuilderDockWindow(winName, _dockDownId);
-        if (ImGui::Begin(winName))
+        if (ImGui::Begin(_projectWindowName))
         {
-            ImGui::End();
         }
+        ImGui::End();
+    }
+
+    void EditorAppDelegate::renderGizmos()
+    {
+        if (!_editorCam || !_selectedEntity || !_scene)
+        {
+            return;
+        }
+
+        ImVec2 min = ImGui::GetItemRectMin();
+        ImVec2 size = ImGui::GetItemRectSize();
+        ImGuizmo::SetRect(min.x, min.y, size.x, size.y);
+
+        ImGuizmo::Enable(true);
+
+        auto view = _editorCam->getViewMatrix();
+        ImGuizmo::ViewManipulate(glm::value_ptr(view), 10.0F, ImVec2(0, 0), ImVec2(10, 10), 0x10101010);
+
+        if (auto trans = _scene->getComponent<Transform>(_selectedEntity.value()))
+        {
+            // view *= trans->getWorldMatrix();
+
+            auto proj = _editorCam->getProjectionMatrix();
+            auto op = ImGuizmo::TRANSLATE;
+            auto mode = ImGuizmo::LOCAL;
+            auto mtx = trans->getLocalMatrix();
+
+            if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), op, mode, glm::value_ptr(mtx)))
+            {
+                trans->setLocalMatrix(mtx);
+            }
+        }
+
+
+
     }
 
     void EditorAppDelegate::imguiRender()
     {
+        ImGuizmo::BeginFrame();
+
         renderMainMenu();
         renderDockspace();
         renderMainToolbar();
@@ -364,5 +495,58 @@ namespace darmok::editor
 
     void EditorAppDelegate::update(float deltaTime)
     {
+        auto trans = _editorCam->getTransform();
+        if (!trans)
+        {
+            return;
+        }
+
+        auto& input = _app.getInput();
+
+        static const std::array<InputAxis, 2> lookAxis = {
+            InputAxis{
+                { MouseInputDir{ MouseAnalog::Position, InputDirType::Left } },
+                { MouseInputDir{ MouseAnalog::Position, InputDirType::Right } }
+            },
+            InputAxis{
+                { MouseInputDir{ MouseAnalog::Position, InputDirType::Down } },
+                { MouseInputDir{ MouseAnalog::Position, InputDirType::Up } }
+            }
+        };
+        static const std::array<InputAxis, 2> moveAxis = {
+            InputAxis{
+                { KeyboardInputEvent{ KeyboardKey::Left } },
+                { KeyboardInputEvent{ KeyboardKey::Right } }
+            },
+            InputAxis{
+                { KeyboardInputEvent{ KeyboardKey::Down }, MouseInputDir{ MouseAnalog::Scroll, InputDirType::Up } },
+                { KeyboardInputEvent{ KeyboardKey::Up }, MouseInputDir{ MouseAnalog::Scroll, InputDirType::Down } }
+            }
+        };
+
+        auto rot = trans->getRotation();
+
+        if (_mouseSceneViewMode != MouseSceneViewMode::None)
+        {
+            glm::vec2 look;
+            input.getAxis(look, lookAxis);
+            look.y = Math::clamp(look.y, -90.F, 90.F);
+            look = glm::radians(look);
+
+            if (_mouseSceneViewMode == MouseSceneViewMode::Look)
+            {
+                rot = glm::quat(glm::vec3(0, look.x, 0)) * rot * glm::quat(glm::vec3(look.y, 0, 0));
+                trans->setRotation(rot);
+            }
+        }
+
+        if (_sceneViewFocused)
+        {
+            glm::vec2 move;
+            input.getAxis(move, moveAxis);
+            move *= 0.05; // sensitivity
+            auto dir = rot * glm::vec3(move.x, 0.F, move.y);
+            trans->setPosition(trans->getPosition() + dir);
+        }
     }
 }

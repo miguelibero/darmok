@@ -1394,7 +1394,7 @@ namespace darmok
 		return 0.F;
 	}
 
-	float InputImpl::getAxis(const Dirs& positive, const Dirs& negative, const Sensitivity& sensi) const noexcept
+	float InputImpl::getAxis(const Dirs& negative, const Dirs& positive, const Sensitivity& sensi) const noexcept
 	{
 		float v = 0;
 		for (auto& dir : positive)
@@ -1758,9 +1758,14 @@ namespace darmok
 		return _impl->checkEvents(evs);
 	}
 
-	float Input::getAxis(const InputDirs& positive, const InputDirs& negative, const Sensitivity& sensi) const noexcept
+	float Input::getAxis(const InputDirs& negative, const InputDirs& positive, const Sensitivity& sensi) const noexcept
 	{
-		return _impl->getAxis(positive, negative, sensi);
+		return _impl->getAxis(negative, positive, sensi);
+	}
+
+	float Input::getAxis(const InputAxis& axis, const Sensitivity& sensitivity) const noexcept
+	{
+		return _impl->getAxis(axis.first, axis.second, sensitivity);
 	}
 
 #pragma endregion Input

@@ -183,7 +183,7 @@ namespace darmok
 
 		static bool checkEvent(const Input& input, const sol::object& ev) noexcept;
 		static bool checkEvents(const Input& input, const sol::table& evs) noexcept;
-		static float getAxis(const Input& input, const sol::object& positive, const sol::object& negative) noexcept;
+		static float getAxis(const Input& input, const sol::object& negative, const sol::object& positive) noexcept;
 
 		static std::optional<InputEvent> readEvent(const sol::object& val) noexcept;
 		static InputEvents readEvents(const sol::object& val) noexcept;

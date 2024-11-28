@@ -271,6 +271,7 @@ namespace darmok
 
 	using InputDir = std::variant<MouseInputDir, GamepadInputDir, InputEvent>;
 	using InputDirs = std::vector<InputDir>;
+	using InputAxis = std::pair<InputDirs, InputDirs>;
 
 	static bool operator==(const InputDir& a, const InputDir& b) noexcept;
 
@@ -335,7 +336,17 @@ namespace darmok
 		bool checkEvents(const InputEvents& evs) const noexcept;
 
 		using Sensitivity = InputSensitivity;
-		float getAxis(const InputDirs& positive, const InputDirs& negative, const Sensitivity& sensitivity = {}) const noexcept;
+		float getAxis(const InputDirs& negative, const InputDirs& positive, const Sensitivity& sensitivity = {}) const noexcept;
+		float getAxis(const InputAxis& axis, const Sensitivity& sensitivity = {}) const noexcept;
+
+		template<glm::length_t L, typename T = float, glm::qualifier Q = glm::defaultp>
+		void getAxis(glm::vec<L, T, Q>& v, const std::array<InputAxis, L>& axis, const Sensitivity& sensitivity = {}) const noexcept
+		{
+			for (glm::length_t i = 0; i < L; ++i)
+			{
+				v[i] = getAxis(axis[i], sensitivity);
+			}
+		}
 		
 		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept;
 		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
