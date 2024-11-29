@@ -1,14 +1,19 @@
 #pragma once
 
-#include <memory>
-#include <optional>
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/uniform.hpp>
+
+#include <memory>
+#include <optional>
+
 #include <bgfx/bgfx.h>
+#include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/memory.hpp>
 
 namespace darmok
 {
@@ -50,6 +55,11 @@ namespace darmok
         virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; };
         virtual void render(bgfx::Encoder& encoder) noexcept = 0;
         virtual void shutdown() = 0;
+
+        template <class Archive>
+        void serialize(Archive& ar)
+        {
+        }
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderChainDelegate
@@ -96,6 +106,12 @@ namespace darmok
 
         bool removeStep(const IRenderChainStep& step) noexcept;
         bool empty() const noexcept;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(_steps);
+        }
 
     private:
         IRenderChainDelegate& _delegate;

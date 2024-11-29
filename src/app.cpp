@@ -794,18 +794,6 @@ namespace darmok
 			[type](auto& comp) { return comp->getAppComponentType() == type; });
 	}
 
-	AppImpl::ComponentDependencies AppImpl::_compDeps;
-
-	void AppImpl::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
-	{
-		if (typeId1 == typeId2)
-		{
-			throw std::invalid_argument("dependency loop");
-		}
-		_compDeps[typeId1].insert(typeId2);
-		_compDeps[typeId2].insert(typeId1);
-	}
-
 	bool AppImpl::removeComponent(entt::id_type type) noexcept
 	{
 		auto itr = findComponent(type);
@@ -813,17 +801,6 @@ namespace darmok
 		if (found)
 		{
 			_components.erase(itr);
-		}
-		auto itr2 = _compDeps.find(type);
-		if (itr2 != _compDeps.end())
-		{
-			for (auto& depTypeId : itr2->second)
-			{
-				if (removeComponent(depTypeId))
-				{
-					found = true;
-				}
-			}
 		}
 		return found;
 	}

@@ -148,13 +148,10 @@ namespace darmok
         bool shouldEntityBeCulled(Entity entity) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
-        static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
+        static void bindMeta() noexcept;
 
-        template<typename T1, typename T2>
-        static void registerComponentDependency()
-        {
-            registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
-        }
+        template<class Archive>
+        void serialize(Archive& archive);
 
     private:
         std::unique_ptr<CameraImpl> _impl;

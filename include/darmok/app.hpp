@@ -251,14 +251,6 @@ namespace darmok
 			return addComponent<T>(std::forward<A>(args)...);
 		}
 
-		static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
-
-		template<typename T1, typename T2>
-		static void registerComponentDependency()
-		{
-			registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
-		}
-
 	protected:
 		void render() const;
 

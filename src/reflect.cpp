@@ -1,5 +1,6 @@
 #include <darmok/reflect.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/camera.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/reflect_serialize.hpp>
 
@@ -21,6 +22,7 @@ namespace darmok
     {
 		ReflectionSerializeUtils::bind();
         Transform::bindMeta();
+		Camera::bindMeta();
     }
 
 	const void* ReflectionUtils::getRefPtr(const entt::meta_any& any)

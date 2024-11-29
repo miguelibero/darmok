@@ -5,6 +5,14 @@
 #include <darmok/material_fwd.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/glm_serialize.hpp>
+
+#include <cereal/cereal.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/variant.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/memory.hpp>
 
 namespace darmok
 {
@@ -98,12 +106,18 @@ namespace darmok
         void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
-        static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
-
-        template<typename T1, typename T2>
-        static void registerComponentDependency()
+        template<typename Archive>
+        void serialize(Archive& archive)
         {
-            registerComponentDependency(entt::type_hash<T1>::value(), entt::type_hash<T2>::value());
+            archive(
+                CEREAL_NVP_("name", _name),
+                CEREAL_NVP_("enabled", _enabled),
+                CEREAL_NVP_("proj", _proj),
+                CEREAL_NVP_("viewportProj", _vpProj),
+                CEREAL_NVP_("cullingFilter", _cullingFilter),
+                CEREAL_NVP_("components", _components),
+                CEREAL_NVP_("renderChain", _renderChain)
+            );
         }
 
     private:
@@ -121,6 +135,14 @@ namespace darmok
             float fovy;
             float near;
             float far;
+
+            template<typename Archive>
+            void serialize(Archive& archive)
+            {
+                CEREAL_NVP(fovy);
+                CEREAL_NVP(near);
+                CEREAL_NVP(far);
+            }
         };
 
         struct OrthoData final
@@ -128,6 +150,14 @@ namespace darmok
             glm::vec2 center;
             float near;
             float far;
+
+            template<typename Archive>
+            void serialize(Archive& archive)
+            {
+                CEREAL_NVP(center);
+                CEREAL_NVP(near);
+                CEREAL_NVP(far);
+            }
         };
 
         using ProjectionData = std::variant<PerspectiveData, OrthoData>;
@@ -138,8 +168,6 @@ namespace darmok
 
         using Components = std::vector<std::shared_ptr<ICameraComponent>>;
         Components _components;
-        using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
-        static ComponentDependencies _compDeps;
 
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;

@@ -27,11 +27,15 @@ namespace darmok
         virtual void render() {};
         virtual void update(float deltaTime) {};
         virtual void shutdown() {};
-
         virtual bool shouldEntityBeCulled(Entity entity) { return false; };
         virtual void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) {};
         virtual void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) { };
         virtual void onCameraTransformChanged() {};
+
+        template <class Archive>
+        void serialize(Archive& ar)
+        {
+        }
     };
 
     template<typename T>

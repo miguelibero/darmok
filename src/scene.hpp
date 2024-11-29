@@ -72,13 +72,10 @@ namespace darmok
         void render();
         void shutdown();
 
-        static void registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2);
-
         void setUpdateFilter(const EntityFilter& filter) noexcept;
         const EntityFilter& getUpdateFilter() const noexcept;
     private:
         using Components = std::vector<std::shared_ptr<ISceneComponent>>;
-        using ComponentDependencies = std::unordered_map<entt::id_type, std::unordered_set<entt::id_type>>;
 
         std::vector<Entity> _pendingDestroy;
         bool _pendingDestroyAll;
@@ -92,7 +89,6 @@ namespace darmok
         RenderChain _renderChain;
         std::optional<Viewport> _viewport;
         EntityFilter _updateFilter;
-        static ComponentDependencies _compDeps;
         OptionalRef<ISceneDelegate> _delegate;
 
         Components::iterator findSceneComponent(entt::id_type type) noexcept;

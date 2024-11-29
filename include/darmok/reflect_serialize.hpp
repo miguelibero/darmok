@@ -16,6 +16,32 @@
 #include <stack>
 #include <functional>
 
+#define DARMOK_IMPLEMENT_TEMPLATE_CEREAL_SERIALIZE(funcName)	                                    \
+template void funcName<cereal::BinaryOutputArchive>(cereal::BinaryOutputArchive&);                  \
+template void funcName<cereal::BinaryInputArchive>(cereal::BinaryInputArchive&);                    \
+template void funcName<cereal::PortableBinaryOutputArchive>(cereal::PortableBinaryOutputArchive&);  \
+template void funcName<cereal::PortableBinaryInputArchive>(cereal::PortableBinaryInputArchive&);    \
+template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);                        \
+template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
+template void funcName<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);                      \
+template void funcName<cereal::JSONInputArchive>(cereal::JSONInputArchive&);                        \
+template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);                        \
+template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
+
+#define DARMOK_IMPLEMENT_TEMPLATE_CEREAL_SAVE(funcName)	                                            \
+template void funcName<cereal::BinaryOutputArchive>(cereal::BinaryOutputArchive&);                  \
+template void funcName<cereal::PortableBinaryOutputArchive>(cereal::PortableBinaryOutputArchive&);  \
+template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);                        \
+template void funcName<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);                      \
+template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);                        \
+
+#define DARMOK_IMPLEMENT_TEMPLATE_CEREAL_LOAD(funcName)	                                            \
+template void funcName<cereal::BinaryInputArchive>(cereal::BinaryInputArchive&);                    \
+template void funcName<cereal::PortableBinaryInputArchive>(cereal::PortableBinaryInputArchive&);    \
+template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
+template void funcName<cereal::JSONInputArchive>(cereal::JSONInputArchive&);                        \
+template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
+
 namespace darmok
 {
     // using this instead of cereal::UserDataAdapter

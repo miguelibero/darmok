@@ -16,6 +16,8 @@
 #include <glm/gtx/string_cast.hpp>
 #include <bx/math.h>
 
+using namespace entt::literals;
+
 namespace darmok
 {
     CameraImpl::CameraImpl(Camera& cam, const glm::mat4& projMatrix) noexcept
@@ -409,18 +411,6 @@ namespace darmok
     }
 
 
-    CameraImpl::ComponentDependencies CameraImpl::_compDeps;
-
-    void CameraImpl::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
-    {
-        if (typeId1 == typeId2)
-        {
-            throw std::invalid_argument("dependency loop");
-        }
-        _compDeps[typeId1].insert(typeId2);
-        _compDeps[typeId2].insert(typeId1);
-    }
-
     bool CameraImpl::removeComponent(entt::id_type type) noexcept
     {
         auto itr = findComponent(type);
@@ -428,17 +418,6 @@ namespace darmok
         if (found)
         {
             _components.erase(itr);
-        }
-        auto itr2 = _compDeps.find(type);
-        if (itr2 != _compDeps.end())
-        {
-            for (auto& depTypeId : itr2->second)
-            {
-                if (removeComponent(depTypeId))
-                {
-                    found = true;
-                }
-            }
         }
         return found;
     }
@@ -894,8 +873,25 @@ namespace darmok
         _impl->beforeRenderEntity(entity, viewId, encoder);
     }
 
-    void Camera::registerComponentDependency(entt::id_type typeId1, entt::id_type typeId2)
+    void Camera::bindMeta() noexcept
     {
-        CameraImpl::registerComponentDependency(typeId1, typeId2);
+        ReflectionSerializeUtils::metaSerialize<Camera>();
+        ReflectionUtils::metaEntityComponent<Camera>("Camera")
+            .ctor()
+            .func<&Camera::getName>("getName"_hs)
+            .func<&Camera::setName, entt::as_void_t>("setName"_hs)
+            .func<&Camera::isEnabled>("isEnabled"_hs)
+            .func<&Camera::setEnabled, entt::as_void_t>("setEnabled"_hs)
+            .func<&Camera::getProjectionMatrix>("getProjectionMatrix"_hs)
+            .func<&Camera::setProjectionMatrix, entt::as_void_t>("setProjectionMatrix"_hs)
+            ;
     }
+
+    template<class Archive>
+    void Camera::serialize(Archive& archive)
+    {
+        _impl->serialize(archive);
+    }
+
+    DARMOK_IMPLEMENT_TEMPLATE_CEREAL_SERIALIZE(Camera::serialize)
 }
