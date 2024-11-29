@@ -53,6 +53,7 @@ namespace darmok::editor
         OptionalRef<ImguiAppComponent> _imgui;
         MouseSceneViewMode _mouseSceneViewMode;
         bool _sceneViewFocused;
+        bool _scenePlaying;
 
         ImGuiID _dockDownId;
         ImGuiID _dockRightId;
@@ -62,8 +63,9 @@ namespace darmok::editor
         OptionalRef<Camera> _editorCam;
         std::optional<Entity> _selectedEntity;
         std::optional<std::filesystem::path> _scenePath;
+        ImFont* _symbolsFont;
+        float _mainToolbarHeight;
 
-        static const float _mainToolbarHeight;
         static const ImGuiWindowFlags _fixedFlags;
         static const char* _sceneTreeWindowName;
         static const char* _sceneViewWindowName;
@@ -88,6 +90,11 @@ namespace darmok::editor
         bool isEditorEntity(Entity entity) const noexcept;
 
         void onEntitySelected(Entity entity) noexcept;
-        void saveScene();
+
+        void saveScene(bool forceNewPath = false);
+        void openScene();
+        void playScene();
+        void stopScene();
+        void pauseScene();
     };
 }

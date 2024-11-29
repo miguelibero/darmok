@@ -21,7 +21,7 @@ function init()
     lightTrans.position = { -1, 1, -1 }
     lightTrans:look_at({ 0, 0, 0 })
     lightEntity:add_component(PointLight, 2)
-        .radius = 40
+        .range = 40
     lightEntity:add_component(AmbientLight, 0.4)
 
     local meshEntity = scene:create_entity()

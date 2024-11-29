@@ -84,7 +84,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * loading models using assimp (FBX, gltf, etc...)
 * serializing models from assimp into binary using cereal
 * lua scripting
-    * lua debugging
     * coroutines similar to unity
 * multiple UI options
     * imgui for tooling
@@ -100,8 +99,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * ozz skeleton & animations
 * dynamic font texture generation
 * play sounds and music (wav & mp3)
-* editor using Imgui
-    *
+* editor using imgui
 
 #### Upcoming
 * frame limiting
@@ -119,10 +117,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
     * loaders should return unique_ptr
     * move lua bindings to separate library?
-    * C++ coroutines could be useful in some places
-* more stuff serialization
-    * binary texture atlas
-    * material
+    * C++ coroutines could be useful in some places (async asset loading)
 * custom UI module (rmlui is nice but slow)
 
 #### In the future
@@ -132,8 +127,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * 2d physics
 * instancing
 * 3d physics materials
+* baked shadowmaps
 * multithreaded updates ([Ubisoft](https://www.youtube.com/watch?v=X1T3IQ4N-3g))
-* support multiple imgui app components with different transforms
 * spine animations
 * unify use of allocators everywhere
 * progressive asset loaders
@@ -173,7 +168,7 @@ function init()
     lightEntity:add_component(AmbientLight, 0.2)
     lightEntity:add_component(Transform, { 1, 1, -1 })
     local light = lightEntity:add_component(PointLight, 2)
-    light.radius = 5
+    light.range = 5
 
     local mesh = MeshData.new_sphere():create_mesh(program.vertex_layout)
     scene:create_entity():add_component(Renderable, mesh, program, Color.green)

@@ -1,6 +1,7 @@
 {
     "files": {
         "noto.ttf": "copy",
+        "MaterialIcons-Regular.ttf": "copy",
         "cubemap.ktx": {
             "image": {
                 "cubemap": [

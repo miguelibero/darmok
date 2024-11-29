@@ -1,4 +1,5 @@
-#include <darmok-editor/app.hpp>
+﻿#include <darmok-editor/app.hpp>
+#include <darmok-editor/IconsMaterialDesign.h>
 #include <darmok/window.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/scene.hpp>
@@ -22,6 +23,7 @@
 #include <imgui_stdlib.h>
 #include <ImGuizmo.h>
 
+
 namespace darmok::editor
 {
     EditorAppDelegate::EditorAppDelegate(App& app)
@@ -32,6 +34,9 @@ namespace darmok::editor
         , _dockDownId(0)
         , _mouseSceneViewMode(MouseSceneViewMode::None)
         , _sceneViewFocused(false)
+        , _symbolsFont(nullptr)
+        , _scenePlaying(false)
+        , _mainToolbarHeight(0.F)
     {
     }
 
@@ -113,6 +118,8 @@ namespace darmok::editor
 
     void EditorAppDelegate::shutdown()
     {
+        stopScene();
+
         _scene.reset();
         _sceneBuffer.reset();
         _editorCam.reset();
@@ -126,7 +133,9 @@ namespace darmok::editor
         _dockCenterId = 0;
         _sceneViewFocused = false;
         _mouseSceneViewMode = MouseSceneViewMode::None;
+        _symbolsFont = nullptr;
         _scenePath.reset();
+        _mainToolbarHeight = 0.F;
     }
 
     void EditorAppDelegate::imguiSetup()
@@ -137,20 +146,25 @@ namespace darmok::editor
 
         io.Fonts->Clear();
         io.Fonts->AddFontFromFileTTF("assets/noto.ttf", 20);
+
+        ImFontConfig config;
+        config.GlyphMinAdvanceX = 30.0f; // Use if you want to make the icon monospaced
+        static const ImWchar iconRanges[] = { ICON_MIN_MD, ICON_MAX_MD , 0 };
+        _symbolsFont = io.Fonts->AddFontFromFileTTF("assets/MaterialIcons-Regular.ttf", 30.0f, &config, iconRanges);
+
         io.Fonts->Build();
     }
 
-    const float EditorAppDelegate::_mainToolbarHeight = 20.F;
-    const ImGuiWindowFlags EditorAppDelegate::_fixedFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking
+    const ImGuiWindowFlags EditorAppDelegate::_fixedFlags = ImGuiWindowFlags_NoDocking
         | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
         | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
     void EditorAppDelegate::renderDockspace()
     {
-        ImGui::SetNextWindowPos(ImVec2(0, _mainToolbarHeight)); // Optional: Start dockspace at top-left
+        ImGui::SetNextWindowPos(ImVec2(0, _mainToolbarHeight));
         auto size = ImGui::GetIO().DisplaySize;
         size.y -= _mainToolbarHeight;
-        ImGui::SetNextWindowSize(size); // Optional: Size it to cover the main viewport
+        ImGui::SetNextWindowSize(size);
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -195,7 +209,27 @@ namespace darmok::editor
         return false;
     }
 
-    void EditorAppDelegate::saveScene()
+    void EditorAppDelegate::saveScene(bool forceNewPath)
+    {
+
+    }
+
+    void EditorAppDelegate::openScene()
+    {
+
+    }
+
+    void EditorAppDelegate::playScene()
+    {
+        _scenePlaying = true;
+    }
+
+    void EditorAppDelegate::stopScene()
+    {
+        _scenePlaying = false;
+    }
+
+    void EditorAppDelegate::pauseScene()
     {
 
     }
@@ -208,6 +242,7 @@ namespace darmok::editor
             {
                 if (ImGui::MenuItem("Open...", "Ctrl+O"))
                 {
+                    openScene();
                 }
                 if (ImGui::MenuItem("Save", "Ctrl+S"))
                 {
@@ -215,6 +250,7 @@ namespace darmok::editor
                 }
                 if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
                 {
+                    saveScene(true);
                 }
                 if (ImGui::MenuItem("Close", "Ctrl+W"))
                 {
@@ -259,12 +295,44 @@ namespace darmok::editor
     void EditorAppDelegate::renderMainToolbar()
     {
         ImGui::SetNextWindowPos(ImVec2(0, 0));
-        ImGui::SetNextWindowSize(ImVec2(0, _mainToolbarHeight));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-        ImGui::Begin("Main Toolbar", NULL, _fixedFlags);
+        ImGui::Begin("Main Toolbar", nullptr, _fixedFlags | ImGuiWindowFlags_MenuBar);
         ImGui::PopStyleVar();
 
-        ImGui::Button("Toolbar goes here", ImVec2(0, 37));
+        ImGui::PushFont(_symbolsFont);
+        if (ImGui::ButtonEx(ICON_MD_SAVE))
+        {
+            saveScene();
+        }
+        ImGui::SameLine();
+        if (ImGui::ButtonEx(ICON_MD_FOLDER_OPEN))
+        {
+            openScene();
+        }
+        ImGui::SameLine();
+        if (_scenePlaying)
+        {
+            if (ImGui::Button(ICON_MD_STOP))
+            {
+                stopScene();
+            }
+        }
+        else
+        {
+            if (ImGui::Button(ICON_MD_PLAY_ARROW))
+            {
+                playScene();
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(ICON_MD_PAUSE))
+        {
+            pauseScene();
+        }
+        ImGui::SameLine();
+        ImGui::PopFont();
+
+        _mainToolbarHeight = ImGui::GetWindowSize().y;
 
         ImGui::End();
     }
@@ -447,7 +515,7 @@ namespace darmok::editor
 
     void EditorAppDelegate::renderGizmos()
     {
-        if (!_editorCam || !_selectedEntity || !_scene)
+        if (!_editorCam  || !_scene)
         {
             return;
         }
@@ -459,7 +527,15 @@ namespace darmok::editor
         ImGuizmo::Enable(true);
 
         auto view = _editorCam->getViewMatrix();
-        ImGuizmo::ViewManipulate(glm::value_ptr(view), 10.0F, ImVec2(0, 0), ImVec2(10, 10), 0x10101010);
+        auto viewPos = min;
+        ImVec2 viewSize(100, 100);
+        viewPos.x += size.x - viewSize.x;
+        ImGuizmo::ViewManipulate(glm::value_ptr(view), 100.0F, viewPos, viewSize, 0x101010DD);
+
+        if (!_selectedEntity)
+        {
+            return;
+        }
 
         if (auto trans = _scene->getComponent<Transform>(_selectedEntity.value()))
         {
