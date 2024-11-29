@@ -1,5 +1,6 @@
 ﻿#include <darmok-editor/app.hpp>
 #include <darmok-editor/IconsMaterialDesign.h>
+#include <darmok-editor/transform.hpp>
 #include <darmok/window.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/scene.hpp>
@@ -498,41 +499,9 @@ namespace darmok::editor
             {
                 auto entity = _selectedEntity;
                 // TODO: use reflection
-                if (ImGui::CollapsingHeader("Transform"))
+                if (auto trans = _scene->getComponent<Transform>(entity))
                 {
-                    if (auto trans = _scene->getComponent<Transform>(entity))
-                    {
-                        {
-                            std::string name = trans->getName();
-                            if (ImGui::InputText("Name", &name))
-                            {
-                                trans->setName(name);
-                            }
-                        }
-
-                        {
-                            auto pos = trans->getPosition();
-                            if (ImGui::InputFloat3("Position", glm::value_ptr(pos)))
-                            {
-                                trans->setPosition(pos);
-                            }
-                        }
-                        {
-                            auto rot = trans->getRotation();
-                            if (ImGui::InputFloat4("Rotation", glm::value_ptr(rot)))
-                            {
-                                trans->setRotation(rot);
-                            }
-                        }
-                        {
-                            auto scale = trans->getScale();
-                            if (ImGui::InputFloat3("Scale", glm::value_ptr(scale)))
-                            {
-                                trans->setScale(scale);
-                            }
-                        }
-
-                    }
+                    TransformEditor().render(trans.value());
                 }
             }
         }

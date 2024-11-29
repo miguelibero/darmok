@@ -43,6 +43,7 @@ namespace darmok
     class DARMOK_EXPORT BX_NO_VTABLE ISceneDelegate
     {
     public:
+        virtual ~ISceneDelegate() = default;
         virtual bool shouldCameraRender(const Camera& cam) const { return true; }
         virtual bool shouldEntityBeSerialized(Entity entity) const { return true; }
     };

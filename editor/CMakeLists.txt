@@ -13,14 +13,24 @@ set(EDITOR_INCLUDE_DIR ${EDITOR_INCLUDE_BASE_DIR}/darmok-editor)
 set(EDITOR_SOURCES
   main.cpp
   app.cpp
+  transform.cpp
 )
 
 set(EDITOR_HEADERS
   app.hpp
+  scene.hpp
+  transform.hpp
 )
 
 set(EDITOR_ASSETS
   noto.ttf
+  MaterialIcons-Regular.ttf
+  cubemap_0.png
+  cubemap_1.png
+  cubemap_2.png
+  cubemap_3.png
+  cubemap_4.png
+  cubemap_5.png
 )
 
 list(TRANSFORM EDITOR_SOURCES PREPEND "${EDITOR_SRC_DIR}/")
