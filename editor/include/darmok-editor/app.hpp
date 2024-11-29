@@ -35,6 +35,7 @@ namespace darmok::editor
 		EditorAppDelegate(App& app);
 		
         // darmok::IAppDelegate
+        std::optional<int32_t> setup(const std::vector<std::string>& args) noexcept;
         void init() override;
 		void shutdown() override;
 		void update(float deltaTime) override;
@@ -61,7 +62,7 @@ namespace darmok::editor
         ImGuiID _dockCenterId;
         std::shared_ptr<FrameBuffer> _sceneBuffer;
         OptionalRef<Camera> _editorCam;
-        std::optional<Entity> _selectedEntity;
+        Entity _selectedEntity;
         std::optional<std::filesystem::path> _scenePath;
         ImFont* _symbolsFont;
         float _mainToolbarHeight;
@@ -71,6 +72,7 @@ namespace darmok::editor
         static const char* _sceneViewWindowName;
         static const char* _projectWindowName;
         static const char* _inspectorWindowName;
+        static const std::vector<std::string> _sceneDialogFilters;
 
         void configureEditorScene(Scene& scene);
         void configureDefaultScene(Scene& scene);

@@ -377,6 +377,8 @@ namespace darmok
 		v[GLFW_KEY_DOWN] = KeyboardKey::Down;
 		v[GLFW_KEY_LEFT] = KeyboardKey::Left;
 		v[GLFW_KEY_RIGHT] = KeyboardKey::Right;
+		v[GLFW_KEY_INSERT] = KeyboardKey::Insert;
+		v[GLFW_KEY_DELETE] = KeyboardKey::Delete;
 		v[GLFW_KEY_PAGE_UP] = KeyboardKey::PageUp;
 		v[GLFW_KEY_PAGE_DOWN] = KeyboardKey::PageDown;
 		v[GLFW_KEY_HOME] = KeyboardKey::Home;

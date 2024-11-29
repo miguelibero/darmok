@@ -35,7 +35,8 @@ namespace darmok
         archive(cereal::make_size_tag(data.storage.size()));
         for (auto itr = data.storage.rbegin(), last = data.storage.rend(); itr != last; ++itr)
         {
-            archive(CEREAL_NVP_("entity", static_cast<ENTT_ID_TYPE>(*itr)));
+            Entity entity = *itr;
+            archive(CEREAL_NVP_("entity", static_cast<ENTT_ID_TYPE>(entity)));
         }
     }
 
@@ -46,7 +47,11 @@ namespace darmok
         for (auto itr = data.storage.rbegin(), last = data.storage.rend(); itr != last; ++itr)
         {
             Entity entity = *itr;
-            auto comp = data.type.from_void(data.storage.value(entity));
+            entt::meta_any comp;
+            if (data.storage.contains(entity))
+            {
+                comp = data.type.from_void(data.storage.value(entity));
+            }
             archive(CEREAL_NVP_("component", comp));
         }
     }
@@ -138,6 +143,10 @@ namespace darmok
         {
             darmok::Entity entity;
             archive(CEREAL_NVP_("entity", entity));
+            if (entity == entt::null)
+            {
+                continue;
+            }
             data.storage.emplace(entity);
         }
     }
@@ -152,7 +161,11 @@ namespace darmok
         {
             Entity entity;
             archive(entity);
-            auto any = ReflectionUtils::getEntityComponent(data.registry, entity, data.type);
+            entt::meta_any any;
+            if (entity != entt::null)
+            {
+                any = ReflectionUtils::getEntityComponent(data.registry, entity, data.type);
+            }
             data.components.push_back(std::move(any));
         }
     }

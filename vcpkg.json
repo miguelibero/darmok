@@ -51,6 +51,7 @@
     "taskflow",
     "tiny-process-library",
     "mikktspace",
-    "imguizmo"
+    "imguizmo",
+    "portable-file-dialogs"
   ]
 }

@@ -552,7 +552,7 @@ namespace darmok
     Entity Scene::getEntity(entt::id_type type, const void* ptr) const noexcept
     {
         auto storage = getRegistry().storage(type);
-        if (!storage)
+        if (!storage || storage->empty())
         {
             return entt::null;
         }
@@ -560,10 +560,15 @@ namespace darmok
         // TODO: is there a faster way that does not require to iterate over the entities?
         for (auto itr = storage->rbegin(), last = storage->rend(); itr < last; ++itr)
         {
-            auto comp = storage->value(*itr);
+            auto entity = *itr;
+            if (!storage->contains(entity))
+            {
+                continue;
+            }
+            auto comp = storage->value(entity);
             if (comp == ptr)
             {
-                return *itr;
+                return entity;
             }
         }
         return entt::null;

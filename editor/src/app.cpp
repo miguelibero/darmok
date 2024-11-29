@@ -3,6 +3,7 @@
 #include <darmok/window.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/scene_serialize.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
@@ -18,11 +19,17 @@
 #include <darmok/shape.hpp>
 #include <darmok/program.hpp>
 #include <darmok/material.hpp>
+#include <darmok/stream.hpp>
+#include <darmok/reflect.hpp>
+
+#include <cereal/cereal.hpp>
+#include <cereal/archives/binary.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_stdlib.h>
 #include <ImGuizmo.h>
 
+#include <portable-file-dialogs.h>
 
 namespace darmok::editor
 {
@@ -37,6 +44,7 @@ namespace darmok::editor
         , _symbolsFont(nullptr)
         , _scenePlaying(false)
         , _mainToolbarHeight(0.F)
+        , _selectedEntity(entt::null)
     {
     }
 
@@ -63,8 +71,17 @@ namespace darmok::editor
         cam.addComponent<ForwardRenderer>();
         cam.addComponent<FrustumCuller>();
 
-        // will be enabled once we know the size of the scene view window
-        cam.setEnabled(false);
+        if (_sceneBuffer)
+        {
+            auto& size = _sceneBuffer->getSize();
+            cam.getRenderChain().setOutput(_sceneBuffer);
+            cam.setViewport(Viewport(size));
+            _app.requestRenderReset();
+        }
+        else
+        {
+            cam.setEnabled(false);
+        }
         _editorCam = cam;
     }
 
@@ -102,15 +119,21 @@ namespace darmok::editor
             .setName("Cube");
     }
 
+    std::optional<int32_t> EditorAppDelegate::setup(const std::vector<std::string>& args) noexcept
+    {
+        ReflectionUtils::bind();
+        return std::nullopt;
+    }
+
     void EditorAppDelegate::init()
     {
         auto& win = _app.getWindow();
         win.requestTitle("darmok editor");
         _app.setDebugFlag(BGFX_DEBUG_TEXT);
 
-        _imgui = _app.addComponent<ImguiAppComponent>(*this);
-        auto& scenes = _app.addComponent<SceneAppComponent>();
-        _scene = scenes.addScene();
+        _imgui = _app.getOrAddComponent<ImguiAppComponent>(*this);
+        auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
+        _scene = scenes.getScene();
         
         configureEditorScene(*_scene);
         configureDefaultScene(*_scene);
@@ -126,7 +149,7 @@ namespace darmok::editor
         _imgui.reset();
         _app.removeComponent<ImguiAppComponent>();
         _app.removeComponent<SceneAppComponent>();
-
+        _selectedEntity = entt::null;
         _dockDownId = 0;
         _dockRightId = 0;
         _dockLeftId = 0;
@@ -209,14 +232,74 @@ namespace darmok::editor
         return false;
     }
 
+    const std::vector<std::string> EditorAppDelegate::_sceneDialogFilters =
+    {
+        "Darmok Scene Files", "*.dsc",
+        "All Files", "*"
+    };
+
     void EditorAppDelegate::saveScene(bool forceNewPath)
     {
+        if (!_scene)
+        {
+            return;
+        }
+        if (!_scenePath || forceNewPath)
+        {
+            std::string initialPath(".");
+            if (_scenePath && std::filesystem::exists(_scenePath.value()))
+            {
+                initialPath = _scenePath.value().string();
+            }
+            auto dialog = pfd::save_file("Save Scene", initialPath,
+                _sceneDialogFilters, pfd::opt::force_path);
 
+            while (!dialog.ready(1000))
+            {
+                StreamUtils::logDebug("waiting for save dialog...");
+            }
+            _scenePath = dialog.result();
+        }
+
+        if(_scenePath)
+        {
+            std::ofstream stream(_scenePath.value());
+            cereal::BinaryOutputArchive archive(stream);
+            save(archive, *_scene);
+        }
     }
 
     void EditorAppDelegate::openScene()
     {
+        if (!_scene)
+        {
+            return;
+        }
+        auto dialog = pfd::open_file("Open Scene", ".",
+            _sceneDialogFilters);
 
+        while (!dialog.ready(1000))
+        {
+            StreamUtils::logDebug("waiting for open dialog...");
+        }
+        std::filesystem::path scenePath = dialog.result()[0];
+        if (!std::filesystem::exists(scenePath))
+        {
+            return;
+        }
+
+        stopScene();
+        _editorCam.reset();
+        _scene->destroyEntitiesImmediate();
+
+        {
+            std::ifstream stream(scenePath);
+            cereal::BinaryInputArchive archive(stream);
+            load(archive, *_scene);
+        }
+        
+        configureEditorScene(*_scene);
+        _scenePath = scenePath;
     }
 
     void EditorAppDelegate::playScene()
@@ -254,6 +337,11 @@ namespace darmok::editor
                 }
                 if (ImGui::MenuItem("Close", "Ctrl+W"))
                 {
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Exit"))
+                {
+                    _app.quit();
                 }
                 ImGui::EndMenu();
             }
@@ -393,6 +481,11 @@ namespace darmok::editor
                 });
                 ImGui::TreePop();
             }
+            if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete) && _selectedEntity != entt::null)
+            {
+                _scene->destroyEntityImmediate(_selectedEntity);
+                _selectedEntity = entt::null;
+            }
         }
         ImGui::End();
     }
@@ -401,9 +494,9 @@ namespace darmok::editor
     {
         if (ImGui::Begin(_inspectorWindowName))
         {
-            if (_scene && _selectedEntity)
+            if (_scene && _selectedEntity != entt::null)
             {
-                auto entity = _selectedEntity.value();
+                auto entity = _selectedEntity;
                 // TODO: use reflection
                 if (ImGui::CollapsingHeader("Transform"))
                 {
@@ -532,12 +625,12 @@ namespace darmok::editor
         viewPos.x += size.x - viewSize.x;
         ImGuizmo::ViewManipulate(glm::value_ptr(view), 100.0F, viewPos, viewSize, 0x101010DD);
 
-        if (!_selectedEntity)
+        if (_selectedEntity == entt::null)
         {
             return;
         }
 
-        if (auto trans = _scene->getComponent<Transform>(_selectedEntity.value()))
+        if (auto trans = _scene->getComponent<Transform>(_selectedEntity))
         {
             // view *= trans->getWorldMatrix();
 
