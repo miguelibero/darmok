@@ -1,6 +1,7 @@
 ﻿#include <darmok-editor/app.hpp>
 #include <darmok-editor/IconsMaterialDesign.h>
 #include <darmok-editor/transform.hpp>
+#include <darmok-editor/camera.hpp>
 #include <darmok/window.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/scene.hpp>
@@ -36,7 +37,7 @@
 
 namespace darmok::editor
 {
-    EditorAppDelegate::EditorAppDelegate(App& app)
+    EditorAppDelegate::EditorAppDelegate(App& app) noexcept
         : _app(app)
         , _dockLeftId(0)
         , _dockRightId(0)
@@ -49,6 +50,11 @@ namespace darmok::editor
         , _mainToolbarHeight(0.F)
         , _selectedEntity(entt::null)
     {
+    }
+
+    EditorAppDelegate::~EditorAppDelegate() noexcept
+    {
+        // empty on purpose
     }
 
     void EditorAppDelegate::configureEditorScene(Scene& scene)
@@ -125,6 +131,8 @@ namespace darmok::editor
     std::optional<int32_t> EditorAppDelegate::setup(const std::vector<std::string>& args) noexcept
     {
         ReflectionUtils::bind();
+        _inspectorEditors.add<TransformInspectorEditor>();
+        _inspectorEditors.add<CameraInspectorEditor>();
         return std::nullopt;
     }
 
@@ -140,11 +148,14 @@ namespace darmok::editor
         
         configureEditorScene(*_scene);
         configureDefaultScene(*_scene);
+
+        _inspectorEditors.init(*this);
     }
 
     void EditorAppDelegate::shutdown()
     {
         stopScene();
+        _inspectorEditors.shutdown();
 
         _scene.reset();
         _sceneBuffer.reset();
@@ -353,7 +364,6 @@ namespace darmok::editor
 
     void EditorAppDelegate::pauseScene()
     {
-
     }
 
     void EditorAppDelegate::renderMainMenu()
@@ -536,10 +546,14 @@ namespace darmok::editor
             if (_scene && _selectedEntity != entt::null)
             {
                 auto entity = _selectedEntity;
-                // TODO: use reflection
-                if (auto trans = _scene->getComponent<Transform>(entity))
+                for (auto [typeInfo, ptr] : _scene->getComponents(entity))
                 {
-                    TransformEditor().render(trans.value());
+                    auto type = entt::resolve(typeInfo);
+                    if (type)
+                    {
+                        auto comp = type.from_void(ptr);
+                        _inspectorEditors.render(comp);
+                    }
                 }
             }
         }
@@ -568,9 +582,6 @@ namespace darmok::editor
     {        
         if (ImGui::Begin(_sceneViewWindowName))
         {
-            // ImVec2 min = ImGui::GetWindowContentRegionMin();
-            // ImVec2 max = ImGui::GetWindowContentRegionMax();
-            // ImVec2 size(max.x - min.x, max.y - min.y);
             auto size = ImGui::GetContentRegionAvail();
             updateSceneSize(glm::uvec2(size.x, size.y));
 

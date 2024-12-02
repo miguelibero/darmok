@@ -1,6 +1,6 @@
 #pragma once
 
-#include <darmok-editor/scene.hpp>
+#include <darmok-editor/editor.hpp>
 
 namespace darmok
 {
@@ -9,9 +9,9 @@ namespace darmok
 
 namespace darmok::editor
 {
-    class TransformEditor final : IComponentEditor<Transform>
+    class TransformInspectorEditor final : public ITypeObjectEditor<Transform>
     {
     public:
-        void render(Transform& trans) noexcept override;
+        bool render(Transform& trans) noexcept override;
     };
 }

@@ -7,7 +7,7 @@
 
 namespace darmok::editor
 {
-    void TransformEditor::render(Transform& trans) noexcept
+    bool TransformInspectorEditor::render(Transform& trans) noexcept
     {
         if (ImGui::CollapsingHeader("Transform"))
         {
@@ -41,5 +41,6 @@ namespace darmok::editor
                 }
             }
         }
+        return true;
     }
 }

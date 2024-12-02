@@ -10,16 +10,21 @@ set(EDITOR_INCLUDE_BASE_DIR ${EDITOR_BASE_DIR}/include)
 set(EDITOR_LIB_BASE_DIR ${EDITOR_BASE_DIR}/lib)
 set(EDITOR_INCLUDE_DIR ${EDITOR_INCLUDE_BASE_DIR}/darmok-editor)
 
+set(EDITOR_HEADERS
+  app.hpp
+  editor.hpp
+  transform.hpp
+  camera.hpp
+  scene.hpp
+)
+
 set(EDITOR_SOURCES
   main.cpp
   app.cpp
+  editor.cpp
   transform.cpp
-)
-
-set(EDITOR_HEADERS
-  app.hpp
-  scene.hpp
-  transform.hpp
+  camera.cpp
+  scene.cpp
 )
 
 set(EDITOR_ASSETS

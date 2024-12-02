@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/camera.hpp>
+#include <darmok/reflect.hpp>
 #include <entt/entt.hpp>
 
 namespace darmok
@@ -17,6 +18,7 @@ namespace darmok
 		}
 
 		static entt::meta_any getCameraComponent(Camera& cam, const entt::meta_type& type);
+		static std::vector<entt::meta_any> getCameraComponents(Camera& cam);
 
 	private:
 

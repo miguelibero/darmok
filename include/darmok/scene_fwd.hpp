@@ -12,3 +12,17 @@ namespace darmok
     using SceneSnapshotLoader = entt::snapshot_loader;
     using SceneContinuousLoader = entt::continuous_loader;
 }
+
+namespace std
+{
+    template<typename T>
+    struct hash;
+}
+
+template<> struct std::hash<entt::type_info>
+{
+    std::size_t operator()(const entt::type_info& typeInfo) const noexcept
+    {
+        return typeInfo.hash();
+    }
+};

@@ -1,9 +1,10 @@
 #pragma once
 
 #include <darmok/app.hpp>
+#include <darmok/scene.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/scene.hpp>
+#include <darmok-editor/editor.hpp>
 
 #include <memory>
 #include <optional>
@@ -29,11 +30,14 @@ namespace darmok::editor
         Drag
     };
 
+    class IObjectEditor;
+
     class EditorAppDelegate final : public darmok::IAppDelegate, public darmok::IImguiRenderer, darmok::ISceneDelegate
     {
     public:
-		EditorAppDelegate(App& app);
-		
+		EditorAppDelegate(App& app) noexcept;
+        ~EditorAppDelegate() noexcept;
+
         // darmok::IAppDelegate
         std::optional<int32_t> setup(const std::vector<std::string>& args) noexcept;
         void init() override;
@@ -66,6 +70,7 @@ namespace darmok::editor
         std::optional<std::filesystem::path> _scenePath;
         ImFont* _symbolsFont;
         float _mainToolbarHeight;
+        ObjectEditorContainer _inspectorEditors;
 
         static const ImGuiWindowFlags _fixedFlags;
         static const char* _sceneTreeWindowName;

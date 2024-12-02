@@ -5,16 +5,16 @@
 
 namespace darmok
 {
-    class Scene;
+    class Camera;
 }
 
 namespace darmok::editor
 {
-    class SceneInspectorEditor final : public ITypeObjectEditor<Scene>
+    class CameraInspectorEditor final : public ITypeObjectEditor<Camera>
     {
     public:
         void init(EditorAppDelegate& app, ObjectEditorContainer& editors) noexcept override;
-        bool render(Scene& scene) noexcept override;
+        bool render(Camera& cam) noexcept override;
     private:
         OptionalRef<ObjectEditorContainer> _editors;
     };

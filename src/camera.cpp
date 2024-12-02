@@ -23,6 +23,7 @@ namespace darmok
 {
     CameraImpl::CameraImpl(Camera& cam, const glm::mat4& projMatrix) noexcept
         : _cam(cam)
+        , _view(1.F)
         , _proj(projMatrix)
         , _projInv(glm::inverse(projMatrix))
         , _enabled(true)

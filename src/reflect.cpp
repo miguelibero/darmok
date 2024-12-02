@@ -139,10 +139,44 @@ namespace darmok
 		return type.invoke(_getSceneComponentKey, {}, entt::forward_as_meta(scene));
 	}
 
+	std::vector<entt::meta_any> SceneReflectionUtils::getSceneComponents(Scene& scene)
+	{
+		std::vector<entt::meta_any> comps;
+		for (auto& compRef : scene.getSceneComponents())
+		{
+			auto& comp = compRef.get();
+			if (auto typeInfo = comp.getSceneComponentType())
+			{
+				if (auto type = entt::resolve(typeInfo.value()))
+				{
+					comps.push_back(type.from_void(&comp));
+				}
+			}
+		}
+		return comps;
+	}
+
 	const entt::hashed_string CameraReflectionUtils::_getCameraComponentKey = "getCameraComponent";
 
 	entt::meta_any CameraReflectionUtils::getCameraComponent(Camera& cam, const entt::meta_type& type)
 	{
 		return type.invoke(_getCameraComponentKey, {}, entt::forward_as_meta(cam));
+	}
+
+	std::vector<entt::meta_any> CameraReflectionUtils::getCameraComponents(Camera& cam)
+	{
+		std::vector<entt::meta_any> comps;
+		for (auto& compRef : cam.getComponents())
+		{
+			auto& comp = compRef.get();
+			if (auto typeInfo = comp.getCameraComponentType())
+			{
+				if (auto type = entt::resolve(typeInfo.value()))
+				{
+					comps.push_back(type.from_void(&comp));
+				}
+			}
+		}
+		return comps;
 	}
 }

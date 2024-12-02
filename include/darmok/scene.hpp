@@ -145,6 +145,8 @@ namespace darmok
 
         Entity getEntity(entt::id_type type, const void* ptr) const noexcept;
         const void* getComponent(Entity entity, entt::id_type type) const noexcept;
+        std::unordered_map<entt::type_info, const void*> getComponents(Entity entity) const noexcept;
+        std::unordered_map<entt::type_info, void*> getComponents(Entity entity) noexcept;
 
         void destroyEntity(Entity entity) noexcept;
         void destroyEntities() noexcept;

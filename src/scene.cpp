@@ -616,6 +616,34 @@ namespace darmok
         return storage->value(entity);
     }
 
+    std::unordered_map<entt::type_info, const void*> Scene::getComponents(Entity entity) const noexcept
+    {
+        std::unordered_map<entt::type_info, const void*> ptrs;
+        for (auto [typeId, storage] : getRegistry().storage())
+        {
+            if (storage.contains(entity))
+            {
+                auto ptr = storage.value(entity);
+                ptrs.emplace(storage.type(), ptr);
+            }
+        }
+        return ptrs;
+    }
+
+    std::unordered_map<entt::type_info, void*> Scene::getComponents(Entity entity) noexcept
+    {
+        std::unordered_map<entt::type_info, void*> ptrs;
+        for (auto [typeId, storage] : getRegistry().storage())
+        {
+            if (storage.contains(entity))
+            {
+                auto ptr = storage.value(entity);
+                ptrs.emplace(storage.type(), ptr);
+            }
+        }
+        return ptrs;
+    }
+
     EntityView Scene::getEntities() const noexcept
     {
         return getEntities({});

@@ -35,6 +35,7 @@ namespace darmok
 		static Entity getEntityComponentRef(const Scene& scene, const entt::meta_any& any);
 
 		static entt::meta_any getSceneComponent(Scene& scene, const entt::meta_type& type);
+		static std::vector<entt::meta_any> getSceneComponents(Scene& scene);
 
 	private:
 
