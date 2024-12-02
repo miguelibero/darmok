@@ -1,16 +1,20 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <memory>
-#include <cstdint>
-#include <vector>
+
 #include <darmok/glm.hpp>
-#include <bx/bx.h>
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/transform_fwd.hpp>
-#include <darmok/reflect.hpp>
+
+#include <memory>
+#include <cstdint>
+#include <vector>
+#include <optional>
+
+#include <bx/bx.h>
+#include <bgfx/bgfx.h>
 
 
 namespace darmok
@@ -22,21 +26,21 @@ namespace darmok
     {
     public:
         virtual ~ISceneComponent() = default;
-        virtual entt::id_type getSceneComponentType() const { return 0; }
+        virtual std::optional<entt::type_info> getSceneComponentType() const { return std::nullopt; }
         virtual void init(Scene& scene, App& app) {}
         virtual void shutdown() {}
         virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
         virtual void update(float deltaTime) {}
-
+        virtual void afterLoad() {}
     };
 
     template<typename T>
     class DARMOK_EXPORT BX_NO_VTABLE ITypeSceneComponent : public ISceneComponent
     {
     public:
-        entt::id_type getSceneComponentType() const noexcept override
+        std::optional<entt::type_info> getSceneComponentType() const noexcept override
         {
-            return entt::type_hash<T>::value();
+            return entt::type_id<T>();
         }
     };
 
@@ -46,6 +50,8 @@ namespace darmok
         virtual ~ISceneDelegate() = default;
         virtual bool shouldCameraRender(const Camera& cam) const { return true; }
         virtual bool shouldEntityBeSerialized(Entity entity) const { return true; }
+
+        static std::vector<Entity> getSerializableEntities(const EntitySparseSet& storage, const OptionalRef<ISceneDelegate>& dlg);
     };
 
     class App;
@@ -54,6 +60,9 @@ namespace darmok
     struct Viewport;
     struct EntityFilter;
     class EntityView;
+
+    using SceneComponentRefs = std::vector<std::reference_wrapper<ISceneComponent>>;
+    using ConstSceneComponentRefs = std::vector<std::reference_wrapper<const ISceneComponent>>;
     
     class DARMOK_EXPORT Scene final
     {
@@ -87,6 +96,8 @@ namespace darmok
         bool hasSceneComponent(entt::id_type type) const noexcept;
         OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
         OptionalRef<const ISceneComponent> getSceneComponent(entt::id_type type) const noexcept;
+        SceneComponentRefs getSceneComponents() noexcept;
+        ConstSceneComponentRefs getSceneComponents() const noexcept;
 
         template<typename T>
         OptionalRef<T> getSceneComponent() noexcept
@@ -414,8 +425,9 @@ namespace darmok
     private:
         std::unique_ptr<SceneImpl> _impl;
 
-        EntityRegistry& getRegistry();
-        const EntityRegistry& getRegistry() const;
+        EntityRegistry& getRegistry() noexcept;
+        const EntityRegistry& getRegistry() const noexcept;
+        const OptionalRef<ISceneDelegate>& getDelegate() const noexcept;
 
         static OptionalRef<Transform> getTransformParent(const Transform& trans) noexcept;
         static TransformChildren getTransformChildren(const Transform& trans) noexcept;

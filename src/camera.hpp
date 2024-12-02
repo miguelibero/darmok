@@ -6,6 +6,7 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/reflect_serialize.hpp>
 
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
@@ -22,6 +23,22 @@ namespace darmok
     class App;
     class Transform;
     struct Ray;
+
+    using ConstCameraComponentRefs = std::vector<std::reference_wrapper<const ICameraComponent>>;
+    using CameraComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
+
+    class CameraComponentCerealListDelegate final : public ICerealReflectSaveListDelegate<ICameraComponent>, public ICerealReflectLoadListDelegate<ICameraComponent>
+    {
+    public:
+        CameraComponentCerealListDelegate(Camera& cam) noexcept;
+        entt::meta_any create(const entt::meta_type& type) override;
+        std::optional<entt::type_info> getTypeInfo(const ICameraComponent& comp) const noexcept override;
+        ConstCameraComponentRefs getList() const noexcept override;
+        void afterLoad() noexcept override;
+    private:
+        Camera& _cam;
+    };
+
 
     class CameraImpl final : IRenderChainDelegate
     {
@@ -86,6 +103,8 @@ namespace darmok
         bool hasComponent(entt::id_type type) const noexcept;
         OptionalRef<ICameraComponent> getComponent(entt::id_type type) noexcept;
         OptionalRef<const ICameraComponent> getComponent(entt::id_type type) const noexcept;
+        ConstCameraComponentRefs getComponents() const noexcept;
+        CameraComponentRefs getComponents() noexcept;
 
         Ray screenPointToRay(const glm::vec3& point) const noexcept;
         Ray viewportPointToRay(const glm::vec3& point) const noexcept;
@@ -106,6 +125,8 @@ namespace darmok
         void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
+        void afterLoad();
+
         template<typename Archive>
         void serialize(Archive& archive)
         {
@@ -115,8 +136,8 @@ namespace darmok
                 CEREAL_NVP_("proj", _proj),
                 CEREAL_NVP_("viewportProj", _vpProj),
                 CEREAL_NVP_("cullingFilter", _cullingFilter),
-                CEREAL_NVP_("components", _components),
-                CEREAL_NVP_("renderChain", _renderChain)
+                CEREAL_NVP_("renderChain", _renderChain),
+                CEREAL_NVP_("components", CameraComponentCerealListDelegate(_cam))
             );
         }
 

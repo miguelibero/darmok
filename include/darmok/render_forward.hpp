@@ -22,6 +22,14 @@ namespace darmok
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
         void render() noexcept override;
         void shutdown() noexcept override;
+
+        static void bindMeta() noexcept;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+        }
+
     private:
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;

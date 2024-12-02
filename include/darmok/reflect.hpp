@@ -1,9 +1,9 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <darmok/scene_fwd.hpp>
 #include <darmok/optional_ref.hpp>
 #include <functional>
+#include <entt/entt.hpp>
 
 namespace darmok
 {
@@ -11,10 +11,10 @@ namespace darmok
 	{
 		OptionalRef,
 		ReferenceWrapper,
-		EntityComponent
+		EntityComponent,
+		SceneComponent,
+		CameraComponent
 	};
-
-	class Scene;
 
 	struct ReflectionUtils final
 	{
@@ -48,26 +48,9 @@ namespace darmok
 			;
 		}
 
-		template<typename T>
-		static entt::meta_factory<T> metaEntityComponent(const char* name)
-		{
-			metaOptionalRef<T>(name);
-			metaReferenceWrapper<T>(name);
-
-			return entt::meta<T>().type(entt::hashed_string{ name })
-				.traits(ReflectionTraits::EntityComponent)
-				.func<&doGetEntityComponent<T>, entt::as_ref_t>(_getEntityComponentKey)
-				.func<&doGetEntityComponentStorage<T>, entt::as_ref_t>(_getEntityComponentStorageKey);
-		}
-
-		static entt::meta_any getEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type);
-		static EntityRegistry::common_type& getEntityComponentStorage(EntityRegistry& registry, const entt::meta_type& type);
-		
 		static const void* getRefPtr(const entt::meta_any& any);
 		static entt::meta_any getRef(const entt::meta_any& any);
-		static Entity getEntityComponentRef(const Scene& scene, const entt::meta_any& any);
 		static entt::meta_type getRefType(const entt::meta_type& type);
-		static entt::meta_type getEntityComponentRefType(const entt::meta_type& type);
 		static void setRef(entt::meta_any& any, const void* val);
 
 		template<typename T>
@@ -85,21 +68,6 @@ namespace darmok
 		static const entt::hashed_string _optionalRefResetKey;
 		static const entt::hashed_string _referenceWrapperGetKey;
 		static const entt::hashed_string _referenceWrapperSetKey;
-
-		static const entt::hashed_string _getEntityComponentKey;
-		static const entt::hashed_string _getEntityComponentStorageKey;
-
-		template<typename T>
-		static EntityRegistry::common_type& doGetEntityComponentStorage(EntityRegistry& registry)
-		{
-			return registry.storage<T>();
-		}
-
-		template<typename T>
-		static T& doGetEntityComponent(EntityRegistry& registry, Entity entity)
-		{
-			return registry.get_or_emplace<T>(entity);
-		}
 
 		template<typename T>
 		static std::reference_wrapper<T> createReferenceWrapper() noexcept

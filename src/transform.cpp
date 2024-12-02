@@ -341,7 +341,7 @@ namespace darmok
     void Transform::bindMeta() noexcept
     {
         ReflectionSerializeUtils::metaSerialize<Transform>();
-        ReflectionUtils::metaEntityComponent<Transform>("Transform")
+        SceneReflectionUtils::metaEntityComponent<Transform>("Transform")
             .ctor()
             .data<&Transform::_position, entt::as_ref_t>("position"_hs)
             .data<&Transform::_rotation, entt::as_ref_t>("rotation"_hs)

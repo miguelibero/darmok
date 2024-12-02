@@ -1,89 +1,119 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <darmok/scene.hpp>
 #include <darmok/reflect_serialize.hpp>
+#include <darmok/scene_reflect.hpp>
 #include <darmok/optional_ref.hpp>
+
+#include <vector>
+#include <unordered_map>
+
 #include <cereal/types/vector.hpp>
+#include <cereal/types/unordered_map.hpp>
 
 namespace darmok
 {
     struct CerealSaveEntityStorageData final
     {
         const EntitySparseSet& storage;
+        OptionalRef<ISceneDelegate> delegate;
+
+        template<typename Archive>
+        void save(Archive& archive) const
+        {
+            auto entities = ISceneDelegate::getSerializableEntities(storage, delegate);
+            archive(cereal::make_size_tag(entities.size()));
+            for (auto entity : entities)
+            {
+                archive(CEREAL_NVP_("entity", static_cast<ENTT_ID_TYPE>(entity)));
+            }
+        }
     };
 
     struct CerealSaveEntityComponentStorageData final
     {
         entt::meta_type type;
         const EntitySparseSet& storage;
+        OptionalRef<ISceneDelegate> delegate;
+
+        template<typename Archive>
+        void save(Archive& archive) const
+        {
+            auto entities = ISceneDelegate::getSerializableEntities(storage, delegate);
+            archive(cereal::make_size_tag(entities.size()));
+            for (auto entity : entities)
+            {
+                auto any = type.from_void(storage.value(entity));
+                archive(CEREAL_NVP_("component", any));
+            }
+        }
     };
 
     struct CerealSaveComponentEntitiesData final
     {
         std::vector<CerealSaveEntityComponentStorageData>& storages;
+        OptionalRef<ISceneDelegate> delegate;
+
+        template<typename Archive>
+        void save(Archive& archive) const
+        {
+            archive(cereal::make_size_tag(storages.size()));
+            for (auto& storageData : storages)
+            {
+                CerealSaveEntityStorageData entitiesData{ storageData.storage, delegate };
+                archive(cereal::make_map_item(storageData.type, entitiesData));
+            }
+        }
     };
 
     struct CerealSaveComponentsData final
     {
         std::vector<CerealSaveEntityComponentStorageData>& storages;
+
+        template<typename Archive>
+        void save(Archive& archive) const
+        {
+            archive(cereal::make_size_tag(storages.size()));
+            for (auto storageData : storages)
+            {
+                archive(cereal::make_map_item(storageData.type, storageData));
+            }
+        }
     };
 
-    template<typename Archive>
-    void save(Archive& archive, const CerealSaveEntityStorageData& data)
+    class SceneComponentCerealSaveListDelegate : public ICerealReflectSaveListDelegate<ISceneComponent>
     {
-        archive(cereal::make_size_tag(data.storage.size()));
-        for (auto itr = data.storage.rbegin(), last = data.storage.rend(); itr != last; ++itr)
+    public:
+        SceneComponentCerealSaveListDelegate(const Scene& scene) noexcept
+            : _scene(scene)
         {
-            Entity entity = *itr;
-            archive(CEREAL_NVP_("entity", static_cast<ENTT_ID_TYPE>(entity)));
         }
-    }
 
-    template<typename Archive>
-    void save(Archive& archive, const CerealSaveEntityComponentStorageData& data)
-    {
-        archive(cereal::make_size_tag(data.storage.size()));
-        for (auto itr = data.storage.rbegin(), last = data.storage.rend(); itr != last; ++itr)
+        ConstSceneComponentRefs getList() const noexcept override
         {
-            Entity entity = *itr;
-            entt::meta_any comp;
-            if (data.storage.contains(entity))
-            {
-                comp = data.type.from_void(data.storage.value(entity));
-            }
-            archive(CEREAL_NVP_("component", comp));
+            return _scene.getSceneComponents();
         }
-    }
 
-    template<typename Archive>
-    void save(Archive& archive, const CerealSaveComponentEntitiesData& data)
-    {
-        archive(cereal::make_size_tag(data.storages.size()));
-        for (auto& storageData : data.storages)
+        std::optional<entt::type_info> getTypeInfo(const ISceneComponent& comp) const override
         {
-            CerealSaveEntityStorageData entitiesData{ storageData.storage };
-            archive(cereal::make_map_item(storageData.type, entitiesData));
+            return comp.getSceneComponentType();
         }
-    }
 
-    template<typename Archive>
-    void save(Archive& archive, const CerealSaveComponentsData& data)
-    {
-        archive(cereal::make_size_tag(data.storages.size()));
-        for (auto storageData : data.storages)
-        {
-            archive(cereal::make_map_item(storageData.type, storageData));
-        }
-    }
+    private:
+        const Scene& _scene;
+    };
 
     template<typename Archive>
     void save(Archive& archive, const Scene& scene)
     {
         SerializeContextStack<const Scene>::push(scene);
 
+        SceneComponentCerealSaveListDelegate sceneComps(scene);
+        archive(CEREAL_NVP_("sceneComponents", sceneComps));
+
         auto& registry = scene.getRegistry();
         auto& entities = *registry.storage<Entity>();
+        auto dlg = scene.getDelegate();
         CerealSaveEntityStorageData entitiesData{ entities };
         archive(CEREAL_NVP_("entities", entitiesData));
         archive(CEREAL_NVP_("freeList", entities.free_list()));
@@ -96,11 +126,12 @@ namespace darmok
             {
                 continue;
             }
-            storages.emplace_back(std::move(type), storage);
+            storages.emplace_back(std::move(type), storage, dlg);
         }
 
-        archive(CEREAL_NVP_("componentEntities", CerealSaveComponentEntitiesData{ storages }));
-        archive(CEREAL_NVP_("components", CerealSaveComponentsData{ storages }));
+        CerealSaveComponentEntitiesData compEntitiesData{ storages, dlg };
+        archive(CEREAL_NVP_("componentEntities", compEntitiesData));
+        archive(CEREAL_NVP_("entityComponents", CerealSaveComponentsData{ storages }));
 
         SerializeContextStack<const Scene>::pop();
     }
@@ -108,6 +139,23 @@ namespace darmok
     struct CerealLoadEntityStorageData final
     {
         EntityStorage& storage;
+
+        template<typename Archive>
+        void load(Archive& archive)
+        {
+            size_t size = 0;
+            archive(cereal::make_size_tag(size));
+            storage.reserve(size);
+            for (size_t i = 0; i < size; ++i)
+            {
+                darmok::Entity entity;
+                archive(CEREAL_NVP_("entity", entity));
+                if (entity != entt::null)
+                {
+                    storage.emplace(entity);
+                }
+            }
+        }
     };
 
     struct CerealLoadComponentEntitiesStorageData final
@@ -115,103 +163,104 @@ namespace darmok
         EntityRegistry& registry;
         entt::meta_type type;
         std::vector<entt::meta_any> components;
+
+        template<typename Archive>
+        void load(Archive& archive)
+        {
+            size_t size = 0;
+            archive(cereal::make_size_tag(size));
+            components.reserve(size);
+            for (size_t i = 0; i < size; ++i)
+            {
+                Entity entity;
+                archive(entity);
+                entt::meta_any any;
+                if (entity != entt::null)
+                {
+                    any = SceneReflectionUtils::getEntityComponent(registry, entity, type);
+                }
+                components.push_back(std::move(any));
+            }
+        }
     };
 
     struct CerealLoadComponentEntitiesData final
     {
         EntityRegistry& registry;
         std::vector<CerealLoadComponentEntitiesStorageData> storages;
+
+        template<typename Archive>
+        void load(Archive& archive)
+        {
+            size_t size = 0;
+            archive(cereal::make_size_tag(size));
+            storages.reserve(size);
+            for (size_t i = 0; i < size; ++i)
+            {
+                auto& storageData = storages.emplace_back(registry);
+                archive(cereal::make_map_item(storageData.type, storageData));
+            }
+        }
     };
 
     struct CerealLoadComponentStorageData final
     {
         std::vector<entt::meta_any>& components;
+
+        template<typename Archive>
+        void load(Archive& archive)
+        {
+            size_t size = 0;
+            archive(cereal::make_size_tag(size));
+            assert(size == components.size());
+            for (auto& comp : components)
+            {
+                archive(CEREAL_NVP_("component", comp));
+            }
+        }
     };
 
     struct CerealLoadEntityComponentsData final
     {
         std::vector<CerealLoadComponentEntitiesStorageData>& storages;
+
+        template<typename Archive>
+        void load(Archive& archive)
+        {
+            size_t size = 0;
+            archive(cereal::make_size_tag(size));
+            assert(size == storages.size());
+            for (auto& storageData : storages)
+            {
+                CerealLoadComponentStorageData componentsData{ storageData.components };
+                archive(cereal::make_map_item(storageData.type, componentsData));
+            }
+        }
     };
 
-    template<typename Archive>
-    void load(Archive& archive, CerealLoadEntityStorageData& data)
+    class CerealSceneComponentLoadListDelegate : public ICerealReflectLoadListDelegate<ISceneComponent>
     {
-        size_t size = 0;
-        archive(cereal::make_size_tag(size));
-        data.storage.reserve(size);
-        for (size_t i = 0; i < size; ++i)
+    public:
+        CerealSceneComponentLoadListDelegate(Scene& scene) noexcept
+            : _scene(scene)
         {
-            darmok::Entity entity;
-            archive(CEREAL_NVP_("entity", entity));
-            if (entity == entt::null)
-            {
-                continue;
-            }
-            data.storage.emplace(entity);
         }
-    }
 
-    template<typename Archive>
-    void load(Archive& archive, CerealLoadComponentEntitiesStorageData& data)
-    {
-        size_t size = 0;
-        archive(cereal::make_size_tag(size));
-        data.components.reserve(size);
-        for (size_t i = 0; i < size; ++i)
+        entt::meta_any create(const entt::meta_type& type) override
         {
-            Entity entity;
-            archive(entity);
-            entt::meta_any any;
-            if (entity != entt::null)
-            {
-                any = ReflectionUtils::getEntityComponent(data.registry, entity, data.type);
-            }
-            data.components.push_back(std::move(any));
+            return SceneReflectionUtils::getSceneComponent(_scene, type);
         }
-    }
-
-    template<typename Archive>
-    void load(Archive& archive, CerealLoadComponentEntitiesData& data)
-    {
-        size_t size = 0;
-        archive(cereal::make_size_tag(size));
-        data.storages.reserve(size);
-        for (size_t i = 0; i < size; ++i)
-        {
-            auto& storageData = data.storages.emplace_back(data.registry);
-            archive(cereal::make_map_item(storageData.type, storageData));
-        }
-    }
-
-    template<typename Archive>
-    void load(Archive& archive, CerealLoadComponentStorageData& data)
-    {
-        size_t size = 0;
-        archive(cereal::make_size_tag(size));
-        assert(size == data.components.size());
-        for (auto& comp : data.components)
-        {
-            archive(CEREAL_NVP_("component", comp));
-        }
-    }
-
-    template<typename Archive>
-    void load(Archive& archive, CerealLoadEntityComponentsData& data)
-    {
-        size_t size = 0;
-        archive(cereal::make_size_tag(size));
-        assert(size == data.storages.size());
-        for (auto& storageData : data.storages)
-        {
-            CerealLoadComponentStorageData componentsData{ storageData.components };
-            archive(cereal::make_map_item(storageData.type, componentsData));
-        }
-    }
+    private:
+        Scene& _scene;
+    };
 
     template<typename Archive>
     void load(Archive& archive, Scene& scene)
     {
         SerializeContextStack<Scene>::push(scene);
+
+        CerealSceneComponentLoadListDelegate sceneComps(scene);
+        archive(CEREAL_NVP_("sceneComponents", sceneComps));
 
         auto& registry = scene.getRegistry();
 
@@ -225,7 +274,24 @@ namespace darmok
 
         CerealLoadComponentEntitiesData data{ registry };
         archive(CEREAL_NVP_("componentEntities", data));
-        archive(CEREAL_NVP_("components", CerealLoadEntityComponentsData{ data.storages }));
+        archive(CEREAL_NVP_("entityComponents", CerealLoadEntityComponentsData{ data.storages }));
+
+        for (auto& comp : scene.getSceneComponents())
+        {
+            comp.get().afterLoad();
+        }
+
+        static const entt::hashed_string afterLoad{ "afterLoad" };
+        for (auto& storageData : data.storages)
+        {
+            if (auto method = storageData.type.func(afterLoad))
+            {
+                for (auto& comp : storageData.components)
+                {
+                    method.invoke(comp);
+                }
+            }
+        }
 
         SerializeContextStack<Scene>::pop();
     }

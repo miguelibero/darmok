@@ -24,7 +24,9 @@
 #include <darmok/reflect.hpp>
 
 #include <cereal/cereal.hpp>
-#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/xml.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_stdlib.h>
@@ -173,7 +175,7 @@ namespace darmok::editor
 
         ImFontConfig config;
         config.GlyphMinAdvanceX = 30.0f; // Use if you want to make the icon monospaced
-        static const ImWchar iconRanges[] = { ICON_MIN_MD, ICON_MAX_MD , 0 };
+        static const ImWchar iconRanges[] = { ImWchar(ICON_MIN_MD), ImWchar(ICON_MAX_MD) , ImWchar(0) };
         _symbolsFont = io.Fonts->AddFontFromFileTTF("assets/MaterialIcons-Regular.ttf", 30.0f, &config, iconRanges);
 
         io.Fonts->Build();
@@ -236,6 +238,8 @@ namespace darmok::editor
     const std::vector<std::string> EditorAppDelegate::_sceneDialogFilters =
     {
         "Darmok Scene Files", "*.dsc",
+        "Darmok Scene XML Files", "*.dsc.xml",
+        "Darmok Scene json Files", "*.dsc.json",
         "All Files", "*"
     };
 
@@ -261,12 +265,30 @@ namespace darmok::editor
             }
             _scenePath = dialog.result();
         }
-
-        if(_scenePath)
+        if(!_scenePath)
         {
+            return;
+        }
+
+        {
+            auto& scene = *_scene;
             std::ofstream stream(_scenePath.value());
-            cereal::BinaryOutputArchive archive(stream);
-            save(archive, *_scene);
+            auto ext = _scenePath->extension();
+            if (ext == ".xml")
+            {
+                cereal::XMLOutputArchive archive(stream);
+                save(archive, scene);
+            }
+            else if (ext == ".json")
+            {
+                cereal::JSONOutputArchive archive(stream);
+                save(archive, scene);
+            }
+            else
+            {
+                cereal::PortableBinaryOutputArchive archive(stream);
+                save(archive, scene);
+            }
         }
     }
 
@@ -293,13 +315,29 @@ namespace darmok::editor
         _editorCam.reset();
         _scene->destroyEntitiesImmediate();
 
+        auto& scene = *_scene;
+
         {
             std::ifstream stream(scenePath);
-            cereal::BinaryInputArchive archive(stream);
-            load(archive, *_scene);
+            auto ext = scenePath.extension();
+            if (ext == ".xml")
+            {
+                cereal::XMLInputArchive archive(stream);
+                load(archive, scene);
+            }
+            else if (ext == ".json")
+            {
+                cereal::JSONInputArchive archive(stream);
+                load(archive, scene);
+            }
+            else
+            {
+                cereal::PortableBinaryInputArchive archive(stream);
+                load(archive, scene);
+            }
         }
         
-        configureEditorScene(*_scene);
+        configureEditorScene(scene);
         _scenePath = scenePath;
     }
 
@@ -613,9 +651,6 @@ namespace darmok::editor
                 trans->setLocalMatrix(mtx);
             }
         }
-
-
-
     }
 
     void EditorAppDelegate::imguiRender()

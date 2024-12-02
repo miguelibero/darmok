@@ -8,8 +8,9 @@
 #include <darmok/mesh.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/reflect_serialize.hpp>
+#include <darmok/camera_reflect.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 
 namespace darmok
 {
@@ -230,6 +231,13 @@ namespace darmok
     bool FrustumCuller::shouldEntityBeCulled(Entity entity) noexcept
     {
         return _culled.contains(entity);
+    }
+
+    void FrustumCuller::bindMeta() noexcept
+    {
+        ReflectionSerializeUtils::metaSerialize<FrustumCuller>();
+        CameraReflectionUtils::metaCameraComponent<FrustumCuller>("FrustumCuller")
+            .ctor();
     }
 
     CullingDebugRenderer::CullingDebugRenderer(const OptionalRef<const Camera>& mainCam) noexcept

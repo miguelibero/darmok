@@ -1,14 +1,16 @@
 #include <darmok/reflect.hpp>
-#include <darmok/transform.hpp>
-#include <darmok/camera.hpp>
-#include <darmok/scene.hpp>
 #include <darmok/reflect_serialize.hpp>
+#include <darmok/scene_reflect.hpp>
+#include <darmok/camera_reflect.hpp>
+
+#include <darmok/transform.hpp>
+#include <darmok/shadow.hpp>
+#include <darmok/light.hpp>
+#include <darmok/culling.hpp>
+#include <darmok/render_forward.hpp>
 
 namespace darmok
 {
-	const entt::hashed_string ReflectionUtils::_getEntityComponentKey = "getEntityComponent";
-	const entt::hashed_string ReflectionUtils::_getEntityComponentStorageKey = "getEntityComponentStorage";
-
 	const entt::hashed_string ReflectionUtils::_optionalRefEmptyKey = "empty";
 	const entt::hashed_string ReflectionUtils::_optionalRefValueKey = "value";
 	const entt::hashed_string ReflectionUtils::_optionalRefPtrKey = "ptr";
@@ -23,6 +25,11 @@ namespace darmok
 		ReflectionSerializeUtils::bind();
         Transform::bindMeta();
 		Camera::bindMeta();
+
+		ShadowRenderer::bindMeta();
+		LightingRenderComponent::bindMeta();
+		ForwardRenderer::bindMeta();
+		FrustumCuller::bindMeta();
     }
 
 	const void* ReflectionUtils::getRefPtr(const entt::meta_any& any)
@@ -71,23 +78,7 @@ namespace darmok
 	{
 		auto ptr = getRefPtr(any);
 		return any.type().template_arg(0u).from_void(ptr);
-	}
-
-	Entity ReflectionUtils::getEntityComponentRef(const Scene& scene, const entt::meta_any& any)
-	{
-		auto refType = getEntityComponentRefType(any.type());
-		if (!refType)
-		{
-			return entt::null;
-		}
-		auto ptr = getRefPtr(any);
-		if (ptr == nullptr)
-		{
-			return entt::null;
-		}
-		auto typeHash = refType.info().hash();
-		return scene.getEntity(typeHash, ptr);
-	}
+	}	
 
 	entt::meta_type ReflectionUtils::getRefType(const entt::meta_type& type)
 	{
@@ -103,9 +94,29 @@ namespace darmok
 		return {};
 	}
 
-	entt::meta_type ReflectionUtils::getEntityComponentRefType(const entt::meta_type& type)
+	const entt::hashed_string SceneReflectionUtils::_getEntityComponentKey = "getEntityComponent";
+	const entt::hashed_string SceneReflectionUtils::_getEntityComponentStorageKey = "getEntityComponentStorage";
+	const entt::hashed_string SceneReflectionUtils::_getSceneComponentKey = "getSceneComponent";
+
+	Entity SceneReflectionUtils::getEntityComponentRef(const Scene& scene, const entt::meta_any& any)
 	{
-		auto refType = getRefType(type);
+		auto refType = getEntityComponentRefType(any.type());
+		if (!refType)
+		{
+			return entt::null;
+		}
+		auto ptr = ReflectionUtils::getRefPtr(any);
+		if (ptr == nullptr)
+		{
+			return entt::null;
+		}
+		auto typeHash = refType.info().hash();
+		return scene.getEntity(typeHash, ptr);
+	}
+
+	entt::meta_type SceneReflectionUtils::getEntityComponentRefType(const entt::meta_type& type)
+	{
+		auto refType = ReflectionUtils::getRefType(type);
 		if (refType && refType.traits<ReflectionTraits>() != ReflectionTraits::EntityComponent)
 		{
 			return {};
@@ -113,13 +124,25 @@ namespace darmok
 		return refType;
 	}
 
-	entt::meta_any ReflectionUtils::getEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type)
+	entt::meta_any SceneReflectionUtils::getEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type)
 	{
 		return type.invoke(_getEntityComponentKey, {}, entt::forward_as_meta(registry), entity);
 	}
 
-	EntityRegistry::common_type& ReflectionUtils::getEntityComponentStorage(EntityRegistry& registry, const entt::meta_type& type)
+	EntityRegistry::common_type& SceneReflectionUtils::getEntityComponentStorage(EntityRegistry& registry, const entt::meta_type& type)
 	{
 		return type.invoke(_getEntityComponentStorageKey, {}, entt::forward_as_meta(registry)).cast<EntityRegistry::common_type&>();
+	}
+
+	entt::meta_any SceneReflectionUtils::getSceneComponent(Scene& scene, const entt::meta_type& type)
+	{
+		return type.invoke(_getSceneComponentKey, {}, entt::forward_as_meta(scene));
+	}
+
+	const entt::hashed_string CameraReflectionUtils::_getCameraComponentKey = "getCameraComponent";
+
+	entt::meta_any CameraReflectionUtils::getCameraComponent(Camera& cam, const entt::meta_type& type)
+	{
+		return type.invoke(_getCameraComponentKey, {}, entt::forward_as_meta(cam));
 	}
 }

@@ -7,6 +7,8 @@
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/reflect_serialize.hpp>
+#include <darmok/camera_reflect.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/component_wise.hpp>
 #include "render_samplers.hpp"
@@ -65,6 +67,11 @@ namespace darmok
         return _shadow;
     }
 
+    void PointLight::bindMeta() noexcept
+    {
+        ReflectionSerializeUtils::metaSerialize<PointLight>();
+    }
+
     DirectionalLight::DirectionalLight(float intensity) noexcept
         : _intensity(intensity)
         , _color(Colors::white3())
@@ -105,6 +112,10 @@ namespace darmok
         return _shadow;
     }
 
+    void DirectionalLight::bindMeta() noexcept
+    {
+        ReflectionSerializeUtils::metaSerialize<DirectionalLight>();
+    }
 
     AmbientLight::AmbientLight(float intensity) noexcept
         : _intensity(intensity)
@@ -132,6 +143,11 @@ namespace darmok
     float AmbientLight::getIntensity() const noexcept
     {
         return _intensity;
+    }
+
+    void AmbientLight::bindMeta() noexcept
+    {
+        ReflectionSerializeUtils::metaSerialize<AmbientLight>();
     }
 
     SpotLight::SpotLight(float intensity, const Color3& color, float range) noexcept
@@ -208,6 +224,11 @@ namespace darmok
     ShadowType SpotLight::getShadowType() const noexcept
     {
         return _shadow;
+    }
+
+    void SpotLight::bindMeta() noexcept
+    {
+        ReflectionSerializeUtils::metaSerialize<SpotLight>();
     }
 
     LightingRenderComponent::LightingRenderComponent() noexcept
@@ -484,5 +505,12 @@ namespace darmok
             normalMatrix = glm::transpose(glm::adjugate(glm::mat3(trans->getWorldMatrix())));
         }
         encoder.setUniform(_normalMatrixUniform, glm::value_ptr(normalMatrix));
+    }
+
+    void LightingRenderComponent::bindMeta() noexcept
+    {
+        ReflectionSerializeUtils::metaSerialize<LightingRenderComponent>();
+        CameraReflectionUtils::metaCameraComponent<LightingRenderComponent>("LightingRenderComponent")
+            .ctor();
     }
 }

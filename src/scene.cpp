@@ -12,6 +12,21 @@
 
 namespace darmok
 {
+    std::vector<Entity> ISceneDelegate::getSerializableEntities(const EntitySparseSet& storage, const OptionalRef<ISceneDelegate>& dlg)
+    {
+        std::vector<Entity> entities;
+        entities.reserve(storage.size());
+        for (auto itr = storage.rbegin(), last = storage.rend(); itr != last; ++itr)
+        {
+            Entity entity = *itr;
+            if (entity != entt::null && storage.contains(entity) && (!dlg || dlg->shouldEntityBeSerialized(entity)))
+            {
+                entities.push_back(entity);
+            }
+        }
+        return entities;
+    }
+
     SceneImpl::SceneImpl(Scene& scene) noexcept
         : _scene(scene)
         , _renderChain(*this)
@@ -36,6 +51,11 @@ namespace darmok
         _delegate = dlg;
     }
 
+    const OptionalRef<ISceneDelegate>& SceneImpl::getDelegate() const noexcept
+    {
+        return _delegate;
+    }
+
     std::string SceneImpl::toString() const noexcept
     {
         return "Scene(" + getDescName() + ")";
@@ -54,7 +74,7 @@ namespace darmok
     {
         if (auto type = component->getSceneComponentType())
         {
-            removeSceneComponent(type);
+            removeSceneComponent(type->hash());
         }
         if (_app)
         {
@@ -100,24 +120,60 @@ namespace darmok
         return **itr;
     }
 
+    struct SceneComponentTypeHashFinder final
+    {
+        entt::id_type type;
+
+        bool operator()(const std::shared_ptr<ISceneComponent>& comp) const noexcept
+        {
+            if (auto typeInfo = comp->getSceneComponentType())
+            {
+                return typeInfo->hash() == type;
+            }
+            return false;
+        }
+    };
+
     SceneImpl::Components::iterator SceneImpl::findSceneComponent(entt::id_type type) noexcept
     {
         return std::find_if(_components.begin(), _components.end(),
-            [type](auto& comp) { return comp->getSceneComponentType() == type; });
+            SceneComponentTypeHashFinder{ type });
     }
 
     SceneImpl::Components::const_iterator SceneImpl::findSceneComponent(entt::id_type type) const noexcept
     {
         return std::find_if(_components.begin(), _components.end(),
-            [type](auto& comp) { return comp->getSceneComponentType() == type; });
+            SceneComponentTypeHashFinder{ type });
     }
 
-    EntityRegistry& SceneImpl::getRegistry()
+    SceneComponentRefs SceneImpl::getSceneComponents() noexcept
+    {
+        SceneComponentRefs comps;
+        comps.reserve(_components.size());
+        for (auto& comp : _components)
+        {
+            comps.emplace_back(*comp);
+        }
+        return comps;
+    }
+
+    ConstSceneComponentRefs SceneImpl::getSceneComponents() const noexcept
+    {
+        ConstSceneComponentRefs comps;
+        comps.reserve(_components.size());
+        for (auto& comp : _components)
+        {
+            comps.emplace_back(*comp);
+        }
+        return comps;
+    }
+
+    EntityRegistry& SceneImpl::getRegistry() noexcept
     {
         return _registry;
     }
 
-    const EntityRegistry& SceneImpl::getRegistry() const
+    const EntityRegistry& SceneImpl::getRegistry() const noexcept
     {
         return _registry;
     }
@@ -465,12 +521,12 @@ namespace darmok
         return *_impl;
     }
 
-    EntityRegistry& Scene::getRegistry()
+    EntityRegistry& Scene::getRegistry() noexcept
     {
         return _impl->getRegistry();
     }
 
-    const EntityRegistry& Scene::getRegistry() const
+    const EntityRegistry& Scene::getRegistry() const noexcept
     {
         return _impl->getRegistry();
     }
@@ -507,7 +563,7 @@ namespace darmok
 
     void Scene::destroyEntityImmediate(Entity entity) noexcept
     {
-        return _impl->destroyEntity(entity);
+        return _impl->destroyEntityImmediate(entity);
     }
 
     void Scene::destroyEntitiesImmediate() noexcept
@@ -622,6 +678,11 @@ namespace darmok
         return *this;
     }
 
+    const OptionalRef<ISceneDelegate>& Scene::getDelegate() const noexcept
+    {
+        return _impl->getDelegate();
+    }
+
     Scene& Scene::setPaused(bool paused) noexcept
     {
         _impl->setPaused(paused);
@@ -682,6 +743,17 @@ namespace darmok
     OptionalRef<const ISceneComponent> Scene::getSceneComponent(entt::id_type type) const noexcept
     {
         return _impl->getSceneComponent(type);
+    }
+
+    SceneComponentRefs Scene::getSceneComponents() noexcept
+    {
+        return _impl->getSceneComponents();
+    }
+
+    ConstSceneComponentRefs Scene::getSceneComponents() const noexcept
+    {
+        const auto& impl = *_impl;
+        return impl.getSceneComponents();
     }
 
     Scene& Scene::setUpdateFilter(const EntityFilter& filter) noexcept

@@ -4,10 +4,12 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/reflect.hpp>
+#include <darmok/scene_reflect.hpp>
 #include <entt/entt.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/utility.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/archives/json.hpp>
@@ -77,7 +79,7 @@ namespace darmok
     };
 
     template<typename T>
-    thread_local std::stack<std::reference_wrapper<T>> SerializeContextStack<T>::_stack;
+    thread_local std::stack<std::reference_wrapper<T>> SerializeContextStack<T>::_stack;    
 
     struct ReflectionSerializeUtils final
     {
@@ -208,11 +210,20 @@ namespace darmok
 
         static bool isMinimalType(const entt::meta_any& v) noexcept
         {
-            return isMinimalType<0>(v.type());
+            return isMinimalType(v.type());
+        }
+
+        static bool isMinimalType(const entt::meta_type& type)
+        {
+            if (isArithmeticType(type))
+            {
+                return true;
+            }
+            return isType<std::string>(type);
         }
 
         template<std::size_t Index = 0>
-        static bool isMinimalType(const entt::meta_type& type)
+        static bool isArithmeticType(const entt::meta_type& type)
         {
             if constexpr (Index < std::variant_size_v<ArithmeticVariant>)
             {
@@ -221,9 +232,9 @@ namespace darmok
                 {
                     return true;
                 }
-                return isMinimalType<Index + 1>(type);
+                return isArithmeticType<Index + 1>(type);
             }
-            return isType<std::string>(type);
+            return false;
         }
 
         template<class T>
@@ -245,6 +256,7 @@ namespace darmok
         template<typename Archive, typename T>
         static void doSave(Archive& archive, const T& v)
         {
+            // TODO: check how to save without adding a value0 tag in xml
             archive(v);
         }
 
@@ -311,9 +323,8 @@ namespace entt
             }
             return;
         }
-
-
-        if (auto refType = darmok::ReflectionUtils::getEntityComponentRefType(type))
+        // TODO: maybe not needed since the optional ref is already registered, need to check
+        if (auto refType = darmok::SceneReflectionUtils::getEntityComponentRefType(type))
         {
             darmok::Entity entity = entt::null;
             if (auto scene = darmok::SerializeContextStack<const darmok::Scene>::tryGet())
@@ -325,7 +336,7 @@ namespace entt
                     entity = scene->getEntity(typeHash, ptr);
                 }
             }
-            archive(static_cast<ENTT_ID_TYPE>(entity));
+            save(archive, static_cast<ENTT_ID_TYPE>(entity));
             return;
         }
 
@@ -342,13 +353,13 @@ namespace entt
     {
         entt::meta_any& any;
         entt::id_type id = 0;
-    };
 
-    template<class Archive>
-    void load(Archive& archive, CerealLoadMetaMapItem& v)
-    {
-        archive(v.any.get(v.id));
-    }
+        template<class Archive>
+        void load(Archive& archive)
+        {
+            archive(any.get(id));
+        }
+    };
 
     template<class Archive>
     void load(Archive& archive, entt::meta_any& v)
@@ -391,7 +402,7 @@ namespace entt
             return;
         }
 
-        if (auto refType = darmok::ReflectionUtils::getEntityComponentRefType(type))
+        if (auto refType = darmok::SceneReflectionUtils::getEntityComponentRefType(type))
         {
             darmok::Entity entity;
             archive(entity);
@@ -423,7 +434,7 @@ namespace entt
         archive(cereal::make_size_tag(v.size()));
         for (auto element : v)
         {
-            archive(element);
+            save(archive, element);
         }
     }
 
@@ -441,7 +452,7 @@ namespace entt
         for (size_t i = 0; i < size; ++i)
         {
             auto elm = valType.construct();
-            archive(elm);
+            load(archive, elm);
             v.insert(v.end(), elm);
         }
     }
@@ -518,4 +529,83 @@ namespace entt
         }
         ar.finishNode();
     }
+}
+
+namespace darmok
+{
+    template<typename T>
+    class DARMOK_EXPORT BX_NO_VTABLE ICerealReflectSaveListDelegate
+    {
+    public:
+        virtual ~ICerealReflectSaveListDelegate() = default;
+        virtual std::optional<entt::type_info> getTypeInfo(const T& elm) const = 0;
+        virtual std::vector<std::reference_wrapper<const T>> getList() const = 0;
+
+        template<class Archive>
+        void save(Archive& archive) const
+        {
+            std::unordered_map<entt::id_type, entt::meta_any> elms;
+            auto refList = getList();
+            elms.reserve(refList.size());
+            for (auto& ref : refList)
+            {
+                auto& elm = ref.get();
+                if (auto typeInfo = getTypeInfo(elm))
+                {
+                    if (auto type = entt::resolve(typeInfo.value()))
+                    {
+                        elms.emplace(type.id(), type.from_void(&elm));
+                    }
+                }
+            }
+            cereal::save(archive, elms);
+        }
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE ICerealReflectCreateDelegate
+    {
+    public:
+        virtual ~ICerealReflectCreateDelegate() = default;
+        virtual entt::meta_any create(const entt::meta_type& type) = 0;
+    };
+
+    struct CerealReflectLoadListElementData final
+    {
+        ICerealReflectCreateDelegate& delegate;
+        entt::meta_type type;
+        entt::any obj;
+
+        template<class Archive>
+        void load(Archive& archive)
+        {
+            obj = delegate.create(type);
+        }
+    };
+
+    template<typename T>
+    class DARMOK_EXPORT BX_NO_VTABLE ICerealReflectLoadListDelegate : public ICerealReflectCreateDelegate
+    {
+    public:
+        virtual ~ICerealReflectLoadListDelegate() = default;
+        virtual void reserve(size_t size) {};
+        virtual entt::meta_any create(const entt::meta_type& type) = 0;
+        virtual void afterLoad() {};
+
+        template<class Archive>
+        void load(Archive& archive)
+        {
+            size_t size = 0;
+            archive(cereal::make_size_tag(size));
+            reserve(size);
+            for (size_t i = 0; i < size; ++i)
+            {
+                CerealReflectLoadListElementData data{ *this };
+                archive(cereal::make_map_item(data.type, data));
+            }
+            afterLoad();
+        }
+    };
+
+
+
 }

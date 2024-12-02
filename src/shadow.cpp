@@ -14,6 +14,7 @@
 #include <darmok/scene_filter.hpp>
 #include <darmok/string.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/camera_reflect.hpp>
 #include "generated/shadow.program.h"
 #include "render_samplers.hpp"
 
@@ -650,6 +651,13 @@ namespace darmok
         encoder.setUniform(_shadowData1Uniform, glm::value_ptr(shadowData));
         shadowData = glm::vec4{ _dirAmount, _spotAmount, _pointAmount, getShadowMapAmount()};
         encoder.setUniform(_shadowData2Uniform, glm::value_ptr(shadowData));
+    }
+
+    void ShadowRenderer::bindMeta() noexcept
+    {
+        ReflectionSerializeUtils::metaSerialize<ShadowRenderer>();
+        CameraReflectionUtils::metaCameraComponent<ShadowRenderer>("ShadowRenderer")
+            .ctor();
     }
 
     ShadowDebugRenderer::ShadowDebugRenderer(ShadowRenderer& renderer) noexcept

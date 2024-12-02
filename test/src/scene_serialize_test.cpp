@@ -123,13 +123,13 @@ TEST_CASE( "scene can be serialized", "[scene-serialize]" )
     auto json = nlohmann::json::parse(str);
 
     REQUIRE(json.is_object());
-    REQUIRE(json.size() == 4);
+    REQUIRE(json.size() == 5);
     REQUIRE(json["entities"].size() == 2);
     REQUIRE(json["freeList"] == 2);
-    REQUIRE(json["components"].size() == 1);
-    REQUIRE(json["components"][0]["value"].size() == 2);
-    REQUIRE(json["components"][0]["value"][0][0]["value"] == 42);
-    REQUIRE(json["components"][0]["value"][1][0]["value"] == 666);
+    REQUIRE(json["entityComponents"].size() == 1);
+    REQUIRE(json["entityComponents"][0]["value"].size() == 2);
+    REQUIRE(json["entityComponents"][0]["value"][0][0]["value"] == 42);
+    REQUIRE(json["entityComponents"][0]["value"][1][0]["value"] == 666);
 }
 
 TEST_CASE("scene can be loaded", "[scene-serialize]")

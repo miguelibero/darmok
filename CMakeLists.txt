@@ -213,6 +213,7 @@ set(HEADERS
   scene_fwd.hpp
   scene.hpp
   scene_filter.hpp
+  scene_reflect.hpp
   scene_serialize.hpp
 
   texture_atlas.hpp
@@ -226,6 +227,7 @@ set(HEADERS
 
   transform.hpp
   camera.hpp
+  camera_reflect.hpp
   culling.hpp
   light.hpp
   render_scene.hpp

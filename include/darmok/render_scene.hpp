@@ -7,6 +7,7 @@
 #include <darmok/viewport.hpp>
 #include <memory>
 #include <vector>
+#include <optional>
 #include <stdexcept>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
@@ -21,30 +22,26 @@ namespace darmok
     {
     public:
         virtual ~ICameraComponent() = default;
-        virtual entt::id_type getCameraComponentType() const noexcept { return 0; };
-        virtual void init(Camera& cam, Scene& scene, App& app) {};
-        virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; };
-        virtual void render() {};
-        virtual void update(float deltaTime) {};
-        virtual void shutdown() {};
-        virtual bool shouldEntityBeCulled(Entity entity) { return false; };
-        virtual void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) {};
-        virtual void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) { };
-        virtual void onCameraTransformChanged() {};
-
-        template <class Archive>
-        void serialize(Archive& ar)
-        {
-        }
+        virtual std::optional<entt::type_info> getCameraComponentType() const noexcept { return std::nullopt; }
+        virtual void init(Camera& cam, Scene& scene, App& app) {}
+        virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
+        virtual void render() {}
+        virtual void update(float deltaTime) {}
+        virtual void shutdown() {}
+        virtual bool shouldEntityBeCulled(Entity entity) { return false; }
+        virtual void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) {}
+        virtual void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) {}
+        virtual void onCameraTransformChanged() {}
+        virtual void afterLoad() {}
     };
 
     template<typename T>
     class DARMOK_EXPORT BX_NO_VTABLE ITypeCameraComponent : public ICameraComponent
     {
     public:
-        entt::id_type getCameraComponentType() const noexcept override
+        std::optional<entt::type_info> getCameraComponentType() const noexcept override
         {
-            return entt::type_hash<T>::value();
+            return entt::type_id<T>();
         }
     };
 

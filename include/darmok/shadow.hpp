@@ -9,6 +9,8 @@
 #include <darmok/easing_fwd.hpp>
 #include <darmok/program.hpp>
 
+#include <cereal/cereal.hpp>
+
 namespace darmok
 {
     class Texture;
@@ -48,13 +50,28 @@ namespace darmok
         float bias = 0.005F;
         float normalBias = 0.02F;
         float nearPlane = 0.1F;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP(mapSize),
+                CEREAL_NVP(cascadeMargin),
+                CEREAL_NVP(cascadeEasing),
+                CEREAL_NVP(maxPassAmount),
+                CEREAL_NVP(cascadeAmount),
+                CEREAL_NVP(bias),
+                CEREAL_NVP(normalBias),
+                CEREAL_NVP(nearPlane)
+            );
+        }
     };
 
     class DARMOK_EXPORT ShadowRenderer final : public ITypeCameraComponent<ShadowRenderer>
     {
     public:
         using Config = ShadowRendererConfig;
-        ShadowRenderer(const Config& config) noexcept;
+        ShadowRenderer(const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void update(float deltaTime) override;
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
@@ -85,6 +102,14 @@ namespace darmok
         bgfx::TextureHandle getTextureHandle() const noexcept;
         OptionalRef<Camera> getCamera() noexcept;
         OptionalRef<Scene> getScene() noexcept;
+
+        static void bindMeta() noexcept;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(CEREAL_NVP_("config", _config));
+        }
 
     private:
         Config _config;

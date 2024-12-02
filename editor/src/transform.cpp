@@ -27,10 +27,10 @@ namespace darmok::editor
                 }
             }
             {
-                auto rot = trans.getRotation();
-                if (ImGui::InputFloat4("Rotation", glm::value_ptr(rot)))
+                auto rot = trans.getEulerAngles();
+                if (ImGui::InputFloat3("Rotation", glm::value_ptr(rot)))
                 {
-                    trans.setRotation(rot);
+                    trans.setEulerAngles(rot);
                 }
             }
             {

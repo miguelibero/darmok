@@ -8,6 +8,7 @@
 #include <darmok/math.hpp>
 #include <darmok/string.hpp>
 #include <darmok/render_scene.hpp>
+#include <darmok/camera_reflect.hpp>
 
 #include "camera.hpp"
 #include "scene.hpp"
@@ -245,6 +246,12 @@ namespace darmok
         }
     }
 
+    void CameraImpl::afterLoad()
+    {
+        _projInv = glm::inverse(_proj);
+        _transformChanged = true;
+    }
+
     bgfx::ViewId CameraImpl::renderReset(bgfx::ViewId viewId)
     {
         updateViewportProjection();
@@ -389,7 +396,7 @@ namespace darmok
     {
         if (auto type = component->getCameraComponentType())
         {
-            removeComponent(type);
+            removeComponent(type->hash());
         }
         if (_scene)
         {
@@ -398,18 +405,31 @@ namespace darmok
         _components.emplace_back(std::move(component));
     }
 
+    struct CameraComponentTypeHashFinder final
+    {
+        entt::id_type type;
+
+        bool operator()(const std::shared_ptr<ICameraComponent>& comp) const noexcept
+        {
+            if (auto typeInfo = comp->getCameraComponentType())
+            {
+                return typeInfo->hash() == type;
+            }
+            return false;
+        }
+    };
+
     CameraImpl::Components::iterator CameraImpl::findComponent(entt::id_type type) noexcept
     {
         return std::find_if(_components.begin(), _components.end(),
-            [type](auto& comp) { return comp->getCameraComponentType() == type; });
+            CameraComponentTypeHashFinder{ type });
     }
 
     CameraImpl::Components::const_iterator CameraImpl::findComponent(entt::id_type type) const noexcept
     {
         return std::find_if(_components.begin(), _components.end(),
-            [type](auto& comp) { return comp->getCameraComponentType() == type; });
+            CameraComponentTypeHashFinder{ type });
     }
-
 
     bool CameraImpl::removeComponent(entt::id_type type) noexcept
     {
@@ -446,6 +466,28 @@ namespace darmok
             return nullptr;
         }
         return **itr;
+    }
+
+    ConstCameraComponentRefs CameraImpl::getComponents() const noexcept
+    {
+        ConstCameraComponentRefs refs;
+        refs.reserve(_components.size());
+        for (auto& comp : _components)
+        {
+            refs.emplace_back(*comp);
+        }
+        return refs;
+    }
+
+    CameraComponentRefs CameraImpl::getComponents() noexcept
+    {
+        CameraComponentRefs refs;
+        refs.reserve(_components.size());
+        for (auto& comp : _components)
+        {
+            refs.emplace_back(*comp);
+        }
+        return refs;
     }
 
     void CameraImpl::setViewport(const std::optional<Viewport>& viewport) noexcept
@@ -583,6 +625,35 @@ namespace darmok
         if (_app)
         {
             _app->requestRenderReset();
+        }
+    }
+
+    CameraComponentCerealListDelegate::CameraComponentCerealListDelegate(Camera& cam) noexcept
+        : _cam(cam)
+    {
+    }
+
+    entt::meta_any CameraComponentCerealListDelegate::create(const entt::meta_type& type)
+    {
+        return CameraReflectionUtils::getCameraComponent(_cam, type);
+    }
+
+    std::optional<entt::type_info> CameraComponentCerealListDelegate::getTypeInfo(const ICameraComponent& comp) const noexcept
+    {
+        return comp.getCameraComponentType();
+    }
+
+    ConstCameraComponentRefs CameraComponentCerealListDelegate::getList() const noexcept
+    {
+        const auto& cam = _cam;
+        return cam.getComponents();
+    }
+
+    void CameraComponentCerealListDelegate::afterLoad() noexcept
+    {
+        for (auto& comp : _cam.getComponents())
+        {
+            comp.get().afterLoad();
         }
     }
 
@@ -793,6 +864,17 @@ namespace darmok
         return _impl->getComponent(type);
     }
 
+    ConstCameraComponentRefs Camera::getComponents() const noexcept
+    {
+        const auto& impl = *_impl;
+        return impl.getComponents();
+    }
+
+    CameraComponentRefs Camera::getComponents() noexcept
+    {
+        return _impl->getComponents();
+    }
+
     Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept
     {
         return _impl->screenPointToRay(point);
@@ -876,8 +958,9 @@ namespace darmok
     void Camera::bindMeta() noexcept
     {
         ReflectionSerializeUtils::metaSerialize<Camera>();
-        ReflectionUtils::metaEntityComponent<Camera>("Camera")
+        SceneReflectionUtils::metaEntityComponent<Camera>("Camera")
             .ctor()
+            .func<&Camera::afterLoad>("afterLoad"_hs)
             .func<&Camera::getName>("getName"_hs)
             .func<&Camera::setName, entt::as_void_t>("setName"_hs)
             .func<&Camera::isEnabled>("isEnabled"_hs)
@@ -891,6 +974,11 @@ namespace darmok
     void Camera::serialize(Archive& archive)
     {
         _impl->serialize(archive);
+    }
+
+    void Camera::afterLoad()
+    {
+        _impl->afterLoad();
     }
 
     DARMOK_IMPLEMENT_TEMPLATE_CEREAL_SERIALIZE(Camera::serialize)

@@ -9,6 +9,8 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/reflect_serialize.hpp>
+#include <darmok/camera_reflect.hpp>
 #include "render_samplers.hpp"
 
 namespace darmok
@@ -78,5 +80,12 @@ namespace darmok
 			_materials->renderSubmit(viewId, encoder, *renderable->getMaterial());
 		}
 		bgfx::end(&encoder);
+	}
+
+	void ForwardRenderer::bindMeta() noexcept
+	{
+		ReflectionSerializeUtils::metaSerialize<ForwardRenderer>();
+		CameraReflectionUtils::metaCameraComponent<ForwardRenderer>("ForwardRenderer")
+			.ctor();
 	}
 }

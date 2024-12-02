@@ -12,6 +12,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace darmok
 {
@@ -26,6 +27,9 @@ namespace darmok
     class EntityView;
     struct Plane;
     struct BoundingBox;
+
+    using ConstCameraComponentRefs = std::vector<std::reference_wrapper<const ICameraComponent>>;
+    using CameraComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
 
     class DARMOK_EXPORT Camera final
     {
@@ -96,6 +100,8 @@ namespace darmok
         [[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
         [[nodiscard]] OptionalRef<ICameraComponent> getComponent(entt::id_type type) noexcept;
         [[nodiscard]] OptionalRef<const ICameraComponent> getComponent(entt::id_type type) const noexcept;
+        [[nodiscard]] ConstCameraComponentRefs getComponents() const noexcept;
+        [[nodiscard]] CameraComponentRefs getComponents() noexcept;
 
         template<typename T>
         [[nodiscard]] OptionalRef<T> getComponent() noexcept
@@ -128,6 +134,16 @@ namespace darmok
             return ref;
         }
 
+        template<typename T, typename... A>
+        T& getOrAddComponent(A&&... args) noexcept
+        {
+            if (auto comp = getComponent<T>())
+            {
+                return comp.value();
+            }
+            return addComponent<T>(std::forward<A>(args)...);
+        }
+
         // trying to maintain Unity API https://docs.unity3d.com/ScriptReference/Camera.html
         [[nodiscard]] Ray screenPointToRay(const glm::vec3& point) const noexcept;
         [[nodiscard]] Ray viewportPointToRay(const glm::vec3& point) const noexcept;
@@ -155,5 +171,7 @@ namespace darmok
 
     private:
         std::unique_ptr<CameraImpl> _impl;
+
+        void afterLoad();
     };
 }

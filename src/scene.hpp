@@ -22,6 +22,9 @@ namespace darmok
     class Camera;
     class FrameBuffer;
 
+    using SceneComponentRefs = std::vector<std::reference_wrapper<ISceneComponent>>;
+    using ConstSceneComponentRefs = std::vector<std::reference_wrapper<const ISceneComponent>>;
+
     class SceneImpl final : IRenderChainDelegate
     {
     public:
@@ -29,12 +32,15 @@ namespace darmok
         ~SceneImpl() noexcept;
 
         void setDelegate(const OptionalRef<ISceneDelegate>& dlg) noexcept;
+        const OptionalRef<ISceneDelegate>& getDelegate() const noexcept;
 
         void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
         bool hasSceneComponent(entt::id_type type) const noexcept;
         OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
         OptionalRef<const ISceneComponent> getSceneComponent(entt::id_type type) const noexcept;
+        SceneComponentRefs getSceneComponents() noexcept;
+        ConstSceneComponentRefs getSceneComponents() const noexcept;
 
         entt::id_type getId() const noexcept;
         void setName(const std::string& name) noexcept;
@@ -55,8 +61,8 @@ namespace darmok
         void destroyEntitiesImmediate() noexcept;
         void destroyEntitiesImmediate(const EntityFilter& filter) noexcept;
 
-        EntityRegistry& getRegistry();
-        const EntityRegistry& getRegistry() const;
+        EntityRegistry& getRegistry() noexcept;
+        const EntityRegistry& getRegistry() const noexcept;
         bool removeComponent(Entity entity, entt::id_type typeId) noexcept;
 
         RenderChain& getRenderChain() noexcept;

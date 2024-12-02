@@ -49,6 +49,13 @@ namespace darmok
         void shutdown() noexcept override;
         void update(float deltaTime) noexcept override;
         bool shouldEntityBeCulled(Entity entity) noexcept override;
+
+        static void bindMeta() noexcept;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+        }
     private:
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
