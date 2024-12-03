@@ -32,24 +32,11 @@ namespace darmok
 		static OptionalRef<Camera>::std_t getEntityComponent(LuaEntity& entity) noexcept;
 		static std::optional<LuaEntity> getEntity(const Camera& cam, const std::shared_ptr<Scene>& scene) noexcept;
 
-		static Camera& setPerspective1(Camera& cam, float fovy, float aspect, float near, float far) noexcept;
-		static Camera& setPerspective2(Camera& cam, float fovy, float aspect, float near) noexcept;
-		static Camera& setPerspective3(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept;
-		static Camera& setPerspective4(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept;
-		static Camera& setOrtho1(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
-		static Camera& setOrtho2(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center) noexcept;
-		static Camera& setOrtho3(Camera& cam, const VarViewport& vp) noexcept;
-		static Camera& setOrtho4(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
-		static Camera& setOrtho5(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept;
-		static Camera& setOrtho6(Camera& cam, const VarLuaTable<glm::uvec2>& size) noexcept;
+		static Camera& setPerspective1(Camera& cam, float fovy) noexcept;
+		static Camera& setPerspective2(Camera& cam, float fovy, float near, float far) noexcept;
+		static Camera& setOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept;
+		static Camera& setOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
 
-		static Camera& setViewportPerspective1(Camera& cam, float fovy) noexcept;
-		static Camera& setViewportPerspective2(Camera& cam, float fovy, float near, float far) noexcept;
-		static Camera& setViewportOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept;
-		static Camera& setViewportOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
-
-		static void setProjectionMatrix(Camera& cam, const VarLuaTable<glm::mat4>& matrix) noexcept;
-		
 		static std::optional<Viewport> getViewport(const Camera& cam) noexcept;
 		static void setViewport(Camera& cam, std::optional<VarViewport> viewport) noexcept;
 

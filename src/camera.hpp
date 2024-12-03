@@ -62,15 +62,8 @@ namespace darmok
 
         BoundingBox getPlaneBounds(const Plane& plane) const noexcept;
 
-        void setProjectionMatrix(const glm::mat4& matrix) noexcept;
-        void setPerspective(float fovy, float aspect, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
-        void setPerspective(float fovy, const glm::uvec2& size, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
-        
-        void setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
-        void setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
-
-        void setViewportPerspective(float fovy, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
-        void setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultPerspFar) noexcept;
+        const CameraProjectionData& getProjection() const noexcept;
+        void setProjection(const CameraProjectionData& data) noexcept;
 
         void setViewport(const std::optional<Viewport>& viewport) noexcept;
         const std::optional<Viewport>& getViewport() const noexcept;
@@ -134,8 +127,7 @@ namespace darmok
             archive(
                 CEREAL_NVP_("name", _name),
                 CEREAL_NVP_("enabled", _enabled),
-                CEREAL_NVP_("proj", _proj),
-                CEREAL_NVP_("viewportProj", _vpProj),
+                CEREAL_NVP_("proj", _projData),
                 CEREAL_NVP_("cullingFilter", _cullingFilter),
                 CEREAL_NVP_("renderChain", _renderChain),
                 CEREAL_NVP_("components", CameraComponentCerealListDelegate(_cam))
@@ -150,40 +142,9 @@ namespace darmok
         glm::mat4 _proj;
         glm::mat4 _projInv;
         glm::mat4 _view;
-        bool _transformChanged;
+        bool _transformChanged;      
 
-        struct PerspectiveData final
-        {
-            float fovy;
-            float near;
-            float far;
-
-            template<typename Archive>
-            void serialize(Archive& archive)
-            {
-                CEREAL_NVP(fovy);
-                CEREAL_NVP(near);
-                CEREAL_NVP(far);
-            }
-        };
-
-        struct OrthoData final
-        {
-            glm::vec2 center;
-            float near;
-            float far;
-
-            template<typename Archive>
-            void serialize(Archive& archive)
-            {
-                CEREAL_NVP(center);
-                CEREAL_NVP(near);
-                CEREAL_NVP(far);
-            }
-        };
-
-        using ProjectionData = std::variant<PerspectiveData, OrthoData>;
-        std::optional<ProjectionData> _vpProj;
+        CameraProjectionData _projData;
 
         std::optional<Viewport> _viewport;
         EntityFilter _cullingFilter;
@@ -197,7 +158,7 @@ namespace darmok
         RenderChain _renderChain;
         
         std::string getDescName() const noexcept;
-        bool updateViewportProjection() noexcept;
+        bool updateProjection() noexcept;
 
         Components::iterator findComponent(entt::id_type type) noexcept;
         Components::const_iterator findComponent(entt::id_type type) const noexcept;
@@ -206,8 +167,24 @@ namespace darmok
         OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
         void onRenderChainChanged() noexcept override;
 
-        void doSetProjectionMatrix(const glm::mat4& matrix) noexcept;
+        void setProjectionMatrix(const glm::mat4& matrix) noexcept;
         glm::mat4 getScreenViewMatrix() const noexcept;
         void onTransformChanged();
     };
+
+    template<typename Archive>
+    void serialize(Archive& archive, CameraPerspectiveData& data)
+    {
+        CEREAL_NVP(data.fovy);
+        CEREAL_NVP(data.near);
+        CEREAL_NVP(data.far);
+    }
+
+    template<typename Archive>
+    void serialize(Archive& archive, CameraOrthoData& data)
+    {
+        CEREAL_NVP(data.center);
+        CEREAL_NVP(data.near);
+        CEREAL_NVP(data.far);
+    }
 }

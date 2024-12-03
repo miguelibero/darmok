@@ -73,7 +73,7 @@ namespace darmok::editor
             .setPosition(glm::vec3(10, 5, -10))
             .lookAt(glm::vec3(0))
             .setName(name);
-        cam.setViewportPerspective(60.F, 0.3F, 10000.F);
+        cam.setPerspective(60.F, 0.3F, 10000.F);
         cam.addComponent<SkyboxRenderer>(skyboxTex);
         cam.addComponent<GridRenderer>();
         cam.addComponent<LightingRenderComponent>();
@@ -104,7 +104,7 @@ namespace darmok::editor
 
         auto camEntity = scene.createEntity();
         auto& cam = scene.addComponent<Camera>(camEntity)
-            .setViewportPerspective(60.F, 0.3F, 1000.F);
+            .setPerspective(60.F, 0.3F, 1000.F);
         cam.addComponent<ShadowRenderer>(shadowConfig);
         cam.addComponent<LightingRenderComponent>();
         cam.addComponent<ForwardRenderer>();

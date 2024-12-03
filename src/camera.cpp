@@ -29,6 +29,7 @@ namespace darmok
         , _enabled(true)
         , _renderChain(*this)
         , _transformChanged(false)
+        , _projData(CameraOrthoData{})
     {
     }
 
@@ -136,78 +137,45 @@ namespace darmok
         return { botLeft, topRight };
     }
 
-    void CameraImpl::setProjectionMatrix(const glm::mat4& matrix) noexcept
+    const CameraProjectionData& CameraImpl::getProjection() const noexcept
     {
-        doSetProjectionMatrix(matrix);
-        _vpProj.reset();
+        return _projData;
     }
 
-    void CameraImpl::setPerspective(float fovy, float aspect, float near, float far) noexcept
+    void CameraImpl::setProjection(const CameraProjectionData& data) noexcept
     {
-        auto proj = Math::perspective(glm::radians(fovy), aspect, near, far);
-        setProjectionMatrix(proj);
-    }
-
-    void CameraImpl::setPerspective(float fovy, const glm::uvec2& size, float near, float far) noexcept
-    {
-        float aspect = (float)size.x / size.y;
-        return setPerspective(fovy, aspect, near, far);
-    }
-
-    void CameraImpl::setOrtho(const Viewport& vp, const glm::vec2& center, float near, float far) noexcept
-    {
-        auto proj = vp.ortho(center, near, far);
-        setProjectionMatrix(proj);
-    }
-
-    void CameraImpl::setOrtho(const glm::uvec2& size, const glm::vec2& center, float near, float far) noexcept
-    {
-        return setOrtho(Viewport(size), center, near, far);
-    }
-
-    void CameraImpl::setViewportPerspective(float fovy, float near, float far) noexcept
-    {
-        _vpProj = PerspectiveData(fovy, near, far);
+        _projData = data;
         if (_app)
         {
-            updateViewportProjection();
+            updateProjection();
         }
     }
 
-    void CameraImpl::setViewportOrtho(const glm::vec2& center, float near, float far) noexcept
+    bool CameraImpl::updateProjection() noexcept
     {
-        _vpProj = OrthoData(center, near, far);
-        if (_app)
-        {
-            updateViewportProjection();
-        }
-    }
-
-    bool CameraImpl::updateViewportProjection() noexcept
-    {
-        if (!_app || !_vpProj)
+        if (!_app)
         {
             return false;
         }
         auto vp = getCurrentViewport();
-        auto ptr = &_vpProj.value();
-        if (auto winPersp = std::get_if<PerspectiveData>(ptr))
+        auto ptr = &_projData;
+        if (auto winPersp = std::get_if<CameraPerspectiveData>(ptr))
         {
             float aspect = vp.getAspectRatio();
             auto proj = Math::perspective(glm::radians(winPersp->fovy), aspect, winPersp->near, winPersp->far);
-            doSetProjectionMatrix(proj);
+            setProjectionMatrix(proj);
             return true;
         }
-        else if (auto winOrtho = std::get_if<OrthoData>(ptr))
+        else if (auto winOrtho = std::get_if<CameraOrthoData>(ptr))
         {
             auto proj = vp.ortho(winOrtho->center, winOrtho->near, winOrtho->far);
-            doSetProjectionMatrix(proj);
+            setProjectionMatrix(proj);
             return true;
         }
         return false;
     }
 
-    void CameraImpl::doSetProjectionMatrix(const glm::mat4& matrix) noexcept
+    void CameraImpl::setProjectionMatrix(const glm::mat4& matrix) noexcept
     {
         if (_proj == matrix)
         {
@@ -249,13 +217,12 @@ namespace darmok
 
     void CameraImpl::afterLoad()
     {
-        _projInv = glm::inverse(_proj);
-        _transformChanged = true;
+        updateProjection();
     }
 
     bgfx::ViewId CameraImpl::renderReset(bgfx::ViewId viewId)
     {
-        updateViewportProjection();
+        updateProjection();
         _renderChain.beforeRenderReset();
         for (auto comp : Components(_components))
         {
@@ -301,7 +268,7 @@ namespace darmok
             comp->update(deltaTime);
         }
         _renderChain.update(deltaTime);
-        updateViewportProjection();
+        updateProjection();
 
         auto view = getViewMatrix();
         if (_view != view)
@@ -498,7 +465,7 @@ namespace darmok
             return;
         }
         _viewport = viewport;
-        updateViewportProjection();
+        updateProjection();
     }
 
     const std::optional<Viewport>& CameraImpl::getViewport() const noexcept
@@ -745,46 +712,25 @@ namespace darmok
         return _impl->getPlaneBounds(plane);
     }
 
-    Camera& Camera::setProjectionMatrix(const glm::mat4& matrix) noexcept
+    const CameraProjectionData& Camera::getProjection() const noexcept
     {
-        _impl->setProjectionMatrix(matrix);
+        return _impl->getProjection();
+    }
+
+    Camera& Camera::setProjection(const CameraProjectionData& data) noexcept
+    {
+        _impl->setProjection(data);
         return *this;
     }
 
-    Camera& Camera::setPerspective(float fovy, float aspect, float near, float far) noexcept
+    Camera& Camera::setPerspective(float fovy, float near, float far) noexcept
     {
-        _impl->setPerspective(fovy, aspect, near, far);
-        return *this;
+        return setProjection(CameraPerspectiveData{ fovy, near, far });
     }
 
-    Camera& Camera::setPerspective(float fovy, const glm::uvec2& size, float near, float far) noexcept
+    Camera& Camera::setOrtho(const glm::vec2& center, float near, float far) noexcept
     {
-        _impl->setPerspective(fovy, size, near, far);
-        return *this;
-    }
-    
-    Camera& Camera::setOrtho(const Viewport& viewport, const glm::vec2& center, float near, float far) noexcept
-    {
-        _impl->setOrtho(viewport, center, near, far);
-        return *this;
-    }
-
-    Camera& Camera::setOrtho(const glm::uvec2& size, const glm::vec2& center, float near, float far) noexcept
-    {
-        _impl->setOrtho(size, center, near, far);
-        return *this;
-    }
-
-    Camera& Camera::setViewportPerspective(float fovy, float near, float far) noexcept
-    {
-        _impl->setViewportPerspective(fovy, near, far);
-        return *this;
-    }
-
-    Camera& Camera::setViewportOrtho(const glm::vec2& center, float near, float far) noexcept
-    {
-        _impl->setViewportOrtho(center, near, far);
-        return *this;
+        return setProjection(CameraOrthoData{ center, near, far });
     }
 
     Camera& Camera::setViewport(const std::optional<Viewport>& viewport) noexcept
@@ -978,7 +924,6 @@ namespace darmok
             .func<&Camera::isEnabled>("isEnabled"_hs)
             .func<&Camera::setEnabled, entt::as_void_t>("setEnabled"_hs)
             .func<&Camera::getProjectionMatrix>("getProjectionMatrix"_hs)
-            .func<&Camera::setProjectionMatrix, entt::as_void_t>("setProjectionMatrix"_hs)
             ;
     }
 

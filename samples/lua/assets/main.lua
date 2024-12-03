@@ -10,7 +10,7 @@ function init()
     local camTrans = camEntity:add_component(Transform, { 0, 2, -2 })
     camTrans:look_at({ 0, 0, 0 })
     local cam = camEntity:add_component(Camera)
-    cam:set_perspective(60, app.window.size, 0.3, 1000)
+    cam:set_perspective(60, 0.3, 1000)
     cam:add_component(ForwardRenderer)
     cam:add_component(LightingRenderComponent)
 

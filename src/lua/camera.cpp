@@ -27,88 +27,24 @@
 
 namespace darmok
 {
-	Camera& LuaCamera::setPerspective1(Camera& cam, float fovy, float aspect, float near, float far) noexcept
+	Camera& LuaCamera::setPerspective1(Camera& cam, float fovy) noexcept
 	{
-		cam.setPerspective(fovy, aspect, near, far);
-		return cam;
+		return cam.setPerspective(fovy);
 	}
 
-	Camera& LuaCamera::setPerspective2(Camera& cam, float fovy, float aspect, float near) noexcept
+	Camera& LuaCamera::setPerspective2(Camera& cam, float fovy, float near, float far) noexcept
 	{
-		cam.setPerspective(fovy, aspect, near);
-		return cam;
+		return cam.setPerspective(fovy, near, far);
 	}
 
-	Camera& LuaCamera::setPerspective3(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near, float far) noexcept
+	Camera& LuaCamera::setOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept
 	{
-		cam.setPerspective(fovy, LuaGlm::tableGet(size), near, far);
-		return cam;
+		return cam.setOrtho(LuaGlm::tableGet(center));
 	}
 
-	Camera& LuaCamera::setPerspective4(Camera& cam, float fovy, const VarLuaTable<glm::uvec2>& size, float near) noexcept
+	Camera& LuaCamera::setOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
 	{
-		cam.setPerspective(fovy, LuaGlm::tableGet(size), near);
-		return cam;
-	}
-
-	Camera& LuaCamera::setViewportPerspective1(Camera& cam, float fovy) noexcept
-	{
-		cam.setViewportPerspective(fovy);
-		return cam;
-	}
-
-	Camera& LuaCamera::setViewportPerspective2(Camera& cam, float fovy, float near, float far) noexcept
-	{
-		cam.setViewportPerspective(fovy, near, far);
-		return cam;
-	}
-
-	Camera& LuaCamera::setOrtho1(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
-	{
-		cam.setOrtho(LuaViewport::tableGet(vp), LuaGlm::tableGet(center), near, far);
-		return cam;
-	}
-
-	Camera& LuaCamera::setOrtho2(Camera& cam, const VarViewport& vp, const VarLuaTable<glm::vec2>& center) noexcept
-	{
-		cam.setOrtho(LuaViewport::tableGet(vp), LuaGlm::tableGet(center));
-		return cam;
-	}
-
-	Camera& LuaCamera::setOrtho3(Camera& cam, const VarViewport& vp) noexcept
-	{
-		cam.setOrtho(LuaViewport::tableGet(vp));
-		return cam;
-	}
-
-	Camera& LuaCamera::setOrtho4(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
-	{
-		cam.setOrtho(LuaGlm::tableGet(size), LuaGlm::tableGet(center), near, far);
-		return cam;
-	}
-
-	Camera& LuaCamera::setOrtho5(Camera& cam, const VarLuaTable<glm::uvec2>& size, const VarLuaTable<glm::vec2>& center) noexcept
-	{
-		cam.setOrtho(LuaGlm::tableGet(size), LuaGlm::tableGet(center));
-		return cam;
-	}
-
-	Camera& LuaCamera::setOrtho6(Camera& cam, const VarLuaTable<glm::uvec2>& size) noexcept
-	{
-		cam.setOrtho(LuaGlm::tableGet(size));
-		return cam;
-	}
-
-	Camera& LuaCamera::setViewportOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept
-	{
-		cam.setViewportOrtho(LuaGlm::tableGet(center));
-		return cam;
-	}
-
-	Camera& LuaCamera::setViewportOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept
-	{
-		cam.setViewportOrtho(LuaGlm::tableGet(center), near, far);
-		return cam;
+		return cam.setOrtho(LuaGlm::tableGet(center), near, far);
 	}
 
 	std::optional<Viewport> LuaCamera::getViewport(const Camera& cam) noexcept
@@ -124,11 +60,6 @@ namespace darmok
 	OptionalRef<Transform>::std_t LuaCamera::getTransform(const Camera& cam) noexcept
 	{
 		return cam.getTransform();
-	}
-
-	void LuaCamera::setProjectionMatrix(Camera& cam, const VarLuaTable<glm::mat4>& matrix) noexcept
-	{
-		cam.setProjectionMatrix(LuaGlm::tableGet(matrix));
 	}
 
 	Ray LuaCamera::screenPointToRay1(const Camera& cam, const glm::vec2& point) noexcept
@@ -225,29 +156,15 @@ namespace darmok
 			"get_entity", &LuaCamera::getEntity,
 			"set_perspective", sol::overload(
 				&LuaCamera::setPerspective1,
-				&LuaCamera::setPerspective2,
-				&LuaCamera::setPerspective3,
-				&LuaCamera::setPerspective4
+				&LuaCamera::setPerspective2
 			),
 			"set_ortho", sol::overload(
 				&LuaCamera::setOrtho1,
-				&LuaCamera::setOrtho2,
-				&LuaCamera::setOrtho3,
-				&LuaCamera::setOrtho4,
-				&LuaCamera::setOrtho5,
-				&LuaCamera::setOrtho6
-			),
-			"set_viewport_perspective", sol::overload(
-				&LuaCamera::setViewportPerspective1,
-				&LuaCamera::setViewportPerspective2
-			),
-			"set_viewport_ortho", sol::overload(
-				&LuaCamera::setViewportOrtho1,
-				&LuaCamera::setViewportOrtho2
+				&LuaCamera::setOrtho2
 			),
 			"name", sol::property(&Camera::getName, &Camera::setName),
 			"enabled", sol::property(&Camera::isEnabled, &Camera::setEnabled),
-			"projection_matrix", sol::property(&Camera::getProjectionMatrix, &LuaCamera::setProjectionMatrix),
+			"projection_matrix", sol::property(&Camera::getProjectionMatrix),
 			"projection_inverse", sol::property(&Camera::getProjectionInverse),
 			"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
 			"current_viewport", sol::property(&Camera::getCurrentViewport),

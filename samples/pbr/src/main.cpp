@@ -258,7 +258,7 @@ namespace
 
 			auto farPlane = mainCamera ? 100 : 20;
 			auto& cam = scene.addComponent<Camera>(entity)
-				.setViewportPerspective(60, 0.3, farPlane);
+				.setPerspective(60, 0.3, farPlane);
 
 			auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx");
 			cam.addComponent<SkyboxRenderer>(skyboxTex);

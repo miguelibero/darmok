@@ -55,7 +55,7 @@ namespace
 					.setPosition({ 0, 5, -10 })
 					.lookAt({ 0, 0, 0 });
 				_cam = _scene->addComponent<Camera>(camEntity)
-					.setViewportPerspective(60, 0.3, 1000);
+					.setPerspective(60, 0.3, 1000);
 
 				_cam->addComponent<ForwardRenderer>();
 				_cam->addComponent<LightingRenderComponent>();

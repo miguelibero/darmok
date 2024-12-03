@@ -13,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <variant>
 
 namespace darmok
 {
@@ -30,6 +31,22 @@ namespace darmok
 
     using ConstCameraComponentRefs = std::vector<std::reference_wrapper<const ICameraComponent>>;
     using CameraComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
+
+    struct DARMOK_EXPORT CameraPerspectiveData final
+    {
+        float fovy = 60.F;
+        float near = Math::defaultPerspNear;
+        float far = Math::defaultPerspFar;
+    };
+
+    struct DARMOK_EXPORT CameraOrthoData final
+    {
+        glm::vec2 center = glm::vec2(0.5f);
+        float near = Math::defaultOrthoNear;
+        float far = Math::defaultOrthoFar;
+    };
+
+    using CameraProjectionData = std::variant<CameraPerspectiveData, CameraOrthoData>;
 
     class DARMOK_EXPORT Camera final
     {
@@ -57,15 +74,10 @@ namespace darmok
 
         BoundingBox getPlaneBounds(const Plane& plane) const noexcept;
 
-        Camera& setProjectionMatrix(const glm::mat4& matrix) noexcept;
-        Camera& setPerspective(float fovy, float aspect, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
-        Camera& setPerspective(float fovy, const glm::uvec2& size, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
-        
-        Camera& setOrtho(const Viewport& viewport, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
-        Camera& setOrtho(const glm::uvec2& size, const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
-
-        Camera& setViewportPerspective(float fovy, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
-        Camera& setViewportOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
+        const CameraProjectionData& getProjection() const noexcept;
+        Camera& setProjection(const CameraProjectionData& data) noexcept;
+        Camera& setPerspective(float fovy = 60.F, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
+        Camera& setOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
 
         Camera& setViewport(const std::optional<Viewport>& viewport) noexcept;
         const std::optional<Viewport>& getViewport() const noexcept;

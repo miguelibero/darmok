@@ -159,7 +159,7 @@ namespace
 
 			auto farPlane = mainCamera ? 40 : 20;
 			auto& cam = scene.addComponent<Camera>(entity);
-			cam.setViewportPerspective(60, 0.3, farPlane);
+			cam.setPerspective(60, 0.3, farPlane);
 
 			scene.addComponent<Transform>(entity)
 				.setPosition(glm::vec3(0, 1, 0))

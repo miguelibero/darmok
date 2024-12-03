@@ -8,6 +8,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/math.hpp>
+#include <darmok/transform.hpp>
 #include <bgfx/bgfx.h>
 #include <glm/gtx/component_wise.hpp>
 #include <RmlUi/Core.h>
@@ -72,7 +73,7 @@ namespace
 			scene.addComponent<Transform>(camEntity)
 				.setPosition({ 0, 0, -3 })
 				.lookAt({ 0, 0, 0 });
-			cam.setViewportPerspective(60, 0.3, 5);
+			cam.setPerspective(60, 0.3, 5);
 			
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<RmluiRenderer>();

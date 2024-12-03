@@ -118,13 +118,13 @@ namespace
 				.setPosition(glm::vec3(0.f, 2.f, -2.f))
 				.lookAt(glm::vec3(0, 0, 0));
 			scene.addComponent<Camera>(cam3d)
-				.setViewportPerspective(60, 0.3, 1000)
+				.setPerspective(60, 0.3, 1000)
 				.setCullingFilter<Culling3D>()
 				.addComponent<ForwardRenderer>();
 
 			auto cam2d = scene.createEntity();
 			scene.addComponent<Camera>(cam2d)
-				.setViewportOrtho(glm::vec2(0))
+				.setOrtho(glm::vec2(0))
 				.setCullingFilter<Culling2D>()
 				.addComponent<ForwardRenderer>();
 

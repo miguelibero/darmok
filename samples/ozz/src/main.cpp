@@ -69,7 +69,7 @@ namespace
 				.lookAt(glm::vec3(0, 1, 0));
 
 			auto& cam = scene.addComponent<Camera>(camEntity)
-				.setViewportPerspective(60, 0.3, 1000);
+				.setPerspective(60, 0.3, 1000);
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<LightingRenderComponent>();
 			cam.addComponent<SkeletalAnimationRenderComponent>();
